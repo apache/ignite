@@ -19,7 +19,7 @@ package org.apache.ignite.internal.client.thin;
 
 import java.util.function.Function;
 import java.util.function.Supplier;
-import java.util.function.ToIntFunction;
+import java.util.function.ToIntBiFunction;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.cache.CacheAtomicityMode;
 import org.apache.ignite.cache.CacheMode;
@@ -28,7 +28,6 @@ import org.apache.ignite.cache.query.ScanQuery;
 import org.apache.ignite.client.ClientAtomicConfiguration;
 import org.apache.ignite.client.ClientAtomicLong;
 import org.apache.ignite.client.ClientCache;
-import org.apache.ignite.client.ClientCacheConfiguration;
 import org.apache.ignite.client.ClientCollectionConfiguration;
 import org.apache.ignite.client.ClientIgniteSet;
 import org.apache.ignite.configuration.AtomicConfiguration;
@@ -83,25 +82,17 @@ public class ThinClientPartitionAwarenessStableTopologyTest extends ThinClientAb
      */
     @Test
     public void testPartitionedCustomAffinityCacheWithMapper() throws Exception {
-        testApplicableCache(() -> {
-            ClientCache<Object, Object> cache = client.getOrCreateCache(
-                    new ClientCacheConfiguration()
-                        .setName(PART_CUSTOM_AFFINITY_CACHE_NAME)
-                        .setPartitionAwarenessAffinityKeyMapper(new ToIntFunction<Object>() {
-                            /** Affinity mask. */
-                            private final int affinityMask = RendezvousAffinityFunction.calculateMask(DFLT_PARTITION_COUNT);
+        testApplicableCache(() -> (ClientCache<Object, Object>)((ClientCacheEx)client.cache(PART_CUSTOM_AFFINITY_CACHE_NAME))
+            .withPartitionAwarenessKeyMapperFactory(new ToIntBiFunction<Object, Integer>() {
+                /** Affinity mask. */
+                private final int affinityMask = RendezvousAffinityFunction.calculateMask(DFLT_PARTITION_COUNT);
 
-                            /** {@inheritDoc} */
-                            @Override public int applyAsInt(Object key) {
-                                return RendezvousAffinityFunction.calculatePartition(key, affinityMask, DFLT_PARTITION_COUNT);
-                            }
-                        })
-                );
+                @Override public int applyAsInt(Object key, Integer parts) {
+                    assertEquals(parts, Integer.valueOf(DFLT_PARTITION_COUNT));
 
-            assertOpOnChannel(dfltCh, ClientOperation.CACHE_GET_OR_CREATE_WITH_CONFIGURATION);
-
-            return cache;
-        }, i -> i);
+                    return RendezvousAffinityFunction.calculatePartition(key, affinityMask, DFLT_PARTITION_COUNT);
+                }
+            }), i -> i);
     }
 
     /**

@@ -197,21 +197,17 @@ public class TcpIgniteClient implements IgniteClient {
         ch.request(ClientOperation.CACHE_GET_OR_CREATE_WITH_CONFIGURATION,
             req -> serDes.cacheConfiguration(cfg, req.out(), req.clientChannel().protocolCtx()));
 
-        ch.onCacheCreated(cfg);
-
         return new TcpClientCache<>(cfg.getName(), ch, marsh, transactions, lsnrsRegistry);
     }
 
     /** {@inheritDoc} */
     @Override public <K, V> IgniteClientFuture<ClientCache<K, V>> getOrCreateCacheAsync(
-        ClientCacheConfiguration cfg
-    ) throws ClientException {
+            ClientCacheConfiguration cfg) throws ClientException {
         ensureCacheConfiguration(cfg);
 
         return new IgniteClientFutureImpl<>(
             ch.requestAsync(ClientOperation.CACHE_GET_OR_CREATE_WITH_CONFIGURATION,
                     req -> serDes.cacheConfiguration(cfg, req.out(), req.clientChannel().protocolCtx()))
-                .thenAccept(x -> ch.onCacheCreated(cfg))
                 .thenApply(x -> new TcpClientCache<>(cfg.getName(), ch, marsh, transactions, lsnrsRegistry)));
     }
 

@@ -25,7 +25,7 @@ import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentLinkedQueue;
 import java.util.concurrent.atomic.AtomicReference;
-import java.util.function.ToIntFunction;
+import java.util.function.ToIntBiFunction;
 import org.apache.ignite.IgniteBinary;
 import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
 import org.apache.ignite.internal.util.GridConcurrentHashSet;
@@ -41,7 +41,7 @@ public class ClientCacheAffinityContext {
     private final AtomicReference<TopologyNodes> lastTop = new AtomicReference<>();
 
     /** Cache key mappers that map the key to a partition for each cache if a custom affinity function was used for cache in a cluster. */
-    private final Map<Integer, ToIntFunction<Object>> cacheAffinityMappers = new ConcurrentHashMap<>();
+    private final Map<Integer, ToIntBiFunction<Object, Integer>> cacheAffinityMappers = new ConcurrentHashMap<>();
 
     /** Current affinity mapping. */
     private volatile ClientCacheAffinityMapping affinityMapping;
@@ -60,7 +60,7 @@ public class ClientCacheAffinityContext {
      * @param cacheId Cache id.
      * @param mapper The client cache key mapper function is used for calculation the key to partition mapping.
      */
-    public void putCacheAffinityMapper(Integer cacheId, ToIntFunction<Object> mapper) {
+    public void putCacheAffinityMapper(Integer cacheId, ToIntBiFunction<Object, Integer> mapper) {
         assert mapper != null;
 
         cacheAffinityMappers.put(cacheId, mapper);

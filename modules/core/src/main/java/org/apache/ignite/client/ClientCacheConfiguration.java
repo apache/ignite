@@ -18,7 +18,6 @@
 package org.apache.ignite.client;
 
 import java.io.Serializable;
-import java.util.function.ToIntFunction;
 import javax.cache.expiry.ExpiryPolicy;
 import org.apache.ignite.cache.CacheAtomicityMode;
 import org.apache.ignite.cache.CacheKeyConfiguration;
@@ -27,12 +26,9 @@ import org.apache.ignite.cache.CacheRebalanceMode;
 import org.apache.ignite.cache.CacheWriteSynchronizationMode;
 import org.apache.ignite.cache.PartitionLossPolicy;
 import org.apache.ignite.cache.QueryEntity;
-import org.apache.ignite.cache.affinity.AffinityFunction;
-import org.apache.ignite.cache.affinity.AffinityKeyMapper;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.util.typedef.internal.S;
-import org.jetbrains.annotations.Nullable;
 
 /** Cache configuration. */
 public final class ClientCacheConfiguration implements Serializable {
@@ -132,22 +128,6 @@ public final class ClientCacheConfiguration implements Serializable {
     /** @serial Expiry policy. */
     private ExpiryPolicy expiryPlc;
 
-    /**
-     * This cache key mapper configuration parameter is used only when the partition awareness thin client feature is enabled. By default,
-     * on a new cache the RendezvousAffinityFunction will be used for calculating mappings 'key-to-partition' and 'partition-to-node'. The
-     * thin client will keep all 'partitions-to-node' mappings up to date when each cache put/get request occurs and the 'key-to-partition'
-     * mapping will also be calculated on the client side.
-     *
-     * The case described above will not be possible (and in turn partition awareness won't work) when a custom {@link AffinityFunction} or
-     * a {@link AffinityKeyMapper} was previously used for a cache creation. The key mapper configuration parameter is used to solve this
-     * issue. All 'partition-to-node' mappings will still be requested from a server node, however, if a custom affinity function was used
-     * the key mapper will calculate mapping a key to a partition.
-     *
-     * This client cache key mapper will not be passed to a server node, it is used only for local calculations.
-     *
-     * Client cache affinity function used for calculation of partition mappings. It wouldn't be transferred to the server side. */
-    private @Nullable ToIntFunction<Object> partitionAwarenessAffinityKeyMapper;
-
     /** Default constructor. */
     public ClientCacheConfiguration() {
         // No-op.
@@ -190,7 +170,6 @@ public final class ClientCacheConfiguration implements Serializable {
         sqlSchema = ccfg.getSqlSchema();
         statisticsEnabled = ccfg.isStatisticsEnabled();
         writeSynchronizationMode = ccfg.getWriteSynchronizationMode();
-        partitionAwarenessAffinityKeyMapper = ccfg.getPartitionAwarenessAffinityKeyMapper();
     }
 
     /**
@@ -763,25 +742,6 @@ public final class ClientCacheConfiguration implements Serializable {
      */
     public ClientCacheConfiguration setExpiryPolicy(ExpiryPolicy expiryPlc) {
         this.expiryPlc = expiryPlc;
-
-        return this;
-    }
-
-    /**
-     * @return The client cache key mapper function is used for calculation the key to partition mapping.
-     * It will not be passed to the server side.
-     */
-    public @Nullable ToIntFunction<Object> getPartitionAwarenessAffinityKeyMapper() {
-        return partitionAwarenessAffinityKeyMapper;
-    }
-
-    /**
-     * @param keyMapper The client cache key mapper function is used for calculation the key to partition mapping.
-     * It will not be passed to the server side.
-     * @return {@code this} for chaining.
-     */
-    public ClientCacheConfiguration setPartitionAwarenessAffinityKeyMapper(ToIntFunction<Object> keyMapper) {
-        partitionAwarenessAffinityKeyMapper = keyMapper;
 
         return this;
     }
