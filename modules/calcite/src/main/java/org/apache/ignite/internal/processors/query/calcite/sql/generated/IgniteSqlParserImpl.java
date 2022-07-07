@@ -433,7 +433,8 @@ public class IgniteSqlParserImpl extends SqlAbstractParserImpl implements Ignite
         return ex;
     }
 
-    int[][] prefixes = prefixList.toArray(new int[prefixList.size()][]);
+    int[][] prefixes = (int[][])
+        prefixList.toArray(new int[prefixList.size()][]);
 
     // Since <IDENTIFIER> was one of the possible productions,
     // we know that the parser will also have included all
@@ -458,7 +459,7 @@ public class IgniteSqlParserImpl extends SqlAbstractParserImpl implements Ignite
     }
 
     ex.expectedTokenSequences =
-        list.toArray(new int [list.size()][]);
+        (int [][]) list.toArray(new int [list.size()][]);
     return ex;
   }
 
@@ -5288,10 +5289,10 @@ public class IgniteSqlParserImpl extends SqlAbstractParserImpl implements Ignite
         assert nfrags > 0;
         if (nfrags == 1) {
             // just the head fragment
-            SqlLiteral lit = frags.get(0);
+            SqlLiteral lit = (SqlLiteral) frags.get(0);
             {if (true) return lit.unescapeUnicode(unicodeEscapeChar);}
         } else {
-            SqlNode[] rands = frags.toArray(new SqlNode[nfrags]);
+            SqlNode[] rands = (SqlNode[]) frags.toArray(new SqlNode[nfrags]);
             for (int i = 0; i < rands.length; ++i) {
                 rands[i] = ((SqlLiteral) rands[i]).unescapeUnicode(
                     unicodeEscapeChar);
