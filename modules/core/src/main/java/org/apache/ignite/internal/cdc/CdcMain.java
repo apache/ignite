@@ -638,6 +638,104 @@ public class CdcMain implements Runnable {
         }
     }
 
+    /** Metadata update. */
+    private void updateMetadata() {
+        long start = System.currentTimeMillis();
+
+        updateMappings();
+
+        updateTypes();
+
+        metaUpdate.value(System.currentTimeMillis() - start);
+    }
+
+    /** Search for new or changed {@link BinaryType} and notifies the consumer. */
+    private void updateTypes() {
+        try {
+            Iterator<BinaryType> changedTypes = Files.list(binaryMeta.toPath())
+                .filter(p -> p.toString().endsWith(METADATA_FILE_SUFFIX))
+                .map(p -> {
+                    int typeId = BinaryUtils.typeId(p.getFileName().toString());
+                    long lastModified = p.toFile().lastModified();
+
+                    // Filter out files already in `typesState` with the same last modify date.
+                    if (typesState.containsKey(typeId) && lastModified == typesState.get(typeId))
+                        return null;
+
+                    typesState.put(typeId, lastModified);
+
+                    try {
+                        kctx.cacheObjects().cacheMetadataLocally(binaryMeta, typeId);
+                    }
+                    catch (IgniteCheckedException e) {
+                        throw new IgniteException(e);
+                    }
+
+                    return kctx.cacheObjects().metadata(typeId);
+                })
+                .filter(Objects::nonNull)
+                .iterator();
+
+            if (!changedTypes.hasNext())
+                return;
+
+            consumer.onTypes(changedTypes);
+
+            if (changedTypes.hasNext())
+                throw new IllegalStateException("Consumer should handle all changed types");
+
+            state.saveTypes(typesState);
+        }
+        catch (IOException e) {
+            throw new IgniteException(e);
+        }
+    }
+
+    /** Search for new or changed {@link TypeMapping} and notifies the consumer. */
+    private void updateMappings() {
+        try {
+            File[] files = marshaller.listFiles(BinaryUtils::notTmpFile);
+
+            if (files == null)
+                return;
+
+            Iterator<TypeMapping> changedMappings = Arrays.stream(files)
+                .map(f -> {
+                    String fileName = f.getName();
+
+                    int typeId = BinaryUtils.mappedTypeId(fileName);
+                    byte platformId = BinaryUtils.mappedFilePlatformId(fileName);
+
+                    T2<Integer, Byte> state = new T2<>(typeId, platformId);
+
+                    if (mappingsState.contains(state))
+                        return null;
+
+                    mappingsState.add(state);
+
+                    return (TypeMapping)new TypeMappingImpl(
+                        typeId,
+                        BinaryUtils.readMapping(f),
+                        platformId == 0 ? PlatformType.JAVA : PlatformType.DOTNET);
+                })
+                .filter(Objects::nonNull)
+                .iterator();
+
+            if (!changedMappings.hasNext())
+                return;
+
+            consumer.onMappings(changedMappings);
+
+            if (changedMappings.hasNext())
+                throw new IllegalStateException("Consumer should handle all changed mappings");
+
+            state.saveMappings(mappingsState);
+        }
+        catch (IOException e) {
+            throw new IgniteException(e);
+        }
+    }
+
     /**
      * Try locks Change Data Capture directory.
      *
