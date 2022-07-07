@@ -150,6 +150,12 @@ public class IgniteServiceCallInterceptorTest extends GridCommonAbstractTest imp
             return null;
         }, ServiceDeploymentException.class, null);
 
+        // Redeploy the service with a valid configuration.
+        client.services().cancel(SVC_NAME_INTERCEPTED);
+
+        client.services().deploy(cfg);
+        assertEquals("2", proxy.method(0));
+
         // Undeploy service.
         client.services().cancel(SVC_NAME_INTERCEPTED);
 
@@ -164,12 +170,6 @@ public class IgniteServiceCallInterceptorTest extends GridCommonAbstractTest imp
 
         for (int i = 0; i < NODES_CNT - 1; i++)
             assertNull("idx=" + i, grid(i).services().service(SVC_NAME_INTERCEPTED));
-
-        // Redeploy the service with a valid configuration.
-        client.services().cancel(SVC_NAME_INTERCEPTED);
-
-        client.services().deploy(cfg);
-        assertEquals("2", proxy.method(0));
     }
 
     /**
