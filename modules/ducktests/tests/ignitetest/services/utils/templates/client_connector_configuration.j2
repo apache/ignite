@@ -1,0 +1,47 @@
+{#
+ Licensed to the Apache Software Foundation (ASF) under one or more
+ contributor license agreements.  See the NOTICE file distributed with
+ this work for additional information regarding copyright ownership.
+ The ASF licenses this file to You under the Apache License, Version 2.0
+ (the "License"); you may not use this file except in compliance with
+ the License.  You may obtain a copy of the License at
+
+    http://www.apache.org/licenses/LICENSE-2.0
+
+ Unless required by applicable law or agreed to in writing, software
+ distributed under the License is distributed on an "AS IS" BASIS,
+ WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ See the License for the specific language governing permissions and
+ limitations under the License.
+#}
+
+{% import 'ssl_params_macro.j2' as ssl_params_util %}
+
+{% macro client_connector_configuration(config) %}
+{% if config %}
+   <property name="clientConnectorConfiguration">
+        <bean class="org.apache.ignite.configuration.ClientConnectorConfiguration">
+            <property name="port" value="{{ config.port }}"/>
+            {% if config.thread_pool_size %}
+            <property name="threadPoolSize" value="{{ config.thread_pool_size }}"/>
+            {% endif %}
+            {% if config.ssl_enabled %}
+                <property name="sslEnabled" value="true"/>
+                <property name="sslContextFactory">
+                    {{ ssl_params_util.ssl_params(config.ssl_params) }}
+                </property>
+                <property name="useIgniteSslContextFactory" value="{{ config.use_ignite_ssl_context_factory }}"/>
+                <property name="sslClientAuth" value="{{ config.ssl_client_auth }}"/>
+            {% endif %}
+            {% if config.thin_client_configuration %}
+            <property name="thinClientConfiguration">
+                <bean class="org.apache.ignite.configuration.ThinClientConfiguration">
+                    <property name="maxActiveComputeTasksPerConnection" value="{{ config.thin_client_configuration.max_active_compute_tasks_per_connection }}" />
+                    <property name="maxActiveTxPerConnection" value="{{ config.thin_client_configuration.max_active_tx_per_connection }}" />
+                </bean>
+            </property>
+            {% endif %}
+        </bean>
+   </property>
+{% endif %}
+{% endmacro %}

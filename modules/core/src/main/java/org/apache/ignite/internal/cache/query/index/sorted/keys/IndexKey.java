@@ -17,7 +17,8 @@
 
 package org.apache.ignite.internal.cache.query.index.sorted.keys;
 
-import org.apache.ignite.internal.cache.query.index.sorted.IndexKeyTypes;
+import org.apache.ignite.IgniteCheckedException;
+import org.apache.ignite.internal.cache.query.index.sorted.IndexKeyType;
 
 /**
  * Class that represnts a single index key.
@@ -29,12 +30,19 @@ public interface IndexKey {
     public Object key();
 
     /**
-     * @return Index key type {@link IndexKeyTypes}.
+     * @return Index key type {@link IndexKeyType}.
      */
-    public int type();
+    public IndexKeyType type();
 
     /**
-     * @return Comparison result with other IndexKey the same type.
+     * @return Comparison result with other IndexKey.
      */
-    public int compare(IndexKey o);
+    public int compare(IndexKey o) throws IgniteCheckedException;
+
+    /**
+     * @return {@code True} if index key can be compared to another index key.
+     */
+    public default boolean isComparableTo(IndexKey k) {
+        return type() == k.type();
+    }
 }

@@ -51,6 +51,9 @@ public class CheckpointContextImpl implements CheckpointListener.Context {
     /** Pending tasks from executor. */
     private GridCompoundFuture pendingTaskFuture;
 
+    /** Whether to force flush WAL after Checkpoint process. */
+    private boolean forceWalFlush;
+
     /**
      * @param curr Current checkpoint progress.
      * @param map Partition map.
@@ -78,6 +81,16 @@ public class CheckpointContextImpl implements CheckpointListener.Context {
     /** {@inheritDoc} */
     @Override public boolean nextSnapshot() {
         return curr.nextSnapshot();
+    }
+
+    /** {@inheritDoc} */
+    @Override public void walFlush(boolean flush) {
+        forceWalFlush = flush;
+    }
+
+    /** {@inheritDoc} */
+    @Override public boolean walFlush() {
+        return forceWalFlush || nextSnapshot();
     }
 
     /** {@inheritDoc} */

@@ -18,6 +18,7 @@
 package org.apache.ignite.cdc;
 
 import java.util.Iterator;
+import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteBinary;
 import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.binary.BinaryIdMapper;
@@ -27,6 +28,7 @@ import org.apache.ignite.internal.cdc.CdcMain;
 import org.apache.ignite.internal.processors.metric.MetricRegistry;
 import org.apache.ignite.lang.IgniteExperimental;
 import org.apache.ignite.resources.LoggerResource;
+import org.apache.ignite.spi.systemview.view.CacheView;
 
 /**
  * Consumer of WAL data change events.
@@ -50,6 +52,14 @@ import org.apache.ignite.resources.LoggerResource;
  *
  * Note, consumption of the {@link CdcEvent} will be started from the last saved offset.
  * The offset of consumptions is saved on the disk every time {@link #onEvents(Iterator)} returns {@code true}.
+ * Note, order of notifications are following:
+ * <ul>
+ *     <li>{@link #onMappings(Iterator)}</li>
+ *     <li>{@link #onTypes(Iterator)}</li>
+ *     <li>{@link #onCacheChange(Iterator)}</li>
+ *     <li>{@link #onCacheDestroy(Iterator)}</li>
+ * </ul>
+ * Note, {@link CdcConsumer} receive notifications on each running CDC application(node).
  *
  * @see CdcMain
  * @see CdcEvent
@@ -77,7 +87,6 @@ public interface CdcConsumer {
     /**
      * Handles new binary types. State of the types processing will be stored after method invocation
      * and ongoing notifications after CDC application fail/restart will be continued for newly created/updates types.
-     * Invoked before {@link #onEvents(Iterator)}.
      *
      * Note, unlike {@link #onEvents(Iterator)} this method MUST process all types or CDC will fail.
      * Because, in time of invocation {@link #onEvents(Iterator)} all changed types must be available on destionation.
@@ -94,7 +103,6 @@ public interface CdcConsumer {
     /**
      * Handles new mappings from type name to id. State of the types processing will be stored after method invocation
      * and ongoing notifications after CDC application fail/restart will be continued for newly created/updates mappings.
-     * Invoked before both {@link #onEvents(Iterator)} and {@link #onTypes(Iterator)}.
      *
      * @param mappings Binary mapping iterator.
      * @see IgniteBinary
@@ -102,6 +110,28 @@ public interface CdcConsumer {
      * @see BinaryIdMapper
      */
     public void onMappings(Iterator<TypeMapping> mappings);
+
+    /**
+     * Handles caches changes(create, edit) events. State of cache processing will be stored after method invocation
+     * and ongoing notifications after CDC application fail/restart will be continued for newly changed caches.
+     *
+     * @param cacheEvents Cache change events.
+     * @see Ignite#createCache(String)
+     * @see Ignite#getOrCreateCache(String)
+     * @see CdcCacheEvent
+     */
+    public void onCacheChange(Iterator<CdcCacheEvent> cacheEvents);
+
+    /**
+     * Handles cache destroy events. State of cache processing will be stored after method invocation
+     * and ongoing notifications after CDC application fail/restart will be continued for newly changed caches.
+     *
+     * @param caches Destroyed caches.
+     * @see Ignite#destroyCache(String)
+     * @see CdcCacheEvent
+     * @see CacheView#cacheId()
+     */
+    public void onCacheDestroy(Iterator<Integer> caches);
 
     /**
      * Stops the consumer.

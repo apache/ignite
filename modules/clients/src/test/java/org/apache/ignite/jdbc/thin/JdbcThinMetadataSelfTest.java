@@ -38,7 +38,6 @@ import java.util.LinkedHashMap;
 import java.util.Map;
 import java.util.Set;
 import java.util.TreeSet;
-
 import org.apache.ignite.IgniteCache;
 import org.apache.ignite.cache.QueryEntity;
 import org.apache.ignite.cache.QueryIndex;
@@ -775,6 +774,7 @@ public class JdbcThinMetadataSelfTest extends JdbcThinAbstractSelfTest {
                 "SYS.SQL_QUERIES.DURATION.null.19",
                 "SYS.SQL_QUERIES.ORIGIN_NODE_ID.null.2147483647",
                 "SYS.SQL_QUERIES.INITIATOR_ID.null.2147483647",
+                "SYS.SQL_QUERIES.SUBJECT_ID.null.2147483647",
                 "SYS.SCAN_QUERIES.START_TIME.null.19",
                 "SYS.SCAN_QUERIES.TRANSFORMER.null.2147483647",
                 "SYS.SCAN_QUERIES.LOCAL.null.1",

@@ -15,7 +15,7 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.internal.processors.query.h2.index.client;
+package org.apache.ignite.internal.cache.query.index.sorted.client;
 
 import java.util.ArrayList;
 import java.util.LinkedHashMap;

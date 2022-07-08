@@ -50,6 +50,7 @@ import org.apache.ignite.internal.processors.cache.GridCacheContextInfo;
 import org.apache.ignite.internal.processors.cache.query.IgniteQueryErrorCode;
 import org.apache.ignite.internal.processors.cache.query.QueryTable;
 import org.apache.ignite.internal.processors.query.GridQueryIndexDescriptor;
+import org.apache.ignite.internal.processors.query.GridQueryRowDescriptorImpl;
 import org.apache.ignite.internal.processors.query.GridQuerySchemaManager;
 import org.apache.ignite.internal.processors.query.GridQueryTypeDescriptor;
 import org.apache.ignite.internal.processors.query.IgniteSQLException;
@@ -558,7 +559,8 @@ public class SchemaManager implements GridQuerySchemaManager {
         if (log.isDebugEnabled())
             log.debug("Creating DB table with SQL: " + sql);
 
-        GridH2RowDescriptor rowDesc = new GridH2RowDescriptor(tbl, tbl.type());
+        GridH2RowDescriptor rowDesc = new GridH2RowDescriptor(
+            new GridQueryRowDescriptorImpl(tbl.cacheInfo(), tbl.type()));
 
         GridH2Table h2Tbl = H2TableEngine.createTable(conn.connection(), sql, rowDesc, tbl, ctx.indexProcessor());
 

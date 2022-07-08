@@ -322,6 +322,16 @@ public class IgniteSequentialNodeCrashRecoveryTest extends GridCommonAbstractTes
         }
 
         /** {@inheritDoc} */
+        @Override public void walFlush(boolean flush) {
+            // No-op.
+        }
+
+        /** {@inheritDoc} */
+        @Override public boolean walFlush() {
+            return false;
+        }
+
+        /** {@inheritDoc} */
         @Override public @Nullable Executor executor() {
             return null;
         }

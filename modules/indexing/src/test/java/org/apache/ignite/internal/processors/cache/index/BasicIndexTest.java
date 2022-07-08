@@ -1508,7 +1508,7 @@ public class BasicIndexTest extends AbstractIndexingCommonTest {
         IgniteH2Indexing idx = ((IgniteH2Indexing)grid().context().query().getIndexing());
 
         H2TableDescriptor tblDesc0 = idx.schemaManager().dataTable("PUBLIC", "TEST0")
-            .rowDescriptor().tableDescriptor();
+            .tableDescriptor();
 
         assertNotNull(GridTestUtils.getFieldValue(tblDesc0, "luceneIdx"));
 
@@ -1518,7 +1518,7 @@ public class BasicIndexTest extends AbstractIndexingCommonTest {
             "WITH \"WRAP_VALUE=false\"");
 
         H2TableDescriptor tblDesc1 = idx.schemaManager().dataTable("PUBLIC", "TEST1")
-            .rowDescriptor().tableDescriptor();
+            .tableDescriptor();
 
         assertNull(GridTestUtils.getFieldValue(tblDesc1, "luceneIdx"));
     }

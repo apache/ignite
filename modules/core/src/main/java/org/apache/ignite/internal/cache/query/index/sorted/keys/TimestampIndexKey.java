@@ -24,11 +24,11 @@ import java.time.LocalTime;
 import java.util.Date;
 import java.util.concurrent.TimeUnit;
 import org.apache.ignite.IgniteException;
-import org.apache.ignite.internal.cache.query.index.sorted.IndexKeyTypes;
+import org.apache.ignite.internal.cache.query.index.sorted.IndexKeyType;
 import org.apache.ignite.internal.cache.query.index.sorted.inline.types.DateValueUtils;
 
 /** */
-public class TimestampIndexKey implements IndexKey {
+public class TimestampIndexKey extends DateTimeIndexKey {
     /** */
     private final long dateVal;
 
@@ -89,14 +89,17 @@ public class TimestampIndexKey implements IndexKey {
     }
 
     /** {@inheritDoc} */
-    @Override public int type() {
-        return IndexKeyTypes.TIMESTAMP;
+    @Override public IndexKeyType type() {
+        return IndexKeyType.TIMESTAMP;
+    }
+
+    /** {@inheritDoc} */
+    @Override public int compareTo(long dateVal, long nanos) {
+        return this.dateVal != dateVal ? Long.compare(this.dateVal, dateVal) : Long.compare(this.nanos, nanos);
     }
 
     /** {@inheritDoc} */
     @Override public int compare(IndexKey o) {
-        TimestampIndexKey other = (TimestampIndexKey)o;
-
-        return dateVal != other.dateVal ? Long.compare(dateVal, other.dateVal) : Long.compare(nanos, other.nanos);
+        return -((DateTimeIndexKey)o).compareTo(dateVal, nanos);
     }
 }
