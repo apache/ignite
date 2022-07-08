@@ -1196,7 +1196,7 @@ namespace Apache.Ignite.Core.Tests.Services
         [Test]
         public void TestCallPlatformServiceThinClient()
         {
-            var svc = _thinClient.GetServices().GetServiceProxy<IJavaService>(PlatformSvcName);
+            var svc = _thinClient.GetServices().GetServiceProxy<IJavaService>(PlatformSvcName, callContext());
             var binSvc = _thinClient.GetServices().WithKeepBinary().WithServerKeepBinary()
                 .GetServiceProxy<IJavaService>(PlatformSvcName);
 
@@ -1209,9 +1209,9 @@ namespace Apache.Ignite.Core.Tests.Services
         [Test]
         public void TestCallJavaServiceThinClient()
         {
-            var svc = Services.GetServiceProxy<IJavaService>(_javaSvcName, false, callContext());
-            var binSvc = Services.WithKeepBinary().WithServerKeepBinary()
-                .GetServiceProxy<IJavaService>(_javaSvcName, false);
+            var svc = _thinClient.GetServices().GetServiceProxy<IJavaService>(_javaSvcName, callContext());
+            var binSvc = _thinClient.GetServices().WithKeepBinary().WithServerKeepBinary()
+                .GetServiceProxy<IJavaService>(_javaSvcName, callContext());
 
             DoAllServiceTests(svc, binSvc, false, false, false);
         }
@@ -1224,7 +1224,7 @@ namespace Apache.Ignite.Core.Tests.Services
         {
             var svc = new JavaServiceDynamicProxy(Services.GetDynamicServiceProxy(_javaSvcName, true, callContext()));
 
-            DoTestService(svc, true);
+            DoTestService(svc);
 
             DoTestJavaExceptions(svc);
         }
@@ -1232,20 +1232,20 @@ namespace Apache.Ignite.Core.Tests.Services
         /// <summary>
         /// Tests service invocation.
         /// </summary>
-        private void DoAllServiceTests(IJavaService svc, IJavaService binSvc, bool isClient, bool isPlatform, bool supportCtxAttrs = true)
+        private void DoAllServiceTests(IJavaService svc, IJavaService binSvc, bool isClient, bool isPlatform, bool checkException = true)
         {
-            DoTestService(svc, supportCtxAttrs);
+            DoTestService(svc);
 
             DoTestBinary(svc, binSvc, isPlatform);
 
-            if (!isPlatform)
+            if (!isPlatform && checkException)
                 DoTestJavaExceptions(svc, isClient);
         }
 
         /// <summary>
         /// Tests service methods.
         /// </summary>
-        private void DoTestService(IJavaService svc, bool supportCtxAttrs)
+        private void DoTestService(IJavaService svc)
         {
             // Basics
             Assert.IsTrue(svc.isInitialized());
@@ -1373,8 +1373,7 @@ namespace Apache.Ignite.Core.Tests.Services
             Assert.AreEqual(dt1, cache.Get(3));
             Assert.AreEqual(dt2, cache.Get(4));
 
-            if (supportCtxAttrs)
-                Assert.AreEqual("value", svc.contextAttribute("attr"));
+            Assert.AreEqual("value", svc.contextAttribute("attr"));
 
 #if NETCOREAPP
             //This Date in Europe/Moscow have offset +4.

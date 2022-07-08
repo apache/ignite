@@ -231,8 +231,7 @@ namespace Apache.Ignite.Core.Tests.Services
             BinarizableTestValue AddOne(BinarizableTestValue val);
 
             /** */
-            // ReSharper disable once InconsistentNaming
-            string contextAttribute(string name);
+            string ContextAttribute(string name);
         }
 
         #pragma warning disable 649
@@ -320,7 +319,7 @@ namespace Apache.Ignite.Core.Tests.Services
                 };
             }
 
-            public string contextAttribute(string name)
+            public string ContextAttribute(string name)
             {
                 IServiceCallContext callCtx = _ctx.CurrentCallContext;
 
