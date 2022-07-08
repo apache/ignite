@@ -27,10 +27,14 @@ import java.nio.ByteBuffer;
 import java.sql.Time;
 import java.sql.Timestamp;
 import java.util.Arrays;
+import java.util.Calendar;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.Objects;
 import java.util.Random;
 import java.util.Set;
+import java.util.TimeZone;
 import java.util.UUID;
 import java.util.function.Function;
 import java.util.stream.Collectors;
@@ -287,19 +291,112 @@ public class IndexQueryAllTypesTest extends GridCommonAbstractTest {
     }
 
     /** */
+    @Test
+    public void testRangeCrossTypeConvertion() {
+        int cnt = 100;
+
+        Map<String, Function<Integer, Object>> funcs = new HashMap<>();
+
+        funcs.put("byte", Integer::byteValue);
+        funcs.put("short", Integer::shortValue);
+        funcs.put("int", Integer::intValue);
+        funcs.put("long", Integer::longValue);
+        funcs.put("float", Integer::floatValue);
+        funcs.put("double", Integer::doubleValue);
+        funcs.put("decimal", BigDecimal::valueOf);
+
+        for (Map.Entry<String, Function<Integer, Object>> cacheRow : funcs.entrySet()) {
+            for (Map.Entry<String, Function<Integer, Object>> searchRow : funcs.entrySet()) {
+                log.info("Checking " + cacheRow.getKey() + " cache row type with " + searchRow.getKey() +
+                    " search row type");
+
+                testRangeField(cacheRow.getValue(), searchRow.getValue(), cacheRow.getKey() + "Id", cnt);
+            }
+        }
+
+        funcs.clear();
+
+        Calendar cal = Calendar.getInstance(TimeZone.getDefault());
+
+        funcs.put("sqlDate", i -> {
+            cal.clear();
+            cal.set(2000 + i / 100, (i / 10) % 10, i % 10);
+            return new java.sql.Date(cal.getTimeInMillis());
+        });
+        funcs.put("timestamp", i -> {
+            cal.clear();
+            cal.set(2000 + i / 100, (i / 10) % 10, i % 10);
+            return new Timestamp(cal.getTimeInMillis());
+        });
+
+        for (Map.Entry<String, Function<Integer, Object>> cacheRow : funcs.entrySet()) {
+            for (Map.Entry<String, Function<Integer, Object>> searchRow : funcs.entrySet()) {
+                log.info("Checking " + cacheRow.getKey() + " cache row type with " + searchRow.getKey() +
+                    " search row type");
+
+                testRangeField(cacheRow.getValue(), searchRow.getValue(), cacheRow.getKey() + "Id", cnt);
+            }
+        }
+    }
+
+    /** */
+    @Test
+    public void testCrossTypeComparisonWithOutOfBoundsFilter() {
+        int cnt = 100;
+
+        Map<String, Function<Integer, Object>> funcs = new HashMap<>();
+
+        funcs.put("bool", i -> i != 0);
+        funcs.put("byte", Integer::byteValue);
+
+        for (Map.Entry<String, Function<Integer, Object>> func : funcs.entrySet()) {
+            String fieldName = func.getKey() + "Id";
+
+            Function<Object, Person> persGen = i -> person(fieldName, i);
+
+            insertData(func.getValue(), persGen, cnt);
+
+            for (Object filterVal : F.asList(1_000, 1_000L, 1_000.0, 1_000.0d, BigDecimal.valueOf(1_000))) {
+                log.info("Checking " + func.getKey() + " cache row type with " +
+                    filterVal.getClass().getSimpleName() + " search row type");
+
+                IndexQuery<Long, Person> qry = new IndexQuery<Long, Person>(Person.class, idxName(fieldName))
+                    .setCriteria(lte(fieldName, filterVal));
+
+                check(cache.query(qry), 0, cnt, func.getValue(), persGen);
+
+                qry = new IndexQuery<Long, Person>(Person.class, idxName(fieldName))
+                    .setCriteria(gt(fieldName, filterVal));
+
+                assertTrue(cache.query(qry).getAll().isEmpty());
+            }
+        }
+    }
+
+    /** */
     private <T> void testRangeField(Function<Integer, T> valGen, String fieldName) {
         testRangeField(valGen, fieldName, CNT);
     }
 
     /** */
     private <T> void testRangeField(Function<Integer, T> valGen, String fieldName, int cnt) {
+        testRangeField(valGen, valGen, fieldName, cnt);
+    }
+
+    /** */
+    private <T, S> void testRangeField(
+        Function<Integer, T> valGen,
+        Function<Integer, S> searchRowGen,
+        String fieldName,
+        int cnt
+    ) {
         Function<T, Person> persGen = i -> person(fieldName, i);
 
         insertData(valGen, persGen, cnt);
 
         int pivot = new Random().nextInt(cnt);
 
-        T val = valGen.apply(pivot);
+        S val = searchRowGen.apply(pivot);
 
         // All.
         IndexQuery<Long, Person> qry = new IndexQuery<>(Person.class, idxName(fieldName));

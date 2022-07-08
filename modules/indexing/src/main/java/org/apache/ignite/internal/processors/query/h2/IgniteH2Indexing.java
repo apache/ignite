@@ -58,6 +58,10 @@ import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.binary.BinaryMarshaller;
 import org.apache.ignite.internal.binary.BinaryUtils;
 import org.apache.ignite.internal.cache.query.index.IndexName;
+import org.apache.ignite.internal.cache.query.index.sorted.IndexKeyTypeSettings;
+import org.apache.ignite.internal.cache.query.index.sorted.QueryIndexDefinition;
+import org.apache.ignite.internal.cache.query.index.sorted.client.ClientIndexDefinition;
+import org.apache.ignite.internal.cache.query.index.sorted.client.ClientIndexFactory;
 import org.apache.ignite.internal.cache.query.index.sorted.inline.InlineIndex;
 import org.apache.ignite.internal.cache.query.index.sorted.inline.InlineIndexFactory;
 import org.apache.ignite.internal.cache.query.index.sorted.inline.InlineIndexImpl;
@@ -84,6 +88,7 @@ import org.apache.ignite.internal.processors.cache.mvcc.MvccSnapshot;
 import org.apache.ignite.internal.processors.cache.mvcc.MvccUtils;
 import org.apache.ignite.internal.processors.cache.mvcc.StaticMvccQueryTracker;
 import org.apache.ignite.internal.processors.cache.persistence.CacheDataRow;
+import org.apache.ignite.internal.processors.cache.persistence.tree.BPlusTree;
 import org.apache.ignite.internal.processors.cache.query.GridCacheQueryMarshallable;
 import org.apache.ignite.internal.processors.cache.query.GridCacheQueryType;
 import org.apache.ignite.internal.processors.cache.query.GridCacheTwoStepQuery;
@@ -122,9 +127,6 @@ import org.apache.ignite.internal.processors.query.h2.dml.DmlUpdateSingleEntryIt
 import org.apache.ignite.internal.processors.query.h2.dml.DmlUtils;
 import org.apache.ignite.internal.processors.query.h2.dml.UpdateMode;
 import org.apache.ignite.internal.processors.query.h2.dml.UpdatePlan;
-import org.apache.ignite.internal.processors.query.h2.index.QueryIndexDefinition;
-import org.apache.ignite.internal.processors.query.h2.index.client.ClientIndexDefinition;
-import org.apache.ignite.internal.processors.query.h2.index.client.ClientIndexFactory;
 import org.apache.ignite.internal.processors.query.h2.maintenance.RebuildIndexWorkflowCallback;
 import org.apache.ignite.internal.processors.query.h2.opt.GridH2IndexBase;
 import org.apache.ignite.internal.processors.query.h2.opt.GridH2Table;
@@ -184,6 +186,7 @@ import org.h2.table.Column;
 import org.h2.table.IndexColumn;
 import org.h2.table.TableType;
 import org.h2.util.JdbcUtils;
+import org.h2.value.CompareMode;
 import org.h2.value.DataType;
 import org.jetbrains.annotations.Nullable;
 
@@ -449,15 +452,30 @@ public class IgniteH2Indexing implements GridQueryIndexing {
             log.debug("Creating cache index [cacheId=" + cacheInfo.cacheId() + ", idxName=" + name + ']');
 
         if (cacheInfo.affinityNode()) {
+            GridCacheContext<?, ?> cctx = cacheInfo.cacheContext();
+
+            GridQueryTypeDescriptor typeDesc = tbl.rowDescriptor().type();
+
+            int typeId = cctx.binaryMarshaller() ? typeDesc.typeId() : typeDesc.valueClass().hashCode();
+
+            String treeName = BPlusTree.treeName(typeId + "_" + name, "H2Tree");
+
+            List<IndexColumn> cols = ctx.indexProcessor().useUnwrappedPk(cctx, treeName) ? unwrappedCols : wrappedCols;
+
+            IndexKeyTypeSettings keyTypeSettings = new IndexKeyTypeSettings()
+                .stringOptimizedCompare(CompareMode.OFF.equals(tbl.getCompareMode().getName()))
+                .binaryUnsigned(tbl.getCompareMode().isBinaryUnsigned());
+
             QueryIndexDefinition idxDef = new QueryIndexDefinition(
-                tbl,
-                name,
+                tbl.rowDescriptor(),
+                new IndexName(tbl.cacheName(), tbl.getSchema().getName(), tbl.getName(), name),
+                treeName,
                 ctx.indexProcessor().rowCacheCleaner(cacheInfo.groupId()),
                 pk,
                 affinityKey,
-                unwrappedCols,
-                wrappedCols,
-                inlineSize
+                H2Utils.columnsToKeyDefinitions(tbl, cols),
+                inlineSize,
+                keyTypeSettings
             );
 
             org.apache.ignite.internal.cache.query.index.Index index;
@@ -474,9 +492,8 @@ public class IgniteH2Indexing implements GridQueryIndexing {
         }
         else {
             ClientIndexDefinition d = new ClientIndexDefinition(
-                tbl,
                 new IndexName(tbl.cacheName(), tbl.getSchema().getName(), tbl.getName(), name),
-                unwrappedCols,
+                H2Utils.columnsToKeyDefinitions(tbl, unwrappedCols),
                 inlineSize,
                 tbl.cacheInfo().config().getSqlIndexMaxInlineSize());
 

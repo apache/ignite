@@ -19,38 +19,32 @@ package org.apache.ignite.internal.cache.query.index.sorted.inline.types;
 
 import org.apache.ignite.internal.cache.query.index.sorted.IndexKeyType;
 import org.apache.ignite.internal.cache.query.index.sorted.keys.IndexKey;
-import org.apache.ignite.internal.cache.query.index.sorted.keys.StringIndexKey;
-import org.jetbrains.annotations.Nullable;
+import org.apache.ignite.internal.cache.query.index.sorted.keys.NumericIndexKey;
 
 /**
- * Skip optimized String comparison implemented in {@link StringInlineIndexKeyType}.
+ * Inline index key implementation for inlining numeric values.
  */
-public class StringNoCompareInlineIndexKeyType extends NullableInlineIndexKeyType<StringIndexKey> {
-    /** Delegate all String operations except comparison to StringInlineIndexKeyType. */
-    private final StringInlineIndexKeyType delegate = new StringInlineIndexKeyType();
-
-    /** */
-    public StringNoCompareInlineIndexKeyType() {
-        super(IndexKeyType.STRING, (short)-1);
+public abstract class NumericInlineIndexKeyType<T extends IndexKey> extends NullableInlineIndexKeyType<T> {
+    /** Constructor. */
+    protected NumericInlineIndexKeyType(IndexKeyType type, short keySize) {
+        super(type, keySize);
     }
 
     /** {@inheritDoc} */
-    @Override protected int put0(long pageAddr, int off, StringIndexKey key, int maxSize) {
-        return delegate.put0(pageAddr, off, key, maxSize);
-    }
-
-    /** {@inheritDoc} */
-    @Override protected @Nullable StringIndexKey get0(long pageAddr, int off) {
-        return delegate.get0(pageAddr, off);
+    @Override public boolean isComparableTo(IndexKey key) {
+        return key instanceof NumericIndexKey;
     }
 
     /** {@inheritDoc} */
     @Override public int compare0(long pageAddr, int off, IndexKey key) {
-        return COMPARE_UNSUPPORTED;
+        return -Integer.signum(compareNumeric((NumericIndexKey)key, pageAddr, off));
     }
 
+    /** Compare numeric index key with inlined value. */
+    public abstract int compareNumeric(NumericIndexKey key, long pageAddr, int off);
+
     /** {@inheritDoc} */
-    @Override protected int inlineSize0(StringIndexKey key) {
-        return delegate.inlineSize0(key);
+    @Override protected int inlineSize0(T key) {
+        return keySize + 1;
     }
 }

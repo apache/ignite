@@ -35,6 +35,7 @@ import org.apache.ignite.internal.processors.cache.GridCacheContext;
 import org.apache.ignite.internal.processors.cache.query.GridCacheTwoStepQuery;
 import org.apache.ignite.internal.processors.cache.query.IgniteQueryErrorCode;
 import org.apache.ignite.internal.processors.query.GridQueryProperty;
+import org.apache.ignite.internal.processors.query.GridQueryRowDescriptor;
 import org.apache.ignite.internal.processors.query.GridQueryTypeDescriptor;
 import org.apache.ignite.internal.processors.query.IgniteSQLException;
 import org.apache.ignite.internal.processors.query.QueryUtils;
@@ -44,7 +45,6 @@ import org.apache.ignite.internal.processors.query.h2.H2StatementCache;
 import org.apache.ignite.internal.processors.query.h2.H2Utils;
 import org.apache.ignite.internal.processors.query.h2.IgniteH2Indexing;
 import org.apache.ignite.internal.processors.query.h2.QueryDescriptor;
-import org.apache.ignite.internal.processors.query.h2.opt.GridH2RowDescriptor;
 import org.apache.ignite.internal.processors.query.h2.opt.GridH2Table;
 import org.apache.ignite.internal.processors.query.h2.opt.QueryContext;
 import org.apache.ignite.internal.processors.query.h2.sql.GridSqlColumn;
@@ -151,7 +151,7 @@ public final class UpdatePlanBuilder {
 
         GridSqlTable tbl;
 
-        GridH2RowDescriptor desc;
+        GridQueryRowDescriptor desc;
 
         List<GridSqlElement[]> elRows = null;
 
@@ -431,7 +431,7 @@ public final class UpdatePlanBuilder {
 
         assert h2Tbl != null;
 
-        GridH2RowDescriptor desc = h2Tbl.rowDescriptor();
+        GridQueryRowDescriptor desc = h2Tbl.rowDescriptor();
 
         if (desc == null)
             throw new IgniteSQLException("Row descriptor undefined for table '" + h2Tbl.getName() + "'",
@@ -557,7 +557,7 @@ public final class UpdatePlanBuilder {
      * @throws IgniteCheckedException if failed.
      */
     public static UpdatePlan planForBulkLoad(SqlBulkLoadCommand cmd, GridH2Table tbl) throws IgniteCheckedException {
-        GridH2RowDescriptor desc = tbl.rowDescriptor();
+        GridQueryRowDescriptor desc = tbl.rowDescriptor();
 
         if (desc == null)
             throw new IgniteSQLException("Row descriptor undefined for table '" + tbl.getName() + "'",
@@ -824,7 +824,7 @@ public final class UpdatePlanBuilder {
      * @return {@code true} if any of given columns corresponds to the key or any of its properties.
      */
     private static boolean updateAffectsKeyColumns(GridH2Table gridTbl, Set<String> affectedColNames) {
-        GridH2RowDescriptor desc = gridTbl.rowDescriptor();
+        GridQueryRowDescriptor desc = gridTbl.rowDescriptor();
 
         for (String colName : affectedColNames) {
             int colId = gridTbl.getColumn(colName).getColumnId();
@@ -835,7 +835,7 @@ public final class UpdatePlanBuilder {
 
             // column ids 0..1 are _key, _val
             if (colId >= QueryUtils.DEFAULT_COLUMNS_COUNT) {
-                if (desc.isColumnKeyProperty(colId - QueryUtils.DEFAULT_COLUMNS_COUNT))
+                if (desc.isFieldKeyProperty(colId - QueryUtils.DEFAULT_COLUMNS_COUNT))
                     return true;
             }
         }
@@ -853,7 +853,7 @@ public final class UpdatePlanBuilder {
      * @throws IgniteSQLException if check failed.
      */
     private static void verifyDmlColumns(GridH2Table tab, Collection<Column> affectedCols) {
-        GridH2RowDescriptor desc = tab.rowDescriptor();
+        GridQueryRowDescriptor desc = tab.rowDescriptor();
 
         // _key (_val) or it alias exist in the update columns.
         String keyColName = null;
@@ -890,7 +890,7 @@ public final class UpdatePlanBuilder {
                 assert colId >= QueryUtils.DEFAULT_COLUMNS_COUNT :
                     "Unexpected column [name=" + col + ", id=" + colId + "].";
 
-                if (desc.isColumnKeyProperty(colId - QueryUtils.DEFAULT_COLUMNS_COUNT))
+                if (desc.isFieldKeyProperty(colId - QueryUtils.DEFAULT_COLUMNS_COUNT))
                     hasKeyProps = true;
                 else
                     hasValProps = true;

@@ -17,37 +17,38 @@
 
 package org.apache.ignite.internal.cache.query.index.sorted.keys;
 
-import java.util.UUID;
-import org.apache.ignite.internal.cache.query.index.sorted.IndexKeyType;
+import java.math.BigDecimal;
 
-/** */
-public class UuidIndexKey implements IndexKey {
+/**
+ * Class that represnts a numeric index key.
+ */
+public abstract class NumericIndexKey implements IndexKey {
     /** */
-    private final UUID key;
+    public abstract int compareTo(boolean val);
 
     /** */
-    public UuidIndexKey(UUID key) {
-        this.key = key;
-    }
+    public abstract int compareTo(byte val);
+
+    /** */
+    public abstract int compareTo(short val);
+
+    /** */
+    public abstract int compareTo(int val);
+
+    /** */
+    public abstract int compareTo(long val);
+
+    /** */
+    public abstract int compareTo(float val);
+
+    /** */
+    public abstract int compareTo(double val);
+
+    /** */
+    public abstract int compareTo(BigDecimal val);
 
     /** {@inheritDoc} */
-    @Override public Object key() {
-        return key;
-    }
-
-    /** {@inheritDoc} */
-    @Override public IndexKeyType type() {
-        return IndexKeyType.UUID;
-    }
-
-    /** {@inheritDoc} */
-    @Override public int compare(IndexKey o) {
-        UUID okey = (UUID)o.key();
-
-        // Keep old logic.
-        if (key.getMostSignificantBits() == okey.getMostSignificantBits())
-            return Long.compare(key.getLeastSignificantBits(), okey.getLeastSignificantBits());
-        else
-            return key.getMostSignificantBits() > okey.getMostSignificantBits() ? 1 : -1;
+    @Override public boolean isComparableTo(IndexKey k) {
+        return k instanceof NumericIndexKey;
     }
 }
