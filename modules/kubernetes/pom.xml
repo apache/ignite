@@ -31,8 +31,13 @@
     </parent>
 
     <artifactId>ignite-kubernetes</artifactId>
+    <packaging>bundle</packaging>
 
     <url>http://ignite.apache.org</url>
+
+    <properties>
+        <osgi.private.package>org.apache.ignite.internal.kubernetes.connection</osgi.private.package>
+    </properties>
 
     <dependencies>
         <dependency>

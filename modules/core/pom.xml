@@ -31,6 +31,7 @@
     </parent>
 
     <artifactId>ignite-core</artifactId>
+    <packaging>bundle</packaging>
 
     <properties>
         <ignite.update.notifier.product>apache-ignite</ignite.update.notifier.product>
@@ -42,12 +43,21 @@
         -->
         <osgi.import.package>
             javax.enterprise.util;resolution:=optional,
+            com.apple.eawt;resolution:=optional,
+            com.sun.management;resolution:=optional,
+            jdk.internal.loader;resolution:=optional,
+            org.apache.ignite.internal.processors.rest.protocols.http.jetty*;resolution:=optional,
+            org.apache.ignite.logger.log4j*;resolution:=optional,
+            org.apache.log4j.varia*;resolution:=optional,
+            org.springframework.context*;resolution:=optional,
+            sun.nio.ch*;resolution:=optional,
+            sun.reflect*;resolution:=optional,
             !com.sun.jmx.mbeanserver,
             *
         </osgi.import.package>
         <osgi.export.package>
             org.apache.ignite.*,
-            org.jsr166.*;version=1.0.0;
+            org.jsr166.*;version=1.0.0,
             {local-packages}
         </osgi.export.package>
     </properties>
@@ -291,13 +301,6 @@
                     </execution>
                 </executions>
             </plugin>
-
-            <!-- Generate the OSGi MANIFEST.MF for this bundle. -->
-            <plugin>
-                <groupId>org.apache.felix</groupId>
-                <artifactId>maven-bundle-plugin</artifactId>
-            </plugin>
-
             <plugin>
                 <groupId>org.apache.maven.plugins</groupId>
                 <artifactId>maven-deploy-plugin</artifactId>

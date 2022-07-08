@@ -31,6 +31,14 @@
     </parent>
 
     <artifactId>ignite-jta</artifactId>
+    <packaging>bundle</packaging>
+
+    <properties>
+      <osgi.import.package>
+          com.ibm.tx.jta*;resolution:=optional,
+          *
+      </osgi.import.package>
+    </properties>
 
     <url>http://ignite.apache.org</url>
 

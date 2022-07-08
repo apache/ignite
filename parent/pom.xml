@@ -116,13 +116,13 @@
         <jsonlib.version>2.4</jsonlib.version>
         <jtidy.version>r938</jtidy.version>
         <kafka.version>2.0.1</kafka.version>
-        <karaf.version>4.0.2</karaf.version>
+        <karaf.version>4.3.7</karaf.version>
         <log4j2.version>2.17.1</log4j2.version>
         <log4j.version>1.2.17</log4j.version>
         <lucene.bundle.version>7.4.0_1</lucene.bundle.version>
         <lucene.version>7.4.0</lucene.version>
         <lz4.version>1.8.0</lz4.version>
-        <maven.bundle.plugin.version>3.5.0</maven.bundle.plugin.version>
+        <maven.bundle.plugin.version>5.1.6</maven.bundle.plugin.version>
         <maven.checkstyle.plugin.version>3.1.1</maven.checkstyle.plugin.version>
         <maven.flatten.plugin.version>1.2.7</maven.flatten.plugin.version>
         <maven.flatten.file.name>pom-installed.xml</maven.flatten.file.name>
@@ -392,13 +392,6 @@
                     <version>${maven.bundle.plugin.version}</version>
                     <extensions>true</extensions>
                     <configuration>
-                        <archive>
-                            <addMavenDescriptor>true</addMavenDescriptor>
-                        </archive>
-                        <supportedProjectTypes>
-                            <supportedProjectType>jar</supportedProjectType>
-                            <supportedProjectType>war</supportedProjectType>
-                        </supportedProjectTypes>
                         <instructions>
                             <Bundle-SymbolicName>${project.groupId}.${project.artifactId}</Bundle-SymbolicName>
                             <Bundle-Version>${project.version}</Bundle-Version>
@@ -418,18 +411,10 @@
                             <Embed-Directory>lib</Embed-Directory>
                             <Embed-Transitive>${osgi.embed.transitive}</Embed-Transitive>
                             <_failok>${osgi.fail.ok}</_failok>
+                            <_contract>!*</_contract>
                             <_invalidfilenames/>
                         </instructions>
                     </configuration>
-                    <executions>
-                        <execution>
-                            <id>bundle-manifest</id>
-                            <phase>process-classes</phase>
-                            <goals>
-                                <goal>manifest</goal>
-                            </goals>
-                        </execution>
-                    </executions>
                 </plugin>
 
                 <plugin>
@@ -529,6 +514,11 @@
                         <include>**/*.java</include>
                     </includes>
                 </configuration>
+            </plugin>
+            <plugin>
+                <groupId>org.apache.felix</groupId>
+                <artifactId>maven-bundle-plugin</artifactId>
+                <extensions>true</extensions>
             </plugin>
 
             <plugin>
