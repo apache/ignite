@@ -227,10 +227,6 @@
                                 <packages>org.apache.ignite.platform*</packages>
                             </group>
                             <group>
-                                <title>OSGi integration</title>
-                                <packages>org.apache.ignite.osgi*</packages>
-                            </group>
-                            <group>
                                 <title>Storm integration</title>
                                 <packages>org.apache.ignite.stream.storm*</packages>
                             </group>

@@ -148,9 +148,6 @@
                 <exclude>${project.groupId}:ignite-ml-spark-model-parser</exclude>
                 <exclude>${project.groupId}:ignite-ml-xgboost-model-parser</exclude>
                 <exclude>${project.groupId}:ignite-ml-catboost-model-parser</exclude>
-                <exclude>${project.groupId}:ignite-osgi</exclude>
-                <exclude>${project.groupId}:ignite-osgi-karaf</exclude>
-                <exclude>${project.groupId}:ignite-osgi-paxlogging</exclude>
                 <exclude>${project.groupId}:ignite-ssh</exclude>
                 <exclude>${project.groupId}:ignite-web</exclude>
                 <exclude>${project.groupId}:ignite-zookeeper</exclude>
