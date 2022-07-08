@@ -18,12 +18,10 @@
 package org.apache.ignite.internal.processors.query.h2.sys.view;
 
 import java.util.Iterator;
-import org.apache.ignite.spi.systemview.view.SystemView;
 import org.h2.engine.Session;
 import org.h2.result.Row;
 import org.h2.result.SearchRow;
 import org.h2.table.Column;
-import org.jetbrains.annotations.Nullable;
 
 /**
  * SQL system view.
@@ -84,9 +82,4 @@ public interface SqlSystemView {
      * @return {@code True} if view is distributed.
      */
     public boolean isDistributed();
-
-    /**
-     * @return Underlying system view. Or {@code null} if SQL view implementation is not based on system view.
-     */
-    public @Nullable SystemView<?> getSystemView();
 }

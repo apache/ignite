@@ -40,6 +40,8 @@ import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.IgniteSystemProperties;
 import org.apache.ignite.cache.query.annotations.QuerySqlFunction;
 import org.apache.ignite.internal.GridKernalContext;
+import org.apache.ignite.internal.managers.systemview.FiltrableSystemViewLocal;
+import org.apache.ignite.internal.managers.systemview.SystemViewLocal;
 import org.apache.ignite.internal.managers.systemview.walker.SqlIndexViewWalker;
 import org.apache.ignite.internal.managers.systemview.walker.SqlSchemaViewWalker;
 import org.apache.ignite.internal.managers.systemview.walker.SqlTableColumnViewWalker;
@@ -70,6 +72,7 @@ import org.apache.ignite.internal.processors.query.schema.SchemaIndexCacheVisito
 import org.apache.ignite.internal.util.GridConcurrentHashSet;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.internal.U;
+import org.apache.ignite.spi.systemview.view.FiltrableSystemView;
 import org.apache.ignite.spi.systemview.view.SqlIndexView;
 import org.apache.ignite.spi.systemview.view.SqlSchemaView;
 import org.apache.ignite.spi.systemview.view.SqlTableColumnView;
@@ -236,8 +239,7 @@ public class SchemaManager implements GridQuerySchemaManager {
      * @param schema Schema to create view in.
      * @param view System view.
      */
-    public void createSystemView(String schema, SqlSystemView view) {
-
+    public void createSystemView(String schema, SystemView<?> view) {
         boolean disabled = IgniteSystemProperties.getBoolean(IgniteSystemProperties.IGNITE_SQL_DISABLE_SYSTEM_VIEWS);
 
         if (disabled) {
@@ -249,19 +251,21 @@ public class SchemaManager implements GridQuerySchemaManager {
             return;
         }
 
+        SystemViewLocal<?> sysView = view instanceof FiltrableSystemView ?
+            new FiltrableSystemViewLocal<>(ctx, view) : new SystemViewLocal<>(ctx, view);
+
         try {
             synchronized (schemaMux) {
                 createSchema(schema, true);
             }
 
             try (H2PooledConnection c = connMgr.connection(schema)) {
-                SqlSystemTableEngine.registerView(c.connection(), view);
+                SqlSystemTableEngine.registerView(c.connection(), sysView);
 
-                systemViews.add(view);
+                systemViews.add(sysView);
             }
 
-            if (view.getSystemView() != null) // Skip pure H2-indexing views.
-                lsnr.onSystemViewCreated(schema, view.getSystemView());
+            lsnr.onSystemViewCreated(schema, view);
         }
         catch (IgniteCheckedException | SQLException e) {
             throw new IgniteException("Failed to register system view.", e);
