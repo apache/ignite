@@ -215,6 +215,10 @@ public abstract class AbstractPlatformServiceCallTask extends ComputeTaskAdapter
         /** */
         @PlatformServiceMethod("ContextAttribute")
         String contextAttribute(String name);
+
+        /** */
+        @PlatformServiceMethod("Intercepted")
+        int intercepted(int val);
     }
 
     /** */

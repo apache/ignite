@@ -50,6 +50,7 @@ public class PlatformServiceCallTask extends AbstractPlatformServiceCallTask {
             checkObjectProp(srv);
             checkErrorMethod(srv);
             checkContextAttribute(srv);
+            checkInterceptedMethod(srv);
         }
 
         /** */
@@ -84,6 +85,13 @@ public class PlatformServiceCallTask extends AbstractPlatformServiceCallTask {
         /** */
         protected void checkContextAttribute(TestPlatformService srv) {
             assertEquals("value", srv.contextAttribute("attr"));
+        }
+
+        /** */
+        protected void checkInterceptedMethod(TestPlatformService srv) {
+            int val = 2;
+
+            assertEquals((val * val) * (val * val), srv.intercepted(val));
         }
     }
 }

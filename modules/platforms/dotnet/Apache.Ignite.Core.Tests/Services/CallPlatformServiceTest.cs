@@ -121,7 +121,8 @@ namespace Apache.Ignite.Core.Tests.Services
             {
                 Name = ServiceName,
                 TotalCount = 1,
-                Service = new TestPlatformService()
+                Service = new TestPlatformService(),
+                Interceptors = new List<IServiceCallInterceptor> { new TestPlatformServiceInterceptor() }
             };
 
             if (withNodeFilter)
@@ -232,6 +233,9 @@ namespace Apache.Ignite.Core.Tests.Services
 
             /** */
             string ContextAttribute(string name);
+            
+            /** */
+            int Intercepted(int val);
         }
 
         #pragma warning disable 649
@@ -319,11 +323,18 @@ namespace Apache.Ignite.Core.Tests.Services
                 };
             }
 
+            /** <inheritdoc /> */
             public string ContextAttribute(string name)
             {
                 IServiceCallContext callCtx = _ctx.CurrentCallContext;
 
                 return callCtx == null ? null : callCtx.GetAttribute(name);
+            }
+
+            /** <inheritdoc /> */
+            public int Intercepted(int val)
+            {
+                return val * val;
             }
 
             /** <inheritdoc /> */
@@ -342,6 +353,22 @@ namespace Apache.Ignite.Core.Tests.Services
             public void Cancel(IServiceContext context)
             {
                 // No-op;
+            }
+        }
+
+        /** */
+        [Serializable]
+        private class TestPlatformServiceInterceptor : IServiceCallInterceptor
+        {
+            /** <inheritdoc /> */
+            public object Invoke(string mtd, object[] args, IServiceContext ctx, Func<object> next)
+            {
+                object res = next.Invoke();
+
+                if ("Intercepted".Equals(mtd))
+                    return (int)res * (int)res;
+
+                return res;
             }
         }
 
