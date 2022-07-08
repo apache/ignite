@@ -21,6 +21,7 @@ import java.util.concurrent.atomic.AtomicBoolean;
 import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.processors.query.QueryUtils;
 import org.apache.ignite.internal.processors.query.calcite.rel.IgniteAggregate;
+import org.apache.ignite.internal.processors.query.calcite.rel.IgniteIndexBound;
 import org.apache.ignite.internal.processors.query.calcite.rel.IgniteIndexCount;
 import org.apache.ignite.internal.processors.query.calcite.rel.IgniteIndexScan;
 import org.apache.ignite.internal.processors.query.calcite.rel.IgniteRel;
@@ -118,15 +119,13 @@ public class IndexRebuildPlannerTest extends AbstractPlannerTest {
     private void checkMinMaxOptimized() throws Exception {
         assertPlan("SELECT MIN(VAL) FROM TBL", publicSchema, nodeOrAnyChild(isInstanceOf(IgniteAggregate.class)
             .and(a -> a.getAggCallList().stream().filter(agg -> agg.getAggregation().getKind() == MIN).count() == 1)
-            .and(nodeOrAnyChild(isInstanceOf(IgniteIndexScan.class)
-                .and(is -> is.indexName().equals(QueryUtils.indexName("TBL", "VAL")))
-                .and(IgniteIndexScan::findFirst)))));
+            .and(nodeOrAnyChild(isInstanceOf(IgniteIndexBound.class)
+                .and(is -> is.indexName().equals(QueryUtils.indexName("TBL", "VAL")))))));
 
         assertPlan("SELECT MAX(VAL) FROM TBL", publicSchema, nodeOrAnyChild(isInstanceOf(IgniteAggregate.class)
             .and(a -> a.getAggCallList().stream().filter(agg -> agg.getAggregation().getKind() == MAX).count() == 1)
-            .and(nodeOrAnyChild(isInstanceOf(IgniteIndexScan.class)
-                .and(is -> is.indexName().equals(QueryUtils.indexName("TBL", "VAL")))
-                .and(IgniteIndexScan::findLast)))));
+            .and(nodeOrAnyChild(isInstanceOf(IgniteIndexBound.class)
+                .and(is -> is.indexName().equals(QueryUtils.indexName("TBL", "VAL")))))));
     }
 
     /** */
@@ -205,13 +204,13 @@ public class IndexRebuildPlannerTest extends AbstractPlannerTest {
             for (int i = 0; i < 500; i++) {
                 assertPlan("SELECT MIN(VAL) FROM TBL", publicSchema,
                     nodeOrAnyChild(isInstanceOf(IgniteAggregate.class)
-                        .and(input(isInstanceOf(IgniteIndexScan.class).and(IgniteIndexScan::findFirst)
+                        .and(input(isInstanceOf(IgniteIndexBound.class)
                             .and(is -> is.indexName().equals(QueryUtils.indexName("TBL", "VAL"))))
                             .or(input(isInstanceOf(IgniteTableScan.class))))));
 
                 assertPlan("SELECT MAX(VAL) FROM TBL", publicSchema,
                     nodeOrAnyChild(isInstanceOf(IgniteAggregate.class)
-                        .and(input(isInstanceOf(IgniteIndexScan.class).and(IgniteIndexScan::findLast)
+                        .and(input(isInstanceOf(IgniteIndexBound.class)
                             .and(is -> is.indexName().equals(QueryUtils.indexName("TBL", "VAL"))))
                             .or(input(isInstanceOf(IgniteTableScan.class))))));
             }

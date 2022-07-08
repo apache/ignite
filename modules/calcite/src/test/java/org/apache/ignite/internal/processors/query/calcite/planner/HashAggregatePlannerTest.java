@@ -31,6 +31,7 @@ import org.apache.ignite.internal.processors.query.QueryUtils;
 import org.apache.ignite.internal.processors.query.calcite.metadata.ColocationGroup;
 import org.apache.ignite.internal.processors.query.calcite.prepare.MappingQueryContext;
 import org.apache.ignite.internal.processors.query.calcite.rel.IgniteAggregate;
+import org.apache.ignite.internal.processors.query.calcite.rel.IgniteIndexBound;
 import org.apache.ignite.internal.processors.query.calcite.rel.IgniteIndexCount;
 import org.apache.ignite.internal.processors.query.calcite.rel.IgniteIndexScan;
 import org.apache.ignite.internal.processors.query.calcite.rel.IgniteRel;
@@ -105,8 +106,8 @@ public class HashAggregatePlannerTest extends AbstractAggregatePlannerTest {
     /** */
     private void assertIndexFirstOrLastRecord(String sql, boolean first, IgniteSchema schema) throws Exception {
         assertPlan(sql, schema, nodeOrAnyChild(isInstanceOf(IgniteAggregate.class)
-            .and(nodeOrAnyChild(isInstanceOf(IgniteIndexScan.class)
-                .and(s -> first && s.findFirst() || !first && s.findLast())))));
+            .and(nodeOrAnyChild(isInstanceOf(IgniteIndexBound.class)
+                .and(s -> first && s.first() || !first && !s.first())))));
     }
 
     /** */

@@ -65,12 +65,6 @@ public class SystemViewIndexImpl implements IgniteIndex {
     }
 
     /** */
-    @Override public List<String> fields() {
-        // No collation means no fields.
-        return Collections.emptyList();
-    }
-
-    /** */
     @Override public IgniteTable table() {
         return tbl;
     }
@@ -87,7 +81,7 @@ public class SystemViewIndexImpl implements IgniteIndex {
     }
 
     /** */
-    @Override public <Row> SystemViewScan<Row, ?> scan(
+    @Override public <Row> Iterable<Row> scan(
         ExecutionContext<Row> execCtx,
         ColocationGroup grp,
         Predicate<Row> filters,
@@ -112,20 +106,20 @@ public class SystemViewIndexImpl implements IgniteIndex {
     }
 
     /** {@inheritDoc} */
-    @Override public <Row> List<Row> findFirstOrLast(boolean first, boolean skipNulls, ExecutionContext<Row> ectx,
+    @Override public <Row> List<Row> findFirstOrLast(boolean first, ExecutionContext<Row> ectx,
         ColocationGroup grp, @Nullable ImmutableBitSet requiredColumns) {
         Iterator<Row> it = scan(ectx, grp, null, null, null, null, requiredColumns).iterator();
 
-        Row curRow = it.hasNext() ? it.next() : null;
+        Row curRow = null;
 
-        while (F.isEmptyOrNulls(curRow) && skipNulls && it.hasNext())
+        while (F.isEmptyOrNulls(curRow) && it.hasNext())
             curRow = it.next();
 
         // No take-last underlying implementation. A minor ticket might be brought for the system views.
         Row res = F.isEmptyOrNulls(curRow) ? null : curRow;
 
         while (!first && it.hasNext())
-            res = F.isEmptyOrNulls(curRow = it.next()) && skipNulls ? res : curRow;
+            res = F.isEmptyOrNulls(curRow = it.next()) ? res : curRow;
 
         return res == null ? F.asList(res) : Collections.emptyList();
     }

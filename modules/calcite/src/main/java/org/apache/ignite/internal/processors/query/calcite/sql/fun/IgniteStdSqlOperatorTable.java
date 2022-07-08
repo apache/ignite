@@ -257,8 +257,6 @@ public class IgniteStdSqlOperatorTable extends ReflectiveSqlOperatorTable {
         register(SqlStdOperatorTable.OCTET_LENGTH);
         register(SqlStdOperatorTable.DEFAULT);
         register(SqlStdOperatorTable.REINTERPRET);
-        register(SqlStdOperatorTable.FIRST_VALUE);
-        register(SqlStdOperatorTable.LAST_VALUE);
 
         // XML Operators.
         register(SqlLibraryOperators.EXTRACT_VALUE);

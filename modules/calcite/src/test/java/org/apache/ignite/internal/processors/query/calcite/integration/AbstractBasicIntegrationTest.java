@@ -207,11 +207,6 @@ public class AbstractBasicIntegrationTest extends GridCommonAbstractTest {
         }
 
         /** {@inheritDoc} */
-        @Override public List<String> fields() {
-            return delegate.fields();
-        }
-
-        /** {@inheritDoc} */
         @Override public IgniteLogicalIndexScan toRel(
             RelOptCluster cluster,
             RelOptTable relOptTbl,
@@ -251,9 +246,9 @@ public class AbstractBasicIntegrationTest extends GridCommonAbstractTest {
         }
 
         /** {@inheritDoc} */
-        @Override public <Row> List<Row> findFirstOrLast(boolean first, boolean skinNulls, ExecutionContext<Row> ectx,
+        @Override public <Row> List<Row> findFirstOrLast(boolean first, ExecutionContext<Row> ectx,
             ColocationGroup grp, @Nullable ImmutableBitSet requiredColumns) {
-            return delegate.findFirstOrLast(first, skinNulls, ectx, grp, requiredColumns);
+            return delegate.findFirstOrLast(first, ectx, grp, requiredColumns);
         }
     }
 

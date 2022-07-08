@@ -44,9 +44,6 @@ public interface IgniteIndex {
     /** */
     public IgniteTable table();
 
-    /** */
-    public List<String> fields();
-
     /**
      * Converts index into relational expression.
      *
@@ -107,7 +104,6 @@ public interface IgniteIndex {
      */
     public <Row> List<Row> findFirstOrLast(
         boolean first,
-        boolean skipNulls,
         ExecutionContext<Row> ectx,
         ColocationGroup grp,
         @Nullable ImmutableBitSet requiredColumns

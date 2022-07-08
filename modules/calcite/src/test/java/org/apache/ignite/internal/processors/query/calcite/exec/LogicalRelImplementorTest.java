@@ -33,8 +33,6 @@ import org.apache.calcite.rex.RexBuilder;
 import org.apache.calcite.rex.RexLiteral;
 import org.apache.calcite.rex.RexNode;
 import org.apache.calcite.rex.RexShuttle;
-import org.apache.calcite.sql.SqlKind;
-import org.apache.calcite.sql.fun.SqlFirstLastValueAggFunction;
 import org.apache.calcite.sql.fun.SqlStdOperatorTable;
 import org.apache.calcite.sql.type.SqlTypeName;
 import org.apache.calcite.util.ImmutableBitSet;
@@ -49,13 +47,13 @@ import org.apache.ignite.internal.processors.query.calcite.exec.rel.SortNode;
 import org.apache.ignite.internal.processors.query.calcite.metadata.ColocationGroup;
 import org.apache.ignite.internal.processors.query.calcite.planner.TestTable;
 import org.apache.ignite.internal.processors.query.calcite.prepare.BaseQueryContext;
+import org.apache.ignite.internal.processors.query.calcite.rel.IgniteIndexBound;
 import org.apache.ignite.internal.processors.query.calcite.rel.IgniteIndexCount;
 import org.apache.ignite.internal.processors.query.calcite.rel.IgniteIndexScan;
 import org.apache.ignite.internal.processors.query.calcite.schema.IgniteSchema;
 import org.apache.ignite.internal.processors.query.calcite.trait.TraitUtils;
 import org.apache.ignite.internal.processors.query.calcite.type.IgniteTypeFactory;
 import org.apache.ignite.internal.processors.query.calcite.util.Commons;
-import org.apache.ignite.internal.processors.query.calcite.util.IndexConditions;
 import org.apache.ignite.internal.processors.query.calcite.util.RexUtils;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
@@ -173,28 +171,14 @@ public class LogicalRelImplementorTest extends GridCommonAbstractTest {
 
         tbl.addIndex(QueryUtils.PRIMARY_KEY_INDEX, idxColumn);
 
-        RelCollation collation = tbl.getIndex(QueryUtils.PRIMARY_KEY_INDEX).collation();
-        RelDataType idxType = tbl.getRowType(tf).getFieldList().get(2).getType();
-        ImmutableBitSet columns = ImmutableBitSet.of(idxColumn);
-
-        IndexConditions idxConditions = RexUtils.buildSortedIndexConditions(
-            cluster,
-            collation,
-            rexBuilder.makeCall(new SqlFirstLastValueAggFunction(first ? SqlKind.FIRST_VALUE : SqlKind.LAST_VALUE),
-                rexBuilder.makeLocalRef(idxType, 0)),
-            idxType,
-            columns);
-
-        IgniteIndexScan idxScan = new IgniteIndexScan(
+        IgniteIndexBound idxScan = new IgniteIndexBound(
+            qctx.catalogReader().getTable(F.asList("PUBLIC", "TBL")),
             cluster,
             cluster.traitSet(),
-            qctx.catalogReader().getTable(F.asList("PUBLIC", "TBL")),
             QueryUtils.PRIMARY_KEY_INDEX,
-            null,
-            null,
-            idxConditions,
-            columns,
-            collation);
+            first,
+            tbl.getIndex(QueryUtils.PRIMARY_KEY_INDEX).collation()
+        );
 
         Node<?> node = relImplementor.visit(idxScan);
 

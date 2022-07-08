@@ -68,10 +68,8 @@ import org.apache.ignite.internal.util.typedef.internal.U;
 import org.jetbrains.annotations.Nullable;
 
 import static org.apache.calcite.sql.SqlKind.EQUALS;
-import static org.apache.calcite.sql.SqlKind.FIRST_VALUE;
 import static org.apache.calcite.sql.SqlKind.GREATER_THAN;
 import static org.apache.calcite.sql.SqlKind.GREATER_THAN_OR_EQUAL;
-import static org.apache.calcite.sql.SqlKind.LAST_VALUE;
 import static org.apache.calcite.sql.SqlKind.LESS_THAN;
 import static org.apache.calcite.sql.SqlKind.LESS_THAN_OR_EQUAL;
 
@@ -170,9 +168,6 @@ public class RexUtils {
     ) {
         if (condition == null)
             return new IndexConditions();
-
-        if (condition.isA(FIRST_VALUE) || condition.isA(LAST_VALUE))
-            return new IndexConditions(null, null, F.asList(condition), F.asList(condition));
 
         condition = RexUtil.toCnf(builder(cluster), condition);
 

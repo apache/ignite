@@ -20,20 +20,14 @@ package org.apache.ignite.internal.processors.query.calcite.rel;
 import java.util.List;
 import com.google.common.collect.ImmutableList;
 import org.apache.calcite.plan.RelOptCluster;
-import org.apache.calcite.plan.RelOptCost;
-import org.apache.calcite.plan.RelOptPlanner;
 import org.apache.calcite.plan.RelOptTable;
 import org.apache.calcite.plan.RelTraitSet;
 import org.apache.calcite.rel.RelCollation;
 import org.apache.calcite.rel.RelInput;
 import org.apache.calcite.rel.RelWriter;
-import org.apache.calcite.rel.metadata.RelMetadataQuery;
 import org.apache.calcite.rex.RexNode;
-import org.apache.calcite.sql.SqlKind;
 import org.apache.calcite.util.ImmutableBitSet;
-import org.apache.ignite.internal.processors.query.calcite.metadata.cost.IgniteCost;
 import org.apache.ignite.internal.processors.query.calcite.util.IndexConditions;
-import org.apache.ignite.internal.util.typedef.F;
 import org.jetbrains.annotations.Nullable;
 
 import static org.apache.ignite.internal.processors.query.calcite.trait.TraitUtils.changeTraits;
@@ -42,8 +36,6 @@ import static org.apache.ignite.internal.processors.query.calcite.trait.TraitUti
  * Relational operator that returns the contents of a table.
  */
 public class IgniteIndexScan extends AbstractIndexScan implements SourceAwareIgniteRel {
-    /** */
-    private static final double INDEX_NULLS_EXPECTED_RATIO = 0.05;
     /** */
     private final long sourceId;
 
@@ -119,58 +111,6 @@ public class IgniteIndexScan extends AbstractIndexScan implements SourceAwareIgn
 
         this.sourceId = sourceId;
         this.collation = collation;
-    }
-
-    /**
-     * @return {@code True}, if the bounds suppose taking first index record.
-     * {@code False} otherwise.
-     */
-    public boolean findFirst() {
-        return firstOrLast(true);
-    }
-
-    /**
-     * @return {@code True}, if the bounds suppose taking last index record.
-     * {@code False} otherwise.
-     */
-    public boolean findLast() {
-        return firstOrLast(false);
-    }
-
-    /**
-     * @return {@code True}, if the bounds suppose taking first or last index record.
-     * {@code False} otherwise.
-     */
-    public boolean findFirstOrLast() {
-        return firstOrLast(null);
-    }
-
-    /**
-     * Tells whether the bounds suppose taking first or last index record.
-     *
-     * @param first If {@code null}, both take-first or take-last actions are considered. If {@code true}, only
-     *              take-first action is considered. If {@code false}, only take-last action is considered.
-     * @return {@code True}, if {@code first} is {@code null} and the bounds suppose taking first or last index record.
-     * {@code True}, if {@code first} is {@code true} and the bounds suppose taking first index record.
-     * {@code True}, if {@code first} is {@code false} and the bounds suppose taking last index record.
-     * {@code False} otherwise.
-     */
-    private boolean firstOrLast(@Nullable Boolean first) {
-        return lowerBound() != null && F.eq(lowerBound(), upperBound()) &&
-            lowerBound().stream().filter(b -> b != null && (first == null
-                ? b.isA(SqlKind.FIRST_VALUE) || b.isA(SqlKind.LAST_VALUE)
-                : b.isA(first ? SqlKind.FIRST_VALUE : SqlKind.LAST_VALUE))).count() == 1;
-    }
-
-    /** {@inheritDoc} */
-    @Override public RelOptCost computeSelfCost(RelOptPlanner planner, RelMetadataQuery mq) {
-        if (idxCond != null && findFirstOrLast()) {
-            //Taking first or last value supposes scan until not null.
-            return planner.getCostFactory().makeCost(1.0, table.getRowCount() * INDEX_NULLS_EXPECTED_RATIO
-                * IgniteCost.ROW_PASS_THROUGH_COST, 0);
-        }
-
-        return super.computeSelfCost(planner, mq);
     }
 
     /** {@inheritDoc} */

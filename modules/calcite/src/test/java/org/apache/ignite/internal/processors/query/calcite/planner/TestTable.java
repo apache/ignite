@@ -214,9 +214,7 @@ public class TestTable implements IgniteCacheTable {
 
     /** */
     public TestTable addIndex(RelCollation collation, String name) {
-        indexes.put(name, new CacheIndexImpl(collation, name, null, this,
-            collation.getFieldCollations().stream()
-                .map(fc -> rawType.getFieldList().get(fc.getFieldIndex()).getName()).collect(Collectors.toList())));
+        indexes.put(name, new CacheIndexImpl(collation, name, null, this));
 
         return this;
     }

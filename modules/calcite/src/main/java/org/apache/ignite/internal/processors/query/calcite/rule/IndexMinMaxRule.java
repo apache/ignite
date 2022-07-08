@@ -19,18 +19,15 @@ package org.apache.ignite.internal.processors.query.calcite.rule;
 
 import org.apache.calcite.plan.RelOptRuleCall;
 import org.apache.calcite.plan.RelRule;
-import org.apache.calcite.rex.RexBuilder;
 import org.apache.calcite.sql.SqlAggFunction;
 import org.apache.calcite.sql.SqlKind;
-import org.apache.calcite.sql.fun.SqlFirstLastValueAggFunction;
 import org.apache.ignite.internal.processors.query.calcite.rel.AbstractIndexScan;
 import org.apache.ignite.internal.processors.query.calcite.rel.IgniteAggregate;
+import org.apache.ignite.internal.processors.query.calcite.rel.IgniteIndexBound;
 import org.apache.ignite.internal.processors.query.calcite.rel.IgniteIndexScan;
 import org.apache.ignite.internal.processors.query.calcite.schema.IgniteIndex;
 import org.apache.ignite.internal.processors.query.calcite.schema.IgniteTable;
 import org.apache.ignite.internal.processors.query.calcite.trait.RewindabilityTrait;
-import org.apache.ignite.internal.processors.query.calcite.util.IndexConditions;
-import org.apache.ignite.internal.processors.query.calcite.util.RexUtils;
 import org.apache.ignite.internal.util.typedef.F;
 import org.immutables.value.Value;
 
@@ -58,34 +55,25 @@ public class IndexMinMaxRule extends RelRule<IndexMinMaxRule.Config> {
             table.isIndexRebuildInProgress() ||
                 idxScan.condition() != null ||
                 aggr.getGroupCount() > 0 ||
-                idx.collation().getFieldCollations().isEmpty() ||
                 aggr.getAggCallList().stream().filter(a -> a.getAggregation().getKind() == SqlKind.MIN
                     || a.getAggregation().getKind() == SqlKind.MAX).count() != 1 ||
-                !idx.fields().get(0).equals(idxScan.getRowType().getFieldList().get(0).getName()))
+                idx.collation().getFieldCollations().isEmpty() ||
+                idx.collation().getFieldCollations().get(0).getFieldIndex() != idxScan.requiredColumns().asList().get(0)
+        )
             return;
 
-        RexBuilder rexb = RexUtils.builder(idxScan.getCluster());
         SqlAggFunction aggFun = aggr.getAggCallList().get(0).getAggregation();
-        boolean descending = idx.collation().getFieldCollations().get(0).getDirection().isDescending();
+        boolean firstIdxValue = (aggFun.getKind() == SqlKind.MIN) !=
+            idx.collation().getFieldCollations().get(0).getDirection().isDescending();
 
-        IndexConditions idxConditions = RexUtils.buildSortedIndexConditions(
-            idxScan.getCluster(),
-            idx.collation(),
-            rexb.makeCall(new SqlFirstLastValueAggFunction((aggFun.getKind() == SqlKind.MIN) != descending ?
-                SqlKind.FIRST_VALUE : SqlKind.LAST_VALUE), rexb.makeLocalRef(idxScan.getRowType(), 0)),
-            idxScan.getRowType(),
-            idxScan.requiredColumns());
-
-        IgniteIndexScan newAggrInput = new IgniteIndexScan(
+        IgniteIndexBound newAggrInput = new IgniteIndexBound(
+            idxScan.getTable(),
             idxScan.getCluster(),
             idxScan.getTraitSet().replace(RewindabilityTrait.REWINDABLE),
-            idxScan.getTable(),
             idxScan.indexName(),
-            null,
-            null,
-            idxConditions,
-            idxScan.requiredColumns(),
-            idx.collation());
+            firstIdxValue,
+            idx.collation()
+        );
 
         call.transformTo(aggr.clone(aggr.getCluster(), F.asList(newAggrInput)));
     }

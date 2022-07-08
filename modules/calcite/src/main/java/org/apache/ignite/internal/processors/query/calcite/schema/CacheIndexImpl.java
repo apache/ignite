@@ -22,7 +22,6 @@ import java.util.UUID;
 import java.util.function.Function;
 import java.util.function.Predicate;
 import java.util.function.Supplier;
-import com.google.common.collect.Lists;
 import org.apache.calcite.plan.RelOptCluster;
 import org.apache.calcite.plan.RelOptTable;
 import org.apache.calcite.rel.RelCollation;
@@ -56,20 +55,15 @@ public class CacheIndexImpl implements IgniteIndex {
     private final String idxName;
 
     /** */
-    private final List<String> fields;
-
-    /** */
     private final @Nullable Index idx;
 
     /** */
     private final IgniteCacheTable tbl;
 
     /** */
-    public CacheIndexImpl(RelCollation collation, String name, @Nullable Index idx, IgniteCacheTable tbl,
-        Iterable<String> fields) {
+    public CacheIndexImpl(RelCollation collation, String name, @Nullable Index idx, IgniteCacheTable tbl) {
         this.collation = collation;
         idxName = name;
-        this.fields = Collections.unmodifiableList(Lists.newArrayList(fields));
         this.idx = idx;
         this.tbl = tbl;
     }
@@ -87,11 +81,6 @@ public class CacheIndexImpl implements IgniteIndex {
     /** */
     @Override public IgniteTable table() {
         return tbl;
-    }
-
-    /** */
-    @Override public List<String> fields() {
-        return fields;
     }
 
     /** {@inheritDoc} */
@@ -148,7 +137,7 @@ public class CacheIndexImpl implements IgniteIndex {
     }
 
     /** {@inheritDoc} */
-    @Override public <Row> List<Row> findFirstOrLast(boolean first, boolean skipNulls, ExecutionContext<Row> ectx,
+    @Override public <Row> List<Row> findFirstOrLast(boolean first, ExecutionContext<Row> ectx,
         ColocationGroup grp, @Nullable ImmutableBitSet requiredColumns) {
         if (idx != null && grp.nodeIds().contains(ectx.localNodeId())) {
             try (IndexScan<Row> scan = createScan(
@@ -161,7 +150,7 @@ public class CacheIndexImpl implements IgniteIndex {
                 null,
                 requiredColumns
             )) {
-                return scan.firstOrLast(first, skipNulls);
+                return scan.firstOrLast(first);
             }
         }
 

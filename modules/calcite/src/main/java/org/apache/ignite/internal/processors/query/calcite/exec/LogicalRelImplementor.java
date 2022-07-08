@@ -70,6 +70,7 @@ import org.apache.ignite.internal.processors.query.calcite.rel.IgniteCorrelatedN
 import org.apache.ignite.internal.processors.query.calcite.rel.IgniteExchange;
 import org.apache.ignite.internal.processors.query.calcite.rel.IgniteFilter;
 import org.apache.ignite.internal.processors.query.calcite.rel.IgniteHashIndexSpool;
+import org.apache.ignite.internal.processors.query.calcite.rel.IgniteIndexBound;
 import org.apache.ignite.internal.processors.query.calcite.rel.IgniteIndexCount;
 import org.apache.ignite.internal.processors.query.calcite.rel.IgniteIndexScan;
 import org.apache.ignite.internal.processors.query.calcite.rel.IgniteLimit;
@@ -295,9 +296,8 @@ public class LogicalRelImplementor<Row> implements IgniteRelVisitor<Node<Row>> {
         IgniteTypeFactory typeFactory = ctx.getTypeFactory();
 
         ImmutableBitSet requiredColumns = rel.requiredColumns();
-        boolean firstOrLast = rel.findFirstOrLast();
-        List<RexNode> lowerCond = firstOrLast ? null : rel.lowerBound();
-        List<RexNode> upperCond = firstOrLast ? null : rel.upperBound();
+        List<RexNode> lowerCond = rel.lowerBound();
+        List<RexNode> upperCond = rel.upperBound();
 
         RelDataType rowType = tbl.getRowType(typeFactory, requiredColumns);
 
@@ -311,9 +311,7 @@ public class LogicalRelImplementor<Row> implements IgniteRelVisitor<Node<Row>> {
         IgniteIndex idx = tbl.getIndex(rel.indexName());
 
         if (idx != null && !tbl.isIndexRebuildInProgress()) {
-            Iterable<Row> rowsIter = firstOrLast
-                ? idx.findFirstOrLast(rel.findFirst(), true, ctx, grp, requiredColumns)
-                : idx.scan(ctx, grp, filters, lower, upper, prj, requiredColumns);
+            Iterable<Row> rowsIter = idx.scan(ctx, grp, filters, lower, upper, prj, requiredColumns);
 
             return new ScanNode<>(ctx, rowType, rowsIter);
         }
@@ -428,6 +426,44 @@ public class LogicalRelImplementor<Row> implements IgniteRelVisitor<Node<Row>> {
                 ctx.group(rel.sourceId()), null, null, ImmutableBitSet.of(0))));
 
             return replacement;
+        }
+    }
+
+    /** {@inheritDoc} */
+    @Override public Node<Row> visit(IgniteIndexBound rel) {
+        IgniteTable tbl = rel.getTable().unwrap(IgniteTable.class);
+        IgniteIndex idx = tbl.getIndex(rel.indexName());
+        IgniteTypeFactory typeFactory = ctx.getTypeFactory();
+        ColocationGroup grp = ctx.group(rel.sourceId());
+        ImmutableBitSet requiredColumns = rel.requiredColumns();
+        RelDataType rowType = tbl.getRowType(typeFactory, requiredColumns);
+
+        if (idx != null && !tbl.isIndexRebuildInProgress()) {
+            return new ScanNode<>(ctx, rowType, idx.findFirstOrLast(rel.first(), ctx, ctx.group(rel.sourceId()),
+                requiredColumns));
+        }
+        else {
+            Iterable<Row> rowsIter = tbl.scan(
+                ctx,
+                grp,
+                null,
+                null,
+                rel.requiredColumns()
+            );
+
+            Node<Row> scanNode = new ScanNode<>(ctx, rowType, rowsIter);
+
+            RelCollation collation = idx.collation().apply(LogicalScanConverterRule.createMapping(
+                null,
+                requiredColumns,
+                tbl.getRowType(typeFactory).getFieldCount()
+            ));
+
+            SortNode<Row> sortNode = new SortNode<>(ctx, rowType, expressionFactory.comparator(collation));
+
+            sortNode.register(scanNode);
+
+            return sortNode;
         }
     }
 

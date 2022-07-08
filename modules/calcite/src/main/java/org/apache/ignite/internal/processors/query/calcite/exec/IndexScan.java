@@ -31,6 +31,7 @@ import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.cluster.ClusterTopologyException;
 import org.apache.ignite.internal.GridKernalContext;
+import org.apache.ignite.internal.cache.query.index.sorted.IndexKeyTypes;
 import org.apache.ignite.internal.cache.query.index.sorted.IndexRow;
 import org.apache.ignite.internal.cache.query.index.sorted.IndexSearchRowImpl;
 import org.apache.ignite.internal.cache.query.index.sorted.InlineIndexRowHandler;
@@ -52,7 +53,6 @@ import org.apache.ignite.internal.processors.query.calcite.schema.CacheTableDesc
 import org.apache.ignite.internal.processors.query.calcite.type.IgniteTypeFactory;
 import org.apache.ignite.internal.processors.query.calcite.util.TypeUtils;
 import org.apache.ignite.internal.util.lang.GridCursor;
-import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.spi.indexing.IndexingQueryFilter;
 import org.apache.ignite.spi.indexing.IndexingQueryFilterImpl;
 import org.jetbrains.annotations.Nullable;
@@ -164,21 +164,18 @@ public class IndexScan<Row> extends AbstractIndexScan<Row, IndexRow> {
 
     /**
      * Gets first or last records from all segments.
-     *
-     * @param notNull If {@code true}, null values is skipped.
      */
-    public List<Row> firstOrLast(boolean first, boolean notNull) {
+    public List<Row> firstOrLast(boolean first) {
         reserve();
 
         IndexingQueryFilter filter = new IndexingQueryFilterImpl(kctx, topVer, parts);
-        BPlusTree.TreeRowClosure<IndexRow, IndexRow> rowFilter = notNull ?
-            new BPlusTree.TreeRowClosure<IndexRow, IndexRow>() {
-                /** {@inheritDoc} */
-                @Override public boolean apply(BPlusTree<IndexRow, IndexRow> tree, BPlusIO<IndexRow> io, long pageAddr,
-                    int idx) throws IgniteCheckedException {
-                    return !F.isEmptyOrNulls(indexRow2Row(io.getLookupRow(tree, pageAddr, idx)));
-                }
-            } : null;
+        BPlusTree.TreeRowClosure<IndexRow, IndexRow> rowFilter = new BPlusTree.TreeRowClosure<IndexRow, IndexRow>() {
+            /** {@inheritDoc} */
+            @Override public boolean apply(BPlusTree<IndexRow, IndexRow> tree, BPlusIO<IndexRow> io, long pageAddr,
+                int idx) throws IgniteCheckedException {
+                return io.getLookupRow(tree, pageAddr, idx).key(0).type() != IndexKeyTypes.NULL;
+            }
+        };
         IndexQueryContext qctx = new IndexQueryContext(filter, rowFilter, ectx.mvccSnapshot());
         List<Row> lst = new ArrayList<>();
 
