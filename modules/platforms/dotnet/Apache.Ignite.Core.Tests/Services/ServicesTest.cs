@@ -109,7 +109,17 @@ namespace Apache.Ignite.Core.Tests.Services
 
             _thinClient = Ignition.StartClient(GetClientConfiguration());
 
-            Services.DeployClusterSingleton(PlatformSvcName, new PlatformTestService());
+            var cfg = new ServiceConfiguration
+            {
+                Name = PlatformSvcName,
+                MaxPerNodeCount = 1,
+                TotalCount = 1,
+                NodeFilter = new NodeIdFilter {NodeId = Grid1.GetCluster().GetLocalNode().Id},
+                Service = new PlatformTestService(),
+                Interceptors = new List<IServiceCallInterceptor> { new PlatformTestServiceInterceptor("testInterception") }
+            };
+
+            Services.Deploy(cfg);
 
             _javaSvcName = TestUtils.DeployJavaService(Grid1);
 
@@ -1374,6 +1384,9 @@ namespace Apache.Ignite.Core.Tests.Services
             Assert.AreEqual(dt2, cache.Get(4));
 
             Assert.AreEqual("value", svc.contextAttribute("attr"));
+
+            const int val = 2;
+            Assert.AreEqual(val * val * val * val, svc.testInterception(val));
 
 #if NETCOREAPP
             //This Date in Europe/Moscow have offset +4.

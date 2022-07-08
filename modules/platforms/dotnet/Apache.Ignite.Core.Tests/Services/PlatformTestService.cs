@@ -631,5 +631,11 @@ namespace Apache.Ignite.Core.Tests.Services
         {
             return _context.CurrentCallContext.GetAttribute(name);
         }
+
+        /** <inheritDoc /> */
+        public int testInterception(int val)
+        {
+            return val * val;
+        }
     }
 }

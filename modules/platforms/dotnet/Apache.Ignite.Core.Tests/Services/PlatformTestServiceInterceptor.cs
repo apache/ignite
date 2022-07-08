@@ -15,25 +15,36 @@
  * limitations under the License.
  */
 
-namespace Apache.Ignite.Core.Services
+namespace Apache.Ignite.Core.Tests.Services
 {
     using System;
-    using Apache.Ignite.Core.Common;
+    using Apache.Ignite.Core.Services;
 
-    /// <summary>
-    /// Represents service call interceptor.
-    /// </summary>
-    [IgniteExperimental]
-    public interface IServiceCallInterceptor
+    /** Test service call interceptor. */
+    [Serializable]
+    public class PlatformTestServiceInterceptor : IServiceCallInterceptor
     {
+        /** Name of the method to intercept. */
+        private string _targetMethod;
+
         /// <summary>
-        /// Intercepts delegated service call.
+        /// Constructor.
         /// </summary>
-        /// <param name="mtd">Method name.</param>
-        /// <param name="args">Method arguments.</param>
-        /// <param name="ctx">Service context.</param>
-        /// <param name="next">Delegated call to a service method and/or interceptor in the chain.</param>
-        /// <returns>Service call result.</returns>
-        public object Invoke(string mtd, object[] args, IServiceContext ctx, Func<object> next);
+        /// <param name="targetMethod">Name of the method to intercept.</param>
+        public PlatformTestServiceInterceptor(string targetMethod)
+        {
+            _targetMethod = targetMethod;
+        }
+        
+        /** <inheritdoc /> */
+        public object Invoke(string mtd, object[] args, IServiceContext ctx, Func<object> next)
+        {
+            object res = next.Invoke();
+
+            if (_targetMethod.Equals(mtd))
+                return (int)res * (int)res;
+
+            return res;
+        }
     }
 }

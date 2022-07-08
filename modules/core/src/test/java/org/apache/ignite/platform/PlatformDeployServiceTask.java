@@ -30,6 +30,7 @@ import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 import java.util.UUID;
+import java.util.concurrent.Callable;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 import org.apache.ignite.Ignite;
@@ -60,6 +61,7 @@ import org.apache.ignite.platform.model.User;
 import org.apache.ignite.platform.model.Value;
 import org.apache.ignite.resources.IgniteInstanceResource;
 import org.apache.ignite.services.Service;
+import org.apache.ignite.services.ServiceCallInterceptor;
 import org.apache.ignite.services.ServiceConfiguration;
 import org.apache.ignite.services.ServiceContext;
 import org.apache.ignite.spi.metric.HistogramMetric;
@@ -119,6 +121,7 @@ public class PlatformDeployServiceTask extends ComputeTaskAdapter<String, Object
             svcCfg.setName(serviceName);
             svcCfg.setMaxPerNodeCount(1);
             svcCfg.setService(new PlatformTestService());
+            svcCfg.setInterceptors(new PlatformTestServiceInterceptor());
 
             ignite.services().deploy(svcCfg);
 
@@ -680,6 +683,11 @@ public class PlatformDeployServiceTask extends ComputeTaskAdapter<String, Object
         }
 
         /** */
+        public int testInterception(int val) {
+            return val * val;
+        }
+
+        /** */
         public void sleep(long delayMs) {
             try {
                 U.sleep(delayMs);
@@ -778,6 +786,24 @@ public class PlatformDeployServiceTask extends ComputeTaskAdapter<String, Object
                     return cnt;
                 }
             }
+        }
+    }
+
+    /** */
+    public static class PlatformTestServiceInterceptor implements ServiceCallInterceptor {
+        /** */
+        private static final long serialVersionUID = 0L;
+
+        /** {@inheritDoc} */
+        @Override public Object invoke(String mtd, Object[] args, ServiceContext ctx, Callable<Object> next)
+            throws Exception {
+
+            Object res = next.call();
+
+            if ("testInterception".equals(mtd))
+                return (int)res * (int)res;
+
+            return res;
         }
     }
 

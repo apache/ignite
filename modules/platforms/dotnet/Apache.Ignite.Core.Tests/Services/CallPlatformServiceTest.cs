@@ -122,7 +122,7 @@ namespace Apache.Ignite.Core.Tests.Services
                 Name = ServiceName,
                 TotalCount = 1,
                 Service = new TestPlatformService(),
-                Interceptors = new List<IServiceCallInterceptor> { new TestPlatformServiceInterceptor() }
+                Interceptors = new List<IServiceCallInterceptor> { new PlatformTestServiceInterceptor("Intercepted") }
             };
 
             if (withNodeFilter)
@@ -353,22 +353,6 @@ namespace Apache.Ignite.Core.Tests.Services
             public void Cancel(IServiceContext context)
             {
                 // No-op;
-            }
-        }
-
-        /** */
-        [Serializable]
-        private class TestPlatformServiceInterceptor : IServiceCallInterceptor
-        {
-            /** <inheritdoc /> */
-            public object Invoke(string mtd, object[] args, IServiceContext ctx, Func<object> next)
-            {
-                object res = next.Invoke();
-
-                if ("Intercepted".Equals(mtd))
-                    return (int)res * (int)res;
-
-                return res;
             }
         }
 
