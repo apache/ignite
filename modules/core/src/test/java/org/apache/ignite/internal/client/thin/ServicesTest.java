@@ -22,6 +22,7 @@ import java.util.Collection;
 import java.util.HashSet;
 import java.util.Map;
 import java.util.UUID;
+import java.util.concurrent.Callable;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
 import org.apache.ignite.Ignite;
@@ -38,6 +39,8 @@ import org.apache.ignite.resources.ServiceContextResource;
 import org.apache.ignite.services.Service;
 import org.apache.ignite.services.ServiceCallContext;
 import org.apache.ignite.services.ServiceCallContextBuilder;
+import org.apache.ignite.services.ServiceCallInterceptor;
+import org.apache.ignite.services.ServiceConfiguration;
 import org.apache.ignite.services.ServiceContext;
 import org.apache.ignite.testframework.GridTestUtils;
 import org.junit.Test;
@@ -79,7 +82,13 @@ public class ServicesTest extends AbstractThinClientTest {
 
         grid(0).services().deployNodeSingleton(NODE_ID_SERVICE_NAME, new TestNodeIdService());
 
-        grid(0).services().deployNodeSingleton(NODE_SINGLTON_SERVICE_NAME, new TestService());
+        ServiceConfiguration svcCfg = new ServiceConfiguration()
+            .setName(NODE_SINGLTON_SERVICE_NAME)
+            .setService(new TestService())
+            .setMaxPerNodeCount(1)
+            .setInterceptors(new TestServiceInterceptor());
+
+        grid(0).services().deploy(svcCfg);
 
         // Deploy CLUSTER_SINGLTON_SERVICE_NAME to grid(1).
         int keyGrid1 = primaryKey(grid(1).cache(DEFAULT_CACHE_NAME));
@@ -263,6 +272,18 @@ public class ServicesTest extends AbstractThinClientTest {
         }
     }
 
+    /** Test service call interceptor. */
+    @Test
+    public void testServiceInterceptor() {
+        try (IgniteClient client = startClient(0)) {
+            TestServiceInterface svc = client.services().serviceProxy(NODE_SINGLTON_SERVICE_NAME, TestServiceInterface.class);
+
+            int val = 2;
+
+            assertEquals(Math.pow(val, 2 + 2), svc.testInterception(val));
+        }
+    }
+
     /**
      * Test that services executed on cluster group.
      */
@@ -430,6 +451,9 @@ public class ServicesTest extends AbstractThinClientTest {
         public byte[] testContextBinaryAttribute(String name);
 
         /** */
+        public int testInterception(int val);
+
+        /** */
         public boolean waitLatch() throws Exception;
     }
 
@@ -509,10 +533,32 @@ public class ServicesTest extends AbstractThinClientTest {
         }
 
         /** {@inheritDoc} */
+        @Override public int testInterception(int val) {
+            return val * val;
+        }
+
+        /** {@inheritDoc} */
         @Override public boolean waitLatch() throws Exception {
             latch.await(10L, TimeUnit.SECONDS);
 
             return true;
+        }
+    }
+
+    /** */
+    private static class TestServiceInterceptor implements ServiceCallInterceptor {
+        /** */
+        private static final long serialVersionUID = 0L;
+
+        /** {@inheritDoc} */
+        @Override public Object invoke(String mtd, Object[] args, ServiceContext ctx, Callable<Object> next)
+            throws Exception {
+            Object res = next.call();
+
+            if ("testInterception".equals(mtd))
+                return (int)res * (int)res;
+
+            return res;
         }
     }
 
