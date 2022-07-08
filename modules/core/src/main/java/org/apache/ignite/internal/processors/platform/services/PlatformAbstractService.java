@@ -33,6 +33,7 @@ import org.apache.ignite.internal.processors.platform.memory.PlatformOutputStrea
 import org.apache.ignite.internal.processors.platform.utils.PlatformUtils;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.resources.IgniteInstanceResource;
+import org.apache.ignite.resources.ServiceContextResource;
 import org.apache.ignite.services.ServiceContext;
 import org.jetbrains.annotations.Nullable;
 
@@ -57,6 +58,10 @@ public abstract class PlatformAbstractService implements PlatformService, Extern
 
     /** Context. */
     protected transient PlatformContext platformCtx;
+
+    /** Service context. */
+    @ServiceContextResource
+    private ServiceContext ctx;
 
     /**
      * Default constructor for serialization.
@@ -84,7 +89,7 @@ public abstract class PlatformAbstractService implements PlatformService, Extern
     }
 
     /** {@inheritDoc} */
-    @Override public void init(ServiceContext ctx) throws Exception {
+    @Override public void init() throws Exception {
         assert ptr == 0;
         assert platformCtx != null;
 
@@ -117,7 +122,7 @@ public abstract class PlatformAbstractService implements PlatformService, Extern
     }
 
     /** {@inheritDoc} */
-    @Override public void execute(ServiceContext ctx) throws Exception {
+    @Override public void execute() throws Exception {
         assert ptr != 0;
         assert platformCtx != null;
 
@@ -127,10 +132,6 @@ public abstract class PlatformAbstractService implements PlatformService, Extern
             BinaryRawWriterEx writer = platformCtx.writer(out);
 
             writer.writeLong(ptr);
-
-//            writer.writeBoolean(srvKeepBinary);
-//
-//            writeServiceContext(ctx, writer);
 
             out.synchronize();
 
@@ -142,7 +143,7 @@ public abstract class PlatformAbstractService implements PlatformService, Extern
     }
 
     /** {@inheritDoc} */
-    @Override public void cancel(ServiceContext ctx) {
+    @Override public void cancel() {
         assert ptr != 0;
         assert platformCtx != null;
 
@@ -152,10 +153,6 @@ public abstract class PlatformAbstractService implements PlatformService, Extern
             BinaryRawWriterEx writer = platformCtx.writer(out);
 
             writer.writeLong(ptr);
-
-//            writer.writeBoolean(srvKeepBinary);
-//
-//            writeServiceContext(ctx, writer);
 
             out.synchronize();
 

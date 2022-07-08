@@ -1023,11 +1023,11 @@ namespace Apache.Ignite.Core.Impl.Unmanaged
                     var svc = reader.ReadObject<IService>();
                     var interceptors = reader.ReadCollection();
 
-                    var compositeInterceptor = interceptors == null ? null :
+                    var interceptor = interceptors == null ? null :
                         interceptors.Count == 1 ? interceptors.OfType<IServiceCallInterceptor>().First() :
                         new CompositeServiceCallInterceptor(interceptors.OfType<IServiceCallInterceptor>());
 
-                    var svcCtx = new ServiceContext(svc, compositeInterceptor,
+                    var svcCtx = new ServiceContext(svc, interceptor,
                         srvKeepBinary ? _ignite.Marshaller.StartUnmarshal(stream, true) : reader);
 
                     ResourceProcessor.Inject(svc, _ignite);
@@ -1070,10 +1070,6 @@ namespace Apache.Ignite.Core.Impl.Unmanaged
                 if (svcCtx == null)
                     return 0;
 
-                var reader = _ignite.Marshaller.StartUnmarshal(stream);
-
-                // bool srvKeepBinary = reader.ReadBoolean();
-
                 svcCtx.Service.Execute(svcCtx);
 
                 return 0;
@@ -1091,10 +1087,6 @@ namespace Apache.Ignite.Core.Impl.Unmanaged
                     var svcCtx = _handleRegistry.Get<ServiceContext>(svcPtr, true);
 
                     svcCtx.IsCancelled = true;
-
-                    var reader = _ignite.Marshaller.StartUnmarshal(stream);
-
-                    // bool srvKeepBinary = reader.ReadBoolean();
 
                     svcCtx.Service.Cancel(svcCtx);
 
