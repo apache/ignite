@@ -2,7 +2,7 @@
 
 == Operation Codes
 
-Upon successful handshake with an Ignite server node, a client can start performing various cahe configuration operations by sending a request (see request/response structure below) with a specific operation code:
+Upon successful handshake with an Ignite server node, a client can start performing various cache configuration operations by sending a request (see request/response structure below) with a specific operation code:
 
 
 [cols="2,1",opts="header"]
