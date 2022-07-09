@@ -139,7 +139,7 @@
         <slf4j.version>1.7.33</slf4j.version>
         <slf4j16.version>1.6.4</slf4j16.version>
         <snappy.version>1.1.7.2</snappy.version>
-        <spring.version>5.2.21.RELEASE</spring.version>
+        <spring.version>5.2.22.RELEASE</spring.version>
         <storm.version>1.1.1</storm.version>
         <surefire.version>3.0.0-M4</surefire.version>
         <tomcat.version>9.0.63</tomcat.version>
