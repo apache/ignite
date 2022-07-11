@@ -18,6 +18,7 @@
 namespace Apache.Ignite.Core.Impl.Unmanaged
 {
     using System;
+    using System.Collections;
     using System.Collections.Generic;
     using System.Diagnostics;
     using System.Diagnostics.CodeAnalysis;
@@ -1023,11 +1024,7 @@ namespace Apache.Ignite.Core.Impl.Unmanaged
                     var svc = reader.ReadObject<IService>();
                     var interceptors = reader.ReadCollection();
 
-                    var interceptor = interceptors == null ? null :
-                        interceptors.Count == 1 ? interceptors.OfType<IServiceCallInterceptor>().First() :
-                        new CompositeServiceCallInterceptor(interceptors.OfType<IServiceCallInterceptor>());
-
-                    var svcCtx = new ServiceContext(svc, interceptor,
+                    var svcCtx = new ServiceContext(svc, PrepareInterceptor(interceptors),
                         srvKeepBinary ? _ignite.Marshaller.StartUnmarshal(stream, true) : reader);
 
                     ResourceProcessor.Inject(svc, _ignite);
@@ -1057,6 +1054,23 @@ namespace Apache.Ignite.Core.Impl.Unmanaged
                     return 0;
                 }
             }
+        }
+
+        /// <summary>
+        /// Prepares composite service call interceptor.
+        /// </summary>
+        /// <param name="interceptors">Service call interceptors.</param>
+        /// <returns>Composite service call interceptor or null.</returns>
+        private IServiceCallInterceptor PrepareInterceptor(ICollection interceptors)
+        {
+            if (interceptors == null)
+                return null;
+            
+            foreach (var intcp in interceptors)
+                ResourceProcessor.Inject(intcp, _ignite);
+                    
+            return interceptors.Count == 1 ? interceptors.OfType<IServiceCallInterceptor>().First() :
+                new CompositeServiceCallInterceptor(interceptors.OfType<IServiceCallInterceptor>());
         }
 
         private long ServiceExecute(long memPtr)

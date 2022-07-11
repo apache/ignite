@@ -385,51 +385,49 @@ namespace Apache.Ignite.Core.Tests.Services
         }
 
         /// <summary>
-        /// Tests service call context.
+        /// Tests service call interceptor.
         /// </summary>
         [Test]
         public void TestServiceCallInterceptor([Values(true, false)] bool binarizable)
         {
-            IServiceCallInterceptor intcp = binarizable ?
-                (IServiceCallInterceptor)new NoopInterceptorBinarizable(1) : new NoopInterceptorSerializable(1);
-                
-            var cfg = new ServiceConfiguration
-            {
-                Name = SvcName,
-                MaxPerNodeCount = 1,
-                TotalCount = 1,
-                NodeFilter = new NodeIdFilter {NodeId = Grid1.GetCluster().GetLocalNode().Id},
-                Service = binarizable
-                    ? new TestIgniteServiceBinarizable()
-                    : new TestIgniteServiceSerializable(),
-                Interceptors = new List<IServiceCallInterceptor> { intcp, intcp }
-            };
+            const string svcMultName = SvcName + "A";
+            const string svcInjectName = SvcName + "B";
+            const string svcErrName = SvcName + "C";
+            const string svcErrCatchName = SvcName + "D";
 
-            Services.Deploy(cfg);
-            
+            Services.Deploy(intcpSvcCfg(svcMultName, binarizable, TestInterceptorAction.Multiplication, TestInterceptorAction.Multiplication));
+            Services.Deploy(intcpSvcCfg(svcInjectName, binarizable, TestInterceptorAction.ResourceInjection));
+            Services.Deploy(intcpSvcCfg(svcErrName, binarizable, TestInterceptorAction.ThrowException));
+            Services.Deploy(intcpSvcCfg(svcErrCatchName, binarizable, TestInterceptorAction.CatchException));
+
             foreach (var grid in Grids)
             {
                 var nodeId = grid.GetCluster().ForLocal().GetNode().Id;
             
                 var attrName = grid.Name;
-                // var attrBinName = "bin-" + grid.Name;
                 var attrValue = nodeId.ToString();
-                // var attrBinValue = nodeId.ToByteArray();
-            
-                var svc0 = grid.GetServices().GetService<ITestIgniteService>(SvcName);
-            
-                if (svc0 != null)
-                    Assert.IsNull(svc0.ContextAttribute(attrName));
-            
+
                 var ctx = new ServiceCallContextBuilder()
                     .Set(attrName, attrValue)
-                    // .Set(attrBinName, attrBinValue)
                     .Build();
             
-                var proxy = grid.GetServices().GetServiceProxy<ITestIgniteService>(SvcName, false);
-            
-                Assert.AreEqual((2 * 2) * (2 * 2), proxy.Method(2));
-            
+                var multiplySvc = grid.GetServices().GetServiceProxy<ITestIgniteService>(svcMultName, false);
+                var injectSvc = grid.GetServices().GetServiceProxy<ITestIgniteService>(svcInjectName, false);
+                var errSvc = grid.GetServices().GetServiceProxy<ITestIgniteService>(svcErrName, false);
+                var errCatchSvc = grid.GetServices().GetServiceProxy<ITestIgniteService>(svcErrCatchName, false);
+
+                const int val = 3;
+                
+                Assert.AreEqual(Math.Pow(val, 2 + 2), multiplySvc.Method(val));
+                Assert.AreEqual(2, injectSvc.Method(0));
+                
+                var ex = Assert.Throws<ServiceInvocationException>(()=> errSvc.Method(0));
+                Assert.NotNull(ex.InnerException);
+                Assert.AreEqual(typeof(InvalidOperationException), ex.InnerException.GetType());
+                Assert.AreEqual("Expected error message", ex.InnerException.Message);
+
+                Assert.AreEqual(nameof(ArgumentNullException), errCatchSvc.ErrMethod(null));
+
                 // Assert.IsNull(proxy.ContextAttribute("not-exist-attribute"));
                 // Assert.IsNull(proxy.ContextBinaryAttribute("not-exist-attribute"));
                 //
@@ -452,6 +450,30 @@ namespace Apache.Ignite.Core.Tests.Services
                 // Assert.AreEqual(attrBinValue, dynamicProxy.ContextBinaryAttribute(attrBinName));
                 // Assert.AreEqual(attrBinValue, dynamicStickyProxy.ContextBinaryAttribute(attrBinName));
             }
+        }
+
+        private ServiceConfiguration intcpSvcCfg(string svcName, bool binarizable, params TestInterceptorAction[] actions)
+        {
+            IList<IServiceCallInterceptor> interceptors = new List<IServiceCallInterceptor>();
+
+            foreach (var action in actions)
+            {
+                interceptors.Add(binarizable
+                    ? (IServiceCallInterceptor)new InterceptorBinarizable(action)
+                    : new InterceptorSerializable(action));
+            }
+
+            return new ServiceConfiguration
+            {
+                Name = svcName,
+                MaxPerNodeCount = 1,
+                TotalCount = 1,
+                NodeFilter = new NodeIdFilter { NodeId = Grid1.GetCluster().GetLocalNode().Id },
+                Service = binarizable
+                    ? new TestIgniteServiceBinarizable()
+                    : new TestIgniteServiceSerializable(),
+                Interceptors = interceptors
+            };
         }
 
         /// <summary>
@@ -2132,55 +2154,88 @@ namespace Apache.Ignite.Core.Tests.Services
         }
         
         /// <summary>
-        /// No-op serializable interceptor.
+        /// Test interceptor action.
+        /// </summary>
+        private enum TestInterceptorAction
+        {
+            Multiplication,
+            ResourceInjection,
+            ThrowException,
+            CatchException
+        };
+        
+        /// <summary>
+        /// Test interceptor.
         /// </summary>
         [Serializable]
-        private class NoopInterceptorSerializable : IServiceCallInterceptor
+        private class InterceptorSerializable : IServiceCallInterceptor
         {
-            protected int _state;
+            [InstanceResource, NonSerialized]
+            private IIgnite _ignite;
+            
+            protected TestInterceptorAction InterceptorAction;
 
-            public NoopInterceptorSerializable(int state)
+            public InterceptorSerializable(TestInterceptorAction interceptorAction)
             {
-                _state = state;
+                InterceptorAction = interceptorAction;
             }
 
             /** <inheritdoc /> */
             public object Invoke(string mtd, object[] args, IServiceContext ctx, Func<object> next)
             {
-                object res = next.Invoke();
-                    
-                switch (_state)
+                if (InterceptorAction == TestInterceptorAction.CatchException)
                 {
-                    case 1:
-                        if (mtd.Equals("Method"))
-                            return (int)res * (int)res;
+                    try
+                    {
+                        // Must throw ArgumentNullException.
+                        next.Invoke();
 
-                        break;
+                        throw new InvalidOperationException();
+                    }
+                    catch (ArgumentNullException e)
+                    {
+                        return e.GetType().Name;
+                    }
+                }
+                
+                var res = next.Invoke();
+
+                switch (InterceptorAction)
+                {
+                    case TestInterceptorAction.Multiplication:
+                        return (int)res * (int)res;
+
+                    case TestInterceptorAction.ResourceInjection:
+                        Assert.NotNull(_ignite);
+
+                        return _ignite.GetCluster().ForServers().GetNodes().Count;
+                    case TestInterceptorAction.ThrowException:
+                        throw new InvalidOperationException("Expected error message");
                 }
 
-                return res;
+                throw new InvalidOperationException("Operation = " + InterceptorAction);
             }
         }
 
         /// <summary>
         /// No-op binarizable interceptor.
         /// </summary>
-        private class NoopInterceptorBinarizable : NoopInterceptorSerializable, IBinarizable
+        private class InterceptorBinarizable : InterceptorSerializable, IBinarizable
         {
-            public NoopInterceptorBinarizable(int state) : base(state)
+            public InterceptorBinarizable(TestInterceptorAction interceptorAction) : base(interceptorAction)
             {
             }
 
             /** <inheritdoc /> */
             public void WriteBinary(IBinaryWriter writer)
             {
-                writer.WriteInt("state", _state);
+                writer.WriteEnum("state", InterceptorAction);
             }
 
             /** <inheritdoc /> */
             public void ReadBinary(IBinaryReader reader)
             {
-                _state = reader.ReadInt("state");
+                InterceptorAction = reader.ReadEnum<TestInterceptorAction>("state");
             }
         }
 
