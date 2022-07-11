@@ -24,7 +24,6 @@ import java.util.Map;
 import java.util.Set;
 import java.util.function.Consumer;
 import java.util.function.Function;
-import java.util.function.ToIntBiFunction;
 import javax.cache.Cache;
 import javax.cache.configuration.CacheEntryListenerConfiguration;
 import javax.cache.configuration.FactoryBuilder;
@@ -49,7 +48,6 @@ import org.apache.ignite.internal.binary.streams.BinaryInputStream;
 import org.apache.ignite.internal.binary.streams.BinaryOutputStream;
 import org.apache.ignite.internal.client.thin.TcpClientTransactions.TcpClientTransaction;
 import org.apache.ignite.internal.util.typedef.internal.A;
-import org.apache.ignite.internal.util.typedef.internal.CU;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.jetbrains.annotations.Nullable;
 import static org.apache.ignite.internal.client.thin.ProtocolVersionFeature.EXPIRY_POLICY;
@@ -58,7 +56,7 @@ import static org.apache.ignite.internal.processors.platform.cache.expiry.Platfo
 /**
  * Implementation of {@link ClientCache} over TCP protocol.
  */
-class TcpClientCache<K, V> implements ClientCacheEx<K, V> {
+class TcpClientCache<K, V> implements ClientCache<K, V> {
     /** "Keep binary" flag mask. */
     private static final byte KEEP_BINARY_FLAG_MASK = 0x01;
 
@@ -855,15 +853,6 @@ class TcpClientCache<K, V> implements ClientCacheEx<K, V> {
         }
         else
             throw new IllegalStateException("Listener is already registered for configuration: " + cfg);
-    }
-
-    /** {@inheritDoc} */
-    @Override public ClientCacheEx<K, V> withPartitionAwarenessKeyMapper(ToIntBiFunction<Object, Integer> mapper) {
-        A.notNull(mapper, "Partition awareness cache key mapper factory cannot be null.");
-
-        ch.setCacheAffinityMapper(CU.cacheId(name), mapper);
-
-        return this;
     }
 
     /** {@inheritDoc} */

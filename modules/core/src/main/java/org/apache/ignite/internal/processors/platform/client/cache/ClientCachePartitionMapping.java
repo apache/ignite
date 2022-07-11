@@ -18,6 +18,7 @@
 package org.apache.ignite.internal.processors.platform.client.cache;
 
 import java.util.HashMap;
+import java.util.Objects;
 import java.util.Set;
 import java.util.UUID;
 import org.apache.ignite.binary.BinaryRawWriter;
@@ -66,12 +67,21 @@ public class ClientCachePartitionMapping {
         }
     }
 
-    /**
-     * Check if the mapping is compatible to another one.
-     * @param another Another mapping.
-     * @return True if compatible.
-     */
-    public boolean isCompatible(ClientCachePartitionMapping another) {
-        return partitionMap.equals(another.partitionMap);
+    /** {@inheritDoc} */
+    @Override public boolean equals(Object o) {
+        if (this == o)
+            return true;
+
+        if (o == null || getClass() != o.getClass())
+            return false;
+
+        ClientCachePartitionMapping mapping = (ClientCachePartitionMapping)o;
+
+        return Objects.equals(partitionMap, mapping.partitionMap);
+    }
+
+    /** {@inheritDoc} */
+    @Override public int hashCode() {
+        return Objects.hash(partitionMap);
     }
 }

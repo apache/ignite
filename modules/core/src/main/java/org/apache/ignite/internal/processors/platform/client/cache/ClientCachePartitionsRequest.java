@@ -19,18 +19,15 @@ package org.apache.ignite.internal.processors.platform.client.cache;
 
 import java.util.ArrayList;
 import java.util.HashMap;
-import java.util.List;
 import java.util.Map;
+import java.util.function.Consumer;
 import org.apache.ignite.binary.BinaryRawReader;
 import org.apache.ignite.cache.CacheMode;
-import org.apache.ignite.cache.affinity.AffinityKeyMapper;
 import org.apache.ignite.cache.affinity.rendezvous.RendezvousAffinityFunction;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.internal.processors.affinity.AffinityAssignment;
-import org.apache.ignite.internal.processors.cache.CacheDefaultBinaryAffinityKeyMapper;
 import org.apache.ignite.internal.processors.cache.DynamicCacheDescriptor;
 import org.apache.ignite.internal.processors.cache.GridCacheContext;
-import org.apache.ignite.internal.processors.cache.binary.CacheObjectBinaryProcessorImpl;
 import org.apache.ignite.internal.processors.platform.client.ClientAffinityTopologyVersion;
 import org.apache.ignite.internal.processors.platform.client.ClientBitmaskFeature;
 import org.apache.ignite.internal.processors.platform.client.ClientConnectionContext;
@@ -39,6 +36,7 @@ import org.apache.ignite.internal.processors.platform.client.ClientRequest;
 import org.apache.ignite.internal.processors.platform.client.ClientResponse;
 import org.apache.ignite.lang.IgnitePredicate;
 import org.jetbrains.annotations.Nullable;
+import static org.apache.ignite.internal.processors.query.QueryUtils.isCustomAffinityMapper;
 
 /**
  * Cluster node list request.
@@ -65,9 +63,7 @@ public class ClientCachePartitionsRequest extends ClientRequest {
 
     /** {@inheritDoc} */
     @Override public ClientResponse process(ClientConnectionContext ctx) {
-        ArrayList<ClientCachePartitionAwarenessGroup> groups = new ArrayList<>(cacheIds.length);
-        HashMap<Integer, ClientCachePartitionAwarenessGroup> cacheGroupIds = new HashMap<>(cacheIds.length);
-
+        Map<ClientCachePartitionAwarenessGroup, Consumer<DynamicCacheDescriptor>> grps = new HashMap<>(cacheIds.length);
         ClientAffinityTopologyVersion affinityVer = ctx.checkAffinityTopologyVersion();
 
         // As a first step, get a set of mappings that we need to return.
@@ -79,14 +75,13 @@ public class ClientCachePartitionsRequest extends ClientRequest {
             if (cacheDesc == null)
                 continue;
 
-            ClientCachePartitionAwarenessGroup grp = processCache(ctx, groups, cacheGroupIds, affinityVer, cacheDesc);
+            ClientCachePartitionAwarenessGroup grp = processCache(ctx, affinityVer, cacheDesc);
 
-            // Cache already processed.
             if (grp == null)
                 continue;
 
-            groups.add(grp);
-            cacheGroupIds.put(cacheDesc.groupId(), grp);
+            grps.computeIfAbsent(grp, grp0 -> grp::addCache)
+                .accept(cacheDesc);
         }
 
         Map<String, DynamicCacheDescriptor> allCaches = ctx.kernalContext().cache().cacheDescriptors();
@@ -97,17 +92,21 @@ public class ClientCachePartitionsRequest extends ClientRequest {
             if (!cacheDesc.cacheType().userCache())
                 continue;
 
-            processCache(ctx, groups, cacheGroupIds, affinityVer, cacheDesc);
+            ClientCachePartitionAwarenessGroup grp = processCache(ctx, affinityVer, cacheDesc);
+
+            if (grp == null)
+                continue;
+
+            if (grps.containsKey(grp))
+                grps.get(grp).accept(cacheDesc);
         }
 
-        return new ClientCachePartitionsResponse(requestId(), groups, affinityVer);
+        return new ClientCachePartitionsResponse(requestId(), new ArrayList<>(grps.keySet()), affinityVer);
     }
 
     /**
      * Process cache and create new partition mapping, if it does not belong to any existent.
      * @param ctx Connection context.
-     * @param groups Cache affinity groups.
-     * @param cacheGroupIds Map of known group IDs.
      * @param affinityVer Affinity topology version.
      * @param cacheDesc Cache descriptor.
      * @return Null if cache was processed and new client cache partition awareness group if it does not belong to any
@@ -115,62 +114,16 @@ public class ClientCachePartitionsRequest extends ClientRequest {
      */
     private static ClientCachePartitionAwarenessGroup processCache(
         ClientConnectionContext ctx,
-        List<ClientCachePartitionAwarenessGroup> groups,
-        Map<Integer, ClientCachePartitionAwarenessGroup> cacheGroupIds,
         ClientAffinityTopologyVersion affinityVer,
         DynamicCacheDescriptor cacheDesc
     ) {
-        int cacheGroupId = cacheDesc.groupId();
-        int cacheId = cacheDesc.cacheId();
-
-        ClientCachePartitionAwarenessGroup group = cacheGroupIds.get(cacheGroupId);
-        if (group != null) {
-            // Cache group is found. It means that cache belongs to one of cache groups with known mapping.
-            // Just adding our cache to this group here.
-            group.addCache(cacheDesc);
-
-            return null;
-        }
-
-        AffinityAssignment assignment = getCacheAssignment(ctx, affinityVer, cacheId);
+        AffinityAssignment assignment = getCacheAssignment(ctx, affinityVer, cacheDesc.cacheId());
 
         // If assignment is not available for the cache for required affinity version, ignore the cache.
-        if (assignment == null)
+        if (assignment == null || !isApplicable(cacheDesc.cacheConfiguration(), ctx.currentProtocolContext()))
             return null;
 
-        ClientCachePartitionMapping mapping = null;
-
-        if (isApplicable(cacheDesc.cacheConfiguration(), ctx.currentProtocolContext()))
-            mapping = new ClientCachePartitionMapping(assignment);
-
-        group = getCompatibleGroup(groups, mapping);
-        if (group != null) {
-            group.addCache(cacheDesc);
-            cacheGroupIds.put(cacheGroupId, group);
-
-            return null;
-        }
-
-        CacheObjectBinaryProcessorImpl proc = (CacheObjectBinaryProcessorImpl)ctx.kernalContext().cacheObjects();
-
-        return new ClientCachePartitionAwarenessGroup(proc, mapping, cacheDesc, isDefaultAffinity(cacheDesc.cacheConfiguration()));
-    }
-
-    /**
-     * Get cache partition awareness group which is compatible with the mapping.
-     * @param groups Group list.
-     * @param mapping Partition mapping.
-     * @return Compatible cache partition awareness group if present, or null.
-     */
-    @Nullable private static ClientCachePartitionAwarenessGroup getCompatibleGroup(
-        List<ClientCachePartitionAwarenessGroup> groups,
-        ClientCachePartitionMapping mapping) {
-        for (ClientCachePartitionAwarenessGroup group : groups) {
-            if (group.isCompatible(mapping))
-                return group;
-        }
-
-        return null;
+        return new ClientCachePartitionAwarenessGroup(new ClientCachePartitionMapping(assignment), cacheDesc);
     }
 
     /**
@@ -221,9 +174,7 @@ public class ClientCachePartitionsRequest extends ClientRequest {
      */
     public static boolean isDefaultAffinity(CacheConfiguration<?, ?> ccfg) {
         // Only caches with no custom affinity key mapper is supported.
-        AffinityKeyMapper keyMapper = ccfg.getAffinityMapper();
-
-        if (!(keyMapper instanceof CacheDefaultBinaryAffinityKeyMapper))
+        if (isCustomAffinityMapper(ccfg.getAffinityMapper()))
             return false;
 
         // Only RendezvousAffinityFunction is supported for now.

@@ -19,6 +19,7 @@ package org.apache.ignite.internal.processors.platform.client.cache;
 
 import java.util.ArrayList;
 import org.apache.ignite.internal.binary.BinaryRawWriterEx;
+import org.apache.ignite.internal.processors.cache.binary.CacheObjectBinaryProcessorImpl;
 import org.apache.ignite.internal.processors.platform.client.ClientAffinityTopologyVersion;
 import org.apache.ignite.internal.processors.platform.client.ClientConnectionContext;
 import org.apache.ignite.internal.processors.platform.client.ClientResponse;
@@ -52,12 +53,14 @@ class ClientCachePartitionsResponse extends ClientResponse {
     @Override public void encode(ClientConnectionContext ctx, BinaryRawWriterEx writer) {
         encode(ctx, writer, affinityVer);
 
+        CacheObjectBinaryProcessorImpl proc = (CacheObjectBinaryProcessorImpl)ctx.kernalContext().cacheObjects();
+
         affinityVer.write(writer);
 
         writer.writeInt(mappings.size());
 
         for (ClientCachePartitionAwarenessGroup mapping : mappings) {
-            mapping.write(writer, ctx.currentProtocolContext());
+            mapping.write(proc, writer, ctx.currentProtocolContext());
         }
     }
 }

@@ -19,11 +19,9 @@ package org.apache.ignite.internal.client.thin;
 
 import java.util.function.Function;
 import java.util.function.Supplier;
-import java.util.function.ToIntBiFunction;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.cache.CacheAtomicityMode;
 import org.apache.ignite.cache.CacheMode;
-import org.apache.ignite.cache.affinity.rendezvous.RendezvousAffinityFunction;
 import org.apache.ignite.cache.query.ScanQuery;
 import org.apache.ignite.client.ClientAtomicConfiguration;
 import org.apache.ignite.client.ClientAtomicLong;
@@ -34,7 +32,6 @@ import org.apache.ignite.configuration.AtomicConfiguration;
 import org.apache.ignite.internal.processors.cache.IgniteInternalCache;
 import org.apache.ignite.internal.processors.datastructures.GridCacheAtomicLongEx;
 import org.junit.Test;
-import static org.apache.ignite.cache.affinity.rendezvous.RendezvousAffinityFunction.DFLT_PARTITION_COUNT;
 
 /**
  * Test partition awareness of thin client on stable topology.
@@ -80,20 +77,20 @@ public class ThinClientPartitionAwarenessStableTopologyTest extends ThinClientAb
      * Test that partition awareness is applicable for partitioned cache with custom affinity function
      * and an affinity mapper is set on the client side.
      */
-    @Test
-    public void testPartitionedCustomAffinityCacheWithMapper() throws Exception {
-        testApplicableCache(() -> (ClientCache<Object, Object>)((ClientCacheEx)client.cache(PART_CUSTOM_AFFINITY_CACHE_NAME))
-            .withPartitionAwarenessKeyMapper(new ToIntBiFunction<Object, Integer>() {
-                /** Affinity mask. */
-                private final int affinityMask = RendezvousAffinityFunction.calculateMask(DFLT_PARTITION_COUNT);
-
-                @Override public int applyAsInt(Object key, Integer parts) {
-                    assertEquals(parts, Integer.valueOf(DFLT_PARTITION_COUNT));
-
-                    return RendezvousAffinityFunction.calculatePartition(key, affinityMask, DFLT_PARTITION_COUNT);
-                }
-            }), i -> i);
-    }
+//    @Test
+//    public void testPartitionedCustomAffinityCacheWithMapper() throws Exception {
+//        testApplicableCache(() -> (ClientCache<Object, Object>)((ClientCacheEx)client.cache(PART_CUSTOM_AFFINITY_CACHE_NAME))
+//            .withPartitionAwarenessKeyMapper(new ToIntBiFunction<Object, Integer>() {
+//                /** Affinity mask. */
+//                private final int affinityMask = RendezvousAffinityFunction.calculateMask(DFLT_PARTITION_COUNT);
+//
+//                @Override public int applyAsInt(Object key, Integer parts) {
+//                    assertEquals(parts, Integer.valueOf(DFLT_PARTITION_COUNT));
+//
+//                    return RendezvousAffinityFunction.calculatePartition(key, affinityMask, DFLT_PARTITION_COUNT);
+//                }
+//            }), i -> i);
+//    }
 
     /**
      * Test partition awareness for all applicable operation types for partitioned cache with primitive key.
