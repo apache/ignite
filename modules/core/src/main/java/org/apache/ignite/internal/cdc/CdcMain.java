@@ -36,6 +36,7 @@ import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.binary.BinaryType;
+import org.apache.ignite.cdc.CdcCacheEvent;
 import org.apache.ignite.cdc.CdcConfiguration;
 import org.apache.ignite.cdc.CdcConsumer;
 import org.apache.ignite.cdc.CdcEvent;
@@ -49,6 +50,7 @@ import org.apache.ignite.internal.IgniteInterruptedCheckedException;
 import org.apache.ignite.internal.MarshallerContextImpl;
 import org.apache.ignite.internal.binary.BinaryUtils;
 import org.apache.ignite.internal.cdc.WalRecordsConsumer.DataEntryIterator;
+import org.apache.ignite.internal.processors.cache.GridLocalConfigManager;
 import org.apache.ignite.internal.processors.cache.binary.CacheObjectBinaryProcessorImpl;
 import org.apache.ignite.internal.processors.cache.persistence.filename.PdsFolderResolver;
 import org.apache.ignite.internal.processors.cache.persistence.filename.PdsFolderSettings;
@@ -63,6 +65,7 @@ import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.T2;
 import org.apache.ignite.internal.util.typedef.internal.CU;
 import org.apache.ignite.internal.util.typedef.internal.U;
+import org.apache.ignite.marshaller.MarshallerUtils;
 import org.apache.ignite.platform.PlatformType;
 import org.apache.ignite.startup.cmdline.CdcCommandLineStartup;
 
@@ -73,6 +76,10 @@ import static org.apache.ignite.internal.IgniteVersionUtils.COPYRIGHT;
 import static org.apache.ignite.internal.IgnitionEx.initializeDefaultMBeanServer;
 import static org.apache.ignite.internal.binary.BinaryUtils.METADATA_FILE_SUFFIX;
 import static org.apache.ignite.internal.pagemem.wal.record.WALRecord.RecordType.DATA_RECORD_V2;
+import static org.apache.ignite.internal.processors.cache.GridCacheUtils.UTILITY_CACHE_NAME;
+import static org.apache.ignite.internal.processors.cache.persistence.file.FilePageStoreManager.CACHE_DATA_FILENAME;
+import static org.apache.ignite.internal.processors.cache.persistence.file.FilePageStoreManager.CACHE_DIR_PREFIX;
+import static org.apache.ignite.internal.processors.cache.persistence.file.FilePageStoreManager.CACHE_GRP_DIR_PREFIX;
 import static org.apache.ignite.internal.processors.cache.persistence.wal.FileWriteAheadLogManager.WAL_SEGMENT_FILE_FILTER;
 import static org.apache.ignite.internal.processors.metric.impl.MetricUtils.metricName;
 
@@ -185,6 +192,9 @@ public class CdcMain implements Runnable {
     /** Change Data Capture directory. */
     private Path cdcDir;
 
+    /** Database directory. */
+    private File dbDir;
+
     /** Binary meta directory. */
     private File binaryMeta;
 
@@ -205,6 +215,9 @@ public class CdcMain implements Runnable {
 
     /** Mappings state. */
     private Set<T2<Integer, Byte>> mappingsState;
+
+    /** Caches state. */
+    private Map<Integer, Long> cachesState;
 
     /** Stopped flag. */
     private volatile boolean stopped;
@@ -292,6 +305,7 @@ public class CdcMain implements Runnable {
                 walState = state.loadWalState();
                 typesState = state.loadTypesState();
                 mappingsState = state.loadMappingsState();
+                cachesState = state.loadCaches();
 
                 if (walState != null) {
                     committedSegmentIdx.value(walState.get1().index());
@@ -404,7 +418,7 @@ public class CdcMain implements Runnable {
             AtomicLong lastSgmnt = new AtomicLong(-1);
 
             while (!stopped) {
-                try (Stream<Path> cdcFiles = Files.walk(cdcDir, 1)) {
+                try (Stream<Path> cdcFiles = Files.list(cdcDir)) {
                     Set<Path> exists = new HashSet<>();
 
                     cdcFiles
@@ -423,6 +437,9 @@ public class CdcMain implements Runnable {
                         .forEach(this::consumeSegment); // Consuming segments.
 
                     seen.removeIf(p -> !exists.contains(p)); // Clean up seen set.
+
+                    if (lastSgmnt.get() == -1) //Forcefully updating metadata if no new segments found.
+                        updateMetadata();
                 }
 
                 if (!stopped)
@@ -436,10 +453,10 @@ public class CdcMain implements Runnable {
 
     /** Reads all available records from segment. */
     private void consumeSegment(Path segment) {
+        updateMetadata();
+
         if (log.isInfoEnabled())
             log.info("Processing WAL segment [segment=" + segment + ']');
-
-        updateMetadata();
 
         IgniteWalIteratorFactory.IteratorParametersBuilder builder =
             new IgniteWalIteratorFactory.IteratorParametersBuilder()
@@ -548,17 +565,24 @@ public class CdcMain implements Runnable {
 
         updateTypes();
 
+        updateCaches();
+
         metaUpdate.value(System.currentTimeMillis() - start);
     }
 
     /** Search for new or changed {@link BinaryType} and notifies the consumer. */
     private void updateTypes() {
         try {
-            Iterator<BinaryType> changedTypes = Files.list(binaryMeta.toPath())
+            File[] files = binaryMeta.listFiles();
+
+            if (files == null)
+                return;
+
+            Iterator<BinaryType> changedTypes = Arrays.stream(files)
                 .filter(p -> p.toString().endsWith(METADATA_FILE_SUFFIX))
-                .map(p -> {
-                    int typeId = BinaryUtils.typeId(p.getFileName().toString());
-                    long lastModified = p.toFile().lastModified();
+                .map(f -> {
+                    int typeId = BinaryUtils.typeId(f.getName());
+                    long lastModified = f.lastModified();
 
                     // Filter out files already in `typesState` with the same last modify date.
                     if (typesState.containsKey(typeId) && lastModified == typesState.get(typeId))
@@ -638,6 +662,74 @@ public class CdcMain implements Runnable {
         }
     }
 
+    /** Search for new or changed {@link CdcCacheEvent} and notifies the consumer. */
+    private void updateCaches() {
+        try {
+            if (!dbDir.exists())
+                return;
+
+            File[] files = dbDir.listFiles();
+
+            if (files == null)
+                return;
+
+            Set<Integer> destroyed = new HashSet<>(cachesState.keySet());
+
+            Iterator<CdcCacheEvent> cacheEvts = Arrays.stream(files)
+                .filter(f -> f.isDirectory() &&
+                    (f.getName().startsWith(CACHE_DIR_PREFIX) || f.getName().startsWith(CACHE_GRP_DIR_PREFIX)) &&
+                    !f.getName().equals(CACHE_DIR_PREFIX + UTILITY_CACHE_NAME))
+                .filter(File::exists)
+                // Cache group directory can contain several cache data files.
+                // See GridLocalConfigManager#cacheConfigurationFile(CacheConfiguration<?, ?>)
+                .flatMap(cacheDir -> Arrays.stream(cacheDir.listFiles(f -> f.getName().endsWith(CACHE_DATA_FILENAME))))
+                .map(f -> {
+                    try {
+                        CdcCacheEvent evt = GridLocalConfigManager.readCacheData(
+                            f,
+                            MarshallerUtils.jdkMarshaller(kctx.igniteInstanceName()),
+                            igniteCfg
+                        );
+
+                        destroyed.remove(evt.cacheId());
+
+                        Long lastModified0 = cachesState.get(evt.cacheId());
+
+                        if (lastModified0 != null && lastModified0 == f.lastModified())
+                            return null;
+
+                        cachesState.put(evt.cacheId(), f.lastModified());
+
+                        return evt;
+                    }
+                    catch (IgniteCheckedException e) {
+                        throw new IgniteException(e);
+                    }
+                })
+                .filter(Objects::nonNull)
+                .iterator();
+
+            consumer.onCacheEvents(cacheEvts);
+
+            if (cacheEvts.hasNext())
+                throw new IllegalStateException("Consumer should handle all cache change events");
+
+            if (!destroyed.isEmpty()) {
+                Iterator<Integer> destroyedIter = destroyed.iterator();
+
+                consumer.onCacheDestroyEvents(destroyedIter);
+
+                if (destroyedIter.hasNext())
+                    throw new IllegalStateException("Consumer should handle all cache destroy events");
+            }
+
+            state.saveCaches(cachesState);
+        }
+        catch (IOException e) {
+            throw new IgniteException(e);
+        }
+    }
+
     /**
      * Try locks Change Data Capture directory.
      *
@@ -645,6 +737,13 @@ public class CdcMain implements Runnable {
      * @return Lock or null if lock failed.
      */
     private CdcFileLockHolder tryLock(File dbStoreDirWithSubdirectory) {
+        if (!dbStoreDirWithSubdirectory.exists()) {
+            log.warning("DB store directory not exists. Should be created by Ignite Node " +
+                " [dir=" + dbStoreDirWithSubdirectory + ']');
+
+            return null;
+        }
+
         File cdcRoot = new File(igniteCfg.getDataStorageConfiguration().getCdcWalPath());
 
         if (!cdcRoot.isAbsolute()) {
@@ -671,6 +770,7 @@ public class CdcMain implements Runnable {
         }
 
         this.cdcDir = cdcDir;
+        this.dbDir = dbStoreDirWithSubdirectory;
 
         CdcFileLockHolder lock = new CdcFileLockHolder(cdcDir.toString(), "cdc.lock", log);
 

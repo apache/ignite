@@ -35,6 +35,7 @@ class ConfigTemplate:
     """
     def __init__(self, path):
         env = Environment(loader=FileSystemLoader(searchpath=TEMPLATE_PATHES))
+        env.filters["snake_to_camel"] = snake_to_camel
 
         self.template = env.get_template(path)
         self.default_params = {}
@@ -47,6 +48,16 @@ class ConfigTemplate:
         unfiltered = self.template.render(**kwargs)
 
         return '\n'.join(filter(lambda line: line.strip(), unfiltered.split('\n')))
+
+
+def snake_to_camel(snake_name):
+    """
+    Custom jinja2 filter to convert named from smake to camel format
+    :param snake_name: name in snake format
+    :return: name in camel format
+    """
+    components = snake_name.split('_')
+    return components[0] + ''.join(x.title() for x in components[1:])
 
 
 class IgniteServerConfigTemplate(ConfigTemplate):

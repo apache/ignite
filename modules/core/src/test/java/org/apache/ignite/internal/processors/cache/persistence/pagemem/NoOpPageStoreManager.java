@@ -217,9 +217,4 @@ public class NoOpPageStoreManager implements IgnitePageStoreManager {
     @Override public void cleanupPageStoreIfMatch(Predicate<Integer> cacheGrpPred, boolean cleanFiles) {
         // No-op.
     }
-
-    /** {@inheritDoc} */
-    @Override public boolean checkAndInitCacheWorkDir(CacheConfiguration cacheCfg) throws IgniteCheckedException {
-        return false;
-    }
 }

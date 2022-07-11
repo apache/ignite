@@ -42,6 +42,16 @@ public interface CheckpointListener {
         public boolean nextSnapshot();
 
         /**
+         * @param flush If {@code True} then will flush WAL after a Checkpoint begin.
+         */
+        public void walFlush(boolean flush);
+
+        /**
+         * Whether to flush WAL after a Checkpoint begin.
+         */
+        public boolean walFlush();
+
+        /**
          * @return Checkpoint future which will be completed when checkpoint ends.
          */
         public IgniteInternalFuture<?> finishedStateFut();

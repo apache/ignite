@@ -54,6 +54,7 @@ import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.pagemem.PageIdUtils;
 import org.apache.ignite.internal.pagemem.store.PageStore;
 import org.apache.ignite.internal.pagemem.store.PageWriteListener;
+import org.apache.ignite.internal.pagemem.wal.record.delta.ClusterSnapshotRecord;
 import org.apache.ignite.internal.processors.cache.CacheGroupContext;
 import org.apache.ignite.internal.processors.cache.GridCacheSharedContext;
 import org.apache.ignite.internal.processors.cache.distributed.dht.topology.GridDhtLocalPartition;
@@ -342,6 +343,15 @@ class SnapshotFutureTask extends AbstractSnapshotFutureTask<Set<GroupPartitionId
             return;
 
         try {
+            // Here we have the following warranties:
+            // 1. Checkpoint holds write acquire lock and Snapshot holds PME. Then there are not any concurrent updates.
+            // 2. This record is written before the related CheckpointRecord, and is flushed with CheckpointRecord or instead it.
+            if (cctx.wal() != null) {
+                cctx.wal().log(new ClusterSnapshotRecord(snpName));
+
+                ctx.walFlush(true);
+            }
+
             for (Map.Entry<Integer, Set<Integer>> e : parts.entrySet()) {
                 int grpId = e.getKey();
                 Set<Integer> grpParts = e.getValue();

@@ -17,10 +17,11 @@
 
 package org.apache.ignite.internal.cache.query.index.sorted.keys;
 
-import org.apache.ignite.internal.cache.query.index.sorted.IndexKeyTypes;
+import java.math.BigDecimal;
+import org.apache.ignite.internal.cache.query.index.sorted.IndexKeyType;
 
 /** */
-public class DoubleIndexKey implements IndexKey {
+public class DoubleIndexKey extends NumericIndexKey {
     /** */
     private final double key;
 
@@ -35,12 +36,52 @@ public class DoubleIndexKey implements IndexKey {
     }
 
     /** {@inheritDoc} */
-    @Override public int type() {
-        return IndexKeyTypes.DOUBLE;
+    @Override public IndexKeyType type() {
+        return IndexKeyType.DOUBLE;
+    }
+
+    /** {@inheritDoc} */
+    @Override public int compareTo(boolean val) {
+        return Boolean.compare(key != 0d, val);
+    }
+
+    /** {@inheritDoc} */
+    @Override public int compareTo(byte val) {
+        return Double.compare(key, val);
+    }
+
+    /** {@inheritDoc} */
+    @Override public int compareTo(short val) {
+        return Double.compare(key, val);
+    }
+
+    /** {@inheritDoc} */
+    @Override public int compareTo(int val) {
+        return Double.compare(key, val);
+    }
+
+    /** {@inheritDoc} */
+    @Override public int compareTo(long val) {
+        return Double.compare(key, val);
+    }
+
+    /** {@inheritDoc} */
+    @Override public int compareTo(float val) {
+        return Double.compare(key, val);
+    }
+
+    /** {@inheritDoc} */
+    @Override public int compareTo(double val) {
+        return Double.compare(key, val);
+    }
+
+    /** {@inheritDoc} */
+    @Override public int compareTo(BigDecimal val) {
+        return BigDecimal.valueOf(key).compareTo(val);
     }
 
     /** {@inheritDoc} */
     @Override public int compare(IndexKey o) {
-        return Double.compare(key, ((DoubleIndexKey)o).key);
+        return o.type() == type() ? Double.compare(key, ((DoubleIndexKey)o).key) : -((NumericIndexKey)o).compareTo(key);
     }
 }

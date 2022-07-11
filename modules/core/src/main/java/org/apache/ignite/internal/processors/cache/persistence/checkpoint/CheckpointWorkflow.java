@@ -362,7 +362,7 @@ public class CheckpointWorkflow {
             return new Checkpoint(checkpointEntry, cpPages, curr);
         }
         else {
-            if (curr.nextSnapshot() && wal != null)
+            if (ctx0.walFlush() && wal != null)
                 wal.flush(null, true);
 
             return new Checkpoint(null, GridConcurrentMultiPairQueue.EMPTY, curr);
