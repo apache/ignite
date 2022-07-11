@@ -62,35 +62,11 @@ public class GridJettyRestProtocol extends GridRestProtocolAdapter {
      */
     static {
         if (!IgniteSystemProperties.getBoolean(IGNITE_JETTY_LOG_NO_OVERRIDE)) {
-            // See also https://www.eclipse.org/jetty/documentation/9.4.x/configuring-logging.html
+            // See also https://docs.huihoo.com/jetty/the-definitive-reference/configuring-logging.html
             // It seems that using system properties should be fine.
             System.setProperty("org.eclipse.jetty.LEVEL", "WARN");
             System.setProperty("org.eclipse.jetty.util.log.LEVEL", "OFF");
             System.setProperty("org.eclipse.jetty.util.component.LEVEL", "OFF");
-
-            try {
-                Class<?> logCls = Class.forName("org.apache.log4j.Logger");
-
-                String ctgrJetty = "org.eclipse.jetty";                         // WARN for this category.
-                String ctgrJettyUtil = "org.eclipse.jetty.util.log";            // ERROR for this...
-                String ctgrJettyUtilComp = "org.eclipse.jetty.util.component";  // ...and this.
-
-                Object logJetty = logCls.getMethod("getLogger", String.class).invoke(logCls, ctgrJetty);
-                Object logJettyUtil = logCls.getMethod("getLogger", String.class).invoke(logCls, ctgrJettyUtil);
-                Object logJettyUtilComp = logCls.getMethod("getLogger", String.class).invoke(logCls, ctgrJettyUtilComp);
-
-                Class<?> lvlCls = Class.forName("org.apache.log4j.Level");
-
-                Object warnLvl = lvlCls.getField("WARN").get(null);
-                Object errLvl = lvlCls.getField("ERROR").get(null);
-
-                logJetty.getClass().getMethod("setLevel", lvlCls).invoke(logJetty, warnLvl);
-                logJettyUtil.getClass().getMethod("setLevel", lvlCls).invoke(logJetty, errLvl);
-                logJettyUtilComp.getClass().getMethod("setLevel", lvlCls).invoke(logJetty, errLvl);
-            }
-            catch (Exception ignored) {
-                // No-op.
-            }
         }
     }
 

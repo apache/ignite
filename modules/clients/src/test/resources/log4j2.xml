@@ -18,23 +18,12 @@
 -->
 
 <Configuration>
-    <!--
-        Logs System.out messages to console.
-
-        Note, this appender is disabled by default.
-        To enable, uncomment the section below and also CONSOLE appender in the <root> element.
-    -->
-   <!--
-   <Console name="CONSOLE" target="SYSTEM_OUT">
-        <PatternLayout pattern="[%d{ISO8601}][%-5p][%t][%c{1}] %m%n"/>
-        <LevelRangeFilter minLevel="INFO" maxLevel="DEBUG"/>
-    </Console>
-    -->
-
-    <!--
-        Logs all ERROR messages to console.
-    -->
     <Appenders>
+        <Console name="CONSOLE" target="SYSTEM_OUT">
+            <PatternLayout pattern="[%d{ISO8601}][%-5p][%t][%c{1}] %m%n"/>
+            <LevelRangeFilter minLevel="INFO" maxLevel="DEBUG"/>
+        </Console>
+
         <Console name="CONSOLE_ERR" target="SYSTEM_ERR">
             <PatternLayout pattern="[%d{ISO8601}][%-5p][%t][%c{1}] %m%n"/>
         </Console>
@@ -49,30 +38,16 @@
             </Policies>
             <DefaultRolloverStrategy max="10"/>
         </RollingFile>
-
-        <File name="CONSISTENCY"
-              append="true"
-              fileName="${IGNITE_HOME}/work/log/consistency.log">
-            <PatternLayout pattern="[%d{ISO8601}][%-5p][%t][%c{1}] %m%n"/>
-        </File>
     </Appenders>
 
     <Loggers>
         <Logger name="org.springframework" level="WARN"/>
-        <Logger name="org.eclipse.jetty" level="WARN"/>
-        <Logger name="org.eclipse.jetty.util.component" level="ERROR"/>
+        <Logger name="org.eclipse.jetty" level="FATAL"/>
         <Logger name="com.amazonaws" level="WARN"/>
-        <Logger name="org.apache.ignite.internal.visor.consistency" level="INFO" additivity="false">
-            <AppenderRef ref="CONSISTENCY"/>
-        </Logger>
 
         <Root level="INFO">
-            <!-- Uncomment to enable logging to console. -->
-            <!--
             <AppenderRef ref="CONSOLE" level="DEBUG"/>
-            -->
-
-            <AppenderRef ref="CONSOLE_ERR" level="ERROR"/>
+            <AppenderRef ref="CONSOLE_ERR" level="WARN"/>
             <AppenderRef ref="FILE" level="DEBUG"/>
         </Root>
     </Loggers>
