@@ -408,6 +408,14 @@ public class PartitionsEvictManager extends GridCacheSharedManagerAdapter {
                 return;
             }
 
+            // To clear index separately must do the following:
+            // [-] 1. Check - if partition removed from node and not reloaded.
+            // [-] 2. If removed then clear the indexes separately.
+            // [-] 2a. Implement batch remove based on partitionId.
+            // [-] 3. If index cleared separately then set the flag.
+            // [-] 4. If flag set then don't try to clear index on partition remove.
+            // [-] 5. Check failover by WAL record.
+
             try {
                 long clearedEntities = part.clearAll(grpEvictionCtx);
 
