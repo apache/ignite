@@ -23,7 +23,7 @@ import org.apache.ignite.cache.store.CacheStoreSession;
 import org.apache.ignite.cache.store.cassandra.CassandraCacheStore;
 import org.apache.ignite.cache.store.cassandra.datasource.DataSource;
 import org.apache.ignite.cache.store.cassandra.persistence.KeyValuePersistenceSettings;
-import org.apache.ignite.logger.log4j2.Log4J2Logger;
+import org.apache.ignite.testframework.junits.logger.GridTestLog4jLogger;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.springframework.core.io.Resource;
@@ -67,7 +67,7 @@ public class CacheStoreHelper {
             logField.setAccessible(true);
 
             sesField.set(cacheStore, session != null ? session : new TestCacheSession(cacheName));
-            logField.set(cacheStore, new Log4J2Logger(log));
+            logField.set(cacheStore, new GridTestLog4jLogger(log));
         }
         catch (Throwable e) {
             throw new RuntimeException("Failed to initialize test Ignite cache store", e);

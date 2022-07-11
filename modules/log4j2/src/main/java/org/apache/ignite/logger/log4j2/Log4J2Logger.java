@@ -140,15 +140,6 @@ public class Log4J2Logger implements IgniteLogger, LoggerNodeIdAndApplicationAwa
      *
      * @param impl Log4j2 implementation to use.
      */
-    public Log4J2Logger(final Logger impl) {
-        this(impl, null);
-    }
-
-    /**
-     * Creates new logger with given implementation.
-     *
-     * @param impl Log4j2 implementation to use.
-     */
     private Log4J2Logger(final Logger impl, String path) {
         assert impl != null;
         
