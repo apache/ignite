@@ -23,6 +23,7 @@ import java.util.Map;
 import java.util.concurrent.Executor;
 import java.util.concurrent.ForkJoinPool;
 import java.util.function.BiFunction;
+import java.util.function.ToIntFunction;
 import javax.cache.configuration.Factory;
 import javax.net.ssl.SSLContext;
 import org.apache.ignite.cache.affinity.AffinityFunction;
@@ -129,7 +130,7 @@ public final class ClientConfiguration implements Serializable {
      *
      * This factory accepts as a parameters a cache name and the number of cache partitions received from a server node.
      */
-    private BiFunction<String, Integer, AffinityFunction> partitionAwarenessAffinityFunctionFactory;
+    private BiFunction<String, Integer, ToIntFunction<Object>> partitionAwarenessMapperFactory;
 
     /**
      * Reconnect throttling period (in milliseconds). There are no more than {@code reconnectThrottlingRetries}
@@ -811,8 +812,8 @@ public final class ClientConfiguration implements Serializable {
      * @param factory Factory.
      * @return {@code this} for chaining.
      */
-    public ClientConfiguration setPartitionAwarenessAffinityFunctionFactory(BiFunction<String, Integer, AffinityFunction> factory) {
-        partitionAwarenessAffinityFunctionFactory = factory;
+    public ClientConfiguration setPartitionAwarenessMapperFactory(BiFunction<String, Integer, ToIntFunction<Object>> factory) {
+        partitionAwarenessMapperFactory = factory;
 
         return this;
     }
@@ -820,7 +821,7 @@ public final class ClientConfiguration implements Serializable {
     /**
      * @return Factory.
      */
-    public BiFunction<String, Integer, AffinityFunction> getPartitionAwarenessAffinityFunctionFactory() {
-        return partitionAwarenessAffinityFunctionFactory;
+    public BiFunction<String, Integer, ToIntFunction<Object>> getPartitionAwarenessMapperFactory() {
+        return partitionAwarenessMapperFactory;
     }
 }

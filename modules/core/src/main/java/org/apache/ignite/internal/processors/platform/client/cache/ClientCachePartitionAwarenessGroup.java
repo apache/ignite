@@ -27,7 +27,7 @@ import org.apache.ignite.internal.processors.cache.DynamicCacheDescriptor;
 import org.apache.ignite.internal.processors.cache.binary.CacheObjectBinaryProcessorImpl;
 import org.apache.ignite.internal.processors.platform.client.ClientBitmaskFeature;
 import org.apache.ignite.internal.processors.platform.client.ClientProtocolContext;
-import static org.apache.ignite.internal.processors.platform.client.cache.ClientCachePartitionsRequest.isDefaultAffinity;
+import static org.apache.ignite.internal.processors.platform.client.cache.ClientCachePartitionsRequest.isDefaultMapping;
 
 /**
  * Partition mapping associated with the group of caches.
@@ -37,7 +37,7 @@ class ClientCachePartitionAwarenessGroup {
     private final ClientCachePartitionMapping mapping;
 
     /** {@code true} if the RendezvousAffinityFunction is used with the default affinity key mapper. */
-    private final boolean dfltAffinity;
+    private final boolean dfltMapping;
 
     /** Descriptor of the associated caches. */
     private final Map<Integer, CacheConfiguration<?, ?>> cacheCfgs = new HashMap<>();
@@ -49,7 +49,7 @@ class ClientCachePartitionAwarenessGroup {
     public ClientCachePartitionAwarenessGroup(ClientCachePartitionMapping mapping, DynamicCacheDescriptor cacheDesc) {
         this.mapping = mapping;
 
-        dfltAffinity = isDefaultAffinity(cacheDesc.cacheConfiguration());
+        dfltMapping = isDefaultMapping(cacheDesc.cacheConfiguration());
         cacheCfgs.put(cacheDesc.cacheId(), cacheDesc.cacheConfiguration());
     }
 
@@ -95,7 +95,7 @@ class ClientCachePartitionAwarenessGroup {
             mapping.write(writer);
 
         if (cpctx.isFeatureSupported(ClientBitmaskFeature.ALL_AFFINITY_MAPPINGS))
-            writer.writeBoolean(dfltAffinity);
+            writer.writeBoolean(dfltMapping);
     }
 
     /**
@@ -116,11 +116,11 @@ class ClientCachePartitionAwarenessGroup {
 
         ClientCachePartitionAwarenessGroup group = (ClientCachePartitionAwarenessGroup)o;
 
-        return dfltAffinity == group.dfltAffinity && Objects.equals(mapping, group.mapping);
+        return dfltMapping == group.dfltMapping && Objects.equals(mapping, group.mapping);
     }
 
     /** {@inheritDoc} */
     @Override public int hashCode() {
-        return Objects.hash(mapping, dfltAffinity);
+        return Objects.hash(mapping, dfltMapping);
     }
 }

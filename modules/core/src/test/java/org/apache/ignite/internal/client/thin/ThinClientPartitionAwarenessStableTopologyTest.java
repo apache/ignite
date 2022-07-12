@@ -17,11 +17,14 @@
 
 package org.apache.ignite.internal.client.thin;
 
+import java.util.function.BiFunction;
 import java.util.function.Function;
-import java.util.function.Supplier;
+import java.util.function.ToIntFunction;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.cache.CacheAtomicityMode;
 import org.apache.ignite.cache.CacheMode;
+import org.apache.ignite.cache.affinity.AffinityFunction;
+import org.apache.ignite.cache.affinity.rendezvous.RendezvousAffinityFunction;
 import org.apache.ignite.cache.query.ScanQuery;
 import org.apache.ignite.client.ClientAtomicConfiguration;
 import org.apache.ignite.client.ClientAtomicLong;
@@ -77,20 +80,21 @@ public class ThinClientPartitionAwarenessStableTopologyTest extends ThinClientAb
      * Test that partition awareness is applicable for partitioned cache with custom affinity function
      * and an affinity mapper is set on the client side.
      */
-//    @Test
-//    public void testPartitionedCustomAffinityCacheWithMapper() throws Exception {
-//        testApplicableCache(() -> (ClientCache<Object, Object>)((ClientCacheEx)client.cache(PART_CUSTOM_AFFINITY_CACHE_NAME))
-//            .withPartitionAwarenessKeyMapper(new ToIntBiFunction<Object, Integer>() {
-//                /** Affinity mask. */
-//                private final int affinityMask = RendezvousAffinityFunction.calculateMask(DFLT_PARTITION_COUNT);
-//
-//                @Override public int applyAsInt(Object key, Integer parts) {
-//                    assertEquals(parts, Integer.valueOf(DFLT_PARTITION_COUNT));
-//
-//                    return RendezvousAffinityFunction.calculatePartition(key, affinityMask, DFLT_PARTITION_COUNT);
-//                }
-//            }), i -> i);
-//    }
+    @Test
+    public void testPartitionedCustomAffinityCacheWithMapper() throws Exception {
+        initClient(getClientConfiguration(1, 2, 3).
+            setPartitionAwarenessMapperFactory(new BiFunction<String, Integer, ToIntFunction<Object>>() {
+                @Override public ToIntFunction<Object> apply(String cacheName, Integer parts) {
+                    assertEquals(cacheName, PART_CUSTOM_AFFINITY_CACHE_NAME);
+
+                    AffinityFunction aff = new RendezvousAffinityFunction(false, parts);
+
+                    return aff::partition;
+                }
+            }), 1, 2);
+
+        testApplicableCache(PART_CUSTOM_AFFINITY_CACHE_NAME, i -> i);
+    }
 
     /**
      * Test partition awareness for all applicable operation types for partitioned cache with primitive key.
@@ -355,24 +359,10 @@ public class ThinClientPartitionAwarenessStableTopologyTest extends ThinClientAb
     /**
      * @param cacheName Cache name.
      * @param keyFactory Key factory function.
-     * @throws Exception If fails.
      */
     private void testApplicableCache(String cacheName, Function<Integer, Object> keyFactory) throws Exception {
-        testApplicableCache(() -> client.cache(cacheName), keyFactory);
-    }
-
-    /**
-     * @param cacheSup Cache supplier.
-     * @param keyFactory Key factory function.
-     * @throws Exception If fails.
-     */
-    private void testApplicableCache(
-        Supplier<ClientCache<Object, Object>> cacheSup,
-        Function<Integer, Object> keyFactory
-    ) throws Exception {
-        ClientCache<Object, Object> clientCache = cacheSup.get();
-
-        IgniteInternalCache<Object, Object> igniteCache = grid(0).context().cache().cache(clientCache.getName());
+        ClientCache<Object, Object> clientCache = client.cache(cacheName);
+        IgniteInternalCache<Object, Object> igniteCache = grid(0).context().cache().cache(cacheName);
 
         clientCache.put(keyFactory.apply(0), 0);
 

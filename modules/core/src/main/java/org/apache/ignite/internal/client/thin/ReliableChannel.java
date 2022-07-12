@@ -36,7 +36,7 @@ import java.util.concurrent.locks.ReentrantReadWriteLock;
 import java.util.function.BiFunction;
 import java.util.function.Consumer;
 import java.util.function.Function;
-import java.util.function.ToIntBiFunction;
+import java.util.function.ToIntFunction;
 import java.util.stream.Collectors;
 import java.util.stream.IntStream;
 import org.apache.ignite.IgniteBinary;
@@ -401,6 +401,19 @@ final class ReliableChannel implements AutoCloseable {
         }
 
         return serviceAsync(op, payloadWriter, payloadReader);
+    }
+
+    /**
+     * @param cacheId Cache id.
+     * @param cacheName Cache name.
+     */
+    public void registerKeyPartitionMapperFactory(int cacheId, String cacheName) {
+        BiFunction<String, Integer, ToIntFunction<Object>> factory = clientCfg.getPartitionAwarenessMapperFactory();
+
+        if (factory == null)
+            return;
+
+        affinityCtx.addKeyMapperFactory(cacheId, parts -> factory.apply(cacheName, parts));
     }
 
     /**
@@ -856,22 +869,6 @@ final class ReliableChannel implements AutoCloseable {
         ClientRetryPolicyContext ctx = new ClientRetryPolicyContextImpl(clientCfg, opType, iteration, exception);
 
         return plc.shouldRetry(ctx);
-    }
-
-    /**
-     * @param cacheId Cache id.
-     * @param mapper Cache key mapper.
-     */
-    void setCacheAffinityMapper(int cacheId, ToIntBiFunction<Object, Integer> mapper) {
-        if (!partitionAwarenessEnabled)
-            throw new ClientException("Using custom affinity cache key mapper is allowed only when partition awareness is enabled");
-
-        applyOnDefaultChannel(c -> {
-            c.protocolCtx().checkFeatureSupported(ProtocolBitmaskFeature.ALL_AFFINITY_MAPPINGS);
-            return null;
-        }, null);
-
-        affinityCtx.putCacheAffinityMapper(cacheId, mapper);
     }
 
     /**

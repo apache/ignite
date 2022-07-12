@@ -165,14 +165,14 @@ public class ClientCachePartitionsRequest extends ClientRequest {
         if (cpctx.isFeatureSupported(ClientBitmaskFeature.ALL_AFFINITY_MAPPINGS))
             return true;
 
-        return isDefaultAffinity(ccfg);
+        return isDefaultMapping(ccfg);
     }
 
     /**
      * @param ccfg Cache configuration.
      * @return {@code true} if the default affinity was used for cache.
      */
-    public static boolean isDefaultAffinity(CacheConfiguration<?, ?> ccfg) {
+    public static boolean isDefaultMapping(CacheConfiguration<?, ?> ccfg) {
         // Only caches with no custom affinity key mapper is supported.
         if (isCustomAffinityMapper(ccfg.getAffinityMapper()))
             return false;

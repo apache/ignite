@@ -25,7 +25,8 @@ import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentLinkedQueue;
 import java.util.concurrent.atomic.AtomicReference;
-import java.util.function.ToIntBiFunction;
+import java.util.function.Function;
+import java.util.function.ToIntFunction;
 import org.apache.ignite.IgniteBinary;
 import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
 import org.apache.ignite.internal.util.GridConcurrentHashSet;
@@ -34,14 +35,17 @@ import org.apache.ignite.internal.util.GridConcurrentHashSet;
  * Client cache partition awareness context.
  */
 public class ClientCacheAffinityContext {
+    /** Default key mapper. */
+    private static final Function<Integer, ToIntFunction<Object>> DEFAULT_KEY_MAPPER = parts -> null;
+
     /** Binary data processor. */
     private final IgniteBinary binary;
 
+    /** Factory for each cache to produce key to partition mappers. */
+    private final Map<Integer, Function<Integer, ToIntFunction<Object>>> cacheKeyMapperFactoryMap = new ConcurrentHashMap<>();
+
     /** Contains last topology version and known nodes of this version. */
     private final AtomicReference<TopologyNodes> lastTop = new AtomicReference<>();
-
-    /** Cache key mappers that map the key to a partition for each cache if a custom affinity function was used for cache in a cluster. */
-    private final Map<Integer, ToIntBiFunction<Object, Integer>> cacheAffinityMappers = new ConcurrentHashMap<>();
 
     /** Current affinity mapping. */
     private volatile ClientCacheAffinityMapping affinityMapping;
@@ -54,16 +58,6 @@ public class ClientCacheAffinityContext {
      */
     public ClientCacheAffinityContext(IgniteBinary binary) {
         this.binary = binary;
-    }
-
-    /**
-     * @param cacheId Cache id.
-     * @param mapper The client cache key mapper function is used for calculation the key to partition mapping.
-     */
-    public void putCacheAffinityMapper(Integer cacheId, ToIntBiFunction<Object, Integer> mapper) {
-        assert mapper != null;
-
-        cacheAffinityMappers.put(cacheId, mapper);
     }
 
     /**
@@ -142,7 +136,8 @@ public class ClientCacheAffinityContext {
         if (lastTop.get() == null)
             return false;
 
-        ClientCacheAffinityMapping newMapping = ClientCacheAffinityMapping.readResponse(ch, cacheAffinityMappers::get);
+        ClientCacheAffinityMapping newMapping = ClientCacheAffinityMapping.readResponse(ch,
+            cacheId -> cacheKeyMapperFactoryMap.getOrDefault(cacheId, DEFAULT_KEY_MAPPER));
 
         ClientCacheAffinityMapping oldMapping = affinityMapping;
 
@@ -233,6 +228,14 @@ public class ClientCacheAffinityContext {
             return null;
 
         return mapping;
+    }
+
+    /**
+     * @param cacheId Cache id.
+     * @param factory Key mapper factory.
+     */
+    public void addKeyMapperFactory(int cacheId, Function<Integer, ToIntFunction<Object>> factory) {
+        cacheKeyMapperFactoryMap.putIfAbsent(cacheId, factory);
     }
 
     /**
