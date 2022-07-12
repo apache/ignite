@@ -57,7 +57,7 @@
         -->
         <module>modules/igfs</module>
         <module>modules/elasticsearch-relay</module>
-        <module>modules/mongdodb-relay</module>
+        <module>modules/mongodb-relay</module>
         <module>modules/clients</module>
         <module>modules/spring</module>
         <module>modules/web</module>
