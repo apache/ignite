@@ -34,6 +34,70 @@ namespace Apache.Ignite.Core.Services
     /// will call the service method.
     /// <example>
     /// <code>
+    /// class Security : IServiceCallInterceptor
+    /// {
+    ///   public object Invoke(string mtd, object[] args, IServiceContext ctx, Func&lt;object&gt; next)
+    ///   {
+    ///     if (!CustomSecurityProvider.Instance().Access(ctx.CurrentCallContext.GetAttribute("sessionId")))
+    ///       throw new SecurityException();
+    ///
+    ///     // Execute remaining interceptors and service method.
+    ///     return next.Invoke();
+    ///   }
+    /// }
+    ///
+    /// class Audit : IServiceCallInterceptor
+    /// {
+    ///   public object Invoke(string mtd, object[] args, IServiceContext ctx, Func&lt;object&gt; next)
+    ///   {
+    ///     var sessionId = ctx.CurrentCallContext.GetAttribute("sessionId");
+    ///     var audit = AuditProvider.Instance();
+    ///
+    ///     audit.RecordEvent("start", mtd, sessionId);
+    ///
+    ///     try
+    ///     {
+    ///       // Execute service method.
+    ///       return next.Invoke();
+    ///     }
+    ///     catch (Exception e)
+    ///     {
+    ///       // Record error.
+    ///       audit.RecordEvent("error", mtd, "id=" + sessionId + ", err=" + e.Message);
+    ///
+    ///       // Re-throw exception to initiator.
+    ///       throw;
+    ///     }
+    ///     finally
+    ///     {
+    ///       // Record finish event after execution of the service method.
+    ///       audit.RecordEvent("finish", mtd, sessionId);
+    ///     }
+    ///   }
+    /// }
+    /// 
+    /// ...
+    /// 
+    /// var svcCfg = new ServiceConfiguration()
+    /// {
+    ///   Name = "service",
+    ///   Service = new MyService(),
+    ///   MaxPerNodeCount = 1,
+    ///   Interceptors = new List&lt;IServiceCallInterceptor&gt; { new Audit(), new Security() }
+    /// };
+    ///
+    /// // Deploy service.
+    /// ignite.GetServices().Deploy(svcCfg);
+    ///
+    /// // Set context parameters for the service proxy.
+    /// var callCtx = new ServiceCallContextBuilder().Set("sessionId", sessionId).Build();
+    ///
+    /// // Make service proxy with caller context to define sessionId attribute.
+    /// var proxy = ignite.GetServices().GetServiceProxy&lt;IMyService&gt;("service", false, callCtx);
+    ///
+    /// // Service method call will be intercepted.
+    /// proxy.PlaceOrder(order1);
+    /// proxy.PlaceOrder(order2);
     /// </code>
     /// </example>
     /// </summary>
