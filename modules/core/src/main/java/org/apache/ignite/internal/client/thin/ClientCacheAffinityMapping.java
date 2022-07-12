@@ -23,17 +23,20 @@ import java.util.Collection;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.Map;
+import java.util.Objects;
 import java.util.UUID;
 import java.util.function.Function;
 import java.util.function.ToIntFunction;
 import org.apache.ignite.IgniteBinary;
 import org.apache.ignite.cache.affinity.rendezvous.RendezvousAffinityFunction;
+import org.apache.ignite.client.ClientFeatureNotSupportedByServerException;
 import org.apache.ignite.internal.binary.BinaryObjectExImpl;
 import org.apache.ignite.internal.binary.BinaryReaderExImpl;
 import org.apache.ignite.internal.binary.streams.BinaryOutputStream;
 import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.internal.U;
+import static org.apache.ignite.internal.client.thin.ProtocolBitmaskFeature.ALL_AFFINITY_MAPPINGS;
 
 /**
  * Affinity mapping (partition to nodes) for each cache.
@@ -145,7 +148,21 @@ public class ClientCacheAffinityMapping {
      * @param ch Output channel.
      * @param cacheIds Cache IDs.
      */
-    public static void writeRequest(PayloadOutputChannel ch, Collection<Integer> cacheIds) {
+    public static void writeRequest(
+        PayloadOutputChannel ch,
+        Collection<Integer> cacheIds,
+        Function<Integer, Function<Integer, ToIntFunction<Object>>> mappers
+    ) {
+        ProtocolContext ctx = ch.clientChannel().protocolCtx();
+
+        boolean hasFactory = cacheIds.stream()
+            .map(cacheId -> Objects.nonNull(mappers.apply(cacheId)))
+            .reduce(Boolean::logicalOr)
+            .orElse(false);
+
+        if (hasFactory && !ctx.isFeatureSupported(ALL_AFFINITY_MAPPINGS))
+            throw new ClientFeatureNotSupportedByServerException(ALL_AFFINITY_MAPPINGS);
+
         BinaryOutputStream out = ch.out();
 
         out.writeInt(cacheIds.size());
@@ -189,7 +206,7 @@ public class ClientCacheAffinityMapping {
 
                     boolean dfltAffinity = true;
 
-                    if (ch.clientChannel().protocolCtx().isFeatureSupported(ProtocolBitmaskFeature.ALL_AFFINITY_MAPPINGS))
+                    if (ch.clientChannel().protocolCtx().isFeatureSupported(ALL_AFFINITY_MAPPINGS))
                         dfltAffinity = in.readBoolean();
 
                     boolean finalDfltAffinity = dfltAffinity;

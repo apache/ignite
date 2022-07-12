@@ -22,7 +22,8 @@ import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.TimeUnit;
-import java.util.function.ToIntBiFunction;
+import java.util.function.BiFunction;
+import java.util.function.ToIntFunction;
 import javax.cache.Cache;
 import javax.cache.event.CacheEntryEvent;
 import javax.cache.expiry.CreatedExpiryPolicy;
@@ -36,6 +37,7 @@ import org.apache.ignite.binary.BinaryObject;
 import org.apache.ignite.cache.CacheAtomicityMode;
 import org.apache.ignite.cache.CacheMode;
 import org.apache.ignite.cache.QueryEntity;
+import org.apache.ignite.cache.affinity.AffinityFunction;
 import org.apache.ignite.cache.affinity.rendezvous.RendezvousAffinityFunction;
 import org.apache.ignite.cache.query.ContinuousQuery;
 import org.apache.ignite.cache.query.ScanQuery;
@@ -55,7 +57,6 @@ import org.apache.ignite.configuration.ClientConfiguration;
 import org.apache.ignite.configuration.ClientConnectorConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.configuration.ThinClientConfiguration;
-import org.apache.ignite.internal.client.thin.ClientCacheEx;
 import org.apache.ignite.internal.processors.platform.cache.expiry.PlatformExpiryPolicy;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.X;
@@ -455,15 +456,20 @@ public class JavaThinCompatibilityTest extends AbstractClientCompatibilityTest {
     private void testCustomPartitionAwarenessMapper() {
         X.println(">>>> Testing custom partition awareness mapper");
 
-        try (IgniteClient client = Ignition.startClient(new ClientConfiguration().setAddresses(ADDR))) {
+        ClientConfiguration cfg = new ClientConfiguration()
+            .setAddresses(ADDR)
+            .setPartitionAwarenessMapperFactory(new BiFunction<String, Integer, ToIntFunction<Object>>() {
+                @Override public ToIntFunction<Object> apply(String cacheName, Integer parts) {
+                    assertEquals(cacheName, CACHE_WITH_CUSTOM_AFFINITY);
 
-            ClientCache<Integer, Integer> cache = ((ClientCacheEx)client.cache(CACHE_WITH_CUSTOM_AFFINITY))
-                .withPartitionAwarenessKeyMapper(new ToIntBiFunction<Object, Integer>() {
-                    /** {@inheritDoc} */
-                    @Override public int applyAsInt(Object key, Integer parts) {
-                        return 0;
-                    }
-                });
+                    AffinityFunction aff = new RendezvousAffinityFunction(false, parts);
+
+                    return aff::partition;
+                }
+            });
+
+        try (IgniteClient client = Ignition.startClient(cfg)) {
+            ClientCache<Integer, Integer> cache = client.cache(CACHE_WITH_CUSTOM_AFFINITY);
 
             assertEquals(CACHE_WITH_CUSTOM_AFFINITY, cache.getName());
             assertEquals(Integer.valueOf(0), cache.get(0));
@@ -474,17 +480,15 @@ public class JavaThinCompatibilityTest extends AbstractClientCompatibilityTest {
     private void testCustomPartitionAwarenessMapperThrows() {
         X.println(">>>> Testing custom partition awareness mapper throws");
 
-        try (IgniteClient client = Ignition.startClient(new ClientConfiguration().setAddresses(ADDR))) {
+        ClientConfiguration cfg = new ClientConfiguration()
+            .setAddresses(ADDR)
+            .setPartitionAwarenessMapperFactory((cacheName, parts) -> null);
+
+        try (IgniteClient client = Ignition.startClient(cfg)) {
             String errMsg = "Feature " + ALL_AFFINITY_MAPPINGS.name() + " is not supported by the server";
 
             Throwable err = assertThrowsWithCause(
-                () -> ((ClientCacheEx)client.cache(CACHE_WITH_CUSTOM_AFFINITY))
-                    .withPartitionAwarenessKeyMapper(new ToIntBiFunction<Object, Integer>() {
-                        /** {@inheritDoc} */
-                        @Override public int applyAsInt(Object key, Integer parts) {
-                            return 0;
-                        }
-                    }),
+                () -> client.cache(CACHE_WITH_CUSTOM_AFFINITY).get(0),
                 ClientFeatureNotSupportedByServerException.class
             );
 

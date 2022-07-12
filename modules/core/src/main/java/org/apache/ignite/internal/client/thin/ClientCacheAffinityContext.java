@@ -126,7 +126,7 @@ public class ClientCacheAffinityContext {
      * @param ch Payload output channel.
      */
     public void writePartitionsUpdateRequest(PayloadOutputChannel ch) {
-        ClientCacheAffinityMapping.writeRequest(ch, pendingCacheIds);
+        ClientCacheAffinityMapping.writeRequest(ch, pendingCacheIds, cacheKeyMapperFactoryMap::get);
     }
 
     /**
