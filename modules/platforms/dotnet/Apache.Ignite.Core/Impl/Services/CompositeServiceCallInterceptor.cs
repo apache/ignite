@@ -55,16 +55,16 @@ namespace Apache.Ignite.Core.Impl.Services
             private IEnumerator<IServiceCallInterceptor> _intcpsIter;
 
             /** Method name. */
-            private string _mtd;
+            private readonly string _mtd;
             
             /** Method arguments. */
-            private object[] _args;
+            private readonly object[] _args;
             
             /** Service context. */
-            private IServiceContext _ctx;
+            private readonly IServiceContext _ctx;
             
             /** Delegated call to a service method. */
-            private Func<object> _svcCall;
+            private readonly Func<object> _svcCall;
 
             /// <summary>
             /// Constructor.
@@ -97,9 +97,11 @@ namespace Apache.Ignite.Core.Impl.Services
             /// <returns>Invocation result.</returns>
             public object Invoke()
             {
-                Debug.Assert(_intcpsIter.Current != null, "curr is null?");
+                var interceptor = _intcpsIter.Current;
+                
+                Debug.Assert(interceptor != null);
 
-                return _intcpsIter.Current.Invoke(_mtd, _args, _ctx, _intcpsIter.MoveNext() ? Invoke : _svcCall);
+                return interceptor.Invoke(_mtd, _args, _ctx, _intcpsIter.MoveNext() ? Invoke : _svcCall);
             } 
         }
     }

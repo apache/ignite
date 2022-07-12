@@ -22,7 +22,23 @@ namespace Apache.Ignite.Core.Services
 
     /// <summary>
     /// Represents service call interceptor.
+    /// <para/>
+    /// Allows the user to intercept the call to any service method except lifecycle methods
+    /// (<see cref="IService.Init">Init</see>, <see cref="IService.Execute">Execute</see> and
+    /// <see cref="IService.Cancel">Cancel</see>).
+    /// <para/>
+    /// A typical use of an interceptor is a middleware logic that applies to all custom methods in a service.
+    /// <para/>
+    /// The user can specify multiple interceptors in the <see cref="ServiceConfiguration">service configuration</see>.
+    /// Each interceptor invokes the next interceptor in the chain using a delegated call, the last interceptor
+    /// will call the service method.
+    /// <example>
+    /// <code>
+    /// </code>
+    /// </example>
     /// </summary>
+    /// <seealso cref="IServiceCallContext"/>
+    /// <seealso cref="IServiceContext"/>
     [IgniteExperimental]
     public interface IServiceCallInterceptor
     {
