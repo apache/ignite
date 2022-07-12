@@ -38,7 +38,7 @@ import static org.apache.ignite.IgniteSystemProperties.IGNITE_DEFAULT_DISK_PAGE_
 import static org.apache.ignite.configuration.DiskPageCompression.ZSTD;
 
 /** */
-@RunWith(DynamicSuite.class)
+//@RunWith(DynamicSuite.class)
 public class IgnitePdsCompressionTestSuite {
     /**
      * @return Suite.
