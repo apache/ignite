@@ -1122,11 +1122,17 @@ namespace Apache.Ignite.Core.Impl.Unmanaged
                 string mthdName;
                 object[] mthdArgs;
                 IServiceCallContext callCtx;
+                IServiceCallContext prevCallCtx = null;
 
                 ServiceProxySerializer.ReadProxyMethod(stream, _ignite.Marshaller, out mthdName, out mthdArgs, out callCtx);
 
                 if (callCtx != null)
+                {
+                    // One service can be called from another in the same thread.
+                    prevCallCtx = svcCtx.CurrentCallContext;
+
                     ServiceContext.SetCurrentCallContext(callCtx);
+                }
 
                 try
                 {
@@ -1141,7 +1147,7 @@ namespace Apache.Ignite.Core.Impl.Unmanaged
                 finally
                 {
                     if (callCtx != null)
-                        ServiceContext.SetCurrentCallContext(null);
+                        ServiceContext.SetCurrentCallContext(prevCallCtx);
                 }
 
                 return 0;

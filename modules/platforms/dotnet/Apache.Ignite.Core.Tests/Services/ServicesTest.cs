@@ -381,6 +381,11 @@ namespace Apache.Ignite.Core.Tests.Services
                 Assert.AreEqual(attrBinValue, stickyProxy.ContextBinaryAttribute(attrBinName));
                 Assert.AreEqual(attrBinValue, dynamicProxy.ContextBinaryAttribute(attrBinName));
                 Assert.AreEqual(attrBinValue, dynamicStickyProxy.ContextBinaryAttribute(attrBinName));
+                
+                Assert.AreEqual(attrValue, proxy.ContextAttributeOtherService(attrName));
+                Assert.AreEqual(attrValue, stickyProxy.ContextAttributeOtherService(attrName));
+                Assert.AreEqual(attrValue, dynamicProxy.ContextAttributeOtherService(attrName));
+                Assert.AreEqual(attrValue, dynamicStickyProxy.ContextAttributeOtherService(attrName));
             }
         }
 
@@ -1898,6 +1903,9 @@ namespace Apache.Ignite.Core.Tests.Services
             object ContextAttribute(string name);
             
             /** */
+            object ContextAttributeOtherService(string name);
+            
+            /** */
             object ContextAttributeWithAsync(string name);
 
             /** */
@@ -2033,6 +2041,33 @@ namespace Apache.Ignite.Core.Tests.Services
                 IServiceCallContext ctx = _context.CurrentCallContext;
 
                 return ctx == null ? null : ctx.GetAttribute(name);
+            }
+            
+            /** <inheritdoc /> */
+            public object ContextAttributeOtherService(string name)
+            {
+                const string otherVal = "expected";
+
+                var threadCtx = _context.CurrentCallContext;
+
+                Assert.NotNull(threadCtx);
+                Assert.AreNotEqual(otherVal, threadCtx.GetAttribute(name));
+
+                // Replacing attribute value.
+                var callCtx = new ServiceCallContextBuilder().Set(name, otherVal).Build();
+
+                // Creating proxy with another call context.
+                var svc = _grid.GetServices().GetServiceProxy<ITestIgniteService>(SvcName, false, callCtx);
+                
+                // Ensure that context has been replaced.
+                Assert.AreEqual(otherVal, svc.ContextAttribute(name));
+
+                threadCtx = _context.CurrentCallContext;
+
+                // Ensure that context has been restored.
+                Assert.NotNull(threadCtx);
+
+                return threadCtx.GetAttribute(name);
             }
 
             /** <inheritdoc /> */

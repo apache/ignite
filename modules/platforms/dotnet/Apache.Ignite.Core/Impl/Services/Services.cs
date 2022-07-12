@@ -485,8 +485,8 @@ namespace Apache.Ignite.Core.Impl.Services
         private IDictionary GetCallerContextAttributes(IServiceCallContext callCtx)
         {
             IgniteArgumentCheck.Ensure(callCtx == null || callCtx is ServiceCallContext, "callCtx", 
-                "custom implementation of " + typeof(ServiceCallContext).Name + " is not supported." +
-                " Please use " + typeof(ServiceCallContextBuilder).Name + " to create it.");
+                "custom implementation of " + nameof(ServiceCallContext) + " is not supported." +
+                " Please use " + nameof(ServiceCallContextBuilder) + " to create it.");
 
             return callCtx == null ? null : ((ServiceCallContext) callCtx).Values();
         }
