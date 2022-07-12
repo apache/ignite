@@ -25,7 +25,6 @@ import org.apache.ignite.internal.cache.query.index.Index;
 import org.apache.ignite.internal.cache.query.index.SortOrder;
 import org.apache.ignite.internal.cache.query.index.sorted.IndexKeyDefinition;
 import org.apache.ignite.internal.cache.query.index.sorted.inline.InlineIndex;
-import org.apache.ignite.internal.processors.cache.IgniteInternalCache;
 import org.apache.ignite.internal.processors.query.IgniteSQLException;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.lang.IgnitePredicate;
@@ -199,9 +198,7 @@ public class IndexDdlIntegrationTest extends AbstractDdlIntegrationTest {
     private Collection<Index> indexes(String cacheName) {
         IgniteEx node = grid(0);
 
-        IgniteInternalCache<?, ?> cache = node.cachex(cacheName);
-
-        return node.context().indexProcessor().indexes(cache.context());
+        return node.context().indexProcessor().indexes(cacheName);
     }
 
     /** */

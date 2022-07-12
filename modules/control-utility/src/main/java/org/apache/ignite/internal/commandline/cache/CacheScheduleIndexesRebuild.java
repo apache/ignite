@@ -37,6 +37,7 @@ import org.apache.ignite.internal.commandline.argument.CommandArgUtils;
 import org.apache.ignite.internal.commandline.cache.argument.IndexRebuildCommandArg;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.internal.S;
+import org.apache.ignite.internal.visor.cache.index.ScheduleIndexRebuildTask;
 import org.apache.ignite.internal.visor.cache.index.ScheduleIndexRebuildTaskArg;
 import org.apache.ignite.internal.visor.cache.index.ScheduleIndexRebuildTaskRes;
 import org.jetbrains.annotations.Nullable;
@@ -101,7 +102,7 @@ public class CacheScheduleIndexesRebuild extends AbstractCommand<CacheScheduleIn
 
             taskRes = TaskExecutor.executeTaskByNameOnNode(
                 client,
-                "org.apache.ignite.internal.visor.cache.index.ScheduleIndexRebuildTask",
+                ScheduleIndexRebuildTask.class.getName(),
                 new ScheduleIndexRebuildTaskArg(args.cacheToIndexes, args.cacheGroups),
                 nodeId,
                 clientCfg
