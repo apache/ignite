@@ -238,7 +238,8 @@ public final class ANNClassificationModel extends NNClassificationModel implemen
                 .readValue(new File(path.toAbsolutePath().toString()), ANNJSONExportModel.class);
 
             return exportModel.convert();
-        } catch (IOException e) {
+        }
+        catch (IOException e) {
             e.printStackTrace();
         }
         return null;
@@ -270,7 +271,8 @@ public final class ANNClassificationModel extends NNClassificationModel implemen
 
             File file = new File(path.toAbsolutePath().toString());
             mapper.writeValue(file, exportModel);
-        } catch (IOException e) {
+        }
+        catch (IOException e) {
             e.printStackTrace();
         }
     }

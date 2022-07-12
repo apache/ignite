@@ -53,7 +53,7 @@ import static org.apache.ignite.transactions.TransactionIsolation.REPEATABLE_REA
  */
 public class EvictionPolicyFailureHandlerTest extends GridCommonAbstractTest {
     /** Test logger. */
-    private final ListeningTestLogger log = new ListeningTestLogger(false, GridAbstractTest.log);
+    private final ListeningTestLogger log = new ListeningTestLogger(GridAbstractTest.log);
 
     /** Node failure. */
     private AtomicBoolean nodeFailure = new AtomicBoolean(false);

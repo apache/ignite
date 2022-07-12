@@ -157,7 +157,9 @@ public class GridUriDeploymentSimpleSelfTest extends GridSpiAbstractTest<UriDepl
             assert subgrid.size() == 1;
 
             return Collections.singletonMap(new ComputeJobAdapter() {
-                @Override public Serializable execute() { return "result"; }
+                @Override public Serializable execute() {
+                    return "result";
+                }
             }, subgrid.get(0));
         }
 
@@ -179,7 +181,9 @@ public class GridUriDeploymentSimpleSelfTest extends GridSpiAbstractTest<UriDepl
             assert subgrid.size() == 1;
 
             return Collections.singletonMap(new ComputeJobAdapter() {
-                @Override public Serializable execute() { return "result"; }
+                @Override public Serializable execute() {
+                    return "result";
+                }
             }, subgrid.get(0));
         }
 

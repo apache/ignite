@@ -48,7 +48,7 @@ public class IgniteSecurityProcessorTest {
             .times(1)
             .build();
 
-        ListeningTestLogger log = new ListeningTestLogger(false);
+        ListeningTestLogger log = new ListeningTestLogger();
 
         log.registerListener(logLsnr);
 

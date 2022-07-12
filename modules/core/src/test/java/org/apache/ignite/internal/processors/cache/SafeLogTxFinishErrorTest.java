@@ -43,7 +43,7 @@ import static org.apache.ignite.testframework.GridTestUtils.setFieldValue;
  */
 public class SafeLogTxFinishErrorTest extends GridCommonAbstractTest {
     /** Logger for listen log messages. */
-    private final ListeningTestLogger log = new ListeningTestLogger(false, GridCommonAbstractTest.log);
+    private final ListeningTestLogger log = new ListeningTestLogger(GridCommonAbstractTest.log);
 
     /** Flag to remove the FailureHandler when creating configuration for node. */
     private boolean rmvFailureHnd;

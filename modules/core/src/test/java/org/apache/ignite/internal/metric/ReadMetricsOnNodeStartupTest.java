@@ -37,7 +37,7 @@ public class ReadMetricsOnNodeStartupTest extends GridCommonAbstractTest {
     private final CountDownLatch exportLatch = new CountDownLatch(1);
 
     /** */
-    private final ListeningTestLogger listeningLog = new ListeningTestLogger(false, log);
+    private final ListeningTestLogger listeningLog = new ListeningTestLogger(log);
 
     /** {@inheritDoc} */
     @Override protected IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {
@@ -52,7 +52,8 @@ public class ReadMetricsOnNodeStartupTest extends GridCommonAbstractTest {
                         // Read metric value.
                         metrics.forEach(Metric::getAsString);
                     });
-                } catch (Throwable e) {
+                }
+                catch (Throwable e) {
                     log.error("Exception on metric export", e);
 
                     throw e;

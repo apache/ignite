@@ -50,7 +50,7 @@ public class BPlusMetaIO extends PageIO {
     private static final int FLAGS_OFFSET = INLINE_SIZE_OFFSET + 2;
 
     /** */
-    private static final int CREATED_VER_OFFSET = FLAGS_OFFSET + 8;
+    private static final int CREATED_VER_OFFSET = FLAGS_OFFSET + Long.BYTES;
 
     /** */
     private static final int REFS_OFFSET = CREATED_VER_OFFSET + IgniteProductVersion.SIZE_IN_BYTES;
@@ -123,8 +123,8 @@ public class BPlusMetaIO extends PageIO {
      * @param pageSize Page size.
      * @return Max levels possible for this page size.
      */
-    private int getMaxLevels(long pageAddr, int pageSize) {
-        return (pageSize - refsOff) / 8;
+    public int getMaxLevels(long pageAddr, int pageSize) {
+        return (pageSize - refsOff) / Long.BYTES;
     }
 
     /**
@@ -145,7 +145,7 @@ public class BPlusMetaIO extends PageIO {
      * @return Offset for page reference.
      */
     private int offset(int lvl) {
-        return lvl * 8 + refsOff;
+        return lvl * Long.BYTES + refsOff;
     }
 
     /**
@@ -344,6 +344,11 @@ public class BPlusMetaIO extends PageIO {
             .a(",\n\tinlineSize=").a(getInlineSize(addr))
             .a("\n]");
             //TODO print firstPageIds by level
+    }
+
+    /** {@inheritDoc} */
+    @Override public int getFreeSpace(int pageSize, long pageAddr) {
+        return (getMaxLevels(pageAddr, pageSize) - getLevelsCount(pageAddr)) * Long.BYTES;
     }
 
     /**

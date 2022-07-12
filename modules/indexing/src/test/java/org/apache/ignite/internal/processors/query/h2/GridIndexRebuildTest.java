@@ -67,7 +67,7 @@ public class GridIndexRebuildTest extends GridCommonAbstractTest {
     public static final String SECOND_CACHE = "cache2";
 
     /** */
-    private final ListeningTestLogger listeningLog = new ListeningTestLogger(false, log);
+    private final ListeningTestLogger listeningLog = new ListeningTestLogger(log);
 
     /** {@inheritDoc} */
     @Override protected void beforeTest() throws Exception {

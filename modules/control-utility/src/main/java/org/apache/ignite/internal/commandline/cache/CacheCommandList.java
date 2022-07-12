@@ -87,7 +87,17 @@ public enum CacheCommandList {
     /**
      * Index force rebuild.
      */
-    INDEX_FORCE_REBUILD("indexes_force_rebuild", new CacheIndexesForceRebuild());
+    INDEX_FORCE_REBUILD("indexes_force_rebuild", new CacheIndexesForceRebuild()),
+
+    /**
+     * Enable, disable or show status for cache metrics.
+     */
+    METRICS("metrics", new CacheMetrics()),
+
+    /**
+     * Schedule index rebuild via the maintenance mode.
+     */
+    INDEX_REBUILD("schedule_indexes_rebuild", new CacheScheduleIndexesRebuild());
 
     /** Enumerated values. */
     private static final CacheCommandList[] VALS = values();

@@ -25,6 +25,8 @@ import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCache;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
+import org.apache.ignite.internal.util.typedef.F;
+import org.apache.ignite.internal.util.typedef.G;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgniteRunnable;
 import org.apache.ignite.spi.communication.tcp.TcpCommunicationSpi;
@@ -85,6 +87,9 @@ public class IgniteVariousConnectionNumberTest extends GridCommonAbstractTest {
         ccfg.setWriteSynchronizationMode(FULL_SYNC);
 
         ignite(0).createCache(ccfg);
+
+        F.view(G.allGrids(), ignite -> ignite.cluster().localNode().isClient())
+            .forEach(ignite -> awaitCacheOnClient(ignite, ccfg.getName()));
 
         for (int i = 0; i < 10; i++) {
             log.info("Iteration: " + i);

@@ -260,6 +260,9 @@ public class DynamicEnableIndexingConcurrentSelfTest extends DynamicEnableIndexi
         srv1.cluster().state(ClusterState.ACTIVE);
 
         createCache(srv1);
+
+        awaitCacheOnClient(grid(4), POI_CACHE_NAME);
+
         loadData(srv1, 0, NUM_ENTRIES);
 
         CountDownLatch idxLatch = blockIndexing(srv1);

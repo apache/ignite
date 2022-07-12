@@ -140,16 +140,14 @@ public class OdbcMessageParser implements ClientListenerMessageParser {
                 break;
             }
 
-            case OdbcRequest.STREAMING_BATCH:
-            {
+            case OdbcRequest.STREAMING_BATCH: {
                 String schema = reader.readString();
 
                 int num = reader.readInt();
 
                 ArrayList<OdbcQuery> queries = new ArrayList<>(num);
 
-                for (int i = 0; i < num; ++i)
-                {
+                for (int i = 0; i < num; ++i) {
                     OdbcQuery qry = new OdbcQuery();
                     qry.readBinary(reader);
 
@@ -267,7 +265,8 @@ public class OdbcMessageParser implements ClientListenerMessageParser {
         if (ver.compareTo(OdbcConnectionContext.VER_2_1_5) < 0) {
             writer.writeByte((byte)(msg.status() == ClientListenerResponse.STATUS_SUCCESS ?
                 ClientListenerResponse.STATUS_SUCCESS : ClientListenerResponse.STATUS_FAILED));
-        } else
+        }
+        else
             writer.writeInt(msg.status());
 
         if (msg.status() != ClientListenerResponse.STATUS_SUCCESS) {

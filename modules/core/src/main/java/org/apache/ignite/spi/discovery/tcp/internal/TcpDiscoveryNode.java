@@ -179,8 +179,8 @@ public class TcpDiscoveryNode extends GridMetadataAwareAdapter implements Ignite
         int discPort,
         DiscoveryMetricsProvider metricsProvider,
         IgniteProductVersion ver,
-        Serializable consistentId)
-    {
+        Serializable consistentId
+    ) {
         assert id != null;
         assert metricsProvider != null;
         assert ver != null;

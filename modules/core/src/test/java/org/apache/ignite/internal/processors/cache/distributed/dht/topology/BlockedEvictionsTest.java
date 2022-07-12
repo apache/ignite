@@ -227,7 +227,8 @@ public class BlockedEvictionsTest extends GridCommonAbstractTest {
                             // No-op.
                         }
                     }, true).get(5_000);
-                } catch (IgniteCheckedException e) {
+                }
+                catch (IgniteCheckedException e) {
                     fail(X.getFullStackTrace(e));
                 }
             }
@@ -262,7 +263,8 @@ public class BlockedEvictionsTest extends GridCommonAbstractTest {
 
         try {
             ref.get().get(10_000);
-        } catch (IgniteFutureTimeoutCheckedException e) {
+        }
+        catch (IgniteFutureTimeoutCheckedException e) {
             fail(X.getFullStackTrace(e));
         }
 
@@ -305,7 +307,8 @@ public class BlockedEvictionsTest extends GridCommonAbstractTest {
 
         try {
             ref.get().get(10_000);
-        } catch (IgniteFutureTimeoutCheckedException e) {
+        }
+        catch (IgniteFutureTimeoutCheckedException e) {
             fail(X.getFullStackTrace(e));
         }
 

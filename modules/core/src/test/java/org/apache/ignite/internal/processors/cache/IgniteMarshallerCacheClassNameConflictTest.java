@@ -122,7 +122,8 @@ public class IgniteMarshallerCacheClassNameConflictTest extends GridCommonAbstra
 
                 try {
                     startLatch.await();
-                } catch (InterruptedException e) {
+                }
+                catch (InterruptedException e) {
                     e.printStackTrace();
                 }
 
@@ -143,7 +144,8 @@ public class IgniteMarshallerCacheClassNameConflictTest extends GridCommonAbstra
 
                 try {
                     startLatch.await();
-                } catch (InterruptedException e) {
+                }
+                catch (InterruptedException e) {
                     e.printStackTrace();
                 }
 

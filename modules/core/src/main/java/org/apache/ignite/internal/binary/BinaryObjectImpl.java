@@ -348,7 +348,8 @@ public final class BinaryObjectImpl extends BinaryObjectExImpl implements Extern
             int len = BinaryPrimitives.readInt(arr, start + GridBinaryMarshaller.DFLT_HDR_LEN + 1);
 
             return start + GridBinaryMarshaller.DFLT_HDR_LEN + len + 5;
-        } else
+        }
+        else
             return start + GridBinaryMarshaller.DFLT_HDR_LEN;
     }
 

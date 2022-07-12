@@ -266,7 +266,7 @@ public class LongRunningQueryTest extends AbstractIndexingCommonTest {
      * @return Test logger.
      */
     private ListeningTestLogger testLog() {
-        ListeningTestLogger testLog = new ListeningTestLogger(false, log);
+        ListeningTestLogger testLog = new ListeningTestLogger(log);
 
         GridTestUtils.setFieldValue(((IgniteH2Indexing)grid().context().query().getIndexing()).longRunningQueries(),
             "log", testLog);

@@ -71,7 +71,7 @@ public class TransactionsMXBeanImplTest extends GridCommonAbstractTest {
     @Override protected void beforeTestsStarted() throws Exception {
         super.beforeTestsStarted();
 
-        testLog = new ListeningTestLogger(false, log);
+        testLog = new ListeningTestLogger(log);
     }
 
     /** {@inheritDoc} */

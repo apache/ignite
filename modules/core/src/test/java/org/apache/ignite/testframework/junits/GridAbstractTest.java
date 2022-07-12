@@ -128,6 +128,7 @@ import org.apache.ignite.testframework.junits.multijvm.IgniteProcessProxy;
 import org.apache.ignite.thread.IgniteThread;
 import org.apache.log4j.ConsoleAppender;
 import org.apache.log4j.Level;
+import org.apache.log4j.LogManager;
 import org.apache.log4j.Logger;
 import org.apache.log4j.PatternLayout;
 import org.apache.log4j.Priority;
@@ -198,10 +199,10 @@ public abstract class GridAbstractTest extends JUnitAssertAware {
     private static final int DFLT_TOP_WAIT_TIMEOUT = 2000;
 
     /** */
-    private static final transient Map<Class<?>, IgniteTestResources> tests = new ConcurrentHashMap<>();
+    private static final Map<Class<?>, IgniteTestResources> tests = new ConcurrentHashMap<>();
 
     /** Loggers with changed log level for test's purposes. */
-    private static final transient Map<Logger, Level> changedLevels = new ConcurrentHashMap<>();
+    private static final Map<Logger, Level> changedLevels = new ConcurrentHashMap<>();
 
     /** */
     private static final MemoryMXBean memoryMxBean = ManagementFactory.getMemoryMXBean();
@@ -257,16 +258,16 @@ public abstract class GridAbstractTest extends JUnitAssertAware {
         .around(runRule);
 
     /** */
-    private static transient boolean startGrid;
+    private static boolean startGrid;
 
     /** */
-    protected static transient IgniteLogger log;
+    protected static IgniteLogger log;
 
     /** */
-    private static transient ClassLoader clsLdr;
+    private static ClassLoader clsLdr;
 
     /** */
-    private static transient boolean stopGridErr;
+    private static boolean stopGridErr;
 
     /** Timestamp for tests. */
     private static long ts = System.currentTimeMillis();
@@ -344,8 +345,8 @@ public abstract class GridAbstractTest extends JUnitAssertAware {
      */
     protected void afterTest() throws Exception {
         try {
-            for (Logger logger : changedLevels.keySet())
-                logger.setLevel(changedLevels.get(logger));
+            for (Map.Entry<Logger, Level> entry : changedLevels.entrySet())
+                entry.getKey().setLevel(entry.getValue());
         }
         finally {
             changedLevels.clear();
@@ -457,13 +458,15 @@ public abstract class GridAbstractTest extends JUnitAssertAware {
     }
 
     /**
-     * Sets the log level for root logger ({@link #log}) to {@link Level#DEBUG}. The log level will be resetted to
+     * Sets the log level for logger ({@link #log}) to {@link Level#DEBUG}. The log level will be resetted to
      * default in {@link #afterTest()}.
      */
-    protected final void setRootLoggerDebugLevel() {
-        Logger logger = Logger.getRootLogger();
+    protected final void setLoggerDebugLevel() {
+        Logger logger = LogManager.getLogger("org.apache.ignite");
 
-        assertNull(logger + " level: " + Level.DEBUG, changedLevels.put(logger, logger.getLevel()));
+        Level lvl = logger.getLevel() == null ? LogManager.getRootLogger().getLevel() : logger.getLevel();
+
+        assertNull(logger + " level: " + Level.DEBUG, changedLevels.put(logger, lvl));
 
         logger.setLevel(Level.DEBUG);
     }
@@ -681,7 +684,7 @@ public abstract class GridAbstractTest extends JUnitAssertAware {
     }
 
     /** */
-    private void beforeFirstTest() throws Exception {
+    protected void beforeFirstTest() throws Exception {
         sharedStaticIpFinder = new TcpDiscoveryVmIpFinder(true);
 
         clsLdr = Thread.currentThread().getContextClassLoader();
@@ -2109,9 +2112,8 @@ public abstract class GridAbstractTest extends JUnitAssertAware {
     /**
      * @return New cache configuration with modified defaults.
      */
-    @SuppressWarnings("unchecked")
-    public static CacheConfiguration defaultCacheConfiguration() {
-        CacheConfiguration cfg = new CacheConfiguration(DEFAULT_CACHE_NAME);
+    public static <K, V> CacheConfiguration<K, V> defaultCacheConfiguration() {
+        CacheConfiguration<K, V> cfg = new CacheConfiguration<>(DEFAULT_CACHE_NAME);
 
         if (MvccFeatureChecker.forcedMvcc())
             cfg.setAtomicityMode(TRANSACTIONAL_SNAPSHOT);
@@ -2400,13 +2402,8 @@ public abstract class GridAbstractTest extends JUnitAssertAware {
     /**
      * @return Test resources.
      */
-    private synchronized IgniteTestResources getIgniteTestResources() throws IgniteCheckedException {
-        IgniteTestResources rsrcs = tests.get(getClass());
-
-        if (rsrcs == null)
-            tests.put(getClass(), rsrcs = new IgniteTestResources());
-
-        return rsrcs;
+    private IgniteTestResources getIgniteTestResources() {
+        return tests.computeIfAbsent(getClass(), cls -> new IgniteTestResources());
     }
 
     /**
@@ -2765,7 +2762,7 @@ public abstract class GridAbstractTest extends JUnitAssertAware {
     /**
      *
      */
-    private static interface WriteReplaceOwner {
+    private interface WriteReplaceOwner {
         /**
          *
          */
@@ -2862,7 +2859,7 @@ public abstract class GridAbstractTest extends JUnitAssertAware {
     }
 
     /** */
-    public static interface TestIgniteCallable<R> extends Serializable {
+    public interface TestIgniteCallable<R> extends Serializable {
         /**
          * @param ignite Ignite.
          */
@@ -2919,7 +2916,7 @@ public abstract class GridAbstractTest extends JUnitAssertAware {
     }
 
     /** */
-    public static interface TestCacheCallable<K, V, R> extends Serializable {
+    public interface TestCacheCallable<K, V, R> extends Serializable {
         /**
          * @param ignite Ignite.
          * @param cache Cache.

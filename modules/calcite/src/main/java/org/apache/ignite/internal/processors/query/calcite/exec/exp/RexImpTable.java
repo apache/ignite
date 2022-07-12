@@ -2532,7 +2532,8 @@ public class RexImpTable {
                             Expressions.constant(call.getOperator().getName(), String.class));
                         expr = Expressions.call(queryable,
                             BuiltInMethod.QUERYABLE_AS_ENUMERABLE.method);
-                    } else {
+                    }
+                    else {
                         expr = Expressions.call(expr,
                             BuiltInMethod.SCANNABLE_TABLE_SCAN.method,
                             translator.getRoot());

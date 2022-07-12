@@ -136,7 +136,9 @@ public class ClientCacheBenchmark {
 
         int thCnt = workers.size();
 
-        for (TestThread t : workers) { total += t.iters; }
+        for (TestThread t : workers) {
+            total += t.iters;
+        }
 
         double timeSpent = ((double)(System.currentTimeMillis() - startTime)) / 1000;
 

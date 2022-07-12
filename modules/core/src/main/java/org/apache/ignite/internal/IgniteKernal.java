@@ -3150,6 +3150,23 @@ public class IgniteKernal implements IgniteEx, Externalizable {
         }
     }
 
+    /** {@inheritDoc} */
+    @Override public <T> IgniteSet<T> set(String name, int cacheId, boolean collocated, boolean separated) throws IgniteException {
+        guard();
+
+        try {
+            checkClusterState();
+
+            return ctx.dataStructures().set(name, cacheId, collocated, separated);
+        }
+        catch (IgniteCheckedException e) {
+            throw U.convertException(e);
+        }
+        finally {
+            unguard();
+        }
+    }
+
     /**
      * The {@code ctx.gateway().readLock()} is used underneath.
      */

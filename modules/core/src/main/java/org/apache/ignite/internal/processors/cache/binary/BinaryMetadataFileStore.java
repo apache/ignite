@@ -46,6 +46,8 @@ import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.internal.util.worker.GridWorker;
 import org.apache.ignite.thread.IgniteThread;
 
+import static org.apache.ignite.internal.processors.cache.persistence.file.FilePageStoreManager.TMP_SUFFIX;
+
 /**
  * Class handles saving/restoring binary metadata to/from disk.
  *
@@ -142,7 +144,7 @@ class BinaryMetadataFileStore {
             return;
 
         try {
-            File file = new File(metadataDir, binMeta.typeId() + ".bin");
+            File file = new File(metadataDir, BinaryUtils.binaryMetaFileName(binMeta.typeId()));
 
             byte[] marshalled = U.marshal(ctx, binMeta);
 
@@ -177,7 +179,7 @@ class BinaryMetadataFileStore {
         if (!enabled)
             return;
 
-        File file = new File(metadataDir, typeId + ".bin");
+        File file = new File(metadataDir, BinaryUtils.binaryMetaFileName(typeId));
 
         if (!file.delete()) {
             final String msg = "Failed to remove metadata for typeId: " + typeId;
@@ -201,16 +203,29 @@ class BinaryMetadataFileStore {
         if (!enabled)
             return;
 
-        for (File file : metadataDir.listFiles()) {
-            try (FileInputStream in = new FileInputStream(file)) {
-                BinaryMetadata meta = U.unmarshal(ctx.config().getMarshaller(), in, U.resolveClassLoader(ctx.config()));
+        for (File file : metadataDir.listFiles())
+            restoreMetadata(file);
+    }
 
-                metadataLocCache.put(meta.typeId(), new BinaryMetadataHolder(meta, 0, 0));
-            }
-            catch (Exception e) {
-                U.warn(log, "Failed to restore metadata from file: " + file.getName() +
-                    "; exception was thrown: " + e.getMessage());
-            }
+    /**
+     * Restores single type metadata.
+     *
+     * @param typeId Type identifier.
+     */
+    void restoreMetadata(int typeId) {
+        restoreMetadata(new File(metadataDir, BinaryUtils.binaryMetaFileName(typeId)));
+    }
+
+    /** */
+    private void restoreMetadata(File file) {
+        try (FileInputStream in = new FileInputStream(file)) {
+            BinaryMetadata meta = U.unmarshal(ctx.config().getMarshaller(), in, U.resolveClassLoader(ctx.config()));
+
+            metadataLocCache.put(meta.typeId(), new BinaryMetadataHolder(meta, 0, 0));
+        }
+        catch (Exception e) {
+            U.warn(log, "Failed to restore metadata from file: " + file.getName() +
+                "; exception was thrown: " + e.getMessage());
         }
     }
 
@@ -238,7 +253,7 @@ class BinaryMetadataFileStore {
      * @param typeId typeId of BinaryMetadata to be read.
      */
     private BinaryMetadata readMetadata(int typeId) {
-        File file = new File(metadataDir, Integer.toString(typeId) + ".bin");
+        File file = new File(metadataDir, BinaryUtils.binaryMetaFileName(typeId));
 
         if (!file.exists())
             return null;
@@ -325,7 +340,7 @@ class BinaryMetadataFileStore {
             "binary_meta"
         ), consistendId);
 
-        File legacyTmpDir = new File(legacyDir.toString() + ".tmp");
+        File legacyTmpDir = new File(legacyDir.toString() + TMP_SUFFIX);
 
         if (legacyTmpDir.exists() && !IgniteUtils.delete(legacyTmpDir))
             throw new IgniteCheckedException("Failed to delete legacy binary metadata dir: "
@@ -443,7 +458,7 @@ class BinaryMetadataFileStore {
                     body0();
                 }
                 catch (InterruptedException e) {
-                    if (!isCancelled) {
+                    if (!isCancelled.get()) {
                         ctx.failure().process(new FailureContext(FailureType.SYSTEM_WORKER_TERMINATION, e));
 
                         throw e;

@@ -121,7 +121,8 @@ public class EncryptedCacheDestroyTest extends AbstractEncryptionTest {
             assertNull(encKey);
 
             assertNull(metaStore.readRaw(ENCRYPTION_KEYS_PREFIX + grpId));
-        } else {
+        }
+        else {
             assertNotNull(encKey);
 
             assertNotNull(metaStore.readRaw(ENCRYPTION_KEYS_PREFIX + grpId));

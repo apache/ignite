@@ -52,19 +52,27 @@ public class BitVector implements Cloneable {
     private final long[] words;
 
     /** */
-    public final long[] words() { return words; }
+    public final long[] words() {
+        return words;
+    }
 
     /** */
-    public final int wordCount() { return words.length; }
+    public final int wordCount() {
+        return words.length;
+    }
 
     /** */
-    public final int byteCount() { return wordCount() * BYTES_PER_WORD; }
+    public final int byteCount() {
+        return wordCount() * BYTES_PER_WORD;
+    }
 
     /** the width of a register in bits (this cannot be more than 64 (the word size)) */
     private final int registerWidth;
 
     /** */
-    public final int registerWidth() { return registerWidth; }
+    public final int registerWidth() {
+        return registerWidth;
+    }
 
     /** Count. */
     private final long count;

@@ -65,6 +65,9 @@ public class GridRunningQueryInfo {
     /** Request ID. */
     private long reqId;
 
+    /** Subject ID. */
+    private final UUID subjId;
+
     /**
      * Constructor.
      *
@@ -77,6 +80,7 @@ public class GridRunningQueryInfo {
      * @param startTimeNanos Query start time in nanoseconds.
      * @param cancel Query cancel.
      * @param loc Local query flag.
+     * @param subjId Subject ID.
      */
     public GridRunningQueryInfo(
         long id,
@@ -88,7 +92,8 @@ public class GridRunningQueryInfo {
         long startTimeNanos,
         GridQueryCancel cancel,
         boolean loc,
-        String qryInitiatorId
+        String qryInitiatorId,
+        UUID subjId
     ) {
         this.id = id;
         this.nodeId = nodeId;
@@ -101,6 +106,7 @@ public class GridRunningQueryInfo {
         this.loc = loc;
         this.span = MTC.span();
         this.qryInitiatorId = qryInitiatorId;
+        this.subjId = subjId;
     }
 
     /**
@@ -220,5 +226,10 @@ public class GridRunningQueryInfo {
     /** @param reqId Request ID. */
     public void requestId(long reqId) {
         this.reqId = reqId;
+    }
+
+    /** @return Subject ID. */
+    public UUID subjectId() {
+        return subjId;
     }
 }

@@ -85,7 +85,8 @@ public final class StringEncoderPreprocessor<K, V> extends EncoderPreprocessor<K
                     res[i] = encodingValues[i].get(tmpObj);
                 else
                     throw new UnknownCategorialValueException(tmpObj.toString());
-            } else {
+            }
+            else {
                 if (tmpObj instanceof Number)
                     res[i] = (double)tmpObj;
                 else

@@ -427,6 +427,8 @@ public class CacheEntryProcessorNonSerializableTest extends GridCommonAbstractTe
 
         grid(0).createCache(ccfg);
 
+        awaitCacheOnClient(cln, ccfg.getName());
+
         IgniteCache clnCache;
 
         if (ccfg.getNearConfiguration() != null)

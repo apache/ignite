@@ -93,27 +93,37 @@ public class HLLMetadata implements IHLLMetadata {
     /* (non-Javadoc)
      * @see net.agkn.hll.serialization.IHLLMetadata#schemaVersion()
      */
-    @Override public int schemaVersion() { return schemaVersion; }
+    @Override public int schemaVersion() {
+        return schemaVersion;
+    }
 
     /* (non-Javadoc)
      * @see net.agkn.hll.serialization.IHLLMetadata#HLLType()
      */
-    @Override public HLLType HLLType() { return type; }
+    @Override public HLLType HLLType() {
+        return type;
+    }
 
     /* (non-Javadoc)
      * @see net.agkn.hll.serialization.IHLLMetadata#registerCountLog2()
      */
-    @Override public int registerCountLog2() { return registerCountLog2; }
+    @Override public int registerCountLog2() {
+        return registerCountLog2;
+    }
 
     /* (non-Javadoc)
      * @see net.agkn.hll.serialization.IHLLMetadata#registerWidth()
      */
-    @Override public int registerWidth() { return registerWidth; }
+    @Override public int registerWidth() {
+        return registerWidth;
+    }
 
     /* (non-Javadoc)
      * @see net.agkn.hll.serialization.IHLLMetadata#log2ExplicitCutoff()
      */
-    @Override public int log2ExplicitCutoff() { return log2ExplicitCutoff; }
+    @Override public int log2ExplicitCutoff() {
+        return log2ExplicitCutoff;
+    }
 
     /* (non-Javadoc)
      * @see net.agkn.hll.serialization.IHLLMetadata#explicitOff()
@@ -133,7 +143,9 @@ public class HLLMetadata implements IHLLMetadata {
     /* (non-Javadoc)
      * @see net.agkn.hll.serialization.IHLLMetadata#sparseEnabled()
      */
-    @Override public boolean sparseEnabled() { return sparseEnabled; }
+    @Override public boolean sparseEnabled() {
+        return sparseEnabled;
+    }
 
     /* (non-Javadoc)
      * @see java.lang.Object#toString()

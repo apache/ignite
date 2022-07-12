@@ -109,6 +109,8 @@ public class DynamicEnableIndexingBasicSelfTest extends DynamicEnableIndexingAbs
 
         node().getOrCreateCache(ccfg);
 
+        awaitCacheOnClient(grid(IDX_CLI_NEAR_ONLY), POI_CACHE_NAME);
+
         if (atomicityMode != CacheAtomicityMode.TRANSACTIONAL_SNAPSHOT)
             grid(IDX_CLI_NEAR_ONLY).getOrCreateNearCache(POI_CACHE_NAME, new NearCacheConfiguration<>());
     }

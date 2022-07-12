@@ -116,6 +116,8 @@ public class IgniteSnapshotManagerSelfTest extends AbstractSnapshotSelfTest {
     @Test
     public void testSnapshotLocalPartitionMultiCpWithLoad() throws Exception {
         int valMultiplier = 2;
+        int afterSnpValMultiplier = 3;
+
         CountDownLatch slowCopy = new CountDownLatch(1);
 
         // Start grid node with data before each test.
@@ -146,7 +148,7 @@ public class IgniteSnapshotManagerSelfTest extends AbstractSnapshotSelfTest {
             cctx.localNodeId(),
             F.asMap(CU.cacheId(DEFAULT_CACHE_NAME), null),
             encryption,
-            new DelegateSnapshotSender(log, mgr.snapshotExecutorService(), mgr.localSnapshotSenderFactory().apply(SNAPSHOT_NAME)) {
+            new DelegateSnapshotSender(log, mgr.snapshotExecutorService(), mgr.localSnapshotSenderFactory().apply(SNAPSHOT_NAME, null)) {
                 @Override public void sendPart0(File part, String cacheDirName, GroupPartitionId pair, Long length) {
                     try {
                         U.await(slowCopy);
@@ -201,7 +203,7 @@ public class IgniteSnapshotManagerSelfTest extends AbstractSnapshotSelfTest {
 
             // Change data after snapshot.
             for (int i = 0; i < CACHE_KEYS_RANGE; i++)
-                ig.cache(DEFAULT_CACHE_NAME).put(i, new Account(i, 3 * i));
+                ig.cache(DEFAULT_CACHE_NAME).put(i, new Account(i, afterSnpValMultiplier * i));
 
             // Snapshot on the next checkpoint must copy page to delta file before write it to a partition.
             forceCheckpoint(ig);
@@ -213,6 +215,24 @@ public class IgniteSnapshotManagerSelfTest extends AbstractSnapshotSelfTest {
         finally {
             loadFut.cancel();
         }
+
+        // Checks that ClusterSnapshotRecord correctly splits WAL on 2 areas - before and after snapshot.
+        checkSnpWalRecords(ig, SNAPSHOT_NAME, (e, afterSnp) -> {
+            if (e.cacheId() == ig.cachex(DEFAULT_CACHE_NAME).context().cacheId()) {
+                CacheObjectContext cacheObjCtx = ig.cachex(DEFAULT_CACHE_NAME).context().cacheObjectContext();
+
+                int key = e.key().value(cacheObjCtx, false);
+                Account val = e.value().value(cacheObjCtx, false);
+
+                boolean entryBeforeSnp = (key == val.id && key == val.balance) || (key == val.id && key == val.balance / valMultiplier);
+
+                boolean entryAfterSnp = (key == val.id && key == val.balance / afterSnpValMultiplier) || (key != val.id);
+
+                assertTrue(
+                    "CHECK ENTRY: key=" + key + " val=" + val,
+                    afterSnp && entryAfterSnp || !afterSnp && entryBeforeSnp);
+            }
+        });
 
         // Now can stop the node and check created snapshots.
         stopGrid(0);
@@ -268,7 +288,7 @@ public class IgniteSnapshotManagerSelfTest extends AbstractSnapshotSelfTest {
             SNAPSHOT_NAME,
             F.asMap(CU.cacheId(DEFAULT_CACHE_NAME), null),
             encryption,
-            mgr.localSnapshotSenderFactory().apply(SNAPSHOT_NAME));
+            mgr.localSnapshotSenderFactory().apply(SNAPSHOT_NAME, null));
 
         // Check the right exception thrown.
         assertThrowsAnyCause(log,
@@ -293,7 +313,7 @@ public class IgniteSnapshotManagerSelfTest extends AbstractSnapshotSelfTest {
             parts,
             encryption,
             new DelegateSnapshotSender(log, mgr0.snapshotExecutorService(),
-                mgr0.localSnapshotSenderFactory().apply(SNAPSHOT_NAME)) {
+                mgr0.localSnapshotSenderFactory().apply(SNAPSHOT_NAME, null)) {
                 @Override public void sendPart0(File part, String cacheDirName, GroupPartitionId pair, Long length) {
                     if (pair.getPartitionId() == 0)
                         throw new IgniteException(err_msg + pair);
@@ -328,7 +348,7 @@ public class IgniteSnapshotManagerSelfTest extends AbstractSnapshotSelfTest {
             SNAPSHOT_NAME,
             F.asMap(CU.cacheId(DEFAULT_CACHE_NAME), null),
             encryption,
-            new DelegateSnapshotSender(log, mgr.snapshotExecutorService(), mgr.localSnapshotSenderFactory().apply(SNAPSHOT_NAME)) {
+            new DelegateSnapshotSender(log, mgr.snapshotExecutorService(), mgr.localSnapshotSenderFactory().apply(SNAPSHOT_NAME, null)) {
                 @Override public void sendPart0(File part, String cacheDirName, GroupPartitionId pair, Long length) {
                     try {
                         U.await(cpLatch);

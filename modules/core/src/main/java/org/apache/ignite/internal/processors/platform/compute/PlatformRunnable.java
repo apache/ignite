@@ -48,7 +48,8 @@ public class PlatformRunnable extends PlatformAbstractFunc implements IgniteRunn
     @Override public void run() {
         try {
             invoke();
-        } catch (IgniteCheckedException e) {
+        }
+        catch (IgniteCheckedException e) {
             throw U.convertException(e);
         }
     }

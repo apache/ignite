@@ -79,8 +79,8 @@ class ZkDiscoveryEventsData implements Serializable {
         UUID clusterId,
         long clusterStartTime,
         long topVer,
-        TreeMap<Long, ZkDiscoveryEventData> evts)
-    {
+        TreeMap<Long, ZkDiscoveryEventData> evts
+    ) {
         this.clusterId = clusterId;
         this.clusterStartTime = clusterStartTime;
         this.topVer = topVer;

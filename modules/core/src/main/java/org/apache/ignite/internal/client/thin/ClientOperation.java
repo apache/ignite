@@ -144,17 +144,20 @@ public enum ClientOperation {
     /** Continuous query event. */
     QUERY_CONTINUOUS_EVENT(2007, ClientNotificationType.CONTINUOUS_QUERY_EVENT),
 
-    /** Get binary type. */
-    GET_BINARY_TYPE(3002),
+    /** Get binary type name. */
+    GET_BINARY_TYPE_NAME(3000),
 
     /** Register binary type name. */
     REGISTER_BINARY_TYPE_NAME(3001),
 
+    /** Get binary type. */
+    GET_BINARY_TYPE(3002),
+
     /** Put binary type. */
     PUT_BINARY_TYPE(3003),
 
-    /** Get binary type name. */
-    GET_BINARY_TYPE_NAME(3000),
+    /** Get binary configuration. */
+    GET_BINARY_CONFIGURATION(3004),
 
     /** Start new transaction. */
     TX_START(4000),
@@ -193,7 +196,73 @@ public enum ClientOperation {
     SERVICE_GET_DESCRIPTORS(7001),
 
     /** Get service descriptors. */
-    SERVICE_GET_DESCRIPTOR(7002);
+    SERVICE_GET_DESCRIPTOR(7002),
+
+    /** Get or create an AtomicLong by name. */
+    ATOMIC_LONG_CREATE(9000),
+
+    /** Remove an AtomicLong. */
+    ATOMIC_LONG_REMOVE(9001),
+
+    /** Check if AtomicLong exists. */
+    ATOMIC_LONG_EXISTS(9002),
+
+    /** AtomicLong.get. */
+    ATOMIC_LONG_VALUE_GET(9003),
+
+    /** AtomicLong.addAndGet (also covers incrementAndGet, getAndIncrement, getAndAdd, decrementAndGet, getAndDecrement).  */
+    ATOMIC_LONG_VALUE_ADD_AND_GET(9004),
+
+    /** AtomicLong.getAndSet. */
+    ATOMIC_LONG_VALUE_GET_AND_SET(9005),
+
+    /** AtomicLong.compareAndSet. */
+    ATOMIC_LONG_VALUE_COMPARE_AND_SET(9006),
+
+    /** AtomicLong.compareAndSetAndGet. */
+    ATOMIC_LONG_VALUE_COMPARE_AND_SET_AND_GET(9007),
+
+    /** Create an IgniteSet. */
+    OP_SET_GET_OR_CREATE(9010),
+
+    /** Remove an IgniteSet. */
+    OP_SET_CLOSE(9011),
+
+    /** Check if IgniteSet exists. */
+    OP_SET_EXISTS(9012),
+
+    /** IgniteSet.add. */
+    OP_SET_VALUE_ADD(9013),
+
+    /** IgniteSet.addAll. */
+    OP_SET_VALUE_ADD_ALL(9014),
+
+    /** IgniteSet.remove. */
+    OP_SET_VALUE_REMOVE(9015),
+
+    /** IgniteSet.removeAll. */
+    OP_SET_VALUE_REMOVE_ALL(9016),
+
+    /** IgniteSet.contains. */
+    OP_SET_VALUE_CONTAINS(9017),
+
+    /** IgniteSet.containsAll. */
+    OP_SET_VALUE_CONTAINS_ALL(9018),
+
+    /** IgniteSet.retainAll. */
+    OP_SET_VALUE_RETAIN_ALL(9019),
+
+    /** IgniteSet.size. */
+    OP_SET_SIZE(9020),
+
+    /** IgniteSet.clear. */
+    OP_SET_CLEAR(9021),
+
+    /** IgniteSet.iterator. */
+    OP_SET_ITERATOR_START(9022),
+
+    /** IgniteSet.iterator page. */
+    OP_SET_ITERATOR_GET_PAGE(9023);
 
     /** Code. */
     private final int code;
@@ -350,6 +419,67 @@ public enum ClientOperation {
 
             case SERVICE_GET_DESCRIPTOR:
                 return ClientOperationType.SERVICE_GET_DESCRIPTOR;
+
+            case ATOMIC_LONG_CREATE:
+                return ClientOperationType.ATOMIC_LONG_CREATE;
+
+            case ATOMIC_LONG_REMOVE:
+                return ClientOperationType.ATOMIC_LONG_REMOVE;
+
+            case ATOMIC_LONG_EXISTS:
+                return ClientOperationType.ATOMIC_LONG_EXISTS;
+
+            case ATOMIC_LONG_VALUE_GET:
+                return ClientOperationType.ATOMIC_LONG_VALUE_GET;
+
+            case ATOMIC_LONG_VALUE_ADD_AND_GET:
+                return ClientOperationType.ATOMIC_LONG_VALUE_ADD_AND_GET;
+
+            case ATOMIC_LONG_VALUE_GET_AND_SET:
+                return ClientOperationType.ATOMIC_LONG_VALUE_GET_AND_SET;
+
+            case ATOMIC_LONG_VALUE_COMPARE_AND_SET:
+            case ATOMIC_LONG_VALUE_COMPARE_AND_SET_AND_GET:
+                return ClientOperationType.ATOMIC_LONG_VALUE_COMPARE_AND_SET;
+
+            case OP_SET_GET_OR_CREATE:
+                return ClientOperationType.SET_GET_OR_CREATE;
+
+            case OP_SET_CLOSE:
+                return ClientOperationType.SET_REMOVE;
+
+            case OP_SET_EXISTS:
+                return ClientOperationType.SET_EXISTS;
+
+            case OP_SET_VALUE_ADD:
+                return ClientOperationType.SET_VALUE_ADD;
+
+            case OP_SET_VALUE_ADD_ALL:
+                return ClientOperationType.SET_VALUE_ADD_ALL;
+
+            case OP_SET_VALUE_REMOVE:
+                return ClientOperationType.SET_VALUE_REMOVE;
+
+            case OP_SET_VALUE_REMOVE_ALL:
+                return ClientOperationType.SET_VALUE_REMOVE_ALL;
+
+            case OP_SET_VALUE_CONTAINS:
+                return ClientOperationType.SET_VALUE_CONTAINS;
+
+            case OP_SET_VALUE_CONTAINS_ALL:
+                return ClientOperationType.SET_VALUE_CONTAINS_ALL;
+
+            case OP_SET_VALUE_RETAIN_ALL:
+                return ClientOperationType.SET_VALUE_RETAIN_ALL;
+
+            case OP_SET_SIZE:
+                return ClientOperationType.SET_SIZE;
+
+            case OP_SET_CLEAR:
+                return ClientOperationType.SET_CLEAR;
+
+            case OP_SET_ITERATOR_START:
+                return ClientOperationType.SET_ITERATOR;
 
             default:
                 return null;

@@ -200,9 +200,8 @@ public class GridNearCacheEntry extends GridDistributedCacheEntry {
         GridCacheVersion ver,
         GridCacheVersion dhtVer,
         UUID primaryNodeId,
-        AffinityTopologyVersion topVer)
-        throws GridCacheEntryRemovedException
-    {
+        AffinityTopologyVersion topVer
+    ) throws GridCacheEntryRemovedException {
         assert dhtVer != null;
 
         cctx.versions().onReceived(primaryNodeId, dhtVer);
@@ -245,8 +244,8 @@ public class GridNearCacheEntry extends GridDistributedCacheEntry {
         long expireTime,
         long ttl,
         UUID primaryNodeId,
-        AffinityTopologyVersion topVer)
-    {
+        AffinityTopologyVersion topVer
+    ) {
         assert dhtVer != null;
 
         cctx.versions().onReceived(primaryNodeId, dhtVer);

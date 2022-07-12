@@ -318,7 +318,8 @@ public class ReliableChannelTest {
         checkFailAfterSendOperation(cache -> {
             try {
                 cache.getAsync(0).get();
-            } catch (Exception e) {
+            }
+            catch (Exception e) {
                 throw new RuntimeException(e);
             }
         }, false);
@@ -333,7 +334,8 @@ public class ReliableChannelTest {
         checkFailAfterSendOperation(cache -> {
             try {
                 cache.getAsync(0).get();
-            } catch (Exception e) {
+            }
+            catch (Exception e) {
                 throw new RuntimeException(e);
             }
         }, true);

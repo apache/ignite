@@ -74,7 +74,7 @@ public class GridCacheLongRunningTransactionDiagnosticsTest extends GridCommonAb
             cfg.setCacheConfiguration(ccfg);
         }
 
-        ListeningTestLogger testLog = new ListeningTestLogger(false, log);
+        ListeningTestLogger testLog = new ListeningTestLogger(log);
 
         testLog.registerListener(dumpLsnr);
 

@@ -145,11 +145,13 @@ public class GridJobServicesAddNodeTest extends GridCommonAbstractTest {
         @Override public Boolean call() throws Exception {
             try {
                 return ignite.services().serviceDescriptors().iterator().hasNext();
-            } catch (Exception e) {
+            }
+            catch (Exception e) {
                 e.printStackTrace();
 
                 return false;
-            } finally {
+            }
+            finally {
                 Thread.sleep(10);
             }
         }

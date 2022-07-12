@@ -391,7 +391,7 @@ public class IgniteDiagnosticMessagesTest extends GridCommonAbstractTest {
     public void testTimeOutTxLock() throws Exception {
         final int longOpDumpTimeout = 500;
 
-        ListeningTestLogger testLog = new ListeningTestLogger(false, log);
+        ListeningTestLogger testLog = new ListeningTestLogger(log);
 
         IgniteLogger oldLog = GridTestUtils.getFieldValue(GridDhtLockFuture.class, "log");
 
@@ -497,7 +497,7 @@ public class IgniteDiagnosticMessagesTest extends GridCommonAbstractTest {
 
             UUID id0 = node0.cluster().localNode().id();
 
-            ListeningTestLogger testLog = this.testLog = new ListeningTestLogger(false, log);
+            ListeningTestLogger testLog = this.testLog = new ListeningTestLogger(log);
 
             String msg1 = "Cache entries [cacheId=" + CU.cacheId(DEFAULT_CACHE_NAME) +
                 ", cacheName=" + DEFAULT_CACHE_NAME + "]:";

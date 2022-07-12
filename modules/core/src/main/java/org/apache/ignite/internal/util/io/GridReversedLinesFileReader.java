@@ -96,7 +96,8 @@ public class GridReversedLinesFileReader implements Closeable {
         int lastBlockLength = (int)(totalByteLength % blockSize);
         if (lastBlockLength > 0) {
             totalBlockCount = totalByteLength / blockSize + 1;
-        } else {
+        }
+        else {
             totalBlockCount = totalByteLength / blockSize;
             if (totalByteLength > 0) {
                 lastBlockLength = blockSize;
@@ -110,22 +111,27 @@ public class GridReversedLinesFileReader implements Closeable {
         if (maxBytesPerChar == 1f) {
             // all one byte encodings are no problem
             byteDecrement = 1;
-        } else if (charset == Charset.forName("UTF-8")) {
+        }
+        else if (charset == Charset.forName("UTF-8")) {
             // UTF-8 works fine out of the box, for multibyte sequences a second UTF-8 byte can never be a newline byte
             // http://en.wikipedia.org/wiki/UTF-8
             byteDecrement = 1;
-        } else if (charset == Charset.forName("Shift_JIS")) {
+        }
+        else if (charset == Charset.forName("Shift_JIS")) {
             // Same as for UTF-8
             // http://www.herongyang.com/Unicode/JIS-Shift-JIS-Encoding.html
             byteDecrement = 1;
-        } else if (charset == Charset.forName("UTF-16BE") || charset == Charset.forName("UTF-16LE")) {
+        }
+        else if (charset == Charset.forName("UTF-16BE") || charset == Charset.forName("UTF-16LE")) {
             // UTF-16 new line sequences are not allowed as second tuple of four byte sequences,
             // however byte order has to be specified
             byteDecrement = 2;
-        } else if (charset == Charset.forName("UTF-16")) {
+        }
+        else if (charset == Charset.forName("UTF-16")) {
             throw new UnsupportedEncodingException(
                 "For UTF-16, you need to specify the byte order (use UTF-16BE or UTF-16LE)");
-        } else {
+        }
+        else {
             throw new UnsupportedEncodingException(
                 "Encoding " + charset + " is not supported yet (feel free to submit a patch)");
         }
@@ -167,7 +173,8 @@ public class GridReversedLinesFileReader implements Closeable {
             currentFilePart = currentFilePart.rollOver();
             if (currentFilePart != null) {
                 line = currentFilePart.readLine();
-            } else {
+            }
+            else {
                 // no more fileparts: we're done, leave line set to null
                 break;
             }
@@ -249,7 +256,8 @@ public class GridReversedLinesFileReader implements Closeable {
 
             if (no > 1) {
                 return new FilePart(no - 1, blockSize, leftOver);
-            } else {
+            }
+            else {
                 // NO 1 was the last FilePart, we're finished
                 if (leftOver != null) {
                     throw new IllegalStateException("Unexpected leftover of the last block: leftOverOfThisFilePart="
@@ -328,7 +336,8 @@ public class GridReversedLinesFileReader implements Closeable {
                 // create left over for next block
                 leftOver = new byte[lineLengthBytes];
                 System.arraycopy(data, 0, leftOver, 0, lineLengthBytes);
-            } else {
+            }
+            else {
                 leftOver = null;
             }
             currentLastBytePos = -1;

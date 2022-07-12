@@ -38,25 +38,25 @@ import org.jetbrains.annotations.Nullable;
 /** Snapshot task to collect snapshot metadata from the baseline nodes for given snapshot name. */
 @GridInternal
 public class SnapshotMetadataCollectorTask
-    extends ComputeTaskAdapter<String, Map<ClusterNode, List<SnapshotMetadata>>> {
+    extends ComputeTaskAdapter<SnapshotMetadataCollectorTaskArg, Map<ClusterNode, List<SnapshotMetadata>>> {
     /** Serial version uid. */
     private static final long serialVersionUID = 0L;
 
     /** {@inheritDoc} */
     @Override public @NotNull Map<? extends ComputeJob, ClusterNode> map(
         List<ClusterNode> subgrid,
-        @Nullable String snpName
+        SnapshotMetadataCollectorTaskArg arg
     ) throws IgniteException {
         Map<ComputeJob, ClusterNode> map = U.newHashMap(subgrid.size());
 
         for (ClusterNode node : subgrid) {
-            map.put(new ComputeJobAdapter(snpName) {
+            map.put(new ComputeJobAdapter() {
                 @IgniteInstanceResource
                 private transient IgniteEx ignite;
 
                 @Override public List<SnapshotMetadata> execute() throws IgniteException {
                     return ignite.context().cache().context().snapshotMgr()
-                        .readSnapshotMetadatas(snpName);
+                        .readSnapshotMetadatas(arg.snapshotName(), arg.snapshotPath());
                 }
             }, node);
         }

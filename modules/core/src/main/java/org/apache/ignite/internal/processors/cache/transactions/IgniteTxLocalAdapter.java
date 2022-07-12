@@ -1313,8 +1313,8 @@ public abstract class IgniteTxLocalAdapter extends IgniteTxAdapter implements Ig
     protected final void addInvokeResult(IgniteTxEntry txEntry,
         CacheObject cacheVal,
         GridCacheReturn ret,
-        GridCacheVersion ver)
-    {
+        GridCacheVersion ver
+    ) {
         GridCacheContext ctx = txEntry.context();
 
         Object key0 = null;

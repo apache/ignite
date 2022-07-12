@@ -205,7 +205,7 @@ public class RestorePartitionStateTest extends GridCommonAbstractTest {
 
         TIMEOUT_OUTPUT_RESTORE_PARTITION_STATE_PROGRESS = 150L;
 
-        setRootLoggerDebugLevel();
+        setLoggerDebugLevel();
 
         startGrid(0, (UnaryOperator<IgniteConfiguration>)cfg -> {
             cfg.setGridLogger(new ListeningTestLogger(log, startPartRestore, progressPartRestore, finishPartRestore));

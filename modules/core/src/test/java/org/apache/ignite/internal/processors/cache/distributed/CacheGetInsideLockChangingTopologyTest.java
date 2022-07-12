@@ -412,7 +412,8 @@ public class CacheGetInsideLockChangingTopologyTest extends GridCommonAbstractTe
                                 executeGet(txCache2);
 
                                 executeGet(atomicCache);
-                            } finally {
+                            }
+                            finally {
                                 lock.unlock();
                             }
 

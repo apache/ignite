@@ -157,7 +157,8 @@ public class IgniteCacheLocalQueryCancelOrTimeoutSelfTest extends GridCommonAbst
             qry.setTimeout(timeoutUnits, timeUnit);
 
             cursor = cache.query(qry);
-        } else {
+        }
+        else {
             cursor = cache.query(qry);
 
             ignite.scheduler().runLocal(new Runnable() {

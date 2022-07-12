@@ -188,9 +188,11 @@ public class GridFinishedFuture<T> implements IgniteInternalFuture<T> {
 
             try {
                 doneCbFut = doneCb.apply(this);
-            } catch (GridClosureException e) {
+            }
+            catch (GridClosureException e) {
                 doneCbFut = new GridFinishedFuture<>(e.unwrap());
-            } catch (RuntimeException e) {
+            }
+            catch (RuntimeException e) {
                 doneCbFut = new GridFinishedFuture<>(e);
             }
 

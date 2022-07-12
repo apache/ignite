@@ -114,7 +114,7 @@ public class CreateIndexOnInvalidDataTypeTest extends AbstractIndexingCommonTest
             sql("CREATE INDEX TEST_VAL_DATE_IDX ON TEST(VAL_DATE)");
 
             return null;
-        }, IgniteSQLException.class, "java.util.Date cannot be cast to java.sql.Date");
+        }, IgniteSQLException.class, "unexpected class");
 
         // Wait for node stop if it is initiated by FailureHandler
         U.sleep(1000);

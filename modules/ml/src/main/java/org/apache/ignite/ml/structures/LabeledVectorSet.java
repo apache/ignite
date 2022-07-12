@@ -125,7 +125,8 @@ public class LabeledVectorSet<Row extends LabeledVector> extends Dataset<Row> im
             for (int j = 0; j < colSize; j++) {
                 try {
                     data[i].features().set(j, mtx[i][j]);
-                } catch (ArrayIndexOutOfBoundsException e) {
+                }
+                catch (ArrayIndexOutOfBoundsException e) {
                     throw new NoDataException("No data in given matrix by coordinates (" + i + "," + j + ")");
                 }
             }

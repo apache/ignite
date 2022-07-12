@@ -534,6 +534,11 @@ public class IgniteProcessProxy implements IgniteEx {
     }
 
     /** {@inheritDoc} */
+    @Override public <T> IgniteSet<T> set(String name, int cacheId, boolean collocated, boolean separated) throws IgniteException {
+        throw new UnsupportedOperationException("Operation isn't supported yet.");
+    }
+
+    /** {@inheritDoc} */
     @Override public IgniteCompute compute() {
         throw new UnsupportedOperationException("Operation isn't supported yet.");
     }
@@ -643,8 +648,7 @@ public class IgniteProcessProxy implements IgniteEx {
     /** {@inheritDoc} */
     @Override public <K, V> IgniteCache<K, V> createNearCache(
         @Nullable String cacheName,
-        NearCacheConfiguration<K, V> nearCfg)
-    {
+        NearCacheConfiguration<K, V> nearCfg) {
         throw new UnsupportedOperationException("Operation isn't supported yet.");
     }
 
@@ -736,8 +740,7 @@ public class IgniteProcessProxy implements IgniteEx {
         String name,
         @Nullable T initVal,
         @Nullable S initStamp,
-        boolean create) throws IgniteException
-    {
+        boolean create) throws IgniteException {
         throw new UnsupportedOperationException("Operation isn't supported yet.");
     }
 

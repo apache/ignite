@@ -119,7 +119,8 @@ public abstract class RandomForestTrainer<L, S extends ImpurityComputer<Bootstra
             if (!init(dataset))
                 return buildComposition(Collections.emptyList());
             models = fit(dataset);
-        } catch (Exception e) {
+        }
+        catch (Exception e) {
             throw new RuntimeException(e);
         }
 
@@ -268,7 +269,8 @@ public abstract class RandomForestTrainer<L, S extends ImpurityComputer<Bootstra
         if (needSplit(cornerNode, bestSplit)) {
             List<TreeNode> children = bestSplit.get().split(cornerNode);
             learningQueue.addAll(children);
-        } else {
+        }
+        else {
             if (bestSplit.isPresent())
                 bestSplit.get().createLeaf(cornerNode);
             else {

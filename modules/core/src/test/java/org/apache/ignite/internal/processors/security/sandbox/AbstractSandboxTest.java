@@ -33,8 +33,8 @@ import javax.tools.JavaCompiler;
 import javax.tools.ToolProvider;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.internal.processors.security.AbstractSecurityTest;
+import org.apache.ignite.internal.util.lang.RunnableX;
 import org.apache.ignite.lang.IgniteCallable;
-import org.apache.ignite.testframework.GridTestUtils;
 
 import static org.apache.ignite.plugin.security.SecurityPermissionSetBuilder.ALLOW_ALL;
 import static org.apache.ignite.testframework.GridTestUtils.assertThrowsWithCause;
@@ -127,7 +127,7 @@ public abstract class AbstractSandboxTest extends AbstractSecurityTest {
     /**
      * @param r RunnableX that that runs {@link AbstractSandboxTest#controlAction()}.
      */
-    protected void runForbiddenOperation(GridTestUtils.RunnableX r, Class<? extends Throwable> cls) {
+    protected void runForbiddenOperation(RunnableX r, Class<? extends Throwable> cls) {
         System.clearProperty(PROP_NAME);
 
         assertThrowsWithCause(r, cls);

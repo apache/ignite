@@ -508,7 +508,9 @@ public class GridCacheQueryAdapter<T> implements CacheQuery<T> {
     /**
      * @return Index query description.
      */
-    @Nullable public IndexQueryDesc idxQryDesc() { return idxQryDesc; }
+    @Nullable public IndexQueryDesc idxQryDesc() {
+        return idxQryDesc;
+    }
 
     /**
      * @throws IgniteCheckedException If query is invalid.

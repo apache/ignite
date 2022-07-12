@@ -19,18 +19,20 @@ package org.apache.ignite.internal.processors.cache.consistency;
 
 import java.util.Collection;
 import java.util.Collections;
+import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 import java.util.Set;
-import java.util.TreeSet;
+import java.util.TreeMap;
 import java.util.function.BiConsumer;
 import java.util.function.Consumer;
 import java.util.stream.Collectors;
 import org.apache.ignite.Ignite;
-import org.apache.ignite.IgniteCache;
+import org.apache.ignite.binary.BinaryObject;
 import org.apache.ignite.cache.CacheEntry;
-import org.apache.ignite.cache.ReadRepairStrategy;
+import org.apache.ignite.internal.processors.cache.consistency.ReadRepairDataGenerator.InconsistentMapping;
+import org.apache.ignite.internal.processors.cache.consistency.ReadRepairDataGenerator.ReadRepairData;
 import org.apache.ignite.internal.processors.cache.distributed.near.consistency.IgniteIrreparableConsistencyViolationException;
-import org.apache.ignite.internal.util.typedef.G;
 import org.junit.Test;
 
 /**
@@ -40,236 +42,232 @@ public abstract class AbstractFullSetReadRepairTest extends AbstractReadRepairTe
     /**
      *
      */
-    protected static final Consumer<ReadRepairData> GET_CHECK_AND_FIX = (data) -> {
-        IgniteCache<Integer, Integer> cache = data.cache;
-        Set<Integer> keys = data.data.keySet();
-        boolean raw = data.raw;
-        boolean async = data.async;
-        ReadRepairStrategy strategy = data.strategy;
-
-        assert keys.size() == 1;
-
-        for (Map.Entry<Integer, InconsistentMapping> entry : data.data.entrySet()) { // Once.
-            Integer key = entry.getKey();
-            Integer fixed = entry.getValue().fixed;
-
-            Integer res;
-
-            if (raw) {
-                CacheEntry<Integer, Integer> rawEntry = async ?
-                    cache.withReadRepair(strategy).getEntryAsync(key).get() :
-                    cache.withReadRepair(strategy).getEntry(key);
-
-                res = rawEntry != null ? rawEntry.getValue() : null;
-            }
-            else
-                res = async ?
-                    cache.withReadRepair(strategy).getAsync(key).get() :
-                    cache.withReadRepair(strategy).get(key);
-
-            assertEquals(fixed, res);
+    protected static final Consumer<ReadRepairData> GET_CHECK_AND_REPAIR = (rrd) -> {
+        for (Integer key : rrd.data.keySet()) { // Once.
+            assertEqualsArraysAware(unwrapBinaryIfNeeded(rrd.data.get(key).repairedBin), get(rrd));
         }
     };
 
     /**
      *
      */
-    protected static final Consumer<ReadRepairData> GETALL_CHECK_AND_FIX = (data) -> {
-        IgniteCache<Integer, Integer> cache = data.cache;
-        Set<Integer> keys = data.data.keySet();
-        boolean raw = data.raw;
-        boolean async = data.async;
-        ReadRepairStrategy strategy = data.strategy;
+    protected static final Consumer<ReadRepairData> GETALL_CHECK_AND_REPAIR = (rrd) -> {
+        Map<Integer, Object> res = getAll(rrd);
+
+        for (Integer key : rrd.data.keySet())
+            assertEqualsArraysAware(unwrapBinaryIfNeeded(rrd.data.get(key).repairedBin), res.get(key));
+    };
+
+    /**
+     *
+     */
+    protected static final Consumer<ReadRepairData> GET_NULL = (rrd) -> assertNull(get(invertKeys(rrd)));
+
+    /**
+     *
+     */
+    protected static final Consumer<ReadRepairData> GET_ALL_NULL = (rrd) -> assertTrue(getAll(invertKeys(rrd)).isEmpty());
+
+    /**
+     *
+     */
+    protected static final Consumer<ReadRepairData> CONTAINS_CHECK_AND_REPAIR = (rrd) -> {
+        Set<Integer> keys = rrd.data.keySet();
+
+        assert keys.size() == 1;
+
+        for (Map.Entry<Integer, InconsistentMapping> entry : rrd.data.entrySet()) { // Once.
+            Integer key = entry.getKey();
+
+            boolean res = rrd.async ?
+                rrd.cache.withReadRepair(rrd.strategy).containsKeyAsync(key).get() :
+                rrd.cache.withReadRepair(rrd.strategy).containsKey(key);
+
+            assertEquals(entry.getValue().repairedBin != null, res);
+        }
+    };
+
+    /**
+     *
+     */
+    protected static final Consumer<ReadRepairData> CONTAINS_ALL_CHECK_AND_REPAIR = (rrd) -> {
+        Set<Integer> keys = rrd.data.keySet();
 
         assert !keys.isEmpty();
 
-        if (raw) {
-            Collection<CacheEntry<Integer, Integer>> res =
-                async ?
-                    cache.withReadRepair(strategy).getEntriesAsync(keys).get() :
-                    cache.withReadRepair(strategy).getEntries(keys);
+        boolean res = rrd.async ?
+            rrd.cache.withReadRepair(rrd.strategy).containsKeysAsync(keys).get() :
+            rrd.cache.withReadRepair(rrd.strategy).containsKeys(keys);
 
-            for (CacheEntry<Integer, Integer> entry : res) {
-                Integer fixed = data.data.get(entry.getKey()).fixed;
+        boolean containsAll = rrd.data.values().stream().allMatch(mapping -> mapping.repairedBin != null);
 
-                assertEquals(fixed, entry.getValue());
-            }
-        }
-        else {
-            Map<Integer, Integer> res =
-                async ?
-                    cache.withReadRepair(strategy).getAllAsync(keys).get() :
-                    cache.withReadRepair(strategy).getAll(keys);
-
-            for (Map.Entry<Integer, Integer> entry : res.entrySet()) {
-                Integer fixed = data.data.get(entry.getKey()).fixed;
-
-                assertEquals(fixed, entry.getValue());
-            }
-        }
+        assertEquals(containsAll, res);
     };
 
     /**
      *
      */
-    protected static final Consumer<ReadRepairData> GET_NULL = (data) -> {
-        IgniteCache<Integer, Integer> cache = data.cache;
-        Set<Integer> keys = data.data.keySet();
-        boolean raw = data.raw;
-        boolean async = data.async;
-        ReadRepairStrategy strategy = data.strategy;
+    private static Object get(ReadRepairData rrd) {
+        Set<Integer> keys = rrd.data.keySet();
 
         assert keys.size() == 1;
 
-        for (Integer key : data.data.keySet()) { // Once.
-            Integer missed = -key; // Negative to gain null.
+        Integer key = keys.iterator().next();
 
-            Object res =
-                raw ?
-                    async ?
-                        cache.withReadRepair(strategy).getEntryAsync(missed).get() :
-                        cache.withReadRepair(strategy).getEntry(missed) :
-                    async ?
-                        cache.withReadRepair(strategy).getAsync(missed).get() :
-                        cache.withReadRepair(strategy).get(missed);
+        Object res;
 
-            assertEquals(null, res);
+        if (rrd.raw) {
+            CacheEntry<Integer, Object> rawEntry = rrd.async ?
+                rrd.cache.withReadRepair(rrd.strategy).getEntryAsync(key).get() :
+                rrd.cache.withReadRepair(rrd.strategy).getEntry(key);
+
+            res = rawEntry != null ? rawEntry.getValue() : null;
         }
-    };
+        else
+            res = rrd.async ?
+                rrd.cache.withReadRepair(rrd.strategy).getAsync(key).get() :
+                rrd.cache.withReadRepair(rrd.strategy).get(key);
+
+        return checkAndUnwrapBinaryIfNeeded(rrd, res);
+    }
 
     /**
      *
      */
-    protected static final Consumer<ReadRepairData> GET_ALL_NULL = (data) -> {
-        IgniteCache<Integer, Integer> cache = data.cache;
-        Set<Integer> keys = data.data.keySet();
-        boolean raw = data.raw;
-        boolean async = data.async;
-        ReadRepairStrategy strategy = data.strategy;
+    private static Map<Integer, Object> getAll(ReadRepairData rrd) {
+        Set<Integer> keys = rrd.data.keySet();
 
-        Set<Integer> missed = keys.stream().map(key -> -key).collect(Collectors.toCollection(TreeSet::new)); // Negative to gain null.
+        assert !keys.isEmpty();
 
-        if (raw) {
-            Collection<CacheEntry<Integer, Integer>> res =
-                async ?
-                    cache.withReadRepair(strategy).getEntriesAsync(missed).get() :
-                    cache.withReadRepair(strategy).getEntries(missed);
+        Map<Integer, Object> objs;
 
-            assertTrue(res.isEmpty());
+        if (rrd.raw) {
+            Collection<CacheEntry<Integer, Object>> entryRes =
+                rrd.async ?
+                    rrd.cache.withReadRepair(rrd.strategy).getEntriesAsync(keys).get() :
+                    rrd.cache.withReadRepair(rrd.strategy).getEntries(keys);
+
+            objs = new HashMap<>();
+
+            for (CacheEntry<Integer, Object> entry : entryRes)
+                objs.put(entry.getKey(), entry.getValue());
         }
         else {
-            Map<Integer, Integer> res =
-                async ?
-                    cache.withReadRepair(strategy).getAllAsync(missed).get() :
-                    cache.withReadRepair(strategy).getAll(missed);
-
-            assertTrue(res.isEmpty());
+            objs = rrd.async ?
+                rrd.cache.withReadRepair(rrd.strategy).getAllAsync(keys).get() :
+                rrd.cache.withReadRepair(rrd.strategy).getAll(keys);
         }
-    };
+
+        return objs.entrySet().stream().collect(Collectors.toMap(
+            Map.Entry::getKey, entry -> checkAndUnwrapBinaryIfNeeded(rrd, entry.getValue())));
+    }
 
     /**
      *
      */
-    protected static final Consumer<ReadRepairData> CONTAINS_CHECK_AND_FIX = (data) -> {
-        IgniteCache<Integer, Integer> cache = data.cache;
-        Set<Integer> keys = data.data.keySet();
-        boolean async = data.async;
-        ReadRepairStrategy strategy = data.strategy;
+    private static Object checkAndUnwrapBinaryIfNeeded(ReadRepairData rrd, Object res) {
+        if (rrd.binary) {
+            assert res == null ||
+                res instanceof Integer ||
+                res instanceof Map ||
+                res instanceof List ||
+                res instanceof Set ||
+                res instanceof int[] ||
+                res instanceof Object[] ||
+                res instanceof BinaryObject : res.getClass();
 
-        assert keys.size() == 1;
-
-        for (Map.Entry<Integer, InconsistentMapping> entry : data.data.entrySet()) { // Once.
-            Integer key = entry.getKey();
-            Integer fixed = entry.getValue().fixed;
-
-            boolean res = async ?
-                cache.withReadRepair(strategy).containsKeyAsync(key).get() :
-                cache.withReadRepair(strategy).containsKey(key);
-
-            assertEquals(fixed != null, res);
+            return unwrapBinaryIfNeeded(res);
         }
-    };
+        else {
+            assert !(res instanceof BinaryObject) : res.getClass();
+
+            return res;
+        }
+    }
+
+    /**
+     * Inverts keys to gain null on get attempt.
+     */
+    private static ReadRepairData invertKeys(ReadRepairData rrd) {
+        return new ReadRepairData(
+            rrd.cache,
+            rrd.data.entrySet().stream().collect(
+                Collectors.toMap(
+                    e -> -1 * e.getKey(), // Negative key to gain null.
+                    Map.Entry::getValue,
+                    (k, v) -> {
+                        throw new IllegalStateException(String.format("Duplicate key %s", k));
+                    },
+                    TreeMap::new)),
+            rrd.raw,
+            rrd.async,
+            rrd.strategy,
+            rrd.binary);
+    }
 
     /**
      *
      */
-    protected static final Consumer<ReadRepairData> CONTAINS_ALL_CHECK_AND_FIX = (data) -> {
-        IgniteCache<Integer, Integer> cache = data.cache;
-        Set<Integer> keys = data.data.keySet();
-        boolean async = data.async;
-        ReadRepairStrategy strategy = data.strategy;
+    protected static final BiConsumer<ReadRepairData, IgniteIrreparableConsistencyViolationException> CHECK_REPAIRED =
+        (rrd, e) -> {
+            boolean raw = rrd.raw;
 
-        boolean res = async ?
-            cache.withReadRepair(strategy).containsKeysAsync(keys).get() :
-            cache.withReadRepair(strategy).containsKeys(keys);
-
-        boolean allFixed = true;
-
-        for (Integer key : keys) {
-            Integer fixed = data.data.get(key).fixed;
-
-            if (fixed == null)
-                allFixed = false;
-        }
-
-        assertEquals(allFixed, res);
-    };
-
-    /**
-     *
-     */
-    protected static final BiConsumer<ReadRepairData, IgniteIrreparableConsistencyViolationException> CHECK_FIXED =
-        (data, e) -> {
-            IgniteCache<Integer, Integer> cache = data.cache;
-            boolean raw = data.raw;
-
-            for (Map.Entry<Integer, InconsistentMapping> entry : data.data.entrySet()) {
+            for (Map.Entry<Integer, InconsistentMapping> entry : rrd.data.entrySet()) {
                 Integer key = entry.getKey();
 
-                // Checking only fixed entries, while entries listed at exception were not fixed.
+                // Checking only repaired entries, while entries listed at exception were not repaired.
                 if (e != null && (e.irreparableKeys().contains(key) ||
                     (e.repairableKeys() != null && e.repairableKeys().contains(key))))
                     continue;
 
-                Integer fixed = entry.getValue().fixed;
-
-                Integer res;
+                Object res;
 
                 if (raw) {
-                    CacheEntry<Integer, Integer> rawEntry = cache.getEntry(key);
+                    CacheEntry<Integer, Object> rawEntry = rrd.cache.getEntry(key);
 
                     res = rawEntry != null ? rawEntry.getValue() : null;
                 }
                 else
-                    res = cache.get(key);
+                    res = rrd.cache.get(key);
 
-                assertEquals(fixed, res);
+                assertEqualsArraysAware(unwrapBinaryIfNeeded(rrd.data.get(key).repairedBin), unwrapBinaryIfNeeded(res));
             }
         };
 
     /**
      *
      */
-    protected final BiConsumer<ReadRepairData, Runnable> repairIfRepairable = (data, r) -> {
+    protected final BiConsumer<ReadRepairData, Runnable> repairIfRepairable = (rrd, r) -> {
         try {
             r.run();
 
-            assertTrue(data.repairable());
+            assertTrue(rrd.repairable());
         }
-        catch (Exception e) {
+        catch (RuntimeException e) {
             Throwable cause = e.getCause();
 
-            assertTrue(cause instanceof IgniteIrreparableConsistencyViolationException);
-            assertFalse(data.repairable());
+            if (cause == null) {
+                e.printStackTrace();
 
-            check(data, (IgniteIrreparableConsistencyViolationException)cause, true);
+                fail("Unexpected exception: " + e.getMessage());
+            }
+
+            if (!(cause instanceof IgniteIrreparableConsistencyViolationException)) {
+                cause.printStackTrace();
+
+                fail("Unexpected exception: " + cause.getMessage());
+            }
+
+            assertFalse(rrd.repairable());
+
+            check(rrd, (IgniteIrreparableConsistencyViolationException)cause, true);
         }
     };
 
     /**
-     * @param data Data.
+     * @param rrd Data.
      */
-    protected void check(ReadRepairData data, IgniteIrreparableConsistencyViolationException e, boolean evtRecorded) {
+    protected void check(ReadRepairData rrd, IgniteIrreparableConsistencyViolationException e, boolean evtRecorded) {
         Collection<Object> irreparableKeys = e != null ? e.irreparableKeys() : null;
 
         if (e != null) {
@@ -278,7 +276,7 @@ public abstract class AbstractFullSetReadRepairTest extends AbstractReadRepairTe
             if (repairableKeys != null)
                 assertTrue(Collections.disjoint(repairableKeys, irreparableKeys));
 
-            Collection<Object> expectedToBeIrreparableKeys = data.data.entrySet().stream()
+            Collection<Object> expectedToBeIrreparableKeys = rrd.data.entrySet().stream()
                 .filter(entry -> !entry.getValue().repairable)
                 .map(Map.Entry::getKey)
                 .collect(Collectors.toSet());
@@ -286,14 +284,14 @@ public abstract class AbstractFullSetReadRepairTest extends AbstractReadRepairTe
             assertEqualsCollectionsIgnoringOrder(expectedToBeIrreparableKeys, irreparableKeys);
         }
 
-        assertEquals(irreparableKeys == null, data.repairable());
+        assertEquals(irreparableKeys == null, rrd.repairable());
 
         if (evtRecorded)
-            checkEvent(data, e);
+            checkEvent(rrd, e);
         else
             checkEventMissed();
 
-        CHECK_FIXED.accept(data, e);
+        CHECK_REPAIRED.accept(rrd, e);
     }
 
     /**
@@ -301,7 +299,9 @@ public abstract class AbstractFullSetReadRepairTest extends AbstractReadRepairTe
      */
     @Test
     public void test() throws Exception {
-        for (Ignite initiator : G.allGrids()) {
+        assertFalse(clsAwareNodes.isEmpty());
+
+        for (Ignite initiator : clsAwareNodes) {
             test(initiator, 1, false); // just get
             test(initiator, 1, true); // 1 (all keys available at primary)
             test(initiator, 2, true); // less than backups
@@ -314,7 +314,7 @@ public abstract class AbstractFullSetReadRepairTest extends AbstractReadRepairTe
     /**
      *
      */
-    private void test(Ignite initiator, Integer cnt, boolean all) throws Exception {
+    private void test(Ignite initiator, int cnt, boolean all) throws Exception {
         testGet(initiator, cnt, all);
         testGetNull(initiator, cnt, all);
         testContains(initiator, cnt, all);
@@ -323,15 +323,15 @@ public abstract class AbstractFullSetReadRepairTest extends AbstractReadRepairTe
     /**
      *
      */
-    protected abstract void testGet(Ignite initiator, Integer cnt, boolean all) throws Exception;
+    protected abstract void testGet(Ignite initiator, int cnt, boolean all) throws Exception;
 
     /**
      *
      */
-    protected abstract void testGetNull(Ignite initiator, Integer cnt, boolean all) throws Exception;
+    protected abstract void testGetNull(Ignite initiator, int cnt, boolean all) throws Exception;
 
     /**
      *
      */
-    protected abstract void testContains(Ignite initiator, Integer cnt, boolean all) throws Exception;
+    protected abstract void testContains(Ignite initiator, int cnt, boolean all) throws Exception;
 }

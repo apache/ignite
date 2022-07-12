@@ -62,8 +62,8 @@ public class ZkJoinedNodeEvtData implements Serializable {
         long joinedInternalId,
         UUID joinDataPrefixId,
         int joinDataPartCnt,
-        int secSubjPartCnt)
-    {
+        int secSubjPartCnt
+    ) {
         this.topVer = topVer;
         this.nodeId = nodeId;
         this.joinedInternalId = joinedInternalId;

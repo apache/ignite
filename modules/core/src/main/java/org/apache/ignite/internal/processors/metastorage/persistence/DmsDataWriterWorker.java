@@ -100,7 +100,7 @@ public class DmsDataWriterWorker extends GridWorker {
 
     /** Start new distributed metastorage worker thread. */
     public void start() {
-        isCancelled = false;
+        isCancelled.set(false);
 
         new IgniteThread(igniteInstanceName(), "dms-writer-thread", this).start();
     }
@@ -187,7 +187,7 @@ public class DmsDataWriterWorker extends GridWorker {
         updateQueue.offer(new FutureTask<>(() -> STOP));
         latch.countDown();
 
-        isCancelled = true;
+        isCancelled.set(true);
 
         Thread runner = runner();
 

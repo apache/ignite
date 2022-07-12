@@ -21,9 +21,11 @@
 #include <ignite/common/concurrent.h>
 
 #include <ignite/thin/cache/query/query_fields_cursor.h>
+#include <ignite/thin/cache/query/query_scan.h>
 #include <ignite/thin/cache/query/query_sql_fields.h>
 
 #include <ignite/impl/thin/cache/continuous/continuous_query_client_holder.h>
+#include <ignite/impl/thin/cache/query/query_cursor_proxy.h>
 
 namespace ignite
 {
@@ -59,7 +61,7 @@ namespace ignite
                     /**
                      * Constructor.
                      */
-                    CacheClientProxy(const common::concurrent::SharedPointer<void>& impl) :
+                    explicit CacheClientProxy(const common::concurrent::SharedPointer<void>& impl) :
                         impl(impl)
                     {
                         // No-op.
@@ -298,6 +300,14 @@ namespace ignite
                      */
                     ignite::thin::cache::query::QueryFieldsCursor Query(
                             const ignite::thin::cache::query::SqlFieldsQuery& qry);
+
+                    /**
+                     * Perform scan query.
+                     *
+                     * @param qry Query.
+                     * @return Query cursor proxy.
+                     */
+                    query::QueryCursorProxy Query(const ignite::thin::cache::query::ScanQuery& qry);
 
                     /**
                      * Starts the continuous query execution

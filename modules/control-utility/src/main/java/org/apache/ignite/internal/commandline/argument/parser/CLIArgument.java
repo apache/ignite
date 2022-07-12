@@ -42,22 +42,22 @@ public class CLIArgument<T> {
 
     /** */
     public static <T> CLIArgument<T> optionalArg(String name, String usage, Class<T> type) {
-        return new CLIArgument<T>(name, usage, true, type, null);
+        return new CLIArgument<>(name, usage, true, type, null);
     }
 
     /** */
     public static <T> CLIArgument<T> optionalArg(String name, String usage, Class<T> type, Supplier<T> dfltValSupplier) {
-        return new CLIArgument<T>(name, usage, true, type, p -> dfltValSupplier.get());
+        return new CLIArgument<>(name, usage, true, type, p -> dfltValSupplier.get());
     }
 
     /** */
     public static <T> CLIArgument<T> optionalArg(String name, String usage, Class<T> type, Function<CLIArgumentParser, T> dfltValSupplier) {
-        return new CLIArgument<T>(name, usage, true, type, dfltValSupplier);
+        return new CLIArgument<>(name, usage, true, type, dfltValSupplier);
     }
 
     /** */
     public static <T> CLIArgument<T> mandatoryArg(String name, String usage, Class<T> type) {
-        return new CLIArgument<T>(name, usage, false, type, null);
+        return new CLIArgument<>(name, usage, false, type, null);
     }
 
     /** */
@@ -87,7 +87,7 @@ public class CLIArgument<T> {
     }
 
     /** */
-    public Class type() {
+    public Class<T> type() {
         return type;
     }
 

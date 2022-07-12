@@ -195,7 +195,8 @@ public class BaselineCommand extends AbstractCommand<BaselineArguments> {
                     return ", Addresses=" + hosts;
                 else
                     return "";
-            } else
+            }
+            else
                 return sortedByIpHosts.findFirst().map(ip -> ", Address=" + ip).orElse("");
         };
 

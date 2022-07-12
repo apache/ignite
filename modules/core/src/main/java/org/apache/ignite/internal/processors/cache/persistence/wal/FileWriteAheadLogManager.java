@@ -1890,7 +1890,7 @@ public class FileWriteAheadLogManager extends GridCacheSharedManagerAdapter impl
          */
         private void shutdown() throws IgniteInterruptedCheckedException {
             synchronized (this) {
-                isCancelled = true;
+                isCancelled.set(true);
 
                 notifyAll();
             }
@@ -1985,7 +1985,7 @@ public class FileWriteAheadLogManager extends GridCacheSharedManagerAdapter impl
                 Thread.currentThread().interrupt();
 
                 synchronized (this) {
-                    isCancelled = true;
+                    isCancelled.set(true);
                 }
             }
             catch (Throwable t) {
@@ -2141,7 +2141,7 @@ public class FileWriteAheadLogManager extends GridCacheSharedManagerAdapter impl
         public void restart() {
             assert runner() == null : "FileArchiver is still running";
 
-            isCancelled = false;
+            isCancelled.set(false);
 
             new IgniteThread(archiver).start();
         }
@@ -2249,7 +2249,7 @@ public class FileWriteAheadLogManager extends GridCacheSharedManagerAdapter impl
         void restart() {
             assert runner() == null : "FileCompressorWorker is still running.";
 
-            isCancelled = false;
+            isCancelled.set(false);
 
             new IgniteThread(this).start();
         }
@@ -2530,7 +2530,7 @@ public class FileWriteAheadLogManager extends GridCacheSharedManagerAdapter impl
                             U.error(log, "Can't rename temporary unzipped segment: raw segment is already present " +
                                 "[tmp=" + unzipTmp + ", raw=" + unzip + "]", e);
                         }
-                        else if (!isCancelled) {
+                        else if (!isCancelled.get()) {
                             ex = new IgniteCheckedException("Error during WAL segment decompression [segmentIdx=" +
                                 segmentToDecompress + "]", e);
                         }
@@ -2549,14 +2549,14 @@ public class FileWriteAheadLogManager extends GridCacheSharedManagerAdapter impl
             catch (InterruptedException e) {
                 Thread.currentThread().interrupt();
 
-                if (!isCancelled)
+                if (!isCancelled.get())
                     err = e;
             }
             catch (Throwable t) {
                 err = t;
             }
             finally {
-                if (err == null && !isCancelled)
+                if (err == null && !isCancelled.get())
                     err = new IllegalStateException("Worker " + name() + " is terminated unexpectedly");
 
                 if (err instanceof OutOfMemoryError)
@@ -2605,7 +2605,7 @@ public class FileWriteAheadLogManager extends GridCacheSharedManagerAdapter impl
         void restart() {
             assert runner() == null : "FileDecompressor is still running.";
 
-            isCancelled = false;
+            isCancelled.set(false);
 
             new IgniteThread(this).start();
         }
@@ -3292,7 +3292,7 @@ public class FileWriteAheadLogManager extends GridCacheSharedManagerAdapter impl
             catch (IgniteInterruptedCheckedException e) {
                 Thread.currentThread().interrupt();
 
-                isCancelled = true;
+                isCancelled.set(true);
             }
             catch (Throwable t) {
                 err = t;
@@ -3314,7 +3314,7 @@ public class FileWriteAheadLogManager extends GridCacheSharedManagerAdapter impl
          * @throws IgniteInterruptedCheckedException If failed to wait for worker shutdown.
          */
         private void shutdown() throws IgniteInterruptedCheckedException {
-            isCancelled = true;
+            isCancelled.set(true);
 
             U.join(this);
         }
@@ -3325,7 +3325,7 @@ public class FileWriteAheadLogManager extends GridCacheSharedManagerAdapter impl
         public void restart() {
             assert runner() == null : "FileCleaner is still running";
 
-            isCancelled = false;
+            isCancelled.set(false);
 
             new IgniteThread(this).start();
         }
@@ -3454,7 +3454,7 @@ public class FileWriteAheadLogManager extends GridCacheSharedManagerAdapter impl
                 for (int i = 0, j = 0; i < toFormat.size(); i++) {
                     FileDescriptor fd = toFormat.get(i);
 
-                    File tmpDst = new File(fd.file().getName() + TMP_SUFFIX);
+                    File tmpDst = new File(fd.file().getAbsolutePath() + TMP_SUFFIX);
 
                     try {
                         Files.copy(fd.file().toPath(), tmpDst.toPath());

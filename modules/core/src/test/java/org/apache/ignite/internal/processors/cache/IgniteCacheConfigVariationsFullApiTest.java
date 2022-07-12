@@ -1926,7 +1926,8 @@ public class IgniteCacheConfigVariationsFullApiTest extends IgniteCacheConfigVar
             try {
                 if (f != null)
                     f.get();
-            } catch (Throwable t) {
+            }
+            catch (Throwable t) {
                 assert false : "Unexpected exception " + t;
             }
         }

@@ -57,7 +57,8 @@ public class PageLockTrackerManagerTest extends GridCommonAbstractTest {
             Assert.assertNotNull(pll);
             Assert.assertSame(PageLockTrackerManager.NOOP_LSNR, pll);
 
-        } finally {
+        }
+        finally {
             System.clearProperty("IGNITE_PAGE_LOCK_TRACKER_TYPE");
         }
 
@@ -71,7 +72,8 @@ public class PageLockTrackerManagerTest extends GridCommonAbstractTest {
             Assert.assertNotNull(pll);
             Assert.assertNotSame(PageLockTrackerManager.NOOP_LSNR, pll);
 
-        } finally {
+        }
+        finally {
             System.clearProperty("IGNITE_PAGE_LOCK_TRACKER_TYPE");
         }
     }

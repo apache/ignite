@@ -619,7 +619,8 @@ public class GridCacheDistributedQueryManager<K, V> extends GridCacheQueryManage
                         if (locIter.hasNextX())
                             cur = locIter.nextX();
 
-                    } finally {
+                    }
+                    finally {
                         if (performanceStatsEnabled) {
                             IoStatisticsHolder stat = IoStatisticsQueryHelper.finishGatheringQueryStatistics();
 

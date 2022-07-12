@@ -122,7 +122,8 @@ public class ReliabilityTest extends AbstractThinClientTest {
 
                         assertEquals("Unexpected entries", data, act);
                     }
-                } catch (ClientConnectionException ignored) {
+                }
+                catch (ClientConnectionException ignored) {
                     // QueryCursor.getAll always executes on the same channel where the cursor is open,
                     // so failover is not possible, and the call will fail when connection drops.
                 }
@@ -315,7 +316,7 @@ public class ReliabilityTest extends AbstractThinClientTest {
 
         String nullOpsNames = nullOps.stream().map(Enum::name).collect(Collectors.joining(", "));
 
-        long expectedNullCount = 14;
+        long expectedNullCount = 16;
 
         String msg = nullOps.size()
                 + " operation codes do not have public equivalent. When adding new codes, update ClientOperationType too. Missing ops: "
@@ -355,7 +356,8 @@ public class ReliabilityTest extends AbstractThinClientTest {
                 }
 
                 fail("ClientReconnectedException or ClientConnectionException must be thrown");
-            } catch (ClientReconnectedException | ClientConnectionException expected) {
+            }
+            catch (ClientReconnectedException | ClientConnectionException expected) {
                 // No-op.
             }
         }
@@ -495,14 +497,18 @@ public class ReliabilityTest extends AbstractThinClientTest {
 
             String msg = "critical error message";
 
-            ignite.events().localListen(e -> { throw new Error(msg); }, EVT_CACHE_OBJECT_READ);
+            ignite.events().localListen(e -> {
+                throw new Error(msg);
+            }, EVT_CACHE_OBJECT_READ);
 
             GridTestUtils.assertThrowsAnyCause(log, () -> cache.get(0), ClientServerError.class, msg);
 
             assertFalse(failure.get());
 
             // OutOfMemoryError should also invoke failure handler.
-            ignite.events().localListen(e -> { throw new OutOfMemoryError(msg); }, EVT_CACHE_OBJECT_REMOVED);
+            ignite.events().localListen(e -> {
+                throw new OutOfMemoryError(msg);
+            }, EVT_CACHE_OBJECT_REMOVED);
 
             GridTestUtils.assertThrowsAnyCause(log, () -> cache.remove(0), ClientServerError.class, msg);
 
@@ -556,18 +562,23 @@ public class ReliabilityTest extends AbstractThinClientTest {
             // PersonExternalizable once again.
             result = svc.testMethod(person);
             assertEquals("testMethod(PersonExternalizable person): " + person, result);
-        } finally {
+        }
+        finally {
             if (ignite != null) {
                 try {
                     ignite.close();
-                } catch (Throwable ignore) {
+                }
+                catch (Throwable ignore) {
+                    // Ignore.
                 }
             }
 
             if (client != null) {
                 try {
                     client.close();
-                } catch (Throwable ignore) {
+                }
+                catch (Throwable ignore) {
+                    // Ignore.
                 }
             }
         }

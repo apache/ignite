@@ -25,34 +25,36 @@ import org.apache.ignite.internal.util.future.IgniteFutureImpl;
 import org.apache.ignite.internal.visor.VisorJob;
 
 /**
- * @see IgniteSnapshotManager#checkSnapshot(String)
+ * @see IgniteSnapshotManager#checkSnapshot(String, String)
  */
 @GridInternal
-public class VisorSnapshotCheckTask extends VisorSnapshotOneNodeTask<String, IdleVerifyResultV2> {
+public class VisorSnapshotCheckTask extends VisorSnapshotOneNodeTask<VisorSnapshotCheckTaskArg, IdleVerifyResultV2> {
     /** Serial version uid. */
     private static final long serialVersionUID = 0L;
 
     /** {@inheritDoc} */
-    @Override protected VisorJob<String, IdleVerifyResultV2> job(String arg) {
+    @Override protected VisorJob<VisorSnapshotCheckTaskArg, IdleVerifyResultV2> job(VisorSnapshotCheckTaskArg arg) {
         return new VisorSnapshotCheckJob(arg, debug);
     }
 
     /** */
-    private static class VisorSnapshotCheckJob extends VisorJob<String, IdleVerifyResultV2> {
+    private static class VisorSnapshotCheckJob extends VisorJob<VisorSnapshotCheckTaskArg, IdleVerifyResultV2> {
         /** Serial version uid. */
         private static final long serialVersionUID = 0L;
 
         /**
-         * @param name Snapshot name.
+         * @param arg Snapshot check task argument.
          * @param debug Flag indicating whether debug information should be printed into node log.
          */
-        protected VisorSnapshotCheckJob(String name, boolean debug) {
-            super(name, debug);
+        protected VisorSnapshotCheckJob(VisorSnapshotCheckTaskArg arg, boolean debug) {
+            super(arg, debug);
         }
 
         /** {@inheritDoc} */
-        @Override protected IdleVerifyResultV2 run(String name) throws IgniteException {
-            return new IgniteFutureImpl<>(ignite.context().cache().context().snapshotMgr().checkSnapshot(name))
+        @Override protected IdleVerifyResultV2 run(VisorSnapshotCheckTaskArg arg) throws IgniteException {
+            IgniteSnapshotManager snpMgr = ignite.context().cache().context().snapshotMgr();
+
+            return new IgniteFutureImpl<>(snpMgr.checkSnapshot(arg.snapshotName(), arg.snapshotPath()))
                 .get();
         }
     }

@@ -129,6 +129,16 @@ BOOST_AUTO_TEST_CASE(SqlFieldsQuerySetGet)
     qry.SetEnforceJoinOrder(true);
     qry.SetLazy(true);
 
+    qry.SetUpdateBatchSize(42);
+
+    std::vector<int32_t> parts;
+    parts.push_back(1);
+    parts.push_back(4);
+    parts.push_back(90);
+    parts.push_back(12432);
+
+    qry.SetPartitions(parts);
+
     BOOST_CHECK_EQUAL(qry.GetSql(), sql);
     BOOST_CHECK_EQUAL(qry.GetTimeout(), 1000);
     BOOST_CHECK_EQUAL(qry.GetMaxRows(), 100);
@@ -140,6 +150,12 @@ BOOST_AUTO_TEST_CASE(SqlFieldsQuerySetGet)
     BOOST_CHECK(qry.IsDistributedJoins());
     BOOST_CHECK(qry.IsEnforceJoinOrder());
     BOOST_CHECK(qry.IsLazy());
+
+    BOOST_CHECK_EQUAL(qry.GetUpdateBatchSize(), 42);
+
+    std::vector<int32_t> partsOut = qry.GetPartitions();
+
+    BOOST_CHECK_EQUAL_COLLECTIONS(parts.begin(), parts.end(), partsOut.begin(), partsOut.end());
 }
 
 BOOST_AUTO_TEST_SUITE_END()

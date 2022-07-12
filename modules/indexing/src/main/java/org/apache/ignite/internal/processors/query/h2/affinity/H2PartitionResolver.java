@@ -40,7 +40,7 @@ public class H2PartitionResolver implements PartitionResolver {
 
     /** {@inheritDoc} */
     @Override public int partition(Object arg, int dataType, String cacheName) throws IgniteCheckedException {
-        Object param = H2Utils.convert(arg, idx, dataType);
+        Object param = H2Utils.convert(arg, idx.objectContext(), dataType);
 
         return idx.kernalContext().affinity().partition(cacheName, param);
     }

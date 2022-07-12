@@ -71,8 +71,8 @@ public class GridNearTxFinishResponse extends GridDistributedTxFinishResponse {
         long nearThreadId,
         IgniteUuid futId,
         int miniId,
-        @Nullable Throwable err)
-    {
+        @Nullable Throwable err
+    ) {
         super(part, xid, futId);
 
         assert miniId != 0;

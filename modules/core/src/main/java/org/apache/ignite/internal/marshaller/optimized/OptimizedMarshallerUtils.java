@@ -194,9 +194,8 @@ class OptimizedMarshallerUtils {
         Class cls,
         boolean useCache,
         MarshallerContext ctx,
-        OptimizedMarshallerIdMapper mapper)
-        throws IOException
-    {
+        OptimizedMarshallerIdMapper mapper
+    ) throws IOException {
         OptimizedClassDescriptor desc = clsMap.get(cls);
 
         if (desc == null && !useCache) {

@@ -22,6 +22,7 @@ import java.util.concurrent.CountDownLatch;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.IgniteLogger;
+import org.apache.ignite.binary.BinaryType;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.IgniteInternalFuture;
@@ -131,6 +132,26 @@ public class CdcConfigurationTest extends GridCommonAbstractTest {
         /** {@inheritDoc} */
         @Override public boolean onEvents(Iterator<CdcEvent> events) {
             return false;
+        }
+
+        /** {@inheritDoc} */
+        @Override public void onTypes(Iterator<BinaryType> types) {
+            // No-Op.
+        }
+
+        /** {@inheritDoc} */
+        @Override public void onMappings(Iterator<TypeMapping> mappings) {
+            // No-Op.
+        }
+
+        /** {@inheritDoc} */
+        @Override public void onCacheChange(Iterator<CdcCacheEvent> cacheEvents) {
+            // No-Op.
+        }
+
+        /** {@inheritDoc} */
+        @Override public void onCacheDestroy(Iterator<Integer> caches) {
+            // No-Op.
         }
 
         /** {@inheritDoc} */

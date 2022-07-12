@@ -118,7 +118,7 @@ public class SqlToNativeCommandConverter {
     private static SqlCreateIndexCommand convertCreateIndex(IgniteSqlCreateIndex sqlCmd, PlanningContext ctx) {
         String schemaName = deriveSchemaName(sqlCmd.tableName(), ctx);
         String tblName = deriveObjectName(sqlCmd.tableName(), ctx, "table name");
-        String idxName = sqlCmd.indexName().getSimple();
+        String idxName = sqlCmd.indexName() == null ? null : sqlCmd.indexName().getSimple();
 
         List<SqlIndexColumn> cols = new ArrayList<>(sqlCmd.columnList().size());
 

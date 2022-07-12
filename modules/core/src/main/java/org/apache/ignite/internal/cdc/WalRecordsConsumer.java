@@ -23,8 +23,11 @@ import java.util.NoSuchElementException;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.IgniteLogger;
+import org.apache.ignite.binary.BinaryType;
+import org.apache.ignite.cdc.CdcCacheEvent;
 import org.apache.ignite.cdc.CdcConsumer;
 import org.apache.ignite.cdc.CdcEvent;
+import org.apache.ignite.cdc.TypeMapping;
 import org.apache.ignite.internal.pagemem.wal.WALIterator;
 import org.apache.ignite.internal.pagemem.wal.record.DataEntry;
 import org.apache.ignite.internal.pagemem.wal.record.DataRecord;
@@ -135,6 +138,40 @@ public class WalRecordsConsumer<K, V> {
         }, CDC_EVENT_TRANSFORMER, true, OPERATIONS_FILTER);
 
         return consumer.onEvents(evts);
+    }
+
+    /**
+     * Handles new binary types.
+     * @param types Binary types iterator.
+     */
+    public void onTypes(Iterator<BinaryType> types) {
+        consumer.onTypes(types);
+    }
+
+    /**
+     * Handles new mappings.
+     * @param mappings Mappings iterator.
+     */
+    public void onMappings(Iterator<TypeMapping> mappings) {
+        consumer.onMappings(mappings);
+    }
+
+    /**
+     * Handles new cache events.
+     *
+     * @param cacheEvts Cache events iterator.
+     */
+    public void onCacheEvents(Iterator<CdcCacheEvent> cacheEvts) {
+        consumer.onCacheChange(cacheEvts);
+    }
+
+    /**
+     * Handles destroy cache events.
+     *
+     * @param caches Destroyed cache iterator.
+     */
+    public void onCacheDestroyEvents(Iterator<Integer> caches) {
+        consumer.onCacheDestroy(caches);
     }
 
     /**

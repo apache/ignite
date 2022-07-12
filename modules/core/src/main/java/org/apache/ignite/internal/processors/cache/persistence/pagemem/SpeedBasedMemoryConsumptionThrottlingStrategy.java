@@ -57,7 +57,7 @@ class SpeedBasedMemoryConsumptionThrottlingStrategy {
     /**
      * Total pages possible to store in page memory.
      */
-    private final long totalPages;
+    private volatile long pageMemTotalPages;
 
     /**
      * Last estimated speed for marking all clear pages as dirty till the end of checkpoint.
@@ -111,8 +111,6 @@ class SpeedBasedMemoryConsumptionThrottlingStrategy {
         this.pageMemory = pageMemory;
         this.cpProgress = cpProgress;
         this.markSpeedAndAvgParkTime = markSpeedAndAvgParkTime;
-
-        totalPages = pageMemory.totalPages();
     }
 
     /**
@@ -149,7 +147,7 @@ class SpeedBasedMemoryConsumptionThrottlingStrategy {
         final int cpWrittenPages = writtenPagesCounter.get();
         final long donePages = cpDonePagesEstimation(cpWrittenPages);
 
-        final long markDirtySpeed = markSpeedAndAvgParkTime.getSpeedOpsPerSec(curNanoTime);
+        final long instantaneousMarkDirtySpeed = markSpeedAndAvgParkTime.getSpeedOpsPerSec(curNanoTime);
         // NB: we update progress for speed calculation only in this (clean pages protection) scenario, because
         // we only use the computed speed in this same scenario and for reporting in logs (where it's not super
         // important to display an ideally accurate speed), but not in the CP Buffer protection scenario.
@@ -157,7 +155,8 @@ class SpeedBasedMemoryConsumptionThrottlingStrategy {
         // The progress is set to 0 at the beginning of a checkpoint, so we can be sure that the start time remembered
         // in cpWriteSpeed is pretty accurate even without writing to cpWriteSpeed from this method.
         cpWriteSpeed.setProgress(donePages, curNanoTime);
-        final long curCpWriteSpeed = cpWriteSpeed.getOpsPerSecond(curNanoTime);
+        // TODO: IGNITE-16878 use exponential moving average so that we react to changes faster?
+        final long avgCpWriteSpeed = cpWriteSpeed.getOpsPerSecond(curNanoTime);
 
         final int cpTotalPages = cpTotalPages();
 
@@ -166,11 +165,11 @@ class SpeedBasedMemoryConsumptionThrottlingStrategy {
             // CheckpointProgressImpl.clearCounters() is invoked at the end of a checkpoint (by falling through
             // between two volatile assignments). When we get here, we don't have any information about the total
             // number of pages in the current CP, so we calculate park time by only using information we have.
-            return parkTimeToThrottleByJustCPSpeed(markDirtySpeed, curCpWriteSpeed);
+            return parkTimeToThrottleByJustCPSpeed(instantaneousMarkDirtySpeed, avgCpWriteSpeed);
         }
         else {
-            return speedBasedParkTime(cpWrittenPages, donePages, markDirtySpeed,
-                    curCpWriteSpeed, cpTotalPages);
+            return speedBasedParkTime(cpWrittenPages, donePages, cpTotalPages, instantaneousMarkDirtySpeed,
+                    avgCpWriteSpeed);
         }
     }
 
@@ -183,6 +182,9 @@ class SpeedBasedMemoryConsumptionThrottlingStrategy {
      * @return estimation of work done (in pages)
      */
     private int cpDonePagesEstimation(int cpWrittenPages) {
+        // TODO: IGNITE-16879 - this only works correctly if time-to-write a page is close to time-to-sync a page.
+        // In reality, this does not seem to hold, which produces wrong estimations. We could measure the real times
+        // in Checkpointer and make this estimation a lot more precise.
         return (cpWrittenPages + cpSyncedPages()) / 2;
     }
 
@@ -198,15 +200,15 @@ class SpeedBasedMemoryConsumptionThrottlingStrategy {
         boolean throttleByCpSpeed = curCpWriteSpeed > 0 && markDirtySpeed > curCpWriteSpeed;
 
         if (throttleByCpSpeed) {
-            return calcDelayTime(curCpWriteSpeed);
+            return nsPerOperation(curCpWriteSpeed);
         }
 
         return 0;
     }
 
     /***/
-    private long speedBasedParkTime(int cpWrittenPages, long donePages, long markDirtySpeed,
-                                    long curCpWriteSpeed, int cpTotalPages) {
+    private long speedBasedParkTime(int cpWrittenPages, long donePages, int cpTotalPages,
+                                    long instantaneousMarkDirtySpeed, long avgCpWriteSpeed) {
         final double dirtyPagesRatio = pageMemory.getDirtyPagesRatio();
 
         currDirtyRatio = dirtyPagesRatio;
@@ -220,8 +222,8 @@ class SpeedBasedMemoryConsumptionThrottlingStrategy {
                     donePages,
                     notEvictedPagesTotal(cpTotalPages),
                     threadIdsCount(),
-                    markDirtySpeed,
-                    curCpWriteSpeed);
+                    instantaneousMarkDirtySpeed,
+                    avgCpWriteSpeed);
         }
     }
 
@@ -237,8 +239,8 @@ class SpeedBasedMemoryConsumptionThrottlingStrategy {
      * @param donePages           roughly, written & fsynced pages count.
      * @param cpTotalPages        total checkpoint scope.
      * @param nThreads            number of threads providing data during current checkpoint.
-     * @param markDirtySpeed      registered mark dirty speed, pages/sec.
-     * @param curCpWriteSpeed     average checkpoint write speed, pages/sec.
+     * @param instantaneousMarkDirtySpeed registered (during approx last second) mark dirty speed, pages/sec.
+     * @param avgCpWriteSpeed     average checkpoint write speed, pages/sec.
      * @return time in nanoseconds to part or 0 if throttling is not required.
      */
     long getParkTime(
@@ -246,84 +248,40 @@ class SpeedBasedMemoryConsumptionThrottlingStrategy {
             long donePages,
             int cpTotalPages,
             int nThreads,
-            long markDirtySpeed,
-            long curCpWriteSpeed) {
+            long instantaneousMarkDirtySpeed,
+            long avgCpWriteSpeed) {
 
         final long targetSpeedToMarkAll = calcSpeedToMarkAllSpaceTillEndOfCp(dirtyPagesRatio, donePages,
-                curCpWriteSpeed, cpTotalPages);
+            avgCpWriteSpeed, cpTotalPages);
         final double targetCurrentDirtyRatio = targetCurrentDirtyRatio(donePages, cpTotalPages);
 
-        updateSpeedAndRatio(targetSpeedToMarkAll, targetCurrentDirtyRatio);
+        publishSpeedAndRatioForMetrics(targetSpeedToMarkAll, targetCurrentDirtyRatio);
 
-        long delayByCpWrite = delayIfMarkingFasterThanCPWriteSpeedAllows(markDirtySpeed, curCpWriteSpeed,
-                dirtyPagesRatio, nThreads, targetSpeedToMarkAll, targetCurrentDirtyRatio);
-        long delayByMarkAllWrite = delayIfMarkingFasterThanTargetSpeedAllows(markDirtySpeed, dirtyPagesRatio, nThreads,
-                targetSpeedToMarkAll, targetCurrentDirtyRatio);
-
-        return Math.max(delayByCpWrite, delayByMarkAllWrite);
+        return delayIfMarkingFasterThanTargetSpeedAllows(instantaneousMarkDirtySpeed,
+            dirtyPagesRatio, nThreads, targetSpeedToMarkAll, targetCurrentDirtyRatio);
     }
 
     /***/
-    private long delayIfMarkingFasterThanCPWriteSpeedAllows(long markDirtySpeed, long curCpWriteSpeed,
-                                                            double dirtyPagesRatio, int nThreads,
-                                                            long targetSpeedToMarkAll, double targetCurrentDirtyRatio) {
-        final double allowedCpWriteSpeedExcessMultiplier = allowedCpWriteSpeedExcessMultiplier(markDirtySpeed,
-                dirtyPagesRatio, targetSpeedToMarkAll, targetCurrentDirtyRatio);
-        final boolean throttleByCpSpeed = curCpWriteSpeed > 0
-                && markDirtySpeed > (allowedCpWriteSpeedExcessMultiplier * curCpWriteSpeed);
-
-        if (!throttleByCpSpeed) {
-            return 0;
-        }
-
-        int slowdown = slowdownIfLowSpaceLeft(dirtyPagesRatio, targetCurrentDirtyRatio);
-        long nanosecsToMarkOnePage = TimeUnit.SECONDS.toNanos(1) * nThreads / markDirtySpeed;
-        long nanosecsToWriteOneCPPage = calcDelayTime(curCpWriteSpeed, nThreads, slowdown);
-        return nanosecsToWriteOneCPPage - nanosecsToMarkOnePage;
-    }
-
-    /***/
-    private double allowedCpWriteSpeedExcessMultiplier(long markDirtySpeed, double dirtyPagesRatio,
-                                                       long targetSpeedToMarkAll, double targetCurrentDirtyRatio) {
-        final boolean lowSpaceLeft = lowCleanSpaceLeft(dirtyPagesRatio, targetCurrentDirtyRatio);
-
-        // for case of speedForMarkAll >> markDirtySpeed, allow write little bit faster than CP average
-        final double allowWriteFasterThanCp;
-        if (markDirtySpeed > 0 && markDirtySpeed < targetSpeedToMarkAll)
-            allowWriteFasterThanCp = 0.1 * targetSpeedToMarkAll / markDirtySpeed;
-        else if (dirtyPagesRatio > targetCurrentDirtyRatio)
-            allowWriteFasterThanCp = 0.0;
-        else
-            allowWriteFasterThanCp = 0.1;
-
-        return lowSpaceLeft
-                ? 1.0
-                : 1.0 + allowWriteFasterThanCp;
-    }
-
-    /***/
-    private int slowdownIfLowSpaceLeft(double dirtyPagesRatio, double targetCurrentDirtyRatio) {
-        boolean lowSpaceLeft = lowCleanSpaceLeft(dirtyPagesRatio, targetCurrentDirtyRatio);
-        return slowdownIfLowSpaceLeft(lowSpaceLeft);
-    }
-
-    /***/
-    private int slowdownIfLowSpaceLeft(boolean lowSpaceLeft) {
-        return lowSpaceLeft ? 3 : 1;
-    }
-
-    /***/
-    private long delayIfMarkingFasterThanTargetSpeedAllows(long markDirtySpeed, double dirtyPagesRatio, int nThreads,
+    private long delayIfMarkingFasterThanTargetSpeedAllows(long instantaneousMarkDirtySpeed, double dirtyPagesRatio,
+                                                           int nThreads,
                                                            long targetSpeedToMarkAll, double targetCurrentDirtyRatio) {
         final boolean lowSpaceLeft = lowCleanSpaceLeft(dirtyPagesRatio, targetCurrentDirtyRatio);
         final int slowdown = slowdownIfLowSpaceLeft(lowSpaceLeft);
 
         double multiplierForSpeedToMarkAll = lowSpaceLeft ? 0.8 : 1.0;
         boolean markingTooFastNow = targetSpeedToMarkAll > 0
-                && markDirtySpeed > multiplierForSpeedToMarkAll * targetSpeedToMarkAll;
+                && instantaneousMarkDirtySpeed > multiplierForSpeedToMarkAll * targetSpeedToMarkAll;
         boolean markedTooFastSinceCPStart = dirtyPagesRatio > targetCurrentDirtyRatio;
         boolean markingTooFast = markedTooFastSinceCPStart && markingTooFastNow;
-        return markingTooFast ? calcDelayTime(targetSpeedToMarkAll, nThreads, slowdown) : 0;
+
+        // We must NOT subtract nsPerOperation(instantaneousMarkDirtySpeed, nThreads)! If we do, the actual speed
+        // converges to a value that is 1-2 times higher than the target speed.
+        return markingTooFast ? nsPerOperation(targetSpeedToMarkAll, nThreads, slowdown) : 0;
+    }
+
+    /***/
+    private int slowdownIfLowSpaceLeft(boolean lowSpaceLeft) {
+        return lowSpaceLeft ? 3 : 1;
     }
 
     /**
@@ -338,9 +296,9 @@ class SpeedBasedMemoryConsumptionThrottlingStrategy {
     }
 
     /***/
-    private void updateSpeedAndRatio(long speedForMarkAll, double targetDirtyRatio) {
-        this.speedForMarkAll = speedForMarkAll; //publish for metrics
-        this.targetDirtyRatio = targetDirtyRatio; //publish for metrics
+    private void publishSpeedAndRatioForMetrics(long speedForMarkAll, double targetDirtyRatio) {
+        this.speedForMarkAll = speedForMarkAll;
+        this.targetDirtyRatio = targetDirtyRatio;
     }
 
     /**
@@ -351,14 +309,14 @@ class SpeedBasedMemoryConsumptionThrottlingStrategy {
      *
      * @param dirtyPagesRatio     current percent of dirty pages.
      * @param donePages           roughly, count of written and sync'ed pages
-     * @param curCpWriteSpeed     pages/second checkpoint write speed. 0 speed means 'no data'.
+     * @param avgCpWriteSpeed     pages/second checkpoint write speed. 0 speed means 'no data'.
      * @param cpTotalPages        total pages in checkpoint.
      * @return pages/second to mark to mark all clean pages as dirty till the end of checkpoint. 0 speed means 'no
      * data', or when we are not going to throttle due to the current dirty pages ratio being too high
      */
     private long calcSpeedToMarkAllSpaceTillEndOfCp(double dirtyPagesRatio, long donePages,
-                                                    long curCpWriteSpeed, int cpTotalPages) {
-        if (curCpWriteSpeed == 0)
+                                                    long avgCpWriteSpeed, int cpTotalPages) {
+        if (avgCpWriteSpeed == 0)
             return 0;
 
         if (cpTotalPages <= 0)
@@ -367,11 +325,30 @@ class SpeedBasedMemoryConsumptionThrottlingStrategy {
         if (dirtyPagesRatio >= MAX_DIRTY_PAGES)
             return 0;
 
-        double remainedClearPages = (MAX_DIRTY_PAGES - dirtyPagesRatio) * totalPages;
+        // IDEA: here, when calculating the count of clean pages, it includes the pages under checkpoint. It is kinda
+        // legal because they can be written (using the Checkpoint Buffer to make a copy of the value to be
+        // checkpointed), but the CP Buffer is usually not too big, and if it gets nearly filled, writes become
+        // throttled really hard by exponential throttler. Maybe we should subtract the number of not-yet-written-by-CP
+        // pages from the count of clean pages? In such a case, we would lessen the risk of CP Buffer-caused throttling.
+        double remainedCleanPages = (MAX_DIRTY_PAGES - dirtyPagesRatio) * pageMemTotalPages();
 
-        double secondsTillCPEnd = 1.0 * (cpTotalPages - donePages) / curCpWriteSpeed;
+        double secondsTillCPEnd = 1.0 * (cpTotalPages - donePages) / avgCpWriteSpeed;
 
-        return (long)(remainedClearPages / secondsTillCPEnd);
+        return (long)(remainedCleanPages / secondsTillCPEnd);
+    }
+
+    /** Returns total number of pages storable in page memory. */
+    private long pageMemTotalPages() {
+        long currentTotalPages = pageMemTotalPages;
+
+        if (currentTotalPages == 0) {
+            currentTotalPages = pageMemory.totalPages();
+            pageMemTotalPages = currentTotalPages;
+        }
+
+        assert currentTotalPages > 0 : "PageMemory.totalPages() is still 0";
+
+        return currentTotalPages;
     }
 
     /**
@@ -457,24 +434,33 @@ class SpeedBasedMemoryConsumptionThrottlingStrategy {
      * @param baseSpeed   speed to slow down.
      * @return sleep time in nanoseconds.
      */
-    long calcDelayTime(long baseSpeed) {
-        return calcDelayTime(baseSpeed, threadIdsCount(), 1);
+    long nsPerOperation(long baseSpeed) {
+        return nsPerOperation(baseSpeed, threadIdsCount());
     }
 
     /**
-     * @param baseSpeed   speed to slow down.
+     * @param speedPagesPerSec   speed to slow down.
+     * @param nThreads    operating threads.
+     * @return sleep time in nanoseconds.
+     */
+    private long nsPerOperation(long speedPagesPerSec, int nThreads) {
+        return nsPerOperation(speedPagesPerSec, nThreads, 1);
+    }
+
+    /**
+     * @param speedPagesPerSec   speed to slow down.
      * @param nThreads    operating threads.
      * @param factor      how much it is needed to slowdown base speed. 1 means delay to get exact base speed.
      * @return sleep time in nanoseconds.
      */
-    private long calcDelayTime(long baseSpeed, int nThreads, int factor) {
+    private long nsPerOperation(long speedPagesPerSec, int nThreads, int factor) {
         if (factor <= 0)
             throw new IllegalStateException("Coefficient should be positive");
 
-        if (baseSpeed <= 0)
+        if (speedPagesPerSec <= 0)
             return 0;
 
-        long updTimeNsForOnePage = TimeUnit.SECONDS.toNanos(1) * nThreads / (baseSpeed);
+        long updTimeNsForOnePage = TimeUnit.SECONDS.toNanos(1) * nThreads / (speedPagesPerSec);
 
         return factor * updTimeNsForOnePage;
     }

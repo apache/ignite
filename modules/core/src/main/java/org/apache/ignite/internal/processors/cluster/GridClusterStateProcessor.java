@@ -1190,7 +1190,7 @@ public class GridClusterStateProcessor extends GridProcessorAdapter implements I
 
         if (activate(curState.state(), state) && !inMemoryMode) {
             try {
-                Map<String, StoredCacheData> cfgs = ctx.cache().context().pageStore().readCacheConfigurations();
+                Map<String, StoredCacheData> cfgs = ctx.cache().configManager().readCacheConfigurations();
 
                 if (!F.isEmpty(cfgs)) {
                     storedCfgs = new ArrayList<>(cfgs.values());

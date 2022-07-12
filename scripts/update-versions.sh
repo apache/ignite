@@ -30,11 +30,17 @@ if [ $# -eq 0 ]
     exit 1
 fi
 
-echo Updating Java versions to $1 with Maven...
-sed -i '' -e "s/<revision>.*<\/revision>/<revision>$1<\/revision>/" ./parent/pom.xml;
+SED_OPTION=(-i)
 
-echo Updating checkstyle resources versions to $1 with Maven...
-mvn -pl modules/checkstyle versions:set -DnewVersion=$1 -DgenerateBackupPoms=false -DoldVersion=* -DprocessDependencies=false
+if [[ "$OSTYPE" == "darwin"* ]]; then
+  SED_OPTION=(-i '')
+fi
 
-echo Updating .NET, C++ and other resources versions to $1 with Maven...
-mvn validate -P update-versions -D new.ignite.version=$1
+echo Updating versions to "$1"
+
+# The ignite-checkstyle module has it's own Apache parent, so in has to be updated independently.
+sed "${SED_OPTION[@]}" -e "s/<revision>\(.*\)</<revision>${1}</g" ./parent/pom.xml ./modules/checkstyle/pom.xml;
+
+echo Updating sub-modules versions to "$1" and resouces during the build
+
+mvn install -P all-java,all-scala,platforms,skip-docs -DskipTests

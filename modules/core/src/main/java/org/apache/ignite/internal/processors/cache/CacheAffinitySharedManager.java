@@ -1800,10 +1800,11 @@ public class CacheAffinitySharedManager<K, V> extends GridCacheSharedManagerAdap
      * @param aff Affinity.
      * @param topVer Topology version.
      */
-    private void calculateAndInit(ExchangeDiscoveryEvents evts,
+    private void calculateAndInit(
+        ExchangeDiscoveryEvents evts,
         GridAffinityAssignmentCache aff,
-        AffinityTopologyVersion topVer)
-    {
+        AffinityTopologyVersion topVer
+    ) {
         List<List<ClusterNode>> assignment = aff.calculate(topVer, evts, evts.discoveryCache()).assignment();
 
         aff.initialize(topVer, assignment);

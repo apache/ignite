@@ -1207,7 +1207,8 @@ public class GridToStringBuilder {
                 objArr = Arrays.copyOf(objArr, COLLECTION_LIMIT);
 
             res = Arrays.toString(objArr);
-        } else {
+        }
+        else {
             res = toStringWithLimit(arr, COLLECTION_LIMIT);
 
             arrLen = Array.getLength(arr);
@@ -1770,8 +1771,8 @@ public class GridToStringBuilder {
         Object[] addNames,
         Object[] addVals,
         boolean[] addSens,
-        int addLen)
-    {
+        int addLen
+    ) {
         if (addLen > 0) {
             for (int i = 0; i < addLen; i++) {
                 Object addVal = addVals[i];

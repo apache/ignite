@@ -48,6 +48,7 @@ import org.apache.ignite.internal.processors.query.QueryIndexDescriptorImpl;
 import org.apache.ignite.internal.processors.query.h2.IgniteH2Indexing;
 import org.apache.ignite.internal.processors.query.schema.SchemaIndexCacheVisitor;
 import org.apache.ignite.internal.processors.query.schema.SchemaOperationException;
+import org.apache.ignite.internal.util.lang.RunnableX;
 import org.apache.ignite.internal.util.typedef.T3;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi;
@@ -56,7 +57,6 @@ import org.jetbrains.annotations.NotNull;
 import org.junit.Test;
 
 import static org.apache.ignite.internal.IgniteClientReconnectAbstractTest.TestTcpDiscoverySpi;
-import static org.apache.ignite.testframework.GridTestUtils.RunnableX;
 
 /**
  * Concurrency tests for dynamic index create/drop.
@@ -215,6 +215,8 @@ public abstract class DynamicIndexAbstractConcurrentSelfTest extends DynamicInde
         ignitionStart(clientConfiguration(4));
 
         createSqlCache(srv1);
+
+        awaitCacheOnClient(grid(4), cacheConfiguration().getName());
 
         CountDownLatch idxLatch = blockIndexing(srv1);
 

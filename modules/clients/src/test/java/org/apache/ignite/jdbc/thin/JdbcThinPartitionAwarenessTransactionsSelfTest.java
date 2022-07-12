@@ -30,7 +30,6 @@ import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.binary.BinaryMarshaller;
 import org.apache.ignite.internal.processors.query.NestedTxMode;
 import org.apache.ignite.internal.processors.query.QueryHistory;
-import org.apache.ignite.internal.processors.query.h2.IgniteH2Indexing;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.jetbrains.annotations.NotNull;
 import org.junit.Test;
@@ -204,10 +203,8 @@ public class JdbcThinPartitionAwarenessTransactionsSelfTest extends JdbcThinAbst
             stmt.executeQuery(sql);
 
         // Reset query history.
-        for (int i = 0; i < NODES_CNT; i++) {
-            ((IgniteH2Indexing)grid(i).context().query().getIndexing())
-                .runningQueryManager().resetQueryHistoryMetrics();
-        }
+        for (int i = 0; i < NODES_CNT; i++)
+            grid(i).context().query().runningQueryManager().resetQueryHistoryMetrics();
 
         // Execute query multiple times
         for (int i = 0; i < NODES_CNT * QUERY_EXECUTION_MULTIPLIER; i++) {
@@ -242,8 +239,8 @@ public class JdbcThinPartitionAwarenessTransactionsSelfTest extends JdbcThinAbst
         int qryExecutionsCntr = 0;
 
         for (int i = 0; i < NODES_CNT; i++) {
-            Collection<QueryHistory> metrics = ((IgniteH2Indexing)grid(i).context().query().getIndexing())
-                .runningQueryManager().queryHistoryMetrics().values();
+            Collection<QueryHistory> metrics = grid(i).context().query().runningQueryManager()
+                .queryHistoryMetrics().values();
 
             if (!metrics.isEmpty()) {
                 nonEmptyMetricsCntr++;

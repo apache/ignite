@@ -77,7 +77,8 @@ public class PartitionDefferedDeleteQueueCleanupTask implements GridTimeoutObjec
 
                             try {
                                 top = grp.topology();
-                            } catch (IllegalStateException ignore) {
+                            }
+                            catch (IllegalStateException ignore) {
                                 // Cache stopped.
                             }
 

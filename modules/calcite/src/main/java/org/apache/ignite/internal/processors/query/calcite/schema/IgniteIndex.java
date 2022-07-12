@@ -86,4 +86,13 @@ public interface IgniteIndex {
         Function<Row, Row> rowTransformer,
         @Nullable ImmutableBitSet requiredColumns
     );
+
+    /**
+     * Calculates index records number.
+     *
+     * @param ectx Execution context.
+     * @param grp  Colocation group.
+     * @return Index records number for {@code group}.
+     */
+    public long count(ExecutionContext<?> ectx, ColocationGroup grp);
 }

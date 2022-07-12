@@ -244,7 +244,7 @@ public class IgnitePdsBinaryMetadataAsyncWritingTest extends GridCommonAbstractT
 
         specialFileIOFactory = new FailingFileIOFactory(new RandomAccessFileIOFactory());
 
-        setRootLoggerDebugLevel();
+        setLoggerDebugLevel();
 
         IgniteEx ig1 = startGrid(1);
 
@@ -332,7 +332,7 @@ public class IgnitePdsBinaryMetadataAsyncWritingTest extends GridCommonAbstractT
 
         ListeningTestLogger listeningLog = new ListeningTestLogger(log);
 
-        setRootLoggerDebugLevel();
+        setLoggerDebugLevel();
 
         LogListener waitingForWriteLsnr = LogListener.matches("Waiting for write completion of").build();
         listeningLog.registerListener(waitingForWriteLsnr);

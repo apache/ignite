@@ -70,7 +70,8 @@ public class IgniteCacheLockPartitionOnAffinityRunWithCollisionSpiTest
                 Arrays.asList(Organization.class.getSimpleName(), Person.class.getSimpleName()),
                 new Integer(orgId),
                 new TestRun(orgId));
-        } catch (Exception ignored) {
+        }
+        catch (Exception ignored) {
             // No-op. Swallow exceptions on run (e.g. job canceling etc.).
             // The test checks only correct partition release in case CollisionSpi is used.
         }
@@ -177,7 +178,8 @@ public class IgniteCacheLockPartitionOnAffinityRunWithCollisionSpiTest
             if (cancelAllJobs) {
                 for (CollisionJobContext job : waitJobs)
                     job.cancel();
-            } else {
+            }
+            else {
                 for (CollisionJobContext job : waitJobs)
                     job.activate();
             }

@@ -1130,9 +1130,8 @@ public class TxRollbackOnTimeoutTest extends GridCommonAbstractTest {
     private void waitingTxUnblockedOnThreadDeath0(final Ignite near,
         final Ignite other,
         final int recordsCnt,
-        final long timeout)
-        throws Exception
-    {
+        final long timeout
+    ) throws Exception {
         info("Start test [node1=" + near.name() + ", node2=" + other.name() + ']');
 
         final CountDownLatch blocked = new CountDownLatch(1);

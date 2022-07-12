@@ -191,7 +191,8 @@ public class CacheGroupPageScanner implements CheckpointListener {
             }
 
             grps.put(grpId, grpScanTask);
-        } finally {
+        }
+        finally {
             lock.unlock();
         }
 
@@ -218,7 +219,8 @@ public class CacheGroupPageScanner implements CheckpointListener {
                 log.info("Scheduled reencryption [grp=" + grpScanTask.group().cacheOrGroupName() + "]");
 
             grpScanTask.checkComplete();
-        } catch (IgniteCheckedException e) {
+        }
+        catch (IgniteCheckedException e) {
             grpScanTask.onDone(e);
         }
     }
@@ -244,7 +246,8 @@ public class CacheGroupPageScanner implements CheckpointListener {
 
             for (GroupScanTask grpScanTask : grps.values())
                 grpScanTask.cancel();
-        } finally {
+        }
+        finally {
             lock.unlock();
         }
     }
@@ -297,7 +300,8 @@ public class CacheGroupPageScanner implements CheckpointListener {
                     partStates[Math.min(partId, partStates.length - 1)] = pagesCnt;
                 }
             });
-        } finally {
+        }
+        finally {
             ctx.cache().context().database().checkpointReadUnlock();
         }
 
@@ -530,12 +534,14 @@ public class CacheGroupPageScanner implements CheckpointListener {
                 }
 
                 parts.remove(partId);
-            } catch (Throwable t) {
+            }
+            catch (Throwable t) {
                 if (X.hasCause(t, NodeStoppingException.class))
                     onCancelled();
                 else
                     onDone(t);
-            } finally {
+            }
+            finally {
                 checkComplete();
 
                 if (log.isDebugEnabled()) {

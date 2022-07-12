@@ -83,7 +83,8 @@ public class ClientTcpSslLoadTest extends ClientTcpSslMultiThreadedSelfTest {
         for (int i = 0; i < NODES_CNT; i++)
             try {
                 grid(i).cache(PARTITIONED_CACHE_NAME).clear();
-            } catch (IgniteException e) {
+            }
+            catch (IgniteException e) {
                 log.error("Cache clear failed.", e);
             }
     }

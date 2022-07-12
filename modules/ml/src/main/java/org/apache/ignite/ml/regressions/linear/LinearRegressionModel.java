@@ -155,7 +155,8 @@ public final class LinearRegressionModel implements IgniteModel<Vector, Double>,
                     .readValue(new File(path.toAbsolutePath().toString()), LinearRegressionModelJSONExportModel.class);
 
             return linearRegressionJSONExportModel.convert();
-        } catch (IOException e) {
+        }
+        catch (IOException e) {
             e.printStackTrace();
         }
 

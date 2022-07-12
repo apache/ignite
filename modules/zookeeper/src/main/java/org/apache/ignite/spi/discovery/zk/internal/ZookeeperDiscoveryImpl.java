@@ -724,8 +724,7 @@ public class ZookeeperDiscoveryImpl {
      * @throws InterruptedException If interrupted.
      */
     private void saveCustomMessage(ZookeeperClient zkClient, byte[] msgBytes)
-        throws ZookeeperClientFailedException, InterruptedException
-    {
+        throws ZookeeperClientFailedException, InterruptedException {
         String prefix = UUID.randomUUID().toString();
 
         int partCnt = 1;
@@ -986,8 +985,7 @@ public class ZookeeperDiscoveryImpl {
      * @throws InterruptedException If interrupted.
      */
     private int saveMultipleParts(ZookeeperClient zkClient, String basePath, List<byte[]> parts)
-        throws ZookeeperClientFailedException, InterruptedException
-    {
+        throws ZookeeperClientFailedException, InterruptedException {
         assert parts.size() > 1;
 
         for (int i = 0; i < parts.size(); i++) {
@@ -1744,8 +1742,7 @@ public class ZookeeperDiscoveryImpl {
      */
     private void generateJoinEvents(TreeMap<Long, ZookeeperClusterNode> curTop,
         TreeMap<Long, String> alives,
-        final int MAX_NEW_EVTS) throws Exception
-    {
+        final int MAX_NEW_EVTS) throws Exception {
         ZkBulkJoinContext joinCtx = new ZkBulkJoinContext();
 
         for (Map.Entry<Long, String> e : alives.entrySet()) {
@@ -1793,8 +1790,7 @@ public class ZookeeperDiscoveryImpl {
      * @throws Exception If failed.
      */
     private void generateBulkJoinEvent(TreeMap<Long, ZookeeperClusterNode> curTop, ZkBulkJoinContext joinCtx)
-        throws Exception
-    {
+        throws Exception {
         rtState.evtsData.evtIdGen++;
 
         long evtId = rtState.evtsData.evtIdGen;
@@ -1997,9 +1993,8 @@ public class ZookeeperDiscoveryImpl {
         ZkBulkJoinContext joinCtx,
         TreeMap<Long, ZookeeperClusterNode> curTop,
         long internalId,
-        String aliveNodePath)
-        throws Exception
-    {
+        String aliveNodePath
+    ) throws Exception {
         UUID nodeId = ZkIgnitePaths.aliveNodeId(aliveNodePath);
         UUID prefixId = ZkIgnitePaths.aliveNodePrefixId(aliveNodePath);
 
@@ -2245,9 +2240,8 @@ public class ZookeeperDiscoveryImpl {
         ZkJoiningNodeData joiningNodeData,
         long internalId,
         UUID prefixId,
-        @Nullable byte[] secSubjZipBytes)
-        throws Exception
-    {
+        @Nullable byte[] secSubjZipBytes
+    ) throws Exception {
         ZookeeperClusterNode joinedNode = joiningNodeData.node();
 
         UUID nodeId = joinedNode.id();
@@ -2527,8 +2521,8 @@ public class ZookeeperDiscoveryImpl {
      */
     private void generateAndProcessCustomEventOnCoordinator(String evtPath,
         ZookeeperClusterNode sndNode,
-        DiscoverySpiCustomMessage msg) throws Exception
-    {
+        DiscoverySpiCustomMessage msg
+    ) throws Exception {
         ZookeeperClient zkClient = rtState.zkClient;
         ZkDiscoveryEventsData evtsData = rtState.evtsData;
 
@@ -2841,8 +2835,7 @@ public class ZookeeperDiscoveryImpl {
 
     /** */
     private boolean processBulkJoin(ZkDiscoveryEventsData evtsData, ZkDiscoveryNodeJoinEventData evtData)
-        throws Exception
-    {
+        throws Exception {
         boolean evtProcessed = false;
 
         for (int i = 0; i < evtData.joinedNodes.size(); i++) {
@@ -2897,8 +2890,8 @@ public class ZookeeperDiscoveryImpl {
      */
     private void onEventProcessed(ZkRuntimeState rtState,
         boolean updateNodeInfo,
-        boolean evtProcessed) throws Exception
-    {
+        boolean evtProcessed
+    ) throws Exception {
         synchronized (stateMux) {
             if (updateNodeInfo) {
                 assert rtState.locNodeZkPath != null;
@@ -2937,8 +2930,7 @@ public class ZookeeperDiscoveryImpl {
      * @throws Exception If failed.
      */
     private void updateProcessedEventsOnTimeout(ZkRuntimeState rtState, ZkTimeoutObject procEvtsUpdateTo)
-        throws Exception
-    {
+        throws Exception {
         synchronized (stateMux) {
             if (rtState.procEvtsUpdateTo == procEvtsUpdateTo && rtState.locNodeInfo.needUpdate) {
                 if (log.isDebugEnabled())
@@ -2988,9 +2980,8 @@ public class ZookeeperDiscoveryImpl {
      */
     private void processLocalJoin(ZkDiscoveryEventsData evtsData,
         ZkJoinedNodeEvtData joinedEvtData,
-        ZkDiscoveryNodeJoinEventData evtData)
-        throws Exception
-    {
+        ZkDiscoveryNodeJoinEventData evtData
+    ) throws Exception {
         synchronized (stateMux) {
             if (connState == ConnectionState.STOPPED)
                 return;
@@ -3152,8 +3143,7 @@ public class ZookeeperDiscoveryImpl {
      * @throws Exception If failed.
      */
     private void processCommunicationErrorResolveFinishMessage(ZkCommunicationErrorResolveFinishMessage msg)
-        throws Exception
-    {
+        throws Exception {
         UUID futId = msg.futId;
 
         assert futId != null;
@@ -4479,8 +4469,7 @@ public class ZookeeperDiscoveryImpl {
 
         /** {@inheritDoc} */
         @Override public void processResult0(int rc, String path, Object ctx, List<String> children, Stat stat)
-            throws Exception
-        {
+            throws Exception {
             assert rc == 0 : KeeperException.Code.get(rc);
 
             checkIsCoordinator(children);
@@ -4500,8 +4489,7 @@ public class ZookeeperDiscoveryImpl {
 
         /** {@inheritDoc} */
         @Override void processResult0(int rc, String path, Object ctx, List<String> children, Stat stat)
-            throws Exception
-        {
+            throws Exception {
             assert rc == 0 : KeeperException.Code.get(rc);
 
             checkClientsStatus(children);

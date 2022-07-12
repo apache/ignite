@@ -148,17 +148,35 @@ public class IgniteSqlDistributedJoinSelfTest extends AbstractIndexingCommonTest
         @QuerySqlField(index = true)
         private String name;
 
-        public String getId() { return id; }
+        /** */
+        public String getId() {
+            return id;
+        }
 
-        public void setId(String id) { this.id = id; }
+        /** */
+        public void setId(String id) {
+            this.id = id;
+        }
 
-        public String getOrgId() { return orgId; }
+        /** */
+        public String getOrgId() {
+            return orgId;
+        }
 
-        public void setOrgId(String orgId) { this.orgId = orgId; }
+        /** */
+        public void setOrgId(String orgId) {
+            this.orgId = orgId;
+        }
 
-        public String getName() { return name; }
+        /** */
+        public String getName() {
+            return name;
+        }
 
-        public void setName(String name) { this.name = name; }
+        /** */
+        public void setName(String name) {
+            this.name = name;
+        }
     }
 
     /**
@@ -173,12 +191,24 @@ public class IgniteSqlDistributedJoinSelfTest extends AbstractIndexingCommonTest
         @QuerySqlField(index = true)
         private String name;
 
-        public void setId(String id) { this.id = id; }
+        /** */
+        public void setId(String id) {
+            this.id = id;
+        }
 
-        public String getId() { return id; }
+        /** */
+        public String getId() {
+            return id;
+        }
 
-        public String getName() { return name; }
+        /** */
+        public String getName() {
+            return name;
+        }
 
-        public void setName(String name) { this.name = name; }
+        /** */
+        public void setName(String name) {
+            this.name = name;
+        }
     }
 }

@@ -56,8 +56,10 @@ import org.apache.ignite.internal.processors.cache.persistence.file.FileIO;
 import org.apache.ignite.internal.processors.cache.persistence.file.FileIOFactory;
 import org.apache.ignite.internal.processors.cache.persistence.file.FilePageStoreManager;
 import org.apache.ignite.internal.processors.cache.persistence.file.RandomAccessFileIOFactory;
+import org.apache.ignite.internal.processors.cache.verify.IdleVerifyResultV2;
 import org.apache.ignite.internal.util.distributed.DistributedProcess.DistributedProcessType;
 import org.apache.ignite.internal.util.distributed.SingleNodeMessage;
+import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.G;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgniteFuture;
@@ -66,6 +68,7 @@ import org.apache.ignite.testframework.GridTestUtils;
 import org.jetbrains.annotations.Nullable;
 import org.junit.Test;
 
+import static org.apache.ignite.cluster.ClusterState.ACTIVE;
 import static org.apache.ignite.events.EventType.EVT_CLUSTER_SNAPSHOT_RESTORE_FAILED;
 import static org.apache.ignite.events.EventType.EVT_CLUSTER_SNAPSHOT_RESTORE_FINISHED;
 import static org.apache.ignite.events.EventType.EVT_CLUSTER_SNAPSHOT_RESTORE_STARTED;
@@ -77,6 +80,7 @@ import static org.apache.ignite.internal.processors.cache.persistence.snapshot.S
 import static org.apache.ignite.internal.util.distributed.DistributedProcess.DistributedProcessType.RESTORE_CACHE_GROUP_SNAPSHOT_PRELOAD;
 import static org.apache.ignite.internal.util.distributed.DistributedProcess.DistributedProcessType.RESTORE_CACHE_GROUP_SNAPSHOT_PREPARE;
 import static org.apache.ignite.internal.util.distributed.DistributedProcess.DistributedProcessType.RESTORE_CACHE_GROUP_SNAPSHOT_START;
+import static org.apache.ignite.testframework.GridTestUtils.assertContains;
 import static org.apache.ignite.testframework.GridTestUtils.assertThrowsAnyCause;
 import static org.apache.ignite.testframework.GridTestUtils.runAsync;
 
@@ -114,6 +118,53 @@ public class IgniteClusterSnapshotRestoreSelfTest extends IgniteClusterSnapshotR
         ignite.snapshot().restoreSnapshot(SNAPSHOT_NAME, null).get(TIMEOUT);
 
         assertCacheKeys(ignite.cache(DEFAULT_CACHE_NAME), keysCnt);
+    }
+
+    /**
+     * @throws Exception If failed.
+     */
+    @Test
+    public void testClusterSnapshotRestoreFromCustomDir() throws Exception {
+        File snpDir = U.resolveWorkDirectory(U.defaultWorkDirectory(), "ex_snapshots", true);
+
+        assertTrue("Target directory is not empty: " + snpDir, F.isEmpty(snpDir.list()));
+
+        try {
+            IgniteEx ignite = startGrids(2);
+            ignite.cluster().state(ACTIVE);
+
+            for (int i = 0; i < CACHE_KEYS_RANGE; i++)
+                ignite.cache(DEFAULT_CACHE_NAME).put(i, i);
+
+            ignite.context().cache().context().snapshotMgr().createSnapshot(SNAPSHOT_NAME, snpDir.toString()).get(TIMEOUT);
+
+            // Check snapshot.
+            IdleVerifyResultV2 res = snp(ignite).checkSnapshot(SNAPSHOT_NAME, snpDir.getAbsolutePath()).get(TIMEOUT);
+
+            StringBuilder sb = new StringBuilder();
+            res.print(sb::append, true);
+
+            assertTrue(F.isEmpty(res.exceptions()));
+            assertPartitionsSame(res);
+            assertContains(log, sb.toString(), "The check procedure has finished, no conflicts have been found");
+
+            ignite.destroyCache(DEFAULT_CACHE_NAME);
+            awaitPartitionMapExchange();
+
+            ignite.context().cache().context().snapshotMgr().restoreSnapshot(SNAPSHOT_NAME, snpDir.getAbsolutePath(), null)
+                .get();
+
+            IgniteCache<Object, Object> cache = ignite.cache(DEFAULT_CACHE_NAME);
+
+            assert cache != null;
+
+            assertSnapshotCacheKeys(cache);
+        }
+        finally {
+            stopAllGrids();
+
+            U.delete(snpDir);
+        }
     }
 
     /**

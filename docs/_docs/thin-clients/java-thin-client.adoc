@@ -100,7 +100,7 @@ The code snippet shows how an example implementation might look like if you want
 * The `fetchServerAddress()` is a custom function that dynamically provides server addresses.
 * Configure client with `ClientConfiguration.setAddressFinder(finder)`.
 
-Also, you can check a real example of the interface implementation. `ThinClientKubernetesAddressFinder` is created to handle scalable Kubernetes environment.
+Also, you can check a link:https://github.com/apache/ignite/blob/master/examples/src/main/java/org/apache/ignite/examples/client/ClientKubernetesPutGetExample.java#L50[real example] of the interface implementation. `ThinClientKubernetesAddressFinder` is created to handle scalable Kubernetes environment.
 
 == Using Key-Value API
 

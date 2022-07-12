@@ -37,8 +37,7 @@ public class PlatformMessageFilterImpl extends PlatformAbstractPredicate impleme
     /**
      * Constructor.
      */
-    public PlatformMessageFilterImpl()
-    {
+    public PlatformMessageFilterImpl() {
         super();
     }
 

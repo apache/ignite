@@ -35,6 +35,7 @@ import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.processors.cache.DynamicCacheDescriptor;
 import org.apache.ignite.internal.processors.cache.GridCacheSharedContext;
+import org.apache.ignite.internal.processors.cache.GridLocalConfigManager;
 import org.apache.ignite.internal.processors.cache.StoredCacheData;
 import org.apache.ignite.internal.processors.cache.persistence.file.FilePageStoreManager;
 import org.apache.ignite.marshaller.Marshaller;
@@ -191,15 +192,12 @@ public class IgnitePdsCacheConfigurationFileConsistencyCheckTest extends GridCom
         for (int i = 0; i < NODES; i++) {
             IgniteEx ig = grid(i);
 
-            GridCacheSharedContext sharedCtx = ig.context().cache().context();
-
-            FilePageStoreManager pageStore = (FilePageStoreManager)sharedCtx.pageStore();
-
             StoredCacheData corrData = cacheDescr.toStoredData(ig.context().cache().splitter());
 
             corrData.config().setGroupName(ODD_GROUP_NAME);
 
-            pageStore.storeCacheData(corrData, true);
+            GridTestUtils.<GridLocalConfigManager>getFieldValue(ig.context().cache(), "locCfgMgr")
+                .saveCacheConfiguration(corrData, true);
         }
     }
 

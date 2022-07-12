@@ -666,7 +666,7 @@ public class BasicIndexTest extends AbstractIndexingCommonTest {
     public void testCorrectFieldsSequenceInPk() throws Exception {
         inlineSize = 10;
 
-        srvLog = new ListeningTestLogger(false, log);
+        srvLog = new ListeningTestLogger(log);
 
         IgniteEx ig0 = startGrid(0);
 
@@ -790,7 +790,7 @@ public class BasicIndexTest extends AbstractIndexingCommonTest {
 
         String msg0 = "Index with the given set or subset of columns already exists";
 
-        srvLog = new ListeningTestLogger(false, log);
+        srvLog = new ListeningTestLogger(log);
 
         IgniteEx ig0 = startGrid(0);
 
@@ -882,7 +882,7 @@ public class BasicIndexTest extends AbstractIndexingCommonTest {
     public void testCreateIdxWithDifferentIdxFldsSeq() throws Exception {
         inlineSize = 10;
 
-        srvLog = new ListeningTestLogger(false, log);
+        srvLog = new ListeningTestLogger(log);
 
         IgniteEx ig0 = startGrid(0);
 
@@ -1164,7 +1164,7 @@ public class BasicIndexTest extends AbstractIndexingCommonTest {
 
         inlineSize = 33;
 
-        srvLog = new ListeningTestLogger(false, log);
+        srvLog = new ListeningTestLogger(log);
 
         String msg1 = "curSize=1";
         String msg2 = "curSize=2";
@@ -1508,7 +1508,7 @@ public class BasicIndexTest extends AbstractIndexingCommonTest {
         IgniteH2Indexing idx = ((IgniteH2Indexing)grid().context().query().getIndexing());
 
         H2TableDescriptor tblDesc0 = idx.schemaManager().dataTable("PUBLIC", "TEST0")
-            .rowDescriptor().tableDescriptor();
+            .tableDescriptor();
 
         assertNotNull(GridTestUtils.getFieldValue(tblDesc0, "luceneIdx"));
 
@@ -1518,7 +1518,7 @@ public class BasicIndexTest extends AbstractIndexingCommonTest {
             "WITH \"WRAP_VALUE=false\"");
 
         H2TableDescriptor tblDesc1 = idx.schemaManager().dataTable("PUBLIC", "TEST1")
-            .rowDescriptor().tableDescriptor();
+            .tableDescriptor();
 
         assertNull(GridTestUtils.getFieldValue(tblDesc1, "luceneIdx"));
     }

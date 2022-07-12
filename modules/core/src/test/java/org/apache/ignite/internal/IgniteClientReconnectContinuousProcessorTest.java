@@ -313,9 +313,8 @@ public class IgniteClientReconnectContinuousProcessorTest extends IgniteClientRe
      */
     private void continuousQueryReconnect(Ignite client,
         IgniteCache<Object, Object> clientCache,
-        CacheEventListener lsnr)
-        throws Exception
-    {
+        CacheEventListener lsnr
+    ) throws Exception {
         Ignite srv = ignite(0);
 
         IgniteDiscoverySpi srvSpi = spi0(srv);

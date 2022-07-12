@@ -31,6 +31,7 @@ import org.apache.ignite.internal.processors.metastorage.DistributedMetastorageL
 import org.apache.ignite.internal.processors.metastorage.ReadableDistributedMetaStorage;
 import org.apache.ignite.internal.processors.subscription.GridInternalSubscriptionProcessor;
 import org.apache.ignite.internal.util.future.GridFutureAdapter;
+import org.jetbrains.annotations.Nullable;
 
 import static org.apache.ignite.internal.processors.configuration.distributed.DistributedConfigurationProcessor.AllowableAction.ACTUALIZE;
 import static org.apache.ignite.internal.processors.configuration.distributed.DistributedConfigurationProcessor.AllowableAction.CLUSTER_WIDE_UPDATE;
@@ -124,7 +125,7 @@ public class DistributedConfigurationProcessor extends GridProcessorAdapter impl
      * @param propKey Key of specific property.
      * @return Property key for meta storage.
      */
-    private static String toMetaStorageKey(String propKey) {
+    public static String toMetaStorageKey(String propKey) {
         return DIST_CONF_PREFIX + propKey;
     }
 
@@ -169,7 +170,7 @@ public class DistributedConfigurationProcessor extends GridProcessorAdapter impl
      * @param name Property name.
      * @return Public property.
      */
-    public DistributedChangeableProperty<Serializable> property(String name) {
+    public @Nullable DistributedChangeableProperty<Serializable> property(String name) {
         DistributedChangeableProperty<?> p = props.get(name);
 
         if (!(p instanceof DistributedChangeableProperty))

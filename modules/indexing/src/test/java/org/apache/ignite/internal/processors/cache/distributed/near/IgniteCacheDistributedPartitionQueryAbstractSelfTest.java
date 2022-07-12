@@ -397,7 +397,8 @@ public abstract class IgniteCacheDistributedPartitionQueryAbstractSelfTest exten
 
                 if (regionId == UNMAPPED_REGION)
                     fail();
-            } catch (CacheException ignored) {
+            }
+            catch (CacheException ignored) {
                 if (regionId != UNMAPPED_REGION)
                     fail();
             }
@@ -449,7 +450,8 @@ public abstract class IgniteCacheDistributedPartitionQueryAbstractSelfTest exten
 
                 if (regionId == UNMAPPED_REGION)
                     fail();
-            } catch (CacheException ignored) {
+            }
+            catch (CacheException ignored) {
                 if (regionId != UNMAPPED_REGION)
                     fail();
             }

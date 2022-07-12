@@ -124,7 +124,8 @@ public abstract class AbstractStorageTest {
     protected void expect(Runnable fun, Class<? extends Exception> exCls) {
         try {
             fun.run();
-        } catch (Exception ex) {
+        }
+        catch (Exception ex) {
             assertEquals(exCls, ex.getClass());
             return;
         }

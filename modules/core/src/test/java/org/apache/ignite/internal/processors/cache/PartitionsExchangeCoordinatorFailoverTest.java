@@ -140,7 +140,9 @@ public class PartitionsExchangeCoordinatorFailoverTest extends GridCommonAbstrac
                 try {
                     sndFullMsgLatch.await();
                 }
-                catch (Throwable ignored) { }
+                catch (Throwable ignored) {
+                    // Ignore.
+                }
 
                 return true;
             }

@@ -137,7 +137,8 @@ public abstract class DatasetTrainer<M extends IgniteModel, L> {
                 learningEnvironment().initDeployingContext(preprocessor);
 
                 return updateModel(mdl, datasetBuilder, preprocessor);
-            } else {
+            }
+            else {
                 environment.logger(getClass()).log(
                     MLLogger.VerboseLevel.HIGH,
                     "Model cannot be updated because of initial state of " +

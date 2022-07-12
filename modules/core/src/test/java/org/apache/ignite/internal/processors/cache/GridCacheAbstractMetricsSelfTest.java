@@ -1293,7 +1293,8 @@ public abstract class GridCacheAbstractMetricsSelfTest extends GridCacheAbstract
 
                 try {
                     Thread.sleep(100);
-                } catch (InterruptedException e) {
+                }
+                catch (InterruptedException e) {
                     throw new EntryProcessorException(e);
                 }
 
@@ -1319,7 +1320,8 @@ public abstract class GridCacheAbstractMetricsSelfTest extends GridCacheAbstract
 
                 try {
                     Thread.sleep(200);
-                } catch (InterruptedException e) {
+                }
+                catch (InterruptedException e) {
                     throw new EntryProcessorException(e);
                 }
 

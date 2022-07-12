@@ -109,6 +109,8 @@ public abstract class IgniteCacheInvokeReadThroughAbstractTest extends GridCommo
         int key = 0;
 
         for (Ignite node : G.allGrids()) {
+            awaitCacheOnClient(node, ccfg.getName());
+
             if (node.configuration().isClientMode() && ccfg.getNearConfiguration() != null)
                 node.createNearCache(ccfg.getName(), ccfg.getNearConfiguration());
         }

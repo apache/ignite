@@ -31,17 +31,22 @@ import java.sql.Time;
 import java.sql.Timestamp;
 import java.sql.Types;
 import java.text.MessageFormat;
+import java.time.LocalDate;
+import java.time.LocalDateTime;
+import java.time.LocalTime;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.Comparator;
+import java.util.HashMap;
 import java.util.HashSet;
+import java.util.LinkedHashMap;
 import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
+import java.util.Set;
 import java.util.UUID;
-
 import javax.cache.CacheException;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteException;
@@ -50,6 +55,9 @@ import org.apache.ignite.internal.GridKernalContext;
 import org.apache.ignite.internal.binary.BinaryArray;
 import org.apache.ignite.internal.binary.BinaryEnumObjectImpl;
 import org.apache.ignite.internal.binary.BinaryUtils;
+import org.apache.ignite.internal.cache.query.index.NullsOrder;
+import org.apache.ignite.internal.cache.query.index.Order;
+import org.apache.ignite.internal.cache.query.index.sorted.IndexKeyDefinition;
 import org.apache.ignite.internal.processors.cache.CacheObject;
 import org.apache.ignite.internal.processors.cache.CacheObjectValueContext;
 import org.apache.ignite.internal.processors.cache.GridCacheContext;
@@ -61,12 +69,12 @@ import org.apache.ignite.internal.processors.cache.query.QueryTable;
 import org.apache.ignite.internal.processors.odbc.jdbc.JdbcParameterMeta;
 import org.apache.ignite.internal.processors.query.GridQueryFieldMetadata;
 import org.apache.ignite.internal.processors.query.GridQueryProperty;
+import org.apache.ignite.internal.processors.query.GridQueryRowDescriptor;
 import org.apache.ignite.internal.processors.query.GridQueryTypeDescriptor;
 import org.apache.ignite.internal.processors.query.IgniteSQLException;
 import org.apache.ignite.internal.processors.query.QueryUtils;
 import org.apache.ignite.internal.processors.query.h2.opt.GridH2IndexBase;
 import org.apache.ignite.internal.processors.query.h2.opt.GridH2RetryException;
-import org.apache.ignite.internal.processors.query.h2.opt.GridH2RowDescriptor;
 import org.apache.ignite.internal.processors.query.h2.opt.GridH2Table;
 import org.apache.ignite.internal.processors.query.h2.opt.GridH2ValueCacheObject;
 import org.apache.ignite.internal.processors.query.h2.opt.QueryContext;
@@ -156,6 +164,21 @@ public class H2Utils {
     /** Quotation character. */
     private static final char ESC_CH = '\"';
 
+    /** Types that can be implicitly converted to H2 column type. */
+    private static final Map<Integer, Set<Class<?>>> CONVERTABLE_TYPES = new HashMap<Integer, Set<Class<?>>>() {
+        {
+            put(Value.TIMESTAMP, new HashSet<Class<?>>() {
+                {
+                    add(LocalDateTime.class);
+                    add(java.util.Date.class);
+                    add(java.sql.Date.class);
+                }
+            });
+            put(Value.TIME, Collections.singleton(LocalTime.class));
+            put(Value.DATE, Collections.singleton(LocalDate.class));
+        }
+    };
+
     /**
      * @param c1 First column.
      * @param c2 Second column.
@@ -187,7 +210,7 @@ public class H2Utils {
      * @param cols Columns list.
      * @return Result.
      */
-    public static boolean containsKeyColumn(GridH2RowDescriptor desc, List<IndexColumn> cols) {
+    public static boolean containsKeyColumn(GridQueryRowDescriptor desc, List<IndexColumn> cols) {
         for (int i = cols.size() - 1; i >= 0; i--) {
             if (desc.isKeyColumn(cols.get(i).column.getColumnId()))
                 return true;
@@ -308,7 +331,7 @@ public class H2Utils {
      * @param affCol Affinity key column.
      * @return The same list back.
      */
-    public static List<IndexColumn> treeIndexColumns(GridH2RowDescriptor desc, List<IndexColumn> cols,
+    public static List<IndexColumn> treeIndexColumns(GridQueryRowDescriptor desc, List<IndexColumn> cols,
         IndexColumn keyCol, IndexColumn affCol) {
         assert keyCol != null;
 
@@ -496,12 +519,12 @@ public class H2Utils {
      * Convert value to column's expected type by means of H2.
      *
      * @param val Source value.
-     * @param idx Row descriptor.
+     * @param coCtx Cache object context.
      * @param type Expected column type to convert to.
      * @return Converted object.
      * @throws IgniteCheckedException if failed.
      */
-    public static Object convert(Object val, IgniteH2Indexing idx, int type) throws IgniteCheckedException {
+    public static Object convert(Object val, CacheObjectValueContext coCtx, int type) throws IgniteCheckedException {
         if (val == null)
             return null;
 
@@ -510,7 +533,7 @@ public class H2Utils {
         if (objType == type)
             return val;
 
-        Value h2Val = wrap(idx.objectContext(), val, objType);
+        Value h2Val = wrap(coCtx, val, objType);
 
         return h2Val.convertTo(type).getObject();
     }
@@ -573,12 +596,32 @@ public class H2Utils {
     }
 
     /**
+     * @param cls The class whose convertibility is to be tested.
+     * @param colType Column target type.
+     * @return Whether specified class can be implicitly converted to the specified type.
+     * @see #wrap(CacheObjectValueContext, Object, int)
+     */
+    public static boolean isConvertableToColumnType(Class<?> cls, int colType) {
+        assert cls != null;
+
+        if (DataType.getTypeClassName(colType).equals(cls.getName()))
+            return true;
+
+        Set<Class<?>> types = CONVERTABLE_TYPES.get(colType);
+
+        return types != null && types.contains(cls);
+    }
+
+    /**
      * Wraps object to respective {@link Value}.
+     *
+     * Note, implicit type conversions must be also included into {@link #CONVERTABLE_TYPES}.
      *
      * @param obj Object.
      * @param type Value type.
      * @return Value.
      * @throws IgniteCheckedException If failed.
+     * @see #isConvertableToColumnType(Class, int)
      */
     @SuppressWarnings("ConstantConditions")
     public static Value wrap(CacheObjectValueContext coCtx, Object obj, int type) throws IgniteCheckedException {
@@ -1040,7 +1083,7 @@ public class H2Utils {
     @NotNull public static IndexColumn[] unwrapKeyColumns(GridH2Table tbl, IndexColumn[] idxCols) {
         ArrayList<IndexColumn> keyCols = new ArrayList<>();
 
-        boolean isSql = tbl.rowDescriptor().tableDescriptor().sql();
+        boolean isSql = tbl.tableDescriptor().sql();
 
         if (!isSql)
             return idxCols;
@@ -1081,7 +1124,8 @@ public class H2Utils {
                     if (!added)
                         keyCols.add(idxCol);
                 }
-            } else
+            }
+            else
                 keyCols.add(idxCol);
         }
 
@@ -1093,6 +1137,27 @@ public class H2Utils {
      */
     public static String queryEngine() {
         return IndexingQueryEngineConfiguration.ENGINE_NAME;
+    }
+
+    /**
+     * Maps H2 columns to IndexKeyDefinition.
+     */
+    public static LinkedHashMap<String, IndexKeyDefinition> columnsToKeyDefinitions(GridH2Table tbl, List<IndexColumn> cols) {
+        LinkedHashMap<String, IndexKeyDefinition> idxKeyDefinitions = new LinkedHashMap<>();
+
+        for (IndexColumn c: cols) {
+            Order sortOrder = new Order((c.sortType & 1) != 0 ?
+                org.apache.ignite.internal.cache.query.index.SortOrder.DESC :
+                org.apache.ignite.internal.cache.query.index.SortOrder.ASC,
+                (c.sortType & 2) != 0 ? NullsOrder.NULLS_FIRST : (c.sortType & 4) != 0 ? NullsOrder.NULLS_LAST : null);
+
+            idxKeyDefinitions.put(c.columnName,
+                new IndexKeyDefinition(c.column.getType(), sortOrder, c.column.getPrecision()));
+        }
+
+        IndexColumn.mapColumns(cols.toArray(new IndexColumn[0]), tbl);
+
+        return idxKeyDefinitions;
     }
 
     /**

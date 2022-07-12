@@ -287,7 +287,9 @@ public class IgniteUuidSelfTest extends GridCommonAbstractTest {
         }
 
         /** {@inheritDoc} */
-        @Override public String toString() { return S.toString(IgniteUuidBean.class, this); }
+        @Override public String toString() {
+            return S.toString(IgniteUuidBean.class, this);
+        }
     }
 
     /**
@@ -332,6 +334,8 @@ public class IgniteUuidSelfTest extends GridCommonAbstractTest {
         }
 
         /** {@inheritDoc} */
-        @Override public String toString() { return S.toString(UuidBean.class, this); }
+        @Override public String toString() {
+            return S.toString(UuidBean.class, this);
+        }
     }
 }

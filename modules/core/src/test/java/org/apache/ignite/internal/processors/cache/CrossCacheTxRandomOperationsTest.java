@@ -179,6 +179,8 @@ public class CrossCacheTxRandomOperationsTest extends GridCommonAbstractTest {
         Ignite ignite,
         String name) {
         ignite.createCache(cacheConfiguration(name, cacheMode, writeSync, nearCache));
+
+        awaitCacheOnClient(ignite(GRID_CNT - 1), name);
     }
 
     /**

@@ -341,7 +341,8 @@ public class ClientListenerProcessor extends GridProcessorAdapter {
                 codecFilter,
                 sslFilter
             };
-        } else {
+        }
+        else {
             return new GridNioFilter[] {
                 openSesFilter,
                 codecFilter

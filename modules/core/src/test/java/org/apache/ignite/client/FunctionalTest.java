@@ -447,21 +447,6 @@ public class FunctionalTest extends AbstractBinaryArraysTest {
     }
 
     /**
-     * Assert values equals (deep equals for arrays).
-     *
-     * @param exp Expected value.
-     * @param actual Actual value.
-     */
-    public static void assertEqualsArraysAware(Object exp, Object actual) {
-        if (exp instanceof Object[])
-            assertArrayEquals((Object[])exp, (Object[])actual);
-        else if (U.isPrimitiveArray(exp))
-            assertArrayEquals(new Object[] {exp}, new Object[] {actual}); // Hack to compare primitive arrays.
-        else
-            assertEquals(exp, actual);
-    }
-
-    /**
      * Tested API:
      * <ul>
      * <li>{@link ClientCache#putAll(Map)}</li>
@@ -695,10 +680,12 @@ public class FunctionalTest extends AbstractBinaryArraysTest {
                     try (ClientTransaction tx2 = client.transactions().txStart(OPTIMISTIC, REPEATABLE_READ, 500)) {
                         cache.put(0, "value2");
                         tx2.commit();
-                    } finally {
+                    }
+                    finally {
                         try {
                             barrier.await(2000, TimeUnit.MILLISECONDS);
-                        } catch (Throwable ignore) {
+                        }
+                        catch (Throwable ignore) {
                             // No-op.
                         }
                     }

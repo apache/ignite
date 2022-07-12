@@ -17,23 +17,31 @@
 
 package org.apache.ignite.internal.processors.query.h2.maintenance;
 
+import java.util.Arrays;
+import java.util.HashMap;
+import java.util.HashSet;
 import java.util.List;
+import java.util.Map;
+import java.util.Set;
 import java.util.stream.IntStream;
 import org.apache.ignite.internal.cache.query.index.sorted.maintenance.MaintenanceRebuildIndexTarget;
 import org.apache.ignite.internal.cache.query.index.sorted.maintenance.MaintenanceRebuildIndexUtils;
 import org.apache.ignite.maintenance.MaintenanceTask;
+import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.junit.Test;
 
+import static java.util.stream.Collectors.groupingBy;
+import static java.util.stream.Collectors.mapping;
 import static java.util.stream.Collectors.toList;
+import static java.util.stream.Collectors.toSet;
 import static org.apache.ignite.internal.cache.query.index.sorted.maintenance.MaintenanceRebuildIndexUtils.INDEX_REBUILD_MNTC_TASK_NAME;
 import static org.apache.ignite.internal.cache.query.index.sorted.maintenance.MaintenanceRebuildIndexUtils.INDEX_REBUILD_PARAMETER_SEPARATOR;
 import static org.apache.ignite.internal.cache.query.index.sorted.maintenance.MaintenanceRebuildIndexUtils.mergeTasks;
 import static org.apache.ignite.internal.cache.query.index.sorted.maintenance.MaintenanceRebuildIndexUtils.parseMaintenanceTaskParameters;
 import static org.apache.ignite.internal.cache.query.index.sorted.maintenance.MaintenanceRebuildIndexUtils.toMaintenanceTask;
-import static org.junit.Assert.assertEquals;
 
 /** Tests for {@link MaintenanceRebuildIndexTarget}. */
-public class MaintenanceRebuildIndexUtilsSelfTest {
+public class MaintenanceRebuildIndexUtilsSelfTest extends GridCommonAbstractTest {
     /**
      * Tests that maintenance task's parameters can be stringified and parsed back.
      */
@@ -116,5 +124,28 @@ public class MaintenanceRebuildIndexUtilsSelfTest {
 
         assertEquals(cacheId, target.cacheId());
         assertEquals(idxName, target.idxName());
+    }
+
+    /**
+     * Tests that maintenance task can be constructed from a map.
+     */
+    @Test
+    public void testConstructFromMap() {
+        Map<Integer, Set<String>> cacheToIndexes = new HashMap<>();
+        cacheToIndexes.put(1, new HashSet<>(Arrays.asList("foo", "bar")));
+        cacheToIndexes.put(2, new HashSet<>(Arrays.asList("foo1", "bar1")));
+
+        MaintenanceTask task = toMaintenanceTask(cacheToIndexes);
+
+        List<MaintenanceRebuildIndexTarget> targets = parseMaintenanceTaskParameters(task.parameters());
+
+        assertEquals(4, targets.size());
+
+        Map<Integer, Set<String>> result = targets.stream().collect(groupingBy(
+            MaintenanceRebuildIndexTarget::cacheId,
+            mapping(MaintenanceRebuildIndexTarget::idxName, toSet())
+        ));
+
+        assertEqualsMaps(cacheToIndexes, result);
     }
 }

@@ -24,6 +24,7 @@ namespace Apache.Ignite.Core.Tests.Services
     using System.Net;
     using System.Runtime.Serialization.Formatters.Binary;
     using System.Threading;
+    using System.Threading.Tasks;
     using Apache.Ignite.Core.Binary;
     using Apache.Ignite.Core.Client;
     using Apache.Ignite.Core.Cluster;
@@ -360,6 +361,11 @@ namespace Apache.Ignite.Core.Tests.Services
                 Assert.AreEqual(attrValue, stickyProxy.ContextAttribute(attrName));
                 Assert.AreEqual(attrValue, dynamicProxy.ContextAttribute(attrName));
                 Assert.AreEqual(attrValue, dynamicStickyProxy.ContextAttribute(attrName));
+                
+                Assert.AreEqual(attrValue, proxy.ContextAttributeWithAsync(attrName));
+                Assert.AreEqual(attrValue, stickyProxy.ContextAttributeWithAsync(attrName));
+                Assert.AreEqual(attrValue, dynamicProxy.ContextAttributeWithAsync(attrName));
+                Assert.AreEqual(attrValue, dynamicStickyProxy.ContextAttributeWithAsync(attrName));
 
                 Assert.AreEqual(attrBinValue, proxy.ContextBinaryAttribute(attrBinName));
                 Assert.AreEqual(attrBinValue, stickyProxy.ContextBinaryAttribute(attrBinName));
@@ -1785,6 +1791,9 @@ namespace Apache.Ignite.Core.Tests.Services
 
             /** */
             object ContextAttribute(string name);
+            
+            /** */
+            object ContextAttributeWithAsync(string name);
 
             /** */
             object ContextBinaryAttribute(string name);
@@ -1919,6 +1928,20 @@ namespace Apache.Ignite.Core.Tests.Services
                 IServiceCallContext ctx = _context.CurrentCallContext;
 
                 return ctx == null ? null : ctx.GetAttribute(name);
+            }
+
+            /** <inheritdoc /> */
+            public object ContextAttributeWithAsync(string name)
+            {
+                return ContextAttributeAsync(name).GetResult();
+            }
+
+            /** */
+            private async Task<object> ContextAttributeAsync(string name)
+            {
+                await Task.Delay(1);
+
+                return ContextAttribute(name);
             }
 
             /** <inheritdoc /> */

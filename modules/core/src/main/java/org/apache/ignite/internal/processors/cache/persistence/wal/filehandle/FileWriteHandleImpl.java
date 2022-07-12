@@ -455,77 +455,62 @@ class FileWriteHandleImpl extends AbstractFileHandle implements FileWriteHandle 
             try {
                 flushOrWait(null);
 
-                try {
-                    RecordSerializer backwardSerializer = new RecordSerializerFactoryImpl(cctx)
-                        .createSerializer(serializerVer);
+                RecordSerializer backwardSerializer = new RecordSerializerFactoryImpl(cctx)
+                    .createSerializer(serializerVer);
 
-                    SwitchSegmentRecord segmentRecord = new SwitchSegmentRecord();
+                SwitchSegmentRecord segmentRecord = new SwitchSegmentRecord();
 
-                    int switchSegmentRecSize = backwardSerializer.size(segmentRecord);
+                int switchSegmentRecSize = backwardSerializer.size(segmentRecord);
 
-                    if (rollOver && written + switchSegmentRecSize < maxWalSegmentSize) {
-                        segmentRecord.size(switchSegmentRecSize);
+                if (rollOver && written + switchSegmentRecSize < maxWalSegmentSize) {
+                    segmentRecord.size(switchSegmentRecSize);
 
-                        WALPointer segRecPtr = addRecord(segmentRecord);
+                    WALPointer segRecPtr = addRecord(segmentRecord);
 
-                        if (segRecPtr != null) {
-                            fsync(segRecPtr);
+                    if (segRecPtr != null) {
+                        fsync(segRecPtr);
 
-                            switchSegmentRecordOffset = segRecPtr.fileOffset() + switchSegmentRecSize;
-                        }
-                        else {
-                            if (log.isDebugEnabled())
-                                log.debug("Not enough space in wal segment to write segment switch");
-                        }
+                        switchSegmentRecordOffset = segRecPtr.fileOffset() + switchSegmentRecSize;
                     }
                     else {
-                        if (log.isDebugEnabled()) {
-                            log.debug("Not enough space in wal segment to write segment switch, written="
-                                + written + ", switchSegmentRecSize=" + switchSegmentRecSize);
-                        }
-                    }
-
-                    // Unconditional flush (tail of the buffer)
-                    flushOrWait(null);
-
-                    if (mmap) {
-                        List<SegmentedRingByteBuffer.ReadSegment> segs = buf.poll(maxWalSegmentSize);
-
-                        if (segs != null) {
-                            assert segs.size() == 1;
-
-                            segs.get(0).release();
-                        }
-                    }
-
-                    // Do the final fsync.
-                    if (mode != WALMode.NONE) {
-                        if (mmap)
-                            ((MappedByteBuffer)buf.buf).force();
-                        else
-                            fileIO.force();
-
-                        lastFsyncPos = written;
-                    }
-
-                    if (mmap) {
-                        try {
-                            fileIO.close();
-                        }
-                        catch (IOException ignore) {
-                            // No-op.
-                        }
-                    }
-                    else {
-                        walWriter.close();
-
-                        if (!rollOver)
-                            buf.free();
+                        if (log.isDebugEnabled())
+                            log.debug("Not enough space in wal segment to write segment switch");
                     }
                 }
-                catch (IOException e) {
-                    throw new StorageException("Failed to close WAL write handle [idx=" + getSegmentId() + "]", e);
+                else {
+                    if (log.isDebugEnabled()) {
+                        log.debug("Not enough space in wal segment to write segment switch, written="
+                            + written + ", switchSegmentRecSize=" + switchSegmentRecSize);
+                    }
                 }
+
+                // Unconditional flush (tail of the buffer)
+                flushOrWait(null);
+
+                if (mmap) {
+                    List<SegmentedRingByteBuffer.ReadSegment> segs = buf.poll(maxWalSegmentSize);
+
+                    if (segs != null) {
+                        assert segs.size() == 1;
+
+                        segs.get(0).release();
+                    }
+                }
+
+                // Do the final fsync.
+                if (mode != WALMode.NONE) {
+                    if (mmap)
+                        ((MappedByteBuffer)buf.buf).force();
+                    else
+                        walWriter.force();
+
+                    lastFsyncPos = written;
+                }
+
+                walWriter.close();
+
+                if (!mmap && !rollOver)
+                    buf.free();
 
                 if (log.isDebugEnabled())
                     log.debug("Closed WAL write handle [idx=" + getSegmentId() + "]");

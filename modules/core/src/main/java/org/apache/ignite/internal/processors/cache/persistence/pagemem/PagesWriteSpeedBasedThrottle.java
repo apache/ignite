@@ -27,6 +27,7 @@ import org.apache.ignite.internal.processors.cache.persistence.checkpoint.Checkp
 import org.apache.ignite.internal.util.GridConcurrentHashSet;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgniteOutClosure;
+import org.jetbrains.annotations.TestOnly;
 
 /**
  * Throttles threads that generate dirty pages during ongoing checkpoint.
@@ -104,7 +105,7 @@ public class PagesWriteSpeedBasedThrottle implements PagesWriteThrottlePolicy {
         this.log = log;
 
         cleanPagesProtector = new SpeedBasedMemoryConsumptionThrottlingStrategy(pageMemory, cpProgress,
-                markSpeedAndAvgParkTime);
+            markSpeedAndAvgParkTime);
         cpBufferWatchdog = new CheckpointBufferOverflowWatchdog(pageMemory);
     }
 
@@ -186,7 +187,7 @@ public class PagesWriteSpeedBasedThrottle implements PagesWriteThrottlePolicy {
 
         if (prevWarnTime.compareAndSet(prevWarningNs, curNs) && log.isInfoEnabled()) {
             String msg = String.format("Throttling is applied to page modifications " +
-                    "[percentOfPartTime=%.2f, markDirty=%d pages/sec, checkpointWrite=%d pages/sec, " +
+                    "[fractionOfParkTime=%.2f, markDirty=%d pages/sec, checkpointWrite=%d pages/sec, " +
                     "estIdealMarkDirty=%d pages/sec, curDirty=%.2f, maxDirty=%.2f, avgParkTime=%d ns, " +
                     "pages: (total=%d, evicted=%d, written=%d, synced=%d, cpBufUsed=%d, cpBufTotal=%d)]",
                 weight, getMarkDirtySpeed(), getCpWriteSpeed(),
@@ -210,6 +211,7 @@ public class PagesWriteSpeedBasedThrottle implements PagesWriteThrottlePolicy {
      * @param curCpWriteSpeed average checkpoint write speed, pages/sec.
      * @return time in nanoseconds to part or 0 if throttling is not required.
      */
+    @TestOnly
     long getCleanPagesProtectionParkTime(
             double dirtyPagesRatio,
             long fullyCompletedPages,
@@ -293,7 +295,7 @@ public class PagesWriteSpeedBasedThrottle implements PagesWriteThrottlePolicy {
         if (speed <= 0)
             return 0;
 
-        long timeForOnePage = cleanPagesProtector.calcDelayTime(speed);
+        long timeForOnePage = cleanPagesProtector.nsPerOperation(speed);
 
         if (timeForOnePage == 0)
             return 0;

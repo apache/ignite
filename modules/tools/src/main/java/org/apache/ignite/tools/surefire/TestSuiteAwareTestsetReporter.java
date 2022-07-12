@@ -51,8 +51,7 @@ public class TestSuiteAwareTestsetReporter extends SurefireStatelessTestsetInfoR
     /**
      * @see TestSetStats#concatenateWithTestGroup(MessageBuilder, ReportEntry, boolean)
      */
-    private static String concatenateWithTestGroup(MessageBuilder builder, ReportEntry report)
-    {
+    private static String concatenateWithTestGroup(MessageBuilder builder, ReportEntry report) {
         String testCls = report.getNameWithGroup();
 
         int idxOfGrp = testCls.indexOf(GROUP_PREFIX);

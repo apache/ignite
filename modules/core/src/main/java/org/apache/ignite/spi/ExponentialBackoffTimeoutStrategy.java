@@ -112,7 +112,8 @@ public class ExponentialBackoffTimeoutStrategy implements TimeoutStrategy {
             currTimeout = backoffTimeout(currTimeout, maxTimeout);
 
             return Math.min(prevTimeout, remainingTime);
-        } else
+        }
+        else
             return Math.min(timeout, remainingTime);
     }
 

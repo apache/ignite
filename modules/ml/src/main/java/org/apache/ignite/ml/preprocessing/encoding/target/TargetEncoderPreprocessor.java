@@ -87,10 +87,12 @@ public class TargetEncoderPreprocessor<K, V> extends EncoderPreprocessor<K, V> {
             if (handledIndices.contains(i)) {
                 if (targetCounters[i].getCategoryMean().containsKey(tmpObj.toString())) {
                     res[i] = targetCounters[i].getCategoryMean().get(tmpObj.toString());
-                } else {
+                }
+                else {
                     res[i] = targetCounters[i].getGlobalMean();
                 }
-            } else
+            }
+            else
                 res[i] = (double)tmpObj;
         }
 

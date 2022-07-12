@@ -379,8 +379,8 @@ public class IgniteMock implements Ignite {
     /** {@inheritDoc} */
     @Nullable @Override public <T> IgniteAtomicReference<T> atomicReference(String name,
         @Nullable T initVal,
-        boolean create)
-    {
+        boolean create
+    ) {
         return null;
     }
 
@@ -394,8 +394,8 @@ public class IgniteMock implements Ignite {
     @Nullable @Override public <T, S> IgniteAtomicStamped<T, S> atomicStamped(String name,
         @Nullable T initVal,
         @Nullable S initStamp,
-        boolean create)
-    {
+        boolean create
+    ) {
         return null;
     }
 
@@ -409,8 +409,8 @@ public class IgniteMock implements Ignite {
     @Nullable @Override public IgniteCountDownLatch countDownLatch(String name,
         int cnt,
         boolean autoDel,
-        boolean create)
-    {
+        boolean create
+    ) {
         return null;
     }
 
@@ -418,8 +418,8 @@ public class IgniteMock implements Ignite {
     @Nullable @Override public IgniteSemaphore semaphore(String name,
         int cnt,
         boolean failoverSafe,
-        boolean create)
-    {
+        boolean create
+    ) {
         return null;
     }
 
@@ -427,23 +427,23 @@ public class IgniteMock implements Ignite {
     @Nullable @Override public IgniteLock reentrantLock(String name,
         boolean failoverSafe,
         boolean fair,
-        boolean create)
-    {
+        boolean create
+    ) {
         return null;
     }
 
     /** {@inheritDoc} */
     @Nullable @Override public <T> IgniteQueue<T> queue(String name,
         int cap,
-        CollectionConfiguration cfg)
-    {
+        CollectionConfiguration cfg
+    ) {
         return null;
     }
 
     /** {@inheritDoc} */
     @Nullable @Override public <T> IgniteSet<T> set(String name,
-        CollectionConfiguration cfg)
-    {
+        CollectionConfiguration cfg
+    ) {
         return null;
     }
 

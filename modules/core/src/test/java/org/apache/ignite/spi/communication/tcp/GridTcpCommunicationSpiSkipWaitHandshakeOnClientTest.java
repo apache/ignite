@@ -51,7 +51,7 @@ public class GridTcpCommunicationSpiSkipWaitHandshakeOnClientTest extends GridCo
     private static final int MESSAGE_TYPE_BYTES = 2;
 
     /** Test logger. */
-    private final ListeningTestLogger log = new ListeningTestLogger(false, GridAbstractTest.log);
+    private final ListeningTestLogger log = new ListeningTestLogger(GridAbstractTest.log);
 
     /** Fetched tcp port. */
     private volatile int fetchedTcpPort = -1;

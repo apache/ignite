@@ -54,7 +54,7 @@ import static org.apache.ignite.plugin.security.SecurityPermissionSetBuilder.ALL
 @RunWith(JUnit4.class)
 public abstract class CommonSecurityCheckTest extends AbstractSecurityTest {
     /** */
-    protected final ListeningTestLogger listeningLog = new ListeningTestLogger(false, log);
+    protected final ListeningTestLogger listeningLog = new ListeningTestLogger(log);
 
     /** */
     protected boolean fail;

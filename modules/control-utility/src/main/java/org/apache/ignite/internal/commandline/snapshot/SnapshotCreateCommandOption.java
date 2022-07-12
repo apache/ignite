@@ -18,41 +18,51 @@
 package org.apache.ignite.internal.commandline.snapshot;
 
 import org.apache.ignite.internal.commandline.argument.CommandArg;
+import org.jetbrains.annotations.Nullable;
 
 /**
  * Snapshot create command options.
  */
 public enum SnapshotCreateCommandOption implements CommandArg {
     /** Synchronous execution flag. */
-    SYNC("sync", "Run the operation synchronously, the command will wait for the entire operation to complete. " +
-        "Otherwise, it will be performed in the background, and the command will immediately return control.");
+    SYNC("--sync", null, "Run the operation synchronously, the command will wait for the entire operation to complete. " +
+        "Otherwise, it will be performed in the background, and the command will immediately return control."),
 
-    /** Option name. */
+    /** Snapshot directory path. */
+    DESTINATION("--dest", "path", "Path to the directory where the snapshot will be saved. If not specified, " +
+        "the default configured snapshot directory will be used.");
+
+    /** Name. */
     private final String name;
 
-    /** Option description. */
+    /** Argument. */
+    private final String arg;
+
+    /** Description. */
     private final String desc;
 
     /**
-     * @param name Option name.
-     * @param desc Option description.
+     * @param name Name.
+     * @param arg Argument.
+     * @param desc Description.
      */
-    SnapshotCreateCommandOption(String name, String desc) {
+    SnapshotCreateCommandOption(String name, @Nullable String arg, String desc) {
         this.name = name;
+        this.arg = arg;
         this.desc = desc;
     }
 
     /** {@inheritDoc} */
     @Override public String argName() {
-        return "--" + name;
-    }
-
-    /** @return Option name. */
-    public String optionName() {
         return name;
     }
 
-    /** @return Option description. */
+    /** @return Argument. */
+    public String arg() {
+        return arg;
+    }
+
+    /** @return Description. */
     public String description() {
         return desc;
     }

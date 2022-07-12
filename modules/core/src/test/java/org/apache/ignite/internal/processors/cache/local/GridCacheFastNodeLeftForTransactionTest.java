@@ -72,7 +72,7 @@ public class GridCacheFastNodeLeftForTransactionTest extends GridCommonAbstractT
     @Override protected void beforeTestsStarted() throws Exception {
         super.beforeTestsStarted();
 
-        listeningLog = new ListeningTestLogger(false, GridAbstractTest.log);
+        listeningLog = new ListeningTestLogger(GridAbstractTest.log);
     }
 
     /** {@inheritDoc} */

@@ -72,7 +72,8 @@ public class IgniteClientReconnectStopTest extends IgniteClientReconnectAbstract
                     info("Disconnected: " + evt);
 
                     disconnectLatch.countDown();
-                } else if (evt.type() == EVT_CLIENT_NODE_RECONNECTED) {
+                }
+                else if (evt.type() == EVT_CLIENT_NODE_RECONNECTED) {
                     info("Reconnected: " + evt);
 
                     reconnectLatch.countDown();

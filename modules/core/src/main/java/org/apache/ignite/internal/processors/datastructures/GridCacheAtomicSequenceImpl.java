@@ -113,8 +113,8 @@ public final class GridCacheAtomicSequenceImpl extends AtomicDataStructureProxy<
         IgniteInternalCache<GridCacheInternalKey, GridCacheAtomicSequenceValue> seqView,
         int batchSize,
         long locVal,
-        long upBound)
-    {
+        long upBound
+    ) {
         super(name, key, seqView);
 
         assert locVal <= upBound;

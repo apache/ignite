@@ -25,7 +25,6 @@ import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.Callable;
 import java.util.stream.Collectors;
-
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.IgniteLogger;
@@ -38,6 +37,7 @@ import org.apache.ignite.internal.processors.cache.persistence.CacheDataRow;
 import org.apache.ignite.internal.processors.query.GridQueryTypeDescriptor;
 import org.apache.ignite.internal.processors.query.h2.opt.GridH2RowDescriptor;
 import org.apache.ignite.internal.processors.query.h2.opt.GridH2Table;
+import org.apache.ignite.internal.processors.query.h2.opt.H2CacheRow;
 import org.apache.ignite.internal.processors.query.h2.opt.H2Row;
 import org.apache.ignite.internal.processors.query.stat.ColumnStatistics;
 import org.apache.ignite.internal.processors.query.stat.ColumnStatisticsCollector;
@@ -261,8 +261,8 @@ public class GatherPartitionStatistics implements Callable<ObjectPartitionStatis
                 }
 
                 for (CacheDataRow row : grp.offheap().cachePartitionIterator(
-                    gathCtx.table().cacheId(), partId, null, false))
-                {
+                    gathCtx.table().cacheId(), partId, null, false)
+                ) {
                     if (--checkInt == 0) {
                         if (gathCtx.future().isCancelled())
                             throw new GatherStatisticCancelException();
@@ -273,7 +273,7 @@ public class GatherPartitionStatistics implements Callable<ObjectPartitionStatis
                     if (!typeDesc.matchType(row.value()) || wasExpired(row))
                         continue;
 
-                    H2Row h2row = rowDesc.createRow(row);
+                    H2Row h2row = new H2CacheRow(rowDesc, row);
 
                     for (ColumnStatisticsCollector colStat : collectors)
                         colStat.add(h2row.getValue(colStat.col().getColumnId()));

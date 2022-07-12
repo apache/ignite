@@ -81,13 +81,15 @@ public class PlatformProcessUtils {
                             if (line.contains(waitForOutput))
                                 return;
                         }
-                    } catch (Exception ignored) {
+                    }
+                    catch (Exception ignored) {
                         // No-op.
                     }
                 });
 
                 f.get(3, TimeUnit.MINUTES);
-            } catch (Exception e) {
+            }
+            catch (Exception e) {
                 process.destroyForcibly();
                 process = null;
 
@@ -112,7 +114,8 @@ public class PlatformProcessUtils {
                 String line;
                 while ((line = br.readLine()) != null)
                     System.out.println("PlatformProcessUtils >> " + line);
-            } catch (Exception ignored) {
+            }
+            catch (Exception ignored) {
                 // No-op.
             }
         });

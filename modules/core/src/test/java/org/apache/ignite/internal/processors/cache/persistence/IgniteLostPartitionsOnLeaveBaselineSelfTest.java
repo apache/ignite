@@ -160,7 +160,8 @@ public class IgniteLostPartitionsOnLeaveBaselineSelfTest extends GridCommonAbstr
 
             assertTrue("List of lost partitions for cache with persistence should not be empty.",
                 !cachePersistence.context().topology().lostPartitions().isEmpty());
-        } finally {
+        }
+        finally {
             stopAllGrids();
         }
     }

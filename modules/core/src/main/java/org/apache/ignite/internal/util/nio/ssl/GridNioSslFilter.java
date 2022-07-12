@@ -187,7 +187,8 @@ public class GridNioSslFilter extends GridNioFilterAdapter {
         if (sslMeta == null) {
             try {
                 engine = sslCtx.createSSLEngine();
-            } catch (IllegalArgumentException e) {
+            }
+            catch (IllegalArgumentException e) {
                 throw new IgniteCheckedException("Failed connect to cluster. Check SSL configuration.", e);
             }
 

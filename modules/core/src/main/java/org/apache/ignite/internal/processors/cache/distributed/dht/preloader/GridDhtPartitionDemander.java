@@ -283,7 +283,8 @@ public class GridDhtPartitionDemander {
                             @Override public void apply(IgniteInternalFuture<Boolean> fut1) {
                                 try {
                                     fut.onDone(fut1.get());
-                                } catch (Exception e) {
+                                }
+                                catch (Exception e) {
                                     fut.onDone(e);
                                 }
                             }

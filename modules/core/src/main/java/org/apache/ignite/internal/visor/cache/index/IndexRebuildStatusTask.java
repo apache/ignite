@@ -54,9 +54,9 @@ public class IndexRebuildStatusTask extends VisorMultiNodeTask<
     }
 
     /** {@inheritDoc} */
-    @Nullable @Override protected Map<UUID, Set<IndexRebuildStatusInfoContainer>> reduce0(List<ComputeJobResult> results)
-        throws IgniteException
-    {
+    @Nullable @Override protected Map<UUID, Set<IndexRebuildStatusInfoContainer>> reduce0(
+        List<ComputeJobResult> results
+    ) throws IgniteException {
         Map<UUID, Set<IndexRebuildStatusInfoContainer>> reduceRes = new HashMap<>();
 
         for (ComputeJobResult jobResult: results) {
@@ -96,9 +96,9 @@ public class IndexRebuildStatusTask extends VisorMultiNodeTask<
         }
 
         /** {@inheritDoc} */
-        @Override protected Set<IndexRebuildStatusInfoContainer> run(@Nullable IndexRebuildStatusTaskArg arg)
-            throws IgniteException
-        {
+        @Override protected Set<IndexRebuildStatusInfoContainer> run(
+            @Nullable IndexRebuildStatusTaskArg arg
+        ) throws IgniteException {
             Set<IgniteCache> rebuildIdxCaches =
                 ignite.context().cache().publicCaches().stream()
                     .filter(c -> !c.indexReadyFuture().isDone())

@@ -381,7 +381,8 @@ public class DefragIndexFactory extends InlineIndexFactory {
             if (storeMvcc) {
                 newDataRow = new MvccDataRow(newLink);
                 newDataRow.mvccVersion(oldValue);
-            } else
+            }
+            else
                 newDataRow = new CacheDataRowAdapter(newLink);
 
             return new DefragIndexRowImpl(rowHnd, newDataRow, oldValue.values);

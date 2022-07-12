@@ -1604,9 +1604,8 @@ public class IgniteCacheClientNodeChangingTopologyTest extends GridCommonAbstrac
     private void checkData(final Map<Integer, Integer> map,
         final Set<Integer> keys,
         IgniteCache<?, ?> clientCache,
-        final int expNodes)
-        throws Exception
-    {
+        final int expNodes
+    ) throws Exception {
         final List<Ignite> nodes = G.allGrids();
 
         final Affinity<Integer> aff = nodes.get(0).affinity(DEFAULT_CACHE_NAME);

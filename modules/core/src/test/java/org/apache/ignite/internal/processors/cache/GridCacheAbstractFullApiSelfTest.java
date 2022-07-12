@@ -1992,7 +1992,8 @@ public abstract class GridCacheAbstractFullApiSelfTest extends GridCacheAbstract
             try {
                 if (f != null)
                     f.get();
-            } catch (Throwable t) {
+            }
+            catch (Throwable t) {
                 assert false : "Unexpected exception " + t;
             }
         }
@@ -3964,7 +3965,8 @@ public abstract class GridCacheAbstractFullApiSelfTest extends GridCacheAbstract
                 asyncCache.clear();
 
                 asyncCache.future().get();
-            } else
+            }
+            else
                 jcache().clearAsync().get();
         }
         else
@@ -5392,8 +5394,8 @@ public abstract class GridCacheAbstractFullApiSelfTest extends GridCacheAbstract
                     asyncCache.clearAll(new HashSet<>(keysToRmv));
 
                 asyncCache.future().get();
-            } else {
-
+            }
+            else {
                 if (keysToRmv.size() == 1)
                     jcache().clearAsync(F.first(keysToRmv)).get();
                 else

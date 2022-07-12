@@ -256,7 +256,8 @@ public class CacheMvccSizeTest extends CacheMvccAbstractTest {
     private int update(SqlFieldsQuery qry, IgniteCache<?, ?> cache) {
         try {
             return Integer.parseInt(cache.query(qry).getAll().get(0).get(0).toString());
-        } catch (Exception e) {
+        }
+        catch (Exception e) {
             return 0;
         }
     }

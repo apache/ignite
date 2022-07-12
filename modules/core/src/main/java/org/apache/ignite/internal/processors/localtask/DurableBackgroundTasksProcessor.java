@@ -23,7 +23,6 @@ import java.util.concurrent.locks.ReadWriteLock;
 import java.util.concurrent.locks.ReentrantReadWriteLock;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteException;
-import org.apache.ignite.cluster.ClusterState;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.internal.GridKernalContext;
 import org.apache.ignite.internal.IgniteInternalFuture;
@@ -231,7 +230,7 @@ public class DurableBackgroundTasksProcessor extends GridProcessorAdapter implem
      * @param msg Message for change cluster global state.
      */
     public void onStateChangeStarted(ChangeGlobalStateMessage msg) {
-        if (msg.state() == ClusterState.INACTIVE)
+        if (!msg.state().active())
             cancelTasks();
     }
 
@@ -241,19 +240,14 @@ public class DurableBackgroundTasksProcessor extends GridProcessorAdapter implem
      * @param msg Finish message for change cluster global state.
      */
     public void onStateChangeFinish(ChangeGlobalStateFinishMessage msg) {
-        if (msg.state() != ClusterState.INACTIVE) {
-            cancelLock.writeLock().lock();
+        if (msg.state().active())
+            activateTasks();
+    }
 
-            try {
-                prohibitionExecTasks = false;
-
-                for (DurableBackgroundTaskState<?> taskState : tasks.values())
-                    executeAsync0(taskState.task());
-            }
-            finally {
-                cancelLock.writeLock().unlock();
-            }
-        }
+    /** {@inheritDoc} */
+    @Override public void onKernalStart(boolean active) throws IgniteCheckedException {
+        if (active)
+            activateTasks();
     }
 
     /**
@@ -380,8 +374,7 @@ public class DurableBackgroundTasksProcessor extends GridProcessorAdapter implem
     }
 
     /**
-     * Canceling tasks.
-     * Prohibiting the execution of tasks.
+     * Prohibit the execution of tasks and cancel tasks.
      */
     private void cancelTasks() {
         cancelLock.writeLock().lock();
@@ -391,6 +384,23 @@ public class DurableBackgroundTasksProcessor extends GridProcessorAdapter implem
 
             for (DurableBackgroundTaskState<?> taskState : tasks.values())
                 taskState.task().cancel();
+        }
+        finally {
+            cancelLock.writeLock().unlock();
+        }
+    }
+
+    /**
+     * Allow the execution of tasks and activate tasks.
+     */
+    private void activateTasks() {
+        cancelLock.writeLock().lock();
+
+        try {
+            prohibitionExecTasks = false;
+
+            for (DurableBackgroundTaskState<?> taskState : tasks.values())
+                executeAsync0(taskState.task());
         }
         finally {
             cancelLock.writeLock().unlock();

@@ -426,9 +426,11 @@ public class GridFutureAdapter<R> implements IgniteInternalFuture<R> {
 
         try {
             doneCbFut = doneCb.apply(fut);
-        } catch (GridClosureException e) {
+        }
+        catch (GridClosureException e) {
             doneCbFut = new GridFinishedFuture<>(e.unwrap());
-        } catch (RuntimeException e) {
+        }
+        catch (RuntimeException e) {
             doneCbFut = new GridFinishedFuture<>(e);
         }
 

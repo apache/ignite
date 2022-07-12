@@ -122,7 +122,8 @@ public class ThreadNameValidationTest extends GridCommonAbstractTest {
             assertEquals("Thread without specific name detected",
                 anonymousThreadCountBeforeTest, getAnonymousThreadCount());
 
-        } finally {
+        }
+        finally {
             System.clearProperty(IgniteSystemProperties.IGNITE_USE_ASYNC_FILE_IO_FACTORY);
 
             super.afterTest();
@@ -172,8 +173,7 @@ public class ThreadNameValidationTest extends GridCommonAbstractTest {
         Arrays.stream(threadMXBean.dumpAllThreads(false, false))
             .filter(t -> t.getThreadName().startsWith("Thread-")
                 && !externalAnonymousThreads.contains(t.getThreadId()))
-            .forEach(threadInfo ->
-            {
+            .forEach(threadInfo -> {
                 StringBuilder sb = new StringBuilder();
                 sb.append("Thread with default name detected. StackTrace: ");
 

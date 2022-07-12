@@ -42,7 +42,8 @@ public class LoadTestsCassandraArtifactsCreator {
 
             try {
                 CassandraHelper.dropTestKeyspaces();
-            } catch (Throwable e) {
+            }
+            catch (Throwable e) {
                 throw new RuntimeException("Failed to drop test keyspace: " + perSettings.getKeyspace(), e);
             }
 
@@ -52,7 +53,8 @@ public class LoadTestsCassandraArtifactsCreator {
 
             try {
                 CassandraHelper.executeWithAdminCredentials(perSettings.getKeyspaceDDLStatement());
-            } catch (Throwable e) {
+            }
+            catch (Throwable e) {
                 throw new RuntimeException("Failed to create test keyspace: " + perSettings.getKeyspace(), e);
             }
 
@@ -62,7 +64,8 @@ public class LoadTestsCassandraArtifactsCreator {
 
             try {
                 CassandraHelper.executeWithAdminCredentials(perSettings.getTableDDLStatement(perSettings.getTable()));
-            } catch (Throwable e) {
+            }
+            catch (Throwable e) {
                 throw new RuntimeException("Failed to create test table: " + perSettings.getTable(), e);
             }
 
@@ -78,7 +81,8 @@ public class LoadTestsCassandraArtifactsCreator {
 
                 try {
                     CassandraHelper.executeWithAdminCredentials(statement);
-                } catch (Throwable e) {
+                }
+                catch (Throwable e) {
                     throw new RuntimeException("Failed to create test table index", e);
                 }
 

@@ -100,7 +100,8 @@ public class MaintenancePersistenceTaskTest extends GridCommonAbstractTest {
             client.cluster().disableWal(CACHE_NAME);
 
             assertFalse(client.cluster().isWalEnabled(CACHE_NAME));
-        } catch (Exception e) {
+        }
+        catch (Exception e) {
             fail(e.getMessage());
         }
 

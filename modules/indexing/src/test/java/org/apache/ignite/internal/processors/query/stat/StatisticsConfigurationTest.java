@@ -417,10 +417,6 @@ public class StatisticsConfigurationTest extends StatisticsAbstractTest {
 
         dropSmallTable(null);
 
-        // TODO: remove after fix IGNITE-14814
-        if (persist)
-            statisticsMgr(0).dropStatistics(SMALL_TARGET);
-
         waitForStats(SCHEMA, "SMALL", TIMEOUT, (stats) -> stats.forEach(s -> assertNull(s)));
 
         waitForStats(SCHEMA, "SMALL_A", TIMEOUT, checkTotalRows, checkColumStats);

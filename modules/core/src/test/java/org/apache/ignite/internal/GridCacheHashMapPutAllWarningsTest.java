@@ -75,7 +75,7 @@ public class GridCacheHashMapPutAllWarningsTest extends GridCommonAbstractTest {
     public void testHashMapPutAllExactMessage() throws Exception {
         List<String> messages = Collections.synchronizedList(new ArrayList<>());
 
-        testLog = new ListeningTestLogger(false, log());
+        testLog = new ListeningTestLogger(log());
 
         testLog.registerListener((s) -> {
             if (s.contains("deadlock"))
@@ -117,7 +117,7 @@ public class GridCacheHashMapPutAllWarningsTest extends GridCommonAbstractTest {
 
         List<String> messages = Collections.synchronizedList(new ArrayList<>());
 
-        testLog = new ListeningTestLogger(false, log());
+        testLog = new ListeningTestLogger(log());
 
         testLog.registerListener((s) -> {
             if (s.contains("deadlock"))
@@ -158,7 +158,7 @@ public class GridCacheHashMapPutAllWarningsTest extends GridCommonAbstractTest {
 
         List<String> messages = Collections.synchronizedList(new ArrayList<>());
 
-        testLog = new ListeningTestLogger(false, log());
+        testLog = new ListeningTestLogger(log());
 
         testLog.registerListener((s) -> {
             if (s.contains("deadlock"))
@@ -204,7 +204,7 @@ public class GridCacheHashMapPutAllWarningsTest extends GridCommonAbstractTest {
     public void testTreeMapRemoveAll() throws Exception {
         List<String> messages = Collections.synchronizedList(new ArrayList<>());
 
-        testLog = new ListeningTestLogger(false, log());
+        testLog = new ListeningTestLogger(log());
 
         testLog.registerListener((s) -> {
             if (s.contains("deadlock"))
@@ -243,7 +243,7 @@ public class GridCacheHashMapPutAllWarningsTest extends GridCommonAbstractTest {
     public void testTreeMapRemoveAllEntries() throws Exception {
         List<String> messages = Collections.synchronizedList(new ArrayList<>());
 
-        testLog = new ListeningTestLogger(false, log());
+        testLog = new ListeningTestLogger(log());
 
         testLog.registerListener((s) -> {
             if (s.contains("deadlock"))
@@ -281,7 +281,7 @@ public class GridCacheHashMapPutAllWarningsTest extends GridCommonAbstractTest {
     public void testTreeMapClearEntries() throws Exception {
         List<String> messages = Collections.synchronizedList(new ArrayList<>());
 
-        testLog = new ListeningTestLogger(false, log());
+        testLog = new ListeningTestLogger(log());
 
         testLog.registerListener((s) -> {
             if (s.contains("deadlock"))
@@ -319,7 +319,7 @@ public class GridCacheHashMapPutAllWarningsTest extends GridCommonAbstractTest {
     public void testHashSetGetAllReplicated() throws Exception {
         List<String> messages = Collections.synchronizedList(new ArrayList<>());
 
-        testLog = new ListeningTestLogger(false, log());
+        testLog = new ListeningTestLogger(log());
 
         testLog.registerListener((s) -> {
             if (s.contains("deadlock"))
@@ -356,7 +356,7 @@ public class GridCacheHashMapPutAllWarningsTest extends GridCommonAbstractTest {
     public void testHashSetGetAllTx() throws Exception {
         List<String> messages = Collections.synchronizedList(new ArrayList<>());
 
-        testLog = new ListeningTestLogger(false, log());
+        testLog = new ListeningTestLogger(log());
 
         testLog.registerListener((s) -> {
             if (s.contains("deadlock"))

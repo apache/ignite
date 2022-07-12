@@ -646,6 +646,9 @@ public abstract class IgniteAbstractDynamicCacheStartFailTest extends GridCacheA
         AffinityTopologyVersion currVer = grid(0).context().discovery().topologyVersionEx();
         AffinityTopologyVersion expVer = currVer.nextMinorVersion();
 
+        // Make sure that client has processed a create cache request before destroying it.
+        awaitCacheOnClient(client, DYNAMIC_CACHE_NAME);
+
         // Let's try to destroy the cache that is being started.
         IgniteInternalFuture<?> stopFut = GridTestUtils.runAsync(() -> client.destroyCache(DYNAMIC_CACHE_NAME));
 

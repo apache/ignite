@@ -68,14 +68,16 @@ public class SimpleDatasetDataBuilder<K, V, C extends Serializable, CO extends S
                 if (cols < 0) {
                     cols = row.size();
                     features = new double[Math.toIntExact(upstreamDataSize * cols)];
-                } else
+                }
+                else
                     assert row.size() == cols : "Feature extractor must return exactly " + cols + " features";
 
                 for (int i = 0; i < cols; i++)
                     features[Math.toIntExact(i * upstreamDataSize + ptr)] = row.get(i);
 
                 ptr++;
-            } else
+            }
+            else
                 throw new NonDoubleVectorException(row);
         }
 

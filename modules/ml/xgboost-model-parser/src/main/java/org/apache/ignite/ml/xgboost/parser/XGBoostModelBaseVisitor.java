@@ -34,7 +34,9 @@ public class XGBoostModelBaseVisitor<T> extends AbstractParseTreeVisitor<T> impl
      * <p>The default implementation returns the result of calling
      * {@link #visitChildren} on {@code ctx}.</p>
      */
-    @Override public T visitXgValue(XGBoostModelParser.XgValueContext ctx) { return visitChildren(ctx); }
+    @Override public T visitXgValue(XGBoostModelParser.XgValueContext ctx) {
+        return visitChildren(ctx);
+    }
 
     /**
      * {@inheritDoc}
@@ -42,7 +44,9 @@ public class XGBoostModelBaseVisitor<T> extends AbstractParseTreeVisitor<T> impl
      * <p>The default implementation returns the result of calling
      * {@link #visitChildren} on {@code ctx}.</p>
      */
-    @Override public T visitXgHeader(XGBoostModelParser.XgHeaderContext ctx) { return visitChildren(ctx); }
+    @Override public T visitXgHeader(XGBoostModelParser.XgHeaderContext ctx) {
+        return visitChildren(ctx);
+    }
 
     /**
      * {@inheritDoc}
@@ -50,7 +54,9 @@ public class XGBoostModelBaseVisitor<T> extends AbstractParseTreeVisitor<T> impl
      * <p>The default implementation returns the result of calling
      * {@link #visitChildren} on {@code ctx}.</p>
      */
-    @Override public T visitXgNode(XGBoostModelParser.XgNodeContext ctx) { return visitChildren(ctx); }
+    @Override public T visitXgNode(XGBoostModelParser.XgNodeContext ctx) {
+        return visitChildren(ctx);
+    }
 
     /**
      * {@inheritDoc}
@@ -58,7 +64,9 @@ public class XGBoostModelBaseVisitor<T> extends AbstractParseTreeVisitor<T> impl
      * <p>The default implementation returns the result of calling
      * {@link #visitChildren} on {@code ctx}.</p>
      */
-    @Override public T visitXgLeaf(XGBoostModelParser.XgLeafContext ctx) { return visitChildren(ctx); }
+    @Override public T visitXgLeaf(XGBoostModelParser.XgLeafContext ctx) {
+        return visitChildren(ctx);
+    }
 
     /**
      * {@inheritDoc}
@@ -66,7 +74,9 @@ public class XGBoostModelBaseVisitor<T> extends AbstractParseTreeVisitor<T> impl
      * <p>The default implementation returns the result of calling
      * {@link #visitChildren} on {@code ctx}.</p>
      */
-    @Override public T visitXgTree(XGBoostModelParser.XgTreeContext ctx) { return visitChildren(ctx); }
+    @Override public T visitXgTree(XGBoostModelParser.XgTreeContext ctx) {
+        return visitChildren(ctx);
+    }
 
     /**
      * {@inheritDoc}
@@ -74,5 +84,7 @@ public class XGBoostModelBaseVisitor<T> extends AbstractParseTreeVisitor<T> impl
      * <p>The default implementation returns the result of calling
      * {@link #visitChildren} on {@code ctx}.</p>
      */
-    @Override public T visitXgModel(XGBoostModelParser.XgModelContext ctx) { return visitChildren(ctx); }
+    @Override public T visitXgModel(XGBoostModelParser.XgModelContext ctx) {
+        return visitChildren(ctx);
+    }
 }

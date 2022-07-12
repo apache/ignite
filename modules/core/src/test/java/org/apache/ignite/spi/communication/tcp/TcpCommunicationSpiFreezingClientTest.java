@@ -19,21 +19,17 @@ package org.apache.ignite.spi.communication.tcp;
 
 import java.util.Map;
 import java.util.UUID;
-import java.util.concurrent.atomic.AtomicLong;
 import org.apache.ignite.Ignite;
-import org.apache.ignite.IgniteCompute;
-import org.apache.ignite.Ignition;
 import org.apache.ignite.cluster.ClusterTopologyException;
 import org.apache.ignite.configuration.IgniteConfiguration;
-import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.IgniteInterruptedCheckedException;
 import org.apache.ignite.internal.util.nio.GridCommunicationClient;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.testframework.GridTestUtils;
-import org.apache.ignite.testframework.ListeningTestLogger;
-import org.apache.ignite.testframework.junits.GridAbstractTest;
 import org.apache.ignite.testframework.junits.WithSystemProperty;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
+import org.apache.ignite.testframework.junits.multijvm.IgniteProcessProxy;
+import org.junit.Assume;
 import org.junit.Test;
 
 import static org.apache.ignite.IgniteSystemProperties.IGNITE_ENABLE_FORCIBLE_NODE_KILL;
@@ -44,12 +40,6 @@ import static org.apache.ignite.testframework.GridTestUtils.waitForCondition;
  */
 @WithSystemProperty(key = IGNITE_ENABLE_FORCIBLE_NODE_KILL, value = "true")
 public class TcpCommunicationSpiFreezingClientTest extends GridCommonAbstractTest {
-    /** Message to catch GC start on a client. */
-    private static final String GC_START_MSG = "Try to start GC.";
-
-    /** Last GC start time. */
-    private final AtomicLong lastGC = new AtomicLong(Long.MAX_VALUE);
-
     /** {@inheritDoc} */
     @Override protected IgniteConfiguration getConfiguration(String gridName) throws Exception {
         IgniteConfiguration cfg = super.getConfiguration(gridName);
@@ -66,15 +56,6 @@ public class TcpCommunicationSpiFreezingClientTest extends GridCommonAbstractTes
 
         cfg.setCommunicationSpi(spi);
 
-        ListeningTestLogger log = new ListeningTestLogger(GridAbstractTest.log);
-
-        log.registerListener((s) -> {
-            if (s.contains(GC_START_MSG))
-                lastGC.set(System.currentTimeMillis());
-        });
-
-        cfg.setGridLogger(log);
-
         return cfg;
     }
 
@@ -85,60 +66,25 @@ public class TcpCommunicationSpiFreezingClientTest extends GridCommonAbstractTes
 
     /** @throws Exception If failed. */
     @Test
+    @SuppressWarnings("ThrowableNotThrown")
     public void testFreezingClient() throws Exception {
+        Assume.assumeTrue("The test reqires the 'kill' command.", U.isUnix() || U.isMacOs());
+
         Ignite srv = startGrid(0);
-        Ignite client = startClientGrid("client");
-        IgniteCompute compute = srv.compute(srv.cluster().forNode(client.cluster().localNode())).withNoFailover();
+        IgniteProcessProxy client = (IgniteProcessProxy)startClientGrid("client");
 
-        // Close communication connections by idle and trigger STW on the client.
-        compute.runAsync(() -> {
-            waitConnectionsClosed(Ignition.localIgnite());
+        // Close communication connections by idle.
+        waitConnectionsClosed(srv);
 
-            triggerSTW();
-        });
+        // Simulate freeze/STW on the client.
+        client.getProcess().suspend();
 
-        while (!Thread.interrupted()) {
-            // Make sure connections closed on the server.
-            waitConnectionsClosed(srv);
-
-            // Make sure that the client is freezed by STW.
-            assertTrue(waitForCondition(() -> System.currentTimeMillis() - lastGC.get() > 1000, getTestTimeout()));
-
-            // Open new connection to the freezed client. Retry if client has completed GC and was not freezed.
-            try {
-                compute.run(() -> {});
-            }
-            catch (ClusterTopologyException ignored) {
-                break;
-            }
-        }
+        // Open new communication connection to the freezing client.
+        GridTestUtils.assertThrowsWithCause(
+            () -> srv.compute(srv.cluster().forClients()).withNoFailover().run(() -> {}),
+            ClusterTopologyException.class);
 
         assertEquals(1, srv.cluster().nodes().size());
-    }
-
-    /** Triggers STW. */
-    private void triggerSTW() {
-        long end = System.currentTimeMillis() + getTestTimeout();
-
-        while (!Thread.interrupted() && (System.currentTimeMillis() < end)) {
-            IgniteInternalFuture<?> fut = GridTestUtils.runAsync(this::simulateLoad);
-
-            while (!fut.isDone()) {
-                System.out.println(GC_START_MSG);
-
-                GridTestUtils.runGC();
-            }
-        }
-    }
-
-    /** Simulate load without safepoints to block GC. */
-    public double simulateLoad() {
-        double d = 0;
-
-        for (int i = 0; i < Integer.MAX_VALUE; i++)
-            d += Math.log(Math.PI * i);
-
-        return d;
     }
 
     /** Waits for all communication connections closed by idle. */

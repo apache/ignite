@@ -80,7 +80,7 @@ public class CheckpointBufferDeadlockTest extends GridCommonAbstractTest {
     private int checkpointThreads;
 
     /** Test logger. */
-    private final ListeningTestLogger log = new ListeningTestLogger(false, super.log);
+    private final ListeningTestLogger log = new ListeningTestLogger(super.log);
 
     /** {@inheritDoc} */
     @Override protected IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {
@@ -88,7 +88,7 @@ public class CheckpointBufferDeadlockTest extends GridCommonAbstractTest {
 
         cfg.setDataStorageConfiguration(
             new DataStorageConfiguration()
-                .setFileIOFactory(new SlowCheckpointFileIOFactory(slowCheckpointEnabled, CHECKPOINT_PARK_NANOS))
+                .setFileIOFactory(new SlowCheckpointMetadataFileIOFactory(slowCheckpointEnabled, CHECKPOINT_PARK_NANOS))
                 .setCheckpointThreads(checkpointThreads)
                 .setDefaultDataRegionConfiguration(
                     new DataRegionConfiguration()

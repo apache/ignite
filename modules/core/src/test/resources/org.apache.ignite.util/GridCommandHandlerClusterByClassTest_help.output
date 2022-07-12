@@ -140,11 +140,12 @@ This utility can do the following commands:
       snapshot_name  - Snapshot name.
 
   Create cluster snapshot:
-    control.(sh|bat) --snapshot create snapshot_name [--sync]
+    control.(sh|bat) --snapshot create snapshot_name [--dest path] [--sync]
 
     Parameters:
       snapshot_name  - Snapshot name.
-      sync           - Run the operation synchronously, the command will wait for the entire operation to complete. Otherwise, it will be performed in the background, and the command will immediately return control.
+      --dest path    - Path to the directory where the snapshot will be saved. If not specified, the default configured snapshot directory will be used.
+      --sync         - Run the operation synchronously, the command will wait for the entire operation to complete. Otherwise, it will be performed in the background, and the command will immediately return control.
 
   Cancel running snapshot:
     control.(sh|bat) --snapshot cancel snapshot_name
@@ -153,18 +154,20 @@ This utility can do the following commands:
       snapshot_name  - Snapshot name.
 
   Check snapshot:
-    control.(sh|bat) --snapshot check snapshot_name
+    control.(sh|bat) --snapshot check snapshot_name [--src path]
 
     Parameters:
       snapshot_name  - Snapshot name.
+      --src path     - Path to the directory where the snapshot files are located. If not specified, the default configured snapshot directory will be used.
 
   Restore snapshot:
-    control.(sh|bat) --snapshot restore snapshot_name --start [--groups group1,...groupN] [--sync]
+    control.(sh|bat) --snapshot restore snapshot_name --start [--groups group1,...groupN] [--src path] [--sync]
 
     Parameters:
-      snapshot_name     - Snapshot name.
-      group1,...groupN  - Cache group names.
-      sync              - Run the operation synchronously, the command will wait for the entire operation to complete. Otherwise, it will be performed in the background, and the command will immediately return control.
+      snapshot_name              - Snapshot name.
+      --groups group1,...groupN  - Cache group names.
+      --src path                 - Path to the directory where the snapshot files are located. If not specified, the default configured snapshot directory will be used.
+      --sync                     - Run the operation synchronously, the command will wait for the entire operation to complete. Otherwise, it will be performed in the background, and the command will immediately return control.
 
   Snapshot restore operation status:
     control.(sh|bat) --snapshot restore snapshot_name --status

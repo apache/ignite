@@ -154,7 +154,8 @@ public class IgniteMdPercentageOriginalRows implements MetadataHandler<BuiltInMe
         if (denominator == 0.0) {
             // cap at 100%
             return 1.0;
-        } else {
+        }
+        else {
             return numerator / denominator;
         }
     }

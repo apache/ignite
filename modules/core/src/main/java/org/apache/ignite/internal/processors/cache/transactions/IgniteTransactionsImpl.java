@@ -115,8 +115,7 @@ public class IgniteTransactionsImpl<K, V> implements IgniteTransactionsEx {
         TransactionConcurrency concurrency,
         TransactionIsolation isolation,
         long timeout,
-        int txSize)
-    {
+        int txSize) {
         A.notNull(concurrency, "concurrency");
         A.notNull(isolation, "isolation");
         A.ensure(timeout >= 0, "timeout cannot be negative");
@@ -135,8 +134,7 @@ public class IgniteTransactionsImpl<K, V> implements IgniteTransactionsEx {
     @Override public GridNearTxLocal txStartEx(
         GridCacheContext ctx,
         TransactionConcurrency concurrency,
-        TransactionIsolation isolation)
-    {
+        TransactionIsolation isolation) {
         A.notNull(concurrency, "concurrency");
         A.notNull(isolation, "isolation");
 

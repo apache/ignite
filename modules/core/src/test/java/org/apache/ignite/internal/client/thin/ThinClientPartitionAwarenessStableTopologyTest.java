@@ -20,9 +20,17 @@ package org.apache.ignite.internal.client.thin;
 import java.util.function.Function;
 
 import org.apache.ignite.IgniteCheckedException;
+import org.apache.ignite.cache.CacheAtomicityMode;
+import org.apache.ignite.cache.CacheMode;
 import org.apache.ignite.cache.query.ScanQuery;
+import org.apache.ignite.client.ClientAtomicConfiguration;
+import org.apache.ignite.client.ClientAtomicLong;
 import org.apache.ignite.client.ClientCache;
+import org.apache.ignite.client.ClientCollectionConfiguration;
+import org.apache.ignite.client.ClientIgniteSet;
+import org.apache.ignite.configuration.AtomicConfiguration;
 import org.apache.ignite.internal.processors.cache.IgniteInternalCache;
+import org.apache.ignite.internal.processors.datastructures.GridCacheAtomicLongEx;
 import org.junit.Test;
 
 /**
@@ -170,6 +178,136 @@ public class ThinClientPartitionAwarenessStableTopologyTest extends ThinClientAb
 
             assertOpOnChannel(dfltCh, ClientOperation.QUERY_SCAN);
         }
+    }
+
+    /**
+     * Tests {@link ClientIgniteSet} partition awareness.
+     * Other client set tests are in {@link IgniteSetTest}.
+     */
+    @Test
+    public void testIgniteSet() {
+        testIgniteSet("testIgniteSet", null, CacheAtomicityMode.ATOMIC);
+        testIgniteSet("testIgniteSet2", null, CacheAtomicityMode.TRANSACTIONAL);
+        testIgniteSet("testIgniteSet3", "grp-testIgniteSet3", CacheAtomicityMode.ATOMIC);
+        testIgniteSet("testIgniteSet4", "grp-testIgniteSet4", CacheAtomicityMode.TRANSACTIONAL);
+    }
+
+    /**
+     * Tests {@link ClientIgniteSet} partition awareness.
+     */
+    private void testIgniteSet(String name, String groupName, CacheAtomicityMode mode) {
+        ClientCollectionConfiguration cfg = new ClientCollectionConfiguration()
+                .setGroupName(groupName)
+                .setAtomicityMode(mode)
+                .setBackups(1);
+
+        ClientIgniteSet<String> clientSet = client.set(name, cfg);
+
+        if (groupName == null)
+            groupName = "default-ds-group";
+
+        String cacheName = "datastructures_" + mode + "_PARTITIONED_1@" + groupName + "#SET_" + clientSet.name();
+        IgniteInternalCache<Object, Object> cache = grid(0).context().cache().cache(cacheName);
+
+        // Warm up.
+        clientSet.add("a");
+        opsQueue.clear();
+
+        // Test.
+        for (int i = 0; i < 10; i++) {
+            String key = "b" + i;
+            clientSet.add(key);
+
+            TestTcpClientChannel opCh = affinityChannel(key, cache);
+            assertOpOnChannel(opCh, ClientOperation.OP_SET_VALUE_ADD);
+        }
+    }
+
+    /**
+     * Tests {@link ClientIgniteSet} partition awareness in colocated mode.
+     */
+    @Test
+    public void testIgniteSetCollocated() {
+        testIgniteSetCollocated("testIgniteSetCollocated", null, CacheAtomicityMode.ATOMIC);
+        testIgniteSetCollocated("testIgniteSetCollocated2", null, CacheAtomicityMode.TRANSACTIONAL);
+        testIgniteSetCollocated("testIgniteSetCollocated3", "grp-testIgniteSetCollocated3", CacheAtomicityMode.ATOMIC);
+        testIgniteSetCollocated("testIgniteSetCollocated4", "grp-testIgniteSetCollocated4",
+                CacheAtomicityMode.TRANSACTIONAL);
+    }
+
+    /**
+     * Tests {@link ClientIgniteSet} partition awareness in colocated mode.
+     */
+    public void testIgniteSetCollocated(String name, String groupName, CacheAtomicityMode mode) {
+        ClientCollectionConfiguration cfg = new ClientCollectionConfiguration()
+                .setColocated(true)
+                .setGroupName(groupName)
+                .setAtomicityMode(mode)
+                .setBackups(1);
+
+        ClientIgniteSet<String> clientSet = client.set(name, cfg);
+
+        if (groupName == null)
+            groupName = "default-ds-group";
+
+        String cacheName = "datastructures_" + mode + "_PARTITIONED_1@" + groupName;
+        IgniteInternalCache<Object, Object> cache = grid(0).context().cache().cache(cacheName);
+
+        // Warm up.
+        clientSet.add("a");
+        opsQueue.clear();
+
+        // Test.
+        for (int i = 0; i < 10; i++) {
+            String key = "b" + i;
+            clientSet.add(key);
+
+            TestTcpClientChannel opCh = affinityChannel(clientSet.name().hashCode(), cache);
+            assertOpOnChannel(opCh, ClientOperation.OP_SET_VALUE_ADD);
+        }
+
+        // Test iterator.
+        clientSet.toArray();
+
+        TestTcpClientChannel opCh = affinityChannel(clientSet.name().hashCode(), cache);
+        assertOpOnChannel(opCh, ClientOperation.OP_SET_ITERATOR_START);
+    }
+
+    /**
+     * Test atomic long.
+     */
+    @Test
+    public void testAtomicLong() {
+        testAtomicLong("default-grp-partitioned", null, CacheMode.PARTITIONED);
+        testAtomicLong("default-grp-replicated", null, CacheMode.REPLICATED);
+        testAtomicLong("custom-grp-partitioned", "testAtomicLong", CacheMode.PARTITIONED);
+        testAtomicLong("custom-grp-replicated", "testAtomicLong", CacheMode.REPLICATED);
+    }
+
+    /**
+     * Test atomic long.
+     */
+    private void testAtomicLong(String name, String grpName, CacheMode cacheMode) {
+        ClientAtomicConfiguration cfg = new ClientAtomicConfiguration()
+                .setGroupName(grpName)
+                .setCacheMode(cacheMode);
+
+        ClientAtomicLong clientAtomicLong = client.atomicLong(name, cfg, 1, true);
+        GridCacheAtomicLongEx serverAtomicLong = (GridCacheAtomicLongEx)grid(0).atomicLong(
+                name, new AtomicConfiguration().setGroupName(grpName), 0, false);
+
+        String cacheName = "ignite-sys-atomic-cache@" + (grpName == null ? "default-ds-group" : grpName);
+        IgniteInternalCache<Object, Object> cache = grid(0).context().cache().cache(cacheName);
+
+        // Warm up.
+        clientAtomicLong.get();
+        opsQueue.clear();
+
+        // Test.
+        clientAtomicLong.get();
+        TestTcpClientChannel opCh = affinityChannel(serverAtomicLong.key(), cache);
+
+        assertOpOnChannel(opCh, ClientOperation.ATOMIC_LONG_VALUE_GET);
     }
 
     /**

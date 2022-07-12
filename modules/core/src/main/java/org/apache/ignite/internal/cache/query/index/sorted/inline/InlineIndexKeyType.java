@@ -17,6 +17,7 @@
 
 package org.apache.ignite.internal.cache.query.index.sorted.inline;
 
+import org.apache.ignite.internal.cache.query.index.sorted.IndexKeyType;
 import org.apache.ignite.internal.cache.query.index.sorted.keys.IndexKey;
 import org.jetbrains.annotations.Nullable;
 
@@ -27,9 +28,9 @@ public interface InlineIndexKeyType {
     /**
      * Returns type of inlined column.
      *
-     * @return Integer code of the column's value type.
+     * @return Column's value type.
      */
-    public int type();
+    public IndexKeyType type();
 
     /**
      * Returns size of inlined key.
@@ -89,4 +90,16 @@ public interface InlineIndexKeyType {
      * than given respectively, or -2 if inlined part is not enough to compare.
      */
     public int compare(long pageAddr, int off, int maxSize, IndexKey v);
+
+    /**
+     * @return {@code True} if inlined value can be compared to index key.
+     */
+    public default boolean isComparableTo(IndexKey key) {
+        return type() == key.type();
+    }
+
+    /**
+     * @return Size of key, in bytes. {@code -1} means variable length of key.
+     */
+    public short keySize();
 }

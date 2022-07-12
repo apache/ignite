@@ -22,6 +22,7 @@ import java.util.concurrent.Callable;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCache;
 import org.apache.ignite.IgniteDataStreamer;
+import org.apache.ignite.IgniteSystemProperties;
 import org.apache.ignite.cache.CacheAtomicityMode;
 import org.apache.ignite.cache.CacheWriteSynchronizationMode;
 import org.apache.ignite.cache.affinity.rendezvous.RendezvousAffinityFunction;
@@ -46,6 +47,7 @@ import org.junit.Assert;
 import org.junit.Assume;
 import org.junit.Test;
 
+import static org.apache.ignite.IgniteSystemProperties.IGNITE_DEFAULT_DISK_PAGE_COMPRESSION;
 import static org.apache.ignite.IgniteSystemProperties.IGNITE_PDS_WAL_REBALANCE_THRESHOLD;
 
 /**
@@ -400,6 +402,10 @@ public class IgniteWalHistoryReservationsTest extends GridCommonAbstractTest {
     @Test
     public void testWalHistoryPartiallyRemoved() throws Exception {
         Assume.assumeFalse("https://issues.apache.org/jira/browse/IGNITE-10551", MvccFeatureChecker.forcedMvcc());
+        Assume.assumeTrue(
+            "https://issues.apache.org/jira/browse/IGNITE-16891",
+            IgniteSystemProperties.getString(IGNITE_DEFAULT_DISK_PAGE_COMPRESSION) == null
+        );
 
         int entryCnt = 9_500;
 

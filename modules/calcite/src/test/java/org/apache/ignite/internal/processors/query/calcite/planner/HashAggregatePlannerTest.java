@@ -18,12 +18,18 @@
 package org.apache.ignite.internal.processors.query.calcite.planner;
 
 import java.util.Arrays;
+import java.util.List;
+
+import com.google.common.collect.ImmutableList;
 import org.apache.calcite.plan.RelOptUtil;
 import org.apache.calcite.rel.type.RelDataTypeFactory;
 import org.apache.calcite.sql.fun.SqlAvgAggFunction;
 import org.apache.calcite.sql.fun.SqlCountAggFunction;
+import org.apache.ignite.internal.processors.query.QueryUtils;
 import org.apache.ignite.internal.processors.query.calcite.metadata.ColocationGroup;
 import org.apache.ignite.internal.processors.query.calcite.prepare.MappingQueryContext;
+import org.apache.ignite.internal.processors.query.calcite.rel.IgniteAggregate;
+import org.apache.ignite.internal.processors.query.calcite.rel.IgniteIndexCount;
 import org.apache.ignite.internal.processors.query.calcite.rel.IgniteRel;
 import org.apache.ignite.internal.processors.query.calcite.rel.agg.IgniteMapHashAggregate;
 import org.apache.ignite.internal.processors.query.calcite.rel.agg.IgniteReduceHashAggregate;
@@ -42,6 +48,77 @@ import org.junit.Test;
  */
 @SuppressWarnings({"TooBroadScope", "FieldCanBeLocal", "TypeMayBeWeakened"})
 public class HashAggregatePlannerTest extends AbstractAggregatePlannerTest {
+    /**
+     * Tests COUNT(...) plan with and without IndexCount optimization.
+     */
+    @Test
+    public void indexCount() throws Exception {
+        IgniteSchema publicSchema = new IgniteSchema("PUBLIC");
+
+        List<IgniteDistribution> lst = ImmutableList.of(
+            IgniteDistributions.single(),
+            IgniteDistributions.random(),
+            IgniteDistributions.broadcast(),
+            IgniteDistributions.hash(ImmutableList.of(0, 1, 2, 3)));
+
+        for (IgniteDistribution distr : lst) {
+            TestTable tbl = createTable(distr);
+            publicSchema.addTable("TEST", tbl);
+
+            assertNoIndexCount("SELECT COUNT(*) FROM TEST", publicSchema);
+
+            tbl.addIndex(QueryUtils.PRIMARY_KEY_INDEX, 0);
+
+            assertIndexCount("SELECT COUNT(*) FROM TEST", publicSchema);
+            assertIndexCount("SELECT COUNT(1) FROM TEST", publicSchema);
+            assertIndexCount("SELECT COUNT(*) FROM (SELECT * FROM TEST)", publicSchema);
+            assertIndexCount("SELECT COUNT(1) FROM (SELECT * FROM TEST)", publicSchema);
+
+            assertIndexCount("SELECT COUNT(*), COUNT(*), COUNT(1) FROM TEST", publicSchema);
+
+            // Count on certain fields can't be optimized. Nulls are count included.
+            assertNoIndexCount("SELECT COUNT(VAL0) FROM TEST", publicSchema);
+            assertNoIndexCount("SELECT COUNT(DISTINCT VAL0) FROM TEST", publicSchema);
+
+            assertNoIndexCount("SELECT COUNT(*), COUNT(VAL0) FROM TEST", publicSchema);
+
+            assertNoIndexCount("SELECT COUNT(1), COUNT(VAL0) FROM TEST", publicSchema);
+            assertNoIndexCount("SELECT COUNT(DISTINCT 1), COUNT(VAL0) FROM TEST", publicSchema);
+
+            assertNoIndexCount("SELECT COUNT(*) FILTER (WHERE VAL0>1) FROM TEST", publicSchema);
+
+            // IndexCount can't be used with a condition, groups, other aggregates or distincts.
+            assertNoIndexCount("SELECT COUNT(*) FROM TEST WHERE VAL0>1", publicSchema);
+            assertNoIndexCount("SELECT COUNT(1) FROM TEST WHERE VAL0>1", publicSchema);
+
+            assertNoIndexCount("SELECT COUNT(*), SUM(VAL0) FROM TEST", publicSchema);
+
+            assertNoIndexCount("SELECT VAL0, COUNT(*) FROM TEST GROUP BY VAL0", publicSchema);
+
+            assertNoIndexCount("SELECT COUNT(*) FROM TEST GROUP BY VAL0", publicSchema);
+
+            assertNoIndexCount("SELECT COUNT(*) FILTER (WHERE VAL0>1) FROM TEST", publicSchema);
+
+            publicSchema.addTable("TEST2", createBroadcastTable());
+
+            assertNoIndexCount("SELECT COUNT(*) FROM (SELECT T1.VAL0, T2.VAL1 FROM TEST T1, " +
+                "TEST2 T2 WHERE T1.GRP0 = T2.GRP0)", publicSchema);
+
+            publicSchema.removeTable("TEST");
+        }
+    }
+
+    /** */
+    private void assertIndexCount(String sql, IgniteSchema schema) throws Exception {
+        assertPlan(sql, schema, nodeOrAnyChild(isInstanceOf(IgniteAggregate.class)
+            .and(nodeOrAnyChild(isInstanceOf(IgniteIndexCount.class)))));
+    }
+
+    /** */
+    private void assertNoIndexCount(String sql, IgniteSchema publicSchema) throws Exception {
+        assertPlan(sql, publicSchema, hasChildThat(isInstanceOf(IgniteIndexCount.class)).negate());
+    }
+
     /**
      * @throws Exception If failed.
      */

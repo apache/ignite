@@ -315,9 +315,11 @@ public class MarshallerContextImpl implements MarshallerContext {
     }
 
     /** {@inheritDoc} */
-    @Override public boolean registerClassNameLocally(byte platformId, int typeId, String clsName)
-        throws IgniteCheckedException
-    {
+    @Override public boolean registerClassNameLocally(
+        byte platformId,
+        int typeId,
+        String clsName
+    ) throws IgniteCheckedException {
         ConcurrentMap<Integer, MappedName> cache = getCacheFor(platformId);
 
         fileStore.mergeAndWriteMapping(platformId, typeId, clsName);
@@ -442,7 +444,8 @@ public class MarshallerContextImpl implements MarshallerContext {
                     for (byte otherPlatformId : otherPlatforms(platformId)) {
                         try {
                             clsName = getClassName(otherPlatformId, typeId, true);
-                        } catch (ClassNotFoundException ignored) {
+                        }
+                        catch (ClassNotFoundException ignored) {
                             continue;
                         }
 

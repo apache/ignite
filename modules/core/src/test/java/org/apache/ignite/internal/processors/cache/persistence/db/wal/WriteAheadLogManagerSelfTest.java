@@ -187,7 +187,7 @@ public class WriteAheadLogManagerSelfTest extends GridCommonAbstractTest {
      */
     @Test
     public void testAutoArchiveWithoutNullPointerException() throws Exception {
-        setRootLoggerDebugLevel();
+        setLoggerDebugLevel();
 
         LogListener logLsnr0 = LogListener.matches("Checking if WAL rollover required").build();
 

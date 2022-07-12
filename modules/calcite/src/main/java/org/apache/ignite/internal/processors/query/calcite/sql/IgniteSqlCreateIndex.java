@@ -30,6 +30,7 @@ import org.apache.calcite.sql.SqlSpecialOperator;
 import org.apache.calcite.sql.SqlWriter;
 import org.apache.calcite.sql.parser.SqlParserPos;
 import org.apache.calcite.util.ImmutableNullableList;
+import org.jetbrains.annotations.Nullable;
 
 /**
  * Parse tree for {@code CREATE INDEX} statement
@@ -55,10 +56,17 @@ public class IgniteSqlCreateIndex extends SqlCreate {
         new SqlSpecialOperator("CREATE INDEX", SqlKind.CREATE_INDEX);
 
     /** Creates a SqlCreateIndex. */
-    public IgniteSqlCreateIndex(SqlParserPos pos, boolean ifNotExists, SqlIdentifier idxName, SqlIdentifier tblName,
-        SqlNodeList columnList, SqlNumericLiteral parallel, SqlNumericLiteral inlineSize) {
+    public IgniteSqlCreateIndex(
+        SqlParserPos pos,
+        boolean ifNotExists,
+        @Nullable SqlIdentifier idxName,
+        SqlIdentifier tblName,
+        SqlNodeList columnList,
+        SqlNumericLiteral parallel,
+        SqlNumericLiteral inlineSize
+    ) {
         super(OPERATOR, pos, false, ifNotExists);
-        this.idxName = Objects.requireNonNull(idxName, "index name");
+        this.idxName = idxName;
         this.tblName = Objects.requireNonNull(tblName, "table name");
         this.columnList = columnList;
         this.parallel = parallel;
@@ -79,7 +87,8 @@ public class IgniteSqlCreateIndex extends SqlCreate {
         if (ifNotExists)
             writer.keyword("IF NOT EXISTS");
 
-        idxName.unparse(writer, 0, 0);
+        if (idxName != null)
+            idxName.unparse(writer, 0, 0);
 
         writer.keyword("ON");
 

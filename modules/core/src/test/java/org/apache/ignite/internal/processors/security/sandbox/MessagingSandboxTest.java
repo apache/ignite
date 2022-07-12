@@ -24,8 +24,8 @@ import java.util.concurrent.TimeUnit;
 import java.util.function.BiFunction;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteMessaging;
+import org.apache.ignite.internal.util.lang.RunnableX;
 import org.apache.ignite.lang.IgniteBiPredicate;
-import org.apache.ignite.testframework.GridTestUtils;
 import org.junit.Test;
 
 import static org.apache.ignite.plugin.security.SecurityPermissionSetBuilder.ALLOW_ALL;
@@ -78,7 +78,7 @@ public class MessagingSandboxTest extends AbstractSandboxTest {
         UUID listenerId = func.apply(messaging, topic);
 
         try {
-            GridTestUtils.RunnableX r = () -> {
+            RunnableX r = () -> {
                 error = null;
 
                 latch = new CountDownLatch(1);

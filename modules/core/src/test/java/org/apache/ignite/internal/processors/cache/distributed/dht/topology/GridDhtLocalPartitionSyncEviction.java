@@ -118,7 +118,8 @@ public class GridDhtLocalPartitionSyncEviction extends GridDhtLocalPartition {
         try {
             if (!U.await(unlock, TIMEOUT, TimeUnit.MILLISECONDS))
                 throw new AssertionError("Failed to wait for lock release");
-        } catch (IgniteInterruptedCheckedException e) {
+        }
+        catch (IgniteInterruptedCheckedException e) {
             throw new AssertionError(X.getFullStackTrace(e));
         }
     }

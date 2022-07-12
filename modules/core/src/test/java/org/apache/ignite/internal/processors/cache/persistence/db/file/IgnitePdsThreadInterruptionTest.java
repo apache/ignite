@@ -65,6 +65,7 @@ public class IgnitePdsThreadInterruptionTest extends GridCommonAbstractTest {
         cfg.setDataStorageConfiguration(new DataStorageConfiguration()
             .setWalMode(WALMode.LOG_ONLY)
             .setWalFsyncDelayNanos(0)
+            .setWalSegmentSize(1024 * 1024)
             .setFileIOFactory(new AsyncFileIOFactory())
             .setDefaultDataRegionConfiguration(
                 new DataRegionConfiguration()

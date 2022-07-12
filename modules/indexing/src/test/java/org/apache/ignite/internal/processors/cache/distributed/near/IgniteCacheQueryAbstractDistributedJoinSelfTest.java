@@ -266,7 +266,8 @@ public class IgniteCacheQueryAbstractDistributedJoinSelfTest extends AbstractInd
         public static int sleep() {
             try {
                 U.sleep(1_000);
-            } catch (IgniteInterruptedCheckedException ignored) {
+            }
+            catch (IgniteInterruptedCheckedException ignored) {
                 // No-op.
             }
 

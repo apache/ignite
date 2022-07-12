@@ -198,8 +198,7 @@ public class MaintenanceProcessor extends GridProcessorAdapter implements Mainte
     /** {@inheritDoc} */
     @Override public void prepareAndExecuteMaintenance() {
         if (isMaintenanceMode()) {
-            workflowCallbacks.entrySet().removeIf(cbE ->
-                {
+            workflowCallbacks.entrySet().removeIf(cbE -> {
                     if (!cbE.getValue().shouldProceedWithMaintenance()) {
                         unregisterMaintenanceTask(cbE.getKey());
 

@@ -49,7 +49,8 @@ public class ClientBinaryTypeGetResponse extends ClientResponse {
             writer.writeBoolean(true);  // Not null.
 
             PlatformUtils.writeBinaryMetadata(writer, meta, true);
-        } else {
+        }
+        else {
             writer.writeBoolean(false);  // Null.
         }
     }

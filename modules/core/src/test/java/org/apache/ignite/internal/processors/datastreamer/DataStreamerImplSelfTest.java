@@ -449,7 +449,8 @@ public class DataStreamerImplSelfTest extends GridCommonAbstractTest {
             needStaleTop = true; // simulate stale topology for the next action
 
             streamer.addData(KEY, VAL);
-        } finally {
+        }
+        finally {
             needStaleTop = false;
 
             logWriter.flush();

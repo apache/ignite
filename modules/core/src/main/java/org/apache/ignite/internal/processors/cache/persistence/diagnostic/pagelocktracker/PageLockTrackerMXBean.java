@@ -26,6 +26,7 @@ import org.apache.ignite.mxbean.MXBeanDescription;
 public interface PageLockTrackerMXBean {
     /** */
     public static final String MBEAN_NAME = "PageLockTracker";
+
     /**
      * Take page locks dump.
      *

@@ -237,9 +237,8 @@ public class CacheDataStructuresManager extends GridCacheManagerAdapter {
     @Nullable public <T> GridCacheQueueProxy<T> queue(final String name,
         final int cap,
         boolean colloc,
-        final boolean create)
-        throws IgniteCheckedException
-    {
+        final boolean create
+    ) throws IgniteCheckedException {
         waitInitialization();
 
         return queue0(name, cap, colloc, create);
@@ -257,9 +256,8 @@ public class CacheDataStructuresManager extends GridCacheManagerAdapter {
     @Nullable public <T> GridCacheQueueProxy<T> queue0(final String name,
         final int cap,
         boolean colloc,
-        final boolean create)
-        throws IgniteCheckedException
-    {
+        final boolean create
+    ) throws IgniteCheckedException {
         cctx.gate().enter();
 
         try {
@@ -359,8 +357,8 @@ public class CacheDataStructuresManager extends GridCacheManagerAdapter {
     @Nullable public <T> IgniteSet<T> set(final String name,
         boolean colloc,
         boolean create,
-        boolean separated) throws IgniteCheckedException
-    {
+        boolean separated
+    ) throws IgniteCheckedException {
         return set0(name, colloc, create, separated);
     }
 
@@ -376,9 +374,8 @@ public class CacheDataStructuresManager extends GridCacheManagerAdapter {
     @Nullable private <T> IgniteSet<T> set0(String name,
         boolean collocated,
         boolean create,
-        boolean separated)
-        throws IgniteCheckedException
-    {
+        boolean separated
+    ) throws IgniteCheckedException {
         cctx.gate().enter();
 
         try {

@@ -281,6 +281,9 @@ public class GridQueryProcessor extends GridProcessorAdapter {
     /** Query engines configuration. */
     private QueryEngineConfigurationEx[] qryEnginesCfg;
 
+    /** Running query manager. */
+    private RunningQueryManager runningQryMgr;
+
     /**
      * Constructor.
      *
@@ -330,6 +333,9 @@ public class GridQueryProcessor extends GridProcessorAdapter {
             idx.start(ctx, busyLock);
         }
 
+        runningQryMgr = new RunningQueryManager(ctx);
+        runningQryMgr.start(busyLock);
+
         ctx.io().addMessageListener(TOPIC_SCHEMA, ioLsnr);
 
         // Schedule queries detail metrics eviction.
@@ -374,6 +380,8 @@ public class GridQueryProcessor extends GridProcessorAdapter {
 
         if (idx != null)
             idx.stop();
+
+        runningQryMgr.stop();
 
         U.closeQuiet(qryDetailMetricsEvictTask);
     }
@@ -699,7 +707,8 @@ public class GridQueryProcessor extends GridProcessorAdapter {
                                 if (!field.isNullable())
                                     QueryUtils.checkNotNullAllowed(ccfg);
                             }
-                        } catch (IgniteSQLException ex) {
+                        }
+                        catch (IgniteSQLException ex) {
                             msg.onError(new SchemaOperationException("Received schema propose discovery message, but " +
                                 "cache doesn't applicable for this modification", ex));
                         }
@@ -994,9 +1003,7 @@ public class GridQueryProcessor extends GridProcessorAdapter {
      * @throws IgniteException If module is not enabled.
      */
     public RunningQueryManager runningQueryManager() throws IgniteException {
-        checkxEnabled();
-
-        return idx.runningQueryManager();
+        return runningQryMgr;
     }
 
     /**
@@ -1167,6 +1174,8 @@ public class GridQueryProcessor extends GridProcessorAdapter {
 
         if (idx != null)
             idx.onDisconnected(reconnectFut);
+
+        runningQryMgr.onDisconnected();
     }
 
     /**
@@ -1221,14 +1230,15 @@ public class GridQueryProcessor extends GridProcessorAdapter {
         GridCacheContextInfo cacheInfo = idx.registeredCacheInfo(cacheName);
 
         if (cacheInfo != null)
-            onCacheStop(cacheInfo, true);
+            onCacheStop(cacheInfo, true, true);
     }
 
     /**
      * @param cacheInfo Cache context info.
      * @param removeIdx If {@code true}, will remove index.
+     * @param clearIdx If {@code true}, will clear the index.
      */
-    public void onCacheStop(GridCacheContextInfo cacheInfo, boolean removeIdx) {
+    public void onCacheStop(GridCacheContextInfo cacheInfo, boolean removeIdx, boolean clearIdx) {
         if (idx == null)
             return;
 
@@ -1236,7 +1246,7 @@ public class GridQueryProcessor extends GridProcessorAdapter {
             return;
 
         try {
-            onCacheStop0(cacheInfo, removeIdx);
+            onCacheStop0(cacheInfo, removeIdx, clearIdx);
         }
         finally {
             busyLock.leaveBusy();
@@ -2041,7 +2051,8 @@ public class GridQueryProcessor extends GridProcessorAdapter {
                             }
                             catch (Exception e) {
                                 throw new IgniteException(e);
-                            } finally {
+                            }
+                            finally {
                                 idxBuildStatusStorage.onFinishBuildNewIndex(cacheName);
                             }
                         }
@@ -2292,7 +2303,7 @@ public class GridQueryProcessor extends GridProcessorAdapter {
                 cacheNames.add(CU.mask(cacheName));
             }
             catch (IgniteCheckedException | RuntimeException e) {
-                onCacheStop0(cacheInfo, true);
+                onCacheStop0(cacheInfo, true, true);
 
                 throw e;
             }
@@ -2305,8 +2316,9 @@ public class GridQueryProcessor extends GridProcessorAdapter {
      *
      * @param cacheInfo Cache context info.
      * @param destroy Destroy flag.
+     * @param clearIdx Clear flag.
      */
-    public void onCacheStop0(GridCacheContextInfo cacheInfo, boolean destroy) {
+    public void onCacheStop0(GridCacheContextInfo cacheInfo, boolean destroy, boolean clearIdx) {
         if (idx == null || !cacheNames.contains(cacheInfo.name()))
             return;
 
@@ -2346,7 +2358,7 @@ public class GridQueryProcessor extends GridProcessorAdapter {
 
             // Notify indexing.
             try {
-                idx.unregisterCache(cacheInfo, destroy);
+                idx.unregisterCache(cacheInfo, destroy, clearIdx);
             }
             catch (Exception e) {
                 U.error(log, "Failed to clear indexing on cache unregister (will ignore): " + cacheName, e);
@@ -3225,10 +3237,7 @@ public class GridQueryProcessor extends GridProcessorAdapter {
      * @return Collection of long running queries.
      */
     public Collection<GridRunningQueryInfo> runningQueries(long duration) {
-        if (moduleEnabled())
-            return idx.runningQueries(duration);
-
-        return Collections.emptyList();
+        return runningQryMgr.longRunningQueries(duration);
     }
 
     /**
@@ -3239,8 +3248,7 @@ public class GridQueryProcessor extends GridProcessorAdapter {
      * @param async If {@code true}, execute asynchronously.
      */
     public void cancelQuery(long queryId, @Nullable UUID nodeId, boolean async) {
-        if (moduleEnabled())
-            idx.cancelQuery(queryId, nodeId, async);
+        runningQryMgr.cancelQuery(queryId, nodeId, async);
     }
 
     /**
@@ -3249,8 +3257,10 @@ public class GridQueryProcessor extends GridProcessorAdapter {
      * @param queries Queries ID's to cancel.
      */
     public void cancelLocalQueries(Collection<Long> queries) {
-        if (moduleEnabled())
-            idx.cancelLocalQueries(queries);
+        if (!F.isEmpty(queries)) {
+            for (Long qryId : queries)
+                runningQryMgr.cancelLocalQuery(qryId);
+        }
     }
 
     /**

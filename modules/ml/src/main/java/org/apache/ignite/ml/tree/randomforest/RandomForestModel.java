@@ -83,7 +83,8 @@ public class RandomForestModel extends ModelsComposition<RandomForestTreeModel> 
         try {
             File file = new File(path.toAbsolutePath().toString());
             writer.writeValue(file, this);
-        } catch (IOException e) {
+        }
+        catch (IOException e) {
             e.printStackTrace();
         }
     }
@@ -98,7 +99,8 @@ public class RandomForestModel extends ModelsComposition<RandomForestTreeModel> 
             JacksonHelper.readAndValidateBasicJsonModelProperties(path, mapper, RandomForestModel.class.getSimpleName());
             mdl = mapper.readValue(new File(path.toAbsolutePath().toString()), RandomForestModel.class);
             return mdl;
-        } catch (IOException e) {
+        }
+        catch (IOException e) {
             e.printStackTrace();
         }
         return null;

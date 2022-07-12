@@ -18,6 +18,7 @@
 package org.apache.ignite.tests.p2p.cache;
 
 import java.io.Serializable;
+import org.apache.ignite.internal.util.typedef.internal.S;
 
 /**
  * Person key.
@@ -70,5 +71,12 @@ public class PersonKey implements Serializable {
     /** {@inheritDoc} */
     @Override public int hashCode() {
         return id;
+    }
+
+    /**
+     * {@inheritDoc}
+     */
+    @Override public String toString() {
+        return S.toString(PersonKey.class, this);
     }
 }

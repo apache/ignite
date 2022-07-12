@@ -37,7 +37,8 @@ public class CatboostClassificationModelParser implements
     @Override public CatboostClassificationModel parse(byte[] mdl) {
         try (InputStream inputStream = new ByteArrayInputStream(mdl)) {
             return new CatboostClassificationModel(CatBoostModel.loadModel(inputStream));
-        } catch (IOException | CatBoostError e) {
+        }
+        catch (IOException | CatBoostError e) {
             throw new RuntimeException("Failed to parse model " + e.getMessage(), e);
         }
     }

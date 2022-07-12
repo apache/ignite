@@ -497,7 +497,8 @@ public class CassandraSessionImpl implements CassandraSession {
                     }
 
                     return;
-                } catch (Throwable e) {
+                }
+                catch (Throwable e) {
                     error = e;
 
                     if (CassandraHelper.isTableAbsenceError(e)) {
@@ -507,13 +508,16 @@ public class CassandraSessionImpl implements CassandraSession {
                         }
                         else
                             return;
-                    } else if (CassandraHelper.isHostsAvailabilityError(e)) {
+                    }
+                    else if (CassandraHelper.isHostsAvailabilityError(e)) {
                         if (handleHostsAvailabilityError(ses == null ? 0 : ses.generation, e, attempt, errorMsg))
                             statements.clear();
-                    } else if (CassandraHelper.isPreparedStatementClusterError(e)) {
+                    }
+                    else if (CassandraHelper.isPreparedStatementClusterError(e)) {
                         handlePreparedStatementClusterError(prepStatement == null ? 0 : prepStatement.generation, e);
                         statements.clear();
-                    } else {
+                    }
+                    else {
                         // For an error which we don't know how to handle, we will not try next attempts and terminate.
                         throw new IgniteException(errorMsg, e);
                     }
@@ -524,9 +528,11 @@ public class CassandraSessionImpl implements CassandraSession {
 
                 attempt++;
             }
-        } catch (Throwable e) {
+        }
+        catch (Throwable e) {
             error = e;
-        } finally {
+        }
+        finally {
             decrementSessionRefs();
         }
 

@@ -27,6 +27,7 @@ namespace Apache.Ignite.Core.Tests.Client.Cache
     using Apache.Ignite.Core.Cache.Configuration;
     using Apache.Ignite.Core.Client;
     using Apache.Ignite.Core.Client.Cache;
+    using Apache.Ignite.Core.Client.DataStructures;
     using Apache.Ignite.Core.Common;
     using NUnit.Framework;
 
@@ -460,6 +461,32 @@ namespace Apache.Ignite.Core.Tests.Client.Cache
             }
 
             Assert.AreEqual(gridIdx, GetClientRequestGridIndex("Start", RequestNamePrefixStreamer));
+        }
+
+        [Test]
+        [TestCase("default-grp-partitioned", null, CacheMode.Partitioned, 0)]
+        [TestCase("default-grp-replicated", null, CacheMode.Replicated, 2)]
+        [TestCase("custom-grp-partitioned", "testAtomicLong", CacheMode.Partitioned, 1)]
+        [TestCase("custom-grp-replicated", "testAtomicLong", CacheMode.Replicated, 0)]
+        public void AtomicLong_RequestIsRoutedToPrimaryNode(
+            string name, string groupName, CacheMode cacheMode, int gridIdx)
+        {
+            var cfg = new AtomicClientConfiguration
+            {
+                GroupName = groupName,
+                CacheMode = cacheMode
+            };
+
+            var atomicLong = Client.GetAtomicLong(name, cfg, 1, true);
+
+            // Warm up.
+            atomicLong.Read();
+            ClearLoggers();
+
+            // Test.
+            atomicLong.Read();
+
+            Assert.AreEqual(gridIdx, GetClientRequestGridIndex("ValueGet", "datastructures.ClientAtomicLong"));
         }
 
         protected override IgniteClientConfiguration GetClientConfiguration()

@@ -168,8 +168,8 @@ public class GridClosureProcessor extends GridProcessorAdapter {
         Collection<? extends Runnable> jobs,
         @Nullable Collection<ClusterNode> nodes,
         boolean sys,
-        @Nullable String execName)
-    {
+        @Nullable String execName
+    ) {
         assert mode != null;
         assert !F.isEmpty(jobs) : jobs;
 
@@ -228,8 +228,8 @@ public class GridClosureProcessor extends GridProcessorAdapter {
         Runnable job,
         @Nullable Collection<ClusterNode> nodes,
         boolean sys,
-        @Nullable String execName)
-    {
+        @Nullable String execName
+    ) {
         assert mode != null;
         assert job != null;
 
@@ -369,8 +369,8 @@ public class GridClosureProcessor extends GridProcessorAdapter {
         Collection<? extends Callable<R1>> jobs,
         IgniteReducer<R1, R2> rdc,
         @Nullable Collection<ClusterNode> nodes,
-        @Nullable String execName)
-    {
+        @Nullable String execName
+    ) {
         assert mode != null;
         assert rdc != null;
         assert !F.isEmpty(jobs);
@@ -433,8 +433,8 @@ public class GridClosureProcessor extends GridProcessorAdapter {
         Collection<? extends Callable<R>> jobs,
         @Nullable Collection<ClusterNode> nodes,
         boolean sys,
-        @Nullable String execName)
-    {
+        @Nullable String execName
+    ) {
         assert mode != null;
         assert !F.isEmpty(jobs);
 
@@ -658,8 +658,8 @@ public class GridClosureProcessor extends GridProcessorAdapter {
         Callable<R> job,
         @Nullable Collection<ClusterNode> nodes,
         boolean sys,
-        @Nullable String execName)
-    {
+        @Nullable String execName
+    ) {
         assert mode != null;
         assert job != null;
 
@@ -736,8 +736,8 @@ public class GridClosureProcessor extends GridProcessorAdapter {
     public <T, R> ComputeTaskInternalFuture<Collection<R>> callAsync(IgniteClosure<T, R> job,
         @Nullable Collection<? extends T> args,
         @Nullable Collection<ClusterNode> nodes,
-        @Nullable String execName)
-    {
+        @Nullable String execName
+    ) {
         busyLock.readLock();
 
         try {

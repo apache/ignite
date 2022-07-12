@@ -41,7 +41,7 @@ jobs:
           server-username: NEXUS_USER
           server-password: NEXUS_PW
       - name: Deploy
-        run: ./mvnw deploy -Pcheckstyle -DskipTests -Dmaven.javadoc.skip=true -B -V
+        run: ./mvnw deploy -Pcheckstyle,compatibility -DskipTests -Dmaven.javadoc.skip=true -B -V
         env:
           NEXUS_USER: ${{ secrets.NEXUS_USER }}
           NEXUS_PW: ${{ secrets.NEXUS_PW }}

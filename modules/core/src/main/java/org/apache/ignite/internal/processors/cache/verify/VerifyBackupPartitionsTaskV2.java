@@ -478,7 +478,7 @@ public class VerifyBackupPartitionsTaskV2 extends ComputeTaskAdapter<VisorIdleVe
                     PartitionKeyV2 key = new PartitionKeyV2(gctx.groupId(), part.id(), gctx.cacheOrGroupName());
 
                     PartitionHashRecordV2 hash = calculatePartitionHash(key,
-                        updateCntrBefore == null ? 0 : updateCntrBefore.get(),
+                        updateCntrBefore == null ? 0 : updateCntrBefore.comparableState(),
                         ignite.context().discovery().localNode().consistentId(),
                         part.state(),
                         part.primary(gctx.topology().readyTopologyVersion()),

@@ -17,6 +17,7 @@
 
 package org.apache.ignite.client;
 
+import java.util.Collection;
 import java.util.Set;
 import org.apache.ignite.cache.query.ContinuousQuery;
 import org.apache.ignite.cache.query.Query;
@@ -213,5 +214,108 @@ public enum ClientOperationType {
     /**
      * Get service descriptor ({@link ClientServices#serviceDescriptor(String)}).
      */
-    SERVICE_GET_DESCRIPTOR
+    SERVICE_GET_DESCRIPTOR,
+
+    /**
+     * Get or create an AtomicLong ({@link IgniteClient#atomicLong(String, long, boolean)},
+     * {@link IgniteClient#atomicLong(String, ClientAtomicConfiguration, long, boolean)}).
+     */
+    ATOMIC_LONG_CREATE,
+
+    /**
+     * Remove an AtomicLong ({@link ClientAtomicLong#close()}).
+     */
+    ATOMIC_LONG_REMOVE,
+
+    /**
+     * Check if AtomicLong exists ({@link ClientAtomicLong#removed()}).
+     */
+    ATOMIC_LONG_EXISTS,
+
+    /**
+     * AtomicLong.get ({@link ClientAtomicLong#get()}).
+     */
+    ATOMIC_LONG_VALUE_GET,
+
+    /**
+     * AtomicLong.addAndGet (includes {@link ClientAtomicLong#addAndGet(long)}, {@link ClientAtomicLong#incrementAndGet()},
+     * {@link ClientAtomicLong#getAndIncrement()}, {@link ClientAtomicLong#getAndAdd(long)}, {@link ClientAtomicLong#decrementAndGet()},
+     * {@link ClientAtomicLong#getAndDecrement()}).
+     */
+    ATOMIC_LONG_VALUE_ADD_AND_GET,
+
+    /**
+     * AtomicLong.getAndSet ({@link ClientAtomicLong#getAndSet(long)}).
+     */
+    ATOMIC_LONG_VALUE_GET_AND_SET,
+
+    /**
+     * AtomicLong.compareAndSet ({@link ClientAtomicLong#compareAndSet(long, long)}).
+     */
+    ATOMIC_LONG_VALUE_COMPARE_AND_SET,
+
+    /**
+     * Create an IgniteSet ({@link IgniteClient#set(String, ClientCollectionConfiguration)}).
+     */
+    SET_GET_OR_CREATE,
+
+    /**
+     * Remove an IgniteSet ({@link ClientIgniteSet#close()}).
+     */
+    SET_REMOVE,
+
+    /**
+     * Check if IgniteSet exists ({@link ClientIgniteSet#removed()}).
+     */
+    SET_EXISTS,
+
+    /**
+     * IgniteSet.add ({@link ClientIgniteSet#add(Object)}).
+     */
+    SET_VALUE_ADD,
+
+    /**
+     * IgniteSet.addAll ({@link ClientIgniteSet#addAll(Collection)}).
+     */
+    SET_VALUE_ADD_ALL,
+
+    /**
+     * IgniteSet.remove ({@link ClientIgniteSet#remove}).
+     */
+    SET_VALUE_REMOVE,
+
+    /**
+     * IgniteSet.removeAll ({@link ClientIgniteSet#removeAll}).
+     */
+    SET_VALUE_REMOVE_ALL,
+
+    /**
+     * IgniteSet.contains ({@link ClientIgniteSet#contains(Object)}).
+     */
+    SET_VALUE_CONTAINS,
+
+    /**
+     * IgniteSet.containsAll ({@link ClientIgniteSet#containsAll}).
+     */
+    SET_VALUE_CONTAINS_ALL,
+
+    /**
+     * IgniteSet.retainAll ({@link ClientIgniteSet#retainAll}).
+     */
+    SET_VALUE_RETAIN_ALL,
+
+    /**
+     * IgniteSet.size ({@link ClientIgniteSet#size()}).
+     */
+    SET_SIZE,
+
+    /**
+     * IgniteSet.clear ({@link ClientIgniteSet#clear()}).
+     */
+    SET_CLEAR,
+
+    /**
+     * IgniteSet.iterator ({@link ClientIgniteSet#iterator()}, {@link ClientIgniteSet#toArray()}).
+     */
+    SET_ITERATOR
 }

@@ -1001,8 +1001,8 @@ public class GridCacheMvccManager extends GridCacheSharedManagerAdapter {
      */
     public GridCacheMvccCandidate removeExplicitLock(long threadId,
         IgniteTxKey key,
-        @Nullable GridCacheVersion ver)
-    {
+        @Nullable GridCacheVersion ver
+    ) {
         assert threadId > 0;
 
         GridCacheExplicitLockSpan span = pendingExplicit.get(threadId);

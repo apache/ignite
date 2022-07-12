@@ -159,7 +159,8 @@ class PlatformTestPluginTarget implements PlatformTarget {
                         try {
                             Thread.sleep(500L);
                             fa.onDone(val.toUpperCase());
-                        } catch (InterruptedException e) {
+                        }
+                        catch (InterruptedException e) {
                             e.printStackTrace();
                         }
                     }
@@ -189,7 +190,8 @@ class PlatformTestPluginTarget implements PlatformTarget {
                         try {
                             Thread.sleep(500L);
                             fa.onDone(new PlatformTestPluginException("x"));
-                        } catch (InterruptedException e) {
+                        }
+                        catch (InterruptedException e) {
                             e.printStackTrace();
                         }
                     }

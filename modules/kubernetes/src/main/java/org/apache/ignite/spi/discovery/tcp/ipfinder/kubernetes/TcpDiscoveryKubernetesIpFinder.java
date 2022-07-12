@@ -76,7 +76,8 @@ public class TcpDiscoveryKubernetesIpFinder extends TcpDiscoveryIpFinderAdapter 
                 .getServiceAddresses()
                 .stream().map(addr -> new InetSocketAddress(addr, cfg.getDiscoveryPort()))
                 .collect(Collectors.toCollection(ArrayList::new));
-        } catch (Exception e) {
+        }
+        catch (Exception e) {
             throw new IgniteSpiException(e);
         }
     }

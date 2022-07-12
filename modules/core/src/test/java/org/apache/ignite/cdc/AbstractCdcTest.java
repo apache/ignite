@@ -24,6 +24,7 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Iterator;
 import java.util.List;
+import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
 import java.util.concurrent.CountDownLatch;
@@ -32,6 +33,8 @@ import java.util.function.Function;
 import javax.management.DynamicMBean;
 import org.apache.ignite.IgniteCache;
 import org.apache.ignite.IgniteException;
+import org.apache.ignite.binary.BinaryBasicIdMapper;
+import org.apache.ignite.binary.BinaryType;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.IgniteInterruptedCheckedException;
@@ -117,9 +120,9 @@ public abstract class AbstractCdcTest extends GridCommonAbstractTest {
 
         return new CdcMain(cfg, null, cdcCfg) {
             @Override protected CdcConsumerState createState(Path stateDir) {
-                return new CdcConsumerState(stateDir) {
-                    @Override public void save(T2<WALPointer, Integer> state) throws IOException {
-                        super.save(state);
+                return new CdcConsumerState(log, stateDir) {
+                    @Override public void saveWal(T2<WALPointer, Integer> state) throws IOException {
+                        super.saveWal(state);
 
                         if (!F.isEmpty(conditions)) {
                             for (GridAbsPredicate p : conditions) {
@@ -274,8 +277,11 @@ public abstract class AbstractCdcTest extends GridCommonAbstractTest {
 
     /** */
     public abstract static class TestCdcConsumer<T> implements CdcConsumer {
-        /** Keys */
+        /** Keys. */
         final ConcurrentMap<IgniteBiTuple<ChangeEventType, Integer>, List<T>> data = new ConcurrentHashMap<>();
+
+        /** Cache events. */
+        protected final ConcurrentMap<Integer, CdcCacheEvent> caches = new ConcurrentHashMap<>();
 
         /** */
         private volatile boolean stopped;
@@ -300,10 +306,31 @@ public abstract class AbstractCdcTest extends GridCommonAbstractTest {
                     F.t(evt.value() == null ? DELETE : UPDATE, evt.cacheId()),
                     k -> new ArrayList<>()).add(extract(evt));
 
+                assertTrue(caches.containsKey(evt.cacheId()));
+
                 checkEvent(evt);
             });
 
             return commit();
+        }
+
+        /** {@inheritDoc} */
+        @Override public void onTypes(Iterator<BinaryType> types) {
+            types.forEachRemaining(t -> assertNotNull(t));
+        }
+
+        /** {@inheritDoc} */
+        @Override public void onCacheChange(Iterator<CdcCacheEvent> cacheEvts) {
+            cacheEvts.forEachRemaining(evt -> {
+                assertFalse(caches.containsKey(evt.cacheId()));
+
+                caches.put(evt.cacheId(), evt);
+            });
+        }
+
+        /** {@inheritDoc} */
+        @Override public void onCacheDestroy(Iterator<Integer> caches) {
+            caches.forEachRemaining(cacheId -> assertNotNull(this.caches.remove(cacheId)));
         }
 
         /** */
@@ -330,8 +357,12 @@ public abstract class AbstractCdcTest extends GridCommonAbstractTest {
 
     /** */
     public static class UserCdcConsumer extends TestCdcConsumer<Integer> {
+        /** */
+        protected boolean userTypeFound;
+
         /** {@inheritDoc} */
         @Override public void checkEvent(CdcEvent evt) {
+            assertTrue(userTypeFound);
             assertNull(evt.version().otherClusterVersion());
 
             if (evt.value() == null)
@@ -346,6 +377,89 @@ public abstract class AbstractCdcTest extends GridCommonAbstractTest {
         /** {@inheritDoc} */
         @Override public Integer extract(CdcEvent evt) {
             return (Integer)evt.key();
+        }
+
+        /** {@inheritDoc} */
+        @Override public void onTypes(Iterator<BinaryType> types) {
+            types.forEachRemaining(t -> {
+                if (t.typeName().equals(User.class.getName())) {
+                    userTypeFound = true;
+
+                    assertNotNull(t.field("name"));
+                    assertEquals(String.class.getSimpleName(), t.fieldTypeName("name"));
+                    assertNotNull(t.field("age"));
+                    assertEquals(int.class.getName(), t.fieldTypeName("age"));
+                    assertNotNull(t.field("payload"));
+                    assertEquals(byte[].class.getSimpleName(), t.fieldTypeName("payload"));
+                }
+
+                assertNotNull(t);
+            });
+        }
+
+        /** {@inheritDoc} */
+        @Override public void onMappings(Iterator<TypeMapping> mappings) {
+            BinaryBasicIdMapper mapper = new BinaryBasicIdMapper();
+
+            mappings.forEachRemaining(m -> {
+                assertNotNull(m);
+
+                String typeName = m.typeName();
+
+                assertFalse(typeName.isEmpty());
+                assertEquals(mapper.typeId(typeName), m.typeId());
+            });
+        }
+    }
+
+    /** */
+    public static class TrackCacheEventsConsumer implements CdcConsumer {
+        /** Cache events. */
+        public final Map<Integer, CdcCacheEvent> evts = new ConcurrentHashMap<>();
+
+        /** {@inheritDoc} */
+        @Override public void onCacheChange(Iterator<CdcCacheEvent> cacheEvents) {
+            cacheEvents.forEachRemaining(e -> {
+                log.info("TrackCacheEventsConsumer.add[cacheId=" + e.cacheId() + ", e=" + e + ']');
+                evts.put(e.cacheId(), e);
+            });
+        }
+
+        /** {@inheritDoc} */
+        @Override public void onCacheDestroy(Iterator<Integer> caches) {
+            caches.forEachRemaining(cacheId -> {
+                log.info("TrackCacheEventsConsumer.remove[cacheId=" + cacheId + ']');
+
+                evts.remove(cacheId);
+            });
+        }
+
+        /** {@inheritDoc} */
+        @Override public void start(MetricRegistry mreg) {
+            // No-op.
+        }
+
+        /** {@inheritDoc} */
+        @Override public boolean onEvents(Iterator<CdcEvent> evts) {
+            evts.forEachRemaining(e -> { /* No-op. */ });
+
+            return false;
+        }
+
+        /** {@inheritDoc} */
+        @Override public void onTypes(Iterator<BinaryType> types) {
+            types.forEachRemaining(e -> { /* No-op. */ });
+        }
+
+        /** {@inheritDoc} */
+        @Override public void onMappings(Iterator<TypeMapping> mappings) {
+            mappings.forEachRemaining(e -> { /* No-op. */ });
+        }
+
+
+        /** {@inheritDoc} */
+        @Override public void stop() {
+            // No-op.
         }
     }
 

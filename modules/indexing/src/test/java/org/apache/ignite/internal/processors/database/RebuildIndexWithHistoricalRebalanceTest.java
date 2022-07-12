@@ -72,7 +72,7 @@ public class RebuildIndexWithHistoricalRebalanceTest extends GridCommonAbstractT
     private static final AtomicReference<CountDownLatch> SUPPLY_MESSAGE_LATCH = new AtomicReference<>();
 
     /** Test logger. */
-    private final ListeningTestLogger log = new ListeningTestLogger(false, super.log);
+    private final ListeningTestLogger log = new ListeningTestLogger(super.log);
 
     /**
      * User key.

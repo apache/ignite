@@ -37,6 +37,7 @@ import java.util.stream.Collectors;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCache;
 import org.apache.ignite.IgniteCheckedException;
+import org.apache.ignite.binary.BinaryType;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.DataRegionConfiguration;
 import org.apache.ignite.configuration.DataStorageConfiguration;
@@ -275,6 +276,23 @@ public class CdcSelfTest extends AbstractCdcTest {
                     return true;
                 }
 
+                @Override public void onTypes(Iterator<BinaryType> types) {
+                    types.forEachRemaining(t -> assertNotNull(t));
+                }
+
+                @Override public void onMappings(Iterator<TypeMapping> mappings) {
+                    mappings.forEachRemaining(m -> assertNotNull(m));
+                }
+
+                @Override public void onCacheChange(Iterator<CdcCacheEvent> cacheEvents) {
+                    cacheEvents.forEachRemaining(ce -> assertNotNull(ce));
+                }
+
+                /** {@inheritDoc} */
+                @Override public void onCacheDestroy(Iterator<Integer> caches) {
+                    caches.forEachRemaining(ce -> assertNotNull(ce));
+                }
+
                 @Override public void stop() {
                     // No-op.
                 }
@@ -348,6 +366,22 @@ public class CdcSelfTest extends AbstractCdcTest {
                     oneConsumed = true;
 
                     return true;
+                }
+
+                @Override public void onTypes(Iterator<BinaryType> types) {
+                    types.forEachRemaining(t -> assertNotNull(t));
+                }
+
+                @Override public void onMappings(Iterator<TypeMapping> mappings) {
+                    mappings.forEachRemaining(m -> assertNotNull(m));
+                }
+
+                @Override public void onCacheChange(Iterator<CdcCacheEvent> cacheEvents) {
+                    cacheEvents.forEachRemaining(ce -> assertNotNull(ce));
+                }
+
+                @Override public void onCacheDestroy(Iterator<Integer> caches) {
+                    caches.forEachRemaining(ce -> assertNotNull(ce));
                 }
 
                 @Override public void stop() {
@@ -570,13 +604,13 @@ public class CdcSelfTest extends AbstractCdcTest {
 
         addData(cache, KEYS_CNT / 2, KEYS_CNT);
 
-        for (int i = 0; i < 3; i++) {
-            UserCdcConsumer cnsmr = new UserCdcConsumer() {
-                @Override protected boolean commit() {
-                    return false;
-                }
-            };
+        UserCdcConsumer cnsmr = new UserCdcConsumer() {
+            @Override protected boolean commit() {
+                return false;
+            }
+        };
 
+        for (int i = 0; i < 3; i++) {
             CdcMain cdc = createCdc(cnsmr, getConfiguration(ign.name()));
 
             IgniteInternalFuture<?> fut = runAsync(cdc);
@@ -588,6 +622,8 @@ public class CdcSelfTest extends AbstractCdcTest {
             fut.cancel();
 
             assertTrue(cnsmr.stopped());
+
+            cnsmr.data.clear();
         }
 
         AtomicBoolean consumeHalf = new AtomicBoolean(true);
@@ -595,7 +631,7 @@ public class CdcSelfTest extends AbstractCdcTest {
 
         int half = KEYS_CNT / 2;
 
-        UserCdcConsumer cnsmr = new UserCdcConsumer() {
+        cnsmr = new UserCdcConsumer() {
             @Override public boolean onEvents(Iterator<CdcEvent> evts) {
                 if (consumeHalf.get() && F.size(data(UPDATE, cacheId(DEFAULT_CACHE_NAME))) == half) {
                     // This means that state committed as a result of the previous call.

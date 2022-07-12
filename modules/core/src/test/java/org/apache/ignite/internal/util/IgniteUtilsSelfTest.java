@@ -999,7 +999,8 @@ public class IgniteUtilsSelfTest extends GridCommonAbstractTest {
                     return null;
                 }
             );
-        } finally {
+        }
+        finally {
             executorService.shutdownNow();
         }
     }
@@ -1034,7 +1035,8 @@ public class IgniteUtilsSelfTest extends GridCommonAbstractTest {
         }
         catch (Exception e) {
             assertTrue(e.toString(), X.hasCause(e, TimeoutException.class));
-        } finally {
+        }
+        finally {
             executorService.shutdownNow();
         }
     }
@@ -1083,7 +1085,8 @@ public class IgniteUtilsSelfTest extends GridCommonAbstractTest {
             for (int parallelism = 1; parallelism < 16; parallelism++)
                 for (int size = 0; size < 10_000; size++)
                     testOrder(executorService, size, parallelism);
-        } finally {
+        }
+        finally {
             executorService.shutdownNow();
         }
     }
@@ -1287,7 +1290,8 @@ public class IgniteUtilsSelfTest extends GridCommonAbstractTest {
         }
         catch (IgniteCheckedException e) {
             assertEquals(expectedException, e.getMessage());
-        } finally {
+        }
+        finally {
             executorService.shutdownNow();
         }
     }

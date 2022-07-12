@@ -351,7 +351,10 @@ public class IgniteOffheapReadWriteLockSelfTest extends GridCommonAbstractTest {
 
         final int threadCnt = 32;
 
-        final CyclicBarrier barr = new CyclicBarrier(threadCnt, () -> { if (done.get()) run.set(false); });
+        final CyclicBarrier barr = new CyclicBarrier(threadCnt, () -> {
+            if (done.get())
+                run.set(false);
+        });
 
         IgniteInternalFuture<Long> fut = GridTestUtils.runMultiThreadedAsync(new Callable<Object>() {
             /** {@inheritDoc} */

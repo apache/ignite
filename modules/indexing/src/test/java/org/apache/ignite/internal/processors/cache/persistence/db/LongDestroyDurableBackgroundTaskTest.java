@@ -162,7 +162,6 @@ public class LongDestroyDurableBackgroundTaskTest extends GridCommonAbstractTest
 
     /** */
     private final ListeningTestLogger testLog = new ListeningTestLogger(
-        false,
         log(),
         blockedSysCriticalThreadLsnr,
         pendingDelFinishedLsnr,

@@ -26,10 +26,10 @@ import java.util.stream.Collectors;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.IgniteLogger;
-import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.failure.FailureContext;
 import org.apache.ignite.failure.FailureType;
 import org.apache.ignite.internal.IgniteInternalFuture;
+import org.apache.ignite.internal.processors.cache.persistence.file.FilePageStoreManager;
 import org.apache.ignite.internal.util.future.GridFinishedFuture;
 import org.apache.ignite.internal.util.lang.GridPlainRunnable;
 import org.apache.ignite.internal.util.typedef.internal.CU;
@@ -249,7 +249,7 @@ public class CachesRegistry {
             registerCache(cacheDesc);
 
         List<DynamicCacheDescriptor> cachesToPersist = cacheDescriptors.stream()
-            .filter(cacheDesc -> shouldPersist(cacheDesc.cacheConfiguration()))
+            .filter(cacheDesc -> CU.storeCacheConfig(cctx, cacheDesc.cacheConfiguration()))
             .collect(Collectors.toList());
 
         if (cachesToPersist.isEmpty())
@@ -263,18 +263,6 @@ public class CachesRegistry {
     }
 
     /**
-     * Checks whether given cache configuration should be persisted.
-     *
-     * @param cacheCfg Cache config.
-     * @return {@code True} if cache configuration should be persisted, {@code false} in other case.
-     */
-    private boolean shouldPersist(CacheConfiguration<?, ?> cacheCfg) {
-        return cctx.pageStore() != null &&
-            CU.isPersistentCache(cacheCfg, cctx.gridConfig().getDataStorageConfiguration()) &&
-            !cctx.kernalContext().clientNode();
-    }
-
-    /**
      * Persists cache configurations.
      *
      * @param cacheConfigsToPersist Cache configurations to persist.
@@ -284,7 +272,10 @@ public class CachesRegistry {
         // Pre-create cache work directories if they don't exist.
         for (StoredCacheData data : cacheConfigsToPersist) {
             try {
-                cctx.pageStore().checkAndInitCacheWorkDir(data.config());
+                FilePageStoreManager.checkAndInitCacheWorkDir(
+                    cctx.cache().configManager().cacheWorkDir(data.config()),
+                    log
+                );
             }
             catch (IgniteCheckedException e) {
                 if (!cctx.kernalContext().isStopping()) {
@@ -299,7 +290,7 @@ public class CachesRegistry {
             @Override public void run() {
                 try {
                     for (StoredCacheData data : cacheConfigsToPersist)
-                        cctx.cache().saveCacheConfiguration(data, false);
+                        cctx.cache().configManager().saveCacheConfiguration(data, false);
                 }
                 catch (IgniteCheckedException e) {
                     U.error(log, "Error while saving cache configurations on disk", e);

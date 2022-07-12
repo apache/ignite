@@ -17,6 +17,8 @@
 
 package org.apache.ignite.internal.cache.query.index.sorted.inline;
 
+import java.util.Comparator;
+import java.util.PriorityQueue;
 import java.util.UUID;
 import java.util.concurrent.atomic.AtomicBoolean;
 import org.apache.ignite.IgniteCheckedException;
@@ -24,9 +26,12 @@ import org.apache.ignite.IgniteException;
 import org.apache.ignite.failure.FailureContext;
 import org.apache.ignite.internal.cache.query.index.AbstractIndex;
 import org.apache.ignite.internal.cache.query.index.SingleCursor;
+import org.apache.ignite.internal.cache.query.index.SortOrder;
 import org.apache.ignite.internal.cache.query.index.sorted.DurableBackgroundCleanupIndexTreeTaskV2;
+import org.apache.ignite.internal.cache.query.index.sorted.IndexKeyDefinition;
 import org.apache.ignite.internal.cache.query.index.sorted.IndexKeyTypeSettings;
 import org.apache.ignite.internal.cache.query.index.sorted.IndexRow;
+import org.apache.ignite.internal.cache.query.index.sorted.IndexRowComparator;
 import org.apache.ignite.internal.cache.query.index.sorted.IndexRowImpl;
 import org.apache.ignite.internal.cache.query.index.sorted.IndexValueCursor;
 import org.apache.ignite.internal.cache.query.index.sorted.InlineIndexRowHandler;
@@ -102,6 +107,27 @@ public class InlineIndexImpl extends AbstractIndex implements InlineIndex {
         }
 
         return segments[segment].find(lower, upper, lowIncl, upIncl, closure, null);
+    }
+
+    /** {@inheritDoc} */
+    @Override public GridCursor<IndexRow> find(
+        IndexRow lower,
+        IndexRow upper,
+        boolean lowIncl,
+        boolean upIncl,
+        IndexQueryContext qryCtx
+    ) throws IgniteCheckedException {
+        int segmentsCnt = segmentsCount();
+
+        if (segmentsCnt == 1)
+            return find(lower, upper, lowIncl, upIncl, 0, qryCtx);
+
+        final GridCursor<IndexRow>[] segmentCursors = new GridCursor[segmentsCnt];
+
+        for (int i = 0; i < segmentsCnt; i++)
+            segmentCursors[i] = find(lower, upper, lowIncl, upIncl, i, qryCtx);
+
+        return new SegmentedIndexCursor(segmentCursors, def);
     }
 
     /** {@inheritDoc} */
@@ -249,7 +275,8 @@ public class InlineIndexImpl extends AbstractIndex implements InlineIndex {
             if (!replaced && oldRow != null)
                 remove(oldRow);
 
-        } finally {
+        }
+        finally {
             ThreadLocalRowHandlerHolder.clearRowHandler();
         }
     }
@@ -269,7 +296,8 @@ public class InlineIndexImpl extends AbstractIndex implements InlineIndex {
 
             return replaced;
 
-        } catch (Throwable t) {
+        }
+        catch (Throwable t) {
             cctx.kernalContext().failure().process(new FailureContext(CRITICAL_ERROR, t));
 
             throw t;
@@ -287,7 +315,8 @@ public class InlineIndexImpl extends AbstractIndex implements InlineIndex {
 
             segments[segment].removex(idxRow);
 
-        } catch (Throwable t) {
+        }
+        catch (Throwable t) {
             cctx.kernalContext().failure().process(new FailureContext(CRITICAL_ERROR, t));
 
             throw t;
@@ -467,5 +496,75 @@ public class InlineIndexImpl extends AbstractIndex implements InlineIndex {
      */
     public SortedIndexDefinition indexDefinition() {
         return def;
+    }
+
+    /** Single cursor over multiple segments. The next value is chosen with the index row comparator. */
+    private static class SegmentedIndexCursor implements GridCursor<IndexRow> {
+        /** Cursors over segments. */
+        private final PriorityQueue<GridCursor<IndexRow>> cursors;
+
+        /** Comparator to compare index rows. */
+        private final Comparator<GridCursor<IndexRow>> cursorComp;
+
+        /** */
+        private IndexRow head;
+
+        /** */
+        SegmentedIndexCursor(GridCursor<IndexRow>[] cursors, SortedIndexDefinition idxDef) throws IgniteCheckedException {
+            cursorComp = new Comparator<GridCursor<IndexRow>>() {
+                private final IndexRowComparator rowComparator = idxDef.rowComparator();
+
+                private final IndexKeyDefinition[] keyDefs =
+                    idxDef.indexKeyDefinitions().values().toArray(new IndexKeyDefinition[0]);
+
+                @Override public int compare(GridCursor<IndexRow> o1, GridCursor<IndexRow> o2) {
+                    try {
+                        int keysLen = o1.get().keys().length;
+
+                        for (int i = 0; i < keysLen; i++) {
+                            int cmp = rowComparator.compareRow(o1.get(), o2.get(), i);
+
+                            if (cmp != 0) {
+                                boolean desc = keyDefs[i].order().sortOrder() == SortOrder.DESC;
+
+                                return desc ? -cmp : cmp;
+                            }
+                        }
+
+                        return 0;
+                    }
+                    catch (IgniteCheckedException e) {
+                        throw new IgniteException("Failed to sort remote index rows", e);
+                    }
+                }
+            };
+
+            this.cursors = new PriorityQueue<>(cursors.length, cursorComp);
+
+            for (GridCursor<IndexRow> c: cursors) {
+                if (c.next())
+                    this.cursors.add(c);
+            }
+        }
+
+        /** {@inheritDoc} */
+        @Override public boolean next() throws IgniteCheckedException {
+            if (cursors.isEmpty())
+                return false;
+
+            GridCursor<IndexRow> c = cursors.poll();
+
+            head = c.get();
+
+            if (c.next())
+                cursors.add(c);
+
+            return true;
+        }
+
+        /** {@inheritDoc} */
+        @Override public IndexRow get() throws IgniteCheckedException {
+            return head;
+        }
     }
 }

@@ -965,15 +965,6 @@ public class ClusterCachesInfo {
             exchangeActions.addCacheGroupToStop(grpDesc, req.destroy());
 
             assert exchangeActions.checkStopRequestConsistency(grpDesc.groupId());
-
-            // If all caches in group will be destroyed it is not necessary to destroy single cache
-            // because group will be stopped anyway.
-            if (req.destroy()) {
-                for (ExchangeActions.CacheActionData action : exchangeActions.cacheStopRequests()) {
-                    if (action.descriptor().groupId() == grpDesc.groupId())
-                        action.request().destroy(false);
-                }
-            }
         }
 
         return true;

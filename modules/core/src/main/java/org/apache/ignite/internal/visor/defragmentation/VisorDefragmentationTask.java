@@ -32,8 +32,7 @@ import org.jetbrains.annotations.Nullable;
 @GridInternal
 @GridVisorManagementTask
 public class VisorDefragmentationTask extends VisorMultiNodeTask
-    <VisorDefragmentationTaskArg, VisorDefragmentationTaskResult, VisorDefragmentationTaskResult>
-{
+    <VisorDefragmentationTaskArg, VisorDefragmentationTaskResult, VisorDefragmentationTaskResult> {
     /** Serial version uid. */
     private static final long serialVersionUID = 0L;
 
@@ -142,7 +141,8 @@ public class VisorDefragmentationTask extends VisorMultiNodeTask
 
             try {
                 return new VisorDefragmentationTaskResult(true, defragmentation.status().toString());
-            } catch (IgniteCheckedException e) {
+            }
+            catch (IgniteCheckedException e) {
                 return new VisorDefragmentationTaskResult(false, e.getMessage());
             }
         }
@@ -173,7 +173,8 @@ public class VisorDefragmentationTask extends VisorMultiNodeTask
                 }
 
                 return new VisorDefragmentationTaskResult(true, message);
-            } catch (IgniteCheckedException e) {
+            }
+            catch (IgniteCheckedException e) {
                 return new VisorDefragmentationTaskResult(false, e.getMessage());
             }
         }

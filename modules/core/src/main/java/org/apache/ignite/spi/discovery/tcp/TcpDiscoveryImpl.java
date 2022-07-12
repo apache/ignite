@@ -417,7 +417,7 @@ abstract class TcpDiscoveryImpl {
                 LT.error(log, e, "Failed to register local node address in IP finder on start " +
                     "(retrying every " + spi.getReconnectDelay() + " ms; " +
                     "change 'reconnectDelay' to configure the frequency of retries).");
-            };
+            }
 
             if (spiJoinTimeout > 0 && U.millisSinceNanos(startNanos) > spiJoinTimeout)
                 throw new IgniteSpiException(
@@ -463,8 +463,7 @@ abstract class TcpDiscoveryImpl {
                 msg.cacheMetrics().get(nodeId) : Collections.emptyMap();
 
             if (endTimeMetricsSizeProcessWait <= U.currentTimeMillis()
-                && cacheMetrics.size() >= METRICS_QNT_WARN)
-            {
+                && cacheMetrics.size() >= METRICS_QNT_WARN) {
                 log.warning("The Discovery message has metrics for " + cacheMetrics.size() + " caches.\n" +
                     "To prevent Discovery blocking use -DIGNITE_DISCOVERY_DISABLE_CACHE_METRICS_UPDATE=true option.");
 

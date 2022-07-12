@@ -23,7 +23,6 @@ import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
-import java.util.UUID;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteDataStreamer;
 import org.apache.ignite.cache.query.FieldsQueryCursor;
@@ -208,9 +207,10 @@ public interface GridQueryIndexing {
      *
      * @param cacheInfo Cache context info.
      * @param rmvIdx If {@code true}, will remove index.
+     * @param clearIdx If {@code true}, will clear the index.
      * @throws IgniteCheckedException If failed to drop cache schema.
      */
-    public void unregisterCache(GridCacheContextInfo cacheInfo, boolean rmvIdx) throws IgniteCheckedException;
+    public void unregisterCache(GridCacheContextInfo cacheInfo, boolean rmvIdx, boolean clearIdx) throws IgniteCheckedException;
 
     /**
      *
@@ -329,30 +329,6 @@ public interface GridQueryIndexing {
     public void onDisconnected(IgniteFuture<?> reconnectFut);
 
     /**
-     * Collect queries that already running more than specified duration.
-     *
-     * @param duration Duration to check.
-     * @return Collection of long running queries.
-     */
-    public Collection<GridRunningQueryInfo> runningQueries(long duration);
-
-    /**
-     * Cancel query running on remote or local Node.
-     *
-     * @param queryId Query id.
-     * @param nodeId Node id, if {@code null}, cancel local query.
-     * @param async If {@code true}, execute asynchronously.
-     */
-    public void cancelQuery(long queryId, @Nullable UUID nodeId, boolean async);
-
-    /**
-     * Cancel specified queries.
-     *
-     * @param queries Queries ID's to cancel.
-     */
-    public void cancelLocalQueries(Collection<Long> queries);
-
-    /**
      * @return Running query manager.
      */
     public RunningQueryManager runningQueryManager();
@@ -462,4 +438,17 @@ public interface GridQueryIndexing {
     default Map<String, Integer> secondaryIndexesInlineSize() {
         return Collections.emptyMap();
     }
+
+    /**
+     * Checks if object of the specified class can be stored in the specified table column by the query engine.
+     *
+     * @param schemaName Schema name.
+     * @param tblName Table name.
+     * @param colName Name of the column.
+     * @param cls Class to perform check on.
+     * @return Whether object of the specified class can be successfully stored and accessed from the SQL column by the
+     *         query engine.
+     * @throws IgniteSQLException if table or column with specified name was not found.
+     */
+    boolean isConvertibleToColumnType(String schemaName, String tblName, String colName, Class<?> cls);
 }

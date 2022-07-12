@@ -121,7 +121,7 @@ public class JavaThinCompatibilityTest extends AbstractClientCompatibilityTest {
     @Override public void testCurrentClientToOldServer() throws Exception {
         Assume.assumeTrue("Java thin client exists only from 2.5.0 release", ver.compareTo(VER_2_5_0) >= 0);
 
-        super.testOldClientToCurrentServer();
+        super.testCurrentClientToOldServer();
     }
 
     /** */
@@ -379,7 +379,7 @@ public class JavaThinCompatibilityTest extends AbstractClientCompatibilityTest {
             cache.put(0, 1);
             cache.remove(0);
 
-            assertTrue(GridTestUtils.waitForCondition(() -> allEvts.size() == 3, 1_000L));
+            assertTrue(GridTestUtils.waitForCondition(() -> allEvts.size() == 3, 10_000L));
         }
     }
 
@@ -445,7 +445,7 @@ public class JavaThinCompatibilityTest extends AbstractClientCompatibilityTest {
             assertEquals(0, svc.totalCount());
             assertEquals(1, svc.maxPerNodeCount());
             assertNull(svc.cacheName());
-            assertEquals(grid(0).localNode().id(), svc.originNodeId());
+            assertEquals(client.cluster().forServers().node().id(), svc.originNodeId());
             assertEquals(PlatformType.JAVA, svc.platformType());
         }
     }

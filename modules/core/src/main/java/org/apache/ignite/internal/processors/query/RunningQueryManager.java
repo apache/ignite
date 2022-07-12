@@ -63,6 +63,7 @@ import org.jetbrains.annotations.Nullable;
 import static org.apache.ignite.internal.processors.cache.query.GridCacheQueryType.SQL;
 import static org.apache.ignite.internal.processors.cache.query.GridCacheQueryType.SQL_FIELDS;
 import static org.apache.ignite.internal.processors.metric.impl.MetricUtils.metricName;
+import static org.apache.ignite.internal.processors.security.SecurityUtils.securitySubjectId;
 import static org.apache.ignite.internal.processors.tracing.SpanTags.ERROR;
 import static org.apache.ignite.internal.processors.tracing.SpanTags.SQL_QRY_ID;
 
@@ -248,7 +249,8 @@ public class RunningQueryManager {
             ctx.performanceStatistics().enabled() ? System.nanoTime() : 0,
             cancel,
             loc,
-            qryInitiatorId
+            qryInitiatorId,
+            securitySubjectId(ctx)
         );
 
         GridRunningQueryInfo preRun = runs.putIfAbsent(qryId, run);
@@ -574,7 +576,8 @@ public class RunningQueryManager {
         if (err == null) {
             try {
                 runningQryInfo.cancel();
-            } catch (Exception e) {
+            }
+            catch (Exception e) {
                 U.warn(log, "Cancellation of query failed: [qryId=" + qryId + "]", e);
 
                 if (!msg.asyncResponse())

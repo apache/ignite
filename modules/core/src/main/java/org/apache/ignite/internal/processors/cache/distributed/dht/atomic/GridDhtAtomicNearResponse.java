@@ -78,8 +78,8 @@ public class GridDhtAtomicNearResponse extends GridCacheIdMessage {
         int partId,
         long futId,
         UUID primaryId,
-        byte flags)
-    {
+        byte flags
+    ) {
         assert primaryId != null;
 
         this.cacheId = cacheId;

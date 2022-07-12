@@ -115,7 +115,8 @@ public class IgniteClientReconnectQueriesTest extends IgniteClientReconnectAbstr
                     clnCache.query(qry);
 
                     fail();
-                } catch (CacheException e) {
+                }
+                catch (CacheException e) {
                     check(e);
                 }
             }
@@ -225,7 +226,8 @@ public class IgniteClientReconnectQueriesTest extends IgniteClientReconnectAbstr
                     clnCache.query(scanQry);
 
                     fail();
-                } catch (CacheException e) {
+                }
+                catch (CacheException e) {
                     check(e);
                 }
             }

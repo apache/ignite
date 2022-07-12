@@ -1298,8 +1298,8 @@ public class CacheLateAffinityAssignmentTest extends GridCommonAbstractTest {
     private void doTestCoordLeaveBlockedFinishExchangeMessage(int cnt,
         int stopId,
         boolean lastClient,
-        int... blockedIds) throws Exception
-    {
+        int... blockedIds
+    ) throws Exception {
         int ord = 1;
 
         for (int i = 0; i < cnt; i++) {

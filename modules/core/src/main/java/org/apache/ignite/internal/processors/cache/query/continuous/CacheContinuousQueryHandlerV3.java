@@ -181,7 +181,8 @@ public class CacheContinuousQueryHandlerV3<K, V> extends CacheContinuousQueryHan
 
             if (p2pUnmarshalFut.isDone())
                 p2pUnmarshalFut = new GridFutureAdapter<>();
-        } else
+        }
+        else
             rmtTransFactory = (Factory<? extends IgniteClosure<CacheEntryEvent<? extends K, ? extends V>, ?>>)in.readObject();
     }
 }

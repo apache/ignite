@@ -159,7 +159,7 @@ public class RebuildIndexTest extends GridCommonAbstractTest {
      * @throws Exception if failed.
      */
     private void check(boolean msgFound) throws Exception {
-        srvLog = new ListeningTestLogger(false, log);
+        srvLog = new ListeningTestLogger(log);
 
         LogListener idxRebuildLsnr = LogListener.matches(idxRebuildPattert).build();
         srvLog.registerListener(idxRebuildLsnr);

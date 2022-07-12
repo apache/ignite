@@ -587,7 +587,8 @@ public class CacheContinuousQueryHandler<K, V> implements GridContinuousHandler 
                                 @Override public void run() {
                                     try {
                                         notifyLocalListener(evts, getTransformer());
-                                    } catch (IgniteCheckedException ex) {
+                                    }
+                                    catch (IgniteCheckedException ex) {
                                         U.error(ctx.log(CU.CONTINUOUS_QRY_LOG_CATEGORY),
                                             "Failed to notify local listener.", ex);
                                     }
@@ -599,7 +600,8 @@ public class CacheContinuousQueryHandler<K, V> implements GridContinuousHandler 
                                 @Override public void run() {
                                     try {
                                         notifyLocalListener(evts, getTransformer());
-                                    } catch (IgniteCheckedException ex) {
+                                    }
+                                    catch (IgniteCheckedException ex) {
                                         U.error(ctx.log(CU.CONTINUOUS_QRY_LOG_CATEGORY),
                                             "Failed to notify local listener.", ex);
                                     }

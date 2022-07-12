@@ -33,7 +33,7 @@ import static org.apache.ignite.testframework.GridTestUtils.waitForCondition;
 /** */
 public class LogExporterSpiTest extends AbstractExporterSpiTest {
     /** Test logger. */
-    private final ListeningTestLogger log = new ListeningTestLogger(false, super.log);
+    private final ListeningTestLogger log = new ListeningTestLogger(super.log);
 
     /** */
     private IgniteEx ignite;

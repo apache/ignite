@@ -1209,7 +1209,8 @@ public class GridDiscoveryManager extends GridManagerAdapter<DiscoverySpi> {
 
                         return metrics;
                     }
-                } catch (Exception e) {
+                }
+                catch (Exception e) {
                     U.warn(log, "Failed to compute cache metrics", e);
                 }
 
@@ -2897,7 +2898,7 @@ public class GridDiscoveryManager extends GridManagerAdapter<DiscoverySpi> {
                     if (!isInterruptedException)
                         U.error(log, "Exception in discovery notifier worker thread.", t);
 
-                    if (!isInterruptedException || !isCancelled) {
+                    if (!isInterruptedException || !isCancelled.get()) {
                         FailureType type = t instanceof OutOfMemoryError ? CRITICAL_ERROR : SYSTEM_WORKER_TERMINATION;
 
                         ctx.failure().process(new FailureContext(type, t));
@@ -3077,7 +3078,7 @@ public class GridDiscoveryManager extends GridManagerAdapter<DiscoverySpi> {
                     onIdle();
                 }
                 catch (InterruptedException e) {
-                    if (!isCancelled)
+                    if (!isCancelled.get())
                         ctx.failure().process(new FailureContext(SYSTEM_WORKER_TERMINATION, e));
 
                     throw e;
@@ -3273,7 +3274,7 @@ public class GridDiscoveryManager extends GridManagerAdapter<DiscoverySpi> {
 
                 if (segmented)
                     onSegmentation();
-            };
+            }
         }
 
         /**

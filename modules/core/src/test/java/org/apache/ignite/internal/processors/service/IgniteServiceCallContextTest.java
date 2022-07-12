@@ -115,9 +115,13 @@ public class IgniteServiceCallContextTest extends GridCommonAbstractTest {
     @Test
     public void testInvalidContextImplementation() {
         ServiceCallContext callCtx = new ServiceCallContext() {
-            @Override public String attribute(String name) { return null; }
+            @Override public String attribute(String name) {
+                return null;
+            }
 
-            @Override public byte[] binaryAttribute(String name) { return null; }
+            @Override public byte[] binaryAttribute(String name) {
+                return null;
+            }
         };
 
         GridTestUtils.assertThrowsAnyCause(log, () -> grid(0).services().serviceProxy(SVC_NAME, TestService.class,

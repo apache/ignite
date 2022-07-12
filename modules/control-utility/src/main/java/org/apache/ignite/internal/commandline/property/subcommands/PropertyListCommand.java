@@ -25,8 +25,7 @@ import org.apache.ignite.internal.commandline.property.tasks.PropertiesListResul
 import org.apache.ignite.internal.commandline.property.tasks.PropertiesListTask;
 
 /** */
-public class PropertyListCommand extends PropertyAbstractSubCommand<VoidDto, PropertiesListResult>
-{
+public class PropertyListCommand extends PropertyAbstractSubCommand<VoidDto, PropertiesListResult> {
     /** {@inheritDoc} */
     @Override protected String taskName() {
         return PropertiesListTask.class.getName();

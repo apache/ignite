@@ -38,7 +38,6 @@ import java.util.LinkedHashMap;
 import java.util.Map;
 import java.util.Set;
 import java.util.TreeSet;
-
 import org.apache.ignite.IgniteCache;
 import org.apache.ignite.cache.QueryEntity;
 import org.apache.ignite.cache.QueryIndex;
@@ -521,13 +520,15 @@ public class JdbcThinMetadataSelfTest extends JdbcThinAbstractSelfTest {
                     assert rs.getInt("NULLABLE") == 0;
                     assert rs.getInt(11) == 0; // nullable column by index
                     assert rs.getString("IS_NULLABLE").equals("NO");
-                } else if ("ORGID".equals(name)) {
+                }
+                else if ("ORGID".equals(name)) {
                     assert rs.getInt("DATA_TYPE") == INTEGER;
                     assert "INTEGER".equals(rs.getString("TYPE_NAME"));
                     assert rs.getInt("NULLABLE") == 1;
                     assert rs.getInt(11) == 1;  // nullable column by index
                     assert rs.getString("IS_NULLABLE").equals("YES");
-                } else if ("AGE".equals(name)) {
+                }
+                else if ("AGE".equals(name)) {
                     assert rs.getInt("DATA_TYPE") == INTEGER;
                     assert "INTEGER".equals(rs.getString("TYPE_NAME"));
                     assert rs.getInt("NULLABLE") == 0;
@@ -573,7 +574,8 @@ public class JdbcThinMetadataSelfTest extends JdbcThinAbstractSelfTest {
                     assert rs.getInt("DATA_TYPE") == INTEGER;
                     assert "INTEGER".equals(rs.getString("TYPE_NAME"));
                     assert rs.getInt("NULLABLE") == 0;
-                } else if ("name".equals(name)) {
+                }
+                else if ("name".equals(name)) {
                     assert rs.getInt("DATA_TYPE") == VARCHAR;
                     assert "VARCHAR".equals(rs.getString("TYPE_NAME"));
                     assert rs.getInt("NULLABLE") == 1;
@@ -772,6 +774,7 @@ public class JdbcThinMetadataSelfTest extends JdbcThinAbstractSelfTest {
                 "SYS.SQL_QUERIES.DURATION.null.19",
                 "SYS.SQL_QUERIES.ORIGIN_NODE_ID.null.2147483647",
                 "SYS.SQL_QUERIES.INITIATOR_ID.null.2147483647",
+                "SYS.SQL_QUERIES.SUBJECT_ID.null.2147483647",
                 "SYS.SCAN_QUERIES.START_TIME.null.19",
                 "SYS.SCAN_QUERIES.TRANSFORMER.null.2147483647",
                 "SYS.SCAN_QUERIES.LOCAL.null.1",

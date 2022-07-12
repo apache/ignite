@@ -181,7 +181,8 @@ public class IgnitePdsConsistencyOnDelayedPartitionOwning extends GridCommonAbst
 
                     try {
                         assertTrue(U.await(delayedOnwningLatch, 10_000, TimeUnit.MILLISECONDS));
-                    } catch (IgniteInterruptedCheckedException e) {
+                    }
+                    catch (IgniteInterruptedCheckedException e) {
                         fail(X.getFullStackTrace(e));
                     }
                 }
@@ -207,7 +208,8 @@ public class IgnitePdsConsistencyOnDelayedPartitionOwning extends GridCommonAbst
 
                     try {
                         assertTrue(U.await(enableDurabilityCPStartLatch, 20_000, TimeUnit.MILLISECONDS));
-                    } catch (IgniteInterruptedCheckedException e) {
+                    }
+                    catch (IgniteInterruptedCheckedException e) {
                         fail(X.getFullStackTrace(e));
                     }
 

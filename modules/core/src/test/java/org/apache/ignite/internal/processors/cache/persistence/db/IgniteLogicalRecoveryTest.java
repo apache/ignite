@@ -380,7 +380,9 @@ public class IgniteLogicalRecoveryTest extends GridCommonAbstractTest {
         try {
             startNodeFut.get();
         }
-        catch (Exception expected) { }
+        catch (Exception expected) {
+            // Ignore.
+        }
 
         // Wait until node will leave cluster.
         GridTestUtils.waitForCondition(() -> {
@@ -602,7 +604,9 @@ public class IgniteLogicalRecoveryTest extends GridCommonAbstractTest {
                     // Throttle against GC.
                     U.sleep(1);
                 }
-                catch (Exception ignored) { }
+                catch (Exception ignored) {
+                    // Ignore.
+                }
             }
         }
 

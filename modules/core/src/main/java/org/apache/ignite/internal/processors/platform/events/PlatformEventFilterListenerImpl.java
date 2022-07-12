@@ -34,8 +34,7 @@ import org.apache.ignite.internal.processors.platform.utils.PlatformUtils;
 /**
  * Platform event filter. Delegates apply to native platform.
  */
-public class PlatformEventFilterListenerImpl implements PlatformEventFilterListener, Externalizable
-{
+public class PlatformEventFilterListenerImpl implements PlatformEventFilterListener, Externalizable {
     /** */
     private static final long serialVersionUID = 0L;
 

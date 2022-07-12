@@ -177,7 +177,8 @@ public abstract class StreamAdapter<T, K, V> {
             if (e != null)
                 stmr.addData(e);
 
-        } else {
+        }
+        else {
             Map<K, V> m = multipleTupleExtractor.extract(msg);
             
             if (m != null && !m.isEmpty())

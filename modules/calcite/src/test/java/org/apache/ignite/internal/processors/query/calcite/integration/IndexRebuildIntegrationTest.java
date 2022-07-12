@@ -19,15 +19,21 @@ package org.apache.ignite.internal.processors.query.calcite.integration;
 
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicBoolean;
+import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.cluster.ClusterState;
 import org.apache.ignite.configuration.DataRegionConfiguration;
 import org.apache.ignite.configuration.DataStorageConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.IgniteEx;
+import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.cache.query.index.IndexProcessor;
 import org.apache.ignite.internal.managers.indexing.IndexesRebuildTask;
 import org.apache.ignite.internal.processors.cache.GridCacheContext;
+import org.apache.ignite.internal.processors.query.calcite.CalciteQueryProcessor;
 import org.apache.ignite.internal.processors.query.calcite.QueryChecker;
+import org.apache.ignite.internal.processors.query.calcite.schema.IgniteCacheTable;
+import org.apache.ignite.internal.processors.query.calcite.util.Commons;
 import org.apache.ignite.internal.processors.query.schema.IndexRebuildCancelToken;
 import org.apache.ignite.internal.processors.query.schema.SchemaIndexCacheVisitorClosure;
 import org.apache.ignite.internal.util.future.GridFutureAdapter;
@@ -194,6 +200,53 @@ public class IndexRebuildIntegrationTest extends AbstractBasicIntegrationTest {
             .ordered();
 
         checkRebuildIndexQuery(grid(1), checker, checker);
+    }
+
+    /**
+     * Test IndexCount is disabled at index rebuilding.
+     */
+    @Test
+    public void testIndexCountAtUnavailableIndex() throws IgniteCheckedException {
+        int records = 50;
+        int iterations = 500;
+
+        CalciteQueryProcessor srvEngine = Commons.lookupComponent(grid(0).context(), CalciteQueryProcessor.class);
+
+        for (int backups = -1; backups < 3; ++backups) {
+            String ddl = "CREATE TABLE tbl3 (id INT PRIMARY KEY, val VARCHAR, val2 VARCHAR) WITH ";
+
+            ddl += backups < 0 ? "TEMPLATE=REPLICATED" : "TEMPLATE=PARTITIONED,backups=" + backups;
+
+            executeSql(ddl);
+
+            for (int i = 0; i < records; i++)
+                executeSql("INSERT INTO tbl3 VALUES (?, ?, ?)", i, "val" + i, "val" + i);
+
+            IgniteCacheTable tbl3 = (IgniteCacheTable)srvEngine.schemaHolder().schema("PUBLIC").getTable("TBL3");
+
+            AtomicBoolean stop = new AtomicBoolean();
+
+            IgniteInternalFuture<?> fut = GridTestUtils.runAsync(() -> {
+                boolean lever = true;
+
+                while (!stop.get())
+                    tbl3.markIndexRebuildInProgress(lever = !lever);
+            });
+
+            try {
+                for (int i = 0; i < iterations; ++i)
+                    assertQuery("select COUNT(*) from tbl3").returns((long)records).check();
+            }
+            finally {
+                stop.set(true);
+
+                tbl3.markIndexRebuildInProgress(false);
+
+                executeSql("DROP TABLE tbl3");
+            }
+
+            fut.get();
+        }
     }
 
     /** */

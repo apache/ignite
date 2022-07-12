@@ -119,9 +119,8 @@ public class ZookeeperClient implements Watcher {
         IgniteLogger log,
         String connectString,
         int sesTimeout,
-        IgniteRunnable connLostC)
-        throws Exception
-    {
+        IgniteRunnable connLostC
+    ) throws Exception {
         this.log = log.getLogger(getClass());
         this.connLostC = connLostC;
 
@@ -416,8 +415,7 @@ public class ZookeeperClient implements Watcher {
      * @throws InterruptedException If interrupted.
      */
     String createIfNeeded(String path, byte[] data, CreateMode createMode)
-        throws ZookeeperClientFailedException, InterruptedException
-    {
+        throws ZookeeperClientFailedException, InterruptedException {
         assert !createMode.isSequential() : createMode;
 
         if (data == null)
@@ -478,8 +476,7 @@ public class ZookeeperClient implements Watcher {
      * @throws InterruptedException If interrupted.
      */
     String createSequential(String checkPrefix, String parentPath, String path, byte[] data, CreateMode createMode)
-        throws ZookeeperClientFailedException, InterruptedException
-    {
+        throws ZookeeperClientFailedException, InterruptedException {
         assert createMode.isSequential() : createMode;
 
         if (data == null)
@@ -596,8 +593,7 @@ public class ZookeeperClient implements Watcher {
      * @throws InterruptedException If interrupted.
      */
     void deleteIfExists(String path, int ver)
-        throws ZookeeperClientFailedException, InterruptedException
-    {
+        throws ZookeeperClientFailedException, InterruptedException {
         try {
             delete(path, ver);
         }
@@ -677,8 +673,7 @@ public class ZookeeperClient implements Watcher {
      * @throws InterruptedException If interrupted.
      */
     private void delete(String path, int ver)
-        throws KeeperException.NoNodeException, ZookeeperClientFailedException, InterruptedException
-    {
+        throws KeeperException.NoNodeException, ZookeeperClientFailedException, InterruptedException {
         for (;;) {
             long connStartTime = this.connStartTime;
 
@@ -707,8 +702,7 @@ public class ZookeeperClient implements Watcher {
      */
     void setData(String path, byte[] data, int ver)
         throws ZookeeperClientFailedException, InterruptedException, KeeperException.NoNodeException,
-        KeeperException.BadVersionException
-    {
+        KeeperException.BadVersionException {
         if (data == null)
             data = EMPTY_BYTES;
 
@@ -762,8 +756,7 @@ public class ZookeeperClient implements Watcher {
      * @throws InterruptedException If interrupted.
      */
     byte[] getData(String path)
-        throws KeeperException.NoNodeException, ZookeeperClientFailedException, InterruptedException
-    {
+        throws KeeperException.NoNodeException, ZookeeperClientFailedException, InterruptedException {
         return getData(path, null);
     }
 
@@ -847,8 +840,7 @@ public class ZookeeperClient implements Watcher {
      * @throws InterruptedException If interrupted.
      */
     private void onZookeeperError(long prevConnStartTime, Exception e)
-        throws ZookeeperClientFailedException, InterruptedException
-    {
+        throws ZookeeperClientFailedException, InterruptedException {
         ZookeeperClientFailedException err = null;
 
         synchronized (stateMux) {

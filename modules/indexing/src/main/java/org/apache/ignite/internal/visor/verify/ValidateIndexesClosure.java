@@ -647,11 +647,13 @@ public class ValidateIndexesClosure implements IgniteCallable<VisorValidateIndex
                         continue;
                     else
                         processedNumber++;
-                } else {
+                }
+                else {
                     if (checkFirst > 0) {
                         if (current++ > checkFirst)
                             break;
-                    } else {
+                    }
+                    else {
                         if (current++ % checkThrough > 0)
                             continue;
                     }
@@ -699,7 +701,7 @@ public class ValidateIndexesClosure implements IgniteCallable<VisorValidateIndex
 
             GridH2RowDescriptor gridH2RowDesc = gridH2Tbl.rowDescriptor();
 
-            H2CacheRow h2Row = gridH2RowDesc.createRow(row);
+            H2CacheRow h2Row = new H2CacheRow(gridH2RowDesc, row);
 
             ArrayList<Index> indexes = gridH2Tbl.getIndexes();
 
@@ -1206,7 +1208,8 @@ public class ValidateIndexesClosure implements IgniteCallable<VisorValidateIndex
                     cacheGrpInfo(cacheGrpCtx),
                     s -> new ValidateIndexesCheckSizeResult(0, new ArrayList<>())
                 ).issues().add(new ValidateIndexesCheckSizeIssue(null, 0, cacheSizeErr));
-            } else {
+            }
+            else {
                 cacheSizeTotal.computeIfAbsent(grpId, i -> new CacheSize(null, new HashMap<>()))
                     .merge(cacheSize.cacheSizePerTbl);
             }

@@ -19,8 +19,11 @@ package org.apache.ignite.internal.processors.cache.persistence.pagemem;
 import java.io.Serializable;
 import java.util.concurrent.Callable;
 import java.util.concurrent.ThreadLocalRandom;
+import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
+import java.util.concurrent.atomic.AtomicLong;
+import com.google.common.util.concurrent.AtomicDouble;
 import org.apache.ignite.DataRegionMetrics;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCheckedException;
@@ -33,7 +36,10 @@ import org.apache.ignite.configuration.DataRegionConfiguration;
 import org.apache.ignite.configuration.DataStorageConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.configuration.WALMode;
+import org.apache.ignite.failure.FailureHandler;
+import org.apache.ignite.failure.StopNodeOrHaltFailureHandler;
 import org.apache.ignite.internal.processors.cache.persistence.GridCacheDatabaseSharedManager;
+import org.apache.ignite.internal.processors.cache.persistence.checkpoint.Checkpointer;
 import org.apache.ignite.internal.processors.metric.impl.HitRateMetric;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.internal.util.typedef.internal.U;
@@ -55,7 +61,7 @@ public class PagesWriteThrottleSandboxTest extends GridCommonAbstractTest {
 
         DataStorageConfiguration dbCfg = new DataStorageConfiguration()
             .setDefaultDataRegionConfiguration(new DataRegionConfiguration()
-                .setMaxSize(4000L * 1024 * 1024)
+                .setMaxSize(1000L * 1024 * 1024)
                 .setCheckpointPageBufferSize(1000L * 1000 * 1000)
                 .setName("dfltDataRegion")
                 .setMetricsEnabled(true)
@@ -132,6 +138,9 @@ public class PagesWriteThrottleSandboxTest extends GridCommonAbstractTest {
             }, 2, "read-loader");
 
             final HitRateMetric putRate = new HitRateMetric("putRate", "", 1000, 5);
+            final AtomicLong putCount = new AtomicLong();
+            final AtomicDouble maxDirtyRatio = new AtomicDouble();
+            long startNanos = System.nanoTime();
 
             GridTestUtils.runAsync(new Runnable() {
                 @Override public void run() {
@@ -142,25 +151,38 @@ public class PagesWriteThrottleSandboxTest extends GridCommonAbstractTest {
                             if (m.getName().equals("dfltDataRegion"))
                                 dirtyPages = m.getDirtyPages();
 
-                        long cpBufPages = 0;
+                        long cpBufPages;
 
                         long cpWrittenPages;
 
-                        AtomicInteger cntr = ((GridCacheDatabaseSharedManager)((ignite(0))
-                            .context().cache().context().database())).getCheckpointer().currentProgress().writtenPagesCounter();
+                        Checkpointer checkpointer = ((GridCacheDatabaseSharedManager)((ignite(0))
+                            .context().cache().context().database())).getCheckpointer();
+                        AtomicInteger cntr = checkpointer.currentProgress().writtenPagesCounter();
 
                         cpWrittenPages = cntr == null ? 0 : cntr.get();
 
                         try {
-                            cpBufPages = ((ignite(0)).context().cache().context().database()
-                                .dataRegion("dfltDataRegion").pageMemory()).checkpointBufferPagesCount();
+                            PageMemoryEx pageMemory = (PageMemoryEx)(ignite(0)).context().cache().context().database()
+                                .dataRegion("dfltDataRegion").pageMemory();
+                            cpBufPages = pageMemory.checkpointBufferPagesCount();
+
+                            if (System.nanoTime() - startNanos > TimeUnit.SECONDS.toNanos(10)) {
+                                double currentDirtyRatio = (double)dirtyPages / pageMemory.totalPages();
+                                double newMaxDirtyRatio = Math.max(maxDirtyRatio.get(), currentDirtyRatio);
+                                maxDirtyRatio.set(newMaxDirtyRatio);
+                            }
                         }
                         catch (IgniteCheckedException e) {
                             e.printStackTrace();
+                            throw new RuntimeException("Something went wrong", e);
                         }
 
-                        System.out.println("@@@ putsPerSec=," + (putRate.value()) + ", getsPerSec=," + (getRate.value()) + ", dirtyPages=,"
-                            + dirtyPages + ", cpWrittenPages=," + cpWrittenPages + ", cpBufPages=," + cpBufPages);
+                        System.out.println("@@@ globalPutsPerSec="
+                            + String.format("%.2f", globalPutsPerSec(putCount, startNanos))
+                            + ", putsPerSec=" + (putRate.value()) + ", getsPerSec=" + (getRate.value()) + ", dirtyPages="
+                            + dirtyPages + ", cpWrittenPages=" + cpWrittenPages + ", cpBufPages=" + cpBufPages
+                            + ", maxDirtyRatio=" + String.format("%.2f", maxDirtyRatio.get())
+                        );
 
                         try {
                             Thread.sleep(1000);
@@ -172,14 +194,27 @@ public class PagesWriteThrottleSandboxTest extends GridCommonAbstractTest {
                 }
             }, "metrics-view");
 
+            final boolean intermittentPutsMode = false;
+
             try (IgniteDataStreamer<Object, Object> ds = ig.dataStreamer(CACHE_NAME)) {
                 ds.allowOverwrite(true);
 
-                for (int i = 0; i < keyCnt * 10; i++) {
-                    ds.addData(ThreadLocalRandom.current().nextInt(keyCnt), new TestValue(ThreadLocalRandom.current().nextInt(),
-                        ThreadLocalRandom.current().nextInt()));
+                while (true) {
+                    long tensOfSecondsPassed = TimeUnit.NANOSECONDS.toSeconds(System.nanoTime() - startNanos) / 10;
+                    if (intermittentPutsMode && tensOfSecondsPassed % 2 == 1) {
+                        System.out.println("... sleeping ...");
+                        Thread.sleep(1000);
+                    }
+                    else {
+                        ds.addData(ThreadLocalRandom.current().nextInt(keyCnt), new TestValue(ThreadLocalRandom.current().nextInt(),
+                            ThreadLocalRandom.current().nextInt()));
 
-                    putRate.increment();
+                        putRate.increment();
+                        putCount.incrementAndGet();
+                    }
+
+                    if (System.nanoTime() - startNanos > TimeUnit.MINUTES.toNanos(10))
+                        break;
                 }
             }
 
@@ -188,6 +223,11 @@ public class PagesWriteThrottleSandboxTest extends GridCommonAbstractTest {
         finally {
             stopAllGrids();
         }
+    }
+
+    /***/
+    private double globalPutsPerSec(AtomicLong putCount, long startNanos) {
+        return (double)putCount.get() * TimeUnit.SECONDS.toNanos(1) / (System.nanoTime() - startNanos);
     }
 
     /**
@@ -246,5 +286,10 @@ public class PagesWriteThrottleSandboxTest extends GridCommonAbstractTest {
     private void deleteWorkFiles() throws Exception {
         cleanPersistenceDir();
         U.delete(U.resolveWorkDirectory(U.defaultWorkDirectory(), "snapshot", false));
+    }
+
+    /** {@inheritDoc} */
+    @Override protected FailureHandler getFailureHandler(String igniteInstanceName) {
+        return new StopNodeOrHaltFailureHandler();
     }
 }

@@ -71,8 +71,7 @@ public class BaselineTopologyHistory implements Serializable {
 
     /** */
     void writeHistoryItem(ReadWriteMetastorage metastorage, BaselineTopologyHistoryItem histItem)
-        throws IgniteCheckedException
-    {
+        throws IgniteCheckedException {
         if (histItem == null)
             return;
 

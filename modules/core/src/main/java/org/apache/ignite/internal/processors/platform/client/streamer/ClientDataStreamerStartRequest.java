@@ -126,7 +126,8 @@ public class ClientDataStreamerStartRequest extends ClientDataStreamerRequest {
                 dataStreamer.close();
 
                 return new ClientLongResponse(requestId(), 0);
-            } else {
+            }
+            else {
                 long rsrcId = ctx.resources().put(new ClientDataStreamerHandle(dataStreamer));
 
                 return new ClientLongResponse(requestId(), rsrcId);

@@ -1579,7 +1579,8 @@ public abstract class IgniteLockAbstractSelfTest extends IgniteAtomicsAbstractTe
         lock1.close();
         try {
             lock2.lock();
-        } catch (IgniteException e) {
+        }
+        catch (IgniteException e) {
             String msg = String.format("Failed to find reentrant lock with given name: " + lockName);
             assertEquals(msg, e.getMessage());
             throw e;

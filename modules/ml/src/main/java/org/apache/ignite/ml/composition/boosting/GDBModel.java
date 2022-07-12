@@ -77,7 +77,8 @@ public final class GDBModel extends ModelsComposition<DecisionTreeModel> impleme
     @Override public Double predict(Vector features) {
         if (internalToExternalLblMapping == null) {
             throw new IllegalArgumentException("The mapping should not be empty. Initialize it with apropriate function. ");
-        } else {
+        }
+        else {
             return internalToExternalLblMapping.apply(super.predict(features));
         }
     }
@@ -97,7 +98,8 @@ public final class GDBModel extends ModelsComposition<DecisionTreeModel> impleme
         try {
             File file = new File(path.toAbsolutePath().toString());
             writer.writeValue(file, this);
-        } catch (IOException e) {
+        }
+        catch (IOException e) {
             e.printStackTrace();
         }
     }
@@ -112,7 +114,8 @@ public final class GDBModel extends ModelsComposition<DecisionTreeModel> impleme
             JacksonHelper.readAndValidateBasicJsonModelProperties(path, mapper, GDBModel.class.getSimpleName());
             mdl = mapper.readValue(new File(path.toAbsolutePath().toString()), GDBModel.class);
             return mdl;
-        } catch (IOException e) {
+        }
+        catch (IOException e) {
             e.printStackTrace();
         }
         return null;

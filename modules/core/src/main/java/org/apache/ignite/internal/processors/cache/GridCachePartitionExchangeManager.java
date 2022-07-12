@@ -1415,7 +1415,9 @@ public class GridCachePartitionExchangeManager<K, V> extends GridCacheSharedMana
      * For coordinator causes {@link GridDhtPartitionsFullMessage FullMessages} send,
      * for non coordinator -  {@link GridDhtPartitionsSingleMessage SingleMessages} send
      */
-    public void refreshPartitions() { refreshPartitions(cctx.cache().cacheGroups()); }
+    public void refreshPartitions() {
+        refreshPartitions(cctx.cache().cacheGroups());
+    }
 
     /**
      * @param nodes Target Nodes.

@@ -529,7 +529,7 @@ public abstract class TcpCommunicationConfigInitializer extends IgniteSpiAdapter
      * @return {@code this} for chaining.
      */
     @IgniteSpiConfiguration(optional = true)
-    public TcpCommunicationSpi setSelectorsCount(int selectorsCnt) { ;
+    public TcpCommunicationSpi setSelectorsCount(int selectorsCnt) {
         cfg.selectorsCount(selectorsCnt);
 
         return (TcpCommunicationSpi)this;

@@ -70,9 +70,8 @@ public class CacheOffheapMapEntrySelfTest extends GridCacheAbstractSelfTest {
     private CacheConfiguration cacheConfiguration(String gridName,
         CacheAtomicityMode atomicityMode,
         CacheMode cacheMode,
-        String cacheName)
-        throws Exception
-    {
+        String cacheName
+    ) throws Exception {
         CacheConfiguration cfg = super.cacheConfiguration(gridName);
 
         cfg.setCacheMode(cacheMode);
@@ -120,9 +119,8 @@ public class CacheOffheapMapEntrySelfTest extends GridCacheAbstractSelfTest {
      */
     private void checkCacheMapEntry(CacheAtomicityMode atomicityMode,
         CacheMode cacheMode,
-        Class<?> entryCls)
-        throws Exception
-    {
+        Class<?> entryCls
+    ) throws Exception {
         log.info("Test cache [atomicityMode=" + atomicityMode + ", cacheMode=" + cacheMode + ']');
 
         CacheConfiguration cfg = cacheConfiguration(grid(0).name(),

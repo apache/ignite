@@ -108,7 +108,8 @@ public class SVMLinearClassificationTrainer extends SingleLabelDatasetTrainer<SV
 
                 final int weightVectorSizeWithIntercept = cols + 1;
                 weights = initializeWeightsWithZeros(weightVectorSizeWithIntercept);
-            } else
+            }
+            else
                 weights = getStateVector(mdl);
 
             for (int i = 0; i < this.getAmountOfIterations(); i++) {
@@ -118,7 +119,8 @@ public class SVMLinearClassificationTrainer extends SingleLabelDatasetTrainer<SV
 
                 weights = weights.plus(deltaWeights); // creates new vector
             }
-        } catch (Exception e) {
+        }
+        catch (Exception e) {
             throw new RuntimeException(e);
         }
         return new SVMLinearClassificationModel(weights.copyOfRange(1, weights.size()), weights.get(0));

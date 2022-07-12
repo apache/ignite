@@ -143,8 +143,7 @@ public class LSQROnHeapTest extends TrainerTest {
         try (LSQROnHeap<Integer, Vector> lsqr = new LSQROnHeap<>(
             datasetBuilder,
             TestUtils.testEnvBuilder(),
-            new SimpleLabeledDatasetDataBuilder<>(prerocessor), TestUtils.testEnvBuilder().buildForTrainer()))
-        {
+            new SimpleLabeledDatasetDataBuilder<>(prerocessor), TestUtils.testEnvBuilder().buildForTrainer())) {
             LSQRResult res = lsqr.solve(0, 1e-12, 1e-12, 1e8, -1, false, null);
 
             assertEquals(8, res.getIterations());

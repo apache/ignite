@@ -307,7 +307,8 @@ public abstract class GridCacheInterceptorAbstractSelfTest extends GridCacheAbst
             c = cache.getEntries(keys);
 
             assertTrue(c.isEmpty());
-        } else {
+        }
+        else {
             map = cache.getAll(keys);
 
             for (String key : keys)

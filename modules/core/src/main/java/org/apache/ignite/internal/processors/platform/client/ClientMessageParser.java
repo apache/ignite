@@ -78,6 +78,28 @@ import org.apache.ignite.internal.processors.platform.client.cluster.ClientClust
 import org.apache.ignite.internal.processors.platform.client.cluster.ClientClusterWalChangeStateRequest;
 import org.apache.ignite.internal.processors.platform.client.cluster.ClientClusterWalGetStateRequest;
 import org.apache.ignite.internal.processors.platform.client.compute.ClientExecuteTaskRequest;
+import org.apache.ignite.internal.processors.platform.client.datastructures.ClientAtomicLongCreateRequest;
+import org.apache.ignite.internal.processors.platform.client.datastructures.ClientAtomicLongExistsRequest;
+import org.apache.ignite.internal.processors.platform.client.datastructures.ClientAtomicLongRemoveRequest;
+import org.apache.ignite.internal.processors.platform.client.datastructures.ClientAtomicLongValueAddAndGetRequest;
+import org.apache.ignite.internal.processors.platform.client.datastructures.ClientAtomicLongValueCompareAndSetAndGetRequest;
+import org.apache.ignite.internal.processors.platform.client.datastructures.ClientAtomicLongValueCompareAndSetRequest;
+import org.apache.ignite.internal.processors.platform.client.datastructures.ClientAtomicLongValueGetAndSetRequest;
+import org.apache.ignite.internal.processors.platform.client.datastructures.ClientAtomicLongValueGetRequest;
+import org.apache.ignite.internal.processors.platform.client.datastructures.ClientIgniteSetClearRequest;
+import org.apache.ignite.internal.processors.platform.client.datastructures.ClientIgniteSetCloseRequest;
+import org.apache.ignite.internal.processors.platform.client.datastructures.ClientIgniteSetExistsRequest;
+import org.apache.ignite.internal.processors.platform.client.datastructures.ClientIgniteSetGetOrCreateRequest;
+import org.apache.ignite.internal.processors.platform.client.datastructures.ClientIgniteSetIteratorGetPageRequest;
+import org.apache.ignite.internal.processors.platform.client.datastructures.ClientIgniteSetIteratorStartRequest;
+import org.apache.ignite.internal.processors.platform.client.datastructures.ClientIgniteSetSizeRequest;
+import org.apache.ignite.internal.processors.platform.client.datastructures.ClientIgniteSetValueAddAllRequest;
+import org.apache.ignite.internal.processors.platform.client.datastructures.ClientIgniteSetValueAddRequest;
+import org.apache.ignite.internal.processors.platform.client.datastructures.ClientIgniteSetValueContainsAllRequest;
+import org.apache.ignite.internal.processors.platform.client.datastructures.ClientIgniteSetValueContainsRequest;
+import org.apache.ignite.internal.processors.platform.client.datastructures.ClientIgniteSetValueRemoveAllRequest;
+import org.apache.ignite.internal.processors.platform.client.datastructures.ClientIgniteSetValueRemoveRequest;
+import org.apache.ignite.internal.processors.platform.client.datastructures.ClientIgniteSetValueRetainAllRequest;
 import org.apache.ignite.internal.processors.platform.client.service.ClientServiceGetDescriptorRequest;
 import org.apache.ignite.internal.processors.platform.client.service.ClientServiceGetDescriptorsRequest;
 import org.apache.ignite.internal.processors.platform.client.service.ClientServiceInvokeRequest;
@@ -288,6 +310,73 @@ public class ClientMessageParser implements ClientListenerMessageParser {
 
     /** */
     private static final short OP_DATA_STREAMER_ADD_DATA = 8001;
+
+    /** Data structures. */
+    /** Create an AtomicLong. */
+    private static final short OP_ATOMIC_LONG_CREATE = 9000;
+
+    /** Remove an AtomicLong. */
+    private static final short OP_ATOMIC_LONG_REMOVE = 9001;
+
+    /** Check if AtomicLong exists. */
+    private static final short OP_ATOMIC_LONG_EXISTS = 9002;
+
+    /** AtomicLong.get. */
+    private static final short OP_ATOMIC_LONG_VALUE_GET = 9003;
+
+    /** AtomicLong.addAndGet (also covers incrementAndGet, getAndIncrement, getAndAdd, decrementAndGet, getAndDecrement).  */
+    private static final short OP_ATOMIC_LONG_VALUE_ADD_AND_GET = 9004;
+
+    /** AtomicLong.getAndSet. */
+    private static final short OP_ATOMIC_LONG_VALUE_GET_AND_SET = 9005;
+
+    /** AtomicLong.compareAndSet. */
+    private static final short OP_ATOMIC_LONG_VALUE_COMPARE_AND_SET = 9006;
+
+    /** AtomicLong.compareAndSetAndGet. */
+    private static final short OP_ATOMIC_LONG_VALUE_COMPARE_AND_SET_AND_GET = 9007;
+
+    /** Create an IgniteSet. */
+    private static final short OP_SET_GET_OR_CREATE = 9010;
+
+    /** Remove an IgniteSet. */
+    private static final short OP_SET_CLOSE = 9011;
+
+    /** IgniteSet.removed. */
+    private static final short OP_SET_EXISTS = 9012;
+
+    /** IgniteSet.add. */
+    private static final short OP_SET_VALUE_ADD = 9013;
+
+    /** IgniteSet.addAll. */
+    private static final short OP_SET_VALUE_ADD_ALL = 9014;
+
+    /** IgniteSet.remove. */
+    private static final short OP_SET_VALUE_REMOVE = 9015;
+
+    /** IgniteSet.removeAll. */
+    private static final short OP_SET_VALUE_REMOVE_ALL = 9016;
+
+    /** IgniteSet.contains. */
+    private static final short OP_SET_VALUE_CONTAINS = 9017;
+
+    /** IgniteSet.containsAll. */
+    private static final short OP_SET_VALUE_CONTAINS_ALL = 9018;
+
+    /** IgniteSet.retainAll. */
+    private static final short OP_SET_VALUE_RETAIN_ALL = 9019;
+
+    /** IgniteSet.size. */
+    private static final short OP_SET_SIZE = 9020;
+
+    /** IgniteSet.clear. */
+    private static final short OP_SET_CLEAR = 9021;
+
+    /** IgniteSet.iterator. */
+    private static final short OP_SET_ITERATOR_START = 9022;
+
+    /** IgniteSet.iterator page. */
+    private static final short OP_SET_ITERATOR_GET_PAGE = 9023;
 
     /** Marshaller. */
     private final GridBinaryMarshaller marsh;
@@ -516,6 +605,72 @@ public class ClientMessageParser implements ClientListenerMessageParser {
 
             case OP_DATA_STREAMER_ADD_DATA:
                 return new ClientDataStreamerAddDataRequest(reader);
+
+            case OP_ATOMIC_LONG_CREATE:
+                return new ClientAtomicLongCreateRequest(reader);
+
+            case OP_ATOMIC_LONG_REMOVE:
+                return new ClientAtomicLongRemoveRequest(reader);
+
+            case OP_ATOMIC_LONG_EXISTS:
+                return new ClientAtomicLongExistsRequest(reader);
+
+            case OP_ATOMIC_LONG_VALUE_GET:
+                return new ClientAtomicLongValueGetRequest(reader);
+
+            case OP_ATOMIC_LONG_VALUE_ADD_AND_GET:
+                return new ClientAtomicLongValueAddAndGetRequest(reader);
+
+            case OP_ATOMIC_LONG_VALUE_GET_AND_SET:
+                return new ClientAtomicLongValueGetAndSetRequest(reader);
+
+            case OP_ATOMIC_LONG_VALUE_COMPARE_AND_SET:
+                return new ClientAtomicLongValueCompareAndSetRequest(reader);
+
+            case OP_ATOMIC_LONG_VALUE_COMPARE_AND_SET_AND_GET:
+                return new ClientAtomicLongValueCompareAndSetAndGetRequest(reader);
+
+            case OP_SET_GET_OR_CREATE:
+                return new ClientIgniteSetGetOrCreateRequest(reader);
+
+            case OP_SET_CLOSE:
+                return new ClientIgniteSetCloseRequest(reader);
+
+            case OP_SET_EXISTS:
+                return new ClientIgniteSetExistsRequest(reader);
+
+            case OP_SET_VALUE_ADD:
+                return new ClientIgniteSetValueAddRequest(reader);
+
+            case OP_SET_VALUE_ADD_ALL:
+                return new ClientIgniteSetValueAddAllRequest(reader);
+
+            case OP_SET_VALUE_REMOVE:
+                return new ClientIgniteSetValueRemoveRequest(reader);
+
+            case OP_SET_VALUE_REMOVE_ALL:
+                return new ClientIgniteSetValueRemoveAllRequest(reader);
+
+            case OP_SET_VALUE_CONTAINS:
+                return new ClientIgniteSetValueContainsRequest(reader);
+
+            case OP_SET_VALUE_CONTAINS_ALL:
+                return new ClientIgniteSetValueContainsAllRequest(reader);
+
+            case OP_SET_VALUE_RETAIN_ALL:
+                return new ClientIgniteSetValueRetainAllRequest(reader);
+
+            case OP_SET_SIZE:
+                return new ClientIgniteSetSizeRequest(reader);
+
+            case OP_SET_CLEAR:
+                return new ClientIgniteSetClearRequest(reader);
+
+            case OP_SET_ITERATOR_START:
+                return new ClientIgniteSetIteratorStartRequest(reader);
+
+            case OP_SET_ITERATOR_GET_PAGE:
+                return new ClientIgniteSetIteratorGetPageRequest(reader);
         }
 
         return new ClientRawRequest(reader.readLong(), ClientStatus.INVALID_OP_CODE,

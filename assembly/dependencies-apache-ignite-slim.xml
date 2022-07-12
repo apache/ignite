@@ -128,12 +128,7 @@
                 <exclude>${project.groupId}:ignite-visor-plugins</exclude>
                 <exclude>${project.groupId}:ignite-hadoop</exclude>
                 <exclude>${project.groupId}:ignite-codegen</exclude>
-                <exclude>${project.groupId}:ignite-hibernate-core</exclude>
-                <exclude>${project.groupId}:ignite-hibernate_4.2</exclude>
-                <exclude>${project.groupId}:ignite-hibernate_5.1</exclude>
-                <exclude>${project.groupId}:ignite-hibernate_5.3</exclude>
                 <exclude>${project.groupId}:ignite-schedule</exclude>
-                <exclude>${project.groupId}:ignite-geospatial</exclude>
                 <exclude>${project.groupId}:ignite-appserver-test</exclude>
                 <exclude>${project.groupId}:ignite-websphere-test</exclude>
                 <exclude>${project.groupId}:ignite-cassandra</exclude>
@@ -144,26 +139,17 @@
                 <exclude>${project.groupId}:ignite-compatibility</exclude>
                 <exclude>${project.groupId}:ignite-sqlline</exclude>
                 <!-- Removed from slim packaging are: -->
-                <exclude>${project.groupId}:ignite-aop</exclude>
                 <exclude>${project.groupId}:ignite-cassandra-serializers</exclude>
                 <exclude>${project.groupId}:ignite-cassandra-store</exclude>
-                <exclude>${project.groupId}:ignite-cloud</exclude>
                 <exclude>${project.groupId}:ignite-direct-io</exclude>
                 <exclude>${project.groupId}:ignite-jcl</exclude>
-                <exclude>${project.groupId}:ignite-mesos</exclude>
                 <exclude>${project.groupId}:ignite-ml</exclude>
                 <exclude>${project.groupId}:ignite-ml-h2o-model-parser</exclude>
                 <exclude>${project.groupId}:ignite-ml-spark-model-parser</exclude>
                 <exclude>${project.groupId}:ignite-ml-xgboost-model-parser</exclude>
                 <exclude>${project.groupId}:ignite-ml-catboost-model-parser</exclude>
-                <exclude>${project.groupId}:ignite-osgi</exclude>
-                <exclude>${project.groupId}:ignite-osgi-karaf</exclude>
-                <exclude>${project.groupId}:ignite-osgi-paxlogging</exclude>
-                <exclude>${project.groupId}:ignite-spark</exclude>
-                <exclude>${project.groupId}:ignite-spark-2.4</exclude>
                 <exclude>${project.groupId}:ignite-ssh</exclude>
                 <exclude>${project.groupId}:ignite-web</exclude>
-                <exclude>${project.groupId}:ignite-yarn</exclude>
                 <exclude>${project.groupId}:ignite-zookeeper</exclude>
             </excludes>
             <sources>

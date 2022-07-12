@@ -17,45 +17,45 @@
 
 package org.apache.ignite.internal.cache.query.index.sorted.inline.types;
 
-import org.apache.ignite.internal.cache.query.index.sorted.IndexKeyTypes;
-import org.apache.ignite.internal.cache.query.index.sorted.keys.AbstractTimeIndexKey;
-import org.apache.ignite.internal.cache.query.index.sorted.keys.IndexKeyFactory;
+import org.apache.ignite.internal.cache.query.index.sorted.IndexKeyType;
+import org.apache.ignite.internal.cache.query.index.sorted.keys.IndexKey;
+import org.apache.ignite.internal.cache.query.index.sorted.keys.TimeIndexKey;
 import org.apache.ignite.internal.pagemem.PageUtils;
 
 /**
- * Inline index key implementation for inlining {@link AbstractTimeIndexKey} values.
+ * Inline index key implementation for inlining {@link TimeIndexKey} values.
  */
-public class TimeInlineIndexKeyType extends NullableInlineIndexKeyType<AbstractTimeIndexKey> {
+public class TimeInlineIndexKeyType extends NullableInlineIndexKeyType<TimeIndexKey> {
     /** */
     public TimeInlineIndexKeyType() {
-        super(IndexKeyTypes.TIME, (short)8);
+        super(IndexKeyType.TIME, (short)8);
     }
 
     /** {@inheritDoc} */
-    @Override public int compare0(long pageAddr, int off, AbstractTimeIndexKey key) {
+    @Override public int compare0(long pageAddr, int off, IndexKey key) {
         long val1 = PageUtils.getLong(pageAddr, off + 1);
-        long val2 = key.nanos();
+        long val2 = ((TimeIndexKey)key).nanos();
 
         return Integer.signum(Long.compare(val1, val2));
     }
 
     /** {@inheritDoc} */
-    @Override protected int put0(long pageAddr, int off, AbstractTimeIndexKey key, int maxSize) {
-        PageUtils.putByte(pageAddr, off, (byte)type());
+    @Override protected int put0(long pageAddr, int off, TimeIndexKey key, int maxSize) {
+        PageUtils.putByte(pageAddr, off, (byte)type().code());
         PageUtils.putLong(pageAddr, off + 1, key.nanos());
 
         return keySize + 1;
     }
 
     /** {@inheritDoc} */
-    @Override protected AbstractTimeIndexKey get0(long pageAddr, int off) {
+    @Override protected TimeIndexKey get0(long pageAddr, int off) {
         long nanos = PageUtils.getLong(pageAddr, off + 1);
 
-        return (AbstractTimeIndexKey)IndexKeyFactory.wrapDateValue(type(), 0L, nanos);
+        return new TimeIndexKey(nanos);
     }
 
     /** {@inheritDoc} */
-    @Override protected int inlineSize0(AbstractTimeIndexKey key) {
+    @Override protected int inlineSize0(TimeIndexKey key) {
         return keySize + 1;
     }
 }

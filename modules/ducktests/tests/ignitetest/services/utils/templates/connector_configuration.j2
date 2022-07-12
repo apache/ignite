@@ -18,13 +18,20 @@
 {% import 'ssl_params_macro.j2' as ssl_params_util %}
 
 {% macro connector_configuration(config) %}
+{% if config %}
+    <property name="connectorConfiguration">
         <bean class="org.apache.ignite.configuration.ConnectorConfiguration">
-                <property name="sslEnabled" value="{{ config.ssl_enabled }}"/>
-                {% if config.ssl_enabled %}
-                <property name="sslFactory">
-                    {{ ssl_params_util.ssl_params(config.ssl_params) }}
-                </property>
-                <property name="sslClientAuth" value="{{ config.ssl_client_auth }}"/>
-                {% endif %}
+            {% if config.idle_timeout %}
+            <property name="idleTimeout" value="{{ config.idle_timeout }}"/>
+            {% endif %}
+            <property name="sslEnabled" value="{{ config.ssl_enabled }}"/>
+            {% if config.ssl_enabled %}
+            <property name="sslFactory">
+                {{ ssl_params_util.ssl_params(config.ssl_params) }}
+            </property>
+            <property name="sslClientAuth" value="{{ config.ssl_client_auth }}"/>
+            {% endif %}
         </bean>
+    </property>
+{% endif %}
 {% endmacro %}

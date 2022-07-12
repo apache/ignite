@@ -78,7 +78,8 @@ public class AffinityKeyNameAndValueFieldNameConflictTest extends GridCommonAbst
             entity.addQueryField("name", String.class.getName(), null);
 
             ccfg.setQueryEntities(F.asList(entity));
-        } else {
+        }
+        else {
             CacheKeyConfiguration keyCfg = new CacheKeyConfiguration(keyCls);
             cfg.setCacheKeyConfiguration(keyCfg);
 

@@ -99,6 +99,16 @@ namespace Apache.Ignite.Core.Impl.Client
 
         // Data Streamer.
         DataStreamerStart = 8000,
-        DataStreamerAddData = 8001
+        DataStreamerAddData = 8001,
+
+        // Data Structures.
+        AtomicLongCreate = 9000,
+        AtomicLongRemove = 9001,
+        AtomicLongExists = 9002,
+        AtomicLongValueGet = 9003,
+        AtomicLongValueAddAndGet = 9004,
+        AtomicLongValueGetAndSet = 9005,
+        AtomicLongValueCompareAndSet = 9006,
+        AtomicLongValueCompareAndSetAndGet = 9007
     }
 }

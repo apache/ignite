@@ -107,7 +107,8 @@ public class PagesWriteThrottle implements PagesWriteThrottlePolicy {
             if (cpWrittenPages == cpTotalPages) {
                 // Checkpoint is already in fsync stage, increasing maximum ratio of dirty pages to 3/4
                 shouldThrottle = pageMemory.shouldThrottle(3.0 / 4);
-            } else {
+            }
+            else {
                 double dirtyRatioThreshold = ((double)cpWrittenPages) / cpTotalPages;
 
                 // Starting with 0.05 to avoid throttle right after checkpoint start

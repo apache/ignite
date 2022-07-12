@@ -631,7 +631,8 @@ public abstract class CacheJdbcPojoStoreAbstractSelfTest extends GridCommonAbstr
             assertTrue("Unexpected exception: " + msg,
                 ("Provided key type is not found in store or cache configuration " +
                     "[cache=" + CACHE_NAME + ", key=PersonKeyWrong]").equals(msg));
-        } finally {
+        }
+        finally {
             checkFetchSize = false;
         }
     }

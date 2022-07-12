@@ -20,6 +20,7 @@ package org.apache.ignite.internal.processors.query.calcite.integration;
 import java.util.List;
 import org.apache.ignite.IgniteCache;
 import org.apache.ignite.IgniteCheckedException;
+import org.apache.ignite.cache.CacheMode;
 import org.apache.ignite.internal.processors.query.calcite.QueryChecker;
 import org.apache.ignite.testframework.GridTestUtils;
 import org.junit.Test;
@@ -30,13 +31,32 @@ import org.junit.Test;
 public class AggregatesIntegrationTest extends AbstractBasicIntegrationTest {
     /** */
     @Test
-    public void countOfNonNumericField() {
+    public void testCountWithBackupsAndCacheModes() {
+        for (int b = 0; b < 2; ++b) {
+            createAndPopulateTable(b, CacheMode.PARTITIONED);
+
+            assertQuery("select count(*) from person").returns(5L).check();
+
+            client.destroyCache(TABLE_NAME);
+        }
+
+        createAndPopulateTable(0, CacheMode.REPLICATED);
+
+        assertQuery("select count(*) from person").returns(5L).check();
+    }
+
+    /** */
+    @Test
+    public void testCountOfNonNumericField() {
         createAndPopulateTable();
 
         assertQuery("select count(name) from person").returns(4L).check();
         assertQuery("select count(*) from person").returns(5L).check();
         assertQuery("select count(1) from person").returns(5L).check();
         assertQuery("select count(null) from person").returns(0L).check();
+
+        assertQuery("select count(DISTINCT name) from person").returns(3L).check();
+        assertQuery("select count(DISTINCT 1) from person").returns(1L).check();
 
         assertQuery("select count(*) from person where salary < 0").returns(0L).check();
         assertQuery("select count(*) from person where salary < 0 and salary > 0").returns(0L).check();

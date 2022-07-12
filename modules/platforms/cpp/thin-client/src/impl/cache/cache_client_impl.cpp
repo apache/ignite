@@ -369,6 +369,24 @@ namespace ignite
                     return cursorImpl;
                 }
 
+                query::SP_QueryCursorImpl CacheClientImpl::Query(const ignite::thin::cache::query::ScanQuery& qry)
+                {
+                    ScanQueryRequest req(id, qry);
+                    ScanQueryResponse rsp;
+
+                    SP_DataChannel channel = SyncMessage(req, rsp);
+
+                    query::SP_QueryCursorImpl cursor(
+                        new query::QueryCursorImpl(
+                            rsp.GetCursorId(),
+                            rsp.GetCursorPage(),
+                            channel,
+                            router.Get()->GetIoTimeout()
+                    ));
+
+                    return cursor;
+                }
+
                 query::continuous::SP_ContinuousQueryHandleClientImpl CacheClientImpl::QueryContinuous(
                         const query::continuous::SP_ContinuousQueryClientHolderBase& continuousQuery)
                 {

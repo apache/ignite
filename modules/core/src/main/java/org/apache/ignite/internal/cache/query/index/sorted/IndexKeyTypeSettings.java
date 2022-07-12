@@ -78,7 +78,9 @@ public class IndexKeyTypeSettings implements Externalizable {
     }
 
     /** */
-    public boolean binaryUnsigned() { return binaryUnsigned; }
+    public boolean binaryUnsigned() {
+        return binaryUnsigned;
+    }
 
     /** */
     public IndexKeyTypeSettings binaryUnsigned(boolean binaryUnsigned) {

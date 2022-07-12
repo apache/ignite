@@ -41,6 +41,7 @@ import org.apache.ignite.internal.processors.query.calcite.prepare.BaseQueryCont
 import org.apache.ignite.internal.processors.query.calcite.type.IgniteTypeFactory;
 import org.apache.ignite.internal.processors.query.calcite.util.Commons;
 import org.apache.ignite.internal.processors.query.calcite.util.TypeUtils;
+import org.apache.ignite.internal.util.lang.RunnableX;
 import org.jetbrains.annotations.NotNull;
 
 import static org.apache.ignite.internal.processors.query.calcite.util.Commons.checkRange;
@@ -288,13 +289,6 @@ public class ExecutionContext<Row> extends AbstractQueryContext implements DataC
                 throw new IgniteException("Unexpected exception", e);
             }
         });
-    }
-
-    /** */
-    @FunctionalInterface
-    public interface RunnableX {
-        /** */
-        void run() throws Exception;
     }
 
     /**

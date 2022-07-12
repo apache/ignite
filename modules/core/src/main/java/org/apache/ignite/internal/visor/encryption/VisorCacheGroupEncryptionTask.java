@@ -38,8 +38,7 @@ import org.jetbrains.annotations.Nullable;
  * @param <T> The type of the task result.
  */
 public abstract class VisorCacheGroupEncryptionTask<T> extends VisorMultiNodeTask<VisorCacheGroupEncryptionTaskArg,
-    VisorCacheGroupEncryptionTaskResult<T>, VisorCacheGroupEncryptionTask.VisorSingleFieldDto<T>>
-{
+    VisorCacheGroupEncryptionTaskResult<T>, VisorCacheGroupEncryptionTask.VisorSingleFieldDto<T>> {
     /** {@inheritDoc} */
     @Nullable @Override protected VisorCacheGroupEncryptionTaskResult<T> reduce0(List<ComputeJobResult> results) {
         Map<UUID, T> jobResults = new HashMap<>();

@@ -49,6 +49,10 @@ import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.apache.ignite.testframework.junits.common.GridCommonTest;
 import org.junit.Test;
 
+import static org.hamcrest.MatcherAssert.assertThat;
+import static org.hamcrest.Matchers.equalTo;
+import static org.hamcrest.Matchers.not;
+
 /**
  * Session cancellation tests.
  */
@@ -92,6 +96,14 @@ public class GridSessionCancelSiblingsFromTaskSelfTest extends GridCommonAbstrac
         return c;
     }
 
+    /** {@inheritDoc} */
+    @Override protected void beforeFirstTest() throws Exception {
+        super.beforeFirstTest();
+
+        // We are changing it because compute jobs fall asleep.
+        assertTrue(computeJobWorkerInterruptTimeout(G.ignite(getTestIgniteInstanceName())).propagate(10L));
+    }
+
     /**
      * @throws Exception If failed.
      */
@@ -114,18 +126,16 @@ public class GridSessionCancelSiblingsFromTaskSelfTest extends GridCommonAbstrac
 
         final AtomicBoolean failed = new AtomicBoolean(false);
 
-        GridTestUtils.runMultiThreaded(new Runnable() {
-            @Override public void run() {
-                int num = sNum.get();
+        GridTestUtils.runMultiThreaded(() -> {
+            int num = sNum.get();
 
-                try {
-                    checkTask(num);
-                }
-                catch (Throwable e) {
-                    error("Failed to execute task.", e);
+            try {
+                checkTask(num);
+            }
+            catch (Throwable e) {
+                error("Failed to execute task.", e);
 
-                    failed.set(true);
-                }
+                failed.set(true);
             }
         }, EXEC_COUNT, "grid-session-test");
 
@@ -143,32 +153,28 @@ public class GridSessionCancelSiblingsFromTaskSelfTest extends GridCommonAbstrac
 
         ComputeTaskFuture<?> fut = executeAsync(ignite.compute(), GridTaskSessionTestTask.class, num);
 
-        assert fut != null;
+        assertNotNull(fut);
 
         try {
             // Wait until jobs begin execution.
-            boolean await = startSignal[num].await(WAIT_TIME, TimeUnit.MILLISECONDS);
+            assertTrue("Jobs did not start.", startSignal[num].await(WAIT_TIME, TimeUnit.MILLISECONDS));
 
-            assert await : "Jobs did not start.";
+            Object res = fut.get(getTestTimeout());
 
-            Object res = fut.get();
-
-            assert "interrupt-task-data".equals(res) : "Invalid task result: " + res;
+            assertThat(res, equalTo("interrupt-task-data"));
 
             // Wait for all jobs to finish.
-            await = stopSignal[num].await(WAIT_TIME, TimeUnit.MILLISECONDS);
+            assertTrue(
+                "Jobs did not cancel [interruptCount=" + Arrays.toString(interruptCnt) + ']',
+                stopSignal[num].await(WAIT_TIME, TimeUnit.MILLISECONDS)
+            );
 
-            assert await :
-                "Jobs did not cancel [interruptCount=" + Arrays.toString(interruptCnt) + ']';
-
-            int cnt = interruptCnt[num].get();
-
-            assert cnt == SPLIT_COUNT - 1 : "Invalid interrupt count value: " + cnt;
+            assertThat(interruptCnt[num].get(), equalTo(SPLIT_COUNT - 1));
         }
         finally {
             // We must wait for the jobs to be sure that they have completed
             // their execution since they use static variable (shared for the tests).
-            fut.get();
+            fut.get(getTestTimeout());
         }
     }
 
@@ -208,11 +214,11 @@ public class GridSessionCancelSiblingsFromTaskSelfTest extends GridCommonAbstrac
             if (log.isInfoEnabled())
                 log.info("Splitting job [job=" + this + ", gridSize=" + gridSize + ", arg=" + arg + ']');
 
-            assert arg != null;
+            assertNotNull(arg);
 
             taskNum = (Integer)arg;
 
-            assert taskNum != -1;
+            assertThat(taskNum, not(equalTo(-1)));
 
             Collection<ComputeJob> jobs = new ArrayList<>(SPLIT_COUNT);
 
@@ -223,7 +229,7 @@ public class GridSessionCancelSiblingsFromTaskSelfTest extends GridCommonAbstrac
 
                     /** {@inheritDoc} */
                     @Override public Serializable execute() {
-                        assert taskSes != null;
+                        assertNotNull(taskSes);
 
                         thread = Thread.currentThread();
 
@@ -260,7 +266,7 @@ public class GridSessionCancelSiblingsFromTaskSelfTest extends GridCommonAbstrac
 
                     /** {@inheritDoc} */
                     @Override public void cancel() {
-                        assert thread != null;
+                        assertNotNull(thread);
 
                         interruptCnt[taskNum].incrementAndGet();
 
@@ -279,7 +285,7 @@ public class GridSessionCancelSiblingsFromTaskSelfTest extends GridCommonAbstrac
 
                 IgniteUuid jobId = received.get(0).getJobContext().getJobId();
 
-                assert jobId != null;
+                assertNotNull(jobId);
 
                 // Cancel all jobs except first job with argument 1.
                 for (ComputeJobSibling jobSibling : jobSiblings) {

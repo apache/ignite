@@ -680,7 +680,8 @@ public final class GridCacheSemaphoreImpl extends AtomicDataStructureProxy<GridC
             @Override public T get() {
                 try {
                     return passedInCallableFuture.get();
-                } catch (Exception e) {
+                }
+                catch (Exception e) {
                     throw new RuntimeException(e.getMessage());
                 }
             }

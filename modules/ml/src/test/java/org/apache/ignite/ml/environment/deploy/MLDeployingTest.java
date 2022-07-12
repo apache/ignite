@@ -160,7 +160,8 @@ public class MLDeployingTest extends GridCommonAbstractTest {
             cache = prepareCache(ignite1, cacheName);
             body.accept(new CacheBasedDatasetBuilder<>(ignite1, cache)
                 .withRetriesNumber(NUMBER_OF_COMPUTE_RETRIES));
-        } finally {
+        }
+        finally {
             if (cache != null)
                 cache.destroy();
         }
@@ -207,7 +208,8 @@ public class MLDeployingTest extends GridCommonAbstractTest {
                 Preprocessor basePreprocessor) {
                 try {
                     return createPreprocessor(basePreprocessor, preprocessorClsName);
-                } catch (Exception e) {
+                }
+                catch (Exception e) {
                     throw new RuntimeException(e);
                 }
             }

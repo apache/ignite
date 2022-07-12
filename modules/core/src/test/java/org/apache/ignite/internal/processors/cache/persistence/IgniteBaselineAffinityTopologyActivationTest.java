@@ -216,7 +216,8 @@ public class IgniteBaselineAffinityTopologyActivationTest extends GridCommonAbst
         try {
             nodeC.cluster().setBaselineTopology(Arrays.asList((BaselineNode)nodeA.cluster().localNode(),
                 nodeB.cluster().localNode()));
-        } catch (IgniteException e) {
+        }
+        catch (IgniteException e) {
             String errMsg = e.getMessage();
             assertTrue(errMsg.startsWith("Removing online nodes"));
             assertTrue(errMsg.contains("[OnlineConsID]"));
@@ -1101,7 +1102,9 @@ public class IgniteBaselineAffinityTopologyActivationTest extends GridCommonAbst
                     if (singleMsgSndLatch != null)
                         singleMsgSndLatch.await();
                 }
-                catch (Exception ignored) { }
+                catch (Exception ignored) {
+                    // Ignore.
+                }
             }
 
             super.sendMessage(node, msg, ackC);

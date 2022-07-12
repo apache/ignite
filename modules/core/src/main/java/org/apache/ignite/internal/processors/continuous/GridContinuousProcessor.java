@@ -959,9 +959,8 @@ public class GridContinuousProcessor extends GridProcessorAdapter {
         int bufSize,
         long interval,
         boolean autoUnsubscribe,
-        @Nullable IgnitePredicate<ClusterNode> nodeFilter)
-        throws IgniteCheckedException
-    {
+        @Nullable IgnitePredicate<ClusterNode> nodeFilter
+    ) throws IgniteCheckedException {
         hnd = hnd.clone();
 
         String clsName = null;
@@ -1654,8 +1653,8 @@ public class GridContinuousProcessor extends GridProcessorAdapter {
     private void sendMessageStartResult(final ClusterNode node,
         final UUID routineId,
         byte[] cntrsMapBytes,
-        @Nullable final Exception err)
-    {
+        @Nullable final Exception err
+    ) {
         byte[] errBytes = null;
 
         if (err != null) {
@@ -2110,8 +2109,8 @@ public class GridContinuousProcessor extends GridProcessorAdapter {
             GridContinuousHandler hnd,
             int bufSize,
             long interval,
-            boolean autoUnsubscribe)
-        {
+            boolean autoUnsubscribe
+        ) {
             assert hnd != null;
             assert bufSize > 0;
             assert interval >= 0;
@@ -2496,8 +2495,8 @@ public class GridContinuousProcessor extends GridProcessorAdapter {
             GridContinuousHandler hnd,
             int bufSize,
             long interval,
-            boolean autoUnsubscribe)
-        {
+            boolean autoUnsubscribe
+        ) {
             assert routineId != null;
             assert hnd != null;
             assert bufSize > 0;

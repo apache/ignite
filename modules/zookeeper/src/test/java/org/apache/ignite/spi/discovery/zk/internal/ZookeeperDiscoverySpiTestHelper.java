@@ -240,9 +240,8 @@ class ZookeeperDiscoverySpiTestHelper {
     static void waitNoAliveZkNodes(final IgniteLogger log,
         String connectStr,
         final List<String> failedZkNodes,
-        long timeout)
-        throws Exception
-    {
+        long timeout
+    ) throws Exception {
         final ZookeeperClient zkClient = new ZookeeperClient(log, connectStr, 10_000, null);
 
         try {

@@ -43,7 +43,7 @@ public class TcpDiscoveryMetricsWarnLogTest extends GridCommonAbstractTest {
     @Override protected void beforeTest() throws Exception {
         super.beforeTest();
 
-        testLog = new ListeningTestLogger(false, log);
+        testLog = new ListeningTestLogger(log);
     }
 
     /** {@inheritDoc} */

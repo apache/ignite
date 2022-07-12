@@ -76,7 +76,8 @@ public class IgniteExcludeInConfigurationTest extends GridCommonAbstractTest {
 
         try {
             assertNotNull(spring.loadConfigurations(cfgLocation).get1());
-        } catch (Exception e) {
+        }
+        catch (Exception e) {
             assertTrue(X.hasCause(e, ClassNotFoundException.class));
         }
     }

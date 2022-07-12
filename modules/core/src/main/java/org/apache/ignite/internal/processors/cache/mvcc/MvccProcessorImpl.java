@@ -1340,13 +1340,15 @@ public class MvccProcessorImpl extends GridProcessorAdapter implements MvccProce
 
                                         if (log.isDebugEnabled())
                                             log.debug("Vacuum completed. " + metrics);
-                                    } catch (Throwable e) {
+                                    }
+                                    catch (Throwable e) {
                                         if (X.hasCause(e, NodeStoppingException.class)) {
                                             if (log.isDebugEnabled())
                                                 log.debug("Cannot complete vacuum (node is stopping).");
 
                                             metrics = new VacuumMetrics();
-                                        } else
+                                        }
+                                        else
                                             ex = new GridClosureException(e);
                                     }
 

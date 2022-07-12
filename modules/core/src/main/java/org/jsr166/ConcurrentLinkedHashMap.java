@@ -1374,7 +1374,8 @@ public class ConcurrentLinkedHashMap<K, V> extends AbstractMap<K, V> implements 
                     break;
                 }
             }
-        } finally {
+        }
+        finally {
             for (Segment<K, V> segment : segments)
                 segment.readLock().unlock();
         }

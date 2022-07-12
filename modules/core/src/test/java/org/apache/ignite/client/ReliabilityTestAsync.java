@@ -27,7 +27,8 @@ public class ReliabilityTestAsync extends ReliabilityTest {
     @Override protected <K, V> void cachePut(ClientCache<K, V> cache, K key, V val) {
         try {
             cache.putAsync(key, val).get();
-        } catch (InterruptedException | ExecutionException e) {
+        }
+        catch (InterruptedException | ExecutionException e) {
             if (e.getCause() instanceof RuntimeException)
                 throw (RuntimeException)e.getCause();
 

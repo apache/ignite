@@ -165,7 +165,8 @@ public class GaussianNaiveBayesModel implements BayesModel<GaussianNaiveBayesMod
         try {
             File file = new File(path.toAbsolutePath().toString());
             writer.writeValue(file, this);
-        } catch (IOException e) {
+        }
+        catch (IOException e) {
             e.printStackTrace();
         }
     }
@@ -180,7 +181,8 @@ public class GaussianNaiveBayesModel implements BayesModel<GaussianNaiveBayesMod
             JacksonHelper.readAndValidateBasicJsonModelProperties(path, mapper, GaussianNaiveBayesModel.class.getSimpleName());
             mdl = mapper.readValue(new File(path.toAbsolutePath().toString()), GaussianNaiveBayesModel.class);
             return mdl;
-        } catch (IOException e) {
+        }
+        catch (IOException e) {
             e.printStackTrace();
         }
         return null;

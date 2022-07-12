@@ -18,16 +18,14 @@
 package org.apache.ignite.internal.cache.query.index.sorted.keys;
 
 import java.math.BigDecimal;
+import java.util.EnumMap;
 import java.util.Map;
 import java.util.UUID;
-import java.util.concurrent.ConcurrentHashMap;
-import java.util.function.BiFunction;
 import java.util.function.Function;
 import org.apache.ignite.IgniteException;
-import org.apache.ignite.internal.binary.BinaryEnumObjectImpl;
 import org.apache.ignite.internal.binary.BinaryObjectImpl;
+import org.apache.ignite.internal.cache.query.index.sorted.IndexKeyType;
 import org.apache.ignite.internal.cache.query.index.sorted.IndexKeyTypeSettings;
-import org.apache.ignite.internal.cache.query.index.sorted.IndexKeyTypes;
 import org.apache.ignite.internal.processors.cache.CacheObject;
 import org.apache.ignite.internal.processors.cache.CacheObjectValueContext;
 
@@ -35,75 +33,64 @@ import org.apache.ignite.internal.processors.cache.CacheObjectValueContext;
  * Factory for creating IndexKey objects.
  */
 public class IndexKeyFactory {
-    /** Registry for non-default key types factory methods (e.g., Geometry, date/time types). */
-    private static final Map<Integer, Function<Object, IndexKey>> registry = new ConcurrentHashMap<>();
+    /** Registry for non-default key types factory methods (e.g., Geometry). */
+    private static final Map<IndexKeyType, Function<Object, IndexKey>> registry = new EnumMap<>(IndexKeyType.class);
 
-    /** Registry for date time key types factory methods. */
-    private static final Map<Integer, BiFunction<Long, Long, IndexKey>> dateTimeRegistry = new ConcurrentHashMap<>();
-
-    /** Register wrapper for custom IndexKey type. */
-    public static void register(int keyType, Function<Object, IndexKey> wrapper) {
+    /** Register wrapper for custom IndexKey type. Used by Ignite extensions. */
+    public static void register(IndexKeyType keyType, Function<Object, IndexKey> wrapper) {
         registry.put(keyType, wrapper);
-    }
-
-    /** Register factory for date/time index key types. */
-    public static void registerDateValueFactory(int keyType, BiFunction<Long, Long, IndexKey> factory) {
-        dateTimeRegistry.put(keyType, factory);
-    }
-
-    /** Wraps a date value and nanos to related date/time IndexKey. */
-    public static IndexKey wrapDateValue(int keyType, long dateVal, long nanos) {
-        return dateTimeRegistry.get(keyType).apply(dateVal, nanos);
     }
 
     /** Wraps user object to {@code IndexKey} object.  */
     public static IndexKey wrap(Object o, int keyType, CacheObjectValueContext coctx, IndexKeyTypeSettings keyTypeSettings) {
-        if (o == null || keyType == IndexKeyTypes.NULL)
+        return wrap(o, IndexKeyType.forCode(keyType), coctx, keyTypeSettings);
+    }
+
+    /** Wraps user object to {@code IndexKey} object.  */
+    public static IndexKey wrap(Object o, IndexKeyType keyType, CacheObjectValueContext coctx, IndexKeyTypeSettings keyTypeSettings) {
+        if (o == null || keyType == IndexKeyType.NULL)
             return NullIndexKey.INSTANCE;
 
         switch (keyType) {
-            case IndexKeyTypes.BOOLEAN:
+            case BOOLEAN:
                 return new BooleanIndexKey((boolean)o);
-            case IndexKeyTypes.BYTE:
+            case BYTE:
                 return new ByteIndexKey((byte)o);
-            case IndexKeyTypes.SHORT:
+            case SHORT:
                 return new ShortIndexKey((short)o);
-            case IndexKeyTypes.ENUM:
-            	// add@byron
-            	if(BinaryEnumObjectImpl.class == o.getClass()) {
-            		return new IntegerIndexKey(((BinaryEnumObjectImpl)o).enumOrdinal());
-            	}
-            	if(o.getClass().isEnum()) {
-            		return new IntegerIndexKey(((Enum)o).ordinal());
-            	}
-            	
-            case IndexKeyTypes.INT:            	
+            case INT:
                 return new IntegerIndexKey((int)o);
-            case IndexKeyTypes.LONG:
+            case LONG:
                 return new LongIndexKey((long)o);
-            case IndexKeyTypes.DECIMAL:
+            case DECIMAL:
                 return new DecimalIndexKey((BigDecimal)o);
-            case IndexKeyTypes.DOUBLE:
+            case DOUBLE:
                 return new DoubleIndexKey((double)o);
-            case IndexKeyTypes.FLOAT:
+            case FLOAT:
                 return new FloatIndexKey((float)o);
-            case IndexKeyTypes.BYTES:
+            case BYTES:
                 return keyTypeSettings.binaryUnsigned() ?
                     new BytesIndexKey((byte[])o) : new SignedBytesIndexKey((byte[])o);
-            case IndexKeyTypes.STRING:
-                return new StringIndexKey(o.toString());
-            case IndexKeyTypes.UUID:
+            case STRING:
+                return new StringIndexKey((String)o);
+            case UUID:
                 return new UuidIndexKey((UUID)o);
-            case IndexKeyTypes.JAVA_OBJECT:
+            case JAVA_OBJECT:
                 if (BinaryObjectImpl.class == o.getClass())
                     return new CacheJavaObjectIndexKey((CacheObject)o, coctx);
 
                 return new PlainJavaObjectIndexKey(o, null);
+            case DATE:
+                return new DateIndexKey(o);
+            case TIME:
+                return new TimeIndexKey(o);
+            case TIMESTAMP:
+                return new TimestampIndexKey(o);
         }
 
         if (registry.containsKey(keyType))
             return registry.get(keyType).apply(o);
 
-        throw new IgniteException("Failed to wrap value[type=" + keyType + ", value=" + o + "]");
+        throw new IgniteException("Failed to wrap value [type=" + keyType + ", value=" + o + "]");
     }
 }

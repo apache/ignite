@@ -39,6 +39,7 @@ import org.apache.ignite.internal.processors.cache.persistence.pagemem.PagesWrit
 import org.apache.ignite.internal.processors.cache.persistence.pagemem.SpeedBasedThrottleBreakdownTest;
 import org.apache.ignite.internal.processors.cache.persistence.pagemem.UsedPagesMetricTest;
 import org.apache.ignite.internal.processors.cache.persistence.pagemem.UsedPagesMetricTestPersistence;
+import org.apache.ignite.internal.processors.cache.persistence.tree.io.PageIOFreeSizeTest;
 import org.apache.ignite.internal.processors.cache.persistence.tree.io.TrackingPageIOTest;
 import org.apache.ignite.internal.processors.cache.persistence.wal.CpTriggeredWalDeltaConsistencyTest;
 import org.apache.ignite.internal.processors.cache.persistence.wal.ExplicitWalDeltaConsistencyTest;
@@ -80,6 +81,7 @@ public class IgnitePdsTestSuite5 {
         GridTestUtils.addTestIfNeeded(suite, PageMemoryImplTest.class, ignoredTests);
         GridTestUtils.addTestIfNeeded(suite, PageIdDistributionTest.class, ignoredTests);
         GridTestUtils.addTestIfNeeded(suite, TrackingPageIOTest.class, ignoredTests);
+        GridTestUtils.addTestIfNeeded(suite, PageIOFreeSizeTest.class, ignoredTests);
 
         // BTree tests with store page memory.
         GridTestUtils.addTestIfNeeded(suite, BPlusTreePageMemoryImplTest.class, ignoredTests);

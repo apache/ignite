@@ -154,7 +154,8 @@ public class TrackingPageIO extends PageIO {
             setLastSnasphotTag(buf, nextSnapshotTag);
 
             PageHandler.zeroMemory(buf, SIZE_FIELD_OFFSET, buf.capacity() - SIZE_FIELD_OFFSET);
-        } else { //we can't drop data, it is still necessary for incremental snapshots
+        }
+        else { //we can't drop data, it is still necessary for incremental snapshots
             int len = cntOfPage >> 3;
 
             int sizeOff = useLeftHalf(nextSnapshotTag) ? SIZE_FIELD_OFFSET : BITMAP_OFFSET + len;
@@ -164,7 +165,8 @@ public class TrackingPageIO extends PageIO {
                 //new data will be written in the same half, we should move old data to another half
                 if ((nextSnapshotTag - last) % 2 == 0)
                     PageHandler.copyMemory(buf, sizeOff, buf, sizeOff2, len + SIZE_FIELD_SIZE);
-            } else { //last - lastSuccessfulSnapshotId > 1, e.g. we should merge two half in one
+            }
+            else { //last - lastSuccessfulSnapshotId > 1, e.g. we should merge two half in one
                 int newSize = 0;
                 int i = 0;
 
@@ -488,5 +490,10 @@ public class TrackingPageIO extends PageIO {
                  + SIZE_FIELD_SIZE + i));
 
         sb.a("}\n\t}\n]");
+    }
+
+    /** {@inheritDoc} */
+    @Override public int getFreeSpace(int pageSize, long pageAddr) {
+        return 0;
     }
 }

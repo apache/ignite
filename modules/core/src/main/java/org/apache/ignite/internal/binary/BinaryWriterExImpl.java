@@ -292,11 +292,9 @@ public class BinaryWriterExImpl implements BinaryWriter, BinaryRawWriterEx, Obje
             useCompactFooter = false;
         }
 
-        int finalSchemaId;
         int offset;
 
         if (fieldCnt != 0) {
-            finalSchemaId = schemaId;
             offset = out.position() - start;
 
             // Write the schema.
@@ -318,16 +316,13 @@ public class BinaryWriterExImpl implements BinaryWriter, BinaryRawWriterEx, Obje
         }
         else {
             if (rawOffPos != 0) {
-                finalSchemaId = 0;
                 offset = rawOffPos - start;
 
                 // If there is no schema, we are free to write raw offset to schema offset.
                 flags |= BinaryUtils.FLAG_HAS_RAW;
             }
-            else {
-                finalSchemaId = 0;
-                offset = 0;
-            }
+            else
+                offset = GridBinaryMarshaller.DFLT_HDR_LEN;
         }
 
         // Actual write.
@@ -341,7 +336,7 @@ public class BinaryWriterExImpl implements BinaryWriter, BinaryRawWriterEx, Obje
         out.unsafeWriteInt(registered ? typeId : GridBinaryMarshaller.UNREGISTERED_TYPE_ID);
         out.unsafePosition(start + GridBinaryMarshaller.TOTAL_LEN_POS);
         out.unsafeWriteInt(retPos - start);
-        out.unsafeWriteInt(finalSchemaId);
+        out.unsafeWriteInt(schemaId);
         out.unsafeWriteInt(offset);
 
         out.unsafePosition(retPos);

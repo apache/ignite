@@ -121,7 +121,8 @@ public class GridCacheGlobalLoadTest extends IgniteCacheAbstractTest {
                 asyncCache.loadCache(null, 1, 2, 3);
 
                 asyncCache.future().get();
-            } else
+            }
+            else
                 cache.loadCacheAsync(null, 1, 2, 3).get();
         }
         else

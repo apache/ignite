@@ -63,7 +63,8 @@ public class ProbabilisticTestUtil {
             // doing this the HLL simply ignores it. This is acceptable
             // because the probability is 1/(2^(2^registerSizeInBits)).
             p_w = 0;
-        } else
+        }
+        else
             p_w = (byte)Math.min(1 + BitUtil.leastSignificantBit(substreamValue), 31);
 
         return p_w;

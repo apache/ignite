@@ -48,8 +48,8 @@ public class IgniteDhtDemandedPartitionsMap implements Serializable {
      */
     public IgniteDhtDemandedPartitionsMap(
         @Nullable CachePartitionPartialCountersMap historical,
-        @Nullable Set<Integer> full)
-    {
+        @Nullable Set<Integer> full
+    ) {
         this.historical = historical;
         this.full = full;
     }

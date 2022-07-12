@@ -175,6 +175,7 @@ import org.junit.runners.Suite;
     ReplicatedSqlTest.class,
     ReplicatedSqlCustomPartitionsTest.class,
     CheckWarnJoinPartitionedTables.class,
+    DeletionDuringRebalanceTest.class,
 
     SqlParserCreateIndexSelfTest.class,
     SqlParserDropIndexSelfTest.class,

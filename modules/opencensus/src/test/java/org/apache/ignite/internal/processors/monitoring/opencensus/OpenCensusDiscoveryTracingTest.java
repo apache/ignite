@@ -287,8 +287,8 @@ public class OpenCensusDiscoveryTracingTest extends AbstractTracingTest {
      */
     private void performClientBasedOperation(
         @Nullable Runnable preparationOperations,
-        @NotNull Runnable operationToCheck) throws Exception
-    {
+        @NotNull Runnable operationToCheck
+    ) throws Exception {
         if (preparationOperations != null) {
             try {
                 preparationOperations.run();

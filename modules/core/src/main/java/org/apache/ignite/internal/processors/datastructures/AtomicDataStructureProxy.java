@@ -75,10 +75,11 @@ public abstract class AtomicDataStructureProxy<V extends AtomicDataStructureValu
      * @param key Structure key.
      * @param cacheView Cache projection.
      */
-    public AtomicDataStructureProxy(String name,
+    public AtomicDataStructureProxy(
+        String name,
         GridCacheInternalKey key,
-        IgniteInternalCache<GridCacheInternalKey, V> cacheView)
-    {
+        IgniteInternalCache<GridCacheInternalKey, V> cacheView
+    ) {
         assert key != null;
         assert cacheView != null;
 

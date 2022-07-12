@@ -100,8 +100,16 @@ public class SqlCreateIndexCommand implements SqlCommand {
      * @param inlineSize Inline size.
      */
     @SuppressWarnings("AssignmentOrReturnOfFieldWithMutableType")
-    public SqlCreateIndexCommand(String schemaName, String tblName, String idxName, boolean ifNotExists,
-        Collection<SqlIndexColumn> cols, boolean spatial, int parallel, int inlineSize) {
+    public SqlCreateIndexCommand(
+        String schemaName,
+        @Nullable String tblName,
+        String idxName,
+        boolean ifNotExists,
+        Collection<SqlIndexColumn> cols,
+        boolean spatial,
+        int parallel,
+        int inlineSize
+    ) {
         this.schemaName = schemaName;
         this.tblName = tblName;
         this.idxName = idxName;

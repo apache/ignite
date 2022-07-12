@@ -25,10 +25,10 @@ import org.apache.ignite.internal.pagemem.wal.record.DataEntry;
 import org.apache.ignite.internal.pagemem.wal.record.UnwrapDataEntry;
 import org.apache.ignite.internal.processors.cache.CacheObject;
 import org.apache.ignite.internal.processors.cache.CacheObjectValueContext;
+import org.apache.ignite.internal.processors.cache.persistence.wal.serializer.RecordDataV1Serializer;
 import org.apache.ignite.internal.util.IgniteUtils;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.internal.util.typedef.internal.SB;
-import org.jetbrains.annotations.Nullable;
 
 import static org.apache.ignite.development.utils.ProcessSensitiveData.HASH;
 import static org.apache.ignite.development.utils.ProcessSensitiveData.HIDE;
@@ -41,7 +41,7 @@ class DataEntryWrapper extends DataEntry {
     /**
      * Source DataEntry.
      */
-    @Nullable private final DataEntry source;
+    private final DataEntry source;
 
     /** Strategy for the processing of sensitive data. */
     private final ProcessSensitiveData sensitiveData;
@@ -84,6 +84,11 @@ class DataEntryWrapper extends DataEntry {
             keyStr = toString(unwrappedDataEntry.unwrappedKey(), this.source.key());
 
             valueStr = toString(unwrappedDataEntry.unwrappedValue(), this.source.value());
+        }
+        else if (source instanceof RecordDataV1Serializer.EncryptedDataEntry) {
+            keyStr = "<encrypted>";
+
+            valueStr = "<encrypted>";
         }
         else {
             keyStr = toString(null, this.source.key());

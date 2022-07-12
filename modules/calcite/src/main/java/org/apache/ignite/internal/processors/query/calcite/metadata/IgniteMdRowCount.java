@@ -22,6 +22,7 @@ import org.apache.calcite.rel.core.Join;
 import org.apache.calcite.rel.core.JoinInfo;
 import org.apache.calcite.rel.core.JoinRelType;
 import org.apache.calcite.rel.core.Minus;
+import org.apache.calcite.rel.core.Sort;
 import org.apache.calcite.rel.metadata.ReflectiveRelMetadataProvider;
 import org.apache.calcite.rel.metadata.RelMdRowCount;
 import org.apache.calcite.rel.metadata.RelMdUtil;
@@ -50,6 +51,11 @@ public class IgniteMdRowCount extends RelMdRowCount {
 
     /** {@inheritDoc} */
     @Override public Double getRowCount(Join rel, RelMetadataQuery mq) {
+        return rel.estimateRowCount(mq);
+    }
+
+    /** {@inheritDoc} */
+    @Override public Double getRowCount(Sort rel, RelMetadataQuery mq) {
         return rel.estimateRowCount(mq);
     }
 

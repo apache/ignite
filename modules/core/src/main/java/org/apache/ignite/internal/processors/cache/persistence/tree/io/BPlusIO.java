@@ -469,6 +469,11 @@ public abstract class BPlusIO<L> extends PageIO implements CompactablePageIO {
             .a("\n]");
     }
 
+    /** {@inheritDoc} */
+    @Override public int getFreeSpace(int pageSize, long pageAddr) {
+        return (getMaxCount(pageAddr, pageSize) - getCount(pageAddr)) * getItemSize();
+    }
+
     /**
      * @param pageAddr Page address.
      * @return Offset after the last item.

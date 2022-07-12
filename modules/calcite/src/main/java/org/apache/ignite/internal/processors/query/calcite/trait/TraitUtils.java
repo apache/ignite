@@ -132,7 +132,7 @@ public class TraitUtils {
 
         RelTraitSet traits = rel.getTraitSet().replace(toTrait);
 
-        return new IgniteSort(rel.getCluster(), traits, rel, toTrait);
+        return new IgniteSort(rel.getCluster(), traits, rel, toTrait, true);
     }
 
     /** */
@@ -442,8 +442,7 @@ public class TraitUtils {
         Set<Pair<RelTraitSet, List<RelTraitSet>>> result,
         RelTraitSet[] combination,
         int idx
-    ) throws ControlFlowException
-    {
+    ) throws ControlFlowException {
         boolean processed = false, last = idx == inTraits.size() - 1;
         for (RelTraitSet t : inTraits.get(idx)) {
             assert t.getConvention() == IgniteConvention.INSTANCE;

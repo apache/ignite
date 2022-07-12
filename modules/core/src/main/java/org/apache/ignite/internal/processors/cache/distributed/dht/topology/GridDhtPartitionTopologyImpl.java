@@ -350,9 +350,8 @@ public class GridDhtPartitionTopologyImpl implements GridDhtPartitionTopology {
 
     /** {@inheritDoc} */
     @Override public boolean initPartitionsWhenAffinityReady(AffinityTopologyVersion affVer,
-        GridDhtPartitionsExchangeFuture exchFut)
-        throws IgniteInterruptedCheckedException
-    {
+        GridDhtPartitionsExchangeFuture exchFut
+    ) throws IgniteInterruptedCheckedException {
         boolean needRefresh;
 
         ctx.database().checkpointReadLock();
@@ -1721,7 +1720,8 @@ public class GridDhtPartitionTopologyImpl implements GridDhtPartitionTopology {
                 }
 
                 return changed;
-            } finally {
+            }
+            finally {
                 lock.writeLock().unlock();
             }
         }
@@ -2447,6 +2447,15 @@ public class GridDhtPartitionTopologyImpl implements GridDhtPartitionTopology {
                     }
                 }
 
+                if (lostParts != null) {
+                    for (Integer lostPart : lostParts) {
+                        for (GridDhtPartitionMap partMap : node2part.values()) {
+                            if (partMap.containsKey(lostPart))
+                                partMap.put(lostPart, LOST);
+                        }
+                    }
+                }
+
                 node2part = new GridDhtPartitionFullMap(node2part, updateSeq.incrementAndGet());
             }
             finally {
@@ -2764,16 +2773,19 @@ public class GridDhtPartitionTopologyImpl implements GridDhtPartitionTopology {
                         try {
                             if (reserved && locPart.state() == MOVING)
                                 own(locPart);
-                        } finally {
+                        }
+                        finally {
                             if (reserved)
                                 locPart.release();
                         }
                     }
                 }
-            } finally {
+            }
+            finally {
                 lock.writeLock().unlock();
             }
-        } finally {
+        }
+        finally {
             ctx.database().checkpointReadUnlock();
         }
     }

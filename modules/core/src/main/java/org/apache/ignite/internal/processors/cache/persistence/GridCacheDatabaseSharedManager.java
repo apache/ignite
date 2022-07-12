@@ -1573,6 +1573,7 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
 
         for (IgniteBiTuple<CacheGroupContext, Boolean> tup : stoppedGrps) {
             CacheGroupContext gctx = tup.get1();
+
             boolean destroy = tup.get2();
 
             int grpId = gctx.groupId();
@@ -1624,7 +1625,12 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
                 CacheGroupContext grp = tup.get1();
 
                 try {
-                    cctx.pageStore().shutdownForCacheGroup(grp, tup.get2());
+                    boolean destroy = tup.get2();
+
+                    cctx.pageStore().shutdownForCacheGroup(grp, destroy);
+
+                    if (destroy)
+                        cctx.cache().configManager().removeCacheGroupConfigurationData(grp);
                 }
                 catch (IgniteCheckedException e) {
                     U.error(log, "Failed to gracefully clean page store resources for destroyed cache " +

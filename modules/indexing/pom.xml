@@ -166,8 +166,8 @@
 
             <!-- Generate the OSGi MANIFEST.MF for this bundle.
                  This bundle is a fragment attached to the ignite-core bundle, as it contains and exports classes in
-                 the org.apache.ignite.internal.processors.query.h2.opt in the same manner as ignite-geospatial, thus
-                 leading to a split package situation in OSGi. It also contains an internal processor.
+                 the org.apache.ignite.internal.processors.query.h2.opt, thus leading to a split package situation in OSGi.
+                 It also contains an internal processor.
             -->
             <plugin>
                 <groupId>org.apache.felix</groupId>

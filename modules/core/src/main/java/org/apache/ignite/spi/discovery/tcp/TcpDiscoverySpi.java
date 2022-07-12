@@ -1629,7 +1629,8 @@ public class TcpDiscoverySpi extends IgniteSpiAdapter implements IgniteDiscovery
             writeToSocket(sock, null, U.IGNITE_HEADER, timeoutHelper.nextTimeoutChunk(sockTimeout));
 
             return sock;
-        } catch (IOException | IgniteSpiOperationTimeoutException e) {
+        }
+        catch (IOException | IgniteSpiOperationTimeoutException e) {
             if (sock != null)
                 U.closeQuiet(sock);
 
@@ -1657,7 +1658,8 @@ public class TcpDiscoverySpi extends IgniteSpiAdapter implements IgniteDiscovery
             configureSocketOptions(sock);
 
             return sock;
-        } catch (IOException e) {
+        }
+        catch (IOException e) {
             if (sock != null)
                 U.closeQuiet(sock);
 

@@ -65,7 +65,8 @@ public class MappedFile implements Closeable, DirectMemoryRegion {
             addr = map(file, MAP_RW, 0, size);
 
             this.size = size;
-        } catch (IOException e) {
+        }
+        catch (IOException e) {
             file.close();
 
             throw e;

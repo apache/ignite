@@ -73,8 +73,8 @@ class ZkCommunicationFailureContext implements CommunicationFailureContext {
         GridCacheSharedContext<?, ?> ctx,
         List<ClusterNode> curNodes,
         List<ClusterNode> initialNodes,
-        Map<UUID, BitSet> nodesState)
-    {
+        Map<UUID, BitSet> nodesState
+    ) {
         this.ctx = ctx;
         this.curNodes = Collections.unmodifiableList(curNodes);
         this.initialNodes = initialNodes;

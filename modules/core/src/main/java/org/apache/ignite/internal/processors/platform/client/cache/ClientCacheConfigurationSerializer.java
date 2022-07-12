@@ -191,7 +191,8 @@ public class ClientCacheConfigurationSerializer {
                 writer.writeString(key.getTypeName());
                 writer.writeString(key.getAffinityKeyFieldName());
             }
-        } else {
+        }
+        else {
             writer.writeInt(0);
         }
 
@@ -203,7 +204,8 @@ public class ClientCacheConfigurationSerializer {
 
             for (QueryEntity e : qryEntities)
                 writeQueryEntity(writer, e, protocolCtx);
-        } else
+        }
+        else
             writer.writeInt(0);
 
         if (protocolCtx.isFeatureSupported(ClientProtocolVersionFeature.EXPIRY_POLICY))

@@ -78,7 +78,8 @@ public class CheckpointMarkersStorage {
     public static final String EARLIEST_CP_SNAPSHOT_FILE = "cpMapSnapshot.bin";
 
     /** Earliest checkpoint map snapshot temporary file name. */
-    private static final String EARLIEST_CP_SNAPSHOT_TMP_FILE = EARLIEST_CP_SNAPSHOT_FILE + ".tmp";
+    private static final String EARLIEST_CP_SNAPSHOT_TMP_FILE =
+        EARLIEST_CP_SNAPSHOT_FILE + FilePageStoreManager.TMP_SUFFIX;
 
     /** Checkpoint map snapshot executor. */
     private final Executor checkpointMapSnapshotExecutor;

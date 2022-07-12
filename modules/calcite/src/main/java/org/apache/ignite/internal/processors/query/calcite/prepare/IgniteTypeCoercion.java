@@ -48,8 +48,8 @@ public class IgniteTypeCoercion extends TypeCoercionImpl {
         SqlValidatorScope scope,
         SqlCall call,
         int idx,
-        RelDataType targetType)
-    {
+        RelDataType targetType
+    ) {
         if (targetType instanceof IgniteCustomType) {
             SqlNode operand = call.getOperandList().get(idx);
 

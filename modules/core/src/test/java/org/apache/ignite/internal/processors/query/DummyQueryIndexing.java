@@ -20,7 +20,6 @@ package org.apache.ignite.internal.processors.query;
 import java.util.Collection;
 import java.util.List;
 import java.util.Set;
-import java.util.UUID;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteDataStreamer;
 import org.apache.ignite.cache.query.FieldsQueryCursor;
@@ -165,7 +164,7 @@ public class DummyQueryIndexing implements GridQueryIndexing {
     }
 
     /** {@inheritDoc} */
-    @Override public void unregisterCache(GridCacheContextInfo cacheInfo, boolean rmvIdx) throws IgniteCheckedException {
+    @Override public void unregisterCache(GridCacheContextInfo cacheInfo, boolean rmvIdx, boolean clearIdx) throws IgniteCheckedException {
 
     }
 
@@ -244,21 +243,6 @@ public class DummyQueryIndexing implements GridQueryIndexing {
     }
 
     /** {@inheritDoc} */
-    @Override public Collection<GridRunningQueryInfo> runningQueries(long duration) {
-        return null;
-    }
-
-    /** {@inheritDoc} */
-    @Override public void cancelQuery(long queryId, @Nullable UUID nodeId, boolean async) {
-        // No-op.
-    }
-
-    /** {@inheritDoc} */
-    @Override public void cancelLocalQueries(Collection<Long> queries) {
-
-    }
-
-    /** {@inheritDoc} */
     @Override public RunningQueryManager runningQueryManager() {
         return null;
     }
@@ -317,5 +301,10 @@ public class DummyQueryIndexing implements GridQueryIndexing {
         String tblNamePtrn,
         String colNamePtrn) {
         return null;
+    }
+
+    /** {@inheritDoc} */
+    @Override public boolean isConvertibleToColumnType(String schemaName, String tblName, String colName, Class<?> cls) {
+        return false;
     }
 }

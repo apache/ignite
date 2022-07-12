@@ -294,7 +294,7 @@ public class SqlSystemViewsSelfTest extends AbstractIndexingCommonTest {
                 {-825022849, "SQL_PUBLIC_AFF_CACHE", "PUBLIC", "AFF_CACHE", "_key_PK_hash", "HASH",
                     "\"ID1\" ASC, \"ID2\" ASC, \"ID2\" ASC", false, true, null},
 
-                {707660652, "SQL_PUBLIC_CACHE_SQL", "PUBLIC", "CACHE_SQL", "IDX_2", "BTREE", "\"ID\" DESC, \"ID\" ASC", false, false, 13},
+                {707660652, "SQL_PUBLIC_CACHE_SQL", "PUBLIC", "CACHE_SQL", "IDX_2", "BTREE", "\"ID\" DESC, \"ID\" ASC", false, false, 10},
                 {707660652, "SQL_PUBLIC_CACHE_SQL", "PUBLIC", "CACHE_SQL", "__SCAN_", "SCAN", null, false, false, null},
                 {707660652, "SQL_PUBLIC_CACHE_SQL", "PUBLIC", "CACHE_SQL", "_key_PK", "BTREE", "\"ID\" ASC", true, true, 5},
                 {707660652, "SQL_PUBLIC_CACHE_SQL", "PUBLIC", "CACHE_SQL", "_key_PK_hash", "HASH", "\"ID\" ASC", false, true, null},
@@ -588,7 +588,7 @@ public class SqlSystemViewsSelfTest extends AbstractIndexingCommonTest {
 
         cache.put(100, "200");
 
-        String sql = "SELECT SQL, QUERY_ID, SCHEMA_NAME, LOCAL, START_TIME, DURATION FROM " +
+        String sql = "SELECT SQL, QUERY_ID, SCHEMA_NAME, LOCAL, START_TIME, DURATION, SUBJECT_ID FROM " +
             systemSchemaName() + ".SQL_QUERIES";
 
         FieldsQueryCursor notClosedFieldQryCursor = cache.query(new SqlFieldsQuery(sql).setLocal(true));
@@ -609,8 +609,9 @@ public class SqlSystemViewsSelfTest extends AbstractIndexingCommonTest {
         assertTrue(diffInMillis < 3000);
 
         assertEquals(sql, res0.get(0));
-
         assertEquals(sql, res1.get(0));
+        assertNull(res0.get(6));
+        assertNull(res1.get(6));
 
         assertTrue((Boolean)res0.get(3));
 

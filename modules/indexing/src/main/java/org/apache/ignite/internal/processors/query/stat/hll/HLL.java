@@ -338,7 +338,9 @@ public class HLL implements Cloneable {
      * @return the type in the promotion hierarchy of this instance. This will
      *         never be <code>null</code>.
      */
-    public HLLType getType() { return type; }
+    public HLLType getType() {
+        return type;
+    }
 
     // ========================================================================
     // Add

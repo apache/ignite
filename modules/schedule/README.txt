@@ -36,7 +36,6 @@ LGPL dependencies
 -----------------
 
 Ignite includes the following optional LGPL dependencies:
- - Hibernate L2 Cache Integration, http://hibernate.org/orm/
  - JTS Topology Suite for Geospatial indexing, http://tsusiatsoftware.net/jts/main.html
  - cron4j for cron-based task scheduling, http://www.sauronsoftware.it/projects/cron4j
 

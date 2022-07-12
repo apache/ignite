@@ -24,6 +24,7 @@ import org.apache.ignite.internal.commandline.cache.argument.FindAndDeleteGarbag
 import org.apache.ignite.internal.commandline.cache.argument.IdleVerifyCommandArg;
 import org.apache.ignite.internal.commandline.cache.argument.IndexForceRebuildCommandArg;
 import org.apache.ignite.internal.commandline.cache.argument.IndexListCommandArg;
+import org.apache.ignite.internal.commandline.cache.argument.IndexRebuildCommandArg;
 import org.apache.ignite.internal.commandline.cache.argument.IndexRebuildStatusArg;
 import org.apache.ignite.internal.commandline.cache.argument.ListCommandArg;
 import org.apache.ignite.internal.commandline.cache.argument.ValidateIndexesCommandArg;
@@ -89,6 +90,11 @@ public enum CacheSubcommands {
     INDEX_FORCE_REBUILD("indexes_force_rebuild", IndexForceRebuildCommandArg.class, new CacheIndexesForceRebuild()),
 
     /**
+     * Index rebuild via the maintenance mode.
+     */
+    INDEX_REBUILD("schedule_indexes_rebuild", IndexRebuildCommandArg.class, new CacheScheduleIndexesRebuild()),
+
+    /**
      * Check secondary indexes inline size.
      */
     CHECK_INDEX_INLINE_SIZES("check_index_inline_sizes", null, new CheckIndexInlineSizes()),
@@ -96,7 +102,12 @@ public enum CacheSubcommands {
     /**
      * Destroy caches.
      */
-    DESTROY("destroy", null, new CacheDestroy());
+    DESTROY("destroy", null, new CacheDestroy()),
+
+    /**
+     * Enable / disable cache metrics collection or show metrics collection status.
+     */
+    METRICS("metrics", null, new CacheMetrics());
 
     /** Enumerated values. */
     private static final CacheSubcommands[] VALS = values();
