@@ -465,6 +465,22 @@ public class IgniteSpringBean implements Ignite, DisposableBean, SmartInitializi
 
         return g.dataStreamer(cacheName);
     }
+    
+
+    /** {@inheritDoc} */
+    @Override public IgniteFileSystem fileSystem(String name) {
+        checkIgnite();
+
+        return g.fileSystem(name);
+    }
+
+    /** {@inheritDoc} */
+    @Override public Collection<IgniteFileSystem> fileSystems() {
+        checkIgnite();
+
+        return g.fileSystems();
+    }
+
 
     /** {@inheritDoc} */
     @Override public <T extends IgnitePlugin> T plugin(String name) throws PluginNotFoundException {

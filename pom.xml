@@ -35,11 +35,11 @@
 
     <modules>
        
-        <!-- 
+      
         <module>modules/checkstyle</module>
         <module>parent</module>
         <module>parent-internal</module>
-        -->
+        
         
         <module>modules/bom</module>  
         
@@ -60,8 +60,7 @@
         <module>modules/mongodb-relay</module>
         <module>modules/clients</module>
         <module>modules/spring</module>
-        <module>modules/web</module>
-        <module>modules/aop</module>
+        <module>modules/web</module>        
         <module>modules/urideploy</module>
         <module>modules/indexing</module>
         <module>modules/ssh</module>
@@ -72,14 +71,16 @@
         <module>modules/slf4j</module>
         <module>modules/jcl</module>
         <module>modules/codegen</module>
-       <!-- <module>modules/cloud</module> -->
+       <!--  <module>modules/cloud</module> -->
        <!--  <module>modules/mesos</module> -->
-        <module>modules/yarn</module>
+       <!--  <module>modules/yarn</module> -->
         <module>modules/zookeeper</module>
+      <!--   
         <module>modules/hibernate-core</module>
         <module>modules/osgi-paxlogging</module>
         <module>modules/osgi-karaf</module>
         <module>modules/osgi</module>
+       -->
         <!-- 
         <module>modules/web/ignite-appserver-test</module>
         <module>modules/web/ignite-websphere-test</module> 

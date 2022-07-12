@@ -23,6 +23,7 @@ import java.util.Map;
 import java.util.UUID;
 import java.util.function.Function;
 import org.apache.ignite.IgniteException;
+import org.apache.ignite.internal.binary.BinaryEnumObjectImpl;
 import org.apache.ignite.internal.binary.BinaryObjectImpl;
 import org.apache.ignite.internal.cache.query.index.sorted.IndexKeyType;
 import org.apache.ignite.internal.cache.query.index.sorted.IndexKeyTypeSettings;
@@ -58,6 +59,14 @@ public class IndexKeyFactory {
                 return new ByteIndexKey((byte)o);
             case SHORT:
                 return new ShortIndexKey((short)o);
+			case ENUM:
+            	// add@byron
+            	if(BinaryEnumObjectImpl.class == o.getClass()) {
+            		return new IntegerIndexKey(((BinaryEnumObjectImpl)o).enumOrdinal());
+            	}
+            	if(o.getClass().isEnum()) {
+            		return new IntegerIndexKey(((Enum)o).ordinal());
+            	}
             case INT:
                 return new IntegerIndexKey((int)o);
             case LONG:
