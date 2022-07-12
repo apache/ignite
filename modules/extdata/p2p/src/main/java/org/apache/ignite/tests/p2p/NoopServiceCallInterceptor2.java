@@ -15,15 +15,18 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.osgi.classloaders;
+package org.apache.ignite.tests.p2p;
+
+import java.util.concurrent.Callable;
+import org.apache.ignite.services.ServiceCallInterceptor;
+import org.apache.ignite.services.ServiceContext;
 
 /**
- * Enum for the user to indicate which type of {@link ClassLoader} Ignite should use.
+ * No-op service call interceptor.
  */
-public enum OsgiClassLoadingStrategyType {
-    /** Use this value for {@link BundleDelegatingClassLoader}. */
-    BUNDLE_DELEGATING,
-
-    /** Use this value for {@link ContainerSweepClassLoader}. */
-    CONTAINER_SWEEP
+public class NoopServiceCallInterceptor2 implements ServiceCallInterceptor {
+    /** {@inheritDoc} */
+    @Override public Object invoke(String mtd, Object[] args, ServiceContext ctx, Callable<Object> next) throws Exception {
+        return next.call();
+    }
 }

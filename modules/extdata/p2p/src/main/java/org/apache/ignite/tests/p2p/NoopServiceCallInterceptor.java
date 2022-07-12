@@ -15,18 +15,18 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.osgi;
+package org.apache.ignite.tests.p2p;
 
-import org.junit.runner.RunWith;
-import org.junit.runners.Suite;
+import java.util.concurrent.Callable;
+import org.apache.ignite.services.ServiceCallInterceptor;
+import org.apache.ignite.services.ServiceContext;
 
 /**
- * Test suite for OSGi-related test cases.
- * <p>
- * NOTE: Have to use JUnit 4 annotations because Pax Exam is built on JUnit 4.
+ * No-op service call interceptor.
  */
-@RunWith(Suite.class)
-@Suite.SuiteClasses({IgniteOsgiServiceTest.class, IgniteKarafFeaturesInstallationTest.class})
-public class IgniteOsgiTestSuite {
-    // No-op.
+public class NoopServiceCallInterceptor implements ServiceCallInterceptor {
+    /** {@inheritDoc} */
+    @Override public Object invoke(String mtd, Object[] args, ServiceContext ctx, Callable<Object> next) throws Exception {
+        return next.call();
+    }
 }

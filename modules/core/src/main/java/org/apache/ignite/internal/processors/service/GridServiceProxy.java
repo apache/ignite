@@ -61,6 +61,7 @@ import org.apache.ignite.marshaller.Marshaller;
 import org.apache.ignite.platform.PlatformServiceMethod;
 import org.apache.ignite.resources.IgniteInstanceResource;
 import org.apache.ignite.services.Service;
+import org.apache.ignite.services.ServiceCallInterceptor;
 import org.jetbrains.annotations.Nullable;
 
 import static org.apache.ignite.internal.processors.task.GridTaskThreadContextKey.TC_IO_POLICY;
@@ -211,8 +212,8 @@ public class GridServiceProxy<T> implements Serializable {
                                 HistogramMetricImpl hist = svcCtx.isStatisticsEnabled() ?
                                     invocationHistogramm(svcCtx, mtd.getName(), args) : null;
 
-                                return hist == null ? callServiceLocally(svc, mtd, args, callAttrs) :
-                                    measureCall(hist, () -> callServiceLocally(svc, mtd, args, callAttrs));
+                                return hist == null ? callServiceLocally(svcCtx, mtd, args, callAttrs) :
+                                    measureCall(hist, () -> callServiceLocally(svcCtx, mtd, args, callAttrs));
                             }
                         }
                     }
@@ -286,46 +287,58 @@ public class GridServiceProxy<T> implements Serializable {
     }
 
     /**
-     * @param svc Service to be called.
+     * @param svcCtx Service context.
      * @param mtd Method to call.
      * @param args Method args.
      * @param callAttrs Service call context attributes.
      * @return Invocation result.
      */
     private Object callServiceLocally(
-        Service svc,
+        ServiceContextImpl svcCtx,
         Method mtd,
         Object[] args,
         @Nullable Map<String, Object> callAttrs
     ) throws Exception {
+        Service svc = svcCtx.service();
+
         if (svc instanceof PlatformService && !PLATFORM_SERVICE_INVOKE_METHOD.equals(mtd))
             return ((PlatformService)svc).invokeMethod(methodName(mtd), false, true, args, callAttrs);
         else
-            return callServiceMethod(svc, mtd, args, callAttrs);
+            return callServiceMethod(svcCtx, mtd, args, callAttrs);
     }
 
     /**
-     * @param svc Service to be called.
+     * @param svcCtx Service context.
      * @param mtd Method to call.
      * @param args Method args.
      * @param callAttrs Service call context attributes.
      * @return Invocation result.
      */
     private static Object callServiceMethod(
-        Service svc,
+        ServiceContextImpl svcCtx,
         Method mtd,
         Object[] args,
         @Nullable Map<String, Object> callAttrs
-    ) throws InvocationTargetException, IllegalAccessException {
-        if (callAttrs != null)
+    ) throws Exception {
+        ServiceCallContextImpl prevCtx = null;
+
+        if (callAttrs != null) {
+            // One service can be called from another in the same thread.
+            prevCtx = ServiceCallContextHolder.current();
+
             ServiceCallContextHolder.current(new ServiceCallContextImpl(callAttrs));
+        }
 
         try {
-            return mtd.invoke(svc, args);
+            ServiceCallInterceptor interceptor = svcCtx.interceptor();
+
+            return interceptor == null ?
+                mtd.invoke(svcCtx.service(), args) :
+                interceptor.invoke(mtd.getName(), args, svcCtx, () -> mtd.invoke(svcCtx.service(), args));
         }
         finally {
             if (callAttrs != null)
-                ServiceCallContextHolder.current(null);
+                ServiceCallContextHolder.current(prevCtx);
         }
     }
 
@@ -577,7 +590,7 @@ public class GridServiceProxy<T> implements Serializable {
             if (svcCtx.service() instanceof PlatformService && mtd == null)
                 return callPlatformService((PlatformService)svcCtx.service());
             else
-                return callOrdinaryService(svcCtx.service(), mtd);
+                return callOrdinaryService(svcCtx, mtd);
         }
 
         /** */
@@ -594,12 +607,12 @@ public class GridServiceProxy<T> implements Serializable {
         }
 
         /** */
-        private Object callOrdinaryService(Service srv, Method mtd) throws Exception {
+        private Object callOrdinaryService(ServiceContextImpl svcCtx, Method mtd) throws Exception {
             if (mtd == null)
                 throw new GridServiceMethodNotFoundException(svcName, mtdName, argTypes);
 
             try {
-                return callServiceMethod(srv, mtd, args, callAttrs);
+                return callServiceMethod(svcCtx, mtd, args, callAttrs);
             }
             catch (InvocationTargetException e) {
                 throw new ServiceProxyException(e.getCause());

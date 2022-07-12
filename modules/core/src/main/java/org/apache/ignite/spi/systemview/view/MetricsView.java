@@ -15,39 +15,46 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.osgi.activators;
+package org.apache.ignite.spi.systemview.view;
+
+import org.apache.ignite.internal.managers.systemview.walker.Order;
+import org.apache.ignite.spi.metric.Metric;
 
 /**
- * Interface to export the flags in OSGi.
+ * Metrics representation for a {@link SystemView}.
  */
-public interface TestOsgiFlags {
-    /**
-     * @return The flag.
-     */
-    Boolean getOnBeforeStartInvoked();
+public class MetricsView {
+    /** Metric. */
+    private final Metric metric;
 
     /**
-     * @return The flag.
+     * @param metric Metric.
      */
-    Boolean getOnAfterStartInvoked();
+    public MetricsView(Metric metric) {
+        this.metric = metric;
+    }
 
     /**
-     * @return The flag.
+     * @return Metric name.
      */
-    Throwable getOnAfterStartThrowable();
+    @Order
+    public String name() {
+        return metric.name();
+    }
 
     /**
-     * @return The flag.
+     * @return Metric value.
      */
-    Boolean getOnBeforeStopInvoked();
+    @Order(1)
+    public String value() {
+        return metric.getAsString();
+    }
 
     /**
-     * @return The flag.
+     * @return Metric description.
      */
-    Boolean getOnAfterStopInvoked();
-
-    /**
-     * @return The flag.
-     */
-    Throwable getOnAfterStopThrowable();
+    @Order(2)
+    public String description() {
+        return metric.description();
+    }
 }
