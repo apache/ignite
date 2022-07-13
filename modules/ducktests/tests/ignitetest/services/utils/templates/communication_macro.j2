@@ -17,9 +17,12 @@
 
 {% macro communication_spi(spi) %}
     <property name="communicationSpi">
-        <bean class="org.apache.ignite.spi.communication.tcp.TcpCommunicationSpi">
-            <property name="localPort" value="{{ spi.port }}"/>
-            <property name="localPortRange" value="{{ spi.port_range }}"/>
+        <bean class="{{ spi.class_name }}">
+            {% for name, value in spi.__dict__.items() %}
+            {% if value %}
+            <property name="{{ name | snake_to_camel }}" value="{{ value }}"/>
+            {% endif %}
+            {% endfor %}
         </bean>
     </property>
 {% endmacro %}

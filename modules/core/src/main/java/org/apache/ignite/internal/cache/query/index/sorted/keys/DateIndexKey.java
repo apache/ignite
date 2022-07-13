@@ -20,11 +20,11 @@ package org.apache.ignite.internal.cache.query.index.sorted.keys;
 import java.sql.Date;
 import java.time.LocalDate;
 import org.apache.ignite.IgniteException;
-import org.apache.ignite.internal.cache.query.index.sorted.IndexKeyTypes;
+import org.apache.ignite.internal.cache.query.index.sorted.IndexKeyType;
 import org.apache.ignite.internal.cache.query.index.sorted.inline.types.DateValueUtils;
 
 /** */
-public class DateIndexKey implements IndexKey {
+public class DateIndexKey extends DateTimeIndexKey {
     /** */
     private final long dateVal;
 
@@ -55,8 +55,8 @@ public class DateIndexKey implements IndexKey {
     }
 
     /** {@inheritDoc} */
-    @Override public int type() {
-        return IndexKeyTypes.DATE;
+    @Override public IndexKeyType type() {
+        return IndexKeyType.DATE;
     }
 
     /** {@inheritDoc} */
@@ -68,7 +68,13 @@ public class DateIndexKey implements IndexKey {
     }
 
     /** {@inheritDoc} */
+    @Override public int compareTo(long dateVal, long nanos) {
+        return this.dateVal != dateVal ? Long.compare(this.dateVal, dateVal) : Long.compare(0, nanos);
+    }
+
+    /** {@inheritDoc} */
     @Override public int compare(IndexKey o) {
-        return Long.compare(dateVal, ((DateIndexKey)o).dateVal);
+        return type() == o.type() ? Long.compare(dateVal, ((DateIndexKey)o).dateVal)
+            : -((DateTimeIndexKey)o).compareTo(dateVal, 0);
     }
 }

@@ -25,6 +25,7 @@ import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.processors.resource.GridSpringResourceContext;
+import org.apache.ignite.internal.util.lang.GridTuple3;
 import org.apache.ignite.lang.IgniteBiTuple;
 
 /**
@@ -100,6 +101,20 @@ public interface IgniteSpringHelper {
      */
     public IgniteBiTuple<Map<Class<?>, Collection>, ? extends GridSpringResourceContext> loadBeans(
         URL cfgUrl,
+        Class<?>... beanClasses
+    ) throws IgniteCheckedException;
+
+    /**
+     * Loads bean instances that match the given types or names from given configuration file.
+     *
+     * @param cfgUrl Configuration file path or URL. This cannot be {@code null}.
+     * @param beanClasses Beans classes.
+     * @return Tuple containing all loaded beans and Spring context used to load them.
+     * @throws IgniteCheckedException If failed to load configuration.
+     */
+    public GridTuple3<Map<String, ?>, Map<Class<?>, Collection>, ? extends GridSpringResourceContext> loadBeans(
+        URL cfgUrl,
+        Collection<String> beanNames,
         Class<?>... beanClasses
     ) throws IgniteCheckedException;
 

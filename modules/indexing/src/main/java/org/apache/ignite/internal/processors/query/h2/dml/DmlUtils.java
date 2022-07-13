@@ -28,7 +28,6 @@ import java.util.Iterator;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
-
 import javax.cache.processor.MutableEntry;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.cache.query.SqlFieldsQuery;
@@ -40,11 +39,11 @@ import org.apache.ignite.internal.processors.cache.QueryCursorImpl;
 import org.apache.ignite.internal.processors.cache.query.IgniteQueryErrorCode;
 import org.apache.ignite.internal.processors.cache.query.SqlFieldsQueryEx;
 import org.apache.ignite.internal.processors.odbc.SqlStateCode;
+import org.apache.ignite.internal.processors.query.GridQueryRowDescriptor;
 import org.apache.ignite.internal.processors.query.IgniteSQLException;
 import org.apache.ignite.internal.processors.query.h2.DmlStatementsProcessor;
 import org.apache.ignite.internal.processors.query.h2.H2Utils;
 import org.apache.ignite.internal.processors.query.h2.UpdateResult;
-import org.apache.ignite.internal.processors.query.h2.opt.GridH2RowDescriptor;
 import org.apache.ignite.internal.processors.tracing.MTC;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.T3;
@@ -79,7 +78,7 @@ public class DmlUtils {
      * @return Converted object.
      */
     @SuppressWarnings({"ConstantConditions", "SuspiciousSystemArraycopy"})
-    public static Object convert(Object val, GridH2RowDescriptor desc, Class<?> expCls,
+    public static Object convert(Object val, GridQueryRowDescriptor desc, Class<?> expCls,
         int type, String columnName) {
         if (val == null)
             return null;
@@ -133,7 +132,7 @@ public class DmlUtils {
                 return newArr;
             }
 
-            Object res = H2Utils.convert(val, desc.indexing(), type);
+            Object res = H2Utils.convert(val, desc.context().kernalContext().query().objectContext(), type);
 
             // We can get a Timestamp instead of Date when converting a String to Date
             // without query - let's handle this
