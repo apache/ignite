@@ -50,7 +50,6 @@ import org.apache.ignite.internal.managers.systemview.walker.SqlViewColumnViewWa
 import org.apache.ignite.internal.managers.systemview.walker.SqlViewViewWalker;
 import org.apache.ignite.internal.processors.cache.GridCacheContextInfo;
 import org.apache.ignite.internal.processors.cache.query.IgniteQueryErrorCode;
-import org.apache.ignite.internal.processors.cache.query.QueryTable;
 import org.apache.ignite.internal.processors.query.GridQueryIndexDescriptor;
 import org.apache.ignite.internal.processors.query.GridQueryRowDescriptorImpl;
 import org.apache.ignite.internal.processors.query.GridQuerySchemaManager;
@@ -84,7 +83,6 @@ import org.h2.index.Index;
 import org.h2.table.Column;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
-
 import static java.util.Objects.requireNonNull;
 import static org.apache.ignite.internal.processors.metric.impl.MetricUtils.metricName;
 
