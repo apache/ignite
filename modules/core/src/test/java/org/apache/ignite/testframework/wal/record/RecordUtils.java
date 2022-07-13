@@ -639,7 +639,7 @@ public class RecordUtils {
 
     /** **/
     public static ConsistentCutStartRecord buildConsistentCutStartRecord() {
-        return new ConsistentCutStartRecord(new ConsistentCutVersion(1204L, System.currentTimeMillis()));
+        return new ConsistentCutStartRecord(new ConsistentCutVersion(1204L));
     }
 
     /** **/

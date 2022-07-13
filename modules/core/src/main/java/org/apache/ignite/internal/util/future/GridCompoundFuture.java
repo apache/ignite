@@ -60,7 +60,7 @@ public class GridCompoundFuture<T, R> extends GridFutureAdapter<R> implements Ig
         AtomicIntegerFieldUpdater.newUpdater(GridCompoundFuture.class, "lsnrCalls");
 
     /** Possible values: null (no future), IgniteInternalFuture instance (single future) or List of futures  */
-    private volatile Object futs;
+    protected volatile Object futs;
 
     /** Reducer. */
     @GridToStringInclude
@@ -279,7 +279,7 @@ public class GridCompoundFuture<T, R> extends GridFutureAdapter<R> implements Ig
             if (futs == null)
                 futs = fut;
             else if (futs instanceof IgniteInternalFuture) {
-                Collection<IgniteInternalFuture> futs0 = new ArrayList<>(4);
+                Collection<IgniteInternalFuture> futs0 = createFuturesCollection();
 
                 futs0.add((IgniteInternalFuture)futs);
                 futs0.add(fut);
@@ -307,6 +307,11 @@ public class GridCompoundFuture<T, R> extends GridFutureAdapter<R> implements Ig
         }
 
         return this;
+    }
+
+    /** */
+    protected Collection<IgniteInternalFuture> createFuturesCollection() {
+        return new ArrayList<>(4);
     }
 
     /**
@@ -386,11 +391,11 @@ public class GridCompoundFuture<T, R> extends GridFutureAdapter<R> implements Ig
     /**
      * Returns future at the specified position in this list.
      *
-     * @param idx - index index of the element to return
+     * @param idx Index of the element to return
      * @return Future.
      */
     @SuppressWarnings("unchecked")
-    protected final IgniteInternalFuture<T> future(int idx) {
+    protected IgniteInternalFuture<T> future(int idx) {
         assert futs != null && idx >= 0 && idx < size;
 
         if (futs instanceof IgniteInternalFuture) {

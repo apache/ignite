@@ -17,7 +17,6 @@
 
 package org.apache.ignite.internal.processors.cache.consistentcut;
 
-import java.util.Collection;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
@@ -31,12 +30,10 @@ import java.util.concurrent.TimeUnit;
 import java.util.function.Function;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteException;
-import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.GridKernalContext;
 import org.apache.ignite.internal.IgniteEx;
-import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.managers.communication.GridIoMessage;
 import org.apache.ignite.internal.pagemem.wal.IgniteWriteAheadLogManager;
 import org.apache.ignite.internal.pagemem.wal.record.ConsistentCutStartRecord;
@@ -46,7 +43,6 @@ import org.apache.ignite.internal.processors.cache.GridCacheSharedContext;
 import org.apache.ignite.internal.processors.cache.persistence.StorageException;
 import org.apache.ignite.internal.processors.cache.persistence.wal.FileWriteAheadLogManager;
 import org.apache.ignite.internal.processors.cache.persistence.wal.WALPointer;
-import org.apache.ignite.internal.processors.cache.transactions.IgniteInternalTx;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.T2;
 import org.apache.ignite.lang.IgniteInClosure;
@@ -239,7 +235,7 @@ public abstract class AbstractConsistentCutBlockingTest extends AbstractConsiste
         txLatch.await(100, TimeUnit.MILLISECONDS);
 
         // 3. Start Consistent Cut procedure concurrently with running transaction.
-        grid(0).context().cache().context().consistentCutMgr().triggerConsistentCutOnCluster();
+        grid(0).context().cache().context().consistentCutMgr().triggerConsistentCutOnCluster("explicit");
 
         // 4-5. Await Consistent Cut started, excluding blocking node.
         awaitCutStarted(prevVer, cutBlkNode);
@@ -483,12 +479,8 @@ public abstract class AbstractConsistentCutBlockingTest extends AbstractConsiste
         private final GridKernalContext ctx;
 
         /** {@inheritDoc} */
-        @Override protected ConsistentCut consistentCut(
-            GridCacheSharedContext<?, ?> cctx,
-            IgniteLogger log,
-            ConsistentCutVersion cutVer
-        ) {
-            return new BlockingConsistentCut(cctx, log, cutVer);
+        @Override protected ConsistentCut consistentCut() {
+            return new BlockingConsistentCut(ctx.cache().context());
         }
 
         /** */
@@ -498,13 +490,15 @@ public abstract class AbstractConsistentCutBlockingTest extends AbstractConsiste
 
         /** */
         private final class BlockingConsistentCut extends ConsistentCut {
-            /** */
-            public BlockingConsistentCut(GridCacheSharedContext<?, ?> cctx, IgniteLogger log, ConsistentCutVersion ver) {
-                super(cctx, log, ver);
+            /**
+             * @param cctx
+             */
+            BlockingConsistentCut(GridCacheSharedContext<?, ?> cctx) {
+                super(cctx);
             }
 
             /** Blocks before or after ConsistentCut preparation. */
-            @Override protected IgniteInternalFuture<?> init(Collection<IgniteInternalTx> beforeCut) throws IgniteCheckedException {
+            @Override protected void init(ConsistentCutVersion ver) throws IgniteCheckedException {
                 if (blkCut(VERSION_UPDATE)) {
                     try {
                         cutBlkLatch.await(100, TimeUnit.MILLISECONDS);
@@ -514,7 +508,7 @@ public abstract class AbstractConsistentCutBlockingTest extends AbstractConsiste
                     }
                 }
 
-                IgniteInternalFuture<?> prepared = super.init(beforeCut);
+                super.init(ver);
 
                 if (blkCut(CUT_PREPARED)) {
                     try {
@@ -524,8 +518,6 @@ public abstract class AbstractConsistentCutBlockingTest extends AbstractConsiste
                         throw new IgniteException(e);
                     }
                 }
-
-                return prepared;
             }
 
             /** Blocks before writing {@link ConsistentCutStartRecord} to WAL. */

@@ -145,16 +145,20 @@ public abstract class AbstractConsistentCutTest extends GridCommonAbstractTest {
         ConsistentCutManager crdCutMgr = grid(0).context().cache().context().consistentCutMgr();
 
         for (int i = 0; i < 100; i++) {
-            long ver = crdCutMgr.latestKnownCutVersion().version();
+            ConsistentCutVersion cutVer = crdCutMgr.latestKnownCutVersion();
 
-            if (ver > prevCutVer) {
-                if (newCutVer < 0)
-                    newCutVer = ver;
-                else
-                    assert newCutVer == ver : "new=" + newCutVer + ", rcv=" + ver + ", prev=" + prevCutVer;
+            if (cutVer != null) {
+                long ver = cutVer.version();
 
-                if (crdCutMgr.latestGlobalCutReady())
-                    return newCutVer;
+                if (ver > prevCutVer) {
+                    if (newCutVer < 0)
+                        newCutVer = ver;
+                    else
+                        assert newCutVer == ver : "new=" + newCutVer + ", rcv=" + ver + ", prev=" + prevCutVer;
+
+                    if (crdCutMgr.latestGlobalCutReady())
+                        return newCutVer;
+                }
             }
 
             Thread.sleep(10);
@@ -248,7 +252,7 @@ public abstract class AbstractConsistentCutTest extends GridCommonAbstractTest {
 
             int expCuts = reader.cuts.get(reader.cuts.size() - 1).ver == INCOMPLETE ? cuts + 1 : cuts;
 
-            assertEquals(expCuts, reader.cuts.size());
+            assertEquals("" + reader.cuts.get(reader.cuts.size() - 1).ver, expCuts, reader.cuts.size());
         }
 
         Map<IgniteUuid, T2<Long, Integer>> txMap = new HashMap<>();

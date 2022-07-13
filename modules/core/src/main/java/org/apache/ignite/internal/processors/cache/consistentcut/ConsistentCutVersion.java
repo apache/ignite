@@ -29,7 +29,7 @@ import org.apache.ignite.plugin.extensions.communication.MessageWriter;
  * Composite version of Consistent Cut. It consists of two fields: incremental version and timestamp of starting
  * Consistent Cut. Both fields set on the coordinator node.
  */
-public class ConsistentCutVersion implements Comparable<Long>, Message {
+public class ConsistentCutVersion implements Message {
     /** */
     private static final long serialVersionUID = 0L;
 
@@ -40,32 +40,17 @@ public class ConsistentCutVersion implements Comparable<Long>, Message {
     @GridToStringInclude
     private long ver;
 
-    /** Timestamp of starting Consistent Cut on the coordinator node. */
-    @GridToStringInclude
-    private long ts;
-
     /** */
     public ConsistentCutVersion() {}
 
     /** */
-    public ConsistentCutVersion(long ver, long ts) {
+    public ConsistentCutVersion(long ver) {
         this.ver = ver;
-        this.ts = ts;
     }
 
     /** */
     public long version() {
         return ver;
-    }
-
-    /** */
-    public long timestamp() {
-        return ts;
-    }
-
-    /** {@inheritDoc} */
-    @Override public int compareTo(Long o) {
-        return Long.compare(ver, o);
     }
 
     /** {@inheritDoc} */
@@ -90,12 +75,6 @@ public class ConsistentCutVersion implements Comparable<Long>, Message {
                     return false;
 
                 writer.incrementState();
-
-            case 1:
-                if (!writer.writeLong("ts", ts))
-                    return false;
-
-                writer.incrementState();
         }
 
         return true;
@@ -116,14 +95,6 @@ public class ConsistentCutVersion implements Comparable<Long>, Message {
                     return false;
 
                 reader.incrementState();
-
-            case 1:
-                ts = reader.readLong("ts");
-
-                if (!reader.isLastRead())
-                    return false;
-
-                reader.incrementState();
         }
 
         return reader.afterMessageRead(GridDeploymentRequest.class);
@@ -136,7 +107,7 @@ public class ConsistentCutVersion implements Comparable<Long>, Message {
 
     /** {@inheritDoc} */
     @Override public byte fieldsCount() {
-        return 2;
+        return 1;
     }
 
     /** {@inheritDoc} */
