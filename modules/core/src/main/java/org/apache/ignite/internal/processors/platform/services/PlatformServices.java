@@ -408,7 +408,7 @@ public class PlatformServices extends PlatformAbstractTarget {
         int totalCnt = reader.readInt();
         int maxPerNodeCnt = reader.readInt();
 
-        services.deployMultiple(name, new PlatformDotNetServiceImpl(svc, platformCtx, srvKeepBinary, null),
+        services.deployMultiple(name, new PlatformDotNetServiceImpl(svc, platformCtx, srvKeepBinary),
                 totalCnt, maxPerNodeCnt);
     }
 
@@ -424,7 +424,7 @@ public class PlatformServices extends PlatformAbstractTarget {
         int totalCnt = reader.readInt();
         int maxPerNodeCnt = reader.readInt();
 
-        return services.deployMultipleAsync(name, new PlatformDotNetServiceImpl(svc, platformCtx, srvKeepBinary, null),
+        return services.deployMultipleAsync(name, new PlatformDotNetServiceImpl(svc, platformCtx, srvKeepBinary),
             totalCnt, maxPerNodeCnt);
     }
 
@@ -501,14 +501,14 @@ public class PlatformServices extends PlatformAbstractTarget {
         if (filter != null)
             cfg.setNodeFilter(platformCtx.createClusterNodeFilter(filter));
 
-        Object intCps = reader.readObjectDetached();
+        Object interceptors = reader.readObjectDetached();
 
         cfg.setStatisticsEnabled(reader.readBoolean());
 
         if (cfg.isStatisticsEnabled())
             cfg.mtdNames(reader.readStringArray());
 
-        cfg.setService(new PlatformDotNetServiceImpl(svc, platformCtx, srvKeepBinary, intCps));
+        cfg.setService(new PlatformDotNetServiceImpl(svc, platformCtx, srvKeepBinary, interceptors));
 
         return cfg;
     }

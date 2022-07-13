@@ -41,10 +41,21 @@ public class PlatformDotNetServiceImpl extends PlatformAbstractService implement
      * @param svc Service.
      * @param ctx Context.
      * @param srvKeepBinary Whether to keep objects binary on server if possible.
-     * @param intCps Service call interceptors.
      */
-    public PlatformDotNetServiceImpl(Object svc, PlatformContext ctx, boolean srvKeepBinary, @Nullable Object intCps) {
-        super(svc, ctx, srvKeepBinary, intCps);
+    public PlatformDotNetServiceImpl(Object svc, PlatformContext ctx, boolean srvKeepBinary) {
+        super(svc, ctx, srvKeepBinary, null);
+    }
+
+    /**
+     * Constructor.
+     *
+     * @param svc Service.
+     * @param ctx Context.
+     * @param srvKeepBinary Whether to keep objects binary on server if possible.
+     * @param interceptors Service call interceptors.
+     */
+    public PlatformDotNetServiceImpl(Object svc, PlatformContext ctx, boolean srvKeepBinary, Object interceptors) {
+        super(svc, ctx, srvKeepBinary, interceptors);
     }
 
     /**
@@ -58,6 +69,6 @@ public class PlatformDotNetServiceImpl extends PlatformAbstractService implement
      * @return Service call interceptors.
      */
     public Object getInterceptors() {
-        return intcps;
+        return interceptors;
     }
 }

@@ -1449,7 +1449,7 @@ namespace Apache.Ignite.Core.Tests.Services
             Assert.AreEqual("value", svc.contextAttribute("attr"));
 
             const int val = 2;
-            Assert.AreEqual(val * val * val * val, svc.testInterception(val));
+            Assert.AreEqual(val * val, svc.testInterception(val));
 
 #if NETCOREAPP
             //This Date in Europe/Moscow have offset +4.

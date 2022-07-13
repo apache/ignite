@@ -69,7 +69,7 @@ namespace Apache.Ignite.Core.Services
         public IClusterNodeFilter NodeFilter { get; set; }
         
         /// <summary>
-        /// Gets or sets service method interceptors.
+        /// Gets or sets service call interceptors.
         /// </summary>
         [SuppressMessage("Microsoft.Usage", "CA2227:CollectionPropertiesShouldBeReadOnly")]
         public ICollection<IServiceCallInterceptor> Interceptors { get; set; }

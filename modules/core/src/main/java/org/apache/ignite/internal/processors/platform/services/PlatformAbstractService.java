@@ -48,7 +48,7 @@ public abstract class PlatformAbstractService implements PlatformService, Extern
     protected Object svc;
 
     /** Service call interceptors. */
-    protected Object intcps;
+    protected Object interceptors;
 
     /** Whether to keep objects binary on server if possible. */
     protected boolean srvKeepBinary;
@@ -61,7 +61,7 @@ public abstract class PlatformAbstractService implements PlatformService, Extern
 
     /** Service context. */
     @ServiceContextResource
-    private ServiceContext ctx;
+    private transient ServiceContext ctx;
 
     /**
      * Default constructor for serialization.
@@ -76,16 +76,16 @@ public abstract class PlatformAbstractService implements PlatformService, Extern
      * @param svc Service.
      * @param ctx Context.
      * @param srvKeepBinary Whether to keep objects binary on server if possible.
-     * @param intcps Service call interceptors.
+     * @param interceptors Service call interceptors.
      */
-    public PlatformAbstractService(Object svc, PlatformContext ctx, boolean srvKeepBinary, @Nullable Object intcps) {
+    public PlatformAbstractService(Object svc, PlatformContext ctx, boolean srvKeepBinary, @Nullable Object interceptors) {
         assert svc != null;
         assert ctx != null;
 
         this.svc = svc;
         this.platformCtx = ctx;
         this.srvKeepBinary = srvKeepBinary;
-        this.intcps = intcps;
+        this.interceptors = interceptors;
     }
 
     /** {@inheritDoc} */
@@ -100,7 +100,7 @@ public abstract class PlatformAbstractService implements PlatformService, Extern
 
             writer.writeBoolean(srvKeepBinary);
             writer.writeObject(svc);
-            writer.writeObject(intcps);
+            writer.writeObject(interceptors);
 
             writeServiceContext(ctx, writer);
 
@@ -243,13 +243,13 @@ public abstract class PlatformAbstractService implements PlatformService, Extern
     @Override public void readExternal(ObjectInput in) throws IOException, ClassNotFoundException {
         svc = in.readObject();
         srvKeepBinary = in.readBoolean();
-        intcps = in.readObject();
+        interceptors = in.readObject();
     }
 
     /** {@inheritDoc} */
     @Override public void writeExternal(ObjectOutput out) throws IOException {
         out.writeObject(svc);
         out.writeBoolean(srvKeepBinary);
-        out.writeObject(intcps);
+        out.writeObject(interceptors);
     }
 }

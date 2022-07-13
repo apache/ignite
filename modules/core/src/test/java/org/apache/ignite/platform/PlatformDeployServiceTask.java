@@ -684,7 +684,7 @@ public class PlatformDeployServiceTask extends ComputeTaskAdapter<String, Object
 
         /** */
         public int testInterception(int val) {
-            return val * val;
+            return val;
         }
 
         /** */

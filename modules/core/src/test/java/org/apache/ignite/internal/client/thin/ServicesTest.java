@@ -21,6 +21,7 @@ import java.util.Arrays;
 import java.util.Collection;
 import java.util.HashSet;
 import java.util.Map;
+import java.util.Objects;
 import java.util.UUID;
 import java.util.concurrent.Callable;
 import java.util.concurrent.CountDownLatch;
@@ -278,9 +279,10 @@ public class ServicesTest extends AbstractThinClientTest {
         try (IgniteClient client = startClient(0)) {
             TestServiceInterface svc = client.services().serviceProxy(NODE_SINGLTON_SERVICE_NAME, TestServiceInterface.class);
 
-            int val = 2;
+            int val = TestServiceInterceptor.INTERCEPTED_VALUE;
 
-            assertEquals(Math.pow(val, 2 + 2), svc.testInterception(val));
+            assertEquals(val * val, svc.testMethod(val));
+            assertEquals(val + 1, svc.testMethod(val + 1));
         }
     }
 
@@ -451,9 +453,6 @@ public class ServicesTest extends AbstractThinClientTest {
         public byte[] testContextBinaryAttribute(String name);
 
         /** */
-        public int testInterception(int val);
-
-        /** */
         public boolean waitLatch() throws Exception;
     }
 
@@ -533,11 +532,6 @@ public class ServicesTest extends AbstractThinClientTest {
         }
 
         /** {@inheritDoc} */
-        @Override public int testInterception(int val) {
-            return val * val;
-        }
-
-        /** {@inheritDoc} */
         @Override public boolean waitLatch() throws Exception {
             latch.await(10L, TimeUnit.SECONDS);
 
@@ -550,12 +544,15 @@ public class ServicesTest extends AbstractThinClientTest {
         /** */
         private static final long serialVersionUID = 0L;
 
+        /** */
+        private static final Integer INTERCEPTED_VALUE = 42;
+
         /** {@inheritDoc} */
         @Override public Object invoke(String mtd, Object[] args, ServiceContext ctx, Callable<Object> next)
             throws Exception {
-            Object res = next.call();
+            Object res = next.call();;
 
-            if ("testInterception".equals(mtd))
+            if (args.length == 1 && "testMethod".equals(mtd) && Objects.equals(INTERCEPTED_VALUE, args[0]))
                 return (int)res * (int)res;
 
             return res;
