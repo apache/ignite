@@ -1080,7 +1080,7 @@ public class ValidateIndexesClosure implements IgniteCallable<VisorValidateIndex
             String idxName = idx.indexDefinition().idxName().idxName();
 
             try {
-                long indexSize = ignite.context().query().getIndexing().indexSize(cacheName, tblName, idxName);
+                long indexSize = idx.totalCount();
 
                 idleChecker.apply(cacheCtx.groupId());
 
