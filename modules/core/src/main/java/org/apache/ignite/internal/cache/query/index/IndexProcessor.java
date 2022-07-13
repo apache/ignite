@@ -376,14 +376,14 @@ public class IndexProcessor extends GridProcessorAdapter {
     /**
      * Returns collection of indexes for specified cache.
      *
-     * @param cctx Cache context.
+     * @param cacheName Cache name.
      * @return Collection of indexes for specified cache.
      */
-    public Collection<Index> indexes(GridCacheContext<?, ?> cctx) {
+    public Collection<Index> indexes(String cacheName) {
         ddlLock.readLock().lock();
 
         try {
-            Map<String, Index> idxs = cacheToIdx.get(cctx.name());
+            Map<String, Index> idxs = cacheToIdx.get(cacheName);
 
             if (idxs == null)
                 return Collections.emptyList();
@@ -587,11 +587,11 @@ public class IndexProcessor extends GridProcessorAdapter {
     /**
      * Collect indexes for rebuild.
      *
-     * @param cctx Cache context.
+     * @param cacheName Cache name.
      * @param createdOnly Get only created indexes (not restored from dick).
      */
-    public List<InlineIndex> treeIndexes(GridCacheContext cctx, boolean createdOnly) {
-        Collection<Index> idxs = indexes(cctx);
+    public List<InlineIndex> treeIndexes(String cacheName, boolean createdOnly) {
+        Collection<Index> idxs = indexes(cacheName);
 
         List<InlineIndex> treeIdxs = new ArrayList<>();
 
