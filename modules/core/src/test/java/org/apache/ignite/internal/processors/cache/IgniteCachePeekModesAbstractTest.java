@@ -43,7 +43,6 @@ import org.apache.ignite.internal.util.GridEmptyCloseableIterator;
 import org.apache.ignite.internal.util.typedef.T2;
 import org.apache.ignite.spi.IgniteSpiCloseableIterator;
 import org.junit.Test;
-import static org.apache.ignite.cache.CacheMode.LOCAL;
 import static org.apache.ignite.cache.CacheMode.PARTITIONED;
 import static org.apache.ignite.cache.CacheMode.REPLICATED;
 import static org.apache.ignite.cache.CachePeekMode.ALL;
@@ -306,14 +305,8 @@ public abstract class IgniteCachePeekModesAbstractTest extends IgniteCacheAbstra
                 assertEquals(val, cache0.localPeek(key, PRIMARY, ONHEAP));
                 assertEquals(val, cache0.localPeek(key, PRIMARY, ONHEAP, OFFHEAP));
 
-                if (cacheMode() == LOCAL) {
-                    assertEquals(val, cache0.localPeek(key, BACKUP));
-                    assertEquals(val, cache0.localPeek(key, NEAR));
-                }
-                else {
-                    assertNull(cache0.localPeek(key, BACKUP));
-                    assertNull(cache0.localPeek(key, NEAR));
-                }
+                assertNull(cache0.localPeek(key, BACKUP));
+                assertNull(cache0.localPeek(key, NEAR));
 
                 assertNull(cache0.localPeek(key, ONHEAP));
                 assertNull(cache0.localPeek(key, OFFHEAP));

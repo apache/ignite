@@ -29,9 +29,6 @@ import java.util.Map;
 import java.util.UUID;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
-import org.apache.ignite.cache.CacheAtomicityMode;
-import org.apache.ignite.cache.CacheMode;
-import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.ConnectorConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.processors.rest.GridRestCommand;
@@ -39,7 +36,6 @@ import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.internal.SB;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.junit.Test;
-
 import static org.apache.ignite.IgniteSystemProperties.IGNITE_JETTY_PORT;
 
 /**
@@ -99,15 +95,7 @@ public class ClientDefaultCacheSelfTest extends GridCommonAbstractTest {
 
         cfg.setConnectorConfiguration(clientCfg);
 
-        CacheConfiguration cLoc = new CacheConfiguration(DEFAULT_CACHE_NAME);
-
-        cLoc.setName(LOCAL_CACHE);
-
-        cLoc.setCacheMode(CacheMode.LOCAL);
-
-        cLoc.setAtomicityMode(CacheAtomicityMode.TRANSACTIONAL);
-
-        cfg.setCacheConfiguration(defaultCacheConfiguration(), cLoc);
+        cfg.setCacheConfiguration(defaultCacheConfiguration());
 
         return cfg;
     }

@@ -26,7 +26,6 @@ import org.apache.ignite.internal.cache.query.index.IndexQueryResultMeta;
 import org.apache.ignite.internal.processors.query.GridQueryFieldMetadata;
 import org.apache.ignite.internal.util.lang.GridCloseableIterator;
 import org.jetbrains.annotations.Nullable;
-
 import static org.apache.ignite.cache.CacheMode.LOCAL;
 
 /**

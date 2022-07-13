@@ -73,10 +73,8 @@ import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 import org.junit.Test;
-
 import static java.util.concurrent.TimeUnit.MILLISECONDS;
 import static org.apache.ignite.cache.CacheAtomicityMode.TRANSACTIONAL;
-import static org.apache.ignite.cache.CacheMode.LOCAL;
 import static org.apache.ignite.cache.CacheMode.PARTITIONED;
 import static org.apache.ignite.cache.CacheMode.REPLICATED;
 import static org.apache.ignite.cache.CacheWriteSynchronizationMode.FULL_ASYNC;
@@ -198,18 +196,13 @@ public abstract class ClientAbstractMultiNodeSelfTest extends GridCommonAbstract
 
         cfg.setAtomicityMode(TRANSACTIONAL);
 
-        switch (cacheName) {
-            case DEFAULT_CACHE_NAME:
-                cfg.setCacheMode(LOCAL);
-                break;
-            case PARTITIONED_CACHE_NAME:
-                cfg.setCacheMode(PARTITIONED);
+        if (PARTITIONED_CACHE_NAME.equals(cacheName)) {
+            cfg.setCacheMode(PARTITIONED);
 
-                cfg.setBackups(0);
-                break;
-            default:
-                cfg.setCacheMode(REPLICATED);
-                break;
+            cfg.setBackups(0);
+        }
+        else {
+            cfg.setCacheMode(REPLICATED);
         }
 
         cfg.setName(cacheName);
