@@ -231,7 +231,7 @@ public abstract class GridH2IndexBase extends H2IndexCostedBase {
      * @return Query context registry.
      */
     protected QueryContextRegistry queryContextRegistry() {
-        return ((GridH2Table)table).rowDescriptor().indexing().queryContextRegistry();
+        return ((GridH2Table)table).tableDescriptor().indexing().queryContextRegistry();
     }
 
 

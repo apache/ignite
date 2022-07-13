@@ -24,8 +24,8 @@ import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.internal.cache.query.index.IndexName;
 import org.apache.ignite.internal.cache.query.index.sorted.IndexKeyDefinition;
+import org.apache.ignite.internal.cache.query.index.sorted.IndexKeyType;
 import org.apache.ignite.internal.cache.query.index.sorted.IndexKeyTypeSettings;
-import org.apache.ignite.internal.cache.query.index.sorted.IndexKeyTypes;
 import org.apache.ignite.internal.cache.query.index.sorted.IndexRow;
 import org.apache.ignite.internal.cache.query.index.sorted.keys.IndexKey;
 import org.apache.ignite.internal.cache.query.index.sorted.keys.JavaObjectIndexKey;
@@ -94,7 +94,7 @@ public class InlineObjectBytesDetector implements BPlusTree.TreeRowClosure<Index
             if (fieldOff >= inlineSize)
                 return false;
 
-            if (keyDef.idxType() != IndexKeyTypes.JAVA_OBJECT) {
+            if (keyDef.idxType() != IndexKeyType.JAVA_OBJECT) {
                 InlineIndexKeyType keyType = InlineIndexKeyTypeRegistry.get(keyDef.idxType(), keyTypeSettings);
 
                 if (keyType.inlineSize() < 0)
@@ -110,10 +110,10 @@ public class InlineObjectBytesDetector implements BPlusTree.TreeRowClosure<Index
             if (key == NullIndexKey.INSTANCE)
                 return false;
 
-            int type = PageUtils.getByte(pageAddr, off + fieldOff);
+            int typeCode = PageUtils.getByte(pageAddr, off + fieldOff);
 
             // We can have garbage in memory and need to compare data.
-            if (type == IndexKeyTypes.JAVA_OBJECT) {
+            if (typeCode == IndexKeyType.JAVA_OBJECT.code()) {
                 int len = PageUtils.getShort(pageAddr, off + fieldOff + 1);
 
                 len &= 0x7FFF;
@@ -141,14 +141,14 @@ public class InlineObjectBytesDetector implements BPlusTree.TreeRowClosure<Index
                 return true;
             }
 
-            if (type == IndexKeyTypes.UNKNOWN && varLenPresents) {
+            if (typeCode == IndexKeyType.UNKNOWN.code() && varLenPresents) {
                 // We can't guarantee in case unknown type and should check next row:
                 // 1: long string, UNKNOWN for java object.
                 // 2: short string, inlined java object
                 return false;
             }
 
-            inlineObjectSupportedDecision(false, "inline type " + type);
+            inlineObjectSupportedDecision(false, "inline type " + typeCode);
 
             return true;
         }
@@ -182,7 +182,7 @@ public class InlineObjectBytesDetector implements BPlusTree.TreeRowClosure<Index
         IndexKeyTypeSettings settings = new IndexKeyTypeSettings();
 
         for (IndexKeyDefinition def: keyDefs) {
-            if (def.idxType() == IndexKeyTypes.JAVA_OBJECT)
+            if (def.idxType() == IndexKeyType.JAVA_OBJECT)
                 break;
 
             InlineIndexKeyType keyType = InlineIndexKeyTypeRegistry.get(def.idxType(), settings);

@@ -18,6 +18,7 @@
 package org.apache.ignite.internal.cache.query.index.sorted;
 
 import org.apache.ignite.internal.cache.query.index.IndexDefinition;
+import org.apache.ignite.internal.processors.query.GridQueryRowDescriptor;
 
 /**
  * Represents a definition of a sorted index.
@@ -38,6 +39,9 @@ public interface SortedIndexDefinition extends IndexDefinition {
     /** Cache of index rows. */
     public IndexRowCache idxRowCache();
 
+    /** Table row descriptor. */
+    public GridQueryRowDescriptor rowDescriptor();
+
     /** Amount of index tree segments.*/
     public int segments();
 
@@ -49,10 +53,4 @@ public interface SortedIndexDefinition extends IndexDefinition {
 
     /** Whether this index is affinity key index or not. */
     public boolean affinity();
-
-    /**
-     * @param created Whether index is creating or restored from PDS.
-     * @param metaPageInfo Initialize internal state with data from a tree meta.
-     */
-    public void initByMeta(boolean created, MetaPageInfo metaPageInfo);
 }

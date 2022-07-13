@@ -17,29 +17,30 @@
 
 package org.apache.ignite.internal.cache.query.index.sorted.inline.types;
 
-import org.apache.ignite.internal.cache.query.index.sorted.IndexKeyTypes;
+import org.apache.ignite.internal.cache.query.index.sorted.IndexKeyType;
+import org.apache.ignite.internal.cache.query.index.sorted.keys.NumericIndexKey;
 import org.apache.ignite.internal.cache.query.index.sorted.keys.ShortIndexKey;
 import org.apache.ignite.internal.pagemem.PageUtils;
 
 /**
  * Inline index key implementation for inlining {@link Short} values.
  */
-public class ShortInlineIndexKeyType extends NullableInlineIndexKeyType<ShortIndexKey> {
+public class ShortInlineIndexKeyType extends NumericInlineIndexKeyType<ShortIndexKey> {
     /** */
     public ShortInlineIndexKeyType() {
-        super(IndexKeyTypes.SHORT, (short)2);
+        super(IndexKeyType.SHORT, (short)2);
     }
 
     /** {@inheritDoc} */
-    @Override public int compare0(long pageAddr, int off, ShortIndexKey key) {
+    @Override public int compareNumeric(NumericIndexKey key, long pageAddr, int off) {
         short val1 = PageUtils.getShort(pageAddr, off + 1);
 
-        return Integer.signum(val1 - (short)key.key());
+        return key.compareTo(val1);
     }
 
     /** {@inheritDoc} */
     @Override protected int put0(long pageAddr, int off, ShortIndexKey key, int maxSize) {
-        PageUtils.putByte(pageAddr, off, (byte)type());
+        PageUtils.putByte(pageAddr, off, (byte)type().code());
         PageUtils.putShort(pageAddr, off + 1, (short)key.key());
 
         return keySize + 1;
@@ -50,10 +51,5 @@ public class ShortInlineIndexKeyType extends NullableInlineIndexKeyType<ShortInd
         short key = PageUtils.getShort(pageAddr, off + 1);
 
         return new ShortIndexKey(key);
-    }
-
-    /** {@inheritDoc} */
-    @Override protected int inlineSize0(ShortIndexKey key) {
-        return keySize + 1;
     }
 }

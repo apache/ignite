@@ -40,6 +40,7 @@ import org.apache.ignite.internal.pagemem.wal.record.SnapshotRecord;
 import org.apache.ignite.internal.pagemem.wal.record.SwitchSegmentRecord;
 import org.apache.ignite.internal.pagemem.wal.record.TxRecord;
 import org.apache.ignite.internal.pagemem.wal.record.WALRecord;
+import org.apache.ignite.internal.pagemem.wal.record.delta.ClusterSnapshotRecord;
 import org.apache.ignite.internal.pagemem.wal.record.delta.DataPageInsertFragmentRecord;
 import org.apache.ignite.internal.pagemem.wal.record.delta.DataPageInsertRecord;
 import org.apache.ignite.internal.pagemem.wal.record.delta.DataPageMvccMarkUpdatedRecord;
@@ -108,6 +109,7 @@ import static org.apache.ignite.internal.pagemem.wal.record.WALRecord.RecordType
 import static org.apache.ignite.internal.pagemem.wal.record.WALRecord.RecordType.BTREE_PAGE_REMOVE;
 import static org.apache.ignite.internal.pagemem.wal.record.WALRecord.RecordType.BTREE_PAGE_REPLACE;
 import static org.apache.ignite.internal.pagemem.wal.record.WALRecord.RecordType.CHECKPOINT_RECORD;
+import static org.apache.ignite.internal.pagemem.wal.record.WALRecord.RecordType.CLUSTER_SNAPSHOT;
 import static org.apache.ignite.internal.pagemem.wal.record.WALRecord.RecordType.CONSISTENT_CUT;
 import static org.apache.ignite.internal.pagemem.wal.record.WALRecord.RecordType.DATA_PAGE_INSERT_FRAGMENT_RECORD;
 import static org.apache.ignite.internal.pagemem.wal.record.WALRecord.RecordType.DATA_PAGE_INSERT_RECORD;
@@ -254,6 +256,7 @@ public class RecordUtils {
         put(INDEX_ROOT_PAGE_RENAME_RECORD, RecordUtils::buildIndexRenameRootPageRecord);
         put(PARTITION_CLEARING_START_RECORD, RecordUtils::buildPartitionClearingStartedRecord);
         put(ENCRYPTED_OUT_OF_ORDER_UPDATE, buildUpsupportedWalRecord(ENCRYPTED_OUT_OF_ORDER_UPDATE));
+        put(CLUSTER_SNAPSHOT, RecordUtils::buildClusterSnapshotRecord);
     }
 
     /** */
@@ -609,6 +612,11 @@ public class RecordUtils {
     /** **/
     public static PartitionClearingStartRecord buildPartitionClearingStartedRecord() {
         return new PartitionClearingStartRecord(12, 345, 123456789);
+    }
+
+    /** **/
+    public static ClusterSnapshotRecord buildClusterSnapshotRecord() {
+        return new ClusterSnapshotRecord("snp-1234567890");
     }
 
     /**

@@ -34,13 +34,6 @@
 
     <url>http://ignite.apache.org</url>
 
-    <properties>
-        <osgi.export.package>
-            org.apache.ignite.internal.processors.schedule,
-            {local-packages}
-        </osgi.export.package>
-    </properties>
-
     <dependencies>
         <dependency>
             <groupId>${project.groupId}</groupId>
@@ -106,18 +99,6 @@
 
     <build>
         <plugins>
-            <!-- Generate the OSGi MANIFEST.MF for this fragment. It is a fragment because it contains internal processors
-                 that would be looked up by ignite-core. -->
-            <plugin>
-                <groupId>org.apache.felix</groupId>
-                <artifactId>maven-bundle-plugin</artifactId>
-                <configuration>
-                    <instructions>
-                        <Fragment-Host>${project.groupId}.ignite-core</Fragment-Host>
-                    </instructions>
-                </configuration>
-            </plugin>
-
             <plugin>
                 <groupId>org.apache.maven.plugins</groupId>
                 <artifactId>maven-deploy-plugin</artifactId>

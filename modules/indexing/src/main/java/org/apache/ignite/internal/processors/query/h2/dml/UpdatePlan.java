@@ -30,13 +30,13 @@ import org.apache.ignite.internal.processors.cache.GridCacheContext;
 import org.apache.ignite.internal.processors.cache.query.IgniteQueryErrorCode;
 import org.apache.ignite.internal.processors.query.EnlistOperation;
 import org.apache.ignite.internal.processors.query.GridQueryProperty;
+import org.apache.ignite.internal.processors.query.GridQueryRowDescriptor;
 import org.apache.ignite.internal.processors.query.GridQueryTypeDescriptor;
 import org.apache.ignite.internal.processors.query.IgniteSQLException;
 import org.apache.ignite.internal.processors.query.QueryUtils;
 import org.apache.ignite.internal.processors.query.UpdateSourceIterator;
 import org.apache.ignite.internal.processors.query.h2.ConnectionManager;
 import org.apache.ignite.internal.processors.query.h2.UpdateResult;
-import org.apache.ignite.internal.processors.query.h2.opt.GridH2RowDescriptor;
 import org.apache.ignite.internal.processors.query.h2.opt.GridH2Table;
 import org.apache.ignite.internal.util.GridCloseableIteratorAdapterEx;
 import org.apache.ignite.internal.util.typedef.F;
@@ -205,7 +205,7 @@ public final class UpdatePlan {
             throw new IgniteSQLException("Not enough values in a row: " + row.size() + " instead of " + colNames.length,
                 IgniteQueryErrorCode.ENTRY_PROCESSING);
 
-        GridH2RowDescriptor rowDesc = tbl.rowDescriptor();
+        GridQueryRowDescriptor rowDesc = tbl.rowDescriptor();
         GridQueryTypeDescriptor desc = rowDesc.type();
 
         GridCacheContext cctx = rowDesc.context();
@@ -271,7 +271,7 @@ public final class UpdatePlan {
 
         // First 2 columns are _key and _val Skip 'em.
         for (int i = QueryUtils.DEFAULT_COLUMNS_COUNT; i < tblCols.length; i++) {
-            if (tbl.rowDescriptor().isKeyValueOrVersionColumn(i))
+            if (tbl.rowDescriptor().isKeyColumn(i) || tbl.rowDescriptor().isValueColumn(i))
                 continue;
 
             String colName = tblCols[i].getName();
@@ -305,7 +305,7 @@ public final class UpdatePlan {
      * @return Tuple contains: [key, old value, new value]
      */
     public T3<Object, Object, Object> processRowForUpdate(List<?> row) throws IgniteCheckedException {
-        GridH2RowDescriptor rowDesc = tbl.rowDescriptor();
+        GridQueryRowDescriptor rowDesc = tbl.rowDescriptor();
         GridQueryTypeDescriptor desc = rowDesc.type();
 
         GridCacheContext cctx = rowDesc.context();
@@ -345,7 +345,7 @@ public final class UpdatePlan {
         for (int i = 0; i < tbl.getColumns().length - QueryUtils.DEFAULT_COLUMNS_COUNT; i++) {
             Column c = tbl.getColumn(i + QueryUtils.DEFAULT_COLUMNS_COUNT);
 
-            if (rowDesc.isKeyValueOrVersionColumn(c.getColumnId()))
+            if (rowDesc.isKeyColumn(c.getColumnId()) || rowDesc.isValueColumn(c.getColumnId()))
                 continue;
 
             GridQueryProperty prop = desc.property(c.getName());
@@ -361,7 +361,7 @@ public final class UpdatePlan {
             Object colVal = newColVals.get(c.getName());
 
             // UPDATE currently does not allow to modify key or its fields, so we must be safe to pass null as key.
-            rowDesc.setColumnValue(null, newVal, colVal, i);
+            rowDesc.setFieldValue(null, newVal, colVal, i);
         }
 
         if (cctx.binaryMarshaller() && hasProps) {
@@ -418,7 +418,7 @@ public final class UpdatePlan {
 
         List<List<?>> res = new ArrayList<>(rowsNum);
 
-        GridH2RowDescriptor desc = tbl.rowDescriptor();
+        GridQueryRowDescriptor desc = tbl.rowDescriptor();
 
         extractArgsValues(args, res, desc);
 
@@ -448,7 +448,7 @@ public final class UpdatePlan {
 
         List<List<List<?>>> resPerQry = new ArrayList<>(argss.size());
 
-        GridH2RowDescriptor desc = tbl.rowDescriptor();
+        GridQueryRowDescriptor desc = tbl.rowDescriptor();
 
         for (Object[] args : argss) {
             List<List<?>> res = new ArrayList<>();
@@ -469,7 +469,7 @@ public final class UpdatePlan {
      * @param desc Row descriptor.
      * @throws IgniteCheckedException If failed.
      */
-    private void extractArgsValues(Object[] args, List<List<?>> res, GridH2RowDescriptor desc)
+    private void extractArgsValues(Object[] args, List<List<?>> res, GridQueryRowDescriptor desc)
         throws IgniteCheckedException {
         assert res != null;
 

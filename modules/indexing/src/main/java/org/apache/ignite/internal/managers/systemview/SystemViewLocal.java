@@ -58,7 +58,7 @@ import static org.apache.ignite.internal.processors.metric.impl.MetricUtils.toSq
 /**
  * SQL system view to export {@link SystemView} data.
  */
-class SystemViewLocal<R> extends SqlAbstractLocalSystemView {
+public class SystemViewLocal<R> extends SqlAbstractLocalSystemView {
     /** */
     private static final Map<Class<?>, Function<Object, ? extends Value>> CLS_TO_VAL = new HashMap<>();
 
@@ -237,10 +237,5 @@ class SystemViewLocal<R> extends SqlAbstractLocalSystemView {
     /** {@inheritDoc} */
     @Override public boolean canGetRowCount() {
         return true;
-    }
-
-    /** {@inheritDoc} */
-    @Override public @Nullable SystemView<?> getSystemView() {
-        return sysView;
     }
 }

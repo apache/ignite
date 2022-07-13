@@ -759,9 +759,11 @@ public abstract class H2DynamicColumnsAbstractBasicSelfTest extends DynamicColum
 
             run("ALTER TABLE test DROP COLUMN a");
 
+            run("INSERT INTO test VALUES(4, 44)");
+
             res = run("SELECT * FROM test WHERE b > 0 ORDER BY b");
 
-            assertEquals(3, res.size());
+            assertEquals(4, res.size());
             assertEquals(2, res.get(0).size());
 
             assertEquals(1, res.get(0).get(0));

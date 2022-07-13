@@ -23,7 +23,6 @@ import org.apache.ignite.internal.processors.query.h2.IgniteH2Indexing;
 import org.apache.ignite.internal.processors.query.h2.SchemaManager;
 import org.apache.ignite.spi.IgniteSpiContext;
 import org.apache.ignite.spi.IgniteSpiException;
-import org.apache.ignite.spi.systemview.view.FiltrableSystemView;
 import org.apache.ignite.spi.systemview.view.SystemView;
 
 import static org.apache.ignite.internal.processors.query.QueryUtils.SCHEMA_SYS;
@@ -59,11 +58,6 @@ class SqlViewExporterSpi extends AbstractSystemViewExporterSpi {
         if (log.isDebugEnabled())
             log.debug("Found new system view [name=" + sysView.name() + ']');
 
-        GridKernalContext ctx = ((IgniteEx)ignite()).context();
-
-        SystemViewLocal<?> view = sysView instanceof FiltrableSystemView ?
-            new FiltrableSystemViewLocal<>(ctx, sysView) : new SystemViewLocal<>(ctx, sysView);
-
-        mgr.createSystemView(SCHEMA_SYS, view);
+        mgr.createSystemView(SCHEMA_SYS, sysView);
     }
 }

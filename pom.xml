@@ -61,9 +61,6 @@
         <module>modules/jcl</module>
         <module>modules/codegen</module>
         <module>modules/zookeeper</module>
-        <module>modules/osgi-paxlogging</module>
-        <module>modules/osgi-karaf</module>
-        <module>modules/osgi</module>
         <module>modules/web/ignite-appserver-test</module>
         <module>modules/web/ignite-websphere-test</module>
         <module>modules/cassandra</module>

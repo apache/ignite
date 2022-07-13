@@ -68,12 +68,6 @@
 
     <build>
         <plugins>
-            <!-- Generate the OSGi MANIFEST.MF for this bundle. -->
-            <plugin>
-                <groupId>org.apache.felix</groupId>
-                <artifactId>maven-bundle-plugin</artifactId>
-            </plugin>
-
             <plugin>
                 <groupId>org.apache.maven.plugins</groupId>
                 <artifactId>maven-deploy-plugin</artifactId>

@@ -44,13 +44,13 @@ public class IndexRowCompartorImpl implements IndexRowComparator {
 
     /** {@inheritDoc} */
     @Override public int compareKey(long pageAddr, int off, int maxSize, IndexKey key, InlineIndexKeyType type) {
-        if (type.type() == IndexKeyTypes.UNKNOWN)
+        if (type.type() == IndexKeyType.UNKNOWN)
             return CANT_BE_COMPARE;
 
-        // Value can be set up by user in query with different data type. Don't compare different types in this comparator.
-        if (sameType(key, type.type())) {
+        // Value can be set up by user in query with different data type. Don't compare uncomparable types in this comparator.
+        if (isInlineComparable(type, key)) {
             // If inlining of POJO is not supported then don't compare it here.
-            if (type.type() != IndexKeyTypes.JAVA_OBJECT || keyTypeSettings.inlineObjSupported())
+            if (type.type() != IndexKeyType.JAVA_OBJECT || keyTypeSettings.inlineObjSupported())
                 return type.compare(pageAddr, off, maxSize, key);
             else
                 return CANT_BE_COMPARE;
@@ -60,11 +60,11 @@ public class IndexRowCompartorImpl implements IndexRowComparator {
     }
 
     /** */
-    private boolean sameType(IndexKey key, int idxType) {
+    private boolean isInlineComparable(InlineIndexKeyType type, IndexKey key) {
         if (key == NullIndexKey.INSTANCE)
             return true;
 
-        return idxType == key.type();
+        return type.isComparableTo(key);
     }
 
     /** {@inheritDoc} */
@@ -81,15 +81,24 @@ public class IndexRowCompartorImpl implements IndexRowComparator {
     }
 
     /** */
-    private int compare(IndexKey lkey, IndexKey rkey) {
-        if (lkey == NullIndexKey.INSTANCE)
-            return lkey.compare(rkey);
-        else if (rkey == NullIndexKey.INSTANCE)
-            return 1;
+    private int compare(IndexKey lkey, IndexKey rkey) throws IgniteCheckedException {
+        try {
+            if (lkey == NullIndexKey.INSTANCE)
+                return lkey.compare(rkey);
+            else if (rkey == NullIndexKey.INSTANCE)
+                return 1;
 
-        if (lkey.type() == rkey.type())
-            return lkey.compare(rkey);
+            if (lkey.isComparableTo(rkey))
+                return lkey.compare(rkey);
+            else if (rkey.isComparableTo(lkey))
+                return -rkey.compare(lkey);
+        }
+        catch (RuntimeException e) {
+            // Runtime exceptions should be wrapped into checked exception, since any runtime exception treated by
+            // B+tree as corrupted tree exception and triggers failure handler.
+            throw new IgniteCheckedException(e);
+        }
 
-        return COMPARE_UNSUPPORTED;
+        throw new IgniteCheckedException("Values can't be compared [lkey=" + lkey + ", rkey=" + rkey + ']');
     }
 }
