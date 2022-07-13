@@ -1026,7 +1026,7 @@ public class IgniteSqlNotNullConstraintTest extends AbstractIndexingCommonTest {
 
                 assertTrue(ex.getMessage().contains(ERR_MSG));
 
-                assertEquals(isLocalAtomic() ? expAtomicCacheSize : 0, cache.size());
+                assertEquals(0, cache.size());
             }
         });
     }
@@ -1261,13 +1261,6 @@ public class IgniteSqlNotNullConstraintTest extends AbstractIndexingCommonTest {
             this.cache = cache;
             this.concurrency = concurrency;
             this.isolation = isolation;
-        }
-
-        /** */
-        protected boolean isLocalAtomic() {
-            CacheConfiguration cfg = cache.getConfiguration(CacheConfiguration.class);
-
-            return cfg.getCacheMode() == CacheMode.LOCAL && cfg.getAtomicityMode() == CacheAtomicityMode.ATOMIC;
         }
 
         /** */
