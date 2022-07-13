@@ -139,11 +139,11 @@ public class IgniteClusterSnapshotSelfTest extends AbstractSnapshotSelfTest {
     @Override protected IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {
         IgniteConfiguration cfg = super.getConfiguration(igniteInstanceName);
 
-        cfg.getDataStorageConfiguration().setCheckpointFrequency(300);
-        cfg.getDataStorageConfiguration().setWalSegments(12);
-        cfg.getDataStorageConfiguration().setWalSegmentSize(64 * 1024 * 1024);
-        cfg.getDataStorageConfiguration().setMaxWalArchiveSize(10 * 1024l * 1024l * 1024l);
-        cfg.getDataStorageConfiguration().setCheckpointReadLockTimeout(20_000);
+//        cfg.getDataStorageConfiguration().setCheckpointFrequency(300);
+//        cfg.getDataStorageConfiguration().setWalSegments(12);
+//        cfg.getDataStorageConfiguration().setWalSegmentSize(64 * 1024 * 1024);
+//        cfg.getDataStorageConfiguration().setMaxWalArchiveSize(10 * 1024l * 1024l * 1024l);
+//        cfg.getDataStorageConfiguration().setCheckpointReadLockTimeout(20_000);
         cfg.getDataStorageConfiguration().getDefaultDataRegionConfiguration().setPersistenceEnabled(true);
         cfg.getDataStorageConfiguration().getDefaultDataRegionConfiguration().setMaxSize(3 * 1024L * 1024L * 1024L);
 
@@ -444,7 +444,7 @@ public class IgniteClusterSnapshotSelfTest extends AbstractSnapshotSelfTest {
     @Test
     public void testClusterSnapshotConsistencyUnderSQLLoad() throws Exception {
         int grids = 4;
-        CountDownLatch startSnp = new CountDownLatch(70_000);
+        CountDownLatch startSnp = new CountDownLatch(5_000_000);
         AtomicBoolean stop = new AtomicBoolean(false);
         dfltCacheCfg = null;
 
@@ -455,7 +455,7 @@ public class IgniteClusterSnapshotSelfTest extends AbstractSnapshotSelfTest {
         Class.forName("org.apache.ignite.IgniteJdbcDriver");
 
         IgniteInternalFuture<?> load1 = runLoad("test_tbl1", stop, startSnp);
-//        IgniteInternalFuture<?> load2 = runLoad("test_tbl2", stop, startSnp);
+        IgniteInternalFuture<?> load2 = runLoad("test_tbl2", stop, startSnp);
 
         startSnp.await();
 
@@ -467,16 +467,16 @@ public class IgniteClusterSnapshotSelfTest extends AbstractSnapshotSelfTest {
         stop.set(true);
 
         load1.get();
-//        load2.get();
+        load2.get();
 
         log.error("TEST | cache1 size: " + grid(0).cache("SQL_PUBLIC_TEST_TBL1").size());
-//        log.error("TEST | cache1 size: " + grid(0).cache("SQL_PUBLIC_TEST_TBL2").size());
+        log.error("TEST | cache1 size: " + grid(0).cache("SQL_PUBLIC_TEST_TBL2").size());
 
 //        sz = grid(0).cache("SQL_PUBLIC_TEST_TBL1").size();
 //        sz = grid(0).cache("SQL_PUBLIC_TEST_TBL2").size();
 
         grid(0).cache("SQL_PUBLIC_TEST_TBL1").destroy();
-//        grid(0).cache("SQL_PUBLIC_TEST_TBL2").destroy();
+        grid(0).cache("SQL_PUBLIC_TEST_TBL2").destroy();
 
 //        grid(0).snapshot().restoreSnapshot(SNAPSHOT_NAME, null).get();
 //        stopAllGrids();
@@ -485,7 +485,10 @@ public class IgniteClusterSnapshotSelfTest extends AbstractSnapshotSelfTest {
 //        startGrids(grids);
 
         grid(0).snapshot().restoreSnapshot(SNAPSHOT_NAME, F.asList("SQL_PUBLIC_TEST_TBL1",
-            "SQL_PUBLIC_TEST_TBL2"));
+            "SQL_PUBLIC_TEST_TBL2")).get();
+
+        log.error("TEST | cache1 size: " + grid(0).cache("SQL_PUBLIC_TEST_TBL1").size());
+        log.error("TEST | cache1 size: " + grid(0).cache("SQL_PUBLIC_TEST_TBL2").size());
     }
 
     private IgniteInternalFuture<?> runLoad(String tblName, AtomicBoolean stop, CountDownLatch startSnp) {
