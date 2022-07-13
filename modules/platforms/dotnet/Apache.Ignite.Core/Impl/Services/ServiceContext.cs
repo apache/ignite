@@ -18,12 +18,8 @@
 namespace Apache.Ignite.Core.Impl.Services
 {
     using System;
-    using System.Collections.Generic;
-    using System.Diagnostics;
-    using System.Linq;
     using System.Threading;
     using Apache.Ignite.Core.Binary;
-    using Apache.Ignite.Core.Cluster;
     using Apache.Ignite.Core.Services;
 
     /// <summary>
@@ -33,7 +29,7 @@ namespace Apache.Ignite.Core.Impl.Services
     {
         /** Service call context of the current thread. */
         private static readonly AsyncLocal<IServiceCallContext> LocalCallContext = new AsyncLocal<IServiceCallContext>();
-        
+
         /// <summary>
         /// Initializes a new instance of the <see cref="ServiceContext"/> class.
         /// </summary>
@@ -71,21 +67,20 @@ namespace Apache.Ignite.Core.Impl.Services
         public object AffinityKey { get; private set; }
 
         /** <inheritdoc /> */
-        public IServiceCallContext CurrentCallContext
-        {
-            get { return LocalCallContext.Value; }
-        }
+        public IServiceCallContext CurrentCallContext => LocalCallContext.Value;
 
         /// <summary>
-        /// 
+        /// Gets service.
         /// </summary>
-        internal IService Service { get; set; }
+        /// <returns>Service.</returns>
+        internal IService Service { get; }
         
         /// <summary>
-        /// 
+        /// Gets service call interceptor.
         /// </summary>
+        /// <returns>Service call interceptor.</returns>
         internal IServiceCallInterceptor Interceptor { get; }
-
+        
         /// <summary>
         /// Sets service call context for the current thread.
         /// </summary>

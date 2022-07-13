@@ -70,12 +70,16 @@ namespace Apache.Ignite.Core.Tests.Services
         /** <inheritDoc /> */
         public void Execute(IServiceContext context)
         {
+            Assert.IsTrue(_context == context);
+
             _executed = true;
         }
 
         /** <inheritDoc /> */
         public void Cancel(IServiceContext context)
         {
+            Assert.IsTrue(_context == context);
+
             _cancelled = true;
         }
 

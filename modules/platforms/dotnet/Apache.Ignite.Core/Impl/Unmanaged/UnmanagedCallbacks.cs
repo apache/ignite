@@ -1019,12 +1019,11 @@ namespace Apache.Ignite.Core.Impl.Unmanaged
                 try
                 {
                     var reader = _ignite.Marshaller.StartUnmarshal(stream);
-                    
+
                     var srvKeepBinary = reader.ReadBoolean();
                     var svc = reader.ReadObject<IService>();
                     var interceptors = reader.ReadCollection();
-
-                    var svcCtx = new ServiceContext(svc, PrepareInterceptor(interceptors),
+                    var svcCtx = new ServiceContext(svc, WrapInterceptors(interceptors),
                         srvKeepBinary ? _ignite.Marshaller.StartUnmarshal(stream, true) : reader);
 
                     ResourceProcessor.Inject(svc, _ignite);
@@ -1057,18 +1056,20 @@ namespace Apache.Ignite.Core.Impl.Unmanaged
         }
 
         /// <summary>
-        /// Prepares composite service call interceptor.
+        /// Wraps a collection of interceptors into a composite interceptor.
         /// </summary>
         /// <param name="interceptors">Service call interceptors.</param>
         /// <returns>Composite service call interceptor or null.</returns>
-        private IServiceCallInterceptor PrepareInterceptor(ICollection interceptors)
+        private IServiceCallInterceptor WrapInterceptors(ICollection interceptors)
         {
             if (interceptors == null)
                 return null;
             
-            foreach (var intcp in interceptors)
-                ResourceProcessor.Inject(intcp, _ignite);
-                    
+            // Inject Ignite instance resource.
+            foreach (var interceptor in interceptors)
+                ResourceProcessor.Inject(interceptor, _ignite);
+
+            // Wrap into a composite interceptor if necessary.
             return interceptors.Count == 1 ? interceptors.OfType<IServiceCallInterceptor>().First() :
                 new CompositeServiceCallInterceptor(interceptors.OfType<IServiceCallInterceptor>());
         }

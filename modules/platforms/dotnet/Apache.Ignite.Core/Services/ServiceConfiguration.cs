@@ -26,6 +26,7 @@ namespace Apache.Ignite.Core.Services
     using System.Reflection;
     using Apache.Ignite.Core.Binary;
     using Apache.Ignite.Core.Cluster;
+    using Apache.Ignite.Core.Common;
 
     /// <summary>
     /// Service configuration.
@@ -71,7 +72,7 @@ namespace Apache.Ignite.Core.Services
         /// <summary>
         /// Gets or sets service call interceptors.
         /// </summary>
-        [SuppressMessage("Microsoft.Usage", "CA2227:CollectionPropertiesShouldBeReadOnly")]
+        [IgniteExperimental]
         public IReadOnlyCollection<IServiceCallInterceptor> Interceptors { get; set; }
         
         /// <summary>

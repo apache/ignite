@@ -18,7 +18,6 @@
 namespace Apache.Ignite.Core.Tests.Services
 {
     using System;
-    using System.Diagnostics;
     using Apache.Ignite.Core.Services;
 
     /** Test service call interceptor. */
