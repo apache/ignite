@@ -447,7 +447,7 @@ public class JavaThinCompatibilityTest extends AbstractClientCompatibilityTest {
         if (clientVer.compareTo(VER_2_14_0) >= 0) {
             if (serverVer.compareTo(VER_2_14_0) >= 0)
                 testCustomPartitionAwarenessMapper();
-            else
+            else if (serverVer.compareTo(VER_2_11_0) >= 0) // Partition awareness available from.
                 testCustomPartitionAwarenessMapperThrows();
         }
     }

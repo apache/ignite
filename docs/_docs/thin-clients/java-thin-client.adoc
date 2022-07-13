@@ -86,10 +86,8 @@ The following code sample illustrates how to use the partition awareness feature
 include::{sourceCodeFile}[tag=partition-awareness,indent=0]
 ----
 
-The code sample below shows how to use a custom cache key mapper function to enable affinity awareness from a thin client side
-if a cache already exists in a cluster and was created with custom AffinityFunction or AffinityKeyMapper.
-
-NOTE: The Apache Ignite an internal thin client API is used. There is no guarantee that it will no be changed in future releases.
+The code sample below shows how to use a custom cache key to partition mapping function to enable affinity awareness on
+a thin client side if the cache already exists in a cluster or/and was created with custom AffinityFunction or AffinityKeyMapper.
 
 [source, java]
 ----

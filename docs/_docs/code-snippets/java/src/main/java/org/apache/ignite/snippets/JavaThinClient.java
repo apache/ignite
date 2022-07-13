@@ -369,21 +369,20 @@ public class JavaThinClient {
         //tag::partition-awareness-with-mapper[]
         // Partition awarenes is enabled by default since Apache Ignite 2.11 release.
         ClientConfiguration cfg = new ClientConfiguration()
-            .setAddresses("node1_address:10800", "node2_address:10800", "node3_address:10800");
+            .setAddresses("node1_address:10800", "node2_address:10800", "node3_address:10800")
+            .setPartitionAwarenessMapperFactory(new BiFunction<String, Integer, ToIntFunction<Object>>() {
+                @Override public ToIntFunction<Object> apply(String cacheName, Integer parts) {
+                    AffinityFunction aff = new RendezvousAffinityFunction(false, parts);
+
+                    return aff::partition;
+                }
+            })
 
         try (IgniteClient client = Ignition.startClient(cfg)) {
-            ClientCache<Integer, String> cache = ((ClientCacheEx)client.cache(PART_CUSTOM_AFFINITY_CACHE_NAME))
-                .withPartitionAwarenessKeyMapper(new ToIntBiFunction<Object, Integer>() {
-                    private final int affinityMask = RendezvousAffinityFunction.calculateMask(DFLT_PARTITION_COUNT);
-
-                    @Override public int applyAsInt(Object key, Integer parts) {
-                        assert parts == RendezvousAffinityFunction.DFLT_PARTITION_COUNT;
-
-                        return RendezvousAffinityFunction.calculatePartition(key, affinityMask, DFLT_PARTITION_COUNT);
-                    }
-                });
-            // Put, get or remove data from the cache...
-        } catch (ClientException e) {
+            ClientCache<Integer, String> cache = client.cache(PART_CUSTOM_AFFINITY_CACHE_NAME);
+            // Put, get or remove data from the cache, partition awarenes will be enabled.
+        }
+        catch (ClientException e) {
             System.err.println(e.getMessage());
         }
         //end::partition-awareness-with-mapper[]

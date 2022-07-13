@@ -126,9 +126,11 @@ public final class ClientConfiguration implements Serializable {
      * All 'partition-to-node' mappings will still be requested from a server node, however, if a custom affinity function or a custom
      * affinity key mapper was used the affinity function produced by this factory will calculate mapping a key to a partition.
      *
-     * These affinity functions are used only for local calculations, they will not be passed to a server node.
+     * These key to partition mapping functions produced by the factory are used only for local calculations, they will not
+     * be passed to a server node.
      *
-     * This factory accepts as a parameters a cache name and the number of cache partitions received from a server node.
+     * This factory accepts as parameters a cache name and the number of cache partitions received from a server node and produces
+     * key to partition mapping functions.
      */
     private BiFunction<String, Integer, ToIntFunction<Object>> partitionAwarenessMapperFactory;
 
@@ -809,7 +811,8 @@ public final class ClientConfiguration implements Serializable {
     }
 
     /**
-     * @param factory Factory.
+     * @param factory Factory that accepts as parameters a cache name and the number of cache partitions received from a server node
+     * and produces key to partition mapping functions.
      * @return {@code this} for chaining.
      */
     public ClientConfiguration setPartitionAwarenessMapperFactory(BiFunction<String, Integer, ToIntFunction<Object>> factory) {
@@ -819,7 +822,8 @@ public final class ClientConfiguration implements Serializable {
     }
 
     /**
-     * @return Factory.
+     * @return Factory that accepts as parameters a cache name and the number of cache partitions received from a server node
+     * and produces key to partition mapping functions.
      */
     public BiFunction<String, Integer, ToIntFunction<Object>> getPartitionAwarenessMapperFactory() {
         return partitionAwarenessMapperFactory;

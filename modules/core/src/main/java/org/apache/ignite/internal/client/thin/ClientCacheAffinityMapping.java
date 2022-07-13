@@ -147,6 +147,7 @@ public class ClientCacheAffinityMapping {
      *
      * @param ch Output channel.
      * @param cacheIds Cache IDs.
+     * @param mappers Function that produces key mapping functions.
      */
     public static void writeRequest(
         PayloadOutputChannel ch,
@@ -176,7 +177,7 @@ public class ClientCacheAffinityMapping {
      * from this response.
      *
      * @param ch Input channel.
-     * @param mappers Factory.
+     * @param mappers Function that produces key mapping functions.
      */
     public static ClientCacheAffinityMapping readResponse(
         PayloadInputChannel ch,
@@ -204,19 +205,19 @@ public class ClientCacheAffinityMapping {
 
                     UUID[] partToNode = readNodePartitions(in);
 
-                    boolean dfltAffinity = true;
+                    boolean dfltMapping = true;
 
                     if (ch.clientChannel().protocolCtx().isFeatureSupported(ALL_AFFINITY_MAPPINGS))
-                        dfltAffinity = in.readBoolean();
+                        dfltMapping = in.readBoolean();
 
-                    boolean finalDfltAffinity = dfltAffinity;
+                    boolean finalDfltMapping = dfltMapping;
 
                     for (Map.Entry<Integer, Map<Integer, Integer>> keyCfg : cacheKeyCfg.entrySet()) {
                         addCacheAffinityMapping(aff,
                             keyCfg.getKey(),
                             keyCfg.getValue(),
                             partToNode,
-                            parts -> finalDfltAffinity ? new RendezvousAffinityKeyMapper(parts) :
+                            parts -> finalDfltMapping ? new RendezvousAffinityKeyMapper(parts) :
                                 mappers.apply(keyCfg.getKey()).apply(parts));
                     }
                 }

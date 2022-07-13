@@ -35,13 +35,13 @@ import org.apache.ignite.internal.util.GridConcurrentHashSet;
  * Client cache partition awareness context.
  */
 public class ClientCacheAffinityContext {
-    /** Default key mapper. */
+    /** Default key to partition mapping function. */
     private static final Function<Integer, ToIntFunction<Object>> DEFAULT_KEY_MAPPER = parts -> null;
 
     /** Binary data processor. */
     private final IgniteBinary binary;
 
-    /** Factory for each cache to produce key to partition mappers. */
+    /** Factory for each cache id to produce key to partition mapping functions. */
     private final Map<Integer, Function<Integer, ToIntFunction<Object>>> cacheKeyMapperFactoryMap = new ConcurrentHashMap<>();
 
     /** Contains last topology version and known nodes of this version. */

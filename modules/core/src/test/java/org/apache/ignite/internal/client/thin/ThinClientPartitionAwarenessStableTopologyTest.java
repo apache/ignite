@@ -78,12 +78,12 @@ public class ThinClientPartitionAwarenessStableTopologyTest extends ThinClientAb
 
     /**
      * Test that partition awareness is applicable for partitioned cache with custom affinity function
-     * and an affinity mapper is set on the client side.
+     * and key to partition mapping function is set on the client side.
      */
     @Test
     public void testPartitionedCustomAffinityCacheWithMapper() throws Exception {
-        initClient(getClientConfiguration(1, 2, 3).
-            setPartitionAwarenessMapperFactory(new BiFunction<String, Integer, ToIntFunction<Object>>() {
+        initClient(getClientConfiguration(1, 2, 3)
+            .setPartitionAwarenessMapperFactory(new BiFunction<String, Integer, ToIntFunction<Object>>() {
                 @Override public ToIntFunction<Object> apply(String cacheName, Integer parts) {
                     assertEquals(cacheName, PART_CUSTOM_AFFINITY_CACHE_NAME);
 
