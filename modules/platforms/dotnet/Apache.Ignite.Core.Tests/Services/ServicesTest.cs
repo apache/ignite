@@ -463,6 +463,17 @@ namespace Apache.Ignite.Core.Tests.Services
             // Deploy the same configuration.
             Services.Deploy(cfg);
 
+            var intcpList = new List<IServiceCallInterceptor>();
+
+            cfg.Interceptors = intcpList;
+            Exception argErr = Assert.Throws<ArgumentException>(() => Services.Deploy(cfg));
+            Assert.AreEqual(argErr.Message, "'configuration.Interceptors' argument is invalid: " +
+                                            "collection cannot be empty (Parameter 'configuration.Interceptors')");
+            
+            intcpList.Add(null);
+            argErr = Assert.Throws<ArgumentNullException>(() => Services.Deploy(cfg));
+            Assert.AreEqual(argErr.Message, "Value cannot be null. (Parameter 'configuration.Interceptors[]')");
+
             var svc = Services.GetServiceProxy<ITestIgniteService>(SvcName, false);
 
             const int val = 3; 

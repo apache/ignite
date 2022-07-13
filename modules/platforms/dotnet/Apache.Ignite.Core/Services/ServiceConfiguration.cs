@@ -72,7 +72,7 @@ namespace Apache.Ignite.Core.Services
         /// Gets or sets service call interceptors.
         /// </summary>
         [SuppressMessage("Microsoft.Usage", "CA2227:CollectionPropertiesShouldBeReadOnly")]
-        public ICollection<IServiceCallInterceptor> Interceptors { get; set; }
+        public IReadOnlyCollection<IServiceCallInterceptor> Interceptors { get; set; }
         
         /// <summary>
         /// Enables or disables service statistics.
@@ -164,7 +164,7 @@ namespace Apache.Ignite.Core.Services
             try
             {
                 NodeFilter = r.ReadObject<IClusterNodeFilter>();
-                Interceptors = (ICollection<IServiceCallInterceptor>)r.ReadCollection();
+                Interceptors = (IReadOnlyCollection<IServiceCallInterceptor>)r.ReadCollection();
             }
             catch (Exception)
             {
