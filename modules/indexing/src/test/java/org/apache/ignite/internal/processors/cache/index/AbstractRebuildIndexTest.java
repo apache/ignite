@@ -50,7 +50,6 @@ import static org.apache.ignite.cluster.ClusterState.ACTIVE;
 import static org.apache.ignite.internal.processors.cache.index.IgniteH2IndexingEx.addIdxCreateCacheRowConsumer;
 import static org.apache.ignite.internal.processors.cache.index.IndexesRebuildTaskEx.addCacheRowConsumer;
 import static org.apache.ignite.internal.processors.cache.index.IndexingTestUtils.nodeName;
-import static org.apache.ignite.testframework.GridTestUtils.cacheContext;
 import static org.apache.ignite.testframework.GridTestUtils.deleteIndexBin;
 import static org.apache.ignite.testframework.GridTestUtils.getFieldValue;
 
@@ -356,7 +355,7 @@ public abstract class AbstractRebuildIndexTest extends GridCommonAbstractTest {
      * @return Index.
      */
     @Nullable protected Index index(IgniteEx n, IgniteCache<Integer, Person> cache, String idxName) {
-        return n.context().indexProcessor().indexes(cacheContext(cache)).stream()
+        return n.context().indexProcessor().indexes(cache.getName()).stream()
             .filter(i -> idxName.equals(i.name()))
             .findAny()
             .orElse(null);

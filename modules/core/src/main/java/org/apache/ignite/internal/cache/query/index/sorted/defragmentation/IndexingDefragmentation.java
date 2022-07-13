@@ -223,7 +223,7 @@ public class IndexingDefragmentation {
         for (GridCacheContext<?, ?> cctx: gctx.caches()) {
             Map<String, TableIndexes> idxs = new HashMap<>();
 
-            List<InlineIndex> indexes = indexing.treeIndexes(cctx, false);
+            List<InlineIndex> indexes = indexing.treeIndexes(cctx.name(), false);
 
             for (InlineIndex idx: indexes) {
                 String table = indexing.indexDefinition(idx.id()).idxName().tableName();

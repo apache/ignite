@@ -231,7 +231,7 @@ public class IndexQueryProcessor {
         String tableName,
         IndexQueryDesc idxQryDesc
     ) throws IgniteCheckedException {
-        Collection<Index> idxs = idxProc.indexes(cctx);
+        Collection<Index> idxs = idxProc.indexes(cctx.name());
 
         for (Index idx: idxs) {
             SortedSegmentedIndex sortedIdx = assertSortedIndex(idx, idxQryDesc);

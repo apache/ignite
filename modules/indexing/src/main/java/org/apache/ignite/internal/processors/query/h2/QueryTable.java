@@ -15,7 +15,7 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.internal.processors.cache.query;
+package org.apache.ignite.internal.processors.query.h2;
 
 import java.nio.ByteBuffer;
 import org.apache.ignite.internal.util.typedef.F;
