@@ -69,14 +69,6 @@ public class GridCacheTtlManagerSelfTest extends GridCommonAbstractTest {
      * @throws Exception If failed.
      */
     @Test
-    public void testLocalTtl() throws Exception {
-        checkTtl(LOCAL);
-    }
-
-    /**
-     * @throws Exception If failed.
-     */
-    @Test
     public void testPartitionedTtl() throws Exception {
         checkTtl(PARTITIONED);
     }

@@ -253,9 +253,6 @@ public class IgniteOptimisticTxSuspendResumeTest extends IgniteAbstractTxSuspend
 
             // Generate different keys: 0 - primary, 1 - backup, 2 - neither primary nor backup.
             for (int type = 0; type < 3; type++) {
-                if (cfg.getCacheMode() == LOCAL)
-                    continue;
-
                 if (type == 1 && cfg.getCacheMode() == PARTITIONED && cfg.getBackups() == 0)
                     continue;
 

@@ -74,8 +74,7 @@ public abstract class IgniteCacheStoreValueAbstractTest extends IgniteCacheAbstr
     @Override protected CacheConfiguration cacheConfiguration(String igniteInstanceName) throws Exception {
         CacheConfiguration ccfg = super.cacheConfiguration(igniteInstanceName);
 
-        if (ccfg.getCacheMode() != CacheMode.LOCAL)
-            assertEquals(1, ccfg.getBackups());
+        assertEquals(1, ccfg.getBackups());
 
         assertTrue(ccfg.isCopyOnRead());
 

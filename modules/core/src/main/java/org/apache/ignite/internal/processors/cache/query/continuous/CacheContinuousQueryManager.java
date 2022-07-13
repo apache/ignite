@@ -744,8 +744,7 @@ public class CacheContinuousQueryManager<K, V> extends GridCacheManagerAdapter<K
         hnd.keepBinary(keepBinary);
         hnd.localOnly(loc);
 
-        IgnitePredicate<ClusterNode> pred = (loc || cctx.config().getCacheMode() == CacheMode.LOCAL)
-            ? F.nodeForNodeId(cctx.localNodeId())
+        IgnitePredicate<ClusterNode> pred = loc ? F.nodeForNodeId(cctx.localNodeId())
             : new IsAllPredicate<>(cctx.group().nodeFilter(), new AttributeNodeFilter(ATTR_CLIENT_MODE, false));
 
         assert pred != null : cctx.config();

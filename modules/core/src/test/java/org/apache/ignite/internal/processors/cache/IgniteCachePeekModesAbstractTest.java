@@ -43,7 +43,6 @@ import org.apache.ignite.internal.util.GridEmptyCloseableIterator;
 import org.apache.ignite.internal.util.typedef.T2;
 import org.apache.ignite.spi.IgniteSpiCloseableIterator;
 import org.junit.Test;
-
 import static org.apache.ignite.cache.CacheMode.LOCAL;
 import static org.apache.ignite.cache.CacheMode.PARTITIONED;
 import static org.apache.ignite.cache.CacheMode.REPLICATED;
@@ -109,20 +108,13 @@ public abstract class IgniteCachePeekModesAbstractTest extends IgniteCacheAbstra
      */
     @Test
     public void testLocalPeek() throws Exception {
-        if (cacheMode() == LOCAL) {
-            checkAffinityLocalCache();
+        checkAffinityPeek(0);
 
-            checkStorage(0);
-        }
-        else {
-            checkAffinityPeek(0);
+        checkAffinityPeek(1);
 
-            checkAffinityPeek(1);
+        checkStorage(0);
 
-            checkStorage(0);
-
-            checkStorage(1);
-        }
+        checkStorage(1);
     }
 
     /**
@@ -333,14 +325,8 @@ public abstract class IgniteCachePeekModesAbstractTest extends IgniteCacheAbstra
                 assertEquals(val, cache0.localPeek(key, ONHEAP, OFFHEAP));
                 assertEquals(val, cache0.localPeek(key, PRIMARY, OFFHEAP));
 
-                if (cacheMode() == LOCAL) {
-                    assertEquals(val, cache0.localPeek(key, OFFHEAP, BACKUP));
-                    assertEquals(val, cache0.localPeek(key, OFFHEAP, NEAR));
-                }
-                else {
-                    assertNull(cache0.localPeek(key, OFFHEAP, BACKUP));
-                    assertNull(cache0.localPeek(key, OFFHEAP, NEAR));
-                }
+                assertNull(cache0.localPeek(key, OFFHEAP, BACKUP));
+                assertNull(cache0.localPeek(key, OFFHEAP, NEAR));
 
                 assertNull(cache0.localPeek(key, ONHEAP));
                 assertNull(cache0.localPeek(key));
@@ -352,14 +338,8 @@ public abstract class IgniteCachePeekModesAbstractTest extends IgniteCacheAbstra
                 assertEquals(val, cache0.localPeek(key, OFFHEAP, ONHEAP));
                 assertEquals(val, cache0.localPeek(key, PRIMARY, ONHEAP));
 
-                if (cacheMode() == LOCAL) {
-                    assertEquals(val, cache0.localPeek(key, ONHEAP, BACKUP));
-                    assertEquals(val, cache0.localPeek(key, ONHEAP, NEAR));
-                }
-                else {
-                    assertNull(cache0.localPeek(key, ONHEAP, BACKUP));
-                    assertNull(cache0.localPeek(key, ONHEAP, NEAR));
-                }
+                assertNull(cache0.localPeek(key, ONHEAP, BACKUP));
+                assertNull(cache0.localPeek(key, ONHEAP, NEAR));
 
                 assertNull(cache0.localPeek(key));
                 assertNull(cache0.localPeek(key, OFFHEAP));
@@ -367,254 +347,6 @@ public abstract class IgniteCachePeekModesAbstractTest extends IgniteCacheAbstra
         }
         finally {
             cache0.removeAll(new HashSet<>(keys));
-        }
-    }
-
-    /**
-     * @throws Exception If failed.
-     */
-    @Test
-    public void testSize() throws Exception {
-        checkEmpty();
-
-        if (cacheMode() == LOCAL) {
-            IgniteCache<Integer, String> cache0 = jcache(0);
-
-            for (int i = 0; i < HEAP_ENTRIES; i++) {
-                cache0.put(i, String.valueOf(i));
-
-                final int size = i + 1;
-
-                assertEquals(size, cache0.localSize());
-                assertEquals(size, cache0.localSize(PRIMARY));
-                assertEquals(size, cache0.localSize(BACKUP));
-                assertEquals(size, cache0.localSize(NEAR));
-                assertEquals(size, cache0.localSize(ALL));
-
-                assertEquals(size, cache0.size());
-                assertEquals(size, cache0.size(PRIMARY));
-                assertEquals(size, cache0.size(BACKUP));
-                assertEquals(size, cache0.size(NEAR));
-                assertEquals(size, cache0.size(ALL));
-
-                assertEquals(size, (int)cache0.sizeAsync().get());
-
-                assertEquals(size, (int)cache0.sizeAsync(PRIMARY).get());
-            }
-
-            for (int i = 0; i < HEAP_ENTRIES; i++) {
-                cache0.remove(i, String.valueOf(i));
-
-                final int size = HEAP_ENTRIES - i - 1;
-
-                assertEquals(size, cache0.localSize());
-                assertEquals(size, cache0.localSize(PRIMARY));
-                assertEquals(size, cache0.localSize(BACKUP));
-                assertEquals(size, cache0.localSize(NEAR));
-                assertEquals(size, cache0.localSize(ALL));
-
-                assertEquals(size, cache0.size());
-                assertEquals(size, cache0.size(PRIMARY));
-                assertEquals(size, cache0.size(BACKUP));
-                assertEquals(size, cache0.size(NEAR));
-                assertEquals(size, cache0.size(ALL));
-
-                assertEquals(size, (int)cache0.sizeAsync().get());
-            }
-
-            checkEmpty();
-
-            if (true) // TODO GG-11148.
-                return;
-
-            Set<Integer> keys = new HashSet<>();
-
-            for (int i = 0; i < 200; i++) {
-                cache0.put(i, "test_val");
-
-                keys.add(i);
-            }
-
-            try {
-                int totalKeys = 200;
-
-                T2<Integer, Integer> swapKeys = swapKeysCount(0);
-
-                T2<Integer, Integer> offheapKeys = offheapKeysCount(0);
-
-                int totalSwap = swapKeys.get1() + swapKeys.get2();
-                int totalOffheap = offheapKeys.get1() + offheapKeys.get2();
-
-                log.info("Keys [total=" + totalKeys + ", offheap=" + offheapKeys + ", swap=" + swapKeys + ']');
-
-                assertTrue(totalSwap + totalOffheap < totalKeys);
-
-                assertEquals(totalKeys, cache0.localSize());
-                assertEquals(totalKeys, cache0.localSize(ALL));
-
-                assertEquals(totalOffheap, cache0.localSize(OFFHEAP));
-                assertEquals(totalKeys - (totalSwap + totalOffheap), cache0.localSize(ONHEAP));
-
-                assertEquals(totalOffheap, cache0.size(OFFHEAP));
-                assertEquals(totalKeys - (totalSwap + totalOffheap), cache0.size(ONHEAP));
-
-                assertEquals(totalOffheap, cache0.localSize(OFFHEAP, PRIMARY));
-                assertEquals(totalKeys - (totalSwap + totalOffheap), cache0.localSize(ONHEAP, PRIMARY));
-
-                assertEquals(totalOffheap, cache0.localSize(OFFHEAP, BACKUP));
-                assertEquals(totalKeys - (totalSwap + totalOffheap), cache0.localSize(ONHEAP, BACKUP));
-            }
-            finally {
-                cache0.removeAll(keys);
-            }
-        }
-        else {
-            checkSizeAffinityFilter(0);
-
-            checkSizeAffinityFilter(1);
-
-            checkSizeStorageFilter(0);
-
-            checkSizeStorageFilter(1);
-        }
-    }
-
-    /**
-     * @throws Exception If failed.
-     */
-    @Test
-    public void testLocalPartitionSize() throws Exception {
-        if (cacheMode() != LOCAL)
-            return;
-
-        awaitPartitionMapExchange();
-        checkEmpty();
-        int part = 0;
-        IgniteCache<Integer, String> cache0 = jcache(0);
-
-        for (int i = 0; i < HEAP_ENTRIES; i++) {
-            cache0.put(i, String.valueOf(i));
-
-            final long size = i + 1;
-
-            assertEquals(size, cache0.localSize());
-            assertEquals(size, cache0.localSizeLong(part, PRIMARY));
-            assertEquals(size, cache0.localSizeLong(part, BACKUP));
-            assertEquals(size, cache0.localSizeLong(part, NEAR));
-            assertEquals(size, cache0.localSizeLong(part, ALL));
-
-            assertEquals(size, cache0.size());
-            assertEquals(size, cache0.sizeLong(part, PRIMARY));
-            assertEquals(size, cache0.sizeLong(part, BACKUP));
-            assertEquals(size, cache0.sizeLong(part, NEAR));
-            assertEquals(size, cache0.sizeLong(part, ALL));
-
-            assertEquals(size, (long)cache0.sizeAsync().get());
-
-            assertEquals(size, (long)cache0.sizeLongAsync(part, PRIMARY).get());
-        }
-
-        for (int i = 0; i < HEAP_ENTRIES; i++) {
-            cache0.remove(i, String.valueOf(i));
-
-            final int size = HEAP_ENTRIES - i - 1;
-
-            assertEquals(size, cache0.localSize());
-            assertEquals(size, cache0.localSizeLong(part, PRIMARY));
-            assertEquals(size, cache0.localSizeLong(part, BACKUP));
-            assertEquals(size, cache0.localSizeLong(part, NEAR));
-            assertEquals(size, cache0.localSizeLong(part, ALL));
-
-            assertEquals(size, cache0.size());
-            assertEquals(size, cache0.sizeLong(part, PRIMARY));
-            assertEquals(size, cache0.sizeLong(part, BACKUP));
-            assertEquals(size, cache0.sizeLong(part, NEAR));
-            assertEquals(size, cache0.sizeLong(part, ALL));
-
-            assertEquals(size, (long)cache0.sizeAsync().get());
-        }
-    }
-
-    /**
-     * @throws InterruptedException If failed.
-     */
-    @Test
-    public void testLocalPartitionSizeFlags() throws InterruptedException {
-        if (true) // TODO GG-11148.
-            return;
-
-        if (cacheMode() != LOCAL)
-            return;
-
-        awaitPartitionMapExchange();
-        checkEmpty();
-        int part = 0;
-        IgniteCache<Integer, String> cache0 = jcache(0);
-
-        Set<Integer> keys = new HashSet<>();
-
-        for (int i = 0; i < 200; i++) {
-            cache0.put(i, "test_val");
-
-            keys.add(i);
-        }
-
-        try {
-            int totalKeys = 200;
-
-            T2<Integer, Integer> swapKeys = swapKeysCount(0);
-
-            T2<Integer, Integer> offheapKeys = offheapKeysCount(0);
-
-            int totalSwap = swapKeys.get1() + swapKeys.get2();
-            int totalOffheap = offheapKeys.get1() + offheapKeys.get2();
-
-            log.info("Keys [total=" + totalKeys + ", offheap=" + offheapKeys + ", swap=" + swapKeys + ']');
-
-            assertTrue(totalSwap + totalOffheap < totalKeys);
-
-            assertEquals(totalKeys, cache0.localSize());
-            assertEquals(totalKeys, cache0.localSizeLong(part, ALL));
-
-            assertEquals(totalOffheap, cache0.localSizeLong(part, OFFHEAP));
-            assertEquals(totalSwap, cache0.localSizeLong(part));
-            assertEquals(totalKeys - (totalSwap + totalOffheap), cache0.localSizeLong(part, ONHEAP));
-
-            assertEquals(totalOffheap, cache0.sizeLong(part, OFFHEAP));
-            assertEquals(totalSwap, cache0.sizeLong(part));
-            assertEquals(totalKeys - (totalSwap + totalOffheap), cache0.sizeLong(part, ONHEAP));
-
-            assertEquals(totalOffheap, cache0.localSizeLong(part, OFFHEAP, PRIMARY));
-            assertEquals(totalSwap, cache0.localSizeLong(part, PRIMARY));
-            assertEquals(totalKeys - (totalSwap + totalOffheap), cache0.localSizeLong(part, ONHEAP, PRIMARY));
-
-            assertEquals(totalOffheap, cache0.localSizeLong(part, OFFHEAP, BACKUP));
-            assertEquals(totalSwap, cache0.localSizeLong(part, BACKUP));
-            assertEquals(totalKeys - (totalSwap + totalOffheap), cache0.localSizeLong(part, ONHEAP, BACKUP));
-        }
-        finally {
-            cache0.removeAll(keys);
-        }
-    }
-
-    /**
-     * @throws Exception If failed.
-     */
-    @Test
-    public void testNonLocalPartitionSize() throws Exception {
-        if (true) // TODO GG-11148.
-            return;
-
-        if (cacheMode() == LOCAL)
-            return;
-
-        awaitPartitionMapExchange(true, true, null);
-
-        checkEmpty();
-
-        for (int i = 0; i < gridCount(); i++) {
-            checkPartitionSizeAffinityFilter(i);
-            checkPartitionSizeStorageFilter(i);
         }
     }
 
@@ -1121,9 +853,7 @@ public abstract class IgniteCachePeekModesAbstractTest extends IgniteCacheAbstra
 
             int backups;
 
-            if (cacheMode() == LOCAL)
-                backups = 0;
-            else if (cacheMode() == PARTITIONED)
+            if (cacheMode() == PARTITIONED)
                 backups = 1;
             else // REPLICATED.
                 backups = gridCount() - 1;
@@ -1219,9 +949,7 @@ public abstract class IgniteCachePeekModesAbstractTest extends IgniteCacheAbstra
 
             int backups;
 
-            if (cacheMode() == LOCAL)
-                backups = 0;
-            else if (cacheMode() == PARTITIONED)
+            if (cacheMode() == PARTITIONED)
                 backups = 1;
             else // REPLICATED.
                 backups = gridCount() - 1;
@@ -1280,112 +1008,6 @@ public abstract class IgniteCachePeekModesAbstractTest extends IgniteCacheAbstra
         }
 
         assertEquals(exp, size);
-    }
-
-    /**
-     * @throws Exception If failed.
-     */
-    @Test
-    public void testLocalEntries() throws Exception {
-        if (cacheMode() == LOCAL) {
-            IgniteCache<Integer, String> cache0 = jcache(0);
-
-            Set<Integer> keys = new HashSet<>();
-
-            try {
-                for (int i = 0; i < HEAP_ENTRIES; i++) {
-                    cache0.put(i, String.valueOf(i));
-
-                    keys.add(i);
-                }
-
-                checkLocalEntries(cache0.localEntries(), keys);
-                checkLocalEntries(cache0.localEntries(ALL), keys);
-                checkLocalEntries(cache0.localEntries(NEAR), keys);
-                checkLocalEntries(cache0.localEntries(PRIMARY), keys);
-                checkLocalEntries(cache0.localEntries(BACKUP), keys);
-            }
-            finally {
-                cache0.removeAll(keys);
-            }
-
-            checkLocalEntries(cache0.localEntries());
-
-            if (true) // TODO GG-11148.
-                return;
-
-            final String val = "test-val-";
-
-            keys = new HashSet<>();
-
-            for (int i = 0; i < 200; i++) {
-                cache0.put(i, val + i);
-
-                keys.add(i);
-            }
-
-            try {
-                int totalKeys = 200;
-
-                T2<List<Integer>, List<Integer>> swapKeys = swapKeys(0);
-
-                T2<List<Integer>, List<Integer>> offheapKeys = offheapKeys(0);
-
-                List<Integer> swap = new ArrayList<>();
-
-                swap.addAll(swapKeys.get1());
-                swap.addAll(swapKeys.get2());
-
-                assertFalse(swap.isEmpty());
-
-                List<Integer> offheap = new ArrayList<>();
-
-                offheap.addAll(offheapKeys.get1());
-                offheap.addAll(offheapKeys.get2());
-
-                assertFalse(offheap.isEmpty());
-
-                log.info("Keys [total=" + totalKeys +
-                    ", offheap=" + offheap.size() +
-                    ", swap=" + swap.size() + ']');
-
-                assertTrue(swap.size() + offheap.size() < totalKeys);
-
-                List<Integer> heap = new ArrayList<>(keys);
-
-                heap.removeAll(swap);
-                heap.removeAll(offheap);
-
-                assertFalse(heap.isEmpty());
-
-                checkLocalEntries(cache0.localEntries(), val, keys);
-                checkLocalEntries(cache0.localEntries(ALL), val, keys);
-
-                checkLocalEntries(cache0.localEntries(OFFHEAP), val, offheap);
-                checkLocalEntries(cache0.localEntries(ONHEAP), val, heap);
-
-                checkLocalEntries(cache0.localEntries(OFFHEAP, PRIMARY), val, offheap);
-                checkLocalEntries(cache0.localEntries(ONHEAP, PRIMARY), val, heap);
-
-                checkLocalEntries(cache0.localEntries(OFFHEAP, BACKUP), val, offheap);
-                checkLocalEntries(cache0.localEntries(ONHEAP, BACKUP), val, heap);
-
-                checkLocalEntries(cache0.localEntries(OFFHEAP, NEAR), val, offheap);
-                checkLocalEntries(cache0.localEntries(ONHEAP, NEAR), val, heap);
-            }
-            finally {
-                cache0.removeAll(keys);
-            }
-        }
-        else {
-            checkLocalEntriesAffinityFilter(0);
-
-            checkLocalEntriesAffinityFilter(1);
-
-            checkLocalEntriesStorageFilter(0);
-
-            checkLocalEntriesStorageFilter(1);
-        }
     }
 
     /**

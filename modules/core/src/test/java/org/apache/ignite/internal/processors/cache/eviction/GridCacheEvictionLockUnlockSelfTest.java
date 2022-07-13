@@ -101,15 +101,6 @@ public class GridCacheEvictionLockUnlockSelfTest extends GridCommonAbstractTest 
 
     /** @throws Exception If failed. */
     @Test
-    public void testLocal() throws Exception {
-        mode = LOCAL;
-        gridCnt = 1;
-
-        doTest();
-    }
-
-    /** @throws Exception If failed. */
-    @Test
     public void testReplicated() throws Exception {
         mode = REPLICATED;
         gridCnt = 3;

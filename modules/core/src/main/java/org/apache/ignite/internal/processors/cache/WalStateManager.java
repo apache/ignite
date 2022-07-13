@@ -30,7 +30,6 @@ import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.IgniteSystemProperties;
-import org.apache.ignite.cache.CacheMode;
 import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.GridKernalContext;
@@ -62,7 +61,6 @@ import org.apache.ignite.lang.IgniteUuid;
 import org.apache.ignite.thread.IgniteThread;
 import org.apache.ignite.thread.OomExceptionHandler;
 import org.jetbrains.annotations.Nullable;
-
 import static org.apache.ignite.IgniteSystemProperties.IGNITE_DISABLE_WAL_DURING_REBALANCING;
 import static org.apache.ignite.IgniteSystemProperties.IGNITE_PENDING_TX_TRACKER_ENABLED;
 import static org.apache.ignite.internal.GridTopic.TOPIC_WAL;
@@ -378,9 +376,6 @@ public class WalStateManager extends GridCacheSharedManagerAdapter {
                 return errorFuture("Cannot change WAL mode because not all cache names belonging to the group are " +
                     "provided [group=" + grpDesc.groupName() + ", missingCaches=" + grpCaches + ']');
             }
-
-            if (grpDesc.config().getCacheMode() == CacheMode.LOCAL)
-                return errorFuture("WAL mode cannot be changed for LOCAL cache(s): " + cacheNames);
 
             // WAL mode change makes sense only for persistent groups.
             if (!grpDesc.persistenceEnabled())

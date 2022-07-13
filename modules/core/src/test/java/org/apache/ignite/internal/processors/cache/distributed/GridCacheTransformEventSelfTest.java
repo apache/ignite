@@ -266,77 +266,6 @@ public class GridCacheTransformEventSelfTest extends GridCommonAbstractTest {
     }
 
     /**
-     * Test TRANSACTIONAL LOCAL cache with OPTIMISTIC/REPEATABLE_READ transaction.
-     *
-     * @throws Exception If failed.
-     */
-    @Test
-    public void testTxLocalOptimisticRepeatableRead() throws Exception {
-        checkTx(LOCAL, OPTIMISTIC, REPEATABLE_READ);
-    }
-
-    /**
-     * Test TRANSACTIONAL LOCAL cache with OPTIMISTIC/READ_COMMITTED transaction.
-     *
-     * @throws Exception If failed.
-     */
-    @Test
-    public void testTxLocalOptimisticReadCommitted() throws Exception {
-        checkTx(LOCAL, OPTIMISTIC, READ_COMMITTED);
-    }
-
-    /**
-     * Test TRANSACTIONAL LOCAL cache with OPTIMISTIC/SERIALIZABLE transaction.
-     *
-     * @throws Exception If failed.
-     */
-    @Test
-    public void testTxLocalOptimisticSerializable() throws Exception {
-        checkTx(LOCAL, OPTIMISTIC, SERIALIZABLE);
-    }
-
-    /**
-     * Test TRANSACTIONAL LOCAL cache with PESSIMISTIC/REPEATABLE_READ transaction.
-     *
-     * @throws Exception If failed.
-     */
-    @Test
-    public void testTxLocalPessimisticRepeatableRead() throws Exception {
-        checkTx(LOCAL, PESSIMISTIC, REPEATABLE_READ);
-    }
-
-    /**
-     * Test TRANSACTIONAL LOCAL cache with PESSIMISTIC/READ_COMMITTED transaction.
-     *
-     * @throws Exception If failed.
-     */
-    @Test
-    public void testTxLocalPessimisticReadCommitted() throws Exception {
-        checkTx(LOCAL, PESSIMISTIC, READ_COMMITTED);
-    }
-
-    /**
-     * Test TRANSACTIONAL LOCAL cache with PESSIMISTIC/SERIALIZABLE transaction.
-     *
-     * @throws Exception If failed.
-     */
-    @Test
-    public void testTxLocalPessimisticSerializable() throws Exception {
-        checkTx(LOCAL, PESSIMISTIC, SERIALIZABLE);
-    }
-
-    /**
-     * Test TRANSACTIONAL_SNAPSHOT LOCAL cache with PESSIMISTIC/REPEATABLE_READ transaction.
-     *
-     * @throws Exception If failed.
-     */
-    @Ignore("https://issues.apache.org/jira/browse/IGNITE-9530")
-    @Test
-    public void testMvccTxLocalPessimisticRepeatableRead() throws Exception {
-        checkMvccTx(LOCAL, PESSIMISTIC, REPEATABLE_READ);
-    }
-
-    /**
      * Test TRANSACTIONAL PARTITIONED cache with OPTIMISTIC/REPEATABLE_READ transaction.
      *
      * @throws Exception If failed.
@@ -477,16 +406,6 @@ public class GridCacheTransformEventSelfTest extends GridCommonAbstractTest {
     @Test
     public void testMvccTxReplicatedPessimisticRepeatableRead() throws Exception {
         checkMvccTx(REPLICATED, PESSIMISTIC, REPEATABLE_READ);
-    }
-
-    /**
-     * Test ATOMIC LOCAL cache.
-     *
-     * @throws Exception If failed.
-     */
-    @Test
-    public void testAtomicLocal() throws Exception {
-        checkAtomic(LOCAL);
     }
 
     /**
@@ -637,11 +556,7 @@ public class GridCacheTransformEventSelfTest extends GridCommonAbstractTest {
     private UUID[] idsForKeys(boolean primaryOnly, int... keys) {
         List<UUID> res = new ArrayList<>();
 
-        if (cacheMode == LOCAL) {
-            for (int key : keys)
-                res.add(ids[0]); // Perform PUTs from the node with index 0.
-        }
-        else if (cacheMode == PARTITIONED) {
+        if (cacheMode == PARTITIONED) {
             for (int key : keys) {
                 for (int i = 0; i < GRID_CNT; i++) {
                     if (primary(i, key) || (!primaryOnly && backup(i, key)))

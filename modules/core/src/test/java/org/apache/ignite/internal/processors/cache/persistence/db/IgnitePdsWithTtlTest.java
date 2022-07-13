@@ -163,8 +163,6 @@ public class IgnitePdsWithTtlTest extends GridCommonAbstractTest {
         cfg.setCacheConfiguration(
             getCacheConfiguration(CACHE_NAME_ATOMIC).setAtomicityMode(ATOMIC),
             getCacheConfiguration(CACHE_NAME_TX).setAtomicityMode(TRANSACTIONAL),
-            getCacheConfiguration(CACHE_NAME_LOCAL_ATOMIC).setAtomicityMode(ATOMIC).setCacheMode(CacheMode.LOCAL),
-            getCacheConfiguration(CACHE_NAME_LOCAL_TX).setAtomicityMode(TRANSACTIONAL).setCacheMode(CacheMode.LOCAL),
             getCacheConfiguration(CACHE_NAME_NEAR_ATOMIC).setAtomicityMode(ATOMIC)
                 .setNearConfiguration(new NearCacheConfiguration<>()),
             getCacheConfiguration(CACHE_NAME_NEAR_TX).setAtomicityMode(TRANSACTIONAL)

@@ -234,9 +234,6 @@ public abstract class CacheContinuousQueryCounterAbstractTest extends GridCommon
      */
     @Test
     public void testTwoQueryListener() throws Exception {
-        if (cacheMode() == LOCAL)
-            return;
-
         final IgniteCache<Integer, Integer> cache = grid(0).cache(CACHE_NAME);
         final IgniteCache<Integer, Integer> cache1 = grid(1).cache(CACHE_NAME);
 

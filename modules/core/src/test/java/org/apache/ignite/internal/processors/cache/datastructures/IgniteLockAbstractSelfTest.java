@@ -106,9 +106,6 @@ public abstract class IgniteLockAbstractSelfTest extends IgniteAtomicsAbstractTe
      */
     @Test
     public void testFailover() throws Exception {
-        if (atomicsCacheMode() == LOCAL)
-            return;
-
         checkFailover(true, false);
 
         checkFailover(false, false);

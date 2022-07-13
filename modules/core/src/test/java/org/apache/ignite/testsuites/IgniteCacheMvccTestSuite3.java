@@ -31,8 +31,6 @@ import org.apache.ignite.internal.processors.cache.GridCacheInterceptorAtomicRep
 import org.apache.ignite.internal.processors.cache.GridCacheInterceptorAtomicSelfTest;
 import org.apache.ignite.internal.processors.cache.GridCacheInterceptorAtomicWithStoreReplicatedSelfTest;
 import org.apache.ignite.internal.processors.cache.GridCacheInterceptorAtomicWithStoreSelfTest;
-import org.apache.ignite.internal.processors.cache.GridCacheInterceptorLocalAtomicSelfTest;
-import org.apache.ignite.internal.processors.cache.GridCacheInterceptorLocalAtomicWithStoreSelfTest;
 import org.apache.ignite.internal.processors.cache.GridCacheValueBytesPreloadingSelfTest;
 import org.apache.ignite.internal.processors.cache.GridCacheVersionSelfTest;
 import org.apache.ignite.internal.processors.cache.GridCacheVersionTopologyChangeTest;
@@ -97,8 +95,6 @@ public class IgniteCacheMvccTestSuite3 {
         ignoredTests.add(IgnteCacheClientWriteBehindStoreAtomicTest.class);
         ignoredTests.add(IgnteCacheClientWriteBehindStoreNonCoalescingTest.class);
 
-        ignoredTests.add(GridCacheInterceptorLocalAtomicSelfTest.class);
-        ignoredTests.add(GridCacheInterceptorLocalAtomicWithStoreSelfTest.class);
         ignoredTests.add(GridCacheInterceptorAtomicSelfTest.class);
         ignoredTests.add(GridCacheInterceptorAtomicNearEnabledSelfTest.class);
         ignoredTests.add(GridCacheInterceptorAtomicWithStoreSelfTest.class);

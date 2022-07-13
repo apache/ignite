@@ -130,7 +130,6 @@ import org.apache.ignite.lang.IgniteInClosure;
 import org.apache.ignite.lang.IgniteProductVersion;
 import org.apache.ignite.lang.IgniteRunnable;
 import org.jetbrains.annotations.Nullable;
-
 import static java.util.Collections.emptySet;
 import static java.util.stream.Stream.concat;
 import static org.apache.ignite.IgniteSystemProperties.IGNITE_LONG_OPERATIONS_DUMP_TIMEOUT_LIMIT;
@@ -1780,9 +1779,6 @@ public class GridDhtPartitionsExchangeFuture extends GridDhtTopologyFutureAdapte
                     cctx.kernalContext().pools().getSystemExecutorService(),
                     cctx.affinity().cacheGroups().values(),
                     desc -> {
-                        if (desc.config().getCacheMode() == CacheMode.LOCAL)
-                            return null;
-
                         CacheGroupContext grp = cctx.cache().cacheGroup(desc.groupId());
 
                         GridDhtPartitionTopology top = grp != null ? grp.topology() :
@@ -3664,9 +3660,6 @@ public class GridDhtPartitionsExchangeFuture extends GridDhtTopologyFutureAdapte
                 cctx.kernalContext().pools().getSystemExecutorService(),
                 cctx.affinity().cacheGroups().values(),
                 desc -> {
-                    if (desc.config().getCacheMode() == CacheMode.LOCAL)
-                        return null;
-
                     CacheGroupContext grp = cctx.cache().cacheGroup(desc.groupId());
 
                     GridDhtPartitionTopology top = grp != null ? grp.topology() :
@@ -3696,9 +3689,6 @@ public class GridDhtPartitionsExchangeFuture extends GridDhtTopologyFutureAdapte
                 cctx.kernalContext().pools().getSystemExecutorService(),
                 cctx.affinity().caches().values(),
                 desc -> {
-                    if (desc.cacheConfiguration().getCacheMode() == CacheMode.LOCAL)
-                        return null;
-
                     if (cacheNames.contains(desc.cacheName())) {
                         CacheGroupContext grp = cctx.cache().cacheGroup(desc.groupId());
 
@@ -3892,9 +3882,6 @@ public class GridDhtPartitionsExchangeFuture extends GridDhtTopologyFutureAdapte
                     cctx.kernalContext().pools().getSystemExecutorService(),
                     cctx.affinity().cacheGroups().values(),
                     desc -> {
-                        if (desc.config().getCacheMode() == CacheMode.LOCAL)
-                            return null;
-
                         CacheGroupContext grp = cctx.cache().cacheGroup(desc.groupId());
 
                         GridDhtPartitionTopology top = grp != null ? grp.topology() :
@@ -4180,10 +4167,8 @@ public class GridDhtPartitionsExchangeFuture extends GridDhtTopologyFutureAdapte
      *
      * @return Collection of non local cache group descriptors.
      */
-    private List<CacheGroupDescriptor> nonLocalCacheGroupDescriptors() {
-        return cctx.affinity().cacheGroups().values().stream()
-            .filter(grpDesc -> grpDesc.config().getCacheMode() != CacheMode.LOCAL)
-            .collect(Collectors.toList());
+    private List<CacheGroupDescriptor> cacheGroupDescriptors() {
+        return new ArrayList<>(cctx.affinity().cacheGroups().values());
     }
 
     /**
@@ -4204,7 +4189,7 @@ public class GridDhtPartitionsExchangeFuture extends GridDhtTopologyFutureAdapte
         try {
             U.doInParallel(
                 cctx.kernalContext().pools().getSystemExecutorService(),
-                nonLocalCacheGroupDescriptors(),
+                cacheGroupDescriptors(),
                 grpDesc -> {
                     CacheGroupContext grpCtx = cctx.cache().cacheGroup(grpDesc.groupId());
 
@@ -4260,7 +4245,7 @@ public class GridDhtPartitionsExchangeFuture extends GridDhtTopologyFutureAdapte
         try {
             U.doInParallel(
                 cctx.kernalContext().pools().getSystemExecutorService(),
-                nonLocalCacheGroupDescriptors(),
+                cacheGroupDescriptors(),
                 grpDesc -> {
                     CacheGroupContext grpCtx = cctx.cache().cacheGroup(grpDesc.groupId());
 

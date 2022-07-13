@@ -41,7 +41,6 @@ import org.apache.ignite.transactions.TransactionConcurrency;
 import org.apache.ignite.transactions.TransactionIsolation;
 import org.apache.ignite.transactions.TransactionTimeoutException;
 import org.junit.Test;
-
 import static org.apache.ignite.cache.CacheAtomicityMode.TRANSACTIONAL;
 import static org.apache.ignite.cache.CacheMode.LOCAL;
 import static org.apache.ignite.cache.CacheMode.PARTITIONED;
@@ -121,7 +120,7 @@ public abstract class IgniteAbstractTxSuspendResumeTest extends GridCommonAbstra
 
             awaitCacheOnClient(client, ccfg.getName());
 
-            if (ccfg.getCacheMode() != LOCAL && !FORCE_MVCC)
+            if (!FORCE_MVCC)
                 client.createNearCache(ccfg.getName(), new NearCacheConfiguration<>());
         }
 
@@ -223,11 +222,6 @@ public abstract class IgniteAbstractTxSuspendResumeTest extends GridCommonAbstra
     public void testCrossCacheTxInAnotherThread() throws Exception {
         executeTestForAllCaches(new CI2Exc<Ignite, IgniteCache<Integer, Integer>>() {
             @Override public void applyx(Ignite ignite, final IgniteCache<Integer, Integer> cache) throws Exception {
-                // TODO: IGNITE-9110 Optimistic tx hangs in cross-cache operations with LOCAL and non LOCAL caches.
-                if (transactionConcurrency() == TransactionConcurrency.OPTIMISTIC
-                    && cache.getConfiguration(CacheConfiguration.class).getCacheMode() == LOCAL)
-                    return;
-
                 for (TransactionIsolation isolation : TransactionIsolation.values()) {
                     final IgniteCache<Integer, Integer> otherCache = ignite.getOrCreateCache(
                         cacheConfiguration("otherCache", PARTITIONED, 0, false));
@@ -600,9 +594,6 @@ public abstract class IgniteAbstractTxSuspendResumeTest extends GridCommonAbstra
         cfgs.add(cacheConfiguration("cache3", PARTITIONED, 1, true));
         cfgs.add(cacheConfiguration("cache4", REPLICATED, 0, false));
 
-        if (!FORCE_MVCC)
-            cfgs.add(cacheConfiguration("cache5", LOCAL, 0, false));
-
         return cfgs;
     }
 
@@ -644,7 +635,7 @@ public abstract class IgniteAbstractTxSuspendResumeTest extends GridCommonAbstra
             log.info(">>> Run test for node [node=" + locNode.id() + ", client=" + locNode.isClient() + ']');
 
             for (CacheConfiguration ccfg : cacheConfigurations()) {
-                if (locNode.isClient() && ccfg.getCacheMode() == LOCAL)
+                if (locNode.isClient())
                     continue;
 
                 log.info(">>>> Run test for cache " + ccfg.getName());

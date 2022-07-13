@@ -110,8 +110,6 @@ import org.apache.ignite.internal.processors.cache.distributed.near.GridNearAtom
 import org.apache.ignite.internal.processors.cache.distributed.near.GridNearTransactionalCache;
 import org.apache.ignite.internal.processors.cache.dr.GridCacheDrManager;
 import org.apache.ignite.internal.processors.cache.jta.CacheJtaManagerAdapter;
-import org.apache.ignite.internal.processors.cache.local.GridLocalCache;
-import org.apache.ignite.internal.processors.cache.local.atomic.GridLocalAtomicCache;
 import org.apache.ignite.internal.processors.cache.mvcc.DeadlockDetectionManager;
 import org.apache.ignite.internal.processors.cache.mvcc.MvccCachingManager;
 import org.apache.ignite.internal.processors.cache.persistence.DataRegion;
@@ -134,7 +132,6 @@ import org.apache.ignite.internal.processors.cache.persistence.snapshot.Snapshot
 import org.apache.ignite.internal.processors.cache.persistence.tree.reuse.ReuseList;
 import org.apache.ignite.internal.processors.cache.persistence.wal.FileWriteAheadLogManager;
 import org.apache.ignite.internal.processors.cache.query.GridCacheDistributedQueryManager;
-import org.apache.ignite.internal.processors.cache.query.GridCacheLocalQueryManager;
 import org.apache.ignite.internal.processors.cache.query.GridCacheQueryManager;
 import org.apache.ignite.internal.processors.cache.query.continuous.CacheContinuousQueryManager;
 import org.apache.ignite.internal.processors.cache.store.CacheStoreManager;
@@ -200,7 +197,6 @@ import org.apache.ignite.spi.systemview.view.CachePagesListView;
 import org.apache.ignite.spi.systemview.view.PartitionStateView;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
-
 import static java.lang.String.format;
 import static java.util.Arrays.asList;
 import static java.util.Objects.isNull;
@@ -214,7 +210,6 @@ import static org.apache.ignite.IgniteSystemProperties.IGNITE_SKIP_CONFIGURATION
 import static org.apache.ignite.IgniteSystemProperties.getBoolean;
 import static org.apache.ignite.cache.CacheAtomicityMode.ATOMIC;
 import static org.apache.ignite.cache.CacheAtomicityMode.TRANSACTIONAL_SNAPSHOT;
-import static org.apache.ignite.cache.CacheMode.LOCAL;
 import static org.apache.ignite.cache.CacheMode.PARTITIONED;
 import static org.apache.ignite.cache.CacheMode.REPLICATED;
 import static org.apache.ignite.cache.CacheRebalanceMode.SYNC;
@@ -499,7 +494,7 @@ public class GridCacheProcessor extends GridProcessorAdapter {
      */
     @SuppressWarnings("IfMayBeConditional")
     private Collection<GridCacheManager> dhtExcludes(GridCacheContext ctx) {
-        if (ctx.config().getCacheMode() == LOCAL || !isNearEnabled(ctx))
+        if (!isNearEnabled(ctx))
             return Collections.emptyList();
         else
             return F.asList(ctx.queries(), ctx.continuousQueries(), ctx.store());
@@ -1299,9 +1294,7 @@ public class GridCacheProcessor extends GridProcessorAdapter {
         CacheEvictionManager evictMgr = (nearEnabled || cfg.isOnheapCacheEnabled())
             ? new GridCacheEvictionManager()
             : new CacheOffheapEvictionManager();
-        GridCacheQueryManager qryMgr = cfg.getCacheMode() == LOCAL
-            ? new GridCacheLocalQueryManager()
-            : new GridCacheDistributedQueryManager();
+        GridCacheQueryManager qryMgr = new GridCacheDistributedQueryManager();
         CacheContinuousQueryManager contQryMgr = new CacheContinuousQueryManager();
         CacheDataStructuresManager dataStructuresMgr = new CacheDataStructuresManager();
         GridCacheTtlManager ttlMgr = new GridCacheTtlManager();
@@ -1355,27 +1348,6 @@ public class GridCacheProcessor extends GridProcessorAdapter {
         GridCacheAdapter cache = null;
 
         switch (cfg.getCacheMode()) {
-            case LOCAL: {
-                switch (cfg.getAtomicityMode()) {
-                    case TRANSACTIONAL:
-                    case TRANSACTIONAL_SNAPSHOT: {
-                        cache = new GridLocalCache(cacheCtx);
-
-                        break;
-                    }
-                    case ATOMIC: {
-                        cache = new GridLocalAtomicCache(cacheCtx);
-
-                        break;
-                    }
-
-                    default: {
-                        assert false : "Invalid cache atomicity mode: " + cfg.getAtomicityMode();
-                    }
-                }
-
-                break;
-            }
             case PARTITIONED:
             case REPLICATED: {
                 if (nearEnabled) {
@@ -1439,7 +1411,7 @@ public class GridCacheProcessor extends GridProcessorAdapter {
          * Create DHT cache.
          * ================
          */
-        if (cfg.getCacheMode() != LOCAL && nearEnabled) {
+        if (nearEnabled) {
             /*
              * Specifically don't create the following managers
              * here and reuse the one from Near cache:
@@ -1633,7 +1605,7 @@ public class GridCacheProcessor extends GridProcessorAdapter {
 
             String cacheName = ccfg.getName();
 
-            if ((inclLoc || ccfg.getCacheMode() != LOCAL))
+            if (inclLoc)
                 return publicJCache(cacheName);
         }
 
@@ -1641,7 +1613,7 @@ public class GridCacheProcessor extends GridProcessorAdapter {
             for (Map.Entry<String, DynamicCacheDescriptor> e : cachesInfo.registeredCaches().entrySet()) {
                 DynamicCacheDescriptor desc = e.getValue();
 
-                if (!desc.cacheType().userCache() || desc.cacheConfiguration().getCacheMode() == LOCAL)
+                if (!desc.cacheType().userCache())
                     continue;
 
                 CacheConfiguration ccfg = desc.cacheConfiguration();
@@ -2014,8 +1986,7 @@ public class GridCacheProcessor extends GridProcessorAdapter {
         AffinityTopologyVersion exchTopVer,
         boolean disabledAfterStart
     ) throws IgniteCheckedException {
-        desc = enricher().enrich(desc,
-            desc.cacheConfiguration().getCacheMode() == LOCAL || isLocalAffinity(desc.cacheConfiguration()));
+        desc = enricher().enrich(desc, isLocalAffinity(desc.cacheConfiguration()));
 
         CacheConfiguration startCfg = desc.cacheConfiguration();
 
@@ -2175,12 +2146,6 @@ public class GridCacheProcessor extends GridProcessorAdapter {
         @Nullable NearCacheConfiguration reqNearCfg,
         CacheConfiguration ccfg
     ) {
-        if (ccfg.getCacheMode() == LOCAL) {
-            ccfg.setNearConfiguration(null);
-
-            return true;
-        }
-
         if (isLocalAffinity(desc.cacheConfiguration()))
             return true;
 
@@ -2276,7 +2241,7 @@ public class GridCacheProcessor extends GridProcessorAdapter {
 
         cacheCtx.initConflictResolver();
 
-        if (cfg.getCacheMode() != LOCAL && GridCacheUtils.isNearEnabled(cfg)) {
+        if ((cfg.getCacheMode() == REPLICATED || cfg.getCacheMode() == PARTITIONED) && GridCacheUtils.isNearEnabled(cfg)) {
             GridCacheContext<?, ?> dhtCtx = cacheCtx.near().dht().context();
 
             // Start DHT managers.
@@ -2525,7 +2490,7 @@ public class GridCacheProcessor extends GridProcessorAdapter {
         boolean needToStart = (dataRegion != null)
             && (cacheType != CacheType.USER
                 || (sharedCtx.isLazyMemoryAllocation(dataRegion)
-                    && (!cacheObjCtx.kernalContext().clientNode() || cfg.getCacheMode() == LOCAL)));
+                    && !cacheObjCtx.kernalContext().clientNode()));
 
         if (needToStart)
             dataRegion.pageMemory().start();

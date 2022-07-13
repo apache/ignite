@@ -664,17 +664,6 @@ public class GridCacheQueryAdapter<T> implements CacheQuery<T> {
         Integer part = partition();
 
         switch (cacheMode) {
-            case LOCAL:
-                if (prj != null)
-                    U.warn(log, "Ignoring query projection because it's executed over LOCAL cache " +
-                        "(only local node will be queried): " + this);
-
-                if (type == SCAN && cctx.config().getCacheMode() == LOCAL &&
-                    part != null && part >= cctx.affinity().partitions())
-                    throw new IgniteCheckedException("Invalid partition number: " + part);
-
-                return Collections.singletonList(cctx.localNode());
-
             case REPLICATED:
                 if (prj != null || part != null)
                     return nodes(cctx, prj, part);

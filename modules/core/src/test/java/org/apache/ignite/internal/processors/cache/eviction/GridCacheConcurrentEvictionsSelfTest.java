@@ -99,57 +99,6 @@ public class GridCacheConcurrentEvictionsSelfTest extends GridCommonAbstractTest
     /**
      * @throws Exception If failed.
      */
-    @Test
-    public void testConcurrentPutsFifoLocal() throws Exception {
-        mode = LOCAL;
-
-        FifoEvictionPolicy plc = new FifoEvictionPolicy();
-        plc.setMaxSize(1000);
-
-        this.plc = plc;
-        warmUpPutsCnt = SF.applyLB(100_000, 10_000);
-        iterCnt = SF.applyLB(100_000, 10_000);
-
-        checkConcurrentPuts();
-    }
-
-    /**
-     * @throws Exception If failed.
-     */
-    @Test
-    public void testConcurrentPutsLruLocal() throws Exception {
-        mode = LOCAL;
-
-        LruEvictionPolicy plc = new LruEvictionPolicy();
-        plc.setMaxSize(1000);
-
-        this.plc = plc;
-        warmUpPutsCnt = SF.applyLB(100_000, 10_000);
-        iterCnt = SF.applyLB(100_000, 10_000);
-
-        checkConcurrentPuts();
-    }
-
-    /**
-     * @throws Exception If failed.
-     */
-    @Test
-    public void testConcurrentPutsSortedLocal() throws Exception {
-        mode = LOCAL;
-
-        SortedEvictionPolicy plc = new SortedEvictionPolicy();
-        plc.setMaxSize(1000);
-
-        this.plc = plc;
-        warmUpPutsCnt = SF.applyLB(100_000, 10_000);
-        iterCnt = SF.applyLB(100_000, 10_000);
-
-        checkConcurrentPuts();
-    }
-
-    /**
-     * @throws Exception If failed.
-     */
     private void checkConcurrentPuts() throws Exception {
         try {
             Ignite ignite = startGrid(1);

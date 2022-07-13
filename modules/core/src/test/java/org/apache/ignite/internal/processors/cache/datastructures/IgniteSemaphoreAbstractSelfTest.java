@@ -99,9 +99,6 @@ public abstract class IgniteSemaphoreAbstractSelfTest extends IgniteAtomicsAbstr
      */
     @Test
     public void testFailover() throws Exception {
-        if (atomicsCacheMode() == LOCAL)
-            return;
-
         checkFailover(true);
         checkFailover(false);
     }

@@ -43,14 +43,6 @@ public class IgniteCachePutStackOverflowSelfTest extends GridCommonAbstractTest 
      * @throws Exception if failed.
      */
     @Test
-    public void testStackLocal() throws Exception {
-        checkCache(CacheMode.LOCAL);
-    }
-
-    /**
-     * @throws Exception if failed.
-     */
-    @Test
     public void testStackPartitioned() throws Exception {
         checkCache(CacheMode.PARTITIONED);
     }

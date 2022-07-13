@@ -105,12 +105,6 @@ public class GridCacheGetStoreErrorSelfTest extends GridCommonAbstractTest {
         checkGetError(false, REPLICATED);
     }
 
-    /** @throws Exception If failed. */
-    @Test
-    public void testGetErrorLocal() throws Exception {
-        checkGetError(false, LOCAL);
-    }
-
     /**
      * @param nearEnabled Near cache flag.
      * @param cacheMode Cache mode.

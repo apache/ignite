@@ -106,8 +106,6 @@ public class GridCacheDistributedQueryManager<K, V> extends GridCacheQueryManage
     @Override public void start0() throws IgniteCheckedException {
         super.start0();
 
-        assert cctx.config().getCacheMode() != LOCAL;
-
         cctx.io().addCacheHandler(cctx.cacheId(), GridCacheQueryRequest.class, new CI2<UUID, GridCacheQueryRequest>() {
             @Override public void apply(UUID nodeId, GridCacheQueryRequest req) {
                 processQueryRequest(nodeId, req);
@@ -504,8 +502,6 @@ public class GridCacheDistributedQueryManager<K, V> extends GridCacheQueryManage
 
     /** */
     private CacheQueryFuture<?> queryDistributed(GridCacheQueryBean qry, final Collection<ClusterNode> nodes, boolean fields) {
-        assert cctx.config().getCacheMode() != LOCAL;
-
         if (log.isDebugEnabled())
             log.debug("Executing distributed query: " + qry);
 
@@ -678,8 +674,6 @@ public class GridCacheDistributedQueryManager<K, V> extends GridCacheQueryManage
 
     /** {@inheritDoc} */
     @Override public CacheQueryFuture<?> queryFieldsLocal(GridCacheQueryBean qry) {
-        assert cctx.config().getCacheMode() != LOCAL;
-
         if (log.isDebugEnabled())
             log.debug("Executing query on local node: " + qry);
 

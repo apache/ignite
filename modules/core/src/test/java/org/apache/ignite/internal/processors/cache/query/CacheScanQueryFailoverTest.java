@@ -104,18 +104,6 @@ public class CacheScanQueryFailoverTest extends GridCommonAbstractTest {
     }
 
     /**
-     * @throws Exception If failed.
-     */
-    @Test
-    public void testScanQueryOverLocalCacheWithFailedClosures() throws Exception {
-        Ignite srv = startGridsMultiThreaded(4);
-
-        queryCachesWithFailedPredicates(srv, new CacheConfiguration(LOCAL_CACHE_NAME).setCacheMode(LOCAL));
-
-        assertEquals(srv.cluster().nodes().size(), 4);
-    }
-
-    /**
      * Test scan query when partitions are concurrently evicting.
      */
     @Test
