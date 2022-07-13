@@ -120,10 +120,15 @@ public class ClientCachePartitionsRequest extends ClientRequest {
         AffinityAssignment assignment = getCacheAssignment(ctx, affinityVer, cacheDesc.cacheId());
 
         // If assignment is not available for the cache for required affinity version, ignore the cache.
-        if (assignment == null || !isApplicable(cacheDesc.cacheConfiguration(), ctx.currentProtocolContext()))
+        if (assignment == null)
             return null;
 
-        return new ClientCachePartitionAwarenessGroup(new ClientCachePartitionMapping(assignment), cacheDesc);
+        ClientCachePartitionMapping mapping = null;
+
+        if (isApplicable(cacheDesc.cacheConfiguration(), ctx.currentProtocolContext()))
+            mapping = new ClientCachePartitionMapping(assignment);
+
+        return new ClientCachePartitionAwarenessGroup(mapping, cacheDesc);
     }
 
     /**

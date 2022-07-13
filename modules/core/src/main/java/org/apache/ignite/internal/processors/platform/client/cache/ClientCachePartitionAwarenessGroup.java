@@ -27,14 +27,15 @@ import org.apache.ignite.internal.processors.cache.DynamicCacheDescriptor;
 import org.apache.ignite.internal.processors.cache.binary.CacheObjectBinaryProcessorImpl;
 import org.apache.ignite.internal.processors.platform.client.ClientBitmaskFeature;
 import org.apache.ignite.internal.processors.platform.client.ClientProtocolContext;
+import org.jetbrains.annotations.Nullable;
 import static org.apache.ignite.internal.processors.platform.client.cache.ClientCachePartitionsRequest.isDefaultMapping;
 
 /**
  * Partition mapping associated with the group of caches.
  */
 class ClientCachePartitionAwarenessGroup {
-    /** Partition mapping. */
-    private final ClientCachePartitionMapping mapping;
+    /** Partition mapping. If {@code null} then cache must be excluded in partition awareness usage (e.g. REPLICATED cache).  */
+    private final @Nullable ClientCachePartitionMapping mapping;
 
     /** {@code true} if the RendezvousAffinityFunction is used with the default affinity key mapper. */
     private final boolean dfltMapping;
@@ -46,7 +47,7 @@ class ClientCachePartitionAwarenessGroup {
      * @param mapping Partition mapping.
      * @param cacheDesc Descriptor of the initial cache.
      */
-    public ClientCachePartitionAwarenessGroup(ClientCachePartitionMapping mapping, DynamicCacheDescriptor cacheDesc) {
+    public ClientCachePartitionAwarenessGroup(@Nullable ClientCachePartitionMapping mapping, DynamicCacheDescriptor cacheDesc) {
         this.mapping = mapping;
 
         dfltMapping = isDefaultMapping(cacheDesc.cacheConfiguration());
