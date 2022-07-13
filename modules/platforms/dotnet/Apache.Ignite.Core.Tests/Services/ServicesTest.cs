@@ -38,7 +38,6 @@ namespace Apache.Ignite.Core.Tests.Services
     using Apache.Ignite.Core.Tests.Compute;
     using Apache.Ignite.Platform.Model;
     using NUnit.Framework;
-    using NUnit.Framework.Internal;
 
     /// <summary>
     /// Services tests.
@@ -180,7 +179,7 @@ namespace Apache.Ignite.Core.Tests.Services
 
             CheckServiceStarted(Grid1, 3);
         }
-        
+
         /// <summary>
         /// Tests several services deployment via DeployAll() method.
         /// </summary>
@@ -427,19 +426,21 @@ namespace Apache.Ignite.Core.Tests.Services
                 const int expVal = 3;
                 
                 Interlocked.Exchange(ref _serviceCallCounter, 0);
+                // We have two interceptors, each of which will square the result.
                 Assert.AreEqual(Math.Pow(expVal, 2 + 2), multiplySvc.Method(expVal));
                 // The service method must be called exactly once.
                 Assert.AreEqual(1, Interlocked.Exchange(ref _serviceCallCounter, 0));
 
-                Assert.AreEqual(2, injectSvc.Method(0));
-                
-                var ex = Assert.Throws<ServiceInvocationException>(()=> errSvc.Method(0));
+                // The method should return the number of server nodes using the injected Ignite instance.
+                Assert.AreEqual(grid.GetCluster().ForServers().GetNodes().Count, injectSvc.Method(0));
+
+                var ex = Assert.Throws<ServiceInvocationException>(() => errSvc.Method(0));
                 Assert.NotNull(ex.InnerException);
                 Assert.AreEqual(typeof(InvalidOperationException), ex.InnerException.GetType());
                 Assert.AreEqual("Expected error message", ex.InnerException.Message);
 
                 Assert.AreEqual(nameof(ArgumentNullException), errCatchSvc.ErrMethod(null));
-                Assert.AreEqual("Invoke1-Invoke2-svc-Invoke2-Invoke1", orderSvc.Method("svc"));
+                Assert.AreEqual("Invoke1 -> Invoke2 -> svc -> Invoke2 -> Invoke1", orderSvc.Method("svc"));
                 
                 Interlocked.Exchange(ref _serviceCallCounter, 0);
                 Assert.AreEqual(expVal, skipCallSvc.Method(expVal));
@@ -476,7 +477,7 @@ namespace Apache.Ignite.Core.Tests.Services
             var deployErr = deploymentException.InnerException;
             Assert.NotNull(deployErr);
             Assert.AreEqual(deployErr.GetType().Name, nameof(ServiceDeploymentException));
-            
+
             var javaErr = deployErr.InnerException;
             Assert.NotNull(javaErr);
             Assert.AreEqual(javaErr.GetType().Name, nameof(JavaException));
@@ -490,19 +491,15 @@ namespace Apache.Ignite.Core.Tests.Services
         }
 
         /// <summary>
-        /// Test service configuration with the specified interceptors. 
+        /// Creates a test service configuration with the specified interceptors. 
         /// </summary>
         private ServiceConfiguration InterceptedServiceConfig(string svcName, bool binarizable,
             params TestInterceptorAction[] actions)
         {
-            IList<IServiceCallInterceptor> interceptors = new List<IServiceCallInterceptor>();
+            var interceptors = new List<IServiceCallInterceptor>(actions.Length);
 
             foreach (var action in actions)
-            {
-                interceptors.Add(binarizable
-                    ? (IServiceCallInterceptor)new InterceptorBinarizable(action)
-                    : new InterceptorSerializable(action));
-            }
+                interceptors.Add(binarizable ? new InterceptorBinarizable(action) : new InterceptorSerializable(action));
 
             return new ServiceConfiguration
             {
@@ -510,9 +507,7 @@ namespace Apache.Ignite.Core.Tests.Services
                 MaxPerNodeCount = 1,
                 TotalCount = 1,
                 NodeFilter = new NodeIdFilter { NodeId = Grid1.GetCluster().GetLocalNode().Id },
-                Service = binarizable
-                    ? new TestIgniteServiceBinarizable()
-                    : new TestIgniteServiceSerializable(),
+                Service = binarizable ? new TestIgniteServiceBinarizable() : new TestIgniteServiceSerializable(),
                 Interceptors = interceptors
             };
         }
@@ -897,9 +892,8 @@ namespace Apache.Ignite.Core.Tests.Services
             var svc = new TestIgniteServiceBinarizable();
 
             // Deploy to grid2
-            var keep = Grid1.GetCluster().ForNodeIds(Grid2.GetCluster().GetLocalNode().Id).GetServices().WithServerKeepBinary();
-            
-            keep.DeployNodeSingleton(SvcName, svc);
+            Grid1.GetCluster().ForNodeIds(Grid2.GetCluster().GetLocalNode().Id).GetServices().WithServerKeepBinary()
+                .DeployNodeSingleton(SvcName, svc);
 
             // Get proxy
             var prx = Services.WithServerKeepBinary().GetServiceProxy<ITestIgniteService>(SvcName);
@@ -2246,11 +2240,17 @@ namespace Apache.Ignite.Core.Tests.Services
         [Serializable]
         private class InterceptorSerializable : IServiceCallInterceptor
         {
+            /** Injected Ignite instance. */
             [InstanceResource, NonSerialized]
             private IIgnite _ignite;
             
+            /** Interceptor action. */
             protected TestInterceptorAction InterceptorAction;
 
+            /// <summary>
+            /// Constructor.
+            /// </summary>
+            /// <param name="interceptorAction">Interceptor action.</param>
             public InterceptorSerializable(TestInterceptorAction interceptorAction)
             {
                 InterceptorAction = interceptorAction;
@@ -2263,7 +2263,7 @@ namespace Apache.Ignite.Core.Tests.Services
                 {
                     case TestInterceptorAction.Invoke1:
                     case TestInterceptorAction.Invoke2:
-                        return InterceptorAction + "-" + next.Invoke() + "-" + InterceptorAction;
+                        return InterceptorAction + " -> " + next.Invoke() + " -> " + InterceptorAction;
 
                     case TestInterceptorAction.SkipServiceCall:
                         return args[0];
@@ -2295,7 +2295,7 @@ namespace Apache.Ignite.Core.Tests.Services
                         }
                 }
 
-                throw new InvalidOperationException("Operation = " + InterceptorAction);
+                throw new InvalidOperationException("Invalid interceptor action: " + InterceptorAction);
             }
         }
 

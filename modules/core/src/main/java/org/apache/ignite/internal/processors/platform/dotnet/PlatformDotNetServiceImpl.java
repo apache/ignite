@@ -19,7 +19,6 @@ package org.apache.ignite.internal.processors.platform.dotnet;
 
 import org.apache.ignite.internal.processors.platform.PlatformContext;
 import org.apache.ignite.internal.processors.platform.services.PlatformAbstractService;
-import org.jetbrains.annotations.Nullable;
 
 /**
  * Interop .Net service.

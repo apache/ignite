@@ -334,7 +334,7 @@ namespace Apache.Ignite.Core.Tests.Services
             /** <inheritdoc /> */
             public int Intercepted(int val)
             {
-                return val * val;
+                return val;
             }
 
             /** <inheritdoc /> */

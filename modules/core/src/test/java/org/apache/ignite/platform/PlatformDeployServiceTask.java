@@ -795,9 +795,7 @@ public class PlatformDeployServiceTask extends ComputeTaskAdapter<String, Object
         private static final long serialVersionUID = 0L;
 
         /** {@inheritDoc} */
-        @Override public Object invoke(String mtd, Object[] args, ServiceContext ctx, Callable<Object> next)
-            throws Exception {
-
+        @Override public Object invoke(String mtd, Object[] args, ServiceContext ctx, Callable<Object> next) throws Exception {
             Object res = next.call();
 
             if ("testInterception".equals(mtd))

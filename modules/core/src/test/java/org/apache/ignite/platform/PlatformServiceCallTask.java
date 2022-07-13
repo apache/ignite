@@ -91,7 +91,7 @@ public class PlatformServiceCallTask extends AbstractPlatformServiceCallTask {
         protected void checkInterceptedMethod(TestPlatformService srv) {
             int val = 2;
 
-            assertEquals((val * val) * (val * val), srv.intercepted(val));
+            assertEquals(val * val, srv.intercepted(val));
         }
     }
 }

@@ -18,6 +18,7 @@
 namespace Apache.Ignite.Core.Tests.Services
 {
     using System;
+    using System.Diagnostics;
     using Apache.Ignite.Core.Services;
 
     /** Test service call interceptor. */
@@ -39,7 +40,7 @@ namespace Apache.Ignite.Core.Tests.Services
         /** <inheritdoc /> */
         public object Invoke(string mtd, object[] args, IServiceContext ctx, Func<object> next)
         {
-            object res = next.Invoke();
+            var res = next.Invoke();
 
             if (_targetMethod.Equals(mtd))
                 return (int)res * (int)res;
