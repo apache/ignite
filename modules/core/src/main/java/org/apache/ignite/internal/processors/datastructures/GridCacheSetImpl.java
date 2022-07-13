@@ -518,7 +518,7 @@ public class GridCacheSetImpl<T> extends AbstractCollection<T> implements Ignite
     private Collection<ClusterNode> dataNodes(AffinityTopologyVersion topVer) throws IgniteCheckedException {
         assert ctx.isPartitioned() || collocated : "Non-collocated mode is supported only for PARTITIONED caches.";
 
-        if (ctx.isLocal() || (ctx.isReplicated() && ctx.affinityNode()))
+        if (ctx.isReplicated() && ctx.affinityNode())
             return Collections.singleton(ctx.localNode());
 
         Collection<ClusterNode> nodes;

@@ -308,8 +308,6 @@ public class CommandProcessor extends SqlCommandProcessor {
 
                 assert tbl.rowDescriptor() != null;
 
-                ensureDdlSupported(tbl.cacheInfo());
-
                 QueryIndex newIdx = new QueryIndex();
 
                 newIdx.setName(cmd.index().getName());
@@ -343,8 +341,6 @@ public class CommandProcessor extends SqlCommandProcessor {
                 GridH2Table tbl = schemaMgr.dataTableForIndex(cmd.schemaName(), cmd.indexName());
 
                 if (tbl != null) {
-                    ensureDdlSupported(tbl.cacheInfo());
-
                     fut = ctx.query().dynamicIndexDrop(tbl.cacheName(), cmd.schemaName(), cmd.indexName(),
                         cmd.ifExists());
                 }

@@ -217,26 +217,6 @@ public class DataStreamProcessorSelfTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
-    @Test
-    public void testLocal() throws Exception {
-        MvccFeatureChecker.skipIfNotSupported(MvccFeatureChecker.Feature.LOCAL_CACHE);
-
-        mode = LOCAL;
-
-        try {
-            checkDataStreamer();
-
-            assert false;
-        }
-        catch (CacheException e) {
-            // Cannot load local cache configured remotely.
-            info("Caught expected exception: " + e);
-        }
-    }
-
-    /**
-     * @throws Exception If failed.
-     */
     private void checkDataStreamer() throws Exception {
         try {
             useCache = true;

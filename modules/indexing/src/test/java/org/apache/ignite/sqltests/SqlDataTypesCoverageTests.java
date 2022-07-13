@@ -308,11 +308,9 @@ public class SqlDataTypesCoverageTests extends AbstractDataTypesCoverageTest {
                 " val " + dataType + ")" +
                 " WITH " + "\"template=" + templateName + "\""), false);
 
-        if (cacheMode != CacheMode.LOCAL) {
-            ignite.context().query().querySqlFields(new SqlFieldsQuery(
-                "CREATE INDEX IDX" + UUID.randomUUID().toString().replaceAll("-", "_") +
-                    " ON " + tblName + "(id, val)"), false);
-        }
+        ignite.context().query().querySqlFields(new SqlFieldsQuery(
+            "CREATE INDEX IDX" + UUID.randomUUID().toString().replaceAll("-", "_") +
+                " ON " + tblName + "(id, val)"), false);
 
         checkCRUD(ignite, tblName, dataType, valsToCheck);
     }

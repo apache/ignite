@@ -135,7 +135,7 @@ public class MvccFeatureChecker {
      * @return {@code True} if feature is supported, {@code False} otherwise.
      */
     public static boolean isSupported(CacheMode mode) {
-        return mode != CacheMode.LOCAL || isSupported(Feature.LOCAL_CACHE);
+        return isSupported(Feature.LOCAL_CACHE);
     }
 
     /**

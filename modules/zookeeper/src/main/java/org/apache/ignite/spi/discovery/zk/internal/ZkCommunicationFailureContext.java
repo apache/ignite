@@ -144,9 +144,6 @@ class ZkCommunicationFailureContext implements CommunicationFailureContext {
         if (cacheDesc == null)
             throw new IllegalArgumentException("Invalid cache name: " + cacheName);
 
-        if (cacheDesc.cacheConfiguration().getCacheMode() == CacheMode.LOCAL)
-            return Collections.emptyList();
-
         CacheGroupContext grp = ctx.cache().cacheGroup(cacheDesc.groupId());
 
         GridDhtPartitionTopology top;

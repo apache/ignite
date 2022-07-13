@@ -172,20 +172,6 @@ public abstract class DynamicIndexAbstractSelfTest extends AbstractSchemaSelfTes
     }
 
     /**
-     * @return Local cache configuration with a pre-configured index.
-     */
-    CacheConfiguration<KeyClass, ValueClass> localCacheConfiguration() {
-        CacheConfiguration<KeyClass, ValueClass> res = cacheConfiguration();
-
-        res.getQueryEntities().iterator().next().setIndexes(Collections.singletonList(
-            new QueryIndex(FIELD_NAME_2_ESCAPED, true, IDX_NAME_LOCAL)));
-
-        res.setCacheMode(CacheMode.LOCAL);
-
-        return res;
-    }
-
-    /**
      * Ensure index is used in plan.
      *
      * @param idxName Index name.

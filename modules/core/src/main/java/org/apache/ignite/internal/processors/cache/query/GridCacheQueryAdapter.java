@@ -587,17 +587,15 @@ public class GridCacheQueryAdapter<T> implements CacheQuery<T> {
     @Override public GridCloseableIterator executeScanQuery() throws IgniteCheckedException {
         assert type == SCAN : "Wrong processing of query: " + type;
 
-        if (!cctx.isLocal()) {
-            GridDhtCacheAdapter<?, ?> cacheAdapter = cctx.isNear() ? cctx.near().dht() : cctx.dht();
+        GridDhtCacheAdapter<?, ?> cacheAdapter = cctx.isNear() ? cctx.near().dht() : cctx.dht();
 
-            Set<Integer> lostParts = cacheAdapter.topology().lostPartitions();
+        Set<Integer> lostParts = cacheAdapter.topology().lostPartitions();
 
-            if (!lostParts.isEmpty()) {
-                if (part == null || lostParts.contains(part)) {
-                    throw new CacheException(new CacheInvalidStateException("Failed to execute query because cache partition " +
-                        "has been lostParts [cacheName=" + cctx.name() +
-                        ", part=" + (part == null ? lostParts.iterator().next() : part) + ']'));
-                }
+        if (!lostParts.isEmpty()) {
+            if (part == null || lostParts.contains(part)) {
+                throw new CacheException(new CacheInvalidStateException("Failed to execute query because cache partition " +
+                    "has been lostParts [cacheName=" + cctx.name() +
+                    ", part=" + (part == null ? lostParts.iterator().next() : part) + ']'));
             }
         }
 

@@ -4548,13 +4548,6 @@ public class IgniteCacheConfigVariationsFullApiTest extends IgniteCacheConfigVar
 
         IgniteCache srvNodeCache = serverNodeCache();
 
-        if (!isMultiJvmObject(srvNodeCache)) {
-            GridCacheAdapter internalCache = internalCache(srvNodeCache);
-
-            if (internalCache.isLocal())
-                return;
-        }
-
         assert c.get(key) == null;
 
         // Ensure that old TTL and expire time are not longer "visible".

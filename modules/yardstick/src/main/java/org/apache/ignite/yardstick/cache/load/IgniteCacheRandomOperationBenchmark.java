@@ -339,8 +339,7 @@ public class IgniteCacheRandomOperationBenchmark extends IgniteAbstractBenchmark
 
             valuesCacheClasses.put(cacheName, determineValueClasses(cacheName));
 
-            if (configuration.getCacheMode() != CacheMode.LOCAL)
-                affCaches.add(cache);
+            affCaches.add(cache);
 
             if (configuration.getAtomicityMode() == CacheAtomicityMode.TRANSACTIONAL)
                 txCaches.add(cache);

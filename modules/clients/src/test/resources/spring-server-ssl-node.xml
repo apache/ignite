@@ -88,18 +88,6 @@
             -->
             <list>
                 <!--
-                    Local cache example configuration.
-                -->
-                <bean class="org.apache.ignite.configuration.CacheConfiguration">
-                    <!-- Cache name is null. -->
-                    <!--<property name="name"><null/></property>-->
-
-                    <!-- LOCAL cache mode. -->
-                    <property name="cacheMode" value="LOCAL"/>
-
-                </bean>
-
-                <!--
                     Partitioned cache example configuration.
                 -->
                 <bean class="org.apache.ignite.configuration.CacheConfiguration">

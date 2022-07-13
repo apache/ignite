@@ -2153,9 +2153,6 @@ public class GridCacheProcessor extends GridProcessorAdapter {
         for (GridCacheAdapter cacheAdapter : caches.values()) {
             GridCacheContext cacheContext = cacheAdapter.context();
 
-            if (cacheContext.isLocal())
-                continue;
-
             if (cacheContext.isRecoveryMode()) {
                 assert !isLocalAffinity(cacheContext.config())
                     : "Cache " + cacheAdapter.context() + " is still in recovery mode after start, but not activated.";
@@ -4017,9 +4014,6 @@ public class GridCacheProcessor extends GridProcessorAdapter {
         sharedCtx.tm().checkEmptyTransactions(
             () -> format(CHECK_EMPTY_TRANSACTIONS_ERROR_MSG_FORMAT, cacheName, "dynamicCloseCache"));
 
-        if (proxy.context().isLocal())
-            return dynamicDestroyCache(cacheName, false, true, false, null);
-
         return startClientCacheChange(null, Collections.singleton(cacheName));
     }
 
@@ -5260,8 +5254,7 @@ public class GridCacheProcessor extends GridProcessorAdapter {
         for (IgniteInternalCache cache : caches) {
             cache.context().statisticsEnabled(enabled);
 
-            if (!cache.context().isLocal())
-                globalCaches.add(cache.name());
+            globalCaches.add(cache.name());
         }
 
         if (globalCaches.isEmpty())
@@ -5288,10 +5281,8 @@ public class GridCacheProcessor extends GridProcessorAdapter {
 
         Collection<String> globalCaches = new HashSet<>(U.capacity(caches.size()));
 
-        for (IgniteInternalCache cache : caches) {
-            if (!cache.context().isLocal())
-                globalCaches.add(cache.name());
-        }
+        for (IgniteInternalCache cache : caches)
+            globalCaches.add(cache.name());
 
         if (globalCaches.isEmpty())
             return;

@@ -4498,15 +4498,6 @@ public abstract class GridCacheAbstractFullApiSelfTest extends GridCacheAbstract
             }
         }, Math.min(ttl * 10, getTestTimeout())));
 
-        IgniteCache fullCache = fullCache();
-
-        if (!isMultiJvmObject(fullCache)) {
-            GridCacheAdapter internalCache = internalCache(fullCache);
-
-            if (internalCache.isLocal())
-                return;
-        }
-
         assert c.get(key) == null;
 
         // Ensure that old TTL and expire time are not longer "visible".

@@ -551,7 +551,6 @@ public class GridCacheDistributedQueryManager<K, V> extends GridCacheQueryManage
     @SuppressWarnings({"unchecked"})
     @Override public GridCloseableIterator scanQueryDistributed(final GridCacheQueryAdapter qry,
         Collection<ClusterNode> nodes) throws IgniteCheckedException {
-        assert !cctx.isLocal() : cctx.name();
         assert qry.type() == GridCacheQueryType.SCAN : qry;
         assert qry.mvccSnapshot() != null || !cctx.mvccEnabled();
 

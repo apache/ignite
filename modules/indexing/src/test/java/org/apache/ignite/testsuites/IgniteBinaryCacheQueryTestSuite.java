@@ -43,7 +43,6 @@ import org.apache.ignite.internal.processors.cache.IgniteCacheMergeSqlQueryFaili
 import org.apache.ignite.internal.processors.cache.IgniteCacheMergeSqlQuerySelfTest;
 import org.apache.ignite.internal.processors.cache.IgniteCacheMultipleIndexedTypesTest;
 import org.apache.ignite.internal.processors.cache.IgniteCacheOffheapEvictQueryTest;
-import org.apache.ignite.internal.processors.cache.IgniteCacheOffheapIndexScanTest;
 import org.apache.ignite.internal.processors.cache.IgniteCacheParallelismQuerySortOrderTest;
 import org.apache.ignite.internal.processors.cache.IgniteCachePrimitiveFieldsQuerySelfTest;
 import org.apache.ignite.internal.processors.cache.IgniteCacheQueryH2IndexingLeakTest;
@@ -107,8 +106,6 @@ import org.apache.ignite.internal.processors.cache.index.IndexMetricsTest;
 import org.apache.ignite.internal.processors.cache.index.QueryEntityValidationSelfTest;
 import org.apache.ignite.internal.processors.cache.index.SchemaExchangeSelfTest;
 import org.apache.ignite.internal.processors.cache.index.StopNodeOnRebuildIndexFailureTest;
-import org.apache.ignite.internal.processors.cache.local.IgniteCacheLocalAtomicQuerySelfTest;
-import org.apache.ignite.internal.processors.cache.local.IgniteCacheLocalQuerySelfTest;
 import org.apache.ignite.internal.processors.cache.query.CacheDataPageScanQueryTest;
 import org.apache.ignite.internal.processors.cache.query.CacheScanQueryFailoverTest;
 import org.apache.ignite.internal.processors.cache.query.GridCacheQueryTransformerSelfTest;
@@ -238,8 +235,6 @@ import org.junit.runners.Suite;
     IgniteSqlSchemaIndexingTest.class,
     GridCacheQueryIndexDisabledSelfTest.class,
     IgniteCacheQueryLoadSelfTest.class,
-    IgniteCacheLocalQuerySelfTest.class,
-    IgniteCacheLocalAtomicQuerySelfTest.class,
     IgniteCacheReplicatedQuerySelfTest.class,
     IgniteCacheReplicatedQueryP2PDisabledSelfTest.class,
     IgniteCacheReplicatedQueryEvtsDisabledSelfTest.class,
@@ -265,7 +260,6 @@ import org.junit.runners.Suite;
     H2ResultSetIteratorNullifyOnEndSelfTest.class,
     IgniteSqlBigIntegerKeyTest.class,
     IgniteCacheOffheapEvictQueryTest.class,
-    IgniteCacheOffheapIndexScanTest.class,
 
     GridCacheCrossCacheQuerySelfTest.class,
     GridCacheQuerySerializationSelfTest.class,

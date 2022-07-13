@@ -89,7 +89,6 @@ import org.apache.ignite.internal.processors.cache.integration.IgniteCacheAtomic
 import org.apache.ignite.internal.processors.cache.integration.IgniteCacheAtomicStoreSessionTest;
 import org.apache.ignite.internal.processors.cache.integration.IgniteCacheAtomicStoreSessionWriteBehindTest;
 import org.apache.ignite.internal.processors.cache.integration.IgniteCacheJdbcBlobStoreNodeRestartTest;
-import org.apache.ignite.internal.processors.cache.version.CacheVersionedEntryLocalAtomicSwapDisabledSelfTest;
 import org.apache.ignite.internal.processors.cache.version.CacheVersionedEntryPartitionedAtomicSelfTest;
 import org.apache.ignite.internal.processors.cache.version.CacheVersionedEntryReplicatedAtomicSelfTest;
 import org.apache.ignite.testframework.junits.DynamicSuite;
@@ -166,7 +165,6 @@ public class IgniteCacheMvccTestSuite4 {
         ignoredTests.add(CacheReadThroughReplicatedAtomicRestartSelfTest.class);
         ignoredTests.add(CacheReadThroughLocalAtomicRestartSelfTest.class);
         ignoredTests.add(CacheReadThroughAtomicRestartSelfTest.class);
-        ignoredTests.add(CacheVersionedEntryLocalAtomicSwapDisabledSelfTest.class);
         ignoredTests.add(CacheVersionedEntryPartitionedAtomicSelfTest.class);
         ignoredTests.add(CacheGetFutureHangsSelfTest.class);
         ignoredTests.add(IgniteCacheContainsKeyAtomicTest.class);

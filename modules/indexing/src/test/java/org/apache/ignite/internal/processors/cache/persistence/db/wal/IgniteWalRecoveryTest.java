@@ -130,7 +130,6 @@ import org.apache.ignite.transactions.TransactionConcurrency;
 import org.apache.ignite.transactions.TransactionIsolation;
 import org.junit.Assert;
 import org.junit.Test;
-
 import static org.apache.ignite.IgniteSystemProperties.IGNITE_DISABLE_WAL_DURING_REBALANCING;
 import static org.apache.ignite.configuration.DataStorageConfiguration.DFLT_CHECKPOINT_FREQ;
 import static org.apache.ignite.internal.IgniteNodeAttributes.ATTR_IGNITE_INSTANCE_NAME;
@@ -220,10 +219,6 @@ public class IgniteWalRecoveryTest extends GridCommonAbstractTest {
         ccfg.setNodeFilter(new RemoteNodeFilter());
         ccfg.setIndexedTypes(Integer.class, IndexedObject.class);
 
-        CacheConfiguration<Integer, IndexedObject> locCcfg = new CacheConfiguration<>(LOC_CACHE_NAME);
-        locCcfg.setCacheMode(CacheMode.LOCAL);
-        locCcfg.setIndexedTypes(Integer.class, IndexedObject.class);
-
         CacheConfiguration<Object, Object> cfg1 = new CacheConfiguration<>("cache1")
             .setAtomicityMode(CacheAtomicityMode.TRANSACTIONAL)
             .setAffinity(new RendezvousAffinityFunction(false, 32))
@@ -234,7 +229,7 @@ public class IgniteWalRecoveryTest extends GridCommonAbstractTest {
 
         CacheConfiguration<Object, Object> cfg2 = new CacheConfiguration<>(cfg1).setName("cache2").setRebalanceOrder(10);
 
-        cfg.setCacheConfiguration(ccfg, locCcfg, cfg1, cfg2);
+        cfg.setCacheConfiguration(ccfg, cfg1, cfg2);
 
         DataStorageConfiguration dbCfg = new DataStorageConfiguration();
 

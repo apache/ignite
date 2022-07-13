@@ -221,8 +221,6 @@ public class SqlCommandProcessor {
                 if (typeDesc == null)
                     throw new SchemaOperationException(SchemaOperationException.CODE_TABLE_NOT_FOUND, cmd0.tableName());
 
-                ensureDdlSupported(cacheInfo);
-
                 QueryIndex newIdx = new QueryIndex();
 
                 newIdx.setName(cmd0.indexName());
@@ -254,8 +252,6 @@ public class SqlCommandProcessor {
                 if (typeDesc != null) {
                     GridCacheContextInfo<?, ?> cacheInfo = schemaMgr.cacheInfoForTable(typeDesc.schemaName(),
                         typeDesc.tableName());
-
-                    ensureDdlSupported(cacheInfo);
 
                     fut = ctx.query().dynamicIndexDrop(cacheInfo.name(), cmd0.schemaName(), cmd0.indexName(),
                         cmd0.ifExists());
@@ -346,19 +342,6 @@ public class SqlCommandProcessor {
                 tx.commit();
             else
                 tx.rollback();
-        }
-    }
-
-    /**
-     * Check if cache supports DDL statement.
-     *
-     * @param cctxInfo Cache context info.
-     * @throws IgniteSQLException If failed.
-     */
-    protected static void ensureDdlSupported(GridCacheContextInfo<?, ?> cctxInfo) throws IgniteSQLException {
-        if (cctxInfo.config().getCacheMode() == CacheMode.LOCAL) {
-            throw new IgniteSQLException("DDL statements are not supported on LOCAL caches",
-                IgniteQueryErrorCode.UNSUPPORTED_OPERATION);
         }
     }
 }

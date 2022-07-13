@@ -683,7 +683,7 @@ public class GridCacheContext<K, V> implements Externalizable {
      * @return {@code True} if cache is local.
      */
     public boolean isLocal() {
-        return cache != null && cache.isLocal();
+        return false;
     }
 
     /**

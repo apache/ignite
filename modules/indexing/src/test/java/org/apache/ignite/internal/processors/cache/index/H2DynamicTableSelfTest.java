@@ -363,27 +363,6 @@ public class H2DynamicTableSelfTest extends AbstractSchemaSelfTest {
     }
 
     /**
-     * Test creating table over existing LOCAL cache fails (enabling query).
-     * @throws Exception if failed.
-     */
-    @Test
-    public void testCreateTableOnExistingLocalCache() throws Exception {
-        client().getOrCreateCache(new CacheConfiguration<>("local").setCacheMode(CacheMode.LOCAL));
-
-        try {
-            GridTestUtils.assertThrows(null, new Callable<Object>() {
-                @Override public Object call() throws Exception {
-                    doTestCustomNames("local", null, null);
-                    return null;
-                }
-            }, IgniteSQLException.class, "Schema changes are not supported for LOCAL cache");
-        }
-        finally {
-            client().destroyCache("local");
-        }
-    }
-
-    /**
      * Test that {@code CREATE TABLE} with given write sync mode actually creates new cache as needed.
      * @throws Exception if failed.
      */

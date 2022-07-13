@@ -702,8 +702,7 @@ public abstract class GridCommonAbstractTest extends GridAbstractTest {
                 if (cfg == null || cacheNames != null && !cacheNames.contains(cfg.getName()))
                     continue;
 
-                if (cfg.getCacheMode() != LOCAL &&
-                    cfg.getRebalanceMode() != NONE &&
+                if (cfg.getRebalanceMode() != NONE &&
                     g.cluster().nodes().size() > 1) {
                     AffinityFunction aff = cfg.getAffinity();
 

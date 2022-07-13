@@ -389,7 +389,7 @@ public class VerifyBackupPartitionsTaskV2 extends ComputeTaskAdapter<VisorIdleVe
             for (GridCacheContext cacheCtx : grp.caches()) {
                 DynamicCacheDescriptor desc = ignite.context().cache().cacheDescriptor(cacheCtx.name());
 
-                if (desc.cacheConfiguration().getCacheMode() != LOCAL && isCacheMatchFilter(desc))
+                if (isCacheMatchFilter(desc))
                     return true;
             }
 
