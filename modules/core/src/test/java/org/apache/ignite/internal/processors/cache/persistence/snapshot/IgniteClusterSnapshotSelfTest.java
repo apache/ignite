@@ -21,17 +21,12 @@ import java.io.File;
 import java.io.IOException;
 import java.io.Serializable;
 import java.nio.file.OpenOption;
-import java.sql.Connection;
-import java.sql.DriverManager;
-import java.sql.PreparedStatement;
-import java.sql.SQLException;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Queue;
-import java.util.Random;
 import java.util.UUID;
 import java.util.concurrent.Callable;
 import java.util.concurrent.ConcurrentLinkedQueue;
@@ -52,7 +47,6 @@ import org.apache.ignite.cache.affinity.rendezvous.RendezvousAffinityFunction;
 import org.apache.ignite.cache.query.ScanQuery;
 import org.apache.ignite.cluster.ClusterTopologyException;
 import org.apache.ignite.configuration.CacheConfiguration;
-import org.apache.ignite.configuration.ConnectorConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.IgniteInternalFuture;
@@ -89,7 +83,6 @@ import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.transactions.Transaction;
 import org.junit.Before;
 import org.junit.Test;
-import org.junit.runners.Parameterized;
 
 import static org.apache.ignite.cluster.ClusterState.ACTIVE;
 import static org.apache.ignite.events.EventType.EVTS_CLUSTER_SNAPSHOT;
@@ -110,11 +103,6 @@ import static org.apache.ignite.testframework.GridTestUtils.assertThrowsWithCaus
  * Cluster-wide snapshot test.
  */
 public class IgniteClusterSnapshotSelfTest extends AbstractSnapshotSelfTest {
-    /** Parameters. */
-    @Parameterized.Parameters(name = "Encryption={0}")
-    public static Iterable<Boolean> encryptionParams() {
-        return Arrays.asList(false);
-    }
     /** Time to wait while rebalance may happen. */
     private static final long REBALANCE_AWAIT_TIME = GridTestUtils.SF.applyLB(10_000, 3_000);
 
@@ -133,30 +121,6 @@ public class IgniteClusterSnapshotSelfTest extends AbstractSnapshotSelfTest {
         super.beforeTestSnapshot();
 
         jvm = false;
-    }
-
-    /** {@inheritDoc} */
-    @Override protected IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {
-        IgniteConfiguration cfg = super.getConfiguration(igniteInstanceName);
-
-//        cfg.getDataStorageConfiguration().setCheckpointFrequency(300);
-//        cfg.getDataStorageConfiguration().setWalSegments(12);
-//        cfg.getDataStorageConfiguration().setWalSegmentSize(64 * 1024 * 1024);
-//        cfg.getDataStorageConfiguration().setMaxWalArchiveSize(10 * 1024l * 1024l * 1024l);
-//        cfg.getDataStorageConfiguration().setCheckpointReadLockTimeout(20_000);
-        cfg.getDataStorageConfiguration().getDefaultDataRegionConfiguration().setPersistenceEnabled(true);
-        cfg.getDataStorageConfiguration().getDefaultDataRegionConfiguration().setMaxSize(3 * 1024L * 1024L * 1024L);
-
-        cfg.setConnectorConfiguration(new ConnectorConfiguration());
-
-        return cfg;
-    }
-
-    /**
-     * @return Test case timeout.
-     */
-    @Override protected long getTestTimeout() {
-        return 3000_000;
     }
 
     /**
@@ -438,113 +402,6 @@ public class IgniteClusterSnapshotSelfTest extends AbstractSnapshotSelfTest {
 
         assertEquals("The total amount of all cache values must not changed in snapshot.",
             total, sumAllCacheValues(snpIg0, clientsCnt, eastCcfg.getName(), westCcfg.getName()));
-    }
-
-    /** @throws Exception If fails. */
-    @Test
-    public void testClusterSnapshotConsistencyUnderSQLLoad() throws Exception {
-        int grids = 4;
-        CountDownLatch startSnp = new CountDownLatch(5_000_000);
-        AtomicBoolean stop = new AtomicBoolean(false);
-        dfltCacheCfg = null;
-
-        startGrids(grids);
-        grid(0).cluster().state(ACTIVE);
-        forceCheckpoint();
-
-        Class.forName("org.apache.ignite.IgniteJdbcDriver");
-
-        IgniteInternalFuture<?> load1 = runLoad("test_tbl1", stop, startSnp);
-        IgniteInternalFuture<?> load2 = runLoad("test_tbl2", stop, startSnp);
-
-        startSnp.await();
-
-//        int sz = grid(0).cache("SQL_PUBLIC_TEST_TBL1").size();
-//        sz = grid(0).cache("SQL_PUBLIC_TEST_TBL2").size();
-
-        grid(0).snapshot().createSnapshot(SNAPSHOT_NAME).get();
-
-        stop.set(true);
-
-        load1.get();
-        load2.get();
-
-        log.error("TEST | cache1 size: " + grid(0).cache("SQL_PUBLIC_TEST_TBL1").size());
-        log.error("TEST | cache1 size: " + grid(0).cache("SQL_PUBLIC_TEST_TBL2").size());
-
-//        sz = grid(0).cache("SQL_PUBLIC_TEST_TBL1").size();
-//        sz = grid(0).cache("SQL_PUBLIC_TEST_TBL2").size();
-
-        grid(0).cache("SQL_PUBLIC_TEST_TBL1").destroy();
-        grid(0).cache("SQL_PUBLIC_TEST_TBL2").destroy();
-
-//        grid(0).snapshot().restoreSnapshot(SNAPSHOT_NAME, null).get();
-//        stopAllGrids();
-//        startGridsFromSnapshot(grids, SNAPSHOT_NAME);
-
-//        startGrids(grids);
-
-        grid(0).snapshot().restoreSnapshot(SNAPSHOT_NAME, F.asList("SQL_PUBLIC_TEST_TBL1",
-            "SQL_PUBLIC_TEST_TBL2")).get();
-
-        log.error("TEST | cache1 size: " + grid(0).cache("SQL_PUBLIC_TEST_TBL1").size());
-        log.error("TEST | cache1 size: " + grid(0).cache("SQL_PUBLIC_TEST_TBL2").size());
-    }
-
-    private IgniteInternalFuture<?> runLoad(String tblName, AtomicBoolean stop, CountDownLatch startSnp) {
-        int leftLimit = 97; // letter 'a'
-        int rightLimit = 122; // letter'z'
-        int targetStringLength = 15;
-        Random rand = new Random();
-
-        return GridTestUtils.runMultiThreadedAsync(() -> {
-            try (Connection conn = DriverManager.getConnection("jdbc:ignite:thin://127.0.0.1/")) {
-                createTable(conn, tblName);
-
-                try (PreparedStatement stmt = conn.prepareStatement("INSERT INTO " + tblName +
-                    "(id, name, orgid, dep) VALUES(?, ?, ?, ?)")) {
-
-                    conn.prepareStatement("SET STREAMING ON;").execute();
-
-                    for (int i = 0; !stop.get(); ++i) {
-                        int orgid = rand.ints(1, 0, 5).findFirst().getAsInt();
-
-                        String val = rand.ints(leftLimit, rightLimit + 1).limit(targetStringLength)
-                            .collect(StringBuilder::new, StringBuilder::appendCodePoint, StringBuilder::append)
-                            .toString();
-                        stmt.setInt(1, i);
-                        stmt.setString(2, val);
-                        stmt.setInt(3, orgid);
-                        stmt.setInt(4, 0);
-
-                        stmt.executeUpdate();
-
-                        if (startSnp.getCount() > 0)
-                            startSnp.countDown();
-
-                        Thread.yield();
-                    }
-                }
-            }
-            catch (Exception e) {
-                while (startSnp.getCount() > 0)
-                    startSnp.countDown();
-
-                throw new IgniteException("Unable to load.", e);
-            }
-        }, 1, "load-thread-" + tblName);
-    }
-
-    private static void createTable(Connection conn, String tableName) throws SQLException {
-        conn.prepareStatement("create table " + tableName +
-            " (\n" +
-            "id int,\n" +
-            "name varchar not null,\n" +
-            "orgid int not null,\n" +
-            "dep int default 0,\n" +
-            "primary key (id, orgid)\n" +
-            ")\n" +
-            "with \"template=partitioned,backups=2\";").execute();
     }
 
     /** @throws Exception If fails. */
