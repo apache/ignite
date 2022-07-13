@@ -567,8 +567,8 @@ public class IgniteCacheGroupsTest extends GridCommonAbstractTest {
             List<Callable<?>> cls = new ArrayList<>(ldrs * 2);
 
             for (int i = 0; i < ldrs; i++) {
-                cls.add(putOperation(loc ? 0 : 1, ldrs, i, CACHE1, data1));
-                cls.add(putOperation(loc ? 0 : 2, ldrs, i, CACHE2, data2));
+                cls.add(putOperation(1, ldrs, i, CACHE1, data1));
+                cls.add(putOperation(2, ldrs, i, CACHE2, data2));
             }
 
             GridTestUtils.runMultiThreaded(cls, "loaders");
@@ -578,7 +578,7 @@ public class IgniteCacheGroupsTest extends GridCommonAbstractTest {
 
         Set<Integer> keysSet = sequence(keys);
 
-        for (Cache.Entry<Integer, Integer> entry : ignite(loc ? 0 : 3).cache(CACHE1).query(qry)) {
+        for (Cache.Entry<Integer, Integer> entry : ignite(3).cache(CACHE1).query(qry)) {
             assertTrue(keysSet.remove(entry.getKey()));
             assertEquals(data1[entry.getKey()], entry.getValue());
         }
@@ -913,8 +913,8 @@ public class IgniteCacheGroupsTest extends GridCommonAbstractTest {
             List<Callable<?>> cls = new ArrayList<>(ldrs * 2);
 
             for (int i = 0; i < ldrs; i++) {
-                cls.add(putOperation(loc ? 0 : 1, ldrs, i, CACHE1, data1));
-                cls.add(putOperation(loc ? 0 : 2, ldrs, i, CACHE2, data2));
+                cls.add(putOperation(1, ldrs, i, CACHE1, data1));
+                cls.add(putOperation(2, ldrs, i, CACHE2, data2));
             }
 
             GridTestUtils.runMultiThreaded(cls, "loaders");

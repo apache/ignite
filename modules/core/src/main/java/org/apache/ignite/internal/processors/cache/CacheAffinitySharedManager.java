@@ -493,11 +493,7 @@ public class CacheAffinitySharedManager<K, V> extends GridCacheSharedManagerAdap
                 CacheGroupContext grp = cctx.cache().cacheGroup(grpDesc.groupId());
 
                 assert grp != null : grpDesc.groupId();
-                assert !grp.affinityNode() || grp.isLocal() : grp.cacheOrGroupName();
-
-                // Skip for local caches.
-                if (grp.isLocal())
-                    continue;
+                assert !grp.affinityNode() : grp.cacheOrGroupName();
 
                 CacheGroupHolder grpHolder = grpHolders.get(grp.groupId());
 
@@ -2695,8 +2691,6 @@ public class CacheAffinitySharedManager<K, V> extends GridCacheSharedManagerAdap
          */
         CacheGroupAffNodeHolder(CacheGroupContext grp, @Nullable GridAffinityAssignmentCache initAff) {
             super(grp.rebalanceEnabled(), grp.affinity(), initAff);
-
-            assert !grp.isLocal() : grp;
 
             this.grp = grp;
         }

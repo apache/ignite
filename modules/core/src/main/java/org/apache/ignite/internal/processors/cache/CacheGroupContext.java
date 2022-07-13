@@ -73,7 +73,6 @@ import org.apache.ignite.plugin.CacheTopologyValidatorProvider;
 import org.jetbrains.annotations.Nullable;
 import static org.apache.ignite.cache.CacheAtomicityMode.ATOMIC;
 import static org.apache.ignite.cache.CacheAtomicityMode.TRANSACTIONAL_SNAPSHOT;
-import static org.apache.ignite.cache.CacheMode.LOCAL;
 import static org.apache.ignite.cache.CacheMode.REPLICATED;
 import static org.apache.ignite.cache.CacheRebalanceMode.NONE;
 import static org.apache.ignite.events.EventType.EVT_CACHE_REBALANCE_PART_MISSED;
@@ -703,13 +702,6 @@ public class CacheGroupContext {
     /**
      * @return {@code True} if cache is local.
      */
-    public boolean isLocal() {
-        return ccfg.getCacheMode() == LOCAL;
-    }
-
-    /**
-     * @return {@code True} if cache is local.
-     */
     public boolean isReplicated() {
         return ccfg.getCacheMode() == REPLICATED;
     }
@@ -991,11 +983,9 @@ public class CacheGroupContext {
         int part,
         long cntr,
         AffinityTopologyVersion topVer,
-        boolean primary) {
+        boolean primary
+    ) {
         assert sharedGroup();
-
-        if (isLocal())
-            return;
 
         List<GridCacheContext> contQryCaches;
 
