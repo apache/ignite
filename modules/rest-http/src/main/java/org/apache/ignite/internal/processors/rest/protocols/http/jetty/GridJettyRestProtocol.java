@@ -62,7 +62,7 @@ public class GridJettyRestProtocol extends GridRestProtocolAdapter {
      */
     static {
         if (!IgniteSystemProperties.getBoolean(IGNITE_JETTY_LOG_NO_OVERRIDE)) {
-            // See also https://docs.huihoo.com/jetty/the-definitive-reference/configuring-logging.html
+            // See also https://www.eclipse.org/jetty/documentation/jetty-9/index.html#configuring-jetty-logging
             // It seems that using system properties should be fine.
             System.setProperty("org.eclipse.jetty.LEVEL", "WARN");
             System.setProperty("org.eclipse.jetty.util.log.LEVEL", "OFF");
