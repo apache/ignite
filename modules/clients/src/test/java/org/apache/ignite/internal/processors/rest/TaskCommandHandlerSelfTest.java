@@ -45,8 +45,6 @@ import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.jetbrains.annotations.NotNull;
 import org.jsr166.ConcurrentLinkedHashMap;
 import org.junit.Test;
-
-import static org.apache.ignite.cache.CacheMode.LOCAL;
 import static org.apache.ignite.cache.CacheMode.PARTITIONED;
 import static org.apache.ignite.cache.CacheMode.REPLICATED;
 import static org.apache.ignite.cache.CacheWriteSynchronizationMode.FULL_SYNC;
@@ -118,11 +116,10 @@ public class TaskCommandHandlerSelfTest extends GridCommonAbstractTest {
      * @return Cache configuration.
      * @throws Exception In case of error.
      */
-    private CacheConfiguration cacheConfiguration(@NotNull String cacheName) throws Exception {
+    private CacheConfiguration cacheConfiguration(@NotNull String cacheName) {
         CacheConfiguration cfg = defaultCacheConfiguration();
 
-        cfg.setCacheMode(DEFAULT_CACHE_NAME.equals(cacheName) || CACHE_NAME.equals(cacheName) ? LOCAL : "replicated".equals(cacheName) ?
-            REPLICATED : PARTITIONED);
+        cfg.setCacheMode("replicated".equals(cacheName) ? REPLICATED : PARTITIONED);
         cfg.setName(cacheName);
         cfg.setWriteSynchronizationMode(FULL_SYNC);
 

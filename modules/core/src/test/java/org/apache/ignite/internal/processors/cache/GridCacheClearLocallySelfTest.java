@@ -31,9 +31,7 @@ import org.apache.ignite.lang.IgnitePredicate;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.apache.ignite.transactions.Transaction;
 import org.junit.Test;
-
 import static org.apache.ignite.cache.CacheAtomicityMode.TRANSACTIONAL;
-import static org.apache.ignite.cache.CacheMode.LOCAL;
 import static org.apache.ignite.cache.CacheMode.PARTITIONED;
 import static org.apache.ignite.cache.CacheMode.REPLICATED;
 import static org.apache.ignite.cache.CacheWriteSynchronizationMode.FULL_SYNC;
@@ -75,13 +73,6 @@ public class GridCacheClearLocallySelfTest extends GridCommonAbstractTest {
     @Override protected IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {
         IgniteConfiguration cfg = super.getConfiguration(igniteInstanceName);
 
-        CacheConfiguration ccfgLoc = new CacheConfiguration(DEFAULT_CACHE_NAME);
-
-        ccfgLoc.setName(CACHE_LOCAL);
-        ccfgLoc.setCacheMode(LOCAL);
-        ccfgLoc.setWriteSynchronizationMode(FULL_SYNC);
-        ccfgLoc.setAtomicityMode(TRANSACTIONAL);
-
         CacheConfiguration ccfgPartitioned = new CacheConfiguration(DEFAULT_CACHE_NAME);
 
         ccfgPartitioned.setName(CACHE_PARTITIONED);
@@ -111,7 +102,7 @@ public class GridCacheClearLocallySelfTest extends GridCommonAbstractTest {
         ccfgReplicated.setWriteSynchronizationMode(FULL_SYNC);
         ccfgReplicated.setAtomicityMode(TRANSACTIONAL);
 
-        cfg.setCacheConfiguration(ccfgLoc, ccfgPartitioned, ccfgColocated, ccfgReplicated);
+        cfg.setCacheConfiguration(ccfgPartitioned, ccfgColocated, ccfgReplicated);
 
         return cfg;
     }

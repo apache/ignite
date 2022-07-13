@@ -233,57 +233,6 @@ public class CacheClientStoreSelfTest extends GridCommonAbstractTest {
     }
 
     /**
-     * Load cache created on client as LOCAL and see if it only loaded on client
-     *
-     * @throws Exception If failed.
-     */
-    @Test
-    public void testLocalLoadClient() throws Exception {
-        cacheMode = CacheMode.LOCAL;
-        factory = new Factory3();
-
-        startGrids(2);
-
-        Ignite client = startClientGrid("client-1");
-
-        IgniteCache<Object, Object> cache = client.cache(CACHE_NAME);
-
-        cache.loadCache(null);
-
-        assertEquals(10, cache.localSize(CachePeekMode.ALL));
-
-        assertEquals(0, grid(0).cache(CACHE_NAME).localSize(CachePeekMode.ALL));
-        assertEquals(0, grid(1).cache(CACHE_NAME).localSize(CachePeekMode.ALL));
-
-        assert loadedFromClient;
-    }
-
-    /**
-     * Load cache from server that created on client as LOCAL and see if it only loaded on server
-     *
-     * @throws Exception If failed.
-     */
-    @Test
-    public void testLocalLoadServer() throws Exception {
-        cacheMode = CacheMode.LOCAL;
-        factory = new Factory3();
-
-        startGrids(2);
-
-        Ignite client = startClientGrid("client-1");
-
-        IgniteCache cache = grid(0).cache(CACHE_NAME);
-
-        cache.loadCache(null);
-
-        assertEquals(10, cache.localSize(CachePeekMode.ALL));
-        assertEquals(0, grid(1).cache(CACHE_NAME).localSize(CachePeekMode.ALL));
-        assertEquals(0, client.cache(CACHE_NAME).localSize(CachePeekMode.ALL));
-
-        assert !loadedFromClient : "Loaded data from client!";
-    }
-
-    /**
      * Load cache created on client as REPLICATED and see if it only loaded on servers
      */
     @Test

@@ -152,55 +152,6 @@ public class GridCacheHashMapPutAllWarningsTest extends GridCommonAbstractTest {
      * @throws Exception If failed.
      */
     @Test
-    public void testHashMapInvokeAllLocal() throws Exception {
-        Assume.assumeFalse( "Local transactional caches not supported by MVCC",
-            IgniteSystemProperties.getBoolean(IgniteSystemProperties.IGNITE_FORCE_MVCC_MODE_IN_TESTS, false));
-
-        List<String> messages = Collections.synchronizedList(new ArrayList<>());
-
-        testLog = new ListeningTestLogger(log());
-
-        testLog.registerListener((s) -> {
-            if (s.contains("deadlock"))
-                messages.add(s);
-        });
-
-        Ignite ignite = startGrid(0);
-
-        IgniteCache<Integer, String> c = ignite.getOrCreateCache(new CacheConfiguration<Integer, String>("invoke")
-            .setCacheMode(CacheMode.LOCAL).setAtomicityMode(CacheAtomicityMode.TRANSACTIONAL));
-
-        c.put(1, "foo");
-        c.put(2, "bar");
-
-        Map<Integer, EntryProcessorResult<String>> result = c.invokeAll(new HashSet<>(Arrays.asList(1, 2)),
-            new EntryProcessor<Integer, String, String>() {
-                @Override public String process(MutableEntry entry, Object... arguments) throws EntryProcessorException {
-                    String newVal = entry.getValue() + "2";
-
-                    entry.setValue(newVal);
-
-                    return newVal;
-                }
-            });
-
-        assertEquals(2, result.size());
-        assertEquals("bar2", c.get(2));
-
-        int found = 0;
-
-        for (String message : messages) {
-            if (message.contains("Unordered collection java.util.HashSet is used for invokeAll operation on cache invoke. "))
-                found++;
-        }
-
-        assertEquals(1, found);
-    }
-
-    /**
-     * @throws Exception If failed.
-     */
-    @Test
     public void testTreeMapRemoveAll() throws Exception {
         List<String> messages = Collections.synchronizedList(new ArrayList<>());
 

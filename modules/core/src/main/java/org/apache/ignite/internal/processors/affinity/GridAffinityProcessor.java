@@ -515,9 +515,6 @@ public class GridAffinityProcessor extends GridProcessorAdapter {
             return new GridFinishedFuture<>((AffinityInfo)null);
         }
 
-        if (desc.cacheConfiguration().getCacheMode() == LOCAL)
-            return new GridFinishedFuture<>(new IgniteCheckedException("Failed to map keys for LOCAL cache: " + cacheName));
-
         AffinityFuture fut0 = new AffinityFuture(cacheName, topVer, cacheNodes);
 
         IgniteInternalFuture<AffinityInfo> old = affMap.putIfAbsent(key, fut0);

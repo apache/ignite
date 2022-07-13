@@ -21,7 +21,6 @@ import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.List;
 import org.apache.ignite.IgniteSystemProperties;
-import org.apache.ignite.internal.processors.cache.CacheInterceptorPartitionCounterLocalSanityTest;
 import org.apache.ignite.internal.processors.cache.CacheInterceptorPartitionCounterRandomOperationsTest;
 import org.apache.ignite.internal.processors.cache.GridCacheAtomicEntryProcessorDeploymentSelfTest;
 import org.apache.ignite.internal.processors.cache.GridCacheEntryVersionSelfTest;
@@ -75,7 +74,6 @@ public class IgniteCacheMvccTestSuite3 {
         ignoredTests.add(GridCacheEntryVersionSelfTest.class);
         ignoredTests.add(GridCacheVersionTopologyChangeTest.class);
         ignoredTests.add(CacheAsyncOperationsTest.class);
-        ignoredTests.add(CacheInterceptorPartitionCounterLocalSanityTest.class);
         ignoredTests.add(CacheInterceptorPartitionCounterRandomOperationsTest.class);
         ignoredTests.add(IgniteCacheGroupsTest.class);
 

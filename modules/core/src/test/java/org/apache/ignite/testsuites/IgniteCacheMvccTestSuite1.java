@@ -47,7 +47,6 @@ import org.apache.ignite.internal.processors.cache.GridCacheAffinityApiSelfTest;
 import org.apache.ignite.internal.processors.cache.GridCacheAffinityMapperSelfTest;
 import org.apache.ignite.internal.processors.cache.GridCacheAffinityRoutingSelfTest;
 import org.apache.ignite.internal.processors.cache.GridCacheAsyncOperationsLimitSelfTest;
-import org.apache.ignite.internal.processors.cache.GridCacheConcurrentMapSelfTest;
 import org.apache.ignite.internal.processors.cache.GridCacheConfigurationConsistencySelfTest;
 import org.apache.ignite.internal.processors.cache.GridCacheConfigurationValidationSelfTest;
 import org.apache.ignite.internal.processors.cache.GridCacheLifecycleAwareSelfTest;
@@ -186,7 +185,6 @@ public class IgniteCacheMvccTestSuite1 {
         ignoredTests.add(GridCacheAffinityRoutingSelfTest.class);
         ignoredTests.add(GridCacheAffinityRoutingBinarySelfTest.class);
         ignoredTests.add(IgniteClientAffinityAssignmentSelfTest.class);
-        ignoredTests.add(GridCacheConcurrentMapSelfTest.class);
         ignoredTests.add(CacheAffinityCallSelfTest.class);
         ignoredTests.add(GridCacheAffinityMapperSelfTest.class);
         ignoredTests.add(GridCacheAffinityApiSelfTest.class);

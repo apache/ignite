@@ -79,22 +79,6 @@ public class CacheGetEntryPessimisticRepeatableReadSelfTest extends CacheGetEntr
     /**
      * @throws Exception If failed.
      */
-    @Ignore("https://issues.apache.org/jira/browse/IGNITE-9530")
-    @Test
-    public void testLocalTransactionalMvcc() throws Exception {
-        CacheConfiguration cfg = new CacheConfiguration(DEFAULT_CACHE_NAME);
-
-        cfg.setWriteSynchronizationMode(FULL_SYNC);
-        cfg.setCacheMode(LOCAL);
-        cfg.setAtomicityMode(TRANSACTIONAL_SNAPSHOT);
-        cfg.setName("localT");
-
-        test(cfg);
-    }
-
-    /**
-     * @throws Exception If failed.
-     */
     @Test
     public void testReplicatedTransactionalMvcc() throws Exception {
         CacheConfiguration cfg = new CacheConfiguration(DEFAULT_CACHE_NAME);
