@@ -18,7 +18,6 @@
 package org.apache.ignite.internal.client.thin;
 
 import java.lang.management.ThreadInfo;
-import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.client.ClientCache;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.testframework.GridTestUtils;
