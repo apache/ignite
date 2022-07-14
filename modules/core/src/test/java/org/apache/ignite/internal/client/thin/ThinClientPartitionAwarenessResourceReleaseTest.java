@@ -35,6 +35,10 @@ public class ThinClientPartitionAwarenessResourceReleaseTest extends ThinClientA
      */
     @Test
     public void testResourcesReleasedAfterClientClosed() throws Exception {
+        System.out.println(">>>>>>>>>>>>>>xxxxxxxxx ");
+        U.dumpThreads(log);
+        System.out.println(">>>>>>>>>>>>>>xxxxxxxxx ");
+
         startGrids(2);
 
         initClient(getClientConfiguration(0, 1), 0, 1);
