@@ -111,8 +111,7 @@ public class IgniteThread extends Thread {
         this.stripe = stripe;
         this.plc = plc;
 
-        if (threadName.contains("thin-client-channel"))
-            System.out.println(">>>>>> threadName " + U.stackTrace());
+        System.out.println(">>>>>> created " + threadName + " " + igniteInstanceName);
     }
 
     /**
