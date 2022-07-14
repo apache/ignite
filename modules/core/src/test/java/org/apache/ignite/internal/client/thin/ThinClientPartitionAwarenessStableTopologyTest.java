@@ -82,6 +82,8 @@ public class ThinClientPartitionAwarenessStableTopologyTest extends ThinClientAb
      */
     @Test
     public void testPartitionedCustomAffinityCacheWithMapper() throws Exception {
+        client.close();
+
         initClient(getClientConfiguration(1, 2, 3)
             .setPartitionAwarenessMapperFactory(new BiFunction<String, Integer, ToIntFunction<Object>>() {
                 @Override public ToIntFunction<Object> apply(String cacheName, Integer parts) {
