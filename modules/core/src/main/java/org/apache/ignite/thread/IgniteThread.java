@@ -21,6 +21,7 @@ import java.util.concurrent.atomic.AtomicLong;
 import org.apache.ignite.internal.managers.communication.GridIoPolicy;
 import org.apache.ignite.internal.util.typedef.internal.A;
 import org.apache.ignite.internal.util.typedef.internal.S;
+import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.internal.util.worker.GridWorker;
 
 /**
@@ -109,6 +110,9 @@ public class IgniteThread extends Thread {
         this.compositeRwLockIdx = grpIdx;
         this.stripe = stripe;
         this.plc = plc;
+
+        if (threadName.contains("thin-client-channel"))
+            System.out.println(">>>>>> threadName " + U.stackTrace());
     }
 
     /**
