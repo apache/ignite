@@ -18,6 +18,7 @@
 package org.apache.ignite.internal.processors.platform.client.cache;
 
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 import org.apache.ignite.binary.BinaryRawWriter;
@@ -101,10 +102,11 @@ class ClientCachePartitionAwarenessGroup {
 
     /**
      * Add cache to affinity group.
-     * @param desc Cache descriptor.
+     * @param descs Cache descriptors.
      */
-    public void addCache(DynamicCacheDescriptor desc) {
-        cacheCfgs.putIfAbsent(desc.cacheId(), desc.cacheConfiguration());
+    public void add(List<DynamicCacheDescriptor> descs) {
+        for (DynamicCacheDescriptor desc : descs)
+            cacheCfgs.putIfAbsent(desc.cacheId(), desc.cacheConfiguration());
     }
 
     /** {@inheritDoc} */

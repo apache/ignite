@@ -18,9 +18,11 @@
 package org.apache.ignite.internal.processors.platform.client.cache;
 
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
-import java.util.function.Consumer;
+import java.util.stream.Collectors;
 import org.apache.ignite.binary.BinaryRawReader;
 import org.apache.ignite.cache.CacheMode;
 import org.apache.ignite.cache.affinity.rendezvous.RendezvousAffinityFunction;
@@ -34,6 +36,7 @@ import org.apache.ignite.internal.processors.platform.client.ClientConnectionCon
 import org.apache.ignite.internal.processors.platform.client.ClientProtocolContext;
 import org.apache.ignite.internal.processors.platform.client.ClientRequest;
 import org.apache.ignite.internal.processors.platform.client.ClientResponse;
+import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.lang.IgnitePredicate;
 import org.jetbrains.annotations.Nullable;
 import static org.apache.ignite.internal.processors.query.QueryUtils.isCustomAffinityMapper;
@@ -63,7 +66,7 @@ public class ClientCachePartitionsRequest extends ClientRequest {
 
     /** {@inheritDoc} */
     @Override public ClientResponse process(ClientConnectionContext ctx) {
-        Map<ClientCachePartitionAwarenessGroup, Consumer<DynamicCacheDescriptor>> grps = new HashMap<>(cacheIds.length);
+        Map<ClientCachePartitionAwarenessGroup, ClientCachePartitionAwarenessGroup> grps = new HashMap<>(cacheIds.length);
         ClientAffinityTopologyVersion affinityVer = ctx.checkAffinityTopologyVersion();
 
         // As a first step, get a set of mappings that we need to return.
@@ -80,25 +83,33 @@ public class ClientCachePartitionsRequest extends ClientRequest {
             if (grp == null)
                 continue;
 
-            grps.computeIfAbsent(grp, grp0 -> grp::addCache)
-                .accept(cacheDesc);
+            ClientCachePartitionAwarenessGroup grp0 = grps.putIfAbsent(grp, grp);
+
+            if (grp0 != null)
+                grp0.add(Collections.singletonList(cacheDesc));
         }
 
-        Map<String, DynamicCacheDescriptor> allCaches = ctx.kernalContext().cache().cacheDescriptors();
+        Map<Integer, List<DynamicCacheDescriptor>> allCaches = ctx.kernalContext().cache().cacheDescriptors().values()
+            .stream()
+            .filter(c -> c.cacheType().userCache())
+            .collect(Collectors.groupingBy(DynamicCacheDescriptor::groupId));
 
         // As a second step, check all other caches and add them to groups they are compatible with.
-        for (DynamicCacheDescriptor cacheDesc: allCaches.values()) {
-            // Ignoring system caches
-            if (!cacheDesc.cacheType().userCache())
+        for (List<DynamicCacheDescriptor> descs: allCaches.values()) {
+            DynamicCacheDescriptor desc = F.first(descs);
+
+            if (desc == null)
                 continue;
 
-            ClientCachePartitionAwarenessGroup grp = processCache(ctx, affinityVer, cacheDesc);
+            ClientCachePartitionAwarenessGroup grp = processCache(ctx, affinityVer, desc);
 
             if (grp == null)
                 continue;
 
-            if (grps.containsKey(grp))
-                grps.get(grp).accept(cacheDesc);
+            ClientCachePartitionAwarenessGroup grp0 = grps.get(grp);
+
+            if (grp0 != null)
+                grp0.add(descs);
         }
 
         return new ClientCachePartitionsResponse(requestId(), new ArrayList<>(grps.keySet()), affinityVer);
