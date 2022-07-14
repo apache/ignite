@@ -265,7 +265,8 @@ public final class ClientUtils {
             };
 
             itemWriter.accept(CfgItem.NAME, w -> w.writeString(cfg.getName()));
-            itemWriter.accept(CfgItem.CACHE_MODE, w -> w.writeInt(cfg.getCacheMode().ordinal()));
+            // The cache mode LOCAL has been removed from the enum order list.
+            itemWriter.accept(CfgItem.CACHE_MODE, w -> w.writeInt(cfg.getCacheMode() == CacheMode.REPLICATED ? 1 : 2));
             itemWriter.accept(CfgItem.ATOMICITY_MODE, w -> w.writeInt(cfg.getAtomicityMode().ordinal()));
             itemWriter.accept(CfgItem.BACKUPS, w -> w.writeInt(cfg.getBackups()));
             itemWriter.accept(CfgItem.WRITE_SYNC_MODE, w -> w.writeInt(cfg.getWriteSynchronizationMode().ordinal()));

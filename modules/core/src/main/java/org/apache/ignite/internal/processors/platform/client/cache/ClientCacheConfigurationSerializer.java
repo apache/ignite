@@ -38,7 +38,6 @@ import org.apache.ignite.internal.binary.BinaryRawWriterEx;
 import org.apache.ignite.internal.processors.platform.client.ClientProtocolContext;
 import org.apache.ignite.internal.processors.platform.client.ClientProtocolVersionFeature;
 import org.apache.ignite.internal.processors.platform.utils.PlatformConfigurationUtils;
-
 import static org.apache.ignite.internal.processors.platform.client.ClientProtocolVersionFeature.QUERY_ENTITY_PRECISION_AND_SCALE;
 
 /**
@@ -298,7 +297,7 @@ public class ClientCacheConfigurationSerializer {
 
         short propCnt = reader.readShort();
 
-        CacheConfiguration cfg = new CacheConfiguration();
+        CacheConfiguration<?, ?> cfg = new CacheConfiguration<>();
 
         for (int i = 0; i < propCnt; i++) {
             short code = reader.readShort();
@@ -313,7 +312,11 @@ public class ClientCacheConfigurationSerializer {
                     break;
 
                 case CACHE_MODE:
-                    cfg.setCacheMode(CacheMode.fromOrdinal(reader.readInt()));
+                    // Cache mode LOCAL was removed since 2.14, so the enum ordinal has shifted.
+                    int modeId = reader.readInt() - 1;
+
+                    cfg.setCacheMode(CacheMode.fromOrdinal(modeId));
+
                     break;
 
                 case COPY_ON_READ:
