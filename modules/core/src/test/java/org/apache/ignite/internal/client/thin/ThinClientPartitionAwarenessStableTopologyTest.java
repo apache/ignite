@@ -17,9 +17,7 @@
 
 package org.apache.ignite.internal.client.thin;
 
-import java.util.function.BiFunction;
 import java.util.function.Function;
-import java.util.function.ToIntFunction;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.cache.CacheAtomicityMode;
 import org.apache.ignite.cache.CacheMode;
@@ -31,6 +29,8 @@ import org.apache.ignite.client.ClientAtomicLong;
 import org.apache.ignite.client.ClientCache;
 import org.apache.ignite.client.ClientCollectionConfiguration;
 import org.apache.ignite.client.ClientIgniteSet;
+import org.apache.ignite.client.ClientPartitionAwarenessMapper;
+import org.apache.ignite.client.ClientPartitionAwarenessMapperFactory;
 import org.apache.ignite.configuration.AtomicConfiguration;
 import org.apache.ignite.internal.processors.cache.IgniteInternalCache;
 import org.apache.ignite.internal.processors.datastructures.GridCacheAtomicLongEx;
@@ -85,11 +85,12 @@ public class ThinClientPartitionAwarenessStableTopologyTest extends ThinClientAb
         client.close();
 
         initClient(getClientConfiguration(1, 2, 3)
-            .setPartitionAwarenessMapperFactory(new BiFunction<String, Integer, ToIntFunction<Object>>() {
-                @Override public ToIntFunction<Object> apply(String cacheName, Integer parts) {
+            .setPartitionAwarenessMapperFactory(new ClientPartitionAwarenessMapperFactory() {
+                /** {@inheritDoc} */
+                @Override public ClientPartitionAwarenessMapper create(String cacheName, int partitions) {
                     assertEquals(cacheName, PART_CUSTOM_AFFINITY_CACHE_NAME);
 
-                    AffinityFunction aff = new RendezvousAffinityFunction(false, parts);
+                    AffinityFunction aff = new RendezvousAffinityFunction(false, partitions);
 
                     return aff::partition;
                 }

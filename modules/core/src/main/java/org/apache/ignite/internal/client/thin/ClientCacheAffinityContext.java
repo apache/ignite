@@ -26,8 +26,8 @@ import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentLinkedQueue;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.Function;
-import java.util.function.ToIntFunction;
 import org.apache.ignite.IgniteBinary;
+import org.apache.ignite.client.ClientPartitionAwarenessMapper;
 import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
 import org.apache.ignite.internal.util.GridConcurrentHashSet;
 
@@ -36,13 +36,13 @@ import org.apache.ignite.internal.util.GridConcurrentHashSet;
  */
 public class ClientCacheAffinityContext {
     /** Default key to partition mapping function. */
-    private static final Function<Integer, ToIntFunction<Object>> DEFAULT_KEY_MAPPER = parts -> null;
+    private static final Function<Integer, ClientPartitionAwarenessMapper> DEFAULT_KEY_MAPPER = parts -> null;
 
     /** Binary data processor. */
     private final IgniteBinary binary;
 
     /** Factory for each cache id to produce key to partition mapping functions. */
-    private final Map<Integer, Function<Integer, ToIntFunction<Object>>> cacheKeyMapperFactoryMap = new ConcurrentHashMap<>();
+    private final Map<Integer, Function<Integer, ClientPartitionAwarenessMapper>> cacheKeyMapperFactoryMap = new ConcurrentHashMap<>();
 
     /** Contains last topology version and known nodes of this version. */
     private final AtomicReference<TopologyNodes> lastTop = new AtomicReference<>();
@@ -234,7 +234,7 @@ public class ClientCacheAffinityContext {
      * @param cacheId Cache id.
      * @param factory Key mapper factory.
      */
-    public void addKeyMapperFactory(int cacheId, Function<Integer, ToIntFunction<Object>> factory) {
+    public void addKeyMapperFactory(int cacheId, Function<Integer, ClientPartitionAwarenessMapper> factory) {
         cacheKeyMapperFactoryMap.putIfAbsent(cacheId, factory);
     }
 

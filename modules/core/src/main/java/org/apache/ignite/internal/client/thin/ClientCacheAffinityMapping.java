@@ -26,10 +26,10 @@ import java.util.Map;
 import java.util.Objects;
 import java.util.UUID;
 import java.util.function.Function;
-import java.util.function.ToIntFunction;
 import org.apache.ignite.IgniteBinary;
 import org.apache.ignite.cache.affinity.rendezvous.RendezvousAffinityFunction;
 import org.apache.ignite.client.ClientFeatureNotSupportedByServerException;
+import org.apache.ignite.client.ClientPartitionAwarenessMapper;
 import org.apache.ignite.internal.binary.BinaryObjectExImpl;
 import org.apache.ignite.internal.binary.BinaryReaderExImpl;
 import org.apache.ignite.internal.binary.streams.BinaryOutputStream;
@@ -152,7 +152,7 @@ public class ClientCacheAffinityMapping {
     public static void writeRequest(
         PayloadOutputChannel ch,
         Collection<Integer> cacheIds,
-        Function<Integer, Function<Integer, ToIntFunction<Object>>> mappers
+        Function<Integer, Function<Integer, ClientPartitionAwarenessMapper>> mappers
     ) {
         ProtocolContext ctx = ch.clientChannel().protocolCtx();
 
@@ -181,7 +181,7 @@ public class ClientCacheAffinityMapping {
      */
     public static ClientCacheAffinityMapping readResponse(
         PayloadInputChannel ch,
-        Function<Integer, Function<Integer, ToIntFunction<Object>>> mappers
+        Function<Integer, Function<Integer, ClientPartitionAwarenessMapper>> mappers
     ) {
         try (BinaryReaderExImpl in = ClientUtils.createBinaryReader(null, ch.in())) {
             long topVer = in.readLong();
@@ -292,7 +292,7 @@ public class ClientCacheAffinityMapping {
         Integer cacheId,
         Map<Integer, Integer> keyCfg,
         UUID[] partMapping,
-        Function<Integer, ToIntFunction<Object>> factory
+        Function<Integer, ClientPartitionAwarenessMapper> factory
     ) {
         mapping.cacheAffinity.put(cacheId,
             partMapping == null ? NOT_APPLICABLE_CACHE_AFFINITY_INFO :
@@ -310,14 +310,14 @@ public class ClientCacheAffinityMapping {
         private final UUID[] partMapping;
 
         /** Mapper a cache key to a partition. */
-        private final ToIntFunction<Object> keyMapper;
+        private final ClientPartitionAwarenessMapper keyMapper;
 
         /**
          * @param keyCfg Cache key configuration or {@code null} if partition awareness is not applicable for this cache.
          * @param partMapping Partition to node mapping or {@code null} if partition awareness is not applicable for
          * this cache.
          */
-        private CacheAffinityInfo(Map<Integer, Integer> keyCfg, UUID[] partMapping, ToIntFunction<Object> keyMapper) {
+        private CacheAffinityInfo(Map<Integer, Integer> keyCfg, UUID[] partMapping, ClientPartitionAwarenessMapper keyMapper) {
             this.keyCfg = keyCfg;
             this.partMapping = partMapping;
             this.keyMapper = keyMapper;
@@ -332,7 +332,7 @@ public class ClientCacheAffinityMapping {
             if (keyMapper == null)
                 return null;
 
-            return nodeForPartition(keyMapper.applyAsInt(key));
+            return nodeForPartition(keyMapper.partition(key));
         }
 
         /**
@@ -349,7 +349,7 @@ public class ClientCacheAffinityMapping {
     }
 
     /** Default implementation of cache key to partition mapper. */
-    private static class RendezvousAffinityKeyMapper implements ToIntFunction<Object> {
+    private static class RendezvousAffinityKeyMapper implements ClientPartitionAwarenessMapper {
         /** Number of partitions. */
         private final int parts;
 
@@ -365,7 +365,7 @@ public class ClientCacheAffinityMapping {
         }
 
         /** {@inheritDoc} */
-        @Override public int applyAsInt(Object key) {
+        @Override public int partition(Object key) {
             return RendezvousAffinityFunction.calculatePartition(key, affinityMask, parts);
         }
     }

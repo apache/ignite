@@ -36,7 +36,6 @@ import java.util.concurrent.locks.ReentrantReadWriteLock;
 import java.util.function.BiFunction;
 import java.util.function.Consumer;
 import java.util.function.Function;
-import java.util.function.ToIntFunction;
 import java.util.stream.Collectors;
 import java.util.stream.IntStream;
 import org.apache.ignite.IgniteBinary;
@@ -46,6 +45,7 @@ import org.apache.ignite.client.ClientAuthorizationException;
 import org.apache.ignite.client.ClientConnectionException;
 import org.apache.ignite.client.ClientException;
 import org.apache.ignite.client.ClientOperationType;
+import org.apache.ignite.client.ClientPartitionAwarenessMapperFactory;
 import org.apache.ignite.client.ClientRetryPolicy;
 import org.apache.ignite.client.ClientRetryPolicyContext;
 import org.apache.ignite.client.IgniteClientFuture;
@@ -408,12 +408,12 @@ final class ReliableChannel implements AutoCloseable {
      * @param cacheName Cache name.
      */
     public void registerKeyPartitionMapperFactory(int cacheId, String cacheName) {
-        BiFunction<String, Integer, ToIntFunction<Object>> factory = clientCfg.getPartitionAwarenessMapperFactory();
+        ClientPartitionAwarenessMapperFactory factory = clientCfg.getPartitionAwarenessMapperFactory();
 
         if (factory == null)
             return;
 
-        affinityCtx.addKeyMapperFactory(cacheId, parts -> factory.apply(cacheName, parts));
+        affinityCtx.addKeyMapperFactory(cacheId, parts -> factory.create(cacheName, parts));
     }
 
     /**

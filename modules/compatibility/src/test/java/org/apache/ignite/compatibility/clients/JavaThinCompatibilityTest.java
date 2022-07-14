@@ -22,8 +22,6 @@ import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.TimeUnit;
-import java.util.function.BiFunction;
-import java.util.function.ToIntFunction;
 import javax.cache.Cache;
 import javax.cache.event.CacheEntryEvent;
 import javax.cache.expiry.CreatedExpiryPolicy;
@@ -44,6 +42,8 @@ import org.apache.ignite.cache.query.ScanQuery;
 import org.apache.ignite.client.ClientCache;
 import org.apache.ignite.client.ClientCacheConfiguration;
 import org.apache.ignite.client.ClientFeatureNotSupportedByServerException;
+import org.apache.ignite.client.ClientPartitionAwarenessMapper;
+import org.apache.ignite.client.ClientPartitionAwarenessMapperFactory;
 import org.apache.ignite.client.ClientServiceDescriptor;
 import org.apache.ignite.client.ClientTransaction;
 import org.apache.ignite.client.IgniteClient;
@@ -458,11 +458,10 @@ public class JavaThinCompatibilityTest extends AbstractClientCompatibilityTest {
 
         ClientConfiguration cfg = new ClientConfiguration()
             .setAddresses(ADDR)
-            .setPartitionAwarenessMapperFactory(new BiFunction<String, Integer, ToIntFunction<Object>>() {
-                @Override public ToIntFunction<Object> apply(String cacheName, Integer parts) {
-                    assertEquals(cacheName, CACHE_WITH_CUSTOM_AFFINITY);
-
-                    AffinityFunction aff = new RendezvousAffinityFunction(false, parts);
+            .setPartitionAwarenessMapperFactory(new ClientPartitionAwarenessMapperFactory() {
+                /** {@inheritDoc} */
+                @Override public ClientPartitionAwarenessMapper create(String cacheName, int partitions) {
+                    AffinityFunction aff = new RendezvousAffinityFunction(false, partitions);
 
                     return aff::partition;
                 }
