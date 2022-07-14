@@ -46,7 +46,7 @@ public class ThinClientPartitionAwarenessResourceReleaseTest extends ThinClientA
 
         assertFalse(channels[0].isClosed());
         assertFalse(channels[1].isClosed());
-        assertTrue(GridTestUtils.waitForCondition(() -> threadsCount(THREAD_PREFIX) == 1, 1_000L));
+        assertEquals(1, threadsCount(THREAD_PREFIX));
 
         client.close();
 
