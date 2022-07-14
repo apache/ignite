@@ -3238,7 +3238,7 @@ public abstract class BPlusTree<L, T extends L> extends DataStructure implements
 
             assert meta0 != null;
 
-            restartFromRoot(meta0.rootId, meta0.rootLvl, globalRmvId.get());
+            init(meta0.rootId, meta0.rootLvl, globalRmvId.get());
         }
 
         /**
@@ -3246,7 +3246,7 @@ public abstract class BPlusTree<L, T extends L> extends DataStructure implements
          * @param rootLvl Root level.
          * @param rmvId Remove ID to be afraid of.
          */
-        void restartFromRoot(long rootId, int rootLvl, long rmvId) {
+        void init(long rootId, int rootLvl, long rmvId) {
             this.rootId = rootId;
             this.rootLvl = rootLvl;
             this.rmvId = rmvId;
@@ -3856,7 +3856,7 @@ public abstract class BPlusTree<L, T extends L> extends DataStructure implements
                 BPlusInnerIO<L> io = (BPlusInnerIO<L>)tail.io;
 
                 // Release tail in case of broken triangle invariant in locked pages.
-                if (io.getLeft(tail.buf, idx) != tail.down.pageId) {
+                if (io.getLeft(tail.pageAddr, idx) != tail.down.pageId) {
                     releaseTail();
 
                     return RETRY;
@@ -3868,20 +3868,20 @@ public abstract class BPlusTree<L, T extends L> extends DataStructure implements
             assert oldRow == null : "The old row must be set only once.";
 
             // Insertion index is found. Replace must be performed in both tail top and tail bottom.
-            replaceRowInPage(tail.io, tail.pageId, tail.page, tail.buf, idx);
+            replaceRowInPage(tail.io, tail.pageId, tail.page, tail.pageAddr, idx);
 
             // Unlock everything until the leaf, there's no need to hold these locks anymore.
             while (tail.lvl != 0) {
-                writeUnlockAndClose(tail.pageId, tail.page, tail.buf, null);
+                writeUnlockAndClose(tail.pageId, tail.page, tail.pageAddr, null);
 
                 tail = tail.down;
             }
 
             // Read old row from the leaf to reduce contention in inner pages.
-            oldRow = needOld ? getRow(tail.io, tail.buf, tail.idx) : (T)Boolean.TRUE;
+            oldRow = needOld ? getRow(tail.io, tail.pageAddr, tail.idx) : (T)Boolean.TRUE;
 
             // Replace row in the leaf.
-            replaceRowInPage(tail.io, tail.pageId, tail.page, tail.buf, tail.idx);
+            replaceRowInPage(tail.io, tail.pageId, tail.page, tail.pageAddr, tail.idx);
 
             finish();
 
@@ -4199,11 +4199,11 @@ public abstract class BPlusTree<L, T extends L> extends DataStructure implements
         }
 
         /** {@inheritDoc} */
-        @Override void restartFromRoot(long rootId, int rootLvl, long rmvId) {
-            super.restartFromRoot(rootId, rootLvl, rmvId);
+        @Override void init(long rootId, int rootLvl, long rmvId) {
+            super.init(rootId, rootLvl, rmvId);
 
             if (op != null)
-                op.restartFromRoot(rootId, rootLvl, rmvId);
+                op.init(rootId, rootLvl, rmvId);
         }
 
         /** {@inheritDoc} */
@@ -4473,12 +4473,12 @@ public abstract class BPlusTree<L, T extends L> extends DataStructure implements
          */
         protected final void doReleaseTail(Tail<L> t) {
             while (t != null) {
-                writeUnlockAndClose(t.pageId, t.page, t.buf, t.walPlc);
+                writeUnlockAndClose(t.pageId, t.page, t.pageAddr, t.walPlc);
 
                 Tail<L> s = t.sibling;
 
                 if (s != null)
-                    writeUnlockAndClose(s.pageId, s.page, s.buf, s.walPlc);
+                    writeUnlockAndClose(s.pageId, s.page, s.pageAddr, s.walPlc);
 
                 t = t.down;
             }
@@ -4588,7 +4588,7 @@ public abstract class BPlusTree<L, T extends L> extends DataStructure implements
             assert tail.type == Tail.EXACT : tail.type;
 
             if (tail.idx == Short.MIN_VALUE) {
-                int idx = findInsertionPoint(tail.lvl, tail.io, tail.buf, 0, tail.getCount(), row, 0);
+                int idx = findInsertionPoint(tail.lvl, tail.io, tail.pageAddr, 0, tail.getCount(), row, 0);
 
                 assert checkIndex(idx) : idx;
 
@@ -4609,14 +4609,14 @@ public abstract class BPlusTree<L, T extends L> extends DataStructure implements
             Tail<L> t = tail;
 
             while (t != null) {
-                sb.a(t.lvl).a(": ").a(printPage(t.io, t.buf, keys));
+                sb.a(t.lvl).a(": ").a(printPage(t.io, t.pageAddr, keys));
 
                 Tail<L> d = t.down;
 
                 t = t.sibling;
 
                 if (t != null)
-                    sb.a(" -> ").a(t.type == Tail.FORWARD ? "F" : "B").a(' ').a(printPage(t.io, t.buf, keys));
+                    sb.a(" -> ").a(t.type == Tail.FORWARD ? "F" : "B").a(' ').a(printPage(t.io, t.pageAddr, keys));
 
                 sb.a('\n');
 
@@ -4953,7 +4953,7 @@ public abstract class BPlusTree<L, T extends L> extends DataStructure implements
                         // Free root if it became empty after merge.
 
                         cutRoot(tail.lvl);
-                        freePage(tail.pageId, tail.page, tail.buf, tail.walPlc, true);
+                        freePage(tail.pageId, tail.page, tail.pageAddr, tail.walPlc, true);
 
                         tail = tail.down;
 
@@ -4963,7 +4963,7 @@ public abstract class BPlusTree<L, T extends L> extends DataStructure implements
                     }
 
                     if (tail.sibling != null &&
-                        tail.getCount() + tail.sibling.getCount() < tail.io.getMaxCount(tail.buf, pageSize())) {
+                        tail.getCount() + tail.sibling.getCount() < tail.io.getMaxCount(tail.pageAddr, pageSize())) {
                         // Release everything lower than tail, we've already merged this path.
                         doReleaseTail(tail.down);
                         tail.down = null;
@@ -4992,7 +4992,7 @@ public abstract class BPlusTree<L, T extends L> extends DataStructure implements
 
             Tail<L> leaf = getTail(t, 0);
 
-            removeDataRowFromLeaf(leaf.pageId, leaf.page, leaf.buf, leaf.walPlc, leaf.io, leaf.getCount(), insertionPoint(leaf));
+            removeDataRowFromLeaf(leaf.pageId, leaf.page, leaf.pageAddr, leaf.walPlc, leaf.io, leaf.getCount(), insertionPoint(leaf));
         }
 
         /**
@@ -5226,7 +5226,7 @@ public abstract class BPlusTree<L, T extends L> extends DataStructure implements
             if (right && cnt != 0)
                 idx++;
 
-            return inner(prnt.io).getLeft(prnt.buf, idx) == child.pageId;
+            return inner(prnt.io).getLeft(prnt.pageAddr, idx) == child.pageId;
         }
 
         /**
@@ -5239,8 +5239,8 @@ public abstract class BPlusTree<L, T extends L> extends DataStructure implements
         private boolean checkChildren(Tail<L> prnt, Tail<L> left, Tail<L> right, int idx) {
             assert idx >= 0 && idx < prnt.getCount() : idx;
 
-            return inner(prnt.io).getLeft(prnt.buf, idx) == left.pageId &&
-                inner(prnt.io).getRight(prnt.buf, idx) == right.pageId;
+            return inner(prnt.io).getLeft(prnt.pageAddr, idx) == left.pageId &&
+                inner(prnt.io).getRight(prnt.pageAddr, idx) == right.pageId;
         }
 
         /**
@@ -5253,7 +5253,7 @@ public abstract class BPlusTree<L, T extends L> extends DataStructure implements
         private boolean doMerge(Tail<L> prnt, Tail<L> left, Tail<L> right)
             throws IgniteCheckedException {
             assert right.io == left.io; // Otherwise incompatible.
-            assert left.io.getForward(left.buf) == right.pageId;
+            assert left.io.getForward(left.pageAddr) == right.pageId;
 
             int prntCnt = prnt.getCount();
             int prntIdx = fix(insertionPoint(prnt));
@@ -5273,7 +5273,7 @@ public abstract class BPlusTree<L, T extends L> extends DataStructure implements
 
             boolean emptyBranch = needMergeEmptyBranch == TRUE || needMergeEmptyBranch == READY;
 
-            if (!left.io.merge(prnt.io, prnt.buf, prntIdx, left.buf, right.buf, emptyBranch, pageSize()))
+            if (!left.io.merge(prnt.io, prnt.pageAddr, prntIdx, left.pageAddr, right.pageAddr, emptyBranch, pageSize()))
                 return false;
 
             // Invalidate indexes after successful merge.
@@ -5285,10 +5285,10 @@ public abstract class BPlusTree<L, T extends L> extends DataStructure implements
 
             // Remove split key from parent. If we are merging empty branch then remove only on the top iteration.
             if (needMergeEmptyBranch != READY)
-                doRemove(prnt.pageId, prnt.page, prnt.buf, prnt.walPlc, prnt.io, prntCnt, prntIdx);
+                doRemove(prnt.pageId, prnt.page, prnt.pageAddr, prnt.walPlc, prnt.io, prntCnt, prntIdx);
 
             // Forward page is now empty and has no links, can free and release it right away.
-            freePage(right.pageId, right.page, right.buf, right.walPlc, true);
+            freePage(right.pageId, right.page, right.pageAddr, right.walPlc, true);
 
             return true;
         }
@@ -5377,14 +5377,14 @@ public abstract class BPlusTree<L, T extends L> extends DataStructure implements
             long rmvId = globalRmvId.incrementAndGet();
 
             // Update inner key with the new biggest key of left subtree.
-            inner.io.store(inner.buf, innerIdx, leaf.io, leaf.buf, leafIdx);
-            inner.io.setRemoveId(inner.buf, rmvId);
+            inner.io.store(inner.pageAddr, innerIdx, leaf.io, leaf.pageAddr, leafIdx);
+            inner.io.setRemoveId(inner.pageAddr, rmvId);
 
             // TODO GG-11640 log a correct inner replace record.
             inner.walPlc = Boolean.TRUE;
 
             // Update remove ID for the leaf page.
-            leaf.io.setRemoveId(leaf.buf, rmvId);
+            leaf.io.setRemoveId(leaf.pageAddr, rmvId);
 
             if (needWalDeltaRecord(leaf.pageId, leaf.page, leaf.walPlc))
                 wal.log(new FixRemoveId(grpId, leaf.pageId, rmvId));
@@ -5493,7 +5493,7 @@ public abstract class BPlusTree<L, T extends L> extends DataStructure implements
         private final long page;
 
         /** */
-        private final long buf;
+        private final long pageAddr;
 
         /** */
         private Boolean walPlc;
@@ -5519,21 +5519,21 @@ public abstract class BPlusTree<L, T extends L> extends DataStructure implements
         /**
          * @param pageId Page ID.
          * @param page Page absolute pointer.
-         * @param buf Buffer.
+         * @param pageAddr Page address.
          * @param io IO.
          * @param type Type.
          * @param lvl Level.
          */
-        private Tail(long pageId, long page, long buf, BPlusIO<L> io, byte type, int lvl) {
+        private Tail(long pageId, long page, long pageAddr, BPlusIO<L> io, byte type, int lvl) {
             assert type == BACK || type == EXACT || type == FORWARD : type;
             assert lvl >= 0 && lvl <= Byte.MAX_VALUE : lvl;
             assert pageId != 0L;
             assert page != 0L;
-            assert buf != 0L;
+            assert pageAddr != 0L;
 
             this.pageId = pageId;
             this.page = page;
-            this.buf = buf;
+            this.pageAddr = pageAddr;
             this.io = io;
             this.type = type;
             this.lvl = (byte)lvl;
@@ -5543,7 +5543,7 @@ public abstract class BPlusTree<L, T extends L> extends DataStructure implements
          * @return Count.
          */
         private int getCount() {
-            return io.getCount(buf);
+            return io.getCount(pageAddr);
         }
 
         /** {@inheritDoc} */
@@ -5573,7 +5573,7 @@ public abstract class BPlusTree<L, T extends L> extends DataStructure implements
 
     /**
      * @param io IO.
-     * @param buf Buffer.
+     * @param pageAddr Page address.
      * @param low Start index.
      * @param cnt Row count.
      * @param row Lookup row.
@@ -5581,12 +5581,12 @@ public abstract class BPlusTree<L, T extends L> extends DataStructure implements
      * @return Insertion point as in {@link Arrays#binarySearch(Object[], Object, Comparator)}.
      * @throws IgniteCheckedException If failed.
      */
-    private int findInsertionPoint(int lvl, BPlusIO<L> io, long buf, int low, int cnt, L row, int shift)
+    private int findInsertionPoint(int lvl, BPlusIO<L> io, long pageAddr, int low, int cnt, L row, int shift)
         throws IgniteCheckedException {
         assert row != null;
 
         if (sequentialWriteOptsEnabled) {
-            assert io.getForward(buf) == 0L;
+            assert io.getForward(pageAddr) == 0L;
 
             return -cnt - 1;
         }
@@ -5596,7 +5596,7 @@ public abstract class BPlusTree<L, T extends L> extends DataStructure implements
         while (low <= high) {
             int mid = (low + high) >>> 1;
 
-            int cmp = compare(lvl, io, buf, mid, row);
+            int cmp = compare(lvl, io, pageAddr, mid, row);
 
             if (cmp == 0)
                 cmp = -shift; // We need to fix the case when search row matches multiple data rows.
