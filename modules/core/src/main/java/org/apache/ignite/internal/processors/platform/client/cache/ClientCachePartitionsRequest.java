@@ -86,7 +86,7 @@ public class ClientCachePartitionsRequest extends ClientRequest {
             ClientCachePartitionAwarenessGroup grp0 = grps.putIfAbsent(grp, grp);
 
             if (grp0 != null)
-                grp0.add(Collections.singletonList(cacheDesc));
+                grp0.addAll(Collections.singletonList(cacheDesc));
         }
 
         Map<Integer, List<DynamicCacheDescriptor>> allCaches = ctx.kernalContext().cache().cacheDescriptors().values()
@@ -109,7 +109,7 @@ public class ClientCachePartitionsRequest extends ClientRequest {
             ClientCachePartitionAwarenessGroup grp0 = grps.get(grp);
 
             if (grp0 != null)
-                grp0.add(descs);
+                grp0.addAll(descs);
         }
 
         return new ClientCachePartitionsResponse(requestId(), new ArrayList<>(grps.keySet()), affinityVer);

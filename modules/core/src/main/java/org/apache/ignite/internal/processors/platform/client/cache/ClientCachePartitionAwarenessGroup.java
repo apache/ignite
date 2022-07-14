@@ -32,7 +32,8 @@ import org.jetbrains.annotations.Nullable;
 import static org.apache.ignite.internal.processors.platform.client.cache.ClientCachePartitionsRequest.isDefaultMapping;
 
 /**
- * Partition mapping associated with the group of caches.
+ * Partitions mapping associated with a group of caches. This group may contain caches from different cache groups,
+ * the grouping criteria is - the same mapping and default or non-default affinity function flag.
  */
 class ClientCachePartitionAwarenessGroup {
     /** Partition mapping. If {@code null} then cache must be excluded in partition awareness usage (e.g. REPLICATED cache).  */
@@ -101,10 +102,10 @@ class ClientCachePartitionAwarenessGroup {
     }
 
     /**
-     * Add cache to affinity group.
+     * Add caches to the same affinity group.
      * @param descs Cache descriptors.
      */
-    public void add(List<DynamicCacheDescriptor> descs) {
+    public void addAll(List<DynamicCacheDescriptor> descs) {
         for (DynamicCacheDescriptor desc : descs)
             cacheCfgs.putIfAbsent(desc.cacheId(), desc.cacheConfiguration());
     }

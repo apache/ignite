@@ -239,6 +239,13 @@ public class ClientCacheAffinityContext {
     }
 
     /**
+     * @param cacheId Cache id.
+     */
+    public void removeKeyMapperFactory(int cacheId) {
+        cacheKeyMapperFactoryMap.remove(cacheId);
+    }
+
+    /**
      * Holder for list of nodes for topology version.
      */
     static class TopologyNodes {

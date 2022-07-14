@@ -417,6 +417,13 @@ final class ReliableChannel implements AutoCloseable {
     }
 
     /**
+     * @param cacheId Cache id.
+     */
+    public void unregisterKeyPartitionMapperFactory(int cacheId) {
+        affinityCtx.removeKeyMapperFactory(cacheId);
+    }
+
+    /**
      * Checks if affinity information for the cache is up to date and tries to update it if not.
      *
      * @return {@code True} if affinity information is up to date, {@code false} if there is not affinity information
