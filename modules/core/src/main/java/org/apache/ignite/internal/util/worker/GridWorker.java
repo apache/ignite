@@ -86,6 +86,10 @@ public abstract class GridWorker implements Runnable, WorkProgressDispatcher {
 
         this.igniteInstanceName = igniteInstanceName;
         this.name = name;
+
+        if (name.contains("thin-client-channel"))
+            System.out.println(">>>>>> stack " + U.stackTrace());
+
         this.log = log;
         this.lsnr = lsnr;
     }
