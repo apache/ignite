@@ -47,24 +47,25 @@ public class ThinClientPartitionAwarenessResourceReleaseTest extends ThinClientA
 
         assertFalse(channels[0].isClosed());
         assertFalse(channels[1].isClosed());
-        assertEquals(1, threadsCount(THREAD_PREFIX, log));
+        System.out.println(">>>>>>>>>>>>>> ");
+        U.dumpThreads(log);
+        assertEquals(1, threadsCount(THREAD_PREFIX));
 
         client.close();
 
+        System.out.println(">>>>>>>>>>>>>> ");
         assertTrue(channels[0].isClosed());
         assertTrue(channels[1].isClosed());
-        assertTrue(GridTestUtils.waitForCondition(() -> threadsCount(THREAD_PREFIX, log) == 0, 1_000L));
+        assertTrue(GridTestUtils.waitForCondition(() -> threadsCount(THREAD_PREFIX) == 0, 1_000L));
     }
 
     /**
      * Gets threads count with a given name.
      */
-    private static int threadsCount(String name, IgniteLogger log) {
+    private static int threadsCount(String name) {
         int cnt = 0;
 
         long[] threadIds = U.getThreadMx().getAllThreadIds();
-
-        U.dumpThreads(log);
 
         for (long id : threadIds) {
             ThreadInfo info = U.getThreadMx().getThreadInfo(id);
