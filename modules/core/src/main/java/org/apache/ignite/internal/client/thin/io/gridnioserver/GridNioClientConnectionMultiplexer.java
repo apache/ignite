@@ -154,10 +154,12 @@ public class GridNioClientConnectionMultiplexer implements ClientConnectionMulti
                 meta.put(GridNioSslFilter.HANDSHAKE_FUT_META_KEY, sslHandshakeFut);
             }
 
-            GridNioSession ses = srv.createSession(ch, meta, false, null).get();
+            GridNioFuture<GridNioSession> sesFut = srv.createSession(ch, meta, false, null);
 
             if (sslHandshakeFut != null)
                 sslHandshakeFut.get();
+
+            GridNioSession ses = sesFut.get();
 
             return new GridNioClientConnection(ses, msgHnd, stateHnd);
         }
