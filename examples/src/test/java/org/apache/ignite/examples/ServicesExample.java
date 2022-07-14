@@ -14,7 +14,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.apache.ignite.snippets.services;
+package org.apache.ignite.examples;
 
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteServices;
@@ -22,13 +22,14 @@ import org.apache.ignite.Ignition;
 import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.lang.IgnitePredicate;
+import org.apache.ignite.services.ServiceCallContext;
 import org.apache.ignite.services.ServiceConfiguration;
 import org.junit.Test;
 
-public class ServiceExample {
+public class ServicesExample {
 
     @Test
-    void serviceExample() {
+    public void serviceExample() {
         //tag::start-with-method[]
         Ignite ignite = Ignition.start();
 
@@ -42,7 +43,7 @@ public class ServiceExample {
         //tag::access-service[]
         //access the service by name
         MyCounterService counterService = ignite.services().serviceProxy("myCounterService",
-                MyCounterService.class, false); //non-sticky proxy
+            MyCounterService.class, false); //non-sticky proxy
 
         //call a service method
         counterService.increment();
@@ -59,7 +60,7 @@ public class ServiceExample {
     }
 
     @Test
-    void deployWithClusterGroup() {
+    public void deployWithClusterGroup() {
         //tag::deploy-with-cluster-group[]
         Ignite ignite = Ignition.start();
 
@@ -82,7 +83,7 @@ public class ServiceExample {
     //end::node-filter[]
 
     @Test
-    void affinityKey() {
+    public void affinityKey() {
 
         //tag::deploy-by-key[]
         Ignite ignite = Ignition.start();
@@ -112,7 +113,7 @@ public class ServiceExample {
     }
 
     @Test
-    void deployingWithNodeFilter() {
+    public void deployingWithNodeFilter() {
 
         System.setProperty("west.coast.node", "true");
 
@@ -139,7 +140,7 @@ public class ServiceExample {
     }
 
     @Test
-    void startWithConfig() {
+    public void startWithConfig() {
         //tag::start-with-service-config[]
         Ignite ignite = Ignition.start();
 
@@ -157,7 +158,7 @@ public class ServiceExample {
     }
 
     @Test
-    void startWithStatistics() {
+    public void startWithStatistics() {
         //tag::start-with-statistics[]
         Ignite ignite = Ignition.start();
 
@@ -180,7 +181,7 @@ public class ServiceExample {
     }
 
     @Test
-    void serviceConfiguration() {
+    public void serviceConfiguration() {
         //tag::service-configuration[]
         ServiceConfiguration serviceCfg = new ServiceConfiguration();
 
@@ -190,7 +191,7 @@ public class ServiceExample {
         serviceCfg.setService(new MyCounterServiceImpl());
 
         IgniteConfiguration igniteCfg = new IgniteConfiguration()
-                .setServiceConfiguration(serviceCfg);
+            .setServiceConfiguration(serviceCfg);
 
         // Start the node.
         Ignite ignite = Ignition.start(igniteCfg);
