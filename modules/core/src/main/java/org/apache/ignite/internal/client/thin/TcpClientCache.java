@@ -122,6 +122,8 @@ class TcpClientCache<K, V> implements ClientCache<K, V> {
         this.expiryPlc = expiryPlc;
 
         jCacheAdapter = new ClientJCacheAdapter<>(this);
+
+        this.ch.registerKeyPartitionMapperFactory(cacheId, this.name);
     }
 
     /** {@inheritDoc} */

@@ -22,8 +22,12 @@ import java.util.Arrays;
 import java.util.Map;
 import java.util.concurrent.Executor;
 import java.util.concurrent.ForkJoinPool;
+import java.util.function.BiFunction;
+import java.util.function.ToIntFunction;
 import javax.cache.configuration.Factory;
 import javax.net.ssl.SSLContext;
+import org.apache.ignite.cache.affinity.AffinityFunction;
+import org.apache.ignite.cache.affinity.AffinityKeyMapper;
 import org.apache.ignite.client.ClientAddressFinder;
 import org.apache.ignite.client.ClientRetryAllPolicy;
 import org.apache.ignite.client.ClientRetryPolicy;
@@ -110,6 +114,25 @@ public final class ClientConfiguration implements Serializable {
      * Whether partition awareness should be enabled.
      */
     private boolean partitionAwarenessEnabled = true;
+
+    /**
+     * This factory is used only when the partition awareness thin client feature is enabled. By default, on a new cache
+     * the RendezvousAffinityFunction will be used for calculating mappings 'key-to-partition' and 'partition-to-node'. The
+     * thin client will keep all 'partitions-to-node' mappings up to date when each cache put/get request occurs and the
+     * 'key-to-partition' mapping will also be calculated on the client side.
+     *
+     * The case described above will not be possible (and in turn partition awareness won't work) when a custom {@link AffinityFunction} or
+     * a {@link AffinityKeyMapper} was previously used for a cache creation. The affinity function factory is used to solve this issue.
+     * All 'partition-to-node' mappings will still be requested from a server node, however, if a custom affinity function or a custom
+     * affinity key mapper was used the affinity function produced by this factory will calculate mapping a key to a partition.
+     *
+     * These key to partition mapping functions produced by the factory are used only for local calculations, they will not
+     * be passed to a server node.
+     *
+     * This factory accepts as parameters a cache name and the number of cache partitions received from a server node and produces
+     * key to partition mapping functions.
+     */
+    private BiFunction<String, Integer, ToIntFunction<Object>> partitionAwarenessMapperFactory;
 
     /**
      * Reconnect throttling period (in milliseconds). There are no more than {@code reconnectThrottlingRetries}
@@ -785,5 +808,24 @@ public final class ClientConfiguration implements Serializable {
         this.autoBinaryConfigurationEnabled = autoBinaryConfigurationEnabled;
 
         return this;
+    }
+
+    /**
+     * @param factory Factory that accepts as parameters a cache name and the number of cache partitions received from a server node
+     * and produces key to partition mapping functions.
+     * @return {@code this} for chaining.
+     */
+    public ClientConfiguration setPartitionAwarenessMapperFactory(BiFunction<String, Integer, ToIntFunction<Object>> factory) {
+        partitionAwarenessMapperFactory = factory;
+
+        return this;
+    }
+
+    /**
+     * @return Factory that accepts as parameters a cache name and the number of cache partitions received from a server node
+     * and produces key to partition mapping functions.
+     */
+    public BiFunction<String, Integer, ToIntFunction<Object>> getPartitionAwarenessMapperFactory() {
+        return partitionAwarenessMapperFactory;
     }
 }

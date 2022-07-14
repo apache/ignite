@@ -18,6 +18,7 @@
 package org.apache.ignite.internal.client.thin;
 
 import java.lang.management.ThreadInfo;
+import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.client.ClientCache;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.testframework.GridTestUtils;
@@ -46,22 +47,24 @@ public class ThinClientPartitionAwarenessResourceReleaseTest extends ThinClientA
 
         assertFalse(channels[0].isClosed());
         assertFalse(channels[1].isClosed());
-        assertEquals(1, threadsCount(THREAD_PREFIX));
+        assertEquals(1, threadsCount(THREAD_PREFIX, log));
 
         client.close();
 
         assertTrue(channels[0].isClosed());
         assertTrue(channels[1].isClosed());
-        assertTrue(GridTestUtils.waitForCondition(() -> threadsCount(THREAD_PREFIX) == 0, 1_000L));
+        assertTrue(GridTestUtils.waitForCondition(() -> threadsCount(THREAD_PREFIX, log) == 0, 1_000L));
     }
 
     /**
      * Gets threads count with a given name.
      */
-    private static int threadsCount(String name) {
+    private static int threadsCount(String name, IgniteLogger log) {
         int cnt = 0;
 
         long[] threadIds = U.getThreadMx().getAllThreadIds();
+
+        U.dumpThreads(log);
 
         for (long id : threadIds) {
             ThreadInfo info = U.getThreadMx().getThreadInfo(id);

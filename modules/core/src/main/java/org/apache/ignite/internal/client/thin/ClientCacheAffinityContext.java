@@ -19,10 +19,14 @@ package org.apache.ignite.internal.client.thin;
 
 import java.util.Collection;
 import java.util.Collections;
+import java.util.Map;
 import java.util.Set;
 import java.util.UUID;
+import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentLinkedQueue;
 import java.util.concurrent.atomic.AtomicReference;
+import java.util.function.Function;
+import java.util.function.ToIntFunction;
 import org.apache.ignite.IgniteBinary;
 import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
 import org.apache.ignite.internal.util.GridConcurrentHashSet;
@@ -31,8 +35,14 @@ import org.apache.ignite.internal.util.GridConcurrentHashSet;
  * Client cache partition awareness context.
  */
 public class ClientCacheAffinityContext {
+    /** Default key to partition mapping function. */
+    private static final Function<Integer, ToIntFunction<Object>> DEFAULT_KEY_MAPPER = parts -> null;
+
     /** Binary data processor. */
     private final IgniteBinary binary;
+
+    /** Factory for each cache id to produce key to partition mapping functions. */
+    private final Map<Integer, Function<Integer, ToIntFunction<Object>>> cacheKeyMapperFactoryMap = new ConcurrentHashMap<>();
 
     /** Contains last topology version and known nodes of this version. */
     private final AtomicReference<TopologyNodes> lastTop = new AtomicReference<>();
@@ -116,7 +126,7 @@ public class ClientCacheAffinityContext {
      * @param ch Payload output channel.
      */
     public void writePartitionsUpdateRequest(PayloadOutputChannel ch) {
-        ClientCacheAffinityMapping.writeRequest(ch, pendingCacheIds);
+        ClientCacheAffinityMapping.writeRequest(ch, pendingCacheIds, cacheKeyMapperFactoryMap::get);
     }
 
     /**
@@ -126,7 +136,8 @@ public class ClientCacheAffinityContext {
         if (lastTop.get() == null)
             return false;
 
-        ClientCacheAffinityMapping newMapping = ClientCacheAffinityMapping.readResponse(ch);
+        ClientCacheAffinityMapping newMapping = ClientCacheAffinityMapping.readResponse(ch,
+            cacheId -> cacheKeyMapperFactoryMap.getOrDefault(cacheId, DEFAULT_KEY_MAPPER));
 
         ClientCacheAffinityMapping oldMapping = affinityMapping;
 
@@ -217,6 +228,14 @@ public class ClientCacheAffinityContext {
             return null;
 
         return mapping;
+    }
+
+    /**
+     * @param cacheId Cache id.
+     * @param factory Key mapper factory.
+     */
+    public void addKeyMapperFactory(int cacheId, Function<Integer, ToIntFunction<Object>> factory) {
+        cacheKeyMapperFactoryMap.putIfAbsent(cacheId, factory);
     }
 
     /**

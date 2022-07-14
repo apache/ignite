@@ -83,6 +83,8 @@ class ClientIgniteSetImpl<T> implements ClientIgniteSet<T> {
         this.name = name;
         this.colocated = colocated;
         this.cacheId = cacheId;
+
+        this.ch.registerKeyPartitionMapperFactory(cacheId, this.name);
     }
 
     /** {@inheritDoc} */

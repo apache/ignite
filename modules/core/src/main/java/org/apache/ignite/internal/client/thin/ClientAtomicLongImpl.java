@@ -55,6 +55,8 @@ public class ClientAtomicLongImpl implements ClientAtomicLong {
 
         String groupNameInternal = groupName == null ? DataStructuresProcessor.DEFAULT_DS_GROUP_NAME : groupName;
         cacheId = ClientUtils.cacheId(DataStructuresProcessor.ATOMICS_CACHE_NAME + "@" + groupNameInternal);
+
+        this.ch.registerKeyPartitionMapperFactory(cacheId, this.name);
     }
 
     /** {@inheritDoc} */

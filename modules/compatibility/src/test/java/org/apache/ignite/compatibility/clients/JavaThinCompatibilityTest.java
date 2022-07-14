@@ -22,18 +22,23 @@ import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.TimeUnit;
+import java.util.function.BiFunction;
+import java.util.function.ToIntFunction;
 import javax.cache.Cache;
 import javax.cache.event.CacheEntryEvent;
 import javax.cache.expiry.CreatedExpiryPolicy;
 import javax.cache.expiry.Duration;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteBinary;
+import org.apache.ignite.IgniteCache;
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.Ignition;
 import org.apache.ignite.binary.BinaryObject;
 import org.apache.ignite.cache.CacheAtomicityMode;
 import org.apache.ignite.cache.CacheMode;
 import org.apache.ignite.cache.QueryEntity;
+import org.apache.ignite.cache.affinity.AffinityFunction;
+import org.apache.ignite.cache.affinity.rendezvous.RendezvousAffinityFunction;
 import org.apache.ignite.cache.query.ContinuousQuery;
 import org.apache.ignite.cache.query.ScanQuery;
 import org.apache.ignite.client.ClientCache;
@@ -47,6 +52,7 @@ import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.compute.ComputeJob;
 import org.apache.ignite.compute.ComputeJobResult;
 import org.apache.ignite.compute.ComputeTaskAdapter;
+import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.ClientConfiguration;
 import org.apache.ignite.configuration.ClientConnectorConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
@@ -66,7 +72,7 @@ import org.jetbrains.annotations.Nullable;
 import org.junit.Assume;
 import org.junit.runner.RunWith;
 import org.junit.runners.Parameterized;
-
+import static org.apache.ignite.internal.client.thin.ProtocolBitmaskFeature.ALL_AFFINITY_MAPPINGS;
 import static org.apache.ignite.internal.client.thin.ProtocolBitmaskFeature.GET_SERVICE_DESCRIPTORS;
 import static org.apache.ignite.internal.client.thin.ProtocolBitmaskFeature.SERVICE_INVOKE_CALLCTX;
 import static org.apache.ignite.testframework.GridTestUtils.assertThrowsWithCause;
@@ -79,6 +85,9 @@ import static org.apache.ignite.testframework.GridTestUtils.assertThrowsWithCaus
 public class JavaThinCompatibilityTest extends AbstractClientCompatibilityTest {
     /** Thin client endpoint. */
     private static final String ADDR = "127.0.0.1:10800";
+
+    /** Cache name. */
+    private static final String CACHE_WITH_CUSTOM_AFFINITY = "cache_with_custom_affinity";
 
     /** {@inheritDoc} */
     @Override protected IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {
@@ -95,6 +104,11 @@ public class JavaThinCompatibilityTest extends AbstractClientCompatibilityTest {
 
         if (ver.compareTo(VER_2_13_0) >= 0)
             ignite.services().deployNodeSingleton("ctx_service", new CtxService());
+
+        IgniteCache<Integer, Integer> cache = ignite.getOrCreateCache(new CacheConfiguration<Integer, Integer>(CACHE_WITH_CUSTOM_AFFINITY)
+            .setAffinity(new CustomAffinity()));
+
+        cache.put(0, 0);
 
         super.initNode(ignite);
     }
@@ -429,6 +443,57 @@ public class JavaThinCompatibilityTest extends AbstractClientCompatibilityTest {
                 testServicesWithCallerContextThrows();
             }
         }
+
+        if (clientVer.compareTo(VER_2_14_0) >= 0) {
+            if (serverVer.compareTo(VER_2_14_0) >= 0)
+                testCustomPartitionAwarenessMapper();
+            else if (serverVer.compareTo(VER_2_11_0) >= 0) // Partition awareness available from.
+                testCustomPartitionAwarenessMapperThrows();
+        }
+    }
+
+    /** */
+    private void testCustomPartitionAwarenessMapper() {
+        X.println(">>>> Testing custom partition awareness mapper");
+
+        ClientConfiguration cfg = new ClientConfiguration()
+            .setAddresses(ADDR)
+            .setPartitionAwarenessMapperFactory(new BiFunction<String, Integer, ToIntFunction<Object>>() {
+                @Override public ToIntFunction<Object> apply(String cacheName, Integer parts) {
+                    assertEquals(cacheName, CACHE_WITH_CUSTOM_AFFINITY);
+
+                    AffinityFunction aff = new RendezvousAffinityFunction(false, parts);
+
+                    return aff::partition;
+                }
+            });
+
+        try (IgniteClient client = Ignition.startClient(cfg)) {
+            ClientCache<Integer, Integer> cache = client.cache(CACHE_WITH_CUSTOM_AFFINITY);
+
+            assertEquals(CACHE_WITH_CUSTOM_AFFINITY, cache.getName());
+            assertEquals(Integer.valueOf(0), cache.get(0));
+        }
+    }
+
+    /** */
+    private void testCustomPartitionAwarenessMapperThrows() {
+        X.println(">>>> Testing custom partition awareness mapper throws");
+
+        ClientConfiguration cfg = new ClientConfiguration()
+            .setAddresses(ADDR)
+            .setPartitionAwarenessMapperFactory((cacheName, parts) -> null);
+
+        try (IgniteClient client = Ignition.startClient(cfg)) {
+            String errMsg = "Feature " + ALL_AFFINITY_MAPPINGS.name() + " is not supported by the server";
+
+            Throwable err = assertThrowsWithCause(
+                () -> client.cache(CACHE_WITH_CUSTOM_AFFINITY).get(0),
+                ClientFeatureNotSupportedByServerException.class
+            );
+
+            assertEquals(errMsg, err.getMessage());
+        }
     }
 
     /** */
@@ -557,5 +622,9 @@ public class JavaThinCompatibilityTest extends AbstractClientCompatibilityTest {
         @Nullable @Override public Integer reduce(List<ComputeJobResult> results) throws IgniteException {
             return results.get(0).getData();
         }
+    }
+
+    /** */
+    public static class CustomAffinity extends RendezvousAffinityFunction {
     }
 }
