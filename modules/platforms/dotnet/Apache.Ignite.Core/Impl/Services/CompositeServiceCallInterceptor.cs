@@ -27,7 +27,6 @@ namespace Apache.Ignite.Core.Impl.Services
     /// Composite service call interceptor.
     /// </summary>
     /// <seealso cref="IServiceCallInterceptor"/>
-    [Serializable]
     internal class CompositeServiceCallInterceptor : IServiceCallInterceptor
     {
         // Service call interceptors.

@@ -21,11 +21,10 @@ namespace Apache.Ignite.Core.Tests.Services
     using Apache.Ignite.Core.Services;
 
     /** Test service call interceptor. */
-    [Serializable]
     public class PlatformTestServiceInterceptor : IServiceCallInterceptor
     {
         /** Name of the method to intercept. */
-        private string _targetMethod;
+        private readonly string _targetMethod;
 
         /// <summary>
         /// Constructor.
