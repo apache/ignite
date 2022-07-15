@@ -18,10 +18,12 @@
 package org.apache.ignite.internal.processors.platform.client.cache;
 
 import java.util.ArrayList;
-import java.util.Collections;
+import java.util.Arrays;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
+import java.util.Set;
 import java.util.stream.Collectors;
 import org.apache.ignite.binary.BinaryRawReader;
 import org.apache.ignite.cache.CacheMode;
@@ -36,6 +38,7 @@ import org.apache.ignite.internal.processors.platform.client.ClientConnectionCon
 import org.apache.ignite.internal.processors.platform.client.ClientProtocolContext;
 import org.apache.ignite.internal.processors.platform.client.ClientRequest;
 import org.apache.ignite.internal.processors.platform.client.ClientResponse;
+import org.apache.ignite.internal.util.lang.gridfunc.NotContainsPredicate;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.lang.IgnitePredicate;
 import org.jetbrains.annotations.Nullable;
@@ -44,7 +47,7 @@ import static org.apache.ignite.internal.processors.query.QueryUtils.isCustomAff
 
 /**
  * Cluster node list request.
- * Currently used to request list of nodes, to calculate affinity on the client side.
+ * Currently, used to request list of nodes, to calculate affinity on the client side.
  */
 public class ClientCachePartitionsRequest extends ClientRequest {
     /** IDs of caches. */
@@ -81,38 +84,34 @@ public class ClientCachePartitionsRequest extends ClientRequest {
         Map<ClientCachePartitionAwarenessGroup, ClientCachePartitionAwarenessGroup> grps = new HashMap<>(cacheIds.length);
         ClientAffinityTopologyVersion affinityVer = ctx.checkAffinityTopologyVersion();
 
+        Set<Integer> affectedGroupIds = Arrays.stream(cacheIds)
+            .mapToObj(id -> ctx.kernalContext().cache().cacheDescriptor(id))
+            .filter(Objects::nonNull)
+            .map(DynamicCacheDescriptor::groupId)
+            .collect(Collectors.toSet());
+
+        Map<Integer, List<DynamicCacheDescriptor>> allCaches = ctx.kernalContext().cache().cacheDescriptors().values()
+            .stream()
+            .filter(Objects::nonNull)
+            .filter(c -> c.cacheType().userCache())
+            .collect(Collectors.groupingBy(DynamicCacheDescriptor::groupId));
+
         // As a first step, get a set of mappings that we need to return.
         // To do that, check if any of the caches listed in request can be grouped.
-        for (int cacheId : cacheIds) {
-            DynamicCacheDescriptor cacheDesc = ctx.kernalContext().cache().cacheDescriptor(cacheId);
-
-            // Just ignoring, if the cache is absent - i.e. was deleted concurrently.
-            if (cacheDesc == null)
-                continue;
-
-            ClientCachePartitionAwarenessGroup grp = processCache(ctx, affinityVer, cacheDesc, withCustomMappings);
+        for (List<DynamicCacheDescriptor> affected : F.view(allCaches, affectedGroupIds::contains).values()) {
+            ClientCachePartitionAwarenessGroup grp = processCache(ctx, affinityVer, F.first(affected), withCustomMappings);
 
             if (grp == null)
                 continue;
 
             ofNullable(grps.putIfAbsent(grp, grp))
                 .orElse(grp)
-                .addAll(Collections.singletonList(cacheDesc));
+                .addAll(affected);
         }
 
-        Map<Integer, List<DynamicCacheDescriptor>> allCaches = ctx.kernalContext().cache().cacheDescriptors().values()
-            .stream()
-            .filter(c -> c.cacheType().userCache())
-            .collect(Collectors.groupingBy(DynamicCacheDescriptor::groupId));
-
         // As a second step, check all other caches and add them to groups they are compatible with.
-        for (List<DynamicCacheDescriptor> descs: allCaches.values()) {
-            DynamicCacheDescriptor desc = F.first(descs);
-
-            if (desc == null)
-                continue;
-
-            ClientCachePartitionAwarenessGroup grp = processCache(ctx, affinityVer, desc, withCustomMappings);
+        for (List<DynamicCacheDescriptor> descs : F.view(allCaches, new NotContainsPredicate<>(affectedGroupIds)).values()) {
+            ClientCachePartitionAwarenessGroup grp = processCache(ctx, affinityVer, F.first(descs), withCustomMappings);
 
             if (grp == null)
                 continue;
