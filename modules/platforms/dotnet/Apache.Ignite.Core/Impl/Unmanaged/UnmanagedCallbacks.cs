@@ -1022,7 +1022,7 @@ namespace Apache.Ignite.Core.Impl.Unmanaged
 
                     var srvKeepBinary = reader.ReadBoolean();
                     var svc = reader.ReadObject<IService>();
-                    var interceptors = reader.ReadCollection();
+                    var interceptors = reader.ReadCollectionAsList<IServiceCallInterceptor>();
                     var svcCtx = new ServiceContext(svc, WrapInterceptors(interceptors),
                         srvKeepBinary ? _ignite.Marshaller.StartUnmarshal(stream, true) : reader);
 
