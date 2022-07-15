@@ -170,6 +170,7 @@ public class IgniteCacheMvccTestSuite2 {
         ignoredTests.add(RendezvousAffinityFunctionBackupFilterSelfTest.class);
         ignoredTests.add(ClusterNodeAttributeAffinityBackupFilterSelfTest.class);
         ignoredTests.add(ClusterNodeAttributeColocatedBackupFilterSelfTest.class);
+        ignoredTests.add(com.sbt.sbergrid.extras.ClusterNodeAttributeColocatedBackupFilterSelfTest.class);
         ignoredTests.add(NonAffinityCoordinatorDynamicStartStopTest.class);
 
         ignoredTests.add(NoneRebalanceModeSelfTest.class);
