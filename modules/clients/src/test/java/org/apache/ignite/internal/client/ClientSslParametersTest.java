@@ -269,7 +269,7 @@ public class ClientSslParametersTest extends GridCommonAbstractTest {
         checkSuccessfulClientStart(
             null,
             new String[] {
-                "TLSv1.1",
+                "TLSv1.2",
                 "SSLv3"
             }
         );
