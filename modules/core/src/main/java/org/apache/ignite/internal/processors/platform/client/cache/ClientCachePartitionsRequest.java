@@ -30,6 +30,7 @@ import org.apache.ignite.cache.CacheMode;
 import org.apache.ignite.cache.affinity.rendezvous.RendezvousAffinityFunction;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.internal.processors.affinity.AffinityAssignment;
+import org.apache.ignite.internal.processors.cache.CacheType;
 import org.apache.ignite.internal.processors.cache.DynamicCacheDescriptor;
 import org.apache.ignite.internal.processors.cache.GridCacheContext;
 import org.apache.ignite.internal.processors.platform.client.ClientAffinityTopologyVersion;
@@ -93,7 +94,7 @@ public class ClientCachePartitionsRequest extends ClientRequest {
         Map<Integer, List<DynamicCacheDescriptor>> allCaches = ctx.kernalContext().cache().cacheDescriptors().values()
             .stream()
             .filter(Objects::nonNull)
-            .filter(c -> c.cacheType().userCache())
+            .filter(c -> c.cacheType() == CacheType.USER || c.cacheType() == CacheType.DATA_STRUCTURES)
             .collect(Collectors.groupingBy(DynamicCacheDescriptor::groupId));
 
         // As a first step, get a set of mappings that we need to return.
