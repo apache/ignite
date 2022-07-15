@@ -18,7 +18,6 @@
 namespace Apache.Ignite.Core.Impl.Unmanaged
 {
     using System;
-    using System.Collections;
     using System.Collections.Generic;
     using System.Diagnostics;
     using System.Diagnostics.CodeAnalysis;
@@ -1022,7 +1021,7 @@ namespace Apache.Ignite.Core.Impl.Unmanaged
 
                     var srvKeepBinary = reader.ReadBoolean();
                     var svc = reader.ReadObject<IService>();
-                    var interceptors = reader.ReadCollectionAsList<IServiceCallInterceptor>();
+                    var interceptors = reader.ReadObject<ICollection<IServiceCallInterceptor>>();
                     var svcCtx = new ServiceContext(svc, WrapInterceptors(interceptors),
                         srvKeepBinary ? _ignite.Marshaller.StartUnmarshal(stream, true) : reader);
 
@@ -1060,7 +1059,7 @@ namespace Apache.Ignite.Core.Impl.Unmanaged
         /// </summary>
         /// <param name="interceptors">Service call interceptors.</param>
         /// <returns>Composite service call interceptor or null.</returns>
-        private IServiceCallInterceptor WrapInterceptors(IList<IServiceCallInterceptor> interceptors)
+        private IServiceCallInterceptor WrapInterceptors(ICollection<IServiceCallInterceptor> interceptors)
         {
             if (interceptors == null)
                 return null;
@@ -1070,7 +1069,7 @@ namespace Apache.Ignite.Core.Impl.Unmanaged
                 ResourceProcessor.Inject(interceptor, _ignite);
 
             // Wrap into a composite interceptor if necessary.
-            return interceptors.Count == 1 ? interceptors[0] : new CompositeServiceCallInterceptor(interceptors);
+            return interceptors.Count == 1 ? interceptors.First() : new CompositeServiceCallInterceptor(interceptors);
         }
 
         private long ServiceExecute(long memPtr)

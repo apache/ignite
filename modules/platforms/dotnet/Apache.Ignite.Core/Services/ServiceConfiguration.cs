@@ -18,7 +18,6 @@
 namespace Apache.Ignite.Core.Services
 {
     using System;
-    using System.Collections;
     using System.Collections.Generic;
     using System.Diagnostics;
     using System.Diagnostics.CodeAnalysis;
@@ -103,7 +102,7 @@ namespace Apache.Ignite.Core.Services
                 w.WriteObject<object>(null);
             
             if (Interceptors != null)
-                w.WriteCollection(Interceptors as ICollection);
+                w.WriteObject(Interceptors);
             else
                 w.WriteObject<object>(null);
 
@@ -166,7 +165,7 @@ namespace Apache.Ignite.Core.Services
             try
             {
                 NodeFilter = r.ReadObject<IClusterNodeFilter>();
-                Interceptors = (ICollection<IServiceCallInterceptor>)r.ReadCollection();
+                Interceptors = r.ReadObject<ICollection<IServiceCallInterceptor>>();
             }
             catch (Exception)
             {
