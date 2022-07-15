@@ -68,13 +68,14 @@ namespace Apache.Ignite.Core.Services
         /// Gets or sets node filter used to filter nodes on which the service will be deployed.
         /// </summary>
         public IClusterNodeFilter NodeFilter { get; set; }
-        
+
         /// <summary>
         /// Gets or sets service call interceptors.
         /// </summary>
         [IgniteExperimental]
+        [SuppressMessage("Microsoft.Usage", "CA2227:CollectionPropertiesShouldBeReadOnly")]
         public ICollection<IServiceCallInterceptor> Interceptors { get; set; }
-        
+
         /// <summary>
         /// Enables or disables service statistics.
         /// NOTE: Service statistics work only via service proxies. <see cref="IServices.GetServiceProxy{T}(string)"/>
@@ -165,7 +166,7 @@ namespace Apache.Ignite.Core.Services
             try
             {
                 NodeFilter = r.ReadObject<IClusterNodeFilter>();
-                Interceptors = (IReadOnlyCollection<IServiceCallInterceptor>)r.ReadCollection();
+                Interceptors = (ICollection<IServiceCallInterceptor>)r.ReadCollection();
             }
             catch (Exception)
             {

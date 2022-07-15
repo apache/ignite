@@ -36,7 +36,7 @@ namespace Apache.Ignite.Core.Impl.Services
         /// Constructor.
         /// </summary>
         /// <param name="interceptors">Service call interceptors.</param>
-        public CompositeServiceCallInterceptor(IEnumerable<IServiceCallInterceptor> interceptors)
+        public CompositeServiceCallInterceptor(ICollection<IServiceCallInterceptor> interceptors)
         {
             _interceptors = interceptors;
         }
