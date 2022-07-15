@@ -23,12 +23,12 @@ import org.apache.ignite.cache.affinity.AffinityKeyMapper;
 /**
  * This factory is used on the client side and only when the partition awareness thin client feature is enabled. By default,
  * on a new cache the RendezvousAffinityFunction will be used for calculating mappings 'key-to-partition' and 'partition-to-node'.
- * The thin client will update all 'partitions-to-node' mappings on every a cache put/get request and the 'key-to-partition'
+ * The thin client will update all 'partitions-to-node' mappings on every cluster topology change and the 'key-to-partition'
  * mapping will be calculated on the client side.
  * <p>
  * The case described above will not be possible (and in turn partition awareness won't work) when a custom {@link AffinityFunction} or
  * a {@link AffinityKeyMapper} was previously used for a cache creation. The partition awareness mapper factory is used to solve this
- * issue. All 'partition-to-node' mappings will still be requested nad received from a server node, however, if a custom AffinityFunction
+ * issue. All 'partition-to-node' mappings will still be requested and received from a server node, however, if a custom AffinityFunction
  * or a custom AffinityKeyMapper was used a ClientPartitionAwarenessMapper produced by this factory will calculate mapping a key to
  * a partition.
  * <p>
