@@ -30,7 +30,7 @@ namespace Apache.Ignite.Core.Impl.Services
     internal class CompositeServiceCallInterceptor : IServiceCallInterceptor
     {
         // Service call interceptors.
-        private readonly IEnumerable<IServiceCallInterceptor> _interceptors;
+        private readonly ICollection<IServiceCallInterceptor> _interceptors;
 
         /// <summary>
         /// Constructor.
