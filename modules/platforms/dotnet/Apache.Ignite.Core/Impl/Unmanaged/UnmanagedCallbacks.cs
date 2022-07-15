@@ -1070,8 +1070,7 @@ namespace Apache.Ignite.Core.Impl.Unmanaged
                 ResourceProcessor.Inject(interceptor, _ignite);
 
             // Wrap into a composite interceptor if necessary.
-            return interceptors.Count == 1 ? interceptors.OfType<IServiceCallInterceptor>().First() :
-                new CompositeServiceCallInterceptor(interceptors.OfType<IServiceCallInterceptor>());
+            return interceptors.Count == 1 ? interceptors[0] : new CompositeServiceCallInterceptor(interceptors);
         }
 
         private long ServiceExecute(long memPtr)
