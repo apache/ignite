@@ -156,15 +156,18 @@ public class ClientCacheAffinityMapping {
     ) {
         ProtocolContext ctx = ch.clientChannel().protocolCtx();
 
-        boolean hasFactory = cacheIds.stream()
+        boolean customMappingsRequired = cacheIds.stream()
             .map(cacheId -> Objects.nonNull(mappers.apply(cacheId)))
             .reduce(Boolean::logicalOr)
             .orElse(false);
 
-        if (hasFactory && !ctx.isFeatureSupported(ALL_AFFINITY_MAPPINGS))
+        if (customMappingsRequired && !ctx.isFeatureSupported(ALL_AFFINITY_MAPPINGS))
             throw new ClientFeatureNotSupportedByServerException(ALL_AFFINITY_MAPPINGS);
 
         BinaryOutputStream out = ch.out();
+
+        if (ctx.isFeatureSupported(ALL_AFFINITY_MAPPINGS))
+            out.writeBoolean(customMappingsRequired);
 
         out.writeInt(cacheIds.size());
 

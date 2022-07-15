@@ -28,7 +28,6 @@ import org.apache.ignite.configuration.ClientConfiguration;
  * or a {@link AffinityKeyMapper} this function will be used to calculate mappings. Be sure that a key maps to the same partition
  * produced by the {@link AffinityFunction#partition(Object)} method.
  *
- *
  * @see AffinityFunction#partition(Object)
  */
 public interface ClientPartitionAwarenessMapper {

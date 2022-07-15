@@ -29,7 +29,6 @@ import org.apache.ignite.internal.processors.cache.binary.CacheObjectBinaryProce
 import org.apache.ignite.internal.processors.platform.client.ClientBitmaskFeature;
 import org.apache.ignite.internal.processors.platform.client.ClientProtocolContext;
 import org.jetbrains.annotations.Nullable;
-import static org.apache.ignite.internal.processors.platform.client.cache.ClientCachePartitionsRequest.isDefaultMapping;
 
 /**
  * Partitions mapping associated with a group of caches. This group may contain caches from different cache groups,
@@ -40,20 +39,18 @@ class ClientCachePartitionAwarenessGroup {
     private final @Nullable ClientCachePartitionMapping mapping;
 
     /** {@code true} if the RendezvousAffinityFunction is used with the default affinity key mapper. */
-    private final boolean dfltMapping;
+    private final boolean dfltAffinity;
 
     /** Descriptor of the associated caches. */
     private final Map<Integer, CacheConfiguration<?, ?>> cacheCfgs = new HashMap<>();
 
     /**
      * @param mapping Partition mapping.
-     * @param cacheDesc Descriptor of the initial cache.
+     * @param dfltAffinity {@code true} if the default affinity or a custom affinity mapper was used.
      */
-    public ClientCachePartitionAwarenessGroup(@Nullable ClientCachePartitionMapping mapping, DynamicCacheDescriptor cacheDesc) {
+    public ClientCachePartitionAwarenessGroup(@Nullable ClientCachePartitionMapping mapping, boolean dfltAffinity) {
         this.mapping = mapping;
-
-        dfltMapping = isDefaultMapping(cacheDesc.cacheConfiguration());
-        cacheCfgs.put(cacheDesc.cacheId(), cacheDesc.cacheConfiguration());
+        this.dfltAffinity = dfltAffinity;
     }
 
     /**
@@ -98,7 +95,7 @@ class ClientCachePartitionAwarenessGroup {
             mapping.write(writer);
 
         if (cpctx.isFeatureSupported(ClientBitmaskFeature.ALL_AFFINITY_MAPPINGS))
-            writer.writeBoolean(dfltMapping);
+            writer.writeBoolean(dfltAffinity);
     }
 
     /**
@@ -120,11 +117,11 @@ class ClientCachePartitionAwarenessGroup {
 
         ClientCachePartitionAwarenessGroup group = (ClientCachePartitionAwarenessGroup)o;
 
-        return dfltMapping == group.dfltMapping && Objects.equals(mapping, group.mapping);
+        return dfltAffinity == group.dfltAffinity && Objects.equals(mapping, group.mapping);
     }
 
     /** {@inheritDoc} */
     @Override public int hashCode() {
-        return Objects.hash(mapping, dfltMapping);
+        return Objects.hash(mapping, dfltAffinity);
     }
 }

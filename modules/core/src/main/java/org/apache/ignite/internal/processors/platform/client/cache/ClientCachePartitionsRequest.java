@@ -39,6 +39,7 @@ import org.apache.ignite.internal.processors.platform.client.ClientResponse;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.lang.IgnitePredicate;
 import org.jetbrains.annotations.Nullable;
+import static java.util.Optional.ofNullable;
 import static org.apache.ignite.internal.processors.query.QueryUtils.isCustomAffinityMapper;
 
 /**
@@ -50,11 +51,22 @@ public class ClientCachePartitionsRequest extends ClientRequest {
     private final int[] cacheIds;
 
     /**
+     * {@code true} if a custom mapping factory is set on the client side and mappings for all requested caches
+     * need to be sent back to the client even if they are related to a custom affinity function.
+     */
+    private final boolean withCustomMappings;
+
+    /**
      * Initializes a new instance of ClientRawRequest class.
      * @param reader Reader.
      */
-    public ClientCachePartitionsRequest(BinaryRawReader reader) {
+    public ClientCachePartitionsRequest(BinaryRawReader reader, ClientProtocolContext protocolCtx) {
         super(reader);
+
+        if (protocolCtx.isFeatureSupported(ClientBitmaskFeature.ALL_AFFINITY_MAPPINGS))
+            withCustomMappings = reader.readBoolean();
+        else
+            withCustomMappings = false;
 
         int len = reader.readInt();
 
@@ -78,15 +90,14 @@ public class ClientCachePartitionsRequest extends ClientRequest {
             if (cacheDesc == null)
                 continue;
 
-            ClientCachePartitionAwarenessGroup grp = processCache(ctx, affinityVer, cacheDesc);
+            ClientCachePartitionAwarenessGroup grp = processCache(ctx, affinityVer, cacheDesc, withCustomMappings);
 
             if (grp == null)
                 continue;
 
-            ClientCachePartitionAwarenessGroup grp0 = grps.putIfAbsent(grp, grp);
-
-            if (grp0 != null)
-                grp0.addAll(Collections.singletonList(cacheDesc));
+            ofNullable(grps.putIfAbsent(grp, grp))
+                .orElse(grp)
+                .addAll(Collections.singletonList(cacheDesc));
         }
 
         Map<Integer, List<DynamicCacheDescriptor>> allCaches = ctx.kernalContext().cache().cacheDescriptors().values()
@@ -101,7 +112,7 @@ public class ClientCachePartitionsRequest extends ClientRequest {
             if (desc == null)
                 continue;
 
-            ClientCachePartitionAwarenessGroup grp = processCache(ctx, affinityVer, desc);
+            ClientCachePartitionAwarenessGroup grp = processCache(ctx, affinityVer, desc, withCustomMappings);
 
             if (grp == null)
                 continue;
@@ -120,13 +131,15 @@ public class ClientCachePartitionsRequest extends ClientRequest {
      * @param ctx Connection context.
      * @param affinityVer Affinity topology version.
      * @param cacheDesc Cache descriptor.
+     * @param withCustomMappings {@code true} to verify a non-default affinity function also.
      * @return Null if cache was processed and new client cache partition awareness group if it does not belong to any
      * existent.
      */
     private static ClientCachePartitionAwarenessGroup processCache(
         ClientConnectionContext ctx,
         ClientAffinityTopologyVersion affinityVer,
-        DynamicCacheDescriptor cacheDesc
+        DynamicCacheDescriptor cacheDesc,
+        boolean withCustomMappings
     ) {
         AffinityAssignment assignment = getCacheAssignment(ctx, affinityVer, cacheDesc.cacheId());
 
@@ -136,10 +149,11 @@ public class ClientCachePartitionsRequest extends ClientRequest {
 
         ClientCachePartitionMapping mapping = null;
 
-        if (isApplicable(cacheDesc.cacheConfiguration(), ctx.currentProtocolContext()))
+        if (isApplicable(cacheDesc.cacheConfiguration(), withCustomMappings))
             mapping = new ClientCachePartitionMapping(assignment);
 
-        return new ClientCachePartitionAwarenessGroup(mapping, cacheDesc);
+        return new ClientCachePartitionAwarenessGroup(mapping,
+            !withCustomMappings || isDefaultMapping(cacheDesc.cacheConfiguration()));
     }
 
     /**
@@ -162,9 +176,10 @@ public class ClientCachePartitionsRequest extends ClientRequest {
 
     /**
      * @param ccfg Cache configuration.
+     * @param withCustomMappings {@code true} to verify a non-default affinity function also.
      * @return True if cache is applicable for partition awareness optimisation.
      */
-    private static boolean isApplicable(CacheConfiguration<?, ?> ccfg, ClientProtocolContext cpctx) {
+    private static boolean isApplicable(CacheConfiguration<?, ?> ccfg, boolean withCustomMappings) {
         // Partition could be extracted only from PARTITIONED caches.
         if (ccfg.getCacheMode() != CacheMode.PARTITIONED)
             return false;
@@ -178,10 +193,7 @@ public class ClientCachePartitionsRequest extends ClientRequest {
         if (hasNodeFilter)
             return false;
 
-        if (cpctx.isFeatureSupported(ClientBitmaskFeature.ALL_AFFINITY_MAPPINGS))
-            return true;
-
-        return isDefaultMapping(ccfg);
+        return withCustomMappings || isDefaultMapping(ccfg);
     }
 
     /**
