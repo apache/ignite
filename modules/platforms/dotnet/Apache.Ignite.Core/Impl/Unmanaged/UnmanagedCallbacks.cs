@@ -1060,7 +1060,7 @@ namespace Apache.Ignite.Core.Impl.Unmanaged
         /// </summary>
         /// <param name="interceptors">Service call interceptors.</param>
         /// <returns>Composite service call interceptor or null.</returns>
-        private IServiceCallInterceptor WrapInterceptors(ICollection interceptors)
+        private IServiceCallInterceptor WrapInterceptors(IList<IServiceCallInterceptor> interceptors)
         {
             if (interceptors == null)
                 return null;
