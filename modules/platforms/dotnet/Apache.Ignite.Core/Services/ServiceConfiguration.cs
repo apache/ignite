@@ -104,7 +104,7 @@ namespace Apache.Ignite.Core.Services
             if (Interceptors != null)
                 w.WriteCollection(Interceptors as ICollection);
             else
-                w.WriteObject<object>(null);;
+                w.WriteObject<object>(null);
 
             w.WriteBoolean(StatisticsEnabled);
 
