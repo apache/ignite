@@ -22,7 +22,7 @@ import org.apache.ignite.cache.affinity.AffinityKeyMapper;
 import org.apache.ignite.configuration.ClientConfiguration;
 
 /**
- * This function calculates a key to a partition mappings for a cache keys. It is used only for local calculation on a client side.
+ * This function calculates the cache key to a partition mapping for each cache key. It is used only for local calculation on a client side.
  * <p>
  * When the {@link ClientConfiguration#isPartitionAwarenessEnabled()} and the cache was created with a custom {@link AffinityFunction}
  * or a {@link AffinityKeyMapper} this function will be used to calculate mappings. Be sure that a key maps to the same partition

@@ -370,9 +370,10 @@ public class JavaThinClient {
         // Partition awarenes is enabled by default since Apache Ignite 2.11 release.
         ClientConfiguration cfg = new ClientConfiguration()
             .setAddresses("node1_address:10800", "node2_address:10800", "node3_address:10800")
-            .setPartitionAwarenessMapperFactory(new BiFunction<String, Integer, ToIntFunction<Object>>() {
-                @Override public ToIntFunction<Object> apply(String cacheName, Integer parts) {
-                    AffinityFunction aff = new RendezvousAffinityFunction(false, parts);
+            .setPartitionAwarenessMapperFactory(new ClientPartitionAwarenessMapperFactory() {
+                /** {@inheritDoc} */
+                @Override public ClientPartitionAwarenessMapper create(String cacheName, int partitions) {
+                    AffinityFunction aff = new RendezvousAffinityFunction(false, partitions);
 
                     return aff::partition;
                 }
