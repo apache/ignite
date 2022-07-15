@@ -462,24 +462,23 @@ namespace Apache.Ignite.Core.Tests.Services
                 
             // Deploy the same configuration.
             Services.Deploy(cfg);
-
-            var intcpsList = new List<IServiceCallInterceptor>();
-
-            cfg.Interceptors = intcpsList;
-            Assert.Throws<ArgumentException>(() => Services.Deploy(cfg));
             
-            intcpsList.Add(null);
-            Assert.Throws<ArgumentNullException>(() => Services.Deploy(cfg));
-
             var svc = Services.GetServiceProxy<ITestIgniteService>(SvcName, false);
 
             const int val = 3; 
             
             Assert.AreEqual(val * val, svc.Method(val));
 
-            // Try to deploy without an interceptor.
-            cfg.Interceptors = null;
+            // Re-deploy with an empty list.
+            cfg.Interceptors = new List<IServiceCallInterceptor>();
+            Services.Cancel(SvcName);
+            Services.Deploy(cfg);
+            
+            cfg.Interceptors.Add(null);
+            Assert.Throws<ArgumentNullException>(() => Services.Deploy(cfg));
 
+            // Try to change configuration without undeploy.
+            cfg.Interceptors = null;
             var deploymentException = Assert.Throws<ServiceDeploymentException>(() => Services.Deploy(cfg));
 
             var deployErr = deploymentException.InnerException;

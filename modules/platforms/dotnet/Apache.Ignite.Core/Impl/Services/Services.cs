@@ -504,9 +504,6 @@ namespace Apache.Ignite.Core.Impl.Services
 
             if (configuration.Interceptors != null)
             {
-                IgniteArgumentCheck.Ensure(configuration.Interceptors.Count > 0,
-                    string.Format("{0}.Interceptors", argName), "collection cannot be empty");
-
                 foreach (var interceptor in configuration.Interceptors)
                     IgniteArgumentCheck.NotNull(interceptor, string.Format("{0}.Interceptors[]", argName));
             }

@@ -1061,7 +1061,7 @@ namespace Apache.Ignite.Core.Impl.Unmanaged
         /// <returns>Composite service call interceptor or null.</returns>
         private IServiceCallInterceptor WrapInterceptors(ICollection<IServiceCallInterceptor> interceptors)
         {
-            if (interceptors == null)
+            if (interceptors == null || interceptors.Count == 0)
                 return null;
             
             // Inject Ignite instance resource.
