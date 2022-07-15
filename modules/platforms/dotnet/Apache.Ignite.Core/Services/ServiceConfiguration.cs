@@ -73,7 +73,7 @@ namespace Apache.Ignite.Core.Services
         /// Gets or sets service call interceptors.
         /// </summary>
         [IgniteExperimental]
-        public IReadOnlyCollection<IServiceCallInterceptor> Interceptors { get; set; }
+        public ICollection<IServiceCallInterceptor> Interceptors { get; set; }
         
         /// <summary>
         /// Enables or disables service statistics.
