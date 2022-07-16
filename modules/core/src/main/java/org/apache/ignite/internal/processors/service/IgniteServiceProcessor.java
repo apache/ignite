@@ -167,6 +167,7 @@ public class IgniteServiceProcessor extends GridProcessorAdapter implements Igni
      * @see ServiceDeploymentActions
      * @see ServiceDeploymentManager
      */
+    // TODO:
     private final ConcurrentMap<IgniteUuid, ServiceInfo> registeredServices = new ConcurrentHashMap<>();
 
     /**

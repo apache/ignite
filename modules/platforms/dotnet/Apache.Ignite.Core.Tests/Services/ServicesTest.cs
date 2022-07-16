@@ -19,6 +19,7 @@ namespace Apache.Ignite.Core.Tests.Services
 {
     using System;
     using System.Collections.Generic;
+    using System.Data.SqlTypes;
     using System.IO;
     using System.Linq;
     using System.Net;
@@ -29,6 +30,10 @@ namespace Apache.Ignite.Core.Tests.Services
     using Apache.Ignite.Core.Client;
     using Apache.Ignite.Core.Cluster;
     using Apache.Ignite.Core.Common;
+    using Apache.Ignite.Core.Deployment;
+    using Apache.Ignite.Core.Discovery.Tcp;
+    using Apache.Ignite.Core.Discovery.Tcp.Static;
+    using Apache.Ignite.Core.Events;
     using Apache.Ignite.Core.Impl;
     using Apache.Ignite.Core.Impl.Binary;
     using Apache.Ignite.Core.Log;
@@ -107,18 +112,20 @@ namespace Apache.Ignite.Core.Tests.Services
         {
             StartGrids();
 
-            _thinClient = Ignition.StartClient(GetClientConfiguration());
+            //_thinClient = Ignition.StartClient(GetClientConfiguration());
+            _thinClient = null;
+            
+            //Services.DeployClusterSingleton(PlatformSvcName, new PlatformTestService());
 
-            Services.DeployClusterSingleton(PlatformSvcName, new PlatformTestService());
-
-            _javaSvcName = TestUtils.DeployJavaService(Grid1);
+            // _javaSvcName = TestUtils.DeployJavaService(Grid1);
+            _javaSvcName = null;
 
             // Verify descriptor
-            var descriptor = Services.GetServiceDescriptors().Single(x => x.Name == _javaSvcName);
-            Assert.AreEqual(_javaSvcName, descriptor.Name);
+            //var descriptor = Services.GetServiceDescriptors().Single(x => x.Name == _javaSvcName);
+            //Assert.AreEqual(_javaSvcName, descriptor.Name);
 
-            descriptor = _client.GetServices().GetServiceDescriptors().Single(x => x.Name == _javaSvcName);
-            Assert.AreEqual(_javaSvcName, descriptor.Name);
+            //descriptor = _client.GetServices().GetServiceDescriptors().Single(x => x.Name == _javaSvcName);
+            //Assert.AreEqual(_javaSvcName, descriptor.Name);
         }
 
         /// <summary>
@@ -147,25 +154,86 @@ namespace Apache.Ignite.Core.Tests.Services
             }
         }
 
+        public class NodeRolesFilter : IClusterNodeFilter
+        {
+            private readonly string[] _componentDeployRoles;
+
+            public NodeRolesFilter(string[] componentDeployRoles)
+            {
+                this._componentDeployRoles = componentDeployRoles;
+            }
+            public bool Invoke(IClusterNode node)
+            {
+                if (node.IsClient) return false;
+            
+                if (node.TryGetAttribute<string>("ROLE", out var attr) && !string.IsNullOrWhiteSpace(attr))
+                {
+                    string[] nodeRoles = attr.Split(new[] { ';' }, StringSplitOptions.RemoveEmptyEntries);
+                    foreach (string role in nodeRoles)
+                    {
+                        foreach (string deployRole in _componentDeployRoles)
+                        {
+                            if (string.Compare(role, deployRole, true) == 0)
+                            {
+                                return true;
+                            }
+                        }
+                    }
+                    //совпадающие роли не найдены
+                    return false;
+                }
+                //у ноды нет ролей - любая роль
+                return true;
+            }
+        }
+
         /// <summary>
         /// Tests deployment.
         /// </summary>
         [Test]
-        public void TestDeploy([Values(true, false)] bool binarizable)
+        public void TestDeploy()
         {
             var cfg = new ServiceConfiguration
             {
                 Name = SvcName,
-                MaxPerNodeCount = 3,
-                TotalCount = 3,
-                NodeFilter = new NodeIdFilter {NodeId = Grid1.GetCluster().GetLocalNode().Id},
-                Service = binarizable ? new TestIgniteServiceBinarizable() : new TestIgniteServiceSerializable()
+                MaxPerNodeCount = 1,
+                TotalCount = 1,
+                NodeFilter = new NodeRolesFilter(new string[] {"node"}),
+                Service = new TestService()
             };
 
-            Services.Deploy(cfg);
+            Grid1.GetCluster().ForDotNet().GetServices().Deploy(cfg);
 
-            CheckServiceStarted(Grid1, 3);
+            CheckServiceStarted(Grid1);
+
+            Thread.Sleep( 60 * 60 * 1000);
         }
+
+        public interface ITestService
+        {
+            string Test(string test);
+        }
+
+        public class TestService : ITestService, IService
+        {
+            public string Test(string test)
+            {
+                return test;
+            }
+
+            public void Init(IServiceContext context)
+            {
+            }
+
+            public void Execute(IServiceContext context)
+            {
+            }
+
+            public void Cancel(IServiceContext context)
+            {
+            }
+        }
+
 
         /// <summary>
         /// Tests several services deployment via DeployAll() method.
@@ -1535,22 +1603,62 @@ namespace Apache.Ignite.Core.Tests.Services
         {
             if (Grid1 != null)
                 return;
-
+            
             var path = Path.Combine("Config", "Compute", "compute-grid");
-            Grid1 = Ignition.Start(GetConfiguration(path + "1.xml"));
-            Grid2 = Ignition.Start(GetConfiguration(path + "2.xml"));
+            
+            // Grid1 = Ignition.Start(GetConfiguration(path + "1.xml"));
 
-            var cfg = GetConfiguration(path + "3.xml");
+            Grid1 = Ignition.Start(IgniteServerConfiguration);
+            
+            Grids = new[] { Grid1 };
 
-            Grid3 = Ignition.Start(cfg);
+            
+            //Grid1 = Ignition.Start(GetConfiguration(path + "1.xml"));
+            //Grid2 = Ignition.Start(GetConfiguration(path + "2.xml"));
 
-            cfg.ClientMode = true;
-            cfg.IgniteInstanceName = "client";
+            //var cfg = GetConfiguration(path + "3.xml");
 
-            _client = Ignition.Start(cfg);
+            //Grid3 = Ignition.Start(cfg);
 
-            Grids = new[] { Grid1, Grid2, Grid3, _client };
+            //cfg.ClientMode = true;
+            //cfg.IgniteInstanceName = "client";
+
+            _client = null;  // Ignition.Start(GetConfiguration(path + "3.xml"));
+
+            //Grids = new[] { Grid1, Grid2, Grid3, _client };
         }
+
+        private static IgniteConfiguration IgniteServerConfiguration => new IgniteConfiguration
+        {
+            // SpringConfigUrl = "ignite-server.xml",
+            PeerAssemblyLoadingMode = PeerAssemblyLoadingMode.CurrentAppDomain,
+            JvmOptions = new List<string>
+            {
+                "-Djava.net.preferIPv4Stack=true",
+                "-DIGNITE_BINARY_SORT_OBJECT_FIELDS=true",
+                "-DREQUIRE_AUDIT=false"
+            },
+            JvmClasspath = TestUtils.CreateTestClasspath(),
+            BinaryConfiguration = new BinaryConfiguration()
+            {
+                CompactFooter = true,
+                NameMapper = new BinaryBasicNameMapper() { NamespaceToLower = true },
+                //TimestampConverter = new NodaTimeConverter()
+            },
+            DiscoverySpi = new TcpDiscoverySpi
+            {
+                LocalAddress = "127.0.0.1",
+                LocalPort = 59000,
+                IpFinder = new TcpDiscoveryStaticIpFinder
+                {
+                    Endpoints = new List<string>(){"127.0.0.1:59000"}
+                }
+            },
+            UserAttributes = new Dictionary<string, object> { { "ROLE", "node" } },
+            IncludedEventTypes = new[] { EventType.NodeLeft, EventType.ClientNodeDisconnected },
+            
+            Logger = new TestUtils.TestContextLogger()
+        };
 
         /// <summary>
         /// Stops the grids.
@@ -1568,23 +1676,20 @@ namespace Apache.Ignite.Core.Tests.Services
         /// </summary>
         private static void CheckServiceStarted(IIgnite grid, int count = 1, string svcName = SvcName)
         {
-            Func<ICollection<TestIgniteServiceSerializable>> getServices = () =>
-                grid.GetServices().GetServices<TestIgniteServiceSerializable>(svcName);
+            Func<ICollection<ITestService>> getServices = () =>
+                grid.GetServices().GetServices<ITestService>(svcName);
 
             Assert.IsTrue(TestUtils.WaitForCondition(() => count == getServices().Count, 5000));
 
             var svc = getServices().First();
 
             Assert.IsNotNull(svc);
-
-            Assert.IsTrue(svc.Initialized);
-
+            
             Thread.Sleep(100);  // Service runs in a separate thread, wait for it to execute.
 
-            Assert.IsTrue(svc.Executed);
-            Assert.IsFalse(svc.Cancelled);
-
-            Assert.AreEqual(grid.GetCluster().GetLocalNode().Id, svc.NodeId);
+            //Assert.AreEqual(grid.GetCluster().GetLocalNode().Id, svc.NodeId);
+            
+            Assert.AreEqual("test", svc.Test(("test")));
         }
 
         /// <summary>
