@@ -80,6 +80,15 @@ namespace Apache.Ignite.Core.Tests.Binary.Serializable
             Assert.AreEqual(type.AssemblyQualifiedName, res.AssemblyQualifiedName);
         }
 
+        [Test]
+        public void TestComparer()
+        {
+            var obj = StringComparer.OrdinalIgnoreCase;
+            var res = TestUtils.SerializeDeserialize(obj);
+
+            Assert.AreEqual(obj, res);
+        }
+
         /// <summary>
         /// Missing serialization ctor.
         /// </summary>
