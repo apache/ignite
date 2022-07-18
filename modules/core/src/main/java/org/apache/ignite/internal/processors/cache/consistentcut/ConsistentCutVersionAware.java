@@ -37,8 +37,8 @@ public interface ConsistentCutVersionAware {
      *
      * It is used to notify a transaction in the check-list whether to include it to this Consistent Cut.
      */
-    public default long txCutVersion() {
-        return -1L;
+    public default ConsistentCutVersion txCutVersion() {
+        return null;
     }
 
     /**
@@ -46,7 +46,7 @@ public interface ConsistentCutVersionAware {
      *
      * It is used to notify a transaction in the check-list whether to include it to this Consistent Cut.
      */
-    public default void txCutVersion(long txCutVer) {}
+    public default void txCutVersion(ConsistentCutVersion cutVer) {}
 
     /**
      * @return Near transaction ID.

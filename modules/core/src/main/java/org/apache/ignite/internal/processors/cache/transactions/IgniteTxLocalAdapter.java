@@ -53,6 +53,7 @@ import org.apache.ignite.internal.processors.cache.GridCacheSharedContext;
 import org.apache.ignite.internal.processors.cache.GridCacheUpdateTxResult;
 import org.apache.ignite.internal.processors.cache.IgniteCacheExpiryPolicy;
 import org.apache.ignite.internal.processors.cache.KeyCacheObject;
+import org.apache.ignite.internal.processors.cache.consistentcut.ConsistentCutVersion;
 import org.apache.ignite.internal.processors.cache.distributed.dht.PartitionUpdateCountersMessage;
 import org.apache.ignite.internal.processors.cache.distributed.dht.topology.GridDhtLocalPartition;
 import org.apache.ignite.internal.processors.cache.distributed.dht.topology.GridDhtPartitionTopology;
@@ -156,7 +157,7 @@ public abstract class IgniteTxLocalAdapter extends IgniteTxAdapter implements Ig
     protected volatile boolean qryEnlisted;
 
     /** The latest Consistent Cut Version AFTER which this transaction committed. */
-    private volatile long txCutVer = -1;
+    private volatile ConsistentCutVersion txCutVer;
 
     /**
      * @param cctx Cache registry.
@@ -381,13 +382,13 @@ public abstract class IgniteTxLocalAdapter extends IgniteTxAdapter implements Ig
     }
 
     /** {@inheritDoc} */
-    @Override public long txCutVersion() {
+    @Override public ConsistentCutVersion txCutVersion() {
         return txCutVer;
     }
 
     /** {@inheritDoc} */
-    @Override public void txCutVersion(long txCutVer) {
-        if (this.txCutVer < 0)
+    @Override public void txCutVersion(ConsistentCutVersion txCutVer) {
+        if (this.txCutVer == null)
             this.txCutVer = txCutVer;
     }
 
@@ -1039,11 +1040,15 @@ public abstract class IgniteTxLocalAdapter extends IgniteTxAdapter implements Ig
      * @param txCutVer If transaction committed with specific ConsistentCutVersion then use it.
      * @throws IgniteCheckedException If failed.
      */
-    public void tmFinish(boolean commit, boolean nodeStop, boolean clearThreadMap, long txCutVer) throws IgniteCheckedException {
+    public void tmFinish(
+        boolean commit,
+        boolean nodeStop,
+        boolean clearThreadMap,
+        ConsistentCutVersion txCutVer
+    ) throws IgniteCheckedException {
         assert onePhaseCommit();
 
-        if (this.txCutVer == -1)
-            txCutVersion(txCutVer);
+        txCutVersion(txCutVer);
 
         if (DONE_FLAG_UPD.compareAndSet(this, 0, 1)) {
             if (!nodeStop) {

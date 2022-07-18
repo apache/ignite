@@ -34,6 +34,7 @@ import org.apache.ignite.internal.cluster.ClusterTopologyCheckedException;
 import org.apache.ignite.internal.processors.cache.GridCacheCompoundIdentityFuture;
 import org.apache.ignite.internal.processors.cache.GridCacheFuture;
 import org.apache.ignite.internal.processors.cache.GridCacheSharedContext;
+import org.apache.ignite.internal.processors.cache.consistentcut.ConsistentCutVersion;
 import org.apache.ignite.internal.processors.cache.distributed.GridDistributedTxMapping;
 import org.apache.ignite.internal.processors.cache.distributed.near.GridNearTxPrepareFutureAdapter;
 import org.apache.ignite.internal.processors.cache.mvcc.MvccFuture;
@@ -240,7 +241,7 @@ public final class GridDhtTxFinishFuture<K, V> extends GridCacheCompoundIdentity
                     try {
                         boolean nodeStopping = X.hasCause(err, NodeStoppingException.class);
 
-                        long txCutVer = -1;
+                        ConsistentCutVersion txCutVer = null;
 
                         if (this.tx.currentPrepareFuture() != null) {
                             if (this.tx.near())
@@ -475,7 +476,7 @@ public final class GridDhtTxFinishFuture<K, V> extends GridCacheCompoundIdentity
         if (mvccSnapshot != null)
             mvccSnapshot = mvccSnapshot.withoutActiveTransactions();
 
-        long txVer = tx.txCutVersion();
+        ConsistentCutVersion txVer = tx.txCutVersion();
 
         // Create mini futures.
         for (GridDistributedTxMapping dhtMapping : dhtMap.values()) {

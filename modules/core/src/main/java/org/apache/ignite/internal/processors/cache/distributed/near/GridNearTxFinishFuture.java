@@ -38,6 +38,7 @@ import org.apache.ignite.internal.processors.cache.GridCacheReturn;
 import org.apache.ignite.internal.processors.cache.GridCacheReturnCompletableWrapper;
 import org.apache.ignite.internal.processors.cache.GridCacheSharedContext;
 import org.apache.ignite.internal.processors.cache.GridCacheVersionedFuture;
+import org.apache.ignite.internal.processors.cache.consistentcut.ConsistentCutVersion;
 import org.apache.ignite.internal.processors.cache.distributed.GridDistributedTxMapping;
 import org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtTxFinishRequest;
 import org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtTxFinishResponse;
@@ -359,7 +360,7 @@ public final class GridNearTxFinishFuture<K, V> extends GridCacheCompoundIdentit
                             finishOnePhase(commit);
 
                         try {
-                            long cutVer = -1;
+                            ConsistentCutVersion cutVer = null;
 
                             if (tx.currentPrepareFuture() != null)
                                 cutVer = ((GridNearTxPrepareFutureAdapter)tx.currentPrepareFuture()).txCutVer();

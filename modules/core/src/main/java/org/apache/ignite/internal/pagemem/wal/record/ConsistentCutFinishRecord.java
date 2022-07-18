@@ -31,9 +31,9 @@ import org.apache.ignite.lang.IgniteUuid;
  * point without any coordination with other nodes.
  *
  * This record is written to WAL in moment when Consistent Cut stops analyzing transactions from {@link ConsistentCut}.
- * It guarantees that every transaction included to {@link #include()} are part of the global BEFORE state, and every
- * committed transaction since {@link ConsistentCutStartRecord} and that aren't included into {@link #include()} are
- * part of the global AFTER state.
+ * It consists only few transactions that were checked. It guarantees that transactions included to {@link #before()}
+ * are part of the global BEFORE state, and every committed transaction since {@link ConsistentCutStartRecord} and included
+ * into {@link #after()} are part of the global AFTER state.
  *
  * @see ConsistentCutStartRecord
  * @see ConsistentCut
@@ -42,27 +42,27 @@ public class ConsistentCutFinishRecord extends WALRecord {
     /**
      * Set of transactions (optionally committed after this record) to include to the BEFORE side of Consistent Cut.
      */
-    private final Set<GridCacheVersion> include;
+    private final Set<GridCacheVersion> before;
 
     /**
-     * Set of transactions (optionally committed after this record) to exclude from the BEFORE side of Consistent Cut State.
+     * Set of transactions (optionally committed after this record) to include to the AFTER side of Consistent Cut.
      */
-    private final Set<GridCacheVersion> exclude;
+    private final Set<GridCacheVersion> after;
 
     /** */
-    public ConsistentCutFinishRecord(Set<GridCacheVersion> include, Set<GridCacheVersion> exclude) {
-        this.include = Collections.unmodifiableSet(include);
-        this.exclude = Collections.unmodifiableSet(exclude);
+    public ConsistentCutFinishRecord(Set<GridCacheVersion> before, Set<GridCacheVersion> after) {
+        this.before = Collections.unmodifiableSet(before);
+        this.after = Collections.unmodifiableSet(after);
     }
 
     /** */
-    public Set<GridCacheVersion> include() {
-        return include;
+    public Set<GridCacheVersion> before() {
+        return before;
     }
 
     /** */
-    public Set<GridCacheVersion> exclude() {
-        return exclude;
+    public Set<GridCacheVersion> after() {
+        return after;
     }
 
     /** {@inheritDoc} */
@@ -72,14 +72,14 @@ public class ConsistentCutFinishRecord extends WALRecord {
 
     /** {@inheritDoc} */
     @Override public String toString() {
-        List<IgniteUuid> incl = include.stream()
+        List<IgniteUuid> incl = before.stream()
             .map(GridCacheVersion::asIgniteUuid)
             .collect(Collectors.toList());
 
-        List<IgniteUuid> excl = exclude.stream()
+        List<IgniteUuid> excl = after.stream()
             .map(GridCacheVersion::asIgniteUuid)
             .collect(Collectors.toList());
 
-        return "ConsistentCutFinishRecord [include=" + incl + ", exclude=" + excl + "]";
+        return "ConsistentCutFinishRecord [before=" + incl + ", after=" + excl + "]";
     }
 }

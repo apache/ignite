@@ -17,6 +17,7 @@
 
 package org.apache.ignite.internal.processors.cache.consistentcut;
 
+import java.io.Serializable;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.HashMap;
@@ -36,6 +37,7 @@ import org.apache.ignite.internal.pagemem.wal.record.WALRecord;
 import org.apache.ignite.internal.processors.cache.persistence.wal.WALPointer;
 import org.apache.ignite.internal.processors.cache.version.GridCacheVersion;
 import org.apache.ignite.internal.util.tostring.GridToStringInclude;
+import org.apache.ignite.internal.util.typedef.T2;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.lang.IgniteBiTuple;
 import org.apache.ignite.lang.IgniteUuid;
@@ -57,7 +59,7 @@ class ConsistentCutWalReader {
     private final WALIterator walIter;
 
     /** */
-    protected final IgniteLogger log;
+    private final IgniteLogger log;
 
     /** Collection of Consistent Cut states. */
     public final List<NodeConsistentCutState> cuts = new ArrayList<>();
@@ -69,15 +71,30 @@ class ConsistentCutWalReader {
         }
     };
 
+    /** Collection of transactions was run within a test. */
+    private final Map<IgniteUuid, Integer> txNearNode;
+
+    /** Ignite nodes description: (nodeIdx -> (consistentId, compactId)). */
+    private final Map<Integer, T2<Serializable, Short>> txCompactNode;
+
+    /** Order ID of Ignite node. */
+    private final Integer nodeIdx;
+
     /** For test purposes. */
     ConsistentCutWalReader(
+        int nodeIdx,
         WALIterator walIter,
-        short nodeCompactId,
-        IgniteLogger log
+        IgniteLogger log,
+        Map<IgniteUuid, Integer> txNearNode,
+        Map<Integer, T2<Serializable, Short>> txCompactNode
     ) {
         this.walIter = walIter;
-        this.nodeCompactId = nodeCompactId;
+        nodeCompactId = txCompactNode.get(nodeIdx).get2();
         this.log = log;
+
+        this.nodeIdx = nodeIdx;
+        this.txNearNode = txNearNode;
+        this.txCompactNode = txCompactNode;
     }
 
     /** Reads whole WAL. */
@@ -362,11 +379,11 @@ class ConsistentCutWalReader {
 
     /** */
     private void handleFinishConsistentCutRecord(ConsistentCutFinishRecord rec, NodeConsistentCutState cut) {
-        Set<IgniteUuid> include = rec.include().stream()
+        Set<IgniteUuid> include = rec.before().stream()
             .map(GridCacheVersion::asIgniteUuid)
             .collect(Collectors.toSet());
 
-        Set<IgniteUuid> exclude = rec.exclude().stream()
+        Set<IgniteUuid> exclude = rec.after().stream()
             .map(GridCacheVersion::asIgniteUuid)
             .collect(Collectors.toSet());
 
@@ -598,33 +615,51 @@ class ConsistentCutWalReader {
     }
 
     /** */
-    final void log(String msg) {
+    private void log(String msg) {
         if (log.isDebugEnabled())
             log.debug(msg);
     }
 
     /** */
-    protected void logCommittedTxRecord(TxRecord tx, NodeConsistentCutState cut) {
+    private void logCommittedTxRecord(TxRecord tx, NodeConsistentCutState cut) {
         IgniteUuid uid = tx.nearXidVersion().asIgniteUuid();
 
-        log(
-            "TX[id=" + uid + ", state=" + tx.state() + ", cut=" + cut.ver + ", participations=" + cut.txParticipations.get(uid) + "]");
+        log("TX[id=" + uid + ", state=" + tx.state() + ", cut=" + cut.ver
+            + ", origNodeId=" + txNearNode.get(uid) + ", nodeId=" + nodeIdx + ", participations="
+            + cut.txParticipations.get(uid) + "]");
     }
 
     /** */
-    protected void logTxParticipations(TxRecord tx) {
+    private void logTxParticipations(TxRecord tx) {
         IgniteUuid uid = tx.nearXidVersion().asIgniteUuid();
 
         Map<Short, Collection<Short>> nodes = tx.participatingNodes();
 
-        log("PART[txId=" + uid + ", partNodes=" + nodes + "]");
+        T2<Serializable, Short> nearNodeInfo = txCompactNode.get(txNearNode.get(uid));
+
+        // -1 means client node.
+        short origCompactId = -1;
+
+        if (nearNodeInfo != null)
+            origCompactId = nearNodeInfo.get2();
+
+        log("PART[txId=" + uid + ", partNodes=" + nodes + ", origNodeCompactId=" + origCompactId + "]");
     }
 
     /** */
-    protected void logPreparedTxRecord(TxRecord tx, NodeConsistentCutState cut) {
+    private void logPreparedTxRecord(TxRecord tx, NodeConsistentCutState cut) {
         IgniteUuid uid = tx.nearXidVersion().asIgniteUuid();
 
-        log("TX[id=" + uid + ", state=" + tx.state() + ", cut=" + cut.ver
-            + ", compactId=" + nodeCompactId + ", participations=" + cut.txParticipations.get(uid) + "]");
+        int nearNodeId = txNearNode.get(uid);
+
+        short origCompactId = -1;
+
+        if (txCompactNode.containsKey(nearNodeId))
+            origCompactId = txCompactNode.get(nearNodeId).get2();
+
+        log("TX[id=" + uid + ", state=" + tx.state() + ", cut=" + cut.ver +
+            ", origNodeId=" + txNearNode.get(uid) + ", origCompactId=" + origCompactId +
+            ", nodeId=" + nodeIdx + ", compactId=" + nodeCompactId +
+            ", participations=" + cut.txParticipations.get(uid) + "]");
     }
 }

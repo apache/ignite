@@ -244,7 +244,7 @@ public abstract class AbstractConsistentCutTest extends GridCommonAbstractTest {
         for (int i = 0; i < nodes(); i++) {
             log.info("Check WAL for node " + i);
 
-            ConsistentCutWalReader reader = new ConsistentCutWalReaderEx(i, walIter(i, (UUID)top.get(i).get1()), log, txNearNode, top);
+            ConsistentCutWalReader reader = new ConsistentCutWalReader(i, walIter(i, (UUID)top.get(i).get1()), log, txNearNode, top);
 
             states.add(reader);
 

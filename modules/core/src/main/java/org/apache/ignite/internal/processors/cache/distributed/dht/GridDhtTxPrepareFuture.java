@@ -60,6 +60,8 @@ import org.apache.ignite.internal.processors.cache.GridCacheReturn;
 import org.apache.ignite.internal.processors.cache.GridCacheSharedContext;
 import org.apache.ignite.internal.processors.cache.GridCacheVersionedFuture;
 import org.apache.ignite.internal.processors.cache.KeyCacheObject;
+import org.apache.ignite.internal.processors.cache.consistentcut.ConsistentCutVersion;
+import org.apache.ignite.internal.processors.cache.consistentcut.ConsistentCutVersionAware;
 import org.apache.ignite.internal.processors.cache.distributed.GridDistributedCacheEntry;
 import org.apache.ignite.internal.processors.cache.distributed.GridDistributedTxMapping;
 import org.apache.ignite.internal.processors.cache.distributed.dht.topology.GridDhtLocalPartition;
@@ -74,7 +76,6 @@ import org.apache.ignite.internal.processors.cache.mvcc.txlog.TxState;
 import org.apache.ignite.internal.processors.cache.transactions.IgniteInternalTx;
 import org.apache.ignite.internal.processors.cache.transactions.IgniteTxEntry;
 import org.apache.ignite.internal.processors.cache.transactions.IgniteTxKey;
-import org.apache.ignite.internal.processors.cache.transactions.IgniteTxLocalAdapter;
 import org.apache.ignite.internal.processors.cache.transactions.TxCounters;
 import org.apache.ignite.internal.processors.cache.version.GridCacheVersion;
 import org.apache.ignite.internal.processors.dr.GridDrType;
@@ -234,7 +235,7 @@ public final class GridDhtTxPrepareFuture extends GridCacheCompoundFuture<Ignite
     protected final IgniteUuid deploymentLdrId;
 
     /** The Latest Consistent Cut Version AFTER which this transaction committed. */
-    private long txCutVer = -1;
+    private ConsistentCutVersion txCutVer;
 
     /**
      * @param cctx Context.
@@ -286,12 +287,12 @@ public final class GridDhtTxPrepareFuture extends GridCacheCompoundFuture<Ignite
     }
 
     /** */
-    public long txCutVer() {
+    public ConsistentCutVersion txCutVer() {
         return txCutVer;
     }
 
     /** */
-    public void txCutVer(long txCutVer) {
+    public void txCutVer(ConsistentCutVersion txCutVer) {
         this.txCutVer = txCutVer;
 
         tx.txCutVersion(txCutVer);
@@ -804,7 +805,7 @@ public final class GridDhtTxPrepareFuture extends GridCacheCompoundFuture<Ignite
 
                                 if (REPLIED_UPD.compareAndSet(GridDhtTxPrepareFuture.this, 0, 1)) {
                                     if (res.onePhaseCommit() && fut.result() != null) {
-                                        long v = ((IgniteTxLocalAdapter)fut.result()).txCutVersion();
+                                        ConsistentCutVersion v = ((ConsistentCutVersionAware)fut.result()).txCutVersion();
 
                                         res.txCutVersion(v);
                                     }
@@ -2069,7 +2070,7 @@ public final class GridDhtTxPrepareFuture extends GridCacheCompoundFuture<Ignite
                     }
                 }
 
-                if (res.txCutVersion() >= 0)
+                if (res.txCutVersion() != null)
                     tx.txCutVersion(res.txCutVersion());
 
                 // Finish mini future.

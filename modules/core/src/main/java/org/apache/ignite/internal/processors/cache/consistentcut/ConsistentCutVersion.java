@@ -24,12 +24,13 @@ import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.plugin.extensions.communication.Message;
 import org.apache.ignite.plugin.extensions.communication.MessageReader;
 import org.apache.ignite.plugin.extensions.communication.MessageWriter;
+import org.jetbrains.annotations.NotNull;
 
 /**
  * Composite version of Consistent Cut. It consists of two fields: incremental version and timestamp of starting
  * Consistent Cut. Both fields set on the coordinator node.
  */
-public class ConsistentCutVersion implements Message {
+public class ConsistentCutVersion implements Message, Comparable<ConsistentCutVersion> {
     /** */
     private static final long serialVersionUID = 0L;
 
@@ -123,5 +124,10 @@ public class ConsistentCutVersion implements Message {
     /** {@inheritDoc} */
     @Override public int hashCode() {
         return Long.hashCode(ver);
+    }
+
+    /** {@inheritDoc} */
+    @Override public int compareTo(@NotNull ConsistentCutVersion o) {
+        return Long.compare(ver, o.ver);
     }
 }

@@ -131,10 +131,10 @@ public class ConsistentCut {
             // Checks COMMITTING / COMMITTED transactions due to concurrency with transactions: some active transactions
             // start committing after being grabbed.
             if (txState == PREPARING || txState == PREPARED || txState == COMMITTING || txState == COMMITTED) {
-                long txCutVer;
+                ConsistentCutVersion txCutVer;
 
                 // Do not await transactions from the AFTER side.
-                if ((txCutVer = ((ConsistentCutVersionAware)activeTx).txCutVersion()) != -1 && txCutVer == ver.version())
+                if ((txCutVer = ((ConsistentCutVersionAware)activeTx).txCutVersion()) != null && txCutVer.compareTo(ver) == 0)
                     afterCut.add(activeTx.nearXidVersion());
                 else {
                     IgniteInternalFuture<Void> txCheckFut = activeTx.finishFuture().chain(txFut -> {
@@ -142,7 +142,7 @@ public class ConsistentCut {
 
                         ConsistentCutVersionAware txCutVerAware = (ConsistentCutVersionAware)tx;
 
-                        if (ver.version() > txCutVerAware.txCutVersion())
+                        if (ver.compareTo(txCutVerAware.txCutVersion()) > 0)
                             beforeCut.add(tx.nearXidVersion());
                         else
                             afterCut.add(tx.nearXidVersion());
@@ -175,15 +175,17 @@ public class ConsistentCut {
         List<IgniteUuid> incl = null;
         List<IgniteUuid> excl = null;
 
-        if (beforeCut != null)
+        if (beforeCut != null) {
             incl = beforeCut.stream()
                 .map(GridCacheVersion::asIgniteUuid)
                 .collect(Collectors.toList());
+        }
 
-        if (afterCut != null)
+        if (afterCut != null) {
             excl = afterCut.stream()
                 .map(GridCacheVersion::asIgniteUuid)
                 .collect(Collectors.toList());
+        }
 
         return "ConsistentCut [started=" + started + ", before=" + incl + ", after=" + excl + "]";
     }

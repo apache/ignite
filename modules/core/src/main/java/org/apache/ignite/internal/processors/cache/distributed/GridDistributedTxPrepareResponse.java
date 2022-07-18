@@ -66,7 +66,7 @@ public class GridDistributedTxPrepareResponse extends GridDistributedBaseMessage
      * Version of the latest Consistent Cut AFTER which this transaction committed.
      * Sets on backup (or primary) node to notify other nodes in 1PC algorithm.
      */
-    private long txCutVer = -1;
+    private ConsistentCutVersion txCutVer;
 
     /**
      * Empty constructor (required by {@link Externalizable}).
@@ -164,12 +164,12 @@ public class GridDistributedTxPrepareResponse extends GridDistributedBaseMessage
     }
 
     /** {@inheritDoc} */
-    @Override public long txCutVersion() {
+    @Override public ConsistentCutVersion txCutVersion() {
         return txCutVer;
     }
 
     /** {@inheritDoc} */
-    @Override public void txCutVersion(long ver) {
+    @Override public void txCutVersion(ConsistentCutVersion ver) {
         txCutVer = ver;
     }
 
@@ -239,7 +239,7 @@ public class GridDistributedTxPrepareResponse extends GridDistributedBaseMessage
                 writer.incrementState();
 
             case 12:
-                if (!writer.writeLong("txCutVer", txCutVer))
+                if (!writer.writeMessage("txCutVer", txCutVer))
                     return false;
 
                 writer.incrementState();
@@ -293,7 +293,7 @@ public class GridDistributedTxPrepareResponse extends GridDistributedBaseMessage
                 reader.incrementState();
 
             case 12:
-                txCutVer = reader.readLong("txCutVer");
+                txCutVer = reader.readMessage("txCutVer");
 
                 if (!reader.isLastRead())
                     return false;

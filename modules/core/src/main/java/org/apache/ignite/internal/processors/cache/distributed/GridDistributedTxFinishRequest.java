@@ -114,7 +114,7 @@ public class GridDistributedTxFinishRequest extends GridDistributedBaseMessage i
      * Version of the latest Consistent Cut AFTER which this transaction committed.
      * Sets on near node to notify other nodes in 2PC algorithm.
      */
-    private long txCutVer = -1;
+    private ConsistentCutVersion txCutVer;
 
     /**
      * Empty constructor required by {@link Externalizable}.
@@ -314,12 +314,12 @@ public class GridDistributedTxFinishRequest extends GridDistributedBaseMessage i
     }
 
     /** {@inheritDoc} */
-    @Override public long txCutVersion() {
+    @Override public ConsistentCutVersion txCutVersion() {
         return txCutVer;
     }
 
     /** {@inheritDoc} */
-    @Override public void txCutVersion(long txCutVer) {
+    @Override public void txCutVersion(ConsistentCutVersion txCutVer) {
         this.txCutVer = txCutVer;
     }
 
@@ -433,7 +433,7 @@ public class GridDistributedTxFinishRequest extends GridDistributedBaseMessage i
                 writer.incrementState();
 
             case 22:
-                if (!writer.writeLong("txCutVer", txCutVer))
+                if (!writer.writeMessage("txCutVer", txCutVer))
                     return false;
 
                 writer.incrementState();
@@ -570,7 +570,7 @@ public class GridDistributedTxFinishRequest extends GridDistributedBaseMessage i
                 reader.incrementState();
 
             case 22:
-                txCutVer = reader.readLong("txCutVer");
+                txCutVer = reader.readMessage("txCutVer");
 
                 if (!reader.isLastRead())
                     return false;

@@ -38,14 +38,14 @@ public class ConsistentCutFinishRecordSerializer {
      * @param buf Byte buffer.
      */
     public void write(ConsistentCutFinishRecord rec, ByteBuffer buf) {
-        buf.putInt(rec.include().size());
+        buf.putInt(rec.before().size());
 
-        for (GridCacheVersion v: rec.include())
+        for (GridCacheVersion v: rec.before())
             putVersion(buf, v, false);
 
-        buf.putInt(rec.exclude().size());
+        buf.putInt(rec.after().size());
 
-        for (GridCacheVersion v: rec.exclude())
+        for (GridCacheVersion v: rec.after())
             putVersion(buf, v, false);
     }
 
@@ -87,10 +87,10 @@ public class ConsistentCutFinishRecordSerializer {
     public int size(ConsistentCutFinishRecord rec) {
         int size = 4 + 4;  // include and exclude tx count.
 
-        for (GridCacheVersion v: rec.include())
+        for (GridCacheVersion v: rec.before())
             size += CacheVersionIO.size(v, false);
 
-        for (GridCacheVersion v: rec.exclude())
+        for (GridCacheVersion v: rec.after())
             size += CacheVersionIO.size(v, false);
 
         return size;

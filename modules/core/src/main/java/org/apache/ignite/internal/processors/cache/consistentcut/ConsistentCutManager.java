@@ -445,14 +445,12 @@ public class ConsistentCutManager extends GridCacheSharedManagerAdapter {
         ConsistentCutVersionAware txCutVerAware = (ConsistentCutVersionAware)tx;
 
         if (isSetterTxCutVersion(tx)) {
-            assert txCutVerAware.txCutVersion() == -1 : tx;
+            assert txCutVerAware.txCutVersion() == null : tx;
 
-            txCutVerAware.txCutVersion(latestKnownCutVersion().version());
+            txCutVerAware.txCutVersion(latestKnownCutVersion());
         }
 
-        long txCutVer = txCutVerAware.txCutVersion();
-
-        assert txCutVer >= 0 : tx;
+        assert txCutVerAware.txCutVersion() != null : tx;
     }
 
     /**

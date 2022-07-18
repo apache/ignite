@@ -25,6 +25,9 @@ import org.apache.ignite.internal.util.future.GridCompoundFuture;
 
 /** Compound future that doesn't allow duplicated futures to insert. */
 public class GridCompoundFutureSet<T, R> extends GridCompoundFuture<T, R> {
+    /** */
+    private static final long serialVersionUID = 0L;
+
     /** {@inheritDoc} */
     @Override protected Collection<IgniteInternalFuture> createFuturesCollection() {
         return new HashSet<>();
