@@ -157,7 +157,7 @@ public abstract class IgniteTxLocalAdapter extends IgniteTxAdapter implements Ig
     protected volatile boolean qryEnlisted;
 
     /** The latest Consistent Cut Version AFTER which this transaction committed. */
-    private volatile ConsistentCutVersion txCutVer;
+    private ConsistentCutVersion txCutVer;
 
     /**
      * @param cctx Cache registry.

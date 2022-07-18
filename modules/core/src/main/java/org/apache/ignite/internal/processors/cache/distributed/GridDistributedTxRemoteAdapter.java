@@ -129,7 +129,7 @@ public abstract class GridDistributedTxRemoteAdapter extends IgniteTxAdapter imp
     /**
      * Latest Consistent Cut Version that AFTER which this transaction committed. Filled for 1PC cases.
      */
-    private volatile ConsistentCutVersion txCutVer;
+    private ConsistentCutVersion txCutVer;
 
     /**
      * @param ctx Cache registry.
