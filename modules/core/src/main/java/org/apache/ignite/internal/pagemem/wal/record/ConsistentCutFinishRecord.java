@@ -22,30 +22,33 @@ import java.util.List;
 import java.util.Set;
 import java.util.stream.Collectors;
 import org.apache.ignite.internal.processors.cache.consistentcut.ConsistentCut;
+import org.apache.ignite.internal.processors.cache.consistentcut.ConsistentCutManager;
 import org.apache.ignite.internal.processors.cache.version.GridCacheVersion;
 import org.apache.ignite.lang.IgniteUuid;
 
 /**
- * Consistent Cut splits timeline on 2 global areas - BEFORE and AFTER. It guarantees that every transaction committed BEFORE
- * also will be committed BEFORE on every other node. It means that an Ignite node can safely recover itself to this
+ * {@link ConsistentCut} splits timeline on 2 global areas - BEFORE and AFTER. It guarantees that every transaction committed
+ * BEFORE also will be committed BEFORE on every other node. It means that an Ignite node can safely recover itself to this
  * point without any coordination with other nodes.
  *
  * This record is written to WAL in moment when Consistent Cut stops analyzing transactions from {@link ConsistentCut}.
- * It consists only few transactions that were checked. It guarantees that transactions included to {@link #before()}
- * are part of the global BEFORE state, and every committed transaction since {@link ConsistentCutStartRecord} and included
- * into {@link #after()} are part of the global AFTER state.
+ * It consists only few transactions that were checked.
  *
- * @see ConsistentCutStartRecord
- * @see ConsistentCut
+ * It guarantees that the BEFORE side consist of:
+ * 1. transactions physically committed before {@link ConsistentCutStartRecord} and aren't included into {@link #after()};
+ * 2. transactions physically committed between {@link ConsistentCutStartRecord} and {@link ConsistentCutFinishRecord}
+ *    and are included into {@link #before()}.
+ *
+ * @see ConsistentCutManager
  */
 public class ConsistentCutFinishRecord extends WALRecord {
     /**
-     * Set of transactions (optionally committed after this record) to include to the BEFORE side of Consistent Cut.
+     * Set of transactions to include to the BEFORE side of Consistent Cut.
      */
     private final Set<GridCacheVersion> before;
 
     /**
-     * Set of transactions (optionally committed after this record) to include to the AFTER side of Consistent Cut.
+     * Set of transactions to include to the AFTER side of Consistent Cut.
      */
     private final Set<GridCacheVersion> after;
 

@@ -18,27 +18,26 @@
 package org.apache.ignite.internal.pagemem.wal.record;
 
 import org.apache.ignite.internal.processors.cache.consistentcut.ConsistentCut;
+import org.apache.ignite.internal.processors.cache.consistentcut.ConsistentCutManager;
 import org.apache.ignite.internal.processors.cache.consistentcut.ConsistentCutVersion;
 import org.apache.ignite.internal.util.tostring.GridToStringInclude;
 import org.apache.ignite.internal.util.typedef.internal.S;
 
 /**
- * Consistent Cut splits timeline on 2 global areas - BEFORE and AFTER. It guarantees that every transaction committed BEFORE
+ * {@link ConsistentCut} splits timeline on 2 global areas - BEFORE and AFTER. It guarantees that every transaction committed BEFORE
  * also will be committed BEFORE on every other node. It means that an Ignite node can safely recover itself to this
  * point without any coordination with other nodes.
  *
- * This record is written to WAL in moment when Consistent Cut starts on a local node. All transactions committed before
- * this WAL record are part of the global area BEFORE. But it's possible then some transactions committed after this
- * record are also part of the BEFORE state. Set of such transactions is prepared in moment of taken Consistent Cut and
- * stored within {@link ConsistentCut}. Ignite analyzes such transactions and decided whether to include
- * them to the state or not. Information about that is written to WAL with {@link ConsistentCutFinishRecord}.
+ * This record is written to WAL in moment when {@link ConsistentCut} starts on a local node.
  *
- * @see ConsistentCutFinishRecord
- * @see ConsistentCut
+ * Note, there is no strict guarantee for all transactions belonged to the BEFORE side to be physically committed before
+ * {@link ConsistentCutStartRecord}, and vice versa. This is the reason for having {@link ConsistentCutFinishRecord}.
+ *
+ * @see ConsistentCutManager
  */
 public class ConsistentCutStartRecord extends WALRecord {
     /**
-     * Consistent Cut Version. It's timestamp of start Consistent Cut on the Ignite coordinator node.
+     * Consistent Cut Version.
      */
     @GridToStringInclude
     private final ConsistentCutVersion ver;
