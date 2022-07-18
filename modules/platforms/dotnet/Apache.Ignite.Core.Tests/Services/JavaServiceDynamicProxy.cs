@@ -406,5 +406,11 @@ namespace Apache.Ignite.Core.Tests.Services
         {
             return _svc.contextAttribute(name);
         }
+
+        /** <inheritDoc /> */
+        public int testInterception(int val)
+        {
+            return _svc.testInterception(val);
+        }
     }
 }
