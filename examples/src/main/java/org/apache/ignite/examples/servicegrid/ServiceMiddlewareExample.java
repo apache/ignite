@@ -84,10 +84,8 @@ public class ServiceMiddlewareExample {
 
                 try {
                     System.out.println("Try to call the proxy method without context.");
-                    // The method call will be intercepted with a SecurityException because no username was passed.
+                    // The method call will be intercepted with a SecurityException because no username was provided.
                     proxy.put(0, 0);
-
-                    assert false;
                 }
                 catch (IgniteException expected) {
                     expected.printStackTrace();
