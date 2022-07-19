@@ -45,7 +45,7 @@ public class Log4j2LoggerSelfTest {
     private static final String LOG_PATH_TEST = "modules/log4j2/src/test/config/log4j2-test.xml";
 
     /** */
-    private static final String LOG_PATH_MAIN = "config/ignite-log4j2.xml";
+    private static final String LOG_PATH_MAIN = "config/ignite-log4j.xml";
 
     /** */
     @Before

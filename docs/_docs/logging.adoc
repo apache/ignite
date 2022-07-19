@@ -73,7 +73,7 @@ tab:.NET[unsupported]
 tab:C++[unsupported]
 --
 
-In the above example, the path to `log4j2-config.xml` can be either an absolute path, a local path relative to META-INF in classpath or to `IGNITE_HOME`. An example log4j2 configuration file can be found in the distribution package (`$IGNITE_HOME/config/ignite-log4j2.xml`).
+In the above example, the path to `log4j2-config.xml` can be either an absolute path, a local path relative to META-INF in classpath or to `IGNITE_HOME`. An example log4j2 configuration file can be found in the distribution package (`$IGNITE_HOME/config/ignite-log4j.xml`).
 
 NOTE: Log4j2 supports runtime reconfiguration, i.e. changes in the configuration file is applied without the need to restart the application.
 

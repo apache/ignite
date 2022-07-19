@@ -17,54 +17,66 @@
   limitations under the License.
 -->
 
-<Configuration>
-    <!--
-        Logs System.out messages to console.
-
-        Note, this appender is disabled by default.
-        To enable, uncomment the section below and also CONSOLE appender in the <root> element.
-    -->
-   <!--
-   <Console name="CONSOLE" target="SYSTEM_OUT">
-        <PatternLayout pattern="[%d{ISO8601}][%-5p][%t][%c{1}] %m%n"/>
-        <LevelRangeFilter minLevel="INFO" maxLevel="DEBUG"/>
-    </Console>
-    -->
-
-    <!--
-        Logs all ERROR messages to console.
-    -->
+<Configuration monitorInterval="60">
     <Appenders>
-        <Console name="CONSOLE_ERR" target="SYSTEM_ERR">
-            <PatternLayout pattern="[%d{ISO8601}][%-5p][%t][%c{1}] %m%n"/>
+        <Console name="CONSOLE" target="SYSTEM_OUT">
+            <PatternLayout pattern="[%d{ISO8601}][%-5p][%t][%c{1}]%notEmpty{[%markerSimpleName]} %m%n"/>
+            <ThresholdFilter level="ERROR" onMatch="DENY" onMismatch="ACCEPT"/>
         </Console>
 
-        <RollingFile name="FILE"
-                     append="true"
-                     fileName="${sys:IGNITE_HOME}/work/log/ignite.log"
-                     filePattern="${sys:IGNITE_HOME}/work/log/ignite.log.%i">
-            <PatternLayout pattern="[%d{ISO8601}][%-5p][%t][%c{1}] %m%n"/>
-            <Policies>
-                <SizeBasedTriggeringPolicy size="10 MB"/>
-            </Policies>
-            <DefaultRolloverStrategy max="10"/>
-        </RollingFile>
+        <Console name="CONSOLE_ERR" target="SYSTEM_ERR">
+            <PatternLayout pattern="[%d{ISO8601}][%-5p][%t][%c{1}]%notEmpty{[%markerSimpleName]} %m%n"/>
+        </Console>
 
-        <File name="CONSISTENCY"
-              append="true"
-              fileName="${IGNITE_HOME}/work/log/consistency.log">
-            <PatternLayout pattern="[%d{ISO8601}][%-5p][%t][%c{1}] %m%n"/>
+        <File name="CONSISTENCY" fileName="${sys:IGNITE_HOME}/work/log/consistency.log">
+            <PatternLayout>
+                <Pattern>"[%d{ISO8601}][%-5p][%t][%c{1}] %m%n"</Pattern>
+            </PatternLayout>
         </File>
+
+        <Routing name="FILE">
+            <Routes pattern="$${sys:nodeId}">
+                <Route>
+                    <RollingFile name="Rolling-${sys:nodeId}" fileName="${sys:IGNITE_HOME}/work/log/${sys:appId}-${sys:nodeId}.log"
+                                 filePattern="${sys:IGNITE_HOME}/work/log/${sys:appId}-${sys:nodeId}-%i-%d{yyyy-MM-dd}.log.gz">
+                        <PatternLayout pattern="[%d{ISO8601}][%-5p][%t][%c{1}]%notEmpty{[%markerSimpleName]} %m%n"/>
+                        <Policies>
+                            <TimeBasedTriggeringPolicy interval="6" modulate="true" />
+                            <SizeBasedTriggeringPolicy size="10 MB" />
+                        </Policies>
+                    </RollingFile>
+                </Route>
+            </Routes>
+        </Routing>
     </Appenders>
 
     <Loggers>
+        <!--
+        <Logger name="org.apache.ignite" level=DEBUG/>
+        -->
+
+        <!--
+            Uncomment to disable courtesy notices, such as SPI configuration
+            consistency warnings.
+        -->
+        <!--
+        <Logger name="org.apache.ignite.CourtesyConfigNotice" level=OFF/>
+        -->
+
         <Logger name="org.springframework" level="WARN"/>
         <Logger name="org.eclipse.jetty" level="WARN"/>
-        <Logger name="org.eclipse.jetty.util.component" level="ERROR"/>
-        <Logger name="com.amazonaws" level="WARN"/>
-        <Logger name="org.apache.ignite.internal.visor.consistency" level="INFO" additivity="false">
+
+        <Logger name="org.apache.ignite.internal.visor.consistency" additivity="false" level="INFO">
             <AppenderRef ref="CONSISTENCY"/>
         </Logger>
+
+        <!--
+        Avoid warnings about failed bind attempt when multiple nodes running on the same host.
+        -->
+        <Logger name="org.eclipse.jetty.util.log" level="ERROR"/>
+        <Logger name="org.eclipse.jetty.util.component" level="ERROR"/>
+
+        <Logger name="com.amazonaws" level="WARN"/>
 
         <Root level="INFO">
             <!-- Uncomment to enable logging to console. -->
