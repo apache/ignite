@@ -118,7 +118,7 @@ public class ServiceMiddlewareExample {
         /** Serial version UID. */
         private static final long serialVersionUID = 0L;
 
-        /** Injected ignite logger. */
+        /** Injected Ignite logger. */
         @LoggerResource
         private IgniteLogger log;
 

@@ -43,6 +43,7 @@ import org.apache.ignite.examples.MessagingExamplesSelfTest;
 import org.apache.ignite.examples.MonteCarloExamplesMultiNodeSelfTest;
 import org.apache.ignite.examples.MonteCarloExamplesSelfTest;
 import org.apache.ignite.examples.OpenCensusMetricsExporterExampleSelfTest;
+import org.apache.ignite.examples.IgniteServiceExamplesSelfTest;
 import org.apache.ignite.examples.SpringBeanExamplesSelfTest;
 import org.apache.ignite.examples.SqlExamplesSelfTest;
 import org.apache.ignite.examples.TaskExamplesMultiNodeSelfTest;
@@ -84,6 +85,7 @@ import org.junit.runners.Suite;
     TaskExamplesMultiNodeSelfTest.class,
     MemcacheRestExamplesMultiNodeSelfTest.class,
     MonteCarloExamplesMultiNodeSelfTest.class,
+    IgniteServiceExamplesSelfTest.class,
 
     // Binary.
     CacheClientBinaryExampleTest.class,
