@@ -303,13 +303,39 @@ WARNING: This feature is experimental and may change in future releases.
 This feature may affect performance of service execution.
 ====
 
-Apache Ignite allows the user to implement custom middleware logic for his services
-and thus clean up the business code from the common boilerplate code.
+Apache Ignite allows the user to implement custom middleware logic for his services and provides the following features:
 
-Ignite provides the following features:
+1. Ability to implicitly pass custom immutable parameters from proxy to service (similar to request headers).
+2. Ability to define custom interceptor for service method calls.
 
-1. Ability to define custom interceptor for service method calls.
-2. Ability to implicitly pass custom immutable parameters from proxy to service (similar to request headers).
+=== Service Call Context
+This feature allows the user to implicilty pass parameters to any service method without service re-deployment.
+
+The user can create context (map with custom parameters) and bind it to the service proxy. After that, each call to the proxy method will also implicitly pass context parameters to the service.
+
+[tabs]
+--
+tab:Java[]
+[source, java]
+----
+include::{javaFile}[tags=service-call-context-create, indent=0]
+----
+tab:C#/.NET[]
+--
+
+The user can read the `call context` using the `currentCallContext` method of `ServiceContext`.
+
+NOTE: Service call context is only accessible from the current thread during the execution of a service method.
+
+[tabs]
+--
+tab:Java[]
+[source, java]
+----
+include::{javaEchoServiceFile}[tags=service-call-context-read, indent=0]
+----
+tab:C#/.NET[]
+--
 
 === Service Interceptor
 This feature allows the user to intercept the call to any service method except
@@ -327,43 +353,12 @@ image::images/intercept--order.png[invocation order]
 An incorrect interceptor implementation can lead to undefined behaviour of the service execution.
 ====
 
-=== Service Call Context
-This feature allows the user to implicilty pass parameters to any service method without service re-deployment.
-
-The user can create context (map with custom parameters) and bind it to the service proxy.
-After that, each call to the proxy method will also implicitly pass context parameters to the service.
-
-The service method can get the current call context using `currentCallContext` method of the `ServiceContext`.
-
-NOTE: Service call context is only accessible from the current thread during the execution of a service method.
-
-==== Creating a context attribute
-[tabs]
---
-tab:Java[]
-[source, java]
-----
-include::{javaFile}[tags=service-call-context-create, indent=0]
-----
-tab:C#/.NET[]
---
-==== Creating service call interceptor
 [tabs]
 --
 tab:Java[]
 [source, java]
 ----
 include::{javaServiceInterceptorFile}[tags=service-call-interceptor, indent=0]
-----
-tab:C#/.NET[]
---
-==== Using the context attribute inside the service
-[tabs]
---
-tab:Java[]
-[source, java]
-----
-include::{javaEchoServiceFile}[tags=service-call-context-read, indent=0]
 ----
 tab:C#/.NET[]
 --
