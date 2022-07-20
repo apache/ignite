@@ -18,8 +18,6 @@
 package org.apache.ignite.internal.processors.query.stat.messages;
 
 import java.nio.ByteBuffer;
-
-import org.apache.ignite.internal.processors.query.h2.twostep.msg.GridH2ValueMessage;
 import org.apache.ignite.plugin.extensions.communication.Message;
 import org.apache.ignite.plugin.extensions.communication.MessageReader;
 import org.apache.ignite.plugin.extensions.communication.MessageWriter;
@@ -32,13 +30,13 @@ public class StatisticsColumnData implements Message {
     private static final long serialVersionUID = 0L;
 
     /** */
-    public static final short TYPE_CODE = 185;
+    public static final short TYPE_CODE = 187;
 
     /** Min value in column. */
-    private GridH2ValueMessage min;
+    private StatisticsValueMessage min;
 
     /** Max value in column. */
-    private GridH2ValueMessage max;
+    private StatisticsValueMessage max;
 
     /** Number of null values in column. */
     private long nulls;
@@ -65,6 +63,7 @@ public class StatisticsColumnData implements Message {
      * Default constructor.
      */
     public StatisticsColumnData() {
+        // No-op.
     }
 
     /**
@@ -81,8 +80,8 @@ public class StatisticsColumnData implements Message {
      * @param createdAt Created at time, milliseconds.
      */
     public StatisticsColumnData(
-        GridH2ValueMessage min,
-        GridH2ValueMessage max,
+        StatisticsBasicValueMessage min,
+        StatisticsBasicValueMessage max,
         long nulls,
         long distinct,
         long total,
@@ -105,14 +104,14 @@ public class StatisticsColumnData implements Message {
     /**
      * @return Min value in column.
      */
-    public GridH2ValueMessage min() {
+    public StatisticsValueMessage min() {
         return min;
     }
 
     /**
      * @return Max value in column.
      */
-    public GridH2ValueMessage max() {
+    public StatisticsValueMessage max() {
         return max;
     }
 

@@ -154,7 +154,7 @@ public class SchemaManager implements GridQuerySchemaManager {
     private final IgniteLogger log;
 
     /** Drop column listeners. */
-    private final Set<BiConsumer<GridH2Table, List<String>>> dropColsLsnrs = ConcurrentHashMap.newKeySet();
+    private final Set<BiConsumer<GridQueryTypeDescriptor, List<String>>> dropColsLsnrs = ConcurrentHashMap.newKeySet();
 
     /** Drop table listeners. */
     private final Set<BiConsumer<String, String>> dropTblLsnrs = ConcurrentHashMap.newKeySet();
@@ -856,7 +856,7 @@ public class SchemaManager implements GridQuerySchemaManager {
 
         lsnr.onSqlTypeUpdated(schemaName, desc.type(), desc.table().cacheInfo());
 
-        dropColsLsnrs.forEach(l -> l.accept(desc.table(), cols));
+        dropColsLsnrs.forEach(l -> l.accept(desc.type(), cols));
     }
 
     /**
@@ -1131,45 +1131,29 @@ public class SchemaManager implements GridQuerySchemaManager {
         }
     }
 
-    /**
-     * Register listener for drop columns event.
-     *
-     * @param lsnr Drop columns event listener.
-     */
-    public void registerDropColumnsListener(@NotNull BiConsumer<GridH2Table, List<String>> lsnr) {
+    /** {@inheritDoc} */
+    @Override public void registerDropColumnsListener(@NotNull BiConsumer<GridQueryTypeDescriptor, List<String>> lsnr) {
         requireNonNull(lsnr, "Drop columns listener should be not-null.");
 
         dropColsLsnrs.add(lsnr);
     }
 
-    /**
-     * Unregister listener for drop columns event.
-     *
-     * @param lsnr Drop columns event listener.
-     */
-    public void unregisterDropColumnsListener(@NotNull BiConsumer<GridH2Table, List<String>> lsnr) {
+    /** {@inheritDoc} */
+    @Override public void unregisterDropColumnsListener(@NotNull BiConsumer<GridQueryTypeDescriptor, List<String>> lsnr) {
         requireNonNull(lsnr, "Drop columns listener should be not-null.");
 
         dropColsLsnrs.remove(lsnr);
     }
 
-    /**
-     * Register listener for drop table event.
-     *
-     * @param lsnr Drop table event listener.
-     */
-    public void registerDropTableListener(@NotNull BiConsumer<String, String> lsnr) {
+    /** {@inheritDoc} */
+    @Override public void registerDropTableListener(@NotNull BiConsumer<String, String> lsnr) {
         requireNonNull(lsnr, "Drop table listener should be not-null.");
 
         dropTblLsnrs.add(lsnr);
     }
 
-    /**
-     * Unregister listener for drop table event.
-     *
-     * @param lsnr Drop table event listener.
-     */
-    public void unregisterDropTableListener(@NotNull BiConsumer<String, String> lsnr) {
+    /** {@inheritDoc} */
+    @Override public void unregisterDropTableListener(@NotNull BiConsumer<String, String> lsnr) {
         requireNonNull(lsnr, "Drop table listener should be not-null.");
 
         dropTblLsnrs.remove(lsnr);

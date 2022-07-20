@@ -19,107 +19,115 @@ package org.apache.ignite.internal.processors.query.stat.messages;
 
 import java.nio.ByteBuffer;
 import java.util.Map;
-import java.util.UUID;
 import org.apache.ignite.internal.GridDirectMap;
-import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
 import org.apache.ignite.internal.processors.query.stat.StatisticsType;
-import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.plugin.extensions.communication.Message;
 import org.apache.ignite.plugin.extensions.communication.MessageCollectionItemType;
 import org.apache.ignite.plugin.extensions.communication.MessageReader;
 import org.apache.ignite.plugin.extensions.communication.MessageWriter;
 
 /**
- * Request for statistics.
+ * Statistics for some object (index or table) in database.
  */
-public class StatisticsRequest implements Message {
+public class StatisticsObjectData implements Message {
     /** */
     private static final long serialVersionUID = 0L;
 
     /** */
     public static final short TYPE_CODE = 186;
 
-    /** Gathering id. */
-    private UUID reqId;
-
-    /** Key to supply statistics by. */
+    /** Statistics key. */
     private StatisticsKeyMessage key;
 
-    /** Type of required statistcs. */
+    /** Total row count in current object. */
+    private long rowsCnt;
+
+    /** Type of statistics. */
     private StatisticsType type;
 
-    /** For local statistics request - column config versions map: name to version. */
-    @GridDirectMap(keyType = String.class, valueType = Long.class)
-    private Map<String, Long> versions;
+    /** Partition id if statistics was collected by partition. */
+    private int partId;
 
-    /** For local statistics request - version to gather statistics by. */
-    private AffinityTopologyVersion topVer;
+    /** Update counter if statistics was collected by partition. */
+    private long updCnt;
 
-    /**
-     * Constructor.
-     */
-    public StatisticsRequest() {
-    }
+    /** Columns key to statistic map. */
+    @GridDirectMap(keyType = String.class, valueType = StatisticsColumnData.class)
+    private Map<String, StatisticsColumnData> data;
 
     /**
      * Constructor.
      *
-     * @param reqId Request id.
-     * @param key Statistics key to get statistics by.
-     * @param type Required statistics type.
-     * @param topVer Topology version to get statistics by.
-     * @param versions Map of statistics version to column name to ensure actual statistics aquired.
+     * @param key Statistics key.
+     * @param rowsCnt Total row count.
+     * @param type Statistics type.
+     * @param partId Partition id.
+     * @param updCnt Partition update counter.
+     * @param data Map of statistics column data.
      */
-    public StatisticsRequest(
-        UUID reqId,
+    public StatisticsObjectData(
         StatisticsKeyMessage key,
+        long rowsCnt,
         StatisticsType type,
-        AffinityTopologyVersion topVer,
-        Map<String, Long> versions
+        int partId,
+        long updCnt,
+        Map<String, StatisticsColumnData> data
     ) {
-        this.reqId = reqId;
         this.key = key;
+        this.rowsCnt = rowsCnt;
         this.type = type;
-        this.topVer = topVer;
-        this.versions = versions;
-    }
-
-    /** Request id. */
-    public UUID reqId() {
-        return reqId;
+        this.partId = partId;
+        this.updCnt = updCnt;
+        this.data = data;
     }
 
     /**
-     * @return Required statistics type.
-     */
-    public StatisticsType type() {
-        return type;
-    }
-
-    /**
-     * @return Key for required statitics.
+     * @return Statistics key.
      */
     public StatisticsKeyMessage key() {
         return key;
     }
 
     /**
-     * @return Topology version.
+     * @return Total rows count.
      */
-    public AffinityTopologyVersion topVer() {
-        return topVer;
+    public long rowsCnt() {
+        return rowsCnt;
     }
 
     /**
-     * @return Column name to version map.
+     * @return Statistics type.
      */
-    public Map<String, Long> versions() {
-        return versions;
+    public StatisticsType type() {
+        return type;
     }
 
-    /** {@inheritDoc} */
-    @Override public String toString() {
-        return S.toString(StatisticsRequest.class, this);
+    /**
+     * @return Partition id.
+     */
+    public int partId() {
+        return partId;
+    }
+
+    /**
+     * @return Partition update counter.
+     */
+    public long updCnt() {
+        return updCnt;
+    }
+
+    /**
+     * @return Statistics column data.
+     */
+    public Map<String, StatisticsColumnData> data() {
+        return data;
+    }
+
+    /**
+     * Default constructor.
+     */
+    public StatisticsObjectData() {
+        // No-op.
     }
 
     /** {@inheritDoc} */
@@ -135,31 +143,37 @@ public class StatisticsRequest implements Message {
 
         switch (writer.state()) {
             case 0:
-                if (!writer.writeMessage("key", key))
+                if (!writer.writeMap("data", data, MessageCollectionItemType.STRING, MessageCollectionItemType.MSG))
                     return false;
 
                 writer.incrementState();
 
             case 1:
-                if (!writer.writeUuid("reqId", reqId))
+                if (!writer.writeMessage("key", key))
                     return false;
 
                 writer.incrementState();
 
             case 2:
-                if (!writer.writeAffinityTopologyVersion("topVer", topVer))
+                if (!writer.writeInt("partId", partId))
                     return false;
 
                 writer.incrementState();
 
             case 3:
-                if (!writer.writeByte("type", type != null ? (byte)type.ordinal() : -1))
+                if (!writer.writeLong("rowsCnt", rowsCnt))
                     return false;
 
                 writer.incrementState();
 
             case 4:
-                if (!writer.writeMap("versions", versions, MessageCollectionItemType.STRING, MessageCollectionItemType.LONG))
+                if (!writer.writeByte("type", type != null ? (byte)type.ordinal() : -1))
+                    return false;
+
+                writer.incrementState();
+
+            case 5:
+                if (!writer.writeLong("updCnt", updCnt))
                     return false;
 
                 writer.incrementState();
@@ -178,7 +192,7 @@ public class StatisticsRequest implements Message {
 
         switch (reader.state()) {
             case 0:
-                key = reader.readMessage("key");
+                data = reader.readMap("data", MessageCollectionItemType.STRING, MessageCollectionItemType.MSG, false);
 
                 if (!reader.isLastRead())
                     return false;
@@ -186,7 +200,7 @@ public class StatisticsRequest implements Message {
                 reader.incrementState();
 
             case 1:
-                reqId = reader.readUuid("reqId");
+                key = reader.readMessage("key");
 
                 if (!reader.isLastRead())
                     return false;
@@ -194,7 +208,7 @@ public class StatisticsRequest implements Message {
                 reader.incrementState();
 
             case 2:
-                topVer = reader.readAffinityTopologyVersion("topVer");
+                partId = reader.readInt("partId");
 
                 if (!reader.isLastRead())
                     return false;
@@ -202,6 +216,14 @@ public class StatisticsRequest implements Message {
                 reader.incrementState();
 
             case 3:
+                rowsCnt = reader.readLong("rowsCnt");
+
+                if (!reader.isLastRead())
+                    return false;
+
+                reader.incrementState();
+
+            case 4:
                 byte typeOrd;
 
                 typeOrd = reader.readByte("type");
@@ -213,8 +235,8 @@ public class StatisticsRequest implements Message {
 
                 reader.incrementState();
 
-            case 4:
-                versions = reader.readMap("versions", MessageCollectionItemType.STRING, MessageCollectionItemType.LONG, false);
+            case 5:
+                updCnt = reader.readLong("updCnt");
 
                 if (!reader.isLastRead())
                     return false;
@@ -223,7 +245,7 @@ public class StatisticsRequest implements Message {
 
         }
 
-        return reader.afterMessageRead(StatisticsRequest.class);
+        return reader.afterMessageRead(StatisticsObjectData.class);
     }
 
     /** {@inheritDoc} */
@@ -233,7 +255,7 @@ public class StatisticsRequest implements Message {
 
     /** {@inheritDoc} */
     @Override public byte fieldsCount() {
-        return 5;
+        return 6;
     }
 
     /** {@inheritDoc} */

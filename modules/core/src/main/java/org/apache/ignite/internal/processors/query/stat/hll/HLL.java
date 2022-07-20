@@ -18,7 +18,6 @@ package org.apache.ignite.internal.processors.query.stat.hll;
 import java.util.Arrays;
 import java.util.HashMap;
 import java.util.HashSet;
-
 import org.apache.ignite.internal.processors.query.stat.hll.serialization.HLLMetadata;
 import org.apache.ignite.internal.processors.query.stat.hll.serialization.IHLLMetadata;
 import org.apache.ignite.internal.processors.query.stat.hll.serialization.ISchemaVersion;
@@ -1112,7 +1111,7 @@ public class HLL implements Cloneable {
     /**
      * Create a deep copy of this HLL.
      *
-     * @see java.lang.Object#clone()
+     * @see Object#clone()
      */
     @Override public HLL clone() throws CloneNotSupportedException {
         // NOTE: Since the package-only constructor assumes both explicit and

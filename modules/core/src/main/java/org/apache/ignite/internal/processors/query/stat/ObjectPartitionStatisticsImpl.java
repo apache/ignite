@@ -19,7 +19,6 @@ package org.apache.ignite.internal.processors.query.stat;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Objects;
-
 import org.apache.ignite.internal.util.typedef.internal.S;
 
 /**

@@ -15,22 +15,12 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.internal.cache.query.index.sorted.keys;
+package org.apache.ignite.internal.processors.query.stat;
 
-import org.apache.ignite.internal.util.typedef.F;
+import org.apache.ignite.IgniteException;
 
 /** */
-public class SignedBytesIndexKey extends BytesIndexKey {
+public class GatherStatisticCancelException extends IgniteException {
     /** */
     private static final long serialVersionUID = 0L;
-
-    /** */
-    public SignedBytesIndexKey(byte[] key) {
-        super(key);
-    }
-
-    /** {@inheritDoc} */
-    @Override public int compare(IndexKey o) {
-        return Integer.signum(F.compareArrays(key, ((BytesIndexKey)o).key));
-    }
 }

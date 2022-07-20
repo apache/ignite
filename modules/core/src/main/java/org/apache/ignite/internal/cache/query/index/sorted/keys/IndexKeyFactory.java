@@ -29,6 +29,8 @@ import org.apache.ignite.internal.cache.query.index.sorted.IndexKeyTypeSettings;
 import org.apache.ignite.internal.processors.cache.CacheObject;
 import org.apache.ignite.internal.processors.cache.CacheObjectValueContext;
 
+import static org.apache.ignite.internal.cache.query.index.sorted.IndexKeyType.JAVA_OBJECT;
+
 /**
  * Factory for creating IndexKey objects.
  */
@@ -48,8 +50,20 @@ public class IndexKeyFactory {
 
     /** Wraps user object to {@code IndexKey} object.  */
     public static IndexKey wrap(Object o, IndexKeyType keyType, CacheObjectValueContext coctx, IndexKeyTypeSettings keyTypeSettings) {
+        return wrap(o, keyType, coctx, keyTypeSettings.binaryUnsigned());
+    }
+
+    /** Wraps user object to {@code IndexKey} object.  */
+    public static IndexKey wrap(Object o, IndexKeyType keyType, CacheObjectValueContext coctx, boolean isBinaryUnsigned) {
         if (o == null || keyType == IndexKeyType.NULL)
             return NullIndexKey.INSTANCE;
+
+        if (o instanceof CacheObject) { // Handle cache object.
+            CacheObject co = (CacheObject)o;
+
+            if (keyType != JAVA_OBJECT)
+                o = co.value(coctx, false);
+        }
 
         switch (keyType) {
             case BOOLEAN:
@@ -69,8 +83,7 @@ public class IndexKeyFactory {
             case FLOAT:
                 return new FloatIndexKey((float)o);
             case BYTES:
-                return keyTypeSettings.binaryUnsigned() ?
-                    new BytesIndexKey((byte[])o) : new SignedBytesIndexKey((byte[])o);
+                return isBinaryUnsigned ? new BytesIndexKey((byte[])o) : new SignedBytesIndexKey((byte[])o);
             case STRING:
                 return new StringIndexKey((String)o);
             case UUID:

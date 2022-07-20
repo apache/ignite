@@ -14,15 +14,19 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+package org.apache.ignite.internal.processors.query.stat.messages;
 
-package org.apache.ignite.internal.processors.query.stat;
+import org.apache.ignite.IgniteCheckedException;
+import org.apache.ignite.internal.GridKernalContext;
+import org.apache.ignite.internal.cache.query.index.sorted.keys.IndexKey;
+import org.apache.ignite.plugin.extensions.communication.Message;
 
-import org.apache.ignite.IgniteException;
-
-/** */
-public class GatherStatisticCancelException extends IgniteException {
-    /** */
-    public GatherStatisticCancelException() {
-        // No-op.
-    }
+/**
+ * Statistics value message interface extension.
+ */
+public interface StatisticsValueMessage extends Message {
+    /**
+     * Get IndexKey from message container.
+     */
+    IndexKey value(GridKernalContext ctx) throws IgniteCheckedException;
 }

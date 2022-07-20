@@ -20,10 +20,10 @@ package org.apache.ignite.internal.processors.query.calcite.metadata;
 import java.math.BigDecimal;
 import java.math.BigInteger;
 import java.math.MathContext;
+import java.sql.Timestamp;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-
 import org.apache.calcite.plan.RelOptUtil;
 import org.apache.calcite.plan.volcano.RelSubset;
 import org.apache.calcite.rel.RelNode;
@@ -49,6 +49,9 @@ import org.apache.calcite.util.BuiltInMethod;
 import org.apache.calcite.util.DateString;
 import org.apache.calcite.util.TimeString;
 import org.apache.calcite.util.TimestampString;
+import org.apache.ignite.internal.cache.query.index.sorted.keys.DateIndexKey;
+import org.apache.ignite.internal.cache.query.index.sorted.keys.IndexKey;
+import org.apache.ignite.internal.cache.query.index.sorted.keys.TimeIndexKey;
 import org.apache.ignite.internal.processors.query.QueryUtils;
 import org.apache.ignite.internal.processors.query.calcite.rel.IgniteExchange;
 import org.apache.ignite.internal.processors.query.calcite.rel.IgniteHashIndexSpool;
@@ -60,8 +63,9 @@ import org.apache.ignite.internal.processors.query.calcite.schema.IgniteStatisti
 import org.apache.ignite.internal.processors.query.calcite.schema.IgniteTable;
 import org.apache.ignite.internal.processors.query.calcite.util.RexUtils;
 import org.apache.ignite.internal.processors.query.stat.ColumnStatistics;
-import org.h2.value.Value;
 import org.jetbrains.annotations.Nullable;
+
+import static org.apache.ignite.internal.cache.query.index.sorted.IndexKeyType.BOOLEAN;
 
 /** */
 public class IgniteMdSelectivity extends RelMdSelectivity {
@@ -173,65 +177,65 @@ public class IgniteMdSelectivity extends RelMdSelectivity {
      * @param val Value to convert to comparable form.
      * @return Comparable form of value.
      */
-    private BigDecimal toComparableValue(Value val) {
+    private BigDecimal toComparableValue(IndexKey val) {
         if (val == null)
             return null;
 
-        switch (val.getType()) {
-            case Value.NULL:
+        switch (val.type()) {
+            case NULL:
                 throw new IllegalArgumentException("Can't compare null values");
 
-            case Value.BOOLEAN:
-                return (val.getBoolean()) ? BigDecimal.ONE : BigDecimal.ZERO;
+            case BOOLEAN:
+                return ((Boolean)val.key()) ? BigDecimal.ONE : BigDecimal.ZERO;
 
-            case Value.BYTE:
-                return new BigDecimal(val.getByte());
+            case BYTE:
+                return new BigDecimal((Byte)val.key());
 
-            case Value.SHORT:
-                return new BigDecimal(val.getShort());
+            case SHORT:
+                return new BigDecimal((Short)val.key());
 
-            case Value.INT:
-                return new BigDecimal(val.getInt());
+            case INT:
+                return new BigDecimal((Integer)val.key());
 
-            case Value.LONG:
-                return new BigDecimal(val.getLong());
+            case LONG:
+                return new BigDecimal((Long)val.key());
 
-            case Value.DECIMAL:
-                return val.getBigDecimal();
+            case DECIMAL:
+                return (BigDecimal)val.key();
 
-            case Value.DOUBLE:
-                return BigDecimal.valueOf(val.getDouble());
+            case DOUBLE:
+                return BigDecimal.valueOf((Double)val.key());
 
-            case Value.FLOAT:
-                return BigDecimal.valueOf(val.getFloat());
+            case FLOAT:
+                return BigDecimal.valueOf((Float)val.key());
 
-            case Value.DATE:
-                return BigDecimal.valueOf(val.getDate().getTime());
+            case DATE:
+                return BigDecimal.valueOf(((DateIndexKey)val).dateValue());
 
-            case Value.TIME:
-                return BigDecimal.valueOf(val.getTime().getTime());
+            case TIME:
+                return BigDecimal.valueOf(((TimeIndexKey)val).nanos());
 
-            case Value.TIMESTAMP:
-                return BigDecimal.valueOf(val.getTimestamp().getTime());
+            case TIMESTAMP:
+                return BigDecimal.valueOf(((Timestamp)val.key()).getTime());
 
-            case Value.BYTES:
-                BigInteger bigInteger = new BigInteger(1, val.getBytes());
+            case BYTES:
+                BigInteger bigInteger = new BigInteger(1, (byte[])val.key());
                 return new BigDecimal(bigInteger);
 
-            case Value.STRING:
-            case Value.STRING_FIXED:
-            case Value.STRING_IGNORECASE:
-            case Value.ARRAY:
-            case Value.JAVA_OBJECT:
-            case Value.GEOMETRY:
+            case STRING:
+            case STRING_FIXED:
+            case STRING_IGNORECASE:
+            case ARRAY:
+            case JAVA_OBJECT:
+            case GEOMETRY:
                 return null;
 
-            case Value.UUID:
-                BigInteger bigInt = new BigInteger(1, val.getBytes());
+            case UUID:
+                BigInteger bigInt = new BigInteger(1, val.bytes());
                 return new BigDecimal(bigInt);
 
             default:
-                throw new IllegalStateException("Unsupported H2 type: " + val.getType());
+                throw new IllegalStateException("Unsupported H2 type: " + val.type());
         }
     }
 
@@ -400,11 +404,11 @@ public class IgniteMdSelectivity extends RelMdSelectivity {
             return res;
         }
 
-        if (colStat.max() == null || colStat.max().getType() != Value.BOOLEAN)
+        if (colStat.max() == null || colStat.max().type() != BOOLEAN)
             return res;
 
-        Boolean min = colStat.min().getBoolean();
-        Boolean max = colStat.max().getBoolean();
+        Boolean min = (Boolean)colStat.min().key();
+        Boolean max = (Boolean)colStat.max().key();
 
         if (!max)
             return 0;

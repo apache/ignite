@@ -367,6 +367,9 @@ public abstract class IgniteUtils {
     /** All grid events. */
     private static final int[] GRID_EVTS;
 
+    /** Empty byte array. */
+    public static final byte[] EMPTY_BYTES = new byte[0];
+
     /** Empty integers array. */
     public static final int[] EMPTY_INTS = new int[0];
 

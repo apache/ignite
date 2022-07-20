@@ -17,77 +17,66 @@
 
 package org.apache.ignite.internal.processors.query.stat.messages;
 
-import java.io.Externalizable;
 import java.nio.ByteBuffer;
-import java.util.List;
-import java.util.Objects;
-
-import org.apache.ignite.internal.GridDirectCollection;
+import java.util.UUID;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.plugin.extensions.communication.Message;
-import org.apache.ignite.plugin.extensions.communication.MessageCollectionItemType;
 import org.apache.ignite.plugin.extensions.communication.MessageReader;
 import org.apache.ignite.plugin.extensions.communication.MessageWriter;
 
 /**
- * Key, describing the object of statistics. For example: table with some columns.
+ * Response for statistics request.
  */
-public class StatisticsKeyMessage implements Message {
+public class StatisticsResponse implements Message {
     /** */
     private static final long serialVersionUID = 0L;
 
     /** */
-    public static final short TYPE_CODE = 183;
+    public static final short TYPE_CODE = 189;
 
-    /** Object schema. */
-    private String schema;
+    /** Request id. */
+    private UUID reqId;
 
-    /** Object name. */
-    private String obj;
-
-    /** Optional list of columns to collect statistics by. */
-    @GridDirectCollection(String.class)
-    private List<String> colNames;
+    /** Requested statistics. */
+    private StatisticsObjectData data;
 
     /**
-     * {@link Externalizable} support.
+     * Constructor.
      */
-    public StatisticsKeyMessage() {
-        // No-op.
+    public StatisticsResponse() {
     }
 
     /**
      * Constructor.
      *
-     * @param schema Schema name.
-     * @param obj Object name.
-     * @param colNames Column names.
+     * @param reqId Request id
+     * @param data Statistics data.
      */
-    public StatisticsKeyMessage(String schema, String obj, List<String> colNames) {
-        this.schema = schema;
-        this.obj = obj;
-        this.colNames = colNames;
+    public StatisticsResponse(
+        UUID reqId,
+        StatisticsObjectData data
+    ) {
+        this.reqId = reqId;
+        this.data = data;
     }
 
     /**
-     * @return Schema name.
+     * @return Request id.
      */
-    public String schema() {
-        return schema;
+    public UUID reqId() {
+        return reqId;
     }
 
     /**
-     * @return Object name.
+     * @return Statitics data.
      */
-    public String obj() {
-        return obj;
+    public StatisticsObjectData data() {
+        return data;
     }
 
-    /**
-     * @return Column names.
-     */
-    public List<String> colNames() {
-        return colNames;
+    /** {@inheritDoc} */
+    @Override public String toString() {
+        return S.toString(StatisticsResponse.class, this);
     }
 
     /** {@inheritDoc} */
@@ -103,19 +92,13 @@ public class StatisticsKeyMessage implements Message {
 
         switch (writer.state()) {
             case 0:
-                if (!writer.writeCollection("colNames", colNames, MessageCollectionItemType.STRING))
+                if (!writer.writeMessage("data", data))
                     return false;
 
                 writer.incrementState();
 
             case 1:
-                if (!writer.writeString("obj", obj))
-                    return false;
-
-                writer.incrementState();
-
-            case 2:
-                if (!writer.writeString("schema", schema))
+                if (!writer.writeUuid("reqId", reqId))
                     return false;
 
                 writer.incrementState();
@@ -134,7 +117,7 @@ public class StatisticsKeyMessage implements Message {
 
         switch (reader.state()) {
             case 0:
-                colNames = reader.readCollection("colNames", MessageCollectionItemType.STRING);
+                data = reader.readMessage("data");
 
                 if (!reader.isLastRead())
                     return false;
@@ -142,15 +125,7 @@ public class StatisticsKeyMessage implements Message {
                 reader.incrementState();
 
             case 1:
-                obj = reader.readString("obj");
-
-                if (!reader.isLastRead())
-                    return false;
-
-                reader.incrementState();
-
-            case 2:
-                schema = reader.readString("schema");
+                reqId = reader.readUuid("reqId");
 
                 if (!reader.isLastRead())
                     return false;
@@ -159,7 +134,7 @@ public class StatisticsKeyMessage implements Message {
 
         }
 
-        return reader.afterMessageRead(StatisticsKeyMessage.class);
+        return reader.afterMessageRead(StatisticsResponse.class);
     }
 
     /** {@inheritDoc} */
@@ -169,31 +144,11 @@ public class StatisticsKeyMessage implements Message {
 
     /** {@inheritDoc} */
     @Override public byte fieldsCount() {
-        return 3;
+        return 2;
     }
 
     /** {@inheritDoc} */
     @Override public void onAckReceived() {
 
-    }
-
-    /** {@inheritDoc} */
-    @Override public String toString() {
-        return S.toString(StatisticsKeyMessage.class, this);
-    }
-
-    /** {@inheritDoc} */
-    @Override public boolean equals(Object o) {
-        if (this == o) return true;
-        if (o == null || getClass() != o.getClass()) return false;
-        StatisticsKeyMessage that = (StatisticsKeyMessage)o;
-        return Objects.equals(schema, that.schema) &&
-            Objects.equals(obj, that.obj) &&
-            Objects.equals(colNames, that.colNames);
-    }
-
-    /** {@inheritDoc} */
-    @Override public int hashCode() {
-        return Objects.hash(schema, obj, colNames);
     }
 }

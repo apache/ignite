@@ -41,15 +41,16 @@ import org.apache.ignite.internal.managers.systemview.walker.StatisticsColumnCon
 import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
 import org.apache.ignite.internal.processors.cache.DynamicCacheChangeBatch;
 import org.apache.ignite.internal.processors.cache.GridCacheContext;
+import org.apache.ignite.internal.processors.cache.GridCacheContextInfo;
 import org.apache.ignite.internal.processors.cache.distributed.dht.preloader.GridDhtPartitionsExchangeFuture;
 import org.apache.ignite.internal.processors.cache.query.IgniteQueryErrorCode;
 import org.apache.ignite.internal.processors.cluster.GridClusterStateProcessor;
 import org.apache.ignite.internal.processors.metastorage.DistributedMetaStorage;
 import org.apache.ignite.internal.processors.metastorage.DistributedMetastorageLifecycleListener;
+import org.apache.ignite.internal.processors.query.GridQuerySchemaManager;
+import org.apache.ignite.internal.processors.query.GridQueryTypeDescriptor;
 import org.apache.ignite.internal.processors.query.IgniteSQLException;
 import org.apache.ignite.internal.processors.query.QueryUtils;
-import org.apache.ignite.internal.processors.query.h2.SchemaManager;
-import org.apache.ignite.internal.processors.query.h2.opt.GridH2Table;
 import org.apache.ignite.internal.processors.query.stat.config.StatisticsColumnConfiguration;
 import org.apache.ignite.internal.processors.query.stat.config.StatisticsObjectConfiguration;
 import org.apache.ignite.internal.processors.query.stat.view.ColumnConfigurationViewSupplier;
@@ -77,7 +78,7 @@ public class IgniteStatisticsConfigurationManager {
     public static final String[] EMPTY_STRINGS = new String[0];
 
     /** Schema manager. */
-    private final SchemaManager schemaMgr;
+    private final GridQuerySchemaManager schemaMgr;
 
     /** Distributed metastore. */
     private volatile DistributedMetaStorage distrMetaStorage;
@@ -102,6 +103,9 @@ public class IgniteStatisticsConfigurationManager {
 
     /** Is server node flag. */
     private final boolean isServerNode;
+
+    /** Binary signed or unsigned compare mode. */
+    private final boolean isBinaryUnsigned;
 
     /** Configuration change subscribers. */
     private List<Consumer<StatisticsObjectConfiguration>> subscribers = new CopyOnWriteArrayList<>();
@@ -145,9 +149,10 @@ public class IgniteStatisticsConfigurationManager {
      * @param stopping Stopping state supplier.
      * @param logSupplier Log supplier.
      * @param isServerNode Server node flag.
+     * @param isBinaryUnsigned Binary signed or unsigned compare mode.
      */
     public IgniteStatisticsConfigurationManager(
-        SchemaManager schemaMgr,
+        GridQuerySchemaManager schemaMgr,
         GridInternalSubscriptionProcessor subscriptionProcessor,
         GridSystemViewManager sysViewMgr,
         GridClusterStateProcessor cluster,
@@ -156,7 +161,8 @@ public class IgniteStatisticsConfigurationManager {
         IgniteThreadPoolExecutor mgmtPool,
         Supplier<Boolean> stopping,
         Function<Class<?>, IgniteLogger> logSupplier,
-        boolean isServerNode
+        boolean isServerNode,
+        boolean isBinaryUnsigned
     ) {
         this.schemaMgr = schemaMgr;
         log = logSupplier.apply(IgniteStatisticsConfigurationManager.class);
@@ -165,6 +171,7 @@ public class IgniteStatisticsConfigurationManager {
         this.statProc = statProc;
         this.cluster = cluster;
         this.isServerNode = isServerNode;
+        this.isBinaryUnsigned = isBinaryUnsigned;
 
         subscriptionProcessor.registerDistributedMetastorageListener(distrMetaStoreLsnr);
 
@@ -204,19 +211,19 @@ public class IgniteStatisticsConfigurationManager {
     }
 
     /** Drop columns listener to clean its statistics configuration. */
-    private final BiConsumer<GridH2Table, List<String>> dropColsLsnr = new BiConsumer<GridH2Table, List<String>>() {
+    private final BiConsumer<GridQueryTypeDescriptor, List<String>> dropColsLsnr = new BiConsumer<GridQueryTypeDescriptor, List<String>>() {
         /**
          * Drop statistics after columns dropped.
          *
          * @param tbl Table.
          * @param cols Dropped columns.
          */
-        @Override public void accept(GridH2Table tbl, List<String> cols) {
+        @Override public void accept(GridQueryTypeDescriptor tbl, List<String> cols) {
             assert !F.isEmpty(cols);
             dropStatistics(Collections.singletonList(
                     new StatisticsTarget(
-                        tbl.identifier().schema(),
-                        tbl.getName(),
+                        tbl.schemaName(),
+                        tbl.tableName(),
                         cols.toArray(EMPTY_STRINGS)
                     )
                 ),
@@ -256,7 +263,9 @@ public class IgniteStatisticsConfigurationManager {
      * @param cfg Statistics object configuration to update statistics by.
      */
     private void updateLocalStatistics(StatisticsObjectConfiguration cfg) {
-        GridH2Table tbl = schemaMgr.dataTable(cfg.key().schema(), cfg.key().obj());
+        GridQueryTypeDescriptor tbl = schemaMgr.typeDescriptorForTable(cfg.key().schema(), cfg.key().obj());
+        GridCacheContextInfo<?, ?> cacheInfo = schemaMgr.cacheInfoForTable(cfg.key().schema(), cfg.key().obj());
+        GridCacheContext<?, ?> cctx = cacheInfo != null ? cacheInfo.cacheContext() : null;
 
         if (tbl == null || cfg.columns().isEmpty()) {
             // Can be drop table event, need to ensure that there is no stored data left for this table.
@@ -268,8 +277,8 @@ public class IgniteStatisticsConfigurationManager {
             }
 
             // Ensure to clean local metastorage.
-            LocalStatisticsGatheringContext ctx = new LocalStatisticsGatheringContext(false, tbl, cfg,
-                Collections.emptySet(), topVer);
+            LocalStatisticsGatheringContext ctx = new LocalStatisticsGatheringContext(false, tbl, cacheInfo,
+                cfg, Collections.emptySet(), topVer, isBinaryUnsigned);
 
             statProc.updateLocalStatistics(ctx);
 
@@ -283,8 +292,6 @@ public class IgniteStatisticsConfigurationManager {
             return;
         }
 
-        GridCacheContext<?, ?> cctx = tbl.cacheContext();
-
         if (cctx == null || !cctx.gate().enterIfNotStopped()) {
             if (log.isDebugEnabled())
                 log.debug("Unable to lock table by key " + cfg.key() + ". Skipping statistics collection.");
@@ -297,8 +304,8 @@ public class IgniteStatisticsConfigurationManager {
 
             final Set<Integer> primParts = cctx.affinity().primaryPartitions(cctx.localNodeId(), topVer0);
 
-            LocalStatisticsGatheringContext ctx = new LocalStatisticsGatheringContext(false, tbl, cfg,
-                primParts, topVer0);
+            LocalStatisticsGatheringContext ctx = new LocalStatisticsGatheringContext(false, tbl, cacheInfo,
+                cfg, primParts, topVer0, isBinaryUnsigned);
             statProc.updateLocalStatistics(ctx);
         }
         catch (IgniteCheckedException e) {
@@ -390,16 +397,16 @@ public class IgniteStatisticsConfigurationManager {
 
         for (StatisticsObjectConfiguration target : targets) {
 
-            GridH2Table tbl = schemaMgr.dataTable(target.key().schema(), target.key().obj());
+            GridQueryTypeDescriptor tbl = schemaMgr.typeDescriptorForTable(target.key().schema(), target.key().obj());
 
             validate(target, tbl);
 
             List<StatisticsColumnConfiguration> colCfgs;
 
             if (F.isEmpty(target.columns()))
-                colCfgs = Arrays.stream(tbl.getColumns())
-                    .filter(c -> c.getColumnId() >= QueryUtils.DEFAULT_COLUMNS_COUNT)
-                    .map(c -> new StatisticsColumnConfiguration(c.getName(), null))
+                colCfgs = tbl.fields().keySet().stream()
+                    .filter(col -> !QueryUtils.KEY_FIELD_NAME.equals(col) && !QueryUtils.VAL_FIELD_NAME.equals(col))
+                    .map(col -> new StatisticsColumnConfiguration(col, null))
                     .collect(Collectors.toList());
             else
                 colCfgs = new ArrayList<>(target.columns().values());
@@ -577,9 +584,9 @@ public class IgniteStatisticsConfigurationManager {
      * Validate specified configuration: check that specified table exist and contains all specified columns.
      *
      * @param cfg Statistics object configuration to check.
-     * @param tbl Corresponding GridH2Table (if exists).
+     * @param tbl Corresponding table (if exists).
      */
-    private void validate(StatisticsObjectConfiguration cfg, GridH2Table tbl) {
+    private void validate(StatisticsObjectConfiguration cfg, GridQueryTypeDescriptor tbl) {
         if (tbl == null) {
             throw new IgniteSQLException(
                 "Table doesn't exist [schema=" + cfg.key().schema() + ", table=" + cfg.key().obj() + ']',
@@ -588,7 +595,7 @@ public class IgniteStatisticsConfigurationManager {
 
         if (!F.isEmpty(cfg.columns())) {
             for (String col : cfg.columns().keySet()) {
-                if (!tbl.doesColumnExist(col)) {
+                if (!tbl.fields().containsKey(col)) {
                     throw new IgniteSQLException(
                         "Column doesn't exist [schema=" + cfg.key().schema() +
                             ", table=" + cfg.key().obj() +

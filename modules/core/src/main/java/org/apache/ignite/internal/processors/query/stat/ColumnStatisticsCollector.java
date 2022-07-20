@@ -17,42 +17,40 @@
 
 package org.apache.ignite.internal.processors.query.stat;
 
-import java.math.BigInteger;
-import java.nio.charset.StandardCharsets;
-import java.util.Comparator;
 import java.util.List;
-
+import org.apache.ignite.IgniteCheckedException;
+import org.apache.ignite.IgniteException;
+import org.apache.ignite.internal.cache.query.index.sorted.IndexKeyType;
+import org.apache.ignite.internal.cache.query.index.sorted.keys.IndexKey;
 import org.apache.ignite.internal.processors.query.stat.config.StatisticsColumnOverrides;
 import org.apache.ignite.internal.processors.query.stat.hll.HLL;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.internal.U;
-import org.h2.table.Column;
-import org.h2.value.Value;
 
 /**
  * Collector to compute statistic by single column.
  */
 public class ColumnStatisticsCollector {
-    /** Column. */
-    private final Column col;
+    /** Column name. */
+    private final String colName;
+
+    /** Column id. */
+    private final int colId;
 
     /** Hyper Log Log structure */
     private final HLL hll = buildHll();
 
     /** Minimum value. */
-    private Value min = null;
+    private IndexKey min;
 
     /** Maximum value. */
-    private Value max = null;
+    private IndexKey max;
 
     /** Total values in column. */
-    private long total = 0;
+    private long total;
 
     /** Total size of all non nulls values (in bytes).*/
-    private long size = 0;
-
-    /** Column value comparator. */
-    private final Comparator<Value> comp;
+    private long size;
 
     /** Null values counter. */
     private long nullsCnt;
@@ -68,58 +66,24 @@ public class ColumnStatisticsCollector {
 
     /**
      * Constructor.
-     *
-     * @param col Column to collect statistics by.
-     * @param comp Column values comparator.
      */
-    public ColumnStatisticsCollector(Column col, Comparator<Value> comp) {
-        this(col, comp, 0);
+    public ColumnStatisticsCollector(int colId, String colName, IndexKeyType colType) {
+        this(colId, colName, colType, 0);
     }
 
     /**
      * Constructor.
      *
-     * @param col Column to collect statistics by.
-     * @param comp Column values comparator.
      * @param ver Target statistic version.
      */
-    public ColumnStatisticsCollector(Column col, Comparator<Value> comp, long ver) {
-        this.col = col;
-        this.comp = comp;
+    public ColumnStatisticsCollector(int colId, String colName, IndexKeyType colType, long ver) {
+        this.colId = colId;
+        this.colName = colName;
         this.ver = ver;
 
-        int colType = col.getType();
-        complexType = colType == Value.ARRAY || colType == Value.ENUM || colType == Value.JAVA_OBJECT ||
-            colType == Value.RESULT_SET || colType == Value.UNKNOWN;
-    }
-
-    /**
-     * Try to fix unexpected behaviour of base Value class.
-     *
-     * @param val Value to convert.
-     * @return Byte array.
-     */
-    private byte[] getBytes(Value val) {
-        switch (val.getType()) {
-            case Value.STRING:
-                String strVal = val.getString();
-                return strVal.getBytes(StandardCharsets.UTF_8);
-            case Value.BOOLEAN:
-                return val.getBoolean() ? new byte[]{1} : new byte[]{0};
-            case Value.DECIMAL:
-            case Value.DOUBLE:
-            case Value.FLOAT:
-                return U.join(val.getBigDecimal().unscaledValue().toByteArray(),
-                    BigInteger.valueOf(val.getBigDecimal().scale()).toByteArray());
-            case Value.TIME:
-                return BigInteger.valueOf(val.getTime().getTime()).toByteArray();
-            case Value.DATE:
-                return BigInteger.valueOf(val.getDate().getTime()).toByteArray();
-            case Value.TIMESTAMP:
-                return BigInteger.valueOf(val.getTimestamp().getTime()).toByteArray();
-            default:
-                return val.getBytes();
-        }
+        complexType = colType == IndexKeyType.ARRAY || colType == IndexKeyType.ENUM ||
+                colType == IndexKeyType.JAVA_OBJECT || colType == IndexKeyType.RESULT_SET ||
+                colType == IndexKeyType.UNKNOWN;
     }
 
     /**
@@ -127,7 +91,7 @@ public class ColumnStatisticsCollector {
      *
      * @param val Value to add to statistics.
      */
-    public void add(Value val) {
+    public void add(IndexKey val) throws IgniteCheckedException {
         total++;
 
         if (isNullValue(val)) {
@@ -136,16 +100,16 @@ public class ColumnStatisticsCollector {
             return;
         }
 
-        byte[] bytes = getBytes(val);
+        byte[] bytes = val.bytes();
         size += bytes.length;
 
         hll.addRaw(hash.fastHash(bytes));
 
         if (!complexType) {
-            if (null == min || comp.compare(val, min) < 0)
+            if (null == min || val.compare(min) < 0)
                 min = val;
 
-            if (null == max || comp.compare(val, max) > 0)
+            if (null == max || val.compare(max) > 0)
                 max = val;
         }
     }
@@ -177,22 +141,27 @@ public class ColumnStatisticsCollector {
     }
 
     /**
-     * @return get column.
+     * @return Column id.
      */
-    public Column col() {
-        return col;
+    public int columnId() {
+        return colId;
+    }
+
+    /**
+     * @return Column name.
+     */
+    public String columnName() {
+        return colName;
     }
 
     /**
      * Aggregate specified (partition or local) column statistics into (local or global) single one.
      *
-     * @param comp Value comparator.
      * @param partStats Column statistics by partitions.
      * @param overrides Overrides or {@code null} to keep calculated values.
      * @return Column statistics for all partitions.
      */
     public static ColumnStatistics aggregate(
-        Comparator<Value> comp,
         List<ColumnStatistics> partStats,
         StatisticsColumnOverrides overrides
     ) {
@@ -201,8 +170,8 @@ public class ColumnStatisticsCollector {
         Long overrideDistinct = (overrides == null) ? null : overrides.distinct();
         HLL hll = buildHll();
 
-        Value min = null;
-        Value max = null;
+        IndexKey min = null;
+        IndexKey max = null;
 
         // Total number of nulls
         long nullsCnt = 0;
@@ -229,14 +198,19 @@ public class ColumnStatisticsCollector {
             nullsCnt += partStat.nulls();
             totalSize += (long)partStat.size() * (partStat.total() - partStat.nulls());
 
-            if (min == null || (partStat.min() != null && comp.compare(partStat.min(), min) < 0))
-                min = partStat.min();
+            try {
+                if (min == null || (partStat.min() != null && partStat.min().compare(min) < 0))
+                    min = partStat.min();
 
-            if (max == null || (partStat.max() != null && comp.compare(partStat.max(), max) > 0))
-                max = partStat.max();
+                if (max == null || (partStat.max() != null && partStat.max().compare(max) > 0))
+                    max = partStat.max();
 
-            if (createdAt < partStat.createdAt())
-                createdAt = partStat.createdAt();
+                if (createdAt < partStat.createdAt())
+                    createdAt = partStat.createdAt();
+            }
+            catch (IgniteCheckedException e) {
+                throw new IgniteException(e);
+            }
         }
 
         Integer overrideSize = (overrides == null) ? null : overrides.size();
@@ -268,7 +242,7 @@ public class ColumnStatisticsCollector {
      * @param v Value to test.
      * @return {@code true} if value is null, {@code false} - otherwise.
      */
-    public static boolean isNullValue(Value v) {
-        return v == null || v.getType() == Value.NULL;
+    public static boolean isNullValue(IndexKey v) {
+        return v == null || v.type() == IndexKeyType.NULL;
     }
 }

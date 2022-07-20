@@ -20,9 +20,12 @@ package org.apache.ignite.internal.processors.query.h2.opt;
 import java.math.BigDecimal;
 import java.math.BigInteger;
 import java.math.MathContext;
+import java.sql.Time;
+import java.sql.Timestamp;
 import java.util.ArrayList;
+import java.util.Date;
 import java.util.HashSet;
-
+import org.apache.ignite.internal.cache.query.index.sorted.keys.IndexKey;
 import org.apache.ignite.internal.processors.query.stat.ColumnStatistics;
 import org.apache.ignite.internal.processors.query.stat.ObjectStatisticsImpl;
 import org.apache.ignite.internal.util.typedef.F;
@@ -479,6 +482,71 @@ public abstract class H2IndexCostedBase extends BaseIndex {
 
             default:
                 throw new IllegalStateException("Unsupported H2 type: " + value.getType());
+        }
+    }
+
+    /**
+     * Convert specified value into comparable type: BigDecimal,
+     *
+     * @param value Value to convert to comparable form.
+     * @return Comparable form of value.
+     */
+    private BigDecimal getComparableValue(IndexKey value) {
+        switch (value.type()) {
+            case NULL:
+                throw new IllegalArgumentException("Can't compare null values");
+
+            case BOOLEAN:
+                return new BigDecimal((Boolean)value.key() ? 1 : 0);
+
+            case BYTE:
+                return new BigDecimal((Byte)value.key());
+
+            case SHORT:
+                return new BigDecimal((Short)value.key());
+
+            case INT:
+                return new BigDecimal((Integer)value.key());
+
+            case LONG:
+                return new BigDecimal((Long)value.key());
+
+            case DECIMAL:
+                return (BigDecimal)value.key();
+
+            case DOUBLE:
+                return BigDecimal.valueOf((Double)value.key());
+
+            case FLOAT:
+                return BigDecimal.valueOf((Float)value.key());
+
+            case DATE:
+                return new BigDecimal(((Date)value.key()).getTime());
+
+            case TIME:
+                return new BigDecimal(((Time)value.key()).getTime());
+
+            case TIMESTAMP:
+                return new BigDecimal(((Timestamp)value.key()).getTime());
+
+            case BYTES:
+                BigInteger bigInteger = new BigInteger(1, value.bytes());
+                return new BigDecimal(bigInteger);
+
+            case STRING:
+            case STRING_FIXED:
+            case STRING_IGNORECASE:
+            case ARRAY:
+            case JAVA_OBJECT:
+            case GEOMETRY:
+                return null;
+
+            case UUID:
+                BigInteger bigInt = new BigInteger(1, value.bytes());
+                return new BigDecimal(bigInt);
+
+            default:
+                throw new IllegalStateException("Unsupported H2 type: " + value.type());
         }
     }
 

@@ -37,6 +37,7 @@ import org.h2.api.JavaObjectSerializer;
 import org.h2.engine.Database;
 import org.h2.jdbc.JdbcConnection;
 import org.h2.store.DataHandler;
+import org.h2.value.CompareMode;
 
 import static org.apache.ignite.IgniteSystemProperties.IGNITE_H2_INDEXING_CACHE_CLEANUP_PERIOD;
 import static org.apache.ignite.IgniteSystemProperties.IGNITE_H2_INDEXING_CACHE_THREAD_USAGE_TIMEOUT;
@@ -341,5 +342,12 @@ public class ConnectionManager {
      */
     public JdbcConnection jdbcConnection() {
         return (JdbcConnection)sysConn;
+    }
+
+    /**
+     * @return Current compare mode.
+     */
+    public CompareMode compareMode() {
+        return dataNhd.getCompareMode();
     }
 }

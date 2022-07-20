@@ -19,19 +19,18 @@ package org.apache.ignite.internal.processors.query.stat;
 
 import java.util.Arrays;
 import java.util.Objects;
-
+import org.apache.ignite.internal.cache.query.index.sorted.keys.IndexKey;
 import org.apache.ignite.internal.util.typedef.internal.S;
-import org.h2.value.Value;
 
 /**
  * Values statistic in particular column.
  */
 public class ColumnStatistics {
     /** Minimum value in column or {@code null} if there are no non null values in the column. */
-    private final Value min;
+    private final IndexKey min;
 
     /** Maximum value in column or {@code null} if there are no non null values in the column. */
-    private final Value max;
+    private final IndexKey max;
 
     /** Number of null values in column. */
     private final long nulls;
@@ -68,8 +67,8 @@ public class ColumnStatistics {
      * @param createdAt Created at time, milliseconds.
      */
     public ColumnStatistics(
-        Value min,
-        Value max,
+        IndexKey min,
+        IndexKey max,
         long nulls,
         long distinct,
         long total,
@@ -92,14 +91,14 @@ public class ColumnStatistics {
     /**
      * @return Min value in column.
      */
-    public Value min() {
+    public IndexKey min() {
         return min;
     }
 
     /**
      * @return Max value in column.
      */
-    public Value max() {
+    public IndexKey max() {
         return max;
     }
 
@@ -163,8 +162,8 @@ public class ColumnStatistics {
             size == that.size &&
             ver == that.ver &&
             createdAt == that.createdAt &&
-            Objects.equals(min, that.min) &&
-            Objects.equals(max, that.max) &&
+            Objects.equals(min != null ? min.key() : null, that.min != null ? that.min.key() : null) &&
+            Objects.equals(max != null ? max.key() : null, that.max != null ? that.max.key() : null) &&
             Arrays.equals(raw, that.raw);
     }
 

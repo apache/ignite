@@ -21,9 +21,8 @@ import java.util.Arrays;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.stream.Collectors;
-
+import org.apache.ignite.internal.cache.query.index.sorted.keys.IntegerIndexKey;
 import org.apache.ignite.internal.util.typedef.internal.U;
-import org.h2.value.ValueInt;
 import org.junit.Test;
 
 /**
@@ -41,7 +40,7 @@ public class IgniteStatisticsRepositoryStaticTest extends StatisticsAbstractTest
         0, new byte[0], 0, U.currentTimeMillis());
 
     /** Column statistics with 100 integers 0-100. */
-    protected ColumnStatistics cs2 = new ColumnStatistics(ValueInt.get(0), ValueInt.get(100), 0, 100, 100,
+    protected ColumnStatistics cs2 = new ColumnStatistics(new IntegerIndexKey(0), new IntegerIndexKey(100), 0, 100, 100,
         4, new byte[0], 0, U.currentTimeMillis());
 
     /** Column statistics with 0 rows. */
@@ -49,7 +48,7 @@ public class IgniteStatisticsRepositoryStaticTest extends StatisticsAbstractTest
         new byte[0], 0, U.currentTimeMillis());
 
     /** Column statistics with 100 integers 0-10. */
-    protected ColumnStatistics cs4 = new ColumnStatistics(ValueInt.get(0), ValueInt.get(10), 0, 10, 100,
+    protected ColumnStatistics cs4 = new ColumnStatistics(new IntegerIndexKey(0), new IntegerIndexKey(10), 0, 10, 100,
         4, new byte[0], 0, U.currentTimeMillis());
 
     /**

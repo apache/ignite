@@ -20,9 +20,9 @@ package org.apache.ignite.internal.processors.query.stat;
 import java.util.HashSet;
 import java.util.Set;
 import java.util.concurrent.CompletableFuture;
-
 import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
-import org.apache.ignite.internal.processors.query.h2.opt.GridH2Table;
+import org.apache.ignite.internal.processors.cache.GridCacheContextInfo;
+import org.apache.ignite.internal.processors.query.GridQueryTypeDescriptor;
 import org.apache.ignite.internal.processors.query.stat.config.StatisticsObjectConfiguration;
 import org.apache.ignite.internal.util.typedef.internal.S;
 
@@ -34,7 +34,10 @@ public class LocalStatisticsGatheringContext {
     private final boolean forceRecollect;
 
     /** Table to process. */
-    private final GridH2Table tbl;
+    private final GridQueryTypeDescriptor tbl;
+
+    /** Table cache context. */
+    private final GridCacheContextInfo<?, ?> cctxInfo;
 
     /** Statistics configuration to use. */
     private final StatisticsObjectConfiguration cfg;
@@ -54,28 +57,37 @@ public class LocalStatisticsGatheringContext {
     /** Context cancelled flag. */
     private volatile boolean cancelled;
 
+    /** Binary signed or unsiged compare mode. */
+    private final boolean isBinaryUnsigned;
+
     /**
      * Constructor.
      *
      * @param forceRecollect Force recollect flag.
      * @param tbl Table to process.
+     * @param cctxInfo Cache context info;
      * @param cfg Statistics configuration to use.
      * @param remainingParts Set of partition ids to collect.
+     * @param isBinaryUnsigned Binary signed or unsiged compare mode.
      */
     public LocalStatisticsGatheringContext(
         boolean forceRecollect,
-        GridH2Table tbl,
+        GridQueryTypeDescriptor tbl,
+        GridCacheContextInfo<?, ?> cctxInfo,
         StatisticsObjectConfiguration cfg,
         Set<Integer> remainingParts,
-        AffinityTopologyVersion topVer
+        AffinityTopologyVersion topVer,
+        boolean isBinaryUnsigned
     ) {
         this.forceRecollect = forceRecollect;
         this.tbl = tbl;
+        this.cctxInfo = cctxInfo;
         this.cfg = cfg;
         this.remainingParts = new HashSet<>(remainingParts);
         this.allParts = (forceRecollect) ? null : new HashSet<>(remainingParts);
         this.topVer = topVer;
         this.future = new CompletableFuture<>();
+        this.isBinaryUnsigned = isBinaryUnsigned;
     }
 
     /**
@@ -88,8 +100,15 @@ public class LocalStatisticsGatheringContext {
     /**
      * @return Table to process.
      */
-    public GridH2Table table() {
+    public GridQueryTypeDescriptor table() {
         return tbl;
+    }
+
+    /**
+     * @return Cache context of processing table.
+     */
+    public GridCacheContextInfo<?, ?> cacheContextInfo() {
+        return cctxInfo;
     }
 
     /**
@@ -169,6 +188,13 @@ public class LocalStatisticsGatheringContext {
      */
     public AffinityTopologyVersion topologyVersion() {
         return topVer;
+    }
+
+    /**
+     * @return Binary signed or unsigned compare mode.
+     */
+    public boolean isBinaryUnsigned() {
+        return isBinaryUnsigned;
     }
 
     /** {@inheritDoc} */

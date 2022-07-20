@@ -19,18 +19,16 @@ package org.apache.ignite.internal.processors.query.stat;
 
 import java.util.HashMap;
 import java.util.Map;
-
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.internal.GridKernalContext;
-import org.apache.ignite.internal.processors.query.h2.twostep.msg.GridH2ValueMessage;
-import org.apache.ignite.internal.processors.query.h2.twostep.msg.GridH2ValueMessageFactory;
+import org.apache.ignite.internal.cache.query.index.sorted.keys.IndexKey;
 import org.apache.ignite.internal.processors.query.stat.config.StatisticsColumnConfiguration;
 import org.apache.ignite.internal.processors.query.stat.config.StatisticsObjectConfiguration;
+import org.apache.ignite.internal.processors.query.stat.messages.StatisticsBasicValueMessage;
 import org.apache.ignite.internal.processors.query.stat.messages.StatisticsColumnData;
 import org.apache.ignite.internal.processors.query.stat.messages.StatisticsKeyMessage;
 import org.apache.ignite.internal.processors.query.stat.messages.StatisticsObjectData;
 import org.apache.ignite.internal.util.typedef.F;
-import org.h2.value.Value;
 
 /**
  * Utilities to convert statistics from/to messages, validate configurations with statistics and so on.
@@ -44,8 +42,8 @@ public class StatisticsUtils {
      * @throws IgniteCheckedException In case of errors.
      */
     public static StatisticsColumnData toMessage(ColumnStatistics stat) throws IgniteCheckedException {
-        GridH2ValueMessage msgMin = stat.min() == null ? null : GridH2ValueMessageFactory.toMessage(stat.min());
-        GridH2ValueMessage msgMax = stat.max() == null ? null : GridH2ValueMessageFactory.toMessage(stat.max());
+        StatisticsBasicValueMessage msgMin = stat.min() == null ? null : new StatisticsBasicValueMessage(stat.min());
+        StatisticsBasicValueMessage msgMax = stat.max() == null ? null : new StatisticsBasicValueMessage(stat.max());
 
         return new StatisticsColumnData(msgMin, msgMax, stat.nulls(), stat.distinct(),
             stat.total(), stat.size(), stat.raw(), stat.version(), stat.createdAt());
@@ -63,8 +61,8 @@ public class StatisticsUtils {
         GridKernalContext ctx,
         StatisticsColumnData data
     ) throws IgniteCheckedException {
-        Value min = (data.min() == null) ? null : data.min().value(ctx);
-        Value max = (data.max() == null) ? null : data.max().value(ctx);
+        IndexKey min = (data.min() == null) ? null : data.min().value(ctx);
+        IndexKey max = (data.max() == null) ? null : data.max().value(ctx);
 
         return new ColumnStatistics(min, max, data.nulls(), data.distinct(),
             data.total(), data.size(), data.rawData(), data.version(), data.createdAt());

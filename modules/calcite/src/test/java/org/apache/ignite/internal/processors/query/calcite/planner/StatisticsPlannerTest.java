@@ -27,6 +27,17 @@ import java.util.Set;
 import org.apache.calcite.rel.type.RelDataType;
 import org.apache.calcite.rel.type.RelDataTypeFactory;
 import org.apache.calcite.rel.type.RelDataTypeField;
+import org.apache.ignite.internal.cache.query.index.sorted.keys.BooleanIndexKey;
+import org.apache.ignite.internal.cache.query.index.sorted.keys.ByteIndexKey;
+import org.apache.ignite.internal.cache.query.index.sorted.keys.DateIndexKey;
+import org.apache.ignite.internal.cache.query.index.sorted.keys.DoubleIndexKey;
+import org.apache.ignite.internal.cache.query.index.sorted.keys.FloatIndexKey;
+import org.apache.ignite.internal.cache.query.index.sorted.keys.IntegerIndexKey;
+import org.apache.ignite.internal.cache.query.index.sorted.keys.LongIndexKey;
+import org.apache.ignite.internal.cache.query.index.sorted.keys.ShortIndexKey;
+import org.apache.ignite.internal.cache.query.index.sorted.keys.StringIndexKey;
+import org.apache.ignite.internal.cache.query.index.sorted.keys.TimeIndexKey;
+import org.apache.ignite.internal.cache.query.index.sorted.keys.TimestampIndexKey;
 import org.apache.ignite.internal.processors.query.calcite.rel.IgniteIndexScan;
 import org.apache.ignite.internal.processors.query.calcite.rel.IgniteRel;
 import org.apache.ignite.internal.processors.query.calcite.schema.CacheTableDescriptor;
@@ -37,17 +48,6 @@ import org.apache.ignite.internal.processors.query.calcite.type.IgniteTypeFactor
 import org.apache.ignite.internal.processors.query.calcite.type.IgniteTypeSystem;
 import org.apache.ignite.internal.processors.query.stat.ColumnStatistics;
 import org.apache.ignite.internal.processors.query.stat.ObjectStatisticsImpl;
-import org.h2.value.ValueBoolean;
-import org.h2.value.ValueByte;
-import org.h2.value.ValueDate;
-import org.h2.value.ValueDouble;
-import org.h2.value.ValueFloat;
-import org.h2.value.ValueInt;
-import org.h2.value.ValueLong;
-import org.h2.value.ValueShort;
-import org.h2.value.ValueString;
-import org.h2.value.ValueTime;
-import org.h2.value.ValueTimestamp;
 import org.junit.Before;
 import org.junit.Test;
 
@@ -150,40 +150,40 @@ public class StatisticsPlannerTest extends AbstractPlannerTest {
         tbl4.addIndex("TBL4_SHORT_LONG", 6, 7);
 
         HashMap<String, ColumnStatistics> colStat1 = new HashMap<>();
-        colStat1.put("T1C1INT", new ColumnStatistics(ValueInt.get(1), ValueInt.get(1000),
+        colStat1.put("T1C1INT", new ColumnStatistics(new IntegerIndexKey(1), new IntegerIndexKey(1000),
             0, 1000, t1rc, 4, null, 1, 0));
 
-        colStat1.put("T1C2STR", new ColumnStatistics(ValueString.get("A1"), ValueString.get("Z9"),
+        colStat1.put("T1C2STR", new ColumnStatistics(new StringIndexKey("A1"), new StringIndexKey("Z9"),
             100, 20, t1rc, 2, null, 1, 0));
 
-        colStat1.put("T1C3DBL", new ColumnStatistics(ValueDouble.get(0.01), ValueDouble.get(0.99),
+        colStat1.put("T1C3DBL", new ColumnStatistics(new DoubleIndexKey(0.01), new DoubleIndexKey(0.99),
             10, 1000, t1rc, 8, null, 1, 0));
 
-        colStat1.put("T1C4BYTE", new ColumnStatistics(ValueByte.get((byte)0), ValueByte.get((byte)255),
+        colStat1.put("T1C4BYTE", new ColumnStatistics(new ByteIndexKey((byte)0), new ByteIndexKey((byte)255),
             10, 1000, t1rc, 8, null, 1, 0));
 
-        colStat1.put("T1C5BOOLEAN", new ColumnStatistics(ValueBoolean.get(false), ValueBoolean.get(true),
+        colStat1.put("T1C5BOOLEAN", new ColumnStatistics(new BooleanIndexKey(false), new BooleanIndexKey(true),
             0, 2, t1rc, 1, null, 1, 0));
 
-        colStat1.put("T1C6CHARACTER", new ColumnStatistics(ValueString.get("A"), ValueString.get("Z"),
+        colStat1.put("T1C6CHARACTER", new ColumnStatistics(new StringIndexKey("A"), new StringIndexKey("Z"),
             10, 10, t1rc, 1, null, 1, 0));
 
-        colStat1.put("T1C7SHORT", new ColumnStatistics(ValueShort.get((short)1), ValueShort.get((short)5000),
+        colStat1.put("T1C7SHORT", new ColumnStatistics(new ShortIndexKey((short)1), new ShortIndexKey((short)5000),
             110, 500, t1rc, 2, null, 1, 0));
 
-        colStat1.put("T1C8LONG", new ColumnStatistics(ValueLong.get(1L), ValueLong.get(100000L),
+        colStat1.put("T1C8LONG", new ColumnStatistics(new LongIndexKey(1L), new LongIndexKey(100000L),
             10, 100000, t1rc, 8, null, 1, 0));
 
-        colStat1.put("T1C9FLOAT", new ColumnStatistics(ValueFloat.get((float)0.1), ValueFloat.get((float)0.9),
+        colStat1.put("T1C9FLOAT", new ColumnStatistics(new FloatIndexKey((float)0.1), new FloatIndexKey((float)0.9),
             10, 1000, t1rc, 8, null, 1, 0));
 
-        colStat1.put("T1C10DATE", new ColumnStatistics(ValueDate.get(MIN_DATE), ValueDate.get(MAX_DATE),
+        colStat1.put("T1C10DATE", new ColumnStatistics(new DateIndexKey(MIN_DATE), new DateIndexKey(MAX_DATE),
             20, 1000, t1rc, 8, null, 1, 0));
 
-        colStat1.put("T1C11TIME", new ColumnStatistics(ValueTime.get(MIN_TIME), ValueTime.get(MAX_TIME),
+        colStat1.put("T1C11TIME", new ColumnStatistics(new TimeIndexKey(MIN_TIME), new TimeIndexKey(MAX_TIME),
             10, 1000, t1rc, 8, null, 1, 0));
 
-        colStat1.put("T1C12TIMESTAMP", new ColumnStatistics(ValueTimestamp.get(MIN_TIMESTAMP), ValueTimestamp.get(MAX_TIMESTAMP),
+        colStat1.put("T1C12TIMESTAMP", new ColumnStatistics(new TimestampIndexKey(MIN_TIMESTAMP), new TimestampIndexKey(MAX_TIMESTAMP),
             20, 1000, t1rc, 8, null, 1, 0));
 
         tbl1stat = new IgniteStatisticsImpl(new ObjectStatisticsImpl(1000, colStat1));
@@ -437,10 +437,10 @@ public class StatisticsPlannerTest extends AbstractPlannerTest {
         int rowCnt = 10_000;
 
         HashMap<String, ColumnStatistics> colStat1 = new HashMap<>();
-        colStat1.put("T1C2STR", new ColumnStatistics(ValueString.get("A1"), ValueString.get("Z9"),
+        colStat1.put("T1C2STR", new ColumnStatistics(new StringIndexKey("A1"), new StringIndexKey("Z9"),
             0, 1, rowCnt, 2, null, 1, 0));
 
-        colStat1.put("T1C7SHORT", new ColumnStatistics(ValueShort.get((short)1), ValueShort.get((short)5000),
+        colStat1.put("T1C7SHORT", new ColumnStatistics(new ShortIndexKey((short)1), new ShortIndexKey((short)5000),
             0, rowCnt, rowCnt, 2, null, 1, 0));
 
         IgniteStatisticsImpl stat = new IgniteStatisticsImpl(new ObjectStatisticsImpl(1000, colStat1));

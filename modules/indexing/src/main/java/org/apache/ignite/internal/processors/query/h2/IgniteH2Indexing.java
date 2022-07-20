@@ -2141,7 +2141,7 @@ public class IgniteH2Indexing implements GridQueryIndexing {
         schemaMgr = new SchemaManager(ctx, connMgr);
         schemaMgr.start(ctx.config().getSqlConfiguration().getSqlSchemas());
 
-        statsMgr = new IgniteStatisticsManagerImpl(ctx, schemaMgr);
+        statsMgr = new IgniteStatisticsManagerImpl(ctx, schemaMgr, connMgr.compareMode().isBinaryUnsigned());
 
         nodeId = ctx.localNodeId();
         marshaller = ctx.config().getMarshaller();
@@ -3115,10 +3115,8 @@ public class IgniteH2Indexing implements GridQueryIndexing {
         return map;
     }
 
-    /**
-     * @return Statistics manager.
-     */
-    public IgniteStatisticsManager statsManager() {
+    /** {@inheritDoc} */
+    @Override public IgniteStatisticsManager statsManager() {
         return statsMgr;
     }
 }

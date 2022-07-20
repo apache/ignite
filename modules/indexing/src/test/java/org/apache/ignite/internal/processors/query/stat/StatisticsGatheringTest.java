@@ -117,8 +117,10 @@ public class StatisticsGatheringTest extends StatisticsRestartAbstractTest {
             ColumnStatistics actColStat = actual.columnStatistics(expectedColStatEntry.getKey());
 
             assertNotNull(actColStat);
-            assertEquals(expColStat.min(), actColStat.min());
-            assertEquals(expColStat.max(), actColStat.max());
+            assertEquals(expColStat.min() != null ? expColStat.min().key() : null,
+                actColStat.min() != null ? actColStat.min().key() : null);
+            assertEquals(expColStat.max() != null ? expColStat.max().key() : null,
+                actColStat.max() != null ? actColStat.max().key() : null);
             assertEquals(expColStat.size(), actColStat.size());
             assertEquals(expColStat.distinct(), actColStat.distinct());
             assertEquals(expColStat.total(), actColStat.total());
