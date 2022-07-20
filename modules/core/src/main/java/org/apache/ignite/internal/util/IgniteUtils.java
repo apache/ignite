@@ -363,13 +363,13 @@ public abstract class IgniteUtils {
     /** Empty integers array. */
     public static final int[] EMPTY_INTS = new int[0];
 
-    /** Empty  longs. */
+    /** Empty longs array. */
     public static final long[] EMPTY_LONGS = new long[0];
 
-    /** */
+    /** Empty strings array. */
     public static final String[] EMPTY_STRS = new String[0];
 
-    /** Empty  longs. */
+    /** Empty fields array. */
     public static final Field[] EMPTY_FIELDS = new Field[0];
 
     /** System line separator. */
