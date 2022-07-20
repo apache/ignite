@@ -19,9 +19,10 @@ package org.apache.ignite.internal.sql.command;
 
 import java.util.ArrayList;
 import java.util.Collection;
+import java.util.Collections;
 import java.util.HashSet;
+import java.util.List;
 import java.util.Set;
-
 import org.apache.ignite.internal.processors.query.stat.StatisticsTarget;
 import org.apache.ignite.internal.sql.SqlKeyword;
 import org.apache.ignite.internal.sql.SqlLexer;
@@ -43,7 +44,17 @@ public abstract class SqlStatisticsCommands implements SqlCommand {
     private String schemaName;
 
     /** Targets to process. */
-    protected Collection<StatisticsTarget> targets = new ArrayList<>();
+    protected List<StatisticsTarget> targets = new ArrayList<>();
+
+    /** */
+    protected SqlStatisticsCommands() {
+        // No-op.
+    }
+
+    /** */
+    protected SqlStatisticsCommands(Collection<StatisticsTarget> targets) {
+        this.targets = new ArrayList<>(targets);
+    }
 
     /** {@inheritDoc} */
     @Override public String schemaName() {
@@ -59,7 +70,7 @@ public abstract class SqlStatisticsCommands implements SqlCommand {
      * @return Analyze targets.
      */
     public Collection<StatisticsTarget> targets() {
-        return targets;
+        return Collections.unmodifiableList(targets);
     }
 
     /** {@inheritDoc} */

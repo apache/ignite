@@ -14,36 +14,21 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.apache.ignite.internal.processors.query.calcite.sql;
+package org.apache.ignite.internal.processors.query.calcite.sql.stat;
 
 import org.apache.calcite.sql.SqlKind;
-import org.apache.calcite.sql.SqlLiteral;
-import org.apache.calcite.sql.SqlNode;
 import org.apache.calcite.sql.SqlNodeList;
 import org.apache.calcite.sql.SqlOperator;
 import org.apache.calcite.sql.SqlSpecialOperator;
 import org.apache.calcite.sql.parser.SqlParserPos;
-import org.jetbrains.annotations.NotNull;
 
-/** An AST node representing option to create table with. */
-public class IgniteSqlCreateTableOption extends IgniteSqlOption<IgniteSqlCreateTableOptionEnum> {
+/** */
+public class IgniteSqlStatisticsDrop extends IgniteSqlStatisticsCommand {
     /** */
-    private static final SqlOperator OPERATOR =
-        new SqlSpecialOperator("TableOption", SqlKind.OTHER);
-
-    /** Creates IgniteSqlCreateTableOption. */
-    public IgniteSqlCreateTableOption(SqlLiteral key, SqlNode value, SqlParserPos pos) {
-        super(key, value, pos, IgniteSqlCreateTableOptionEnum.class);
-    }
-
-    /** {@inheritDoc} */
-    @NotNull @Override public SqlOperator getOperator() {
-        return OPERATOR;
-    }
+    private static final SqlOperator OPERATOR = new SqlSpecialOperator("DROP STATISTICS", SqlKind.OTHER_DDL);
 
     /** */
-    public static SqlNodeList parseOptionList(String opts, SqlParserPos pos) {
-        return IgniteSqlOption.parseOptionList(opts, pos, IgniteSqlCreateTableOption::new,
-            IgniteSqlCreateTableOptionEnum.class);
+    public IgniteSqlStatisticsDrop(SqlNodeList tables, SqlParserPos pos) {
+        super(OPERATOR, tables, pos);
     }
 }

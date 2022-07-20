@@ -14,7 +14,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.apache.ignite.internal.processors.query.calcite.sql;
+package org.apache.ignite.internal.processors.query.calcite.sql.stat;
 
 import org.apache.calcite.sql.SqlKind;
 import org.apache.calcite.sql.SqlLiteral;
@@ -23,17 +23,18 @@ import org.apache.calcite.sql.SqlNodeList;
 import org.apache.calcite.sql.SqlOperator;
 import org.apache.calcite.sql.SqlSpecialOperator;
 import org.apache.calcite.sql.parser.SqlParserPos;
+import org.apache.ignite.internal.processors.query.calcite.sql.IgniteSqlOption;
 import org.jetbrains.annotations.NotNull;
 
-/** An AST node representing option to create table with. */
-public class IgniteSqlCreateTableOption extends IgniteSqlOption<IgniteSqlCreateTableOptionEnum> {
+/** */
+public class IgniteSqlStatisticsAnalyzeOption extends IgniteSqlOption<IgniteSqlStatisticsAnalyzeOptionEnum> {
     /** */
     private static final SqlOperator OPERATOR =
-        new SqlSpecialOperator("TableOption", SqlKind.OTHER);
+        new SqlSpecialOperator("AnalyzeOption", SqlKind.OTHER);
 
     /** Creates IgniteSqlCreateTableOption. */
-    public IgniteSqlCreateTableOption(SqlLiteral key, SqlNode value, SqlParserPos pos) {
-        super(key, value, pos, IgniteSqlCreateTableOptionEnum.class);
+    public IgniteSqlStatisticsAnalyzeOption(SqlLiteral key, SqlNode value, SqlParserPos pos) {
+        super(key, value, pos, IgniteSqlStatisticsAnalyzeOptionEnum.class);
     }
 
     /** {@inheritDoc} */
@@ -43,7 +44,7 @@ public class IgniteSqlCreateTableOption extends IgniteSqlOption<IgniteSqlCreateT
 
     /** */
     public static SqlNodeList parseOptionList(String opts, SqlParserPos pos) {
-        return IgniteSqlOption.parseOptionList(opts, pos, IgniteSqlCreateTableOption::new,
-            IgniteSqlCreateTableOptionEnum.class);
+        return IgniteSqlOption.parseOptionList(opts, pos, IgniteSqlStatisticsAnalyzeOption::new,
+            IgniteSqlStatisticsAnalyzeOptionEnum.class);
     }
 }

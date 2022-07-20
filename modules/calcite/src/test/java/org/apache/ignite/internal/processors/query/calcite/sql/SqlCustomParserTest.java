@@ -17,12 +17,14 @@
 package org.apache.ignite.internal.processors.query.calcite.sql;
 
 import java.util.List;
+import java.util.Map;
 import java.util.Objects;
 import java.util.UUID;
 import java.util.concurrent.ThreadLocalRandom;
 import java.util.function.Predicate;
-
+import java.util.stream.Collectors;
 import com.google.common.collect.ImmutableList;
+import com.google.inject.internal.util.ImmutableMap;
 import org.apache.calcite.sql.SqlCall;
 import org.apache.calcite.sql.SqlIdentifier;
 import org.apache.calcite.sql.SqlKind;
@@ -41,14 +43,26 @@ import org.apache.ignite.internal.processors.query.calcite.sql.kill.IgniteSqlKil
 import org.apache.ignite.internal.processors.query.calcite.sql.kill.IgniteSqlKillScanQuery;
 import org.apache.ignite.internal.processors.query.calcite.sql.kill.IgniteSqlKillService;
 import org.apache.ignite.internal.processors.query.calcite.sql.kill.IgniteSqlKillTransaction;
+import org.apache.ignite.internal.processors.query.calcite.sql.stat.IgniteSqlStatisticsAnalyze;
+import org.apache.ignite.internal.processors.query.calcite.sql.stat.IgniteSqlStatisticsAnalyzeOption;
+import org.apache.ignite.internal.processors.query.calcite.sql.stat.IgniteSqlStatisticsAnalyzeOptionEnum;
+import org.apache.ignite.internal.processors.query.calcite.sql.stat.IgniteSqlStatisticsCommand;
+import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.lang.IgniteUuid;
 import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.hamcrest.CustomMatcher;
 import org.hamcrest.Matcher;
+import org.jetbrains.annotations.Nullable;
 import org.junit.Test;
 
 import static java.util.Collections.singleton;
+import static org.apache.ignite.internal.processors.query.calcite.sql.stat.IgniteSqlStatisticsAnalyzeOptionEnum.DISTINCT;
+import static org.apache.ignite.internal.processors.query.calcite.sql.stat.IgniteSqlStatisticsAnalyzeOptionEnum.MAX_CHANGED_PARTITION_ROWS_PERCENT;
+import static org.apache.ignite.internal.processors.query.calcite.sql.stat.IgniteSqlStatisticsAnalyzeOptionEnum.NULLS;
+import static org.apache.ignite.internal.processors.query.calcite.sql.stat.IgniteSqlStatisticsAnalyzeOptionEnum.SIZE;
+import static org.apache.ignite.internal.processors.query.calcite.sql.stat.IgniteSqlStatisticsAnalyzeOptionEnum.TOTAL;
+import static org.hamcrest.CoreMatchers.equalTo;
 import static org.hamcrest.CoreMatchers.hasItem;
 import static org.hamcrest.CoreMatchers.instanceOf;
 import static org.hamcrest.CoreMatchers.is;
@@ -807,6 +821,92 @@ public class SqlCustomParserTest extends GridCommonAbstractTest {
         assertParserThrows("commit 123", SqlParseException.class);
         assertParserThrows("rollback transaction 123", SqlParseException.class);
         assertParserThrows("rollback 123", SqlParseException.class);
+    }
+
+    /**
+     * Test parsing statistics command.
+     */
+    @Test
+    public void testStatisticsAnalyze() throws Exception {
+        checkStatisticsCommand("ANALYZE tbl1", "ANALYZE", "TBL1");
+        checkStatisticsCommand("ANALYZE tbl1, tbl2", "ANALYZE", "TBL1,TBL2");
+        checkStatisticsCommand("REFRESH STATISTICS tbl1, tbl2", "REFRESH STATISTICS", "TBL1,TBL2");
+        checkStatisticsCommand("ANALYZE tbl1(a), tbl2", "ANALYZE", "TBL1(A),TBL2");
+        checkStatisticsCommand("ANALYZE tbl1(a), tbl2(b,c), tbl3", "ANALYZE", "TBL1(A),TBL2(B,C),TBL3");
+        checkStatisticsCommand("REFRESH STATISTICS tbl1(a), tbl2(b,c), tbl3", "REFRESH STATISTICS", "TBL1(A),TBL2(B,C),TBL3");
+        checkStatisticsCommand("DROP STATISTICS tbl1(a), tbl2(b,c), tbl3", "DROP STATISTICS", "TBL1(A),TBL2(B,C),TBL3");
+    }
+
+    /**
+     * Test parsing analyze command's options.
+     */
+    @Test
+    public void testStatisticsAnalyzeOptions() throws Exception {
+        checkStatisticsCommand(
+            "ANALYZE schema.tbl1(a,b), tlbl2(c) WITH \"MAX_CHANGED_PARTITION_ROWS_PERCENT=1,DISTINCT=5,NULLS=6,TOTAL=7,SIZE=8\"",
+            "ANALYZE",
+            "SCHEMA.TBL1(A,B),TLBL2(C)",
+            ImmutableMap.of(MAX_CHANGED_PARTITION_ROWS_PERCENT, "1", DISTINCT, "5", NULLS, "6", TOTAL, "7", SIZE, "8")
+        );
+
+        checkStatisticsCommand(
+            "ANALYZE schema.tbl1(a,b), tlbl2(c) WITH MAX_CHANGED_PARTITION_ROWS_PERCENT=1,DISTINCT=5,NULLS=6,TOTAL=7,SIZE=8",
+            "ANALYZE",
+            "SCHEMA.TBL1(A,B),TLBL2(C)",
+            ImmutableMap.of(MAX_CHANGED_PARTITION_ROWS_PERCENT, "1", DISTINCT, "5", NULLS, "6", TOTAL, "7", SIZE, "8")
+        );
+
+        checkStatisticsCommand(
+            "ANALYZE schema.tbl1(a,b), tlbl2(c)",
+            "ANALYZE",
+            "SCHEMA.TBL1(A,B),TLBL2(C)",
+            ImmutableMap.of()
+        );
+    }
+
+    /** */
+    private void checkStatisticsCommand(
+        String sql,
+        String expOperator,
+        String expTables
+    ) throws Exception {
+        checkStatisticsCommand(sql, expOperator, expTables, null);
+    }
+
+    /** */
+    private void checkStatisticsCommand(
+        String sql,
+        String expOperator,
+        String expTables,
+        @Nullable Map<IgniteSqlStatisticsAnalyzeOptionEnum, String> expOptions
+    ) throws Exception {
+        SqlNode res = parse(sql);
+
+        assertTrue(res instanceof IgniteSqlStatisticsCommand);
+
+        assertEquals(expOperator, ((SqlCall)res).getOperator().getName());
+
+        assertEquals(
+            expTables,
+            ((IgniteSqlStatisticsCommand)res).tables().stream().map(t -> {
+                StringBuilder sb = new StringBuilder(t.name().toString());
+
+                if (!F.isEmpty(t.columns()))
+                    sb.append(t.columns().stream().map(SqlNode::toString).collect(Collectors.joining(",", "(", ")")));
+
+                return sb.toString();
+            }).collect(Collectors.joining(","))
+        );
+
+        if (res instanceof IgniteSqlStatisticsAnalyze && !F.isEmpty(expOptions)) {
+            List<IgniteSqlStatisticsAnalyzeOption> options = ((IgniteSqlStatisticsAnalyze)res).options();
+
+            assertThat(
+                options.stream().collect(Collectors.toMap(IgniteSqlStatisticsAnalyzeOption::key,
+                    v -> v.value().toString())),
+                equalTo(expOptions)
+            );
+        }
     }
 
     /** */

@@ -44,6 +44,7 @@ import org.apache.ignite.internal.processors.query.calcite.integration.RunningQu
 import org.apache.ignite.internal.processors.query.calcite.integration.ServerStatisticsIntegrationTest;
 import org.apache.ignite.internal.processors.query.calcite.integration.SetOpIntegrationTest;
 import org.apache.ignite.internal.processors.query.calcite.integration.SortAggregateIntegrationTest;
+import org.apache.ignite.internal.processors.query.calcite.integration.StatisticsCommandDdlIntegrationTest;
 import org.apache.ignite.internal.processors.query.calcite.integration.StdSqlOperatorsTest;
 import org.apache.ignite.internal.processors.query.calcite.integration.SystemViewsIntegrationTest;
 import org.apache.ignite.internal.processors.query.calcite.integration.TableDdlIntegrationTest;
@@ -83,6 +84,7 @@ import org.junit.runners.Suite;
     UserDdlIntegrationTest.class,
     KillCommandDdlIntegrationTest.class,
     KillQueryCommandDdlIntegrationTest.class,
+    StatisticsCommandDdlIntegrationTest.class,
     FunctionsTest.class,
     StdSqlOperatorsTest.class,
     TableDmlIntegrationTest.class,

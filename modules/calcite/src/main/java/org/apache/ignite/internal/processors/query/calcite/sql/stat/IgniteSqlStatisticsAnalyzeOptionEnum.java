@@ -14,23 +14,22 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+package org.apache.ignite.internal.processors.query.calcite.sql.stat;
 
-package org.apache.ignite.internal.sql.command;
-
-import java.util.Collection;
-import org.apache.ignite.internal.processors.query.stat.StatisticsTarget;
-
-/**
- * REFRESH STATISTICS Command.
- */
-public class SqlRefreshStatitsicsCommand extends SqlStatisticsCommands {
+/** */
+public enum IgniteSqlStatisticsAnalyzeOptionEnum {
     /** */
-    public SqlRefreshStatitsicsCommand() {
-        // No-op.
-    }
+    MAX_CHANGED_PARTITION_ROWS_PERCENT,
 
     /** */
-    public SqlRefreshStatitsicsCommand(Collection<StatisticsTarget> targets) {
-        super(targets);
-    }
+    DISTINCT,
+
+    /** */
+    TOTAL,
+
+    /** */
+    SIZE,
+
+    /** */
+    NULLS
 }
