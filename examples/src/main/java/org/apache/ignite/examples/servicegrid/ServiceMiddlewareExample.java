@@ -34,12 +34,12 @@ import org.apache.ignite.services.ServiceContext;
 /**
  * The example shows how to add a middleware layer for distributed services in Ignite.
  * <p>
- * To start remote nodes, you must run {@link ExampleNodeStartup} in another JVM
- * which will start node with {@code examples/config/example-ignite.xml} configuration.
+ * To start remote nodes, run {@link ExampleNodeStartup} in another JVM. It will start
+ * a node with {@code examples/config/example-ignite.xml} configuration.
  * <p>
  * NOTE:<br/>
  * Starting {@code ignite.sh} directly will not work, as distributed services (and interceptors)
- * cannot be peer-deployed and classes must be on the classpath for every node.
+ * cannot be peer-deployed and classes must be in the classpath for each node.
  */
 public class ServiceMiddlewareExample {
     /** Service name. */

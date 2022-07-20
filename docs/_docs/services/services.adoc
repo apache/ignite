@@ -303,15 +303,15 @@ WARNING: This feature is experimental and may change in future releases.
 This feature may affect performance of service execution.
 ====
 
-Apache Ignite allows the user to implement custom middleware logic for his services and provides the following features:
+Apache Ignite allows users to implement custom middleware logic for their services and provides the following features:
 
 1. Ability to implicitly pass custom immutable parameters from proxy to service (similar to request headers).
 2. Ability to define custom interceptor for service method calls.
 
 === Service Call Context
-This feature allows the user to implicilty pass parameters to any service method without service re-deployment.
+This feature allows users to implicilty pass parameters to any service method without service re-deployment.
 
-The user can create context (map with custom parameters) and bind it to the service proxy. After that, each call to the proxy method will also implicitly pass context parameters to the service.
+The user can create context and bind it to the service proxy. After that, each call to the proxy method will also implicitly pass context parameters to the service.
 
 [tabs]
 --
@@ -338,13 +338,13 @@ tab:C#/.NET[]
 --
 
 === Service Interceptor
-This feature allows the user to intercept the call to any service method except
+This feature allows users to intercept the call to any service method except
 lifecycle methods (`init()`, `execute()` and `cancel()`).
 
 The user can specify one or more interceptors in the `ServiceConfiguration`. They are deployed with the service using the same class loader.
 
-Each interceptor invokes the next interceptor in the chain using a delegated call, the last interceptor will call the service method.
-So the interceptor specified first in the configuration will process the result of the service method execution last.
+Each interceptor invokes the next interceptor in the chain using a delegated call, the last interceptor calls the service method.
+So, the interceptor specified first in the configuration is the last interceptor processing the result of the service method execution.
 
 image::images/service-intercept--order.png[invocation order]
 
