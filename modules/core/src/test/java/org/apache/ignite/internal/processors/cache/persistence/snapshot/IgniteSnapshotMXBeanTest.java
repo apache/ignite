@@ -38,6 +38,7 @@ import static org.apache.ignite.internal.processors.cache.persistence.snapshot.I
 import static org.apache.ignite.internal.processors.cache.persistence.snapshot.SnapshotRestoreProcess.SNAPSHOT_RESTORE_METRICS;
 import static org.apache.ignite.internal.util.distributed.DistributedProcess.DistributedProcessType.RESTORE_CACHE_GROUP_SNAPSHOT_PREPARE;
 import static org.apache.ignite.testframework.GridTestUtils.assertThrowsAnyCause;
+import static org.apache.ignite.testframework.GridTestUtils.waitForCondition;
 
 /**
  * Tests {@link SnapshotMXBean}.
@@ -152,10 +153,10 @@ public class IgniteSnapshotMXBeanTest extends AbstractSnapshotSelfTest {
 
         assertThrowsAnyCause(log, () -> fut.get(TIMEOUT), IgniteCheckedException.class, expErrMsg);
 
-        assertTrue((long)getMetric("endTime", mReg0) > 0);
-        assertTrue((long)getMetric("endTime", mReg1) > 0);
-        assertTrue(((String)getMetric("error", mReg0)).contains(expErrMsg));
-        assertTrue(((String)getMetric("error", mReg1)).contains(expErrMsg));
+        assertTrue(waitForCondition(() -> (long)getMetric("endTime", mReg0) > 0, getTestTimeout()));
+        assertTrue(waitForCondition(() -> (long)getMetric("endTime", mReg1) > 0, getTestTimeout()));
+        assertTrue(waitForCondition(() -> ((String)getMetric("error", mReg0)).contains(expErrMsg), getTestTimeout()));
+        assertTrue(waitForCondition(() -> ((String)getMetric("error", mReg1)).contains(expErrMsg), getTestTimeout()));
 
         assertNull(ignite.cache(DEFAULT_CACHE_NAME));
     }
