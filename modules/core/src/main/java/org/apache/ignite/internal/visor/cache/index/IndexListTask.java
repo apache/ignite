@@ -17,23 +17,17 @@
 
 package org.apache.ignite.internal.visor.cache.index;
 
-import java.util.Arrays;
+import java.util.Collection;
 import java.util.HashSet;
 import java.util.Set;
 import java.util.regex.Pattern;
-import java.util.stream.Collectors;
 import org.apache.ignite.IgniteException;
+import org.apache.ignite.internal.cache.query.index.Index;
+import org.apache.ignite.internal.cache.query.index.sorted.inline.InlineIndexImpl;
 import org.apache.ignite.internal.processors.cache.GridCacheContext;
-import org.apache.ignite.internal.processors.query.GridQueryProcessor;
-import org.apache.ignite.internal.processors.query.GridQueryTypeDescriptor;
-import org.apache.ignite.internal.processors.query.h2.IgniteH2Indexing;
-import org.apache.ignite.internal.processors.query.h2.database.H2TreeIndexBase;
-import org.apache.ignite.internal.processors.query.h2.opt.GridH2Table;
 import org.apache.ignite.internal.processors.task.GridInternal;
 import org.apache.ignite.internal.visor.VisorJob;
 import org.apache.ignite.internal.visor.VisorOneNodeTask;
-import org.h2.index.Index;
-import org.h2.table.Column;
 import org.jetbrains.annotations.Nullable;
 
 /**
@@ -78,11 +72,7 @@ public class IndexListTask extends VisorOneNodeTask<IndexListTaskArg, Set<IndexL
 
             Set<IndexListInfoContainer> idxInfos = new HashSet<>();
 
-            GridQueryProcessor qry = ignite.context().query();
-
-            IgniteH2Indexing indexing = (IgniteH2Indexing)qry.getIndexing();
-
-            for (GridCacheContext ctx : ignite.context().cache().context().cacheContexts()) {
+            for (GridCacheContext<?, ?> ctx : ignite.context().cache().context().cacheContexts()) {
                 final String cacheName = ctx.name();
 
                 final String grpName = ctx.config().getGroupName();
@@ -94,19 +84,16 @@ public class IndexListTask extends VisorOneNodeTask<IndexListTaskArg, Set<IndexL
                 if (!isNameValid(cachesPtrn, cacheName))
                     continue;
 
-                for (GridQueryTypeDescriptor type : qry.types(cacheName)) {
-                    GridH2Table gridH2Tbl = indexing.schemaManager().dataTable(cacheName, type.tableName());
+                Collection<Index> idxs = ignite.context().indexProcessor().indexes(cacheName);
 
-                    if (gridH2Tbl == null)
+                for (Index idx : idxs) {
+                    if (!isNameValid(indexesPtrn, idx.name()))
                         continue;
 
-                    for (Index idx : gridH2Tbl.getIndexes()) {
-                        if (!isNameValid(indexesPtrn, idx.getName()))
-                            continue;
+                    InlineIndexImpl idx0 = idx.unwrap(InlineIndexImpl.class);
 
-                        if (idx instanceof H2TreeIndexBase)
-                            idxInfos.add(constructContainer(ctx, idx));
-                    }
+                    if (idx0 != null)
+                        idxInfos.add(constructContainer(ctx, idx0));
                 }
             }
 
@@ -119,12 +106,12 @@ public class IndexListTask extends VisorOneNodeTask<IndexListTaskArg, Set<IndexL
         }
 
         /** */
-        private static IndexListInfoContainer constructContainer(GridCacheContext ctx, Index idx) {
+        private static IndexListInfoContainer constructContainer(GridCacheContext<?, ?> ctx, InlineIndexImpl idx) {
             return new IndexListInfoContainer(
                 ctx,
-                idx.getName(),
-                Arrays.stream(idx.getColumns()).map(Column::getName).collect(Collectors.toList()),
-                idx.getTable().getName()
+                idx.indexDefinition().idxName().idxName(),
+                idx.indexDefinition().indexKeyDefinitions().keySet(),
+                idx.indexDefinition().idxName().tableName()
             );
         }
 

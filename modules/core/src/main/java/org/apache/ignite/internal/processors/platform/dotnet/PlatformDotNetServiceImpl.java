@@ -42,7 +42,19 @@ public class PlatformDotNetServiceImpl extends PlatformAbstractService implement
      * @param srvKeepBinary Whether to keep objects binary on server if possible.
      */
     public PlatformDotNetServiceImpl(Object svc, PlatformContext ctx, boolean srvKeepBinary) {
-        super(svc, ctx, srvKeepBinary);
+        super(svc, ctx, srvKeepBinary, null);
+    }
+
+    /**
+     * Constructor.
+     *
+     * @param svc Service.
+     * @param ctx Context.
+     * @param srvKeepBinary Whether to keep objects binary on server if possible.
+     * @param interceptors Service call interceptors.
+     */
+    public PlatformDotNetServiceImpl(Object svc, PlatformContext ctx, boolean srvKeepBinary, Object interceptors) {
+        super(svc, ctx, srvKeepBinary, interceptors);
     }
 
     /**
@@ -50,5 +62,12 @@ public class PlatformDotNetServiceImpl extends PlatformAbstractService implement
      */
     public Object getInternalService() {
         return svc;
+    }
+
+    /**
+     * @return Service call interceptors.
+     */
+    public Object getInterceptors() {
+        return interceptors;
     }
 }

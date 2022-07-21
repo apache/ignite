@@ -29,21 +29,16 @@ import java.util.stream.Collectors;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.compute.ComputeJobResult;
+import org.apache.ignite.internal.cache.query.index.Index;
 import org.apache.ignite.internal.processors.cache.CacheGroupContext;
 import org.apache.ignite.internal.processors.cache.GridCacheContext;
 import org.apache.ignite.internal.processors.cache.GridCacheProcessor;
-import org.apache.ignite.internal.processors.query.GridQueryProcessor;
-import org.apache.ignite.internal.processors.query.GridQueryTypeDescriptor;
-import org.apache.ignite.internal.processors.query.h2.IgniteH2Indexing;
-import org.apache.ignite.internal.processors.query.h2.database.H2TreeIndexBase;
-import org.apache.ignite.internal.processors.query.h2.opt.GridH2Table;
 import org.apache.ignite.internal.processors.task.GridInternal;
 import org.apache.ignite.internal.util.typedef.internal.CU;
 import org.apache.ignite.internal.visor.VisorJob;
 import org.apache.ignite.internal.visor.VisorMultiNodeTask;
 import org.apache.ignite.maintenance.MaintenanceRegistry;
 import org.apache.ignite.maintenance.MaintenanceTask;
-import org.h2.index.Index;
 import org.jetbrains.annotations.Nullable;
 
 import static org.apache.ignite.internal.cache.query.index.sorted.maintenance.MaintenanceRebuildIndexUtils.mergeTasks;
@@ -182,25 +177,9 @@ public class ScheduleIndexRebuildTask
          * @return Indexes of the cache.
          */
         private Set<String> indexes(String cache) {
-            GridQueryProcessor qry = ignite.context().query();
-
-            IgniteH2Indexing indexing = (IgniteH2Indexing)qry.getIndexing();
-
-            Set<String> indexes = new HashSet<>();
-
-            for (GridQueryTypeDescriptor type : qry.types(cache)) {
-                GridH2Table gridH2Tbl = indexing.schemaManager().dataTable(type.schemaName(), type.tableName());
-
-                if (gridH2Tbl == null)
-                    continue;
-
-                for (Index idx : gridH2Tbl.getIndexes()) {
-                    if (idx instanceof H2TreeIndexBase)
-                        indexes.add(idx.getName());
-                }
-            }
-
-            return indexes;
+            return ignite.context().indexProcessor().treeIndexes(cache, false).stream()
+                .map(Index::name)
+                .collect(Collectors.toSet());
         }
     }
 

@@ -169,7 +169,7 @@ public class ClientMessage implements Message, Externalizable {
             if (missing > 0) {
                 int len = Math.min(missing, remaining);
 
-                if (isFirstMessage) {
+                if (isFirstMessage && data == null) {
                     // Sanity check: first 3 bytes in handshake are always 1 1 0 (handshake = 1, major version = 1).
                     // Do not allocate the buffer before validating the header to protect us from garbage data sent by unrelated application
                     // connecting on our port by accident.

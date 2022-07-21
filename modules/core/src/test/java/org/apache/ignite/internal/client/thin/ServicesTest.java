@@ -21,7 +21,9 @@ import java.util.Arrays;
 import java.util.Collection;
 import java.util.HashSet;
 import java.util.Map;
+import java.util.Objects;
 import java.util.UUID;
+import java.util.concurrent.Callable;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
 import org.apache.ignite.Ignite;
@@ -38,6 +40,8 @@ import org.apache.ignite.resources.ServiceContextResource;
 import org.apache.ignite.services.Service;
 import org.apache.ignite.services.ServiceCallContext;
 import org.apache.ignite.services.ServiceCallContextBuilder;
+import org.apache.ignite.services.ServiceCallInterceptor;
+import org.apache.ignite.services.ServiceConfiguration;
 import org.apache.ignite.services.ServiceContext;
 import org.apache.ignite.testframework.GridTestUtils;
 import org.junit.Test;
@@ -79,7 +83,13 @@ public class ServicesTest extends AbstractThinClientTest {
 
         grid(0).services().deployNodeSingleton(NODE_ID_SERVICE_NAME, new TestNodeIdService());
 
-        grid(0).services().deployNodeSingleton(NODE_SINGLTON_SERVICE_NAME, new TestService());
+        ServiceConfiguration svcCfg = new ServiceConfiguration()
+            .setName(NODE_SINGLTON_SERVICE_NAME)
+            .setService(new TestService())
+            .setMaxPerNodeCount(1)
+            .setInterceptors(new TestServiceInterceptor());
+
+        grid(0).services().deploy(svcCfg);
 
         // Deploy CLUSTER_SINGLTON_SERVICE_NAME to grid(1).
         int keyGrid1 = primaryKey(grid(1).cache(DEFAULT_CACHE_NAME));
@@ -260,6 +270,19 @@ public class ServicesTest extends AbstractThinClientTest {
 
             assertEquals(attrVal, svc.testContextAttribute(attrName));
             assertArrayEquals(binAttrVal, svc.testContextBinaryAttribute(binAttrName));
+        }
+    }
+
+    /** Test service call interceptor. */
+    @Test
+    public void testServiceInterceptor() {
+        try (IgniteClient client = startClient(0)) {
+            TestServiceInterface svc = client.services().serviceProxy(NODE_SINGLTON_SERVICE_NAME, TestServiceInterface.class);
+
+            int val = TestServiceInterceptor.INTERCEPTED_VALUE;
+
+            assertEquals(val * val, svc.testMethod(val));
+            assertEquals(val + 1, svc.testMethod(val + 1));
         }
     }
 
@@ -513,6 +536,26 @@ public class ServicesTest extends AbstractThinClientTest {
             latch.await(10L, TimeUnit.SECONDS);
 
             return true;
+        }
+    }
+
+    /** */
+    private static class TestServiceInterceptor implements ServiceCallInterceptor {
+        /** */
+        private static final long serialVersionUID = 0L;
+
+        /** */
+        private static final Integer INTERCEPTED_VALUE = 42;
+
+        /** {@inheritDoc} */
+        @Override public Object invoke(String mtd, Object[] args, ServiceContext ctx, Callable<Object> next)
+            throws Exception {
+            Object res = next.call();;
+
+            if (args.length == 1 && "testMethod".equals(mtd) && Objects.equals(INTERCEPTED_VALUE, args[0]))
+                return (int)res * (int)res;
+
+            return res;
         }
     }
 
