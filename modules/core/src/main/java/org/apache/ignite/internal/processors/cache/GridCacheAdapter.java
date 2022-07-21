@@ -4298,14 +4298,14 @@ public abstract class GridCacheAdapter<K, V> implements IgniteInternalCache<K, V
                         }
                     });
 
-                saveFuture(holder, f, /*retry*/false);
+                saveFuture(holder, f, /*asyncOp*/false, /*retry*/false);
 
                 return f;
             }
 
             IgniteInternalFuture<IgniteInternalTx> f = tx.commitNearTxLocalAsync();
 
-            saveFuture(holder, f, /*retry*/false);
+            saveFuture(holder, f, /*asyncOp*/false, /*retry*/false);
 
             ctx.tm().resetContext();
 
@@ -4599,7 +4599,7 @@ public abstract class GridCacheAdapter<K, V> implements IgniteInternalCache<K, V
                         return resFut;
                     });
 
-                saveFuture(holder, f, retry);
+                saveFuture(holder, f, /*asyncOp*/true, retry);
 
                 return f;
             }
@@ -4621,7 +4621,7 @@ public abstract class GridCacheAdapter<K, V> implements IgniteInternalCache<K, V
                 ctx.shared().txContextReset();
             }
 
-            saveFuture(holder, f, retry);
+            saveFuture(holder, f, /*asyncOp*/true, retry);
 
             if (tx.implicit())
                 ctx.tm().resetContext();
@@ -4639,8 +4639,10 @@ public abstract class GridCacheAdapter<K, V> implements IgniteInternalCache<K, V
      *
      * @param holder Future holder.
      * @param fut Future to save.
+     * @param asyncOp Whether operation is instance of AsyncOp.
+     * @param retry {@code true} for retry operations.
      */
-    protected void saveFuture(final FutureHolder holder, IgniteInternalFuture<?> fut, final boolean retry) {
+    protected void saveFuture(final FutureHolder holder, IgniteInternalFuture<?> fut, final boolean asyncOp, final boolean retry) {
         assert holder != null;
         assert fut != null;
         assert holder.holdsLock();
@@ -4650,12 +4652,14 @@ public abstract class GridCacheAdapter<K, V> implements IgniteInternalCache<K, V
         if (fut.isDone()) {
             holder.future(null);
 
-            asyncOpRelease(retry);
+            if (asyncOp)
+                asyncOpRelease(retry);
         }
         else {
             fut.listen(new CI1<IgniteInternalFuture<?>>() {
                 @Override public void apply(IgniteInternalFuture<?> f) {
-                    asyncOpRelease(retry);
+                    if (asyncOp)
+                        asyncOpRelease(retry);
 
                     if (!holder.tryLock())
                         return;
