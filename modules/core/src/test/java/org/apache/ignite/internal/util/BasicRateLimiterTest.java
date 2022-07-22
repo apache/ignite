@@ -21,6 +21,7 @@ import java.util.concurrent.CyclicBarrier;
 import java.util.concurrent.atomic.AtomicInteger;
 import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.IgniteInterruptedCheckedException;
+import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.testframework.GridTestUtils;
 import org.junit.Test;
 
@@ -36,16 +37,16 @@ public class BasicRateLimiterTest {
     @Test
     public void checkSpeedLimitChange() throws IgniteInterruptedCheckedException {
         BasicRateLimiter limiter = new BasicRateLimiter(2);
-
-        checkRate(limiter, 10);
+        checkRate(limiter, 10, 1);
 
         limiter.setRate(3);
-
-        checkRate(limiter, 15);
+        checkRate(limiter, 15, 1);
 
         limiter.setRate(0.5);
+        checkRate(limiter, 5, 1);
 
-        checkRate(limiter, 5);
+        limiter.setRate(U.GB);
+        checkRate(limiter, 4 * U.GB, U.KB);
     }
 
     /**
@@ -53,13 +54,14 @@ public class BasicRateLimiterTest {
      *
      * @param limiter Rate limiter.
      * @param totalOps Number of operations.
+     * @param blockSize Block size.
      */
-    private void checkRate(BasicRateLimiter limiter, int totalOps) throws IgniteInterruptedCheckedException {
+    private void checkRate(BasicRateLimiter limiter, long totalOps, long blockSize) throws IgniteInterruptedCheckedException {
         double permitsPerSec = limiter.getRate();
         long startTime = System.currentTimeMillis();
 
-        for (int i = 0; i < totalOps; i++)
-            limiter.acquire(1);
+        for (long i = 0; i < totalOps; i += blockSize)
+            limiter.acquire(blockSize);
 
         long timeSpent = System.currentTimeMillis() - startTime;
 

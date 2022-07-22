@@ -21,7 +21,7 @@ import org.apache.ignite.internal.IgniteInterruptedCheckedException;
 import org.apache.ignite.internal.util.typedef.internal.A;
 
 import static java.lang.Math.max;
-import static java.util.concurrent.TimeUnit.MICROSECONDS;
+import static java.util.concurrent.TimeUnit.MILLISECONDS;
 import static java.util.concurrent.TimeUnit.NANOSECONDS;
 import static java.util.concurrent.TimeUnit.SECONDS;
 
@@ -46,6 +46,9 @@ import static java.util.concurrent.TimeUnit.SECONDS;
  * forget about that past underutilization.
  */
 public class BasicRateLimiter {
+    /** Minimum sleep interval. */
+    private static final long SLEEP_ACCURACY = MILLISECONDS.toNanos(1);
+
     /** Start timestamp. */
     private final long startTime = System.nanoTime();
 
@@ -56,13 +59,13 @@ public class BasicRateLimiter {
      * The interval between two unit requests, at our stable rate. E.g., a stable rate of 5 permits
      * per second has a stable interval of 200ms.
      */
-    private double stableIntervalMicros;
+    private double stableIntervalNanos;
 
     /**
      * The time when the next request (no matter its size) will be granted. After granting a request,
      * this is pushed further in the future. Large requests push this further than small requests.
      */
-    private long nextFreeTicketMicros;
+    private long nextFreeTicketNanos;
 
     /**
      * The flag indicates that the rate is not limited.
@@ -89,9 +92,11 @@ public class BasicRateLimiter {
             return;
 
         synchronized (mux) {
+            nextFreeTicketNanos = 0;
+
             resync();
 
-            stableIntervalMicros = SECONDS.toMicros(1L) / permitsPerSecond;
+            stableIntervalNanos = SECONDS.toNanos(1L) / permitsPerSecond;
         }
     }
 
@@ -103,7 +108,7 @@ public class BasicRateLimiter {
             return 0;
 
         synchronized (mux) {
-            return SECONDS.toMicros(1L) / stableIntervalMicros;
+            return SECONDS.toNanos(1L) / stableIntervalNanos;
         }
     }
 
@@ -125,10 +130,24 @@ public class BasicRateLimiter {
         if (unlimited)
             return;
 
-        long microsToWait = reserve(permits);
+        long nanosToWait = reserve(permits);
+
+        if (nanosToWait == 0)
+            return;
+
+        if (nanosToWait < SLEEP_ACCURACY) {
+            long endTime = System.nanoTime() + nanosToWait;
+
+            while (System.nanoTime() < endTime) {
+                if (Thread.currentThread().isInterrupted())
+                    throw new IgniteInterruptedCheckedException("Thread has been interrupted.");
+            }
+
+            return;
+        }
 
         try {
-            MICROSECONDS.sleep(microsToWait);
+            NANOSECONDS.sleep(nanosToWait);
         }
         catch (InterruptedException e) {
             Thread.currentThread().interrupt();
@@ -141,33 +160,33 @@ public class BasicRateLimiter {
      * Reserves the given number of permits for future use.
      *
      * @param permits The number of permits.
-     * @return Time in microseconds to wait until the resource can be acquired, never negative.
+     * @return Time in nanoseconds to wait until the resource can be acquired, never negative.
      */
     private long reserve(long permits) {
         A.ensure(permits > 0, "Requested permits (" + permits + ") must be positive");
 
         synchronized (mux) {
-            long nowMicros = resync();
+            long nowNanos = resync();
 
-            long momentAvailable = nextFreeTicketMicros;
+            long momentAvailable = nextFreeTicketNanos;
 
-            nextFreeTicketMicros = momentAvailable + (long)(permits * stableIntervalMicros);
+            nextFreeTicketNanos = momentAvailable + (long)(permits * stableIntervalNanos);
 
-            return max(momentAvailable - nowMicros, 0);
+            return max(momentAvailable - nowNanos, 0);
         }
     }
 
     /**
-     * Updates {@code nextFreeTicketMicros} based on the current time.
+     * Updates {@code nextFreeTicketNanos} based on the current time.
      *
-     * @return Time passed (since start) in microseconds.
+     * @return Time passed (since start) in nanoseconds.
      */
     private long resync() {
-        long passed = MICROSECONDS.convert(System.nanoTime() - startTime, NANOSECONDS);
+        long passed = System.nanoTime() - startTime;
 
         // if nextFreeTicket is in the past, resync to now
-        if (passed > nextFreeTicketMicros)
-            nextFreeTicketMicros = passed;
+        if (passed > nextFreeTicketNanos)
+            nextFreeTicketNanos = passed;
 
         return passed;
     }
