@@ -147,7 +147,7 @@ public class DataStreamerImpl<K, V> implements IgniteDataStreamer<K, V>, Delayed
     private static final int REMAP_SEMAPHORE_PERMISSIONS_COUNT = Integer.MAX_VALUE;
 
     /** Cache receiver. */
-    private StreamReceiver<K, V> rcvr = ISOLATED_UPDATER;
+    private StreamReceiver<K, V> rcvr = DataStreamerCacheUpdaters.<K, V>individual();//ISOLATED_UPDATER;
 
     /** */
     private byte[] updaterBytes;
@@ -810,6 +810,8 @@ public class DataStreamerImpl<K, V> implements IgniteDataStreamer<K, V>, Delayed
         ClusterNode remapNode,
         AffinityTopologyVersion remapTopVer
     ) {
+//        log.error("TEST | DataStreamer:load0(), BEGIN.");
+
         try {
             assert entries != null;
 
@@ -863,7 +865,7 @@ public class DataStreamerImpl<K, V> implements IgniteDataStreamer<K, V>, Delayed
 
             List<List<ClusterNode>> assignments = cctx.affinity().assignments(topVer);
 
-            if (!allowOverwrite() && !cctx.isLocal()) { // Cases where cctx required.
+            if (/*!allowOverwrite() &&*/ !cctx.isLocal()) { // Cases where cctx required.
                 gate = cctx.gate();
 
                 gate.enter();
@@ -1088,6 +1090,9 @@ public class DataStreamerImpl<K, V> implements IgniteDataStreamer<K, V>, Delayed
         }
         catch (Exception ex) {
             resFut.onDone(new IgniteCheckedException("DataStreamer data loading failed.", ex));
+        }
+        finally {
+//            log.error("TEST | DataStreamer:load0(), END.");
         }
     }
 
@@ -1679,7 +1684,7 @@ public class DataStreamerImpl<K, V> implements IgniteDataStreamer<K, V>, Delayed
                     }
                 }
 
-                if (!allowOverwrite() && !topVer.equals(curBatchTopVer)) {
+                if (/*!allowOverwrite() && */!topVer.equals(curBatchTopVer)) {
                     for (int i = 0; i < stripes.length; i++) {
                         PerStripeBuffer b0 = stripes[i];
 
