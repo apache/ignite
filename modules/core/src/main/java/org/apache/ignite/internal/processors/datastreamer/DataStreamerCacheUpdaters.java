@@ -115,6 +115,8 @@ public class DataStreamerCacheUpdaters {
 
                 V val = entry.getValue();
 
+                //System.err.println("TEST | individual update: cache.put()");
+
                 if (val == null)
                     cache.remove(key);
                 else

@@ -30,6 +30,8 @@ import org.apache.ignite.IgniteDataStreamer;
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.cache.CacheMode;
 import org.apache.ignite.configuration.CacheConfiguration;
+import org.apache.ignite.configuration.ConnectorConfiguration;
+import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.testframework.GridTestUtils;
@@ -45,12 +47,28 @@ public class IgniteClusterShanpshotStreamerTest  extends AbstractSnapshotSelfTes
         return Arrays.asList(false);
     }
 
+    /** {@inheritDoc} */
+    @Override protected IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {
+        IgniteConfiguration cfg = super.getConfiguration(igniteInstanceName);
+
+        cfg.getDataStorageConfiguration().getDefaultDataRegionConfiguration().setMaxSize(2 * 1024L * 1024L * 1024L);
+        cfg.getDataStorageConfiguration().setWalSegments(4);
+        cfg.getDataStorageConfiguration().setWalSegmentSize(4 * 1024 * 1024);
+        cfg.getDataStorageConfiguration().setMaxWalArchiveSize(32 * 1024 * 1024);
+        cfg.getDataStorageConfiguration().setCheckpointFrequency(500);
+        cfg.getDataStorageConfiguration().setCheckpointReadLockTimeout(15_000);
+
+        cfg.setConnectorConfiguration(new ConnectorConfiguration());
+
+        return cfg;
+    }
+
     /** @throws Exception If fails. */
     @Test
     public void testClusterSnapshotConsistencyWithStreamer() throws Exception {
         int grids = 2;
         int backups = grids - 1;
-        int loadBeforeSnp = 150_000;
+        int loadBeforeSnp = 100_000;
 
         CountDownLatch loadLever = new CountDownLatch(loadBeforeSnp);
         AtomicBoolean stopLoading = new AtomicBoolean(false);
@@ -61,7 +79,7 @@ public class IgniteClusterShanpshotStreamerTest  extends AbstractSnapshotSelfTes
         startGrids(grids);
         grid(0).cluster().state(ACTIVE);
 
-        IgniteInternalFuture<?> load1 = runLoad(tableName, true, backups, true, stopLoading, loadLever);
+        IgniteInternalFuture<?> load1 = runLoad(tableName, false, backups, true, stopLoading, loadLever);
 
         loadLever.await();
 
@@ -115,7 +133,9 @@ public class IgniteClusterShanpshotStreamerTest  extends AbstractSnapshotSelfTes
                         "(id, name, orgid, dep) VALUES(?, ?, ?, ?)")) {
 
                         if (streaming)
-                            conn.prepareStatement("SET STREAMING ON;").execute();
+//                            conn.prepareStatement("SET STREAMING ON;").execute();
+                            conn.prepareStatement("SET STREAMING ON allow_overwrite on;").execute();
+//                            conn.prepareStatement("SET STREAMING ON batch_size 100;").execute();
 
                         int leftLimit = 97; // letter 'a'
                         int rightLimit = 122; // letter'z'
