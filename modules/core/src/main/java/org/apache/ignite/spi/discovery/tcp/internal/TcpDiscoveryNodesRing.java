@@ -28,6 +28,7 @@ import java.util.TreeSet;
 import java.util.UUID;
 import java.util.concurrent.locks.ReadWriteLock;
 import java.util.concurrent.locks.ReentrantReadWriteLock;
+import java.util.stream.Collectors;
 import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.internal.util.tostring.GridToStringExclude;
 import org.apache.ignite.internal.util.tostring.GridToStringInclude;
@@ -448,7 +449,9 @@ public class TcpDiscoveryNodesRing {
         rwLock.readLock().lock();
 
         try {
-            Collection<TcpDiscoveryNode> filtered = serverNodes(excluded);
+            Collection<TcpDiscoveryNode> filtered = serverNodes(excluded).stream()
+                .filter(node -> !node.isDaemon())
+                .collect(Collectors.toList());
 
             if (F.isEmpty(filtered))
                 return null;
