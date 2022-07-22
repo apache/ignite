@@ -35,7 +35,7 @@ import org.h2.result.SearchRow;
 /**
  * Filtrable SQL system view to export {@link SystemView} data.
  */
-class FiltrableSystemViewLocal<R> extends SystemViewLocal<R> {
+public class FiltrableSystemViewLocal<R> extends SystemViewLocal<R> {
     /** View attribute names. */
     private final String[] attributeNames;
 

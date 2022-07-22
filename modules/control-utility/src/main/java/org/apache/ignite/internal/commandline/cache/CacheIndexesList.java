@@ -36,6 +36,7 @@ import org.apache.ignite.internal.commandline.cache.argument.IndexListCommandArg
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.internal.visor.cache.index.IndexListInfoContainer;
+import org.apache.ignite.internal.visor.cache.index.IndexListTask;
 import org.apache.ignite.internal.visor.cache.index.IndexListTaskArg;
 
 import static org.apache.ignite.internal.commandline.CommandLogger.optional;
@@ -88,7 +89,7 @@ public class CacheIndexesList extends AbstractCommand<CacheIndexesList.Arguments
 
         try (GridClient client = Command.startClient(clientCfg)) {
             taskRes = TaskExecutor.executeTaskByNameOnNode(client,
-                "org.apache.ignite.internal.visor.cache.index.IndexListTask", taskArg, nodeId, clientCfg);
+                IndexListTask.class.getName(), taskArg, nodeId, clientCfg);
         }
 
         printIndexes(taskRes, logger);

@@ -56,6 +56,12 @@ public class SystemViewsIntegrationTest extends AbstractBasicIntegrationTest {
 
     /** */
     @Test
+    public void testMetricsView() {
+        assertQuery("SELECT value FROM sys.metrics WHERE name = 'cluster.TotalClientNodes'").returns("1").check();
+    }
+
+    /** */
+    @Test
     public void testFiltrableView() {
         Matcher<String> containsIdx = QueryChecker.containsIndexScan("SYS", "NODE_ATTRIBUTES", "NODE_ATTRIBUTES_IDX");
 

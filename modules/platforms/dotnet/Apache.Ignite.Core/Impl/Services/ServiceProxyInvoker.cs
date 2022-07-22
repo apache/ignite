@@ -39,22 +39,28 @@ namespace Apache.Ignite.Core.Impl.Services
         /// Invokes the service method according to data from a stream,
         /// and writes invocation result to the output stream.
         /// </summary>
-        /// <param name="svc">Service instance.</param>
+        /// <param name="svcCtx">Service context.</param>
         /// <param name="methodName">Name of the method.</param>
         /// <param name="arguments">Arguments.</param>
         /// <returns>Pair of method return value and invocation exception.</returns>
         [SuppressMessage("Microsoft.Design", "CA1031:DoNotCatchGeneralExceptionTypes")]
-        public static KeyValuePair<object, Exception> InvokeServiceMethod(object svc, string methodName, 
+        public static KeyValuePair<object, Exception> InvokeServiceMethod(ServiceContext svcCtx, string methodName, 
             object[] arguments)
         {
-            Debug.Assert(svc != null);
+            Debug.Assert(svcCtx != null);
+            Debug.Assert(svcCtx.Service != null);
             Debug.Assert(!string.IsNullOrWhiteSpace(methodName));
 
-            var method = GetMethodOrThrow(svc.GetType(), methodName, arguments);
+            var method = GetMethodOrThrow(svcCtx.Service.GetType(), methodName, arguments);
 
             try
             {
-                return new KeyValuePair<object, Exception>(method.Invoke(svc, arguments), null);
+                var res = svcCtx.Interceptor == null
+                    ? method.Invoke(svcCtx.Service, arguments)
+                    : svcCtx.Interceptor.Invoke(methodName, arguments, svcCtx,
+                        () => method.Invoke(svcCtx.Service, arguments));
+
+                return new KeyValuePair<object, Exception>(res, null);
             }
             catch (TargetInvocationException invokeErr)
             {
