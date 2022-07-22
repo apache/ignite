@@ -46,7 +46,7 @@ public class BasicRateLimiterTest {
         checkRate(limiter, 5, 1);
 
         limiter.setRate(U.GB);
-        checkRate(limiter, 4 * U.GB, U.KB);
+        checkRate(limiter, 8 * U.GB, U.KB);
     }
 
     /**
