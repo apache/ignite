@@ -505,6 +505,8 @@ class SnapshotFutureTask extends AbstractSnapshotFutureTask<Set<GroupPartitionId
 
                     CompletableFuture<Void> fut0 = CompletableFuture.runAsync(
                         wrapExceptionIfStarted(() -> {
+                            log.info("TEST | send part.");
+
                             snpSndr.sendPart(
                                 getPartitionFile(pageStore.workDir(), cacheDirName, partId),
                                 cacheDirName,
@@ -530,6 +532,8 @@ class SnapshotFutureTask extends AbstractSnapshotFutureTask<Set<GroupPartitionId
                                 catch (IOException ex) {
                                     throw new IgniteCheckedException(ex);
                                 }
+
+                                log.info("TEST | send delta.");
 
                                 snpSndr.sendDelta(delta, cacheDirName, pair);
 

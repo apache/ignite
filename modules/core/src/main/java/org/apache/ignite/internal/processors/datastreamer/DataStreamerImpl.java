@@ -2323,6 +2323,8 @@ public class DataStreamerImpl<K, V> implements IgniteDataStreamer<K, V>, Delayed
 
                         boolean primary = cctx.affinity().primaryByKey(cctx.localNode(), entry.key(), topVer);
 
+                        log.info("TEST | updating entry.");
+
                         entry.initialValue(e.getValue(),
                             ver,
                             ttl,
