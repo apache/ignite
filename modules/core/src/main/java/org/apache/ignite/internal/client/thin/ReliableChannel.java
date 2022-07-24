@@ -413,7 +413,7 @@ final class ReliableChannel implements AutoCloseable {
         if (factory == null)
             return;
 
-        affinityCtx.addKeyMapperFactory(cacheId, parts -> factory.create(cacheName, parts));
+        affinityCtx.putKeyMapperFactory(cacheId, parts -> factory.create(cacheName, parts));
     }
 
     /**

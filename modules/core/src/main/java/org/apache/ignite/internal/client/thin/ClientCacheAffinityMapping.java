@@ -23,7 +23,6 @@ import java.util.Collection;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.Map;
-import java.util.Objects;
 import java.util.UUID;
 import java.util.function.Function;
 import org.apache.ignite.IgniteBinary;
@@ -36,12 +35,13 @@ import org.apache.ignite.internal.binary.streams.BinaryOutputStream;
 import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.internal.U;
+import org.jetbrains.annotations.NotNull;
 import static org.apache.ignite.internal.client.thin.ProtocolBitmaskFeature.ALL_AFFINITY_MAPPINGS;
 
 /**
  * Affinity mapping (partition to nodes) for each cache.
  */
-public class ClientCacheAffinityMapping {
+public class ClientCacheAffinityMapping implements Comparable<ClientCacheAffinityMapping> {
     /** CacheAffinityInfo for caches with not applicable partition awareness. */
     private static final CacheAffinityInfo NOT_APPLICABLE_CACHE_AFFINITY_INFO =
         new CacheAffinityInfo(null, null, null);
@@ -67,6 +67,11 @@ public class ClientCacheAffinityMapping {
      */
     public AffinityTopologyVersion topologyVersion() {
         return topVer;
+    }
+
+    /** {@inheritDoc} */
+    @Override public int compareTo(@NotNull ClientCacheAffinityMapping o) {
+        return topVer.compareTo(o.topVer);
     }
 
     /**
@@ -146,20 +151,11 @@ public class ClientCacheAffinityMapping {
      * Writes caches affinity request to the output channel.
      *
      * @param ch Output channel.
-     * @param cacheIds Cache IDs.
-     * @param mappers Function that produces key mapping functions.
+     * @param cacheIds Set of cache ids to request.
+     * @param customMappingsRequired {@code true} if non-default affinity mappings required.
      */
-    public static void writeRequest(
-        PayloadOutputChannel ch,
-        Collection<Integer> cacheIds,
-        Function<Integer, Function<Integer, ClientPartitionAwarenessMapper>> mappers
-    ) {
+    public static void writeRequest(PayloadOutputChannel ch, Collection<Integer> cacheIds, boolean customMappingsRequired) {
         ProtocolContext ctx = ch.clientChannel().protocolCtx();
-
-        boolean customMappingsRequired = cacheIds.stream()
-            .map(cacheId -> Objects.nonNull(mappers.apply(cacheId)))
-            .reduce(Boolean::logicalOr)
-            .orElse(false);
 
         if (customMappingsRequired && !ctx.isFeatureSupported(ALL_AFFINITY_MAPPINGS))
             throw new ClientFeatureNotSupportedByServerException(ALL_AFFINITY_MAPPINGS);
@@ -213,20 +209,21 @@ public class ClientCacheAffinityMapping {
                     if (ch.clientChannel().protocolCtx().isFeatureSupported(ALL_AFFINITY_MAPPINGS))
                         dfltMapping = in.readBoolean();
 
-                    boolean finalDfltMapping = dfltMapping;
-
                     for (Map.Entry<Integer, Map<Integer, Integer>> keyCfg : cacheKeyCfg.entrySet()) {
-                        addCacheAffinityMapping(aff,
-                            keyCfg.getKey(),
-                            keyCfg.getValue(),
-                            partToNode,
-                            parts -> finalDfltMapping ? new RendezvousAffinityKeyMapper(parts) :
-                                mappers.apply(keyCfg.getKey()).apply(parts));
+                        Function<Integer, ClientPartitionAwarenessMapper> factory = dfltMapping ?
+                            RendezvousAffinityKeyMapper::new : mappers.apply(keyCfg.getKey());
+
+                        // Cache was concurrently destroyed.
+                        if (factory == null)
+                            continue;
+
+                        aff.cacheAffinity.put(keyCfg.getKey(),
+                            new CacheAffinityInfo(keyCfg.getValue(), partToNode, factory.apply(partToNode.length)));
                     }
                 }
                 else { // Partition awareness is not applicable for these caches.
                     for (int j = 0; j < cachesCnt; j++)
-                        addCacheAffinityMapping(aff, in.readInt(), null, null, null);
+                        aff.cacheAffinity.put(in.readInt(), NOT_APPLICABLE_CACHE_AFFINITY_INFO);
                 }
             }
 
@@ -282,24 +279,6 @@ public class ClientCacheAffinityMapping {
         }
 
         return Arrays.copyOf(partToNode, maxPart + 1);
-    }
-
-    /**
-     * @param cacheId Cache id.
-     * @param keyCfg Cache configuration mapping.
-     * @param partMapping Partition mapping to node.
-     * @param factory Cache key mapper factory.
-     */
-    private static void addCacheAffinityMapping(
-        ClientCacheAffinityMapping mapping,
-        Integer cacheId,
-        Map<Integer, Integer> keyCfg,
-        UUID[] partMapping,
-        Function<Integer, ClientPartitionAwarenessMapper> factory
-    ) {
-        mapping.cacheAffinity.put(cacheId,
-            partMapping == null ? NOT_APPLICABLE_CACHE_AFFINITY_INFO :
-                new CacheAffinityInfo(keyCfg, partMapping, factory.apply(partMapping.length)));
     }
 
     /**
