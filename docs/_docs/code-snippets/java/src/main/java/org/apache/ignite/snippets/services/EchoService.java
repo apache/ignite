@@ -14,10 +14,13 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+package org.apache.ignite.examples;
 
-/**
- * <!-- Package description. -->
- * Contains internal tests or test related classes and interfaces.
- */
+import org.apache.ignite.services.Service;
 
-package org.apache.ignite.logger.log4j;
+public interface EchoService extends Service {
+    /**
+     * Shows how to read parameter implicitly passed to the service.
+     */
+    String hello();
+}

@@ -18,7 +18,6 @@
 namespace Apache.Ignite.Core.Impl.Services
 {
     using System;
-    using System.Diagnostics;
     using System.Threading;
     using Apache.Ignite.Core.Binary;
     using Apache.Ignite.Core.Services;
@@ -34,11 +33,17 @@ namespace Apache.Ignite.Core.Impl.Services
         /// <summary>
         /// Initializes a new instance of the <see cref="ServiceContext"/> class.
         /// </summary>
+        /// <param name="svc">Service.</param>
+        /// <param name="interceptor">Service call interceptor.</param>
         /// <param name="reader">The reader.</param>
-        public ServiceContext(IBinaryRawReader reader)
+        public ServiceContext(IService svc, IServiceCallInterceptor interceptor, IBinaryRawReader reader)
         {
-            Debug.Assert(reader != null);
+            Service = svc;
+            Interceptor = interceptor;
 
+            if (reader == null)
+                return;
+                
             Name = reader.ReadString();
             ExecutionId = reader.ReadGuid() ?? Guid.Empty;
             IsCancelled = reader.ReadBoolean();
@@ -53,7 +58,7 @@ namespace Apache.Ignite.Core.Impl.Services
         public Guid ExecutionId { get; private set; }
 
         /** <inheritdoc /> */
-        public bool IsCancelled { get; private set; }
+        public bool IsCancelled { get; set; }
 
         /** <inheritdoc /> */
         public string CacheName { get; private set; }
@@ -62,11 +67,20 @@ namespace Apache.Ignite.Core.Impl.Services
         public object AffinityKey { get; private set; }
 
         /** <inheritdoc /> */
-        public IServiceCallContext CurrentCallContext
-        {
-            get { return LocalCallContext.Value; }
-        }
+        public IServiceCallContext CurrentCallContext => LocalCallContext.Value;
 
+        /// <summary>
+        /// Gets service.
+        /// </summary>
+        /// <returns>Service.</returns>
+        internal IService Service { get; }
+        
+        /// <summary>
+        /// Gets service call interceptor.
+        /// </summary>
+        /// <returns>Service call interceptor.</returns>
+        internal IServiceCallInterceptor Interceptor { get; }
+        
         /// <summary>
         /// Sets service call context for the current thread.
         /// </summary>

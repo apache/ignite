@@ -39,11 +39,6 @@
         </dependency>
         <dependency>
             <groupId>${project.groupId}</groupId>
-            <artifactId>ignite-log4j</artifactId>
-            <version>${ignite.version}</version>
-        </dependency>
-        <dependency>
-            <groupId>${project.groupId}</groupId>
             <artifactId>ignite-jcl</artifactId>
             <version>${ignite.version}</version>
         </dependency>

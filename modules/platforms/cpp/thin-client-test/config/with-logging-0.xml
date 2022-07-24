@@ -28,7 +28,12 @@
 
     <bean parent="test.cfg">
         <property name="gridLogger">
-            <bean class="org.apache.ignite.logger.log4j2.Log4J2Logger">
+            <!--
+                CPP tests starts JVM only once and reuses it. Since Log4j2Logger is designed to be configured
+                only once per JVM, we need to either restart JVM or use another logger implementation to start node with
+                different logging configurations.
+             -->
+            <bean class="org.apache.ignite.testframework.junits.logger.GridTestLog4jLogger">
                 <constructor-arg type="java.lang.String" value="${IGNITE_NATIVE_TEST_CPP_THIN_CONFIG_PATH}/log/log4j-0.xml"/>
             </bean>
         </property>

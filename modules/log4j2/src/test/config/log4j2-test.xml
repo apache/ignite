@@ -17,7 +17,7 @@
   limitations under the License.
 -->
 
-<Configuration monitorInterval="60">
+<Configuration>
     <Appenders>
         <Console name="CONSOLE" target="SYSTEM_OUT">
             <PatternLayout pattern="[%d{ISO8601}][%-5p][%t][%c{1}]%notEmpty{[%markerSimpleName]} %m%n"/>
@@ -27,12 +27,6 @@
         <Console name="CONSOLE_ERR" target="SYSTEM_ERR">
             <PatternLayout pattern="[%d{ISO8601}][%-5p][%t][%c{1}]%notEmpty{[%markerSimpleName]} %m%n"/>
         </Console>
-
-        <File name="CONSISTENCY" fileName="${sys:IGNITE_HOME}/work/log/consistency.log">
-            <PatternLayout>
-                <Pattern>"[%d{ISO8601}][%-5p][%t][%c{1}] %m%n"</Pattern>
-            </PatternLayout>
-        </File>
 
         <Routing name="FILE">
             <Routes pattern="$${sys:nodeId}">
@@ -51,40 +45,12 @@
     </Appenders>
 
     <Loggers>
-        <!--
-        <Logger name="org.apache.ignite" level=DEBUG/>
-        -->
-
-        <!--
-            Uncomment to disable courtesy notices, such as SPI configuration
-            consistency warnings.
-        -->
-        <!--
-        <Logger name="org.apache.ignite.CourtesyConfigNotice" level=OFF/>
-        -->
-
-        <Logger name="org.springframework" level="WARN"/>
-        <Logger name="org.eclipse.jetty" level="WARN"/>
-
-        <Logger name="org.apache.ignite.internal.visor.consistency" additivity="false" level="INFO">
-            <AppenderRef ref="CONSISTENCY"/>
-        </Logger>
-
-        <!--
-        Avoid warnings about failed bind attempt when multiple nodes running on the same host.
-        -->
-        <Logger name="org.eclipse.jetty.util.log" level="ERROR"/>
-        <Logger name="org.eclipse.jetty.util.component" level="ERROR"/>
-
-        <Logger name="com.amazonaws" level="WARN"/>
+        <Logger name="org" level="INFO"/>
+        <Logger name="org.eclipse.jetty" level="INFO"/>
 
         <Root level="INFO">
-            <!-- Uncomment to enable logging to console. -->
-            <!--
             <AppenderRef ref="CONSOLE" level="DEBUG"/>
-            -->
-
-            <AppenderRef ref="CONSOLE_ERR" level="ERROR"/>
+            <AppenderRef ref="CONSOLE_ERR" level="WARN"/>
             <AppenderRef ref="FILE" level="DEBUG"/>
         </Root>
     </Loggers>

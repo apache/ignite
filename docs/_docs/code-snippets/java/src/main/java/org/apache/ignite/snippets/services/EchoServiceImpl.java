@@ -14,10 +14,27 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+package org.apache.ignite.examples;
 
-/**
- * <!-- Package description. -->
- * Contains <b>default</b> Log4j implementation for logging.
- */
+import org.apache.ignite.resources.ServiceContextResource;
+import org.apache.ignite.services.ServiceCallContext;
+import org.apache.ignite.services.ServiceContext;
 
-package org.apache.ignite.logger.log4j;
+public class EchoServiceImpl implements EchoService {
+    /** Serial version UID. */
+    private static final long serialVersionUID = 0L;
+
+    //tag::service-call-context-read[]
+    @ServiceContextResource
+    private ServiceContext ctx;
+
+    /** {@inheritDoc} */
+    @Override public String hello() {
+        ServiceCallContext callCtx = ctx.currentCallContext();
+
+        String proxyUser = callCtx != null ? callCtx.attribute("user") : null;
+
+        return String.format("Hello %s!", (proxyUser == null || proxyUser.isEmpty() ? "anonymous" : proxyUser));
+    }
+    //end::service-call-context-read[]
+}

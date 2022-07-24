@@ -121,7 +121,8 @@ namespace Apache.Ignite.Core.Tests.Services
             {
                 Name = ServiceName,
                 TotalCount = 1,
-                Service = new TestPlatformService()
+                Service = new TestPlatformService(),
+                Interceptors = new List<IServiceCallInterceptor> { new PlatformTestServiceInterceptor("Intercepted") }
             };
 
             if (withNodeFilter)
@@ -231,8 +232,10 @@ namespace Apache.Ignite.Core.Tests.Services
             BinarizableTestValue AddOne(BinarizableTestValue val);
 
             /** */
-            // ReSharper disable once InconsistentNaming
-            string contextAttribute(string name);
+            string ContextAttribute(string name);
+            
+            /** */
+            int Intercepted(int val);
         }
 
         #pragma warning disable 649
@@ -320,11 +323,18 @@ namespace Apache.Ignite.Core.Tests.Services
                 };
             }
 
-            public string contextAttribute(string name)
+            /** <inheritdoc /> */
+            public string ContextAttribute(string name)
             {
                 IServiceCallContext callCtx = _ctx.CurrentCallContext;
 
                 return callCtx == null ? null : callCtx.GetAttribute(name);
+            }
+
+            /** <inheritdoc /> */
+            public int Intercepted(int val)
+            {
+                return val;
             }
 
             /** <inheritdoc /> */

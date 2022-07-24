@@ -363,13 +363,13 @@ public abstract class IgniteUtils {
     /** Empty integers array. */
     public static final int[] EMPTY_INTS = new int[0];
 
-    /** Empty  longs. */
+    /** Empty longs array. */
     public static final long[] EMPTY_LONGS = new long[0];
 
-    /** */
+    /** Empty strings array. */
     public static final String[] EMPTY_STRS = new String[0];
 
-    /** Empty  longs. */
+    /** Empty fields array. */
     public static final Field[] EMPTY_FIELDS = new Field[0];
 
     /** System line separator. */
@@ -4752,7 +4752,7 @@ public abstract class IgniteUtils {
                 Class<?> log4jCls;
 
                 try {
-                    log4jCls = Class.forName("org.apache.ignite.logger.log4j.Log4JLogger");
+                    log4jCls = Class.forName("org.apache.ignite.logger.log4j2.Log4J2Logger");
                 }
                 catch (ClassNotFoundException | NoClassDefFoundError ignored) {
                     log4jCls = null;
@@ -4813,7 +4813,7 @@ public abstract class IgniteUtils {
                 ((LoggerNodeIdAware)cfgLog).setNodeId(nodeId);
 
             if (log4jInitErr != null)
-                U.warn(cfgLog, "Failed to initialize Log4JLogger (falling back to standard java logging): "
+                U.warn(cfgLog, "Failed to initialize Log4J2Logger (falling back to standard java logging): "
                     + log4jInitErr.getCause());
 
             return cfgLog;
@@ -8966,66 +8966,6 @@ public abstract class IgniteUtils {
     public static boolean isVisorRequiredProperty(String name) {
         return "java.version".equals(name) || "java.vm.name".equals(name) || "os.arch".equals(name) ||
             "os.name".equals(name) || "os.version".equals(name);
-    }
-
-    /**
-     * Adds no-op logger to remove no-appender warning.
-     *
-     * @return Tuple with root log and no-op appender instances. No-op appender can be {@code null}
-     *      if it did not found in classpath. Notice that in this case logging is not suppressed.
-     * @throws IgniteCheckedException In case of failure to add no-op logger for Log4j.
-     */
-    public static IgniteBiTuple<Object, Object> addLog4jNoOpLogger() throws IgniteCheckedException {
-        Object rootLog;
-        Object nullApp;
-
-        try {
-            // Add no-op logger to remove no-appender warning.
-            Class<?> logCls = Class.forName("org.apache.log4j.Logger");
-
-            rootLog = logCls.getMethod("getRootLogger").invoke(logCls);
-
-            try {
-                nullApp = Class.forName("org.apache.log4j.varia.NullAppender").newInstance();
-            }
-            catch (ClassNotFoundException ignore) {
-                // Can't found log4j no-op appender in classpath (for example, log4j was added through
-                // log4j-over-slf4j library. No-appender warning will not be suppressed.
-                return new IgniteBiTuple<>(rootLog, null);
-            }
-
-            Class appCls = Class.forName("org.apache.log4j.Appender");
-
-            rootLog.getClass().getMethod("addAppender", appCls).invoke(rootLog, nullApp);
-        }
-        catch (Exception e) {
-            throw new IgniteCheckedException("Failed to add no-op logger for Log4j.", e);
-        }
-
-        return new IgniteBiTuple<>(rootLog, nullApp);
-    }
-
-    /**
-     * Removes previously added no-op logger via method {@link #addLog4jNoOpLogger}.
-     *
-     * @param t Tuple with root log and null appender instances.
-     * @throws IgniteCheckedException In case of failure to remove previously added no-op logger for Log4j.
-     */
-    public static void removeLog4jNoOpLogger(IgniteBiTuple<Object, Object> t) throws IgniteCheckedException {
-        Object rootLog = t.get1();
-        Object nullApp = t.get2();
-
-        if (nullApp == null)
-            return;
-
-        try {
-            Class appenderCls = Class.forName("org.apache.log4j.Appender");
-
-            rootLog.getClass().getMethod("removeAppender", appenderCls).invoke(rootLog, nullApp);
-        }
-        catch (Exception e) {
-            throw new IgniteCheckedException("Failed to remove previously added no-op logger for Log4j.", e);
-        }
     }
 
     /**

@@ -18,12 +18,14 @@
 namespace Apache.Ignite.Core.Services
 {
     using System;
+    using System.Collections.Generic;
     using System.Diagnostics;
     using System.Diagnostics.CodeAnalysis;
     using System.Linq;
     using System.Reflection;
     using Apache.Ignite.Core.Binary;
     using Apache.Ignite.Core.Cluster;
+    using Apache.Ignite.Core.Common;
 
     /// <summary>
     /// Service configuration.
@@ -65,7 +67,14 @@ namespace Apache.Ignite.Core.Services
         /// Gets or sets node filter used to filter nodes on which the service will be deployed.
         /// </summary>
         public IClusterNodeFilter NodeFilter { get; set; }
-        
+
+        /// <summary>
+        /// Gets or sets service call interceptors.
+        /// </summary>
+        [IgniteExperimental]
+        [SuppressMessage("Microsoft.Usage", "CA2227:CollectionPropertiesShouldBeReadOnly")]
+        public ICollection<IServiceCallInterceptor> Interceptors { get; set; }
+
         /// <summary>
         /// Enables or disables service statistics.
         /// NOTE: Service statistics work only via service proxies. <see cref="IServices.GetServiceProxy{T}(string)"/>
@@ -89,6 +98,11 @@ namespace Apache.Ignite.Core.Services
 
             if (NodeFilter != null)
                 w.WriteObject(NodeFilter);
+            else
+                w.WriteObject<object>(null);
+            
+            if (Interceptors != null)
+                w.WriteObject(Interceptors);
             else
                 w.WriteObject<object>(null);
 
@@ -140,7 +154,7 @@ namespace Apache.Ignite.Core.Services
             }
             catch (Exception)
             {
-                // Ignore exceptions in user deserealization code.
+                // Ignore exceptions in user deserialization code.
             }
 
             TotalCount = r.ReadInt();
@@ -151,10 +165,11 @@ namespace Apache.Ignite.Core.Services
             try
             {
                 NodeFilter = r.ReadObject<IClusterNodeFilter>();
+                Interceptors = r.ReadObject<ICollection<IServiceCallInterceptor>>();
             }
             catch (Exception)
             {
-                // Ignore exceptions in user deserealization code.
+                // Ignore exceptions in user deserialization code.
             }
 
             StatisticsEnabled = r.ReadBoolean();
