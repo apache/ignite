@@ -114,11 +114,7 @@ public class IgniteClusterSnapshotWalRecordTest extends AbstractSnapshotSelfTest
 
         CacheObjectContext cacheObjCtx = ign.cachex(DEFAULT_CACHE_NAME).context().cacheObjectContext();
 
-        WALPointer lastPtr = null;
-
         for (IgniteBiTuple<WALPointer, WALRecord> rec: walIt) {
-            lastPtr = rec.get1();
-
             if (rec.getValue() instanceof ClusterSnapshotRecord) {
                 assertEquals(snpName, ((ClusterSnapshotRecord)rec.getValue()).clusterSnapshotName());
 
@@ -143,8 +139,6 @@ public class IgniteClusterSnapshotWalRecordTest extends AbstractSnapshotSelfTest
                 finalData.put(key, val);
             }
         }
-
-        System.out.println("LAST PTR " + lastPtr);
 
         assertNotNull(snpRecPtr);
         assertFalse(F.isEmpty(snpData));
