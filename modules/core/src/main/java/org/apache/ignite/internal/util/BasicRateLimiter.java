@@ -20,8 +20,7 @@ package org.apache.ignite.internal.util;
 import org.apache.ignite.internal.IgniteInterruptedCheckedException;
 import org.apache.ignite.internal.util.typedef.internal.A;
 
-import static java.lang.Math.max;
-import static java.util.concurrent.TimeUnit.MILLISECONDS;
+import static java.lang.Math.min;
 import static java.util.concurrent.TimeUnit.NANOSECONDS;
 import static java.util.concurrent.TimeUnit.SECONDS;
 
@@ -46,9 +45,6 @@ import static java.util.concurrent.TimeUnit.SECONDS;
  * forget about that past underutilization.
  */
 public class BasicRateLimiter {
-    /** Minimum sleep interval. */
-    private static final long SLEEP_ACCURACY = MILLISECONDS.toNanos(1);
-
     /** Start timestamp. */
     private final long startTime = System.nanoTime();
 
@@ -67,10 +63,11 @@ public class BasicRateLimiter {
      */
     private long nextFreeTicketNanos;
 
-    /**
-     * The flag indicates that the rate is not limited.
-     */
-    private volatile boolean unlimited;
+    /** The currently stored permits. */
+    private double storedPermits;
+
+    /** The stable rate as {@code permits per seconds} ({@code 0} means that the rate is unlimited). */
+    private volatile double rate;
 
     /**
      * @param permitsPerSecond Estimated number of permits per second.
@@ -88,15 +85,14 @@ public class BasicRateLimiter {
     public void setRate(double permitsPerSecond) {
         A.ensure(permitsPerSecond >= 0, "Requested permits (" + permitsPerSecond + ") must be non-negative.");
 
-        if (unlimited = (permitsPerSecond == 0))
+        if ((rate = permitsPerSecond) == 0)
             return;
 
         synchronized (mux) {
-            nextFreeTicketNanos = 0;
+            storedPermits = nextFreeTicketNanos = 0;
+            stableIntervalNanos = SECONDS.toNanos(1L) / permitsPerSecond;
 
             resync();
-
-            stableIntervalNanos = SECONDS.toNanos(1L) / permitsPerSecond;
         }
     }
 
@@ -104,19 +100,14 @@ public class BasicRateLimiter {
      * @return The stable rate as {@code permits per seconds} ({@code 0} means that the rate is unlimited).
      */
     public double getRate() {
-        if (unlimited)
-            return 0;
-
-        synchronized (mux) {
-            return SECONDS.toNanos(1L) / stableIntervalNanos;
-        }
+        return rate;
     }
 
     /**
      * @return {@code True} if the rate is not limited.
      */
     public boolean isUnlimited() {
-        return unlimited;
+        return rate == 0;
     }
 
     /**
@@ -127,24 +118,10 @@ public class BasicRateLimiter {
      * @throws IllegalArgumentException If the requested number of permits is negative or zero.
      */
     public void acquire(long permits) throws IgniteInterruptedCheckedException {
-        if (unlimited)
+        if (isUnlimited())
             return;
 
         long nanosToWait = reserve(permits);
-
-        if (nanosToWait == 0)
-            return;
-
-        if (nanosToWait < SLEEP_ACCURACY) {
-            long endTime = System.nanoTime() + nanosToWait;
-
-            while (System.nanoTime() < endTime) {
-                if (Thread.currentThread().isInterrupted())
-                    throw new IgniteInterruptedCheckedException("Thread has been interrupted.");
-            }
-
-            return;
-        }
 
         try {
             NANOSECONDS.sleep(nanosToWait);
@@ -160,7 +137,7 @@ public class BasicRateLimiter {
      * Reserves the given number of permits for future use.
      *
      * @param permits The number of permits.
-     * @return Time in nanoseconds to wait until the resource can be acquired, never negative.
+     * @return Time in nanoseconds to wait until the resource can be acquired.
      */
     private long reserve(long permits) {
         A.ensure(permits > 0, "Requested permits (" + permits + ") must be positive");
@@ -169,10 +146,13 @@ public class BasicRateLimiter {
             long nowNanos = resync();
 
             long momentAvailable = nextFreeTicketNanos;
+            double storedPermitsToSpend = min(permits, storedPermits);
+            double freshPermits = permits - storedPermitsToSpend;
 
-            nextFreeTicketNanos = momentAvailable + (long)(permits * stableIntervalNanos);
+            nextFreeTicketNanos = momentAvailable + (long)(freshPermits * stableIntervalNanos);
+            storedPermits -= storedPermitsToSpend;
 
-            return max(momentAvailable - nowNanos, 0);
+            return momentAvailable - nowNanos;
         }
     }
 
@@ -184,9 +164,12 @@ public class BasicRateLimiter {
     private long resync() {
         long passed = System.nanoTime() - startTime;
 
-        // if nextFreeTicket is in the past, resync to now
-        if (passed > nextFreeTicketNanos)
+        // if nextFreeTicket is in the past, resync to now.
+        if (passed > nextFreeTicketNanos) {
+            storedPermits = min(getRate(), storedPermits + ((passed - nextFreeTicketNanos) / stableIntervalNanos));
+
             nextFreeTicketNanos = passed;
+        }
 
         return passed;
     }

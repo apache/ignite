@@ -57,7 +57,6 @@ public class BasicRateLimiterTest {
      * @param blockSize Block size.
      */
     private void checkRate(BasicRateLimiter limiter, long totalOps, long blockSize) throws IgniteInterruptedCheckedException {
-        double permitsPerSec = limiter.getRate();
         long startTime = System.currentTimeMillis();
 
         for (long i = 0; i < totalOps; i += blockSize)
@@ -66,7 +65,7 @@ public class BasicRateLimiterTest {
         long timeSpent = System.currentTimeMillis() - startTime;
 
         // Rate limiter aims for an average rate of permits per second.
-        assertEquals(1, Math.round((double)timeSpent / 1000 / totalOps * permitsPerSec));
+        assertEquals(1, Math.round((double)timeSpent / 1000 / totalOps * limiter.getRate()));
     }
 
     /**
