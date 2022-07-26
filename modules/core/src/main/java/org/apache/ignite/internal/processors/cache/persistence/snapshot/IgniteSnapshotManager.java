@@ -18,7 +18,6 @@
 package org.apache.ignite.internal.processors.cache.persistence.snapshot;
 
 import java.io.BufferedInputStream;
-import java.io.BufferedOutputStream;
 import java.io.File;
 import java.io.FileInputStream;
 import java.io.FileOutputStream;
@@ -828,13 +827,22 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
                     blts,
                     (Set<GroupPartitionId>)fut.result(),
                     cctx.gridConfig().getEncryptionSpi().masterKeyDigest()
-                    );
+                );
 
-                try (OutputStream out = new BufferedOutputStream(new FileOutputStream(smf))) {
-                    U.marshal(marsh, meta, out);
+                try (OutputStream out = Files.newOutputStream(smf.toPath())) {
+                    byte[] bytes = U.marshal(marsh, meta);
+                    int blockSize = SNAPSHOT_LIMITED_TRANSFER_BLOCK_SIZE_BYTES;
 
-                    log.info("Snapshot metafile has been created: " + smf.getAbsolutePath());
+                    for (int off = 0; off < bytes.length; off += blockSize) {
+                        int len = Math.min(blockSize, bytes.length - off);
+
+                        transferRateLimiter.acquire(len);
+
+                        out.write(bytes, off, len);
+                    }
                 }
+
+                log.info("Snapshot metafile has been created: " + smf.getAbsolutePath());
 
                 // Before starting limited operations, we must reset the internal state of the limiter.
                 transferRateLimiter.reset();
@@ -3149,7 +3157,7 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
 
                 File targetCacheCfg = new File(cacheDir, ccfg.getName());
 
-                copy(ioFactory, ccfg, targetCacheCfg, ccfg.length());
+                copy(ioFactory, ccfg, targetCacheCfg, ccfg.length(), transferRateLimiter);
 
                 StoredCacheData cacheData = locCfgMgr.readCacheData(targetCacheCfg);
 
