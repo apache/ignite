@@ -865,7 +865,7 @@ public class DataStreamerImpl<K, V> implements IgniteDataStreamer<K, V>, Delayed
 
             List<List<ClusterNode>> assignments = cctx.affinity().assignments(topVer);
 
-            if (/*!allowOverwrite() &&*/ !cctx.isLocal()) { // Cases where cctx required.
+            if (!allowOverwrite() && !cctx.isLocal()) { // Cases where cctx required.
                 gate = cctx.gate();
 
                 gate.enter();
@@ -1684,7 +1684,7 @@ public class DataStreamerImpl<K, V> implements IgniteDataStreamer<K, V>, Delayed
                     }
                 }
 
-                if (/*!allowOverwrite() && */!topVer.equals(curBatchTopVer)) {
+                if (!allowOverwrite() && !topVer.equals(curBatchTopVer)) {
                     for (int i = 0; i < stripes.length; i++) {
                         PerStripeBuffer b0 = stripes[i];
 

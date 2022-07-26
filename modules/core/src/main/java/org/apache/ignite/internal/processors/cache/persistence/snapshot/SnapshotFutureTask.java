@@ -534,7 +534,6 @@ class SnapshotFutureTask extends AbstractSnapshotFutureTask<Set<GroupPartitionId
                                 }
 
 //                                log.info("TEST | send delta.");
-
                                 snpSndr.sendDelta(delta, cacheDirName, pair);
 
                                 processedSize.addAndGet(delta.length());

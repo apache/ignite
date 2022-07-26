@@ -33,7 +33,9 @@ import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.ConnectorConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.IgniteInternalFuture;
+import org.apache.ignite.internal.IgniteInterruptedCheckedException;
 import org.apache.ignite.internal.util.typedef.F;
+import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.testframework.GridTestUtils;
 import org.junit.Test;
 import org.junit.runners.Parameterized;
@@ -52,10 +54,10 @@ public class IgniteClusterShanpshotStreamerTest  extends AbstractSnapshotSelfTes
         IgniteConfiguration cfg = super.getConfiguration(igniteInstanceName);
 
         cfg.getDataStorageConfiguration().getDefaultDataRegionConfiguration().setMaxSize(2 * 1024L * 1024L * 1024L);
-        cfg.getDataStorageConfiguration().setWalSegments(4);
-        cfg.getDataStorageConfiguration().setWalSegmentSize(4 * 1024 * 1024);
-        cfg.getDataStorageConfiguration().setMaxWalArchiveSize(32 * 1024 * 1024);
-        cfg.getDataStorageConfiguration().setCheckpointFrequency(500);
+        cfg.getDataStorageConfiguration().setWalSegments(8);
+        cfg.getDataStorageConfiguration().setWalSegmentSize(16 * 1024 * 1024);
+        cfg.getDataStorageConfiguration().setMaxWalArchiveSize(64 * 1024 * 1024);
+        cfg.getDataStorageConfiguration().setCheckpointFrequency(1000);
         cfg.getDataStorageConfiguration().setCheckpointReadLockTimeout(15_000);
 
         cfg.setConnectorConfiguration(new ConnectorConfiguration());
@@ -68,7 +70,7 @@ public class IgniteClusterShanpshotStreamerTest  extends AbstractSnapshotSelfTes
     public void testClusterSnapshotConsistencyWithStreamer() throws Exception {
         int grids = 2;
         int backups = grids - 1;
-        int loadBeforeSnp = 100_000;
+        int loadBeforeSnp = 5_000;
 
         CountDownLatch loadLever = new CountDownLatch(loadBeforeSnp);
         AtomicBoolean stopLoading = new AtomicBoolean(false);
@@ -79,7 +81,18 @@ public class IgniteClusterShanpshotStreamerTest  extends AbstractSnapshotSelfTes
         startGrids(grids);
         grid(0).cluster().state(ACTIVE);
 
-        IgniteInternalFuture<?> load1 = runLoad(tableName, false, backups, true, stopLoading, loadLever);
+        IgniteCache<Integer, Account> cache2 = grid(0)
+            .createCache(new CacheConfiguration<Integer, Account>("cache2").setBackups(2)
+                .setCacheMode(CacheMode.PARTITIONED));
+
+        awaitPartitionMapExchange();
+//
+        for (int i = 0; i < 10_000; ++i)
+            cache2.put(i, new Account(i, i * 100));
+
+        awaitPartitionMapExchange();
+
+        IgniteInternalFuture<?> load1 = runLoad(tableName, true, backups, true, stopLoading, loadLever);
 
         loadLever.await();
 
@@ -94,12 +107,14 @@ public class IgniteClusterShanpshotStreamerTest  extends AbstractSnapshotSelfTes
         log.info("TEST | stop loading, destroy cache.");
 
         grid(0).cache("SQL_PUBLIC_" + tableName).destroy();
+        grid(0).cache("cache2").destroy();
 
         awaitPartitionMapExchange();
 
         log.info("TEST | restoreSnapshot.");
 
-        grid(0).snapshot().restoreSnapshot(SNAPSHOT_NAME, F.asList("SQL_PUBLIC_" + tableName)).get();
+        grid(0).snapshot().restoreSnapshot(SNAPSHOT_NAME, F.asList("cache2")).get();
+//        grid(0).snapshot().restoreSnapshot(SNAPSHOT_NAME, F.asList("SQL_PUBLIC_" + tableName)).get();
     }
 
     /** */
@@ -122,7 +137,17 @@ public class IgniteClusterShanpshotStreamerTest  extends AbstractSnapshotSelfTes
                         else
                             cache.put(i, new Account(i, i - 1));
 
-                        startSnp.countDown();
+                        if (startSnp.getCount() < 1)
+                            startSnp.countDown();
+
+                        Thread.yield();
+
+                        try {
+                            U.sleep(1);
+                        }
+                        catch (IgniteInterruptedCheckedException e) {
+                            throw new RuntimeException(e);
+                        }
                     }
                 }
             } else {
@@ -133,8 +158,8 @@ public class IgniteClusterShanpshotStreamerTest  extends AbstractSnapshotSelfTes
                         "(id, name, orgid, dep) VALUES(?, ?, ?, ?)")) {
 
                         if (streaming)
-//                            conn.prepareStatement("SET STREAMING ON;").execute();
-                            conn.prepareStatement("SET STREAMING ON allow_overwrite on;").execute();
+                            conn.prepareStatement("SET STREAMING ON;").execute();
+//                            conn.prepareStatement("SET STREAMING ON allow_overwrite on;").execute();
 //                            conn.prepareStatement("SET STREAMING ON batch_size 100;").execute();
 
                         int leftLimit = 97; // letter 'a'
@@ -170,6 +195,11 @@ public class IgniteClusterShanpshotStreamerTest  extends AbstractSnapshotSelfTes
                 }
             }
         }, 1, "load-thread-" + tblName);
+    }
+
+    /** */
+    @Override protected long getTestTimeout() {
+        return 300_000;
     }
 
     /** */
