@@ -119,10 +119,15 @@ public class RecordV2Serializer implements RecordSerializer {
 
             // In case of encrypted records we should check the type of the nested record
             if (recType == ENCRYPTED_RECORD || recType == ENCRYPTED_RECORD_V2) {
+                // Ignore grpId (4 bytes) and record size (4 bytes)
+                int skipBytes = 4 + 4;
+
+                // 1 byte for record type.
+                in.ensure(skipBytes + 1);
+
                 in.buffer().mark();
 
-                // Ignore grpId (4 bytes) and record size (4 bytes)
-                in.skipBytes(4 + 4);
+                in.skipBytes(skipBytes);
 
                 actualType = readRecordType(in);
 
