@@ -2102,6 +2102,27 @@ public abstract class BPlusTree<L, T extends L> extends DataStructure implements
         return Collections.unmodifiableList(rmvOp.removedRows);
     }
 
+    /**
+     * Removes all rows by filter.
+     *
+     * @param filter
+     * @throws IgniteCheckedException
+     */
+    public void remove(TreeRowClosure<L, T> filter) throws IgniteCheckedException {
+        checkDestroyed();
+
+        try {
+            new RemoveByFilterCursor(filter).iterate();
+        }
+        catch (RuntimeException | AssertionError e) {
+            throw corruptedTreeException("Runtime failure ", e, grpId);
+        }
+        finally {
+            checkDestroyed();
+        }
+
+    }
+
     /** {@inheritDoc} */
     @Override public void invoke(L row, Object z, InvokeClosure<T> c) throws IgniteCheckedException {
         checkDestroyed();
@@ -5946,6 +5967,60 @@ public abstract class BPlusTree<L, T extends L> extends DataStructure implements
                 lowerShift = 1; // Now we have the full row an need to avoid duplicates.
                 lowerBound = lower; // Move the lower bound forward for further concurrent merge retries.
             }
+        }
+    }
+
+    /**
+     *
+     */
+    private class RemoveByFilterCursor extends AbstractForwardCursor {
+        /** */
+        private final TreeRowClosure<L, T> p;
+
+        /** */
+        private L lastRow;
+
+        /** */
+        public RemoveByFilterCursor(TreeRowClosure<L, T> p) {
+            super(null, null, true, true);
+
+            this.p = p;
+        }
+
+        /** @throws IgniteCheckedException If failed. */
+        private void iterate() throws IgniteCheckedException {
+            find();
+
+            while (nextPageId != 0) {
+                L lastRow0 = lastRow;
+
+                lastRow = null;
+
+                nextPage(lastRow0);
+
+                if (nextPageId == 0)
+                    return;
+            }
+        }
+
+        /** {@inheritDoc} */
+        @Override void init0() {
+            // No-op.
+        }
+
+        /** {@inheritDoc} */
+        @Override boolean fillFromBuffer0(long pageAddr, BPlusIO<L> io, int startIdx, int cnt) throws IgniteCheckedException {
+            return false;
+        }
+
+        /** {@inheritDoc} */
+        @Override boolean reinitialize0() throws IgniteCheckedException {
+            return true;
+        }
+
+        /** {@inheritDoc} */
+        @Override void onNotFound(boolean readDone) {
+            nextPageId = 0;
         }
     }
 
