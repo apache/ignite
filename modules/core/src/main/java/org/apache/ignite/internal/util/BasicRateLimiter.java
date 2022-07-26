@@ -77,6 +77,16 @@ public class BasicRateLimiter {
     }
 
     /**
+     * Reset internal state.
+     */
+    public void reset() {
+        synchronized (mux) {
+            nextFreeTicketNanos = System.nanoTime() - startTime;
+            storedPermits = 0;
+        }
+    }
+
+    /**
      * Updates the stable rate.
      *
      * @param permitsPerSecond The new stable rate of this {@code RateLimiter}, set {@code 0} for unlimited rate.
@@ -89,10 +99,9 @@ public class BasicRateLimiter {
             return;
 
         synchronized (mux) {
-            storedPermits = nextFreeTicketNanos = 0;
             stableIntervalNanos = SECONDS.toNanos(1L) / permitsPerSecond;
 
-            resync();
+            reset();
         }
     }
 
@@ -166,6 +175,7 @@ public class BasicRateLimiter {
 
         // if nextFreeTicket is in the past, resync to now.
         if (passed > nextFreeTicketNanos) {
+            // This is the number of permits we can give for free because we've been inactive longer than expected.
             storedPermits = min(getRate(), storedPermits + ((passed - nextFreeTicketNanos) / stableIntervalNanos));
 
             nextFreeTicketNanos = passed;

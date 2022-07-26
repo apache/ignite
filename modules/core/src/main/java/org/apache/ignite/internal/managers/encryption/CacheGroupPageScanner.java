@@ -178,8 +178,12 @@ public class CacheGroupPageScanner implements CheckpointListener {
             if (stopped)
                 throw new NodeStoppingException("Operation has been cancelled (node is stopping).");
 
-            if (grps.isEmpty())
+            if (grps.isEmpty()) {
                 ((GridCacheDatabaseSharedManager)ctx.cache().context().database()).addCheckpointListener(this);
+
+                // Before starting limited operations, we must reset the internal state of the limiter.
+                limiter.reset();
+            }
 
             GroupScanTask prevState = grps.get(grpId);
 
