@@ -29,6 +29,7 @@ import org.apache.ignite.configuration.ClientConfiguration;
  * produced by the {@link AffinityFunction#partition(Object)} method.
  *
  * @see AffinityFunction#partition(Object)
+ * @since 2.14
  */
 public interface ClientPartitionAwarenessMapper {
     /**

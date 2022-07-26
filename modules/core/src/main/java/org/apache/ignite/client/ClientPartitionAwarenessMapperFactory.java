@@ -36,6 +36,7 @@ import org.apache.ignite.cache.affinity.AffinityKeyMapper;
  * to a server node.
  *
  * @see AffinityFunction
+ * @since 2.14
  */
 public interface ClientPartitionAwarenessMapperFactory {
     /**

@@ -35,15 +35,12 @@ import org.apache.ignite.binary.BinaryObject;
 import org.apache.ignite.cache.CacheAtomicityMode;
 import org.apache.ignite.cache.CacheMode;
 import org.apache.ignite.cache.QueryEntity;
-import org.apache.ignite.cache.affinity.AffinityFunction;
 import org.apache.ignite.cache.affinity.rendezvous.RendezvousAffinityFunction;
 import org.apache.ignite.cache.query.ContinuousQuery;
 import org.apache.ignite.cache.query.ScanQuery;
 import org.apache.ignite.client.ClientCache;
 import org.apache.ignite.client.ClientCacheConfiguration;
 import org.apache.ignite.client.ClientFeatureNotSupportedByServerException;
-import org.apache.ignite.client.ClientPartitionAwarenessMapper;
-import org.apache.ignite.client.ClientPartitionAwarenessMapperFactory;
 import org.apache.ignite.client.ClientServiceDescriptor;
 import org.apache.ignite.client.ClientTransaction;
 import org.apache.ignite.client.IgniteClient;
@@ -72,7 +69,6 @@ import org.jetbrains.annotations.Nullable;
 import org.junit.Assume;
 import org.junit.runner.RunWith;
 import org.junit.runners.Parameterized;
-import static org.apache.ignite.internal.client.thin.ProtocolBitmaskFeature.ALL_AFFINITY_MAPPINGS;
 import static org.apache.ignite.internal.client.thin.ProtocolBitmaskFeature.GET_SERVICE_DESCRIPTORS;
 import static org.apache.ignite.internal.client.thin.ProtocolBitmaskFeature.SERVICE_INVOKE_CALLCTX;
 import static org.apache.ignite.testframework.GridTestUtils.assertThrowsWithCause;
@@ -84,10 +80,10 @@ import static org.apache.ignite.testframework.GridTestUtils.assertThrowsWithCaus
 @RunWith(Parameterized.class)
 public class JavaThinCompatibilityTest extends AbstractClientCompatibilityTest {
     /** Thin client endpoint. */
-    private static final String ADDR = "127.0.0.1:10800";
+    public static final String ADDR = "127.0.0.1:10800";
 
     /** Cache name. */
-    private static final String CACHE_WITH_CUSTOM_AFFINITY = "cache_with_custom_affinity";
+    public static final String CACHE_WITH_CUSTOM_AFFINITY = "cache_with_custom_affinity";
 
     /** {@inheritDoc} */
     @Override protected IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {
@@ -445,53 +441,13 @@ public class JavaThinCompatibilityTest extends AbstractClientCompatibilityTest {
         }
 
         if (clientVer.compareTo(VER_2_14_0) >= 0) {
+            // This wrapper is used to avoid serialization/deserialization issues when the `testClient` is
+            // tried to be deserialized on previous Ignite releases that do not contain a newly added classes.
+            // Such classes will be loaded by classloader only if a version of the thin client is match.
             if (serverVer.compareTo(VER_2_14_0) >= 0)
-                testCustomPartitionAwarenessMapper();
+                ClientPartitionAwarenessMapperAPITestWrapper.testCustomPartitionAwarenessMapper();
             else if (serverVer.compareTo(VER_2_11_0) >= 0) // Partition awareness available from.
-                testCustomPartitionAwarenessMapperThrows();
-        }
-    }
-
-    /** */
-    private void testCustomPartitionAwarenessMapper() {
-        X.println(">>>> Testing custom partition awareness mapper");
-
-        ClientConfiguration cfg = new ClientConfiguration()
-            .setAddresses(ADDR)
-            .setPartitionAwarenessMapperFactory(new ClientPartitionAwarenessMapperFactory() {
-                /** {@inheritDoc} */
-                @Override public ClientPartitionAwarenessMapper create(String cacheName, int partitions) {
-                    AffinityFunction aff = new RendezvousAffinityFunction(false, partitions);
-
-                    return aff::partition;
-                }
-            });
-
-        try (IgniteClient client = Ignition.startClient(cfg)) {
-            ClientCache<Integer, Integer> cache = client.cache(CACHE_WITH_CUSTOM_AFFINITY);
-
-            assertEquals(CACHE_WITH_CUSTOM_AFFINITY, cache.getName());
-            assertEquals(Integer.valueOf(0), cache.get(0));
-        }
-    }
-
-    /** */
-    private void testCustomPartitionAwarenessMapperThrows() {
-        X.println(">>>> Testing custom partition awareness mapper throws");
-
-        ClientConfiguration cfg = new ClientConfiguration()
-            .setAddresses(ADDR)
-            .setPartitionAwarenessMapperFactory((cacheName, parts) -> null);
-
-        try (IgniteClient client = Ignition.startClient(cfg)) {
-            String errMsg = "Feature " + ALL_AFFINITY_MAPPINGS.name() + " is not supported by the server";
-
-            Throwable err = assertThrowsWithCause(
-                () -> client.cache(CACHE_WITH_CUSTOM_AFFINITY).get(0),
-                ClientFeatureNotSupportedByServerException.class
-            );
-
-            assertEquals(errMsg, err.getMessage());
+                ClientPartitionAwarenessMapperAPITestWrapper.testCustomPartitionAwarenessMapperThrows();
         }
     }
 
