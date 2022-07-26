@@ -383,8 +383,8 @@ class IgniteAwareService(BackgroundThreadService, IgnitePathAware, metaclass=ABC
         cm_spi = self.config.communication_spi
         dsc_spi = self.config.discovery_spi
 
-        cm_ports = str(cm_spi.port) if cm_spi.port_range < 1 else str(cm_spi.port) + ':' + str(
-            cm_spi.port + cm_spi.port_range)
+        cm_ports = str(cm_spi.local_port) if cm_spi.local_port_range < 1 else str(cm_spi.local_port) + ':' + str(
+            cm_spi.local_port + cm_spi.local_port_range)
 
         dsc_ports = str(dsc_spi.port) if not hasattr(dsc_spi, 'port_range') or dsc_spi.port_range < 1 else str(
             dsc_spi.port) + ':' + str(dsc_spi.port + dsc_spi.port_range)
