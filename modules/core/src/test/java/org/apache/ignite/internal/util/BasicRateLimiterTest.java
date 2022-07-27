@@ -35,10 +35,10 @@ import org.junit.Test;
  */
 public class BasicRateLimiterTest extends GridCommonAbstractTest {
     /**
-     * Check change speed at runtime.
+     * Test the rate limit.
      */
     @Test
-    public void checkSpeedLimitChange() throws Exception {
+    public void testRateLimit() throws Exception {
         int threadsCnt = 1;
 
         BasicRateLimiter limiter = new BasicRateLimiter(2);
@@ -58,10 +58,10 @@ public class BasicRateLimiterTest extends GridCommonAbstractTest {
     }
 
     /**
-     * Check change speed at runtime.
+     * Test the rate limit in multithreaded mode.
      */
     @Test
-    public void checkSpeedLimitChangeMultithreaded() throws Exception {
+    public void testRateLimitMultithreaded() throws Exception {
         int threadsCnt = Runtime.getRuntime().availableProcessors();
 
         BasicRateLimiter limiter = new BasicRateLimiter(1_000);
