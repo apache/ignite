@@ -18,7 +18,7 @@
 package org.apache.ignite.internal.processors.query.h2;
 
 import org.apache.ignite.IgniteLogger;
-import org.apache.ignite.internal.mxbean.SqlQueryMXBean;
+import org.apache.ignite.internal.processors.query.h2.mxbean.SqlQueryMXBean;
 
 /**
  * Print warning message to log when query result size fetch count is bigger then specified threshold.

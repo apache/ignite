@@ -80,6 +80,24 @@ public class ConnectionTest {
     }
 
     /** */
+    @Test(expected = org.apache.ignite.client.ClientConnectionException.class)
+    public void testInvalidBigHandshakeMessage() throws Exception {
+        char[] data = new char[1024 * 1024 * 128];
+        String userName = new String(data);
+
+        testConnectionWithUsername(userName, Config.SERVER);
+    }
+
+    /** */
+    @Test
+    public void testValidBigHandshakeMessage() throws Exception {
+        char[] data = new char[1024 * 65];
+        String userName = new String(data);
+
+        testConnectionWithUsername(userName, Config.SERVER);
+    }
+
+    /** */
     @Test
     public void testHandshakeTooLargeServerDropsConnection() throws Exception {
         try (LocalIgniteCluster ignored = LocalIgniteCluster.start(1, IPv4_HOST)) {
@@ -132,6 +150,18 @@ public class ConnectionTest {
         try (LocalIgniteCluster cluster = LocalIgniteCluster.start(1, host);
              IgniteClient client = Ignition.startClient(new ClientConfiguration()
                      .setAddresses(addrs))) {
+        }
+    }
+
+    /**
+     * @param userName User name.
+     * @param addrs Addresses to connect.
+     */
+    private void testConnectionWithUsername(String userName, String... addrs) throws Exception {
+        try (LocalIgniteCluster cluster = LocalIgniteCluster.start(1);
+             IgniteClient client = Ignition.startClient(new ClientConfiguration()
+                 .setAddresses(addrs)
+                 .setUserName(userName))) {
         }
     }
 }

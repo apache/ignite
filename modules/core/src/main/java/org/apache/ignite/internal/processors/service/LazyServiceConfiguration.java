@@ -19,7 +19,6 @@ package org.apache.ignite.internal.processors.service;
 
 import java.util.Arrays;
 import org.apache.ignite.internal.util.tostring.GridToStringExclude;
-import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.services.Service;
 import org.apache.ignite.services.ServiceCallInterceptor;
@@ -143,7 +142,7 @@ public class LazyServiceConfiguration extends ServiceConfiguration {
         if (name != null ? !name.equals(that.getName()) : that.getName() != null)
             return false;
 
-        if (!F.eq(srvcClsName, that.srvcClsName))
+        if (!Arrays.equals(srvcBytes, that.srvcBytes))
             return false;
 
         if (!Arrays.equals(interceptorsBytes, that.interceptorsBytes))

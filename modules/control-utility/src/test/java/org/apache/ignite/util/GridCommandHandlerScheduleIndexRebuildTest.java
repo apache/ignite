@@ -25,22 +25,18 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
+import java.util.stream.Collectors;
 import org.apache.ignite.cluster.ClusterState;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.IgniteInterruptedCheckedException;
+import org.apache.ignite.internal.cache.query.index.Index;
 import org.apache.ignite.internal.cache.query.index.sorted.maintenance.MaintenanceRebuildIndexTarget;
-import org.apache.ignite.internal.processors.query.GridQueryProcessor;
-import org.apache.ignite.internal.processors.query.GridQueryTypeDescriptor;
-import org.apache.ignite.internal.processors.query.h2.IgniteH2Indexing;
-import org.apache.ignite.internal.processors.query.h2.database.H2TreeIndexBase;
-import org.apache.ignite.internal.processors.query.h2.opt.GridH2Table;
 import org.apache.ignite.internal.util.typedef.G;
 import org.apache.ignite.internal.util.typedef.internal.CU;
 import org.apache.ignite.maintenance.MaintenanceTask;
 import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.testframework.ListeningTestLogger;
-import org.h2.index.Index;
 import org.junit.Test;
 
 import static java.util.Collections.singletonMap;
@@ -572,25 +568,8 @@ public class GridCommandHandlerScheduleIndexRebuildTest extends GridCommandHandl
      * @return Indexes of the cache.
      */
     private Set<String> indexes(IgniteEx node, String cache) {
-        GridQueryProcessor qry = node.context().query();
-
-        IgniteH2Indexing indexing = (IgniteH2Indexing)qry.getIndexing();
-
-        Set<String> indexes = new HashSet<>();
-
-        for (GridQueryTypeDescriptor type : qry.types(cache)) {
-            GridH2Table gridH2Tbl = indexing.schemaManager().dataTable(type.schemaName(), type.tableName());
-
-            if (gridH2Tbl == null)
-                continue;
-
-            for (Index idx : gridH2Tbl.getIndexes()) {
-                // We need only indexes that can be rebuilt.
-                if (idx instanceof H2TreeIndexBase)
-                    indexes.add(idx.getName());
-            }
-        }
-
-        return indexes;
+        return node.context().indexProcessor().treeIndexes(cache, false).stream()
+            .map(Index::name)
+            .collect(Collectors.toSet());
     }
 }

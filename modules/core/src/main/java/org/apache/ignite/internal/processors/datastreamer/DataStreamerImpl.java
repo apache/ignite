@@ -147,7 +147,7 @@ public class DataStreamerImpl<K, V> implements IgniteDataStreamer<K, V>, Delayed
     private static final int REMAP_SEMAPHORE_PERMISSIONS_COUNT = Integer.MAX_VALUE;
 
     /** Cache receiver. */
-    private StreamReceiver<K, V> rcvr = ISOLATED_UPDATER;
+    private StreamReceiver<K, V> rcvr = DataStreamerCacheUpdaters.<K, V>individual();//ISOLATED_UPDATER;
 
     /** */
     private byte[] updaterBytes;
@@ -810,6 +810,8 @@ public class DataStreamerImpl<K, V> implements IgniteDataStreamer<K, V>, Delayed
         ClusterNode remapNode,
         AffinityTopologyVersion remapTopVer
     ) {
+//        log.error("TEST | DataStreamer:load0(), BEGIN.");
+
         try {
             assert entries != null;
 
@@ -1088,6 +1090,9 @@ public class DataStreamerImpl<K, V> implements IgniteDataStreamer<K, V>, Delayed
         }
         catch (Exception ex) {
             resFut.onDone(new IgniteCheckedException("DataStreamer data loading failed.", ex));
+        }
+        finally {
+//            log.error("TEST | DataStreamer:load0(), END.");
         }
     }
 
@@ -2322,6 +2327,8 @@ public class DataStreamerImpl<K, V> implements IgniteDataStreamer<K, V>, Delayed
                         }
 
                         boolean primary = cctx.affinity().primaryByKey(cctx.localNode(), entry.key(), topVer);
+
+//                        log.info("TEST | updating entry.");
 
                         entry.initialValue(e.getValue(),
                             ver,

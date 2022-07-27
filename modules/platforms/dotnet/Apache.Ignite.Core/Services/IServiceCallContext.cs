@@ -58,6 +58,9 @@ namespace Apache.Ignite.Core.Services
     /// Console.WriteLine( helloSvc.call("Hello ") );
     /// </code>
     /// </summary>
+    /// <seealso cref="IServiceCallInterceptor"/>
+    /// <seealso cref="IServiceContext"/>
+    /// <seealso cref="ServiceCallContextBuilder"/>
     [IgniteExperimental]
     public interface IServiceCallContext
     {
