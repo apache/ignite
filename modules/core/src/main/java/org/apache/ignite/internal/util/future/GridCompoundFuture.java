@@ -279,7 +279,7 @@ public class GridCompoundFuture<T, R> extends GridFutureAdapter<R> implements Ig
             if (futs == null)
                 futs = fut;
             else if (futs instanceof IgniteInternalFuture) {
-                Collection<IgniteInternalFuture> futs0 = createFuturesCollection();
+                Collection<IgniteInternalFuture> futs0 = new ArrayList<>(4);
 
                 futs0.add((IgniteInternalFuture)futs);
                 futs0.add(fut);
@@ -307,11 +307,6 @@ public class GridCompoundFuture<T, R> extends GridFutureAdapter<R> implements Ig
         }
 
         return this;
-    }
-
-    /** */
-    protected Collection<IgniteInternalFuture> createFuturesCollection() {
-        return new ArrayList<>(4);
     }
 
     /**

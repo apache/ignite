@@ -17,7 +17,7 @@
 
 package org.apache.ignite.internal.processors.cache.consistentcut;
 
-import java.util.Collection;
+import java.util.Iterator;
 import java.util.List;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
@@ -31,7 +31,10 @@ import org.apache.ignite.internal.pagemem.wal.record.WALRecord;
 import org.apache.ignite.internal.processors.cache.GridCacheSharedContext;
 import org.apache.ignite.internal.processors.cache.transactions.IgniteInternalTx;
 import org.apache.ignite.internal.processors.cache.version.GridCacheVersion;
+import org.apache.ignite.internal.util.future.GridCompoundFuture;
 import org.apache.ignite.internal.util.tostring.GridToStringInclude;
+import org.apache.ignite.internal.util.typedef.F;
+import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgniteUuid;
 import org.apache.ignite.transactions.TransactionState;
 
@@ -65,13 +68,13 @@ public class ConsistentCut {
     private volatile boolean started;
 
     /**
-     * Collection of transactions belong to the BEFORE side, but optionally committed after {@link ConsistentCutStartRecord}.
+     * Set of checked transactions belonging to the BEFORE side.
      */
     @GridToStringInclude
     private Set<GridCacheVersion> beforeCut;
 
     /**
-     * Collection of transactions belong to the AFTER side, but optionally committed before {@link ConsistentCutStartRecord}.
+     * Set of checked transactions belonging to the AFTER side.
      */
     @GridToStringInclude
     private Set<GridCacheVersion> afterCut;
@@ -94,39 +97,46 @@ public class ConsistentCut {
 
         started = walLog(ver, new ConsistentCutStartRecord(ver));
 
-        GridCompoundFutureSet<Void, Void> activeTxsFinishFut = new GridCompoundFutureSet<>();
+        GridCompoundFuture<Void, Void> finishFut = new GridCompoundFuture<>();
 
         // `committingTxs` and `activeTxs` may have some duplicated txs - tx is firstly added to `committingTxs` and
         // only after that it is removed from `activeTxs`.
-        listenTransactions(ver, cctx.tm().activeTransactions(), activeTxsFinishFut);
-        listenTransactions(ver, cctx.consistentCutMgr().committingTxs(), activeTxsFinishFut);
+        listenTransactions(
+            ver,
+            F.concat(cctx.tm().activeTransactions().iterator(), cctx.consistentCutMgr().committingTxs().iterator()),
+            finishFut);
 
-        activeTxsFinishFut.markInitialized();
+        finishFut.markInitialized();
 
-        activeTxsFinishFut.listen(activeFinished -> {
-            try {
-                walLog(ver, new ConsistentCutFinishRecord(beforeCut, afterCut));
+        finishFut.listen(finish -> {
+            Throwable err = finish.error() != null ? finish.error() : null;
 
-                cctx.consistentCutMgr().onFinish(null);
+            if (err == null) {
+                try {
+                    walLog(ver, new ConsistentCutFinishRecord(beforeCut, afterCut));
+
+                    cctx.consistentCutMgr().onFinish(null);
+                }
+                catch (IgniteCheckedException e) {
+                    U.error(log, "Failed to write FinishRecord to WAL for ver " + ver, e);
+
+                    cctx.consistentCutMgr().onFinish(e);
+                }
             }
-            catch (IgniteCheckedException e) {
-                cctx.consistentCutMgr().onFinish(e);
-            }
+            else
+                cctx.consistentCutMgr().onFinish(err);
         });
     }
 
     /** */
     private void listenTransactions(
-        ConsistentCutVersion ver, Collection
-        <IgniteInternalTx> activeTxs,
-        GridCompoundFutureSet<Void, Void> activeTxsFinishFut
+        ConsistentCutVersion ver,
+        Iterator<IgniteInternalTx> activeTxs,
+        GridCompoundFuture<Void, Void> finishFut
     ) {
-        for (IgniteInternalTx activeTx : activeTxs) {
+        while (activeTxs.hasNext()) {
+            IgniteInternalTx activeTx = activeTxs.next();
             TransactionState txState = activeTx.state();
-
-            // Avoid duplication of futures from different collections.
-            if (activeTxsFinishFut.containsFuture(activeTx.finishFuture()))
-                continue;
 
             // Checks COMMITTING / COMMITTED transactions due to concurrency with transactions: some active transactions
             // start committing after being grabbed.
@@ -142,6 +152,14 @@ public class ConsistentCut {
 
                         ConsistentCutVersionAware txCutVerAware = (ConsistentCutVersionAware)tx;
 
+                        // TODO: TxRecovery case.
+                        if (txCutVerAware.txCutVersion() == null) {
+                            log.warning("Stop Consistent Cut due to txCutVersion is null. " +
+                                "Consistent Cut doesn't support topology change. " + tx);
+
+                            return null;
+                        }
+
                         if (ver.compareTo(txCutVerAware.txCutVersion()) > 0)
                             beforeCut.add(tx.nearXidVersion());
                         else
@@ -150,7 +168,7 @@ public class ConsistentCut {
                         return null;
                     });
 
-                    activeTxsFinishFut.add(txCheckFut);
+                    finishFut.add(txCheckFut);
                 }
             }
         }

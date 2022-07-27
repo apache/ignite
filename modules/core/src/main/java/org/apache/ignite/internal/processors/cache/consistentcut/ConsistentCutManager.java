@@ -25,17 +25,22 @@ import java.util.concurrent.atomic.AtomicReferenceFieldUpdater;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.configuration.DataStorageConfiguration;
+import org.apache.ignite.events.DiscoveryEvent;
+import org.apache.ignite.internal.GridKernalContext;
 import org.apache.ignite.internal.pagemem.wal.record.ConsistentCutFinishRecord;
 import org.apache.ignite.internal.pagemem.wal.record.ConsistentCutStartRecord;
 import org.apache.ignite.internal.pagemem.wal.record.TxRecord;
 import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
+import org.apache.ignite.internal.processors.cache.GridCachePartitionExchangeManager;
+import org.apache.ignite.internal.processors.cache.GridCacheSharedContext;
 import org.apache.ignite.internal.processors.cache.GridCacheSharedManagerAdapter;
+import org.apache.ignite.internal.processors.cache.distributed.dht.preloader.GridDhtPartitionsExchangeFuture;
+import org.apache.ignite.internal.processors.cache.distributed.dht.preloader.PartitionsExchangeAware;
 import org.apache.ignite.internal.processors.cache.distributed.near.GridNearTxLocal;
 import org.apache.ignite.internal.processors.cache.transactions.IgniteInternalTx;
 import org.apache.ignite.internal.processors.cache.transactions.IgniteTxManager;
-import org.apache.ignite.internal.processors.cluster.ChangeGlobalStateFinishMessage;
-import org.apache.ignite.internal.processors.timeout.GridTimeoutObject;
-import org.apache.ignite.internal.processors.timeout.GridTimeoutObjectAdapter;
+import org.apache.ignite.internal.processors.cluster.IgniteChangeGlobalStateSupport;
+import org.apache.ignite.internal.processors.timeout.GridTimeoutProcessor;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.internal.CU;
 import org.apache.ignite.internal.util.typedef.internal.U;
@@ -44,6 +49,7 @@ import org.apache.ignite.transactions.TransactionState;
 import org.jetbrains.annotations.Nullable;
 
 import static org.apache.ignite.events.EventType.EVT_NODE_FAILED;
+import static org.apache.ignite.events.EventType.EVT_NODE_JOINED;
 import static org.apache.ignite.events.EventType.EVT_NODE_LEFT;
 import static org.apache.ignite.internal.GridTopic.TOPIC_CONSISTENT_CUT;
 import static org.apache.ignite.internal.managers.communication.GridIoPolicy.SYSTEM_POOL;
@@ -88,11 +94,11 @@ import static org.apache.ignite.internal.managers.communication.GridIoPolicy.SYS
  * 8. After Consistent Cut finished and all transactions from BEFORE side committed, it notifies coordinator with
  *    {@link ConsistentCutFinishResponse} that local node is ready for next Consistent Cut process.
  */
-public class ConsistentCutManager extends GridCacheSharedManagerAdapter {
+public class ConsistentCutManager extends GridCacheSharedManagerAdapter implements PartitionsExchangeAware, IgniteChangeGlobalStateSupport {
     /**
-     * It is used for CAS updates of {@link #cutState}.
+     * It serves updates of {@link #cutState} with CAS.
      */
-    private static final AtomicReferenceFieldUpdater<ConsistentCutManager, ConsistentCutState> CONSITENT_CUT_STATE =
+    protected static final AtomicReferenceFieldUpdater<ConsistentCutManager, ConsistentCutState> CONSITENT_CUT_STATE =
         AtomicReferenceFieldUpdater.newUpdater(ConsistentCutManager.class, ConsistentCutState.class, "cutState");
 
     /**
@@ -111,124 +117,141 @@ public class ConsistentCutManager extends GridCacheSharedManagerAdapter {
     private final Set<IgniteInternalTx> committingTxs = ConcurrentHashMap.newKeySet();
 
     /**
-     * Node ID of Consistent Cut coordinator.
+     * Collection of server nodes not finished Consistent Cut yet. {@code null} on non-coordinator nodes.
      */
-    private UUID crdNodeId;
+    protected volatile @Nullable Set<UUID> notFinishedSrvNodes;
 
     /**
-     * Collection of server nodes that aren't ready to run new Consistent Cut procedure. {@code null} on non-coordinator nodes.
+     * Schedules next global Consistent Cut. {@code null} on non-coordinator nodes, or if Consistent Cut scheduling
+     * was disabled. Guarded by {@link GridCachePartitionExchangeManager} blocking sections.
      */
-    private @Nullable Set<UUID> notFinishedSrvNodes;
-
-    /**
-     * Schedules next global Consistent Cut procedure. {@code null} on non-coordinator nodes, or if Consistent Cut scheduling
-     * is disabled.
-     */
-    private volatile @Nullable GridTimeoutObject cutTimer;
-
-    /**
-     * If disabled then Ignite coordinator stops scheduling new Consistent Cuts.
-     */
-    private volatile boolean disableScheduling;
+    private @Nullable GridTimeoutProcessor.CancelableTask scheduleConsistentCutTask;
 
     /** {@inheritDoc} */
     @Override protected void start0() throws IgniteCheckedException {
         super.start0();
 
-        CONSITENT_CUT_STATE.set(this, new ConsistentCutState(new ConsistentCutVersion(0)));
+        CONSITENT_CUT_STATE.set(this, new ConsistentCutState(new ConsistentCutVersion(0, null), null));
 
         cctx.kernalContext().io().addMessageListener(TOPIC_CONSISTENT_CUT, (nodeId, msg, plc) -> {
             if (msg instanceof ConsistentCutStartRequest)
-                handleConsistentCutVersion(nodeId, ((ConsistentCutStartRequest)msg).version());
+                handleConsistentCutVersion(((ConsistentCutStartRequest)msg).version());
             else if (msg instanceof ConsistentCutFinishResponse)
                 handleConsistentCutFinishResponse(nodeId, (ConsistentCutFinishResponse)msg);
         });
 
-        cctx.kernalContext().discovery().setCustomEventListener(ChangeGlobalStateFinishMessage.class, (top, snd, msg) -> {
-            if (!U.isLocalNodeCoordinator(cctx.discovery()))
-                return;
-
-            if (msg.state().active()) {
-                if (disableScheduling) {
-                    log.warning("Consistent Cut had been disabled previously and it wasn't activated. To start" +
-                        " Consistent Cut again it's required to explicitly enable it.");
-
-                    return;
-                }
-
-                if (cutTimer == null)
-                    scheduleConsistentCut();
-            }
-            else
-                disableScheduling = true;
-        });
-
-        cctx.kernalContext().event().addLocalEventListener((e) -> {
-            if (notFinishedSrvNodes != null) {
-                if (notFinishedSrvNodes.remove(e.node().id())) {
-                    log.error("Node participated in Consistent Cut failed, stops scheduling new Consistent Cuts.");
-
-                    disableScheduling = true;
-                }
-            }
-
-        }, EVT_NODE_FAILED, EVT_NODE_LEFT);
+        cctx.exchange().registerExchangeAwareComponent(this);
     }
 
     /** {@inheritDoc} */
-    @Override protected void onKernalStart0(boolean active) {
-        if (U.isLocalNodeCoordinator(cctx.discovery())) {
-            if (notFinishedSrvNodes == null)
-                notFinishedSrvNodes = ConcurrentHashMap.newKeySet();
-        }
+    @Override protected void stop0(boolean cancel) {
+        super.stop0(cancel);
 
-        if (crdNodeId == null)
-            crdNodeId = U.oldest(cctx.discovery().aliveServerNodes(), null).id();
+        disableScheduling();
+    }
+
+
+    /** {@inheritDoc} */
+    @Override public void onActivate(GridKernalContext kctx) throws IgniteCheckedException {
+        init(kctx.discovery().topologyVersionEx());
+    }
+
+    /** {@inheritDoc} */
+    @Override public void onDeActivate(GridKernalContext kctx) {
+        disableScheduling();
+    }
+
+    /**
+     * Cancels local Consistent Cuts and pauses scheduling new Consistent Cut in case of server node join, leave or fail.
+     */
+    @Override public void onInitBeforeTopologyLock(GridDhtPartitionsExchangeFuture fut) {
+        if (fut.serverNodeDiscoveryEvent())
+            disableScheduling();
+    }
+
+    /**
+     * Re-init the Consistent Cut procedure after topology unlock.
+     */
+    @Override public void onDoneAfterTopologyUnlock(GridDhtPartitionsExchangeFuture fut) {
+        DiscoveryEvent evt = fut.firstEvent();
+
+        if (!evt.eventNode().isClient() && (evt.type() == EVT_NODE_JOINED || evt.type() == EVT_NODE_FAILED || evt.type() == EVT_NODE_LEFT))
+            init(fut.topologyVersion());
+    }
+
+    /** */
+    private void init(AffinityTopologyVersion topVer) {
+        ClusterNode crdNode = cctx.discovery().discoCache(topVer).oldestAliveServerNode();
+
+        if (crdNode != null && crdNode.equals(cctx.localNode()))
+            scheduleConsistentCut(cctx, topVer);
     }
 
     /**
      * Schedules global Consistent Cut procedure on Ignite coordinator.
      */
-    private void scheduleConsistentCut() {
+    protected void scheduleConsistentCut(GridCacheSharedContext<?, ?> cctx, AffinityTopologyVersion topVer) {
+        if (scheduleConsistentCutTask != null)
+            return;
+
         long period = CU.getPitrPointsPeriod(cctx.gridConfig());
 
-        cutTimer = new GridTimeoutObjectAdapter(period) {
-            /** {@inheritDoc} */
-            @Override public void onTimeout() {
-                if (disableScheduling)
-                    return;
+        scheduleConsistentCutTask = cctx.time().schedule(() -> {
+            Set<UUID> awaitNodes = notFinishedSrvNodes;
 
-                if (notFinishedSrvNodes != null && notFinishedSrvNodes.isEmpty())
-                    triggerConsistentCutOnCluster("onTimeout");
-                else {
-                    log.warning("Skip Consistent Cut procedure. Some nodes hasn't finished yet previous one. " +
-                        "Latest version: " + latestKnownCutVersion() +
-                        "\n\tConsistent Cut may require more time that it configured." +
-                        "\n\tConsider to increase param `DataStorageConfiguration#setPointInTimeRecoveryPeriod`. " +
-                        "\n\tNodes that hasn't finished their job: " + notFinishedSrvNodes);
-                }
-
-                scheduleConsistentCut();
+            if (awaitNodes == null)
+                triggerConsistentCutOnCluster(topVer, "onTimeout");
+            else {
+                log.warning("Skip Consistent Cut procedure. " +
+                    "\n\tSome nodes hasn't finished yet previous one. Latest version: " + latestKnownCutVersion() +
+                    "\n\tConsistent Cut may require more time that is configured." +
+                    "\n\tConsider to increase param `DataStorageConfiguration#setPointInTimeRecoveryPeriod`. " +
+                    "\n\tNodes that hasn't finished their job: " + awaitNodes);
             }
-        };
+        }, period, period);
+    }
 
-        cctx.time().addTimeoutObject(cutTimer);
+    /**
+     * Disables scheduling new Consistent Cut procedures on Ignite coordinator.
+     */
+    protected void disableScheduling() {
+        if (scheduleConsistentCutTask != null) {
+            if (log.isDebugEnabled())
+                log.debug("Disabling scheduling new Consistent Cuts");
+
+            scheduleConsistentCutTask.close();
+
+            scheduleConsistentCutTask = null;
+            notFinishedSrvNodes = null;
+        }
     }
 
     /**
      * Registers transaction before commit it, sets Consistent Cut Version if needed (for non-near nodes).
-     *
      * It invokes before committing transactions leave {@link IgniteTxManager#activeTransactions()}.
+     *
+     * @param tx Transaction.
+     * @return {@code true} if transaction has registered with this call.
      */
-    public void registerBeforeCommit(IgniteInternalTx tx) {
+    public boolean registerBeforeCommit(IgniteInternalTx tx) {
         setTxCutVersionIfNeeded(tx);
-
-        committingTxs.add(tx);
 
         if (log.isDebugEnabled()) {
             log.debug("`registerBeforeCommit` from " + tx.nearXidVersion().asIgniteUuid() + " to " + tx.xid()
                 + " , ver=" + ((ConsistentCutVersionAware)tx).txCutVersion() + ", cutVer = " + latestKnownCutVersion());
         }
+
+        return committingTxs.add(tx);
+    }
+
+    /**
+     * Cancels transaction registration (with {@link #registerBeforeCommit(IgniteInternalTx)}) in case it is being finished
+     * concurrently.
+     *
+     * @param tx Transaction.
+     */
+    public void cancelRegisterBeforeCommit(IgniteInternalTx tx) {
+        committingTxs.remove(tx);
     }
 
     /**
@@ -245,26 +268,14 @@ public class ConsistentCutManager extends GridCacheSharedManagerAdapter {
      * Handles received Consistent Cut Version from remote node. It compares it with the latest version that local node
      * is aware of. Init local Consistent Cut procedure if received version is greater than the local.
      *
-     * @param crdNodeId ID of Consistent Cut coordinator node.
      * @param rcvCutVer Received Cut Version from different node.
      */
-    public void handleConsistentCutVersion(@Nullable UUID crdNodeId, ConsistentCutVersion rcvCutVer) {
+    public void handleConsistentCutVersion(ConsistentCutVersion rcvCutVer) {
         ConsistentCutState cutState = CONSITENT_CUT_STATE.get(this);
         ConsistentCutVersion cutVer = cutState.version();
 
-        try {
-            verifyMessage(cutVer, crdNodeId, rcvCutVer);
-        }
-        catch (IgniteCheckedException e) {
-            U.error(log, "Invalid Consistent Cut message.", e);
-
-            onFinish(e);
-
-            return;
-        }
-
         if (rcvCutVer.version() > cutVer.version()) {
-            ConsistentCut cut = new ConsistentCut(cctx);
+            ConsistentCut cut = newConsistentCut();
 
             ConsistentCutState newCutState = new ConsistentCutState(rcvCutVer, cut);
 
@@ -293,15 +304,9 @@ public class ConsistentCutManager extends GridCacheSharedManagerAdapter {
         return CONSITENT_CUT_STATE.get(this).version();
     }
 
-    /**
-     * Verifies whether received message looks like as expected. If it's not then skip handling Consistent Cut.
-     */
-    private void verifyMessage(ConsistentCutVersion cutVer, UUID crdNodeId, ConsistentCutVersion rcvCutVer) throws IgniteCheckedException {
-        if (crdNodeId != null && !this.crdNodeId.equals(crdNodeId))
-            throw new IgniteCheckedException("Consistent Cut coordinator has changed: prev=" + this.crdNodeId + ", new=" + crdNodeId);
-
-        if (Math.abs(rcvCutVer.version() - cutVer.version()) > 1)
-            throw new IgniteCheckedException("Unexpected Consistent Cut version: prev=" + cutVer + ", new=" + rcvCutVer);
+    /** Creates new Consistent Cut instance. */
+    protected ConsistentCut newConsistentCut() {
+        return new ConsistentCut(cctx);
     }
 
     /**
@@ -313,13 +318,17 @@ public class ConsistentCutManager extends GridCacheSharedManagerAdapter {
 
     /**
      * Finishes local Consistent Cut: cleans {@link ConsistentCut} reference and sends finish message to Consistent Cut coordinator node.
+     *
+     * @param err Exception if occured.
      */
-    void onFinish(Throwable err) {
+    void onFinish(@Nullable Throwable err) {
         try {
             ConsistentCutState cutState = CONSITENT_CUT_STATE.get(this);
 
             if (cutState.cut() != null) {
-                ConsistentCutState finishedCutState = new ConsistentCutState(cutState.version());
+                ConsistentCutVersion cutVer = cutState.version();
+
+                ConsistentCutState finishedCutState = new ConsistentCutState(cutVer);
 
                 if (CONSITENT_CUT_STATE.compareAndSet(this, cutState, finishedCutState)) {
                     // Clean committed transactions.
@@ -328,12 +337,12 @@ public class ConsistentCutManager extends GridCacheSharedManagerAdapter {
                     if (cctx.kernalContext().clientNode())
                         return;
 
-                    Message msg = new ConsistentCutFinishResponse(cutState.version(), err != null);
+                    Message msg = new ConsistentCutFinishResponse(cutVer);
 
                     if (log.isDebugEnabled())
                         log.debug("Send " + msg + " from " + cctx.localNodeId());
 
-                    cctx.kernalContext().io().sendToGridTopic(crdNodeId, TOPIC_CONSISTENT_CUT, msg, SYSTEM_POOL);
+                    cctx.kernalContext().io().sendToGridTopic(cutVer.cutCrdNodeId(), TOPIC_CONSISTENT_CUT, msg, SYSTEM_POOL);
                 }
             }
         }
@@ -348,20 +357,19 @@ public class ConsistentCutManager extends GridCacheSharedManagerAdapter {
      * @param reason Reason to trigger new Consistent Cut.
      * @return New Consistent Cut Version.
      */
-    ConsistentCutVersion triggerConsistentCutOnCluster(String reason) {
-        AffinityTopologyVersion topVer = cctx.kernalContext().discovery().topologyVersionEx();
-
+    ConsistentCutVersion triggerConsistentCutOnCluster(AffinityTopologyVersion topVer, String reason) {
         assert F.isEmpty(notFinishedSrvNodes);
 
         Set<UUID> srvNodes = ConcurrentHashMap.newKeySet();
 
         cctx.kernalContext().discovery().serverNodes(topVer).forEach((n) -> srvNodes.add(n.id()));
 
+        notFinishedSrvNodes = ConcurrentHashMap.newKeySet(srvNodes.size());
         notFinishedSrvNodes.addAll(srvNodes);
 
         ConsistentCutVersion prevCutVer = CONSITENT_CUT_STATE.get(this).version();
 
-        ConsistentCutVersion cutVer = new ConsistentCutVersion(prevCutVer.version() + 1);
+        ConsistentCutVersion cutVer = new ConsistentCutVersion(prevCutVer.version() + 1, cctx.localNodeId());
 
         if (log.isDebugEnabled())
             log.debug("Start Consistent Cut, version = " + cutVer + ", reason='" + reason + "'");
@@ -375,8 +383,6 @@ public class ConsistentCutManager extends GridCacheSharedManagerAdapter {
             }
             catch (IgniteCheckedException e) {
                 U.error(log, "Failed to send Consistent Cut message to remote node.", e);
-
-                notFinishedSrvNodes.remove(n.id());
             }
         }
 
@@ -387,53 +393,19 @@ public class ConsistentCutManager extends GridCacheSharedManagerAdapter {
      * Coordinator handles finish responses from remote nodes.
      */
     void handleConsistentCutFinishResponse(UUID nodeId, ConsistentCutFinishResponse msg) {
+        Set<UUID> awaitNodes = notFinishedSrvNodes;
+
+        // Receive response after ConsistentCut was disablied.
+        if (awaitNodes == null)
+            return;
+
         if (log.isDebugEnabled())
-            log.debug("Received ConsistentCutReadyResponse from node " + nodeId + ": " + msg + " . Wait " + notFinishedSrvNodes);
+            log.info("Received ConsistentCutReadyResponse from node " + nodeId + ": " + msg + " . Wait " + awaitNodes);
 
-        if (!U.isLocalNodeCoordinator(cctx.discovery())) {
-            log.error("Received unexpected message from node " + nodeId + ": " + msg);
+        awaitNodes.remove(nodeId);
 
-            return;
-        }
-
-        if (!notFinishedSrvNodes.remove(nodeId)) {
-            log.error("Received duplicated message from node " + nodeId + ":" + msg);
-
-            return;
-        }
-
-        if (msg.error()) {
-            log.error("Consistent Cut " + msg.version() + " failed on remote node " + nodeId + ". Stop scheduling new Consistent Cut.");
-
-            disableScheduling = true;
-        }
-    }
-
-    /**
-     * Disables starting new Consistent Cut procedures on Ignite coordinator.
-     */
-    public void disable() {
-        assert U.isLocalNodeCoordinator(cctx.discovery());
-
-        disableScheduling = true;
-    }
-
-    /**
-     * Enables starting new Consistent Cut procedures on Ignite coordinator.
-     */
-    public void enable() {
-        assert U.isLocalNodeCoordinator(cctx.discovery());
-
-        disableScheduling = false;
-
-        scheduleConsistentCut();
-    }
-
-    /**
-     * @return {@code true} if it's safe to run new Consistent Cut procedure.
-     */
-    boolean latestGlobalCutReady() {
-        return F.isEmpty(notFinishedSrvNodes);
+        if (awaitNodes.isEmpty())
+            notFinishedSrvNodes = null;
     }
 
     /**
@@ -445,12 +417,11 @@ public class ConsistentCutManager extends GridCacheSharedManagerAdapter {
         ConsistentCutVersionAware txCutVerAware = (ConsistentCutVersionAware)tx;
 
         if (isSetterTxCutVersion(tx)) {
-            assert txCutVerAware.txCutVersion() == null : tx;
+            // TODO: receive from recovery here too.
+//            assert txCutVerAware.txCutVersion() == null : tx;
 
             txCutVerAware.txCutVersion(latestKnownCutVersion());
         }
-
-        assert txCutVerAware.txCutVersion() != null : tx;
     }
 
     /**
@@ -486,10 +457,5 @@ public class ConsistentCutManager extends GridCacheSharedManagerAdapter {
         }
         else
             return tx.near();
-    }
-
-    /** For test purposes. */
-    protected ConsistentCut consistentCut() {
-        return new ConsistentCut(cctx);
     }
 }

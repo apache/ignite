@@ -57,10 +57,10 @@ public class ConsistentCutFinishRecordSerializer {
      * @throws IOException In case of fail.
      */
     public ConsistentCutFinishRecord read(ByteBufferBackedDataInput in) throws IOException {
-        Set<GridCacheVersion> include = readSetTxs(in);
-        Set<GridCacheVersion> exclude = readSetTxs(in);
+        Set<GridCacheVersion> before = readSetTxs(in);
+        Set<GridCacheVersion> after = readSetTxs(in);
 
-        return new ConsistentCutFinishRecord(include, exclude);
+        return new ConsistentCutFinishRecord(before, after);
     }
 
     /** */

@@ -18,7 +18,7 @@
 package org.apache.ignite.internal.processors.cache.consistentcut;
 
 import java.io.File;
-import java.io.Serializable;
+import java.nio.file.Paths;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.HashSet;
@@ -27,7 +27,10 @@ import java.util.Map;
 import java.util.Random;
 import java.util.Set;
 import java.util.UUID;
-import java.util.concurrent.atomic.AtomicInteger;
+import java.util.concurrent.atomic.AtomicLong;
+import java.util.function.Function;
+import org.apache.ignite.Ignite;
+import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.cache.CacheAtomicityMode;
 import org.apache.ignite.cache.affinity.Affinity;
@@ -37,10 +40,13 @@ import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.DataRegionConfiguration;
 import org.apache.ignite.configuration.DataStorageConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
+import org.apache.ignite.internal.GridKernalContext;
 import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.managers.communication.GridIoMessage;
 import org.apache.ignite.internal.pagemem.wal.IgniteWriteAheadLogManager;
 import org.apache.ignite.internal.pagemem.wal.WALIterator;
+import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
+import org.apache.ignite.internal.processors.cache.GridCacheSharedContext;
 import org.apache.ignite.internal.processors.cache.distributed.GridDistributedTxFinishResponse;
 import org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtTxFinishRequest;
 import org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtTxPrepareRequest;
@@ -50,18 +56,21 @@ import org.apache.ignite.internal.processors.cache.distributed.near.GridNearTxFi
 import org.apache.ignite.internal.processors.cache.distributed.near.GridNearTxPrepareRequest;
 import org.apache.ignite.internal.processors.cache.distributed.near.GridNearTxPrepareResponse;
 import org.apache.ignite.internal.processors.cache.persistence.wal.reader.IgniteWalIteratorFactory;
+import org.apache.ignite.internal.util.typedef.G;
 import org.apache.ignite.internal.util.typedef.T2;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgniteInClosure;
 import org.apache.ignite.lang.IgniteUuid;
+import org.apache.ignite.plugin.AbstractTestPluginProvider;
+import org.apache.ignite.plugin.PluginContext;
 import org.apache.ignite.plugin.extensions.communication.Message;
 import org.apache.ignite.spi.IgniteSpiException;
 import org.apache.ignite.spi.communication.tcp.TcpCommunicationSpi;
+import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.jetbrains.annotations.Nullable;
 
 import static org.apache.ignite.internal.processors.cache.consistentcut.ConsistentCutWalReader.NodeConsistentCutState.INCOMPLETE;
-import static org.apache.ignite.internal.processors.cache.persistence.filename.PdsFolderResolver.genNewStyleSubfolderName;
 
 /** Base class for testing Consistency Cut algorithm. */
 public abstract class AbstractConsistentCutTest extends GridCommonAbstractTest {
@@ -69,20 +78,19 @@ public abstract class AbstractConsistentCutTest extends GridCommonAbstractTest {
     protected static final String CACHE = "CACHE";
 
     /** */
-    private static final int WAL_ARCHIVE_TIMEOUT = 200;
-
-    /** */
     private static final int CONSISTENT_CUT_PERIOD = 500;
 
     /** */
     private final Random rnd = new Random();
+
+    /** nodeIdx -> Consistent Node ID. */
+    private final List<UUID> consistentIds = new ArrayList<>();
 
     /** {@inheritDoc} */
     @Override protected IgniteConfiguration getConfiguration(String instanceName) throws Exception {
         IgniteConfiguration cfg = super.getConfiguration(instanceName);
 
         cfg.setDataStorageConfiguration(new DataStorageConfiguration()
-            .setWalAutoArchiveAfterInactivity(WAL_ARCHIVE_TIMEOUT)
             .setPointInTimeRecoveryEnabled(true)
             .setPitrPeriod(CONSISTENT_CUT_PERIOD)
             .setDataRegionConfigurations(new DataRegionConfiguration()
@@ -96,8 +104,13 @@ public abstract class AbstractConsistentCutTest extends GridCommonAbstractTest {
                 .setBackups(backups())
                 .setDataRegionName("consistent-cut-persist"));
 
-        cfg
-            .setCommunicationSpi(new LogCommunicationSpi());
+        cfg.setCommunicationSpi(new LogCommunicationSpi());
+
+        cfg.setPluginProviders(new TestConsistentCutManagerPluginProvider());
+
+        cfg.setConsistentId(UUID.randomUUID());
+
+        consistentIds.add((UUID)cfg.getConsistentId());
 
         return cfg;
     }
@@ -107,9 +120,6 @@ public abstract class AbstractConsistentCutTest extends GridCommonAbstractTest {
         cleanPersistenceDir();
 
         startGrids(nodes());
-
-        // Disable by default to trigger Consistent Cut manually. Test enabled in `ConcurrentTxsConsistentCutTest`.
-        grid(0).context().cache().context().consistentCutMgr().disable();
 
         grid(0).cluster().state(ClusterState.ACTIVE);
 
@@ -134,50 +144,73 @@ public abstract class AbstractConsistentCutTest extends GridCommonAbstractTest {
     protected abstract int backups();
 
     /**
+     * Await that every node received Consistent Cut version.
+     *
+     * @param cutVer Consistent Cut version.
+     */
+    protected void awaitGlobalCutVersionReceived(long cutVer) throws Exception {
+        awaitGlobalCutEvent((ign) ->
+            cutMgr(ign).latestKnownCutVersion().version() == cutVer
+        );
+    }
+
+    /**
      * Await global Consistent Cut has completed, and Ignite is ready for new Consistent Cut.
      *
-     * @param prevCutVer Previous Consistent Cut version.
-     * @return Version of the latest Consistent Cut version.
+     * @param expCutVer Expected Consistent Cut version.
+     * @param strict If {@code true} then await exactly specified version, otherwise any greater than specified.
+     * @return Actual version of the latest finished Consistent Cut.
      */
-    protected long awaitGlobalCutReady(long prevCutVer) throws Exception {
-        long newCutVer = -1L;
+    protected long awaitGlobalCutReady(long expCutVer, boolean strict) throws Exception {
+        AtomicLong ver = new AtomicLong();
 
-        ConsistentCutManager crdCutMgr = grid(0).context().cache().context().consistentCutMgr();
+        // Await all nodes finishes locally.
+        awaitGlobalCutEvent(ign -> {
+            ConsistentCutState cutState = cutMgr(ign).currCutState();
 
-        for (int i = 0; i < 100; i++) {
-            ConsistentCutVersion cutVer = crdCutMgr.latestKnownCutVersion();
+            long cutVer = cutState.version().version();
 
-            if (cutVer != null) {
-                long ver = cutVer.version();
+            if (cutVer >= expCutVer) {
+                boolean ready = cutState.cut() == null;
 
-                if (ver > prevCutVer) {
-                    if (newCutVer < 0)
-                        newCutVer = ver;
-                    else
-                        assert newCutVer == ver : "new=" + newCutVer + ", rcv=" + ver + ", prev=" + prevCutVer;
+                if (ready) {
+                    if (strict && cutVer != expCutVer)
+                        return false;
 
-                    if (crdCutMgr.latestGlobalCutReady())
-                        return newCutVer;
+                    ver.set(cutVer);
                 }
+
+                return ready;
             }
 
-            Thread.sleep(10);
-        }
+            return false;
+        });
+
+        // Await all nodes sent finish responses and coordinator received all of them.
+        GridTestUtils.waitForCondition(() ->
+            cutMgr(grid(0)).consistentCutFinished(expCutVer), 60_000, 10);
+
+        return ver.get();
+    }
+
+    /**
+     * Await global Consistent Cut event has finished.
+     */
+    protected void awaitGlobalCutEvent(Function<IgniteEx, Boolean> cutEvtPredicate) throws Exception {
+        boolean rdy = GridTestUtils.waitForCondition(() ->
+            G.allGrids().stream()
+                .allMatch(ign -> cutEvtPredicate.apply((IgniteEx)ign)), 60_000, 10);
+
+        if (rdy)
+            return;
 
         StringBuilder bld = new StringBuilder()
-            .append("Failed to wait Consitent Cut")
-            .append(" newCutVer ").append(newCutVer)
-            .append(", prevCutVer ").append(prevCutVer);
+            .append("Failed to wait Consitent Cut event.");
 
         bld.append("\n\tCoordinator node0 = ").append(U.isLocalNodeCoordinator(grid(0).context().discovery()));
-        bld.append(", latestCutVersion = ").append(crdCutMgr.latestKnownCutVersion());
-        bld.append(", latestGlobalCutReady = ").append(crdCutMgr.latestGlobalCutReady());
 
-        for (int i = 0; i < nodes(); i++) {
-            ConsistentCutManager cutMgr = grid(i).context().cache().context().consistentCutMgr();
-
-            bld.append("\n\tNode").append(i).append( ": ").append(cutMgr.consistentCut());
-        }
+        for (int i = 0; i < nodes(); i++)
+            bld.append("\n\tNode").append(i).append( ": ").append(cutMgr(grid(i)).latestKnownCutVersion());
 
         throw new Exception(bld.toString());
     }
@@ -205,24 +238,33 @@ public abstract class AbstractConsistentCutTest extends GridCommonAbstractTest {
     }
 
     /**
+     * @param cuts Amount of Consistent Cut to await.
+     */
+    protected void awaitConsistentCuts(int cuts) throws Exception {
+        for (int i = 1; i <= cuts; i++) {
+            awaitGlobalCutReady(i, true);
+
+            log.info("Consistent Cut finished: " + i);
+        }
+    }
+
+    /**
      * Stops Ignite cluster and prepares description (nodeId, consistenceId, compactId) of stopped Ignite nodes.
      *
-     * @return { nodeId -> (consistentId, compactId) }.
+     * @return { nodeId -> compactId }.
      */
-    protected Map<Integer, T2<Serializable, Short>> stopCluster() throws Exception {
+    protected Map<Integer, Short> stopCluster() throws Exception {
         flushWalAllGrids();
 
         Map<Object, Short> consistentMapping = grid(0).context().discovery().discoCache().state().baselineTopology()
             .consistentIdMapping();
 
-        Map<Integer, T2<Serializable, Short>> m = new HashMap<>();
+        Map<Integer, Short> m = new HashMap<>();
 
         for (int i = 0; i < nodes(); i++) {
-            Serializable consistentId = (Serializable)grid(i).cluster().localNode().consistentId();
+            short compactId = consistentMapping.get(consistentIds.get(i));
 
-            short compactId = consistentMapping.get(consistentId);
-
-            m.put(i, new T2<>(consistentId, compactId));
+            m.put(i, compactId);
         }
 
         stopAllGrids();
@@ -237,22 +279,54 @@ public abstract class AbstractConsistentCutTest extends GridCommonAbstractTest {
      * @param cuts       Number of Consistent Cuts was run within a test.
      */
     protected void checkWalsConsistency(Map<IgniteUuid, Integer> txNearNode, int cuts) throws Exception {
-        Map<Integer, T2<Serializable, Short>> top = stopCluster();
+        checkWalsConsistency(txNearNode, cuts, nodeIds(null), false);
+    }
+
+    /** */
+    Set<Integer> nodeIds(@Nullable Integer excl) {
+        Set<Integer> nodes = new HashSet<>();
+
+        for (int i = 0; i < nodes(); i++) {
+            if (excl != null && excl.intValue() == i)
+                continue;
+
+            nodes.add(i);
+        }
+
+        return nodes;
+    }
+
+    /**
+     * Checks WALs for correct Consistency Cut.
+     *
+     * @param txNearNode Collection of transactions was run within a test. Key is transaction ID, value is near node ID.
+     * @param cuts       Number of Consistent Cuts was run within a test.
+     * @param nodes      Set of nodes to check WAL.
+     * @param checkTxAmount Whether to check that WAL contain all transactions specified with txNearNode.
+     */
+    protected void checkWalsConsistency(
+        Map<IgniteUuid, Integer> txNearNode,
+        int cuts, Set<Integer> nodes,
+        boolean checkTxAmount
+    ) throws Exception {
+        Map<Integer, Short> top = stopCluster();
 
         List<ConsistentCutWalReader> states = new ArrayList<>();
 
-        for (int i = 0; i < nodes(); i++) {
+        for (int i: nodes) {
             log.info("Check WAL for node " + i);
 
-            ConsistentCutWalReader reader = new ConsistentCutWalReader(i, walIter(i, (UUID)top.get(i).get1()), log, txNearNode, top);
+            ConsistentCutWalReader reader = new ConsistentCutWalReader(i, walIter(i), log, txNearNode, top);
 
             states.add(reader);
 
             reader.read();
 
+            assertTrue("Wrong cuts amount " + i, !reader.cuts.isEmpty());
+
             int expCuts = reader.cuts.get(reader.cuts.size() - 1).ver == INCOMPLETE ? cuts + 1 : cuts;
 
-            assertEquals("" + reader.cuts.get(reader.cuts.size() - 1).ver, expCuts, reader.cuts.size());
+            assertEquals(expCuts, reader.cuts.size());
         }
 
         Map<IgniteUuid, T2<Long, Integer>> txMap = new HashMap<>();
@@ -261,72 +335,111 @@ public abstract class AbstractConsistentCutTest extends GridCommonAbstractTest {
 
         // Includes incomplete state also.
         for (int cutId = 0; cutId < cuts + 1; cutId++) {
-            for (int nodeId = 0; nodeId < nodes(); nodeId++) {
+            for (int nodeId: nodes) {
                 // Skip if the latest cut wasn't INCOMPLETE.
                 if (states.get(nodeId).cuts.size() == cutId)
                     continue;
 
                 ConsistentCutWalReader.NodeConsistentCutState state = states.get(nodeId).cuts.get(cutId);
 
-                for (IgniteUuid uid : state.committedTx) {
+                for (IgniteUuid uid: state.committedTx) {
                     T2<Long, Integer> prev = txMap.put(uid, new T2<>(state.ver, nodeId));
 
                     if (prev != null) {
                         assertTrue("Transaction miscutted: " + uid + ". Node" + prev.get2() + "=" + prev.get1() +
-                                ". Node" + nodeId + "=" + state.ver, prev.get1() == state.ver);
+                            ". Node" + nodeId + "=" + state.ver, prev.get1() == state.ver);
                     }
 
                     txSet.add(uid);
                 }
+
+                txSet.addAll(state.rolledBackTx);
             }
         }
 
-        assertEquals(txNearNode.size(), txSet.size());
+        if (checkTxAmount)
+            assertEquals(txNearNode.size(), txSet.size());
     }
 
     /** */
-    private void flushWalAllGrids() throws Exception {
-        AtomicInteger cnt = new AtomicInteger();
+    protected void flushWalAllGrids() throws Exception {
+        for (Ignite ign: G.allGrids()) {
+            IgniteWriteAheadLogManager walMgr = ((IgniteEx)ign).context().cache().context().wal();
 
-        multithreadedAsync(() -> {
-            int idx = cnt.getAndIncrement();
-
-            final IgniteWriteAheadLogManager walMgr = grid(idx).context().cache().context().wal();
-
-            int attempts = 0;
-
-            while (walMgr.lastWritePointer().fileOffset() != 0) {
-                try {
-                    Thread.sleep(WAL_ARCHIVE_TIMEOUT / 2);
-
-                    log.info("Waiting flushing WAL node" + idx + ", last pointer " + walMgr.lastWritePointer()
-                        + ", last archived segment " + walMgr.lastArchivedSegment());
-
-                    if (attempts++ == 20)
-                        throw new RuntimeException("Failed to flush WAL for node" + idx);
-                }
-                catch (InterruptedException e) {
-                    e.printStackTrace();
-                }
-            }
-
-        }, nodes()).get(getTestTimeout());
+            if (walMgr != null)
+                walMgr.flush(null, true);
+        }
     }
 
-    /** Get plain iterator over WAL. */
-    private WALIterator walIter(int nodeIdx, UUID consistentId) throws Exception {
+    /** Get iterator over WAL. */
+    private WALIterator walIter(int nodeIdx) throws Exception {
         String workDir = U.defaultWorkDirectory();
 
         IgniteWalIteratorFactory factory = new IgniteWalIteratorFactory(log);
 
-        String subfolderName = genNewStyleSubfolderName(nodeIdx, consistentId);
+        String subfolderName = U.maskForFileName(consistentIds.get(nodeIdx).toString());
 
-        File archive = U.resolveWorkDirectory(workDir, "db/wal/archive/" + subfolderName, false);
+        File wal = Paths.get(workDir).resolve(DataStorageConfiguration.DFLT_WAL_PATH).resolve(subfolderName).toFile();
+        File archive = Paths.get(workDir).resolve(DataStorageConfiguration.DFLT_WAL_ARCHIVE_PATH).resolve(subfolderName).toFile();
 
         IgniteWalIteratorFactory.IteratorParametersBuilder params = new IgniteWalIteratorFactory.IteratorParametersBuilder()
-            .filesOrDirs(archive);
+            .filesOrDirs(wal, archive);
 
         return factory.iterator(params);
+    }
+
+    /** */
+    private static TestConsistentCutManager cutMgr(IgniteEx ign) {
+        return (TestConsistentCutManager)ign.context().cache().context().consistentCutMgr();
+    }
+
+    /** */
+    private static class TestConsistentCutManagerPluginProvider extends AbstractTestPluginProvider {
+        /** {@inheritDoc} */
+        @Override public String name() {
+            return "TestConsistentCutManagerPluginProvider";
+        }
+
+        /** {@inheritDoc} */
+        @Override public <T> @Nullable T createComponent(PluginContext ctx, Class<T> cls) {
+            if (ConsistentCutManager.class.equals(cls))
+                return (T)new TestConsistentCutManager();
+
+            return null;
+        }
+    }
+
+    /** ConsistentCutManager with possibility to disable schedulling Consistent Cuts manually. */
+    protected static class TestConsistentCutManager extends ConsistentCutManager {
+        /** {@inheritDoc} */
+        @Override public void onActivate(GridKernalContext kctx) throws IgniteCheckedException {
+            // Don't automatically shedule Consistent Cut on cluster activation.
+        }
+
+        /** */
+        boolean consistentCutFinished(long cutVer) {
+            return U.isLocalNodeCoordinator(cctx.discovery())
+                && latestKnownCutVersion().version() == cutVer && notFinishedSrvNodes == null;
+        }
+
+        /** */
+        public ConsistentCutState currCutState() {
+            return CONSITENT_CUT_STATE.get(this);
+        }
+
+        /** */
+        static void enableConsistentCutScheduling(IgniteEx ign) {
+            GridCacheSharedContext<?, ?> cctx = ign.context().cache().context();
+
+            AffinityTopologyVersion topVer = ign.cachex(CACHE).context().topology().readyTopologyVersion();
+
+            cctx.consistentCutMgr().scheduleConsistentCut(cctx, topVer);
+        }
+
+        /** */
+        static void disableConsistentCutScheduling(IgniteEx ign) {
+            cutMgr(ign).disableScheduling();
+        }
     }
 
     /** Logs TX messages between nodes. */

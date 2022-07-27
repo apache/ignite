@@ -41,20 +41,13 @@ public class ConsistentCutFinishResponse implements Message {
     @GridToStringInclude
     private ConsistentCutVersion ver;
 
-    /**
-     * Whether local Consistent Cut procedure was finished with an error.
-     */
-    @GridToStringInclude
-    private boolean err;
-
     /** */
     public ConsistentCutFinishResponse() {
     }
 
     /** */
-    public ConsistentCutFinishResponse(ConsistentCutVersion ver, boolean err) {
+    public ConsistentCutFinishResponse(ConsistentCutVersion ver) {
         this.ver = ver;
-        this.err = err;
     }
 
     /**
@@ -62,13 +55,6 @@ public class ConsistentCutFinishResponse implements Message {
      */
     public ConsistentCutVersion version() {
         return ver;
-    }
-
-    /**
-     * @return {@code true} if local Consistent Cut procedure failed.
-     */
-    public boolean error() {
-        return err;
     }
 
     /** {@inheritDoc} */
@@ -85,12 +71,6 @@ public class ConsistentCutFinishResponse implements Message {
         switch (writer.state()) {
             case 0:
                 if (!writer.writeMessage("ver", ver))
-                    return false;
-
-                writer.incrementState();
-
-            case 1:
-                if (!writer.writeBoolean("err", err))
                     return false;
 
                 writer.incrementState();
@@ -114,14 +94,6 @@ public class ConsistentCutFinishResponse implements Message {
                     return false;
 
                 reader.incrementState();
-
-            case 1:
-                err = reader.readBoolean("err");
-
-                if (!reader.isLastRead())
-                    return false;
-
-                reader.incrementState();
         }
 
         return reader.afterMessageRead(GridDeploymentRequest.class);
@@ -134,7 +106,7 @@ public class ConsistentCutFinishResponse implements Message {
 
     /** {@inheritDoc} */
     @Override public byte fieldsCount() {
-        return 2;
+        return 1;
     }
 
     /** {@inheritDoc} */

@@ -27,7 +27,6 @@ import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.Future;
 import java.util.concurrent.TimeUnit;
-import java.util.function.Function;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.cluster.ClusterNode;
@@ -39,6 +38,7 @@ import org.apache.ignite.internal.pagemem.wal.IgniteWriteAheadLogManager;
 import org.apache.ignite.internal.pagemem.wal.record.ConsistentCutStartRecord;
 import org.apache.ignite.internal.pagemem.wal.record.TxRecord;
 import org.apache.ignite.internal.pagemem.wal.record.WALRecord;
+import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
 import org.apache.ignite.internal.processors.cache.GridCacheSharedContext;
 import org.apache.ignite.internal.processors.cache.persistence.StorageException;
 import org.apache.ignite.internal.processors.cache.persistence.wal.FileWriteAheadLogManager;
@@ -57,16 +57,16 @@ import org.apache.ignite.transactions.TransactionConcurrency;
 import org.apache.ignite.transactions.TransactionState;
 import org.jetbrains.annotations.Nullable;
 
+import static org.apache.ignite.internal.processors.cache.consistentcut.AbstractConsistentCutBlockingTest.BlkCutType.AFTER_VERSION_UPDATE;
+import static org.apache.ignite.internal.processors.cache.consistentcut.AbstractConsistentCutBlockingTest.BlkCutType.BEFORE_WAL_FINISHED;
 import static org.apache.ignite.internal.processors.cache.consistentcut.AbstractConsistentCutBlockingTest.BlkCutType.BEFORE_WAL_STARTED;
-import static org.apache.ignite.internal.processors.cache.consistentcut.AbstractConsistentCutBlockingTest.BlkCutType.CUT_PREPARED;
-import static org.apache.ignite.internal.processors.cache.consistentcut.AbstractConsistentCutBlockingTest.BlkCutType.VERSION_UPDATE;
 import static org.apache.ignite.internal.processors.cache.consistentcut.AbstractConsistentCutBlockingTest.BlkNodeType.NEAR;
 import static org.apache.ignite.internal.processors.cache.consistentcut.AbstractConsistentCutBlockingTest.BlkNodeType.PRIMARY;
 import static org.apache.ignite.transactions.TransactionIsolation.SERIALIZABLE;
 
 /** Base class for testing Consistency Cut blocking some events. */
 public abstract class AbstractConsistentCutBlockingTest extends AbstractConsistentCutTest {
-    /** */
+    /** Number of current testing case. */
     private int caseNum;
 
     /** Latch that blocks transaction execution. */
@@ -235,10 +235,10 @@ public abstract class AbstractConsistentCutBlockingTest extends AbstractConsiste
         txLatch.await(100, TimeUnit.MILLISECONDS);
 
         // 3. Start Consistent Cut procedure concurrently with running transaction.
-        grid(0).context().cache().context().consistentCutMgr().triggerConsistentCutOnCluster("explicit");
+        triggerConsistentCut();
 
-        // 4-5. Await Consistent Cut started, excluding blocking node.
-        awaitCutStarted(prevVer, cutBlkNode);
+        // 4-5. Await Consistent Cut version received and handled.
+        awaitGlobalCutVersionReceived(prevVer + 1);
 
         // 6. Resume running transaction.
         cutGlobalStartLatch.countDown();
@@ -250,7 +250,7 @@ public abstract class AbstractConsistentCutBlockingTest extends AbstractConsiste
         cutBlkLatch.countDown();
 
         // 9. Await while Consistent Cut completed.
-        awaitGlobalCutReady(prevVer);
+        awaitGlobalCutReady(prevVer + 1, true);
     }
 
     /** Init latches depending on test parameters. */
@@ -315,59 +315,11 @@ public abstract class AbstractConsistentCutBlockingTest extends AbstractConsiste
         return node;
     }
 
-    /**
-     * Await Consistent Cut started on every node.
-     *
-     * @param prevCutVer Previous Consistent Cut version.
-     * @param excl Node to exclude awaiting Consistent Cut starts.
-     * @return Version of the latest Consistent Cut version.
-     */
-    protected long awaitCutStarted(long prevCutVer, @Nullable Integer excl) throws Exception {
-        long newCutVer = -1L;
+    /** Manually triggers new Consistent Cut. */
+    private void triggerConsistentCut() {
+        AffinityTopologyVersion topVer = grid(0).cachex(CACHE).context().topology().readyTopologyVersion();
 
-        Function<Integer, ConsistentCutManager> cutMgr = (n) -> grid(n).context().cache().context().consistentCutMgr();
-
-        int starts = 0;
-
-        // Wait Consistent Cut locally started on every node (prepared the check-list).
-        for (int n = 0; n < nodes(); n++) {
-            if (excl != null && n == excl) {
-                if (++starts == nodes())
-                    return newCutVer;
-
-                continue;
-            }
-
-            // At most 1 sec to wait.
-            for (int i = 0; i < 1_000; i++) {
-                long ver = cutMgr.apply(n).latestKnownCutVersion().version();
-
-                if (ver > prevCutVer) {
-                    if (newCutVer < 0)
-                        newCutVer = ver;
-                    else
-                        assert newCutVer == ver : "new=" + newCutVer + ", rcv=" + ver + ", prev=" + prevCutVer;
-
-                    if (++starts == nodes())
-                        return newCutVer;
-
-                    break;
-                }
-
-                Thread.sleep(1);
-            }
-        }
-
-        StringBuilder bld = new StringBuilder()
-            .append("Failed to wait Consitent Cut")
-            .append(" newCutVer ").append(newCutVer)
-            .append(", prevCutVer ").append(prevCutVer)
-            .append(", excl node ").append(excl);
-
-        for (int n = 0; n < nodes(); n++)
-            bld.append("\nNode").append(n).append( ": ").append(cutMgr.apply(n).consistentCut());
-
-        throw new Exception(bld.toString());
+        grid(0).context().cache().context().consistentCutMgr().triggerConsistentCutOnCluster(topVer, "explicit");
     }
 
     /** Blocks sending transaction message between nodes, and awaits for Consistent Cut procedure starts on every node. */
@@ -474,12 +426,12 @@ public abstract class AbstractConsistentCutBlockingTest extends AbstractConsiste
     }
 
     /** Blocks Consistent Cut procedure on writing ConsistentCutStartRecord or preparing and publishing Consistent Cut state. */
-    private static class BlockingConsistentCutManager extends ConsistentCutManager {
+    private static class BlockingConsistentCutManager extends TestConsistentCutManager {
         /** */
         private final GridKernalContext ctx;
 
         /** {@inheritDoc} */
-        @Override protected ConsistentCut consistentCut() {
+        @Override protected ConsistentCut newConsistentCut() {
             return new BlockingConsistentCut(ctx.cache().context());
         }
 
@@ -490,16 +442,14 @@ public abstract class AbstractConsistentCutBlockingTest extends AbstractConsiste
 
         /** */
         private final class BlockingConsistentCut extends ConsistentCut {
-            /**
-             * @param cctx
-             */
+            /** */
             BlockingConsistentCut(GridCacheSharedContext<?, ?> cctx) {
                 super(cctx);
             }
 
             /** Blocks before or after ConsistentCut preparation. */
             @Override protected void init(ConsistentCutVersion ver) throws IgniteCheckedException {
-                if (blkCut(VERSION_UPDATE)) {
+                if (blkCut(AFTER_VERSION_UPDATE)) {
                     try {
                         cutBlkLatch.await(100, TimeUnit.MILLISECONDS);
                     }
@@ -509,20 +459,14 @@ public abstract class AbstractConsistentCutBlockingTest extends AbstractConsiste
                 }
 
                 super.init(ver);
-
-                if (blkCut(CUT_PREPARED)) {
-                    try {
-                        cutBlkLatch.await(100, TimeUnit.MILLISECONDS);
-                    }
-                    catch (InterruptedException e) {
-                        throw new IgniteException(e);
-                    }
-                }
             }
 
             /** Blocks before writing {@link ConsistentCutStartRecord} to WAL. */
             @Override protected boolean walLog(ConsistentCutVersion cutVer, WALRecord record) throws IgniteCheckedException {
-                if (blkCut(BEFORE_WAL_STARTED)) {
+                boolean blkStart = record.type() == WALRecord.RecordType.CONSISTENT_CUT_START_RECORD && blkCut(BEFORE_WAL_STARTED);
+                boolean blkFinish = record.type() == WALRecord.RecordType.CONSISTENT_CUT_FINISH_RECORD && blkCut(BEFORE_WAL_FINISHED);
+
+                if (blkStart || blkFinish) {
                     try {
                         cutBlkLatch.await(100, TimeUnit.MILLISECONDS);
                     }
@@ -559,12 +503,12 @@ public abstract class AbstractConsistentCutBlockingTest extends AbstractConsiste
         NONE,
 
         /** */
-        VERSION_UPDATE,
+        AFTER_VERSION_UPDATE,
 
         /** */
         BEFORE_WAL_STARTED,
 
         /** */
-        CUT_PREPARED
+        BEFORE_WAL_FINISHED
     }
 }

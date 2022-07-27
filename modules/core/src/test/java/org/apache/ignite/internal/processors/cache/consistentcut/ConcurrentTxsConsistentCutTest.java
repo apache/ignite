@@ -34,6 +34,9 @@ import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.junit.runners.Parameterized;
 
+import static org.apache.ignite.internal.processors.cache.consistentcut.AbstractConsistentCutTest.TestConsistentCutManager.disableConsistentCutScheduling;
+import static org.apache.ignite.internal.processors.cache.consistentcut.AbstractConsistentCutTest.TestConsistentCutManager.enableConsistentCutScheduling;
+
 /** Load Ignite with transactions and starts Consistent Cut concurrently. */
 @RunWith(Parameterized.class)
 public class ConcurrentTxsConsistentCutTest extends AbstractConsistentCutTest {
@@ -65,8 +68,7 @@ public class ConcurrentTxsConsistentCutTest extends AbstractConsistentCutTest {
     @Override protected void beforeTest() throws Exception {
         super.beforeTest();
 
-        // Enable scheduling Consistent Cut procedure.
-        grid(0).context().cache().context().consistentCutMgr().enable();
+        enableConsistentCutScheduling(grid(0));
     }
 
     /** */
@@ -101,10 +103,9 @@ public class ConcurrentTxsConsistentCutTest extends AbstractConsistentCutTest {
 
         IgniteInternalFuture<?> f = asyncLoadData(2);
 
-        awaitConsistentCuts(CUTS, 0);
+        awaitConsistentCuts(CUTS);
 
-        // Disable new Consistent Cuts.
-        grid(0).context().cache().context().consistentCutMgr().disable();
+        disableConsistentCutScheduling(grid(0));
 
         stopLoadLatch.countDown();
 
@@ -143,17 +144,5 @@ public class ConcurrentTxsConsistentCutTest extends AbstractConsistentCutTest {
                 }
             }
         }, threads);
-    }
-
-    /**
-     * @param cuts Amount of Consistent Cut to await.
-     * @param prevCutVer Previous Consistent Cut version (timestamp).
-     */
-    protected void awaitConsistentCuts(int cuts, long prevCutVer) throws Exception {
-        for (int i = 0; i < cuts; i++) {
-            prevCutVer = awaitGlobalCutReady(prevCutVer);
-
-            log.info("Consistent Cut finished: " + prevCutVer);
-        }
     }
 }

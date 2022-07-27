@@ -1682,18 +1682,14 @@ public class IgniteTxManager extends GridCacheSharedManagerAdapter {
     private boolean activeTx(IgniteInternalTx tx) {
         ConcurrentMap<GridCacheVersion, IgniteInternalTx> txIdMap = transactionMap(tx);
 
-        if (txIdMap.containsKey(tx.xidVersion())) {
-            ConsistentCutManager cutMgr = cctx.consistentCutMgr();
+        ConsistentCutManager cutMgr = cctx.consistentCutMgr();
+
+        if (cutMgr == null || cutMgr.registerBeforeCommit(tx)) {
+            if (txIdMap.remove(tx.xidVersion(), tx))
+                return true;
 
             if (cutMgr != null)
-                cutMgr.registerBeforeCommit(tx);
-
-            boolean active = txIdMap.remove(tx.xidVersion(), tx);
-
-            if (!active && cutMgr != null)
-                cutMgr.unregisterAfterCommit(tx);
-
-            return active;
+                cutMgr.cancelRegisterBeforeCommit(tx);
         }
 
         return false;

@@ -17,7 +17,6 @@
 
 package org.apache.ignite.internal.processors.cache.consistentcut;
 
-import java.io.Serializable;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.HashMap;
@@ -37,7 +36,6 @@ import org.apache.ignite.internal.pagemem.wal.record.WALRecord;
 import org.apache.ignite.internal.processors.cache.persistence.wal.WALPointer;
 import org.apache.ignite.internal.processors.cache.version.GridCacheVersion;
 import org.apache.ignite.internal.util.tostring.GridToStringInclude;
-import org.apache.ignite.internal.util.typedef.T2;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.lang.IgniteBiTuple;
 import org.apache.ignite.lang.IgniteUuid;
@@ -74,8 +72,8 @@ class ConsistentCutWalReader {
     /** Collection of transactions was run within a test. */
     private final Map<IgniteUuid, Integer> txNearNode;
 
-    /** Ignite nodes description: (nodeIdx -> (consistentId, compactId)). */
-    private final Map<Integer, T2<Serializable, Short>> txCompactNode;
+    /** Ignite nodes description: (nodeIdx -> compactId). */
+    private final Map<Integer, Short> txCompactNode;
 
     /** Order ID of Ignite node. */
     private final Integer nodeIdx;
@@ -86,10 +84,10 @@ class ConsistentCutWalReader {
         WALIterator walIter,
         IgniteLogger log,
         Map<IgniteUuid, Integer> txNearNode,
-        Map<Integer, T2<Serializable, Short>> txCompactNode
+        Map<Integer, Short> txCompactNode
     ) {
         this.walIter = walIter;
-        nodeCompactId = txCompactNode.get(nodeIdx).get2();
+        nodeCompactId = txCompactNode.get(nodeIdx);
         this.log = log;
 
         this.nodeIdx = nodeIdx;
@@ -120,16 +118,18 @@ class ConsistentCutWalReader {
                 return;
             }
 
-            awaitFinishCut(it, curCut);
+            if (awaitFinishCut(it, curCut)) {
+                readCutInclusions(it, curCut);
 
-            readCutInclusions(it, curCut);
+                // Skip includes in buffer when re-read them from buffer.
+                it.skipTxInBuffer(new HashSet<>(curCut.txInclude));
 
-            // Skip includes in buffer when re-read them from buffer.
-            it.skipTxInBuffer(new HashSet<>(curCut.txInclude));
+                cuts.add(curCut);
 
-            cuts.add(curCut);
-
-            curCut = new NodeConsistentCutState(curCut.ver + 1, curCut.txExclude, curCut.txInclude, curCut.txParticipations);
+                curCut = new NodeConsistentCutState(curCut.ver + 1, curCut.txExclude, curCut.txInclude, curCut.txParticipations);
+            }
+            else
+                assert false : "Doesn't get expected ConsistentCutFinishRecord. " + curCut.ver;
         }
     }
 
@@ -170,7 +170,7 @@ class ConsistentCutWalReader {
     }
 
     /** Read WAL until ConsistentCutFinishRecord achieved. */
-    private void awaitFinishCut(BufferWalIterator it, NodeConsistentCutState cut) {
+    private boolean awaitFinishCut(BufferWalIterator it, NodeConsistentCutState cut) {
         // Store all records between Start and Finish records to re-read them again.
         it.mode(BufferWalIterator.BufferedMode.STORE);
 
@@ -185,7 +185,7 @@ class ConsistentCutWalReader {
             if (rec.type() == CONSISTENT_CUT_FINISH_RECORD) {
                 handleFinishConsistentCutRecord((ConsistentCutFinishRecord)rec, cut);
 
-                return;
+                return true;
             }
             else if (rec.type() == CONSISTENT_CUT_START_RECORD)
                 assert false : "Lost FINISH record. Next cut: " + rec;
@@ -194,6 +194,8 @@ class ConsistentCutWalReader {
                     log("SKIP[" + ((TxRecord)rec).nearXidVersion().asIgniteUuid() + ", " + ((TxRecord)rec).state() + "]");
             }
         }
+
+        return false;
     }
 
     /** Read WAL to find all transactions to include to specific Consistent Cut. */
@@ -305,6 +307,8 @@ class ConsistentCutWalReader {
             else
                 handlePreparedTx(tx, cut, false);
         }
+        else if (tx.state() == TransactionState.ROLLED_BACK)
+            cut.addRollBackedTx(uid);
     }
 
     /** */
@@ -439,6 +443,12 @@ class ConsistentCutWalReader {
         @GridToStringInclude
         final Set<IgniteUuid> committedTx = new HashSet<>();
 
+        /**
+         * Roll-backed transactions.
+         */
+        @GridToStringInclude
+        final Set<IgniteUuid> rolledBackTx = new HashSet<>();
+
         /** Transactions to exclude from this state while reading WAL. */
         @GridToStringInclude
         Set<IgniteUuid> txExclude;
@@ -486,6 +496,11 @@ class ConsistentCutWalReader {
             }
 
             return false;
+        }
+
+        /** */
+        public void addRollBackedTx(IgniteUuid txId) {
+            rolledBackTx.add(txId);
         }
 
         /** Includes set of transactions to this state. */
@@ -635,13 +650,11 @@ class ConsistentCutWalReader {
 
         Map<Short, Collection<Short>> nodes = tx.participatingNodes();
 
-        T2<Serializable, Short> nearNodeInfo = txCompactNode.get(txNearNode.get(uid));
+        Short origCompactId = txCompactNode.get(txNearNode.get(uid));
 
         // -1 means client node.
-        short origCompactId = -1;
-
-        if (nearNodeInfo != null)
-            origCompactId = nearNodeInfo.get2();
+        if (origCompactId == null)
+            origCompactId = -1;
 
         log("PART[txId=" + uid + ", partNodes=" + nodes + ", origNodeCompactId=" + origCompactId + "]");
     }
@@ -655,7 +668,7 @@ class ConsistentCutWalReader {
         short origCompactId = -1;
 
         if (txCompactNode.containsKey(nearNodeId))
-            origCompactId = txCompactNode.get(nearNodeId).get2();
+            origCompactId = txCompactNode.get(nearNodeId);
 
         log("TX[id=" + uid + ", state=" + tx.state() + ", cut=" + cut.ver +
             ", origNodeId=" + txNearNode.get(uid) + ", origCompactId=" + origCompactId +

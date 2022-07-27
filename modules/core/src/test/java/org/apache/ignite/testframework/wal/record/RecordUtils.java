@@ -21,6 +21,7 @@ import java.util.Collections;
 import java.util.EnumMap;
 import java.util.HashMap;
 import java.util.Map;
+import java.util.UUID;
 import java.util.function.Supplier;
 import org.apache.ignite.internal.pagemem.FullPageId;
 import org.apache.ignite.internal.pagemem.wal.record.CheckpointRecord;
@@ -639,7 +640,7 @@ public class RecordUtils {
 
     /** **/
     public static ConsistentCutStartRecord buildConsistentCutStartRecord() {
-        return new ConsistentCutStartRecord(new ConsistentCutVersion(1204L));
+        return new ConsistentCutStartRecord(new ConsistentCutVersion(1204L, UUID.randomUUID()));
     }
 
     /** **/
