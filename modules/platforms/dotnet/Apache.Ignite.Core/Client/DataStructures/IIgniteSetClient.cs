@@ -36,6 +36,16 @@ namespace Apache.Ignite.Core.Client.DataStructures
         string Name { get; }
 
         /// <summary>
+        /// Gets a value indicating whether this set is colocated, that is, all items are stored on a single node.
+        /// </summary>
+        bool Colocated { get; }
+
+        /// <summary>
+        /// Gets or sets a value indicating the batch size for multi-item operations such as iteration.
+        /// </summary>
+        int PageSize { get; set; }
+
+        /// <summary>
         /// Gets a value indicating whether this instance was removed from the cluster.
         /// </summary>
         /// <returns>True if this set was removed; otherwise, false.</returns>
