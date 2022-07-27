@@ -16,8 +16,44 @@
  */
 namespace Apache.Ignite.Core.Client.DataStructures
 {
+    using System.ComponentModel;
+    using Apache.Ignite.Core.Cache.Configuration;
+
+    /// <summary>
+    ///
+    /// </summary>
     public sealed class CollectionClientConfiguration
     {
+        /// <summary>
+        /// Default value for <see cref="CacheMode"/>.
+        /// </summary>
+        public const CacheMode DefaultCacheMode = CacheMode.Partitioned;
+
+        /// <summary>
+        /// Default value for <see cref="AtomicityMode"/>.
+        /// </summary>
+        public const CacheAtomicityMode DefaultAtomicityMode = CacheAtomicityMode.Atomic;
+
+        /// <summary>
+        /// Gets or sets the number of backup nodes for the underlying cache.
+        /// </summary>
+        public int Backups { get; set; }
+
+        /// <summary>
+        /// Gets or sets the cache mode for the underlying cache.
+        /// </summary>
+        [DefaultValue(DefaultCacheMode)]
+        public CacheMode CacheMode { get; set; } = DefaultCacheMode;
+
+        /// <summary>
+        /// Gets or sets the cache mode for the underlying cache.
+        /// </summary>
+        [DefaultValue(DefaultAtomicityMode)]
+        public CacheAtomicityMode AtomicityMode { get; set; } = DefaultAtomicityMode;
+
+        /// <summary>
+        /// Gets or sets a value indicating whether all set items should be stored on a single node.
+        /// </summary>
         public bool Colocated { get; set; }
     }
 }
