@@ -14,13 +14,14 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 namespace Apache.Ignite.Core.Client.DataStructures
 {
     using System.ComponentModel;
     using Apache.Ignite.Core.Cache.Configuration;
 
     /// <summary>
-    ///
+    /// Configuration for Ignite collections.
     /// </summary>
     public sealed class CollectionClientConfiguration
     {
