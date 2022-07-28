@@ -368,8 +368,6 @@
       url: data-structures/atomic-types
     - title: CountDownLatch 
       url: data-structures/countdownlatch
-    - title: Atomic Sequence 
-      url: data-structures/atomic-sequence
     - title:  Semaphore 
       url: data-structures/semaphore
     - title: ID Generator
