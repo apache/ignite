@@ -241,7 +241,7 @@ public class ClientCacheAffinityContext {
     /**
      * Current affinity mapping.
      */
-    private ClientCacheAffinityMapping currentMapping() {
+    protected ClientCacheAffinityMapping currentMapping() {
         TopologyNodes top = lastTop.get();
 
         if (top == null)
