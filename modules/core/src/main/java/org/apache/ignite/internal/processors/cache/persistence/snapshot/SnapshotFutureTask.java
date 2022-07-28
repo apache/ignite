@@ -968,6 +968,9 @@ class SnapshotFutureTask extends AbstractSnapshotFutureTask<Set<GroupPartitionId
             // Write buffer to the end of the file.
             int len = deltaFileIo.writeFully(pageBuf);
 
+            if (len > 0)
+                log.error("TEST | writting delta: for page " + pageId);
+
             totalSize.addAndGet(len);
         }
 

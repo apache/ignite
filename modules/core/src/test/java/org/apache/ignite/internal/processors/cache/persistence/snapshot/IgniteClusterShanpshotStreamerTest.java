@@ -65,7 +65,7 @@ public class IgniteClusterShanpshotStreamerTest  extends AbstractSnapshotSelfTes
     public void testClusterSnapshotConsistencyWithStreamer() throws Exception {
         int grids = 2;
         int backups = grids - 1;
-        int loadBeforeSnp = 10_000_000;
+        int loadBeforeSnp = 1_000_000;
 
         CountDownLatch loadLever = new CountDownLatch(loadBeforeSnp);
         AtomicBoolean stopLoading = new AtomicBoolean(false);
