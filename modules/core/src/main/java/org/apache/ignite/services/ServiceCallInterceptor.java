@@ -51,7 +51,7 @@ import org.apache.ignite.lang.IgniteExperimental;
  *
  *     try {
  *         // Execute service method.
- *         svcCall.call();
+ *         return svcCall.call();
  *     }
  *     catch (Exception e) {
  *         // Record error.
@@ -78,10 +78,10 @@ import org.apache.ignite.lang.IgniteExperimental;
  * // Set context parameters for the service proxy.
  * ServiceCallContext callCtx = ServiceCallContext.builder().put("sessionId", sessionId).build();
  *
- * // Make service proxy with caller context.
+ * // Make a service proxy with the call context to define the "sessionId" attribute.
  * MyService proxy = ignite.services().serviceProxy("service", MyService.class, false, callCtx, 0);
  *
- * // The call to the business method to be intercepted.
+ * // Service method call will be intercepted.
  * proxy.placeOrder(order1);
  * proxy.placeOrder(order2);
  * </pre>

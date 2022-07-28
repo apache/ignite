@@ -23,7 +23,7 @@ import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.lang.IgnitePredicate;
 import org.apache.ignite.services.ServiceConfiguration;
-import org.junit.jupiter.api.Test;
+import org.junit.Test;
 
 public class ServiceExample {
 
@@ -173,7 +173,7 @@ public class ServiceExample {
         ignite.services().deploy(serviceCfg);
 
         // NOTE: work via proxy. Direct references like 'IgniteServices#service()' corrupt the statistics.
-        MyCounterService svc = ignite.services().serviceProxy("myService", MyCounterService.class, true)
+        MyCounterService svc = ignite.services().serviceProxy("myService", MyCounterService.class, true);
         //end::start-with-statistics[]
 
         ignite.close();
@@ -196,5 +196,28 @@ public class ServiceExample {
         Ignite ignite = Ignition.start(igniteCfg);
         //end::service-configuration[]
         ignite.close();
+    }
+
+    @Test
+    public void serviceCallContextExample() {
+        //tag::service-call-context-create[]
+        try (Ignite ignite = Ignition.start()) {
+            ignite.services().deployClusterSingleton("EchoService", new EchoServiceImpl());
+
+            // Create context.
+            ServiceCallContext johnCtx = ServiceCallContext.builder().put("user", "John").build();
+            ServiceCallContext maryCtx = ServiceCallContext.builder().put("user", "Mary").build();
+
+            // Bind it to the service proxy.
+            EchoService johnProxy = ignite.services().serviceProxy("EchoService", EchoService.class, false, johnCtx);
+            EchoService maryProxy = ignite.services().serviceProxy("EchoService", EchoService.class, false, maryCtx);
+
+            // Prints "Hello John!".
+            System.out.println(johnProxy.hello());
+
+            // Prints "Hello Mary!".
+            System.out.println(maryProxy.hello());
+        }
+        //end::service-call-context-create[]
     }
 }

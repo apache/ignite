@@ -14,19 +14,23 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+package org.apache.ignite.examples;
 
-package org.apache.ignite.logger.log4j;
+import java.util.concurrent.Callable;
+import org.apache.ignite.services.ServiceCallContext;
+import org.apache.ignite.services.ServiceCallInterceptor;
+import org.apache.ignite.services.ServiceContext;
 
-import org.apache.ignite.lang.IgniteClosure;
+//tag::service-call-interceptor[]
+public class EchoServiceAccessInterceptor implements ServiceCallInterceptor {
+    /** {@inheritDoc} */
+    @Override public Object invoke(String mtd, Object[] args, ServiceContext ctx, Callable<Object> next) throws Exception {
+        ServiceCallContext callCtx = ctx.currentCallContext();
 
-/**
- * Interface for those loggers and appenders that evaluate their file paths lazily.
- */
-interface Log4jFileAware {
-    /**
-     * Sets closure that later evaluate file path.
-     *
-     * @param filePathClos Closure that generates actual file path.
-     */
-    void updateFilePath(IgniteClosure<String, String> filePathClos);
+        if (callCtx == null || callCtx.attribute("user") == null)
+            throw new SecurityException("Anonymous access is restricted.");
+
+        return next.call();
+    }
 }
+//end::service-call-interceptor[]
