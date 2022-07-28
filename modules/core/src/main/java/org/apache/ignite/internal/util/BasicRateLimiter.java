@@ -45,6 +45,9 @@ import static java.util.concurrent.TimeUnit.SECONDS;
  * forget about that past underutilization.
  */
 public class BasicRateLimiter {
+    /** The maximum idle time during which the limiter remembers about reserved permits. */
+    private static final long MAX_IDLE_TIMEOUT = SECONDS.toNanos(1);
+
     /** Start timestamp. */
     private final long startTime = System.nanoTime();
 
@@ -77,16 +80,6 @@ public class BasicRateLimiter {
     }
 
     /**
-     * Reset internal state.
-     */
-    public void reset() {
-        synchronized (mux) {
-            nextFreeTicketNanos = System.nanoTime() - startTime;
-            storedPermits = 0;
-        }
-    }
-
-    /**
      * Updates the stable rate.
      *
      * @param permitsPerSecond The new stable rate of this {@code RateLimiter}, set {@code 0} for unlimited rate.
@@ -100,8 +93,8 @@ public class BasicRateLimiter {
 
         synchronized (mux) {
             stableIntervalNanos = SECONDS.toNanos(1L) / permitsPerSecond;
-
-            reset();
+            nextFreeTicketNanos = System.nanoTime() - startTime;
+            storedPermits = 0;
         }
     }
 
@@ -175,8 +168,10 @@ public class BasicRateLimiter {
 
         // if nextFreeTicket is in the past, resync to now.
         if (passed > nextFreeTicketNanos) {
+            long idleTime = passed - nextFreeTicketNanos;
+
             // This is the number of permits we can give for free because we've been inactive longer than expected.
-            storedPermits = min(getRate(), storedPermits + ((passed - nextFreeTicketNanos) / stableIntervalNanos));
+            storedPermits = idleTime > MAX_IDLE_TIMEOUT ? 0 : min(getRate(), storedPermits + (idleTime / stableIntervalNanos));;
 
             nextFreeTicketNanos = passed;
         }
