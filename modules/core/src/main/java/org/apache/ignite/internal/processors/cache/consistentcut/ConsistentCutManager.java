@@ -380,7 +380,7 @@ public class ConsistentCutManager extends GridCacheSharedManagerAdapter implemen
         committingTxs.values().removeIf(tx ->
             tx.finishFuture().isDone()
                 && tx.state() == TransactionState.COMMITTED
-                && ((ConsistentCutVersionAware)tx).txCutVersion().compareTo(cutVer) < 0
+                && cutVer.compareToNullable(((ConsistentCutVersionAware)tx).txCutVersion()) > 0
         );
     }
 

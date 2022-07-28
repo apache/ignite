@@ -49,7 +49,6 @@ import org.apache.ignite.plugin.AbstractTestPluginProvider;
 import org.apache.ignite.plugin.PluginContext;
 import org.apache.ignite.plugin.extensions.communication.Message;
 import org.apache.ignite.spi.IgniteSpiException;
-import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.transactions.Transaction;
 import org.apache.ignite.transactions.TransactionConcurrency;
 import org.apache.ignite.transactions.TransactionState;
@@ -197,6 +196,8 @@ public abstract class AbstractConsistentCutBlockingTest extends AbstractConsiste
      * @param stopClient Whether to stop client node during test.
      */
     protected void runCase(Runnable tx, int nearNodeId, List<T2<Integer, Integer>> c, boolean stopClient) throws Exception {
+        log.info("START CASE " + caseNum + ". Data=" + c + ", nearNodeId=" + nearNodeId);
+
         long prevVer = grid(0).context().cache().context().consistentCutMgr().latestKnownCutVersion().version();
 
         initLatches();
@@ -227,8 +228,6 @@ public abstract class AbstractConsistentCutBlockingTest extends AbstractConsiste
 
         caseNum++;
 
-        log.info("START CASE " + caseNum + ". Data=" + c + ", nearNodeId=" + nearNodeId);
-
         if (txBlkNodeType != null) {
             Integer id = blkNode(nearNodeId, txBlkNodeType, c);
 
@@ -252,7 +251,8 @@ public abstract class AbstractConsistentCutBlockingTest extends AbstractConsiste
         }, 1);
 
         // 2. Block transaction.
-        txLatch.await(100, TimeUnit.MILLISECONDS);
+        if (txMsgBlkCls != null && !txMsgBlkCls.contains("Recovery"))
+            txLatch.await(100, TimeUnit.MILLISECONDS);
 
         // 3. Start Consistent Cut procedure concurrently with running transaction.
         triggerConsistentCut();
@@ -265,6 +265,10 @@ public abstract class AbstractConsistentCutBlockingTest extends AbstractConsiste
             assert nearNodeId == nodes() : "Wrong test configuration. Stopping node doesn't affect it.";
 
             stopGrid(nodes());
+
+            // Await blocks on recovery messages.
+            if (txMsgBlkCls != null && txMsgBlkCls.contains("Recovery"))
+                txLatch.await(100, TimeUnit.MILLISECONDS);
         }
 
         // 6. Resume the blocking transaction.
@@ -273,23 +277,6 @@ public abstract class AbstractConsistentCutBlockingTest extends AbstractConsiste
         // 7. Await transaction completed.
         if (!stopClient)
             txFut.get(getTestTimeout(), TimeUnit.MILLISECONDS);
-        else {
-            // Await while all primary nodes finished.
-            GridTestUtils.waitForCondition(() -> {
-                boolean finished = false;
-
-                for (T2<Integer, Integer> primBackup: c) {
-                    int primNode = primBackup.getKey();
-
-                    GridCacheSharedContext<?, ?> cctx = grid(primNode).context().cache().context();
-
-                    finished &= cctx.tm().activeTransactions().isEmpty() && cctx.consistentCutMgr().committingTxs().stream()
-                        .allMatch(t -> t.state() == TransactionState.COMMITTED || t.state() == TransactionState.ROLLED_BACK);
-                }
-
-                return finished;
-            }, 5_000, 10);
-        }
 
         // 8. Resume the blocking Consistent Cut.
         cutBlkLatch.countDown();
@@ -374,9 +361,11 @@ public abstract class AbstractConsistentCutBlockingTest extends AbstractConsiste
             ClusterNode node, Message msg, IgniteInClosure<IgniteException> ackC) throws IgniteSpiException {
             if (blkMessage(msg)) {
                 try {
-                    txLatch.countDown();
+                    if (txLatch.getCount() > 0) {
+                        txLatch.countDown();
 
-                    cutGlobalStartLatch.await(100, TimeUnit.MILLISECONDS);
+                        cutGlobalStartLatch.await(1_000, TimeUnit.MILLISECONDS);
+                    }
                 }
                 catch (InterruptedException e) {
                     e.printStackTrace();

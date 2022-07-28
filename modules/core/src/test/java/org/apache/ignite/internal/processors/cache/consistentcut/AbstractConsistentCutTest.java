@@ -438,7 +438,8 @@ public abstract class AbstractConsistentCutTest extends GridCommonAbstractTest {
         /** */
         boolean consistentCutFinished(long cutVer) {
             return U.isLocalNodeCoordinator(cctx.discovery())
-                && latestKnownCutVersion().version() == cutVer && notFinishedSrvNodes == null;
+                && latestKnownCutVersion().version() == cutVer
+                && notFinishedSrvNodes == null;
         }
 
         /** */

@@ -661,9 +661,9 @@ public class GridCacheTxRecoveryFuture extends GridCacheCompoundIdentityFuture<G
                 return false;
             }
 
-            GridCacheTxRecoveryCommitInfo commitInfo = resUpd.get(this);
-
             while (true) {
+                GridCacheTxRecoveryCommitInfo commitInfo = resUpd.get(this);
+
                 GridCacheTxRecoveryCommitInfo updCommitInfo = null;
 
                 if (commitInfo == null)
