@@ -22,6 +22,8 @@ import java.nio.ByteBuffer;
 import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.internal.GridDirectTransient;
 import org.apache.ignite.internal.processors.cache.GridCacheSharedContext;
+import org.apache.ignite.internal.processors.cache.consistentcut.ConsistentCutVersion;
+import org.apache.ignite.internal.processors.cache.consistentcut.ConsistentCutVersionAware;
 import org.apache.ignite.internal.processors.cache.transactions.IgniteTxState;
 import org.apache.ignite.internal.processors.cache.transactions.IgniteTxStateAware;
 import org.apache.ignite.internal.processors.cache.version.GridCacheVersion;
@@ -29,11 +31,12 @@ import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.lang.IgniteUuid;
 import org.apache.ignite.plugin.extensions.communication.MessageReader;
 import org.apache.ignite.plugin.extensions.communication.MessageWriter;
+import org.jetbrains.annotations.Nullable;
 
 /**
  * Transactions recovery check response.
  */
-public class GridCacheTxRecoveryResponse extends GridDistributedBaseMessage implements IgniteTxStateAware {
+public class GridCacheTxRecoveryResponse extends GridDistributedBaseMessage implements IgniteTxStateAware, ConsistentCutVersionAware {
     /** */
     private static final long serialVersionUID = 0L;
 
@@ -43,12 +46,18 @@ public class GridCacheTxRecoveryResponse extends GridDistributedBaseMessage impl
     /** Mini future ID. */
     private IgniteUuid miniId;
 
-    /** Flag indicating if all remote transactions were prepared. */
-    private boolean success;
-
     /** Transient TX state. */
     @GridDirectTransient
     private IgniteTxState txState;
+
+    /** Version of the latest known Consistent Cut on local node. */
+    @Nullable private ConsistentCutVersion latestCutVer;
+
+    /**
+     * Version of the latest Consistent Cut AFTER which this transaction committed.
+     * Sets on near node to notify other nodes in 2PC algorithm.
+     */
+    private GridCacheTxRecoveryCommitInfo commit;
 
     /**
      * Empty constructor required by {@link Externalizable}
@@ -61,21 +70,25 @@ public class GridCacheTxRecoveryResponse extends GridDistributedBaseMessage impl
      * @param txId Transaction ID.
      * @param futId Future ID.
      * @param miniId Mini future ID.
-     * @param success {@code True} if all remote transactions were prepared, {@code false} otherwise.
      * @param addDepInfo Deployment info flag.
+     * @param commit Commit info on local node for specified transaction.
+     * @param latestCutVer The latest known Consistent Cut on sender node.
      */
     public GridCacheTxRecoveryResponse(GridCacheVersion txId,
         IgniteUuid futId,
         IgniteUuid miniId,
-        boolean success,
-        boolean addDepInfo) {
+        boolean addDepInfo,
+        GridCacheTxRecoveryCommitInfo commit,
+        @Nullable ConsistentCutVersion latestCutVer) {
         super(txId, 0, addDepInfo);
 
         this.futId = futId;
         this.miniId = miniId;
-        this.success = success;
 
         this.addDepInfo = addDepInfo;
+
+        this.commit = commit;
+        this.latestCutVer = latestCutVer;
     }
 
     /**
@@ -93,10 +106,15 @@ public class GridCacheTxRecoveryResponse extends GridDistributedBaseMessage impl
     }
 
     /**
-     * @return {@code True} if all remote transactions were prepared.
+     * @return Commit info on local node for specified transaction.
      */
-    public boolean success() {
-        return success;
+    public GridCacheTxRecoveryCommitInfo commit() {
+        return commit;
+    }
+
+    /** {@inheritDoc} */
+    @Override public ConsistentCutVersion latestCutVersion() {
+        return latestCutVer;
     }
 
     /** {@inheritDoc} */
@@ -142,7 +160,13 @@ public class GridCacheTxRecoveryResponse extends GridDistributedBaseMessage impl
                 writer.incrementState();
 
             case 10:
-                if (!writer.writeBoolean("success", success))
+                if (!writer.writeMessage("commit", commit))
+                    return false;
+
+                writer.incrementState();
+
+            case 11:
+                if (!writer.writeMessage("latestCutVer", latestCutVer))
                     return false;
 
                 writer.incrementState();
@@ -180,13 +204,20 @@ public class GridCacheTxRecoveryResponse extends GridDistributedBaseMessage impl
                 reader.incrementState();
 
             case 10:
-                success = reader.readBoolean("success");
+                commit = reader.readMessage("commit");
 
                 if (!reader.isLastRead())
                     return false;
 
                 reader.incrementState();
 
+            case 11:
+                latestCutVer = reader.readMessage("latestCutVer");
+
+                if (!reader.isLastRead())
+                    return false;
+
+                reader.incrementState();
         }
 
         return reader.afterMessageRead(GridCacheTxRecoveryResponse.class);
@@ -199,7 +230,7 @@ public class GridCacheTxRecoveryResponse extends GridDistributedBaseMessage impl
 
     /** {@inheritDoc} */
     @Override public byte fieldsCount() {
-        return 11;
+        return 12;
     }
 
     /** {@inheritDoc} */

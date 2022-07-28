@@ -59,7 +59,7 @@ public class GridDistributedTxPrepareResponse extends GridDistributedBaseMessage
     /** */
     protected byte flags;
 
-    /** Version of the latest observable Consistent Cut on local node. */
+    /** Version of the latest known Consistent Cut on local node. */
     private ConsistentCutVersion latestCutVer;
 
     /**

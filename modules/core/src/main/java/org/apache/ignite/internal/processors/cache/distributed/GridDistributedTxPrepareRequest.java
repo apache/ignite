@@ -162,7 +162,7 @@ public class GridDistributedTxPrepareRequest extends GridDistributedBaseMessage 
     @GridToStringExclude
     private byte flags;
 
-    /** Version of the latest observable Consistent Cut on local node. */
+    /** Version of the latest known Consistent Cut on local node. */
     private ConsistentCutVersion latestCutVer;
 
     /**
@@ -182,7 +182,7 @@ public class GridDistributedTxPrepareRequest extends GridDistributedBaseMessage 
      * @param last Last request flag.
      * @param onePhaseCommit One phase commit flag.
      * @param addDepInfo Deployment info flag.
-     * @param latestCutVer Version of the latest observable Consistent Cut.
+     * @param latestCutVer Version of the latest known Consistent Cut.
      */
     public GridDistributedTxPrepareRequest(
         IgniteInternalTx tx,

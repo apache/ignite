@@ -48,6 +48,7 @@ import org.apache.ignite.internal.processors.cache.GridCacheSharedContext;
 import org.apache.ignite.internal.processors.cache.GridCacheUpdateTxResult;
 import org.apache.ignite.internal.processors.cache.KeyCacheObject;
 import org.apache.ignite.internal.processors.cache.consistentcut.ConsistentCutVersionAware;
+import org.apache.ignite.internal.processors.cache.distributed.GridCacheTxRecoveryCommitInfo;
 import org.apache.ignite.internal.processors.cache.distributed.GridCacheTxRecoveryFuture;
 import org.apache.ignite.internal.processors.cache.distributed.GridCacheTxRecoveryRequest;
 import org.apache.ignite.internal.processors.cache.distributed.GridCacheTxRecoveryResponse;
@@ -2207,38 +2208,41 @@ public class IgniteTxHandler {
                 ", node=" + nodeId + ']');
         }
 
-        IgniteInternalFuture<Boolean> fut = req.nearTxCheck() ? ctx.tm().txCommitted(req.nearXidVersion()) :
-            ctx.tm().txsPreparedOrCommitted(req.nearXidVersion(), req.transactions());
+        processConsistentVer(req);
 
-        if (fut == null || fut.isDone()) {
-            boolean prepared;
+        IgniteInternalFuture<GridCacheTxRecoveryCommitInfo> fut = req.nearTxCheck()
+            ? ctx.tm().txCommitted(req.nearXidVersion())
+            : ctx.tm().txsPreparedOrCommitted(req.nearXidVersion(), req.transactions());
+
+        if (fut.isDone()) {
+            GridCacheTxRecoveryCommitInfo commitInfo;
 
             try {
-                prepared = fut == null ? true : fut.get();
+                commitInfo = fut.get();
             }
             catch (IgniteCheckedException e) {
                 U.error(log, "Check prepared transaction future failed [req=" + req + ']', e);
 
-                prepared = false;
+                commitInfo = GridCacheTxRecoveryCommitInfo.noCommit();
             }
 
-            sendCheckPreparedResponse(nodeId, req, prepared);
+            sendCheckPreparedResponse(nodeId, req, commitInfo);
         }
         else {
-            fut.listen(new CI1<IgniteInternalFuture<Boolean>>() {
-                @Override public void apply(IgniteInternalFuture<Boolean> fut) {
-                    boolean prepared;
+            fut.listen(new CI1<IgniteInternalFuture<GridCacheTxRecoveryCommitInfo>>() {
+                @Override public void apply(IgniteInternalFuture<GridCacheTxRecoveryCommitInfo> fut) {
+                    GridCacheTxRecoveryCommitInfo commitInfo;
 
                     try {
-                        prepared = fut.get();
+                        commitInfo = fut.get();
                     }
                     catch (IgniteCheckedException e) {
                         U.error(log, "Check prepared transaction future failed [req=" + req + ']', e);
 
-                        prepared = false;
+                        commitInfo = GridCacheTxRecoveryCommitInfo.noCommit();
                     }
 
-                    sendCheckPreparedResponse(nodeId, req, prepared);
+                    sendCheckPreparedResponse(nodeId, req, commitInfo);
                 }
             });
         }
@@ -2247,16 +2251,18 @@ public class IgniteTxHandler {
     /**
      * @param nodeId Node ID.
      * @param req Request.
-     * @param prepared {@code True} if all transaction prepared or committed.
+     * @param commitInfo Commit info.
      */
     private void sendCheckPreparedResponse(UUID nodeId,
         GridCacheTxRecoveryRequest req,
-        boolean prepared) {
+        GridCacheTxRecoveryCommitInfo commitInfo
+    ) {
         GridCacheTxRecoveryResponse res = new GridCacheTxRecoveryResponse(req.version(),
             req.futureId(),
             req.miniId(),
-            prepared,
-            req.deployInfo() != null);
+            req.deployInfo() != null,
+            commitInfo,
+            ctx.consistentCutMgr() != null ? ctx.consistentCutMgr().latestKnownCutVersion() : null);
 
         try {
             ctx.io().send(nodeId, res, req.system() ? UTILITY_CACHE_POOL : SYSTEM_POOL);
@@ -2291,6 +2297,8 @@ public class IgniteTxHandler {
                 ", node=" + nodeId +
                 ", res=" + res + ']');
         }
+
+        processConsistentVer(res);
 
         GridCacheTxRecoveryFuture fut = (GridCacheTxRecoveryFuture)ctx.mvcc().future(res.futureId());
 

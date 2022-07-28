@@ -56,7 +56,7 @@ public class ConsistentCutNoBackupMessagesBlockingTest extends AbstractConsisten
     public void testMultipleCases() throws Exception {
         List<List<T2<Integer, Integer>>> cases = ConsistentCutBlockingCases.casesNoBackup(nodes());
 
-        List<String> msgs = messages(false);
+        List<String> msgs = messages(false, false);
 
         for (String msg: msgs) {
             initMsgCase(msg, cutBlkType, cutNodeBlkType);
@@ -65,6 +65,24 @@ public class ConsistentCutNoBackupMessagesBlockingTest extends AbstractConsisten
         }
 
         checkWalsConsistency();
+    }
+
+    /** */
+    @Test
+    public void testWithStoppedClient() throws Exception {
+        stopGrid(nodes());
+
+        List<List<T2<Integer, Integer>>> cases = ConsistentCutBlockingCases.casesNoBackup(nodes());
+
+        List<String> msgs = ConsistentCutBlockingCases.messages(false, true);
+
+        for (String msg: msgs) {
+            initMsgCase(msg, cutBlkType, cutNodeBlkType);
+
+            runCases(cases, true);
+        }
+
+        checkWalsConsistency(false);
     }
 
     /** {@inheritDoc} */

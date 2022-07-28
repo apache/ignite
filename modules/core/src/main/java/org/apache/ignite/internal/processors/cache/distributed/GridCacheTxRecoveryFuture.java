@@ -23,13 +23,16 @@ import java.util.Map;
 import java.util.Set;
 import java.util.UUID;
 import java.util.concurrent.atomic.AtomicReference;
+import java.util.concurrent.atomic.AtomicReferenceFieldUpdater;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.cluster.ClusterNode;
+import org.apache.ignite.configuration.DataStorageConfiguration;
 import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.cluster.ClusterTopologyCheckedException;
 import org.apache.ignite.internal.processors.cache.GridCacheCompoundIdentityFuture;
 import org.apache.ignite.internal.processors.cache.GridCacheSharedContext;
+import org.apache.ignite.internal.processors.cache.consistentcut.ConsistentCutVersion;
 import org.apache.ignite.internal.processors.cache.transactions.IgniteInternalTx;
 import org.apache.ignite.internal.util.GridLeanMap;
 import org.apache.ignite.internal.util.future.GridFutureAdapter;
@@ -38,9 +41,9 @@ import org.apache.ignite.internal.util.tostring.GridToStringInclude;
 import org.apache.ignite.internal.util.typedef.C1;
 import org.apache.ignite.internal.util.typedef.CI1;
 import org.apache.ignite.internal.util.typedef.F;
-import org.apache.ignite.internal.util.typedef.internal.CU;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.internal.util.typedef.internal.U;
+import org.apache.ignite.lang.IgniteReducer;
 import org.apache.ignite.lang.IgniteUuid;
 import org.jetbrains.annotations.Nullable;
 
@@ -49,7 +52,7 @@ import static org.apache.ignite.transactions.TransactionState.PREPARED;
 /**
  * Future verifying that all remote transactions related to transaction were prepared or committed.
  */
-public class GridCacheTxRecoveryFuture extends GridCacheCompoundIdentityFuture<Boolean> {
+public class GridCacheTxRecoveryFuture extends GridCacheCompoundIdentityFuture<GridCacheTxRecoveryCommitInfo> {
     /** */
     private static final long serialVersionUID = 0L;
 
@@ -99,7 +102,7 @@ public class GridCacheTxRecoveryFuture extends GridCacheCompoundIdentityFuture<B
         Set<UUID> failedNodeIds,
         Map<UUID, Collection<UUID>> txNodes
     ) {
-        super(CU.boolReducer());
+        super(new CommitInfoReducer());
 
         this.cctx = cctx;
         this.tx = tx;
@@ -141,10 +144,10 @@ public class GridCacheTxRecoveryFuture extends GridCacheCompoundIdentityFuture<B
             UUID nearNodeId = tx.eventNodeId();
 
             if (cctx.localNodeId().equals(nearNodeId)) {
-                IgniteInternalFuture<Boolean> fut = cctx.tm().txCommitted(tx.nearXidVersion());
+                IgniteInternalFuture<GridCacheTxRecoveryCommitInfo> fut = cctx.tm().txCommitted(tx.nearXidVersion());
 
-                fut.listen(new CI1<IgniteInternalFuture<Boolean>>() {
-                    @Override public void apply(IgniteInternalFuture<Boolean> fut) {
+                fut.listen(new CI1<IgniteInternalFuture<GridCacheTxRecoveryCommitInfo>>() {
+                    @Override public void apply(IgniteInternalFuture<GridCacheTxRecoveryCommitInfo> fut) {
                         try {
                             onDone(fut.get());
                         }
@@ -165,7 +168,8 @@ public class GridCacheTxRecoveryFuture extends GridCacheCompoundIdentityFuture<B
                     true,
                     futureId(),
                     fut.futureId(),
-                    tx.activeCachesDeploymentEnabled());
+                    tx.activeCachesDeploymentEnabled(),
+                    cctx.consistentCutMgr() != null ? cctx.consistentCutMgr().latestKnownCutVersion() : null);
 
                 try {
                     cctx.io().send(nearNodeId, req, tx.ioPolicy());
@@ -200,22 +204,23 @@ public class GridCacheTxRecoveryFuture extends GridCacheCompoundIdentityFuture<B
         int locTxNum = nodeTransactions(cctx.localNodeId());
 
         if (locTxNum > 1) {
-            IgniteInternalFuture<Boolean> fut = cctx.tm().txsPreparedOrCommitted(tx.nearXidVersion(), locTxNum);
+            IgniteInternalFuture<GridCacheTxRecoveryCommitInfo> fut =
+                cctx.tm().txsPreparedOrCommitted(tx.nearXidVersion(), locTxNum);
 
-            if (fut == null || fut.isDone()) {
-                boolean prepared;
+            if (fut.isDone()) {
+                GridCacheTxRecoveryCommitInfo commitInfo;
 
                 try {
-                    prepared = fut == null ? true : fut.get();
+                    commitInfo = fut.get();
                 }
                 catch (IgniteCheckedException e) {
                     U.error(log, "Check prepared transaction future failed: " + e, e);
 
-                    prepared = false;
+                    commitInfo = GridCacheTxRecoveryCommitInfo.noCommit();
                 }
 
-                if (!prepared) {
-                    onDone(false);
+                if (!commitInfo.commit()) {
+                    onDone(GridCacheTxRecoveryCommitInfo.noCommit());
 
                     markInitialized();
 
@@ -223,21 +228,21 @@ public class GridCacheTxRecoveryFuture extends GridCacheCompoundIdentityFuture<B
                 }
             }
             else {
-                fut.listen(new CI1<IgniteInternalFuture<Boolean>>() {
-                    @Override public void apply(IgniteInternalFuture<Boolean> fut) {
-                        boolean prepared;
+                fut.listen(new CI1<IgniteInternalFuture<GridCacheTxRecoveryCommitInfo>>() {
+                    @Override public void apply(IgniteInternalFuture<GridCacheTxRecoveryCommitInfo> fut) {
+                        GridCacheTxRecoveryCommitInfo commitInfo;
 
                         try {
-                            prepared = fut.get();
+                            commitInfo = fut.get();
                         }
                         catch (IgniteCheckedException e) {
                             U.error(log, "Check prepared transaction future failed: " + e, e);
 
-                            prepared = false;
+                            commitInfo = GridCacheTxRecoveryCommitInfo.noCommit();
                         }
 
-                        if (!prepared) {
-                            onDone(false);
+                        if (!commitInfo.commit()) {
+                            onDone(GridCacheTxRecoveryCommitInfo.noCommit());
 
                             markInitialized();
                         }
@@ -284,7 +289,8 @@ public class GridCacheTxRecoveryFuture extends GridCacheCompoundIdentityFuture<B
                         false,
                         futureId(),
                         fut.futureId(),
-                        tx.activeCachesDeploymentEnabled());
+                        tx.activeCachesDeploymentEnabled(),
+                        cctx.consistentCutMgr() != null ? cctx.consistentCutMgr().latestKnownCutVersion() : null);
 
                     try {
                         cctx.io().send(id, req, tx.ioPolicy());
@@ -323,7 +329,8 @@ public class GridCacheTxRecoveryFuture extends GridCacheCompoundIdentityFuture<B
                     false,
                     futureId(),
                     fut.futureId(),
-                    tx.activeCachesDeploymentEnabled());
+                    tx.activeCachesDeploymentEnabled(),
+                    cctx.consistentCutMgr() != null ? cctx.consistentCutMgr().latestKnownCutVersion() : null);
 
                 try {
                     cctx.io().send(nodeId, req, tx.ioPolicy());
@@ -424,7 +431,7 @@ public class GridCacheTxRecoveryFuture extends GridCacheCompoundIdentityFuture<B
 
             // Avoid iterator creation.
             for (int i = 0; i < size; i++) {
-                IgniteInternalFuture<Boolean> fut = future(i);
+                IgniteInternalFuture<GridCacheTxRecoveryCommitInfo> fut = future(i);
 
                 if (!isMini(fut))
                     continue;
@@ -488,7 +495,7 @@ public class GridCacheTxRecoveryFuture extends GridCacheCompoundIdentityFuture<B
     }
 
     /** {@inheritDoc} */
-    @Override public boolean onDone(@Nullable Boolean res, @Nullable Throwable err) {
+    @Override public boolean onDone(@Nullable GridCacheTxRecoveryCommitInfo res, @Nullable Throwable err) {
         if (super.onDone(res, err)) {
             cctx.mvcc().removeFuture(futId);
 
@@ -544,7 +551,7 @@ public class GridCacheTxRecoveryFuture extends GridCacheCompoundIdentityFuture<B
     /**
      *
      */
-    private class MiniFuture extends GridFutureAdapter<Boolean> {
+    private class MiniFuture extends GridFutureAdapter<GridCacheTxRecoveryCommitInfo> {
         /** Mini future ID. */
         private final IgniteUuid futId = IgniteUuid.randomUuid();
 
@@ -604,20 +611,81 @@ public class GridCacheTxRecoveryFuture extends GridCacheCompoundIdentityFuture<B
 
                 onDone(new ClusterTopologyCheckedException("Transaction node left grid (will ignore)."));
             }
-            else
-                onDone(true);
+            else {
+                // Remote node failed. Decide by self.
+                ConsistentCutVersion txCutVer = null;
+
+                if (cctx.consistentCutMgr() != null)
+                    txCutVer = cctx.consistentCutMgr().latestKnownCutVersion();
+
+                onDone(new GridCacheTxRecoveryCommitInfo(true, txCutVer));
+            }
         }
 
         /**
          * @param res Result callback.
          */
         private void onResult(GridCacheTxRecoveryResponse res) {
-            onDone(res.success());
+            onDone(res.commit());
         }
 
         /** {@inheritDoc} */
         @Override public String toString() {
             return S.toString(MiniFuture.class, this, "done", isDone(), "err", error());
+        }
+    }
+
+    /**
+     * Reduces {@link GridCacheTxRecoveryCommitInfo} received from remote nodes. If at least single node respond
+     * with no-commit than local transaction will not commit.
+     *
+     * In case {@link DataStorageConfiguration#isPointInTimeRecoveryEnabled()} recovered transaction signed with the least
+     * {@link ConsistentCutVersion} received from remote nodes. NULL means the least possible version.
+     */
+    private static class CommitInfoReducer implements IgniteReducer<GridCacheTxRecoveryCommitInfo, GridCacheTxRecoveryCommitInfo> {
+        /** */
+        private static final long serialVersionUID = 0L;
+
+        /** */
+        private static final AtomicReferenceFieldUpdater<CommitInfoReducer, GridCacheTxRecoveryCommitInfo> resUpd =
+            AtomicReferenceFieldUpdater.newUpdater(CommitInfoReducer.class, GridCacheTxRecoveryCommitInfo.class, "res");
+
+        /** Reduced result. */
+        private volatile GridCacheTxRecoveryCommitInfo res;
+
+        /** {@inheritDoc} */
+        @Override public boolean collect(@Nullable GridCacheTxRecoveryCommitInfo info) {
+            if (!info.commit()) {
+                resUpd.set(this, GridCacheTxRecoveryCommitInfo.noCommit());
+
+                return false;
+            }
+
+            GridCacheTxRecoveryCommitInfo commitInfo = resUpd.get(this);
+
+            while (true) {
+                GridCacheTxRecoveryCommitInfo updCommitInfo = null;
+
+                if (commitInfo == null)
+                    updCommitInfo = info;
+                else if (commitInfo.cutVer() != null && commitInfo.cutVer().compareToNullable(info.cutVer()) > 0)
+                    updCommitInfo = info;
+
+                if (updCommitInfo == null || resUpd.compareAndSet(this, commitInfo, updCommitInfo))
+                    break;
+            }
+
+            return true;
+        }
+
+        /** {@inheritDoc} */
+        @Override public GridCacheTxRecoveryCommitInfo reduce() {
+            GridCacheTxRecoveryCommitInfo commitInfo = res;
+
+            if (commitInfo == null)
+                commitInfo = GridCacheTxRecoveryCommitInfo.noCommit();
+
+            return commitInfo;
         }
     }
 }

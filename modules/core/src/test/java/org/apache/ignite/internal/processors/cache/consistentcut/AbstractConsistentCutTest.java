@@ -47,6 +47,8 @@ import org.apache.ignite.internal.pagemem.wal.IgniteWriteAheadLogManager;
 import org.apache.ignite.internal.pagemem.wal.WALIterator;
 import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
 import org.apache.ignite.internal.processors.cache.GridCacheSharedContext;
+import org.apache.ignite.internal.processors.cache.distributed.GridCacheTxRecoveryRequest;
+import org.apache.ignite.internal.processors.cache.distributed.GridCacheTxRecoveryResponse;
 import org.apache.ignite.internal.processors.cache.distributed.GridDistributedTxFinishResponse;
 import org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtTxFinishRequest;
 import org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtTxPrepareRequest;
@@ -68,6 +70,7 @@ import org.apache.ignite.spi.IgniteSpiException;
 import org.apache.ignite.spi.communication.tcp.TcpCommunicationSpi;
 import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
+import org.apache.ignite.transactions.TransactionState;
 import org.jetbrains.annotations.Nullable;
 
 import static org.apache.ignite.internal.processors.cache.consistentcut.ConsistentCutWalReader.NodeConsistentCutState.INCOMPLETE;
@@ -279,7 +282,7 @@ public abstract class AbstractConsistentCutTest extends GridCommonAbstractTest {
      * @param cuts       Number of Consistent Cuts was run within a test.
      */
     protected void checkWalsConsistency(Map<IgniteUuid, Integer> txNearNode, int cuts) throws Exception {
-        checkWalsConsistency(txNearNode, cuts, nodeIds(null), false);
+        checkWalsConsistency(txNearNode, cuts, nodeIds(null), true);
     }
 
     /** */
@@ -302,12 +305,13 @@ public abstract class AbstractConsistentCutTest extends GridCommonAbstractTest {
      * @param txNearNode Collection of transactions was run within a test. Key is transaction ID, value is near node ID.
      * @param cuts       Number of Consistent Cuts was run within a test.
      * @param nodes      Set of nodes to check WAL.
-     * @param checkTxAmount Whether to check that WAL contain all transactions specified with txNearNode.
+     * @param strictAmountCheck If {@code true} than amount of transactions parsed from WAL must be equal amount of transactions
+     *                          in txNearNode. If {@code false} then check only that amount of transactions isn't 0.
      */
     protected void checkWalsConsistency(
         Map<IgniteUuid, Integer> txNearNode,
         int cuts, Set<Integer> nodes,
-        boolean checkTxAmount
+        boolean strictAmountCheck
     ) throws Exception {
         Map<Integer, Short> top = stopCluster();
 
@@ -331,7 +335,7 @@ public abstract class AbstractConsistentCutTest extends GridCommonAbstractTest {
 
         Map<IgniteUuid, T2<Long, Integer>> txMap = new HashMap<>();
 
-        Set<IgniteUuid> txSet = new HashSet<>();
+        Map<IgniteUuid, TransactionState> txStates = new HashMap<>();
 
         // Includes incomplete state also.
         for (int cutId = 0; cutId < cuts + 1; cutId++) {
@@ -350,15 +354,30 @@ public abstract class AbstractConsistentCutTest extends GridCommonAbstractTest {
                             ". Node" + nodeId + "=" + state.ver, prev.get1() == state.ver);
                     }
 
-                    txSet.add(uid);
+                    TransactionState prevState = txStates.put(uid, TransactionState.COMMITTED);
+
+                    assertTrue(prevState == null || prevState == TransactionState.COMMITTED);
                 }
 
-                txSet.addAll(state.rolledBackTx);
+                for (IgniteUuid uid: state.rolledBackTx) {
+                    T2<Long, Integer> prev = txMap.get(uid);
+
+                    assertNull("Transaction miscommitted: " + uid + ". Committed Node " + prev +
+                            ". Rollbacked Node " + nodeId + ". Version =" + state.ver,
+                        prev);
+
+                    TransactionState prevState = txStates.put(uid, TransactionState.ROLLED_BACK);
+
+                    assertTrue(prevState == null || prevState == TransactionState.ROLLED_BACK);
+                }
             }
         }
 
-        if (checkTxAmount)
-            assertEquals(txNearNode.size(), txSet.size());
+        if (strictAmountCheck)
+            assertEquals(txNearNode.size(), txStates.size());
+        else
+            // Check that at least 1 committed and 1 rolled back transactions are here.
+            assertTrue(new HashSet<>(txStates.values()).size() == 2);
     }
 
     /** */
@@ -541,6 +560,21 @@ public abstract class AbstractConsistentCutTest extends GridCommonAbstractTest {
                     .append("; txVer=").append(m.xidVersion().asIgniteUuid())
                     .append("; txCutVer=").append((m.txCutVersion()))
                     .append("; 1PC=").append((m.onePhaseCommit()));
+            }
+            else if (msg instanceof GridCacheTxRecoveryRequest) {
+                GridCacheTxRecoveryRequest m = (GridCacheTxRecoveryRequest)msg;
+
+                bld
+                    .append("; lastCutVer=").append(m.latestCutVersion())
+                    .append("; nearTxVer=").append(m.nearXidVersion().asIgniteUuid())
+                    .append("; txCutVer=").append((m.txCutVersion()));
+            }
+            else if (msg instanceof GridCacheTxRecoveryResponse) {
+                GridCacheTxRecoveryResponse m = (GridCacheTxRecoveryResponse)msg;
+
+                bld
+                    .append("; lastCutVer=").append(m.latestCutVersion())
+                    .append("; commitInfo=").append(m.commit());
             }
 
             log.info(bld.toString());

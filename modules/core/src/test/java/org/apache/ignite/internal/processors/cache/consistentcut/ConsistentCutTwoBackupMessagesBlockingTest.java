@@ -44,7 +44,7 @@ public class ConsistentCutTwoBackupMessagesBlockingTest extends AbstractConsiste
     public static List<Object[]> params() {
         List<Object[]> p = new ArrayList<>();
 
-        List<String> msgs = ConsistentCutBlockingCases.messages(true);
+        List<String> msgs = ConsistentCutBlockingCases.messages(true, false);
 
         for (BlkNodeType n: BlkNodeType.values()) {
             for (BlkCutType c : BlkCutType.values()) {

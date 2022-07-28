@@ -107,7 +107,7 @@ public class GridDistributedTxFinishRequest extends GridDistributedBaseMessage i
     @GridDirectTransient
     private IgniteTxState txState;
 
-    /** Version of the latest observable Consistent Cut on local node. */
+    /** Version of the latest known Consistent Cut on local node. */
     private ConsistentCutVersion latestCutVer;
 
     /**

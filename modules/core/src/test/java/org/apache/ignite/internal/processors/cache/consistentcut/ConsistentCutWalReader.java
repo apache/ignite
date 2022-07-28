@@ -263,8 +263,6 @@ class ConsistentCutWalReader {
                         }
                     }
                     else {
-                        assert tx.state() == TransactionState.COMMITTED : uid + " " + tx.state();
-
                         handleTxRecord(tx, cut, true);
 
                         if (!cut.txParticipations.containsKey(uid))
@@ -295,8 +293,8 @@ class ConsistentCutWalReader {
     private void handleTxRecord(TxRecord tx, NodeConsistentCutState cut, boolean awaited) {
         IgniteUuid uid = tx.nearXidVersion().asIgniteUuid();
 
-        if (tx.state() == TransactionState.COMMITTED) {
-            if (cut.addCommittedTx(uid))
+        if (tx.state() == TransactionState.COMMITTED || tx.state() == TransactionState.ROLLED_BACK) {
+            if (cut.addFinishedTx(uid, tx.state() == TransactionState.COMMITTED))
                 logCommittedTxRecord(tx, cut);
             else
                 log("--- TX[id=" + uid + ", state=" + tx.state() + "]");
@@ -307,8 +305,6 @@ class ConsistentCutWalReader {
             else
                 handlePreparedTx(tx, cut, false);
         }
-        else if (tx.state() == TransactionState.ROLLED_BACK)
-            cut.addRollBackedTx(uid);
     }
 
     /** */
@@ -485,22 +481,20 @@ class ConsistentCutWalReader {
         }
 
         /** */
-        public boolean addCommittedTx(IgniteUuid txId) {
+        public boolean addFinishedTx(IgniteUuid txId, boolean commitOrRollback) {
             if (txExclude != null && txExclude.contains(txId))
                 return false;
 
-            if (txParticipate(txId)) {
-                committedTx.add(txId);
+            if (txParticipate(txId, !commitOrRollback)) {
+                if (commitOrRollback)
+                    committedTx.add(txId);
+                else
+                    rolledBackTx.add(txId);
 
                 return true;
             }
 
             return false;
-        }
-
-        /** */
-        public void addRollBackedTx(IgniteUuid txId) {
-            rolledBackTx.add(txId);
         }
 
         /** Includes set of transactions to this state. */
@@ -543,7 +537,7 @@ class ConsistentCutWalReader {
          *
          * @return {@code true} if this node participated in this tx, otherwise {@code false}.
          */
-        private boolean txParticipate(IgniteUuid txId) {
+        private boolean txParticipate(IgniteUuid txId, boolean rollBack) {
             // Artifacts from previous cut states.
             if (!txParticipations.containsKey(txId))
                 return false;
@@ -554,10 +548,12 @@ class ConsistentCutWalReader {
 
             // For 2PC case when node participate as near and backup. Then it will have first COMMITTED record without data entries.
             if (!p.started) {
-                assert p.maybeNear : txId;
+                assert rollBack || p.maybeNear : txId + " " + p + " " + rollBack;
 
                 return false;
             }
+            else
+                assert !rollBack : txId + " " + p + " " + rollBack;
 
             boolean isParticipate = p.participate();
 

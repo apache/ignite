@@ -75,7 +75,10 @@ import org.apache.ignite.internal.processors.cache.GridCacheVersionedFuture;
 import org.apache.ignite.internal.processors.cache.GridDeferredAckMessageSender;
 import org.apache.ignite.internal.processors.cache.TxTimeoutOnPartitionMapExchangeChangeMessage;
 import org.apache.ignite.internal.processors.cache.consistentcut.ConsistentCutManager;
+import org.apache.ignite.internal.processors.cache.consistentcut.ConsistentCutVersion;
+import org.apache.ignite.internal.processors.cache.consistentcut.ConsistentCutVersionAware;
 import org.apache.ignite.internal.processors.cache.distributed.GridCacheMappedVersion;
+import org.apache.ignite.internal.processors.cache.distributed.GridCacheTxRecoveryCommitInfo;
 import org.apache.ignite.internal.processors.cache.distributed.GridCacheTxRecoveryFuture;
 import org.apache.ignite.internal.processors.cache.distributed.GridDistributedCacheEntry;
 import org.apache.ignite.internal.processors.cache.distributed.GridDistributedLockCancelledException;
@@ -2240,18 +2243,20 @@ public class IgniteTxManager extends GridCacheSharedManagerAdapter {
      *
      * @param nearVer Near version ID.
      * @param txNum Number of transactions.
-     * @return Future for flag indicating if transactions were prepared or committed or {@code null} for success future.
+     * @return Future for info indicating if transactions were prepared or committed.
      */
-    @Nullable public IgniteInternalFuture<Boolean> txsPreparedOrCommitted(GridCacheVersion nearVer, int txNum) {
+    public IgniteInternalFuture<GridCacheTxRecoveryCommitInfo> txsPreparedOrCommitted(GridCacheVersion nearVer, int txNum) {
         return txsPreparedOrCommitted(nearVer, txNum, null, null);
     }
 
     /**
+     * Checks transaction on near node whether it's committed or not.
+     *
      * @param xidVer Version.
-     * @return Future for flag indicating if transactions was committed.
+     * @return Future for info indicating if transactions was committed.
      */
-    public IgniteInternalFuture<Boolean> txCommitted(GridCacheVersion xidVer) {
-        final GridFutureAdapter<Boolean> resFut = new GridFutureAdapter<>();
+    public IgniteInternalFuture<GridCacheTxRecoveryCommitInfo> txCommitted(GridCacheVersion xidVer) {
+        final GridFutureAdapter<GridCacheTxRecoveryCommitInfo> resFut = new GridFutureAdapter<>();
 
         final IgniteInternalTx tx = cctx.tm().tx(xidVer);
 
@@ -2268,31 +2273,48 @@ public class IgniteTxManager extends GridCacheSharedManagerAdapter {
                     if (log.isDebugEnabled())
                         log.debug("Near transaction finished with state: " + state);
 
-                    resFut.onDone(state == COMMITTED);
+                    boolean commit = state == COMMITTED;
+
+                    GridCacheTxRecoveryCommitInfo commitInfo = new GridCacheTxRecoveryCommitInfo(
+                        commit, commit ? ((ConsistentCutVersionAware)tx).txCutVersion() : null);
+
+                    resFut.onDone(commitInfo);
                 }
             });
 
             return resFut;
         }
 
-        boolean committed = false;
+        GridCacheTxRecoveryCommitInfo commitInfo = null;
 
         for (Map.Entry<GridCacheVersion, Object> entry : completedVersHashMap.entrySet()) {
             if (entry.getKey() instanceof CommittedVersion) {
                 CommittedVersion comm = (CommittedVersion)entry.getKey();
 
                 if (comm.nearVer.equals(xidVer)) {
-                    committed = !entry.getValue().equals(Boolean.FALSE);
+                    boolean committed = !entry.getValue().equals(Boolean.FALSE);
+
+                    if (committed) {
+                        ConsistentCutVersion cutVer = null;
+
+                        if (cctx.consistentCutMgr() != null)
+                            cutVer = cctx.consistentCutMgr().txCutVersion(xidVer);
+
+                        commitInfo = new GridCacheTxRecoveryCommitInfo(true, cutVer);
+                    }
 
                     break;
                 }
             }
         }
 
-        if (log.isDebugEnabled())
-            log.debug("Near transaction committed: " + committed);
+        if (commitInfo == null)
+            commitInfo = GridCacheTxRecoveryCommitInfo.noCommit();
 
-        resFut.onDone(committed);
+        if (log.isDebugEnabled())
+            log.debug("Near transaction committed: " + commitInfo);
+
+        resFut.onDone(commitInfo);
 
         return resFut;
     }
@@ -2320,13 +2342,17 @@ public class IgniteTxManager extends GridCacheSharedManagerAdapter {
      * @param txNum Number of transactions.
      * @param fut Result future.
      * @param processedVers Processed versions.
-     * @return Future for flag indicating if transactions were prepared or committed or {@code null} for success future.
+     * @return Future for info indicating if transactions were prepared or committed.
      */
-    @Nullable private IgniteInternalFuture<Boolean> txsPreparedOrCommitted(final GridCacheVersion nearVer,
+    private IgniteInternalFuture<GridCacheTxRecoveryCommitInfo> txsPreparedOrCommitted(
+        final GridCacheVersion nearVer,
         int txNum,
-        @Nullable GridFutureAdapter<Boolean> fut,
+        @Nullable GridFutureAdapter<GridCacheTxRecoveryCommitInfo> fut,
         @Nullable Collection<GridCacheVersion> processedVers
     ) {
+        if (fut == null)
+            fut = new GridFutureAdapter<>();
+
         for (final IgniteInternalTx tx : activeTransactions()) {
             if (nearVer.equals(tx.nearXidVersion())) {
                 IgniteInternalFuture<?> prepFut = tx.currentPrepareFuture();
@@ -2335,7 +2361,7 @@ public class IgniteTxManager extends GridCacheSharedManagerAdapter {
                     if (log.isDebugEnabled())
                         log.debug("Transaction is preparing (will wait): " + tx);
 
-                    final GridFutureAdapter<Boolean> fut0 = fut != null ? fut : new GridFutureAdapter<Boolean>();
+                    final GridFutureAdapter<GridCacheTxRecoveryCommitInfo> fut0 = fut;
 
                     final int txNum0 = txNum;
 
@@ -2346,7 +2372,7 @@ public class IgniteTxManager extends GridCacheSharedManagerAdapter {
                             if (log.isDebugEnabled())
                                 log.debug("Transaction prepare future finished: " + tx);
 
-                            IgniteInternalFuture<Boolean> fut = txsPreparedOrCommitted(nearVer,
+                            IgniteInternalFuture<GridCacheTxRecoveryCommitInfo> fut = txsPreparedOrCommitted(nearVer,
                                 txNum0,
                                 fut0,
                                 processedVers0);
@@ -2365,8 +2391,18 @@ public class IgniteTxManager extends GridCacheSharedManagerAdapter {
                         tx.markFinalizing(RECOVERY_FINISH); // Prevents concurrent rollback.
 
                     if (--txNum == 0) {
-                        if (fut != null)
-                            fut.onDone(true);
+                        ConsistentCutVersion txCutVer = null;
+
+                        if (cctx.consistentCutMgr() != null) {
+                            txCutVer = ((ConsistentCutVersionAware)tx).txCutVersion();
+
+                            // In this point transaction at least prepared. If version hasn't been specified then
+                            // explicitly set it to the latest possible version.
+                            if (txCutVer == null)
+                                txCutVer = cctx.consistentCutMgr().latestKnownCutVersion();
+                        }
+
+                        fut.onDone(new GridCacheTxRecoveryCommitInfo(true, txCutVer));
 
                         return fut;
                     }
@@ -2378,18 +2414,20 @@ public class IgniteTxManager extends GridCacheSharedManagerAdapter {
                         if (log.isDebugEnabled())
                             log.debug("Transaction was not prepared (rolled back): " + tx);
 
-                        if (fut == null)
-                            fut = new GridFutureAdapter<>();
-
-                        fut.onDone(false);
+                        fut.onDone(GridCacheTxRecoveryCommitInfo.noCommit());
 
                         return fut;
                     }
                     else {
                         if (tx.state() == COMMITTED) {
                             if (--txNum == 0) {
-                                if (fut != null)
-                                    fut.onDone(true);
+                                ConsistentCutVersion txCutVer = null;
+
+                                // Non-recovered committed transactions always have specified version.
+                                if (cctx.consistentCutMgr() != null)
+                                    txCutVer = ((ConsistentCutVersionAware)tx).txCutVersion();
+
+                                fut.onDone(new GridCacheTxRecoveryCommitInfo(true, txCutVer));
 
                                 return fut;
                             }
@@ -2398,10 +2436,7 @@ public class IgniteTxManager extends GridCacheSharedManagerAdapter {
                             if (log.isDebugEnabled())
                                 log.debug("Transaction is not prepared: " + tx);
 
-                            if (fut == null)
-                                fut = new GridFutureAdapter<>();
-
-                            fut.onDone(false);
+                            fut.onDone(GridCacheTxRecoveryCommitInfo.noCommit());
 
                             return fut;
                         }
@@ -2431,8 +2466,12 @@ public class IgniteTxManager extends GridCacheSharedManagerAdapter {
 
                 if (commitVer.nearVer.equals(nearVer)) {
                     if (--txNum == 0) {
-                        if (fut != null)
-                            fut.onDone(true);
+                        ConsistentCutVersion txCutVer = null;
+
+                        if (cctx.consistentCutMgr() != null)
+                            txCutVer = cctx.consistentCutMgr().txCutVersion(ver);
+
+                        fut.onDone(new GridCacheTxRecoveryCommitInfo(true, txCutVer));
 
                         return fut;
                     }
@@ -2440,10 +2479,7 @@ public class IgniteTxManager extends GridCacheSharedManagerAdapter {
             }
         }
 
-        if (fut == null)
-            fut = new GridFutureAdapter<>();
-
-        fut.onDone(false);
+        fut.onDone(GridCacheTxRecoveryCommitInfo.noCommit());
 
         return fut;
     }
@@ -2454,7 +2490,7 @@ public class IgniteTxManager extends GridCacheSharedManagerAdapter {
      * @param tx Transaction.
      * @param commit Whether transaction should be committed or rolled back.
      */
-    public void finishTxOnRecovery(final IgniteInternalTx tx, boolean commit) {
+    public void finishTxOnRecovery(final IgniteInternalTx tx, GridCacheTxRecoveryCommitInfo commit) {
         if (log.isInfoEnabled())
             log.info("Finishing prepared transaction [commit=" + commit + ", tx=" + tx + ']');
 
@@ -2470,8 +2506,11 @@ public class IgniteTxManager extends GridCacheSharedManagerAdapter {
                 Collections.<GridCacheVersion>emptyList());
         }
 
-        if (commit)
+        if (commit.commit()) {
+            ((ConsistentCutVersionAware)tx).txCutVersion(commit.cutVer());
+
             tx.commitAsync().listen(new CommitListener(tx));
+        }
         else if (!tx.local()) {
             // This tx was rolled back on recovery because of primary node fail, other backups may be not aware of it.
             TxCounters cnts = tx.txCounters(false);
@@ -2493,7 +2532,7 @@ public class IgniteTxManager extends GridCacheSharedManagerAdapter {
      * @param tx Transaction.
      * @param failedNodeIds Failed nodes IDs.
      */
-    public IgniteInternalFuture<Boolean> commitIfPrepared(IgniteInternalTx tx, Set<UUID> failedNodeIds) {
+    public IgniteInternalFuture<GridCacheTxRecoveryCommitInfo> commitIfPrepared(IgniteInternalTx tx, Set<UUID> failedNodeIds) {
         assert tx instanceof GridDhtTxLocal || tx instanceof GridDhtTxRemote : tx;
         assert !F.isEmpty(tx.transactionNodes()) : tx;
         assert tx.nearXidVersion() != null : tx;
@@ -3265,7 +3304,7 @@ public class IgniteTxManager extends GridCacheSharedManagerAdapter {
         private final AtomicLong preparedTxCnt = new AtomicLong();
 
         /** Recovery finished future. */
-        private final GridCompoundFuture<Boolean, ?> doneFut = new GridCompoundFuture<>();
+        private final GridCompoundFuture<GridCacheTxRecoveryCommitInfo, ?> doneFut = new GridCompoundFuture<>();
 
         /**
          * @param node Failed node.
@@ -3400,7 +3439,7 @@ public class IgniteTxManager extends GridCacheSharedManagerAdapter {
          * @param failedNode Failed node.
          */
         private void processPrepared(IgniteInternalTx tx, UUID failedNode) {
-            IgniteInternalFuture<Boolean> fut = commitIfPrepared(tx, Collections.singleton(failedNode));
+            IgniteInternalFuture<GridCacheTxRecoveryCommitInfo> fut = commitIfPrepared(tx, Collections.singleton(failedNode));
 
             if (fut != null)
                 doneFut.add(fut);

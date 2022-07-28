@@ -15,59 +15,69 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.internal.processors.cache.consistentcut;
+package org.apache.ignite.internal.processors.cache.distributed;
 
+import java.io.Externalizable;
 import java.nio.ByteBuffer;
-import java.util.UUID;
+import org.apache.ignite.internal.processors.cache.consistentcut.ConsistentCutVersion;
 import org.apache.ignite.internal.util.tostring.GridToStringInclude;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.plugin.extensions.communication.Message;
 import org.apache.ignite.plugin.extensions.communication.MessageReader;
 import org.apache.ignite.plugin.extensions.communication.MessageWriter;
-import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
 /**
- * Composite version of Consistent Cut. It consists of two fields: incremental version and timestamp of starting
- * Consistent Cut. Both fields set on the coordinator node.
+ * It describes info received from remote nodes during transaction recovery procedure.
  */
-public class ConsistentCutVersion implements Message, Comparable<ConsistentCutVersion> {
+public class GridCacheTxRecoveryCommitInfo implements Message {
     /** */
     private static final long serialVersionUID = 0L;
 
     /** */
-    public static final short TYPE_CODE = 182;
+    public static final short TYPE_CODE = 183;
 
-    /** Incremental version. */
+    /** */
+    private static final GridCacheTxRecoveryCommitInfo NO_COMMIT = new GridCacheTxRecoveryCommitInfo(false, null);
+
+    /**
+     * If {@code true} then transaction was prepared and can be committed.
+     */
     @GridToStringInclude
-    private long ver;
+    private boolean commit;
 
-    /** Consistent Cut coordinator node ID. */
+    /**
+     * Consistent Cut version with that this transaction was signed for commit.
+     */
     @GridToStringInclude
-    private UUID cutCrdNodeId;
+    private @Nullable ConsistentCutVersion cutVer;
 
-    /** */
-    public ConsistentCutVersion() {}
-
-    /** */
-    public ConsistentCutVersion(long ver, UUID cutCrdNodeId) {
-        this.ver = ver;
-        this.cutCrdNodeId = cutCrdNodeId;
+    /**
+     * Empty constructor required by {@link Externalizable}
+     */
+    public GridCacheTxRecoveryCommitInfo() {
+        // No-op.
     }
 
     /** */
-    public long version() {
-        return ver;
+    public GridCacheTxRecoveryCommitInfo(boolean commit, @Nullable ConsistentCutVersion cutVer) {
+        this.commit = commit;
+        this.cutVer = cutVer;
     }
 
-    /** Consistent Cut coordinator node ID. */
-    public UUID cutCrdNodeId() {
-        return cutCrdNodeId;
+    /** */
+    public static GridCacheTxRecoveryCommitInfo noCommit() {
+        return NO_COMMIT;
     }
 
-    /** {@inheritDoc} */
-    @Override public String toString() {
-        return S.toString(ConsistentCutVersion.class, this);
+    /** */
+    public boolean commit() {
+        return commit;
+    }
+
+    /** */
+    public ConsistentCutVersion cutVer() {
+        return cutVer;
     }
 
     /** {@inheritDoc} */
@@ -83,16 +93,17 @@ public class ConsistentCutVersion implements Message, Comparable<ConsistentCutVe
 
         switch (writer.state()) {
             case 0:
-                if (!writer.writeLong("ver", ver))
+                if (!writer.writeBoolean("commit", commit))
                     return false;
 
                 writer.incrementState();
 
             case 1:
-                if (!writer.writeUuid("cutCrdNodeId", cutCrdNodeId))
+                if (!writer.writeMessage("ver", cutVer))
                     return false;
 
                 writer.incrementState();
+
         }
 
         return true;
@@ -107,7 +118,7 @@ public class ConsistentCutVersion implements Message, Comparable<ConsistentCutVe
 
         switch (reader.state()) {
             case 0:
-                ver = reader.readLong("ver");
+                commit = reader.readBoolean("commit");
 
                 if (!reader.isLastRead())
                     return false;
@@ -115,7 +126,7 @@ public class ConsistentCutVersion implements Message, Comparable<ConsistentCutVe
                 reader.incrementState();
 
             case 1:
-                cutCrdNodeId = reader.readUuid("cutCrdNodeId");
+                cutVer = reader.readMessage("ver");
 
                 if (!reader.isLastRead())
                     return false;
@@ -123,7 +134,7 @@ public class ConsistentCutVersion implements Message, Comparable<ConsistentCutVe
                 reader.incrementState();
         }
 
-        return reader.afterMessageRead(ConsistentCutVersion.class);
+        return reader.afterMessageRead(GridCacheTxRecoveryCommitInfo.class);
     }
 
     /** {@inheritDoc} */
@@ -142,22 +153,7 @@ public class ConsistentCutVersion implements Message, Comparable<ConsistentCutVe
     }
 
     /** {@inheritDoc} */
-    @Override public boolean equals(Object o) {
-        return o instanceof ConsistentCutVersion && ver == ((ConsistentCutVersion)o).version();
-    }
-
-    /** {@inheritDoc} */
-    @Override public int hashCode() {
-        return Long.hashCode(ver);
-    }
-
-    /** {@code null} means the least possible version. */
-    public int compareToNullable(@Nullable ConsistentCutVersion o) {
-        return o == null ? 1 : compareTo(o);
-    }
-
-    /** {@inheritDoc} */
-    @Override public int compareTo(@NotNull ConsistentCutVersion o) {
-        return Long.compare(ver, o.ver);
+    @Override public String toString() {
+        return S.toString(GridCacheTxRecoveryCommitInfo.class, this);
     }
 }

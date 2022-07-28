@@ -57,6 +57,7 @@ import org.apache.ignite.internal.processors.cache.consistentcut.ConsistentCutFi
 import org.apache.ignite.internal.processors.cache.consistentcut.ConsistentCutStartRequest;
 import org.apache.ignite.internal.processors.cache.consistentcut.ConsistentCutVersion;
 import org.apache.ignite.internal.processors.cache.distributed.GridCacheTtlUpdateRequest;
+import org.apache.ignite.internal.processors.cache.distributed.GridCacheTxRecoveryCommitInfo;
 import org.apache.ignite.internal.processors.cache.distributed.GridCacheTxRecoveryRequest;
 import org.apache.ignite.internal.processors.cache.distributed.GridCacheTxRecoveryResponse;
 import org.apache.ignite.internal.processors.cache.distributed.GridDistributedLockRequest;
@@ -381,6 +382,7 @@ public class GridIoMessageFactory implements MessageFactoryProvider {
         factory.register(ConsistentCutStartRequest.TYPE_CODE, ConsistentCutStartRequest::new);
         factory.register(ConsistentCutFinishResponse.TYPE_CODE, ConsistentCutFinishResponse::new);
         factory.register(ConsistentCutVersion.TYPE_CODE, ConsistentCutVersion::new);
+        factory.register(GridCacheTxRecoveryCommitInfo.TYPE_CODE, GridCacheTxRecoveryCommitInfo::new);
 
         // [-3..119] [124..129] [-23..-28] [-36..-55] - this
         // [120..123] - DR

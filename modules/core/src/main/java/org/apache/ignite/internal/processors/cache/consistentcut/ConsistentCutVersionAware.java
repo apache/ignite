@@ -18,13 +18,14 @@
 package org.apache.ignite.internal.processors.cache.consistentcut;
 
 import org.apache.ignite.internal.processors.cache.version.GridCacheVersion;
+import org.jetbrains.annotations.Nullable;
 
 /**
  * This interface marks messages that responsible for notifying nodes with Consistent Cut Version.
  */
 public interface ConsistentCutVersionAware {
     /**
-     * Version of the latest observable Consistent Cut on sender node.
+     * Version of the latest known Consistent Cut on sender node.
      *
      * It is used to trigger Consistent Cut procedure on receiver.
      */
@@ -36,8 +37,10 @@ public interface ConsistentCutVersionAware {
      * Version of the latest finished Consistent Cut AFTER which the specified transaction committed.
      *
      * It is used to notify a transaction in the check-list whether to include it to this Consistent Cut.
+     *
+     * @return {@code null} if transaction will commit BEFORE the latest known Consistent Cut version.
      */
-    public default ConsistentCutVersion txCutVersion() {
+    public default @Nullable ConsistentCutVersion txCutVersion() {
         return null;
     }
 
@@ -45,8 +48,10 @@ public interface ConsistentCutVersionAware {
      * Version of the latest finished Consistent Cut AFTER which the specified transaction committed.
      *
      * It is used to notify a transaction in the check-list whether to include it to this Consistent Cut.
+     *
+     * @param cutVer {@code null} if transaction will commit BEFORE the latest known Consistent Cut version.
      */
-    public default void txCutVersion(ConsistentCutVersion cutVer) {}
+    public default void txCutVersion(@Nullable ConsistentCutVersion cutVer) {}
 
     /**
      * @return Near transaction ID.

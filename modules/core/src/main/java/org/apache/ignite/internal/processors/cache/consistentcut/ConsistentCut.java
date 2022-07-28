@@ -152,15 +152,9 @@ public class ConsistentCut {
 
                         ConsistentCutVersionAware txCutVerAware = (ConsistentCutVersionAware)tx;
 
-                        // TODO: TxRecovery case.
-                        if (txCutVerAware.txCutVersion() == null) {
-                            log.warning("Stop Consistent Cut due to txCutVersion is null. " +
-                                "Consistent Cut doesn't support topology change. " + tx);
-
-                            return null;
-                        }
-
-                        if (ver.compareTo(txCutVerAware.txCutVersion()) > 0)
+                        // txCutVersion may be NULL for some cases with transaction recovery - NULL means that transaction
+                        // committed BEFORE this Cut on remote nodes.
+                        if (ver.compareToNullable(txCutVerAware.txCutVersion()) > 0)
                             beforeCut.add(tx.nearXidVersion());
                         else
                             afterCut.add(tx.nearXidVersion());
@@ -190,21 +184,21 @@ public class ConsistentCut {
 
     /** {@inheritDoc} */
     @Override public String toString() {
-        List<IgniteUuid> incl = null;
-        List<IgniteUuid> excl = null;
+        List<IgniteUuid> before = null;
+        List<IgniteUuid> after = null;
 
         if (beforeCut != null) {
-            incl = beforeCut.stream()
+            before = beforeCut.stream()
                 .map(GridCacheVersion::asIgniteUuid)
                 .collect(Collectors.toList());
         }
 
         if (afterCut != null) {
-            excl = afterCut.stream()
+            after = afterCut.stream()
                 .map(GridCacheVersion::asIgniteUuid)
                 .collect(Collectors.toList());
         }
 
-        return "ConsistentCut [started=" + started + ", before=" + incl + ", after=" + excl + "]";
+        return "ConsistentCut [started=" + started + ", before=" + before + ", after=" + after + "]";
     }
 }

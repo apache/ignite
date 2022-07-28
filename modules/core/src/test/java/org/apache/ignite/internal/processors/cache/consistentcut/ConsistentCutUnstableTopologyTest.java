@@ -144,7 +144,7 @@ public class ConsistentCutUnstableTopologyTest extends AbstractConsistentCutTest
 
             loadFut.get();
 
-            checkWalsConsistency(txOrigNode, (int)lastCutVer, nodeIds(stopNode), true);
+            checkWalsConsistency(txOrigNode, (int)lastCutVer, nodeIds(stopNode), false);
         }
         finally {
             loadFut.cancel();
