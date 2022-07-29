@@ -119,6 +119,14 @@ public class ThinClientPartitionAwarenessResourceReleaseTest extends ThinClientA
         assertNull(affCtx.currentMapping().affinityNode(cacheId, 0));
     }
 
+    /** {@inheritDoc} */
+    @Override protected void afterTest() throws Exception {
+        super.afterTest();
+
+        stopAllGrids();
+        client.close();
+    }
+
     /**
      * @param clnt Ignite client.
      * @return Client context.
