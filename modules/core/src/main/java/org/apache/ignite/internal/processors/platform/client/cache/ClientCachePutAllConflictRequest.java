@@ -24,13 +24,18 @@ import org.apache.ignite.IgniteException;
 import org.apache.ignite.internal.binary.BinaryReaderExImpl;
 import org.apache.ignite.internal.client.thin.TcpClientCache;
 import org.apache.ignite.internal.processors.cache.CacheObject;
+import org.apache.ignite.internal.processors.cache.IgniteInternalCache;
 import org.apache.ignite.internal.processors.cache.KeyCacheObject;
+import org.apache.ignite.internal.processors.cache.dr.GridCacheDrExpirationInfo;
 import org.apache.ignite.internal.processors.cache.dr.GridCacheDrInfo;
 import org.apache.ignite.internal.processors.cache.version.GridCacheVersion;
 import org.apache.ignite.internal.processors.platform.client.ClientConnectionContext;
 import org.apache.ignite.internal.processors.platform.client.ClientResponse;
 import org.apache.ignite.internal.processors.platform.client.tx.ClientTxAwareRequest;
+import org.apache.ignite.internal.util.typedef.F;
 
+import static org.apache.ignite.internal.processors.cache.GridCacheUtils.EXPIRE_TIME_CALCULATE;
+import static org.apache.ignite.internal.processors.cache.GridCacheUtils.TTL_NOT_CHANGED;
 import static org.apache.ignite.internal.processors.platform.utils.PlatformUtils.readCacheObject;
 
 /**
@@ -38,7 +43,7 @@ import static org.apache.ignite.internal.processors.platform.utils.PlatformUtils
  */
 public class ClientCachePutAllConflictRequest extends ClientCacheDataRequest implements ClientTxAwareRequest {
     /** */
-    private final Map<KeyCacheObject, GridCacheDrInfo> map;
+    private Map<KeyCacheObject, GridCacheDrInfo> map;
 
     /**
      * Constructor.
@@ -64,7 +69,15 @@ public class ClientCachePutAllConflictRequest extends ClientCacheDataRequest imp
     /** {@inheritDoc} */
     @Override public ClientResponse process(ClientConnectionContext ctx) {
         try {
-            cachex(ctx).putAllConflict(map);
+            IgniteInternalCache<?, ?> cache = cachex(ctx);
+
+            if (cache.configuration().getExpiryPolicyFactory() != null) {
+                map = F.viewReadOnly(map,
+                    (info) -> new GridCacheDrExpirationInfo(info.value(), info.version(),
+                        TTL_NOT_CHANGED, EXPIRE_TIME_CALCULATE));
+            }
+
+            cache.putAllConflict(map);
         }
         catch (IgniteCheckedException e) {
             throw new IgniteException(e);
