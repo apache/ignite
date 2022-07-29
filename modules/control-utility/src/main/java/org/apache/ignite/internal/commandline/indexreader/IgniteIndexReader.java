@@ -596,11 +596,8 @@ public class IgniteIndexReader implements AutoCloseable {
      * @param treesInfo Index trees info to compare cache data tree with.
      * @return Map of errors, bound to partition id.
      */
-    private Map<Integer, List<String>> checkParts(Map<String, ScanContext> treesInfo) {
+    private void checkParts(Map<String, ScanContext> treesInfo) {
         log.info("");
-
-        // Map partId -> errors.
-        Map<Integer, List<String>> res = new HashMap<>();
 
         AtomicInteger partWithErrs = new AtomicInteger();
         AtomicInteger errSum = new AtomicInteger();
@@ -676,8 +673,6 @@ public class IgniteIndexReader implements AutoCloseable {
 
         log.info("Partition check finished, total errors: " + errSum.get() +
                 ", total problem partitions: " + partWithErrs.get());
-
-        return res;
     }
 
     /**
@@ -903,43 +898,50 @@ public class IgniteIndexReader implements AutoCloseable {
         Map<String, ScanContext> recursiveScans,
         Map<String, ScanContext> horizontalScans
     ) {
-        List<String> errors = new LinkedList<>();
+        AtomicInteger errCnt = new AtomicInteger();
 
         recursiveScans.forEach((name, rctx) -> {
             ScanContext hctx = horizontalScans.get(name);
 
             if (hctx == null) {
-                errors.add("Tree was detected in " + RECURSIVE_TRAVERSE_NAME + " but absent in  "
+                errCnt.incrementAndGet();
+                log.severe("Tree was detected in " + RECURSIVE_TRAVERSE_NAME + " but absent in  "
                     + HORIZONTAL_SCAN_NAME + ": " + name);
 
                 return;
             }
 
-            if (rctx.items.size() != hctx.items.size())
-                errors.add(compareError("items", name, rctx.items.size(), hctx.items.size(), null));
+            if (rctx.items.size() != hctx.items.size()) {
+                errCnt.incrementAndGet();
+                log.severe(compareError("items", name, rctx.items.size(), hctx.items.size(), null));
+            }
 
             rctx.stats.forEach((cls, stat) -> {
                 long scanCnt = hctx.stats.getOrDefault(cls, new PagesStatistic()).cnt;
 
-                if (scanCnt != stat.cnt)
-                    errors.add(compareError("pages", name, stat.cnt, scanCnt, cls));
+                if (scanCnt != stat.cnt) {
+                    errCnt.incrementAndGet();
+                    log.severe(compareError("pages", name, stat.cnt, scanCnt, cls));
+                }
             });
 
             hctx.stats.forEach((cls, stat) -> {
-                if (!rctx.stats.containsKey(cls))
-                    errors.add(compareError("pages", name, 0, stat.cnt, cls));
+                if (!rctx.stats.containsKey(cls)) {
+                    errCnt.incrementAndGet();
+                    log.severe(compareError("pages", name, 0, stat.cnt, cls));
+                }
             });
         });
 
         horizontalScans.forEach((name, hctx) -> {
-            if (!recursiveScans.containsKey(name))
-                errors.add("Tree was detected in " + HORIZONTAL_SCAN_NAME + " but absent in  "
-                    + RECURSIVE_TRAVERSE_NAME + ": " + name);
+            if (!recursiveScans.containsKey(name)) {
+                errCnt.incrementAndGet();
+                log.severe("Tree was detected in " + HORIZONTAL_SCAN_NAME + " but absent in  "
+                        + RECURSIVE_TRAVERSE_NAME + ": " + name);
+            }
         });
 
-        errors.forEach(log::severe);
-
-        log.info("Comparing traversals detected " + errors.size() + " errors.");
+        log.info("Comparing traversals detected " + errCnt + " errors.");
         log.info("------------------");
     }
 
