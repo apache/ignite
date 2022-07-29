@@ -40,7 +40,7 @@ import static org.junit.Assert.assertEquals;
  *
  * This wrapper is required to solve serialization/deserialization issues when the
  * {@link JavaThinCompatibilityTest#testClient(IgniteProductVersion, IgniteProductVersion)} is used upon previous
- * Ignite releases. The newly added classos must not be loaded by default when the test method is deserialized.
+ * Ignite releases. The newly added classes must not be loaded by default when the test method is deserialized.
  */
 public class ClientPartitionAwarenessMapperAPITestWrapper implements Serializable {
     /** Serial version UID. */
