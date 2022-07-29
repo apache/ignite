@@ -697,9 +697,6 @@ public class ReducePartitionMapper {
         for (int i = 0; i < cacheIds.size(); i++) {
             GridCacheContext<?, ?> cctx = cacheContext(cacheIds.get(i));
 
-            if (i == 0)
-                throw new CacheException("Cache is LOCAL: " + cctx.name());
-
             if (!cctx.isReplicated())
                 return cctx;
         }
