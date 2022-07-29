@@ -111,6 +111,7 @@ import static java.util.stream.Collectors.toList;
 import static org.apache.ignite.configuration.DataStorageConfiguration.DFLT_PAGE_SIZE;
 import static org.apache.ignite.internal.commandline.argument.parser.CLIArgument.mandatoryArg;
 import static org.apache.ignite.internal.commandline.argument.parser.CLIArgument.optionalArg;
+import static org.apache.ignite.internal.commandline.indexreader.ScanContext.errorHandler;
 import static org.apache.ignite.internal.pagemem.PageIdAllocator.FLAG_DATA;
 import static org.apache.ignite.internal.pagemem.PageIdAllocator.FLAG_IDX;
 import static org.apache.ignite.internal.pagemem.PageIdAllocator.INDEX_PARTITION;
@@ -420,7 +421,7 @@ public class IgniteIndexReader implements AutoCloseable {
      * @return Tree traversal context.
      */
     ScanContext recursiveTreeScan(long rootPageId, String idx, ItemStorage items) {
-        ScanContext ctx = createContext(idx, filePageStore(rootPageId), items);
+        ScanContext ctx = createContext(idx, filePageStore(rootPageId), items, RECURSIVE_TRAVERSE_NAME);
 
         metaPageVisitor.readAndVisit(rootPageId, ctx);
 
@@ -436,7 +437,7 @@ public class IgniteIndexReader implements AutoCloseable {
      * @return Tree traversal context.
      */
     private ScanContext horizontalTreeScan(long rootPageId, String idx, ItemStorage items) {
-        ScanContext ctx = createContext(idx, filePageStore(rootPageId), items);
+        ScanContext ctx = createContext(idx, filePageStore(rootPageId), items, HORIZONTAL_SCAN_NAME);
 
         levelsPageVisitor.readAndVisit(rootPageId, ctx);
 
@@ -458,7 +459,7 @@ public class IgniteIndexReader implements AutoCloseable {
             long pagesCnt = 0;
             long currMetaPageId = metaPageListId;
 
-            ObjLongConsumer<String> onError = errorHandler(PAGE_LISTS_PREFIX);
+            ObjLongConsumer<String> onError = errorHandler(PAGE_LISTS_PREFIX, log);
 
             while (currMetaPageId != 0) {
                 try {
@@ -547,9 +548,9 @@ public class IgniteIndexReader implements AutoCloseable {
 
         ProgressPrinter progressPrinter = createProgressPrinter("Reading pages sequentially", pagesNum);
 
-        ScanContext ctx = createContext(null, idxStore, new CountOnlyStorage());
+        ScanContext ctx = createContext(null, idxStore, new CountOnlyStorage(), "");
 
-        ObjLongConsumer<String> onError = errorHandler("");
+        ObjLongConsumer<String> onError = errorHandler("", log);
 
         doWithBuffer((buf, addr) -> {
             for (int i = 0; i < pagesNum; i++) {
@@ -734,7 +735,7 @@ public class IgniteIndexReader implements AutoCloseable {
     }
 
     /** */
-    ScanContext createContext(String idxName, FilePageStore store, ItemStorage items) {
+    ScanContext createContext(String idxName, FilePageStore store, ItemStorage items, String prefix) {
         GridTuple3<Integer, Integer, String> parsed;
 
         if (idxName != null)
@@ -742,7 +743,7 @@ public class IgniteIndexReader implements AutoCloseable {
         else
             parsed = new GridTuple3<>(UNKNOWN_CACHE, 0, null);
 
-        return new ScanContext(parsed.get1(), inlineFieldsCount(parsed), store, items);
+        return new ScanContext(parsed.get1(), inlineFieldsCount(parsed), store, items, log, prefix);
     }
 
     /**
@@ -1134,27 +1135,6 @@ public class IgniteIndexReader implements AutoCloseable {
             HORIZONTAL_SCAN_NAME,
             scan
         );
-    }
-
-    /** */
-    private ObjLongConsumer<String> errorHandler(String prefix) {
-        return new ObjLongConsumer<String>() {
-            /** */
-            private boolean errFound;
-
-            /** */
-            private final String pfx = prefix;
-
-            /** {@inheritDoc} */
-            @Override public void accept(String err, long pageId) {
-                if (!errFound)
-                    log.warning(pfx + "---- Errors:");
-
-                errFound = true;
-
-                log.warning(pfx + "Page id: " + pageId + ", exception: " + err);
-            }
-        };
     }
 
     /** */

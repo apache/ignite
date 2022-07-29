@@ -21,6 +21,8 @@ import java.util.LinkedHashMap;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
+import java.util.function.ObjLongConsumer;
+import java.util.logging.Logger;
 
 import org.apache.ignite.internal.processors.cache.persistence.file.FilePageStore;
 import org.apache.ignite.internal.processors.cache.persistence.tree.io.PageIO;
@@ -57,13 +59,21 @@ class ScanContext {
     int[] inline;
 
     /** */
-    public ScanContext(int cacheId, int inlineFldCnt, FilePageStore store, ItemStorage items) {
+    private final Logger log;
+
+    /** */
+    private final String prefix;
+
+    /** */
+    public ScanContext(int cacheId, int inlineFldCnt, FilePageStore store, ItemStorage items, Logger log, String prefix) {
         this.cacheId = cacheId;
         this.inlineFldCnt = inlineFldCnt;
         this.store = store;
         this.items = items;
         this.stats = new LinkedHashMap<>();
         this.errors = new LinkedHashMap<>();
+        this.log = log;
+        this.prefix = prefix;
     }
 
     /** */
@@ -98,7 +108,30 @@ class ScanContext {
 
     /** */
     public void onError(long pageId, String message) {
+        errCnt++;
+
         errors.computeIfAbsent(pageId, k -> new LinkedList<>()).add(message);
+    }
+
+    /** */
+    public static ObjLongConsumer<String> errorHandler(String prefix, Logger log) {
+        return new ObjLongConsumer<String>() {
+            /** */
+            private boolean errFound;
+
+            /** */
+            private final String pfx = prefix;
+
+            /** {@inheritDoc} */
+            @Override public void accept(String err, long pageId) {
+                if (!errFound)
+                    log.warning(pfx + "---- Errors:");
+
+                errFound = true;
+
+                log.warning(pfx + "Page id: " + pageId + ", exception: " + err);
+            }
+        };
     }
 
     /** */

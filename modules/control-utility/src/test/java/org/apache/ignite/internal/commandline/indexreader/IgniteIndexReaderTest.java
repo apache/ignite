@@ -285,8 +285,10 @@ public class IgniteIndexReaderTest extends GridCommandHandlerAbstractTest {
         // Take any inner page from tree.
         AtomicLong anyLeafId = new AtomicLong();
 
-        IgniteIndexReader reader0 = new IgniteIndexReader(PAGE_SIZE, PART_CNT, PAGE_STORE_VER, dir, null, false, createTestLogger()) {
-            @Override ScanContext createContext(String idxName, FilePageStore store, ItemStorage items) {
+        Logger log = createTestLogger();
+
+        IgniteIndexReader reader0 = new IgniteIndexReader(PAGE_SIZE, PART_CNT, PAGE_STORE_VER, dir, null, false, log) {
+            @Override ScanContext createContext(String idxName, FilePageStore store, ItemStorage items, String prefix) {
                 GridTuple3<Integer, Integer, String> parsed;
 
                 if (idxName != null)
@@ -294,7 +296,7 @@ public class IgniteIndexReaderTest extends GridCommandHandlerAbstractTest {
                 else
                     parsed = new GridTuple3<>(UNKNOWN_CACHE, 0, null);
 
-                return new ScanContext(parsed.get1(), inlineFieldsCount(parsed), store, items) {
+                return new ScanContext(parsed.get1(), inlineFieldsCount(parsed), store, items, log, prefix) {
                     @Override public void onLeafPage(long pageId, List<Object> data) {
                         super.onLeafPage(pageId, data);
 
