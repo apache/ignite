@@ -34,6 +34,8 @@ import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
+import java.util.concurrent.atomic.AtomicInteger;
+import java.util.function.ObjLongConsumer;
 import java.util.function.Predicate;
 import java.util.function.Supplier;
 import java.util.logging.Level;
@@ -101,7 +103,6 @@ import org.jetbrains.annotations.Nullable;
 import static java.lang.Integer.parseInt;
 import static java.lang.String.format;
 import static java.util.Arrays.asList;
-import static java.util.Collections.singletonList;
 import static java.util.Objects.isNull;
 import static java.util.Objects.nonNull;
 import static java.util.logging.Level.WARNING;
@@ -377,7 +378,7 @@ public class IgniteIndexReader implements AutoCloseable {
         printSequentialScanInfo(scanIndexSequentially());
 
         if (checkParts)
-            printCheckPartsInfo(checkParts(horizontalScans));
+            checkParts(horizontalScans);
     }
 
     /** Traverse all trees in file and return their info. */
@@ -454,10 +455,10 @@ public class IgniteIndexReader implements AutoCloseable {
 
             Map<Class<? extends PageIO>, PagesStatistic> stats = new HashMap<>();
 
-            Map<Long, List<String>> errors = new HashMap<>();
-
             long pagesCnt = 0;
             long currMetaPageId = metaPageListId;
+
+            ObjLongConsumer<String> onError = errorHandler(PAGE_LISTS_PREFIX);
 
             while (currMetaPageId != 0) {
                 try {
@@ -480,7 +481,7 @@ public class IgniteIndexReader implements AutoCloseable {
                                 pagesCnt += visitPageList(listId, stats);
                             }
                             catch (Exception err) {
-                                errors.put(listId, singletonList(err.getMessage()));
+                                onError.accept(err.getMessage(), listId);
                             }
                         }
 
@@ -489,14 +490,14 @@ public class IgniteIndexReader implements AutoCloseable {
 
                     currMetaPageId = io.getNextMetaPageId(addr);
                 }
-                catch (Exception e) {
-                    errors.put(currMetaPageId, singletonList(e.getMessage()));
+                catch (Exception err) {
+                    onError.accept(err.getMessage(), currMetaPageId);
 
                     break;
                 }
             }
 
-            return new PageListsInfo(bucketsData, pagesCnt, stats, errors);
+            return new PageListsInfo(bucketsData, pagesCnt, stats, new HashMap<>());
         });
     }
 
@@ -548,6 +549,8 @@ public class IgniteIndexReader implements AutoCloseable {
 
         ScanContext ctx = createContext(null, idxStore, new CountOnlyStorage());
 
+        ObjLongConsumer<String> onError = errorHandler("");
+
         doWithBuffer((buf, addr) -> {
             for (int i = 0; i < pagesNum; i++) {
                 long pageId = -1;
@@ -568,15 +571,16 @@ public class IgniteIndexReader implements AutoCloseable {
                     if (pageIds.contains(normalizePageId(pageId)))
                         continue;
 
-                    ctx.errors.put(pageId, Collections.singletonList("Error [step=" + i +
-                        ", msg=Possibly orphan " + io.getClass().getSimpleName() + " page" +
-                        ", pageId=" + normalizePageId(pageId) + ']'));
+                    ctx.errCnt++;
+
+                    onError.accept("Error [step=" + i +
+                            ", msg=Possibly orphan " + io.getClass().getSimpleName() + " page" +
+                            ", pageId=" + normalizePageId(pageId) + ']', pageId);
                 }
                 catch (Throwable e) {
-                    ctx.errors.put(
-                        pageId,
-                        Collections.singletonList("Error [step=" + i + ", msg=" + e.getMessage() + ']')
-                    );
+                    ctx.errCnt++;
+
+                    onError.accept("Error [step=" + i + ", msg=" + e.getMessage() + ']', pageId);
                 }
             }
 
@@ -598,6 +602,9 @@ public class IgniteIndexReader implements AutoCloseable {
         // Map partId -> errors.
         Map<Integer, List<String>> res = new HashMap<>();
 
+        AtomicInteger partWithErrs = new AtomicInteger();
+        AtomicInteger errSum = new AtomicInteger();
+
         ProgressPrinter progressPrinter = createProgressPrinter("Checking partitions", partCnt);
 
         IntStream.range(0, partCnt).forEach(partId -> {
@@ -608,7 +615,7 @@ public class IgniteIndexReader implements AutoCloseable {
             if (partStore == null)
                 return;
 
-            List<String> errors = new LinkedList<>();
+            AtomicInteger errCnt = new AtomicInteger();
 
             try {
                 long partMetaId = pageId(partId, FLAG_DATA, 0);
@@ -634,7 +641,8 @@ public class IgniteIndexReader implements AutoCloseable {
 
                             long pageId = pageId(cacheAwareLink.link);
 
-                            errors.add("Entry is missing in index[name=" + e.getKey() +
+                            errCnt.getAndIncrement();
+                            log.severe(ERROR_PREFIX + "Entry is missing in index[name=" + e.getKey() +
                                 "cacheId=" + cacheAwareLink.cacheId +
                                 ", partId=" + partId(pageId) +
                                 ", pageIndex=" + pageIndex(pageId) +
@@ -642,8 +650,8 @@ public class IgniteIndexReader implements AutoCloseable {
                                 ", link=" + cacheAwareLink.link + ']');
                         }
 
-                        if (errors.size() >= MAX_ERRORS_CNT) {
-                            errors.add("Too many errors (" + MAX_ERRORS_CNT +
+                        if (errCnt.get() >= MAX_ERRORS_CNT) {
+                            log.severe(ERROR_PREFIX + "Too many errors (" + MAX_ERRORS_CNT +
                                 ") found for partId=" + partId + ", stopping analysis for this partition.");
 
                             break;
@@ -654,12 +662,20 @@ public class IgniteIndexReader implements AutoCloseable {
                 });
             }
             catch (IgniteCheckedException e) {
-                errors.add("Partition check failed, partId=" + partId);
+                log.severe(ERROR_PREFIX + "Partition check failed [partId=" + partId + ']');
             }
 
-            if (!errors.isEmpty())
-                res.put(partId, errors);
+            if (errCnt.get() != 0) {
+                partWithErrs.getAndIncrement();
+                errSum.addAndGet(errCnt.get());
+            }
         });
+
+        if (errSum.get() == 0)
+            log.info("Partitions check detected no errors.");
+
+        log.info("Partition check finished, total errors: " + errSum.get() +
+                ", total problem partitions: " + partWithErrs.get());
 
         return res;
     }
@@ -945,7 +961,7 @@ public class IgniteIndexReader implements AutoCloseable {
             Arrays.asList(STRING, NUMBER),
             Arrays.asList(
                 Arrays.asList("Total pages encountered during sequential scan:", ctx.stats.values().stream().mapToLong(a -> a.cnt).sum()),
-                Arrays.asList("Total errors occurred during sequential scan: ", ctx.errors.size())
+                Arrays.asList("Total errors occurred during sequential scan: ", ctx.errCnt)
             ),
             log
         );
@@ -955,23 +971,6 @@ public class IgniteIndexReader implements AutoCloseable {
 
         log.info("Note that some pages can be occupied by meta info, tracking info, etc., so total page count can differ " +
             "from count of pages found in index trees and page lists.");
-    }
-
-    /** Print check partitions info. */
-    private void printCheckPartsInfo(Map<Integer, List<String>> checkPartsErrors) {
-        log.info("");
-
-        printErrors("",
-            "Partitions check:",
-            "Partitions check detected no errors.",
-            "Errors detected in partition, partId=%s",
-            checkPartsErrors
-        );
-
-        log.info("Partition check finished, total errors: " +
-            checkPartsErrors.values().stream().mapToInt(List::size).sum() + ", total problem partitions: " +
-            checkPartsErrors.size()
-        );
     }
 
     /** Prints traversal info. */
@@ -1140,6 +1139,27 @@ public class IgniteIndexReader implements AutoCloseable {
             HORIZONTAL_SCAN_NAME,
             scan
         );
+    }
+
+    /** */
+    private ObjLongConsumer<String> errorHandler(String prefix) {
+        return new ObjLongConsumer<String>() {
+            /** */
+            private boolean errFound;
+
+            /** */
+            private final String pfx = prefix;
+
+            /** {@inheritDoc} */
+            @Override public void accept(String err, long pageId) {
+                if (!errFound)
+                    log.warning(pfx + "---- Errors:");
+
+                errFound = true;
+
+                log.warning(pfx + "Page id: " + pageId + ", exception: " + err);
+            }
+        };
     }
 
     /** */

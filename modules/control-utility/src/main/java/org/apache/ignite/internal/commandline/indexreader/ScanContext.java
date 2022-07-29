@@ -43,6 +43,8 @@ class ScanContext {
     /** Map of errors, pageId -> set of exceptions. */
     final Map<Long, List<String>> errors;
 
+    long errCnt;
+
     /** List of items storage. */
     final ItemStorage items;
 
