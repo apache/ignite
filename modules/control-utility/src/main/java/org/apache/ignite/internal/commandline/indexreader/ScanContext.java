@@ -18,6 +18,7 @@
 package org.apache.ignite.internal.commandline.indexreader;
 
 import java.util.LinkedHashMap;
+import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
 
@@ -93,6 +94,11 @@ class ScanContext {
     /** */
     public void onLeafPage(long pageId, List<Object> data) {
         data.forEach(items::add);
+    }
+
+    /** */
+    public void onError(long pageId, String message) {
+        errors.computeIfAbsent(pageId, k -> new LinkedList<>()).add(message);
     }
 
     /** */

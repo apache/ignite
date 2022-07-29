@@ -702,7 +702,7 @@ public class IgniteIndexReader implements AutoCloseable {
             x.run();
         }
         catch (Throwable e) {
-            ctx.errors.computeIfAbsent(pageId, k -> new LinkedList<>()).add(e.getMessage());
+            ctx.onError(pageId, e.getMessage());
         }
     }
 
@@ -948,13 +948,6 @@ public class IgniteIndexReader implements AutoCloseable {
     /** Prints sequential file scan results. */
     private void printSequentialScanInfo(ScanContext ctx) {
         printIoStat("", "---- These pages types were encountered during sequential scan:", ctx.stats);
-
-        if (!ctx.errors.isEmpty()) {
-            log.severe("----");
-            log.severe("Errors:");
-
-            ctx.errors.values().forEach(e -> log.severe(e.get(0)));
-        }
 
         log.info("----");
 
@@ -1322,7 +1315,7 @@ public class IgniteIndexReader implements AutoCloseable {
                         }
                     }
                     catch (Throwable e) {
-                        ctx.errors.computeIfAbsent(pageId, k -> new LinkedList<>()).add(e.getMessage());
+                        ctx.onError(pageId, e.getMessage());
                     }
                 }
 
