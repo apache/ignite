@@ -1009,7 +1009,7 @@ public class IgniteIndexReader implements AutoCloseable {
             if (ctx.errCnt == 0)
                 log.info(prefix + "No errors occurred while traversing.");
 
-            totalErr += ctx.errors.size();
+            totalErr += ctx.errCnt;
 
             GridTuple3<Integer, Integer, String> parsed = cacheAndTypeId(idxName);
 

@@ -18,7 +18,6 @@
 package org.apache.ignite.internal.commandline.indexreader;
 
 import java.util.LinkedHashMap;
-import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
 import java.util.logging.Logger;
@@ -43,9 +42,6 @@ class ScanContext {
 
     /** Page type statistics. */
     final Map<Class<? extends PageIO>, PagesStatistic> stats;
-
-    /** Map of errors, pageId -> set of exceptions. */
-    final Map<Long, List<String>> errors;
 
     long errCnt;
 
@@ -75,7 +71,6 @@ class ScanContext {
         this.store = store;
         this.items = items;
         this.stats = new LinkedHashMap<>();
-        this.errors = new LinkedHashMap<>();
         this.log = log;
         this.prefix = prefix;
         this.idxName = idxName;
@@ -113,8 +108,6 @@ class ScanContext {
 
     /** */
     public void onError(long pageId, String message) {
-        errors.computeIfAbsent(pageId, k -> new LinkedList<>()).add(message);
-
         if (errCnt == 0) {
             log.warning(prefix + ERROR_PREFIX + "-----");
             log.warning(prefix + ERROR_PREFIX + "Index tree: " + idxName);
