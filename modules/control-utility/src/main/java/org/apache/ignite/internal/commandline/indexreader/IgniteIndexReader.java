@@ -736,7 +736,7 @@ public class IgniteIndexReader implements AutoCloseable {
         else
             parsed = new GridTuple3<>(UNKNOWN_CACHE, 0, null);
 
-        return new ScanContext(parsed.get1(), inlineFieldsCount(parsed), store, items, log, prefix);
+        return new ScanContext(parsed.get1(), inlineFieldsCount(parsed), store, items, log, prefix, idxName);
     }
 
     /**
@@ -1006,13 +1006,8 @@ public class IgniteIndexReader implements AutoCloseable {
                 );
             }
 
-            printErrors(
-                prefix,
-                "Errors:",
-                "No errors occurred while traversing.",
-                "Page id=%s, exceptions:",
-                ctx.errors
-            );
+            if (ctx.errCnt == 0)
+                log.info(prefix + "No errors occurred while traversing.");
 
             totalErr += ctx.errors.size();
 
@@ -1130,12 +1125,6 @@ public class IgniteIndexReader implements AutoCloseable {
 
     /** */
     private void printErrors(String prefix, String caption, String emptyCaption, String msg, Map<?, List<String>> errors) {
-        if (errors.isEmpty()) {
-            log.info(prefix + emptyCaption);
-
-            return;
-        }
-
         log.info(prefix + ERROR_PREFIX + caption);
 
         errors.forEach((k, v) -> {

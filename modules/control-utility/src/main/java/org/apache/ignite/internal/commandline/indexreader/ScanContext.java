@@ -66,7 +66,10 @@ class ScanContext {
     private final String prefix;
 
     /** */
-    public ScanContext(int cacheId, int inlineFldCnt, FilePageStore store, ItemStorage items, Logger log, String prefix) {
+    private final String idxName;
+
+    /** */
+    public ScanContext(int cacheId, int inlineFldCnt, FilePageStore store, ItemStorage items, Logger log, String prefix, String idxName) {
         this.cacheId = cacheId;
         this.inlineFldCnt = inlineFldCnt;
         this.store = store;
@@ -75,6 +78,7 @@ class ScanContext {
         this.errors = new LinkedHashMap<>();
         this.log = log;
         this.prefix = prefix;
+        this.idxName = idxName;
     }
 
     /** */
@@ -111,8 +115,11 @@ class ScanContext {
     public void onError(long pageId, String message) {
         errors.computeIfAbsent(pageId, k -> new LinkedList<>()).add(message);
 
-        if (errCnt == 0)
+        if (errCnt == 0) {
+            log.warning(prefix + ERROR_PREFIX + "-----");
+            log.warning(prefix + ERROR_PREFIX + "Index tree: " + idxName);
             log.warning(prefix + ERROR_PREFIX + "---- Errors:");
+        }
 
         errCnt++;
 

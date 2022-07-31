@@ -144,9 +144,8 @@ public class IgniteIndexReaderTest extends GridCommandHandlerAbstractTest {
 
     /** Regexp to validate output of corrupted index. */
     private static final String CHECK_IDX_PTRN_WITH_ERRORS =
-        CHECK_IDX_PTRN_COMMON + "<PREFIX>" + ERROR_PREFIX + "Errors:" +
-            LINE_DELIM + "<PREFIX>" + ERROR_PREFIX + "Page id=[0-9]{1,30}, exceptions:" +
-            LINE_DELIM + "Failed to read page.*";
+        "<PREFIX>" + ERROR_PREFIX + "---- Errors:" +
+            LINE_DELIM + "<PREFIX>" + ERROR_PREFIX + "Page id: [0-9]{1,30}, exceptions: Failed to read page.*";
 
     /** Work directory, containing cache group directories. */
     private static File workDir;
@@ -296,7 +295,7 @@ public class IgniteIndexReaderTest extends GridCommandHandlerAbstractTest {
                 else
                     parsed = new GridTuple3<>(UNKNOWN_CACHE, 0, null);
 
-                return new ScanContext(parsed.get1(), inlineFieldsCount(parsed), store, items, log, prefix) {
+                return new ScanContext(parsed.get1(), inlineFieldsCount(parsed), store, items, log, prefix, idxName) {
                     @Override public void onLeafPage(long pageId, List<Object> data) {
                         super.onLeafPage(pageId, data);
 
