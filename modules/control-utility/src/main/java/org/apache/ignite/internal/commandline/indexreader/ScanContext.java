@@ -21,11 +21,12 @@ import java.util.LinkedHashMap;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
-import java.util.function.ObjLongConsumer;
 import java.util.logging.Logger;
 
 import org.apache.ignite.internal.processors.cache.persistence.file.FilePageStore;
 import org.apache.ignite.internal.processors.cache.persistence.tree.io.PageIO;
+
+import static org.apache.ignite.internal.commandline.indexreader.IgniteIndexReader.ERROR_PREFIX;
 
 /**
  * Traverse context, which is used for tree traversal and is unique for traversal of one single tree.
@@ -108,30 +109,18 @@ class ScanContext {
 
     /** */
     public void onError(long pageId, String message) {
+        errors.computeIfAbsent(pageId, k -> new LinkedList<>()).add(message);
+
+        if (errCnt == 0)
+            log.warning(prefix + ERROR_PREFIX + "---- Errors:");
+
         errCnt++;
 
-        errors.computeIfAbsent(pageId, k -> new LinkedList<>()).add(message);
+        onError(log, prefix, pageId, message);
     }
 
-    /** */
-    public static ObjLongConsumer<String> errorHandler(String prefix, Logger log) {
-        return new ObjLongConsumer<String>() {
-            /** */
-            private boolean errFound;
-
-            /** */
-            private final String pfx = prefix;
-
-            /** {@inheritDoc} */
-            @Override public void accept(String err, long pageId) {
-                if (!errFound)
-                    log.warning(pfx + "---- Errors:");
-
-                errFound = true;
-
-                log.warning(pfx + "Page id: " + pageId + ", exception: " + err);
-            }
-        };
+    public static void onError(Logger log, String prefix, long pageId, String message) {
+        log.warning(prefix + ERROR_PREFIX + "Page id: " + pageId + ", exceptions: " + message);
     }
 
     /** */

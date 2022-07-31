@@ -35,7 +35,6 @@ import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
 import java.util.concurrent.atomic.AtomicInteger;
-import java.util.function.ObjLongConsumer;
 import java.util.function.Predicate;
 import java.util.function.Supplier;
 import java.util.logging.Level;
@@ -111,7 +110,6 @@ import static java.util.stream.Collectors.toList;
 import static org.apache.ignite.configuration.DataStorageConfiguration.DFLT_PAGE_SIZE;
 import static org.apache.ignite.internal.commandline.argument.parser.CLIArgument.mandatoryArg;
 import static org.apache.ignite.internal.commandline.argument.parser.CLIArgument.optionalArg;
-import static org.apache.ignite.internal.commandline.indexreader.ScanContext.errorHandler;
 import static org.apache.ignite.internal.pagemem.PageIdAllocator.FLAG_DATA;
 import static org.apache.ignite.internal.pagemem.PageIdAllocator.FLAG_IDX;
 import static org.apache.ignite.internal.pagemem.PageIdAllocator.INDEX_PARTITION;
@@ -457,9 +455,8 @@ public class IgniteIndexReader implements AutoCloseable {
             Map<Class<? extends PageIO>, PagesStatistic> stats = new HashMap<>();
 
             long pagesCnt = 0;
+            long errCnt = 0;
             long currMetaPageId = metaPageListId;
-
-            ObjLongConsumer<String> onError = errorHandler(PAGE_LISTS_PREFIX, log);
 
             while (currMetaPageId != 0) {
                 try {
@@ -482,7 +479,8 @@ public class IgniteIndexReader implements AutoCloseable {
                                 pagesCnt += visitPageList(listId, stats);
                             }
                             catch (Exception err) {
-                                onError.accept(err.getMessage(), listId);
+                                errCnt++;
+                                ScanContext.onError(log, PAGE_LISTS_PREFIX, listId, err.getMessage());
                             }
                         }
 
@@ -492,13 +490,14 @@ public class IgniteIndexReader implements AutoCloseable {
                     currMetaPageId = io.getNextMetaPageId(addr);
                 }
                 catch (Exception err) {
-                    onError.accept(err.getMessage(), currMetaPageId);
+                    errCnt++;
+                    ScanContext.onError(log, PAGE_LISTS_PREFIX, currMetaPageId, err.getMessage());
 
                     break;
                 }
             }
 
-            return new PageListsInfo(bucketsData, pagesCnt, stats, new HashMap<>());
+            return new PageListsInfo(bucketsData, pagesCnt, stats, errCnt);
         });
     }
 
@@ -550,8 +549,6 @@ public class IgniteIndexReader implements AutoCloseable {
 
         ScanContext ctx = createContext(null, idxStore, new CountOnlyStorage(), "");
 
-        ObjLongConsumer<String> onError = errorHandler("", log);
-
         doWithBuffer((buf, addr) -> {
             for (int i = 0; i < pagesNum; i++) {
                 long pageId = -1;
@@ -572,16 +569,12 @@ public class IgniteIndexReader implements AutoCloseable {
                     if (pageIds.contains(normalizePageId(pageId)))
                         continue;
 
-                    ctx.errCnt++;
-
-                    onError.accept("Error [step=" + i +
+                    ctx.onError(pageId, "Error [step=" + i +
                             ", msg=Possibly orphan " + io.getClass().getSimpleName() + " page" +
-                            ", pageId=" + normalizePageId(pageId) + ']', pageId);
+                            ", pageId=" + normalizePageId(pageId) + ']');
                 }
                 catch (Throwable e) {
-                    ctx.errCnt++;
-
-                    onError.accept("Error [step=" + i + ", msg=" + e.getMessage() + ']', pageId);
+                    ctx.onError(pageId, "Error [step=" + i + ", msg=" + e.getMessage() + ']');
                 }
             }
 
@@ -1107,8 +1100,6 @@ public class IgniteIndexReader implements AutoCloseable {
 
         printIoStat(PAGE_LISTS_PREFIX, "---- Page stat:", pageListsInfo.stats);
 
-        printErrors(PAGE_LISTS_PREFIX, "---- Errors:", "---- No errors.", "Page id: %s, exception: ", pageListsInfo.errors);
-
         log.info("");
 
         SystemViewCommand.printTable(
@@ -1116,7 +1107,7 @@ public class IgniteIndexReader implements AutoCloseable {
             Arrays.asList(STRING, NUMBER),
             Arrays.asList(
                 Arrays.asList(PAGE_LISTS_PREFIX + "Total index pages found in lists:", pageListsInfo.pagesCnt),
-                Arrays.asList(PAGE_LISTS_PREFIX + "Total errors during lists scan:", pageListsInfo.errors.size())
+                Arrays.asList(PAGE_LISTS_PREFIX + "Total errors during lists scan:", pageListsInfo.errCnt)
             ),
             log
         );

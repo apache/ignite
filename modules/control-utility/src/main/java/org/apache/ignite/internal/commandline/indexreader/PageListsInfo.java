@@ -40,19 +40,18 @@ class PageListsInfo {
     /** Pages statistics. */
     final Map<Class<? extends PageIO>, ScanContext.PagesStatistic> stats;
 
-    /** Map of errors, pageId -> list of exceptions. */
-    final Map<Long, List<String>> errors;
+    final long errCnt;
 
     /** */
     public PageListsInfo(
         Map<IgniteBiTuple<Long, Integer>, List<Long>> bucketsData,
         long pagesCnt,
         Map<Class<? extends PageIO>, ScanContext.PagesStatistic> stats,
-        Map<Long, List<String>> errors
+        long errCnt
     ) {
         this.bucketsData = bucketsData;
         this.pagesCnt = pagesCnt;
         this.stats = stats;
-        this.errors = errors;
+        this.errCnt = errCnt;
     }
 }
