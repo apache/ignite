@@ -56,5 +56,10 @@ namespace Apache.Ignite.Core.Client.DataStructures
         /// Gets or sets a value indicating whether all set items should be stored on a single node.
         /// </summary>
         public bool Colocated { get; set; }
+
+        /// <summary>
+        /// Gets or sets the cache group name.
+        /// </summary>
+        public string GroupName { get; set; }
     }
 }

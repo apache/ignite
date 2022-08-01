@@ -27,6 +27,28 @@ namespace Apache.Ignite.Core.Impl.Client.DataStructures
     /// <typeparam name="T">Element type.</typeparam>
     internal sealed class IgniteSetClient<T> : IIgniteSetClient<T>
     {
+        /** */
+        private readonly ClientFailoverSocket _socket;
+
+        /** */
+        private readonly int _cacheId;
+
+        /// <summary>
+        /// Initializes a new instance of <see cref="IgniteSetClient{T}"/> class,
+        /// </summary>
+        /// <param name="socket">Socket.</param>
+        /// <param name="name">Set name.</param>
+        /// <param name="colocated">Colocated flag.</param>
+        /// <param name="cacheId">Cache id.</param>
+        public IgniteSetClient(ClientFailoverSocket socket, string name, bool colocated, int cacheId)
+        {
+            _socket = socket;
+            _cacheId = cacheId;
+
+            Name = name;
+            Colocated = colocated;
+        }
+
         /** <inheritdoc /> */
         public IEnumerator<T> GetEnumerator()
         {
@@ -42,7 +64,7 @@ namespace Apache.Ignite.Core.Impl.Client.DataStructures
         /** <inheritdoc /> */
         void ICollection<T>.Add(T item)
         {
-            throw new System.NotImplementedException();
+            _socket.DoOutInOp<object>(ClientOp.SetValueAdd, ctx => ctx.Writer.WriteObject(item), null);
         }
 
         /** <inheritdoc /> */
@@ -120,7 +142,10 @@ namespace Apache.Ignite.Core.Impl.Client.DataStructures
         /** <inheritdoc /> */
         public bool Contains(T item)
         {
-            throw new System.NotImplementedException();
+            return _socket.DoOutInOp(
+                ClientOp.SetValueContains,
+                ctx => ctx.Writer.WriteObject(item),
+                ctx => ctx.Reader.ReadBoolean());
         }
 
         /** <inheritdoc /> */
@@ -132,7 +157,10 @@ namespace Apache.Ignite.Core.Impl.Client.DataStructures
         /** <inheritdoc /> */
         public bool Remove(T item)
         {
-            throw new System.NotImplementedException();
+            return _socket.DoOutInOp(
+                ClientOp.SetValueRemove,
+                ctx => ctx.Writer.WriteObject(item),
+                ctx => ctx.Reader.ReadBoolean());
         }
 
         /** <inheritdoc /> */
