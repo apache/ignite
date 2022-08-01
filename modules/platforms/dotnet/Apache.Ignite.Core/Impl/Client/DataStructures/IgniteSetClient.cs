@@ -102,26 +102,24 @@ namespace Apache.Ignite.Core.Impl.Client.DataStructures
         /** <inheritdoc /> */
         public bool IsProperSubsetOf(IEnumerable<T> other)
         {
-            throw new NotImplementedException();
+            throw new NotSupportedException();
         }
 
         /** <inheritdoc /> */
         public bool IsProperSupersetOf(IEnumerable<T> other)
         {
-            throw new NotImplementedException();
+            // TODO: IsSupersetOf && Count > other.Count
+            throw new NotSupportedException();
         }
 
         /** <inheritdoc /> */
         public bool IsSubsetOf(IEnumerable<T> other)
         {
-            throw new NotImplementedException();
+            throw new NotSupportedException();
         }
 
         /** <inheritdoc /> */
-        public bool IsSupersetOf(IEnumerable<T> other)
-        {
-            throw new NotImplementedException();
-        }
+        public bool IsSupersetOf(IEnumerable<T> other) => MultiKeyOp(ClientOp.SetValueContainsAll, other);
 
         /** <inheritdoc /> */
         public bool Overlaps(IEnumerable<T> other)
@@ -132,7 +130,8 @@ namespace Apache.Ignite.Core.Impl.Client.DataStructures
         /** <inheritdoc /> */
         public bool SetEquals(IEnumerable<T> other)
         {
-            throw new NotImplementedException();
+            // TODO: IsSupersetOf && Count == other.Count
+            throw new NotSupportedException();
         }
 
         /** <inheritdoc /> */
