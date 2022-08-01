@@ -80,7 +80,7 @@ namespace Apache.Ignite.Core.Cache.Configuration
         /// If a transaction is executed over multiple caches, all caches must have the same atomicity mode,
         /// either TRANSACTIONAL_SNAPSHOT or TRANSACTIONAL.
         /// </summary>
-        [IgniteExperimentalAttribute]
-        TransactionalSnapshot,
+        [IgniteExperimental]
+        TransactionalSnapshot
     }
 }
