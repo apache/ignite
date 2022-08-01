@@ -137,6 +137,20 @@ namespace Apache.Ignite.Core.Tests.Client.DataStructures
         }
 
         [Test]
+        public void TestIntersectWith()
+        {
+            var set = Client.GetIgniteSet<int>(nameof(TestIntersectWith), new CollectionClientConfiguration());
+
+            set.Add(1);
+            set.Add(2);
+            set.Add(3);
+
+            set.IntersectWith(new[] { 1, 3, 5 });
+
+            CollectionAssert.AreEquivalent(new[] { 1, 3 }, set);
+        }
+
+        [Test]
         public void TestGetIgniteSetNonExistingReturnsNull()
         {
             Assert.IsNull(Client.GetIgniteSet<int>("foobar", null));

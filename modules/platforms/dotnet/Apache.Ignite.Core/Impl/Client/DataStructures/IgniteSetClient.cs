@@ -102,49 +102,49 @@ namespace Apache.Ignite.Core.Impl.Client.DataStructures
         /** <inheritdoc /> */
         public bool IsProperSubsetOf(IEnumerable<T> other)
         {
-            throw new System.NotImplementedException();
+            throw new NotImplementedException();
         }
 
         /** <inheritdoc /> */
         public bool IsProperSupersetOf(IEnumerable<T> other)
         {
-            throw new System.NotImplementedException();
+            throw new NotImplementedException();
         }
 
         /** <inheritdoc /> */
         public bool IsSubsetOf(IEnumerable<T> other)
         {
-            throw new System.NotImplementedException();
+            throw new NotImplementedException();
         }
 
         /** <inheritdoc /> */
         public bool IsSupersetOf(IEnumerable<T> other)
         {
-            throw new System.NotImplementedException();
+            throw new NotImplementedException();
         }
 
         /** <inheritdoc /> */
         public bool Overlaps(IEnumerable<T> other)
         {
-            throw new System.NotImplementedException();
+            throw new NotImplementedException();
         }
 
         /** <inheritdoc /> */
         public bool SetEquals(IEnumerable<T> other)
         {
-            throw new System.NotImplementedException();
+            throw new NotImplementedException();
         }
 
         /** <inheritdoc /> */
         public void SymmetricExceptWith(IEnumerable<T> other)
         {
-            throw new System.NotImplementedException();
+            throw new NotImplementedException();
         }
 
         /** <inheritdoc /> */
         public void UnionWith(IEnumerable<T> other)
         {
-            throw new System.NotImplementedException();
+            throw new NotImplementedException();
         }
 
         /** <inheritdoc /> */
