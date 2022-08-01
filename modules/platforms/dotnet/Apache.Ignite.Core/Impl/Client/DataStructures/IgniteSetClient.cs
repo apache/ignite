@@ -19,7 +19,9 @@ namespace Apache.Ignite.Core.Impl.Client.DataStructures
 {
     using System.Collections;
     using System.Collections.Generic;
+    using System.Diagnostics;
     using Apache.Ignite.Core.Client.DataStructures;
+    using Apache.Ignite.Core.Impl.Binary;
 
     /// <summary>
     /// Client set.
@@ -33,6 +35,9 @@ namespace Apache.Ignite.Core.Impl.Client.DataStructures
         /** */
         private readonly int _cacheId;
 
+        /** */
+        private readonly object _nameHash;
+
         /// <summary>
         /// Initializes a new instance of <see cref="IgniteSetClient{T}"/> class,
         /// </summary>
@@ -42,8 +47,12 @@ namespace Apache.Ignite.Core.Impl.Client.DataStructures
         /// <param name="cacheId">Cache id.</param>
         public IgniteSetClient(ClientFailoverSocket socket, string name, bool colocated, int cacheId)
         {
+            Debug.Assert(socket != null);
+            Debug.Assert(name != null);
+
             _socket = socket;
             _cacheId = cacheId;
+            _nameHash = BinaryUtils.GetStringHashCode(name);
 
             Name = name;
             Colocated = colocated;
@@ -64,7 +73,8 @@ namespace Apache.Ignite.Core.Impl.Client.DataStructures
         /** <inheritdoc /> */
         void ICollection<T>.Add(T item)
         {
-            _socket.DoOutInOp<object>(ClientOp.SetValueAdd, ctx => ctx.Writer.WriteObject(item), null);
+            // TODO: What happens when value exists? Exception or not?
+            SingleKeyOp(ClientOp.SetValueAdd, item);
         }
 
         /** <inheritdoc /> */
@@ -128,10 +138,7 @@ namespace Apache.Ignite.Core.Impl.Client.DataStructures
         }
 
         /** <inheritdoc /> */
-        bool ISet<T>.Add(T item)
-        {
-            throw new System.NotImplementedException();
-        }
+        bool ISet<T>.Add(T item) => SingleKeyOp(ClientOp.SetValueAdd, item);
 
         /** <inheritdoc /> */
         public void Clear()
@@ -140,13 +147,7 @@ namespace Apache.Ignite.Core.Impl.Client.DataStructures
         }
 
         /** <inheritdoc /> */
-        public bool Contains(T item)
-        {
-            return _socket.DoOutInOp(
-                ClientOp.SetValueContains,
-                ctx => ctx.Writer.WriteObject(item),
-                ctx => ctx.Reader.ReadBoolean());
-        }
+        public bool Contains(T item) => SingleKeyOp(ClientOp.SetValueContains, item);
 
         /** <inheritdoc /> */
         public void CopyTo(T[] array, int arrayIndex)
@@ -155,13 +156,7 @@ namespace Apache.Ignite.Core.Impl.Client.DataStructures
         }
 
         /** <inheritdoc /> */
-        public bool Remove(T item)
-        {
-            return _socket.DoOutInOp(
-                ClientOp.SetValueRemove,
-                ctx => ctx.Writer.WriteObject(item),
-                ctx => ctx.Reader.ReadBoolean());
-        }
+        public bool Remove(T item) => SingleKeyOp(ClientOp.SetValueRemove, item);
 
         /** <inheritdoc /> */
         public int Count { get; }
@@ -185,6 +180,34 @@ namespace Apache.Ignite.Core.Impl.Client.DataStructures
         public void Close()
         {
             throw new System.NotImplementedException();
+        }
+
+        private bool SingleKeyOp(ClientOp op, T key) =>
+            _socket.DoOutInOpAffinity(
+                op,
+                ctx =>
+                {
+                    var w = ctx.Writer;
+
+                    WriteIdentity(w);
+                    w.WriteBoolean(true); // ServerKeepBinary
+                    w.WriteObject(key);
+                },
+                ctx => ctx.Stream.ReadBool(),
+                _cacheId,
+                GetAffinityKey(key));
+
+        private void WriteIdentity(BinaryWriter w)
+        {
+            w.WriteString(Name);
+            w.WriteInt(_cacheId);
+            w.WriteBoolean(Colocated);
+        }
+
+        private object GetAffinityKey(T key)
+        {
+            // See ClientIgniteSetImpl#affinityKey in Java for details.
+            return Colocated ? _nameHash : key;
         }
     }
 }
