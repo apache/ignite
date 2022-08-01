@@ -58,6 +58,7 @@ namespace Apache.Ignite.Core.Impl.Client.DataStructures
             _pageSize = pageSize;
         }
 
+        /** <inheritdoc /> */
         public bool MoveNext()
         {
             if (_pos < _page.Count - 1)
@@ -95,8 +96,10 @@ namespace Apache.Ignite.Core.Impl.Client.DataStructures
             return true;
         }
 
+        /** <inheritdoc /> */
         public void Reset() => throw new NotSupportedException();
 
+        /** <inheritdoc /> */
         public T Current
         {
             get
@@ -115,8 +118,10 @@ namespace Apache.Ignite.Core.Impl.Client.DataStructures
             }
         }
 
+        /** <inheritdoc /> */
         object IEnumerator.Current => Current;
 
+        /** <inheritdoc /> */
         public void Dispose()
         {
             if (_resourceId == null)
