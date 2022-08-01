@@ -21,16 +21,13 @@ import java.io.File;
 import java.nio.file.Paths;
 import java.util.ArrayList;
 import java.util.HashMap;
-import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Random;
-import java.util.Set;
 import java.util.UUID;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.function.Function;
 import org.apache.ignite.Ignite;
-import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.cache.CacheAtomicityMode;
 import org.apache.ignite.cache.affinity.Affinity;
@@ -40,12 +37,10 @@ import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.DataRegionConfiguration;
 import org.apache.ignite.configuration.DataStorageConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
-import org.apache.ignite.internal.GridKernalContext;
 import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.managers.communication.GridIoMessage;
 import org.apache.ignite.internal.pagemem.wal.IgniteWriteAheadLogManager;
 import org.apache.ignite.internal.pagemem.wal.WALIterator;
-import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
 import org.apache.ignite.internal.processors.cache.GridCacheSharedContext;
 import org.apache.ignite.internal.processors.cache.distributed.GridCacheTxRecoveryRequest;
 import org.apache.ignite.internal.processors.cache.distributed.GridCacheTxRecoveryResponse;
@@ -282,21 +277,7 @@ public abstract class AbstractConsistentCutTest extends GridCommonAbstractTest {
      * @param cuts       Number of Consistent Cuts was run within a test.
      */
     protected void checkWalsConsistency(Map<IgniteUuid, Integer> txNearNode, int cuts) throws Exception {
-        checkWalsConsistency(txNearNode, cuts, nodeIds(null), true);
-    }
-
-    /** */
-    Set<Integer> nodeIds(@Nullable Integer excl) {
-        Set<Integer> nodes = new HashSet<>();
-
-        for (int i = 0; i < nodes(); i++) {
-            if (excl != null && excl.intValue() == i)
-                continue;
-
-            nodes.add(i);
-        }
-
-        return nodes;
+        checkWalsConsistency(txNearNode, cuts, true);
     }
 
     /**
@@ -304,20 +285,19 @@ public abstract class AbstractConsistentCutTest extends GridCommonAbstractTest {
      *
      * @param txNearNode Collection of transactions was run within a test. Key is transaction ID, value is near node ID.
      * @param cuts       Number of Consistent Cuts was run within a test.
-     * @param nodes      Set of nodes to check WAL.
      * @param strictAmountCheck If {@code true} than amount of transactions parsed from WAL must be equal amount of transactions
      *                          in txNearNode. If {@code false} then check only that amount of transactions isn't 0.
      */
     protected void checkWalsConsistency(
         Map<IgniteUuid, Integer> txNearNode,
-        int cuts, Set<Integer> nodes,
+        int cuts,
         boolean strictAmountCheck
     ) throws Exception {
         Map<Integer, Short> top = stopCluster();
 
         List<ConsistentCutWalReader> states = new ArrayList<>();
 
-        for (int i: nodes) {
+        for (int i = 0; i < nodes(); i++) {
             log.info("Check WAL for node " + i);
 
             ConsistentCutWalReader reader = new ConsistentCutWalReader(i, walIter(i), log, txNearNode, top);
@@ -339,7 +319,7 @@ public abstract class AbstractConsistentCutTest extends GridCommonAbstractTest {
 
         // Includes incomplete state also.
         for (int cutId = 0; cutId < cuts + 1; cutId++) {
-            for (int nodeId: nodes) {
+            for (int nodeId = 0; nodeId < nodes(); nodeId++) {
                 // Skip if the latest cut wasn't INCOMPLETE.
                 if (states.get(nodeId).cuts.size() == cutId)
                     continue;
@@ -375,9 +355,6 @@ public abstract class AbstractConsistentCutTest extends GridCommonAbstractTest {
 
         if (strictAmountCheck)
             assertEquals(txNearNode.size(), txStates.size());
-        else
-            // Check that at least 1 committed and 1 rolled back transactions are here.
-            assertTrue(new HashSet<>(txStates.values()).size() == 2);
     }
 
     /** */
@@ -430,11 +407,6 @@ public abstract class AbstractConsistentCutTest extends GridCommonAbstractTest {
 
     /** ConsistentCutManager with possibility to disable schedulling Consistent Cuts manually. */
     protected static class TestConsistentCutManager extends ConsistentCutManager {
-        /** {@inheritDoc} */
-        @Override public void onActivate(GridKernalContext kctx) throws IgniteCheckedException {
-            // Don't automatically shedule Consistent Cut on cluster activation.
-        }
-
         /** */
         boolean consistentCutFinished(long cutVer) {
             return U.isLocalNodeCoordinator(cctx.discovery())
@@ -451,14 +423,17 @@ public abstract class AbstractConsistentCutTest extends GridCommonAbstractTest {
         static void enableConsistentCutScheduling(IgniteEx ign) {
             GridCacheSharedContext<?, ?> cctx = ign.context().cache().context();
 
-            AffinityTopologyVersion topVer = ign.cachex(CACHE).context().topology().readyTopologyVersion();
-
-            cctx.consistentCutMgr().scheduleConsistentCut(cctx, topVer);
+            cctx.consistentCutMgr().scheduleConsistentCut();
         }
 
         /** */
         static void disableConsistentCutScheduling(IgniteEx ign) {
-            cutMgr(ign).disableScheduling();
+            cutMgr(ign).disableScheduling(false);
+        }
+
+        /** */
+        static boolean disabled(IgniteEx ign) {
+            return cutMgr(ign).scheduleConsistentCutTask == null;
         }
     }
 

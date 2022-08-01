@@ -1152,6 +1152,11 @@ public class SnapshotRestoreProcess {
         if (failure == null) {
             finishProcess(reqId, null);
 
+            if (U.isLocalNodeCoordinator(ctx.discovery()) && CU.isPitrEnabled(ctx.config())) {
+                ctx.pools().getSystemExecutorService().submit(() ->
+                    ctx.cache().context().consistentCutMgr().scheduleConsistentCut());
+            }
+
             return;
         }
 

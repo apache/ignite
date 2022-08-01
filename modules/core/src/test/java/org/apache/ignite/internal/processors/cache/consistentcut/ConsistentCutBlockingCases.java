@@ -110,21 +110,23 @@ public class ConsistentCutBlockingCases {
     public static List<String> messages(boolean backup, boolean recovery) {
         List<String> msgCls = new ArrayList<>();
 
-        msgCls.add(GridNearTxPrepareRequest.class.getSimpleName());
-        msgCls.add(GridNearTxPrepareResponse.class.getSimpleName());
-        msgCls.add(GridNearTxPrepareRequest.class.getSimpleName());
-        msgCls.add(GridNearTxPrepareResponse.class.getSimpleName());
-        msgCls.add(GridNearTxFinishRequest.class.getSimpleName());
-        msgCls.add(GridNearTxFinishResponse.class.getSimpleName());
+        if (!recovery) {
+            msgCls.add(GridNearTxPrepareRequest.class.getSimpleName());
+            msgCls.add(GridNearTxPrepareResponse.class.getSimpleName());
+            msgCls.add(GridNearTxPrepareRequest.class.getSimpleName());
+            msgCls.add(GridNearTxPrepareResponse.class.getSimpleName());
+            msgCls.add(GridNearTxFinishRequest.class.getSimpleName());
+            msgCls.add(GridNearTxFinishResponse.class.getSimpleName());
 
-        if (backup) {
-            msgCls.add(GridDhtTxPrepareRequest.class.getSimpleName());
-            msgCls.add(GridDhtTxPrepareResponse.class.getSimpleName());
-            msgCls.add(GridDhtTxFinishRequest.class.getSimpleName());
-            msgCls.add(GridDhtTxFinishResponse.class.getSimpleName());
+            if (backup) {
+                msgCls.add(GridDhtTxPrepareRequest.class.getSimpleName());
+                msgCls.add(GridDhtTxPrepareResponse.class.getSimpleName());
+                msgCls.add(GridDhtTxFinishRequest.class.getSimpleName());
+                msgCls.add(GridDhtTxFinishResponse.class.getSimpleName());
+            }
         }
-
-        if (recovery) {
+        else {
+            msgCls.add(GridNearTxFinishRequest.class.getSimpleName());
             msgCls.add(GridCacheTxRecoveryRequest.class.getSimpleName());
             msgCls.add(GridCacheTxRecoveryResponse.class.getSimpleName());
         }

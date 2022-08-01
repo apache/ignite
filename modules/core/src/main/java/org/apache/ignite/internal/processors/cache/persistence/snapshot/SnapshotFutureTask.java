@@ -231,6 +231,11 @@ class SnapshotFutureTask extends AbstractSnapshotFutureTask<Set<GroupPartitionId
         if (err != null)
             startedFut.onDone(err);
 
+        if (err == null && CU.isPitrEnabled(cctx.gridConfig()) && U.isLocalNodeCoordinator(cctx.discovery())) {
+            cctx.kernalContext().pools().getSystemExecutorService().submit(() ->
+                cctx.consistentCutMgr().scheduleConsistentCut());
+        }
+
         return super.onDone(res, err);
     }
 

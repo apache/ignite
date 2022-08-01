@@ -33,10 +33,8 @@ import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.managers.communication.GridIoMessage;
 import org.apache.ignite.internal.pagemem.wal.IgniteWriteAheadLogManager;
-import org.apache.ignite.internal.pagemem.wal.record.ConsistentCutStartRecord;
 import org.apache.ignite.internal.pagemem.wal.record.TxRecord;
 import org.apache.ignite.internal.pagemem.wal.record.WALRecord;
-import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
 import org.apache.ignite.internal.processors.cache.GridCacheSharedContext;
 import org.apache.ignite.internal.processors.cache.persistence.StorageException;
 import org.apache.ignite.internal.processors.cache.persistence.wal.FileWriteAheadLogManager;
@@ -55,8 +53,6 @@ import org.apache.ignite.transactions.TransactionState;
 import org.jetbrains.annotations.Nullable;
 
 import static org.apache.ignite.internal.processors.cache.consistentcut.AbstractConsistentCutBlockingTest.BlkCutType.AFTER_VERSION_UPDATE;
-import static org.apache.ignite.internal.processors.cache.consistentcut.AbstractConsistentCutBlockingTest.BlkCutType.BEFORE_WAL_FINISHED;
-import static org.apache.ignite.internal.processors.cache.consistentcut.AbstractConsistentCutBlockingTest.BlkCutType.BEFORE_WAL_STARTED;
 import static org.apache.ignite.internal.processors.cache.consistentcut.AbstractConsistentCutBlockingTest.BlkNodeType.NEAR;
 import static org.apache.ignite.internal.processors.cache.consistentcut.AbstractConsistentCutBlockingTest.BlkNodeType.PRIMARY;
 import static org.apache.ignite.transactions.TransactionIsolation.SERIALIZABLE;
@@ -174,7 +170,7 @@ public abstract class AbstractConsistentCutBlockingTest extends AbstractConsiste
 
     /** Checks WALs for correct Consistency Cut. */
     protected void checkWalsConsistency(boolean checkAmountTxs) throws Exception {
-        checkWalsConsistency(txNearNode, caseNum, nodeIds(null), checkAmountTxs);
+        checkWalsConsistency(txNearNode, caseNum, checkAmountTxs);
     }
 
     /**
@@ -349,9 +345,7 @@ public abstract class AbstractConsistentCutBlockingTest extends AbstractConsiste
 
     /** Manually triggers new Consistent Cut. */
     private void triggerConsistentCut() {
-        AffinityTopologyVersion topVer = grid(0).cachex(CACHE).context().topology().readyTopologyVersion();
-
-        grid(0).context().cache().context().consistentCutMgr().triggerConsistentCutOnCluster(topVer, "explicit");
+        grid(0).context().cache().context().consistentCutMgr().triggerConsistentCutOnCluster("explicit");
     }
 
     /** Blocks sending transaction message between nodes, and awaits for Consistent Cut procedure starts on every node. */
@@ -364,7 +358,7 @@ public abstract class AbstractConsistentCutBlockingTest extends AbstractConsiste
                     if (txLatch.getCount() > 0) {
                         txLatch.countDown();
 
-                        cutGlobalStartLatch.await(1_000, TimeUnit.MILLISECONDS);
+                        cutGlobalStartLatch.await(100, TimeUnit.MILLISECONDS);
                     }
                 }
                 catch (InterruptedException e) {
@@ -494,23 +488,6 @@ public abstract class AbstractConsistentCutBlockingTest extends AbstractConsiste
 
                 super.init(ver);
             }
-
-            /** Blocks before writing {@link ConsistentCutStartRecord} to WAL. */
-            @Override protected boolean walLog(ConsistentCutVersion cutVer, WALRecord record) throws IgniteCheckedException {
-                boolean blkStart = record.type() == WALRecord.RecordType.CONSISTENT_CUT_START_RECORD && blkCut(BEFORE_WAL_STARTED);
-                boolean blkFinish = record.type() == WALRecord.RecordType.CONSISTENT_CUT_FINISH_RECORD && blkCut(BEFORE_WAL_FINISHED);
-
-                if (blkStart || blkFinish) {
-                    try {
-                        cutBlkLatch.await(100, TimeUnit.MILLISECONDS);
-                    }
-                    catch (InterruptedException e) {
-                        throw new IgniteException(e);
-                    }
-                }
-
-                return super.walLog(cutVer, record);
-            }
         }
 
         /** */
@@ -537,12 +514,6 @@ public abstract class AbstractConsistentCutBlockingTest extends AbstractConsiste
         NONE,
 
         /** */
-        AFTER_VERSION_UPDATE,
-
-        /** */
-        BEFORE_WAL_STARTED,
-
-        /** */
-        BEFORE_WAL_FINISHED
+        AFTER_VERSION_UPDATE
     }
 }

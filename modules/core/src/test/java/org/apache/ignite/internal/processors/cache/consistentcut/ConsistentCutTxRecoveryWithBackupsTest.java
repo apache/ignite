@@ -25,11 +25,12 @@ import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.junit.runners.Parameterized;
 
-import static org.apache.ignite.internal.processors.cache.consistentcut.ConsistentCutBlockingCases.messages;
-
 /** */
 @RunWith(Parameterized.class)
-public class ConsistentCutNoBackupMessagesBlockingTest extends AbstractConsistentCutBlockingTest {
+public class ConsistentCutTxRecoveryWithBackupsTest extends AbstractConsistentCutBlockingTest {
+    /** */
+    public static final int NODES = 2;
+
     /** */
     @Parameterized.Parameter
     public BlkCutType cutBlkType;
@@ -53,27 +54,29 @@ public class ConsistentCutNoBackupMessagesBlockingTest extends AbstractConsisten
 
     /** */
     @Test
-    public void testMultipleCases() throws Exception {
-        List<List<T2<Integer, Integer>>> cases = ConsistentCutBlockingCases.casesNoBackup(nodes());
+    public void testWithStoppedClient() throws Exception {
+        stopGrid(nodes());
 
-        List<String> msgs = messages(false, false);
+        List<List<T2<Integer, Integer>>> cases = ConsistentCutBlockingCases.casesWithBackup(nodes());
+
+        List<String> msgs = ConsistentCutBlockingCases.messages(false, true);
 
         for (String msg: msgs) {
             initMsgCase(msg, cutBlkType, cutNodeBlkType);
 
-            runCases(cases);
+            runCases(cases, true);
         }
 
-        checkWalsConsistency();
+        checkWalsConsistency(true);
     }
 
     /** {@inheritDoc} */
     @Override protected int nodes() {
-        return 3;
+        return NODES;
     }
 
     /** {@inheritDoc} */
     @Override protected int backups() {
-        return 0;
+        return 1;
     }
 }
