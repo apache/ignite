@@ -97,10 +97,7 @@ namespace Apache.Ignite.Core.Impl.Client.DataStructures
         public void ExceptWith(IEnumerable<T> other) => MultiKeyOp(ClientOp.SetValueRemoveAll, other);
 
         /** <inheritdoc /> */
-        public void IntersectWith(IEnumerable<T> other)
-        {
-            throw new System.NotImplementedException();
-        }
+        public void IntersectWith(IEnumerable<T> other) => MultiKeyOp(ClientOp.SetValueRetainAll, other);
 
         /** <inheritdoc /> */
         public bool IsProperSubsetOf(IEnumerable<T> other)
