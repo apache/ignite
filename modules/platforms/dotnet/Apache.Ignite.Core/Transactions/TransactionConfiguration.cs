@@ -95,7 +95,7 @@ namespace Apache.Ignite.Core.Transactions
         /// <see cref="TimeSpan.Zero"/> for disabling deadlock detection.
         /// </summary>
         [DefaultValue(typeof(TimeSpan), "00:00:10")]
-        [IgniteExperimentalAttribute]
+        [IgniteExperimental]
         public TimeSpan DeadlockTimeout { get; set; }
 
         /// <summary>

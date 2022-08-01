@@ -1131,7 +1131,7 @@ namespace Apache.Ignite.Core.Tests.Services
 
             Assert.IsNotNull(ex);
             Assert.AreEqual("Expected exception", ex.Message);
-            Assert.IsTrue(ex.StackTrace.Trim().StartsWith(
+            Assert.IsTrue(ex.StackTrace!.Trim().StartsWith(
                 "at Apache.Ignite.Core.Tests.Services.ServicesTest.TestIgniteServiceSerializable.Init"));
 
             var failedCfgs = deploymentException.FailedConfigurations;
@@ -2249,6 +2249,7 @@ namespace Apache.Ignite.Core.Tests.Services
         {
             /** Injected Ignite instance. */
             [InstanceResource, NonSerialized]
+            // ReSharper disable once UnassignedField.Local
             private IIgnite _ignite;
             
             /** Interceptor action. */
