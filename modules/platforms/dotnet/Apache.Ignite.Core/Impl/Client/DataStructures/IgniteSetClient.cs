@@ -39,6 +39,9 @@ namespace Apache.Ignite.Core.Impl.Client.DataStructures
         /** */
         private readonly object _nameHash;
 
+        /** */
+        private int _pageSize = 1024;
+
         /// <summary>
         /// Initializes a new instance of <see cref="IgniteSetClient{T}"/> class,
         /// </summary>
@@ -62,7 +65,12 @@ namespace Apache.Ignite.Core.Impl.Client.DataStructures
         /** <inheritdoc /> */
         public IEnumerator<T> GetEnumerator()
         {
-            throw new System.NotImplementedException();
+            // TODO: Colocated mode proper support.
+            return _socket.DoOutInOp(ClientOp.SetIteratorStart, ctx =>
+            {
+                WriteIdentity(ctx.Writer);
+                ctx.Writer.WriteInt(_pageSize);
+            }, ctx => new IgniteSetClientEnumerator<T>(ctx));
         }
 
         /** <inheritdoc /> */
@@ -168,7 +176,11 @@ namespace Apache.Ignite.Core.Impl.Client.DataStructures
         public bool Colocated { get; }
 
         /** <inheritdoc /> */
-        public int PageSize { get; set; } = 1024;
+        public int PageSize
+        {
+            get => _pageSize;
+            set => _pageSize = value > 0 ? value : throw new ArgumentOutOfRangeException(nameof(value));
+        }
 
         /** <inheritdoc /> */
         public bool IsClosed { get; }
