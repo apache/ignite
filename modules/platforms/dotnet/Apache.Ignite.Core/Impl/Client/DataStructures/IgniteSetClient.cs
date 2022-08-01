@@ -154,10 +154,7 @@ namespace Apache.Ignite.Core.Impl.Client.DataStructures
         bool ISet<T>.Add(T item) => AddIfNotPresent(item);
 
         /** <inheritdoc /> */
-        public void Clear()
-        {
-            Op<object>(ClientOp.SetClear, w => WriteIdentity(w), null);
-        }
+        public void Clear() => Op<object>(ClientOp.SetClear);
 
         /** <inheritdoc /> */
         public bool Contains(T item) => SingleKeyOp(ClientOp.SetValueContains, item);
@@ -183,7 +180,7 @@ namespace Apache.Ignite.Core.Impl.Client.DataStructures
         public int Count => Op(ClientOp.SetSize, null, r => r.Stream.ReadInt());
 
         /** <inheritdoc /> */
-        public bool IsReadOnly { get; }
+        public bool IsReadOnly => false;
 
         /** <inheritdoc /> */
         public string Name { get; }
@@ -199,18 +196,17 @@ namespace Apache.Ignite.Core.Impl.Client.DataStructures
         }
 
         /** <inheritdoc /> */
-        public bool IsClosed { get; }
+        public bool IsClosed => Op(ClientOp.SetExists, null, r => !r.Stream.ReadBool());
 
         /** <inheritdoc /> */
-        public void Close()
-        {
-            throw new System.NotImplementedException();
-        }
+        public void Close() => Op<object>(ClientOp.SetClose);
 
         private bool AddIfNotPresent(T item) => SingleKeyOp(ClientOp.SetValueAdd, item);
 
-        private TRes Op<TRes>(ClientOp op, Action<BinaryWriter> writeAction,
-            Func<ClientResponseContext, TRes> readFunc) =>
+        private TRes Op<TRes>(
+            ClientOp op,
+            Action<BinaryWriter> writeAction = null,
+            Func<ClientResponseContext, TRes> readFunc = null) =>
             _socket.DoOutInOp(op, ctx =>
             {
                 WriteIdentity(ctx.Writer);

@@ -20,6 +20,7 @@ namespace Apache.Ignite.Core.Tests.Client.DataStructures
     using System;
     using System.Collections.Generic;
     using System.Linq;
+    using Apache.Ignite.Core.Client;
     using Apache.Ignite.Core.Client.DataStructures;
     using NUnit.Framework;
 
@@ -47,6 +48,7 @@ namespace Apache.Ignite.Core.Tests.Client.DataStructures
             Assert.IsFalse(set.Contains(1));
             Assert.AreEqual(1, set.Count);
             Assert.AreEqual(2, set.Single());
+            Assert.IsFalse(set.IsClosed);
         }
 
         [Test]
@@ -107,8 +109,7 @@ namespace Apache.Ignite.Core.Tests.Client.DataStructures
         [Test]
         public void TestClear()
         {
-            var set = Client.GetIgniteSet<int>(nameof(TestClear),
-                new CollectionClientConfiguration());
+            var set = Client.GetIgniteSet<int>(nameof(TestClear), new CollectionClientConfiguration());
 
             set.Add(1);
             set.Add(2);
@@ -124,6 +125,20 @@ namespace Apache.Ignite.Core.Tests.Client.DataStructures
         public void TestGetIgniteSetNonExistingReturnsNull()
         {
             Assert.IsNull(Client.GetIgniteSet<int>("foobar", null));
+        }
+
+        [Test]
+        public void TestClose()
+        {
+            var set = Client.GetIgniteSet<int>(nameof(TestClose), new CollectionClientConfiguration());
+
+            set.Add(1);
+            set.Close();
+
+            Assert.IsTrue(set.IsClosed);
+
+            var ex = Assert.Throws<IgniteClientException>(() => set.Add(2));
+            Assert.AreEqual("IgniteSet with name 'TestClose' does not exist.", ex.Message);
         }
     }
 }
