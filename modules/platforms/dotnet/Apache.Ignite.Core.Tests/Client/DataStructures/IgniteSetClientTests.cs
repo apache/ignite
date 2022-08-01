@@ -122,6 +122,21 @@ namespace Apache.Ignite.Core.Tests.Client.DataStructures
         }
 
         [Test]
+        public void TestExceptWith()
+        {
+            var set = Client.GetIgniteSet<int>(nameof(TestExceptWith), new CollectionClientConfiguration());
+
+            set.Add(1);
+            set.Add(2);
+            set.Add(3);
+
+            set.ExceptWith(new[]{1, 3, 5, 7});
+            set.ExceptWith(Array.Empty<int>());
+
+            Assert.AreEqual(2, set.Single());
+        }
+
+        [Test]
         public void TestGetIgniteSetNonExistingReturnsNull()
         {
             Assert.IsNull(Client.GetIgniteSet<int>("foobar", null));
@@ -139,6 +154,18 @@ namespace Apache.Ignite.Core.Tests.Client.DataStructures
 
             var ex = Assert.Throws<IgniteClientException>(() => set.Add(2));
             Assert.AreEqual("IgniteSet with name 'TestClose' does not exist.", ex.Message);
+        }
+
+        [Test]
+        public void TestConfigurationPropagation()
+        {
+            Assert.Fail("TODO");
+        }
+
+        [Test]
+        public void TestPartitionAwareness()
+        {
+            Assert.Fail("TODO");
         }
     }
 }
