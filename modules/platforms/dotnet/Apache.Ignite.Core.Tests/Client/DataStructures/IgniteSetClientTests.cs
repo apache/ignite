@@ -32,12 +32,17 @@ namespace Apache.Ignite.Core.Tests.Client.DataStructures
                 new CollectionClientConfiguration());
 
             set.Add(1);
+            set.Add(1);
+
             set.Add(2);
+            set.Add(2);
+
             set.Remove(1);
 
             Assert.AreEqual(nameof(TestCreateAddContainsRemove), set.Name);
             Assert.IsTrue(set.Contains(2));
             Assert.IsFalse(set.Contains(1));
+            Assert.AreEqual(1, set.Count);
         }
 
         [Test]

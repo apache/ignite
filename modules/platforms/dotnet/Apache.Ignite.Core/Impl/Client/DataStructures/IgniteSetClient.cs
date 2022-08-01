@@ -17,6 +17,7 @@
 
 namespace Apache.Ignite.Core.Impl.Client.DataStructures
 {
+    using System;
     using System.Collections;
     using System.Collections.Generic;
     using System.Diagnostics;
@@ -71,11 +72,7 @@ namespace Apache.Ignite.Core.Impl.Client.DataStructures
         }
 
         /** <inheritdoc /> */
-        void ICollection<T>.Add(T item)
-        {
-            // TODO: What happens when value exists? Exception or not?
-            SingleKeyOp(ClientOp.SetValueAdd, item);
-        }
+        void ICollection<T>.Add(T item) => AddIfNotPresent(item);
 
         /** <inheritdoc /> */
         public void ExceptWith(IEnumerable<T> other)
@@ -138,7 +135,7 @@ namespace Apache.Ignite.Core.Impl.Client.DataStructures
         }
 
         /** <inheritdoc /> */
-        bool ISet<T>.Add(T item) => SingleKeyOp(ClientOp.SetValueAdd, item);
+        bool ISet<T>.Add(T item) => AddIfNotPresent(item);
 
         /** <inheritdoc /> */
         public void Clear()
@@ -159,7 +156,7 @@ namespace Apache.Ignite.Core.Impl.Client.DataStructures
         public bool Remove(T item) => SingleKeyOp(ClientOp.SetValueRemove, item);
 
         /** <inheritdoc /> */
-        public int Count { get; }
+        public int Count => Op(ClientOp.SetSize, null, r => r.Stream.ReadInt());
 
         /** <inheritdoc /> */
         public bool IsReadOnly { get; }
@@ -171,7 +168,7 @@ namespace Apache.Ignite.Core.Impl.Client.DataStructures
         public bool Colocated { get; }
 
         /** <inheritdoc /> */
-        public int PageSize { get; set; }
+        public int PageSize { get; set; } = 1024;
 
         /** <inheritdoc /> */
         public bool IsClosed { get; }
@@ -182,7 +179,17 @@ namespace Apache.Ignite.Core.Impl.Client.DataStructures
             throw new System.NotImplementedException();
         }
 
-        private bool SingleKeyOp(ClientOp op, T key) =>
+        private bool AddIfNotPresent(T item) => SingleKeyOp(ClientOp.SetValueAdd, item);
+
+        private TRes Op<TRes>(ClientOp op, Action<BinaryWriter> writeAction,
+            Func<ClientResponseContext, TRes> readFunc) =>
+            _socket.DoOutInOp(op, ctx =>
+            {
+                WriteIdentity(ctx.Writer);
+                writeAction?.Invoke(ctx.Writer);
+            }, readFunc);
+
+        private bool SingleKeyOp(ClientOp op, T item) =>
             _socket.DoOutInOpAffinity(
                 op,
                 ctx =>
@@ -191,11 +198,11 @@ namespace Apache.Ignite.Core.Impl.Client.DataStructures
 
                     WriteIdentity(w);
                     w.WriteBoolean(true); // ServerKeepBinary
-                    w.WriteObject(key);
+                    w.WriteObject(item);
                 },
                 ctx => ctx.Stream.ReadBool(),
                 _cacheId,
-                GetAffinityKey(key));
+                GetAffinityKey(item));
 
         private void WriteIdentity(BinaryWriter w)
         {
