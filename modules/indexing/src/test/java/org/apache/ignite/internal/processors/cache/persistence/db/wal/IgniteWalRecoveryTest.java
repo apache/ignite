@@ -170,9 +170,6 @@ public class IgniteWalRecoveryTest extends GridCommonAbstractTest {
     private static final String CACHE_TO_DESTROY_NAME = "destroyCache";
 
     /** */
-    private static final String LOC_CACHE_NAME = "local";
-
-    /** */
     private static final String CACHE_1 = "cache1";
 
     /** */
@@ -844,11 +841,6 @@ public class IgniteWalRecoveryTest extends GridCommonAbstractTest {
 
         assertEquals(1, res.size());
         assertEquals((long)ENTRY_COUNT, res.get(0).get(0));
-
-        IgniteCache<Object, Object> locCache = cacheGrid.cache(LOC_CACHE_NAME);
-
-        for (int i = 0; i < ENTRY_COUNT; i++)
-            assertEquals(new IndexedObject(i), locCache.get(i));
     }
 
     /**
@@ -891,15 +883,12 @@ public class IgniteWalRecoveryTest extends GridCommonAbstractTest {
 
         cacheGrid.resetLostPartitions(Collections.singleton(CACHE_NAME));
 
-        IgniteCache<Object, Object> locCache = cacheGrid.cache(LOC_CACHE_NAME);
-
         for (int i = 0; i < LARGE_ENTRY_COUNT; i++) {
             final long[] data = new long[LARGE_ARR_SIZE];
 
             Arrays.fill(data, i);
 
             Assert.assertArrayEquals(data, (long[])cache.get(i));
-            Assert.assertArrayEquals(data, (long[])locCache.get(i));
         }
     }
 
@@ -2008,12 +1997,9 @@ public class IgniteWalRecoveryTest extends GridCommonAbstractTest {
             }
 
             IgniteCache<Object, Object> cache = ignite.cache(CACHE_NAME);
-            IgniteCache<Object, Object> locCache = ignite.cache(LOC_CACHE_NAME);
 
-            for (int i = 0; i < ENTRY_COUNT; i++) {
+            for (int i = 0; i < ENTRY_COUNT; i++)
                 cache.put(i, new IndexedObject(i));
-                locCache.put(i, new IndexedObject(i));
-            }
 
             ignite.log().info("Finished load.");
         }
@@ -2048,7 +2034,6 @@ public class IgniteWalRecoveryTest extends GridCommonAbstractTest {
                 ignite.scheduler().callLocal(new Callable<Object>() {
                     @Override public Object call() {
                         IgniteCache<Object, Object> cache = ignite.cache(CACHE_NAME);
-                        IgniteCache<Object, Object> locCache = ignite.cache(LOC_CACHE_NAME);
 
                         ThreadLocalRandom rnd = ThreadLocalRandom.current();
 
@@ -2056,7 +2041,6 @@ public class IgniteWalRecoveryTest extends GridCommonAbstractTest {
 
                         while (!Thread.currentThread().isInterrupted()) {
                             cache.put(rnd.nextInt(10_000), new IndexedObject(rnd.nextInt()));
-                            locCache.put(rnd.nextInt(10_000), new IndexedObject(rnd.nextInt()));
 
                             cnt++;
 
@@ -2104,27 +2088,13 @@ public class IgniteWalRecoveryTest extends GridCommonAbstractTest {
 
             ignite.resetLostPartitions(Collections.singleton(CACHE_NAME));
 
-            IgniteCache<Object, Object> locCache = ignite.cache(LOC_CACHE_NAME);
-
             for (int i = 0; i < ENTRY_COUNT; i++) {
-                {
-                    Object val = cache.get(i);
+                Object val = cache.get(i);
 
-                    if (val == null) {
-                        ignite.log().warning("Failed to find a value for PARTITIONED cache key: " + i);
+                if (val == null) {
+                    ignite.log().warning("Failed to find a value for PARTITIONED cache key: " + i);
 
-                        return 2;
-                    }
-                }
-
-                {
-                    Object val = locCache.get(i);
-
-                    if (val == null) {
-                        ignite.log().warning("Failed to find a value for LOCAL cache key: " + i);
-
-                        return 2;
-                    }
+                    return 2;
                 }
             }
 
@@ -2175,7 +2145,6 @@ public class IgniteWalRecoveryTest extends GridCommonAbstractTest {
             }
 
             IgniteCache<Object, Object> cache = ignite.cache(CACHE_NAME);
-            IgniteCache<Object, Object> locCache = ignite.cache(LOC_CACHE_NAME);
 
             for (int i = 0; i < LARGE_ENTRY_COUNT; i++) {
                 final long[] data = new long[LARGE_ARR_SIZE];
@@ -2183,7 +2152,6 @@ public class IgniteWalRecoveryTest extends GridCommonAbstractTest {
                 Arrays.fill(data, i);
 
                 cache.put(i, data);
-                locCache.put(i, data);
             }
 
             ignite.log().info("Finished load.");
