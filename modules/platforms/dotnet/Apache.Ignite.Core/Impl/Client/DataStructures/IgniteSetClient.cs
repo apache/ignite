@@ -65,12 +65,20 @@ namespace Apache.Ignite.Core.Impl.Client.DataStructures
         /** <inheritdoc /> */
         public IEnumerator<T> GetEnumerator()
         {
-            // TODO: Colocated mode proper support.
-            return _socket.DoOutInOp(ClientOp.SetIteratorStart, ctx =>
+            if (Colocated)
             {
-                WriteIdentity(ctx.Writer);
-                ctx.Writer.WriteInt(_pageSize);
-            }, ctx => new IgniteSetClientEnumerator<T>(ctx, PageSize));
+                return _socket.DoOutInOpAffinity(
+                    ClientOp.SetIteratorStart,
+                    ctx => WriteIteratorStart(ctx),
+                    ctx => new IgniteSetClientEnumerator<T>(ctx, PageSize),
+                    _cacheId,
+                    _nameHash);
+            }
+
+            return _socket.DoOutInOp(
+                ClientOp.SetIteratorStart,
+                ctx => WriteIteratorStart(ctx),
+                ctx => new IgniteSetClientEnumerator<T>(ctx, PageSize));
         }
 
         /** <inheritdoc /> */
@@ -235,6 +243,12 @@ namespace Apache.Ignite.Core.Impl.Client.DataStructures
         {
             // See ClientIgniteSetImpl#affinityKey in Java for details.
             return Colocated ? _nameHash : key;
+        }
+
+        private void WriteIteratorStart(ClientRequestContext ctx)
+        {
+            WriteIdentity(ctx.Writer);
+            ctx.Writer.WriteInt(_pageSize);
         }
     }
 }
