@@ -202,7 +202,7 @@ namespace Apache.Ignite.Core.Tests.Binary.Serializable
         /// </summary>
         private SerializableXmlDoc(SerializationInfo info, StreamingContext context)
         {
-            LoadXml(info.GetString("xmlDocument"));
+            LoadXml(info.GetString("xmlDocument")!);
         }
 
         /** <inheritdoc /> */
