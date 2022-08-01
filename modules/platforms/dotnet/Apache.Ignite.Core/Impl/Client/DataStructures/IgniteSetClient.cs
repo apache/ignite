@@ -94,10 +94,7 @@ namespace Apache.Ignite.Core.Impl.Client.DataStructures
         void ICollection<T>.Add(T item) => AddIfNotPresent(item);
 
         /** <inheritdoc /> */
-        public void ExceptWith(IEnumerable<T> other)
-        {
-            throw new System.NotImplementedException();
-        }
+        public void ExceptWith(IEnumerable<T> other) => MultiKeyOp(ClientOp.SetValueRemoveAll, other);
 
         /** <inheritdoc /> */
         public void IntersectWith(IEnumerable<T> other)
