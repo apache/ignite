@@ -35,7 +35,7 @@ public class GridCacheTxRecoveryCommitInfo implements Message {
     private static final long serialVersionUID = 0L;
 
     /** */
-    public static final short TYPE_CODE = 183;
+    public static final short TYPE_CODE = 191;
 
     /** */
     private static final GridCacheTxRecoveryCommitInfo NO_COMMIT = new GridCacheTxRecoveryCommitInfo(false, null);

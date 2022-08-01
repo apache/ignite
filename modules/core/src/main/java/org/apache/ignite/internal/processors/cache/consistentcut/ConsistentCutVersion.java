@@ -36,7 +36,7 @@ public class ConsistentCutVersion implements Message, Comparable<ConsistentCutVe
     private static final long serialVersionUID = 0L;
 
     /** */
-    public static final short TYPE_CODE = 182;
+    public static final short TYPE_CODE = 190;
 
     /** Incremental version. */
     @GridToStringInclude

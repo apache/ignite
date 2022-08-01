@@ -384,12 +384,13 @@ public class GridIoMessageFactory implements MessageFactoryProvider {
         factory.register(ConsistentCutVersion.TYPE_CODE, ConsistentCutVersion::new);
         factory.register(GridCacheTxRecoveryCommitInfo.TYPE_CODE, GridCacheTxRecoveryCommitInfo::new);
 
-        // [-3..119] [124..129] [-23..-28] [-36..-55] - this
+        // [-3..119] [124..129] [-23..-28] [-36..-55] [188..191] - this
         // [120..123] - DR
         // [-4..-22, -30..-35] - SQL
         // [2048..2053] - Snapshots
         // [-42..-37] - former hadoop.
         // [64..71] - former IGFS.
+        // [183..187] - GridH2ValueMessageFactory
     }
 
     /** {@inheritDoc} */
