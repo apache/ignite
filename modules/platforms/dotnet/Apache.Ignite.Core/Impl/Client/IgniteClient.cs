@@ -360,6 +360,14 @@ namespace Apache.Ignite.Core.Impl.Client
         }
 
         /** <inheritDoc /> */
+        public IIgniteSetClient<T> GetIgniteSet<T>(string name, CollectionClientConfiguration configuration)
+        {
+            IgniteArgumentCheck.NotNullOrEmpty(name, "name");
+
+            throw new NotImplementedException();
+        }
+
+        /** <inheritDoc /> */
         public IBinaryProcessor BinaryProcessor
         {
             get { return _binProc; }
