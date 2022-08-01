@@ -18,6 +18,7 @@
 namespace Apache.Ignite.Core.Tests.Client.DataStructures
 {
     using System;
+    using System.Collections.Generic;
     using System.Linq;
     using Apache.Ignite.Core.Client.DataStructures;
     using NUnit.Framework;
@@ -75,6 +76,32 @@ namespace Apache.Ignite.Core.Tests.Client.DataStructures
             var res = set.ToList();
 
             CollectionAssert.AreEquivalent(items, res);
+        }
+
+        [Test]
+        public void TestEnumeratorRemoveAllWhileEnumerating()
+        {
+            var set = Client.GetIgniteSet<int>(nameof(TestEnumeratorMultiplePages),
+                new CollectionClientConfiguration());
+
+            set.PageSize = 2;
+
+            var items = Enumerable.Range(1, 10).ToList();
+            items.ForEach(x => set.Add(x));
+
+            using var enumerator = set.GetEnumerator();
+
+            items.ForEach(x => set.Remove(x));
+
+            var res = new List<int>();
+
+            while (enumerator.MoveNext())
+            {
+                res.Add(enumerator.Current);
+            }
+
+            // 2 from current page, 1 from current item cached on server.
+            Assert.AreEqual(3, res.Count);
         }
 
         [Test]
