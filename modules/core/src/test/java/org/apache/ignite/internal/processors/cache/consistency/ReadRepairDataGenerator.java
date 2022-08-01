@@ -25,7 +25,6 @@ import java.util.Comparator;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.TreeMap;
 import java.util.concurrent.ThreadLocalRandom;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.function.BiFunction;
@@ -36,6 +35,7 @@ import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteBinary;
 import org.apache.ignite.IgniteCache;
 import org.apache.ignite.IgniteCheckedException;
+import org.apache.ignite.IgniteException;
 import org.apache.ignite.binary.BinaryObject;
 import org.apache.ignite.cache.ReadRepairStrategy;
 import org.apache.ignite.internal.GridKernalContext;
@@ -77,10 +77,10 @@ public class ReadRepairDataGenerator extends JUnitAssertAware {
     private final ClassLoader extClsLdr;
 
     /** Primary node. */
-    private final BiFunction<Integer, String, Ignite> primaryNode;
+    private final BiFunction<Object, String, Ignite> primaryNode;
 
     /** Backup nodes. */
-    private final BiFunction<Integer, String, List<Ignite>> backupNodes;
+    private final BiFunction<Object, String, List<Ignite>> backupNodes;
 
     /** Server nodes count. */
     private final Supplier<Integer> serverNodesCnt;
@@ -101,8 +101,8 @@ public class ReadRepairDataGenerator extends JUnitAssertAware {
         String cacheName,
         List<Ignite> clsAwareNodes,
         ClassLoader extClsLdr,
-        BiFunction<Integer, String, Ignite> primaryNode,
-        BiFunction<Integer, String, List<Ignite>> backupNodes,
+        BiFunction<Object, String, Ignite> primaryNode,
+        BiFunction<Object, String, List<Ignite>> backupNodes,
         Supplier<Integer> serverNodesCnt,
         Supplier<Integer> backupsCnt) {
         this.cacheName = cacheName;
@@ -137,7 +137,7 @@ public class ReadRepairDataGenerator extends JUnitAssertAware {
         boolean binary,
         ReadRepairStrategy strategy,
         Consumer<ReadRepairData> c) throws Exception {
-        IgniteCache<Integer, Object> cache = initiator.getOrCreateCache(cacheName);
+        IgniteCache<Object, Object> cache = initiator.getOrCreateCache(cacheName);
 
         ThreadLocalRandom rnd = ThreadLocalRandom.current();
 
@@ -146,36 +146,30 @@ public class ReadRepairDataGenerator extends JUnitAssertAware {
         for (int i = 0; i < rnd.nextInt(1, 10); i++) {
             ReadRepairStrategy keyStrategy = strategy != null ? strategy : strategies[rnd.nextInt(strategies.length)];
 
-            Map<Integer, InconsistentMapping> results = new TreeMap<>(); // Sorted to avoid warning.
+            Map<Object, InconsistentMapping> results = new HashMap<>();
 
             try {
                 for (int j = 0; j < cnt; j++) {
-                    int curKey = incrementalKey.incrementAndGet();
+                    Object curKey = wrapTestKeyIfNeeded(rnd.nextBoolean(), incrementalKey.incrementAndGet());
+
+                    if (binary)
+                        curKey = toBinary(curKey);
 
                     InconsistentMapping res = setDifferentValuesForSameKey(curKey, misses, nulls, keyStrategy);
 
-                    results.put(curKey, res);
-                }
+                    for (Ignite node : G.allGrids()) { // Check that cache filled properly.
+                        T2<Object, GridCacheVersion> valVer = res.mappingBin.get(node);
 
-                for (Ignite node : G.allGrids()) { // Check that cache filled properly.
-                    Map<Integer, Object> all =
-                        node.getOrCreateCache(cacheName).<Integer, Object>withKeepBinary().getAll(results.keySet());
+                        Object exp = valVer != null ?
+                            valVer.get1() : // Should read from itself (backup or primary).
+                            res.primaryBin; // Or read from primary (when not a partition owner).
 
-                    for (Map.Entry<Integer, Object> entry : all.entrySet()) {
-                        Integer key = entry.getKey();
-                        Object val = entry.getValue();
-
-                        T2<Object, GridCacheVersion> valVer = results.get(key).mappingBin.get(node);
-
-                        Object exp;
-
-                        if (valVer != null)
-                            exp = valVer.get1(); // Should read from itself (backup or primary).
-                        else
-                            exp = results.get(key).primaryBin; // Or read from primary (when not a partition owner).
+                        Object val = node.getOrCreateCache(cacheName).withKeepBinary().get(curKey);
 
                         assertEqualsArraysAware(exp, val);
                     }
+
+                    results.put(curKey, res);
                 }
 
                 c.accept(new ReadRepairData(cache, results, raw, async, keyStrategy, binary));
@@ -188,7 +182,7 @@ public class ReadRepairDataGenerator extends JUnitAssertAware {
                     .append(", strategy=").append(keyStrategy)
                     .append("]\n");
 
-                for (Map.Entry<Integer, InconsistentMapping> entry : results.entrySet()) {
+                for (Map.Entry<Object, InconsistentMapping> entry : results.entrySet()) {
                     sb.append("Key: ").append(entry.getKey()).append("\n");
 
                     InconsistentMapping mapping = entry.getValue();
@@ -218,6 +212,15 @@ public class ReadRepairDataGenerator extends JUnitAssertAware {
     }
 
     /**
+     *
+     */
+    public Object toBinary(Object obj) {
+        IgniteBinary igniteBinary = clsAwareNodes.get(0).binary();
+
+        return igniteBinary.toBinary(obj);
+    }
+
+    /**
      * @param obj Object.
      */
     private Object describeArrayIfNeeded(Object obj) {
@@ -239,7 +242,7 @@ public class ReadRepairDataGenerator extends JUnitAssertAware {
      *
      */
     private InconsistentMapping setDifferentValuesForSameKey(
-        int key,
+        Object key,
         boolean misses,
         boolean nulls,
         ReadRepairStrategy strategy) throws Exception {
@@ -495,10 +498,8 @@ public class ReadRepairDataGenerator extends JUnitAssertAware {
             }
         }
 
-        IgniteBinary igniteBinary = clsAwareNodes.get(0).binary();
-
-        Object primValBin = igniteBinary.toBinary(primVal);
-        Object repairedBin = igniteBinary.toBinary(unwrapArrayIfNeeded(repaired));
+        Object primValBin = toBinary(primVal);
+        Object repairedBin = toBinary(unwrapArrayIfNeeded(repaired));
 
         Map<Ignite, T2<Object, GridCacheVersion>> mappingBin = mapping.entrySet().stream().collect(
             Collectors.toMap(
@@ -506,7 +507,7 @@ public class ReadRepairDataGenerator extends JUnitAssertAware {
                 (entry) -> {
                     T2<Object, GridCacheVersion> t2 = entry.getValue();
 
-                    return new T2<>(igniteBinary.toBinary(unwrapArrayIfNeeded(t2.getKey())), t2.getValue());
+                    return new T2<>(toBinary(unwrapArrayIfNeeded(t2.getKey())), t2.getValue());
                 }));
 
         return new InconsistentMapping(mappingBin, primValBin, repairedBin, repairable, consistent);
@@ -544,15 +545,28 @@ public class ReadRepairDataGenerator extends JUnitAssertAware {
     }
 
     /**
-     * @param wrap Wrap.
-     * @param val  Value.
+     *
      */
-    private Object wrapTestValueIfNeeded(boolean wrap, Integer val) throws ReflectiveOperationException {
-        if (wrap) {
-            int type = val % 7;
+    private Object wrapTestKeyIfNeeded(boolean wrap, Integer key) {
+        return wrapIfNeeded(wrap, true, key);
+    }
 
-            switch (type) {
-                case 0:
+    /**
+     *
+     */
+    private Object wrapTestValueIfNeeded(boolean wrap, Integer val) {
+        return wrapIfNeeded(wrap, false, val);
+    }
+
+    /**
+     *
+     */
+    private Object wrapIfNeeded(boolean wrap, boolean key, Integer val) {
+        if (wrap) {
+            List<Supplier<Object>> wrapClos = new ArrayList<>();
+
+            wrapClos.add(() -> {
+                try {
                     // Some nodes will be unable to deserialize this object.
                     // Checking that Read Repair feature cause no `class not found` problems.
                     Class<?> clazz = extClsLdr.loadClass("org.apache.ignite.tests.p2p.cache.PersonKey");
@@ -562,28 +576,24 @@ public class ReadRepairDataGenerator extends JUnitAssertAware {
                     GridTestUtils.setFieldValue(obj, "id", val);
 
                     return obj;
+                }
+                catch (Exception e) {
+                    throw new IgniteException(e);
+                }
+            });
 
-                case 1:
-                    return new Object[] {val};
+            wrapClos.add(() -> Collections.singletonMap(val, val));
+            wrapClos.add(() -> Collections.singletonList(val));
+            wrapClos.add(() -> Collections.singleton(val));
 
-                case 2:
-                    return new Object[][] {{val}, {val}};
+            wrapClos.add(() -> new int[] {val});
 
-                case 3:
-                    return new int[] {val};
-
-                case 4:
-                    return Collections.singletonMap(val, val);
-
-                case 5:
-                    return Collections.singletonList(val);
-
-                case 6:
-                    return Collections.singleton(val);
-
-                default:
-                    throw new IllegalStateException();
+            if (!key) {
+                wrapClos.add(() -> new Object[] {val});
+                wrapClos.add(() -> new Object[][] {{val}, {val}});
             }
+
+            return wrapClos.get(val % wrapClos.size()).get();
         }
         else
             return val;
@@ -592,7 +602,7 @@ public class ReadRepairDataGenerator extends JUnitAssertAware {
     /**
      * @param obj Object.
      */
-    public static Object unwrapBinaryIfNeeded(Object obj) {
+    public Object unwrapBinaryIfNeeded(Object obj) {
         if (obj instanceof BinaryObject) {
             BinaryObject valObj = (BinaryObject)obj;
 
@@ -606,7 +616,7 @@ public class ReadRepairDataGenerator extends JUnitAssertAware {
      * @param ctx Context.
      * @param val Value.
      */
-    byte[] marshalValue(CacheObjectContext ctx, Object val) throws IgniteCheckedException {
+    private byte[] marshalValue(CacheObjectContext ctx, Object val) throws IgniteCheckedException {
         IgniteCacheObjectProcessor clsAwareProc = ((IgniteEx)clsAwareNodes.get(0)).context().cacheObjects();
 
         return clsAwareProc.marshal(ctx, val);
@@ -617,10 +627,10 @@ public class ReadRepairDataGenerator extends JUnitAssertAware {
      */
     public static final class ReadRepairData {
         /** Initiator's cache. */
-        public final IgniteCache<Integer, Object> cache;
+        public final IgniteCache<Object, Object> cache;
 
-        /** Generated data across topology per key mapping. */
-        public final Map<Integer, InconsistentMapping> data;
+        /** Generated data across topology per (binary) key mapping. */
+        public final Map<Object, InconsistentMapping> data;
 
         /** Raw read flag. True means required GetEntry() instead of get(). */
         public final boolean raw;
@@ -638,8 +648,8 @@ public class ReadRepairDataGenerator extends JUnitAssertAware {
          *
          */
         public ReadRepairData(
-            IgniteCache<Integer, Object> cache,
-            Map<Integer, InconsistentMapping> data,
+            IgniteCache<Object, Object> cache,
+            Map<Object, InconsistentMapping> data,
             boolean raw,
             boolean async,
             ReadRepairStrategy strategy,

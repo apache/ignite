@@ -71,7 +71,7 @@
         <asm.version>4.2</asm.version>
         <aspectj.bundle.version>1.8.13_1</aspectj.bundle.version>
         <aspectj.version>1.8.13</aspectj.version>
-        <netty.version>4.1.75.Final</netty.version>
+        <netty.version>4.1.79.Final</netty.version>
         <bouncycastle.version>1.69</bouncycastle.version>
         <commons.beanutils.bundle.version>1.9.2_1</commons.beanutils.bundle.version>
         <commons.beanutils.version>1.9.4</commons.beanutils.version>

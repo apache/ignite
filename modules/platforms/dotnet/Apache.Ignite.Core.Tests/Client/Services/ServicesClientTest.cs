@@ -313,7 +313,7 @@ namespace Apache.Ignite.Core.Tests.Client.Services
             Assert.AreEqual(1, svc.Foo(default(uint)));
             Assert.AreEqual(4, svc.Foo(default(ushort)));
 
-            if (!_useBinaryArray)
+            if (!UseBinaryArray)
             {
                 // Array types are not distinguished.
                 Assert.AreEqual(9, svc.Foo(new[] {new Person(0)}));
@@ -322,7 +322,7 @@ namespace Apache.Ignite.Core.Tests.Client.Services
             {
                 Assert.AreEqual(9, svc.Foo(new object[] {new Person(0)}));
                 Assert.AreEqual(10, svc.Foo(new[] {new Person(0)}));
-                Assert.AreEqual(10, svc.Foo(new Person[] {new Person(0)}));
+                Assert.AreEqual(10, svc.Foo(new[] {new Person(0)}));
             }
         }
 
