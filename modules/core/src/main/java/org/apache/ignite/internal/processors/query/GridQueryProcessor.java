@@ -2981,7 +2981,7 @@ public class GridQueryProcessor extends GridProcessorAdapter {
         if (qry.isDistributedJoins() && qry.getPartitions() != null)
             throw new CacheException("Using both partitions and distributed JOINs is not supported for the same query");
 
-        if (qry.isLocal() && ctx.clientNode() && cctx == null)
+        if (qry.isLocal() && ctx.clientNode())
             throw new CacheException("Execution of local SqlFieldsQuery on client node disallowed.");
 
         return executeQuerySafe(cctx, () -> {
