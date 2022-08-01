@@ -21,8 +21,11 @@ namespace Apache.Ignite.Core.Impl.Client.DataStructures
     using System.Collections;
     using System.Collections.Generic;
     using System.Diagnostics;
+    using System.IO;
     using Apache.Ignite.Core.Client.DataStructures;
     using Apache.Ignite.Core.Impl.Binary;
+    using Apache.Ignite.Core.Impl.Common;
+    using BinaryWriter = Apache.Ignite.Core.Impl.Binary.BinaryWriter;
 
     /// <summary>
     /// Client set.
@@ -213,8 +216,12 @@ namespace Apache.Ignite.Core.Impl.Client.DataStructures
                 writeAction?.Invoke(ctx.Writer);
             }, readFunc);
 
-        private bool SingleKeyOp(ClientOp op, T item) =>
-            _socket.DoOutInOpAffinity(
+        private bool SingleKeyOp(ClientOp op, T item)
+        {
+            // TODO: Arg checks in all methods.
+            IgniteArgumentCheck.NotNull(item, nameof(item));
+
+            return _socket.DoOutInOpAffinity(
                 op,
                 ctx =>
                 {
@@ -227,6 +234,54 @@ namespace Apache.Ignite.Core.Impl.Client.DataStructures
                 ctx => ctx.Stream.ReadBool(),
                 _cacheId,
                 GetAffinityKey(item));
+        }
+
+        private bool MultiKeyOp(ClientOp op, IEnumerable<T> items)
+        {
+            IgniteArgumentCheck.NotNull(items, nameof(items));
+
+            using var enumerator = items.GetEnumerator();
+
+            if (!enumerator.MoveNext())
+            {
+                return false;
+            }
+
+            var first = enumerator.Current;
+            var affKey = GetAffinityKey(first);
+
+            return _socket.DoOutInOpAffinity(
+                op,
+                ctx =>
+                {
+                    var w = ctx.Writer;
+
+                    WriteIdentity(w);
+                    w.WriteBoolean(true); // ServerKeepBinary.
+
+                    var countPos = w.Stream.Position;
+                    var count = 1;
+                    w.WriteInt(0);
+
+                    w.WriteObjectDetached(first);
+
+                    // ReSharper disable once AccessToDisposedClosure
+                    while (enumerator.MoveNext())
+                    {
+                        // ReSharper disable once AccessToDisposedClosure
+                        w.WriteObjectDetached(enumerator.Current);
+                        count++;
+                    }
+
+                    var endPos = w.Stream.Position;
+                    w.Stream.Seek(countPos, SeekOrigin.Begin);
+                    w.Stream.WriteInt(count);
+                    w.Stream.Seek(endPos, SeekOrigin.Begin);
+                },
+                ctx => ctx.Reader.ReadBoolean(),
+                _cacheId,
+                affKey);
+        }
 
         private void WriteIdentity(BinaryWriter w)
         {
