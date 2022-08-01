@@ -17,6 +17,8 @@
 
 namespace Apache.Ignite.Core.Tests.Client.DataStructures
 {
+    using System;
+    using System.Linq;
     using Apache.Ignite.Core.Client.DataStructures;
     using NUnit.Framework;
 
@@ -43,6 +45,36 @@ namespace Apache.Ignite.Core.Tests.Client.DataStructures
             Assert.IsTrue(set.Contains(2));
             Assert.IsFalse(set.Contains(1));
             Assert.AreEqual(1, set.Count);
+            Assert.AreEqual(2, set.Single());
+        }
+
+        [Test]
+        public void TestEnumeratorEmptySet()
+        {
+            var set = Client.GetIgniteSet<int>(nameof(TestEnumeratorEmptySet),
+                new CollectionClientConfiguration());
+
+            using var enumerator = set.GetEnumerator();
+
+            Assert.Throws<InvalidOperationException>(() => _ = enumerator.Current);
+            Assert.IsFalse(enumerator.MoveNext());
+            Assert.Throws<InvalidOperationException>(() => _ = enumerator.Current);
+        }
+
+        [Test]
+        public void TestEnumeratorMultiplePages()
+        {
+            var set = Client.GetIgniteSet<int>(nameof(TestEnumeratorMultiplePages),
+                new CollectionClientConfiguration());
+
+            set.PageSize = 2;
+
+            var items = Enumerable.Range(1, 10).ToList();
+            items.ForEach(x => set.Add(x));
+
+            var res = set.ToList();
+
+            CollectionAssert.AreEquivalent(items, res);
         }
 
         [Test]

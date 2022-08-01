@@ -157,7 +157,15 @@ namespace Apache.Ignite.Core.Impl.Client.DataStructures
         /** <inheritdoc /> */
         public void CopyTo(T[] array, int arrayIndex)
         {
-            throw new System.NotImplementedException();
+            foreach (var item in this)
+            {
+                if (arrayIndex >= array.Length)
+                {
+                    return;
+                }
+
+                array[arrayIndex++] = item;
+            }
         }
 
         /** <inheritdoc /> */
