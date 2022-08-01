@@ -81,7 +81,7 @@ namespace Apache.Ignite.Core.Tests.Client.DataStructures
         [Test]
         public void TestEnumeratorRemoveAllWhileEnumerating()
         {
-            var set = Client.GetIgniteSet<int>(nameof(TestEnumeratorMultiplePages),
+            var set = Client.GetIgniteSet<int>(nameof(TestEnumeratorRemoveAllWhileEnumerating),
                 new CollectionClientConfiguration());
 
             set.PageSize = 2;
@@ -102,6 +102,22 @@ namespace Apache.Ignite.Core.Tests.Client.DataStructures
 
             // 2 from current page, 1 from current item cached on server.
             Assert.AreEqual(3, res.Count);
+        }
+
+        [Test]
+        public void TestClear()
+        {
+            var set = Client.GetIgniteSet<int>(nameof(TestClear),
+                new CollectionClientConfiguration());
+
+            set.Add(1);
+            set.Add(2);
+
+            set.Clear();
+
+            Assert.AreEqual(0, set.Count);
+            Assert.IsFalse(set.Contains(1));
+            Assert.IsFalse(set.Contains(2));
         }
 
         [Test]

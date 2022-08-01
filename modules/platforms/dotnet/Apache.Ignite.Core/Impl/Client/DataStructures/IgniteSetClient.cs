@@ -156,7 +156,7 @@ namespace Apache.Ignite.Core.Impl.Client.DataStructures
         /** <inheritdoc /> */
         public void Clear()
         {
-            throw new System.NotImplementedException();
+            Op<object>(ClientOp.SetClear, w => WriteIdentity(w), null);
         }
 
         /** <inheritdoc /> */
