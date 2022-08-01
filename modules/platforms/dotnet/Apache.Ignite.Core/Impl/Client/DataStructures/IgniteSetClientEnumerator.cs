@@ -28,10 +28,13 @@ namespace Apache.Ignite.Core.Impl.Client.DataStructures
     internal sealed class IgniteSetClientEnumerator<T> : IEnumerator<T>
     {
         /** */
-        private long? _resourceId;
+        private readonly ClientSocket _socket;
 
         /** */
-        private readonly ClientSocket _socket;
+        private readonly int _pageSize;
+
+        /** */
+        private long? _resourceId;
 
         /** */
         private List<T> _page;
@@ -43,7 +46,8 @@ namespace Apache.Ignite.Core.Impl.Client.DataStructures
         /// Initializes a new instance of <see cref="IgniteSetClientEnumerator{T}"/> class.
         /// </summary>
         /// <param name="ctx">Response context.</param>
-        public IgniteSetClientEnumerator(ClientResponseContext ctx)
+        /// <param name="pageSize">Page size.</param>
+        public IgniteSetClientEnumerator(ClientResponseContext ctx, int pageSize)
         {
             _page = ReadPage(ctx.Reader);
 
@@ -51,6 +55,7 @@ namespace Apache.Ignite.Core.Impl.Client.DataStructures
 
             _resourceId = hasNext ? ctx.Reader.ReadLong() : (long?)null;
             _socket = ctx.Socket;
+            _pageSize = pageSize;
         }
 
         public bool MoveNext()
@@ -67,7 +72,11 @@ namespace Apache.Ignite.Core.Impl.Client.DataStructures
             }
 
             _socket.DoOutInOp<object>(ClientOp.SetIteratorGetPage,
-                ctx => ctx.Stream.WriteLong(_resourceId.Value),
+                ctx =>
+                {
+                    ctx.Stream.WriteLong(_resourceId.Value);
+                    ctx.Stream.WriteInt(_pageSize);
+                },
                 ctx =>
                 {
                     _page = ReadPage(ctx.Reader);
@@ -94,7 +103,6 @@ namespace Apache.Ignite.Core.Impl.Client.DataStructures
             {
                 if (_pos == -1)
                 {
-                    // TODO: Proper text - see
                     throw new InvalidOperationException("Enumeration has not started. Call MoveNext.");
                 }
 

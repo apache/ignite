@@ -70,7 +70,7 @@ namespace Apache.Ignite.Core.Impl.Client.DataStructures
             {
                 WriteIdentity(ctx.Writer);
                 ctx.Writer.WriteInt(_pageSize);
-            }, ctx => new IgniteSetClientEnumerator<T>(ctx));
+            }, ctx => new IgniteSetClientEnumerator<T>(ctx, PageSize));
         }
 
         /** <inheritdoc /> */
