@@ -85,10 +85,7 @@ namespace Apache.Ignite.Core.Impl.Client.DataStructures
         }
 
         /** <inheritdoc /> */
-        IEnumerator IEnumerable.GetEnumerator()
-        {
-            return GetEnumerator();
-        }
+        IEnumerator IEnumerable.GetEnumerator() => GetEnumerator();
 
         /** <inheritdoc /> */
         void ICollection<T>.Add(T item) => AddIfNotPresent(item);

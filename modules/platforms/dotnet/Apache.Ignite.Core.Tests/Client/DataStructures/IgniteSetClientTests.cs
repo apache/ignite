@@ -111,9 +111,7 @@ namespace Apache.Ignite.Core.Tests.Client.DataStructures
         {
             var set = Client.GetIgniteSet<int>(nameof(TestClear), new CollectionClientConfiguration());
 
-            set.Add(1);
-            set.Add(2);
-
+            set.UnionWith(new[] { 1, 2 });
             set.Clear();
 
             Assert.AreEqual(0, set.Count);
@@ -126,11 +124,8 @@ namespace Apache.Ignite.Core.Tests.Client.DataStructures
         {
             var set = Client.GetIgniteSet<int>(nameof(TestExceptWith), new CollectionClientConfiguration());
 
-            set.Add(1);
-            set.Add(2);
-            set.Add(3);
-
-            set.ExceptWith(new[]{1, 3, 5, 7});
+            set.UnionWith(new[] { 1, 2, 3 });
+            set.ExceptWith(new[] { 1, 3, 5, 7 });
             set.ExceptWith(Array.Empty<int>());
 
             Assert.AreEqual(2, set.Single());
@@ -141,10 +136,7 @@ namespace Apache.Ignite.Core.Tests.Client.DataStructures
         {
             var set = Client.GetIgniteSet<int>(nameof(TestIntersectWith), new CollectionClientConfiguration());
 
-            set.Add(1);
-            set.Add(2);
-            set.Add(3);
-
+            set.UnionWith(new[] { 1, 2, 3 });
             set.IntersectWith(new[] { 1, 3, 5 });
 
             CollectionAssert.AreEquivalent(new[] { 1, 3 }, set);
