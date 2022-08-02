@@ -231,6 +231,7 @@ namespace Apache.Ignite.Core.Tests.Client.DataStructures
         [Test]
         public void TestUserObjects()
         {
+            // TODO: Test all methods with user objects! RetainAll, Clear also require deserialization!
             var set = Client.GetIgniteSet<CustomClass>(nameof(TestUserObjects), GetCollectionConfiguration());
 
             set.Add(new CustomClass { Id = 1, Name = "A" });

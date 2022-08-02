@@ -59,6 +59,15 @@ public interface IgniteSet<T> extends Set<T>, Closeable {
     /** {@inheritDoc} */
     @Override Iterator<T> iterator() throws IgniteException;
 
+    /**
+     * Returns an iterator over the elements in this set.
+     *
+     * @param keepBinary Whether to keep elements in binary form.
+     * @return an iterator over the elements in this set.
+     * @throws IgniteException On error.
+     */
+    Iterator<T> iterator(boolean keepBinary) throws IgniteException;
+
     /** {@inheritDoc} */
     @Override boolean remove(Object o) throws IgniteException;
 
