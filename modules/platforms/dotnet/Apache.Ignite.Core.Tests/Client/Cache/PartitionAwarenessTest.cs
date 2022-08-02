@@ -520,12 +520,18 @@ namespace Apache.Ignite.Core.Tests.Client.Cache
         }
 
         [Test]
-        [TestCase("default-grp-partitioned", null, CacheMode.Partitioned, 0)]
-        [TestCase("default-grp-replicated", null, CacheMode.Replicated, 2)]
-        [TestCase("custom-grp-partitioned", "testIgniteSetColocated1", CacheMode.Partitioned, 1)]
-        [TestCase("custom-grp-replicated", "testIgniteSetColocated2", CacheMode.Replicated, 0)]
+        [TestCase("default-grp-partitioned", null, CacheMode.Partitioned, 1, 0)]
+        [TestCase("default-grp-partitioned", null, CacheMode.Partitioned, 2, 0)]
+        [TestCase("default-grp-partitioned", null, CacheMode.Partitioned, 3, 0)]
+        [TestCase("default-grp-partitioned", null, CacheMode.Partitioned, 4, 0)]
+        [TestCase("custom-grp-partitioned", "testIgniteSetColocated1", CacheMode.Partitioned, 1, 1)]
+        [TestCase("custom-grp-partitioned", "testIgniteSetColocated1", CacheMode.Partitioned, 2, 1)]
+        [TestCase("custom-grp-partitioned", "testIgniteSetColocated1", CacheMode.Partitioned, 3, 1)]
+        [TestCase("custom-grp-replicated", "testIgniteSetColocated2", CacheMode.Replicated, 1, 1)]
+        [TestCase("custom-grp-replicated", "testIgniteSetColocated2", CacheMode.Replicated, 2, 1)]
+        [TestCase("custom-grp-replicated", "testIgniteSetColocated2", CacheMode.Replicated, 3, 1)]
         public void IgniteSetColocated_RequestIsRoutedToPrimaryNode(
-            string name, string groupName, CacheMode cacheMode, int gridIdx)
+            string name, string groupName, CacheMode cacheMode, int item, int gridIdx)
         {
             var cfg = new CollectionClientConfiguration
             {
