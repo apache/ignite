@@ -18,10 +18,12 @@
 namespace Apache.Ignite.Core.Tests.Client.DataStructures
 {
     using Apache.Ignite.Core.Client.DataStructures;
+    using NUnit.Framework;
 
     /// <summary>
     /// Tests for <see cref="IIgniteSetClient{T}"/> in <see cref="CollectionClientConfiguration.Colocated"/> mode.
     /// </summary>
+    [TestFixture]
     public class IgniteSetClientTestsColocated : IgniteSetClientTests
     {
         protected override CollectionClientConfiguration GetCollectionConfiguration()

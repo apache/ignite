@@ -489,6 +489,59 @@ namespace Apache.Ignite.Core.Tests.Client.Cache
             Assert.AreEqual(gridIdx, GetClientRequestGridIndex("ValueGet", "datastructures.ClientAtomicLong"));
         }
 
+        [Test]
+        [TestCase("default-grp-partitioned", null, CacheMode.Partitioned, 0)]
+        [TestCase("default-grp-replicated", null, CacheMode.Replicated, 2)]
+        [TestCase("custom-grp-partitioned", "testAtomicLong", CacheMode.Partitioned, 1)]
+        [TestCase("custom-grp-replicated", "testAtomicLong", CacheMode.Replicated, 0)]
+        public void IgniteSet_RequestIsRoutedToPrimaryNode(
+            string name, string groupName, CacheMode cacheMode, int gridIdx)
+        {
+            var cfg = new CollectionClientConfiguration
+            {
+                GroupName = groupName,
+                CacheMode = cacheMode
+            };
+
+            var igniteSet = Client.GetIgniteSet<int>(name, cfg);
+
+            // Warm up.
+            igniteSet.Clear();
+            ClearLoggers();
+
+            // Test.
+            igniteSet.Add(1);
+
+            Assert.AreEqual(gridIdx, GetClientRequestGridIndex("ValueGet", "datastructures.ClientAtomicLong"));
+        }
+
+        [Test]
+        [TestCase("default-grp-partitioned", null, CacheMode.Partitioned, 0)]
+        [TestCase("default-grp-replicated", null, CacheMode.Replicated, 2)]
+        [TestCase("custom-grp-partitioned", "testAtomicLong", CacheMode.Partitioned, 1)]
+        [TestCase("custom-grp-replicated", "testAtomicLong", CacheMode.Replicated, 0)]
+        public void IgniteSetColocated_RequestIsRoutedToPrimaryNode(
+            string name, string groupName, CacheMode cacheMode, int gridIdx)
+        {
+            var cfg = new CollectionClientConfiguration
+            {
+                GroupName = groupName,
+                CacheMode = cacheMode,
+                Colocated = true
+            };
+
+            var igniteSet = Client.GetIgniteSet<int>(name, cfg);
+
+            // Warm up.
+            igniteSet.Clear();
+            ClearLoggers();
+
+            // Test.
+            igniteSet.Add(1);
+
+            Assert.AreEqual(gridIdx, GetClientRequestGridIndex("ValueGet", "datastructures.ClientAtomicLong"));
+        }
+
         protected override IgniteClientConfiguration GetClientConfiguration()
         {
             var cfg = base.GetClientConfiguration();

@@ -22,10 +22,13 @@ namespace Apache.Ignite.Core.Tests.Client.DataStructures
     using System.Linq;
     using Apache.Ignite.Core.Client;
     using Apache.Ignite.Core.Client.DataStructures;
+    using Apache.Ignite.Core.Tests.Client.Cache;
     using NUnit.Framework;
 
     /// <summary>
     /// Tests for <see cref="IIgniteSetClient{T}"/>.
+    /// Partition awareness tests: <see cref="PartitionAwarenessTest.IgniteSet_RequestIsRoutedToPrimaryNode"/>,
+    /// <see cref="PartitionAwarenessTest.IgniteSetColocated_RequestIsRoutedToPrimaryNode"/>
     /// </summary>
     public class IgniteSetClientTests : ClientTestBase
     {
@@ -164,12 +167,6 @@ namespace Apache.Ignite.Core.Tests.Client.DataStructures
 
         [Test]
         public void TestConfigurationPropagation()
-        {
-            Assert.Fail("TODO");
-        }
-
-        [Test]
-        public void TestPartitionAwareness()
         {
             Assert.Fail("TODO");
         }
