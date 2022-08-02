@@ -490,12 +490,16 @@ namespace Apache.Ignite.Core.Tests.Client.Cache
         }
 
         [Test]
-        [TestCase("default-grp-partitioned", null, CacheMode.Partitioned, 0)]
-        [TestCase("default-grp-replicated", null, CacheMode.Replicated, 2)]
-        [TestCase("custom-grp-partitioned", "testAtomicLong", CacheMode.Partitioned, 1)]
-        [TestCase("custom-grp-replicated", "testAtomicLong", CacheMode.Replicated, 0)]
+        [TestCase("default-grp-partitioned", null, CacheMode.Partitioned, 1, 1)]
+        [TestCase("default-grp-partitioned", null, CacheMode.Partitioned, 2, 0)]
+        [TestCase("default-grp-partitioned", null, CacheMode.Partitioned, 3, 0)]
+        [TestCase("default-grp-partitioned", null, CacheMode.Partitioned, 4, 1)]
+        [TestCase("custom-grp-partitioned", "testIgniteSet1", CacheMode.Partitioned, 1, 1)]
+        [TestCase("custom-grp-partitioned", "testIgniteSet1", CacheMode.Partitioned, 3, 0)]
+        [TestCase("custom-grp-replicated", "testIgniteSet2", CacheMode.Replicated, 1, 1)]
+        [TestCase("custom-grp-replicated", "testIgniteSet2", CacheMode.Replicated, 3, 1)]
         public void IgniteSet_RequestIsRoutedToPrimaryNode(
-            string name, string groupName, CacheMode cacheMode, int gridIdx)
+            string name, string groupName, CacheMode cacheMode, int item, int gridIdx)
         {
             var cfg = new CollectionClientConfiguration
             {
@@ -506,20 +510,20 @@ namespace Apache.Ignite.Core.Tests.Client.Cache
             var igniteSet = Client.GetIgniteSet<int>(name, cfg);
 
             // Warm up.
-            igniteSet.Clear();
+            igniteSet.Add(0);
             ClearLoggers();
 
             // Test.
-            igniteSet.Add(1);
+            igniteSet.Add(item);
 
-            Assert.AreEqual(gridIdx, GetClientRequestGridIndex("ValueGet", "datastructures.ClientAtomicLong"));
+            Assert.AreEqual(gridIdx, GetClientRequestGridIndex("ValueAdd", "datastructures.ClientIgniteSet"));
         }
 
         [Test]
         [TestCase("default-grp-partitioned", null, CacheMode.Partitioned, 0)]
         [TestCase("default-grp-replicated", null, CacheMode.Replicated, 2)]
-        [TestCase("custom-grp-partitioned", "testAtomicLong", CacheMode.Partitioned, 1)]
-        [TestCase("custom-grp-replicated", "testAtomicLong", CacheMode.Replicated, 0)]
+        [TestCase("custom-grp-partitioned", "testIgniteSetColocated1", CacheMode.Partitioned, 1)]
+        [TestCase("custom-grp-replicated", "testIgniteSetColocated2", CacheMode.Replicated, 0)]
         public void IgniteSetColocated_RequestIsRoutedToPrimaryNode(
             string name, string groupName, CacheMode cacheMode, int gridIdx)
         {
@@ -533,13 +537,13 @@ namespace Apache.Ignite.Core.Tests.Client.Cache
             var igniteSet = Client.GetIgniteSet<int>(name, cfg);
 
             // Warm up.
-            igniteSet.Clear();
+            igniteSet.Add(0);
             ClearLoggers();
 
             // Test.
             igniteSet.Add(1);
 
-            Assert.AreEqual(gridIdx, GetClientRequestGridIndex("ValueGet", "datastructures.ClientAtomicLong"));
+            Assert.AreEqual(gridIdx, GetClientRequestGridIndex("ValueAdd", "datastructures.ClientIgniteSet"));
         }
 
         protected override IgniteClientConfiguration GetClientConfiguration()
