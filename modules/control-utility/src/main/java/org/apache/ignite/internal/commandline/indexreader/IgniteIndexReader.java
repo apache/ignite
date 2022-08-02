@@ -396,7 +396,12 @@ public class IgniteIndexReader implements AutoCloseable {
 
         ProgressPrinter progressPrinter = createProgressPrinter(caption, pagesCnt);
 
-        ScanContext metaTreeCtx = scanner.scan(metaTreeRoot, META_TREE_NAME, new ItemsListStorage<IndexStorageImpl.IndexItem>(), progressPrinter);
+        ScanContext metaTreeCtx = scanner.scan(
+            metaTreeRoot,
+            META_TREE_NAME,
+            new ItemsListStorage<IndexStorageImpl.IndexItem>(),
+            progressPrinter
+        );
 
         log.info("Going to scan " + metaTreeCtx.items.size() + " trees.");
 
@@ -405,13 +410,18 @@ public class IgniteIndexReader implements AutoCloseable {
         AtomicInteger treeCnt = new AtomicInteger();
 
         ((ItemsListStorage<IndexStorageImpl.IndexItem>)metaTreeCtx.items).forEach(item -> {
-            log.info("Scanning [num=" + treeCnt.incrementAndGet() + ", of=" + metaTreeCtx.items.size() + ", item=" + item.nameString() + "]");
+            log.info("Scanning [num=" + treeCnt.incrementAndGet() + ", of=" + metaTreeCtx.items.size() +
+                ", idx=" + item.nameString() + "]");
 
             if (nonNull(idxFilter) && !idxFilter.test(item.nameString()))
                 return;
 
-            ScanContext ctx =
-                scanner.scan(normalizePageId(item.pageId()), item.nameString(), itemStorageFactory.get(), progressPrinter);
+            ScanContext ctx = scanner.scan(
+                normalizePageId(item.pageId()),
+                item.nameString(),
+                itemStorageFactory.get(),
+                progressPrinter
+            );
 
             ctxs.put(item.toString(), ctx);
         });

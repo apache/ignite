@@ -47,6 +47,7 @@ class ScanContext {
     /** Page type statistics. */
     final Map<Class<? extends PageIO>, PagesStatistic> stats;
 
+    /** Errors count. */
     long errCnt;
 
     /** List of items storage. */
@@ -139,6 +140,7 @@ class ScanContext {
         onError(log, prefix, pageId, message);
     }
 
+    /** */
     public static void onError(Logger log, String prefix, long pageId, String message) {
         log.warning(prefix + ERROR_PREFIX + "Page id: " + pageId + ", exceptions: " + message);
     }
