@@ -231,7 +231,17 @@ namespace Apache.Ignite.Core.Tests.Client.DataStructures
         [Test]
         public void TestUserObjects()
         {
-            Assert.Fail("TODO");
+            var set = Client.GetIgniteSet<CustomClass>(nameof(TestUserObjects), GetCollectionConfiguration());
+
+            set.Add(new CustomClass { Id = 1, Name = "A" });
+
+            Assert.IsTrue(set.Contains(new CustomClass { Id = 1, Name = "A" }));
+            Assert.IsFalse(set.Contains(new CustomClass { Id = 1, Name = "a" }));
+
+            var res = set.Single();
+
+            Assert.AreEqual(1, res.Id);
+            Assert.AreEqual("A", res.Name);
         }
 
         [Test]
@@ -260,5 +270,12 @@ namespace Apache.Ignite.Core.Tests.Client.DataStructures
 
         protected virtual CollectionClientConfiguration GetCollectionConfiguration() =>
             new CollectionClientConfiguration();
+
+        private class CustomClass
+        {
+            public int Id { get; set; }
+
+            public string Name { get; set; }
+        }
     }
 }
