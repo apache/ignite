@@ -94,10 +94,10 @@ namespace Apache.Ignite.Core.Impl.Client.DataStructures
         void ICollection<T>.Add(T item) => AddIfNotPresent(item);
 
         /** <inheritdoc /> */
-        public void ExceptWith(IEnumerable<T> other) => MultiKeyOp(ClientOp.SetValueRemoveAll, other);
+        public void ExceptWith(IEnumerable<T> other) => MultiKeyOp(ClientOp.SetValueRemoveAll, other, out _);
 
         /** <inheritdoc /> */
-        public void IntersectWith(IEnumerable<T> other) => MultiKeyOp(ClientOp.SetValueRetainAll, other);
+        public void IntersectWith(IEnumerable<T> other) => MultiKeyOp(ClientOp.SetValueRetainAll, other, out _);
 
         /** <inheritdoc /> */
         public bool IsProperSubsetOf(IEnumerable<T> other)
@@ -106,11 +106,10 @@ namespace Apache.Ignite.Core.Impl.Client.DataStructures
         }
 
         /** <inheritdoc /> */
-        public bool IsProperSupersetOf(IEnumerable<T> other)
-        {
-            // TODO: IsSupersetOf && Count > other.Count
-            throw new NotSupportedException();
-        }
+        public bool IsProperSupersetOf(IEnumerable<T> other) =>
+            // If B is a proper superset of A, then all elements of A are in B
+            // but B contains at least one element that is not in A.
+            MultiKeyOp(ClientOp.SetValueContainsAll, other, out var otherCount) && Count > otherCount;
 
         /** <inheritdoc /> */
         public bool IsSubsetOf(IEnumerable<T> other)
@@ -119,7 +118,7 @@ namespace Apache.Ignite.Core.Impl.Client.DataStructures
         }
 
         /** <inheritdoc /> */
-        public bool IsSupersetOf(IEnumerable<T> other) => MultiKeyOp(ClientOp.SetValueContainsAll, other);
+        public bool IsSupersetOf(IEnumerable<T> other) => MultiKeyOp(ClientOp.SetValueContainsAll, other, out _);
 
         /** <inheritdoc /> */
         public bool Overlaps(IEnumerable<T> other)
@@ -229,7 +228,7 @@ namespace Apache.Ignite.Core.Impl.Client.DataStructures
                 GetAffinityKey(item));
         }
 
-        private bool MultiKeyOp(ClientOp op, IEnumerable<T> items)
+        private bool MultiKeyOp(ClientOp op, IEnumerable<T> items, out int itemsCount)
         {
             IgniteArgumentCheck.NotNull(items, nameof(items));
 
@@ -237,13 +236,15 @@ namespace Apache.Ignite.Core.Impl.Client.DataStructures
 
             if (!enumerator.MoveNext())
             {
+                itemsCount = 0;
                 return false;
             }
 
             var first = enumerator.Current;
             var affKey = GetAffinityKey(first);
+            var count = 1;
 
-            return _socket.DoOutInOpAffinity(
+            var res = _socket.DoOutInOpAffinity(
                 op,
                 ctx =>
                 {
@@ -253,7 +254,6 @@ namespace Apache.Ignite.Core.Impl.Client.DataStructures
                     w.WriteBoolean(true); // ServerKeepBinary.
 
                     var countPos = w.Stream.Position;
-                    var count = 1;
                     w.WriteInt(0);
 
                     w.WriteObjectDetached(first);
@@ -274,6 +274,9 @@ namespace Apache.Ignite.Core.Impl.Client.DataStructures
                 ctx => ctx.Reader.ReadBoolean(),
                 _cacheId,
                 affKey);
+
+            itemsCount = count;
+            return res;
         }
 
         private void WriteIdentity(BinaryWriter w)
