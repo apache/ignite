@@ -2112,7 +2112,9 @@ public abstract class BPlusTree<L, T extends L> extends DataStructure implements
         checkDestroyed();
 
         try {
-            new RemoveByFilterCursor(filter).iterate();
+            RemoveByFilterCursor rmvCursor = new RemoveByFilterCursor(filter);
+
+            rmvCursor.remove();
         }
         catch (RuntimeException | AssertionError e) {
             throw corruptedTreeException("Runtime failure ", e, grpId);
@@ -5988,8 +5990,8 @@ public abstract class BPlusTree<L, T extends L> extends DataStructure implements
         }
 
         /** @throws IgniteCheckedException If failed. */
-        private void iterate() throws IgniteCheckedException {
-            find();
+        private void remove() throws IgniteCheckedException {
+            findFirst();
 
             while (nextPageId != 0) {
                 L lastRow0 = lastRow;
@@ -6399,8 +6401,10 @@ public abstract class BPlusTree<L, T extends L> extends DataStructure implements
     public interface TreeVisitorClosure<L, T extends L> {
         /** */
         int STOP = 0x01;
+
         /** */
         int CAN_WRITE = STOP << 1;
+
         /** */
         int DIRTY = CAN_WRITE << 1;
 
