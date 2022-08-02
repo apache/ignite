@@ -100,10 +100,7 @@ namespace Apache.Ignite.Core.Impl.Client.DataStructures
         public void IntersectWith(IEnumerable<T> other) => MultiKeyOp(ClientOp.SetValueRetainAll, other, out _);
 
         /** <inheritdoc /> */
-        public bool IsProperSubsetOf(IEnumerable<T> other)
-        {
-            throw new NotSupportedException();
-        }
+        public bool IsProperSubsetOf(IEnumerable<T> other) => throw new NotSupportedException();
 
         /** <inheritdoc /> */
         public bool IsProperSupersetOf(IEnumerable<T> other) =>
@@ -112,38 +109,23 @@ namespace Apache.Ignite.Core.Impl.Client.DataStructures
             MultiKeyOp(ClientOp.SetValueContainsAll, other, out var otherCount) && Count > otherCount;
 
         /** <inheritdoc /> */
-        public bool IsSubsetOf(IEnumerable<T> other)
-        {
-            throw new NotSupportedException();
-        }
+        public bool IsSubsetOf(IEnumerable<T> other) => throw new NotSupportedException();
 
         /** <inheritdoc /> */
         public bool IsSupersetOf(IEnumerable<T> other) => MultiKeyOp(ClientOp.SetValueContainsAll, other, out _);
 
         /** <inheritdoc /> */
-        public bool Overlaps(IEnumerable<T> other)
-        {
-            throw new NotImplementedException();
-        }
+        public bool Overlaps(IEnumerable<T> other) => throw new NotImplementedException();
 
         /** <inheritdoc /> */
-        public bool SetEquals(IEnumerable<T> other)
-        {
-            // TODO: IsSupersetOf && Count == other.Count
-            throw new NotSupportedException();
-        }
+        public bool SetEquals(IEnumerable<T> other) =>
+            MultiKeyOp(ClientOp.SetValueContainsAll, other, out var otherCount) && Count == otherCount;
 
         /** <inheritdoc /> */
-        public void SymmetricExceptWith(IEnumerable<T> other)
-        {
-            throw new NotImplementedException();
-        }
+        public void SymmetricExceptWith(IEnumerable<T> other) => throw new NotImplementedException();
 
         /** <inheritdoc /> */
-        public void UnionWith(IEnumerable<T> other)
-        {
-            throw new NotImplementedException();
-        }
+        public void UnionWith(IEnumerable<T> other) => MultiKeyOp(ClientOp.SetValueAddAll, other, out _);
 
         /** <inheritdoc /> */
         bool ISet<T>.Add(T item) => AddIfNotPresent(item);
