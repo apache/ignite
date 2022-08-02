@@ -60,9 +60,6 @@ public class ClientDefaultCacheSelfTest extends GridCommonAbstractTest {
     /** Used to sent request charset. */
     private static final String CHARSET = StandardCharsets.UTF_8.name();
 
-    /** Name of node local cache. */
-    private static final String LOCAL_CACHE = "local";
-
     /** JSON to java mapper. */
     private static final ObjectMapper JSON_MAPPER = new ObjectMapper();
 
@@ -165,7 +162,7 @@ public class ClientDefaultCacheSelfTest extends GridCommonAbstractTest {
         String val = "{\"v\":\"my Value\",\"t\":1422559650154}";
 
         // Put to cache JSON format string value.
-        String ret = content(F.asMap("cmd", GridRestCommand.CACHE_PUT.key(), "cacheName", LOCAL_CACHE,
+        String ret = content(F.asMap("cmd", GridRestCommand.CACHE_PUT.key(), "cacheName", DEFAULT_CACHE_NAME,
             "key", "a", "val", URLEncoder.encode(val, CHARSET)));
 
         JsonNode res = jsonResponse(ret);
@@ -173,7 +170,7 @@ public class ClientDefaultCacheSelfTest extends GridCommonAbstractTest {
         assertEquals("Incorrect put response", true, res.asBoolean());
 
         // Escape '\' symbols disappear from response string on transformation to JSON object.
-        ret = content(F.asMap("cmd", GridRestCommand.CACHE_GET.key(), "cacheName", LOCAL_CACHE, "key", "a"));
+        ret = content(F.asMap("cmd", GridRestCommand.CACHE_GET.key(), "cacheName", DEFAULT_CACHE_NAME, "key", "a"));
 
         res = jsonResponse(ret);
 
