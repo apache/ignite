@@ -35,6 +35,9 @@ class ScanContext {
     /** Cache id or {@code -1} for sequential scan. */
     final int cacheId;
 
+    /** Index name. */
+    final String idxName;
+
     /** Count of inline fields. */
     final int inlineFldCnt;
 
@@ -63,9 +66,6 @@ class ScanContext {
     private final String prefix;
 
     /** */
-    private final String idxName;
-
-    /** */
     private final ProgressPrinter printer;
 
     /** */
@@ -80,13 +80,13 @@ class ScanContext {
         ProgressPrinter printer
     ) {
         this.cacheId = cacheId;
+        this.idxName = idxName;
         this.inlineFldCnt = inlineFldCnt;
         this.store = store;
         this.items = items;
         this.stats = new LinkedHashMap<>();
         this.log = log;
         this.prefix = prefix;
-        this.idxName = idxName;
         this.printer = printer;
     }
 
