@@ -69,7 +69,16 @@ class ScanContext {
     private final ProgressPrinter printer;
 
     /** */
-    public ScanContext(int cacheId, int inlineFldCnt, FilePageStore store, ItemStorage items, Logger log, String prefix, String idxName, ProgressPrinter printer) {
+    public ScanContext(
+        int cacheId,
+        String idxName,
+        int inlineFldCnt,
+        FilePageStore store,
+        ItemStorage items,
+        Logger log,
+        String prefix,
+        ProgressPrinter printer
+    ) {
         this.cacheId = cacheId;
         this.inlineFldCnt = inlineFldCnt;
         this.store = store;
@@ -127,11 +136,11 @@ class ScanContext {
 
         errCnt++;
 
-        onError(log, prefix, pageId, message, errCnt);
+        onError(log, prefix, pageId, message);
     }
 
-    public static void onError(Logger log, String prefix, long pageId, String message, long errCnt) {
-        log.warning(prefix + ERROR_PREFIX + "Err#" + errCnt + ", Page id: " + pageId + ", exceptions: " + message);
+    public static void onError(Logger log, String prefix, long pageId, String message) {
+        log.warning(prefix + ERROR_PREFIX + "Page id: " + pageId + ", exceptions: " + message);
     }
 
     /** */

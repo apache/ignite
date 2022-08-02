@@ -491,7 +491,7 @@ public class IgniteIndexReader implements AutoCloseable {
                             }
                             catch (Exception err) {
                                 errCnt++;
-                                ScanContext.onError(log, PAGE_LISTS_PREFIX, listId, err.getMessage(), errCnt);
+                                ScanContext.onError(log, PAGE_LISTS_PREFIX, listId, err.getMessage());
                             }
                         }
 
@@ -502,7 +502,7 @@ public class IgniteIndexReader implements AutoCloseable {
                 }
                 catch (Exception err) {
                     errCnt++;
-                    ScanContext.onError(log, PAGE_LISTS_PREFIX, currMetaPageId, err.getMessage(), errCnt);
+                    ScanContext.onError(log, PAGE_LISTS_PREFIX, currMetaPageId, err.getMessage());
 
                     break;
                 }
@@ -745,7 +745,7 @@ public class IgniteIndexReader implements AutoCloseable {
         else
             parsed = new GridTuple3<>(UNKNOWN_CACHE, 0, null);
 
-        return new ScanContext(parsed.get1(), inlineFieldsCount(parsed), store, items, log, prefix, idxName, printer);
+        return new ScanContext(parsed.get1(), idxName, inlineFieldsCount(parsed), store, items, log, prefix, printer);
     }
 
     /**

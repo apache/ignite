@@ -295,7 +295,7 @@ public class IgniteIndexReaderTest extends GridCommandHandlerAbstractTest {
                 else
                     parsed = new GridTuple3<>(UNKNOWN_CACHE, 0, null);
 
-                return new ScanContext(parsed.get1(), inlineFieldsCount(parsed), store, items, log, prefix, idxName, printer) {
+                return new ScanContext(parsed.get1(), idxName, inlineFieldsCount(parsed), store, items, log, prefix, printer) {
                     @Override public void onLeafPage(long pageId, List<Object> data) {
                         super.onLeafPage(pageId, data);
 
