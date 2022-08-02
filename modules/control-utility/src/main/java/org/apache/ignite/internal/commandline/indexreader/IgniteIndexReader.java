@@ -589,8 +589,8 @@ public class IgniteIndexReader implements AutoCloseable {
                         continue;
 
                     ctx.onError(pageId, "Error [step=" + i +
-                            ", msg=Possibly orphan " + io.getClass().getSimpleName() + " page" +
-                            ", pageId=" + normalizePageId(pageId) + ']');
+                        ", msg=Possibly orphan " + io.getClass().getSimpleName() + " page" +
+                        ", pageId=" + normalizePageId(pageId) + ']');
                 }
                 catch (Exception e) {
                     ctx.onError(pageId, "Error [step=" + i + ", msg=" + e.getMessage() + ']');
