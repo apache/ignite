@@ -605,6 +605,14 @@ public abstract class IgniteTxAdapter extends GridMetadataAwareAdapter implement
 
                 res = old != FinalizationStatus.USER_FINISH && FINALIZING_UPD.compareAndSet(this, old, status);
 
+//              Fix draft
+//                FinalizationStatus newStatus = FINALIZING_UPD.updateAndGet(this, old -> {
+//                    if (old == FinalizationStatus.USER_FINISH)
+//                        return old;
+//                    else
+//                        return status;
+//                });
+//                res = newStatus == status;
                 break;
 
             default:
