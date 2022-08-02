@@ -20,6 +20,8 @@ namespace Apache.Ignite.Core.Tests.Client.DataStructures
     using System;
     using System.Collections.Generic;
     using System.Linq;
+    using System.Reflection;
+    using Apache.Ignite.Core.Cache.Configuration;
     using Apache.Ignite.Core.Client;
     using Apache.Ignite.Core.Client.DataStructures;
     using Apache.Ignite.Core.Tests.Client.Cache;
@@ -168,7 +170,25 @@ namespace Apache.Ignite.Core.Tests.Client.DataStructures
         [Test]
         public void TestConfigurationPropagation()
         {
-            Assert.Fail("TODO");
+            var cfg = new CollectionClientConfiguration
+            {
+                Backups = 7,
+                Colocated = false,
+                AtomicityMode = CacheAtomicityMode.Transactional,
+                CacheMode = CacheMode.Partitioned,
+                GroupName = "g-" + nameof(TestConfigurationPropagation)
+            };
+
+            var set = Client.GetIgniteSet<int>(nameof(TestConfigurationPropagation), cfg);
+
+            const string cacheName = "datastructures_TRANSACTIONAL_PARTITIONED_7@" +
+                                     "g-TestConfigurationPropagation#SET_TestConfigurationPropagation";
+
+            var cache = Client.GetCache<int, int>(cacheName);
+
+            Assert.AreEqual(
+                set.GetType().GetField("_cacheId", BindingFlags.Instance | BindingFlags.NonPublic)!.GetValue(set),
+                cache.GetType().GetField("_id", BindingFlags.Instance | BindingFlags.NonPublic)!.GetValue(cache));
         }
 
         [Test]
