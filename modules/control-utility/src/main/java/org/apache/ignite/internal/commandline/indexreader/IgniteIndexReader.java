@@ -592,7 +592,7 @@ public class IgniteIndexReader implements AutoCloseable {
                         ", msg=Possibly orphan " + io.getClass().getSimpleName() + " page" +
                         ", pageId=" + normalizePageId(pageId) + ']');
                 }
-                catch (Exception e) {
+                catch (Exception | AssertionError e) {
                     ctx.onError(pageId, "Error [step=" + i + ", msg=" + e.getMessage() + ']');
                 }
             }
@@ -714,7 +714,7 @@ public class IgniteIndexReader implements AutoCloseable {
         try {
             x.run();
         }
-        catch (Exception e) {
+        catch (Exception | AssertionError e) {
             ctx.onError(pageId, e.getMessage());
         }
     }
@@ -1289,7 +1289,7 @@ public class IgniteIndexReader implements AutoCloseable {
                             pageId = ((BPlusIO<?>)pageIO).getForward(addr);
                         }
                     }
-                    catch (Exception e) {
+                    catch (Exception | AssertionError e) {
                         ctx.onError(pageId, e.getMessage());
                     }
                 }
@@ -1378,7 +1378,7 @@ public class IgniteIndexReader implements AutoCloseable {
                     try {
                         idxKeyType = IndexKeyType.forCode(type0);
                     }
-                    catch (Exception t) {
+                    catch (Exception | AssertionError t) {
                         log.log(Level.FINEST, "Unknown index key type [type=" + type0 + ']');
 
                         break;
@@ -1406,7 +1406,7 @@ public class IgniteIndexReader implements AutoCloseable {
                             realInlineSz += Short.BYTES; /* size of the array is short number. */
                             realInlineSz += bytes.length;
                         }
-                        catch (Exception e) {
+                        catch (Exception | AssertionError e) {
                             log.warning("Error while reading inline [msg=" + e.getMessage() + ']');
 
                             break;
