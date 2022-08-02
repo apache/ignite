@@ -42,9 +42,6 @@ import static org.apache.ignite.testframework.MvccFeatureChecker.forcedMvcc;
  * Test {@link IgniteCache#localClearAll(java.util.Set)} operations in multinode environment with nodes having caches with different names.
  */
 public class GridCacheClearLocallySelfTest extends GridCommonAbstractTest {
-    /** Local cache. */
-    private static final String CACHE_LOCAL = "cache_local";
-
     /** Partitioned cache. */
     private static final String CACHE_PARTITIONED = "cache_partitioned";
 
@@ -56,9 +53,6 @@ public class GridCacheClearLocallySelfTest extends GridCommonAbstractTest {
 
     /** Grid nodes count. */
     private static final int GRID_CNT = 3;
-
-    /** Local caches. */
-    private IgniteCache<Integer, Integer>[] cachesLoc;
 
     /** Partitioned caches. */
     private IgniteCache<Integer, Integer>[] cachesPartitioned;
@@ -111,7 +105,6 @@ public class GridCacheClearLocallySelfTest extends GridCommonAbstractTest {
     @Override protected void afterTest() throws Exception {
         stopAllGrids();
 
-        cachesLoc = null;
         cachesPartitioned = null;
         cachesColocated = null;
         cachesReplicated = null;
@@ -123,7 +116,6 @@ public class GridCacheClearLocallySelfTest extends GridCommonAbstractTest {
      * @throws Exception If failed.
      */
     private void startUp() throws Exception {
-        cachesLoc = (IgniteCache<Integer, Integer>[])Array.newInstance(IgniteCache.class, GRID_CNT);
         cachesPartitioned = (IgniteCache<Integer, Integer>[])Array.newInstance(IgniteCache.class, GRID_CNT);
         cachesColocated = (IgniteCache<Integer, Integer>[])Array.newInstance(IgniteCache.class, GRID_CNT);
         cachesReplicated = (IgniteCache<Integer, Integer>[])Array.newInstance(IgniteCache.class, GRID_CNT);
@@ -140,31 +132,10 @@ public class GridCacheClearLocallySelfTest extends GridCommonAbstractTest {
             if (i == 2)
                 ignite.cache(CACHE_PARTITIONED);
 
-            cachesLoc[i] = ignite.cache(CACHE_LOCAL);
             cachesPartitioned[i] = ignite.cache(CACHE_PARTITIONED);
             cachesColocated[i] = ignite.cache(CACHE_COLOCATED);
             cachesReplicated[i] = ignite.cache(CACHE_REPLICATED);
         }
-    }
-
-    /**
-     * Test {@link IgniteCache#localClearAll(java.util.Set)} on LOCAL cache with no split.
-     *
-     * @throws Exception If failed.
-     */
-    @Test
-    public void testLocalNoSplit() throws Exception {
-        test(Mode.TEST_LOCAL, CLEAR_ALL_SPLIT_THRESHOLD / 2);
-    }
-
-    /**
-     * Test {@link IgniteCache#localClearAll(java.util.Set)} on LOCAL cache with split.
-     *
-     * @throws Exception If failed.
-     */
-    @Test
-    public void testLocalSplit() throws Exception {
-        test(Mode.TEST_LOCAL, CLEAR_ALL_SPLIT_THRESHOLD + 1);
     }
 
     /**
@@ -240,63 +211,45 @@ public class GridCacheClearLocallySelfTest extends GridCommonAbstractTest {
 
         startUp();
 
-        switch (mode) {
-            case TEST_LOCAL: {
-                // Check on only one node.
-                IgniteCache<Integer, Integer> cache = cachesLoc[0];
+        // Take in count special case for near-only cache as well.
+        if (mode == Mode.TEST_PARTITIONED) {
+            fillCache(cachesPartitioned[0], keysCnt);
 
-                fillCache(cache, keysCnt);
+            // Ensure correct no-op clean of CLIENT_ONLY cache.
+            warmCache(cachesPartitioned[2], keysCnt);
+            assert cachesPartitioned[1].localSize(CachePeekMode.ALL) == 0;
+            // XXX I think it was supposed that NEAR cache will only be present on node 1.
+            assert cachesPartitioned[2].localSize(CachePeekMode.PRIMARY) == 0;
+
+            stopGrid(2); // Shutdown Grid in order to remove reader in NEAR_PARTITIONED cache.
+
+            // Ensure correct clearLocally of NEAR_ONLY cache.
+            warmCache(cachesPartitioned[1], keysCnt);
+            assert cachesPartitioned[1].localSize(CachePeekMode.NEAR) != 0;
+            cachesPartitioned[1].localClearAll(keySet(cachesPartitioned[1]));
+            assert cachesPartitioned[1].localSize() == 0;
+            fillCache(cachesPartitioned[1], keysCnt);
+
+            stopGrid(1); // Shutdown Grid in order to remove reader in NEAR_PARTITIONED cache.
+
+            // Ensure correct clearLocally of NEAR_PARTITIONED cache.
+            assert cachesPartitioned[0].localSize() != 0;
+            cachesPartitioned[0].localClearAll(keySet(cachesPartitioned[0]));
+            assert cachesPartitioned[0].localSize() == 0;
+        }
+        else {
+            assert mode == Mode.TEST_COLOCATED || mode == Mode.TEST_REPLICATED;
+
+            IgniteCache<Integer, Integer>[] caches = mode == Mode.TEST_COLOCATED ? cachesColocated : cachesReplicated;
+
+            fillCache(caches[0], keysCnt);
+
+            for (IgniteCache<Integer, Integer> cache : caches) {
+                assert cache.localSize() != 0;
 
                 cache.localClearAll(keySet(cache));
 
                 assert cache.localSize() == 0;
-
-                break;
-            }
-
-            case TEST_PARTITIONED: {
-                // Take in count special case for near-only cache as well.
-                fillCache(cachesPartitioned[0], keysCnt);
-
-                // Ensure correct no-op clean of CLIENT_ONLY cache.
-                warmCache(cachesPartitioned[2], keysCnt);
-                assert cachesPartitioned[1].localSize(CachePeekMode.ALL) == 0;
-                // XXX I think it was supposed that NEAR cache will only be present on node 1.
-                assert cachesPartitioned[2].localSize(CachePeekMode.PRIMARY) == 0;
-
-                stopGrid(2); // Shutdown Grid in order to remove reader in NEAR_PARTITIONED cache.
-
-                // Ensure correct clearLocally of NEAR_ONLY cache.
-                warmCache(cachesPartitioned[1], keysCnt);
-                assert cachesPartitioned[1].localSize(CachePeekMode.NEAR) != 0;
-                cachesPartitioned[1].localClearAll(keySet(cachesPartitioned[1]));
-                assert cachesPartitioned[1].localSize() == 0;
-                fillCache(cachesPartitioned[1], keysCnt);
-
-                stopGrid(1); // Shutdown Grid in order to remove reader in NEAR_PARTITIONED cache.
-
-                // Ensure correct clearLocally of NEAR_PARTITIONED cache.
-                assert cachesPartitioned[0].localSize() != 0;
-                cachesPartitioned[0].localClearAll(keySet(cachesPartitioned[0]));
-                assert cachesPartitioned[0].localSize() == 0;
-
-                break;
-            }
-
-            default: {
-                assert mode == Mode.TEST_COLOCATED || mode == Mode.TEST_REPLICATED;
-
-                IgniteCache<Integer, Integer>[] caches = mode == Mode.TEST_COLOCATED ? cachesColocated : cachesReplicated;
-
-                fillCache(caches[0], keysCnt);
-
-                for (IgniteCache<Integer, Integer> cache : caches) {
-                    assert cache.localSize() != 0;
-
-                    cache.localClearAll(keySet(cache));
-
-                    assert cache.localSize() == 0;
-                }
             }
         }
     }
@@ -335,9 +288,6 @@ public class GridCacheClearLocallySelfTest extends GridCommonAbstractTest {
      * Test mode.
      */
     private enum Mode {
-        /** Local cache. */
-        TEST_LOCAL,
-
         /** Partitioned cache. */
         TEST_PARTITIONED,
 
