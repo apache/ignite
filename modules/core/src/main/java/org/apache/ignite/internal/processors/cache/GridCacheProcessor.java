@@ -1592,10 +1592,9 @@ public class GridCacheProcessor extends GridProcessorAdapter {
      * started.
      *
      * @param start Start cache.
-     * @param inclLoc Include local caches.
      * @return Cache or {@code null} if there is no suitable cache.
      */
-    public IgniteCacheProxy<?, ?> getOrStartPublicCache(boolean start, boolean inclLoc) throws IgniteCheckedException {
+    public IgniteCacheProxy<?, ?> getOrStartPublicCache(boolean start) throws IgniteCheckedException {
         // Try to find started cache first.
         for (Map.Entry<String, GridCacheAdapter<?, ?>> e : caches.entrySet()) {
             if (!e.getValue().context().userCache())
@@ -1605,8 +1604,7 @@ public class GridCacheProcessor extends GridProcessorAdapter {
 
             String cacheName = ccfg.getName();
 
-            if (inclLoc)
-                return publicJCache(cacheName);
+            return publicJCache(cacheName);
         }
 
         if (start) {
@@ -2241,7 +2239,7 @@ public class GridCacheProcessor extends GridProcessorAdapter {
 
         cacheCtx.initConflictResolver();
 
-        if ((cfg.getCacheMode() == REPLICATED || cfg.getCacheMode() == PARTITIONED) && GridCacheUtils.isNearEnabled(cfg)) {
+        if (GridCacheUtils.isNearEnabled(cfg)) {
             GridCacheContext<?, ?> dhtCtx = cacheCtx.near().dht().context();
 
             // Start DHT managers.
