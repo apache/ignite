@@ -235,6 +235,7 @@ namespace Apache.Ignite.Core.Tests.Client.DataStructures
             var set = Client.GetIgniteSet<CustomClass>(nameof(TestUserObjects), GetCollectionConfiguration());
 
             set.Add(new CustomClass { Id = 1, Name = "A" });
+            set.IntersectWith(new[] { new CustomClass { Id = 1, Name = "A" }, new CustomClass { Id = 2, Name = "B" } });
 
             Assert.IsTrue(set.Contains(new CustomClass { Id = 1, Name = "A" }));
             Assert.IsFalse(set.Contains(new CustomClass { Id = 1, Name = "a" }));
@@ -243,6 +244,9 @@ namespace Apache.Ignite.Core.Tests.Client.DataStructures
 
             Assert.AreEqual(1, res.Id);
             Assert.AreEqual("A", res.Name);
+
+            set.Clear();
+            Assert.AreEqual(0, set.Count);
         }
 
         [Test]
