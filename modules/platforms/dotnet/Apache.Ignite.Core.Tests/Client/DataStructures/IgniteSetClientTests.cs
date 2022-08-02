@@ -33,7 +33,7 @@ namespace Apache.Ignite.Core.Tests.Client.DataStructures
         public void TestCreateAddContainsRemove()
         {
             var set = Client.GetIgniteSet<int>(nameof(TestCreateAddContainsRemove),
-                new CollectionClientConfiguration());
+                GetCollectionConfiguration());
 
             set.Add(1);
             set.Add(1);
@@ -55,7 +55,7 @@ namespace Apache.Ignite.Core.Tests.Client.DataStructures
         public void TestEnumeratorEmptySet()
         {
             var set = Client.GetIgniteSet<int>(nameof(TestEnumeratorEmptySet),
-                new CollectionClientConfiguration());
+                GetCollectionConfiguration());
 
             using var enumerator = set.GetEnumerator();
 
@@ -68,7 +68,7 @@ namespace Apache.Ignite.Core.Tests.Client.DataStructures
         public void TestEnumeratorMultiplePages()
         {
             var set = Client.GetIgniteSet<int>(nameof(TestEnumeratorMultiplePages),
-                new CollectionClientConfiguration());
+                GetCollectionConfiguration());
 
             set.PageSize = 2;
 
@@ -84,7 +84,7 @@ namespace Apache.Ignite.Core.Tests.Client.DataStructures
         public void TestEnumeratorRemoveAllWhileEnumerating()
         {
             var set = Client.GetIgniteSet<int>(nameof(TestEnumeratorRemoveAllWhileEnumerating),
-                new CollectionClientConfiguration());
+                GetCollectionConfiguration());
 
             set.PageSize = 2;
 
@@ -109,7 +109,7 @@ namespace Apache.Ignite.Core.Tests.Client.DataStructures
         [Test]
         public void TestClear()
         {
-            var set = Client.GetIgniteSet<int>(nameof(TestClear), new CollectionClientConfiguration());
+            var set = Client.GetIgniteSet<int>(nameof(TestClear), GetCollectionConfiguration());
 
             set.UnionWith(new[] { 1, 2 });
             set.Clear();
@@ -122,7 +122,7 @@ namespace Apache.Ignite.Core.Tests.Client.DataStructures
         [Test]
         public void TestExceptWith()
         {
-            var set = Client.GetIgniteSet<int>(nameof(TestExceptWith), new CollectionClientConfiguration());
+            var set = Client.GetIgniteSet<int>(nameof(TestExceptWith), GetCollectionConfiguration());
 
             set.UnionWith(new[] { 1, 2, 3 });
             set.ExceptWith(new[] { 1, 3, 5, 7 });
@@ -134,7 +134,7 @@ namespace Apache.Ignite.Core.Tests.Client.DataStructures
         [Test]
         public void TestIntersectWith()
         {
-            var set = Client.GetIgniteSet<int>(nameof(TestIntersectWith), new CollectionClientConfiguration());
+            var set = Client.GetIgniteSet<int>(nameof(TestIntersectWith), GetCollectionConfiguration());
 
             set.UnionWith(new[] { 1, 2, 3 });
             set.IntersectWith(new[] { 1, 3, 5 });
@@ -151,7 +151,7 @@ namespace Apache.Ignite.Core.Tests.Client.DataStructures
         [Test]
         public void TestClose()
         {
-            var set = Client.GetIgniteSet<int>(nameof(TestClose), new CollectionClientConfiguration());
+            var set = Client.GetIgniteSet<int>(nameof(TestClose), GetCollectionConfiguration());
 
             set.Add(1);
             set.Close();
@@ -173,5 +173,8 @@ namespace Apache.Ignite.Core.Tests.Client.DataStructures
         {
             Assert.Fail("TODO");
         }
+
+        protected virtual CollectionClientConfiguration GetCollectionConfiguration() =>
+            new CollectionClientConfiguration();
     }
 }
