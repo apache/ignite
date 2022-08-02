@@ -90,7 +90,7 @@ public class ConsistentCut {
     }
 
     /**
-     * Runs local Consistent Cut: prepares list of active transactions to check which side of Consistent Cut they belong to.
+     * Inits local Consistent Cut: prepares list of active transactions to check which side of Consistent Cut they belong to.
      *
      * @param ver Consistent Cut version.
      */
@@ -98,25 +98,20 @@ public class ConsistentCut {
         beforeCut = ConcurrentHashMap.newKeySet();
         afterCut = ConcurrentHashMap.newKeySet();
 
-        started = walLog(ver, new ConsistentCutStartRecord(ver));
+        started = walLog(new ConsistentCutStartRecord(ver));
 
-        GridCompoundFuture<Throwable, Throwable> finishFut = new GridCompoundFuture<>(new FailedTxReducer());
+        Iterator<IgniteInternalTx> activeTxs = F.concat(
+            cctx.tm().activeTransactions().iterator(),
+            cctx.consistentCutMgr().committingTxs().iterator());
 
-        // `committingTxs` and `activeTxs` may have some duplicated txs - tx is firstly added to `committingTxs` and
-        // only after that it is removed from `activeTxs`.
-        listenTransactions(
-            ver,
-            F.concat(cctx.tm().activeTransactions().iterator(), cctx.consistentCutMgr().committingTxs().iterator()),
-            finishFut);
+        GridCompoundFuture<Throwable, Throwable> checkFut = checkTransactions(ver, activeTxs);
 
-        finishFut.markInitialized();
-
-        finishFut.listen(failedTx -> {
+        checkFut.listen(failedTx -> {
             if (failedTx.result() != null)
                 U.error(log, "Skip writing ConsistentCutFinishRecord due to transaction failure. ", failedTx.result());
             else {
                 try {
-                    walLog(ver, new ConsistentCutFinishRecord(beforeCut, afterCut));
+                    walLog(new ConsistentCutFinishRecord(beforeCut, afterCut));
                 }
                 catch (IgniteCheckedException e) {
                     U.error(log, "Failed to write ConsistentCutFinishRecord to WAL for ver " + ver, e);
@@ -127,56 +122,66 @@ public class ConsistentCut {
         });
     }
 
-    /** */
-    private void listenTransactions(
+    /**
+     * Checks active transactions - decides which side of Consistent Cut they belong to after they finished.
+     *
+     * @param ver Current Consistent Cut version.
+     * @param activeTxs Collection of active transactions to check.
+     * @return Compound future that completes after all active transactions were checked.
+     */
+    private GridCompoundFuture<Throwable, Throwable> checkTransactions(
         ConsistentCutVersion ver,
-        Iterator<IgniteInternalTx> activeTxs,
-        GridCompoundFuture<Throwable, Throwable> finishFut
+        Iterator<IgniteInternalTx> activeTxs
     ) {
+        GridCompoundFuture<Throwable, Throwable> checkFut = new GridCompoundFuture<>(new FailedTxReducer());
+
         while (activeTxs.hasNext()) {
             IgniteInternalTx activeTx = activeTxs.next();
-            TransactionState txState = activeTx.state();
 
-            // Checks COMMITTING / COMMITTED transactions due to concurrency with transactions: some active transactions
-            // start committing after being grabbed.
-            if (txState == PREPARING || txState == PREPARED || txState == COMMITTING || txState == COMMITTED) {
-                ConsistentCutVersion txCutVer;
+            if (needCheck(activeTx.state())) {
+                IgniteInternalFuture<Throwable> txCheckFut = activeTx.finishFuture().chain(txFut -> {
+                    // txFut never fails and always returns IgniteInternalTx.
+                    IgniteInternalTx tx = txFut.result();
 
-                // Do not await transactions from the AFTER side.
-                if ((txCutVer = ((ConsistentCutVersionAware)activeTx).txCutVersion()) != null && txCutVer.compareTo(ver) == 0)
-                    afterCut.add(activeTx.nearXidVersion());
-                else {
-                    IgniteInternalFuture<Throwable> txCheckFut = activeTx.finishFuture().chain(txFut -> {
-                        // txFut never fails and always returns IgniteInternalTx.
-                        IgniteInternalTx tx = txFut.result();
+                    if (tx.state() == UNKNOWN) {
+                        return new IgniteCheckedException(
+                            "Transaction is in UNKNOWN state. Cluster might be inconsistent. Transaction: " + tx);
+                    }
 
-                        if (tx.state() == UNKNOWN) {
-                            return new IgniteCheckedException(
-                                "Transaction is in UNKNOWN state. Cluster might be inconsistent. Transaction: " + tx);
-                        }
+                    ConsistentCutVersionAware txCutVerAware = (ConsistentCutVersionAware)tx;
 
-                        ConsistentCutVersionAware txCutVerAware = (ConsistentCutVersionAware)tx;
+                    // txCutVersion may be NULL for some cases with transaction recovery - NULL means that transaction
+                    // committed BEFORE this Cut on remote nodes.
+                    if (ver.compareToNullable(txCutVerAware.txCutVersion()) > 0)
+                        beforeCut.add(tx.nearXidVersion());
+                    else
+                        afterCut.add(tx.nearXidVersion());
 
-                        // txCutVersion may be NULL for some cases with transaction recovery - NULL means that transaction
-                        // committed BEFORE this Cut on remote nodes.
-                        if (ver.compareToNullable(txCutVerAware.txCutVersion()) > 0)
-                            beforeCut.add(tx.nearXidVersion());
-                        else
-                            afterCut.add(tx.nearXidVersion());
+                    return null;
+                });
 
-                        return null;
-                    });
-
-                    finishFut.add(txCheckFut);
-                }
+                checkFut.add(txCheckFut);
             }
         }
+
+        return checkFut.markInitialized();
+    }
+
+    /**
+     * Checks only transactions that might affect data consistency: are going to commit or failed (UNKNOWN state).
+     */
+    private boolean needCheck(TransactionState txState) {
+        return txState == PREPARING
+            || txState == PREPARED
+            || txState == COMMITTING
+            || txState == COMMITTED
+            || txState == UNKNOWN;
     }
 
     /**
      * Logs Consistent Cut Record to WAL.
      */
-    protected boolean walLog(ConsistentCutVersion cutVer, WALRecord record) throws IgniteCheckedException {
+    private boolean walLog(WALRecord record) throws IgniteCheckedException {
         if (cctx.wal() != null) {
             if (log.isDebugEnabled())
                 log.debug("Writing Consistent Cut WAL record: " + record);
