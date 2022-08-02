@@ -139,6 +139,11 @@ namespace Apache.Ignite.Core.Impl.Client.DataStructures
         /** <inheritdoc /> */
         public void CopyTo(T[] array, int arrayIndex)
         {
+            IgniteArgumentCheck.NotNull(array, nameof(array));
+            IgniteArgumentCheck.Ensure(arrayIndex >= 0, nameof(arrayIndex), "index should not be negative");
+            IgniteArgumentCheck.Ensure(arrayIndex < array.Length - 1, nameof(arrayIndex),
+                "index should not be negative");
+
             foreach (var item in this)
             {
                 if (arrayIndex >= array.Length)
@@ -192,7 +197,6 @@ namespace Apache.Ignite.Core.Impl.Client.DataStructures
 
         private bool SingleKeyOp(ClientOp op, T item)
         {
-            // TODO: Arg checks in all methods.
             IgniteArgumentCheck.NotNull(item, nameof(item));
 
             return _socket.DoOutInOpAffinity(
