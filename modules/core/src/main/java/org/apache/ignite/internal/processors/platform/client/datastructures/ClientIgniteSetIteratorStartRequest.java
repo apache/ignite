@@ -45,7 +45,7 @@ public class ClientIgniteSetIteratorStartRequest extends ClientIgniteSetRequest 
 
     /** {@inheritDoc} */
     @Override protected ClientResponse process(IgniteSet<Object> set) {
-        return new Response(requestId(), set.iterator(true));
+        return new Response(requestId(), set.iterator());
     }
 
     /**
