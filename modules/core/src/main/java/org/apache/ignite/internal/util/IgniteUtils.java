@@ -140,6 +140,7 @@ import java.util.concurrent.Executors;
 import java.util.concurrent.Future;
 import java.util.concurrent.Semaphore;
 import java.util.concurrent.TimeUnit;
+import java.util.concurrent.TimeoutException;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.concurrent.locks.Condition;
@@ -248,6 +249,7 @@ import org.apache.ignite.internal.util.typedef.P1;
 import org.apache.ignite.internal.util.typedef.X;
 import org.apache.ignite.internal.util.typedef.internal.A;
 import org.apache.ignite.internal.util.typedef.internal.LT;
+import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.internal.util.typedef.internal.SB;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.internal.util.worker.GridWorker;
@@ -290,6 +292,7 @@ import sun.misc.Unsafe;
 import static java.util.Objects.isNull;
 import static org.apache.ignite.IgniteSystemProperties.IGNITE_DISABLE_HOSTNAME_VERIFIER;
 import static org.apache.ignite.IgniteSystemProperties.IGNITE_HOME;
+import static org.apache.ignite.IgniteSystemProperties.IGNITE_IGNORE_LOCAL_HOST_NAME;
 import static org.apache.ignite.IgniteSystemProperties.IGNITE_LOCAL_HOST;
 import static org.apache.ignite.IgniteSystemProperties.IGNITE_MBEAN_APPEND_CLASS_LOADER_ID;
 import static org.apache.ignite.IgniteSystemProperties.IGNITE_MBEAN_APPEND_JVM_ID;
@@ -299,6 +302,7 @@ import static org.apache.ignite.IgniteSystemProperties.IGNITE_SSH_HOST;
 import static org.apache.ignite.IgniteSystemProperties.IGNITE_SSH_USER_NAME;
 import static org.apache.ignite.IgniteSystemProperties.IGNITE_SUCCESS_FILE;
 import static org.apache.ignite.IgniteSystemProperties.getBoolean;
+import static org.apache.ignite.IgniteSystemProperties.getString;
 import static org.apache.ignite.events.EventType.EVTS_ALL;
 import static org.apache.ignite.events.EventType.EVTS_ALL_MINUS_METRIC_UPDATE;
 import static org.apache.ignite.events.EventType.EVT_NODE_METRICS_UPDATED;
@@ -318,6 +322,9 @@ import static org.apache.ignite.internal.util.GridUnsafe.staticFieldOffset;
  */
 @SuppressWarnings({"UnusedReturnValue"})
 public abstract class IgniteUtils {
+    /** Logger. */
+    private static final Logger log = Logger.getLogger(IgniteUtils.class.getName());
+
     /** */
     public static final long KB = 1024L;
 
@@ -2277,11 +2284,19 @@ public abstract class IgniteUtils {
      */
     private static void addresses(InetAddress addr, Collection<String> addrs, Collection<String> hostNames,
         boolean allHostNames) {
-        String hostName = addr.getHostName();
-
         String ipAddr = addr.getHostAddress();
 
         addrs.add(ipAddr);
+
+        boolean ignoreLocalHostName = getBoolean(IGNITE_IGNORE_LOCAL_HOST_NAME, true);
+
+        String userDefinedLocalHost = getString(IGNITE_LOCAL_HOST);
+
+        // If IGNITE_LOCAL_HOST is defined and IGNITE_IGNORE_LOCAL_HOST_NAME is not false, then ignore local address's hostname
+        if (!F.isEmpty(userDefinedLocalHost) && ignoreLocalHostName)
+            return;
+
+        String hostName = addr.getHostName();
 
         if (allHostNames)
             hostNames.add(hostName);
@@ -9650,20 +9665,62 @@ public abstract class IgniteUtils {
             String hostName = hostNamesIt.hasNext() ? hostNamesIt.next() : null;
 
             if (!F.isEmpty(hostName)) {
-                InetSocketAddress inetSockAddr = new InetSocketAddress(hostName, port);
+                InetSocketAddress inetSockAddr = createResolved(hostName, port);
 
-                if (inetSockAddr.isUnresolved() || inetSockAddr.getAddress().isLoopbackAddress())
-                    inetSockAddr = new InetSocketAddress(addr, port);
+                if (inetSockAddr.isUnresolved() ||
+                    (!inetSockAddr.isUnresolved() && inetSockAddr.getAddress().isLoopbackAddress())
+                )
+                    inetSockAddr = createResolved(addr, port);
 
                 res.add(inetSockAddr);
             }
 
             // Always append address because local and remote nodes may have the same hostname
-            // therefore remote hostname will be always resolved to local address.
-            res.add(new InetSocketAddress(addr, port));
+            // therefore remote hostname will always be resolved to local address.
+            res.add(createResolved(addr, port));
         }
 
         return res;
+    }
+
+    /**
+     * Creates a resolved inet socket address, writing the diagnostic information into a log if operation took
+     * a significant amount of time.
+     *
+     * @param addr Host address.
+     * @param port Port value.
+     * @return Resolved address.
+     */
+    private static InetSocketAddress createResolved(String addr, int port) {
+        log.log(Level.FINE, () -> S.toString(
+            "Resolving address",
+            "addr", addr, false,
+            "port", port, false,
+            "thread", Thread.currentThread().getName(), false
+        ));
+
+        long startNanos = System.nanoTime();
+
+        try {
+            return new InetSocketAddress(addr, port);
+        }
+        finally {
+            long endNanos = System.nanoTime();
+
+            long duration = endNanos - startNanos;
+
+            long threshold = U.millisToNanos(200);
+
+            if (duration > threshold) {
+                log.log(Level.FINE, new TimeoutException(), () -> S.toString(
+                    "Resolving address took too much time",
+                    "duration(ms)", U.nanosToMillis(duration), false,
+                    "addr", addr, false,
+                    "port", port, false,
+                    "thread", Thread.currentThread().getName(), false
+                ));
+            }
+        }
     }
 
     /**

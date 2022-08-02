@@ -120,7 +120,7 @@ namespace Apache.Ignite.Platform.Model
     /// <summary>
     /// A enum is a clone of Java class User with the same namespace.
     /// </summary>
-    // ReSharper disable once InconsistentNaming
+    // ReSharper disable InconsistentNaming
     public enum ACL
     {
         ALLOW, DENY
@@ -134,6 +134,7 @@ namespace Apache.Ignite.Platform.Model
         USER, SUPER
     }
 
+    // ReSharper enable InconsistentNaming
     /// <summary>
     /// A class is a clone of Java class Role with the same namespace.
     /// </summary>
