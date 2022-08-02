@@ -26,7 +26,6 @@ import java.io.ObjectStreamException;
 import java.util.Collection;
 import java.util.Iterator;
 import org.apache.ignite.IgniteCheckedException;
-import org.apache.ignite.IgniteException;
 import org.apache.ignite.IgniteSet;
 import org.apache.ignite.internal.GridKernalContext;
 import org.apache.ignite.internal.IgniteInternalFuture;
@@ -356,25 +355,6 @@ public class GridCacheSetProxy<T> implements IgniteSet<T>, Externalizable {
     }
 
     /** {@inheritDoc} */
-    @Override public Iterator<T> iterator(boolean keepBinary) throws IgniteException {
-        enterBusy();
-
-        try {
-            gate.enter();
-
-            try {
-                return delegate.iterator(keepBinary);
-            }
-            finally {
-                gate.leave();
-            }
-        }
-        finally {
-            leaveBusy();
-        }
-    }
-
-    /** {@inheritDoc} */
     @Override public void close() {
         IgniteFuture<Boolean> destroyFut = null;
 
@@ -433,6 +413,11 @@ public class GridCacheSetProxy<T> implements IgniteSet<T>, Externalizable {
     /** {@inheritDoc} */
     @Override public <R> R affinityCall(final IgniteCallable<R> job) {
         return delegate.affinityCall(job);
+    }
+
+    /** {@inheritDoc} */
+    @Override public <T1> IgniteSet<T1> withKeepBinary() {
+        return new GridCacheSetProxy<>(cctx, (GridCacheSetImpl<T1>) delegate.<T1>withKeepBinary());
     }
 
     /**

@@ -59,15 +59,6 @@ public interface IgniteSet<T> extends Set<T>, Closeable {
     /** {@inheritDoc} */
     @Override Iterator<T> iterator() throws IgniteException;
 
-    /**
-     * Returns an iterator over the elements in this set.
-     *
-     * @param keepBinary Whether to keep elements in binary form.
-     * @return an iterator over the elements in this set.
-     * @throws IgniteException On error.
-     */
-    Iterator<T> iterator(boolean keepBinary) throws IgniteException;
-
     /** {@inheritDoc} */
     @Override boolean remove(Object o) throws IgniteException;
 
@@ -139,4 +130,12 @@ public interface IgniteSet<T> extends Set<T>, Closeable {
      * @throws IgniteException If job failed.
      */
     public <R> R affinityCall(IgniteCallable<R> job) throws IgniteException;
+
+    /**
+     * Returns Ignite set that operates on binary objects without deserialization.
+     *
+     * @param <T1> Type of binary objects.
+     * @return New set instance for binary objects.
+     */
+    public <T1> IgniteSet<T1> withKeepBinary();
 }

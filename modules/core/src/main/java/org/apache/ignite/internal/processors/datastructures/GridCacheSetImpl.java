@@ -99,13 +99,19 @@ public class GridCacheSetImpl<T> extends AbstractCollection<T> implements Ignite
     /** Access to affinityRun() and affinityCall() functions. */
     private final IgniteCompute compute;
 
+    /** */
+    private final boolean keepBinary;
+
+    /** */
+    private final GridCacheSetHeader hdr;
+
     /**
      * @param ctx Cache context.
      * @param name Set name.
      * @param hdr Set header.
      */
     @SuppressWarnings("unchecked")
-    public GridCacheSetImpl(GridCacheContext ctx, String name, GridCacheSetHeader hdr) {
+    public GridCacheSetImpl(GridCacheContext ctx, String name, GridCacheSetHeader hdr, boolean keepBinary) {
         this.ctx = ctx;
         this.name = name;
         this.collocated = hdr.collocated();
@@ -116,6 +122,8 @@ public class GridCacheSetImpl<T> extends AbstractCollection<T> implements Ignite
         this.log = ctx.logger(GridCacheSetImpl.class);
         this.hdrPart = ctx.affinity().partition(setKey);
         this.separated = hdr.separated();
+        this.hdr = hdr;
+        this.keepBinary = keepBinary;
     }
 
     /** {@inheritDoc} */
@@ -304,7 +312,7 @@ public class GridCacheSetImpl<T> extends AbstractCollection<T> implements Ignite
         try {
             onAccess();
 
-            try (GridCloseableIterator<T> iter = iterator0(false)) {
+            try (GridCloseableIterator<T> iter = iterator0(keepBinary)) {
                 boolean rmv = false;
 
                 Set<SetItemKey> rmvKeys = null;
@@ -342,7 +350,7 @@ public class GridCacheSetImpl<T> extends AbstractCollection<T> implements Ignite
         try {
             onAccess();
 
-            try (GridCloseableIterator<T> iter = iterator0(false)) {
+            try (GridCloseableIterator<T> iter = iterator0(keepBinary)) {
                 Collection<SetItemKey> rmvKeys = new ArrayList<>(BATCH_SIZE);
 
                 for (T val : iter) {
@@ -368,13 +376,6 @@ public class GridCacheSetImpl<T> extends AbstractCollection<T> implements Ignite
     @Override public Iterator<T> iterator() {
         onAccess();
 
-        return iterator0(false);
-    }
-
-    /** {@inheritDoc} */
-    @Override public Iterator<T> iterator(boolean keepBinary) {
-        onAccess();
-
         return iterator0(keepBinary);
     }
 
@@ -394,6 +395,11 @@ public class GridCacheSetImpl<T> extends AbstractCollection<T> implements Ignite
                 ". This operation is supported only for collocated sets.");
 
         return compute.affinityCall(cache.name(), setKey, job);
+    }
+
+    /** {@inheritDoc} */
+    @Override public <T1> IgniteSet<T1> withKeepBinary() {
+        return new GridCacheSetImpl<>(ctx, name, hdr, true);
     }
 
     /** {@inheritDoc} */
