@@ -247,13 +247,24 @@ namespace Apache.Ignite.Core.Tests.Client.DataStructures
         [Test]
         public void TestIsSupersetOf()
         {
-            Assert.Fail("TODO");
+            var set = Client.GetIgniteSet<int>(nameof(TestIsSupersetOf), GetCollectionConfiguration());
+            set.UnionWith(new[] { 1, 2, 3 });
+
+            Assert.IsTrue(set.IsSupersetOf(new[] { 3, 2, 1 }));
+            Assert.IsTrue(set.IsSupersetOf(new[] { 3, 2 }));
+            Assert.IsFalse(set.IsSupersetOf(new[] { 3, 0 }));
         }
 
         [Test]
         public void TestIsProperSupersetOf()
         {
-            Assert.Fail("TODO");
+            var set = Client.GetIgniteSet<int>(nameof(TestIsProperSupersetOf), GetCollectionConfiguration());
+            set.UnionWith(new[] { 1, 2, 3 });
+
+            Assert.IsFalse(set.IsProperSupersetOf(new[] { 3, 2, 1 }));
+            Assert.IsTrue(set.IsProperSupersetOf(new[] { 3, 2 }));
+            Assert.IsTrue(set.IsProperSupersetOf(new[] { 1 }));
+            Assert.IsFalse(set.IsProperSupersetOf(new[] { 3, 0 }));
         }
 
         [Test]
