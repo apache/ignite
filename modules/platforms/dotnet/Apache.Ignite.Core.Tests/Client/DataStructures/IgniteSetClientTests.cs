@@ -281,7 +281,14 @@ namespace Apache.Ignite.Core.Tests.Client.DataStructures
         [Test]
         public void TestSetEquals()
         {
-            Assert.Fail("TODO");
+            var set = Client.GetIgniteSet<int>(nameof(TestSetEquals), GetCollectionConfiguration());
+            set.UnionWith(new[] { 1, 2, 3 });
+
+            Assert.IsTrue(set.SetEquals(new[] { 1, 2, 3 }));
+            Assert.IsTrue(set.SetEquals(new[] { 3, 1, 2 }));
+            Assert.IsFalse(set.SetEquals(new[] { 1, 2 }));
+            Assert.IsFalse(set.SetEquals(new[] { 1, 2, 4 }));
+            Assert.IsFalse(set.SetEquals(new[] { 1, 2, 3, 4 }));
         }
 
         protected virtual CollectionClientConfiguration GetCollectionConfiguration() =>
