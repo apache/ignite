@@ -417,7 +417,7 @@ public class GridCacheSetProxy<T> implements IgniteSet<T>, Externalizable {
 
     /** {@inheritDoc} */
     @Override public <T1> IgniteSet<T1> withKeepBinary() {
-        return new GridCacheSetProxy<>(cctx, (GridCacheSetImpl<T1>) delegate.<T1>withKeepBinary());
+        return new GridCacheSetProxy<>(cctx, (GridCacheSetImpl<T1>)delegate.<T1>withKeepBinary());
     }
 
     /**
