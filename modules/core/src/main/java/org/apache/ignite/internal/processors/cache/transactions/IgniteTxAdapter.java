@@ -601,18 +601,15 @@ public abstract class IgniteTxAdapter extends GridMetadataAwareAdapter implement
                 break;
 
             case RECOVERY_FINISH:
-                FinalizationStatus old = finalizing;
+                FinalizationStatus newStatus = FINALIZING_UPD.updateAndGet(this, old -> {
+                    if (old == FinalizationStatus.USER_FINISH)
+                        return old;
+                    else
+                        return status;
+                });
 
-                res = old != FinalizationStatus.USER_FINISH && FINALIZING_UPD.compareAndSet(this, old, status);
+                res = newStatus == status;
 
-//              Fix draft
-//                FinalizationStatus newStatus = FINALIZING_UPD.updateAndGet(this, old -> {
-//                    if (old == FinalizationStatus.USER_FINISH)
-//                        return old;
-//                    else
-//                        return status;
-//                });
-//                res = newStatus == status;
                 break;
 
             default:
