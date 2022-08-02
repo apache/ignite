@@ -270,7 +270,12 @@ namespace Apache.Ignite.Core.Tests.Client.DataStructures
         [Test]
         public void TestUnionWith()
         {
-            Assert.Fail("TODO");
+            var set = Client.GetIgniteSet<int>(nameof(TestUnionWith), GetCollectionConfiguration());
+            set.UnionWith(new[] { 1 });
+            set.UnionWith(new[] { 1, 2 });
+            set.UnionWith(new[] { 0, 3 });
+
+            CollectionAssert.AreEquivalent(new[] { 0, 1, 2, 3 }, set);
         }
 
         [Test]
