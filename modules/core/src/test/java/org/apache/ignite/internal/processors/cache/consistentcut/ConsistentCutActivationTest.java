@@ -19,6 +19,7 @@ package org.apache.ignite.internal.processors.cache.consistentcut;
 
 import org.apache.ignite.IgniteDataStreamer;
 import org.apache.ignite.cluster.ClusterState;
+import org.jetbrains.annotations.Nullable;
 import org.junit.Test;
 
 /** */
@@ -36,7 +37,7 @@ public class ConsistentCutActivationTest extends AbstractConsistentCutTest {
     /** */
     @Test
     public void testConsistentCutDisabledByDefault() {
-        assertConsistentCutDisabled();
+        assertConsistentCutDisabled(null);
     }
 
     /** */
@@ -54,7 +55,7 @@ public class ConsistentCutActivationTest extends AbstractConsistentCutTest {
 
         TestConsistentCutManager.disableConsistentCutScheduling(grid(0));
 
-        assertConsistentCutDisabled();
+        assertConsistentCutDisabled(null);
 
         grid(0).cache(CACHE).destroy();
 
@@ -72,7 +73,7 @@ public class ConsistentCutActivationTest extends AbstractConsistentCutTest {
 
         stopGrid(1);
 
-        assertConsistentCutDisabled();
+        assertConsistentCutDisabled(1);
     }
 
     /** */
@@ -84,7 +85,7 @@ public class ConsistentCutActivationTest extends AbstractConsistentCutTest {
 
         startGrid(nodes() + 1);
 
-        assertConsistentCutDisabled();
+        assertConsistentCutDisabled(null);
     }
 
     /** */
@@ -118,9 +119,13 @@ public class ConsistentCutActivationTest extends AbstractConsistentCutTest {
     }
 
     /** */
-    private void assertConsistentCutDisabled() {
-        for (int i = 0; i < nodes(); i++)
+    private void assertConsistentCutDisabled(@Nullable Integer excl) {
+        for (int i = 0; i < nodes(); i++) {
+            if (excl != null && excl == i)
+                continue;
+
             assertTrue(TestConsistentCutManager.disabled(grid(i)));
+        }
     }
 
     /** {@inheritDoc} */

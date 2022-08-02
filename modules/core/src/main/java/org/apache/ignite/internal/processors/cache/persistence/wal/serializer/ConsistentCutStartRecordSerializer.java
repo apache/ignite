@@ -45,7 +45,7 @@ public class ConsistentCutStartRecordSerializer {
     public ConsistentCutStartRecord read(ByteBufferBackedDataInput in) throws IOException {
         long ver = in.readLong();
 
-        return new ConsistentCutStartRecord(new ConsistentCutVersion(ver, null));
+        return new ConsistentCutStartRecord(new ConsistentCutVersion(ver));
     }
 
     /**

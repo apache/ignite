@@ -37,7 +37,7 @@ public class GridCacheTxRecoveryCommitInfo implements Message {
     /** */
     public static final short TYPE_CODE = 191;
 
-    /** */
+    /** If transaction didn't commit on node. */
     private static final GridCacheTxRecoveryCommitInfo NO_COMMIT = new GridCacheTxRecoveryCommitInfo(false, null);
 
     /**
@@ -47,7 +47,8 @@ public class GridCacheTxRecoveryCommitInfo implements Message {
     private boolean commit;
 
     /**
-     * Consistent Cut version with that this transaction was signed for commit.
+     * Consistent Cut version with that this transaction was signed for commit. {@code null} means transaction committed
+     * on the BEFORE side of the latest known Consistent Cut version.
      */
     @GridToStringInclude
     private @Nullable ConsistentCutVersion cutVer;

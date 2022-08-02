@@ -1005,6 +1005,11 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
 
         clusterSnpReq = null;
 
+        if (endFail.isEmpty() && snpReq.error() == null) {
+            if (CU.isPitrEnabled(cctx.gridConfig()) && U.isLocalNodeCoordinator(cctx.discovery()))
+                cctx.consistentCutMgr().scheduleConsistentCut();
+        }
+
         synchronized (snpOpMux) {
             if (clusterSnpFut != null) {
                 if (endFail.isEmpty() && snpReq.error() == null) {

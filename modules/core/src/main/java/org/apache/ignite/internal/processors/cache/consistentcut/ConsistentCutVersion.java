@@ -18,7 +18,6 @@
 package org.apache.ignite.internal.processors.cache.consistentcut;
 
 import java.nio.ByteBuffer;
-import java.util.UUID;
 import org.apache.ignite.internal.util.tostring.GridToStringInclude;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.plugin.extensions.communication.Message;
@@ -42,27 +41,17 @@ public class ConsistentCutVersion implements Message, Comparable<ConsistentCutVe
     @GridToStringInclude
     private long ver;
 
-    /** Consistent Cut coordinator node ID. */
-    @GridToStringInclude
-    private UUID cutCrdNodeId;
-
     /** */
     public ConsistentCutVersion() {}
 
     /** */
-    public ConsistentCutVersion(long ver, UUID cutCrdNodeId) {
+    public ConsistentCutVersion(long ver) {
         this.ver = ver;
-        this.cutCrdNodeId = cutCrdNodeId;
     }
 
     /** */
     public long version() {
         return ver;
-    }
-
-    /** Consistent Cut coordinator node ID. */
-    public UUID cutCrdNodeId() {
-        return cutCrdNodeId;
     }
 
     /** {@inheritDoc} */
@@ -87,12 +76,6 @@ public class ConsistentCutVersion implements Message, Comparable<ConsistentCutVe
                     return false;
 
                 writer.incrementState();
-
-            case 1:
-                if (!writer.writeUuid("cutCrdNodeId", cutCrdNodeId))
-                    return false;
-
-                writer.incrementState();
         }
 
         return true;
@@ -113,14 +96,6 @@ public class ConsistentCutVersion implements Message, Comparable<ConsistentCutVe
                     return false;
 
                 reader.incrementState();
-
-            case 1:
-                cutCrdNodeId = reader.readUuid("cutCrdNodeId");
-
-                if (!reader.isLastRead())
-                    return false;
-
-                reader.incrementState();
         }
 
         return reader.afterMessageRead(ConsistentCutVersion.class);
@@ -133,7 +108,7 @@ public class ConsistentCutVersion implements Message, Comparable<ConsistentCutVe
 
     /** {@inheritDoc} */
     @Override public byte fieldsCount() {
-        return 2;
+        return 1;
     }
 
     /** {@inheritDoc} */
