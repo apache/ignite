@@ -194,6 +194,15 @@ namespace Apache.Ignite.Core.Tests.Client.DataStructures
         [Test]
         public void TestCopyTo()
         {
+            // TODO: Compare with HashSet semantics.
+            var set = new HashSet<int>();
+
+            Assert.Fail("TODO");
+        }
+
+        [Test]
+        public void TestUserObjects()
+        {
             Assert.Fail("TODO");
         }
 
