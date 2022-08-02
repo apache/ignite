@@ -287,7 +287,13 @@ public class IgniteIndexReaderTest extends GridCommandHandlerAbstractTest {
         Logger log = createTestLogger();
 
         IgniteIndexReader reader0 = new IgniteIndexReader(PAGE_SIZE, PART_CNT, PAGE_STORE_VER, dir, null, false, log) {
-            @Override ScanContext createContext(String idxName, FilePageStore store, ItemStorage items, String prefix, ProgressPrinter printer) {
+            @Override ScanContext createContext(
+                String idxName,
+                FilePageStore store,
+                ItemStorage items,
+                String prefix,
+                ProgressPrinter printer
+            ) {
                 GridTuple3<Integer, Integer, String> parsed;
 
                 if (idxName != null)

@@ -40,6 +40,7 @@ class PageListsInfo {
     /** Pages statistics. */
     final Map<Class<? extends PageIO>, ScanContext.PagesStatistic> stats;
 
+    /** Errors count. */
     final long errCnt;
 
     /** */
