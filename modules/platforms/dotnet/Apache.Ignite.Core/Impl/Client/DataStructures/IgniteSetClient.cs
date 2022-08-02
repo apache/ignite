@@ -137,15 +137,24 @@ namespace Apache.Ignite.Core.Impl.Client.DataStructures
         public void CopyTo(T[] array, int arrayIndex)
         {
             IgniteArgumentCheck.NotNull(array, nameof(array));
-            IgniteArgumentCheck.Ensure(arrayIndex >= 0, nameof(arrayIndex), "index should not be negative");
-            IgniteArgumentCheck.Ensure(arrayIndex < array.Length - 1, nameof(arrayIndex),
-                "index should not be negative");
+
+            if (arrayIndex < 0)
+            {
+                // Here and below - same exception text as HashSet uses.
+                throw new ArgumentOutOfRangeException(
+                    paramName: nameof(arrayIndex),
+                    actualValue: arrayIndex,
+                    message: "Non-negative number required.");
+            }
 
             foreach (var item in this)
             {
                 if (arrayIndex >= array.Length)
                 {
-                    return;
+                    throw new ArgumentException(
+                        message: "Destination array is not long enough to copy all the items in the collection. " +
+                                 "Check array index and length.",
+                        paramName: nameof(array));
                 }
 
                 array[arrayIndex++] = item;

@@ -194,10 +194,38 @@ namespace Apache.Ignite.Core.Tests.Client.DataStructures
         [Test]
         public void TestCopyTo()
         {
-            // TODO: Compare with HashSet semantics.
-            var set = new HashSet<int>();
+            var set = Client.GetIgniteSet<int>(nameof(TestCopyTo), GetCollectionConfiguration());
+            set.UnionWith(new[] { 1, 2, 3 });
 
-            Assert.Fail("TODO");
+            var target1 = new int[3];
+            set.CopyTo(target1, 0);
+
+            var target2 = new int[4];
+            set.CopyTo(target2, 1);
+
+            CollectionAssert.AreEquivalent(set, target1);
+            CollectionAssert.AreEquivalent(set, target2.Skip(1));
+        }
+
+        [Test]
+        public void TestCopyToInvalidArguments()
+        {
+            var set = Client.GetIgniteSet<int>(nameof(TestCopyToInvalidArguments), GetCollectionConfiguration());
+            set.UnionWith(new[] { 1, 2, 3 });
+
+            var target1 = new int[3];
+
+            var ex1 = Assert.Throws<ArgumentOutOfRangeException>(() => set.CopyTo(target1, -1));
+            Assert.AreEqual("Non-negative number required. (Parameter 'arrayIndex')\nActual value was -1.",
+                ex1.Message);
+
+            var ex2 = Assert.Throws<ArgumentException>(() => set.CopyTo(target1, 1));
+            Assert.AreEqual("Destination array is not long enough to copy all the items in the collection. " +
+                            "Check array index and length. (Parameter 'array')", ex2.Message);
+
+            var ex3 = Assert.Throws<ArgumentException>(() => set.CopyTo(target1, 3));
+            Assert.AreEqual("Destination array is not long enough to copy all the items in the collection. " +
+                            "Check array index and length. (Parameter 'array')", ex3.Message);
         }
 
         [Test]
