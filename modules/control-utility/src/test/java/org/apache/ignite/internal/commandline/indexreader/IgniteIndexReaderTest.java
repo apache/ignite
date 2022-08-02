@@ -287,7 +287,7 @@ public class IgniteIndexReaderTest extends GridCommandHandlerAbstractTest {
         Logger log = createTestLogger();
 
         IgniteIndexReader reader0 = new IgniteIndexReader(PAGE_SIZE, PART_CNT, PAGE_STORE_VER, dir, null, false, log) {
-            @Override ScanContext createContext(String idxName, FilePageStore store, ItemStorage items, String prefix) {
+            @Override ScanContext createContext(String idxName, FilePageStore store, ItemStorage items, String prefix, ProgressPrinter printer) {
                 GridTuple3<Integer, Integer, String> parsed;
 
                 if (idxName != null)
@@ -295,7 +295,7 @@ public class IgniteIndexReaderTest extends GridCommandHandlerAbstractTest {
                 else
                     parsed = new GridTuple3<>(UNKNOWN_CACHE, 0, null);
 
-                return new ScanContext(parsed.get1(), inlineFieldsCount(parsed), store, items, log, prefix, idxName) {
+                return new ScanContext(parsed.get1(), inlineFieldsCount(parsed), store, items, log, prefix, idxName, printer) {
                     @Override public void onLeafPage(long pageId, List<Object> data) {
                         super.onLeafPage(pageId, data);
 
@@ -310,7 +310,7 @@ public class IgniteIndexReaderTest extends GridCommandHandlerAbstractTest {
 
             ItemsListStorage<IndexStorageImpl.IndexItem> idxItemStorage = new ItemsListStorage<>();
 
-            reader.recursiveTreeScan(partitionRoots[0], META_TREE_NAME, idxItemStorage);
+            reader.recursiveTreeScan(partitionRoots[0], META_TREE_NAME, idxItemStorage, null);
 
             // Take any index item.
             IndexStorageImpl.IndexItem idxItem = idxItemStorage.iterator().next();
@@ -320,7 +320,8 @@ public class IgniteIndexReaderTest extends GridCommandHandlerAbstractTest {
             reader.recursiveTreeScan(
                 normalizePageId(idxItem.pageId()),
                 idxItem.nameString(),
-                linkStorage
+                linkStorage,
+                null
             );
 
             // Take any link.

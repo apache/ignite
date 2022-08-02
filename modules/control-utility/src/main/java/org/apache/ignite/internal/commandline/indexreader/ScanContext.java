@@ -22,6 +22,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.logging.Logger;
 
+import org.apache.ignite.internal.commandline.ProgressPrinter;
 import org.apache.ignite.internal.processors.cache.persistence.file.FilePageStore;
 import org.apache.ignite.internal.processors.cache.persistence.tree.io.PageIO;
 
@@ -65,7 +66,10 @@ class ScanContext {
     private final String idxName;
 
     /** */
-    public ScanContext(int cacheId, int inlineFldCnt, FilePageStore store, ItemStorage items, Logger log, String prefix, String idxName) {
+    private final ProgressPrinter printer;
+
+    /** */
+    public ScanContext(int cacheId, int inlineFldCnt, FilePageStore store, ItemStorage items, Logger log, String prefix, String idxName, ProgressPrinter printer) {
         this.cacheId = cacheId;
         this.inlineFldCnt = inlineFldCnt;
         this.store = store;
@@ -74,6 +78,13 @@ class ScanContext {
         this.log = log;
         this.prefix = prefix;
         this.idxName = idxName;
+        this.printer = printer;
+    }
+
+    /** */
+    public void progress() {
+        if (printer != null)
+            printer.printProgress();
     }
 
     /** */
@@ -116,11 +127,11 @@ class ScanContext {
 
         errCnt++;
 
-        onError(log, prefix, pageId, message);
+        onError(log, prefix, pageId, message, errCnt);
     }
 
-    public static void onError(Logger log, String prefix, long pageId, String message) {
-        log.warning(prefix + ERROR_PREFIX + "Page id: " + pageId + ", exceptions: " + message);
+    public static void onError(Logger log, String prefix, long pageId, String message, long errCnt) {
+        log.warning(prefix + ERROR_PREFIX + "Err#" + errCnt + ", Page id: " + pageId + ", exceptions: " + message);
     }
 
     /** */
