@@ -60,6 +60,7 @@ import static org.apache.ignite.testframework.GridTestUtils.waitForCondition;
 import static org.apache.ignite.transactions.TransactionConcurrency.OPTIMISTIC;
 import static org.apache.ignite.transactions.TransactionConcurrency.PESSIMISTIC;
 import static org.apache.ignite.transactions.TransactionIsolation.READ_COMMITTED;
+import static org.apache.ignite.transactions.TransactionIsolation.REPEATABLE_READ;
 
 /**
  */
@@ -256,6 +257,100 @@ public class TxRecoveryWithConcurrentRollbackTest extends GridCommonAbstractTest
         final TransactionState s2 = txs1.get(0).state();
 
         assertEquals(s1, s2);
+    }
+
+
+    /**
+     *
+     * @throws Exception
+     */
+    @Test
+    public void testRecoveryNotDeadLockOnPrimaryFail() throws Exception {
+        backups = 2;
+        persistence = false;
+
+        for (int iter = 0; iter < 100; iter++) {
+            stopAllGrids();
+
+            log.info("iteration=" + iter);
+            final IgniteEx grid0 = startGrid("g0");
+            final IgniteEx grid1 = startGrid("g1",
+                    cfg -> cfg.setSystemThreadPoolSize(1).setStripedPoolSize(1));
+            final IgniteEx grid2 = startGrid("g2");
+
+            grid0.cluster().state(ACTIVE);
+
+            final IgniteCache<Object, Object> cache = grid2.cache(DEFAULT_CACHE_NAME);
+
+            final Integer g2Key = primaryKeys(grid2.cache(DEFAULT_CACHE_NAME), 1, 0).get(0);
+
+            List<IgniteInternalTx> txs0 = null;
+            List<IgniteInternalTx> txs1 = null;
+
+            CountDownLatch grid1BlockLatch = new CountDownLatch(1);
+
+            try (final Transaction tx = grid2.transactions().txStart(PESSIMISTIC, REPEATABLE_READ)) {
+                cache.put(g2Key, Boolean.TRUE);
+                TransactionProxyImpl<?, ?> p = (TransactionProxyImpl<?, ?>)tx;
+                p.tx().prepare(true);
+
+                txs0 = txs(grid0);
+                txs1 = txs(grid1);
+                List<IgniteInternalTx> txs2 = txs(grid2);
+
+                assertTrue(txs0.size() == 1);
+                assertTrue(txs1.size() == 1);
+                assertTrue(txs2.size() == 1);
+
+                // Prevent tx recovery request to be sent from grid0 to grid1.
+                spi(grid0).blockMessages(GridCacheTxRecoveryRequest.class, grid1.name());
+
+                // Block recovery procedure processing on grid1
+                grid1.context().pools().getSystemExecutorService().execute(() -> U.awaitQuiet(grid1BlockLatch));
+                // Block stripe tx recovery request processing on grid1
+                int stripe = U.safeAbs(p.tx().xidVersion().hashCode());
+                grid1.context().pools().getStripedExecutorService().execute(stripe, () -> U.awaitQuiet(grid1BlockLatch));
+
+                // Prevent finish request processing on grid0 and grid1.
+                spi(grid2).blockMessages(GridDhtTxFinishRequest.class, grid0.name());
+                spi(grid2).blockMessages(GridDhtTxFinishRequest.class, grid1.name());
+
+                runAsync(() -> {
+                    grid2.close();
+                    return null;
+                });
+            }
+            catch (Exception ignored) {
+                // Expected.
+            }
+
+            // Wait grid0 is ready to send the tx recovery request to grid1
+            spi(grid0).waitForBlocked();
+            // Let grid0 send the tx recovery request to grid1
+            log.info("unblock grid0");
+            spi(grid0).stopBlock();
+            // Give grid1 some time to receive the tx recovery request (processing is still blocked in grid1).
+            log.info("sleep in grid0");
+            doSleep(100);
+
+            // Unblock processing in grid1. Simultaneously in striped and system pools to start
+            // recovery procedure and the tx recovery request processing at the "same" moment
+            // (for the same transaction). This should increase chances for race condition occur in
+            // the IgniteTxAdapter::markFinalizing.
+            log.info("unblock grid1");
+            grid1BlockLatch.countDown();
+
+            // Wait transaction finish in grid0.
+            txs0.get(0).finishFuture().get(5_000);
+
+            try {
+                // Check if transaction is finished in grid1. It wouldn't if race condition occur.
+                txs1.get(0).finishFuture().get(20_000);
+            }
+            catch (IgniteFutureTimeoutCheckedException e) {
+                fail("fail to markFinalizing in grid1, iteration=" + iter);
+            }
+        }
     }
 
     /** */
