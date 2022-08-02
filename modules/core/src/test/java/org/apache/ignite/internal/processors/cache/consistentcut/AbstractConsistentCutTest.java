@@ -89,7 +89,7 @@ public abstract class AbstractConsistentCutTest extends GridCommonAbstractTest {
         IgniteConfiguration cfg = super.getConfiguration(instanceName);
 
         cfg.setDataStorageConfiguration(new DataStorageConfiguration()
-            .setPointInTimeRecoveryEnabled(true)
+            .setPitrEnabled(true)
             .setPitrPeriod(CONSISTENT_CUT_PERIOD)
             .setDataRegionConfigurations(new DataRegionConfiguration()
                 .setName("consistent-cut-persist")
@@ -148,8 +148,7 @@ public abstract class AbstractConsistentCutTest extends GridCommonAbstractTest {
      */
     protected void awaitGlobalCutVersionReceived(long cutVer) throws Exception {
         awaitGlobalCutEvent((ign) ->
-            cutMgr(ign).latestKnownCutVersion().version() == cutVer
-        );
+            cutMgr(ign).latestKnownCutVersion().version() == cutVer, "CutVersionReceived " + cutVer);
     }
 
     /**
@@ -182,7 +181,7 @@ public abstract class AbstractConsistentCutTest extends GridCommonAbstractTest {
             }
 
             return false;
-        });
+        }, "GlobalCutReady " + expCutVer + " " + strict);
 
         // Await all nodes sent finish responses and coordinator received all of them.
         GridTestUtils.waitForCondition(() ->
@@ -194,7 +193,7 @@ public abstract class AbstractConsistentCutTest extends GridCommonAbstractTest {
     /**
      * Await global Consistent Cut event has finished.
      */
-    protected void awaitGlobalCutEvent(Function<IgniteEx, Boolean> cutEvtPredicate) throws Exception {
+    protected void awaitGlobalCutEvent(Function<IgniteEx, Boolean> cutEvtPredicate, String evt) throws Exception {
         boolean rdy = GridTestUtils.waitForCondition(() ->
             G.allGrids().stream()
                 .allMatch(ign -> cutEvtPredicate.apply((IgniteEx)ign)), 60_000, 10);
@@ -203,7 +202,7 @@ public abstract class AbstractConsistentCutTest extends GridCommonAbstractTest {
             return;
 
         StringBuilder bld = new StringBuilder()
-            .append("Failed to wait Consitent Cut event.");
+            .append("Failed to wait Consitent Cut event: " + evt);
 
         bld.append("\n\tCoordinator node0 = ").append(U.isLocalNodeCoordinator(grid(0).context().discovery()));
 

@@ -31,13 +31,17 @@ import org.apache.ignite.lang.IgniteUuid;
  * BEFORE also will be committed BEFORE on every other node. It means that an Ignite node can safely recover itself to this
  * point without any coordination with other nodes.
  *
- * This record is written to WAL in moment when Consistent Cut stops analyzing transactions from {@link ConsistentCut}.
- * It consists only few transactions that were checked.
+ * This record is written to WAL after Consistent Cut stopped analyzing transactions from {@link ConsistentCut} and
+ * storing them in a particular collection - {@link #before()} or {@link #after()}.
  *
  * It guarantees that the BEFORE side consist of:
- * 1. transactions physically committed before {@link ConsistentCutStartRecord} and aren't included into {@link #after()};
+ * 1. transactions physically committed before {@link ConsistentCutStartRecord} and weren't included into {@link #after()};
  * 2. transactions physically committed between {@link ConsistentCutStartRecord} and {@link ConsistentCutFinishRecord}
- *    and are included into {@link #before()}.
+ *    and were included into {@link #before()}.
+ *
+ * It guarantees that the AFTER side consist of:
+ * 1. transactions physically committed before {@link ConsistentCutStartRecord} and were included into {@link #after()};
+ * 2. transactions physically committed after {@link ConsistentCutStartRecord} and weren't included into {@link #before()}.
  *
  * @see ConsistentCutManager
  */

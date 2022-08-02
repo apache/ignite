@@ -35,13 +35,16 @@ import org.apache.ignite.internal.util.future.GridCompoundFuture;
 import org.apache.ignite.internal.util.tostring.GridToStringInclude;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.internal.U;
+import org.apache.ignite.lang.IgniteReducer;
 import org.apache.ignite.lang.IgniteUuid;
 import org.apache.ignite.transactions.TransactionState;
+import org.jetbrains.annotations.Nullable;
 
 import static org.apache.ignite.transactions.TransactionState.COMMITTED;
 import static org.apache.ignite.transactions.TransactionState.COMMITTING;
 import static org.apache.ignite.transactions.TransactionState.PREPARED;
 import static org.apache.ignite.transactions.TransactionState.PREPARING;
+import static org.apache.ignite.transactions.TransactionState.UNKNOWN;
 
 /**
  * Describes current Consistent Cut.
@@ -97,7 +100,7 @@ public class ConsistentCut {
 
         started = walLog(ver, new ConsistentCutStartRecord(ver));
 
-        GridCompoundFuture<Void, Void> finishFut = new GridCompoundFuture<>();
+        GridCompoundFuture<Throwable, Throwable> finishFut = new GridCompoundFuture<>(new FailedTxReducer());
 
         // `committingTxs` and `activeTxs` may have some duplicated txs - tx is firstly added to `committingTxs` and
         // only after that it is removed from `activeTxs`.
@@ -108,23 +111,19 @@ public class ConsistentCut {
 
         finishFut.markInitialized();
 
-        finishFut.listen(finish -> {
-            Throwable err = finish.error() != null ? finish.error() : null;
-
-            if (err == null) {
+        finishFut.listen(failedTx -> {
+            if (failedTx.result() != null)
+                U.error(log, "Skip writing ConsistentCutFinishRecord due to transaction failure. ", failedTx.result());
+            else {
                 try {
                     walLog(ver, new ConsistentCutFinishRecord(beforeCut, afterCut));
-
-                    cctx.consistentCutMgr().onFinish(null);
                 }
                 catch (IgniteCheckedException e) {
-                    U.error(log, "Failed to write FinishRecord to WAL for ver " + ver, e);
-
-                    cctx.consistentCutMgr().onFinish(e);
+                    U.error(log, "Failed to write ConsistentCutFinishRecord to WAL for ver " + ver, e);
                 }
             }
-            else
-                cctx.consistentCutMgr().onFinish(err);
+
+            cctx.consistentCutMgr().onFinish();
         });
     }
 
@@ -132,7 +131,7 @@ public class ConsistentCut {
     private void listenTransactions(
         ConsistentCutVersion ver,
         Iterator<IgniteInternalTx> activeTxs,
-        GridCompoundFuture<Void, Void> finishFut
+        GridCompoundFuture<Throwable, Throwable> finishFut
     ) {
         while (activeTxs.hasNext()) {
             IgniteInternalTx activeTx = activeTxs.next();
@@ -147,8 +146,14 @@ public class ConsistentCut {
                 if ((txCutVer = ((ConsistentCutVersionAware)activeTx).txCutVersion()) != null && txCutVer.compareTo(ver) == 0)
                     afterCut.add(activeTx.nearXidVersion());
                 else {
-                    IgniteInternalFuture<Void> txCheckFut = activeTx.finishFuture().chain(txFut -> {
+                    IgniteInternalFuture<Throwable> txCheckFut = activeTx.finishFuture().chain(txFut -> {
+                        // txFut never fails and always returns IgniteInternalTx.
                         IgniteInternalTx tx = txFut.result();
+
+                        if (tx.state() == UNKNOWN) {
+                            return new IgniteCheckedException(
+                                "Transaction is in UNKNOWN state. Cluster might be inconsistent. Transaction: " + tx);
+                        }
 
                         ConsistentCutVersionAware txCutVerAware = (ConsistentCutVersionAware)tx;
 
@@ -200,5 +205,30 @@ public class ConsistentCut {
         }
 
         return "ConsistentCut [started=" + started + ", before=" + before + ", after=" + after + "]";
+    }
+
+    /** Checks finished transactions, in case of any failed return exception. */
+    private static class FailedTxReducer implements IgniteReducer<Throwable, Throwable> {
+        /** */
+        private static final long serialVersionUID = 0L;
+
+        /** */
+        private volatile Throwable err;
+
+        /** {@inheritDoc} */
+        @Override public boolean collect(@Nullable Throwable throwable) {
+            if (throwable != null) {
+                err = throwable;
+
+                return false;
+            }
+
+            return true;
+        }
+
+        /** {@inheritDoc} */
+        @Override public Throwable reduce() {
+            return err;
+        }
     }
 }

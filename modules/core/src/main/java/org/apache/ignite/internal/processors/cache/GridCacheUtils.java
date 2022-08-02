@@ -2144,7 +2144,7 @@ public class GridCacheUtils {
         if (dsCfg == null)
             return false;
 
-        return dsCfg.isPointInTimeRecoveryEnabled();
+        return dsCfg.isPitrEnabled();
     }
 
     /**

@@ -639,7 +639,7 @@ public class GridCacheTxRecoveryFuture extends GridCacheCompoundIdentityFuture<G
      * Reduces {@link GridCacheTxRecoveryCommitInfo} received from remote nodes. If at least single node respond
      * with no-commit than local transaction will not commit.
      *
-     * In case {@link DataStorageConfiguration#isPointInTimeRecoveryEnabled()} recovered transaction signed with the least
+     * In case {@link DataStorageConfiguration#isPitrEnabled()} recovered transaction signed with the least
      * {@link ConsistentCutVersion} received from remote nodes. NULL means the least possible version.
      */
     private static class CommitInfoReducer implements IgniteReducer<GridCacheTxRecoveryCommitInfo, GridCacheTxRecoveryCommitInfo> {

@@ -24,8 +24,8 @@ import org.apache.ignite.internal.util.tostring.GridToStringInclude;
 import org.apache.ignite.internal.util.typedef.internal.S;
 
 /**
- * {@link ConsistentCut} splits timeline on 2 global areas - BEFORE and AFTER. It guarantees that every transaction committed BEFORE
- * also will be committed BEFORE on every other node. It means that an Ignite node can safely recover itself to this
+ * {@link ConsistentCut} splits timeline on 2 global areas - BEFORE and AFTER. It guarantees that every transaction committed
+ * BEFORE also will be committed BEFORE on every other node. It means that an Ignite node can safely recover itself to this
  * point without any coordination with other nodes.
  *
  * This record is written to WAL in moment when {@link ConsistentCut} starts on a local node.

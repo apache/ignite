@@ -192,8 +192,6 @@ public abstract class AbstractConsistentCutBlockingTest extends AbstractConsiste
      * @param stopClient Whether to stop client node during test.
      */
     protected void runCase(Runnable tx, int nearNodeId, List<T2<Integer, Integer>> c, boolean stopClient) throws Exception {
-        log.info("START CASE " + caseNum + ". Data=" + c + ", nearNodeId=" + nearNodeId);
-
         long prevVer = grid(0).context().cache().context().consistentCutMgr().latestKnownCutVersion().version();
 
         initLatches();
@@ -236,6 +234,8 @@ public abstract class AbstractConsistentCutBlockingTest extends AbstractConsiste
         }
         else
             txBlkNodeId = null;
+
+        log.info("START CASE " + caseNum + ". Data=" + c + ", nearNodeId=" + nearNodeId);
 
         // 1. Start transaction.
         IgniteInternalFuture<?> txFut = multithreadedAsync(() -> {

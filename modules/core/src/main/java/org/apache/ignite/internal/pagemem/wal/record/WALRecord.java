@@ -284,10 +284,10 @@ public abstract class WALRecord {
         /** ClusterSnapshot start. */
         CLUSTER_SNAPSHOT(75, LOGICAL),
 
-        /** Consistent Cut record. */
+        /** Consistent Cut Start record. */
         CONSISTENT_CUT_START_RECORD(76, LOGICAL),
 
-        /** Consistent Cut record. */
+        /** Consistent Cut Finish record. */
         CONSISTENT_CUT_FINISH_RECORD(77, LOGICAL);
 
         /** Index for serialization. Should be consistent throughout all versions. */

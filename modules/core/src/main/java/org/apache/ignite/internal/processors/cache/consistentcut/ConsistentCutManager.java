@@ -281,7 +281,7 @@ public class ConsistentCutManager extends GridCacheSharedManagerAdapter implemen
                     catch (IgniteCheckedException e) {
                         U.error(log, "Failed to handle Consistent Cut version.", e);
 
-                        onFinish(e);
+                        onFinish();
                     }
                 });
             }
@@ -309,10 +309,8 @@ public class ConsistentCutManager extends GridCacheSharedManagerAdapter implemen
 
     /**
      * Finishes local Consistent Cut: cleans {@link ConsistentCut} reference and sends finish message to Consistent Cut coordinator node.
-     *
-     * @param err Exception if occured.
      */
-    void onFinish(@Nullable Throwable err) {
+    void onFinish() {
         try {
             ConsistentCutState cutState = CONSITENT_CUT_STATE.get(this);
 
