@@ -171,6 +171,36 @@ namespace Apache.Ignite.Core.Tests.Client.DataStructures
             Assert.Fail("TODO");
         }
 
+        [Test]
+        public void TestCopyTo()
+        {
+            Assert.Fail("TODO");
+        }
+
+        [Test]
+        public void TestIsSupersetOf()
+        {
+            Assert.Fail("TODO");
+        }
+
+        [Test]
+        public void TestIsProperSupersetOf()
+        {
+            Assert.Fail("TODO");
+        }
+
+        [Test]
+        public void TestUnionWith()
+        {
+            Assert.Fail("TODO");
+        }
+
+        [Test]
+        public void TestSetEquals()
+        {
+            Assert.Fail("TODO");
+        }
+
         protected virtual CollectionClientConfiguration GetCollectionConfiguration() =>
             new CollectionClientConfiguration();
     }
