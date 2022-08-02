@@ -115,14 +115,14 @@ namespace Apache.Ignite.Core.Impl.Client.DataStructures
         public bool IsSupersetOf(IEnumerable<T> other) => MultiKeyOp(ClientOp.SetValueContainsAll, other, out _);
 
         /** <inheritdoc /> */
-        public bool Overlaps(IEnumerable<T> other) => throw new NotImplementedException();
+        public bool Overlaps(IEnumerable<T> other) => throw new NotSupportedException();
 
         /** <inheritdoc /> */
         public bool SetEquals(IEnumerable<T> other) =>
             MultiKeyOp(ClientOp.SetValueContainsAll, other, out var otherCount) && Count == otherCount;
 
         /** <inheritdoc /> */
-        public void SymmetricExceptWith(IEnumerable<T> other) => throw new NotImplementedException();
+        public void SymmetricExceptWith(IEnumerable<T> other) => throw new NotSupportedException();
 
         /** <inheritdoc /> */
         public void UnionWith(IEnumerable<T> other) => MultiKeyOp(ClientOp.SetValueAddAll, other, out _);

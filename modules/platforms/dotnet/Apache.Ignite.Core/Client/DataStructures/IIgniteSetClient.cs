@@ -23,6 +23,10 @@ namespace Apache.Ignite.Core.Client.DataStructures
     /// <summary>
     /// Distributed set: stores items on one or more Ignite cluster nodes.
     /// <para />
+    /// Implements most of the methods from <see cref="ISet{T}"/>. The following methods are NOT supported:
+    /// <see cref="ISet{T}.IsSubsetOf"/>, <see cref="ISet{T}.IsProperSubsetOf"/>,
+    /// <see cref="ISet{T}.Overlaps"/>, <see cref="ISet{T}.SymmetricExceptWith"/>.
+    /// <para />
     /// Set items can be placed on single node (when <see cref="CollectionClientConfiguration.Colocated"/> is true)
     /// or distributed across grid nodes.
     /// </summary>
