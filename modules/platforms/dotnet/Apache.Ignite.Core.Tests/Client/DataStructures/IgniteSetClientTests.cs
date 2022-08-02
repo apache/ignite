@@ -89,7 +89,7 @@ namespace Apache.Ignite.Core.Tests.Client.DataStructures
         public void TestEnumeratorRemoveAllWhileEnumerating()
         {
             var set = Client.GetIgniteSet<int>(nameof(TestEnumeratorRemoveAllWhileEnumerating),
-                GetCollectionConfiguration());
+                new CollectionClientConfiguration());
 
             set.PageSize = 2;
 
