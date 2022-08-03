@@ -707,9 +707,6 @@ public class IgniteTxHandler {
             req.onePhaseCommit(),
             req.deployInfo() != null);
 
-        if (ctx.consistentCutMgr() != null)
-            res.cutVersion(ctx.consistentCutMgr().cutVersion());
-
         try {
             ctx.io().send(node.id(), res, req.policy());
         }

@@ -68,17 +68,12 @@ public class GridCacheTxRecoveryResponse extends GridDistributedBaseMessage impl
         IgniteUuid futId,
         IgniteUuid miniId,
         boolean success,
-        boolean addDepInfo
-    ) {
+        boolean addDepInfo) {
         super(txId, 0, addDepInfo);
-
-        if (!success)
-            System.out.println(success);
-        else
-            System.out.println("SUCCESS!");
 
         this.futId = futId;
         this.miniId = miniId;
+        this.success = success;
 
         this.addDepInfo = addDepInfo;
     }

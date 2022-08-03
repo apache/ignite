@@ -407,11 +407,6 @@ public final class GridDhtTxFinishFuture<K, V> extends GridCacheCompoundIdentity
                 false,
                 tx.mvccSnapshot(),
                 cctx.tm().txHandler().filterUpdateCountersForBackupNode(tx, n));
-// TODO: reove?
-            if (cctx.consistentCutMgr() != null) {
-                req.cutVersion(cctx.consistentCutMgr().cutVersion());
-                req.txCutVersion(tx.txCutVersion());
-            }
 
             try {
                 cctx.io().send(n, req, tx.ioPolicy());

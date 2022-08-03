@@ -146,8 +146,6 @@ public class ConsistentCut {
 
                     assert tx.state() == UNKNOWN || tx.state() == ROLLED_BACK || tx.state() == COMMITTED : tx;
 
-                    System.out.println("TX STATE " + tx.state() + " " + ((ConsistentCutVersionAware)tx).txCutVersion());
-
                     if (tx.state() == UNKNOWN) {
                         U.warn(log, "Transaction is in UNKNOWN state. Cut might be inconsistent. Transaction: " + tx);
 

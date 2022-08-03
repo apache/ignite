@@ -99,8 +99,6 @@ public class ConsistentCutTxRecoveryTest extends AbstractConsistentCutBlockingTe
             WALRecord rec = iter.next().getValue();
 
             if (rec.type() == WALRecord.RecordType.CONSISTENT_CUT_START_RECORD) {
-                log.info("REC " + rec);
-
                 ConsistentCutStartRecord startRec = (ConsistentCutStartRecord)rec;
 
                 if (skipBlkVer)
@@ -112,8 +110,6 @@ public class ConsistentCutTxRecoveryTest extends AbstractConsistentCutBlockingTe
 
             }
             else if (rec.type() == WALRecord.RecordType.CONSISTENT_CUT_FINISH_RECORD) {
-                log.info("REC " + rec);
-
                 assertTrue("Unexpect Finish Record. Blk ver " + blkVer, expFinRec);
 
                 expFinRec = false;

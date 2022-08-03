@@ -31,6 +31,7 @@ import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.GridKernalContext;
 import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.IgniteInternalFuture;
+import org.apache.ignite.internal.IgniteInterruptedCheckedException;
 import org.apache.ignite.internal.managers.communication.GridIoMessage;
 import org.apache.ignite.internal.pagemem.wal.IgniteWriteAheadLogManager;
 import org.apache.ignite.internal.pagemem.wal.record.TxRecord;
@@ -177,29 +178,15 @@ public abstract class AbstractConsistentCutBlockingTest extends AbstractConsiste
 
         initLatches();
 
-        Integer cutBlkNode = null;
+        int cutBlkNode = -1;
 
-        if (cutBlkType != BlkCutType.NONE) {
+        if (cutBlkType != BlkCutType.NONE)
             cutBlkNode = blkNode(nearNodeId, cutBlkNodeType, c);
 
-            assert cutBlkNode != null : c;
-
-            if (cutBlkNode == 0) {
-                log.info("SKIP CASE (to avoid block coordinator) " + caseNum + ". Data=" + c + ", nearNodeId=" + nearNodeId);
-
-                return;
-            }
-        }
-
         if (txBlkNodeType != null) {
-            Integer id = blkNode(nearNodeId, txBlkNodeType, c);
+            int id = blkNode(nearNodeId, txBlkNodeType, c);
 
-            assert id != null || txBlkNodeType == BlkNodeType.BACKUP : c;
-
-            if (id != null)
-                txBlkNodeId = grid(id).localNode().id();
-            else
-                txBlkNodeId = null;
+            txBlkNodeId = grid(id).localNode().id();
         }
         else
             txBlkNodeId = null;
@@ -219,7 +206,7 @@ public abstract class AbstractConsistentCutBlockingTest extends AbstractConsiste
         txLatch.await(100, TimeUnit.MILLISECONDS);
 
         // 3. Start Consistent Cut procedure concurrently with running transaction.
-        if (cutBlkNode != null)
+        if (cutBlkNode != -1)
             BlockingConsistentCutManager.cutMgr(grid(cutBlkNode)).block(cutBlkType);
 
         triggerConsistentCut();
@@ -234,7 +221,7 @@ public abstract class AbstractConsistentCutBlockingTest extends AbstractConsiste
         txFut.get(getTestTimeout(), TimeUnit.MILLISECONDS);
 
         // 8. Resume the blocking Consistent Cut.
-        if (cutBlkNode != null)
+        if (cutBlkNode != -1)
             BlockingConsistentCutManager.cutMgr(grid(cutBlkNode)).unblock(cutBlkType);
 
         // 9. Await while Consistent Cut completed.
@@ -274,30 +261,13 @@ public abstract class AbstractConsistentCutBlockingTest extends AbstractConsiste
     }
 
     /** Finds ID of node to be blocked during a case. */
-    private Integer blkNode(int nearNodeId, BlkNodeType blkNodeType, List<T2<Integer, Integer>> c) {
-        Integer node = null;
-
+    private int blkNode(int nearNodeId, BlkNodeType blkNodeType, List<T2<Integer, Integer>> c) {
         if (blkNodeType == NEAR)
-            node = nearNodeId;
-        else if (blkNodeType == PRIMARY) {
-            for (T2<Integer, Integer> cc: c) {
-                node = cc.get1();
-
-                if (node != 0)
-                    break;
-            }
-
-        }
-        else {
-            for (T2<Integer, Integer> cc: c) {
-                node = cc.get2();
-
-                if (node == null || node != 0)
-                    break;
-            }
-        }
-
-        return node;
+            return nearNodeId;
+        else if (blkNodeType == PRIMARY)
+            return c.get(0).get1();
+        else
+            return c.get(0).get2();
     }
 
     /** Manually triggers new Consistent Cut. */
@@ -457,7 +427,13 @@ public abstract class AbstractConsistentCutBlockingTest extends AbstractConsiste
             if (beforeVerUpd != null) {
                 blocked = true;
 
-                U.awaitQuiet(beforeVerUpd);
+                try {
+                    // Just hang for 100ms to make other threads do their work.
+                    U.await(beforeVerUpd, 100, TimeUnit.MILLISECONDS);
+                }
+                catch (IgniteInterruptedCheckedException e) {
+                    // No-op.
+                }
             }
 
             return new BlockingConsistentCut(ctx.cache().context());

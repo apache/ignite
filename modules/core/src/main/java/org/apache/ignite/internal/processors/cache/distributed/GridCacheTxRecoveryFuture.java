@@ -279,8 +279,7 @@ public class GridCacheTxRecoveryFuture extends GridCacheCompoundIdentityFuture<B
 
                     add(fut);
 
-                    GridCacheTxRecoveryRequest req = new GridCacheTxRecoveryRequest(
-                        tx,
+                    GridCacheTxRecoveryRequest req = new GridCacheTxRecoveryRequest(tx,
                         nodeTransactions(id),
                         false,
                         futureId(),
