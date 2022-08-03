@@ -20,9 +20,11 @@ package org.apache.ignite.internal.client.thin;
 import java.util.Collection;
 import java.util.HashMap;
 import java.util.Map;
+import org.apache.ignite.client.ClientCacheConfiguration;
 import org.apache.ignite.client.IgniteClient;
 import org.apache.ignite.client.Person;
 import org.apache.ignite.internal.processors.cache.version.GridCacheVersion;
+import org.apache.ignite.internal.processors.platform.cache.expiry.PlatformExpiryPolicy;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.T2;
 import org.junit.Test;
@@ -30,6 +32,7 @@ import org.junit.runner.RunWith;
 import org.junit.runners.Parameterized;
 
 import static org.apache.ignite.testframework.GridTestUtils.cartesianProduct;
+import static org.apache.ignite.testframework.GridTestUtils.waitForCondition;
 
 /**
  * Data replication operations test.
@@ -84,26 +87,16 @@ public class DataReplicationOperationsTest extends AbstractThinClientTest {
         super.afterTestsStopped();
 
         client.close();
-
-        stopAllGrids();
     }
 
     /** */
     @Test
     public void testPutAllConflict() {
-        Map<Object, T2<Object, GridCacheVersion>> map = new HashMap<>();
+        Map<Object, T2<Object, GridCacheVersion>> data = createPutAllData();
 
-        for (int i = 0; i < KEYS_CNT; i++) {
-            Person key = new Person(i, "Person-" + i);
-            Person val = new Person(i, "Person-" + i);
+        cache.putAllConflict(data);
 
-            map.put(binary ? client.binary().toBinary(key) : key,
-                new T2<>(binary ? client.binary().toBinary(val) : val, otherVer));
-        }
-
-        cache.putAllConflict(map);
-
-        map.forEach((key, val) -> assertEquals(val.get1(), cache.get(key)));
+        data.forEach((key, val) -> assertEquals(val.get1(), cache.get(key)));
     }
 
     /** */
@@ -123,5 +116,46 @@ public class DataReplicationOperationsTest extends AbstractThinClientTest {
         cache.removeAllConflict(map);
 
         map.keySet().forEach(key -> assertFalse(cache.containsKey(key)));
+    }
+
+    /** @throws Exception If fails. */
+    @Test
+    public void testWithExpiryPolicy() throws Exception {
+        PlatformExpiryPolicy expPlc = new PlatformExpiryPolicy(1000, 1000, 1000);
+
+        ClientCacheConfiguration ccfgWithExpPlc = new ClientCacheConfiguration()
+            .setName("cache-with-expiry-policy")
+            .setExpiryPolicy(expPlc);
+
+        TcpClientCache<Object, Object> cache = (TcpClientCache<Object, Object>)client.getOrCreateCache(ccfgWithExpPlc);
+
+        TcpClientCache<Object, Object> cacheWithExpPlc = binary ?
+            (TcpClientCache<Object, Object>)cache.withKeepBinary() : cache;
+
+        Map<Object, T2<Object, GridCacheVersion>> data = createPutAllData();
+
+        cacheWithExpPlc.putAllConflict(data);
+
+        assertTrue(cacheWithExpPlc.containsKeys(data.keySet()));
+
+        assertTrue(waitForCondition(
+            () -> data.keySet().stream().noneMatch(cacheWithExpPlc::containsKey),
+            2 * expPlc.getExpiryForCreation().getDurationAmount()
+        ));
+    }
+
+    /** */
+    private Map<Object, T2<Object, GridCacheVersion>> createPutAllData() {
+        Map<Object, T2<Object, GridCacheVersion>> map = new HashMap<>();
+
+        for (int i = 0; i < KEYS_CNT; i++) {
+            Person key = new Person(i, "Person-" + i);
+            Person val = new Person(i, "Person-" + i);
+
+            map.put(binary ? client.binary().toBinary(key) : key,
+                new T2<>(binary ? client.binary().toBinary(val) : val, otherVer));
+        }
+
+        return map;
     }
 }
