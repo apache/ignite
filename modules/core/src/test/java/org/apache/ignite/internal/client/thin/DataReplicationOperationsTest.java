@@ -65,21 +65,21 @@ public class DataReplicationOperationsTest extends AbstractThinClientTest {
     @Override protected void beforeTestsStarted() throws Exception {
         super.beforeTestsStarted();
 
-        startGrid(0);
+        startGrid();
 
-        client = startClient(0);
+        client = startClient(grid());
     }
 
     /** {@inheritDoc} */
     @Override protected void beforeTest() throws Exception {
         super.beforeTest();
 
-        cache = (TcpClientCache<Object, Object>)client.getOrCreateCache(DEFAULT_CACHE_NAME);
+        grid().destroyCaches(grid().cacheNames());
+
+        cache = (TcpClientCache<Object, Object>)client.createCache(DEFAULT_CACHE_NAME);
 
         if (binary)
             cache = (TcpClientCache<Object, Object>)cache.withKeepBinary();
-
-        cache.removeAll();
     }
 
     /** {@inheritDoc} */

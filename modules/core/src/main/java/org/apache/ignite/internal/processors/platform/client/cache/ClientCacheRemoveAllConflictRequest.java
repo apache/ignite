@@ -20,7 +20,6 @@ package org.apache.ignite.internal.processors.platform.client.cache;
 import java.util.LinkedHashMap;
 import java.util.Map;
 import org.apache.ignite.IgniteCheckedException;
-import org.apache.ignite.IgniteException;
 import org.apache.ignite.internal.binary.BinaryReaderExImpl;
 import org.apache.ignite.internal.client.thin.TcpClientCache;
 import org.apache.ignite.internal.processors.cache.KeyCacheObject;
@@ -28,6 +27,7 @@ import org.apache.ignite.internal.processors.cache.version.GridCacheVersion;
 import org.apache.ignite.internal.processors.platform.client.ClientConnectionContext;
 import org.apache.ignite.internal.processors.platform.client.ClientResponse;
 import org.apache.ignite.internal.processors.platform.client.tx.ClientTxAwareRequest;
+import org.apache.ignite.internal.util.typedef.internal.U;
 
 import static org.apache.ignite.internal.processors.platform.utils.PlatformUtils.readCacheObject;
 
@@ -64,7 +64,7 @@ public class ClientCacheRemoveAllConflictRequest extends ClientCacheDataRequest 
             cachex(ctx).removeAllConflict(map);
         }
         catch (IgniteCheckedException e) {
-            throw new IgniteException(e);
+            throw U.convertException(e);
         }
 
         return super.process(ctx);
