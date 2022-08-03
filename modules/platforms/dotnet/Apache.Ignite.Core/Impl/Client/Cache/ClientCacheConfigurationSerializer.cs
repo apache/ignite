@@ -226,7 +226,7 @@ namespace Apache.Ignite.Core.Impl.Client.Cache
             writer.WriteInt(cfg.Backups);
             
             code(Op.CacheMode);
-            writer.WriteInt((int)cfg.CacheMode);
+            writer.WriteInt(IgniteUtils.CacheModeToInt(cfg.CacheMode));
             
             code(Op.CopyOnRead);
             writer.WriteBoolean(cfg.CopyOnRead);
@@ -410,7 +410,7 @@ namespace Apache.Ignite.Core.Impl.Client.Cache
 
             cfg.AtomicityMode = (CacheAtomicityMode)reader.ReadInt();
             cfg.Backups = reader.ReadInt();
-            cfg.CacheMode = (CacheMode)reader.ReadInt();
+            cfg.CacheMode = IgniteUtils.CacheModeFromInt(reader.ReadInt());
             cfg.CopyOnRead = reader.ReadBoolean();
             cfg.DataRegionName = reader.ReadString();
             cfg.EagerTtl = reader.ReadBoolean();
