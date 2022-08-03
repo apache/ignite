@@ -687,16 +687,8 @@ namespace Apache.Ignite.Core.Tests.Cache
             int key0;
             int key1;
 
-            if (LocalCache())
-            {
-                key0 = 0;
-                key1 = 1;
-            }
-            else
-            {
-                key0 = GetPrimaryKeyForCache(cache0);
-                key1 = GetPrimaryKeyForCache(Cache(1));
-            }
+            key0 = GetPrimaryKeyForCache(cache0);
+            key1 = GetPrimaryKeyForCache(Cache(1));
 
             // Test unchanged expiration.
             ICache<int, int> cache = withPolicyFunc(cache0, new ExpiryPolicy(null, null, null));
@@ -799,16 +791,8 @@ namespace Apache.Ignite.Core.Tests.Cache
             int key0;
             int key1;
 
-            if (LocalCache())
-            {
-                key0 = 0;
-                key1 = 1;
-            }
-            else
-            {
-                key0 = GetPrimaryKeyForCache(cache0);
-                key1 = GetPrimaryKeyForCache(Cache(1));
-            }
+            key0 = GetPrimaryKeyForCache(cache0);
+            key1 = GetPrimaryKeyForCache(Cache(1));
 
             // Test zero expiration.
             var cache = cache0.WithExpiryPolicy(new ExpiryPolicy(TimeSpan.Zero, TimeSpan.Zero, TimeSpan.Zero));
@@ -1228,7 +1212,7 @@ namespace Apache.Ignite.Core.Tests.Cache
             Assert.AreEqual(GridCount() * 2, cache0.GetSize(CachePeekMode.Primary));
             Assert.AreEqual(GridCount() * 2, cache0.GetSizeLong(CachePeekMode.Primary));
 
-            if (!LocalCache() && !ReplicatedCache())
+            if (!ReplicatedCache())
             {
                 int nearKey = NearKeyForCache(cache0);
 
@@ -1784,10 +1768,7 @@ namespace Apache.Ignite.Core.Tests.Cache
                 for (int i = 0; i < 1000; i++)
                     parts.Add(aff.GetPartition(i));
 
-                if (LocalCache())
-                    Assert.AreEqual(1, parts.Count);
-                else
-                    Assert.IsTrue(parts.Count > 10);
+                Assert.IsTrue(parts.Count > 10);
             }
 
             {
@@ -1796,10 +1777,7 @@ namespace Apache.Ignite.Core.Tests.Cache
                 for (int i = 0; i < 1000; i++)
                     parts.Add(aff.GetPartition("key" + i));
 
-                if (LocalCache())
-                    Assert.AreEqual(1, parts.Count);
-                else
-                    Assert.IsTrue(parts.Count > 10);
+                Assert.IsTrue(parts.Count > 10);
             }
         }
 
@@ -1997,32 +1975,19 @@ namespace Apache.Ignite.Core.Tests.Cache
         {
             ICacheAffinity aff = Affinity();
 
-            if (LocalCache())
+            IList<int> parts = new List<int> { 1, 2, 3 };
+
+            IDictionary<int, IClusterNode> map = aff.MapPartitionsToNodes(parts);
+
+            Assert.AreEqual(parts.Count, map.Count);
+
+            foreach (int part in parts)
             {
-                IList<int> parts = new List<int> { 0 };
+                Assert.IsTrue(map.ContainsKey(part));
 
-                IDictionary<int, IClusterNode> map = aff.MapPartitionsToNodes(parts);
+                IClusterNode primary = aff.MapPartitionToNode(part);
 
-                Assert.AreEqual(parts.Count, map.Count);
-
-                Assert.AreEqual(GetIgnite(0).GetCluster().GetLocalNode(), map[0]);
-            }
-            else
-            {
-                IList<int> parts = new List<int> { 1, 2, 3 };
-
-                IDictionary<int, IClusterNode> map = aff.MapPartitionsToNodes(parts);
-
-                Assert.AreEqual(parts.Count, map.Count);
-
-                foreach (int part in parts)
-                {
-                    Assert.IsTrue(map.ContainsKey(part));
-
-                    IClusterNode primary = aff.MapPartitionToNode(part);
-
-                    Assert.AreEqual(primary, map[part], "Wrong node for partition: " + part);
-                }
+                Assert.AreEqual(primary, map[part], "Wrong node for partition: " + part);
             }
         }
 
@@ -2509,11 +2474,6 @@ namespace Apache.Ignite.Core.Tests.Cache
         }
 
         protected virtual bool NearEnabled()
-        {
-            return false;
-        }
-
-        protected virtual bool LocalCache()
         {
             return false;
         }

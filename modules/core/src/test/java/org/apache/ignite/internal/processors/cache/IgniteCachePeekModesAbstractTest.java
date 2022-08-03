@@ -117,32 +117,6 @@ public abstract class IgniteCachePeekModesAbstractTest extends IgniteCacheAbstra
     }
 
     /**
-     * @throws Exception If failed.
-     */
-    private void checkAffinityLocalCache() throws Exception {
-        IgniteCache<Integer, String> cache0 = jcache(0);
-
-        final String val = "1";
-
-        for (int i = 0; i < HEAP_ENTRIES; i++)
-            cache0.put(i, val);
-
-        try {
-            for (int i = 0; i < HEAP_ENTRIES; i++) {
-                assertEquals(val, cache0.localPeek(i));
-                assertEquals(val, cache0.localPeek(i, ALL));
-                assertEquals(val, cache0.localPeek(i, PRIMARY));
-                assertEquals(val, cache0.localPeek(i, BACKUP));
-                assertEquals(val, cache0.localPeek(i, NEAR));
-            }
-        }
-        finally {
-            for (int i = 0; i < HEAP_ENTRIES; i++)
-                cache0.remove(i);
-        }
-    }
-
-    /**
      * @param nodeIdx Node index.
      * @throws Exception If failed.
      */
