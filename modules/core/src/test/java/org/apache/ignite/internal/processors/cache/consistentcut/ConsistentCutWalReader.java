@@ -62,13 +62,6 @@ class ConsistentCutWalReader {
     /** Collection of Consistent Cut states. */
     public final List<NodeConsistentCutState> cuts = new ArrayList<>();
 
-    /** Initied cut version. Counter -> Consistent Cut Version */
-    private final Map<Long, Long> cutVers = new HashMap<Long, Long>() {
-        {
-            put(1L, null);
-        }
-    };
-
     /** Collection of transactions was run within a test. */
     private final Map<IgniteUuid, Integer> txNearNode;
 
@@ -293,8 +286,8 @@ class ConsistentCutWalReader {
     private void handleTxRecord(TxRecord tx, NodeConsistentCutState cut, boolean awaited) {
         IgniteUuid uid = tx.nearXidVersion().asIgniteUuid();
 
-        if (tx.state() == TransactionState.COMMITTED || tx.state() == TransactionState.ROLLED_BACK) {
-            if (cut.addFinishedTx(uid, tx.state() == TransactionState.COMMITTED))
+        if (tx.state() == TransactionState.COMMITTED) {
+            if (cut.addFinishedTx(uid))
                 logCommittedTxRecord(tx, cut);
             else
                 log("--- TX[id=" + uid + ", state=" + tx.state() + "]");
@@ -362,15 +355,7 @@ class ConsistentCutWalReader {
 
     /** */
     private ConsistentCutStartRecord handleStartConsistentCutRecord(ConsistentCutStartRecord rec, NodeConsistentCutState cut) {
-        if (cutVers.get(cut.ver) != null) {
-            log("SKIP START " + cut.ver + " CUT[" + rec + "]");
-
-            return null;
-        }
-
         log("START " + cut.ver + " CUT[" + rec + "], state = " + cut);
-
-        cutVers.put(cut.ver, rec.version().version());
 
         assert cut.ver == rec.version().version() : cut.ver + " " + rec.version().version();
 
@@ -439,12 +424,6 @@ class ConsistentCutWalReader {
         @GridToStringInclude
         final Set<IgniteUuid> committedTx = new HashSet<>();
 
-        /**
-         * Roll-backed transactions.
-         */
-        @GridToStringInclude
-        final Set<IgniteUuid> rolledBackTx = new HashSet<>();
-
         /** Transactions to exclude from this state while reading WAL. */
         @GridToStringInclude
         Set<IgniteUuid> txExclude;
@@ -481,15 +460,12 @@ class ConsistentCutWalReader {
         }
 
         /** */
-        public boolean addFinishedTx(IgniteUuid txId, boolean commitOrRollback) {
+        public boolean addFinishedTx(IgniteUuid txId) {
             if (txExclude != null && txExclude.contains(txId))
                 return false;
 
-            if (txParticipate(txId, !commitOrRollback)) {
-                if (commitOrRollback)
-                    committedTx.add(txId);
-                else
-                    rolledBackTx.add(txId);
+            if (txParticipate(txId)) {
+                committedTx.add(txId);
 
                 return true;
             }
@@ -537,7 +513,7 @@ class ConsistentCutWalReader {
          *
          * @return {@code true} if this node participated in this tx, otherwise {@code false}.
          */
-        private boolean txParticipate(IgniteUuid txId, boolean rollBack) {
+        private boolean txParticipate(IgniteUuid txId) {
             // Artifacts from previous cut states.
             if (!txParticipations.containsKey(txId))
                 return false;
@@ -548,12 +524,10 @@ class ConsistentCutWalReader {
 
             // For 2PC case when node participate as near and backup. Then it will have first COMMITTED record without data entries.
             if (!p.started) {
-                assert rollBack || p.maybeNear : txId + " " + p + " " + rollBack;
+                assert p.maybeNear : txId + " " + p;
 
                 return false;
             }
-            else
-                assert !rollBack : txId + " " + p + " " + rollBack;
 
             boolean isParticipate = p.participate();
 

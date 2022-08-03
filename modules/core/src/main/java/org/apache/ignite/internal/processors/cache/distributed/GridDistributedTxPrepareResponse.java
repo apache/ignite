@@ -60,7 +60,7 @@ public class GridDistributedTxPrepareResponse extends GridDistributedBaseMessage
     protected byte flags;
 
     /** Version of the latest known Consistent Cut on local node. */
-    private ConsistentCutVersion latestCutVer;
+    private ConsistentCutVersion cutVer;
 
     /**
      * Version of the latest Consistent Cut AFTER which this transaction committed.
@@ -154,13 +154,13 @@ public class GridDistributedTxPrepareResponse extends GridDistributedBaseMessage
     }
 
     /** {@inheritDoc} */
-    @Override public ConsistentCutVersion latestCutVersion() {
-        return latestCutVer;
+    @Override public ConsistentCutVersion cutVersion() {
+        return cutVer;
     }
 
     /** */
-    public void latestCutVersion(ConsistentCutVersion latestCutVer) {
-        this.latestCutVer = latestCutVer;
+    public void cutVersion(ConsistentCutVersion cutVer) {
+        this.cutVer = cutVer;
     }
 
     /** {@inheritDoc} */
@@ -233,7 +233,7 @@ public class GridDistributedTxPrepareResponse extends GridDistributedBaseMessage
                 writer.incrementState();
 
             case 11:
-                if (!writer.writeMessage("latestCutVer", latestCutVer))
+                if (!writer.writeMessage("cutVer", cutVer))
                     return false;
 
                 writer.incrementState();
@@ -285,7 +285,7 @@ public class GridDistributedTxPrepareResponse extends GridDistributedBaseMessage
                 reader.incrementState();
 
             case 11:
-                latestCutVer = reader.readMessage("latestCutVer");
+                cutVer = reader.readMessage("cutVer");
 
                 if (!reader.isLastRead())
                     return false;

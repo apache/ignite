@@ -34,9 +34,6 @@ import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.junit.runners.Parameterized;
 
-import static org.apache.ignite.internal.processors.cache.consistentcut.AbstractConsistentCutTest.TestConsistentCutManager.disableConsistentCutScheduling;
-import static org.apache.ignite.internal.processors.cache.consistentcut.AbstractConsistentCutTest.TestConsistentCutManager.enableConsistentCutScheduling;
-
 /** Load Ignite with transactions and starts Consistent Cut concurrently. */
 @RunWith(Parameterized.class)
 public class ConcurrentTxsConsistentCutTest extends AbstractConsistentCutTest {
@@ -68,7 +65,7 @@ public class ConcurrentTxsConsistentCutTest extends AbstractConsistentCutTest {
     @Override protected void beforeTest() throws Exception {
         super.beforeTest();
 
-        enableConsistentCutScheduling(grid(0));
+        TestConsistentCutManager.cutMgr(grid(0)).scheduleConsistentCut();
     }
 
     /** */
@@ -105,7 +102,7 @@ public class ConcurrentTxsConsistentCutTest extends AbstractConsistentCutTest {
 
         awaitConsistentCuts(CUTS);
 
-        disableConsistentCutScheduling(grid(0));
+        TestConsistentCutManager.cutMgr(grid(0)).disableScheduling(false);
 
         stopLoadLatch.countDown();
 

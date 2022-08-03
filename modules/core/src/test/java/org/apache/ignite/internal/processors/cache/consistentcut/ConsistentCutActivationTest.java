@@ -53,7 +53,7 @@ public class ConsistentCutActivationTest extends AbstractConsistentCutTest {
     public void testConsistentCutStartedOnSnapshotRestore() {
         grid(1).context().cache().context().snapshotMgr().createSnapshot("snp").get();
 
-        TestConsistentCutManager.disableConsistentCutScheduling(grid(0));
+        TestConsistentCutManager.cutMgr(grid(0)).disableScheduling(false);
 
         assertConsistentCutDisabled(null);
 
@@ -67,7 +67,7 @@ public class ConsistentCutActivationTest extends AbstractConsistentCutTest {
     /** */
     @Test
     public void testConsistentCutStoppedOnServerFailed() {
-        TestConsistentCutManager.enableConsistentCutScheduling(grid(0));
+        TestConsistentCutManager.cutMgr(grid(0)).scheduleConsistentCut();
 
         assertConsistentCutEnabled();
 
@@ -79,7 +79,7 @@ public class ConsistentCutActivationTest extends AbstractConsistentCutTest {
     /** */
     @Test
     public void testConsistentCutStoppedOnServerAdd() throws Exception {
-        TestConsistentCutManager.enableConsistentCutScheduling(grid(0));
+        TestConsistentCutManager.cutMgr(grid(0)).scheduleConsistentCut();
 
         assertConsistentCutEnabled();
 
@@ -91,7 +91,7 @@ public class ConsistentCutActivationTest extends AbstractConsistentCutTest {
     /** */
     @Test
     public void testClusterActivationNotAffect() throws Exception {
-        TestConsistentCutManager.enableConsistentCutScheduling(grid(0));
+        TestConsistentCutManager.cutMgr(grid(0)).scheduleConsistentCut();
 
         assertConsistentCutEnabled();
 

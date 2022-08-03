@@ -24,7 +24,6 @@ import org.apache.ignite.plugin.extensions.communication.Message;
 import org.apache.ignite.plugin.extensions.communication.MessageReader;
 import org.apache.ignite.plugin.extensions.communication.MessageWriter;
 import org.jetbrains.annotations.NotNull;
-import org.jetbrains.annotations.Nullable;
 
 /**
  * Composite version of Consistent Cut. It consists of two fields: incremental version and timestamp of starting
@@ -124,11 +123,6 @@ public class ConsistentCutVersion implements Message, Comparable<ConsistentCutVe
     /** {@inheritDoc} */
     @Override public int hashCode() {
         return Long.hashCode(ver);
-    }
-
-    /** {@code null} means the least possible version. */
-    public int compareToNullable(@Nullable ConsistentCutVersion o) {
-        return o == null ? 1 : compareTo(o);
     }
 
     /** {@inheritDoc} */

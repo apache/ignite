@@ -41,9 +41,6 @@ import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.managers.communication.GridIoMessage;
 import org.apache.ignite.internal.pagemem.wal.IgniteWriteAheadLogManager;
 import org.apache.ignite.internal.pagemem.wal.WALIterator;
-import org.apache.ignite.internal.processors.cache.GridCacheSharedContext;
-import org.apache.ignite.internal.processors.cache.distributed.GridCacheTxRecoveryRequest;
-import org.apache.ignite.internal.processors.cache.distributed.GridCacheTxRecoveryResponse;
 import org.apache.ignite.internal.processors.cache.distributed.GridDistributedTxFinishResponse;
 import org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtTxFinishRequest;
 import org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtTxPrepareRequest;
@@ -68,6 +65,7 @@ import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.apache.ignite.transactions.TransactionState;
 import org.jetbrains.annotations.Nullable;
 
+import static org.apache.ignite.internal.processors.cache.consistentcut.AbstractConsistentCutTest.TestConsistentCutManager.cutMgr;
 import static org.apache.ignite.internal.processors.cache.consistentcut.ConsistentCutWalReader.NodeConsistentCutState.INCOMPLETE;
 
 /** Base class for testing Consistency Cut algorithm. */
@@ -146,16 +144,17 @@ public abstract class AbstractConsistentCutTest extends GridCommonAbstractTest {
      *
      * @param cutVer Consistent Cut version.
      */
-    protected void awaitGlobalCutVersionReceived(long cutVer) throws Exception {
+    protected void awaitGlobalCutVersionReceived(long cutVer, @Nullable Integer exclNodeId) throws Exception {
         awaitGlobalCutEvent((ign) ->
-            cutMgr(ign).latestKnownCutVersion().version() == cutVer, "CutVersionReceived " + cutVer);
+            cutMgr(ign).cutVersion().version() == cutVer, "CutVersionReceived " + cutVer, exclNodeId);
     }
 
     /**
      * Await global Consistent Cut has completed, and Ignite is ready for new Consistent Cut.
      *
      * @param expCutVer Expected Consistent Cut version.
-     * @param strict If {@code true} then await exactly specified version, otherwise any greater than specified.
+     * @param strict If {@code true} then await exactly specified version, otherwise it finishes after getting version
+     *               greater than specified.
      * @return Actual version of the latest finished Consistent Cut.
      */
     protected long awaitGlobalCutReady(long expCutVer, boolean strict) throws Exception {
@@ -181,7 +180,7 @@ public abstract class AbstractConsistentCutTest extends GridCommonAbstractTest {
             }
 
             return false;
-        }, "GlobalCutReady " + expCutVer + " " + strict);
+        }, "GlobalCutReady " + expCutVer + " " + strict, null);
 
         // Await all nodes sent finish responses and coordinator received all of them.
         GridTestUtils.waitForCondition(() ->
@@ -193,9 +192,19 @@ public abstract class AbstractConsistentCutTest extends GridCommonAbstractTest {
     /**
      * Await global Consistent Cut event has finished.
      */
-    protected void awaitGlobalCutEvent(Function<IgniteEx, Boolean> cutEvtPredicate, String evt) throws Exception {
+    private void awaitGlobalCutEvent(
+        Function<IgniteEx, Boolean> cutEvtPredicate,
+        String evt,
+        @Nullable Integer exclNodeId
+    ) throws Exception {
         boolean rdy = GridTestUtils.waitForCondition(() ->
             G.allGrids().stream()
+                .filter(ign -> {
+                    if (exclNodeId != null)
+                        return !ign.cluster().localNode().consistentId().equals(consistentIds.get(exclNodeId));
+
+                    return true;
+                })
                 .allMatch(ign -> cutEvtPredicate.apply((IgniteEx)ign)), 60_000, 10);
 
         if (rdy)
@@ -207,7 +216,7 @@ public abstract class AbstractConsistentCutTest extends GridCommonAbstractTest {
         bld.append("\n\tCoordinator node0 = ").append(U.isLocalNodeCoordinator(grid(0).context().discovery()));
 
         for (int i = 0; i < nodes(); i++)
-            bld.append("\n\tNode").append(i).append( ": ").append(cutMgr(grid(i)).latestKnownCutVersion());
+            bld.append("\n\tNode").append(i).append( ": ").append(cutMgr(grid(i)).cutVersion());
 
         throw new Exception(bld.toString());
     }
@@ -276,22 +285,6 @@ public abstract class AbstractConsistentCutTest extends GridCommonAbstractTest {
      * @param cuts       Number of Consistent Cuts was run within a test.
      */
     protected void checkWalsConsistency(Map<IgniteUuid, Integer> txNearNode, int cuts) throws Exception {
-        checkWalsConsistency(txNearNode, cuts, true);
-    }
-
-    /**
-     * Checks WALs for correct Consistency Cut.
-     *
-     * @param txNearNode Collection of transactions was run within a test. Key is transaction ID, value is near node ID.
-     * @param cuts       Number of Consistent Cuts was run within a test.
-     * @param strictAmountCheck If {@code true} than amount of transactions parsed from WAL must be equal amount of transactions
-     *                          in txNearNode. If {@code false} then check only that amount of transactions isn't 0.
-     */
-    protected void checkWalsConsistency(
-        Map<IgniteUuid, Integer> txNearNode,
-        int cuts,
-        boolean strictAmountCheck
-    ) throws Exception {
         Map<Integer, Short> top = stopCluster();
 
         List<ConsistentCutWalReader> states = new ArrayList<>();
@@ -337,23 +330,10 @@ public abstract class AbstractConsistentCutTest extends GridCommonAbstractTest {
 
                     assertTrue(prevState == null || prevState == TransactionState.COMMITTED);
                 }
-
-                for (IgniteUuid uid: state.rolledBackTx) {
-                    T2<Long, Integer> prev = txMap.get(uid);
-
-                    assertNull("Transaction miscommitted: " + uid + ". Committed Node " + prev +
-                            ". Rollbacked Node " + nodeId + ". Version =" + state.ver,
-                        prev);
-
-                    TransactionState prevState = txStates.put(uid, TransactionState.ROLLED_BACK);
-
-                    assertTrue(prevState == null || prevState == TransactionState.ROLLED_BACK);
-                }
             }
         }
 
-        if (strictAmountCheck)
-            assertEquals(txNearNode.size(), txStates.size());
+        assertEquals(txNearNode.size(), txStates.size());
     }
 
     /** */
@@ -367,7 +347,7 @@ public abstract class AbstractConsistentCutTest extends GridCommonAbstractTest {
     }
 
     /** Get iterator over WAL. */
-    private WALIterator walIter(int nodeIdx) throws Exception {
+    protected WALIterator walIter(int nodeIdx) throws Exception {
         String workDir = U.defaultWorkDirectory();
 
         IgniteWalIteratorFactory factory = new IgniteWalIteratorFactory(log);
@@ -381,11 +361,6 @@ public abstract class AbstractConsistentCutTest extends GridCommonAbstractTest {
             .filesOrDirs(wal, archive);
 
         return factory.iterator(params);
-    }
-
-    /** */
-    private static TestConsistentCutManager cutMgr(IgniteEx ign) {
-        return (TestConsistentCutManager)ign.context().cache().context().consistentCutMgr();
     }
 
     /** */
@@ -407,27 +382,20 @@ public abstract class AbstractConsistentCutTest extends GridCommonAbstractTest {
     /** ConsistentCutManager with possibility to disable schedulling Consistent Cuts manually. */
     protected static class TestConsistentCutManager extends ConsistentCutManager {
         /** */
+        static TestConsistentCutManager cutMgr(IgniteEx ign) {
+            return (TestConsistentCutManager)ign.context().cache().context().consistentCutMgr();
+        }
+
+        /** */
         boolean consistentCutFinished(long cutVer) {
             return U.isLocalNodeCoordinator(cctx.discovery())
-                && latestKnownCutVersion().version() == cutVer
+                && cutVersion().version() == cutVer
                 && notFinishedSrvNodes == null;
         }
 
         /** */
         public ConsistentCutState currCutState() {
             return CONSITENT_CUT_STATE.get(this);
-        }
-
-        /** */
-        static void enableConsistentCutScheduling(IgniteEx ign) {
-            GridCacheSharedContext<?, ?> cctx = ign.context().cache().context();
-
-            cctx.consistentCutMgr().scheduleConsistentCut();
-        }
-
-        /** */
-        static void disableConsistentCutScheduling(IgniteEx ign) {
-            cutMgr(ign).disableScheduling(false);
         }
 
         /** */
@@ -480,7 +448,7 @@ public abstract class AbstractConsistentCutTest extends GridCommonAbstractTest {
                 GridDhtTxFinishRequest m = (GridDhtTxFinishRequest)msg;
 
                 bld
-                    .append("; lastCutVer=").append(m.latestCutVersion())
+                    .append("; lastCutVer=").append(m.cutVersion())
                     .append("; nearTxVer=").append(m.nearXidVersion().asIgniteUuid())
                     .append("; txVer=").append(m.xidVersion().asIgniteUuid())
                     .append("; txCutVer=").append(m.txCutVersion());
@@ -489,7 +457,7 @@ public abstract class AbstractConsistentCutTest extends GridCommonAbstractTest {
                 GridNearTxFinishRequest m = (GridNearTxFinishRequest)msg;
 
                 bld
-                    .append("; lastCutVer=").append(m.latestCutVersion())
+                    .append("; lastCutVer=").append(m.cutVersion())
                     .append("; nearTxVer=").append(m.nearXidVersion().asIgniteUuid())
                     .append("; txVer=").append(m.xidVersion().asIgniteUuid())
                     .append("; txCutVer=").append(m.txCutVersion());
@@ -504,7 +472,7 @@ public abstract class AbstractConsistentCutTest extends GridCommonAbstractTest {
                 GridDhtTxPrepareRequest m = (GridDhtTxPrepareRequest)msg;
 
                 bld
-                    .append("; lastCutVer=").append(m.latestCutVersion())
+                    .append("; lastCutVer=").append(m.cutVersion())
                     .append("; ver=").append(m.version().asIgniteUuid())
                     .append("; 1PC=").append((m.onePhaseCommit()));
             }
@@ -512,7 +480,7 @@ public abstract class AbstractConsistentCutTest extends GridCommonAbstractTest {
                 GridNearTxPrepareRequest m = (GridNearTxPrepareRequest)msg;
 
                 bld
-                    .append("; lastCutVer=").append(m.latestCutVersion())
+                    .append("; lastCutVer=").append(m.cutVersion())
                     .append("; ver=").append(m.version().asIgniteUuid())
                     .append("; 1PC=").append((m.onePhaseCommit()));
             }
@@ -520,7 +488,7 @@ public abstract class AbstractConsistentCutTest extends GridCommonAbstractTest {
                 GridDhtTxPrepareResponse m = (GridDhtTxPrepareResponse)msg;
 
                 bld
-                    .append("; lastCutVer=").append(m.latestCutVersion())
+                    .append("; lastCutVer=").append(m.cutVersion())
                     .append("; nearTxVer=").append(m.nearXidVersion().asIgniteUuid())
                     .append("; txVer=").append(m.xidVersion().asIgniteUuid())
                     .append("; txCutVer=").append((m.txCutVersion()))
@@ -530,26 +498,11 @@ public abstract class AbstractConsistentCutTest extends GridCommonAbstractTest {
                 GridNearTxPrepareResponse m = (GridNearTxPrepareResponse)msg;
 
                 bld
-                    .append("; lastCutVer=").append(m.latestCutVersion())
+                    .append("; lastCutVer=").append(m.cutVersion())
                     .append("; nearTxVer=").append(m.nearXidVersion().asIgniteUuid())
                     .append("; txVer=").append(m.xidVersion().asIgniteUuid())
                     .append("; txCutVer=").append((m.txCutVersion()))
                     .append("; 1PC=").append((m.onePhaseCommit()));
-            }
-            else if (msg instanceof GridCacheTxRecoveryRequest) {
-                GridCacheTxRecoveryRequest m = (GridCacheTxRecoveryRequest)msg;
-
-                bld
-                    .append("; lastCutVer=").append(m.latestCutVersion())
-                    .append("; nearTxVer=").append(m.nearXidVersion().asIgniteUuid())
-                    .append("; txCutVer=").append((m.txCutVersion()));
-            }
-            else if (msg instanceof GridCacheTxRecoveryResponse) {
-                GridCacheTxRecoveryResponse m = (GridCacheTxRecoveryResponse)msg;
-
-                bld
-                    .append("; lastCutVer=").append(m.latestCutVersion())
-                    .append("; commitInfo=").append(m.commit());
             }
 
             log.info(bld.toString());

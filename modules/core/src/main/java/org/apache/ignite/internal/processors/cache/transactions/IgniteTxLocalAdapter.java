@@ -1048,7 +1048,8 @@ public abstract class IgniteTxLocalAdapter extends IgniteTxAdapter implements Ig
     ) throws IgniteCheckedException {
         assert onePhaseCommit();
 
-        txCutVersion(txCutVer);
+        if (txCutVer != null)
+            txCutVersion(txCutVer);
 
         if (DONE_FLAG_UPD.compareAndSet(this, 0, 1)) {
             if (!nodeStop) {

@@ -572,7 +572,7 @@ public class GridNearOptimisticSerializableTxPrepareFuture extends GridNearOptim
             txNodes.size() == 1,
             tx.activeCachesDeploymentEnabled(),
             tx.txState().recovery(),
-            cctx.consistentCutMgr() != null ? cctx.consistentCutMgr().latestKnownCutVersion() : null);
+            cctx.consistentCutMgr() != null ? cctx.consistentCutMgr().cutVersion() : null);
 
         for (IgniteTxEntry txEntry : writes) {
             if (txEntry.op() == TRANSFORM)

@@ -29,7 +29,7 @@ public interface ConsistentCutVersionAware {
      *
      * It is used to trigger Consistent Cut procedure on receiver.
      */
-    public default ConsistentCutVersion latestCutVersion() {
+    public default ConsistentCutVersion cutVersion() {
         return null;
     }
 

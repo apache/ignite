@@ -4418,7 +4418,7 @@ public class GridNearTxLocal extends GridDhtTxLocalAdapter implements GridTimeou
     /**
      * @return {@code True} if 'fast finish' path can be used for transaction completion.
      */
-    public boolean fastFinish() {
+    private boolean fastFinish() {
         return !queryEnlisted() && writeMap().isEmpty()
             && ((optimistic() && !serializable()) || readMap().isEmpty());
     }

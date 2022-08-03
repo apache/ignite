@@ -362,7 +362,7 @@ public final class GridNearTxFinishFuture<K, V> extends GridCacheCompoundIdentit
                         try {
                             ConsistentCutVersion cutVer = null;
 
-                            if (tx.currentPrepareFuture() != null)
+                            if (cctx.consistentCutMgr() != null && tx.currentPrepareFuture() != null)
                                 cutVer = ((GridNearTxPrepareFutureAdapter)tx.currentPrepareFuture()).txCutVer();
 
                             tx.tmFinish(commit, nodeStop, true, cutVer);
@@ -655,11 +655,6 @@ public final class GridNearTxFinishFuture<K, V> extends GridCacheCompoundIdentit
                     else {
                         GridDhtTxFinishRequest finishReq = checkCommittedRequest(mini.futureId(), false);
 
-                        if (cctx.consistentCutMgr() != null) {
-                            finishReq.latestCutVersion(cctx.consistentCutMgr().latestKnownCutVersion());
-                            finishReq.txCutVersion(tx.txCutVersion());
-                        }
-
                         try {
                             cctx.io().send(backup, finishReq, tx.ioPolicy());
 
@@ -798,7 +793,7 @@ public final class GridNearTxFinishFuture<K, V> extends GridCacheCompoundIdentit
             tx.activeCachesDeploymentEnabled());
 
         if (cctx.consistentCutMgr() != null) {
-            req.latestCutVersion(cctx.consistentCutMgr().latestKnownCutVersion());
+            req.cutVersion(cctx.consistentCutMgr().cutVersion());
             req.txCutVersion(tx.txCutVersion());
         }
 
@@ -939,6 +934,11 @@ public final class GridNearTxFinishFuture<K, V> extends GridCacheCompoundIdentit
             null);
 
         finishReq.checkCommitted(true);
+
+        if (cctx.consistentCutMgr() != null) {
+            finishReq.cutVersion(cctx.consistentCutMgr().cutVersion());
+            finishReq.txCutVersion(tx.txCutVersion());
+        }
 
         return finishReq;
     }

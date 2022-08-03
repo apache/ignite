@@ -18,7 +18,7 @@
 package org.apache.ignite.internal.processors.cache.consistentcut;
 
 import java.util.Collection;
-import java.util.Map;
+import java.util.Iterator;
 import java.util.Set;
 import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
@@ -36,7 +36,6 @@ import org.apache.ignite.internal.processors.cache.distributed.dht.preloader.Par
 import org.apache.ignite.internal.processors.cache.distributed.near.GridNearTxLocal;
 import org.apache.ignite.internal.processors.cache.transactions.IgniteInternalTx;
 import org.apache.ignite.internal.processors.cache.transactions.IgniteTxManager;
-import org.apache.ignite.internal.processors.cache.version.GridCacheVersion;
 import org.apache.ignite.internal.processors.timeout.GridTimeoutProcessor;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.internal.CU;
@@ -105,14 +104,10 @@ public class ConsistentCutManager extends GridCacheSharedManagerAdapter implemen
     private volatile ConsistentCutState cutState;
 
     /**
-     * Collection of committing and committed transactions. Track them for two reasons:
-     * 1.{@link IgniteTxManager#activeTransactions()} doesn't contain information about transactions in COMMITTING / COMMITTED state.
-     * 2. For transaction recovery process, it's required to extract Consistent Cut Version for a transaction even after
-     *    it committed.
-     *
-     * Key is {@link IgniteInternalTx#xidVersion()} - transaction version on local node.
+     * Collection of committing and committed transactions. Track them because {@link IgniteTxManager#activeTransactions()}
+     * doesn't contain information about transactions in COMMITTING / COMMITTED state.
      */
-    private final Map<GridCacheVersion, IgniteInternalTx> committingTxs = new ConcurrentHashMap<>();
+    private final Set<IgniteInternalTx> committingTxs = ConcurrentHashMap.newKeySet();
 
     /** Consistent Cut coordinator node ID. {@code null} if Consistent Cut is disabled. */
     protected volatile @Nullable UUID cutCrdNodeId;
@@ -175,19 +170,6 @@ public class ConsistentCutManager extends GridCacheSharedManagerAdapter implemen
     }
 
     /**
-     * Extract Consistent Cut version by specified transaction version.
-     *
-     * @param xidVer Transaction version on local node.
-     * @return Consistent Cut version AFTER which specified transaction committed. {@code null} guarantees that transaction
-     *         committed BEFORE the latest known Consistent Cut version.
-     */
-    public @Nullable ConsistentCutVersion txCutVersion(GridCacheVersion xidVer) {
-        IgniteInternalTx tx = committingTxs.get(xidVer);
-
-        return tx != null ? ((ConsistentCutVersionAware)tx).txCutVersion() : null;
-    }
-
-    /**
      * Schedules global Consistent Cut procedure on Ignite coordinator.
      */
     public void scheduleConsistentCut() {
@@ -212,7 +194,7 @@ public class ConsistentCutManager extends GridCacheSharedManagerAdapter implemen
                 triggerConsistentCutOnCluster( "onTimeout");
             else {
                 log.warning("Skip Consistent Cut procedure. " +
-                    "\n  ^-- Some nodes hasn't finished yet previous one. Latest version: " + latestKnownCutVersion() +
+                    "\n  ^-- Some nodes hasn't finished yet previous one. Latest version: " + cutVersion() +
                     "\n  ^-- Consistent Cut may require more time that is configured." +
                     "\n  ^-- Consider to increase param `DataStorageConfiguration#setPointInTimeRecoveryPeriod`. " +
                     "\n  ^-- Nodes that hasn't finished their job: " + awaitNodes);
@@ -230,7 +212,7 @@ public class ConsistentCutManager extends GridCacheSharedManagerAdapter implemen
             if (topChanged) {
                 U.error(log, "PITR (Point-in-time-recovery) is not available since the moment. " +
                     "\n  ^-- PITR doesn't support server topology changes. " +
-                    "\n  ^-- The latest version to recover on is " + latestKnownCutVersion().version() + "." +
+                    "\n  ^-- The latest version to recover on is " + cutVersion().version() + "." +
                     "\n  ^-- To enable PITR again, please start ClusterSnapshot create or restore procedure.");
             }
 
@@ -253,10 +235,10 @@ public class ConsistentCutManager extends GridCacheSharedManagerAdapter implemen
 
         if (log.isDebugEnabled()) {
             log.debug("`registerBeforeCommit` from " + tx.nearXidVersion().asIgniteUuid() + " to " + tx.xid()
-                + " , ver=" + ((ConsistentCutVersionAware)tx).txCutVersion() + ", cutVer = " + latestKnownCutVersion());
+                + " , ver=" + ((ConsistentCutVersionAware)tx).txCutVersion() + ", cutVer = " + cutVersion());
         }
 
-        return committingTxs.put(tx.xidVersion(), tx) == null;
+        return committingTxs.add(tx);
     }
 
     /**
@@ -266,7 +248,7 @@ public class ConsistentCutManager extends GridCacheSharedManagerAdapter implemen
      * @param tx Transaction.
      */
     public void cancelRegisterBeforeCommit(IgniteInternalTx tx) {
-        committingTxs.remove(tx.xidVersion());
+        committingTxs.remove(tx);
     }
 
     /**
@@ -276,7 +258,7 @@ public class ConsistentCutManager extends GridCacheSharedManagerAdapter implemen
      */
     public void unregisterAfterCommit(IgniteInternalTx tx) {
         if (CONSITENT_CUT_STATE.get(this).cut() == null)
-            committingTxs.remove(tx.xidVersion());
+            committingTxs.remove(tx);
     }
 
     /**
@@ -297,9 +279,6 @@ public class ConsistentCutManager extends GridCacheSharedManagerAdapter implemen
             if (CONSITENT_CUT_STATE.compareAndSet(this, cutState, newCutState)) {
                 cctx.kernalContext().pools().getSystemExecutorService().submit(() -> {
                     try {
-                        // No need to track old transactions after version update.
-                        cleanCommittedTransactions(rcvCutVer);
-
                         cut.init(rcvCutVer);
 
                         if (log.isDebugEnabled())
@@ -318,7 +297,7 @@ public class ConsistentCutManager extends GridCacheSharedManagerAdapter implemen
     /**
      * @return Latest known Consistent Cut Version, no matter whether this Consistent Cut has just started or already finished.
      */
-    public ConsistentCutVersion latestKnownCutVersion() {
+    public ConsistentCutVersion cutVersion() {
         return CONSITENT_CUT_STATE.get(this).version();
     }
 
@@ -328,10 +307,10 @@ public class ConsistentCutManager extends GridCacheSharedManagerAdapter implemen
     }
 
     /**
-     * @return Snapshot of committing transactions.
+     * @return Iterator over committing transactions.
      */
-    Collection<IgniteInternalTx> committingTxs() {
-        return committingTxs.values();
+    Iterator<IgniteInternalTx> committingTxs() {
+        return committingTxs.iterator();
     }
 
     /**
@@ -347,8 +326,7 @@ public class ConsistentCutManager extends GridCacheSharedManagerAdapter implemen
                 ConsistentCutState finishedCutState = new ConsistentCutState(cutVer);
 
                 if (CONSITENT_CUT_STATE.compareAndSet(this, cutState, finishedCutState)) {
-                    // Clean transactions that committed BEFORE concurrently with Consistent Cut procedure.
-                    cleanCommittedTransactions(cutVer);
+                    committingTxs.removeIf(tx -> tx.finishFuture().isDone());
 
                     if (cctx.kernalContext().clientNode())
                         return;
@@ -376,17 +354,6 @@ public class ConsistentCutManager extends GridCacheSharedManagerAdapter implemen
         catch (IgniteCheckedException e) {
             U.error(log, "Failed to send Consistent Cut Finish message to coordinator node.", e);
         }
-    }
-
-    /**
-     * Cleans transactions committed BEFORE the specified version.
-     */
-    private void cleanCommittedTransactions(ConsistentCutVersion cutVer) {
-        committingTxs.values().removeIf(tx ->
-            tx.finishFuture().isDone()
-                && tx.state() == TransactionState.COMMITTED
-                && cutVer.compareToNullable(((ConsistentCutVersionAware)tx).txCutVersion()) > 0
-        );
     }
 
     /**
@@ -437,13 +404,9 @@ public class ConsistentCutManager extends GridCacheSharedManagerAdapter implemen
     void handleConsistentCutFinishResponse(UUID nodeId, ConsistentCutFinishResponse msg) {
         ConsistentCutVersion cutVer = CONSITENT_CUT_STATE.get(this).version();
 
-        if (cutVer.compareTo(msg.version()) > 0)
-            return;
-
         Set<UUID> awaitNodes = notFinishedSrvNodes;
 
-        // Receive response after ConsistentCut was disablied.
-        if (awaitNodes == null)
+        if (cutVer.compareTo(msg.version()) > 0 || awaitNodes == null)
             return;
 
         awaitNodes.remove(nodeId);
@@ -452,7 +415,7 @@ public class ConsistentCutManager extends GridCacheSharedManagerAdapter implemen
             notFinishedSrvNodes = null;
 
         if (log.isDebugEnabled())
-            log.info("Received ConsistentCutReadyResponse from node " + nodeId + ": " + msg + " . Wait " + awaitNodes);
+            log.debug("Received ConsistentCutReadyResponse from node " + nodeId + ": " + msg + " . Wait " + awaitNodes);
     }
 
     /**
@@ -467,7 +430,7 @@ public class ConsistentCutManager extends GridCacheSharedManagerAdapter implemen
         ConsistentCutVersionAware txCutVerAware = (ConsistentCutVersionAware)tx;
 
         if (isSetterTxCutVersion(tx))
-            txCutVerAware.txCutVersion(latestKnownCutVersion());
+            txCutVerAware.txCutVersion(cutVersion());
     }
 
     /**

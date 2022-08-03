@@ -127,7 +127,7 @@ public abstract class GridDistributedTxRemoteAdapter extends IgniteTxAdapter imp
     @Nullable private String txLbl;
 
     /**
-     * Latest Consistent Cut Version that AFTER which this transaction committed. Filled for 1PC cases.
+     * Latest Consistent Cut Version that AFTER which this transaction committed.
      */
     private ConsistentCutVersion txCutVer;
 

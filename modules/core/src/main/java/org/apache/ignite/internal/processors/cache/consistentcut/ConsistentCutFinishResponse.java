@@ -26,7 +26,7 @@ import org.apache.ignite.plugin.extensions.communication.MessageReader;
 import org.apache.ignite.plugin.extensions.communication.MessageWriter;
 
 /**
- * This message is sent by every node to Consistent Cut coordinator after node is ready to run new Consistent Cut.
+ * This message is sent by every node to Consistent Cut coordinator after node finised local Consistent Cut.
  */
 public class ConsistentCutFinishResponse implements Message {
     /** */

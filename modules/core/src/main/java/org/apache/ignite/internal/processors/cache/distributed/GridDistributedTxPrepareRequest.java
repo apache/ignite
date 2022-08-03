@@ -163,7 +163,7 @@ public class GridDistributedTxPrepareRequest extends GridDistributedBaseMessage 
     private byte flags;
 
     /** Version of the latest known Consistent Cut on local node. */
-    private ConsistentCutVersion latestCutVer;
+    private ConsistentCutVersion cutVer;
 
     /**
      * Required by {@link Externalizable}.
@@ -182,7 +182,7 @@ public class GridDistributedTxPrepareRequest extends GridDistributedBaseMessage 
      * @param last Last request flag.
      * @param onePhaseCommit One phase commit flag.
      * @param addDepInfo Deployment info flag.
-     * @param latestCutVer Version of the latest known Consistent Cut.
+     * @param cutVer Version of the latest known Consistent Cut.
      */
     public GridDistributedTxPrepareRequest(
         IgniteInternalTx tx,
@@ -194,7 +194,7 @@ public class GridDistributedTxPrepareRequest extends GridDistributedBaseMessage 
         boolean last,
         boolean onePhaseCommit,
         boolean addDepInfo,
-        ConsistentCutVersion latestCutVer
+        ConsistentCutVersion cutVer
     ) {
         super(tx.xidVersion(), 0, addDepInfo);
 
@@ -210,7 +210,7 @@ public class GridDistributedTxPrepareRequest extends GridDistributedBaseMessage 
         this.writes = writes;
         this.txNodes = txNodes;
 
-        this.latestCutVer = latestCutVer;
+        this.cutVer = cutVer;
 
         setFlag(tx.system(), SYSTEM_TX_FLAG_MASK);
         setFlag(retVal, NEED_RETURN_VALUE_FLAG_MASK);
@@ -412,8 +412,8 @@ public class GridDistributedTxPrepareRequest extends GridDistributedBaseMessage 
     }
 
     /** {@inheritDoc} */
-    @Override public ConsistentCutVersion latestCutVersion() {
-        return latestCutVer;
+    @Override public ConsistentCutVersion cutVersion() {
+        return cutVer;
     }
 
     /** {@inheritDoc}
@@ -598,7 +598,7 @@ public class GridDistributedTxPrepareRequest extends GridDistributedBaseMessage 
                 writer.incrementState();
 
             case 21:
-                if (!writer.writeMessage("latestCutVer", latestCutVer))
+                if (!writer.writeMessage("cutVer", cutVer))
                     return false;
 
                 writer.incrementState();
@@ -732,7 +732,7 @@ public class GridDistributedTxPrepareRequest extends GridDistributedBaseMessage 
                 reader.incrementState();
 
             case 21:
-                latestCutVer = reader.readMessage("latestCutVer");
+                cutVer = reader.readMessage("cutVer");
 
                 if (!reader.isLastRead())
                     return false;

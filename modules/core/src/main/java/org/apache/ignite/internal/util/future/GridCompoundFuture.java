@@ -60,7 +60,7 @@ public class GridCompoundFuture<T, R> extends GridFutureAdapter<R> implements Ig
         AtomicIntegerFieldUpdater.newUpdater(GridCompoundFuture.class, "lsnrCalls");
 
     /** Possible values: null (no future), IgniteInternalFuture instance (single future) or List of futures  */
-    protected volatile Object futs;
+    private volatile Object futs;
 
     /** Reducer. */
     @GridToStringInclude
@@ -386,11 +386,11 @@ public class GridCompoundFuture<T, R> extends GridFutureAdapter<R> implements Ig
     /**
      * Returns future at the specified position in this list.
      *
-     * @param idx Index of the element to return
+     * @param idx - index index of the element to return
      * @return Future.
      */
     @SuppressWarnings("unchecked")
-    protected IgniteInternalFuture<T> future(int idx) {
+    protected final IgniteInternalFuture<T> future(int idx) {
         assert futs != null && idx >= 0 && idx < size;
 
         if (futs instanceof IgniteInternalFuture) {

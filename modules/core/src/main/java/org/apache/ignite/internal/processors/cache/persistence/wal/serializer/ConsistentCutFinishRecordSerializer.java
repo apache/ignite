@@ -85,7 +85,7 @@ public class ConsistentCutFinishRecordSerializer {
      * @return Size of ConsistentCutFinishRecord in bytes.
      */
     public int size(ConsistentCutFinishRecord rec) {
-        int size = 4 + 4;  // include and exclude tx count.
+        int size = 4 + 4;  // Before and after tx count.
 
         for (GridCacheVersion v: rec.before())
             size += CacheVersionIO.size(v, false);

@@ -21,20 +21,17 @@ import java.io.Externalizable;
 import java.nio.ByteBuffer;
 import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.internal.processors.cache.GridCacheSharedContext;
-import org.apache.ignite.internal.processors.cache.consistentcut.ConsistentCutVersion;
-import org.apache.ignite.internal.processors.cache.consistentcut.ConsistentCutVersionAware;
 import org.apache.ignite.internal.processors.cache.transactions.IgniteInternalTx;
 import org.apache.ignite.internal.processors.cache.version.GridCacheVersion;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.lang.IgniteUuid;
 import org.apache.ignite.plugin.extensions.communication.MessageReader;
 import org.apache.ignite.plugin.extensions.communication.MessageWriter;
-import org.jetbrains.annotations.Nullable;
 
 /**
  * Message sent to check that transactions related to transaction were prepared on remote node.
  */
-public class GridCacheTxRecoveryRequest extends GridDistributedBaseMessage implements ConsistentCutVersionAware {
+public class GridCacheTxRecoveryRequest extends GridDistributedBaseMessage {
     /** */
     private static final long serialVersionUID = 0L;
 
@@ -56,9 +53,6 @@ public class GridCacheTxRecoveryRequest extends GridDistributedBaseMessage imple
     /** {@code True} if should check only tx on near node. */
     private boolean nearTxCheck;
 
-    /** Version of the latest known Consistent Cut on local node. */
-    private @Nullable ConsistentCutVersion latestCutVer;
-
     /**
      * Empty constructor required by {@link Externalizable}
      */
@@ -73,15 +67,13 @@ public class GridCacheTxRecoveryRequest extends GridDistributedBaseMessage imple
      * @param futId Future ID.
      * @param miniId Mini future ID.
      * @param addDepInfo Deployment info flag.
-     * @param latestCutVer Latest known Consistent Cut on sender node.
      */
     public GridCacheTxRecoveryRequest(IgniteInternalTx tx,
         int txNum,
         boolean nearTxCheck,
         IgniteUuid futId,
         IgniteUuid miniId,
-        boolean addDepInfo,
-        @Nullable ConsistentCutVersion latestCutVer
+        boolean addDepInfo
     ) {
         super(tx.xidVersion(), 0, addDepInfo);
 
@@ -92,7 +84,6 @@ public class GridCacheTxRecoveryRequest extends GridDistributedBaseMessage imple
         this.miniId = miniId;
         this.txNum = txNum;
         this.nearTxCheck = nearTxCheck;
-        this.latestCutVer = latestCutVer;
     }
 
     /**
@@ -105,7 +96,7 @@ public class GridCacheTxRecoveryRequest extends GridDistributedBaseMessage imple
     /**
      * @return Near version.
      */
-    @Override public GridCacheVersion nearXidVersion() {
+    public GridCacheVersion nearXidVersion() {
         return nearXidVer;
     }
 
@@ -135,11 +126,6 @@ public class GridCacheTxRecoveryRequest extends GridDistributedBaseMessage imple
      */
     public boolean system() {
         return sys;
-    }
-
-    /** {@inheritDoc} */
-    @Override public ConsistentCutVersion latestCutVersion() {
-        return latestCutVer;
     }
 
     /** {@inheritDoc} */
@@ -194,12 +180,6 @@ public class GridCacheTxRecoveryRequest extends GridDistributedBaseMessage imple
 
             case 13:
                 if (!writer.writeInt("txNum", txNum))
-                    return false;
-
-                writer.incrementState();
-
-            case 14:
-                if (!writer.writeMessage("latestCutVer", latestCutVer))
                     return false;
 
                 writer.incrementState();
@@ -268,13 +248,6 @@ public class GridCacheTxRecoveryRequest extends GridDistributedBaseMessage imple
 
                 reader.incrementState();
 
-            case 14:
-                latestCutVer = reader.readMessage("latestCutVer");
-
-                if (!reader.isLastRead())
-                    return false;
-
-                reader.incrementState();
         }
 
         return reader.afterMessageRead(GridCacheTxRecoveryRequest.class);
@@ -287,7 +260,7 @@ public class GridCacheTxRecoveryRequest extends GridDistributedBaseMessage imple
 
     /** {@inheritDoc} */
     @Override public byte fieldsCount() {
-        return 15;
+        return 14;
     }
 
     /** {@inheritDoc} */

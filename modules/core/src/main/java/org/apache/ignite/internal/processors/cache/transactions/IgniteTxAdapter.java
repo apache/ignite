@@ -1067,6 +1067,9 @@ public abstract class IgniteTxAdapter extends GridMetadataAwareAdapter implement
 
     /** {@inheritDoc} */
     @Override public boolean state(TransactionState state) {
+        if (state == ROLLED_BACK)
+            System.out.println(state);
+
         return state(state, false);
     }
 
