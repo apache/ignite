@@ -1201,7 +1201,7 @@ public abstract class IgniteTxLocalAdapter extends IgniteTxAdapter implements Ig
                     if (retval || invoke) {
                         if (!cacheCtx.isNear()) {
                             if (!hasPrevVal) {
-                                // For caches we should read from store after lock on primary.
+                                // For caches, we should read from store after lock on primary.
                                 v = cached.innerGet(
                                     null,
                                     this,
