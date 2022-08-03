@@ -193,7 +193,7 @@ public class ListeningTestLogger implements IgniteLogger {
 
     /** {@inheritDoc} */
     @Override public boolean isInfoEnabled() {
-        return echo.isInfoEnabled() || true;
+        return  (echo != null && echo.isInfoEnabled()) || true;
     }
 
     /** {@inheritDoc} */
