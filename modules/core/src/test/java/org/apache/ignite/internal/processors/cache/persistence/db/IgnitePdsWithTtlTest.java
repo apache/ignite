@@ -88,12 +88,6 @@ public class IgnitePdsWithTtlTest extends GridCommonAbstractTest {
     private static final String CACHE_NAME_TX = "expirable-cache-tx";
 
     /** */
-    private static final String CACHE_NAME_LOCAL_ATOMIC = "expirable-cache-local-atomic";
-
-    /** */
-    private static final String CACHE_NAME_LOCAL_TX = "expirable-cache-local-tx";
-
-    /** */
     private static final String CACHE_NAME_NEAR_ATOMIC = "expirable-cache-near-atomic";
 
     /** */
@@ -323,8 +317,6 @@ public class IgnitePdsWithTtlTest extends GridCommonAbstractTest {
             List<IgniteCache<Object, Object>> caches = F.asList(
                 srv.cache(CACHE_NAME_ATOMIC),
                 srv.cache(CACHE_NAME_TX),
-                srv.cache(CACHE_NAME_LOCAL_ATOMIC),
-                srv.cache(CACHE_NAME_LOCAL_TX),
                 srv.cache(CACHE_NAME_NEAR_ATOMIC),
                 srv.cache(CACHE_NAME_NEAR_TX)
             );

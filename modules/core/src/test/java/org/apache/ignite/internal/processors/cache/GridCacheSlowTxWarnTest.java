@@ -68,19 +68,16 @@ public class GridCacheSlowTxWarnTest extends GridCommonAbstractTest {
 
             checkCache(g, "partitioned", true, false);
             checkCache(g, "replicated", true, false);
-            checkCache(g, "local", true, false);
 
             info(">>> Slow tx timeout is set, long-live tx simulated.");
 
             checkCache(g, "partitioned", true, true);
             checkCache(g, "replicated", true, true);
-            checkCache(g, "local", true, true);
 
             info(">>> Slow tx timeout is set, no long-live txs.");
 
             checkCache(g, "partitioned", false, true);
             checkCache(g, "replicated", false, true);
-            checkCache(g, "local", false, true);
         }
         finally {
             stopAllGrids();
