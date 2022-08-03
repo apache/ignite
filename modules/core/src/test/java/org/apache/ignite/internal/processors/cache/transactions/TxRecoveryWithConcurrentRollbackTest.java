@@ -261,15 +261,25 @@ public class TxRecoveryWithConcurrentRollbackTest extends GridCommonAbstractTest
 
 
     /**
-     *
-     * @throws Exception
+     * The test enforces the concurrent processing of the same prepared transaction both in the
+     * tx recovery procedure started due to primary node left and in the tx recovery request handler
+     * invoked by message from another backup node.
+     * <ul>
+     *  <li>Start 3 nodes (g0, g1, g2) and cache with 2 backups.</li>
+     *  <li>Prepare a transaction with g2 as a primary node.</li>
+     *  <li>Kill g2.</li>
+     *  <li>Enforce the concurrent processing of transaction in tx recovery on g1.</li>
+     * </ul>
+     * Use several attempts to reproduce the race condition.
+     * <p>
+     * Expected result: transaction is finished both on g0 and g1
      */
     @Test
     public void testRecoveryNotDeadLockOnPrimaryFail() throws Exception {
         backups = 2;
         persistence = false;
 
-        for (int iter = 0; iter < 100; iter++) {
+        for (int iter = 0; iter < 75; iter++) {
             stopAllGrids();
 
             log.info("iteration=" + iter);
