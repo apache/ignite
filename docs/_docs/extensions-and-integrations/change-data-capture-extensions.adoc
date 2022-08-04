@@ -25,7 +25,7 @@ link:https://github.com/apache/ignite-extensions/tree/master/modules/cdc-ext[Cha
 
 NOTE: For each cache replicated between clusters link:https://github.com/apache/ignite/blob/master/modules/core/src/main/java/org/apache/ignite/internal/processors/cache/version/CacheVersionConflictResolver.java[CacheVersionConflictResolver] should be defined.
 
-== Ignite to Ignite Client CDC streamer
+== Ignite to Java Thin Client CDC streamer
 This streamer starts link:thin-clients/java-thin-client[Java Thin Client] which connects to destination cluster.
 After connection is established, all changes captured by CDC will be replicated to destination cluster.
 
