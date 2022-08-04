@@ -405,7 +405,7 @@ public class ConsistentCutManager extends GridCacheSharedManagerAdapter implemen
     /**
      * Coordinator handles finish responses from remote nodes.
      */
-    private void handleConsistentCutFinishResponse(UUID nodeId, ConsistentCutFinishResponse msg) {
+    protected void handleConsistentCutFinishResponse(UUID nodeId, ConsistentCutFinishResponse msg) {
         ConsistentCutVersion cutVer = CONSITENT_CUT_STATE.get(this).version();
 
         Set<UUID> awaitNodes = notFinishedSrvNodes;

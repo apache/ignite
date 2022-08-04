@@ -75,6 +75,7 @@ public class ConsistentCutVersion implements Message, Comparable<ConsistentCutVe
                     return false;
 
                 writer.incrementState();
+
         }
 
         return true;
@@ -95,6 +96,7 @@ public class ConsistentCutVersion implements Message, Comparable<ConsistentCutVe
                     return false;
 
                 reader.incrementState();
+
         }
 
         return reader.afterMessageRead(ConsistentCutVersion.class);

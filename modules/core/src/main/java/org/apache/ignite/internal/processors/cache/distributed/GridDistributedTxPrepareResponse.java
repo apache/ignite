@@ -178,11 +178,6 @@ public class GridDistributedTxPrepareResponse
     }
 
     /** {@inheritDoc} */
-    public GridCacheVersion xidVersion() {
-        return version();
-    }
-
-    /** {@inheritDoc} */
     @Override public IgniteLogger messageLogger(GridCacheSharedContext ctx) {
         return ctx.txPrepareMessageLogger();
     }
@@ -219,25 +214,25 @@ public class GridDistributedTxPrepareResponse
 
         switch (writer.state()) {
             case 8:
-                if (!writer.writeByteArray("errBytes", errBytes))
+                if (!writer.writeMessage("cutVer", cutVer))
                     return false;
 
                 writer.incrementState();
 
             case 9:
-                if (!writer.writeByte("flags", flags))
+                if (!writer.writeByteArray("errBytes", errBytes))
                     return false;
 
                 writer.incrementState();
 
             case 10:
-                if (!writer.writeInt("part", part))
+                if (!writer.writeByte("flags", flags))
                     return false;
 
                 writer.incrementState();
 
             case 11:
-                if (!writer.writeMessage("cutVer", cutVer))
+                if (!writer.writeInt("part", part))
                     return false;
 
                 writer.incrementState();
@@ -265,7 +260,7 @@ public class GridDistributedTxPrepareResponse
 
         switch (reader.state()) {
             case 8:
-                errBytes = reader.readByteArray("errBytes");
+                cutVer = reader.readMessage("cutVer");
 
                 if (!reader.isLastRead())
                     return false;
@@ -273,7 +268,7 @@ public class GridDistributedTxPrepareResponse
                 reader.incrementState();
 
             case 9:
-                flags = reader.readByte("flags");
+                errBytes = reader.readByteArray("errBytes");
 
                 if (!reader.isLastRead())
                     return false;
@@ -281,7 +276,7 @@ public class GridDistributedTxPrepareResponse
                 reader.incrementState();
 
             case 10:
-                part = reader.readInt("part");
+                flags = reader.readByte("flags");
 
                 if (!reader.isLastRead())
                     return false;
@@ -289,7 +284,7 @@ public class GridDistributedTxPrepareResponse
                 reader.incrementState();
 
             case 11:
-                cutVer = reader.readMessage("cutVer");
+                part = reader.readInt("part");
 
                 if (!reader.isLastRead())
                     return false;

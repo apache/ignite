@@ -18,7 +18,6 @@
 package org.apache.ignite.internal.processors.cache.consistentcut;
 
 import java.nio.ByteBuffer;
-import org.apache.ignite.internal.managers.deployment.GridDeploymentRequest;
 import org.apache.ignite.internal.util.tostring.GridToStringInclude;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.plugin.extensions.communication.Message;
@@ -74,6 +73,7 @@ public class ConsistentCutFinishResponse implements Message {
                     return false;
 
                 writer.incrementState();
+
         }
 
         return true;
@@ -94,9 +94,10 @@ public class ConsistentCutFinishResponse implements Message {
                     return false;
 
                 reader.incrementState();
+
         }
 
-        return reader.afterMessageRead(GridDeploymentRequest.class);
+        return reader.afterMessageRead(ConsistentCutFinishResponse.class);
     }
 
     /** {@inheritDoc} */

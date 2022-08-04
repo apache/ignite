@@ -193,6 +193,7 @@ public class GridNearTxFinishRequest extends GridDistributedTxFinishRequest {
                     return false;
 
                 writer.incrementState();
+
         }
 
         return true;
@@ -224,6 +225,7 @@ public class GridNearTxFinishRequest extends GridDistributedTxFinishRequest {
                     return false;
 
                 reader.incrementState();
+
         }
 
         return reader.afterMessageRead(GridNearTxFinishRequest.class);

@@ -2700,6 +2700,7 @@ public class GridFunc {
      * @param <T> Element's type.
      * @return Created set.
      */
+    @Deprecated
     public static <T> Set<T> asSet(@Nullable T t) {
         return t == null ? Collections.<T>emptySet() : Collections.singleton(t);
     }
@@ -2712,6 +2713,7 @@ public class GridFunc {
      * @return Created set.
      */
     @SuppressWarnings({"RedundantTypeArguments"})
+    @Deprecated
     public static <T> Set<T> asSet(@Nullable T... t) {
         if (t == null || t.length == 0)
             return Collections.<T>emptySet();

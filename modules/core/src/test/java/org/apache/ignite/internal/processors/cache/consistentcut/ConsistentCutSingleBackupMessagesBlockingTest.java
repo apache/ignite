@@ -40,7 +40,7 @@ public class ConsistentCutSingleBackupMessagesBlockingTest extends AbstractConsi
     public BlkNodeType cutNodeBlkType;
 
     /** */
-    @Parameterized.Parameters(name = "cutBlkAt={0}, nodeBlk={1}")
+    @Parameterized.Parameters(name = "txNodeBlk={0}, cutBlkAt={1}, cutNodeBlk={2}")
     public static List<Object[]> params() {
         List<Object[]> p = new ArrayList<>();
 

@@ -38,6 +38,7 @@ import org.apache.ignite.configuration.DataRegionConfiguration;
 import org.apache.ignite.configuration.DataStorageConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.IgniteEx;
+import org.apache.ignite.internal.TestRecordingCommunicationSpi;
 import org.apache.ignite.internal.managers.communication.GridIoMessage;
 import org.apache.ignite.internal.pagemem.wal.IgniteWriteAheadLogManager;
 import org.apache.ignite.internal.pagemem.wal.WALIterator;
@@ -59,7 +60,6 @@ import org.apache.ignite.plugin.AbstractTestPluginProvider;
 import org.apache.ignite.plugin.PluginContext;
 import org.apache.ignite.plugin.extensions.communication.Message;
 import org.apache.ignite.spi.IgniteSpiException;
-import org.apache.ignite.spi.communication.tcp.TcpCommunicationSpi;
 import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.apache.ignite.transactions.TransactionState;
@@ -298,7 +298,12 @@ public abstract class AbstractConsistentCutTest extends GridCommonAbstractTest {
 
             reader.read();
 
-            assertTrue("Wrong cuts amount " + i, !reader.cuts.isEmpty());
+            // Skip all tests for input testCase and blocks.
+            if (reader.cuts.isEmpty()) {
+                assertTrue(txNearNode.isEmpty());
+
+                return;
+            }
 
             int expCuts = reader.cuts.get(reader.cuts.size() - 1).ver == INCOMPLETE ? cuts + 1 : cuts;
 
@@ -405,7 +410,7 @@ public abstract class AbstractConsistentCutTest extends GridCommonAbstractTest {
     }
 
     /** Logs TX messages between nodes. */
-    protected static class LogCommunicationSpi extends TcpCommunicationSpi {
+    protected static class LogCommunicationSpi extends TestRecordingCommunicationSpi {
         /** {@inheritDoc} */
         @Override public void sendMessage(
             ClusterNode node,
@@ -449,7 +454,7 @@ public abstract class AbstractConsistentCutTest extends GridCommonAbstractTest {
 
                 bld
                     .append("; lastCutVer=").append(m.cutVersion())
-                    .append("; txVer=").append(m.xidVersion().asIgniteUuid())
+                    .append("; txVer=").append(m.version().asIgniteUuid())
                     .append("; txCutVer=").append(m.txCutVersion());
             }
             else if (msg instanceof GridNearTxFinishRequest) {
@@ -457,7 +462,7 @@ public abstract class AbstractConsistentCutTest extends GridCommonAbstractTest {
 
                 bld
                     .append("; lastCutVer=").append(m.cutVersion())
-                    .append("; txVer=").append(m.xidVersion().asIgniteUuid())
+                    .append("; txVer=").append(m.version().asIgniteUuid())
                     .append("; txCutVer=").append(m.txCutVersion());
             }
             else if (msg instanceof GridNearTxFinishResponse) {
@@ -487,7 +492,7 @@ public abstract class AbstractConsistentCutTest extends GridCommonAbstractTest {
 
                 bld
                     .append("; lastCutVer=").append(m.cutVersion())
-                    .append("; txVer=").append(m.xidVersion().asIgniteUuid())
+                    .append("; txVer=").append(m.version().asIgniteUuid())
                     .append("; txCutVer=").append((m.txCutVersion()));
             }
             else if (msg instanceof GridNearTxPrepareResponse) {
@@ -495,7 +500,7 @@ public abstract class AbstractConsistentCutTest extends GridCommonAbstractTest {
 
                 bld
                     .append("; lastCutVer=").append(m.cutVersion())
-                    .append("; txVer=").append(m.xidVersion().asIgniteUuid())
+                    .append("; txVer=").append(m.version().asIgniteUuid())
                     .append("; txCutVer=").append((m.txCutVersion()))
                     .append("; 1PC=").append((m.onePhaseCommit()));
             }

@@ -328,11 +328,6 @@ public class GridDistributedTxFinishRequest extends GridDistributedBaseMessage
     }
 
     /** {@inheritDoc} */
-    public GridCacheVersion xidVersion() {
-        return version();
-    }
-
-    /** {@inheritDoc} */
     @Override public IgniteLogger messageLogger(GridCacheSharedContext ctx) {
         return ctx.txFinishMessageLogger();
     }
@@ -371,76 +366,77 @@ public class GridDistributedTxFinishRequest extends GridDistributedBaseMessage
                 writer.incrementState();
 
             case 11:
-                if (!writer.writeByte("flags", flags))
-                    return false;
-
-                writer.incrementState();
-
-            case 12:
-                if (!writer.writeIgniteUuid("futId", futId))
-                    return false;
-
-                writer.incrementState();
-
-            case 13:
-                if (!writer.writeBoolean("invalidate", invalidate))
-                    return false;
-
-                writer.incrementState();
-
-            case 14:
-                if (!writer.writeByte("plc", plc))
-                    return false;
-
-                writer.incrementState();
-
-            case 15:
-                if (!writer.writeByte("syncMode", syncMode != null ? (byte)syncMode.ordinal() : -1))
-                    return false;
-
-                writer.incrementState();
-
-            case 16:
-                if (!writer.writeBoolean("sys", sys))
-                    return false;
-
-                writer.incrementState();
-
-            case 17:
-                if (!writer.writeInt("taskNameHash", taskNameHash))
-                    return false;
-
-                writer.incrementState();
-
-            case 18:
-                if (!writer.writeLong("threadId", threadId))
-                    return false;
-
-                writer.incrementState();
-
-            case 19:
-                if (!writer.writeAffinityTopologyVersion("topVer", topVer))
-                    return false;
-
-                writer.incrementState();
-
-            case 20:
-                if (!writer.writeInt("txSize", txSize))
-                    return false;
-
-                writer.incrementState();
-
-            case 21:
                 if (!writer.writeMessage("cutVer", cutVer))
                     return false;
 
                 writer.incrementState();
 
-            case 22:
+            case 12:
+                if (!writer.writeByte("flags", flags))
+                    return false;
+
+                writer.incrementState();
+
+            case 13:
+                if (!writer.writeIgniteUuid("futId", futId))
+                    return false;
+
+                writer.incrementState();
+
+            case 14:
+                if (!writer.writeBoolean("invalidate", invalidate))
+                    return false;
+
+                writer.incrementState();
+
+            case 15:
+                if (!writer.writeByte("plc", plc))
+                    return false;
+
+                writer.incrementState();
+
+            case 16:
+                if (!writer.writeByte("syncMode", syncMode != null ? (byte)syncMode.ordinal() : -1))
+                    return false;
+
+                writer.incrementState();
+
+            case 17:
+                if (!writer.writeBoolean("sys", sys))
+                    return false;
+
+                writer.incrementState();
+
+            case 18:
+                if (!writer.writeInt("taskNameHash", taskNameHash))
+                    return false;
+
+                writer.incrementState();
+
+            case 19:
+                if (!writer.writeLong("threadId", threadId))
+                    return false;
+
+                writer.incrementState();
+
+            case 20:
+                if (!writer.writeAffinityTopologyVersion("topVer", topVer))
+                    return false;
+
+                writer.incrementState();
+
+            case 21:
                 if (!writer.writeMessage("txCutVer", txCutVer))
                     return false;
 
                 writer.incrementState();
+
+            case 22:
+                if (!writer.writeInt("txSize", txSize))
+                    return false;
+
+                writer.incrementState();
+
         }
 
         return true;
@@ -482,7 +478,7 @@ public class GridDistributedTxFinishRequest extends GridDistributedBaseMessage
                 reader.incrementState();
 
             case 11:
-                flags = reader.readByte("flags");
+                cutVer = reader.readMessage("cutVer");
 
                 if (!reader.isLastRead())
                     return false;
@@ -490,7 +486,7 @@ public class GridDistributedTxFinishRequest extends GridDistributedBaseMessage
                 reader.incrementState();
 
             case 12:
-                futId = reader.readIgniteUuid("futId");
+                flags = reader.readByte("flags");
 
                 if (!reader.isLastRead())
                     return false;
@@ -498,7 +494,7 @@ public class GridDistributedTxFinishRequest extends GridDistributedBaseMessage
                 reader.incrementState();
 
             case 13:
-                invalidate = reader.readBoolean("invalidate");
+                futId = reader.readIgniteUuid("futId");
 
                 if (!reader.isLastRead())
                     return false;
@@ -506,7 +502,7 @@ public class GridDistributedTxFinishRequest extends GridDistributedBaseMessage
                 reader.incrementState();
 
             case 14:
-                plc = reader.readByte("plc");
+                invalidate = reader.readBoolean("invalidate");
 
                 if (!reader.isLastRead())
                     return false;
@@ -514,6 +510,14 @@ public class GridDistributedTxFinishRequest extends GridDistributedBaseMessage
                 reader.incrementState();
 
             case 15:
+                plc = reader.readByte("plc");
+
+                if (!reader.isLastRead())
+                    return false;
+
+                reader.incrementState();
+
+            case 16:
                 byte syncModeOrd;
 
                 syncModeOrd = reader.readByte("syncMode");
@@ -525,7 +529,7 @@ public class GridDistributedTxFinishRequest extends GridDistributedBaseMessage
 
                 reader.incrementState();
 
-            case 16:
+            case 17:
                 sys = reader.readBoolean("sys");
 
                 if (!reader.isLastRead())
@@ -533,7 +537,7 @@ public class GridDistributedTxFinishRequest extends GridDistributedBaseMessage
 
                 reader.incrementState();
 
-            case 17:
+            case 18:
                 taskNameHash = reader.readInt("taskNameHash");
 
                 if (!reader.isLastRead())
@@ -541,7 +545,7 @@ public class GridDistributedTxFinishRequest extends GridDistributedBaseMessage
 
                 reader.incrementState();
 
-            case 18:
+            case 19:
                 threadId = reader.readLong("threadId");
 
                 if (!reader.isLastRead())
@@ -549,7 +553,7 @@ public class GridDistributedTxFinishRequest extends GridDistributedBaseMessage
 
                 reader.incrementState();
 
-            case 19:
+            case 20:
                 topVer = reader.readAffinityTopologyVersion("topVer");
 
                 if (!reader.isLastRead())
@@ -557,16 +561,8 @@ public class GridDistributedTxFinishRequest extends GridDistributedBaseMessage
 
                 reader.incrementState();
 
-            case 20:
-                txSize = reader.readInt("txSize");
-
-                if (!reader.isLastRead())
-                    return false;
-
-                reader.incrementState();
-
             case 21:
-                cutVer = reader.readMessage("cutVer");
+                txCutVer = reader.readMessage("txCutVer");
 
                 if (!reader.isLastRead())
                     return false;
@@ -574,12 +570,13 @@ public class GridDistributedTxFinishRequest extends GridDistributedBaseMessage
                 reader.incrementState();
 
             case 22:
-                txCutVer = reader.readMessage("txCutVer");
+                txSize = reader.readInt("txSize");
 
                 if (!reader.isLastRead())
                     return false;
 
                 reader.incrementState();
+
         }
 
         return reader.afterMessageRead(GridDistributedTxFinishRequest.class);

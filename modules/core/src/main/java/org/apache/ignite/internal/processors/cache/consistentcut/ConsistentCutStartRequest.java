@@ -18,7 +18,6 @@
 package org.apache.ignite.internal.processors.cache.consistentcut;
 
 import java.nio.ByteBuffer;
-import org.apache.ignite.internal.managers.deployment.GridDeploymentRequest;
 import org.apache.ignite.internal.util.tostring.GridToStringInclude;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.plugin.extensions.communication.Message;
@@ -68,11 +67,13 @@ public class ConsistentCutStartRequest implements Message {
             writer.onHeaderWritten();
         }
 
-        if (writer.state() == 0) {
-            if (!writer.writeMessage("ver", ver))
-                return false;
+        switch (writer.state()) {
+            case 0:
+                if (!writer.writeMessage("ver", ver))
+                    return false;
 
-            writer.incrementState();
+                writer.incrementState();
+
         }
 
         return true;
@@ -85,16 +86,18 @@ public class ConsistentCutStartRequest implements Message {
         if (!reader.beforeMessageRead())
             return false;
 
-        if (reader.state() == 0) {
-            ver = reader.readMessage("ver");
+        switch (reader.state()) {
+            case 0:
+                ver = reader.readMessage("ver");
 
-            if (!reader.isLastRead())
-                return false;
+                if (!reader.isLastRead())
+                    return false;
 
-            reader.incrementState();
+                reader.incrementState();
+
         }
 
-        return reader.afterMessageRead(GridDeploymentRequest.class);
+        return reader.afterMessageRead(ConsistentCutStartRequest.class);
     }
 
     /** {@inheritDoc} */
