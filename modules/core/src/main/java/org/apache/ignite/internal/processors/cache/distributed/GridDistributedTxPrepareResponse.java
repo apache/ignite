@@ -174,7 +174,7 @@ public class GridDistributedTxPrepareResponse extends GridDistributedBaseMessage
     }
 
     /** {@inheritDoc} */
-    @Override public GridCacheVersion xidVersion() {
+    public GridCacheVersion xidVersion() {
         return version();
     }
 

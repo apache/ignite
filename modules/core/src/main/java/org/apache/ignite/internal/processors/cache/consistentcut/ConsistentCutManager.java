@@ -109,11 +109,13 @@ public class ConsistentCutManager extends GridCacheSharedManagerAdapter implemen
      */
     private final Set<IgniteInternalTx> committingTxs = ConcurrentHashMap.newKeySet();
 
-    /** Consistent Cut coordinator node ID. {@code null} if Consistent Cut is disabled. */
-    protected volatile @Nullable UUID cutCrdNodeId;
+    /**
+     * Consistent Cut coordinator node ID. {@code null} if Consistent Cut is disabled.
+     */
+    private volatile @Nullable UUID cutCrdNodeId;
 
     /**
-     * On Consistent Cut initiator node, tracks server nodes hasn't finished Consistent Cut yet.
+     * On Consistent Cut coordinator node, tracks server nodes hasn't finished Consistent Cut yet.
      */
     protected volatile @Nullable Set<UUID> notFinishedSrvNodes;
 
@@ -160,7 +162,9 @@ public class ConsistentCutManager extends GridCacheSharedManagerAdapter implemen
         }
     }
 
-    /** {@inheritDoc} */
+    /**
+     * Init Consistent Cut coordinator node. It is same as Ignite coordinator node.
+     */
     @Override public void onDoneBeforeTopologyUnlock(GridDhtPartitionsExchangeFuture fut) {
         if (fut.serverNodeDiscoveryEvent() || fut.activateCluster()) {
             AffinityTopologyVersion topVer = fut.topologyVersion();
@@ -323,7 +327,7 @@ public class ConsistentCutManager extends GridCacheSharedManagerAdapter implemen
             if (cutState.cut() != null) {
                 ConsistentCutVersion cutVer = cutState.version();
 
-                ConsistentCutState finishedCutState = new ConsistentCutState(cutVer);
+                ConsistentCutState finishedCutState = new ConsistentCutState(cutVer, null);
 
                 if (CONSITENT_CUT_STATE.compareAndSet(this, cutState, finishedCutState)) {
                     committingTxs.removeIf(tx -> tx.finishFuture().isDone());
@@ -401,7 +405,7 @@ public class ConsistentCutManager extends GridCacheSharedManagerAdapter implemen
     /**
      * Coordinator handles finish responses from remote nodes.
      */
-    void handleConsistentCutFinishResponse(UUID nodeId, ConsistentCutFinishResponse msg) {
+    private void handleConsistentCutFinishResponse(UUID nodeId, ConsistentCutFinishResponse msg) {
         ConsistentCutVersion cutVer = CONSITENT_CUT_STATE.get(this).version();
 
         Set<UUID> awaitNodes = notFinishedSrvNodes;

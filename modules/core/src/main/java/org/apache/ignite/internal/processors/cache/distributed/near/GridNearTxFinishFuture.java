@@ -911,7 +911,6 @@ public final class GridNearTxFinishFuture<K, V> extends GridCacheCompoundIdentit
             miniId,
             tx.topologyVersion(),
             tx.xidVersion(),
-            tx.nearXidVersion(),
             tx.commitVersion(),
             tx.threadId(),
             tx.isolation(),

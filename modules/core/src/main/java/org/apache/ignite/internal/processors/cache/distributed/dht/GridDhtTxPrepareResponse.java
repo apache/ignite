@@ -68,12 +68,6 @@ public class GridDhtTxPrepareResponse extends GridDistributedTxPrepareResponse {
     @GridDirectCollection(GridCacheEntryInfo.class)
     private List<GridCacheEntryInfo> preloadEntries;
 
-    /** Near transaction ID. */
-    private GridCacheVersion nearXidVer;
-
-    /** */
-    private boolean onePhaseCommit;
-
     /**
      * Empty constructor required by {@link Externalizable}.
      */
@@ -91,21 +85,17 @@ public class GridDhtTxPrepareResponse extends GridDistributedTxPrepareResponse {
     public GridDhtTxPrepareResponse(
         int part,
         GridCacheVersion xid,
-        GridCacheVersion nearXidVer,
         IgniteUuid futId,
         int miniId,
-        boolean addDepInfo,
-        boolean onePhaseCommit
+        boolean addDepInfo
     ) {
         super(part, xid, addDepInfo);
 
         assert futId != null;
         assert miniId != 0;
 
-        this.nearXidVer = nearXidVer;
         this.futId = futId;
         this.miniId = miniId;
-        this.onePhaseCommit = onePhaseCommit;
     }
 
     /**
@@ -119,22 +109,18 @@ public class GridDhtTxPrepareResponse extends GridDistributedTxPrepareResponse {
     public GridDhtTxPrepareResponse(
         int part,
         GridCacheVersion xid,
-        GridCacheVersion nearXidVer,
         IgniteUuid futId,
         int miniId,
         Throwable err,
-        boolean addDepInfo,
-        boolean onePhaseCommit
+        boolean addDepInfo
     ) {
         super(part, xid, err, addDepInfo);
 
         assert futId != null;
         assert miniId != 0;
 
-        this.nearXidVer = nearXidVer;
         this.futId = futId;
         this.miniId = miniId;
-        this.onePhaseCommit = onePhaseCommit;
     }
 
     /**
@@ -200,16 +186,6 @@ public class GridDhtTxPrepareResponse extends GridDistributedTxPrepareResponse {
             preloadEntries = new ArrayList<>();
 
         preloadEntries.add(info);
-    }
-
-    /** {@inheritDoc} */
-    @Override public GridCacheVersion nearXidVersion() {
-        return nearXidVer;
-    }
-
-    /** */
-    public boolean onePhaseCommit() {
-        return onePhaseCommit;
     }
 
     /** {@inheritDoc} */
@@ -301,17 +277,6 @@ public class GridDhtTxPrepareResponse extends GridDistributedTxPrepareResponse {
 
                 writer.incrementState();
 
-            case 18:
-                if (!writer.writeMessage("nearXidVer", nearXidVer))
-                    return false;
-
-                writer.incrementState();
-
-            case 19:
-                if (!writer.writeBoolean("onePhaseCommit", onePhaseCommit))
-                    return false;
-
-                writer.incrementState();
         }
 
         return true;
@@ -368,21 +333,6 @@ public class GridDhtTxPrepareResponse extends GridDistributedTxPrepareResponse {
 
                 reader.incrementState();
 
-            case 18:
-                nearXidVer = reader.readMessage("nearXidVer");
-
-                if (!reader.isLastRead())
-                    return false;
-
-                reader.incrementState();
-
-            case 19:
-                onePhaseCommit = reader.readBoolean("onePhaseCommit");
-
-                if (!reader.isLastRead())
-                    return false;
-
-                reader.incrementState();
         }
 
         return reader.afterMessageRead(GridDhtTxPrepareResponse.class);
@@ -395,7 +345,7 @@ public class GridDhtTxPrepareResponse extends GridDistributedTxPrepareResponse {
 
     /** {@inheritDoc} */
     @Override public byte fieldsCount() {
-        return 20;
+        return 18;
     }
 
     /** {@inheritDoc} */

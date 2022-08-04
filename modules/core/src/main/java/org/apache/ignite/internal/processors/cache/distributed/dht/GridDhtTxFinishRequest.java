@@ -74,9 +74,6 @@ public class GridDhtTxFinishRequest extends GridDistributedTxFinishRequest {
     @GridDirectCollection(PartitionUpdateCountersMessage.class)
     private Collection<PartitionUpdateCountersMessage> updCntrs;
 
-    /** Transaction ID on near node. */
-    private GridCacheVersion nearXidVer;
-
     /**
      * Empty constructor required for {@link Externalizable}.
      */
@@ -117,7 +114,6 @@ public class GridDhtTxFinishRequest extends GridDistributedTxFinishRequest {
         int miniId,
         @NotNull AffinityTopologyVersion topVer,
         GridCacheVersion xidVer,
-        GridCacheVersion nearXidVer,
         GridCacheVersion commitVer,
         long threadId,
         TransactionIsolation isolation,
@@ -167,7 +163,6 @@ public class GridDhtTxFinishRequest extends GridDistributedTxFinishRequest {
         this.miniId = miniId;
         this.mvccSnapshot = mvccSnapshot;
         this.updCntrs = updCntrs;
-        this.nearXidVer = nearXidVer;
 
         needReturnValue(retVal);
         waitRemoteTransactions(waitRemoteTxs);
@@ -180,7 +175,6 @@ public class GridDhtTxFinishRequest extends GridDistributedTxFinishRequest {
      * @param miniId Mini future ID.
      * @param topVer Topology version.
      * @param xidVer Transaction ID.
-     * @param nearXidVer Transaction ID on near node.
      * @param threadId Thread ID.
      * @param commitVer Commit version.
      * @param isolation Transaction isolation.
@@ -209,7 +203,6 @@ public class GridDhtTxFinishRequest extends GridDistributedTxFinishRequest {
         int miniId,
         @NotNull AffinityTopologyVersion topVer,
         GridCacheVersion xidVer,
-        GridCacheVersion nearXidVer,
         GridCacheVersion commitVer,
         long threadId,
         TransactionIsolation isolation,
@@ -237,7 +230,6 @@ public class GridDhtTxFinishRequest extends GridDistributedTxFinishRequest {
             miniId,
             topVer,
             xidVer,
-            nearXidVer,
             commitVer,
             threadId,
             isolation,
@@ -372,13 +364,6 @@ public class GridDhtTxFinishRequest extends GridDistributedTxFinishRequest {
         return updCntrs;
     }
 
-    /**
-     * @return Transaction ID on near node.
-     */
-    @Override public GridCacheVersion nearXidVersion() {
-        return nearXidVer;
-    }
-
     /** {@inheritDoc} */
     @Override public boolean writeTo(ByteBuffer buf, MessageWriter writer) {
         writer.setBuffer(buf);
@@ -442,11 +427,6 @@ public class GridDhtTxFinishRequest extends GridDistributedTxFinishRequest {
 
                 writer.incrementState();
 
-            case 31:
-                if (!writer.writeMessage("nearXidVer", nearXidVer))
-                    return false;
-
-                writer.incrementState();
         }
 
         return true;
@@ -531,13 +511,6 @@ public class GridDhtTxFinishRequest extends GridDistributedTxFinishRequest {
 
                 reader.incrementState();
 
-            case 31:
-                nearXidVer = reader.readMessage("nearXidVer");
-
-                if (!reader.isLastRead())
-                    return false;
-
-                reader.incrementState();
         }
 
         return reader.afterMessageRead(GridDhtTxFinishRequest.class);
@@ -550,7 +523,7 @@ public class GridDhtTxFinishRequest extends GridDistributedTxFinishRequest {
 
     /** {@inheritDoc} */
     @Override public byte fieldsCount() {
-        return 32;
+        return 31;
     }
 
     /** {@inheritDoc} */

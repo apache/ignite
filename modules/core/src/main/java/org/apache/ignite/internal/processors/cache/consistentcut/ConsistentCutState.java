@@ -44,11 +44,6 @@ class ConsistentCutState {
     }
 
     /** */
-    ConsistentCutState(ConsistentCutVersion cutVer) {
-        this(cutVer, null);
-    }
-
-    /** */
     ConsistentCut cut() {
         return cut;
     }

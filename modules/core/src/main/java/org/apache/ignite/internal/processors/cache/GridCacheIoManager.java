@@ -768,11 +768,9 @@ public class GridCacheIoManager extends GridCacheSharedManagerAdapter {
                 GridDhtTxPrepareResponse res = new GridDhtTxPrepareResponse(
                     req.partition(),
                     req.version(),
-                    req.nearXidVersion(),
                     req.futureId(),
                     req.miniId(),
-                    req.deployInfo() != null,
-                    req.onePhaseCommit());
+                    req.deployInfo() != null);
 
                 res.error(req.classError());
 

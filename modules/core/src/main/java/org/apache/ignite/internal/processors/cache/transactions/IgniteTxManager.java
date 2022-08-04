@@ -2240,17 +2240,15 @@ public class IgniteTxManager extends GridCacheSharedManagerAdapter {
      *
      * @param nearVer Near version ID.
      * @param txNum Number of transactions.
-     * @return Future for info indicating if transactions were prepared or committed.
+     * @return Future for flag indicating if transactions were prepared or committed or {@code null} for success future.
      */
-    public IgniteInternalFuture<Boolean> txsPreparedOrCommitted(GridCacheVersion nearVer, int txNum) {
+    @Nullable public IgniteInternalFuture<Boolean> txsPreparedOrCommitted(GridCacheVersion nearVer, int txNum) {
         return txsPreparedOrCommitted(nearVer, txNum, null, null);
     }
 
     /**
-     * Checks transaction on near node whether it's committed or not.
-     *
      * @param xidVer Version.
-     * @return Future for info indicating if transactions was committed.
+     * @return Future for flag indicating if transactions was committed.
      */
     public IgniteInternalFuture<Boolean> txCommitted(GridCacheVersion xidVer) {
         final GridFutureAdapter<Boolean> resFut = new GridFutureAdapter<>();
@@ -2324,15 +2322,11 @@ public class IgniteTxManager extends GridCacheSharedManagerAdapter {
      * @param processedVers Processed versions.
      * @return Future for flag indicating if transactions were prepared or committed or {@code null} for success future.
      */
-    private IgniteInternalFuture<Boolean> txsPreparedOrCommitted(
-        final GridCacheVersion nearVer,
+    @Nullable private IgniteInternalFuture<Boolean> txsPreparedOrCommitted(final GridCacheVersion nearVer,
         int txNum,
         @Nullable GridFutureAdapter<Boolean> fut,
         @Nullable Collection<GridCacheVersion> processedVers
     ) {
-        if (fut == null)
-            fut = new GridFutureAdapter<>();
-
         for (final IgniteInternalTx tx : activeTransactions()) {
             if (nearVer.equals(tx.nearXidVersion())) {
                 IgniteInternalFuture<?> prepFut = tx.currentPrepareFuture();
@@ -2384,6 +2378,9 @@ public class IgniteTxManager extends GridCacheSharedManagerAdapter {
                         if (log.isDebugEnabled())
                             log.debug("Transaction was not prepared (rolled back): " + tx);
 
+                        if (fut == null)
+                            fut = new GridFutureAdapter<>();
+
                         fut.onDone(false);
 
                         return fut;
@@ -2400,6 +2397,9 @@ public class IgniteTxManager extends GridCacheSharedManagerAdapter {
                         else {
                             if (log.isDebugEnabled())
                                 log.debug("Transaction is not prepared: " + tx);
+
+                            if (fut == null)
+                                fut = new GridFutureAdapter<>();
 
                             fut.onDone(false);
 
@@ -2439,6 +2439,9 @@ public class IgniteTxManager extends GridCacheSharedManagerAdapter {
                 }
             }
         }
+
+        if (fut == null)
+            fut = new GridFutureAdapter<>();
 
         fut.onDone(false);
 

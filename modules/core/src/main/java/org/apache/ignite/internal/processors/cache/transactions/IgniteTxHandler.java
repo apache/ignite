@@ -1234,11 +1234,9 @@ public class IgniteTxHandler {
                 res = new GridDhtTxPrepareResponse(
                     req.partition(),
                     req.version(),
-                    req.nearXidVersion(),
                     req.futureId(),
                     req.miniId(),
-                    req.deployInfo() != null,
-                    req.onePhaseCommit());
+                    req.deployInfo() != null);
 
                 // Start near transaction first.
                 nearTx = !F.isEmpty(req.nearWrites()) ? startNearRemoteTx(ctx.deploy().globalLoader(), nodeId, req) : null;
@@ -1305,12 +1303,10 @@ public class IgniteTxHandler {
                 res = new GridDhtTxPrepareResponse(
                     req.partition(),
                     req.version(),
-                    req.nearXidVersion(),
                     req.futureId(),
                     req.miniId(),
                     e,
-                    req.deployInfo() != null,
-                    req.onePhaseCommit());
+                    req.deployInfo() != null);
             }
 
             if (req.onePhaseCommit()) {

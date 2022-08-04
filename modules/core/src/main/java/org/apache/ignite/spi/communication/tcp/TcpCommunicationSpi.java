@@ -372,7 +372,7 @@ public class TcpCommunicationSpi extends TcpCommunicationConfigInitializer {
 
     /** Logger. */
     @LoggerResource
-    protected IgniteLogger log;
+    private IgniteLogger log;
 
     /** Logger. */
     @LoggerResource(categoryName = "org.apache.ignite.internal.diagnostic")

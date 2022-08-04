@@ -218,7 +218,7 @@ public class GridDhtTxPrepareRequest extends GridDistributedTxPrepareRequest {
     /**
      * @return Near transaction ID.
      */
-    @Override public GridCacheVersion nearXidVersion() {
+    public GridCacheVersion nearXidVersion() {
         return nearXidVer;
     }
 

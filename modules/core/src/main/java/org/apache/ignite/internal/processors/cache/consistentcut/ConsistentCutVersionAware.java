@@ -17,7 +17,6 @@
 
 package org.apache.ignite.internal.processors.cache.consistentcut;
 
-import org.apache.ignite.internal.processors.cache.version.GridCacheVersion;
 import org.jetbrains.annotations.Nullable;
 
 /**
@@ -52,18 +51,4 @@ public interface ConsistentCutVersionAware {
      * @param cutVer {@code null} if transaction will commit BEFORE the latest known Consistent Cut version.
      */
     public default void txCutVersion(@Nullable ConsistentCutVersion cutVer) {}
-
-    /**
-     * @return Near transaction ID.
-     */
-    public default GridCacheVersion nearXidVersion() {
-        return null;
-    }
-
-    /**
-     * @return Transaction ID.
-     */
-    public default GridCacheVersion xidVersion() {
-        return null;
-    }
 }

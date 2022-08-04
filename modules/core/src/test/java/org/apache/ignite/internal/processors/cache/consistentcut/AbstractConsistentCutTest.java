@@ -449,7 +449,6 @@ public abstract class AbstractConsistentCutTest extends GridCommonAbstractTest {
 
                 bld
                     .append("; lastCutVer=").append(m.cutVersion())
-                    .append("; nearTxVer=").append(m.nearXidVersion().asIgniteUuid())
                     .append("; txVer=").append(m.xidVersion().asIgniteUuid())
                     .append("; txCutVer=").append(m.txCutVersion());
             }
@@ -458,7 +457,6 @@ public abstract class AbstractConsistentCutTest extends GridCommonAbstractTest {
 
                 bld
                     .append("; lastCutVer=").append(m.cutVersion())
-                    .append("; nearTxVer=").append(m.nearXidVersion().asIgniteUuid())
                     .append("; txVer=").append(m.xidVersion().asIgniteUuid())
                     .append("; txCutVer=").append(m.txCutVersion());
             }
@@ -489,17 +487,14 @@ public abstract class AbstractConsistentCutTest extends GridCommonAbstractTest {
 
                 bld
                     .append("; lastCutVer=").append(m.cutVersion())
-                    .append("; nearTxVer=").append(m.nearXidVersion().asIgniteUuid())
                     .append("; txVer=").append(m.xidVersion().asIgniteUuid())
-                    .append("; txCutVer=").append((m.txCutVersion()))
-                    .append("; 1PC=").append((m.onePhaseCommit()));
+                    .append("; txCutVer=").append((m.txCutVersion()));
             }
             else if (msg instanceof GridNearTxPrepareResponse) {
                 GridNearTxPrepareResponse m = (GridNearTxPrepareResponse)msg;
 
                 bld
                     .append("; lastCutVer=").append(m.cutVersion())
-                    .append("; nearTxVer=").append(m.nearXidVersion().asIgniteUuid())
                     .append("; txVer=").append(m.xidVersion().asIgniteUuid())
                     .append("; txCutVer=").append((m.txCutVersion()))
                     .append("; 1PC=").append((m.onePhaseCommit()));

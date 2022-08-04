@@ -346,7 +346,7 @@ public abstract class AbstractConsistentCutBlockingTest extends AbstractConsiste
 
     /** Manually triggers new Consistent Cut. */
     private void triggerConsistentCut() {
-        grid(0).context().cache().context().consistentCutMgr().triggerConsistentCutOnCluster("explicit");
+        TestConsistentCutManager.cutMgr(grid(0)).triggerConsistentCutOnCluster("explicit");
     }
 
     /** */
