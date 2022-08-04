@@ -57,7 +57,7 @@ public class WalCompactionNotificationsTest extends GridCommonAbstractTest {
     private final EventListener evtLsnr = new EventListener();
 
     /** Wal archive size. */
-    private long archiveSize = DataStorageConfiguration.UNLIMITED_WAL_ARCHIVE;
+    private long archiveSize;
 
     /** {@inheritDoc} */
     @Override protected IgniteConfiguration getConfiguration(String name) throws Exception {
@@ -103,7 +103,9 @@ public class WalCompactionNotificationsTest extends GridCommonAbstractTest {
      * @throws Throwable If failed.
      */
     @Test
-    public void testNotifications() throws Throwable {
+    public void testNotificationsUnlimitedWal() throws Throwable {
+        archiveSize = DataStorageConfiguration.UNLIMITED_WAL_ARCHIVE;
+
         NotificationIndexListener notifyStartLsnr = new NotificationIndexListener(evtLsnr.errRef, evtLsnr.enqueueHist, true);
         NotificationIndexListener notifyEndLsnr = new NotificationIndexListener(evtLsnr.errRef, evtLsnr.compressedHist, false);
 
@@ -114,7 +116,7 @@ public class WalCompactionNotificationsTest extends GridCommonAbstractTest {
         ig.cluster().state(ClusterState.ACTIVE);
 
         doCachePuts(ig, 100);
-        evtLsnr.checkErrors();
+        evtLsnr.checkErrors(true);
 
         ig.cluster().state(ClusterState.INACTIVE);
         stopGrid(0);
@@ -123,8 +125,38 @@ public class WalCompactionNotificationsTest extends GridCommonAbstractTest {
         ig0.cluster().state(ClusterState.ACTIVE);
 
         doCachePuts(ig0, 100);
-        evtLsnr.checkErrors();
+        evtLsnr.checkErrors(true);
     }
+
+    /**
+     * @throws Throwable If failed.
+     */
+    @Test
+    public void testNotificationsEmptyArchive() throws Throwable {
+        archiveSize = SEGMENT_SIZE;
+
+        NotificationIndexListener notifyStartLsnr = new NotificationIndexListener(evtLsnr.errRef, evtLsnr.enqueueHist, true);
+        NotificationIndexListener notifyEndLsnr = new NotificationIndexListener(evtLsnr.errRef, evtLsnr.compressedHist, false);
+
+        logger.registerListener(notifyStartLsnr);
+        logger.registerListener(notifyEndLsnr);
+
+        IgniteEx ig = startGrid(0);
+        ig.cluster().state(ClusterState.ACTIVE);
+
+        doCachePuts(ig, 100);
+        evtLsnr.checkErrors(false);
+
+        ig.cluster().state(ClusterState.INACTIVE);
+        stopGrid(0);
+
+        IgniteEx ig0 = startGrid(0);
+        ig0.cluster().state(ClusterState.ACTIVE);
+
+//        doCachePuts(ig0, 100);
+        evtLsnr.checkErrors(false);
+    }
+
 
     /** */
     private void doCachePuts(IgniteEx ig, int segmentsCnt) {
@@ -157,8 +189,8 @@ public class WalCompactionNotificationsTest extends GridCommonAbstractTest {
             this.idxHistory = idxHistory;
 
             pattern = startNotification ?
-                Pattern.compile("Segment compressed notification \\[idx=(-?\\d{1,10})\\]") :
-                Pattern.compile("Enqueuing segment for compression \\[idx=(-?\\d{1,10})\\]");
+                Pattern.compile("Enqueuing segment for compression \\[idx=(?<idx>-?\\d{1,10})\\]") :
+                Pattern.compile("(Segment compressed notification|Skipping segment compression) \\[idx=(?<idx>-?\\d{1,10})\\]");
         }
 
         /** {@inheritDoc} */
@@ -180,7 +212,7 @@ public class WalCompactionNotificationsTest extends GridCommonAbstractTest {
                 if (!matcher.find())
                     return;
 
-                int idx = Integer.parseInt(matcher.group(1));
+                int idx = Integer.parseInt(matcher.group("idx"));
 
                 assertTrue("Negative index value in log [idx=" + idx + ", msg=" + s + ']', idx >= 0);
                 assertFalse("Duplicate index in log [idx=" + idx + ", msg=" + s + ']', idxHistory.get(idx));
@@ -253,22 +285,33 @@ public class WalCompactionNotificationsTest extends GridCommonAbstractTest {
         /**
          * @throws Throwable If failed.
          */
-        public void checkErrors() throws Throwable {
+        public void checkErrors(boolean checkFullness) throws Throwable {
             Throwable err = errRef.get();
 
             if (err != null)
                 throw err;
 
             IgniteWriteAheadLogManager walMgr = grid(0).context().cache().context().wal();
-            GridTestUtils.waitForCondition(() -> lastEvtIdx == walMgr.lastCompactedSegment(), getTestTimeout());
-            assertEquals(lastEvtIdx, walMgr.lastCompactedSegment());
+
+            if (checkFullness) {
+                GridTestUtils.waitForCondition(() -> lastEvtIdx == walMgr.lastCompactedSegment(), 5_000);
+                assertEquals("evtIdx=" + lastEvtIdx + ", compacted=" + walMgr.lastCompactedSegment(), lastEvtIdx, walMgr.lastCompactedSegment());
+            }
 
             int lastCompactedIdx = (int)walMgr.lastCompactedSegment();
 
             for (int i = 0; i < lastCompactedIdx; i++) {
-                assertTrue("Missing event [idx=" + i + ']', evtHistory.get(i));
-                assertTrue("Log compression start missing [idx=" + i + ']', enqueueHist.get(i));
-                assertTrue("Log compression end missing [idx=" + i + ']', compressedHist.get(i));
+                if (checkFullness) {
+                    assertTrue("Missing event [idx=" + i + ']', evtHistory.get(i));
+                    assertTrue("Log compression start missing [idx=" + i + ']', enqueueHist.get(i));
+                    assertTrue("Log compression end missing [idx=" + i + ']', compressedHist.get(i));
+                } else {
+                    assertTrue("Missing index [idx=" + i +
+//                            ", event=" + evtHistory.get(i) +
+                            ", msgEnqueue=" + enqueueHist.get(i) +
+                            ", msgCompress=" + compressedHist.get(i) + ']',
+                        enqueueHist.get(i) == compressedHist.get(i));
+                }
             }
         }
     }

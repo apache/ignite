@@ -2266,6 +2266,9 @@ public class FileWriteAheadLogManager extends GridCacheSharedManagerAdapter impl
             if (reserved)
                 return segmentToCompress;
             else {
+                if (log.isInfoEnabled())
+                    log.info("Skipping segment compression [idx=" + segmentToCompress + ']');
+
                 segmentAware.onSegmentCompressed(segmentToCompress);
 
                 return -1;
