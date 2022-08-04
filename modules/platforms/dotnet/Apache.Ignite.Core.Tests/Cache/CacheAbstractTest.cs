@@ -2254,7 +2254,7 @@ namespace Apache.Ignite.Core.Tests.Cache
             var cacheNames = GetIgnite(0).GetCacheNames();
             var expectedNames = new[]
             {
-                "local", "local_atomic", "partitioned", "partitioned_atomic",
+                "partitioned", "partitioned_atomic",
                 "partitioned_near", "partitioned_atomic_near", "replicated", "replicated_atomic"
             };
 

@@ -54,9 +54,6 @@ import static org.apache.ignite.internal.processors.cache.distributed.dht.topolo
  * ScanQuery failover test. Tests scenario where user supplied closures throw unhandled errors.
  */
 public class CacheScanQueryFailoverTest extends GridCommonAbstractTest {
-    /** */
-    private static final String LOCAL_CACHE_NAME = "local";
-
     /** {@inheritDoc} */
     @Override protected void beforeTest() throws Exception {
         super.beforeTest();
