@@ -50,7 +50,7 @@ public class IndexKeyFactory {
 
     /** Wraps user object to {@code IndexKey} object.  */
     public static IndexKey wrap(Object o, IndexKeyType keyType, CacheObjectValueContext coctx, IndexKeyTypeSettings keyTypeSettings) {
-        return wrap(o, keyType, coctx, keyTypeSettings.binaryUnsigned());
+        return wrap(o, keyType, coctx, keyTypeSettings != null && keyTypeSettings.binaryUnsigned());
     }
 
     /** Wraps user object to {@code IndexKey} object.  */
