@@ -104,8 +104,8 @@ public class ConsistentCut {
 
         GridCompoundFuture<Boolean, Boolean> checkFut = checkTransactions(ver, activeTxs);
 
-        checkFut.listen(consistentCutFinish -> {
-            if (Boolean.FALSE.equals(consistentCutFinish.result())) {
+        checkFut.listen(finish -> {
+            if (Boolean.FALSE.equals(finish.result())) {
                 if (log.isDebugEnabled())
                     log.debug("Cut might be inconsistent for version " + ver + ". Skip writing FinishRecord.");
             }
