@@ -23,14 +23,18 @@ import java.util.UUID;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicReference;
+import java.util.function.UnaryOperator;
 import java.util.stream.Collectors;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCache;
+import org.apache.ignite.IgniteException;
 import org.apache.ignite.cache.CacheWriteSynchronizationMode;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.DataRegionConfiguration;
 import org.apache.ignite.configuration.DataStorageConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
+import org.apache.ignite.events.Event;
+import org.apache.ignite.events.EventType;
 import org.apache.ignite.failure.StopNodeFailureHandler;
 import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.IgniteFutureTimeoutCheckedException;
@@ -41,6 +45,7 @@ import org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtTxFini
 import org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtTxLocal;
 import org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtTxPrepareFuture;
 import org.apache.ignite.internal.processors.cache.distributed.near.GridNearTxFinishRequest;
+import org.apache.ignite.internal.util.typedef.PE;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
@@ -264,65 +269,85 @@ public class TxRecoveryWithConcurrentRollbackTest extends GridCommonAbstractTest
      * The test enforces the concurrent processing of the same prepared transaction both in the
      * tx recovery procedure started due to primary node left and in the tx recovery request handler
      * invoked by message from another backup node.
-     * <ul>
-     *  <li>Start 3 nodes (g0, g1, g2) and cache with 2 backups.</li>
-     *  <li>Prepare a transaction with g2 as a primary node.</li>
-     *  <li>Kill g2.</li>
-     *  <li>Enforce the concurrent processing of transaction in tx recovery on g1.</li>
-     * </ul>
+     * <p>
+     * The idea is to have a 3-nodes cluster and a cache with 2 backups. So there will be 2 backup nodes
+     * to execute the tx recovery in parallel if primary one would fail. These backup nodes will send the
+     * tx recovery requests to each other, so the tx recovery request handler will be invoked as well.
+     * <p>
      * Use several attempts to reproduce the race condition.
      * <p>
-     * Expected result: transaction is finished both on g0 and g1
+     * Expected result: transaction is finished on both backup nodes and the partition map exchange is completed as well.
      */
     @Test
     public void testRecoveryNotDeadLockOnPrimaryFail() throws Exception {
         backups = 2;
         persistence = false;
 
-        for (int iter = 0; iter < 75; iter++) {
+        for (int iter = 0; iter < 100; iter++) {
             stopAllGrids();
 
             log.info("iteration=" + iter);
-            final IgniteEx grid0 = startGrid("g0");
-            final IgniteEx grid1 = startGrid("g1",
-                    cfg -> cfg.setSystemThreadPoolSize(1).setStripedPoolSize(1));
-            final IgniteEx grid2 = startGrid("g2");
+
+            final IgniteEx grid0 = startGrid(0);
+
+            final IgniteEx grid1 = startGrid(1, (UnaryOperator<IgniteConfiguration>)cfg ->
+                    cfg.setSystemThreadPoolSize(1).setStripedPoolSize(1));
+
+            final IgniteEx grid2 = startGrid(2);
 
             grid0.cluster().state(ACTIVE);
 
             final IgniteCache<Object, Object> cache = grid2.cache(DEFAULT_CACHE_NAME);
 
-            final Integer g2Key = primaryKeys(grid2.cache(DEFAULT_CACHE_NAME), 1, 0).get(0);
+            final Integer g2Key = primaryKeys(cache, 1, 0).get(0);
 
             List<IgniteInternalTx> txs0 = null;
             List<IgniteInternalTx> txs1 = null;
+            List<IgniteInternalTx> txs2;
 
-            CountDownLatch grid1BlockLatch = new CountDownLatch(1);
+            final CountDownLatch grid1BlockLatch = new CountDownLatch(1);
+
+            final CountDownLatch grid1NodeLeftEventLatch = new CountDownLatch(1);
+
+            int[] stripeHolder = new int[1];
 
             try (final Transaction tx = grid2.transactions().txStart(PESSIMISTIC, REPEATABLE_READ)) {
                 cache.put(g2Key, Boolean.TRUE);
+
                 TransactionProxyImpl<?, ?> p = (TransactionProxyImpl<?, ?>)tx;
+
                 p.tx().prepare(true);
 
                 txs0 = txs(grid0);
                 txs1 = txs(grid1);
-                List<IgniteInternalTx> txs2 = txs(grid2);
+                txs2 = txs(grid2);
 
                 assertTrue(txs0.size() == 1);
                 assertTrue(txs1.size() == 1);
                 assertTrue(txs2.size() == 1);
 
-                // Prevent tx recovery request to be sent from grid0 to grid1.
-                spi(grid0).blockMessages(GridCacheTxRecoveryRequest.class, grid1.name());
+                grid1.events().localListen(new PE() {
+                    @Override public boolean apply(Event evt) {
+                        grid1NodeLeftEventLatch.countDown();
+
+                        return true;
+                    }
+                }, EventType.EVT_NODE_LEFT);
 
                 // Block recovery procedure processing on grid1
                 grid1.context().pools().getSystemExecutorService().execute(() -> U.awaitQuiet(grid1BlockLatch));
-                // Block stripe tx recovery request processing on grid1
+
                 int stripe = U.safeAbs(p.tx().xidVersion().hashCode());
+
+                stripeHolder[0] = stripe;
+
+                // Block stripe tx recovery request processing on grid1
                 grid1.context().pools().getStripedExecutorService().execute(stripe, () -> U.awaitQuiet(grid1BlockLatch));
 
-                // Prevent finish request processing on grid0 and grid1.
+                // Prevent finish request processing on grid0
                 spi(grid2).blockMessages(GridDhtTxFinishRequest.class, grid0.name());
+
+                // Prevent finish request processing on grid1
                 spi(grid2).blockMessages(GridDhtTxFinishRequest.class, grid1.name());
 
                 runAsync(() -> {
@@ -334,32 +359,31 @@ public class TxRecoveryWithConcurrentRollbackTest extends GridCommonAbstractTest
                 // Expected.
             }
 
-            // Wait grid0 is ready to send the tx recovery request to grid1
-            spi(grid0).waitForBlocked();
-            // Let grid0 send the tx recovery request to grid1
-            log.info("unblock grid0");
-            spi(grid0).stopBlock();
-            // Give grid1 some time to receive the tx recovery request (processing is still blocked in grid1).
-            log.info("sleep in grid0");
-            doSleep(100);
+            // Wait until grid1 node detects primary node left
+            grid1NodeLeftEventLatch.await();
+
+            // Wait until grid1 receives the tx recovery request and the corresponding processing task is added into the queue
+            assertTrue("tx recovery request received on grid1", GridTestUtils.waitForCondition(() ->
+                    grid1.context().pools().getStripedExecutorService().queueStripeSize(stripeHolder[0]) == 1, 5_000));
 
             // Unblock processing in grid1. Simultaneously in striped and system pools to start
             // recovery procedure and the tx recovery request processing at the "same" moment
             // (for the same transaction). This should increase chances for race condition occur in
             // the IgniteTxAdapter::markFinalizing.
-            log.info("unblock grid1");
             grid1BlockLatch.countDown();
 
-            // Wait transaction finish in grid0.
-            txs0.get(0).finishFuture().get(5_000);
+            waitForTopology(2);
 
             try {
-                // Check if transaction is finished in grid1. It wouldn't if race condition occur.
-                txs1.get(0).finishFuture().get(20_000);
+                awaitPartitionMapExchange();
             }
-            catch (IgniteFutureTimeoutCheckedException e) {
-                fail("fail to markFinalizing in grid1, iteration=" + iter);
+            catch (IgniteException ex) {
+                log.error("exception from the awaitPartitionMapExchange", ex);
+                fail("fail to wait for the partition map exchange, iteration=" + iter);
             }
+
+            assertTrue(txs0.get(0).finishFuture().isDone());
+            assertTrue(txs1.get(0).finishFuture().isDone());
         }
     }
 
