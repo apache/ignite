@@ -31,6 +31,7 @@ import org.apache.ignite.cache.query.IndexQuery;
 import org.apache.ignite.cache.query.IndexQueryCriterion;
 import org.apache.ignite.internal.cache.query.RangeIndexQueryCriterion;
 import org.apache.ignite.internal.cache.query.index.sorted.IndexKeyDefinition;
+import org.apache.ignite.internal.cache.query.index.sorted.IndexKeyType;
 import org.apache.ignite.internal.cache.query.index.sorted.IndexKeyTypeSettings;
 import org.apache.ignite.internal.cache.query.index.sorted.IndexRow;
 import org.apache.ignite.internal.cache.query.index.sorted.IndexRowComparator;
@@ -230,7 +231,7 @@ public class IndexQueryProcessor {
         String tableName,
         IndexQueryDesc idxQryDesc
     ) throws IgniteCheckedException {
-        Collection<Index> idxs = idxProc.indexes(cctx);
+        Collection<Index> idxs = idxProc.indexes(cctx.name());
 
         for (Index idx: idxs) {
             SortedSegmentedIndex sortedIdx = assertSortedIndex(idx, idxQryDesc);
@@ -542,9 +543,10 @@ public class IndexQueryProcessor {
      */
     private IndexKey key(Object val, boolean isNull, IndexKeyDefinition def, IndexKeyTypeSettings settings, CacheObjectContext coctx) {
         IndexKey key = null;
+        IndexKeyType keyType = val == null ? IndexKeyType.NULL : IndexKeyType.forClass(val.getClass());
 
         if (val != null || isNull)
-            key = IndexKeyFactory.wrap(val, def.idxType(), coctx, settings);
+            key = IndexKeyFactory.wrap(val, keyType, coctx, settings);
 
         return key;
     }

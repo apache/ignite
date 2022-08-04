@@ -116,6 +116,8 @@ public class IgniteSnapshotManagerSelfTest extends AbstractSnapshotSelfTest {
     @Test
     public void testSnapshotLocalPartitionMultiCpWithLoad() throws Exception {
         int valMultiplier = 2;
+        int afterSnpValMultiplier = 3;
+
         CountDownLatch slowCopy = new CountDownLatch(1);
 
         // Start grid node with data before each test.
@@ -201,7 +203,7 @@ public class IgniteSnapshotManagerSelfTest extends AbstractSnapshotSelfTest {
 
             // Change data after snapshot.
             for (int i = 0; i < CACHE_KEYS_RANGE; i++)
-                ig.cache(DEFAULT_CACHE_NAME).put(i, new Account(i, 3 * i));
+                ig.cache(DEFAULT_CACHE_NAME).put(i, new Account(i, afterSnpValMultiplier * i));
 
             // Snapshot on the next checkpoint must copy page to delta file before write it to a partition.
             forceCheckpoint(ig);

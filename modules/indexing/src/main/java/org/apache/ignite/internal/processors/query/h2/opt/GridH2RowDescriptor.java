@@ -17,44 +17,18 @@
 
 package org.apache.ignite.internal.processors.query.h2.opt;
 
-import java.util.Arrays;
-import java.util.HashSet;
-import java.util.LinkedHashMap;
-import java.util.List;
-import java.util.Map;
+import java.util.Collection;
 import java.util.Set;
-import java.util.stream.Collectors;
-import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.internal.processors.cache.GridCacheContext;
-import org.apache.ignite.internal.processors.cache.GridCacheContextInfo;
-import org.apache.ignite.internal.processors.cache.persistence.CacheDataRow;
-import org.apache.ignite.internal.processors.query.GridQueryProperty;
+import org.apache.ignite.internal.processors.query.GridQueryRowDescriptor;
 import org.apache.ignite.internal.processors.query.GridQueryTypeDescriptor;
-import org.apache.ignite.internal.processors.query.QueryUtils;
-import org.apache.ignite.internal.processors.query.h2.H2TableDescriptor;
-import org.apache.ignite.internal.processors.query.h2.IgniteH2Indexing;
-import org.h2.message.DbException;
-import org.h2.result.SearchRow;
 import org.h2.value.DataType;
-import org.h2.value.Value;
 import org.jetbrains.annotations.Nullable;
 
 /**
  * Row descriptor.
  */
-public class GridH2RowDescriptor {
-    /** Non existent column. */
-    public static final int COL_NOT_EXISTS = -1;
-
-    /** Table descriptor. */
-    private final H2TableDescriptor tbl;
-
-    /** */
-    private final GridQueryTypeDescriptor type;
-
-    /** */
-    private volatile String[] fields;
-
+public class GridH2RowDescriptor implements GridQueryRowDescriptor {
     /** */
     private volatile int[] fieldTypes;
 
@@ -65,140 +39,49 @@ public class GridH2RowDescriptor {
     private final int valType;
 
     /** */
-    private volatile GridQueryProperty[] props;
-    
+    private final GridQueryRowDescriptor delegate;
+
+    /**
+     * Ctor.
+     *
+     * @param delegate Delegate.
+     */
+    public GridH2RowDescriptor(GridQueryRowDescriptor delegate) {
+        this.delegate = delegate;
+
+        keyType = DataType.getTypeFromClass(delegate.type().keyClass());
+        valType = DataType.getTypeFromClass(delegate.type().valueClass());
+
+        updateFieldTypes();
+    }
+
+    /** {@inheritDoc} */
+    @Override public void onMetadataUpdated() {
+        delegate.onMetadataUpdated();
+
+        updateFieldTypes();
+    }
+
     /** */
-    private volatile Set<String> rowKeyColumnNames;
-    
-    /** Id of user-defined key column */
-    private volatile int keyAliasColId;
+    private void updateFieldTypes() {
+        Collection<Class<?>> classes = delegate.type().fields().values();
 
-    /** Id of user-defined value column */
-    private volatile int valAliasColId;
+        fieldTypes = new int[classes.size()];
 
-    /**
-     * Constructor.
-     *
-     * @param tbl Table.
-     * @param type Type descriptor.
-     */
-    public GridH2RowDescriptor(H2TableDescriptor tbl, GridQueryTypeDescriptor type) {
-        assert type != null;
+        int fieldIdx = 0;
 
-        this.tbl = tbl;
-        this.type = type;
-
-        keyType = DataType.getTypeFromClass(type.keyClass());
-        valType = DataType.getTypeFromClass(type.valueClass());
-
-        refreshMetadataFromTypeDescriptor();
+        for (Class<?> cls : classes)
+            fieldTypes[fieldIdx++] = DataType.getTypeFromClass(cls);
     }
 
-    /**
-     * Gets table descriptor.
-     *
-     * @return Table descriptor.
-     */
-    public H2TableDescriptor tableDescriptor() {
-        return tbl;
+    /** {@inheritDoc} */
+    @Override public GridQueryTypeDescriptor type() {
+        return delegate.type();
     }
 
-    /**
-     * Update metadata of this row descriptor according to current state of type descriptor.
-     */
-    @SuppressWarnings({"WeakerAccess", "ToArrayCallWithZeroLengthArrayArgument"})
-    public final void refreshMetadataFromTypeDescriptor() {
-
-        Map<String, Class<?>> allFields = new LinkedHashMap<>(type.fields());
-
-        fields = allFields.keySet().toArray(new String[allFields.size()]);
-
-        fieldTypes = new int[fields.length];
-
-        Class[] classes = allFields.values().toArray(new Class[fields.length]);
-
-        for (int i = 0; i < fieldTypes.length; i++)
-            fieldTypes[i] = DataType.getTypeFromClass(classes[i]);
-
-        props = new GridQueryProperty[fields.length];
-
-        for (int i = 0; i < fields.length; i++) {
-            GridQueryProperty p = type.property(fields[i]);
-
-            assert p != null : fields[i];
-
-            props[i] = p;
-        }
-
-        List<String> fieldsList = Arrays.asList(fields);
-
-        keyAliasColId = (type.keyFieldName() != null) ?
-            QueryUtils.DEFAULT_COLUMNS_COUNT + fieldsList.indexOf(type.keyFieldAlias()) : COL_NOT_EXISTS;
-
-        valAliasColId = (type.valueFieldName() != null) ?
-            QueryUtils.DEFAULT_COLUMNS_COUNT + fieldsList.indexOf(type.valueFieldAlias()) : COL_NOT_EXISTS;
-    
-        rowKeyColumnNames = Arrays.stream(props).filter(GridQueryProperty::key)
-                .map(GridQueryProperty::name)
-                .collect(Collectors.toSet());
-    }
-
-    /**
-     * Gets indexing.
-     *
-     * @return indexing.
-     */
-    public IgniteH2Indexing indexing() {
-        return tbl.indexing();
-    }
-
-    /**
-     * Gets type descriptor.
-     *
-     * @return Type descriptor.
-     */
-    public GridQueryTypeDescriptor type() {
-        return type;
-    }
-
-    /**
-     * Gets cache context info for this row descriptor.
-     *
-     * @return Cache context info.
-     */
-    public GridCacheContextInfo<?, ?> cacheInfo() {
-        return tbl.cacheInfo();
-    }
-
-    /**
-     * Gets cache context for this row descriptor.
-     *
-     * @return Cache context.
-     */
-    @Nullable public GridCacheContext<?, ?> context() {
-        return tbl.cache();
-    }
-
-    /**
-     * Create new row for update operation.
-     *
-     * @param dataRow Data row.
-     * @return Row.
-     * @throws IgniteCheckedException If failed.
-     */
-    public H2CacheRow createRow(CacheDataRow dataRow) throws IgniteCheckedException {
-        H2CacheRow row;
-
-        try {
-            row = new H2CacheRow(this, dataRow);
-        }
-        catch (ClassCastException e) {
-            throw new IgniteCheckedException("Failed to convert key to SQL type. " +
-                "Please make sure that you always store each value type with the same key type " +
-                "or configure key type as common super class for all actual keys for this value type.", e);
-        }
-
-        return row;
+    /** {@inheritDoc} */
+    @Override public @Nullable GridCacheContext<?, ?> context() {
+        return delegate.context();
     }
 
     /**
@@ -216,225 +99,52 @@ public class GridH2RowDescriptor {
     }
 
     /**
-     * @return Total fields count.
-     */
-    public int fieldsCount() {
-        return fields.length;
-    }
-
-    /**
-     * Gets value type for column index.
+     * Gets value type for field index.
      *
-     * @param col Column index.
+     * @param fieldIdx Field index.
      * @return Value type.
      */
-    public int fieldType(int col) {
-        return fieldTypes[col];
+    public int fieldType(int fieldIdx) {
+        return fieldTypes[fieldIdx];
     }
 
-    /**
-     * Gets column value by column index.
-     *
-     * @param key Key.
-     * @param val Value.
-     * @param col Column index.
-     * @return  Column value.
-     */
-    public Object columnValue(Object key, Object val, int col) {
-        try {
-            return props[col].value(key, val);
-        }
-        catch (IgniteCheckedException e) {
-            throw DbException.convert(e);
-        }
+    /** {@inheritDoc} */
+    @Override public int fieldsCount() {
+        return delegate.fieldsCount();
     }
 
-    /**
-     * Gets column value by column index.
-     *
-     * @param key Key.
-     * @param val Value.
-     * @param colVal Value to set to column.
-     * @param col Column index.
-     */
-    public void setColumnValue(Object key, Object val, Object colVal, int col) {
-        try {
-            props[col].setValue(key, val, colVal);
-        }
-        catch (IgniteCheckedException e) {
-            throw DbException.convert(e);
-        }
+    /** {@inheritDoc} */
+    @Override public Object getFieldValue(Object key, Object val, int fieldIdx) {
+        return delegate.getFieldValue(key, val, fieldIdx);
     }
 
-    /**
-     * Determine whether a column corresponds to a property of key or to one of value.
-     *
-     * @param col Column index.
-     * @return {@code true} if given column corresponds to a key property, {@code false} otherwise
-     */
-    public boolean isColumnKeyProperty(int col) {
-        return props[col].key();
+    /** {@inheritDoc} */
+    @Override public void setFieldValue(Object key, Object val, Object fieldVal, int fieldIdx) {
+        delegate.setFieldValue(key, val, fieldVal, fieldIdx);
     }
 
-    /**
-     * Checks if provided column id matches key column or key alias.
-     *
-     * @param colId Column id.
-     * @return Result.
-     */
-    public boolean isKeyColumn(int colId) {
-        assert colId >= 0;
-        return colId == QueryUtils.KEY_COL || colId == keyAliasColId;
+    /** {@inheritDoc} */
+    @Override public boolean isFieldKeyProperty(int fieldIdx) {
+        return delegate.isFieldKeyProperty(fieldIdx);
     }
 
-    /**
-     * Checks if provided column id matches key alias column.
-     *
-     * @param colId Column id.
-     * @return Result.
-     */
-    public boolean isKeyAliasColumn(int colId) {
-        assert colId >= 0;
-        return colId == keyAliasColId;
+    /** {@inheritDoc} */
+    @Override public boolean isKeyColumn(int colId) {
+        return delegate.isKeyColumn(colId);
     }
 
-    /**
-     * Checks if provided column id matches value column or alias.
-     *
-     * @param colId Column id.
-     * @return Result.
-     */
-    public boolean isValueColumn(int colId) {
-        assert colId >= 0;
-        return colId == QueryUtils.VAL_COL || colId == valAliasColId;
+    /** {@inheritDoc} */
+    @Override public boolean isValueColumn(int colId) {
+        return delegate.isValueColumn(colId);
     }
 
-    /**
-     * Checks if provided column id matches value alias column.
-     *
-     * @param colId Column id.
-     * @return Result.
-     */
-    public boolean isValueAliasColumn(int colId) {
-        assert colId >= 0;
-        return colId == valAliasColId;
+    /** {@inheritDoc} */
+    @Override public int getAlternativeColumnId(int colId) {
+        return delegate.getAlternativeColumnId(colId);
     }
 
-    /**
-     * Checks if provided column id matches key, key alias,
-     * value, value alias or version column.
-     *
-     * @param colId Column id.
-     * @return Result.
-     */
-    @SuppressWarnings("RedundantIfStatement")
-    public boolean isKeyValueOrVersionColumn(int colId) {
-        assert colId >= 0;
-
-        if (colId < QueryUtils.DEFAULT_COLUMNS_COUNT)
-            return true;
-
-        if (colId == keyAliasColId)
-            return true;
-
-        if (colId == valAliasColId)
-            return true;
-
-        return false;
-    }
-
-    /**
-     * Checks if provided index condition is allowed for key column or key alias column.
-     *
-     * @param masks Array containing Index Condition masks for each column.
-     * @param mask Index Condition to check.
-     * @return Result.
-     */
-    @SuppressWarnings("IfMayBeConditional")
-    public boolean checkKeyIndexCondition(int masks[], int mask) {
-        assert masks != null;
-        assert masks.length > 0;
-
-        if (keyAliasColId < 0)
-            return (masks[QueryUtils.KEY_COL] & mask) != 0;
-        else
-            return (masks[QueryUtils.KEY_COL] & mask) != 0 || (masks[keyAliasColId] & mask) != 0;
-    }
-
-    /**
-     * Clones provided row and copies values of alias key and val columns
-     * into respective key and val positions.
-     *
-     * @param row Source row.
-     * @return Result.
-     */
-    public SearchRow prepareProxyIndexRow(SearchRow row) {
-        if (row == null)
-            return null;
-
-        Value[] data = new Value[row.getColumnCount()];
-
-        for (int idx = 0; idx < data.length; idx++)
-            data[idx] = row.getValue(idx);
-
-        copyAliasColumnData(data, QueryUtils.KEY_COL, keyAliasColId);
-        copyAliasColumnData(data, QueryUtils.VAL_COL, valAliasColId);
-
-        return H2PlainRowFactory.create(data);
-    }
-
-    /**
-     * Copies data between original and alias columns
-     *
-     * @param data Array of values.
-     * @param colId Original column id.
-     * @param aliasColId Alias column id.
-     */
-    private void copyAliasColumnData(Value[] data, int colId, int aliasColId) {
-        if (aliasColId <= 0)
-            return;
-
-        if (data[aliasColId] == null && data[colId] != null)
-            data[aliasColId] = data[colId];
-
-        if (data[colId] == null && data[aliasColId] != null)
-            data[colId] = data[aliasColId];
-    }
-
-    /**
-     * Gets alternative column id that may substitute the given column id.
-     *
-     * For alias column returns original one.
-     * For original column returns its alias.
-     *
-     * Otherwise, returns the given column id.
-     *
-     * @param colId Column id.
-     * @return Result.
-     */
-    public int getAlternativeColumnId(int colId) {
-        if (keyAliasColId > 0) {
-            if (colId == QueryUtils.KEY_COL)
-                return keyAliasColId;
-            else if (colId == keyAliasColId)
-                return QueryUtils.KEY_COL;
-        }
-        if (valAliasColId > 0) {
-            if (colId == QueryUtils.VAL_COL)
-                return valAliasColId;
-            else if (colId == valAliasColId)
-                return QueryUtils.VAL_COL;
-        }
-
-        return colId;
-    }
-    
-    /**
-     * Gets a copy of a set of table key column names.
-     *
-     * @return Set of a table key column names.
-     */
-    public Set<String> getRowKeyColumnNames() {
-        return new HashSet<>(rowKeyColumnNames);
+    /** {@inheritDoc} */
+    @Override public Set<String> getRowKeyColumnNames() {
+        return delegate.getRowKeyColumnNames();
     }
 }

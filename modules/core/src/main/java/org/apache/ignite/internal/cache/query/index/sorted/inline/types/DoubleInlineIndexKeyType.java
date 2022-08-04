@@ -17,29 +17,30 @@
 
 package org.apache.ignite.internal.cache.query.index.sorted.inline.types;
 
-import org.apache.ignite.internal.cache.query.index.sorted.IndexKeyTypes;
+import org.apache.ignite.internal.cache.query.index.sorted.IndexKeyType;
 import org.apache.ignite.internal.cache.query.index.sorted.keys.DoubleIndexKey;
+import org.apache.ignite.internal.cache.query.index.sorted.keys.NumericIndexKey;
 import org.apache.ignite.internal.pagemem.PageUtils;
 
 /**
  * Inline index key implementation for inlining {@link Double} values.
  */
-public class DoubleInlineIndexKeyType extends NullableInlineIndexKeyType<DoubleIndexKey> {
+public class DoubleInlineIndexKeyType extends NumericInlineIndexKeyType<DoubleIndexKey> {
     /** */
     public DoubleInlineIndexKeyType() {
-        super(IndexKeyTypes.DOUBLE, (short)8);
+        super(IndexKeyType.DOUBLE, (short)8);
     }
 
     /** {@inheritDoc} */
-    @Override public int compare0(long pageAddr, int off, DoubleIndexKey v) {
+    @Override public int compareNumeric(NumericIndexKey key, long pageAddr, int off) {
         double val1 = Double.longBitsToDouble(PageUtils.getLong(pageAddr, off + 1));
 
-        return Integer.signum(Double.compare(val1, (double)v.key()));
+        return key.compareTo(val1);
     }
 
     /** {@inheritDoc} */
     @Override protected int put0(long pageAddr, int off, DoubleIndexKey key, int maxSize) {
-        PageUtils.putByte(pageAddr, off, (byte)type());
+        PageUtils.putByte(pageAddr, off, (byte)type().code());
         PageUtils.putLong(pageAddr, off + 1, Double.doubleToLongBits((double)key.key()));
 
         return keySize + 1;
@@ -50,10 +51,5 @@ public class DoubleInlineIndexKeyType extends NullableInlineIndexKeyType<DoubleI
         double key = Double.longBitsToDouble(PageUtils.getLong(pageAddr, off + 1));
 
         return new DoubleIndexKey(key);
-    }
-
-    /** {@inheritDoc} */
-    @Override protected int inlineSize0(DoubleIndexKey val) {
-        return keySize + 1;
     }
 }

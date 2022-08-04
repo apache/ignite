@@ -32,7 +32,8 @@ import org.apache.ignite.binary.BinaryBasicNameMapper;
 import org.apache.ignite.binary.BinaryTypeConfiguration;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.testframework.GridTestUtils;
-import org.apache.log4j.xml.DOMConfigurator;
+import org.apache.logging.log4j.core.config.Configurator;
+import org.apache.logging.log4j.core.config.LoggerConfig;
 import org.jetbrains.annotations.Nullable;
 
 /**
@@ -127,16 +128,16 @@ public final class GridTestProperties {
         String cfgFile = System.getProperty("IGNITE_TEST_PROP_LOG4J_FILE");
 
         if (cfgFile == null)
-            cfgFile = "log4j-test.xml";
+            cfgFile = "log4j2-test.xml";
 
         File log4jFile = getTestConfigurationFile(user, cfgFile);
 
         if (log4jFile == null)
             log4jFile = getTestConfigurationFile(null, cfgFile);
 
-        DOMConfigurator.configure(log4jFile.getAbsolutePath());
+        Configurator.initialize(LoggerConfig.ROOT, log4jFile.getAbsolutePath());
 
-        System.out.println("Configured log4j from: " + log4jFile);
+        System.out.println("Configured log4j2 from: " + log4jFile);
     }
 
     /** */

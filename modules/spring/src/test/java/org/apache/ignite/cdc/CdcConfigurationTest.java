@@ -145,6 +145,16 @@ public class CdcConfigurationTest extends GridCommonAbstractTest {
         }
 
         /** {@inheritDoc} */
+        @Override public void onCacheChange(Iterator<CdcCacheEvent> cacheEvents) {
+            // No-Op.
+        }
+
+        /** {@inheritDoc} */
+        @Override public void onCacheDestroy(Iterator<Integer> caches) {
+            // No-Op.
+        }
+
+        /** {@inheritDoc} */
         @Override public void stop() {
             // No-Op.
         }

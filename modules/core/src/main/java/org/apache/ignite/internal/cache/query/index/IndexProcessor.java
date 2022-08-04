@@ -32,6 +32,7 @@ import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.cache.query.index.sorted.IndexRow;
 import org.apache.ignite.internal.cache.query.index.sorted.IndexRowCache;
 import org.apache.ignite.internal.cache.query.index.sorted.IndexRowCacheRegistry;
+import org.apache.ignite.internal.cache.query.index.sorted.MetaPageInfo;
 import org.apache.ignite.internal.cache.query.index.sorted.defragmentation.IndexingDefragmentation;
 import org.apache.ignite.internal.cache.query.index.sorted.inline.InlineIndex;
 import org.apache.ignite.internal.cache.query.index.sorted.inline.JavaObjectKeySerializer;
@@ -49,13 +50,13 @@ import org.apache.ignite.internal.processors.cache.CacheGroupContext;
 import org.apache.ignite.internal.processors.cache.GridCacheContext;
 import org.apache.ignite.internal.processors.cache.GridCacheContextInfo;
 import org.apache.ignite.internal.processors.cache.persistence.CacheDataRow;
+import org.apache.ignite.internal.processors.cache.persistence.IgniteCacheDatabaseSharedManager;
 import org.apache.ignite.internal.processors.cache.persistence.RootPage;
 import org.apache.ignite.internal.processors.cache.persistence.checkpoint.CheckpointTimeoutLock;
 import org.apache.ignite.internal.processors.cache.persistence.defragmentation.LinkMap;
 import org.apache.ignite.internal.processors.cache.persistence.pagemem.PageMemoryEx;
 import org.apache.ignite.internal.processors.cache.persistence.tree.BPlusTree;
 import org.apache.ignite.internal.processors.cache.persistence.tree.io.BPlusIO;
-import org.apache.ignite.internal.processors.cache.persistence.tree.io.BPlusMetaIO;
 import org.apache.ignite.internal.processors.cache.persistence.tree.io.PageIO;
 import org.apache.ignite.internal.processors.cache.persistence.tree.reuse.ReuseList;
 import org.apache.ignite.internal.processors.cache.query.IgniteQueryErrorCode;
@@ -375,14 +376,14 @@ public class IndexProcessor extends GridProcessorAdapter {
     /**
      * Returns collection of indexes for specified cache.
      *
-     * @param cctx Cache context.
+     * @param cacheName Cache name.
      * @return Collection of indexes for specified cache.
      */
-    public Collection<Index> indexes(GridCacheContext<?, ?> cctx) {
+    public Collection<Index> indexes(String cacheName) {
         ddlLock.readLock().lock();
 
         try {
-            Map<String, Index> idxs = cacheToIdx.get(cctx.name());
+            Map<String, Index> idxs = cacheToIdx.get(cacheName);
 
             if (idxs == null)
                 return Collections.emptyList();
@@ -503,7 +504,7 @@ public class IndexProcessor extends GridProcessorAdapter {
 
         long metaPageId = page.pageId().pageId();
 
-        int inlineSize = inlineSize(page, grpId, pageMemory);
+        int inlineSize = MetaPageInfo.read(metaPageId, grpId, pageMemory).inlineSize();
 
         String grpName = ctx.cache().cacheGroup(grpId).cacheOrGroupName();
 
@@ -535,35 +536,25 @@ public class IndexProcessor extends GridProcessorAdapter {
     }
 
     /**
-     * @param page Root page.
-     * @param grpId Cache group id.
-     * @param pageMemory Page memory.
-     * @return Inline size.
-     * @throws IgniteCheckedException If something went wrong.
+     * @return {@code true} In case of use an unwrapped PK for the index.
      */
-    private int inlineSize(RootPage page, int grpId, PageMemory pageMemory) throws IgniteCheckedException {
-        long metaPageId = page.pageId().pageId();
-
-        final long metaPage = pageMemory.acquirePage(grpId, metaPageId);
+    public boolean useUnwrappedPk(GridCacheContext<?, ?> cctx, String treeName) {
+        IgniteCacheDatabaseSharedManager db = cctx.shared().database();
+        db.checkpointReadLock();
 
         try {
-            long pageAddr = pageMemory.readLock(grpId, metaPageId, metaPage); // Meta can't be removed.
+            RootPage page = cctx.offheap().findRootPageForIndex(cctx.cacheId(), treeName, 0);
 
-            assert pageAddr != 0 : "Failed to read lock meta page [metaPageId=" +
-                U.hexLong(metaPageId) + ']';
-
-            try {
-                BPlusMetaIO io = BPlusMetaIO.VERSIONS.forPage(pageAddr);
-
-                return io.getInlineSize(pageAddr);
-            }
-            finally {
-                pageMemory.readUnlock(grpId, metaPageId, metaPage);
-            }
+            return page == null ||
+                MetaPageInfo.read(page.pageId().pageId(), cctx.groupId(), cctx.dataRegion().pageMemory()).useUnwrappedPk();
+        }
+        catch (IgniteCheckedException ignore) {
+            return true;
         }
         finally {
-            pageMemory.releasePage(grpId, metaPageId, metaPage);
+            db.checkpointReadUnlock();
         }
+
     }
 
     /**
@@ -596,11 +587,11 @@ public class IndexProcessor extends GridProcessorAdapter {
     /**
      * Collect indexes for rebuild.
      *
-     * @param cctx Cache context.
+     * @param cacheName Cache name.
      * @param createdOnly Get only created indexes (not restored from dick).
      */
-    public List<InlineIndex> treeIndexes(GridCacheContext cctx, boolean createdOnly) {
-        Collection<Index> idxs = indexes(cctx);
+    public List<InlineIndex> treeIndexes(String cacheName, boolean createdOnly) {
+        Collection<Index> idxs = indexes(cacheName);
 
         List<InlineIndex> treeIdxs = new ArrayList<>();
 

@@ -208,14 +208,4 @@ public interface IgnitePageStoreManager extends GridCacheSharedManager, IgniteCh
      * @param cleanFiles {@code True} to delete all persisted files related to particular store.
      */
     public void cleanupPageStoreIfMatch(Predicate<Integer> cacheGrpPred, boolean cleanFiles);
-
-    /**
-     * Creates and initializes cache work directory retrieved from {@code cacheCfg}.
-     *
-     * @param cacheCfg Cache configuration.
-     * @return {@code True} if work directory already exists.
-     *
-     * @throws IgniteCheckedException If failed.
-     */
-    public boolean checkAndInitCacheWorkDir(CacheConfiguration cacheCfg) throws IgniteCheckedException;
 }

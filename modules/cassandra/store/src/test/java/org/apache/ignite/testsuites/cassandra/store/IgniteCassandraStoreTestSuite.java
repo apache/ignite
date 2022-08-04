@@ -26,7 +26,8 @@ import org.apache.ignite.tests.IgnitePersistentStorePrimitiveTest;
 import org.apache.ignite.tests.IgnitePersistentStoreTest;
 import org.apache.ignite.tests.utils.CassandraHelper;
 import org.apache.ignite.tools.junit.JUnitTeamcityReporter;
-import org.apache.log4j.Logger;
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
 import org.junit.AfterClass;
 import org.junit.BeforeClass;
 import org.junit.runner.RunWith;
@@ -49,7 +50,7 @@ import org.junit.runners.Suite.SuiteClasses;
     IgnitePersistentStorePrimitiveTest.class})
 public class IgniteCassandraStoreTestSuite {
     /** */
-    private static final Logger LOGGER = Logger.getLogger(IgniteCassandraStoreTestSuite.class.getName());
+    private static final Logger LOGGER = LogManager.getLogger(IgniteCassandraStoreTestSuite.class.getName());
 
     /** */
     @BeforeClass

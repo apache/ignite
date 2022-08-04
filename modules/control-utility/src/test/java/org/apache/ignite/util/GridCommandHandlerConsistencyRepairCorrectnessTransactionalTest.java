@@ -229,14 +229,14 @@ public class GridCommandHandlerConsistencyRepairCorrectnessTransactionalTest ext
             assertEquals(EXIT_CODE_OK, execute(cmd));
         }
 
-        IgniteCache<Integer, Object> cache = rrd.cache;
+        IgniteCache<Object, Object> cache = rrd.cache;
 
-        for (Map.Entry<Integer, InconsistentMapping> dataEntry : rrd.data.entrySet()) {
-            Integer key = dataEntry.getKey();
+        for (Map.Entry<Object, InconsistentMapping> dataEntry : rrd.data.entrySet()) {
+            Object key = dataEntry.getKey();
             InconsistentMapping mapping = dataEntry.getValue();
 
             if (mapping.repairable) {
-                Object repaired = ReadRepairDataGenerator.unwrapBinaryIfNeeded(mapping.repairedBin);
+                Object repaired = gen.unwrapBinaryIfNeeded(mapping.repairedBin);
 
                 // Regular get (form primary or backup or client node).
                 assertEqualsArraysAware("Checking key=" + key, repaired, cache.get(key));

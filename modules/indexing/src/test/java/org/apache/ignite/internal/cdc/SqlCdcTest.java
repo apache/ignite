@@ -24,8 +24,10 @@ import java.util.concurrent.CountDownLatch;
 import org.apache.ignite.binary.BinaryBasicIdMapper;
 import org.apache.ignite.binary.BinaryObject;
 import org.apache.ignite.binary.BinaryType;
+import org.apache.ignite.cache.QueryEntity;
 import org.apache.ignite.cache.query.SqlFieldsQuery;
 import org.apache.ignite.cdc.AbstractCdcTest;
+import org.apache.ignite.cdc.CdcCacheEvent;
 import org.apache.ignite.cdc.CdcEvent;
 import org.apache.ignite.cdc.TypeMapping;
 import org.apache.ignite.configuration.DataRegionConfiguration;
@@ -73,6 +75,21 @@ public class SqlCdcTest extends AbstractCdcTest {
     public static final String CITY_VAL_TYPE = "TestCity";
 
     /** */
+    public static final String ID = "ID";
+
+    /** */
+    public static final String CITY_ID = "CITY_ID";
+
+    /** */
+    public static final String NAME = "NAME";
+
+    /** */
+    public static final String ZIP_CODE = "ZIP_CODE";
+
+    /** */
+    public static final String REGION = "REGION";
+
+    /** */
     @Parameterized.Parameter
     public boolean persistenceEnabled;
 
@@ -93,6 +110,13 @@ public class SqlCdcTest extends AbstractCdcTest {
                 .setCdcEnabled(true)));
 
         return cfg;
+    }
+
+    /** {@inheritDoc} */
+    @Override protected void afterTest() throws Exception {
+        stopAllGrids();
+
+        cleanPersistenceDir();
     }
 
     /** Simplest CDC test. */
@@ -118,13 +142,13 @@ public class SqlCdcTest extends AbstractCdcTest {
         executeSql(
             ign,
             "CREATE TABLE USER(id int, city_id int, name varchar, PRIMARY KEY (id, city_id)) " +
-                "WITH \"CACHE_NAME=user,VALUE_TYPE=" + USER_VAL_TYPE + ",KEY_TYPE=" + USER_KEY_TYPE + "\""
+                "WITH \"CACHE_NAME=" + USER + ",VALUE_TYPE=" + USER_VAL_TYPE + ",KEY_TYPE=" + USER_KEY_TYPE + "\""
         );
 
         executeSql(
             ign,
             "CREATE TABLE CITY(id int, name varchar, zip_code varchar(6), PRIMARY KEY (id)) " +
-               "WITH \"CACHE_NAME=city,VALUE_TYPE=TestCity\""
+               "WITH \"CACHE_NAME=" + CITY + ",VALUE_TYPE=TestCity\""
         );
 
         for (int i = 0; i < KEYS_CNT; i++) {
@@ -160,7 +184,7 @@ public class SqlCdcTest extends AbstractCdcTest {
 
         cdc = createCdc(cnsmr, cfg);
 
-        IgniteInternalFuture<?> rmvFut = runAsync(cdc);
+        IgniteInternalFuture<?> cdcFut = runAsync(cdc);
 
         waitForSize(KEYS_CNT, USER, DELETE, cnsmr);
 
@@ -172,13 +196,15 @@ public class SqlCdcTest extends AbstractCdcTest {
             ign,
             "INSERT INTO CITY VALUES(?, ?, ?, ?)",
             KEYS_CNT + 1,
-            MSK,
+            SPB,
             Integer.toString(127000 + KEYS_CNT + 1),
-            "Moscow region");
+            "Saint Petersburg");
 
         waitForSize(KEYS_CNT + 1, CITY, UPDATE, cnsmr);
 
-        rmvFut.cancel();
+        assertFalse(cdcFut.isDone());
+
+        cdcFut.cancel();
 
         assertTrue(cnsmr.stopped());
     }
@@ -207,12 +233,12 @@ public class SqlCdcTest extends AbstractCdcTest {
                 return;
 
             if (evt.cacheId() == cacheId(USER)) {
-                int id = ((BinaryObject)evt.key()).field("ID");
-                int cityId = ((BinaryObject)evt.key()).field("CITY_ID");
+                int id = ((BinaryObject)evt.key()).field(ID);
+                int cityId = ((BinaryObject)evt.key()).field(CITY_ID);
 
                 assertEquals(42 * id, cityId);
 
-                String name = ((BinaryObject)evt.value()).field("NAME");
+                String name = ((BinaryObject)evt.value()).field(NAME);
 
                 if (id % 2 == 0)
                     assertTrue(name.startsWith(JOHN));
@@ -221,8 +247,8 @@ public class SqlCdcTest extends AbstractCdcTest {
             }
             else {
                 int id = (Integer)evt.key();
-                String name = ((BinaryObject)evt.value()).field("NAME");
-                String zipCode = ((BinaryObject)evt.value()).field("ZIP_CODE");
+                String name = ((BinaryObject)evt.value()).field(NAME);
+                String zipCode = ((BinaryObject)evt.value()).field(ZIP_CODE);
 
                 assertEquals(Integer.toString(127000 + id), zipCode);
 
@@ -249,34 +275,34 @@ public class SqlCdcTest extends AbstractCdcTest {
 
                 switch (type.typeName()) {
                     case USER_KEY_TYPE:
-                        assertTrue(type.fieldNames().containsAll(Arrays.asList("ID", "CITY_ID")));
+                        assertTrue(type.fieldNames().containsAll(Arrays.asList(ID, CITY_ID)));
                         assertEquals(2, type.fieldNames().size());
-                        assertEquals(int.class.getSimpleName(), type.fieldTypeName("ID"));
-                        assertEquals(int.class.getSimpleName(), type.fieldTypeName("CITY_ID"));
+                        assertEquals(int.class.getSimpleName(), type.fieldTypeName(ID));
+                        assertEquals(int.class.getSimpleName(), type.fieldTypeName(CITY_ID));
 
                         userKeyType = true;
 
                         break;
 
                     case USER_VAL_TYPE:
-                        assertTrue(type.fieldNames().contains("NAME"));
+                        assertTrue(type.fieldNames().contains(NAME));
                         assertEquals(1, type.fieldNames().size());
-                        assertEquals(String.class.getSimpleName(), type.fieldTypeName("NAME"));
+                        assertEquals(String.class.getSimpleName(), type.fieldTypeName(NAME));
 
                         userValType = true;
 
                         break;
 
                     case CITY_VAL_TYPE:
-                        assertTrue(type.fieldNames().containsAll(Arrays.asList("NAME", "ZIP_CODE")));
+                        assertTrue(type.fieldNames().containsAll(Arrays.asList(NAME, ZIP_CODE)));
                         assertEquals(cityValType ? 3 : 2, type.fieldNames().size());
-                        assertEquals(String.class.getSimpleName(), type.fieldTypeName("NAME"));
-                        assertEquals(String.class.getSimpleName(), type.fieldTypeName("ZIP_CODE"));
+                        assertEquals(String.class.getSimpleName(), type.fieldTypeName(NAME));
+                        assertEquals(String.class.getSimpleName(), type.fieldTypeName(ZIP_CODE));
 
                         // Alter table happen.
                         if (cityValType) {
-                            assertTrue(type.fieldNames().contains("REGION"));
-                            assertEquals(String.class.getSimpleName(), type.fieldTypeName("REGION"));
+                            assertTrue(type.fieldNames().contains(REGION));
+                            assertEquals(String.class.getSimpleName(), type.fieldTypeName(REGION));
                         }
 
                         cityValType = true;
@@ -308,10 +334,49 @@ public class SqlCdcTest extends AbstractCdcTest {
                 assertEquals(mapper.typeId(typeName), m.typeId());
             }
         }
+
+        /** {@inheritDoc} */
+        @Override public void onCacheChange(Iterator<CdcCacheEvent> cacheEvts) {
+            cacheEvts.forEachRemaining(evt -> {
+                if (evt.configuration().getName().equals(CITY)) {
+                    assertNotNull(evt.queryEntities());
+                    assertEquals(1, evt.queryEntities().size());
+
+                    QueryEntity tbl = evt.queryEntities().iterator().next();
+
+                    assertEquals(CITY.toUpperCase(), tbl.getTableName());
+                    assertEquals(caches.containsKey(evt.cacheId()) ? 4 : 3, tbl.getFields().size());
+                    assertEquals(Integer.class.getName(), tbl.getKeyType());
+                    assertEquals(ID, tbl.getKeyFieldName());
+                    assertTrue(tbl.getFields().keySet().containsAll(Arrays.asList(ID, NAME, ZIP_CODE)));
+
+                    if (caches.containsKey(evt.cacheId()))
+                        assertTrue(tbl.getFields().containsKey(REGION));
+
+                    assertEquals((Integer)6, tbl.getFieldsPrecision().get(ZIP_CODE));
+                }
+                else if (evt.configuration().getName().equals(USER)) {
+                    assertNotNull(evt.queryEntities());
+                    assertEquals(1, evt.queryEntities().size());
+
+                    QueryEntity tbl = evt.queryEntities().iterator().next();
+
+                    assertEquals(USER.toUpperCase(), tbl.getTableName());
+                    assertEquals(3, tbl.getFields().size());
+                    assertEquals(USER_KEY_TYPE, tbl.getKeyType());
+                    assertEquals(USER_VAL_TYPE, tbl.getValueType());
+                    assertTrue(tbl.getFields().keySet().containsAll(Arrays.asList(ID, CITY_ID, NAME)));
+                }
+                else
+                    fail("Unknown cache[" + evt.configuration().getName() + ']');
+
+                caches.put(evt.cacheId(), evt);
+            });
+        }
     }
 
     /** */
-    private List<List<?>> executeSql(IgniteEx node, String sqlText, Object... args) {
+    static List<List<?>> executeSql(IgniteEx node, String sqlText, Object... args) {
         return node.context().query().querySqlFields(new SqlFieldsQuery(sqlText).setArgs(args), true).getAll();
     }
 

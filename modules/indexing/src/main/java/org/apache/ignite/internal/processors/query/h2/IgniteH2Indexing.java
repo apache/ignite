@@ -58,6 +58,10 @@ import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.binary.BinaryMarshaller;
 import org.apache.ignite.internal.binary.BinaryUtils;
 import org.apache.ignite.internal.cache.query.index.IndexName;
+import org.apache.ignite.internal.cache.query.index.sorted.IndexKeyTypeSettings;
+import org.apache.ignite.internal.cache.query.index.sorted.QueryIndexDefinition;
+import org.apache.ignite.internal.cache.query.index.sorted.client.ClientIndexDefinition;
+import org.apache.ignite.internal.cache.query.index.sorted.client.ClientIndexFactory;
 import org.apache.ignite.internal.cache.query.index.sorted.inline.InlineIndex;
 import org.apache.ignite.internal.cache.query.index.sorted.inline.InlineIndexFactory;
 import org.apache.ignite.internal.cache.query.index.sorted.inline.InlineIndexImpl;
@@ -65,8 +69,6 @@ import org.apache.ignite.internal.cluster.ClusterTopologyServerNotFoundException
 import org.apache.ignite.internal.managers.IgniteMBeansManager;
 import org.apache.ignite.internal.managers.communication.GridMessageListener;
 import org.apache.ignite.internal.managers.eventstorage.GridLocalEventListener;
-import org.apache.ignite.internal.mxbean.SqlQueryMXBean;
-import org.apache.ignite.internal.mxbean.SqlQueryMXBeanImpl;
 import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
 import org.apache.ignite.internal.processors.cache.CacheGroupDescriptor;
 import org.apache.ignite.internal.processors.cache.CacheObjectValueContext;
@@ -84,11 +86,10 @@ import org.apache.ignite.internal.processors.cache.mvcc.MvccSnapshot;
 import org.apache.ignite.internal.processors.cache.mvcc.MvccUtils;
 import org.apache.ignite.internal.processors.cache.mvcc.StaticMvccQueryTracker;
 import org.apache.ignite.internal.processors.cache.persistence.CacheDataRow;
+import org.apache.ignite.internal.processors.cache.persistence.tree.BPlusTree;
 import org.apache.ignite.internal.processors.cache.query.GridCacheQueryMarshallable;
 import org.apache.ignite.internal.processors.cache.query.GridCacheQueryType;
-import org.apache.ignite.internal.processors.cache.query.GridCacheTwoStepQuery;
 import org.apache.ignite.internal.processors.cache.query.IgniteQueryErrorCode;
-import org.apache.ignite.internal.processors.cache.query.RegisteredQueryCursor;
 import org.apache.ignite.internal.processors.cache.transactions.IgniteTxAdapter;
 import org.apache.ignite.internal.processors.cache.tree.CacheDataTree;
 import org.apache.ignite.internal.processors.odbc.SqlStateCode;
@@ -122,10 +123,9 @@ import org.apache.ignite.internal.processors.query.h2.dml.DmlUpdateSingleEntryIt
 import org.apache.ignite.internal.processors.query.h2.dml.DmlUtils;
 import org.apache.ignite.internal.processors.query.h2.dml.UpdateMode;
 import org.apache.ignite.internal.processors.query.h2.dml.UpdatePlan;
-import org.apache.ignite.internal.processors.query.h2.index.QueryIndexDefinition;
-import org.apache.ignite.internal.processors.query.h2.index.client.ClientIndexDefinition;
-import org.apache.ignite.internal.processors.query.h2.index.client.ClientIndexFactory;
 import org.apache.ignite.internal.processors.query.h2.maintenance.RebuildIndexWorkflowCallback;
+import org.apache.ignite.internal.processors.query.h2.mxbean.SqlQueryMXBean;
+import org.apache.ignite.internal.processors.query.h2.mxbean.SqlQueryMXBeanImpl;
 import org.apache.ignite.internal.processors.query.h2.opt.GridH2IndexBase;
 import org.apache.ignite.internal.processors.query.h2.opt.GridH2Table;
 import org.apache.ignite.internal.processors.query.h2.opt.QueryContext;
@@ -184,9 +184,9 @@ import org.h2.table.Column;
 import org.h2.table.IndexColumn;
 import org.h2.table.TableType;
 import org.h2.util.JdbcUtils;
+import org.h2.value.CompareMode;
 import org.h2.value.DataType;
 import org.jetbrains.annotations.Nullable;
-
 import static java.lang.Math.max;
 import static java.lang.Math.min;
 import static java.util.Collections.singletonList;
@@ -449,15 +449,30 @@ public class IgniteH2Indexing implements GridQueryIndexing {
             log.debug("Creating cache index [cacheId=" + cacheInfo.cacheId() + ", idxName=" + name + ']');
 
         if (cacheInfo.affinityNode()) {
+            GridCacheContext<?, ?> cctx = cacheInfo.cacheContext();
+
+            GridQueryTypeDescriptor typeDesc = tbl.rowDescriptor().type();
+
+            int typeId = cctx.binaryMarshaller() ? typeDesc.typeId() : typeDesc.valueClass().hashCode();
+
+            String treeName = BPlusTree.treeName(typeId + "_" + name, "H2Tree");
+
+            List<IndexColumn> cols = ctx.indexProcessor().useUnwrappedPk(cctx, treeName) ? unwrappedCols : wrappedCols;
+
+            IndexKeyTypeSettings keyTypeSettings = new IndexKeyTypeSettings()
+                .stringOptimizedCompare(CompareMode.OFF.equals(tbl.getCompareMode().getName()))
+                .binaryUnsigned(tbl.getCompareMode().isBinaryUnsigned());
+
             QueryIndexDefinition idxDef = new QueryIndexDefinition(
-                tbl,
-                name,
+                tbl.rowDescriptor(),
+                new IndexName(tbl.cacheName(), tbl.getSchema().getName(), tbl.getName(), name),
+                treeName,
                 ctx.indexProcessor().rowCacheCleaner(cacheInfo.groupId()),
                 pk,
                 affinityKey,
-                unwrappedCols,
-                wrappedCols,
-                inlineSize
+                H2Utils.columnsToKeyDefinitions(tbl, cols),
+                inlineSize,
+                keyTypeSettings
             );
 
             org.apache.ignite.internal.cache.query.index.Index index;
@@ -474,9 +489,8 @@ public class IgniteH2Indexing implements GridQueryIndexing {
         }
         else {
             ClientIndexDefinition d = new ClientIndexDefinition(
-                tbl,
                 new IndexName(tbl.cacheName(), tbl.getSchema().getName(), tbl.getName(), name),
-                unwrappedCols,
+                H2Utils.columnsToKeyDefinitions(tbl, unwrappedCols),
                 inlineSize,
                 tbl.cacheInfo().config().getSqlIndexMaxInlineSize());
 
@@ -524,7 +538,6 @@ public class IgniteH2Indexing implements GridQueryIndexing {
      * @param inTx Flag whether the query is executed in transaction.
      * @param timeout Timeout.
      * @return Query result.
-     * @throws IgniteCheckedException If failed.
      */
     private GridQueryFieldsResult executeSelectLocal(
         long qryId,
@@ -536,7 +549,7 @@ public class IgniteH2Indexing implements GridQueryIndexing {
         GridQueryCancel cancel,
         boolean inTx,
         int timeout
-    ) throws IgniteCheckedException {
+    ) {
         assert !select.mvccEnabled() || mvccTracker != null;
 
         String qry;
@@ -1397,7 +1410,6 @@ public class IgniteH2Indexing implements GridQueryIndexing {
      * @param cancel Cancel.
      * @param timeout Timeout.
      * @return Fields query.
-     * @throws IgniteCheckedException On error.
      */
     private QueryCursorImpl<List<?>> executeSelectForDml(
         long qryId,
@@ -1406,7 +1418,7 @@ public class IgniteH2Indexing implements GridQueryIndexing {
         MvccQueryTracker mvccTracker,
         GridQueryCancel cancel,
         int timeout
-    ) throws IgniteCheckedException {
+    ) {
         QueryParserResult parseRes = parser.parse(schema, selectQry, false);
 
         QueryParserResultSelect select = parseRes.select();
@@ -1447,7 +1459,6 @@ public class IgniteH2Indexing implements GridQueryIndexing {
      * @param inTx Flag whether query is executed within transaction.
      * @param timeout Timeout.
      * @return Query result.
-     * @throws IgniteCheckedException On error.
      */
     private Iterable<List<?>> executeSelect0(
         long qryId,
@@ -1459,7 +1470,7 @@ public class IgniteH2Indexing implements GridQueryIndexing {
         GridQueryCancel cancel,
         boolean inTx,
         int timeout
-    ) throws IgniteCheckedException {
+    ) {
         assert !select.mvccEnabled() || mvccTracker != null;
 
         // Check security.
@@ -1664,7 +1675,7 @@ public class IgniteH2Indexing implements GridQueryIndexing {
         AffinityTopologyVersion topVer,
         MvccSnapshot mvccSnapshot,
         GridQueryCancel cancel
-    ) throws IgniteCheckedException {
+    ) {
         SqlFieldsQuery fldsQry = QueryUtils.withQueryTimeout(new SqlFieldsQuery(qry), timeout, TimeUnit.MILLISECONDS);
 
         if (params != null)

@@ -68,7 +68,7 @@ public abstract class AbstractReadRepairTest extends GridCommonAbstractTest {
     protected static volatile List<Ignite> clsAwareNodes;
 
     /** Generator. */
-    private static volatile ReadRepairDataGenerator gen;
+    protected static volatile ReadRepairDataGenerator gen;
 
     /** Backups count. */
     protected Integer backupsCount() {
@@ -207,9 +207,11 @@ public abstract class AbstractReadRepairTest extends GridCommonAbstractTest {
         Map<Object, Map<ClusterNode, CacheConsistencyViolationEvent.EntryInfo>> evtEntries = new HashMap<>();
         Map<Object, Object> evtRepaired = new HashMap<>();
 
-        Map<Integer, InconsistentMapping> inconsistent = rrd.data.entrySet().stream()
+        Map<Object, InconsistentMapping> inconsistent = rrd.data.entrySet().stream()
             .filter(entry -> !entry.getValue().consistent)
-            .collect(Collectors.toMap(Map.Entry::getKey, Map.Entry::getValue));
+            .collect(Collectors.toMap(
+                entry -> gen.toBinary(entry.getKey()), // Events are always contain binary keys, converting expectations.
+                Map.Entry::getValue));
 
         while (!evtEntries.keySet().equals(inconsistent.keySet())) {
             if (!evtDeq.isEmpty()) {
@@ -228,10 +230,12 @@ public abstract class AbstractReadRepairTest extends GridCommonAbstractTest {
             }
         }
 
-        for (Map.Entry<Integer, InconsistentMapping> mapping : inconsistent.entrySet()) {
-            Integer key = mapping.getKey();
+        for (Map.Entry<Object, InconsistentMapping> mapping : inconsistent.entrySet()) {
+            Object key = mapping.getKey();
+
             Object repairedBin = mapping.getValue().repairedBin;
             Object primaryBin = mapping.getValue().primaryBin;
+
             boolean repairable = mapping.getValue().repairable;
 
             if (!repairable)
@@ -290,7 +294,7 @@ public abstract class AbstractReadRepairTest extends GridCommonAbstractTest {
      * @param obj Object.
      */
     protected static Object unwrapBinaryIfNeeded(Object obj) {
-        return ReadRepairDataGenerator.unwrapBinaryIfNeeded(obj);
+        return gen.unwrapBinaryIfNeeded(obj);
     }
 
     /**

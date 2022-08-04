@@ -17,10 +17,11 @@
 
 package org.apache.ignite.internal.cache.query.index.sorted.keys;
 
-import org.apache.ignite.internal.cache.query.index.sorted.IndexKeyTypes;
+import java.math.BigDecimal;
+import org.apache.ignite.internal.cache.query.index.sorted.IndexKeyType;
 
 /** */
-public class BooleanIndexKey implements IndexKey {
+public class BooleanIndexKey extends NumericIndexKey {
     /** */
     private final boolean key;
 
@@ -35,12 +36,52 @@ public class BooleanIndexKey implements IndexKey {
     }
 
     /** {@inheritDoc} */
-    @Override public int type() {
-        return IndexKeyTypes.BOOLEAN;
+    @Override public IndexKeyType type() {
+        return IndexKeyType.BOOLEAN;
+    }
+
+    /** {@inheritDoc} */
+    @Override public int compareTo(boolean val) {
+        return Boolean.compare(key, val);
+    }
+
+    /** {@inheritDoc} */
+    @Override public int compareTo(byte val) {
+        return Boolean.compare(key, val != (byte)0);
+    }
+
+    /** {@inheritDoc} */
+    @Override public int compareTo(short val) {
+        return Boolean.compare(key, val != (short)0);
+    }
+
+    /** {@inheritDoc} */
+    @Override public int compareTo(int val) {
+        return Boolean.compare(key, val != 0);
+    }
+
+    /** {@inheritDoc} */
+    @Override public int compareTo(long val) {
+        return Boolean.compare(key, val != 0L);
+    }
+
+    /** {@inheritDoc} */
+    @Override public int compareTo(float val) {
+        return Boolean.compare(key, val != 0f);
+    }
+
+    /** {@inheritDoc} */
+    @Override public int compareTo(double val) {
+        return Boolean.compare(key, val != 0d);
+    }
+
+    /** {@inheritDoc} */
+    @Override public int compareTo(BigDecimal val) {
+        return Boolean.compare(key, val.compareTo(BigDecimal.ZERO) != 0);
     }
 
     /** {@inheritDoc} */
     @Override public int compare(IndexKey o) {
-        return Boolean.compare(key, ((BooleanIndexKey)o).key);
+        return o.type() == type() ? Boolean.compare(key, ((BooleanIndexKey)o).key) : -((NumericIndexKey)o).compareTo(key);
     }
 }

@@ -17,7 +17,7 @@
 
 package org.apache.ignite.internal.cache.query.index.sorted.keys;
 
-import org.apache.ignite.internal.cache.query.index.sorted.IndexKeyTypes;
+import org.apache.ignite.internal.cache.query.index.sorted.IndexKeyType;
 
 /**
  * Represents null value stored in index row or query.
@@ -40,7 +40,7 @@ public class NullIndexKey implements IndexKey {
     }
 
     /** {@inheritDoc} */
-    @Override public int type() {
-        return IndexKeyTypes.NULL;
+    @Override public IndexKeyType type() {
+        return IndexKeyType.NULL;
     }
 }

@@ -17,134 +17,75 @@
   limitations under the License.
 -->
 
-<!DOCTYPE log4j:configuration PUBLIC "-//APACHE//DTD LOG4J 1.2//EN"
-    "http://logging.apache.org/log4j/1.2/apidocs/org/apache/log4j/xml/doc-files/log4j.dtd">
+<Configuration monitorInterval="60">
+    <Appenders>
+        <Console name="CONSOLE" target="SYSTEM_OUT">
+            <PatternLayout pattern="[%d{ISO8601}][%-5p][%t][%c{1}]%notEmpty{[%markerSimpleName]} %m%n"/>
+            <ThresholdFilter level="ERROR" onMatch="DENY" onMismatch="ACCEPT"/>
+        </Console>
 
-<!--
-    Default log4j configuration for Ignite.
--->
-<log4j:configuration xmlns:log4j="http://jakarta.apache.org/log4j/" debug="false">
-    <!--
-        Logs System.out messages to console.
+        <Console name="CONSOLE_ERR" target="SYSTEM_ERR">
+            <PatternLayout pattern="[%d{ISO8601}][%-5p][%t][%c{1}]%notEmpty{[%markerSimpleName]} %m%n"/>
+        </Console>
 
-        Note, this appender is disabled by default.
-        To enable, uncomment the section below and also CONSOLE appender in the <root> element.
-    -->
-    <!--
-    <appender name="CONSOLE" class="org.apache.log4j.ConsoleAppender">
-        <param name="Target" value="System.out"/>
+        <File name="CONSISTENCY" fileName="${sys:IGNITE_HOME}/work/log/consistency.log">
+            <PatternLayout>
+                <Pattern>"[%d{ISO8601}][%-5p][%t][%c{1}] %m%n"</Pattern>
+            </PatternLayout>
+        </File>
 
-        <param name="Threshold" value="DEBUG"/>
+        <Routing name="FILE">
+            <Routes pattern="$${sys:nodeId}">
+                <Route>
+                    <RollingFile name="Rolling-${sys:nodeId}" fileName="${sys:IGNITE_HOME}/work/log/${sys:appId}-${sys:nodeId}.log"
+                                 filePattern="${sys:IGNITE_HOME}/work/log/${sys:appId}-${sys:nodeId}-%i-%d{yyyy-MM-dd}.log.gz">
+                        <PatternLayout pattern="[%d{ISO8601}][%-5p][%t][%c{1}]%notEmpty{[%markerSimpleName]} %m%n"/>
+                        <Policies>
+                            <TimeBasedTriggeringPolicy interval="6" modulate="true" />
+                            <SizeBasedTriggeringPolicy size="10 MB" />
+                        </Policies>
+                    </RollingFile>
+                </Route>
+            </Routes>
+        </Routing>
+    </Appenders>
 
-        <layout class="org.apache.log4j.PatternLayout">
-            <param name="ConversionPattern" value="[%d{ISO8601}][%-5p][%t][%c{1}] %m%n"/>
-        </layout>
-
-        <filter class="org.apache.log4j.varia.LevelRangeFilter">
-            <param name="levelMin" value="DEBUG"/>
-            <param name="levelMax" value="WARN"/>
-        </filter>
-    </appender>
-    -->
-
-    <!--
-        Logs all ERROR messages to console.
-    -->
-    <appender name="CONSOLE_ERR" class="org.apache.log4j.ConsoleAppender">
-        <!-- Log to STDERR. -->
-        <param name="Target" value="System.err"/>
-
-        <!-- Log from ERROR and higher (change to WARN if needed). -->
-        <param name="Threshold" value="ERROR"/>
-
-        <!-- The default pattern: Date Priority [Category] Message\n -->
-        <layout class="org.apache.log4j.PatternLayout">
-            <param name="ConversionPattern" value="[%d{ISO8601}][%-5p][%t][%c{1}] %m%n"/>
-        </layout>
-    </appender>
-
-    <!--
-        Logs all output to specified file.
-        By default, the logging goes to IGNITE_HOME/work/log folder
-    -->
-    <appender name="FILE" class="org.apache.ignite.logger.log4j.Log4jRollingFileAppender">
-        <param name="Threshold" value="DEBUG"/>
-        <param name="File" value="${IGNITE_HOME}/work/log/ignite.log"/>
-        <param name="Append" value="true"/>
-        <param name="MaxFileSize" value="10MB"/>
-        <param name="MaxBackupIndex" value="10"/>
-        <layout class="org.apache.log4j.PatternLayout">
-            <param name="ConversionPattern" value="[%d{ISO8601}][%-5p][%t][%c{1}] %m%n"/>
-        </layout>
-    </appender>
-
-    <!--
-    <category name="org.apache.ignite">
-        <level value="DEBUG"/>
-    </category>
-    -->
-
-    <!--
-        Uncomment to disable courtesy notices, such as SPI configuration
-        consistency warnings.
-    -->
-    <!--
-    <category name="org.apache.ignite.CourtesyConfigNotice">
-        <level value="OFF"/>
-    </category>
-    -->
-
-    <category name="org.springframework">
-        <level value="WARN"/>
-    </category>
-
-    <category name="org.eclipse.jetty">
-        <level value="WARN"/>
-    </category>
-
-    <!--
-        Avoid warnings about failed bind attempt when multiple nodes running on the same host.
-    -->
-    <category name="org.eclipse.jetty.util.log">
-        <level value="ERROR"/>
-    </category>
-
-    <category name="org.eclipse.jetty.util.component">
-        <level value="ERROR"/>
-    </category>
-
-    <category name="com.amazonaws">
-        <level value="WARN"/>
-    </category>
-
-    <!--
-        Consistency repair section.
-        Repaired data should not be logged to the same log file by default.
-    -->
-    <category name="org.apache.ignite.internal.visor.consistency" additivity="false">
-        <appender-ref ref="CONSISTENCY"/>
-        <level value="INFO"/>
-    </category>
-
-    <appender name="CONSISTENCY" class="org.apache.log4j.FileAppender">
-        <param name="File" value="${IGNITE_HOME}/work/log/consistency.log"/>
-        <param name="Append" value="true"/>
-        <layout class="org.apache.log4j.PatternLayout">
-            <param name="ConversionPattern" value="[%d{ISO8601}][%-5p][%t][%c{1}] %m%n"/>
-        </layout>
-    </appender>
-
-    <!-- Default settings. -->
-    <root>
-        <!-- Print out all info by default. -->
-        <level value="INFO"/>
-
-        <!-- Uncomment to enable logging to console. -->
+    <Loggers>
         <!--
-        <appender-ref ref="CONSOLE"/>
+        <Logger name="org.apache.ignite" level=DEBUG/>
         -->
 
-        <appender-ref ref="CONSOLE_ERR"/>
-        <appender-ref ref="FILE"/>
-    </root>
-</log4j:configuration>
+        <!--
+            Uncomment to disable courtesy notices, such as SPI configuration
+            consistency warnings.
+        -->
+        <!--
+        <Logger name="org.apache.ignite.CourtesyConfigNotice" level=OFF/>
+        -->
+
+        <Logger name="org.springframework" level="WARN"/>
+        <Logger name="org.eclipse.jetty" level="WARN"/>
+
+        <Logger name="org.apache.ignite.internal.visor.consistency" additivity="false" level="INFO">
+            <AppenderRef ref="CONSISTENCY"/>
+        </Logger>
+
+        <!--
+        Avoid warnings about failed bind attempt when multiple nodes running on the same host.
+        -->
+        <Logger name="org.eclipse.jetty.util.log" level="ERROR"/>
+        <Logger name="org.eclipse.jetty.util.component" level="ERROR"/>
+
+        <Logger name="com.amazonaws" level="WARN"/>
+
+        <Root level="INFO">
+            <!-- Uncomment to enable logging to console. -->
+            <!--
+            <AppenderRef ref="CONSOLE" level="DEBUG"/>
+            -->
+
+            <AppenderRef ref="CONSOLE_ERR" level="ERROR"/>
+            <AppenderRef ref="FILE" level="DEBUG"/>
+        </Root>
+    </Loggers>
+</Configuration>

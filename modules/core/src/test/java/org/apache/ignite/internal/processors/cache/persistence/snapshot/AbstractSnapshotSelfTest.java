@@ -74,6 +74,7 @@ import org.apache.ignite.internal.processors.cache.persistence.partstate.GroupPa
 import org.apache.ignite.internal.processors.cache.persistence.wal.crc.FastCrc;
 import org.apache.ignite.internal.processors.marshaller.MappedName;
 import org.apache.ignite.internal.processors.resource.GridSpringResourceContext;
+import org.apache.ignite.internal.util.tostring.GridToStringInclude;
 import org.apache.ignite.internal.util.typedef.G;
 import org.apache.ignite.internal.util.typedef.internal.CU;
 import org.apache.ignite.internal.util.typedef.internal.S;
@@ -778,10 +779,12 @@ public abstract class AbstractSnapshotSelfTest extends GridCommonAbstractTest {
 
         /** User id. */
         @QuerySqlField(index = true)
-        private final int id;
+        @GridToStringInclude
+        protected final int id;
 
         /** Order value. */
         @QuerySqlField
+        @GridToStringInclude
         protected int balance;
 
         /**

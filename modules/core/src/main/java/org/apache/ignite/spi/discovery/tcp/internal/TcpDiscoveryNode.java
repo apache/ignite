@@ -82,7 +82,7 @@ public class TcpDiscoveryNode extends GridMetadataAwareAdapter implements Ignite
 
     /** */
     @GridToStringInclude
-    private Collection<InetSocketAddress> sockAddrs;
+    private volatile Collection<InetSocketAddress> sockAddrs;
 
     /** */
     @GridToStringInclude
@@ -408,6 +408,9 @@ public class TcpDiscoveryNode extends GridMetadataAwareAdapter implements Ignite
      * @return Addresses that could be used by discovery.
      */
     public Collection<InetSocketAddress> socketAddresses() {
+        if (this.sockAddrs == null)
+            sockAddrs = U.toSocketAddresses(this, discPort);
+
         return sockAddrs;
     }
 
@@ -611,8 +614,6 @@ public class TcpDiscoveryNode extends GridMetadataAwareAdapter implements Ignite
         hostNames = U.readCollection(in);
         discPort = in.readInt();
 
-        sockAddrs = U.toSocketAddresses(this, discPort);
-
         Object consistentIdAttr = attrs.get(ATTR_NODE_CONSISTENT_ID);
 
         // Cluster metrics
@@ -660,9 +661,7 @@ public class TcpDiscoveryNode extends GridMetadataAwareAdapter implements Ignite
      * Only purpose of this constructor is creating node which contains necessary data to store on disc only
      * @param node to copy data from
      */
-    public TcpDiscoveryNode(
-        ClusterNode node
-    ) {
+    public TcpDiscoveryNode(ClusterNode node) {
         this.id = node.id();
         this.consistentId = node.consistentId();
         this.addrs = node.addresses();

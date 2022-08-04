@@ -55,14 +55,23 @@
     {% endif %}
 {% endmacro %}
 
-{% macro bean(bean) %}
-    {% if bean.properties | length > 0 %}
-        <bean class="{{ bean }}">
-            {% for name, value in bean.properties.items() %}
-            <property name="{{ name }}" value="{{ value }}"/>
+{% macro bean(bean_object) %}
+    {% if bean_object.properties | length > 0 or bean_object.constructor_args | length > 0 %}
+        <bean class="{{ bean_object }}">
+            {% for name, value in bean_object.properties.items() %}
+                {% if value is string or value is number or value is boolean %}
+                    <property name="{{ name }}" value="{{ value }}"/>
+                {% else %}
+                    <property name="{{ name }}">
+                        {{ bean(value) }}
+                    </property>
+                {% endif %}
+            {% endfor %}
+            {% for value in bean_object.constructor_args %}
+            <constructor-arg value="{{ value }}"/>
             {% endfor %}
         </bean>
     {% else %}
-        <bean class="{{ bean }}"/>
+        <bean class="{{ bean_object }}"/>
     {% endif %}
 {% endmacro %}

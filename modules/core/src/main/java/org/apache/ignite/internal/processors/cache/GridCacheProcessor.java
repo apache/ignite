@@ -1118,9 +1118,7 @@ public class GridCacheProcessor extends GridProcessorAdapter {
 
             U.stopLifecycleAware(log, lifecycleAwares(ctx.group(), cache.configuration(), ctx.store().configuredStore()));
 
-            IgnitePageStoreManager pageStore;
-
-            if (callDestroy && (pageStore = sharedCtx.pageStore()) != null) {
+            if (callDestroy && CU.storeCacheConfig(sharedCtx, ctx.config())) {
                 try {
                     locCfgMgr.removeCacheData(new StoredCacheData(ctx.config()));
                 }

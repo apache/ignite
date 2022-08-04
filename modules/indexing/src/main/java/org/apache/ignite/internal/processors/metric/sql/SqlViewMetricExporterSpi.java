@@ -20,24 +20,22 @@ package org.apache.ignite.internal.processors.metric.sql;
 import java.util.function.Predicate;
 import org.apache.ignite.internal.GridKernalContext;
 import org.apache.ignite.internal.IgniteEx;
-import org.apache.ignite.internal.processors.query.h2.IgniteH2Indexing;
-import org.apache.ignite.internal.processors.query.h2.SchemaManager;
+import org.apache.ignite.internal.managers.systemview.walker.MetricsViewWalker;
 import org.apache.ignite.spi.IgniteSpiAdapter;
 import org.apache.ignite.spi.IgniteSpiContext;
 import org.apache.ignite.spi.IgniteSpiException;
 import org.apache.ignite.spi.metric.MetricExporterSpi;
 import org.apache.ignite.spi.metric.ReadOnlyMetricManager;
 import org.apache.ignite.spi.metric.ReadOnlyMetricRegistry;
+import org.apache.ignite.spi.systemview.view.MetricsView;
 import org.jetbrains.annotations.Nullable;
-
-import static org.apache.ignite.internal.processors.query.QueryUtils.SCHEMA_SYS;
 
 /**
  * This SPI implementation exports metrics as SQL views.
  */
 class SqlViewMetricExporterSpi extends IgniteSpiAdapter implements MetricExporterSpi {
     /** System view name. */
-    public static final String SYS_VIEW_NAME = "METRICS";
+    public static final String SYS_VIEW_NAME = "metrics";
 
     /** Metric Registry. */
     private ReadOnlyMetricManager mreg;
@@ -46,12 +44,14 @@ class SqlViewMetricExporterSpi extends IgniteSpiAdapter implements MetricExporte
     @Override protected void onContextInitialized0(IgniteSpiContext spiCtx) throws IgniteSpiException {
         GridKernalContext ctx = ((IgniteEx)ignite()).context();
 
-        if (!(ctx.query().getIndexing() instanceof IgniteH2Indexing))
-            return;
-
-        SchemaManager mgr = ((IgniteH2Indexing)ctx.query().getIndexing()).schemaManager();
-
-        mgr.createSystemView(SCHEMA_SYS, new MetricRegistryLocalSystemView(ctx, mreg));
+        ctx.systemView().registerInnerCollectionView(
+            SYS_VIEW_NAME,
+            "Ignite metrics",
+            new MetricsViewWalker(),
+            mreg,
+            r -> r,
+            (r, m) -> new MetricsView(m)
+        );
 
         if (log.isDebugEnabled())
             log.debug(SYS_VIEW_NAME + " SQL view for metrics created.");

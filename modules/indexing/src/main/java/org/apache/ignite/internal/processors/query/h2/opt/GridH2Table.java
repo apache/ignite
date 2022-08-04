@@ -32,7 +32,6 @@ import java.util.concurrent.locks.Lock;
 import java.util.concurrent.locks.ReentrantReadWriteLock;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
-
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.IgniteInterruptedException;
@@ -48,13 +47,13 @@ import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
 import org.apache.ignite.internal.processors.cache.GridCacheContext;
 import org.apache.ignite.internal.processors.cache.GridCacheContextInfo;
 import org.apache.ignite.internal.processors.cache.persistence.CacheDataRow;
-import org.apache.ignite.internal.processors.cache.query.QueryTable;
 import org.apache.ignite.internal.processors.query.IgniteSQLException;
 import org.apache.ignite.internal.processors.query.QueryField;
 import org.apache.ignite.internal.processors.query.QueryUtils;
 import org.apache.ignite.internal.processors.query.h2.H2TableDescriptor;
 import org.apache.ignite.internal.processors.query.h2.H2Utils;
 import org.apache.ignite.internal.processors.query.h2.IgniteH2Indexing;
+import org.apache.ignite.internal.processors.query.h2.QueryTable;
 import org.apache.ignite.internal.processors.query.h2.database.H2IndexType;
 import org.apache.ignite.internal.processors.query.h2.database.H2TreeIndex;
 import org.apache.ignite.internal.processors.query.h2.database.H2TreeIndexBase;
@@ -85,7 +84,6 @@ import org.h2.table.TableBase;
 import org.h2.table.TableType;
 import org.h2.value.DataType;
 import org.jetbrains.annotations.Nullable;
-
 import static org.apache.ignite.cache.CacheMode.PARTITIONED;
 import static org.apache.ignite.internal.processors.query.h2.H2TableDescriptor.PK_HASH_IDX_NAME;
 import static org.apache.ignite.internal.processors.query.h2.opt.H2TableScanIndex.SCAN_INDEX_NAME_SUFFIX;
@@ -121,6 +119,9 @@ public class GridH2Table extends TableBase {
 
     /** */
     private final GridH2RowDescriptor desc;
+
+    /** */
+    private final H2TableDescriptor tblDesc;
 
     /** */
     private volatile ArrayList<Index> idxs;
@@ -209,6 +210,7 @@ public class GridH2Table extends TableBase {
         assert tblDesc != null;
 
         this.desc = desc;
+        this.tblDesc = tblDesc;
         this.cacheInfo = cacheInfo;
         this.idxProc = idxProc;
 
@@ -351,7 +353,7 @@ public class GridH2Table extends TableBase {
      * @return {@code true} If this is a partitioned table.
      */
     public boolean isPartitioned() {
-        return desc != null && desc.cacheInfo().config().getCacheMode() == PARTITIONED;
+        return desc != null && cacheInfo.config().getCacheMode() == PARTITIONED;
     }
 
     /**
@@ -457,6 +459,13 @@ public class GridH2Table extends TableBase {
      */
     public GridH2RowDescriptor rowDescriptor() {
         return desc;
+    }
+
+    /**
+     * @return Table descriptor.
+     */
+    public H2TableDescriptor tableDescriptor() {
+        return tblDesc;
     }
 
     /**
@@ -1228,7 +1237,7 @@ public class GridH2Table extends TableBase {
      * @return Backup filter for the current topology.
      */
     @Nullable private IndexingQueryCacheFilter backupFilter() {
-        IgniteH2Indexing indexing = rowDescriptor().indexing();
+        IgniteH2Indexing indexing = (IgniteH2Indexing)cacheContext().kernalContext().query().getIndexing();
 
         AffinityTopologyVersion topVer = indexing.readyTopologyVersion();
 
@@ -1358,7 +1367,7 @@ public class GridH2Table extends TableBase {
 
             setColumns(newCols);
 
-            desc.refreshMetadataFromTypeDescriptor();
+            desc.onMetadataUpdated();
 
             incrementModificationCounter();
         }
@@ -1419,7 +1428,7 @@ public class GridH2Table extends TableBase {
 
             setColumns(newCols);
 
-            desc.refreshMetadataFromTypeDescriptor();
+            desc.onMetadataUpdated();
 
             for (Index idx : getIndexes()) {
                 if (idx instanceof GridH2IndexBase)

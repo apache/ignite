@@ -209,6 +209,9 @@ namespace Apache.Ignite.Core.Tests.Services
 
         /** */
         object testRoundtrip(object x);
+        
+        /** */
+        int testInterception(int val);
 
         /** */
         void sleep(long delayMs);

@@ -47,19 +47,11 @@
             </dependency>
 
             <dependency>
-                <groupId>log4j</groupId>
-                <artifactId>log4j</artifactId>
-                <version>${log4j.version}</version>
-                <exclusions>
-                    <exclusion>
-                        <groupId>com.sun.jdmk</groupId>
-                        <artifactId>jmxtools</artifactId>
-                    </exclusion>
-                    <exclusion>
-                        <groupId>com.sun.jmx</groupId>
-                        <artifactId>jmxri</artifactId>
-                    </exclusion>
-                </exclusions>
+                <groupId>org.apache.logging.log4j</groupId>
+                <artifactId>log4j-bom</artifactId>
+                <version>${log4j2.version}</version>
+                <scope>import</scope>
+                <type>pom</type>
             </dependency>
         </dependencies>
     </dependencyManagement>
@@ -225,10 +217,6 @@
                             <group>
                                 <title>Platforms</title>
                                 <packages>org.apache.ignite.platform*</packages>
-                            </group>
-                            <group>
-                                <title>OSGi integration</title>
-                                <packages>org.apache.ignite.osgi*</packages>
                             </group>
                             <group>
                                 <title>Storm integration</title>
