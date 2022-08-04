@@ -58,7 +58,8 @@ import org.jetbrains.annotations.Nullable;
  * Transaction prepare request for optimistic and eventually consistent
  * transactions.
  */
-public class GridDistributedTxPrepareRequest extends GridDistributedBaseMessage implements IgniteTxStateAware, ConsistentCutVersionAware {
+public class GridDistributedTxPrepareRequest
+    extends GridDistributedBaseMessage implements IgniteTxStateAware, ConsistentCutVersionAware {
     /** */
     private static final long serialVersionUID = 0L;
 

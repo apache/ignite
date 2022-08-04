@@ -156,9 +156,7 @@ public class ConsistentCut {
                     if (tx.state() == ROLLED_BACK)
                         return true;
 
-                    ConsistentCutVersionAware txCutVerAware = (ConsistentCutVersionAware)tx;
-
-                    if (txCutVerAware.txCutVersion() == null) {
+                    if (tx.txCutVersion() == null) {
                         if (log.isDebugEnabled()) {
                             log.debug("Transaction committed after recovery process and CutVersion isn't defined. " +
                                 "Cut might be inconsistent. Transaction: " + tx);
@@ -167,7 +165,7 @@ public class ConsistentCut {
                         return false;
                     }
 
-                    if (ver.compareTo(txCutVerAware.txCutVersion()) > 0)
+                    if (ver.compareTo(tx.txCutVersion()) > 0)
                         beforeCut.add(tx.nearXidVersion());
                     else
                         afterCut.add(tx.nearXidVersion());

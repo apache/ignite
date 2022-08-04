@@ -61,7 +61,6 @@ import org.apache.ignite.internal.processors.cache.GridCacheSharedContext;
 import org.apache.ignite.internal.processors.cache.GridCacheVersionedFuture;
 import org.apache.ignite.internal.processors.cache.KeyCacheObject;
 import org.apache.ignite.internal.processors.cache.consistentcut.ConsistentCutVersion;
-import org.apache.ignite.internal.processors.cache.consistentcut.ConsistentCutVersionAware;
 import org.apache.ignite.internal.processors.cache.distributed.GridDistributedCacheEntry;
 import org.apache.ignite.internal.processors.cache.distributed.GridDistributedTxMapping;
 import org.apache.ignite.internal.processors.cache.distributed.dht.topology.GridDhtLocalPartition;
@@ -806,7 +805,7 @@ public final class GridDhtTxPrepareFuture extends GridCacheCompoundFuture<Ignite
                                 if (REPLIED_UPD.compareAndSet(GridDhtTxPrepareFuture.this, 0, 1)) {
                                     if (cctx.consistentCutMgr() != null) {
                                         if (res.onePhaseCommit() && fut.result() != null) {
-                                            ConsistentCutVersion v = ((ConsistentCutVersionAware)fut.result()).txCutVersion();
+                                            ConsistentCutVersion v = fut.result().txCutVersion();
 
                                             res.txCutVersion(v);
                                         }

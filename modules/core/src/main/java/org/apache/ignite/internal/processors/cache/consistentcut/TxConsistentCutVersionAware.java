@@ -17,12 +17,20 @@
 
 package org.apache.ignite.internal.processors.cache.consistentcut;
 
+import org.jetbrains.annotations.Nullable;
+
 /**
- * This interface marks messages that responsible for notifying nodes with Consistent Cut Version.
+ * This interface marks objects that are aware of the latest Consistent Cut Version AFTER which this transaction
+ * committed.
  */
-public interface ConsistentCutVersionAware {
+public interface TxConsistentCutVersionAware {
     /**
-     * @return Version of the latest known Consistent Cut on sender node.
+     * @return Consistent Cut Version or {@code null} if the version is unknown.
      */
-    public ConsistentCutVersion cutVersion();
+    public @Nullable ConsistentCutVersion txCutVersion();
+
+    /**
+     * @param cutVer Consistent Cut Version.
+     */
+    public void txCutVersion(ConsistentCutVersion cutVer);
 }

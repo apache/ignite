@@ -25,6 +25,7 @@ import org.apache.ignite.internal.GridDirectTransient;
 import org.apache.ignite.internal.processors.cache.GridCacheSharedContext;
 import org.apache.ignite.internal.processors.cache.consistentcut.ConsistentCutVersion;
 import org.apache.ignite.internal.processors.cache.consistentcut.ConsistentCutVersionAware;
+import org.apache.ignite.internal.processors.cache.consistentcut.TxConsistentCutVersionAware;
 import org.apache.ignite.internal.processors.cache.transactions.IgniteTxState;
 import org.apache.ignite.internal.processors.cache.transactions.IgniteTxStateAware;
 import org.apache.ignite.internal.processors.cache.version.GridCacheVersion;
@@ -37,7 +38,8 @@ import org.apache.ignite.plugin.extensions.communication.MessageWriter;
 /**
  * Response to prepare request.
  */
-public class GridDistributedTxPrepareResponse extends GridDistributedBaseMessage implements IgniteTxStateAware, ConsistentCutVersionAware {
+public class GridDistributedTxPrepareResponse
+    extends GridDistributedBaseMessage implements IgniteTxStateAware, ConsistentCutVersionAware, TxConsistentCutVersionAware {
     /** */
     private static final long serialVersionUID = 0L;
 
@@ -163,7 +165,9 @@ public class GridDistributedTxPrepareResponse extends GridDistributedBaseMessage
         this.cutVer = cutVer;
     }
 
-    /** {@inheritDoc} */
+    /**
+     * @return Holds Consistent Cut Cersion for 1PC transactions.
+     */
     @Override public ConsistentCutVersion txCutVersion() {
         return txCutVer;
     }

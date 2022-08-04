@@ -27,6 +27,7 @@ import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
 import org.apache.ignite.internal.processors.cache.GridCacheSharedContext;
 import org.apache.ignite.internal.processors.cache.consistentcut.ConsistentCutVersion;
 import org.apache.ignite.internal.processors.cache.consistentcut.ConsistentCutVersionAware;
+import org.apache.ignite.internal.processors.cache.consistentcut.TxConsistentCutVersionAware;
 import org.apache.ignite.internal.processors.cache.transactions.IgniteTxState;
 import org.apache.ignite.internal.processors.cache.transactions.IgniteTxStateAware;
 import org.apache.ignite.internal.processors.cache.version.GridCacheVersion;
@@ -42,7 +43,8 @@ import static org.apache.ignite.cache.CacheWriteSynchronizationMode.FULL_SYNC;
 /**
  * Transaction completion message.
  */
-public class GridDistributedTxFinishRequest extends GridDistributedBaseMessage implements IgniteTxStateAware, ConsistentCutVersionAware {
+public class GridDistributedTxFinishRequest extends GridDistributedBaseMessage
+    implements IgniteTxStateAware, ConsistentCutVersionAware, TxConsistentCutVersionAware {
     /** */
     private static final long serialVersionUID = 0L;
 
@@ -313,7 +315,9 @@ public class GridDistributedTxFinishRequest extends GridDistributedBaseMessage i
         this.cutVer = cutVer;
     }
 
-    /** {@inheritDoc} */
+    /**
+     * @return Holds Consistent Cut Cersion for 2PC transactions.
+     */
     @Override public ConsistentCutVersion txCutVersion() {
         return txCutVer;
     }

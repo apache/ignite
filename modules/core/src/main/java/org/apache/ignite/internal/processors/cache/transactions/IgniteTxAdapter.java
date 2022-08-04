@@ -56,7 +56,7 @@ import org.apache.ignite.internal.processors.cache.GridCacheOperation;
 import org.apache.ignite.internal.processors.cache.GridCacheReturn;
 import org.apache.ignite.internal.processors.cache.GridCacheSharedContext;
 import org.apache.ignite.internal.processors.cache.KeyCacheObject;
-import org.apache.ignite.internal.processors.cache.consistentcut.ConsistentCutVersionAware;
+import org.apache.ignite.internal.processors.cache.consistentcut.ConsistentCutVersion;
 import org.apache.ignite.internal.processors.cache.distributed.dht.topology.GridDhtInvalidPartitionException;
 import org.apache.ignite.internal.processors.cache.distributed.dht.topology.GridDhtLocalPartition;
 import org.apache.ignite.internal.processors.cache.distributed.dht.topology.GridDhtPartitionState;
@@ -124,7 +124,7 @@ import static org.apache.ignite.transactions.TransactionState.SUSPENDED;
 /**
  * Managed transaction adapter.
  */
-public abstract class IgniteTxAdapter extends GridMetadataAwareAdapter implements IgniteInternalTx, ConsistentCutVersionAware {
+public abstract class IgniteTxAdapter extends GridMetadataAwareAdapter implements IgniteInternalTx {
     /** Static logger to avoid re-creation. */
     private static final AtomicReference<IgniteLogger> logRef = new AtomicReference<>();
 
@@ -2581,6 +2581,16 @@ public abstract class IgniteTxAdapter extends GridMetadataAwareAdapter implement
         /** {@inheritDoc} */
         @Override public String toString() {
             return S.toString(TxShadow.class, this);
+        }
+
+        /** {@inheritDoc} */
+        @Override public @Nullable ConsistentCutVersion txCutVersion() {
+            return null;
+        }
+
+        /** {@inheritDoc} */
+        @Override public void txCutVersion(ConsistentCutVersion cutVer) {
+            throw new IllegalStateException("Deserialized transaction can only be used as read-only.");
         }
     }
 
