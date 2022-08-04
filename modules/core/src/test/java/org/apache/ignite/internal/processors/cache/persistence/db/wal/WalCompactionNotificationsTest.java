@@ -103,7 +103,7 @@ public class WalCompactionNotificationsTest extends GridCommonAbstractTest {
      * @throws Throwable If failed.
      */
     @Test
-    public void testOrder() throws Throwable {
+    public void testNotifications() throws Throwable {
         NotificationIndexListener notifyStartLsnr = new NotificationIndexListener(evtLsnr.errRef, evtLsnr.enqueueHist, true);
         NotificationIndexListener notifyEndLsnr = new NotificationIndexListener(evtLsnr.errRef, evtLsnr.compressedHist, false);
 
@@ -172,6 +172,7 @@ public class WalCompactionNotificationsTest extends GridCommonAbstractTest {
         }
 
         /** {@inheritDoc} */
+        @SuppressWarnings("ErrorNotRethrown")
         @Override public void accept(String s) {
             try {
                 Matcher matcher = pattern.matcher(s);
@@ -188,8 +189,6 @@ public class WalCompactionNotificationsTest extends GridCommonAbstractTest {
             }
             catch (Error | RuntimeException e) {
                 errRef.compareAndSet(null, e);
-
-                throw e;
             }
         }
     }

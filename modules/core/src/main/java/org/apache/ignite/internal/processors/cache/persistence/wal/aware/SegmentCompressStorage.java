@@ -69,9 +69,6 @@ class SegmentCompressStorage {
      * @param compressedIdx Index of compressed segment.
      */
     synchronized void onSegmentCompressed(long compressedIdx) {
-        if (log.isInfoEnabled())
-            log.info("Segment compressed notification [idx=" + compressedIdx + ']');
-
         if (compressedIdx > lastMaxCompressedIdx)
             lastMaxCompressedIdx = compressedIdx;
 

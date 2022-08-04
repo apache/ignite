@@ -2320,6 +2320,9 @@ public class FileWriteAheadLogManager extends GridCacheSharedManagerAdapter impl
 
                         segmentAware.onSegmentCompressed(segIdx);
 
+                        if (log.isInfoEnabled())
+                            log.info("Segment compressed notification [idx=" + segIdx + ']');
+
                         if (evt.isRecordable(EVT_WAL_SEGMENT_COMPACTED) && !cctx.kernalContext().recoveryMode())
                             evt.record(new WalSegmentCompactedEvent(cctx.localNode(), segIdx, zip.getAbsoluteFile()));
                     }
