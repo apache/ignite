@@ -1175,16 +1175,10 @@ public abstract class BPlusTree<L, T extends L> extends DataStructure implements
     }
 
     /**
-     * @param upper Upper bound.
-     * @param upIncl {@code true} if upper bound is inclusive.
-     * @param c Filter closure.
-     * @param x Implementation specific argument, {@code null} always means that we need to return full detached data row.
-     * @return Cursor.
+     * @param cursor Cursor to init.
      * @throws IgniteCheckedException If failed.
      */
-    private GridCursor<T> findLowerUnbounded(L upper, boolean upIncl, TreeRowClosure<L, T> c, Object x) throws IgniteCheckedException {
-        ForwardCursor cursor = new ForwardCursor(upper, upIncl, c, x);
-
+    private void findLowerUnbounded(AbstractForwardCursor cursor) throws IgniteCheckedException {
         long firstPageId;
 
         long metaPage = acquirePage(metaPageId);
@@ -1199,24 +1193,31 @@ public abstract class BPlusTree<L, T extends L> extends DataStructure implements
             long firstPage = acquirePage(firstPageId);
 
             try {
-                long pageAddr = readLock(firstPageId, firstPage); // We always merge pages backwards, the first page is never removed.
+                // We always merge pages backwards, the first page is never removed.
+                long pageAddr = cursor.readLockRequired()
+                    ? readLock(firstPageId, firstPage)
+                    : writeLock(firstPageId, firstPage);
 
                 try {
                     cursor.init(pageAddr, io(pageAddr), -1);
                 }
                 finally {
-                    readUnlock(firstPageId, firstPage, pageAddr);
+                    if (cursor.readLockRequired())
+                        readUnlock(firstPageId, firstPage, pageAddr);
+                    else
+                        //TODO: FIXME WAL will be recorded twice!
+                        writeUnlock(firstPageId, firstPage, pageAddr, cursor.currentPageDirty());
                 }
             }
             finally {
                 releasePage(firstPageId, firstPage);
             }
+
+            //TODO: call afterInit here to remove last item from tree.
         }
         catch (RuntimeException | AssertionError e) {
             throw new BPlusTreeRuntimeException(e, grpId, metaPageId, firstPageId);
         }
-
-        return cursor;
     }
 
     /**
@@ -1250,6 +1251,31 @@ public abstract class BPlusTree<L, T extends L> extends DataStructure implements
     }
 
     /**
+     * Removes all rows by filter.
+     *
+     * @param filter Filter closure.
+     * @throws IgniteCheckedException
+     */
+    public void remove(TreeRowClosure<L, T> filter) throws IgniteCheckedException {
+        checkDestroyed();
+
+        try {
+            RemoveByFilterCursor rmvCursor = new RemoveByFilterCursor(filter);
+
+            findLowerUnbounded(rmvCursor);
+
+            rmvCursor.iterate();
+        }
+        catch (RuntimeException | AssertionError e) {
+            throw corruptedTreeException("Runtime failure ", e, grpId);
+        }
+        finally {
+            checkDestroyed();
+        }
+
+    }
+
+    /**
      * @param lower Lower bound or {@code null} if unbounded.
      * @param upper Upper bound or {@code null} if unbounded.
      * @param lowIncl {@code true} if lower bound is inclusive.
@@ -1272,8 +1298,13 @@ public abstract class BPlusTree<L, T extends L> extends DataStructure implements
         ForwardCursor cursor = new ForwardCursor(lower, upper, lowIncl, upIncl, c, x);
 
         try {
-            if (lower == null)
-                return findLowerUnbounded(upper, upIncl, c, x);
+            if (lower == null) {
+                ForwardCursor cursor0 = new ForwardCursor(upper, upIncl, c, x);
+
+                findLowerUnbounded(cursor0);
+
+                return cursor0;
+            }
 
             cursor.find();
 
@@ -2100,29 +2131,6 @@ public abstract class BPlusTree<L, T extends L> extends DataStructure implements
         assert rmvOp.isDone();
 
         return Collections.unmodifiableList(rmvOp.removedRows);
-    }
-
-    /**
-     * Removes all rows by filter.
-     *
-     * @param filter
-     * @throws IgniteCheckedException
-     */
-    public void remove(TreeRowClosure<L, T> filter) throws IgniteCheckedException {
-        checkDestroyed();
-
-        try {
-            RemoveByFilterCursor rmvCursor = new RemoveByFilterCursor(filter);
-
-            rmvCursor.remove();
-        }
-        catch (RuntimeException | AssertionError e) {
-            throw corruptedTreeException("Runtime failure ", e, grpId);
-        }
-        finally {
-            checkDestroyed();
-        }
-
     }
 
     /** {@inheritDoc} */
@@ -5928,7 +5936,9 @@ public abstract class BPlusTree<L, T extends L> extends DataStructure implements
                 long pageId = nextPageId;
                 long page = acquirePage(pageId);
                 try {
-                    long pageAddr = readLock(pageId, page); // Doing explicit null check.
+                    long pageAddr = readLockRequired()
+                        ? readLock(pageId, page) // Doing explicit null check.
+                        : writeLock(pageId, page);
 
                     // If concurrent merge occurred we have to reinitialize cursor from the last returned row.
                     if (pageAddr == 0L)
@@ -5943,7 +5953,11 @@ public abstract class BPlusTree<L, T extends L> extends DataStructure implements
                         // Continue fetching forward.
                     }
                     finally {
-                        readUnlock(pageId, page, pageAddr);
+                        if (readLockRequired())
+                            readUnlock(pageId, page, pageAddr);
+                        else
+                            //TODO: FIXME WAL will be recorded twice!
+                            writeUnlock(pageId, page, pageAddr, currentPageDirty());
                     }
                 }
                 catch (CorruptedDataStructureException e) {
@@ -5970,35 +5984,40 @@ public abstract class BPlusTree<L, T extends L> extends DataStructure implements
                 lowerBound = lower; // Move the lower bound forward for further concurrent merge retries.
             }
         }
+
+        /** @return {@code True} if read lock for page required {@code false} otherwise. */
+        protected boolean readLockRequired() {
+            return true;
+        }
+
+        /** @return {@code True} if current page modified during {@link #fillFromBuffer0(long, BPlusIO, int, int)}. */
+        protected boolean currentPageDirty() {
+            return false;
+        }
     }
 
     /**
      *
      */
-    private class RemoveByFilterCursor extends AbstractForwardCursor {
+    private class RemoveByFilterCursor extends ClosureCursor {
         /** */
-        private final TreeRowClosure<L, T> p;
+        private boolean currentPageDirty;
 
-        /** */
-        private L lastRow;
+        /** Row identified to be removed from "root". */
+        private L removeRow;
+
+        /** Accumulates indexes of rows for the delta wal record. */
+        private int[] idxs;
 
         /** */
         public RemoveByFilterCursor(TreeRowClosure<L, T> p) {
-            super(null, null, true, true);
-
-            this.p = p;
+            super(null, null, p);
         }
 
         /** @throws IgniteCheckedException If failed. */
         private void remove() throws IgniteCheckedException {
-            findFirst();
-
             while (nextPageId != 0) {
-                L lastRow0 = lastRow;
-
-                lastRow = null;
-
-                nextPage(lastRow0);
+                nextPage(null);
 
                 if (nextPageId == 0)
                     return;
@@ -6006,35 +6025,67 @@ public abstract class BPlusTree<L, T extends L> extends DataStructure implements
         }
 
         /** {@inheritDoc} */
-        @Override void init0() {
-            // No-op.
-        }
+        @Override protected boolean handlePage(
+            long pageAddr,
+            BPlusIO<L> io,
+            int startIdx,
+            int cnt
+        ) throws IgniteCheckedException {
+            assert io.isLeaf();
 
-        /** {@inheritDoc} */
-        @Override boolean fillFromBuffer0(long pageAddr, BPlusIO<L> io, int startIdx, int cnt) throws IgniteCheckedException {
-            return false;
-        }
+            currentPageDirty = false;
 
-        /** {@inheritDoc} */
-        @Override boolean reinitialize0() throws IgniteCheckedException {
+            if (idxs == null || idxs.length < cnt)
+                idxs = new int[cnt];
+
+            int idxsCnt = 0;
+
+            for (int i = startIdx; i < cnt; i++) {
+                if (p.apply(BPlusTree.this, io, pageAddr, i))
+                    idxs[idxsCnt++] = i;
+            }
+
+            if (p.apply(BPlusTree.this, io, pageAddr, cnt - 1))
+                removeRow = io.getLookupRow(BPlusTree.this, pageAddr, cnt - 1);
+
+            if (idxsCnt > 0) {
+                io.remove(pageAddr, idxs, idxsCnt);
+
+                currentPageDirty = true;
+
+                long pageId = PageIO.getPageId(pageAddr);
+                long page = acquirePage(pageId);
+
+                if (needWalDeltaRecord(pageId, page, null)) // TODO: is walPlc == null correct here?
+                    wal.log(new PurgeRecord(grpId, pageId, idxs, idxsCnt, cnt - idxsCnt));
+            }
+
+            if (nextPageId != 0)
+                lastRow = io.getLookupRow(BPlusTree.this, pageAddr, cnt - 1); // Need save last row.
+
             return true;
         }
 
         /** {@inheritDoc} */
-        @Override void onNotFound(boolean readDone) {
-            nextPageId = 0;
+        @Override protected boolean readLockRequired() {
+            return false;
+        }
+
+        /** {@inheritDoc} */
+        @Override protected boolean currentPageDirty() {
+            return currentPageDirty;
         }
     }
 
     /**
      * Closure cursor.
      */
-    private final class ClosureCursor extends AbstractForwardCursor {
+    private class ClosureCursor extends AbstractForwardCursor {
         /** */
-        private final TreeRowClosure<L, T> p;
+        protected final TreeRowClosure<L, T> p;
 
         /** */
-        private L lastRow;
+        protected L lastRow;
 
         /**
          * @param lowerBound Lower bound inclusive.
@@ -6065,6 +6116,11 @@ public abstract class BPlusTree<L, T extends L> extends DataStructure implements
             if (cnt == startIdx)
                 return false;
 
+            return handlePage(pageAddr, io, startIdx, cnt);
+        }
+
+        /** Cursor specifig logic to handle single page. */
+        protected boolean handlePage(long pageAddr, BPlusIO<L> io, int startIdx, int cnt) throws IgniteCheckedException {
             for (int i = startIdx; i < cnt; i++) {
                 int cmp = compare(0, io, pageAddr, i, upperBound);
 
@@ -6102,18 +6158,14 @@ public abstract class BPlusTree<L, T extends L> extends DataStructure implements
         /**
          * @throws IgniteCheckedException If failed.
          */
-        private void iterate() throws IgniteCheckedException {
+        protected void iterate() throws IgniteCheckedException {
             find();
 
             if (nextPageId == 0)
                 return;
 
             for (;;) {
-                L lastRow0 = lastRow;
-
-                lastRow = null;
-
-                nextPage(lastRow0);
+                nextPage(lastRow);
 
                 if (nextPageId == 0)
                     return;

@@ -328,10 +328,8 @@ public class BPlusTreeSelfTest extends GridCommonAbstractTest {
         checkCursor(tree.find(null, null, alwaysFalse, null), Collections.emptyIterator());
         checkCursor(tree.find(null, null, alwaysTrue, null), map.values().iterator());
 
-        System.out.println("====");
         // This must remove nothing.
         tree.remove(alwaysFalse);
-        System.out.println("====");
 
         checkCursor(tree.find(null, null, alwaysTrue, null), map.values().iterator());
 
@@ -3436,7 +3434,7 @@ public class BPlusTreeSelfTest extends GridCommonAbstractTest {
     /**
      * Long leaf.
      */
-    private static final class LongLeafIO extends BPlusLeafIO<Long> {
+    public static final class LongLeafIO extends BPlusLeafIO<Long> {
         /**
          */
         LongLeafIO() {
