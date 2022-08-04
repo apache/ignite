@@ -72,6 +72,9 @@ public abstract class AbstractClientCompatibilityTest extends IgniteCompatibilit
     /** Version 2.13.0. */
     protected static final IgniteProductVersion VER_2_13_0 = IgniteProductVersion.fromString("2.13.0");
 
+    /** Version 2.14.0. */
+    protected static final IgniteProductVersion VER_2_14_0 = IgniteProductVersion.fromString("2.14.0");
+
     /** Parameters. */
     @Parameterized.Parameters(name = "Version {0}")
     public static Iterable<Object[]> versions() {
