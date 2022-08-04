@@ -20,7 +20,6 @@ package org.apache.ignite.internal.processors.cache.consistentcut;
 import java.util.Random;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCache;
-import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.TestRecordingCommunicationSpi;
 import org.apache.ignite.internal.pagemem.wal.WALIterator;
@@ -32,15 +31,6 @@ import org.junit.Test;
 
 /***/
 public class ConsistentCutTxRecoveryTest extends AbstractConsistentCutBlockingTest {
-    /** {@inheritDoc} */
-    @Override protected IgniteConfiguration getConfiguration(String instanceName) throws Exception {
-        IgniteConfiguration cfg = super.getConfiguration(instanceName);
-
-        cfg.setCommunicationSpi(new TestRecordingCommunicationSpi());
-
-        return cfg;
-    }
-
     /** */
     @Test
     public void testSkipFinishRecordOnTxRecovery() throws Exception {

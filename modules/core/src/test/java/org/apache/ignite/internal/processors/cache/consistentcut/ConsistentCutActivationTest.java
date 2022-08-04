@@ -90,6 +90,22 @@ public class ConsistentCutActivationTest extends AbstractConsistentCutTest {
 
     /** */
     @Test
+    public void testConsistentCutClientNotAffect() throws Exception {
+        TestConsistentCutManager.cutMgr(grid(0)).scheduleConsistentCut();
+
+        assertConsistentCutEnabled();
+
+        startClientGrid(nodes() + 1);
+
+        assertConsistentCutEnabled();
+
+        stopGrid(nodes());
+
+        assertConsistentCutEnabled();
+    }
+
+    /** */
+    @Test
     public void testClusterActivationNotAffect() throws Exception {
         TestConsistentCutManager.cutMgr(grid(0)).scheduleConsistentCut();
 

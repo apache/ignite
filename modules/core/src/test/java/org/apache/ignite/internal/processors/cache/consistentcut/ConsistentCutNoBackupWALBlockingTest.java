@@ -72,7 +72,7 @@ public class ConsistentCutNoBackupWALBlockingTest extends AbstractConsistentCutB
     public void testMultipleCases() throws Exception {
         initWALCase(txBlkState, txBlkNode, cutBlkType, cutBlkNode);
 
-        runCases(cases());
+        runCases(cases(), true);
 
         checkWalsConsistency();
     }

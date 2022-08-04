@@ -29,29 +29,35 @@ import org.junit.runners.Parameterized;
 public class ConsistentCutTwoBackupMessagesBlockingTest extends AbstractConsistentCutBlockingTest {
     /** */
     @Parameterized.Parameter
-    public BlkCutType cutBlkType;
+    public BlkNodeType txNodeBlkType;
 
     /** */
     @Parameterized.Parameter(1)
-    public BlkNodeType cutNodeBlkType;
+    public BlkCutType cutBlkType;
 
     /** */
     @Parameterized.Parameter(2)
-    public String blkMsgCls;
+    public BlkNodeType cutNodeBlkType;
 
     /** */
-    @Parameterized.Parameters(name = "cutBlkAt={0}, nodeBlk={1}, blkMsgCls={2}")
+    @Parameterized.Parameter(3)
+    public Class<?> blkMsgCls;
+
+    /** */
+    @Parameterized.Parameters(name = "txNodeBlk={0}, cutBlkAt={1}, nodeBlk={2}, blkMsgCls={3}")
     public static List<Object[]> params() {
         List<Object[]> p = new ArrayList<>();
 
-        List<String> msgs = ConsistentCutBlockingCases.messages(true, false);
+        List<Class<?>> msgs = ConsistentCutBlockingCases.messages(true);
 
-        for (BlkNodeType n: BlkNodeType.values()) {
-            for (BlkCutType c : BlkCutType.values()) {
-                for (String m: msgs)
-                    p.add(new Object[] {c, n, m});
+        for (BlkNodeType txN: BlkNodeType.values()) {
+            for (BlkNodeType cutN: BlkNodeType.values()) {
+                for (BlkCutType c : BlkCutType.values()) {
+                    for (Class<?> m: msgs)
+                        p.add(new Object[] {txN, c, cutN, m});
+                }
             }
-        };
+        }
 
         return p;
     }
@@ -61,9 +67,9 @@ public class ConsistentCutTwoBackupMessagesBlockingTest extends AbstractConsiste
     public void testMultipleCases() throws Exception {
         List<List<T2<Integer, Integer>>> cases = ConsistentCutBlockingCases.casesWithBackup(nodes());
 
-        initMsgCase(blkMsgCls, cutBlkType, cutNodeBlkType);
+        initMsgCase(blkMsgCls, txNodeBlkType, cutBlkType, cutNodeBlkType);
 
-        runCases(cases);
+        runCases(cases, false);
 
         checkWalsConsistency();
     }

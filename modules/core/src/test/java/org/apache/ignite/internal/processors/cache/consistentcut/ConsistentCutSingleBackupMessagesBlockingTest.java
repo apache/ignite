@@ -29,10 +29,14 @@ import org.junit.runners.Parameterized;
 public class ConsistentCutSingleBackupMessagesBlockingTest extends AbstractConsistentCutBlockingTest {
     /** */
     @Parameterized.Parameter
-    public BlkCutType cutBlkType;
+    public BlkNodeType txNodeBlkType;
 
     /** */
     @Parameterized.Parameter(1)
+    public BlkCutType cutBlkType;
+
+    /** */
+    @Parameterized.Parameter(2)
     public BlkNodeType cutNodeBlkType;
 
     /** */
@@ -40,9 +44,11 @@ public class ConsistentCutSingleBackupMessagesBlockingTest extends AbstractConsi
     public static List<Object[]> params() {
         List<Object[]> p = new ArrayList<>();
 
-        for (BlkNodeType n: BlkNodeType.values()) {
-            for (BlkCutType c : BlkCutType.values())
-                p.add(new Object[] {c, n});
+        for (BlkNodeType txN: BlkNodeType.values()) {
+            for (BlkNodeType cutN: BlkNodeType.values()) {
+                for (BlkCutType c : BlkCutType.values())
+                    p.add(new Object[] {txN, c, cutN});
+            }
         }
 
         return p;
@@ -53,12 +59,12 @@ public class ConsistentCutSingleBackupMessagesBlockingTest extends AbstractConsi
     public void testMultipleCases() throws Exception {
         List<List<T2<Integer, Integer>>> cases = ConsistentCutBlockingCases.casesWithBackup(nodes());
 
-        List<String> msgs = ConsistentCutBlockingCases.messages(true, false);
+        List<Class<?>> msgs = ConsistentCutBlockingCases.messages(true);
 
-        for (String msg: msgs) {
-            initMsgCase(msg, cutBlkType, cutNodeBlkType);
+        for (Class<?> msg: msgs) {
+            initMsgCase(msg, txNodeBlkType, cutBlkType, cutNodeBlkType);
 
-            runCases(cases);
+            runCases(cases, false);
         }
 
         checkWalsConsistency();

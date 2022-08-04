@@ -20,35 +20,38 @@ package org.apache.ignite.internal.processors.cache.consistentcut;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
-import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
 import org.apache.ignite.IgniteCheckedException;
-import org.apache.ignite.IgniteException;
 import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.GridKernalContext;
 import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.IgniteInterruptedCheckedException;
-import org.apache.ignite.internal.managers.communication.GridIoMessage;
+import org.apache.ignite.internal.TestRecordingCommunicationSpi;
 import org.apache.ignite.internal.pagemem.wal.IgniteWriteAheadLogManager;
 import org.apache.ignite.internal.pagemem.wal.record.TxRecord;
 import org.apache.ignite.internal.pagemem.wal.record.WALRecord;
 import org.apache.ignite.internal.processors.cache.GridCacheSharedContext;
+import org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtTxFinishRequest;
+import org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtTxFinishResponse;
+import org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtTxPrepareRequest;
+import org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtTxPrepareResponse;
+import org.apache.ignite.internal.processors.cache.distributed.near.GridNearTxFinishRequest;
+import org.apache.ignite.internal.processors.cache.distributed.near.GridNearTxFinishResponse;
+import org.apache.ignite.internal.processors.cache.distributed.near.GridNearTxPrepareRequest;
+import org.apache.ignite.internal.processors.cache.distributed.near.GridNearTxPrepareResponse;
 import org.apache.ignite.internal.processors.cache.persistence.StorageException;
 import org.apache.ignite.internal.processors.cache.persistence.wal.FileWriteAheadLogManager;
 import org.apache.ignite.internal.processors.cache.persistence.wal.WALPointer;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.T2;
 import org.apache.ignite.internal.util.typedef.internal.U;
-import org.apache.ignite.lang.IgniteInClosure;
 import org.apache.ignite.lang.IgniteUuid;
 import org.apache.ignite.plugin.AbstractTestPluginProvider;
 import org.apache.ignite.plugin.PluginContext;
-import org.apache.ignite.plugin.extensions.communication.Message;
-import org.apache.ignite.spi.IgniteSpiException;
 import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.transactions.Transaction;
 import org.apache.ignite.transactions.TransactionConcurrency;
@@ -57,6 +60,7 @@ import org.jetbrains.annotations.Nullable;
 
 import static org.apache.ignite.internal.processors.cache.consistentcut.AbstractConsistentCutBlockingTest.BlkCutType.AFTER_VERSION_UPDATE;
 import static org.apache.ignite.internal.processors.cache.consistentcut.AbstractConsistentCutBlockingTest.BlkCutType.BEFORE_VERSION_UPDATE;
+import static org.apache.ignite.internal.processors.cache.consistentcut.AbstractConsistentCutBlockingTest.BlkNodeType.BACKUP;
 import static org.apache.ignite.internal.processors.cache.consistentcut.AbstractConsistentCutBlockingTest.BlkNodeType.NEAR;
 import static org.apache.ignite.internal.processors.cache.consistentcut.AbstractConsistentCutBlockingTest.BlkNodeType.PRIMARY;
 import static org.apache.ignite.transactions.TransactionIsolation.SERIALIZABLE;
@@ -65,15 +69,6 @@ import static org.apache.ignite.transactions.TransactionIsolation.SERIALIZABLE;
 public abstract class AbstractConsistentCutBlockingTest extends AbstractConsistentCutTest {
     /** Number of current testing case. */
     private int caseNum;
-
-    /** Latch that blocks transaction execution. */
-    private static volatile CountDownLatch txLatch = new CountDownLatch(0);
-
-    /**
-     * Latch that counts down when Consistent Cut procedure started on every node. It means that every node writes
-     * ConsistentCutStartRecord to WAL and publish its state.
-     */
-    private static volatile CountDownLatch cutGlobalStartLatch = new CountDownLatch(0);
 
     /** */
     private final Map<IgniteUuid, Integer> txNearNode = new ConcurrentHashMap<>();
@@ -88,19 +83,16 @@ public abstract class AbstractConsistentCutBlockingTest extends AbstractConsiste
     private static BlkNodeType txBlkNodeType;
 
     /** */
-    private static UUID txBlkNodeId;
-
-    /** */
     private static TransactionState txBlkState;
 
     /** */
-    private static String txMsgBlkCls;
+    private static Class<?> txMsgBlkCls;
 
     /** {@inheritDoc} */
     @Override protected IgniteConfiguration getConfiguration(String instanceName) throws Exception {
         IgniteConfiguration cfg = super.getConfiguration(instanceName);
 
-        cfg.setCommunicationSpi(new BlockingCommunicationSpi());
+        cfg.setCommunicationSpi(new TestRecordingCommunicationSpi());
 
         cfg.setPluginProviders(
             new BlockingWALPluginProvider(),
@@ -110,9 +102,9 @@ public abstract class AbstractConsistentCutBlockingTest extends AbstractConsiste
     }
 
     /** Initialize latches for test cases with blocking tx messages. */
-    protected final void initMsgCase(String msgCls, BlkCutType cutBlkType, BlkNodeType cutBlkNode) {
+    protected final void initMsgCase(Class<?> msgCls, BlkNodeType txBlkNode, BlkCutType cutBlkType, BlkNodeType cutBlkNode) {
         txBlkState = null;
-        txBlkNodeType = null;
+        txBlkNodeType = txBlkNode;
 
         txMsgBlkCls = msgCls;
         AbstractConsistentCutBlockingTest.cutBlkType = cutBlkType;
@@ -130,23 +122,105 @@ public abstract class AbstractConsistentCutBlockingTest extends AbstractConsiste
         cutBlkNodeType = cutBlkNode;
     }
 
+    /** */
+    protected void runWalBlkCase(
+        List<T2<Integer, Integer>> testCase,
+        int nearNodeId,
+        TransactionConcurrency txConcurrency
+    ) throws Exception {
+        int txBlkNodeId = blkNode(nearNodeId, txBlkNodeType, testCase);
+
+        int cutBlkNodeId = -1;
+
+        if (cutBlkType != BlkCutType.NONE)
+            cutBlkNodeId = blkNode(nearNodeId, cutBlkNodeType, testCase);
+
+        if (txBlkNodeId != nodes())
+            BlockingWALManager.walMgr(grid(txBlkNodeId)).block();
+
+        log.info("START CASE " + (++caseNum) + ". Data=" + testCase + ", nearNodeId=" + nearNodeId);
+
+        runCase(() -> tx(nearNodeId, testCase, txConcurrency), txBlkNodeId, cutBlkNodeId);
+
+        if (txBlkNodeId != nodes())
+            BlockingWALManager.walMgr(grid(txBlkNodeId)).clear();
+    }
+
+    /** */
+    protected void runMsgBlkCase(
+        List<T2<Integer, Integer>> testCase,
+        int nearNodeId,
+        TransactionConcurrency txConcurrency
+    ) throws Exception {
+        if (skipMsgTestCase())
+            return;
+
+        int txBlkNodeId = blkNode(nearNodeId, txBlkNodeType, testCase);
+
+        int cutBlkNodeId = -1;
+
+        if (cutBlkType != BlkCutType.NONE)
+            cutBlkNodeId = blkNode(nearNodeId, cutBlkNodeType, testCase);
+
+        TestRecordingCommunicationSpi.spi(grid(txBlkNodeId)).blockMessages((n, msg) ->
+            msg.getClass().equals(txMsgBlkCls)
+        );
+
+        log.info("START CASE " + (++caseNum) + ". Data=" + testCase + ", nearNodeId=" + nearNodeId);
+
+        runCase(() -> tx(nearNodeId, testCase, txConcurrency), txBlkNodeId, cutBlkNodeId);
+    }
+
+    /** */
+    private boolean skipMsgTestCase() {
+        if (txMsgBlkCls.equals(GridNearTxPrepareRequest.class) && txBlkNodeType != NEAR)
+            return true;
+
+        if (txMsgBlkCls.equals(GridNearTxPrepareResponse.class) && txBlkNodeType == NEAR)
+            return true;
+
+        if (txMsgBlkCls.equals(GridNearTxFinishRequest.class) && txBlkNodeType != NEAR)
+            return true;
+
+        if (txMsgBlkCls.equals(GridNearTxFinishResponse.class) && txBlkNodeType == NEAR)
+            return true;
+
+        if (txMsgBlkCls.equals(GridDhtTxPrepareRequest.class) && txBlkNodeType == BACKUP)
+            return true;
+
+        if (txMsgBlkCls.equals(GridDhtTxPrepareResponse.class) && txBlkNodeType != BACKUP)
+            return true;
+
+        if (txMsgBlkCls.equals(GridDhtTxFinishRequest.class) && txBlkNodeType == BACKUP)
+            return true;
+
+        if (txMsgBlkCls.equals(GridDhtTxFinishResponse.class) && txBlkNodeType == NEAR)
+            return true;
+
+        return false;
+    }
+
     /**
      * Run cases on Ignite cluster.
      *
      * @param cases Collection of cases. Every case is a collection of key description - tuple (primaryNodeId, backupNodeId).
+     * @param walOrMsg {@code true} for running test cases with blocking WAL writing, {@code false} for blocking messages.
      */
-    protected void runCases(List<List<T2<Integer, Integer>>> cases) throws Exception {
+    protected void runCases(List<List<T2<Integer, Integer>>> cases, boolean walOrMsg) throws Exception {
         // Ignite coordinator, ordinary server node, client node.
         // If test with stopping client node then use it as near node.
         Set<Integer> nears = F.asSet(0, nodes() - 1, nodes());
 
         for (int near: nears) {
-            for (int cs = 0; cs < cases.size(); cs++) {
-                final int n = near;
-                final int c = cs;
-
-                runCase(() -> tx(n, cases.get(c), TransactionConcurrency.PESSIMISTIC), near, cases.get(c));
-                runCase(() -> tx(n, cases.get(c), TransactionConcurrency.OPTIMISTIC), near, cases.get(c));
+            for (int c = 0; c < cases.size(); c++) {
+                if (walOrMsg) {
+                    runWalBlkCase(cases.get(c), near, TransactionConcurrency.PESSIMISTIC);
+                    runWalBlkCase(cases.get(c), near, TransactionConcurrency.OPTIMISTIC);
+                }
+                else {
+                    runMsgBlkCase(cases.get(c), near, TransactionConcurrency.PESSIMISTIC);
+                    runMsgBlkCase(cases.get(c), near, TransactionConcurrency.OPTIMISTIC);
+                }
             }
         }
     }
@@ -170,28 +244,11 @@ public abstract class AbstractConsistentCutBlockingTest extends AbstractConsiste
      * 9. Await Consistent Cut finished.
      *
      * @param tx Function that performs transaction.
-     * @param nearNodeId ID of near node.
-     * @param c Test case - list of tuples (prim, backup) to be written.
+     * @param txBlkNodeId ID of node to block transaction.
+     * @param cutBlkNodeId ID of node to block Consistent Cut.
      */
-    protected void runCase(Runnable tx, int nearNodeId, List<T2<Integer, Integer>> c) throws Exception {
+    private void runCase(Runnable tx, int txBlkNodeId, int cutBlkNodeId) throws Exception {
         long prevVer = grid(0).context().cache().context().consistentCutMgr().cutVersion().version();
-
-        initLatches();
-
-        int cutBlkNode = -1;
-
-        if (cutBlkType != BlkCutType.NONE)
-            cutBlkNode = blkNode(nearNodeId, cutBlkNodeType, c);
-
-        if (txBlkNodeType != null) {
-            int id = blkNode(nearNodeId, txBlkNodeType, c);
-
-            txBlkNodeId = grid(id).localNode().id();
-        }
-        else
-            txBlkNodeId = null;
-
-        log.info("START CASE " + (++caseNum) + ". Data=" + c + ", nearNodeId=" + nearNodeId);
 
         // 1. Start transaction.
         IgniteInternalFuture<?> txFut = multithreadedAsync(() -> {
@@ -199,40 +256,57 @@ public abstract class AbstractConsistentCutBlockingTest extends AbstractConsiste
 
             // In some cases tx isn't blocked and reaches this without counting down the latch.
             // Then explicitly unblock awaited threads.
-            txLatch.countDown();
+            unblockTx(grid(txBlkNodeId));
         }, 1);
 
         // 2. Block transaction.
-        txLatch.await(100, TimeUnit.MILLISECONDS);
+        blockTx(grid(txBlkNodeId));
 
         // 3. Start Consistent Cut procedure concurrently with running transaction.
-        if (cutBlkNode != -1)
-            BlockingConsistentCutManager.cutMgr(grid(cutBlkNode)).block(cutBlkType);
+        if (cutBlkNodeId != -1)
+            BlockingConsistentCutManager.cutMgr(grid(cutBlkNodeId)).block(cutBlkType);
 
-        triggerConsistentCut();
+        multithreadedAsync(this::triggerConsistentCut, 1);
 
         // 4-5. Await Consistent Cut version received and handled.
-        awaitGlobalCutVersionReceived(prevVer + 1, cutBlkNode);
+        if (cutBlkNodeId != -1)
+            BlockingConsistentCutManager.cutMgr(grid(cutBlkNodeId)).awaitBlocked();
+
+        awaitGlobalCutVersionReceived(prevVer + 1, cutBlkNodeId);
 
         // 6. Resume the blocking transaction.
-        cutGlobalStartLatch.countDown();
+        unblockTx(grid(txBlkNodeId));
 
         // 7. Await transaction completed.
         txFut.get(getTestTimeout(), TimeUnit.MILLISECONDS);
 
         // 8. Resume the blocking Consistent Cut.
-        if (cutBlkNode != -1)
-            BlockingConsistentCutManager.cutMgr(grid(cutBlkNode)).unblock(cutBlkType);
+        if (cutBlkNodeId != -1)
+            BlockingConsistentCutManager.cutMgr(grid(cutBlkNodeId)).unblock(cutBlkType);
 
         // 9. Await while Consistent Cut completed.
         awaitGlobalCutReady(prevVer + 1, true);
     }
 
-    /** Init latches depending on test parameters. */
-    private void initLatches() {
-        txLatch = new CountDownLatch(1);
+    /** */
+    private void blockTx(IgniteEx blkNode) throws Exception {
+        if (txBlkState != null) {
+            if (!blkNode.localNode().isClient())
+                BlockingWALManager.walMgr(blkNode).awaitBlocked();
+        }
+        else
+            // In some cases blocking node doesn't send required message. Just hangs a little for such cases.
+            TestRecordingCommunicationSpi.spi(blkNode).waitForBlocked(1, 100, 100);
+    }
 
-        cutGlobalStartLatch = new CountDownLatch(1);
+    /** */
+    private void unblockTx(IgniteEx blkNode) {
+        if (txBlkState != null) {
+            if (!blkNode.localNode().isClient())
+                BlockingWALManager.walMgr(blkNode).unblock();
+        }
+        else
+            TestRecordingCommunicationSpi.spi(blkNode).stopBlock();
     }
 
     /**
@@ -275,39 +349,6 @@ public abstract class AbstractConsistentCutBlockingTest extends AbstractConsiste
         grid(0).context().cache().context().consistentCutMgr().triggerConsistentCutOnCluster("explicit");
     }
 
-    /** Blocks sending transaction message between nodes, and awaits for Consistent Cut procedure starts on every node. */
-    private static class BlockingCommunicationSpi extends LogCommunicationSpi {
-        /** {@inheritDoc} */
-        @Override public void sendMessage(
-            ClusterNode node, Message msg, IgniteInClosure<IgniteException> ackC) throws IgniteSpiException {
-            if (blkMessage(msg)) {
-                try {
-                    if (txLatch.getCount() > 0) {
-                        txLatch.countDown();
-
-                        cutGlobalStartLatch.await(100, TimeUnit.MILLISECONDS);
-                    }
-                }
-                catch (InterruptedException e) {
-                    e.printStackTrace();
-                }
-            }
-
-            super.sendMessage(node, msg, ackC);
-        }
-
-        /** */
-        private boolean blkMessage(Message msg) {
-            if (msg instanceof GridIoMessage) {
-                msg = ((GridIoMessage)msg).message();
-
-                return msg.getClass().getSimpleName().equals(txMsgBlkCls);
-            }
-
-            return false;
-        }
-    }
-
     /** */
     private static class BlockingWALPluginProvider extends AbstractTestPluginProvider {
         /** {@inheritDoc} */
@@ -327,7 +368,10 @@ public abstract class AbstractConsistentCutBlockingTest extends AbstractConsiste
     /** Blocks writing to WAL specific tx record, and awaits for Consistent Cut procedure starts on every node. */
     private static class BlockingWALManager extends FileWriteAheadLogManager {
         /** */
-        private final GridKernalContext ctx;
+        private volatile CountDownLatch latch;
+
+        /** */
+        private volatile boolean blocked;
 
         /**
          * Constructor.
@@ -336,21 +380,40 @@ public abstract class AbstractConsistentCutBlockingTest extends AbstractConsiste
          */
         public BlockingWALManager(GridKernalContext ctx) {
             super(ctx);
+        }
 
-            this.ctx = ctx;
+        /** */
+        static BlockingWALManager walMgr(IgniteEx ign) {
+            return (BlockingWALManager)ign.context().cache().context().wal();
+        }
+
+        /** */
+        public void block() {
+            latch = new CountDownLatch(1);
+        }
+
+        /** */
+        public void unblock() {
+            latch.countDown();
+        }
+
+        /** */
+        public void awaitBlocked() throws Exception {
+            GridTestUtils.waitForCondition(() -> blocked, 60_000, 10);
+        }
+
+        /** */
+        public void clear() {
+            blocked = false;
+            latch = null;
         }
 
         /** {@inheritDoc} */
         @Override public WALPointer log(WALRecord record) throws IgniteCheckedException, StorageException {
             if (blkRecord(record)) {
-                try {
-                    txLatch.countDown();
+                blocked = true;
 
-                    cutGlobalStartLatch.await(100, TimeUnit.MILLISECONDS);
-                }
-                catch (InterruptedException e) {
-                    throw new IgniteCheckedException(e);
-                }
+                U.awaitQuiet(latch);
             }
 
             return super.log(record);
@@ -358,9 +421,10 @@ public abstract class AbstractConsistentCutBlockingTest extends AbstractConsiste
 
         /** */
         private boolean blkRecord(WALRecord record) {
-            return record instanceof TxRecord
-                && ((TxRecord)record).state() == txBlkState
-                && ctx.localNodeId().equals(txBlkNodeId);
+            return latch != null
+                && latch.getCount() > 0
+                && record instanceof TxRecord
+                && ((TxRecord)record).state() == txBlkState;
         }
     }
 
@@ -385,10 +449,10 @@ public abstract class AbstractConsistentCutBlockingTest extends AbstractConsiste
         /** */
         private final GridKernalContext ctx;
 
-        /** Latch that blocks writing Consistent Cut record on single node. */
+        /** Latch that blocks before Consistent Cut Version updated. */
         private volatile CountDownLatch beforeVerUpd;
 
-        /** Latch that blocks writing Consistent Cut record on single node. */
+        /** Latch that blocks after Consistent Cut Version updated. */
         private volatile CountDownLatch afterVerUpd;
 
         /** */
@@ -411,10 +475,21 @@ public abstract class AbstractConsistentCutBlockingTest extends AbstractConsiste
         public void unblock(BlkCutType blkType) {
             blocked = false;
 
-            if (blkType == BEFORE_VERSION_UPDATE)
-                beforeVerUpd.countDown();
-            else if (blkType == AFTER_VERSION_UPDATE)
-                afterVerUpd.countDown();
+            // It's safe to do that, because Consistent Cut's never invoke concurrently.
+            if (blkType == BEFORE_VERSION_UPDATE) {
+                CountDownLatch latch = beforeVerUpd;
+
+                beforeVerUpd = null;
+
+                latch.countDown();
+            }
+            else if (blkType == AFTER_VERSION_UPDATE) {
+                CountDownLatch latch = afterVerUpd;
+
+                afterVerUpd = null;
+
+                latch.countDown();
+            }
         }
 
         /** */

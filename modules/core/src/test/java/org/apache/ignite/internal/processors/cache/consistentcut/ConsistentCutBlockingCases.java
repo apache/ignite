@@ -19,8 +19,6 @@ package org.apache.ignite.internal.processors.cache.consistentcut;
 
 import java.util.ArrayList;
 import java.util.List;
-import org.apache.ignite.internal.processors.cache.distributed.GridCacheTxRecoveryRequest;
-import org.apache.ignite.internal.processors.cache.distributed.GridCacheTxRecoveryResponse;
 import org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtTxFinishRequest;
 import org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtTxFinishResponse;
 import org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtTxPrepareRequest;
@@ -107,28 +105,19 @@ public class ConsistentCutBlockingCases {
     }
 
     /** */
-    public static List<String> messages(boolean backup, boolean recovery) {
-        List<String> msgCls = new ArrayList<>();
+    public static List<Class<?>> messages(boolean backup) {
+        List<Class<?>> msgCls = new ArrayList<>();
 
-        if (!recovery) {
-            msgCls.add(GridNearTxPrepareRequest.class.getSimpleName());
-            msgCls.add(GridNearTxPrepareResponse.class.getSimpleName());
-            msgCls.add(GridNearTxPrepareRequest.class.getSimpleName());
-            msgCls.add(GridNearTxPrepareResponse.class.getSimpleName());
-            msgCls.add(GridNearTxFinishRequest.class.getSimpleName());
-            msgCls.add(GridNearTxFinishResponse.class.getSimpleName());
+        msgCls.add(GridNearTxPrepareRequest.class);
+        msgCls.add(GridNearTxPrepareResponse.class);
+        msgCls.add(GridNearTxFinishRequest.class);
+        msgCls.add(GridNearTxFinishResponse.class);
 
-            if (backup) {
-                msgCls.add(GridDhtTxPrepareRequest.class.getSimpleName());
-                msgCls.add(GridDhtTxPrepareResponse.class.getSimpleName());
-                msgCls.add(GridDhtTxFinishRequest.class.getSimpleName());
-                msgCls.add(GridDhtTxFinishResponse.class.getSimpleName());
-            }
-        }
-        else {
-            msgCls.add(GridNearTxFinishRequest.class.getSimpleName());
-            msgCls.add(GridCacheTxRecoveryRequest.class.getSimpleName());
-            msgCls.add(GridCacheTxRecoveryResponse.class.getSimpleName());
+        if (backup) {
+            msgCls.add(GridDhtTxPrepareRequest.class);
+            msgCls.add(GridDhtTxPrepareResponse.class);
+            msgCls.add(GridDhtTxFinishRequest.class);
+            msgCls.add(GridDhtTxFinishResponse.class);
         }
 
         return msgCls;

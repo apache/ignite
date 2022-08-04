@@ -32,21 +32,27 @@ import static org.apache.ignite.internal.processors.cache.consistentcut.Consiste
 public class ConsistentCutNoBackupMessagesBlockingTest extends AbstractConsistentCutBlockingTest {
     /** */
     @Parameterized.Parameter
-    public BlkCutType cutBlkType;
+    public BlkNodeType txNodeBlkType;
 
     /** */
     @Parameterized.Parameter(1)
+    public BlkCutType cutBlkType;
+
+    /** */
+    @Parameterized.Parameter(2)
     public BlkNodeType cutNodeBlkType;
 
     /** */
-    @Parameterized.Parameters(name = "cutBlkAt={0}, nodeBlk={1}")
+    @Parameterized.Parameters(name = "txNodeBlk={0}, cutBlkAt={1}, nodeBlk={2}")
     public static List<Object[]> params() {
         List<Object[]> p = new ArrayList<>();
 
-        Stream.of(BlkNodeType.NEAR, BlkNodeType.PRIMARY).forEach(n -> {
-            for (BlkCutType c : BlkCutType.values())
-                p.add(new Object[] {c, n});
-        });
+        Stream.of(BlkNodeType.NEAR, BlkNodeType.PRIMARY).forEach(txN ->
+            Stream.of(BlkNodeType.NEAR, BlkNodeType.PRIMARY).forEach(cutN -> {
+                for (BlkCutType c : BlkCutType.values())
+                    p.add(new Object[] {txN, c, cutN});
+            })
+        );
 
         return p;
     }
@@ -56,12 +62,12 @@ public class ConsistentCutNoBackupMessagesBlockingTest extends AbstractConsisten
     public void testMultipleCases() throws Exception {
         List<List<T2<Integer, Integer>>> cases = ConsistentCutBlockingCases.casesNoBackup(nodes());
 
-        List<String> msgs = messages(false, false);
+        List<Class<?>> msgs = messages(false);
 
-        for (String msg: msgs) {
-            initMsgCase(msg, cutBlkType, cutNodeBlkType);
+        for (Class<?> msg: msgs) {
+            initMsgCase(msg, txNodeBlkType, cutBlkType, cutNodeBlkType);
 
-            runCases(cases);
+            runCases(cases, false);
         }
 
         checkWalsConsistency();

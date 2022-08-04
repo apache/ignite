@@ -144,7 +144,7 @@ public abstract class AbstractConsistentCutTest extends GridCommonAbstractTest {
      *
      * @param cutVer Consistent Cut version.
      */
-    protected void awaitGlobalCutVersionReceived(long cutVer, @Nullable Integer exclNodeId) throws Exception {
+    protected void awaitGlobalCutVersionReceived(long cutVer, int exclNodeId) throws Exception {
         awaitGlobalCutEvent((ign) ->
             cutMgr(ign).cutVersion().version() == cutVer, "CutVersionReceived " + cutVer, exclNodeId);
     }
@@ -180,7 +180,7 @@ public abstract class AbstractConsistentCutTest extends GridCommonAbstractTest {
             }
 
             return false;
-        }, "GlobalCutReady " + expCutVer + " " + strict, null);
+        }, "GlobalCutReady " + expCutVer + " " + strict, -1);
 
         // Await all nodes sent finish responses and coordinator received all of them.
         GridTestUtils.waitForCondition(() ->
@@ -195,12 +195,12 @@ public abstract class AbstractConsistentCutTest extends GridCommonAbstractTest {
     private void awaitGlobalCutEvent(
         Function<IgniteEx, Boolean> cutEvtPredicate,
         String evt,
-        @Nullable Integer exclNodeId
+        int exclNodeId
     ) throws Exception {
         boolean rdy = GridTestUtils.waitForCondition(() ->
             G.allGrids().stream()
                 .filter(ign -> {
-                    if (exclNodeId != null)
+                    if (exclNodeId >= 0)
                         return !ign.cluster().localNode().consistentId().equals(consistentIds.get(exclNodeId));
 
                     return true;
