@@ -336,6 +336,11 @@ public class BPlusTreeSelfTest extends GridCommonAbstractTest {
         // This must remove all.
         tree.remove(alwaysTrue);
 
+        GridCursor<Long> cursor = tree.find(null, null, alwaysTrue, null);
+
+        while (cursor.next())
+            System.out.println("cursor.get() = " + cursor.get());
+
         checkCursor(tree.find(null, null, alwaysTrue, null), Collections.emptyIterator());
     }
 

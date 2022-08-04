@@ -1212,8 +1212,6 @@ public abstract class BPlusTree<L, T extends L> extends DataStructure implements
             finally {
                 releasePage(firstPageId, firstPage);
             }
-
-            //TODO: call afterInit here to remove last item from tree.
         }
         catch (RuntimeException | AssertionError e) {
             throw new BPlusTreeRuntimeException(e, grpId, metaPageId, firstPageId);
@@ -1340,6 +1338,9 @@ public abstract class BPlusTree<L, T extends L> extends DataStructure implements
      */
     public void iterate(L lower, L upper, TreeRowClosure<L, T> c) throws IgniteCheckedException {
         checkDestroyed();
+
+        assert lower != null;
+        assert upper != null;
 
         ClosureCursor cursor = new ClosureCursor(lower, upper, c);
 
@@ -5994,11 +5995,14 @@ public abstract class BPlusTree<L, T extends L> extends DataStructure implements
         protected boolean currentPageDirty() {
             return false;
         }
+
+        /** Callback to execute actions right after page lock released. */
+        public void afterLockReleased() throws IgniteCheckedException {
+            // No-op.
+        }
     }
 
-    /**
-     *
-     */
+    /** */
     private class RemoveByFilterCursor extends ClosureCursor {
         /** */
         private boolean currentPageDirty;
@@ -6014,23 +6018,19 @@ public abstract class BPlusTree<L, T extends L> extends DataStructure implements
             super(null, null, p);
         }
 
-        /** @throws IgniteCheckedException If failed. */
-        private void remove() throws IgniteCheckedException {
-            while (nextPageId != 0) {
-                nextPage(null);
-
-                if (nextPageId == 0)
-                    return;
-            }
-        }
-
         /** {@inheritDoc} */
-        @Override protected boolean handlePage(
+        @Override protected boolean fillFromBuffer0(
             long pageAddr,
             BPlusIO<L> io,
             int startIdx,
             int cnt
         ) throws IgniteCheckedException {
+            if (startIdx == -1)
+                startIdx = 0;
+
+            if (cnt == startIdx)
+                return false;
+
             assert io.isLeaf();
 
             currentPageDirty = false;
@@ -6040,13 +6040,17 @@ public abstract class BPlusTree<L, T extends L> extends DataStructure implements
 
             int idxsCnt = 0;
 
-            for (int i = startIdx; i < cnt; i++) {
+            int lastIdx = cnt - 1;
+
+            for (int i = startIdx; i < lastIdx; i++) {
                 if (p.apply(BPlusTree.this, io, pageAddr, i))
                     idxs[idxsCnt++] = i;
             }
 
-            if (p.apply(BPlusTree.this, io, pageAddr, cnt - 1))
-                removeRow = io.getLookupRow(BPlusTree.this, pageAddr, cnt - 1);
+            lastRow = io.getLookupRow(BPlusTree.this, pageAddr, lastIdx); // Need save last row.
+
+            if (p.apply(BPlusTree.this, io, pageAddr, lastIdx))
+                removeRow = lastRow;
 
             if (idxsCnt > 0) {
                 io.remove(pageAddr, idxs, idxsCnt);
@@ -6054,16 +6058,24 @@ public abstract class BPlusTree<L, T extends L> extends DataStructure implements
                 currentPageDirty = true;
 
                 long pageId = PageIO.getPageId(pageAddr);
-                long page = acquirePage(pageId);
+                long page = pageMem.absolutePointer(pageAddr);
 
                 if (needWalDeltaRecord(pageId, page, null)) // TODO: is walPlc == null correct here?
-                    wal.log(new PurgeRecord(grpId, pageId, idxs, idxsCnt, cnt - idxsCnt));
+                    System.out.println("RemoveByFilterCursor.handlePage");
+                    //wal.log(new RemoveRecord(grpId, pageId, idxs, idxsCnt, cnt - idxsCnt));
             }
 
-            if (nextPageId != 0)
-                lastRow = io.getLookupRow(BPlusTree.this, pageAddr, cnt - 1); // Need save last row.
-
             return true;
+        }
+
+        /** {@inheritDoc} */
+        @Override public void afterLockReleased() throws IgniteCheckedException {
+            if (removeRow == null)
+                return;
+
+            remove(removeRow);
+
+            removeRow = null;
         }
 
         /** {@inheritDoc} */
@@ -6095,8 +6107,6 @@ public abstract class BPlusTree<L, T extends L> extends DataStructure implements
         ClosureCursor(L lowerBound, L upperBound, TreeRowClosure<L, T> p) {
             super(lowerBound, upperBound, true, true);
 
-            assert lowerBound != null;
-            assert upperBound != null;
             assert p != null;
 
             this.p = p;
@@ -6116,11 +6126,6 @@ public abstract class BPlusTree<L, T extends L> extends DataStructure implements
             if (cnt == startIdx)
                 return false;
 
-            return handlePage(pageAddr, io, startIdx, cnt);
-        }
-
-        /** Cursor specifig logic to handle single page. */
-        protected boolean handlePage(long pageAddr, BPlusIO<L> io, int startIdx, int cnt) throws IgniteCheckedException {
             for (int i = startIdx; i < cnt; i++) {
                 int cmp = compare(0, io, pageAddr, i, upperBound);
 
@@ -6159,7 +6164,8 @@ public abstract class BPlusTree<L, T extends L> extends DataStructure implements
          * @throws IgniteCheckedException If failed.
          */
         protected void iterate() throws IgniteCheckedException {
-            find();
+            if (lowerBound != null)
+                find();
 
             if (nextPageId == 0)
                 return;

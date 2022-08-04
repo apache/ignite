@@ -125,4 +125,10 @@ public interface PageSupport {
      * @return {@code True} if the page is dirty.
      */
     public boolean isDirty(int grpId, long pageId, long page);
+
+    /** */
+    public long absolutePointer(long pageAddr);
+
+    /** */
+    public long pageAddress(long absPtr);
 }

@@ -369,7 +369,7 @@ public class PageMemoryNoStoreImpl implements PageMemory {
         writePageId(absPtr, pageId);
 
         // TODO pass an argument to decide whether the page should be cleaned.
-        GridUnsafe.setMemory(absPtr + PAGE_OVERHEAD, sysPageSize - PAGE_OVERHEAD, (byte)0);
+        GridUnsafe.setMemory(pageAddress(absPtr), sysPageSize - PAGE_OVERHEAD, (byte)0);
 
         return pageId;
     }
@@ -510,7 +510,7 @@ public class PageMemoryNoStoreImpl implements PageMemory {
 
         long absPtr = seg.acquirePage(pageIdx);
 
-        statHolder.trackLogicalRead(absPtr + PAGE_OVERHEAD);
+        statHolder.trackLogicalRead(pageAddress(absPtr));
 
         return absPtr;
     }
@@ -531,7 +531,7 @@ public class PageMemoryNoStoreImpl implements PageMemory {
         assert started;
 
         if (rwLock.readLock(page + LOCK_OFFSET, PageIdUtils.tag(pageId)))
-            return page + PAGE_OVERHEAD;
+            return pageAddress(page);
 
         return 0L;
     }
@@ -541,7 +541,7 @@ public class PageMemoryNoStoreImpl implements PageMemory {
         assert started;
 
         if (rwLock.readLock(page + LOCK_OFFSET, -1))
-            return page + PAGE_OVERHEAD;
+            return pageAddress(page);
 
         return 0L;
     }
@@ -558,7 +558,7 @@ public class PageMemoryNoStoreImpl implements PageMemory {
         assert started;
 
         if (rwLock.writeLock(page + LOCK_OFFSET, PageIdUtils.tag(pageId)))
-            return page + PAGE_OVERHEAD;
+            return pageAddress(page);
 
         return 0L;
     }
@@ -568,7 +568,7 @@ public class PageMemoryNoStoreImpl implements PageMemory {
         assert started;
 
         if (rwLock.tryWriteLock(page + LOCK_OFFSET, PageIdUtils.tag(pageId)))
-            return page + PAGE_OVERHEAD;
+            return pageAddress(page);
 
         return 0L;
     }
@@ -583,7 +583,7 @@ public class PageMemoryNoStoreImpl implements PageMemory {
     ) {
         assert started;
 
-        long actualId = PageIO.getPageId(page + PAGE_OVERHEAD);
+        long actualId = PageIO.getPageId(pageAddress(page));
 
         rwLock.writeUnlock(page + LOCK_OFFSET, PageIdUtils.tag(actualId));
     }
@@ -592,6 +592,16 @@ public class PageMemoryNoStoreImpl implements PageMemory {
     @Override public boolean isDirty(int cacheId, long pageId, long page) {
         // always false for page no store.
         return false;
+    }
+
+    /** {@inheritDoc} */
+    @Override public long absolutePointer(long pageAddr) {
+        return pageAddr - PAGE_OVERHEAD;
+    }
+
+    /** {@inheritDoc} */
+    @Override public long pageAddress(long absPtr) {
+        return absPtr + PAGE_OVERHEAD;
     }
 
     /**
