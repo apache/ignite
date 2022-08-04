@@ -19,11 +19,40 @@ WARNING: CDC is an experimental feature. API or design architecture might be cha
 == Overview
 link:https://github.com/apache/ignite-extensions/tree/master/modules/cdc-ext[Change Data Capture Extension] module provides two ways to set up cross cluster replication based on CDC.
 
+. link:https://github.com/apache/ignite-extensions/blob/master/modules/cdc-ext/src/main/java/org/apache/ignite/cdc/thin/IgniteToIgniteClientCdcStreamer.java[Ignite2IgniteClientCdcStreamer] - streams changes to destination cluster using link:thin-clients/java-thin-client[Java Thin Client].
 . link:https://github.com/apache/ignite-extensions/blob/master/modules/cdc-ext/src/main/java/org/apache/ignite/cdc/IgniteToIgniteCdcStreamer.java[Ignite2IgniteCdcStreamer] - streams changes to destination cluster using client node.
 . link:https://github.com/apache/ignite-extensions/blob/master/modules/cdc-ext/src/main/java/org/apache/ignite/cdc/kafka/IgniteToKafkaCdcStreamer.java[Ignite2KafkaCdcStreamer] combined with link:https://github.com/apache/ignite-extensions/blob/master/modules/cdc-ext/src/main/java/org/apache/ignite/cdc/kafka/KafkaToIgniteCdcStreamer.java[KafkaToIgniteCdcStreamer] streams changes to destination cluster using link:https://kafka.apache.org[Apache Kafka] as a transport.
 
 NOTE: For each cache replicated between clusters link:https://github.com/apache/ignite/blob/master/modules/core/src/main/java/org/apache/ignite/internal/processors/cache/version/CacheVersionConflictResolver.java[CacheVersionConflictResolver] should be defined.
 
+== Ignite to Ignite Client CDC streamer
+This streamer starts link:thin-clients/java-thin-client[Java Thin Client] which connects to destination cluster.
+After connection is established, all changes captured by CDC will be replicated to destination cluster.
+
+NOTE: Instances of `ignite-cdc.sh` with configured streamer should be started on each server node of source cluster to capture all changes.
+
+image:../../assets/images/integrations/CDC-ignite2igniteClient.svg[]
+
+=== Configuration
+
+[cols="20%,45%,35%",opts="header"]
+|===
+|Name |Description | Default value
+| `caches` | Set of cache names to replicate. | null
+| `destinationClientConfiguration` | Client configuration of thin client that will connect to destination cluster to replicate changes. | null
+| `onlyPrimary` | Flag to handle changes only on primary node. | `false`
+| `maxBatchSize` | Maximum number of events to be sent to destination cluster in a single batch. | 1024
+|===
+
+=== Metrics
+
+|===
+|Name |Description
+| `EventsCount` | Count of messages applied to destination cluster.
+| `LastEventTime` | Timestamp of last applied event.
+| `TypesCount` | Count of received binary types events.
+| `MappingsCount` | Count of received mappings events.
+|===
 
 == Ignite to Ignite CDC streamer
 This streamer starts client node which connects to destination cluster.
@@ -33,7 +62,7 @@ NOTE: Instances of `ignite-cdc.sh` with configured streamer should be started on
 
 image:../../assets/images/integrations/CDC-ignite2ignite.svg[]
 
-== Configuration
+=== Configuration
 
 [cols="20%,45%,35%",opts="header"]
 |===
@@ -44,12 +73,14 @@ image:../../assets/images/integrations/CDC-ignite2ignite.svg[]
 | `maxBatchSize` | Maximum number of events to be sent to destination cluster in a single batch. | 1024
 |===
 
-== Metrics
+=== Metrics
 
 |===
 |Name |Description
 | `EventsCount` | Count of messages applied to destination cluster.
 | `LastEventTime` | Timestamp of last applied event.
+| `TypesCount` | Count of received binary types events.
+| `MappingsCount` | Count of received mappings events.
 |===
 
 == CDC replication using Kafka
