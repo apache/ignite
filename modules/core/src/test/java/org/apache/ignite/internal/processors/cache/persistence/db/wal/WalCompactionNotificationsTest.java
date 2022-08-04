@@ -20,6 +20,8 @@ import java.util.BitSet;
 import java.util.Collections;
 import java.util.concurrent.ThreadLocalRandom;
 import java.util.concurrent.atomic.AtomicReference;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 import org.apache.ignite.IgniteCache;
 import org.apache.ignite.cache.CacheWriteSynchronizationMode;
 import org.apache.ignite.cache.affinity.rendezvous.RendezvousAffinityFunction;
@@ -32,10 +34,10 @@ import org.apache.ignite.events.Event;
 import org.apache.ignite.events.WalSegmentCompactedEvent;
 import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.pagemem.wal.IgniteWriteAheadLogManager;
-import org.apache.ignite.internal.processors.cache.persistence.wal.FileWriteAheadLogManager;
 import org.apache.ignite.lang.IgnitePredicate;
 import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.testframework.ListeningTestLogger;
+import org.apache.ignite.testframework.LogListener;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.junit.Test;
 
@@ -70,14 +72,13 @@ public class WalCompactionNotificationsTest extends GridCommonAbstractTest {
             .setMaxWalArchiveSize(archiveSize)
         );
 
-        cfg.setGridLogger(logger);
-
         cfg.setCacheConfiguration(new CacheConfiguration<>(DEFAULT_CACHE_NAME)
             .setWriteSynchronizationMode(CacheWriteSynchronizationMode.FULL_SYNC)
             .setAffinity(new RendezvousAffinityFunction(false, 16))
         );
-        cfg.setConsistentId(name);
 
+        cfg.setGridLogger(logger);
+        cfg.setConsistentId(name);
         cfg.setIncludeEventTypes(EVT_WAL_SEGMENT_COMPACTED);
         cfg.setLocalEventListeners(Collections.singletonMap(evtLsnr, new int[] {EVT_WAL_SEGMENT_COMPACTED}));
 
@@ -103,6 +104,12 @@ public class WalCompactionNotificationsTest extends GridCommonAbstractTest {
      */
     @Test
     public void testOrder() throws Throwable {
+        NotificationIndexListener notifyStartLsnr = new NotificationIndexListener(evtLsnr.errRef, evtLsnr.enqueueHist, true);
+        NotificationIndexListener notifyEndLsnr = new NotificationIndexListener(evtLsnr.errRef, evtLsnr.compressedHist, false);
+
+        logger.registerListener(notifyStartLsnr);
+        logger.registerListener(notifyEndLsnr);
+
         IgniteEx ig = startGrid(0);
         ig.cluster().state(ClusterState.ACTIVE);
 
@@ -130,6 +137,64 @@ public class WalCompactionNotificationsTest extends GridCommonAbstractTest {
     }
 
     /** */
+    private static class NotificationIndexListener extends LogListener {
+        /** Message pattern. */
+        private final Pattern pattern;
+
+        /** Index history. */
+        private final BitSet idxHistory;
+
+        /** Error reference. */
+        private final AtomicReference<Throwable> errRef;
+
+        /**
+         * @param errRef Error reference.
+         * @param idxHistory Index history.
+         * @param startNotification Flag indicating that we are catching compression start messages.
+         */
+        private NotificationIndexListener(AtomicReference<Throwable> errRef, BitSet idxHistory, boolean startNotification) {
+            this.errRef = errRef;
+            this.idxHistory = idxHistory;
+
+            pattern = startNotification ?
+                Pattern.compile("Segment compressed notification \\[idx=(-?\\d{1,10})\\]") :
+                Pattern.compile("Enqueuing segment for compression \\[idx=(-?\\d{1,10})\\]");
+        }
+
+        /** {@inheritDoc} */
+        @Override public boolean check() {
+            throw new UnsupportedOperationException();
+        }
+
+        /** {@inheritDoc} */
+        @Override public void reset() {
+            idxHistory.clear();
+        }
+
+        /** {@inheritDoc} */
+        @Override public void accept(String s) {
+            try {
+                Matcher matcher = pattern.matcher(s);
+
+                if (!matcher.find())
+                    return;
+
+                int idx = Integer.parseInt(matcher.group(1));
+
+                assertTrue("Negative index value in log [idx=" + idx + ", msg=" + s + ']', idx >= 0);
+                assertFalse("Duplicate index in log [idx=" + idx + ", msg=" + s + ']', idxHistory.get(idx));
+
+                idxHistory.set(idx);
+            }
+            catch (Error | RuntimeException e) {
+                errRef.compareAndSet(null, e);
+
+                throw e;
+            }
+        }
+    }
+
+    /** */
     private class EventListener implements IgnitePredicate<Event> {
         /** Error. */
         private final AtomicReference<Throwable> errRef = new AtomicReference<>();
@@ -138,10 +203,10 @@ public class WalCompactionNotificationsTest extends GridCommonAbstractTest {
         private final BitSet evtHistory = new BitSet();
 
         /** Log compress start notification history. */
-        private final BitSet logEnqueueHistory = new BitSet();
+        private final BitSet enqueueHist = new BitSet();
 
         /** Log compression end notification history. */
-        private final BitSet logCompressedHistory = new BitSet();
+        private final BitSet compressedHist = new BitSet();
 
         /** Last compacted segment index. */
         private long lastCompactedSegment;
@@ -178,7 +243,8 @@ public class WalCompactionNotificationsTest extends GridCommonAbstractTest {
                 lastEvtIdx = compactEvt.getAbsWalSegmentIdx();
 
                 return true;
-            } catch (Throwable t) {
+            }
+            catch (Throwable t) {
                 errRef.set(t);
 
                 return false;
@@ -200,8 +266,11 @@ public class WalCompactionNotificationsTest extends GridCommonAbstractTest {
 
             int lastCompactedIdx = (int)walMgr.lastCompactedSegment();
 
-            for (int i = 0; i < lastCompactedIdx; i++)
+            for (int i = 0; i < lastCompactedIdx; i++) {
                 assertTrue("Missing event [idx=" + i + ']', evtHistory.get(i));
+                assertTrue("Log compression start missing [idx=" + i + ']', enqueueHist.get(i));
+                assertTrue("Log compression end missing [idx=" + i + ']', compressedHist.get(i));
+            }
         }
     }
 }
