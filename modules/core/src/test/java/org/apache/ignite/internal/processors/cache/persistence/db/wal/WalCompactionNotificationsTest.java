@@ -18,8 +18,10 @@ package org.apache.ignite.internal.processors.cache.persistence.db.wal;
 
 import java.util.BitSet;
 import java.util.Collections;
+import java.util.EnumMap;
 import java.util.concurrent.ThreadLocalRandom;
 import java.util.concurrent.atomic.AtomicReference;
+import java.util.function.Consumer;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 import org.apache.ignite.IgniteCache;
@@ -37,7 +39,6 @@ import org.apache.ignite.internal.pagemem.wal.IgniteWriteAheadLogManager;
 import org.apache.ignite.lang.IgnitePredicate;
 import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.testframework.ListeningTestLogger;
-import org.apache.ignite.testframework.LogListener;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.junit.Test;
 
@@ -106,19 +107,16 @@ public class WalCompactionNotificationsTest extends GridCommonAbstractTest {
     public void testNotificationsUnlimitedWal() throws Throwable {
         archiveSize = DataStorageConfiguration.UNLIMITED_WAL_ARCHIVE;
 
-        NotificationIndexListener notifyStartLsnr = new NotificationIndexListener(evtLsnr.errRef, evtLsnr.enqueueHist, true);
-        NotificationIndexListener notifyEndLsnr = new NotificationIndexListener(evtLsnr.errRef, evtLsnr.compressedHist, false);
-
-        logger.registerListener(notifyStartLsnr);
-        logger.registerListener(notifyEndLsnr);
+        logger.registerListener(evtLsnr);
 
         IgniteEx ig = startGrid(0);
         ig.cluster().state(ClusterState.ACTIVE);
 
         doCachePuts(ig, 100);
+        ig.cluster().state(ClusterState.INACTIVE);
+
         evtLsnr.checkErrors(true);
 
-        ig.cluster().state(ClusterState.INACTIVE);
         stopGrid(0);
 
         IgniteEx ig0 = startGrid(0);
@@ -135,28 +133,23 @@ public class WalCompactionNotificationsTest extends GridCommonAbstractTest {
     public void testNotificationsEmptyArchive() throws Throwable {
         archiveSize = SEGMENT_SIZE;
 
-        NotificationIndexListener notifyStartLsnr = new NotificationIndexListener(evtLsnr.errRef, evtLsnr.enqueueHist, true);
-        NotificationIndexListener notifyEndLsnr = new NotificationIndexListener(evtLsnr.errRef, evtLsnr.compressedHist, false);
-
-        logger.registerListener(notifyStartLsnr);
-        logger.registerListener(notifyEndLsnr);
+        logger.registerListener(evtLsnr);
 
         IgniteEx ig = startGrid(0);
         ig.cluster().state(ClusterState.ACTIVE);
 
         doCachePuts(ig, 100);
+        ig.cluster().state(ClusterState.INACTIVE);
+
         evtLsnr.checkErrors(false);
 
-        ig.cluster().state(ClusterState.INACTIVE);
         stopGrid(0);
 
         IgniteEx ig0 = startGrid(0);
         ig0.cluster().state(ClusterState.ACTIVE);
 
-//        doCachePuts(ig0, 100);
         evtLsnr.checkErrors(false);
     }
-
 
     /** */
     private void doCachePuts(IgniteEx ig, int segmentsCnt) {
@@ -168,76 +161,42 @@ public class WalCompactionNotificationsTest extends GridCommonAbstractTest {
             cache.put(ThreadLocalRandom.current().nextInt(), "Ignite");
     }
 
-    /** */
-    private static class NotificationIndexListener extends LogListener {
-        /** Message pattern. */
-        private final Pattern pattern;
+    /** Log event type. */
+    enum LogEventType {
+        /** */
+        ENQUEUE("Enqueuing segment for compression"),
 
-        /** Index history. */
-        private final BitSet idxHistory;
+        /** */
+        SKIP("Skipping segment compression"),
 
-        /** Error reference. */
-        private final AtomicReference<Throwable> errRef;
+        /** */
+        COMPRESS("Segment compressed notification");
 
-        /**
-         * @param errRef Error reference.
-         * @param idxHistory Index history.
-         * @param startNotification Flag indicating that we are catching compression start messages.
-         */
-        private NotificationIndexListener(AtomicReference<Throwable> errRef, BitSet idxHistory, boolean startNotification) {
-            this.errRef = errRef;
-            this.idxHistory = idxHistory;
+        /** */
+        private final Pattern ptrn;
 
-            pattern = startNotification ?
-                Pattern.compile("Enqueuing segment for compression \\[idx=(?<idx>-?\\d{1,10})\\]") :
-                Pattern.compile("(Segment compressed notification|Skipping segment compression) \\[idx=(?<idx>-?\\d{1,10})\\]");
-        }
-
-        /** {@inheritDoc} */
-        @Override public boolean check() {
-            throw new UnsupportedOperationException();
-        }
-
-        /** {@inheritDoc} */
-        @Override public void reset() {
-            idxHistory.clear();
-        }
-
-        /** {@inheritDoc} */
-        @SuppressWarnings("ErrorNotRethrown")
-        @Override public void accept(String s) {
-            try {
-                Matcher matcher = pattern.matcher(s);
-
-                if (!matcher.find())
-                    return;
-
-                int idx = Integer.parseInt(matcher.group("idx"));
-
-                assertTrue("Negative index value in log [idx=" + idx + ", msg=" + s + ']', idx >= 0);
-                assertFalse("Duplicate index in log [idx=" + idx + ", msg=" + s + ']', idxHistory.get(idx));
-
-                idxHistory.set(idx);
-            }
-            catch (Error | RuntimeException e) {
-                errRef.compareAndSet(null, e);
-            }
+        /** */
+        LogEventType(String msg) {
+            ptrn = Pattern.compile(msg + " \\[idx=(?<idx>-?\\d{1,10})]");
         }
     }
 
     /** */
-    private class EventListener implements IgnitePredicate<Event> {
+    private class EventListener implements IgnitePredicate<Event>, Consumer<String> {
         /** Error. */
         private final AtomicReference<Throwable> errRef = new AtomicReference<>();
 
-        /** Event history. */
+        /** Events history. */
         private final BitSet evtHistory = new BitSet();
 
-        /** Log compress start notification history. */
-        private final BitSet enqueueHist = new BitSet();
+        /** Log events history. */
+        private final EnumMap<LogEventType, BitSet> logEvtHist = new EnumMap<>(LogEventType.class);
 
-        /** Log compression end notification history. */
-        private final BitSet compressedHist = new BitSet();
+        /** Constructor. */
+        public EventListener() {
+            for (LogEventType type : LogEventType.values())
+                logEvtHist.put(type, new BitSet());
+        }
 
         /** Last compacted segment index. */
         private long lastCompactedSegment;
@@ -282,6 +241,37 @@ public class WalCompactionNotificationsTest extends GridCommonAbstractTest {
             }
         }
 
+        /** {@inheritDoc} */
+        @SuppressWarnings({"ErrorNotRethrown"})
+        @Override public void accept(String str) {
+            try {
+                for (LogEventType type : LogEventType.values()) {
+                    Matcher matcher = type.ptrn.matcher(str);
+
+                    if (!matcher.find())
+                        continue;
+
+                    int idx = Integer.parseInt(matcher.group("idx"));
+
+                    assertTrue("Negative index value in log [idx=" + idx + ", msg=" + str + ']', idx >= 0);
+
+                    BitSet hist = logEvtHist.get(type);
+
+                    if (type == LogEventType.ENQUEUE && logEvtHist.get(LogEventType.SKIP).get(idx))
+                        break;
+
+                    assertFalse("Duplicate index in log [idx=" + idx + ", msg=" + str + ']', hist.get(idx));
+
+                    hist.set(idx);
+
+                    break;
+                }
+            }
+            catch (Error | RuntimeException e) {
+                errRef.compareAndSet(null, e);
+            }
+        }
+
         /**
          * @throws Throwable If failed.
          */
@@ -295,23 +285,30 @@ public class WalCompactionNotificationsTest extends GridCommonAbstractTest {
 
             if (checkFullness) {
                 GridTestUtils.waitForCondition(() -> lastEvtIdx == walMgr.lastCompactedSegment(), 5_000);
-                assertEquals("evtIdx=" + lastEvtIdx + ", compacted=" + walMgr.lastCompactedSegment(), lastEvtIdx, walMgr.lastCompactedSegment());
+                assertEquals("eventIdx=" + lastEvtIdx + ", compactedIdx=" + walMgr.lastCompactedSegment(),
+                    lastEvtIdx, walMgr.lastCompactedSegment());
             }
 
             int lastCompactedIdx = (int)walMgr.lastCompactedSegment();
+            BitSet enqHist = logEvtHist.get(LogEventType.ENQUEUE);
+            BitSet cmprsHist = logEvtHist.get(LogEventType.COMPRESS);
+            BitSet skipHist = logEvtHist.get(LogEventType.SKIP);
 
             for (int i = 0; i < lastCompactedIdx; i++) {
-                if (checkFullness) {
-                    assertTrue("Missing event [idx=" + i + ']', evtHistory.get(i));
-                    assertTrue("Log compression start missing [idx=" + i + ']', enqueueHist.get(i));
-                    assertTrue("Log compression end missing [idx=" + i + ']', compressedHist.get(i));
-                } else {
+                if (!checkFullness) {
                     assertTrue("Missing index [idx=" + i +
-//                            ", event=" + evtHistory.get(i) +
-                            ", msgEnqueue=" + enqueueHist.get(i) +
-                            ", msgCompress=" + compressedHist.get(i) + ']',
-                        enqueueHist.get(i) == compressedHist.get(i));
+                            ", event=" + evtHistory.get(i) +
+                            ", msgEnqueue=" + enqHist.get(i) +
+                            ", msgEnqueue=" + enqHist.get(i) +
+                            ", msgSkip=" + skipHist.get(i) + ']',
+                        enqHist.get(i) == (cmprsHist.get(i) || skipHist.get(i)));
+
+                    continue;
                 }
+
+                assertTrue("Missing event [idx=" + i + ']', evtHistory.get(i));
+                assertTrue("Log compression start missing [idx=" + i + ']', enqHist.get(i));
+                assertTrue("Log compression end missing [idx=" + i + ']', cmprsHist.get(i));
             }
         }
     }
