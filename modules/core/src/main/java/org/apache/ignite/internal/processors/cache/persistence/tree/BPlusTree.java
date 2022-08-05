@@ -1258,11 +1258,20 @@ public abstract class BPlusTree<L, T extends L> extends DataStructure implements
         checkDestroyed();
 
         try {
-            RemoveByFilterCursor rmvCursor = new RemoveByFilterCursor(filter);
+            visit((L)((Long)0L), null, new TreeVisitorClosure<L, T>() {
+                @Override public int visit(BPlusTree<L, T> tree, BPlusIO<L> io, long pageAddr, int idx,
+                    IgniteWriteAheadLogManager wal) throws IgniteCheckedException {
+                    L l = io.getLookupRow(tree, pageAddr, idx);
 
-            findLowerUnbounded(rmvCursor);
+                    System.out.println("l = " + l);
 
-            rmvCursor.iterate();
+                    return 0;
+                }
+
+                @Override public int state() {
+                    return 0;
+                }
+            });
         }
         catch (RuntimeException | AssertionError e) {
             throw corruptedTreeException("Runtime failure ", e, grpId);
