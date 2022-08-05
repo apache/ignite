@@ -629,8 +629,13 @@ public abstract class GridCacheQueryManager<K, V> extends GridCacheManagerAdapte
                     break;
 
                 case INDEX:
+                    int[] parts = null;
+
+                    if (qry.partition() != null)
+                        parts = new int[]{qry.partition()};
+
                     IndexQueryResult<K, V> idxQryRes = qryProc.queryIndex(cacheName, qry.queryClassName(), qry.idxQryDesc(),
-                        qry.scanFilter(), filter(qry), qry.keepBinary());
+                        qry.scanFilter(), filter(qry, parts), qry.keepBinary());
 
                     iter = idxQryRes.iter();
                     res.metadata(idxQryRes.metadata());
@@ -2020,10 +2025,19 @@ public abstract class GridCacheQueryManager<K, V> extends GridCacheManagerAdapte
      * @return Filter.
      */
     private IndexingQueryFilter filter(GridCacheQueryAdapter<?> qry) {
+        return filter(qry, null);
+    }
+
+    /**
+     * @param qry Query.
+     * @param partsArr Array of partitions to apply specified query.
+     * @return Filter.
+     */
+    private IndexingQueryFilter filter(GridCacheQueryAdapter<?> qry, @Nullable int[] partsArr) {
         if (qry.includeBackups())
             return null;
 
-        return new IndexingQueryFilterImpl(cctx.kernalContext(), AffinityTopologyVersion.NONE, null);
+        return new IndexingQueryFilterImpl(cctx.kernalContext(), AffinityTopologyVersion.NONE, partsArr);
     }
 
     /**
@@ -2912,9 +2926,18 @@ public abstract class GridCacheQueryManager<K, V> extends GridCacheManagerAdapte
      * @return Created query.
      */
     public <R> CacheQuery<R> createIndexQuery(IndexQuery qry, boolean keepBinary) {
+        if (qry.getPartition() != null) {
+            int part = qry.getPartition();
+
+            A.ensure(part >= 0 && part < cctx.affinity().partitions(),
+                "Specified partition must be in the range [0, N) where N is partition number in the cache.");
+        }
+
         IndexQueryDesc desc = new IndexQueryDesc(qry.getCriteria(), qry.getIndexName(), qry.getValueType());
 
-        GridCacheQueryAdapter q = new GridCacheQueryAdapter<>(cctx, INDEX, desc, qry.getValueType(), qry.getFilter());
+        GridCacheQueryAdapter q = new GridCacheQueryAdapter<>(
+            cctx, INDEX, desc, qry.getPartition(), qry.getValueType(), qry.getFilter());
+
         q.keepBinary(keepBinary);
 
         return q;
