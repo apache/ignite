@@ -193,6 +193,9 @@ public class ListeningTestLogger implements IgniteLogger {
 
     /** {@inheritDoc} */
     @Override public boolean isInfoEnabled() {
+        // This is required to proxy `isInfoEnabled` requests to delegated classes.
+        boolean ignore = echo != null && echo.isInfoEnabled();
+
         return true;
     }
 

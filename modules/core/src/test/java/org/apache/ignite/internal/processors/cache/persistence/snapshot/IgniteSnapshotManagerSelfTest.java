@@ -216,24 +216,6 @@ public class IgniteSnapshotManagerSelfTest extends AbstractSnapshotSelfTest {
             loadFut.cancel();
         }
 
-        // Checks that ClusterSnapshotRecord correctly splits WAL on 2 areas - before and after snapshot.
-        checkSnpWalRecords(ig, SNAPSHOT_NAME, (e, afterSnp) -> {
-            if (e.cacheId() == ig.cachex(DEFAULT_CACHE_NAME).context().cacheId()) {
-                CacheObjectContext cacheObjCtx = ig.cachex(DEFAULT_CACHE_NAME).context().cacheObjectContext();
-
-                int key = e.key().value(cacheObjCtx, false);
-                Account val = e.value().value(cacheObjCtx, false);
-
-                boolean entryBeforeSnp = (key == val.id && key == val.balance) || (key == val.id && key == val.balance / valMultiplier);
-
-                boolean entryAfterSnp = (key == val.id && key == val.balance / afterSnpValMultiplier) || (key != val.id);
-
-                assertTrue(
-                    "CHECK ENTRY: key=" + key + " val=" + val,
-                    afterSnp && entryAfterSnp || !afterSnp && entryBeforeSnp);
-            }
-        });
-
         // Now can stop the node and check created snapshots.
         stopGrid(0);
 

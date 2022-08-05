@@ -54,8 +54,11 @@ import org.apache.ignite.configuration.ClientConfiguration;
 import org.apache.ignite.configuration.ClientConnectorConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.configuration.ThinClientConfiguration;
+import org.apache.ignite.internal.client.thin.TcpClientCache;
+import org.apache.ignite.internal.processors.cache.version.GridCacheVersion;
 import org.apache.ignite.internal.processors.platform.cache.expiry.PlatformExpiryPolicy;
 import org.apache.ignite.internal.util.typedef.F;
+import org.apache.ignite.internal.util.typedef.T2;
 import org.apache.ignite.internal.util.typedef.X;
 import org.apache.ignite.lang.IgniteProductVersion;
 import org.apache.ignite.platform.PlatformType;
@@ -440,6 +443,9 @@ public class JavaThinCompatibilityTest extends AbstractClientCompatibilityTest {
             }
         }
 
+        if (clientVer.compareTo(VER_2_14_0) >= 0)
+            testDataReplicationOperations(serverVer.compareTo(VER_2_14_0) >= 0);
+
         if (clientVer.compareTo(VER_2_14_0) >= 0) {
             // This wrapper is used to avoid serialization/deserialization issues when the `testClient` is
             // tried to be deserialized on previous Ignite releases that do not contain a newly added classes.
@@ -490,6 +496,35 @@ public class JavaThinCompatibilityTest extends AbstractClientCompatibilityTest {
             );
 
             assertEquals(errMsg, err.getMessage());
+        }
+    }
+
+    /** @param supported {@code True} if feature supported. */
+    private void testDataReplicationOperations(boolean supported) {
+        X.println(">>>> Testing cache replication");
+
+        try (IgniteClient client = Ignition.startClient(new ClientConfiguration().setAddresses(ADDR))) {
+            TcpClientCache<Object, Object> cache = (TcpClientCache<Object, Object>)client
+                .getOrCreateCache("test-cache-replication");
+
+            Map<Object, T2<Object, GridCacheVersion>> puts = F.asMap(1, new T2<>(1, new GridCacheVersion(1, 1, 1, 2)));
+
+            Map<Object, GridCacheVersion> rmvs = F.asMap(1, new GridCacheVersion(1, 1, 1, 2));
+
+            if (supported) {
+                cache.putAllConflict(puts);
+
+                assertEquals(1, cache.get(1));
+
+                cache.removeAllConflict(rmvs);
+
+                assertFalse(cache.containsKey(1));
+            }
+            else {
+                assertThrowsWithCause(() -> cache.putAllConflict(puts), ClientFeatureNotSupportedByServerException.class);
+
+                assertThrowsWithCause(() -> cache.removeAllConflict(rmvs), ClientFeatureNotSupportedByServerException.class);
+            }
         }
     }
 
