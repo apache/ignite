@@ -264,17 +264,19 @@ public class TxRecoveryWithConcurrentRollbackTest extends GridCommonAbstractTest
     }
 
     /**
-     * The test enforces the concurrent processing of the same prepared transaction both in the
-     * tx recovery procedure started due to primary node left and in the tx recovery request handler
-     * invoked by message from another backup node.
+     * The test enforces the concurrent processing of the same prepared transaction
+     * both in the tx recovery procedure started due to primary node left and in the
+     * tx recovery request handler invoked by message from another backup node.
      * <p>
-     * The idea is to have a 3-nodes cluster and a cache with 2 backups. So there will be 2 backup nodes
-     * to execute the tx recovery in parallel if primary one would fail. These backup nodes will send the
-     * tx recovery requests to each other, so the tx recovery request handler will be invoked as well.
+     * The idea is to have a 3-nodes cluster and a cache with 2 backups. So there
+     * will be 2 backup nodes to execute the tx recovery in parallel if primary one
+     * would fail. These backup nodes will send the tx recovery requests to each
+     * other, so the tx recovery request handler will be invoked as well.
      * <p>
      * Use several attempts to reproduce the race condition.
      * <p>
-     * Expected result: transaction is finished on both backup nodes and the partition map exchange is completed as well.
+     * Expected result: transaction is finished on both backup nodes and the partition
+     * map exchange is completed as well.
      */
     @Test
     public void testRecoveryNotDeadLockOnPrimaryFail() throws Exception {
@@ -284,8 +286,8 @@ public class TxRecoveryWithConcurrentRollbackTest extends GridCommonAbstractTest
         for (int iter = 0; iter < 100; iter++) {
             final IgniteEx grid0 = startGrid(0);
 
-            final IgniteEx grid1 = startGrid(1, (UnaryOperator<IgniteConfiguration>)cfg ->
-                    cfg.setSystemThreadPoolSize(1).setStripedPoolSize(1));
+            final IgniteEx grid1 = startGrid(1, (UnaryOperator<IgniteConfiguration>)cfg -> cfg
+                .setSystemThreadPoolSize(1).setStripedPoolSize(1));
 
             final IgniteEx grid2 = startGrid(2);
 
@@ -323,18 +325,18 @@ public class TxRecoveryWithConcurrentRollbackTest extends GridCommonAbstractTest
 
             final CountDownLatch grid1BlockLatch = new CountDownLatch(1);
 
-            // Block recovery procedure processing on grid1
+            // Block recovery procedure processing on grid1.
             grid1.context().pools().getSystemExecutorService().execute(() -> U.awaitQuiet(grid1BlockLatch));
 
             final int stripe = U.safeAbs(p.tx().xidVersion().hashCode());
 
-            // Block stripe tx recovery request processing on grid1
+            // Block stripe tx recovery request processing on grid1.
             grid1.context().pools().getStripedExecutorService().execute(stripe, () -> U.awaitQuiet(grid1BlockLatch));
 
-            // Prevent finish request processing on grid0
+            // Prevent finish request processing on grid0.
             spi(grid2).blockMessages(GridDhtTxFinishRequest.class, grid0.name());
 
-            // Prevent finish request processing on grid1
+            // Prevent finish request processing on grid1.
             spi(grid2).blockMessages(GridDhtTxFinishRequest.class, grid1.name());
 
             runAsync(() -> {
@@ -347,20 +349,21 @@ public class TxRecoveryWithConcurrentRollbackTest extends GridCommonAbstractTest
                 tx.close();
             }
             catch (Exception ignored) {
-                // Don't bother if the transaction close throws in case grid2 appear to be stopping or stopped already for this thread.
+                // Don't bother if the transaction close throws in case grid2 appear to be stopping or stopped already
+                // for this thread.
             }
 
-            // Wait until grid1 node detects primary node left
+            // Wait until grid1 node detects primary node left.
             grid1NodeLeftEventLatch.await();
 
-            // Wait until grid1 receives the tx recovery request and the corresponding processing task is added into the queue
-            assertTrue("tx recovery request received on grid1", GridTestUtils.waitForCondition(() ->
-                    grid1.context().pools().getStripedExecutorService().queueStripeSize(stripe) == 1, 5_000));
+            // Wait until grid1 receives the tx recovery request and the corresponding processing task is added into
+            // the queue.
+            assertTrue("tx recovery request received on grid1", GridTestUtils.waitForCondition(() -> grid1.context()
+                .pools().getStripedExecutorService().queueStripeSize(stripe) == 1, 5_000));
 
-            // Unblock processing in grid1. Simultaneously in striped and system pools to start
-            // recovery procedure and the tx recovery request processing at the "same" moment
-            // (for the same transaction). This should increase chances for race condition occur in
-            // the IgniteTxAdapter::markFinalizing.
+            // Unblock processing in grid1. Simultaneously in striped and system pools to start recovery procedure and
+            // the tx recovery request processing at the "same" moment (for the same transaction). This should increase
+            // chances for race condition occur in the IgniteTxAdapter#markFinalizing.
             grid1BlockLatch.countDown();
 
             waitForTopology(2);
