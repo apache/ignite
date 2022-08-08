@@ -138,9 +138,6 @@ class SegmentCompressStorage {
         if (!compactionEnabled)
             return;
 
-        if (lastEnqueuedToCompressIdx == -1)
-            lastEnqueuedToCompressIdx = lastAbsArchivedIdx - 1;
-
         while (lastEnqueuedToCompressIdx < lastAbsArchivedIdx) {
             if (log.isInfoEnabled())
                 log.info("Enqueuing segment for compression [idx=" + (lastEnqueuedToCompressIdx + 1) + ']');
