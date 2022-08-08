@@ -2186,7 +2186,7 @@ public class FileWriteAheadLogManager extends GridCacheSharedManagerAdapter impl
             if (alreadyCompressed.length > 0)
                 segmentAware.onSegmentCompressed(alreadyCompressed[alreadyCompressed.length - 1].idx());
             else {
-                // We have to set a starting idnex for the compressor.
+                // We have to set a starting index for the compressor.
                 FileDescriptor[] alreadyArchived = scan(walArchiveDir.listFiles(WAL_SEGMENT_FILE_FILTER));
 
                 if (alreadyArchived.length > 0)
