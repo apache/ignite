@@ -235,7 +235,7 @@ public class TcpIgniteClient implements IgniteClient {
         ensureCacheName(name);
 
         ch.request(ClientOperation.CACHE_DESTROY, req -> req.out().writeInt(ClientUtils.cacheId(name)));
-        ch.unregisterKeyPartitionMapperFactory(ClientUtils.cacheId(name));
+        ch.unregisterKeyPartitionMapperFactory(name);
     }
 
     /** {@inheritDoc} */
@@ -244,7 +244,7 @@ public class TcpIgniteClient implements IgniteClient {
 
         return ch.requestAsync(ClientOperation.CACHE_DESTROY, req -> {
             req.out().writeInt(ClientUtils.cacheId(name));
-            ch.unregisterKeyPartitionMapperFactory(ClientUtils.cacheId(name));
+            ch.unregisterKeyPartitionMapperFactory(name);
         });
     }
 

@@ -126,7 +126,7 @@ public class TcpClientCache<K, V> implements ClientCache<K, V> {
 
         jCacheAdapter = new ClientJCacheAdapter<>(this);
 
-        this.ch.registerKeyPartitionMapperFactory(cacheId, this.name);
+        this.ch.registerKeyPartitionMapperFactory(this.name);
     }
 
     /** {@inheritDoc} */

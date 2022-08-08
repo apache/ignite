@@ -30,9 +30,11 @@ import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.Function;
 import org.apache.ignite.IgniteBinary;
 import org.apache.ignite.client.ClientPartitionAwarenessMapper;
+import org.apache.ignite.client.ClientPartitionAwarenessMapperFactory;
 import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
 import org.apache.ignite.internal.util.GridConcurrentHashSet;
 import org.apache.ignite.internal.util.typedef.internal.U;
+import org.jetbrains.annotations.Nullable;
 
 /**
  * Client cache partition awareness context.
@@ -44,7 +46,14 @@ public class ClientCacheAffinityContext {
     /** Binary data processor. */
     private final IgniteBinary binary;
 
-    /** Factory for each cache id to produce key to partition mapping functions. */
+    /** Mapper factory from client configuration that is used for cache groups with custom affinity. */
+    private final ClientPartitionAwarenessMapperFactory paMapFactory;
+
+    /**
+     * Factory for each cache id to produce key to partition mapping functions.
+     * This factory is also used to resolve cacheName from cacheId. If a cache has default affinity mappings then
+     * it will be cleared on the next affinity mapping request.
+     */
     private final Map<Integer, ClientPartitionAwarenessMapperHolder> cacheKeyMapperFactoryMap = new HashMap<>();
 
     /** Contains last topology version and known nodes of this version. */
@@ -61,8 +70,10 @@ public class ClientCacheAffinityContext {
 
     /**
      * @param binary Binary data processor.
+     * @param mapFacotry Factory for caches with custom affinity.
      */
-    public ClientCacheAffinityContext(IgniteBinary binary) {
+    public ClientCacheAffinityContext(IgniteBinary binary, @Nullable ClientPartitionAwarenessMapperFactory mapFacotry) {
+        this.paMapFactory = mapFacotry;
         this.binary = binary;
     }
 
@@ -148,8 +159,11 @@ public class ClientCacheAffinityContext {
                         ClientPartitionAwarenessMapperHolder hld = cacheKeyMapperFactoryMap.get(cacheId);
 
                         // Factory concurrently removed on cache destroy.
-                        if (hld == null || hld.ts == REMOVED_TS)
+                        if (paMapFactory == null || hld == null || hld.ts == REMOVED_TS)
                             return null;
+
+                        if (hld.factory == null)
+                            hld.factory = (parts) -> paMapFactory.create(hld.cacheName, parts);
 
                         return hld.factory;
                     }
@@ -157,13 +171,21 @@ public class ClientCacheAffinityContext {
             }
         );
 
-        // Clean up outdated factories.
         synchronized (cacheKeyMapperFactoryMap) {
-            rq0.caches.removeAll(newMapping.cacheIds());
-
             cacheKeyMapperFactoryMap.entrySet()
-                .removeIf(e -> rq0.caches.contains(e.getKey())
-                    && e.getValue().ts <= rq0.ts);
+                .removeIf(e -> {
+                    // Process only requested caches.
+                    if (!rq0.caches.contains(e.getKey()))
+                        return false;
+
+                    if (newMapping.cacheIds().contains(e.getKey())) {
+                        // Remove caches that have default affinity.
+                        return e.getValue().factory == null;
+                    } else {
+                        // Requested, but not received caches means that they have been destoryed on the server side.
+                        return e.getValue().ts <= rq0.ts;
+                    }
+                });
         }
 
         rq = null;
@@ -259,24 +281,23 @@ public class ClientCacheAffinityContext {
     }
 
     /**
-     * @param cacheId Cache id.
-     * @param factory Key mapper factory.
+     * @param cacheName Cache name.
      */
-    public void putKeyMapperFactory(int cacheId, Function<Integer, ClientPartitionAwarenessMapper> factory) {
+    public void putKeyMapperFactory(String cacheName) {
         synchronized (cacheKeyMapperFactoryMap) {
-            ClientPartitionAwarenessMapperHolder hld = cacheKeyMapperFactoryMap.computeIfAbsent(cacheId,
-                id -> new ClientPartitionAwarenessMapperHolder(factory));
+            ClientPartitionAwarenessMapperHolder hld = cacheKeyMapperFactoryMap.computeIfAbsent(ClientUtils.cacheId(cacheName),
+                id -> new ClientPartitionAwarenessMapperHolder(cacheName));
 
             hld.ts = U.currentTimeMillis();
         }
     }
 
     /**
-     * @param cacheId Cache id.
+     * @param cacheName Cache name.
      */
-    public void removeKeyMapperFactory(int cacheId) {
+    public void removeKeyMapperFactory(String cacheName) {
         synchronized (cacheKeyMapperFactoryMap) {
-            ClientPartitionAwarenessMapperHolder hld = cacheKeyMapperFactoryMap.get(cacheId);
+            ClientPartitionAwarenessMapperHolder hld = cacheKeyMapperFactoryMap.get(ClientUtils.cacheId(cacheName));
 
             if (hld == null)
                 return;
@@ -314,19 +335,22 @@ public class ClientCacheAffinityContext {
         }
     }
 
-    /** Holder of a mapper factory. */
+    /** Holder of a mapper factory and cacheName. */
     private static class ClientPartitionAwarenessMapperHolder {
+        /** Cache name. */
+        private final String cacheName;
+
         /** Factory. */
-        private final Function<Integer, ClientPartitionAwarenessMapper> factory;
+        private @Nullable Function<Integer, ClientPartitionAwarenessMapper> factory;
 
         /** Last accessed timestamp. */
         private long ts;
 
         /**
-         * @param factory Factory.
+         * @param cacheName Cache name.
          */
-        public ClientPartitionAwarenessMapperHolder(Function<Integer, ClientPartitionAwarenessMapper> factory) {
-            this.factory = factory;
+        public ClientPartitionAwarenessMapperHolder(String cacheName) {
+            this.cacheName = cacheName;
         }
     }
 

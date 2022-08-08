@@ -131,7 +131,7 @@ final class ReliableChannel implements AutoCloseable {
 
         partitionAwarenessEnabled = clientCfg.isPartitionAwarenessEnabled();
 
-        affinityCtx = new ClientCacheAffinityContext(binary);
+        affinityCtx = new ClientCacheAffinityContext(binary, clientCfg.getPartitionAwarenessMapperFactory());
 
         connMgr = new GridNioClientConnectionMultiplexer(clientCfg);
         connMgr.start();
@@ -404,23 +404,22 @@ final class ReliableChannel implements AutoCloseable {
     }
 
     /**
-     * @param cacheId Cache id.
      * @param cacheName Cache name.
      */
-    public void registerKeyPartitionMapperFactory(int cacheId, String cacheName) {
+    public void registerKeyPartitionMapperFactory(String cacheName) {
         ClientPartitionAwarenessMapperFactory factory = clientCfg.getPartitionAwarenessMapperFactory();
 
         if (factory == null)
             return;
 
-        affinityCtx.putKeyMapperFactory(cacheId, parts -> factory.create(cacheName, parts));
+        affinityCtx.putKeyMapperFactory(cacheName);
     }
 
     /**
-     * @param cacheId Cache id.
+     * @param cacheName Cache name.
      */
-    public void unregisterKeyPartitionMapperFactory(int cacheId) {
-        affinityCtx.removeKeyMapperFactory(cacheId);
+    public void unregisterKeyPartitionMapperFactory(String cacheName) {
+        affinityCtx.removeKeyMapperFactory(cacheName);
     }
 
     /**

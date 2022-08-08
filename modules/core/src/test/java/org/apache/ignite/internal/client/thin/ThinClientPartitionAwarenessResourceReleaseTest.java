@@ -116,10 +116,15 @@ public class ThinClientPartitionAwarenessResourceReleaseTest extends ThinClientA
             return m.topologyVersion().equals(ver.nextMinorVersion());
         }, 5_000L));
 
+        // Mapping for previous caches become outdated and will be updated on the next request.
         assertNull(affCtx.currentMapping().affinityNode(cacheId, 0));
 
+        // Trigger the next affinity mappings update. The outdated cache with custom affinity was added
+        // to pending caches list and will be processed and cleared.
+        client.cache(REPL_CACHE_NAME).put(2, 2);
+
         Map<?, ?> m = GridTestUtils.getFieldValue(affCtx, "cacheKeyMapperFactoryMap");
-        assertTrue(GridTestUtils.waitForCondition(() -> m.get(cacheId) == null, 5000L));
+        assertTrue(GridTestUtils.waitForCondition(m::isEmpty, 5000L));
     }
 
     /** {@inheritDoc} */
