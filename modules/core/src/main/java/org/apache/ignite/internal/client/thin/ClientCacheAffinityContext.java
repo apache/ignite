@@ -120,8 +120,6 @@ public class ClientCacheAffinityContext {
         synchronized (cacheKeyMapperFactoryMap) {
             cacheIds = new HashSet<>(pendingCacheIds);
 
-            pendingCacheIds.removeAll(cacheIds);
-
             lastAccessed = cacheIds.stream()
                 .map(cacheKeyMapperFactoryMap::get)
                 .filter(Objects::nonNull)
@@ -160,9 +158,9 @@ public class ClientCacheAffinityContext {
         );
 
         // Clean up outdated factories.
-        rq0.caches.removeAll(newMapping.cacheIds());
-
         synchronized (cacheKeyMapperFactoryMap) {
+            rq0.caches.removeAll(newMapping.cacheIds());
+
             cacheKeyMapperFactoryMap.entrySet()
                 .removeIf(e -> rq0.caches.contains(e.getKey())
                     && e.getValue().ts <= rq0.ts);
@@ -178,6 +176,8 @@ public class ClientCacheAffinityContext {
             // Re-request mappings that are out of date.
             if (oldMapping != null)
                 pendingCacheIds.addAll(oldMapping.cacheIds());
+
+            pendingCacheIds.removeAll(newMapping.cacheIds());
 
             return true;
         }

@@ -18,12 +18,12 @@
 package org.apache.ignite.internal.client.thin;
 
 import java.lang.management.ThreadInfo;
+import java.util.Map;
 import org.apache.ignite.cache.affinity.AffinityFunction;
 import org.apache.ignite.cache.affinity.rendezvous.RendezvousAffinityFunction;
 import org.apache.ignite.client.ClientCache;
 import org.apache.ignite.client.ClientPartitionAwarenessMapper;
 import org.apache.ignite.client.ClientPartitionAwarenessMapperFactory;
-import org.apache.ignite.client.IgniteClient;
 import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
 import org.apache.ignite.internal.processors.cache.IgniteInternalCache;
 import org.apache.ignite.internal.util.typedef.internal.CU;
@@ -95,7 +95,7 @@ public class ThinClientPartitionAwarenessResourceReleaseTest extends ThinClientA
         for (int i = 1; i < KEY_CNT; i++)
             clientCache.put(i, i);
 
-        ClientCacheAffinityContext affCtx = clientAffinityContext(client);
+        ClientCacheAffinityContext affCtx = ((TcpIgniteClient)client).reliableChannel().affinityContext();
         AffinityTopologyVersion ver = affCtx.currentMapping().topologyVersion();
 
         grid(0).destroyCache(PART_CUSTOM_AFFINITY_CACHE_NAME);
@@ -117,6 +117,9 @@ public class ThinClientPartitionAwarenessResourceReleaseTest extends ThinClientA
         }, 5_000L));
 
         assertNull(affCtx.currentMapping().affinityNode(cacheId, 0));
+
+        Map<?, ?> m = GridTestUtils.getFieldValue(affCtx, "cacheKeyMapperFactoryMap");
+        assertTrue(GridTestUtils.waitForCondition(() -> m.get(cacheId) == null, 5000L));
     }
 
     /** {@inheritDoc} */
@@ -124,18 +127,9 @@ public class ThinClientPartitionAwarenessResourceReleaseTest extends ThinClientA
         super.afterTest();
 
         stopAllGrids();
-        client.close();
-    }
 
-    /**
-     * @param clnt Ignite client.
-     * @return Client context.
-     */
-    private static ClientCacheAffinityContext clientAffinityContext(IgniteClient clnt) {
-        assertTrue(clnt instanceof TcpIgniteClient);
-
-        return GridTestUtils.getFieldValue(GridTestUtils.getFieldValue(clnt, "ch"),
-            "affinityCtx");
+        if (client != null)
+            client.close();
     }
 
     /**

@@ -879,6 +879,13 @@ final class ReliableChannel implements AutoCloseable {
     }
 
     /**
+     * @return Affinity context.
+     */
+    ClientCacheAffinityContext affinityContext() {
+        return affinityCtx;
+    }
+
+    /**
      * Channels holder.
      */
     @SuppressWarnings("PackageVisibleInnerClass") // Visible for tests.

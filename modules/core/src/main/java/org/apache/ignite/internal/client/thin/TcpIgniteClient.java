@@ -418,6 +418,13 @@ public class TcpIgniteClient implements IgniteClient {
         return new TcpIgniteClient(cfg);
     }
 
+    /**
+     * @return Channel.
+     */
+    ReliableChannel reliableChannel() {
+        return ch;
+    }
+
     /** @throws IllegalArgumentException if the specified cache name is invalid. */
     private static void ensureCacheName(String name) {
         if (name == null || name.isEmpty())
