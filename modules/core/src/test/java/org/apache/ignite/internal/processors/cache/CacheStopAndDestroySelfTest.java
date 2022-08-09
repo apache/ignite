@@ -66,9 +66,6 @@ public class CacheStopAndDestroySelfTest extends GridCommonAbstractTest {
     /** Near cache name. */
     private static String CACHE_NAME_NEAR = "cache_near";
 
-    /** Local cache name. */
-    private static String CACHE_NAME_LOC = "cache_local";
-
     /** Memory configuration to be used on client nodes with local caches. */
     private static DataStorageConfiguration memCfg;
 
