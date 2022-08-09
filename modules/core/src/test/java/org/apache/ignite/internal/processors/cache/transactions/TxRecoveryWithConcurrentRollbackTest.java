@@ -58,6 +58,7 @@ import static org.apache.ignite.cache.CacheWriteSynchronizationMode.FULL_ASYNC;
 import static org.apache.ignite.cache.CacheWriteSynchronizationMode.FULL_SYNC;
 import static org.apache.ignite.cache.CacheWriteSynchronizationMode.PRIMARY_SYNC;
 import static org.apache.ignite.cluster.ClusterState.ACTIVE;
+import static org.apache.ignite.cluster.ClusterState.INACTIVE;
 import static org.apache.ignite.internal.TestRecordingCommunicationSpi.spi;
 import static org.apache.ignite.testframework.GridTestUtils.runAsync;
 import static org.apache.ignite.testframework.GridTestUtils.waitForCondition;
@@ -297,9 +298,10 @@ public class TxRecoveryWithConcurrentRollbackTest extends GridCommonAbstractTest
 
             final Transaction tx = grid2.transactions().txStart(PESSIMISTIC, REPEATABLE_READ);
 
-            final Integer g2Key = primaryKeys(cache, 1, 0).get(0);
+            // Key for which the grid2 node is primary.
+            final Integer grid2PrimaryKey = primaryKeys(cache, 1, 0).get(0);
 
-            cache.put(g2Key, Boolean.TRUE);
+            cache.put(grid2PrimaryKey, Boolean.TRUE);
 
             final TransactionProxyImpl<?, ?> p = (TransactionProxyImpl<?, ?>)tx;
 
@@ -328,10 +330,8 @@ public class TxRecoveryWithConcurrentRollbackTest extends GridCommonAbstractTest
             // Block recovery procedure processing on grid1.
             grid1.context().pools().getSystemExecutorService().execute(() -> U.awaitQuiet(grid1BlockLatch));
 
-            final int stripe = U.safeAbs(p.tx().xidVersion().hashCode());
-
-            // Block stripe tx recovery request processing on grid1.
-            grid1.context().pools().getStripedExecutorService().execute(stripe, () -> U.awaitQuiet(grid1BlockLatch));
+            // Block stripe tx recovery request processing on grid1 (note that the only stripe is configured in the executor).
+            grid1.context().pools().getStripedExecutorService().execute(0, () -> U.awaitQuiet(grid1BlockLatch));
 
             // Prevent finish request processing on grid0.
             spi(grid2).blockMessages(GridDhtTxFinishRequest.class, grid0.name());
@@ -345,21 +345,13 @@ public class TxRecoveryWithConcurrentRollbackTest extends GridCommonAbstractTest
                 return null;
             });
 
-            try {
-                tx.close();
-            }
-            catch (Exception ignored) {
-                // Don't bother if the transaction close throws in case grid2 appear to be stopping or stopped already
-                // for this thread.
-            }
-
             // Wait until grid1 node detects primary node left.
             grid1NodeLeftEventLatch.await();
 
             // Wait until grid1 receives the tx recovery request and the corresponding processing task is added into
-            // the queue.
-            assertTrue("tx recovery request received on grid1", GridTestUtils.waitForCondition(() -> grid1.context()
-                .pools().getStripedExecutorService().queueStripeSize(stripe) == 1, 5_000));
+            // the stripe queue (note that the only stripe is configured in the executor).
+            assertTrue("failed to wait the tx recovery request received on grid1", GridTestUtils.waitForCondition(() ->
+                grid1.context().pools().getStripedExecutorService().queueStripeSize(0) == 1, 5_000));
 
             // Unblock processing in grid1. Simultaneously in striped and system pools to start recovery procedure and
             // the tx recovery request processing at the "same" moment (for the same transaction). This should increase
@@ -372,6 +364,8 @@ public class TxRecoveryWithConcurrentRollbackTest extends GridCommonAbstractTest
 
             assertTrue(txs0.get(0).finishFuture().isDone());
             assertTrue(txs1.get(0).finishFuture().isDone());
+
+            grid0.cluster().state(INACTIVE);
 
             stopAllGrids();
         }
