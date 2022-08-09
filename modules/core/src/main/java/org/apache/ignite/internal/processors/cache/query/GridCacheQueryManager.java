@@ -635,7 +635,7 @@ public abstract class GridCacheQueryManager<K, V> extends GridCacheManagerAdapte
                         parts = new int[]{qry.partition()};
 
                     IndexQueryResult<K, V> idxQryRes = qryProc.queryIndex(cacheName, qry.queryClassName(), qry.idxQryDesc(),
-                        qry.scanFilter(), filter(qry, parts), qry.keepBinary());
+                        qry.scanFilter(), filter(qry, parts, parts != null), qry.keepBinary());
 
                     iter = idxQryRes.iter();
                     res.metadata(idxQryRes.metadata());
@@ -2025,19 +2025,20 @@ public abstract class GridCacheQueryManager<K, V> extends GridCacheManagerAdapte
      * @return Filter.
      */
     private IndexingQueryFilter filter(GridCacheQueryAdapter<?> qry) {
-        return filter(qry, null);
+        return filter(qry, null, false);
     }
 
     /**
      * @param qry Query.
      * @param partsArr Array of partitions to apply specified query.
+     * @param treatReplicatedAsPartitioned If true, only primary partitions of replicated caches will be used.
      * @return Filter.
      */
-    private IndexingQueryFilter filter(GridCacheQueryAdapter<?> qry, @Nullable int[] partsArr) {
+    private IndexingQueryFilter filter(GridCacheQueryAdapter<?> qry, @Nullable int[] partsArr, boolean treatReplicatedAsPartitioned) {
         if (qry.includeBackups())
             return null;
 
-        return new IndexingQueryFilterImpl(cctx.kernalContext(), AffinityTopologyVersion.NONE, partsArr);
+        return new IndexingQueryFilterImpl(cctx.kernalContext(), AffinityTopologyVersion.NONE, partsArr, treatReplicatedAsPartitioned);
     }
 
     /**
