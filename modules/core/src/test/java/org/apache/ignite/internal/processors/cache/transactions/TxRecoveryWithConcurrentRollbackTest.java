@@ -17,10 +17,14 @@
 
 package org.apache.ignite.internal.processors.cache.transactions;
 
+import java.time.Duration;
+import java.time.Instant;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.UUID;
+import java.util.concurrent.BrokenBarrierException;
 import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.CyclicBarrier;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.UnaryOperator;
@@ -284,15 +288,32 @@ public class TxRecoveryWithConcurrentRollbackTest extends GridCommonAbstractTest
         backups = 2;
         persistence = false;
 
+        final IgniteEx grid0 = startGrid(0);
+
+        final IgniteEx grid1 = startGrid(1, (UnaryOperator<IgniteConfiguration>)cfg -> cfg
+            .setSystemThreadPoolSize(1).setStripedPoolSize(1));
+
+        final CyclicBarrier grid1NodeLeftEventBarrier = new CyclicBarrier(2);
+
+        final PE listener = new PE() {
+            @Override public boolean apply(Event evt)  {
+                try {
+                    grid1NodeLeftEventBarrier.await();
+                }
+                catch (InterruptedException | BrokenBarrierException e) {
+                    // Just supress.
+                }
+                return true;
+            }
+        };
+
+        grid1.events().localListen(listener, EventType.EVT_NODE_LEFT);
+
+        grid0.cluster().state(ACTIVE);
+
+        Instant start = Instant.now();
         for (int iter = 0; iter < 100; iter++) {
-            final IgniteEx grid0 = startGrid(0);
-
-            final IgniteEx grid1 = startGrid(1, (UnaryOperator<IgniteConfiguration>)cfg -> cfg
-                .setSystemThreadPoolSize(1).setStripedPoolSize(1));
-
             final IgniteEx grid2 = startGrid(2);
-
-            grid0.cluster().state(ACTIVE);
 
             final IgniteCache<Object, Object> cache = grid2.cache(DEFAULT_CACHE_NAME);
 
@@ -315,16 +336,6 @@ public class TxRecoveryWithConcurrentRollbackTest extends GridCommonAbstractTest
             assertTrue(txs1.size() == 1);
             assertTrue(txs2.size() == 1);
 
-            final CountDownLatch grid1NodeLeftEventLatch = new CountDownLatch(1);
-
-            grid1.events().localListen(new PE() {
-                @Override public boolean apply(Event evt) {
-                    grid1NodeLeftEventLatch.countDown();
-
-                    return true;
-                }
-            }, EventType.EVT_NODE_LEFT);
-
             final CountDownLatch grid1BlockLatch = new CountDownLatch(1);
 
             // Block recovery procedure processing on grid1.
@@ -346,7 +357,7 @@ public class TxRecoveryWithConcurrentRollbackTest extends GridCommonAbstractTest
             });
 
             // Wait until grid1 node detects primary node left.
-            grid1NodeLeftEventLatch.await();
+            grid1NodeLeftEventBarrier.await();
 
             // Wait until grid1 receives the tx recovery request and the corresponding processing task is added into
             // the stripe queue (note that the only stripe is configured in the executor).
@@ -364,11 +375,12 @@ public class TxRecoveryWithConcurrentRollbackTest extends GridCommonAbstractTest
 
             assertTrue(txs0.get(0).finishFuture().isDone());
             assertTrue(txs1.get(0).finishFuture().isDone());
-
-            grid0.cluster().state(INACTIVE);
-
-            stopAllGrids();
         }
+        log.info("elapsed:" + Duration.between(start, Instant.now()));
+
+        grid0.cluster().state(INACTIVE);
+
+        stopAllGrids();
     }
 
     /** */
