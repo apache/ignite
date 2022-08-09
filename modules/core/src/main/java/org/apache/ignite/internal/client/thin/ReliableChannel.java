@@ -406,20 +406,20 @@ final class ReliableChannel implements AutoCloseable {
     /**
      * @param cacheName Cache name.
      */
-    public void registerKeyPartitionMapperFactory(String cacheName) {
+    public void registerCacheIfCustomAffinity(String cacheName) {
         ClientPartitionAwarenessMapperFactory factory = clientCfg.getPartitionAwarenessMapperFactory();
 
         if (factory == null)
             return;
 
-        affinityCtx.putKeyMapperFactory(cacheName);
+        affinityCtx.registerCache(cacheName);
     }
 
     /**
      * @param cacheName Cache name.
      */
-    public void unregisterKeyPartitionMapperFactory(String cacheName) {
-        affinityCtx.removeKeyMapperFactory(cacheName);
+    public void unregisterCacheIfCustomAffinity(String cacheName) {
+        affinityCtx.unregisterCache(cacheName);
     }
 
     /**

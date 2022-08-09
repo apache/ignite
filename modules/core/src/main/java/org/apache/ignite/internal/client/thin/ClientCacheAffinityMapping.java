@@ -35,13 +35,12 @@ import org.apache.ignite.internal.binary.streams.BinaryOutputStream;
 import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.internal.U;
-import org.jetbrains.annotations.NotNull;
 import static org.apache.ignite.internal.client.thin.ProtocolBitmaskFeature.ALL_AFFINITY_MAPPINGS;
 
 /**
  * Affinity mapping (partition to nodes) for each cache.
  */
-public class ClientCacheAffinityMapping implements Comparable<ClientCacheAffinityMapping> {
+public class ClientCacheAffinityMapping {
     /** CacheAffinityInfo for caches with not applicable partition awareness. */
     private static final CacheAffinityInfo NOT_APPLICABLE_CACHE_AFFINITY_INFO =
         new CacheAffinityInfo(null, null, null);
@@ -67,11 +66,6 @@ public class ClientCacheAffinityMapping implements Comparable<ClientCacheAffinit
      */
     public AffinityTopologyVersion topologyVersion() {
         return topVer;
-    }
-
-    /** {@inheritDoc} */
-    @Override public int compareTo(@NotNull ClientCacheAffinityMapping o) {
-        return topVer.compareTo(o.topVer);
     }
 
     /**

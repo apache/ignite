@@ -18,7 +18,6 @@
 package org.apache.ignite.internal.client.thin;
 
 import java.lang.management.ThreadInfo;
-import java.util.Map;
 import org.apache.ignite.cache.affinity.AffinityFunction;
 import org.apache.ignite.cache.affinity.rendezvous.RendezvousAffinityFunction;
 import org.apache.ignite.client.ClientCache;
@@ -123,8 +122,7 @@ public class ThinClientPartitionAwarenessResourceReleaseTest extends ThinClientA
         // to pending caches list and will be processed and cleared.
         client.cache(REPL_CACHE_NAME).put(2, 2);
 
-        Map<?, ?> m = GridTestUtils.getFieldValue(affCtx, "cacheKeyMapperFactoryMap");
-        assertTrue(GridTestUtils.waitForCondition(m::isEmpty, 5000L));
+        assertTrue(GridTestUtils.waitForCondition(affCtx.cacheKeyMapperFactoryMap::isEmpty, 5000L));
     }
 
     /** {@inheritDoc} */
