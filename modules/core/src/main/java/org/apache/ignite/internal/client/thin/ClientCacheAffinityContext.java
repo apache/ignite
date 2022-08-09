@@ -181,7 +181,8 @@ public class ClientCacheAffinityContext {
                     if (newMapping.cacheIds().contains(e.getKey())) {
                         // Remove caches that have default affinity.
                         return e.getValue().factory == null;
-                    } else {
+                    }
+                    else {
                         // Requested, but not received caches means that they have been destoryed on the server side.
                         return e.getValue().ts <= rq0.ts;
                     }
