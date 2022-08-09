@@ -135,10 +135,7 @@ class SegmentCompressStorage {
      * Callback for waking up compressor when new segment is archived.
      */
     synchronized void onSegmentArchived(long lastAbsArchivedIdx) {
-        if (!compactionEnabled)
-            return;
-
-        while (lastEnqueuedToCompressIdx < lastAbsArchivedIdx) {
+        while (lastEnqueuedToCompressIdx < lastAbsArchivedIdx && compactionEnabled) {
             if (log.isInfoEnabled())
                 log.info("Enqueuing segment for compression [idx=" + (lastEnqueuedToCompressIdx + 1) + ']');
 
