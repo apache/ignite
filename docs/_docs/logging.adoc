@@ -19,7 +19,6 @@
 Ignite supports a number of logging libraries and frameworks:
 
 - JUL (default),
-- Log4j,
 - Log4j2,
 - JCL,
 - SLF4J.
@@ -49,40 +48,6 @@ You can override the default logging directory by specifying the `IGNITE_LOG_DIR
 If you use Ignite as a library in your application, the default logging configuration includes only console handler at INFO level.
 You can provide a custom configuration file via the `java.util.logging.config.file` system property.
 
-== Using Log4j
-
-[CAUTION]
-====
-[discrete]
-The ignite-log4j module is deprecated and will be removed in the next releases.
-Log4j 1.x had link:https://blogs.apache.org/foundation/entry/apache_logging_services_project_announces[reached end of life] and contains critical vulnerabilities.
-Use link:logging#using-log4j2[ignite-log4j2] module instead.
-====
-
-NOTE: Before using Log4j, enable the link:setup#enabling-modules[ignite-log4j] module.
-
-To enable Log4j logger, set the `gridLogger` property of `IgniteConfiguration`, as shown in the following example:
-
-:javaFile: {javaCodeDir}/Logging.java
-
-[tabs]
---
-tab:XML[]
-[source,xml]
-----
-include::code-snippets/xml/log4j.xml[tags=log4j;!discovery, indent=0]
-----
-tab:Java[]
-[source,java]
-----
-include::{javaFile}[tag=log4j, indent=0]
-----
-tab:.NET[unsupported]
-tab:C++[unsupported]
---
-
-In the above example, the path to `log4j-config.xml` can be either an absolute path, a local path relative to META-INF in classpath or to `IGNITE_HOME`. An example log4j configuration file can be found in the distribution package (`$IGNITE_HOME/config/ignite-log4j.xml`).
-
 == Using Log4j2
 NOTE: Before using Log4j2, enable the link:setup#enabling-modules[ignite-log4j2] module.
 
@@ -108,14 +73,14 @@ tab:.NET[unsupported]
 tab:C++[unsupported]
 --
 
-In the above example, the path to `log4j2-config.xml` can be either an absolute path, a local path relative to META-INF in classpath or to `IGNITE_HOME`. An example log4j2 configuration file can be found in the distribution package (`$IGNITE_HOME/config/ignite-log4j2.xml`).
+In the above example, the path to `log4j2-config.xml` can be either an absolute path, a local path relative to META-INF in classpath or to `IGNITE_HOME`. An example log4j2 configuration file can be found in the distribution package (`$IGNITE_HOME/config/ignite-log4j.xml`).
 
 NOTE: Log4j2 supports runtime reconfiguration, i.e. changes in the configuration file is applied without the need to restart the application.
 
 == Using JCL
 NOTE: Before using JCL, enable the link:setup#enabling-modules[ignite-jcl] module.
 
-NOTE: Note that JCL simply forwards logging messages to an underlying logging system, which needs to be properly configured. Refer to the link:https://commons.apache.org/proper/commons-logging/guide.html#Configuration[JCL official documentation] for more information. For example, if you want to use Log4j, make sure you add the required libraries to your classpath.
+NOTE: Note that JCL simply forwards logging messages to an underlying logging system, which needs to be properly configured. Refer to the link:https://commons.apache.org/proper/commons-logging/guide.html#Configuration[JCL official documentation] for more information. For example, if you want to use Log4j2, make sure you add the required libraries to your classpath.
 
 To enable Log4j2 logger, set the `gridLogger` property of `IgniteConfiguration`, as shown below:
 
@@ -182,9 +147,9 @@ See link:starting-nodes#setting-jvm-options[Setting JVM Options] to learn about 
 
 The following steps guide you through the process of configuring logging. This should be suitable for most cases.
 
-. Use either Log4j or Log4j2 as the logging framework. To enable it, follow the instructions provided in the corresponding section above.
-. If you use the default configuration file (either `ignite-log4j.xml` or `ignite-log4j2.xml`), uncomment the CONSOLE appender.
-. In the log4j configuration file, set the path to the log file. The default location is `${IGNITE_HOME}/work/log/ignite.log`.
+. To enable Log4j2, follow the instructions provided in the corresponding section above.
+. If you use the default configuration file (`ignite-log4j.xml`), uncomment the CONSOLE appender.
+. In the log4j2 configuration file, set the path to the log file. The default location is `${IGNITE_HOME}/work/log/ignite.log`.
 . Start the nodes in verbose mode:
    - If you use `ignite.sh` to start nodes, specify the `-v` option.
    - If you start nodes from Java code, use the `IGNITE_QUIET=false` system variable.

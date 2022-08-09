@@ -23,7 +23,7 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
-import java.util.TreeMap;
+import java.util.concurrent.atomic.AtomicInteger;
 import java.util.function.BiConsumer;
 import java.util.function.Consumer;
 import java.util.stream.Collectors;
@@ -39,11 +39,14 @@ import org.junit.Test;
  *
  */
 public abstract class AbstractFullSetReadRepairTest extends AbstractReadRepairTest {
+    /** Negative key to gain null. */
+    private static final AtomicInteger decrementalKey = new AtomicInteger();
+
     /**
      *
      */
     protected static final Consumer<ReadRepairData> GET_CHECK_AND_REPAIR = (rrd) -> {
-        for (Integer key : rrd.data.keySet()) { // Once.
+        for (Object key : rrd.data.keySet()) { // Once.
             assertEqualsArraysAware(unwrapBinaryIfNeeded(rrd.data.get(key).repairedBin), get(rrd));
         }
     };
@@ -52,9 +55,9 @@ public abstract class AbstractFullSetReadRepairTest extends AbstractReadRepairTe
      *
      */
     protected static final Consumer<ReadRepairData> GETALL_CHECK_AND_REPAIR = (rrd) -> {
-        Map<Integer, Object> res = getAll(rrd);
+        Map<Object, Object> res = getAll(rrd);
 
-        for (Integer key : rrd.data.keySet())
+        for (Object key : rrd.data.keySet())
             assertEqualsArraysAware(unwrapBinaryIfNeeded(rrd.data.get(key).repairedBin), res.get(key));
     };
 
@@ -72,12 +75,12 @@ public abstract class AbstractFullSetReadRepairTest extends AbstractReadRepairTe
      *
      */
     protected static final Consumer<ReadRepairData> CONTAINS_CHECK_AND_REPAIR = (rrd) -> {
-        Set<Integer> keys = rrd.data.keySet();
+        Set<Object> keys = rrd.data.keySet();
 
         assert keys.size() == 1;
 
-        for (Map.Entry<Integer, InconsistentMapping> entry : rrd.data.entrySet()) { // Once.
-            Integer key = entry.getKey();
+        for (Map.Entry<Object, InconsistentMapping> entry : rrd.data.entrySet()) { // Once.
+            Object key = entry.getKey();
 
             boolean res = rrd.async ?
                 rrd.cache.withReadRepair(rrd.strategy).containsKeyAsync(key).get() :
@@ -91,7 +94,7 @@ public abstract class AbstractFullSetReadRepairTest extends AbstractReadRepairTe
      *
      */
     protected static final Consumer<ReadRepairData> CONTAINS_ALL_CHECK_AND_REPAIR = (rrd) -> {
-        Set<Integer> keys = rrd.data.keySet();
+        Set<Object> keys = rrd.data.keySet();
 
         assert !keys.isEmpty();
 
@@ -108,16 +111,16 @@ public abstract class AbstractFullSetReadRepairTest extends AbstractReadRepairTe
      *
      */
     private static Object get(ReadRepairData rrd) {
-        Set<Integer> keys = rrd.data.keySet();
+        Set<Object> keys = rrd.data.keySet();
 
         assert keys.size() == 1;
 
-        Integer key = keys.iterator().next();
+        Object key = keys.iterator().next();
 
         Object res;
 
         if (rrd.raw) {
-            CacheEntry<Integer, Object> rawEntry = rrd.async ?
+            CacheEntry<Object, Object> rawEntry = rrd.async ?
                 rrd.cache.withReadRepair(rrd.strategy).getEntryAsync(key).get() :
                 rrd.cache.withReadRepair(rrd.strategy).getEntry(key);
 
@@ -134,22 +137,22 @@ public abstract class AbstractFullSetReadRepairTest extends AbstractReadRepairTe
     /**
      *
      */
-    private static Map<Integer, Object> getAll(ReadRepairData rrd) {
-        Set<Integer> keys = rrd.data.keySet();
+    private static Map<Object, Object> getAll(ReadRepairData rrd) {
+        Set<Object> keys = rrd.data.keySet();
 
         assert !keys.isEmpty();
 
-        Map<Integer, Object> objs;
+        Map<Object, Object> objs;
 
         if (rrd.raw) {
-            Collection<CacheEntry<Integer, Object>> entryRes =
+            Collection<CacheEntry<Object, Object>> entryRes =
                 rrd.async ?
                     rrd.cache.withReadRepair(rrd.strategy).getEntriesAsync(keys).get() :
                     rrd.cache.withReadRepair(rrd.strategy).getEntries(keys);
 
             objs = new HashMap<>();
 
-            for (CacheEntry<Integer, Object> entry : entryRes)
+            for (CacheEntry<Object, Object> entry : entryRes)
                 objs.put(entry.getKey(), entry.getValue());
         }
         else {
@@ -193,12 +196,12 @@ public abstract class AbstractFullSetReadRepairTest extends AbstractReadRepairTe
             rrd.cache,
             rrd.data.entrySet().stream().collect(
                 Collectors.toMap(
-                    e -> -1 * e.getKey(), // Negative key to gain null.
+                    e -> decrementalKey.decrementAndGet(), // Negative key to gain null.
                     Map.Entry::getValue,
                     (k, v) -> {
                         throw new IllegalStateException(String.format("Duplicate key %s", k));
                     },
-                    TreeMap::new)),
+                    HashMap::new)),
             rrd.raw,
             rrd.async,
             rrd.strategy,
@@ -212,8 +215,8 @@ public abstract class AbstractFullSetReadRepairTest extends AbstractReadRepairTe
         (rrd, e) -> {
             boolean raw = rrd.raw;
 
-            for (Map.Entry<Integer, InconsistentMapping> entry : rrd.data.entrySet()) {
-                Integer key = entry.getKey();
+            for (Map.Entry<Object, InconsistentMapping> entry : rrd.data.entrySet()) {
+                Object key = entry.getKey();
 
                 // Checking only repaired entries, while entries listed at exception were not repaired.
                 if (e != null && (e.irreparableKeys().contains(key) ||
@@ -223,7 +226,7 @@ public abstract class AbstractFullSetReadRepairTest extends AbstractReadRepairTe
                 Object res;
 
                 if (raw) {
-                    CacheEntry<Integer, Object> rawEntry = rrd.cache.getEntry(key);
+                    CacheEntry<Object, Object> rawEntry = rrd.cache.getEntry(key);
 
                     res = rawEntry != null ? rawEntry.getValue() : null;
                 }

@@ -59,8 +59,10 @@ import org.apache.ignite.marshaller.Marshaller;
 import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.eclipse.jetty.security.HashLoginService;
+import org.eclipse.jetty.security.SecurityHandler;
 import org.eclipse.jetty.server.Server;
 import org.eclipse.jetty.servlet.ServletHolder;
+import org.eclipse.jetty.util.security.Constraint;
 import org.eclipse.jetty.webapp.WebAppContext;
 import org.jetbrains.annotations.Nullable;
 import org.junit.Ignore;
@@ -856,7 +858,6 @@ public class WebSessionSelfTest extends GridCommonAbstractTest {
         final AtomicBoolean stop = new AtomicBoolean();
 
         IgniteInternalFuture<?> restarterFut = GridTestUtils.runMultiThreadedAsync(new Callable<Object>() {
-            @SuppressWarnings("BusyWait")
             @Override public Object call() throws Exception {
                 Random rnd = new Random();
 
@@ -1017,7 +1018,10 @@ public class WebSessionSelfTest extends GridCommonAbstractTest {
         hashLoginService.setName("Test Realm");
         createRealm();
         hashLoginService.setConfig("/tmp/realm.properties");
-        ctx.getSecurityHandler().setLoginService(hashLoginService);
+        SecurityHandler securityHandler = ctx.getSecurityHandler();
+        // DefaultAuthenticatorFactory doesn't default to basic auth anymore.
+        securityHandler.setAuthMethod(Constraint.__BASIC_AUTH);
+        securityHandler.setLoginService(hashLoginService);
 
         srv.setHandler(ctx);
 

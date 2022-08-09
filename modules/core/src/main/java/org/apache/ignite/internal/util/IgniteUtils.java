@@ -140,6 +140,7 @@ import java.util.concurrent.Executors;
 import java.util.concurrent.Future;
 import java.util.concurrent.Semaphore;
 import java.util.concurrent.TimeUnit;
+import java.util.concurrent.TimeoutException;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.concurrent.locks.Condition;
@@ -248,6 +249,7 @@ import org.apache.ignite.internal.util.typedef.P1;
 import org.apache.ignite.internal.util.typedef.X;
 import org.apache.ignite.internal.util.typedef.internal.A;
 import org.apache.ignite.internal.util.typedef.internal.LT;
+import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.internal.util.typedef.internal.SB;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.internal.util.worker.GridWorker;
@@ -290,6 +292,7 @@ import sun.misc.Unsafe;
 import static java.util.Objects.isNull;
 import static org.apache.ignite.IgniteSystemProperties.IGNITE_DISABLE_HOSTNAME_VERIFIER;
 import static org.apache.ignite.IgniteSystemProperties.IGNITE_HOME;
+import static org.apache.ignite.IgniteSystemProperties.IGNITE_IGNORE_LOCAL_HOST_NAME;
 import static org.apache.ignite.IgniteSystemProperties.IGNITE_LOCAL_HOST;
 import static org.apache.ignite.IgniteSystemProperties.IGNITE_MBEAN_APPEND_CLASS_LOADER_ID;
 import static org.apache.ignite.IgniteSystemProperties.IGNITE_MBEAN_APPEND_JVM_ID;
@@ -299,6 +302,7 @@ import static org.apache.ignite.IgniteSystemProperties.IGNITE_SSH_HOST;
 import static org.apache.ignite.IgniteSystemProperties.IGNITE_SSH_USER_NAME;
 import static org.apache.ignite.IgniteSystemProperties.IGNITE_SUCCESS_FILE;
 import static org.apache.ignite.IgniteSystemProperties.getBoolean;
+import static org.apache.ignite.IgniteSystemProperties.getString;
 import static org.apache.ignite.events.EventType.EVTS_ALL;
 import static org.apache.ignite.events.EventType.EVTS_ALL_MINUS_METRIC_UPDATE;
 import static org.apache.ignite.events.EventType.EVT_NODE_METRICS_UPDATED;
@@ -318,6 +322,9 @@ import static org.apache.ignite.internal.util.GridUnsafe.staticFieldOffset;
  */
 @SuppressWarnings({"UnusedReturnValue"})
 public abstract class IgniteUtils {
+    /** Logger. */
+    private static final Logger log = Logger.getLogger(IgniteUtils.class.getName());
+
     /** */
     public static final long KB = 1024L;
 
@@ -2277,11 +2284,19 @@ public abstract class IgniteUtils {
      */
     private static void addresses(InetAddress addr, Collection<String> addrs, Collection<String> hostNames,
         boolean allHostNames) {
-        String hostName = addr.getHostName();
-
         String ipAddr = addr.getHostAddress();
 
         addrs.add(ipAddr);
+
+        boolean ignoreLocalHostName = getBoolean(IGNITE_IGNORE_LOCAL_HOST_NAME, true);
+
+        String userDefinedLocalHost = getString(IGNITE_LOCAL_HOST);
+
+        // If IGNITE_LOCAL_HOST is defined and IGNITE_IGNORE_LOCAL_HOST_NAME is not false, then ignore local address's hostname
+        if (!F.isEmpty(userDefinedLocalHost) && ignoreLocalHostName)
+            return;
+
+        String hostName = addr.getHostName();
 
         if (allHostNames)
             hostNames.add(hostName);
@@ -4752,7 +4767,7 @@ public abstract class IgniteUtils {
                 Class<?> log4jCls;
 
                 try {
-                    log4jCls = Class.forName("org.apache.ignite.logger.log4j.Log4JLogger");
+                    log4jCls = Class.forName("org.apache.ignite.logger.log4j2.Log4J2Logger");
                 }
                 catch (ClassNotFoundException | NoClassDefFoundError ignored) {
                     log4jCls = null;
@@ -4813,7 +4828,7 @@ public abstract class IgniteUtils {
                 ((LoggerNodeIdAware)cfgLog).setNodeId(nodeId);
 
             if (log4jInitErr != null)
-                U.warn(cfgLog, "Failed to initialize Log4JLogger (falling back to standard java logging): "
+                U.warn(cfgLog, "Failed to initialize Log4J2Logger (falling back to standard java logging): "
                     + log4jInitErr.getCause());
 
             return cfgLog;
@@ -8969,66 +8984,6 @@ public abstract class IgniteUtils {
     }
 
     /**
-     * Adds no-op logger to remove no-appender warning.
-     *
-     * @return Tuple with root log and no-op appender instances. No-op appender can be {@code null}
-     *      if it did not found in classpath. Notice that in this case logging is not suppressed.
-     * @throws IgniteCheckedException In case of failure to add no-op logger for Log4j.
-     */
-    public static IgniteBiTuple<Object, Object> addLog4jNoOpLogger() throws IgniteCheckedException {
-        Object rootLog;
-        Object nullApp;
-
-        try {
-            // Add no-op logger to remove no-appender warning.
-            Class<?> logCls = Class.forName("org.apache.log4j.Logger");
-
-            rootLog = logCls.getMethod("getRootLogger").invoke(logCls);
-
-            try {
-                nullApp = Class.forName("org.apache.log4j.varia.NullAppender").newInstance();
-            }
-            catch (ClassNotFoundException ignore) {
-                // Can't found log4j no-op appender in classpath (for example, log4j was added through
-                // log4j-over-slf4j library. No-appender warning will not be suppressed.
-                return new IgniteBiTuple<>(rootLog, null);
-            }
-
-            Class appCls = Class.forName("org.apache.log4j.Appender");
-
-            rootLog.getClass().getMethod("addAppender", appCls).invoke(rootLog, nullApp);
-        }
-        catch (Exception e) {
-            throw new IgniteCheckedException("Failed to add no-op logger for Log4j.", e);
-        }
-
-        return new IgniteBiTuple<>(rootLog, nullApp);
-    }
-
-    /**
-     * Removes previously added no-op logger via method {@link #addLog4jNoOpLogger}.
-     *
-     * @param t Tuple with root log and null appender instances.
-     * @throws IgniteCheckedException In case of failure to remove previously added no-op logger for Log4j.
-     */
-    public static void removeLog4jNoOpLogger(IgniteBiTuple<Object, Object> t) throws IgniteCheckedException {
-        Object rootLog = t.get1();
-        Object nullApp = t.get2();
-
-        if (nullApp == null)
-            return;
-
-        try {
-            Class appenderCls = Class.forName("org.apache.log4j.Appender");
-
-            rootLog.getClass().getMethod("removeAppender", appenderCls).invoke(rootLog, nullApp);
-        }
-        catch (Exception e) {
-            throw new IgniteCheckedException("Failed to remove previously added no-op logger for Log4j.", e);
-        }
-    }
-
-    /**
      * Adds no-op console handler for root java logger.
      *
      * @return Removed handlers.
@@ -9710,20 +9665,62 @@ public abstract class IgniteUtils {
             String hostName = hostNamesIt.hasNext() ? hostNamesIt.next() : null;
 
             if (!F.isEmpty(hostName)) {
-                InetSocketAddress inetSockAddr = new InetSocketAddress(hostName, port);
+                InetSocketAddress inetSockAddr = createResolved(hostName, port);
 
-                if (inetSockAddr.isUnresolved() || inetSockAddr.getAddress().isLoopbackAddress())
-                    inetSockAddr = new InetSocketAddress(addr, port);
+                if (inetSockAddr.isUnresolved() ||
+                    (!inetSockAddr.isUnresolved() && inetSockAddr.getAddress().isLoopbackAddress())
+                )
+                    inetSockAddr = createResolved(addr, port);
 
                 res.add(inetSockAddr);
             }
 
             // Always append address because local and remote nodes may have the same hostname
-            // therefore remote hostname will be always resolved to local address.
-            res.add(new InetSocketAddress(addr, port));
+            // therefore remote hostname will always be resolved to local address.
+            res.add(createResolved(addr, port));
         }
 
         return res;
+    }
+
+    /**
+     * Creates a resolved inet socket address, writing the diagnostic information into a log if operation took
+     * a significant amount of time.
+     *
+     * @param addr Host address.
+     * @param port Port value.
+     * @return Resolved address.
+     */
+    private static InetSocketAddress createResolved(String addr, int port) {
+        log.log(Level.FINE, () -> S.toString(
+            "Resolving address",
+            "addr", addr, false,
+            "port", port, false,
+            "thread", Thread.currentThread().getName(), false
+        ));
+
+        long startNanos = System.nanoTime();
+
+        try {
+            return new InetSocketAddress(addr, port);
+        }
+        finally {
+            long endNanos = System.nanoTime();
+
+            long duration = endNanos - startNanos;
+
+            long threshold = U.millisToNanos(200);
+
+            if (duration > threshold) {
+                log.log(Level.FINE, new TimeoutException(), () -> S.toString(
+                    "Resolving address took too much time",
+                    "duration(ms)", U.nanosToMillis(duration), false,
+                    "addr", addr, false,
+                    "port", port, false,
+                    "thread", Thread.currentThread().getName(), false
+                ));
+            }
+        }
     }
 
     /**

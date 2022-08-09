@@ -130,31 +130,18 @@ class VisorOpenCommand extends VisorConsoleCommand {
                             url
                     }
 
-                // Add no-op logger to remove no-appender warning.
-                val log4jTup =
-                    if (visor.quiet) {
-                        val springLog = Logger.getLogger("org.springframework")
+                if (visor.quiet) {
+                    val springLog = Logger.getLogger("org.springframework")
 
-                        if (springLog != null)
-                            springLog.setLevel(Level.WARNING)
-
-                        null
-                    }
-                    else if (classOf[Ignition].getClassLoader.getResource("org/apache/log4j/Appender.class") != null)
-                        U.addLog4jNoOpLogger()
-                    else
-                        null
+                    if (springLog != null)
+                        springLog.setLevel(Level.WARNING)
+                }
 
                 val spring: IgniteSpringHelper = SPRING.create(false)
 
                 val cfgs =
-                    try
-                        // Cache, indexing SPI configurations should be excluded from daemon node config.
-                        spring.loadConfigurations(url, "cacheConfiguration", "lifecycleBeans", "indexingSpi").get1()
-                    finally {
-                        if (log4jTup != null && !visor.quiet)
-                            U.removeLog4jNoOpLogger(log4jTup)
-                    }
+                    // Cache, indexing SPI configurations should be excluded from daemon node config.
+                    spring.loadConfigurations(url, "cacheConfiguration", "lifecycleBeans", "indexingSpi").get1()
 
                 if (cfgs == null || cfgs.isEmpty)
                     throw new IgniteException("Can't find grid configuration in: " + url)
@@ -167,7 +154,7 @@ class VisorOpenCommand extends VisorConsoleCommand {
                 if (visor.quiet)
                     cfg.setGridLogger(new NullLogger)
                 else {
-                    if (log4jTup != null)
+                    if (classOf[Ignition].getClassLoader.getResource("org/apache/logging/log4j/core/Appender.class") != null)
                         System.setProperty(IgniteSystemProperties.IGNITE_CONSOLE_APPENDER, "false")
                     else
                         Logger.getGlobal.getHandlers.foreach({
