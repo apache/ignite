@@ -36,8 +36,8 @@ import org.apache.ignite.events.Event;
 import org.apache.ignite.events.WalSegmentCompactedEvent;
 import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.pagemem.wal.IgniteWriteAheadLogManager;
+import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgnitePredicate;
-import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.testframework.ListeningTestLogger;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.junit.Test;
@@ -51,39 +51,33 @@ public class WalCompactionNotificationsTest extends GridCommonAbstractTest {
     /** Wal segment size. */
     private static final int SEGMENT_SIZE = 512 * 1024;
 
-    /** */
+    /** Listening logger. */
     private final ListeningTestLogger logger = new ListeningTestLogger(log);
 
-    /** */
+    /** WAL compaction event listener. */
     private final EventListener evtLsnr = new EventListener();
 
-    /** Wal archive size. */
+    /** WAL archive size. */
     private long archiveSize;
 
     /** {@inheritDoc} */
     @Override protected IgniteConfiguration getConfiguration(String name) throws Exception {
-        IgniteConfiguration cfg = super.getConfiguration(name);
-
-        cfg.setDataStorageConfiguration(new DataStorageConfiguration()
-            .setDefaultDataRegionConfiguration(new DataRegionConfiguration()
-                .setPersistenceEnabled(true)
-                .setMaxSize(200L * 1024 * 1024))
-            .setWalSegmentSize(SEGMENT_SIZE)
-            .setWalCompactionEnabled(true)
-            .setMaxWalArchiveSize(archiveSize)
-        );
-
-        cfg.setCacheConfiguration(new CacheConfiguration<>(DEFAULT_CACHE_NAME)
-            .setWriteSynchronizationMode(CacheWriteSynchronizationMode.FULL_SYNC)
-            .setAffinity(new RendezvousAffinityFunction(false, 16))
-        );
-
-        cfg.setGridLogger(logger);
-        cfg.setConsistentId(name);
-        cfg.setIncludeEventTypes(EVT_WAL_SEGMENT_COMPACTED);
-        cfg.setLocalEventListeners(Collections.singletonMap(evtLsnr, new int[] {EVT_WAL_SEGMENT_COMPACTED}));
-
-        return cfg;
+        return super.getConfiguration(name)
+            .setDataStorageConfiguration(new DataStorageConfiguration()
+                .setDefaultDataRegionConfiguration(
+                    new DataRegionConfiguration()
+                        .setPersistenceEnabled(true)
+                        .setMaxSize(200 * U.MB))
+                .setWalSegmentSize(SEGMENT_SIZE)
+                .setMaxWalArchiveSize(archiveSize)
+                .setWalCompactionEnabled(true)
+            ).setCacheConfiguration(new CacheConfiguration<>(DEFAULT_CACHE_NAME)
+                .setWriteSynchronizationMode(CacheWriteSynchronizationMode.FULL_SYNC)
+                .setAffinity(new RendezvousAffinityFunction(false, 16))
+            ).setGridLogger(logger)
+            .setConsistentId(name)
+            .setIncludeEventTypes(EVT_WAL_SEGMENT_COMPACTED)
+            .setLocalEventListeners(Collections.singletonMap(evtLsnr, new int[] {EVT_WAL_SEGMENT_COMPACTED}));
     }
 
     /** {@inheritDoc} */
@@ -109,21 +103,8 @@ public class WalCompactionNotificationsTest extends GridCommonAbstractTest {
 
         logger.registerListener(evtLsnr);
 
-        IgniteEx ig = startGrid(0);
-        ig.cluster().state(ClusterState.ACTIVE);
-
-        doCachePuts(ig, 100);
-        ig.cluster().state(ClusterState.INACTIVE);
-
-        evtLsnr.checkErrors(true);
-
-        stopGrid(0);
-
-        IgniteEx ig0 = startGrid(0);
-        ig0.cluster().state(ClusterState.ACTIVE);
-
-        doCachePuts(ig0, 100);
-        evtLsnr.checkErrors(true);
+        checkRestart(50);
+        checkRestart(50);
     }
 
     /**
@@ -135,24 +116,34 @@ public class WalCompactionNotificationsTest extends GridCommonAbstractTest {
 
         logger.registerListener(evtLsnr);
 
+        checkRestart(50);
+        checkRestart(0);
+    }
+
+    /**
+     * @param segmentsCnt The number of WAL segments to generate.
+     * @throws Exception If failed.
+     */
+    private void checkRestart(int segmentsCnt) throws Exception {
         IgniteEx ig = startGrid(0);
         ig.cluster().state(ClusterState.ACTIVE);
 
-        doCachePuts(ig, 100);
+        generateWal(ig, segmentsCnt);
         ig.cluster().state(ClusterState.INACTIVE);
 
-        evtLsnr.checkErrors(false);
+        evtLsnr.validateEvents();
 
         stopGrid(0);
-
-        IgniteEx ig0 = startGrid(0);
-        ig0.cluster().state(ClusterState.ACTIVE);
-
-        evtLsnr.checkErrors(false);
     }
 
-    /** */
-    private void doCachePuts(IgniteEx ig, int segmentsCnt) {
+    /**
+     * @param ig Ignite instance.
+     * @param segmentsCnt The number of WAL segments to generate.
+     */
+    private void generateWal(IgniteEx ig, int segmentsCnt) {
+        if (segmentsCnt <= 0)
+            return;
+
         IgniteCache<Integer, String> cache = ig.cache(DEFAULT_CACHE_NAME);
         IgniteWriteAheadLogManager walMgr = ig.context().cache().context().wal();
         long totalIdx = walMgr.currentSegment() + segmentsCnt;
@@ -181,7 +172,7 @@ public class WalCompactionNotificationsTest extends GridCommonAbstractTest {
         }
     }
 
-    /** */
+    /** WAL compaction event listener. */
     private class EventListener implements IgnitePredicate<Event>, Consumer<String> {
         /** Error. */
         private final AtomicReference<Throwable> errRef = new AtomicReference<>();
@@ -189,8 +180,11 @@ public class WalCompactionNotificationsTest extends GridCommonAbstractTest {
         /** Events history. */
         private final BitSet evtHistory = new BitSet();
 
-        /** Log events history. */
+        /** Log notifications history. */
         private final EnumMap<LogEventType, BitSet> logEvtHist = new EnumMap<>(LogEventType.class);
+
+        /** Last compacted segment index. */
+        private long lastCompactedSegment;
 
         /** Constructor. */
         public EventListener() {
@@ -198,13 +192,8 @@ public class WalCompactionNotificationsTest extends GridCommonAbstractTest {
                 logEvtHist.put(type, new BitSet());
         }
 
-        /** Last compacted segment index. */
-        private long lastCompactedSegment;
-
-        /** Last event index. */
-        private long lastEvtIdx;
-
         /** {@inheritDoc} */
+        @SuppressWarnings("ErrorNotRethrown")
         @Override public boolean apply(Event evt) {
             try {
                 if (!(evt instanceof WalSegmentCompactedEvent))
@@ -230,19 +219,17 @@ public class WalCompactionNotificationsTest extends GridCommonAbstractTest {
 
                 evtHistory.set(walIdx);
 
-                lastEvtIdx = compactEvt.getAbsWalSegmentIdx();
-
                 return true;
             }
-            catch (Throwable t) {
-                errRef.set(t);
+            catch (AssertionError | RuntimeException e) {
+                errRef.compareAndSet(null, e);
 
                 return false;
             }
         }
 
         /** {@inheritDoc} */
-        @SuppressWarnings({"ErrorNotRethrown"})
+        @SuppressWarnings("ErrorNotRethrown")
         @Override public void accept(String str) {
             try {
                 for (LogEventType type : LogEventType.values()) {
@@ -267,48 +254,35 @@ public class WalCompactionNotificationsTest extends GridCommonAbstractTest {
                     break;
                 }
             }
-            catch (Error | RuntimeException e) {
+            catch (AssertionError | RuntimeException e) {
                 errRef.compareAndSet(null, e);
             }
         }
 
         /**
-         * @throws Throwable If failed.
+         * @throws AssertionError If failed.
          */
-        public void checkErrors(boolean checkFullness) throws Throwable {
+        public void validateEvents() {
             Throwable err = errRef.get();
 
+            if (err instanceof AssertionError)
+                throw (AssertionError)err;
+
+            if (err instanceof RuntimeException)
+                throw (RuntimeException)err;
+
             if (err != null)
-                throw err;
+                fail("Unexpected exception [class=" + err.getClass().getName() + ", msg=" + err.getMessage() + "].");
 
-            IgniteWriteAheadLogManager walMgr = grid(0).context().cache().context().wal();
-
-            if (checkFullness) {
-                GridTestUtils.waitForCondition(() -> lastEvtIdx == walMgr.lastCompactedSegment(), 5_000);
-                assertEquals("eventIdx=" + lastEvtIdx + ", compactedIdx=" + walMgr.lastCompactedSegment(),
-                    lastEvtIdx, walMgr.lastCompactedSegment());
-            }
-
-            int lastCompactedIdx = (int)walMgr.lastCompactedSegment();
+            int lastCompactedIdx = (int)grid(0).context().cache().context().wal().lastCompactedSegment();
             BitSet enqHist = logEvtHist.get(LogEventType.ENQUEUE);
             BitSet cmprsHist = logEvtHist.get(LogEventType.COMPRESS);
             BitSet skipHist = logEvtHist.get(LogEventType.SKIP);
 
             for (int i = 0; i < lastCompactedIdx; i++) {
-                if (!checkFullness) {
-                    assertTrue("Missing index [idx=" + i +
-                            ", event=" + evtHistory.get(i) +
-                            ", msgEnqueue=" + enqHist.get(i) +
-                            ", msgEnqueue=" + enqHist.get(i) +
-                            ", msgSkip=" + skipHist.get(i) + ']',
-                        enqHist.get(i) == (cmprsHist.get(i) || skipHist.get(i)));
-
-                    continue;
-                }
-
-                assertTrue("Missing event [idx=" + i + ']', evtHistory.get(i));
+                assertTrue("Missing event [idx=" + i + ']', evtHistory.get(i) == cmprsHist.get(i));
                 assertTrue("Log compression start missing [idx=" + i + ']', enqHist.get(i));
-                assertTrue("Log compression end missing [idx=" + i + ']', cmprsHist.get(i));
+                assertTrue("Log compression end missing [idx=" + i + ']', cmprsHist.get(i) || skipHist.get(i));
             }
         }
     }
