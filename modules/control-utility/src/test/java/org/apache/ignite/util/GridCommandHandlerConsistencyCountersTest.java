@@ -222,7 +222,8 @@ public class GridCommandHandlerConsistencyCountersTest extends GridCommandHandle
             updateCnt++;
         }
 
-        if (historical) { // Trick to have historical rebalance on cluster recovery (decreases percent of updates in comparison to cache size).
+        // Trick to have historical rebalance on cluster recovery (decreases percent of updates in comparison to cache size).
+        if (historical) {
             stopAllGrids();
             startGrids(nodes);
         }
@@ -288,14 +289,16 @@ public class GridCommandHandlerConsistencyCountersTest extends GridCommandHandle
 
         ThreadLocalRandom rnd = ThreadLocalRandom.current();
 
-        // The main idea of this section is to generate missed counters updates, some of them should be on backups only, some at primary too.
+        // The main idea of this section is to generate missed counters updates, some of them should be on backups only,
+        // some at primary too.
         // This emulates the situation of reordering possible on real highloaded clusters.
         for (int it = 0; it < iters; it++) {
             boolean first = it == 0;
             boolean last = it == iters - 1;
 
             boolean globalBlock = it % 2 != 0 && // Global means all nodes (including primary) will miss the counters updates.
-                atomicityMode != ATOMIC; // Since atomic cache commits entry on primary before sending the request to backups, so all misses are only on backups.
+                // Since atomic cache commits entry on primary before sending the request to backups, so all misses are only on backups.
+                atomicityMode != ATOMIC;
 
             if (first || last) // Odd number to gain misses on backups only at first and last iteration.
                 // First iteration will guarantee rebalance for tx caches: Primary LWM > backup LWM.
@@ -538,7 +541,7 @@ public class GridCommandHandlerConsistencyCountersTest extends GridCommandHandle
      * @param missed Missed.
      * @param hwm Hwm.
      */
-    private void assertTxCounters(int lwm, List<String> missed, int hwm){
+    private void assertTxCounters(int lwm, List<String> missed, int hwm) {
         assertContains(log, testOut.toString(),
             "updateCntr=[lwm=" + lwm + ", missed=" + missed + ", hwm=" + hwm + "]");
     }
@@ -546,7 +549,7 @@ public class GridCommandHandlerConsistencyCountersTest extends GridCommandHandle
     /**
      * @param cnt Counter.
      */
-    private void assertAtomicCounters(int cnt){
+    private void assertAtomicCounters(int cnt) {
         assertContains(log, testOut.toString(), "updateCntr=" + cnt);
     }
 
