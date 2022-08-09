@@ -205,6 +205,8 @@ public class ClientCacheAffinityContext {
             affinityMapping = ClientCacheAffinityMapping.merge(oldMapping, newMapping);
 
         pendingCacheIds.removeAll(newMapping.cacheIds());
+        // Some caches can be requested, but not received from server (destoroyed on the server side).
+        pendingCacheIds.removeAll(rq0.caches);
 
         return true;
     }
