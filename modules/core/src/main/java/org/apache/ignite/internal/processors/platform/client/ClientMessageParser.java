@@ -549,7 +549,7 @@ public class ClientMessageParser implements ClientListenerMessageParser {
                 return new ClientCacheNodePartitionsRequest(reader);
 
             case OP_CACHE_PARTITIONS:
-                return new ClientCachePartitionsRequest(reader);
+                return new ClientCachePartitionsRequest(reader, protocolCtx);
 
             case OP_CACHE_GET_NAMES:
                 return new ClientCacheGetNamesRequest(reader);
