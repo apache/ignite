@@ -16,10 +16,10 @@
 */
 package org.apache.ignite.internal.processors.cache.persistence.db.wal;
 
-import java.util.BitSet;
 import java.util.Collections;
 import java.util.EnumMap;
 import java.util.concurrent.ThreadLocalRandom;
+import java.util.concurrent.atomic.AtomicIntegerArray;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.Consumer;
 import java.util.regex.Matcher;
@@ -48,8 +48,11 @@ import static org.apache.ignite.events.EventType.EVT_WAL_SEGMENT_COMPACTED;
  * WAL compaction notification test.
  */
 public class WalCompactionNotificationsTest extends GridCommonAbstractTest {
-    /** Wal segment size. */
+    /** WAL segment size. */
     private static final int SEGMENT_SIZE = 512 * 1024;
+
+    /** Maximum WAL segments count. */
+    private static final int MAX_WAL_SEGMENTS = 200;
 
     /** Listening logger. */
     private final ListeningTestLogger logger = new ListeningTestLogger(log);
@@ -178,18 +181,18 @@ public class WalCompactionNotificationsTest extends GridCommonAbstractTest {
         private final AtomicReference<Throwable> errRef = new AtomicReference<>();
 
         /** Events history. */
-        private final BitSet evtHistory = new BitSet();
+        private final AtomicIntegerArray evtHistory = new AtomicIntegerArray(MAX_WAL_SEGMENTS);
 
         /** Log notifications history. */
-        private final EnumMap<LogEventType, BitSet> logEvtHist = new EnumMap<>(LogEventType.class);
+        private final EnumMap<LogEventType, AtomicIntegerArray> logEvtHist = new EnumMap<>(LogEventType.class);
 
         /** Last compacted segment index. */
-        private long lastCompactedSegment;
+        private volatile long lastCompactedSegment;
 
         /** Constructor. */
         public EventListener() {
             for (LogEventType type : LogEventType.values())
-                logEvtHist.put(type, new BitSet());
+                logEvtHist.put(type, new AtomicIntegerArray(MAX_WAL_SEGMENTS));
         }
 
         /** {@inheritDoc} */
@@ -214,10 +217,9 @@ public class WalCompactionNotificationsTest extends GridCommonAbstractTest {
 
                 int walIdx = (int)compactEvt.getAbsWalSegmentIdx();
 
-                if (evtHistory.get(walIdx))
-                    fail("Duplicate event [idx=" + walIdx + ']');
+                assertEquals("Duplicate event [idx=" + walIdx + ']', 0, evtHistory.get(walIdx));
 
-                evtHistory.set(walIdx);
+                evtHistory.set(walIdx, 1);
 
                 return true;
             }
@@ -242,14 +244,17 @@ public class WalCompactionNotificationsTest extends GridCommonAbstractTest {
 
                     assertTrue("Negative index value in log [idx=" + idx + ", msg=" + str + ']', idx >= 0);
 
-                    BitSet hist = logEvtHist.get(type);
+                    AtomicIntegerArray hist = logEvtHist.get(type);
 
-                    if (type == LogEventType.ENQUEUE && logEvtHist.get(LogEventType.SKIP).get(idx))
+                    if (type == LogEventType.ENQUEUE && logEvtHist.get(LogEventType.SKIP).get(idx) == 1) {
+                        logEvtHist.get(LogEventType.SKIP).set(idx, 0);
+
                         break;
+                    }
 
-                    assertFalse("Duplicate index in log [idx=" + idx + ", msg=" + str + ']', hist.get(idx));
+                    assertEquals("Duplicate index in log [idx=" + idx + ", msg=" + str + ']', 0, hist.get(idx));
 
-                    hist.set(idx);
+                    hist.set(idx, 1);
 
                     break;
                 }
@@ -275,14 +280,18 @@ public class WalCompactionNotificationsTest extends GridCommonAbstractTest {
                 fail("Unexpected exception [class=" + err.getClass().getName() + ", msg=" + err.getMessage() + "].");
 
             int lastCompactedIdx = (int)grid(0).context().cache().context().wal().lastCompactedSegment();
-            BitSet enqHist = logEvtHist.get(LogEventType.ENQUEUE);
-            BitSet cmprsHist = logEvtHist.get(LogEventType.COMPRESS);
-            BitSet skipHist = logEvtHist.get(LogEventType.SKIP);
+
+            AtomicIntegerArray enqHist = logEvtHist.get(LogEventType.ENQUEUE);
+            AtomicIntegerArray cmprsHist = logEvtHist.get(LogEventType.COMPRESS);
+            AtomicIntegerArray skipHist = logEvtHist.get(LogEventType.SKIP);
 
             for (int i = 0; i < lastCompactedIdx; i++) {
-                assertTrue("Missing event [idx=" + i + ']', evtHistory.get(i) == cmprsHist.get(i));
-                assertTrue("Log compression start missing [idx=" + i + ']', enqHist.get(i));
-                assertTrue("Log compression end missing [idx=" + i + ']', cmprsHist.get(i) || skipHist.get(i));
+                assertTrue("Missing event " +
+                    "[idx=" + i +
+                    ", evt=" + evtHistory.get(i) +
+                    ", cmprs=" + cmprsHist.get(i) + ']', evtHistory.get(i) == cmprsHist.get(i));
+                assertTrue("Log compression start missing [idx=" + i + ']', enqHist.get(i) == 1);
+                assertTrue("Log compression end missing [idx=" + i + ']', cmprsHist.get(i) == 1 || skipHist.get(i) == 1);
             }
         }
     }
