@@ -92,6 +92,7 @@
         <profile>
             <id>all-scala</id><!-- used to update project versions and check all modules compilation -->
             <modules><!-- sorted alphabetically -->
+                <module>modules/spark-3.2</module>
                 <module>modules/visor-console-2.10</module>
                 <module>modules/visor-console</module>
                 <module>modules/visor-plugins</module>
@@ -517,6 +518,7 @@
             </activation>
 
             <modules>
+                <module>modules/spark-3.2</module>
                 <module>modules/visor-console</module>
                 <module>modules/visor-plugins</module>
             </modules>
