@@ -166,6 +166,7 @@ public class CacheAffinityChangeMessage implements DiscoveryCustomMessage {
         return true;
     }
 
+    /** {@inheritDoc} */
     @Override public boolean stopProcess() {
         return stopProc;
     }
