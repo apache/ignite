@@ -603,16 +603,13 @@ public abstract class IgniteTxAdapter extends GridMetadataAwareAdapter implement
             case RECOVERY_FINISH:
                 FinalizationStatus old = finalizing;
 
-                if (old == FinalizationStatus.USER_FINISH) {
+                if (old == FinalizationStatus.USER_FINISH)
                     res = false;
-                }
-                else if (old == FinalizationStatus.RECOVERY_FINISH) {
+                else if (old == FinalizationStatus.RECOVERY_FINISH)
                     res = true;
-                }
-                else {
+                else
                     res = FINALIZING_UPD.compareAndSet(this, old, status) ||
-                            finalizing == FinalizationStatus.RECOVERY_FINISH;
-                }
+                        finalizing == FinalizationStatus.RECOVERY_FINISH;
 
                 break;
 

@@ -98,7 +98,7 @@ public class TxRecoveryConcurrentOnPrimaryFailTest extends GridCommonAbstractTes
             try {
                 grid1BlockerBarrier.await();
             }
-            catch (InterruptedException | BrokenBarrierException e) {
+            catch (InterruptedException | BrokenBarrierException ignored) {
                 // Just supress.
             }
         };
