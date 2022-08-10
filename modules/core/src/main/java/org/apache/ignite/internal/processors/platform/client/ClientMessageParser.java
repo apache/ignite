@@ -61,6 +61,7 @@ import org.apache.ignite.internal.processors.platform.client.cache.ClientCachePu
 import org.apache.ignite.internal.processors.platform.client.cache.ClientCachePutIfAbsentRequest;
 import org.apache.ignite.internal.processors.platform.client.cache.ClientCachePutRequest;
 import org.apache.ignite.internal.processors.platform.client.cache.ClientCacheQueryContinuousRequest;
+import org.apache.ignite.internal.processors.platform.client.cache.ClientCacheQueryIndexRequest;
 import org.apache.ignite.internal.processors.platform.client.cache.ClientCacheQueryNextPageRequest;
 import org.apache.ignite.internal.processors.platform.client.cache.ClientCacheRemoveAllConflictRequest;
 import org.apache.ignite.internal.processors.platform.client.cache.ClientCacheRemoveAllRequest;
@@ -251,6 +252,12 @@ public class ClientMessageParser implements ClientListenerMessageParser {
 
     /** */
     public static final short OP_QUERY_CONTINUOUS_EVENT_NOTIFICATION = 2007;
+
+    /** */
+    private static final short OP_QUERY_INDEX = 2008;
+
+    /** */
+    private static final short OP_QUERY_INDEX_CURSOR_GET_PAGE = 2009;
 
     /* Binary metadata operations. */
     /** */
@@ -459,6 +466,8 @@ public class ClientMessageParser implements ClientListenerMessageParser {
             case OP_QUERY_SCAN_CURSOR_GET_PAGE:
 
             case OP_QUERY_SQL_CURSOR_GET_PAGE:
+
+            case OP_QUERY_INDEX_CURSOR_GET_PAGE:
                 return new ClientCacheQueryNextPageRequest(reader);
 
             case OP_RESOURCE_CLOSE:
@@ -574,6 +583,9 @@ public class ClientMessageParser implements ClientListenerMessageParser {
 
             case OP_QUERY_CONTINUOUS:
                 return new ClientCacheQueryContinuousRequest(reader);
+
+            case OP_QUERY_INDEX:
+                return new ClientCacheQueryIndexRequest(reader);
 
             case OP_TX_START:
                 return new ClientTxStartRequest(reader);

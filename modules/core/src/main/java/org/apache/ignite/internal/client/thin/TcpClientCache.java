@@ -33,6 +33,7 @@ import javax.cache.expiry.ExpiryPolicy;
 import org.apache.ignite.cache.CachePeekMode;
 import org.apache.ignite.cache.query.ContinuousQuery;
 import org.apache.ignite.cache.query.FieldsQueryCursor;
+import org.apache.ignite.cache.query.IndexQuery;
 import org.apache.ignite.cache.query.Query;
 import org.apache.ignite.cache.query.QueryCursor;
 import org.apache.ignite.cache.query.ScanQuery;
@@ -745,6 +746,8 @@ public class TcpClientCache<K, V> implements ClientCache<K, V> {
             res = (QueryCursor<R>)query((SqlFieldsQuery)qry);
         else if (qry instanceof ContinuousQuery)
             res = query((ContinuousQuery<K, V>)qry, null);
+        else if (qry instanceof IndexQuery)
+            res = indexQuery((IndexQuery)qry);
         else
             throw new IllegalArgumentException(
                 String.format("Query of type [%s] is not supported", qry.getClass().getSimpleName())
@@ -942,6 +945,42 @@ public class TcpClientCache<K, V> implements ClientCache<K, V> {
             marsh,
             cacheId,
             qry.getPartition() == null ? -1 : qry.getPartition()
+        ));
+    }
+
+    /** Handle index query. */
+    private QueryCursor<Cache.Entry<K, V>> indexQuery(IndexQuery<K, V> qry) {
+        Consumer<PayloadOutputChannel> qryWriter = payloadCh -> {
+            writeCacheInfo(payloadCh);
+
+            BinaryOutputStream out = payloadCh.out();
+
+            out.writeInt(qry.getPageSize());
+            out.writeBoolean(qry.isLocal());
+
+            serDes.writeObject(out, qry.getValueType());
+
+            serDes.writeObject(out, qry.getCriteria());
+
+            serDes.writeObject(out, qry.getIndexName());
+
+            if (qry.getFilter() == null)
+                out.writeByte(GridBinaryMarshaller.NULL);
+            else {
+                serDes.writeObject(out, qry.getFilter());
+                out.writeByte(JAVA_PLATFORM);
+            }
+        };
+
+        return new ClientQueryCursor<>(new ClientQueryPager<>(
+            ch,
+            ClientOperation.QUERY_INDEX,
+            ClientOperation.QUERY_INDEX_CURSOR_GET_PAGE,
+            qryWriter,
+            keepBinary,
+            marsh,
+            cacheId,
+            -1
         ));
     }
 

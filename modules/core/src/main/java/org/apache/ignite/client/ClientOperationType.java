@@ -167,6 +167,11 @@ public enum ClientOperationType {
     QUERY_CONTINUOUS,
 
     /**
+     * Index query ({@link ClientCache#query(Query)}).
+     */
+    QUERY_INDEX,
+
+    /**
      * Start transaction ({@link ClientTransactions#txStart}).
      */
     TRANSACTION_START,
