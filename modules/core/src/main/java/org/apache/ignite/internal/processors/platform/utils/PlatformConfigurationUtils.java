@@ -115,6 +115,7 @@ import org.apache.ignite.ssl.SslContextFactory;
 import org.apache.ignite.transactions.TransactionConcurrency;
 import org.apache.ignite.transactions.TransactionIsolation;
 import org.apache.ignite.util.AttributeNodeFilter;
+import static java.util.Optional.ofNullable;
 
 /**
  * Configuration utils.
@@ -1105,7 +1106,7 @@ public class PlatformConfigurationUtils {
 
         writeEnumInt(writer, ccfg.getAtomicityMode(), CacheConfiguration.DFLT_CACHE_ATOMICITY_MODE);
         writer.writeInt(ccfg.getBackups());
-        writeEnumInt(writer, ccfg.getCacheMode(), CacheConfiguration.DFLT_CACHE_MODE);
+        writer.writeInt(ofNullable(ccfg.getCacheMode()).orElse(CacheConfiguration.DFLT_CACHE_MODE).code());
         writer.writeBoolean(ccfg.isCopyOnRead());
         writer.writeBoolean(ccfg.isEagerTtl());
         writer.writeBoolean(ccfg.isInvalidate());
@@ -1490,7 +1491,7 @@ public class PlatformConfigurationUtils {
 
             w.writeInt(atomic.getAtomicSequenceReserveSize());
             w.writeInt(atomic.getBackups());
-            writeEnumInt(w, atomic.getCacheMode(), AtomicConfiguration.DFLT_CACHE_MODE);
+            w.writeInt(ofNullable(atomic.getCacheMode()).orElse(AtomicConfiguration.DFLT_CACHE_MODE).code());
         }
         else
             w.writeBoolean(false);

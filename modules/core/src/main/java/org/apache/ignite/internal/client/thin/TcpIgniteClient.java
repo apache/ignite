@@ -362,7 +362,7 @@ public class TcpIgniteClient implements IgniteClient {
                 if (cfg != null) {
                     out.out().writeBoolean(true);
                     out.out().writeInt(cfg.getAtomicSequenceReserveSize());
-                    out.out().writeByte((byte)cfg.getCacheMode().ordinal());
+                    out.out().writeByte(cfg.getCacheMode().code());
                     out.out().writeInt(cfg.getBackups());
                     writeString(cfg.getGroupName(), out.out());
                 }
@@ -390,7 +390,7 @@ public class TcpIgniteClient implements IgniteClient {
             if (cfg != null) {
                 out.out().writeBoolean(true);
                 out.out().writeByte((byte)cfg.getAtomicityMode().ordinal());
-                out.out().writeByte((byte)cfg.getCacheMode().ordinal());
+                out.out().writeByte(cfg.getCacheMode().code());
                 out.out().writeInt(cfg.getBackups());
                 writeString(cfg.getGroupName(), out.out());
                 out.out().writeBoolean(cfg.isColocated());

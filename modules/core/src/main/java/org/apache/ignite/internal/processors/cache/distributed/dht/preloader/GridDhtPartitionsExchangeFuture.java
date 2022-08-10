@@ -2121,7 +2121,7 @@ public class GridDhtPartitionsExchangeFuture extends GridDhtTopologyFutureAdapte
 
     /**
      * @param grpId Cache group ID to check.
-     * @return {@code True} if cache group us stopping by this exchange.
+     * @return {@code True} if cache group is stopping by this exchange.
      */
     private boolean cacheGroupStopping(int grpId) {
         return exchActions != null && exchActions.cacheGroupStopping(grpId);
@@ -4149,9 +4149,7 @@ public class GridDhtPartitionsExchangeFuture extends GridDhtTopologyFutureAdapte
     }
 
     /**
-     * Collects non local cache groups.
-     *
-     * @return Collection of non local cache groups.
+     * @return Collection of cache groups that are not being stopped by this exchange.
      */
     private List<CacheGroupContext> nonStoppingCacheGroups() {
         return cctx.cache().cacheGroups().stream()
