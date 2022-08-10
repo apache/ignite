@@ -229,7 +229,7 @@ public class CacheAffinitySharedManager<K, V> extends GridCacheSharedManagerAdap
 
         // Skip message if affinity was already recalculated.
         // Client node should just accept the flag from the mutated message.
-        boolean exchangeNeeded = (isClient)? msg.exchangeNeeded() :
+        boolean exchangeNeeded = (isClient) ? msg.exchangeNeeded() :
             lastAffVer == null || lastAffVer.equals(msg.topologyVersion());
 
         msg.exchangeNeeded(exchangeNeeded);
