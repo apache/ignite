@@ -26,7 +26,7 @@ namespace Apache.Ignite.Core.Cache.Configuration
         /// Specifies fully replicated cache behavior. In this mode all the keys are distributed
         /// to all participating nodes. 
         /// </summary>
-        Replicated,
+        Replicated = 1,
 
         /// <summary>
         /// Specifies partitioned cache behaviour. In this mode the overall
@@ -35,6 +35,6 @@ namespace Apache.Ignite.Core.Cache.Configuration
         /// <para />
         /// Note that partitioned cache is always fronted by local 'near' cache which stores most recent data. 
         /// </summary>
-        Partitioned
+        Partitioned = 2
     }
 }
