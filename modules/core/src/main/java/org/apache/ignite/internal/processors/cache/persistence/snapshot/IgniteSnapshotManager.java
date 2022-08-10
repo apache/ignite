@@ -2708,7 +2708,6 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
          * @return The set of currently scheduled tasks, some of them may be already completed.
          */
         private Set<RemoteSnapshotFilesRecevier> activeTasks() {
-
             Set<RemoteSnapshotFilesRecevier> futs = new HashSet<>(queue);
 
             RemoteSnapshotFilesRecevier active0 = active;

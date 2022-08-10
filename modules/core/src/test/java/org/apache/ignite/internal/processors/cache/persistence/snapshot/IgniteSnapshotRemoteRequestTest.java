@@ -348,7 +348,7 @@ public class IgniteSnapshotRemoteRequestTest extends IgniteClusterSnapshotRestor
         Collection<IgniteEx> rcvrs = F.viewReadOnly(G.allGrids(), srv -> (IgniteEx)srv,
             srv -> !F.eq(sndr.localNode(), srv.cluster().localNode()));
 
-        GridCompoundFuture<Void, Void> futs =  new GridCompoundFuture<>();
+        GridCompoundFuture<Void, Void> futs = new GridCompoundFuture<>();
 
         for (IgniteEx rcv : rcvrs) {
             Map<Integer, Set<Integer>> expParts = owningParts(rcv, CU.cacheId(DEFAULT_CACHE_NAME), sndNode);
@@ -362,8 +362,7 @@ public class IgniteSnapshotRemoteRequestTest extends IgniteClusterSnapshotRestor
             futs.add(fut);
         }
 
-        futs.markInitialized();
-        futs.get(getTestTimeout());
+        futs.markInitialized().get(getTestTimeout());
     }
 
     /**
