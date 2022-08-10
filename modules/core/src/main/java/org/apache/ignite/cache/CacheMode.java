@@ -17,6 +17,7 @@
 
 package org.apache.ignite.cache;
 
+import java.util.stream.Stream;
 import org.apache.ignite.cache.affinity.AffinityFunction;
 import org.apache.ignite.configuration.NearCacheConfiguration;
 import org.jetbrains.annotations.Nullable;
@@ -32,7 +33,7 @@ public enum CacheMode {
      * over subset of nodes for any given key via {@link AffinityFunction}
      * configuration.
      */
-    REPLICATED,
+    REPLICATED((byte)1),
 
     /**
      * Specifies partitioned cache behaviour. In this mode the overall
@@ -46,18 +47,65 @@ public enum CacheMode {
      * can configure the size of near cache via {@link NearCacheConfiguration#getNearEvictionPolicyFactory()}
      * configuration property.
      */
-    PARTITIONED;
+    PARTITIONED((byte)2);
+
+    /** Cached enumerated values by their codes. */
+    private static final CacheMode[] BY_CODE;
 
     /** Enumerated values. */
     private static final CacheMode[] VALS = values();
+
+    static {
+        int max = Stream.of(VALS)
+            .mapToInt(e -> e.code)
+            .max()
+            .orElseThrow(RuntimeException::new);
+
+        BY_CODE = new CacheMode[max];
+
+        for (CacheMode e : VALS) {
+            BY_CODE[e.code] = e;
+        }
+    }
+
+    /** Cache mode code. */
+    private final byte code;
+
+    /**
+     * @param code Cache mode code.
+     */
+    CacheMode(byte code) {
+        this.code = code;
+    }
+
+    /**
+     * @return Cache mode code.
+     */
+    public byte code() {
+        return code;
+    }
 
     /**
      * Efficiently gets enumerated value from its ordinal.
      *
      * @param ord Ordinal value.
      * @return Enumerated value or {@code null} if ordinal out of range.
+     *
+     * @deprecated The cache mode code is changed since 2.14 and the code based on the enumeration order may lead to an incorrect result.
+     * Use the {@link CacheMode#fromCode(int)} instead.
      */
+    @Deprecated
     @Nullable public static CacheMode fromOrdinal(int ord) {
         return ord >= 0 && ord < VALS.length ? VALS[ord] : null;
+    }
+
+    /**
+     * Efficiently gets enumerated value from its code.
+     *
+     * @param code Code.
+     * @return Enumerated value or {@code null} if an out of range.
+     */
+    @Nullable public static CacheMode fromCode(int code) {
+        return code >= 0 && code < BY_CODE.length ? BY_CODE[code] : null;
     }
 }

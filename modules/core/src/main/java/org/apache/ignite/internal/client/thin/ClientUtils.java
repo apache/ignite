@@ -49,7 +49,6 @@ import org.apache.ignite.cache.QueryIndex;
 import org.apache.ignite.cache.QueryIndexType;
 import org.apache.ignite.cache.query.SqlFieldsQuery;
 import org.apache.ignite.client.ClientCacheConfiguration;
-import org.apache.ignite.client.ClientException;
 import org.apache.ignite.internal.binary.BinaryContext;
 import org.apache.ignite.internal.binary.BinaryFieldMetadata;
 import org.apache.ignite.internal.binary.BinaryMetadata;
@@ -68,7 +67,6 @@ import org.apache.ignite.internal.processors.platform.cache.expiry.PlatformExpir
 import org.apache.ignite.internal.util.MutableSingletonList;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.jetbrains.annotations.Nullable;
-
 import static org.apache.ignite.internal.client.thin.ProtocolVersionFeature.EXPIRY_POLICY;
 import static org.apache.ignite.internal.client.thin.ProtocolVersionFeature.QUERY_ENTITY_PRECISION_AND_SCALE;
 import static org.apache.ignite.internal.processors.platform.cache.expiry.PlatformExpiryPolicy.convertDuration;
@@ -247,36 +245,6 @@ public final class ClientUtils {
         }
     }
 
-    /**
-     * @param mode Integer mode representation.
-     * @return Cache mode.
-     */
-    public static CacheMode cacheModeFromInt(int mode) {
-        switch (mode) {
-            case 1:
-                return CacheMode.REPLICATED;
-            case 2:
-                return CacheMode.PARTITIONED;
-            default:
-                throw new ClientException("Unsupported cache mode: " + mode);
-        }
-    }
-
-    /**
-     * @param mode Cache mode.
-     * @return Integer mode representation.
-     */
-    public static int cacheModeToInt(CacheMode mode) {
-        switch (mode) {
-            case REPLICATED:
-                return 1;
-            case PARTITIONED:
-                return 2;
-            default:
-                throw new ClientException("Unsupported cache mode: " + mode);
-        }
-    }
-
     /** Serialize configuration to stream. */
     void cacheConfiguration(ClientCacheConfiguration cfg, BinaryOutputStream out, ProtocolContext protocolCtx) {
         try (BinaryRawWriterEx writer = new BinaryWriterExImpl(marsh.context(), out, null, null)) {
@@ -297,7 +265,7 @@ public final class ClientUtils {
 
             itemWriter.accept(CfgItem.NAME, w -> w.writeString(cfg.getName()));
             // The cache mode LOCAL has been removed from the enum order list.
-            itemWriter.accept(CfgItem.CACHE_MODE, w -> w.writeInt(cacheModeToInt(cfg.getCacheMode())));
+            itemWriter.accept(CfgItem.CACHE_MODE, w -> w.writeInt(cfg.getCacheMode().code()));
             itemWriter.accept(CfgItem.ATOMICITY_MODE, w -> w.writeInt(cfg.getAtomicityMode().ordinal()));
             itemWriter.accept(CfgItem.BACKUPS, w -> w.writeInt(cfg.getBackups()));
             itemWriter.accept(CfgItem.WRITE_SYNC_MODE, w -> w.writeInt(cfg.getWriteSynchronizationMode().ordinal()));
@@ -420,7 +388,7 @@ public final class ClientUtils {
             return new ClientCacheConfiguration().setName("TBD") // cache name is to be assigned later
                 .setAtomicityMode(CacheAtomicityMode.fromOrdinal(reader.readInt()))
                 .setBackups(reader.readInt())
-                .setCacheMode(cacheModeFromInt(reader.readInt()))
+                .setCacheMode(CacheMode.fromCode(reader.readInt()))
                 .setCopyOnRead(reader.readBoolean())
                 .setDataRegionName(reader.readString())
                 .setEagerTtl(reader.readBoolean())

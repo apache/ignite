@@ -23,7 +23,6 @@ import java.io.ObjectOutput;
 import org.apache.ignite.cache.CacheMode;
 import org.apache.ignite.configuration.AtomicConfiguration;
 import org.apache.ignite.internal.util.typedef.internal.S;
-import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.internal.visor.VisorDataTransferObject;
 
 /**
@@ -84,14 +83,14 @@ public class VisorAtomicConfiguration extends VisorDataTransferObject {
     /** {@inheritDoc} */
     @Override protected void writeExternalData(ObjectOutput out) throws IOException {
         out.writeInt(seqReserveSize);
-        U.writeEnum(out, cacheMode);
+        out.writeByte(cacheMode.code());
         out.writeInt(backups);
     }
 
     /** {@inheritDoc} */
     @Override protected void readExternalData(byte protoVer, ObjectInput in) throws IOException, ClassNotFoundException {
         seqReserveSize = in.readInt();
-        cacheMode = CacheMode.fromOrdinal(in.readByte());
+        cacheMode = CacheMode.fromCode(in.readByte());
         backups = in.readInt();
     }
 

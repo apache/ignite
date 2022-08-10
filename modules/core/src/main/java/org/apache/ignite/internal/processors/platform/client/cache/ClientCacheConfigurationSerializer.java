@@ -27,17 +27,18 @@ import java.util.Set;
 import org.apache.ignite.binary.BinaryRawReader;
 import org.apache.ignite.cache.CacheAtomicityMode;
 import org.apache.ignite.cache.CacheKeyConfiguration;
+import org.apache.ignite.cache.CacheMode;
 import org.apache.ignite.cache.CacheRebalanceMode;
 import org.apache.ignite.cache.CacheWriteSynchronizationMode;
 import org.apache.ignite.cache.PartitionLossPolicy;
 import org.apache.ignite.cache.QueryEntity;
 import org.apache.ignite.cache.QueryIndex;
+import org.apache.ignite.client.ClientException;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.internal.binary.BinaryRawWriterEx;
 import org.apache.ignite.internal.processors.platform.client.ClientProtocolContext;
 import org.apache.ignite.internal.processors.platform.client.ClientProtocolVersionFeature;
 import org.apache.ignite.internal.processors.platform.utils.PlatformConfigurationUtils;
-import org.apache.ignite.internal.processors.platform.utils.PlatformUtils;
 import static java.util.Optional.ofNullable;
 import static org.apache.ignite.internal.processors.platform.client.ClientProtocolVersionFeature.QUERY_ENTITY_PRECISION_AND_SCALE;
 
@@ -155,7 +156,7 @@ public class ClientCacheConfigurationSerializer {
                 CacheConfiguration.DFLT_CACHE_ATOMICITY_MODE);
 
         writer.writeInt(cfg.getBackups());
-        writer.writeInt(PlatformUtils.cacheModeToInt(ofNullable(cfg.getCacheMode()).orElse(CacheConfiguration.DFLT_CACHE_MODE)));
+        writer.writeInt(ofNullable(cfg.getCacheMode()).orElse(CacheConfiguration.DFLT_CACHE_MODE).code());
         writer.writeBoolean(cfg.isCopyOnRead());
         writer.writeString(cfg.getDataRegionName());
         writer.writeBoolean(cfg.isEagerTtl());
@@ -313,9 +314,7 @@ public class ClientCacheConfigurationSerializer {
                     break;
 
                 case CACHE_MODE:
-                    // Cache mode LOCAL was removed since 2.14, so the enum ordinal has shifted.
-                    cfg.setCacheMode(PlatformUtils.cacheModeFromInt(reader.readInt()));
-
+                    cfg.setCacheMode(CacheMode.fromCode(reader.readInt()));
                     break;
 
                 case COPY_ON_READ:
@@ -450,6 +449,9 @@ public class ClientCacheConfigurationSerializer {
                     break;
             }
         }
+
+        if (cfg.getCacheMode() == null)
+            throw new ClientException("Unsupported cache mode");
 
         return cfg;
     }

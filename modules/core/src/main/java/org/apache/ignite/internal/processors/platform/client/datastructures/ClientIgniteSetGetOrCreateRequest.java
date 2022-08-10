@@ -51,7 +51,7 @@ public class ClientIgniteSetGetOrCreateRequest extends ClientRequest {
         collectionConfiguration = create
                 ? new CollectionConfiguration()
                 .setAtomicityMode(CacheAtomicityMode.fromOrdinal(reader.readByte()))
-                .setCacheMode(CacheMode.fromOrdinal(reader.readByte()))
+                .setCacheMode(CacheMode.fromCode(reader.readByte()))
                 .setBackups(reader.readInt())
                 .setGroupName(reader.readString())
                 .setCollocated(reader.readBoolean())

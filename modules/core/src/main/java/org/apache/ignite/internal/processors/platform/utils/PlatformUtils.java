@@ -41,9 +41,7 @@ import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.binary.BinaryObject;
 import org.apache.ignite.binary.BinaryRawReader;
 import org.apache.ignite.binary.BinaryRawWriter;
-import org.apache.ignite.cache.CacheMode;
 import org.apache.ignite.cache.CachePeekMode;
-import org.apache.ignite.client.ClientException;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.GridKernalContext;
 import org.apache.ignite.internal.IgniteKernal;
@@ -122,36 +120,6 @@ public class PlatformUtils {
             CACHE_PEEK_MODES = new CachePeekMode[len][];
 
             CACHE_PEEK_MODES[0] = new CachePeekMode[0];
-        }
-    }
-
-    /**
-     * @param mode Integer mode representation.
-     * @return Cache mode.
-     */
-    public static CacheMode cacheModeFromInt(int mode) {
-        switch (mode) {
-            case 1:
-                return CacheMode.REPLICATED;
-            case 2:
-                return CacheMode.PARTITIONED;
-            default:
-                throw new ClientException("Unsupported cache mode: " + mode);
-        }
-    }
-
-    /**
-     * @param mode Cache mode.
-     * @return Integer mode representation.
-     */
-    public static int cacheModeToInt(CacheMode mode) {
-        switch (mode) {
-            case REPLICATED:
-                return 1;
-            case PARTITIONED:
-                return 2;
-            default:
-                throw new ClientException("Unsupported cache mode: " + mode);
         }
     }
 

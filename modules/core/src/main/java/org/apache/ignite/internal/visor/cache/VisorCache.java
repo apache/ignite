@@ -299,7 +299,7 @@ public class VisorCache extends VisorDataTransferObject {
     @Override protected void writeExternalData(ObjectOutput out) throws IOException {
         U.writeString(out, name);
         U.writeIgniteUuid(out, dynamicDeploymentId);
-        U.writeEnum(out, mode);
+        out.writeByte(mode.code());
         out.writeLong(memorySize);
         out.writeLong(indexesSize);
         out.writeLong(size);
@@ -317,7 +317,7 @@ public class VisorCache extends VisorDataTransferObject {
     @Override protected void readExternalData(byte protoVer, ObjectInput in) throws IOException, ClassNotFoundException {
         name = U.readString(in);
         dynamicDeploymentId = U.readIgniteUuid(in);
-        mode = CacheMode.fromOrdinal(in.readByte());
+        mode = CacheMode.fromCode(in.readByte());
         memorySize = in.readLong();
         indexesSize = in.readLong();
         size = in.readLong();

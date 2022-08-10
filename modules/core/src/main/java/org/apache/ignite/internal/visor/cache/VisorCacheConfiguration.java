@@ -36,7 +36,6 @@ import org.apache.ignite.internal.visor.query.VisorQueryConfiguration;
 import org.apache.ignite.internal.visor.query.VisorQueryEntity;
 import org.apache.ignite.lang.IgniteUuid;
 import org.jetbrains.annotations.Nullable;
-
 import static org.apache.ignite.internal.visor.util.VisorTaskUtils.compactClass;
 import static org.apache.ignite.internal.visor.util.VisorTaskUtils.compactIterable;
 
@@ -551,7 +550,7 @@ public class VisorCacheConfiguration extends VisorDataTransferObject {
     @Override protected void writeExternalData(ObjectOutput out) throws IOException {
         U.writeString(out, name);
         U.writeString(out, grpName);
-        U.writeEnum(out, mode);
+        out.writeByte(mode.code());
         U.writeEnum(out, atomicityMode);
         out.writeBoolean(eagerTtl);
         U.writeEnum(out, writeSynchronizationMode);
@@ -599,7 +598,7 @@ public class VisorCacheConfiguration extends VisorDataTransferObject {
     @Override protected void readExternalData(byte protoVer, ObjectInput in) throws IOException, ClassNotFoundException {
         name = U.readString(in);
         grpName = U.readString(in);
-        mode = CacheMode.fromOrdinal(in.readByte());
+        mode = CacheMode.fromCode(in.readByte());
         atomicityMode = CacheAtomicityMode.fromOrdinal(in.readByte());
         eagerTtl = in.readBoolean();
         writeSynchronizationMode = CacheWriteSynchronizationMode.fromOrdinal(in.readByte());

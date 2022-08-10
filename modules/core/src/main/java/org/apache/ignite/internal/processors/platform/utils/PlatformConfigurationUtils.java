@@ -178,7 +178,7 @@ public class PlatformConfigurationUtils {
 
         ccfg.setAtomicityMode(CacheAtomicityMode.fromOrdinal(in.readInt()));
         ccfg.setBackups(in.readInt());
-        ccfg.setCacheMode(CacheMode.fromOrdinal(in.readInt()));
+        ccfg.setCacheMode(CacheMode.fromCode(in.readInt()));
         ccfg.setCopyOnRead(in.readBoolean());
         ccfg.setEagerTtl(in.readBoolean());
         ccfg.setInvalidate(in.readBoolean());
@@ -872,7 +872,7 @@ public class PlatformConfigurationUtils {
 
             atomic.setAtomicSequenceReserveSize(in.readInt());
             atomic.setBackups(in.readInt());
-            atomic.setCacheMode(CacheMode.fromOrdinal(in.readInt()));
+            atomic.setCacheMode(CacheMode.fromCode(in.readInt()));
 
             cfg.setAtomicConfiguration(atomic);
         }
