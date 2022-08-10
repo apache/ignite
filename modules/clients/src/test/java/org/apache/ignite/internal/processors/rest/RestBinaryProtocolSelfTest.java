@@ -43,8 +43,6 @@ import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.jetbrains.annotations.NotNull;
 import org.junit.Test;
-import static org.apache.ignite.cache.CacheMode.REPLICATED;
-import static org.apache.ignite.cache.CacheWriteSynchronizationMode.FULL_SYNC;
 
 /**
  * TCP protocol test.
@@ -103,17 +101,11 @@ public class RestBinaryProtocolSelfTest extends GridCommonAbstractTest {
     /**
      * @param cacheName Cache name.
      * @return Cache configuration.
-     * @throws Exception In case of error.
      */
-    private CacheConfiguration cacheConfiguration(@NotNull String cacheName) throws Exception {
-        CacheConfiguration cfg = defaultCacheConfiguration();
-
-        cfg.setCacheMode(REPLICATED);
-        cfg.setName(cacheName);
-        cfg.setWriteSynchronizationMode(FULL_SYNC);
-        cfg.setStatisticsEnabled(true);
-
-        return cfg;
+    private static CacheConfiguration<?, ?> cacheConfiguration(@NotNull String cacheName) {
+        return defaultCacheConfiguration()
+            .setName(cacheName)
+            .setStatisticsEnabled(true);
     }
 
     /**

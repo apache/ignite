@@ -24,7 +24,6 @@ import java.util.stream.IntStream;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCache;
 import org.apache.ignite.IgniteDataStreamer;
-import org.apache.ignite.cache.CacheMode;
 import org.apache.ignite.cache.affinity.rendezvous.RendezvousAffinityFunction;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.DataRegionConfiguration;
@@ -76,6 +75,7 @@ public abstract class IgnitePdsDestroyCacheAbstractTest extends GridCommonAbstra
 
     /**
      * @param ignite Ignite.
+     * @param singlePart {@code True} to load data to single partition.
      */
     protected void loadCaches(Ignite ignite, boolean singlePart) {
         final List<Integer> keys;
@@ -188,7 +188,7 @@ public abstract class IgnitePdsDestroyCacheAbstractTest extends GridCommonAbstra
         List<CacheConfiguration> ccfg = new ArrayList<>(CACHES);
 
         for (int i = 0; i < CACHES; i++)
-            ccfg.add(new CacheConfiguration<>(cacheName(i)).setCacheMode(CacheMode.PARTITIONED)
+            ccfg.add(new CacheConfiguration<>(cacheName(i))
                 .setGroupName(i % 2 == 0 ? "grp-even" : "grp-odd")
                 .setBackups(1)
                 .setAffinity(new RendezvousAffinityFunction(false, 32)));
