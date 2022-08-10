@@ -135,6 +135,8 @@
         <scala210.library.version>2.10.7</scala210.library.version>
         <scala.library.version>2.11.12</scala.library.version>
         <scala.test.version>2.2.6</scala.test.version>
+        <scala212.library.version>2.12.16</scala212.library.version>
+        <scala32.test.version>3.2.12</scala32.test.version>
         <slf4j.version>1.7.33</slf4j.version>
         <slf4j16.version>1.6.4</slf4j16.version>
         <snappy.version>1.1.7.2</snappy.version>
@@ -151,6 +153,10 @@
         <zstd.version>1.3.7-2</zstd.version>
         <opencensus.version>0.22.0</opencensus.version>
         <commons.lang3.version>3.9</commons.lang3.version>
+        <!--Spark 3.2 version support -->
+        <spark32.hadoop.version>3.3.4</spark32.hadoop.version>
+        <spark32.version>3.2.1</spark32.version>
+
         <ignite-kafka-ext.version>1.0.0</ignite-kafka-ext.version>
 
         <!-- Maven plugins versions -->
