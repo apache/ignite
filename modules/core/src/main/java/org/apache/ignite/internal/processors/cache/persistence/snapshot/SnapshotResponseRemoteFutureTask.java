@@ -18,13 +18,14 @@
 package org.apache.ignite.internal.processors.cache.persistence.snapshot;
 
 import java.io.File;
-import java.util.ArrayList;
-import java.util.Collections;
+import java.util.Collection;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.UUID;
 import java.util.concurrent.CompletableFuture;
+import java.util.function.Function;
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.internal.processors.cache.GridCacheSharedContext;
 import org.apache.ignite.internal.processors.cache.persistence.file.FileIOFactory;
@@ -50,6 +51,7 @@ public class SnapshotResponseRemoteFutureTask extends AbstractSnapshotFutureTask
      * @param tmpWorkDir Working directory for intermediate snapshot results.
      * @param ioFactory Factory to working with snapshot files.
      * @param snpSndr Factory which produces snapshot receiver instance.
+     * @param parts Partition to be processed.
      */
     public SnapshotResponseRemoteFutureTask(
         GridCacheSharedContext<?, ?> cctx,
@@ -72,70 +74,65 @@ public class SnapshotResponseRemoteFutureTask extends AbstractSnapshotFutureTask
             return false;
 
         try {
-            List<GroupPartitionId> handled = new ArrayList<>();
+            List<SnapshotMetadata> metas = cctx.snapshotMgr().readSnapshotMetadatas(snpName, snpPath);
 
-            for (Map.Entry<Integer, Set<Integer>> e : parts.entrySet()) {
-                ofNullable(e.getValue()).orElse(Collections.emptySet())
-                    .forEach(p -> handled.add(new GroupPartitionId(e.getKey(), p)));
+            Function<GroupPartitionId, SnapshotMetadata> findMeta = pair -> {
+                for (SnapshotMetadata meta : metas) {
+                    Map<Integer, Set<Integer>> parts0 = meta.partitions();
+
+                    if (F.isEmpty(parts0))
+                        continue;
+
+                    Set<Integer> locParts = parts0.get(pair.getGroupId());
+
+                    if (locParts != null && locParts.contains(pair.getPartitionId()))
+                        return meta;
+                }
+
+                return null;
+            };
+
+            Map<GroupPartitionId, SnapshotMetadata> partsToSend = new HashMap<>();
+
+            for (Map.Entry<Integer, Set<Integer>> e : parts.entrySet())
+                e.getValue().forEach(p -> partsToSend.computeIfAbsent(new GroupPartitionId(e.getKey(), p), findMeta));
+
+            if (partsToSend.containsValue(null)) {
+                Collection<GroupPartitionId> missed = F.viewReadOnly(partsToSend.entrySet(), Map.Entry::getKey,
+                    e -> e.getValue() == null);
+
+                err.compareAndSet(null, new IgniteException("Snapshot partitions missed on local node " +
+                    "[snpName=" + snpName + ", missed=" + missed + ']'));
             }
 
-            snpSndr.init(handled.size());
+            snpSndr.init(partsToSend.size());
 
             File snpDir = cctx.snapshotMgr().snapshotLocalDir(snpName, snpPath);
 
-            List<CompletableFuture<Void>> futs = new ArrayList<>();
-            List<SnapshotMetadata> metas = cctx.snapshotMgr().readSnapshotMetadatas(snpName, snpPath);
+            CompletableFuture.runAsync(() -> partsToSend.forEach((gp, meta) -> {
+                if (err.get() != null)
+                    return;
 
-            for (SnapshotMetadata meta : metas) {
-                Map<Integer, Set<Integer>> parts0 = meta.partitions();
+                File cacheDir = cacheDirectory(new File(snpDir, databaseRelativePath(meta.folderName())),
+                    gp.getGroupId());
 
-                if (F.isEmpty(parts0))
-                    continue;
+                if (cacheDir == null) {
+                    throw new IgniteException("Cache directory not found [snpName=" + snpName + ", meta=" + meta +
+                        ", pair=" + gp + ']');
+                }
 
-                handled.removeIf(gp -> {
-                    if (ofNullable(parts0.get(gp.getGroupId()))
-                        .orElse(Collections.emptySet())
-                        .contains(gp.getPartitionId())
-                    ) {
-                        futs.add(CompletableFuture.runAsync(() -> {
-                            if (err.get() != null)
-                                return;
+                File snpPart = getPartitionFile(cacheDir.getParentFile(), cacheDir.getName(), gp.getPartitionId());
 
-                            File cacheDir = cacheDirectory(new File(snpDir, databaseRelativePath(meta.folderName())),
-                                gp.getGroupId());
+                if (!snpPart.exists()) {
+                    throw new IgniteException("Snapshot partition file not found [cacheDir=" + cacheDir +
+                        ", pair=" + gp + ']');
+                }
 
-                            if (cacheDir == null) {
-                                throw new IgniteException("Cache directory not found [snpName=" + snpName + ", meta=" + meta +
-                                    ", pair=" + gp + ']');
-                            }
-
-                            File snpPart = getPartitionFile(cacheDir.getParentFile(), cacheDir.getName(), gp.getPartitionId());
-
-                            if (!snpPart.exists()) {
-                                throw new IgniteException("Snapshot partition file not found [cacheDir=" + cacheDir +
-                                    ", pair=" + gp + ']');
-                            }
-
-                            snpSndr.sendPart(snpPart, cacheDir.getName(), gp, snpPart.length());
-                        }, snpSndr.executor())
-                            .whenComplete((r, t) -> err.compareAndSet(null, t)));
-
-                        return true;
-                    }
-
-                    return false;
-                });
-            }
-
-            if (!handled.isEmpty()) {
-                err.compareAndSet(null, new IgniteException("Snapshot partitions missed on local node [snpName=" + snpName +
-                    ", missed=" + handled + ']'));
-            }
-
-            int size = futs.size();
-
-            CompletableFuture.allOf(futs.toArray(new CompletableFuture[size]))
+                snpSndr.sendPart(snpPart, cacheDir.getName(), gp, snpPart.length());
+            }), snpSndr.executor())
                 .whenComplete((r, t) -> {
+                    err.compareAndSet(null, t);
+
                     Throwable th = ofNullable(err.get()).orElse(t);
 
                     if (th == null && log.isInfoEnabled()) {

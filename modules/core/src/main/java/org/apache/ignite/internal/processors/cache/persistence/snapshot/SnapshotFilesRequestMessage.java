@@ -26,6 +26,7 @@ import java.util.Map;
 import java.util.Set;
 import java.util.stream.Collectors;
 import org.apache.ignite.internal.GridDirectMap;
+import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.plugin.extensions.communication.MessageCollectionItemType;
@@ -91,9 +92,10 @@ public class SnapshotFilesRequestMessage extends AbstractSnapshotMessage {
         Map<Integer, Set<Integer>> res = new HashMap<>();
 
         for (Map.Entry<Integer, int[]> e : parts.entrySet()) {
-            res.put(e.getKey(), e.getValue().length == 0 ? null : Arrays.stream(e.getValue())
-                .boxed()
-                .collect(Collectors.toSet()));
+            if (F.isEmpty(e.getValue()))
+                continue;
+
+            res.put(e.getKey(), Arrays.stream(e.getValue()).boxed().collect(Collectors.toSet()));
         }
 
         return res;

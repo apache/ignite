@@ -35,7 +35,6 @@ import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.nio.file.SimpleFileVisitor;
 import java.nio.file.attribute.BasicFileAttributes;
-import java.util.ArrayDeque;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.BitSet;
@@ -2930,70 +2929,6 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
     }
 
     /**
-     * Such an executor can executes tasks not in a single thread, but executes them
-     * on different threads sequentially. It's important for some {@link SnapshotSender}'s
-     * to process sub-task sequentially due to all these sub-tasks may share a single socket
-     * channel to send data to.
-     */
-    private static class SequentialExecutorWrapper implements Executor {
-        /** Ignite logger. */
-        private final IgniteLogger log;
-
-        /** Queue of task to execute. */
-        private final Queue<Runnable> tasks = new ArrayDeque<>();
-
-        /** Delegate executor. */
-        private final Executor executor;
-
-        /** Currently running task. */
-        private volatile Runnable active;
-
-        /** If wrapped executor is shutting down. */
-        private volatile boolean stopping;
-
-        /**
-         * @param executor Executor to run tasks on.
-         */
-        public SequentialExecutorWrapper(IgniteLogger log, Executor executor) {
-            this.log = log.getLogger(SequentialExecutorWrapper.class);
-            this.executor = executor;
-        }
-
-        /** {@inheritDoc} */
-        @Override public synchronized void execute(final Runnable r) {
-            assert !stopping : "Task must be cancelled prior to the wrapped executor is shutting down.";
-
-            tasks.offer(() -> {
-                try {
-                    r.run();
-                }
-                finally {
-                    scheduleNext();
-                }
-            });
-
-            if (active == null)
-                scheduleNext();
-        }
-
-        /** */
-        private synchronized void scheduleNext() {
-            if ((active = tasks.poll()) != null) {
-                try {
-                    executor.execute(active);
-                }
-                catch (RejectedExecutionException e) {
-                    tasks.clear();
-
-                    stopping = true;
-
-                    log.warning("Task is outdated. Wrapped executor is shutting down.", e);
-                }
-            }
-        }
-    }
-
-    /**
      *
      */
     private static class RemoteSnapshotSender extends SnapshotSender {
@@ -3017,7 +2952,7 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
             GridIoManager.TransmissionSender sndr,
             String rqId
         ) {
-            super(log, new SequentialExecutorWrapper(log, exec));
+            super(log, exec);
 
             this.sndr = sndr;
             this.rqId = rqId;
