@@ -17,69 +17,59 @@
 
 package org.apache.ignite.internal.processors.query.stat.messages;
 
+import java.math.BigDecimal;
+import java.math.BigInteger;
 import java.nio.ByteBuffer;
-import org.apache.ignite.IgniteCheckedException;
-import org.apache.ignite.internal.GridKernalContext;
-import org.apache.ignite.internal.IgniteCodeGeneratingFail;
-import org.apache.ignite.internal.cache.query.index.sorted.keys.CacheJavaObjectIndexKey;
-import org.apache.ignite.internal.cache.query.index.sorted.keys.IndexKey;
-import org.apache.ignite.internal.processors.cache.CacheObject;
+import java.util.Objects;
+import org.apache.ignite.plugin.extensions.communication.Message;
 import org.apache.ignite.plugin.extensions.communication.MessageReader;
 import org.apache.ignite.plugin.extensions.communication.MessageWriter;
 
 /**
- * H2 Cache object message.
+ * H2 Decimal.
  */
-@IgniteCodeGeneratingFail
-public class StatisticsCacheObjectValueMessage implements StatisticsValueMessage {
+public class StatisticsDecimalMessage implements Message {
     /** */
     private static final long serialVersionUID = 0L;
 
     /** */
-    public static final short TYPE_CODE = 185;
+    public static final short TYPE_CODE = 184;
 
     /** */
-    private CacheObject obj;
+    private int scale;
+
+    /** */
+    private byte[] b;
 
     /**
      *
      */
-    public StatisticsCacheObjectValueMessage() {
+    public StatisticsDecimalMessage() {
         // No-op.
     }
 
     /**
-     * @param v Value.
-     * @throws IgniteCheckedException If failed.
+     * @param val Value.
      */
-    public StatisticsCacheObjectValueMessage(CacheJavaObjectIndexKey v) {
-        obj = v.cacheObject();
-    }
-
-    /** {@inheritDoc} */
-    @Override public IndexKey value(GridKernalContext ctx) throws IgniteCheckedException {
-        return new CacheJavaObjectIndexKey(obj, ctx.query().objectContext());
-    }
-
-    /** {@inheritDoc} */
-    @Override public boolean readFrom(ByteBuffer buf, MessageReader reader) {
-        reader.setBuffer(buf);
-
-        if (!reader.beforeMessageRead())
-            return false;
-
-        switch (reader.state()) {
-            case 0:
-                obj = reader.readMessage("obj");
-
-                if (!reader.isLastRead())
-                    return false;
-
-                reader.incrementState();
-
+    public StatisticsDecimalMessage(BigDecimal val) {
+        if (val == null) {
+            scale = 0;
+            b = null;
         }
+        else {
+            scale = val.scale();
+            b = val.unscaledValue().toByteArray();
+        }
+    }
 
-        return reader.afterMessageRead(StatisticsCacheObjectValueMessage.class);
+    /**
+     * @return Decimal value.
+     */
+    public BigDecimal value() {
+        if (b == null && scale == 0)
+            return null;
+
+        return new BigDecimal(new BigInteger(b), scale);
     }
 
     /** {@inheritDoc} */
@@ -95,24 +85,57 @@ public class StatisticsCacheObjectValueMessage implements StatisticsValueMessage
 
         switch (writer.state()) {
             case 0:
-                if (!writer.writeMessage("obj", obj))
+                if (!writer.writeByteArray("b", b))
                     return false;
 
                 writer.incrementState();
 
+            case 1:
+                if (!writer.writeInt("scale", scale))
+                    return false;
+
+                writer.incrementState();
         }
 
         return true;
     }
 
     /** {@inheritDoc} */
+    @Override public boolean readFrom(ByteBuffer buf, MessageReader reader) {
+        reader.setBuffer(buf);
+
+        if (!reader.beforeMessageRead())
+            return false;
+
+        switch (reader.state()) {
+            case 0:
+                b = reader.readByteArray("b");
+
+                if (!reader.isLastRead())
+                    return false;
+
+                reader.incrementState();
+
+            case 1:
+                scale = reader.readInt("scale");
+
+                if (!reader.isLastRead())
+                    return false;
+
+                reader.incrementState();
+        }
+
+        return reader.afterMessageRead(StatisticsDecimalMessage.class);
+    }
+
+    /** {@inheritDoc} */
     @Override public short directType() {
-        return -22;
+        return TYPE_CODE;
     }
 
     /** {@inheritDoc} */
     @Override public byte fieldsCount() {
-        return 1;
+        return 2;
     }
 
     /** {@inheritDoc} */
@@ -122,6 +145,6 @@ public class StatisticsCacheObjectValueMessage implements StatisticsValueMessage
 
     /** {@inheritDoc} */
     @Override public String toString() {
-        return String.valueOf(obj);
+        return Objects.toString(value());
     }
 }

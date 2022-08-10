@@ -17,14 +17,13 @@
 
 package org.apache.ignite.internal.cache.query.index.sorted.keys;
 
-import java.io.Serializable;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.internal.cache.query.index.sorted.IndexKeyType;
 
 /**
  * Class that represnts a single index key.
  */
-public interface IndexKey extends Serializable {
+public interface IndexKey {
     /**
      * @return Value of this key.
      */
@@ -39,13 +38,6 @@ public interface IndexKey extends Serializable {
      * @return Comparison result with other IndexKey.
      */
     public int compare(IndexKey o) throws IgniteCheckedException;
-
-    /**
-     * @return byte array.
-     */
-    public default byte[] bytes() {
-        throw new RuntimeException("Not implemented");
-    }
 
     /**
      * @return {@code True} if index key can be compared to another index key.

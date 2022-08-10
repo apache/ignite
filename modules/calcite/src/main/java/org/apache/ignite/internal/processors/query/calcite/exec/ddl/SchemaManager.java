@@ -17,8 +17,6 @@
 
 package org.apache.ignite.internal.processors.query.calcite.exec.ddl;
 
-import java.util.List;
-import java.util.function.BiConsumer;
 import java.util.function.Supplier;
 import org.apache.calcite.schema.SchemaPlus;
 import org.apache.calcite.schema.Table;
@@ -27,7 +25,6 @@ import org.apache.ignite.internal.processors.query.GridQuerySchemaManager;
 import org.apache.ignite.internal.processors.query.GridQueryTypeDescriptor;
 import org.apache.ignite.internal.processors.query.calcite.schema.IgniteCacheTable;
 import org.apache.ignite.internal.processors.query.calcite.schema.IgniteTable;
-import org.jetbrains.annotations.NotNull;
 
 /**
  * Schema manager.
@@ -84,25 +81,5 @@ class SchemaManager implements GridQuerySchemaManager {
         IgniteCacheTable cachetbl = tbl instanceof IgniteCacheTable ? (IgniteCacheTable)tbl : null;
 
         return cachetbl == null ? null : (GridCacheContextInfo<K, V>)cachetbl.descriptor().cacheInfo();
-    }
-
-    /** {@inheritDoc} */
-    @Override public void registerDropColumnsListener(@NotNull BiConsumer<GridQueryTypeDescriptor, List<String>> lsnr) {
-
-    }
-
-    /** {@inheritDoc} */
-    @Override public void unregisterDropColumnsListener(@NotNull BiConsumer<GridQueryTypeDescriptor, List<String>> lsnr) {
-
-    }
-
-    /** {@inheritDoc} */
-    @Override public void registerDropTableListener(@NotNull BiConsumer<String, String> lsnr) {
-
-    }
-
-    /** {@inheritDoc} */
-    @Override public void unregisterDropTableListener(@NotNull BiConsumer<String, String> lsnr) {
-
     }
 }

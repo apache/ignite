@@ -21,24 +21,11 @@ import java.math.BigDecimal;
 import java.time.LocalDate;
 import java.time.Month;
 import java.util.Arrays;
+import java.util.HashMap;
 import java.util.HashSet;
-import java.util.Set;
+import java.util.Map;
 import java.util.UUID;
-import org.apache.ignite.internal.cache.query.index.sorted.IndexKeyType;
-import org.apache.ignite.internal.cache.query.index.sorted.keys.BooleanIndexKey;
-import org.apache.ignite.internal.cache.query.index.sorted.keys.ByteIndexKey;
-import org.apache.ignite.internal.cache.query.index.sorted.keys.DateIndexKey;
-import org.apache.ignite.internal.cache.query.index.sorted.keys.DecimalIndexKey;
-import org.apache.ignite.internal.cache.query.index.sorted.keys.DoubleIndexKey;
-import org.apache.ignite.internal.cache.query.index.sorted.keys.FloatIndexKey;
-import org.apache.ignite.internal.cache.query.index.sorted.keys.IndexKey;
-import org.apache.ignite.internal.cache.query.index.sorted.keys.IntegerIndexKey;
-import org.apache.ignite.internal.cache.query.index.sorted.keys.NullIndexKey;
-import org.apache.ignite.internal.cache.query.index.sorted.keys.ShortIndexKey;
-import org.apache.ignite.internal.cache.query.index.sorted.keys.StringIndexKey;
-import org.apache.ignite.internal.cache.query.index.sorted.keys.UuidIndexKey;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
-import org.h2.table.Column;
 import org.junit.Test;
 
 /**
@@ -46,24 +33,26 @@ import org.junit.Test;
  */
 public class ColumnStatisticsCollectorTest extends GridCommonAbstractTest {
     /** Types with its comparators for tests.  */
-    private static final Set<IndexKey[]> types = new HashSet<>();
+    private static final Map<Class<?>, Object[]> types = new HashMap<>();
+
+    /** */
+    private static final Object[] ZERO_ARR = new Object[0];
 
     static {
-        types.add(new IndexKey[]{new BooleanIndexKey(false), new BooleanIndexKey(true)});
-        types.add(new IndexKey[]{new IntegerIndexKey(1), new IntegerIndexKey(2), new IntegerIndexKey(10)});
-        types.add(new IndexKey[]{new ShortIndexKey((short)1), new ShortIndexKey((short)3)});
-        types.add(new IndexKey[]{new StringIndexKey("1"), new StringIndexKey("9")});
-        types.add(new IndexKey[]{new DecimalIndexKey(BigDecimal.ONE), new DecimalIndexKey(BigDecimal.TEN)});
-        types.add(new IndexKey[]{
-            new DateIndexKey(LocalDate.of(1945, Month.MAY, 9)),
-            new DateIndexKey(LocalDate.of(1957, Month.OCTOBER, 4)),
-            new DateIndexKey(LocalDate.of(1961, Month.APRIL, 12)),
+        types.put(Boolean.class, new Object[]{false, true});
+        types.put(Integer.class, new Object[]{1, 2, 10});
+        types.put(Short.class, new Object[]{(short)1, (short)3});
+        types.put(String.class, new Object[]{"1", "9"});
+        types.put(BigDecimal.class, new Object[]{BigDecimal.ONE, BigDecimal.TEN});
+        types.put(LocalDate.class, new Object[]{
+            LocalDate.of(1945, Month.MAY, 9),
+            LocalDate.of(1957, Month.OCTOBER, 4),
+            LocalDate.of(1961, Month.APRIL, 12),
         });
-        types.add(new IndexKey[]{new UuidIndexKey(new UUID(1, 2)), new UuidIndexKey(new UUID(2, 1)),
-            new UuidIndexKey(new UUID(2, 2))});
-        types.add(new IndexKey[]{new FloatIndexKey(1f), new FloatIndexKey(10f)});
-        types.add(new IndexKey[]{new DoubleIndexKey(1.), new DoubleIndexKey(10.)});
-        types.add(new IndexKey[]{new ByteIndexKey((byte)1), new ByteIndexKey((byte)2)});
+        types.put(UUID.class, new Object[]{new UUID(1, 2), new UUID(2, 1), new UUID(2, 2)});
+        types.put(Float.class, new Object[]{1f, 10f});
+        types.put(Double.class, new Object[]{1., 10.});
+        types.put(Byte.class, new Object[]{(byte)1, (byte)2});
     }
 
     /**
@@ -72,9 +61,8 @@ public class ColumnStatisticsCollectorTest extends GridCommonAbstractTest {
      */
     @Test
     public void testZeroAggregation() throws Exception {
-        IndexKey[] zeroArr = new IndexKey[0];
-        for (IndexKey[] keys : types)
-            testAggregation(keys[0].type(), 0, zeroArr);
+        for (Map.Entry<Class<?>, Object[]> tv: types.entrySet())
+            testAggregation(tv.getKey(), 0, ZERO_ARR);
     }
 
     /**
@@ -83,8 +71,8 @@ public class ColumnStatisticsCollectorTest extends GridCommonAbstractTest {
      */
     @Test
     public void testSingleNullAggregation() throws Exception {
-        for (IndexKey[] keys : types)
-            testAggregation(keys[0].type(), 1);
+        for (Map.Entry<Class<?>, Object[]> tv: types.entrySet())
+            testAggregation(tv.getKey(), 1);
     }
 
     /**
@@ -93,9 +81,8 @@ public class ColumnStatisticsCollectorTest extends GridCommonAbstractTest {
      */
     @Test
     public void testMultipleNullsAggregation() throws Exception {
-        IndexKey[] zeroArr = new IndexKey[0];
-        for (IndexKey[] keys : types)
-            testAggregation(keys[0].type(), 1000, zeroArr);
+        for (Map.Entry<Class<?>, Object[]> tv: types.entrySet())
+            testAggregation(tv.getKey(), 1000, ZERO_ARR);
     }
 
     /**
@@ -104,9 +91,9 @@ public class ColumnStatisticsCollectorTest extends GridCommonAbstractTest {
      */
     @Test
     public void testSingleAggregation() throws Exception {
-        for (IndexKey[] keys : types) {
-            for (IndexKey key : keys)
-                testAggregation(key.type(), 0, key);
+        for (Map.Entry<Class<?>, Object[]> tv: types.entrySet()) {
+            for (Object val : tv.getValue())
+                testAggregation(tv.getKey(), 0, val);
         }
     }
 
@@ -116,8 +103,8 @@ public class ColumnStatisticsCollectorTest extends GridCommonAbstractTest {
      */
     @Test
     public void testMultipleAggregation() throws Exception {
-        for (IndexKey[] keys : types)
-            testAggregation(keys[0].type(), 0, keys);
+        for (Map.Entry<Class<?>, Object[]> tv: types.entrySet())
+            testAggregation(tv.getKey(), 0, tv.getValue());
     }
 
     /**
@@ -126,8 +113,8 @@ public class ColumnStatisticsCollectorTest extends GridCommonAbstractTest {
      */
     @Test
     public void testMultipleWithNullsAggregation() throws Exception {
-        for (IndexKey[] keys : types)
-            testAggregation(keys[0].type(), keys.length, keys);
+        for (Map.Entry<Class<?>, Object[]> tv: types.entrySet())
+            testAggregation(tv.getKey(), tv.getValue().length, tv.getValue());
     }
 
     /**
@@ -138,43 +125,42 @@ public class ColumnStatisticsCollectorTest extends GridCommonAbstractTest {
      * @param nulls Nulls count.
      * @param vals Values to aggregate where the first one is the smallest and the last one is the biggest one.
      */
-    private static void testAggregation(IndexKeyType type, int nulls, IndexKey... vals) throws Exception {
-        Column intCol = new Column("test", type.code());
-
-        ColumnStatisticsCollector collector = new ColumnStatisticsCollector(intCol.getColumnId(), intCol.getName(), type);
-        ColumnStatisticsCollector collectorInverted = new ColumnStatisticsCollector(intCol.getColumnId(), intCol.getName(), type);
+    private static void testAggregation(Class<?> type, int nulls, Object... vals) throws Exception {
+        ColumnStatisticsCollector collector = new ColumnStatisticsCollector(0, "test", type);
+        ColumnStatisticsCollector collectorInverted = new ColumnStatisticsCollector(0, "test", type);
 
         for (int i = 0; i < vals.length; i++) {
             collector.add(vals[i]);
             collectorInverted.add(vals[vals.length - 1 - i]);
         }
         for (int i = 0; i < nulls; i++) {
-            collector.add(NullIndexKey.INSTANCE);
-            collectorInverted.add(NullIndexKey.INSTANCE);
+            collector.add(null);
+            collectorInverted.add(null);
         }
 
         ColumnStatistics res = collector.finish();
         ColumnStatistics resInverted = collectorInverted.finish();
 
-        testAggregationResult(res, nulls, vals);
-        testAggregationResult(resInverted, nulls, vals);
+        testAggregationResult(type, res, nulls, vals);
+        testAggregationResult(type, resInverted, nulls, vals);
     }
 
     /**
      * Check column statistics collection results.
      *
+     * @param type Field type.
      * @param res Column statistics to test.
      * @param nulls Count of null values in statistics.
      * @param vals Values included into statistics where first one is the smallest one and the last one is the biggest.
      */
-    private static void testAggregationResult(ColumnStatistics res, int nulls, IndexKey... vals) {
+    private static void testAggregationResult(Class<?> type, ColumnStatistics res, int nulls, Object... vals) {
         if (vals.length == 0) {
             assertNull(res.min());
             assertNull(res.max());
         }
-        else {
-            assertEquals(vals[0].key(), res.min().key());
-            assertEquals(vals[vals.length - 1].key(), res.max().key());
+        else if (!type.isAssignableFrom(String.class)) {
+            assertEquals(StatisticsUtils.toDecimal(vals[0]), res.min());
+            assertEquals(StatisticsUtils.toDecimal(vals[vals.length - 1]), res.max());
         }
 
         assertEquals(nulls, res.nulls());

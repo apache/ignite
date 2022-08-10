@@ -117,10 +117,10 @@ public class StatisticsGatheringTest extends StatisticsRestartAbstractTest {
             ColumnStatistics actColStat = actual.columnStatistics(expectedColStatEntry.getKey());
 
             assertNotNull(actColStat);
-            assertEquals(expColStat.min() != null ? expColStat.min().key() : null,
-                actColStat.min() != null ? actColStat.min().key() : null);
-            assertEquals(expColStat.max() != null ? expColStat.max().key() : null,
-                actColStat.max() != null ? actColStat.max().key() : null);
+            assertEquals(expColStat.min() != null ? expColStat.min() : null,
+                actColStat.min() != null ? actColStat.min() : null);
+            assertEquals(expColStat.max() != null ? expColStat.max() : null,
+                actColStat.max() != null ? actColStat.max() : null);
             assertEquals(expColStat.size(), actColStat.size());
             assertEquals(expColStat.distinct(), actColStat.distinct());
             assertEquals(expColStat.total(), actColStat.total());
@@ -130,11 +130,9 @@ public class StatisticsGatheringTest extends StatisticsRestartAbstractTest {
 
     /**
      * Collect statistics for group of object at once and check it collected in each node.
-     *
-     * @throws Exception In case of errors.
      */
     @Test
-    public void testGroupGathering() throws Exception {
+    public void testGroupGathering() {
         StatisticsTarget t100 = createStatisticTarget(100);
         StatisticsTarget t101 = createStatisticTarget(101);
         StatisticsTarget tWrong = new StatisticsTarget(t101.schema(), t101.obj() + "wrong");

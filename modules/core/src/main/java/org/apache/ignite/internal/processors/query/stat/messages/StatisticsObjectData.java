@@ -34,7 +34,7 @@ public class StatisticsObjectData implements Message {
     private static final long serialVersionUID = 0L;
 
     /** */
-    public static final short TYPE_CODE = 186;
+    public static final short TYPE_CODE = 185;
 
     /** Statistics key. */
     private StatisticsKeyMessage key;

@@ -29,11 +29,9 @@ import java.util.stream.Collectors;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.IgniteLogger;
-import org.apache.ignite.internal.cache.query.index.sorted.IndexKeyType;
-import org.apache.ignite.internal.cache.query.index.sorted.keys.IndexKey;
-import org.apache.ignite.internal.cache.query.index.sorted.keys.IndexKeyFactory;
 import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
 import org.apache.ignite.internal.processors.cache.CacheGroupContext;
+import org.apache.ignite.internal.processors.cache.CacheObject;
 import org.apache.ignite.internal.processors.cache.GridCacheContext;
 import org.apache.ignite.internal.processors.cache.distributed.dht.topology.GridDhtLocalPartition;
 import org.apache.ignite.internal.processors.cache.distributed.dht.topology.GridDhtPartitionTopology;
@@ -254,7 +252,7 @@ public class GatherPartitionStatistics implements Callable<ObjectPartitionStatis
                 long colCfgVer = colsToCollect.get(colName).version();
                 Class<?> colCls = tbl.fields().get(colName);
 
-                collectors.add(new ColumnStatisticsCollector(colId, colName, IndexKeyType.forClass(colCls), colCfgVer));
+                collectors.add(new ColumnStatisticsCollector(colId, colName, colCls, colCfgVer));
             }
 
             try {
@@ -329,31 +327,35 @@ public class GatherPartitionStatistics implements Callable<ObjectPartitionStatis
      * @param coll Column collector.
      * @return IndexKey containing value extracted from row.
      */
-    private IndexKey getValue(
+    private Object getValue(
         GridCacheContext<?, ?> cctx,
         GridQueryRowDescriptor desc,
         CacheDataRow row,
         ColumnStatisticsCollector coll
     ) {
         if (row.value() == null)
-            return wrap(cctx, row.key(), desc.type().keyClass());
+            return unwrap(cctx, row.key(), desc.type().keyClass());
 
         if (desc.isKeyColumn(coll.columnId()))
-            return wrap(cctx, row.key(), desc.type().keyClass());
+            return unwrap(cctx, row.key(), desc.type().keyClass());
 
         if (desc.isValueColumn(coll.columnId()))
-            return wrap(cctx, row.value(), desc.type().valueClass());
+            return unwrap(cctx, row.value(), desc.type().valueClass());
 
         Object val = desc.getFieldValue(row.key(), row.value(), coll.columnId() - QueryUtils.DEFAULT_COLUMNS_COUNT);
 
-        return wrap(cctx, val, desc.type().fields().get(coll.columnName()));
+        return unwrap(cctx, val, desc.type().fields().get(coll.columnName()));
     }
 
     /** */
-    private IndexKey wrap(GridCacheContext<?, ?> cctx, Object val, Class<?> cls) {
-        IndexKeyType type = IndexKeyType.forClass(val != null ? cls : null);
+    private Object unwrap(GridCacheContext<?, ?> cctx, Object val, Class<?> cls) {
+        if (val == null)
+            return null;
 
-        return IndexKeyFactory.wrap(val, type, cctx.cacheObjectContext(), gathCtx.isBinaryUnsigned());
+        if (val instanceof CacheObject && QueryUtils.isSqlType(cls))
+            return ((CacheObject)val).value(cctx.cacheObjectContext(), false);
+
+        return val;
     }
 
     /**

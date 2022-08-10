@@ -25,10 +25,7 @@ import org.jetbrains.annotations.Nullable;
 /** */
 public class PlainJavaObjectIndexKey extends JavaObjectIndexKey {
     /** */
-    private static final long serialVersionUID = 0L;
-
-    /** */
-    private transient Object key;
+    private Object key;
 
     /** */
     private byte[] serialized;

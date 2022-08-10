@@ -168,9 +168,8 @@ import org.apache.ignite.internal.processors.query.h2.twostep.messages.GridQuery
 import org.apache.ignite.internal.processors.query.messages.GridQueryKillRequest;
 import org.apache.ignite.internal.processors.query.messages.GridQueryKillResponse;
 import org.apache.ignite.internal.processors.query.schema.message.SchemaOperationStatusMessage;
-import org.apache.ignite.internal.processors.query.stat.messages.StatisticsBasicValueMessage;
-import org.apache.ignite.internal.processors.query.stat.messages.StatisticsCacheObjectValueMessage;
 import org.apache.ignite.internal.processors.query.stat.messages.StatisticsColumnData;
+import org.apache.ignite.internal.processors.query.stat.messages.StatisticsDecimalMessage;
 import org.apache.ignite.internal.processors.query.stat.messages.StatisticsKeyMessage;
 import org.apache.ignite.internal.processors.query.stat.messages.StatisticsObjectData;
 import org.apache.ignite.internal.processors.query.stat.messages.StatisticsRequest;
@@ -385,8 +384,7 @@ public class GridIoMessageFactory implements MessageFactoryProvider {
 
         // Index statistics.
         factory.register(StatisticsKeyMessage.TYPE_CODE, StatisticsKeyMessage::new);
-        factory.register(StatisticsBasicValueMessage.TYPE_CODE, StatisticsBasicValueMessage::new);
-        factory.register(StatisticsCacheObjectValueMessage.TYPE_CODE, StatisticsCacheObjectValueMessage::new);
+        factory.register(StatisticsDecimalMessage.TYPE_CODE, StatisticsDecimalMessage::new);
         factory.register(StatisticsObjectData.TYPE_CODE, StatisticsObjectData::new);
         factory.register(StatisticsColumnData.TYPE_CODE, StatisticsColumnData::new);
         factory.register(StatisticsRequest.TYPE_CODE, StatisticsRequest::new);

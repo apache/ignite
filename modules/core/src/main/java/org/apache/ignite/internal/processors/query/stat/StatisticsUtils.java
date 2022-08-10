@@ -17,18 +17,28 @@
 
 package org.apache.ignite.internal.processors.query.stat;
 
+import java.math.BigDecimal;
+import java.math.BigInteger;
+import java.time.LocalDate;
+import java.time.LocalDateTime;
+import java.time.LocalTime;
 import java.util.HashMap;
 import java.util.Map;
+import java.util.UUID;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.internal.GridKernalContext;
-import org.apache.ignite.internal.cache.query.index.sorted.keys.IndexKey;
 import org.apache.ignite.internal.processors.query.stat.config.StatisticsColumnConfiguration;
 import org.apache.ignite.internal.processors.query.stat.config.StatisticsObjectConfiguration;
-import org.apache.ignite.internal.processors.query.stat.messages.StatisticsBasicValueMessage;
 import org.apache.ignite.internal.processors.query.stat.messages.StatisticsColumnData;
+import org.apache.ignite.internal.processors.query.stat.messages.StatisticsDecimalMessage;
 import org.apache.ignite.internal.processors.query.stat.messages.StatisticsKeyMessage;
 import org.apache.ignite.internal.processors.query.stat.messages.StatisticsObjectData;
 import org.apache.ignite.internal.util.typedef.F;
+import org.apache.ignite.internal.util.typedef.internal.U;
+
+import static org.apache.ignite.internal.cache.query.index.sorted.inline.types.DateValueUtils.convertToSqlDate;
+import static org.apache.ignite.internal.cache.query.index.sorted.inline.types.DateValueUtils.convertToSqlTime;
+import static org.apache.ignite.internal.cache.query.index.sorted.inline.types.DateValueUtils.convertToTimestamp;
 
 /**
  * Utilities to convert statistics from/to messages, validate configurations with statistics and so on.
@@ -42,8 +52,8 @@ public class StatisticsUtils {
      * @throws IgniteCheckedException In case of errors.
      */
     public static StatisticsColumnData toMessage(ColumnStatistics stat) throws IgniteCheckedException {
-        StatisticsBasicValueMessage msgMin = stat.min() == null ? null : new StatisticsBasicValueMessage(stat.min());
-        StatisticsBasicValueMessage msgMax = stat.max() == null ? null : new StatisticsBasicValueMessage(stat.max());
+        StatisticsDecimalMessage msgMin = new StatisticsDecimalMessage(stat.min());
+        StatisticsDecimalMessage msgMax = new StatisticsDecimalMessage(stat.max());
 
         return new StatisticsColumnData(msgMin, msgMax, stat.nulls(), stat.distinct(),
             stat.total(), stat.size(), stat.raw(), stat.version(), stat.createdAt());
@@ -55,16 +65,9 @@ public class StatisticsUtils {
      * @param ctx Kernal context.
      * @param data Statistics column data message to convert.
      * @return ColumnStatistics object.
-     * @throws IgniteCheckedException In case of errors.
      */
-    public static ColumnStatistics toColumnStatistics(
-        GridKernalContext ctx,
-        StatisticsColumnData data
-    ) throws IgniteCheckedException {
-        IndexKey min = (data.min() == null) ? null : data.min().value(ctx);
-        IndexKey max = (data.max() == null) ? null : data.max().value(ctx);
-
-        return new ColumnStatistics(min, max, data.nulls(), data.distinct(),
+    public static ColumnStatistics toColumnStatistics(GridKernalContext ctx, StatisticsColumnData data) {
+        return new ColumnStatistics(data.min().value(), data.max().value(), data.nulls(), data.distinct(),
             data.total(), data.size(), data.rawData(), data.version(), data.createdAt());
     }
 
@@ -148,12 +151,8 @@ public class StatisticsUtils {
      * @param ctx Kernal context to use during conversion.
      * @param data Statistics object data message to convert.
      * @return Converted object statistics.
-     * @throws IgniteCheckedException  In case of errors.
      */
-    public static ObjectStatisticsImpl toObjectStatistics(
-        GridKernalContext ctx,
-        StatisticsObjectData data
-    ) throws IgniteCheckedException {
+    public static ObjectStatisticsImpl toObjectStatistics(GridKernalContext ctx, StatisticsObjectData data) {
         Map<String, ColumnStatistics> colNameToStat = new HashMap<>(data.data().size());
 
         for (Map.Entry<String, StatisticsColumnData> cs : data.data().entrySet())
@@ -230,5 +229,44 @@ public class StatisticsUtils {
         }
 
         return 0;
+    }
+
+    /** */
+    public static BigDecimal toDecimal(Object obj) {
+        if (obj == null)
+            return null;
+
+        Class<?> cls = U.box(obj.getClass());
+
+        if (Boolean.class.isAssignableFrom(cls))
+            return (Boolean)obj ? BigDecimal.ONE : BigDecimal.ZERO;
+        else if (Byte.class.isAssignableFrom(cls))
+            return new BigDecimal((Byte)obj);
+        else if (Short.class.isAssignableFrom(cls))
+            return new BigDecimal((Short)obj);
+        else if (Integer.class.isAssignableFrom(cls))
+            return new BigDecimal((Integer)obj);
+        else if (Long.class.isAssignableFrom(cls))
+            return new BigDecimal((Long)obj);
+        else if (Float.class.isAssignableFrom(cls))
+            return BigDecimal.valueOf((Float)obj);
+        else if (Double.class.isAssignableFrom(cls))
+            return BigDecimal.valueOf((Double)obj);
+        else if (BigDecimal.class.isAssignableFrom(cls))
+            return (BigDecimal)obj;
+        else if (UUID.class.isAssignableFrom(cls)) {
+            BigInteger bigInt = new BigInteger(1, U.uuidToBytes((UUID)obj));
+            return new BigDecimal(bigInt);
+        }
+        else if (java.util.Date.class.isAssignableFrom(cls))
+            return new BigDecimal(((java.util.Date)obj).getTime());
+        else if (LocalDate.class.isAssignableFrom(cls))
+            return new BigDecimal(convertToSqlDate((LocalDate)obj).getTime());
+        else if (LocalTime.class.isAssignableFrom(cls))
+            return new BigDecimal(convertToSqlTime((LocalTime)obj).getTime());
+        else if (LocalDateTime.class.isAssignableFrom(cls))
+            return new BigDecimal(convertToTimestamp((LocalDateTime)obj).getTime());
+
+        throw new IllegalArgumentException("Value of type " + cls.getName() + " is not expected");
     }
 }

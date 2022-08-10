@@ -18,9 +18,7 @@
 package org.apache.ignite.internal.processors.query.calcite.metadata;
 
 import java.math.BigDecimal;
-import java.math.BigInteger;
 import java.math.MathContext;
-import java.sql.Timestamp;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -49,9 +47,6 @@ import org.apache.calcite.util.BuiltInMethod;
 import org.apache.calcite.util.DateString;
 import org.apache.calcite.util.TimeString;
 import org.apache.calcite.util.TimestampString;
-import org.apache.ignite.internal.cache.query.index.sorted.keys.DateIndexKey;
-import org.apache.ignite.internal.cache.query.index.sorted.keys.IndexKey;
-import org.apache.ignite.internal.cache.query.index.sorted.keys.TimeIndexKey;
 import org.apache.ignite.internal.processors.query.QueryUtils;
 import org.apache.ignite.internal.processors.query.calcite.rel.IgniteExchange;
 import org.apache.ignite.internal.processors.query.calcite.rel.IgniteHashIndexSpool;
@@ -64,8 +59,6 @@ import org.apache.ignite.internal.processors.query.calcite.schema.IgniteTable;
 import org.apache.ignite.internal.processors.query.calcite.util.RexUtils;
 import org.apache.ignite.internal.processors.query.stat.ColumnStatistics;
 import org.jetbrains.annotations.Nullable;
-
-import static org.apache.ignite.internal.cache.query.index.sorted.IndexKeyType.BOOLEAN;
 
 /** */
 public class IgniteMdSelectivity extends RelMdSelectivity {
@@ -169,74 +162,6 @@ public class IgniteMdSelectivity extends RelMdSelectivity {
         }
 
         return null;
-    }
-
-    /**
-     * Convert specified value into comparable type: BigDecimal,
-     *
-     * @param val Value to convert to comparable form.
-     * @return Comparable form of value.
-     */
-    private BigDecimal toComparableValue(IndexKey val) {
-        if (val == null)
-            return null;
-
-        switch (val.type()) {
-            case NULL:
-                throw new IllegalArgumentException("Can't compare null values");
-
-            case BOOLEAN:
-                return ((Boolean)val.key()) ? BigDecimal.ONE : BigDecimal.ZERO;
-
-            case BYTE:
-                return new BigDecimal((Byte)val.key());
-
-            case SHORT:
-                return new BigDecimal((Short)val.key());
-
-            case INT:
-                return new BigDecimal((Integer)val.key());
-
-            case LONG:
-                return new BigDecimal((Long)val.key());
-
-            case DECIMAL:
-                return (BigDecimal)val.key();
-
-            case DOUBLE:
-                return BigDecimal.valueOf((Double)val.key());
-
-            case FLOAT:
-                return BigDecimal.valueOf((Float)val.key());
-
-            case DATE:
-                return BigDecimal.valueOf(((DateIndexKey)val).dateValue());
-
-            case TIME:
-                return BigDecimal.valueOf(((TimeIndexKey)val).nanos());
-
-            case TIMESTAMP:
-                return BigDecimal.valueOf(((Timestamp)val.key()).getTime());
-
-            case BYTES:
-                BigInteger bigInteger = new BigInteger(1, (byte[])val.key());
-                return new BigDecimal(bigInteger);
-
-            case STRING:
-            case STRING_FIXED:
-            case STRING_IGNORECASE:
-            case ARRAY:
-            case JAVA_OBJECT:
-            case GEOMETRY:
-                return null;
-
-            case UUID:
-                BigInteger bigInt = new BigInteger(1, val.bytes());
-                return new BigDecimal(bigInt);
-
-            default:
-                throw new IllegalStateException("Unsupported H2 type: " + val.type());
-        }
     }
 
     /**
@@ -404,11 +329,12 @@ public class IgniteMdSelectivity extends RelMdSelectivity {
             return res;
         }
 
-        if (colStat.max() == null || colStat.max().type() != BOOLEAN)
+        if (colStat.max() == null || colStat.max().compareTo(BigDecimal.ONE) != 0
+            || colStat.max().compareTo(BigDecimal.ZERO) != 0)
             return res;
 
-        Boolean min = (Boolean)colStat.min().key();
-        Boolean max = (Boolean)colStat.max().key();
+        Boolean min = colStat.min().compareTo(BigDecimal.ONE) == 0;
+        Boolean max = colStat.max().compareTo(BigDecimal.ONE) == 0;
 
         if (!max)
             return 0;
@@ -454,8 +380,8 @@ public class IgniteMdSelectivity extends RelMdSelectivity {
 
         SqlOperator op = ((RexCall)pred).op;
 
-        BigDecimal min = toComparableValue(colStat.min());
-        BigDecimal max = toComparableValue(colStat.max());
+        BigDecimal min = colStat.min();
+        BigDecimal max = colStat.max();
         BigDecimal total = (min == null || max == null) ? null : max.subtract(min).abs();
 
         if (total == null)
@@ -541,13 +467,13 @@ public class IgniteMdSelectivity extends RelMdSelectivity {
             return guessSelectivity(pred);
 
         if (colStat.min() != null) {
-            BigDecimal minComparable = toComparableValue(colStat.min());
+            BigDecimal minComparable = colStat.min();
             if (minComparable != null && minComparable.compareTo(comparableVal) > 0)
                 return 0.;
         }
 
         if (colStat.max() != null) {
-            BigDecimal maxComparable = toComparableValue(colStat.max());
+            BigDecimal maxComparable = colStat.max();
             if (maxComparable != null && maxComparable.compareTo(comparableVal) < 0)
                 return 0.;
         }

@@ -22,9 +22,6 @@ import org.apache.ignite.internal.util.typedef.F;
 /** */
 public class SignedBytesIndexKey extends BytesIndexKey {
     /** */
-    private static final long serialVersionUID = 0L;
-
-    /** */
     public SignedBytesIndexKey(byte[] key) {
         super(key);
     }

@@ -17,9 +17,16 @@
 
 package org.apache.ignite.internal.cache.query.index.sorted.inline.types;
 
+import java.sql.Date;
+import java.sql.Time;
+import java.sql.Timestamp;
+import java.time.LocalDate;
+import java.time.LocalDateTime;
+import java.time.LocalTime;
 import java.util.Calendar;
 import java.util.GregorianCalendar;
 import java.util.TimeZone;
+import java.util.concurrent.TimeUnit;
 
 /**
  * DateValue is a representation of a date in bit form:
@@ -131,5 +138,31 @@ public class DateValueUtils {
         // Taking into account DST, offset can be changed after converting from UTC to time-zone.
         return utcMillis - DEFAULT_TZ.getOffset(utcMillis - DEFAULT_TZ.getOffset(utcMillis));
 
+    }
+
+    /** */
+    public static Timestamp convertToTimestamp(LocalDateTime locDateTime) {
+        LocalDate locDate = locDateTime.toLocalDate();
+        LocalTime locTime = locDateTime.toLocalTime();
+
+        long dateVal = dateValue(locDate.getYear(), locDate.getMonthValue(), locDate.getDayOfMonth());
+        long millis = millisFromDateValue(dateVal) + TimeUnit.NANOSECONDS.toMillis(locTime.toNanoOfDay());
+
+        return new Timestamp(defaultTzMillisFromUtc(millis));
+    }
+
+    /** */
+    public static Time convertToSqlTime(LocalTime locTime) {
+        long millis = TimeUnit.NANOSECONDS.toMillis(locTime.toNanoOfDay());
+
+        return new Time(defaultTzMillisFromUtc(millis));
+    }
+
+    /** */
+    public static Date convertToSqlDate(LocalDate locDate) {
+        long dateVal = dateValue(locDate.getYear(), locDate.getMonthValue(), locDate.getDayOfMonth());
+        long millis = millisFromDateValue(dateVal);
+
+        return new Date(defaultTzMillisFromUtc(millis));
     }
 }

@@ -27,9 +27,6 @@ import org.apache.ignite.internal.processors.cache.CacheObjectValueContext;
 /** */
 public class CacheJavaObjectIndexKey extends JavaObjectIndexKey {
     /** */
-    private static final long serialVersionUID = 0L;
-
-    /** */
     private final CacheObject obj;
 
     /** Object value context. */
@@ -65,11 +62,6 @@ public class CacheJavaObjectIndexKey extends JavaObjectIndexKey {
             key = obj.isPlatformType() ? obj.value(valCtx, false) : obj;
 
         return key;
-    }
-
-    /** */
-    public CacheObject cacheObject() {
-        return obj;
     }
 
     /** {@inheritDoc} */

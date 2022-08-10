@@ -22,7 +22,6 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Random;
 import java.util.concurrent.ThreadLocalRandom;
-import org.apache.ignite.internal.cache.query.index.sorted.keys.DecimalIndexKey;
 import org.apache.ignite.internal.processors.query.stat.hll.HLL;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
@@ -81,18 +80,18 @@ public class ColumnStatisticsCollectorAggregationTest extends GridCommonAbstract
     @Test
     public void aggregateTest() {
         List<ColumnStatistics> statistics = new ArrayList<>();
-        ColumnStatistics stat1 = new ColumnStatistics(new DecimalIndexKey(BigDecimal.ONE),
-            new DecimalIndexKey(BigDecimal.TEN), 50, 10, 1000, 0, getHLL(50).toBytes(), 0, U.currentTimeMillis());
-        ColumnStatistics stat2 = new ColumnStatistics(new DecimalIndexKey(BigDecimal.ZERO),
-            new DecimalIndexKey(BigDecimal.ONE), 10, 100, 10, 0, getHLL(9).toBytes(), 0, U.currentTimeMillis());
+        ColumnStatistics stat1 = new ColumnStatistics(BigDecimal.ONE, BigDecimal.TEN, 50, 10, 1000, 0,
+            getHLL(50).toBytes(), 0, U.currentTimeMillis());
+        ColumnStatistics stat2 = new ColumnStatistics(BigDecimal.ZERO, BigDecimal.ONE, 10, 100, 10, 0,
+            getHLL(9).toBytes(), 0, U.currentTimeMillis());
 
         statistics.add(stat1);
         statistics.add(stat2);
 
         ColumnStatistics res = ColumnStatisticsCollector.aggregate(statistics, null);
 
-        assertEquals(BigDecimal.ZERO, res.min().key());
-        assertEquals(BigDecimal.TEN, res.max().key());
+        assertEquals(BigDecimal.ZERO, res.min());
+        assertEquals(BigDecimal.TEN, res.max());
         assertEquals(60, res.nulls());
         assertEquals(59, res.distinct());
         assertEquals(1010, res.total());

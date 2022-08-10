@@ -30,13 +30,13 @@ public class StatisticsColumnData implements Message {
     private static final long serialVersionUID = 0L;
 
     /** */
-    public static final short TYPE_CODE = 187;
+    public static final short TYPE_CODE = 186;
 
     /** Min value in column. */
-    private StatisticsValueMessage min;
+    private StatisticsDecimalMessage min;
 
     /** Max value in column. */
-    private StatisticsValueMessage max;
+    private StatisticsDecimalMessage max;
 
     /** Number of null values in column. */
     private long nulls;
@@ -80,8 +80,8 @@ public class StatisticsColumnData implements Message {
      * @param createdAt Created at time, milliseconds.
      */
     public StatisticsColumnData(
-        StatisticsBasicValueMessage min,
-        StatisticsBasicValueMessage max,
+        StatisticsDecimalMessage min,
+        StatisticsDecimalMessage max,
         long nulls,
         long distinct,
         long total,
@@ -104,14 +104,14 @@ public class StatisticsColumnData implements Message {
     /**
      * @return Min value in column.
      */
-    public StatisticsValueMessage min() {
+    public StatisticsDecimalMessage min() {
         return min;
     }
 
     /**
      * @return Max value in column.
      */
-    public StatisticsValueMessage max() {
+    public StatisticsDecimalMessage max() {
         return max;
     }
 

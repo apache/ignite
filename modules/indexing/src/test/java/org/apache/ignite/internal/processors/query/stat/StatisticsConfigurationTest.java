@@ -104,7 +104,7 @@ public class StatisticsConfigurationTest extends StatisticsAbstractTest {
                 assertNotNull("Column: " + col, colStat);
 
                 assertTrue("Column: " + col, colStat.distinct() > 0);
-                assertTrue("Column: " + col, (Integer)colStat.max().key() > 0);
+                assertTrue("Column: " + col, colStat.max().intValue() > 0);
                 assertTrue("Column: " + col, colStat.total() == stat.rowCount());
             }
         }
