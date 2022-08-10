@@ -87,6 +87,9 @@ public class GridCacheDistributedQueryFuture<K, V, R> extends GridCacheQueryFutu
 
         qryMgr = (GridCacheDistributedQueryManager<K, V>)ctx.queries();
 
+        if (qry.query().partition() != null)
+            nodes = Collections.singletonList(node(nodes));
+
         streams = new ConcurrentHashMap<>(nodes.size());
 
         for (ClusterNode node : nodes) {
@@ -106,6 +109,22 @@ public class GridCacheDistributedQueryFuture<K, V, R> extends GridCacheQueryFutu
 
             reducer = qry.query().type() == TEXT ? new TextQueryReducer<>(streamsMap) : new UnsortedCacheQueryReducer<>(streamsMap);
         }
+    }
+
+    /**
+     * @return Nodes for query execution.
+     */
+    private ClusterNode node(Collection<ClusterNode> nodes) {
+        ClusterNode rmtNode = null;
+
+        for (ClusterNode node : nodes) {
+            if (node.isLocal())
+                return node;
+
+            rmtNode = node;
+        }
+
+        return rmtNode;
     }
 
     /** {@inheritDoc} */

@@ -681,7 +681,7 @@ public class GridCacheQueryAdapter<T> implements CacheQuery<T> {
                 return Collections.singletonList(cctx.localNode());
 
             case REPLICATED:
-                if (prj != null)
+                if (prj != null || part != null)
                     return nodes(cctx, prj, part);
 
                 GridDhtPartitionTopology topology = cctx.topology();
