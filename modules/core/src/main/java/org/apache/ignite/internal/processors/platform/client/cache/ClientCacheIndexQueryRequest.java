@@ -33,7 +33,7 @@ import org.apache.ignite.internal.processors.platform.client.ClientResponse;
  * IndexQuery request.
  */
 @SuppressWarnings({"rawtypes", "unchecked"})
-public class ClientCacheQueryIndexRequest extends ClientCacheRequest {
+public class ClientCacheIndexQueryRequest extends ClientCacheRequest {
     /** IndexQuery. */
     private final IndexQuery qry;
 
@@ -43,12 +43,14 @@ public class ClientCacheQueryIndexRequest extends ClientCacheRequest {
     /**
      * @param reader Reader.
      */
-    public ClientCacheQueryIndexRequest(BinaryRawReaderEx reader) {
+    public ClientCacheIndexQueryRequest(BinaryRawReaderEx reader) {
         super(reader);
 
         pageSize = reader.readInt();
 
         boolean loc = reader.readBoolean();
+
+        int part = reader.readInt();
 
         String valType = reader.readString();
 
@@ -62,6 +64,9 @@ public class ClientCacheQueryIndexRequest extends ClientCacheRequest {
 
         qry.setPageSize(pageSize);
         qry.setLocal(loc);
+
+        if (part >= 0)
+            qry.setPartition(part);
 
         if (criteria != null)
             qry.setCriteria(Arrays.asList(criteria.toArray()));

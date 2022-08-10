@@ -53,6 +53,7 @@ import org.apache.ignite.internal.processors.platform.client.cache.ClientCacheGe
 import org.apache.ignite.internal.processors.platform.client.cache.ClientCacheGetOrCreateWithNameRequest;
 import org.apache.ignite.internal.processors.platform.client.cache.ClientCacheGetRequest;
 import org.apache.ignite.internal.processors.platform.client.cache.ClientCacheGetSizeRequest;
+import org.apache.ignite.internal.processors.platform.client.cache.ClientCacheIndexQueryRequest;
 import org.apache.ignite.internal.processors.platform.client.cache.ClientCacheLocalPeekRequest;
 import org.apache.ignite.internal.processors.platform.client.cache.ClientCacheNodePartitionsRequest;
 import org.apache.ignite.internal.processors.platform.client.cache.ClientCachePartitionsRequest;
@@ -61,7 +62,6 @@ import org.apache.ignite.internal.processors.platform.client.cache.ClientCachePu
 import org.apache.ignite.internal.processors.platform.client.cache.ClientCachePutIfAbsentRequest;
 import org.apache.ignite.internal.processors.platform.client.cache.ClientCachePutRequest;
 import org.apache.ignite.internal.processors.platform.client.cache.ClientCacheQueryContinuousRequest;
-import org.apache.ignite.internal.processors.platform.client.cache.ClientCacheQueryIndexRequest;
 import org.apache.ignite.internal.processors.platform.client.cache.ClientCacheQueryNextPageRequest;
 import org.apache.ignite.internal.processors.platform.client.cache.ClientCacheRemoveAllConflictRequest;
 import org.apache.ignite.internal.processors.platform.client.cache.ClientCacheRemoveAllRequest;
@@ -585,7 +585,7 @@ public class ClientMessageParser implements ClientListenerMessageParser {
                 return new ClientCacheQueryContinuousRequest(reader);
 
             case OP_QUERY_INDEX:
-                return new ClientCacheQueryIndexRequest(reader);
+                return new ClientCacheIndexQueryRequest(reader);
 
             case OP_TX_START:
                 return new ClientTxStartRequest(reader);

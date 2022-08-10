@@ -59,6 +59,9 @@ public class ThinClientIndexQueryTest extends GridCommonAbstractTest {
     private static final int CNT = 10_000;
 
     /** */
+    private static final int NODES = 2;
+
+    /** */
     private static final String IDX_FLD1 = "IDX_FLD1";
 
     /** */
@@ -87,7 +90,7 @@ public class ThinClientIndexQueryTest extends GridCommonAbstractTest {
     @Override protected void beforeTestsStarted() throws Exception {
         super.beforeTestsStarted();
 
-        Ignite crd = startGrids(2);
+        Ignite crd = startGrids(NODES);
 
         crd.getOrCreateCache(new CacheConfiguration<Integer, Person>()
             .setName("CACHE")
@@ -189,6 +192,34 @@ public class ThinClientIndexQueryTest extends GridCommonAbstractTest {
         idxQry.setFilter((k, v) -> (int)k < 1000);
 
         withClientCache((cache) -> assertClientQuery(cache, 0, 1000, idxQry));
+    }
+
+    /** */
+    @Test
+    public void testPartition() {
+        withClientCache(cache -> {
+            IndexQuery<Integer, Person> idxQry = new IndexQuery<>(Person.class);
+
+            for (int p = 0; p < 1024; p++) {
+                idxQry.setPartition(p);
+
+                for (int i = 0; i < NODES; i++)
+                    TestRecordingCommunicationSpi.spi(grid(i)).record(GridQueryNextPageRequest.class);
+
+                List<Cache.Entry<Integer, Person>> result = cache.query(idxQry).getAll();
+
+                assertTrue(result.size() < CNT);
+
+                for (Cache.Entry<Integer, Person> e: result)
+                    assertEquals(p, grid(0).affinity("CACHE").partition(e.getKey()));
+
+                for (int i = 0; i < NODES; i++) {
+                    List<Object> reqs = TestRecordingCommunicationSpi.spi(grid(0)).recordedMessages(true);
+
+                    assertTrue(reqs.isEmpty());
+                }
+            }
+        });
     }
 
     /** */

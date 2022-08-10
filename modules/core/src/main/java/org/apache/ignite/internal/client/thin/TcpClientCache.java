@@ -959,6 +959,7 @@ public class TcpClientCache<K, V> implements ClientCache<K, V> {
 
             out.writeInt(qry.getPageSize());
             out.writeBoolean(qry.isLocal());
+            out.writeInt(qry.getPartition() == null ? -1 : qry.getPartition());
 
             serDes.writeObject(out, qry.getValueType());
 
@@ -982,7 +983,7 @@ public class TcpClientCache<K, V> implements ClientCache<K, V> {
             keepBinary,
             marsh,
             cacheId,
-            -1
+            qry.getPartition() == null ? -1 : qry.getPartition()
         ));
     }
 
