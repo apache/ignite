@@ -42,11 +42,14 @@ import org.apache.ignite.client.ClientCache;
 import org.apache.ignite.client.ClientCacheConfiguration;
 import org.apache.ignite.client.ClientDisconnectListener;
 import org.apache.ignite.client.ClientException;
+import org.apache.ignite.client.ClientFeatureNotSupportedByServerException;
 import org.apache.ignite.client.IgniteClientFuture;
 import org.apache.ignite.internal.binary.GridBinaryMarshaller;
 import org.apache.ignite.internal.binary.streams.BinaryInputStream;
 import org.apache.ignite.internal.binary.streams.BinaryOutputStream;
 import org.apache.ignite.internal.client.thin.TcpClientTransactions.TcpClientTransaction;
+import org.apache.ignite.internal.processors.cache.version.GridCacheVersion;
+import org.apache.ignite.internal.util.typedef.T2;
 import org.apache.ignite.internal.util.typedef.internal.A;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.jetbrains.annotations.Nullable;
@@ -57,7 +60,7 @@ import static org.apache.ignite.internal.processors.platform.cache.expiry.Platfo
 /**
  * Implementation of {@link ClientCache} over TCP protocol.
  */
-class TcpClientCache<K, V> implements ClientCache<K, V> {
+public class TcpClientCache<K, V> implements ClientCache<K, V> {
     /** "Keep binary" flag mask. */
     private static final byte KEEP_BINARY_FLAG_MASK = 0x01;
 
@@ -122,6 +125,8 @@ class TcpClientCache<K, V> implements ClientCache<K, V> {
         this.expiryPlc = expiryPlc;
 
         jCacheAdapter = new ClientJCacheAdapter<>(this);
+
+        this.ch.registerCacheIfCustomAffinity(this.name);
     }
 
     /** {@inheritDoc} */
@@ -863,6 +868,54 @@ class TcpClientCache<K, V> implements ClientCache<K, V> {
         U.closeQuiet(hnd);
     }
 
+    /**
+     * Store DR data.
+     *
+     * @param drMap DR map.
+     */
+    public void putAllConflict(Map<? extends K, ? extends T2<? extends V, GridCacheVersion>> drMap) throws ClientException {
+        A.notNull(drMap, "drMap");
+
+        ch.request(ClientOperation.CACHE_PUT_ALL_CONFLICT, req -> writePutAllConflict(drMap, req));
+    }
+
+    /**
+     * Store DR data asynchronously.
+     *
+     * @param drMap DR map.
+     * @return Future.
+     */
+    public IgniteClientFuture<Void> putAllConflictAsync(Map<? extends K, T2<? extends V, GridCacheVersion>> drMap)
+        throws ClientException {
+        A.notNull(drMap, "drMap");
+
+        return ch.requestAsync(ClientOperation.CACHE_PUT_ALL_CONFLICT, req -> writePutAllConflict(drMap, req));
+    }
+
+    /**
+     * Removes DR data.
+     *
+     * @param drMap DR map.
+     */
+    public void removeAllConflict(Map<? extends K, GridCacheVersion> drMap) throws ClientException {
+        A.notNull(drMap, "drMap");
+
+        ch.request(ClientOperation.CACHE_REMOVE_ALL_CONFLICT, req -> writeRemoveAllConflict(drMap, req));
+    }
+
+    /**
+     * Removes DR data asynchronously.
+     *
+     * @param drMap DR map.
+     * @return Future.
+     */
+    public IgniteClientFuture<Void> removeAllConflictAsync(Map<? extends K, GridCacheVersion> drMap)
+        throws ClientException {
+        A.notNull(drMap, "drMap");
+
+        return ch.requestAsync(ClientOperation.CACHE_REMOVE_ALL_CONFLICT, req -> writeRemoveAllConflict(drMap, req));
+    }
+
     /** Handle scan query. */
     private QueryCursor<Cache.Entry<K, V>> scanQuery(ScanQuery<K, V> qry) {
         Consumer<PayloadOutputChannel> qryWriter = payloadCh -> {
@@ -1064,5 +1117,50 @@ class TcpClientCache<K, V> implements ClientCache<K, V> {
                     serDes.writeObject(out, e.getKey());
                     serDes.writeObject(out, e.getValue());
                 });
+    }
+
+    /** */
+    private void writePutAllConflict(
+        Map<? extends K, ? extends T2<? extends V, GridCacheVersion>> map,
+        PayloadOutputChannel req
+    ) {
+        checkDataReplicationSupported(req.clientChannel().protocolCtx());
+
+        writeCacheInfo(req);
+
+        ClientUtils.collection(
+            map.entrySet(),
+            req.out(),
+            (out, e) -> {
+                serDes.writeObject(out, e.getKey());
+                serDes.writeObject(out, e.getValue().get1());
+                serDes.writeObject(out, e.getValue().get2());
+            });
+    }
+
+    /** */
+    private void writeRemoveAllConflict(Map<? extends K, GridCacheVersion> map, PayloadOutputChannel req) {
+        checkDataReplicationSupported(req.clientChannel().protocolCtx());
+
+        writeCacheInfo(req);
+
+        ClientUtils.collection(
+            map.entrySet(),
+            req.out(),
+            (out, e) -> {
+                serDes.writeObject(out, e.getKey());
+                serDes.writeObject(out, e.getValue());
+            });
+    }
+
+    /**
+     * Check that data replication operations is supported by server.
+     *
+     * @param protocolCtx Protocol context.
+     */
+    private void checkDataReplicationSupported(ProtocolContext protocolCtx)
+        throws ClientFeatureNotSupportedByServerException {
+        if (!protocolCtx.isFeatureSupported(ProtocolBitmaskFeature.DATA_REPLICATION_OPERATIONS))
+            throw new ClientFeatureNotSupportedByServerException(ProtocolBitmaskFeature.DATA_REPLICATION_OPERATIONS);
     }
 }

@@ -235,13 +235,17 @@ public class TcpIgniteClient implements IgniteClient {
         ensureCacheName(name);
 
         ch.request(ClientOperation.CACHE_DESTROY, req -> req.out().writeInt(ClientUtils.cacheId(name)));
+        ch.unregisterCacheIfCustomAffinity(name);
     }
 
     /** {@inheritDoc} */
     @Override public IgniteClientFuture<Void> destroyCacheAsync(String name) throws ClientException {
         ensureCacheName(name);
 
-        return ch.requestAsync(ClientOperation.CACHE_DESTROY, req -> req.out().writeInt(ClientUtils.cacheId(name)));
+        return ch.requestAsync(ClientOperation.CACHE_DESTROY, req -> {
+            req.out().writeInt(ClientUtils.cacheId(name));
+            ch.unregisterCacheIfCustomAffinity(name);
+        });
     }
 
     /** {@inheritDoc} */
@@ -412,6 +416,13 @@ public class TcpIgniteClient implements IgniteClient {
      */
     public static IgniteClient start(ClientConfiguration cfg) throws ClientException {
         return new TcpIgniteClient(cfg);
+    }
+
+    /**
+     * @return Channel.
+     */
+    ReliableChannel reliableChannel() {
+        return ch;
     }
 
     /** @throws IllegalArgumentException if the specified cache name is invalid. */

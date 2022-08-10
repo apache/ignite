@@ -56,11 +56,13 @@ import org.apache.ignite.internal.processors.platform.client.cache.ClientCacheGe
 import org.apache.ignite.internal.processors.platform.client.cache.ClientCacheLocalPeekRequest;
 import org.apache.ignite.internal.processors.platform.client.cache.ClientCacheNodePartitionsRequest;
 import org.apache.ignite.internal.processors.platform.client.cache.ClientCachePartitionsRequest;
+import org.apache.ignite.internal.processors.platform.client.cache.ClientCachePutAllConflictRequest;
 import org.apache.ignite.internal.processors.platform.client.cache.ClientCachePutAllRequest;
 import org.apache.ignite.internal.processors.platform.client.cache.ClientCachePutIfAbsentRequest;
 import org.apache.ignite.internal.processors.platform.client.cache.ClientCachePutRequest;
 import org.apache.ignite.internal.processors.platform.client.cache.ClientCacheQueryContinuousRequest;
 import org.apache.ignite.internal.processors.platform.client.cache.ClientCacheQueryNextPageRequest;
+import org.apache.ignite.internal.processors.platform.client.cache.ClientCacheRemoveAllConflictRequest;
 import org.apache.ignite.internal.processors.platform.client.cache.ClientCacheRemoveAllRequest;
 import org.apache.ignite.internal.processors.platform.client.cache.ClientCacheRemoveIfEqualsRequest;
 import org.apache.ignite.internal.processors.platform.client.cache.ClientCacheRemoveKeyRequest;
@@ -188,6 +190,12 @@ public class ClientMessageParser implements ClientListenerMessageParser {
 
     /** */
     private static final short OP_CACHE_LOCAL_PEEK = 1021;
+
+    /** */
+    private static final short OP_CACHE_PUT_ALL_CONFLICT = 1022;
+
+    /** */
+    private static final short OP_CACHE_REMOVE_ALL_CONFLICT = 1023;
 
     /* Cache create / destroy, configuration. */
     /** */
@@ -522,6 +530,12 @@ public class ClientMessageParser implements ClientListenerMessageParser {
             case OP_CACHE_REMOVE_ALL:
                 return new ClientCacheRemoveAllRequest(reader);
 
+            case OP_CACHE_PUT_ALL_CONFLICT:
+                return new ClientCachePutAllConflictRequest(reader, ctx);
+
+            case OP_CACHE_REMOVE_ALL_CONFLICT:
+                return new ClientCacheRemoveAllConflictRequest(reader);
+
             case OP_CACHE_CREATE_WITH_NAME:
                 return new ClientCacheCreateWithNameRequest(reader);
 
@@ -535,7 +549,7 @@ public class ClientMessageParser implements ClientListenerMessageParser {
                 return new ClientCacheNodePartitionsRequest(reader);
 
             case OP_CACHE_PARTITIONS:
-                return new ClientCachePartitionsRequest(reader);
+                return new ClientCachePartitionsRequest(reader, protocolCtx);
 
             case OP_CACHE_GET_NAMES:
                 return new ClientCacheGetNamesRequest(reader);
