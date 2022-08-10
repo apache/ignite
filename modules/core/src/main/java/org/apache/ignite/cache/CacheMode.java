@@ -52,18 +52,15 @@ public enum CacheMode {
     /** Cached enumerated values by their codes. */
     private static final CacheMode[] BY_CODE;
 
-    /** Enumerated values. */
-    private static final CacheMode[] VALS = values();
-
     static {
-        int max = Stream.of(VALS)
+        int max = Stream.of(values())
             .mapToInt(e -> e.code)
             .max()
             .orElseThrow(RuntimeException::new);
 
         BY_CODE = new CacheMode[max + 1];
 
-        for (CacheMode e : VALS) {
+        for (CacheMode e : values()) {
             BY_CODE[e.code] = e;
         }
     }
@@ -83,20 +80,6 @@ public enum CacheMode {
      */
     public byte code() {
         return code;
-    }
-
-    /**
-     * Efficiently gets enumerated value from its ordinal.
-     *
-     * @param ord Ordinal value.
-     * @return Enumerated value or {@code null} if ordinal out of range.
-     *
-     * @deprecated The cache mode code is changed since 2.14 and the code based on the enumeration order may lead to an incorrect result.
-     * Use the {@link CacheMode#fromCode(int)} instead.
-     */
-    @Deprecated
-    @Nullable public static CacheMode fromOrdinal(int ord) {
-        return ord >= 0 && ord < VALS.length ? VALS[ord] : null;
     }
 
     /**
