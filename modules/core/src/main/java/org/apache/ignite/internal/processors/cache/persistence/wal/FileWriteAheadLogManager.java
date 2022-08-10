@@ -2181,20 +2181,31 @@ public class FileWriteAheadLogManager extends GridCacheSharedManagerAdapter impl
          * Checks if there are already compressed segments and assigns counters if needed.
          */
         private void initAlreadyCompressedSegments() {
-            FileDescriptor[] alreadyCompressed = scan(walArchiveDir.listFiles(WAL_SEGMENT_FILE_COMPACTED_FILTER));
+            long firstArchivedIdx = -1;
+            long lastCompactedIdx = -1;
 
-            if (alreadyCompressed.length > 0)
-                segmentAware.onSegmentCompressed(alreadyCompressed[alreadyCompressed.length - 1].idx());
-            else {
-                // We have to set a starting index for the compressor.
-                FileDescriptor[] alreadyArchived = scan(walArchiveDir.listFiles(WAL_SEGMENT_FILE_FILTER));
+            for (File file : walArchiveDir.listFiles()) {
+                try {
+                    long idx = Long.parseLong(file.getName().substring(0, 16));
 
-                if (alreadyArchived.length > 0)
-                    segmentAware.onSegmentCompressed(alreadyArchived[0].idx() - 1);
+                    if (WAL_SEGMENT_FILE_COMPACTED_PATTERN.matcher(file.getName()).matches()) {
+                        metrics.onWalSegmentCompressed(file.length());
+
+                        lastCompactedIdx = Math.max(lastCompactedIdx, idx);
+                    }
+                    else if (lastCompactedIdx == -1 && WAL_NAME_PATTERN.matcher(file.getName()).matches())
+                        firstArchivedIdx = firstArchivedIdx == -1 ? idx : Math.min(firstArchivedIdx, idx);
+                }
+                catch (NumberFormatException | IndexOutOfBoundsException ignore) {
+
+                }
             }
 
-            for (FileDescriptor fd : alreadyCompressed)
-                metrics.onWalSegmentCompressed(fd.file().length());
+            // We have to set a starting index for the compressor.
+            if (lastCompactedIdx >= 0)
+                segmentAware.onSegmentCompressed(lastCompactedIdx);
+            else if (firstArchivedIdx >= 0)
+                segmentAware.onSegmentCompressed(firstArchivedIdx - 1);
         }
 
         /**
