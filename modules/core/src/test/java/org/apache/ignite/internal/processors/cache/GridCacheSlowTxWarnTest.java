@@ -34,22 +34,24 @@ import static org.apache.ignite.cache.CacheMode.REPLICATED;
  * system property.
  */
 public class GridCacheSlowTxWarnTest extends GridCommonAbstractTest {
+    /** Partitioned cache name. */
+    protected static final String PARTITIONED_CACHE_NAME = "partitioned";
+
+    /** Replicated cache name. */
+    private static final String REPLICATED_CACHE_NAME = "replicated";
+
     /** {@inheritDoc} */
     @Override protected IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {
         IgniteConfiguration c = super.getConfiguration(igniteInstanceName);
 
-        CacheConfiguration cc1 = defaultCacheConfiguration();
+        CacheConfiguration cc1 = defaultCacheConfiguration()
+            .setName(PARTITIONED_CACHE_NAME)
+            .setCacheMode(PARTITIONED)
+            .setBackups(1);
 
-        cc1.setName("partitioned");
-        cc1.setCacheMode(PARTITIONED);
-        cc1.setBackups(1);
-
-        CacheConfiguration cc2 = defaultCacheConfiguration();
-
-        cc2.setName("replicated");
-        cc2.setCacheMode(REPLICATED);
-
-        CacheConfiguration cc3 = defaultCacheConfiguration();
+        CacheConfiguration cc2 = defaultCacheConfiguration()
+            .setName(REPLICATED_CACHE_NAME)
+            .setCacheMode(REPLICATED);
 
         c.setCacheConfiguration(cc1, cc2);
 
@@ -66,18 +68,18 @@ public class GridCacheSlowTxWarnTest extends GridCommonAbstractTest {
 
             info(">>> Slow tx timeout is not set, long-live txs simulated.");
 
-            checkCache(g, "partitioned", true, false);
-            checkCache(g, "replicated", true, false);
+            checkCache(g, PARTITIONED_CACHE_NAME, true, false);
+            checkCache(g, REPLICATED_CACHE_NAME, true, false);
 
             info(">>> Slow tx timeout is set, long-live tx simulated.");
 
-            checkCache(g, "partitioned", true, true);
-            checkCache(g, "replicated", true, true);
+            checkCache(g, PARTITIONED_CACHE_NAME, true, true);
+            checkCache(g, REPLICATED_CACHE_NAME, true, true);
 
             info(">>> Slow tx timeout is set, no long-live txs.");
 
-            checkCache(g, "partitioned", false, true);
-            checkCache(g, "replicated", false, true);
+            checkCache(g, PARTITIONED_CACHE_NAME, false, true);
+            checkCache(g, REPLICATED_CACHE_NAME, false, true);
         }
         finally {
             stopAllGrids();

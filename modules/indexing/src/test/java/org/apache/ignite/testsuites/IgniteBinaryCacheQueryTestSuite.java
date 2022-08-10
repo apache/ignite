@@ -43,6 +43,7 @@ import org.apache.ignite.internal.processors.cache.IgniteCacheMergeSqlQueryFaili
 import org.apache.ignite.internal.processors.cache.IgniteCacheMergeSqlQuerySelfTest;
 import org.apache.ignite.internal.processors.cache.IgniteCacheMultipleIndexedTypesTest;
 import org.apache.ignite.internal.processors.cache.IgniteCacheOffheapEvictQueryTest;
+import org.apache.ignite.internal.processors.cache.IgniteCacheOffheapIndexScanTest;
 import org.apache.ignite.internal.processors.cache.IgniteCacheParallelismQuerySortOrderTest;
 import org.apache.ignite.internal.processors.cache.IgniteCachePrimitiveFieldsQuerySelfTest;
 import org.apache.ignite.internal.processors.cache.IgniteCacheQueryH2IndexingLeakTest;
@@ -260,6 +261,7 @@ import org.junit.runners.Suite;
     H2ResultSetIteratorNullifyOnEndSelfTest.class,
     IgniteSqlBigIntegerKeyTest.class,
     IgniteCacheOffheapEvictQueryTest.class,
+    IgniteCacheOffheapIndexScanTest.class,
 
     GridCacheCrossCacheQuerySelfTest.class,
     GridCacheQuerySerializationSelfTest.class,
