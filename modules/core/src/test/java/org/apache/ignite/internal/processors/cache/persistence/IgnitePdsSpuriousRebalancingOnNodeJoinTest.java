@@ -154,7 +154,7 @@ public class IgnitePdsSpuriousRebalancingOnNodeJoinTest extends GridCommonAbstra
 
             PartitionUpdateCounterTrackingImpl delegate = U.field(cntr0, "delegate");
 
-            AtomicLong cntr = U.field(delegate, "cntr");
+            AtomicLong cntr = U.field(delegate, "lwm");
 
             cntr.set(cntr.get() - 1);
 

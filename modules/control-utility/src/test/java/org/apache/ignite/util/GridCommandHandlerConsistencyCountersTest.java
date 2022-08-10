@@ -127,7 +127,7 @@ public class GridCommandHandlerConsistencyCountersTest extends GridCommandHandle
     protected final ListeningTestLogger listeningLog = new ListeningTestLogger(log);
 
     /** File IO blocked flag. */
-    private static final AtomicBoolean ioBlocked = new AtomicBoolean();
+    private static volatile boolean ioBlocked;
 
     /** {@inheritDoc} */
     @Override protected void beforeTestsStarted() throws Exception {
@@ -170,21 +170,21 @@ public class GridCommandHandlerConsistencyCountersTest extends GridCommandHandle
         @Override public FileIO create(File file, OpenOption... modes) throws IOException {
             return new FileIODecorator(factory.create(file, modes)) {
                 @Override public int write(ByteBuffer srcBuf) throws IOException {
-                    if (ioBlocked.get())
+                    if (ioBlocked)
                         throw new IOException();
 
                     return super.write(srcBuf);
                 }
 
                 @Override public int write(ByteBuffer srcBuf, long position) throws IOException {
-                    if (ioBlocked.get())
+                    if (ioBlocked)
                         throw new IOException();
 
                     return super.write(srcBuf, position);
                 }
 
                 @Override public int write(byte[] buf, int off, int len) throws IOException {
-                    if (ioBlocked.get())
+                    if (ioBlocked)
                         throw new IOException();
 
                     return super.write(buf, off, len);
@@ -412,14 +412,14 @@ public class GridCommandHandlerConsistencyCountersTest extends GridCommandHandle
         listeningLog.registerListener(lsnrRebalanceType);
         listeningLog.registerListener(lsnrRebalanceAmount);
 
-        ioBlocked.set(true); // Emulating power off, OOM or disk overflow. Keeping data as is, with missed counters updates.
+        ioBlocked = true; // Emulating power off, OOM or disk overflow. Keeping data as is, with missed counters updates.
 
         stopAllGrids();
 
         for (Thread th : ths)
             th.join();
 
-        ioBlocked.set(false);
+        ioBlocked = false;
 
         ignite = startGrids(nodes);
 
