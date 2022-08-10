@@ -61,7 +61,7 @@ public enum CacheMode {
             .max()
             .orElseThrow(RuntimeException::new);
 
-        BY_CODE = new CacheMode[max];
+        BY_CODE = new CacheMode[max + 1];
 
         for (CacheMode e : VALS) {
             BY_CODE[e.code] = e;
