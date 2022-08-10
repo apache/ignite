@@ -2627,7 +2627,7 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
         private final Queue<RemoteSnapshotFilesRecevier> queue = new ConcurrentLinkedDeque<>();
 
         /** {@code true} if the node is stopping. */
-        private volatile boolean stopping;
+        private boolean stopping;
 
         /**
          * @param next New task for scheduling.
@@ -2637,14 +2637,6 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
 
             if (stopping) {
                 next.acceptException(new IgniteException(SNP_NODE_STOPPING_ERR_MSG));
-
-                if (active != null)
-                    active.acceptException(new IgniteException(SNP_NODE_STOPPING_ERR_MSG));
-
-                RemoteSnapshotFilesRecevier r;
-
-                while ((r = queue.poll()) != null)
-                    r.acceptException(new IgniteException(SNP_NODE_STOPPING_ERR_MSG));
 
                 return;
             }
@@ -2673,8 +2665,16 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
         }
 
         /** Stopping handler. */
-        public void stop() {
+        public synchronized void stop() {
             stopping = true;
+
+            if (active != null)
+                active.acceptException(new IgniteException(SNP_NODE_STOPPING_ERR_MSG));
+
+            RemoteSnapshotFilesRecevier r;
+
+            while ((r = queue.poll()) != null)
+                r.acceptException(new IgniteException(SNP_NODE_STOPPING_ERR_MSG));
 
             Set<RemoteSnapshotFilesRecevier> futs = activeTasks();
             GridCompoundFuture<Void, Void> stopFut = new GridCompoundFuture<>();
@@ -2911,12 +2911,10 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
                             ", grpId=" + grpId + ", partId=" + partId + ']');
                     }
 
-                    busyLock.enterBusy();
+                    if (!busyLock.enterBusy())
+                        throw new IgniteException(SNP_NODE_STOPPING_ERR_MSG);
 
                     try {
-                        if (stopping)
-                            throw new IgniteException(SNP_NODE_STOPPING_ERR_MSG);
-
                         task0.acceptFile(file);
                     }
                     finally {
