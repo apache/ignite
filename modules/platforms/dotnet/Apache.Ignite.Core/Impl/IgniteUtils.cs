@@ -232,43 +232,5 @@ namespace Apache.Ignite.Core.Impl
             
             return res & ~platformCache;
         }
-
-        /// <summary>
-        /// Converts integer code representation to CacheMode.
-        /// </summary>
-        /// <param name="code">Integer representation.</param>
-        /// <returns>Cache mode.</returns>
-        /// <exception cref="NotSupportedException">If fails.</exception>
-        public static CacheMode CacheModeFromInt(int code)
-        {
-            switch (code)
-            {
-                case 1:
-                    return CacheMode.Replicated;
-                case 2:
-                    return CacheMode.Partitioned;
-                default:
-                    throw new NotSupportedException("Cache mode is not supported: " + code);
-            }
-        }
-        
-        /// <summary>
-        /// Converts CacheMode to integer code representation.
-        /// </summary>
-        /// <param name="mode">Cache mode.</param>
-        /// <returns>Integer cache mode representation.</returns>
-        /// <exception cref="NotSupportedException">If fails.</exception>
-        public static int CacheModeToInt(CacheMode mode)
-        {
-            switch (mode)
-            {
-                case CacheMode.Replicated:
-                    return 1;
-                case CacheMode.Partitioned:
-                    return 2;
-                default:
-                    throw new NotSupportedException("Cache mode is not supported: " + mode);
-            }
-        }
     }
 }
