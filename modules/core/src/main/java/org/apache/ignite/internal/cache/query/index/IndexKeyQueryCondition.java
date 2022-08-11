@@ -143,15 +143,13 @@ class IndexKeyQueryCondition {
             }
         });
 
-        IndexKeyType condType = null;
+        IndexKeyType expCondType = idx.indexDefinition().indexKeyDefinitions().get(fldName).idxType();
 
         for (Object v: criterion.values()) {
             IndexKey k = key(v, v == null);
 
-            if (condType == null)
-                condType = k.type() == IndexKeyType.NULL ? null : k.type();
-            else if (condType != k.type())
-                throw new IgniteCheckedException("Different types of values in IN criterion. Was " + inVals + ", receieve " + k);
+            if (k.type() != IndexKeyType.NULL && k.type() != expCondType)
+                throw new IgniteCheckedException("Wrong type of value in IN criterion. Expect " + expCondType + ", receieve " + k.type());
 
             inVals.add(k);
         }
