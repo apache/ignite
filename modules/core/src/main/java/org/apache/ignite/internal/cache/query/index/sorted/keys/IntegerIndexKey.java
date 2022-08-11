@@ -84,4 +84,19 @@ public class IntegerIndexKey extends NumericIndexKey {
     @Override public int compare(IndexKey o) {
         return o.type() == type() ? Integer.compare(key, ((IntegerIndexKey)o).key) : -((NumericIndexKey)o).compareTo(key);
     }
+
+    /** {@inheritDoc} */
+    @Override public String toString() {
+        return String.valueOf(key);
+    }
+//
+//    /** {@inheritDoc} */
+//    @Override public int hashCode() {
+//        return Integer.hashCode(key);
+//    }
+//
+//    /** {@inheritDoc} */
+//    @Override public boolean equals(Object o) {
+//        return o instanceof IntegerIndexKey && key == ((IntegerIndexKey)o).key;
+//    }
 }

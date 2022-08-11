@@ -177,13 +177,8 @@ public final class IndexQuery<K, V> extends Query<Cache.Entry<K, V>> {
         if (F.isEmpty(criteria))
             return;
 
-        Class<?> critCls = criteria.get(0).getClass();
-
-        for (IndexQueryCriterion c: criteria) {
+        for (IndexQueryCriterion c: criteria)
             A.notNull(c, "criteria");
-            A.ensure(c.getClass() == critCls,
-                "Expect a the same criteria class for merging criteria. Exp=" + critCls + ", act=" + c.getClass());
-        }
 
         this.criteria = Collections.unmodifiableList(criteria);
     }

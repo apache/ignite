@@ -40,7 +40,9 @@ import org.junit.runners.Suite;
     IndexQueryWrongIndexTest.class,
     MultifieldIndexQueryTest.class,
     MultiTableIndexQuery.class,
-    RepeatedFieldIndexQueryTest.class
+    RepeatedFieldIndexQueryTest.class,
+    IndexQueryInCriterionTest.class,
+    IndexQueryInCriterionDescTest.class
 })
 public class IndexQueryTestSuite {
 }

@@ -17,6 +17,8 @@
 
 package org.apache.ignite.cache.query;
 
+import java.util.Collection;
+import org.apache.ignite.internal.cache.query.InIndexQueryCriterion;
 import org.apache.ignite.internal.cache.query.RangeIndexQueryCriterion;
 import org.apache.ignite.internal.util.typedef.internal.A;
 
@@ -123,5 +125,19 @@ public class IndexQueryCriteriaBuilder {
         c.upperNull(upper == null);
 
         return c;
+    }
+
+    /**
+     * In.
+     *
+     * @param field Index field to apply criterion.
+     * @param vals Collection of values to find.
+     * @return Criterion.
+     */
+    public static IndexQueryCriterion in(String field, Collection<?> vals) {
+        A.notNullOrEmpty(field, "field");
+        A.notEmpty(vals, "vals");
+
+        return new InIndexQueryCriterion(field, vals);
     }
 }

@@ -84,4 +84,9 @@ public class FloatIndexKey extends NumericIndexKey {
     @Override public int compare(IndexKey o) {
         return o.type() == type() ? Float.compare(key, ((FloatIndexKey)o).key) : -((NumericIndexKey)o).compareTo(key);
     }
+
+    /** {@inheritDoc} */
+    @Override public String toString() {
+        return String.valueOf(key);
+    }
 }

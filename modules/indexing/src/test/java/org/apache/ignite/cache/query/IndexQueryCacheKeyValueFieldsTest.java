@@ -158,7 +158,7 @@ public class IndexQueryCacheKeyValueFieldsTest extends GridCommonAbstractTest {
             grid(0).cache(CACHE).query(
                 new IndexQuery<String, Integer>(Integer.class).setCriteria(gt(fld, key ? key(0) : 0))
             ).getAll();
-        }, IgniteException.class, "Failed to parse IndexQuery. No index found for criteria.");
+        }, IgniteException.class, "Failed to execute IndexQuery: No index found for criteria.");
     }
 
     /** */
