@@ -91,4 +91,12 @@ public enum CacheMode {
     @Nullable public static CacheMode fromCode(int code) {
         return code >= 0 && code < BY_CODE.length ? BY_CODE[code] : null;
     }
+
+    /**
+     * @param mode Cache mode.
+     * @return Cache mode code.
+     */
+    public static byte toCode(@Nullable CacheMode mode) {
+        return mode == null ? -1 : mode.code;
+    }
 }

@@ -83,7 +83,7 @@ public class VisorAtomicConfiguration extends VisorDataTransferObject {
     /** {@inheritDoc} */
     @Override protected void writeExternalData(ObjectOutput out) throws IOException {
         out.writeInt(seqReserveSize);
-        out.writeByte(cacheMode.code());
+        out.writeByte(CacheMode.toCode(cacheMode));
         out.writeInt(backups);
     }
 

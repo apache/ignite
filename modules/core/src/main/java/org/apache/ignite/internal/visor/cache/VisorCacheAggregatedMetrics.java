@@ -560,7 +560,7 @@ public class VisorCacheAggregatedMetrics extends VisorDataTransferObject {
     /** {@inheritDoc} */
     @Override protected void writeExternalData(ObjectOutput out) throws IOException {
         U.writeString(out, name);
-        out.writeByte(mode.code());
+        out.writeByte(CacheMode.toCode(mode));
         out.writeBoolean(sys);
         U.writeMap(out, metrics);
         out.writeObject(minHeapSize);

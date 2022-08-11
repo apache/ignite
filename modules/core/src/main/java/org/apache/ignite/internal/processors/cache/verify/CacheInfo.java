@@ -359,7 +359,7 @@ public class CacheInfo extends VisorDataTransferObject {
         out.writeInt(partitions);
         out.writeInt(mapped);
         out.writeObject(topVer);
-        out.writeByte(mode.code());
+        out.writeByte(CacheMode.toCode(mode));
         out.writeInt(backupsCnt);
         U.writeString(out, affinityClsName);
         out.writeInt(cachesCnt);

@@ -299,7 +299,7 @@ public class VisorCache extends VisorDataTransferObject {
     @Override protected void writeExternalData(ObjectOutput out) throws IOException {
         U.writeString(out, name);
         U.writeIgniteUuid(out, dynamicDeploymentId);
-        out.writeByte(mode.code());
+        out.writeByte(CacheMode.toCode(mode));
         out.writeLong(memorySize);
         out.writeLong(indexesSize);
         out.writeLong(size);

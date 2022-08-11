@@ -680,7 +680,7 @@ public class VisorCacheMetrics extends VisorDataTransferObject {
     /** {@inheritDoc} */
     @Override protected void writeExternalData(ObjectOutput out) throws IOException {
         U.writeString(out, name);
-        out.writeByte(mode.code());
+        out.writeByte(CacheMode.toCode(mode));
 
         out.writeBoolean(sys);
         out.writeInt(size);

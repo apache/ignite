@@ -550,7 +550,7 @@ public class VisorCacheConfiguration extends VisorDataTransferObject {
     @Override protected void writeExternalData(ObjectOutput out) throws IOException {
         U.writeString(out, name);
         U.writeString(out, grpName);
-        out.writeByte(mode.code());
+        out.writeByte(CacheMode.toCode(mode));
         U.writeEnum(out, atomicityMode);
         out.writeBoolean(eagerTtl);
         U.writeEnum(out, writeSynchronizationMode);

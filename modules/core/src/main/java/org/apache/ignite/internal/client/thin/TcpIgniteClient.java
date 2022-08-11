@@ -32,6 +32,7 @@ import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.binary.BinaryBasicNameMapper;
 import org.apache.ignite.binary.BinaryObjectException;
 import org.apache.ignite.binary.BinaryType;
+import org.apache.ignite.cache.CacheMode;
 import org.apache.ignite.cache.query.FieldsQueryCursor;
 import org.apache.ignite.cache.query.SqlFieldsQuery;
 import org.apache.ignite.client.ClientAtomicConfiguration;
@@ -362,7 +363,7 @@ public class TcpIgniteClient implements IgniteClient {
                 if (cfg != null) {
                     out.out().writeBoolean(true);
                     out.out().writeInt(cfg.getAtomicSequenceReserveSize());
-                    out.out().writeByte(cfg.getCacheMode().code());
+                    out.out().writeByte(CacheMode.toCode(cfg.getCacheMode()));
                     out.out().writeInt(cfg.getBackups());
                     writeString(cfg.getGroupName(), out.out());
                 }
@@ -390,7 +391,7 @@ public class TcpIgniteClient implements IgniteClient {
             if (cfg != null) {
                 out.out().writeBoolean(true);
                 out.out().writeByte((byte)cfg.getAtomicityMode().ordinal());
-                out.out().writeByte(cfg.getCacheMode().code());
+                out.out().writeByte(CacheMode.toCode(cfg.getCacheMode()));
                 out.out().writeInt(cfg.getBackups());
                 writeString(cfg.getGroupName(), out.out());
                 out.out().writeBoolean(cfg.isColocated());
