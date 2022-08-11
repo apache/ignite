@@ -299,6 +299,7 @@ public class GridCacheQueryAdapter<T> implements CacheQuery<T> {
      * @param cctx Context.
      * @param type Query type.
      * @param idxQryDesc Index query descriptor.
+     * @param part Partition number to iterate over.
      * @param clsName Class name.
      * @param filter Index query remote filter.
      */
@@ -306,6 +307,7 @@ public class GridCacheQueryAdapter<T> implements CacheQuery<T> {
         GridCacheContext<?, ?> cctx,
         GridCacheQueryType type,
         IndexQueryDesc idxQryDesc,
+        @Nullable Integer part,
         @Nullable String clsName,
         @Nullable IgniteBiPredicate<Object, Object> filter
     ) {
@@ -314,6 +316,7 @@ public class GridCacheQueryAdapter<T> implements CacheQuery<T> {
         this.clsName = clsName;
         this.idxQryDesc = idxQryDesc;
         this.filter = filter;
+        this.part = part;
 
         log = cctx.logger(getClass());
 
