@@ -219,6 +219,14 @@
             <testResource>
                 <directory>src/test/resources</directory>
             </testResource>
+            <testResource>
+                <directory>src/test/config</directory>
+                <includes>
+                    <include>log4j2-test.xml</include>
+                    <include>tests.properties</include>
+                </includes>
+            </testResource>
+
         </testResources>
 
         <plugins>
