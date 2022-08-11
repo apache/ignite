@@ -27,6 +27,7 @@
 
 #include <ignite/cache/event/cache_entry_event_listener.h>
 #include <ignite/cache/event/cache_entry_event_filter.h>
+#include <ignite/cache/event/java_cache_entry_event_filter.h>
 
 namespace ignite
 {
@@ -130,6 +131,35 @@ namespace ignite
                     ContinuousQuery(Reference<event::CacheEntryEventListener<K, V> > lsnr,
                         const Reference<F>& remoteFilter, bool loc) :
                         impl(new impl::cache::query::continuous::ContinuousQueryImpl<K, V>(lsnr, loc, remoteFilter))
+                    {
+                        // No-op.
+                    }
+
+                    /**
+                     * Constructor.
+                     *
+                     * @param lsnr Event listener. Invoked on the node where
+                     *     continuous query execution has been started.
+                     * @param remoteFilter Java remote filter.
+                     */
+                    ContinuousQuery(Reference<event::CacheEntryEventListener<K, V> > lsnr,
+                                    const event::JavaCacheEntryEventFilter& remoteFilter) :
+                            impl(new impl::cache::query::continuous::ContinuousQueryImpl<K, V>(lsnr, false, remoteFilter))
+                    {
+                        // No-op.
+                    }
+
+                    /**
+                     * Constructor.
+                     *
+                     * @param lsnr Event listener Invoked on the node where
+                     *     continuous query execution has been started.
+                     * @param remoteFilter Java remote filter.
+                     * @param loc Whether query should be executed locally.
+                     */
+                    ContinuousQuery(Reference<event::CacheEntryEventListener<K, V> > lsnr,
+                                    const event::JavaCacheEntryEventFilter& remoteFilter, bool loc) :
+                            impl(new impl::cache::query::continuous::ContinuousQueryImpl<K, V>(lsnr, loc, remoteFilter))
                     {
                         // No-op.
                     }
