@@ -17,17 +17,21 @@
 
 package org.apache.ignite.internal.processors.platform.client.cache;
 
+import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 import org.apache.ignite.IgniteCache;
+import org.apache.ignite.IgniteException;
 import org.apache.ignite.binary.BinaryObject;
 import org.apache.ignite.cache.query.IndexQuery;
 import org.apache.ignite.cache.query.IndexQueryCriterion;
 import org.apache.ignite.cache.query.QueryCursor;
 import org.apache.ignite.internal.binary.BinaryRawReaderEx;
+import org.apache.ignite.internal.cache.query.RangeIndexQueryCriterion;
 import org.apache.ignite.internal.processors.platform.client.ClientConnectionContext;
 import org.apache.ignite.internal.processors.platform.client.ClientResponse;
 
+import static org.apache.ignite.internal.binary.GridBinaryMarshaller.ARR_LIST;
 
 /**
  * IndexQuery request.
@@ -54,9 +58,20 @@ public class ClientCacheIndexQueryRequest extends ClientCacheRequest {
 
         String valType = reader.readString();
 
-        List<IndexQueryCriterion> criteria = reader.readObject();
+        String idxName = reader.readString();
 
-        String idxName = (String)reader.readObjectDetached();
+        byte arrMark = reader.readByte();
+
+        List<IndexQueryCriterion> criteria = null;
+
+        if (arrMark == ARR_LIST) {
+            int critSize = reader.readInt();
+
+            criteria = new ArrayList<>(critSize);
+
+            for (int i = 0; i < critSize; i++)
+                criteria.add(readCriterion(reader));
+        }
 
         Object filterObj = reader.readObjectDetached();
 
@@ -73,6 +88,33 @@ public class ClientCacheIndexQueryRequest extends ClientCacheRequest {
 
         if (filterObj != null)
             qry.setFilter(((BinaryObject)filterObj).deserialize());
+    }
+
+    /** */
+    private IndexQueryCriterion readCriterion(BinaryRawReaderEx reader) {
+        byte type = reader.readByte();
+
+        if (type == 0) {
+            String field = reader.readString();
+
+            boolean lowerIncl = reader.readBoolean();
+            boolean upperIncl = reader.readBoolean();
+            boolean lowerNull = reader.readBoolean();
+            boolean upperNull = reader.readBoolean();
+
+            Object lower = reader.readObjectDetached();
+            Object upper = reader.readObjectDetached();
+
+            RangeIndexQueryCriterion r = new RangeIndexQueryCriterion(field, lower, upper);
+            r.lowerIncl(lowerIncl);
+            r.upperIncl(upperIncl);
+            r.lowerNull(lowerNull);
+            r.upperNull(upperNull);
+
+            return r;
+        }
+
+        throw new IgniteException("Unknown IndexQuery criterion type: " + type);
     }
 
     /**
