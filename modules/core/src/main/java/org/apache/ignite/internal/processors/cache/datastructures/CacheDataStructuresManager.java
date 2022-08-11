@@ -321,7 +321,7 @@ public class CacheDataStructuresManager extends GridCacheManagerAdapter {
                         }
                     },
                     new QueueHeaderPredicate(),
-                    cctx.isLocal() || (cctx.isReplicated() && cctx.affinityNode()),
+                    cctx.isReplicated() && cctx.affinityNode(),
                     true,
                     false,
                     false);
@@ -430,15 +430,11 @@ public class CacheDataStructuresManager extends GridCacheManagerAdapter {
      * @throws IgniteCheckedException If failed.
      */
     private void removeSetData(IgniteUuid setId, AffinityTopologyVersion topVer) throws IgniteCheckedException {
-        boolean loc = cctx.isLocal();
-
         GridCacheAffinityManager aff = cctx.affinity();
 
-        if (!loc) {
-            aff.affinityReadyFuture(topVer).get();
+        aff.affinityReadyFuture(topVer).get();
 
-            cctx.preloader().syncFuture().get();
-        }
+        cctx.preloader().syncFuture().get();
 
         IgniteInternalCache<?, ?> cache = cctx.cache();
 
@@ -473,74 +469,67 @@ public class CacheDataStructuresManager extends GridCacheManagerAdapter {
     public void removeSetData(IgniteUuid id, boolean separated) throws IgniteCheckedException {
         assert id != null;
 
-        if (!cctx.isLocal()) {
-            while (true) {
-                AffinityTopologyVersion topVer = cctx.topologyVersionFuture().get();
+        while (true) {
+            AffinityTopologyVersion topVer = cctx.topologyVersionFuture().get();
 
-                Collection<ClusterNode> nodes = F.view(cctx.discovery().nodes(topVer), node -> !node.isDaemon());
+            Collection<ClusterNode> nodes = F.view(cctx.discovery().nodes(topVer), node -> !node.isDaemon());
 
-                try {
-                    cctx.closures().callAsyncNoFailover(BROADCAST,
-                        new BlockSetCallable(cctx.name(), id),
-                        nodes,
-                        true,
-                        0, false).get();
+            try {
+                cctx.closures().callAsyncNoFailover(BROADCAST,
+                    new BlockSetCallable(cctx.name(), id),
+                    nodes,
+                    true,
+                    0, false).get();
 
-                    // Separated cache will be destroyed after the set is blocked.
-                    if (separated)
-                        break;
-                }
-                catch (IgniteCheckedException e) {
-                    if (e.hasCause(ClusterTopologyCheckedException.class)) {
-                        if (log.isDebugEnabled())
-                            log.debug("RemoveSetData job failed, will retry: " + e);
-
-                        continue;
-                    }
-                    else if (!pingNodes(nodes)) {
-                        if (log.isDebugEnabled())
-                            log.debug("RemoveSetData job failed and set data node left, will retry: " + e);
-
-                        continue;
-                    }
-                    else
-                        throw e;
-                }
-
-                Collection<ClusterNode> affNodes = CU.affinityNodes(cctx, topVer);
-
-                try {
-                    cctx.closures().callAsyncNoFailover(BROADCAST,
-                        new RemoveSetDataCallable(cctx.name(), id, topVer),
-                        affNodes,
-                        true,
-                        0, false).get();
-                }
-                catch (IgniteCheckedException e) {
-                    if (e.hasCause(ClusterTopologyCheckedException.class)) {
-                        if (log.isDebugEnabled())
-                            log.debug("RemoveSetData job failed, will retry: " + e);
-
-                        continue;
-                    }
-                    else if (!pingNodes(affNodes)) {
-                        if (log.isDebugEnabled())
-                            log.debug("RemoveSetData job failed and set data node left, will retry: " + e);
-
-                        continue;
-                    }
-                    else
-                        throw e;
-                }
-
-                if (topVer.equals(cctx.topologyVersionFuture().get()))
+                // Separated cache will be destroyed after the set is blocked.
+                if (separated)
                     break;
             }
-        }
-        else {
-            blockSet(id);
+            catch (IgniteCheckedException e) {
+                if (e.hasCause(ClusterTopologyCheckedException.class)) {
+                    if (log.isDebugEnabled())
+                        log.debug("RemoveSetData job failed, will retry: " + e);
 
-            cctx.dataStructures().removeSetData(id, AffinityTopologyVersion.ZERO);
+                    continue;
+                }
+                else if (!pingNodes(nodes)) {
+                    if (log.isDebugEnabled())
+                        log.debug("RemoveSetData job failed and set data node left, will retry: " + e);
+
+                    continue;
+                }
+                else
+                    throw e;
+            }
+
+            Collection<ClusterNode> affNodes = CU.affinityNodes(cctx, topVer);
+
+            try {
+                cctx.closures().callAsyncNoFailover(BROADCAST,
+                    new RemoveSetDataCallable(cctx.name(), id, topVer),
+                    affNodes,
+                    true,
+                    0, false).get();
+            }
+            catch (IgniteCheckedException e) {
+                if (e.hasCause(ClusterTopologyCheckedException.class)) {
+                    if (log.isDebugEnabled())
+                        log.debug("RemoveSetData job failed, will retry: " + e);
+
+                    continue;
+                }
+                else if (!pingNodes(affNodes)) {
+                    if (log.isDebugEnabled())
+                        log.debug("RemoveSetData job failed and set data node left, will retry: " + e);
+
+                    continue;
+                }
+                else
+                    throw e;
+            }
+
+            if (topVer.equals(cctx.topologyVersionFuture().get()))
+                break;
         }
     }
 

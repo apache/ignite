@@ -44,7 +44,6 @@ import org.apache.ignite.internal.processors.cache.distributed.IgniteOptimisticT
 import org.apache.ignite.internal.processors.cache.distributed.OnePhaseCommitAndNodeLeftTest;
 import org.apache.ignite.internal.processors.cache.distributed.PartitionsExchangeAwareTest;
 import org.apache.ignite.internal.processors.cache.distributed.dht.preloader.latch.ExchangeLatchManagerTest;
-import org.apache.ignite.internal.processors.cache.transactions.TxLocalDhtMixedCacheModesTest;
 import org.apache.ignite.internal.processors.cache.transactions.TxOptimisticOnPartitionExchangeTest;
 import org.apache.ignite.internal.processors.cache.transactions.TxOptimisticPrepareOnUnstableTopologyTest;
 import org.apache.ignite.internal.processors.cache.transactions.TxOptimisticReadThroughTest;
@@ -94,9 +93,6 @@ public class IgniteCacheMvccTestSuite6 {
         ignoredTests.add(IgniteCacheMultiClientsStartTest.class);
         ignoredTests.add(CacheIgniteOutOfMemoryExceptionTest.class);
         ignoredTests.add(OnePhaseCommitAndNodeLeftTest.class);
-
-        // Mixed local/dht tx test.
-        ignoredTests.add(TxLocalDhtMixedCacheModesTest.class);
 
         // Skip tests that has Mvcc clones.
         // See PartitionedMvccTxPessimisticCacheGetsDistributionTest.

@@ -25,7 +25,6 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.UUID;
-import org.apache.ignite.cache.CacheMode;
 import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.CommunicationFailureContext;
@@ -143,9 +142,6 @@ class ZkCommunicationFailureContext implements CommunicationFailureContext {
 
         if (cacheDesc == null)
             throw new IllegalArgumentException("Invalid cache name: " + cacheName);
-
-        if (cacheDesc.cacheConfiguration().getCacheMode() == CacheMode.LOCAL)
-            return Collections.emptyList();
 
         CacheGroupContext grp = ctx.cache().cacheGroup(cacheDesc.groupId());
 

@@ -49,7 +49,6 @@ import org.apache.ignite.internal.processors.cache.GridCacheColocatedTxStoreExce
 import org.apache.ignite.internal.processors.cache.GridCacheConcurrentGetCacheOnClientTest;
 import org.apache.ignite.internal.processors.cache.GridCacheLeakTest;
 import org.apache.ignite.internal.processors.cache.GridCacheLifecycleAwareSelfTest;
-import org.apache.ignite.internal.processors.cache.GridCacheLocalTxStoreExceptionSelfTest;
 import org.apache.ignite.internal.processors.cache.GridCacheMissingCommitVersionSelfTest;
 import org.apache.ignite.internal.processors.cache.GridCacheMixedPartitionExchangeSelfTest;
 import org.apache.ignite.internal.processors.cache.GridCacheMvccFlagsTest;
@@ -102,7 +101,6 @@ import org.apache.ignite.internal.processors.cache.distributed.dht.IgniteCacheCo
 import org.apache.ignite.internal.processors.cache.distributed.near.GridCacheNearTxExceptionSelfTest;
 import org.apache.ignite.internal.processors.cache.distributed.near.GridCachePartitionedStorePutSelfTest;
 import org.apache.ignite.internal.processors.cache.distributed.replicated.GridCacheReplicatedTxExceptionSelfTest;
-import org.apache.ignite.internal.processors.cache.local.GridCacheLocalTxExceptionSelfTest;
 import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.testframework.junits.DynamicSuite;
 import org.junit.runner.RunWith;
@@ -138,7 +136,6 @@ public class IgniteCacheTestSuite10 {
         GridTestUtils.addTestIfNeeded(suite, GridCacheOffHeapAtomicMultiThreadedUpdateSelfTest.class, ignoredTests);
         GridTestUtils.addTestIfNeeded(suite, GridCacheColocatedTxStoreExceptionSelfTest.class, ignoredTests);
         GridTestUtils.addTestIfNeeded(suite, GridCacheReplicatedTxStoreExceptionSelfTest.class, ignoredTests);
-        GridTestUtils.addTestIfNeeded(suite, GridCacheLocalTxStoreExceptionSelfTest.class, ignoredTests);
         GridTestUtils.addTestIfNeeded(suite, GridCacheNearTxStoreExceptionSelfTest.class, ignoredTests);
         GridTestUtils.addTestIfNeeded(suite, GridCacheMissingCommitVersionSelfTest.class, ignoredTests);
         GridTestUtils.addTestIfNeeded(suite, GridCacheEntrySetIterationPreloadingSelfTest.class, ignoredTests);
@@ -169,7 +166,6 @@ public class IgniteCacheTestSuite10 {
         // Heuristic exception handling.
         GridTestUtils.addTestIfNeeded(suite, GridCacheColocatedTxExceptionSelfTest.class, ignoredTests);
         GridTestUtils.addTestIfNeeded(suite, GridCacheReplicatedTxExceptionSelfTest.class, ignoredTests);
-        GridTestUtils.addTestIfNeeded(suite, GridCacheLocalTxExceptionSelfTest.class, ignoredTests);
         GridTestUtils.addTestIfNeeded(suite, GridCacheNearTxExceptionSelfTest.class, ignoredTests);
         GridTestUtils.addTestIfNeeded(suite, GridCacheStopSelfTest.class, ignoredTests);
 

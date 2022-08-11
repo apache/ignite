@@ -131,28 +131,20 @@ public class IgnitePdsDestroyCacheTest extends IgnitePdsDestroyCacheAbstractTest
      */
     @Test
     public void testDestroyCacheOperationNotBlockingCheckpointTest() throws Exception {
-        doTestDestroyCacheOperationNotBlockingCheckpointTest(false);
-    }
-
-    /**
-     * Tests if a checkpoint is not blocked forever by concurrent cache destroying (local).
-     */
-    @Test
-    public void testDestroyCacheOperationNotBlockingCheckpointTest_LocalCache() throws Exception {
-        doTestDestroyCacheOperationNotBlockingCheckpointTest(true);
+        doTestDestroyCacheOperationNotBlockingCheckpointTest();
     }
 
     /**
      *
      */
-    private void doTestDestroyCacheOperationNotBlockingCheckpointTest(boolean loc) throws Exception {
+    private void doTestDestroyCacheOperationNotBlockingCheckpointTest() throws Exception {
         final IgniteEx ignite = startGrids(1);
 
         ignite.cluster().active(true);
 
-        startGroupCachesDynamically(ignite, loc);
+        startGroupCachesDynamically(ignite);
 
-        loadCaches(ignite, !loc);
+        loadCaches(ignite, true);
 
         // It's important to clear cache in group having > 1 caches.
         final String cacheName = cacheName(0);
@@ -208,10 +200,7 @@ public class IgnitePdsDestroyCacheTest extends IgnitePdsDestroyCacheAbstractTest
             return null;
         });
 
-        if (loc)
-            ignite.cache(cacheName).close();
-        else
-            ignite.destroyCache(cacheName);
+        ignite.destroyCache(cacheName);
 
         fut.get();
     }

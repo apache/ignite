@@ -22,7 +22,6 @@ import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.junit.Ignore;
 import org.junit.Test;
-
 import static org.apache.ignite.cache.CacheAtomicityMode.TRANSACTIONAL_SNAPSHOT;
 
 /**
@@ -64,13 +63,6 @@ public class DataStreamProcessorMvccSelfTest extends DataStreamProcessorSelfTest
     @Test
     @Override public void testFlushTimeout() throws Exception {
         super.testFlushTimeout();
-    }
-
-    /** {@inheritDoc} */
-    @Ignore("https://issues.apache.org/jira/browse/IGNITE-9530")
-    @Test
-    @Override public void testLocal() throws Exception {
-        super.testLocal();
     }
 
     /** {@inheritDoc} */

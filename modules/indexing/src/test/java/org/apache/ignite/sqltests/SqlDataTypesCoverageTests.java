@@ -23,7 +23,6 @@ import java.util.List;
 import java.util.Objects;
 import java.util.Random;
 import java.util.UUID;
-import org.apache.ignite.cache.CacheMode;
 import org.apache.ignite.cache.CacheWriteSynchronizationMode;
 import org.apache.ignite.cache.affinity.rendezvous.RendezvousAffinityFunction;
 import org.apache.ignite.cache.query.SqlFieldsQuery;
@@ -33,7 +32,6 @@ import org.apache.ignite.internal.processors.cache.AbstractDataTypesCoverageTest
 import org.junit.Before;
 import org.junit.Ignore;
 import org.junit.Test;
-
 import static org.apache.ignite.testframework.GridTestUtils.waitForCondition;
 
 /**
@@ -308,11 +306,9 @@ public class SqlDataTypesCoverageTests extends AbstractDataTypesCoverageTest {
                 " val " + dataType + ")" +
                 " WITH " + "\"template=" + templateName + "\""), false);
 
-        if (cacheMode != CacheMode.LOCAL) {
-            ignite.context().query().querySqlFields(new SqlFieldsQuery(
-                "CREATE INDEX IDX" + UUID.randomUUID().toString().replaceAll("-", "_") +
-                    " ON " + tblName + "(id, val)"), false);
-        }
+        ignite.context().query().querySqlFields(new SqlFieldsQuery(
+            "CREATE INDEX IDX" + UUID.randomUUID().toString().replaceAll("-", "_") +
+                " ON " + tblName + "(id, val)"), false);
 
         checkCRUD(ignite, tblName, dataType, valsToCheck);
     }

@@ -21,7 +21,6 @@ import java.util.concurrent.Callable;
 import java.util.concurrent.atomic.AtomicInteger;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCache;
-import org.apache.ignite.cache.CacheMode;
 import org.apache.ignite.cache.CachePeekMode;
 import org.apache.ignite.cache.eviction.EvictionPolicy;
 import org.apache.ignite.cache.eviction.fifo.FifoEvictionPolicy;
@@ -31,13 +30,8 @@ import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.testframework.GridTestUtils.SF;
-import org.apache.ignite.testframework.MvccFeatureChecker;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.junit.Test;
-
-import static org.apache.ignite.cache.CacheMode.LOCAL;
-import static org.apache.ignite.cache.CacheMode.REPLICATED;
-import static org.apache.ignite.cache.CacheWriteSynchronizationMode.FULL_SYNC;
 import static org.apache.ignite.transactions.TransactionConcurrency.PESSIMISTIC;
 import static org.apache.ignite.transactions.TransactionIsolation.REPEATABLE_READ;
 
@@ -45,9 +39,6 @@ import static org.apache.ignite.transactions.TransactionIsolation.REPEATABLE_REA
  *
  */
 public class GridCacheConcurrentEvictionsSelfTest extends GridCommonAbstractTest {
-    /** Replicated cache. */
-    private CacheMode mode = REPLICATED;
-
     /** */
     private EvictionPolicy<?, ?> plc;
 
@@ -59,18 +50,12 @@ public class GridCacheConcurrentEvictionsSelfTest extends GridCommonAbstractTest
 
     /** {@inheritDoc} */
     @Override protected IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {
-        MvccFeatureChecker.skipIfNotSupported(MvccFeatureChecker.Feature.LOCAL_CACHE);
-
         IgniteConfiguration c = super.getConfiguration(igniteInstanceName);
 
         c.getTransactionConfiguration().setDefaultTxConcurrency(PESSIMISTIC);
         c.getTransactionConfiguration().setDefaultTxIsolation(REPEATABLE_READ);
 
         CacheConfiguration<?, ?> cc = defaultCacheConfiguration();
-
-        cc.setCacheMode(mode);
-
-        cc.setWriteSynchronizationMode(FULL_SYNC);
 
         cc.setNearConfiguration(null);
 
@@ -89,20 +74,11 @@ public class GridCacheConcurrentEvictionsSelfTest extends GridCommonAbstractTest
         plc = null;
     }
 
-    /** {@inheritDoc} */
-    @Override protected void beforeTestsStarted() throws Exception {
-        MvccFeatureChecker.skipIfNotSupported(MvccFeatureChecker.Feature.LOCAL_CACHE);
-
-        super.beforeTestsStarted();
-    }
-
     /**
      * @throws Exception If failed.
      */
     @Test
-    public void testConcurrentPutsFifoLocal() throws Exception {
-        mode = LOCAL;
-
+    public void testConcurrentPutsFifo() throws Exception {
         FifoEvictionPolicy plc = new FifoEvictionPolicy();
         plc.setMaxSize(1000);
 
@@ -117,9 +93,7 @@ public class GridCacheConcurrentEvictionsSelfTest extends GridCommonAbstractTest
      * @throws Exception If failed.
      */
     @Test
-    public void testConcurrentPutsLruLocal() throws Exception {
-        mode = LOCAL;
-
+    public void testConcurrentPutsLru() throws Exception {
         LruEvictionPolicy plc = new LruEvictionPolicy();
         plc.setMaxSize(1000);
 
@@ -134,9 +108,7 @@ public class GridCacheConcurrentEvictionsSelfTest extends GridCommonAbstractTest
      * @throws Exception If failed.
      */
     @Test
-    public void testConcurrentPutsSortedLocal() throws Exception {
-        mode = LOCAL;
-
+    public void testConcurrentPutsSorted() throws Exception {
         SortedEvictionPolicy plc = new SortedEvictionPolicy();
         plc.setMaxSize(1000);
 
@@ -160,7 +132,7 @@ public class GridCacheConcurrentEvictionsSelfTest extends GridCommonAbstractTest
             for (int i = 0; i < warmUpPutsCnt; i++) {
                 cache.put(i, i);
 
-                if (i != 0 && i % 1000 == 0)
+                if (i != 0 && i % 10000 == 0)
                     info("Warm up puts count: " + i);
             }
 
@@ -182,7 +154,7 @@ public class GridCacheConcurrentEvictionsSelfTest extends GridCommonAbstractTest
 
                             cache.put(j, j);
 
-                            if (i != 0 && i % 1000 == 0)
+                            if (i != 0 && i % 10000 == 0)
                                 // info("Puts count: " + i);
                                 info("Stats [putsCnt=" + i + ", size=" + cache.size(CachePeekMode.ONHEAP) + ']');
                         }

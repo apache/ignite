@@ -22,7 +22,6 @@ import java.util.List;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteCluster;
 import org.apache.ignite.IgniteLogger;
-import org.apache.ignite.cache.CacheMode;
 import org.apache.ignite.cache.QueryIndex;
 import org.apache.ignite.cache.QueryIndexType;
 import org.apache.ignite.cache.query.FieldsQueryCursor;
@@ -57,7 +56,6 @@ import org.apache.ignite.internal.sql.command.SqlKillServiceCommand;
 import org.apache.ignite.internal.sql.command.SqlKillTransactionCommand;
 import org.apache.ignite.internal.util.future.GridFinishedFuture;
 import org.jetbrains.annotations.Nullable;
-
 import static org.apache.ignite.internal.processors.query.QueryUtils.convert;
 import static org.apache.ignite.internal.processors.query.QueryUtils.isDdlOnSchemaSupported;
 
@@ -221,8 +219,6 @@ public class SqlCommandProcessor {
                 if (typeDesc == null)
                     throw new SchemaOperationException(SchemaOperationException.CODE_TABLE_NOT_FOUND, cmd0.tableName());
 
-                ensureDdlSupported(cacheInfo);
-
                 QueryIndex newIdx = new QueryIndex();
 
                 newIdx.setName(cmd0.indexName());
@@ -254,8 +250,6 @@ public class SqlCommandProcessor {
                 if (typeDesc != null) {
                     GridCacheContextInfo<?, ?> cacheInfo = schemaMgr.cacheInfoForTable(typeDesc.schemaName(),
                         typeDesc.tableName());
-
-                    ensureDdlSupported(cacheInfo);
 
                     fut = ctx.query().dynamicIndexDrop(cacheInfo.name(), cmd0.schemaName(), cmd0.indexName(),
                         cmd0.ifExists());
@@ -346,19 +340,6 @@ public class SqlCommandProcessor {
                 tx.commit();
             else
                 tx.rollback();
-        }
-    }
-
-    /**
-     * Check if cache supports DDL statement.
-     *
-     * @param cctxInfo Cache context info.
-     * @throws IgniteSQLException If failed.
-     */
-    protected static void ensureDdlSupported(GridCacheContextInfo<?, ?> cctxInfo) throws IgniteSQLException {
-        if (cctxInfo.config().getCacheMode() == CacheMode.LOCAL) {
-            throw new IgniteSQLException("DDL statements are not supported on LOCAL caches",
-                IgniteQueryErrorCode.UNSUPPORTED_OPERATION);
         }
     }
 }

@@ -235,11 +235,8 @@ public class IndexScan<Row> extends AbstractIndexScan<Row, IndexRow> {
             for (int i = 0; i < parts.length; i++)
                 toReserve.add(top.localPartition(parts[i]));
         }
-        else {
-            assert cctx.isLocal();
-
+        else
             toReserve = Collections.emptyList();
-        }
 
         reserved = new ArrayList<>(toReserve.size());
 

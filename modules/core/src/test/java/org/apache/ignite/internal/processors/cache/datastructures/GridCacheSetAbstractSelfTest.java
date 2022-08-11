@@ -54,10 +54,8 @@ import org.apache.ignite.resources.IgniteInstanceResource;
 import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.transactions.Transaction;
 import org.junit.Test;
-
 import static org.apache.ignite.cache.CacheAtomicityMode.ATOMIC;
 import static org.apache.ignite.cache.CacheAtomicityMode.TRANSACTIONAL;
-import static org.apache.ignite.cache.CacheMode.LOCAL;
 import static org.apache.ignite.cache.CacheMode.PARTITIONED;
 import static org.apache.ignite.cache.CacheWriteSynchronizationMode.FULL_SYNC;
 
@@ -538,7 +536,7 @@ public abstract class GridCacheSetAbstractSelfTest extends IgniteCollectionAbstr
      * @param collocated Collocation flag.
      * @throws Exception If failed.
      */
-    @SuppressWarnings({"BusyWait", "ErrorNotRethrown"})
+    @SuppressWarnings("ErrorNotRethrown")
     private void testIteratorClose(boolean collocated) throws Exception {
         CollectionConfiguration colCfg = config(collocated);
 
@@ -610,9 +608,6 @@ public abstract class GridCacheSetAbstractSelfTest extends IgniteCollectionAbstr
      */
     @Test
     public void testNodeJoinsAndLeaves() throws Exception {
-        if (collectionCacheMode() == LOCAL)
-            return;
-
         testNodeJoinsAndLeaves(false);
     }
 
@@ -621,9 +616,6 @@ public abstract class GridCacheSetAbstractSelfTest extends IgniteCollectionAbstr
      */
     @Test
     public void testNodeJoinsAndLeavesCollocated() throws Exception {
-        if (collectionCacheMode() == LOCAL)
-            return;
-
         testNodeJoinsAndLeaves(true);
     }
 

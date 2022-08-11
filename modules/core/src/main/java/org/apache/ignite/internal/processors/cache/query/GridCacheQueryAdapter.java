@@ -64,15 +64,12 @@ import org.apache.ignite.internal.util.typedef.X;
 import org.apache.ignite.internal.util.typedef.internal.A;
 import org.apache.ignite.internal.util.typedef.internal.CU;
 import org.apache.ignite.internal.util.typedef.internal.S;
-import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgniteBiPredicate;
 import org.apache.ignite.lang.IgniteClosure;
 import org.apache.ignite.lang.IgniteReducer;
 import org.apache.ignite.plugin.security.SecurityPermission;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
-
-import static org.apache.ignite.cache.CacheMode.LOCAL;
 import static org.apache.ignite.internal.processors.cache.query.GridCacheQueryType.INDEX;
 import static org.apache.ignite.internal.processors.cache.query.GridCacheQueryType.SCAN;
 import static org.apache.ignite.internal.processors.cache.query.GridCacheQueryType.SET;
@@ -590,17 +587,15 @@ public class GridCacheQueryAdapter<T> implements CacheQuery<T> {
     @Override public GridCloseableIterator executeScanQuery() throws IgniteCheckedException {
         assert type == SCAN : "Wrong processing of query: " + type;
 
-        if (!cctx.isLocal()) {
-            GridDhtCacheAdapter<?, ?> cacheAdapter = cctx.isNear() ? cctx.near().dht() : cctx.dht();
+        GridDhtCacheAdapter<?, ?> cacheAdapter = cctx.isNear() ? cctx.near().dht() : cctx.dht();
 
-            Set<Integer> lostParts = cacheAdapter.topology().lostPartitions();
+        Set<Integer> lostParts = cacheAdapter.topology().lostPartitions();
 
-            if (!lostParts.isEmpty()) {
-                if (part == null || lostParts.contains(part)) {
-                    throw new CacheException(new CacheInvalidStateException("Failed to execute query because cache partition " +
-                        "has been lostParts [cacheName=" + cctx.name() +
-                        ", part=" + (part == null ? lostParts.iterator().next() : part) + ']'));
-                }
+        if (!lostParts.isEmpty()) {
+            if (part == null || lostParts.contains(part)) {
+                throw new CacheException(new CacheInvalidStateException("Failed to execute query because cache partition " +
+                    "has been lostParts [cacheName=" + cctx.name() +
+                    ", part=" + (part == null ? lostParts.iterator().next() : part) + ']'));
             }
         }
 
@@ -669,17 +664,6 @@ public class GridCacheQueryAdapter<T> implements CacheQuery<T> {
         Integer part = partition();
 
         switch (cacheMode) {
-            case LOCAL:
-                if (prj != null)
-                    U.warn(log, "Ignoring query projection because it's executed over LOCAL cache " +
-                        "(only local node will be queried): " + this);
-
-                if (type == SCAN && cctx.config().getCacheMode() == LOCAL &&
-                    part != null && part >= cctx.affinity().partitions())
-                    throw new IgniteCheckedException("Invalid partition number: " + part);
-
-                return Collections.singletonList(cctx.localNode());
-
             case REPLICATED:
                 if (prj != null || part != null)
                     return nodes(cctx, prj, part);

@@ -154,32 +154,6 @@ public class PageMemoryLazyAllocationTest extends GridCommonAbstractTest {
 
     /** @throws Exception If failed. */
     @Test
-    public void testLocalCacheOnClientNodeWithLazyAllocation() throws Exception {
-        lazyAllocation = true;
-
-        IgniteEx srv = startSrv()[0];
-
-        IgniteCacheDatabaseSharedManager srvDb = srv.context().cache().context().database();
-
-        checkMemoryAllocated(srvDb.dataRegion(EAGER_REGION).pageMemory());
-        checkMemoryNotAllocated(srvDb.dataRegion(LAZY_REGION).pageMemory());
-
-        IgniteEx clnt = startClientGrid(2);
-
-        IgniteCacheDatabaseSharedManager clntDb = clnt.context().cache().context().database();
-
-        checkMemoryNotAllocated(clntDb.dataRegion(EAGER_REGION).pageMemory());
-        checkMemoryNotAllocated(clntDb.dataRegion(LAZY_REGION).pageMemory());
-
-        createCacheAndPut(clnt, CacheMode.LOCAL);
-
-        checkMemoryNotAllocated(clntDb.dataRegion(EAGER_REGION).pageMemory());
-        //LOCAL Cache was created in LAZY_REGION so it has to be allocated on client node.
-        checkMemoryAllocated(clntDb.dataRegion(LAZY_REGION).pageMemory());
-    }
-
-    /** @throws Exception If failed. */
-    @Test
     public void testStopNotAllocatedRegions() throws Exception {
         IgniteEx srv = startSrv()[0];
 

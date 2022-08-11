@@ -77,11 +77,6 @@ import org.apache.ignite.internal.processors.cache.distributed.replicated.GridCa
 import org.apache.ignite.internal.processors.cache.distributed.replicated.GridCacheReplicatedMultiNodeFullApiSelfTest;
 import org.apache.ignite.internal.processors.cache.distributed.replicated.GridCacheReplicatedMultiNodeP2PDisabledFullApiSelfTest;
 import org.apache.ignite.internal.processors.cache.distributed.replicated.GridCacheReplicatedNearOnlyMultiNodeFullApiSelfTest;
-import org.apache.ignite.internal.processors.cache.local.GridCacheLocalAtomicFullApiSelfTest;
-import org.apache.ignite.internal.processors.cache.local.GridCacheLocalAtomicWithGroupFullApiSelfTest;
-import org.apache.ignite.internal.processors.cache.local.GridCacheLocalFullApiMultithreadedSelfTest;
-import org.apache.ignite.internal.processors.cache.local.GridCacheLocalFullApiSelfTest;
-import org.apache.ignite.internal.processors.cache.local.GridCacheLocalWithGroupFullApiSelfTest;
 import org.apache.ignite.internal.processors.cache.persistence.standbycluster.extended.GridActivateExtensionTest;
 import org.junit.runner.RunWith;
 import org.junit.runners.Suite;
@@ -91,8 +86,6 @@ import org.junit.runners.Suite;
  */
 @RunWith(Suite.class)
 @Suite.SuiteClasses({
-    GridCacheLocalFullApiSelfTest.class,
-    GridCacheLocalAtomicFullApiSelfTest.class,
     GridCacheReplicatedFullApiSelfTest.class,
     GridCachePartitionedFullApiSelfTest.class,
     GridCacheAtomicFullApiSelfTest.class,
@@ -156,15 +149,12 @@ import org.junit.runners.Suite;
     GridCacheAtomicOnheapMultiNodeFullApiSelfTest.class,
 
     // Multithreaded.
-    GridCacheLocalFullApiMultithreadedSelfTest.class,
     GridCacheReplicatedFullApiMultithreadedSelfTest.class,
     GridCachePartitionedFullApiMultithreadedSelfTest.class,
 
     // Other.
     GridCacheClearSelfTest.class,
 
-    GridCacheLocalWithGroupFullApiSelfTest.class,
-    GridCacheLocalAtomicWithGroupFullApiSelfTest.class,
     GridCacheAtomicMultiNodeWithGroupFullApiSelfTest.class,
     GridCacheAtomicNearEnabledMultiNodeWithGroupFullApiSelfTest.class,
     GridCachePartitionedMultiNodeWithGroupFullApiSelfTest.class,

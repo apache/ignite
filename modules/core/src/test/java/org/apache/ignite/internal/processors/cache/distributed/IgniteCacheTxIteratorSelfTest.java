@@ -134,8 +134,7 @@ public class IgniteCacheTxIteratorSelfTest extends GridCommonAbstractTest {
         boolean useEvicPlc
     ) throws Exception {
         if (atomMode == CacheAtomicityMode.TRANSACTIONAL_SNAPSHOT) {
-            if (!MvccFeatureChecker.isSupported(mode) ||
-                (nearEnabled && !MvccFeatureChecker.isSupported(Feature.NEAR_CACHE)) ||
+            if ((nearEnabled && !MvccFeatureChecker.isSupported(Feature.NEAR_CACHE)) ||
                 (useEvicPlc && !MvccFeatureChecker.isSupported(Feature.EVICTION)))
                 return; // Nothing to do. Mode is not supported.
         }

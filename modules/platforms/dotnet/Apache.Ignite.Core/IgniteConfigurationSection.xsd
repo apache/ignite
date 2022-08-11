@@ -25,7 +25,6 @@
 
     <xs:simpleType name="cacheMode" final="restriction">
         <xs:restriction base="xs:string">
-            <xs:enumeration value="Local" />
             <xs:enumeration value="Replicated" />
             <xs:enumeration value="Partitioned" />
         </xs:restriction>
