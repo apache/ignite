@@ -41,6 +41,7 @@ import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
+import org.jetbrains.annotations.Nullable;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.junit.runners.Parameterized;
@@ -105,44 +106,55 @@ public class ThinClientIndexQueryTest extends GridCommonAbstractTest {
 
     /** */
     @Test
-    public void testRanges() throws Exception {
+    public void testValidRanges() {
         Random rnd = new Random();
 
         int left = rnd.nextInt(CNT / 2);
         int right = CNT / 2 + rnd.nextInt(CNT / 4) + 1;
 
-        withClientCache((cache) -> {
-            // No criteria.
-            assertClientQuery(cache, 0, CNT);
+        for (String idxName: F.asList(IDX_FLD1, IDX_FLD1_FLD2, null)) {
+            withClientCache((cache) -> {
+                // No criteria.
+                assertClientQuery(cache, 0, CNT, idxName);
 
-            // Single field, single criterion.
-            assertClientQuery(cache, left + 1, CNT, gt("fld1", left));
-            assertClientQuery(cache, left, CNT, gte("fld1", left));
-            assertClientQuery(cache, 0, left, lt("fld1", left));
-            assertClientQuery(cache, 0, left + 1, lte("fld1", left));
-            assertClientQuery(cache, left, left + 1, eq("fld1", left));
-            assertClientQuery(cache, left, right, between("fld1", left, right));
+                // Single field, single criterion.
+                assertClientQuery(cache, left + 1, CNT, idxName, gt("fld1", left));
+                assertClientQuery(cache, left, CNT, idxName, gte("fld1", left));
+                assertClientQuery(cache, 0, left, idxName, lt("fld1", left));
+                assertClientQuery(cache, 0, left + 1, idxName, lte("fld1", left));
+                assertClientQuery(cache, left, left + 1, idxName, eq("fld1", left));
+                assertClientQuery(cache, left, right, idxName, between("fld1", left, right));
 
-            // Single field, multiple criteria.
-            assertClientQuery(cache, left, right + 1, gte("fld1", left), lte("fld1", right));
+                // Single field, multiple criteria.
+                assertClientQuery(cache, left, right + 1, idxName, gte("fld1", left), lte("fld1", right));
+            });
+        }
 
-            // Multiple field, multiple criteria.
-            assertClientQuery(cache, left + 1, right, gt("fld1", left), lt("fld2", right));
-        });
+        for (String idxName: F.asList(IDX_FLD1_FLD2, null)) {
+            withClientCache((cache) -> {
+                // Multiple field, multiple criteria.
+                assertClientQuery(cache, left + 1, right, idxName, gt("fld1", left), lt("fld2", right));
+            });
+        }
     }
 
     /** */
     @Test
-    public void testIndexName() {
+    public void testIndexNameMismatchCriteria() {
         withClientCache((cache) -> {
-            IndexQuery<Integer, Person> idxQry = new IndexQuery<Integer, Person>(Person.class, IDX_FLD1)
-                .setCriteria(lt("fld2", 100));
+            for (IndexQueryCriterion[] criteria: F.asList(
+                new IndexQueryCriterion[] { lt("fld1", 100), lt("fld2", 100) },
+                new IndexQueryCriterion[] { lt("fld2", 100) }
+            )) {
+                IndexQuery<Integer, Person> idxQry = new IndexQuery<Integer, Person>(Person.class, IDX_FLD1)
+                    .setCriteria(criteria);
 
-            GridTestUtils.assertThrows(
-                log,
-                () -> cache.query(idxQry).getAll(),
-                ClientException.class,
-                "Failed to parse IndexQuery. Index doesn't match criteria");
+                GridTestUtils.assertThrows(
+                    log,
+                    () -> cache.query(idxQry).getAll(),
+                    ClientException.class,
+                    "Failed to parse IndexQuery. Index doesn't match criteria");
+            }
         });
     }
 
@@ -157,12 +169,20 @@ public class ThinClientIndexQueryTest extends GridCommonAbstractTest {
 
                 TestRecordingCommunicationSpi.spi(grid(0)).record(GridQueryNextPageRequest.class);
 
-                assertClientQuery(cache, 0, CNT);
+                assertClientQuery(cache, 0, CNT, null);
 
                 List<Object> reqs = TestRecordingCommunicationSpi.spi(grid(0)).recordedMessages(true);
 
                 for (Object r: reqs)
                     assertEquals(pageSize, ((GridQueryNextPageRequest)r).pageSize());
+            }
+
+            for (int pageSize: F.asList(-10, -1, 0)) {
+                GridTestUtils.assertThrowsAnyCause(
+                    log,
+                    () -> idxQry.setPageSize(pageSize),
+                    IllegalArgumentException.class,
+                    "Page size must be above zero");
             }
         });
     }
@@ -219,12 +239,55 @@ public class ThinClientIndexQueryTest extends GridCommonAbstractTest {
                     assertTrue(reqs.isEmpty());
                 }
             }
+
+            for (int part: F.asList(-10, -1)) {
+                GridTestUtils.assertThrows(
+                    log,
+                    () -> idxQry.setPartition(part),
+                    IllegalArgumentException.class,
+                    "Specified partition must be in the range");
+            }
+
+            GridTestUtils.assertThrows(
+                log,
+                () -> {
+                    idxQry.setPartition(5000);
+
+                    return cache.query(idxQry).getAll();
+                },
+                ClientException.class,
+                "Specified partition must be in the range");
         });
     }
 
     /** */
-    private void assertClientQuery(ClientCache<Integer, Person> cache, int left, int right, IndexQueryCriterion... crit) {
-        IndexQuery<Integer, Person> idxQry = new IndexQuery<Integer, Person>(Person.class)
+    @Test
+    public void testWrongIndexQueryCriterion() {
+        withClientCache(cache -> {
+            IndexQuery<Integer, Person> idxQry = new IndexQuery<>(Person.class);
+            idxQry.setCriteria(new IndexQueryCriterion() {
+                @Override public String field() {
+                    return null;
+                }
+            });
+
+            GridTestUtils.assertThrowsAnyCause(
+                log,
+                () -> cache.query(idxQry).getAll(),
+                IllegalArgumentException.class,
+                "Unknown IndexQuery criterion type");
+        });
+    }
+
+    /** */
+    private void assertClientQuery(
+        ClientCache<Integer, Person> cache,
+        int left,
+        int right,
+        @Nullable String idxName,
+        IndexQueryCriterion... crit
+    ) {
+        IndexQuery<Integer, Person> idxQry = new IndexQuery<Integer, Person>(Person.class, idxName)
             .setCriteria(crit);
 
         assertClientQuery(cache, left, right, idxQry);

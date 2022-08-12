@@ -989,6 +989,11 @@ public class TcpClientCache<K, V> implements ClientCache<K, V> {
                             serDes.writeObject(out, range.lower());
                             serDes.writeObject(out, range.upper());
                         }
+                        else {
+                            throw new IllegalArgumentException(
+                                String.format("Unknown IndexQuery criterion type [%s]", c.getClass().getSimpleName())
+                            );
+                        }
                     }
                 }
                 else
