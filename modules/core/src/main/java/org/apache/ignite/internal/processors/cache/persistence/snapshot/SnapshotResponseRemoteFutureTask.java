@@ -101,8 +101,8 @@ public class SnapshotResponseRemoteFutureTask extends AbstractSnapshotFutureTask
                 Collection<GroupPartitionId> missed = F.viewReadOnly(partsToSend.entrySet(), Map.Entry::getKey,
                     e -> e.getValue() == null);
 
-                err.compareAndSet(null, new IgniteException("Snapshot partitions missed on local node " +
-                    "[snpName=" + snpName + ", missed=" + missed + ']'));
+                throw new IgniteException("Snapshot partitions missed on local node " +
+                    "[snpName=" + snpName + ", missed=" + missed + ']');
             }
 
             snpSndr.init(partsToSend.size());

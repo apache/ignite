@@ -81,7 +81,7 @@ public class SnapshotFilesRequestMessage extends AbstractSnapshotMessage {
         this.snpPath = snpPath;
         this.parts = new HashMap<>();
 
-        for (Map.Entry<Integer, Set<Integer>> e : parts.entrySet())
+        for (Map.Entry<Integer, Set<Integer>> e : F.view(parts.entrySet(), e -> !F.isEmpty(e.getValue())))
             this.parts.put(e.getKey(), U.toIntArray(e.getValue()));
     }
 
@@ -91,12 +91,8 @@ public class SnapshotFilesRequestMessage extends AbstractSnapshotMessage {
     public Map<Integer, Set<Integer>> parts() {
         Map<Integer, Set<Integer>> res = new HashMap<>();
 
-        for (Map.Entry<Integer, int[]> e : parts.entrySet()) {
-            if (F.isEmpty(e.getValue()))
-                continue;
-
+        for (Map.Entry<Integer, int[]> e : parts.entrySet())
             res.put(e.getKey(), Arrays.stream(e.getValue()).boxed().collect(Collectors.toSet()));
-        }
 
         return res;
     }
