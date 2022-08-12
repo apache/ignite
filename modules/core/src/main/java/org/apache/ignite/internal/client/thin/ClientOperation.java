@@ -150,6 +150,12 @@ public enum ClientOperation {
     /** Continuous query event. */
     QUERY_CONTINUOUS_EVENT(2007, ClientNotificationType.CONTINUOUS_QUERY_EVENT),
 
+    /** Index query event. */
+    QUERY_INDEX(2008),
+
+    /** Query index cursor get page. */
+    QUERY_INDEX_CURSOR_GET_PAGE(2009),
+
     /** Get binary type name. */
     GET_BINARY_TYPE_NAME(3000),
 
@@ -394,6 +400,9 @@ public enum ClientOperation {
 
             case QUERY_CONTINUOUS:
                 return ClientOperationType.QUERY_CONTINUOUS;
+
+            case QUERY_INDEX:
+                return ClientOperationType.QUERY_INDEX;
 
             case TX_START:
                 return ClientOperationType.TRANSACTION_START;
