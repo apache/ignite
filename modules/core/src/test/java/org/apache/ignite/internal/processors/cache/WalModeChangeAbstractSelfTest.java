@@ -27,12 +27,9 @@ import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.util.lang.IgniteInClosureX;
 import org.apache.ignite.internal.util.typedef.internal.U;
-import org.apache.ignite.testframework.MvccFeatureChecker;
 import org.junit.Test;
-
 import static org.apache.ignite.cache.CacheAtomicityMode.ATOMIC;
 import static org.apache.ignite.cache.CacheAtomicityMode.TRANSACTIONAL;
-import static org.apache.ignite.cache.CacheMode.LOCAL;
 import static org.apache.ignite.cache.CacheMode.PARTITIONED;
 import static org.apache.ignite.cache.CacheMode.REPLICATED;
 
@@ -179,44 +176,6 @@ public abstract class WalModeChangeAbstractSelfTest extends WalModeChangeCommonA
                 }, IgniteException.class, "Cannot change WAL mode because persistence is not enabled for cache(s)");
 
                 assert !ignite.cluster().isWalEnabled(CACHE_NAME_3);
-            }
-        });
-    }
-
-    /**
-     * Negative case: LOCAL cache.
-     *
-     * @throws Exception If failed.
-     */
-    @Test
-    public void testLocalCache() throws Exception {
-        if (jdbc)
-            // Doesn't make sense for JDBC.
-            return;
-
-        MvccFeatureChecker.skipIfNotSupported(MvccFeatureChecker.Feature.LOCAL_CACHE);
-
-        forAllNodes(new IgniteInClosureX<Ignite>() {
-            @Override public void applyx(Ignite ignite) throws IgniteCheckedException {
-                createCache(ignite, cacheConfig(LOCAL).setDataRegionName(REGION_VOLATILE));
-
-                assertThrows(new Callable<Void>() {
-                    @Override public Void call() throws Exception {
-                        walDisable(ignite, CACHE_NAME);
-
-                        return null;
-                    }
-                }, IgniteException.class, "WAL mode cannot be changed for LOCAL cache(s)");
-
-                assertThrows(new Callable<Void>() {
-                    @Override public Void call() throws Exception {
-                        walEnable(ignite, CACHE_NAME);
-
-                        return null;
-                    }
-                }, IgniteException.class, "WAL mode cannot be changed for LOCAL cache(s)");
-
-                assert !ignite.cluster().isWalEnabled(CACHE_NAME);
             }
         });
     }

@@ -17,7 +17,6 @@
 
 package org.apache.ignite.compatibility.testsuites;
 
-import org.apache.ignite.compatibility.cache.LocalCacheTest;
 import org.apache.ignite.compatibility.clients.JavaThinCompatibilityTest;
 import org.apache.ignite.compatibility.clients.JdbcThinCompatibilityTest;
 import org.apache.ignite.compatibility.persistence.FoldersReuseCompatibilityTest;
@@ -41,7 +40,6 @@ import org.junit.runners.Suite;
     FoldersReuseCompatibilityTest.class,
     MigratingToWalV2SerializerWithCompactionTest.class,
     MetaStorageCompatibilityTest.class,
-    LocalCacheTest.class,
     MoveBinaryMetadataCompatibility.class,
     JdbcThinCompatibilityTest.class,
     JavaThinCompatibilityTest.class

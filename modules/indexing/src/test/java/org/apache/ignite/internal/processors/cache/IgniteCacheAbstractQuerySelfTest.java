@@ -217,8 +217,7 @@ public abstract class IgniteCacheAbstractQuerySelfTest extends GridCommonAbstrac
 
         cc.setQueryEntities(entityList);
 
-        if (cacheMode() != CacheMode.LOCAL)
-            cc.setAffinity(new RendezvousAffinityFunction());
+        cc.setAffinity(new RendezvousAffinityFunction());
 
         // Explicitly set number of backups equal to number of grids.
         if (cacheMode() == CacheMode.PARTITIONED)

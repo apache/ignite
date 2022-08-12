@@ -44,14 +44,11 @@ import org.apache.ignite.spi.communication.tcp.TcpCommunicationSpi;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.apache.ignite.transactions.Transaction;
 import org.jetbrains.annotations.NotNull;
-import org.junit.Ignore;
 import org.junit.Test;
-
 import static java.util.concurrent.TimeUnit.MILLISECONDS;
 import static org.apache.ignite.cache.CacheAtomicityMode.ATOMIC;
 import static org.apache.ignite.cache.CacheAtomicityMode.TRANSACTIONAL;
 import static org.apache.ignite.cache.CacheAtomicityMode.TRANSACTIONAL_SNAPSHOT;
-import static org.apache.ignite.cache.CacheMode.LOCAL;
 import static org.apache.ignite.cache.CacheMode.PARTITIONED;
 import static org.apache.ignite.cache.CacheMode.REPLICATED;
 import static org.apache.ignite.cache.CacheWriteSynchronizationMode.FULL_SYNC;
@@ -98,17 +95,6 @@ public class CacheContinuousQueryExecuteInPrimaryTest extends GridCommonAbstract
      * @throws Exception If failed.
      */
     @Test
-    public void testLocalCache() throws Exception {
-        CacheConfiguration<Integer, String> ccfg = cacheConfiguration(ATOMIC, LOCAL);
-
-        doTestWithoutEventsEntries(ccfg);
-        doTestWithEventsEntries(ccfg);
-    }
-
-    /**
-     * @throws Exception If failed.
-     */
-    @Test
     public void testReplicatedCache() throws Exception {
         CacheConfiguration<Integer, String> ccfg = cacheConfiguration(ATOMIC, REPLICATED);
 
@@ -131,17 +117,6 @@ public class CacheContinuousQueryExecuteInPrimaryTest extends GridCommonAbstract
      * @throws Exception If failed.
      */
     @Test
-    public void testTransactionLocalCache() throws Exception {
-        CacheConfiguration<Integer, String> ccfg = cacheConfiguration(TRANSACTIONAL, LOCAL);
-
-        doTestWithoutEventsEntries(ccfg);
-        doTestWithEventsEntries(ccfg);
-    }
-
-    /**
-     * @throws Exception If failed.
-     */
-    @Test
     public void testTransactionReplicatedCache() throws Exception {
         CacheConfiguration<Integer, String> ccfg = cacheConfiguration(TRANSACTIONAL, REPLICATED);
 
@@ -155,18 +130,6 @@ public class CacheContinuousQueryExecuteInPrimaryTest extends GridCommonAbstract
     @Test
     public void testTransactionPartitionedCache() throws Exception {
         CacheConfiguration<Integer, String> ccfg = cacheConfiguration(TRANSACTIONAL, PARTITIONED);
-
-        doTestWithoutEventsEntries(ccfg);
-        doTestWithEventsEntries(ccfg);
-    }
-
-    /**
-     * @throws Exception If failed.
-     */
-    @Ignore("https://issues.apache.org/jira/browse/IGNITE-9530")
-    @Test
-    public void testMvccTransactionLocalCache() throws Exception {
-        CacheConfiguration<Integer, String> ccfg = cacheConfiguration(TRANSACTIONAL_SNAPSHOT, LOCAL);
 
         doTestWithoutEventsEntries(ccfg);
         doTestWithEventsEntries(ccfg);

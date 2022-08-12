@@ -38,15 +38,6 @@ import org.apache.ignite.internal.processors.cache.datastructures.IgniteSetClust
 import org.apache.ignite.internal.processors.cache.datastructures.OutOfMemoryVolatileRegionTest;
 import org.apache.ignite.internal.processors.cache.datastructures.SemaphoreFailoverNoWaitingAcquirerTest;
 import org.apache.ignite.internal.processors.cache.datastructures.SemaphoreFailoverSafeReleasePermitsTest;
-import org.apache.ignite.internal.processors.cache.datastructures.local.GridCacheLocalAtomicQueueApiSelfTest;
-import org.apache.ignite.internal.processors.cache.datastructures.local.GridCacheLocalAtomicSetSelfTest;
-import org.apache.ignite.internal.processors.cache.datastructures.local.GridCacheLocalQueueApiSelfTest;
-import org.apache.ignite.internal.processors.cache.datastructures.local.GridCacheLocalSequenceApiSelfTest;
-import org.apache.ignite.internal.processors.cache.datastructures.local.GridCacheLocalSetSelfTest;
-import org.apache.ignite.internal.processors.cache.datastructures.local.IgniteLocalAtomicLongApiSelfTest;
-import org.apache.ignite.internal.processors.cache.datastructures.local.IgniteLocalCountDownLatchSelfTest;
-import org.apache.ignite.internal.processors.cache.datastructures.local.IgniteLocalLockSelfTest;
-import org.apache.ignite.internal.processors.cache.datastructures.local.IgniteLocalSemaphoreSelfTest;
 import org.apache.ignite.internal.processors.cache.datastructures.partitioned.GridCachePartitionedAtomicQueueApiSelfTest;
 import org.apache.ignite.internal.processors.cache.datastructures.partitioned.GridCachePartitionedAtomicQueueCreateMultiNodeSelfTest;
 import org.apache.ignite.internal.processors.cache.datastructures.partitioned.GridCachePartitionedAtomicQueueFailoverDataConsistencySelfTest;
@@ -109,15 +100,6 @@ import org.junit.runners.Suite;
     GridCachePartitionedQueueFailoverDataConsistencySelfTest.class,
     GridCachePartitionedAtomicQueueFailoverDataConsistencySelfTest.class,
 
-    GridCacheLocalSequenceApiSelfTest.class,
-    GridCacheLocalSetSelfTest.class,
-    GridCacheLocalAtomicSetSelfTest.class,
-    GridCacheLocalQueueApiSelfTest.class,
-    GridCacheLocalAtomicQueueApiSelfTest.class,
-    IgniteLocalCountDownLatchSelfTest.class,
-    IgniteLocalSemaphoreSelfTest.class,
-    IgniteLocalLockSelfTest.class,
-
     GridCacheReplicatedSequenceApiSelfTest.class,
     GridCacheReplicatedSequenceMultiNodeSelfTest.class,
     GridCacheReplicatedQueueApiSelfTest.class,
@@ -168,7 +150,6 @@ import org.junit.runners.Suite;
     GridCachePartitionedDataStructuresFailoverSelfTest.class,
     GridCacheQueueMultiNodeConsistencySelfTest.class,
 
-    IgniteLocalAtomicLongApiSelfTest.class,
     IgnitePartitionedAtomicLongApiSelfTest.class,
     IgniteReplicatedAtomicLongApiSelfTest.class,
 

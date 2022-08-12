@@ -55,12 +55,10 @@ import org.apache.ignite.internal.util.typedef.internal.SB;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgnitePredicate;
 import org.jetbrains.annotations.Nullable;
-
 import static org.apache.ignite.IgniteSystemProperties.IGNITE_AFFINITY_HISTORY_SIZE;
 import static org.apache.ignite.IgniteSystemProperties.IGNITE_PART_DISTRIBUTION_WARN_THRESHOLD;
 import static org.apache.ignite.IgniteSystemProperties.getFloat;
 import static org.apache.ignite.IgniteSystemProperties.getInteger;
-import static org.apache.ignite.cache.CacheMode.LOCAL;
 import static org.apache.ignite.cache.CacheMode.PARTITIONED;
 import static org.apache.ignite.internal.events.DiscoveryCustomEvent.EVT_DISCOVERY_CUSTOM_EVT;
 
@@ -142,9 +140,6 @@ public class GridAffinityAssignmentCache {
     /** */
     private final GridKernalContext ctx;
 
-    /** */
-    private final boolean locCache;
-
     /** Node stop flag. */
     private volatile IgniteCheckedException stopErr;
 
@@ -163,15 +158,13 @@ public class GridAffinityAssignmentCache {
      * @param aff Affinity function.
      * @param nodeFilter Node filter.
      * @param backups Number of backups.
-     * @param locCache Local cache flag.
      */
     private GridAffinityAssignmentCache(GridKernalContext ctx,
         String cacheOrGrpName,
         int grpId,
         AffinityFunction aff,
         IgnitePredicate<ClusterNode> nodeFilter,
-        int backups,
-        boolean locCache
+        int backups
     ) {
         assert ctx != null;
         assert aff != null;
@@ -184,7 +177,6 @@ public class GridAffinityAssignmentCache {
         this.cacheOrGrpName = cacheOrGrpName;
         this.grpId = grpId;
         this.backups = backups;
-        this.locCache = locCache;
 
         log = ctx.log(GridAffinityAssignmentCache.class);
 
@@ -209,8 +201,7 @@ public class GridAffinityAssignmentCache {
             CU.cacheGroupId(ccfg),
             aff,
             ccfg.getNodeFilter(),
-            ccfg.getBackups(),
-            ccfg.getCacheMode() == LOCAL);
+            ccfg.getBackups());
     }
 
     /**
@@ -351,15 +342,9 @@ public class GridAffinityAssignmentCache {
             return prevAssignment;
 
         // Resolve nodes snapshot for specified topology version.
-        List<ClusterNode> sorted;
+        List<ClusterNode> sorted = new ArrayList<>(discoCache.cacheGroupAffinityNodes(groupId()));
 
-        if (!locCache) {
-            sorted = new ArrayList<>(discoCache.cacheGroupAffinityNodes(groupId()));
-
-            sorted.sort(NodeOrderComparator.getInstance());
-        }
-        else
-            sorted = Collections.singletonList(ctx.discovery().localNode());
+        sorted.sort(NodeOrderComparator.getInstance());
 
         boolean hasBaseline = false;
         boolean changedBaseline = false;
@@ -462,9 +447,6 @@ public class GridAffinityAssignmentCache {
             baselineTopology = null;
             baselineAssignment = null;
         }
-
-        if (locCache)
-            initialize(topVer, assignment.assignment());
 
         return assignment;
     }

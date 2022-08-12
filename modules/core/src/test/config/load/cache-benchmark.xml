@@ -40,15 +40,6 @@
 
                     <property name="writeSynchronizationMode" value="FULL_ASYNC"/>
                 </bean>
-                <bean class="org.apache.ignite.configuration.CacheConfiguration">
-                    <property name="name" value="local"/>
-
-                    <property name="cacheMode" value="LOCAL"/>
-
-                    <property name="swapEnabled" value="false"/>
-
-                    <property name="writeSynchronizationMode" value="FULL_ASYNC"/>
-                </bean>
             </list>
         </property>
 

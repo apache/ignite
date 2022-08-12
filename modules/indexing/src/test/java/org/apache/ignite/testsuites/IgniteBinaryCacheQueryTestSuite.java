@@ -107,8 +107,6 @@ import org.apache.ignite.internal.processors.cache.index.IndexMetricsTest;
 import org.apache.ignite.internal.processors.cache.index.QueryEntityValidationSelfTest;
 import org.apache.ignite.internal.processors.cache.index.SchemaExchangeSelfTest;
 import org.apache.ignite.internal.processors.cache.index.StopNodeOnRebuildIndexFailureTest;
-import org.apache.ignite.internal.processors.cache.local.IgniteCacheLocalAtomicQuerySelfTest;
-import org.apache.ignite.internal.processors.cache.local.IgniteCacheLocalQuerySelfTest;
 import org.apache.ignite.internal.processors.cache.query.CacheDataPageScanQueryTest;
 import org.apache.ignite.internal.processors.cache.query.CacheScanQueryFailoverTest;
 import org.apache.ignite.internal.processors.cache.query.GridCacheQueryTransformerSelfTest;
@@ -238,8 +236,6 @@ import org.junit.runners.Suite;
     IgniteSqlSchemaIndexingTest.class,
     GridCacheQueryIndexDisabledSelfTest.class,
     IgniteCacheQueryLoadSelfTest.class,
-    IgniteCacheLocalQuerySelfTest.class,
-    IgniteCacheLocalAtomicQuerySelfTest.class,
     IgniteCacheReplicatedQuerySelfTest.class,
     IgniteCacheReplicatedQueryP2PDisabledSelfTest.class,
     IgniteCacheReplicatedQueryEvtsDisabledSelfTest.class,

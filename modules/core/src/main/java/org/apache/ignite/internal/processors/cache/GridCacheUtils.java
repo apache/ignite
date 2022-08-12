@@ -68,7 +68,6 @@ import org.apache.ignite.internal.cluster.ClusterGroupEmptyCheckedException;
 import org.apache.ignite.internal.cluster.ClusterTopologyCheckedException;
 import org.apache.ignite.internal.cluster.ClusterTopologyServerNotFoundException;
 import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
-import org.apache.ignite.internal.processors.affinity.LocalAffinityFunction;
 import org.apache.ignite.internal.processors.cache.distributed.GridDistributedLockCancelledException;
 import org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtCacheAdapter;
 import org.apache.ignite.internal.processors.cache.distributed.dht.topology.GridDhtInvalidPartitionException;
@@ -116,10 +115,8 @@ import org.apache.ignite.transactions.TransactionIsolation;
 import org.apache.ignite.transactions.TransactionRollbackException;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
-
 import static java.util.Objects.nonNull;
 import static org.apache.ignite.IgniteSystemProperties.IGNITE_SKIP_CONFIGURATION_CONSISTENCY_CHECK;
-import static org.apache.ignite.cache.CacheMode.LOCAL;
 import static org.apache.ignite.cache.CacheMode.PARTITIONED;
 import static org.apache.ignite.cache.CacheMode.REPLICATED;
 import static org.apache.ignite.cache.CacheRebalanceMode.ASYNC;
@@ -496,9 +493,6 @@ public class GridCacheUtils {
      */
     @SuppressWarnings("SimplifiableIfStatement")
     public static boolean isNearEnabled(CacheConfiguration cfg) {
-        if (cfg.getCacheMode() == LOCAL)
-            return false;
-
         return cfg.getNearConfiguration() != null;
     }
 
@@ -1727,22 +1721,12 @@ public class GridCacheUtils {
 
                 cfg.setAffinity(aff);
             }
-            else if (cfg.getCacheMode() == REPLICATED) {
+            else {
                 RendezvousAffinityFunction aff = new RendezvousAffinityFunction(false, 512);
 
                 cfg.setAffinity(aff);
 
                 cfg.setBackups(Integer.MAX_VALUE);
-            }
-            else
-                cfg.setAffinity(new LocalAffinityFunction());
-        }
-        else {
-            if (cfg.getCacheMode() == LOCAL && !(cfg.getAffinity() instanceof LocalAffinityFunction)) {
-                cfg.setAffinity(new LocalAffinityFunction());
-
-                U.warn(log, "AffinityFunction configuration parameter will be ignored for local cache" +
-                    " [cacheName=" + U.maskName(cfg.getName()) + ']');
             }
         }
 
@@ -2161,7 +2145,7 @@ public class GridCacheUtils {
             if (cctx == null)
                 throw new CacheException("Failed to find cache.");
 
-            if (!cctx.isLocal() && !cctx.isReplicated())
+            if (!cctx.isReplicated())
                 return cctx;
         }
 
@@ -2180,7 +2164,7 @@ public class GridCacheUtils {
             if (cctx == null)
                 throw new CacheException("Failed to find cache.");
 
-            if (!cctx.isLocal() && !cctx.isReplicated())
+            if (!cctx.isReplicated())
                 return cctx;
         }
 

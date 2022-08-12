@@ -46,7 +46,6 @@ import java.util.function.Function;
 import org.apache.commons.lang3.builder.EqualsBuilder;
 import org.apache.ignite.IgniteCache;
 import org.apache.ignite.IgniteCheckedException;
-import org.apache.ignite.cache.CacheMode;
 import org.apache.ignite.cache.CacheWriteSynchronizationMode;
 import org.apache.ignite.cache.QueryEntity;
 import org.apache.ignite.cache.affinity.rendezvous.RendezvousAffinityFunction;
@@ -62,7 +61,6 @@ import org.junit.Ignore;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.ExpectedException;
-
 import static org.apache.ignite.testframework.GridTestUtils.waitForCondition;
 
 /**
@@ -418,8 +416,7 @@ public class JdbcThinCacheToJdbcDataTypesCoverageTest extends GridCacheDataTypes
 
         Class<?> dataType = originalValItem.getClass();
 
-        IgniteEx ignite =
-            (cacheMode == CacheMode.LOCAL || writeSyncMode == CacheWriteSynchronizationMode.PRIMARY_SYNC) ?
+        IgniteEx ignite = writeSyncMode == CacheWriteSynchronizationMode.PRIMARY_SYNC ?
                 grid(0) :
                 grid(new Random().nextInt(NODES_CNT));
 

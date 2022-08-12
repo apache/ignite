@@ -121,7 +121,7 @@
             </value>
         </pair>
     </userAttributes>
-    <atomicConfiguration backups='2' cacheMode='Local' atomicSequenceReserveSize='250' />
+    <atomicConfiguration backups='2' cacheMode='Partitioned' atomicSequenceReserveSize='250' />
     <transactionConfiguration defaultTransactionConcurrency='Optimistic' defaultTransactionIsolation='RepeatableRead' defaultTimeout='0:1:2' pessimisticTransactionLogSize='15' pessimisticTransactionLogLinger='0:0:33' />
     <logger type='Apache.Ignite.Core.Tests.IgniteConfigurationSerializerTest+TestLogger, Apache.Ignite.Core.Tests' />
     <pluginConfigurations>

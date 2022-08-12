@@ -32,6 +32,7 @@ import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.binary.BinaryBasicNameMapper;
 import org.apache.ignite.binary.BinaryObjectException;
 import org.apache.ignite.binary.BinaryType;
+import org.apache.ignite.cache.CacheMode;
 import org.apache.ignite.cache.query.FieldsQueryCursor;
 import org.apache.ignite.cache.query.SqlFieldsQuery;
 import org.apache.ignite.client.ClientAtomicConfiguration;
@@ -235,13 +236,17 @@ public class TcpIgniteClient implements IgniteClient {
         ensureCacheName(name);
 
         ch.request(ClientOperation.CACHE_DESTROY, req -> req.out().writeInt(ClientUtils.cacheId(name)));
+        ch.unregisterCacheIfCustomAffinity(name);
     }
 
     /** {@inheritDoc} */
     @Override public IgniteClientFuture<Void> destroyCacheAsync(String name) throws ClientException {
         ensureCacheName(name);
 
-        return ch.requestAsync(ClientOperation.CACHE_DESTROY, req -> req.out().writeInt(ClientUtils.cacheId(name)));
+        return ch.requestAsync(ClientOperation.CACHE_DESTROY, req -> {
+            req.out().writeInt(ClientUtils.cacheId(name));
+            ch.unregisterCacheIfCustomAffinity(name);
+        });
     }
 
     /** {@inheritDoc} */
@@ -358,7 +363,7 @@ public class TcpIgniteClient implements IgniteClient {
                 if (cfg != null) {
                     out.out().writeBoolean(true);
                     out.out().writeInt(cfg.getAtomicSequenceReserveSize());
-                    out.out().writeByte((byte)cfg.getCacheMode().ordinal());
+                    out.out().writeByte(CacheMode.toCode(cfg.getCacheMode()));
                     out.out().writeInt(cfg.getBackups());
                     writeString(cfg.getGroupName(), out.out());
                 }
@@ -386,7 +391,7 @@ public class TcpIgniteClient implements IgniteClient {
             if (cfg != null) {
                 out.out().writeBoolean(true);
                 out.out().writeByte((byte)cfg.getAtomicityMode().ordinal());
-                out.out().writeByte((byte)cfg.getCacheMode().ordinal());
+                out.out().writeByte(CacheMode.toCode(cfg.getCacheMode()));
                 out.out().writeInt(cfg.getBackups());
                 writeString(cfg.getGroupName(), out.out());
                 out.out().writeBoolean(cfg.isColocated());
@@ -412,6 +417,13 @@ public class TcpIgniteClient implements IgniteClient {
      */
     public static IgniteClient start(ClientConfiguration cfg) throws ClientException {
         return new TcpIgniteClient(cfg);
+    }
+
+    /**
+     * @return Channel.
+     */
+    ReliableChannel reliableChannel() {
+        return ch;
     }
 
     /** @throws IllegalArgumentException if the specified cache name is invalid. */
