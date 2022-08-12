@@ -33,7 +33,6 @@ import org.apache.ignite.internal.processors.cache.persistence.partstate.GroupPa
 import org.apache.ignite.internal.util.typedef.F;
 import org.jetbrains.annotations.Nullable;
 
-import static java.util.Optional.ofNullable;
 import static org.apache.ignite.internal.processors.cache.persistence.file.FilePageStoreManager.cacheDirectory;
 import static org.apache.ignite.internal.processors.cache.persistence.file.FilePageStoreManager.getPartitionFile;
 import static org.apache.ignite.internal.processors.cache.persistence.snapshot.IgniteSnapshotManager.databaseRelativePath;
@@ -131,9 +130,10 @@ public class SnapshotResponseRemoteFutureTask extends AbstractSnapshotFutureTask
                 snpSndr.sendPart(snpPart, cacheDir.getName(), gp, snpPart.length());
             }), snpSndr.executor())
                 .whenComplete((r, t) -> {
-                    err.compareAndSet(null, t);
+                    if (t != null)
+                        err.compareAndSet(null, t);
 
-                    Throwable th = ofNullable(err.get()).orElse(t);
+                    Throwable th = err.get();
 
                     if (th == null && log.isInfoEnabled()) {
                         log.info("Snapshot partitions have been sent to the remote node [snpName=" + snpName +
