@@ -216,7 +216,7 @@ public class GridCommandHandlerConsistencyCountersTest extends GridCommandHandle
         int updateCnt = 0;
 
         // Initial preloading.
-        for (int i = 0; i < 10_000; i++) {
+        for (int i = 0; i < 2_000; i++) { // Enough to have historical rebalance when needed.
             cache.put(i, i);
 
             updateCnt++;
