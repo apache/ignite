@@ -94,8 +94,8 @@ public class SnapshotResponseRemoteFutureTask extends AbstractSnapshotFutureTask
 
             Map<GroupPartitionId, SnapshotMetadata> partsToSend = new HashMap<>();
 
-            for (Map.Entry<Integer, Set<Integer>> e : parts.entrySet())
-                e.getValue().forEach(p -> partsToSend.computeIfAbsent(new GroupPartitionId(e.getKey(), p), findMeta));
+            parts.forEach((grpId, parts) -> parts.forEach(
+                part -> partsToSend.computeIfAbsent(new GroupPartitionId(grpId, part), findMeta)));
 
             if (partsToSend.containsValue(null)) {
                 Collection<GroupPartitionId> missed = F.viewReadOnly(partsToSend.entrySet(), Map.Entry::getKey,
