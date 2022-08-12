@@ -324,13 +324,16 @@ public class IgniteMdSelectivity extends RelMdSelectivity {
         ColumnStatistics colStat = getColumnStatistics(mq, rel, ref);
         double res = 0.33;
 
-        if (colStat == null) {
+        if (colStat == null || colStat.max() == null || colStat.min() == null) {
             // true, false and null with equivalent probability
             return res;
         }
 
-        if (colStat.max() == null || colStat.max().compareTo(BigDecimal.ONE) != 0
-            || colStat.max().compareTo(BigDecimal.ZERO) != 0)
+        // Check whether it can be considered as BOOL.
+        boolean isBool = (colStat.max().compareTo(BigDecimal.ONE) == 0 || colStat.max().compareTo(BigDecimal.ZERO) == 0)
+            && (colStat.min().compareTo(BigDecimal.ONE) == 0 || colStat.min().compareTo(BigDecimal.ZERO) == 0);
+
+        if (!isBool)
             return res;
 
         Boolean min = colStat.min().compareTo(BigDecimal.ONE) == 0;
