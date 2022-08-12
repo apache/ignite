@@ -67,7 +67,10 @@ public final class GridTestProperties {
     public static final String TESTS_PROP_FILE = "tests.properties";
 
     /** */
-    public static final String TESTS_CFG_PATH = "modules/core/src/test/config";
+    public static final String TESTS_CLS_PATH = "test/config/";
+
+    /** */
+    public static final String TESTS_CFG_PATH = "modules/core/src/" + TESTS_CLS_PATH;
 
     /** */
     private static final Pattern PROP_REGEX = Pattern.compile("[@$]\\{[^@${}]+\\}");
@@ -118,7 +121,7 @@ public final class GridTestProperties {
         if (cfgFile != null && cfgFile.exists())
             dfltProps = Collections.unmodifiableMap(loadFromFile(new HashMap<>(), cfgFile));
         else {
-            URL res = GridTestProperties.class.getClassLoader().getResource(TESTS_PROP_FILE);
+            URL res = GridTestProperties.class.getClassLoader().getResource(TESTS_CLS_PATH + TESTS_PROP_FILE);
 
             if (res == null)
                 fail("Unable to find " + TESTS_PROP_FILE);
@@ -163,7 +166,7 @@ public final class GridTestProperties {
             cfgFileLocation = log4jFile.getAbsolutePath();
         else {
             // Try loading the logger configuration from the classpath.
-            URL resourse = GridTestProperties.class.getClassLoader().getResource(cfgFile);
+            URL resourse = GridTestProperties.class.getClassLoader().getResource(TESTS_CLS_PATH + cfgFile);
 
             cfgFileLocation = resourse.toExternalForm();
         }

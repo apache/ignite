@@ -225,6 +225,9 @@
                     <include>log4j2-test.xml</include>
                     <include>tests.properties</include>
                 </includes>
+                <!-- Hide the test logger configuration from the log4j autoconfigurator
+                     in case the user starts Ignite with test.jar on the classpath. -->
+                <targetPath>${project.build.testOutputDirectory}/test/config</targetPath>
             </testResource>
 
         </testResources>
