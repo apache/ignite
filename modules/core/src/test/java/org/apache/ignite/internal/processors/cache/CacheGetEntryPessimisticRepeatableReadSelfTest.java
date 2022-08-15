@@ -23,9 +23,7 @@ import org.apache.ignite.transactions.TransactionConcurrency;
 import org.apache.ignite.transactions.TransactionIsolation;
 import org.junit.Ignore;
 import org.junit.Test;
-
 import static org.apache.ignite.cache.CacheAtomicityMode.TRANSACTIONAL_SNAPSHOT;
-import static org.apache.ignite.cache.CacheMode.LOCAL;
 import static org.apache.ignite.cache.CacheMode.PARTITIONED;
 import static org.apache.ignite.cache.CacheMode.REPLICATED;
 import static org.apache.ignite.cache.CacheWriteSynchronizationMode.FULL_SYNC;
@@ -72,22 +70,6 @@ public class CacheGetEntryPessimisticRepeatableReadSelfTest extends CacheGetEntr
         cfg.setCacheMode(PARTITIONED);
         cfg.setAtomicityMode(TRANSACTIONAL_SNAPSHOT);
         cfg.setName("partitionedT");
-
-        test(cfg);
-    }
-
-    /**
-     * @throws Exception If failed.
-     */
-    @Ignore("https://issues.apache.org/jira/browse/IGNITE-9530")
-    @Test
-    public void testLocalTransactionalMvcc() throws Exception {
-        CacheConfiguration cfg = new CacheConfiguration(DEFAULT_CACHE_NAME);
-
-        cfg.setWriteSynchronizationMode(FULL_SYNC);
-        cfg.setCacheMode(LOCAL);
-        cfg.setAtomicityMode(TRANSACTIONAL_SNAPSHOT);
-        cfg.setName("localT");
 
         test(cfg);
     }

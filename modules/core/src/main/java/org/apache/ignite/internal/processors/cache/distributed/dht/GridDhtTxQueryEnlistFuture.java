@@ -145,7 +145,7 @@ public final class GridDhtTxQueryEnlistFuture extends GridDhtTxQueryAbstractEnli
      */
     @SuppressWarnings("ForLoopReplaceableByForEach")
     private void checkPartitions(int[] parts) throws ClusterTopologyCheckedException {
-        if (cctx.isLocal() || !cctx.rebalanceEnabled())
+        if (!cctx.rebalanceEnabled())
             return;
 
         GridDhtPartitionTopology top = cctx.topology();

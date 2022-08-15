@@ -380,16 +380,10 @@ public class IgniteCacheProxyImpl<K, V> extends AsyncSupportAdapter<IgniteCache<
 
         try {
             if (isAsync()) {
-                if (ctx.cache().isLocal())
-                    setFuture(ctx.cache().localLoadCacheAsync(p, args));
-                else
-                    setFuture(ctx.cache().globalLoadCacheAsync(p, args));
+                setFuture(ctx.cache().globalLoadCacheAsync(p, args));
             }
             else {
-                if (ctx.cache().isLocal())
-                    ctx.cache().localLoadCache(p, args);
-                else
-                    ctx.cache().globalLoadCache(p, args);
+                ctx.cache().globalLoadCache(p, args);
             }
         }
         catch (IgniteCheckedException | IgniteException e) {
@@ -403,9 +397,6 @@ public class IgniteCacheProxyImpl<K, V> extends AsyncSupportAdapter<IgniteCache<
         GridCacheContext<K, V> ctx = getContextSafe();
 
         try {
-            if (ctx.cache().isLocal())
-                return (IgniteFuture<Void>)createFuture(ctx.cache().localLoadCacheAsync(p, args));
-
             return (IgniteFuture<Void>)createFuture(ctx.cache().globalLoadCacheAsync(p, args));
         }
         catch (IgniteCheckedException | IgniteException e) {
@@ -647,10 +638,7 @@ public class IgniteCacheProxyImpl<K, V> extends AsyncSupportAdapter<IgniteCache<
     private ClusterGroup projection(boolean loc) {
         GridCacheContext<K, V> ctx = getContextSafe();
 
-        if (loc || ctx.isLocal())
-            return ctx.kernalContext().grid().cluster().forLocal();
-
-        return null;
+        return loc ? ctx.kernalContext().grid().cluster().forLocal() : null;
     }
 
     /**

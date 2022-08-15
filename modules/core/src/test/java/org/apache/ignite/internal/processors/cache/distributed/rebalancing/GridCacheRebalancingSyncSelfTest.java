@@ -63,8 +63,6 @@ import org.apache.ignite.testframework.GridTestUtils.SF;
 import org.apache.ignite.testframework.MvccFeatureChecker;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.junit.Test;
-
-import static org.apache.ignite.cache.CacheMode.LOCAL;
 import static org.apache.ignite.cache.CacheRebalanceMode.NONE;
 
 /**
@@ -411,7 +409,7 @@ public class GridCacheRebalancingSyncSelfTest extends GridCommonAbstractTest {
             for (IgniteCacheProxy<?, ?> c : g0.context().cache().jcaches()) {
                 CacheConfiguration cfg = c.context().config();
 
-                if (cfg.getCacheMode() != LOCAL && cfg.getRebalanceMode() != NONE) {
+                if (cfg.getRebalanceMode() != NONE) {
                     GridDhtCacheAdapter<?, ?> dht = dht(c);
 
                     GridDhtPartitionTopology top = dht.topology();

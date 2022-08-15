@@ -203,7 +203,7 @@ namespace Apache.Ignite.Core.Tests
 
             var atomicCfg = cfg.AtomicConfiguration;
             Assert.AreEqual(2, atomicCfg.Backups);
-            Assert.AreEqual(CacheMode.Local, atomicCfg.CacheMode);
+            Assert.AreEqual(CacheMode.Partitioned, atomicCfg.CacheMode);
             Assert.AreEqual(250, atomicCfg.AtomicSequenceReserveSize);
 
             var tx = cfg.TransactionConfiguration;

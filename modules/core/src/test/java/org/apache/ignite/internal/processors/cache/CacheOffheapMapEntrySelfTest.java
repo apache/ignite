@@ -24,14 +24,11 @@ import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.internal.IgniteKernal;
 import org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtCacheEntry;
 import org.apache.ignite.internal.processors.cache.distributed.near.GridNearCacheEntry;
-import org.apache.ignite.internal.processors.cache.local.GridLocalCacheEntry;
 import org.apache.ignite.testframework.MvccFeatureChecker;
 import org.junit.Test;
-
 import static org.apache.ignite.cache.CacheAtomicityMode.ATOMIC;
 import static org.apache.ignite.cache.CacheAtomicityMode.TRANSACTIONAL;
 import static org.apache.ignite.cache.CacheAtomicityMode.TRANSACTIONAL_SNAPSHOT;
-import static org.apache.ignite.cache.CacheMode.LOCAL;
 import static org.apache.ignite.cache.CacheMode.PARTITIONED;
 import static org.apache.ignite.cache.CacheMode.REPLICATED;
 
@@ -89,13 +86,6 @@ public class CacheOffheapMapEntrySelfTest extends GridCacheAbstractSelfTest {
      */
     @Test
     public void testCacheMapEntry() throws Exception {
-        checkCacheMapEntry(ATOMIC, LOCAL, GridLocalCacheEntry.class);
-
-        checkCacheMapEntry(TRANSACTIONAL, LOCAL, GridLocalCacheEntry.class);
-
-        if (MvccFeatureChecker.isSupported(MvccFeatureChecker.Feature.LOCAL_CACHE))
-            checkCacheMapEntry(TRANSACTIONAL_SNAPSHOT, LOCAL, GridLocalCacheEntry.class);
-
         checkCacheMapEntry(ATOMIC, PARTITIONED, GridNearCacheEntry.class);
 
         checkCacheMapEntry(TRANSACTIONAL, PARTITIONED, GridNearCacheEntry.class);
