@@ -102,11 +102,9 @@ public class PartitionUpdateCounterTrackingImpl implements PartitionUpdateCounte
     @Override public void init(long initUpdCntr, @Nullable byte[] cntrUpdData) {
         lwm.set(initUpdCntr);
 
-        initCntr = initUpdCntr;
+        reservedCntr.set(initCntr = initUpdCntr);
 
         queue = fromBytes(cntrUpdData);
-
-        reservedCntr.set(highestAppliedCounter());
     }
 
     /** {@inheritDoc} */
