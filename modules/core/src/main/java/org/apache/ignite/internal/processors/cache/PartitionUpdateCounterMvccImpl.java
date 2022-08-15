@@ -49,11 +49,11 @@ public class PartitionUpdateCounterMvccImpl extends PartitionUpdateCounterTracki
     @Override public PartitionUpdateCounter copy() {
         PartitionUpdateCounterMvccImpl copy = new PartitionUpdateCounterMvccImpl(grp);
 
-        copy.lwm.set(lwm.get());
+        copy.cntr.set(cntr.get());
         copy.first = first;
         copy.queue = new TreeMap<>(queue);
         copy.initCntr = initCntr;
-        copy.reservedCntr.set(reservedCntr.get());
+        copy.reserveCntr.set(reserveCntr.get());
 
         return copy;
     }

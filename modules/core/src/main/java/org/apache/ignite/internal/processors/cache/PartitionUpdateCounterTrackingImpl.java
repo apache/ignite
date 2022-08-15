@@ -74,10 +74,10 @@ public class PartitionUpdateCounterTrackingImpl implements PartitionUpdateCounte
     protected NavigableMap<Long, Item> queue = new TreeMap<>();
 
     /** LWM. */
-    protected final AtomicLong lwm = new AtomicLong();
+    protected final AtomicLong cntr = new AtomicLong();
 
-    /** Reserved. */
-    protected final AtomicLong reservedCntr = new AtomicLong();
+    /** HWM. */
+    protected final AtomicLong reserveCntr = new AtomicLong();
 
     /** */
     protected boolean first = true;
@@ -100,13 +100,13 @@ public class PartitionUpdateCounterTrackingImpl implements PartitionUpdateCounte
 
     /** {@inheritDoc} */
     @Override public void init(long initUpdCntr, @Nullable byte[] cntrUpdData) {
-        lwm.set(initUpdCntr);
+        cntr.set(initUpdCntr);
 
         initCntr = initUpdCntr;
 
         queue = fromBytes(cntrUpdData);
 
-        reservedCntr.set(highestAppliedCounter());
+        reserveCntr.set(highestAppliedCounter());
     }
 
     /** {@inheritDoc} */
@@ -116,21 +116,21 @@ public class PartitionUpdateCounterTrackingImpl implements PartitionUpdateCounte
 
     /** {@inheritDoc} */
     @Override public long get() {
-        return lwm.get();
+        return cntr.get();
     }
 
     /** */
     protected synchronized long highestAppliedCounter() {
-        return queue.isEmpty() ? lwm.get() : queue.lastEntry().getValue().absolute();
+        return queue.isEmpty() ? cntr.get() : queue.lastEntry().getValue().absolute();
     }
 
     /**
      * @return Next update counter. For tx mode called by {@link DataStreamerImpl} IsolatedUpdater.
      */
     @Override public long next() {
-        long next = lwm.incrementAndGet();
+        long next = cntr.incrementAndGet();
 
-        reservedCntr.set(next);
+        reserveCntr.set(next);
 
         return next;
     }
@@ -138,27 +138,25 @@ public class PartitionUpdateCounterTrackingImpl implements PartitionUpdateCounte
     /** {@inheritDoc} */
     @Override public synchronized void update(long val) throws IgniteCheckedException {
         // Reserved update counter is updated only on exchange.
-        long curLwm = lwm.get();
+        long cur = get();
 
         // Always set reserved counter equal to max known counter.
-        long max = Math.max(val, curLwm);
-        long reserved = reservedCntr.get();
+        long max = Math.max(val, cur);
 
-        if (reserved < max)
-            reservedCntr.set(max);
+        if (reserveCntr.get() < max)
+            reserveCntr.set(max);
 
         // Outdated counter (txs are possible before current topology future is finished if primary is not changed).
-        if (val < curLwm)
+        if (val < cur)
             return;
 
         // Absolute counter should be not less than last applied update.
         // Otherwise supplier doesn't contain some updates and rebalancing couldn't restore consistency.
         // Best behavior is to stop node by failure handler in such a case.
         if (val < highestAppliedCounter())
-            throw new IgniteCheckedException("Failed to update the counter " +
-                "[newVal=" + val + ", prevReserved=" + reserved + ", curState=" + this + ']');
+            throw new IgniteCheckedException("Failed to update the counter [newVal=" + val + ", curState=" + this + ']');
 
-        lwm.set(val);
+        cntr.set(val);
 
         /** If some holes are present at this point, thar means some update were missed on recovery and will be restored
          * during rebalance. All gaps are safe to "forget".
@@ -172,7 +170,7 @@ public class PartitionUpdateCounterTrackingImpl implements PartitionUpdateCounte
 
     /** {@inheritDoc} */
     @Override public synchronized boolean update(long start, long delta) {
-        long cur = lwm.get();
+        long cur = cntr.get();
 
         if (cur > start)
             return false;
@@ -215,7 +213,7 @@ public class PartitionUpdateCounterTrackingImpl implements PartitionUpdateCounte
             if (nextItem != null)
                 next += nextItem.delta;
 
-            boolean res = lwm.compareAndSet(cur, next);
+            boolean res = cntr.compareAndSet(cur, next);
 
             assert res;
 
@@ -229,8 +227,8 @@ public class PartitionUpdateCounterTrackingImpl implements PartitionUpdateCounte
 
         initCntr = get();
 
-        if (reservedCntr.get() < initCntr)
-            reservedCntr.set(initCntr);
+        if (reserveCntr.get() < initCntr)
+            reserveCntr.set(initCntr);
     }
 
     /** {@inheritDoc} */
@@ -243,37 +241,37 @@ public class PartitionUpdateCounterTrackingImpl implements PartitionUpdateCounte
             if (gaps == null)
                 gaps = new GridLongList((queue.size() + 1) * 2);
 
-            long start = lwm.get() + 1;
+            long start = cntr.get() + 1;
             long end = item.getValue().start;
 
             gaps.add(start);
             gaps.add(end);
 
             // Close pending ranges.
-            lwm.set(item.getValue().absolute());
+            cntr.set(item.getValue().absolute());
 
             item = queue.pollFirstEntry();
         }
 
-        reservedCntr.set(get());
+        reserveCntr.set(get());
 
         return gaps;
     }
 
     /** {@inheritDoc} */
     @Override public synchronized long reserve(long delta) {
-        long lwm = get();
+        long cntr = get();
 
-        long reserved = reservedCntr.getAndAdd(delta);
+        long reserved = reserveCntr.getAndAdd(delta);
 
-        assert reserved >= lwm : "LWM after reserved: lwm=" + lwm + ", reserved=" + reserved + ", cntr=" + this;
+        assert reserved >= cntr : "LWM after HWM: lwm=" + cntr + ", hwm=" + reserved + ", cntr=" + toString();
 
         return reserved;
     }
 
     /** {@inheritDoc} */
     @Override public long next(long delta) {
-        return lwm.getAndAdd(delta);
+        return cntr.getAndAdd(delta);
     }
 
     /** {@inheritDoc} */
@@ -346,9 +344,9 @@ public class PartitionUpdateCounterTrackingImpl implements PartitionUpdateCounte
     @Override public synchronized void reset() {
         initCntr = 0;
 
-        lwm.set(0);
+        cntr.set(0);
 
-        reservedCntr.set(0);
+        reserveCntr.set(0);
 
         queue.clear();
     }
@@ -363,7 +361,7 @@ public class PartitionUpdateCounterTrackingImpl implements PartitionUpdateCounte
      */
     private static class Item {
         /** */
-        private final long start;
+        private long start;
 
         /** */
         private long delta;
@@ -433,12 +431,12 @@ public class PartitionUpdateCounterTrackingImpl implements PartitionUpdateCounte
         if (!queue.equals(cntr.queue))
             return false;
 
-        return lwm.get() == cntr.lwm.get();
+        return this.cntr.get() == cntr.cntr.get();
     }
 
     /** {@inheritDoc} */
     @Override public long reserved() {
-        return reservedCntr.get();
+        return reserveCntr.get();
     }
 
     /** {@inheritDoc} */
@@ -454,21 +452,21 @@ public class PartitionUpdateCounterTrackingImpl implements PartitionUpdateCounte
     /**
      * Human-readable missed unordered updates.
      */
-    private String missed() {
-        List<String> missed = new ArrayList<>();
+    private String gaps() {
+        List<String> gaps = new ArrayList<>();
 
-        long prev = lwm.get();
+        long prev = cntr.get();
 
         for (Item item : queue.values()) {
             if (prev + 1 == item.start)
-                missed.add(String.valueOf(item.start));
+                gaps.add(String.valueOf(item.start));
             else
-                missed.add((prev + 1) + " - " + item.start);
+                gaps.add((prev + 1) + " - " + item.start);
 
             prev = item.start + item.delta;
         }
 
-        return missed.toString();
+        return gaps.toString();
     }
 
     /** {@inheritDoc} */
@@ -478,7 +476,7 @@ public class PartitionUpdateCounterTrackingImpl implements PartitionUpdateCounte
         long hwm;
 
         synchronized (this) {
-            missed = missed();
+            missed = gaps();
 
             lwm = get();
 
@@ -501,16 +499,16 @@ public class PartitionUpdateCounterTrackingImpl implements PartitionUpdateCounte
         String missed;
         long lwm;
         long hwm;
-        long reserved;
+        long maxApplied;
 
         synchronized (this) {
-            missed = missed();
+            missed = gaps();
 
             lwm = get();
 
-            hwm = highestAppliedCounter();
+            hwm = reserveCntr.get();
 
-            reserved = reservedCntr.get();
+            maxApplied = highestAppliedCounter();
         }
 
         return new SB()
@@ -518,10 +516,10 @@ public class PartitionUpdateCounterTrackingImpl implements PartitionUpdateCounte
             .a(lwm)
             .a(", missed=")
             .a(missed)
+            .a(", maxApplied=")
+            .a(maxApplied)
             .a(", hwm=")
             .a(hwm)
-            .a(", reserved=")
-            .a(reserved)
             .a(']')
             .toString();
     }
@@ -535,11 +533,11 @@ public class PartitionUpdateCounterTrackingImpl implements PartitionUpdateCounte
     @Override public PartitionUpdateCounter copy() {
         PartitionUpdateCounterTrackingImpl copy = createInstance();
 
-        copy.lwm.set(lwm.get());
+        copy.cntr.set(cntr.get());
         copy.first = first;
         copy.queue = new TreeMap<>(queue);
         copy.initCntr = initCntr;
-        copy.reservedCntr.set(reservedCntr.get());
+        copy.reserveCntr.set(reserveCntr.get());
 
         return copy;
     }
