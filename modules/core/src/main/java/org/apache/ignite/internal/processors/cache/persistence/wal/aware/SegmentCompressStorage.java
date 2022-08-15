@@ -136,8 +136,8 @@ class SegmentCompressStorage {
      */
     synchronized void onSegmentArchived(long lastAbsArchivedIdx) {
         while (lastEnqueuedToCompressIdx < lastAbsArchivedIdx && compactionEnabled) {
-            if (log.isInfoEnabled())
-                log.info("Enqueuing segment for compression [idx=" + (lastEnqueuedToCompressIdx + 1) + ']');
+            if (log.isDebugEnabled())
+                log.debug("Enqueuing segment for compression [idx=" + (lastEnqueuedToCompressIdx + 1) + ']');
 
             segmentsToCompress.add(++lastEnqueuedToCompressIdx);
         }

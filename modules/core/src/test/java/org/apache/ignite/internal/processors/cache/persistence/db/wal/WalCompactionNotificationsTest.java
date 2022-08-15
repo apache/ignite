@@ -88,10 +88,14 @@ public class WalCompactionNotificationsTest extends GridCommonAbstractTest {
         super.beforeTest();
 
         cleanPersistenceDir();
+
+        setLoggerDebugLevel();
     }
 
     /** {@inheritDoc} */
     @Override protected void afterTest() throws Exception {
+        super.afterTest();
+
         stopAllGrids();
 
         cleanPersistenceDir();

@@ -2277,8 +2277,8 @@ public class FileWriteAheadLogManager extends GridCacheSharedManagerAdapter impl
             if (reserved)
                 return segmentToCompress;
             else {
-                if (log.isInfoEnabled())
-                    log.info("Skipping segment compression [idx=" + segmentToCompress + ']');
+                if (log.isDebugEnabled())
+                    log.debug("Skipping segment compression [idx=" + segmentToCompress + ']');
 
                 segmentAware.onSegmentCompressed(segmentToCompress);
 
@@ -2334,8 +2334,8 @@ public class FileWriteAheadLogManager extends GridCacheSharedManagerAdapter impl
 
                         segmentAware.onSegmentCompressed(segIdx);
 
-                        if (log.isInfoEnabled())
-                            log.info("Segment compressed notification [idx=" + segIdx + ']');
+                        if (log.isDebugEnabled())
+                            log.debug("Segment compressed notification [idx=" + segIdx + ']');
 
                         if (evt.isRecordable(EVT_WAL_SEGMENT_COMPACTED) && !cctx.kernalContext().recoveryMode())
                             evt.record(new WalSegmentCompactedEvent(cctx.localNode(), segIdx, zip.getAbsoluteFile()));
