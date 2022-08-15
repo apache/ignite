@@ -131,31 +131,37 @@ public class TxRecoveryWithConcurrentRollbackTest extends GridCommonAbstractTest
         cleanPersistenceDir();
     }
 
+    /** */
     @Test
     public void testRecoveryCommitsOnAllNodesOnNearFail_FULL_SYNC() throws Exception {
         doTestRecoveryNotBreakingTxAtomicityOnNearFail(false, FULL_SYNC);
     }
 
+    /** */
     @Test
     public void testRecoveryRollsBackOnAllNodesOnNearFail_FULL_SYNC() throws Exception {
         doTestRecoveryNotBreakingTxAtomicityOnNearFail(true, FULL_SYNC);
     }
 
+    /** */
     @Test
     public void testRecoveryCommitsOnAllNodesOnNearFail_FULL_ASYNC() throws Exception {
         doTestRecoveryNotBreakingTxAtomicityOnNearFail(false, FULL_ASYNC);
     }
 
+    /** */
     @Test
     public void testRecoveryRollsBackOnAllNodesOnNearFail_FULL_ASYNC() throws Exception {
         doTestRecoveryNotBreakingTxAtomicityOnNearFail(true, FULL_ASYNC);
     }
 
+    /** */
     @Test
     public void testRecoveryCommitsOnAllNodesOnNearFail_PRIMARY_SYNC() throws Exception {
         doTestRecoveryNotBreakingTxAtomicityOnNearFail(false, PRIMARY_SYNC);
     }
 
+    /** */
     @Test
     public void testRecoveryRollsBackOnAllNodesOnNearFail_PRIMARY_SYNC() throws Exception {
         doTestRecoveryNotBreakingTxAtomicityOnNearFail(true, PRIMARY_SYNC);
@@ -166,8 +172,15 @@ public class TxRecoveryWithConcurrentRollbackTest extends GridCommonAbstractTest
      * node left.
      * <p>
      * Expected result: both DHT transactions produces same COMMITTED state on tx finish.
-     * */
-    private void doTestRecoveryNotBreakingTxAtomicityOnNearFail(Boolean sequentialProcessing, CacheWriteSynchronizationMode syncMode) throws Exception {
+     *
+     * @param sequentialProcessing True if force the sequential processing of rollback and tx recovery requests
+     *                             in the stripe pool.
+     * @param syncMode Cache syncronization mode.
+     */
+    private void doTestRecoveryNotBreakingTxAtomicityOnNearFail(
+        Boolean sequentialProcessing,
+        CacheWriteSynchronizationMode syncMode
+    ) throws Exception {
         backups = 1;
         persistence = false;
 
