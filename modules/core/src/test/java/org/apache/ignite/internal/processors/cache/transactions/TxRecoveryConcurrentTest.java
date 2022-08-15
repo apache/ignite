@@ -44,7 +44,7 @@ import static org.apache.ignite.testframework.GridTestUtils.runAsync;
 /**
  * Tests concurrent execution of the tx recovery.
  */
-public class TxRecoveryConcurrentOnPrimaryFailTest extends GridCommonAbstractTest {
+public class TxRecoveryConcurrentTest extends GridCommonAbstractTest {
     /** {@inheritDoc} */
     @Override protected IgniteConfiguration getConfiguration(String name) throws Exception {
         final IgniteConfiguration cfg = super.getConfiguration(name);
@@ -59,7 +59,7 @@ public class TxRecoveryConcurrentOnPrimaryFailTest extends GridCommonAbstractTes
         cfg.setStripedPoolSize(1);
 
         cfg.setCacheConfiguration(new CacheConfiguration<>(DEFAULT_CACHE_NAME).setCacheMode(PARTITIONED)
-            .setBackups(2).setAtomicityMode(TRANSACTIONAL).setAffinity(new RendezvousAffinityFunction(false, 1)));
+            .setBackups(2).setAtomicityMode(TRANSACTIONAL).setAffinity(new RendezvousAffinityFunction(false, 10)));
 
         return cfg;
     }
@@ -73,7 +73,7 @@ public class TxRecoveryConcurrentOnPrimaryFailTest extends GridCommonAbstractTes
 
     /**
      * The test enforces the concurrent processing of the same prepared transaction
-     * both in the tx recovery procedure started due to primary node left and in the
+     * both in the tx recovery procedure started due to near and primary node left and in the
      * tx recovery request handler invoked by message from another backup node.
      * <p>
      * The idea is to have a 3-nodes cluster and a cache with 2 backups. So there
@@ -87,7 +87,7 @@ public class TxRecoveryConcurrentOnPrimaryFailTest extends GridCommonAbstractTes
      * map exchange is completed as well.
      */
     @Test
-    public void testRecoveryNotDeadLockOnPrimaryFail() throws Exception {
+    public void testRecoveryNotDeadLockOnNearAndPrimaryFail() throws Exception {
         final IgniteEx backup = startGrids(2);
 
         final CyclicBarrier backupBlockerBarrier = new CyclicBarrier(3);
