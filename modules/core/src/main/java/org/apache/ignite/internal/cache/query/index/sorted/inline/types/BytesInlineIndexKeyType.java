@@ -89,7 +89,7 @@ public class BytesInlineIndexKeyType extends NullableInlineIndexKeyType<BytesInd
 
         int res = Integer.signum(len1 - len2);
 
-        if (isValueFull(pageAddr, off))
+        if (inlinedFullValue(pageAddr, off))
             return res;
 
         if (res >= 0)
@@ -144,12 +144,8 @@ public class BytesInlineIndexKeyType extends NullableInlineIndexKeyType<BytesInd
         return compareBinaryUnsigned;
     }
 
-    /**
-     * @param pageAddr Page address.
-     * @param off Offset.
-     * @return {@code True} if string is not truncated on save.
-     */
-    private boolean isValueFull(long pageAddr, int off) {
+    /** {@inheritDoc} */
+    @Override public boolean inlinedFullValue(long pageAddr, int off) {
         return (PageUtils.getShort(pageAddr, off + 1) & 0x8000) == 0;
     }
 }

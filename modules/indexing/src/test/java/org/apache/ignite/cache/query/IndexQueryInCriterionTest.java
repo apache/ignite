@@ -560,35 +560,6 @@ public class IndexQueryInCriterionTest extends GridCommonAbstractTest {
     }
 
     /** */
-    @Test
-    public void testInWithDifferentClassesAndTypes() {
-        IndexQuery<Integer, Person> idxQry = new IndexQuery<Integer, Person>(Person.class)
-            .setCriteria(in("age", F.asList(0, "0")));
-
-        GridTestUtils.assertThrows(
-            log,
-            () -> grid(0).cache("CACHE").query(idxQry).getAll(),
-            IgniteCheckedException.class,
-            "Wrong type of value in IN criterion"
-        );
-
-        IndexQuery<Integer, Person> qry = new IndexQuery<Integer, Person>(Person.class)
-            .setCriteria(in("age", F.asList(0, new Integer(1))));
-
-        assertExpect(qry, (k, p) -> p.age == 0 || p.age == 1);
-
-        IndexQuery<Integer, Person> qry2 = new IndexQuery<Integer, Person>(Person.class)
-            .setCriteria(in("age", F.asList("1", "0")));
-
-        GridTestUtils.assertThrows(
-            log,
-            () -> grid(0).cache("CACHE").query(qry2).getAll(),
-            IgniteCheckedException.class,
-            "Wrong type of value in IN criterion"
-        );
-    }
-
-    /** */
     private void assertExpect(IndexQuery<Integer, Person> qry, IgniteBiPredicate<Integer, Person> expectFunc) {
         assertExpect(qry, expectFunc, false);
     }

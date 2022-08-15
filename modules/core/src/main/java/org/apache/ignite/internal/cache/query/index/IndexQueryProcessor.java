@@ -17,14 +17,12 @@
 
 package org.apache.ignite.internal.cache.query.index;
 
-import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.NoSuchElementException;
-import java.util.Set;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 import org.apache.ignite.IgniteCheckedException;
@@ -34,20 +32,15 @@ import org.apache.ignite.internal.cache.query.RangeIndexQueryCriterion;
 import org.apache.ignite.internal.cache.query.index.sorted.IndexKeyDefinition;
 import org.apache.ignite.internal.cache.query.index.sorted.IndexRow;
 import org.apache.ignite.internal.cache.query.index.sorted.IndexRowComparator;
-import org.apache.ignite.internal.cache.query.index.sorted.IndexSearchRowImpl;
 import org.apache.ignite.internal.cache.query.index.sorted.SortedIndexDefinition;
 import org.apache.ignite.internal.cache.query.index.sorted.SortedSegmentedIndex;
 import org.apache.ignite.internal.cache.query.index.sorted.inline.IndexQueryContext;
 import org.apache.ignite.internal.cache.query.index.sorted.inline.InlineIndexImpl;
-import org.apache.ignite.internal.cache.query.index.sorted.inline.InlineIndexKeyType;
-import org.apache.ignite.internal.cache.query.index.sorted.inline.InlineIndexTree;
-import org.apache.ignite.internal.cache.query.index.sorted.keys.IndexKey;
 import org.apache.ignite.internal.processors.cache.CacheObject;
 import org.apache.ignite.internal.processors.cache.CacheObjectContext;
 import org.apache.ignite.internal.processors.cache.CacheObjectUtils;
 import org.apache.ignite.internal.processors.cache.GridCacheContext;
 import org.apache.ignite.internal.processors.cache.persistence.tree.BPlusTree;
-import org.apache.ignite.internal.processors.cache.persistence.tree.io.BPlusIO;
 import org.apache.ignite.internal.processors.cache.query.IndexQueryDesc;
 import org.apache.ignite.internal.processors.query.QueryUtils;
 import org.apache.ignite.internal.util.GridCloseableIteratorAdapter;
@@ -58,9 +51,6 @@ import org.apache.ignite.lang.IgniteBiPredicate;
 import org.apache.ignite.lang.IgniteBiTuple;
 import org.apache.ignite.spi.indexing.IndexingQueryFilter;
 import org.jetbrains.annotations.Nullable;
-
-import static org.apache.ignite.internal.cache.query.index.sorted.inline.types.NullableInlineIndexKeyType.CANT_BE_COMPARE;
-import static org.apache.ignite.internal.cache.query.index.sorted.inline.types.NullableInlineIndexKeyType.COMPARE_UNSUPPORTED;
 
 /**
  * Processor of {@link IndexQuery}.
@@ -347,7 +337,7 @@ public class IndexQueryProcessor {
         IndexingQueryFilter cacheFilter,
         IndexMultipleRangeQuery qry
     ) throws IgniteCheckedException {
-        List<IndexSingleRangeQuery> queries = qry.queries;
+        List<IndexSingleRangeQuery> queries = qry.queries();
 
         if (queries.size() == 1)
             return querySortedIndex(idx, cacheFilter, queries.get(0));
@@ -388,14 +378,9 @@ public class IndexQueryProcessor {
         IndexingQueryFilter cacheFilter,
         IndexSingleRangeQuery qry
     ) throws IgniteCheckedException {
-        BPlusTree.TreeRowClosure<IndexRow, IndexRow> treeFilter = null;
+        IndexRowComparator rowCmp = ((SortedIndexDefinition)idxProc.indexDefinition(idx.id())).rowComparator();
 
-        // No need in the additional filter step for queries with 0 or 1 criteria.
-        // Also skips filtering if the current search is unbounded (both boundaries equal to null).
-        if (qry.keyCond.length > 1 && !(qry.lowerAllNulls && qry.upperAllNulls)) {
-            treeFilter = new IndexQueryCriteriaClosure(
-                qry, ((SortedIndexDefinition)idxProc.indexDefinition(idx.id())).rowComparator());
-        }
+        BPlusTree.TreeRowClosure<IndexRow, IndexRow> treeFilter = qry.filter(rowCmp);
 
         IndexQueryContext qryCtx = new IndexQueryContext(cacheFilter, treeFilter, null);
 
@@ -415,138 +400,10 @@ public class IndexQueryProcessor {
     private GridCursor<IndexRow> treeIndexRange(SortedSegmentedIndex idx, IndexSingleRangeQuery qry, IndexQueryContext qryCtx)
         throws IgniteCheckedException {
 
-        boolean lowIncl = inclBoundary(qry, true);
-        boolean upIncl = inclBoundary(qry, false);
+        boolean lowIncl = qry.inclBoundary(true);
+        boolean upIncl = qry.inclBoundary(false);
 
         return idx.find(qry.lower(), qry.upper(), lowIncl, upIncl, qryCtx);
-    }
-
-    /**
-     * Checks whether index thraversing should include boundary or not. Includes a boundary for unbounded searches, for
-     * others it checks user criteria.
-     *
-     * @param lower {@code true} for lower bound and {@code false} for upper bound.
-     * @return {@code true} for inclusive boundary, otherwise {@code false}.
-     */
-    private boolean inclBoundary(IndexSingleRangeQuery qry, boolean lower) {
-        for (IndexKeyQueryCondition cond: qry.keyCond) {
-            RangeIndexQueryCriterion c = cond.range();
-
-            if (c == null || (lower ? c.lower() : c.upper()) == null)
-                break;
-
-            if (!(lower ? c.lowerIncl() : c.upperIncl()))
-                return false;
-        }
-
-        return true;
-    }
-
-    /**
-     * Checks index rows for matching to specified index criteria.
-     */
-    private static class IndexQueryCriteriaClosure implements BPlusTree.TreeRowClosure<IndexRow, IndexRow> {
-        /** */
-        private final IndexSingleRangeQuery qry;
-
-        /** */
-        private final IndexRowComparator rowCmp;
-
-        /** */
-        private final boolean[] descOrderCache;
-
-        /** */
-        IndexQueryCriteriaClosure(IndexSingleRangeQuery qry, IndexRowComparator rowCmp) {
-            this.qry = qry;
-            this.rowCmp = rowCmp;
-            descOrderCache = new boolean[qry.keyCond.length];
-
-            for (int i = 0; i < qry.keyCond.length; i++) {
-                RangeIndexQueryCriterion c = qry.keyCond[i].range();
-
-                if (c != null)
-                    descOrderCache[i] = qry.keyCond[i].desc();
-            }
-        }
-
-        /** {@inheritDoc} */
-        @Override public boolean apply(
-            BPlusTree<IndexRow, IndexRow> tree,
-            BPlusIO<IndexRow> io,
-            long pageAddr,
-            int idx
-        ) throws IgniteCheckedException {
-            return !rowIsOutOfRange((InlineIndexTree)tree, io, pageAddr, idx, qry.lower(), qry.upper());
-        }
-
-        /**
-         * Checks that {@code row} belongs to the range specified with {@code low} and {@code high}.
-         *
-         * @return {@code true} if the row doesn't belong the range, otherwise {@code false}.
-         */
-        private boolean rowIsOutOfRange(
-            InlineIndexTree tree,
-            BPlusIO<IndexRow> io,
-            long pageAddr,
-            int idx,
-            IndexRow low,
-            IndexRow high
-        ) throws IgniteCheckedException {
-            int criteriaKeysCnt = qry.keyCond.length;
-
-            int off = io.offset(idx);
-
-            int fieldOff = 0;
-
-            InlineIndexRow currRow = new InlineIndexRow(tree, io, pageAddr, idx);
-
-            List<InlineIndexKeyType> keyTypes = tree.rowHandler().inlineIndexKeyTypes();
-
-            for (int keyIdx = 0; keyIdx < criteriaKeysCnt; keyIdx++) {
-                RangeIndexQueryCriterion c = qry.keyCond[keyIdx].range();
-                Set<IndexKey> inVals = qry.keyCond[keyIdx].inVals();
-
-                InlineIndexKeyType keyType = keyIdx < keyTypes.size() ? keyTypes.get(keyIdx) : null;
-
-                boolean descOrder = descOrderCache[keyIdx];
-
-                int maxSize = tree.inlineSize() - fieldOff;
-
-                if (inVals != null) {
-                    IndexRow row = io.getLookupRow(tree, pageAddr, idx);
-
-                    // Range boundaries were already checked for all IN values.
-                    return !inVals.contains(row.key(keyIdx));
-                }
-
-                if (low != null && low.key(keyIdx) != null) {
-                    int cmp = currRow.compare(rowCmp, low, keyIdx, off + fieldOff, maxSize, keyType);
-
-                    if (cmp == 0) {
-                        if (!c.lowerIncl())
-                            return true;  // Exclude if field equals boundary field and criteria is excluding.
-                    }
-                    else if ((cmp < 0) ^ descOrder)
-                        return true;  // Out of bound. Either below 'low' margin or column with desc order.
-                }
-
-                if (high != null && high.key(keyIdx) != null) {
-                    int cmp = currRow.compare(rowCmp, high, keyIdx, off + fieldOff, maxSize, keyType);
-
-                    if (cmp == 0) {
-                        if (!c.upperIncl())
-                            return true;  // Exclude if field equals boundary field and criteria is excluding.
-                    }
-                    else if ((cmp > 0) ^ descOrder)
-                        return true;  // Out of bound. Either above 'high' margin or column with desc order.
-                }
-
-                if (keyType != null)
-                    fieldOff += keyType.inlineSize(pageAddr, off + fieldOff);
-            }
-
-            return false;
-        }
     }
 
     /**
@@ -564,199 +421,5 @@ public class IndexQueryProcessor {
         r.upperIncl(c.upperIncl());
 
         return r.toString();
-    }
-
-    /**
-     * Represents ordered list of independent index range queries.
-     */
-    private static class IndexMultipleRangeQuery {
-        /** Ordered list of index ranges queries. */
-        private final List<IndexSingleRangeQuery> queries = new ArrayList<>();
-
-        /** */
-        private final int critSize;
-
-        /** */
-        private final int idxRowSize;
-
-        /** */
-        IndexMultipleRangeQuery(int idxRowSize, int critSize) {
-            this.critSize = critSize;
-            this.idxRowSize = idxRowSize;
-        }
-
-        /** */
-        int critSize() {
-            return critSize;
-        }
-
-        /**
-         * Adds condition. In case of multiple queries it adds to every query.
-         */
-        void addIndexKeyCondition(int i, IndexKeyQueryCondition cond) {
-            if (i == 0)
-                addFirstIndexKeyCondition(cond);
-            else {
-                for (IndexSingleRangeQuery qry: queries)
-                    qry.addCondition(cond, i);
-            }
-        }
-
-        /**
-         * Add first condition. If it contains IN clause then split query to multiple index ranges joint with OR:
-         *
-         * IN(A, B) and GT(C) = (EQ(A) and GT(C)) or (EQ(B) and GT(C)).
-         *
-         * It ignores RANGE criterion if IN is specified. Intersection of them was already checked on prepare query phase.
-         */
-        private void addFirstIndexKeyCondition(IndexKeyQueryCondition keyCond) {
-            if (keyCond.inVals() != null) {
-                for (IndexKey k: keyCond.inVals()) {
-                    RangeIndexQueryCriterion c = new RangeIndexQueryCriterion(keyCond.fieldName(), k, k);
-                    c.lowerIncl(true);
-                    c.upperIncl(true);
-
-                    IndexKeyQueryCondition cond = new IndexKeyQueryCondition(keyCond.fieldName(), keyCond.index(), c, null);
-
-                    IndexSingleRangeQuery q = new IndexSingleRangeQuery(idxRowSize, critSize);
-
-                    q.addCondition(cond, 0);
-
-                    queries.add(q);
-                }
-            }
-            else {
-                IndexSingleRangeQuery qry = new IndexSingleRangeQuery(idxRowSize, critSize);
-
-                qry.addCondition(keyCond, 0);
-
-                queries.add(qry);
-            }
-        }
-    }
-
-    /** */
-    private static class IndexSingleRangeQuery {
-        /** Ordered list of criteria. Order matches index fields order. */
-        private final IndexKeyQueryCondition[] keyCond;
-
-        /** Array of IndexKeys to query underlying index. */
-        private final IndexKey[] lowerBounds;
-
-        /** Array of IndexKeys to query underlying index. */
-        private final IndexKey[] upperBounds;
-
-        /** {@code true} if all {@link #lowerBounds} keys are null. */
-        private boolean lowerAllNulls = true;
-
-        /** {@code true} if all {@link #upperBounds} keys are null. */
-        private boolean upperAllNulls = true;
-
-        /** Lower bound to query underlying index. */
-        private @Nullable IndexSearchRowImpl lower;
-
-        /** Upper bound to query underlying index. */
-        private @Nullable IndexSearchRowImpl upper;
-
-        /** */
-        IndexSingleRangeQuery(int idxRowSize, int critSize) {
-            keyCond = new IndexKeyQueryCondition[critSize];
-
-            // Size of bounds array has to be equal to count of indexed fields.
-            lowerBounds = new IndexKey[idxRowSize];
-            upperBounds = new IndexKey[idxRowSize];
-        }
-
-        /** */
-        void addCondition(IndexKeyQueryCondition cond, int i) {
-            keyCond[i] = cond;
-
-            if (cond.range() != null) {
-                IndexKey l = (IndexKey)cond.range().lower();
-                IndexKey u = (IndexKey)cond.range().upper();
-
-                if (l != null)
-                    lowerAllNulls = false;
-
-                if (u != null)
-                    upperAllNulls = false;
-
-                lowerBounds[i] = l;
-                upperBounds[i] = u;
-            }
-            else {
-                lowerAllNulls = false;
-                upperAllNulls = false;
-            }
-        }
-
-        /** */
-        @Nullable IndexSearchRowImpl lower() {
-            if (lower == null && !lowerAllNulls)
-                lower = new IndexSearchRowImpl(lowerBounds, null);
-
-            return lower;
-        }
-
-        /** */
-        @Nullable IndexSearchRowImpl upper() {
-            if (upper == null && !upperAllNulls)
-                upper = new IndexSearchRowImpl(upperBounds, null);
-
-            return upper;
-        }
-    }
-
-    /**
-     * Wrapper class over index row. It is suitable for comparison. It tries to check inlined keys first, and fetches a
-     * cache entry only if the inlined information is not full enough for comparison.
-     */
-    private static class InlineIndexRow {
-        /** */
-        private final long pageAddr;
-
-        /** */
-        private final int idx;
-
-        /** */
-        private final InlineIndexTree tree;
-
-        /** */
-        private final BPlusIO<IndexRow> io;
-
-        /** Set it for accessing keys from underlying cache entry. */
-        private IndexRow currRow;
-
-        /** */
-        private InlineIndexRow(InlineIndexTree tree, BPlusIO<IndexRow> io, long addr, int idx) {
-            pageAddr = addr;
-            this.idx = idx;
-            this.tree = tree;
-            this.io = io;
-        }
-
-        /** Compare using inline. {@code keyType} is {@code null} for non-inlined keys. */
-        private int compare(
-            IndexRowComparator rowCmp,
-            IndexRow o,
-            int keyIdx,
-            int off,
-            int maxSize,
-            @Nullable InlineIndexKeyType keyType
-        ) throws IgniteCheckedException {
-            if (currRow == null) {
-                int cmp = COMPARE_UNSUPPORTED;
-
-                if (keyType != null)
-                    cmp = rowCmp.compareKey(pageAddr, off, maxSize, o.key(keyIdx), keyType);
-
-                if (cmp == COMPARE_UNSUPPORTED || cmp == CANT_BE_COMPARE)
-                    currRow = tree.getRow(io, pageAddr, idx);
-                else
-                    return cmp;
-            }
-
-            return rowCmp.compareRow(currRow, o, keyIdx);
-        }
     }
 }

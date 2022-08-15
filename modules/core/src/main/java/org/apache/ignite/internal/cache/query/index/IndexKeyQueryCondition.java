@@ -17,8 +17,10 @@
 
 package org.apache.ignite.internal.cache.query.index;
 
+import java.util.ArrayList;
 import java.util.Collections;
 import java.util.Iterator;
+import java.util.List;
 import java.util.SortedSet;
 import java.util.TreeSet;
 import org.apache.ignite.IgniteCheckedException;
@@ -89,6 +91,23 @@ class IndexKeyQueryCondition {
     }
 
     /**
+     * Splits IN condition to multiple RANGE conditions.
+     */
+    public List<IndexKeyQueryCondition> splitInToRanges() {
+        List<IndexKeyQueryCondition> conds = new ArrayList<>(inVals.size());
+
+        for (IndexKey k: inVals) {
+            RangeIndexQueryCriterion c = new RangeIndexQueryCriterion(fldName, k, k);
+            c.lowerIncl(true);
+            c.upperIncl(true);
+
+            conds.add(new IndexKeyQueryCondition(fldName, idx, c, null));
+        }
+
+        return conds;
+    }
+
+    /**
      * Accumulate User's criterion for index key.
      *
      * @param criterion User's criterion for index key.
@@ -100,16 +119,6 @@ class IndexKeyQueryCondition {
             addRangeCriterion((RangeIndexQueryCriterion)criterion);
         else
             throw new IgniteCheckedException("Unexpected IndexQueryCriterion class: " + criterion);
-    }
-
-    /** */
-    public InlineIndexImpl index() {
-        return idx;
-    }
-
-    /** */
-    public String fieldName() {
-        return fldName;
     }
 
     /**
@@ -143,16 +152,8 @@ class IndexKeyQueryCondition {
             }
         });
 
-        IndexKeyType expCondType = idx.indexDefinition().indexKeyDefinitions().get(fldName).idxType();
-
-        for (Object v: criterion.values()) {
-            IndexKey k = key(v, v == null);
-
-            if (k.type() != IndexKeyType.NULL && k.type() != expCondType)
-                throw new IgniteCheckedException("Wrong type of value in IN criterion. Expect " + expCondType + ", receieve " + k.type());
-
-            inVals.add(k);
-        }
+        for (Object v: criterion.values())
+            inVals.add(key(v, v == null));
 
         narrowRangeWithIn();
     }
