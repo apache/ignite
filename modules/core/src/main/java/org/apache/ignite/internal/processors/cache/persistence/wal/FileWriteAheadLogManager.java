@@ -2185,13 +2185,13 @@ public class FileWriteAheadLogManager extends GridCacheSharedManagerAdapter impl
             long lastCompactedIdx = -1;
 
             for (FileDescriptor segment : walArchiveFiles()) {
-                if (firstArchivedIdx == -1 && !segment.isCompressed())
-                    firstArchivedIdx = segment.idx();
-                else if (segment.isCompressed()) {
+                if (segment.isCompressed()) {
                     lastCompactedIdx = segment.idx();
 
                     metrics.onWalSegmentCompressed(segment.file().length());
                 }
+                else if (firstArchivedIdx == -1)
+                    firstArchivedIdx = segment.idx();
             }
 
             // We have to set a starting index for the compressor.
