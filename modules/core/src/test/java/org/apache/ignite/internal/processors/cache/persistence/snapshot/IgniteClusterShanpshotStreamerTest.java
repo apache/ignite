@@ -20,6 +20,8 @@ package org.apache.ignite.internal.processors.cache.persistence.snapshot;
 import org.apache.ignite.IgniteCache;
 import org.apache.ignite.IgniteDataStreamer;
 import org.apache.ignite.IgniteException;
+import org.apache.ignite.cache.CacheAtomicityMode;
+import org.apache.ignite.cache.CacheMode;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.ConnectorConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
@@ -34,6 +36,7 @@ import java.sql.SQLException;
 import java.util.Arrays;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.concurrent.atomic.AtomicInteger;
 
 import static org.apache.ignite.cluster.ClusterState.ACTIVE;
 
@@ -65,28 +68,27 @@ public class IgniteClusterShanpshotStreamerTest  extends AbstractSnapshotSelfTes
     public void testClusterSnapshotConsistencyWithStreamer() throws Exception {
         int grids = 2;
         int backups = grids - 1;
-        int loadBeforeSnp = 1_000_000;
+        int loadBeforeSnp = 5_000_000;
 
         CountDownLatch loadLever = new CountDownLatch(loadBeforeSnp);
         AtomicBoolean stopLoading = new AtomicBoolean(false);
+        AtomicInteger idx = new AtomicInteger();
         dfltCacheCfg = null;
-//        Class.forName("org.apache.ignite.IgniteJdbcDriver");
         String tableName = "TEST_TBL1";
 
         startGrids(grids);
         grid(0).cluster().state(ACTIVE);
 
-//        IgniteCache<Integer, Account> cache2 = grid(0)
-//            .createCache(new CacheConfiguration<Integer, Account>("cache2").setBackups(1)
-//                    .setAtomicityMode(CacheAtomicityMode.ATOMIC)
-//                .setCacheMode(CacheMode.PARTITIONED)
-////                    .setGroupName("grp1")
-//            );
-////
-//        for (int i = 0; i < 100_000; ++i)
-//            cache2.put(i, new Account(i, i * 100));
+        IgniteCache<Integer, Account> cache = grid(0)
+            .createCache(new CacheConfiguration<Integer, Account>("SQL_PUBLIC_" + tableName).setBackups(backups)
+                    .setAtomicityMode(CacheAtomicityMode.ATOMIC)
+                    .setCacheMode(CacheMode.REPLICATED)
+//                                    .setWriteSynchronizationMode(CacheWriteSynchronizationMode.FULL_ASYNC)
+//                            .setGroupName("grp1")
+            );
 
-        IgniteInternalFuture<?> load1 = runLoad(tableName, backups, stopLoading, loadLever);
+        IgniteInternalFuture<?> load1 = runLoad(tableName, stopLoading, idx, loadLever);
+        IgniteInternalFuture<?> load2 = runLoad(tableName, stopLoading, idx, loadLever);
 
         loadLever.await();
 
@@ -97,6 +99,7 @@ public class IgniteClusterShanpshotStreamerTest  extends AbstractSnapshotSelfTes
         stopLoading.set(true);
 
         load1.get();
+        load2.get();
 
         log.info("TEST | stop loading, destroy cache.");
 
@@ -111,27 +114,23 @@ public class IgniteClusterShanpshotStreamerTest  extends AbstractSnapshotSelfTes
     }
 
     /** */
-    private IgniteInternalFuture<?> runLoad(String tblName,  int backups, AtomicBoolean stop,
+    private IgniteInternalFuture<?> runLoad(String tblName, AtomicBoolean stop, AtomicInteger idx,
         CountDownLatch startSnp) {
         return GridTestUtils.runMultiThreadedAsync(() -> {
                 String cacheName = "SQL_PUBLIC_" + tblName.toUpperCase();
 
-                IgniteCache<Integer, Account> cache = grid(0)
-                    .createCache(new CacheConfiguration<Integer, Account>(cacheName).setBackups(backups)
-//                            .setAtomicityMode(CacheAtomicityMode.ATOMIC)
-//                        .setCacheMode(CacheMode.PARTITIONED)
-//                                    .setWriteSynchronizationMode(CacheWriteSynchronizationMode.FULL_ASYNC)
-//                            .setGroupName("grp1")
-                    );
-
                 try (IgniteDataStreamer<Integer, Object> ds = grid(0).dataStreamer(cacheName)) {
-//                    ds.allowOverwrite(false);
+                    ds.allowOverwrite(false);
 //                    ds.skipStore(false);
 
-                    for (int i = 0; !stop.get(); ++i) {
+                    while(!stop.get()){
+                        int i = idx.incrementAndGet();
+
                         ds.addData(i, new Account(i, i - 1));
 
                         startSnp.countDown();
+
+                        Thread.yield();
                     }
                 }
                 catch (Exception e) {
