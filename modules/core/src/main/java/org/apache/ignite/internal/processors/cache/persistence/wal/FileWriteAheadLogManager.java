@@ -2184,20 +2184,13 @@ public class FileWriteAheadLogManager extends GridCacheSharedManagerAdapter impl
             long firstArchivedIdx = -1;
             long lastCompactedIdx = -1;
 
-            for (File file : walArchiveDir.listFiles()) {
-                try {
-                    long idx = Long.parseLong(file.getName().substring(0, 16));
+            for (FileDescriptor segment : walArchiveFiles()) {
+                if (firstArchivedIdx == -1 && !segment.isCompressed())
+                    firstArchivedIdx = segment.idx();
+                else if (segment.isCompressed()) {
+                    lastCompactedIdx = segment.idx();
 
-                    if (WAL_SEGMENT_FILE_COMPACTED_PATTERN.matcher(file.getName()).matches()) {
-                        metrics.onWalSegmentCompressed(file.length());
-
-                        lastCompactedIdx = Math.max(lastCompactedIdx, idx);
-                    }
-                    else if (lastCompactedIdx == -1 && WAL_NAME_PATTERN.matcher(file.getName()).matches())
-                        firstArchivedIdx = firstArchivedIdx == -1 ? idx : Math.min(firstArchivedIdx, idx);
-                }
-                catch (NumberFormatException | IndexOutOfBoundsException ignore) {
-
+                    metrics.onWalSegmentCompressed(segment.file().length());
                 }
             }
 
