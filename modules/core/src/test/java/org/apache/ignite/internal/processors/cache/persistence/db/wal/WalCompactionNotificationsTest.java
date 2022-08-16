@@ -16,6 +16,8 @@
 */
 package org.apache.ignite.internal.processors.cache.persistence.db.wal;
 
+import java.util.Arrays;
+import java.util.Collection;
 import java.util.Collections;
 import java.util.EnumMap;
 import java.util.concurrent.ThreadLocalRandom;
@@ -41,12 +43,15 @@ import org.apache.ignite.lang.IgnitePredicate;
 import org.apache.ignite.testframework.ListeningTestLogger;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.junit.Test;
+import org.junit.runner.RunWith;
+import org.junit.runners.Parameterized;
 
 import static org.apache.ignite.events.EventType.EVT_WAL_SEGMENT_COMPACTED;
 
 /**
- * WAL compaction notification test.
+ * WAL compaction notifications test.
  */
+@RunWith(Parameterized.class)
 public class WalCompactionNotificationsTest extends GridCommonAbstractTest {
     /** WAL segment size. */
     private static final int SEGMENT_SIZE = 512 * 1024;
@@ -61,7 +66,17 @@ public class WalCompactionNotificationsTest extends GridCommonAbstractTest {
     private final EventListener evtLsnr = new EventListener();
 
     /** WAL archive size. */
-    private long archiveSize;
+    @Parameterized.Parameter
+    public long archiveSize;
+
+    /** Test run parameters. */
+    @Parameterized.Parameters(name = "archiveSize={0}")
+    public static Collection<Object[]> parameters() {
+        return Arrays.asList(new Object[][] {
+            { DataStorageConfiguration.UNLIMITED_WAL_ARCHIVE },
+            { SEGMENT_SIZE },
+        });
+    }
 
     /** {@inheritDoc} */
     @Override protected IgniteConfiguration getConfiguration(String name) throws Exception {
@@ -90,6 +105,8 @@ public class WalCompactionNotificationsTest extends GridCommonAbstractTest {
         cleanPersistenceDir();
 
         setLoggerDebugLevel();
+
+        logger.registerListener(evtLsnr);
     }
 
     /** {@inheritDoc} */
@@ -105,33 +122,16 @@ public class WalCompactionNotificationsTest extends GridCommonAbstractTest {
      * @throws Throwable If failed.
      */
     @Test
-    public void testNotificationsUnlimitedWal() throws Throwable {
-        archiveSize = DataStorageConfiguration.UNLIMITED_WAL_ARCHIVE;
-
-        logger.registerListener(evtLsnr);
-
-        checkRestart(50);
-        checkRestart(50);
-    }
-
-    /**
-     * @throws Throwable If failed.
-     */
-    @Test
-    public void testNotificationsEmptyArchive() throws Throwable {
-        archiveSize = SEGMENT_SIZE;
-
-        logger.registerListener(evtLsnr);
-
-        checkRestart(50);
-        checkRestart(0);
+    public void testNotifications() throws Throwable {
+        checkNodeRestart(50);
+        checkNodeRestart(50);
     }
 
     /**
      * @param segmentsCnt The number of WAL segments to generate.
      * @throws Exception If failed.
      */
-    private void checkRestart(int segmentsCnt) throws Exception {
+    private void checkNodeRestart(int segmentsCnt) throws Exception {
         IgniteEx ig = startGrid(0);
         ig.cluster().state(ClusterState.ACTIVE);
 
