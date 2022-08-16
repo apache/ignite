@@ -20,8 +20,7 @@ package org.apache.ignite.internal.processors.cache.transactions;
 import java.util.Collection;
 import java.util.LinkedList;
 import java.util.List;
-import java.util.concurrent.BrokenBarrierException;
-import java.util.concurrent.CyclicBarrier;
+import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.ThreadPoolExecutor;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCache;
@@ -30,8 +29,8 @@ import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.failure.StopNodeFailureHandler;
 import org.apache.ignite.internal.IgniteEx;
+import org.apache.ignite.internal.IgniteInterruptedCheckedException;
 import org.apache.ignite.internal.TestRecordingCommunicationSpi;
-import org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtTxFinishRequest;
 import org.apache.ignite.internal.util.typedef.G;
 import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
@@ -39,7 +38,6 @@ import org.junit.Test;
 
 import static org.apache.ignite.cache.CacheAtomicityMode.TRANSACTIONAL;
 import static org.apache.ignite.cache.CacheMode.PARTITIONED;
-import static org.apache.ignite.internal.TestRecordingCommunicationSpi.spi;
 import static org.apache.ignite.testframework.GridTestUtils.runAsync;
 
 /**
@@ -91,81 +89,65 @@ public class TxRecoveryConcurrentTest extends GridCommonAbstractTest {
     public void testRecoveryNotDeadLockOnNearAndPrimaryFail() throws Exception {
         startGrids(2);
 
-        final CyclicBarrier ensurePoolsAreBlockedBarrier = new CyclicBarrier(3);
-
-        final CyclicBarrier unblockPoolsBarrier = new CyclicBarrier(3);
-
-        final Runnable backupBlockerTask = () -> {
-            try {
-                ensurePoolsAreBlockedBarrier.await();
-
-                unblockPoolsBarrier.await();
-            }
-            catch (InterruptedException | BrokenBarrierException ignored) {
-                // Just supress.
-            }
-        };
+        final int key = 0;
 
         for (int iter = 0; iter < 100; iter++) {
             startGrid(iter + 2);
 
             awaitPartitionMapExchange();
 
-            final Ignite primary = primaryNode(0, DEFAULT_CACHE_NAME);
-
-            final List<Ignite> backups = backupNodes(0, DEFAULT_CACHE_NAME);
+            final Ignite primary = primaryNode(key, DEFAULT_CACHE_NAME);
+            final List<Ignite> backups = backupNodes(key, DEFAULT_CACHE_NAME);
 
             final IgniteCache<Object, Object> cache = primary.cache(DEFAULT_CACHE_NAME);
 
             final TransactionProxyImpl<?, ?> tx = (TransactionProxyImpl<?, ?>)primary.transactions().txStart();
 
-            cache.put(0, 0);
+            cache.put(key, key);
 
             tx.tx().prepare(true);
 
             for (Ignite grid : G.allGrids())
                 assertTrue(((IgniteEx)grid).context().cache().context().tm().activeTransactions().size() == 1);
 
-            Collection<IgniteInternalTx> backupTransactions = new LinkedList<>();
+            final Collection<IgniteInternalTx> backupTransactions = new LinkedList<>();
 
-            for (Ignite grid : backups)
-                backupTransactions.addAll(((IgniteEx)grid).context().cache().context().tm().activeTransactions());
+            for (Ignite backup : backups)
+                backupTransactions.addAll(((IgniteEx)backup).context().cache().context().tm().activeTransactions());
 
             assertTrue(backupTransactions.size() == 2);
 
-            // Choose one backup node to force concurrent execution on it.
+            final CountDownLatch ensureBothPoolsAreBlockedLatch = new CountDownLatch(2);
+            final CountDownLatch unblockBothPoolsLatch = new CountDownLatch(1);
+
+            final Runnable poolBlockerTask = () -> {
+                try {
+                    ensureBothPoolsAreBlockedLatch.countDown();
+                    unblockBothPoolsLatch.await();
+                }
+                catch (InterruptedException ignored) {
+                    // No-op.
+                }
+            };
+
             final IgniteEx blockedBackup = (IgniteEx)backups.get(0);
 
-            // Block recovery procedure processing on one of the backup nodes.
-            blockedBackup.context().pools().getSystemExecutorService().execute(backupBlockerTask);
+            blockedBackup.context().pools().getSystemExecutorService().execute(poolBlockerTask);
 
-            // Block stripe tx recovery request processing on one of the backup nodes (note that the only stripe is
-            // configured in the executor).
-            blockedBackup.context().pools().getStripedExecutorService().execute(0, backupBlockerTask);
+            blockedBackup.context().pools().getStripedExecutorService().execute(0, poolBlockerTask);
 
-            // Prevent tx finish request processing on both backup nodes.
-            for (Ignite grid : backups)
-                spi(primary).blockMessages(GridDhtTxFinishRequest.class, grid.name());
-
-            // Wait both pools are blocked in the blocked backup node.
-            ensurePoolsAreBlockedBarrier.await();
+            ensureBothPoolsAreBlockedLatch.await();
 
             runAsync(primary::close);
 
-            // Wait until blocked backup node receives the tx recovery request and the corresponding processing task is
-            // added into the stripe queue (note that the only stripe is configured in the executor).
-            assertTrue("failed to wait the tx recovery request on backup", GridTestUtils.waitForCondition(() ->
-                blockedBackup.context().pools().getStripedExecutorService().queueStripeSize(0) > 0, 5_000, 10));
+            waitForTxRecoveryRequestEnqueuedOn(blockedBackup);
 
-            // Wait until blocked backup node detects primary node failure and the tx recovery task is added into
-            // the system pool queue.
-            assertTrue("failed to wait the tx recovery task on backup", GridTestUtils.waitForCondition(() ->
-                !((ThreadPoolExecutor)blockedBackup.context().pools().getSystemExecutorService()).getQueue().isEmpty(), 5_000, 10));
+            waitForTxRecoveryTaskEnqueuedOn(blockedBackup);
 
             // Unblock processing in blocked backup node. Simultaneously in striped and system pools to start recovery
             // procedure and the tx recovery request processing at the "same" moment (for the same transaction). This
             // should increase chances for race condition occur in the IgniteTxAdapter#markFinalizing.
-            unblockPoolsBarrier.await();
+            unblockBothPoolsLatch.countDown();
 
             waitForTopology(2);
 
@@ -174,5 +156,17 @@ public class TxRecoveryConcurrentTest extends GridCommonAbstractTest {
             for (IgniteInternalTx transaction : backupTransactions)
                 assertTrue(transaction.finishFuture().isDone());
         }
+    }
+
+    /** */
+    private void waitForTxRecoveryRequestEnqueuedOn(IgniteEx grid) throws IgniteInterruptedCheckedException {
+        assertTrue(GridTestUtils.waitForCondition(() ->
+            grid.context().pools().getStripedExecutorService().queueStripeSize(0) > 0, 5_000, 10));
+    }
+
+    /** */
+    private void waitForTxRecoveryTaskEnqueuedOn(IgniteEx grid) throws IgniteInterruptedCheckedException {
+        assertTrue(GridTestUtils.waitForCondition(() ->
+            !((ThreadPoolExecutor)grid.context().pools().getSystemExecutorService()).getQueue().isEmpty(), 5_000, 10));
     }
 }

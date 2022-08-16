@@ -596,20 +596,12 @@ public abstract class IgniteTxAdapter extends GridMetadataAwareAdapter implement
 
         switch (status) {
             case USER_FINISH:
-                res = FINALIZING_UPD.compareAndSet(this, FinalizationStatus.NONE, FinalizationStatus.USER_FINISH);
+                res = FINALIZING_UPD.compareAndSet(this, FinalizationStatus.NONE, status);
 
                 break;
 
             case RECOVERY_FINISH:
-                FinalizationStatus old = finalizing;
-
-                if (old == FinalizationStatus.USER_FINISH)
-                    res = false;
-                else if (old == FinalizationStatus.RECOVERY_FINISH)
-                    res = true;
-                else
-                    res = FINALIZING_UPD.compareAndSet(this, old, status) ||
-                        finalizing == FinalizationStatus.RECOVERY_FINISH;
+                res = FINALIZING_UPD.compareAndSet(this, FinalizationStatus.NONE, status) || finalizing == status;
 
                 break;
 
