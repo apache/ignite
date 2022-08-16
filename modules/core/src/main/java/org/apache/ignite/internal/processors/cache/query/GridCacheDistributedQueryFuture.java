@@ -141,9 +141,9 @@ public class GridCacheDistributedQueryFuture<K, V, R> extends GridCacheQueryFutu
 
     /** {@inheritDoc} */
     @Override protected void onNodeLeft(UUID nodeId) {
-        boolean hasRemotePages = streams.get(nodeId).hasRemotePages();
+        NodePageStream<R> stream = streams.get(nodeId);
 
-        if (hasRemotePages)
+        if (stream != null && stream.hasRemotePages())
             onError(new ClusterTopologyCheckedException("Remote node has left topology: " + nodeId));
     }
 
