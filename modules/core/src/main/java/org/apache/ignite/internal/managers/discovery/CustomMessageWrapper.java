@@ -50,9 +50,8 @@ public class CustomMessageWrapper implements DiscoverySpiCustomMessage {
     }
 
     /** {@inheritDoc} */
-    @Deprecated
     @Override public boolean stopProcess() {
-        return false;
+        return delegate.stopProcess();
     }
 
     /**
