@@ -68,6 +68,8 @@ import static org.apache.ignite.internal.processors.cache.GridCacheOperation.UPD
  * DHT atomic cache near update future.
  */
 public class GridNearAtomicUpdateFuture extends GridNearAtomicAbstractUpdateFuture {
+    public static volatile UUID TEST_NIDE_UID;
+
     /** Keys */
     private Collection<?> keys;
 
@@ -688,6 +690,9 @@ public class GridNearAtomicUpdateFuture extends GridNearAtomicAbstractUpdateFutu
                 try {
                     if (req.initMappingLocally() && reqState.mappedNodes.isEmpty())
                         reqState.resetLocalMapping();
+
+//                    if(TEST_NIDE_UID !=null && TEST_NIDE_UID.equals(req.nodeId()))
+//                        U.sleep(300);
 
                     cctx.io().send(req.nodeId(), req, cctx.ioPolicy());
 
