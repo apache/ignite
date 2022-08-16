@@ -36,6 +36,7 @@ import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.IgniteFutureTimeoutCheckedException;
 import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.TestRecordingCommunicationSpi;
+import org.apache.ignite.internal.processors.cache.distributed.GridCacheTxRecoveryRequest;
 import org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtTxFinishRequest;
 import org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtTxLocal;
 import org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtTxPrepareFuture;
@@ -72,12 +73,6 @@ public class TxRecoveryWithConcurrentRollbackTest extends GridCommonAbstractTest
     /** Sync mode. */
     private CacheWriteSynchronizationMode syncMode;
 
-    /** System thread pool size. */
-    private Integer systemThreadPoolSize;
-
-    /** Striped thread pool size. */
-    private Integer stripedPoolSize;
-
     /** {@inheritDoc} */
     @Override protected IgniteConfiguration getConfiguration(String name) throws Exception {
         final IgniteConfiguration cfg = super.getConfiguration(name);
@@ -99,12 +94,6 @@ public class TxRecoveryWithConcurrentRollbackTest extends GridCommonAbstractTest
         cfg.setCommunicationSpi(new TestRecordingCommunicationSpi());
 
         cfg.setFailureHandler(new StopNodeFailureHandler());
-
-        if (systemThreadPoolSize != null)
-            cfg.setSystemThreadPoolSize(systemThreadPoolSize);
-
-        if (stripedPoolSize != null)
-            cfg.setStripedPoolSize(stripedPoolSize);
 
         cfg.setCacheConfiguration(new CacheConfiguration(DEFAULT_CACHE_NAME).
             setCacheMode(PARTITIONED).
@@ -131,65 +120,16 @@ public class TxRecoveryWithConcurrentRollbackTest extends GridCommonAbstractTest
         cleanPersistenceDir();
     }
 
-    /** */
-    @Test
-    public void testRecoveryCommitsOnAllNodesOnNearFail_FULL_SYNC() throws Exception {
-        doTestRecoveryNotBreakingTxAtomicityOnNearFail(false, FULL_SYNC);
-    }
-
-    /** */
-    @Test
-    public void testRecoveryRollsBackOnAllNodesOnNearFail_FULL_SYNC() throws Exception {
-        doTestRecoveryNotBreakingTxAtomicityOnNearFail(true, FULL_SYNC);
-    }
-
-    /** */
-    @Test
-    public void testRecoveryCommitsOnAllNodesOnNearFail_FULL_ASYNC() throws Exception {
-        doTestRecoveryNotBreakingTxAtomicityOnNearFail(false, FULL_ASYNC);
-    }
-
-    /** */
-    @Test
-    public void testRecoveryRollsBackOnAllNodesOnNearFail_FULL_ASYNC() throws Exception {
-        doTestRecoveryNotBreakingTxAtomicityOnNearFail(true, FULL_ASYNC);
-    }
-
-    /** */
-    @Test
-    public void testRecoveryCommitsOnAllNodesOnNearFail_PRIMARY_SYNC() throws Exception {
-        doTestRecoveryNotBreakingTxAtomicityOnNearFail(false, PRIMARY_SYNC);
-    }
-
-    /** */
-    @Test
-    public void testRecoveryRollsBackOnAllNodesOnNearFail_PRIMARY_SYNC() throws Exception {
-        doTestRecoveryNotBreakingTxAtomicityOnNearFail(true, PRIMARY_SYNC);
-    }
-
     /**
      * The test enforces specific order in messages processing during concurrent tx rollback and tx recovery due to
      * node left.
      * <p>
      * Expected result: both DHT transactions produces same COMMITTED state on tx finish.
-     *
-     * @param sequentialProcessing True if force the sequential processing of rollback and tx recovery requests
-     *                             in the stripe pool.
-     * @param syncMode Cache syncronization mode.
-     */
-    private void doTestRecoveryNotBreakingTxAtomicityOnNearFail(
-        Boolean sequentialProcessing,
-        CacheWriteSynchronizationMode syncMode
-    ) throws Exception {
+     * */
+    @Test
+    public void testRecoveryNotBreakingTxAtomicityOnNearFail() throws Exception {
         backups = 1;
         persistence = false;
-
-        systemThreadPoolSize = 1;
-
-        this.syncMode = syncMode;
-
-        if (sequentialProcessing)
-            stripedPoolSize = 1;
 
         final IgniteEx node0 = startGrids(3);
         node0.cluster().state(ACTIVE);
@@ -221,34 +161,30 @@ public class TxRecoveryWithConcurrentRollbackTest extends GridCommonAbstractTest
 
         List<IgniteInternalTx> txs0 = null;
         List<IgniteInternalTx> txs1 = null;
-        List<IgniteInternalTx> txs2 = null;
 
         CountDownLatch stripeBlockLatch = new CountDownLatch(1);
-
-        CountDownLatch sysBlockLatch = new CountDownLatch(1);
 
         int[] stripeHolder = new int[1];
 
         try (final Transaction tx = client.transactions().txStart(PESSIMISTIC, READ_COMMITTED)) {
-            cache.put(k2, Boolean.TRUE);
             cache.put(k1, Boolean.TRUE);
+            cache.put(k2, Boolean.TRUE);
 
             TransactionProxyImpl p = (TransactionProxyImpl)tx;
             p.tx().prepare(true);
 
             txs0 = txs(grid(0));
             txs1 = txs(grid(1));
-            txs2 = txs(grid(2));
+            List<IgniteInternalTx> txs2 = txs(grid(2));
 
             assertTrue(txs0.size() == 1);
             assertTrue(txs1.size() == 1);
             assertTrue(txs2.size() == 2);
 
+            // Prevent recovery request for grid1 tx branch to go to grid0.
+            spi(grid(1)).blockMessages(GridCacheTxRecoveryRequest.class, grid(0).name());
             // Prevent finish(false) request processing on node0.
             spi(client).blockMessages(GridNearTxFinishRequest.class, grid(0).name());
-
-            // Block recovery procedure processing on node1.
-            grid(1).context().pools().getSystemExecutorService().execute(() -> U.awaitQuiet(sysBlockLatch));
 
             int stripe = U.safeAbs(p.tx().xidVersion().hashCode());
 
@@ -268,6 +204,8 @@ public class TxRecoveryWithConcurrentRollbackTest extends GridCommonAbstractTest
             });
 
             tx.rollback();
+
+            fail();
         }
         catch (Exception ignored) {
             // Expected.
@@ -290,9 +228,6 @@ public class TxRecoveryWithConcurrentRollbackTest extends GridCommonAbstractTest
             // Unblock recovery message from g1 to g0 because tx is in RECOVERY_FINISH state and waits for recovery end.
             spi(grid(1)).stopBlock();
 
-            // Unblock tx recovery on node1. Tx0 is rolled back so tx1 also should be rolled back.
-            sysBlockLatch.countDown();
-
             txs0.get(0).finishFuture().get();
             txs1.get(0).finishFuture().get();
 
@@ -300,11 +235,6 @@ public class TxRecoveryWithConcurrentRollbackTest extends GridCommonAbstractTest
             final TransactionState s2 = txs1.get(0).state();
 
             assertEquals(s1, s2);
-
-            assertEquals(s1, TransactionState.ROLLED_BACK);
-            assertEquals(s2, TransactionState.ROLLED_BACK);
-
-            txs2.stream().allMatch(tx -> tx.state() == TransactionState.ROLLED_BACK);
 
             return;
         }
@@ -316,8 +246,8 @@ public class TxRecoveryWithConcurrentRollbackTest extends GridCommonAbstractTest
         assertTrue("concurrent processing", GridTestUtils.waitForCondition(() ->
             grid(1).context().pools().getStripedExecutorService().queueStripeSize(stripeHolder[0]) == 0, 5_000));
 
-        // Proceed with recovery on grid1. Tx0 is committed so tx1 also should be committed.
-        sysBlockLatch.countDown();
+        // Proceed with recovery on grid1 -> grid0. Tx0 is committed so tx1 also should be committed.
+        spi(grid(1)).stopBlock();
 
         assertNotNull(txs1);
         txs1.get(0).finishFuture().get();
@@ -326,11 +256,6 @@ public class TxRecoveryWithConcurrentRollbackTest extends GridCommonAbstractTest
         final TransactionState s2 = txs1.get(0).state();
 
         assertEquals(s1, s2);
-
-        assertEquals(s1, TransactionState.COMMITTED);
-        assertEquals(s2, TransactionState.COMMITTED);
-
-        txs2.stream().allMatch(tx -> tx.state() == TransactionState.COMMITTED);
     }
 
     /** */
@@ -406,11 +331,9 @@ public class TxRecoveryWithConcurrentRollbackTest extends GridCommonAbstractTest
 
         final IgniteInternalTx tx_0 = tx0.get(0);
         tx_0.finishFuture().get();
-        assertEquals(tx_0.state(), TransactionState.COMMITTED);
 
         final IgniteInternalTx tx_2 = tx2.get(0);
         tx_2.finishFuture().get();
-        assertEquals(tx_2.state(), TransactionState.COMMITTED);
 
         assertPartitionsSame(idleVerify(grid(0), DEFAULT_CACHE_NAME));
 
