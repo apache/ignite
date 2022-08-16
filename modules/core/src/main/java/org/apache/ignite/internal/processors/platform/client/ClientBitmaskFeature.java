@@ -66,7 +66,10 @@ public enum ClientBitmaskFeature implements ThinProtocolFeature {
     DATA_REPLICATION_OPERATIONS(12),
 
     /** Send all mappings to the client including non-default affinity functions. */
-    ALL_AFFINITY_MAPPINGS(13);
+    ALL_AFFINITY_MAPPINGS(13),
+
+    /** IndexQuery. */
+    INDEX_QUERY(14);
 
     /** */
     private static final EnumSet<ClientBitmaskFeature> ALL_FEATURES_AS_ENUM_SET =

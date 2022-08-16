@@ -959,6 +959,9 @@ public class TcpClientCache<K, V> implements ClientCache<K, V> {
     /** Handle index query. */
     private QueryCursor<Cache.Entry<K, V>> indexQuery(IndexQuery<K, V> qry) {
         Consumer<PayloadOutputChannel> qryWriter = payloadCh -> {
+            if (!payloadCh.clientChannel().protocolCtx().isFeatureSupported(ProtocolBitmaskFeature.INDEX_QUERY))
+                throw new ClientFeatureNotSupportedByServerException(ProtocolBitmaskFeature.INDEX_QUERY);
+
             writeCacheInfo(payloadCh);
 
             BinaryOutputStream out = payloadCh.out();

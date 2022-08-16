@@ -18,6 +18,7 @@
 package org.apache.ignite.compatibility.clients;
 
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
@@ -35,9 +36,12 @@ import org.apache.ignite.binary.BinaryObject;
 import org.apache.ignite.cache.CacheAtomicityMode;
 import org.apache.ignite.cache.CacheMode;
 import org.apache.ignite.cache.QueryEntity;
+import org.apache.ignite.cache.QueryIndex;
 import org.apache.ignite.cache.affinity.rendezvous.RendezvousAffinityFunction;
 import org.apache.ignite.cache.query.ContinuousQuery;
+import org.apache.ignite.cache.query.IndexQuery;
 import org.apache.ignite.cache.query.ScanQuery;
+import org.apache.ignite.cache.query.SqlFieldsQuery;
 import org.apache.ignite.client.ClientCache;
 import org.apache.ignite.client.ClientCacheConfiguration;
 import org.apache.ignite.client.ClientFeatureNotSupportedByServerException;
@@ -396,6 +400,44 @@ public class JavaThinCompatibilityTest extends AbstractClientCompatibilityTest {
         }
     }
 
+    /** */
+    private void testIndexQueries(boolean supported) {
+        X.println(">>>> Testing index queries");
+
+        try (IgniteClient client = Ignition.startClient(new ClientConfiguration().setAddresses(ADDR))) {
+            ClientCache<Object, Object> cache = client.getOrCreateCache(
+                new ClientCacheConfiguration()
+                    .setName("testIndexQueries")
+                    .setQueryEntities(
+                        new QueryEntity()
+                            .setTableName("TABLE_TEST_INDEX_QUERIES")
+                            .setKeyType(Integer.class.getName())
+                            .setFields(new LinkedHashMap<>(F.asMap(
+                                "A", Integer.class.getName(),
+                                "B", Integer.class.getName())))
+                            .setKeyFieldName("A")
+                            .setValueType("TEST_INDEX_QUERIES")
+                            .setIndexes(Collections.singleton(new QueryIndex()
+                                .setName("IDX")
+                                .setFields(new LinkedHashMap<>(F.asMap("B", true)))))
+                    )
+            );
+
+            cache.query(new SqlFieldsQuery("insert into TABLE_TEST_INDEX_QUERIES(A, B) values (?, ?)")
+                .setArgs(0, 0))
+                .getAll();
+
+            IndexQuery<Integer, Object> idxQry = new IndexQuery<>("TEST_INDEX_QUERIES", "IDX");
+
+            if (supported)
+                assertEquals(1, cache.withKeepBinary().query(idxQry).getAll().size());
+            else
+                assertThrowsWithCause(
+                    () -> cache.withKeepBinary().query(idxQry).getAll(),
+                    ClientFeatureNotSupportedByServerException.class);
+        }
+    }
+
     /** {@inheritDoc} */
     @Override protected void testClient(IgniteProductVersion clientVer, IgniteProductVersion serverVer) throws Exception {
         IgniteProductVersion minVer = clientVer.compareTo(serverVer) < 0 ? clientVer : serverVer;
@@ -443,8 +485,10 @@ public class JavaThinCompatibilityTest extends AbstractClientCompatibilityTest {
             }
         }
 
-        if (clientVer.compareTo(VER_2_14_0) >= 0)
+        if (clientVer.compareTo(VER_2_14_0) >= 0) {
             testDataReplicationOperations(serverVer.compareTo(VER_2_14_0) >= 0);
+            testIndexQueries(serverVer.compareTo(VER_2_14_0) >= 0);
+        }
 
         if (clientVer.compareTo(VER_2_14_0) >= 0) {
             // This wrapper is used to avoid serialization/deserialization issues when the `testClient` is
