@@ -106,7 +106,7 @@ public class PartitionUpdateCounterTrackingImpl implements PartitionUpdateCounte
 
         queue = fromBytes(cntrUpdData);
 
-        reserveCntr.set(highestAppliedCounter());
+        reservedCntr.set(highestAppliedCounter());
     }
 
     /** {@inheritDoc} */
