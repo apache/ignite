@@ -64,13 +64,16 @@ import static org.junit.Assert.fail;
  */
 public final class GridTestProperties {
     /** */
+    public static final String DEFAULT_LOG4J_FILE = "log4j2-test.xml";
+
+    /** */
     public static final String TESTS_PROP_FILE = "tests.properties";
 
     /** */
-    public static final String TESTS_CLS_PATH = "test/config/";
+    private static final String TEST_RESOURCES_PATH = "/test/config/";
 
     /** */
-    public static final String TESTS_CFG_PATH = "modules/core/src/" + TESTS_CLS_PATH;
+    private static final String TESTS_CFG_PATH = "modules/core/src" + TEST_RESOURCES_PATH;
 
     /** */
     private static final Pattern PROP_REGEX = Pattern.compile("[@$]\\{[^@${}]+\\}");
@@ -121,7 +124,7 @@ public final class GridTestProperties {
         if (cfgFile != null && cfgFile.exists())
             dfltProps = Collections.unmodifiableMap(loadFromFile(new HashMap<>(), cfgFile));
         else {
-            URL res = GridTestProperties.class.getClassLoader().getResource(TESTS_CLS_PATH + TESTS_PROP_FILE);
+            URL res = findTestResource(TESTS_PROP_FILE);
 
             if (res == null)
                 fail("Unable to find " + TESTS_PROP_FILE);
@@ -153,22 +156,23 @@ public final class GridTestProperties {
         String cfgFile = System.getProperty("IGNITE_TEST_PROP_LOG4J_FILE");
 
         if (cfgFile == null)
-            cfgFile = "log4j2-test.xml";
+            cfgFile = DEFAULT_LOG4J_FILE;
 
         File log4jFile = getTestConfigurationFile(user, cfgFile);
 
         if (log4jFile == null)
             log4jFile = getTestConfigurationFile(null, cfgFile);
 
-        String cfgFileLocation;
+        String cfgFileLocation = null;
 
         if (log4jFile != null)
             cfgFileLocation = log4jFile.getAbsolutePath();
         else {
             // Try loading the logger configuration from the classpath.
-            URL resourse = GridTestProperties.class.getClassLoader().getResource(TESTS_CLS_PATH + cfgFile);
+            URL resourse = findTestResource(DEFAULT_LOG4J_FILE);
 
-            cfgFileLocation = resourse.toExternalForm();
+            if (resourse != null)
+                cfgFileLocation = resourse.toExternalForm();
         }
 
         Configurator.initialize(LoggerConfig.ROOT, cfgFileLocation);
@@ -179,6 +183,11 @@ public final class GridTestProperties {
     /** */
     public static void init() {
         // No-op.
+    }
+
+    /** */
+    public static URL findTestResource(String res) {
+        return GridTestProperties.class.getResource(TEST_RESOURCES_PATH + res);
     }
 
     /**
