@@ -60,6 +60,8 @@ import org.apache.ignite.transactions.TransactionState;
 import org.jetbrains.annotations.Nullable;
 
 import static org.apache.ignite.internal.GridTopic.TOPIC_CONSISTENT_CUT;
+import static org.apache.ignite.internal.processors.cache.consistentcut.AbstractConsistentCutBlockingTest.BlkCutType.AFTER_VERSION_UPDATE;
+import static org.apache.ignite.internal.processors.cache.consistentcut.AbstractConsistentCutBlockingTest.BlkCutType.BEFORE_FINISH;
 import static org.apache.ignite.internal.processors.cache.consistentcut.AbstractConsistentCutBlockingTest.BlkCutType.BEFORE_VERSION_UPDATE;
 import static org.apache.ignite.internal.processors.cache.consistentcut.AbstractConsistentCutBlockingTest.BlkNodeType.BACKUP;
 import static org.apache.ignite.internal.processors.cache.consistentcut.AbstractConsistentCutBlockingTest.BlkNodeType.NEAR;
@@ -178,7 +180,6 @@ public abstract class AbstractConsistentCutBlockingTest extends AbstractConsiste
 
     /** */
     private boolean skipMsgTestCase(int txBlkNodeId, List<T2<Integer, Integer>> testCase) {
-        // И если слать некому
         if (txMsgBlkCls.equals(GridNearTxPrepareRequest.class)) {
             if (txBlkNodeType != NEAR)
                 return true;
@@ -524,6 +525,9 @@ public abstract class AbstractConsistentCutBlockingTest extends AbstractConsiste
         /** Latch that blocks after Consistent Cut Version updated. */
         private volatile CountDownLatch afterUpdVer;
 
+        /** Latch that blocks before Consistent Cut finished. */
+        private volatile CountDownLatch beforeFinish;
+
         /** */
         private volatile CountDownLatch blockedLatch;
 
@@ -562,13 +566,29 @@ public abstract class AbstractConsistentCutBlockingTest extends AbstractConsiste
         }
 
         /** */
+        @Override protected void onFinish(ConsistentCutVersion cutVer) {
+            if (beforeFinish != null) {
+                blockedLatch.countDown();
+                blockedLatch = null;
+
+                U.awaitQuiet(beforeFinish);
+
+                beforeFinish = null;
+            }
+
+            super.onFinish(cutVer);
+        }
+
+        /** */
         public void block(BlkCutType type) {
             blockedLatch = new CountDownLatch(1);
 
             if (type == BEFORE_VERSION_UPDATE)
                 beforeUpdVer = new CountDownLatch(1);
-            else
+            else if (type == AFTER_VERSION_UPDATE)
                 afterUpdVer = new CountDownLatch(1);
+            else if (type == BEFORE_FINISH)
+                beforeFinish = new CountDownLatch(1);
         }
 
         /** */
@@ -580,8 +600,10 @@ public abstract class AbstractConsistentCutBlockingTest extends AbstractConsiste
         public void unblock(BlkCutType type) {
             if (type == BEFORE_VERSION_UPDATE)
                 beforeUpdVer.countDown();
-            else
+            else if (type == AFTER_VERSION_UPDATE)
                 afterUpdVer.countDown();
+            else if (type == BEFORE_FINISH)
+                beforeFinish.countDown();
         }
 
         /** {@inheritDoc} */
@@ -638,6 +660,14 @@ public abstract class AbstractConsistentCutBlockingTest extends AbstractConsiste
         BEFORE_VERSION_UPDATE,
 
         /** */
-        AFTER_VERSION_UPDATE
+        AFTER_VERSION_UPDATE,
+
+        /** */
+        BEFORE_FINISH;
+
+        /** */
+        public static BlkCutType[] blkTestValues() {
+            return new BlkCutType[] { NONE, BEFORE_VERSION_UPDATE, AFTER_VERSION_UPDATE };
+        }
     }
 }

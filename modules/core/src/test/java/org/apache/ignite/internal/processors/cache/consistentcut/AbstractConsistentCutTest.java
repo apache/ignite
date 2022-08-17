@@ -180,11 +180,15 @@ public abstract class AbstractConsistentCutTest extends GridCommonAbstractTest {
             }
 
             return false;
-        }, "GlobalCutReady " + expCutVer + " " + strict, -1);
+        }, "GlobalCutReady " + expCutVer + " " + strict + " " + ver, -1);
 
         // Await all nodes sent finish responses and coordinator received all of them.
-        GridTestUtils.waitForCondition(() ->
-            cutMgr(grid(0)).consistentCutFinished(expCutVer), 60_000, 10);
+        awaitGlobalCutEvent(ign -> {
+            if (!U.isLocalNodeCoordinator(ign.context().discovery()))
+                return true;
+
+            return cutMgr(ign).consistentCutFinished(ver.get(), strict);
+        }, "CoordinatorNodeReceivedFinisheds " + expCutVer + " " + strict + " " + ver, -1);
 
         return ver.get();
     }
@@ -205,7 +209,7 @@ public abstract class AbstractConsistentCutTest extends GridCommonAbstractTest {
 
                     return true;
                 })
-                .allMatch(ign -> cutEvtPredicate.apply((IgniteEx)ign)), 60_000, 10);
+                .allMatch(ign -> cutEvtPredicate.apply((IgniteEx)ign)), CONSISTENT_CUT_PERIOD * 10, 10);
 
         if (rdy)
             return;
@@ -216,7 +220,7 @@ public abstract class AbstractConsistentCutTest extends GridCommonAbstractTest {
         bld.append("\n\tCoordinator node0 = ").append(U.isLocalNodeCoordinator(grid(0).context().discovery()));
 
         for (int i = 0; i < nodes(); i++)
-            bld.append("\n\tNode").append(i).append( ": ").append(cutMgr(grid(i)).cutVersion());
+            bld.append("\n\tNode").append(i).append( ": ").append(cutMgr(grid(i)).currCutState());
 
         throw new Exception(bld.toString());
     }
@@ -392,10 +396,10 @@ public abstract class AbstractConsistentCutTest extends GridCommonAbstractTest {
         }
 
         /** */
-        boolean consistentCutFinished(long cutVer) {
-            return U.isLocalNodeCoordinator(cctx.discovery())
-                && cutVersion().version() == cutVer
-                && notFinishedSrvNodes == null;
+        boolean consistentCutFinished(long cutVer, boolean strictVer) {
+            boolean ver = strictVer ? cutVersion().version() == cutVer : cutVersion().version() >= cutVer;
+
+            return ver && notFinishedSrvNodes == null;
         }
 
         /** */

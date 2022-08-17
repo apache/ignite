@@ -95,6 +95,16 @@ public class ConcurrentTxsConsistentCutTest extends AbstractConsistentCutTest {
 
     /** */
     @Test
+    public void noLoadAndCutTest() throws Exception {
+        awaitConsistentCuts(CUTS);
+
+        TestConsistentCutManager.cutMgr(grid(0)).disableScheduling(false);
+
+        checkWalsConsistency(txOrigNode, CUTS);
+    }
+
+    /** */
+    @Test
     public void concurrentLoadAndCutTest() throws Exception {
         stopLoadLatch = new CountDownLatch(1);
 

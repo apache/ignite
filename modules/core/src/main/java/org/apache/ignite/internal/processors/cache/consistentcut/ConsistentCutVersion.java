@@ -18,6 +18,7 @@
 package org.apache.ignite.internal.processors.cache.consistentcut;
 
 import java.nio.ByteBuffer;
+import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
 import org.apache.ignite.internal.util.tostring.GridToStringInclude;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.plugin.extensions.communication.Message;
@@ -40,17 +41,27 @@ public class ConsistentCutVersion implements Message, Comparable<ConsistentCutVe
     @GridToStringInclude
     private long ver;
 
+    /** Topology version on which Consistent Cut has started. */
+    @GridToStringInclude
+    private AffinityTopologyVersion topVer;
+
     /** */
     public ConsistentCutVersion() {}
 
     /** */
-    public ConsistentCutVersion(long ver) {
+    public ConsistentCutVersion(long ver, AffinityTopologyVersion topVer) {
         this.ver = ver;
+        this.topVer = topVer;
     }
 
     /** */
     public long version() {
         return ver;
+    }
+
+    /** */
+    public AffinityTopologyVersion topVer() {
+        return topVer;
     }
 
     /** {@inheritDoc} */
@@ -71,6 +82,12 @@ public class ConsistentCutVersion implements Message, Comparable<ConsistentCutVe
 
         switch (writer.state()) {
             case 0:
+                if (!writer.writeAffinityTopologyVersion("topVer", topVer))
+                    return false;
+
+                writer.incrementState();
+
+            case 1:
                 if (!writer.writeLong("ver", ver))
                     return false;
 
@@ -90,6 +107,14 @@ public class ConsistentCutVersion implements Message, Comparable<ConsistentCutVe
 
         switch (reader.state()) {
             case 0:
+                topVer = reader.readAffinityTopologyVersion("topVer");
+
+                if (!reader.isLastRead())
+                    return false;
+
+                reader.incrementState();
+
+            case 1:
                 ver = reader.readLong("ver");
 
                 if (!reader.isLastRead())
@@ -109,7 +134,7 @@ public class ConsistentCutVersion implements Message, Comparable<ConsistentCutVe
 
     /** {@inheritDoc} */
     @Override public byte fieldsCount() {
-        return 1;
+        return 2;
     }
 
     /** {@inheritDoc} */
@@ -119,16 +144,20 @@ public class ConsistentCutVersion implements Message, Comparable<ConsistentCutVe
 
     /** {@inheritDoc} */
     @Override public boolean equals(Object o) {
-        return o instanceof ConsistentCutVersion && ver == ((ConsistentCutVersion)o).version();
+        return o instanceof ConsistentCutVersion
+            && ver == ((ConsistentCutVersion)o).version()
+            && topVer.equals(((ConsistentCutVersion)o).topVer);
     }
 
     /** {@inheritDoc} */
     @Override public int hashCode() {
-        return Long.hashCode(ver);
+        return 31 * Long.hashCode(ver) + topVer.hashCode();
     }
 
     /** {@inheritDoc} */
     @Override public int compareTo(@NotNull ConsistentCutVersion o) {
-        return Long.compare(ver, o.ver);
+        int cutVerCmp = Long.compare(ver, o.ver);
+
+        return cutVerCmp != 0 ? cutVerCmp : topVer.compareTo(o.topVer);
     }
 }

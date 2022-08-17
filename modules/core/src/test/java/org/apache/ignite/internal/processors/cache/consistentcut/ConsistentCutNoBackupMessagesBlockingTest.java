@@ -49,7 +49,7 @@ public class ConsistentCutNoBackupMessagesBlockingTest extends AbstractConsisten
 
         Stream.of(BlkNodeType.NEAR, BlkNodeType.PRIMARY).forEach(txN ->
             Stream.of(BlkNodeType.NEAR, BlkNodeType.PRIMARY).forEach(cutN -> {
-                for (BlkCutType c : BlkCutType.values())
+                for (BlkCutType c : BlkCutType.blkTestValues())
                     p.add(new Object[] {txN, c, cutN});
             })
         );

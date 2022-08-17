@@ -118,7 +118,7 @@ public class ConsistentCut {
                 }
             }
 
-            cctx.consistentCutMgr().onFinish();
+            cctx.consistentCutMgr().onFinish(ver);
         });
     }
 

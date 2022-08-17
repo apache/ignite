@@ -29,7 +29,6 @@ import org.apache.ignite.configuration.DataStorageConfiguration;
 import org.apache.ignite.internal.pagemem.wal.record.ConsistentCutFinishRecord;
 import org.apache.ignite.internal.pagemem.wal.record.ConsistentCutStartRecord;
 import org.apache.ignite.internal.pagemem.wal.record.TxRecord;
-import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
 import org.apache.ignite.internal.processors.cache.GridCacheSharedManagerAdapter;
 import org.apache.ignite.internal.processors.cache.distributed.dht.preloader.GridDhtPartitionsExchangeFuture;
 import org.apache.ignite.internal.processors.cache.distributed.dht.preloader.PartitionsExchangeAware;
@@ -110,11 +109,6 @@ public class ConsistentCutManager extends GridCacheSharedManagerAdapter implemen
     private final Set<IgniteInternalTx> committingTxs = ConcurrentHashMap.newKeySet();
 
     /**
-     * Consistent Cut coordinator node ID. {@code null} if Consistent Cut is disabled.
-     */
-    private volatile @Nullable UUID cutCrdNodeId;
-
-    /**
      * On Consistent Cut coordinator node, tracks server nodes hasn't finished Consistent Cut yet.
      */
     protected volatile @Nullable Set<UUID> notFinishedSrvNodes;
@@ -129,7 +123,7 @@ public class ConsistentCutManager extends GridCacheSharedManagerAdapter implemen
     @Override protected void start0() throws IgniteCheckedException {
         super.start0();
 
-        CONSITENT_CUT_STATE.set(this, new ConsistentCutState(new ConsistentCutVersion(0), null));
+        CONSITENT_CUT_STATE.set(this, new ConsistentCutState(newCutVersion(0), null));
 
         cctx.kernalContext().io().addMessageListener(TOPIC_CONSISTENT_CUT, (nodeId, msg, plc) -> {
             if (msg instanceof ConsistentCutStartRequest)
@@ -153,23 +147,10 @@ public class ConsistentCutManager extends GridCacheSharedManagerAdapter implemen
      */
     @Override public void onInitBeforeTopologyLock(GridDhtPartitionsExchangeFuture fut) {
         if (fut.serverNodeDiscoveryEvent()) {
-            cutCrdNodeId = null;
-
             disableScheduling(true);
 
             // Cancel current Consistent Cut, if exists.
-            onFinish();
-        }
-    }
-
-    /**
-     * Init Consistent Cut coordinator node. It is same as Ignite coordinator node.
-     */
-    @Override public void onDoneBeforeTopologyUnlock(GridDhtPartitionsExchangeFuture fut) {
-        if (fut.serverNodeDiscoveryEvent() || fut.activateCluster()) {
-            AffinityTopologyVersion topVer = fut.topologyVersion();
-
-            cutCrdNodeId = cctx.discovery().discoCache(topVer).oldestAliveServerNode().id();
+            onFinish(cutVersion());
         }
     }
 
@@ -177,11 +158,9 @@ public class ConsistentCutManager extends GridCacheSharedManagerAdapter implemen
      * Schedules global Consistent Cut procedure on Ignite coordinator.
      */
     public void scheduleConsistentCut() {
-        if (cutCrdNodeId == null || !cctx.localNodeId().equals(cutCrdNodeId)) {
+        if (!U.isLocalNodeCoordinator(cctx.discovery())) {
             U.error(log, "Failed to schedule Consistent Cut procedure, PITR is disabled. " +
-                "\n  ^-- This node isn't the expected Consistent Cut coordinator: " +
-                "\n  ^-- LocalNodeID=" + cctx.localNode().id() + ", CutCrdNodeID=" + cutCrdNodeId + "." +
-                "\n  ^-- To enable PITR, please start ClusterSnapshot create or restore procedure.");
+                "\n  ^-- This node isn't the expected Consistent Cut coordinator.");
 
             return;
         }
@@ -275,7 +254,7 @@ public class ConsistentCutManager extends GridCacheSharedManagerAdapter implemen
         ConsistentCutState cutState = CONSITENT_CUT_STATE.get(this);
         ConsistentCutVersion cutVer = cutState.version();
 
-        if (rcvCutVer.version() > cutVer.version()) {
+        if (rcvCutVer.compareTo(cutVer) > 0) {
             ConsistentCut cut = newConsistentCut();
 
             ConsistentCutState newCutState = new ConsistentCutState(rcvCutVer, cut);
@@ -291,7 +270,7 @@ public class ConsistentCutManager extends GridCacheSharedManagerAdapter implemen
                     catch (IgniteCheckedException e) {
                         U.error(log, "Failed to handle Consistent Cut version.", e);
 
-                        onFinish();
+                        onFinish(rcvCutVer);
                     }
                 });
             }
@@ -319,44 +298,40 @@ public class ConsistentCutManager extends GridCacheSharedManagerAdapter implemen
 
     /**
      * Finishes local Consistent Cut: cleans {@link ConsistentCut} reference and sends finish message to Consistent Cut coordinator node.
+     *
+     * @param cutVer Consistent Cut version to finish.
      */
-    void onFinish() {
-        try {
-            ConsistentCutState cutState = CONSITENT_CUT_STATE.get(this);
+    protected void onFinish(ConsistentCutVersion cutVer) {
+        ConsistentCutState cutState = CONSITENT_CUT_STATE.get(this);
 
-            if (cutState.cut() != null) {
-                ConsistentCutVersion cutVer = cutState.version();
+        // If finishing version differs from actual - it means it receive message concurrently from older coordinator
+        // sent before topology changed. No need to handle send this message back.
+        if (cutState.cut() != null && (cutVer == null || cutState.version().equals(cutVer))) {
+            ConsistentCutState finishedCutState = new ConsistentCutState(cutVer, null);
 
-                ConsistentCutState finishedCutState = new ConsistentCutState(cutVer, null);
+            if (CONSITENT_CUT_STATE.compareAndSet(this, cutState, finishedCutState)) {
+                committingTxs.removeIf(tx -> tx.finishFuture().isDone());
 
-                if (CONSITENT_CUT_STATE.compareAndSet(this, cutState, finishedCutState)) {
-                    committingTxs.removeIf(tx -> tx.finishFuture().isDone());
+                if (cctx.kernalContext().clientNode())
+                    return;
 
-                    if (cctx.kernalContext().clientNode())
-                        return;
+                Message msg = new ConsistentCutFinishResponse(cutVer);
 
-                    Message msg = new ConsistentCutFinishResponse(cutVer);
+                if (log.isDebugEnabled())
+                    log.debug("Send " + msg + " from " + cctx.localNodeId());
 
-                    if (log.isDebugEnabled())
-                        log.debug("Send " + msg + " from " + cctx.localNodeId());
+                cctx.discovery().topologyFuture(cutVer.topVer().topologyVersion())
+                    .listen((tv) -> {
+                        try {
+                            UUID crd = cctx.discovery().discoCache(cutVer.topVer()).oldestAliveServerNode().id();
 
-                    UUID crd = cutCrdNodeId;
-
-                    if (crd == null) {
-                        if (log.isDebugEnabled()) {
-                            log.debug("Skip sending Consistent Cut Finish message to coordinator node" +
-                                " due to the topology changed. Ver=" + cutVer);
+                            cctx.kernalContext().io().sendToGridTopic(crd, TOPIC_CONSISTENT_CUT, msg, SYSTEM_POOL);
                         }
-
-                        return;
-                    }
-
-                    cctx.kernalContext().io().sendToGridTopic(crd, TOPIC_CONSISTENT_CUT, msg, SYSTEM_POOL);
-                }
+                        catch (IgniteCheckedException e) {
+                            U.error(log, "Failed to send Consistent Cut Finish message to coordinator node.", e);
+                        }
+                    });
             }
-        }
-        catch (IgniteCheckedException e) {
-            U.error(log, "Failed to send Consistent Cut Finish message to coordinator node.", e);
         }
     }
 
@@ -382,7 +357,7 @@ public class ConsistentCutManager extends GridCacheSharedManagerAdapter implemen
 
         ConsistentCutVersion prevCutVer = CONSITENT_CUT_STATE.get(this).version();
 
-        ConsistentCutVersion cutVer = new ConsistentCutVersion(prevCutVer.version() + 1);
+        ConsistentCutVersion cutVer = newCutVersion(prevCutVer.version() + 1);
 
         if (log.isDebugEnabled())
             log.debug("Start Consistent Cut, version = " + cutVer + ", reason='" + reason + "'");
@@ -468,5 +443,10 @@ public class ConsistentCutManager extends GridCacheSharedManagerAdapter implemen
         }
         else
             return tx.near();
+    }
+
+    /** */
+    private ConsistentCutVersion newCutVersion(long cutVer) {
+        return new ConsistentCutVersion(cutVer, cctx.discovery().topologyVersionEx());
     }
 }
