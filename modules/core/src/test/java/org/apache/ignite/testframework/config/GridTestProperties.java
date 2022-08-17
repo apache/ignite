@@ -121,18 +121,12 @@ public final class GridTestProperties {
         // Load default properties.
 //        URI cfgFileResource = null;
 
-        File cfgFile = getTestConfigurationFile(null, TESTS_PROP_FILE);
+        URI cfgFile = getTestConfigurationFile(TESTS_PROP_FILE, true);
 
-        URI cfgFileResource = cfgFile != null && cfgFile.exists() ? cfgFile.toURI() :
-            findTestResource(TESTS_PROP_FILE);
-
-        if (cfgFile != null && cfgFile.exists())
-            cfgFileResource = cfgFile.toURI();
-
-        if (cfgFileResource == null)
+        if (cfgFile == null)
             fail("Unable to find " + TESTS_PROP_FILE);
 
-            dfltProps = Collections.unmodifiableMap(loadFromResource(new HashMap<>(), cfgFileResource));
+        dfltProps = Collections.unmodifiableMap(loadFromResource(new HashMap<>(), cfgFile));
 
         if ("false".equals(System.getProperty("IGNITE_TEST_PROP_DISABLE_LOG4J", "false"))) {
             String user = System.getProperty("user.name");
@@ -160,26 +154,11 @@ public final class GridTestProperties {
         if (cfgFile == null)
             cfgFile = DEFAULT_LOG4J_FILE;
 
-        File log4jFile = getTestConfigurationFile(user, cfgFile);
+        URI log4jFile = getTestConfigurationFile(cfgFile, true, user, null);
 
-        if (log4jFile == null)
-            log4jFile = getTestConfigurationFile(null, cfgFile);
+        Configurator.initialize(LoggerConfig.ROOT, GridTestProperties.class.getClassLoader(), log4jFile);
 
-        String cfgFileLocation = null;
-
-        if (log4jFile != null)
-            cfgFileLocation = log4jFile.getAbsolutePath();
-        else {
-            // Try loading the logger configuration from the classpath.
-            URI resourse = findTestResource(DEFAULT_LOG4J_FILE);
-
-            if (resourse != null)
-                cfgFileLocation = resourse.toString();
-        }
-
-        Configurator.initialize(LoggerConfig.ROOT, cfgFileLocation);
-
-        System.out.println("Configured log4j2 from: " + cfgFileLocation);
+        System.out.println("Configured log4j2 from: " + log4jFile);
     }
 
     /** */
@@ -317,36 +296,42 @@ public final class GridTestProperties {
      * @return Loaded properties.
      */
     private static Map<String, String> loadProperties(Map<String, String> props, String dir) {
-        File cfg = getTestConfigurationFile(dir, TESTS_PROP_FILE);
+        URI cfg = getTestConfigurationFile(TESTS_PROP_FILE, false, dir);
 
         if (cfg != null)
-            loadFromResource(props, cfg.toURI());
+            loadFromResource(props, cfg);
 
         return props;
     }
 
     /**
-     * @param user User name.
      * @param fileName File name.
-     * @return Configuration file for given user.
+     * @param resourceLookup Search this file in resources.
+     * @param subDirs Sub-directory names.
+     * @return Configuration file for given sub-directories.
      */
-    @Nullable private static File getTestConfigurationFile(@Nullable String user, String fileName) {
-        String path = TESTS_CFG_PATH;
+    @Nullable private static URI getTestConfigurationFile(String fileName, boolean resourceLookup, String... subDirs) {
+        if (F.isEmpty(subDirs))
+            subDirs = new String[] {null};
 
-        if (user != null)
-            path += File.separatorChar + user;
+        for (String dir : subDirs) {
+            String path = TESTS_CFG_PATH;
 
-        path += File.separatorChar + fileName;
+            if (dir != null)
+                path += File.separatorChar + dir;
 
-        File file = GridTestUtils.resolveIgnitePath(path);
+            path += File.separatorChar + fileName;
 
-        if (file != null && file.exists()) {
-            assert !file.isDirectory();
+            File file = GridTestUtils.resolveIgnitePath(path);
 
-            return file;
+            if (file != null && file.exists()) {
+                assert !file.isDirectory();
+
+                return file.toURI();
+            }
         }
 
-        return null;
+        return resourceLookup ? findTestResource(TESTS_PROP_FILE) : null;
     }
 
     /**
