@@ -412,17 +412,7 @@ public class GridCommandHandlerConsistencyCountersTest extends GridCommandHandle
 
         stopAllGrids();
 
-        asyncPutFuts.markInitialized();
-
-        try {
-            asyncPutFuts.get();
-
-            if (atomicityMode != ATOMIC) // Atomics already committed at primary before the fail, so no falure on get() is expected.
-                fail(); // But tx cache is still committing, so get() must throw an exception.
-        }
-        catch (IgniteCheckedException | TransactionHeuristicException ex) {
-            assertTrue(atomicityMode != ATOMIC);
-        }
+        checkAsyncPutOperationsFinished(asyncPutFuts);
 
         ioBlocked = false;
 
@@ -572,9 +562,25 @@ public class GridCommandHandlerConsistencyCountersTest extends GridCommandHandle
         Pattern pattern = Pattern.compile("repaired=(\\d*),");
         Matcher matcher = pattern.matcher(testOut.toString());
 
-        if (matcher.find())
-            return Integer.parseInt(testOut.toString().substring(matcher.start(1), matcher.end(1)));
-        else
-            return 0;
+        return matcher.find() ?
+            Integer.parseInt(testOut.toString().substring(matcher.start(1), matcher.end(1))) :
+            0;
+    }
+
+    /**
+     * Checks that all async put operations are finished.
+     */
+    private void checkAsyncPutOperationsFinished(GridCompoundFuture<?, ?> asyncPutFuts) {
+        asyncPutFuts.markInitialized();
+
+        try {
+            asyncPutFuts.get();
+
+            if (atomicityMode != ATOMIC) // Atomics already committed at primary before the fail, so no falure on get() is expected.
+                fail(); // But tx cache is still committing, so get() must throw an exception.
+        }
+        catch (IgniteCheckedException | TransactionHeuristicException ex) {
+            assertTrue(atomicityMode != ATOMIC);
+        }
     }
 }
