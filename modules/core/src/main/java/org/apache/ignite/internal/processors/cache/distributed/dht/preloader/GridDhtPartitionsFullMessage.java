@@ -178,6 +178,21 @@ public class GridDhtPartitionsFullMessage extends GridDhtPartitionsAbstractMessa
         GridDhtPartitionsFullMessage cp = (GridDhtPartitionsFullMessage)msg;
 
         cp.parts = parts;
+        if (parts != null) {
+            cp.parts = new HashMap<>(parts.size());
+
+            for (Map.Entry<Integer, GridDhtPartitionFullMap> e : parts.entrySet()) {
+                GridDhtPartitionFullMap val = e.getValue();
+
+                cp.parts.put(e.getKey(), new GridDhtPartitionFullMap(
+                    val.nodeId(),
+                    val.nodeOrder(),
+                    val.updateSequence(),
+                    val,
+                    false));
+            }
+        }
+
         cp.dupPartsData = dupPartsData;
         cp.partsBytes = partsBytes;
         cp.partCntrs = partCntrs;
@@ -202,7 +217,7 @@ public class GridDhtPartitionsFullMessage extends GridDhtPartitionsAbstractMessa
     /**
      * @return Message copy.
      */
-    GridDhtPartitionsFullMessage copy() {
+    public GridDhtPartitionsFullMessage copy() {
         GridDhtPartitionsFullMessage cp = new GridDhtPartitionsFullMessage();
 
         copyStateTo(cp);
