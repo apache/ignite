@@ -1127,7 +1127,7 @@ public final class GridTestUtils {
      * @param task Runnable.
      * @return Future with task result.
      */
-    public static IgniteInternalFuture runAsync(final Runnable task) {
+    public static <T> IgniteInternalFuture<T> runAsync(final Runnable task) {
         return runAsync(task, "async-runnable-runner");
     }
 
@@ -1137,7 +1137,7 @@ public final class GridTestUtils {
      * @param task Runnable.
      * @return Future with task result.
      */
-    public static IgniteInternalFuture runAsync(final RunnableX task) {
+    public static <T> IgniteInternalFuture<T> runAsync(final RunnableX task) {
         return runAsync(task, "async-runnable-runner");
     }
 
@@ -1147,7 +1147,7 @@ public final class GridTestUtils {
      * @param task Runnable.
      * @return Future with task result.
      */
-    public static IgniteInternalFuture runAsync(final Runnable task, String threadName) {
+    public static <T> IgniteInternalFuture<T> runAsync(final Runnable task, String threadName) {
         return runAsync(() -> {
             task.run();
 
@@ -1161,7 +1161,7 @@ public final class GridTestUtils {
      * @param task Runnable.
      * @return Future with task result.
      */
-    public static IgniteInternalFuture runAsync(final RunnableX task, String threadName) {
+    public static <T> IgniteInternalFuture<T> runAsync(final RunnableX task, String threadName) {
         return runAsync(() -> {
             task.run();
 

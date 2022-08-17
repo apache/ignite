@@ -44,10 +44,8 @@ import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicLong;
-import java.util.concurrent.atomic.AtomicReference;
 import java.util.concurrent.atomic.LongAdder;
 import java.util.function.BooleanSupplier;
-import java.util.function.Consumer;
 import java.util.function.Function;
 import java.util.function.UnaryOperator;
 import java.util.regex.Matcher;
@@ -64,7 +62,6 @@ import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteDataStreamer;
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.ShutdownPolicy;
-import org.apache.ignite.cache.CacheAtomicityMode;
 import org.apache.ignite.cache.affinity.rendezvous.RendezvousAffinityFunction;
 import org.apache.ignite.cluster.BaselineNode;
 import org.apache.ignite.cluster.ClusterNode;
@@ -89,7 +86,6 @@ import org.apache.ignite.internal.processors.cache.GridCacheContext;
 import org.apache.ignite.internal.processors.cache.GridCacheEntryEx;
 import org.apache.ignite.internal.processors.cache.GridCacheMvccCandidate;
 import org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtTxFinishRequest;
-import org.apache.ignite.internal.processors.cache.distributed.dht.atomic.GridDhtAtomicSingleUpdateRequest;
 import org.apache.ignite.internal.processors.cache.distributed.near.GridNearLockResponse;
 import org.apache.ignite.internal.processors.cache.distributed.near.GridNearTxFinishRequest;
 import org.apache.ignite.internal.processors.cache.distributed.near.GridNearTxLocal;
@@ -140,11 +136,9 @@ import org.junit.Test;
 
 import static java.io.File.separatorChar;
 import static org.apache.ignite.IgniteSystemProperties.IGNITE_CLUSTER_NAME;
-import static org.apache.ignite.cache.CacheAtomicityMode.ATOMIC;
 import static org.apache.ignite.cache.CacheAtomicityMode.TRANSACTIONAL;
 import static org.apache.ignite.cache.CacheMode.PARTITIONED;
 import static org.apache.ignite.cache.CacheWriteSynchronizationMode.FULL_SYNC;
-import static org.apache.ignite.cache.CacheWriteSynchronizationMode.PRIMARY_SYNC;
 import static org.apache.ignite.cache.PartitionLossPolicy.READ_ONLY_SAFE;
 import static org.apache.ignite.cluster.ClusterState.ACTIVE;
 import static org.apache.ignite.cluster.ClusterState.ACTIVE_READ_ONLY;
@@ -2314,162 +2308,6 @@ public class GridCommandHandlerTest extends GridCommandHandlerClusterPerMethodAb
         }
         else
             fail("Should be found dump with conflicts");
-    }
-
-    /**
-     * Tests that idle verify checks gaps.
-     */
-    @Test
-    public void testCacheIdleVerifyChecksGapsAtomic() throws Exception {
-        testCacheIdleVerifyChecksGaps(ATOMIC);
-    }
-
-    /**
-     * Tests that idle verify checks gaps.
-     */
-    @Test
-    public void testCacheIdleVerifyChecksGapsTx() throws Exception {
-        testCacheIdleVerifyChecksGaps(TRANSACTIONAL);
-    }
-
-    /**
-     * Tests that idle verify checks gaps.
-     */
-    private void testCacheIdleVerifyChecksGaps(CacheAtomicityMode atomicityMode) throws Exception {
-        int parts = 1;
-
-        IgniteEx ignite = startGrids(3);
-
-        ignite.cluster().active(true);
-
-        int backups = 2;
-
-        IgniteCache<Object, Object> cache = ignite.createCache(new CacheConfiguration<>()
-            .setAffinity(new RendezvousAffinityFunction(false, parts))
-            .setBackups(backups)
-            .setName(DEFAULT_CACHE_NAME)
-            .setAtomicityMode(atomicityMode)
-            .setWriteSynchronizationMode(PRIMARY_SYNC)
-            .setReadFromBackup(true));
-
-        int cnt = 0;
-
-        for (int i = 0; i < 100; i++) {
-            cache.put(i, i);
-
-            cnt++;
-        }
-
-        int cntFrom = cnt;
-
-        Ignite prim = primaryNode(0L, DEFAULT_CACHE_NAME);
-        Ignite backup = backupNode(0L, DEFAULT_CACHE_NAME);
-
-        TestRecordingCommunicationSpi primSpi = TestRecordingCommunicationSpi.spi(prim);
-
-        AtomicReference<CountDownLatch> latchRef = new AtomicReference<>();
-
-        primSpi.blockMessages(new IgniteBiPredicate<ClusterNode, Message>() {
-            @Override public boolean apply(ClusterNode node, Message msg) {
-                if (msg instanceof GridDhtTxFinishRequest ||
-                    msg instanceof GridDhtAtomicSingleUpdateRequest) {
-                    CountDownLatch blockLatch = latchRef.get();
-
-                    boolean block = blockLatch.getCount() > 0;
-
-                    blockLatch.countDown();
-
-                    return block; // Generating counter gaps.
-                }
-                else
-                    return false;
-            }
-        });
-
-        int blockedKey = cntFrom + 1_000;
-        int committedKey = blockedKey + 1_000;
-
-        int blockedFrom = blockedKey;
-        int committedFrom = committedKey;
-
-        ThreadLocalRandom rnd = ThreadLocalRandom.current();
-
-        List<String> gaps = new ArrayList<>();
-
-        Consumer<Integer> cachePut = (key) -> {
-            if (atomicityMode == TRANSACTIONAL)
-                try (Transaction tx = prim.transactions().txStart()) {
-                    prim.cache(DEFAULT_CACHE_NAME).put(key, key);
-
-                    tx.commit();
-                }
-            else
-                prim.cache(DEFAULT_CACHE_NAME).put(key, key);
-        };
-
-        for (int it = 0; it < 10; it++) {
-            int range = rnd.nextInt(3);
-
-            CountDownLatch blockLatch = new CountDownLatch(backups * range);
-
-            latchRef.set(blockLatch);
-
-            for (int i = 0; i < range; i++) {
-                cachePut.accept(blockedKey++);
-
-                cnt++;
-            }
-
-            if (range == 1)
-                gaps.add(String.valueOf(cnt));
-            else if (range > 1)
-                gaps.add((cnt - range + 1) + " - " + cnt);
-
-            blockLatch.await();
-
-            for (int i = 0; i < range; i++) {
-                cachePut.accept(committedKey++);
-
-                cnt++;
-            }
-        }
-
-        for (int key = blockedFrom; key < blockedKey; key++) {
-            assertNotNull(prim.getOrCreateCache(DEFAULT_CACHE_NAME).get(key));
-            assertNull(backup.getOrCreateCache(DEFAULT_CACHE_NAME).get(key)); // Commit is blocked.
-        }
-
-        for (int key = committedFrom; key < committedKey; key++) {
-            assertNotNull(prim.getOrCreateCache(DEFAULT_CACHE_NAME).get(key));
-            assertNotNull(backup.getOrCreateCache(DEFAULT_CACHE_NAME).get(key));
-        }
-
-        G.restart(true);
-
-        ignite.cluster().active(true);
-
-        awaitPartitionMapExchange();
-
-        injectTestSystemOut();
-
-        assertEquals(EXIT_CODE_OK, execute("--cache", "idle_verify"));
-
-        if (atomicityMode == TRANSACTIONAL) {
-            assertContains(log, testOut.toString(), "conflict partitions has been found: [counterConflicts=1, " +
-                "hashConflicts=1]");
-
-            assertContains(log, testOut.toString(),
-                "updateCntr=[lwm=" + cnt + ", missed=[], hwm=" + cnt + "]"); // Primary
-
-            assertContains(log, testOut.toString(),
-                "updateCntr=[lwm=" + cntFrom + ", missed=" + gaps + ", hwm=" + cnt + "]"); // Backups.
-        }
-        else {
-            assertContains(log, testOut.toString(), "conflict partitions has been found: [counterConflicts=0, " +
-                "hashConflicts=1]");
-
-            assertContains(log, testOut.toString(), "updateCntr=" + cnt); // All
-        }
     }
 
     /**
