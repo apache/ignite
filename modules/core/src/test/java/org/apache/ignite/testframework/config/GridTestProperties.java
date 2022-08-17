@@ -20,7 +20,7 @@ package org.apache.ignite.testframework.config;
 import java.io.File;
 import java.io.IOException;
 import java.io.InputStream;
-import java.net.MalformedURLException;
+import java.net.URI;
 import java.net.URL;
 import java.util.Collections;
 import java.util.HashMap;
@@ -70,10 +70,10 @@ public final class GridTestProperties {
     public static final String TESTS_PROP_FILE = "tests.properties";
 
     /** */
-    private static final String TEST_RESOURCES_PATH = "/test/config/";
+    private static final String TEST_CONFIG_DIR = "/test/config/";
 
     /** */
-    private static final String TESTS_CFG_PATH = "modules/core/src" + TEST_RESOURCES_PATH;
+    private static final String TESTS_CFG_PATH = "modules/core/src" + TEST_CONFIG_DIR;
 
     /** */
     private static final Pattern PROP_REGEX = Pattern.compile("[@$]\\{[^@${}]+\\}");
@@ -119,18 +119,20 @@ public final class GridTestProperties {
         }
 
         // Load default properties.
+//        URI cfgFileResource = null;
+
         File cfgFile = getTestConfigurationFile(null, TESTS_PROP_FILE);
 
+        URI cfgFileResource = cfgFile != null && cfgFile.exists() ? cfgFile.toURI() :
+            findTestResource(TESTS_PROP_FILE);
+
         if (cfgFile != null && cfgFile.exists())
-            dfltProps = Collections.unmodifiableMap(loadFromFile(new HashMap<>(), cfgFile));
-        else {
-            URL res = findTestResource(TESTS_PROP_FILE);
+            cfgFileResource = cfgFile.toURI();
 
-            if (res == null)
-                fail("Unable to find " + TESTS_PROP_FILE);
+        if (cfgFileResource == null)
+            fail("Unable to find " + TESTS_PROP_FILE);
 
-            dfltProps = Collections.unmodifiableMap(loadFromResource(new HashMap<>(), res));
-        }
+            dfltProps = Collections.unmodifiableMap(loadFromResource(new HashMap<>(), cfgFileResource));
 
         if ("false".equals(System.getProperty("IGNITE_TEST_PROP_DISABLE_LOG4J", "false"))) {
             String user = System.getProperty("user.name");
@@ -169,10 +171,10 @@ public final class GridTestProperties {
             cfgFileLocation = log4jFile.getAbsolutePath();
         else {
             // Try loading the logger configuration from the classpath.
-            URL resourse = findTestResource(DEFAULT_LOG4J_FILE);
+            URI resourse = findTestResource(DEFAULT_LOG4J_FILE);
 
             if (resourse != null)
-                cfgFileLocation = resourse.toExternalForm();
+                cfgFileLocation = resourse.toString();
         }
 
         Configurator.initialize(LoggerConfig.ROOT, cfgFileLocation);
@@ -186,8 +188,13 @@ public final class GridTestProperties {
     }
 
     /** */
-    public static URL findTestResource(String res) {
-        return GridTestProperties.class.getResource(TEST_RESOURCES_PATH + res);
+    public static URI findTestResource(String res) {
+        URL resUrl = GridTestProperties.class.getResource(TEST_CONFIG_DIR + res);
+
+        if (resUrl == null)
+            return null;
+
+        return URI.create(resUrl.toExternalForm());
     }
 
     /**
@@ -313,7 +320,7 @@ public final class GridTestProperties {
         File cfg = getTestConfigurationFile(dir, TESTS_PROP_FILE);
 
         if (cfg != null)
-            loadFromFile(props, cfg);
+            loadFromResource(props, cfg.toURI());
 
         return props;
     }
@@ -344,16 +351,28 @@ public final class GridTestProperties {
 
     /**
      * @param props Initial properties.
-     * @param file Property file.
+     * @param resource File resource location.
      * @return Loaded properties.
      */
-    private static Map<String, String> loadFromFile(Map<String, String> props, File file) {
-        try {
-            return loadFromResource(props, file.toURI().toURL());
+    private static Map<String, String> loadFromResource(Map<String, String> props, URI resource) {
+        try (InputStream in = resource.toURL().openStream()) {
+            Properties fileProps = new Properties();
+
+            fileProps.load(in);
+
+            for (Entry<Object, Object> prop : fileProps.entrySet())
+                props.put((String)prop.getKey(), (String)prop.getValue());
+
+            for (Entry<String, String> prop : props.entrySet())
+                prop.setValue(substituteProperties(prop.getValue()));
         }
-        catch (MalformedURLException e) {
-            throw new RuntimeException("Unable to load properties file: " + file.getAbsolutePath(), e);
+        catch (IOException e) {
+            e.printStackTrace();
+
+            assert false : "Failed to load test configuration properties: " + resource;
         }
+
+        return props;
     }
 
     /**
