@@ -270,7 +270,7 @@ public class GridCommandHandlerConsistencyCountersTest extends GridCommandHandle
 
         Consumer<Integer> cachePut = (key) -> primCache.put(key, -key);
 
-        GridCompoundFuture<?,?> asyncPutFuts = new GridCompoundFuture<>();
+        GridCompoundFuture<?, ?> asyncPutFuts = new GridCompoundFuture<>();
 
         Consumer<Integer> cachePutAsync = (key) -> asyncPutFuts.add(GridTestUtils.runAsync(() -> cachePut.accept(key)));
 
