@@ -43,7 +43,7 @@ import static org.apache.ignite.internal.commandline.snapshot.SnapshotSubcommand
 import static org.apache.ignite.internal.visor.systemview.VisorSystemViewTask.SimpleType.STRING;
 
 /**
- * Command to get the status of a current snapshot operation in the cluster.
+ * Command to get the status of the current snapshot operation in the cluster.
  */
 public class SnapshotStatusCommand extends AbstractCommand<Object> {
     /** {@inheritDoc} */
