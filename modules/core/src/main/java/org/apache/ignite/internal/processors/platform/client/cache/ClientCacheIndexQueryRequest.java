@@ -27,6 +27,7 @@ import org.apache.ignite.cache.query.IndexQuery;
 import org.apache.ignite.cache.query.IndexQueryCriterion;
 import org.apache.ignite.cache.query.QueryCursor;
 import org.apache.ignite.internal.binary.BinaryRawReaderEx;
+import org.apache.ignite.internal.cache.query.InIndexQueryCriterion;
 import org.apache.ignite.internal.cache.query.RangeIndexQueryCriterion;
 import org.apache.ignite.internal.processors.platform.client.ClientConnectionContext;
 import org.apache.ignite.internal.processors.platform.client.ClientResponse;
@@ -94,27 +95,47 @@ public class ClientCacheIndexQueryRequest extends ClientCacheRequest {
     private IndexQueryCriterion readCriterion(BinaryRawReaderEx reader) {
         byte type = reader.readByte();
 
-        if (type == 0) {
-            String field = reader.readString();
-
-            boolean lowerIncl = reader.readBoolean();
-            boolean upperIncl = reader.readBoolean();
-            boolean lowerNull = reader.readBoolean();
-            boolean upperNull = reader.readBoolean();
-
-            Object lower = reader.readObjectDetached();
-            Object upper = reader.readObjectDetached();
-
-            RangeIndexQueryCriterion r = new RangeIndexQueryCriterion(field, lower, upper);
-            r.lowerIncl(lowerIncl);
-            r.upperIncl(upperIncl);
-            r.lowerNull(lowerNull);
-            r.upperNull(upperNull);
-
-            return r;
-        }
+        if (type == (byte)0)
+            return readRangeCriterion(reader);
+        else if (type == (byte)1)
+            return readInCriterion(reader);
 
         throw new IgniteException("Unknown IndexQuery criterion type: " + type);
+    }
+
+    /** */
+    private IndexQueryCriterion readRangeCriterion(BinaryRawReaderEx reader) {
+        String field = reader.readString();
+
+        boolean lowerIncl = reader.readBoolean();
+        boolean upperIncl = reader.readBoolean();
+        boolean lowerNull = reader.readBoolean();
+        boolean upperNull = reader.readBoolean();
+
+        Object lower = reader.readObjectDetached();
+        Object upper = reader.readObjectDetached();
+
+        RangeIndexQueryCriterion r = new RangeIndexQueryCriterion(field, lower, upper);
+        r.lowerIncl(lowerIncl);
+        r.upperIncl(upperIncl);
+        r.lowerNull(lowerNull);
+        r.upperNull(upperNull);
+
+        return r;
+    }
+
+    /** */
+    private IndexQueryCriterion readInCriterion(BinaryRawReaderEx reader) {
+        String field = reader.readString();
+
+        int valsCnt = reader.readInt();
+
+        List<Object> vals = new ArrayList<>(valsCnt);
+
+        for (int i = 0; i < valsCnt; i++)
+            vals.add(reader.readObject());
+
+        return new InIndexQueryCriterion(field, vals);
     }
 
     /**

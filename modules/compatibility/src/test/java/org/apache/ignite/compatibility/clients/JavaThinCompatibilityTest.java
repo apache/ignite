@@ -18,6 +18,7 @@
 package org.apache.ignite.compatibility.clients;
 
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
@@ -35,9 +36,12 @@ import org.apache.ignite.binary.BinaryObject;
 import org.apache.ignite.cache.CacheAtomicityMode;
 import org.apache.ignite.cache.CacheMode;
 import org.apache.ignite.cache.QueryEntity;
+import org.apache.ignite.cache.QueryIndex;
 import org.apache.ignite.cache.affinity.rendezvous.RendezvousAffinityFunction;
 import org.apache.ignite.cache.query.ContinuousQuery;
+import org.apache.ignite.cache.query.IndexQuery;
 import org.apache.ignite.cache.query.ScanQuery;
+import org.apache.ignite.cache.query.SqlFieldsQuery;
 import org.apache.ignite.client.ClientCache;
 import org.apache.ignite.client.ClientCacheConfiguration;
 import org.apache.ignite.client.ClientFeatureNotSupportedByServerException;
@@ -46,6 +50,7 @@ import org.apache.ignite.client.ClientTransaction;
 import org.apache.ignite.client.IgniteClient;
 import org.apache.ignite.client.Person;
 import org.apache.ignite.cluster.ClusterNode;
+import org.apache.ignite.compatibility.testframework.junits.IgniteCompatibilityNodeRunner;
 import org.apache.ignite.compute.ComputeJob;
 import org.apache.ignite.compute.ComputeJobResult;
 import org.apache.ignite.compute.ComputeTaskAdapter;
@@ -446,6 +451,9 @@ public class JavaThinCompatibilityTest extends AbstractClientCompatibilityTest {
         if (clientVer.compareTo(VER_2_14_0) >= 0)
             testDataReplicationOperations(serverVer.compareTo(VER_2_14_0) >= 0);
 
+        if (clientVer.compareTo(VER_2_14_0) >= 0)
+            new JavaThinIndexQueryCompatibilityTest().testIndexQueries(ADDR, serverVer.compareTo(VER_2_14_0) >= 0);
+
         if (clientVer.compareTo(VER_2_14_0) >= 0) {
             // This wrapper is used to avoid serialization/deserialization issues when the `testClient` is
             // tried to be deserialized on previous Ignite releases that do not contain a newly added classes.
@@ -616,5 +624,54 @@ public class JavaThinCompatibilityTest extends AbstractClientCompatibilityTest {
 
     /** */
     public static class CustomAffinity extends RendezvousAffinityFunction {
+    }
+
+    /**
+     * This class is a workaround to avoid serialization error in {@link IgniteCompatibilityNodeRunner#readClosureFromFileAndDelete}.
+     * {@link IndexQuery} appeared since Ignite 2.12 and prior versions doesn't know this class, and it fails while serializing
+     * {@link JavaThinCompatibilityTest} class. Then it's required to move this test case into separate class that will be loaded in
+     * runtime only for the such versions that know this class.
+     */
+    public static class JavaThinIndexQueryCompatibilityTest {
+        /** */
+        public void testIndexQueries(String addr, boolean supported) {
+            X.println(">>>> Testing index queries");
+
+            try (IgniteClient client = Ignition.startClient(new ClientConfiguration().setAddresses(addr))) {
+                ClientCache<Object, Object> cache = client.getOrCreateCache(
+                    new ClientCacheConfiguration()
+                        .setName("testIndexQueries")
+                        .setQueryEntities(
+                            new QueryEntity()
+                                .setTableName("TABLE_TEST_INDEX_QUERIES")
+                                .setKeyType(Integer.class.getName())
+                                .setFields(new LinkedHashMap<>(F.asMap(
+                                    "A", Integer.class.getName(),
+                                    "B", Integer.class.getName())))
+                                .setKeyFieldName("A")
+                                .setValueType("TEST_INDEX_QUERIES")
+                                .setIndexes(Collections.singleton(new QueryIndex()
+                                    .setName("IDX")
+                                    .setFields(new LinkedHashMap<>(F.asMap("B", true)))))
+                        )
+                );
+
+                cache.query(
+                    new SqlFieldsQuery("insert into TABLE_TEST_INDEX_QUERIES(A, B) values (?, ?)")
+                        .setArgs(0, 0)
+                        .setTimeout(0, TimeUnit.MILLISECONDS))  // Required.
+                    .getAll();
+
+                IndexQuery<Integer, Object> idxQry = new IndexQuery<>("TEST_INDEX_QUERIES", "IDX");
+
+                if (supported)
+                    assertEquals(1, cache.withKeepBinary().query(idxQry).getAll().size());
+                else {
+                    assertThrowsWithCause(
+                        () -> cache.withKeepBinary().query(idxQry).getAll(),
+                        ClientFeatureNotSupportedByServerException.class);
+                }
+            }
+        }
     }
 }

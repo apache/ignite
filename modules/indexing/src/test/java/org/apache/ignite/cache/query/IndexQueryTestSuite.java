@@ -42,7 +42,10 @@ import org.junit.runners.Suite;
     MultifieldIndexQueryTest.class,
     MultiTableIndexQuery.class,
     RepeatedFieldIndexQueryTest.class,
-    ThinClientIndexQueryTest.class
+    ThinClientIndexQueryTest.class,
+    RepeatedFieldIndexQueryTest.class,
+    IndexQueryInCriterionTest.class,
+    IndexQueryInCriterionDescTest.class
 })
 public class IndexQueryTestSuite {
 }

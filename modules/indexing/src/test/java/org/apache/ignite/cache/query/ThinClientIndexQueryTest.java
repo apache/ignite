@@ -17,10 +17,11 @@
 
 package org.apache.ignite.cache.query;
 
-import java.util.Iterator;
+import java.util.Collections;
 import java.util.List;
 import java.util.Random;
 import java.util.function.Consumer;
+import java.util.function.Function;
 import javax.cache.Cache;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteDataStreamer;
@@ -50,6 +51,7 @@ import static org.apache.ignite.cache.query.IndexQueryCriteriaBuilder.between;
 import static org.apache.ignite.cache.query.IndexQueryCriteriaBuilder.eq;
 import static org.apache.ignite.cache.query.IndexQueryCriteriaBuilder.gt;
 import static org.apache.ignite.cache.query.IndexQueryCriteriaBuilder.gte;
+import static org.apache.ignite.cache.query.IndexQueryCriteriaBuilder.in;
 import static org.apache.ignite.cache.query.IndexQueryCriteriaBuilder.lt;
 import static org.apache.ignite.cache.query.IndexQueryCriteriaBuilder.lte;
 
@@ -60,6 +62,9 @@ public class ThinClientIndexQueryTest extends GridCommonAbstractTest {
     private static final int CNT = 10_000;
 
     /** */
+    private static final int NULLS_CNT = -10;
+
+    /** */
     private static final int NODES = 2;
 
     /** */
@@ -67,6 +72,9 @@ public class ThinClientIndexQueryTest extends GridCommonAbstractTest {
 
     /** */
     private static final String IDX_FLD1_FLD2 = "IDX_FLD1_FLD2";
+
+    /** */
+    private static final String IDX_FLD3 = "IDX_FLD3";
 
     /** */
     @Parameterized.Parameter
@@ -100,7 +108,10 @@ public class ThinClientIndexQueryTest extends GridCommonAbstractTest {
 
         try (IgniteDataStreamer<Integer, Person> stream = grid(0).dataStreamer("CACHE")) {
             for (int i = 0; i < CNT; i++)
-                stream.addData(i, new Person(i, i));
+                stream.addData(i, new Person(i, i, new IndexQueryAllTypesTest.PojoField(i)));
+
+            for (int i = NULLS_CNT; i < 0; i++)
+                stream.addData(i, new Person(null, null, null));
         }
     }
 
@@ -115,18 +126,31 @@ public class ThinClientIndexQueryTest extends GridCommonAbstractTest {
         for (String idxName: F.asList(IDX_FLD1, IDX_FLD1_FLD2, null)) {
             withClientCache((cache) -> {
                 // No criteria.
-                assertClientQuery(cache, 0, CNT, idxName);
+                assertClientQuery(cache, NULLS_CNT, CNT, idxName);
 
                 // Single field, single criterion.
                 assertClientQuery(cache, left + 1, CNT, idxName, gt("fld1", left));
                 assertClientQuery(cache, left, CNT, idxName, gte("fld1", left));
-                assertClientQuery(cache, 0, left, idxName, lt("fld1", left));
-                assertClientQuery(cache, 0, left + 1, idxName, lte("fld1", left));
+                assertClientQuery(cache, NULLS_CNT, left, idxName, lt("fld1", left));
+                assertClientQuery(cache, NULLS_CNT, left + 1, idxName, lte("fld1", left));
                 assertClientQuery(cache, left, left + 1, idxName, eq("fld1", left));
-                assertClientQuery(cache, left, right, idxName, between("fld1", left, right));
+                assertClientQuery(cache, left, right + 1, idxName, between("fld1", left, right));
+                assertClientQuery(cache, left, left + 1, idxName, in("fld1", Collections.singleton(left)));
 
                 // Single field, multiple criteria.
                 assertClientQuery(cache, left, right + 1, idxName, gte("fld1", left), lte("fld1", right));
+                assertClientQuery(cache, left + 1, right + 1, idxName, gt("fld1", left), lte("fld1", right));
+                assertClientQuery(cache, left, right, idxName, gte("fld1", left), lt("fld1", right));
+                assertClientQuery(cache, left + 1, right, idxName, gt("fld1", left), lt("fld1", right));
+                assertClientQuery(cache, right, right + 1, idxName,
+                    gte("fld1", left), in("fld1", Collections.singleton(right)));
+
+                // Single field, with nulls.
+                assertClientQuery(cache, NULLS_CNT, CNT, idxName, gte("fld1", null));
+                assertClientQuery(cache, 0, CNT, idxName, gt("fld1", null));
+                assertClientQuery(cache, 0, 0, idxName, lt("fld1", null));
+                assertClientQuery(cache, NULLS_CNT, 0, idxName, lte("fld1", null));
+                assertClientQuery(cache, NULLS_CNT, 0, idxName, in("fld1", Collections.singleton(null)));
             });
         }
 
@@ -134,8 +158,37 @@ public class ThinClientIndexQueryTest extends GridCommonAbstractTest {
             withClientCache((cache) -> {
                 // Multiple field, multiple criteria.
                 assertClientQuery(cache, left + 1, right, idxName, gt("fld1", left), lt("fld2", right));
+                assertClientQuery(cache, right, right + 1, idxName,
+                    gt("fld1", left), in("fld2", Collections.singleton(right)));
+
             });
         }
+    }
+
+    /** */
+    @Test
+    public void testPojoIndex() {
+        withClientCache((cache) -> {
+            Object pojo = new IndexQueryAllTypesTest.PojoField(100);
+
+            for (IndexQueryCriterion[] criteria: F.asList(
+                new IndexQueryCriterion[] { eq("fld3", pojo) },
+                new IndexQueryCriterion[] { in("fld3", Collections.singleton(pojo)) })
+            ) {
+                IndexQuery<Integer, Person> idxQry = new IndexQuery<Integer, Person>(Person.class, IDX_FLD3)
+                    .setCriteria(criteria);
+
+                List<Cache.Entry<Integer, Person>> result = cache.query(idxQry).getAll();
+
+                assertEquals(1, result.size());
+                assertEquals(100, result.get(0).getKey().intValue());
+
+                if (keepBinary)
+                    assertEquals(pojo, ((BinaryObject)result.get(0).getValue()).field("fld3"));
+                else
+                    assertEquals(100, result.get(0).getKey().intValue());
+            }
+        });
     }
 
     /** */
@@ -153,7 +206,7 @@ public class ThinClientIndexQueryTest extends GridCommonAbstractTest {
                     log,
                     () -> cache.query(idxQry).getAll(),
                     ClientException.class,
-                    "Failed to parse IndexQuery. Index doesn't match criteria");
+                    "Failed to execute IndexQuery: Index doesn't match criteria");
             }
         });
     }
@@ -169,7 +222,7 @@ public class ThinClientIndexQueryTest extends GridCommonAbstractTest {
 
                 TestRecordingCommunicationSpi.spi(grid(0)).record(GridQueryNextPageRequest.class);
 
-                assertClientQuery(cache, 0, CNT, idxQry);
+                assertClientQuery(cache, NULLS_CNT, CNT, idxQry);
 
                 List<Object> reqs = TestRecordingCommunicationSpi.spi(grid(0)).recordedMessages(true);
 
@@ -209,7 +262,7 @@ public class ThinClientIndexQueryTest extends GridCommonAbstractTest {
     @Test
     public void testFilter() {
         IndexQuery idxQry = new IndexQuery(Person.class);
-        idxQry.setFilter((k, v) -> (int)k < 1000);
+        idxQry.setFilter((k, v) -> (int)k >= 0 && (int)k < 1000);
 
         withClientCache((cache) -> assertClientQuery(cache, 0, 1000, idxQry));
     }
@@ -295,21 +348,24 @@ public class ThinClientIndexQueryTest extends GridCommonAbstractTest {
 
     /** */
     private void assertClientQuery(ClientCache<Integer, Person> cache, int left, int right, IndexQuery idxQry) {
-        Iterator<Cache.Entry<Integer, Person>> cursor = cache.query(idxQry).iterator();
+        List<Cache.Entry<Integer, Person>> result = cache.query(idxQry).getAll();
 
-        for (int i = left; i < right; i++) {
-            Cache.Entry<Integer, Person> e = cursor.next();
+        assertEquals(right - left, result.size());
 
-            assertEquals(i, e.getKey().intValue());
+        Function<Cache.Entry<Integer, Person>, Object> fldOneVal = (e) ->
+            keepBinary ? ((BinaryObject)e.getValue()).field("fld1") : e.getValue().fld1;
 
-            if (keepBinary) {
-                assertEquals(i, (int)((BinaryObject)e.getValue()).field("fld1"));
-                assertEquals(i, (int)((BinaryObject)e.getValue()).field("fld2"));
+        for (int i = 0; i < result.size(); i++) {
+            Cache.Entry<Integer, Person> e = result.get(i);
+
+            int key = left + i;
+
+            if (key >= 0) {
+                assertEquals(key, e.getKey().intValue());
+                assertEquals(key, (int)fldOneVal.apply(e));
             }
-            else {
-                assertEquals(i, e.getValue().fld1);
-                assertEquals(i, e.getValue().fld2);
-            }
+            else
+                assertEquals(null, fldOneVal.apply(e));
         }
     }
 
@@ -336,19 +392,26 @@ public class ThinClientIndexQueryTest extends GridCommonAbstractTest {
             @QuerySqlField.Group(name = IDX_FLD1, order = 0),
             @QuerySqlField.Group(name = IDX_FLD1_FLD2, order = 0)
         })
-        final int fld1;
+        final Integer fld1;
 
         /** */
         @GridToStringInclude
         @QuerySqlField(orderedGroups = {
             @QuerySqlField.Group(name = IDX_FLD1_FLD2, order = 1)
         })
-        final int fld2;
+        final Integer fld2;
 
         /** */
-        Person(int fld1, int fld2) {
+        @QuerySqlField(orderedGroups = {
+            @QuerySqlField.Group(name = IDX_FLD3, order = 0)
+        })
+        IndexQueryAllTypesTest.PojoField fld3;
+
+        /** */
+        Person(Integer fld1, Integer fld2, IndexQueryAllTypesTest.PojoField fld3) {
             this.fld1 = fld1;
             this.fld2 = fld2;
+            this.fld3 = fld3;
         }
 
         /** {@inheritDoc} */

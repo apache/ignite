@@ -67,4 +67,9 @@ public class ObjectByteArrayInlineIndexKeyType extends NullableInlineIndexKeyTyp
         // Signed or unsigned doesn't matter there.
         return delegate.inlineSize0(new BytesIndexKey(b));
     }
+
+    /** {@inheritDoc} */
+    @Override public boolean inlinedFullValue(long pageAddr, int offset) {
+        return delegate.inlinedFullValue(pageAddr, offset);
+    }
 }
