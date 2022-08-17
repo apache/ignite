@@ -2014,6 +2014,9 @@ public class DataStreamerImpl<K, V> implements IgniteDataStreamer<K, V>, Delayed
                         partId : GridIoMessage.STRIPE_DISABLED_PART);
 
                 try {
+//                    if(node.order() != 2)
+//                        U.sleep(50);
+
                     ctx.io().sendToGridTopic(node, TOPIC_DATASTREAM, req, plc);
 
                     if (log.isDebugEnabled())
@@ -2274,6 +2277,8 @@ public class DataStreamerImpl<K, V> implements IgniteDataStreamer<K, V>, Delayed
                 for (Entry<KeyCacheObject, CacheObject> e : entries) {
                     cctx.shared().database().checkpointReadLock();
 
+//                    log.info("TEST | updating entries.");
+
                     try {
                         e.getKey().finishUnmarshal(cctx.cacheObjectContext(), cctx.deploy().globalLoader());
 
@@ -2328,7 +2333,14 @@ public class DataStreamerImpl<K, V> implements IgniteDataStreamer<K, V>, Delayed
 
                         boolean primary = cctx.affinity().primaryByKey(cctx.localNode(), entry.key(), topVer);
 
-//                        log.info("TEST | updating entry.");
+                        if (cctx.affinity().partition(e.getKey()) == 744) {
+                            U.FLAG.compute(cctx.kernalContext().grid().localNode().order(), (k, v) -> {
+                                return v == null ? 1 : v + 1;
+                            });
+                        }
+
+//                        if(!U.FLAG.isEmpty())
+//                            System.err.println("TEST | Inconsistent!");
 
                         entry.initialValue(e.getValue(),
                             ver,
@@ -2362,6 +2374,8 @@ public class DataStreamerImpl<K, V> implements IgniteDataStreamer<K, V>, Delayed
                     finally {
                         cctx.shared().database().checkpointReadUnlock();
                     }
+
+//                    log.info("TEST | updating entries finished.");
                 }
             }
             finally {

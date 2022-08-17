@@ -541,6 +541,9 @@ class SnapshotFutureTask extends AbstractSnapshotFutureTask<Set<GroupPartitionId
                                 boolean deleted = delta.delete();
 
                                 assert deleted;
+
+//                                if(pair.getPartitionId() == 744)
+//                                    U.FLAG.put(cctx.kernalContext().grid().localNode().order(), true);
                             }),
                             snpSndr.executor());
 

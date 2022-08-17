@@ -3262,6 +3262,9 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
                     pageBuf.flip();
                 }
 
+                if(pair.getPartitionId() == 744)
+                    System.err.println("TEST | send delta, counter on "+cctx.kernalContext().grid().localNode().order()+": " + U.FLAG.get(cctx.kernalContext().grid().localNode().order()));
+
                 pageStore.finishRecover();
             }
             catch (IOException | IgniteCheckedException e) {
