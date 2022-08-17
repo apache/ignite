@@ -47,8 +47,6 @@ import org.apache.ignite.lang.IgniteClosure;
 import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.junit.Test;
-
-import static org.apache.ignite.cache.CacheMode.LOCAL;
 import static org.apache.ignite.cache.CacheMode.PARTITIONED;
 import static org.apache.ignite.internal.processors.cache.distributed.dht.topology.GridDhtPartitionState.EVICTED;
 
@@ -56,9 +54,6 @@ import static org.apache.ignite.internal.processors.cache.distributed.dht.topolo
  * ScanQuery failover test. Tests scenario where user supplied closures throw unhandled errors.
  */
 public class CacheScanQueryFailoverTest extends GridCommonAbstractTest {
-    /** */
-    private static final String LOCAL_CACHE_NAME = "local";
-
     /** {@inheritDoc} */
     @Override protected void beforeTest() throws Exception {
         super.beforeTest();
@@ -101,18 +96,6 @@ public class CacheScanQueryFailoverTest extends GridCommonAbstractTest {
         queryCachesWithFailedPredicates(srv, cfg);
 
         assertEquals(client.cluster().nodes().size(), 5);
-    }
-
-    /**
-     * @throws Exception If failed.
-     */
-    @Test
-    public void testScanQueryOverLocalCacheWithFailedClosures() throws Exception {
-        Ignite srv = startGridsMultiThreaded(4);
-
-        queryCachesWithFailedPredicates(srv, new CacheConfiguration(LOCAL_CACHE_NAME).setCacheMode(LOCAL));
-
-        assertEquals(srv.cluster().nodes().size(), 4);
     }
 
     /**

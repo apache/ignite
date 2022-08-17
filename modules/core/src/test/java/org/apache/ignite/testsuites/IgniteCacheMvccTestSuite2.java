@@ -100,10 +100,6 @@ import org.apache.ignite.internal.processors.cache.distributed.near.NearCacheMul
 import org.apache.ignite.internal.processors.cache.distributed.near.NearCacheSyncUpdateTest;
 import org.apache.ignite.internal.processors.cache.distributed.near.NoneRebalanceModeSelfTest;
 import org.apache.ignite.internal.processors.cache.distributed.replicated.GridCacheReplicatedJobExecutionTest;
-import org.apache.ignite.internal.processors.cache.local.GridCacheLocalAtomicBasicStoreSelfTest;
-import org.apache.ignite.internal.processors.cache.local.GridCacheLocalAtomicGetAndTransformStoreSelfTest;
-import org.apache.ignite.internal.processors.cache.local.GridCacheLocalBasicStoreMultithreadedSelfTest;
-import org.apache.ignite.internal.processors.cache.local.GridCacheLocalTxReadTest;
 import org.apache.ignite.internal.processors.cache.persistence.MemoryPolicyInitializationTest;
 import org.apache.ignite.internal.processors.continuous.IgniteContinuousQueryMetadataUpdateTest;
 import org.apache.ignite.internal.processors.continuous.IgniteNoCustomEventsOnNodeStart;
@@ -145,8 +141,6 @@ public class IgniteCacheMvccTestSuite2 {
         ignoredTests.add(GridCachePartitionedMultiThreadedPutGetSelfTest.class); // On-heap test.
 
         // Atomic cache tests.
-        ignoredTests.add(GridCacheLocalAtomicBasicStoreSelfTest.class);
-        ignoredTests.add(GridCacheLocalAtomicGetAndTransformStoreSelfTest.class);
         ignoredTests.add(GridCacheAtomicNearMultiNodeSelfTest.class);
         ignoredTests.add(GridCacheAtomicNearReadersSelfTest.class);
         ignoredTests.add(GridCachePartitionedAtomicGetAndTransformStoreSelfTest.class);
@@ -210,8 +204,6 @@ public class IgniteCacheMvccTestSuite2 {
         ignoredTests.add(GridCacheColocatedDebugTest.class);
         ignoredTests.add(GridCacheDhtEvictionNearReadersSelfTest.class);
         ignoredTests.add(GridCacheDhtPreloadMessageCountTest.class);
-        ignoredTests.add(GridCacheLocalBasicStoreMultithreadedSelfTest.class);
-        ignoredTests.add(GridCacheLocalTxReadTest.class);
         ignoredTests.add(NearCacheMultithreadedUpdateTest.class);
         ignoredTests.add(GridCachePartitionedEvictionSelfTest.class);
         ignoredTests.add(GridCachePartitionedNearDisabledMetricsSelfTest.class);

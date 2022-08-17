@@ -31,9 +31,7 @@ import org.apache.ignite.testframework.MvccFeatureChecker;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.apache.ignite.transactions.Transaction;
 import org.junit.Test;
-
 import static org.apache.ignite.cache.CacheAtomicityMode.TRANSACTIONAL;
-import static org.apache.ignite.cache.CacheMode.LOCAL;
 import static org.apache.ignite.cache.CacheMode.PARTITIONED;
 import static org.apache.ignite.cache.CacheMode.REPLICATED;
 import static org.apache.ignite.transactions.TransactionConcurrency.PESSIMISTIC;
@@ -83,24 +81,6 @@ public class GridCacheObjectToStringSelfTest extends GridCommonAbstractTest {
         super.afterTest();
 
         evictionPlc = null;
-    }
-
-    /** @throws Exception If failed. */
-    @Test
-    public void testLocalCacheFifoEvictionPolicy() throws Exception {
-        cacheMode = LOCAL;
-        evictionPlc = new FifoEvictionPolicy();
-
-        checkToString();
-    }
-
-    /** @throws Exception If failed. */
-    @Test
-    public void testLocalCacheLruEvictionPolicy() throws Exception {
-        cacheMode = LOCAL;
-        evictionPlc = new LruEvictionPolicy();
-
-        checkToString();
     }
 
     /** @throws Exception If failed. */

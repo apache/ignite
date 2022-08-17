@@ -463,7 +463,7 @@ public class JdbcStatement implements Statement {
             throw new SQLException("Failed to query Ignite: DML operations are supported in versions 1.8.0 and newer");
 
         JdbcBatchUpdateTask task = new JdbcBatchUpdateTask(loc ? ignite : null, conn.cacheName(),
-            conn.schemaName(), command, batch, batchArgs, loc, getFetchSize(), conn.isLocalQuery(),
+            conn.schemaName(), command, batch, batchArgs, getFetchSize(), conn.isLocalQuery(),
             conn.isCollocatedQuery(), conn.isDistributedJoins());
 
         try {

@@ -35,12 +35,14 @@ import org.junit.runners.Suite;
     IndexQueryAliasTest.class,
     IndexQuerySqlIndexTest.class,
     IndexQueryRangeTest.class,
+    IndexQueryPartitionTest.class,
     IndexQueryCacheKeyValueFieldsTest.class,
     IndexQueryCacheKeyValueEscapedFieldsTest.class,
     IndexQueryWrongIndexTest.class,
     MultifieldIndexQueryTest.class,
     MultiTableIndexQuery.class,
-    RepeatedFieldIndexQueryTest.class
+    RepeatedFieldIndexQueryTest.class,
+    ThinClientIndexQueryTest.class
 })
 public class IndexQueryTestSuite {
 }

@@ -60,7 +60,7 @@ namespace Apache.Ignite.Core.Tests
             short.MaxValue,
 
             // Enums.
-            CacheMode.Local,
+            CacheMode.Partitioned,
             GCCollectionMode.Forced,
 
             // Objects.

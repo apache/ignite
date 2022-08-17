@@ -91,11 +91,9 @@ import org.apache.ignite.transactions.TransactionIsolation;
 import org.jetbrains.annotations.Nullable;
 import org.junit.Ignore;
 import org.junit.Test;
-
 import static java.util.concurrent.TimeUnit.MILLISECONDS;
 import static org.apache.ignite.cache.CacheAtomicityMode.ATOMIC;
 import static org.apache.ignite.cache.CacheAtomicityMode.TRANSACTIONAL;
-import static org.apache.ignite.cache.CacheMode.LOCAL;
 import static org.apache.ignite.cache.CacheMode.PARTITIONED;
 import static org.apache.ignite.cache.CacheMode.REPLICATED;
 import static org.apache.ignite.cache.CachePeekMode.ALL;
@@ -3300,7 +3298,7 @@ public class IgniteCacheConfigVariationsFullApiTest extends IgniteCacheConfigVar
      */
     @Test
     public void testDeletedEntriesFlag() throws Exception {
-        if (cacheMode() != LOCAL && cacheMode() != REPLICATED) {
+        if (cacheMode() == PARTITIONED) {
             final int cnt = 3;
 
             IgniteCache<String, Integer> cache = jcache();
@@ -4547,13 +4545,6 @@ public class IgniteCacheConfigVariationsFullApiTest extends IgniteCacheConfigVar
         }, Math.min(ttl * 10, getTestTimeout())));
 
         IgniteCache srvNodeCache = serverNodeCache();
-
-        if (!isMultiJvmObject(srvNodeCache)) {
-            GridCacheAdapter internalCache = internalCache(srvNodeCache);
-
-            if (internalCache.isLocal())
-                return;
-        }
 
         assert c.get(key) == null;
 

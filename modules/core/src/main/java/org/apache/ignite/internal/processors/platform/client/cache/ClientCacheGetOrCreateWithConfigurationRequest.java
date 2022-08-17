@@ -26,6 +26,7 @@ import org.apache.ignite.internal.processors.platform.client.ClientRequest;
 import org.apache.ignite.internal.processors.platform.client.ClientResponse;
 import org.apache.ignite.internal.processors.platform.client.ClientStatus;
 import org.apache.ignite.internal.processors.platform.client.IgniteClientException;
+import static org.apache.ignite.internal.processors.platform.client.cache.ClientCacheCreateWithConfigurationRequest.checkClientCacheConfiguration;
 
 /**
  * Cache get or create with configuration request.
@@ -49,6 +50,8 @@ public class ClientCacheGetOrCreateWithConfigurationRequest extends ClientReques
 
     /** {@inheritDoc} */
     @Override public ClientResponse process(ClientConnectionContext ctx) {
+        checkClientCacheConfiguration(cacheCfg);
+
         try {
             ctx.kernalContext().grid().getOrCreateCache(cacheCfg);
         }

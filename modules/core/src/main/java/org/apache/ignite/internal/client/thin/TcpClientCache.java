@@ -33,6 +33,8 @@ import javax.cache.expiry.ExpiryPolicy;
 import org.apache.ignite.cache.CachePeekMode;
 import org.apache.ignite.cache.query.ContinuousQuery;
 import org.apache.ignite.cache.query.FieldsQueryCursor;
+import org.apache.ignite.cache.query.IndexQuery;
+import org.apache.ignite.cache.query.IndexQueryCriterion;
 import org.apache.ignite.cache.query.Query;
 import org.apache.ignite.cache.query.QueryCursor;
 import org.apache.ignite.cache.query.ScanQuery;
@@ -42,22 +44,29 @@ import org.apache.ignite.client.ClientCache;
 import org.apache.ignite.client.ClientCacheConfiguration;
 import org.apache.ignite.client.ClientDisconnectListener;
 import org.apache.ignite.client.ClientException;
+import org.apache.ignite.client.ClientFeatureNotSupportedByServerException;
 import org.apache.ignite.client.IgniteClientFuture;
+import org.apache.ignite.internal.binary.BinaryRawWriterEx;
+import org.apache.ignite.internal.binary.BinaryWriterExImpl;
 import org.apache.ignite.internal.binary.GridBinaryMarshaller;
 import org.apache.ignite.internal.binary.streams.BinaryInputStream;
 import org.apache.ignite.internal.binary.streams.BinaryOutputStream;
+import org.apache.ignite.internal.cache.query.RangeIndexQueryCriterion;
 import org.apache.ignite.internal.client.thin.TcpClientTransactions.TcpClientTransaction;
+import org.apache.ignite.internal.processors.cache.version.GridCacheVersion;
+import org.apache.ignite.internal.util.typedef.T2;
 import org.apache.ignite.internal.util.typedef.internal.A;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.jetbrains.annotations.Nullable;
 
+import static org.apache.ignite.internal.binary.GridBinaryMarshaller.ARR_LIST;
 import static org.apache.ignite.internal.client.thin.ProtocolVersionFeature.EXPIRY_POLICY;
 import static org.apache.ignite.internal.processors.platform.cache.expiry.PlatformExpiryPolicy.convertDuration;
 
 /**
  * Implementation of {@link ClientCache} over TCP protocol.
  */
-class TcpClientCache<K, V> implements ClientCache<K, V> {
+public class TcpClientCache<K, V> implements ClientCache<K, V> {
     /** "Keep binary" flag mask. */
     private static final byte KEEP_BINARY_FLAG_MASK = 0x01;
 
@@ -122,6 +131,8 @@ class TcpClientCache<K, V> implements ClientCache<K, V> {
         this.expiryPlc = expiryPlc;
 
         jCacheAdapter = new ClientJCacheAdapter<>(this);
+
+        this.ch.registerCacheIfCustomAffinity(this.name);
     }
 
     /** {@inheritDoc} */
@@ -742,6 +753,8 @@ class TcpClientCache<K, V> implements ClientCache<K, V> {
             res = (QueryCursor<R>)query((SqlFieldsQuery)qry);
         else if (qry instanceof ContinuousQuery)
             res = query((ContinuousQuery<K, V>)qry, null);
+        else if (qry instanceof IndexQuery)
+            res = indexQuery((IndexQuery)qry);
         else
             throw new IllegalArgumentException(
                 String.format("Query of type [%s] is not supported", qry.getClass().getSimpleName())
@@ -863,6 +876,54 @@ class TcpClientCache<K, V> implements ClientCache<K, V> {
         U.closeQuiet(hnd);
     }
 
+    /**
+     * Store DR data.
+     *
+     * @param drMap DR map.
+     */
+    public void putAllConflict(Map<? extends K, ? extends T2<? extends V, GridCacheVersion>> drMap) throws ClientException {
+        A.notNull(drMap, "drMap");
+
+        ch.request(ClientOperation.CACHE_PUT_ALL_CONFLICT, req -> writePutAllConflict(drMap, req));
+    }
+
+    /**
+     * Store DR data asynchronously.
+     *
+     * @param drMap DR map.
+     * @return Future.
+     */
+    public IgniteClientFuture<Void> putAllConflictAsync(Map<? extends K, T2<? extends V, GridCacheVersion>> drMap)
+        throws ClientException {
+        A.notNull(drMap, "drMap");
+
+        return ch.requestAsync(ClientOperation.CACHE_PUT_ALL_CONFLICT, req -> writePutAllConflict(drMap, req));
+    }
+
+    /**
+     * Removes DR data.
+     *
+     * @param drMap DR map.
+     */
+    public void removeAllConflict(Map<? extends K, GridCacheVersion> drMap) throws ClientException {
+        A.notNull(drMap, "drMap");
+
+        ch.request(ClientOperation.CACHE_REMOVE_ALL_CONFLICT, req -> writeRemoveAllConflict(drMap, req));
+    }
+
+    /**
+     * Removes DR data asynchronously.
+     *
+     * @param drMap DR map.
+     * @return Future.
+     */
+    public IgniteClientFuture<Void> removeAllConflictAsync(Map<? extends K, GridCacheVersion> drMap)
+        throws ClientException {
+        A.notNull(drMap, "drMap");
+
+        return ch.requestAsync(ClientOperation.CACHE_REMOVE_ALL_CONFLICT, req -> writeRemoveAllConflict(drMap, req));
+    }
+
     /** Handle scan query. */
     private QueryCursor<Cache.Entry<K, V>> scanQuery(ScanQuery<K, V> qry) {
         Consumer<PayloadOutputChannel> qryWriter = payloadCh -> {
@@ -886,6 +947,71 @@ class TcpClientCache<K, V> implements ClientCache<K, V> {
             ch,
             ClientOperation.QUERY_SCAN,
             ClientOperation.QUERY_SCAN_CURSOR_GET_PAGE,
+            qryWriter,
+            keepBinary,
+            marsh,
+            cacheId,
+            qry.getPartition() == null ? -1 : qry.getPartition()
+        ));
+    }
+
+    /** Handle index query. */
+    private QueryCursor<Cache.Entry<K, V>> indexQuery(IndexQuery<K, V> qry) {
+        Consumer<PayloadOutputChannel> qryWriter = payloadCh -> {
+            writeCacheInfo(payloadCh);
+
+            BinaryOutputStream out = payloadCh.out();
+
+            try (BinaryRawWriterEx w = new BinaryWriterExImpl(marsh.context(), out, null, null)) {
+                w.writeInt(qry.getPageSize());
+                w.writeBoolean(qry.isLocal());
+                w.writeInt(qry.getPartition() == null ? -1 : qry.getPartition());
+
+                w.writeString(qry.getValueType());
+                w.writeString(qry.getIndexName());
+
+                if (qry.getCriteria() != null) {
+                    out.writeByte(ARR_LIST);
+                    out.writeInt(qry.getCriteria().size());
+
+                    for (IndexQueryCriterion c: qry.getCriteria()) {
+                        if (c instanceof RangeIndexQueryCriterion) {
+                            out.writeByte((byte)0); // Criterion type.
+
+                            RangeIndexQueryCriterion range = (RangeIndexQueryCriterion)c;
+
+                            w.writeString(range.field());
+                            w.writeBoolean(range.lowerIncl());
+                            w.writeBoolean(range.upperIncl());
+                            w.writeBoolean(range.lowerNull());
+                            w.writeBoolean(range.upperNull());
+
+                            serDes.writeObject(out, range.lower());
+                            serDes.writeObject(out, range.upper());
+                        }
+                        else {
+                            throw new IllegalArgumentException(
+                                String.format("Unknown IndexQuery criterion type [%s]", c.getClass().getSimpleName())
+                            );
+                        }
+                    }
+                }
+                else
+                    out.writeByte(GridBinaryMarshaller.NULL);
+            }
+
+            if (qry.getFilter() == null)
+                out.writeByte(GridBinaryMarshaller.NULL);
+            else {
+                serDes.writeObject(out, qry.getFilter());
+                out.writeByte(JAVA_PLATFORM);
+            }
+        };
+
+        return new ClientQueryCursor<>(new ClientQueryPager<>(
+            ch,
+            ClientOperation.QUERY_INDEX,
+            ClientOperation.QUERY_INDEX_CURSOR_GET_PAGE,
             qryWriter,
             keepBinary,
             marsh,
@@ -1064,5 +1190,50 @@ class TcpClientCache<K, V> implements ClientCache<K, V> {
                     serDes.writeObject(out, e.getKey());
                     serDes.writeObject(out, e.getValue());
                 });
+    }
+
+    /** */
+    private void writePutAllConflict(
+        Map<? extends K, ? extends T2<? extends V, GridCacheVersion>> map,
+        PayloadOutputChannel req
+    ) {
+        checkDataReplicationSupported(req.clientChannel().protocolCtx());
+
+        writeCacheInfo(req);
+
+        ClientUtils.collection(
+            map.entrySet(),
+            req.out(),
+            (out, e) -> {
+                serDes.writeObject(out, e.getKey());
+                serDes.writeObject(out, e.getValue().get1());
+                serDes.writeObject(out, e.getValue().get2());
+            });
+    }
+
+    /** */
+    private void writeRemoveAllConflict(Map<? extends K, GridCacheVersion> map, PayloadOutputChannel req) {
+        checkDataReplicationSupported(req.clientChannel().protocolCtx());
+
+        writeCacheInfo(req);
+
+        ClientUtils.collection(
+            map.entrySet(),
+            req.out(),
+            (out, e) -> {
+                serDes.writeObject(out, e.getKey());
+                serDes.writeObject(out, e.getValue());
+            });
+    }
+
+    /**
+     * Check that data replication operations is supported by server.
+     *
+     * @param protocolCtx Protocol context.
+     */
+    private void checkDataReplicationSupported(ProtocolContext protocolCtx)
+        throws ClientFeatureNotSupportedByServerException {
+        if (!protocolCtx.isFeatureSupported(ProtocolBitmaskFeature.DATA_REPLICATION_OPERATIONS))
+            throw new ClientFeatureNotSupportedByServerException(ProtocolBitmaskFeature.DATA_REPLICATION_OPERATIONS);
     }
 }

@@ -207,8 +207,7 @@ public class CacheContinuousQueryManager<K, V> extends GridCacheManagerAdapter<K
      * @return {@code True} if should notify continuous query manager.
      */
     public boolean notifyContinuousQueries(@Nullable IgniteInternalTx tx) {
-        return cctx.isLocal() ||
-            cctx.isReplicated() ||
+        return cctx.isReplicated() ||
             (!cctx.isNear() && !(tx != null && tx.onePhaseCommit() && !tx.local()));
     }
 
@@ -738,17 +737,14 @@ public class CacheContinuousQueryManager<K, V> extends GridCacheManagerAdapter<K
 
         final CacheContinuousQueryHandler hnd = clsr.apply();
 
-        boolean locOnly = cctx.isLocal() || loc;
-
         hnd.taskNameHash(taskNameHash);
         hnd.skipPrimaryCheck(skipPrimaryCheck);
         hnd.notifyExisting(notifyExisting);
         hnd.internal(internal);
         hnd.keepBinary(keepBinary);
-        hnd.localOnly(locOnly);
+        hnd.localOnly(loc);
 
-        IgnitePredicate<ClusterNode> pred = (loc || cctx.config().getCacheMode() == CacheMode.LOCAL)
-            ? F.nodeForNodeId(cctx.localNodeId())
+        IgnitePredicate<ClusterNode> pred = loc ? F.nodeForNodeId(cctx.localNodeId())
             : new IsAllPredicate<>(cctx.group().nodeFilter(), new AttributeNodeFilter(ATTR_CLIENT_MODE, false));
 
         assert pred != null : cctx.config();
@@ -758,13 +754,13 @@ public class CacheContinuousQueryManager<K, V> extends GridCacheManagerAdapter<K
         try {
             id = cctx.kernalContext().continuous().startRoutine(
                 hnd,
-                locOnly,
+                loc,
                 bufSize,
                 timeInterval,
                 autoUnsubscribe,
                 pred).get();
 
-            if (hnd.isQuery() && cctx.userCache() && !locOnly && !onStart)
+            if (hnd.isQuery() && cctx.userCache() && !loc && !onStart)
                 hnd.waitTopologyFuture(cctx.kernalContext());
         }
         catch (NodeStoppingException e) {
@@ -1000,7 +996,7 @@ public class CacheContinuousQueryManager<K, V> extends GridCacheManagerAdapter<K
                         lsnr.onRegister();
 
                         if (lsnrCnt.get() == 1) {
-                            if (grp.sharedGroup() && !cctx.isLocal())
+                            if (grp.sharedGroup())
                                 grp.addCacheWithContinuousQuery(cctx);
                         }
                     }
@@ -1039,7 +1035,7 @@ public class CacheContinuousQueryManager<K, V> extends GridCacheManagerAdapter<K
                 if ((lsnr = lsnrs.remove(id)) != null) {
                     int cnt = lsnrCnt.decrementAndGet();
 
-                    if (cctx.group().sharedGroup() && cnt == 0 && !cctx.isLocal())
+                    if (cctx.group().sharedGroup() && cnt == 0)
                         cctx.group().removeCacheWithContinuousQuery(cctx);
                 }
             }

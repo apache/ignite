@@ -76,14 +76,6 @@ public class GridCacheTtlManagerEvictionSelfTest extends GridCommonAbstractTest 
      * @throws Exception If failed.
      */
     @Test
-    public void testLocalEviction() throws Exception {
-        checkEviction(CacheMode.LOCAL);
-    }
-
-    /**
-     * @throws Exception If failed.
-     */
-    @Test
     public void testPartitionedEviction() throws Exception {
         checkEviction(CacheMode.PARTITIONED);
     }

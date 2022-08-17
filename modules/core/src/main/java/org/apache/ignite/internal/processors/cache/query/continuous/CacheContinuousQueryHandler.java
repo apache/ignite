@@ -423,21 +423,21 @@ public class CacheContinuousQueryHandler<K, V> implements GridContinuousHandler 
             @Override public void onBeforeRegister() {
                 GridCacheContext<K, V> cctx = cacheContext(ctx);
 
-                if (cctx != null && !cctx.isLocal())
+                if (cctx != null)
                     cctx.topology().readLock();
             }
 
             @Override public void onAfterRegister() {
                 GridCacheContext<K, V> cctx = cacheContext(ctx);
 
-                if (cctx != null && !cctx.isLocal())
+                if (cctx != null)
                     cctx.topology().readUnlock();
             }
 
             @Override public void onRegister() {
                 GridCacheContext<K, V> cctx = cacheContext(ctx);
 
-                if (cctx != null && !cctx.isLocal())
+                if (cctx != null)
                     locInitUpdCntrs = toCountersMap(cctx.topology().localUpdateCounters(false));
             }
 
@@ -681,7 +681,7 @@ public class CacheContinuousQueryHandler<K, V> implements GridContinuousHandler 
                 assert !skipEvt || evt == null;
                 assert skipEvt || part == -1 && cntr == -1; // part == -1 && cntr == -1 means skip counter.
 
-                if (!cctx.mvccEnabled() || cctx.isLocal())
+                if (!cctx.mvccEnabled())
                     return true;
 
                 assert locInitUpdCntrs != null;
@@ -857,14 +857,12 @@ public class CacheContinuousQueryHandler<K, V> implements GridContinuousHandler 
     void waitTopologyFuture(GridKernalContext ctx) throws IgniteCheckedException {
         GridCacheContext<K, V> cctx = cacheContext(ctx);
 
-        if (!cctx.isLocal()) {
-            AffinityTopologyVersion topVer = initTopVer;
+        AffinityTopologyVersion topVer = initTopVer;
 
-            cacheContext(ctx).shared().exchange().affinityReadyFuture(topVer).get();
+        cacheContext(ctx).shared().exchange().affinityReadyFuture(topVer).get();
 
-            for (int partId = 0; partId < cacheContext(ctx).affinity().partitions(); partId++)
-                getOrCreatePartitionRecovery(ctx, partId, topVer);
-        }
+        for (int partId = 0; partId < cacheContext(ctx).affinity().partitions(); partId++)
+            getOrCreatePartitionRecovery(ctx, partId, topVer);
     }
 
     /** {@inheritDoc} */
