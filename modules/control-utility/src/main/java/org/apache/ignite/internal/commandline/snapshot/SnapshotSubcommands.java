@@ -17,6 +17,7 @@
 
 package org.apache.ignite.internal.commandline.snapshot;
 
+import org.apache.ignite.internal.commandline.AbstractCommand;
 import org.apache.ignite.internal.util.typedef.F;
 
 /**
@@ -36,13 +37,16 @@ public enum SnapshotSubcommands {
     CHECK(new SnapshotCheckCommand()),
 
     /** Sub-command to restore snapshot. */
-    RESTORE(new SnapshotRestoreCommand());
+    RESTORE(new SnapshotRestoreCommand()),
+
+    /** Sub-command to get the status of a current snapshot operation. */
+    STATUS(new SnapshotStatusCommand());
 
     /** Sub-command. */
-    private final SnapshotSubcommand cmd;
+    private final AbstractCommand<?> cmd;
 
     /** @param cmd Sub-command. */
-    SnapshotSubcommands(SnapshotSubcommand cmd) {
+    SnapshotSubcommands(AbstractCommand<?> cmd) {
         this.cmd = cmd;
     }
 
@@ -65,7 +69,7 @@ public enum SnapshotSubcommands {
     /**
      * @return Sub-command.
      */
-    public SnapshotSubcommand subCommand() {
+    public AbstractCommand<?> subCommand() {
         return cmd;
     }
 
