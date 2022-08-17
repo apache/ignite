@@ -23,8 +23,6 @@ import java.nio.ByteBuffer;
 import java.nio.file.OpenOption;
 import java.util.ArrayList;
 import java.util.List;
-import java.util.Set;
-import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.ThreadLocalRandom;
 import java.util.concurrent.atomic.AtomicBoolean;
@@ -34,6 +32,7 @@ import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCache;
+import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.cache.CacheAtomicityMode;
 import org.apache.ignite.cache.CachePeekMode;
 import org.apache.ignite.cache.ReadRepairStrategy;
@@ -53,12 +52,15 @@ import org.apache.ignite.internal.processors.cache.distributed.dht.atomic.GridDh
 import org.apache.ignite.internal.processors.cache.persistence.file.FileIO;
 import org.apache.ignite.internal.processors.cache.persistence.file.FileIODecorator;
 import org.apache.ignite.internal.processors.cache.persistence.file.FileIOFactory;
+import org.apache.ignite.internal.util.future.GridCompoundFuture;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.G;
 import org.apache.ignite.lang.IgniteBiPredicate;
 import org.apache.ignite.plugin.extensions.communication.Message;
+import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.testframework.ListeningTestLogger;
 import org.apache.ignite.testframework.LogListener;
+import org.apache.ignite.transactions.TransactionHeuristicException;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.junit.runners.Parameterized;
@@ -268,15 +270,9 @@ public class GridCommandHandlerConsistencyCountersTest extends GridCommandHandle
 
         Consumer<Integer> cachePut = (key) -> primCache.put(key, -key);
 
-        Set<Thread> ths = ConcurrentHashMap.newKeySet();
+        GridCompoundFuture<?,?> asyncPutFuts = new GridCompoundFuture<>();
 
-        Consumer<Integer> cachePutAsync = (key) -> {
-            Thread th = new Thread(() -> cachePut.accept(key));
-
-            ths.add(th);
-
-            th.start();
-        };
+        Consumer<Integer> cachePutAsync = (key) -> asyncPutFuts.add(GridTestUtils.runAsync(() -> cachePut.accept(key)));
 
         int primaryLwm = -1; // Primary LWM after data prepatation (at tx caches).
         int backupHwm = -1; // Backups HWM after data preparation (at tx caches).
@@ -416,8 +412,17 @@ public class GridCommandHandlerConsistencyCountersTest extends GridCommandHandle
 
         stopAllGrids();
 
-        for (Thread th : ths)
-            th.join();
+        asyncPutFuts.markInitialized();
+
+        try {
+            asyncPutFuts.get();
+
+            if (atomicityMode != ATOMIC) // Atomics already committed at primary before the fail, so no falure on get() is expected.
+                fail(); // But tx cache is still committing, so get() must throw an exception.
+        }
+        catch (IgniteCheckedException | TransactionHeuristicException ex) {
+            assertTrue(atomicityMode != ATOMIC);
+        }
 
         ioBlocked = false;
 
