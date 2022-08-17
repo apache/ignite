@@ -34,6 +34,7 @@ import org.apache.ignite.internal.TestRecordingCommunicationSpi;
 import org.apache.ignite.internal.util.typedef.G;
 import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
+import org.apache.ignite.transactions.TransactionState;
 import org.junit.Test;
 
 import static org.apache.ignite.cache.CacheAtomicityMode.TRANSACTIONAL;
@@ -61,6 +62,7 @@ public class TxRecoveryConcurrentTest extends GridCommonAbstractTest {
             .setCacheMode(PARTITIONED)
             .setBackups(2)
             .setAtomicityMode(TRANSACTIONAL)
+            .setReadFromBackup(true)
             .setAffinity(new RendezvousAffinityFunction(false, 1)));
 
         return cfg;
@@ -103,7 +105,7 @@ public class TxRecoveryConcurrentTest extends GridCommonAbstractTest {
 
             final TransactionProxyImpl<?, ?> tx = (TransactionProxyImpl<?, ?>)primary.transactions().txStart();
 
-            cache.put(key, key);
+            cache.put(key, key + iter);
 
             tx.tx().prepare(true);
 
@@ -133,7 +135,6 @@ public class TxRecoveryConcurrentTest extends GridCommonAbstractTest {
             final IgniteEx blockedBackup = (IgniteEx)backups.get(0);
 
             blockedBackup.context().pools().getSystemExecutorService().execute(poolBlockerTask);
-
             blockedBackup.context().pools().getStripedExecutorService().execute(0, poolBlockerTask);
 
             ensureBothPoolsAreBlockedLatch.await();
@@ -141,7 +142,6 @@ public class TxRecoveryConcurrentTest extends GridCommonAbstractTest {
             runAsync(primary::close);
 
             waitForTxRecoveryRequestEnqueuedOn(blockedBackup);
-
             waitForTxRecoveryTaskEnqueuedOn(blockedBackup);
 
             // Unblock processing in blocked backup node. Simultaneously in striped and system pools to start recovery
@@ -153,8 +153,13 @@ public class TxRecoveryConcurrentTest extends GridCommonAbstractTest {
 
             awaitPartitionMapExchange();
 
-            for (IgniteInternalTx transaction : backupTransactions)
+            for (IgniteInternalTx transaction : backupTransactions) {
                 assertTrue(transaction.finishFuture().isDone());
+                assertTrue(transaction.state() == TransactionState.COMMITTED);
+            }
+
+            for (Ignite backup : backups)
+                assertEquals(key + iter, backup.cache(DEFAULT_CACHE_NAME).get(key));
         }
     }
 
