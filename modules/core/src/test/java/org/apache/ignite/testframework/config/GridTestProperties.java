@@ -18,6 +18,7 @@
 package org.apache.ignite.testframework.config;
 
 import java.io.File;
+import java.io.FileInputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.net.URI;
@@ -31,15 +32,12 @@ import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 import org.apache.ignite.binary.BinaryBasicNameMapper;
 import org.apache.ignite.binary.BinaryTypeConfiguration;
-import org.apache.ignite.internal.util.typedef.F;
-import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.logging.log4j.core.config.Configurator;
 import org.apache.logging.log4j.core.config.LoggerConfig;
 import org.jetbrains.annotations.Nullable;
 
-import static org.apache.ignite.IgniteSystemProperties.IGNITE_HOME;
-import static org.junit.Assert.fail;
+import static org.apache.ignite.testframework.GridTestUtils.initTestProjectHome;
 
 /**
  * Loads test properties from {@code config} folder under tests.
@@ -105,28 +103,15 @@ public final class GridTestProperties {
     /** */
     static {
         // Initialize IGNITE_HOME system property.
-        if (F.isEmpty(U.getIgniteHome())) {
-            // Setting IGNITE_HOME for extensions because the current logger configuration depends on it.
-            String userDir = System.getProperty("user.dir");
-
-            if (!F.isEmpty(userDir)) {
-                String igniteDir = new File(userDir, "ignite").getAbsolutePath();
-
-                System.setProperty(IGNITE_HOME, igniteDir);
-
-                System.out.println('"' + IGNITE_HOME + "\" system property was automatically set to " + igniteDir);
-            }
-        }
+        initTestProjectHome();
 
         // Load default properties.
-//        URI cfgFileResource = null;
+        File cfgFile = getTestConfigurationFile(null, TESTS_PROP_FILE);
 
-        URI cfgFile = getTestConfigurationFile(TESTS_PROP_FILE, true);
+        assert cfgFile != null && cfgFile.exists();
+        assert !cfgFile.isDirectory();
 
-        if (cfgFile == null)
-            fail("Unable to find " + TESTS_PROP_FILE);
-
-        dfltProps = Collections.unmodifiableMap(loadFromResource(new HashMap<>(), cfgFile));
+        dfltProps = Collections.unmodifiableMap(loadFromFile(new HashMap<String, String>(), cfgFile));
 
         if ("false".equals(System.getProperty("IGNITE_TEST_PROP_DISABLE_LOG4J", "false"))) {
             String user = System.getProperty("user.name");
@@ -154,9 +139,12 @@ public final class GridTestProperties {
         if (cfgFile == null)
             cfgFile = DEFAULT_LOG4J_FILE;
 
-        URI log4jFile = getTestConfigurationFile(cfgFile, true, user, null);
+        File log4jFile = getTestConfigurationFile(user, cfgFile);
 
-        Configurator.initialize(LoggerConfig.ROOT, GridTestProperties.class.getClassLoader(), log4jFile);
+        if (log4jFile == null)
+            log4jFile = getTestConfigurationFile(null, cfgFile);
+
+        Configurator.initialize(LoggerConfig.ROOT, log4jFile.getAbsolutePath());
 
         System.out.println("Configured log4j2 from: " + log4jFile);
     }
@@ -167,13 +155,13 @@ public final class GridTestProperties {
     }
 
     /** */
-    public static URI findTestResource(String res) {
+    public static File findTestResource(String res) {
         URL resUrl = GridTestProperties.class.getResource(TEST_CONFIG_DIR + res);
 
         if (resUrl == null)
             return null;
 
-        return URI.create(resUrl.toExternalForm());
+        return new File(URI.create(resUrl.toExternalForm()));
     }
 
     /**
@@ -296,91 +284,62 @@ public final class GridTestProperties {
      * @return Loaded properties.
      */
     private static Map<String, String> loadProperties(Map<String, String> props, String dir) {
-        URI cfg = getTestConfigurationFile(TESTS_PROP_FILE, false, dir);
+        File cfg = getTestConfigurationFile(dir, TESTS_PROP_FILE);
 
         if (cfg != null)
-            loadFromResource(props, cfg);
+            loadFromFile(props, cfg);
 
         return props;
     }
 
     /**
+     * @param user User name.
      * @param fileName File name.
-     * @param resourceLookup Search this file in resources.
-     * @param subDirs Sub-directory names.
-     * @return Configuration file for given sub-directories.
+     * @return Configuration file for given user.
      */
-    @Nullable private static URI getTestConfigurationFile(String fileName, boolean resourceLookup, String... subDirs) {
-        if (F.isEmpty(subDirs))
-            subDirs = new String[] {null};
+    @Nullable private static File getTestConfigurationFile(@Nullable String user, String fileName) {
+        String path = TESTS_CFG_PATH;
 
-        for (String dir : subDirs) {
-            String path = TESTS_CFG_PATH;
+        if (user != null)
+            path += File.separatorChar + user;
 
-            if (dir != null)
-                path += File.separatorChar + dir;
+        path += File.separatorChar + fileName;
 
-            path += File.separatorChar + fileName;
+        File file = GridTestUtils.resolveIgnitePath(path);
 
-            File file = GridTestUtils.resolveIgnitePath(path);
+        if (file != null && file.exists()) {
+            assert !file.isDirectory();
 
-            if (file != null && file.exists()) {
-                assert !file.isDirectory();
+            return file;
+        }
 
-                return file.toURI();
+        return user == null ? findTestResource(fileName) : null;
+    }
+
+    /**
+     * @param props Initial properties.
+     * @param file Property file.
+     * @return Loaded properties.
+     */
+    private static Map<String, String> loadFromFile(Map<String, String> props, File file) {
+        try {
+
+            try (InputStream in = new FileInputStream(file)) {
+                Properties fileProps = new Properties();
+
+                fileProps.load(in);
+
+                for (Entry<Object, Object> prop : fileProps.entrySet())
+                    props.put((String)prop.getKey(), (String)prop.getValue());
+
+                for (Entry<String, String> prop : props.entrySet())
+                    prop.setValue(substituteProperties(prop.getValue()));
             }
         }
-
-        return resourceLookup ? findTestResource(TESTS_PROP_FILE) : null;
-    }
-
-    /**
-     * @param props Initial properties.
-     * @param resource File resource location.
-     * @return Loaded properties.
-     */
-    private static Map<String, String> loadFromResource(Map<String, String> props, URI resource) {
-        try (InputStream in = resource.toURL().openStream()) {
-            Properties fileProps = new Properties();
-
-            fileProps.load(in);
-
-            for (Entry<Object, Object> prop : fileProps.entrySet())
-                props.put((String)prop.getKey(), (String)prop.getValue());
-
-            for (Entry<String, String> prop : props.entrySet())
-                prop.setValue(substituteProperties(prop.getValue()));
-        }
         catch (IOException e) {
             e.printStackTrace();
 
-            assert false : "Failed to load test configuration properties: " + resource;
-        }
-
-        return props;
-    }
-
-    /**
-     * @param props Initial properties.
-     * @param res Resource.
-     * @return Loaded properties.
-     */
-    private static Map<String, String> loadFromResource(Map<String, String> props, URL res) {
-        try (InputStream in = res.openStream()) {
-            Properties fileProps = new Properties();
-
-            fileProps.load(in);
-
-            for (Entry<Object, Object> prop : fileProps.entrySet())
-                props.put((String)prop.getKey(), (String)prop.getValue());
-
-            for (Entry<String, String> prop : props.entrySet())
-                prop.setValue(substituteProperties(prop.getValue()));
-        }
-        catch (IOException e) {
-            e.printStackTrace();
-
-            assert false : "Failed to load test configuration properties: " + res;
+            assert false : "Failed to load test configuration properties: " + file;
         }
 
         return props;

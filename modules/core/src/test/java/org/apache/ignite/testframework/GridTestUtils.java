@@ -99,6 +99,7 @@ import org.apache.ignite.internal.processors.cache.distributed.near.GridNearCach
 import org.apache.ignite.internal.processors.odbc.ClientListenerProcessor;
 import org.apache.ignite.internal.processors.port.GridPortRecord;
 import org.apache.ignite.internal.util.GridBusyLock;
+import org.apache.ignite.internal.util.IgniteUtils;
 import org.apache.ignite.internal.util.future.GridFutureAdapter;
 import org.apache.ignite.internal.util.lang.GridAbsClosure;
 import org.apache.ignite.internal.util.lang.GridAbsPredicate;
@@ -123,6 +124,7 @@ import org.apache.ignite.testframework.junits.GridAbstractTest;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
+import static org.apache.ignite.IgniteSystemProperties.IGNITE_HOME;
 import static org.apache.ignite.internal.processors.cache.persistence.file.FilePageStoreManager.DFLT_STORE_DIR;
 import static org.apache.ignite.ssl.SslContextFactory.DFLT_KEY_ALGORITHM;
 import static org.apache.ignite.ssl.SslContextFactory.DFLT_SSL_PROTOCOL;
@@ -1277,6 +1279,20 @@ public final class GridTestUtils {
         }
         finally {
             busyLock.unblock();
+        }
+    }
+
+    /** */
+    public static void initTestProjectHome() {
+        // Initialize IGNITE_HOME system property.
+        String igniteHome = U.getIgniteHome();
+
+        if (F.isEmpty(igniteHome)) {
+            igniteHome = new File(System.getProperty("user.dir"), "ignite").getAbsolutePath();
+
+            IgniteUtils.setIgniteHome(igniteHome);
+
+            U.warn(null, '"' + IGNITE_HOME + "\" system property was automatically set to " + igniteHome);
         }
     }
 
