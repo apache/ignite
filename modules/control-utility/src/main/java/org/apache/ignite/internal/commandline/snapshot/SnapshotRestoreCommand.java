@@ -37,6 +37,7 @@ import static org.apache.ignite.internal.commandline.snapshot.SnapshotRestoreCom
 import static org.apache.ignite.internal.commandline.snapshot.SnapshotRestoreCommandOption.SYNC;
 import static org.apache.ignite.internal.commandline.snapshot.SnapshotSubcommands.RESTORE;
 import static org.apache.ignite.internal.visor.snapshot.VisorSnapshotRestoreTaskAction.START;
+import static org.apache.ignite.internal.visor.snapshot.VisorSnapshotRestoreTaskAction.STATUS;
 
 /**
  * Sub-command to restore snapshot.
@@ -49,6 +50,9 @@ public class SnapshotRestoreCommand extends SnapshotSubcommand {
 
     /** {@inheritDoc} */
     @Override public Object execute(GridClientConfiguration clientCfg, Logger log) throws Exception {
+        if (cmdArg instanceof VisorSnapshotRestoreTaskArg && ((VisorSnapshotRestoreTaskArg)cmdArg).jobAction() == STATUS)
+            log.warning("Command deprecated. Use '" + SNAPSHOT + SnapshotSubcommands.STATUS + "' instead.");
+
         Object res = super.execute(clientCfg, log);
 
         log.info(String.valueOf(res));
@@ -122,7 +126,8 @@ public class SnapshotRestoreCommand extends SnapshotSubcommand {
 
         usage(log, "Restore snapshot:", SNAPSHOT, startParams, RESTORE.toString(), SNAPSHOT_NAME_ARG, "--start",
             optional(GROUPS.argName(), GROUPS.arg()), optional(SOURCE.argName(), SOURCE.arg()), optional(SYNC.argName()));
-        usage(log, "Snapshot restore operation status:", SNAPSHOT, params, RESTORE.toString(), SNAPSHOT_NAME_ARG, "--status");
+        usage(log, "Snapshot restore operation status (Command deprecated. Use '" + SNAPSHOT + SnapshotSubcommands.STATUS
+            + "' instead.):", SNAPSHOT, params, RESTORE.toString(), SNAPSHOT_NAME_ARG, "--status");
         usage(log, "Cancel snapshot restore operation:", SNAPSHOT, params, RESTORE.toString(), SNAPSHOT_NAME_ARG, "--cancel");
     }
 

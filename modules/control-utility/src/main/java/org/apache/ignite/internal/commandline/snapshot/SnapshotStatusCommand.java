@@ -65,7 +65,7 @@ public class SnapshotStatusCommand extends AbstractCommand<Object> {
     /** Prints the snapshot operation status to the log. */
     private void printStatus(SnapshotStatus status, Logger log) {
         if (status == null) {
-            log.info("There is no snapshot create or restore operation in progress.");
+            log.info("There is no create or restore snapshot operation in progress.");
 
             return;
         }

@@ -27,6 +27,7 @@ import org.apache.ignite.lang.IgniteFuture;
  * Visor snapshot restore task.
  */
 @GridInternal
+@Deprecated
 public class VisorSnapshotRestoreTask extends VisorSnapshotOneNodeTask<VisorSnapshotRestoreTaskArg, String> {
     /** Serial version uid. */
     private static final long serialVersionUID = 0L;
