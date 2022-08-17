@@ -120,7 +120,7 @@ public class SnapshotStatusCommand extends AbstractCommand<Object> {
 
     /** {@inheritDoc} */
     @Override public void printUsage(Logger log) {
-        usage(log, "Get the status of a current snapshot operation:", SNAPSHOT, STATUS.toString());
+        usage(log, "Get the status of the current snapshot operation:", SNAPSHOT, STATUS.toString());
     }
 
     /** {@inheritDoc} */
