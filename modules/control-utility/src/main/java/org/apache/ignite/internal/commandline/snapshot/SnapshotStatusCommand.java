@@ -102,7 +102,8 @@ public class SnapshotStatusCommand extends SnapshotSubcommand {
 
     /** {@inheritDoc} */
     @Override public void parseArguments(CommandArgIterator argIter) {
-        // No-op.
+        if (argIter.hasNextSubArg())
+            throw new IllegalArgumentException("Unexpected argument: " + argIter.peekNextArg() + '.');
     }
 
     /** {@inheritDoc} */
