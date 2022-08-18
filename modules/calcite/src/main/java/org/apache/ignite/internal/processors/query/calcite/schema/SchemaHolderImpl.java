@@ -193,8 +193,7 @@ public class SchemaHolderImpl extends AbstractService implements SchemaHolder, S
         String schemaName,
         GridQueryTypeDescriptor typeDesc,
         GridCacheContextInfo<?, ?> cacheInfo,
-        List<QueryField> cols,
-        boolean ifColNotExists
+        List<QueryField> cols
     ) {
         onSqlTypeCreated(schemaName, typeDesc, cacheInfo);
     }
@@ -204,10 +203,8 @@ public class SchemaHolderImpl extends AbstractService implements SchemaHolder, S
         String schemaName,
         GridQueryTypeDescriptor typeDesc,
         GridCacheContextInfo<?, ?> cacheInfo,
-        List<String> cols,
-        boolean ifColExists
+        List<String> cols
     ) {
-
         onSqlTypeCreated(schemaName, typeDesc, cacheInfo);
     }
 

@@ -151,8 +151,7 @@ public class QueryPlanCacheImpl extends AbstractService implements QueryPlanCach
         String schemaName,
         GridQueryTypeDescriptor typeDesc,
         GridCacheContextInfo<?, ?> cacheInfo,
-        List<QueryField> cols,
-        boolean ifColNotExists
+        List<QueryField> cols
     ) {
         clear();
     }
@@ -162,8 +161,7 @@ public class QueryPlanCacheImpl extends AbstractService implements QueryPlanCach
         String schemaName,
         GridQueryTypeDescriptor typeDesc,
         GridCacheContextInfo<?, ?> cacheInfo,
-        List<String> cols,
-        boolean ifColExists
+        List<String> cols
     ) {
         clear();
     }

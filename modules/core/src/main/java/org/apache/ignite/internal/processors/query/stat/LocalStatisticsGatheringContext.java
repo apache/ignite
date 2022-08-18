@@ -57,9 +57,6 @@ public class LocalStatisticsGatheringContext {
     /** Context cancelled flag. */
     private volatile boolean cancelled;
 
-    /** Binary signed or unsiged compare mode. */
-    private final boolean isBinaryUnsigned;
-
     /**
      * Constructor.
      *
@@ -68,7 +65,6 @@ public class LocalStatisticsGatheringContext {
      * @param cctxInfo Cache context info;
      * @param cfg Statistics configuration to use.
      * @param remainingParts Set of partition ids to collect.
-     * @param isBinaryUnsigned Binary signed or unsiged compare mode.
      */
     public LocalStatisticsGatheringContext(
         boolean forceRecollect,
@@ -76,8 +72,7 @@ public class LocalStatisticsGatheringContext {
         GridCacheContextInfo<?, ?> cctxInfo,
         StatisticsObjectConfiguration cfg,
         Set<Integer> remainingParts,
-        AffinityTopologyVersion topVer,
-        boolean isBinaryUnsigned
+        AffinityTopologyVersion topVer
     ) {
         this.forceRecollect = forceRecollect;
         this.tbl = tbl;
@@ -87,7 +82,6 @@ public class LocalStatisticsGatheringContext {
         this.allParts = (forceRecollect) ? null : new HashSet<>(remainingParts);
         this.topVer = topVer;
         this.future = new CompletableFuture<>();
-        this.isBinaryUnsigned = isBinaryUnsigned;
     }
 
     /**
@@ -188,13 +182,6 @@ public class LocalStatisticsGatheringContext {
      */
     public AffinityTopologyVersion topologyVersion() {
         return topVer;
-    }
-
-    /**
-     * @return Binary signed or unsigned compare mode.
-     */
-    public boolean isBinaryUnsigned() {
-        return isBinaryUnsigned;
     }
 
     /** {@inheritDoc} */

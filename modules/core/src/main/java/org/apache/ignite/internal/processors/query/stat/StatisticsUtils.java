@@ -241,11 +241,11 @@ public class StatisticsUtils {
         if (Boolean.class.isAssignableFrom(cls))
             return (Boolean)obj ? BigDecimal.ONE : BigDecimal.ZERO;
         else if (Byte.class.isAssignableFrom(cls))
-            return new BigDecimal((Byte)obj);
+            return BigDecimal.valueOf((Byte)obj);
         else if (Short.class.isAssignableFrom(cls))
-            return new BigDecimal((Short)obj);
+            return BigDecimal.valueOf((Short)obj);
         else if (Integer.class.isAssignableFrom(cls))
-            return new BigDecimal((Integer)obj);
+            return BigDecimal.valueOf((Integer)obj);
         else if (Long.class.isAssignableFrom(cls))
             return new BigDecimal((Long)obj);
         else if (Float.class.isAssignableFrom(cls))

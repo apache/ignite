@@ -52,13 +52,21 @@ public abstract class StatisticsViewsTest extends StatisticsAbstractTest {
      */
     @Test
     public void testConfigurationView() throws Exception {
+        collectStatistics(StatisticsType.GLOBAL, SMALL_TARGET);
+
+        ObjectStatisticsImpl smallStat = (ObjectStatisticsImpl)statisticsMgr(0).getLocalStatistics(SMALL_KEY);
+
+        long aVer = smallStat.columnStatistics("A").version();
+        long bVer = smallStat.columnStatistics("B").version();
+        long cVer = smallStat.columnStatistics("C").version();
+
         List<List<Object>> config = Arrays.asList(
-            Arrays.asList(SCHEMA, "TABLE", "SMALL", "A", (byte)15, null, null, null, null, 1L),
-            Arrays.asList(SCHEMA, "TABLE", "SMALL", "B", (byte)15, null, null, null, null, 1L),
-            Arrays.asList(SCHEMA, "TABLE", "SMALL", "C", (byte)15, null, null, null, null, 1L)
+            Arrays.asList(SCHEMA, "TABLE", "SMALL", "A", (byte)15, null, null, null, null, aVer),
+            Arrays.asList(SCHEMA, "TABLE", "SMALL", "B", (byte)15, null, null, null, null, bVer),
+            Arrays.asList(SCHEMA, "TABLE", "SMALL", "C", (byte)15, null, null, null, null, cVer)
         );
 
-        checkSqlResult("select * from SYS.STATISTICS_CONFIGURATION", null, config::equals);
+        checkSqlResult("select * from SYS.STATISTICS_CONFIGURATION where name = 'SMALL'", null, config::equals);
     }
 
     /**
@@ -160,8 +168,7 @@ public abstract class StatisticsViewsTest extends StatisticsAbstractTest {
 
         sql("DROP STATISTICS SMALL");
 
-        checkSqlResult("select * from SYS.STATISTICS_LOCAL_DATA where NAME = 'SMALL'", null,
-            list -> list.isEmpty());
+        checkSqlResult("select * from SYS.STATISTICS_LOCAL_DATA where NAME = 'SMALL'", null, List::isEmpty);
 
         sql("ANALYZE SMALL (A) WITH \"DISTINCT=5,NULLS=6,TOTAL=7,SIZE=8\"");
         sql("ANALYZE SMALL (B) WITH \"DISTINCT=6,NULLS=7,TOTAL=8\"");
@@ -182,10 +189,14 @@ public abstract class StatisticsViewsTest extends StatisticsAbstractTest {
         Timestamp tsB = new Timestamp(smallStat.columnStatistics("B").createdAt());
         Timestamp tsC = new Timestamp(smallStat.columnStatistics("C").createdAt());
 
+        long aVer = smallStat.columnStatistics("A").version();
+        long bVer = smallStat.columnStatistics("B").version();
+        long cVer = smallStat.columnStatistics("C").version();
+
         List<List<Object>> localData = Arrays.asList(
-            Arrays.asList(SCHEMA, "TABLE", "SMALL", "A", 8L, 5L, 6L, 7L, 8, 3L, tsA.toString()),
-            Arrays.asList(SCHEMA, "TABLE", "SMALL", "B", 8L, 6L, 7L, 8L, 4, 3L, tsB.toString()),
-            Arrays.asList(SCHEMA, "TABLE", "SMALL", "C", 8L, 10L, 0L, size, 4, 3L, tsC.toString())
+            Arrays.asList(SCHEMA, "TABLE", "SMALL", "A", 8L, 5L, 6L, 7L, 8, aVer, tsA.toString()),
+            Arrays.asList(SCHEMA, "TABLE", "SMALL", "B", 8L, 6L, 7L, 8L, 4, bVer, tsB.toString()),
+            Arrays.asList(SCHEMA, "TABLE", "SMALL", "C", 8L, 10L, 0L, size, 4, cVer, tsC.toString())
         );
 
         checkSqlResult("select * from SYS.STATISTICS_LOCAL_DATA where NAME = 'SMALL'", null,

@@ -80,8 +80,7 @@ public abstract class AbstractSchemaChangeListener implements SchemaChangeListen
         String schemaName,
         GridQueryTypeDescriptor typeDesc,
         GridCacheContextInfo<?, ?> cacheInfo,
-        List<QueryField> cols,
-        boolean ifColNotExists
+        List<QueryField> cols
     ) {
         // No-op.
     }
@@ -91,8 +90,7 @@ public abstract class AbstractSchemaChangeListener implements SchemaChangeListen
         String schemaName,
         GridQueryTypeDescriptor typeDesc,
         GridCacheContextInfo<?, ?> cacheInfo,
-        List<String> cols,
-        boolean ifColExists
+        List<String> cols
     ){
         // No-op.
     }

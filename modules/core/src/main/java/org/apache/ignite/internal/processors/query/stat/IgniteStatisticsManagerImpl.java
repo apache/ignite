@@ -111,9 +111,6 @@ public class IgniteStatisticsManagerImpl implements IgniteStatisticsManager {
     /** Schedule to process obsolescence statistics. */
     private GridTimeoutProcessor.CancelableTask obsolescenceSchedule;
 
-    /** Binary signed or unsigned compare mode. */
-    private final boolean isBinaryUnsigned;
-
     /** Exchange listener. */
     private final PartitionsExchangeAware exchAwareLsnr = new PartitionsExchangeAware() {
         @Override public void onDoneAfterTopologyUnlock(GridDhtPartitionsExchangeFuture fut) {
@@ -138,16 +135,13 @@ public class IgniteStatisticsManagerImpl implements IgniteStatisticsManager {
      *
      * @param ctx Kernal context.
      * @param schemaMgr Schema manager.
-     * @param isBinaryUnsigned Binary signed or unsigned compare mode.
      */
     public IgniteStatisticsManagerImpl(
         GridKernalContext ctx,
-        GridQuerySchemaManager schemaMgr,
-        boolean isBinaryUnsigned
+        GridQuerySchemaManager schemaMgr
     ) {
         this.ctx = ctx;
         this.schemaMgr = schemaMgr;
-        this.isBinaryUnsigned = isBinaryUnsigned;
 
         boolean serverNode = !(ctx.config().isClientMode() || ctx.isDaemon());
 
@@ -208,8 +202,7 @@ public class IgniteStatisticsManagerImpl implements IgniteStatisticsManager {
             mgmtPool,
             ctx::isStopping,
             ctx::log,
-            serverNode,
-            isBinaryUnsigned
+            serverNode
         );
 
         globalStatsMgr = new IgniteGlobalStatisticsManager(
@@ -502,7 +495,7 @@ public class IgniteStatisticsManagerImpl implements IgniteStatisticsManager {
             }
 
             LocalStatisticsGatheringContext ctx = new LocalStatisticsGatheringContext(true, tbl, cacheInfo, cfg,
-                tasksParts, null, isBinaryUnsigned);
+                tasksParts, null);
             statProc.updateLocalStatistics(ctx);
         }
     }

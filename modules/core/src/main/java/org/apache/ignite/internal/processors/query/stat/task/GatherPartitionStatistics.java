@@ -333,9 +333,6 @@ public class GatherPartitionStatistics implements Callable<ObjectPartitionStatis
         CacheDataRow row,
         ColumnStatisticsCollector coll
     ) {
-        if (row.value() == null)
-            return unwrap(cctx, row.key(), desc.type().keyClass());
-
         if (desc.isKeyColumn(coll.columnId()))
             return unwrap(cctx, row.key(), desc.type().keyClass());
 

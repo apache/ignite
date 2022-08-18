@@ -231,7 +231,7 @@ public class ManagerStatisticsTypesTest extends StatisticsTypesAbstractTest {
         assertEquals(SMALL_SIZE - 1, timestampStats.distinct());
         assertEquals(convert(LocalDateTime.of(1970, Month.JANUARY, 1, 12, 0, 1)), timestampStats.min());
         assertEquals(convert(LocalDateTime.of(1970, Month.JANUARY, 1, 12, 1, 39)), timestampStats.max());
-        assertEquals(16, timestampStats.size());
+        assertEquals(12, timestampStats.size());
     }
 
     /**

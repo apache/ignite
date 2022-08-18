@@ -65,14 +65,12 @@ public interface SchemaChangeListener {
      * @param typeDesc Type descriptor.
      * @param cacheInfo Cache info.
      * @param cols Added columns' names.
-     * @param ifColNotExists if columns not exists.
      */
     public void onColumnsAdded(
         String schemaName,
         GridQueryTypeDescriptor typeDesc,
         GridCacheContextInfo<?, ?> cacheInfo,
-        List<QueryField> cols,
-        boolean ifColNotExists
+        List<QueryField> cols
     );
 
     /**
@@ -82,14 +80,12 @@ public interface SchemaChangeListener {
      * @param typeDesc Type descriptor.
      * @param cacheInfo Cache info.
      * @param cols Dropped columns' names.
-     * @param ifColExists if columns exists.
      */
     public void onColumnsDropped(
         String schemaName,
         GridQueryTypeDescriptor typeDesc,
         GridCacheContextInfo<?, ?> cacheInfo,
-        List<String> cols,
-        boolean ifColExists
+        List<String> cols
     );
 
     /**

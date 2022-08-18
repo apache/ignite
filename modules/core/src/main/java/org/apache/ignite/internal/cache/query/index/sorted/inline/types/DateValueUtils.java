@@ -147,8 +147,12 @@ public class DateValueUtils {
 
         long dateVal = dateValue(locDate.getYear(), locDate.getMonthValue(), locDate.getDayOfMonth());
         long millis = millisFromDateValue(dateVal) + TimeUnit.NANOSECONDS.toMillis(locTime.toNanoOfDay());
+        long nanos = locTime.toNanoOfDay() % 1_000_000_000L;
 
-        return new Timestamp(defaultTzMillisFromUtc(millis));
+        Timestamp res = new Timestamp(defaultTzMillisFromUtc(millis));
+        res.setNanos((int)nanos);
+
+        return res;
     }
 
     /** */

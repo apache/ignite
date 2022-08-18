@@ -31,12 +31,10 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
 import java.util.UUID;
-import java.util.concurrent.TimeUnit;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.internal.binary.BinaryObjectImpl;
 import org.apache.ignite.internal.cache.query.index.IndexProcessor;
-import org.apache.ignite.internal.cache.query.index.sorted.inline.types.DateValueUtils;
 import org.apache.ignite.internal.processors.query.stat.config.StatisticsColumnOverrides;
 import org.apache.ignite.internal.processors.query.stat.hll.HLL;
 import org.apache.ignite.internal.util.typedef.F;
@@ -81,10 +79,10 @@ public class ColumnStatisticsCollector {
     private final HLL hll = buildHll();
 
     /** Minimum value. */
-    private Object min;
+    private BigDecimal min;
 
     /** Maximum value. */
-    private Object max;
+    private BigDecimal max;
 
     /** Total values in column. */
     private long total;
@@ -141,11 +139,13 @@ public class ColumnStatisticsCollector {
         addToHll(val);
 
         if (isComparable) {
-            if (null == min || compare(val, min) < 0)
-                min = val;
+            BigDecimal decVal = toDecimal(val);
 
-            if (null == max || compare(val, max) > 0)
-                max = val;
+            if (null == min || min.compareTo(decVal) > 0)
+                min = decVal;
+
+            if (null == max || max.compareTo(decVal) < 0)
+                max = decVal;
         }
     }
 
@@ -155,7 +155,6 @@ public class ColumnStatisticsCollector {
      * @return Aggregated column statistics.
      */
     public ColumnStatistics finish() {
-
         int averageSize = averageSize(size, total, nullsCnt);
 
         return new ColumnStatistics(toDecimal(min), toDecimal(max), nullsCnt, hll.cardinality(), total, averageSize,
@@ -205,8 +204,8 @@ public class ColumnStatisticsCollector {
         Long overrideDistinct = (overrides == null) ? null : overrides.distinct();
         HLL hll = buildHll();
 
-        Object min = null;
-        Object max = null;
+        BigDecimal min = null;
+        BigDecimal max = null;
 
         // Total number of nulls
         long nullsCnt = 0;
@@ -233,15 +232,14 @@ public class ColumnStatisticsCollector {
             nullsCnt += partStat.nulls();
             totalSize += (long)partStat.size() * (partStat.total() - partStat.nulls());
 
-            if (min == null || (partStat.min() != null && compare(partStat.min(), min) < 0))
+            if (min == null || (partStat.min() != null && partStat.min().compareTo(min) < 0))
                 min = partStat.min();
 
-            if (max == null || (partStat.max() != null && compare(partStat.max(), max) > 0))
+            if (max == null || (partStat.max() != null && partStat.max().compareTo(max) > 0))
                 max = partStat.max();
 
             if (createdAt < partStat.createdAt())
                 createdAt = partStat.createdAt();
-
         }
 
         Integer overrideSize = (overrides == null) ? null : overrides.size();
@@ -255,8 +253,7 @@ public class ColumnStatisticsCollector {
         Long overrideTotal = (overrides == null) ? null : overrides.total();
         total = (overrideTotal == null) ? total : overrideTotal;
 
-        return new ColumnStatistics(toDecimal(min), toDecimal(max), nulls, distinct, total, averageSize, hll.toBytes(),
-            ver, createdAt);
+        return new ColumnStatistics(min, max, nulls, distinct, total, averageSize, hll.toBytes(), ver, createdAt);
     }
 
     /**
@@ -296,16 +293,16 @@ public class ColumnStatisticsCollector {
         }
         else if (UUID.class.isAssignableFrom(cls))
             buf = U.uuidToBytes((UUID)obj);
-        else if (java.sql.Date.class.isAssignableFrom(cls) || java.sql.Time.class.isAssignableFrom(cls))
-            buf = U.longToBytes(((Date)obj).getTime());
         else if (LocalDate.class.isAssignableFrom(cls))
             buf = U.longToBytes(convertToSqlDate((LocalDate)obj).getTime());
         else if (LocalTime.class.isAssignableFrom(cls))
             buf = U.longToBytes(convertToSqlTime((LocalTime)obj).getTime());
-        else if (Timestamp.class.isAssignableFrom(cls) || java.util.Date.class.isAssignableFrom(cls))
-            buf = timestampToBytes((Date)obj);
         else if (LocalDateTime.class.isAssignableFrom(cls))
             buf = timestampToBytes(convertToTimestamp((LocalDateTime)obj));
+        else if (Timestamp.class.isAssignableFrom(cls))
+            buf = timestampToBytes((Timestamp)obj);
+        else if (java.util.Date.class.isAssignableFrom(cls))
+            buf = U.longToBytes(((Date)obj).getTime());
         else if (cls.isAssignableFrom(byte[].class))
             buf = (byte[])obj;
         else if (cls.isAssignableFrom(String.class))
@@ -326,35 +323,11 @@ public class ColumnStatisticsCollector {
     }
 
     /** */
-    private static int compare(Object o1, Object o2) {
-        assert o1 != null && o2 != null;
-        assert o1.getClass().equals(o2.getClass());
+    private static byte[] timestampToBytes(java.sql.Timestamp ts) {
+        byte[] buf = new byte[12];
 
-        if (o1 instanceof Comparable)
-            return ((Comparable)o1).compareTo(o2);
-
-        return 0;
-    }
-
-    /** */
-    private static byte[] timestampToBytes(java.util.Date ts) {
-        byte[] buf = new byte[16];
-
-        long millis = DateValueUtils.utcMillisFromDefaultTz(ts.getTime());
-        U.longToBytes(DateValueUtils.dateValueFromMillis(millis), buf, 0);
-
-        millis %= DateValueUtils.MILLIS_PER_DAY;
-
-        if (millis < 0)
-            millis += DateValueUtils.MILLIS_PER_DAY;
-
-        long nanos;
-        if (ts instanceof Timestamp)
-            nanos = TimeUnit.MILLISECONDS.toNanos(millis) + ((Timestamp)ts).getNanos() % 1_000_000L;
-        else
-            nanos = TimeUnit.MILLISECONDS.toNanos(millis);
-
-        U.longToBytes(TimeUnit.MILLISECONDS.toNanos(millis) + nanos % 1_000_000L, buf, 8);
+        U.longToBytes(ts.getTime(), buf, 0);
+        U.intToBytes(ts.getNanos(), buf, 8);
 
         return buf;
     }

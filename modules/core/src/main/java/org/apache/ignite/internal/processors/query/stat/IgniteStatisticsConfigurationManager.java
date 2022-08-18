@@ -24,7 +24,6 @@ import java.util.Collections;
 import java.util.List;
 import java.util.Set;
 import java.util.concurrent.CopyOnWriteArrayList;
-import java.util.function.BiConsumer;
 import java.util.function.Consumer;
 import java.util.function.Function;
 import java.util.function.Supplier;
@@ -106,9 +105,6 @@ public class IgniteStatisticsConfigurationManager {
     /** Is server node flag. */
     private final boolean isServerNode;
 
-    /** Binary signed or unsigned compare mode. */
-    private final boolean isBinaryUnsigned;
-
     /** Active flag. */
     private volatile boolean active;
 
@@ -147,8 +143,7 @@ public class IgniteStatisticsConfigurationManager {
             String schemaName,
             GridQueryTypeDescriptor typeDesc,
             GridCacheContextInfo<?, ?> cacheInfo,
-            List<String> cols,
-            boolean ifColExists
+            List<String> cols
         ) {
             if (!active)
                 return;
@@ -205,7 +200,6 @@ public class IgniteStatisticsConfigurationManager {
      * @param stopping Stopping state supplier.
      * @param logSupplier Log supplier.
      * @param isServerNode Server node flag.
-     * @param isBinaryUnsigned Binary signed or unsigned compare mode.
      */
     public IgniteStatisticsConfigurationManager(
         GridQuerySchemaManager schemaMgr,
@@ -217,8 +211,7 @@ public class IgniteStatisticsConfigurationManager {
         IgniteThreadPoolExecutor mgmtPool,
         Supplier<Boolean> stopping,
         Function<Class<?>, IgniteLogger> logSupplier,
-        boolean isServerNode,
-        boolean isBinaryUnsigned
+        boolean isServerNode
     ) {
         this.schemaMgr = schemaMgr;
         log = logSupplier.apply(IgniteStatisticsConfigurationManager.class);
@@ -227,7 +220,6 @@ public class IgniteStatisticsConfigurationManager {
         this.statProc = statProc;
         this.cluster = cluster;
         this.isServerNode = isServerNode;
-        this.isBinaryUnsigned = isBinaryUnsigned;
 
         subscriptionProcessor.registerDistributedMetastorageListener(distrMetaStoreLsnr);
 
@@ -269,53 +261,6 @@ public class IgniteStatisticsConfigurationManager {
         mgmtBusyExecutor.execute(this::updateAllLocalStatistics);
     }
 
-    /** Drop columns listener to clean its statistics configuration. */
-    private final BiConsumer<GridQueryTypeDescriptor, List<String>> dropColsLsnr = new BiConsumer<GridQueryTypeDescriptor, List<String>>() {
-        /**
-         * Drop statistics after columns dropped.
-         *
-         * @param tbl Table.
-         * @param cols Dropped columns.
-         */
-        @Override public void accept(GridQueryTypeDescriptor tbl, List<String> cols) {
-            assert !F.isEmpty(cols);
-            dropStatistics(Collections.singletonList(
-                    new StatisticsTarget(
-                        tbl.schemaName(),
-                        tbl.tableName(),
-                        cols.toArray(EMPTY_STRINGS)
-                    )
-                ),
-                false);
-        }
-    };
-
-    /** Drop table listener to clear its statistics configuration. */
-    private final BiConsumer<String, String> dropTblLsnr = new BiConsumer<String, String>() {
-        /**
-         * Drop statistics after table dropped.
-         *
-         * @param schema Schema name.
-         * @param name Table name.
-         */
-        @Override public void accept(String schema, String name) {
-            assert !F.isEmpty(schema) && !F.isEmpty(name) : schema + ":" + name;
-
-            StatisticsKey key = new StatisticsKey(schema, name);
-
-            try {
-                StatisticsObjectConfiguration cfg = config(key);
-
-                if (cfg != null && !F.isEmpty(cfg.columns()))
-                    dropStatistics(Collections.singletonList(new StatisticsTarget(schema, name)), false);
-            }
-            catch (Throwable e) {
-                if (!X.hasCause(e, NodeStoppingException.class))
-                    throw new IgniteSQLException("Error on drop statistics for dropped table [key=" + key + ']', e);
-            }
-        }
-    };
-
     /**
      * Pass all necessary parameters to schedule statistics key update.
      *
@@ -337,7 +282,7 @@ public class IgniteStatisticsConfigurationManager {
 
             // Ensure to clean local metastorage.
             LocalStatisticsGatheringContext ctx = new LocalStatisticsGatheringContext(false, tbl, cacheInfo,
-                cfg, Collections.emptySet(), topVer, isBinaryUnsigned);
+                cfg, Collections.emptySet(), topVer);
 
             statProc.updateLocalStatistics(ctx);
 
@@ -364,7 +309,7 @@ public class IgniteStatisticsConfigurationManager {
             final Set<Integer> primParts = cctx.affinity().primaryPartitions(cctx.localNodeId(), topVer0);
 
             LocalStatisticsGatheringContext ctx = new LocalStatisticsGatheringContext(false, tbl, cacheInfo,
-                cfg, primParts, topVer0, isBinaryUnsigned);
+                cfg, primParts, topVer0);
             statProc.updateLocalStatistics(ctx);
         }
         catch (IgniteCheckedException e) {

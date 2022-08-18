@@ -815,7 +815,7 @@ public class SchemaManager implements GridQuerySchemaManager {
 
         desc.table().addColumns(cols, ifColNotExists);
 
-        lsnr.onColumnsAdded(schemaName, desc.type(), desc.cacheInfo(), cols, ifColNotExists);
+        lsnr.onColumnsAdded(schemaName, desc.type(), desc.cacheInfo(), cols);
     }
 
     /**
@@ -845,7 +845,7 @@ public class SchemaManager implements GridQuerySchemaManager {
 
         desc.table().dropColumns(cols, ifColExists);
 
-        lsnr.onColumnsDropped(schemaName, desc.type(), desc.cacheInfo(), cols, ifColExists);
+        lsnr.onColumnsDropped(schemaName, desc.type(), desc.cacheInfo(), cols);
     }
 
     /**
@@ -1032,10 +1032,9 @@ public class SchemaManager implements GridQuerySchemaManager {
             String schemaName,
             GridQueryTypeDescriptor typeDesc,
             GridCacheContextInfo<?, ?> cacheInfo,
-            List<QueryField> cols,
-            boolean ifColNotExists
+            List<QueryField> cols
         ) {
-            lsnrs.forEach(lsnr -> lsnr.onColumnsAdded(schemaName, typeDesc, cacheInfo, cols, ifColNotExists));
+            lsnrs.forEach(lsnr -> lsnr.onColumnsAdded(schemaName, typeDesc, cacheInfo, cols));
         }
 
         /**
@@ -1045,10 +1044,9 @@ public class SchemaManager implements GridQuerySchemaManager {
             String schemaName,
             GridQueryTypeDescriptor typeDesc,
             GridCacheContextInfo<?, ?> cacheInfo,
-            List<String> cols,
-            boolean ifColExists
+            List<String> cols
         ) {
-            lsnrs.forEach(lsnr -> lsnr.onColumnsDropped(schemaName, typeDesc, cacheInfo, cols, ifColExists));
+            lsnrs.forEach(lsnr -> lsnr.onColumnsDropped(schemaName, typeDesc, cacheInfo, cols));
         }
 
         /**

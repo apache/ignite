@@ -20,7 +20,6 @@ package org.apache.ignite.internal.processors.query.stat;
 import java.util.Collections;
 import java.util.Map;
 import java.util.Objects;
-
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.cluster.ClusterState;
@@ -117,10 +116,8 @@ public class StatisticsGatheringTest extends StatisticsRestartAbstractTest {
             ColumnStatistics actColStat = actual.columnStatistics(expectedColStatEntry.getKey());
 
             assertNotNull(actColStat);
-            assertEquals(expColStat.min() != null ? expColStat.min() : null,
-                actColStat.min() != null ? actColStat.min() : null);
-            assertEquals(expColStat.max() != null ? expColStat.max() : null,
-                actColStat.max() != null ? actColStat.max() : null);
+            assertEquals(expColStat.min(), actColStat.min());
+            assertEquals(expColStat.max(), actColStat.max());
             assertEquals(expColStat.size(), actColStat.size());
             assertEquals(expColStat.distinct(), actColStat.distinct());
             assertEquals(expColStat.total(), actColStat.total());
