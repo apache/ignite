@@ -34,7 +34,7 @@ import static org.apache.ignite.internal.commandline.CommandList.SNAPSHOT;
  */
 public class SnapshotCommand extends AbstractCommand<Object> {
     /** Snapshot sub-command to execute. */
-    private AbstractCommand<?> cmd;
+    private SnapshotSubcommand cmd;
 
     /** {@inheritDoc} */
     @Override public Object execute(GridClientConfiguration clientCfg, Logger log) throws Exception {
