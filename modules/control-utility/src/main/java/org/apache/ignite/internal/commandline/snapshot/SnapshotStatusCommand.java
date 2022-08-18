@@ -40,6 +40,7 @@ import org.apache.ignite.internal.visor.snapshot.VisorSnapshotTaskResult;
 import static org.apache.ignite.internal.commandline.CommandList.SNAPSHOT;
 import static org.apache.ignite.internal.commandline.TaskExecutor.executeTask;
 import static org.apache.ignite.internal.commandline.snapshot.SnapshotSubcommands.STATUS;
+import static org.apache.ignite.internal.visor.systemview.VisorSystemViewTask.SimpleType.NUMBER;
 import static org.apache.ignite.internal.visor.systemview.VisorSystemViewTask.SimpleType.STRING;
 
 /**
@@ -107,7 +108,7 @@ public class SnapshotStatusCommand extends AbstractCommand<Object> {
                 return F.asList(nodeId, processed, total, percent);
         }).collect(Collectors.toList());
 
-        SystemViewCommand.printTable(titles, F.asList(STRING, STRING, STRING, STRING),
+        SystemViewCommand.printTable(titles, F.asList(STRING, NUMBER, NUMBER, NUMBER),
             rows, log);
 
         log.info(U.nl());
