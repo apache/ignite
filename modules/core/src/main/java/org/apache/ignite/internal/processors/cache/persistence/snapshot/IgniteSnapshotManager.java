@@ -1037,6 +1037,11 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
         }
     }
 
+    /** @return Current create snapshot request. {@code Null} if there is no create snapshot operation in progress. */
+    @Nullable public SnapshotOperationRequest currentCreateRequest() {
+        return clusterSnpReq;
+    }
+
     /**
      * Check if snapshot restore process is currently running.
      *
