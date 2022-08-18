@@ -240,13 +240,34 @@ control.(sh|bat) --snapshot restore snapshot_09062021 --cancel
 
 == Getting Snapshot Operation Status
 
-The status of the current snapshot operation in the cluster can be obtained using the `control.sh|bat` script:
+The status of the current snapshot operation in the cluster can be obtained using the `control.sh|bat` script or JMX interface:
 
+[tabs]
+--
+tab:Unix[]
 [source,shell]
 ----
 # Get the status of the snapshot operation.
-control.(sh|bat) --snapshot status
+control.sh --snapshot status
 ----
+
+tab:Windows[]
+[source,shell]
+----
+# Get the status of the snapshot operation.
+control.bat --snapshot status
+----
+
+tab:JMX[]
+You can also get the current snapshot status via the `SnapshotMXBean` interface:
+[source,java]
+----
+SnapshotMXBean mxBean = ...;
+
+// The status of a current snapshot operation in the cluster.
+String status = mxBean.status();
+----
+--
 
 == Consistency Guarantees
 

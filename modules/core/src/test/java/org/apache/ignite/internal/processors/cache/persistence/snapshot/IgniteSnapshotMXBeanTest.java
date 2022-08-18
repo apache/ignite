@@ -174,7 +174,7 @@ public class IgniteSnapshotMXBeanTest extends AbstractSnapshotSelfTest {
     public void testStatus() throws Exception {
         IgniteEx srv = startGridsWithCache(2, dfltCacheCfg, CACHE_KEYS_RANGE);
 
-        checkStatus(false, false, null);
+        checkSnapshotStatus(false, false, null);
 
         TestRecordingCommunicationSpi spi = TestRecordingCommunicationSpi.spi(grid(1));
 
@@ -184,13 +184,13 @@ public class IgniteSnapshotMXBeanTest extends AbstractSnapshotSelfTest {
 
         spi.waitForBlocked();
 
-        checkStatus(true, false, SNAPSHOT_NAME);
+        checkSnapshotStatus(true, false, SNAPSHOT_NAME);
 
         spi.stopBlock();
 
         fut.get(getTestTimeout());
 
-        checkStatus(false, false, null);
+        checkSnapshotStatus(false, false, null);
 
         srv.destroyCache(DEFAULT_CACHE_NAME);
 
@@ -200,17 +200,21 @@ public class IgniteSnapshotMXBeanTest extends AbstractSnapshotSelfTest {
 
         spi.waitForBlocked();
 
-        checkStatus(false, true, SNAPSHOT_NAME);
+        checkSnapshotStatus(false, true, SNAPSHOT_NAME);
 
         spi.stopBlock();
 
         fut.get(getTestTimeout());
 
-        checkStatus(false, false, null);
+        checkSnapshotStatus(false, false, null);
     }
 
-    /** */
-    private void checkStatus(boolean isCreating, boolean isRestoring, String expName) throws Exception {
+    /**
+     * @param isCreating {@code True} if create snapshot operation is in progress.
+     * @param isRestoring {@code True} if restore snapshot operation is in progress.
+     * @param expName Expected snapshot name.
+     */
+    private void checkSnapshotStatus(boolean isCreating, boolean isRestoring, String expName) throws Exception {
         assertTrue(waitForCondition(() -> G.allGrids().stream().allMatch(
                 ignite -> {
                     IgniteSnapshotManager mgr = ((IgniteEx)ignite).context().cache().context().snapshotMgr();

@@ -25,6 +25,8 @@ import org.apache.ignite.lang.IgniteFuture;
 
 /**
  * Visor snapshot restore task.
+ *
+ * @deprecated Use {@link VisorSnapshotStatusTask} instead.
  */
 @GridInternal
 @Deprecated

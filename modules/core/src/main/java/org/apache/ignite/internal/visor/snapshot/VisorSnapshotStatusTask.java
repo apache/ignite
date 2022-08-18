@@ -43,7 +43,9 @@ import static org.apache.ignite.internal.processors.cache.persistence.snapshot.I
 import static org.apache.ignite.internal.processors.cache.persistence.snapshot.SnapshotRestoreProcess.SNAPSHOT_RESTORE_METRICS;
 import static org.apache.ignite.internal.visor.snapshot.VisorSnapshotStatusTask.SnapshotStatus;
 
-/** */
+/**
+ * Task to get the status of the current snapshot operation in the cluster.
+ */
 @GridInternal
 public class VisorSnapshotStatusTask extends VisorMultiNodeTask<Void, VisorSnapshotTaskResult, SnapshotStatus> {
     /** */
@@ -150,21 +152,21 @@ public class VisorSnapshotStatusTask extends VisorMultiNodeTask<Void, VisorSnaps
         }
     }
 
-    /** */
+    /** Snapshot operation status. */
     public static class SnapshotStatus implements Serializable {
         /** */
         private static final long serialVersionUID = 0L;
 
-        /** */
+        /** Operation type. */
         private final SnapshotOperation op;
 
-        /** */
+        /** Snapshot name. */
         private final String name;
 
-        /** */
+        /** Request ID. */
         private final String requestId;
 
-        /** */
+        /** Start time. */
         private final long startTime;
 
         /** Progress of operation on nodes. */
@@ -180,38 +182,38 @@ public class VisorSnapshotStatusTask extends VisorMultiNodeTask<Void, VisorSnaps
             this.progress = Collections.unmodifiableMap(progress);
         }
 
-        /** */
+        /** @return Operation type. */
         public SnapshotOperation operation() {
             return op;
         }
 
-        /** */
+        /** @return Snapshot name. */
         public String name() {
             return name;
         }
 
-        /** */
+        /** @return Request ID. */
         public String requestId() {
             return requestId;
         }
 
-        /** */
+        /** @return Start time. */
         public long startTime() {
             return startTime;
         }
 
-        /** */
+        /** @return Progress of operation on nodes. */
         public Map<UUID, T2<Long, Long>> progress() {
             return progress;
         }
     }
 
-    /** */
+    /** Snapshot operation type. */
     public enum SnapshotOperation {
-        /**  */
+        /** Create snapshot. */
         CREATE,
 
-        /** */
+        /** Restore snapshot. */
         RESTORE
     }
 }
