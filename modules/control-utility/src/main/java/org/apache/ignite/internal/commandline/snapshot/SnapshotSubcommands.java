@@ -36,7 +36,10 @@ public enum SnapshotSubcommands {
     CHECK(new SnapshotCheckCommand()),
 
     /** Sub-command to restore snapshot. */
-    RESTORE(new SnapshotRestoreCommand());
+    RESTORE(new SnapshotRestoreCommand()),
+
+    /** Sub-command to get the status of the current snapshot operation. */
+    STATUS(new SnapshotStatusCommand());
 
     /** Sub-command. */
     private final SnapshotSubcommand cmd;
