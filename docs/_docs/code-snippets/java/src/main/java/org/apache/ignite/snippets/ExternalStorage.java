@@ -73,8 +73,8 @@ public class ExternalStorage {
 
         personType.setKeyFields(new JdbcTypeField(java.sql.Types.INTEGER, "id", Integer.class, "id"));
 
-        personType.setValueFields(new JdbcTypeField(java.sql.Types.INTEGER, "id", Integer.class, "id"));
-        personType.setValueFields(new JdbcTypeField(java.sql.Types.VARCHAR, "name", String.class, "name"));
+        personType.setValueFields(new JdbcTypeField(java.sql.Types.INTEGER, "id", Integer.class, "id"), 
+                                  new JdbcTypeField(java.sql.Types.VARCHAR, "name", String.class, "name"));
 
         factory.setTypes(personType);
 
