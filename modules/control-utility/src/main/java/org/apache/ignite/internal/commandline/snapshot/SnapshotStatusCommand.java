@@ -24,10 +24,7 @@ import java.util.Map;
 import java.util.UUID;
 import java.util.logging.Logger;
 import java.util.stream.Collectors;
-import org.apache.ignite.internal.client.GridClient;
-import org.apache.ignite.internal.client.GridClientConfiguration;
-import org.apache.ignite.internal.commandline.AbstractCommand;
-import org.apache.ignite.internal.commandline.Command;
+import org.apache.ignite.internal.commandline.CommandArgIterator;
 import org.apache.ignite.internal.commandline.systemview.SystemViewCommand;
 import org.apache.ignite.internal.util.GridStringBuilder;
 import org.apache.ignite.internal.util.typedef.F;
@@ -35,10 +32,8 @@ import org.apache.ignite.internal.util.typedef.X;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.internal.visor.snapshot.VisorSnapshotStatusTask;
 import org.apache.ignite.internal.visor.snapshot.VisorSnapshotStatusTask.SnapshotStatus;
-import org.apache.ignite.internal.visor.snapshot.VisorSnapshotTaskResult;
 
 import static org.apache.ignite.internal.commandline.CommandList.SNAPSHOT;
-import static org.apache.ignite.internal.commandline.TaskExecutor.executeTask;
 import static org.apache.ignite.internal.commandline.snapshot.SnapshotSubcommands.STATUS;
 import static org.apache.ignite.internal.visor.systemview.VisorSystemViewTask.SimpleType.NUMBER;
 import static org.apache.ignite.internal.visor.systemview.VisorSystemViewTask.SimpleType.STRING;
@@ -46,30 +41,21 @@ import static org.apache.ignite.internal.visor.systemview.VisorSystemViewTask.Si
 /**
  * Command to get the status of the current snapshot operation in the cluster.
  */
-public class SnapshotStatusCommand extends AbstractCommand<Object> {
-    /** {@inheritDoc} */
-    @Override public Object execute(GridClientConfiguration clientCfg, Logger log) throws Exception {
-        try (GridClient client = Command.startClient(clientCfg)) {
-            VisorSnapshotTaskResult res = executeTask(
-                client,
-                VisorSnapshotStatusTask.class,
-                null,
-                clientCfg
-            );
-
-            printStatus((SnapshotStatus)res.result(), log);
-
-            return res;
-        }
+public class SnapshotStatusCommand extends SnapshotSubcommand {
+    /** */
+    protected SnapshotStatusCommand() {
+        super("status", VisorSnapshotStatusTask.class);
     }
 
-    /** Prints the snapshot operation status to the log. */
-    private void printStatus(SnapshotStatus status, Logger log) {
-        if (status == null) {
+    /** {@inheritDoc} */
+    @Override protected void printResult(Object res, Logger log) {
+        if (res == null) {
             log.info("There is no create or restore snapshot operation in progress.");
 
             return;
         }
+
+        SnapshotStatus status = (SnapshotStatus)res;
 
         boolean isCreating = status.operation() == VisorSnapshotStatusTask.SnapshotOperation.CREATE;
 
@@ -84,13 +70,13 @@ public class SnapshotStatusCommand extends AbstractCommand<Object> {
         s.a("Operation ID: ").a(status.requestId()).nl();
         s.a("Started at: ").a(DateFormat.getDateTimeInstance().format(new Date(status.startTime()))).nl();
         s.a("Duration: ").a(X.timeSpan2DHMSM(System.currentTimeMillis() - status.startTime())).nl()
-            .nl();
+                .nl();
         s.a("Estimated operation progress:").nl();
 
         log.info(s.toString());
 
         List<String> titles = isCreating ? F.asList("Node ID", "Processed, bytes", "Total, bytes", "Percent") :
-            F.asList("Node ID", "Processed, partitions", "Total, partitions", "Percent");
+                F.asList("Node ID", "Processed, partitions", "Total, partitions", "Percent");
 
         List<List<?>> rows = status.progress().entrySet().stream().sorted(Map.Entry.comparingByKey()).map(e -> {
             UUID nodeId = e.getKey();
@@ -109,23 +95,18 @@ public class SnapshotStatusCommand extends AbstractCommand<Object> {
         }).collect(Collectors.toList());
 
         SystemViewCommand.printTable(titles, F.asList(STRING, NUMBER, NUMBER, NUMBER),
-            rows, log);
+                rows, log);
 
         log.info(U.nl());
     }
 
     /** {@inheritDoc} */
-    @Override public Object arg() {
-        return null;
+    @Override public void parseArguments(CommandArgIterator argIter) {
+        // No-op.
     }
 
     /** {@inheritDoc} */
     @Override public void printUsage(Logger log) {
         usage(log, "Get the status of the current snapshot operation:", SNAPSHOT, STATUS.toString());
-    }
-
-    /** {@inheritDoc} */
-    @Override public String name() {
-        return STATUS.name();
     }
 }

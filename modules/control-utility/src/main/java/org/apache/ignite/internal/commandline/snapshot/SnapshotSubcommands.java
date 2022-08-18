@@ -17,7 +17,6 @@
 
 package org.apache.ignite.internal.commandline.snapshot;
 
-import org.apache.ignite.internal.commandline.AbstractCommand;
 import org.apache.ignite.internal.util.typedef.F;
 
 /**
@@ -43,10 +42,10 @@ public enum SnapshotSubcommands {
     STATUS(new SnapshotStatusCommand());
 
     /** Sub-command. */
-    private final AbstractCommand<?> cmd;
+    private final SnapshotSubcommand cmd;
 
     /** @param cmd Sub-command. */
-    SnapshotSubcommands(AbstractCommand<?> cmd) {
+    SnapshotSubcommands(SnapshotSubcommand cmd) {
         this.cmd = cmd;
     }
 
@@ -69,7 +68,7 @@ public enum SnapshotSubcommands {
     /**
      * @return Sub-command.
      */
-    public AbstractCommand<?> subCommand() {
+    public SnapshotSubcommand subCommand() {
         return cmd;
     }
 
