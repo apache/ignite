@@ -78,6 +78,7 @@ import org.apache.ignite.IgniteCache;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.IgniteLogger;
+import org.apache.ignite.IgniteSystemProperties;
 import org.apache.ignite.Ignition;
 import org.apache.ignite.cache.query.annotations.QuerySqlFunction;
 import org.apache.ignite.cluster.ClusterNode;
@@ -1282,9 +1283,10 @@ public final class GridTestUtils {
         }
     }
 
-    /** */
+    /**
+     * Initialize {@link IgniteSystemProperties#IGNITE_HOME IGNITE_HOME} system property.
+     */
     public static void initTestProjectHome() {
-        // Initialize IGNITE_HOME system property.
         String igniteHome = U.getIgniteHome();
 
         if (F.isEmpty(igniteHome)) {

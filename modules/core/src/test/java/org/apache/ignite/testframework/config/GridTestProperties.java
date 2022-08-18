@@ -101,7 +101,6 @@ public final class GridTestProperties {
 
     /** */
     static {
-        // Initialize IGNITE_HOME system property.
         initTestProjectHome();
 
         // Load default properties.
