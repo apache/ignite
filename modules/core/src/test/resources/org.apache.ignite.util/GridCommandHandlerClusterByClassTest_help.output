@@ -169,7 +169,7 @@ This utility can do the following commands:
       --src path                 - Path to the directory where the snapshot files are located. If not specified, the default configured snapshot directory will be used.
       --sync                     - Run the operation synchronously, the command will wait for the entire operation to complete. Otherwise, it will be performed in the background, and the command will immediately return control.
 
-  Snapshot restore operation status (Command deprecated. Use '--snapshot STATUS' instead.):
+  Snapshot restore operation status (Command deprecated. Use '--snapshot status' instead.):
     control.(sh|bat) --snapshot restore snapshot_name --status
 
     Parameters:
@@ -182,7 +182,7 @@ This utility can do the following commands:
       snapshot_name  - Snapshot name.
 
   Get the status of the current snapshot operation:
-    control.(sh|bat) --snapshot STATUS
+    control.(sh|bat) --snapshot status
 
   Change cluster tag to new value:
     control.(sh|bat) --change-tag newTagValue [--yes]
