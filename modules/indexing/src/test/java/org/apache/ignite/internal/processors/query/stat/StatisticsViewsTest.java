@@ -46,7 +46,6 @@ public abstract class StatisticsViewsTest extends StatisticsAbstractTest {
         collectStatistics(StatisticsType.GLOBAL, SMALL_TARGET);
     }
 
-
     /**
      * Check small table configuration in statistics column configuration view.
      */
