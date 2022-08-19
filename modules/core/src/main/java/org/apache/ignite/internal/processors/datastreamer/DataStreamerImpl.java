@@ -2014,8 +2014,10 @@ public class DataStreamerImpl<K, V> implements IgniteDataStreamer<K, V>, Delayed
                         partId : GridIoMessage.STRIPE_DISABLED_PART);
 
                 try {
-//                    if(node.order() != 2)
+//                    if(node.order() == 2)
 //                        U.sleep(50);
+
+                    //System.err.println("TEST | send to node " + node.order());
 
                     ctx.io().sendToGridTopic(node, TOPIC_DATASTREAM, req, plc);
 

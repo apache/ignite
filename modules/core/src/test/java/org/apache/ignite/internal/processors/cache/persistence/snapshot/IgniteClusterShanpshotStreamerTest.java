@@ -54,9 +54,9 @@ public class IgniteClusterShanpshotStreamerTest  extends AbstractSnapshotSelfTes
         IgniteConfiguration cfg = super.getConfiguration(igniteInstanceName);
 
         cfg.getDataStorageConfiguration().getDefaultDataRegionConfiguration().setMaxSize(2 * 1024L * 1024L * 1024L);
-        cfg.getDataStorageConfiguration().setWalSegments(4);
-        cfg.getDataStorageConfiguration().setWalSegmentSize(16 * 1024 * 1024);
-        cfg.getDataStorageConfiguration().setMaxWalArchiveSize(128 * 1024 * 1024);
+//        cfg.getDataStorageConfiguration().setWalSegments(4);
+//        cfg.getDataStorageConfiguration().setWalSegmentSize(16 * 1024 * 1024);
+//        cfg.getDataStorageConfiguration().setMaxWalArchiveSize(128 * 1024 * 1024);
 //        cfg.getDataStorageConfiguration().setCheckpointFrequency(1000);
         cfg.getDataStorageConfiguration().setCheckpointReadLockTimeout(15_000);
 
@@ -68,12 +68,12 @@ public class IgniteClusterShanpshotStreamerTest  extends AbstractSnapshotSelfTes
     /** @throws Exception If fails. */
     @Test
     public void testClusterSnapshotConsistencyWithStreamer() throws Exception {
-        int grids = 2;
+        int grids = 3;
         int backups = 1;
 //        int loadBeforeSnp = 20_000;
 //        int loadBeforeSnp = 1;
 
-        CountDownLatch loadLever = new CountDownLatch(100_000);
+        CountDownLatch loadLever = new CountDownLatch(20_000);
         AtomicBoolean stop = new AtomicBoolean(false);
         AtomicInteger idx = new AtomicInteger();
         dfltCacheCfg = null;
@@ -88,7 +88,7 @@ public class IgniteClusterShanpshotStreamerTest  extends AbstractSnapshotSelfTes
             .createCache(new CacheConfiguration<Integer, Account>("SQL_PUBLIC_" + tableName).setBackups(backups)
                     .setAtomicityMode(CacheAtomicityMode.ATOMIC)
                     .setCacheMode(CacheMode.PARTITIONED)
-//                .setWriteSynchronizationMode(CacheWriteSynchronizationMode.FULL_SYNC)
+//                .setWriteSynchronizationMode(CacheWriteSynchronizationMode.FULL_ASYNC)
                     .setBackups(backups)
 //                                    .setWriteSynchronizationMode(CacheWriteSynchronizationMode.FULL_ASYNC)
 //                            .setGroupName("grp1")
@@ -104,7 +104,6 @@ public class IgniteClusterShanpshotStreamerTest  extends AbstractSnapshotSelfTes
         grid(0).snapshot().createSnapshot(SNAPSHOT_NAME).get();
 
         stop.set(true);
-
         load1.get();
 //        load2.get();
 
@@ -138,8 +137,8 @@ public class IgniteClusterShanpshotStreamerTest  extends AbstractSnapshotSelfTes
                     while(!stop.get()){
                         int i = idx.incrementAndGet();
 
-                        ds.addData(i, new Account(i, i - 1));
-//                        cache.put(i, new Account(i, i - 1));
+//                        ds.addData(i, new Account(i, i - 1));
+                        cache.put(i, new Account(i, i - 1));
 
 //                        batch.put(i, new Account(i, i - 1));
 //
