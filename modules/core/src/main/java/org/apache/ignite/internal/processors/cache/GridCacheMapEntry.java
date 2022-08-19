@@ -2437,6 +2437,9 @@ public abstract class GridCacheMapEntry extends GridMetadataAwareAdapter impleme
                     keepBinary);
             }
 
+//            if(((KeyCacheObjectImpl)key).val.equals(1))
+//                System.err.println("TEST | update on " + cctx.kernalContext().grid().localNode().order());
+
             if (c.op == UPDATE) {
                 updateVal = val;
 

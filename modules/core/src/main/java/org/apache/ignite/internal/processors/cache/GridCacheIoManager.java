@@ -1250,8 +1250,11 @@ public class GridCacheIoManager extends GridCacheSharedManagerAdapter {
     public void send(ClusterNode node, GridCacheMessage msg, byte plc) throws IgniteCheckedException {
         assert !node.isLocal() : node;
 
-        if(msg instanceof GridNearAtomicAbstractUpdateRequest && node.order() == 2 && new Random().nextInt(100) > 79)
-            U.sleep(100);
+//        if(msg instanceof GridNearAtomicAbstractUpdateRequest && node.order() == 2 && new Random().nextInt(100) > 79)
+//            U.sleep(100);
+
+        if(msg instanceof GridNearAtomicAbstractUpdateRequest)
+            System.err.println("TEST | send GridNearAtomicAbstractUpdateRequest");
 
         msg.lastAffinityChangedTopologyVersion(cctx.exchange().lastAffinityChangedTopologyVersion(msg.topologyVersion()));
 

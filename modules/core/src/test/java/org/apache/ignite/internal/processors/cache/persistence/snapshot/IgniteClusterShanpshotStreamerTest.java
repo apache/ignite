@@ -68,8 +68,8 @@ public class IgniteClusterShanpshotStreamerTest  extends AbstractSnapshotSelfTes
     /** @throws Exception If fails. */
     @Test
     public void testClusterSnapshotConsistencyWithStreamer() throws Exception {
-        int grids = 3;
-        int backups = 1;
+        int grids = 4;
+        int backups = 2;
 //        int loadBeforeSnp = 20_000;
 //        int loadBeforeSnp = 1;
 
