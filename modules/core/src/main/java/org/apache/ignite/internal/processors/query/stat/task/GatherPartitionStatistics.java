@@ -17,10 +17,11 @@
 
 package org.apache.ignite.internal.processors.query.stat.task;
 
-import java.util.Arrays;
+import java.util.ArrayList;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.HashSet;
+import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.Callable;
@@ -30,15 +31,15 @@ import org.apache.ignite.IgniteException;
 import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
 import org.apache.ignite.internal.processors.cache.CacheGroupContext;
+import org.apache.ignite.internal.processors.cache.CacheObject;
 import org.apache.ignite.internal.processors.cache.GridCacheContext;
 import org.apache.ignite.internal.processors.cache.distributed.dht.topology.GridDhtLocalPartition;
 import org.apache.ignite.internal.processors.cache.distributed.dht.topology.GridDhtPartitionTopology;
 import org.apache.ignite.internal.processors.cache.persistence.CacheDataRow;
+import org.apache.ignite.internal.processors.query.GridQueryRowDescriptor;
+import org.apache.ignite.internal.processors.query.GridQueryRowDescriptorImpl;
 import org.apache.ignite.internal.processors.query.GridQueryTypeDescriptor;
-import org.apache.ignite.internal.processors.query.h2.opt.GridH2RowDescriptor;
-import org.apache.ignite.internal.processors.query.h2.opt.GridH2Table;
-import org.apache.ignite.internal.processors.query.h2.opt.H2CacheRow;
-import org.apache.ignite.internal.processors.query.h2.opt.H2Row;
+import org.apache.ignite.internal.processors.query.QueryUtils;
 import org.apache.ignite.internal.processors.query.stat.ColumnStatistics;
 import org.apache.ignite.internal.processors.query.stat.ColumnStatisticsCollector;
 import org.apache.ignite.internal.processors.query.stat.GatherStatisticCancelException;
@@ -48,8 +49,8 @@ import org.apache.ignite.internal.processors.query.stat.LocalStatisticsGathering
 import org.apache.ignite.internal.processors.query.stat.ObjectPartitionStatisticsImpl;
 import org.apache.ignite.internal.processors.query.stat.config.StatisticsColumnConfiguration;
 import org.apache.ignite.internal.util.typedef.F;
+import org.apache.ignite.internal.util.typedef.T2;
 import org.apache.ignite.internal.util.typedef.internal.U;
-import org.h2.table.Column;
 import org.jetbrains.annotations.Nullable;
 
 import static org.apache.ignite.internal.processors.cache.distributed.dht.topology.GridDhtPartitionState.OWNING;
@@ -129,7 +130,8 @@ public class GatherPartitionStatistics implements Callable<ObjectPartitionStatis
         if (gathCtx.cancelled())
             throw new GatherStatisticCancelException();
 
-        GridCacheContext<?, ?> cctx = gathCtx.table().cacheContext();
+        GridCacheContext<?, ?> cctx = gathCtx.cacheContextInfo() != null ? gathCtx.cacheContextInfo().cacheContext()
+            : null;
 
         if (cctx == null || !(cctx.gate().enterIfNotStopped()))
             throw new GatherStatisticCancelException();
@@ -225,44 +227,46 @@ public class GatherPartitionStatistics implements Callable<ObjectPartitionStatis
 
         boolean reserved = locPart.reserve();
 
-        GridH2Table tbl = gathCtx.table();
+        GridQueryTypeDescriptor tbl = gathCtx.table();
 
-        ObjectPartitionStatisticsImpl res = null;
+        ObjectPartitionStatisticsImpl res;
 
         try {
             if (!reserved || (locPart.state() != OWNING)) {
                 if (log.isDebugEnabled()) {
                     log.debug("Partition not owning. Need to retry [part=" + partId +
-                        ", tbl=" + tbl.identifier() + ']');
+                        ", tbl=" + tbl.tableName() + ']');
                 }
 
                 throw new GatherStatisticCancelException();
             }
 
-            Column cols[] = IgniteStatisticsHelper.filterColumns(tbl.getColumns(), colsToCollect.keySet());
+            List<T2<Integer, String>> cols = IgniteStatisticsHelper.filterColumns(tbl, colsToCollect.keySet());
 
-            ColumnStatisticsCollector[] collectors = new ColumnStatisticsCollector[cols.length];
+            List<ColumnStatisticsCollector> collectors = new ArrayList<>();
 
-            for (int i = 0; i < cols.length; ++i) {
-                long colCfgVer = colsToCollect.get(cols[i].getName()).version();
+            for (T2<Integer, String> col: cols) {
+                Integer colId = col.getKey();
+                String colName = col.getValue();
 
-                collectors[i] = new ColumnStatisticsCollector(cols[i], tbl::compareTypeSafe, colCfgVer);
+                long colCfgVer = colsToCollect.get(colName).version();
+                Class<?> colCls = tbl.fields().get(colName);
+
+                collectors.add(new ColumnStatisticsCollector(colId, colName, colCls, colCfgVer));
             }
-
-            GridH2RowDescriptor rowDesc = tbl.rowDescriptor();
-            GridQueryTypeDescriptor typeDesc = rowDesc.type();
 
             try {
                 int checkInt = CANCELLED_CHECK_INTERVAL;
 
                 if (log.isDebugEnabled()) {
                     log.debug("Start partition scan [part=" + partId +
-                        ", tbl=" + gathCtx.table().identifier() + ']');
+                        ", tbl=" + tbl.tableName() + ']');
                 }
 
-                for (CacheDataRow row : grp.offheap().cachePartitionIterator(
-                    gathCtx.table().cacheId(), partId, null, false)
-                ) {
+                GridQueryRowDescriptor rowDesc = new GridQueryRowDescriptorImpl(gathCtx.cacheContextInfo(), tbl);
+
+                for (CacheDataRow row : grp.offheap().cachePartitionIterator(gathCtx.cacheContextInfo().cacheId(), partId,
+                    null, false)) {
                     if (--checkInt == 0) {
                         if (gathCtx.future().isCancelled())
                             throw new GatherStatisticCancelException();
@@ -270,24 +274,22 @@ public class GatherPartitionStatistics implements Callable<ObjectPartitionStatis
                         checkInt = CANCELLED_CHECK_INTERVAL;
                     }
 
-                    if (!typeDesc.matchType(row.value()) || wasExpired(row))
+                    if (!tbl.matchType(row.value()) || wasExpired(row))
                         continue;
 
-                    H2Row h2row = new H2CacheRow(rowDesc, row);
-
                     for (ColumnStatisticsCollector colStat : collectors)
-                        colStat.add(h2row.getValue(colStat.col().getColumnId()));
+                        colStat.add(getValue(cctx, rowDesc, row, colStat));
                 }
             }
             catch (IgniteCheckedException e) {
                 log.warning(String.format("Unable to collect partition level statistics by %s.%s:%d due to %s",
-                    tbl.identifier().schema(), tbl.identifier().table(), partId, e.getMessage()));
+                    tbl.schemaName(), tbl.tableName(), partId, e.getMessage()));
 
                 throw new IgniteException("Unable to collect partition level statistics", e);
             }
 
-            Map<String, ColumnStatistics> colStats = Arrays.stream(collectors).collect(
-                Collectors.toMap(csc -> csc.col().getName(), ColumnStatisticsCollector::finish));
+            Map<String, ColumnStatistics> colStats = collectors.stream().collect(
+                Collectors.toMap(ColumnStatisticsCollector::columnName, ColumnStatisticsCollector::finish));
 
             // Add existing to full replace existing statistics with new one.
             if (partStat != null) {
@@ -316,6 +318,41 @@ public class GatherPartitionStatistics implements Callable<ObjectPartitionStatis
             statRepo.refreshObsolescence(gathCtx.configuration().key(), partId);
 
         return res;
+    }
+
+    /**
+     * @param cctx Cache contex.
+     * @param desc Row descriptor.
+     * @param row Cache data row
+     * @param coll Column collector.
+     * @return IndexKey containing value extracted from row.
+     */
+    private Object getValue(
+        GridCacheContext<?, ?> cctx,
+        GridQueryRowDescriptor desc,
+        CacheDataRow row,
+        ColumnStatisticsCollector coll
+    ) {
+        if (desc.isKeyColumn(coll.columnId()))
+            return unwrap(cctx, row.key(), desc.type().keyClass());
+
+        if (desc.isValueColumn(coll.columnId()))
+            return unwrap(cctx, row.value(), desc.type().valueClass());
+
+        Object val = desc.getFieldValue(row.key(), row.value(), coll.columnId() - QueryUtils.DEFAULT_COLUMNS_COUNT);
+
+        return unwrap(cctx, val, coll.columnType());
+    }
+
+    /** */
+    private Object unwrap(GridCacheContext<?, ?> cctx, Object val, Class<?> cls) {
+        if (val == null)
+            return null;
+
+        if (val instanceof CacheObject && QueryUtils.isSqlType(cls))
+            return ((CacheObject)val).value(cctx.cacheObjectContext(), false);
+
+        return val;
     }
 
     /**

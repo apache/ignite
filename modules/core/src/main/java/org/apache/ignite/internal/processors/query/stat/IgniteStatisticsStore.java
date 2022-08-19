@@ -19,7 +19,6 @@ package org.apache.ignite.internal.processors.query.stat;
 
 import java.util.Collection;
 import java.util.Map;
-
 import org.apache.ignite.internal.util.collection.IntMap;
 
 /**

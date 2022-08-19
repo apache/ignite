@@ -29,7 +29,6 @@ import java.util.Set;
 import java.util.function.BiConsumer;
 import java.util.function.Function;
 import java.util.stream.Collectors;
-
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.internal.processors.cache.persistence.IgniteCacheDatabaseSharedManager;
@@ -64,7 +63,7 @@ public class IgniteStatisticsPersistenceStoreImpl implements IgniteStatisticsSto
     private static final String META_VERSION_KEY = META_STAT_PREFIX + META_SEPARATOR + "version";
 
     /** Actual statistics version. */
-    public static final Integer VERSION = 2;
+    public static final Integer VERSION = 3;
 
     /** Logger. */
     private final IgniteLogger log;

@@ -21,7 +21,6 @@ import java.util.Collection;
 import java.util.Collections;
 import java.util.Map;
 import java.util.function.Function;
-
 import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.internal.util.collection.IntMap;
 

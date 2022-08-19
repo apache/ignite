@@ -17,21 +17,20 @@
 
 package org.apache.ignite.internal.processors.query.stat;
 
+import java.math.BigDecimal;
 import java.util.Arrays;
 import java.util.Objects;
-
 import org.apache.ignite.internal.util.typedef.internal.S;
-import org.h2.value.Value;
 
 /**
  * Values statistic in particular column.
  */
 public class ColumnStatistics {
     /** Minimum value in column or {@code null} if there are no non null values in the column. */
-    private final Value min;
+    private final BigDecimal min;
 
     /** Maximum value in column or {@code null} if there are no non null values in the column. */
-    private final Value max;
+    private final BigDecimal max;
 
     /** Number of null values in column. */
     private final long nulls;
@@ -68,8 +67,8 @@ public class ColumnStatistics {
      * @param createdAt Created at time, milliseconds.
      */
     public ColumnStatistics(
-        Value min,
-        Value max,
+        BigDecimal min,
+        BigDecimal max,
         long nulls,
         long distinct,
         long total,
@@ -92,14 +91,14 @@ public class ColumnStatistics {
     /**
      * @return Min value in column.
      */
-    public Value min() {
+    public BigDecimal min() {
         return min;
     }
 
     /**
      * @return Max value in column.
      */
-    public Value max() {
+    public BigDecimal max() {
         return max;
     }
 
@@ -163,8 +162,8 @@ public class ColumnStatistics {
             size == that.size &&
             ver == that.ver &&
             createdAt == that.createdAt &&
-            Objects.equals(min, that.min) &&
-            Objects.equals(max, that.max) &&
+            (min == null ? that.min == null : min.compareTo(that.min) == 0) &&
+            (max == null ? that.max == null : max.compareTo(that.max) == 0) &&
             Arrays.equals(raw, that.raw);
     }
 

@@ -22,7 +22,6 @@ import java.util.Arrays;
 import java.util.List;
 import java.util.function.Consumer;
 import java.util.stream.Collectors;
-
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteException;
@@ -105,7 +104,7 @@ public class StatisticsConfigurationTest extends StatisticsAbstractTest {
                 assertNotNull("Column: " + col, colStat);
 
                 assertTrue("Column: " + col, colStat.distinct() > 0);
-                assertTrue("Column: " + col, colStat.max().getInt() > 0);
+                assertTrue("Column: " + col, colStat.max().intValue() > 0);
                 assertTrue("Column: " + col, colStat.total() == stat.rowCount());
             }
         }

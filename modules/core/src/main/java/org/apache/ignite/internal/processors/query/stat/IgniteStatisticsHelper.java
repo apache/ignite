@@ -23,27 +23,32 @@ import java.util.Collection;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.HashSet;
+import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
+import java.util.Spliterator;
+import java.util.Spliterators;
 import java.util.UUID;
 import java.util.function.Function;
 import java.util.stream.Collectors;
-
+import java.util.stream.Stream;
+import java.util.stream.StreamSupport;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
 import org.apache.ignite.internal.processors.cache.CacheGroupContext;
+import org.apache.ignite.internal.processors.cache.GridCacheContextInfo;
+import org.apache.ignite.internal.processors.query.GridQuerySchemaManager;
+import org.apache.ignite.internal.processors.query.GridQueryTypeDescriptor;
 import org.apache.ignite.internal.processors.query.QueryUtils;
-import org.apache.ignite.internal.processors.query.h2.SchemaManager;
-import org.apache.ignite.internal.processors.query.h2.opt.GridH2Table;
 import org.apache.ignite.internal.processors.query.stat.config.StatisticsColumnConfiguration;
 import org.apache.ignite.internal.processors.query.stat.config.StatisticsObjectConfiguration;
 import org.apache.ignite.internal.processors.query.stat.messages.StatisticsKeyMessage;
 import org.apache.ignite.internal.processors.query.stat.messages.StatisticsRequest;
 import org.apache.ignite.internal.util.typedef.F;
-import org.h2.table.Column;
+import org.apache.ignite.internal.util.typedef.T2;
 import org.jetbrains.annotations.Nullable;
 
 /**
@@ -54,7 +59,7 @@ public class IgniteStatisticsHelper {
     private final IgniteLogger log;
 
     /** Schema manager. */
-    private final SchemaManager schemaMgr;
+    private final GridQuerySchemaManager schemaMgr;
 
     /**
      * Constructor.
@@ -65,7 +70,7 @@ public class IgniteStatisticsHelper {
      */
     public IgniteStatisticsHelper(
         UUID locNodeId,
-        SchemaManager schemaMgr,
+        GridQuerySchemaManager schemaMgr,
         Function<Class<?>, IgniteLogger> logSupplier
     ) {
         this.schemaMgr = schemaMgr;
@@ -80,7 +85,7 @@ public class IgniteStatisticsHelper {
      * @throws IgniteCheckedException If unable to find table by specified key.
      */
     public CacheGroupContext groupContext(StatisticsKey key) throws IgniteCheckedException {
-        GridH2Table tbl = schemaMgr.dataTable(key.schema(), key.obj());
+        GridCacheContextInfo<?, ?> tbl = schemaMgr.cacheInfoForTable(key.schema(), key.obj());
 
         if (tbl == null)
             throw new IgniteCheckedException(String.format("Can't find object %s.%s", key.schema(), key.obj()));
@@ -145,7 +150,7 @@ public class IgniteStatisticsHelper {
         );
 
         // For now there can be only tables
-        GridH2Table tbl = schemaMgr.dataTable(keyMsg.schema(), keyMsg.obj());
+        GridQueryTypeDescriptor tbl = schemaMgr.typeDescriptorForTable(keyMsg.schema(), keyMsg.obj());
 
         if (tbl == null) {
             // remove all loaded statistics.
@@ -169,23 +174,24 @@ public class IgniteStatisticsHelper {
      * @return Local level statistics.
      */
     public static ObjectStatisticsImpl aggregateLocalStatistics(
-        GridH2Table tbl,
+        GridQueryTypeDescriptor tbl,
         StatisticsObjectConfiguration cfg,
         Collection<? extends ObjectStatisticsImpl> stats,
         IgniteLogger log
     ) {
         assert !stats.isEmpty();
-        Column[] selectedCols = filterColumns(tbl.getColumns(), cfg.columns().keySet());
+        List<String> selectedCols = filterColumns(tbl, cfg.columns().keySet()).stream().map(T2::getValue)
+            .collect(Collectors.toList());
 
-        Map<Column, List<ColumnStatistics>> colPartStats = new HashMap<>(selectedCols.length);
+        Map<String, List<ColumnStatistics>> colPartStats = new HashMap<>(selectedCols.size());
         long rowCnt = 0;
 
-        for (Column col : selectedCols)
+        for (String col : selectedCols)
             colPartStats.put(col, new ArrayList<>());
 
         for (ObjectStatisticsImpl partStat : stats) {
-            for (Column col : selectedCols) {
-                ColumnStatistics colPartStat = partStat.columnStatistics(col.getName());
+            for (String col : selectedCols) {
+                ColumnStatistics colPartStat = partStat.columnStatistics(col);
 
                 if (colPartStat != null)
                     colPartStats.get(col).add(colPartStat);
@@ -194,17 +200,17 @@ public class IgniteStatisticsHelper {
             rowCnt += partStat.rowCount();
         }
 
-        Map<String, ColumnStatistics> colStats = new HashMap<>(selectedCols.length);
+        Map<String, ColumnStatistics> colStats = new HashMap<>(selectedCols.size());
 
-        for (Column col : selectedCols) {
-            StatisticsColumnConfiguration colCfg = cfg.columns().get(col.getName());
-            ColumnStatistics stat = ColumnStatisticsCollector.aggregate(tbl::compareTypeSafe, colPartStats.get(col),
+        for (String col : selectedCols) {
+            StatisticsColumnConfiguration colCfg = cfg.columns().get(col);
+            ColumnStatistics stat = ColumnStatisticsCollector.aggregate(colPartStats.get(col),
                 colCfg.overrides());
 
             if (log.isDebugEnabled())
-                log.debug("Aggregate column statistic done [col=" + col.getName() + ", stat=" + stat + ']');
+                log.debug("Aggregate column statistic done [col=" + col + ", stat=" + stat + ']');
 
-            colStats.put(col.getName(), stat);
+            colStats.put(col, stat);
         }
 
         rowCnt = calculateRowCount(cfg, rowCnt);
@@ -260,19 +266,44 @@ public class IgniteStatisticsHelper {
     /**
      * Filter columns by specified names.
      *
-     * @param cols Columns to filter.
+     * @param typeDescriptor Table descriptor.
      * @param colNames Column names.
      * @return Column with specified names.
      */
-    public static Column[] filterColumns(Column[] cols, @Nullable Collection<String> colNames) {
+    public static List<T2<Integer, String>> filterColumns(
+        GridQueryTypeDescriptor typeDescriptor,
+        @Nullable Collection<String> colNames
+    ) {
+        Stream<T2<Integer, String>> colStream = enumerate(typeDescriptor.fields().keySet().stream(),
+            QueryUtils.DEFAULT_COLUMNS_COUNT);
+
         if (F.isEmpty(colNames)) {
-            return Arrays.stream(cols)
-                .filter(c -> c.getColumnId() >= QueryUtils.DEFAULT_COLUMNS_COUNT)
-                .toArray(Column[]::new);
+            return colStream.filter(col -> !QueryUtils.KEY_FIELD_NAME.equals(col.getValue()) &&
+                    !QueryUtils.VAL_FIELD_NAME.equals(col.getValue())).collect(Collectors.toList());
         }
 
         Set<String> colNamesSet = new HashSet<>(colNames);
 
-        return Arrays.stream(cols).filter(c -> colNamesSet.contains(c.getName())).toArray(Column[]::new);
+        return colStream.filter(col -> colNamesSet.contains(col.getValue())).collect(Collectors.toList());
+    }
+
+    /** */
+    private static <T> Stream<T2<Integer, T>> enumerate(Stream<? extends T> stream, int startIdx) {
+        Iterator<T2<Integer, T>> iter = new Iterator<T2<Integer, T>>() {
+            private final Iterator<? extends T> streamIter = stream.iterator();
+
+            private int idx = startIdx;
+
+            @Override public boolean hasNext() {
+                return streamIter.hasNext();
+            }
+
+            @Override public T2<Integer, T> next() {
+                return new T2<>(idx++, streamIter.next());
+            }
+        };
+
+        return StreamSupport.stream(Spliterators.spliteratorUnknownSize(iter, Spliterator.ORDERED |
+            Spliterator.IMMUTABLE), false);
     }
 }
