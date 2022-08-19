@@ -162,8 +162,7 @@ public class IgniteStatisticsConfigurationManager {
         @Override public void onSqlTypeDropped(
             String schemaName,
             GridQueryTypeDescriptor typeDesc,
-            boolean destroy,
-            boolean clearIdx
+            boolean destroy
         ) {
             if (!active || !destroy)
                 return;

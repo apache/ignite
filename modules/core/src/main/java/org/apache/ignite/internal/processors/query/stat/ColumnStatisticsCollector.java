@@ -102,6 +102,9 @@ public class ColumnStatisticsCollector {
     /** Version. */
     private final long ver;
 
+    /** Column type. */
+    private final Class<?> colType;
+
     /**
      * Constructor.
      */
@@ -118,6 +121,7 @@ public class ColumnStatisticsCollector {
         this.colId = colId;
         this.colName = colName;
         this.ver = ver;
+        this.colType = colType;
 
         isComparable = colType != null && comparableCls.contains(colType);
     }
@@ -186,6 +190,13 @@ public class ColumnStatisticsCollector {
      */
     public String columnName() {
         return colName;
+    }
+
+    /**
+     * @return Column type.
+     */
+    public Class<?> columnType() {
+        return colType;
     }
 
     /**

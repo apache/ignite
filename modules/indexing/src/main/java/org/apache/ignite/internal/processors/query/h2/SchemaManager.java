@@ -362,7 +362,7 @@ public class SchemaManager implements GridQuerySchemaManager {
                     tbl.table().setRemoveIndexOnDestroy(clearIdx);
 
                     dropTable(tbl, rmvIdx);
-                    lsnr.onSqlTypeDropped(schemaName, tbl.type(), rmvIdx, clearIdx);
+                    lsnr.onSqlTypeDropped(schemaName, tbl.type(), rmvIdx);
                 }
                 catch (Exception e) {
                     U.error(log, "Failed to drop table on cache stop (will ignore): " + tbl.fullTableName(), e);
@@ -1055,10 +1055,9 @@ public class SchemaManager implements GridQuerySchemaManager {
         @Override public void onSqlTypeDropped(
             String schemaName,
             GridQueryTypeDescriptor typeDescriptor,
-            boolean destroy,
-            boolean clearIdx
+            boolean destroy
         ) {
-            lsnrs.forEach(lsnr -> lsnr.onSqlTypeDropped(schemaName, typeDescriptor, destroy, clearIdx));
+            lsnrs.forEach(lsnr -> lsnr.onSqlTypeDropped(schemaName, typeDescriptor, destroy));
         }
 
         /**

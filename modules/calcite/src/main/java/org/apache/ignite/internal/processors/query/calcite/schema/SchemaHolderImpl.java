@@ -219,8 +219,7 @@ public class SchemaHolderImpl extends AbstractService implements SchemaHolder, S
     @Override public synchronized void onSqlTypeDropped(
         String schemaName,
         GridQueryTypeDescriptor typeDesc,
-        boolean destroy,
-        boolean clearIdx
+        boolean destroy
     ) {
         IgniteSchema schema = igniteSchemas.computeIfAbsent(schemaName, IgniteSchema::new);
 

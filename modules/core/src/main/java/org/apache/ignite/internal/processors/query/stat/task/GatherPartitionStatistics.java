@@ -341,7 +341,7 @@ public class GatherPartitionStatistics implements Callable<ObjectPartitionStatis
 
         Object val = desc.getFieldValue(row.key(), row.value(), coll.columnId() - QueryUtils.DEFAULT_COLUMNS_COUNT);
 
-        return unwrap(cctx, val, desc.type().fields().get(coll.columnName()));
+        return unwrap(cctx, val, coll.columnType());
     }
 
     /** */

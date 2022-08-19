@@ -99,8 +99,7 @@ public abstract class AbstractSchemaChangeListener implements SchemaChangeListen
     @Override public void onSqlTypeDropped(
         String schemaName,
         GridQueryTypeDescriptor typeDescriptor,
-        boolean destroy,
-        boolean clearIdx
+        boolean destroy
     ) {
         // No-op.
     }

@@ -105,8 +105,7 @@ public class QueryPlanCacheImpl extends AbstractService implements QueryPlanCach
     @Override public void onSqlTypeDropped(
         String schemaName,
         GridQueryTypeDescriptor typeDescriptor,
-        boolean destroy,
-        boolean clearIdx
+        boolean destroy
     ) {
         clear();
     }

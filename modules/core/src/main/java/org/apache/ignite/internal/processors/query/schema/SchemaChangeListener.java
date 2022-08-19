@@ -93,16 +93,9 @@ public interface SchemaChangeListener {
      *
      * @param schemaName Schema name.
      * @param typeDesc Type descriptor.
-     */
-    /**
-     * Callback method.
-     *
-     * @param schemaName Schema name.
-     * @param typeDesc Type descriptor.
      * @param destroy Cache destroy flag.
-     * @param clearIdx Clear index flag.
      */
-    public void onSqlTypeDropped(String schemaName, GridQueryTypeDescriptor typeDesc, boolean destroy, boolean clearIdx);
+    public void onSqlTypeDropped(String schemaName, GridQueryTypeDescriptor typeDesc, boolean destroy);
 
     /**
      * Callback on index creation.
