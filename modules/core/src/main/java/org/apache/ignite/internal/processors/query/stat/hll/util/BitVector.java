@@ -156,7 +156,7 @@ public class BitVector implements Cloneable {
      * @return a <code>LongIterator</code> for iterating starting at the register
      *         with index zero. This will never be <code>null</code>.
      */
-    public org.apache.ignite.internal.processors.query.stat.hll.util.LongIterator registerIterator() {
+    public LongIterator registerIterator() {
         LongIterator longIterator = new LongIterator() {
             final int registerWidth = BitVector.this.registerWidth;
             final long[] words = BitVector.this.words;
@@ -218,7 +218,7 @@ public class BitVector implements Cloneable {
      *         otherwise.
      * @see #getRegister(long)
      * @see #setRegister(long, long)
-     * @see java.lang.Math#max(long, long)
+     * @see Math#max(long, long)
      */
     // NOTE:  if this changes then setRegister() must change
     public boolean setMaxRegister(final long registerIndex, final long value) {
@@ -284,7 +284,7 @@ public class BitVector implements Cloneable {
     /**
      * Creates a deep copy of this vector.
      *
-     * @see java.lang.Object#clone()
+     * @see Object#clone()
      */
     @Override public BitVector clone() {
         final BitVector copy = new BitVector(registerWidth, count);

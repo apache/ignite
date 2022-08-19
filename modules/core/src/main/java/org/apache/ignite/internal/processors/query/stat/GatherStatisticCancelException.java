@@ -22,7 +22,5 @@ import org.apache.ignite.IgniteException;
 /** */
 public class GatherStatisticCancelException extends IgniteException {
     /** */
-    public GatherStatisticCancelException() {
-        // No-op.
-    }
+    private static final long serialVersionUID = 0L;
 }

@@ -18,7 +18,6 @@
 package org.apache.ignite.internal.processors.query.stat;
 
 import java.util.function.Predicate;
-
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.internal.IgniteEx;
@@ -28,7 +27,6 @@ import org.apache.ignite.internal.processors.query.h2.IgniteH2Indexing;
 import org.apache.ignite.internal.util.typedef.G;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.testframework.GridTestUtils;
-import org.junit.Ignore;
 import org.junit.Test;
 
 import static org.apache.ignite.testframework.GridTestUtils.waitForCondition;
@@ -36,7 +34,6 @@ import static org.apache.ignite.testframework.GridTestUtils.waitForCondition;
 /**
  * Integration tests for statistics collection.
  */
-@Ignore("https://issues.apache.org/jira/browse/IGNITE-15455")
 public class SqlStatisticsCommandTests extends StatisticsAbstractTest {
     /** {@inheritDoc} */
     @Override protected void beforeTestsStarted() throws Exception {

@@ -23,7 +23,6 @@ import java.util.List;
 import java.util.Set;
 import java.util.concurrent.LinkedBlockingQueue;
 import java.util.function.Consumer;
-
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.IgniteLogger;
@@ -32,13 +31,14 @@ import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.GridKernalContext;
 import org.apache.ignite.internal.managers.communication.GridIoPolicy;
 import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
+import org.apache.ignite.internal.processors.cache.GridCacheContextInfo;
 import org.apache.ignite.internal.processors.cache.GridCacheUtils;
 import org.apache.ignite.internal.processors.cache.distributed.dht.preloader.GridDhtPartitionsExchangeFuture;
 import org.apache.ignite.internal.processors.cache.distributed.dht.preloader.PartitionsExchangeAware;
 import org.apache.ignite.internal.processors.cache.persistence.IgniteCacheDatabaseSharedManager;
 import org.apache.ignite.internal.processors.configuration.distributed.DistributedEnumProperty;
-import org.apache.ignite.internal.processors.query.h2.SchemaManager;
-import org.apache.ignite.internal.processors.query.h2.opt.GridH2Table;
+import org.apache.ignite.internal.processors.query.GridQuerySchemaManager;
+import org.apache.ignite.internal.processors.query.GridQueryTypeDescriptor;
 import org.apache.ignite.internal.processors.query.stat.config.StatisticsObjectConfiguration;
 import org.apache.ignite.internal.processors.timeout.GridTimeoutProcessor;
 import org.apache.ignite.internal.util.collection.IntMap;
@@ -69,7 +69,7 @@ public class IgniteStatisticsManagerImpl implements IgniteStatisticsManager {
     private final GridKernalContext ctx;
 
     /** SchemaManager */
-    private final SchemaManager schemaMgr;
+    private final GridQuerySchemaManager schemaMgr;
 
     /** Statistics repository. */
     private final IgniteStatisticsRepository statsRepos;
@@ -106,7 +106,7 @@ public class IgniteStatisticsManagerImpl implements IgniteStatisticsManager {
     private volatile StatisticsUsageState lastUsageState = null;
 
     /** Started flag to prevent double start on change statistics usage state and activation and vice versa. */
-    private boolean started = false;
+    private volatile boolean started;
 
     /** Schedule to process obsolescence statistics. */
     private GridTimeoutProcessor.CancelableTask obsolescenceSchedule;
@@ -136,7 +136,10 @@ public class IgniteStatisticsManagerImpl implements IgniteStatisticsManager {
      * @param ctx Kernal context.
      * @param schemaMgr Schema manager.
      */
-    public IgniteStatisticsManagerImpl(GridKernalContext ctx, SchemaManager schemaMgr) {
+    public IgniteStatisticsManagerImpl(
+        GridKernalContext ctx,
+        GridQuerySchemaManager schemaMgr
+    ) {
         this.ctx = ctx;
         this.schemaMgr = schemaMgr;
 
@@ -482,7 +485,8 @@ public class IgniteStatisticsManagerImpl implements IgniteStatisticsManager {
 
             Set<Integer> tasksParts = calculateObsolescencedPartitions(cfg, statsRepos.getObsolescence(key));
 
-            GridH2Table tbl = schemaMgr.dataTable(key.schema(), key.obj());
+            GridQueryTypeDescriptor tbl = schemaMgr.typeDescriptorForTable(key.schema(), key.obj());
+            GridCacheContextInfo<?, ?> cacheInfo = schemaMgr.cacheInfoForTable(key.schema(), key.obj());
 
             if (tbl == null) {
                 // Table can be removed earlier, but not already processed. Or somethink goes wrong. Try to reschedule.
@@ -490,7 +494,7 @@ public class IgniteStatisticsManagerImpl implements IgniteStatisticsManager {
                     log.debug(String.format("Got obsolescence statistics for unknown table %s", key));
             }
 
-            LocalStatisticsGatheringContext ctx = new LocalStatisticsGatheringContext(true, tbl, cfg,
+            LocalStatisticsGatheringContext ctx = new LocalStatisticsGatheringContext(true, tbl, cacheInfo, cfg,
                 tasksParts, null);
             statProc.updateLocalStatistics(ctx);
         }
