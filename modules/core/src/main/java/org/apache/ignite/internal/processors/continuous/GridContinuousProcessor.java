@@ -105,6 +105,7 @@ import static org.apache.ignite.events.EventType.EVT_NODE_SEGMENTED;
 import static org.apache.ignite.internal.GridComponent.DiscoveryDataExchangeType.CONTINUOUS_PROC;
 import static org.apache.ignite.internal.GridTopic.TOPIC_CACHE;
 import static org.apache.ignite.internal.GridTopic.TOPIC_CONTINUOUS;
+import static org.apache.ignite.internal.managers.communication.GridIoPolicy.PUBLIC_POOL;
 import static org.apache.ignite.internal.managers.communication.GridIoPolicy.SYSTEM_POOL;
 import static org.apache.ignite.internal.processors.cache.distributed.dht.preloader.CachePartitionPartialCountersMap.toCountersMap;
 import static org.apache.ignite.internal.processors.continuous.GridContinuousMessageType.MSG_EVT_ACK;
@@ -1963,13 +1964,18 @@ public class GridContinuousProcessor extends GridProcessorAdapter {
                             node,
                             orderedTopic,
                             msg,
-                            SYSTEM_POOL,
+                            msg.type() == MSG_EVT_NOTIFICATION ? PUBLIC_POOL : SYSTEM_POOL,
                             0,
                             true,
                             ackC);
                     }
-                    else
-                        ctx.io().sendToGridTopic(node, TOPIC_CONTINUOUS, msg, SYSTEM_POOL, ackC);
+                    else {
+                        ctx.io().sendToGridTopic(node,
+                            TOPIC_CONTINUOUS,
+                            msg,
+                            msg.type() == MSG_EVT_NOTIFICATION ? PUBLIC_POOL : SYSTEM_POOL,
+                            ackC);
+                    }
 
                     break;
                 }
