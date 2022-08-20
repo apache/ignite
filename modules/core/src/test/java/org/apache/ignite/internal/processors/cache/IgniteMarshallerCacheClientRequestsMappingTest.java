@@ -103,7 +103,7 @@ public class IgniteMarshallerCacheClientRequestsMappingTest extends GridCommonAb
     @Override protected void beforeTest() throws Exception {
         super.beforeTest();
 
-         clntWorkDir = U.resolveWorkDirectory(U.defaultWorkDirectory(),  "clnt", true).getAbsolutePath();
+        clntWorkDir = U.resolveWorkDirectory(U.defaultWorkDirectory(), "clnt", true).getAbsolutePath();
     }
 
     /** {@inheritDoc} */
@@ -149,16 +149,13 @@ public class IgniteMarshallerCacheClientRequestsMappingTest extends GridCommonAb
 
         // Flood system thread pool with cache events.
         GridTestUtils.runMultiThreadedAsync((Callable<Boolean>)() -> {
-                    int key;
+            int key;
 
-                    while ((key = loadKeys.decrementAndGet()) > initialKeys && !Thread.currentThread().isInterrupted())
-                        srv1.cache(DEFAULT_CACHE_NAME).put(key, createOrganization(extClsLdr, key));
+            while ((key = loadKeys.decrementAndGet()) > initialKeys && !Thread.currentThread().isInterrupted())
+                srv1.cache(DEFAULT_CACHE_NAME).put(key, createOrganization(extClsLdr, key));
 
-                    return true;
-                },
-                8,
-                "cache-adder-thread")
-            .get();
+            return true;
+        }, 8, "cache-adder-thread").get();
 
         assertTrue(GridTestUtils.waitForCondition(() -> TestRecordingCommunicationSpi.spi(srv1).hasBlockedMessages(),
             AWAIT_PROCESSING_TIMEOUT_MS));
