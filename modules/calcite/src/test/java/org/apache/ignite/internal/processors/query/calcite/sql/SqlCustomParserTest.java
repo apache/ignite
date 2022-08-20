@@ -827,7 +827,7 @@ public class SqlCustomParserTest extends GridCommonAbstractTest {
      * Test parsing statistics command.
      */
     @Test
-    public void testStatisticsAnalyze() throws Exception {
+    public void testStatisticsCommands() throws Exception {
         checkStatisticsCommand("ANALYZE tbl1", "ANALYZE", "TBL1");
         checkStatisticsCommand("ANALYZE tbl1, tbl2", "ANALYZE", "TBL1,TBL2");
         checkStatisticsCommand("REFRESH STATISTICS tbl1, tbl2", "REFRESH STATISTICS", "TBL1,TBL2");
