@@ -106,6 +106,7 @@ import org.apache.ignite.internal.processors.cache.warmup.WarmUpTestPluginProvid
 import org.apache.ignite.internal.processors.cluster.ChangeGlobalStateFinishMessage;
 import org.apache.ignite.internal.processors.cluster.GridClusterStateProcessor;
 import org.apache.ignite.internal.util.BasicRateLimiter;
+import org.apache.ignite.internal.util.distributed.SingleNodeMessage;
 import org.apache.ignite.internal.util.future.IgniteFinishedFutureImpl;
 import org.apache.ignite.internal.util.lang.GridAbsPredicate;
 import org.apache.ignite.internal.util.lang.GridFunc;
@@ -3474,9 +3475,92 @@ public class GridCommandHandlerTest extends GridCommandHandlerClusterPerMethodAb
         assertNull(ig.cache(DEFAULT_CACHE_NAME));
     }
 
+    /** @throws Exception If fails. */
+    @Test
+    public void testSnapshotStatus() throws Exception {
+        String snapshotName = "snapshot1";
+        int keysCnt = 10_000;
+
+        IgniteEx srv = startGrids(3);
+
+        srv.cluster().state(ACTIVE);
+
+        createCacheAndPreload(srv, keysCnt);
+
+        checkSnapshotStatus(false, false, null);
+
+        TestRecordingCommunicationSpi spi = TestRecordingCommunicationSpi.spi(grid(1));
+
+        spi.blockMessages((node, msg) -> msg instanceof SingleNodeMessage);
+
+        IgniteFuture<Void> fut = srv.snapshot().createSnapshot(snapshotName);
+
+        spi.waitForBlocked();
+
+        checkSnapshotStatus(true, false, snapshotName);
+
+        spi.stopBlock();
+
+        fut.get(getTestTimeout());
+
+        checkSnapshotStatus(false, false, null);
+
+        srv.destroyCache(DEFAULT_CACHE_NAME);
+
+        spi.blockMessages((node, msg) -> msg instanceof SingleNodeMessage);
+
+        fut = srv.snapshot().restoreSnapshot(snapshotName, F.asList(DEFAULT_CACHE_NAME));
+
+        spi.waitForBlocked();
+
+        checkSnapshotStatus(false, true, snapshotName);
+
+        spi.stopBlock();
+
+        fut.get(getTestTimeout());
+
+        checkSnapshotStatus(false, false, null);
+    }
+
     /**
-     * @throws Exception If failed.
+     * @param isCreating {@code True} if create snapshot operation is in progress.
+     * @param isRestoring {@code True} if restore snapshot operation is in progress.
+     * @param expName Expected snapshot name.
      */
+    private void checkSnapshotStatus(boolean isCreating, boolean isRestoring, String expName) throws Exception {
+        assertTrue(waitForCondition(() -> G.allGrids().stream().allMatch(
+                ignite -> {
+                    IgniteSnapshotManager mgr = ((IgniteEx)ignite).context().cache().context().snapshotMgr();
+
+                    return isCreating == mgr.isSnapshotCreating() && isRestoring == mgr.isRestoring();
+                }),
+            getTestTimeout()));
+
+        injectTestSystemOut();
+
+        int status = execute("--snapshot", "status");
+
+        String out = testOut.toString();
+
+        assertEquals(out, EXIT_CODE_OK, status);
+
+        if (!isCreating && !isRestoring) {
+            assertContains(log, out, "There is no create or restore snapshot operation in progress.");
+
+            return;
+        }
+
+        if (isCreating)
+            assertContains(log, out, "Create snapshot operation is in progress.");
+        else
+            assertContains(log, out, "Restore snapshot operation is in progress.");
+
+        assertContains(log, out, "Snapshot name: " + expName);
+
+        G.allGrids().forEach(srv -> assertContains(log, out, srv.cluster().localNode().id().toString()));
+    }
+
+    /** @throws Exception If failed. */
     @Test
     @WithSystemProperty(key = IGNITE_PDS_SKIP_CHECKPOINT_ON_NODE_STOP, value = "true")
     public void testCleaningGarbageAfterCacheDestroyedAndNodeStop_ControlConsoleUtil() throws Exception {

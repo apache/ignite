@@ -20,7 +20,6 @@ package org.apache.ignite.internal.processors.query.stat;
 import java.util.Collections;
 import java.util.Map;
 import java.util.Objects;
-
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.cluster.ClusterState;
@@ -128,11 +127,9 @@ public class StatisticsGatheringTest extends StatisticsRestartAbstractTest {
 
     /**
      * Collect statistics for group of object at once and check it collected in each node.
-     *
-     * @throws Exception In case of errors.
      */
     @Test
-    public void testGroupGathering() throws Exception {
+    public void testGroupGathering() {
         StatisticsTarget t100 = createStatisticTarget(100);
         StatisticsTarget t101 = createStatisticTarget(101);
         StatisticsTarget tWrong = new StatisticsTarget(t101.schema(), t101.obj() + "wrong");

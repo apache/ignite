@@ -26,6 +26,7 @@ import org.apache.ignite.testframework.junits.WithSystemProperty;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.junit.Test;
 
+import static java.lang.System.clearProperty;
 import static java.lang.System.setProperty;
 import static org.apache.ignite.IgniteSystemProperties.IGNITE_THRESHOLD_WAL_ARCHIVE_SIZE_PERCENTAGE;
 import static org.apache.ignite.configuration.DataStorageConfiguration.DFLT_WAL_SEGMENT_SIZE;
@@ -38,6 +39,13 @@ import static org.apache.ignite.testframework.GridTestUtils.assertThrows;
  * Class for testing {@link IgniteCacheDatabaseSharedManager}.
  */
 public class IgniteCacheDatabaseSharedManagerSelfTest extends GridCommonAbstractTest {
+    /** {@inheritDoc} */
+    @Override protected void afterTestsStopped() throws Exception {
+        super.afterTestsStopped();
+
+        clearProperty(IGNITE_THRESHOLD_WAL_ARCHIVE_SIZE_PERCENTAGE);
+    }
+
     /**
      * Checking the correctness of validation {@link DataStorageConfiguration#getMinWalArchiveSize()}.
      *

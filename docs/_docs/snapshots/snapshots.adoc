@@ -218,7 +218,7 @@ control.(sh|bat) --snapshot restore snapshot_02092020 --start --groups snapshot-
 --
 
 ==== Using CLI to control restore operation
-The `control.sh|bat` script provides the ability to start, stop, and get the status of the restore operation.
+The `control.sh|bat` script provides the ability to start and stop the restore operation.
 
 [source,shell]
 ----
@@ -234,12 +234,40 @@ control.(sh|bat) --snapshot restore snapshot_09062021 --src /tmp/ignite/snapshot
 # Start restoring only "cache-group1" and "cache-group2" from the snapshot "snapshot_09062021" in the background.
 control.(sh|bat) --snapshot restore snapshot_09062021 --start --groups cache-group1,cache-group2
 
-# Get the status of the restore operation for "snapshot_09062021".
-control.(sh|bat) --snapshot restore snapshot_09062021 --status
-
 # Cancel the restore operation for "snapshot_09062021".
 control.(sh|bat) --snapshot restore snapshot_09062021 --cancel
 ----
+
+== Getting Snapshot Operation Status
+
+The status of the current snapshot operation in the cluster can be obtained using the `control.sh|bat` script or JMX interface:
+
+[tabs]
+--
+tab:Unix[]
+[source,shell]
+----
+# Get the status of the snapshot operation.
+control.sh --snapshot status
+----
+
+tab:Windows[]
+[source,shell]
+----
+# Get the status of the snapshot operation.
+control.bat --snapshot status
+----
+
+tab:JMX[]
+You can also get the current snapshot status via the `SnapshotMXBean` interface:
+[source,java]
+----
+SnapshotMXBean mxBean = ...;
+
+// The status of a current snapshot operation in the cluster.
+String status = mxBean.status();
+----
+--
 
 == Consistency Guarantees
 

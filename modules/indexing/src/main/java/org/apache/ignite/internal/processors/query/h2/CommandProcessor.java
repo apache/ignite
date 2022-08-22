@@ -66,18 +66,11 @@ import org.apache.ignite.internal.processors.query.h2.sql.GridSqlDropIndex;
 import org.apache.ignite.internal.processors.query.h2.sql.GridSqlDropTable;
 import org.apache.ignite.internal.processors.query.h2.sql.GridSqlStatement;
 import org.apache.ignite.internal.processors.query.schema.SchemaOperationException;
-import org.apache.ignite.internal.processors.query.stat.StatisticsKey;
-import org.apache.ignite.internal.processors.query.stat.StatisticsTarget;
-import org.apache.ignite.internal.processors.query.stat.config.StatisticsObjectConfiguration;
 import org.apache.ignite.internal.sql.SqlCommandProcessor;
-import org.apache.ignite.internal.sql.command.SqlAnalyzeCommand;
 import org.apache.ignite.internal.sql.command.SqlBeginTransactionCommand;
 import org.apache.ignite.internal.sql.command.SqlBulkLoadCommand;
 import org.apache.ignite.internal.sql.command.SqlCommand;
 import org.apache.ignite.internal.sql.command.SqlCommitTransactionCommand;
-import org.apache.ignite.internal.sql.command.SqlDropStatisticsCommand;
-import org.apache.ignite.internal.sql.command.SqlKillQueryCommand;
-import org.apache.ignite.internal.sql.command.SqlRefreshStatitsicsCommand;
 import org.apache.ignite.internal.sql.command.SqlRollbackTransactionCommand;
 import org.apache.ignite.internal.sql.command.SqlSetStreamingCommand;
 import org.apache.ignite.internal.util.future.GridFinishedFuture;
@@ -194,12 +187,6 @@ public class CommandProcessor extends SqlCommandProcessor {
             return processBulkLoadCommand((SqlBulkLoadCommand)cmdNative, qryId);
         else if (cmdNative instanceof SqlSetStreamingCommand)
             processSetStreamingCommand((SqlSetStreamingCommand)cmdNative, cliCtx);
-        else if (cmdNative instanceof SqlAnalyzeCommand)
-            processAnalyzeCommand((SqlAnalyzeCommand)cmdNative);
-        else if (cmdNative instanceof SqlRefreshStatitsicsCommand)
-            processRefreshStatisticsCommand((SqlRefreshStatitsicsCommand)cmdNative);
-        else if (cmdNative instanceof SqlDropStatisticsCommand)
-            processDropStatisticsCommand((SqlDropStatisticsCommand)cmdNative);
         else
             processTxCommand(cmdNative, params);
 
@@ -214,74 +201,6 @@ public class CommandProcessor extends SqlCommandProcessor {
             || cmd instanceof SqlRollbackTransactionCommand
             || cmd instanceof SqlBulkLoadCommand
             || cmd instanceof SqlSetStreamingCommand;
-    }
-
-    /**
-     * Process kill query command
-     *
-     * @param cmd Command.
-     */
-    private void processKillQueryCommand(SqlKillQueryCommand cmd) {
-        idx.runningQueryManager().cancelQuery(cmd.nodeQueryId(), cmd.nodeId(), cmd.async());
-    }
-
-    /**
-     * Process analyze command.
-     *
-     * @param cmd Sql analyze command.
-     */
-    private void processAnalyzeCommand(SqlAnalyzeCommand cmd) throws IgniteCheckedException {
-        ctx.security().authorize(SecurityPermission.CHANGE_STATISTICS);
-
-        IgniteH2Indexing indexing = (IgniteH2Indexing)ctx.query().getIndexing();
-
-        StatisticsObjectConfiguration objCfgs[] = cmd.configurations().stream()
-            .map(t -> {
-                if (t.key().schema() == null) {
-                    StatisticsKey key = new StatisticsKey(cmd.schemaName(), t.key().obj());
-
-                    return new StatisticsObjectConfiguration(key, t.columns().values(),
-                        t.maxPartitionObsolescencePercent());
-                }
-                else
-                    return t;
-            }).toArray(StatisticsObjectConfiguration[]::new);
-
-        indexing.statsManager().collectStatistics(objCfgs);
-    }
-
-    /**
-     * Process refresh statistics command.
-     *
-     * @param cmd Refresh statistics command.
-     */
-    private void processRefreshStatisticsCommand(SqlRefreshStatitsicsCommand cmd) throws IgniteCheckedException {
-        ctx.security().authorize(SecurityPermission.REFRESH_STATISTICS);
-
-        IgniteH2Indexing indexing = (IgniteH2Indexing)ctx.query().getIndexing();
-
-        StatisticsTarget[] targets = cmd.targets().stream()
-            .map(t -> (t.schema() == null) ? new StatisticsTarget(cmd.schemaName(), t.obj(), t.columns()) : t)
-            .toArray(StatisticsTarget[]::new);
-
-        indexing.statsManager().refreshStatistics(targets);
-    }
-
-    /**
-     * Process drop statistics command.
-     *
-     * @param cmd Drop statistics command.
-     */
-    private void processDropStatisticsCommand(SqlDropStatisticsCommand cmd) throws IgniteCheckedException {
-        ctx.security().authorize(SecurityPermission.CHANGE_STATISTICS);
-
-        IgniteH2Indexing indexing = (IgniteH2Indexing)ctx.query().getIndexing();
-
-        StatisticsTarget[] targets = cmd.targets().stream()
-            .map(t -> (t.schema() == null) ? new StatisticsTarget(cmd.schemaName(), t.obj(), t.columns()) : t)
-            .toArray(StatisticsTarget[]::new);
-
-        indexing.statsManager().dropStatistics(targets);
     }
 
     /**

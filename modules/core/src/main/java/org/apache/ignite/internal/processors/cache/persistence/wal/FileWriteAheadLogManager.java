@@ -2181,13 +2181,24 @@ public class FileWriteAheadLogManager extends GridCacheSharedManagerAdapter impl
          * Checks if there are already compressed segments and assigns counters if needed.
          */
         private void initAlreadyCompressedSegments() {
-            FileDescriptor[] alreadyCompressed = scan(walArchiveDir.listFiles(WAL_SEGMENT_FILE_COMPACTED_FILTER));
+            long firstArchivedIdx = -1;
+            long lastCompactedIdx = -1;
 
-            if (alreadyCompressed.length > 0)
-                segmentAware.onSegmentCompressed(alreadyCompressed[alreadyCompressed.length - 1].idx());
+            for (FileDescriptor segment : walArchiveFiles()) {
+                if (segment.isCompressed()) {
+                    lastCompactedIdx = segment.idx();
 
-            for (FileDescriptor fd : alreadyCompressed)
-                metrics.onWalSegmentCompressed(fd.file().length());
+                    metrics.onWalSegmentCompressed(segment.file().length());
+                }
+                else if (firstArchivedIdx == -1)
+                    firstArchivedIdx = segment.idx();
+            }
+
+            // We have to set a starting index for the compressor.
+            if (lastCompactedIdx >= 0)
+                segmentAware.onSegmentCompressed(lastCompactedIdx);
+            else if (firstArchivedIdx >= 0)
+                segmentAware.onSegmentCompressed(firstArchivedIdx - 1);
         }
 
         /**
@@ -2266,6 +2277,9 @@ public class FileWriteAheadLogManager extends GridCacheSharedManagerAdapter impl
             if (reserved)
                 return segmentToCompress;
             else {
+                if (log.isDebugEnabled())
+                    log.debug("Skipping segment compression [idx=" + segmentToCompress + ']');
+
                 segmentAware.onSegmentCompressed(segmentToCompress);
 
                 return -1;
@@ -2319,6 +2333,9 @@ public class FileWriteAheadLogManager extends GridCacheSharedManagerAdapter impl
                         metrics.onWalSegmentCompressed(currSize);
 
                         segmentAware.onSegmentCompressed(segIdx);
+
+                        if (log.isDebugEnabled())
+                            log.debug("Segment compressed notification [idx=" + segIdx + ']');
 
                         if (evt.isRecordable(EVT_WAL_SEGMENT_COMPACTED) && !cctx.kernalContext().recoveryMode())
                             evt.record(new WalSegmentCompactedEvent(cctx.localNode(), segIdx, zip.getAbsoluteFile()));

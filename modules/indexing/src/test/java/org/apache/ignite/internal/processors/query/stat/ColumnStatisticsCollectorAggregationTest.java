@@ -19,26 +19,18 @@ package org.apache.ignite.internal.processors.query.stat;
 
 import java.math.BigDecimal;
 import java.util.ArrayList;
-import java.util.Comparator;
 import java.util.List;
 import java.util.Random;
 import java.util.concurrent.ThreadLocalRandom;
-
 import org.apache.ignite.internal.processors.query.stat.hll.HLL;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
-import org.h2.value.Value;
-import org.h2.value.ValueDecimal;
 import org.junit.Test;
 
 /**
  * Test different scenarious with column statistics aggregation.
  */
 public class ColumnStatisticsCollectorAggregationTest extends GridCommonAbstractTest {
-    /** Decimal comparator. */
-    private static final Comparator<Value> DECIMAL_VALUE_COMPARATOR = (v1, v2) ->
-        v1.getBigDecimal().compareTo(v2.getBigDecimal());
-
     /**
      * Aggregate single column statistics object.
      * Test that aggregated object are the same as original.
@@ -50,7 +42,7 @@ public class ColumnStatisticsCollectorAggregationTest extends GridCommonAbstract
             getHLL(-1).toBytes(), 0, U.currentTimeMillis());
         statistics.add(stat1);
 
-        ColumnStatistics res = ColumnStatisticsCollector.aggregate(DECIMAL_VALUE_COMPARATOR, statistics, null);
+        ColumnStatistics res = ColumnStatisticsCollector.aggregate(statistics, null);
 
         assertEquals(stat1, res);
     }
@@ -70,7 +62,7 @@ public class ColumnStatisticsCollectorAggregationTest extends GridCommonAbstract
         statistics.add(stat1);
         statistics.add(stat2);
 
-        ColumnStatistics res = ColumnStatisticsCollector.aggregate(DECIMAL_VALUE_COMPARATOR, statistics, null);
+        ColumnStatistics res = ColumnStatisticsCollector.aggregate(statistics, null);
 
         assertNull(res.min());
         assertNull(res.max());
@@ -88,18 +80,18 @@ public class ColumnStatisticsCollectorAggregationTest extends GridCommonAbstract
     @Test
     public void aggregateTest() {
         List<ColumnStatistics> statistics = new ArrayList<>();
-        ColumnStatistics stat1 = new ColumnStatistics(ValueDecimal.get(BigDecimal.ONE), ValueDecimal.get(BigDecimal.TEN),
-            50, 10, 1000, 0, getHLL(50).toBytes(), 0, U.currentTimeMillis());
-        ColumnStatistics stat2 = new ColumnStatistics(ValueDecimal.get(BigDecimal.ZERO), ValueDecimal.get(BigDecimal.ONE),
-            10, 100, 10, 0, getHLL(9).toBytes(), 0, U.currentTimeMillis());
+        ColumnStatistics stat1 = new ColumnStatistics(BigDecimal.ONE, BigDecimal.TEN, 50, 10, 1000, 0,
+            getHLL(50).toBytes(), 0, U.currentTimeMillis());
+        ColumnStatistics stat2 = new ColumnStatistics(BigDecimal.ZERO, BigDecimal.ONE, 10, 100, 10, 0,
+            getHLL(9).toBytes(), 0, U.currentTimeMillis());
 
         statistics.add(stat1);
         statistics.add(stat2);
 
-        ColumnStatistics res = ColumnStatisticsCollector.aggregate(DECIMAL_VALUE_COMPARATOR, statistics, null);
+        ColumnStatistics res = ColumnStatisticsCollector.aggregate(statistics, null);
 
-        assertEquals(ValueDecimal.get(BigDecimal.ZERO), res.min());
-        assertEquals(ValueDecimal.get(BigDecimal.TEN), res.max());
+        assertEquals(BigDecimal.ZERO, res.min());
+        assertEquals(BigDecimal.TEN, res.max());
         assertEquals(60, res.nulls());
         assertEquals(59, res.distinct());
         assertEquals(1010, res.total());

@@ -83,7 +83,7 @@ public abstract class StatisticsAbstractTest extends GridCommonAbstractTest {
     static final StatisticsTarget SMALL_TARGET = new StatisticsTarget(SMALL_KEY, null);
 
     /** Async operation timeout for test */
-    static final int TIMEOUT = 5_000;
+    static final int TIMEOUT = 10_000;
 
     static {
         assertTrue(SMALL_SIZE < MED_SIZE && MED_SIZE < BIG_SIZE);

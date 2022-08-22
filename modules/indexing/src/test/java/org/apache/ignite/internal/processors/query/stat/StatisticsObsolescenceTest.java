@@ -65,7 +65,7 @@ public class StatisticsObsolescenceTest extends StatisticsAbstractTest {
         assertTrue(GridTestUtils.waitForCondition(() -> {
             ObjectStatisticsImpl stat2 = (ObjectStatisticsImpl)statisticsMgr(0).getLocalStatistics(SMALL_KEY);
 
-            return stat2.rowCount() > stat1.rowCount();
+            return stat2 != null && stat2.rowCount() > stat1.rowCount();
         }, TIMEOUT));
     }
 
