@@ -216,20 +216,15 @@ namespace Apache.Ignite.Core.Tests.Client.DataStructures
             var target1 = new int[3];
 
             var ex1 = Assert.Throws<ArgumentOutOfRangeException>(() => set.CopyTo(target1, -1));
-            Assert.AreEqual("Non-negative number required. (Parameter 'arrayIndex') Actual value was -1.",
-                TestUtils.RemoveLineBreaks(ex1.Message));
+            StringAssert.StartsWith("Non-negative number required.", ex1.Message);
 
             var ex2 = Assert.Throws<ArgumentException>(() => set.CopyTo(target1, 1));
-            Assert.AreEqual(
-                "Destination array is not long enough to copy all the items in the collection. " +
-                "Check array index and length. (Parameter 'array')",
-                TestUtils.RemoveLineBreaks(ex2.Message));
+            StringAssert.StartsWith("Destination array is not long enough to copy all the items in the collection",
+                ex2.Message);
 
             var ex3 = Assert.Throws<ArgumentException>(() => set.CopyTo(target1, 3));
-            Assert.AreEqual(
-                "Destination array is not long enough to copy all the items in the collection. " +
-                "Check array index and length. (Parameter 'array')",
-                TestUtils.RemoveLineBreaks(ex3.Message));
+            StringAssert.StartsWith("Destination array is not long enough to copy all the items in the collection",
+                ex3.Message);
         }
 
         [Test]
