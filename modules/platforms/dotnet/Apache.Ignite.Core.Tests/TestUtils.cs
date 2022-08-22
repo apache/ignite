@@ -693,6 +693,14 @@ namespace Apache.Ignite.Core.Tests
         }
 
         /// <summary>
+        /// Removes line breaks from the string.
+        /// </summary>
+        public static string RemoveLineBreaks(string s)
+        {
+            return s.Replace("\r\n", " ").Replace("\n", " ");
+        }
+
+        /// <summary>
         /// Logs to test progress. Produces immediate console output on .NET Core.
         /// </summary>
         public class TestContextLogger : ILogger
