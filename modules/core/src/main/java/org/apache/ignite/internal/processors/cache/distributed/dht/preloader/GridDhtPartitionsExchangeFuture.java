@@ -757,6 +757,13 @@ public class GridDhtPartitionsExchangeFuture extends GridDhtTopologyFutureAdapte
     }
 
     /**
+     * @return {@code True} if update counters finalization exchange.
+     */
+    public boolean finalizeCounters() {
+        return exchActions != null && exchActions.finalizePartitionCounters();
+    }
+
+    /**
      * @return {@code True} if activate cluster exchange.
      */
     public boolean activateCluster() {
@@ -2151,12 +2158,15 @@ public class GridDhtPartitionsExchangeFuture extends GridDhtTopologyFutureAdapte
 
         GridDhtPartitionsSingleMessage msg;
 
-        // Reset lost partitions before sending local partitions to coordinator.
+        // Reset lost/repaired partitions before sending local partitions to coordinator.
         if (exchActions != null) {
             Set<String> caches = exchActions.cachesToResetLostPartitions();
 
             if (!F.isEmpty(caches))
                 resetLostPartitions(caches);
+
+            if (exchActions.finalizePartitionCounters())
+                finalizePartitionCounters();
         }
 
         if (cctx.kernalContext().clientNode() || (dynamicCacheStartExchange() && exchangeLocE != null)) {
@@ -3913,6 +3923,9 @@ public class GridDhtPartitionsExchangeFuture extends GridDhtTopologyFutureAdapte
                             .collect(Collectors.toSet());
 
                         assignPartitionsStates(cacheGroupsToResetOwners);
+
+                        if (exchActions.finalizePartitionCounters())
+                            finalizePartitionCounters();
                     }
                 }
                 else if (discoveryCustomMessage instanceof SnapshotDiscoveryMessage

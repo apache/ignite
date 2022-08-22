@@ -1082,6 +1082,24 @@ control.bat --enable-experimental --consistency status
 ----
 --
 
+=== Partition update counters finalization
+
+The command allows fo finalize partition update counters after the manual repair.
+
+[tabs]
+--
+tab:Unix[]
+[source,shell]
+----
+control.sh --enable-experimental --consistency finalize
+----
+tab:Window[]
+[source,shell]
+----
+control.bat --enable-experimental --consistency finalize
+----
+--
+
 == Manage cache metrics collection
 
 The command provides an ability to enable, disable or show status of cache metrics collection.
