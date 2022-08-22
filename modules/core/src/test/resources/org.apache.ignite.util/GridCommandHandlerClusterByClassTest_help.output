@@ -322,7 +322,7 @@ If the file name isn't specified the output file name is: '<typeId>.bin'
     control.(sh|bat) --consistency status
 
   [EXPERIMENTAL]
-  Finalize partitions counters:
+  Finalize partitions update counters:
     control.(sh|bat) --consistency finalize
 
 By default commands affecting the cluster require interactive confirmation.
