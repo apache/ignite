@@ -117,7 +117,10 @@ namespace Apache.Ignite.Core.Impl.Common
         /// <summary>
         /// Gets the serialization ctor.
         /// </summary>
-        public Func<SerializationInfo, StreamingContext, object> SerializationCtor => _serializationCtor;
+        public Func<SerializationInfo, StreamingContext, object> SerializationCtor
+        {
+            get { return _serializationCtor; }
+        }
 
         /// <summary>
         /// Gets the serialization ctor to call on an uninitialized instance.
