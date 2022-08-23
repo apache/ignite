@@ -86,7 +86,8 @@ namespace Apache.Ignite.Core.Tests.Binary.Serializable
             var obj = StringComparer.OrdinalIgnoreCase;
             var res = TestUtils.SerializeDeserialize(obj);
 
-            Assert.AreEqual(obj, res);
+            Assert.AreEqual("OrdinalComparer", res.GetType().Name);
+            Assert.AreEqual(0, res.Compare("A", "a"), "Ignore case flag is deserialized incorrectly.");
         }
 
         /// <summary>
