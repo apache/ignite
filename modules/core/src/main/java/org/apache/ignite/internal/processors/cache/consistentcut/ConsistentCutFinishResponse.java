@@ -32,7 +32,7 @@ public class ConsistentCutFinishResponse implements Message {
     private static final long serialVersionUID = 0L;
 
     /** */
-    public static final short TYPE_CODE = 189;
+    public static final short TYPE_CODE = 201;
 
     /**
      * Consistent Cut Version.

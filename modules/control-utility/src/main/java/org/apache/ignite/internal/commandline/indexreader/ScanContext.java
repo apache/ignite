@@ -20,9 +20,13 @@ package org.apache.ignite.internal.commandline.indexreader;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.logging.Logger;
 
+import org.apache.ignite.internal.commandline.ProgressPrinter;
 import org.apache.ignite.internal.processors.cache.persistence.file.FilePageStore;
 import org.apache.ignite.internal.processors.cache.persistence.tree.io.PageIO;
+
+import static org.apache.ignite.internal.commandline.indexreader.IgniteIndexReader.ERROR_PREFIX;
 
 /**
  * Traverse context, which is used for tree traversal and is unique for traversal of one single tree.
@@ -30,6 +34,9 @@ import org.apache.ignite.internal.processors.cache.persistence.tree.io.PageIO;
 class ScanContext {
     /** Cache id or {@code -1} for sequential scan. */
     final int cacheId;
+
+    /** Index name. */
+    final String idxName;
 
     /** Count of inline fields. */
     final int inlineFldCnt;
@@ -40,8 +47,8 @@ class ScanContext {
     /** Page type statistics. */
     final Map<Class<? extends PageIO>, PagesStatistic> stats;
 
-    /** Map of errors, pageId -> set of exceptions. */
-    final Map<Long, List<String>> errors;
+    /** Errors count. */
+    long errCnt;
 
     /** List of items storage. */
     final ItemStorage items;
@@ -54,13 +61,40 @@ class ScanContext {
     int[] inline;
 
     /** */
-    public ScanContext(int cacheId, int inlineFldCnt, FilePageStore store, ItemStorage items) {
+    private final Logger log;
+
+    /** */
+    private final String prefix;
+
+    /** */
+    private final ProgressPrinter printer;
+
+    /** */
+    public ScanContext(
+        int cacheId,
+        String idxName,
+        int inlineFldCnt,
+        FilePageStore store,
+        ItemStorage items,
+        Logger log,
+        String prefix,
+        ProgressPrinter printer
+    ) {
         this.cacheId = cacheId;
+        this.idxName = idxName;
         this.inlineFldCnt = inlineFldCnt;
         this.store = store;
         this.items = items;
         this.stats = new LinkedHashMap<>();
-        this.errors = new LinkedHashMap<>();
+        this.log = log;
+        this.prefix = prefix;
+        this.printer = printer;
+    }
+
+    /** */
+    public void progress() {
+        if (printer != null)
+            printer.printProgress();
     }
 
     /** */
@@ -91,6 +125,24 @@ class ScanContext {
     /** */
     public void onLeafPage(long pageId, List<Object> data) {
         data.forEach(items::add);
+    }
+
+    /** */
+    public void onError(long pageId, String message) {
+        if (errCnt == 0) {
+            log.warning(prefix + ERROR_PREFIX + "-----");
+            log.warning(prefix + ERROR_PREFIX + "Index tree: " + idxName);
+            log.warning(prefix + ERROR_PREFIX + "---- Errors:");
+        }
+
+        errCnt++;
+
+        onError(log, prefix, pageId, message);
+    }
+
+    /** */
+    public static void onError(Logger log, String prefix, long pageId, String message) {
+        log.warning(prefix + ERROR_PREFIX + "Page id: " + pageId + ", exceptions: " + message);
     }
 
     /** */

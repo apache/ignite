@@ -221,5 +221,15 @@ namespace Apache.Ignite.Core.Client
             AtomicClientConfiguration configuration,
             long initialValue,
             bool create);
+
+        /// <summary>
+        /// Gets or creates an Ignite set with the specified name.
+        /// </summary>
+        /// <param name="name">Name.</param>
+        /// <param name="configuration">Configuration. When null, gets and existing set by name;
+        /// otherwise, creates a new set with the specified configuration.</param>
+        /// <typeparam name="T">Element type.</typeparam>
+        /// <returns>Ignite set.</returns>
+        IIgniteSetClient<T> GetIgniteSet<T>(string name, CollectionClientConfiguration configuration);
     }
 }

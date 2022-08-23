@@ -34,6 +34,7 @@ import org.apache.ignite.internal.processors.cache.mvcc.MvccSnapshot;
 import org.apache.ignite.internal.processors.cache.persistence.CacheDataRow;
 import org.apache.ignite.internal.processors.odbc.jdbc.JdbcParameterMeta;
 import org.apache.ignite.internal.processors.query.schema.SchemaIndexCacheVisitor;
+import org.apache.ignite.internal.processors.query.stat.IgniteStatisticsManager;
 import org.apache.ignite.internal.util.GridSpinBusyLock;
 import org.apache.ignite.internal.util.lang.GridCloseableIterator;
 import org.apache.ignite.lang.IgniteBiTuple;
@@ -306,5 +307,10 @@ public class DummyQueryIndexing implements GridQueryIndexing {
     /** {@inheritDoc} */
     @Override public boolean isConvertibleToColumnType(String schemaName, String tblName, String colName, Class<?> cls) {
         return false;
+    }
+
+    /** {@inheritDoc} */
+    @Override public IgniteStatisticsManager statsManager() {
+        return null;
     }
 }

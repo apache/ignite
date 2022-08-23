@@ -154,17 +154,6 @@
                     <!-- Set synchronous rebalancing (default is asynchronous). -->
                     <property name="rebalanceMode" value="SYNC"/>
                 </bean>
-
-                <!--
-                    Local cache example configuration.
-                -->
-                <bean class="org.apache.ignite.configuration.CacheConfiguration">
-                    <!-- Cache name is 'local'. -->
-                    <property name="name" value="local"/>
-
-                    <!-- LOCAL cache mode. -->
-                    <property name="cacheMode" value="LOCAL"/>
-                </bean>
             </list>
         </property>
 

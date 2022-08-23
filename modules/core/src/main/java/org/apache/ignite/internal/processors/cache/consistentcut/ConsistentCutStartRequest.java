@@ -32,7 +32,7 @@ public class ConsistentCutStartRequest implements Message {
     private static final long serialVersionUID = 0L;
 
     /** */
-    public static final short TYPE_CODE = 188;
+    public static final short TYPE_CODE = 200;
 
     /**
      * Consistent Cut Version.

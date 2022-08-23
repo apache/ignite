@@ -35,7 +35,6 @@ import org.apache.ignite.spi.metric.LongMetric;
 import org.apache.ignite.testframework.MvccFeatureChecker;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.junit.Test;
-
 import static org.apache.ignite.internal.processors.metric.impl.MetricUtils.cacheMetricsRegistryName;
 
 /**
@@ -99,14 +98,6 @@ public class CacheMetricsEntitiesCountTest extends GridCommonAbstractTest {
             .setBackups(1)
             .setOnheapCacheEnabled(true)
             .setAtomicityMode(CacheAtomicityMode.TRANSACTIONAL));
-
-        if (!MvccFeatureChecker.forcedMvcc() || MvccFeatureChecker.isSupported(MvccFeatureChecker.Feature.LOCAL_CACHE)) {
-            ccfgs.add(new CacheConfiguration<>()
-                .setName(CACHE_PREFIX + 4)
-                .setStatisticsEnabled(true)
-                .setCacheMode(CacheMode.LOCAL)
-                .setAtomicityMode(CacheAtomicityMode.TRANSACTIONAL));
-        }
 
         cacheCnt = ccfgs.size();
 

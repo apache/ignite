@@ -77,4 +77,9 @@ public class DateIndexKey extends DateTimeIndexKey {
         return type() == o.type() ? Long.compare(dateVal, ((DateIndexKey)o).dateVal)
             : -((DateTimeIndexKey)o).compareTo(dateVal, 0);
     }
+
+    /** {@inheritDoc} */
+    @Override public String toString() {
+        return String.valueOf(dateVal);
+    }
 }

@@ -56,11 +56,9 @@ import org.apache.ignite.lang.IgniteFuture;
 import org.apache.ignite.marshaller.Marshaller;
 import org.apache.ignite.startup.servlet.ServletContextListenerStartup;
 import org.apache.ignite.transactions.Transaction;
-
 import static java.util.concurrent.TimeUnit.MILLISECONDS;
 import static org.apache.ignite.cache.CacheAtomicityMode.ATOMIC;
 import static org.apache.ignite.cache.CacheAtomicityMode.TRANSACTIONAL;
-import static org.apache.ignite.cache.CacheMode.LOCAL;
 import static org.apache.ignite.cache.CacheMode.PARTITIONED;
 import static org.apache.ignite.cache.CacheWriteSynchronizationMode.FULL_ASYNC;
 import static org.apache.ignite.transactions.TransactionConcurrency.PESSIMISTIC;
@@ -344,10 +342,6 @@ public class WebSessionFilter implements Filter {
         if (!cacheCfg.isEagerTtl())
             throw new IgniteException("Cache for web sessions cannot operate with lazy TTL. " +
                 "Consider setting eagerTtl to true for cache: " + cacheName);
-
-        if (cacheCfg.getCacheMode() == LOCAL)
-            U.quietAndWarn(webSesIgnite.log(), "Using LOCAL cache for web sessions caching " +
-                "(this is only OK in test mode): " + cacheName);
 
         if (cacheCfg.getCacheMode() == PARTITIONED && cacheCfg.getAtomicityMode() != ATOMIC)
             U.quietAndWarn(webSesIgnite.log(), "Using " + cacheCfg.getAtomicityMode() + " atomicity for web sessions " +

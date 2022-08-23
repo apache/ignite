@@ -1057,7 +1057,7 @@ public class IgniteH2Indexing implements GridQueryIndexing {
         GridSqlStatement cmdH2 = cmd.commandH2();
 
         if (qryDesc.local()) {
-            throw new IgniteSQLException("DDL statements are not supported for LOCAL caches",
+            throw new IgniteSQLException("DDL statements are not supported for execution on local nodes only",
                 IgniteQueryErrorCode.UNSUPPORTED_OPERATION);
         }
 
@@ -2139,9 +2139,9 @@ public class IgniteH2Indexing implements GridQueryIndexing {
         parser = new QueryParser(this, connMgr, cmd -> cmdProc.isCommandSupported(cmd));
 
         schemaMgr = new SchemaManager(ctx, connMgr);
-        schemaMgr.start(ctx.config().getSqlConfiguration().getSqlSchemas());
-
         statsMgr = new IgniteStatisticsManagerImpl(ctx, schemaMgr);
+
+        schemaMgr.start(ctx.config().getSqlConfiguration().getSqlSchemas());
 
         nodeId = ctx.localNodeId();
         marshaller = ctx.config().getMarshaller();
@@ -3115,10 +3115,8 @@ public class IgniteH2Indexing implements GridQueryIndexing {
         return map;
     }
 
-    /**
-     * @return Statistics manager.
-     */
-    public IgniteStatisticsManager statsManager() {
+    /** {@inheritDoc} */
+    @Override public IgniteStatisticsManager statsManager() {
         return statsMgr;
     }
 }

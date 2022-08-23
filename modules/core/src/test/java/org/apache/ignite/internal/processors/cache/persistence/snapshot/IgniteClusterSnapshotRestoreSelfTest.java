@@ -31,6 +31,7 @@ import java.util.concurrent.atomic.AtomicInteger;
 import java.util.function.Consumer;
 import java.util.function.Function;
 import java.util.function.IntSupplier;
+import com.google.common.base.Throwables;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCache;
 import org.apache.ignite.IgniteCheckedException;
@@ -61,6 +62,7 @@ import org.apache.ignite.internal.util.distributed.DistributedProcess.Distribute
 import org.apache.ignite.internal.util.distributed.SingleNodeMessage;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.G;
+import org.apache.ignite.internal.util.typedef.X;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgniteFuture;
 import org.apache.ignite.spi.IgniteSpiException;
@@ -269,14 +271,16 @@ public class IgniteClusterSnapshotRestoreSelfTest extends IgniteClusterSnapshotR
 
         IgniteInternalFuture<Long> fut = GridTestUtils.runMultiThreadedAsync(() -> {
             try {
-                nodeIdxSupplier.getAsInt();
-
                 grid(nodeIdxSupplier.getAsInt()).snapshot().restoreSnapshot(
                     SNAPSHOT_NAME, Collections.singleton(DEFAULT_CACHE_NAME)).get(TIMEOUT);
 
                 successCnt.incrementAndGet();
             }
             catch (Exception e) {
+                assertTrue("Unexpected exception: " + Throwables.getStackTraceAsString(e),
+                    X.hasCause(e, "The previous snapshot restore operation was not completed.",
+                    IgniteCheckedException.class, IgniteException.class));
+
                 failCnt.incrementAndGet();
             }
         }, 2, "runner");

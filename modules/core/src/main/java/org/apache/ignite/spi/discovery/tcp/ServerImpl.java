@@ -6166,7 +6166,7 @@ class ServerImpl extends TcpDiscoveryImpl {
          */
         private void processCustomMessage(TcpDiscoveryCustomEventMessage msg, boolean waitForNotification) {
             if (isLocalNodeCoordinator()) {
-                if (posponeUndeliveredMessages(msg))
+                if (postponeUndeliveredMessages(msg))
                     return;
 
                 if (!msg.verified()) {
@@ -6257,7 +6257,7 @@ class ServerImpl extends TcpDiscoveryImpl {
          * @param msg Processed message.
          * @return {@code true} If message was appended to pending queue.
          */
-        private boolean posponeUndeliveredMessages(final TcpDiscoveryCustomEventMessage msg) {
+        private boolean postponeUndeliveredMessages(final TcpDiscoveryCustomEventMessage msg) {
             boolean joiningEmpty;
 
             synchronized (mux) {

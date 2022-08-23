@@ -49,10 +49,8 @@ import org.apache.ignite.internal.processors.cache.index.H2TreeCorruptedTreeExce
 import org.apache.ignite.internal.processors.cache.index.IndexCorruptionRebuildTest;
 import org.apache.ignite.internal.processors.cache.persistence.RebuildIndexLogMessageTest;
 import org.apache.ignite.internal.processors.cache.ttl.CacheSizeTtlTest;
-import org.apache.ignite.internal.processors.cache.ttl.CacheTtlAtomicLocalSelfTest;
 import org.apache.ignite.internal.processors.cache.ttl.CacheTtlAtomicPartitionedSelfTest;
 import org.apache.ignite.internal.processors.cache.ttl.CacheTtlReadOnlyModeSelfTest;
-import org.apache.ignite.internal.processors.cache.ttl.CacheTtlTransactionalLocalSelfTest;
 import org.apache.ignite.internal.processors.cache.ttl.CacheTtlTransactionalPartitionedSelfTest;
 import org.apache.ignite.internal.processors.client.IgniteDataStreamerTest;
 import org.apache.ignite.internal.processors.query.h2.database.inlinecolumn.ComputeInlineSizeTest;
@@ -71,9 +69,7 @@ import org.junit.runners.Suite;
     GridIndexingWithNoopSwapSelfTest.class,
     GridCacheOffHeapSelfTest.class,
 
-    CacheTtlTransactionalLocalSelfTest.class,
     CacheTtlTransactionalPartitionedSelfTest.class,
-    CacheTtlAtomicLocalSelfTest.class,
     CacheTtlAtomicPartitionedSelfTest.class,
     CacheTtlReadOnlyModeSelfTest.class,
     CacheSizeTtlTest.class,

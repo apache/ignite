@@ -1427,9 +1427,6 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
                 cctx.kernalContext().pools().getSystemExecutorService(),
                 cctx.cache().cacheGroups(),
                 cacheGroup -> {
-                    if (cacheGroup.isLocal())
-                        return null;
-
                     cctx.database().checkpointReadLock();
 
                     try {
@@ -1789,9 +1786,6 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
         Map<Integer, Set<Integer>> res = new HashMap<>();
 
         for (CacheGroupContext grp : cctx.cache().cacheGroups()) {
-            if (grp.isLocal())
-                continue;
-
             for (GridDhtLocalPartition locPart : grp.topology().currentLocalPartitions()) {
                 if (locPart.state() == OWNING && (preferWalRebalance() ||
                     locPart.fullSize() > historicalRebalanceThreshold.getOrDefault(walRebalanceThresholdLegacy)))
@@ -2726,7 +2720,7 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
 
                         CacheGroupContext ctx = cctx.cache().cacheGroup(rbRec.groupId());
 
-                        if (ctx != null && !ctx.isLocal()) {
+                        if (ctx != null) {
                             GridDhtLocalPartition part = ctx.topology().forceCreatePartition(rbRec.partitionId());
 
                             ctx.offheap().dataStore(part).updateInitialCounter(rbRec.start(), rbRec.range());
@@ -2961,7 +2955,7 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
         if (partId == -1)
             partId = cacheCtx.affinity().partition(dataEntry.key());
 
-        GridDhtLocalPartition locPart = cacheCtx.isLocal() ? null : cacheCtx.topology().forceCreatePartition(partId);
+        GridDhtLocalPartition locPart = cacheCtx.topology().forceCreatePartition(partId);
 
         switch (dataEntry.op()) {
             case CREATE:
@@ -3347,7 +3341,7 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
     private static void dumpPartitionsInfo(GridCacheSharedContext cctx,
         IgniteLogger log) throws IgniteCheckedException {
         for (CacheGroupContext grp : cctx.cache().cacheGroups()) {
-            if (grp.isLocal() || !grp.persistenceEnabled())
+            if (!grp.persistenceEnabled())
                 continue;
 
             dumpPartitionsInfo(grp, log);
