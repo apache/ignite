@@ -31,6 +31,7 @@ import java.nio.charset.Charset;
 import java.util.ArrayList;
 import java.util.Collection;
 import jodd.jerry.Jerry;
+import jodd.lagarto.dom.LagartoDOMBuilder;
 import org.apache.tools.ant.BuildException;
 import org.apache.tools.ant.DirectoryScanner;
 import org.apache.tools.ant.Project;
@@ -164,7 +165,11 @@ public class GridJavadocAntTask extends MatchingTask {
 
         if (verify) {
             // Parse HTML.
-            Jerry doc = Jerry.jerry(fileContent);
+            Jerry doc = Jerry.create(
+                    new LagartoDOMBuilder()
+                            .enableHtmlMode()
+                            .configure(cfg -> cfg.setErrorLogEnabled(false))
+            ).parse(fileContent);
 
             // TODO https://issues.apache.org/jira/browse/IGNITE-13202 Check also index.html file.
             if (file.endsWith("overview-summary.html")) {
