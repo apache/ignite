@@ -18,7 +18,9 @@
 namespace Apache.Ignite.Core.Tests.Binary.Serializable
 {
     using System;
+    using System.IO;
     using System.Runtime.Serialization;
+    using System.Runtime.Serialization.Formatters.Binary;
     using NUnit.Framework;
 
     /// <summary>
@@ -85,6 +87,23 @@ namespace Apache.Ignite.Core.Tests.Binary.Serializable
         {
             var obj = StringComparer.OrdinalIgnoreCase;
             var res = TestUtils.SerializeDeserialize(obj);
+
+            Assert.AreEqual("OrdinalComparer", res.GetType().Name);
+            Assert.AreEqual(0, res.Compare("A", "a"), "Ignore case flag is deserialized incorrectly.");
+        }
+
+        [Test]
+        public void TestComparerBinaryFormatter()
+        {
+            var bf = new BinaryFormatter();
+
+            var obj = StringComparer.OrdinalIgnoreCase;
+
+            using var ms = new MemoryStream();
+            bf.Serialize(ms, obj);
+
+            ms.Position = 0;
+            var res = (StringComparer)bf.Deserialize(ms);
 
             Assert.AreEqual("OrdinalComparer", res.GetType().Name);
             Assert.AreEqual(0, res.Compare("A", "a"), "Ignore case flag is deserialized incorrectly.");
