@@ -607,6 +607,8 @@ namespace Apache.Ignite.Core.Impl.Binary
                 ? customObj
                 : wrapper.GetRealObject(ctx);
 
+            // Special case: type is replaced, but there is no serialization ctor.
+            // Example: StringComparer.OrdinalIgnoreCase.
             if (ctorFunc == null)
             {
                 // Cached internally.
