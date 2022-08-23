@@ -103,6 +103,8 @@ namespace Apache.Ignite.Core.Tests.Binary.Serializable
             bf.Serialize(ms, obj);
 
             ms.Position = 0;
+
+            // Calls FormatterServices.GetUninitializedObject then FormatterServices.PopulateObjectMembers
             var res = (StringComparer)bf.Deserialize(ms);
 
             Assert.AreEqual("OrdinalComparer", res.GetType().Name);
