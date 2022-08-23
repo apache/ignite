@@ -265,6 +265,9 @@ public class MarshallerContextImpl implements MarshallerContext {
         String clsName,
         boolean failIfUnregistered
     ) throws IgniteCheckedException {
+        if (clsName.contains("Result") && clientNode)
+            new Exception(Thread.currentThread().getName() + " +++ REGISTER " + clsName).printStackTrace();
+
         ConcurrentMap<Integer, MappedName> cache = getCacheFor(platformId);
 
         MappedName mappedName = cache.get(typeId);
@@ -350,6 +353,9 @@ public class MarshallerContextImpl implements MarshallerContext {
      * previous {@link MappedName mapped name} otherwise.
      */
     public MappedName onMappingProposed(MarshallerMappingItem item) {
+        if (item.className().contains("Result"))
+            System.out.println(Thread.currentThread().getName() +  " +++ onMappingProposed " + item);
+
         ConcurrentMap<Integer, MappedName> cache = getCacheFor(item.platformId());
 
         MappedName newName = new MappedName(item.className(), false);
@@ -407,8 +413,11 @@ public class MarshallerContextImpl implements MarshallerContext {
 
         String clsName;
 
-        if (mappedName != null)
+        if (mappedName != null) {
             clsName = mappedName.className();
+            if (clsName.contains("Result") && clientNode)
+                new Exception(Thread.currentThread().getName() + " +++ found " + clsName).printStackTrace();
+        }
         else {
             clsName = fileStore.readMapping(platformId, typeId);
 
