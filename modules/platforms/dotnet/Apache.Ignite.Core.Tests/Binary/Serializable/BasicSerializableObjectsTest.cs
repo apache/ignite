@@ -83,6 +83,7 @@ namespace Apache.Ignite.Core.Tests.Binary.Serializable
         [Test]
         public void TestComparer()
         {
+            // TODO: Test all supported types from https://docs.microsoft.com/en-us/dotnet/standard/serialization/binary-serialization
             var obj = StringComparer.OrdinalIgnoreCase;
             var res = TestUtils.SerializeDeserialize(obj);
 
