@@ -610,6 +610,7 @@ namespace Apache.Ignite.Core.Impl.Binary
             if (ctorFunc == null)
             {
                 // TODO: Should we use compiled logic here?
+                // TODO: Special case for string comparers?
                 var members = FormatterServices.GetSerializableMembers(resObj.GetType());
 
                 foreach (var memberInfo in members)
