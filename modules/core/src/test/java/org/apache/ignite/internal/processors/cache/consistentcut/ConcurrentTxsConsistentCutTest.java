@@ -71,7 +71,10 @@ public class ConcurrentTxsConsistentCutTest extends AbstractConsistentCutTest {
     /** */
     @Parameterized.Parameters(name = "nodes={0} backups={1} repeat={2}")
     public static List<Object[]> params() {
-        List<T2<Integer, Integer>> nodesAndBackups = F.asList(new T2<>(3, 0), new T2<>(2, 1), new T2<>(3, 2));
+        List<T2<Integer, Integer>> nodesAndBackups = F.asList(
+            new T2<>(3, 0),
+            new T2<>(2, 1),
+            new T2<>(3, 2));
 
         List<Object[]> params = new ArrayList<>();
 

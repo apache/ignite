@@ -218,7 +218,7 @@ public class ConsistentCutManager extends GridCacheSharedManagerAdapter implemen
 
         if (log.isDebugEnabled()) {
             log.debug("`registerBeforeCommit` from " + tx.nearXidVersion().asIgniteUuid() + " to " + tx.xid()
-                + " , ver=" + tx.txCutVersion() + ", cutVer = " + cutVersion());
+                + " , txCutVer=" + tx.txCutVersion() + ", cutVer = " + cutVersion());
         }
 
         return committingTxs.add(tx);
@@ -231,6 +231,9 @@ public class ConsistentCutManager extends GridCacheSharedManagerAdapter implemen
      * @param tx Transaction.
      */
     public void cancelRegisterBeforeCommit(IgniteInternalTx tx) {
+        if (log.isDebugEnabled())
+            log.debug("`cancelRegisterBeforeCommit` from " + tx.nearXidVersion().asIgniteUuid() + " to " + tx.xid());
+
         committingTxs.remove(tx);
     }
 
@@ -406,7 +409,7 @@ public class ConsistentCutManager extends GridCacheSharedManagerAdapter implemen
      * transaction recovery txCutVer is chosen between all nodes participated in a transaction.
      */
     private void setTxCutVersionIfNeeded(IgniteInternalTx tx) {
-        if (isSetterTxCutVersion(tx))
+        if (tx.txCutVersion() == null && isSetterTxCutVersion(tx))
             tx.txCutVersion(cutVersion());
     }
 

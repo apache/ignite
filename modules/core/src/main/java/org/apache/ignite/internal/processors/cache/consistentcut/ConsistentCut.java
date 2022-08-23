@@ -33,7 +33,6 @@ import org.apache.ignite.internal.processors.cache.transactions.IgniteInternalTx
 import org.apache.ignite.internal.processors.cache.version.GridCacheVersion;
 import org.apache.ignite.internal.util.future.GridCompoundFuture;
 import org.apache.ignite.internal.util.tostring.GridToStringInclude;
-import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.internal.CU;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgniteUuid;
@@ -98,11 +97,13 @@ public class ConsistentCut {
 
         started = walLog(new ConsistentCutStartRecord(ver));
 
-        Iterator<IgniteInternalTx> activeTxs = F.concat(
-            cctx.tm().activeTransactions().iterator(),
-            cctx.consistentCutMgr().committingTxs());
+        GridCompoundFuture<Boolean, Boolean> checkFut = new GridCompoundFuture<>(CU.boolReducer());
 
-        GridCompoundFuture<Boolean, Boolean> checkFut = checkTransactions(ver, activeTxs);
+        // Invoke sequentially over two iterators:
+        // 1. iterators are weakly consistent.
+        // 2. we need a guarantee to handle `committingTxs` after `activeTxs` to avoid misses of transactions.
+        checkTransactions(ver, cctx.tm().activeTransactions().iterator(), checkFut);
+        checkTransactions(ver, cctx.consistentCutMgr().committingTxs(), checkFut);
 
         checkFut.listen(finish -> {
             if (Boolean.FALSE.equals(finish.result())) {
@@ -127,15 +128,15 @@ public class ConsistentCut {
      *
      * @param ver Current Consistent Cut version.
      * @param activeTxs Collection of active transactions to check.
+     * @param checkFut Compound future that reduces finishes of checked transactions.
      * @return Compound future that completes after all active transactions were checked. Completes with {@code true}
      *         if Consistent Cut finished, otherwise {@code false} in case of any errors.
      */
     private GridCompoundFuture<Boolean, Boolean> checkTransactions(
         ConsistentCutVersion ver,
-        Iterator<IgniteInternalTx> activeTxs
+        Iterator<IgniteInternalTx> activeTxs,
+        GridCompoundFuture<Boolean, Boolean> checkFut
     ) {
-        GridCompoundFuture<Boolean, Boolean> checkFut = new GridCompoundFuture<>(CU.boolReducer());
-
         while (activeTxs.hasNext()) {
             IgniteInternalTx activeTx = activeTxs.next();
 
