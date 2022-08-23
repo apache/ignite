@@ -247,7 +247,7 @@ public class VisorFindAndDeleteGarbageInPersistenceClosure implements IgniteCall
             Collection<CacheGroupContext> groups = ignite.context().cache().cacheGroups();
 
             for (CacheGroupContext grp : groups) {
-                if (!grp.systemCache() && !grp.isLocal())
+                if (!grp.systemCache())
                     grpIds.add(grp.groupId());
             }
         }

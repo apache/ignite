@@ -18,27 +18,14 @@
 package org.apache.ignite.internal.processors.query.stat;
 
 import java.math.BigDecimal;
+import java.time.LocalDate;
+import java.time.Month;
 import java.util.Arrays;
-import java.util.Comparator;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Map;
 import java.util.UUID;
-
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
-import org.h2.table.Column;
-import org.h2.value.Value;
-import org.h2.value.ValueBoolean;
-import org.h2.value.ValueByte;
-import org.h2.value.ValueDate;
-import org.h2.value.ValueDecimal;
-import org.h2.value.ValueDouble;
-import org.h2.value.ValueFloat;
-import org.h2.value.ValueInt;
-import org.h2.value.ValueNull;
-import org.h2.value.ValueShort;
-import org.h2.value.ValueString;
-import org.h2.value.ValueUuid;
 import org.junit.Test;
 
 /**
@@ -46,30 +33,26 @@ import org.junit.Test;
  */
 public class ColumnStatisticsCollectorTest extends GridCommonAbstractTest {
     /** Types with its comparators for tests.  */
-    private static final Map<Value[], Comparator<Value>> types = new HashMap<>();
+    private static final Map<Class<?>, Object[]> types = new HashMap<>();
+
+    /** */
+    private static final Object[] ZERO_ARR = new Object[0];
 
     static {
-        types.put(new Value[]{ValueBoolean.get(false), ValueBoolean.get(true)},
-            (v1, v2) -> Boolean.compare(v1.getBoolean(), v2.getBoolean()));
-        types.put(new Value[]{ValueInt.get(1), ValueInt.get(2), ValueInt.get(10)},
-            (v1, v2) -> Integer.compare(v1.getInt(), v2.getInt()));
-        types.put(new Value[]{ValueShort.get((short)1), ValueShort.get((short)3)},
-            (v1, v2) -> Short.compare(v1.getShort(), v2.getShort()));
-        types.put(new Value[]{ValueString.get("1"), ValueString.get("9")},
-            (v1, v2) -> v1.getString().compareTo(v2.getString()));
-        types.put(new Value[]{ValueDecimal.get(BigDecimal.ONE), ValueDecimal.get(BigDecimal.TEN)},
-            (v1, v2) -> v1.getBigDecimal().compareTo(v2.getBigDecimal()));
-        types.put(new Value[]{ValueDate.fromMillis(1), ValueDate.fromMillis(10000), ValueDate.fromMillis(9999999)},
-            (v1, v2) -> v1.getDate().compareTo(v2.getDate()));
-        types.put(new Value[]{ValueUuid.get(1, 2), ValueUuid.get(2, 1), ValueUuid.get(2, 2)},
-            (v1, v2) -> new UUID(((ValueUuid)v1).getHigh(), ((ValueUuid)v1).getLow())
-                .compareTo(new UUID(((ValueUuid)v2).getHigh(), ((ValueUuid)v2).getLow())));
-        types.put(new Value[]{ValueFloat.get(1f), ValueFloat.get(10f)},
-            (v1, v2) -> Float.compare(v1.getFloat(), v2.getFloat()));
-        types.put(new Value[]{ValueDouble.get(1.), ValueDouble.get(10.)},
-            (v1, v2) -> Double.compare(v1.getDouble(), v2.getDouble()));
-        types.put(new Value[]{ValueByte.get((byte)1), ValueByte.get((byte)2)},
-            (v1, v2) -> Byte.compare(v1.getByte(), v2.getByte()));
+        types.put(Boolean.class, new Object[]{false, true});
+        types.put(Integer.class, new Object[]{1, 2, 10});
+        types.put(Short.class, new Object[]{(short)1, (short)3});
+        types.put(String.class, new Object[]{"1", "9"});
+        types.put(BigDecimal.class, new Object[]{BigDecimal.ONE, BigDecimal.TEN});
+        types.put(LocalDate.class, new Object[]{
+            LocalDate.of(1945, Month.MAY, 9),
+            LocalDate.of(1957, Month.OCTOBER, 4),
+            LocalDate.of(1961, Month.APRIL, 12),
+        });
+        types.put(UUID.class, new Object[]{new UUID(1, 2), new UUID(2, 1), new UUID(2, 2)});
+        types.put(Float.class, new Object[]{1f, 10f});
+        types.put(Double.class, new Object[]{1., 10.});
+        types.put(Byte.class, new Object[]{(byte)1, (byte)2});
     }
 
     /**
@@ -77,10 +60,9 @@ public class ColumnStatisticsCollectorTest extends GridCommonAbstractTest {
      * Check that statistics collected properly.
      */
     @Test
-    public void testZeroAggregation() {
-        Value[] zeroArr = new Value[0];
-        for (Map.Entry<Value[], Comparator<Value>> type : types.entrySet())
-            testAggregation(type.getValue(), type.getKey()[0].getType(), 0, zeroArr);
+    public void testZeroAggregation() throws Exception {
+        for (Map.Entry<Class<?>, Object[]> tv: types.entrySet())
+            testAggregation(tv.getKey(), 0, ZERO_ARR);
     }
 
     /**
@@ -88,9 +70,9 @@ public class ColumnStatisticsCollectorTest extends GridCommonAbstractTest {
      * Check that statistics collected properly.
      */
     @Test
-    public void testSingleNullAggregation() {
-        for (Map.Entry<Value[], Comparator<Value>> type : types.entrySet())
-            testAggregation(type.getValue(), type.getKey()[0].getType(), 1);
+    public void testSingleNullAggregation() throws Exception {
+        for (Map.Entry<Class<?>, Object[]> tv: types.entrySet())
+            testAggregation(tv.getKey(), 1);
     }
 
     /**
@@ -98,10 +80,9 @@ public class ColumnStatisticsCollectorTest extends GridCommonAbstractTest {
      * Check that statistics collected properly.
      */
     @Test
-    public void testMultipleNullsAggregation() {
-        Value[] zeroArr = new Value[0];
-        for (Map.Entry<Value[], Comparator<Value>> type : types.entrySet())
-            testAggregation(type.getValue(), type.getKey()[0].getType(), 1000, zeroArr);
+    public void testMultipleNullsAggregation() throws Exception {
+        for (Map.Entry<Class<?>, Object[]> tv: types.entrySet())
+            testAggregation(tv.getKey(), 1000, ZERO_ARR);
     }
 
     /**
@@ -109,10 +90,10 @@ public class ColumnStatisticsCollectorTest extends GridCommonAbstractTest {
      * Check that statistics collected properly.
      */
     @Test
-    public void testSingleAggregation() {
-        for (Map.Entry<Value[], Comparator<Value>> type : types.entrySet()) {
-            for (Value v : type.getKey())
-                testAggregation(type.getValue(), v.getType(), 0, v);
+    public void testSingleAggregation() throws Exception {
+        for (Map.Entry<Class<?>, Object[]> tv: types.entrySet()) {
+            for (Object val : tv.getValue())
+                testAggregation(tv.getKey(), 0, val);
         }
     }
 
@@ -121,11 +102,9 @@ public class ColumnStatisticsCollectorTest extends GridCommonAbstractTest {
      * Check that statistics collected properly.
      */
     @Test
-    public void testMultipleAggregation() {
-        for (Map.Entry<Value[], Comparator<Value>> type : types.entrySet()) {
-            Value[] vals = type.getKey();
-            testAggregation(type.getValue(), vals[0].getType(), 0, vals);
-        }
+    public void testMultipleAggregation() throws Exception {
+        for (Map.Entry<Class<?>, Object[]> tv: types.entrySet())
+            testAggregation(tv.getKey(), 0, tv.getValue());
     }
 
     /**
@@ -133,59 +112,55 @@ public class ColumnStatisticsCollectorTest extends GridCommonAbstractTest {
      * Check that statistics collected properly.
      */
     @Test
-    public void testMultipleWithNullsAggregation() {
-        for (Map.Entry<Value[], Comparator<Value>> type : types.entrySet()) {
-            Value[] vals = type.getKey();
-            testAggregation(type.getValue(), vals[0].getType(), vals.length, vals);
-        }
+    public void testMultipleWithNullsAggregation() throws Exception {
+        for (Map.Entry<Class<?>, Object[]> tv: types.entrySet())
+            testAggregation(tv.getKey(), tv.getValue().length, tv.getValue());
     }
 
     /**
      * Test aggregation with specified values.
      * Check that statistics collected properly.
      *
-     * @param comp Value comparator.
      * @param type Value type.
      * @param nulls Nulls count.
      * @param vals Values to aggregate where the first one is the smallest and the last one is the biggest one.
      */
-    private static void testAggregation(Comparator<Value> comp, int type, int nulls, Value... vals) {
-        Column intCol = new Column("test", type);
-
-        ColumnStatisticsCollector collector = new ColumnStatisticsCollector(intCol, comp);
-        ColumnStatisticsCollector collectorInverted = new ColumnStatisticsCollector(intCol, comp);
+    private static void testAggregation(Class<?> type, int nulls, Object... vals) throws Exception {
+        ColumnStatisticsCollector collector = new ColumnStatisticsCollector(0, "test", type);
+        ColumnStatisticsCollector collectorInverted = new ColumnStatisticsCollector(0, "test", type);
 
         for (int i = 0; i < vals.length; i++) {
             collector.add(vals[i]);
             collectorInverted.add(vals[vals.length - 1 - i]);
         }
         for (int i = 0; i < nulls; i++) {
-            collector.add(ValueNull.INSTANCE);
-            collectorInverted.add(ValueNull.INSTANCE);
+            collector.add(null);
+            collectorInverted.add(null);
         }
 
         ColumnStatistics res = collector.finish();
         ColumnStatistics resInverted = collectorInverted.finish();
 
-        testAggregationResult(res, nulls, vals);
-        testAggregationResult(resInverted, nulls, vals);
+        testAggregationResult(type, res, nulls, vals);
+        testAggregationResult(type, resInverted, nulls, vals);
     }
 
     /**
      * Check column statistics collection results.
      *
+     * @param type Field type.
      * @param res Column statistics to test.
      * @param nulls Count of null values in statistics.
      * @param vals Values included into statistics where first one is the smallest one and the last one is the biggest.
      */
-    private static void testAggregationResult(ColumnStatistics res, int nulls, Value... vals) {
+    private static void testAggregationResult(Class<?> type, ColumnStatistics res, int nulls, Object... vals) {
         if (vals.length == 0) {
             assertNull(res.min());
             assertNull(res.max());
         }
-        else {
-            assertEquals(vals[0], res.min());
-            assertEquals(vals[vals.length - 1], res.max());
+        else if (!type.isAssignableFrom(String.class)) {
+            assertEquals(StatisticsUtils.toDecimal(vals[0]), res.min());
+            assertEquals(StatisticsUtils.toDecimal(vals[vals.length - 1]), res.max());
         }
 
         assertEquals(nulls, res.nulls());

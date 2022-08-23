@@ -55,10 +55,6 @@ import org.apache.ignite.internal.processors.cache.eviction.paged.RandomLruPageE
 import org.apache.ignite.internal.processors.cache.eviction.paged.RandomLruPageEvictionWithRebalanceTest;
 import org.apache.ignite.internal.processors.cache.eviction.sorted.SortedEvictionPolicyFactorySelfTest;
 import org.apache.ignite.internal.processors.cache.eviction.sorted.SortedEvictionPolicySelfTest;
-import org.apache.ignite.internal.processors.cache.local.GridCacheAtomicLocalMetricsNoStoreSelfTest;
-import org.apache.ignite.internal.processors.cache.local.GridCacheAtomicLocalMetricsSelfTest;
-import org.apache.ignite.internal.processors.cache.local.GridCacheAtomicLocalTckMetricsSelfTestImpl;
-import org.apache.ignite.internal.processors.cache.local.GridCacheLocalAtomicMetricsNoReadThroughSelfTest;
 import org.apache.ignite.testframework.junits.DynamicSuite;
 import org.junit.runner.RunWith;
 
@@ -92,14 +88,10 @@ public class IgniteCacheMvccTestSuite8 {
         ignoredTests.add(GridCacheEvictableEntryEqualsSelfTest.class);
 
         // Atomic cache tests.
-        ignoredTests.add(GridCacheLocalAtomicMetricsNoReadThroughSelfTest.class);
         ignoredTests.add(GridCacheNearAtomicMetricsSelfTest.class);
-        ignoredTests.add(GridCacheAtomicLocalMetricsSelfTest.class);
-        ignoredTests.add(GridCacheAtomicLocalMetricsNoStoreSelfTest.class);
         ignoredTests.add(GridCacheAtomicReplicatedMetricsSelfTest.class);
         ignoredTests.add(GridCacheAtomicPartitionedMetricsSelfTest.class);
         ignoredTests.add(GridCacheAtomicPartitionedTckMetricsSelfTestImpl.class);
-        ignoredTests.add(GridCacheAtomicLocalTckMetricsSelfTestImpl.class);
         ignoredTests.add(IgniteTopologyValidatorPartitionedAtomicCacheTest.class);
         ignoredTests.add(IgniteTopologyValidatorNearPartitionedAtomicCacheTest.class);
         ignoredTests.add(IgniteTopologyValidatorReplicatedAtomicCacheTest.class);

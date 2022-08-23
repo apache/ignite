@@ -46,11 +46,9 @@ import org.apache.ignite.testframework.GridStringLogger;
 import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.junit.Test;
-
 import static org.apache.ignite.cache.CacheAtomicityMode.ATOMIC;
 import static org.apache.ignite.cache.CacheAtomicityMode.TRANSACTIONAL;
 import static org.apache.ignite.cache.CacheAtomicityMode.TRANSACTIONAL_SNAPSHOT;
-import static org.apache.ignite.cache.CacheMode.LOCAL;
 import static org.apache.ignite.cache.CacheMode.PARTITIONED;
 import static org.apache.ignite.cache.CacheMode.REPLICATED;
 import static org.apache.ignite.cache.CacheRebalanceMode.ASYNC;
@@ -140,7 +138,7 @@ public class GridCacheConfigurationConsistencySelfTest extends GridCommonAbstrac
 
         final GridStringLogger strLog = new GridStringLogger(false, log);
 
-        CU.checkAttributeMismatch(strLog, "cache", node.id(), "cacheMode", "Cache mode", LOCAL, PARTITIONED, false);
+        CU.checkAttributeMismatch(strLog, "cache", node.id(), "cacheMode", "Cache mode", REPLICATED, PARTITIONED, false);
 
         assertTrue("No expected message in log: " + strLog.toString(),
             strLog.toString().contains("Cache mode mismatch"));
@@ -150,14 +148,14 @@ public class GridCacheConfigurationConsistencySelfTest extends GridCommonAbstrac
         GridTestUtils.assertThrows(log, new Callable<Void>() {
             /** {@inheritDoc} */
             @Override public Void call() throws Exception {
-                CU.checkAttributeMismatch(strLog, "cache", node.id(), "cacheMode", "Cache mode", LOCAL, PARTITIONED, true);
+                CU.checkAttributeMismatch(strLog, "cache", node.id(), "cacheMode", "Cache mode", REPLICATED, PARTITIONED, true);
                 return null;
             }
         }, IgniteCheckedException.class, "Cache mode mismatch");
 
         final CacheConfiguration cfg1 = defaultCacheConfiguration();
 
-        cfg1.setCacheMode(LOCAL);
+        cfg1.setCacheMode(REPLICATED);
 
         final CacheConfiguration cfg2 = defaultCacheConfiguration();
 
@@ -246,14 +244,6 @@ public class GridCacheConfigurationConsistencySelfTest extends GridCommonAbstrac
      */
     @Test
     public void testDifferentCacheDifferentModes() throws Exception {
-        // 1st grid with local cache.
-        cacheEnabled = true;
-        cacheName = "local";
-        cacheMode = LOCAL;
-        depMode = SHARED;
-
-        startGrid(1);
-
         // 2nd grid with replicated cache.
         cacheEnabled = true;
         cacheName = "replicated";
@@ -689,54 +679,6 @@ public class GridCacheConfigurationConsistencySelfTest extends GridCommonAbstrac
                 nearCfg.setNearEvictionPolicy(new FifoEvictionPolicy());
 
                 cfg.setNearConfiguration(nearCfg);
-
-                return null;
-            }
-        };
-
-        startGrid(2);
-    }
-
-    /**
-     * @throws Exception If failed.
-     */
-    @Test
-    public void testIgnoreMismatchForLocalCaches() throws Exception {
-        cacheEnabled = true;
-
-        cacheMode = LOCAL;
-
-        initCache = new C1<CacheConfiguration, Void>() {
-            /** {@inheritDoc} */
-            @SuppressWarnings("unchecked")
-            @Override public Void apply(CacheConfiguration cfg) {
-                cfg.setAffinity(new TestRendezvousAffinityFunction());
-
-                cfg.setEvictionPolicyFactory(new FifoEvictionPolicyFactory<>());
-                cfg.setEvictionPolicy(new FifoEvictionPolicy());
-                cfg.setOnheapCacheEnabled(true);
-
-                cfg.setCacheStoreFactory(new IgniteCacheAbstractTest.TestStoreFactory());
-                cfg.setReadThrough(true);
-                cfg.setWriteThrough(true);
-                cfg.setLoadPreviousValue(true);
-
-                return null;
-            }
-        };
-
-        startGrid(1);
-
-        initCache = new C1<CacheConfiguration, Void>() {
-            /** {@inheritDoc} */
-            @Override public Void apply(CacheConfiguration cfg) {
-                cfg.setAffinity(new RendezvousAffinityFunction());
-
-                cfg.setEvictionPolicyFactory(new FifoEvictionPolicyFactory<>());
-                cfg.setEvictionPolicy(new LruEvictionPolicy());
-                cfg.setOnheapCacheEnabled(true);
-
-                cfg.setCacheStoreFactory(null);
 
                 return null;
             }

@@ -144,9 +144,8 @@ public class IgniteIndexReaderTest extends GridCommandHandlerAbstractTest {
 
     /** Regexp to validate output of corrupted index. */
     private static final String CHECK_IDX_PTRN_WITH_ERRORS =
-        CHECK_IDX_PTRN_COMMON + "<PREFIX>" + ERROR_PREFIX + "Errors:" +
-            LINE_DELIM + "<PREFIX>" + ERROR_PREFIX + "Page id=[0-9]{1,30}, exceptions:" +
-            LINE_DELIM + "Failed to read page.*";
+        "<PREFIX>" + ERROR_PREFIX + "---- Errors:" +
+            LINE_DELIM + "<PREFIX>" + ERROR_PREFIX + "Page id: [0-9]{1,30}, exceptions: Failed to read page.*";
 
     /** Work directory, containing cache group directories. */
     private static File workDir;
@@ -285,8 +284,16 @@ public class IgniteIndexReaderTest extends GridCommandHandlerAbstractTest {
         // Take any inner page from tree.
         AtomicLong anyLeafId = new AtomicLong();
 
-        IgniteIndexReader reader0 = new IgniteIndexReader(PAGE_SIZE, PART_CNT, PAGE_STORE_VER, dir, null, false, createTestLogger()) {
-            @Override ScanContext createContext(String idxName, FilePageStore store, ItemStorage items) {
+        Logger log = createTestLogger();
+
+        IgniteIndexReader reader0 = new IgniteIndexReader(PAGE_SIZE, PART_CNT, PAGE_STORE_VER, dir, null, false, log) {
+            @Override ScanContext createContext(
+                String idxName,
+                FilePageStore store,
+                ItemStorage items,
+                String prefix,
+                ProgressPrinter printer
+            ) {
                 GridTuple3<Integer, Integer, String> parsed;
 
                 if (idxName != null)
@@ -294,7 +301,7 @@ public class IgniteIndexReaderTest extends GridCommandHandlerAbstractTest {
                 else
                     parsed = new GridTuple3<>(UNKNOWN_CACHE, 0, null);
 
-                return new ScanContext(parsed.get1(), inlineFieldsCount(parsed), store, items) {
+                return new ScanContext(parsed.get1(), idxName, inlineFieldsCount(parsed), store, items, log, prefix, printer) {
                     @Override public void onLeafPage(long pageId, List<Object> data) {
                         super.onLeafPage(pageId, data);
 
@@ -309,7 +316,7 @@ public class IgniteIndexReaderTest extends GridCommandHandlerAbstractTest {
 
             ItemsListStorage<IndexStorageImpl.IndexItem> idxItemStorage = new ItemsListStorage<>();
 
-            reader.recursiveTreeScan(partitionRoots[0], META_TREE_NAME, idxItemStorage);
+            reader.recursiveTreeScan(partitionRoots[0], META_TREE_NAME, idxItemStorage, null);
 
             // Take any index item.
             IndexStorageImpl.IndexItem idxItem = idxItemStorage.iterator().next();
@@ -319,7 +326,8 @@ public class IgniteIndexReaderTest extends GridCommandHandlerAbstractTest {
             reader.recursiveTreeScan(
                 normalizePageId(idxItem.pageId()),
                 idxItem.nameString(),
-                linkStorage
+                linkStorage,
+                null
             );
 
             // Take any link.

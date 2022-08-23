@@ -22,9 +22,7 @@ import java.util.Collections;
 import java.util.List;
 import java.util.UUID;
 import javax.cache.Cache;
-import javax.cache.expiry.ExpiryPolicy;
 import javax.cache.processor.EntryProcessor;
-import javax.cache.processor.EntryProcessorResult;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.cache.eviction.EvictableEntry;
 import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
@@ -40,7 +38,6 @@ import org.apache.ignite.internal.processors.cache.version.GridCacheVersionedEnt
 import org.apache.ignite.internal.processors.dr.GridDrType;
 import org.apache.ignite.internal.processors.query.schema.SchemaIndexCacheVisitorClosure;
 import org.apache.ignite.internal.util.lang.GridMetadataAwareAdapter;
-import org.apache.ignite.internal.util.lang.GridTuple3;
 import org.apache.ignite.lang.IgniteUuid;
 import org.jetbrains.annotations.Nullable;
 
@@ -519,27 +516,6 @@ public class GridCacheTestEntryEx extends GridMetadataAwareAdapter implements Gr
     @Override public GridCacheUpdateTxResult mvccLock(GridDhtTxLocalAdapter tx,
         MvccSnapshot mvccVer) throws GridCacheEntryRemovedException, IgniteCheckedException {
         return new GridCacheUpdateTxResult(true);
-    }
-
-    /** {@inheritDoc} */
-    @Override public GridTuple3<Boolean, Object, EntryProcessorResult<Object>> innerUpdateLocal(
-        GridCacheVersion ver,
-        GridCacheOperation op,
-        @Nullable Object writeObj,
-        @Nullable Object[] invokeArgs,
-        boolean writeThrough,
-        boolean readThrough,
-        boolean retval,
-        boolean keepBinary,
-        @Nullable ExpiryPolicy expiryPlc,
-        boolean evt,
-        boolean metrics,
-        @Nullable CacheEntryPredicate[] filter,
-        boolean intercept,
-        String taskName,
-        boolean transformOp)
-        throws IgniteCheckedException, GridCacheEntryRemovedException {
-        return new GridTuple3<>(false, null, null);
     }
 
     /** {@inheritDoc} */

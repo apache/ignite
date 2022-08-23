@@ -560,7 +560,7 @@ public class VisorCacheAggregatedMetrics extends VisorDataTransferObject {
     /** {@inheritDoc} */
     @Override protected void writeExternalData(ObjectOutput out) throws IOException {
         U.writeString(out, name);
-        U.writeEnum(out, mode);
+        out.writeByte(CacheMode.toCode(mode));
         out.writeBoolean(sys);
         U.writeMap(out, metrics);
         out.writeObject(minHeapSize);
@@ -592,7 +592,7 @@ public class VisorCacheAggregatedMetrics extends VisorDataTransferObject {
     /** {@inheritDoc} */
     @Override protected void readExternalData(byte protoVer, ObjectInput in) throws IOException, ClassNotFoundException {
         name = U.readString(in);
-        mode = CacheMode.fromOrdinal(in.readByte());
+        mode = CacheMode.fromCode(in.readByte());
         sys = in.readBoolean();
         metrics = U.readMap(in);
         minHeapSize = (Long)in.readObject();

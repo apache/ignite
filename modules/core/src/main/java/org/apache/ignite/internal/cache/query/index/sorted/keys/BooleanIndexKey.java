@@ -84,4 +84,9 @@ public class BooleanIndexKey extends NumericIndexKey {
     @Override public int compare(IndexKey o) {
         return o.type() == type() ? Boolean.compare(key, ((BooleanIndexKey)o).key) : -((NumericIndexKey)o).compareTo(key);
     }
+
+    /** {@inheritDoc} */
+    @Override public String toString() {
+        return String.valueOf(key);
+    }
 }

@@ -76,7 +76,7 @@ public class ClientAtomicLongCreateRequest extends ClientRequest {
 
         return new AtomicConfiguration()
                 .setAtomicSequenceReserveSize(reader.readInt())
-                .setCacheMode(CacheMode.fromOrdinal(reader.readByte()))
+                .setCacheMode(CacheMode.fromCode(reader.readByte()))
                 .setBackups(reader.readInt())
                 .setGroupName(reader.readString());
     }

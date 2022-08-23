@@ -25,6 +25,8 @@ import java.util.concurrent.ForkJoinPool;
 import javax.cache.configuration.Factory;
 import javax.net.ssl.SSLContext;
 import org.apache.ignite.client.ClientAddressFinder;
+import org.apache.ignite.client.ClientPartitionAwarenessMapper;
+import org.apache.ignite.client.ClientPartitionAwarenessMapperFactory;
 import org.apache.ignite.client.ClientRetryAllPolicy;
 import org.apache.ignite.client.ClientRetryPolicy;
 import org.apache.ignite.client.SslMode;
@@ -110,6 +112,13 @@ public final class ClientConfiguration implements Serializable {
      * Whether partition awareness should be enabled.
      */
     private boolean partitionAwarenessEnabled = true;
+
+    /**
+     * This factory accepts as parameters a cache name and the number of cache partitions received from a server node and produces
+     * a {@link ClientPartitionAwarenessMapper}. This mapper function is used only for local calculations key to a partition and
+     * will not be passed to a server node.
+     */
+    private ClientPartitionAwarenessMapperFactory partitionAwarenessMapperFactory;
 
     /**
      * Reconnect throttling period (in milliseconds). There are no more than {@code reconnectThrottlingRetries}
@@ -785,5 +794,24 @@ public final class ClientConfiguration implements Serializable {
         this.autoBinaryConfigurationEnabled = autoBinaryConfigurationEnabled;
 
         return this;
+    }
+
+    /**
+     * @param factory Factory that accepts as parameters a cache name and the number of cache partitions received from a server node
+     * and produces key to partition mapping functions.
+     * @return {@code this} for chaining.
+     */
+    public ClientConfiguration setPartitionAwarenessMapperFactory(ClientPartitionAwarenessMapperFactory factory) {
+        partitionAwarenessMapperFactory = factory;
+
+        return this;
+    }
+
+    /**
+     * @return Factory that accepts as parameters a cache name and the number of cache partitions received from a server node
+     * and produces key to partition mapping functions.
+     */
+    public ClientPartitionAwarenessMapperFactory getPartitionAwarenessMapperFactory() {
+        return partitionAwarenessMapperFactory;
     }
 }

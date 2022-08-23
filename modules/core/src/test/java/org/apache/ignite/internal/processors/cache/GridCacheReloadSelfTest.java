@@ -133,20 +133,6 @@ public class GridCacheReloadSelfTest extends GridCommonAbstractTest {
     }
 
     /**
-     * Checks that eviction works with reload() on local cache.
-     *
-     * @throws Exception If error occurs.
-     */
-    @Test
-    public void testReloadEvictionLocalCache() throws Exception {
-        MvccFeatureChecker.skipIfNotSupported(MvccFeatureChecker.Feature.LOCAL_CACHE);
-
-        cacheMode = CacheMode.LOCAL;
-
-        doTest();
-    }
-
-    /**
      * Checks that eviction works with reload() on partitioned cache
      * with near enabled.
      *

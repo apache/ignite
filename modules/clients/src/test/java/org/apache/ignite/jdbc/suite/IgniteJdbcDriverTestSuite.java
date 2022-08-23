@@ -29,7 +29,6 @@ import org.apache.ignite.jdbc.JdbcComplexQuerySelfTest;
 import org.apache.ignite.jdbc.JdbcConnectionSelfTest;
 import org.apache.ignite.jdbc.JdbcDefaultNoOpCacheTest;
 import org.apache.ignite.jdbc.JdbcEmptyCacheSelfTest;
-import org.apache.ignite.jdbc.JdbcLocalCachesSelfTest;
 import org.apache.ignite.jdbc.JdbcMetadataSelfTest;
 import org.apache.ignite.jdbc.JdbcNoDefaultCacheTest;
 import org.apache.ignite.jdbc.JdbcPojoLegacyQuerySelfTest;
@@ -120,7 +119,6 @@ import org.junit.runners.Suite;
     JdbcComplexQuerySelfTest.class,
     JdbcMetadataSelfTest.class,
     JdbcEmptyCacheSelfTest.class,
-    JdbcLocalCachesSelfTest.class,
     JdbcNoDefaultCacheTest.class,
     JdbcDefaultNoOpCacheTest.class,
     JdbcPojoQuerySelfTest.class,
@@ -139,7 +137,6 @@ import org.junit.runners.Suite;
     JdbcDistributedJoinsQueryTest.class,
     org.apache.ignite.internal.jdbc2.JdbcMetadataSelfTest.class,
     org.apache.ignite.internal.jdbc2.JdbcEmptyCacheSelfTest.class,
-    org.apache.ignite.internal.jdbc2.JdbcLocalCachesSelfTest.class,
     org.apache.ignite.internal.jdbc2.JdbcConnectionWithoutCacheNameTest.class,
     org.apache.ignite.internal.jdbc2.JdbcMergeStatementSelfTest.class,
     org.apache.ignite.internal.jdbc2.JdbcBinaryMarshallerMergeStatementSelfTest.class,

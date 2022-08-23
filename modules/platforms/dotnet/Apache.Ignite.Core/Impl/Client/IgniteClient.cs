@@ -360,6 +360,45 @@ namespace Apache.Ignite.Core.Impl.Client
         }
 
         /** <inheritDoc /> */
+        public IIgniteSetClient<T> GetIgniteSet<T>(string name, CollectionClientConfiguration configuration)
+        {
+            IgniteArgumentCheck.NotNullOrEmpty(name, "name");
+
+            return _socket.DoOutInOp(ClientOp.SetGetOrCreate, ctx =>
+            {
+                var w = ctx.Writer;
+
+                w.WriteString(name);
+
+                if (configuration != null)
+                {
+                    w.WriteBoolean(true);
+                    w.WriteByte((byte)configuration.AtomicityMode);
+                    w.WriteByte((byte)configuration.CacheMode);
+                    w.WriteInt(configuration.Backups);
+                    w.WriteString(configuration.GroupName);
+                    w.WriteBoolean(configuration.Colocated);
+                }
+                else
+                {
+                    w.WriteBoolean(false);
+                }
+
+            }, ctx =>
+            {
+                if (!ctx.Reader.ReadBoolean())
+                {
+                    return null;
+                }
+
+                var colocated = ctx.Reader.ReadBoolean();
+                var cacheId = ctx.Reader.ReadInt();
+
+                return new IgniteSetClient<T>(_socket, name, colocated, cacheId);
+            });
+        }
+
+        /** <inheritDoc /> */
         public IBinaryProcessor BinaryProcessor
         {
             get { return _binProc; }

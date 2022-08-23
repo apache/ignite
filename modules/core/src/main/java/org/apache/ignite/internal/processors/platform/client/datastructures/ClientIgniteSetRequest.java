@@ -87,7 +87,13 @@ public class ClientIgniteSetRequest extends ClientRequest {
      */
     protected <T> IgniteSet<T> igniteSet(ClientConnectionContext ctx) {
         // Thin client only works in separated mode, because non-separated mode was discontinued earlier.
-        return ctx.kernalContext().grid().set(name, cacheId, collocated, true);
+        IgniteSet<T> set = ctx.kernalContext().grid().set(name, cacheId, collocated, true);
+
+        if (set != null) {
+            set = set.withKeepBinary();
+        }
+
+        return set;
     }
 
     /**

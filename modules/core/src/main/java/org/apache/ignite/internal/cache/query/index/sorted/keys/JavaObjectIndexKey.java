@@ -112,4 +112,14 @@ public abstract class JavaObjectIndexKey implements IndexKey {
             return len == 0 ? EMPTY_BYTES : Arrays.copyOf(bytes, len);
         }
     }
+
+    /** {@inheritDoc} */
+    @Override public String toString() {
+        return key().toString();
+    }
+
+//    /** {@inheritDoc} */
+//    @Override public boolean equals(Object o) {
+//        return o instanceof JavaObjectIndexKey && compare((IndexKey)o) == 0;
+//    }
 }

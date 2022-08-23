@@ -87,6 +87,9 @@ public class GridCacheDistributedQueryFuture<K, V, R> extends GridCacheQueryFutu
 
         qryMgr = (GridCacheDistributedQueryManager<K, V>)ctx.queries();
 
+        if (qry.query().partition() != null)
+            nodes = Collections.singletonList(node(nodes));
+
         streams = new ConcurrentHashMap<>(nodes.size());
 
         for (ClusterNode node : nodes) {
@@ -108,6 +111,22 @@ public class GridCacheDistributedQueryFuture<K, V, R> extends GridCacheQueryFutu
         }
     }
 
+    /**
+     * @return Nodes for query execution.
+     */
+    private ClusterNode node(Collection<ClusterNode> nodes) {
+        ClusterNode rmtNode = null;
+
+        for (ClusterNode node : nodes) {
+            if (node.isLocal())
+                return node;
+
+            rmtNode = node;
+        }
+
+        return rmtNode;
+    }
+
     /** {@inheritDoc} */
     @Override protected void cancelQuery(Throwable err) {
         firstPageLatch.countDown();
@@ -122,9 +141,9 @@ public class GridCacheDistributedQueryFuture<K, V, R> extends GridCacheQueryFutu
 
     /** {@inheritDoc} */
     @Override protected void onNodeLeft(UUID nodeId) {
-        boolean hasRemotePages = streams.get(nodeId).hasRemotePages();
+        NodePageStream<R> stream = streams.get(nodeId);
 
-        if (hasRemotePages)
+        if (stream != null && stream.hasRemotePages())
             onError(new ClusterTopologyCheckedException("Remote node has left topology: " + nodeId));
     }
 

@@ -22,7 +22,6 @@ import java.math.BigInteger;
 import java.math.MathContext;
 import java.util.ArrayList;
 import java.util.HashSet;
-
 import org.apache.ignite.internal.processors.query.stat.ColumnStatistics;
 import org.apache.ignite.internal.processors.query.stat.ObjectStatisticsImpl;
 import org.apache.ignite.internal.util.typedef.F;
@@ -375,8 +374,8 @@ public abstract class H2IndexCostedBase extends BaseIndex {
         if (minValue == null && maxValue == null)
             return estimatePercentFallback(min, max);
 
-        BigDecimal minStat = getComparableValue(colStat.min());
-        BigDecimal maxStat = getComparableValue(colStat.max());
+        BigDecimal minStat = colStat.min();
+        BigDecimal maxStat = colStat.max();
 
         if (minStat == null || maxStat == null)
             return estimatePercentFallback(min, max);
@@ -429,7 +428,7 @@ public abstract class H2IndexCostedBase extends BaseIndex {
                 throw new IllegalArgumentException("Can't compare null values");
 
             case Value.BOOLEAN:
-                return new BigDecimal(value.getBoolean() ? 1 : 0);
+                return value.getBoolean() ? BigDecimal.ONE : BigDecimal.ZERO;
 
             case Value.BYTE:
                 return new BigDecimal(value.getByte());
@@ -447,10 +446,10 @@ public abstract class H2IndexCostedBase extends BaseIndex {
                 return value.getBigDecimal();
 
             case Value.DOUBLE:
-                return new BigDecimal(value.getDouble());
+                return BigDecimal.valueOf(value.getDouble());
 
             case Value.FLOAT:
-                return new BigDecimal(value.getFloat());
+                return BigDecimal.valueOf(value.getFloat());
 
             case Value.DATE:
                 return new BigDecimal(value.getDate().getTime());

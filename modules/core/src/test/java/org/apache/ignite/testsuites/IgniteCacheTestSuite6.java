@@ -53,7 +53,6 @@ import org.apache.ignite.internal.processors.cache.distributed.dht.preloader.lat
 import org.apache.ignite.internal.processors.cache.distributed.rebalancing.GridCacheRebalancingOrderingTest;
 import org.apache.ignite.internal.processors.cache.transactions.StartImplicitlyTxOnStopCacheTest;
 import org.apache.ignite.internal.processors.cache.transactions.TxLabelTest;
-import org.apache.ignite.internal.processors.cache.transactions.TxLocalDhtMixedCacheModesTest;
 import org.apache.ignite.internal.processors.cache.transactions.TxMultiCacheAsyncOpsTest;
 import org.apache.ignite.internal.processors.cache.transactions.TxOnCachesStartTest;
 import org.apache.ignite.internal.processors.cache.transactions.TxOnCachesStopTest;
@@ -153,8 +152,6 @@ public class IgniteCacheTestSuite6 {
         GridTestUtils.addTestIfNeeded(suite, CacheNoAffinityExchangeTest.class, ignoredTests);
 
         GridTestUtils.addTestIfNeeded(suite, CachePartitionLossWithRestartsTest.class, ignoredTests);
-
-        GridTestUtils.addTestIfNeeded(suite, TxLocalDhtMixedCacheModesTest.class, ignoredTests);
 
         GridTestUtils.addTestIfNeeded(suite, CacheClientsConcurrentStartTest.class, ignoredTests);
         GridTestUtils.addTestIfNeeded(suite, GridCacheRebalancingOrderingTest.class, ignoredTests);

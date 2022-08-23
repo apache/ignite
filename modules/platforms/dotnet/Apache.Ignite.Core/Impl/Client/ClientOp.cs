@@ -109,6 +109,21 @@ namespace Apache.Ignite.Core.Impl.Client
         AtomicLongValueAddAndGet = 9004,
         AtomicLongValueGetAndSet = 9005,
         AtomicLongValueCompareAndSet = 9006,
-        AtomicLongValueCompareAndSetAndGet = 9007
+        AtomicLongValueCompareAndSetAndGet = 9007,
+
+        SetGetOrCreate = 9010,
+        SetClose = 9011,
+        SetExists = 9012,
+        SetValueAdd = 9013,
+        SetValueAddAll = 9014,
+        SetValueRemove = 9015,
+        SetValueRemoveAll = 9016,
+        SetValueContains = 9017,
+        SetValueContainsAll = 9018,
+        SetValueRetainAll = 9019,
+        SetSize = 9020,
+        SetClear = 9021,
+        SetIteratorStart = 9022,
+        SetIteratorGetPage = 9023
     }
 }

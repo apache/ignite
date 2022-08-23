@@ -22,7 +22,6 @@ import java.util.List;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteCluster;
 import org.apache.ignite.IgniteLogger;
-import org.apache.ignite.cache.CacheMode;
 import org.apache.ignite.cache.QueryIndex;
 import org.apache.ignite.cache.QueryIndexType;
 import org.apache.ignite.cache.query.FieldsQueryCursor;
@@ -36,17 +35,23 @@ import org.apache.ignite.internal.processors.cache.GridCacheContextInfo;
 import org.apache.ignite.internal.processors.cache.distributed.near.GridNearTxLocal;
 import org.apache.ignite.internal.processors.cache.mvcc.MvccUtils;
 import org.apache.ignite.internal.processors.cache.query.IgniteQueryErrorCode;
+import org.apache.ignite.internal.processors.query.GridQueryIndexing;
 import org.apache.ignite.internal.processors.query.GridQueryProperty;
 import org.apache.ignite.internal.processors.query.GridQuerySchemaManager;
 import org.apache.ignite.internal.processors.query.GridQueryTypeDescriptor;
 import org.apache.ignite.internal.processors.query.IgniteSQLException;
 import org.apache.ignite.internal.processors.query.schema.SchemaOperationException;
+import org.apache.ignite.internal.processors.query.stat.StatisticsKey;
+import org.apache.ignite.internal.processors.query.stat.StatisticsTarget;
+import org.apache.ignite.internal.processors.query.stat.config.StatisticsObjectConfiguration;
 import org.apache.ignite.internal.sql.command.SqlAlterTableCommand;
 import org.apache.ignite.internal.sql.command.SqlAlterUserCommand;
+import org.apache.ignite.internal.sql.command.SqlAnalyzeCommand;
 import org.apache.ignite.internal.sql.command.SqlCommand;
 import org.apache.ignite.internal.sql.command.SqlCreateIndexCommand;
 import org.apache.ignite.internal.sql.command.SqlCreateUserCommand;
 import org.apache.ignite.internal.sql.command.SqlDropIndexCommand;
+import org.apache.ignite.internal.sql.command.SqlDropStatisticsCommand;
 import org.apache.ignite.internal.sql.command.SqlDropUserCommand;
 import org.apache.ignite.internal.sql.command.SqlIndexColumn;
 import org.apache.ignite.internal.sql.command.SqlKillComputeTaskCommand;
@@ -55,9 +60,11 @@ import org.apache.ignite.internal.sql.command.SqlKillQueryCommand;
 import org.apache.ignite.internal.sql.command.SqlKillScanQueryCommand;
 import org.apache.ignite.internal.sql.command.SqlKillServiceCommand;
 import org.apache.ignite.internal.sql.command.SqlKillTransactionCommand;
+import org.apache.ignite.internal.sql.command.SqlRefreshStatitsicsCommand;
+import org.apache.ignite.internal.sql.command.SqlStatisticsCommands;
 import org.apache.ignite.internal.util.future.GridFinishedFuture;
+import org.apache.ignite.plugin.security.SecurityPermission;
 import org.jetbrains.annotations.Nullable;
-
 import static org.apache.ignite.internal.processors.query.QueryUtils.convert;
 import static org.apache.ignite.internal.processors.query.QueryUtils.isDdlOnSchemaSupported;
 
@@ -109,6 +116,12 @@ public class SqlCommandProcessor {
             processKillContinuousQueryCommand((SqlKillContinuousQueryCommand)cmdNative);
         else if (cmdNative instanceof SqlKillQueryCommand)
             processKillQueryCommand((SqlKillQueryCommand)cmdNative);
+        else if (cmdNative instanceof SqlAnalyzeCommand)
+            processAnalyzeCommand((SqlAnalyzeCommand)cmdNative);
+        else if (cmdNative instanceof SqlRefreshStatitsicsCommand)
+            processRefreshStatisticsCommand((SqlRefreshStatitsicsCommand)cmdNative);
+        else if (cmdNative instanceof SqlDropStatisticsCommand)
+            processDropStatisticsCommand((SqlDropStatisticsCommand)cmdNative);
 
         return null;
     }
@@ -128,7 +141,8 @@ public class SqlCommandProcessor {
             || cmd instanceof SqlKillTransactionCommand
             || cmd instanceof SqlKillScanQueryCommand
             || cmd instanceof SqlKillContinuousQueryCommand
-            || cmd instanceof SqlKillQueryCommand;
+            || cmd instanceof SqlKillQueryCommand
+            || cmd instanceof SqlStatisticsCommands;
     }
 
     /**
@@ -200,6 +214,80 @@ public class SqlCommandProcessor {
     }
 
     /**
+     * Process analyze command.
+     *
+     * @param cmd Sql analyze command.
+     */
+    private void processAnalyzeCommand(SqlAnalyzeCommand cmd) {
+        ctx.security().authorize(SecurityPermission.CHANGE_STATISTICS);
+
+        GridQueryIndexing indexing = ctx.query().getIndexing();
+
+        StatisticsObjectConfiguration objCfgs[] = cmd.configurations().stream()
+            .map(t -> {
+                if (t.key().schema() == null) {
+                    StatisticsKey key = new StatisticsKey(cmd.schemaName(), t.key().obj());
+
+                    return new StatisticsObjectConfiguration(key, t.columns().values(),
+                        t.maxPartitionObsolescencePercent());
+                }
+                else
+                    return t;
+            }).toArray(StatisticsObjectConfiguration[]::new);
+
+        try {
+            indexing.statsManager().collectStatistics(objCfgs);
+        }
+        catch (IgniteCheckedException e) {
+            throw new IgniteSQLException(e.getMessage(), e);
+        }
+    }
+
+    /**
+     * Process refresh statistics command.
+     *
+     * @param cmd Refresh statistics command.
+     */
+    private void processRefreshStatisticsCommand(SqlRefreshStatitsicsCommand cmd) {
+        ctx.security().authorize(SecurityPermission.REFRESH_STATISTICS);
+
+        GridQueryIndexing indexing = ctx.query().getIndexing();
+
+        StatisticsTarget[] targets = cmd.targets().stream()
+            .map(t -> (t.schema() == null) ? new StatisticsTarget(cmd.schemaName(), t.obj(), t.columns()) : t)
+            .toArray(StatisticsTarget[]::new);
+
+        try {
+            indexing.statsManager().refreshStatistics(targets);
+        }
+        catch (IgniteCheckedException e) {
+            throw new IgniteSQLException(e.getMessage(), e);
+        }
+    }
+
+    /**
+     * Process drop statistics command.
+     *
+     * @param cmd Drop statistics command.
+     */
+    private void processDropStatisticsCommand(SqlDropStatisticsCommand cmd) {
+        ctx.security().authorize(SecurityPermission.CHANGE_STATISTICS);
+
+        GridQueryIndexing indexing = ctx.query().getIndexing();
+
+        StatisticsTarget[] targets = cmd.targets().stream()
+            .map(t -> (t.schema() == null) ? new StatisticsTarget(cmd.schemaName(), t.obj(), t.columns()) : t)
+            .toArray(StatisticsTarget[]::new);
+
+        try {
+            indexing.statsManager().dropStatistics(targets);
+        }
+        catch (IgniteCheckedException e) {
+            throw new IgniteSQLException(e.getMessage(), e);
+        }
+    }
+
+    /**
      * Run DDL statement.
      *
      * @param cmd Command.
@@ -220,8 +308,6 @@ public class SqlCommandProcessor {
 
                 if (typeDesc == null)
                     throw new SchemaOperationException(SchemaOperationException.CODE_TABLE_NOT_FOUND, cmd0.tableName());
-
-                ensureDdlSupported(cacheInfo);
 
                 QueryIndex newIdx = new QueryIndex();
 
@@ -254,8 +340,6 @@ public class SqlCommandProcessor {
                 if (typeDesc != null) {
                     GridCacheContextInfo<?, ?> cacheInfo = schemaMgr.cacheInfoForTable(typeDesc.schemaName(),
                         typeDesc.tableName());
-
-                    ensureDdlSupported(cacheInfo);
 
                     fut = ctx.query().dynamicIndexDrop(cacheInfo.name(), cmd0.schemaName(), cmd0.indexName(),
                         cmd0.ifExists());
@@ -346,19 +430,6 @@ public class SqlCommandProcessor {
                 tx.commit();
             else
                 tx.rollback();
-        }
-    }
-
-    /**
-     * Check if cache supports DDL statement.
-     *
-     * @param cctxInfo Cache context info.
-     * @throws IgniteSQLException If failed.
-     */
-    protected static void ensureDdlSupported(GridCacheContextInfo<?, ?> cctxInfo) throws IgniteSQLException {
-        if (cctxInfo.config().getCacheMode() == CacheMode.LOCAL) {
-            throw new IgniteSQLException("DDL statements are not supported on LOCAL caches",
-                IgniteQueryErrorCode.UNSUPPORTED_OPERATION);
         }
     }
 }

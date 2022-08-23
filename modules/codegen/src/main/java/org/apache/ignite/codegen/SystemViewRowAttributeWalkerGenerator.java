@@ -153,10 +153,10 @@ public class SystemViewRowAttributeWalkerGenerator {
         gen.generateAndWrite(SqlTableColumnView.class, INDEXING_SRC_DIR);
         gen.generateAndWrite(SqlViewColumnView.class, INDEXING_SRC_DIR);
 
-        gen.generateAndWrite(StatisticsColumnConfigurationView.class, INDEXING_SRC_DIR);
-        gen.generateAndWrite(StatisticsColumnLocalDataView.class, INDEXING_SRC_DIR);
-        gen.generateAndWrite(StatisticsColumnGlobalDataView.class, INDEXING_SRC_DIR);
-        gen.generateAndWrite(StatisticsColumnPartitionDataView.class, INDEXING_SRC_DIR);
+        gen.generateAndWrite(StatisticsColumnConfigurationView.class, DFLT_SRC_DIR);
+        gen.generateAndWrite(StatisticsColumnLocalDataView.class, DFLT_SRC_DIR);
+        gen.generateAndWrite(StatisticsColumnGlobalDataView.class, DFLT_SRC_DIR);
+        gen.generateAndWrite(StatisticsColumnPartitionDataView.class, DFLT_SRC_DIR);
     }
 
     /**

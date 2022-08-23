@@ -23,7 +23,6 @@ import java.sql.Statement;
 import java.util.Arrays;
 import java.util.Random;
 import java.util.UUID;
-import org.apache.ignite.cache.CacheMode;
 import org.apache.ignite.cache.CacheWriteSynchronizationMode;
 import org.apache.ignite.cache.affinity.rendezvous.RendezvousAffinityFunction;
 import org.apache.ignite.configuration.CacheConfiguration;
@@ -33,7 +32,6 @@ import org.junit.After;
 import org.junit.Before;
 import org.junit.Ignore;
 import org.junit.Test;
-
 import static org.apache.ignite.testframework.GridTestUtils.waitForCondition;
 
 /**
@@ -55,7 +53,6 @@ public class JdbcThinJdbcToCacheDataTypesCoverageTest extends SqlDataTypesCovera
     private Statement stmt;
 
     /** @inheritDoc */
-    @SuppressWarnings("RedundantMethodOverride")
     @Before
     @Override public void init() throws Exception {
         super.init();
@@ -131,8 +128,7 @@ public class JdbcThinJdbcToCacheDataTypesCoverageTest extends SqlDataTypesCovera
     @Override protected void checkBasicSqlOperations(SqlDataType dataType, Object... valsToCheck) throws Exception {
         assert valsToCheck.length > 0;
 
-        IgniteEx ignite =
-            (cacheMode == CacheMode.LOCAL || writeSyncMode == CacheWriteSynchronizationMode.PRIMARY_SYNC) ?
+        IgniteEx ignite = writeSyncMode == CacheWriteSynchronizationMode.PRIMARY_SYNC ?
                 grid(0) :
                 grid(new Random().nextInt(NODES_CNT));
 
@@ -163,8 +159,7 @@ public class JdbcThinJdbcToCacheDataTypesCoverageTest extends SqlDataTypesCovera
             " val " + dataType + ")" +
             " WITH " + "\"template=" + templateName + ",cache_name=" + cacheName + ",wrap_value=false\"");
 
-        if (cacheMode != CacheMode.LOCAL)
-            stmt.execute("CREATE INDEX " + idxName + " ON " + tblName + "(id, val)");
+        stmt.execute("CREATE INDEX " + idxName + " ON " + tblName + "(id, val)");
 
         for (Object valToCheck : valsToCheck) {
             Object sqlStrVal = valToCheck instanceof SqlStrConvertedValHolder ?

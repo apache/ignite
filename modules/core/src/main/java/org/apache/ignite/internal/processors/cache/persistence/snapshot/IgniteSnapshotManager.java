@@ -18,7 +18,6 @@
 package org.apache.ignite.internal.processors.cache.persistence.snapshot;
 
 import java.io.BufferedInputStream;
-import java.io.BufferedOutputStream;
 import java.io.File;
 import java.io.FileInputStream;
 import java.io.FileOutputStream;
@@ -36,7 +35,6 @@ import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.nio.file.SimpleFileVisitor;
 import java.nio.file.attribute.BasicFileAttributes;
-import java.util.ArrayDeque;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.BitSet;
@@ -828,13 +826,22 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
                     blts,
                     (Set<GroupPartitionId>)fut.result(),
                     cctx.gridConfig().getEncryptionSpi().masterKeyDigest()
-                    );
+                );
 
-                try (OutputStream out = new BufferedOutputStream(new FileOutputStream(smf))) {
-                    U.marshal(marsh, meta, out);
+                try (OutputStream out = Files.newOutputStream(smf.toPath())) {
+                    byte[] bytes = U.marshal(marsh, meta);
+                    int blockSize = SNAPSHOT_LIMITED_TRANSFER_BLOCK_SIZE_BYTES;
 
-                    log.info("Snapshot metafile has been created: " + smf.getAbsolutePath());
+                    for (int off = 0; off < bytes.length; off += blockSize) {
+                        int len = Math.min(blockSize, bytes.length - off);
+
+                        transferRateLimiter.acquire(len);
+
+                        out.write(bytes, off, len);
+                    }
                 }
+
+                log.info("Snapshot metafile has been created: " + smf.getAbsolutePath());
 
                 SnapshotHandlerContext ctx = new SnapshotHandlerContext(meta, req.groups(), cctx.localNode(), snpDir);
 
@@ -1028,6 +1035,11 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
         synchronized (snpOpMux) {
             return clusterSnpReq != null || clusterSnpFut != null;
         }
+    }
+
+    /** @return Current create snapshot request. {@code Null} if there is no create snapshot operation in progress. */
+    @Nullable public SnapshotOperationRequest currentCreateRequest() {
+        return clusterSnpReq;
     }
 
     /**
@@ -2620,7 +2632,7 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
         private final Queue<RemoteSnapshotFilesRecevier> queue = new ConcurrentLinkedDeque<>();
 
         /** {@code true} if the node is stopping. */
-        private volatile boolean stopping;
+        private boolean stopping;
 
         /**
          * @param next New task for scheduling.
@@ -2630,14 +2642,6 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
 
             if (stopping) {
                 next.acceptException(new IgniteException(SNP_NODE_STOPPING_ERR_MSG));
-
-                if (active != null)
-                    active.acceptException(new IgniteException(SNP_NODE_STOPPING_ERR_MSG));
-
-                RemoteSnapshotFilesRecevier r;
-
-                while ((r = queue.poll()) != null)
-                    r.acceptException(new IgniteException(SNP_NODE_STOPPING_ERR_MSG));
 
                 return;
             }
@@ -2666,8 +2670,16 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
         }
 
         /** Stopping handler. */
-        public void stop() {
+        public synchronized void stop() {
             stopping = true;
+
+            if (active != null)
+                active.acceptException(new IgniteException(SNP_NODE_STOPPING_ERR_MSG));
+
+            RemoteSnapshotFilesRecevier r;
+
+            while ((r = queue.poll()) != null)
+                r.acceptException(new IgniteException(SNP_NODE_STOPPING_ERR_MSG));
 
             Set<RemoteSnapshotFilesRecevier> futs = activeTasks();
             GridCompoundFuture<Void, Void> stopFut = new GridCompoundFuture<>();
@@ -2701,7 +2713,6 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
          * @return The set of currently scheduled tasks, some of them may be already completed.
          */
         private Set<RemoteSnapshotFilesRecevier> activeTasks() {
-
             Set<RemoteSnapshotFilesRecevier> futs = new HashSet<>(queue);
 
             RemoteSnapshotFilesRecevier active0 = active;
@@ -2905,12 +2916,10 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
                             ", grpId=" + grpId + ", partId=" + partId + ']');
                     }
 
-                    busyLock.enterBusy();
+                    if (!busyLock.enterBusy())
+                        throw new IgniteException(SNP_NODE_STOPPING_ERR_MSG);
 
                     try {
-                        if (stopping)
-                            throw new IgniteException(SNP_NODE_STOPPING_ERR_MSG);
-
                         task0.acceptFile(file);
                     }
                     finally {
@@ -2918,70 +2927,6 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
                     }
                 }
             };
-        }
-    }
-
-    /**
-     * Such an executor can executes tasks not in a single thread, but executes them
-     * on different threads sequentially. It's important for some {@link SnapshotSender}'s
-     * to process sub-task sequentially due to all these sub-tasks may share a single socket
-     * channel to send data to.
-     */
-    private static class SequentialExecutorWrapper implements Executor {
-        /** Ignite logger. */
-        private final IgniteLogger log;
-
-        /** Queue of task to execute. */
-        private final Queue<Runnable> tasks = new ArrayDeque<>();
-
-        /** Delegate executor. */
-        private final Executor executor;
-
-        /** Currently running task. */
-        private volatile Runnable active;
-
-        /** If wrapped executor is shutting down. */
-        private volatile boolean stopping;
-
-        /**
-         * @param executor Executor to run tasks on.
-         */
-        public SequentialExecutorWrapper(IgniteLogger log, Executor executor) {
-            this.log = log.getLogger(SequentialExecutorWrapper.class);
-            this.executor = executor;
-        }
-
-        /** {@inheritDoc} */
-        @Override public synchronized void execute(final Runnable r) {
-            assert !stopping : "Task must be cancelled prior to the wrapped executor is shutting down.";
-
-            tasks.offer(() -> {
-                try {
-                    r.run();
-                }
-                finally {
-                    scheduleNext();
-                }
-            });
-
-            if (active == null)
-                scheduleNext();
-        }
-
-        /** */
-        private synchronized void scheduleNext() {
-            if ((active = tasks.poll()) != null) {
-                try {
-                    executor.execute(active);
-                }
-                catch (RejectedExecutionException e) {
-                    tasks.clear();
-
-                    stopping = true;
-
-                    log.warning("Task is outdated. Wrapped executor is shutting down.", e);
-                }
-            }
         }
     }
 
@@ -3009,7 +2954,7 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
             GridIoManager.TransmissionSender sndr,
             String rqId
         ) {
-            super(log, new SequentialExecutorWrapper(log, exec));
+            super(log, exec);
 
             this.sndr = sndr;
             this.rqId = rqId;
@@ -3146,7 +3091,7 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
 
                 File targetCacheCfg = new File(cacheDir, ccfg.getName());
 
-                copy(ioFactory, ccfg, targetCacheCfg, ccfg.length());
+                copy(ioFactory, ccfg, targetCacheCfg, ccfg.length(), transferRateLimiter);
 
                 StoredCacheData cacheData = locCfgMgr.readCacheData(targetCacheCfg);
 

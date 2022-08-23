@@ -212,9 +212,9 @@ public class JUnitAssertAware {
 
     /** Check arrays equality as well as objects equality. */
     protected static void assertEqualsArraysAware(String msg, Object exp, Object actual) {
-        if (exp instanceof Object[])
+        if (exp instanceof Object[] && actual instanceof Object[])
             Assert.assertArrayEquals((Object[])exp, (Object[])actual);
-        else if (U.isPrimitiveArray(exp))
+        else if (U.isPrimitiveArray(exp) && U.isPrimitiveArray(actual))
             Assert.assertArrayEquals(new Object[] {exp}, new Object[] {actual}); // Hack to compare primitive arrays.
         else
             Assert.assertEquals(exp, actual);
