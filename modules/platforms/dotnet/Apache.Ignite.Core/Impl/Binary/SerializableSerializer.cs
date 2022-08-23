@@ -21,6 +21,7 @@ namespace Apache.Ignite.Core.Impl.Binary
     using System.Collections.Generic;
     using System.IO;
     using System.Linq;
+    using System.Reflection;
     using System.Runtime.Serialization;
     using Apache.Ignite.Core.Binary;
     using Apache.Ignite.Core.Impl.Binary.Metadata;
@@ -602,9 +603,24 @@ namespace Apache.Ignite.Core.Impl.Binary
 
             var wrapper = customObj as IObjectReference;
 
-            return wrapper == null
+            var resObj = wrapper == null
                 ? customObj
                 : wrapper.GetRealObject(ctx);
+
+            if (ctorFunc == null)
+            {
+                // TODO: Should we use compiled logic here?
+                var members = FormatterServices.GetSerializableMembers(resObj.GetType());
+
+                foreach (var memberInfo in members)
+                {
+                    // FormatterServices.InternalGetSerializableMembers actually returns FieldInfo[].
+                    var fieldInfo = (FieldInfo)memberInfo;
+                    fieldInfo.SetValue(resObj, serInfo.GetValue(fieldInfo.Name, fieldInfo.FieldType));
+                }
+            }
+
+            return resObj;
         }
 
         /// <summary>
