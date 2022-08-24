@@ -85,17 +85,17 @@ public class TableDescriptor {
     }
 
     /** */
-    public void addIndex(String idxName, IndexDescriptor idx) {
+    void addIndex(String idxName, IndexDescriptor idx) {
         idxs.put(idxName, idx);
     }
 
     /** */
-    public IndexDescriptor dropIndex(String idxName) {
+    IndexDescriptor dropIndex(String idxName) {
         return idxs.remove(idxName);
     }
 
     /** */
-    public Map<String, IndexDescriptor> indexes() {
+    Map<String, IndexDescriptor> indexes() {
         return Collections.unmodifiableMap(idxs);
     }
 
@@ -110,7 +110,7 @@ public class TableDescriptor {
     }
 
     /** */
-    public void markIndexRebuildInProgress(boolean idxRebuildInProgress) {
+    void markIndexRebuildInProgress(boolean idxRebuildInProgress) {
         this.idxRebuildInProgress = idxRebuildInProgress;
     }
 }

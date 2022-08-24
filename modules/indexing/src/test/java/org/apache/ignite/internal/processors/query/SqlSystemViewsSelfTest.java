@@ -309,7 +309,7 @@ public class SqlSystemViewsSelfTest extends AbstractIndexingCommonTest {
                 "\"MY_VAL\" ASC, \"ID1\" ASC, \"ID2\" ASC, \"ID1\" ASC, \"ID2\" ASC", false, false, 25},
             {1102275506, "SQL_PUBLIC_DFLT_CACHE", "PUBLIC", "DFLT_CACHE", "_key_PK", "SORTED",
                 "\"ID1\" ASC, \"ID2\" ASC", true, true, 10},
-            {2584860, "TST1", "TST1", "VALUECLASS", "TST1_INDEX", "SORTED", "\"KEY\" ASC", false, false, 10},
+            {2584860, "TST1", "TST1", "VALUECLASS", "TST1_INDEX", "SORTED", "\"KEY\" ASC, \"_KEY\" ASC", false, false, 10},
             {2584860, "TST1", "TST1", "VALUECLASS", "TST1_INDEX_proxy", "SORTED",
                 "\"_KEY\" ASC", false, false, 10},
             {2584860, "TST1", "TST1", "VALUECLASS", "_key_PK", "SORTED", "\"_KEY\" ASC", true, true, 5},

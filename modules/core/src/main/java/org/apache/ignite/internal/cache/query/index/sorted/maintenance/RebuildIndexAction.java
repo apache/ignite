@@ -195,13 +195,18 @@ public class RebuildIndexAction implements MaintenanceAction<Boolean> {
         TableDescriptor tblDesc = oldIdxDesc.table();
         IndexDefinition definition = oldIdxDesc.index().unwrap(InlineIndexImpl.class).indexDefinition();
 
-        Index newIdx = idxProc.createIndexDynamically(oldIdxDesc.table().cacheInfo().cacheContext(),
+        Index newIdx = idxProc.createIndexDynamically(tblDesc.cacheInfo().cacheContext(),
             InlineIndexFactory.INSTANCE, definition, visitor);
 
-        IndexDescriptor newIdxDesc = new IndexDescriptor(oldIdxDesc.table(), oldIdxDesc.name(), oldIdxDesc.type(),
+        IndexDescriptor newIdxDesc = new IndexDescriptor(tblDesc, oldIdxDesc.name(), oldIdxDesc.type(),
             oldIdxDesc.keyDefinitions(), oldIdxDesc.isPk(), oldIdxDesc.isAffinity(), oldIdxDesc.inlineSize(), newIdx);
 
-        schemaMgr.addIndex(tblDesc, newIdxDesc);
+        try {
+            schemaMgr.addIndex(tblDesc, newIdxDesc);
+        }
+        catch (IgniteCheckedException e) {
+            log.error("Failed to register incex in schema manager", e);
+        }
 
         // This future must be already finished by the schema index cache visitor above
         assert createIdxFut.isDone();

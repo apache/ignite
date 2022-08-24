@@ -34,8 +34,8 @@ import java.util.Objects;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
+import java.util.concurrent.locks.ReentrantReadWriteLock;
 import org.apache.ignite.IgniteCheckedException;
-import org.apache.ignite.IgniteException;
 import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.IgniteSystemProperties;
 import org.apache.ignite.cache.QueryIndexType;
@@ -71,7 +71,6 @@ import org.apache.ignite.internal.processors.query.schema.SchemaOperationExcepti
 import org.apache.ignite.internal.util.GridConcurrentHashSet;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.T2;
-import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.spi.systemview.view.SystemView;
 import org.apache.ignite.spi.systemview.view.sql.SqlIndexView;
 import org.apache.ignite.spi.systemview.view.sql.SqlSchemaView;
@@ -139,7 +138,7 @@ public class SchemaManager {
     /** Collection of schemaNames and registered tables. */
     private final ConcurrentMap<String, SchemaDescriptor> schemas = new ConcurrentHashMap<>();
 
-    /** Cache name -> schema name */
+    /** Cache name -> schema name. */
     private final Map<String, String> cacheName2schema = new ConcurrentHashMap<>();
 
     /** Map from table identifier to table. */
@@ -148,8 +147,8 @@ public class SchemaManager {
     /** System VIEW collection. */
     private final Set<SystemView<?>> sysViews = new GridConcurrentHashSet<>();
 
-    /** Mutex to synchronize schema operations. */
-    private final Object schemaMux = new Object();
+    /** Lock to synchronize schema operations. */
+    private final ReentrantReadWriteLock lock = new ReentrantReadWriteLock();
 
     /** Kernal context. */
     private final GridKernalContext ctx;
@@ -225,13 +224,18 @@ public class SchemaManager {
             v -> MetricUtils.systemViewAttributes(v).entrySet(),
             SqlViewColumnView::new);
 
-        // Register PUBLIC schema which is always present.
-        synchronized (schemaMux) {
-            createSchema(QueryUtils.DFLT_SCHEMA, true);
-        }
+        lock.writeLock().lock();
 
-        // Create schemas listed in node's configuration.
-        createPredefinedSchemas(schemaNames);
+        try {
+            // Register PUBLIC schema which is always present.
+            createSchema(QueryUtils.DFLT_SCHEMA, true);
+
+            // Create schemas listed in node's configuration.
+            createPredefinedSchemas(schemaNames);
+        }
+        finally {
+            lock.writeLock().unlock();
+        }
     }
 
     /** */
@@ -274,17 +278,17 @@ public class SchemaManager {
             return;
         }
 
+        lock.writeLock().lock();
+
         try {
-            synchronized (schemaMux) {
-                createSchema(schema, true);
-            }
+            createSchema(schema, true);
 
             sysViews.add(view);
 
             lsnr.onSystemViewCreated(schema, view);
         }
-        catch (IgniteCheckedException e) {
-            throw new IgniteException("Failed to register system view.", e);
+        finally {
+            lock.writeLock().unlock();
         }
     }
 
@@ -293,7 +297,9 @@ public class SchemaManager {
      *
      * @param schemaNames Schema names.
      */
-    private void createPredefinedSchemas(String[] schemaNames) throws IgniteCheckedException {
+    private void createPredefinedSchemas(String[] schemaNames) {
+        assert lock.isWriteLockedByCurrentThread();
+
         if (F.isEmpty(schemaNames))
             return;
 
@@ -308,10 +314,8 @@ public class SchemaManager {
             schemaNames0.add(schemaName);
         }
 
-        synchronized (schemaMux) {
-            for (String schemaName : schemaNames0)
-                createSchema(schemaName, true);
-        }
+        for (String schemaName : schemaNames0)
+            createSchema(schemaName, true);
     }
 
     /**
@@ -323,13 +327,18 @@ public class SchemaManager {
      * @throws IgniteCheckedException If failed.
      */
     public void onCacheCreated(String cacheName, String schemaName, Class<?>[] sqlFuncs) throws IgniteCheckedException {
-        synchronized (schemaMux) {
+        lock.writeLock().lock();
+
+        try {
             createSchema(schemaName, false);
+
+            cacheName2schema.put(cacheName, schemaName);
+
+            createSqlFunctions(schemaName, sqlFuncs);
         }
-
-        cacheName2schema.put(cacheName, schemaName);
-
-        createSqlFunctions(schemaName, sqlFuncs);
+        finally {
+            lock.writeLock().unlock();
+        }
     }
 
     /**
@@ -347,23 +356,35 @@ public class SchemaManager {
     ) throws IgniteCheckedException {
         validateTypeDescriptor(type);
 
-        String schemaName = schemaName(cacheInfo.name());
+        lock.writeLock().lock();
 
-        SchemaDescriptor schema = schema(schemaName);
+        try {
+            String schemaName = schemaName(cacheInfo.name());
 
-        lsnr.onSqlTypeCreated(schemaName, type, cacheInfo);
+            SchemaDescriptor schema = schema(schemaName);
 
-        TableDescriptor tbl = new TableDescriptor(cacheInfo, type, isSql);
+            TableDescriptor tbl = new TableDescriptor(cacheInfo, type, isSql);
 
-        createSystemIndexes(tbl);
-        createInitialUserIndexes(tbl);
+            schema.add(tbl);
 
-        schema.add(tbl);
+            T2<String, String> tableId = new T2<>(schemaName, type.tableName());
 
-        T2<String, String> tableId = new T2<>(schemaName, type.tableName());
+            if (id2tbl.putIfAbsent(tableId, tbl) != null)
+                throw new IllegalStateException("Table already exists: " + schemaName + '.' + type.tableName());
 
-        if (id2tbl.putIfAbsent(tableId, tbl) != null)
-            throw new IllegalStateException("Table already exists: " + schemaName + '.' + type.tableName());
+            lsnr.onSqlTypeCreated(schemaName, type, cacheInfo);
+
+            // Create system indexes.
+            createPkIndex(tbl);
+            createAffinityIndex(tbl);
+
+            // Create initial user indexes.
+            for (GridQueryIndexDescriptor idxDesc : tbl.type().indexes().values())
+                createIndex0(idxDesc, tbl, null);
+        }
+        finally {
+            lock.writeLock().unlock();
+        }
     }
 
     /**
@@ -396,49 +417,43 @@ public class SchemaManager {
      * @param rmvIdx Whether to remove indexes.
      * @param clearIdx Whether to clear the index.
      */
-    public void onCacheDestroyed(String cacheName, boolean rmvIdx, boolean clearIdx) throws IgniteCheckedException {
-        String schemaName = schemaName(cacheName);
+    public void onCacheDestroyed(String cacheName, boolean rmvIdx, boolean clearIdx) {
+        lock.writeLock().lock();
 
-        SchemaDescriptor schema = schemas.get(schemaName);
+        try {
+            String schemaName = schemaName(cacheName);
 
-        // Remove this mapping only after callback to DML proc - it needs that mapping internally.
-        cacheName2schema.remove(cacheName);
+            SchemaDescriptor schema = schemas.get(schemaName);
 
-        for (TableDescriptor tbl : schema.tables()) {
-            if (F.eq(tbl.cacheInfo().name(), cacheName)) {
-                Collection<IndexDescriptor> idxs = new ArrayList<>(tbl.indexes().values());
+            // Remove this mapping only after callback to DML proc - it needs that mapping internally.
+            cacheName2schema.remove(cacheName);
 
-                for (IndexDescriptor idx : idxs) {
-                    if (!idx.isProxy()) // Proxies will be deleted implicitly after deleting target index.
-                        dropIndex(tbl, idx.name(), true, !clearIdx);
-                }
+            for (TableDescriptor tbl : schema.tables()) {
+                if (F.eq(tbl.cacheInfo().name(), cacheName)) {
+                    Collection<IndexDescriptor> idxs = new ArrayList<>(tbl.indexes().values());
 
-                try {
+                    for (IndexDescriptor idx : idxs) {
+                        if (!idx.isProxy()) // Proxies will be deleted implicitly after deleting target index.
+                            dropIndex(tbl, idx.name(), !clearIdx);
+                    }
+
                     lsnr.onSqlTypeDropped(schemaName, tbl.type(), rmvIdx);
-                }
-                catch (Exception e) {
-                    U.error(log, "Failed to drop table on cache stop (will ignore): " +
-                        tbl.type().tableName(), e);
-                }
 
-                schema.drop(tbl);
+                    schema.drop(tbl);
 
-                T2<String, String> tableId = new T2<>(tbl.type().schemaName(), tbl.type().tableName());
-                id2tbl.remove(tableId, tbl);
+                    T2<String, String> tableId = new T2<>(tbl.type().schemaName(), tbl.type().tableName());
+                    id2tbl.remove(tableId, tbl);
+                }
             }
-        }
 
-        synchronized (schemaMux) {
             if (schema.decrementUsageCount()) {
                 schemas.remove(schemaName);
 
-                try {
-                    lsnr.onSchemaDropped(schemaName);
-                }
-                catch (Exception e) {
-                    U.error(log, "Failed to drop schema on cache stop (will ignore): " + cacheName, e);
-                }
+                lsnr.onSchemaDropped(schemaName);
             }
+        }
+        finally {
+            lock.writeLock().unlock();
         }
     }
 
@@ -448,11 +463,11 @@ public class SchemaManager {
      * @param schemaName Schema name.
      * @param predefined Whether this is predefined schema.
      */
-    private void createSchema(String schemaName, boolean predefined) throws IgniteCheckedException {
-        assert Thread.holdsLock(schemaMux);
+    private void createSchema(String schemaName, boolean predefined) {
+        assert lock.isWriteLockedByCurrentThread();
 
         if (!predefined)
-            predefined = isSchemaPredefined(schemaName);
+            predefined = F.eq(QueryUtils.DFLT_SCHEMA, schemaName);
 
         SchemaDescriptor schema = new SchemaDescriptor(schemaName, predefined);
 
@@ -467,16 +482,6 @@ public class SchemaManager {
     }
 
     /**
-     * Check if schema is predefined.
-     *
-     * @param schemaName Schema name.
-     * @return {@code True} if predefined.
-     */
-    private boolean isSchemaPredefined(String schemaName) {
-        return F.eq(QueryUtils.DFLT_SCHEMA, schemaName);
-    }
-
-    /**
      * Registers SQL functions.
      *
      * @param schema Schema.
@@ -484,6 +489,8 @@ public class SchemaManager {
      * @throws IgniteCheckedException If failed.
      */
     private void createSqlFunctions(String schema, Class<?>[] clss) throws IgniteCheckedException {
+        assert lock.isWriteLockedByCurrentThread();
+
         if (F.isEmpty(clss))
             return;
 
@@ -539,23 +546,15 @@ public class SchemaManager {
         return schemas.get(schemaName);
     }
 
-    /**
-     * Create system indexes for table.
-     *
-     * @param tbl Table.
-     */
-    private void createSystemIndexes(TableDescriptor tbl) {
-        createPkIndex(tbl);
-        createAffinityIndex(tbl);
-    }
-
     /** */
-    private void createPkIndex(TableDescriptor tbl) {
+    private void createPkIndex(TableDescriptor tbl) throws IgniteCheckedException {
+        assert lock.isWriteLockedByCurrentThread();
+
         GridQueryIndexDescriptor idxDesc = new QuerySysIndexDescriptorImpl(QueryUtils.PRIMARY_KEY_INDEX,
             Collections.emptyList(), tbl.type().primaryKeyInlineSize()); // _KEY field will be added implicitly.
 
         // Add primary key index.
-        createIndexDescriptor(
+        createIndex0(
             idxDesc,
             tbl,
             null
@@ -563,7 +562,9 @@ public class SchemaManager {
     }
 
     /** */
-    private void createAffinityIndex(TableDescriptor tbl) {
+    private void createAffinityIndex(TableDescriptor tbl) throws IgniteCheckedException {
+        assert lock.isWriteLockedByCurrentThread();
+
         // Locate index where affinity column is first (if any).
         if (tbl.affinityKey() != null) {
             boolean affIdxFound = false;
@@ -580,7 +581,7 @@ public class SchemaManager {
                 GridQueryIndexDescriptor idxDesc = new QuerySysIndexDescriptorImpl(QueryUtils.AFFINITY_KEY_INDEX,
                     Collections.singleton(tbl.affinityKey()), tbl.type().affinityFieldInlineSize());
 
-                createIndexDescriptor(
+                createIndex0(
                     idxDesc,
                     tbl,
                     null
@@ -590,11 +591,15 @@ public class SchemaManager {
     }
 
     /** */
-    private IndexDescriptor createIndexDescriptor(
+    private void createIndex0(
         GridQueryIndexDescriptor idxDesc,
         TableDescriptor tbl,
         @Nullable SchemaIndexCacheVisitor cacheVisitor
-    ) {
+    ) throws IgniteCheckedException {
+        // If cacheVisitor is not null, index creation can be durable, schema lock should not be acquired in this case
+        // to avoid blocking of other schema operations.
+        assert cacheVisitor == null || !lock.isWriteLockedByCurrentThread();
+
         IndexDescriptorFactory factory = idxDescFactory.get(idxDesc.type());
 
         if (factory == null)
@@ -603,18 +608,19 @@ public class SchemaManager {
         IndexDescriptor desc = factory.create(ctx, idxDesc, tbl, cacheVisitor);
 
         addIndex(tbl, desc);
-
-        return desc;
     }
 
     /** Create proxy index for real index if needed. */
-    private IndexDescriptor createProxyIndexDescriptor(
+    private void createProxyIndex(
         IndexDescriptor idxDesc,
         TableDescriptor tbl
     ) {
+        assert lock.isWriteLockedByCurrentThread();
+
         GridQueryTypeDescriptor typeDesc = tbl.type();
+
         if (F.isEmpty(typeDesc.keyFieldName()) && F.isEmpty(typeDesc.valueFieldName()))
-            return null;
+            return;
 
         String keyAlias = typeDesc.keyFieldAlias();
         String valAlias = typeDesc.valueFieldAlias();
@@ -643,7 +649,7 @@ public class SchemaManager {
         }
 
         if (!modified)
-            return null;
+            return;
 
         String proxyName = generateProxyIdxName(idxDesc.name());
 
@@ -652,23 +658,11 @@ public class SchemaManager {
         tbl.addIndex(proxyName, proxyDesc);
 
         lsnr.onIndexCreated(tbl.type().schemaName(), tbl.type().tableName(), proxyName, proxyDesc);
-
-        return proxyDesc;
     }
 
     /** */
     public static String generateProxyIdxName(String idxName) {
         return idxName + "_proxy";
-    }
-
-    /**
-     * Create initial user indexes.
-     *
-     * @param tbl Table.
-     */
-    private void createInitialUserIndexes(TableDescriptor tbl) {
-        for (GridQueryIndexDescriptor idxDesc : tbl.type().indexes().values())
-            createIndexDescriptor(idxDesc, tbl, null);
     }
 
     /**
@@ -688,22 +682,29 @@ public class SchemaManager {
         boolean ifNotExists,
         SchemaIndexCacheVisitor cacheVisitor
     ) throws IgniteCheckedException {
-        // Locate table.
-        TableDescriptor tbl = table(schemaName, tblName);
+        TableDescriptor tbl;
 
-        if (tbl == null) {
-            throw new IgniteCheckedException("Table not found in schema manager [schemaName=" + schemaName +
-                ", tblName=" + tblName + ']');
+        lock.readLock().lock();
+
+        try {
+            // Locate table.
+            tbl = table(schemaName, tblName);
+
+            if (tbl == null)
+                throw new SchemaOperationException(SchemaOperationException.CODE_TABLE_NOT_FOUND, tblName);
+
+            if (tbl.indexes().containsKey(idxDesc.name())) {
+                if (ifNotExists)
+                    return;
+                else
+                    throw new SchemaOperationException(SchemaOperationException.CODE_INDEX_EXISTS, idxDesc.name());
+            }
+        }
+        finally {
+            lock.readLock().unlock();
         }
 
-        if (tbl.indexes().containsKey(idxDesc.name())) {
-            if (ifNotExists)
-                return;
-            else
-                throw new SchemaOperationException(SchemaOperationException.CODE_INDEX_EXISTS, idxDesc.name());
-        }
-
-        createIndexDescriptor(idxDesc, tbl, cacheVisitor);
+        createIndex0(idxDesc, tbl, cacheVisitor);
     }
 
     /**
@@ -712,12 +713,27 @@ public class SchemaManager {
      * @param tbl Table descriptor.
      * @param idxDesc Index descriptor.
      */
-    public void addIndex(TableDescriptor tbl, IndexDescriptor idxDesc) {
-        tbl.addIndex(idxDesc.name(), idxDesc);
+    public void addIndex(TableDescriptor tbl, IndexDescriptor idxDesc) throws IgniteCheckedException {
+        lock.writeLock().lock();
 
-        lsnr.onIndexCreated(tbl.type().schemaName(), tbl.type().tableName(), idxDesc.name(), idxDesc);
+        try {
+            // Check under the lock if table is still exists.
+            if (table(tbl.type().schemaName(), tbl.type().tableName()) == null) {
+                ctx.indexProcessor().removeIndex(new IndexName(tbl.cacheInfo().name(), tbl.type().schemaName(),
+                        tbl.type().tableName(), idxDesc.name()), false);
 
-        createProxyIndexDescriptor(idxDesc, tbl);
+                throw new SchemaOperationException(SchemaOperationException.CODE_TABLE_NOT_FOUND, tbl.type().tableName());
+            }
+
+            tbl.addIndex(idxDesc.name(), idxDesc);
+
+            lsnr.onIndexCreated(tbl.type().schemaName(), tbl.type().tableName(), idxDesc.name(), idxDesc);
+
+            createProxyIndex(idxDesc, tbl);
+        }
+        finally {
+            lock.writeLock().unlock();
+        }
     }
 
     /**
@@ -728,16 +744,23 @@ public class SchemaManager {
      * @param ifExists If exists.
      */
     public void dropIndex(String schemaName, String idxName, boolean ifExists) throws IgniteCheckedException {
-        IndexDescriptor idxDesc = index(schemaName, idxName);
+        lock.writeLock().lock();
 
-        if (idxDesc == null) {
-            if (ifExists)
-                return;
-            else
-                throw new SchemaOperationException(SchemaOperationException.CODE_INDEX_NOT_FOUND, idxName);
+        try {
+            IndexDescriptor idxDesc = index(schemaName, idxName);
+
+            if (idxDesc == null) {
+                if (ifExists)
+                    return;
+                else
+                    throw new SchemaOperationException(SchemaOperationException.CODE_INDEX_NOT_FOUND, idxName);
+            }
+
+            dropIndex(idxDesc.table(), idxName, false);
         }
-
-        dropIndex(idxDesc.table(), idxName, ifExists, false);
+        finally {
+            lock.writeLock().unlock();
+        }
     }
 
     /**
@@ -745,9 +768,10 @@ public class SchemaManager {
      *
      * @param tbl Table descriptor.
      * @param idxName Index name.
-     * @param ifExists If exists.
      */
-    private void dropIndex(TableDescriptor tbl, String idxName, boolean ifExists, boolean softDelete) throws IgniteCheckedException {
+    private void dropIndex(TableDescriptor tbl, String idxName, boolean softDelete) {
+        assert lock.isWriteLockedByCurrentThread();
+
         String schemaName = tbl.type().schemaName();
         String cacheName = tbl.type().cacheName();
         String tableName = tbl.type().tableName();
@@ -794,19 +818,26 @@ public class SchemaManager {
     ) throws IgniteCheckedException {
         assert !ifColNotExists || cols.size() == 1;
 
-        // Locate table.
-        TableDescriptor tbl = table(schemaName, tblName);
+        lock.writeLock().lock();
 
-        if (tbl == null) {
-            if (!ifTblExists) {
-                throw new IgniteCheckedException("Table not found in schema manager [schemaName=" + schemaName +
-                    ", tblName=" + tblName + ']');
+        try {
+            // Locate table.
+            TableDescriptor tbl = table(schemaName, tblName);
+
+            if (tbl == null) {
+                if (!ifTblExists) {
+                    throw new IgniteCheckedException("Table not found in schema manager [schemaName=" + schemaName +
+                        ", tblName=" + tblName + ']');
+                }
+                else
+                    return;
             }
-            else
-                return;
-        }
 
-        lsnr.onColumnsAdded(schemaName, tbl.type(), tbl.cacheInfo(), cols);
+            lsnr.onColumnsAdded(schemaName, tbl.type(), tbl.cacheInfo(), cols);
+        }
+        finally {
+            lock.writeLock().unlock();
+        }
     }
 
     /**
@@ -828,19 +859,26 @@ public class SchemaManager {
     ) throws IgniteCheckedException {
         assert !ifColExists || cols.size() == 1;
 
-        // Locate table.
-        TableDescriptor tbl = table(schemaName, tblName);
+        lock.writeLock().lock();
 
-        if (tbl == null) {
-            if (!ifTblExists) {
-                throw new IgniteCheckedException("Table not found in schema manager [schemaName=" + schemaName +
-                    ",tblName=" + tblName + ']');
+        try {
+            // Locate table.
+            TableDescriptor tbl = table(schemaName, tblName);
+
+            if (tbl == null) {
+                if (!ifTblExists) {
+                    throw new IgniteCheckedException("Table not found in schema manager [schemaName=" + schemaName +
+                        ",tblName=" + tblName + ']');
+                }
+                else
+                    return;
             }
-            else
-                return;
-        }
 
-        lsnr.onColumnsDropped(schemaName, tbl.type(), tbl.cacheInfo(), cols);
+            lsnr.onColumnsDropped(schemaName, tbl.type(), tbl.cacheInfo(), cols);
+        }
+        finally {
+            lock.writeLock().unlock();
+        }
     }
 
     /**
@@ -850,18 +888,25 @@ public class SchemaManager {
      * @return {@code true} If context has been initialized.
      */
     public boolean initCacheContext(GridCacheContext<?, ?> cctx) {
-        GridCacheContextInfo<?, ?> cacheInfo = cacheInfo(cctx.name());
+        lock.writeLock().lock();
 
-        if (cacheInfo != null) {
-            assert !cacheInfo.isCacheContextInited() : cacheInfo.name();
-            assert cacheInfo.name().equals(cctx.name()) : cacheInfo.name() + " != " + cctx.name();
+        try {
+            GridCacheContextInfo<?, ?> cacheInfo = cacheInfo(cctx.name());
 
-            cacheInfo.initCacheContext((GridCacheContext)cctx);
+            if (cacheInfo != null) {
+                assert !cacheInfo.isCacheContextInited() : cacheInfo.name();
+                assert cacheInfo.name().equals(cctx.name()) : cacheInfo.name() + " != " + cctx.name();
 
-            return true;
+                cacheInfo.initCacheContext((GridCacheContext)cctx);
+
+                return true;
+            }
+
+            return false;
         }
-
-        return false;
+        finally {
+            lock.writeLock().unlock();
+        }
     }
 
     /**
@@ -871,15 +916,22 @@ public class SchemaManager {
      * @return {@code true} If context has been cleared.
      */
     public boolean clearCacheContext(GridCacheContext<?, ?> cctx) {
-        GridCacheContextInfo<?, ?> cacheInfo = cacheInfo(cctx.name());
+        lock.writeLock().lock();
 
-        if (cacheInfo != null && cacheInfo.isCacheContextInited()) {
-            cacheInfo.clearCacheContext();
+        try {
+            GridCacheContextInfo<?, ?> cacheInfo = cacheInfo(cctx.name());
 
-            return true;
+            if (cacheInfo != null && cacheInfo.isCacheContextInited()) {
+                cacheInfo.clearCacheContext();
+
+                return true;
+            }
+
+            return false;
         }
-
-        return false;
+        finally {
+            lock.writeLock().unlock();
+        }
     }
 
     /**
@@ -889,13 +941,20 @@ public class SchemaManager {
      * @param mark Mark/unmark flag, {@code true} if index rebuild started, {@code false} if finished.
      */
     public void markIndexRebuild(String cacheName, boolean mark) {
-        for (TableDescriptor tbl : tablesForCache(cacheName)) {
-            tbl.markIndexRebuildInProgress(mark);
+        lock.writeLock().lock();
 
-            if (mark)
-                lsnr.onIndexRebuildStarted(tbl.type().schemaName(), tbl.type().tableName());
-            else
-                lsnr.onIndexRebuildFinished(tbl.type().schemaName(), tbl.type().tableName());
+        try {
+            for (TableDescriptor tbl : tablesForCache(cacheName)) {
+                tbl.markIndexRebuildInProgress(mark);
+
+                if (mark)
+                    lsnr.onIndexRebuildStarted(tbl.type().schemaName(), tbl.type().tableName());
+                else
+                    lsnr.onIndexRebuildFinished(tbl.type().schemaName(), tbl.type().tableName());
+            }
+        }
+        finally {
+            lock.writeLock().unlock();
         }
     }
 
@@ -908,14 +967,21 @@ public class SchemaManager {
      * @return Descriptor.
      */
     @Nullable public GridQueryTypeDescriptor typeDescriptorForType(String schemaName, String cacheName, String type) {
-        SchemaDescriptor schema = schema(schemaName);
+        lock.readLock().lock();
 
-        if (schema == null)
-            return null;
+        try {
+            SchemaDescriptor schema = schema(schemaName);
 
-        TableDescriptor tbl = schema.tableByTypeName(cacheName, type);
+            if (schema == null)
+                return null;
 
-        return tbl == null ? null : tbl.type();
+            TableDescriptor tbl = schema.tableByTypeName(cacheName, type);
+
+            return tbl == null ? null : tbl.type();
+        }
+        finally {
+            lock.readLock().unlock();
+        }
     }
 
     /**
@@ -925,36 +991,50 @@ public class SchemaManager {
      * @return Collection of table descriptors.
      */
     public Collection<TableDescriptor> tablesForCache(String cacheName) {
-        SchemaDescriptor schema = schema(schemaName(cacheName));
+        lock.readLock().lock();
 
-        if (schema == null)
-            return Collections.emptySet();
+        try {
+            SchemaDescriptor schema = schema(schemaName(cacheName));
 
-        List<TableDescriptor> tbls = new ArrayList<>();
+            if (schema == null)
+                return Collections.emptySet();
 
-        for (TableDescriptor tbl : schema.tables()) {
-            if (F.eq(tbl.cacheInfo().name(), cacheName))
-                tbls.add(tbl);
+            List<TableDescriptor> tbls = new ArrayList<>();
+
+            for (TableDescriptor tbl : schema.tables()) {
+                if (F.eq(tbl.cacheInfo().name(), cacheName))
+                    tbls.add(tbl);
+            }
+
+            return tbls;
         }
-
-        return tbls;
+        finally {
+            lock.readLock().unlock();
+        }
     }
 
     /**
      * Find registered cache info by it's name.
      */
     @Nullable public GridCacheContextInfo<?, ?> cacheInfo(String cacheName) {
-        SchemaDescriptor schema = schema(schemaName(cacheName));
+        lock.readLock().lock();
 
-        if (schema == null)
+        try {
+            SchemaDescriptor schema = schema(schemaName(cacheName));
+
+            if (schema == null)
+                return null;
+
+            for (TableDescriptor tbl : schema.tables()) {
+                if (F.eq(tbl.cacheInfo().name(), cacheName))
+                    return tbl.cacheInfo();
+            }
+
             return null;
-
-        for (TableDescriptor tbl : schema.tables()) {
-            if (F.eq(tbl.cacheInfo().name(), cacheName))
-                return tbl.cacheInfo();
         }
-
-        return null;
+        finally {
+            lock.readLock().unlock();
+        }
     }
 
     /**
@@ -976,19 +1056,26 @@ public class SchemaManager {
      * @return Index or {@code null} if none found.
      */
     @Nullable public IndexDescriptor index(String schemaName, String idxName) {
-        SchemaDescriptor schema = schema(schemaName);
+        lock.readLock().lock();
 
-        if (schema == null)
+        try {
+            SchemaDescriptor schema = schema(schemaName);
+
+            if (schema == null)
+                return null;
+
+            for (TableDescriptor tbl : schema.tables()) {
+                IndexDescriptor idx = tbl.indexes().get(idxName);
+
+                if (idx != null)
+                    return idx;
+            }
+
             return null;
-
-        for (TableDescriptor tbl : schema.tables()) {
-            IndexDescriptor idx = tbl.indexes().get(idxName);
-
-            if (idx != null)
-                return idx;
         }
-
-        return null;
+        finally {
+            lock.readLock().unlock();
+        }
     }
 
     /**
