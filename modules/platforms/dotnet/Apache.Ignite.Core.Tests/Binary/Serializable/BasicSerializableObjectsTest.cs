@@ -377,8 +377,10 @@ namespace Apache.Ignite.Core.Tests.Binary.Serializable
         [Test, TestCaseSource(nameof(SerializableTypeObjects))]
         public void TestAllSerializableSystemTypes(object obj)
         {
-            TestContext.Progress.WriteLine(obj?.GetType());
             Assert.IsNotNull(obj);
+            var res = TestUtils.SerializeDeserialize(obj);
+
+            Assert.IsNotNull(res);
         }
 
         /// <summary>
