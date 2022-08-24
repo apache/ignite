@@ -37,6 +37,10 @@ namespace Apache.Ignite.Core.Tests.Binary.Serializable
     public class BasicSerializableObjectsTest
     {
 #pragma warning disable CS0618
+        /// <summary>
+        /// Source:
+        /// https://docs.microsoft.com/en-us/dotnet/standard/serialization/binary-serialization#serializable-types
+        /// </summary>
         private static readonly IReadOnlyList<object> SerializableTypeObjects = new object[]
         {
             new RuntimeBinderException(),
@@ -372,7 +376,6 @@ namespace Apache.Ignite.Core.Tests.Binary.Serializable
 
         /// <summary>
         /// Tests all serializable system types.
-        /// See https://docs.microsoft.com/en-us/dotnet/standard/serialization/binary-serialization#serializable-types.
         /// </summary>
         [Test, TestCaseSource(nameof(SerializableTypeObjects))]
         public void TestAllSerializableSystemTypes(object obj)
