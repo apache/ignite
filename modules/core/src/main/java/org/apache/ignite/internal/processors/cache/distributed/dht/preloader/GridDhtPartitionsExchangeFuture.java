@@ -2215,8 +2215,7 @@ public class GridDhtPartitionsExchangeFuture extends GridDhtTopologyFutureAdapte
      * @param newCntrMap {@code True} if possible to use {@link CachePartitionFullCountersMap}.
      * @return Message.
      */
-    private GridDhtPartitionsFullMessage createPartitionsMessage(boolean compress,
-        boolean newCntrMap) {
+    private GridDhtPartitionsFullMessage createPartitionsMessage(boolean compress, boolean newCntrMap) {
         GridCacheVersion last = lastVer.get();
 
         GridDhtPartitionsFullMessage m = cctx.exchange().createPartitionsFullMessage(
@@ -4937,12 +4936,12 @@ public class GridDhtPartitionsExchangeFuture extends GridDhtTopologyFutureAdapte
 
                         cctx.affinity().onExchangeChangeAffinityMessage(GridDhtPartitionsExchangeFuture.this, msg);
 
-                        IgniteCheckedException err = !F.isEmpty(msg.partitionsMessage().getErrorsMap()) ?
+                        GridDhtPartitionsFullMessage partsMsg = msg.partitionsMessage();
+
+                        IgniteCheckedException err = !F.isEmpty(partsMsg.getErrorsMap()) ?
                             new IgniteCheckedException("Cluster state change failed.") : null;
 
                         if (!crd.isLocal()) {
-                            GridDhtPartitionsFullMessage partsMsg = msg.partitionsMessage();
-
                             assert partsMsg != null : msg;
                             assert partsMsg.lastVersion() != null : partsMsg;
 
@@ -4950,7 +4949,7 @@ public class GridDhtPartitionsExchangeFuture extends GridDhtTopologyFutureAdapte
 
                             if (exchActions != null && exchActions.stateChangeRequest() != null && err != null) {
                                 cctx.kernalContext().state().onStateChangeError(
-                                    msg.partitionsMessage().getErrorsMap(),
+                                    partsMsg.getErrorsMap(),
                                     exchActions.stateChangeRequest()
                                 );
                             }

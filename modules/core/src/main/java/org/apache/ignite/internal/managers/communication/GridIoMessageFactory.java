@@ -168,6 +168,12 @@ import org.apache.ignite.internal.processors.query.h2.twostep.messages.GridQuery
 import org.apache.ignite.internal.processors.query.messages.GridQueryKillRequest;
 import org.apache.ignite.internal.processors.query.messages.GridQueryKillResponse;
 import org.apache.ignite.internal.processors.query.schema.message.SchemaOperationStatusMessage;
+import org.apache.ignite.internal.processors.query.stat.messages.StatisticsColumnData;
+import org.apache.ignite.internal.processors.query.stat.messages.StatisticsDecimalMessage;
+import org.apache.ignite.internal.processors.query.stat.messages.StatisticsKeyMessage;
+import org.apache.ignite.internal.processors.query.stat.messages.StatisticsObjectData;
+import org.apache.ignite.internal.processors.query.stat.messages.StatisticsRequest;
+import org.apache.ignite.internal.processors.query.stat.messages.StatisticsResponse;
 import org.apache.ignite.internal.processors.rest.handlers.task.GridTaskResultRequest;
 import org.apache.ignite.internal.processors.rest.handlers.task.GridTaskResultResponse;
 import org.apache.ignite.internal.processors.service.ServiceDeploymentProcessId;
@@ -376,9 +382,17 @@ public class GridIoMessageFactory implements MessageFactoryProvider {
         factory.register(SnapshotFilesRequestMessage.TYPE_CODE, SnapshotFilesRequestMessage::new);
         factory.register(SnapshotFilesFailureMessage.TYPE_CODE, SnapshotFilesFailureMessage::new);
 
+        // Index statistics.
+        factory.register(StatisticsKeyMessage.TYPE_CODE, StatisticsKeyMessage::new);
+        factory.register(StatisticsDecimalMessage.TYPE_CODE, StatisticsDecimalMessage::new);
+        factory.register(StatisticsObjectData.TYPE_CODE, StatisticsObjectData::new);
+        factory.register(StatisticsColumnData.TYPE_CODE, StatisticsColumnData::new);
+        factory.register(StatisticsRequest.TYPE_CODE, StatisticsRequest::new);
+        factory.register(StatisticsResponse.TYPE_CODE, StatisticsResponse::new);
+
         // [-3..119] [124..129] [-23..-28] [-36..-55] - this
         // [120..123] - DR
-        // [-4..-22, -30..-35] - SQL
+        // [-4..-22, -30..-35, -54..-57] - SQL
         // [2048..2053] - Snapshots
         // [-42..-37] - former hadoop.
         // [64..71] - former IGFS.

@@ -39,6 +39,7 @@ import org.apache.ignite.cache.query.annotations.QuerySqlField;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.processors.cache.query.QueryCursorEx;
+import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.junit.Test;
 import org.junit.runner.RunWith;
@@ -52,6 +53,7 @@ import static org.apache.ignite.cache.query.IndexQueryCriteriaBuilder.between;
 import static org.apache.ignite.cache.query.IndexQueryCriteriaBuilder.eq;
 import static org.apache.ignite.cache.query.IndexQueryCriteriaBuilder.gt;
 import static org.apache.ignite.cache.query.IndexQueryCriteriaBuilder.gte;
+import static org.apache.ignite.cache.query.IndexQueryCriteriaBuilder.in;
 import static org.apache.ignite.cache.query.IndexQueryCriteriaBuilder.lt;
 import static org.apache.ignite.cache.query.IndexQueryCriteriaBuilder.lte;
 
@@ -220,6 +222,12 @@ public class IndexQueryRangeTest extends GridCommonAbstractTest {
             .setCriteria(between(fld, lower, upper));
 
         check(qry, lower, upper + 1);
+
+        // In.
+        qry = new IndexQuery<Long, Person>(Person.class, idxName)
+            .setCriteria(in(fld, F.asList(pivot, pivot + 1)));
+
+        check(qry, pivot, pivot + 2);
     }
 
     /**

@@ -37,6 +37,7 @@ import org.apache.ignite.internal.cache.query.index.Index;
 import org.apache.ignite.internal.processors.cache.GridCacheContextInfo;
 import org.apache.ignite.internal.processors.query.GridQueryIndexDescriptor;
 import org.apache.ignite.internal.processors.query.GridQueryTypeDescriptor;
+import org.apache.ignite.internal.processors.query.QueryField;
 import org.apache.ignite.internal.processors.query.calcite.exec.exp.IgniteScalarFunction;
 import org.apache.ignite.internal.processors.query.calcite.trait.TraitUtils;
 import org.apache.ignite.internal.processors.query.calcite.type.IgniteTypeFactory;
@@ -188,10 +189,21 @@ public class SchemaHolderImpl extends AbstractService implements SchemaHolder, S
     }
 
     /** {@inheritDoc} */
-    @Override public void onSqlTypeUpdated(
+    @Override public void onColumnsAdded(
         String schemaName,
         GridQueryTypeDescriptor typeDesc,
-        GridCacheContextInfo<?, ?> cacheInfo
+        GridCacheContextInfo<?, ?> cacheInfo,
+        List<QueryField> cols
+    ) {
+        onSqlTypeCreated(schemaName, typeDesc, cacheInfo);
+    }
+
+    /** {@inheritDoc} */
+    @Override public void onColumnsDropped(
+        String schemaName,
+        GridQueryTypeDescriptor typeDesc,
+        GridCacheContextInfo<?, ?> cacheInfo,
+        List<String> cols
     ) {
         onSqlTypeCreated(schemaName, typeDesc, cacheInfo);
     }
@@ -206,7 +218,8 @@ public class SchemaHolderImpl extends AbstractService implements SchemaHolder, S
     /** {@inheritDoc} */
     @Override public synchronized void onSqlTypeDropped(
         String schemaName,
-        GridQueryTypeDescriptor typeDesc
+        GridQueryTypeDescriptor typeDesc,
+        boolean destroy
     ) {
         IgniteSchema schema = igniteSchemas.computeIfAbsent(schemaName, IgniteSchema::new);
 

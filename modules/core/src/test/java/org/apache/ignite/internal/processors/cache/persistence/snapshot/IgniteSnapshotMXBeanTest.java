@@ -22,12 +22,15 @@ import javax.management.AttributeNotFoundException;
 import javax.management.DynamicMBean;
 import javax.management.MBeanException;
 import javax.management.ReflectionException;
+import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.TestRecordingCommunicationSpi;
 import org.apache.ignite.internal.util.distributed.SingleNodeMessage;
+import org.apache.ignite.internal.util.typedef.F;
+import org.apache.ignite.internal.util.typedef.G;
 import org.apache.ignite.lang.IgniteFuture;
 import org.apache.ignite.mxbean.SnapshotMXBean;
 import org.apache.ignite.spi.metric.jmx.JmxMetricExporterSpi;
@@ -37,6 +40,7 @@ import org.junit.Test;
 import static org.apache.ignite.internal.processors.cache.persistence.snapshot.IgniteSnapshotManager.SNAPSHOT_METRICS;
 import static org.apache.ignite.internal.processors.cache.persistence.snapshot.SnapshotRestoreProcess.SNAPSHOT_RESTORE_METRICS;
 import static org.apache.ignite.internal.util.distributed.DistributedProcess.DistributedProcessType.RESTORE_CACHE_GROUP_SNAPSHOT_PREPARE;
+import static org.apache.ignite.testframework.GridTestUtils.assertContains;
 import static org.apache.ignite.testframework.GridTestUtils.assertThrowsAnyCause;
 import static org.apache.ignite.testframework.GridTestUtils.waitForCondition;
 
@@ -44,12 +48,13 @@ import static org.apache.ignite.testframework.GridTestUtils.waitForCondition;
  * Tests {@link SnapshotMXBean}.
  */
 public class IgniteSnapshotMXBeanTest extends AbstractSnapshotSelfTest {
-    /** Metric group name. */
-    private static final String METRIC_GROUP = "Snapshot";
+    /** Snapshot group name. */
+    private static final String SNAPSHOT_GROUP = "Snapshot";
 
     /** {@inheritDoc} */
     @Override protected IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {
         return super.getConfiguration(igniteInstanceName)
+            .setCommunicationSpi(new TestRecordingCommunicationSpi())
             .setMetricExporterSpi(new JmxMetricExporterSpi());
     }
 
@@ -63,7 +68,7 @@ public class IgniteSnapshotMXBeanTest extends AbstractSnapshotSelfTest {
         assertEquals("Snapshot end time must be undefined on first snapshot operation starts.",
             0, (long)getMetric("LastSnapshotEndTime", snpMBean));
 
-        SnapshotMXBean mxBean = getMxBean(ignite.name(), METRIC_GROUP, SnapshotMXBeanImpl.class, SnapshotMXBean.class);
+        SnapshotMXBean mxBean = getMxBean(ignite.name(), SNAPSHOT_GROUP, SnapshotMXBeanImpl.class, SnapshotMXBean.class);
 
         mxBean.createSnapshot(SNAPSHOT_NAME, "");
 
@@ -84,7 +89,7 @@ public class IgniteSnapshotMXBeanTest extends AbstractSnapshotSelfTest {
         IgniteEx startCli = startClientGrid(1);
         IgniteEx killCli = startClientGrid(2);
 
-        SnapshotMXBean mxBean = getMxBean(killCli.name(), METRIC_GROUP, SnapshotMXBeanImpl.class,
+        SnapshotMXBean mxBean = getMxBean(killCli.name(), SNAPSHOT_GROUP, SnapshotMXBeanImpl.class,
             SnapshotMXBean.class);
 
         doSnapshotCancellationTest(startCli,
@@ -104,7 +109,7 @@ public class IgniteSnapshotMXBeanTest extends AbstractSnapshotSelfTest {
         assertEquals(0, (long)getMetric("endTime", mReg0));
         assertEquals(0, (long)getMetric("endTime", mReg1));
 
-        getMxBean(ignite.name(), METRIC_GROUP, SnapshotMXBeanImpl.class, SnapshotMXBean.class)
+        getMxBean(ignite.name(), SNAPSHOT_GROUP, SnapshotMXBeanImpl.class, SnapshotMXBean.class)
             .restoreSnapshot(SNAPSHOT_NAME, "", "");
 
         assertTrue(GridTestUtils.waitForCondition(() -> (long)getMetric("endTime", mReg0) > 0, TIMEOUT));
@@ -117,7 +122,7 @@ public class IgniteSnapshotMXBeanTest extends AbstractSnapshotSelfTest {
     @Test
     public void testCancelRestoreSnapshot() throws Exception {
         IgniteEx ignite = startGridsWithSnapshot(2, CACHE_KEYS_RANGE, false);
-        SnapshotMXBean mxBean = getMxBean(ignite.name(), METRIC_GROUP, SnapshotMXBeanImpl.class, SnapshotMXBean.class);
+        SnapshotMXBean mxBean = getMxBean(ignite.name(), SNAPSHOT_GROUP, SnapshotMXBeanImpl.class, SnapshotMXBean.class);
         DynamicMBean mReg0 = metricRegistry(grid(0).name(), null, SNAPSHOT_RESTORE_METRICS);
         DynamicMBean mReg1 = metricRegistry(grid(1).name(), null, SNAPSHOT_RESTORE_METRICS);
 
@@ -162,6 +167,80 @@ public class IgniteSnapshotMXBeanTest extends AbstractSnapshotSelfTest {
         assertTrue(waitForCondition(() -> ((String)getMetric("error", mReg1)).contains(expErrMsg), getTestTimeout()));
 
         assertNull(ignite.cache(DEFAULT_CACHE_NAME));
+    }
+
+    /** @throws Exception If fails. */
+    @Test
+    public void testStatus() throws Exception {
+        IgniteEx srv = startGridsWithCache(2, dfltCacheCfg, CACHE_KEYS_RANGE);
+
+        checkSnapshotStatus(false, false, null);
+
+        TestRecordingCommunicationSpi spi = TestRecordingCommunicationSpi.spi(grid(1));
+
+        spi.blockMessages((node, msg) -> msg instanceof SingleNodeMessage);
+
+        IgniteFuture<Void> fut = srv.snapshot().createSnapshot(SNAPSHOT_NAME);
+
+        spi.waitForBlocked();
+
+        checkSnapshotStatus(true, false, SNAPSHOT_NAME);
+
+        spi.stopBlock();
+
+        fut.get(getTestTimeout());
+
+        checkSnapshotStatus(false, false, null);
+
+        srv.destroyCache(DEFAULT_CACHE_NAME);
+
+        spi.blockMessages((node, msg) -> msg instanceof SingleNodeMessage);
+
+        fut = srv.snapshot().restoreSnapshot(SNAPSHOT_NAME, F.asList(DEFAULT_CACHE_NAME));
+
+        spi.waitForBlocked();
+
+        checkSnapshotStatus(false, true, SNAPSHOT_NAME);
+
+        spi.stopBlock();
+
+        fut.get(getTestTimeout());
+
+        checkSnapshotStatus(false, false, null);
+    }
+
+    /**
+     * @param isCreating {@code True} if create snapshot operation is in progress.
+     * @param isRestoring {@code True} if restore snapshot operation is in progress.
+     * @param expName Expected snapshot name.
+     */
+    private void checkSnapshotStatus(boolean isCreating, boolean isRestoring, String expName) throws Exception {
+        assertTrue(waitForCondition(() -> G.allGrids().stream().allMatch(
+                ignite -> {
+                    IgniteSnapshotManager mgr = ((IgniteEx)ignite).context().cache().context().snapshotMgr();
+
+                    return isCreating == mgr.isSnapshotCreating() && isRestoring == mgr.isRestoring();
+                }),
+            getTestTimeout()));
+
+        for (Ignite grid : G.allGrids()) {
+            SnapshotMXBean bean = getMxBean(grid.name(), SNAPSHOT_GROUP, SnapshotMXBeanImpl.class, SnapshotMXBean.class);
+
+            String status = bean.status();
+
+            if (!isCreating && !isRestoring) {
+                assertContains(log, status, "There is no create or restore snapshot operation in progress");
+
+                continue;
+            }
+
+            if (isCreating)
+                assertContains(log, status, "Create snapshot operation is in progress");
+            else
+                assertContains(log, status, "Restore snapshot operation is in progress");
+
+            assertContains(log, status, "name=" + expName);
+        }
     }
 
     /**
