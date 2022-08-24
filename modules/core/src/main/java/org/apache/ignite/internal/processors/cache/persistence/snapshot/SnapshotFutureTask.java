@@ -208,6 +208,10 @@ class SnapshotFutureTask extends AbstractSnapshotFutureTask<Set<GroupPartitionId
 
     /** {@inheritDoc} */
     @Override public boolean onDone(@Nullable Set<GroupPartitionId> res, @Nullable Throwable err) {
+        log.error("TEST | snapshot - onDone()");
+
+        U.FLAG2.set(false);
+
         for (PageStoreSerialWriter writer : partDeltaWriters.values())
             U.closeQuiet(writer);
 
@@ -312,6 +316,8 @@ class SnapshotFutureTask extends AbstractSnapshotFutureTask<Set<GroupPartitionId
         if (stopping())
             return;
 
+        log.error("TEST | snapshot - beforeCheckpointBegin()");
+
         ctx.finishedStateFut().listen(f -> {
             if (f.error() == null)
                 cpEndFut.complete(true);
@@ -341,6 +347,8 @@ class SnapshotFutureTask extends AbstractSnapshotFutureTask<Set<GroupPartitionId
         // Write lock is hold. Partition pages counters has been collected under write lock.
         if (stopping())
             return;
+
+        log.error("TEST | snapshot - onMarkCheckpointBegin()");
 
         try {
             // Here we have the following warranties:
@@ -448,6 +456,8 @@ class SnapshotFutureTask extends AbstractSnapshotFutureTask<Set<GroupPartitionId
         if (stopping())
             return;
 
+        log.error("TEST | snapshot - onCheckpointBegin");
+
         assert !processed.isEmpty() : "Partitions to process must be collected under checkpoint mark phase";
 
         wrapExceptionIfStarted(() -> snpSndr.init(processed.values().stream().mapToInt(Set::size).sum()))
@@ -505,7 +515,13 @@ class SnapshotFutureTask extends AbstractSnapshotFutureTask<Set<GroupPartitionId
 
                     CompletableFuture<Void> fut0 = CompletableFuture.runAsync(
                         wrapExceptionIfStarted(() -> {
-//                            log.info("TEST | send part.");
+//                            U.FLAG2.set(true);
+                            if(cctx.kernalContext().grid().localNode().order() == 2)
+                                U.FLAG2.set(true);
+
+                            if(partId == 859){
+                                log.error("TEST | sending delta " + partId);
+                            }
 
                             snpSndr.sendPart(
                                 getPartitionFile(pageStore.workDir(), cacheDirName, partId),
@@ -533,7 +549,15 @@ class SnapshotFutureTask extends AbstractSnapshotFutureTask<Set<GroupPartitionId
                                     throw new IgniteCheckedException(ex);
                                 }
 
-//                                log.info("TEST | send delta.");
+//                                if(cctx.kernalContext().grid().localNode().order() == 2)
+//                                    U.FLAG2.set(true);
+
+//                                log.error("TEST | sending delta " + delta.getName());
+
+                                if(delta.getName().contains("859")){
+                                    log.error("TEST | sending delta " + delta.getName());
+                                }
+
                                 snpSndr.sendDelta(delta, cacheDirName, pair);
 
                                 processedSize.addAndGet(delta.length());
@@ -542,8 +566,8 @@ class SnapshotFutureTask extends AbstractSnapshotFutureTask<Set<GroupPartitionId
 
                                 assert deleted;
 
-//                                if(pair.getPartitionId() == 744)
-//                                    U.FLAG.put(cctx.kernalContext().grid().localNode().order(), true);
+//                                if(delta.getName().contains("851"))
+//                                    log.error("TEST | send delta " + delta.getName());
                             }),
                             snpSndr.executor());
 

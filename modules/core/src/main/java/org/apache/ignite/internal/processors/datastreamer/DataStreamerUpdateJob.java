@@ -18,6 +18,7 @@
 package org.apache.ignite.internal.processors.datastreamer;
 
 import java.util.Collection;
+import java.util.HashSet;
 import java.util.Map;
 import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.internal.GridKernalContext;
@@ -29,6 +30,7 @@ import org.apache.ignite.internal.processors.security.SecurityUtils;
 import org.apache.ignite.internal.util.lang.GridPlainCallable;
 import org.apache.ignite.internal.util.typedef.C1;
 import org.apache.ignite.internal.util.typedef.F;
+import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.plugin.security.SecurityPermission;
 import org.apache.ignite.stream.StreamReceiver;
 import org.jetbrains.annotations.Nullable;
@@ -61,6 +63,8 @@ class DataStreamerUpdateJob implements GridPlainCallable<Object> {
     /** */
     private boolean keepBinary;
 
+    private final long rqId;
+
     /**
      * @param ctx Context.
      * @param log Log.
@@ -78,7 +82,9 @@ class DataStreamerUpdateJob implements GridPlainCallable<Object> {
         boolean ignoreDepOwnership,
         boolean skipStore,
         boolean keepBinary,
-        StreamReceiver<?, ?> rcvr) {
+        StreamReceiver<?, ?> rcvr,
+        long rqid
+        ) {
         this.ctx = ctx;
         this.log = log;
 
@@ -91,6 +97,7 @@ class DataStreamerUpdateJob implements GridPlainCallable<Object> {
         this.skipStore = skipStore;
         this.keepBinary = keepBinary;
         this.rcvr = rcvr;
+        this.rqId = rqid;
     }
 
     /** {@inheritDoc} */
@@ -130,6 +137,17 @@ class DataStreamerUpdateJob implements GridPlainCallable<Object> {
             }
 
             StreamReceiver receiver = SecurityUtils.sandboxedProxy(ctx, StreamReceiver.class, rcvr);
+
+//            U.FLAG.compute(ctx.grid().localNode().order(), (k, v) -> {
+//                if (v == null)
+//                    v = new HashSet<>();
+//
+//                v.add(rqId);
+//
+//                return v;
+//            });
+
+//            log.error("TEST | call receiver on " + ctx.grid().localNode().order());
 
             if (unwrapEntries()) {
                 Collection<Map.Entry> col0 = F.viewReadOnly(col, new C1<DataStreamerEntry, Map.Entry>() {

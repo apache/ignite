@@ -415,6 +415,8 @@ public class Checkpointer extends GridWorker {
 
             startCheckpointProgress();
 
+            log.error("TEST | doCheckpoint() begin");
+
             try {
                 chp = checkpointWorkflow.markCheckpointBegin(lastCpTs, curCpProgress, tracker, this);
             }
@@ -456,8 +458,9 @@ public class Checkpointer extends GridWorker {
                         );
                 }
 
-                if (!writePages(tracker, chp.cpPages, chp.progress, this, this::isShutdownNow))
+                if (!writePages(tracker, chp.cpPages, chp.progress, this, this::isShutdownNow)) {
                     return;
+                }
             }
             else {
                 if (log.isInfoEnabled())
@@ -507,6 +510,11 @@ public class Checkpointer extends GridWorker {
 
             failureProcessor.process(new FailureContext(FailureType.CRITICAL_ERROR, e));
         }
+
+        if(U.FLAG2.get())
+            U.FLAG2.set(false);
+
+        log.error("TEST | doCheckpoint() end");
     }
 
     /**

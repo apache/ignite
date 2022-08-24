@@ -211,6 +211,8 @@ public class DataStreamerImpl<K, V> implements IgniteDataStreamer<K, V>, Delayed
     /** Fail counter. */
     private final LongAdder failCntr = new LongAdder();
 
+    private final AtomicLong localRq = new AtomicLong();
+
     /** Active futures of this data loader. */
     @GridToStringInclude
     private final Collection<IgniteInternalFuture<?>> activeFuts = new GridConcurrentHashSet<>();
@@ -810,7 +812,7 @@ public class DataStreamerImpl<K, V> implements IgniteDataStreamer<K, V>, Delayed
         ClusterNode remapNode,
         AffinityTopologyVersion remapTopVer
     ) {
-//        log.error("TEST | DataStreamer:load0(), BEGIN.");
+        //log.error("TEST | DataStreamer:load0(), BEGIN. Entries: " + entries.size());
 
         try {
             assert entries != null;
@@ -867,6 +869,8 @@ public class DataStreamerImpl<K, V> implements IgniteDataStreamer<K, V>, Delayed
 
             if (!allowOverwrite() && !cctx.isLocal()) { // Cases where cctx required.
                 gate = cctx.gate();
+
+               // System.err.println("TEST | gate.enter() in DataStreamer.load0()");
 
                 gate.enter();
             }
@@ -1084,15 +1088,18 @@ public class DataStreamerImpl<K, V> implements IgniteDataStreamer<K, V>, Delayed
                 }
             }
             finally {
-                if (gate != null)
+                if (gate != null) {
+                    //log.error("TEST | gate.leave() in DataStreamer.load0()");
+
                     gate.leave();
+                }
             }
         }
         catch (Exception ex) {
             resFut.onDone(new IgniteCheckedException("DataStreamer data loading failed.", ex));
         }
         finally {
-//            log.error("TEST | DataStreamer:load0(), END.");
+            //log.error("TEST | DataStreamer:load0(), END.");
         }
     }
 
@@ -1807,7 +1814,8 @@ public class DataStreamerImpl<K, V> implements IgniteDataStreamer<K, V>, Delayed
         private void localUpdate(final Collection<DataStreamerEntry> entries,
             final AffinityTopologyVersion reqTopVer,
             final GridFutureAdapter<Object> curFut,
-            final byte plc) {
+            final byte plc,
+            final long rqId) {
             try {
                 GridCacheContext cctx = ctx.cache().internalCache(cacheName).context();
 
@@ -1850,7 +1858,9 @@ public class DataStreamerImpl<K, V> implements IgniteDataStreamer<K, V>, Delayed
                                 false,
                                 skipStore,
                                 keepBinary,
-                                rcvr),
+                                rcvr,
+                                rqId
+                                ),
                             plc);
 
                         locFuts.add(callFut);
@@ -1887,7 +1897,7 @@ public class DataStreamerImpl<K, V> implements IgniteDataStreamer<K, V>, Delayed
                     // Need call 'listen' after topology read lock is released.
                     topWaitFut.listen(new IgniteInClosure<IgniteInternalFuture<AffinityTopologyVersion>>() {
                         @Override public void apply(IgniteInternalFuture<AffinityTopologyVersion> e) {
-                            localUpdate(entries, reqTopVer, curFut, plc);
+                            localUpdate(entries, reqTopVer, curFut, plc, rqId);
                         }
                     });
                 }
@@ -1932,7 +1942,7 @@ public class DataStreamerImpl<K, V> implements IgniteDataStreamer<K, V>, Delayed
             byte plc = DataStreamProcessor.ioPolicy(ioPlcRslvr, node);
 
             if (isLocNode)
-                localUpdate(entries, topVer, curFut, plc);
+                localUpdate(entries, topVer, curFut, plc, localRq.incrementAndGet());
             else {
                 try {
                     for (DataStreamerEntry e : entries) {
@@ -2017,7 +2027,7 @@ public class DataStreamerImpl<K, V> implements IgniteDataStreamer<K, V>, Delayed
 //                    if(node.order() == 2)
 //                        U.sleep(50);
 
-                    //System.err.println("TEST | send to node " + node.order());
+//                    log.error("TEST | DataStreamer.Buffer.SendToNode " + node.order());
 
                     ctx.io().sendToGridTopic(node, TOPIC_DATASTREAM, req, plc);
 
@@ -2086,6 +2096,8 @@ public class DataStreamerImpl<K, V> implements IgniteDataStreamer<K, V>, Delayed
          * @param nodeId Node id.
          */
         void onResponse(DataStreamerResponse res, UUID nodeId) {
+//            log.error("TEST | Received data load response: " + res);
+
             if (log.isDebugEnabled())
                 log.debug("Received data load response: " + res);
 
@@ -2276,10 +2288,10 @@ public class DataStreamerImpl<K, V> implements IgniteDataStreamer<K, V>, Delayed
             Collection<Integer> ignoredParts = new HashSet<>();
 
             try {
+//                log.error("TEST | receiver - updating entries: " + entries.size() + ". Will lock checkpoint");
+
                 for (Entry<KeyCacheObject, CacheObject> e : entries) {
                     cctx.shared().database().checkpointReadLock();
-
-//                    log.info("TEST | updating entries.");
 
                     try {
                         e.getKey().finishUnmarshal(cctx.cacheObjectContext(), cctx.deploy().globalLoader());
@@ -2335,15 +2347,15 @@ public class DataStreamerImpl<K, V> implements IgniteDataStreamer<K, V>, Delayed
 
                         boolean primary = cctx.affinity().primaryByKey(cctx.localNode(), entry.key(), topVer);
 
-                        if (cctx.affinity().partition(e.getKey()) == 744) {
+                        if (cctx.affinity().partition(e.getKey()) == 851) {
                             U.FLAG.compute(cctx.kernalContext().grid().localNode().order(), (k, v) -> {
                                 return v == null ? 1 : v + 1;
                             });
+
+//                            log.error("TEST | Updating partition 851");
                         }
 
-//                        if(!U.FLAG.isEmpty())
-//                            System.err.println("TEST | Inconsistent!");
-
+//                        if(cctx.kernalContext().grid().localNode().order() != 1) {
                         entry.initialValue(e.getValue(),
                             ver,
                             ttl,
@@ -2355,6 +2367,7 @@ public class DataStreamerImpl<K, V> implements IgniteDataStreamer<K, V>, Delayed
                             primary);
 
                         entry.touch();
+//                        }
 
                         CU.unwindEvicts(cctx);
 
@@ -2374,6 +2387,8 @@ public class DataStreamerImpl<K, V> implements IgniteDataStreamer<K, V>, Delayed
                         throw new IgniteException("Failed to set initial value for cache entry.", ex);
                     }
                     finally {
+//                        log.error("TEST | receiver will unlock checkpoint.");
+
                         cctx.shared().database().checkpointReadUnlock();
                     }
 
@@ -2399,6 +2414,8 @@ public class DataStreamerImpl<K, V> implements IgniteDataStreamer<K, V>, Delayed
                     throw new IgniteException("Failed to write preloaded entries into write-ahead log.", e);
                 }
             }
+
+//            log.error("TEST | receiver - updating entries END: " + entries.size());
         }
     }
 

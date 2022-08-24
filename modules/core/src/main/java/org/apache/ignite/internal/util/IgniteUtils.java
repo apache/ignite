@@ -319,7 +319,12 @@ import static org.apache.ignite.internal.util.GridUnsafe.staticFieldOffset;
  */
 @SuppressWarnings({"UnusedReturnValue"})
 public abstract class IgniteUtils {
-    public static final Map<Long, Integer> FLAG = new ConcurrentHashMap<>();
+//    public static final Map<Long, Set<Long>> FLAG = new ConcurrentHashMap<>();
+    public static final ConcurrentHashMap<Long, Long> FLAG = new ConcurrentHashMap<>();
+
+    public static final ConcurrentHashMap<? extends Integer, Set<Long>> PART_859 = new ConcurrentHashMap<>();
+
+    public static final AtomicBoolean FLAG2 = new AtomicBoolean();
 
     /** */
     public static final long KB = 1024L;

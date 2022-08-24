@@ -216,6 +216,8 @@ public class DataStreamProcessor<K, V> extends GridProcessorAdapter {
         }
 
         try {
+//            log.error("TEST | Processing data load request: " + req.requestId());
+
             if (log.isDebugEnabled())
                 log.debug("Processing data load request: " + req);
 
@@ -375,7 +377,9 @@ public class DataStreamProcessor<K, V> extends GridProcessorAdapter {
                         req.ignoreDeploymentOwnership(),
                         req.skipStore(),
                         req.keepBinary(),
-                        updater);
+                        updater,
+                        req.requestId()
+                        );
 
                     waitFut = allowOverwrite ? null : cctx.mvcc().addDataStreamerFuture(streamerFutTopVer);
                 }

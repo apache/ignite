@@ -1253,8 +1253,8 @@ public class GridCacheIoManager extends GridCacheSharedManagerAdapter {
 //        if(msg instanceof GridNearAtomicAbstractUpdateRequest && node.order() == 2 && new Random().nextInt(100) > 79)
 //            U.sleep(100);
 
-        if(msg instanceof GridNearAtomicAbstractUpdateRequest)
-            System.err.println("TEST | send GridNearAtomicAbstractUpdateRequest");
+//        if(msg instanceof GridNearAtomicAbstractUpdateRequest)
+//            log.error("TEST | send GridNearAtomicAbstractUpdateRequest");
 
         msg.lastAffinityChangedTopologyVersion(cctx.exchange().lastAffinityChangedTopologyVersion(msg.topologyVersion()));
 

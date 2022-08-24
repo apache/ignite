@@ -22,7 +22,6 @@ import org.apache.ignite.IgniteDataStreamer;
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.cache.CacheAtomicityMode;
 import org.apache.ignite.cache.CacheMode;
-import org.apache.ignite.cache.CacheWriteSynchronizationMode;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.ConnectorConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
@@ -68,8 +67,8 @@ public class IgniteClusterShanpshotStreamerTest  extends AbstractSnapshotSelfTes
     /** @throws Exception If fails. */
     @Test
     public void testClusterSnapshotConsistencyWithStreamer() throws Exception {
-        int grids = 4;
-        int backups = 2;
+        int grids = 2;
+        int backups = 1;
 //        int loadBeforeSnp = 20_000;
 //        int loadBeforeSnp = 1;
 
@@ -119,6 +118,9 @@ public class IgniteClusterShanpshotStreamerTest  extends AbstractSnapshotSelfTes
 //        grid(0).snapshot().restoreSnapshot(SNAPSHOT_NAME, F.asList("cache2")).get();
         grid(0).snapshot().restoreSnapshot(SNAPSHOT_NAME, F.asList("SQL_PUBLIC_" + tableName)).get();
 //        grid(0).snapshot().restoreSnapshot(SNAPSHOT_NAME, F.asList("grp1")).get();
+
+        assertEquals(grid(0).cache("SQL_PUBLIC_" + tableName).get(1),
+            grid(1).cache("SQL_PUBLIC_" + tableName).get(1));
     }
 
     /** */
@@ -137,8 +139,8 @@ public class IgniteClusterShanpshotStreamerTest  extends AbstractSnapshotSelfTes
                     while(!stop.get()){
                         int i = idx.incrementAndGet();
 
-//                        ds.addData(i, new Account(i, i - 1));
-                        cache.put(i, new Account(i, i - 1));
+                        ds.addData(i, new Account(i, i - 1));
+//                        cache.put(i, new Account(i, i - 1));
 
 //                        batch.put(i, new Account(i, i - 1));
 //

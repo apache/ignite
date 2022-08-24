@@ -3199,6 +3199,12 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
                 if (!snpPart.exists() || snpPart.delete())
                     snpPart.createNewFile();
 
+                if(pair.getPartitionId() == 851) {
+                    log.error("Partition has been snapshot [snapshotDir=" + dbDir.getAbsolutePath() +
+                        ", cacheDirName=" + cacheDirName + ", part=" + part.getName() +
+                        ", length=" + part.length() + ", snapshot=" + snpPart.getName() + ']');
+                }
+
                 copy(ioFactory, part, snpPart, len, transferRateLimiter);
 
                 if (log.isDebugEnabled()) {
@@ -3262,8 +3268,8 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
                     pageBuf.flip();
                 }
 
-                if(pair.getPartitionId() == 744)
-                    System.err.println("TEST | send delta, counter on "+cctx.kernalContext().grid().localNode().order()+": " + U.FLAG.get(cctx.kernalContext().grid().localNode().order()));
+//                if(pair.getPartitionId() == 744)
+//                    System.err.println("TEST | send delta, counter on "+cctx.kernalContext().grid().localNode().order()+": " + U.FLAG.get(cctx.kernalContext().grid().localNode().order()));
 
                 pageStore.finishRecover();
             }
