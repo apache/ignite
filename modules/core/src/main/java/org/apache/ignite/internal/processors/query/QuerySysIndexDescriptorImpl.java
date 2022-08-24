@@ -58,11 +58,11 @@ public class QuerySysIndexDescriptorImpl implements GridQueryIndexDescriptor {
 
     /** {@inheritDoc} */
     @Override public QueryIndexType type() {
-        throw new RuntimeException("Not implemented");
+        throw new UnsupportedOperationException("Not implemented");
     }
 
     /** {@inheritDoc} */
     @Override public int inlineSize() {
-        throw new RuntimeException("Not implemented");
+        throw new UnsupportedOperationException("Not implemented");
     }
 }
