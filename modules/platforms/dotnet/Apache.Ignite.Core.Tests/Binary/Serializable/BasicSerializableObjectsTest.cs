@@ -93,7 +93,9 @@ namespace Apache.Ignite.Core.Tests.Binary.Serializable
             new System.Collections.Specialized.StringDictionary(),
             new Stack(),
             new BindingList<int>(),
+#if NETCOREAPP
             new System.ComponentModel.DataAnnotations.ValidationException(),
+#endif
             new System.ComponentModel.Design.CheckoutException(),
             new InvalidAsynchronousStateException(),
             new InvalidEnumArgumentException(),
@@ -229,7 +231,9 @@ namespace Apache.Ignite.Core.Tests.Binary.Serializable
             new System.Reflection.TargetParameterCountException(),
             new System.Resources.MissingManifestResourceException(),
             new System.Resources.MissingSatelliteAssemblyException(),
+#if NETCOREAPP
             new System.Runtime.CompilerServices.RuntimeWrappedException(new object()),
+#endif
             new System.Runtime.InteropServices.COMException(),
             new System.Runtime.InteropServices.ExternalException(),
             new System.Runtime.InteropServices.InvalidComObjectException(),
