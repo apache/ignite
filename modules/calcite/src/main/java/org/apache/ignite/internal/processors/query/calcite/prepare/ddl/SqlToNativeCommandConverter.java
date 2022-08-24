@@ -19,7 +19,9 @@ package org.apache.ignite.internal.processors.query.calcite.prepare.ddl;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Map;
 import java.util.UUID;
+import java.util.stream.Collectors;
 import org.apache.calcite.sql.SqlCall;
 import org.apache.calcite.sql.SqlDdl;
 import org.apache.calcite.sql.SqlIdentifier;
@@ -42,12 +44,19 @@ import org.apache.ignite.internal.processors.query.calcite.sql.kill.IgniteSqlKil
 import org.apache.ignite.internal.processors.query.calcite.sql.kill.IgniteSqlKillScanQuery;
 import org.apache.ignite.internal.processors.query.calcite.sql.kill.IgniteSqlKillService;
 import org.apache.ignite.internal.processors.query.calcite.sql.kill.IgniteSqlKillTransaction;
+import org.apache.ignite.internal.processors.query.calcite.sql.stat.IgniteSqlStatisticsAnalyze;
+import org.apache.ignite.internal.processors.query.calcite.sql.stat.IgniteSqlStatisticsCommand;
+import org.apache.ignite.internal.processors.query.calcite.sql.stat.IgniteSqlStatisticsDrop;
+import org.apache.ignite.internal.processors.query.calcite.sql.stat.IgniteSqlStatisticsRefresh;
+import org.apache.ignite.internal.processors.query.stat.StatisticsTarget;
 import org.apache.ignite.internal.sql.command.SqlAlterTableCommand;
 import org.apache.ignite.internal.sql.command.SqlAlterUserCommand;
+import org.apache.ignite.internal.sql.command.SqlAnalyzeCommand;
 import org.apache.ignite.internal.sql.command.SqlCommand;
 import org.apache.ignite.internal.sql.command.SqlCreateIndexCommand;
 import org.apache.ignite.internal.sql.command.SqlCreateUserCommand;
 import org.apache.ignite.internal.sql.command.SqlDropIndexCommand;
+import org.apache.ignite.internal.sql.command.SqlDropStatisticsCommand;
 import org.apache.ignite.internal.sql.command.SqlDropUserCommand;
 import org.apache.ignite.internal.sql.command.SqlIndexColumn;
 import org.apache.ignite.internal.sql.command.SqlKillComputeTaskCommand;
@@ -56,6 +65,8 @@ import org.apache.ignite.internal.sql.command.SqlKillQueryCommand;
 import org.apache.ignite.internal.sql.command.SqlKillScanQueryCommand;
 import org.apache.ignite.internal.sql.command.SqlKillServiceCommand;
 import org.apache.ignite.internal.sql.command.SqlKillTransactionCommand;
+import org.apache.ignite.internal.sql.command.SqlRefreshStatitsicsCommand;
+import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.lang.IgniteUuid;
 
 import static org.apache.ignite.internal.processors.query.calcite.util.PlanUtils.deriveObjectName;
@@ -75,7 +86,8 @@ public class SqlToNativeCommandConverter {
             || sqlCmd instanceof IgniteSqlCreateUser
             || sqlCmd instanceof IgniteSqlAlterUser
             || sqlCmd instanceof IgniteSqlDropUser
-            || sqlCmd instanceof IgniteSqlKill;
+            || sqlCmd instanceof IgniteSqlKill
+            || sqlCmd instanceof IgniteSqlStatisticsCommand;
     }
 
     /**
@@ -106,6 +118,8 @@ public class SqlToNativeCommandConverter {
             return convertDropUser((IgniteSqlDropUser)cmd, pctx);
         else if (cmd instanceof IgniteSqlKill)
             return convertKill((IgniteSqlKill)cmd, pctx);
+        else if (cmd instanceof IgniteSqlStatisticsCommand)
+            return convertStatistics((IgniteSqlStatisticsCommand)cmd, pctx);
 
         throw new IgniteSQLException("Unsupported native operation [" +
             "cmdName=" + (cmd == null ? null : cmd.getClass().getSimpleName()) + "; " +
@@ -220,6 +234,40 @@ public class SqlToNativeCommandConverter {
             IgniteSqlKillQuery cmd0 = (IgniteSqlKillQuery)cmd;
             return new SqlKillQueryCommand(cmd0.nodeId(), cmd0.queryId(), cmd0.isAsync());
         }
+        else {
+            throw new IgniteSQLException("Unsupported native operation [" +
+                "cmdName=" + (cmd == null ? null : cmd.getClass().getSimpleName()) + "; " +
+                "querySql=\"" + pctx.query() + "\"]", IgniteQueryErrorCode.UNSUPPORTED_OPERATION);
+        }
+    }
+
+    /** */
+    private static SqlCommand convertStatistics(IgniteSqlStatisticsCommand cmd, PlanningContext pctx) {
+        List<StatisticsTarget> targets = cmd.tables().stream().map(t -> {
+            String schemaName = deriveSchemaName(t.name(), pctx);
+            String tblName = deriveObjectName(t.name(), pctx, "table name");
+
+            if (F.isEmpty(t.columns()))
+                return new StatisticsTarget(schemaName, tblName);
+
+            String[] columns = t.columns().stream().map(SqlNode::toString).toArray(String[]::new);
+
+            return new StatisticsTarget(schemaName, tblName, columns);
+        }).collect(Collectors.toList());
+
+        if (cmd instanceof IgniteSqlStatisticsAnalyze) {
+            if (F.isEmpty(((IgniteSqlStatisticsAnalyze)cmd).options()))
+                return new SqlAnalyzeCommand(targets);
+
+            Map<String, String> params = ((IgniteSqlStatisticsAnalyze)cmd).options().stream().collect(
+                Collectors.toMap(o -> o.key().toString(), o -> o.value().toString()));
+
+            return new SqlAnalyzeCommand(targets, params);
+        }
+        else if (cmd instanceof IgniteSqlStatisticsRefresh)
+            return new SqlRefreshStatitsicsCommand(targets);
+        else if (cmd instanceof IgniteSqlStatisticsDrop)
+            return new SqlDropStatisticsCommand(targets);
         else {
             throw new IgniteSQLException("Unsupported native operation [" +
                 "cmdName=" + (cmd == null ? null : cmd.getClass().getSimpleName()) + "; " +
