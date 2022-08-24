@@ -80,15 +80,29 @@ namespace Apache.Ignite.Core.Tests.Binary.Serializable
             Assert.AreEqual(type.AssemblyQualifiedName, res.AssemblyQualifiedName);
         }
 
+        /// <summary>
+        /// Tests a special case with StringComparer.
+        /// </summary>
         [Test]
         public void TestComparer()
         {
-            // TODO: Test all supported types from https://docs.microsoft.com/en-us/dotnet/standard/serialization/binary-serialization
             var obj = StringComparer.OrdinalIgnoreCase;
             var res = TestUtils.SerializeDeserialize(obj);
 
             Assert.AreEqual("OrdinalComparer", res.GetType().Name);
             Assert.AreEqual(0, res.Compare("A", "a"), "Ignore case flag is deserialized incorrectly.");
+        }
+
+        /// <summary>
+        /// Tests all serializable system types.
+        /// See https://docs.microsoft.com/en-us/dotnet/standard/serialization/binary-serialization#serializable-types.
+        /// </summary>
+        [Test]
+        public void TestAllSerializableSystemTypes()
+        {
+            // TODO: Test all supported types from https://docs.microsoft.com/en-us/dotnet/standard/serialization/binary-serialization
+            // TODO: Load SerializableTypes.txt from resources.
+            // TODO: Support this in the other project file.
         }
 
         /// <summary>
