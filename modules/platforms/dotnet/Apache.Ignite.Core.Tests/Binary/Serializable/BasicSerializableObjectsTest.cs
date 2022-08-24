@@ -36,12 +36,6 @@ namespace Apache.Ignite.Core.Tests.Binary.Serializable
     /// </summary>
     public class BasicSerializableObjectsTest
     {
-        /** */
-        private static readonly IReadOnlyList<string> SerializableTypes =
-            File.ReadLines(Path.Combine("Binary", "Serializable", "SerializableTypes.txt"))
-                .Where(x => !x.StartsWith('#'))
-                .ToList();
-
 #pragma warning disable CS0618
         private static readonly IReadOnlyList<object> SerializableTypeObjects = new object[]
         {
@@ -245,17 +239,19 @@ namespace Apache.Ignite.Core.Tests.Binary.Serializable
             new SerializationException(),
             new SByte(),
 
-            // new System.Security.AccessControl.PrivilegeNotHeldException(),
-            // new System.Security.Authentication.AuthenticationException(),
-            // new System.Security.Authentication.InvalidCredentialException(),
-            // new System.Security.Cryptography.CryptographicException(),
-            // new System.Security.Cryptography.CryptographicUnexpectedOperationException(),
-            // new System.Security.HostProtectionException(),
-            // new System.Security.Policy.PolicyException(),
-            // new System.Security.Principal.IdentityNotMappedException(),
-            // new System.Security.SecurityException(),
-            // new System.Security.VerificationException(),
-            // new System.Security.XmlSyntaxException(),
+#if !NETCOREAPP
+            new System.Security.AccessControl.PrivilegeNotHeldException(),
+            new System.Security.Authentication.AuthenticationException(),
+            new System.Security.Authentication.InvalidCredentialException(),
+            new System.Security.Cryptography.CryptographicException(),
+            new System.Security.Cryptography.CryptographicUnexpectedOperationException(),
+            new System.Security.HostProtectionException(),
+            new System.Security.Policy.PolicyException(),
+            new System.Security.Principal.IdentityNotMappedException(),
+            new System.Security.SecurityException(),
+            new System.Security.VerificationException(),
+            new System.Security.XmlSyntaxException(),
+#endif
 
             new Single(),
             new StackOverflowException(),
@@ -382,20 +378,7 @@ namespace Apache.Ignite.Core.Tests.Binary.Serializable
         [Test, TestCaseSource(nameof(SerializableTypeObjects))]
         public void TestAllSerializableSystemTypes(object obj)
         {
-            // TODO: Test all supported types from https://docs.microsoft.com/en-us/dotnet/standard/serialization/binary-serialization
-            // TODO: Load SerializableTypes.txt from resources.
-            // TODO: Support this in the other project file.
-            // TODO: Cache resolver.
             Assert.IsNotNull(obj);
-        }
-
-        [Test]
-        public void FOo()
-        {
-            foreach (var typeName in SerializableTypes)
-            {
-                TestContext.Progress.WriteLine("new {0}(),", typeName);
-            }
         }
 
         /// <summary>
