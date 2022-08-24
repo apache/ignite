@@ -110,6 +110,9 @@
     <None Update="Config\Client\server-with-ssl-no-client-auth.xml">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </None>
+    <None Update="Binary\Serializable\SerializableTypes.txt">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </None>
   </ItemGroup>
 
   <ItemGroup>
