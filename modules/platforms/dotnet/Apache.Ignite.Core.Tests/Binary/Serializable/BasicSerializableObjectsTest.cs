@@ -207,7 +207,6 @@ namespace Apache.Ignite.Core.Tests.Binary.Serializable
             new NotImplementedException(),
             new NotSupportedException(),
             new NullReferenceException(),
-            new Nullable<int>(),
             new System.Numerics.BigInteger(),
             new System.Numerics.Complex(),
             new Object(),
@@ -378,6 +377,7 @@ namespace Apache.Ignite.Core.Tests.Binary.Serializable
         [Test, TestCaseSource(nameof(SerializableTypeObjects))]
         public void TestAllSerializableSystemTypes(object obj)
         {
+            TestContext.Progress.WriteLine(obj?.GetType());
             Assert.IsNotNull(obj);
         }
 
