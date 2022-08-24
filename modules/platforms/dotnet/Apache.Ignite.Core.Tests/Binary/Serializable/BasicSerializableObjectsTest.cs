@@ -41,7 +41,7 @@ namespace Apache.Ignite.Core.Tests.Binary.Serializable
         /// Source:
         /// https://docs.microsoft.com/en-us/dotnet/standard/serialization/binary-serialization#serializable-types
         /// </summary>
-        private static readonly IReadOnlyList<object> SerializableTypeObjects = new object[]
+        private static readonly IReadOnlyList<object> SerializableTypeObjects = new[]
         {
             new RuntimeBinderException(),
             new RuntimeBinderInternalCompilerException(),
