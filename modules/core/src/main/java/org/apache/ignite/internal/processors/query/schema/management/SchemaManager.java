@@ -57,7 +57,6 @@ import org.apache.ignite.internal.processors.metric.impl.MetricUtils;
 import org.apache.ignite.internal.processors.query.ColumnInformation;
 import org.apache.ignite.internal.processors.query.GridQueryIndexDescriptor;
 import org.apache.ignite.internal.processors.query.GridQueryProperty;
-import org.apache.ignite.internal.processors.query.GridQuerySchemaManager;
 import org.apache.ignite.internal.processors.query.GridQueryTypeDescriptor;
 import org.apache.ignite.internal.processors.query.QueryField;
 import org.apache.ignite.internal.processors.query.QueryIndexDescriptorImpl;
@@ -90,7 +89,7 @@ import static org.apache.ignite.internal.processors.query.QueryUtils.matches;
 /**
  * Schema manager. Responsible for all manipulations on schema objects.
  */
-public class SchemaManager implements GridQuerySchemaManager {
+public class SchemaManager {
     /** */
     public static final String SQL_SCHEMA_VIEW = "schemas";
 
@@ -237,13 +236,13 @@ public class SchemaManager implements GridQuerySchemaManager {
 
     /** */
     private Collection<GridQueryProperty> tableColumns(TableDescriptor tblDesc) {
-        GridQueryTypeDescriptor typeDesc = tblDesc.descriptor();
+        GridQueryTypeDescriptor typeDesc = tblDesc.type();
         Collection<GridQueryProperty> props = typeDesc.properties().values();
 
-        if (!tblDesc.descriptor().properties().containsKey(KEY_FIELD_NAME))
+        if (!tblDesc.type().properties().containsKey(KEY_FIELD_NAME))
             props = F.concat(false, new KeyOrValProperty(true, KEY_FIELD_NAME, typeDesc.keyClass()), props);
 
-        if (!tblDesc.descriptor().properties().containsKey(VAL_FIELD_NAME))
+        if (!tblDesc.type().properties().containsKey(VAL_FIELD_NAME))
             props = F.concat(false, new KeyOrValProperty(false, VAL_FIELD_NAME, typeDesc.valueClass()), props);
 
         return props;
@@ -415,16 +414,16 @@ public class SchemaManager implements GridQuerySchemaManager {
                 }
 
                 try {
-                    lsnr.onSqlTypeDropped(schemaName, tbl.descriptor(), rmvIdx);
+                    lsnr.onSqlTypeDropped(schemaName, tbl.type(), rmvIdx);
                 }
                 catch (Exception e) {
                     U.error(log, "Failed to drop table on cache stop (will ignore): " +
-                        tbl.descriptor().tableName(), e);
+                        tbl.type().tableName(), e);
                 }
 
                 schema.drop(tbl);
 
-                T2<String, String> tableId = new T2<>(tbl.descriptor().schemaName(), tbl.descriptor().tableName());
+                T2<String, String> tableId = new T2<>(tbl.type().schemaName(), tbl.type().tableName());
                 id2tbl.remove(tableId, tbl);
             }
         }
@@ -553,7 +552,7 @@ public class SchemaManager implements GridQuerySchemaManager {
     /** */
     private void createPkIndex(TableDescriptor tbl) {
         GridQueryIndexDescriptor idxDesc = new QuerySysIndexDescriptorImpl(QueryUtils.PRIMARY_KEY_INDEX,
-            Collections.emptyList(), tbl.descriptor().primaryKeyInlineSize()); // _KEY field will be added implicitly.
+            Collections.emptyList(), tbl.type().primaryKeyInlineSize()); // _KEY field will be added implicitly.
 
         // Add primary key index.
         createIndexDescriptor(
@@ -569,7 +568,7 @@ public class SchemaManager implements GridQuerySchemaManager {
         if (tbl.affinityKey() != null) {
             boolean affIdxFound = false;
 
-            for (GridQueryIndexDescriptor idxDesc : tbl.descriptor().indexes().values()) {
+            for (GridQueryIndexDescriptor idxDesc : tbl.type().indexes().values()) {
                 if (idxDesc.type() != QueryIndexType.SORTED)
                     continue;
 
@@ -579,7 +578,7 @@ public class SchemaManager implements GridQuerySchemaManager {
             // Add explicit affinity key index if nothing alike was found.
             if (!affIdxFound) {
                 GridQueryIndexDescriptor idxDesc = new QuerySysIndexDescriptorImpl(QueryUtils.AFFINITY_KEY_INDEX,
-                    Collections.singleton(tbl.affinityKey()), tbl.descriptor().affinityFieldInlineSize());
+                    Collections.singleton(tbl.affinityKey()), tbl.type().affinityFieldInlineSize());
 
                 createIndexDescriptor(
                     idxDesc,
@@ -613,7 +612,7 @@ public class SchemaManager implements GridQuerySchemaManager {
         IndexDescriptor idxDesc,
         TableDescriptor tbl
     ) {
-        GridQueryTypeDescriptor typeDesc = tbl.descriptor();
+        GridQueryTypeDescriptor typeDesc = tbl.type();
         if (F.isEmpty(typeDesc.keyFieldName()) && F.isEmpty(typeDesc.valueFieldName()))
             return null;
 
@@ -652,7 +651,7 @@ public class SchemaManager implements GridQuerySchemaManager {
 
         tbl.addIndex(proxyName, proxyDesc);
 
-        lsnr.onIndexCreated(tbl.descriptor().schemaName(), tbl.descriptor().tableName(), proxyName, proxyDesc);
+        lsnr.onIndexCreated(tbl.type().schemaName(), tbl.type().tableName(), proxyName, proxyDesc);
 
         return proxyDesc;
     }
@@ -668,7 +667,7 @@ public class SchemaManager implements GridQuerySchemaManager {
      * @param tbl Table.
      */
     private void createInitialUserIndexes(TableDescriptor tbl) {
-        for (GridQueryIndexDescriptor idxDesc : tbl.descriptor().indexes().values())
+        for (GridQueryIndexDescriptor idxDesc : tbl.type().indexes().values())
             createIndexDescriptor(idxDesc, tbl, null);
     }
 
@@ -690,7 +689,7 @@ public class SchemaManager implements GridQuerySchemaManager {
         SchemaIndexCacheVisitor cacheVisitor
     ) throws IgniteCheckedException {
         // Locate table.
-        TableDescriptor tbl = dataTable(schemaName, tblName);
+        TableDescriptor tbl = table(schemaName, tblName);
 
         if (tbl == null) {
             throw new IgniteCheckedException("Table not found in schema manager [schemaName=" + schemaName +
@@ -716,7 +715,7 @@ public class SchemaManager implements GridQuerySchemaManager {
     public void addIndex(TableDescriptor tbl, IndexDescriptor idxDesc) {
         tbl.addIndex(idxDesc.name(), idxDesc);
 
-        lsnr.onIndexCreated(tbl.descriptor().schemaName(), tbl.descriptor().tableName(), idxDesc.name(), idxDesc);
+        lsnr.onIndexCreated(tbl.type().schemaName(), tbl.type().tableName(), idxDesc.name(), idxDesc);
 
         createProxyIndexDescriptor(idxDesc, tbl);
     }
@@ -749,9 +748,9 @@ public class SchemaManager implements GridQuerySchemaManager {
      * @param ifExists If exists.
      */
     private void dropIndex(TableDescriptor tbl, String idxName, boolean ifExists, boolean softDelete) throws IgniteCheckedException {
-        String schemaName = tbl.descriptor().schemaName();
-        String cacheName = tbl.descriptor().cacheName();
-        String tableName = tbl.descriptor().tableName();
+        String schemaName = tbl.type().schemaName();
+        String cacheName = tbl.type().cacheName();
+        String tableName = tbl.type().tableName();
 
         IndexDescriptor idxDesc = tbl.dropIndex(idxName);
 
@@ -796,7 +795,7 @@ public class SchemaManager implements GridQuerySchemaManager {
         assert !ifColNotExists || cols.size() == 1;
 
         // Locate table.
-        TableDescriptor tbl = dataTable(schemaName, tblName);
+        TableDescriptor tbl = table(schemaName, tblName);
 
         if (tbl == null) {
             if (!ifTblExists) {
@@ -807,7 +806,7 @@ public class SchemaManager implements GridQuerySchemaManager {
                 return;
         }
 
-        lsnr.onColumnsAdded(schemaName, tbl.descriptor(), tbl.cacheInfo(), cols);
+        lsnr.onColumnsAdded(schemaName, tbl.type(), tbl.cacheInfo(), cols);
     }
 
     /**
@@ -830,7 +829,7 @@ public class SchemaManager implements GridQuerySchemaManager {
         assert !ifColExists || cols.size() == 1;
 
         // Locate table.
-        TableDescriptor tbl = dataTable(schemaName, tblName);
+        TableDescriptor tbl = table(schemaName, tblName);
 
         if (tbl == null) {
             if (!ifTblExists) {
@@ -841,65 +840,7 @@ public class SchemaManager implements GridQuerySchemaManager {
                 return;
         }
 
-        lsnr.onColumnsDropped(schemaName, tbl.descriptor(), tbl.cacheInfo(), cols);
-    }
-
-    /**
-     * Get table descriptor.
-     *
-     * @param schemaName Schema name.
-     * @param cacheName Cache name.
-     * @param type Type name.
-     * @return Descriptor.
-     */
-    @Nullable public GridQueryTypeDescriptor typeDescriptorForType(String schemaName, String cacheName, String type) {
-        SchemaDescriptor schema = schema(schemaName);
-
-        if (schema == null)
-            return null;
-
-        TableDescriptor tbl = schema.tableByTypeName(cacheName, type);
-
-        return tbl == null ? null : tbl.descriptor();
-    }
-
-    /**
-     * Gets collection of table for given schema name.
-     *
-     * @param cacheName Cache name.
-     * @return Collection of table descriptors.
-     */
-    public Collection<GridQueryTypeDescriptor> typeDescriptorsForCache(String cacheName) {
-        SchemaDescriptor schema = schema(schemaName(cacheName));
-
-        if (schema == null)
-            return Collections.emptySet();
-
-        List<GridQueryTypeDescriptor> tbls = new ArrayList<>();
-
-        for (TableDescriptor tbl : schema.tables()) {
-            if (F.eq(tbl.cacheInfo().name(), cacheName))
-                tbls.add(tbl.descriptor());
-        }
-
-        return tbls;
-    }
-
-    /**
-     * Find registered cache info by it's name.
-     */
-    public GridCacheContextInfo<?, ?> cacheInfo(String cacheName) {
-        SchemaDescriptor schema = schema(schemaName(cacheName));
-
-        if (schema == null)
-            return null;
-
-        for (TableDescriptor tbl : schema.tables()) {
-            if (F.eq(tbl.cacheInfo().name(), cacheName))
-                return tbl.cacheInfo();
-        }
-
-        return null;
+        lsnr.onColumnsDropped(schemaName, tbl.type(), tbl.cacheInfo(), cols);
     }
 
     /**
@@ -942,13 +883,88 @@ public class SchemaManager implements GridQuerySchemaManager {
     }
 
     /**
+     * Mark tables for index rebuild, so that their indexes are not used.
+     *
+     * @param cacheName Cache name.
+     * @param mark Mark/unmark flag, {@code true} if index rebuild started, {@code false} if finished.
+     */
+    public void markIndexRebuild(String cacheName, boolean mark) {
+        for (TableDescriptor tbl : tablesForCache(cacheName)) {
+            tbl.markIndexRebuildInProgress(mark);
+
+            if (mark)
+                lsnr.onIndexRebuildStarted(tbl.type().schemaName(), tbl.type().tableName());
+            else
+                lsnr.onIndexRebuildFinished(tbl.type().schemaName(), tbl.type().tableName());
+        }
+    }
+
+    /**
+     * Get table descriptor.
+     *
+     * @param schemaName Schema name.
+     * @param cacheName Cache name.
+     * @param type Type name.
+     * @return Descriptor.
+     */
+    @Nullable public GridQueryTypeDescriptor typeDescriptorForType(String schemaName, String cacheName, String type) {
+        SchemaDescriptor schema = schema(schemaName);
+
+        if (schema == null)
+            return null;
+
+        TableDescriptor tbl = schema.tableByTypeName(cacheName, type);
+
+        return tbl == null ? null : tbl.type();
+    }
+
+    /**
+     * Gets collection of table for given schema name.
+     *
+     * @param cacheName Cache name.
+     * @return Collection of table descriptors.
+     */
+    public Collection<TableDescriptor> tablesForCache(String cacheName) {
+        SchemaDescriptor schema = schema(schemaName(cacheName));
+
+        if (schema == null)
+            return Collections.emptySet();
+
+        List<TableDescriptor> tbls = new ArrayList<>();
+
+        for (TableDescriptor tbl : schema.tables()) {
+            if (F.eq(tbl.cacheInfo().name(), cacheName))
+                tbls.add(tbl);
+        }
+
+        return tbls;
+    }
+
+    /**
+     * Find registered cache info by it's name.
+     */
+    @Nullable public GridCacheContextInfo<?, ?> cacheInfo(String cacheName) {
+        SchemaDescriptor schema = schema(schemaName(cacheName));
+
+        if (schema == null)
+            return null;
+
+        for (TableDescriptor tbl : schema.tables()) {
+            if (F.eq(tbl.cacheInfo().name(), cacheName))
+                return tbl.cacheInfo();
+        }
+
+        return null;
+    }
+
+    /**
      * Find table by it's identifier.
      *
      * @param schemaName Schema name.
      * @param tblName Table name.
      * @return Table descriptor or {@code null} if none found.
      */
-    public TableDescriptor dataTable(String schemaName, String tblName) {
+    @Nullable public TableDescriptor table(String schemaName, String tblName) {
         return id2tbl.get(new T2<>(schemaName, tblName));
     }
 
@@ -959,7 +975,7 @@ public class SchemaManager implements GridQuerySchemaManager {
      * @param idxName Index name.
      * @return Index or {@code null} if none found.
      */
-    public IndexDescriptor index(String schemaName, String idxName) {
+    @Nullable public IndexDescriptor index(String schemaName, String idxName) {
         SchemaDescriptor schema = schema(schemaName);
 
         if (schema == null)
@@ -973,57 +989,6 @@ public class SchemaManager implements GridQuerySchemaManager {
         }
 
         return null;
-    }
-
-    /**
-     * @return all known tables.
-     */
-    private Collection<TableDescriptor> dataTables() {
-        return id2tbl.values();
-    }
-
-    /**
-     * Mark tables for index rebuild, so that their indexes are not used.
-     *
-     * @param cacheName Cache name.
-     * @param mark Mark/unmark flag, {@code true} if index rebuild started, {@code false} if finished.
-     */
-    public void markIndexRebuild(String cacheName, boolean mark) {
-        for (GridQueryTypeDescriptor typeDesc : typeDescriptorsForCache(cacheName)) {
-            dataTable(typeDesc.schemaName(), typeDesc.tableName()).markIndexRebuildInProgress(mark);
-
-            if (mark)
-                lsnr.onIndexRebuildStarted(typeDesc.schemaName(), typeDesc.tableName());
-            else
-                lsnr.onIndexRebuildFinished(typeDesc.schemaName(), typeDesc.tableName());
-        }
-    }
-
-    /** {@inheritDoc} */
-    @Override public GridQueryTypeDescriptor typeDescriptorForTable(String schemaName, String tableName) {
-        TableDescriptor tbl = dataTable(schemaName, tableName);
-        return tbl == null ? null : tbl.descriptor();
-    }
-
-    /** {@inheritDoc} */
-    @Override public GridQueryTypeDescriptor typeDescriptorForIndex(String schemaName, String idxName) {
-        for (Map.Entry<T2<String, String>, TableDescriptor> dataTableEntry : id2tbl.entrySet()) {
-            if (F.eq(dataTableEntry.getKey().get1(), schemaName)) {
-                GridQueryTypeDescriptor desc = dataTableEntry.getValue().descriptor();
-
-                if (desc.indexes().containsKey(idxName))
-                    return desc;
-            }
-        }
-
-        return null;
-    }
-
-    /** {@inheritDoc} */
-    @Override public <K, V> GridCacheContextInfo<K, V> cacheInfoForTable(String schemaName, String tableName) {
-        TableDescriptor tbl = dataTable(schemaName, tableName);
-
-        return tbl == null ? null : (GridCacheContextInfo<K, V>)tbl.cacheInfo();
     }
 
     /**
@@ -1048,9 +1013,9 @@ public class SchemaManager implements GridQuerySchemaManager {
         boolean allTypes = F.isEmpty(tblTypes);
 
         if (allTypes || types.contains(JdbcUtils.TYPE_TABLE)) {
-            dataTables().stream()
-                .filter(t -> matches(t.descriptor().schemaName(), schemaNamePtrn))
-                .filter(t -> matches(t.descriptor().tableName(), tblNamePtrn))
+            id2tbl.values().stream()
+                .filter(t -> matches(t.type().schemaName(), schemaNamePtrn))
+                .filter(t -> matches(t.type().tableName(), tblNamePtrn))
                 .map(t -> {
                     int cacheGrpId = t.cacheInfo().groupId();
 
@@ -1060,9 +1025,9 @@ public class SchemaManager implements GridQuerySchemaManager {
                     if (cacheGrpDesc == null)
                         return null;
 
-                    GridQueryTypeDescriptor type = t.descriptor();
+                    GridQueryTypeDescriptor type = t.type();
 
-                    return new TableInformation(t.descriptor().schemaName(), t.descriptor().tableName(),
+                    return new TableInformation(t.type().schemaName(), t.type().tableName(),
                         JdbcUtils.TYPE_TABLE, cacheGrpId, cacheGrpDesc.cacheOrGroupName(), t.cacheInfo().cacheId(),
                         t.cacheInfo().name(), type.affinityKey(), type.keyFieldAlias(), type.valueFieldAlias(),
                         type.keyTypeName(), type.valueTypeName());
@@ -1098,13 +1063,13 @@ public class SchemaManager implements GridQuerySchemaManager {
         Collection<ColumnInformation> infos = new ArrayList<>();
 
         // Gather information about tables.
-        dataTables().stream()
-            .filter(t -> matches(t.descriptor().schemaName(), schemaNamePtrn))
-            .filter(t -> matches(t.descriptor().tableName(), tblNamePtrn))
+        id2tbl.values().stream()
+            .filter(t -> matches(t.type().schemaName(), schemaNamePtrn))
+            .filter(t -> matches(t.type().tableName(), tblNamePtrn))
             .forEach(tbl -> {
                 int[] cnt = new int[] { 1 }; // Column ordinal position, start from 1.
 
-                GridQueryTypeDescriptor d = tbl.descriptor();
+                GridQueryTypeDescriptor d = tbl.type();
 
                 // Add default columns if fields not specified explicitely.
                 if (F.isEmpty(d.fields())) {

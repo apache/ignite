@@ -36,10 +36,12 @@ import org.apache.ignite.internal.processors.cache.distributed.near.GridNearTxLo
 import org.apache.ignite.internal.processors.cache.mvcc.MvccUtils;
 import org.apache.ignite.internal.processors.cache.query.IgniteQueryErrorCode;
 import org.apache.ignite.internal.processors.query.GridQueryProperty;
-import org.apache.ignite.internal.processors.query.GridQuerySchemaManager;
 import org.apache.ignite.internal.processors.query.GridQueryTypeDescriptor;
 import org.apache.ignite.internal.processors.query.IgniteSQLException;
 import org.apache.ignite.internal.processors.query.schema.SchemaOperationException;
+import org.apache.ignite.internal.processors.query.schema.management.IndexDescriptor;
+import org.apache.ignite.internal.processors.query.schema.management.SchemaManager;
+import org.apache.ignite.internal.processors.query.schema.management.TableDescriptor;
 import org.apache.ignite.internal.processors.query.stat.StatisticsKey;
 import org.apache.ignite.internal.processors.query.stat.StatisticsTarget;
 import org.apache.ignite.internal.processors.query.stat.config.StatisticsObjectConfiguration;
@@ -79,16 +81,16 @@ public class SqlCommandProcessor {
     protected final IgniteLogger log;
 
     /** Schema manager. */
-    protected final GridQuerySchemaManager schemaMgr;
+    protected final SchemaManager schemaMgr;
 
     /**
      * Constructor.
      *
      * @param ctx Kernal context.
      */
-    public SqlCommandProcessor(GridKernalContext ctx, GridQuerySchemaManager schemaMgr) {
+    public SqlCommandProcessor(GridKernalContext ctx) {
         this.ctx = ctx;
-        this.schemaMgr = schemaMgr;
+        this.schemaMgr = ctx.query().schemaManager();
         log = ctx.log(getClass());
     }
 
@@ -296,11 +298,13 @@ public class SqlCommandProcessor {
             if (cmd instanceof SqlCreateIndexCommand) {
                 SqlCreateIndexCommand cmd0 = (SqlCreateIndexCommand)cmd;
 
-                GridQueryTypeDescriptor typeDesc = schemaMgr.typeDescriptorForTable(cmd0.schemaName(), cmd0.tableName());
-                GridCacheContextInfo<?, ?> cacheInfo = schemaMgr.cacheInfoForTable(cmd0.schemaName(), cmd0.tableName());
+                TableDescriptor tbl = schemaMgr.table(cmd0.schemaName(), cmd0.tableName());
 
-                if (typeDesc == null)
+                if (tbl == null)
                     throw new SchemaOperationException(SchemaOperationException.CODE_TABLE_NOT_FOUND, cmd0.tableName());
+
+                GridQueryTypeDescriptor typeDesc = tbl.type();
+                GridCacheContextInfo<?, ?> cacheInfo = tbl.cacheInfo();
 
                 QueryIndex newIdx = new QueryIndex();
 
@@ -328,11 +332,11 @@ public class SqlCommandProcessor {
             else if (cmd instanceof SqlDropIndexCommand) {
                 SqlDropIndexCommand cmd0 = (SqlDropIndexCommand)cmd;
 
-                GridQueryTypeDescriptor typeDesc = schemaMgr.typeDescriptorForIndex(cmd0.schemaName(), cmd0.indexName());
+                IndexDescriptor idxDesc = schemaMgr.index(cmd0.schemaName(), cmd0.indexName());
 
-                if (typeDesc != null) {
-                    GridCacheContextInfo<?, ?> cacheInfo = schemaMgr.cacheInfoForTable(typeDesc.schemaName(),
-                        typeDesc.tableName());
+                // Do not allow to drop system indexes.
+                if (idxDesc != null && !idxDesc.isPk() && !idxDesc.isAffinity() && !idxDesc.isProxy()) {
+                    GridCacheContextInfo<?, ?> cacheInfo = idxDesc.table().cacheInfo();
 
                     fut = ctx.query().dynamicIndexDrop(cacheInfo.name(), cmd0.schemaName(), cmd0.indexName(),
                         cmd0.ifExists());
@@ -348,12 +352,14 @@ public class SqlCommandProcessor {
             else if (cmd instanceof SqlAlterTableCommand) {
                 SqlAlterTableCommand cmd0 = (SqlAlterTableCommand)cmd;
 
-                GridCacheContextInfo<?, ?> cacheInfo = schemaMgr.cacheInfoForTable(cmd0.schemaName(), cmd0.tableName());
+                TableDescriptor tbl = schemaMgr.table(cmd0.schemaName(), cmd0.tableName());
 
-                if (cacheInfo == null) {
+                if (tbl == null) {
                     throw new SchemaOperationException(SchemaOperationException.CODE_TABLE_NOT_FOUND,
                         cmd0.tableName());
                 }
+
+                GridCacheContextInfo<?, ?> cacheInfo = tbl.cacheInfo();
 
                 Boolean logging = cmd0.logging();
 

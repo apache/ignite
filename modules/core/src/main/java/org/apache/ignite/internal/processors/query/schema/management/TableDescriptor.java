@@ -33,7 +33,7 @@ public class TableDescriptor {
     private final GridCacheContextInfo<?, ?> cacheInfo;
 
     /** */
-    private final GridQueryTypeDescriptor desc;
+    private final GridQueryTypeDescriptor typeDesc;
 
     /** */
     private final boolean isSql;
@@ -51,20 +51,20 @@ public class TableDescriptor {
      * Ctor.
      *
      * @param cacheInfo Cache cacheInfo context.
-     * @param desc Descriptor.
+     * @param typeDesc Descriptor.
      */
-    public TableDescriptor(GridCacheContextInfo<?, ?> cacheInfo, GridQueryTypeDescriptor desc, boolean isSql) {
+    public TableDescriptor(GridCacheContextInfo<?, ?> cacheInfo, GridQueryTypeDescriptor typeDesc, boolean isSql) {
         this.cacheInfo = cacheInfo;
-        this.desc = desc;
+        this.typeDesc = typeDesc;
         this.isSql = isSql;
 
-        if (!F.isEmpty(desc.affinityKey())
-            && !desc.customAffinityKeyMapper()
-            && !F.eq(desc.affinityKey(), QueryUtils.KEY_FIELD_NAME)
-            && !F.eq(desc.affinityKey(), desc.keyFieldName())
-            && desc.fields().containsKey(desc.affinityKey())
+        if (!F.isEmpty(typeDesc.affinityKey())
+            && !typeDesc.customAffinityKeyMapper()
+            && !F.eq(typeDesc.affinityKey(), QueryUtils.KEY_FIELD_NAME)
+            && !F.eq(typeDesc.affinityKey(), typeDesc.keyFieldName())
+            && typeDesc.fields().containsKey(typeDesc.affinityKey())
         )
-            affKey = desc.affinityKey();
+            affKey = typeDesc.affinityKey();
         else
             affKey = null;
     }
@@ -75,8 +75,8 @@ public class TableDescriptor {
     }
 
     /** */
-    public GridQueryTypeDescriptor descriptor() {
-        return desc;
+    public GridQueryTypeDescriptor type() {
+        return typeDesc;
     }
 
     /** */

@@ -51,13 +51,13 @@ public class SqlTableColumnView {
     /** @return Schema name. */
     @Order(2)
     public String schemaName() {
-        return tbl.descriptor().schemaName();
+        return tbl.type().schemaName();
     }
 
     /** @return Table name. */
     @Order(1)
     public String tableName() {
-        return tbl.descriptor().tableName();
+        return tbl.type().tableName();
     }
 
     /** @return Field data type. */
@@ -87,7 +87,7 @@ public class SqlTableColumnView {
 
     /** @return {@code True} if primary key. */
     public boolean pk() {
-        return F.eq(prop.name(), tbl.descriptor().keyFieldName()) || prop.key();
+        return F.eq(prop.name(), tbl.type().keyFieldName()) || prop.key();
     }
 
     /** @return {@code True} if autoincremented field. */
@@ -97,7 +97,7 @@ public class SqlTableColumnView {
 
     /** @return {@code True} if affinity column. */
     public boolean affinityColumn() {
-        return !tbl.descriptor().customAffinityKeyMapper() &&
-            (F.eq(prop.name(), tbl.descriptor().affinityKey()) || (F.isEmpty(tbl.descriptor().affinityKey()) && pk()));
+        return !tbl.type().customAffinityKeyMapper() &&
+            (F.eq(prop.name(), tbl.type().affinityKey()) || (F.isEmpty(tbl.type().affinityKey()) && pk()));
     }
 }

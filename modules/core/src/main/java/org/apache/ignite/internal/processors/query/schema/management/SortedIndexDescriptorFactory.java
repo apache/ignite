@@ -60,7 +60,7 @@ public class SortedIndexDescriptorFactory extends AbstractIndexDescriptorFactory
         @Nullable SchemaIndexCacheVisitor cacheVisitor
     ) {
         GridCacheContextInfo<?, ?> cacheInfo = tbl.cacheInfo();
-        GridQueryTypeDescriptor typeDesc = tbl.descriptor();
+        GridQueryTypeDescriptor typeDesc = tbl.type();
         String idxName = idxDesc.name();
         boolean isPk = QueryUtils.PRIMARY_KEY_INDEX.equals(idxName);
         boolean isAffKey = QueryUtils.AFFINITY_KEY_INDEX.equals(idxName);
@@ -115,7 +115,7 @@ public class SortedIndexDescriptorFactory extends AbstractIndexDescriptorFactory
         }
         else {
             ClientIndexDefinition d = new ClientIndexDefinition(
-                new IndexName(tbl.cacheInfo().name(), tbl.descriptor().schemaName(), tbl.descriptor().tableName(), idxName),
+                new IndexName(tbl.cacheInfo().name(), tbl.type().schemaName(), tbl.type().tableName(), idxName),
                 idxCols,
                 idxDesc.inlineSize(),
                 tbl.cacheInfo().config().getSqlIndexMaxInlineSize());
@@ -132,7 +132,7 @@ public class SortedIndexDescriptorFactory extends AbstractIndexDescriptorFactory
     /** Split key into simple components and add to columns list. */
     private static void addUnwrappedKeyColumns(LinkedHashMap<String, IndexKeyDefinition> cols, TableDescriptor tbl) {
         // Key unwrapping possible only for SQL created tables.
-        if (!tbl.isSql() || QueryUtils.isSqlType(tbl.descriptor().keyClass())) {
+        if (!tbl.isSql() || QueryUtils.isSqlType(tbl.type().keyClass())) {
             addKeyColumn(cols, tbl);
 
             return;
@@ -140,16 +140,16 @@ public class SortedIndexDescriptorFactory extends AbstractIndexDescriptorFactory
 
         int oldColsSize = cols.size();
 
-        if (!tbl.descriptor().primaryKeyFields().isEmpty()) {
-            for (String keyName : tbl.descriptor().primaryKeyFields())
-                cols.put(keyName, keyDefinition(tbl.descriptor(), keyName, true));
+        if (!tbl.type().primaryKeyFields().isEmpty()) {
+            for (String keyName : tbl.type().primaryKeyFields())
+                cols.put(keyName, keyDefinition(tbl.type(), keyName, true));
         }
         else {
-            for (String propName : tbl.descriptor().fields().keySet()) {
-                GridQueryProperty prop = tbl.descriptor().property(propName);
+            for (String propName : tbl.type().fields().keySet()) {
+                GridQueryProperty prop = tbl.type().property(propName);
 
                 if (prop.key())
-                    cols.put(propName, keyDefinition(tbl.descriptor(), propName, true));
+                    cols.put(propName, keyDefinition(tbl.type(), propName, true));
             }
         }
 
@@ -162,13 +162,13 @@ public class SortedIndexDescriptorFactory extends AbstractIndexDescriptorFactory
     /** Add key column, if it (or it's alias) wasn't added before. */
     private static void addKeyColumn(LinkedHashMap<String, IndexKeyDefinition> cols, TableDescriptor tbl) {
         if (!cols.containsKey(QueryUtils.KEY_FIELD_NAME)
-            && (F.isEmpty(tbl.descriptor().keyFieldName()) || !cols.containsKey(tbl.descriptor().keyFieldAlias())))
-            cols.put(QueryUtils.KEY_FIELD_NAME, keyDefinition(tbl.descriptor(), QueryUtils.KEY_FIELD_NAME, true));
+            && (F.isEmpty(tbl.type().keyFieldName()) || !cols.containsKey(tbl.type().keyFieldAlias())))
+            cols.put(QueryUtils.KEY_FIELD_NAME, keyDefinition(tbl.type(), QueryUtils.KEY_FIELD_NAME, true));
     }
 
     /** Add affinity column, if it wasn't added before. */
     private static void addAffinityColumn(LinkedHashMap<String, IndexKeyDefinition> cols, TableDescriptor tbl) {
         if (tbl.affinityKey() != null)
-            cols.put(tbl.affinityKey(), keyDefinition(tbl.descriptor(), tbl.affinityKey(), true));
+            cols.put(tbl.affinityKey(), keyDefinition(tbl.type(), tbl.affinityKey(), true));
     }
 }

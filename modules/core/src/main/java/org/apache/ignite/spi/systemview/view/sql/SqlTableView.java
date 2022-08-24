@@ -38,11 +38,11 @@ public class SqlTableView {
     public SqlTableView(TableDescriptor tbl) {
         this.tbl = tbl;
 
-        String affCol = tbl.descriptor().affinityKey();
+        String affCol = tbl.type().affinityKey();
 
         if (affCol != null) {
             // Only explicit affinity column should be shown. Do not do this for _KEY or it's alias.
-            if (!F.eq(tbl.descriptor().keyFieldName(), affCol) && !F.eq(tbl.descriptor().keyFieldAlias(), affCol))
+            if (!F.eq(tbl.type().keyFieldName(), affCol) && !F.eq(tbl.type().keyFieldAlias(), affCol))
                 affColName = affCol;
         }
     }
@@ -94,7 +94,7 @@ public class SqlTableView {
      */
     @Order(4)
     public String schemaName() {
-        return tbl.descriptor().schemaName();
+        return tbl.type().schemaName();
     }
 
     /**
@@ -104,7 +104,7 @@ public class SqlTableView {
      */
     @Order(5)
     public String tableName() {
-        return tbl.descriptor().tableName();
+        return tbl.type().tableName();
     }
 
     /**
@@ -124,7 +124,7 @@ public class SqlTableView {
      */
     @Order(7)
     public String keyAlias() {
-        return tbl.descriptor().keyFieldAlias();
+        return tbl.type().keyFieldAlias();
     }
 
     /**
@@ -134,7 +134,7 @@ public class SqlTableView {
      */
     @Order(8)
     public String valueAlias() {
-        return tbl.descriptor().valueFieldAlias();
+        return tbl.type().valueFieldAlias();
     }
 
     /**
@@ -144,7 +144,7 @@ public class SqlTableView {
      */
     @Order(9)
     public String keyTypeName() {
-        return tbl.descriptor().keyTypeName();
+        return tbl.type().keyTypeName();
     }
 
     /**
@@ -154,7 +154,7 @@ public class SqlTableView {
      */
     @Order(10)
     public String valueTypeName() {
-        return tbl.descriptor().valueTypeName();
+        return tbl.type().valueTypeName();
     }
 
     /** @return {@code True} if index rebuild is in progress. */

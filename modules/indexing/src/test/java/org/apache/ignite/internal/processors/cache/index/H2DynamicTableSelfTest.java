@@ -65,6 +65,7 @@ import org.apache.ignite.internal.processors.query.h2.IgniteH2Indexing;
 import org.apache.ignite.internal.processors.query.h2.opt.GridH2Table;
 import org.apache.ignite.internal.processors.query.schema.SchemaOperationException;
 import org.apache.ignite.internal.processors.query.schema.management.SchemaManager;
+import org.apache.ignite.internal.processors.query.schema.management.TableDescriptor;
 import org.apache.ignite.internal.util.GridStringBuilder;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.G;
@@ -1770,13 +1771,13 @@ public class H2DynamicTableSelfTest extends AbstractSchemaSelfTest {
 
             String cacheName = cacheName("T1");
 
-            Collection<GridQueryTypeDescriptor> col = schemaMgr.typeDescriptorsForCache(cacheName);
+            Collection<TableDescriptor> col = schemaMgr.tablesForCache(cacheName);
 
             assertNotNull(col);
 
             assertEquals(1, col.size());
 
-            assertEquals("T1", F.first(col).tableName());
+            assertEquals("T1", F.first(col).type().tableName());
         }
         finally {
             execute("drop table t1 if exists");

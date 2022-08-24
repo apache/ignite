@@ -20,7 +20,6 @@ package org.apache.ignite.internal.processors.query.h2;
 import java.lang.reflect.Method;
 import java.sql.SQLException;
 import java.sql.Statement;
-import java.util.Collection;
 import java.util.List;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
@@ -266,34 +265,34 @@ public class H2SchemaManager implements SchemaChangeListener {
 
     /** {@inheritDoc} */
     @Override public void onIndexCreated(String schemaName, String tblName, String idxName, IndexDescriptor idxDesc) {
-        GridH2Table h2Tbl = dataTable(schemaName, tblName);
+        GridH2Table tbl = dataTable(schemaName, tblName);
 
-        if (h2Tbl == null)
+        if (tbl == null)
             return;
 
         try {
-            Index h2Idx = idxFactory.createIndex(h2Tbl, idxDesc);
+            Index h2Idx = idxFactory.createIndex(tbl, idxDesc);
 
             // Do not register system indexes as DB objects.
             if (isSystemIndex(h2Idx)) {
-                h2Tbl.addSystemIndex(h2Idx);
+                tbl.addSystemIndex(h2Idx);
 
                 return;
             }
 
-            h2Tbl.proposeUserIndex(h2Idx);
+            tbl.proposeUserIndex(h2Idx);
 
             try {
                 // At this point index is in consistent state, promote it through H2 SQL statement, so that cached
                 // prepared statements are re-built.
-                String sql = H2Utils.indexCreateSql(h2Tbl.tableDescriptor().fullTableName(), h2Idx, true);
+                String sql = H2Utils.indexCreateSql(tbl.tableDescriptor().fullTableName(), h2Idx, true);
 
                 connMgr.executeStatement(schemaName, sql);
 
             }
             catch (Exception e) {
                 // Rollback and re-throw.
-                h2Tbl.rollbackUserIndex(h2Idx.getName());
+                tbl.rollbackUserIndex(h2Idx.getName());
 
                 throw e;
             }
@@ -407,7 +406,7 @@ public class H2SchemaManager implements SchemaChangeListener {
     }
 
     /**
-     * Find table by it's identifier.
+     * Find H2 table by it's identifier.
      *
      * @param schemaName Schema name.
      * @param tblName Table name.
@@ -415,12 +414,5 @@ public class H2SchemaManager implements SchemaChangeListener {
      */
     public GridH2Table dataTable(String schemaName, String tblName) {
         return dataTables.get(new QueryTable(schemaName, tblName));
-    }
-
-    /**
-     * @return all known tables.
-     */
-    public Collection<GridH2Table> dataTables() {
-        return dataTables.values();
     }
 }

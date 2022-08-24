@@ -89,7 +89,7 @@ public class SqlIndexView {
      */
     @Order(4)
     public String schemaName() {
-        return tbl.descriptor().schemaName();
+        return tbl.type().schemaName();
     }
 
     /**
@@ -99,7 +99,7 @@ public class SqlIndexView {
      */
     @Order(5)
     public String tableName() {
-        return tbl.descriptor().tableName();
+        return tbl.type().tableName();
     }
 
     /**

@@ -283,7 +283,7 @@ public class CalciteQueryProcessor extends GridProcessorAdapter implements Query
     }
 
     /** {@inheritDoc} */
-    @Override public void start() {
+    @Override public void onKernalStart(boolean active) {
         onStart(ctx,
             executionSvc,
             mailboxRegistry,
@@ -299,7 +299,7 @@ public class CalciteQueryProcessor extends GridProcessorAdapter implements Query
     }
 
     /** {@inheritDoc} */
-    @Override public void stop(boolean cancel) {
+    @Override public void onKernalStop(boolean cancel) {
         onStop(
             qryReg,
             executionSvc,

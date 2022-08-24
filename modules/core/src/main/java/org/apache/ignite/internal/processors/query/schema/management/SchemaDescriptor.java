@@ -103,11 +103,11 @@ public class SchemaDescriptor {
      * @param tbl Table descriptor.
      */
     public void add(TableDescriptor tbl) {
-        if (tbls.putIfAbsent(tbl.descriptor().tableName(), tbl) != null)
-            throw new IllegalStateException("Table already registered: " + tbl.descriptor().tableName());
+        if (tbls.putIfAbsent(tbl.type().tableName(), tbl) != null)
+            throw new IllegalStateException("Table already registered: " + tbl.type().tableName());
 
-        if (typeToTbl.putIfAbsent(new QueryTypeNameKey(tbl.cacheInfo().name(), tbl.descriptor().name()), tbl) != null)
-            throw new IllegalStateException("Table already registered: " + tbl.descriptor().tableName());
+        if (typeToTbl.putIfAbsent(new QueryTypeNameKey(tbl.cacheInfo().name(), tbl.type().name()), tbl) != null)
+            throw new IllegalStateException("Table already registered: " + tbl.type().tableName());
     }
 
     /**
@@ -116,9 +116,9 @@ public class SchemaDescriptor {
      * @param tbl Table to be removed.
      */
     public void drop(TableDescriptor tbl) {
-        tbls.remove(tbl.descriptor().tableName());
+        tbls.remove(tbl.type().tableName());
 
-        typeToTbl.remove(new QueryTypeNameKey(tbl.cacheInfo().name(), tbl.descriptor().name()));
+        typeToTbl.remove(new QueryTypeNameKey(tbl.cacheInfo().name(), tbl.type().name()));
     }
 
     /**
