@@ -256,7 +256,8 @@ namespace Apache.Ignite.Core.Tests.Binary.Serializable
             new System.Security.Cryptography.CryptographicUnexpectedOperationException(),
             new System.Security.HostProtectionException(),
             new System.Security.Policy.PolicyException(),
-            new System.Security.Principal.IdentityNotMappedException(),
+            // Bug in .NET FW - missing deserialization constructor.
+            // new System.Security.Principal.IdentityNotMappedException(),
             new System.Security.SecurityException(),
             new System.Security.VerificationException(),
             new System.Security.XmlSyntaxException(),
