@@ -71,7 +71,7 @@ CP="${IGNITE_HOME}/bin/include/visor-common/*${SEP}${IGNITE_HOME}/bin/include/vi
 #
 # ADD YOUR/CHANGE ADDITIONAL OPTIONS HERE
 #
-JVM_OPTS="-Xms1g -Xmx1g -XX:MaxPermSize=128M -server ${JVM_OPTS}"
+JVM_OPTS="-Xms1g -Xmx1g -server ${JVM_OPTS}"
 
 # Mac OS specific support to display correct name in the dock.
 osname=`uname`
