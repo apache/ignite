@@ -28,7 +28,6 @@ namespace Apache.Ignite.Core.Tests.Binary.Serializable
     using System.Linq;
     using System.Runtime.Serialization;
     using Microsoft.CSharp.RuntimeBinder;
-    using Newtonsoft.Json.Serialization;
     using NUnit.Framework;
 
     /// <summary>
@@ -79,7 +78,9 @@ namespace Apache.Ignite.Core.Tests.Binary.Serializable
             new Stack<int>(),
             new Hashtable(),
             new Collection<int>(),
-            new JsonPropertyCollection(typeof(object)),
+#if NETCOREAPP
+            new Newtonsoft.Json.Serialization.JsonPropertyCollection(typeof(object)),
+#endif
             new ObservableCollection<string>(),
             new ReadOnlyCollection<int>(Enumerable.Range(1, 10).ToList()),
             new ReadOnlyDictionary<int, string>(Enumerable.Range(1, 5).ToDictionary(x => x, x => x.ToString())),
@@ -215,8 +216,10 @@ namespace Apache.Ignite.Core.Tests.Binary.Serializable
             new NotImplementedException(),
             new NotSupportedException(),
             new NullReferenceException(),
+#if NETCOREAPP
             new System.Numerics.BigInteger(),
             new System.Numerics.Complex(),
+#endif
             new Object(),
             new ObjectDisposedException("x"),
             new OperationCanceledException(),
