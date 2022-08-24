@@ -18,7 +18,12 @@
 namespace Apache.Ignite.Core.Tests.Binary.Serializable
 {
     using System;
+    using System.Collections.Generic;
+    using System.IO;
+    using System.Linq;
     using System.Runtime.Serialization;
+    using Apache.Ignite.Core.Impl.Binary;
+    using Microsoft.CSharp.RuntimeBinder;
     using NUnit.Framework;
 
     /// <summary>
@@ -26,6 +31,12 @@ namespace Apache.Ignite.Core.Tests.Binary.Serializable
     /// </summary>
     public class BasicSerializableObjectsTest
     {
+        /** */
+        private static readonly IReadOnlyList<string> SerializableTypes =
+            File.ReadLines(Path.Combine("Binary", "Serializable", "SerializableTypes.txt"))
+                .Where(x => !x.StartsWith('#'))
+                .ToList();
+
         /// <summary>
         /// Tests the object with no fields.
         /// </summary>
@@ -97,12 +108,21 @@ namespace Apache.Ignite.Core.Tests.Binary.Serializable
         /// Tests all serializable system types.
         /// See https://docs.microsoft.com/en-us/dotnet/standard/serialization/binary-serialization#serializable-types.
         /// </summary>
-        [Test]
-        public void TestAllSerializableSystemTypes()
+        [Test, TestCaseSource(nameof(SerializableTypes))]
+        public void TestAllSerializableSystemTypes(string typeName)
         {
             // TODO: Test all supported types from https://docs.microsoft.com/en-us/dotnet/standard/serialization/binary-serialization
             // TODO: Load SerializableTypes.txt from resources.
             // TODO: Support this in the other project file.
+            // TODO: Cache resolver.
+            var type = Type.GetType(typeName);
+            Assert.IsNotNull(type);
+        }
+
+        [Test]
+        public void TestDelme()
+        {
+            TestContext.Progress.WriteLine(typeof(AppDomainUnloadedException).AssemblyQualifiedName);
         }
 
         /// <summary>

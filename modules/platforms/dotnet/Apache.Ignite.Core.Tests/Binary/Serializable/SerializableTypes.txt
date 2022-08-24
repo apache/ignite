@@ -1,9 +1,9 @@
 # Source: https://docs.microsoft.com/en-us/dotnet/standard/serialization/binary-serialization#serializable-types
-Microsoft.CSharp.RuntimeBinder.RuntimeBinderException
-Microsoft.CSharp.RuntimeBinder.RuntimeBinderInternalCompilerException
+Microsoft.CSharp.RuntimeBinder.RuntimeBinderException, Microsoft.CSharp
+Microsoft.CSharp.RuntimeBinder.RuntimeBinderInternalCompilerException, Microsoft.CSharp
 System.AccessViolationException
 System.AggregateException
-System.AppDomainUnloadedException
+System.AppDomainUnloadedException, System.Runtime.Extensions
 System.ApplicationException
 System.ArgumentException
 System.ArgumentNullException
