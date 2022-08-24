@@ -68,6 +68,9 @@ public class GridCommandHandlerConsistencyTest extends GridCommandHandlerCluster
     /** Default cache name filtered. */
     private static final String DEFAULT_CACHE_NAME_FILTERED = DEFAULT_CACHE_NAME + "Filtered";
 
+    /** Group postfix. */
+    private static final String GRP_POSTFIX = "_grp";
+
     /** Partitions. */
     private static final int PARTITIONS = 32;
 
@@ -78,12 +81,18 @@ public class GridCommandHandlerConsistencyTest extends GridCommandHandlerCluster
     protected final ListeningTestLogger listeningLog = new ListeningTestLogger(log);
 
     /** */
-    @Parameterized.Parameters(name = "strategy={0}")
+    @Parameterized.Parameters(name = "strategy={0}, explicitGrp={1}, callByGrp={2}")
     public static Iterable<Object[]> data() {
         List<Object[]> res = new ArrayList<>();
 
-        for (ReadRepairStrategy strategy : ReadRepairStrategy.values())
-            res.add(new Object[] {strategy});
+        for (ReadRepairStrategy strategy : ReadRepairStrategy.values()) {
+            for (boolean explicitGrp : new boolean[] {false, true}) {
+                if (explicitGrp)
+                    res.add(new Object[] {strategy, explicitGrp, true});
+
+                res.add(new Object[] {strategy, explicitGrp, false});
+            }
+        }
 
         return res;
     }
@@ -95,6 +104,18 @@ public class GridCommandHandlerConsistencyTest extends GridCommandHandlerCluster
     public ReadRepairStrategy strategy;
 
     /**
+     * True when cache defined via group.
+     */
+    @Parameterized.Parameter(1)
+    public boolean explicitGrp;
+
+    /**
+     * True when cache consistency repair called by group name.
+     */
+    @Parameterized.Parameter(2)
+    public boolean callByGrp;
+
+    /**
      *
      */
     protected CacheConfiguration<Integer, Integer> cacheConfiguration(boolean tx) {
@@ -104,6 +125,9 @@ public class GridCommandHandlerConsistencyTest extends GridCommandHandlerCluster
         cfg.setAtomicityMode(tx ? TRANSACTIONAL : ATOMIC);
         cfg.setBackups(BACKUPS);
         cfg.setAffinity(new RendezvousAffinityFunction().setPartitions(PARTITIONS));
+
+        if (explicitGrp)
+            cfg.setGroupName(cfg.getName() + GRP_POSTFIX);
 
         return cfg;
     }
@@ -232,6 +256,9 @@ public class GridCommandHandlerConsistencyTest extends GridCommandHandlerCluster
         cfg.setAffinity(new RendezvousAffinityFunction().setPartitions(PARTITIONS));
         cfg.setNodeFilter(node -> !node.consistentId().equals(filteredId));
 
+        if (explicitGrp)
+            cfg.setGroupName(cfg.getName() + GRP_POSTFIX);
+
         String cacheName = ignite.getOrCreateCache(cfg).getName();
 
         fillCache(cacheName, filtered, true);
@@ -273,7 +300,7 @@ public class GridCommandHandlerConsistencyTest extends GridCommandHandlerCluster
 
             assertTrue(VisorConsistencyStatusTask.MAP.isEmpty());
 
-            assertContains(log, testOut.toString(), "Cache not found");
+            assertContains(log, testOut.toString(), "Cache(group) not found");
         }
     }
 
@@ -283,7 +310,7 @@ public class GridCommandHandlerConsistencyTest extends GridCommandHandlerCluster
     private void readRepair(AtomicInteger brokenParts, String cacheName, Integer repairsPerEntry) {
         for (int i = 0; i < PARTITIONS; i++) {
             assertEquals(EXIT_CODE_OK, execute("--consistency", "repair",
-                ConsistencyCommand.CACHE, cacheName,
+                ConsistencyCommand.CACHE, callByGrp ? cacheName + GRP_POSTFIX : cacheName,
                 ConsistencyCommand.PARTITION, String.valueOf(i),
                 ConsistencyCommand.STRATEGY, strategy.toString()));
 
