@@ -274,7 +274,7 @@ namespace Apache.Ignite.Core.Tests.Binary.Serializable
             new System.Threading.ThreadStateException(),
             new System.Threading.WaitHandleCannotBeOpenedException(),
             new TimeSpan(),
-            TimeZoneInfo.Local,
+            TimeZoneInfo.Utc,
             new TimeZoneNotFoundException(),
             new TimeoutException(),
             new System.Transactions.TransactionAbortedException(),
