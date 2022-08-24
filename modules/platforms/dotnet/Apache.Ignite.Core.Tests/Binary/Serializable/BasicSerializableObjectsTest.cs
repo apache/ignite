@@ -209,7 +209,9 @@ namespace Apache.Ignite.Core.Tests.Binary.Serializable
             new System.Net.Sockets.SocketException(),
             new System.Net.WebException(),
             new System.Net.WebSockets.WebSocketException(),
+#if NETCOREAPP
             new NotFiniteNumberException(),
+#endif
             new NotImplementedException(),
             new NotSupportedException(),
             new NullReferenceException(),
