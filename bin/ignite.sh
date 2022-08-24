@@ -94,6 +94,16 @@ if [ -z "$JVM_OPTS" ] ; then
 fi
 
 #
+# Set 'file.encoding' to UTF-8 default if not specified otherwise
+#
+case "${JVM_OPTS:-}" in
+    *-Dfile.encoding=*)
+        ;;
+    *)
+        JVM_OPTS="${JVM_OPTS:-} -Dfile.encoding=UTF-8";;
+esac
+
+#
 # Uncomment the following GC settings if you see spikes in your throughput due to Garbage Collection.
 #
 # JVM_OPTS="$JVM_OPTS -XX:+UseG1GC"

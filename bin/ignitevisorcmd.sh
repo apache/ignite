@@ -71,7 +71,19 @@ CP="${IGNITE_HOME}/bin/include/visor-common/*${SEP}${IGNITE_HOME}/bin/include/vi
 #
 # ADD YOUR/CHANGE ADDITIONAL OPTIONS HERE
 #
-JVM_OPTS="-Xms1g -Xmx1g -XX:MaxPermSize=128M -server ${JVM_OPTS}"
+if [ -z "$JVM_OPTS" ] ; then
+    JVM_OPTS="-Xms1g -Xmx1g -server -XX:MaxMetaspaceSize=256m"
+fi
+
+#
+# Set 'file.encoding' to UTF-8 default if not specified otherwise
+#
+case "${JVM_OPTS:-}" in
+    *-Dfile.encoding=*)
+        ;;
+    *)
+        JVM_OPTS="${JVM_OPTS:-} -Dfile.encoding=UTF-8";;
+esac
 
 # Mac OS specific support to display correct name in the dock.
 osname=`uname`
