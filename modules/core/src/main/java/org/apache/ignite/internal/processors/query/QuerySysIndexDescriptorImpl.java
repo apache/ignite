@@ -19,7 +19,6 @@ package org.apache.ignite.internal.processors.query;
 
 import java.util.Collection;
 import org.apache.ignite.cache.QueryIndexType;
-import sun.reflect.generics.reflectiveObjects.NotImplementedException;
 
 /**
  * Sys Indexes descriptor.
@@ -59,11 +58,11 @@ public class QuerySysIndexDescriptorImpl implements GridQueryIndexDescriptor {
 
     /** {@inheritDoc} */
     @Override public QueryIndexType type() {
-        throw new NotImplementedException();
+        throw new UnsupportedOperationException("Not implemented");
     }
 
     /** {@inheritDoc} */
     @Override public int inlineSize() {
-        throw new NotImplementedException();
+        throw new UnsupportedOperationException("Not implemented");
     }
 }
