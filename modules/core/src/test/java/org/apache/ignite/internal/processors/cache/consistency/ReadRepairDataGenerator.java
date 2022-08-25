@@ -67,8 +67,8 @@ public class ReadRepairDataGenerator extends JUnitAssertAware {
     /** Key. */
     private final AtomicInteger incrementalKey = new AtomicInteger();
 
-    /** Cache name. */
-    private final String cacheName;
+    /** Cache names. */
+    private final String[] cacheNames;
 
     /** Nodes aware of the entry value class. */
     private final List<Ignite> clsAwareNodes;
@@ -89,7 +89,7 @@ public class ReadRepairDataGenerator extends JUnitAssertAware {
     private final Supplier<Integer> backupsCnt;
 
     /**
-     * @param cacheName Cache name.
+     * @param cacheNames Cache names.
      * @param clsAwareNodes Class aware nodes.
      * @param extClsLdr Ext class loader.
      * @param primaryNode Primary node.
@@ -98,14 +98,14 @@ public class ReadRepairDataGenerator extends JUnitAssertAware {
      * @param backupsCnt Backups count.
      */
     public ReadRepairDataGenerator(
-        String cacheName,
+        String[] cacheNames,
         List<Ignite> clsAwareNodes,
         ClassLoader extClsLdr,
         BiFunction<Object, String, Ignite> primaryNode,
         BiFunction<Object, String, List<Ignite>> backupNodes,
         Supplier<Integer> serverNodesCnt,
         Supplier<Integer> backupsCnt) {
-        this.cacheName = cacheName;
+        this.cacheNames = cacheNames;
         this.clsAwareNodes = Collections.unmodifiableList(clsAwareNodes);
         this.extClsLdr = extClsLdr;
         this.primaryNode = primaryNode;
@@ -125,7 +125,8 @@ public class ReadRepairDataGenerator extends JUnitAssertAware {
      * @param nulls     Removing entries after the generation on some nodes.
      * @param binary    Read Repair will be performed with keeping data binary.
      * @param strategy  Strategy to perform the Read Repair.
-     * @param c         Lambda consumes generated data and performs the Read Repair check.
+     * @param singleResConsumer Lambda consumes generated data and performs the Read Repair check.
+     * @param allResConsumer Lambda consumes all generated data and performs the Read Repair check.
      */
     public void generateAndCheck(
         Ignite initiator,
@@ -136,14 +137,19 @@ public class ReadRepairDataGenerator extends JUnitAssertAware {
         boolean nulls,
         boolean binary,
         ReadRepairStrategy strategy,
-        Consumer<ReadRepairData> c) throws Exception {
-        IgniteCache<Object, Object> cache = initiator.getOrCreateCache(cacheName);
-
+        Consumer<ReadRepairData> singleResConsumer,
+        Consumer<Collection<ReadRepairData>> allResConsumer) throws Exception {
         ThreadLocalRandom rnd = ThreadLocalRandom.current();
 
         ReadRepairStrategy[] strategies = ReadRepairStrategy.values();
 
-        for (int i = 0; i < rnd.nextInt(1, 10); i++) {
+        Collection<ReadRepairData> allRes = new ArrayList<>();
+
+        for (int i = 0; i < rnd.nextInt(2, 10); i++) {
+            String cacheName = cacheNames[rnd.nextInt(cacheNames.length)];
+
+            IgniteCache<Object, Object> cache = initiator.getOrCreateCache(cacheName);
+
             ReadRepairStrategy keyStrategy = strategy != null ? strategy : strategies[rnd.nextInt(strategies.length)];
 
             Map<Object, InconsistentMapping> results = new HashMap<>();
@@ -155,7 +161,7 @@ public class ReadRepairDataGenerator extends JUnitAssertAware {
                     if (binary)
                         curKey = toBinary(curKey);
 
-                    InconsistentMapping res = setDifferentValuesForSameKey(curKey, misses, nulls, keyStrategy);
+                    InconsistentMapping res = setDifferentValuesForSameKey(cacheName, curKey, misses, nulls, keyStrategy);
 
                     for (Ignite node : G.allGrids()) { // Check that cache filled properly.
                         T2<Object, GridCacheVersion> valVer = res.mappingBin.get(node);
@@ -172,7 +178,12 @@ public class ReadRepairDataGenerator extends JUnitAssertAware {
                     results.put(curKey, res);
                 }
 
-                c.accept(new ReadRepairData(cache, results, raw, async, keyStrategy, binary));
+                ReadRepairData rrd = new ReadRepairData(cache, results, raw, async, keyStrategy, binary);
+
+                if (singleResConsumer != null)
+                    singleResConsumer.accept(rrd);
+
+                allRes.add(rrd);
             }
             catch (Throwable th) {
                 StringBuilder sb = new StringBuilder();
@@ -209,6 +220,8 @@ public class ReadRepairDataGenerator extends JUnitAssertAware {
                 throw new Exception(sb.toString(), th);
             }
         }
+
+        allResConsumer.accept(allRes);
     }
 
     /**
@@ -242,6 +255,7 @@ public class ReadRepairDataGenerator extends JUnitAssertAware {
      *
      */
     private InconsistentMapping setDifferentValuesForSameKey(
+        String cacheName,
         Object key,
         boolean misses,
         boolean nulls,

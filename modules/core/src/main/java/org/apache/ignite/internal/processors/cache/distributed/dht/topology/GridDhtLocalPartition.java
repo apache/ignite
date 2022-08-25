@@ -898,7 +898,7 @@ public class GridDhtLocalPartition extends GridCacheConcurrentMapImpl implements
             assert nextCntr != null : this;
         }
 
-        if (grp.sharedGroup())
+        if (grp.sharedGroup() && tx != null)
             grp.onPartitionCounterUpdate(cacheId, id, nextCntr, tx.topologyVersion(), tx.local());
 
         return nextCntr;

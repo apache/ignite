@@ -94,7 +94,7 @@ public class VisorConsistencyRepairTask extends AbstractConsistencyTask<VisorCon
             ReadRepairStrategy strategy = arg.strategy();
 
             int p = arg.part();
-            int batchSize = 1024;
+            int batchSize = 128;
             int statusDelay = 60_000; // Every minute.
 
             int cacheOrGrpId = CU.cacheId(cacheOrGrpName);
@@ -171,6 +171,8 @@ public class VisorConsistencyRepairTask extends AbstractConsistencyTask<VisorCon
                             checked += batch.keys.size();
 
                             batch.keys.clear();
+
+                            VisorConsistencyStatusTask.MAP.put(statusKey, checked + "/" + part.fullSize());
                         }
 
                         assert batch.keys.size() < batchSize;
@@ -183,8 +185,6 @@ public class VisorConsistencyRepairTask extends AbstractConsistencyTask<VisorCon
                                 ", part=" + p +
                                 ", checked=" + checked +
                                 ", processed =" + processed + "/" + part.fullSize() + "]");
-
-                            VisorConsistencyStatusTask.MAP.put(statusKey, checked + "/" + part.fullSize());
                         }
                     }
 
