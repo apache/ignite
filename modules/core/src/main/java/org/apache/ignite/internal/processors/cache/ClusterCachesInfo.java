@@ -761,7 +761,7 @@ public class ClusterCachesInfo {
 
         assert !req.clientStartOnly() : req;
 
-        DynamicCacheDescriptor desc = registeredCaches.get(cacheName);
+        DynamicCacheDescriptor desc = cacheName != null ? registeredCaches.get(cacheName) : null;
 
         boolean needExchange = false;
 
@@ -819,6 +819,11 @@ public class ClusterCachesInfo {
 
                 exchangeActions.addCacheToResetLostPartitions(req, desc);
             }
+        }
+        else if (req.finalizePartitionCounters()) {
+            needExchange = true;
+
+            exchangeActions.addFinalizePartitionCounters(req);
         }
         else if (req.stop()) {
             if (desc != null) {
