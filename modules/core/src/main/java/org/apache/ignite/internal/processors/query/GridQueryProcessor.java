@@ -556,9 +556,20 @@ public class GridQueryProcessor extends GridProcessorAdapter {
 
         QueryEngineConfiguration[] qryEnginesCfg = ctx.config().getSqlConfiguration().getQueryEnginesConfiguration();
 
-        // No query engines explicitly configured - indexing will be used.
-        if (F.isEmpty(qryEnginesCfg))
+        if (F.isEmpty(qryEnginesCfg)) {
+            // No query engines explicitly configured - indexing will be used.
+            // If indexing is disabled, try to find any query engine in components.
+            if (!indexingEnabled()) {
+                for (GridComponent cmp : ctx.components()) {
+                    if (cmp instanceof QueryEngine) {
+                        qryEngines = new QueryEngine[] {(QueryEngine)cmp};
+                        dfltQryEngine = (QueryEngine)cmp;
+                    }
+                }
+            }
+
             return;
+        }
 
         this.qryEnginesCfg = new QueryEngineConfigurationEx[qryEnginesCfg.length];
 
@@ -1229,9 +1240,12 @@ public class GridQueryProcessor extends GridProcessorAdapter {
      * @param isSql {@code true} in case create cache initialized from SQL.
      * @throws IgniteCheckedException If failed.
      */
-    public void onCacheStart(GridCacheContextInfo cacheInfo, QuerySchema schema,
-        boolean isSql) throws IgniteCheckedException {
-        if (idx == null)
+    public void onCacheStart(
+        GridCacheContextInfo cacheInfo,
+        QuerySchema schema,
+        boolean isSql
+    ) throws IgniteCheckedException {
+        if (!moduleEnabled())
             return;
 
         if (!busyLock.enterBusy())
