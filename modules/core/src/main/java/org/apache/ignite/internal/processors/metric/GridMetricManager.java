@@ -72,9 +72,6 @@ import static org.apache.ignite.internal.util.IgniteUtils.notifyListeners;
  * @see MetricRegistry
  */
 public class GridMetricManager extends GridManagerAdapter<MetricExporterSpi> implements ReadOnlyMetricManager {
-    /** Class name for a SQL view metrics exporter. */
-    public static final String SQL_SPI = "org.apache.ignite.internal.processors.metric.sql.SqlViewMetricExporterSpi";
-
     /** Metrics update frequency. */
     private static final long METRICS_UPDATE_FREQ = 3000;
 
@@ -199,7 +196,7 @@ public class GridMetricManager extends GridManagerAdapter<MetricExporterSpi> imp
         super(ctx, ((Supplier<MetricExporterSpi[]>)() -> {
             MetricExporterSpi[] spi = ctx.config().getMetricExporterSpi();
 
-            if (!IgniteComponentType.INDEXING.inClassPath())
+            if (!IgniteComponentType.INDEXING.inClassPath() && !IgniteComponentType.QUERY_ENGINE.inClassPath())
                 return spi;
 
             MetricExporterSpi[] spiWithSql = new MetricExporterSpi[spi != null ? spi.length + 1 : 1];
@@ -207,12 +204,7 @@ public class GridMetricManager extends GridManagerAdapter<MetricExporterSpi> imp
             if (!F.isEmpty(spi))
                 System.arraycopy(spi, 0, spiWithSql, 0, spi.length);
 
-            try {
-                spiWithSql[spiWithSql.length - 1] = U.newInstance(SQL_SPI);
-            }
-            catch (IgniteCheckedException e) {
-                throw new IgniteException(e);
-            }
+            spiWithSql[spiWithSql.length - 1] = new SqlViewMetricExporterSpi();
 
             return spiWithSql;
         }).get());

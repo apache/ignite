@@ -27,9 +27,6 @@ import static org.apache.ignite.internal.processors.query.QueryUtils.SCHEMA_SYS;
 
 /**
  * This SPI implementation exports metrics as SQL views.
- *
- * Note, instance of this class created with reflection.
- * @see GridSystemViewManager#SYSTEM_VIEW_SQL_SPI
  */
 class SqlViewExporterSpi extends AbstractSystemViewExporterSpi {
     /** */

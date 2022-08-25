@@ -2538,8 +2538,8 @@ public class GridQueryProcessor extends GridProcessorAdapter {
      */
     @SuppressWarnings("RedundantIfStatement")
     private boolean rebuildIsMeaningless(GridCacheContext cctx) {
-        // Indexing module is disabled, nothing to rebuild.
-        if (idx == null)
+        // Query module is disabled, nothing to rebuild.
+        if (!moduleEnabled())
             return true;
 
         // No data on non-affinity nodes.

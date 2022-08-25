@@ -26,8 +26,6 @@ CAUTION: The Calcite-based query engine is currently in beta status.
 
 To use a Calcite-based engine, please make sure that the Calcite module libraries are in a classpath.
 
-CAUTION: Currently, a part of the `ignite-indexing` module functionality is reused, this means the `ignite-indexing` module also has to be present at classpath.
-
 === Standalone Mode
 
 When starting a standalone node, move `optional/ignite-calcite` folder to the `libs` folder before running `ignite.{sh|bat}` script. In this case, the content of the module folder is added to the classpath.
