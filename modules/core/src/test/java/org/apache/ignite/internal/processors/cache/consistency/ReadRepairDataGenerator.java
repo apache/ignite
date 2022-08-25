@@ -221,7 +221,8 @@ public class ReadRepairDataGenerator extends JUnitAssertAware {
             }
         }
 
-        allResConsumer.accept(allRes);
+        if (allResConsumer != null)
+            allResConsumer.accept(allRes);
     }
 
     /**
