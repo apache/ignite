@@ -119,13 +119,7 @@ namespace Apache.Ignite.Core.Impl.Common
         /// </summary>
         public Func<SerializationInfo, StreamingContext, object> SerializationCtor
         {
-            get
-            {
-                if (_serializationCtor == null)
-                    throw GetMissingCtorException();
-
-                return _serializationCtor;
-            }
+            get { return _serializationCtor; }
         }
 
         /// <summary>
