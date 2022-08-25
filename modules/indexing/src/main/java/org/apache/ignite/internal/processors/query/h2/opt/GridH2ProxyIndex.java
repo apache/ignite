@@ -121,7 +121,7 @@ public class GridH2ProxyIndex extends H2IndexCostedBase {
 
     /** {@inheritDoc} */
     @Override public void remove(Session session) {
-        throw DbException.getUnsupportedException("remove index");
+        // No-op.
     }
 
     /** {@inheritDoc} */
