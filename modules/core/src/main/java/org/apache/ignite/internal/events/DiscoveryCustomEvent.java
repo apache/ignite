@@ -122,7 +122,8 @@ public class DiscoveryCustomEvent extends DiscoveryEvent {
             DynamicCacheChangeBatch cacheMsg = (DynamicCacheChangeBatch)msg;
 
             return cacheMsg.exchangeActions() != null &&
-                    !cacheMsg.exchangeActions().cachesToResetLostPartitions().isEmpty();
+                (!cacheMsg.exchangeActions().cachesToResetLostPartitions().isEmpty() ||
+                    cacheMsg.exchangeActions().finalizePartitionCounters());
         }
 
         return false;

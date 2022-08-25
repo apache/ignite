@@ -63,7 +63,7 @@ public class BulkLoadCsvParser extends BulkLoadParser {
 
         // Handling of the other options is to be implemented in IGNITE-7537.
         inputBlock.append(new LineSplitterBlock(format.lineSeparator()))
-               .append(new CsvLineProcessorBlock(format.fieldSeparator(), format.quoteChars()))
+               .append(new CsvLineProcessorBlock(format))
                .append(collectorBlock);
     }
 
