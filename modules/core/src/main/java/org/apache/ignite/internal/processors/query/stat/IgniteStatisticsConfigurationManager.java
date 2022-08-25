@@ -394,10 +394,9 @@ public class IgniteStatisticsConfigurationManager {
             log.debug("Update statistics [targets=" + targets + ']');
 
         for (StatisticsObjectConfiguration target : targets) {
-
             TableDescriptor tbl = schemaMgr.table(target.key().schema(), target.key().obj());
 
-            validate(target, tbl.type());
+            validate(target, tbl);
 
             List<StatisticsColumnConfiguration> colCfgs;
 
@@ -584,7 +583,7 @@ public class IgniteStatisticsConfigurationManager {
      * @param cfg Statistics object configuration to check.
      * @param tbl Corresponding table (if exists).
      */
-    private void validate(StatisticsObjectConfiguration cfg, GridQueryTypeDescriptor tbl) {
+    private void validate(StatisticsObjectConfiguration cfg, TableDescriptor tbl) {
         if (tbl == null) {
             throw new IgniteSQLException(
                 "Table doesn't exist [schema=" + cfg.key().schema() + ", table=" + cfg.key().obj() + ']',
@@ -593,7 +592,7 @@ public class IgniteStatisticsConfigurationManager {
 
         if (!F.isEmpty(cfg.columns())) {
             for (String col : cfg.columns().keySet()) {
-                if (!tbl.fields().containsKey(col)) {
+                if (!tbl.type().fields().containsKey(col)) {
                     throw new IgniteSQLException(
                         "Column doesn't exist [schema=" + cfg.key().schema() +
                             ", table=" + cfg.key().obj() +
