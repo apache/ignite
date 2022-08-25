@@ -58,15 +58,12 @@ public class TableDescriptor {
         this.typeDesc = typeDesc;
         this.isSql = isSql;
 
-        if (!F.isEmpty(typeDesc.affinityKey())
-            && !typeDesc.customAffinityKeyMapper()
-            && !F.eq(typeDesc.affinityKey(), QueryUtils.KEY_FIELD_NAME)
-            && !F.eq(typeDesc.affinityKey(), typeDesc.keyFieldName())
-            && typeDesc.fields().containsKey(typeDesc.affinityKey())
-        )
-            affKey = typeDesc.affinityKey();
-        else
+        if (F.isEmpty(typeDesc.affinityKey()) || F.eq(typeDesc.affinityKey(), typeDesc.keyFieldName()))
+            affKey = QueryUtils.KEY_FIELD_NAME;
+        else if (typeDesc.customAffinityKeyMapper() || !typeDesc.fields().containsKey(typeDesc.affinityKey()))
             affKey = null;
+        else
+            affKey = typeDesc.affinityKey();
     }
 
     /** */

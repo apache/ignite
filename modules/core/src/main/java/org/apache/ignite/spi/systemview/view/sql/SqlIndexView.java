@@ -152,7 +152,7 @@ public class SqlIndexView {
      */
     @Order(10)
     public boolean isUnique() {
-        return idx.isPk();
+        return idx.isPk() || (idx.isProxy() && idx.targetIdx().isPk());
     }
 
     /**

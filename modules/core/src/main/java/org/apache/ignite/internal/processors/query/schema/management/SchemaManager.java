@@ -566,7 +566,7 @@ public class SchemaManager {
         assert lock.isWriteLockedByCurrentThread();
 
         // Locate index where affinity column is first (if any).
-        if (tbl.affinityKey() != null) {
+        if (tbl.affinityKey() != null && !tbl.affinityKey().equals(KEY_FIELD_NAME)) {
             boolean affIdxFound = false;
 
             for (GridQueryIndexDescriptor idxDesc : tbl.type().indexes().values()) {

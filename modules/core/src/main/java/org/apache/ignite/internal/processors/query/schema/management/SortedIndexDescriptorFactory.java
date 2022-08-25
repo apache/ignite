@@ -63,7 +63,7 @@ public class SortedIndexDescriptorFactory extends AbstractIndexDescriptorFactory
         GridQueryTypeDescriptor typeDesc = tbl.type();
         String idxName = idxDesc.name();
         boolean isPk = QueryUtils.PRIMARY_KEY_INDEX.equals(idxName);
-        boolean isAffKey = QueryUtils.AFFINITY_KEY_INDEX.equals(idxName);
+        boolean isAff = QueryUtils.AFFINITY_KEY_INDEX.equals(idxName);
 
         if (log.isDebugEnabled())
             log.debug("Creating cache index [cacheId=" + cacheInfo.cacheId() + ", idxName=" + idxName + ']');
@@ -71,15 +71,22 @@ public class SortedIndexDescriptorFactory extends AbstractIndexDescriptorFactory
         LinkedHashMap<String, IndexKeyDefinition> originalIdxCols = indexDescriptorToKeysDefinition(idxDesc, typeDesc);
         LinkedHashMap<String, IndexKeyDefinition> wrappedCols = new LinkedHashMap<>(originalIdxCols);
 
+        // Columns conditions below is caused by legacy implementation, to maintain backward compatibility.
+
         // Enrich wrapped columns collection with key and affinity key.
-        addKeyColumn(wrappedCols, tbl);
-        addAffinityColumn(wrappedCols, tbl);
+        if (isAff || F.isEmpty(tbl.type().keyFieldName()) || !wrappedCols.containsKey(tbl.type().keyFieldAlias()))
+            addKeyColumn(wrappedCols, tbl);
+
+        if (!(isPk && QueryUtils.KEY_FIELD_NAME.equals(tbl.affinityKey())))
+            addAffinityColumn(wrappedCols, tbl);
 
         LinkedHashMap<String, IndexKeyDefinition> unwrappedCols = new LinkedHashMap<>(originalIdxCols);
 
         // Enrich unwrapped columns collection with unwrapped key fields and affinity key.
         addUnwrappedKeyColumns(unwrappedCols, tbl);
-        addAffinityColumn(unwrappedCols, tbl);
+
+        if (!(isPk && QueryUtils.KEY_FIELD_NAME.equals(tbl.affinityKey())))
+            addAffinityColumn(unwrappedCols, tbl);
 
         LinkedHashMap<String, IndexKeyDefinition> idxCols = unwrappedCols;
 
@@ -102,7 +109,7 @@ public class SortedIndexDescriptorFactory extends AbstractIndexDescriptorFactory
                 treeName,
                 ctx.indexProcessor().rowCacheCleaner(cacheInfo.groupId()),
                 isPk,
-                isAffKey,
+                isAff,
                 idxCols,
                 idxDesc.inlineSize(),
                 ctx.indexProcessor().keyTypeSettings()
@@ -125,7 +132,7 @@ public class SortedIndexDescriptorFactory extends AbstractIndexDescriptorFactory
 
         assert idx instanceof InlineIndex : idx;
 
-        return new IndexDescriptor(tbl, idxName, idxDesc.type(), idxCols, isPk, isAffKey,
+        return new IndexDescriptor(tbl, idxName, idxDesc.type(), idxCols, isPk, isAff,
             ((InlineIndex)idx).inlineSize(), idx);
     }
 
@@ -138,37 +145,37 @@ public class SortedIndexDescriptorFactory extends AbstractIndexDescriptorFactory
             return;
         }
 
-        int oldColsSize = cols.size();
-
         if (!tbl.type().primaryKeyFields().isEmpty()) {
             for (String keyName : tbl.type().primaryKeyFields())
-                cols.put(keyName, keyDefinition(tbl.type(), keyName, true));
+                cols.putIfAbsent(keyName, keyDefinition(tbl.type(), keyName, true));
         }
         else {
+            boolean haveKeyFields = false;
+
             for (String propName : tbl.type().fields().keySet()) {
                 GridQueryProperty prop = tbl.type().property(propName);
 
-                if (prop.key())
-                    cols.put(propName, keyDefinition(tbl.type(), propName, true));
+                if (prop.key()) {
+                    cols.putIfAbsent(propName, keyDefinition(tbl.type(), propName, true));
+                    haveKeyFields = true;
+                }
             }
-        }
 
-        // If key is object but the user has not specified any particular columns,
-        // we have to fall back to whole-key index.
-        if (cols.size() == oldColsSize)
-            addKeyColumn(cols, tbl);
+            // If key is object but the user has not specified any particular columns,
+            // we have to fall back to whole-key index.
+            if (!haveKeyFields)
+                addKeyColumn(cols, tbl);
+        }
     }
 
     /** Add key column, if it (or it's alias) wasn't added before. */
     private static void addKeyColumn(LinkedHashMap<String, IndexKeyDefinition> cols, TableDescriptor tbl) {
-        if (!cols.containsKey(QueryUtils.KEY_FIELD_NAME)
-            && (F.isEmpty(tbl.type().keyFieldName()) || !cols.containsKey(tbl.type().keyFieldAlias())))
-            cols.put(QueryUtils.KEY_FIELD_NAME, keyDefinition(tbl.type(), QueryUtils.KEY_FIELD_NAME, true));
+        cols.putIfAbsent(QueryUtils.KEY_FIELD_NAME, keyDefinition(tbl.type(), QueryUtils.KEY_FIELD_NAME, true));
     }
 
     /** Add affinity column, if it wasn't added before. */
     private static void addAffinityColumn(LinkedHashMap<String, IndexKeyDefinition> cols, TableDescriptor tbl) {
         if (tbl.affinityKey() != null)
-            cols.put(tbl.affinityKey(), keyDefinition(tbl.type(), tbl.affinityKey(), true));
+            cols.putIfAbsent(tbl.affinityKey(), keyDefinition(tbl.type(), tbl.affinityKey(), true));
     }
 }
