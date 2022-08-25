@@ -196,7 +196,21 @@ public class GridCommandHandlerConsistencyCountersTest extends GridCommandHandle
     }
 
     /**
-     * Checks counters and behaviour on crash recovery.
+     * This tests checks crash recovery procedure (idle_verify -> consistency repair -> consistency finalize) for
+     * the cluster with persistence enabled but failed for some reason under the load.
+     * Precondition: A broken cluster with missed update counters and inconsistent data.
+     * Step 0 (precondition):
+     * Generating broken data and missed updates.
+     * Detecting data is broken using 'idle_verify'
+     *  - counters are different on nodes and has missed updates,
+     *  - partition hashes are also differ
+     * Killing the cluster.
+     * Starting the cluster from persistence.
+     * Step 1: Checking cluster state via 'idle_verify'.
+     * It may detect counters and/or hash inconsistency (depends on test params).
+     * Step 2: Repairing the data using '--consistency repair'.
+     * Step 3: Fixing counters using '--consistency finalize'.
+     * Profit :)
      */
     @Test
     public void testCountersOnCrachRecovery() throws Exception {
@@ -515,6 +529,26 @@ public class GridCommandHandlerConsistencyCountersTest extends GridCommandHandle
         for (Ignite node : G.allGrids()) // Checking the cache size after the fixes.
             assertEquals((reuseKeys ? preloadCnt : primaryKeysCnt + preloadCnt /*postload*/ - rmvd),
                 node.cache(DEFAULT_CACHE_NAME).localSize(CachePeekMode.ALL));
+
+        assertEquals(EXIT_CODE_OK, execute("--consistency", "finalize")); // Fixing partitions update counters.
+
+        assertEquals(EXIT_CODE_OK, execute("--cache", "idle_verify"));
+
+        assertConflicts(false, false); // Counters are fixed.
+
+        // Checking finalization did not break something.
+        for (int i = 0; i < updateCnt * 2; i += 7) { // From 0 to maximum and even more.
+            ignite.cache(DEFAULT_CACHE_NAME).put(i, i + 42);
+        }
+
+        assertEquals(EXIT_CODE_OK, execute("--cache", "idle_verify"));
+
+        assertConflicts(false, false); // Counters still fixed.
+
+        for (int i = 0; i < updateCnt * 2; i += 7) { // Checking data updated after the counters fix.
+            for (Ignite node : G.allGrids())
+                assertEquals(i + 42, node.cache(DEFAULT_CACHE_NAME).get(i));
+        }
     }
 
     /**
