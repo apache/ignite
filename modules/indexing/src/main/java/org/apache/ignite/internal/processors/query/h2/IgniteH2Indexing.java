@@ -1863,13 +1863,11 @@ public class IgniteH2Indexing implements GridQueryIndexing {
         funcMgr = new FunctionsManager(distrCfg);
 
         // Setup default index key type settings.
-        try (H2PooledConnection conn = connMgr.connection()) {
-            CompareMode compareMode = H2Utils.session(conn).getDatabase().getCompareMode();
+        CompareMode compareMode = connMgr.dataHandler().getCompareMode();
 
-            ctx.indexProcessor().keyTypeSettings()
-                .stringOptimizedCompare(CompareMode.OFF.equals(compareMode.getName()))
-                .binaryUnsigned(compareMode.isBinaryUnsigned());
-        }
+        ctx.indexProcessor().keyTypeSettings()
+            .stringOptimizedCompare(CompareMode.OFF.equals(compareMode.getName()))
+            .binaryUnsigned(compareMode.isBinaryUnsigned());
 
         ctx.internalSubscriptionProcessor().registerSchemaChangeListener(new AbstractSchemaChangeListener() {
             /** */
