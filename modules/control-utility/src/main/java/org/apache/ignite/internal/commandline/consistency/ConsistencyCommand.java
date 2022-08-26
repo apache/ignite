@@ -225,7 +225,7 @@ public class ConsistencyCommand extends AbstractCommand<Object> {
             }
 
             if (cacheOrGrpName == null)
-                throw new IllegalArgumentException("Cache(group) name argument missed.");
+                throw new IllegalArgumentException("Cache (or cache group) name argument missed.");
 
             if (part == -1)
                 throw new IllegalArgumentException("Partition argument missed.");

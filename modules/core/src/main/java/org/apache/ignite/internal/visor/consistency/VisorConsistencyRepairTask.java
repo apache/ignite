@@ -113,7 +113,7 @@ public class VisorConsistencyRepairTask extends AbstractConsistencyTask<VisorCon
                     ignite.context().cache().cacheDescriptor(cacheOrGrpName) != null)
                     return null; // Node filtered by node filter.
                 else
-                    throw new IgniteException("Cache(group) not found [name=" + cacheOrGrpName + "]");
+                    throw new IgniteException("Cache (or cache group) not found [name=" + cacheOrGrpName + "]");
 
             if (!ignite.context().event().isRecordable(EVT_CONSISTENCY_VIOLATION))
                 throw new UnsupportedOperationException("Consistency violation events recording is disabled on cluster.");

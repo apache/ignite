@@ -300,7 +300,7 @@ public class GridCommandHandlerConsistencyTest extends GridCommandHandlerCluster
 
             assertTrue(VisorConsistencyStatusTask.MAP.isEmpty());
 
-            assertContains(log, testOut.toString(), "Cache(group) not found");
+            assertContains(log, testOut.toString(), "Cache (or cache group) not found");
         }
     }
 
