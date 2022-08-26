@@ -47,6 +47,7 @@ import org.apache.ignite.internal.processors.cache.GridCacheAdapter;
 import org.apache.ignite.internal.processors.cache.GridCacheEntryEx;
 import org.apache.ignite.internal.processors.cache.GridCacheOperation;
 import org.apache.ignite.internal.processors.cache.IgniteInternalCache;
+import org.apache.ignite.internal.processors.cache.transactions.IgniteInternalTx;
 import org.apache.ignite.internal.processors.cache.version.GridCacheVersion;
 import org.apache.ignite.internal.processors.cache.version.GridCacheVersionManager;
 import org.apache.ignite.internal.processors.cacheobject.IgniteCacheObjectProcessor;
@@ -56,6 +57,8 @@ import org.apache.ignite.internal.util.typedef.T2;
 import org.apache.ignite.internal.util.typedef.internal.CU;
 import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.testframework.junits.JUnitAssertAware;
+import org.mockito.ArgumentMatchers;
+import org.mockito.Mockito;
 
 import static org.apache.ignite.cache.CacheAtomicityMode.ATOMIC;
 import static org.apache.ignite.cache.CacheMode.REPLICATED;
@@ -389,9 +392,16 @@ public class ReadRepairDataGenerator extends JUnitAssertAware {
                             null,
                             null,
                             false);
-                    else
+                    else {
+                        IgniteInternalTx tx = Mockito.mock(IgniteInternalTx.class);
+
+                        Mockito.when(tx.topologyVersion()).thenReturn(AffinityTopologyVersion.NONE);
+                        Mockito.when(tx.local()).thenReturn(true);
+                        Mockito.when(tx.ownsLock(ArgumentMatchers.any())).thenReturn(true);
+                        Mockito.when(tx.writeVersion()).thenReturn(ver);
+
                         entry.innerRemove(
-                            null,
+                            tx,
                             ((IgniteEx)node).localNode().id(),
                             ((IgniteEx)node).localNode().id(),
                             false,
@@ -407,6 +417,7 @@ public class ReadRepairDataGenerator extends JUnitAssertAware {
                             null,
                             null,
                             1L);
+                    }
 
                     rmvd = true;
 

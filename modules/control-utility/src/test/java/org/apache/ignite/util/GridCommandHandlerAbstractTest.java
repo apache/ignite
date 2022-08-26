@@ -172,6 +172,8 @@ public abstract class GridCommandHandlerAbstractTest extends GridCommonAbstractT
 
         GridClientFactory.stopAll(false);
 
+        stopAllGrids(true);
+
         cleanPersistenceDir();
     }
 
