@@ -17,7 +17,6 @@
 
 package org.apache.ignite.internal.visor.consistency;
 
-import java.util.Collection;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Map;
@@ -140,7 +139,7 @@ public class VisorConsistencyRepairTask extends AbstractConsistencyTask<VisorCon
 
             try {
                 IgnitePredicate<CacheConsistencyViolationEvent> lsnr = new CacheConsistencyViolationEventListener(
-                    grpCtx.caches().stream().map(GridCacheContext::name).collect(Collectors.toList()));
+                    grpCtx.caches().stream().map(GridCacheContext::name).collect(Collectors.toSet()));
 
                 ignite.events().localListen(lsnr, EVT_CONSISTENCY_VIOLATION);
 
@@ -312,12 +311,12 @@ public class VisorConsistencyRepairTask extends AbstractConsistencyTask<VisorCon
             private static final long serialVersionUID = 0L;
 
             /** Cache names. */
-            private final Collection<String> cacheNames;
+            private final Set<String> cacheNames;
 
             /**
              * @param cacheNames Names.
              */
-            private CacheConsistencyViolationEventListener(Collection<String> cacheNames) {
+            private CacheConsistencyViolationEventListener(Set<String> cacheNames) {
                 this.cacheNames = cacheNames;
             }
 
