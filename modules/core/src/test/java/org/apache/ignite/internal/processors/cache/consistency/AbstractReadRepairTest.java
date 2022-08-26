@@ -139,7 +139,7 @@ public abstract class AbstractReadRepairTest extends GridCommonAbstractTest {
         awaitPartitionMapExchange();
 
         gen = new ReadRepairDataGenerator(
-            DEFAULT_CACHE_NAME,
+            new String[] {DEFAULT_CACHE_NAME},
             clsAwareNodes,
             extClsLdr,
             this::primaryNode,
@@ -318,6 +318,7 @@ public abstract class AbstractReadRepairTest extends GridCommonAbstractTest {
             nulls,
             binary,
             null,
-            c);
+            c,
+            null);
     }
 }

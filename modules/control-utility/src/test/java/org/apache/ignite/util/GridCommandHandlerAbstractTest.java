@@ -171,6 +171,10 @@ public abstract class GridCommandHandlerAbstractTest extends GridCommonAbstractT
             U.delete(f);
 
         GridClientFactory.stopAll(false);
+
+        stopAllGrids(true);
+
+        cleanPersistenceDir();
     }
 
     /** {@inheritDoc} */
