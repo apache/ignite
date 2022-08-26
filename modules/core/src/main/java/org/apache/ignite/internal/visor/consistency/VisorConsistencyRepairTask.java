@@ -127,9 +127,10 @@ public class VisorConsistencyRepairTask extends AbstractConsistencyTask<VisorCon
 
             String statusKey = "[node=" + ignite.localNode() + ", cacheGroup=" + grpCtx.cacheOrGroupName() + ", part=" + p + "]";
 
-            if (VisorConsistencyStatusTask.MAP.putIfAbsent(statusKey, "0/" + part.fullSize()) != null)
+            if (VisorConsistencyStatusTask.MAP.putIfAbsent(statusKey, "0/" + part.fullSize()) != null) {
                 throw new IllegalStateException("Consistency check already started " +
                     "[grp=" + grpCtx.cacheOrGroupName() + ", part=" + p + "]");
+            }
 
             long processed = 0;
             long checked = 0;
