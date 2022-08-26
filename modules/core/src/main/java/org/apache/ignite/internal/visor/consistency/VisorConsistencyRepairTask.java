@@ -159,8 +159,7 @@ public class VisorConsistencyRepairTask extends AbstractConsistencyTask<VisorCon
                                 ignite.context().cache().cacheDescriptor(cacheId).cacheName() :
                                 cacheOrGrpName;
 
-                            return new PerCacheBatch(
-                                ignite.cache(cacheName).withKeepBinary().withReadRepair(strategy), new HashSet<>());
+                            return new PerCacheBatch(ignite.cache(cacheName).withKeepBinary().withReadRepair(strategy));
                         });
 
                         batch.keys.add(row.key());
@@ -348,11 +347,10 @@ public class VisorConsistencyRepairTask extends AbstractConsistencyTask<VisorCon
 
             /**
              * @param cache Cache.
-             * @param keys Keys.
              */
-            public PerCacheBatch(IgniteCache<Object, Object> cache, Set<Object> keys) {
+            public PerCacheBatch(IgniteCache<Object, Object> cache) {
                 this.cache = cache;
-                this.keys = keys;
+                keys = new HashSet<>();
             }
         }
     }
