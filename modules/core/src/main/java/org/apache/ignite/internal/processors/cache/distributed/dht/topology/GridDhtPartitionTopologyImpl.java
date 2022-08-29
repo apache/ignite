@@ -2939,6 +2939,8 @@ public class GridDhtPartitionTopologyImpl implements GridDhtPartitionTopology {
     @Override public CachePartitionFullCountersMap fullUpdateCounters() {
         lock.readLock().lock();
 
+        log.error("TEST | fullUpdateCounters()");
+
         try {
             return new CachePartitionFullCountersMap(cntrMap);
         }

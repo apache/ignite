@@ -1599,7 +1599,12 @@ public class IgniteCacheOffheapManagerImpl implements IgniteCacheOffheapManager 
 
         /** {@inheritDoc} */
         @Override public long nextUpdateCounter() {
-            return pCntr.next();
+            long next = pCntr.next();
+
+            if (partId == 859)
+                log.error("TEST | nextUpdateCounter on 859: " + next);
+
+            return next;
         }
 
         /** {@inheritDoc} */
@@ -1642,6 +1647,9 @@ public class IgniteCacheOffheapManagerImpl implements IgniteCacheOffheapManager 
 
         /** {@inheritDoc} */
         @Override public void updateCounter(long val) {
+            if (partId == 859)
+                log.error("TEST | updateCounter() on part 859: " + val);
+
             try {
                 pCntr.update(val);
             }

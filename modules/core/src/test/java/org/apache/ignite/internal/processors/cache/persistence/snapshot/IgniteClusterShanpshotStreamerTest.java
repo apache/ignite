@@ -133,7 +133,8 @@ public class IgniteClusterShanpshotStreamerTest  extends AbstractSnapshotSelfTes
 //                Map<Integer, Object> batch = new HashMap<>();
 
                 try (IgniteDataStreamer<Integer, Object> ds = grid(0).dataStreamer(cacheName)) {
-                    ds.allowOverwrite(false);
+//                    ds.allowOverwrite(false);
+                    ds.allowOverwrite(true);
 //                    ds.skipStore(false);
 
                     while(!stop.get()){

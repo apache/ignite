@@ -495,6 +495,9 @@ public class GridCacheOffheapManager extends IgniteCacheOffheapManagerImpl imple
                         if (changed)
                             partStore.saveMetadata(grp.statisticsHolderData());
 
+                        if(part.id() == 859)
+                            log.error("TEST | updating counter on part 859: " + updCntr);
+
                         changed |= io.setUpdateCounter(partMetaPageAddr, updCntr);
                         changed |= io.setGlobalRemoveId(partMetaPageAddr, rmvId);
                         changed |= io.setSize(partMetaPageAddr, size);

@@ -3484,8 +3484,12 @@ public abstract class GridCacheMapEntry extends GridMetadataAwareAdapter impleme
 
                 long updateCntr = 0;
 
-                if (!preload)
+                if (!preload) {
                     updateCntr = nextPartitionCounter(topVer, true, true, null);
+
+                    if(partition() == 859)
+                        log.error("TEST | partition 859 counter: " + updateCntr);
+                }
 
                 if (walEnabled) {
                     if (cctx.mvccEnabled()) {
@@ -6554,6 +6558,9 @@ public abstract class GridCacheMapEntry extends GridMetadataAwareAdapter impleme
             }
 
             long updateCntr0 = entry.nextPartitionCounter(topVer, primary, false, updateCntr);
+
+//            if (entry.partition() == 859)
+//                log.error("TEST | update counter 859: " + updateCntr0);
 
             entry.logUpdate(op, updated, newVer, newExpireTime, updateCntr0, primary);
 
