@@ -1960,7 +1960,7 @@ public class PlatformConfigurationUtils {
             cfg.setThinClientConfiguration(new ThinClientConfiguration()
                 .setMaxActiveTxPerConnection(in.readInt())
                 .setMaxActiveComputeTasksPerConnection(in.readInt())
-                .sendServerExceptionStackTraceToClient(in.readBoolean())
+                .setSendServerExceptionStackTraceToClient(in.readBoolean())
             );
         }
 
