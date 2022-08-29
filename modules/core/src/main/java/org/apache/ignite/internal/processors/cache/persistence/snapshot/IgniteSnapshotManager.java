@@ -888,24 +888,24 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
 
         snpReq.startStageEnded(true);
 
-        Set<UUID> missed = new HashSet<>(snpReq.nodes());
-        missed.removeAll(res.keySet());
-        missed.removeAll(err.keySet());
-
-        if (cancelled) {
-            snpReq.error(new IgniteFutureCancelledCheckedException("Execution of snapshot tasks " +
-                "has been cancelled by external process [err=" + err + ", missed=" + missed + ']'));
-        }
-        else if (!missed.isEmpty()) {
-            snpReq.error(new ClusterTopologyCheckedException("Snapshot operation interrupted, because baseline " +
-                "node left the cluster. Uncompleted snapshot will be deleted [missed=" + missed + ']'));
-        }
-        else if (!F.isEmpty(err)) {
-            snpReq.error(new IgniteCheckedException("Execution of local snapshot tasks fails. " +
-                "Uncompleted snapshot will be deleted [err=" + err + ']'));
-        }
-
         if (isLocalNodeCoordinator(cctx.discovery())) {
+            Set<UUID> missed = new HashSet<>(snpReq.nodes());
+            missed.removeAll(res.keySet());
+            missed.removeAll(err.keySet());
+
+            if (cancelled) {
+                snpReq.error(new IgniteFutureCancelledCheckedException("Execution of snapshot tasks " +
+                    "has been cancelled by external process [err=" + err + ", missed=" + missed + ']'));
+            }
+            else if (!missed.isEmpty()) {
+                snpReq.error(new ClusterTopologyCheckedException("Snapshot operation interrupted, because baseline " +
+                    "node left the cluster. Uncompleted snapshot will be deleted [missed=" + missed + ']'));
+            }
+            else if (!F.isEmpty(err)) {
+                snpReq.error(new IgniteCheckedException("Execution of local snapshot tasks fails. " +
+                    "Uncompleted snapshot will be deleted [err=" + err + ']'));
+            }
+
             completeHandlersAsyncIfNeeded(snpReq, res.values())
                 .listen(f -> {
                         if (f.error() != null)
@@ -977,8 +977,11 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
             return new GridFinishedFuture<>();
 
         try {
-            if (req.error() != null)
+            if (req.error() != null) {
+                snpReq.error(req.error());
+
                 deleteSnapshot(snapshotLocalDir(req.snapshotName(), req.snapshotPath()), pdsSettings.folderName());
+            }
 
             removeLastMetaStorageKey();
         }
