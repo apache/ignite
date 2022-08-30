@@ -41,7 +41,6 @@ import org.apache.ignite.internal.TestRecordingCommunicationSpi;
 import org.apache.ignite.internal.managers.discovery.CustomMessageWrapper;
 import org.apache.ignite.internal.managers.discovery.DiscoveryCustomMessage;
 import org.apache.ignite.internal.processors.cache.binary.MetadataResponseMessage;
-import org.apache.ignite.internal.processors.cache.binary.MetadataUpdateAcceptedMessage;
 import org.apache.ignite.internal.processors.marshaller.MappingAcceptedMessage;
 import org.apache.ignite.internal.processors.marshaller.MappingProposedMessage;
 import org.apache.ignite.internal.processors.marshaller.MarshallerMappingItem;
@@ -134,62 +133,6 @@ public class IgniteMarshallerCacheClientRequestsMappingTest extends GridCommonAb
     }
 
     /**
-     * A marshaller mapping already exists on a server node. The client node joins to the cluster and do not receive
-     * the required mapping on the node join exchange, so the client node will request in through the TcpCommunicationSpi peer-2-peer.
-     * The mapping will not be registered though discovery messages due to it already exists on the server node.
-     * <p>
-     * The test checks that mappings will be processed by a thread pool different from system thread pool that is used for cache event
-     * message processing.
-     *
-     * @throws Exception If failed.
-     */
-    @Test
-    public void testRequestedMappingProcessedByAnotherThreadPool() throws Exception {
-        int initialKeys = 10;
-        AtomicInteger loadKeys = new AtomicInteger(1000);
-        CountDownLatch processed = new CountDownLatch(1);
-        IgniteEx srv1 = startGrid(0);
-
-        TestRecordingCommunicationSpi.spi(srv1)
-            .blockMessages((IgniteBiPredicate<ClusterNode, Message>)(node, msg) -> msg instanceof MissingMappingResponseMessage);
-
-        for (int i = 0; i < initialKeys; i++)
-            srv1.cache(DEFAULT_CACHE_NAME).put(i, createOrganization(extClsLdr, i));
-
-        Ignite cl1 = startClientGrid(1, (UnaryOperator<IgniteConfiguration>)cfg ->
-            cfg.setDiscoverySpi(new IgniteMarshallerCacheClientRequestsMappingOnMissTest.
-                BlockingClientMarshallerUpdatesTcpDiscoverySpi().setIpFinder(IP_FINDER)));
-
-        cl1.events().remoteListen(
-            (IgniteBiPredicate<UUID, Event>)(uuid, evt) -> {
-                info("Event [" + evt.shortDisplay() + ']');
-
-                processed.countDown();
-
-                return true;
-            },
-            t -> true,
-            EVT_CACHE_OBJECT_PUT);
-
-        // Floods system thread pool with cache events.
-        GridTestUtils.runMultiThreadedAsync((Callable<Boolean>)() -> {
-            int key;
-
-            while ((key = loadKeys.decrementAndGet()) > initialKeys && !Thread.currentThread().isInterrupted())
-                srv1.cache(DEFAULT_CACHE_NAME).put(key, createOrganization(extClsLdr, key));
-
-            return true;
-        }, 8, "cache-adder-thread").get();
-
-        assertTrue(GridTestUtils.waitForCondition(() -> TestRecordingCommunicationSpi.spi(srv1).hasBlockedMessages(),
-            AWAIT_PROCESSING_TIMEOUT_MS));
-
-        TestRecordingCommunicationSpi.spi(srv1).stopBlock();
-
-        assertTrue(U.await(processed, AWAIT_PROCESSING_TIMEOUT_MS, TimeUnit.MILLISECONDS));
-    }
-
-    /**
      * @throws Exception If failed.
      */
     @Test
@@ -206,100 +149,15 @@ public class IgniteMarshallerCacheClientRequestsMappingTest extends GridCommonAb
     }
 
     /**
-     * @throws Exception If failed.
-     */
-    @Test
-    public void testDiscoveryM() throws Exception {
-        CountDownLatch latch = new CountDownLatch(1);
-        AtomicInteger loadKeys = new AtomicInteger(100);
-        CountDownLatch processed = new CountDownLatch(1);
-        IgniteEx srv1 = startGrid(0);
-
-        TestRecordingCommunicationSpi.spi(srv1)
-            .blockMessages((IgniteBiPredicate<ClusterNode, Message>)(node, msg) -> msg instanceof MissingMappingResponseMessage);
-
-        Ignite cl1 = startClientGrid(1, (UnaryOperator<IgniteConfiguration>)cfg ->
-            cfg.setDiscoverySpi(new TcpDiscoverySpi() {
-                @Override
-                protected void startMessageProcess(TcpDiscoveryAbstractMessage msg) {
-                    if (msg instanceof TcpDiscoveryCustomEventMessage) {
-                        try {
-                            DiscoverySpiCustomMessage custom =
-                                ((TcpDiscoveryCustomEventMessage)msg).message(marshaller(), U.gridClassLoader());
-
-                            if (custom instanceof CustomMessageWrapper) {
-                                DiscoveryCustomMessage delegate = ((CustomMessageWrapper)custom).delegate();
-
-                                if (delegate instanceof MappingAcceptedMessage) {
-                                    MarshallerMappingItem item = GridTestUtils.getFieldValue(delegate, "item");
-
-                                    if (item.className().equals(PERSON_CLASS_NAME) ||
-                                        item.className().equals(ORGANIZATION_CLASS_NAME) ||
-                                        item.className().equals(ADDRESS_CLASS_NAME)
-                                    ) {
-                                        try {
-                                            U.sleep(1_000);
-
-                                            log.info("+++ UNLOCK MappingAcceptedMessage");
-                                        }
-                                        catch (Exception e) {
-                                            log.error(e.getMessage(), e);
-
-                                            fail("Mapping proposed message must be released.");
-                                        }
-                                    }
-                                }
-                            }
-                        }
-                        catch (Throwable e) {
-                            throw new RuntimeException(e);
-                        }
-                    }
-
-                    super.startMessageProcess(msg);
-                }
-            }.setIpFinder(IP_FINDER)));
-
-        cl1.events().remoteListen(
-            (IgniteBiPredicate<UUID, Event>)(uuid, evt) -> {
-                info("Event [" + evt.shortDisplay() + ']');
-
-                processed.countDown();
-
-                return true;
-            },
-            t -> true,
-            EVT_CACHE_OBJECT_PUT);
-
-        // Flood system thread pool with cache events.
-        GridTestUtils.runMultiThreadedAsync((Callable<Boolean>)() -> {
-            int key;
-
-            while ((key = loadKeys.decrementAndGet()) > 0 && !Thread.currentThread().isInterrupted())
-                srv1.cache(DEFAULT_CACHE_NAME).put(key, createOrganization(extClsLdr, key));
-
-            return true;
-        }, 8, "cache-adder-thread").get();
-
-        assertTrue(GridTestUtils.waitForCondition(() -> TestRecordingCommunicationSpi.spi(srv1).hasBlockedMessages(),
-            AWAIT_PROCESSING_TIMEOUT_MS));
-
-        TestRecordingCommunicationSpi.spi(srv1).stopBlock();
-        latch.countDown();
-
-        assertTrue(U.await(processed, AWAIT_PROCESSING_TIMEOUT_MS, TimeUnit.MILLISECONDS));
-    }
-
-    /**
-     * @param receiveBinaryMappingOnJoin If {@code true} than binary metadata will exist on the server node and loaded
+     * @param receiveMetadataOnClientJoin If {@code true} than binary metadata will exist on the server node and loaded
      * by the client node on the node join exchange, otherwise it will be requested by client peer-2-peer though the TcpCommunicationSpi.
      * @throws Exception If fails.
      */
-    private void doTestMarshallingBinaryMappingsLoadedFromClient(boolean receiveBinaryMappingOnJoin) throws Exception {
+    private void doTestMarshallingBinaryMappingsLoadedFromClient(boolean receiveMetadataOnClientJoin) throws Exception {
         CountDownLatch delayMappingLatch = new CountDownLatch(1);
         AtomicInteger loadKeys = new AtomicInteger(100);
         CountDownLatch evtReceiveLatch = new CountDownLatch(1);
-        int initialKeys = receiveBinaryMappingOnJoin ? 10 : 0;
+        int initialKeys = receiveMetadataOnClientJoin ? 10 : 0;
 
         IgniteEx srv1 = startGrid(0);
 
@@ -313,8 +171,7 @@ public class IgniteMarshallerCacheClientRequestsMappingTest extends GridCommonAb
 
         Ignite cl1 = startClientGrid(1,
             (UnaryOperator<IgniteConfiguration>)cfg -> cfg.setDiscoverySpi(new TcpDiscoverySpi() {
-                @Override
-                protected void startMessageProcess(TcpDiscoveryAbstractMessage msg) {
+                @Override protected void startMessageProcess(TcpDiscoveryAbstractMessage msg) {
                     if (msg instanceof TcpDiscoveryCustomEventMessage) {
                         try {
                             DiscoverySpiCustomMessage custom =
@@ -336,16 +193,6 @@ public class IgniteMarshallerCacheClientRequestsMappingTest extends GridCommonAb
                                         catch (Exception e) {
                                             fail("Mapping proposed message must be released.");
                                         }
-                                    }
-                                }
-                                else if (delegate instanceof MetadataUpdateAcceptedMessage) {
-                                    System.out.println(">>>>>> muam typeid " +((MetadataUpdateAcceptedMessage)delegate).typeId());
-
-                                    try {
-                                        U.await(delayMappingLatch, AWAIT_PROCESSING_TIMEOUT_MS, TimeUnit.MILLISECONDS);
-                                    }
-                                    catch (Exception e) {
-                                        fail("Mapping proposed message must be released.");
                                     }
                                 }
                             }
@@ -401,8 +248,7 @@ public class IgniteMarshallerCacheClientRequestsMappingTest extends GridCommonAb
 
         Ignite cl1 = startClientGrid(1, (UnaryOperator<IgniteConfiguration>)cfg ->
             cfg.setDiscoverySpi(new TcpDiscoverySpi() {
-                @Override
-                protected void startMessageProcess(TcpDiscoveryAbstractMessage msg) {
+                @Override protected void startMessageProcess(TcpDiscoveryAbstractMessage msg) {
                     if (msg instanceof TcpDiscoveryCustomEventMessage) {
                         try {
                             DiscoverySpiCustomMessage custom =

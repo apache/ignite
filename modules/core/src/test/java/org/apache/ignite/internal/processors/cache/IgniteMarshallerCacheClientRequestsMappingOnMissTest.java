@@ -71,7 +71,7 @@ public class IgniteMarshallerCacheClientRequestsMappingOnMissTest extends GridCo
         if (cfg.isClientMode())
             cfg.setWorkDirectory(TMP_DIR);
 
-        TcpDiscoverySpi disco = new BlockingClientMarshallerUpdatesTcpDiscoverySpi();
+        TcpDiscoverySpi disco = new TestTcpDiscoverySpi();
         disco.setIpFinder(ipFinder);
 
         cfg.setDiscoverySpi(disco);
@@ -363,10 +363,10 @@ public class IgniteMarshallerCacheClientRequestsMappingOnMissTest extends GridCo
 
     /**
      * This implementation prevents client nodes from obtaining marshaller mapping data on discovery phase.
-     * <p>
+     *
      * It is needed to force client to request mapping from grid.
      */
-    static class BlockingClientMarshallerUpdatesTcpDiscoverySpi extends TcpDiscoverySpi {
+    private static class TestTcpDiscoverySpi extends TcpDiscoverySpi {
         /** {@inheritDoc} */
         @Override protected void onExchange(DiscoveryDataPacket dataPacket, ClassLoader clsLdr) {
             if (locNode.isClient()) {

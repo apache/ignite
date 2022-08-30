@@ -1123,7 +1123,7 @@ public abstract class GridAbstractTest extends JUnitAssertAware {
         IgnitionEx.setClientMode(true);
 
         try {
-            return  (IgniteEx)startGrid(igniteInstanceName, cfgOp, null);
+            return (IgniteEx)startGrid(igniteInstanceName, cfgOp, null);
         }
         finally {
             IgnitionEx.setClientMode(false);
