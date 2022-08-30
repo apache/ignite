@@ -28,6 +28,7 @@ import java.util.concurrent.Callable;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
+import java.util.function.UnaryOperator;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.configuration.CacheConfiguration;
@@ -35,13 +36,25 @@ import org.apache.ignite.configuration.DataStorageConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.events.Event;
 import org.apache.ignite.internal.IgniteEx;
+import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.TestRecordingCommunicationSpi;
+import org.apache.ignite.internal.managers.discovery.CustomMessageWrapper;
+import org.apache.ignite.internal.managers.discovery.DiscoveryCustomMessage;
+import org.apache.ignite.internal.processors.cache.binary.MetadataResponseMessage;
+import org.apache.ignite.internal.processors.cache.binary.MetadataUpdateAcceptedMessage;
+import org.apache.ignite.internal.processors.marshaller.MappingAcceptedMessage;
+import org.apache.ignite.internal.processors.marshaller.MappingProposedMessage;
+import org.apache.ignite.internal.processors.marshaller.MarshallerMappingItem;
 import org.apache.ignite.internal.processors.marshaller.MissingMappingResponseMessage;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgniteBiPredicate;
 import org.apache.ignite.plugin.extensions.communication.Message;
+import org.apache.ignite.spi.discovery.DiscoverySpiCustomMessage;
+import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.TcpDiscoveryIpFinder;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.TcpDiscoveryVmIpFinder;
+import org.apache.ignite.spi.discovery.tcp.messages.TcpDiscoveryAbstractMessage;
+import org.apache.ignite.spi.discovery.tcp.messages.TcpDiscoveryCustomEventMessage;
 import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.junit.Test;
@@ -52,10 +65,10 @@ import static org.apache.ignite.events.EventType.EVT_CACHE_OBJECT_PUT;
 /** */
 public class IgniteMarshallerCacheClientRequestsMappingTest extends GridCommonAbstractTest {
     /** Waiting timeout. */
-    private static final long AWAIT_PROCESSING_TIMEOUT_MS = 5000L;
+    private static final long AWAIT_PROCESSING_TIMEOUT_MS = 10_000L;
 
     /** Limited thread pool size. */
-    private static final int LIMITED_SYSTEM_THREAD_POOL = 8;
+    private static final int LIMITED_SYSTEM_THREAD_POOL = 4;
 
     /** IP finder. */
     private static final TcpDiscoveryIpFinder IP_FINDER = new TcpDiscoveryVmIpFinder(true);
@@ -72,6 +85,9 @@ public class IgniteMarshallerCacheClientRequestsMappingTest extends GridCommonAb
     /** Address class name. */
     private static final String ADDRESS_CLASS_NAME = "org.apache.ignite.tests.p2p.cache.Address";
 
+    /** Compute job result class name. */
+    private static final String JOB_RESULT_CLASS_NAME_PREFIX = "org.apache.ignite.tests.p2p.compute.ResultV";
+
     /** Client work directory absolute path. */
     private String clntWorkDir;
 
@@ -86,8 +102,7 @@ public class IgniteMarshallerCacheClientRequestsMappingTest extends GridCommonAb
 
         cfg.setClassLoader(extClsLdr);
 
-        cfg.setDiscoverySpi(new IgniteMarshallerCacheClientRequestsMappingOnMissTest.BlockingClientMarshallerUpdatesTcpDiscoverySpi()
-            .setIpFinder(IP_FINDER));
+        cfg.setDiscoverySpi(new TcpDiscoverySpi().setIpFinder(IP_FINDER));
         cfg.setCommunicationSpi(new TestRecordingCommunicationSpi());
 
         cfg.setCacheConfiguration(new CacheConfiguration<>(DEFAULT_CACHE_NAME)
@@ -119,10 +134,17 @@ public class IgniteMarshallerCacheClientRequestsMappingTest extends GridCommonAb
     }
 
     /**
+     * A marshaller mapping already exists on a server node. The client node joins to the cluster and do not receive
+     * the required mapping on the node join exchange, so the client node will request in through the TcpCommunicationSpi peer-2-peer.
+     * The mapping will not be registered though discovery messages due to it already exists on the server node.
+     * <p>
+     * The test checks that mappings will be processed by a thread pool different from system thread pool that is used for cache event
+     * message processing.
+     *
      * @throws Exception If failed.
      */
     @Test
-    public void testRequestedMappingFromServerWithOverfloodThreadPool() throws Exception {
+    public void testRequestedMappingProcessedByAnotherThreadPool() throws Exception {
         int initialKeys = 10;
         AtomicInteger loadKeys = new AtomicInteger(1000);
         CountDownLatch processed = new CountDownLatch(1);
@@ -134,13 +156,216 @@ public class IgniteMarshallerCacheClientRequestsMappingTest extends GridCommonAb
         for (int i = 0; i < initialKeys; i++)
             srv1.cache(DEFAULT_CACHE_NAME).put(i, createOrganization(extClsLdr, i));
 
-        Ignite cl1 = startClientGrid(1);
+        Ignite cl1 = startClientGrid(1, (UnaryOperator<IgniteConfiguration>)cfg ->
+            cfg.setDiscoverySpi(new IgniteMarshallerCacheClientRequestsMappingOnMissTest.
+                BlockingClientMarshallerUpdatesTcpDiscoverySpi().setIpFinder(IP_FINDER)));
 
         cl1.events().remoteListen(
             (IgniteBiPredicate<UUID, Event>)(uuid, evt) -> {
                 info("Event [" + evt.shortDisplay() + ']');
 
                 processed.countDown();
+
+                return true;
+            },
+            t -> true,
+            EVT_CACHE_OBJECT_PUT);
+
+        // Floods system thread pool with cache events.
+        GridTestUtils.runMultiThreadedAsync((Callable<Boolean>)() -> {
+            int key;
+
+            while ((key = loadKeys.decrementAndGet()) > initialKeys && !Thread.currentThread().isInterrupted())
+                srv1.cache(DEFAULT_CACHE_NAME).put(key, createOrganization(extClsLdr, key));
+
+            return true;
+        }, 8, "cache-adder-thread").get();
+
+        assertTrue(GridTestUtils.waitForCondition(() -> TestRecordingCommunicationSpi.spi(srv1).hasBlockedMessages(),
+            AWAIT_PROCESSING_TIMEOUT_MS));
+
+        TestRecordingCommunicationSpi.spi(srv1).stopBlock();
+
+        assertTrue(U.await(processed, AWAIT_PROCESSING_TIMEOUT_MS, TimeUnit.MILLISECONDS));
+    }
+
+    /**
+     * @throws Exception If failed.
+     */
+    @Test
+    public void testDiscoeryMarshallerDelayedWithOverfloodThreadPool() throws Exception {
+        doTestMarshallingBinaryMappingsLoadedFromClient(true);
+    }
+
+    /**
+     * @throws Exception If failed.
+     */
+    @Test
+    public void testDiscoeryBinaryMetaDelayedWithOverfloodThreadPool() throws Exception {
+        doTestMarshallingBinaryMappingsLoadedFromClient(false);
+    }
+
+    /**
+     * @throws Exception If failed.
+     */
+    @Test
+    public void testDiscoveryM() throws Exception {
+        CountDownLatch latch = new CountDownLatch(1);
+        AtomicInteger loadKeys = new AtomicInteger(100);
+        CountDownLatch processed = new CountDownLatch(1);
+        IgniteEx srv1 = startGrid(0);
+
+        TestRecordingCommunicationSpi.spi(srv1)
+            .blockMessages((IgniteBiPredicate<ClusterNode, Message>)(node, msg) -> msg instanceof MissingMappingResponseMessage);
+
+        Ignite cl1 = startClientGrid(1, (UnaryOperator<IgniteConfiguration>)cfg ->
+            cfg.setDiscoverySpi(new TcpDiscoverySpi() {
+                @Override
+                protected void startMessageProcess(TcpDiscoveryAbstractMessage msg) {
+                    if (msg instanceof TcpDiscoveryCustomEventMessage) {
+                        try {
+                            DiscoverySpiCustomMessage custom =
+                                ((TcpDiscoveryCustomEventMessage)msg).message(marshaller(), U.gridClassLoader());
+
+                            if (custom instanceof CustomMessageWrapper) {
+                                DiscoveryCustomMessage delegate = ((CustomMessageWrapper)custom).delegate();
+
+                                if (delegate instanceof MappingAcceptedMessage) {
+                                    MarshallerMappingItem item = GridTestUtils.getFieldValue(delegate, "item");
+
+                                    if (item.className().equals(PERSON_CLASS_NAME) ||
+                                        item.className().equals(ORGANIZATION_CLASS_NAME) ||
+                                        item.className().equals(ADDRESS_CLASS_NAME)
+                                    ) {
+                                        try {
+                                            U.sleep(1_000);
+
+                                            log.info("+++ UNLOCK MappingAcceptedMessage");
+                                        }
+                                        catch (Exception e) {
+                                            log.error(e.getMessage(), e);
+
+                                            fail("Mapping proposed message must be released.");
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                        catch (Throwable e) {
+                            throw new RuntimeException(e);
+                        }
+                    }
+
+                    super.startMessageProcess(msg);
+                }
+            }.setIpFinder(IP_FINDER)));
+
+        cl1.events().remoteListen(
+            (IgniteBiPredicate<UUID, Event>)(uuid, evt) -> {
+                info("Event [" + evt.shortDisplay() + ']');
+
+                processed.countDown();
+
+                return true;
+            },
+            t -> true,
+            EVT_CACHE_OBJECT_PUT);
+
+        // Flood system thread pool with cache events.
+        GridTestUtils.runMultiThreadedAsync((Callable<Boolean>)() -> {
+            int key;
+
+            while ((key = loadKeys.decrementAndGet()) > 0 && !Thread.currentThread().isInterrupted())
+                srv1.cache(DEFAULT_CACHE_NAME).put(key, createOrganization(extClsLdr, key));
+
+            return true;
+        }, 8, "cache-adder-thread").get();
+
+        assertTrue(GridTestUtils.waitForCondition(() -> TestRecordingCommunicationSpi.spi(srv1).hasBlockedMessages(),
+            AWAIT_PROCESSING_TIMEOUT_MS));
+
+        TestRecordingCommunicationSpi.spi(srv1).stopBlock();
+        latch.countDown();
+
+        assertTrue(U.await(processed, AWAIT_PROCESSING_TIMEOUT_MS, TimeUnit.MILLISECONDS));
+    }
+
+    /**
+     * @param receiveBinaryMappingOnJoin If {@code true} than binary metadata will exist on the server node and loaded
+     * by the client node on the node join exchange, otherwise it will be requested by client peer-2-peer though the TcpCommunicationSpi.
+     * @throws Exception If fails.
+     */
+    private void doTestMarshallingBinaryMappingsLoadedFromClient(boolean receiveBinaryMappingOnJoin) throws Exception {
+        CountDownLatch delayMappingLatch = new CountDownLatch(1);
+        AtomicInteger loadKeys = new AtomicInteger(100);
+        CountDownLatch evtReceiveLatch = new CountDownLatch(1);
+        int initialKeys = receiveBinaryMappingOnJoin ? 10 : 0;
+
+        IgniteEx srv1 = startGrid(0);
+
+        TestRecordingCommunicationSpi.spi(srv1)
+            .blockMessages((IgniteBiPredicate<ClusterNode, Message>)(node, msg) -> msg instanceof MissingMappingResponseMessage ||
+                msg instanceof MetadataResponseMessage);
+
+        // Load data pior to the client note starts, so the client will receive the binary metadata on the client node join.
+        for (int i = 0; i < initialKeys; i++)
+            srv1.cache(DEFAULT_CACHE_NAME).put(i, createOrganization(extClsLdr, i));
+
+        Ignite cl1 = startClientGrid(1,
+            (UnaryOperator<IgniteConfiguration>)cfg -> cfg.setDiscoverySpi(new TcpDiscoverySpi() {
+                @Override
+                protected void startMessageProcess(TcpDiscoveryAbstractMessage msg) {
+                    if (msg instanceof TcpDiscoveryCustomEventMessage) {
+                        try {
+                            DiscoverySpiCustomMessage custom =
+                                ((TcpDiscoveryCustomEventMessage)msg).message(marshaller(), U.gridClassLoader());
+
+                            if (custom instanceof CustomMessageWrapper) {
+                                DiscoveryCustomMessage delegate = ((CustomMessageWrapper)custom).delegate();
+
+                                if (delegate instanceof MappingAcceptedMessage) {
+                                    MarshallerMappingItem item = GridTestUtils.getFieldValue(delegate, "item");
+
+                                    if (item.className().equals(PERSON_CLASS_NAME) ||
+                                        item.className().equals(ORGANIZATION_CLASS_NAME) ||
+                                        item.className().equals(ADDRESS_CLASS_NAME)
+                                    ) {
+                                        try {
+                                            U.await(delayMappingLatch, AWAIT_PROCESSING_TIMEOUT_MS, TimeUnit.MILLISECONDS);
+                                        }
+                                        catch (Exception e) {
+                                            fail("Mapping proposed message must be released.");
+                                        }
+                                    }
+                                }
+                                else if (delegate instanceof MetadataUpdateAcceptedMessage) {
+                                    System.out.println(">>>>>> muam typeid " +((MetadataUpdateAcceptedMessage)delegate).typeId());
+
+                                    try {
+                                        U.await(delayMappingLatch, AWAIT_PROCESSING_TIMEOUT_MS, TimeUnit.MILLISECONDS);
+                                    }
+                                    catch (Exception e) {
+                                        fail("Mapping proposed message must be released.");
+                                    }
+                                }
+                            }
+                        }
+                        catch (Throwable e) {
+                            throw new RuntimeException(e);
+                        }
+                    }
+
+                    super.startMessageProcess(msg);
+                }
+            }.setIpFinder(IP_FINDER)));
+
+        awaitPartitionMapExchange();
+
+        cl1.events().remoteListen(
+            (IgniteBiPredicate<UUID, Event>)(uuid, evt) -> {
+                info("Event [" + evt.shortDisplay() + ']');
+
+                evtReceiveLatch.countDown();
 
                 return true;
             },
@@ -160,9 +385,73 @@ public class IgniteMarshallerCacheClientRequestsMappingTest extends GridCommonAb
         assertTrue(GridTestUtils.waitForCondition(() -> TestRecordingCommunicationSpi.spi(srv1).hasBlockedMessages(),
             AWAIT_PROCESSING_TIMEOUT_MS));
 
-        TestRecordingCommunicationSpi.spi(srv1).stopBlock();
+        delayMappingLatch.countDown();
 
-        assertTrue(U.await(processed, AWAIT_PROCESSING_TIMEOUT_MS, TimeUnit.MILLISECONDS));
+        assertTrue(U.await(evtReceiveLatch, AWAIT_PROCESSING_TIMEOUT_MS, TimeUnit.MILLISECONDS));
+    }
+
+    /**
+     * @throws Exception If failed.
+     */
+    @Test
+    public void testBinaryMetaDelayedForComputeJobResult() throws Exception {
+        CountDownLatch latch = new CountDownLatch(1);
+
+        startGrid(0);
+
+        Ignite cl1 = startClientGrid(1, (UnaryOperator<IgniteConfiguration>)cfg ->
+            cfg.setDiscoverySpi(new TcpDiscoverySpi() {
+                @Override
+                protected void startMessageProcess(TcpDiscoveryAbstractMessage msg) {
+                    if (msg instanceof TcpDiscoveryCustomEventMessage) {
+                        try {
+                            DiscoverySpiCustomMessage custom =
+                                ((TcpDiscoveryCustomEventMessage)msg).message(marshaller(), U.gridClassLoader());
+
+                            if (custom instanceof CustomMessageWrapper) {
+                                DiscoveryCustomMessage delegate = ((CustomMessageWrapper)custom).delegate();
+
+                                if (delegate instanceof MappingProposedMessage) {
+                                    MarshallerMappingItem item = GridTestUtils.getFieldValue(delegate, "mappingItem");
+
+                                    if (item.className().contains(JOB_RESULT_CLASS_NAME_PREFIX)) {
+                                        try {
+                                            U.await(latch, AWAIT_PROCESSING_TIMEOUT_MS, TimeUnit.MILLISECONDS);
+                                        }
+                                        catch (Exception e) {
+                                            fail("Exception must never be thrown: " + e.getMessage());
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                        catch (Throwable e) {
+                            throw new RuntimeException(e);
+                        }
+                    }
+
+                    super.startMessageProcess(msg);
+                }
+            }.setIpFinder(IP_FINDER)));
+
+        AtomicInteger results = new AtomicInteger(4);
+
+        // Flood system thread pool with task results.
+        IgniteInternalFuture<?> fut = GridTestUtils.runMultiThreadedAsync((Callable<Boolean>)() -> {
+            int v;
+
+            while ((v = results.decrementAndGet()) >= 0) {
+                int v0 = v;
+
+                Object ignore = cl1.compute().call(() -> createResult(extClsLdr, v0));
+            }
+
+            return true;
+        }, LIMITED_SYSTEM_THREAD_POOL, "compute-thread");
+
+        latch.countDown();
+
+        fut.get(AWAIT_PROCESSING_TIMEOUT_MS, TimeUnit.MILLISECONDS);
     }
 
     /**
@@ -183,5 +472,17 @@ public class IgniteMarshallerCacheClientRequestsMappingTest extends GridCommonAb
         return organizationConstructor.newInstance("Organization " + key,
             personConstructor.newInstance("Persone name " + key),
             addrConstructor.newInstance("Street " + key, key));
+    }
+
+    /**
+     * @param extClsLdr Class loader.
+     * @param ver Class type version.
+     * @return Result.
+     * @throws Exception If fails.
+     */
+    public static Object createResult(ClassLoader extClsLdr, int ver) throws Exception {
+        Class<?> resCls = extClsLdr.loadClass(JOB_RESULT_CLASS_NAME_PREFIX + ver);
+
+        return resCls.getConstructor(int.class).newInstance(ver);
     }
 }

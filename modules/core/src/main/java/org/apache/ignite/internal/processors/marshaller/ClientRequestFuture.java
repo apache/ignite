@@ -88,7 +88,7 @@ final class ClientRequestFuture extends GridFutureAdapter<MappingExchangeResult>
     /**
      *
      */
-    void requestMapping() {
+    ClientRequestFuture requestMapping() {
         boolean noSrvsInCluster;
 
         synchronized (this) {
@@ -121,13 +121,16 @@ final class ClientRequestFuture extends GridFutureAdapter<MappingExchangeResult>
             noSrvsInCluster = pendingNode == null;
         }
 
-        if (noSrvsInCluster)
+        if (noSrvsInCluster) {
             onDone(MappingExchangeResult.createFailureResult(
-                    new IgniteCheckedException(
-                            "All server nodes have left grid, cannot request mapping [platformId: "
-                                    + item.platformId()
-                                    + "; typeId: "
-                                    + item.typeId() + "]")));
+                new IgniteCheckedException(
+                    "All server nodes have left grid, cannot request mapping [platformId: "
+                        + item.platformId()
+                        + "; typeId: "
+                        + item.typeId() + "]")));
+        }
+
+        return this;
     }
 
     /**
