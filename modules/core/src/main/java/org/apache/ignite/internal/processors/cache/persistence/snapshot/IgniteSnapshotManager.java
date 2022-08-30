@@ -976,8 +976,11 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
             return new GridFinishedFuture<>();
 
         try {
-            if (req.error() != null)
+            if (req.error() != null) {
+                snpReq.error(req.error());
+
                 deleteSnapshot(snapshotLocalDir(req.snapshotName(), req.snapshotPath()), pdsSettings.folderName());
+            }
 
             removeLastMetaStorageKey();
         }

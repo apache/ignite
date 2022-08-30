@@ -541,7 +541,7 @@ public class IgniteStatisticsConfigurationManager {
      * @param target Operation targer.
      * @param cfg Current statistics configuration.
      */
-    private void validateDropRefresh(@NotNull StatisticsTarget target, @NotNull StatisticsObjectConfiguration cfg) {
+    private void validateDropRefresh(@NotNull StatisticsTarget target, StatisticsObjectConfiguration cfg) {
         if (cfg == null || F.isEmpty(cfg.columns())) {
             throw new IgniteSQLException(
                 "Statistic doesn't exist for [schema=" + target.schema() + ", obj=" + target.obj() + ']',

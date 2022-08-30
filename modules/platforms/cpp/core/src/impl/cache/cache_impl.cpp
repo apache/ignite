@@ -467,10 +467,10 @@ namespace ignite
                 rawWriter.WriteInt32(qry0.GetBufferSize());
                 rawWriter.WriteInt64(qry0.GetTimeInterval());
 
-                // Autounsubscribe is a filter feature.
+                // Auto-unsubscribe is a filter feature.
                 rawWriter.WriteBool(false);
 
-                // Writing initial query. When there is not initial query writing -1.
+                // Writing initial query. When there is no initial query writing -1.
                 rawWriter.WriteInt32(typ);
                 if (typ != -1)
                     initialQry.Write(rawWriter);
