@@ -764,7 +764,7 @@ public class CommandProcessor extends SqlCommandProcessor {
                 IgniteQueryErrorCode.TABLE_NOT_FOUND);
         }
 
-        H2Utils.checkAndStartNotStartedCache(ctx, tbl);
+        H2Utils.checkAndStartNotStartedCache(ctx, tbl.cacheInfo());
 
         UpdatePlan plan = UpdatePlanBuilder.planForBulkLoad(cmd, tbl);
 

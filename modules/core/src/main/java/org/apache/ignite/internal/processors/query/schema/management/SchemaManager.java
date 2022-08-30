@@ -34,6 +34,7 @@ import java.util.Objects;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
+import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.locks.ReentrantReadWriteLock;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteLogger;
@@ -1045,7 +1046,14 @@ public class SchemaManager {
      * @return Table descriptor or {@code null} if none found.
      */
     @Nullable public TableDescriptor table(String schemaName, String tblName) {
-        return id2tbl.get(new T2<>(schemaName, tblName));
+        lock.readLock().lock();
+
+        try {
+            return id2tbl.get(new T2<>(schemaName, tblName));
+        }
+        finally {
+            lock.readLock().unlock();
+        }
     }
 
     /**
@@ -1154,20 +1162,20 @@ public class SchemaManager {
             .filter(t -> matches(t.type().schemaName(), schemaNamePtrn))
             .filter(t -> matches(t.type().tableName(), tblNamePtrn))
             .forEach(tbl -> {
-                int[] cnt = new int[] { 1 }; // Column ordinal position, start from 1.
+                AtomicInteger cnt = new AtomicInteger(1); // Column ordinal position, start from 1.
 
                 GridQueryTypeDescriptor d = tbl.type();
 
                 // Add default columns if fields not specified explicitely.
                 if (F.isEmpty(d.fields())) {
                     if (matches(KEY_FIELD_NAME, colNamePtrn)) {
-                        infos.add(new ColumnInformation(cnt[0]++, d.schemaName(), d.tableName(), KEY_FIELD_NAME,
-                            d.keyClass(), false, null, -1, -1, false));
+                        infos.add(new ColumnInformation(cnt.getAndIncrement(), d.schemaName(), d.tableName(),
+                            KEY_FIELD_NAME, d.keyClass(), false, null, -1, -1, false));
                     }
 
                     if (matches(VAL_FIELD_NAME, colNamePtrn)) {
-                        infos.add(new ColumnInformation(cnt[0]++, d.schemaName(), d.tableName(), VAL_FIELD_NAME,
-                            d.valueClass(), false, null, -1, -1, false));
+                        infos.add(new ColumnInformation(cnt.getAndIncrement(), d.schemaName(), d.tableName(),
+                            VAL_FIELD_NAME, d.valueClass(), false, null, -1, -1, false));
                     }
                 }
                 else {
@@ -1177,7 +1185,7 @@ public class SchemaManager {
                             GridQueryProperty prop = d.property(field);
 
                             infos.add(new ColumnInformation(
-                                cnt[0]++,
+                                cnt.getAndIncrement(),
                                 d.schemaName(),
                                 d.tableName(),
                                 field,
@@ -1198,12 +1206,12 @@ public class SchemaManager {
                 .filter(v -> matches(MetricUtils.toSqlName(v.name()), tblNamePtrn))
                 .flatMap(
                     view -> {
-                        int[] cnt = new int[1];
+                        AtomicInteger cnt = new AtomicInteger(1); // Column ordinal position, start from 1.
 
                         return MetricUtils.systemViewAttributes(view).entrySet().stream()
                             .filter(c -> matches(MetricUtils.toSqlName(c.getKey()), colNamePtrn))
                             .map(c -> new ColumnInformation(
-                                ++cnt[0], // Start from 1.
+                                cnt.getAndIncrement(),
                                 QueryUtils.SCHEMA_SYS,
                                 MetricUtils.toSqlName(view.name()),
                                 MetricUtils.toSqlName(c.getKey()),

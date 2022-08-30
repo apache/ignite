@@ -413,13 +413,6 @@ public class GridH2Table extends TableBase {
     }
 
     /**
-     * @return {@code true} If Cache is lazy (not full inited).
-     */
-    public boolean isCacheLazy() {
-        return cacheInfo.cacheContext() == null;
-    }
-
-    /**
      * Get actual table statistics if exists.
      *
      * @return Table statistics or {@code null} if there is no statistics available.

@@ -43,12 +43,12 @@ import org.h2.table.IndexColumn;
 /**
  * Index factory for H2 indexes.
  */
-public class H2IndexFactory {
+class H2IndexFactory {
     /** */
     private final IgniteLogger log;
 
     /** */
-    public H2IndexFactory(GridKernalContext ctx) {
+    H2IndexFactory(GridKernalContext ctx) {
         log = ctx.log(H2IndexFactory.class);
     }
 

@@ -102,7 +102,7 @@ public class ConnectionManager {
     private final ConcurrentStripedPool<H2Connection> connPool;
 
     /** H2 connection for INFORMATION_SCHEMA. Holds H2 open until node is stopped. */
-    private volatile Connection sysConn;
+    private final Connection sysConn;
 
     /** H2 data handler. Primarily used for serialization. */
     private final DataHandler dataNhd;
@@ -129,11 +129,7 @@ public class ConnectionManager {
 
             sysConn.setSchema(QueryUtils.SCHEMA_INFORMATION);
 
-            assert sysConn instanceof JdbcConnection : sysConn;
-
-            JdbcConnection conn = (JdbcConnection)sysConn;
-
-            dataNhd = conn.getSession().getDataHandler();
+            dataNhd = sysConn.unwrap(JdbcConnection.class).getSession().getDataHandler();
         }
         catch (SQLException e) {
             throw new IgniteSQLException("Failed to initialize DB connection: " + dbUrl, e);
@@ -354,12 +350,5 @@ public class ConnectionManager {
     void setH2Serializer(JavaObjectSerializer serializer) {
         if (dataNhd != null && dataNhd instanceof Database)
             DB_JOBJ_SERIALIZER.set((Database)dataNhd, serializer);
-    }
-
-    /**
-     * @return H2 connection.
-     */
-    public JdbcConnection jdbcConnection() {
-        return (JdbcConnection)sysConn;
     }
 }

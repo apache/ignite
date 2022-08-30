@@ -55,6 +55,7 @@ import org.apache.ignite.internal.binary.BinaryUtils;
 import org.apache.ignite.internal.processors.cache.CacheObject;
 import org.apache.ignite.internal.processors.cache.CacheObjectValueContext;
 import org.apache.ignite.internal.processors.cache.GridCacheContext;
+import org.apache.ignite.internal.processors.cache.GridCacheContextInfo;
 import org.apache.ignite.internal.processors.cache.GridCacheSharedContext;
 import org.apache.ignite.internal.processors.cache.QueryCursorImpl;
 import org.apache.ignite.internal.processors.cache.mvcc.MvccUtils;
@@ -73,6 +74,7 @@ import org.apache.ignite.internal.processors.query.h2.twostep.msg.GridH2RowMessa
 import org.apache.ignite.internal.processors.query.h2.twostep.msg.GridH2ValueMessage;
 import org.apache.ignite.internal.processors.query.h2.twostep.msg.GridH2ValueMessageFactory;
 import org.apache.ignite.internal.processors.query.schema.management.IndexDescriptor;
+import org.apache.ignite.internal.processors.query.schema.management.TableDescriptor;
 import org.apache.ignite.internal.util.GridStringBuilder;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.internal.SB;
@@ -510,15 +512,15 @@ public class H2Utils {
     }
 
     /**
-     * Check that given table has not started cache and start it for such case.
+     * Check that given cache is not started and start it for such case.
      *
-     * @param tbl Table to check on not started cache.
+     * @param cacheInfo Cache context info.
      * @return {@code true} in case not started and has been started.
      */
     @SuppressWarnings({"ConstantConditions", "UnusedReturnValue"})
-    public static boolean checkAndStartNotStartedCache(GridKernalContext ctx, GridH2Table tbl) {
-        if (tbl != null && tbl.isCacheLazy()) {
-            String cacheName = tbl.cacheInfo().config().getName();
+    public static boolean checkAndStartNotStartedCache(GridKernalContext ctx, GridCacheContextInfo<?, ?> cacheInfo) {
+        if (cacheInfo != null && !cacheInfo.isCacheContextInited()) {
+            String cacheName = cacheInfo.config().getName();
 
             try {
                 Boolean res = ctx.cache().dynamicStartCache(null, cacheName, null, false, true, true).get();
@@ -840,12 +842,12 @@ public class H2Utils {
 
         if (!F.isEmpty(tbls)) {
             for (QueryTable tblKey : tbls) {
-                GridH2Table tbl = idx.schemaManager().dataTable(tblKey.schema(), tblKey.table());
+                TableDescriptor tbl = idx.kernalContext().query().schemaManager().table(tblKey.schema(), tblKey.table());
 
                 if (tbl != null) {
-                    checkAndStartNotStartedCache(idx.kernalContext(), tbl);
+                    checkAndStartNotStartedCache(idx.kernalContext(), tbl.cacheInfo());
 
-                    caches0.add(tbl.cacheId());
+                    caches0.add(tbl.cacheInfo().cacheId());
                 }
             }
         }
