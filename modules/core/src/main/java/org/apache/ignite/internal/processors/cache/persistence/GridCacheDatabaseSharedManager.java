@@ -2054,6 +2054,19 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
     }
 
     /**
+     * @param f Consumer.
+     * @return Accumulated result for all page stores.
+     */
+    public long forAllPageStores(ToLongFunction<PageStore> f) {
+        long res = 0;
+
+        for (CacheGroupContext gctx : cacheGroupContexts())
+            res += forGroupPageStores(gctx, f);
+
+        return res;
+    }
+
+    /**
      * Calculates tail pointer for WAL at the end of logical recovery.
      *
      * @param logicalState State after logical recovery.
@@ -3167,11 +3180,6 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
     /** {@inheritDoc} */
     @Override public DataStorageMetrics persistentStoreMetrics() {
         return new DataStorageMetricsSnapshot(dsMetrics);
-    }
-
-    /** {@inheritDoc} */
-    @Override public DataStorageMetricsImpl dataStorageMetricsImpl() {
-        return dsMetrics;
     }
 
     /** {@inheritDoc} */

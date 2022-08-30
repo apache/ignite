@@ -59,6 +59,7 @@ import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.mxbean.DataStorageMetricsMXBean;
 import org.apache.ignite.spi.metric.HistogramMetric;
+import org.apache.ignite.spi.metric.LongMetric;
 import org.apache.ignite.testframework.ListeningTestLogger;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.junit.Test;
@@ -68,8 +69,10 @@ import static org.apache.ignite.cache.CacheAtomicityMode.ATOMIC;
 import static org.apache.ignite.cache.CacheMode.PARTITIONED;
 import static org.apache.ignite.cache.CacheWriteSynchronizationMode.FULL_SYNC;
 import static org.apache.ignite.cluster.ClusterState.ACTIVE;
+import static org.apache.ignite.internal.processors.cache.CacheGroupMetricsImpl.CACHE_GROUP_METRICS_PREFIX;
 import static org.apache.ignite.internal.processors.cache.persistence.DataStorageMetricsImpl.DATASTORAGE_METRIC_PREFIX;
 import static org.apache.ignite.internal.processors.cache.persistence.wal.serializer.RecordV1Serializer.HEADER_RECORD_SIZE;
+import static org.apache.ignite.internal.processors.metric.impl.MetricUtils.metricName;
 import static org.apache.ignite.testframework.GridTestUtils.setFieldValue;
 import static org.apache.ignite.testframework.GridTestUtils.waitForCondition;
 
@@ -81,7 +84,16 @@ public class IgniteDataStorageMetricsSelfTest extends GridCommonAbstractTest {
     private static final String GROUP1 = "grp1";
 
     /** */
+    private static final String GROUP2 = "grp2";
+
+    /** */
     private static final String NO_PERSISTENCE = "no-persistence";
+
+    /** */
+    private static final String PERSISTENCE_REGION_1 = "persistence-1";
+
+    /** */
+    private static final String PERSISTENCE_REGION_2 = "persistence-2";
 
     /** */
     private final ListeningTestLogger listeningLog = new ListeningTestLogger(log);
@@ -111,12 +123,18 @@ public class IgniteDataStorageMetricsSelfTest extends GridCommonAbstractTest {
                 .setMaxSize(maxRegionSize)
                 .setPersistenceEnabled(true)
                 .setMetricsEnabled(true)
-                .setName("dflt-plc"))
-            .setDataRegionConfigurations(new DataRegionConfiguration()
-                .setMaxSize(maxRegionSize)
-                .setPersistenceEnabled(false)
-                .setMetricsEnabled(true)
-                .setName(NO_PERSISTENCE))
+                .setName(PERSISTENCE_REGION_1))
+            .setDataRegionConfigurations(
+                new DataRegionConfiguration()
+                    .setMaxSize(maxRegionSize)
+                    .setPersistenceEnabled(true)
+                    .setMetricsEnabled(true)
+                    .setName(PERSISTENCE_REGION_2),
+                new DataRegionConfiguration()
+                    .setMaxSize(maxRegionSize)
+                    .setPersistenceEnabled(false)
+                    .setMetricsEnabled(true)
+                    .setName(NO_PERSISTENCE))
             .setWalMode(WALMode.LOG_ONLY)
             .setMetricsEnabled(true);
 
@@ -126,6 +144,7 @@ public class IgniteDataStorageMetricsSelfTest extends GridCommonAbstractTest {
 
         cfg.setCacheConfiguration(
             cacheConfiguration(GROUP1, "cache", PARTITIONED, ATOMIC, 1, null),
+            cacheConfiguration(GROUP2, "cache2", PARTITIONED, ATOMIC, 1, PERSISTENCE_REGION_2),
             cacheConfiguration(null, "cache-np", PARTITIONED, ATOMIC, 1, NO_PERSISTENCE));
 
         cfg.setGridLogger(listeningLog);
@@ -186,16 +205,19 @@ public class IgniteDataStorageMetricsSelfTest extends GridCommonAbstractTest {
 
         try {
             IgniteCache<Object, Object> cache = ig.cache("cache");
+            IgniteCache<Object, Object> cache2 = ig.cache("cache2");
 
-            for (int i = 0; i < 10; i++)
+            for (int i = 0; i < 10; i++) {
                 cache.put(i, new Person("first-" + i, "last-" + i));
+                cache2.put(i, new Person("first-" + i, "last-" + i));
+            }
 
             IgniteCache<Object, Object> cacheNp = ig.cache("cache-np");
 
             for (int i = 0; i < 10; i++)
                 cacheNp.put(i, new Person("first-" + i, "last-" + i));
 
-            DataRegionMetrics memMetrics = ig.dataRegionMetrics("dflt-plc");
+            DataRegionMetrics memMetrics = ig.dataRegionMetrics(PERSISTENCE_REGION_1);
 
             assertNotNull(memMetrics);
             assertTrue(memMetrics.getDirtyPages() > 0);
@@ -219,6 +241,24 @@ public class IgniteDataStorageMetricsSelfTest extends GridCommonAbstractTest {
                         pMetrics.getLastCheckpointDataPagesNumber() != 0;
                 }
             }, 10_000));
+
+
+            MetricRegistry mregGrp1 = ig.context().metric().registry(
+                metricName(CACHE_GROUP_METRICS_PREFIX, GROUP1));
+            MetricRegistry mregGrp2 = ig.context().metric().registry(
+                metricName(CACHE_GROUP_METRICS_PREFIX, GROUP2));
+
+            long storageSize1 = mregGrp1.<LongMetric>findMetric("StorageSize").value();
+            long sparseStorageSize1 = mregGrp1.<LongMetric>findMetric("SparseStorageSize").value();
+
+            long storageSize2 = mregGrp2.<LongMetric>findMetric("StorageSize").value();
+            long sparseStorageSize2 = mregGrp2.<LongMetric>findMetric("SparseStorageSize").value();
+
+            long storageSize = dsMetricRegistry(ig).<LongMetric>findMetric("StorageSize").value();
+            long sparseStorageSize = dsMetricRegistry(ig).<LongMetric>findMetric("SparseStorageSize").value();
+
+            assertEquals(storageSize1 + storageSize2, storageSize);
+            assertEquals(sparseStorageSize1 + sparseStorageSize2, sparseStorageSize);
         }
         finally {
             stopAllGrids();
