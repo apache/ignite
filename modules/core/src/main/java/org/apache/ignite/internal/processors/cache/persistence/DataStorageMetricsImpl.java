@@ -739,6 +739,8 @@ public class DataStorageMetricsImpl implements DataStorageMetricsMXBean {
      * @param totalPages Total number of all pages in checkpoint.
      * @param dataPages Total number of data pages in checkpoint.
      * @param cowPages Total number of COW-ed pages in checkpoint.
+     * @param storageSize Storage space allocated, in bytes.
+     * @param sparseStorageSize Storage space allocated adjusted for possible sparsity, in bytes.
      */
     public void onCheckpoint(
         long beforeLockDuration,
