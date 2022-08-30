@@ -20,11 +20,13 @@ package org.apache.ignite.internal.processors.cache.persistence;
 import java.io.File;
 import java.io.Serializable;
 import java.util.Arrays;
+import java.util.Collection;
 import java.util.Objects;
 import java.util.concurrent.ThreadLocalRandom;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.function.Consumer;
+import java.util.function.ToLongFunction;
 import java.util.function.UnaryOperator;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
@@ -54,6 +56,7 @@ import org.apache.ignite.internal.processors.metric.impl.AtomicLongMetric;
 import org.apache.ignite.internal.processors.metric.impl.LongAdderMetric;
 import org.apache.ignite.internal.processors.metric.impl.LongGauge;
 import org.apache.ignite.internal.util.tostring.GridToStringInclude;
+import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.PAX;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.internal.util.typedef.internal.U;
@@ -242,23 +245,18 @@ public class IgniteDataStorageMetricsSelfTest extends GridCommonAbstractTest {
                 }
             }, 10_000));
 
+            Collection<MetricRegistry> grpRegs = F.viewReadOnly(ig.context().cache().cacheGroups(),
+                ctx -> ig.context().metric().registry(metricName(CACHE_GROUP_METRICS_PREFIX, ctx.cacheOrGroupName())));
 
-            MetricRegistry mregGrp1 = ig.context().metric().registry(
-                metricName(CACHE_GROUP_METRICS_PREFIX, GROUP1));
-            MetricRegistry mregGrp2 = ig.context().metric().registry(
-                metricName(CACHE_GROUP_METRICS_PREFIX, GROUP2));
-
-            long storageSize1 = mregGrp1.<LongMetric>findMetric("StorageSize").value();
-            long sparseStorageSize1 = mregGrp1.<LongMetric>findMetric("SparseStorageSize").value();
-
-            long storageSize2 = mregGrp2.<LongMetric>findMetric("StorageSize").value();
-            long sparseStorageSize2 = mregGrp2.<LongMetric>findMetric("SparseStorageSize").value();
+            ToLongFunction<String> sumByGroups = metric -> grpRegs.stream()
+                .map(grpReg -> grpReg.<LongMetric>findMetric(metric).value()).mapToLong(v -> v)
+                .sum();
 
             long storageSize = dsMetricRegistry(ig).<LongMetric>findMetric("StorageSize").value();
             long sparseStorageSize = dsMetricRegistry(ig).<LongMetric>findMetric("SparseStorageSize").value();
 
-            assertEquals(storageSize1 + storageSize2, storageSize);
-            assertEquals(sparseStorageSize1 + sparseStorageSize2, sparseStorageSize);
+            assertEquals(sumByGroups.applyAsLong("StorageSize"), storageSize);
+            assertEquals(sumByGroups.applyAsLong("SparseStorageSize"), sparseStorageSize);
         }
         finally {
             stopAllGrids();
