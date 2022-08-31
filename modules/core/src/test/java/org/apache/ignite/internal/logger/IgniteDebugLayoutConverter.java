@@ -125,18 +125,17 @@ public class IgniteDebugLayoutConverter extends LogEventPatternConverter {
         return nodeIdxByNameCache.computeIfAbsent(instanceName, v -> {
             int n = 0;
             int res = 0;
-            int startPos = instanceName.length() - 1;
 
-            for (int pos0 = startPos; pos0 >= 0; pos0--) {
+            for (int pos0 = instanceName.length() - 1; pos0 >= 0; pos0--) {
                 char cur = instanceName.charAt(pos0);
 
                 if (cur < '0' || cur > '9')
-                    return pos0 == startPos ? res : res + 1;
+                    return res;
 
                 res += (cur - '0') * Math.pow(10, n++);
             }
 
-            return res + 1;
+            return res;
         });
     }
 
