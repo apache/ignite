@@ -150,7 +150,7 @@ public class CompoundIndexCompatibilityTest extends IndexAbstractCompatibilityTe
         List<List<?>> plan = executeSql(grid(0), "explain " + sql);
 
         assertFalse(plan.isEmpty());
-        assertTrue("Actial plan: " + plan.get(0).get(0).toString() + " expected index: " + name,
+        assertTrue("Actual plan: " + plan.get(0).get(0).toString() + " expected index: " + name,
             plan.get(0).get(0).toString().toLowerCase().contains(name.toLowerCase()));
 
         // Check query on index.
