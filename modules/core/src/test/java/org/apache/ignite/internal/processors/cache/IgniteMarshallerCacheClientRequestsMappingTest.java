@@ -90,9 +90,7 @@ public class IgniteMarshallerCacheClientRequestsMappingTest extends GridCommonAb
     /** Client work directory absolute path. */
     private String clntWorkDir;
 
-    /**
-     * {@inheritDoc}
-     */
+    /** {@inheritDoc} */
     @Override protected IgniteConfiguration getConfiguration(String gridName) throws Exception {
         IgniteConfiguration cfg = super.getConfiguration(gridName);
 

@@ -88,7 +88,7 @@ final class ClientRequestFuture extends GridFutureAdapter<MappingExchangeResult>
     /**
      *
      */
-    ClientRequestFuture requestMapping() {
+    void requestMapping() {
         boolean noSrvsInCluster;
 
         synchronized (this) {
@@ -97,12 +97,12 @@ final class ClientRequestFuture extends GridFutureAdapter<MappingExchangeResult>
 
                 try {
                     ioMgr.sendToGridTopic(
-                            srvNode,
-                            GridTopic.TOPIC_MAPPING_MARSH,
-                            new MissingMappingRequestMessage(
-                                    item.platformId(),
-                                    item.typeId()),
-                            GridIoPolicy.SYSTEM_POOL);
+                        srvNode,
+                        GridTopic.TOPIC_MAPPING_MARSH,
+                        new MissingMappingRequestMessage(
+                            item.platformId(),
+                            item.typeId()),
+                        GridIoPolicy.SYSTEM_POOL);
 
                     if (discoMgr.node(srvNode.id()) == null)
                         continue;
@@ -113,8 +113,8 @@ final class ClientRequestFuture extends GridFutureAdapter<MappingExchangeResult>
                 }
                 catch (IgniteCheckedException ignored) {
                     U.warn(log,
-                            "Failed to request marshaller mapping from remote node (proceeding with the next one): "
-                                    + srvNode);
+                        "Failed to request marshaller mapping from remote node (proceeding with the next one): "
+                            + srvNode);
                 }
             }
 
@@ -129,8 +129,6 @@ final class ClientRequestFuture extends GridFutureAdapter<MappingExchangeResult>
                         + "; typeId: "
                         + item.typeId() + "]")));
         }
-
-        return this;
     }
 
     /**
