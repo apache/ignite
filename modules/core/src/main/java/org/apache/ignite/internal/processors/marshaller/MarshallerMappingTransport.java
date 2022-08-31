@@ -135,27 +135,28 @@ public final class MarshallerMappingTransport {
      * @param cache Cache.
      */
     public GridFutureAdapter<MappingExchangeResult> requestMapping(
-            MarshallerMappingItem item,
-            ConcurrentMap<Integer, MappedName> cache
+        MarshallerMappingItem item,
+        ConcurrentMap<Integer, MappedName> cache
     ) {
+        assert ctx.clientNode();
+        assert item.className() == null;
+
         ClientRequestFuture newFut = new ClientRequestFuture(ctx, item, clientReqSyncMap);
-
         ClientRequestFuture oldFut = clientReqSyncMap.putIfAbsent(item, newFut);
-
-        if (oldFut != null)
-            return oldFut;
+        ClientRequestFuture resFut = oldFut == null ? newFut : oldFut;
 
         MappedName mappedName = cache.get(item.typeId());
 
-        if (mappedName != null) {
-            newFut.onDone(MappingExchangeResult.createSuccessfulResult(mappedName.className()));
-
-            return newFut;
+        if (mappedName == null) {
+            if (oldFut == null)
+                newFut.requestMapping();
+        }
+        else {
+            if (mappedName.accepted())
+                resFut.onDone(MappingExchangeResult.createSuccessfulResult(mappedName.className()));
         }
 
-        newFut.requestMapping();
-
-        return newFut;
+        return resFut;
     }
 
     /**

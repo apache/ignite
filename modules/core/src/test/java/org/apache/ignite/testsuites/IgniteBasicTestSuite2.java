@@ -49,6 +49,7 @@ import org.apache.ignite.internal.processors.cache.CacheLockCandidatesThreadTest
 import org.apache.ignite.internal.processors.cache.GridLongRunningInitNewCrdFutureDiagnosticsTest;
 import org.apache.ignite.internal.processors.cache.IgniteMarshallerCacheClassNameConflictTest;
 import org.apache.ignite.internal.processors.cache.IgniteMarshallerCacheClientRequestsMappingOnMissTest;
+import org.apache.ignite.internal.processors.cache.IgniteMarshallerCacheClientRequestsMappingTest;
 import org.apache.ignite.internal.processors.cache.IgniteMarshallerCacheFSRestoreTest;
 import org.apache.ignite.internal.processors.cache.IgniteMarshallerCacheSeparateDirectoryTest;
 import org.apache.ignite.internal.processors.cache.RebalanceWithDifferentThreadPoolSizeTest;
@@ -143,6 +144,7 @@ import org.junit.runners.Suite;
     IgniteMarshallerCacheFSRestoreTest.class,
     IgniteMarshallerCacheClassNameConflictTest.class,
     IgniteMarshallerCacheClientRequestsMappingOnMissTest.class,
+    IgniteMarshallerCacheClientRequestsMappingTest.class,
     IgniteMarshallerCacheSeparateDirectoryTest.class,
 
     IgniteDiagnosticMessagesTest.class,
