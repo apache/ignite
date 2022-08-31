@@ -105,7 +105,6 @@ import org.apache.ignite.internal.processors.query.GridQueryFieldsResultAdapter;
 import org.apache.ignite.internal.processors.query.GridQueryFinishedInfo;
 import org.apache.ignite.internal.processors.query.GridQueryIndexing;
 import org.apache.ignite.internal.processors.query.GridQueryProperty;
-import org.apache.ignite.internal.processors.query.GridQueryRowCacheCleaner;
 import org.apache.ignite.internal.processors.query.GridQueryStartedInfo;
 import org.apache.ignite.internal.processors.query.GridQueryTypeDescriptor;
 import org.apache.ignite.internal.processors.query.IgniteSQLException;
@@ -191,6 +190,7 @@ import org.h2.util.JdbcUtils;
 import org.h2.value.CompareMode;
 import org.h2.value.DataType;
 import org.jetbrains.annotations.Nullable;
+
 import static java.lang.Math.max;
 import static java.lang.Math.min;
 import static java.util.Collections.singletonList;
