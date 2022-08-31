@@ -288,7 +288,6 @@ public class H2SchemaManager implements SchemaChangeListener {
                 String sql = H2Utils.indexCreateSql(tbl.tableDescriptor().fullTableName(), h2Idx, true);
 
                 connMgr.executeStatement(schemaName, sql);
-
             }
             catch (Exception e) {
                 // Rollback and re-throw.

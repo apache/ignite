@@ -1126,7 +1126,6 @@ public abstract class DynamicColumnsAbstractConcurrentSelfTest extends DynamicCo
         /** {@inheritDoc} */
         @Override public void start(GridKernalContext ctx, GridSpinBusyLock busyLock) throws IgniteCheckedException {
             ctx.internalSubscriptionProcessor().registerSchemaChangeListener(new AbstractSchemaChangeListener() {
-
                 @Override public void onColumnsAdded(
                     String schemaName,
                     GridQueryTypeDescriptor typeDesc,

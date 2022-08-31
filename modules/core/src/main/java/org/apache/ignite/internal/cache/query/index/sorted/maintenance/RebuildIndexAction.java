@@ -205,7 +205,7 @@ public class RebuildIndexAction implements MaintenanceAction<Boolean> {
             schemaMgr.addIndex(tblDesc, newIdxDesc);
         }
         catch (IgniteCheckedException e) {
-            log.error("Failed to register incex in schema manager", e);
+            log.error("Failed to register index in schema manager", e);
         }
 
         // This future must be already finished by the schema index cache visitor above
