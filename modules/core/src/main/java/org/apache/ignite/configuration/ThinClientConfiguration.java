@@ -112,8 +112,7 @@ public class ThinClientConfiguration {
 
     /**
      * @return If {@code true} sends a server exception stack to the client side.
-     * @see new getServerExceptionStackTraceToClient() and setServerExceptionStackTraceToClient().
-     * @deprecated please now use getServerExceptionStackTraceToClient()
+     * @deprecated please now use new method getServerExceptionStackTraceToClient().
      */
     @Deprecated
     public boolean sendServerExceptionStackTraceToClient() {
@@ -123,7 +122,6 @@ public class ThinClientConfiguration {
     /**
      * @param sendServerExcStackTraceToClient If {@code true} sends a server exception stack to the client side.
      * @return {@code this} for chaining.
-     * @see new setServerExceptionStackTraceToClient().
      * @deprecated please now use new method setServerExceptionStackTraceToClient().
      */
     @Deprecated
@@ -153,8 +151,7 @@ public class ThinClientConfiguration {
     /**
      * {@inheritDoc}
      */
-    @Override
-    public String toString() {
+    @Override public String toString() {
         return S.toString(ThinClientConfiguration.class, this);
     }
 }
