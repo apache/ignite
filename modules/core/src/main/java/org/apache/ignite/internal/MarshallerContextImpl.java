@@ -363,7 +363,13 @@ public class MarshallerContextImpl implements MarshallerContext {
     public void onMappingAccepted(final MarshallerMappingItem item) {
         ConcurrentMap<Integer, MappedName> cache = getCacheFor(item.platformId());
 
-        cache.replace(item.typeId(), new MappedName(item.className(), true));
+        MappedName oldMappedName = cache.put(item.typeId(), new MappedName(item.className(), true));
+
+        assert oldMappedName == null || item.className().equals(oldMappedName.className()) :
+            "Class name resolved from cluster: "
+                + item.className()
+                + ", class name from local cache: "
+                + oldMappedName.className();
 
         closProc.runLocalSafe(new MappingStoreTask(fileStore, item.platformId(), item.typeId(), item.className()));
     }
@@ -496,30 +502,6 @@ public class MarshallerContextImpl implements MarshallerContext {
         }
 
         return null;
-    }
-
-    /**
-     * @param item Item.
-     * @param resolvedClsName Resolved class name.
-     */
-    public void onMissedMappingResolved(final MarshallerMappingItem item, String resolvedClsName) {
-        ConcurrentMap<Integer, MappedName> cache = getCacheFor(item.platformId());
-
-        int typeId = item.typeId();
-        MappedName mappedName = cache.get(typeId);
-
-        if (mappedName != null)
-            assert resolvedClsName.equals(mappedName.className()) :
-                    "Class name resolved from cluster: "
-                            + resolvedClsName
-                            + ", class name from local cache: "
-                            + mappedName.className();
-        else {
-            mappedName = new MappedName(resolvedClsName, true);
-            cache.putIfAbsent(typeId, mappedName);
-
-            closProc.runLocalSafe(new MappingStoreTask(fileStore, item.platformId(), item.typeId(), resolvedClsName));
-        }
     }
 
     /** {@inheritDoc} */

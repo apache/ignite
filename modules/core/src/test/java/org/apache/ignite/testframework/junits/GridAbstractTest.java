@@ -1002,7 +1002,7 @@ public abstract class GridAbstractTest extends JUnitAssertAware {
      * @throws Exception If anything failed.
      */
     protected IgniteEx startClientGrid() throws Exception {
-        return startClientGrid(getTestIgniteInstanceName());
+        return startClientGrid(getTestIgniteInstanceName(), (UnaryOperator<IgniteConfiguration>)null);
     }
 
     /**
@@ -1061,6 +1061,16 @@ public abstract class GridAbstractTest extends JUnitAssertAware {
     }
 
     /**
+     * @param idx Index of the grid to start.
+     * @param cfgOp Configuration mutator. Can be used to avoid overcomplification of {@link #getConfiguration()}.
+     * @return Started grid.
+     * @throws Exception If anything failed.
+     */
+    protected IgniteEx startClientGrid(int idx, UnaryOperator<IgniteConfiguration> cfgOp) throws Exception {
+        return startClientGrid(getTestIgniteInstanceName(idx), cfgOp);
+    }
+
+    /**
      * Starts new client grid with given index.
      *
      * @param idx Index of the grid to start.
@@ -1068,7 +1078,7 @@ public abstract class GridAbstractTest extends JUnitAssertAware {
      * @throws Exception If anything failed.
      */
     protected IgniteEx startClientGrid(int idx) throws Exception {
-        return startClientGrid(getTestIgniteInstanceName(idx));
+        return startClientGrid(getTestIgniteInstanceName(idx), (UnaryOperator<IgniteConfiguration>)null);
     }
 
     /**
@@ -1083,7 +1093,7 @@ public abstract class GridAbstractTest extends JUnitAssertAware {
         IgnitionEx.dependencyResolver(rslvr);
 
         try {
-            return startClientGrid(getTestIgniteInstanceName(idx));
+            return startClientGrid(getTestIgniteInstanceName(idx), (UnaryOperator<IgniteConfiguration>)null);
         }
         finally {
             IgnitionEx.dependencyResolver(null);
@@ -1098,10 +1108,22 @@ public abstract class GridAbstractTest extends JUnitAssertAware {
      * @throws Exception If anything failed.
      */
     protected IgniteEx startClientGrid(String igniteInstanceName) throws Exception {
+        return startClientGrid(igniteInstanceName, (UnaryOperator<IgniteConfiguration>)null);
+    }
+
+    /**
+     * Starts new client grid with given name.
+     *
+     * @param igniteInstanceName Ignite instance name.
+     * @param cfgOp Configuration mutator. Can be used to avoid overcomplification of {@link #getConfiguration()}.
+     * @return Started grid.
+     * @throws Exception If anything failed.
+     */
+    protected IgniteEx startClientGrid(String igniteInstanceName, UnaryOperator<IgniteConfiguration> cfgOp) throws Exception {
         IgnitionEx.setClientMode(true);
 
         try {
-            return (IgniteEx)startGrid(igniteInstanceName, (GridSpringResourceContext)null);
+            return (IgniteEx)startGrid(igniteInstanceName, cfgOp, null);
         }
         finally {
             IgnitionEx.setClientMode(false);
