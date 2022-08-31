@@ -19,6 +19,7 @@ package org.apache.ignite.internal.processors.cache.metric;
 
 import java.lang.reflect.Field;
 import java.sql.Connection;
+import java.sql.Timestamp;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
@@ -72,6 +73,7 @@ import org.apache.ignite.internal.processors.service.DummyService;
 import org.apache.ignite.internal.util.StripedExecutor;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.G;
+import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgnitePredicate;
 import org.apache.ignite.services.ServiceConfiguration;
 import org.apache.ignite.spi.systemview.view.MetastorageView;
@@ -115,10 +117,15 @@ public class SqlViewExporterSpiTest extends AbstractExporterSpiTest {
 
         cfg.setDataStorageConfiguration(new DataStorageConfiguration()
             .setDataRegionConfigurations(
-                new DataRegionConfiguration().setName("in-memory").setMaxSize(100L * 1024 * 1024))
+                new DataRegionConfiguration()
+                    .setName("in-memory")
+                    .setMaxSize(100L * 1024 * 1024)
+                    .setMetricsEnabled(true))
             .setDefaultDataRegionConfiguration(
                 new DataRegionConfiguration()
-                    .setPersistenceEnabled(true)));
+                    .setName("persistent")
+                    .setPersistenceEnabled(true)
+                    .setMetricsEnabled(true)));
 
         return cfg;
     }
@@ -162,7 +169,7 @@ public class SqlViewExporterSpiTest extends AbstractExporterSpiTest {
     @Test
     public void testDataRegionMetrics() throws Exception {
         List<List<?>> res = execute(ignite0,
-            "SELECT REPLACE(name, 'io.dataregion.default.'), value, description FROM SYS.METRICS");
+            "SELECT REPLACE(name, 'io.dataregion.persistent.'), value, description FROM SYS.METRICS");
 
         Set<String> names = new HashSet<>();
 
@@ -446,7 +453,8 @@ public class SqlViewExporterSpiTest extends AbstractExporterSpiTest {
             "DS_REENTRANTLOCKS",
             "DS_SETS",
             "DS_SEMAPHORES",
-            "DS_QUEUES"
+            "DS_QUEUES",
+            "PAGES_TIMESTAMP_HISTOGRAM"
         ));
 
         Set<String> actViews = new TreeSet<>();
@@ -1188,6 +1196,32 @@ public class SqlViewExporterSpiTest extends AbstractExporterSpiTest {
         assertEquals(nodesCnt, execute(ignite0, "SELECT * FROM SYS.SNAPSHOT where name = ?", snap0).size());
         assertEquals(nodesCnt, execute(ignite0,
             "SELECT * FROM SYS.SNAPSHOT WHERE cache_groups LIKE '%" + DEFAULT_CACHE_NAME + "%'").size());
+    }
+
+    /** */
+    @Test
+    public void testPagesTimestampHistogram() throws Exception {
+        IgniteCache<Integer, Integer> cache = ignite0.getOrCreateCache("test-page-ts-cache");
+
+        cache.put(0, 0);
+
+        assertEquals(0, execute(ignite0,
+            "SELECT * FROM SYS.PAGES_TIMESTAMP_HISTOGRAM WHERE DATA_REGION_NAME = ?", "in-memory").size());
+
+        // There should be two buckets after start: empty "out of bounds" bucket and current bucket.
+        assertEquals(2, execute(ignite0,
+            "SELECT * FROM SYS.PAGES_TIMESTAMP_HISTOGRAM WHERE DATA_REGION_NAME = ?", "persistent").size());
+
+        Timestamp ts = new Timestamp(U.currentTimeMillis());
+
+        List<List<?>> res = execute(ignite0, "SELECT INTERVAL_START, INTERVAL_END " +
+            "FROM SYS.PAGES_TIMESTAMP_HISTOGRAM " +
+            "WHERE DATA_REGION_NAME = ? AND PAGES_COUNT > 0", "persistent");
+
+        assertEquals(1, res.size());
+
+        assertTrue(ts.compareTo(((Timestamp)res.get(0).get(0))) >= 0);
+        assertTrue(ts.compareTo(((Timestamp)res.get(0).get(1))) <= 0);
     }
 
     /**

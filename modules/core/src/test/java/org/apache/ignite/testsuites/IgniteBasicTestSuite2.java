@@ -39,6 +39,7 @@ import org.apache.ignite.internal.managers.IgniteDiagnosticPartitionReleaseFutur
 import org.apache.ignite.internal.managers.communication.GridIoManagerFileTransmissionSelfTest;
 import org.apache.ignite.internal.managers.discovery.IncompleteDeserializationExceptionTest;
 import org.apache.ignite.internal.metric.MetricsClusterActivationTest;
+import org.apache.ignite.internal.metric.PeriodicHistogramMetricImplTest;
 import org.apache.ignite.internal.mxbean.IgniteStandardMXBeanTest;
 import org.apache.ignite.internal.pagemem.wal.record.WALRecordSerializationTest;
 import org.apache.ignite.internal.pagemem.wal.record.WALRecordTest;
@@ -224,7 +225,8 @@ import org.junit.runners.Suite;
     ExponentialBackoffTest.class,
     ProgressSpeedCalculationTest.class,
 
-    ConcurrentMappingFileReadWriteTest.class
+    ConcurrentMappingFileReadWriteTest.class,
+    PeriodicHistogramMetricImplTest.class,
 })
 public class IgniteBasicTestSuite2 {
 }
