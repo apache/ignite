@@ -571,8 +571,7 @@ public class ClientListenerProcessor extends GridProcessorAdapter {
         Boolean send = distrThinCfg.sendServerExceptionStackTraceToClient();
 
         return send == null ?
-                (ctx.config().getClientConnectorConfiguration().getThinClientConfiguration().sendServerExceptionStackTraceToClient() ||
-                        ctx.config().getClientConnectorConfiguration().getThinClientConfiguration().getServerExceptionStackTraceToClient()) : send;
+                ctx.config().getClientConnectorConfiguration().getThinClientConfiguration().sendServerExceptionStackTraceToClient() : send;
     }
 
     /**
