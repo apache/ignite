@@ -43,7 +43,6 @@ import org.apache.ignite.internal.processors.metastorage.DistributedMetastorageL
 import org.apache.ignite.internal.processors.metastorage.ReadableDistributedMetaStorage;
 import org.apache.ignite.internal.processors.metric.impl.AtomicLongMetric;
 import org.apache.ignite.internal.processors.metric.impl.DoubleMetricImpl;
-import org.apache.ignite.internal.processors.metric.impl.HistogramMetricImpl;
 import org.apache.ignite.internal.processors.metric.impl.HitRateMetric;
 import org.apache.ignite.internal.processors.timeout.GridTimeoutProcessor;
 import org.apache.ignite.internal.util.future.GridCompoundFuture;
@@ -460,7 +459,7 @@ public class GridMetricManager extends GridManagerAdapter<MetricExporterSpi> imp
      *
      * @param name Metric name.
      * @param rateTimeInterval New rateTimeInterval.
-     * @see HistogramMetricImpl#reset(long[])
+     * @see HitRateMetric#reset(long)
      */
     private void onHitRateConfigChanged(String name, @Nullable Long rateTimeInterval) {
         if (rateTimeInterval == null)
@@ -486,12 +485,18 @@ public class GridMetricManager extends GridManagerAdapter<MetricExporterSpi> imp
         if (bounds == null)
             return;
 
-        HistogramMetricImpl m = find(name, HistogramMetricImpl.class);
+        ConfigurableHistogramMetric m = find(name, ConfigurableHistogramMetric.class);
 
         if (m == null)
             return;
 
-        m.reset(bounds);
+        try {
+            m.bounds(bounds);
+        }
+        catch (RuntimeException e) {
+            // Can't throw exceptions here since method is invoked by metastorage listener.
+            log.error("Error during histogram bounds reconfiguration", e);
+        }
     }
 
     /**
@@ -522,7 +527,7 @@ public class GridMetricManager extends GridManagerAdapter<MetricExporterSpi> imp
             return null;
         }
 
-        if (!m.getClass().isAssignableFrom(type)) {
+        if (!type.isAssignableFrom(m.getClass())) {
             log.error("Metric '" + name + "' has wrong type[type=" + m.getClass().getSimpleName() + ']');
 
             return null;
