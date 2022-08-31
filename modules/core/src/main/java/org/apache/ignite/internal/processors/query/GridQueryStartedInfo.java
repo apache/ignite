@@ -19,15 +19,12 @@ package org.apache.ignite.internal.processors.query;
 
 import java.util.UUID;
 import org.apache.ignite.internal.processors.cache.query.GridCacheQueryType;
-import org.apache.ignite.internal.processors.tracing.MTC;
-import org.apache.ignite.internal.processors.tracing.Span;
-import org.apache.ignite.internal.util.tostring.GridToStringExclude;
 import org.apache.ignite.internal.util.typedef.internal.S;
 
 /**
- * Query descriptor.
+ * Info about new started query.
  */
-public class GridRunningQueryInfo {
+public class GridQueryStartedInfo {
     /** */
     private final long id;
 
@@ -46,39 +43,23 @@ public class GridRunningQueryInfo {
     /** */
     private final long startTime;
 
-    /** Query start time in nanoseconds to measure duration. */
-    private final long startTimeNanos;
-
-    /** */
-    private final GridQueryCancel cancel;
+    /** Query cancellable flag. */
+    private boolean cancellable;
 
     /** */
     private final boolean loc;
 
-    /** */
-    @GridToStringExclude
-    private final QueryRunningFuture fut = new QueryRunningFuture();
+    /** Enforce join order query flag. */
+    private boolean enforceJoinOrder;
 
-    /** Span of the running query. */
-    private final Span span;
+    /** Lazy query flag. */
+    private boolean lazy;
+
+    /** Distributed joins query flag. */
+    private boolean distributedJoins;
 
     /** Originator. */
     private final String qryInitiatorId;
-
-    /** Enforce join order flag. */
-    private final boolean enforceJoinOrder;
-
-    /** Lazy flag. */
-    private final boolean lazy;
-
-    /** Distributed joins flag. */
-    private final boolean distributedJoins;
-
-    /** Request ID. */
-    private long reqId;
-
-    /** Subject ID. */
-    private final UUID subjId;
 
     /**
      * Constructor.
@@ -89,30 +70,26 @@ public class GridRunningQueryInfo {
      * @param qryType Query type.
      * @param schemaName Schema name.
      * @param startTime Query start time.
-     * @param startTimeNanos Query start time in nanoseconds.
-     * @param cancel Query cancel.
+     * @param cancellable Query cancellable flag.
      * @param loc Local query flag.
+     * @param enforceJoinOrder Local query flag.
+     * @param lazy Local query flag.
+     * @param distributedJoins Local query flag.
      * @param qryInitiatorId Query's initiator identifier.
-     * @param enforceJoinOrder Enforce join order flag.
-     * @param lazy Lazy flag.
-     * @param distributedJoins Distributed joins flag.
-     * @param subjId Subject ID.
      */
-    public GridRunningQueryInfo(
-        long id,
+    public GridQueryStartedInfo(
+        Long id,
         UUID nodeId,
         String qry,
         GridCacheQueryType qryType,
         String schemaName,
         long startTime,
-        long startTimeNanos,
-        GridQueryCancel cancel,
+        boolean cancellable,
         boolean loc,
-        String qryInitiatorId,
         boolean enforceJoinOrder,
         boolean lazy,
         boolean distributedJoins,
-        UUID subjId
+        String qryInitiatorId
     ) {
         this.id = id;
         this.nodeId = nodeId;
@@ -120,29 +97,26 @@ public class GridRunningQueryInfo {
         this.qryType = qryType;
         this.schemaName = schemaName;
         this.startTime = startTime;
-        this.startTimeNanos = startTimeNanos;
-        this.cancel = cancel;
+        this.cancellable = cancellable;
         this.loc = loc;
-        this.span = MTC.span();
-        this.qryInitiatorId = qryInitiatorId;
         this.enforceJoinOrder = enforceJoinOrder;
         this.lazy = lazy;
         this.distributedJoins = distributedJoins;
-        this.subjId = subjId;
+        this.qryInitiatorId = qryInitiatorId;
     }
 
     /**
      * @return Query ID.
      */
-    public long id() {
+    public Long id() {
         return id;
     }
 
     /**
-     * @return Global query ID.
+     * @return Node ID.
      */
-    public String globalQueryId() {
-        return QueryUtils.globalQueryId(nodeId, id);
+    public UUID nodeId() {
+        return nodeId;
     }
 
     /**
@@ -174,41 +148,10 @@ public class GridRunningQueryInfo {
     }
 
     /**
-     * @return Query start time in nanoseconds.
-     */
-    public long startTimeNanos() {
-        return startTimeNanos;
-    }
-
-    /**
-     * @param curTime Current time.
-     * @param duration Duration of long query.
-     * @return {@code true} if this query should be considered as long running query.
-     */
-    public boolean longQuery(long curTime, long duration) {
-        return curTime - startTime > duration;
-    }
-
-    /**
-     * Cancel query.
-     */
-    public void cancel() {
-        if (cancel != null)
-            cancel.cancel();
-    }
-
-    /**
-     * @return Query running future.
-     */
-    public QueryRunningFuture runningFuture() {
-        return fut;
-    }
-
-    /**
      * @return {@code true} if query can be cancelled.
      */
-    public boolean cancelable() {
-        return cancel != null;
+    public boolean cancellable() {
+        return cancellable;
     }
 
     /**
@@ -216,40 +159,6 @@ public class GridRunningQueryInfo {
      */
     public boolean local() {
         return loc;
-    }
-
-    /**
-     * @return Originating node ID.
-     */
-    public UUID nodeId() {
-        return nodeId;
-    }
-
-    /**
-     * @return Span of the running query.
-     */
-    public Span span() {
-        return span;
-    }
-
-    /** @return Request ID. */
-    public long requestId() {
-        return reqId;
-    }
-
-    /**
-     * @return Query's originator string (client host+port, user name,
-     * job name or any user's information about query initiator).
-     */
-    public String queryInitiatorId() {
-        return qryInitiatorId;
-    }
-
-    /**
-     * @return Distributed joins.
-     */
-    public boolean distributedJoins() {
-        return distributedJoins;
     }
 
     /**
@@ -266,18 +175,23 @@ public class GridRunningQueryInfo {
         return lazy;
     }
 
-    /** @param reqId Request ID. */
-    public void requestId(long reqId) {
-        this.reqId = reqId;
+    /**
+     * @return Distributed joins.
+     */
+    public boolean distributedJoins() {
+        return distributedJoins;
     }
 
-    /** @return Subject ID. */
-    public UUID subjectId() {
-        return subjId;
+    /**
+     * @return Query's originator string (client host+port, user name,
+     * job name or any user's information about query initiator).
+     */
+    public String queryInitiatorId() {
+        return qryInitiatorId;
     }
 
     /**{@inheritDoc} */
     @Override public String toString() {
-        return S.toString(GridRunningQueryInfo.class, this);
+        return S.toString(GridQueryStartedInfo.class, this);
     }
 }
