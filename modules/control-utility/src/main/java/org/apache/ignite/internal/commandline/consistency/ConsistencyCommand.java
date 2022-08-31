@@ -185,7 +185,7 @@ public class ConsistencyCommand extends AbstractCommand<Object> {
         parallel = cmd != REPAIR; // REPAIR is sequential by default.
 
         if (cmd == REPAIR) {
-            String cacheName = null;
+            String cacheOrGrpName = null;
             int part = -1;
             ReadRepairStrategy strategy = null;
 
@@ -197,7 +197,7 @@ public class ConsistencyCommand extends AbstractCommand<Object> {
 
                     switch (arg) {
                         case CACHE:
-                            cacheName = argIter.nextArg("Expected cache name.");
+                            cacheOrGrpName = argIter.nextArg("Expected cache(group) name.");
 
                             break;
 
@@ -224,8 +224,8 @@ public class ConsistencyCommand extends AbstractCommand<Object> {
                     break;
             }
 
-            if (cacheName == null)
-                throw new IllegalArgumentException("Cache name argument missed.");
+            if (cacheOrGrpName == null)
+                throw new IllegalArgumentException("Cache (or cache group) name argument missed.");
 
             if (part == -1)
                 throw new IllegalArgumentException("Partition argument missed.");
@@ -239,7 +239,7 @@ public class ConsistencyCommand extends AbstractCommand<Object> {
                     "Parallel mode currently allowed only when CHECK_ONLY strategy is chosen.");
             }
 
-            cmdArg = new VisorConsistencyRepairTaskArg(cacheName, part, strategy);
+            cmdArg = new VisorConsistencyRepairTaskArg(cacheOrGrpName, part, strategy);
         }
         else if (cmd == STATUS || cmd == FINALIZE_COUNTERS)
             cmdArg = null;
