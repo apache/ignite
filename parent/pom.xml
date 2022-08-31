@@ -126,7 +126,7 @@
         <maven.model.version>3.8.4</maven.model.version>
         <checkstyle.puppycrawl.version>8.45</checkstyle.puppycrawl.version>
         <mockito.version>3.4.6</mockito.version>
-        <mysql.connector.version>8.0.26</mysql.connector.version>
+        <mysql.connector.version>8.0.30</mysql.connector.version>
         <netlibjava.version>1.1.2</netlibjava.version>
         <oro.bundle.version>2.0.8_6</oro.bundle.version>
         <paho.version>1.0.2</paho.version>
