@@ -17,9 +17,11 @@
 
 package org.apache.ignite.internal.visor.consistency;
 
+import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Map;
 import java.util.Set;
+import java.util.stream.Collectors;
 import javax.cache.CacheException;
 import org.apache.ignite.IgniteCache;
 import org.apache.ignite.IgniteCheckedException;
@@ -30,12 +32,12 @@ import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.events.CacheConsistencyViolationEvent;
 import org.apache.ignite.internal.processors.cache.CacheGroupContext;
 import org.apache.ignite.internal.processors.cache.GridCacheContext;
-import org.apache.ignite.internal.processors.cache.IgniteInternalCache;
 import org.apache.ignite.internal.processors.cache.distributed.dht.topology.GridDhtLocalPartition;
 import org.apache.ignite.internal.processors.cache.distributed.near.consistency.IgniteIrreparableConsistencyViolationException;
 import org.apache.ignite.internal.processors.cache.persistence.CacheDataRow;
 import org.apache.ignite.internal.util.GridConcurrentHashSet;
 import org.apache.ignite.internal.util.lang.GridCursor;
+import org.apache.ignite.internal.util.typedef.internal.CU;
 import org.apache.ignite.internal.visor.VisorJob;
 import org.apache.ignite.lang.IgnitePredicate;
 import org.apache.ignite.resources.LoggerResource;
@@ -87,27 +89,33 @@ public class VisorConsistencyRepairTask extends AbstractConsistencyTask<VisorCon
 
         /** {@inheritDoc} */
         @Override protected String run(VisorConsistencyRepairTaskArg arg) throws IgniteException {
-            String cacheName = arg.cacheName();
+            String cacheOrGrpName = arg.cacheOrGroupName();
             ReadRepairStrategy strategy = arg.strategy();
 
             int p = arg.part();
-            int batchSize = 1024;
+            int batchSize = 128;
             int statusDelay = 60_000; // Every minute.
 
-            IgniteInternalCache<Object, Object> internalCache = ignite.context().cache().cache(cacheName);
+            int cacheOrGrpId = CU.cacheId(cacheOrGrpName);
 
-            if (internalCache == null)
-                if (ignite.context().cache().cacheDescriptor(cacheName) != null)
+            CacheGroupContext grpCtx = ignite.context().cache().cacheGroup(cacheOrGrpId);
+
+            if (grpCtx == null) {
+                GridCacheContext<?, ?> cacheCtx = ignite.context().cache().context().cacheContext(cacheOrGrpId);
+
+                if (cacheCtx != null)
+                    grpCtx = cacheCtx.group();
+            }
+
+            if (grpCtx == null)
+                if (ignite.context().cache().cacheGroupDescriptor(cacheOrGrpId) != null ||
+                    ignite.context().cache().cacheDescriptor(cacheOrGrpName) != null)
                     return null; // Node filtered by node filter.
                 else
-                    throw new IgniteException("Cache not found [name=" + cacheName + "]");
+                    throw new IgniteException("Cache (or cache group) not found [name=" + cacheOrGrpName + "]");
 
-            GridCacheContext<Object, Object> cctx = internalCache.context();
-
-            if (!cctx.gridEvents().isRecordable(EVT_CONSISTENCY_VIOLATION))
+            if (!ignite.context().event().isRecordable(EVT_CONSISTENCY_VIOLATION))
                 throw new UnsupportedOperationException("Consistency violation events recording is disabled on cluster.");
-
-            CacheGroupContext grpCtx = cctx.group();
 
             GridDhtLocalPartition part = grpCtx.topology().localPartition(p);
 
@@ -117,73 +125,84 @@ public class VisorConsistencyRepairTask extends AbstractConsistencyTask<VisorCon
             log.info("Consistency check started " +
                 "[grp=" + grpCtx.cacheOrGroupName() + ", part=" + p + ", strategy=" + strategy + "]");
 
-            StringBuilder sb = new StringBuilder();
+            String statusKey = "[node=" + ignite.localNode() + ", cacheGroup=" + grpCtx.cacheOrGroupName() + ", part=" + p + "]";
 
-            sb.append("[node=").append(ignite.localNode());
-            sb.append(", cacheGroup=").append(grpCtx.cacheOrGroupName());
-            sb.append(", part=").append(p).append("]");
-
-            String statusKey = sb.toString();
-
-            if (VisorConsistencyStatusTask.MAP.putIfAbsent(statusKey, "0/" + part.fullSize()) != null)
+            if (VisorConsistencyStatusTask.MAP.putIfAbsent(statusKey, "0/" + part.fullSize()) != null) {
                 throw new IllegalStateException("Consistency check already started " +
                     "[grp=" + grpCtx.cacheOrGroupName() + ", part=" + p + "]");
+            }
 
-            long cnt = 0;
+            long processed = 0;
+            long checked = 0;
             long statusTs = 0;
 
             part.reserve();
 
             try {
-                IgnitePredicate<CacheConsistencyViolationEvent> lsnr = new CacheConsistencyViolationEventListener(cacheName);
+                IgnitePredicate<CacheConsistencyViolationEvent> lsnr = new CacheConsistencyViolationEventListener(
+                    grpCtx.caches().stream().map(GridCacheContext::name).collect(Collectors.toSet()));
 
                 ignite.events().localListen(lsnr, EVT_CONSISTENCY_VIOLATION);
 
                 try {
-                    Set<Object> keys = new HashSet<>();
+                    Map<Integer, PerCacheBatch> batches = new HashMap<>();
 
-                    GridCursor<? extends CacheDataRow> cursor = grpCtx.offheap().dataStore(part).cursor(cctx.cacheId());
+                    GridCursor<? extends CacheDataRow> cursor = grpCtx.offheap().dataStore(part).cursor();
 
-                    IgniteCache<Object, Object> cache = ignite.cache(cacheName).withKeepBinary().withReadRepair(strategy);
+                    while (cursor.next() && !isCancelled()) {
+                        CacheDataRow row = cursor.get();
 
-                    do {
-                        keys.clear();
+                        processed++;
 
-                        for (int i = 0; i < batchSize && cursor.next(); i++) {
-                            CacheDataRow row = cursor.get();
+                        PerCacheBatch batch = batches.computeIfAbsent(row.cacheId(), cacheId -> {
+                            String cacheName = cacheId != 0 ?
+                                ignite.context().cache().cacheDescriptor(cacheId).cacheName() :
+                                cacheOrGrpName;
 
-                            keys.add(row.key());
+                            return new PerCacheBatch(ignite.cache(cacheName).withKeepBinary().withReadRepair(strategy));
+                        });
+
+                        batch.keys.add(row.key());
+
+                        if (batch.keys.size() == batchSize) {
+                            repair(batch.cache, batch.keys);
+
+                            checked += batch.keys.size();
+
+                            batch.keys.clear();
+
+                            VisorConsistencyStatusTask.MAP.put(statusKey, checked + "/" + part.fullSize());
                         }
 
-                        if (keys.isEmpty()) {
-                            log.info("Consistency check finished [grp=" + grpCtx.cacheOrGroupName() +
-                                ", part=" + p + ", checked=" + cnt + "]");
-
-                            break;
-                        }
-
-                        try {
-                            cache.getAll(keys); // Repair.
-                        }
-                        catch (CacheException e) {
-                            if (!(e.getCause() instanceof IgniteIrreparableConsistencyViolationException) // Found but not repaired.
-                                && !isCancelled())
-                                throw new IgniteException("Read repair attempt failed.", e);
-                        }
-
-                        cnt += keys.size();
+                        assert batch.keys.size() < batchSize;
 
                         if (System.currentTimeMillis() >= statusTs) {
                             statusTs = System.currentTimeMillis() + statusDelay;
 
                             log.info("Consistency check progress [grp=" + grpCtx.cacheOrGroupName() +
-                                ", part=" + p + ", checked=" + cnt + "/" + part.fullSize() + "]");
-
-                            VisorConsistencyStatusTask.MAP.put(statusKey, cnt + "/" + part.fullSize());
+                                ", caches=" + batches.values().stream().map(b -> b.cache.getName()).collect(Collectors.toList()) +
+                                ", part=" + p +
+                                ", checked=" + checked +
+                                ", processed =" + processed + "/" + part.fullSize() + "]");
                         }
-
                     }
-                    while (!isCancelled());
+
+                    for (PerCacheBatch batch : batches.values()) {
+                        assert batch.keys.size() < batchSize;
+
+                        repair(batch.cache, batch.keys);
+
+                        checked += batch.keys.size();
+
+                        batch.keys.clear();
+                    }
+
+                    log.info("Consistency check " + (isCancelled() ? "cancelled" : "finished") +
+                        "[grp=" + grpCtx.cacheOrGroupName() +
+                        ", caches=" + batches.values().stream().map(b -> b.cache.getName()).collect(Collectors.toList()) +
+                        ", part=" + p +
+                        ", checked=" + checked +
+                        ", processed =" + processed + "/" + part.fullSize() + "]");
                 }
                 finally {
                     ignite.events().stopLocalListen(lsnr);
@@ -199,9 +218,24 @@ public class VisorConsistencyRepairTask extends AbstractConsistencyTask<VisorCon
             }
 
             if (!evts.isEmpty())
-                return processEvents(p, cnt);
+                return processEvents(p, checked);
             else
-                return NOTHING_FOUND + " [processed=" + cnt + "]\n";
+                return NOTHING_FOUND + " [processed=" + checked + "]\n";
+        }
+
+        /**
+         * @param cache Cache.
+         * @param keys Keys.
+         */
+        private void repair(IgniteCache<Object, Object> cache, Set<Object> keys) {
+            try {
+                cache.getAll(keys); // Repair.
+            }
+            catch (CacheException e) {
+                if (!(e.getCause() instanceof IgniteIrreparableConsistencyViolationException) // Found but not repaired.
+                    && !isCancelled())
+                    throw new IgniteException("Read repair attempt failed.", e);
+            }
         }
 
         /**
@@ -276,14 +310,14 @@ public class VisorConsistencyRepairTask extends AbstractConsistencyTask<VisorCon
             /** Serial version uid. */
             private static final long serialVersionUID = 0L;
 
-            /** Cache name. */
-            private final String cacheName;
+            /** Cache names. */
+            private final Set<String> cacheNames;
 
             /**
-             * @param name Name.
+             * @param cacheNames Names.
              */
-            private CacheConsistencyViolationEventListener(String name) {
-                cacheName = name;
+            private CacheConsistencyViolationEventListener(Set<String> cacheNames) {
+                this.cacheNames = cacheNames;
             }
 
             /**
@@ -292,12 +326,31 @@ public class VisorConsistencyRepairTask extends AbstractConsistencyTask<VisorCon
             @Override public boolean apply(CacheConsistencyViolationEvent evt) {
                 assert evt instanceof CacheConsistencyViolationEvent;
 
-                if (!evt.getCacheName().equals(cacheName))
+                if (!cacheNames.contains(evt.getCacheName()))
                     return true; // Skipping other caches results, which are generated by concurrent executions.
 
                 evts.add(evt);
 
                 return true;
+            }
+        }
+
+        /**
+         *
+         */
+        private static class PerCacheBatch {
+            /** Cache. */
+            private final IgniteCache<Object, Object> cache;
+
+            /** Keys. */
+            private final Set<Object> keys;
+
+            /**
+             * @param cache Cache.
+             */
+            public PerCacheBatch(IgniteCache<Object, Object> cache) {
+                this.cache = cache;
+                keys = new HashSet<>();
             }
         }
     }

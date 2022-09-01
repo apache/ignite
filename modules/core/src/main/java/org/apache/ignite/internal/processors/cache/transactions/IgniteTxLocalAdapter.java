@@ -1201,15 +1201,11 @@ public abstract class IgniteTxLocalAdapter extends IgniteTxAdapter implements Ig
                     if (retval || invoke) {
                         if (!cacheCtx.isNear()) {
                             if (!hasPrevVal) {
-                                // For non-local cache should read from store after lock on primary.
-                                boolean readThrough = cacheCtx.isLocal() &&
-                                    (invoke || cacheCtx.loadPreviousValue()) &&
-                                    !txEntry.skipStore();
-
+                                // For caches, we should read from store after lock on primary.
                                 v = cached.innerGet(
                                     null,
                                     this,
-                                    readThrough,
+                                    false,
                                     /*metrics*/!invoke,
                                     /*event*/!invoke && !dht(),
                                     null,

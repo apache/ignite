@@ -18,16 +18,19 @@
 package org.apache.ignite.internal.client.thin;
 
 import java.util.function.Function;
-
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.cache.CacheAtomicityMode;
 import org.apache.ignite.cache.CacheMode;
+import org.apache.ignite.cache.affinity.AffinityFunction;
+import org.apache.ignite.cache.affinity.rendezvous.RendezvousAffinityFunction;
 import org.apache.ignite.cache.query.ScanQuery;
 import org.apache.ignite.client.ClientAtomicConfiguration;
 import org.apache.ignite.client.ClientAtomicLong;
 import org.apache.ignite.client.ClientCache;
 import org.apache.ignite.client.ClientCollectionConfiguration;
 import org.apache.ignite.client.ClientIgniteSet;
+import org.apache.ignite.client.ClientPartitionAwarenessMapper;
+import org.apache.ignite.client.ClientPartitionAwarenessMapperFactory;
 import org.apache.ignite.configuration.AtomicConfiguration;
 import org.apache.ignite.internal.processors.cache.IgniteInternalCache;
 import org.apache.ignite.internal.processors.datastructures.GridCacheAtomicLongEx;
@@ -71,6 +74,29 @@ public class ThinClientPartitionAwarenessStableTopologyTest extends ThinClientAb
     @Test
     public void testPartitionedCustomAffinityCache() {
         testNotApplicableCache(PART_CUSTOM_AFFINITY_CACHE_NAME);
+    }
+
+    /**
+     * Test that partition awareness is applicable for partitioned cache with custom affinity function
+     * and key to partition mapping function is set on the client side.
+     */
+    @Test
+    public void testPartitionedCustomAffinityCacheWithMapper() throws Exception {
+        client.close();
+
+        initClient(getClientConfiguration(1, 2, 3)
+            .setPartitionAwarenessMapperFactory(new ClientPartitionAwarenessMapperFactory() {
+                /** {@inheritDoc} */
+                @Override public ClientPartitionAwarenessMapper create(String cacheName, int partitions) {
+                    assertEquals(cacheName, PART_CUSTOM_AFFINITY_CACHE_NAME);
+
+                    AffinityFunction aff = new RendezvousAffinityFunction(false, partitions);
+
+                    return aff::partition;
+                }
+            }), 1, 2);
+
+        testApplicableCache(PART_CUSTOM_AFFINITY_CACHE_NAME, i -> i);
     }
 
     /**

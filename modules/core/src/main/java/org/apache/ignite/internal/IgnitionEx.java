@@ -2242,7 +2242,7 @@ public class IgnitionEx {
                     Map<UUID, Map<Integer, Set<Integer>>> proposedSuppliers = new HashMap<>();
 
                     for (CacheGroupContext grpCtx : grid.context().cache().cacheGroups()) {
-                        if (grpCtx.isLocal() || grpCtx.systemCache())
+                        if (grpCtx.systemCache())
                             continue;
 
                         if (grpCtx.config().getCacheMode() == PARTITIONED && grpCtx.config().getBackups() == 0) {

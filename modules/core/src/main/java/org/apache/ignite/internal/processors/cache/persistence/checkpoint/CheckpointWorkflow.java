@@ -379,7 +379,7 @@ public class CheckpointWorkflow {
         GridCompoundFuture grpHandleFut = checkpointCollectPagesInfoPool == null ? null : new GridCompoundFuture();
 
         for (CacheGroupContext grp : cacheGroupsContexts.get()) {
-            if (grp.isLocal() || !grp.walEnabled())
+            if (!grp.walEnabled())
                 continue;
 
             Runnable r = () -> {

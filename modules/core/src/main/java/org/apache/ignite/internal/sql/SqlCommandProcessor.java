@@ -22,7 +22,6 @@ import java.util.List;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteCluster;
 import org.apache.ignite.IgniteLogger;
-import org.apache.ignite.cache.CacheMode;
 import org.apache.ignite.cache.QueryIndex;
 import org.apache.ignite.cache.QueryIndexType;
 import org.apache.ignite.cache.query.FieldsQueryCursor;
@@ -37,16 +36,23 @@ import org.apache.ignite.internal.processors.cache.distributed.near.GridNearTxLo
 import org.apache.ignite.internal.processors.cache.mvcc.MvccUtils;
 import org.apache.ignite.internal.processors.cache.query.IgniteQueryErrorCode;
 import org.apache.ignite.internal.processors.query.GridQueryProperty;
-import org.apache.ignite.internal.processors.query.GridQuerySchemaManager;
 import org.apache.ignite.internal.processors.query.GridQueryTypeDescriptor;
 import org.apache.ignite.internal.processors.query.IgniteSQLException;
 import org.apache.ignite.internal.processors.query.schema.SchemaOperationException;
+import org.apache.ignite.internal.processors.query.schema.management.IndexDescriptor;
+import org.apache.ignite.internal.processors.query.schema.management.SchemaManager;
+import org.apache.ignite.internal.processors.query.schema.management.TableDescriptor;
+import org.apache.ignite.internal.processors.query.stat.StatisticsKey;
+import org.apache.ignite.internal.processors.query.stat.StatisticsTarget;
+import org.apache.ignite.internal.processors.query.stat.config.StatisticsObjectConfiguration;
 import org.apache.ignite.internal.sql.command.SqlAlterTableCommand;
 import org.apache.ignite.internal.sql.command.SqlAlterUserCommand;
+import org.apache.ignite.internal.sql.command.SqlAnalyzeCommand;
 import org.apache.ignite.internal.sql.command.SqlCommand;
 import org.apache.ignite.internal.sql.command.SqlCreateIndexCommand;
 import org.apache.ignite.internal.sql.command.SqlCreateUserCommand;
 import org.apache.ignite.internal.sql.command.SqlDropIndexCommand;
+import org.apache.ignite.internal.sql.command.SqlDropStatisticsCommand;
 import org.apache.ignite.internal.sql.command.SqlDropUserCommand;
 import org.apache.ignite.internal.sql.command.SqlIndexColumn;
 import org.apache.ignite.internal.sql.command.SqlKillComputeTaskCommand;
@@ -55,7 +61,10 @@ import org.apache.ignite.internal.sql.command.SqlKillQueryCommand;
 import org.apache.ignite.internal.sql.command.SqlKillScanQueryCommand;
 import org.apache.ignite.internal.sql.command.SqlKillServiceCommand;
 import org.apache.ignite.internal.sql.command.SqlKillTransactionCommand;
+import org.apache.ignite.internal.sql.command.SqlRefreshStatitsicsCommand;
+import org.apache.ignite.internal.sql.command.SqlStatisticsCommands;
 import org.apache.ignite.internal.util.future.GridFinishedFuture;
+import org.apache.ignite.plugin.security.SecurityPermission;
 import org.jetbrains.annotations.Nullable;
 
 import static org.apache.ignite.internal.processors.query.QueryUtils.convert;
@@ -72,17 +81,16 @@ public class SqlCommandProcessor {
     protected final IgniteLogger log;
 
     /** Schema manager. */
-    protected final GridQuerySchemaManager schemaMgr;
+    protected final SchemaManager schemaMgr;
 
     /**
      * Constructor.
      *
      * @param ctx Kernal context.
-     * @param schemaMgr Schema manager.
      */
-    public SqlCommandProcessor(GridKernalContext ctx, GridQuerySchemaManager schemaMgr) {
+    public SqlCommandProcessor(GridKernalContext ctx) {
         this.ctx = ctx;
-        this.schemaMgr = schemaMgr;
+        this.schemaMgr = ctx.query().schemaManager();
         log = ctx.log(getClass());
     }
 
@@ -109,6 +117,12 @@ public class SqlCommandProcessor {
             processKillContinuousQueryCommand((SqlKillContinuousQueryCommand)cmdNative);
         else if (cmdNative instanceof SqlKillQueryCommand)
             processKillQueryCommand((SqlKillQueryCommand)cmdNative);
+        else if (cmdNative instanceof SqlAnalyzeCommand)
+            processAnalyzeCommand((SqlAnalyzeCommand)cmdNative);
+        else if (cmdNative instanceof SqlRefreshStatitsicsCommand)
+            processRefreshStatisticsCommand((SqlRefreshStatitsicsCommand)cmdNative);
+        else if (cmdNative instanceof SqlDropStatisticsCommand)
+            processDropStatisticsCommand((SqlDropStatisticsCommand)cmdNative);
 
         return null;
     }
@@ -128,7 +142,8 @@ public class SqlCommandProcessor {
             || cmd instanceof SqlKillTransactionCommand
             || cmd instanceof SqlKillScanQueryCommand
             || cmd instanceof SqlKillContinuousQueryCommand
-            || cmd instanceof SqlKillQueryCommand;
+            || cmd instanceof SqlKillQueryCommand
+            || cmd instanceof SqlStatisticsCommands;
     }
 
     /**
@@ -200,6 +215,74 @@ public class SqlCommandProcessor {
     }
 
     /**
+     * Process analyze command.
+     *
+     * @param cmd Sql analyze command.
+     */
+    private void processAnalyzeCommand(SqlAnalyzeCommand cmd) {
+        ctx.security().authorize(SecurityPermission.CHANGE_STATISTICS);
+
+        StatisticsObjectConfiguration objCfgs[] = cmd.configurations().stream()
+            .map(t -> {
+                if (t.key().schema() == null) {
+                    StatisticsKey key = new StatisticsKey(cmd.schemaName(), t.key().obj());
+
+                    return new StatisticsObjectConfiguration(key, t.columns().values(),
+                        t.maxPartitionObsolescencePercent());
+                }
+                else
+                    return t;
+            }).toArray(StatisticsObjectConfiguration[]::new);
+
+        try {
+            ctx.query().statsManager().collectStatistics(objCfgs);
+        }
+        catch (IgniteCheckedException e) {
+            throw new IgniteSQLException(e.getMessage(), e);
+        }
+    }
+
+    /**
+     * Process refresh statistics command.
+     *
+     * @param cmd Refresh statistics command.
+     */
+    private void processRefreshStatisticsCommand(SqlRefreshStatitsicsCommand cmd) {
+        ctx.security().authorize(SecurityPermission.REFRESH_STATISTICS);
+
+        StatisticsTarget[] targets = cmd.targets().stream()
+            .map(t -> (t.schema() == null) ? new StatisticsTarget(cmd.schemaName(), t.obj(), t.columns()) : t)
+            .toArray(StatisticsTarget[]::new);
+
+        try {
+            ctx.query().statsManager().refreshStatistics(targets);
+        }
+        catch (IgniteCheckedException e) {
+            throw new IgniteSQLException(e.getMessage(), e);
+        }
+    }
+
+    /**
+     * Process drop statistics command.
+     *
+     * @param cmd Drop statistics command.
+     */
+    private void processDropStatisticsCommand(SqlDropStatisticsCommand cmd) {
+        ctx.security().authorize(SecurityPermission.CHANGE_STATISTICS);
+
+        StatisticsTarget[] targets = cmd.targets().stream()
+            .map(t -> (t.schema() == null) ? new StatisticsTarget(cmd.schemaName(), t.obj(), t.columns()) : t)
+            .toArray(StatisticsTarget[]::new);
+
+        try {
+            ctx.query().statsManager().dropStatistics(targets);
+        }
+        catch (IgniteCheckedException e) {
+            throw new IgniteSQLException(e.getMessage(), e);
+        }
+    }
+
+    /**
      * Run DDL statement.
      *
      * @param cmd Command.
@@ -215,13 +298,13 @@ public class SqlCommandProcessor {
             if (cmd instanceof SqlCreateIndexCommand) {
                 SqlCreateIndexCommand cmd0 = (SqlCreateIndexCommand)cmd;
 
-                GridQueryTypeDescriptor typeDesc = schemaMgr.typeDescriptorForTable(cmd0.schemaName(), cmd0.tableName());
-                GridCacheContextInfo<?, ?> cacheInfo = schemaMgr.cacheInfoForTable(cmd0.schemaName(), cmd0.tableName());
+                TableDescriptor tbl = schemaMgr.table(cmd0.schemaName(), cmd0.tableName());
 
-                if (typeDesc == null)
+                if (tbl == null)
                     throw new SchemaOperationException(SchemaOperationException.CODE_TABLE_NOT_FOUND, cmd0.tableName());
 
-                ensureDdlSupported(cacheInfo);
+                GridQueryTypeDescriptor typeDesc = tbl.type();
+                GridCacheContextInfo<?, ?> cacheInfo = tbl.cacheInfo();
 
                 QueryIndex newIdx = new QueryIndex();
 
@@ -249,13 +332,11 @@ public class SqlCommandProcessor {
             else if (cmd instanceof SqlDropIndexCommand) {
                 SqlDropIndexCommand cmd0 = (SqlDropIndexCommand)cmd;
 
-                GridQueryTypeDescriptor typeDesc = schemaMgr.typeDescriptorForIndex(cmd0.schemaName(), cmd0.indexName());
+                IndexDescriptor idxDesc = schemaMgr.index(cmd0.schemaName(), cmd0.indexName());
 
-                if (typeDesc != null) {
-                    GridCacheContextInfo<?, ?> cacheInfo = schemaMgr.cacheInfoForTable(typeDesc.schemaName(),
-                        typeDesc.tableName());
-
-                    ensureDdlSupported(cacheInfo);
+                // Do not allow to drop system indexes.
+                if (idxDesc != null && !idxDesc.isPk() && !idxDesc.isAffinity() && !idxDesc.isProxy()) {
+                    GridCacheContextInfo<?, ?> cacheInfo = idxDesc.table().cacheInfo();
 
                     fut = ctx.query().dynamicIndexDrop(cacheInfo.name(), cmd0.schemaName(), cmd0.indexName(),
                         cmd0.ifExists());
@@ -271,12 +352,14 @@ public class SqlCommandProcessor {
             else if (cmd instanceof SqlAlterTableCommand) {
                 SqlAlterTableCommand cmd0 = (SqlAlterTableCommand)cmd;
 
-                GridCacheContextInfo<?, ?> cacheInfo = schemaMgr.cacheInfoForTable(cmd0.schemaName(), cmd0.tableName());
+                TableDescriptor tbl = schemaMgr.table(cmd0.schemaName(), cmd0.tableName());
 
-                if (cacheInfo == null) {
+                if (tbl == null) {
                     throw new SchemaOperationException(SchemaOperationException.CODE_TABLE_NOT_FOUND,
                         cmd0.tableName());
                 }
+
+                GridCacheContextInfo<?, ?> cacheInfo = tbl.cacheInfo();
 
                 Boolean logging = cmd0.logging();
 
@@ -346,19 +429,6 @@ public class SqlCommandProcessor {
                 tx.commit();
             else
                 tx.rollback();
-        }
-    }
-
-    /**
-     * Check if cache supports DDL statement.
-     *
-     * @param cctxInfo Cache context info.
-     * @throws IgniteSQLException If failed.
-     */
-    protected static void ensureDdlSupported(GridCacheContextInfo<?, ?> cctxInfo) throws IgniteSQLException {
-        if (cctxInfo.config().getCacheMode() == CacheMode.LOCAL) {
-            throw new IgniteSQLException("DDL statements are not supported on LOCAL caches",
-                IgniteQueryErrorCode.UNSUPPORTED_OPERATION);
         }
     }
 }

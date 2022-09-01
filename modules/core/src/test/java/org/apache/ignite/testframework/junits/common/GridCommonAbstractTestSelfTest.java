@@ -19,12 +19,27 @@ package org.apache.ignite.testframework.junits.common;
 
 import java.util.Arrays;
 import java.util.HashMap;
+import java.util.function.Consumer;
+import org.apache.ignite.testframework.config.GridTestProperties;
 import org.junit.Test;
+
+import static org.apache.ignite.testframework.config.GridTestProperties.findTestResource;
 
 /**
  *
  */
 public class GridCommonAbstractTestSelfTest extends GridCommonAbstractTest {
+    /**
+     *
+     */
+    @Test
+    public void testResourceLocation() {
+        Consumer<String> check = (res) -> assertNotNull("Required resource not found: " + res, findTestResource(res));
+
+        check.accept(GridTestProperties.TESTS_PROP_FILE);
+        check.accept(GridTestProperties.DEFAULT_LOG4J_FILE);
+    }
+
     /**
      *
      */

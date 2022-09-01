@@ -33,6 +33,8 @@ import javax.cache.expiry.ExpiryPolicy;
 import org.apache.ignite.cache.CachePeekMode;
 import org.apache.ignite.cache.query.ContinuousQuery;
 import org.apache.ignite.cache.query.FieldsQueryCursor;
+import org.apache.ignite.cache.query.IndexQuery;
+import org.apache.ignite.cache.query.IndexQueryCriterion;
 import org.apache.ignite.cache.query.Query;
 import org.apache.ignite.cache.query.QueryCursor;
 import org.apache.ignite.cache.query.ScanQuery;
@@ -44,9 +46,13 @@ import org.apache.ignite.client.ClientDisconnectListener;
 import org.apache.ignite.client.ClientException;
 import org.apache.ignite.client.ClientFeatureNotSupportedByServerException;
 import org.apache.ignite.client.IgniteClientFuture;
+import org.apache.ignite.internal.binary.BinaryRawWriterEx;
+import org.apache.ignite.internal.binary.BinaryWriterExImpl;
 import org.apache.ignite.internal.binary.GridBinaryMarshaller;
 import org.apache.ignite.internal.binary.streams.BinaryInputStream;
 import org.apache.ignite.internal.binary.streams.BinaryOutputStream;
+import org.apache.ignite.internal.cache.query.InIndexQueryCriterion;
+import org.apache.ignite.internal.cache.query.RangeIndexQueryCriterion;
 import org.apache.ignite.internal.client.thin.TcpClientTransactions.TcpClientTransaction;
 import org.apache.ignite.internal.processors.cache.version.GridCacheVersion;
 import org.apache.ignite.internal.util.typedef.T2;
@@ -54,6 +60,7 @@ import org.apache.ignite.internal.util.typedef.internal.A;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.jetbrains.annotations.Nullable;
 
+import static org.apache.ignite.internal.binary.GridBinaryMarshaller.ARR_LIST;
 import static org.apache.ignite.internal.client.thin.ProtocolVersionFeature.EXPIRY_POLICY;
 import static org.apache.ignite.internal.processors.platform.cache.expiry.PlatformExpiryPolicy.convertDuration;
 
@@ -125,6 +132,8 @@ public class TcpClientCache<K, V> implements ClientCache<K, V> {
         this.expiryPlc = expiryPlc;
 
         jCacheAdapter = new ClientJCacheAdapter<>(this);
+
+        this.ch.registerCacheIfCustomAffinity(this.name);
     }
 
     /** {@inheritDoc} */
@@ -745,6 +754,8 @@ public class TcpClientCache<K, V> implements ClientCache<K, V> {
             res = (QueryCursor<R>)query((SqlFieldsQuery)qry);
         else if (qry instanceof ContinuousQuery)
             res = query((ContinuousQuery<K, V>)qry, null);
+        else if (qry instanceof IndexQuery)
+            res = indexQuery((IndexQuery)qry);
         else
             throw new IllegalArgumentException(
                 String.format("Query of type [%s] is not supported", qry.getClass().getSimpleName())
@@ -937,6 +948,85 @@ public class TcpClientCache<K, V> implements ClientCache<K, V> {
             ch,
             ClientOperation.QUERY_SCAN,
             ClientOperation.QUERY_SCAN_CURSOR_GET_PAGE,
+            qryWriter,
+            keepBinary,
+            marsh,
+            cacheId,
+            qry.getPartition() == null ? -1 : qry.getPartition()
+        ));
+    }
+
+    /** Handle index query. */
+    private QueryCursor<Cache.Entry<K, V>> indexQuery(IndexQuery<K, V> qry) {
+        Consumer<PayloadOutputChannel> qryWriter = payloadCh -> {
+            if (!payloadCh.clientChannel().protocolCtx().isFeatureSupported(ProtocolBitmaskFeature.INDEX_QUERY))
+                throw new ClientFeatureNotSupportedByServerException(ProtocolBitmaskFeature.INDEX_QUERY);
+
+            writeCacheInfo(payloadCh);
+
+            BinaryOutputStream out = payloadCh.out();
+
+            try (BinaryRawWriterEx w = new BinaryWriterExImpl(marsh.context(), out, null, null)) {
+                w.writeInt(qry.getPageSize());
+                w.writeBoolean(qry.isLocal());
+                w.writeInt(qry.getPartition() == null ? -1 : qry.getPartition());
+
+                w.writeString(qry.getValueType());
+                w.writeString(qry.getIndexName());
+
+                if (qry.getCriteria() != null) {
+                    out.writeByte(ARR_LIST);
+                    out.writeInt(qry.getCriteria().size());
+
+                    for (IndexQueryCriterion c: qry.getCriteria()) {
+                        if (c instanceof RangeIndexQueryCriterion) {
+                            out.writeByte((byte)0); // Criterion type.
+
+                            RangeIndexQueryCriterion range = (RangeIndexQueryCriterion)c;
+
+                            w.writeString(range.field());
+                            w.writeBoolean(range.lowerIncl());
+                            w.writeBoolean(range.upperIncl());
+                            w.writeBoolean(range.lowerNull());
+                            w.writeBoolean(range.upperNull());
+
+                            serDes.writeObject(out, range.lower());
+                            serDes.writeObject(out, range.upper());
+                        }
+                        else if (c instanceof InIndexQueryCriterion) {
+                            out.writeByte((byte)1); // Criterion type.
+
+                            InIndexQueryCriterion in = (InIndexQueryCriterion)c;
+
+                            w.writeString(in.field());
+                            w.writeInt(in.values().size());
+
+                            for (Object v: in.values())
+                                serDes.writeObject(out, v);
+                        }
+                        else {
+                            throw new IllegalArgumentException(
+                                String.format("Unknown IndexQuery criterion type [%s]", c.getClass().getSimpleName())
+                            );
+                        }
+                    }
+                }
+                else
+                    out.writeByte(GridBinaryMarshaller.NULL);
+            }
+
+            if (qry.getFilter() == null)
+                out.writeByte(GridBinaryMarshaller.NULL);
+            else {
+                serDes.writeObject(out, qry.getFilter());
+                out.writeByte(JAVA_PLATFORM);
+            }
+        };
+
+        return new ClientQueryCursor<>(new ClientQueryPager<>(
+            ch,
+            ClientOperation.QUERY_INDEX,
+            ClientOperation.QUERY_INDEX_CURSOR_GET_PAGE,
             qryWriter,
             keepBinary,
             marsh,

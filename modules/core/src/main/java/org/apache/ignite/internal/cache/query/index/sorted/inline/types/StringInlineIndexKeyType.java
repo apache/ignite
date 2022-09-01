@@ -230,7 +230,7 @@ public class StringInlineIndexKeyType extends NullableInlineIndexKeyType<StringI
 
         int res = cntr1 == len1 && cntr2 == len2 ? 0 : cntr1 == len1 ? -1 : 1;
 
-        if (isValueFull(pageAddr, off))
+        if (inlinedFullValue(pageAddr, off))
             return res;
 
         if (res >= 0)
@@ -264,12 +264,8 @@ public class StringInlineIndexKeyType extends NullableInlineIndexKeyType<StringI
         return null;
     }
 
-    /**
-     * @param pageAddr Page address.
-     * @param off Offset.
-     * @return {@code True} if string is not truncated on save.
-     */
-    private boolean isValueFull(long pageAddr, int off) {
+    /** {@inheritDoc} */
+    @Override public boolean inlinedFullValue(long pageAddr, int off) {
         return (PageUtils.getShort(pageAddr, off + 1) & 0x8000) == 0;
     }
 

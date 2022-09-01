@@ -1627,6 +1627,7 @@ public abstract class BPlusTree<L, T extends L> extends DataStructure implements
             switch (findDown(g, g.rootId, 0L, g.rootLvl)) {
                 case RETRY:
                 case RETRY_ROOT:
+                    checkDestroyed();
                     checkInterrupted();
 
                     continue;

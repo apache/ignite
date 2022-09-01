@@ -189,6 +189,12 @@ public class IgniteServiceProcessor extends GridProcessorAdapter implements Igni
      */
     private final ConcurrentMap<IgniteUuid, ServiceInfo> deployedServices = new ConcurrentHashMap<>();
 
+    /**
+     * Map of deployed services, kept in-sync with deployedServices above, and keyed by name to improve performance
+     * for lookups.
+     */
+    private final ConcurrentMap<String, ServiceInfo> deployedServicesByName = new ConcurrentHashMap<>();
+
     /** Deployment futures. */
     private final ConcurrentMap<IgniteUuid, GridServiceDeploymentFuture<IgniteUuid>> depFuts = new ConcurrentHashMap<>();
 
@@ -346,6 +352,7 @@ public class IgniteServiceProcessor extends GridProcessorAdapter implements Igni
         assert opsLock.isWriteLockedByCurrentThread();
 
         deployedServices.clear();
+        deployedServicesByName.clear();
 
         ctx.metric().remove(SERVICE_METRIC_REGISTRY);
 
@@ -1545,9 +1552,9 @@ public class IgniteServiceProcessor extends GridProcessorAdapter implements Igni
      * @return @return Service's id if exists, otherwise {@code null};
      */
     @Nullable private IgniteUuid lookupDeployedServiceId(String name) {
-        for (ServiceInfo desc : deployedServices.values()) {
-            if (desc.name().equals(name))
-                return desc.serviceId();
+        ServiceInfo serviceInfo = deployedServicesByName.get(name);
+        if (serviceInfo != null) {
+            return serviceInfo.serviceId();
         }
 
         return null;
@@ -1580,12 +1587,18 @@ public class IgniteServiceProcessor extends GridProcessorAdapter implements Igni
             return;
 
         try {
-            depActions.servicesToDeploy().forEach(deployedServices::putIfAbsent);
+            depActions.servicesToDeploy().forEach((uuid, serviceInfo) -> {
+                if (deployedServices.putIfAbsent(uuid, serviceInfo) == null) {
+                    deployedServicesByName.put(serviceInfo.name(), serviceInfo);
+                }
+            });
 
             depActions.servicesToUndeploy().forEach((srvcId, desc) -> {
                 ServiceInfo rmv = deployedServices.remove(srvcId);
 
                 assert rmv != null && rmv == desc : "Concurrent map modification.";
+
+                deployedServicesByName.remove(rmv.name());
             });
         }
         finally {

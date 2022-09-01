@@ -35,7 +35,6 @@ import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.junit.runners.Parameterized;
-
 import static org.apache.ignite.cache.CacheAtomicityMode.ATOMIC;
 
 /** Test concurrent putAll/removeAll operations with unordered set of keys on atomic caches. */
@@ -61,9 +60,7 @@ public class IgniteCacheAtomicConcurrentUnorderedUpdateAllTest extends GridCommo
             new Object[] {CacheMode.PARTITIONED, Boolean.TRUE, Boolean.FALSE},
             new Object[] {CacheMode.PARTITIONED, Boolean.FALSE, Boolean.TRUE},
             new Object[] {CacheMode.REPLICATED, Boolean.FALSE, Boolean.FALSE},
-            new Object[] {CacheMode.REPLICATED, Boolean.TRUE, Boolean.FALSE},
-            new Object[] {CacheMode.LOCAL, Boolean.FALSE, Boolean.FALSE},
-            new Object[] {CacheMode.LOCAL, Boolean.TRUE, Boolean.FALSE}
+            new Object[] {CacheMode.REPLICATED, Boolean.TRUE, Boolean.FALSE}
         );
     }
 

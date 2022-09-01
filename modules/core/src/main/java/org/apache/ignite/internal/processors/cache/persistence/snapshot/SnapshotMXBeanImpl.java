@@ -21,9 +21,13 @@ import java.util.Arrays;
 import java.util.Set;
 import java.util.stream.Collectors;
 import org.apache.ignite.internal.GridKernalContext;
+import org.apache.ignite.internal.processors.metric.GridMetricManager;
+import org.apache.ignite.internal.processors.metric.MetricRegistry;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.lang.IgniteFuture;
 import org.apache.ignite.mxbean.SnapshotMXBean;
+
+import static org.apache.ignite.internal.processors.cache.persistence.snapshot.SnapshotRestoreProcess.SNAPSHOT_RESTORE_METRICS;
 
 /**
  * Snapshot MBean features.
@@ -32,11 +36,15 @@ public class SnapshotMXBeanImpl implements SnapshotMXBean {
     /** Instance of snapshot cache shared manager. */
     private final IgniteSnapshotManager mgr;
 
+    /** Instance of metric manager. */
+    private final GridMetricManager metricMgr;
+
     /**
      * @param ctx Kernal context.
      */
     public SnapshotMXBeanImpl(GridKernalContext ctx) {
         mgr = ctx.cache().context().snapshotMgr();
+        metricMgr = ctx.metric();
     }
 
     /** {@inheritDoc} */
@@ -66,5 +74,26 @@ public class SnapshotMXBeanImpl implements SnapshotMXBean {
     /** {@inheritDoc} */
     @Override public void cancelSnapshotRestore(String name) {
         mgr.cancelSnapshotRestore(name).get();
+    }
+
+    /** {@inheritDoc} */
+    @Override public String status() {
+        SnapshotOperationRequest req = mgr.currentCreateRequest();
+
+        if (req != null) {
+            return "Create snapshot operation is in progress [name=" + req.snapshotName() +
+                ", id=" + req.requestId() + ']';
+        }
+
+        if (mgr.isRestoring()) {
+            MetricRegistry mreg = metricMgr.registry(SNAPSHOT_RESTORE_METRICS);
+
+            String name = mreg.findMetric("snapshotName").getAsString();
+            String id = mreg.findMetric("requestId").getAsString();
+
+            return "Restore snapshot operation is in progress [name=" + name + ", id=" + id + ']';
+        }
+
+        return "There is no create or restore snapshot operation in progress.";
     }
 }

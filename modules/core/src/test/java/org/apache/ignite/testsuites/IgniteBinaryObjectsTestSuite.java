@@ -83,9 +83,6 @@ import org.apache.ignite.internal.processors.cache.binary.distributed.dht.GridCa
 import org.apache.ignite.internal.processors.cache.binary.distributed.dht.GridCacheBinaryObjectsPartitionedOnheapSelfTest;
 import org.apache.ignite.internal.processors.cache.binary.distributed.dht.GridCacheBinaryObjectsPartitionedSelfTest;
 import org.apache.ignite.internal.processors.cache.binary.distributed.replicated.GridCacheBinaryObjectsReplicatedSelfTest;
-import org.apache.ignite.internal.processors.cache.binary.local.GridCacheBinaryObjectsAtomicLocalSelfTest;
-import org.apache.ignite.internal.processors.cache.binary.local.GridCacheBinaryObjectsLocalOnheapSelfTest;
-import org.apache.ignite.internal.processors.cache.binary.local.GridCacheBinaryObjectsLocalSelfTest;
 import org.apache.ignite.internal.processors.cache.distributed.IgniteBinaryMetadataUpdateChangingTopologySelfTest;
 import org.junit.runner.RunWith;
 import org.junit.runners.Suite;
@@ -142,9 +139,6 @@ import org.junit.runners.Suite;
     BinaryFooterOffsetsHeapNonCompactSelfTest.class,
     BinaryFooterOffsetsOffheapNonCompactSelfTest.class,
 
-    GridCacheBinaryObjectsLocalSelfTest.class,
-    GridCacheBinaryObjectsLocalOnheapSelfTest.class,
-    GridCacheBinaryObjectsAtomicLocalSelfTest.class,
     GridCacheBinaryObjectsReplicatedSelfTest.class,
     GridCacheBinaryObjectsPartitionedSelfTest.class,
     GridCacheBinaryObjectsPartitionedNearDisabledSelfTest.class,

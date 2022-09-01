@@ -70,12 +70,9 @@ import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 import org.junit.Assert;
 import org.junit.Test;
-
 import static org.apache.ignite.IgniteSystemProperties.IGNITE_JETTY_PORT;
-import static org.apache.ignite.cache.CacheMode.LOCAL;
 import static org.apache.ignite.cache.CacheMode.PARTITIONED;
 import static org.apache.ignite.cache.CacheMode.REPLICATED;
-import static org.apache.ignite.cache.CacheWriteSynchronizationMode.FULL_SYNC;
 
 /**
  * Tests for Java client.
@@ -83,7 +80,10 @@ import static org.apache.ignite.cache.CacheWriteSynchronizationMode.FULL_SYNC;
 @SuppressWarnings("deprecation")
 public abstract class ClientAbstractSelfTest extends GridCommonAbstractTest {
     /** */
-    private static final String CACHE_NAME = "cache";
+    private static final String REPLICATED_CACHE_NAME = "replicated";
+
+    /** */
+    private static final String PARTITIONED_CACHE_NAME = "partitioned";
 
     /** */
     public static final String HOST = "127.0.0.1";
@@ -153,8 +153,8 @@ public abstract class ClientAbstractSelfTest extends GridCommonAbstractTest {
                 cacheStore.map.clear();
         }
 
-        grid().cache(DEFAULT_CACHE_NAME).clear();
-        grid().cache(CACHE_NAME).clear();
+        grid().cache(PARTITIONED_CACHE_NAME).clear();
+        grid().cache(REPLICATED_CACHE_NAME).clear();
 
         INTERCEPTED_OBJECTS.clear();
     }
@@ -228,8 +228,7 @@ public abstract class ClientAbstractSelfTest extends GridCommonAbstractTest {
 
         cfg.setConnectorConfiguration(clientCfg);
 
-        cfg.setCacheConfiguration(cacheConfiguration(DEFAULT_CACHE_NAME), cacheConfiguration("replicated"),
-            cacheConfiguration("partitioned"), cacheConfiguration(CACHE_NAME));
+        cfg.setCacheConfiguration(cacheConfiguration(REPLICATED_CACHE_NAME), cacheConfiguration(PARTITIONED_CACHE_NAME));
 
         clientCfg.setMessageInterceptor(new ConnectorMessageInterceptor() {
             /** {@inheritDoc} */
@@ -262,10 +261,8 @@ public abstract class ClientAbstractSelfTest extends GridCommonAbstractTest {
     private static CacheConfiguration cacheConfiguration(@NotNull final String cacheName) throws Exception {
         CacheConfiguration cfg = defaultCacheConfiguration();
 
-        cfg.setCacheMode(DEFAULT_CACHE_NAME.equals(cacheName) || CACHE_NAME.equals(cacheName) ? LOCAL : "replicated".equals(cacheName) ?
-            REPLICATED : PARTITIONED);
+        cfg.setCacheMode(REPLICATED_CACHE_NAME.equals(cacheName) ? REPLICATED : PARTITIONED);
         cfg.setName(cacheName);
-        cfg.setWriteSynchronizationMode(FULL_SYNC);
 
         cfg.setCacheStoreFactory(new Factory<CacheStore>() {
             @Override public CacheStore create() {
@@ -308,7 +305,7 @@ public abstract class ClientAbstractSelfTest extends GridCommonAbstractTest {
 
         GridClientDataConfiguration cache = new GridClientDataConfiguration();
 
-        cache.setName(CACHE_NAME);
+        cache.setName(PARTITIONED_CACHE_NAME);
 
         cfg.setDataConfigurations(Arrays.asList(nullCache, cache));
 
@@ -320,7 +317,7 @@ public abstract class ClientAbstractSelfTest extends GridCommonAbstractTest {
         cfg.setExecutorService(Executors.newCachedThreadPool(new ThreadFactory() {
             private AtomicInteger cntr = new AtomicInteger();
 
-            @SuppressWarnings("NullableProblems")
+            /** {@inheritDoc} */
             @Override public Thread newThread(Runnable r) {
                 return new Thread(r, "client-worker-thread-" + cntr.getAndIncrement());
             }
@@ -353,7 +350,7 @@ public abstract class ClientAbstractSelfTest extends GridCommonAbstractTest {
     public void testNoAsyncExceptions() throws Exception {
         GridClient client = client();
 
-        GridClientData data = client.data(CACHE_NAME);
+        GridClientData data = client.data(PARTITIONED_CACHE_NAME);
         GridClientCompute compute = client.compute().projection(new GridClientPredicate<GridClientNode>() {
             @Override public boolean apply(GridClientNode e) {
                 return false;

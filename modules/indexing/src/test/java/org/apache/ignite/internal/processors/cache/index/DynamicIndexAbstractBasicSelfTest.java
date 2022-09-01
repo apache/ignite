@@ -1190,35 +1190,6 @@ public abstract class DynamicIndexAbstractBasicSelfTest extends DynamicIndexAbst
     }
 
     /**
-     * Test that operations fail on LOCAL cache.
-     *
-     * @throws Exception If failed.
-     */
-    @Test
-    public void testFailOnLocalCache() throws Exception {
-        for (Ignite node : Ignition.allGrids()) {
-            if (!node.configuration().isClientMode())
-                createSqlCache(node, localCacheConfiguration());
-        }
-
-        final QueryIndex idx = index(IDX_NAME_1, field(FIELD_NAME_1_ESCAPED));
-
-        assertIgniteSqlException(new RunnableX() {
-            @Override public void runx() throws Exception {
-                dynamicIndexCreate(CACHE_NAME, TBL_NAME, idx, true, 0);
-            }
-        }, IgniteQueryErrorCode.UNSUPPORTED_OPERATION);
-
-        assertNoIndex(CACHE_NAME, TBL_NAME, IDX_NAME_1);
-
-        assertIgniteSqlException(new RunnableX() {
-            @Override public void runx() throws Exception {
-                dynamicIndexDrop(CACHE_NAME, IDX_NAME_LOCAL, true);
-            }
-        }, IgniteQueryErrorCode.UNSUPPORTED_OPERATION);
-    }
-
-    /**
      * Test that operations work on statically configured cache.
      *
      * @throws Exception If failed.

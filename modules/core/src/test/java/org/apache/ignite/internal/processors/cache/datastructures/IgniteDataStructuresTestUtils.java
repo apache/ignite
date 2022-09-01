@@ -75,11 +75,6 @@ class IgniteDataStructuresTestUtils {
 
         for (int backups : Arrays.asList(0, 1)) {
             for (CacheMode cacheMode : CacheMode.values()) {
-                if (cacheMode == CacheMode.LOCAL) {
-                    // TODO: https://issues.apache.org/jira/browse/IGNITE-13076
-                    continue;
-                }
-
                 AtomicConfiguration cfg = new AtomicConfiguration()
                     .setBackups(backups)
                     .setCacheMode(cacheMode)
@@ -104,11 +99,6 @@ class IgniteDataStructuresTestUtils {
             for (CacheAtomicityMode atomicityMode : Arrays.asList(TRANSACTIONAL, ATOMIC)) {
                 for (int backups : Arrays.asList(0, 1)) {
                     for (CacheMode cacheMode : CacheMode.values()) {
-                        if (cacheMode == CacheMode.LOCAL) {
-                            // TODO: https://issues.apache.org/jira/browse/IGNITE-13076
-                            continue;
-                        }
-
                         CollectionConfiguration cfg = new CollectionConfiguration()
                             .setCollocated(collocated)
                             .setAtomicityMode(atomicityMode)

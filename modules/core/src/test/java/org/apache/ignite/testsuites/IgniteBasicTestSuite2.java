@@ -39,6 +39,7 @@ import org.apache.ignite.internal.managers.IgniteDiagnosticPartitionReleaseFutur
 import org.apache.ignite.internal.managers.communication.GridIoManagerFileTransmissionSelfTest;
 import org.apache.ignite.internal.managers.discovery.IncompleteDeserializationExceptionTest;
 import org.apache.ignite.internal.metric.MetricsClusterActivationTest;
+import org.apache.ignite.internal.metric.PeriodicHistogramMetricImplTest;
 import org.apache.ignite.internal.mxbean.IgniteStandardMXBeanTest;
 import org.apache.ignite.internal.pagemem.wal.record.WALRecordSerializationTest;
 import org.apache.ignite.internal.pagemem.wal.record.WALRecordTest;
@@ -48,6 +49,7 @@ import org.apache.ignite.internal.processors.cache.CacheLockCandidatesThreadTest
 import org.apache.ignite.internal.processors.cache.GridLongRunningInitNewCrdFutureDiagnosticsTest;
 import org.apache.ignite.internal.processors.cache.IgniteMarshallerCacheClassNameConflictTest;
 import org.apache.ignite.internal.processors.cache.IgniteMarshallerCacheClientRequestsMappingOnMissTest;
+import org.apache.ignite.internal.processors.cache.IgniteMarshallerCacheClientRequestsMappingTest;
 import org.apache.ignite.internal.processors.cache.IgniteMarshallerCacheFSRestoreTest;
 import org.apache.ignite.internal.processors.cache.IgniteMarshallerCacheSeparateDirectoryTest;
 import org.apache.ignite.internal.processors.cache.RebalanceWithDifferentThreadPoolSizeTest;
@@ -142,6 +144,7 @@ import org.junit.runners.Suite;
     IgniteMarshallerCacheFSRestoreTest.class,
     IgniteMarshallerCacheClassNameConflictTest.class,
     IgniteMarshallerCacheClientRequestsMappingOnMissTest.class,
+    IgniteMarshallerCacheClientRequestsMappingTest.class,
     IgniteMarshallerCacheSeparateDirectoryTest.class,
 
     IgniteDiagnosticMessagesTest.class,
@@ -224,7 +227,8 @@ import org.junit.runners.Suite;
     ExponentialBackoffTest.class,
     ProgressSpeedCalculationTest.class,
 
-    ConcurrentMappingFileReadWriteTest.class
+    ConcurrentMappingFileReadWriteTest.class,
+    PeriodicHistogramMetricImplTest.class,
 })
 public class IgniteBasicTestSuite2 {
 }

@@ -29,7 +29,6 @@ import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
 import javax.cache.Cache;
-import javax.cache.CacheException;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCache;
 import org.apache.ignite.IgniteDataStreamer;
@@ -69,10 +68,8 @@ import org.apache.ignite.testframework.MvccFeatureChecker;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.jetbrains.annotations.Nullable;
 import org.junit.Test;
-
 import static java.util.concurrent.TimeUnit.MILLISECONDS;
 import static org.apache.ignite.cache.CacheAtomicityMode.TRANSACTIONAL;
-import static org.apache.ignite.cache.CacheMode.LOCAL;
 import static org.apache.ignite.cache.CacheMode.PARTITIONED;
 import static org.apache.ignite.cache.CacheMode.REPLICATED;
 import static org.apache.ignite.cache.CacheWriteSynchronizationMode.FULL_SYNC;
@@ -212,26 +209,6 @@ public class DataStreamProcessorSelfTest extends GridCommonAbstractTest {
         mode = REPLICATED;
 
         checkDataStreamer();
-    }
-
-    /**
-     * @throws Exception If failed.
-     */
-    @Test
-    public void testLocal() throws Exception {
-        MvccFeatureChecker.skipIfNotSupported(MvccFeatureChecker.Feature.LOCAL_CACHE);
-
-        mode = LOCAL;
-
-        try {
-            checkDataStreamer();
-
-            assert false;
-        }
-        catch (CacheException e) {
-            // Cannot load local cache configured remotely.
-            info("Caught expected exception: " + e);
-        }
     }
 
     /**

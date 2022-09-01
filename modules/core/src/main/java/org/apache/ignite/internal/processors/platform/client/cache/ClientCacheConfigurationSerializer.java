@@ -33,12 +33,13 @@ import org.apache.ignite.cache.CacheWriteSynchronizationMode;
 import org.apache.ignite.cache.PartitionLossPolicy;
 import org.apache.ignite.cache.QueryEntity;
 import org.apache.ignite.cache.QueryIndex;
+import org.apache.ignite.client.ClientException;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.internal.binary.BinaryRawWriterEx;
 import org.apache.ignite.internal.processors.platform.client.ClientProtocolContext;
 import org.apache.ignite.internal.processors.platform.client.ClientProtocolVersionFeature;
 import org.apache.ignite.internal.processors.platform.utils.PlatformConfigurationUtils;
-
+import static java.util.Optional.ofNullable;
 import static org.apache.ignite.internal.processors.platform.client.ClientProtocolVersionFeature.QUERY_ENTITY_PRECISION_AND_SCALE;
 
 /**
@@ -155,7 +156,7 @@ public class ClientCacheConfigurationSerializer {
                 CacheConfiguration.DFLT_CACHE_ATOMICITY_MODE);
 
         writer.writeInt(cfg.getBackups());
-        PlatformConfigurationUtils.writeEnumInt(writer, cfg.getCacheMode(), CacheConfiguration.DFLT_CACHE_MODE);
+        writer.writeInt(ofNullable(cfg.getCacheMode()).orElse(CacheConfiguration.DFLT_CACHE_MODE).code());
         writer.writeBoolean(cfg.isCopyOnRead());
         writer.writeString(cfg.getDataRegionName());
         writer.writeBoolean(cfg.isEagerTtl());
@@ -298,7 +299,7 @@ public class ClientCacheConfigurationSerializer {
 
         short propCnt = reader.readShort();
 
-        CacheConfiguration cfg = new CacheConfiguration();
+        CacheConfiguration<?, ?> cfg = new CacheConfiguration<>();
 
         for (int i = 0; i < propCnt; i++) {
             short code = reader.readShort();
@@ -313,7 +314,7 @@ public class ClientCacheConfigurationSerializer {
                     break;
 
                 case CACHE_MODE:
-                    cfg.setCacheMode(CacheMode.fromOrdinal(reader.readInt()));
+                    cfg.setCacheMode(CacheMode.fromCode(reader.readInt()));
                     break;
 
                 case COPY_ON_READ:
@@ -448,6 +449,9 @@ public class ClientCacheConfigurationSerializer {
                     break;
             }
         }
+
+        if (cfg.getCacheMode() == null)
+            throw new ClientException("Unsupported cache mode");
 
         return cfg;
     }

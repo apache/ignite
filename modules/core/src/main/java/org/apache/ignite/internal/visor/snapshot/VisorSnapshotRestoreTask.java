@@ -98,7 +98,10 @@ public class VisorSnapshotRestoreTask extends VisorSnapshotOneNodeTask<VisorSnap
         }
     }
 
-    /** */
+    /**
+     * @deprecated Use {@link VisorSnapshotStatusTask} instead.
+     */
+    @Deprecated
     private static class VisorSnapshotRestoreStatusJob extends VisorJob<VisorSnapshotRestoreTaskArg, String> {
         /** Serial version uid. */
         private static final long serialVersionUID = 0L;
