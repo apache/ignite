@@ -854,12 +854,12 @@ To trigger the rebuild process of all indexes for the specified caches or the ca
 tab:Unix[]
 [source,shell]
 ----
-control.sh --cache indexes_force_rebuild --node-id nodeId --cache-name cacheName1,...cacheNameN|--group-name groupName1,...groupNameN
+control.sh --cache indexes_force_rebuild --node-id nodeId --cache-names cacheName1,...cacheNameN|--group-names groupName1,...groupNameN
 ----
 tab:Window[]
 [source,shell]
 ----
-control.bat --cache indexes_force_rebuild --node-id nodeId --cache-name cacheName1,...cacheNameN|--group-name groupName1,...groupNameN
+control.bat --cache indexes_force_rebuild --node-id nodeId --cache-names cacheName1,...cacheNameN|--group-names groupName1,...groupNameN
 ----
 --
 
