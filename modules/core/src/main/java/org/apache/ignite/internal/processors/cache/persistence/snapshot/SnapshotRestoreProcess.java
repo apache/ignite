@@ -337,7 +337,14 @@ public class SnapshotRestoreProcess {
             prepareRestoreProc.start(req.requestId(), req);
         });
 
-        return new IgniteFutureImpl<>(fut0);
+        return new IgniteFutureImpl<Void>(fut0) {
+            @Override public boolean cancel() throws IgniteException {
+                SnapshotRestoreProcess.this.cancel(
+                    new IgniteCheckedException("Operation has been canceled by the user."), fut0.rqId);
+
+                return true;
+            }
+        };
     }
 
     /**
@@ -485,6 +492,37 @@ public class SnapshotRestoreProcess {
         }
 
         boolean ctxStop = opCtx0 != null && opCtx0.snpName.equals(snpName);
+
+        if (ctxStop)
+            interrupt(opCtx0, reason);
+
+        return fut0 == null ? new IgniteFinishedFutureImpl<>(ctxStop) :
+            new IgniteFutureImpl<>(fut0.chain(f -> true));
+    }
+
+    /**
+     * Cancel the currently running local restore procedure.
+     *
+     * @param reason Interruption reason.
+     * @param operId Snapshot operation ID.
+     * @return Future that will be finished when process the process is complete. The result of this future will be
+     * {@code false} if the restore process with the specified snapshot name is not running at all.
+     */
+    public IgniteFuture<Boolean> cancel(IgniteCheckedException reason, UUID operId) {
+        SnapshotRestoreContext opCtx0;
+        ClusterSnapshotFuture fut0 = null;
+
+        synchronized (this) {
+            opCtx0 = opCtx;
+
+            if (fut != null && fut.rqId.equals(operId)) {
+                fut0 = fut;
+
+                fut0.interruptEx = reason;
+            }
+        }
+
+        boolean ctxStop = opCtx0 != null && opCtx0.reqId.equals(operId);
 
         if (ctxStop)
             interrupt(opCtx0, reason);
@@ -1001,6 +1039,7 @@ public class SnapshotRestoreProcess {
                 for (Map.Entry<UUID, Map<Integer, Set<Integer>>> m : snpAff.entrySet()) {
                     ctx.cache().context().snapshotMgr()
                         .requestRemoteSnapshotFiles(m.getKey(),
+                            opCtx0.reqId,
                             opCtx0.snpName,
                             opCtx0.snpPath,
                             m.getValue(),

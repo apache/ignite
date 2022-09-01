@@ -162,6 +162,7 @@ class SnapshotFutureTask extends AbstractSnapshotFutureTask<Set<GroupPartitionId
     public SnapshotFutureTask(
         GridCacheSharedContext<?, ?> cctx,
         UUID srcNodeId,
+        UUID operId,
         String snpName,
         File tmpWorkDir,
         FileIOFactory ioFactory,
@@ -170,7 +171,7 @@ class SnapshotFutureTask extends AbstractSnapshotFutureTask<Set<GroupPartitionId
         boolean withMetaStorage,
         ThreadLocal<ByteBuffer> locBuff
     ) {
-        super(cctx, srcNodeId, snpName, tmpWorkDir, ioFactory, snpSndr, parts);
+        super(cctx, srcNodeId, operId, snpName, tmpWorkDir, ioFactory, snpSndr, parts);
 
         assert snpName != null : "Snapshot name cannot be empty or null.";
         assert snpSndr != null : "Snapshot sender which handles execution tasks must be not null.";

@@ -63,6 +63,7 @@ import java.util.function.BiConsumer;
 import java.util.function.BiFunction;
 import java.util.function.BooleanSupplier;
 import java.util.function.Consumer;
+import java.util.function.Function;
 import java.util.function.Predicate;
 import java.util.stream.Collectors;
 import org.apache.ignite.IgniteCheckedException;
@@ -787,6 +788,7 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
         else {
             task0 = registerSnapshotTask(req.snapshotName(),
                 req.operationalNodeId(),
+                req.requestId(),
                 parts,
                 withMetaStorage,
                 locSndrFactory.apply(req.snapshotName(), req.snapshotPath()));
@@ -1116,6 +1118,7 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
     }
 
     /** {@inheritDoc} */
+    @Deprecated
     @Override public IgniteFuture<Void> cancelSnapshot(String name) {
         A.notNullOrEmpty(name, "Snapshot name must be not empty or null");
 
@@ -1123,7 +1126,7 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
 
         IgniteInternalFuture<Void> fut0 = cctx.kernalContext().closure()
             .callAsyncNoFailover(BROADCAST,
-                new CancelSnapshotCallable(name),
+                new CancelSnapshotCallable(name, null),
                 cctx.discovery().aliveServerNodes(),
                 false,
                 0,
@@ -1133,18 +1136,58 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
     }
 
     /**
+     *
+     * @param operId
+     * @return
+     */
+    public IgniteFuture<Void> cancelSnapshotOperation(UUID operId) {
+        A.notNull(operId, "Snapshot operation ID must be not null");
+
+        cctx.kernalContext().security().authorize(ADMIN_SNAPSHOT);
+
+        IgniteInternalFuture<Void> fut0 = cctx.kernalContext().closure()
+            .callAsyncNoFailover(BROADCAST,
+                new CancelSnapshotCallable(null, operId),
+                cctx.discovery().aliveServerNodes(),
+                false,
+                0,
+                true);
+
+        return new IgniteFutureImpl<>(fut0);
+    }
+
+    /**
+     * Cancel runninh snapshot operation (create/restore) by operation ID.
+     *
+     * @param operId Snapshot operation ID.
+     */
+    private void cancelLocalSnapshotOperations(UUID operId) {
+        A.notNull(operId, "Snapshot operation ID must be not null");
+
+        cancelLocalSnapshotTask0(task -> operId.equals(task.operationId()));
+        restoreCacheGrpProc.cancel(new IgniteCheckedException("Operation has been canceled by the user."), operId).get();
+    }
+
+    /**
      * @param name Snapshot name to cancel operation on local node.
      */
     public void cancelLocalSnapshotTask(String name) {
         A.notNullOrEmpty(name, "Snapshot name must be not null or empty");
 
+        cancelLocalSnapshotTask0(task -> name.equals(task.snapshotName()));
+    }
+
+    /**
+     * @param filter Snapshot task filter.
+     */
+    private void cancelLocalSnapshotTask0(Function<AbstractSnapshotFutureTask<?>, Boolean> filter) {
         ClusterSnapshotFuture fut0 = null;
 
         busyLock.enterBusy();
 
         try {
             for (AbstractSnapshotFutureTask<?> sctx : locSnpTasks.values()) {
-                if (sctx.snapshotName().equals(name))
+                if (filter.apply(sctx))
                     sctx.cancel();
             }
 
@@ -1548,7 +1591,13 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
             if (log.isInfoEnabled())
                 log.info(msg);
 
-            return new IgniteFutureImpl<>(snpFut0);
+            return new IgniteFutureImpl<Void>(snpFut0) {
+                @Override public boolean cancel() throws IgniteException {
+                    cancelSnapshotOperation(snpFut0.rqId).get();
+
+                    return true;
+                }
+            };
         }
         catch (Exception e) {
             recordSnapshotEvent(name, SNAPSHOT_FAILED_MSG + e.getMessage(), EVT_CLUSTER_SNAPSHOT_FAILED);
@@ -1674,6 +1723,7 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
      */
     public IgniteInternalFuture<Void> requestRemoteSnapshotFiles(
         UUID rmtNodeId,
+        UUID operId,
         String snpName,
         @Nullable String rmtSnpPath,
         Map<Integer, Set<Integer>> parts,
@@ -1694,7 +1744,7 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
             throw new IgniteCheckedException("Snapshot on remote node is not supported: " + rmtNode.id());
 
         RemoteSnapshotFilesRecevier fut =
-            new RemoteSnapshotFilesRecevier(this, rmtNodeId, snpName, rmtSnpPath, parts, stopChecker, partHnd);
+            new RemoteSnapshotFilesRecevier(this, rmtNodeId, operId, snpName, rmtSnpPath, parts, stopChecker, partHnd);
 
         snpRmtMgr.submit(fut);
 
@@ -1839,12 +1889,13 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
     AbstractSnapshotFutureTask<?> registerSnapshotTask(
         String snpName,
         UUID srcNodeId,
+        UUID operId,
         Map<Integer, Set<Integer>> parts,
         boolean withMetaStorage,
         SnapshotSender snpSndr
     ) {
-        AbstractSnapshotFutureTask<?> task = registerTask(snpName, new SnapshotFutureTask(cctx, srcNodeId, snpName,
-            tmpWorkDir, ioFactory, snpSndr, parts, withMetaStorage, locBuff));
+        AbstractSnapshotFutureTask<?> task = registerTask(snpName, new SnapshotFutureTask(cctx, srcNodeId, operId,
+            snpName, tmpWorkDir, ioFactory, snpSndr, parts, withMetaStorage, locBuff));
 
         if (!withMetaStorage) {
             for (Integer grpId : parts.keySet()) {
@@ -2510,6 +2561,7 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
         public RemoteSnapshotFilesRecevier(
             IgniteSnapshotManager snpMgr,
             UUID rmtNodeId,
+            UUID operId,
             String snpName,
             @Nullable String rmtSnpPath,
             Map<Integer, Set<Integer>> parts,
@@ -2517,7 +2569,7 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
             BiConsumer<@Nullable File, @Nullable Throwable> partHnd
         ) {
             dir = Paths.get(snpMgr.tmpWorkDir.getAbsolutePath(), reqId);
-            initMsg = new SnapshotFilesRequestMessage(reqId, snpName, rmtSnpPath, parts);
+            initMsg = new SnapshotFilesRequestMessage(reqId, operId, snpName, rmtSnpPath, parts);
 
             this.snpMgr = snpMgr;
             this.rmtNodeId = rmtNodeId;
@@ -2753,6 +2805,7 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
                         AbstractSnapshotFutureTask<?> task = registerTask(rqId,
                             new SnapshotResponseRemoteFutureTask(cctx,
                                 nodeId,
+                                reqMsg0.operationId(),
                                 snpName,
                                 reqMsg0.snapshotPath(),
                                 tmpWorkDir,
@@ -3385,6 +3438,9 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
         /** Snapshot name. */
         private final String snpName;
 
+        /** Snapshot operation ID. */
+        private final UUID operId;
+
         /** Auto-injected grid instance. */
         @IgniteInstanceResource
         private transient IgniteEx ignite;
@@ -3392,13 +3448,17 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
         /**
          * @param snpName Snapshot name.
          */
-        public CancelSnapshotCallable(String snpName) {
+        public CancelSnapshotCallable(String snpName, UUID operId) {
             this.snpName = snpName;
+            this.operId = operId;
         }
 
         /** {@inheritDoc} */
         @Override public Void call() throws Exception {
-            ignite.context().cache().context().snapshotMgr().cancelLocalSnapshotTask(snpName);
+            if (operId != null)
+                ignite.context().cache().context().snapshotMgr().cancelLocalSnapshotOperations(operId);
+            else
+                ignite.context().cache().context().snapshotMgr().cancelLocalSnapshotTask(snpName);
 
             return null;
         }

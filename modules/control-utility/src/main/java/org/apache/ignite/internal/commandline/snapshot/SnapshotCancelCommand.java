@@ -17,7 +17,10 @@
 
 package org.apache.ignite.internal.commandline.snapshot;
 
+import java.util.UUID;
 import java.util.logging.Logger;
+import org.apache.ignite.internal.commandline.CommandArgIterator;
+import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.visor.snapshot.VisorSnapshotCancelTask;
 
 import static org.apache.ignite.internal.commandline.CommandList.SNAPSHOT;
@@ -26,13 +29,23 @@ import static org.apache.ignite.internal.commandline.CommandList.SNAPSHOT;
  * Sub-command to cancel running snapshot.
  */
 public class SnapshotCancelCommand extends SnapshotSubcommand {
+
     /** Default constructor. */
     protected SnapshotCancelCommand() {
         super("cancel", VisorSnapshotCancelTask.class);
     }
 
     /** {@inheritDoc} */
+    @Override public void parseArguments(CommandArgIterator argIter) {
+        cmdArg = UUID.fromString(argIter.nextArg("Expected snapshot operation ID."));
+
+        if (argIter.hasNextSubArg())
+            throw new IllegalArgumentException("Unexpected argument: " + argIter.peekNextArg() + '.');
+    }
+
+    /** {@inheritDoc} */
     @Override public void printUsage(Logger log) {
-        usage(log, "Cancel running snapshot:", SNAPSHOT, generalUsageOptions(), name(), SNAPSHOT_NAME_ARG);
+        usage(log, "Cancel running snapshot operation:", SNAPSHOT,
+            F.asMap("operationId", "Snapshot operation ID."), name(), "operationId");
     }
 }

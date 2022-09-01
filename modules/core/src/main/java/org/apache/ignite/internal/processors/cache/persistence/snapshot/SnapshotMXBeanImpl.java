@@ -19,6 +19,7 @@ package org.apache.ignite.internal.processors.cache.persistence.snapshot;
 
 import java.util.Arrays;
 import java.util.Set;
+import java.util.UUID;
 import java.util.stream.Collectors;
 import org.apache.ignite.internal.GridKernalContext;
 import org.apache.ignite.internal.processors.metric.GridMetricManager;
@@ -58,6 +59,13 @@ public class SnapshotMXBeanImpl implements SnapshotMXBean {
     /** {@inheritDoc} */
     @Override public void cancelSnapshot(String snpName) {
         mgr.cancelSnapshot(snpName).get();
+    }
+
+    /**
+     * @param operId Snapshot operation ID.
+     */
+    public void cancelSnapshotOperation(String operId) {
+        mgr.cancelSnapshotOperation(UUID.fromString(operId)).get();
     }
 
     /** {@inheritDoc} */

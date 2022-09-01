@@ -17,43 +17,44 @@
 
 package org.apache.ignite.internal.visor.snapshot;
 
+import java.util.UUID;
 import org.apache.ignite.IgniteException;
-import org.apache.ignite.IgniteSnapshot;
+import org.apache.ignite.internal.processors.cache.persistence.snapshot.IgniteSnapshotManager;
 import org.apache.ignite.internal.processors.cache.persistence.snapshot.SnapshotMXBeanImpl;
 import org.apache.ignite.internal.processors.task.GridInternal;
 import org.apache.ignite.internal.visor.VisorJob;
 
 /**
- * @see IgniteSnapshot#cancelSnapshot(String)
+ * @see IgniteSnapshotManager#cancelSnapshotOperation(UUID)
  */
 @GridInternal
-public class VisorSnapshotCancelTask extends VisorSnapshotOneNodeTask<String, String> {
+public class VisorSnapshotCancelTask extends VisorSnapshotOneNodeTask<UUID, String> {
     /** Serial version uid. */
     private static final long serialVersionUID = 0L;
 
     /** {@inheritDoc} */
-    @Override protected VisorJob<String, String> job(String arg) {
+    @Override protected VisorJob<UUID, String> job(UUID arg) {
         return new VisorSnapshotCancelJob(arg, debug);
     }
 
     /** */
-    private static class VisorSnapshotCancelJob extends VisorJob<String, String> {
+    private static class VisorSnapshotCancelJob extends VisorJob<UUID, String> {
         /** Serial version uid. */
         private static final long serialVersionUID = 0L;
 
         /**
-         * @param name Snapshot name.
+         * @param operId Snapshot operation ID.
          * @param debug Flag indicating whether debug information should be printed into node log.
          */
-        protected VisorSnapshotCancelJob(String name, boolean debug) {
-            super(name, debug);
+        protected VisorSnapshotCancelJob(UUID operId, boolean debug) {
+            super(operId, debug);
         }
 
         /** {@inheritDoc} */
-        @Override protected String run(String name) throws IgniteException {
-            new SnapshotMXBeanImpl(ignite.context()).cancelSnapshot(name);
+        @Override protected String run(UUID operId) throws IgniteException {
+            new SnapshotMXBeanImpl(ignite.context()).cancelSnapshotOperation(operId.toString());
 
-            return "Snapshot operation cancelled.";
+            return "Snapshot operation cancelled [operId=" + operId + "].";
         }
     }
 }

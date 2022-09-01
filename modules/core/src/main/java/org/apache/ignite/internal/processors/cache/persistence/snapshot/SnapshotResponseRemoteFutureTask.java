@@ -55,6 +55,7 @@ public class SnapshotResponseRemoteFutureTask extends AbstractSnapshotFutureTask
     public SnapshotResponseRemoteFutureTask(
         GridCacheSharedContext<?, ?> cctx,
         UUID srcNodeId,
+        UUID operId,
         String snpName,
         String snpPath,
         File tmpWorkDir,
@@ -62,7 +63,7 @@ public class SnapshotResponseRemoteFutureTask extends AbstractSnapshotFutureTask
         SnapshotSender snpSndr,
         Map<Integer, Set<Integer>> parts
     ) {
-        super(cctx, srcNodeId, snpName, tmpWorkDir, ioFactory, snpSndr, parts);
+        super(cctx, srcNodeId, operId, snpName, tmpWorkDir, ioFactory, snpSndr, parts);
 
         this.snpPath = snpPath;
     }

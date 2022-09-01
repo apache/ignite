@@ -24,6 +24,7 @@ import java.util.Arrays;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Set;
+import java.util.UUID;
 import java.util.stream.Collectors;
 import org.apache.ignite.internal.GridDirectMap;
 import org.apache.ignite.internal.util.typedef.F;
@@ -43,6 +44,9 @@ public class SnapshotFilesRequestMessage extends AbstractSnapshotMessage {
 
     /** Serialization version. */
     private static final long serialVersionUID = 0L;
+
+    /** Snapshot operation ID. */
+    private UUID operId;
 
     /** Snapshot name to request. */
     private String snpName;
@@ -69,6 +73,7 @@ public class SnapshotFilesRequestMessage extends AbstractSnapshotMessage {
      */
     public SnapshotFilesRequestMessage(
         String reqId,
+        UUID operId,
         String snpName,
         @Nullable String snpPath,
         Map<Integer, Set<Integer>> parts
@@ -77,6 +82,7 @@ public class SnapshotFilesRequestMessage extends AbstractSnapshotMessage {
 
         assert parts != null && !parts.isEmpty();
 
+        this.operId = operId;
         this.snpName = snpName;
         this.snpPath = snpPath;
         this.parts = new HashMap<>();
@@ -109,6 +115,13 @@ public class SnapshotFilesRequestMessage extends AbstractSnapshotMessage {
      */
     public String snapshotPath() {
         return snpPath;
+    }
+
+    /**
+     * @return Snapshot operation ID.
+     */
+    public UUID operationId() {
+        return operId;
     }
 
     /** {@inheritDoc} */

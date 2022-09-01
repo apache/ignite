@@ -3440,9 +3440,14 @@ public class GridCommandHandlerTest extends GridCommandHandlerClusterPerMethodAb
         assertFalse(restoreFut.isDone());
 
         // Check the status with a control command.
-        assertEquals(EXIT_CODE_OK, execute(h, "--snapshot", "restore", snpName, "--status"));
-        assertContains(log, testOut.toString(),
-            "Snapshot cache group restore operation is running [snapshot=" + snpName + ']');
+        assertEquals(EXIT_CODE_OK, execute(h, "--snapshot", "status"));
+
+        Pattern operIdPtrn = Pattern.compile("Operation ID: (?<operId>[-\\w]{36})");
+        Matcher matcher = operIdPtrn.matcher(testOut.toString());
+        assertTrue(matcher.find());
+
+        String operIdStr = matcher.group("operId");
+        assertNotNull(operIdStr);
 
         // Check "status" with the wrong snapshot name.
         assertEquals(EXIT_CODE_OK, execute(h, "--snapshot", "restore", missingSnpName, "--status"));
@@ -3455,9 +3460,9 @@ public class GridCommandHandlerTest extends GridCommandHandlerClusterPerMethodAb
             "Snapshot cache group restore operation is NOT running [snapshot=" + missingSnpName + ']');
 
         // Cancel operation using control command.
-        assertEquals(EXIT_CODE_OK, execute(h, "--snapshot", "restore", snpName, "--cancel"));
+        assertEquals(EXIT_CODE_OK, execute(h, "--snapshot", "cancel", operIdStr));
         assertContains(log, testOut.toString(),
-            "Snapshot cache group restore operation canceled [snapshot=" + snpName + ']');
+            "Snapshot operation cancelled [operId=" + operIdStr + ']');
 
         GridTestUtils.assertThrowsAnyCause(log, () -> restoreFut.get(getTestTimeout()), IgniteCheckedException.class,
             "Operation has been canceled by the user.");
@@ -3468,9 +3473,8 @@ public class GridCommandHandlerTest extends GridCommandHandlerClusterPerMethodAb
 
         assertTrue(ctxDisposed);
 
-        assertEquals(EXIT_CODE_OK, execute(h, "--snapshot", "restore", snpName, "--status"));
-        assertContains(log, testOut.toString(),
-            "Snapshot cache group restore operation is NOT running [snapshot=" + snpName + ']');
+        assertEquals(EXIT_CODE_OK, execute(h, "--snapshot", "status"));
+        assertContains(log, testOut.toString(), "There is no create or restore snapshot operation in progress.");
 
         assertNull(ig.cache(DEFAULT_CACHE_NAME));
     }

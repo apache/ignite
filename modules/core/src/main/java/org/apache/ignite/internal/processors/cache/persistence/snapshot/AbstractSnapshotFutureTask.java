@@ -43,6 +43,9 @@ abstract class AbstractSnapshotFutureTask<T> extends GridFutureAdapter<T> {
     /** Node id which cause snapshot operation. */
     protected final UUID srcNodeId;
 
+    /** Unique snapshot operation ID. */
+    protected final UUID operId;
+
     /** Unique identifier of snapshot process. */
     protected final String snpName;
 
@@ -74,6 +77,7 @@ abstract class AbstractSnapshotFutureTask<T> extends GridFutureAdapter<T> {
     protected AbstractSnapshotFutureTask(
         GridCacheSharedContext<?, ?> cctx,
         UUID srcNodeId,
+        UUID operId,
         String snpName,
         File tmpWorkDir,
         FileIOFactory ioFactory,
@@ -87,6 +91,7 @@ abstract class AbstractSnapshotFutureTask<T> extends GridFutureAdapter<T> {
         this.cctx = cctx;
         this.log = cctx.logger(AbstractSnapshotFutureTask.class);
         this.srcNodeId = srcNodeId;
+        this.operId = operId;
         this.snpName = snpName;
         this.tmpSnpWorkDir = new File(tmpWorkDir, snpName);
         this.ioFactory = ioFactory;
@@ -106,6 +111,13 @@ abstract class AbstractSnapshotFutureTask<T> extends GridFutureAdapter<T> {
      */
     public UUID sourceNodeId() {
         return srcNodeId;
+    }
+
+    /**
+     * @return Snapshot operation ID.
+     */
+    public UUID operationId() {
+        return operId;
     }
 
     /**
