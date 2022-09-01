@@ -15,13 +15,11 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.internal.processors.query.h2.maintenance;
+package org.apache.ignite.internal.cache.query.index.sorted.maintenance;
 
 import java.util.Collections;
 import java.util.List;
-import org.apache.ignite.IgniteLogger;
-import org.apache.ignite.internal.cache.query.index.sorted.maintenance.MaintenanceRebuildIndexTarget;
-import org.apache.ignite.internal.processors.query.h2.IgniteH2Indexing;
+import org.apache.ignite.internal.GridKernalContext;
 import org.apache.ignite.maintenance.MaintenanceAction;
 import org.apache.ignite.maintenance.MaintenanceWorkflowCallback;
 import org.jetbrains.annotations.Nullable;
@@ -33,23 +31,18 @@ public class RebuildIndexWorkflowCallback implements MaintenanceWorkflowCallback
     /** Indexes to rebuild. */
     private final List<MaintenanceRebuildIndexTarget> indexesToRebuild;
 
-    /** Indexing. */
-    private final IgniteH2Indexing indexing;
-
-    /** Logger. */
-    private final IgniteLogger log;
+    /** Context. */
+    private final GridKernalContext ctx;
 
     /**
      * Constructor.
      *
      * @param indexesToRebuild Indexes to rebuild.
-     * @param indexing Indexing.
-     * @param log Logger.
+     * @param ctx Context.
      */
-    public RebuildIndexWorkflowCallback(List<MaintenanceRebuildIndexTarget> indexesToRebuild, IgniteH2Indexing indexing, IgniteLogger log) {
+    public RebuildIndexWorkflowCallback(List<MaintenanceRebuildIndexTarget> indexesToRebuild, GridKernalContext ctx) {
         this.indexesToRebuild = indexesToRebuild;
-        this.indexing = indexing;
-        this.log = log;
+        this.ctx = ctx;
     }
 
     /** {@inheritDoc} */
@@ -59,11 +52,11 @@ public class RebuildIndexWorkflowCallback implements MaintenanceWorkflowCallback
 
     /** {@inheritDoc} */
     @Override public List<MaintenanceAction<?>> allActions() {
-        return Collections.singletonList(new RebuildIndexAction(indexesToRebuild, indexing, log));
+        return Collections.singletonList(new RebuildIndexAction(indexesToRebuild, ctx));
     }
 
     /** {@inheritDoc} */
     @Override public @Nullable MaintenanceAction<?> automaticAction() {
-        return new RebuildIndexAction(indexesToRebuild, indexing, log);
+        return new RebuildIndexAction(indexesToRebuild, ctx);
     }
 }

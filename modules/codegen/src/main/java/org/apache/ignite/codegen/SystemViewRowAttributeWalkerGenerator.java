@@ -62,14 +62,8 @@ import org.apache.ignite.spi.systemview.view.PartitionStateView;
 import org.apache.ignite.spi.systemview.view.ScanQueryView;
 import org.apache.ignite.spi.systemview.view.ServiceView;
 import org.apache.ignite.spi.systemview.view.SnapshotView;
-import org.apache.ignite.spi.systemview.view.SqlIndexView;
 import org.apache.ignite.spi.systemview.view.SqlQueryHistoryView;
 import org.apache.ignite.spi.systemview.view.SqlQueryView;
-import org.apache.ignite.spi.systemview.view.SqlSchemaView;
-import org.apache.ignite.spi.systemview.view.SqlTableColumnView;
-import org.apache.ignite.spi.systemview.view.SqlTableView;
-import org.apache.ignite.spi.systemview.view.SqlViewColumnView;
-import org.apache.ignite.spi.systemview.view.SqlViewView;
 import org.apache.ignite.spi.systemview.view.StripedExecutorTaskView;
 import org.apache.ignite.spi.systemview.view.SystemView;
 import org.apache.ignite.spi.systemview.view.SystemViewRowAttributeWalker;
@@ -83,9 +77,14 @@ import org.apache.ignite.spi.systemview.view.datastructures.QueueView;
 import org.apache.ignite.spi.systemview.view.datastructures.ReentrantLockView;
 import org.apache.ignite.spi.systemview.view.datastructures.SemaphoreView;
 import org.apache.ignite.spi.systemview.view.datastructures.SetView;
+import org.apache.ignite.spi.systemview.view.sql.SqlIndexView;
+import org.apache.ignite.spi.systemview.view.sql.SqlSchemaView;
+import org.apache.ignite.spi.systemview.view.sql.SqlTableColumnView;
+import org.apache.ignite.spi.systemview.view.sql.SqlTableView;
+import org.apache.ignite.spi.systemview.view.sql.SqlViewColumnView;
+import org.apache.ignite.spi.systemview.view.sql.SqlViewView;
 
 import static org.apache.ignite.codegen.MessageCodeGenerator.DFLT_SRC_DIR;
-import static org.apache.ignite.codegen.MessageCodeGenerator.INDEXING_SRC_DIR;
 
 /**
  * Application for code generation of {@link SystemViewRowAttributeWalker}.
@@ -148,12 +147,12 @@ public class SystemViewRowAttributeWalkerGenerator {
         gen.generateAndWrite(MetricsView.class, DFLT_SRC_DIR);
         gen.generateAndWrite(PagesTimestampHistogramView.class, DFLT_SRC_DIR);
 
-        gen.generateAndWrite(SqlSchemaView.class, INDEXING_SRC_DIR);
-        gen.generateAndWrite(SqlTableView.class, INDEXING_SRC_DIR);
-        gen.generateAndWrite(SqlViewView.class, INDEXING_SRC_DIR);
-        gen.generateAndWrite(SqlIndexView.class, INDEXING_SRC_DIR);
-        gen.generateAndWrite(SqlTableColumnView.class, INDEXING_SRC_DIR);
-        gen.generateAndWrite(SqlViewColumnView.class, INDEXING_SRC_DIR);
+        gen.generateAndWrite(SqlSchemaView.class, DFLT_SRC_DIR);
+        gen.generateAndWrite(SqlTableView.class, DFLT_SRC_DIR);
+        gen.generateAndWrite(SqlViewView.class, DFLT_SRC_DIR);
+        gen.generateAndWrite(SqlIndexView.class, DFLT_SRC_DIR);
+        gen.generateAndWrite(SqlTableColumnView.class, DFLT_SRC_DIR);
+        gen.generateAndWrite(SqlViewColumnView.class, DFLT_SRC_DIR);
 
         gen.generateAndWrite(StatisticsColumnConfigurationView.class, DFLT_SRC_DIR);
         gen.generateAndWrite(StatisticsColumnLocalDataView.class, DFLT_SRC_DIR);

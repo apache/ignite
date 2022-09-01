@@ -18,6 +18,7 @@
 package org.apache.ignite.internal.processors.query;
 
 import java.util.Collection;
+import java.util.Collections;
 import org.apache.ignite.cache.QueryIndexType;
 
 /**
@@ -30,15 +31,19 @@ public class QuerySysIndexDescriptorImpl implements GridQueryIndexDescriptor {
     /** Index fields. */
     private final Collection<String> fields;
 
+    /** Inline size. */
+    private final int inlineSize;
+
     /**
      * Constructor.
      *
      * @param name Index name.
      * @param fields Index fields.
      */
-    public QuerySysIndexDescriptorImpl(String name, Collection<String> fields) {
+    public QuerySysIndexDescriptorImpl(String name, Collection<String> fields, int inlineSize) {
         this.name = name;
-        this.fields = fields;
+        this.fields = Collections.unmodifiableCollection(fields);
+        this.inlineSize = inlineSize;
     }
 
     /** {@inheritDoc} */
@@ -58,11 +63,11 @@ public class QuerySysIndexDescriptorImpl implements GridQueryIndexDescriptor {
 
     /** {@inheritDoc} */
     @Override public QueryIndexType type() {
-        throw new UnsupportedOperationException("Not implemented");
+        return QueryIndexType.SORTED;
     }
 
     /** {@inheritDoc} */
     @Override public int inlineSize() {
-        throw new UnsupportedOperationException("Not implemented");
+        return inlineSize;
     }
 }

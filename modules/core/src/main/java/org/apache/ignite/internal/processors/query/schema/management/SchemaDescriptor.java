@@ -15,24 +15,25 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.internal.processors.query.h2;
+package org.apache.ignite.internal.processors.query.schema.management;
 
 import java.util.Collection;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
+import org.apache.ignite.internal.processors.query.QueryTypeNameKey;
 
 /**
- * Database schema object.
+ * Local database schema object.
  */
-public class H2Schema {
+public class SchemaDescriptor {
     /** */
     private final String schemaName;
 
     /** */
-    private final ConcurrentMap<String, H2TableDescriptor> tbls = new ConcurrentHashMap<>();
+    private final ConcurrentMap<String, TableDescriptor> tbls = new ConcurrentHashMap<>();
 
     /** */
-    private final ConcurrentMap<H2TypeKey, H2TableDescriptor> typeToTbl = new ConcurrentHashMap<>();
+    private final ConcurrentMap<QueryTypeNameKey, TableDescriptor> typeToTbl = new ConcurrentHashMap<>();
 
     /** Whether schema is predefined and cannot be dorpped. */
     private final boolean predefined;
@@ -46,7 +47,7 @@ public class H2Schema {
      * @param schemaName Schema name.
      * @param predefined Predefined flag.
      */
-    public H2Schema(String schemaName, boolean predefined) {
+    public SchemaDescriptor(String schemaName, boolean predefined) {
         this.schemaName = schemaName;
         this.predefined = predefined;
     }
@@ -78,7 +79,7 @@ public class H2Schema {
     /**
      * @return Tables.
      */
-    public Collection<H2TableDescriptor> tables() {
+    public Collection<TableDescriptor> tables() {
         return tbls.values();
     }
 
@@ -86,7 +87,7 @@ public class H2Schema {
      * @param tblName Table name.
      * @return Table.
      */
-    public H2TableDescriptor tableByName(String tblName) {
+    public TableDescriptor tableByName(String tblName) {
         return tbls.get(tblName);
     }
 
@@ -94,19 +95,19 @@ public class H2Schema {
      * @param typeName Type name.
      * @return Table.
      */
-    public H2TableDescriptor tableByTypeName(String cacheName, String typeName) {
-        return typeToTbl.get(new H2TypeKey(cacheName, typeName));
+    public TableDescriptor tableByTypeName(String cacheName, String typeName) {
+        return typeToTbl.get(new QueryTypeNameKey(cacheName, typeName));
     }
 
     /**
      * @param tbl Table descriptor.
      */
-    public void add(H2TableDescriptor tbl) {
-        if (tbls.putIfAbsent(tbl.tableName(), tbl) != null)
-            throw new IllegalStateException("Table already registered: " + tbl.fullTableName());
+    public void add(TableDescriptor tbl) {
+        if (tbls.putIfAbsent(tbl.type().tableName(), tbl) != null)
+            throw new IllegalStateException("Table already registered: " + tbl.type().tableName());
 
-        if (typeToTbl.putIfAbsent(new H2TypeKey(tbl.cacheName(), tbl.typeName()), tbl) != null)
-            throw new IllegalStateException("Table already registered: " + tbl.fullTableName());
+        if (typeToTbl.putIfAbsent(new QueryTypeNameKey(tbl.cacheInfo().name(), tbl.type().name()), tbl) != null)
+            throw new IllegalStateException("Table already registered: " + tbl.type().tableName());
     }
 
     /**
@@ -114,12 +115,10 @@ public class H2Schema {
      *
      * @param tbl Table to be removed.
      */
-    public void drop(H2TableDescriptor tbl) {
-        tbl.onDrop();
+    public void drop(TableDescriptor tbl) {
+        tbls.remove(tbl.type().tableName());
 
-        tbls.remove(tbl.tableName());
-
-        typeToTbl.remove(new H2TypeKey(tbl.cacheName(), tbl.typeName()));
+        typeToTbl.remove(new QueryTypeNameKey(tbl.cacheInfo().name(), tbl.type().name()));
     }
 
     /**

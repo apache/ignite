@@ -460,7 +460,9 @@ public class PoolProcessor extends GridProcessorAdapter {
                 GridIoPolicy.IDX_POOL,
                 oomeHnd
             );
+        }
 
+        if (IgniteComponentType.INDEXING.inClassPath() || IgniteComponentType.QUERY_ENGINE.inClassPath()) {
             int buildIdxThreadPoolSize = cfg.getBuildIndexThreadPoolSize();
 
             validateThreadPoolSize(buildIdxThreadPoolSize, "build-idx");

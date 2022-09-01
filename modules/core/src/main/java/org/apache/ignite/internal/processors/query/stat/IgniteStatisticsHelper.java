@@ -39,10 +39,10 @@ import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
 import org.apache.ignite.internal.processors.cache.CacheGroupContext;
-import org.apache.ignite.internal.processors.cache.GridCacheContextInfo;
-import org.apache.ignite.internal.processors.query.GridQuerySchemaManager;
 import org.apache.ignite.internal.processors.query.GridQueryTypeDescriptor;
 import org.apache.ignite.internal.processors.query.QueryUtils;
+import org.apache.ignite.internal.processors.query.schema.management.SchemaManager;
+import org.apache.ignite.internal.processors.query.schema.management.TableDescriptor;
 import org.apache.ignite.internal.processors.query.stat.config.StatisticsColumnConfiguration;
 import org.apache.ignite.internal.processors.query.stat.config.StatisticsObjectConfiguration;
 import org.apache.ignite.internal.processors.query.stat.messages.StatisticsKeyMessage;
@@ -59,7 +59,7 @@ public class IgniteStatisticsHelper {
     private final IgniteLogger log;
 
     /** Schema manager. */
-    private final GridQuerySchemaManager schemaMgr;
+    private final SchemaManager schemaMgr;
 
     /**
      * Constructor.
@@ -70,7 +70,7 @@ public class IgniteStatisticsHelper {
      */
     public IgniteStatisticsHelper(
         UUID locNodeId,
-        GridQuerySchemaManager schemaMgr,
+        SchemaManager schemaMgr,
         Function<Class<?>, IgniteLogger> logSupplier
     ) {
         this.schemaMgr = schemaMgr;
@@ -85,12 +85,12 @@ public class IgniteStatisticsHelper {
      * @throws IgniteCheckedException If unable to find table by specified key.
      */
     public CacheGroupContext groupContext(StatisticsKey key) throws IgniteCheckedException {
-        GridCacheContextInfo<?, ?> tbl = schemaMgr.cacheInfoForTable(key.schema(), key.obj());
+        TableDescriptor tbl = schemaMgr.table(key.schema(), key.obj());
 
         if (tbl == null)
             throw new IgniteCheckedException(String.format("Can't find object %s.%s", key.schema(), key.obj()));
 
-        return tbl.cacheContext().group();
+        return tbl.cacheInfo().cacheContext().group();
     }
 
     /**
@@ -150,7 +150,7 @@ public class IgniteStatisticsHelper {
         );
 
         // For now there can be only tables
-        GridQueryTypeDescriptor tbl = schemaMgr.typeDescriptorForTable(keyMsg.schema(), keyMsg.obj());
+        TableDescriptor tbl = schemaMgr.table(keyMsg.schema(), keyMsg.obj());
 
         if (tbl == null) {
             // remove all loaded statistics.
@@ -161,7 +161,7 @@ public class IgniteStatisticsHelper {
             return null;
         }
 
-        return aggregateLocalStatistics(tbl, cfg, stats, log);
+        return aggregateLocalStatistics(tbl.type(), cfg, stats, log);
     }
 
     /**

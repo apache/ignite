@@ -25,18 +25,12 @@ import java.sql.Statement;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
-import java.util.Collections;
-import java.util.HashMap;
-import java.util.HashSet;
 import java.util.Iterator;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.Objects;
-import java.util.Set;
 import java.util.UUID;
 import java.util.concurrent.TimeUnit;
-import java.util.stream.Stream;
 import javax.cache.CacheException;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteDataStreamer;
@@ -57,20 +51,11 @@ import org.apache.ignite.internal.GridTopic;
 import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.binary.BinaryMarshaller;
 import org.apache.ignite.internal.binary.BinaryUtils;
-import org.apache.ignite.internal.cache.query.index.IndexName;
-import org.apache.ignite.internal.cache.query.index.sorted.IndexKeyTypeSettings;
-import org.apache.ignite.internal.cache.query.index.sorted.QueryIndexDefinition;
-import org.apache.ignite.internal.cache.query.index.sorted.client.ClientIndexDefinition;
-import org.apache.ignite.internal.cache.query.index.sorted.client.ClientIndexFactory;
-import org.apache.ignite.internal.cache.query.index.sorted.inline.InlineIndex;
-import org.apache.ignite.internal.cache.query.index.sorted.inline.InlineIndexFactory;
-import org.apache.ignite.internal.cache.query.index.sorted.inline.InlineIndexImpl;
 import org.apache.ignite.internal.cluster.ClusterTopologyServerNotFoundException;
 import org.apache.ignite.internal.managers.IgniteMBeansManager;
 import org.apache.ignite.internal.managers.communication.GridMessageListener;
 import org.apache.ignite.internal.managers.eventstorage.GridLocalEventListener;
 import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
-import org.apache.ignite.internal.processors.cache.CacheGroupDescriptor;
 import org.apache.ignite.internal.processors.cache.CacheObjectValueContext;
 import org.apache.ignite.internal.processors.cache.CacheOperationContext;
 import org.apache.ignite.internal.processors.cache.DynamicCacheDescriptor;
@@ -86,7 +71,6 @@ import org.apache.ignite.internal.processors.cache.mvcc.MvccSnapshot;
 import org.apache.ignite.internal.processors.cache.mvcc.MvccUtils;
 import org.apache.ignite.internal.processors.cache.mvcc.StaticMvccQueryTracker;
 import org.apache.ignite.internal.processors.cache.persistence.CacheDataRow;
-import org.apache.ignite.internal.processors.cache.persistence.tree.BPlusTree;
 import org.apache.ignite.internal.processors.cache.query.GridCacheQueryMarshallable;
 import org.apache.ignite.internal.processors.cache.query.GridCacheQueryType;
 import org.apache.ignite.internal.processors.cache.query.IgniteQueryErrorCode;
@@ -94,7 +78,6 @@ import org.apache.ignite.internal.processors.cache.transactions.IgniteTxAdapter;
 import org.apache.ignite.internal.processors.cache.tree.CacheDataTree;
 import org.apache.ignite.internal.processors.odbc.SqlStateCode;
 import org.apache.ignite.internal.processors.odbc.jdbc.JdbcParameterMeta;
-import org.apache.ignite.internal.processors.query.ColumnInformation;
 import org.apache.ignite.internal.processors.query.EnlistOperation;
 import org.apache.ignite.internal.processors.query.GridQueryCacheObjectsIterator;
 import org.apache.ignite.internal.processors.query.GridQueryCancel;
@@ -102,31 +85,23 @@ import org.apache.ignite.internal.processors.query.GridQueryFieldMetadata;
 import org.apache.ignite.internal.processors.query.GridQueryFieldsResult;
 import org.apache.ignite.internal.processors.query.GridQueryFieldsResultAdapter;
 import org.apache.ignite.internal.processors.query.GridQueryIndexing;
-import org.apache.ignite.internal.processors.query.GridQueryProperty;
 import org.apache.ignite.internal.processors.query.GridQueryTypeDescriptor;
 import org.apache.ignite.internal.processors.query.IgniteSQLException;
 import org.apache.ignite.internal.processors.query.QueryField;
-import org.apache.ignite.internal.processors.query.QueryIndexDescriptorImpl;
 import org.apache.ignite.internal.processors.query.QueryUtils;
 import org.apache.ignite.internal.processors.query.RunningQueryManager;
 import org.apache.ignite.internal.processors.query.SqlClientContext;
-import org.apache.ignite.internal.processors.query.TableInformation;
 import org.apache.ignite.internal.processors.query.UpdateSourceIterator;
 import org.apache.ignite.internal.processors.query.h2.affinity.H2PartitionResolver;
 import org.apache.ignite.internal.processors.query.h2.affinity.PartitionExtractor;
-import org.apache.ignite.internal.processors.query.h2.database.H2TreeClientIndex;
-import org.apache.ignite.internal.processors.query.h2.database.H2TreeIndex;
-import org.apache.ignite.internal.processors.query.h2.database.H2TreeIndexBase;
 import org.apache.ignite.internal.processors.query.h2.dml.DmlDistributedPlanInfo;
 import org.apache.ignite.internal.processors.query.h2.dml.DmlUpdateResultsIterator;
 import org.apache.ignite.internal.processors.query.h2.dml.DmlUpdateSingleEntryIterator;
 import org.apache.ignite.internal.processors.query.h2.dml.DmlUtils;
 import org.apache.ignite.internal.processors.query.h2.dml.UpdateMode;
 import org.apache.ignite.internal.processors.query.h2.dml.UpdatePlan;
-import org.apache.ignite.internal.processors.query.h2.maintenance.RebuildIndexWorkflowCallback;
 import org.apache.ignite.internal.processors.query.h2.mxbean.SqlQueryMXBean;
 import org.apache.ignite.internal.processors.query.h2.mxbean.SqlQueryMXBeanImpl;
-import org.apache.ignite.internal.processors.query.h2.opt.GridH2IndexBase;
 import org.apache.ignite.internal.processors.query.h2.opt.GridH2Table;
 import org.apache.ignite.internal.processors.query.h2.opt.QueryContext;
 import org.apache.ignite.internal.processors.query.h2.opt.QueryContextRegistry;
@@ -142,9 +117,7 @@ import org.apache.ignite.internal.processors.query.h2.twostep.messages.GridQuery
 import org.apache.ignite.internal.processors.query.h2.twostep.msg.GridH2DmlRequest;
 import org.apache.ignite.internal.processors.query.h2.twostep.msg.GridH2DmlResponse;
 import org.apache.ignite.internal.processors.query.h2.twostep.msg.GridH2QueryRequest;
-import org.apache.ignite.internal.processors.query.schema.SchemaIndexCacheVisitor;
-import org.apache.ignite.internal.processors.query.stat.IgniteStatisticsManager;
-import org.apache.ignite.internal.processors.query.stat.IgniteStatisticsManagerImpl;
+import org.apache.ignite.internal.processors.query.schema.AbstractSchemaChangeListener;
 import org.apache.ignite.internal.processors.tracing.MTC;
 import org.apache.ignite.internal.processors.tracing.MTC.TraceSurroundings;
 import org.apache.ignite.internal.processors.tracing.Span;
@@ -177,23 +150,16 @@ import org.h2.api.ErrorCode;
 import org.h2.api.JavaObjectSerializer;
 import org.h2.engine.Session;
 import org.h2.engine.SysProperties;
-import org.h2.index.Index;
-import org.h2.index.IndexType;
 import org.h2.message.DbException;
-import org.h2.table.Column;
-import org.h2.table.IndexColumn;
-import org.h2.table.TableType;
 import org.h2.util.JdbcUtils;
 import org.h2.value.CompareMode;
-import org.h2.value.DataType;
 import org.jetbrains.annotations.Nullable;
+
 import static java.lang.Math.max;
 import static java.lang.Math.min;
 import static java.util.Collections.singletonList;
 import static org.apache.ignite.IgniteSystemProperties.IGNITE_MVCC_TX_SIZE_CACHING_THRESHOLD;
 import static org.apache.ignite.events.EventType.EVT_SQL_QUERY_EXECUTION;
-import static org.apache.ignite.internal.cache.query.index.sorted.maintenance.MaintenanceRebuildIndexUtils.INDEX_REBUILD_MNTC_TASK_NAME;
-import static org.apache.ignite.internal.cache.query.index.sorted.maintenance.MaintenanceRebuildIndexUtils.parseMaintenanceTaskParameters;
 import static org.apache.ignite.internal.processors.cache.mvcc.MvccCachingManager.TX_SIZE_THRESHOLD;
 import static org.apache.ignite.internal.processors.cache.mvcc.MvccUtils.checkActive;
 import static org.apache.ignite.internal.processors.cache.mvcc.MvccUtils.mvccEnabled;
@@ -201,11 +167,9 @@ import static org.apache.ignite.internal.processors.cache.mvcc.MvccUtils.request
 import static org.apache.ignite.internal.processors.cache.mvcc.MvccUtils.tx;
 import static org.apache.ignite.internal.processors.cache.mvcc.MvccUtils.txStart;
 import static org.apache.ignite.internal.processors.cache.query.GridCacheQueryType.TEXT;
-import static org.apache.ignite.internal.processors.query.QueryUtils.matches;
 import static org.apache.ignite.internal.processors.query.h2.H2Utils.UPDATE_RESULT_META;
 import static org.apache.ignite.internal.processors.query.h2.H2Utils.generateFieldsQueryString;
 import static org.apache.ignite.internal.processors.query.h2.H2Utils.session;
-import static org.apache.ignite.internal.processors.query.h2.H2Utils.validateTypeDescriptor;
 import static org.apache.ignite.internal.processors.query.h2.H2Utils.zeroCursor;
 import static org.apache.ignite.internal.processors.tracing.SpanTags.ERROR;
 import static org.apache.ignite.internal.processors.tracing.SpanTags.SQL_QRY_TEXT;
@@ -233,9 +197,6 @@ public class IgniteH2Indexing implements GridQueryIndexing {
     /** Cached value of {@code IgniteSystemProperties.IGNITE_ALLOW_DML_INSIDE_TRANSACTION}. */
     private final boolean updateInTxAllowed =
         Boolean.getBoolean(IgniteSystemProperties.IGNITE_ALLOW_DML_INSIDE_TRANSACTION);
-
-    /** Make it public for test purposes. */
-    public static InlineIndexFactory idxFactory = InlineIndexFactory.INSTANCE;
 
     /** Logger. */
     @LoggerResource
@@ -290,7 +251,7 @@ public class IgniteH2Indexing implements GridQueryIndexing {
     private ConnectionManager connMgr;
 
     /** Schema manager. */
-    private SchemaManager schemaMgr;
+    private H2SchemaManager schemaMgr;
 
     /** H2 Connection manager. */
     private LongRunningQueryManager longRunningQryMgr;
@@ -300,9 +261,6 @@ public class IgniteH2Indexing implements GridQueryIndexing {
 
     /** Query message listener. */
     private GridMessageListener qryLsnr;
-
-    /** Statistic manager. */
-    private IgniteStatisticsManager statsMgr;
 
     /** Distributed config. */
     private DistributedSqlConfiguration distrCfg;
@@ -358,23 +316,21 @@ public class IgniteH2Indexing implements GridQueryIndexing {
         @Nullable CacheDataRow prevRow,
         boolean prevRowAvailable
     ) throws IgniteCheckedException {
-        String cacheName = cctx.name();
-
-        H2TableDescriptor tbl = schemaMgr.tableForType(schema(cacheName), cacheName, type.name());
+        GridH2Table tbl = schemaMgr.dataTable(type.schemaName(), type.tableName());
 
         if (tbl == null)
             return; // Type was rejected.
 
-        if (tbl.luceneIndex() != null) {
+        if (tbl.tableDescriptor().luceneIndex() != null) {
             long expireTime = row.expireTime();
 
             if (expireTime == 0L)
                 expireTime = Long.MAX_VALUE;
 
-            tbl.luceneIndex().store(row.key(), row.value(), row.version(), expireTime);
+            tbl.tableDescriptor().luceneIndex().store(row.key(), row.value(), row.version(), expireTime);
         }
 
-        tbl.table().update(row, prevRow);
+        tbl.update(row, prevRow);
     }
 
     /** {@inheritDoc} */
@@ -386,124 +342,15 @@ public class IgniteH2Indexing implements GridQueryIndexing {
                 ", val=" + row.value() + ']');
         }
 
-        String cacheName = cctx.name();
-
-        H2TableDescriptor tbl = schemaMgr.tableForType(schema(cacheName), cacheName, type.name());
+        GridH2Table tbl = schemaMgr.dataTable(type.schemaName(), type.tableName());
 
         if (tbl == null)
             return;
 
-        if (tbl.luceneIndex() != null)
-            tbl.luceneIndex().remove(row.key());
+        if (tbl.tableDescriptor().luceneIndex() != null)
+            tbl.tableDescriptor().luceneIndex().remove(row.key());
 
-        tbl.table().remove(row);
-    }
-
-    /** {@inheritDoc} */
-    @Override public void dynamicIndexCreate(String schemaName, String tblName, QueryIndexDescriptorImpl idxDesc,
-        boolean ifNotExists, SchemaIndexCacheVisitor cacheVisitor) throws IgniteCheckedException {
-        schemaMgr.createIndex(schemaName, tblName, idxDesc, ifNotExists, cacheVisitor);
-    }
-
-    /** {@inheritDoc} */
-    @Override public void dynamicIndexDrop(String schemaName, String idxName, boolean ifExists)
-        throws IgniteCheckedException {
-        schemaMgr.dropIndex(schemaName, idxName, ifExists);
-    }
-
-    /** {@inheritDoc} */
-    @Override public void dynamicAddColumn(String schemaName, String tblName, List<QueryField> cols,
-        boolean ifTblExists, boolean ifColNotExists) throws IgniteCheckedException {
-        schemaMgr.addColumn(schemaName, tblName, cols, ifTblExists, ifColNotExists);
-
-        clearPlanCache();
-    }
-
-    /** {@inheritDoc} */
-    @Override public void dynamicDropColumn(String schemaName, String tblName, List<String> cols, boolean ifTblExists,
-        boolean ifColExists) throws IgniteCheckedException {
-        schemaMgr.dropColumn(schemaName, tblName, cols, ifTblExists, ifColExists);
-
-        clearPlanCache();
-    }
-
-    /**
-     * Create sorted index.
-     *
-     * @param name Index name,
-     * @param tbl Table.
-     * @param pk Primary key flag.
-     * @param affinityKey Affinity key flag.
-     * @param unwrappedCols Unwrapped index columns for complex types.
-     * @param wrappedCols Index columns as is complex types.
-     * @param inlineSize Index inline size.
-     * @param cacheVisitor whether index created with new cache or on existing one.
-     * @return Index.
-     */
-    @SuppressWarnings("ConstantConditions")
-    GridH2IndexBase createSortedIndex(String name, GridH2Table tbl, boolean pk, boolean affinityKey,
-        List<IndexColumn> unwrappedCols, List<IndexColumn> wrappedCols, int inlineSize, @Nullable SchemaIndexCacheVisitor cacheVisitor) {
-        GridCacheContextInfo cacheInfo = tbl.cacheInfo();
-
-        if (log.isDebugEnabled())
-            log.debug("Creating cache index [cacheId=" + cacheInfo.cacheId() + ", idxName=" + name + ']');
-
-        if (cacheInfo.affinityNode()) {
-            GridCacheContext<?, ?> cctx = cacheInfo.cacheContext();
-
-            GridQueryTypeDescriptor typeDesc = tbl.rowDescriptor().type();
-
-            int typeId = cctx.binaryMarshaller() ? typeDesc.typeId() : typeDesc.valueClass().hashCode();
-
-            String treeName = BPlusTree.treeName(typeId + "_" + name, "H2Tree");
-
-            List<IndexColumn> cols = ctx.indexProcessor().useUnwrappedPk(cctx, treeName) ? unwrappedCols : wrappedCols;
-
-            IndexKeyTypeSettings keyTypeSettings = new IndexKeyTypeSettings()
-                .stringOptimizedCompare(CompareMode.OFF.equals(tbl.getCompareMode().getName()))
-                .binaryUnsigned(tbl.getCompareMode().isBinaryUnsigned());
-
-            QueryIndexDefinition idxDef = new QueryIndexDefinition(
-                tbl.rowDescriptor(),
-                new IndexName(tbl.cacheName(), tbl.getSchema().getName(), tbl.getName(), name),
-                treeName,
-                ctx.indexProcessor().rowCacheCleaner(cacheInfo.groupId()),
-                pk,
-                affinityKey,
-                H2Utils.columnsToKeyDefinitions(tbl, cols),
-                inlineSize,
-                keyTypeSettings
-            );
-
-            org.apache.ignite.internal.cache.query.index.Index index;
-
-            if (cacheVisitor != null)
-                index = ctx.indexProcessor().createIndexDynamically(
-                    tbl.cacheContext(), idxFactory, idxDef, cacheVisitor);
-            else
-                index = ctx.indexProcessor().createIndex(tbl.cacheContext(), idxFactory, idxDef);
-
-            InlineIndexImpl queryIndex = index.unwrap(InlineIndexImpl.class);
-
-            return new H2TreeIndex(queryIndex, tbl, unwrappedCols.toArray(new IndexColumn[0]), pk, log);
-        }
-        else {
-            ClientIndexDefinition d = new ClientIndexDefinition(
-                new IndexName(tbl.cacheName(), tbl.getSchema().getName(), tbl.getName(), name),
-                H2Utils.columnsToKeyDefinitions(tbl, unwrappedCols),
-                inlineSize,
-                tbl.cacheInfo().config().getSqlIndexMaxInlineSize());
-
-            org.apache.ignite.internal.cache.query.index.Index index =
-                ctx.indexProcessor().createIndex(tbl.cacheContext(), new ClientIndexFactory(log), d);
-
-            InlineIndex idx = index.unwrap(InlineIndex.class);
-
-            IndexType idxType = pk ? IndexType.createPrimaryKey(false, false) :
-                IndexType.createNonUnique(false, false, false);
-
-            return new H2TreeClientIndex(idx, tbl, name, unwrappedCols.toArray(new IndexColumn[0]), idxType);
-        }
+        tbl.remove(row);
     }
 
     /** {@inheritDoc} */
@@ -1003,7 +850,7 @@ public class IgniteH2Indexing implements GridQueryIndexing {
     /** {@inheritDoc} */
     @SuppressWarnings("deprecation")
     @Override public SqlFieldsQuery generateFieldsQuery(String cacheName, SqlQuery qry) {
-        String schemaName = schema(cacheName);
+        String schemaName = ctx.query().schemaManager().schemaName(cacheName);
 
         String type = qry.getType();
 
@@ -1902,164 +1749,6 @@ public class IgniteH2Indexing implements GridQueryIndexing {
         );
     }
 
-    /**
-     * Registers new class description.
-     *
-     * This implementation doesn't support type reregistration.
-     *
-     * @param cacheInfo Cache context info.
-     * @param type Type description.
-     * @param isSql {@code true} in case table has been created from SQL.
-     * @throws IgniteCheckedException In case of error.
-     */
-    @Override public boolean registerType(GridCacheContextInfo cacheInfo, GridQueryTypeDescriptor type, boolean isSql)
-        throws IgniteCheckedException {
-        validateTypeDescriptor(type);
-        schemaMgr.onCacheTypeCreated(cacheInfo, this, type, isSql);
-
-        return true;
-    }
-
-    /** {@inheritDoc} */
-    @Override public GridCacheContextInfo registeredCacheInfo(String cacheName) {
-        for (H2TableDescriptor tbl : schemaMgr.tablesForCache(cacheName)) {
-            if (F.eq(tbl.cacheName(), cacheName))
-                return tbl.cacheInfo();
-        }
-
-        return null;
-    }
-
-    /** {@inheritDoc} */
-    @Override public void closeCacheOnClient(String cacheName) {
-        GridCacheContextInfo cacheInfo = registeredCacheInfo(cacheName);
-
-        // Only for SQL caches.
-        if (cacheInfo != null) {
-            parser.clearCache();
-
-            cacheInfo.clearCacheContext();
-        }
-    }
-
-    /** {@inheritDoc} */
-    @Override public String schema(String cacheName) {
-        return schemaMgr.schemaName(cacheName);
-    }
-
-    /** {@inheritDoc} */
-    @Override public Set<String> schemasNames() {
-        return schemaMgr.schemaNames();
-    }
-
-    /** {@inheritDoc} */
-    @Override public Collection<TableInformation> tablesInformation(String schemaNamePtrn, String tblNamePtrn,
-        String... tblTypes) {
-        Set<String> types = F.isEmpty(tblTypes) ? Collections.emptySet() : new HashSet<>(Arrays.asList(tblTypes));
-
-        Collection<TableInformation> infos = new ArrayList<>();
-
-        boolean allTypes = F.isEmpty(tblTypes);
-
-        if (allTypes || types.contains(TableType.TABLE.name())) {
-            schemaMgr.dataTables().stream()
-                .filter(t -> matches(t.getSchema().getName(), schemaNamePtrn))
-                .filter(t -> matches(t.getName(), tblNamePtrn))
-                .map(t -> {
-                    int cacheGrpId = t.cacheInfo().groupId();
-
-                    CacheGroupDescriptor cacheGrpDesc = ctx.cache().cacheGroupDescriptors().get(cacheGrpId);
-
-                    // We should skip table in case regarding cache group has been removed.
-                    if (cacheGrpDesc == null)
-                        return null;
-
-                    GridQueryTypeDescriptor type = t.rowDescriptor().type();
-
-                    IndexColumn affCol = t.getExplicitAffinityKeyColumn();
-
-                    String affinityKeyCol = affCol != null ? affCol.columnName : null;
-
-                    return new TableInformation(t.getSchema().getName(), t.getName(), TableType.TABLE.name(), cacheGrpId,
-                        cacheGrpDesc.cacheOrGroupName(), t.cacheId(), t.cacheName(), affinityKeyCol,
-                        type.keyFieldAlias(), type.valueFieldAlias(), type.keyTypeName(), type.valueTypeName());
-                })
-                .filter(Objects::nonNull)
-                .forEach(infos::add);
-        }
-
-        if ((allTypes || types.contains(TableType.VIEW.name()))
-            && matches(QueryUtils.SCHEMA_SYS, schemaNamePtrn)) {
-            schemaMgr.systemViews().stream()
-                .filter(t -> matches(t.getTableName(), tblNamePtrn))
-                .map(v -> new TableInformation(QueryUtils.SCHEMA_SYS, v.getTableName(), TableType.VIEW.name()))
-                .forEach(infos::add);
-        }
-
-        return infos;
-    }
-
-    /** {@inheritDoc} */
-    @Override public Collection<ColumnInformation> columnsInformation(String schemaNamePtrn, String tblNamePtrn,
-        String colNamePtrn) {
-        Collection<ColumnInformation> infos = new ArrayList<>();
-
-        // Gather information about tables.
-        schemaMgr.dataTables().stream()
-            .filter(t -> matches(t.getSchema().getName(), schemaNamePtrn))
-            .filter(t -> matches(t.getName(), tblNamePtrn))
-            .flatMap(
-                tbl -> {
-                    IndexColumn affCol = tbl.getAffinityKeyColumn();
-
-                    return Stream.of(tbl.getColumns())
-                        .filter(Column::getVisible)
-                        .filter(c -> matches(c.getName(), colNamePtrn))
-                        .map(c -> {
-                            GridQueryProperty prop = tbl.rowDescriptor().type().property(c.getName());
-
-                            boolean isAff = affCol != null && c.getColumnId() == affCol.column.getColumnId();
-
-                            return new ColumnInformation(
-                                c.getColumnId() - QueryUtils.DEFAULT_COLUMNS_COUNT + 1,
-                                tbl.getSchema().getName(),
-                                tbl.getName(),
-                                c.getName(),
-                                prop.type(),
-                                c.isNullable(),
-                                prop.defaultValue(),
-                                prop.precision(),
-                                prop.scale(),
-                                isAff);
-                        });
-                }
-            ).forEach(infos::add);
-
-        // Gather information about system views.
-        if (matches(QueryUtils.SCHEMA_SYS, schemaNamePtrn)) {
-            schemaMgr.systemViews().stream()
-                .filter(v -> matches(v.getTableName(), tblNamePtrn))
-                .flatMap(
-                    view ->
-                        Stream.of(view.getColumns())
-                            .filter(c -> matches(c.getName(), colNamePtrn))
-                            .map(c -> new ColumnInformation(
-                                c.getColumnId() + 1,
-                                QueryUtils.SCHEMA_SYS,
-                                view.getTableName(),
-                                c.getName(),
-                                IgniteUtils.classForName(DataType.getTypeClassName(c.getType()), Object.class),
-                                c.isNullable(),
-                                null,
-                                (int)c.getPrecision(),
-                                c.getScale(),
-                                false))
-                ).forEach(infos::add);
-        }
-
-        return infos;
-    }
-
     /** {@inheritDoc} */
     @Override public boolean isConvertibleToColumnType(String schemaName, String tblName, String colName, Class<?> cls) {
         GridH2Table table = schemaMgr.dataTable(schemaName, tblName);
@@ -2081,11 +1770,6 @@ public class IgniteH2Indexing implements GridQueryIndexing {
         QueryParserResult parsed = parser.parse(schemaName, qry, true);
 
         return parsed.isDml() && parsed.dml().streamable() && parsed.remainingQuery() == null;
-    }
-
-    /** {@inheritDoc} */
-    @Override public void markAsRebuildNeeded(GridCacheContext cctx, boolean val) {
-        schemaMgr.markIndexRebuild(cctx.name(), val);
     }
 
     /**
@@ -2120,6 +1804,10 @@ public class IgniteH2Indexing implements GridQueryIndexing {
         if (log.isDebugEnabled())
             log.debug("Starting cache query index...");
 
+        // During this check we also load necessary spatial index utils class.
+        if (H2Utils.checkSpatialIndexEnabled() && log.isDebugEnabled())
+            log.debug("Spatial indexes are enabled.");
+
         this.busyLock = busyLock;
 
         if (SysProperties.serializeJavaObject) {
@@ -2138,10 +1826,8 @@ public class IgniteH2Indexing implements GridQueryIndexing {
 
         parser = new QueryParser(this, connMgr, cmd -> cmdProc.isCommandSupported(cmd));
 
-        schemaMgr = new SchemaManager(ctx, connMgr);
-        statsMgr = new IgniteStatisticsManagerImpl(ctx, schemaMgr);
-
-        schemaMgr.start(ctx.config().getSqlConfiguration().getSqlSchemas());
+        schemaMgr = new H2SchemaManager(ctx, this, connMgr);
+        schemaMgr.start();
 
         nodeId = ctx.localNodeId();
         marshaller = ctx.config().getMarshaller();
@@ -2176,15 +1862,34 @@ public class IgniteH2Indexing implements GridQueryIndexing {
 
         funcMgr = new FunctionsManager(distrCfg);
 
-        ctx.maintenanceRegistry()
-            .registerWorkflowCallbackIfTaskExists(
-                INDEX_REBUILD_MNTC_TASK_NAME,
-                task -> new RebuildIndexWorkflowCallback(
-                    parseMaintenanceTaskParameters(task.parameters()),
-                    this,
-                    log
-                )
-            );
+        // Setup default index key type settings.
+        CompareMode compareMode = connMgr.dataHandler().getCompareMode();
+
+        ctx.indexProcessor().keyTypeSettings()
+            .stringOptimizedCompare(CompareMode.OFF.equals(compareMode.getName()))
+            .binaryUnsigned(compareMode.isBinaryUnsigned());
+
+        ctx.internalSubscriptionProcessor().registerSchemaChangeListener(new AbstractSchemaChangeListener() {
+            /** */
+            @Override public void onColumnsAdded(
+                String schemaName,
+                GridQueryTypeDescriptor typeDesc,
+                GridCacheContextInfo<?, ?> cacheInfo,
+                List<QueryField> cols
+            ) {
+                clearPlanCache();
+            }
+
+            /** */
+            @Override public void onColumnsDropped(
+                String schemaName,
+                GridQueryTypeDescriptor typeDesc,
+                GridCacheContextInfo<?, ?> cacheInfo,
+                List<String> cols
+            ) {
+                clearPlanCache();
+            }
+        });
     }
 
     /**
@@ -2369,11 +2074,8 @@ public class IgniteH2Indexing implements GridQueryIndexing {
 
         qryCtxRegistry.clearSharedOnLocalNodeStop();
 
-        schemaMgr.stop();
         longRunningQryMgr.stop();
         connMgr.stop();
-
-        statsMgr.stop();
 
         if (log.isDebugEnabled())
             log.debug("Cache query index stopped.");
@@ -2391,40 +2093,15 @@ public class IgniteH2Indexing implements GridQueryIndexing {
     }
 
     /** {@inheritDoc} */
-    @SuppressWarnings("unchecked")
-    @Override public boolean initCacheContext(GridCacheContext cacheCtx) {
-        GridCacheContextInfo cacheInfo = registeredCacheInfo(cacheCtx.name());
-
-        if (cacheInfo != null) {
-            assert !cacheInfo.isCacheContextInited() : cacheInfo.name();
-            assert cacheInfo.name().equals(cacheCtx.name()) : cacheInfo.name() + " != " + cacheCtx.name();
-
-            cacheInfo.initCacheContext(cacheCtx);
-
-            return true;
-        }
-
-        return false;
+    @Override public void registerCache(String cacheName, String schemaName, GridCacheContextInfo<?, ?> cacheInfo) {
+        // No-op.
     }
 
     /** {@inheritDoc} */
-    @Override public void registerCache(String cacheName, String schemaName, GridCacheContextInfo<?, ?> cacheInfo)
-        throws IgniteCheckedException {
-        ctx.indexProcessor().idxRowCacheRegistry().onCacheRegistered(cacheInfo);
-
-        schemaMgr.onCacheCreated(cacheName, schemaName, cacheInfo.config().getSqlFunctionClasses());
-    }
-
-    /** {@inheritDoc} */
-    @Override public void unregisterCache(GridCacheContextInfo cacheInfo, boolean rmvIdx, boolean clearIdx) {
-        ctx.indexProcessor().unregisterCache(cacheInfo);
-
+    @Override public void unregisterCache(GridCacheContextInfo<?, ?> cacheInfo) {
         String cacheName = cacheInfo.name();
 
         partReservationMgr.onCacheStop(cacheName);
-
-        // Drop schema (needs to be called after callback to DML processor because the latter depends on schema).
-        schemaMgr.onCacheDestroyed(cacheName, rmvIdx, clearIdx);
 
         // Unregister connection.
         connMgr.onCacheDestroyed();
@@ -2527,7 +2204,7 @@ public class IgniteH2Indexing implements GridQueryIndexing {
     /**
      * @return Schema manager.
      */
-    public SchemaManager schemaManager() {
+    public H2SchemaManager schemaManager() {
         return schemaMgr;
     }
 
@@ -3078,45 +2755,10 @@ public class IgniteH2Indexing implements GridQueryIndexing {
         return longRunningQryMgr;
     }
 
-    /** {@inheritDoc} */
-    @Override public long indexSize(String schemaName, String tblName, String idxName) throws IgniteCheckedException {
-        GridH2Table tbl = schemaMgr.dataTable(schemaName, tblName);
-
-        if (tbl == null)
-            return 0;
-
-        H2TreeIndex idx = (H2TreeIndex)tbl.userIndex(idxName);
-
-        return idx == null ? 0 : idx.size();
-    }
-
     /**
      * @return Distributed SQL configuration.
      */
     public DistributedSqlConfiguration distributedConfiguration() {
         return distrCfg;
-    }
-
-    /** {@inheritDoc} */
-    @Override public Map<String, Integer> secondaryIndexesInlineSize() {
-        Map<String, Integer> map = new HashMap<>();
-        for (GridH2Table table : schemaMgr.dataTables()) {
-            for (Index index : table.getIndexes()) {
-                if (index instanceof H2TreeIndexBase && !index.getIndexType().isPrimaryKey()) {
-                    map.put(
-                        index.getSchema().getName() + "#" + index.getTable().getName() + "#" + index.getName(),
-                        ((H2TreeIndexBase)index).inlineSize()
-                    );
-                }
-            }
-
-        }
-
-        return map;
-    }
-
-    /** {@inheritDoc} */
-    @Override public IgniteStatisticsManager statsManager() {
-        return statsMgr;
     }
 }

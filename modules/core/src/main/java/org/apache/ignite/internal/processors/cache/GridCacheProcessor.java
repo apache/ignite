@@ -1066,7 +1066,7 @@ public class GridCacheProcessor extends GridProcessorAdapter {
                 ctx.kernalContext().query().onCacheStop(cacheInfo, rmvIdx, clearIdx);
             }
             else
-                ctx.kernalContext().query().getIndexing().closeCacheOnClient(ctx.name());
+                ctx.kernalContext().query().onClientCacheStop(cacheInfo);
 
             if (isNearEnabled(ctx)) {
                 GridDhtCacheAdapter dht = ctx.near().dht();

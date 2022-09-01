@@ -15,7 +15,7 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.internal.processors.metric.sql;
+package org.apache.ignite.internal.processors.metric;
 
 import java.util.function.Predicate;
 import org.apache.ignite.internal.GridKernalContext;

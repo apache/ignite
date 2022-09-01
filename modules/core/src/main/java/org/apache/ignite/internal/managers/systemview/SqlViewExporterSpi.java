@@ -19,8 +19,6 @@ package org.apache.ignite.internal.managers.systemview;
 
 import org.apache.ignite.internal.GridKernalContext;
 import org.apache.ignite.internal.IgniteEx;
-import org.apache.ignite.internal.processors.query.h2.IgniteH2Indexing;
-import org.apache.ignite.internal.processors.query.h2.SchemaManager;
 import org.apache.ignite.spi.IgniteSpiContext;
 import org.apache.ignite.spi.IgniteSpiException;
 import org.apache.ignite.spi.systemview.view.SystemView;
@@ -29,24 +27,16 @@ import static org.apache.ignite.internal.processors.query.QueryUtils.SCHEMA_SYS;
 
 /**
  * This SPI implementation exports metrics as SQL views.
- *
- * Note, instance of this class created with reflection.
- * @see GridSystemViewManager#SYSTEM_VIEW_SQL_SPI
  */
 class SqlViewExporterSpi extends AbstractSystemViewExporterSpi {
-    /** Schema manager. */
-    private SchemaManager mgr;
+    /** */
+    private GridKernalContext ctx;
 
     /** {@inheritDoc} */
     @Override protected void onContextInitialized0(IgniteSpiContext spiCtx) throws IgniteSpiException {
-        GridKernalContext ctx = ((IgniteEx)ignite()).context();
-
-        if (ctx.query().getIndexing() instanceof IgniteH2Indexing) {
-            mgr = ((IgniteH2Indexing)ctx.query().getIndexing()).schemaManager();
-
-            sysViewReg.forEach(this::register);
-            sysViewReg.addSystemViewCreationListener(this::register);
-        }
+        ctx = ((IgniteEx)ignite()).context();
+        sysViewReg.forEach(this::register);
+        sysViewReg.addSystemViewCreationListener(this::register);
     }
 
     /**
@@ -58,6 +48,6 @@ class SqlViewExporterSpi extends AbstractSystemViewExporterSpi {
         if (log.isDebugEnabled())
             log.debug("Found new system view [name=" + sysView.name() + ']');
 
-        mgr.createSystemView(SCHEMA_SYS, sysView);
+        ctx.query().schemaManager().createSystemView(SCHEMA_SYS, sysView);
     }
 }

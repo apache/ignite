@@ -167,7 +167,7 @@ public class IgniteMBeansManager {
         registerMBean("Kernal", blockOpCtrlMXBean.getClass().getSimpleName(), blockOpCtrlMXBean,
             FailureHandlingMxBean.class);
 
-        if (ctx.query().moduleEnabled())
+        if (ctx.query().indexingEnabled())
             ctx.query().getIndexing().registerMxBeans(this);
 
         PerformanceStatisticsMBeanImpl performanceStatMbean = new PerformanceStatisticsMBeanImpl(ctx);

@@ -17,26 +17,23 @@
 
 package org.apache.ignite.internal.processors.query.calcite.prepare;
 
-import java.lang.reflect.Method;
 import java.util.List;
 import java.util.Map;
 import java.util.function.Supplier;
 import org.apache.ignite.internal.GridKernalContext;
-import org.apache.ignite.internal.cache.query.index.Index;
 import org.apache.ignite.internal.processors.cache.GridCacheContextInfo;
-import org.apache.ignite.internal.processors.query.GridQueryIndexDescriptor;
 import org.apache.ignite.internal.processors.query.GridQueryTypeDescriptor;
 import org.apache.ignite.internal.processors.query.QueryField;
 import org.apache.ignite.internal.processors.query.calcite.util.AbstractService;
-import org.apache.ignite.internal.processors.query.schema.SchemaChangeListener;
+import org.apache.ignite.internal.processors.query.schema.AbstractSchemaChangeListener;
+import org.apache.ignite.internal.processors.query.schema.management.IndexDescriptor;
 import org.apache.ignite.internal.processors.subscription.GridInternalSubscriptionProcessor;
 import org.apache.ignite.internal.util.GridBoundedConcurrentLinkedHashMap;
-import org.apache.ignite.spi.systemview.view.SystemView;
 
 /**
  *
  */
-public class QueryPlanCacheImpl extends AbstractService implements QueryPlanCache, SchemaChangeListener {
+public class QueryPlanCacheImpl extends AbstractService implements QueryPlanCache {
     /** */
     private static final int CACHE_SIZE = 1024;
 
@@ -67,7 +64,7 @@ public class QueryPlanCacheImpl extends AbstractService implements QueryPlanCach
 
     /** {@inheritDoc} */
     @Override public void init() {
-        subscriptionProcessor.registerSchemaChangeListener(this);
+        subscriptionProcessor.registerSchemaChangeListener(new SchemaListener());
     }
 
     /** {@inheritDoc} */
@@ -96,82 +93,65 @@ public class QueryPlanCacheImpl extends AbstractService implements QueryPlanCach
         cache = new GridBoundedConcurrentLinkedHashMap<>(CACHE_SIZE);
     }
 
-    /** {@inheritDoc} */
-    @Override public void onSchemaDropped(String schemaName) {
-        clear();
-    }
+    /** Schema change listener. */
+    private class SchemaListener extends AbstractSchemaChangeListener {
+        /** {@inheritDoc} */
+        @Override public void onSchemaDropped(String schemaName) {
+            clear();
+        }
 
-    /** {@inheritDoc} */
-    @Override public void onSqlTypeDropped(
-        String schemaName,
-        GridQueryTypeDescriptor typeDescriptor,
-        boolean destroy
-    ) {
-        clear();
-    }
+        /** {@inheritDoc} */
+        @Override public void onSqlTypeDropped(
+            String schemaName,
+            GridQueryTypeDescriptor typeDescriptor,
+            boolean destroy
+        ) {
+            clear();
+        }
 
-    /** {@inheritDoc} */
-    @Override public void onIndexCreated(String schemaName, String tblName, String idxName,
-        GridQueryIndexDescriptor idxDesc, Index idx) {
-        clear();
-    }
+        /** {@inheritDoc} */
+        @Override public void onIndexCreated(
+            String schemaName,
+            String tblName,
+            String idxName,
+            IndexDescriptor idxDesc
+        ) {
+            clear();
+        }
 
-    /** {@inheritDoc} */
-    @Override public void onIndexDropped(String schemaName, String tblName, String idxName) {
-        clear();
-    }
+        /** {@inheritDoc} */
+        @Override public void onIndexDropped(String schemaName, String tblName, String idxName) {
+            clear();
+        }
 
-    /** {@inheritDoc} */
-    @Override public void onIndexRebuildStarted(String schemaName, String tblName) {
-        clear();
-    }
+        /** {@inheritDoc} */
+        @Override public void onIndexRebuildStarted(String schemaName, String tblName) {
+            clear();
+        }
 
-    /** {@inheritDoc} */
-    @Override public void onIndexRebuildFinished(String schemaName, String tblName) {
-        clear();
-    }
+        /** {@inheritDoc} */
+        @Override public void onIndexRebuildFinished(String schemaName, String tblName) {
+            clear();
+        }
 
-    /** {@inheritDoc} */
-    @Override public void onSchemaCreated(String schemaName) {
-        // No-op.
-    }
+        /** {@inheritDoc} */
+        @Override public void onColumnsAdded(
+            String schemaName,
+            GridQueryTypeDescriptor typeDesc,
+            GridCacheContextInfo<?, ?> cacheInfo,
+            List<QueryField> cols
+        ) {
+            clear();
+        }
 
-    /** {@inheritDoc} */
-    @Override public void onSqlTypeCreated(
-        String schemaName,
-        GridQueryTypeDescriptor typeDesc,
-        GridCacheContextInfo<?, ?> cacheInfo
-    ) {
-        // No-op.
-    }
-
-    /** {@inheritDoc} */
-    @Override public void onColumnsAdded(
-        String schemaName,
-        GridQueryTypeDescriptor typeDesc,
-        GridCacheContextInfo<?, ?> cacheInfo,
-        List<QueryField> cols
-    ) {
-        clear();
-    }
-
-    /** {@inheritDoc} */
-    @Override public void onColumnsDropped(
-        String schemaName,
-        GridQueryTypeDescriptor typeDesc,
-        GridCacheContextInfo<?, ?> cacheInfo,
-        List<String> cols
-    ) {
-        clear();
-    }
-
-    /** {@inheritDoc} */
-    @Override public void onFunctionCreated(String schemaName, String name, Method method) {
-        // No-op.
-    }
-
-    /** {@inheritDoc} */
-    @Override public void onSystemViewCreated(String schemaName, SystemView<?> sysView) {
-        // No-op.
+        /** {@inheritDoc} */
+        @Override public void onColumnsDropped(
+            String schemaName,
+            GridQueryTypeDescriptor typeDesc,
+            GridCacheContextInfo<?, ?> cacheInfo,
+            List<String> cols
+        ) {
+            clear();
+        }
     }
 }

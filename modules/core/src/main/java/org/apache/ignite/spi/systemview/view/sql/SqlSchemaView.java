@@ -15,39 +15,33 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.spi.systemview.view;
+package org.apache.ignite.spi.systemview.view.sql;
 
 import org.apache.ignite.internal.managers.systemview.walker.Order;
-import org.apache.ignite.internal.processors.query.QueryUtils;
-import org.apache.ignite.internal.processors.query.h2.sys.view.SqlSystemView;
+import org.apache.ignite.internal.processors.query.schema.management.SchemaDescriptor;
 
 /**
- * Sql view representation for a {@link SystemView}.
+ * Sql schema system view representation.
  */
-public class SqlViewView {
-    /** Sql system view. */
-    private final SqlSystemView view;
+public class SqlSchemaView {
+    /** Schema. */
+    private final SchemaDescriptor schema;
 
-    /** @param view Sql system view. */
-    public SqlViewView(SqlSystemView view) {
-        this.view = view;
+    /**
+     * @param schema Schema.
+     */
+    public SqlSchemaView(SchemaDescriptor schema) {
+        this.schema = schema;
     }
 
-    /** @return View name. */
+    /** @return Schema name. */
     @Order
-    public String name() {
-        return view.getTableName();
+    public String schemaName() {
+        return schema.schemaName();
     }
 
-    /** @return View description. */
-    @Order(2)
-    public String description() {
-        return view.getDescription();
-    }
-
-    /** @return View schema. */
-    @Order(1)
-    public String schema() {
-        return QueryUtils.SCHEMA_SYS;
+    /** @return {@code True} if schema is predefined, {@code false} otherwise. */
+    public boolean predefined() {
+        return schema.predefined();
     }
 }
