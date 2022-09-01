@@ -83,6 +83,11 @@ public class CacheIndexImpl implements IgniteIndex {
         return tbl;
     }
 
+    /** Underlying query index. */
+    public Index queryIndex() {
+        return idx;
+    }
+
     /** {@inheritDoc} */
     @Override public IgniteLogicalIndexScan toRel(
         RelOptCluster cluster,

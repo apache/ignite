@@ -750,6 +750,11 @@ public abstract class AbstractPlannerTest extends GridCommonAbstractTest {
         }
 
         /** {@inheritDoc} */
+        @Override public Collection<ColumnDescriptor> columnDescriptors() {
+            throw new AssertionError();
+        }
+
+        /** {@inheritDoc} */
         @Override public GridQueryTypeDescriptor typeDescription() {
             throw new AssertionError();
         }
