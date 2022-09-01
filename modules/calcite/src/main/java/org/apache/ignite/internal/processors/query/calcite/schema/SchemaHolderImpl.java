@@ -190,7 +190,7 @@ public class SchemaHolderImpl extends AbstractService implements SchemaHolder, S
         GridCacheContextInfo<?, ?> cacheInfo,
         List<QueryField> cols
     ) {
-        IgniteCacheTable oldTbl = (IgniteCacheTable)table(schemaName, typeDesc.tableName());
+        IgniteCacheTable oldTbl = table(schemaName, typeDesc.tableName());
         assert oldTbl != null;
 
         IgniteCacheTable newTbl = createTable(typeDesc, cacheInfo);
@@ -212,7 +212,7 @@ public class SchemaHolderImpl extends AbstractService implements SchemaHolder, S
         GridCacheContextInfo<?, ?> cacheInfo,
         List<String> cols
     ) {
-        IgniteCacheTable oldTbl = (IgniteCacheTable)table(schemaName, typeDesc.tableName());
+        IgniteCacheTable oldTbl = table(schemaName, typeDesc.tableName());
         assert oldTbl != null;
 
         IgniteCacheTable newTbl = createTable(typeDesc, cacheInfo);
@@ -288,7 +288,7 @@ public class SchemaHolderImpl extends AbstractService implements SchemaHolder, S
         String idxName,
         IndexDescriptor idxDesc
     ) {
-        IgniteCacheTable tbl = (IgniteCacheTable)table(schemaName, tblName);
+        IgniteCacheTable tbl = table(schemaName, tblName);
         assert tbl != null;
 
         RelCollation idxCollation = deriveSecondaryIndexCollation(idxDesc, tbl);
@@ -373,11 +373,11 @@ public class SchemaHolderImpl extends AbstractService implements SchemaHolder, S
     }
 
     /** */
-    private IgniteTable table(String schemaName, String tableName) {
+    private IgniteCacheTable table(String schemaName, String tableName) {
         IgniteSchema schema = igniteSchemas.get(schemaName);
 
         if (schema != null)
-            return (IgniteTable)schema.getTable(tableName);
+            return (IgniteCacheTable)schema.getTable(tableName);
 
         return null;
     }
