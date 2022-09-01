@@ -18,6 +18,7 @@
 package org.apache.ignite.internal.processors.cache.metric;
 
 import java.lang.reflect.Field;
+import java.net.InetSocketAddress;
 import java.sql.Connection;
 import java.sql.Timestamp;
 import java.util.ArrayList;
@@ -77,8 +78,8 @@ import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgnitePredicate;
 import org.apache.ignite.services.ServiceConfiguration;
 import org.apache.ignite.spi.systemview.view.MetastorageView;
-import org.apache.ignite.spi.systemview.view.SqlSchemaView;
 import org.apache.ignite.spi.systemview.view.SystemView;
+import org.apache.ignite.spi.systemview.view.sql.SqlSchemaView;
 import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.transactions.Transaction;
 import org.junit.Test;
@@ -93,7 +94,7 @@ import static org.apache.ignite.internal.processors.cache.persistence.GridCacheD
 import static org.apache.ignite.internal.processors.metastorage.persistence.DistributedMetaStorageImpl.DISTRIBUTED_METASTORE_VIEW;
 import static org.apache.ignite.internal.processors.query.QueryUtils.DFLT_SCHEMA;
 import static org.apache.ignite.internal.processors.query.QueryUtils.SCHEMA_SYS;
-import static org.apache.ignite.internal.processors.query.h2.SchemaManager.SQL_SCHEMA_VIEW;
+import static org.apache.ignite.internal.processors.query.schema.management.SchemaManager.SQL_SCHEMA_VIEW;
 import static org.apache.ignite.internal.util.IgniteUtils.toStringSafe;
 import static org.apache.ignite.testframework.GridTestUtils.waitForCondition;
 import static org.apache.ignite.transactions.TransactionConcurrency.OPTIMISTIC;
@@ -510,7 +511,7 @@ public class SqlViewExporterSpiTest extends AbstractExporterSpiTest {
     public void testTableColumns() throws Exception {
         assertTrue(execute(ignite0, "SELECT * FROM SYS.TABLE_COLUMNS").isEmpty());
 
-        execute(ignite0, "CREATE TABLE T1(ID LONG PRIMARY KEY, NAME VARCHAR(40))");
+        execute(ignite0, "CREATE TABLE T1(ID LONG PRIMARY KEY, NAME VARCHAR(40) DEFAULT 'name')");
 
         Set<?> actCols = execute(ignite0, "SELECT * FROM SYS.TABLE_COLUMNS")
             .stream()
@@ -521,15 +522,17 @@ public class SqlViewExporterSpiTest extends AbstractExporterSpiTest {
 
         execute(ignite0, "CREATE TABLE T2(ID LONG PRIMARY KEY, NAME VARCHAR(50))");
 
+        // Columns order: COLUMN_NAME, TABLE_NAME, SCHEMA_NAME, AFFINITY_COLUMN, AUTO_INCREMENT, DEFAULT_VALUE,
+        // NULLABLE, PK, PRECESION, SCALE, TYPE.
         List<List<?>> expRes = asList(
-            asList("ID", "T1", "PUBLIC", false, false, "null", true, true, -1, -1, Long.class.getName()),
-            asList("NAME", "T1", "PUBLIC", false, false, "null", true, false, 40, -1, String.class.getName()),
-            asList("_KEY", "T1", "PUBLIC", true, false, null, false, true, -1, -1, null),
-            asList("_VAL", "T1", "PUBLIC", false, false, null, true, false, -1, -1, null),
-            asList("ID", "T2", "PUBLIC", false, false, "null", true, true, -1, -1, Long.class.getName()),
-            asList("NAME", "T2", "PUBLIC", false, false, "null", true, false, 50, -1, String.class.getName()),
-            asList("_KEY", "T2", "PUBLIC", true, false, null, false, true, -1, -1, null),
-            asList("_VAL", "T2", "PUBLIC", false, false, null, true, false, -1, -1, null)
+            asList("ID", "T1", "PUBLIC", true, false, null, true, true, -1, -1, Long.class.getName()),
+            asList("NAME", "T1", "PUBLIC", false, false, "name", true, false, 40, -1, String.class.getName()),
+            asList("_KEY", "T1", "PUBLIC", true, false, null, false, true, -1, -1, Long.class.getName()),
+            asList("_VAL", "T1", "PUBLIC", false, false, null, false, false, -1, -1, Object.class.getName()),
+            asList("ID", "T2", "PUBLIC", true, false, null, true, true, -1, -1, Long.class.getName()),
+            asList("NAME", "T2", "PUBLIC", false, false, null, true, false, 50, -1, String.class.getName()),
+            asList("_KEY", "T2", "PUBLIC", true, false, null, false, true, -1, -1, Long.class.getName()),
+            asList("_VAL", "T2", "PUBLIC", false, false, null, false, false, -1, -1, Object.class.getName())
         );
 
         List<List<?>> res = execute(ignite0, "SELECT * FROM SYS.TABLE_COLUMNS ORDER BY TABLE_NAME, COLUMN_NAME");
@@ -544,21 +547,17 @@ public class SqlViewExporterSpiTest extends AbstractExporterSpiTest {
 
     /** */
     @Test
-    public void testViewColumns() throws Exception {
+    public void testViewColumns() {
         execute(ignite0, "SELECT * FROM SYS.VIEW_COLUMNS");
 
+        // Columns order: COLUMN_NAME, VIEW_NAME, SCHEMA_NAME, DEFAULT_VALUE, NULLABLE, PRECESION, SCALE, TYPE.
         List<List<?>> expRes = asList(
-            asList("CONNECTION_ID", "CLIENT_CONNECTIONS", SCHEMA_SYS, "null", true, 19L, 0, Long.class.getName()),
-            asList("LOCAL_ADDRESS", "CLIENT_CONNECTIONS", SCHEMA_SYS, "null", true, (long)Integer.MAX_VALUE, 0,
-                String.class.getName()),
-            asList("REMOTE_ADDRESS", "CLIENT_CONNECTIONS", SCHEMA_SYS, "null", true, (long)Integer.MAX_VALUE, 0,
-                String.class.getName()),
-            asList("TYPE", "CLIENT_CONNECTIONS", SCHEMA_SYS, "null", true, (long)Integer.MAX_VALUE, 0,
-                String.class.getName()),
-            asList("USER", "CLIENT_CONNECTIONS", SCHEMA_SYS, "null", true, (long)Integer.MAX_VALUE, 0,
-                String.class.getName()),
-            asList("VERSION", "CLIENT_CONNECTIONS", SCHEMA_SYS, "null", true, (long)Integer.MAX_VALUE, 0,
-                String.class.getName())
+            asList("CONNECTION_ID", "CLIENT_CONNECTIONS", SCHEMA_SYS, null, false, -1, -1, long.class.getName()),
+            asList("LOCAL_ADDRESS", "CLIENT_CONNECTIONS", SCHEMA_SYS, null, true, -1, -1, InetSocketAddress.class.getName()),
+            asList("REMOTE_ADDRESS", "CLIENT_CONNECTIONS", SCHEMA_SYS, null, true, -1, -1, InetSocketAddress.class.getName()),
+            asList("TYPE", "CLIENT_CONNECTIONS", SCHEMA_SYS, null, true, -1, -1, String.class.getName()),
+            asList("USER", "CLIENT_CONNECTIONS", SCHEMA_SYS, null, true, -1, -1, String.class.getName()),
+            asList("VERSION", "CLIENT_CONNECTIONS", SCHEMA_SYS, null, true, -1, -1, String.class.getName())
         );
 
         List<List<?>> res = execute(ignite0, "SELECT * FROM SYS.VIEW_COLUMNS WHERE VIEW_NAME = 'CLIENT_CONNECTIONS'");

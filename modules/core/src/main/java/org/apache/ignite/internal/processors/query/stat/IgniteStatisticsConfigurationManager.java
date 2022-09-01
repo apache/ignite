@@ -46,12 +46,13 @@ import org.apache.ignite.internal.processors.cache.query.IgniteQueryErrorCode;
 import org.apache.ignite.internal.processors.cluster.GridClusterStateProcessor;
 import org.apache.ignite.internal.processors.metastorage.DistributedMetaStorage;
 import org.apache.ignite.internal.processors.metastorage.DistributedMetastorageLifecycleListener;
-import org.apache.ignite.internal.processors.query.GridQuerySchemaManager;
 import org.apache.ignite.internal.processors.query.GridQueryTypeDescriptor;
 import org.apache.ignite.internal.processors.query.IgniteSQLException;
 import org.apache.ignite.internal.processors.query.QueryUtils;
 import org.apache.ignite.internal.processors.query.schema.AbstractSchemaChangeListener;
 import org.apache.ignite.internal.processors.query.schema.SchemaChangeListener;
+import org.apache.ignite.internal.processors.query.schema.management.SchemaManager;
+import org.apache.ignite.internal.processors.query.schema.management.TableDescriptor;
 import org.apache.ignite.internal.processors.query.stat.config.StatisticsColumnConfiguration;
 import org.apache.ignite.internal.processors.query.stat.config.StatisticsObjectConfiguration;
 import org.apache.ignite.internal.processors.query.stat.view.ColumnConfigurationViewSupplier;
@@ -79,7 +80,7 @@ public class IgniteStatisticsConfigurationManager {
     public static final String[] EMPTY_STRINGS = new String[0];
 
     /** Schema manager. */
-    private final GridQuerySchemaManager schemaMgr;
+    private final SchemaManager schemaMgr;
 
     /** Distributed metastore. */
     private volatile DistributedMetaStorage distrMetaStorage;
@@ -201,7 +202,7 @@ public class IgniteStatisticsConfigurationManager {
      * @param isServerNode Server node flag.
      */
     public IgniteStatisticsConfigurationManager(
-        GridQuerySchemaManager schemaMgr,
+        SchemaManager schemaMgr,
         GridInternalSubscriptionProcessor subscriptionProcessor,
         GridSystemViewManager sysViewMgr,
         GridClusterStateProcessor cluster,
@@ -266,8 +267,9 @@ public class IgniteStatisticsConfigurationManager {
      * @param cfg Statistics object configuration to update statistics by.
      */
     private void updateLocalStatistics(StatisticsObjectConfiguration cfg) {
-        GridQueryTypeDescriptor tbl = schemaMgr.typeDescriptorForTable(cfg.key().schema(), cfg.key().obj());
-        GridCacheContextInfo<?, ?> cacheInfo = schemaMgr.cacheInfoForTable(cfg.key().schema(), cfg.key().obj());
+        TableDescriptor tbl = schemaMgr.table(cfg.key().schema(), cfg.key().obj());
+        GridQueryTypeDescriptor typeDesc = tbl != null ? tbl.type() : null;
+        GridCacheContextInfo<?, ?> cacheInfo = tbl != null ? tbl.cacheInfo() : null;
         GridCacheContext<?, ?> cctx = cacheInfo != null ? cacheInfo.cacheContext() : null;
 
         if (tbl == null || cfg.columns().isEmpty()) {
@@ -280,8 +282,8 @@ public class IgniteStatisticsConfigurationManager {
             }
 
             // Ensure to clean local metastorage.
-            LocalStatisticsGatheringContext ctx = new LocalStatisticsGatheringContext(false, tbl, cacheInfo,
-                cfg, Collections.emptySet(), topVer);
+            LocalStatisticsGatheringContext ctx = new LocalStatisticsGatheringContext(false, typeDesc,
+                cacheInfo, cfg, Collections.emptySet(), topVer);
 
             statProc.updateLocalStatistics(ctx);
 
@@ -307,8 +309,9 @@ public class IgniteStatisticsConfigurationManager {
 
             final Set<Integer> primParts = cctx.affinity().primaryPartitions(cctx.localNodeId(), topVer0);
 
-            LocalStatisticsGatheringContext ctx = new LocalStatisticsGatheringContext(false, tbl, cacheInfo,
-                cfg, primParts, topVer0);
+            LocalStatisticsGatheringContext ctx = new LocalStatisticsGatheringContext(false, typeDesc,
+                cacheInfo, cfg, primParts, topVer0);
+
             statProc.updateLocalStatistics(ctx);
         }
         catch (IgniteCheckedException e) {
@@ -391,15 +394,14 @@ public class IgniteStatisticsConfigurationManager {
             log.debug("Update statistics [targets=" + targets + ']');
 
         for (StatisticsObjectConfiguration target : targets) {
-
-            GridQueryTypeDescriptor tbl = schemaMgr.typeDescriptorForTable(target.key().schema(), target.key().obj());
+            TableDescriptor tbl = schemaMgr.table(target.key().schema(), target.key().obj());
 
             validate(target, tbl);
 
             List<StatisticsColumnConfiguration> colCfgs;
 
             if (F.isEmpty(target.columns()))
-                colCfgs = tbl.fields().keySet().stream()
+                colCfgs = tbl.type().fields().keySet().stream()
                     .filter(col -> !QueryUtils.KEY_FIELD_NAME.equals(col) && !QueryUtils.VAL_FIELD_NAME.equals(col))
                     .map(col -> new StatisticsColumnConfiguration(col, null))
                     .collect(Collectors.toList());
@@ -581,7 +583,7 @@ public class IgniteStatisticsConfigurationManager {
      * @param cfg Statistics object configuration to check.
      * @param tbl Corresponding table (if exists).
      */
-    private void validate(StatisticsObjectConfiguration cfg, GridQueryTypeDescriptor tbl) {
+    private void validate(StatisticsObjectConfiguration cfg, TableDescriptor tbl) {
         if (tbl == null) {
             throw new IgniteSQLException(
                 "Table doesn't exist [schema=" + cfg.key().schema() + ", table=" + cfg.key().obj() + ']',
@@ -590,7 +592,7 @@ public class IgniteStatisticsConfigurationManager {
 
         if (!F.isEmpty(cfg.columns())) {
             for (String col : cfg.columns().keySet()) {
-                if (!tbl.fields().containsKey(col)) {
+                if (!tbl.type().fields().containsKey(col)) {
                     throw new IgniteSQLException(
                         "Column doesn't exist [schema=" + cfg.key().schema() +
                             ", table=" + cfg.key().obj() +

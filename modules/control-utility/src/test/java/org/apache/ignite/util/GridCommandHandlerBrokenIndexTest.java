@@ -152,7 +152,8 @@ public class GridCommandHandlerBrokenIndexTest extends GridCommandHandlerCluster
                     IndexName idxName = idxDef.idxName();
 
                     SortedIndexDefinition badIdxDef = new QueryIndexDefinition(
-                        idxDef.rowDescriptor(),
+                        idxDef.typeDescriptor(),
+                        idxDef.cacheInfo(),
                         new IndexName(idxName.cacheName(), idxName.schemaName(), idxName.tableName(), IDX_NAME),
                         idxDef.treeName(),
                         idxDef.idxRowCache(),

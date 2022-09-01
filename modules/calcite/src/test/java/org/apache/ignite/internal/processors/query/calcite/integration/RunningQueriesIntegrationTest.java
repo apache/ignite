@@ -36,6 +36,8 @@ import org.apache.calcite.util.ImmutableBitSet;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.cache.query.SqlFieldsQuery;
+import org.apache.ignite.calcite.CalciteQueryEngineConfiguration;
+import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.processors.query.IgniteSQLException;
@@ -83,6 +85,14 @@ public class RunningQueriesIntegrationTest extends AbstractBasicIntegrationTest 
         super.beforeTestsStarted();
 
         srv = grid(0);
+    }
+
+    /** {@inheritDoc} */
+    @Override protected IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {
+        IgniteConfiguration cfg = super.getConfiguration(igniteInstanceName);
+        cfg.getSqlConfiguration().setQueryEnginesConfiguration(new CalciteQueryEngineConfiguration());
+
+        return cfg;
     }
 
     /**
@@ -317,17 +327,21 @@ public class RunningQueriesIntegrationTest extends AbstractBasicIntegrationTest 
         String initiatorId = "initiator";
 
         GridTestUtils.runAsync(() -> client.cache("cache").query(new SqlFieldsQuery("SELECT * FROM t")
-            .setQueryInitiatorId(initiatorId)));
+            .setQueryInitiatorId(initiatorId)).getAll());
 
         try {
             SystemView<SqlQueryView> view = client.context().systemView().view(SQL_QRY_VIEW);
 
             assertTrue(GridTestUtils.waitForCondition(() -> !F.isEmpty(view), 1_000));
 
+            assertFalse(F.isEmpty(engine.runningQueries()));
+
             assertEquals(1, F.size(view.iterator(), v -> initiatorId.equals(v.initiatorId())));
         }
         finally {
             latch.countDown();
         }
+
+        assertTrue(GridTestUtils.waitForCondition(() -> F.isEmpty(engine.runningQueries()), PLANNER_TIMEOUT * 2));
     }
 }

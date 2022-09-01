@@ -18,58 +18,19 @@
 
 package org.apache.ignite.compatibility.persistence;
 
-import java.util.Collection;
 import java.util.List;
-import java.util.Set;
 import org.apache.ignite.Ignite;
-import org.apache.ignite.cache.query.SqlFieldsQuery;
-import org.apache.ignite.compatibility.testframework.junits.Dependency;
-import org.apache.ignite.configuration.DataRegionConfiguration;
-import org.apache.ignite.configuration.DataStorageConfiguration;
-import org.apache.ignite.configuration.IgniteConfiguration;
-import org.apache.ignite.configuration.SystemDataRegionConfiguration;
+import org.apache.ignite.cluster.ClusterState;
 import org.apache.ignite.internal.IgniteEx;
-import org.apache.ignite.internal.processors.cache.GridCacheAbstractFullApiSelfTest;
 import org.apache.ignite.lang.IgniteInClosure;
-import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi;
-import org.jetbrains.annotations.NotNull;
-import org.junit.Ignore;
 import org.junit.Test;
 
 /**
  * Test to check that starting node with PK index of the old format present doesn't break anything.
  */
-@Ignore("https://issues.apache.org/jira/browse/IGNITE-13723")
-public class IgnitePKIndexesMigrationToUnwrapPkTest extends IgnitePersistenceCompatibilityAbstractTest {
+public class IgnitePKIndexesMigrationToUnwrapPkTest extends IndexAbstractCompatibilityTest {
     /** */
-    private static String TABLE_NAME = "TEST_IDX_TABLE";
-
-    /** {@inheritDoc} */
-    @Override protected IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {
-        IgniteConfiguration cfg = super.getConfiguration(igniteInstanceName);
-
-        new ConfigurationClosure().apply(cfg);
-
-        return cfg;
-    }
-
-    /** {@inheritDoc} */
-    @Override @NotNull protected Collection<Dependency> getDependencies(String igniteVer) {
-        Collection<Dependency> dependencies = super.getDependencies(igniteVer);
-
-        dependencies.add(new Dependency("h2", "com.h2database", "h2", "1.4.195", false));
-
-        return dependencies;
-    }
-
-    /** {@inheritDoc} */
-    @Override protected Set<String> getExcluded(String ver, Collection<Dependency> dependencies) {
-        Set<String> excluded = super.getExcluded(ver, dependencies);
-
-        excluded.add("h2");
-
-        return excluded;
-    }
+    private static final String TABLE_NAME = "TEST_IDX_TABLE";
 
     /**
      * Tests opportunity to read data from previous Ignite DB version.
@@ -97,20 +58,20 @@ public class IgnitePKIndexesMigrationToUnwrapPkTest extends IgnitePersistenceCom
      * @param ver 3-digits version of ignite
      * @throws Exception If failed.
      */
-    @SuppressWarnings("unchecked")
     private void doTestStartupWithOldVersion(String ver) throws Exception {
         try {
-            startGrid(1, ver, new ConfigurationClosure(), new PostStartupClosure(true));
+            startGrid(1, ver, new PersistenceBasicCompatibilityTest.ConfigurationClosure(true),
+                new PostStartupClosure());
 
             stopAllGrids();
 
             IgniteEx igniteEx = startGrid(0);
 
-            new PostStartupClosure(false).apply(igniteEx);
-
-            igniteEx.active(true);
+            igniteEx.cluster().state(ClusterState.ACTIVE);
 
             assertDontUsingPkIndex(igniteEx, TABLE_NAME);
+
+            assertQueryWorks(igniteEx, TABLE_NAME);
 
             String newTblName = TABLE_NAME + "_NEW";
 
@@ -118,7 +79,9 @@ public class IgnitePKIndexesMigrationToUnwrapPkTest extends IgnitePersistenceCom
 
             checkUsingIndexes(igniteEx, newTblName);
 
-            igniteEx.active(false);
+            assertQueryWorks(igniteEx, newTblName);
+
+            igniteEx.cluster().state(ClusterState.INACTIVE);
         }
         finally {
             stopAllGrids();
@@ -127,25 +90,13 @@ public class IgnitePKIndexesMigrationToUnwrapPkTest extends IgnitePersistenceCom
 
     /** */
     private static class PostStartupClosure implements IgniteInClosure<Ignite> {
-
-        /** */
-        boolean createTable;
-
-        /**
-         * @param createTable {@code true} In case table should be created
-         */
-        public PostStartupClosure(boolean createTable) {
-            this.createTable = createTable;
-        }
-
         /** {@inheritDoc} */
         @Override public void apply(Ignite ignite) {
             ignite.active(true);
 
             IgniteEx igniteEx = (IgniteEx)ignite;
 
-            if (createTable)
-                initializeTable(igniteEx, TABLE_NAME);
+            initializeTable(igniteEx, TABLE_NAME);
 
             assertDontUsingPkIndex(igniteEx, TABLE_NAME);
 
@@ -157,7 +108,7 @@ public class IgnitePKIndexesMigrationToUnwrapPkTest extends IgnitePersistenceCom
      * @param igniteEx Ignite instance.
      * @param tblName Table name.
      */
-    @NotNull private static void initializeTable(IgniteEx igniteEx, String tblName) {
+    private static void initializeTable(IgniteEx igniteEx, String tblName) {
         executeSql(igniteEx, "CREATE TABLE " + tblName + " (id int, name varchar, age int, company varchar, city varchar, " +
             "primary key (id, name, city)) WITH \"affinity_key=name\"");
 
@@ -165,18 +116,6 @@ public class IgnitePKIndexesMigrationToUnwrapPkTest extends IgnitePersistenceCom
 
         for (int i = 0; i < 1000; i++)
             executeSql(igniteEx, "INSERT INTO " + tblName + " (id, name, age, company, city) VALUES(?,'name',2,'company', 'city')", i);
-    }
-
-    /**
-     * Run SQL statement on specified node.
-     *
-     * @param node node to execute query.
-     * @param stmt Statement to run.
-     * @param args arguments of statements
-     * @return Run result.
-     */
-    private static List<List<?>> executeSql(IgniteEx node, String stmt, Object... args) {
-        return node.context().query().querySqlFields(new SqlFieldsQuery(stmt).setArgs(args), true).getAll();
     }
 
     /**
@@ -207,7 +146,7 @@ public class IgnitePKIndexesMigrationToUnwrapPkTest extends IgnitePersistenceCom
      * @param results Result list of explain of query.
      */
     private static void assertUsingPkIndex(List<List<?>> results) {
-        assertEquals(2, results.size());
+        assertFalse(results.isEmpty());
 
         String explainPlan = (String)results.get(0).get(0);
 
@@ -225,7 +164,7 @@ public class IgnitePKIndexesMigrationToUnwrapPkTest extends IgnitePersistenceCom
     private static void assertDontUsingPkIndex(IgniteEx igniteEx, String tblName) {
         List<List<?>> results = executeSql(igniteEx, "explain SELECT * FROM " + tblName + " WHERE id=1");
 
-        assertEquals(2, results.size());
+        assertFalse(results.isEmpty());
 
         String explainPlan = (String)results.get(0).get(0);
 
@@ -236,33 +175,16 @@ public class IgnitePKIndexesMigrationToUnwrapPkTest extends IgnitePersistenceCom
         assertTrue(explainPlan, explainPlan.contains("_SCAN_"));
     }
 
-    /** */
-    private static class ConfigurationClosure implements IgniteInClosure<IgniteConfiguration> {
-        /** {@inheritDoc} */
-        @Override public void apply(IgniteConfiguration cfg) {
-            cfg.setLocalHost("127.0.0.1");
+    /**
+     * Check that query on table works correctly.
+     *
+     * @param igniteEx Ignite instance.
+     * @param tblName Name of table.
+     */
+    private static void assertQueryWorks(IgniteEx igniteEx, String tblName) {
+        List<List<?>> results = executeSql(igniteEx, "SELECT * FROM " + tblName + " WHERE id=1");
 
-            TcpDiscoverySpi disco = new TcpDiscoverySpi();
-            disco.setIpFinder(GridCacheAbstractFullApiSelfTest.LOCAL_IP_FINDER);
-
-            cfg.setDiscoverySpi(disco);
-
-            cfg.setPeerClassLoadingEnabled(false);
-
-            DataStorageConfiguration storageCfg = new DataStorageConfiguration()
-                .setDefaultDataRegionConfiguration(
-                    new DataRegionConfiguration()
-                            .setPersistenceEnabled(true)
-                            .setInitialSize(10 * 1024 * 1024)
-                            .setMaxSize(15 * 1024 * 1024)
-                )
-                .setSystemDataRegionConfiguration(
-                    new SystemDataRegionConfiguration()
-                            .setInitialSize(10 * 1024 * 1024)
-                            .setMaxSize(15 * 1024 * 1024)
-                );
-
-            cfg.setDataStorageConfiguration(storageCfg);
-        }
+        assertEquals(1, results.size());
+        assertEquals(1, results.get(0).get(0));
     }
 }

@@ -44,18 +44,23 @@ import org.apache.ignite.cache.query.SqlQuery;
 import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
+import org.apache.ignite.internal.GridKernalContext;
 import org.apache.ignite.internal.IgniteClientReconnectAbstractTest;
 import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.managers.discovery.CustomEventListener;
 import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
+import org.apache.ignite.internal.processors.cache.GridCacheContextInfo;
 import org.apache.ignite.internal.processors.query.GridQueryProcessor;
+import org.apache.ignite.internal.processors.query.GridQueryTypeDescriptor;
 import org.apache.ignite.internal.processors.query.QueryField;
 import org.apache.ignite.internal.processors.query.QueryUtils;
 import org.apache.ignite.internal.processors.query.h2.IgniteH2Indexing;
+import org.apache.ignite.internal.processors.query.schema.AbstractSchemaChangeListener;
 import org.apache.ignite.internal.processors.query.schema.SchemaOperationException;
 import org.apache.ignite.internal.processors.query.schema.message.SchemaFinishDiscoveryMessage;
 import org.apache.ignite.internal.util.GridConcurrentHashSet;
+import org.apache.ignite.internal.util.GridSpinBusyLock;
 import org.apache.ignite.internal.util.lang.RunnableX;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.T3;
@@ -1119,20 +1124,27 @@ public abstract class DynamicColumnsAbstractConcurrentSelfTest extends DynamicCo
      */
     private static class BlockingIndexing extends IgniteH2Indexing {
         /** {@inheritDoc} */
-        @Override public void dynamicAddColumn(String schemaName, String tblName, List<QueryField> cols,
-            boolean ifTblExists, boolean ifColNotExists)
-            throws IgniteCheckedException {
-            awaitIndexing(ctx.localNodeId());
+        @Override public void start(GridKernalContext ctx, GridSpinBusyLock busyLock) throws IgniteCheckedException {
+            ctx.internalSubscriptionProcessor().registerSchemaChangeListener(new AbstractSchemaChangeListener() {
+                @Override public void onColumnsAdded(
+                    String schemaName,
+                    GridQueryTypeDescriptor typeDesc,
+                    GridCacheContextInfo<?, ?> cacheInfo,
+                    List<QueryField> cols
+                ) {
+                    awaitIndexing(ctx.localNodeId());
+                }
 
-            super.dynamicAddColumn(schemaName, tblName, cols, ifTblExists, ifColNotExists);
-        }
-
-        /** {@inheritDoc} */
-        @Override public void dynamicDropColumn(String schemaName, String tblName, List<String> cols,
-            boolean ifTblExists, boolean ifColExists) throws IgniteCheckedException {
-            awaitIndexing(ctx.localNodeId());
-
-            super.dynamicDropColumn(schemaName, tblName, cols, ifTblExists, ifColExists);
+                @Override public void onColumnsDropped(
+                    String schemaName,
+                    GridQueryTypeDescriptor typeDesc,
+                    GridCacheContextInfo<?, ?> cacheInfo,
+                    List<String> cols
+                ) {
+                    awaitIndexing(ctx.localNodeId());
+                }
+            });
+            super.start(ctx, busyLock);
         }
     }
 

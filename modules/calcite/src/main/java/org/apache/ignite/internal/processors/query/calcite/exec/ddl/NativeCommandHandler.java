@@ -21,7 +21,6 @@ import java.util.List;
 import java.util.UUID;
 import org.apache.ignite.cache.query.FieldsQueryCursor;
 import org.apache.ignite.internal.GridKernalContext;
-import org.apache.ignite.internal.processors.query.GridQuerySchemaManager;
 import org.apache.ignite.internal.processors.query.calcite.prepare.ddl.NativeCommandWrapper;
 import org.apache.ignite.internal.sql.SqlCommandProcessor;
 
@@ -35,8 +34,8 @@ public class NativeCommandHandler {
     /**
      * @param ctx Context.
      */
-    public NativeCommandHandler(GridKernalContext ctx, GridQuerySchemaManager schemaMgr) {
-        proc = new SqlCommandProcessor(ctx, schemaMgr);
+    public NativeCommandHandler(GridKernalContext ctx) {
+        proc = new SqlCommandProcessor(ctx);
     }
 
     /**

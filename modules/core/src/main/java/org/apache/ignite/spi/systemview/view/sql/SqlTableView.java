@@ -15,29 +15,36 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.spi.systemview.view;
+package org.apache.ignite.spi.systemview.view.sql;
 
 import org.apache.ignite.internal.managers.systemview.walker.Order;
-import org.apache.ignite.internal.processors.query.h2.database.IndexInformation;
-import org.apache.ignite.internal.processors.query.h2.opt.GridH2Table;
+import org.apache.ignite.internal.processors.query.schema.management.TableDescriptor;
+import org.apache.ignite.internal.util.typedef.F;
+import org.apache.ignite.spi.systemview.view.SystemView;
 
 /**
- * Sql index representation for a {@link SystemView}.
+ * Sql table representation for a {@link SystemView}.
  */
-public class SqlIndexView {
+public class SqlTableView {
     /** Table. */
-    private final GridH2Table tbl;
+    private final TableDescriptor tbl;
 
-    /** Index. */
-    private final IndexInformation idx;
+    /** Affinity column name. */
+    private String affColName;
 
     /**
-     * @param tbl H2 table implementation.
-     * @param idx Index information.
+     * @param tbl Table.
      */
-    public SqlIndexView(GridH2Table tbl, IndexInformation idx) {
+    public SqlTableView(TableDescriptor tbl) {
         this.tbl = tbl;
-        this.idx = idx;
+
+        String affCol = tbl.type().affinityKey();
+
+        if (affCol != null) {
+            // Only explicit affinity column should be shown. Do not do this for _KEY or it's alias.
+            if (!F.eq(tbl.type().keyFieldName(), affCol) && !F.eq(tbl.type().keyFieldAlias(), affCol))
+                affColName = affCol;
+        }
     }
 
     /**
@@ -62,11 +69,12 @@ public class SqlIndexView {
 
     /**
      * Returns cache ID.
+     *
      * @return Cache ID.
      */
     @Order(2)
     public int cacheId() {
-        return tbl.cacheId();
+        return tbl.cacheInfo().cacheId();
     }
 
     /**
@@ -76,17 +84,17 @@ public class SqlIndexView {
      */
     @Order(3)
     public String cacheName() {
-        return tbl.cacheName();
+        return tbl.cacheInfo().name();
     }
 
     /**
-     *  Returns schema name.
+     * Returns schema name.
      *
      * @return Schema name.
      */
     @Order(4)
     public String schemaName() {
-        return tbl.getSchema().getName();
+        return tbl.type().schemaName();
     }
 
     /**
@@ -96,66 +104,61 @@ public class SqlIndexView {
      */
     @Order(5)
     public String tableName() {
-        return tbl.identifier().table();
+        return tbl.type().tableName();
     }
 
     /**
-     * Returns index name.
+     * Returns name of affinity key column.
      *
-     * @return Index name.
+     * @return Affinity key column name.
      */
     @Order(6)
-    public String indexName() {
-        return idx.name();
+    public String affinityKeyColumn() {
+        return affColName;
     }
 
     /**
-     * Returns index type.
+     * Returns alias for key column.
      *
-     * @return Index type.
+     * @return Key alias.
      */
     @Order(7)
-    public String indexType() {
-        return idx.type();
+    public String keyAlias() {
+        return tbl.type().keyFieldAlias();
     }
 
     /**
-     * Returns all columns on which index is built.
+     * Returns alias for value column.
      *
-     * @return Coma separated indexed columns.
+     * @return Value alias.
      */
     @Order(8)
-    public String columns() {
-        return idx.keySql();
+    public String valueAlias() {
+        return tbl.type().valueFieldAlias();
     }
 
     /**
-     * Returns boolean value which indicates whether this index is for primary key or not.
+     * Returns name of key type.
      *
-     * @return {@code True} if primary key index, {@code false} otherwise.
+     * @return Key type name.
      */
     @Order(9)
-    public boolean isPk() {
-        return idx.pk();
+    public String keyTypeName() {
+        return tbl.type().keyTypeName();
     }
 
     /**
-     * Returns boolean value which indicates whether this index is unique or not.
+     * Returns name of value type.
      *
-     * @return {@code True} if unique index, {@code false} otherwise.
+     * @return Value type name.
      */
     @Order(10)
-    public boolean isUnique() {
-        return idx.unique();
+    public String valueTypeName() {
+        return tbl.type().valueTypeName();
     }
 
-    /**
-     * Returns inline size in bytes.
-     *
-     * @return Inline size.
-     */
-    @Order(11)
-    public Integer inlineSize() {
-        return idx.inlineSize();
+    /** @return {@code True} if index rebuild is in progress. */
+    public boolean isIndexRebuildInProgress() {
+        return tbl.isIndexRebuildInProgress();
     }
 }

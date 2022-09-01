@@ -15,108 +15,89 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.spi.systemview.view;
+package org.apache.ignite.spi.systemview.view.sql;
 
 import org.apache.ignite.internal.managers.systemview.walker.Order;
 import org.apache.ignite.internal.processors.query.GridQueryProperty;
-import org.apache.ignite.internal.processors.query.h2.opt.GridH2Table;
-import org.h2.table.Column;
-import org.h2.table.IndexColumn;
+import org.apache.ignite.internal.processors.query.schema.management.TableDescriptor;
+import org.apache.ignite.internal.util.typedef.F;
+import org.apache.ignite.spi.systemview.view.SystemView;
 
 /**
  * Sql table column representation for a {@link SystemView}.
  */
 public class SqlTableColumnView {
     /** Table. */
-    private final GridH2Table tbl;
-
-    /** Column. */
-    private final Column col;
+    private final TableDescriptor tbl;
 
     /** Query property. */
     private final GridQueryProperty prop;
 
-    /** Affinity column. */
-    private final IndexColumn affCol;
-
     /**
      * @param tbl Table.
-     * @param col Column.
+     * @param prop Column.
      */
-    public SqlTableColumnView(GridH2Table tbl, Column col) {
+    public SqlTableColumnView(TableDescriptor tbl, GridQueryProperty prop) {
         this.tbl = tbl;
-        this.col = col;
-        this.prop = tbl.rowDescriptor().type().property(col.getName());
-        this.affCol = tbl.getAffinityKeyColumn();
+        this.prop = prop;
     }
 
     /** @return Column name. */
     @Order
     public String columnName() {
-        return col.getName();
+        return prop.name();
     }
 
     /** @return Schema name. */
     @Order(2)
     public String schemaName() {
-        return tbl.getSchema().getName();
+        return tbl.type().schemaName();
     }
 
     /** @return Table name. */
     @Order(1)
     public String tableName() {
-        return tbl.identifier().table();
+        return tbl.type().tableName();
     }
 
     /** @return Field data type. */
     public Class<?> type() {
-        if (prop == null)
-            return null;
-
         return prop.type();
     }
 
     /** @return Field default. */
     public String defaultValue() {
-        if (prop == null)
-            return null;
-
-        return String.valueOf(prop.defaultValue());
+        return prop.defaultValue() == null ? null : prop.defaultValue().toString();
     }
 
     /** @return Precision. */
     public int precision() {
-        if (prop == null)
-            return -1;
-
         return prop.precision();
     }
 
     /** @return Scale. */
     public int scale() {
-        if (prop == null)
-            return -1;
-
         return prop.scale();
     }
 
     /** @return {@code True} if nullable field. */
     public boolean nullable() {
-        return col.isNullable();
+        return !prop.notNull();
     }
 
     /** @return {@code True} if primary key. */
     public boolean pk() {
-        return tbl.rowDescriptor().isKeyColumn(col.getColumnId());
+        return F.eq(prop.name(), tbl.type().keyFieldName()) || prop.key();
     }
 
     /** @return {@code True} if autoincremented field. */
     public boolean autoIncrement() {
-        return col.isAutoIncrement();
+        return false;
     }
 
-    /** @return {@code True} if autoincremented field. */
+    /** @return {@code True} if affinity column. */
     public boolean affinityColumn() {
-        return affCol != null && col.getColumnId() == affCol.column.getColumnId();
+        return !tbl.type().customAffinityKeyMapper() &&
+            (F.eq(prop.name(), tbl.type().affinityKey()) || (F.isEmpty(tbl.type().affinityKey()) && pk()));
     }
 }

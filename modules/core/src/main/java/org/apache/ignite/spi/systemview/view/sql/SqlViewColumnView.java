@@ -15,29 +15,29 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.spi.systemview.view;
+package org.apache.ignite.spi.systemview.view.sql;
 
+import java.util.Map;
 import org.apache.ignite.internal.managers.systemview.walker.Order;
+import org.apache.ignite.internal.processors.metric.impl.MetricUtils;
 import org.apache.ignite.internal.processors.query.QueryUtils;
-import org.apache.ignite.internal.processors.query.h2.sys.view.SqlSystemView;
-import org.h2.table.Column;
-import org.h2.value.DataType;
+import org.apache.ignite.spi.systemview.view.SystemView;
 
 /**
  * Sql view column representation for a {@link SystemView}.
  */
 public class SqlViewColumnView {
     /** System view. */
-    private final SqlSystemView view;
+    private final SystemView<?> view;
 
     /** Column. */
-    private final Column col;
+    private final Map.Entry<String, Class<?>> col;
 
     /**
      * @param view View.
      * @param col Column.
      */
-    public SqlViewColumnView(SqlSystemView view, Column col) {
+    public SqlViewColumnView(SystemView<?> view, Map.Entry<String, Class<?>> col) {
         this.view = view;
         this.col = col;
     }
@@ -45,7 +45,7 @@ public class SqlViewColumnView {
     /** @return Column name. */
     @Order
     public String columnName() {
-        return col.getName();
+        return MetricUtils.toSqlName(col.getKey());
     }
 
     /** @return Schema name. */
@@ -57,31 +57,31 @@ public class SqlViewColumnView {
     /** @return View name. */
     @Order(1)
     public String viewName() {
-        return view.getTableName();
+        return MetricUtils.toSqlName(view.name());
     }
 
     /** @return Field data type. */
     public String type() {
-        return DataType.getTypeClassName(col.getType());
+        return col.getValue().getName();
     }
 
     /** @return Field default. */
     public String defaultValue() {
-        return String.valueOf(col.getDefaultExpression());
+        return null;
     }
 
     /** @return Precision. */
-    public long precision() {
-        return col.getPrecision();
+    public int precision() {
+        return -1;
     }
 
     /** @return Scale. */
     public int scale() {
-        return col.getScale();
+        return -1;
     }
 
     /** @return {@code True} if nullable field. */
     public boolean nullable() {
-        return col.isNullable();
+        return !col.getValue().isPrimitive();
     }
 }
