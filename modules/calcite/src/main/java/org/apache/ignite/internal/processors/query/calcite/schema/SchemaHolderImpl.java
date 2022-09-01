@@ -341,10 +341,7 @@ public class SchemaHolderImpl extends AbstractService implements SchemaHolder, S
 
     /** {@inheritDoc} */
     @Override public void onIndexRebuildFinished(String schemaName, String tblName) {
-        IgniteSchema schema = igniteSchemas.get(schemaName);
-        assert schema != null;
-
-        IgniteTable tbl = (IgniteTable)schema.getTable(tblName);
+        IgniteTable tbl = table(schemaName, tblName);
         assert tbl != null;
 
         tbl.markIndexRebuildInProgress(false);
