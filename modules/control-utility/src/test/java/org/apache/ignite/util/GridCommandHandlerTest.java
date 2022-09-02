@@ -3480,9 +3480,7 @@ public class GridCommandHandlerTest extends GridCommandHandlerClusterPerMethodAb
     public void testSnapshotStatusInMemory() throws Exception {
         persistenceEnable(false);
 
-        IgniteEx srv = startGrid();
-
-        createCacheAndPreload(srv, 10);
+        startGrid();
 
         checkSnapshotStatus(false, false, null);
     }
