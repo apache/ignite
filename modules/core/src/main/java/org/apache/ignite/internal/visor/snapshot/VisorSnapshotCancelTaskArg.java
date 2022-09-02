@@ -20,76 +20,63 @@ package org.apache.ignite.internal.visor.snapshot;
 import java.io.IOException;
 import java.io.ObjectInput;
 import java.io.ObjectOutput;
-import java.util.Collection;
+import java.util.UUID;
+import org.apache.ignite.internal.dto.IgniteDataTransferObject;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.internal.util.typedef.internal.U;
-import org.jetbrains.annotations.Nullable;
 
 /**
- * Argument for the task to manage snapshot restore operation.
+ * Argument for the task to cancel snapshot operation.
  */
-public class VisorSnapshotRestoreTaskArg extends VisorSnapshotCreateTaskArg {
+public class VisorSnapshotCancelTaskArg extends IgniteDataTransferObject {
     /** Serial version uid. */
     private static final long serialVersionUID = 0L;
 
-    /** Cache group names. */
-    private Collection<String> grpNames;
+    /** Snapshot operation ID. */
+    private UUID operId;
 
-    /** Snapshot restore operation management action. */
-    private VisorSnapshotRestoreTaskAction action;
+    /** Snapshot name. */
+    private String snpName;
 
     /** Default constructor. */
-    public VisorSnapshotRestoreTaskArg() {
+    public VisorSnapshotCancelTaskArg() {
         // No-op.
     }
 
     /**
+     * @param operId Snapshot operation ID.
      * @param snpName Snapshot name.
-     * @param sync Synchronous execution flag.
-     * @param action Snapshot restore operation management action.
-     * @param grpNames Cache group names.
      */
-    public VisorSnapshotRestoreTaskArg(
-        String snpName,
-        String snpPath,
-        boolean sync,
-        VisorSnapshotRestoreTaskAction action,
-        @Nullable Collection<String> grpNames
-    ) {
-        super(snpName, snpPath, sync);
-
-        this.action = action;
-        this.grpNames = grpNames;
+    public VisorSnapshotCancelTaskArg(UUID operId, String snpName) {
+        this.snpName = snpName;
+        this.operId = operId;
     }
 
-    /** @return Cache group names. */
-    public Collection<String> groupNames() {
-        return grpNames;
-    }
-
-    /** @return Snapshot restore operation management action. */
+    /** @return Snapshot name. */
     @Deprecated
-    public VisorSnapshotRestoreTaskAction jobAction() {
-        return action;
+    public String snapshotName() {
+        return snpName;
     }
 
+    /** @return Snapshot operation ID. */
+    public UUID operationId() {
+        return operId;
+    }
 
     /** {@inheritDoc} */
     @Override protected void writeExternalData(ObjectOutput out) throws IOException {
-        super.writeExternalData(out);
-        U.writeEnum(out, action);
-        U.writeCollection(out, grpNames);
+        U.writeUuid(out, operId);
+        U.writeString(out, snpName);
     }
 
     /** {@inheritDoc} */
     @Override protected void readExternalData(byte ver, ObjectInput in) throws IOException, ClassNotFoundException {
-        super.readExternalData(ver, in);
-        action = U.readEnum(in, VisorSnapshotRestoreTaskAction.class);
-        grpNames = U.readCollection(in);
+        operId = U.readUuid(in);
+        snpName = U.readString(in);
     }
 
     /** {@inheritDoc} */
     @Override public String toString() {
-        return S.toString(VisorSnapshotRestoreTaskArg.class, this);
+        return S.toString(VisorSnapshotCancelTaskArg.class, this);
     }
 }

@@ -28,33 +28,39 @@ import org.apache.ignite.internal.visor.VisorJob;
  * @see IgniteSnapshotManager#cancelSnapshotOperation(UUID)
  */
 @GridInternal
-public class VisorSnapshotCancelTask extends VisorSnapshotOneNodeTask<UUID, String> {
+public class VisorSnapshotCancelTask extends VisorSnapshotOneNodeTask<VisorSnapshotCancelTaskArg, String> {
     /** Serial version uid. */
     private static final long serialVersionUID = 0L;
 
     /** {@inheritDoc} */
-    @Override protected VisorJob<UUID, String> job(UUID arg) {
+    @Override protected VisorJob<VisorSnapshotCancelTaskArg, String> job(VisorSnapshotCancelTaskArg arg) {
         return new VisorSnapshotCancelJob(arg, debug);
     }
 
     /** */
-    private static class VisorSnapshotCancelJob extends VisorJob<UUID, String> {
+    private static class VisorSnapshotCancelJob extends VisorJob<VisorSnapshotCancelTaskArg, String> {
         /** Serial version uid. */
         private static final long serialVersionUID = 0L;
 
         /**
-         * @param operId Snapshot operation ID.
+         * @param taskArg Task argument.
          * @param debug Flag indicating whether debug information should be printed into node log.
          */
-        protected VisorSnapshotCancelJob(UUID operId, boolean debug) {
-            super(operId, debug);
+        protected VisorSnapshotCancelJob(VisorSnapshotCancelTaskArg taskArg, boolean debug) {
+            super(taskArg, debug);
         }
 
         /** {@inheritDoc} */
-        @Override protected String run(UUID operId) throws IgniteException {
-            new SnapshotMXBeanImpl(ignite.context()).cancelSnapshotOperation(operId.toString());
+        @Override protected String run(VisorSnapshotCancelTaskArg taskArg) throws IgniteException {
+            if (taskArg.operationId() != null) {
+                new SnapshotMXBeanImpl(ignite.context()).cancelSnapshotOperation(taskArg.operationId().toString());
 
-            return "Snapshot operation cancelled [operId=" + operId + "].";
+                return "Snapshot operation cancelled [operId=" + taskArg.operationId() + "].";
+            }
+
+            new SnapshotMXBeanImpl(ignite.context()).cancelSnapshot(taskArg.snapshotName());
+
+            return "Snapshot operation cancelled [snapshot=" + taskArg.snapshotName() + "].";
         }
     }
 }

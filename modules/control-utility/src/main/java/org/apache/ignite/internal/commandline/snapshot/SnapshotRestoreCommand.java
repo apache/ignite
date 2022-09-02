@@ -17,7 +17,6 @@
 
 package org.apache.ignite.internal.commandline.snapshot;
 
-import java.util.Collection;
 import java.util.LinkedHashMap;
 import java.util.Map;
 import java.util.Set;
@@ -37,7 +36,6 @@ import static org.apache.ignite.internal.commandline.snapshot.SnapshotRestoreCom
 import static org.apache.ignite.internal.commandline.snapshot.SnapshotRestoreCommandOption.SYNC;
 import static org.apache.ignite.internal.commandline.snapshot.SnapshotSubcommands.RESTORE;
 import static org.apache.ignite.internal.visor.snapshot.VisorSnapshotRestoreTaskAction.START;
-import static org.apache.ignite.internal.visor.snapshot.VisorSnapshotRestoreTaskAction.STATUS;
 
 /**
  * Sub-command to restore snapshot.
@@ -50,8 +48,7 @@ public class SnapshotRestoreCommand extends SnapshotSubcommand {
 
     /** {@inheritDoc} */
     @Override public Object execute(GridClientConfiguration clientCfg, Logger log) throws Exception {
-        if (cmdArg instanceof VisorSnapshotRestoreTaskArg && ((VisorSnapshotRestoreTaskArg)cmdArg).jobAction() == STATUS)
-            log.warning("Command deprecated. Use '" + SNAPSHOT + ' ' + SnapshotSubcommands.STATUS + "' instead.");
+        explainDeprecatedOptions(cmdArg, log);
 
         Object res = super.execute(clientCfg, log);
 
@@ -60,18 +57,59 @@ public class SnapshotRestoreCommand extends SnapshotSubcommand {
         return res;
     }
 
+    /**
+     * @param cmdArg Command argument.
+     * @param log Logger.
+     */
+    private void explainDeprecatedOptions(Object cmdArg, Logger log) {
+        if (!(cmdArg instanceof VisorSnapshotRestoreTaskArg))
+            return;
+
+        VisorSnapshotRestoreTaskAction action = ((VisorSnapshotRestoreTaskArg)cmdArg).jobAction();
+
+        if (action == null)
+            return;
+
+        switch (action) {
+            case START:
+                log.warning("Command option '--" + START.toString().toLowerCase() + "' is redundant and must be avoided.");
+
+                break;
+
+            case CANCEL:
+                log.warning("Command deprecated. Use `" + SNAPSHOT + ' ' + SnapshotSubcommands.CANCEL + "' instead.");
+
+                break;
+
+            case STATUS:
+                log.warning("Command deprecated. Use '" + SNAPSHOT + ' ' + SnapshotSubcommands.STATUS + "' instead.");
+
+                break;
+        }
+    }
+
     /** {@inheritDoc} */
     @Override public void parseArguments(CommandArgIterator argIter) {
         String snpName = argIter.nextArg("Expected snapshot name.");
-        VisorSnapshotRestoreTaskAction restoreAction = parseAction(argIter);
         String snpPath = null;
         Set<String> grpNames = null;
         boolean sync = false;
+        boolean firstArg = true;
+        VisorSnapshotRestoreTaskAction restoreAction = null;
 
         while (argIter.hasNextSubArg()) {
             String arg = argIter.nextArg(null);
 
-            if (restoreAction != START) {
+            if (firstArg) {
+                firstArg = false;
+
+                restoreAction = parseAction(arg);
+
+                if (restoreAction != null)
+                    continue;
+            }
+
+            if (restoreAction != null && restoreAction != START) {
                 throw new IllegalArgumentException("Invalid argument: " + arg + ". " +
                     "Action \"--" + restoreAction.name().toLowerCase() + "\" does not support specified option.");
             }
@@ -124,38 +162,32 @@ public class SnapshotRestoreCommand extends SnapshotSubcommand {
         startParams.put(SOURCE.argName() + " " + SOURCE.arg(), SOURCE.description());
         startParams.put(SYNC.argName(), SYNC.description());
 
-        usage(log, "Restore snapshot:", SNAPSHOT, startParams, RESTORE.toString(), SNAPSHOT_NAME_ARG, "--start",
+        usage(log, "Restore snapshot:", SNAPSHOT, startParams, RESTORE.toString(), SNAPSHOT_NAME_ARG,
             optional(GROUPS.argName(), GROUPS.arg()), optional(SOURCE.argName(), SOURCE.arg()), optional(SYNC.argName()));
         usage(log, "Snapshot restore operation status (Command deprecated. Use '" + SNAPSHOT + ' '
-            + SnapshotSubcommands.STATUS + "' instead.):", SNAPSHOT, params, RESTORE.toString(), SNAPSHOT_NAME_ARG, "--status");
-        usage(log, "Cancel snapshot restore operation:", SNAPSHOT, params, RESTORE.toString(), SNAPSHOT_NAME_ARG, "--cancel");
+            + SnapshotSubcommands.STATUS + "' instead):", SNAPSHOT, params, RESTORE.toString(), SNAPSHOT_NAME_ARG, "--status");
+        usage(log, "Cancel snapshot restore operation (Command deprecated. Use '" + SNAPSHOT + ' '
+            + SnapshotSubcommands.CANCEL + "' instead):", SNAPSHOT, params, RESTORE.toString(), SNAPSHOT_NAME_ARG, "--cancel");
     }
 
     /** {@inheritDoc} */
     @Override public String confirmationPrompt() {
         VisorSnapshotRestoreTaskArg arg = (VisorSnapshotRestoreTaskArg)cmdArg;
 
-        return arg.jobAction() != START || arg.groupNames() != null ? null :
+        return (arg.jobAction() != null && arg.jobAction() != START) || arg.groupNames() != null ? null :
             "Warning: command will restore ALL USER-CREATED CACHE GROUPS from the snapshot " + arg.snapshotName() + '.';
     }
 
     /**
-     * @param argIter Argument iterator.
+     * @param arg Argument.
      * @return Snapshot restore operation management action.
      */
-    private VisorSnapshotRestoreTaskAction parseAction(CommandArgIterator argIter) {
-        Collection<String> cmdNames =
-            F.viewReadOnly(F.asList(VisorSnapshotRestoreTaskAction.values()), v -> "--" + v.toString().toLowerCase());
-
-        String actionErrMsg = "One of " + cmdNames + " is expected.";
-
-        String action = argIter.nextArg(actionErrMsg);
-
+    private VisorSnapshotRestoreTaskAction parseAction(String arg) {
         for (VisorSnapshotRestoreTaskAction val : VisorSnapshotRestoreTaskAction.values()) {
-            if (action.toLowerCase().equals("--" + val.name().toLowerCase()))
+            if (arg.toLowerCase().equals("--" + val.name().toLowerCase()))
                 return val;
         }
 
-        throw new IllegalArgumentException("Invalid argument: " + action + ". " + actionErrMsg);
+        return null;
     }
 }

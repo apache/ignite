@@ -23,6 +23,7 @@ public enum VisorSnapshotRestoreTaskAction {
     START,
 
     /** Cancel snapshot restore operation. */
+    @Deprecated
     CANCEL,
 
     /**

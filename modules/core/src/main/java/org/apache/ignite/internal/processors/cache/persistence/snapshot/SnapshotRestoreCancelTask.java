@@ -22,12 +22,15 @@ import org.apache.ignite.compute.ComputeJob;
 import org.apache.ignite.compute.ComputeJobAdapter;
 import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.processors.task.GridInternal;
+import org.apache.ignite.internal.visor.snapshot.VisorSnapshotCancelTask;
 import org.apache.ignite.resources.IgniteInstanceResource;
 
 /**
  * Snapshot restore cancel task.
+ * @deprecated Use {@link VisorSnapshotCancelTask} instead.
  */
 @GridInternal
+@Deprecated
 class SnapshotRestoreCancelTask extends SnapshotRestoreManagementTask {
     /** Serial version uid. */
     private static final long serialVersionUID = 0L;

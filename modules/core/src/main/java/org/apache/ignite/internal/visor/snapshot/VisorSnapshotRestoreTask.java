@@ -33,7 +33,10 @@ public class VisorSnapshotRestoreTask extends VisorSnapshotOneNodeTask<VisorSnap
 
     /** {@inheritDoc} */
     @Override protected VisorJob<VisorSnapshotRestoreTaskArg, String> job(VisorSnapshotRestoreTaskArg arg) {
-        switch (arg.jobAction()) {
+        VisorSnapshotRestoreTaskAction action =
+            arg.jobAction() == null ? VisorSnapshotRestoreTaskAction.START : arg.jobAction();
+
+        switch (action) {
             case START:
                 return new VisorSnapshotStartRestoreJob(arg, debug);
 
