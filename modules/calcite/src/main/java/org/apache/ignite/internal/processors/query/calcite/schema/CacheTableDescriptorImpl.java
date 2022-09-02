@@ -20,7 +20,10 @@ package org.apache.ignite.internal.processors.query.calcite.schema;
 import java.lang.reflect.Constructor;
 import java.lang.reflect.InvocationTargetException;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.BitSet;
+import java.util.Collection;
+import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
@@ -555,6 +558,11 @@ public class CacheTableDescriptorImpl extends NullInitializerExpressionFactory
     /** {@inheritDoc} */
     @Override public ColumnDescriptor columnDescriptor(String fieldName) {
         return fieldName == null ? null : descriptorsMap.get(fieldName);
+    }
+
+    /** {@inheritDoc} */
+    @Override public Collection<CacheColumnDescriptor> columnDescriptors() {
+        return Collections.unmodifiableList(Arrays.asList(descriptors));
     }
 
     /** {@inheritDoc} */
