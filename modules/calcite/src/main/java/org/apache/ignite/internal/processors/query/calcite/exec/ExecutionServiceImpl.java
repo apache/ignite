@@ -152,7 +152,7 @@ public class ExecutionServiceImpl<Row> extends AbstractService implements Execut
     private final RowHandler<Row> handler;
 
     /** */
-    private final DdlCommandHandler ddlCmdHnd;
+    private DdlCommandHandler ddlCmdHnd;
 
     /**
      * @param ctx Kernal.
@@ -162,10 +162,6 @@ public class ExecutionServiceImpl<Row> extends AbstractService implements Execut
         this.handler = handler;
 
         discoLsnr = (e, c) -> onNodeLeft(e.eventNode().id());
-
-        ddlCmdHnd = new DdlCommandHandler(
-            ctx::query, ctx.cache(), ctx.security(), () -> schemaHolder().schema(null)
-        );
     }
 
     /**
@@ -383,6 +379,8 @@ public class ExecutionServiceImpl<Row> extends AbstractService implements Execut
         exchangeService(proc.exchangeService());
         queryRegistry(proc.queryRegistry());
         prepareService(proc.prepareService());
+
+        ddlCmdHnd = new DdlCommandHandler(ctx.query(), ctx.cache(), ctx.security(), () -> schemaHolder().schema(null));
 
         init();
     }

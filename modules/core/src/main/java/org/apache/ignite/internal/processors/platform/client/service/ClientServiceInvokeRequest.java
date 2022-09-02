@@ -195,7 +195,7 @@ public class ClientServiceInvokeRequest extends ClientRequest {
         catch (PlatformNativeException e) {
             ctx.kernalContext().log(getClass()).error("Failed to invoke platform service", e);
 
-            throw new IgniteException("Failed to invoke platform service, see server logs for details");
+            throw new IgniteException("Failed to invoke platform service, see server logs for details", e);
         }
         catch (Throwable e) {
             throw new IgniteException(e);

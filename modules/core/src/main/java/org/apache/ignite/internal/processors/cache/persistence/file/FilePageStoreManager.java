@@ -1084,7 +1084,7 @@ public class FilePageStoreManager extends GridCacheSharedManagerAdapter implemen
     }
 
     /**
-     * Return cache store holedr.
+     * Return cache store holder.
      *
      * @param grpId Cache group ID.
      * @return Cache store holder.

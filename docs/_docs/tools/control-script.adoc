@@ -854,12 +854,12 @@ To trigger the rebuild process of all indexes for the specified caches or the ca
 tab:Unix[]
 [source,shell]
 ----
-control.sh --cache indexes_force_rebuild --node-id nodeId --cache-name cacheName1,...cacheNameN|--group-name groupName1,...groupNameN
+control.sh --cache indexes_force_rebuild --node-id nodeId --cache-names cacheName1,...cacheNameN|--group-names groupName1,...groupNameN
 ----
 tab:Window[]
 [source,shell]
 ----
-control.bat --cache indexes_force_rebuild --node-id nodeId --cache-name cacheName1,...cacheNameN|--group-name groupName1,...groupNameN
+control.bat --cache indexes_force_rebuild --node-id nodeId --cache-names cacheName1,...cacheNameN|--group-names groupName1,...groupNameN
 ----
 --
 
@@ -1128,3 +1128,20 @@ control.sh|bat --cache metrics status --all-caches
 control.sh|bat --cache metrics enable --caches cache-2,cache-1
 ----
 
+== Rebuild index
+
+The `schedule_indexes_rebuild` commands Apache Ignite to rebuild indexes for specified caches or cache groups. Target caches or cache groups must be in Maintenance Mode.
+
+[source, shell]
+----
+ control.sh|bat --cache schedule_indexes_rebuild --node-id nodeId --cache-names cacheName[index1,...indexN],cacheName2,cacheName3[index1] --group-names groupName1,groupName2,...groupNameN
+----
+
+Parameters:
+
+[cols="1,3",opts="header"]
+|===
+| Parameter | Description
+|--node-id | A list of nodes to rebuild indexes on. If not specified, schedules rebuild on all nodes.
+|--cache-names | Comma-separated list of cache names, optionally with indexes. If indexes are not specified, all indexes of the cache will be scheduled for the rebuild operation. Can be used simultaneously with cache group names.
+|--group-names | Comma-separated list of cache group names. Can be used simultaneously with cache names.

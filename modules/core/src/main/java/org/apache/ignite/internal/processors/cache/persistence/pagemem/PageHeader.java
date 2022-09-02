@@ -27,6 +27,9 @@ class PageHeader {
     /** */
     public static final long PAGE_MARKER = 0x0000000000000001L;
 
+    /** */
+    public static final long TIMESTAMP_MASK = 0xFFFFFFFFFFFFFF00L;
+
     /** Dirty flag. */
     private static final long DIRTY_FLAG = 0x0100000000000000L;
 
@@ -169,11 +172,19 @@ class PageHeader {
      * Volatile write for current timestamp to page in {@code absAddr} address.
      *
      * @param absPtr Absolute page address.
+     * @return Old page timestamp value.
      */
-    public static void writeTimestamp(final long absPtr, long tstamp) {
-        tstamp &= 0xFFFFFFFFFFFFFF00L;
+    public static long writeTimestamp(final long absPtr, long tstamp) {
+        long oldTs;
 
-        GridUnsafe.putLongVolatile(null, absPtr, tstamp | 0x01);
+        tstamp &= TIMESTAMP_MASK;
+        tstamp |= 0x01L;
+
+        do {
+            oldTs = GridUnsafe.getLong(absPtr);
+        } while (!GridUnsafe.compareAndSwapLong(null, absPtr, oldTs, tstamp));
+
+        return oldTs & TIMESTAMP_MASK;
     }
 
     /**
@@ -186,7 +197,7 @@ class PageHeader {
         long markerAndTs = GridUnsafe.getLong(absPtr);
 
         // Clear last byte as it is occupied by page marker.
-        return markerAndTs & ~0xFF;
+        return markerAndTs & TIMESTAMP_MASK;
     }
 
     /**

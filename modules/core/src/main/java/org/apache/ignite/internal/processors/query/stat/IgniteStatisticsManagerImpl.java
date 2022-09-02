@@ -37,8 +37,8 @@ import org.apache.ignite.internal.processors.cache.distributed.dht.preloader.Gri
 import org.apache.ignite.internal.processors.cache.distributed.dht.preloader.PartitionsExchangeAware;
 import org.apache.ignite.internal.processors.cache.persistence.IgniteCacheDatabaseSharedManager;
 import org.apache.ignite.internal.processors.configuration.distributed.DistributedEnumProperty;
-import org.apache.ignite.internal.processors.query.GridQuerySchemaManager;
-import org.apache.ignite.internal.processors.query.GridQueryTypeDescriptor;
+import org.apache.ignite.internal.processors.query.schema.management.SchemaManager;
+import org.apache.ignite.internal.processors.query.schema.management.TableDescriptor;
 import org.apache.ignite.internal.processors.query.stat.config.StatisticsObjectConfiguration;
 import org.apache.ignite.internal.processors.timeout.GridTimeoutProcessor;
 import org.apache.ignite.internal.util.collection.IntMap;
@@ -69,7 +69,7 @@ public class IgniteStatisticsManagerImpl implements IgniteStatisticsManager {
     private final GridKernalContext ctx;
 
     /** SchemaManager */
-    private final GridQuerySchemaManager schemaMgr;
+    private final SchemaManager schemaMgr;
 
     /** Statistics repository. */
     private final IgniteStatisticsRepository statsRepos;
@@ -134,14 +134,10 @@ public class IgniteStatisticsManagerImpl implements IgniteStatisticsManager {
      * Constructor.
      *
      * @param ctx Kernal context.
-     * @param schemaMgr Schema manager.
      */
-    public IgniteStatisticsManagerImpl(
-        GridKernalContext ctx,
-        GridQuerySchemaManager schemaMgr
-    ) {
+    public IgniteStatisticsManagerImpl(GridKernalContext ctx) {
         this.ctx = ctx;
-        this.schemaMgr = schemaMgr;
+        schemaMgr = ctx.query().schemaManager();
 
         boolean serverNode = !(ctx.config().isClientMode() || ctx.isDaemon());
 
@@ -485,8 +481,8 @@ public class IgniteStatisticsManagerImpl implements IgniteStatisticsManager {
 
             Set<Integer> tasksParts = calculateObsolescencedPartitions(cfg, statsRepos.getObsolescence(key));
 
-            GridQueryTypeDescriptor tbl = schemaMgr.typeDescriptorForTable(key.schema(), key.obj());
-            GridCacheContextInfo<?, ?> cacheInfo = schemaMgr.cacheInfoForTable(key.schema(), key.obj());
+            TableDescriptor tbl = schemaMgr.table(key.schema(), key.obj());
+            GridCacheContextInfo<?, ?> cacheInfo = tbl.cacheInfo();
 
             if (tbl == null) {
                 // Table can be removed earlier, but not already processed. Or somethink goes wrong. Try to reschedule.
@@ -494,8 +490,9 @@ public class IgniteStatisticsManagerImpl implements IgniteStatisticsManager {
                     log.debug(String.format("Got obsolescence statistics for unknown table %s", key));
             }
 
-            LocalStatisticsGatheringContext ctx = new LocalStatisticsGatheringContext(true, tbl, cacheInfo, cfg,
-                tasksParts, null);
+            LocalStatisticsGatheringContext ctx = new LocalStatisticsGatheringContext(true,
+                tbl.type(), cacheInfo, cfg, tasksParts, null);
+
             statProc.updateLocalStatistics(ctx);
         }
     }
