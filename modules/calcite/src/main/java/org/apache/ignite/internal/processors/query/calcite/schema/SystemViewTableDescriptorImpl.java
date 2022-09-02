@@ -189,8 +189,8 @@ public class SystemViewTableDescriptorImpl<ViewRow> extends NullInitializerExpre
         return fieldName == null ? null : descriptorsMap.get(fieldName);
     }
 
-    /** Column descriptors. */
-    public Collection<SystemViewColumnDescriptor> columnDescriptors() {
+    /** {@inheritDoc} */
+    @Override public Collection<SystemViewColumnDescriptor> columnDescriptors() {
         return Collections.unmodifiableList(Arrays.asList(descriptors));
     }
 
