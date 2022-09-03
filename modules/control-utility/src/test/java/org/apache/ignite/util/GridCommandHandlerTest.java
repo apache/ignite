@@ -3477,11 +3477,23 @@ public class GridCommandHandlerTest extends GridCommandHandlerClusterPerMethodAb
 
     /** @throws Exception If fails. */
     @Test
+    public void testSnapshotStatusInMemory() throws Exception {
+        persistenceEnable(false);
+
+        startGrid();
+
+        checkSnapshotStatus(false, false, null);
+    }
+
+    /** @throws Exception If fails. */
+    @Test
     public void testSnapshotStatus() throws Exception {
         String snapshotName = "snapshot1";
         int keysCnt = 10_000;
 
         IgniteEx srv = startGrids(3);
+
+        startClientGrid("client");
 
         srv.cluster().state(ACTIVE);
 
@@ -3528,7 +3540,9 @@ public class GridCommandHandlerTest extends GridCommandHandlerClusterPerMethodAb
      * @param expName Expected snapshot name.
      */
     private void checkSnapshotStatus(boolean isCreating, boolean isRestoring, String expName) throws Exception {
-        assertTrue(waitForCondition(() -> G.allGrids().stream().allMatch(
+        Collection<Ignite> srvs = F.view(G.allGrids(), n -> !n.cluster().localNode().isLocal());
+
+        assertTrue(waitForCondition(() -> srvs.stream().allMatch(
                 ignite -> {
                     IgniteSnapshotManager mgr = ((IgniteEx)ignite).context().cache().context().snapshotMgr();
 
@@ -3557,7 +3571,7 @@ public class GridCommandHandlerTest extends GridCommandHandlerClusterPerMethodAb
 
         assertContains(log, out, "Snapshot name: " + expName);
 
-        G.allGrids().forEach(srv -> assertContains(log, out, srv.cluster().localNode().id().toString()));
+        srvs.forEach(srv -> assertContains(log, out, srv.cluster().localNode().id().toString()));
     }
 
     /** @throws Exception If failed. */

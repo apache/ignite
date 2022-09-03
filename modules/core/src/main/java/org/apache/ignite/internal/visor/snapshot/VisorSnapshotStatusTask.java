@@ -32,6 +32,7 @@ import org.apache.ignite.internal.processors.metric.MetricRegistry;
 import org.apache.ignite.internal.processors.task.GridInternal;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.T2;
+import org.apache.ignite.internal.util.typedef.internal.CU;
 import org.apache.ignite.internal.visor.VisorJob;
 import org.apache.ignite.internal.visor.VisorMultiNodeTask;
 import org.apache.ignite.internal.visor.VisorTaskArgument;
@@ -58,7 +59,7 @@ public class VisorSnapshotStatusTask extends VisorMultiNodeTask<Void, VisorSnaps
 
     /** {@inheritDoc} */
     @Override protected Collection<UUID> jobNodes(VisorTaskArgument<Void> arg) {
-        return F.nodeIds(ignite.cluster().nodes());
+        return F.nodeIds(ignite.cluster().forServers().nodes());
     }
 
     /** {@inheritDoc} */
@@ -106,6 +107,9 @@ public class VisorSnapshotStatusTask extends VisorMultiNodeTask<Void, VisorSnaps
 
         /** {@inheritDoc} */
         @Override protected SnapshotStatus run(@Nullable Void arg) throws IgniteException {
+            if (!CU.isPersistenceEnabled(ignite.context().config()))
+                return null;
+
             IgniteSnapshotManager snpMgr = ignite.context().cache().context().snapshotMgr();
 
             SnapshotOperationRequest req = snpMgr.currentCreateRequest();
