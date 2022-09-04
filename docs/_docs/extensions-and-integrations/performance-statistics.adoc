@@ -52,6 +52,22 @@ For more details run the help command:
 performance-statistics-tool/build-report.sh --help
 ----
 
+=== Performance Statistics Report Example
+
+[tabs]
+--
+tab:Cache operations[]
+image:../../assets/images/integrations/performance-statistics/perf_stat_2.png[]
+tab:Transactions[]
+image:../../assets/images/integrations/performance-statistics/perf_stat_3.png[]
+tab:Queries[]
+image:../../assets/images/integrations/performance-statistics/perf_stat_4.png[]
+tab:Compute[]
+image:../../assets/images/integrations/performance-statistics/perf_stat_5.png[]
+tab:Cluster info[]
+image:../../assets/images/integrations/performance-statistics/perf_stat_1.png[]
+--
+
 == Print Statistics
 
 Ignite provides a tool to print statistics to a console or to a file in JSON format.
