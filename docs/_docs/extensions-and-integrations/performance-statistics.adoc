@@ -59,15 +59,15 @@ performance-statistics-tool/build-report.sh --help
 [tabs]
 --
 tab:Cache operations[]
-image:{perf_stat_url}/perf_stat_2.png[link="{perf_stat_url}/perf_stat_2.png",window=_blank]
+image:{perf_stat_url}/perf_stat_2.jpg[link="{perf_stat_url}/perf_stat_2.jpg",window=_blank]
 tab:Transactions[]
-image:{perf_stat_url}/perf_stat_3.png[link="{perf_stat_url}/perf_stat_3.png",window=_blank]
+image:{perf_stat_url}/perf_stat_3.jpg[link="{perf_stat_url}/perf_stat_3.jpg",window=_blank]
 tab:Queries[]
-image:{perf_stat_url}/perf_stat_4.png[link="{perf_stat_url}/perf_stat_4.png",window=_blank]
+image:{perf_stat_url}/perf_stat_4.jpg[link="{perf_stat_url}/perf_stat_4.jpg",window=_blank]
 tab:Compute[]
-image:{perf_stat_url}/perf_stat_5.png[link="{perf_stat_url}/perf_stat_5.png",window=_blank]
+image:{perf_stat_url}/perf_stat_5.jpg[link="{perf_stat_url}/perf_stat_5.jpg",window=_blank]
 tab:Cluster info[]
-image:{perf_stat_url}/perf_stat_1.png[link="{perf_stat_url}/perf_stat_1.png",window=_blank]
+image:{perf_stat_url}/perf_stat_1.jpg[link="{perf_stat_url}/perf_stat_1.jpg",window=_blank]
 --
 
 == Print Statistics
