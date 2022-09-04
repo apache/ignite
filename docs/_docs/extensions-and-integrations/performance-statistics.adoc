@@ -54,18 +54,20 @@ performance-statistics-tool/build-report.sh --help
 
 === Performance Statistics Report Example
 
+:perf_stat_url: ../../assets/images/integrations/performance-statistics
+
 [tabs]
 --
 tab:Cache operations[]
-image:../../assets/images/integrations/performance-statistics/perf_stat_2.png[link="../../assets/images/integrations/performance-statistics/perf_stat_2.png",window=_blank]
+image:{perf_stat_url}/perf_stat_2.png[link="{perf_stat_url}/perf_stat_2.png",window=_blank]
 tab:Transactions[]
-image:../../assets/images/integrations/performance-statistics/perf_stat_3.png[link="../../assets/images/integrations/performance-statistics/perf_stat_3.png",window=_blank]
+image:{perf_stat_url}/perf_stat_3.png[link="{perf_stat_url}/perf_stat_3.png",window=_blank]
 tab:Queries[]
-image:../../assets/images/integrations/performance-statistics/perf_stat_4.png[link="../../assets/images/integrations/performance-statistics/perf_stat_4.png",window=_blank]
+image:{perf_stat_url}/perf_stat_4.png[link="{perf_stat_url}/perf_stat_4.png",window=_blank]
 tab:Compute[]
-image:../../assets/images/integrations/performance-statistics/perf_stat_5.png[link="../../assets/images/integrations/performance-statistics/perf_stat_5.png",window=_blank]
+image:{perf_stat_url}/perf_stat_5.png[link="{perf_stat_url}/perf_stat_5.png",window=_blank]
 tab:Cluster info[]
-image:../../assets/images/integrations/performance-statistics/perf_stat_1.png[link="../../assets/images/integrations/performance-statistics/perf_stat_1.png",window=_blank]
+image:{perf_stat_url}/perf_stat_1.png[link="{perf_stat_url}/perf_stat_1.png",window=_blank]
 --
 
 == Print Statistics
