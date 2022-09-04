@@ -22,6 +22,7 @@ import java.io.ObjectInput;
 import java.io.ObjectOutput;
 import java.util.UUID;
 import org.apache.ignite.internal.dto.IgniteDataTransferObject;
+import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.internal.util.typedef.internal.U;
 
@@ -48,6 +49,8 @@ public class VisorSnapshotCancelTaskArg extends IgniteDataTransferObject {
      * @param snpName Snapshot name.
      */
     public VisorSnapshotCancelTaskArg(UUID operId, String snpName) {
+        assert (operId != null && snpName == null) || (operId == null && !F.isEmpty(snpName));
+
         this.snpName = snpName;
         this.operId = operId;
     }

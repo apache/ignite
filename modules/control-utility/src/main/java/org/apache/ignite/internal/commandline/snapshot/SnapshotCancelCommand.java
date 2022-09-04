@@ -22,7 +22,9 @@ import java.util.LinkedHashMap;
 import java.util.Map;
 import java.util.UUID;
 import java.util.logging.Logger;
+import org.apache.ignite.internal.client.GridClientConfiguration;
 import org.apache.ignite.internal.commandline.CommandArgIterator;
+import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.visor.snapshot.VisorSnapshotCancelTask;
 import org.apache.ignite.internal.visor.snapshot.VisorSnapshotCancelTaskArg;
 
@@ -41,10 +43,17 @@ public class SnapshotCancelCommand extends SnapshotSubcommand {
     }
 
     /** {@inheritDoc} */
+    @Override public Object execute(GridClientConfiguration clientCfg, Logger log) throws Exception {
+        if (!F.isEmpty(((VisorSnapshotCancelTaskArg)cmdArg).snapshotName()))
+            log.warning("'" + NAME.arg() + "' option is deprecated, please use operation ID to cancel snapshot operation.");
+
+        return super.execute(clientCfg, log);
+    }
+
+    /** {@inheritDoc} */
     @Override public void parseArguments(CommandArgIterator argIter) {
         UUID operId = null;
         String snpName = null;
-
         String explainMsg = "One of " + Arrays.toString(SnapshotCancelCommandOption.values()) + " is expected.";
 
         String arg = argIter.nextArg(explainMsg);

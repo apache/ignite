@@ -3458,8 +3458,10 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
         @Override public Void call() throws Exception {
             if (operId != null)
                 ignite.context().cache().context().snapshotMgr().cancelLocalSnapshotOperations(operId);
-            else
+            else {
                 ignite.context().cache().context().snapshotMgr().cancelLocalSnapshotTask(snpName);
+                ignite.context().cache().context().snapshotMgr().cancelLocalRestoreTask(snpName);
+            }
 
             return null;
         }
