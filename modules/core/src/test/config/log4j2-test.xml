@@ -17,19 +17,19 @@
   limitations under the License.
 -->
 
-<Configuration packages="org.apache.ignite.internal.logger">
+<Configuration>
     <Properties>
-        <Property name="disableAnsi">${sys:NO_LOG_COLOR:-false}</Property>
+        <Property name="disableAnsi">${sys:IGNITE_NO_LOG_COLOR:-false}</Property>
     </Properties>
 
     <Appenders>
         <Console name="CONSOLE" target="SYSTEM_OUT">
-            <PatternLayout disableAnsi="${disableAnsi}" pattern="%igniteDebugConverter{[%d{ISO8601}]%highlight{[%-5p]}{FATAL=red blink, ERROR=red, WARN=yellow bold, INFO=green, DEBUG=green bold, TRACE=blue}%style{[%t]}{magenta}%style{[%c{1}]}{cyan}%notEmpty{[%markerSimpleName]} %m%n}"/>
+            <PatternLayout disableAnsi="${disableAnsi}" pattern="[%d{ISO8601}]%highlight{[%-5p]}{INFO=green, DEBUG=green bold, TRACE=blue}%style{[%t]}{magenta}%style{[%c{1}]}{cyan}%notEmpty{[%markerSimpleName]} %m%n"/>
             <LevelRangeFilter minLevel="INFO" maxLevel="DEBUG"/>
         </Console>
 
         <Console name="CONSOLE_ERR" target="SYSTEM_ERR">
-            <PatternLayout disableAnsi="${disableAnsi}" pattern="%igniteDebugConverter{%highlight{[%d{ISO8601}][%-5p][%t][%c{1}] %m%n}{FATAL=red blink, ERROR=red, WARN=yellow bold}}"/>
+            <PatternLayout disableAnsi="${disableAnsi}" pattern="%highlight{[%d{ISO8601}][%-5p][%t][%c{1}] %m%n}{FATAL=red blink, ERROR=default, WARN=yellow bold}"/>
         </Console>
 
         <RollingFile name="FILE"
