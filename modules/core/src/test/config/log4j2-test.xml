@@ -19,12 +19,15 @@
 
 <Configuration>
     <Properties>
+        <!-- Set the `IGNITE_NO_LOG_COLOR` environment variable to completely disable colors in the console output. -->
         <Property name="disableAnsi">${sys:IGNITE_NO_LOG_COLOR:-false}</Property>
     </Properties>
 
     <Appenders>
         <Console name="CONSOLE" target="SYSTEM_OUT">
-            <PatternLayout disableAnsi="${disableAnsi}" pattern="[%d{ISO8601}]%highlight{[%-5p]}{INFO=green, DEBUG=green bold, TRACE=blue}%style{[%t]}{magenta}%style{[%c{1}]}{cyan}%notEmpty{[%markerSimpleName]} %m%n"/>
+            <PatternLayout
+                pattern="[%d{ISO8601}]%highlight{[%-5p]}{INFO=green, DEBUG=green bold, TRACE=blue}%style{[%t]}{magenta}%style{[%c{1}]}{cyan}%notEmpty{[%markerSimpleName]} %m%n"
+                disableAnsi="${disableAnsi}"/>
             <LevelRangeFilter minLevel="INFO" maxLevel="DEBUG"/>
         </Console>
 
