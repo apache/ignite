@@ -237,7 +237,7 @@ public class SnapshotRestoreProcess {
                 if (restoringSnapshotName() != null)
                     throw new IgniteException(OP_REJECT_MSG + "The previous snapshot restore operation was not completed.");
 
-                fut = new ClusterSnapshotFuture(UUID.randomUUID(), snpName);
+                fut = new ClusterSnapshotFuture(UUID.randomUUID(), snpName, snpMgr);
 
                 fut0 = fut;
             }

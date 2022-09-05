@@ -509,6 +509,15 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
             "The list of names of all snapshots currently saved on the local node with respect to " +
                 "the configured via IgniteConfiguration snapshot working path.");
 
+        mreg.register("lastRequestId", () -> {
+                UUID operId = lastSeenSnpFut.rqId;
+
+                return operId == null ? "" : operId.toString();
+            },
+            String.class,
+            "The ID of the last started snapshot operation."
+        );
+
         mreg.register("CurrentSnapshotTotalSize", () -> {
             SnapshotFutureTask task = currentSnapshotTask();
 
@@ -1119,34 +1128,38 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
     }
 
     /** {@inheritDoc} */
-    @Deprecated
     @Override public IgniteFuture<Void> cancelSnapshot(String name) {
+        return new IgniteFutureImpl<>(cancelSnapshot0(name).chain(f -> null));
+    }
+
+    /**
+     * @param name Snapshot name.
+     * @return Future which will be completed when cancel operation finished.
+     */
+    private IgniteInternalFuture<Boolean> cancelSnapshot0(String name) {
         A.notNullOrEmpty(name, "Snapshot name must be not empty or null");
 
         cctx.kernalContext().security().authorize(ADMIN_SNAPSHOT);
 
-        IgniteInternalFuture<Void> fut0 = cctx.kernalContext().closure()
+        return cctx.kernalContext().closure()
             .callAsyncNoFailover(BROADCAST,
                 new CancelSnapshotCallable(name, null),
                 cctx.discovery().aliveServerNodes(),
                 false,
                 0,
                 true);
-
-        return new IgniteFutureImpl<>(fut0);
     }
 
     /**
-     *
-     * @param operId
-     * @return
+     * @param operId Snapshot operation ID.
+     * @return Future which will be completed when cancel operation finished.
      */
-    public IgniteFuture<Void> cancelSnapshotOperation(UUID operId) {
+    public IgniteFuture<Boolean> cancelSnapshotOperation(UUID operId) {
         A.notNull(operId, "Snapshot operation ID must be not null");
 
         cctx.kernalContext().security().authorize(ADMIN_SNAPSHOT);
 
-        IgniteInternalFuture<Void> fut0 = cctx.kernalContext().closure()
+        IgniteInternalFuture<Boolean> fut0 = cctx.kernalContext().closure()
             .callAsyncNoFailover(BROADCAST,
                 new CancelSnapshotCallable(null, operId),
                 cctx.discovery().aliveServerNodes(),
@@ -1162,34 +1175,38 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
      *
      * @param operId Snapshot operation ID.
      */
-    private void cancelLocalSnapshotOperations(UUID operId) {
+    private boolean cancelLocalSnapshotOperations(UUID operId) {
         A.notNull(operId, "Snapshot operation ID must be not null");
 
-        cancelLocalSnapshotTask0(task -> operId.equals(task.operationId()));
-        restoreCacheGrpProc.cancel(new IgniteCheckedException("Operation has been canceled by the user."), operId).get();
+        if (cancelLocalSnapshotTask0(task -> operId.equals(task.operationId())))
+            return true;
+
+        return restoreCacheGrpProc.cancel(new IgniteCheckedException("Operation has been canceled by the user."), operId).get();
     }
 
     /**
      * @param name Snapshot name to cancel operation on local node.
      */
-    public void cancelLocalSnapshotTask(String name) {
+    public boolean cancelLocalSnapshotTask(String name) {
         A.notNullOrEmpty(name, "Snapshot name must be not null or empty");
 
-        cancelLocalSnapshotTask0(task -> name.equals(task.snapshotName()));
+        return cancelLocalSnapshotTask0(task -> name.equals(task.snapshotName()));
     }
 
     /**
      * @param filter Snapshot task filter.
+     * @return {@code True} if the snapshot operation was canceled.
      */
-    private void cancelLocalSnapshotTask0(Function<AbstractSnapshotFutureTask<?>, Boolean> filter) {
+    private boolean cancelLocalSnapshotTask0(Function<AbstractSnapshotFutureTask<?>, Boolean> filter) {
         ClusterSnapshotFuture fut0 = null;
+        boolean canceled = false;
 
         busyLock.enterBusy();
 
         try {
             for (AbstractSnapshotFutureTask<?> sctx : locSnpTasks.values()) {
                 if (filter.apply(sctx))
-                    sctx.cancel();
+                    canceled |= sctx.cancel();
             }
 
             synchronized (snpOpMux) {
@@ -1214,11 +1231,13 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
             else
                 throw new IgniteException(e);
         }
+
+        return canceled;
     }
 
     /** {@inheritDoc} */
     @Override public IgniteFuture<Boolean> cancelSnapshotRestore(String name) {
-        return executeRestoreManagementTask(SnapshotRestoreCancelTask.class, name);
+        return new IgniteFutureImpl<>(cancelSnapshot0(name));
     }
 
     /**
@@ -1226,7 +1245,10 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
      *
      * @return Future that will be finished when process the process is complete. The result of this future will be
      * {@code false} if the restore process with the specified snapshot name is not running at all.
+     *
+     * @deprecated Use {@link #cancelLocalSnapshotOperations(UUID)} instead.
      */
+    @Deprecated
     public IgniteFuture<Boolean> cancelLocalRestoreTask(String name) {
         return restoreCacheGrpProc.cancel(new IgniteCheckedException("Operation has been canceled by the user."), name);
     }
@@ -1557,7 +1579,7 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
                     );
                 }
 
-                snpFut0 = new ClusterSnapshotFuture(UUID.randomUUID(), name);
+                snpFut0 = new ClusterSnapshotFuture(UUID.randomUUID(), name, this);
 
                 clusterSnpFut = snpFut0;
                 lastSeenSnpFut = snpFut0;
@@ -1592,13 +1614,7 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
             if (log.isInfoEnabled())
                 log.info(msg);
 
-            return new IgniteFutureImpl<Void>(snpFut0) {
-                @Override public boolean cancel() throws IgniteException {
-                    cancelSnapshotOperation(snpFut0.rqId).get();
-
-                    return true;
-                }
-            };
+            return new IgniteFutureImpl<>(snpFut0);
         }
         catch (Exception e) {
             recordSnapshotEvent(name, SNAPSHOT_FAILED_MSG + e.getMessage(), EVT_CLUSTER_SNAPSHOT_FAILED);
@@ -3354,6 +3370,9 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
         /** Snapshot start time. */
         final long startTime;
 
+        /** */
+        private final IgniteSnapshotManager mgr;
+
         /** Snapshot finish time. */
         volatile long endTime;
 
@@ -3370,6 +3389,7 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
             name = "";
             startTime = 0;
             endTime = 0;
+            mgr = null;
         }
 
         /**
@@ -3383,15 +3403,17 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
             startTime = U.currentTimeMillis();
             endTime = 0;
             rqId = null;
+            mgr = null;
         }
 
         /**
          * @param rqId Unique snapshot request id.
          */
-        public ClusterSnapshotFuture(UUID rqId, String name) {
+        public ClusterSnapshotFuture(UUID rqId, String name, IgniteSnapshotManager mgr) {
             this.rqId = rqId;
             this.name = name;
             startTime = U.currentTimeMillis();
+            this.mgr = mgr;
         }
 
         /** {@inheritDoc} */
@@ -3432,7 +3454,7 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
 
     /** Cancel snapshot operation closure. */
     @GridInternal
-    private static class CancelSnapshotCallable implements IgniteCallable<Void> {
+    private static class CancelSnapshotCallable implements IgniteCallable<Boolean> {
         /** Serial version uid. */
         private static final long serialVersionUID = 0L;
 
@@ -3455,15 +3477,15 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
         }
 
         /** {@inheritDoc} */
-        @Override public Void call() throws Exception {
+        @Override public Boolean call() throws Exception {
             if (operId != null)
-                ignite.context().cache().context().snapshotMgr().cancelLocalSnapshotOperations(operId);
+                return ignite.context().cache().context().snapshotMgr().cancelLocalSnapshotOperations(operId);
             else {
-                ignite.context().cache().context().snapshotMgr().cancelLocalSnapshotTask(snpName);
-                ignite.context().cache().context().snapshotMgr().cancelLocalRestoreTask(snpName);
-            }
+                if (ignite.context().cache().context().snapshotMgr().cancelLocalSnapshotTask(snpName))
+                    return true;
 
-            return null;
+                return ignite.context().cache().context().snapshotMgr().cancelLocalRestoreTask(snpName).get();
+            }
         }
     }
 

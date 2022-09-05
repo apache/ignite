@@ -50,7 +50,6 @@ public interface IgniteSnapshot {
      * @return Future which will be completed when cancel operation finished.
      * @deprecated Use {@link IgniteFuture#cancel()} instead.
      */
-    @Deprecated
     public IgniteFuture<Void> cancelSnapshot(String name);
 
     /**
@@ -73,6 +72,5 @@ public interface IgniteSnapshot {
      * future will be {@code false} if the restore process with the specified snapshot name is not running at all.
      * @deprecated Use {@link IgniteFuture#cancel()} instead.
      */
-    @Deprecated
     public IgniteFuture<Boolean> cancelSnapshotRestore(String name);
 }
