@@ -58,14 +58,14 @@ public class VisorSnapshotCreateTask extends VisorSnapshotOneNodeTask<VisorSnaps
 
             IgniteInternalFuture<Void> internalFut = fut.internalFuture();
 
-            String operationId = (internalFut instanceof IgniteSnapshotManager.ClusterSnapshotFuture) ?
+            String msgOperId = (internalFut instanceof IgniteSnapshotManager.ClusterSnapshotFuture) ?
                 ", operId=" + ((IgniteSnapshotManager.ClusterSnapshotFuture)internalFut).requestId().toString() : "";
 
             if (arg.sync() || fut.isDone())
                 fut.get();
 
             return "Snapshot create operation " + (arg.sync() ? "completed successfully" : "started") +
-                " [name=" + arg.snapshotName() + operationId + ']';
+                " [name=" + arg.snapshotName() + msgOperId + ']';
         }
     }
 }

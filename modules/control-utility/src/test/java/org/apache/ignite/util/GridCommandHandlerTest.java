@@ -3156,16 +3156,10 @@ public class GridCommandHandlerTest extends GridCommandHandlerClusterPerMethodAb
         // Cancel snapshot using operation ID.
         doSnapshotCancellationTest(startCli, Collections.singletonList(srv), startCli.cache(DEFAULT_CACHE_NAME),
             snpName -> {
-                assertEquals(EXIT_CODE_OK, execute(h, "--snapshot", "status"));
+                String operId = srv.context().metric().registry(SNAPSHOT_METRICS).findMetric("lastRequestId").getAsString();
+                assertFalse(F.isEmpty(operId));
 
-                Pattern operIdPtrn = Pattern.compile("Operation ID: (?<operId>[-\\w]{36})");
-                Matcher matcher = operIdPtrn.matcher(testOut.toString());
-                assertTrue(matcher.find());
-
-                String operIdStr = matcher.group("operId");
-                assertNotNull(operIdStr);
-
-                assertEquals(EXIT_CODE_OK, execute(h, "--snapshot", "cancel", "--id", operIdStr));
+                assertEquals(EXIT_CODE_OK, execute(h, "--snapshot", "cancel", "--id", operId));
             });
 
         // Cancel snapshot using snapshot name.

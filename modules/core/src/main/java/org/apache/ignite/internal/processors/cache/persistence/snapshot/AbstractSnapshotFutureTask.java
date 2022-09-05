@@ -43,7 +43,7 @@ abstract class AbstractSnapshotFutureTask<T> extends GridFutureAdapter<T> {
     /** Node id which cause snapshot operation. */
     protected final UUID srcNodeId;
 
-    /** Unique snapshot operation ID. */
+    /** Snapshot operation ID. */
     protected final UUID operId;
 
     /** Unique identifier of snapshot process. */
@@ -68,6 +68,7 @@ abstract class AbstractSnapshotFutureTask<T> extends GridFutureAdapter<T> {
     /**
      * @param cctx Shared context.
      * @param srcNodeId Node id which cause snapshot task creation.
+     * @param operId Snapshot operation ID.
      * @param snpName Unique identifier of snapshot process.
      * @param tmpWorkDir Working directory for intermediate snapshot results.
      * @param ioFactory Factory to working with snapshot files.

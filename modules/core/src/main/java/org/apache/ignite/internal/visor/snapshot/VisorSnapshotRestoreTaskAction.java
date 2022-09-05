@@ -18,6 +18,7 @@
 package org.apache.ignite.internal.visor.snapshot;
 
 /** Snapshot restore operation management action. */
+@Deprecated
 public enum VisorSnapshotRestoreTaskAction {
     /**
      * Start snapshot restore operation.

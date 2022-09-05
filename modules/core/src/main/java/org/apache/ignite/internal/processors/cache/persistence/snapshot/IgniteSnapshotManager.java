@@ -49,6 +49,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.NoSuchElementException;
 import java.util.Objects;
+import java.util.Optional;
 import java.util.Queue;
 import java.util.Set;
 import java.util.UUID;
@@ -508,15 +509,8 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
         mreg.register("LocalSnapshotNames", this::localSnapshotNames, List.class,
             "The list of names of all snapshots currently saved on the local node with respect to " +
                 "the configured via IgniteConfiguration snapshot working path.");
-
-        mreg.register("lastRequestId", () -> {
-                UUID operId = lastSeenSnpFut.rqId;
-
-                return operId == null ? "" : operId.toString();
-            },
-            String.class,
-            "The ID of the last started snapshot operation."
-        );
+        mreg.register("lastRequestId", () -> Optional.ofNullable(lastSeenSnpFut.rqId).map(UUID::toString).orElse(""),
+            String.class, "The ID of the last started snapshot operation.");
 
         mreg.register("CurrentSnapshotTotalSize", () -> {
             SnapshotFutureTask task = currentSnapshotTask();
@@ -1071,7 +1065,6 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
      * @param snpName Snapshot name.
      * @return {@code True} if the snapshot restore operation from the specified snapshot is in progress locally.
      */
-    @Deprecated
     public boolean isRestoring(String snpName) {
         return snpName.equals(restoreCacheGrpProc.restoringSnapshotName());
     }
@@ -1143,7 +1136,7 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
 
         return cctx.kernalContext().closure()
             .callAsyncNoFailover(BROADCAST,
-                new CancelSnapshotCallable(name, null),
+                new CancelSnapshotCallable(null, name),
                 cctx.discovery().aliveServerNodes(),
                 false,
                 0,
@@ -1161,7 +1154,7 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
 
         IgniteInternalFuture<Boolean> fut0 = cctx.kernalContext().closure()
             .callAsyncNoFailover(BROADCAST,
-                new CancelSnapshotCallable(null, operId),
+                new CancelSnapshotCallable(operId, null),
                 cctx.discovery().aliveServerNodes(),
                 false,
                 0,
@@ -1171,9 +1164,10 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
     }
 
     /**
-     * Cancel runninh snapshot operation (create/restore) by operation ID.
+     * Cancel running snapshot operation (create/restore).
      *
      * @param operId Snapshot operation ID.
+     * @return {@code True} if the operation with the specified ID was canceled.
      */
     private boolean cancelLocalSnapshotOperations(UUID operId) {
         A.notNull(operId, "Snapshot operation ID must be not null");
@@ -1181,11 +1175,12 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
         if (cancelLocalSnapshotTask0(task -> operId.equals(task.operationId())))
             return true;
 
-        return restoreCacheGrpProc.cancel(new IgniteCheckedException("Operation has been canceled by the user."), operId).get();
+        return restoreCacheGrpProc.cancel(operId, null).get();
     }
 
     /**
      * @param name Snapshot name to cancel operation on local node.
+     * @return {@code True} if the snapshot operation was canceled.
      */
     public boolean cancelLocalSnapshotTask(String name) {
         A.notNullOrEmpty(name, "Snapshot name must be not null or empty");
@@ -1250,7 +1245,7 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
      */
     @Deprecated
     public IgniteFuture<Boolean> cancelLocalRestoreTask(String name) {
-        return restoreCacheGrpProc.cancel(new IgniteCheckedException("Operation has been canceled by the user."), name);
+        return restoreCacheGrpProc.cancel(null, name);
     }
 
     /**
@@ -1579,7 +1574,7 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
                     );
                 }
 
-                snpFut0 = new ClusterSnapshotFuture(UUID.randomUUID(), name, this);
+                snpFut0 = new ClusterSnapshotFuture(UUID.randomUUID(), name);
 
                 clusterSnpFut = snpFut0;
                 lastSeenSnpFut = snpFut0;
@@ -1732,6 +1727,7 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
 
     /**
      * @param rmtNodeId The remote node to connect to.
+     * @param operId Snapshot operation ID.
      * @param snpName Snapshot name to request.
      * @param rmtSnpPath Snapshot directory path on the remote node.
      * @param parts Collection of pairs group and appropriate cache partition to be snapshot.
@@ -1898,6 +1894,7 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
     /**
      * @param snpName Unique snapshot name.
      * @param srcNodeId Node id which cause snapshot operation.
+     * @param operId Snapshot operation ID.
      * @param parts Collection of pairs group and appropriate cache partition to be snapshot.
      * @param withMetaStorage {@code true} if all metastorage data must be also included into snapshot.
      * @param snpSndr Factory which produces snapshot receiver instance.
@@ -2569,6 +2566,7 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
         /**
          * @param snpMgr Ignite snapshot manager.
          * @param rmtNodeId Remote node to request snapshot from.
+         * @param operId Snapshot operation ID.
          * @param snpName Snapshot name to request.
          * @param rmtSnpPath Snapshot directory path on the remote node.
          * @param parts Cache group and partitions to request.
@@ -3370,9 +3368,6 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
         /** Snapshot start time. */
         final long startTime;
 
-        /** */
-        private final IgniteSnapshotManager mgr;
-
         /** Snapshot finish time. */
         volatile long endTime;
 
@@ -3389,7 +3384,6 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
             name = "";
             startTime = 0;
             endTime = 0;
-            mgr = null;
         }
 
         /**
@@ -3403,17 +3397,16 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
             startTime = U.currentTimeMillis();
             endTime = 0;
             rqId = null;
-            mgr = null;
         }
 
         /**
          * @param rqId Unique snapshot request id.
+         * @param name Snapshot name.
          */
-        public ClusterSnapshotFuture(UUID rqId, String name, IgniteSnapshotManager mgr) {
+        public ClusterSnapshotFuture(UUID rqId, String name) {
             this.rqId = rqId;
             this.name = name;
             startTime = U.currentTimeMillis();
-            this.mgr = mgr;
         }
 
         /** {@inheritDoc} */
@@ -3474,11 +3467,12 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
         private transient IgniteEx ignite;
 
         /**
+         * @param operId Snapshot operation ID.
          * @param snpName Snapshot name.
          */
-        public CancelSnapshotCallable(String snpName, UUID operId) {
-            this.snpName = snpName;
+        public CancelSnapshotCallable(UUID operId, String snpName) {
             this.operId = operId;
+            this.snpName = snpName;
         }
 
         /** {@inheritDoc} */

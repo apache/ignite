@@ -45,6 +45,7 @@ public class SnapshotResponseRemoteFutureTask extends AbstractSnapshotFutureTask
     /**
      * @param cctx Shared context.
      * @param srcNodeId Node id which cause snapshot task creation.
+     * @param operId Snapshot operation ID.
      * @param snpName Unique identifier of snapshot process.
      * @param snpPath Snapshot directory path.
      * @param tmpWorkDir Working directory for intermediate snapshot results.

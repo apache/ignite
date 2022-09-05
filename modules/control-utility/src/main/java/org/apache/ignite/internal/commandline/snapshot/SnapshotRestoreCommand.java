@@ -58,9 +58,6 @@ public class SnapshotRestoreCommand extends SnapshotSubcommand {
      * @param log Logger.
      */
     private void explainDeprecatedOptions(Object cmdArg, Logger log) {
-        if (!(cmdArg instanceof VisorSnapshotRestoreTaskArg))
-            return;
-
         VisorSnapshotRestoreTaskAction action = ((VisorSnapshotRestoreTaskArg)cmdArg).jobAction();
 
         if (action == null)
@@ -87,23 +84,16 @@ public class SnapshotRestoreCommand extends SnapshotSubcommand {
     /** {@inheritDoc} */
     @Override public void parseArguments(CommandArgIterator argIter) {
         String snpName = argIter.nextArg("Expected snapshot name.");
+        VisorSnapshotRestoreTaskAction restoreAction = parseAction(argIter.peekNextArg());
         String snpPath = null;
         Set<String> grpNames = null;
         boolean sync = false;
-        boolean firstArg = true;
-        VisorSnapshotRestoreTaskAction restoreAction = null;
+
+        if (restoreAction != null)
+            argIter.nextArg(null);
 
         while (argIter.hasNextSubArg()) {
             String arg = argIter.nextArg(null);
-
-            if (firstArg) {
-                firstArg = false;
-
-                restoreAction = parseAction(arg);
-
-                if (restoreAction != null)
-                    continue;
-            }
 
             if (restoreAction != null && restoreAction != START) {
                 throw new IllegalArgumentException("Invalid argument: " + arg + ". " +
@@ -179,6 +169,9 @@ public class SnapshotRestoreCommand extends SnapshotSubcommand {
      * @return Snapshot restore operation management action.
      */
     private VisorSnapshotRestoreTaskAction parseAction(String arg) {
+        if (arg == null)
+            return null;
+
         for (VisorSnapshotRestoreTaskAction val : VisorSnapshotRestoreTaskAction.values()) {
             if (arg.toLowerCase().equals("--" + val.name().toLowerCase()))
                 return val;

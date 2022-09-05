@@ -67,6 +67,7 @@ public class SnapshotFilesRequestMessage extends AbstractSnapshotMessage {
 
     /**
      * @param reqId Unique request id.
+     * @param operId Snapshot operation ID.
      * @param snpName Snapshot name to request.
      * @param snpPath Snapshot directory path.
      * @param parts Map of cache group ids and corresponding set of its partition ids to be snapshot.
@@ -159,6 +160,13 @@ public class SnapshotFilesRequestMessage extends AbstractSnapshotMessage {
             writer.incrementState();
         }
 
+        if (writer.state() == 4) {
+            if (!writer.writeUuid("operId", operId))
+                return false;
+
+            writer.incrementState();
+        }
+
         return true;
     }
 
@@ -192,6 +200,15 @@ public class SnapshotFilesRequestMessage extends AbstractSnapshotMessage {
 
         if (reader.state() == 3) {
             snpPath = reader.readString("snpPath");
+
+            if (!reader.isLastRead())
+                return false;
+
+            reader.incrementState();
+        }
+
+        if (reader.state() == 4) {
+            operId = reader.readUuid("operId");
 
             if (!reader.isLastRead())
                 return false;
