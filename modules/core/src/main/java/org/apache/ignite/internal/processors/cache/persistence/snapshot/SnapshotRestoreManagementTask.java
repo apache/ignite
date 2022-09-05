@@ -31,6 +31,7 @@ import org.jetbrains.annotations.NotNull;
 /**
  * Snapshot restore management task.
  */
+@Deprecated
 abstract class SnapshotRestoreManagementTask extends ComputeTaskAdapter<String, Boolean> {
    /**
      * @param param Compute job argument.

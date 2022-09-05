@@ -105,6 +105,7 @@ import org.apache.ignite.internal.processors.cache.warmup.BlockedWarmUpStrategy;
 import org.apache.ignite.internal.processors.cache.warmup.WarmUpTestPluginProvider;
 import org.apache.ignite.internal.processors.cluster.ChangeGlobalStateFinishMessage;
 import org.apache.ignite.internal.processors.cluster.GridClusterStateProcessor;
+import org.apache.ignite.internal.processors.metric.MetricRegistry;
 import org.apache.ignite.internal.util.BasicRateLimiter;
 import org.apache.ignite.internal.util.distributed.SingleNodeMessage;
 import org.apache.ignite.internal.util.future.IgniteFinishedFutureImpl;
@@ -126,6 +127,7 @@ import org.apache.ignite.lang.IgniteUuid;
 import org.apache.ignite.plugin.extensions.communication.Message;
 import org.apache.ignite.spi.communication.tcp.TcpCommunicationSpi;
 import org.apache.ignite.spi.metric.LongMetric;
+import org.apache.ignite.spi.metric.Metric;
 import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.testframework.junits.WithSystemProperty;
 import org.apache.ignite.transactions.Transaction;
@@ -166,6 +168,7 @@ import static org.apache.ignite.internal.processors.cache.persistence.snapshot.I
 import static org.apache.ignite.internal.processors.cache.persistence.snapshot.IgniteSnapshotManager.SNAPSHOT_METRICS;
 import static org.apache.ignite.internal.processors.cache.persistence.snapshot.IgniteSnapshotManager.SNAPSHOT_TRANSFER_RATE_DMS_KEY;
 import static org.apache.ignite.internal.processors.cache.persistence.snapshot.IgniteSnapshotManager.resolveSnapshotWorkDirectory;
+import static org.apache.ignite.internal.processors.cache.persistence.snapshot.SnapshotRestoreProcess.SNAPSHOT_RESTORE_METRICS;
 import static org.apache.ignite.internal.processors.cache.verify.IdleVerifyUtility.GRID_NOT_IDLE_MSG;
 import static org.apache.ignite.internal.processors.diagnostic.DiagnosticProcessor.DEFAULT_TARGET_FOLDER;
 import static org.apache.ignite.testframework.GridTestUtils.assertContains;
@@ -3089,8 +3092,16 @@ public class GridCommandHandlerTest extends GridCommandHandlerClusterPerMethodAb
 
         assertEquals(EXIT_CODE_OK, execute(h, args));
 
-        LongMetric opEndTimeMetric = ig.context().metric().registry(SNAPSHOT_METRICS).findMetric("LastSnapshotEndTime");
+        MetricRegistry metrics = ig.context().metric().registry(SNAPSHOT_METRICS);
+
+        LongMetric opEndTimeMetric = metrics.findMetric("LastSnapshotEndTime");
         BooleanSupplier endTimeMetricPredicate = () -> opEndTimeMetric.value() > 0;
+
+        String operId = metrics.findMetric("lastRequestId").getAsString();
+        assertFalse(F.isEmpty(operId));
+
+        // Make sure the operation ID has been shown to the user.
+        assertContains(log, testOut.toString(), operId);
 
         if (syncMode)
             assertTrue(endTimeMetricPredicate.getAsBoolean());
@@ -3293,10 +3304,15 @@ public class GridCommandHandlerTest extends GridCommandHandlerClusterPerMethodAb
 
         // Restore single cache group.
         assertEquals(EXIT_CODE_OK, execute(h, "--snapshot", "restore", snpName, "--groups", cacheName1));
-        assertContains(log, testOut.toString(),
-            "Snapshot cache group restore operation started [snapshot=" + snpName + ", group(s)=" + cacheName1 + ']');
 
         waitForCondition(() -> ig.cache(cacheName1) != null, getTestTimeout());
+
+        MetricRegistry metrics = ig.context().metric().registry(SNAPSHOT_RESTORE_METRICS);
+        Metric operIdMetric = metrics.findMetric("requestId");
+        assertNotNull(operIdMetric);
+
+        assertContains(log, testOut.toString(), "Snapshot cache group restore operation started " +
+            "[name=" + snpName + ", group(s)=" + cacheName1 + ", operId=" + operIdMetric.getAsString() + ']');
 
         cache1 = ig.cache(cacheName1);
 
@@ -3318,7 +3334,7 @@ public class GridCommandHandlerTest extends GridCommandHandlerClusterPerMethodAb
         // Restore two (of three) groups of caches.
         assertEquals(EXIT_CODE_OK, execute(h, "--snapshot", "restore", snpName, "--groups", cacheNames));
         assertContains(log, testOut.toString(),
-            "Snapshot cache group restore operation started [snapshot=" + snpName + ", group(s)=");
+            "Snapshot cache group restore operation started [name=" + snpName + ", group(s)=");
 
         waitForCondition(() -> ig.cache(cacheName1) != null, getTestTimeout());
         waitForCondition(() -> ig.cache(cacheName2) != null, getTestTimeout());
@@ -3347,7 +3363,7 @@ public class GridCommandHandlerTest extends GridCommandHandlerClusterPerMethodAb
         assertEquals(EXIT_CODE_OK, execute(h, "--snapshot", "restore", snpName));
         String out = testOut.toString();
         assertContains(log, out, "Warning: command will restore ALL USER-CREATED CACHE GROUPS from the snapshot");
-        assertContains(log, out, "Snapshot cache group restore operation started [snapshot=" + snpName + ']');
+        assertContains(log, out, "Snapshot cache group restore operation started [name=" + snpName);
 
         waitForCondition(() -> ig.cache(cacheName1) != null, getTestTimeout());
         waitForCondition(() -> ig.cache(cacheName2) != null, getTestTimeout());

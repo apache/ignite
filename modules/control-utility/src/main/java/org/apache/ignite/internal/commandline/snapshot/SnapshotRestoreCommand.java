@@ -50,11 +50,7 @@ public class SnapshotRestoreCommand extends SnapshotSubcommand {
     @Override public Object execute(GridClientConfiguration clientCfg, Logger log) throws Exception {
         explainDeprecatedOptions(cmdArg, log);
 
-        Object res = super.execute(clientCfg, log);
-
-        log.info(String.valueOf(res));
-
-        return res;
+        return super.execute(clientCfg, log);
     }
 
     /**
