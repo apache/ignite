@@ -32,7 +32,9 @@
         </Console>
 
         <Console name="CONSOLE_ERR" target="SYSTEM_ERR">
-            <PatternLayout disableAnsi="${disableAnsi}" pattern="%highlight{[%d{ISO8601}][%-5p][%t][%c{1}] %m%n}{FATAL=red blink, ERROR=default, WARN=yellow bold}"/>
+            <PatternLayout
+                pattern="%highlight{[%d{ISO8601}][%-5p][%t][%c{1}] %m%n}{FATAL=red blink, ERROR=default, WARN=yellow bold}"
+                disableAnsi="${disableAnsi}"/>
         </Console>
 
         <RollingFile name="FILE"
