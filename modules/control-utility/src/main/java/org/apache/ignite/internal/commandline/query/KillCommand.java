@@ -193,7 +193,7 @@ public class KillCommand extends AbstractCommand<Object> {
                 break;
 
             case SNAPSHOT:
-                taskArgs = new VisorSnapshotCancelTaskArg(UUID.fromString(argIter.nextArg("Expected snapshot oepration ID.")), null);
+                taskArgs = new VisorSnapshotCancelTaskArg(UUID.fromString(argIter.nextArg("Expected snapshot operation ID.")), null);
 
                 taskName = VisorSnapshotCancelTask.class.getName();
 
