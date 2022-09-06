@@ -18,7 +18,6 @@
 package org.apache.ignite.internal.visor.snapshot;
 
 import org.apache.ignite.IgniteException;
-import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.processors.cache.persistence.snapshot.IgniteSnapshotManager;
 import org.apache.ignite.internal.processors.task.GridInternal;
 import org.apache.ignite.internal.util.future.IgniteFutureImpl;
@@ -71,14 +70,12 @@ public class VisorSnapshotRestoreTask extends VisorSnapshotOneNodeTask<VisorSnap
             IgniteFutureImpl<Void> fut = ignite.context().cache().context().snapshotMgr()
                 .restoreSnapshot(arg.snapshotName(), arg.snapshotPath(), arg.groupNames());
 
-            IgniteInternalFuture<Void> internalFut = fut.internalFuture();
-
-            String msgOperId = (internalFut instanceof IgniteSnapshotManager.ClusterSnapshotFuture) ?
-                ", operId=" + ((IgniteSnapshotManager.ClusterSnapshotFuture)internalFut).requestId().toString() : "";
+            IgniteSnapshotManager.ClusterSnapshotFuture snpFut = (IgniteSnapshotManager.ClusterSnapshotFuture)fut.internalFuture();
 
             if (arg.sync() || fut.isDone())
                 fut.get();
-            
+
+            String msgOperId = snpFut.requestId() != null ? ", operId=" + snpFut.requestId() : "";
             String msgSuff = arg.sync() ? "completed successfully" : "started";
             String msgGrps = arg.groupNames() == null ? "" : ", group(s)=" + F.concat(arg.groupNames(), ",");
 

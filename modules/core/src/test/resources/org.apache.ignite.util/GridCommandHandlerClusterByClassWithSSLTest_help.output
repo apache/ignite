@@ -148,7 +148,7 @@ This utility can do the following commands:
       --sync         - Run the operation synchronously, the command will wait for the entire operation to complete. Otherwise, it will be performed in the background, and the command will immediately return control.
 
   Cancel running snapshot operation:
-    control.(sh|bat) --snapshot --id id|--name name
+    control.(sh|bat) --snapshot cancel --id id|--name name
 
     Parameters:
       --id id      - Snapshot operation ID.

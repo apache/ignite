@@ -79,6 +79,6 @@ public class SnapshotCancelCommand extends SnapshotSubcommand {
         params.put(NAME.argName() + " " + NAME.arg(), NAME.description());
 
         usage(log, "Cancel running snapshot operation:", SNAPSHOT,
-            params, or(ID.argName() + " " + ID.arg(), NAME.argName() + " " + NAME.arg()));
+            params, name(), or(ID.argName() + " " + ID.arg(), NAME.argName() + " " + NAME.arg()));
     }
 }
