@@ -84,7 +84,7 @@ public class CheckpointReadWriteLock {
 
         boolean res = checkpointLock.readLock().tryLock(timeout, unit);
 
-        if (ASSERTION_ENABLED)
+        if (ASSERTION_ENABLED && res)
             CHECKPOINT_LOCK_HOLD_COUNT.set(CHECKPOINT_LOCK_HOLD_COUNT.get() + 1);
 
         return res;
