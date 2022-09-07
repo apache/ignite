@@ -70,7 +70,6 @@ import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.DataRegionConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.GridJobExecuteResponse;
-import org.apache.ignite.internal.GridKernalContext;
 import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.IgniteInterruptedCheckedException;
@@ -3566,20 +3565,6 @@ public class GridCommandHandlerTest extends GridCommandHandlerClusterPerMethodAb
 
         fut.get(getTestTimeout());
 
-        waitForCondition(() -> {
-            for (Ignite ignite : G.allGrids()) {
-                GridKernalContext kctx = ((IgniteEx)ignite).context();
-
-                if (kctx.clientNode())
-                    continue;
-
-                if (kctx.cache().context().snapshotMgr().currentCreateRequest() != null)
-                    return false;
-            }
-
-            return true;
-        }, getTestTimeout());
-
         checkSnapshotStatus(false, false, null);
     }
 
@@ -3589,7 +3574,7 @@ public class GridCommandHandlerTest extends GridCommandHandlerClusterPerMethodAb
      * @param expName Expected snapshot name.
      */
     private void checkSnapshotStatus(boolean isCreating, boolean isRestoring, String expName) throws Exception {
-        Collection<Ignite> srvs = F.view(G.allGrids(), n -> !n.cluster().localNode().isLocal());
+        Collection<Ignite> srvs = F.view(G.allGrids(), n -> !n.cluster().localNode().isClient());
 
         assertTrue(waitForCondition(() -> srvs.stream().allMatch(
                 ignite -> {
