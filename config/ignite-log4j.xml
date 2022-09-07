@@ -18,14 +18,29 @@
 -->
 
 <Configuration monitorInterval="60">
+    <Properties>
+        <!-- Set this property to true if you want to completely disable colors in console output. -->
+        <Property name="disableAnsi">false</Property>
+    </Properties>
     <Appenders>
         <Console name="CONSOLE" target="SYSTEM_OUT">
-            <PatternLayout pattern="[%d{ISO8601}][%-5p][%t][%c{1}]%notEmpty{[%markerSimpleName]} %m%n"/>
-            <ThresholdFilter level="ERROR" onMatch="DENY" onMismatch="ACCEPT"/>
+            <PatternLayout
+                pattern="[%d{ISO8601}]%highlight{[%-5p]}{INFO=green, DEBUG=green bold, TRACE=blue}%style{[%t]}{magenta}%style{[%c{1}]}{cyan}%notEmpty{[%markerSimpleName]} %m%n"
+                disableAnsi="${disableAnsi}"/>
+            <ThresholdFilter level="WARN" onMatch="DENY" onMismatch="ACCEPT"/>
+        </Console>
+
+        <Console name="CONSOLE_WARN" target="SYSTEM_OUT">
+            <PatternLayout
+                pattern="%highlight{[%d{ISO8601}][%-5p][%t][%c{1}] %m%n}{WARN=yellow bold}"
+                disableAnsi="${disableAnsi}"/>
+            <ThresholdFilter level="WARN" onMatch="ACCEPT" onMismatch="DENY"/>
         </Console>
 
         <Console name="CONSOLE_ERR" target="SYSTEM_ERR">
-            <PatternLayout pattern="[%d{ISO8601}][%-5p][%t][%c{1}]%notEmpty{[%markerSimpleName]} %m%n"/>
+            <PatternLayout
+                pattern="%style{[%d{ISO8601}][%-5p][%t][%c{1}] %m%n}{red}"
+                disableAnsi="${disableAnsi}"/>
         </Console>
 
         <File name="CONSISTENCY" fileName="${sys:IGNITE_HOME}/work/log/consistency.log">
@@ -82,6 +97,7 @@
             <!-- Uncomment to enable logging to console. -->
             <!--
             <AppenderRef ref="CONSOLE" level="DEBUG"/>
+            <AppenderRef ref="CONSOLE_WARN" level="WARN"/>
             -->
 
             <AppenderRef ref="CONSOLE_ERR" level="ERROR"/>
