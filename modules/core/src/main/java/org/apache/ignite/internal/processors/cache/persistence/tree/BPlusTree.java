@@ -41,6 +41,7 @@ import org.apache.ignite.internal.metric.IoStatisticsHolderNoOp;
 import org.apache.ignite.internal.pagemem.PageIdUtils;
 import org.apache.ignite.internal.pagemem.PageMemory;
 import org.apache.ignite.internal.pagemem.wal.IgniteWriteAheadLogManager;
+import org.apache.ignite.internal.pagemem.wal.record.delta.FilterRemoveRecord;
 import org.apache.ignite.internal.pagemem.wal.record.delta.FixCountRecord;
 import org.apache.ignite.internal.pagemem.wal.record.delta.FixLeftmostChildRecord;
 import org.apache.ignite.internal.pagemem.wal.record.delta.FixRemoveId;
@@ -5714,23 +5715,7 @@ public abstract class BPlusTree<L, T extends L> extends DataStructure implements
     public abstract T getRow(BPlusIO<L> io, long pageAddr, int idx, Object x) throws IgniteCheckedException;
 
     /**
-     * Page handler with additional processing before and after page visit.
-     */
-    private abstract class VisitorPageHandler extends PageHandler<Void, L> {
-        /**
-         * This method is called before the page locks are taken.
-         */
-        public abstract void onBefore() throws IgniteCheckedException;
-
-        /**
-         * This method is called after the page locks are released.
-         */
-        public abstract void onAfter() throws IgniteCheckedException;
-    }
-
-    /**
-     * Visitor of the leaf pages of the tree.
-     * Accepts a row filter and writing page handler.
+     * This class iterates all leaf pages and removes filtered rows.
      */
     private final class RemoveWithFilter {
         /** Last row to get back to if current page turns out removed. */
@@ -5797,7 +5782,7 @@ public abstract class BPlusTree<L, T extends L> extends DataStructure implements
                     if (cnt != 0) {
                         nextPageId = io.getForward(pageAddr);
 
-                        removeByFilter(pageId, pageAddr, io, cnt);
+                        removeByFilter(pageId, pageAddr, page, io, cnt);
                     }
                 }
                 finally {
@@ -5820,11 +5805,18 @@ public abstract class BPlusTree<L, T extends L> extends DataStructure implements
         /**
          * @param pageId Page ID.
          * @param pageAddr Page address.
+         * @param page Page pointer.
          * @param io IO.
          * @param cnt Count of items on the page.
-         * @throws IgniteCheckedException
+         * @throws IgniteCheckedException If failed.
          */
-        private void removeByFilter(long pageId, long pageAddr, BPlusIO<L> io, int cnt) throws IgniteCheckedException {
+        private void removeByFilter(
+            long pageId,
+            long pageAddr,
+            long page,
+            BPlusIO<L> io,
+            int cnt
+        ) throws IgniteCheckedException {
             assert io.isLeaf();
 
             if (idxs == null || idxs.length < cnt)
@@ -5845,10 +5837,8 @@ public abstract class BPlusTree<L, T extends L> extends DataStructure implements
             if (idxsCnt > 0) {
                 io.remove(pageAddr, idxs, idxsCnt);
 
-/*
                 if (needWalDeltaRecord(pageId, page, null))
-                    wal.log(new PurgeRecord(grpId, pageId, idxs, idxsCnt, cnt - idxsCnt));
-*/
+                    wal.log(new FilterRemoveRecord(grpId, pageId, idxs, idxsCnt, cnt - idxsCnt));
             }
         }
     }
