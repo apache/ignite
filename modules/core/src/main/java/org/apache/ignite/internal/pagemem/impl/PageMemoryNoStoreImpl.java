@@ -594,11 +594,6 @@ public class PageMemoryNoStoreImpl implements PageMemory {
         return false;
     }
 
-    /** @return Page address. */
-    public long pageAddress(long absPtr) {
-        return absPtr + PAGE_OVERHEAD;
-    }
-
     /**
      * @param pageIdx Page index.
      * @return Total page sequence number.
@@ -748,6 +743,11 @@ public class PageMemoryNoStoreImpl implements PageMemory {
 
         // Only this synchronized method writes to segments, so it is safe to read twice.
         return segments[segments.length - 1];
+    }
+
+    /** @return Page address. */
+    private static long pageAddress(long absPtr) {
+        return absPtr + PAGE_OVERHEAD;
     }
 
     /**

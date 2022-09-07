@@ -534,11 +534,6 @@ public class PageMemoryImpl implements PageMemoryEx {
         return isDirty(page);
     }
 
-    /** @return Page address. */
-    public final long pageAddress(long absPtr) {
-        return absPtr + PAGE_OVERHEAD;
-    }
-
     /** {@inheritDoc} */
     @Override public long allocatePage(int grpId, int partId, byte flags) throws IgniteCheckedException {
         assert flags != PageIdAllocator.FLAG_IDX && partId <= PageIdAllocator.MAX_PARTITION_ID ||
@@ -2530,6 +2525,11 @@ public class PageMemoryImpl implements PageMemoryEx {
             dataRegionMetrics.decrementPagesWithTimestamp(oldTs);
 
         dataRegionMetrics.incrementPagesWithTimestamp(newTs & PageHeader.TIMESTAMP_MASK);
+    }
+
+    /** @return Page address. */
+    private static long pageAddress(long absPtr) {
+        return absPtr + PAGE_OVERHEAD;
     }
 
     /**
