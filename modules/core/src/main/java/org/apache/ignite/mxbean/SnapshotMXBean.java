@@ -49,6 +49,14 @@ public interface SnapshotMXBean {
     public void cancelSnapshot(@MXBeanParameter(name = "snpName", description = "Snapshot name.") String snpName);
 
     /**
+     * Cancel previously started snapshot operation.
+     *
+     * @param reqId Snapshot operation request ID.
+     */
+    @MXBeanDescription("Cancel started cluster-wide snapshot operation.")
+    public void cancelSnapshotOperation(@MXBeanParameter(name = "requestId", description = "Snapshot operation request ID.") String reqId);
+
+    /**
      * Restore cluster-wide snapshot.
      *
      * @param name Snapshot name.
