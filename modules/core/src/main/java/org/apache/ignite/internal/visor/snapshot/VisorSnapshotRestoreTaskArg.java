@@ -68,7 +68,6 @@ public class VisorSnapshotRestoreTaskArg extends VisorSnapshotCreateTaskArg {
     }
 
     /** @return Snapshot restore operation management action. */
-    @Deprecated
     public VisorSnapshotRestoreTaskAction jobAction() {
         return action;
     }
