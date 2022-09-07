@@ -70,6 +70,7 @@ import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.DataRegionConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.GridJobExecuteResponse;
+import org.apache.ignite.internal.GridKernalContext;
 import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.IgniteInterruptedCheckedException;
@@ -3551,6 +3552,8 @@ public class GridCommandHandlerTest extends GridCommandHandlerClusterPerMethodAb
 
         srv.destroyCache(DEFAULT_CACHE_NAME);
 
+        awaitPartitionMapExchange();
+
         spi.blockMessages((node, msg) -> msg instanceof SingleNodeMessage);
 
         fut = srv.snapshot().restoreSnapshot(snapshotName, F.asList(DEFAULT_CACHE_NAME));
@@ -3562,6 +3565,20 @@ public class GridCommandHandlerTest extends GridCommandHandlerClusterPerMethodAb
         spi.stopBlock();
 
         fut.get(getTestTimeout());
+
+        waitForCondition(() -> {
+            for (Ignite ignite : G.allGrids()) {
+                GridKernalContext kctx = ((IgniteEx)ignite).context();
+
+                if (kctx.clientNode())
+                    continue;
+
+                if (kctx.cache().context().snapshotMgr().currentCreateRequest() != null)
+                    return false;
+            }
+
+            return true;
+        }, getTestTimeout());
 
         checkSnapshotStatus(false, false, null);
     }
