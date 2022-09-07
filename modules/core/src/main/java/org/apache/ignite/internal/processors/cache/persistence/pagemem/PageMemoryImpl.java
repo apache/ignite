@@ -534,13 +534,8 @@ public class PageMemoryImpl implements PageMemoryEx {
         return isDirty(page);
     }
 
-    /** {@inheritDoc} */
-    @Override public long absolutePointer(long pageAddr) {
-        return pageAddr - PAGE_OVERHEAD;
-    }
-
-    /** {@inheritDoc} */
-    @Override public final long pageAddress(long absPtr) {
+    /** @return Page address. */
+    public final long pageAddress(long absPtr) {
         return absPtr + PAGE_OVERHEAD;
     }
 

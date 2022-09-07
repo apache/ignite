@@ -594,13 +594,8 @@ public class PageMemoryNoStoreImpl implements PageMemory {
         return false;
     }
 
-    /** {@inheritDoc} */
-    @Override public long absolutePointer(long pageAddr) {
-        return pageAddr - PAGE_OVERHEAD;
-    }
-
-    /** {@inheritDoc} */
-    @Override public long pageAddress(long absPtr) {
+    /** @return Page address. */
+    public long pageAddress(long absPtr) {
         return absPtr + PAGE_OVERHEAD;
     }
 
