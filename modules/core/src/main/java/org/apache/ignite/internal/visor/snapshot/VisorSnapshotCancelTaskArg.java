@@ -33,8 +33,8 @@ public class VisorSnapshotCancelTaskArg extends IgniteDataTransferObject {
     /** Serial version uid. */
     private static final long serialVersionUID = 0L;
 
-    /** Snapshot operation ID. */
-    private UUID operId;
+    /** Snapshot operation request ID. */
+    private UUID reqId;
 
     /** Snapshot name. */
     private String snpName;
@@ -45,14 +45,14 @@ public class VisorSnapshotCancelTaskArg extends IgniteDataTransferObject {
     }
 
     /**
-     * @param operId Snapshot operation ID.
+     * @param reqId Snapshot operation request ID.
      * @param snpName Snapshot name.
      */
-    public VisorSnapshotCancelTaskArg(UUID operId, String snpName) {
-        assert (operId != null && snpName == null) || (operId == null && !F.isEmpty(snpName));
+    public VisorSnapshotCancelTaskArg(UUID reqId, String snpName) {
+        assert (reqId != null && snpName == null) || (reqId == null && !F.isEmpty(snpName));
 
         this.snpName = snpName;
-        this.operId = operId;
+        this.reqId = reqId;
     }
 
     /** @return Snapshot name. */
@@ -61,20 +61,20 @@ public class VisorSnapshotCancelTaskArg extends IgniteDataTransferObject {
         return snpName;
     }
 
-    /** @return Snapshot operation ID. */
-    public UUID operationId() {
-        return operId;
+    /** @return Snapshot operation request ID. */
+    public UUID requestId() {
+        return reqId;
     }
 
     /** {@inheritDoc} */
     @Override protected void writeExternalData(ObjectOutput out) throws IOException {
-        U.writeUuid(out, operId);
+        U.writeUuid(out, reqId);
         U.writeString(out, snpName);
     }
 
     /** {@inheritDoc} */
     @Override protected void readExternalData(byte ver, ObjectInput in) throws IOException, ClassNotFoundException {
-        operId = U.readUuid(in);
+        reqId = U.readUuid(in);
         snpName = U.readString(in);
     }
 

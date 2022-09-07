@@ -70,17 +70,19 @@ public class VisorSnapshotRestoreTask extends VisorSnapshotOneNodeTask<VisorSnap
             IgniteFutureImpl<Void> fut = ignite.context().cache().context().snapshotMgr()
                 .restoreSnapshot(arg.snapshotName(), arg.snapshotPath(), arg.groupNames());
 
-            IgniteSnapshotManager.ClusterSnapshotFuture snpFut = (IgniteSnapshotManager.ClusterSnapshotFuture)fut.internalFuture();
+            IgniteSnapshotManager.ClusterSnapshotFuture snpFut =
+                fut.internalFuture() instanceof IgniteSnapshotManager.ClusterSnapshotFuture ?
+                    (IgniteSnapshotManager.ClusterSnapshotFuture)fut.internalFuture() : null;
 
             if (arg.sync() || fut.isDone())
                 fut.get();
 
-            String msgOperId = snpFut.requestId() != null ? ", operId=" + snpFut.requestId() : "";
             String msgSuff = arg.sync() ? "completed successfully" : "started";
             String msgGrps = arg.groupNames() == null ? "" : ", group(s)=" + F.concat(arg.groupNames(), ",");
+            String msgId = snpFut != null && snpFut.requestId() != null ? ", id=" + snpFut.requestId() : "";
 
             return "Snapshot cache group restore operation " + msgSuff +
-                " [name=" + arg.snapshotName() + msgGrps + msgOperId + ']';
+                " [name=" + arg.snapshotName() + msgGrps + msgId + ']';
         }
     }
 

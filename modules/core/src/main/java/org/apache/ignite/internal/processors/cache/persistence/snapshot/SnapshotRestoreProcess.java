@@ -465,13 +465,13 @@ public class SnapshotRestoreProcess {
     /**
      * Cancel the currently running local restore procedure.
      *
-     * @param operId Snapshot operation ID.
+     * @param reqId Snapshot operation request ID.
      * @param snpName Snapshot name.
      * @return Future that will be finished when process the process is complete. The result of this future will be
      * {@code false} if the restore process with the specified snapshot name is not running at all.
      */
-    public IgniteFuture<Boolean> cancel(UUID operId, @Deprecated String snpName) {
-        assert (operId == null && snpName != null) || (operId != null && snpName == null);
+    public IgniteFuture<Boolean> cancel(UUID reqId, @Deprecated String snpName) {
+        assert (reqId == null && snpName != null) || (reqId != null && snpName == null);
 
         IgniteCheckedException reason = new IgniteCheckedException("Operation has been canceled by the user.");
         SnapshotRestoreContext opCtx0;
@@ -480,14 +480,14 @@ public class SnapshotRestoreProcess {
         synchronized (this) {
             opCtx0 = opCtx;
 
-            if (fut != null && (fut.rqId.equals(operId) || fut.name.equals(snpName))) {
+            if (fut != null && (fut.rqId.equals(reqId) || fut.name.equals(snpName))) {
                 fut0 = fut;
 
                 fut0.interruptEx = reason;
             }
         }
 
-        boolean ctxStop = opCtx0 != null && (opCtx0.reqId.equals(operId) || opCtx0.snpName.equals(snpName));
+        boolean ctxStop = opCtx0 != null && (opCtx0.reqId.equals(reqId) || opCtx0.snpName.equals(snpName));
 
         if (ctxStop)
             interrupt(opCtx0, reason);

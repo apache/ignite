@@ -45,7 +45,7 @@ public class SnapshotResponseRemoteFutureTask extends AbstractSnapshotFutureTask
     /**
      * @param cctx Shared context.
      * @param srcNodeId Node id which cause snapshot task creation.
-     * @param operId Snapshot operation ID.
+     * @param reqId Snapshot operation request ID.
      * @param snpName Unique identifier of snapshot process.
      * @param snpPath Snapshot directory path.
      * @param tmpWorkDir Working directory for intermediate snapshot results.
@@ -56,7 +56,7 @@ public class SnapshotResponseRemoteFutureTask extends AbstractSnapshotFutureTask
     public SnapshotResponseRemoteFutureTask(
         GridCacheSharedContext<?, ?> cctx,
         UUID srcNodeId,
-        UUID operId,
+        UUID reqId,
         String snpName,
         String snpPath,
         File tmpWorkDir,
@@ -64,7 +64,7 @@ public class SnapshotResponseRemoteFutureTask extends AbstractSnapshotFutureTask
         SnapshotSender snpSndr,
         Map<Integer, Set<Integer>> parts
     ) {
-        super(cctx, srcNodeId, operId, snpName, tmpWorkDir, ioFactory, snpSndr, parts);
+        super(cctx, srcNodeId, reqId, snpName, tmpWorkDir, ioFactory, snpSndr, parts);
 
         this.snpPath = snpPath;
     }

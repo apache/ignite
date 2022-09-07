@@ -45,21 +45,21 @@ public class SnapshotCancelCommand extends SnapshotSubcommand {
     /** {@inheritDoc} */
     @Override public Object execute(GridClientConfiguration clientCfg, Logger log) throws Exception {
         if (!F.isEmpty(((VisorSnapshotCancelTaskArg)cmdArg).snapshotName()))
-            log.warning("'" + NAME.arg() + "' option is deprecated, please use operation ID to cancel snapshot operation.");
+            log.warning("'" + NAME.arg() + "' option is deprecated, please use operation request ID to cancel operation.");
 
         return super.execute(clientCfg, log);
     }
 
     /** {@inheritDoc} */
     @Override public void parseArguments(CommandArgIterator argIter) {
-        UUID operId = null;
+        UUID reqId = null;
         String snpName = null;
         String explainMsg = "One of " + Arrays.toString(SnapshotCancelCommandOption.values()) + " is expected.";
 
         String arg = argIter.nextArg(explainMsg);
 
         if (arg.equals(ID.argName()))
-            operId = UUID.fromString(argIter.nextArg("Expected operation ID."));
+            reqId = UUID.fromString(argIter.nextArg("Expected operation request ID."));
         else if (arg.equals(NAME.argName()))
             snpName = argIter.nextArg("Expected snapshot name.");
         else
@@ -68,7 +68,7 @@ public class SnapshotCancelCommand extends SnapshotSubcommand {
         if (argIter.hasNextSubArg())
             throw new IllegalArgumentException("No more arguments expected.");
 
-        cmdArg = new VisorSnapshotCancelTaskArg(operId, snpName);
+        cmdArg = new VisorSnapshotCancelTaskArg(reqId, snpName);
     }
 
     /** {@inheritDoc} */

@@ -45,8 +45,8 @@ public class SnapshotFilesRequestMessage extends AbstractSnapshotMessage {
     /** Serialization version. */
     private static final long serialVersionUID = 0L;
 
-    /** Snapshot operation ID. */
-    private UUID operId;
+    /** Snapshot operation request ID. */
+    private UUID requestId;
 
     /** Snapshot name to request. */
     private String snpName;
@@ -66,15 +66,15 @@ public class SnapshotFilesRequestMessage extends AbstractSnapshotMessage {
     }
 
     /**
-     * @param reqId Unique request id.
-     * @param operId Snapshot operation ID.
+     * @param reqId Unique message id.
+     * @param requestId Snapshot operation request ID.
      * @param snpName Snapshot name to request.
      * @param snpPath Snapshot directory path.
      * @param parts Map of cache group ids and corresponding set of its partition ids to be snapshot.
      */
     public SnapshotFilesRequestMessage(
         String reqId,
-        UUID operId,
+        UUID requestId,
         String snpName,
         @Nullable String snpPath,
         Map<Integer, Set<Integer>> parts
@@ -83,7 +83,7 @@ public class SnapshotFilesRequestMessage extends AbstractSnapshotMessage {
 
         assert parts != null && !parts.isEmpty();
 
-        this.operId = operId;
+        this.requestId = requestId;
         this.snpName = snpName;
         this.snpPath = snpPath;
         this.parts = new HashMap<>();
@@ -119,10 +119,10 @@ public class SnapshotFilesRequestMessage extends AbstractSnapshotMessage {
     }
 
     /**
-     * @return Snapshot operation ID.
+     * @return Snapshot operation request ID.
      */
-    public UUID operationId() {
-        return operId;
+    public UUID requestId() {
+        return requestId;
     }
 
     /** {@inheritDoc} */
@@ -161,7 +161,7 @@ public class SnapshotFilesRequestMessage extends AbstractSnapshotMessage {
         }
 
         if (writer.state() == 4) {
-            if (!writer.writeUuid("operId", operId))
+            if (!writer.writeUuid("reqId", requestId))
                 return false;
 
             writer.incrementState();
@@ -208,7 +208,7 @@ public class SnapshotFilesRequestMessage extends AbstractSnapshotMessage {
         }
 
         if (reader.state() == 4) {
-            operId = reader.readUuid("operId");
+            requestId = reader.readUuid("reqId");
 
             if (!reader.isLastRead())
                 return false;

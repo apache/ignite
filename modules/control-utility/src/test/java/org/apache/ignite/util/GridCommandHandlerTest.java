@@ -3097,11 +3097,11 @@ public class GridCommandHandlerTest extends GridCommandHandlerClusterPerMethodAb
         LongMetric opEndTimeMetric = metrics.findMetric("LastSnapshotEndTime");
         BooleanSupplier endTimeMetricPredicate = () -> opEndTimeMetric.value() > 0;
 
-        String operId = metrics.findMetric("lastRequestId").getAsString();
-        assertFalse(F.isEmpty(operId));
+        String reqId = metrics.findMetric("lastRequestId").getAsString();
+        assertFalse(F.isEmpty(reqId));
 
         // Make sure the operation ID has been shown to the user.
-        assertContains(log, testOut.toString(), operId);
+        assertContains(log, testOut.toString(), reqId);
 
         if (syncMode)
             assertTrue(endTimeMetricPredicate.getAsBoolean());
@@ -3156,10 +3156,10 @@ public class GridCommandHandlerTest extends GridCommandHandlerClusterPerMethodAb
         // Cancel snapshot using operation ID.
         doSnapshotCancellationTest(startCli, Collections.singletonList(srv), startCli.cache(DEFAULT_CACHE_NAME),
             snpName -> {
-                String operId = srv.context().metric().registry(SNAPSHOT_METRICS).findMetric("lastRequestId").getAsString();
-                assertFalse(F.isEmpty(operId));
+                String reqId = srv.context().metric().registry(SNAPSHOT_METRICS).findMetric("lastRequestId").getAsString();
+                assertFalse(F.isEmpty(reqId));
 
-                assertEquals(EXIT_CODE_OK, execute(h, "--snapshot", "cancel", "--id", operId));
+                assertEquals(EXIT_CODE_OK, execute(h, "--snapshot", "cancel", "--id", reqId));
             });
 
         // Cancel snapshot using snapshot name.
@@ -3306,7 +3306,7 @@ public class GridCommandHandlerTest extends GridCommandHandlerClusterPerMethodAb
         assertNotNull(operIdMetric);
 
         assertContains(log, testOut.toString(), "Snapshot cache group restore operation started " +
-            "[name=" + snpName + ", group(s)=" + cacheName1 + ", operId=" + operIdMetric.getAsString() + ']');
+            "[name=" + snpName + ", group(s)=" + cacheName1 + ", id=" + operIdMetric.getAsString() + ']');
 
         cache1 = ig.cache(cacheName1);
 
@@ -3470,11 +3470,11 @@ public class GridCommandHandlerTest extends GridCommandHandlerClusterPerMethodAb
         // Check the status with a control command.
         assertEquals(EXIT_CODE_OK, execute(h, "--snapshot", "status"));
 
-        Pattern operIdPtrn = Pattern.compile("Operation ID: (?<operId>[-\\w]{36})");
+        Pattern operIdPtrn = Pattern.compile("Operation request ID: (?<id>[-\\w]{36})");
         Matcher matcher = operIdPtrn.matcher(testOut.toString());
         assertTrue(matcher.find());
 
-        String operIdStr = matcher.group("operId");
+        String operIdStr = matcher.group("id");
         assertNotNull(operIdStr);
 
         // Check "status" with the wrong snapshot name.
@@ -3490,7 +3490,7 @@ public class GridCommandHandlerTest extends GridCommandHandlerClusterPerMethodAb
         // Cancel operation using control command.
         assertEquals(EXIT_CODE_OK, execute(h, "--snapshot", "cancel", "--id", operIdStr));
         assertContains(log, testOut.toString(),
-            "Snapshot operation cancelled [operId=" + operIdStr + ']');
+            "Snapshot operation cancelled [id=" + operIdStr + ']');
 
         GridTestUtils.assertThrowsAnyCause(log, () -> restoreFut.get(getTestTimeout()), IgniteCheckedException.class,
             "Operation has been canceled by the user.");

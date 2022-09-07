@@ -1144,17 +1144,17 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
     }
 
     /**
-     * @param operId Snapshot operation ID.
+     * @param reqId Snapshot operation request ID.
      * @return Future which will be completed when cancel operation finished.
      */
-    public IgniteFuture<Boolean> cancelSnapshotOperation(UUID operId) {
-        A.notNull(operId, "Snapshot operation ID must be not null");
+    public IgniteFuture<Boolean> cancelSnapshotOperation(UUID reqId) {
+        A.notNull(reqId, "Snapshot operation request ID must be not null");
 
         cctx.kernalContext().security().authorize(ADMIN_SNAPSHOT);
 
         IgniteInternalFuture<Boolean> fut0 = cctx.kernalContext().closure()
             .callAsyncNoFailover(BROADCAST,
-                new CancelSnapshotCallable(operId, null),
+                new CancelSnapshotCallable(reqId, null),
                 cctx.discovery().aliveServerNodes(),
                 false,
                 0,
@@ -1166,16 +1166,16 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
     /**
      * Cancel running snapshot operation (create/restore).
      *
-     * @param operId Snapshot operation ID.
+     * @param reqId Snapshot operation request ID.
      * @return {@code True} if the operation with the specified ID was canceled.
      */
-    private boolean cancelLocalSnapshotOperations(UUID operId) {
-        A.notNull(operId, "Snapshot operation ID must be not null");
+    private boolean cancelLocalSnapshotOperations(UUID reqId) {
+        A.notNull(reqId, "Snapshot operation request ID must be not null");
 
-        if (cancelLocalSnapshotTask0(task -> operId.equals(task.operationId())))
+        if (cancelLocalSnapshotTask0(task -> reqId.equals(task.requestId())))
             return true;
 
-        return restoreCacheGrpProc.cancel(operId, null).get();
+        return restoreCacheGrpProc.cancel(reqId, null).get();
     }
 
     /**
@@ -1727,7 +1727,7 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
 
     /**
      * @param rmtNodeId The remote node to connect to.
-     * @param operId Snapshot operation ID.
+     * @param reqId Snapshot operation request ID.
      * @param snpName Snapshot name to request.
      * @param rmtSnpPath Snapshot directory path on the remote node.
      * @param parts Collection of pairs group and appropriate cache partition to be snapshot.
@@ -1736,7 +1736,7 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
      */
     public IgniteInternalFuture<Void> requestRemoteSnapshotFiles(
         UUID rmtNodeId,
-        UUID operId,
+        UUID reqId,
         String snpName,
         @Nullable String rmtSnpPath,
         Map<Integer, Set<Integer>> parts,
@@ -1757,7 +1757,7 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
             throw new IgniteCheckedException("Snapshot on remote node is not supported: " + rmtNode.id());
 
         RemoteSnapshotFilesRecevier fut =
-            new RemoteSnapshotFilesRecevier(this, rmtNodeId, operId, snpName, rmtSnpPath, parts, stopChecker, partHnd);
+            new RemoteSnapshotFilesRecevier(this, rmtNodeId, reqId, snpName, rmtSnpPath, parts, stopChecker, partHnd);
 
         snpRmtMgr.submit(fut);
 
@@ -1894,7 +1894,7 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
     /**
      * @param snpName Unique snapshot name.
      * @param srcNodeId Node id which cause snapshot operation.
-     * @param operId Snapshot operation ID.
+     * @param requestId Snapshot operation request ID.
      * @param parts Collection of pairs group and appropriate cache partition to be snapshot.
      * @param withMetaStorage {@code true} if all metastorage data must be also included into snapshot.
      * @param snpSndr Factory which produces snapshot receiver instance.
@@ -1903,12 +1903,12 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
     AbstractSnapshotFutureTask<?> registerSnapshotTask(
         String snpName,
         UUID srcNodeId,
-        UUID operId,
+        UUID requestId,
         Map<Integer, Set<Integer>> parts,
         boolean withMetaStorage,
         SnapshotSender snpSndr
     ) {
-        AbstractSnapshotFutureTask<?> task = registerTask(snpName, new SnapshotFutureTask(cctx, srcNodeId, operId,
+        AbstractSnapshotFutureTask<?> task = registerTask(snpName, new SnapshotFutureTask(cctx, srcNodeId, requestId,
             snpName, tmpWorkDir, ioFactory, snpSndr, parts, withMetaStorage, locBuff));
 
         if (!withMetaStorage) {
@@ -2566,7 +2566,7 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
         /**
          * @param snpMgr Ignite snapshot manager.
          * @param rmtNodeId Remote node to request snapshot from.
-         * @param operId Snapshot operation ID.
+         * @param reqId Snapshot operation request ID.
          * @param snpName Snapshot name to request.
          * @param rmtSnpPath Snapshot directory path on the remote node.
          * @param parts Cache group and partitions to request.
@@ -2576,15 +2576,15 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
         public RemoteSnapshotFilesRecevier(
             IgniteSnapshotManager snpMgr,
             UUID rmtNodeId,
-            UUID operId,
+            UUID reqId,
             String snpName,
             @Nullable String rmtSnpPath,
             Map<Integer, Set<Integer>> parts,
             BooleanSupplier stopChecker,
             BiConsumer<@Nullable File, @Nullable Throwable> partHnd
         ) {
-            dir = Paths.get(snpMgr.tmpWorkDir.getAbsolutePath(), reqId);
-            initMsg = new SnapshotFilesRequestMessage(reqId, operId, snpName, rmtSnpPath, parts);
+            dir = Paths.get(snpMgr.tmpWorkDir.getAbsolutePath(), this.reqId);
+            initMsg = new SnapshotFilesRequestMessage(this.reqId, reqId, snpName, rmtSnpPath, parts);
 
             this.snpMgr = snpMgr;
             this.rmtNodeId = rmtNodeId;
@@ -2801,7 +2801,7 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
             try {
                 if (msg instanceof SnapshotFilesRequestMessage) {
                     SnapshotFilesRequestMessage reqMsg0 = (SnapshotFilesRequestMessage)msg;
-                    String rqId = reqMsg0.requestId();
+                    String rqId = reqMsg0.id();
                     String snpName = reqMsg0.snapshotName();
 
                     try {
@@ -2820,7 +2820,7 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
                         AbstractSnapshotFutureTask<?> task = registerTask(rqId,
                             new SnapshotResponseRemoteFutureTask(cctx,
                                 nodeId,
-                                reqMsg0.operationId(),
+                                reqMsg0.requestId(),
                                 snpName,
                                 reqMsg0.snapshotPath(),
                                 tmpWorkDir,
@@ -2838,7 +2838,7 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
                             try {
                                 cctx.gridIO().sendToCustomTopic(nodeId,
                                     DFLT_INITIAL_SNAPSHOT_TOPIC,
-                                    new SnapshotFilesFailureMessage(reqMsg0.requestId(), f.error().getMessage()),
+                                    new SnapshotFilesFailureMessage(reqMsg0.id(), f.error().getMessage()),
                                     SYSTEM_POOL);
                             }
                             catch (IgniteCheckedException ex0) {
@@ -2855,7 +2855,7 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
 
                         cctx.gridIO().sendToCustomTopic(nodeId,
                             DFLT_INITIAL_SNAPSHOT_TOPIC,
-                            new SnapshotFilesFailureMessage(reqMsg0.requestId(), t.getMessage()),
+                            new SnapshotFilesFailureMessage(reqMsg0.id(), t.getMessage()),
                             SYSTEM_POOL);
                     }
                 }
@@ -2864,7 +2864,7 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
 
                     RemoteSnapshotFilesRecevier task = active;
 
-                    if (task == null || !task.reqId.equals(respMsg0.requestId())) {
+                    if (task == null || !task.reqId.equals(respMsg0.id())) {
                         if (log.isInfoEnabled()) {
                             log.info("A stale snapshot response message has been received. Will be ignored " +
                                 "[fromNodeId=" + nodeId + ", response=" + respMsg0 + ']');
@@ -3459,26 +3459,26 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
         /** Snapshot name. */
         private final String snpName;
 
-        /** Snapshot operation ID. */
-        private final UUID operId;
+        /** Snapshot operation request ID. */
+        private final UUID reqId;
 
         /** Auto-injected grid instance. */
         @IgniteInstanceResource
         private transient IgniteEx ignite;
 
         /**
-         * @param operId Snapshot operation ID.
+         * @param reqId Snapshot operation request ID.
          * @param snpName Snapshot name.
          */
-        public CancelSnapshotCallable(UUID operId, String snpName) {
-            this.operId = operId;
+        public CancelSnapshotCallable(UUID reqId, String snpName) {
+            this.reqId = reqId;
             this.snpName = snpName;
         }
 
         /** {@inheritDoc} */
         @Override public Boolean call() throws Exception {
-            if (operId != null)
-                return ignite.context().cache().context().snapshotMgr().cancelLocalSnapshotOperations(operId);
+            if (reqId != null)
+                return ignite.context().cache().context().snapshotMgr().cancelLocalSnapshotOperations(reqId);
             else {
                 if (ignite.context().cache().context().snapshotMgr().cancelLocalSnapshotTask(snpName))
                     return true;

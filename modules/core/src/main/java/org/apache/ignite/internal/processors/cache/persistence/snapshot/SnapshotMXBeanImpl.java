@@ -62,10 +62,10 @@ public class SnapshotMXBeanImpl implements SnapshotMXBean {
     }
 
     /**
-     * @param operId Snapshot operation ID.
+     * @param reqId Snapshot operation request ID.
      */
-    public void cancelSnapshotOperation(String operId) {
-        mgr.cancelSnapshotOperation(UUID.fromString(operId)).get();
+    public void cancelSnapshotOperation(String reqId) {
+        mgr.cancelSnapshotOperation(UUID.fromString(reqId)).get();
     }
 
     /** {@inheritDoc} */

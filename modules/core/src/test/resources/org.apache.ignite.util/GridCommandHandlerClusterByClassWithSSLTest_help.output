@@ -151,7 +151,7 @@ This utility can do the following commands:
     control.(sh|bat) --snapshot cancel --id id|--name name
 
     Parameters:
-      --id id      - Snapshot operation ID.
+      --id id      - Snapshot operation request ID.
       --name name  - Snapshot name (deprecated).
 
   Check snapshot:

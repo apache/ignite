@@ -23,8 +23,8 @@ import org.apache.ignite.internal.commandline.argument.CommandArg;
  * Snapshot cancel command options.
  */
 public enum SnapshotCancelCommandOption implements CommandArg {
-    /** Snapshot operation ID. */
-    ID("--id", "id", "Snapshot operation ID."),
+    /** Snapshot operation request ID. */
+    ID("--id", "id", "Snapshot operation request ID."),
 
     /** Snapshot name. */
     NAME("--name", "name", "Snapshot name (deprecated).");

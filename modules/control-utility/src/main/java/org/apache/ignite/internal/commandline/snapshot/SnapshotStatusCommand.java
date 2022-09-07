@@ -67,7 +67,7 @@ public class SnapshotStatusCommand extends SnapshotSubcommand {
             s.a("Restore snapshot operation is in progress.").nl();
 
         s.a("Snapshot name: ").a(status.name()).nl();
-        s.a("Operation ID: ").a(status.requestId()).nl();
+        s.a("Operation request ID: ").a(status.requestId()).nl();
         s.a("Started at: ").a(DateFormat.getDateTimeInstance().format(new Date(status.startTime()))).nl();
         s.a("Duration: ").a(X.timeSpan2DHMSM(System.currentTimeMillis() - status.startTime())).nl()
                 .nl();
