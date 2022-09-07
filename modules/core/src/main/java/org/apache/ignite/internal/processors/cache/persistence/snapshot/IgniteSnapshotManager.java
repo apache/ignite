@@ -130,6 +130,7 @@ import org.apache.ignite.internal.processors.cache.persistence.partstate.GroupPa
 import org.apache.ignite.internal.processors.cache.persistence.tree.io.DataPageIO;
 import org.apache.ignite.internal.processors.cache.persistence.tree.io.DataPagePayload;
 import org.apache.ignite.internal.processors.cache.persistence.tree.io.PageIO;
+import org.apache.ignite.internal.processors.cache.persistence.tree.io.PagePartitionMetaIO;
 import org.apache.ignite.internal.processors.cache.persistence.wal.crc.FastCrc;
 import org.apache.ignite.internal.processors.cache.persistence.wal.reader.StandaloneGridKernalContext;
 import org.apache.ignite.internal.processors.cache.tree.DataRow;
@@ -146,6 +147,7 @@ import org.apache.ignite.internal.processors.task.GridInternal;
 import org.apache.ignite.internal.util.BasicRateLimiter;
 import org.apache.ignite.internal.util.GridBusyLock;
 import org.apache.ignite.internal.util.GridCloseableIteratorAdapter;
+import org.apache.ignite.internal.util.GridUnsafe;
 import org.apache.ignite.internal.util.distributed.DistributedProcess;
 import org.apache.ignite.internal.util.distributed.InitMessage;
 import org.apache.ignite.internal.util.future.GridCompoundFuture;
@@ -1873,6 +1875,7 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
                 log.info("Snapshot task has been registered on local node [sctx=" + this +
                     ", task=" + task.getClass().getSimpleName() +
                     ", topVer=" + cctx.discovery().topologyVersionEx() + ']');
+                log.info("");
             }
 
             task.listen(f -> locSnpTasks.remove(rqId));
@@ -3199,11 +3202,28 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
                 if (!snpPart.exists() || snpPart.delete())
                     snpPart.createNewFile();
 
-                if(pair.getPartitionId() == 851) {
-                    log.error("Partition has been snapshot [snapshotDir=" + dbDir.getAbsolutePath() +
-                        ", cacheDirName=" + cacheDirName + ", part=" + part.getName() +
-                        ", length=" + part.length() + ", snapshot=" + snpPart.getName() + ']');
-                }
+//                if(pair.getPartitionId() == 859) {
+//                    ByteBuffer pageBuff = ByteBuffer.allocateDirect(4096).order(ByteOrder.nativeOrder());
+//                    pageBuff.clear();
+//
+//                    try(FilePageStore pageStore =
+//                        (FilePageStore)storeMgr.getPageStoreFactory(pair.getGroupId(), false)
+//                            .createPageStore(getTypeByPartId(pair.getPartitionId()), part::toPath, val -> {})) {
+//                        pageStore.read(0, pageBuff, true);
+//
+//                        PagePartitionMetaIO io = PageIO.getPageIO(pageBuff);
+//
+//                        long pageAddr = GridUnsafe.bufferAddress(pageBuff);
+//
+//                        long updateCntr = io.getUpdateCounter(pageAddr);
+//
+//                        log.error("TEST | writting 859 into snp. UpdateCounter: " + updateCntr);
+//                    } catch (Exception e){
+//                        System.err.println("TEST | err: " + e.getMessage());
+//                    }
+//                }
+
+                log.error("TEST | sending part " + pair.getPartitionId());
 
                 copy(ioFactory, part, snpPart, len, transferRateLimiter);
 
@@ -3226,6 +3246,9 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
                 log.debug("Start partition snapshot recovery with the given delta page file [part=" + snpPart +
                     ", delta=" + delta + ']');
             }
+
+            log.error("TEST | Start partition snapshot recovery with the given delta page file [part=" + snpPart +
+                ", delta=" + delta + ']');
 
             boolean encrypted = cctx.cache().isEncrypted(pair.getGroupId());
 
@@ -3276,6 +3299,30 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
             catch (IOException | IgniteCheckedException e) {
                 throw new IgniteException(e);
             }
+
+            if(pair.getPartitionId() == 859) {
+                try {
+                    ByteBuffer pageBuff = ByteBuffer.allocateDirect(4096).order(ByteOrder.nativeOrder());
+                    pageBuff.clear();
+
+                    FilePageStore pageStore =
+                        (FilePageStore)storeMgr.getPageStoreFactory(pair.getGroupId(), false)
+                            .createPageStore(getTypeByPartId(pair.getPartitionId()), snpPart::toPath, val -> {
+                            });
+                    pageStore.read(0, pageBuff, true);
+
+                    PagePartitionMetaIO io = PageIO.getPageIO(pageBuff);
+
+                    long pageAddr = GridUnsafe.bufferAddress(pageBuff);
+
+                    long updateCntr = io.getUpdateCounter(pageAddr);
+
+                    log.error("TEST | delted 859 into snp. UpdateCounter: " + updateCntr);
+                } catch (Exception e){
+                    log.error("TEST | err reading update counter.", e);
+                }
+            }
+
         }
 
         /** {@inheritDoc} */

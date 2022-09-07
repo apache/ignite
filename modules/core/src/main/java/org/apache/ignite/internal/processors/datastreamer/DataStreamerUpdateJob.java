@@ -138,17 +138,6 @@ class DataStreamerUpdateJob implements GridPlainCallable<Object> {
 
             StreamReceiver receiver = SecurityUtils.sandboxedProxy(ctx, StreamReceiver.class, rcvr);
 
-//            U.FLAG.compute(ctx.grid().localNode().order(), (k, v) -> {
-//                if (v == null)
-//                    v = new HashSet<>();
-//
-//                v.add(rqId);
-//
-//                return v;
-//            });
-
-//            log.error("TEST | call receiver on " + ctx.grid().localNode().order());
-
             if (unwrapEntries()) {
                 Collection<Map.Entry> col0 = F.viewReadOnly(col, new C1<DataStreamerEntry, Map.Entry>() {
                     @Override public Map.Entry apply(DataStreamerEntry e) {

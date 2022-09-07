@@ -276,6 +276,8 @@ public class GridCacheOffheapManager extends IgniteCacheOffheapManagerImpl imple
     @Override public void beforeCheckpointBegin(Context ctx) throws IgniteCheckedException {
         assert F.size(cacheDataStores().iterator(), CacheDataStore::destroyed) == 0;
 
+        log.error("TEST | beforeCheckpointBegin() -> syncMetadata()");
+
         // Optimization: reducing the holding time of checkpoint write lock.
         syncMetadata(ctx, ctx.executor(), false);
     }
@@ -496,9 +498,10 @@ public class GridCacheOffheapManager extends IgniteCacheOffheapManagerImpl imple
                             partStore.saveMetadata(grp.statisticsHolderData());
 
                         if(part.id() == 859)
-                            log.error("TEST | updating counter on part 859: " + updCntr);
+                            log.error("TEST | saveStoreMetadata() -> update counter on part 859: " + updCntr);
 
                         changed |= io.setUpdateCounter(partMetaPageAddr, updCntr);
+
                         changed |= io.setGlobalRemoveId(partMetaPageAddr, rmvId);
                         changed |= io.setSize(partMetaPageAddr, size);
 

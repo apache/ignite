@@ -120,7 +120,7 @@ public class DataStreamerCacheUpdaters {
                 if (val == null)
                     cache.remove(key);
                 else
-                    cache.put(key, val);
+                    cache.putIfAbsent(key, val);
             }
         }
     }

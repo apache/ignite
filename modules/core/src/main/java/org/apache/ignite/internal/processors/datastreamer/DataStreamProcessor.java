@@ -59,7 +59,7 @@ import static org.apache.ignite.internal.managers.communication.GridIoPolicy.DAT
  */
 public class DataStreamProcessor<K, V> extends GridProcessorAdapter {
     /** Loaders map (access is not supposed to be highly concurrent). */
-    private Collection<DataStreamerImpl> ldrs = new GridConcurrentHashSet<>();
+    private Collection<DataStreamerImpl<?, ?>> ldrs = new GridConcurrentHashSet<>();
 
     /** Busy lock. */
     private final GridSpinBusyLock busyLock = new GridSpinBusyLock();
@@ -221,6 +221,8 @@ public class DataStreamProcessor<K, V> extends GridProcessorAdapter {
             if (log.isDebugEnabled())
                 log.debug("Processing data load request: " + req);
 
+
+
             AffinityTopologyVersion locAffVer = ctx.cache().context().exchange().readyAffinityVersion();
             AffinityTopologyVersion rmtAffVer = req.topologyVersion();
 
@@ -354,9 +356,13 @@ public class DataStreamProcessor<K, V> extends GridProcessorAdapter {
                         topFut.initialVersion();
 
                     if (topVer.compareTo(req.topologyVersion()) > 0) {
-                        remapErr = new ClusterTopologyCheckedException("DataStreamer will retry " +
-                            "data transfer at stable topology [reqTop=" + req.topologyVersion() +
-                            ", topVer=" + topFut.initialVersion() + ", node=remote]");
+                        try {
+                            remapErr = new ClusterTopologyCheckedException("DataStreamer will retry " +
+                                "data transfer at stable topology [reqTop=" + req.topologyVersion() +
+                                ", topVer=" + topFut.initialVersion() + ", node=remote]");
+                        } catch (Exception e){
+                            remapErr = new IgniteCheckedException("sudden err", e);
+                        }
                     }
                     else if (!topFut.isDone())
                         topWaitFut = topFut;
@@ -491,5 +497,13 @@ public class DataStreamProcessor<K, V> extends GridProcessorAdapter {
         X.println(">>>");
         X.println(">>> Data streamer processor memory stats [igniteInstanceName=" + ctx.igniteInstanceName() + ']');
         X.println(">>>   ldrsSize: " + ldrs.size());
+    }
+
+    public void unmarkStreamed(String cacheName, UUID nodeId) {
+
+    }
+
+    public void markStreamed(String cacheName) {
+
     }
 }

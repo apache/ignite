@@ -207,10 +207,10 @@ class SnapshotFutureTask extends AbstractSnapshotFutureTask<Set<GroupPartitionId
     }
 
     /** {@inheritDoc} */
-    @Override public boolean onDone(@Nullable Set<GroupPartitionId> res, @Nullable Throwable err) {
-        log.error("TEST | snapshot - onDone()");
+    @Override public boolean onDone(@Nullable Set<GroupPartitionId> res, @Nullable Throwable err) {;
+        log.error("TEST | snapshot - onDone(), dataStreamerFutures().size(): " + cctx.mvcc().dataStreamerFutures().size());
 
-        U.FLAG2.set(false);
+//        U.FLAG2.set(false);
 
         for (PageStoreSerialWriter writer : partDeltaWriters.values())
             U.closeQuiet(writer);
@@ -316,7 +316,7 @@ class SnapshotFutureTask extends AbstractSnapshotFutureTask<Set<GroupPartitionId
         if (stopping())
             return;
 
-        log.error("TEST | snapshot - beforeCheckpointBegin()");
+        log.error("TEST | snapshot - beforeCheckpointBegin(). DSFuts: "  +cctx.mvcc().dataStreamerFutures().size());
 
         ctx.finishedStateFut().listen(f -> {
             if (f.error() == null)
@@ -348,7 +348,9 @@ class SnapshotFutureTask extends AbstractSnapshotFutureTask<Set<GroupPartitionId
         if (stopping())
             return;
 
-        log.error("TEST | snapshot - onMarkCheckpointBegin()");
+        U.FLAG2.set(false);
+
+        log.error("TEST | snapshot - onMarkCheckpointBegin(). DSFuts: " + cctx.mvcc().dataStreamerFutures().size());
 
         try {
             // Here we have the following warranties:
@@ -456,7 +458,7 @@ class SnapshotFutureTask extends AbstractSnapshotFutureTask<Set<GroupPartitionId
         if (stopping())
             return;
 
-        log.error("TEST | snapshot - onCheckpointBegin");
+        log.error("TEST | snapshot - onCheckpointBegin. DSFuts: " + cctx.mvcc().dataStreamerFutures().size());
 
         assert !processed.isEmpty() : "Partitions to process must be collected under checkpoint mark phase";
 
@@ -516,12 +518,11 @@ class SnapshotFutureTask extends AbstractSnapshotFutureTask<Set<GroupPartitionId
                     CompletableFuture<Void> fut0 = CompletableFuture.runAsync(
                         wrapExceptionIfStarted(() -> {
 //                            U.FLAG2.set(true);
-                            if(cctx.kernalContext().grid().localNode().order() == 2)
-                                U.FLAG2.set(true);
+//                            if(cctx.kernalContext().grid().localNode().order() == 2)
+//                                U.FLAG2.set(true);
 
-                            if(partId == 859){
+                            if(partId == 859)
                                 log.error("TEST | sending delta " + partId);
-                            }
 
                             snpSndr.sendPart(
                                 getPartitionFile(pageStore.workDir(), cacheDirName, partId),
@@ -995,8 +996,8 @@ class SnapshotFutureTask extends AbstractSnapshotFutureTask<Set<GroupPartitionId
             // Write buffer to the end of the file.
             int len = deltaFileIo.writeFully(pageBuf);
 
-//            if (len > 0)
-//                log.error("TEST | writting delta: for page " + pageId);
+            if (len > 0)
+                log.error("TEST | Wrote delta " + deltaFile.getName());
 
             totalSize.addAndGet(len);
         }

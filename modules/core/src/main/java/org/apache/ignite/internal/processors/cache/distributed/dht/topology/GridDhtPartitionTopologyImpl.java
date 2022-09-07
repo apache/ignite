@@ -2870,6 +2870,8 @@ public class GridDhtPartitionTopologyImpl implements GridDhtPartitionTopology {
         // It is need to acquire checkpoint lock before topology lock acquiring.
         ctx.database().checkpointReadLock();
 
+        log.error("TEST | finalize counters");
+
         try {
             WALPointer ptr = null;
 

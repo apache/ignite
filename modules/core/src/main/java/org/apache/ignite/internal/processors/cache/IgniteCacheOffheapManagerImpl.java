@@ -1601,8 +1601,8 @@ public class IgniteCacheOffheapManagerImpl implements IgniteCacheOffheapManager 
         @Override public long nextUpdateCounter() {
             long next = pCntr.next();
 
-            if (partId == 859)
-                log.error("TEST | nextUpdateCounter on 859: " + next);
+//            if (partId == 859)
+//                log.error("TEST | nextUpdateCounter on 859: " + next);
 
             return next;
         }
@@ -1647,8 +1647,8 @@ public class IgniteCacheOffheapManagerImpl implements IgniteCacheOffheapManager 
 
         /** {@inheritDoc} */
         @Override public void updateCounter(long val) {
-            if (partId == 859)
-                log.error("TEST | updateCounter() on part 859: " + val);
+//            if (partId == 859 && val > 200)
+//                log.error("TEST | CacheDataStoreImpl.updateCounter() on part 859: " + val);
 
             try {
                 pCntr.update(val);
@@ -1671,6 +1671,10 @@ public class IgniteCacheOffheapManagerImpl implements IgniteCacheOffheapManager 
 
         /** {@inheritDoc} */
         @Override public GridLongList finalizeUpdateCounters() {
+            if(this.partId == 859){
+                log.error("TEST | updationg counter 859");
+            }
+
             return pCntr.finalizeUpdateCounters();
         }
 

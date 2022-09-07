@@ -20,7 +20,6 @@ package org.apache.ignite.internal.processors.cache;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
-import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
@@ -2331,16 +2330,16 @@ public abstract class GridCacheMapEntry extends GridMetadataAwareAdapter impleme
                 c.call(dataRow);
             }
             else {
-                if (localPartition().id() == 859) {
-                    U.PART_859.compute(key.value(cctx.cacheObjectContext(), true), (k, v) -> {
-                        if (v == null)
-                            v = new HashSet<>();
-
-                        v.add(cctx.kernalContext().grid().localNode().order());
-
-                        return v;
-                    });
-                }
+//                if (localPartition().id() == 859) {
+//                    U.PART_859.compute(key.value(cctx.cacheObjectContext(), true), (k, v) -> {
+//                        if (v == null)
+//                            v = new HashSet<>();
+//
+//                        v.add(cctx.kernalContext().grid().localNode().order());
+//
+//                        return v;
+//                    });
+//                }
 //                if (localPartition().id() == 851 && U.FLAG2.get() && cctx.kernalContext().grid().localNode().order() == 2 /* && new Random().nextInt(100) > 90*/)
 //                    log.error("TEST | entry.innerUpdate() part 851");
 
@@ -3487,8 +3486,16 @@ public abstract class GridCacheMapEntry extends GridMetadataAwareAdapter impleme
                 if (!preload) {
                     updateCntr = nextPartitionCounter(topVer, true, true, null);
 
-                    if(partition() == 859)
+                    if (partition() == 859 && U.FLAG2.get()) {
                         log.error("TEST | partition 859 counter: " + updateCntr);
+
+                        U.PART_859.compute(cctx.kernalContext().grid().localNode().order(), (k, v) -> {
+                            if (v == null)
+                                return 1;
+
+                            return v + 1;
+                        });
+                    }
                 }
 
                 if (walEnabled) {
@@ -4357,16 +4364,16 @@ public abstract class GridCacheMapEntry extends GridMetadataAwareAdapter impleme
 
         UpdateClosure closure = new UpdateClosure(this, val, ver, expireTime, predicate, row);
 
-        if (localPartition().id() == 859) {
-            U.PART_859.compute(key.value(cctx.cacheObjectContext(), true), (k, v) -> {
-                if (v == null)
-                    v = new HashSet<>();
-
-                v.add(cctx.kernalContext().grid().localNode().order());
-
-                return v;
-            });
-        }
+//        if (localPartition().id() == 859) {
+//            U.PART_859.compute(key.value(cctx.cacheObjectContext(), true), (k, v) -> {
+//                if (v == null)
+//                    v = new HashSet<>();
+//
+//                v.add(cctx.kernalContext().grid().localNode().order());
+//
+//                return v;
+//            });
+//        }
         cctx.offheap().invoke(cctx, key, localPartition(), closure);
 
         return closure.treeOp != IgniteTree.OperationType.NOOP;
@@ -6560,7 +6567,8 @@ public abstract class GridCacheMapEntry extends GridMetadataAwareAdapter impleme
             long updateCntr0 = entry.nextPartitionCounter(topVer, primary, false, updateCntr);
 
 //            if (entry.partition() == 859)
-//                log.error("TEST | update counter 859: " + updateCntr0);
+//                log.error("TEST | AtomicCacheUpdateClosure() -> got next update counter of 859: " + updateCntr0 +
+//                    ", primaryCounter: " + updateCntr);
 
             entry.logUpdate(op, updated, newVer, newExpireTime, updateCntr0, primary);
 

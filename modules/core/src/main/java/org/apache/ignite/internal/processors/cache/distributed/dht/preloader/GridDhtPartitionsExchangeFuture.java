@@ -1925,7 +1925,7 @@ public class GridDhtPartitionsExchangeFuture extends GridDhtTopologyFutureAdapte
 
         long waitStartNanos = System.nanoTime();
 
-        long waitTimeout = 2 * cfg.getNetworkTimeout();
+        long waitTimeout = 20 * cfg.getNetworkTimeout();
 
         boolean txRolledBack = !doRollback;
 
