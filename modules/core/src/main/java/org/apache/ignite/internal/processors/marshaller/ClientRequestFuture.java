@@ -97,12 +97,12 @@ final class ClientRequestFuture extends GridFutureAdapter<MappingExchangeResult>
 
                 try {
                     ioMgr.sendToGridTopic(
-                            srvNode,
-                            GridTopic.TOPIC_MAPPING_MARSH,
-                            new MissingMappingRequestMessage(
-                                    item.platformId(),
-                                    item.typeId()),
-                            GridIoPolicy.SYSTEM_POOL);
+                        srvNode,
+                        GridTopic.TOPIC_MAPPING_MARSH,
+                        new MissingMappingRequestMessage(
+                            item.platformId(),
+                            item.typeId()),
+                        GridIoPolicy.SYSTEM_POOL);
 
                     if (discoMgr.node(srvNode.id()) == null)
                         continue;
@@ -113,21 +113,22 @@ final class ClientRequestFuture extends GridFutureAdapter<MappingExchangeResult>
                 }
                 catch (IgniteCheckedException ignored) {
                     U.warn(log,
-                            "Failed to request marshaller mapping from remote node (proceeding with the next one): "
-                                    + srvNode);
+                        "Failed to request marshaller mapping from remote node (proceeding with the next one): "
+                            + srvNode);
                 }
             }
 
             noSrvsInCluster = pendingNode == null;
         }
 
-        if (noSrvsInCluster)
+        if (noSrvsInCluster) {
             onDone(MappingExchangeResult.createFailureResult(
-                    new IgniteCheckedException(
-                            "All server nodes have left grid, cannot request mapping [platformId: "
-                                    + item.platformId()
-                                    + "; typeId: "
-                                    + item.typeId() + "]")));
+                new IgniteCheckedException(
+                    "All server nodes have left grid, cannot request mapping [platformId: "
+                        + item.platformId()
+                        + "; typeId: "
+                        + item.typeId() + "]")));
+        }
     }
 
     /**

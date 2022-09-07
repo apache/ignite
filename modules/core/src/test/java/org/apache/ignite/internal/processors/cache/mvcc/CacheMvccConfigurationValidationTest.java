@@ -24,13 +24,11 @@ import javax.cache.Cache;
 import javax.cache.CacheException;
 import javax.cache.configuration.Factory;
 import javax.cache.expiry.ExpiryPolicy;
-
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCache;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.cache.CacheAtomicityMode;
 import org.apache.ignite.cache.CacheInterceptor;
-import org.apache.ignite.cache.CacheMode;
 import org.apache.ignite.cache.CacheRebalanceMode;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.DataRegionConfiguration;
@@ -43,11 +41,9 @@ import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.jetbrains.annotations.Nullable;
 import org.junit.Test;
-
 import static org.apache.ignite.cache.CacheAtomicityMode.ATOMIC;
 import static org.apache.ignite.cache.CacheAtomicityMode.TRANSACTIONAL;
 import static org.apache.ignite.cache.CacheAtomicityMode.TRANSACTIONAL_SNAPSHOT;
-import static org.apache.ignite.cache.CacheMode.LOCAL;
 import static org.apache.ignite.configuration.DataPageEvictionMode.RANDOM_2_LRU;
 import static org.apache.ignite.configuration.DataPageEvictionMode.RANDOM_LRU;
 
@@ -111,7 +107,6 @@ public class CacheMvccConfigurationValidationTest extends GridCommonAbstractTest
     /**
      * @throws Exception If failed.
      */
-    @SuppressWarnings("ThrowableNotThrown")
     @Test
     public void testMvccLocalCacheDisabled() throws Exception {
         final Ignite node1 = startGrid(1);
@@ -123,15 +118,6 @@ public class CacheMvccConfigurationValidationTest extends GridCommonAbstractTest
         cache1.put(1, 1);
         cache1.put(2, 2);
         cache1.put(2, 2);
-
-        GridTestUtils.assertThrows(log, new Callable<Void>() {
-            @Override public Void call() {
-                node1.createCache(new CacheConfiguration("cache2").setCacheMode(CacheMode.LOCAL)
-                    .setAtomicityMode(TRANSACTIONAL_SNAPSHOT));
-
-                return null;
-            }
-        }, CacheException.class, null);
 
         IgniteCache cache3 = node2.createCache(new CacheConfiguration("cache3")
             .setAtomicityMode(TRANSACTIONAL));
@@ -281,11 +267,6 @@ public class CacheMvccConfigurationValidationTest extends GridCommonAbstractTest
     @SuppressWarnings("unchecked")
     @Test
     public void testTransactionalSnapshotLimitations() throws Exception {
-        assertCannotStart(
-            mvccCacheConfig().setCacheMode(LOCAL),
-            "LOCAL cache mode cannot be used with TRANSACTIONAL_SNAPSHOT atomicity mode"
-        );
-
         assertCannotStart(
             mvccCacheConfig().setRebalanceMode(CacheRebalanceMode.NONE),
             "Rebalance mode NONE cannot be used with TRANSACTIONAL_SNAPSHOT atomicity mode"

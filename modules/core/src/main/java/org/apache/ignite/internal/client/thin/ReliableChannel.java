@@ -45,6 +45,7 @@ import org.apache.ignite.client.ClientAuthorizationException;
 import org.apache.ignite.client.ClientConnectionException;
 import org.apache.ignite.client.ClientException;
 import org.apache.ignite.client.ClientOperationType;
+import org.apache.ignite.client.ClientPartitionAwarenessMapperFactory;
 import org.apache.ignite.client.ClientRetryPolicy;
 import org.apache.ignite.client.ClientRetryPolicyContext;
 import org.apache.ignite.client.IgniteClientFuture;
@@ -130,7 +131,7 @@ final class ReliableChannel implements AutoCloseable {
 
         partitionAwarenessEnabled = clientCfg.isPartitionAwarenessEnabled();
 
-        affinityCtx = new ClientCacheAffinityContext(binary);
+        affinityCtx = new ClientCacheAffinityContext(binary, clientCfg.getPartitionAwarenessMapperFactory());
 
         connMgr = new GridNioClientConnectionMultiplexer(clientCfg);
         connMgr.start();
@@ -400,6 +401,25 @@ final class ReliableChannel implements AutoCloseable {
         }
 
         return serviceAsync(op, payloadWriter, payloadReader);
+    }
+
+    /**
+     * @param cacheName Cache name.
+     */
+    public void registerCacheIfCustomAffinity(String cacheName) {
+        ClientPartitionAwarenessMapperFactory factory = clientCfg.getPartitionAwarenessMapperFactory();
+
+        if (factory == null)
+            return;
+
+        affinityCtx.registerCache(cacheName);
+    }
+
+    /**
+     * @param cacheName Cache name.
+     */
+    public void unregisterCacheIfCustomAffinity(String cacheName) {
+        affinityCtx.unregisterCache(cacheName);
     }
 
     /**
@@ -855,6 +875,13 @@ final class ReliableChannel implements AutoCloseable {
         ClientRetryPolicyContext ctx = new ClientRetryPolicyContextImpl(clientCfg, opType, iteration, exception);
 
         return plc.shouldRetry(ctx);
+    }
+
+    /**
+     * @return Affinity context.
+     */
+    ClientCacheAffinityContext affinityContext() {
+        return affinityCtx;
     }
 
     /**

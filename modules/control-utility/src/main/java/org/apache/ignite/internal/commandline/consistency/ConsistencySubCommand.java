@@ -17,6 +17,7 @@
 
 package org.apache.ignite.internal.commandline.consistency;
 
+import org.apache.ignite.internal.visor.consistency.VisorConsistencyCountersFinalizationTask;
 import org.apache.ignite.internal.visor.consistency.VisorConsistencyRepairTask;
 import org.apache.ignite.internal.visor.consistency.VisorConsistencyStatusTask;
 import org.jetbrains.annotations.Nullable;
@@ -29,7 +30,10 @@ public enum ConsistencySubCommand {
     REPAIR("repair", VisorConsistencyRepairTask.class.getName()),
 
     /** Status. */
-    STATUS("status", VisorConsistencyStatusTask.class.getName());
+    STATUS("status", VisorConsistencyStatusTask.class.getName()),
+
+    /** Finalize partitions update counters. */
+    FINALIZE_COUNTERS("finalize", VisorConsistencyCountersFinalizationTask.class.getName());
 
     /** Sub-command name. */
     private final String name;

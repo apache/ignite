@@ -56,8 +56,7 @@ public abstract class GridDhtTopologyFutureAdapter extends GridFutureAdapter<Aff
      * @return Validation result.
      */
     protected final CacheGroupValidation validateCacheGroup(CacheGroupContext grp, Collection<ClusterNode> topNodes) {
-        Collection<Integer> lostParts = grp.isLocal() ?
-            Collections.<Integer>emptyList() : grp.topology().lostPartitions();
+        Collection<Integer> lostParts = grp.topology().lostPartitions();
 
         boolean valid = true;
 

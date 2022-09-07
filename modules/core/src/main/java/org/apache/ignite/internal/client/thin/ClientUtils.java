@@ -67,7 +67,6 @@ import org.apache.ignite.internal.processors.platform.cache.expiry.PlatformExpir
 import org.apache.ignite.internal.util.MutableSingletonList;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.jetbrains.annotations.Nullable;
-
 import static org.apache.ignite.internal.client.thin.ProtocolVersionFeature.EXPIRY_POLICY;
 import static org.apache.ignite.internal.client.thin.ProtocolVersionFeature.QUERY_ENTITY_PRECISION_AND_SCALE;
 import static org.apache.ignite.internal.processors.platform.cache.expiry.PlatformExpiryPolicy.convertDuration;
@@ -265,7 +264,7 @@ public final class ClientUtils {
             };
 
             itemWriter.accept(CfgItem.NAME, w -> w.writeString(cfg.getName()));
-            itemWriter.accept(CfgItem.CACHE_MODE, w -> w.writeInt(cfg.getCacheMode().ordinal()));
+            itemWriter.accept(CfgItem.CACHE_MODE, w -> w.writeInt(CacheMode.toCode(cfg.getCacheMode())));
             itemWriter.accept(CfgItem.ATOMICITY_MODE, w -> w.writeInt(cfg.getAtomicityMode().ordinal()));
             itemWriter.accept(CfgItem.BACKUPS, w -> w.writeInt(cfg.getBackups()));
             itemWriter.accept(CfgItem.WRITE_SYNC_MODE, w -> w.writeInt(cfg.getWriteSynchronizationMode().ordinal()));
@@ -388,7 +387,7 @@ public final class ClientUtils {
             return new ClientCacheConfiguration().setName("TBD") // cache name is to be assigned later
                 .setAtomicityMode(CacheAtomicityMode.fromOrdinal(reader.readInt()))
                 .setBackups(reader.readInt())
-                .setCacheMode(CacheMode.fromOrdinal(reader.readInt()))
+                .setCacheMode(CacheMode.fromCode(reader.readInt()))
                 .setCopyOnRead(reader.readBoolean())
                 .setDataRegionName(reader.readString())
                 .setEagerTtl(reader.readBoolean())

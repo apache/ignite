@@ -53,11 +53,16 @@ import org.apache.ignite.internal.binary.BinaryMetadata;
 import org.apache.ignite.internal.binary.BinaryNoopMetadataHandler;
 import org.apache.ignite.internal.binary.BinaryRawReaderEx;
 import org.apache.ignite.internal.binary.BinaryRawWriterEx;
+import org.apache.ignite.internal.binary.BinaryReaderExImpl;
 import org.apache.ignite.internal.binary.BinarySchema;
 import org.apache.ignite.internal.binary.BinarySchemaRegistry;
 import org.apache.ignite.internal.binary.BinaryTypeImpl;
 import org.apache.ignite.internal.binary.BinaryUtils;
 import org.apache.ignite.internal.binary.GridBinaryMarshaller;
+import org.apache.ignite.internal.binary.streams.BinaryInputStream;
+import org.apache.ignite.internal.processors.cache.CacheObject;
+import org.apache.ignite.internal.processors.cache.CacheObjectImpl;
+import org.apache.ignite.internal.processors.cache.KeyCacheObjectImpl;
 import org.apache.ignite.internal.processors.cache.binary.CacheObjectBinaryProcessorImpl;
 import org.apache.ignite.internal.processors.platform.PlatformContext;
 import org.apache.ignite.internal.processors.platform.PlatformExtendedException;
@@ -1361,6 +1366,34 @@ public class PlatformUtils {
             return PLATFORM_DOTNET;
 
         return "";
+    }
+
+    /**
+     * Read cache object from the stream as raw bytes to avoid marshalling.
+     *
+     * @param reader Reader.
+     * @param isKey {@code True} if object is a key.
+     */
+    public static <T extends CacheObject> T readCacheObject(BinaryReaderExImpl reader, boolean isKey) {
+        BinaryInputStream in = reader.in();
+
+        int pos0 = in.position();
+
+        Object obj = reader.readObjectDetached();
+
+        if (obj == null)
+            return null;
+
+        if (obj instanceof CacheObject)
+            return (T)obj;
+
+        int pos1 = in.position();
+
+        in.position(pos0);
+
+        byte[] objBytes = in.readByteArray(pos1 - pos0);
+
+        return isKey ? (T)new KeyCacheObjectImpl(obj, objBytes, -1) : (T)new CacheObjectImpl(obj, objBytes);
     }
 
     /**

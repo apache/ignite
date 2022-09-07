@@ -84,4 +84,20 @@ public class LongIndexKey extends NumericIndexKey {
     @Override public int compare(IndexKey o) {
         return o.type() == type() ? Long.compare(key, ((LongIndexKey)o).key) : -((NumericIndexKey)o).compareTo(key);
     }
+
+    /** {@inheritDoc} */
+    @Override public String toString() {
+        return String.valueOf(key);
+    }
+
+//    /** {@inheritDoc} */
+//    @Override public int hashCode() {
+//        return Long.hashCode(key);
+//    }
+//
+//    /** {@inheritDoc} */
+//    @Override public boolean equals(Object o) {
+//        return o instanceof LongIndexKey && key == ((LongIndexKey)o).key;
+//    }
+
 }

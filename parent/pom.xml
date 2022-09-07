@@ -71,7 +71,7 @@
         <asm.version>4.2</asm.version>
         <aspectj.bundle.version>1.8.13_1</aspectj.bundle.version>
         <aspectj.version>1.8.13</aspectj.version>
-        <netty.version>4.1.75.Final</netty.version>
+        <netty.version>4.1.79.Final</netty.version>
         <bouncycastle.version>1.69</bouncycastle.version>
         <commons.beanutils.bundle.version>1.9.2_1</commons.beanutils.bundle.version>
         <commons.beanutils.version>1.9.4</commons.beanutils.version>
@@ -94,7 +94,7 @@
         <hamcrest.version>2.2</hamcrest.version>
         <httpclient.version>4.5.13</httpclient.version>
         <httpcore.version>4.4.14</httpcore.version>
-        <jackson.version>2.12.4</jackson.version>
+        <jackson.version>2.12.7</jackson.version>
         <jaxb.api.version>2.1</jaxb.api.version>
         <jaxb.impl.version>2.1.14</jaxb.impl.version>
         <javassist.version>3.28.0-GA</javassist.version>
@@ -116,7 +116,6 @@
         <jtidy.version>r938</jtidy.version>
         <kafka.version>2.0.1</kafka.version>
         <log4j2.version>2.17.1</log4j2.version>
-        <log4j.version>1.2.17</log4j.version>
         <lucene.bundle.version>7.4.0_1</lucene.bundle.version>
         <lucene.version>8.11.2</lucene.version>
         <lz4.version>1.8.0</lz4.version>
@@ -127,7 +126,7 @@
         <maven.model.version>3.8.4</maven.model.version>
         <checkstyle.puppycrawl.version>8.45</checkstyle.puppycrawl.version>
         <mockito.version>3.4.6</mockito.version>
-        <mysql.connector.version>8.0.26</mysql.connector.version>
+        <mysql.connector.version>8.0.30</mysql.connector.version>
         <netlibjava.version>1.1.2</netlibjava.version>
         <oro.bundle.version>2.0.8_6</oro.bundle.version>
         <paho.version>1.0.2</paho.version>

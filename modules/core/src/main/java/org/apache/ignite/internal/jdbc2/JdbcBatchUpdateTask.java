@@ -68,9 +68,6 @@ class JdbcBatchUpdateTask implements IgniteCallable<int[]> {
     /** Fetch size. */
     private final int fetchSize;
 
-    /** Local execution flag. */
-    private final boolean loc;
-
     /** Local query flag. */
     private final boolean locQry;
 
@@ -87,14 +84,13 @@ class JdbcBatchUpdateTask implements IgniteCallable<int[]> {
      * @param sql SQL query. {@code null} in case of statement batching.
      * @param sqlBatch Batch of SQL statements. {@code null} in case of parameter batching.
      * @param batchArgs Batch of SQL parameters. {@code null} in case of statement batching.
-     * @param loc Local execution flag.
      * @param fetchSize Fetch size.
      * @param locQry Local query flag.
      * @param collocatedQry Collocated query flag.
      * @param distributedJoins Distributed joins flag.
      */
     public JdbcBatchUpdateTask(Ignite ignite, String cacheName, String schemaName, String sql,
-        List<String> sqlBatch, List<List<Object>> batchArgs, boolean loc, int fetchSize,
+        List<String> sqlBatch, List<List<Object>> batchArgs, int fetchSize,
         boolean locQry, boolean collocatedQry, boolean distributedJoins) {
         this.ignite = ignite;
         this.cacheName = cacheName;
@@ -103,7 +99,6 @@ class JdbcBatchUpdateTask implements IgniteCallable<int[]> {
         this.sqlBatch = sqlBatch;
         this.batchArgs = batchArgs;
         this.fetchSize = fetchSize;
-        this.loc = loc;
         this.locQry = locQry;
         this.collocatedQry = collocatedQry;
         this.distributedJoins = distributedJoins;
@@ -119,7 +114,7 @@ class JdbcBatchUpdateTask implements IgniteCallable<int[]> {
         boolean start = ignite.configuration().isClientMode();
 
         if (cache == null && cacheName == null)
-            cache = ((IgniteKernal)ignite).context().cache().getOrStartPublicCache(start, !loc && locQry);
+            cache = ((IgniteKernal)ignite).context().cache().getOrStartPublicCache(start);
 
         if (cache == null) {
             if (cacheName == null) {

@@ -44,6 +44,7 @@ import org.apache.ignite.internal.processors.cache.CacheGroupContext;
 import org.apache.ignite.internal.processors.cache.GridCacheProcessor;
 import org.apache.ignite.internal.processors.cache.persistence.CheckpointState;
 import org.apache.ignite.internal.processors.cache.persistence.DataStorageMetricsImpl;
+import org.apache.ignite.internal.processors.cache.persistence.GridCacheDatabaseSharedManager;
 import org.apache.ignite.internal.processors.cache.persistence.GridCacheOffheapManager;
 import org.apache.ignite.internal.processors.cache.persistence.pagemem.CheckpointMetricsTracker;
 import org.apache.ignite.internal.processors.cache.persistence.pagemem.PageMemoryEx;
@@ -629,6 +630,8 @@ public class Checkpointer extends GridWorker {
         }
 
         if (persStoreMetrics.metricsEnabled()) {
+            GridCacheDatabaseSharedManager dbMgr = (GridCacheDatabaseSharedManager)cacheProcessor.context().database();
+
             persStoreMetrics.onCheckpoint(
                 tracker.beforeLockDuration(),
                 tracker.lockWaitDuration(),
@@ -644,7 +647,9 @@ public class Checkpointer extends GridWorker {
                 tracker.checkpointStartTime(),
                 chp.pagesSize,
                 tracker.dataPagesWritten(),
-                tracker.cowPagesWritten()
+                tracker.cowPagesWritten(),
+                dbMgr.forAllPageStores(PageStore::size),
+                dbMgr.forAllPageStores(PageStore::getSparseSize)
             );
         }
     }

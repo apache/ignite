@@ -78,4 +78,19 @@ public class TimeIndexKey implements IndexKey {
     @Override public int compare(IndexKey o) {
         return Long.compare(nanos, ((TimeIndexKey)o).nanos);
     }
+
+    /** {@inheritDoc} */
+    @Override public String toString() {
+        return String.valueOf(nanos);
+    }
+
+//    /** {@inheritDoc} */
+//    @Override public int hashCode() {
+//        return Long.hashCode(nanos);
+//    }
+//
+//    /** {@inheritDoc} */
+//    @Override public boolean equals(Object o) {
+//        return o instanceof TimeIndexKey && compare((IndexKey)o) == 0;
+//    }
 }

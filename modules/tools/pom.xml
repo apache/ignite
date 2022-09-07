@@ -159,7 +159,7 @@
         <dependency>
             <groupId>org.jodd</groupId>
             <artifactId>jodd-lagarto</artifactId>
-            <version>3.4.8</version>
+            <version>6.0.6</version>
         </dependency>
 
         <dependency>

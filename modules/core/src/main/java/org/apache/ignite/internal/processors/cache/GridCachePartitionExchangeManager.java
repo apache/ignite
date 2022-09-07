@@ -1380,12 +1380,10 @@ public class GridCachePartitionExchangeManager<K, V> extends GridCacheSharedMana
         if (oldest.id().equals(cctx.localNodeId())) {
             // Check rebalance state & send CacheAffinityChangeMessage if need.
             for (CacheGroupContext grp : cctx.cache().cacheGroups()) {
-                if (!grp.isLocal()) {
-                    GridDhtPartitionTopology top = grp.topology();
+                GridDhtPartitionTopology top = grp.topology();
 
-                    if (top != null)
-                        cctx.affinity().checkRebalanceState(top, grp.groupId());
-                }
+                if (top != null)
+                    cctx.affinity().checkRebalanceState(top, grp.groupId());
             }
 
             GridDhtPartitionsExchangeFuture lastFut = lastInitializedFut;
@@ -1543,39 +1541,37 @@ public class GridCachePartitionExchangeManager<K, V> extends GridCacheSharedMana
         Map<Integer, Map<Integer, Long>> partsSizes = new HashMap<>();
 
         for (CacheGroupContext grp : grps) {
-            if (!grp.isLocal()) {
-                if (exchId != null) {
-                    AffinityTopologyVersion startTopVer = grp.localStartVersion();
+            if (exchId != null) {
+                AffinityTopologyVersion startTopVer = grp.localStartVersion();
 
-                    if (startTopVer.compareTo(exchId.topologyVersion()) > 0)
-                        continue;
+                if (startTopVer.compareTo(exchId.topologyVersion()) > 0)
+                    continue;
+            }
+
+            GridAffinityAssignmentCache affCache = grp.affinity();
+
+            GridDhtPartitionFullMap locMap = grp.topology().partitionMap(true);
+
+            if (locMap != null)
+                addFullPartitionsMap(m, dupData, compress, grp.groupId(), locMap, affCache.similarAffinityKey());
+
+            Map<Integer, Long> partSizesMap = grp.topology().globalPartSizes();
+
+            if (!partSizesMap.isEmpty())
+                partsSizes.put(grp.groupId(), partSizesMap);
+
+            if (exchId != null) {
+                CachePartitionFullCountersMap cntrsMap = grp.topology().fullUpdateCounters();
+
+                if (newCntrMap)
+                    m.addPartitionUpdateCounters(grp.groupId(), cntrsMap);
+                else {
+                    m.addPartitionUpdateCounters(grp.groupId(),
+                        CachePartitionFullCountersMap.toCountersMap(cntrsMap));
                 }
 
-                GridAffinityAssignmentCache affCache = grp.affinity();
-
-                GridDhtPartitionFullMap locMap = grp.topology().partitionMap(true);
-
-                if (locMap != null)
-                    addFullPartitionsMap(m, dupData, compress, grp.groupId(), locMap, affCache.similarAffinityKey());
-
-                Map<Integer, Long> partSizesMap = grp.topology().globalPartSizes();
-
-                if (!partSizesMap.isEmpty())
-                    partsSizes.put(grp.groupId(), partSizesMap);
-
-                if (exchId != null) {
-                    CachePartitionFullCountersMap cntrsMap = grp.topology().fullUpdateCounters();
-
-                    if (newCntrMap)
-                        m.addPartitionUpdateCounters(grp.groupId(), cntrsMap);
-                    else {
-                        m.addPartitionUpdateCounters(grp.groupId(),
-                            CachePartitionFullCountersMap.toCountersMap(cntrsMap));
-                    }
-
-                    // Lost partitions can be skipped on node left or activation.
-                    m.addLostPartitions(grp.groupId(), grp.topology().lostPartitions());
-                }
+                // Lost partitions can be skipped on node left or activation.
+                m.addLostPartitions(grp.groupId(), grp.topology().lostPartitions());
             }
         }
 
@@ -1730,7 +1726,7 @@ public class GridCachePartitionExchangeManager<K, V> extends GridCacheSharedMana
         Map<Object, T2<Integer, GridPartitionStateMap>> dupData = new HashMap<>();
 
         for (CacheGroupContext grp : grps) {
-            if (!grp.isLocal() && (exchActions == null || !exchActions.cacheGroupStopping(grp.groupId()))) {
+            if (exchActions == null || !exchActions.cacheGroupStopping(grp.groupId())) {
                 GridDhtPartitionMap locMap = grp.topology().localPartitionMap();
 
                 addPartitionMap(m,
@@ -1959,12 +1955,7 @@ public class GridCachePartitionExchangeManager<K, V> extends GridCacheSharedMana
 
                     CacheGroupContext grp = cctx.cache().cacheGroup(grpId);
 
-                    GridDhtPartitionTopology top = null;
-
-                    if (grp == null)
-                        top = clientTops.get(grpId);
-                    else if (!grp.isLocal())
-                        top = grp.topology();
+                    GridDhtPartitionTopology top = grp == null ? clientTops.get(grpId) : grp.topology();
 
                     if (top != null) {
                         updated |= top.update(null,
@@ -1988,7 +1979,7 @@ public class GridCachePartitionExchangeManager<K, V> extends GridCacheSharedMana
                 boolean hasMovingParts = false;
 
                 for (CacheGroupContext grp : cctx.cache().cacheGroups()) {
-                    if (!grp.isLocal() && grp.topology().hasMovingPartitions()) {
+                    if (grp.topology().hasMovingPartitions()) {
                         hasMovingParts = true;
 
                         break;
@@ -2030,12 +2021,7 @@ public class GridCachePartitionExchangeManager<K, V> extends GridCacheSharedMana
                     if (grp != null && !grp.topology().initialized())
                         continue;
 
-                    GridDhtPartitionTopology top = null;
-
-                    if (grp == null)
-                        top = clientTops.get(grpId);
-                    else if (!grp.isLocal())
-                        top = grp.topology();
+                    GridDhtPartitionTopology top = grp == null ? clientTops.get(grpId) : grp.topology();
 
                     if (top != null) {
                         updated |= top.update(null, entry.getValue(), false);
@@ -2205,12 +2191,10 @@ public class GridCachePartitionExchangeManager<K, V> extends GridCacheSharedMana
      */
     public void checkRebalanceState() {
         for (CacheGroupContext grp : cctx.cache().cacheGroups()) {
-            if (!grp.isLocal()) {
-                GridDhtPartitionTopology top = grp.topology();
+            GridDhtPartitionTopology top = grp.topology();
 
-                if (top != null)
-                    cctx.affinity().checkRebalanceState(top, grp.groupId());
-            }
+            if (top != null)
+                cctx.affinity().checkRebalanceState(top, grp.groupId());
         }
     }
 
@@ -2603,9 +2587,6 @@ public class GridCachePartitionExchangeManager<K, V> extends GridCacheSharedMana
         int affDumpCnt = 0;
 
         for (CacheGroupContext grp : cctx.cache().cacheGroups()) {
-            if (grp.isLocal())
-                continue;
-
             GridCachePreloader preloader = grp.preloader();
 
             if (preloader != null)
@@ -3242,9 +3223,6 @@ public class GridCachePartitionExchangeManager<K, V> extends GridCacheSharedMana
                     boolean preloadFinished = true;
 
                     for (CacheGroupContext grp : cctx.cache().cacheGroups()) {
-                        if (grp.isLocal())
-                            continue;
-
                         preloadFinished &= grp.preloader() != null && grp.preloader().syncFuture().isDone();
 
                         if (!preloadFinished)
@@ -3458,12 +3436,8 @@ public class GridCachePartitionExchangeManager<K, V> extends GridCacheSharedMana
                             // same event.
                             boolean changed = false;
 
-                            for (CacheGroupContext grp : cctx.cache().cacheGroups()) {
-                                if (grp.isLocal())
-                                    continue;
-
+                            for (CacheGroupContext grp : cctx.cache().cacheGroups())
                                 changed |= grp.topology().afterExchange(exchFut);
-                            }
 
                             if (!cctx.kernalContext().clientNode() && changed) {
                                 if (log.isDebugEnabled())
@@ -3535,7 +3509,6 @@ public class GridCachePartitionExchangeManager<K, V> extends GridCacheSharedMana
                             }
                             else {
                                 resVer = resVer == null ? assignsSet.stream()
-                                    .filter(g -> !g.isLocal())
                                     .map(g -> g.topology().readyTopologyVersion())
                                     .filter(Objects::nonNull)
                                     .findFirst()

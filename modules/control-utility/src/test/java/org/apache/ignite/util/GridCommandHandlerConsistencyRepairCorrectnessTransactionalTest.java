@@ -19,13 +19,19 @@ package org.apache.ignite.util;
 
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Collection;
+import java.util.Collections;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
+import java.util.concurrent.ThreadLocalRandom;
+import java.util.stream.Collectors;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCache;
 import org.apache.ignite.cache.CacheAtomicityMode;
 import org.apache.ignite.cache.ReadRepairStrategy;
 import org.apache.ignite.cache.affinity.rendezvous.RendezvousAffinityFunction;
+import org.apache.ignite.cluster.ClusterState;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.commandline.consistency.ConsistencyCommand;
@@ -42,6 +48,7 @@ import org.junit.runners.Parameterized;
 import static org.apache.ignite.IgniteSystemProperties.IGNITE_ENABLE_EXPERIMENTAL_COMMAND;
 import static org.apache.ignite.cache.CacheAtomicityMode.TRANSACTIONAL;
 import static org.apache.ignite.internal.commandline.CommandHandler.EXIT_CODE_OK;
+import static org.apache.ignite.testframework.GridTestUtils.assertContains;
 
 /**
  *
@@ -89,6 +96,12 @@ public class GridCommandHandlerConsistencyRepairCorrectnessTransactionalTest ext
     /** Partitions. */
     private static final int PARTITIONS = 8;
 
+    /** Caches. */
+    private static final int CACHES = 3;
+
+    /** Group name. */
+    private static final String GROUP_NAME = "grp";
+
     /** External class loader. */
     private static final ClassLoader extClsLdr = getExternalClassLoader();
 
@@ -99,7 +112,16 @@ public class GridCommandHandlerConsistencyRepairCorrectnessTransactionalTest ext
     protected static volatile List<Ignite> clsAwareNodes;
 
     /** Generator. */
-    private static volatile ReadRepairDataGenerator gen;
+    private static volatile ReadRepairDataGenerator cacheGen;
+
+    /** Generator. */
+    private static volatile ReadRepairDataGenerator grpGen;
+
+    /** Repair the whole group by its name. */
+    private volatile boolean repairByGrp;
+
+    /** Repair the whole group by a single cache name. */
+    private volatile boolean repairBySingleCacheName;
 
     /** Listening logger. */
     protected final ListeningTestLogger listeningLog = new ListeningTestLogger(log);
@@ -122,22 +144,45 @@ public class GridCommandHandlerConsistencyRepairCorrectnessTransactionalTest ext
     /**
      *
      */
-    protected CacheConfiguration<Integer, Object> cacheConfiguration() {
-        CacheConfiguration<Integer, Object> cfg = new CacheConfiguration<>(DEFAULT_CACHE_NAME);
+    protected Collection<CacheConfiguration> cacheConfigurations() {
+        Collection<CacheConfiguration> cfgs = new ArrayList<>();
 
-        cfg.setAtomicityMode(atomicityMode());
-        cfg.setBackups(backupsCount());
+        for (int i = 0; i < CACHES; i++) {
+            CacheConfiguration<Integer, Object> cfg = new CacheConfiguration<>(DEFAULT_CACHE_NAME + i);
 
-        cfg.setAffinity(new RendezvousAffinityFunction().setPartitions(PARTITIONS));
+            cfg.setAtomicityMode(atomicityMode());
+            cfg.setBackups(backupsCount());
+            cfg.setAffinity(new RendezvousAffinityFunction().setPartitions(PARTITIONS));
 
-        return cfg;
+            cfgs.add(cfg);
+        }
+
+        return cfgs;
+    }
+
+    /**
+     *
+     */
+    protected Collection<CacheConfiguration> cacheWithGroupsConfigurations() {
+        Collection<CacheConfiguration> cfgs = new ArrayList<>();
+
+        for (int i = 0; i < CACHES; i++) {
+            CacheConfiguration<Integer, Object> cfg = new CacheConfiguration<>(DEFAULT_CACHE_NAME + "grp" + i);
+
+            cfg.setAtomicityMode(atomicityMode());
+            cfg.setBackups(backupsCount());
+            cfg.setAffinity(new RendezvousAffinityFunction().setPartitions(PARTITIONS));
+            cfg.setGroupName(GROUP_NAME);
+
+            cfgs.add(cfg);
+        }
+
+        return cfgs;
     }
 
     /** {@inheritDoc} */
     @Override protected IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {
         IgniteConfiguration cfg = super.getConfiguration(igniteInstanceName);
-
-        cfg.setDataStorageConfiguration(null);
 
         cfg.setGridLogger(listeningLog);
 
@@ -150,6 +195,8 @@ public class GridCommandHandlerConsistencyRepairCorrectnessTransactionalTest ext
     /** {@inheritDoc} */
     @Override protected void beforeTestsStarted() throws Exception {
         super.beforeTestsStarted();
+
+        cleanPersistenceDir();
 
         Ignite ignite = startGrids(serverNodesCount() / 2); // Server nodes.
 
@@ -168,12 +215,24 @@ public class GridCommandHandlerConsistencyRepairCorrectnessTransactionalTest ext
 
         startClientGrid(G.allGrids().size()); // Client node 2.
 
-        ignite.getOrCreateCache(cacheConfiguration());
+        ignite.cluster().state(ClusterState.ACTIVE);
+
+        ignite.getOrCreateCaches(cacheConfigurations());
+        ignite.getOrCreateCaches(cacheWithGroupsConfigurations());
 
         awaitPartitionMapExchange();
 
-        gen = new ReadRepairDataGenerator(
-            DEFAULT_CACHE_NAME,
+        cacheGen = new ReadRepairDataGenerator(
+            cacheConfigurations().stream().map(CacheConfiguration::getName).toArray(String[]::new),
+            clsAwareNodes,
+            extClsLdr,
+            this::primaryNode,
+            this::backupNodes,
+            this::serverNodesCount,
+            this::backupsCount);
+
+        grpGen = new ReadRepairDataGenerator(
+            cacheWithGroupsConfigurations().stream().map(CacheConfiguration::getName).toArray(String[]::new),
             clsAwareNodes,
             extClsLdr,
             this::primaryNode,
@@ -186,7 +245,8 @@ public class GridCommandHandlerConsistencyRepairCorrectnessTransactionalTest ext
     @Override protected void afterTestsStopped() throws Exception {
         super.afterTestsStopped();
 
-        log.info("Checked " + gen.generated() + " keys");
+        log.info("Checked [cache] " + cacheGen.generated() + " keys");
+        log.info("Checked [group] " + grpGen.generated() + " keys");
 
         stopAllGrids();
     }
@@ -195,19 +255,57 @@ public class GridCommandHandlerConsistencyRepairCorrectnessTransactionalTest ext
      *
      */
     @Test
-    public void test() throws Exception {
+    public void testCachesRepair() throws Exception {
+        test(cacheGen);
+    }
+
+    /**
+     *
+     */
+    @Test
+    public void testGroupRepairByCacheNames() throws Exception {
+        test(grpGen);
+    }
+
+    /**
+     *
+     */
+    @Test
+    public void testGroupRepairBySingleCacheName() throws Exception {
+        repairBySingleCacheName = true;
+
+        test(grpGen);
+    }
+
+    /**
+     *
+     */
+    @Test
+    public void testGroupRepairByItsName() throws Exception {
+        repairByGrp = true;
+
+        test(grpGen);
+    }
+
+    /**
+     *
+     */
+    private void test(ReadRepairDataGenerator gen) throws Exception {
         assertFalse(clsAwareNodes.isEmpty());
+
+        ThreadLocalRandom rnd = ThreadLocalRandom.current();
 
         for (Ignite initiator : clsAwareNodes) {
             gen.generateAndCheck(
                 initiator,
-                50,
+                rnd.nextInt(10, 100),
                 false,
                 false,
                 misses,
                 nulls,
                 false,
                 strategy,
+                null,
                 this::repairAndCheck);
         }
     }
@@ -215,43 +313,66 @@ public class GridCommandHandlerConsistencyRepairCorrectnessTransactionalTest ext
     /**
      *
      */
-    protected final void repairAndCheck(ReadRepairData rrd) {
+    protected final void repairAndCheck(Collection<ReadRepairData> rrds) {
+        assertTrue(rrds.size() >= 2); // Checking that generator provides the data.
+
+        Set<String> caches = repairByGrp ?
+            Collections.singleton(GROUP_NAME) :
+            rrds.stream().map(data -> data.cache.getName()).collect(Collectors.toSet());
+
+        if (misses || nulls) // Generation may cause inconsistent counters.
+            // Performing finalization prior to the repair to check that repair cause no counters desync.
+            assertEquals(EXIT_CODE_OK, execute("--consistency", "finalize")); // Fixing partitions update counters.
+
         for (int i = 0; i < PARTITIONS; i++) {
-            List<String> cmd = new ArrayList<>(Arrays.asList(
-                "--consistency", "repair",
-                ConsistencyCommand.CACHE, DEFAULT_CACHE_NAME,
-                ConsistencyCommand.PARTITION, String.valueOf(i),
-                ConsistencyCommand.STRATEGY, strategy.toString()));
+            for (String cacheName : caches) {
+                List<String> cmd = new ArrayList<>(Arrays.asList(
+                    "--consistency", "repair",
+                    ConsistencyCommand.CACHE, cacheName,
+                    ConsistencyCommand.PARTITION, String.valueOf(i),
+                    ConsistencyCommand.STRATEGY, strategy.toString()));
 
-            if (parallel)
-                cmd.add(ConsistencyCommand.PARALLEL);
+                if (parallel)
+                    cmd.add(ConsistencyCommand.PARALLEL);
 
-            assertEquals(EXIT_CODE_OK, execute(cmd));
-        }
+                assertEquals(EXIT_CODE_OK, execute(cmd));
 
-        IgniteCache<Integer, Object> cache = rrd.cache;
-
-        for (Map.Entry<Integer, InconsistentMapping> dataEntry : rrd.data.entrySet()) {
-            Integer key = dataEntry.getKey();
-            InconsistentMapping mapping = dataEntry.getValue();
-
-            if (mapping.repairable) {
-                Object repaired = ReadRepairDataGenerator.unwrapBinaryIfNeeded(mapping.repairedBin);
-
-                // Regular get (form primary or backup or client node).
-                assertEqualsArraysAware("Checking key=" + key, repaired, cache.get(key));
-
-                // All copies check.
-                assertEqualsArraysAware("Checking key=" + key, repaired,
-                    cache.withReadRepair(ReadRepairStrategy.CHECK_ONLY).get(key));
-            }
-            else if (!mapping.consistent) {
-                // Removing irreparable.
-                // Otherwice subsequent consistency repairs over this partition will regenerate the warning.
-                cache.withReadRepair(ReadRepairStrategy.REMOVE).get(key);
-
-                assertNull("Checking key=" + key, cache.get(key));
+                if (repairBySingleCacheName)
+                    break;
             }
         }
+
+        for (ReadRepairData rrd : rrds) {
+            IgniteCache<Object, Object> cache = rrd.cache;
+
+            for (Map.Entry<Object, InconsistentMapping> dataEntry : rrd.data.entrySet()) {
+                Object key = dataEntry.getKey();
+                InconsistentMapping mapping = dataEntry.getValue();
+
+                if (mapping.repairable) {
+                    Object repaired = cacheGen.unwrapBinaryIfNeeded(mapping.repairedBin);
+
+                    // Regular get (form primary or backup or client node).
+                    assertEqualsArraysAware("Checking key=" + key, repaired, cache.get(key));
+
+                    // All copies check.
+                    assertEqualsArraysAware("Checking key=" + key, repaired,
+                        cache.withReadRepair(ReadRepairStrategy.CHECK_ONLY).get(key));
+                }
+                else if (!mapping.consistent) {
+                    // Removing irreparable.
+                    // Otherwice subsequent consistency repairs over this partition will regenerate the warning.
+                    cache.withReadRepair(ReadRepairStrategy.REMOVE).get(key);
+
+                    assertNull("Checking key=" + key, cache.get(key));
+                }
+            }
+        }
+
+        injectTestSystemOut();
+
+        assertEquals(EXIT_CODE_OK, execute("--cache", "idle_verify"));
+
+        assertContains(log, testOut.toString(), "no conflicts have been found");
     }
 }

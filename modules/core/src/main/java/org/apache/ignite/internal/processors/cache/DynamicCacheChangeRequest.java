@@ -68,6 +68,9 @@ public class DynamicCacheChangeRequest implements Serializable {
     /** Restart flag. */
     private boolean restart;
 
+    /** Finalize update counters flag. */
+    private boolean finalizePartitionCounters;
+
     /** Restart operation id. */
     private IgniteUuid restartId;
 
@@ -117,7 +120,6 @@ public class DynamicCacheChangeRequest implements Serializable {
      */
     public DynamicCacheChangeRequest(UUID reqId, String cacheName, UUID initiatingNodeId) {
         assert reqId != null;
-        assert cacheName != null;
 
         this.reqId = reqId;
         this.cacheName = cacheName;
@@ -133,6 +135,18 @@ public class DynamicCacheChangeRequest implements Serializable {
         DynamicCacheChangeRequest req = new DynamicCacheChangeRequest(UUID.randomUUID(), cacheName, ctx.localNodeId());
 
         req.markResetLostPartitions();
+
+        return req;
+    }
+
+    /**
+     * @param ctx Context.
+     * @return Request to finalize partition update counters.
+     */
+    static DynamicCacheChangeRequest finalizePartitionCounters(GridKernalContext ctx) {
+        DynamicCacheChangeRequest req = new DynamicCacheChangeRequest(UUID.randomUUID(), null, ctx.localNodeId());
+
+        req.markFinalizePartitionCounters();
 
         return req;
     }
@@ -280,6 +294,20 @@ public class DynamicCacheChangeRequest implements Serializable {
      */
     public void restart(boolean restart) {
         this.restart = restart;
+    }
+
+    /**
+     * Set finalize partition update counters flag.
+     */
+    public void markFinalizePartitionCounters() {
+        finalizePartitionCounters = true;
+    }
+
+    /**
+     * Finalize partition update counters flag.
+     */
+    public boolean finalizePartitionCounters() {
+        return finalizePartitionCounters;
     }
 
     /**

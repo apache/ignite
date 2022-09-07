@@ -298,13 +298,22 @@ include::{csharpFile}[tag=query-entity-with-inline-size,indent=0]
 tab:C++[unsupported]
 --
 
-* If you create indexes using the `CREATE INDEX` command, you can use the `INLINE_SIZE` option to set the inline size. See examples in the link:sql-reference/ddl[corresponding section].
+* If you create indexes by using the `CREATE INDEX` command, you can use the `INLINE_SIZE` option to set the inline size. See examples in the link:sql-reference/ddl[corresponding section].
 +
 [source, sql]
 ----
 create index country_idx on Person (country) INLINE_SIZE 13;
 ----
 
+* If you create a table by using the `CREATE TABLE` command, you can use the ` PK_INLINE_SIZE` and `AFFINITY_INDEX_INLINE_SIZE` parameters to set primary key and affinity index sizes.
++
+[source, sql]
+----
+CREATE TABLE IF NOT EXISTS TABLE1 (
+  id varchar(15),
+  col varchar(100),
+  PRIMARY KEY(id) ) WITH "PK_INLINE_SIZE=19,AFFINITY_INDEX_INLINE_SIZE=20"
+----
 
 == Custom Keys
 If you use only predefined SQL data types for primary keys, then you do not need to perform additional manipulation with the SQL schema configuration. Those data types are defined by the `GridQueryProcessor.SQL_TYPES` constant, as listed below.

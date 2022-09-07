@@ -105,7 +105,10 @@ import static org.apache.ignite.cache.CacheAtomicityMode.TRANSACTIONAL;
 import static org.apache.ignite.cache.CacheRebalanceMode.ASYNC;
 import static org.apache.ignite.cache.CacheRebalanceMode.SYNC;
 import static org.apache.ignite.cache.CacheWriteSynchronizationMode.FULL_SYNC;
+import static org.apache.ignite.internal.TestRecordingCommunicationSpi.blockSingleExhangeMessage;
 import static org.apache.ignite.internal.processors.cache.ExchangeContext.IGNITE_EXCHANGE_COMPATIBILITY_VER_1;
+import static org.apache.ignite.testframework.GridTestUtils.runAsync;
+import static org.apache.ignite.testframework.GridTestUtils.waitForCondition;
 
 /**
  *
@@ -1352,7 +1355,7 @@ public class CacheLateAffinityAssignmentTest extends GridCommonAbstractTest {
             Ignite ignite = grids.get(i);
 
             if (!blocked.contains(ignite.name())) {
-                GridTestUtils.waitForCondition(new GridAbsPredicate() {
+                waitForCondition(new GridAbsPredicate() {
                     @Override public boolean apply() {
                         return fut.isDone();
                     }
@@ -1527,7 +1530,7 @@ public class CacheLateAffinityAssignmentTest extends GridCommonAbstractTest {
             });
         }
 
-        IgniteInternalFuture<?> stopFut = GridTestUtils.runAsync(new Callable<Void>() {
+        IgniteInternalFuture<?> stopFut = runAsync(new Callable<Void>() {
             @Override public Void call() throws Exception {
                 for (int j = 1; j < NODES; j++) {
                     TestRecordingCommunicationSpi spi =
@@ -1558,6 +1561,106 @@ public class CacheLateAffinityAssignmentTest extends GridCommonAbstractTest {
             startServer(i, ++topVer);
 
         checkAffinity(NODES + 1, topVer(topVer, 1), true);
+    }
+
+    /**
+     * Wait for rebalance, send affinity change message, but affinity already changed
+     * (new nodes joined: server + client). Checks that tere is no race that could lead to
+     * unexpected partition map exchange on the client node.
+     *
+     * @throws Exception If failed.
+     */
+    @Test
+    public void testDelayAssignmentAffinityChangedUnexpectedPME() throws Exception {
+        Ignite ignite0 = startServer(0, 1);
+
+        for (int i = 0; i < 1024; i++)
+            ignite0.cache(CACHE_NAME1).put(i, i);
+
+        DiscoverySpiTestListener lsnr = new DiscoverySpiTestListener();
+
+        ((IgniteDiscoverySpi)ignite0.configuration().getDiscoverySpi()).setInternalListener(lsnr);
+
+        TestRecordingCommunicationSpi commSpi0 =
+            (TestRecordingCommunicationSpi)ignite0.configuration().getCommunicationSpi();
+
+        // Starting a new client node should not lead to a rebalance obviously.
+        // So, it is expected that data distribution is ideal (ideal assignment).
+        startClient(1, 2);
+
+        checkAffinity(2, topVer(2, 0), true);
+
+        // Block late affinity assignment. (*)
+        lsnr.blockCustomEvent(CacheAffinityChangeMessage.class);
+
+        // Starting a new server node triggers data rebalancing.
+        // [3, 0] - is not ideal (expected)
+        startServer(2, 3);
+
+        checkAffinity(3, topVer(3, 0), false);
+
+        // Wait for sending late affinity assignment message (1) from the coordinator node.
+        // This message will be blocked (*)
+        lsnr.waitCustomEvent();
+
+        // Block rebalance messages.
+        blockSupplySend(commSpi0, CACHE_NAME1);
+
+        // Starting a new server node means that the late affinity assignment message (1) should be skipped.
+        startServer(3, 4);
+
+        TestRecordingCommunicationSpi clientSpi = new TestRecordingCommunicationSpi();
+        clientSpi.blockMessages(blockSingleExhangeMessage());
+        spiC = igniteInstanceName -> clientSpi;
+
+        IgniteInternalFuture<?> startClientFut = runAsync(() -> {
+            startClient(4, 5);
+        });
+
+        clientSpi.waitForBlocked();
+
+        // Unblock the late affinity assignment message (1).
+        lsnr.stopBlockCustomEvents();
+
+        clientSpi.stopBlock();
+
+        startClientFut.get(15_000);
+
+        // [5, 0] - is not ideal (expected)
+        checkAffinity(5, topVer(5, 0), false);
+
+        // Rebalance is blocked at this moment, so [5, 1] is not ready.
+        checkNoExchange(5, topVer(5, 1));
+
+        // Unblock rebalancing.
+        // The late affinity assignments message (2) should be fired after all.
+        commSpi0.stopBlock();
+
+        // [5, 1] should be ideal
+        checkAffinity(5, topVer(5, 1), true);
+
+        // The following output demonstrates the issue.
+        // The coordinator node and client initiate PME on the same toplogy version,
+        // but it relies to different custom messages.
+        // client:
+        //      Started exchange init [
+        //          topVer=AffinityTopologyVersion [topVer=5, minorTopVer=1],
+        //          crd=false,
+        //          evt=DISCOVERY_CUSTOM_EVT, evtNode=00ac9434-fd34-4aae-95d3-ceb477700000,
+        //          customEvt=CacheAffinityChangeMessage [
+        //              id=3ccc8984181-ea41279c-71cb-4b8c-8b48-1dee1baa6fe0,                       <<< (1)
+        //              topVer=AffinityTopologyVersion [topVer=3, minorTopVer=0], ...]             <<< !!!
+        // coordinator:
+        //      Started exchange init
+        //          [topVer=AffinityTopologyVersion [topVer=5, minorTopVer=1],
+        //          crd=true,
+        //          evt=DISCOVERY_CUSTOM_EVT, evtNode=00ac9434-fd34-4aae-95d3-ceb477700000,
+        //          customEvt=CacheAffinityChangeMessage [
+        //              id=d2ec8984181-ea41279c-71cb-4b8c-8b48-1dee1baa6fe0,                        <<< (2)
+        //              topVer=AffinityTopologyVersion [topVer=4, minorTopVer=0], ...]              <<< !!!
+        awaitPartitionMapExchange(true, true, null, false);
+
+        assertPartitionsSame(idleVerify(grid(0), CACHE_NAME1));
     }
 
     /**
@@ -1657,7 +1760,7 @@ public class CacheLateAffinityAssignmentTest extends GridCommonAbstractTest {
 
             lsnr.stopBlockCustomEvents();
 
-            boolean started = GridTestUtils.waitForCondition(new GridAbsPredicate() {
+            boolean started = waitForCondition(new GridAbsPredicate() {
                 @Override public boolean apply() {
                     return startedFuture.isDone();
                 }
@@ -2174,7 +2277,7 @@ public class CacheLateAffinityAssignmentTest extends GridCommonAbstractTest {
             //Ensure exchanges merge.
             spiC = igniteInstanceName -> testSpis[getTestIgniteInstanceIndex(igniteInstanceName)];
 
-            GridTestUtils.runAsync(() -> {
+            runAsync(() -> {
                 try {
                     for (int j = 1; j < NODES; j++)
                         testSpis[j].waitForBlocked();
@@ -2321,7 +2424,7 @@ public class CacheLateAffinityAssignmentTest extends GridCommonAbstractTest {
             }
         }, NODES, "update-thread");
 
-        IgniteInternalFuture<?> srvRestartFut = GridTestUtils.runAsync(new Callable<Void>() {
+        IgniteInternalFuture<?> srvRestartFut = runAsync(new Callable<Void>() {
             @Override public Void call() throws Exception {
                 while (!fail.get() && System.currentTimeMillis() < stopTime) {
                     Ignite node = startGrid(NODES);
@@ -2462,7 +2565,7 @@ public class CacheLateAffinityAssignmentTest extends GridCommonAbstractTest {
 
             final ClusterNode srvcNode = affinity.get(part).get(0);
 
-            boolean wait = GridTestUtils.waitForCondition(new PA() {
+            boolean wait = waitForCondition(new PA() {
                 @Override public boolean apply() {
                     TestService srvc = grid(srvcNode).services().service(srvcName);
 

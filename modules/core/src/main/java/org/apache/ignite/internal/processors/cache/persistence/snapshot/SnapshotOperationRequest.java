@@ -25,6 +25,7 @@ import org.apache.ignite.internal.util.distributed.DistributedProcess;
 import org.apache.ignite.internal.util.distributed.DistributedProcess.DistributedProcessType;
 import org.apache.ignite.internal.util.tostring.GridToStringInclude;
 import org.apache.ignite.internal.util.typedef.internal.S;
+import org.apache.ignite.internal.util.typedef.internal.U;
 import org.jetbrains.annotations.Nullable;
 
 /**
@@ -60,6 +61,9 @@ public class SnapshotOperationRequest implements Serializable {
     /** Flag indicating that the {@link DistributedProcessType#START_SNAPSHOT} phase has completed. */
     private transient volatile boolean startStageEnded;
 
+    /** Operation start time. */
+    private final long startTime;
+
     /**
      * @param reqId Request ID.
      * @param opNodeId Operational node ID.
@@ -82,6 +86,7 @@ public class SnapshotOperationRequest implements Serializable {
         this.grps = grps;
         this.nodes = nodes;
         this.snpPath = snpPath;
+        startTime = U.currentTimeMillis();
     }
 
     /**
@@ -138,6 +143,11 @@ public class SnapshotOperationRequest implements Serializable {
      */
     public void error(Throwable err) {
         this.err = err;
+    }
+
+    /** @return Start time. */
+    public long startTime() {
+        return startTime;
     }
 
     /**

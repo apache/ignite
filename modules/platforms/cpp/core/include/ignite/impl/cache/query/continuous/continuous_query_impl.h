@@ -286,11 +286,28 @@ namespace ignite
                          * @param lsnr Event listener Invoked on the node where
                          *     continuous query execution has been started.
                          * @param loc Whether query should be executed locally.
+                         * @param filter Remote filter.
                          */
                         template<typename F>
                         ContinuousQueryImpl(Reference<ignite::cache::event::CacheEntryEventListener<K, V> >& lsnr,
                             bool loc, const Reference<F>& filter) :
                             ContinuousQueryImplBase(loc, new event::CacheEntryEventFilterHolder<F>(filter)),
+                            lsnr(lsnr)
+                        {
+                            // No-op.
+                        }
+
+                        /**
+                         * Constructor.
+                         *
+                         * @param lsnr Event listener Invoked on the node where
+                         *     continuous query execution has been started.
+                         * @param loc Whether query should be executed locally.
+                         * @param filter Remote Java filter.
+                         */
+                        ContinuousQueryImpl(Reference<ignite::cache::event::CacheEntryEventListener<K, V> >& lsnr,
+                            bool loc, const ignite::cache::event::JavaCacheEntryEventFilter& filter) :
+                            ContinuousQueryImplBase(loc, new event::JavaCacheEntryEventFilterHolder(filter)),
                             lsnr(lsnr)
                         {
                             // No-op.

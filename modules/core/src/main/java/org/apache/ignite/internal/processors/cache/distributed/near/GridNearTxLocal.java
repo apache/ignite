@@ -102,7 +102,6 @@ import org.apache.ignite.internal.util.tostring.GridToStringExclude;
 import org.apache.ignite.internal.util.typedef.C1;
 import org.apache.ignite.internal.util.typedef.C2;
 import org.apache.ignite.internal.util.typedef.CI1;
-import org.apache.ignite.internal.util.typedef.CI2;
 import org.apache.ignite.internal.util.typedef.CX1;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.internal.CU;
@@ -118,7 +117,6 @@ import org.apache.ignite.transactions.TransactionConcurrency;
 import org.apache.ignite.transactions.TransactionIsolation;
 import org.apache.ignite.transactions.TransactionState;
 import org.jetbrains.annotations.Nullable;
-
 import static org.apache.ignite.cache.CacheWriteSynchronizationMode.FULL_SYNC;
 import static org.apache.ignite.events.EventType.EVT_CACHE_OBJECT_READ;
 import static org.apache.ignite.internal.processors.cache.GridCacheOperation.CREATE;
@@ -127,7 +125,6 @@ import static org.apache.ignite.internal.processors.cache.GridCacheOperation.NOO
 import static org.apache.ignite.internal.processors.cache.GridCacheOperation.READ;
 import static org.apache.ignite.internal.processors.cache.GridCacheOperation.TRANSFORM;
 import static org.apache.ignite.internal.processors.cache.GridCacheOperation.UPDATE;
-import static org.apache.ignite.internal.processors.cache.transactions.IgniteTxEntry.SER_READ_EMPTY_ENTRY_VER;
 import static org.apache.ignite.internal.processors.cache.transactions.IgniteTxEntry.SER_READ_NOT_EMPTY_VER;
 import static org.apache.ignite.internal.processors.tracing.MTC.TraceSurroundings;
 import static org.apache.ignite.internal.processors.tracing.SpanType.TX_NEAR_ENLIST_READ;
@@ -2436,26 +2433,6 @@ public class GridNearTxLocal extends GridDhtTxLocalAdapter implements GridTimeou
                             }
                         }
 
-                        if (!missed.isEmpty() && cacheCtx.isLocal()) {
-                            AffinityTopologyVersion topVer = topologyVersionSnapshot();
-
-                            if (topVer == null)
-                                topVer = entryTopVer;
-
-                            return checkMissed(cacheCtx,
-                                topVer != null ? topVer : topologyVersion(),
-                                retMap,
-                                missed,
-                                deserializeBinary,
-                                skipVals,
-                                keepCacheObjects,
-                                skipStore,
-                                recovery,
-                                readRepairStrategy,
-                                needVer,
-                                expiryPlc0);
-                        }
-
                         if (readRepairStrategy != null) { // Checking and repairing each locked entry (if necessary).
                             // Providing the guarantee that all copies are updated when read repair operation is finished.
                             syncMode(FULL_SYNC);
@@ -3192,7 +3169,8 @@ public class GridNearTxLocal extends GridDhtTxLocalAdapter implements GridTimeou
                     }
                 });
         }
-        else if (cacheCtx.isColocated()) {
+        // cacheCtx.isColocated() == true
+        else {
             if (readRepairStrategy != null) {
                 return new GridNearReadRepairCheckOnlyFuture(
                     topVer,
@@ -3201,7 +3179,7 @@ public class GridNearTxLocal extends GridDhtTxLocalAdapter implements GridTimeou
                     readRepairStrategy,
                     readThrough,
                     taskName,
-                    false,
+                    !keepBinary,
                     recovery,
                     expiryPlc0,
                     skipVals,
@@ -3297,169 +3275,6 @@ public class GridNearTxLocal extends GridDhtTxLocalAdapter implements GridTimeou
                     }
                 });
             }
-        }
-        else {
-            assert cacheCtx.isLocal();
-
-            return localCacheLoadMissing(cacheCtx,
-                topVer,
-                readThrough,
-                async,
-                keys,
-                skipVals,
-                needVer,
-                keepBinary,
-                recovery,
-                expiryPlc,
-                c);
-        }
-    }
-
-    /**
-     * @param cacheCtx Cache context.
-     * @param readThrough Read through flag.
-     * @param async if {@code True}, then loading will happen in a separate thread.
-     * @param keys Keys.
-     * @param skipVals Skip values flag.
-     * @param needVer If {@code true} version is required for loaded values.
-     * @param c Closure to be applied for loaded values.
-     * @param expiryPlc Expiry policy.
-     * @return Future with {@code True} value if loading took place.
-     */
-    private IgniteInternalFuture<Void> localCacheLoadMissing(
-        final GridCacheContext cacheCtx,
-        final AffinityTopologyVersion topVer,
-        final boolean readThrough,
-        boolean async,
-        final Collection<KeyCacheObject> keys,
-        boolean skipVals,
-        boolean needVer,
-        boolean keepBinary,
-        boolean recovery,
-        final ExpiryPolicy expiryPlc,
-        final GridInClosure3<KeyCacheObject, Object, GridCacheVersion> c
-    ) {
-        assert cacheCtx.isLocal() : cacheCtx.name();
-
-        if (!readThrough || !cacheCtx.readThrough()) {
-            for (KeyCacheObject key : keys)
-                c.apply(key, null, SER_READ_EMPTY_ENTRY_VER);
-
-            return new GridFinishedFuture<>();
-        }
-
-        try {
-            IgniteCacheExpiryPolicy expiryPlc0 = optimistic() ?
-                accessPolicy(cacheCtx, keys) :
-                cacheCtx.cache().expiryPolicy(expiryPlc);
-
-            Map<KeyCacheObject, GridCacheVersion> misses = null;
-
-            for (KeyCacheObject key : keys) {
-                while (true) {
-                    IgniteTxEntry txEntry = entry(cacheCtx.txKey(key));
-
-                    GridCacheEntryEx entry = txEntry == null ? cacheCtx.cache().entryEx(key) :
-                        txEntry.cached();
-
-                    if (entry == null)
-                        continue;
-
-                    try {
-                        EntryGetResult res = entry.innerGetVersioned(
-                            null,
-                            this,
-                            /*update-metrics*/!skipVals,
-                            /*event*/!skipVals,
-                            null,
-                            resolveTaskName(),
-                            expiryPlc0,
-                            txEntry == null ? keepBinary : txEntry.keepBinary(),
-                            null);
-
-                        if (res == null) {
-                            if (misses == null)
-                                misses = new LinkedHashMap<>();
-
-                            misses.put(key, entry.version());
-                        }
-                        else
-                            c.apply(key, skipVals ? true : res.value(), res.version());
-
-                        break;
-                    }
-                    catch (GridCacheEntryRemovedException ignore) {
-                        if (log.isDebugEnabled())
-                            log.debug("Got removed entry, will retry: " + key);
-
-                        if (txEntry != null)
-                            txEntry.cached(cacheCtx.cache().entryEx(key, topologyVersion()));
-                    }
-                }
-            }
-
-            if (misses != null) {
-                final Map<KeyCacheObject, GridCacheVersion> misses0 = misses;
-
-                cacheCtx.store().loadAll(this, misses.keySet(), new CI2<KeyCacheObject, Object>() {
-                    @Override public void apply(KeyCacheObject key, Object val) {
-                        GridCacheVersion ver = misses0.remove(key);
-
-                        assert ver != null : key;
-
-                        if (val != null) {
-                            CacheObject cacheVal = cacheCtx.toCacheObject(val);
-
-                            while (true) {
-                                GridCacheEntryEx entry = cacheCtx.cache().entryEx(key, topVer);
-
-                                try {
-                                    cacheCtx.shared().database().ensureFreeSpace(cacheCtx.dataRegion());
-
-                                    EntryGetResult verVal = entry.versionedValue(cacheVal,
-                                        ver,
-                                        null,
-                                        null,
-                                        null);
-
-                                    if (log.isDebugEnabled()) {
-                                        log.debug("Set value loaded from store into entry [" +
-                                            "oldVer=" + ver +
-                                            ", newVer=" + verVal.version() +
-                                            ", entry=" + entry + ']');
-                                    }
-
-                                    ver = verVal.version();
-
-                                    break;
-                                }
-                                catch (GridCacheEntryRemovedException ignore) {
-                                    if (log.isDebugEnabled())
-                                        log.debug("Got removed entry, (will retry): " + entry);
-                                }
-                                catch (IgniteCheckedException e) {
-                                    // Wrap errors (will be unwrapped).
-                                    throw new GridClosureException(e);
-                                }
-                            }
-                        }
-                        else
-                            ver = SER_READ_EMPTY_ENTRY_VER;
-
-                        c.apply(key, val, ver);
-                    }
-                });
-
-                for (KeyCacheObject key : misses0.keySet())
-                    c.apply(key, null, SER_READ_EMPTY_ENTRY_VER);
-            }
-
-            return new GridFinishedFuture<>();
-        }
-        catch (IgniteCheckedException e) {
-            setRollbackOnly();
-
-            return new GridFinishedFuture<>(e);
         }
     }
 

@@ -293,7 +293,7 @@ public class KillCommandsCommandShTest extends GridCommandHandlerClusterByClassA
 
             assertEquals(EXIT_CODE_OK, res);
 
-            assertContains(log, testOut.toString(), "Status: 1024/" + entries);
+            assertContains(log, testOut.toString(), "Status: 128/" + entries);
             assertNotContains(log, testOut.toString(), VisorConsistencyStatusTask.NOTHING_FOUND);
 
             testOut.reset();

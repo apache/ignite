@@ -64,7 +64,6 @@ public class H2TableEngine implements TableEngine {
         throws SQLException {
         rowDesc0 = rowDesc;
         tblDesc0 = tblDesc;
-        idxMgr0 = idxMgr;
 
         try {
             try (Statement s = conn.createStatement()) {
@@ -79,13 +78,12 @@ public class H2TableEngine implements TableEngine {
             resTbl0 = null;
             tblDesc0 = null;
             rowDesc0 = null;
-            idxMgr0 = idxMgr;
         }
     }
 
     /** {@inheritDoc} */
     @Override public TableBase createTable(CreateTableData createTblData) {
-        resTbl0 = new GridH2Table(createTblData, rowDesc0, tblDesc0, tblDesc0.cacheInfo(), idxMgr0);
+        resTbl0 = new GridH2Table(createTblData, rowDesc0, tblDesc0, tblDesc0.cacheInfo());
 
         return resTbl0;
     }

@@ -436,7 +436,6 @@ public class ResumeCreateIndexTest extends AbstractRebuildIndexTest {
      * @throws Exception If failed.
      */
     private IgniteEx prepareNodeToCreateNewIndex(String cacheName, int cnt, boolean disableCp) throws Exception {
-        IgniteH2IndexingEx.prepareBeforeNodeStart();
         IndexesRebuildTaskEx.prepareBeforeNodeStart();
 
         IgniteEx n = startGrid(0);

@@ -26,6 +26,7 @@ import java.util.Map;
 import java.util.Set;
 import java.util.stream.Collectors;
 import org.apache.ignite.internal.GridDirectMap;
+import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.plugin.extensions.communication.MessageCollectionItemType;
@@ -80,7 +81,7 @@ public class SnapshotFilesRequestMessage extends AbstractSnapshotMessage {
         this.snpPath = snpPath;
         this.parts = new HashMap<>();
 
-        for (Map.Entry<Integer, Set<Integer>> e : parts.entrySet())
+        for (Map.Entry<Integer, Set<Integer>> e : F.view(parts.entrySet(), e -> !F.isEmpty(e.getValue())))
             this.parts.put(e.getKey(), U.toIntArray(e.getValue()));
     }
 
@@ -90,11 +91,8 @@ public class SnapshotFilesRequestMessage extends AbstractSnapshotMessage {
     public Map<Integer, Set<Integer>> parts() {
         Map<Integer, Set<Integer>> res = new HashMap<>();
 
-        for (Map.Entry<Integer, int[]> e : parts.entrySet()) {
-            res.put(e.getKey(), e.getValue().length == 0 ? null : Arrays.stream(e.getValue())
-                .boxed()
-                .collect(Collectors.toSet()));
-        }
+        for (Map.Entry<Integer, int[]> e : parts.entrySet())
+            res.put(e.getKey(), Arrays.stream(e.getValue()).boxed().collect(Collectors.toSet()));
 
         return res;
     }

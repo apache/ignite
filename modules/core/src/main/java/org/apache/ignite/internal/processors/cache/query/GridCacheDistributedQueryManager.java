@@ -54,8 +54,6 @@ import org.apache.ignite.lang.IgniteClosure;
 import org.apache.ignite.lang.IgniteFuture;
 import org.apache.ignite.lang.IgniteReducer;
 import org.jetbrains.annotations.Nullable;
-
-import static org.apache.ignite.cache.CacheMode.LOCAL;
 import static org.apache.ignite.events.EventType.EVT_NODE_FAILED;
 import static org.apache.ignite.events.EventType.EVT_NODE_LEFT;
 import static org.apache.ignite.internal.GridTopic.TOPIC_CACHE;
@@ -105,8 +103,6 @@ public class GridCacheDistributedQueryManager<K, V> extends GridCacheQueryManage
     /** {@inheritDoc} */
     @Override public void start0() throws IgniteCheckedException {
         super.start0();
-
-        assert cctx.config().getCacheMode() != LOCAL;
 
         cctx.io().addCacheHandler(cctx.cacheId(), GridCacheQueryRequest.class, new CI2<UUID, GridCacheQueryRequest>() {
             @Override public void apply(UUID nodeId, GridCacheQueryRequest req) {
@@ -504,8 +500,6 @@ public class GridCacheDistributedQueryManager<K, V> extends GridCacheQueryManage
 
     /** */
     private CacheQueryFuture<?> queryDistributed(GridCacheQueryBean qry, final Collection<ClusterNode> nodes, boolean fields) {
-        assert cctx.config().getCacheMode() != LOCAL;
-
         if (log.isDebugEnabled())
             log.debug("Executing distributed query: " + qry);
 
@@ -551,7 +545,6 @@ public class GridCacheDistributedQueryManager<K, V> extends GridCacheQueryManage
     @SuppressWarnings({"unchecked"})
     @Override public GridCloseableIterator scanQueryDistributed(final GridCacheQueryAdapter qry,
         Collection<ClusterNode> nodes) throws IgniteCheckedException {
-        assert !cctx.isLocal() : cctx.name();
         assert qry.type() == GridCacheQueryType.SCAN : qry;
         assert qry.mvccSnapshot() != null || !cctx.mvccEnabled();
 
@@ -679,8 +672,6 @@ public class GridCacheDistributedQueryManager<K, V> extends GridCacheQueryManage
 
     /** {@inheritDoc} */
     @Override public CacheQueryFuture<?> queryFieldsLocal(GridCacheQueryBean qry) {
-        assert cctx.config().getCacheMode() != LOCAL;
-
         if (log.isDebugEnabled())
             log.debug("Executing query on local node: " + qry);
 

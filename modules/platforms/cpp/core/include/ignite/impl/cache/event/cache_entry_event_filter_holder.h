@@ -20,6 +20,8 @@
 
 #include <ignite/reference.h>
 
+#include <ignite/cache/event/java_cache_entry_event_filter.h>
+
 namespace ignite
 {
     namespace impl
@@ -176,6 +178,62 @@ namespace ignite
                     {
                         return 0;
                     }
+                };
+
+                class JavaCacheEntryEventFilterHolder : public CacheEntryEventFilterHolderBase
+                {
+                public:
+                    /**
+                     * Default constructor.
+                     */
+                    JavaCacheEntryEventFilterHolder()
+                    {
+                        // No-op.
+                    }
+
+                    /**
+                     * Constructor.
+                     */
+                    JavaCacheEntryEventFilterHolder(const ignite::cache::event::JavaCacheEntryEventFilter& filter) :
+                        filter(filter)
+                    {
+                        // No-op.
+                    }
+
+                    /**
+                     * Destructor.
+                     */
+                    virtual ~JavaCacheEntryEventFilterHolder()
+                    {
+                        // No-op.
+                    }
+
+                    /**
+                     * Process input.
+                     *
+                     * @param writer Writer.
+                     */
+                    virtual void Write(binary::BinaryWriterImpl& writer)
+                    {
+                        writer.WriteBool(true);
+                        writer.WriteObject<impl::PlatformJavaObjectFactoryProxy>(*filter.factory.Get());
+                    }
+
+                    /**
+                     * Get filter pointer.
+                     *
+                     * @return Filter.
+                     */
+                    virtual CacheEntryEventFilterBase* GetFilter()
+                    {
+                        // We can not return Java object to C++ code.
+                        // This call should never be called on C++ side.
+                        return 0;
+                    }
+
+                private:
+                    /** Remote Java filter. */
+                    ignite::cache::event::JavaCacheEntryEventFilter filter;
                 };
             }
         }

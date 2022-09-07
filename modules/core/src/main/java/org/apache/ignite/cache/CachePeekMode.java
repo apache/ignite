@@ -43,19 +43,16 @@ public enum CachePeekMode {
 
     /**
      * Peek into near cache only (don't peek into partitioned cache).
-     * In case of {@link CacheMode#LOCAL} cache, behaves as {@link #ALL} mode.
      */
     NEAR,
 
     /**
      * Peek value from primary copy of partitioned cache only (skip near cache).
-     * In case of {@link CacheMode#LOCAL} cache, behaves as {@link #ALL} mode.
      */
     PRIMARY,
 
     /**
      * Peek value from backup copies of partitioned cache only (skip near cache).
-     * In case of {@link CacheMode#LOCAL} cache, behaves as {@link #ALL} mode.
      */
     BACKUP,
 

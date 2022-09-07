@@ -53,7 +53,6 @@ import org.apache.ignite.IgniteDataStreamerTimeoutException;
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.IgniteInterruptedException;
 import org.apache.ignite.IgniteLogger;
-import org.apache.ignite.cache.CacheMode;
 import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.cluster.ClusterTopologyException;
 import org.apache.ignite.configuration.CacheConfiguration;
@@ -87,7 +86,6 @@ import org.apache.ignite.internal.processors.cache.GridCacheUtils;
 import org.apache.ignite.internal.processors.cache.IgniteCacheFutureImpl;
 import org.apache.ignite.internal.processors.cache.IgniteCacheProxy;
 import org.apache.ignite.internal.processors.cache.KeyCacheObject;
-import org.apache.ignite.internal.processors.cache.KeyCacheObjectImpl;
 import org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtTopologyFuture;
 import org.apache.ignite.internal.processors.cache.distributed.dht.IgniteClusterReadOnlyException;
 import org.apache.ignite.internal.processors.cache.distributed.dht.preloader.GridDhtPartitionsExchangeFuture;
@@ -122,7 +120,6 @@ import org.apache.ignite.plugin.security.SecurityPermission;
 import org.apache.ignite.stream.StreamReceiver;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
-
 import static org.apache.ignite.events.EventType.EVT_NODE_FAILED;
 import static org.apache.ignite.events.EventType.EVT_NODE_LEFT;
 import static org.apache.ignite.internal.GridTopic.TOPIC_DATASTREAM;
@@ -148,7 +145,7 @@ public class DataStreamerImpl<K, V> implements IgniteDataStreamer<K, V>, Delayed
     private static final int REMAP_SEMAPHORE_PERMISSIONS_COUNT = Integer.MAX_VALUE;
 
     /** Cache receiver. */
-    private StreamReceiver<K, V> rcvr = DataStreamerCacheUpdaters.<K, V>individual();//ISOLATED_UPDATER;
+    private StreamReceiver<K, V> rcvr = ISOLATED_UPDATER;
 
     /** */
     private byte[] updaterBytes;
@@ -211,8 +208,6 @@ public class DataStreamerImpl<K, V> implements IgniteDataStreamer<K, V>, Delayed
 
     /** Fail counter. */
     private final LongAdder failCntr = new LongAdder();
-
-    private final AtomicLong localRq = new AtomicLong();
 
     /** Active futures of this data loader. */
     @GridToStringInclude
@@ -379,9 +374,6 @@ public class DataStreamerImpl<K, V> implements IgniteDataStreamer<K, V>, Delayed
 
         if (cache == null) { // Possible, cache is not configured on node.
             assert ccfg != null;
-
-            if (ccfg.getCacheMode() == CacheMode.LOCAL)
-                throw new CacheException("Impossible to load Local cache configured remotely.");
 
             ctx.grid().getOrCreateCache(ccfg);
         }
@@ -850,27 +842,23 @@ public class DataStreamerImpl<K, V> implements IgniteDataStreamer<K, V>, Delayed
 
             AffinityTopologyVersion topVer;
 
-            if (!cctx.isLocal()) {
-                GridDhtPartitionsExchangeFuture exchFut = ctx.cache().context().exchange().lastTopologyFuture();
+            GridDhtPartitionsExchangeFuture exchFut = ctx.cache().context().exchange().lastTopologyFuture();
 
-                if (!exchFut.isDone()) {
-                    ExchangeActions acts = exchFut.exchangeActions();
+            if (!exchFut.isDone()) {
+                ExchangeActions acts = exchFut.exchangeActions();
 
-                    if (acts != null && acts.cacheStopped(CU.cacheId(cacheName)))
-                        throw new CacheStoppedException(cacheName);
-                }
-
-                // It is safe to block here even if the cache gate is acquired.
-                topVer = exchFut.get();
+                if (acts != null && acts.cacheStopped(CU.cacheId(cacheName)))
+                    throw new CacheStoppedException(cacheName);
             }
-            else
-                topVer = ctx.cache().context().exchange().readyAffinityVersion();
+
+            // It is safe to block here even if the cache gate is acquired.
+            topVer = exchFut.get();
 
             log.error("TEST | load entries with topology top " + topVer);
 
             List<List<ClusterNode>> assignments = cctx.affinity().assignments(topVer);
 
-            if (!allowOverwrite() && !cctx.isLocal()) { // Cases where cctx required.
+            if (!allowOverwrite()) { // Cases where cctx required.
                 gate = cctx.gate();
 
                // System.err.println("TEST | gate.enter() in DataStreamer.load0()");
@@ -1091,11 +1079,8 @@ public class DataStreamerImpl<K, V> implements IgniteDataStreamer<K, V>, Delayed
                 }
             }
             finally {
-                if (gate != null) {
-                    //log.error("TEST | gate.leave() in DataStreamer.load0()");
-
+                if (gate != null)
                     gate.leave();
-                }
             }
         }
         catch (Exception ex) {
@@ -1128,9 +1113,7 @@ public class DataStreamerImpl<K, V> implements IgniteDataStreamer<K, V>, Delayed
         List<ClusterNode> res = null;
 
         if (!allowOverwrite())
-            res = cctx.isLocal() ?
-                aff.mapKeyToPrimaryAndBackups(cacheName, key, topVer) :
-                cctx.topology().nodes(cctx.affinity().partition(key), topVer);
+            res = cctx.topology().nodes(cctx.affinity().partition(key), topVer);
         else {
             ClusterNode node = aff.mapKeyToNode(cacheName, key, topVer);
 
@@ -1595,9 +1578,6 @@ public class DataStreamerImpl<K, V> implements IgniteDataStreamer<K, V>, Delayed
         /** */
         private final int perNodeParallelOps;
 
-        /* */
-        private GridFutureAdapter<?> initWaitFut;
-
         /** Closure to signal on task finish. */
         @GridToStringExclude
         private final IgniteInClosure<IgniteInternalFuture<Object>> signalC =
@@ -1840,12 +1820,11 @@ public class DataStreamerImpl<K, V> implements IgniteDataStreamer<K, V>, Delayed
         private void localUpdate(final Collection<DataStreamerEntry> entries,
             final AffinityTopologyVersion reqTopVer,
             final GridFutureAdapter<Object> curFut,
-            final byte plc,
-            final long rqId) {
+            final byte plc) {
             try {
                 GridCacheContext cctx = ctx.cache().internalCache(cacheName).context();
 
-                final boolean lockTop = !cctx.isLocal() && !allowOverwrite();
+                final boolean lockTop = !allowOverwrite();
 
                 GridDhtTopologyFuture topWaitFut = null;
 
@@ -1884,9 +1863,7 @@ public class DataStreamerImpl<K, V> implements IgniteDataStreamer<K, V>, Delayed
                                 false,
                                 skipStore,
                                 keepBinary,
-                                rcvr,
-                                rqId
-                                ),
+                                rcvr),
                             plc);
 
                         locFuts.add(callFut);
@@ -1923,7 +1900,7 @@ public class DataStreamerImpl<K, V> implements IgniteDataStreamer<K, V>, Delayed
                     // Need call 'listen' after topology read lock is released.
                     topWaitFut.listen(new IgniteInClosure<IgniteInternalFuture<AffinityTopologyVersion>>() {
                         @Override public void apply(IgniteInternalFuture<AffinityTopologyVersion> e) {
-                            localUpdate(entries, reqTopVer, curFut, plc, rqId);
+                            localUpdate(entries, reqTopVer, curFut, plc);
                         }
                     });
                 }
@@ -2223,12 +2200,6 @@ public class DataStreamerImpl<K, V> implements IgniteDataStreamer<K, V>, Delayed
 
             for (GridFutureAdapter<?> f : reqs.values())
                 f.onDone(err);
-
-            if (initWaitFut != null) {
-                initWaitFut.onDone();
-
-                initWaitFut = null;
-            }
         }
 
         /** {@inheritDoc} */
@@ -2373,38 +2344,35 @@ public class DataStreamerImpl<K, V> implements IgniteDataStreamer<K, V>, Delayed
                     try {
                         e.getKey().finishUnmarshal(cctx.cacheObjectContext(), cctx.deploy().globalLoader());
 
+                        int p = cctx.affinity().partition(e.getKey());
                         if (v == U.TEST_VALUE  && cctx.kernalContext().grid().localNode().order() == 2) {
                             log.error("TEST | receive test value after checkpointReadLock()" + v);
 
                             break;
                         }
 
-                        if (!cctx.isLocal()) {
-                            int p = cctx.affinity().partition(e.getKey());
+                        if (ignoredParts.contains(p))
+                            continue;
 
-                            if (ignoredParts.contains(p))
+                        if (!reservedParts.contains(p)) {
+                            GridDhtLocalPartition part = cctx.topology().localPartition(p, topVer, true);
+
+                            if (!part.reserve()) {
+                                ignoredParts.add(p);
+
                                 continue;
+                            }
+                            else {
+                                // We must not allow to read from RENTING partitions.
+                                if (part.state() == GridDhtPartitionState.RENTING) {
+                                    part.release();
 
-                            if (!reservedParts.contains(p)) {
-                                GridDhtLocalPartition part = cctx.topology().localPartition(p, topVer, true);
-
-                                if (!part.reserve()) {
                                     ignoredParts.add(p);
 
                                     continue;
                                 }
-                                else {
-                                    // We must not allow to read from RENTING partitions.
-                                    if (part.state() == GridDhtPartitionState.RENTING) {
-                                        part.release();
 
-                                        ignoredParts.add(p);
-
-                                        continue;
-                                    }
-
-                                    reservedParts.add(p);
-                                }
+                                reservedParts.add(p);
                             }
                         }
 

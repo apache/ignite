@@ -53,24 +53,8 @@ public class PageEvictionReadThroughTest extends PageEvictionAbstractTest {
      * @throws Exception If failed.
      */
     @Test
-    public void testEvictionWithReadThroughAtomicLocal() throws Exception {
-        testEvictionWithReadThrough(CacheAtomicityMode.ATOMIC, CacheMode.LOCAL);
-    }
-
-    /**
-     * @throws Exception If failed.
-     */
-    @Test
     public void testEvictionWithReadThroughTxReplicated() throws Exception {
         testEvictionWithReadThrough(CacheAtomicityMode.TRANSACTIONAL, CacheMode.REPLICATED);
-    }
-
-    /**
-     * @throws Exception If failed.
-     */
-    @Test
-    public void testEvictionWithReadThroughTxLocal() throws Exception {
-        testEvictionWithReadThrough(CacheAtomicityMode.TRANSACTIONAL, CacheMode.LOCAL);
     }
 
     /**
@@ -89,16 +73,6 @@ public class PageEvictionReadThroughTest extends PageEvictionAbstractTest {
     @Test
     public void testEvictionWithReadThroughMvccTxPartitioned() throws Exception {
         testEvictionWithReadThrough(CacheAtomicityMode.TRANSACTIONAL_SNAPSHOT, CacheMode.PARTITIONED);
-    }
-
-    /**
-     * @throws Exception If failed.
-     */
-    @Ignore("https://issues.apache.org/jira/browse/IGNITE-8582,https://issues.apache.org/jira/browse/IGNITE-7956,"
-        + "https://issues.apache.org/jira/browse/IGNITE-9530")
-    @Test
-    public void testEvictionWithReadThroughMvccTxLocal() throws Exception {
-        testEvictionWithReadThrough(CacheAtomicityMode.TRANSACTIONAL_SNAPSHOT, CacheMode.LOCAL);
     }
 
     /**

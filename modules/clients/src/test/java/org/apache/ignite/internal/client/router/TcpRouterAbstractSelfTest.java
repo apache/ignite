@@ -28,7 +28,7 @@ import org.apache.ignite.internal.client.GridClientProtocol;
 import org.apache.ignite.internal.client.integration.ClientAbstractSelfTest;
 import org.apache.ignite.internal.client.router.impl.GridTcpRouterImpl;
 import org.apache.ignite.internal.util.typedef.F;
-import org.apache.ignite.logger.log4j.Log4JLogger;
+import org.apache.ignite.logger.log4j2.Log4J2Logger;
 import org.junit.Test;
 
 /**
@@ -110,7 +110,7 @@ public abstract class TcpRouterAbstractSelfTest extends ClientAbstractSelfTest {
         cfg.setPort(ROUTER_PORT);
         cfg.setPortRange(0);
         cfg.setServers(Collections.singleton(HOST + ":" + BINARY_PORT));
-        cfg.setLogger(new Log4JLogger(ROUTER_LOG_CFG));
+        cfg.setLogger(new Log4J2Logger(ROUTER_LOG_CFG));
 
         return cfg;
     }

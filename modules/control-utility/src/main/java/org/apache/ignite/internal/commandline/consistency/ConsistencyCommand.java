@@ -40,6 +40,7 @@ import static java.util.stream.Collectors.toSet;
 import static org.apache.ignite.internal.commandline.CommandList.CONSISTENCY;
 import static org.apache.ignite.internal.commandline.TaskExecutor.BROADCAST_UUID;
 import static org.apache.ignite.internal.commandline.TaskExecutor.executeTaskByNameOnNode;
+import static org.apache.ignite.internal.commandline.consistency.ConsistencySubCommand.FINALIZE_COUNTERS;
 import static org.apache.ignite.internal.commandline.consistency.ConsistencySubCommand.REPAIR;
 import static org.apache.ignite.internal.commandline.consistency.ConsistencySubCommand.STATUS;
 import static org.apache.ignite.internal.commandline.consistency.ConsistencySubCommand.of;
@@ -74,49 +75,59 @@ public class ConsistencyCommand extends AbstractCommand<Object> {
 
     /** {@inheritDoc} */
     @Override public Object execute(GridClientConfiguration clientCfg, Logger log) throws Exception {
-        boolean failed = false;
-
-        StringBuilder sb = new StringBuilder();
+        String output;
 
         try (GridClient client = Command.startClient(clientCfg)) {
-            Set<UUID> nodeIds = parallel ?
-                Collections.singleton(BROADCAST_UUID) :
-                client.compute().nodes().stream()
-                    .filter(SRV_NODES)
-                    .map(GridClientNode::nodeId)
-                    .collect(toSet());
+            if (cmd == FINALIZE_COUNTERS)
+                output = executeTaskByNameOnNode(client, cmd.taskName(), arg(), null, clientCfg);
+            else {
+                StringBuilder sb = new StringBuilder();
+                boolean failed = false;
 
-            for (UUID nodeId : nodeIds) {
-                VisorConsistencyTaskResult res = executeTaskByNameOnNode(
-                    client,
-                    cmd.taskName(),
-                    arg(),
-                    nodeId,
-                    clientCfg
-                );
+                Set<UUID> nodeIds = parallel ?
+                    Collections.singleton(BROADCAST_UUID) :
+                    client.compute().nodes().stream()
+                        .filter(SRV_NODES)
+                        .map(GridClientNode::nodeId)
+                        .collect(toSet());
 
-                if (res.cancelled()) {
-                    sb.append("Operation execution cancelled.\n\n");
+                for (UUID nodeId : nodeIds) {
+                    VisorConsistencyTaskResult res = executeTaskByNameOnNode(
+                        client,
+                        cmd.taskName(),
+                        arg(),
+                        nodeId,
+                        clientCfg
+                    );
 
-                    failed = true;
+                    if (res.cancelled()) {
+                        sb.append("Operation execution cancelled.\n\n");
+
+                        failed = true;
+                    }
+
+                    if (res.failed()) {
+                        sb.append("Operation execution failed.\n\n");
+
+                        failed = true;
+                    }
+
+                    if (failed)
+                        sb.append("[EXECUTION FAILED OR CANCELLED, RESULTS MAY BE INCOMPLETE OR INCONSISTENT]\n\n");
+
+                    if (res.message() != null)
+                        sb.append(res.message());
+                    else
+                        assert !parallel;
+
+                    if (failed)
+                        break;
                 }
 
-                if (res.failed()) {
-                    sb.append("Operation execution failed.\n\n");
-
-                    failed = true;
-                }
+                output = sb.toString();
 
                 if (failed)
-                    sb.append("[EXECUTION FAILED OR CANCELLED, RESULTS MAY BE INCOMPLETE OR INCONSISTENT]\n\n");
-
-                if (res.message() != null)
-                    sb.append(res.message());
-                else
-                    assert !parallel;
-
-                if (failed)
-                    break;
+                    throw new IgniteCheckedException(output);
             }
         }
         catch (Throwable e) {
@@ -126,12 +137,7 @@ public class ConsistencyCommand extends AbstractCommand<Object> {
             throw e;
         }
 
-        String output = sb.toString();
-
-        if (failed)
-            throw new IgniteCheckedException(output);
-        else
-            log.info(output);
+        log.info(output);
 
         return output;
     }
@@ -150,7 +156,7 @@ public class ConsistencyCommand extends AbstractCommand<Object> {
 
         usage(
             log,
-            "Checks/Repairs cache consistency using Read Repair approach:",
+            "Check/Repair cache consistency using Read Repair approach:",
             CONSISTENCY,
             params,
             REPAIR.toString(),
@@ -163,6 +169,13 @@ public class ConsistencyCommand extends AbstractCommand<Object> {
             CONSISTENCY,
             Collections.emptyMap(),
             STATUS.toString());
+
+        usage(
+            log,
+            "Finalize partitions update counters:",
+            CONSISTENCY,
+            Collections.emptyMap(),
+            FINALIZE_COUNTERS.toString());
     }
 
     /** {@inheritDoc} */
@@ -172,7 +185,7 @@ public class ConsistencyCommand extends AbstractCommand<Object> {
         parallel = cmd != REPAIR; // REPAIR is sequential by default.
 
         if (cmd == REPAIR) {
-            String cacheName = null;
+            String cacheOrGrpName = null;
             int part = -1;
             ReadRepairStrategy strategy = null;
 
@@ -184,7 +197,7 @@ public class ConsistencyCommand extends AbstractCommand<Object> {
 
                     switch (arg) {
                         case CACHE:
-                            cacheName = argIter.nextArg("Expected cache name.");
+                            cacheOrGrpName = argIter.nextArg("Expected cache(group) name.");
 
                             break;
 
@@ -211,8 +224,8 @@ public class ConsistencyCommand extends AbstractCommand<Object> {
                     break;
             }
 
-            if (cacheName == null)
-                throw new IllegalArgumentException("Cache name argument missed.");
+            if (cacheOrGrpName == null)
+                throw new IllegalArgumentException("Cache (or cache group) name argument missed.");
 
             if (part == -1)
                 throw new IllegalArgumentException("Partition argument missed.");
@@ -226,9 +239,9 @@ public class ConsistencyCommand extends AbstractCommand<Object> {
                     "Parallel mode currently allowed only when CHECK_ONLY strategy is chosen.");
             }
 
-            cmdArg = new VisorConsistencyRepairTaskArg(cacheName, part, strategy);
+            cmdArg = new VisorConsistencyRepairTaskArg(cacheOrGrpName, part, strategy);
         }
-        else if (cmd == STATUS)
+        else if (cmd == STATUS || cmd == FINALIZE_COUNTERS)
             cmdArg = null;
         else
             throw new IllegalArgumentException("Unsupported operation.");

@@ -34,10 +34,8 @@ import org.apache.ignite.lang.IgnitePredicate;
 import org.apache.ignite.testframework.MvccFeatureChecker;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.junit.Test;
-
 import static java.util.concurrent.TimeUnit.SECONDS;
 import static org.apache.ignite.cache.CacheAtomicityMode.TRANSACTIONAL;
-import static org.apache.ignite.cache.CacheMode.LOCAL;
 import static org.apache.ignite.cache.CacheMode.PARTITIONED;
 import static org.apache.ignite.cache.CacheMode.REPLICATED;
 import static org.apache.ignite.events.EventType.EVT_CACHE_ENTRY_EVICTED;
@@ -63,7 +61,6 @@ public class GridCacheEvictionLockUnlockSelfTest extends GridCommonAbstractTest 
 
     /** {@inheritDoc} */
     @Override protected IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {
-        MvccFeatureChecker.skipIfNotSupported(MvccFeatureChecker.Feature.LOCAL_CACHE);
         MvccFeatureChecker.skipIfNotSupported(MvccFeatureChecker.Feature.ENTRY_LOCK);
 
         IgniteConfiguration c = super.getConfiguration(igniteInstanceName);
@@ -93,19 +90,9 @@ public class GridCacheEvictionLockUnlockSelfTest extends GridCommonAbstractTest 
 
     /** {@inheritDoc} */
     @Override protected void beforeTestsStarted() throws Exception {
-        MvccFeatureChecker.skipIfNotSupported(MvccFeatureChecker.Feature.LOCAL_CACHE);
         MvccFeatureChecker.skipIfNotSupported(MvccFeatureChecker.Feature.ENTRY_LOCK);
 
         super.beforeTestsStarted();
-    }
-
-    /** @throws Exception If failed. */
-    @Test
-    public void testLocal() throws Exception {
-        mode = LOCAL;
-        gridCnt = 1;
-
-        doTest();
     }
 
     /** @throws Exception If failed. */

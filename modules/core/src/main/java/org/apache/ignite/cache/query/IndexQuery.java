@@ -53,6 +53,9 @@ public final class IndexQuery<K, V> extends Query<Cache.Entry<K, V>> {
     /** Index query criteria. */
     private @Nullable List<IndexQueryCriterion> criteria;
 
+    /** Partition to run IndexQuery over. */
+    private @Nullable Integer part;
+
     /**
      * Specify index with cache value class.
      *
@@ -172,18 +175,39 @@ public final class IndexQuery<K, V> extends Query<Cache.Entry<K, V>> {
         return filter;
     }
 
+    /**
+     * Sets partition number over which this query should iterate. If {@code null}, query will iterate over
+     * all partitions in the cache. Must be in the range [0, N) where N is partition number in the cache.
+     *
+     * @param part Partition number over which this query should iterate.
+     * @return {@code this} for chaining.
+     */
+    public IndexQuery<K, V> setPartition(@Nullable Integer part) {
+        A.ensure(part == null || part >= 0,
+            "Specified partition must be in the range [0, N) where N is partition number in the cache.");
+
+        this.part = part;
+
+        return this;
+    }
+
+    /**
+     * Gets partition number over which this query should iterate. Will return {@code null} if partition was not
+     * set. In this case query will iterate over all partitions in the cache.
+     *
+     * @return Partition number or {@code null}.
+     */
+    @Nullable public Integer getPartition() {
+        return part;
+    }
+
     /** */
     private void validateAndSetCriteria(List<IndexQueryCriterion> criteria) {
         if (F.isEmpty(criteria))
             return;
 
-        Class<?> critCls = criteria.get(0).getClass();
-
-        for (IndexQueryCriterion c: criteria) {
+        for (IndexQueryCriterion c: criteria)
             A.notNull(c, "criteria");
-            A.ensure(c.getClass() == critCls,
-                "Expect a the same criteria class for merging criteria. Exp=" + critCls + ", act=" + c.getClass());
-        }
 
         this.criteria = Collections.unmodifiableList(criteria);
     }

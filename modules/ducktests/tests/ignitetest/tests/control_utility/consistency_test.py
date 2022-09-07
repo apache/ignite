@@ -75,7 +75,7 @@ class ConsistencyTest(IgniteTest):
 
             cfg_file = f"{ignites.config_dir}/{cfg_filename}"
 
-            ignites.exec_command(node, f"cp {ignites.home_dir}/config/ignite-log4j2.xml {cfg_file}")
+            ignites.exec_command(node, f"cp {ignites.home_dir}/config/ignite-log4j.xml {cfg_file}")
 
             orig = "${sys:IGNITE_HOME}/work/log".replace('/', '\\/')
             fixed = ignites.log_dir.replace('/', '\\/')

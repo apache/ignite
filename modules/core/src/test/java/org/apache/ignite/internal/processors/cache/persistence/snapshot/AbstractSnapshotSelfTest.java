@@ -37,7 +37,6 @@ import java.util.Queue;
 import java.util.Set;
 import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.concurrent.Executor;
-import java.util.function.BiConsumer;
 import java.util.function.BiFunction;
 import java.util.function.Consumer;
 import java.util.function.Function;
@@ -68,18 +67,11 @@ import org.apache.ignite.internal.TestRecordingCommunicationSpi;
 import org.apache.ignite.internal.encryption.AbstractEncryptionTest;
 import org.apache.ignite.internal.managers.discovery.CustomMessageWrapper;
 import org.apache.ignite.internal.managers.discovery.DiscoveryCustomMessage;
-import org.apache.ignite.internal.pagemem.wal.WALIterator;
-import org.apache.ignite.internal.pagemem.wal.record.DataEntry;
-import org.apache.ignite.internal.pagemem.wal.record.DataRecord;
-import org.apache.ignite.internal.pagemem.wal.record.WALRecord;
-import org.apache.ignite.internal.pagemem.wal.record.delta.ClusterSnapshotRecord;
 import org.apache.ignite.internal.processors.cache.CacheGroupDescriptor;
 import org.apache.ignite.internal.processors.cache.GridCacheSharedContext;
 import org.apache.ignite.internal.processors.cache.persistence.file.FilePageStoreManager;
 import org.apache.ignite.internal.processors.cache.persistence.partstate.GroupPartitionId;
-import org.apache.ignite.internal.processors.cache.persistence.wal.WALPointer;
 import org.apache.ignite.internal.processors.cache.persistence.wal.crc.FastCrc;
-import org.apache.ignite.internal.processors.cache.persistence.wal.reader.IgniteWalIteratorFactory;
 import org.apache.ignite.internal.processors.marshaller.MappedName;
 import org.apache.ignite.internal.processors.resource.GridSpringResourceContext;
 import org.apache.ignite.internal.util.tostring.GridToStringInclude;
@@ -87,7 +79,6 @@ import org.apache.ignite.internal.util.typedef.G;
 import org.apache.ignite.internal.util.typedef.internal.CU;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.internal.util.typedef.internal.U;
-import org.apache.ignite.lang.IgniteBiTuple;
 import org.apache.ignite.lang.IgniteFuture;
 import org.apache.ignite.lang.IgniteFutureCancelledException;
 import org.apache.ignite.lang.IgnitePredicate;
@@ -661,72 +652,6 @@ public abstract class AbstractSnapshotSelfTest extends GridCommonAbstractTest {
      */
     protected static BlockingCustomMessageDiscoverySpi discoSpi(IgniteEx ignite) {
         return (BlockingCustomMessageDiscoverySpi)ignite.context().discovery().getInjectedDiscoverySpi();
-    }
-
-    /**
-     * Checks that {@link ClusterSnapshotRecord} was written and every data entry is written afer this record
-     * isn't part of ClusterSnapshot.
-     *
-     * @param ign Ignite instance.
-     * @param snpName Cluster snapshot name.
-     * @param afterSnpEntryCheck Checks every entry in WAL. It consumes two params: next DataEntry, and {@code true} if
-     *                           this entry written before {@link ClusterSnapshotRecord}, otherwise {@code false}.
-     */
-    protected void checkSnpWalRecords(IgniteEx ign, String snpName, BiConsumer<DataEntry, Boolean> afterSnpEntryCheck) throws Exception {
-        WALIterator walIt = wal(ign);
-
-        assertTrue(walIt.hasNext());
-
-        WALPointer snpRecPtr = null;
-
-        for (IgniteBiTuple<WALPointer, WALRecord> rec: walIt) {
-            if (snpRecPtr == null) {
-                if (rec.getValue() instanceof ClusterSnapshotRecord) {
-                    snpRecPtr = rec.get1();
-
-                    assertEquals(snpName, ((ClusterSnapshotRecord)rec.getValue()).clusterSnapshotName());
-                }
-            }
-            else if (rec.getValue() instanceof DataRecord) {
-                DataRecord data = (DataRecord)rec.getValue();
-
-                assertEquals(1, data.writeEntries().size());
-
-                DataEntry e = data.writeEntries().get(0);
-
-                if (snpRecPtr == null) {
-                    assertTrue(rec.getKey().compareTo(snpRecPtr) < 0);
-
-                    afterSnpEntryCheck.accept(e, false);
-                }
-                else {
-                    assertTrue(rec.getKey().compareTo(snpRecPtr) > 0);
-
-                    afterSnpEntryCheck.accept(e, true);
-                }
-            }
-        }
-    }
-
-    /**
-     * @param ign Ignite instance.
-     * @return WAL iterator over existing WAL files.
-     */
-    private WALIterator wal(IgniteEx ign) throws Exception {
-        String workDir = U.defaultWorkDirectory();
-
-        IgniteWalIteratorFactory factory = new IgniteWalIteratorFactory(log);
-
-        String subfolderName = U.maskForFileName(ign.name());
-
-        File wals = Paths.get(workDir).resolve(DataStorageConfiguration.DFLT_WAL_PATH).resolve(subfolderName).toFile();
-        File archive = Paths.get(workDir).resolve(DataStorageConfiguration.DFLT_WAL_ARCHIVE_PATH).resolve(subfolderName).toFile();
-
-        IgniteWalIteratorFactory.IteratorParametersBuilder params = new IgniteWalIteratorFactory.IteratorParametersBuilder()
-            .filesOrDirs(archive, wals)
-            .sharedContext(ign.cachex(DEFAULT_CACHE_NAME).context().shared());
-
-        return factory.iterator(params);
     }
 
     /** */

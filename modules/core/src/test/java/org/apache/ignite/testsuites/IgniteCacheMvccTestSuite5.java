@@ -25,7 +25,6 @@ import org.apache.ignite.IgniteSystemProperties;
 import org.apache.ignite.cache.affinity.AffinityClientNodeSelfTest;
 import org.apache.ignite.cache.affinity.AffinityDistributionLoggingTest;
 import org.apache.ignite.cache.affinity.AffinityHistoryCleanupTest;
-import org.apache.ignite.cache.affinity.local.LocalAffinityFunctionTest;
 import org.apache.ignite.internal.GridCachePartitionExchangeManagerHistSizeTest;
 import org.apache.ignite.internal.processors.cache.CacheCreateDestroyClusterReadOnlyModeTest;
 import org.apache.ignite.internal.processors.cache.CacheSerializableTransactionsTest;
@@ -103,7 +102,6 @@ public class IgniteCacheMvccTestSuite5 {
         ignoredTests.add(GridCacheAffinityBackupsSelfTest.class);
         ignoredTests.add(IgniteCacheAffinitySelfTest.class);
         ignoredTests.add(AffinityClientNodeSelfTest.class);
-        ignoredTests.add(LocalAffinityFunctionTest.class);
         ignoredTests.add(AffinityHistoryCleanupTest.class);
         ignoredTests.add(AffinityDistributionLoggingTest.class);
         ignoredTests.add(PartitionsExchangeOnDiscoveryHistoryOverflowTest.class);

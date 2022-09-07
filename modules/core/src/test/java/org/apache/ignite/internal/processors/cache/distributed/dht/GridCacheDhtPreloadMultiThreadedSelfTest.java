@@ -30,7 +30,6 @@ import org.apache.ignite.failure.NoOpFailureHandler;
 import org.apache.ignite.internal.util.typedef.G;
 import org.apache.ignite.lang.IgnitePredicate;
 import org.apache.ignite.testframework.GridTestUtils;
-import org.apache.ignite.testframework.MvccFeatureChecker;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.jetbrains.annotations.Nullable;
 import org.junit.Test;
@@ -136,8 +135,6 @@ public class GridCacheDhtPreloadMultiThreadedSelfTest extends GridCommonAbstract
      */
     @Test
     public void testConcurrentNodesStartStop() throws Exception {
-        MvccFeatureChecker.skipIfNotSupported(MvccFeatureChecker.Feature.LOCAL_CACHE);
-
         try {
             multithreadedAsync(
                 new Callable<Object>() {
