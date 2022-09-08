@@ -157,7 +157,7 @@ public class KillCommandsCommandShTest extends GridCommandHandlerClusterByClassA
     @Test
     public void testCancelSnapshot() {
         doSnapshotCancellationTest(client, srvs, client.cache(DEFAULT_CACHE_NAME), snpName -> {
-            String id = grid(0).context().metric().registry(SNAPSHOT_METRICS).findMetric("lastRequestId").getAsString();
+            String id = grid(0).context().metric().registry(SNAPSHOT_METRICS).findMetric("LastRequestId").getAsString();
 
             int res = execute("--kill", "snapshot", id);
 

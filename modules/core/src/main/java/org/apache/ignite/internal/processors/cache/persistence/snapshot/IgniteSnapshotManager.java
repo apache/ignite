@@ -509,7 +509,7 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
         mreg.register("LocalSnapshotNames", this::localSnapshotNames, List.class,
             "The list of names of all snapshots currently saved on the local node with respect to " +
                 "the configured via IgniteConfiguration snapshot working path.");
-        mreg.register("lastRequestId", () -> Optional.ofNullable(lastSeenSnpFut.rqId).map(UUID::toString).orElse(""),
+        mreg.register("LastRequestId", () -> Optional.ofNullable(lastSeenSnpFut.rqId).map(UUID::toString).orElse(""),
             String.class, "The ID of the last started snapshot operation.");
 
         mreg.register("CurrentSnapshotTotalSize", () -> {

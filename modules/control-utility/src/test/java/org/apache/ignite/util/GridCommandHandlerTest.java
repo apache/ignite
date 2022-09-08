@@ -3097,7 +3097,7 @@ public class GridCommandHandlerTest extends GridCommandHandlerClusterPerMethodAb
         LongMetric opEndTimeMetric = metrics.findMetric("LastSnapshotEndTime");
         BooleanSupplier endTimeMetricPredicate = () -> opEndTimeMetric.value() > 0;
 
-        String reqId = metrics.findMetric("lastRequestId").getAsString();
+        String reqId = metrics.findMetric("LastRequestId").getAsString();
         assertFalse(F.isEmpty(reqId));
 
         // Make sure the operation ID has been shown to the user.
@@ -3156,7 +3156,7 @@ public class GridCommandHandlerTest extends GridCommandHandlerClusterPerMethodAb
         // Cancel snapshot using operation ID.
         doSnapshotCancellationTest(startCli, Collections.singletonList(srv), startCli.cache(DEFAULT_CACHE_NAME),
             snpName -> {
-                String reqId = srv.context().metric().registry(SNAPSHOT_METRICS).findMetric("lastRequestId").getAsString();
+                String reqId = srv.context().metric().registry(SNAPSHOT_METRICS).findMetric("LastRequestId").getAsString();
                 assertFalse(F.isEmpty(reqId));
 
                 assertEquals(EXIT_CODE_OK, execute(h, "--snapshot", "cancel", "--id", reqId));
