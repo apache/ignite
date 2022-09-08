@@ -19,8 +19,12 @@
 
 <Configuration monitorInterval="60">
     <Properties>
-        <!-- Set this property to true if you want to completely disable colors in console output. -->
-        <Property name="disableAnsi">false</Property>
+        <!--
+            Set this property to false if you want to enable colors in console output.
+
+            NOTE: on Windows, you must additionally set the `LOG4J_SKIP_JANSI=false` environment variable.
+        -->
+        <Property name="disableAnsi">true</Property>
     </Properties>
     <Appenders>
         <Console name="CONSOLE" target="SYSTEM_OUT">
