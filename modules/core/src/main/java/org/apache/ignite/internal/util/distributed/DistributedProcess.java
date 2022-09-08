@@ -316,20 +316,17 @@ public class DistributedProcess<I extends Serializable, R extends Serializable> 
         Process p = processes.computeIfAbsent(msg.processId(), id -> new Process(msg.processId()));
 
         p.initCrdFut.listen(f -> {
-            boolean rmvd, isEmpty;
+            boolean isEmpty;
 
             synchronized (mux) {
-                rmvd = p.remaining.remove(nodeId);
+                if (p.remaining.remove(nodeId))
+                    p.singleMsgs.put(nodeId, msg);
 
                 isEmpty = p.remaining.isEmpty();
             }
 
-            if (rmvd) {
-                p.singleMsgs.put(nodeId, msg);
-
-                if (isEmpty)
-                    finishProcess(p);
-            }
+            if (isEmpty)
+                finishProcess(p);
         });
     }
 
