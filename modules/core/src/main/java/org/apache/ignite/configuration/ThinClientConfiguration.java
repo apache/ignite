@@ -37,16 +37,8 @@ public class ThinClientConfiguration {
     /** Active compute tasks per connection limit. */
     private int maxActiveComputeTasksPerConn = DFLT_MAX_ACTIVE_COMPUTE_TASKS_PER_CONNECTION;
 
-    /**
-     * @see new field serverExcStackTraceToClient.
-     * If {@code true} sends a server exception stack trace to the client side.
-     * @deprecated please now use new field serverExcStackTraceToClientbecause.
-     */
-    @Deprecated
+    /** If {@code true} sends a server exception stack trace to the client side. */
     private boolean sendServerExcStackTraceToClient;
-
-    /** If {@code true} a server exception stack trace is sent to the client side. */
-    private boolean serverExcStackTraceToClient;
 
     /**
      * Creates thin-client configuration with all default values.
@@ -56,11 +48,10 @@ public class ThinClientConfiguration {
     }
 
     /**
-     * @param cfg Configuration to copy.
      * Creates thin-client configuration by copying all properties from given configuration.
-     * @deprecated
+     *
+     * @param cfg Configuration to copy.
      */
-    @Deprecated
     public ThinClientConfiguration(ThinClientConfiguration cfg) {
         assert cfg != null;
 
@@ -112,7 +103,7 @@ public class ThinClientConfiguration {
 
     /**
      * @return If {@code true} sends a server exception stack to the client side.
-     * @deprecated please now use new method getServerExceptionStackTraceToClient().
+     * @deprecated Use {@link #getServerExceptionStackTraceToClient()} instead.
      */
     @Deprecated
     public boolean sendServerExceptionStackTraceToClient() {
@@ -122,7 +113,7 @@ public class ThinClientConfiguration {
     /**
      * @param sendServerExcStackTraceToClient If {@code true} sends a server exception stack to the client side.
      * @return {@code this} for chaining.
-     * @deprecated please now use new method setServerExceptionStackTraceToClient().
+     * @deprecated Use {@link #setServerToClientExceptionStackTraceSending(boolean)} instead.
      */
     @Deprecated
     public ThinClientConfiguration sendServerExceptionStackTraceToClient(boolean sendServerExcStackTraceToClient) {
@@ -135,22 +126,20 @@ public class ThinClientConfiguration {
      * @return If {@code true} gets a server exception stack that is to be sent to the client side.
      */
     public boolean getServerExceptionStackTraceToClient() {
-        return serverExcStackTraceToClient;
+        return sendServerExcStackTraceToClient;
     }
 
     /**
-     * @param serverExcStackTraceToClient if {@code true} sets a server exception stack that is to be sent to the client side.
+     * @param sendStackTrace if {@code true} sets a server to client exception stack trace sending.
      * @return {@code this} for chaining.
      */
-    public ThinClientConfiguration setServerExceptionStackTraceToClient(boolean serverExcStackTraceToClient) {
-        this.serverExcStackTraceToClient = serverExcStackTraceToClient;
+    public ThinClientConfiguration setServerToClientExceptionStackTraceSending(boolean sendStackTrace) {
+        sendServerExcStackTraceToClient = sendStackTrace;
 
         return this;
     }
 
-    /**
-     * {@inheritDoc}
-     */
+    /** {@inheritDoc} */
     @Override public String toString() {
         return S.toString(ThinClientConfiguration.class, this);
     }
