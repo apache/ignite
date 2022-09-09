@@ -103,9 +103,7 @@ public class ThinClientConfiguration {
 
     /**
      * @return If {@code true} sends a server exception stack to the client side.
-     * @deprecated Use {@link #setServerToClientExceptionStackTraceSending()} instead.
      */
-    @Deprecated
     public boolean sendServerExceptionStackTraceToClient() {
         return sendServerExcStackTraceToClient;
     }
@@ -120,13 +118,6 @@ public class ThinClientConfiguration {
         this.sendServerExcStackTraceToClient = sendServerExcStackTraceToClient;
 
         return this;
-    }
-
-    /**
-     * @return If {@code true} sends a server exception stack to the client side.
-     */
-    public boolean setServerToClientExceptionStackTraceSending() {
-        return sendServerExcStackTraceToClient;
     }
 
     /**
