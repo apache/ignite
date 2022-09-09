@@ -12,7 +12,7 @@ Ignite:
 * Added CDC binary meta change events.
 * Added a control.sh command that schedules index rebuild via the maintenance mode.
 * Added a pluggable affinity mapping function for the partition awareness usage.
-* Added a snapshot creation operational metrics.
+* Added a snapshot creation operation metrics.
 * Added a snapshot status command to control.sh and JMX.
 * Added a user info to the sql queries view.
 * Added an opportunity to specify a single partition for IndexQuery.
