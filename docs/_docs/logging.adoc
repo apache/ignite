@@ -77,6 +77,8 @@ In the above example, the path to `log4j2-config.xml` can be either an absolute 
 
 NOTE: Log4j2 supports runtime reconfiguration, i.e. changes in the configuration file is applied without the need to restart the application.
 
+NOTE: `log4j2-config.xml` enables colorization of console output by default. This feature works out of the box on many operating systems, except for Windows. If you would like to enable this feature on Windows, follow the https://logging.apache.org/log4j/2.x/manual/layouts.html#ANSI_Styling_on_Windows[official log4j2 instructions].
+
 == Using JCL
 NOTE: Before using JCL, enable the link:setup#enabling-modules[ignite-jcl] module.
 
