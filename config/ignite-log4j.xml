@@ -34,7 +34,7 @@
 
         <Console name="CONSOLE_ERR" target="SYSTEM_ERR">
             <!-- Add the `disableAnsi="true"` property to the pattern layout if you want to disable colors in the console output. -->
-            <PatternLayout pattern="%style{[%d{ISO8601}][%-5p][%t][%c{1}] %m%n}{bright red}"/>
+            <PatternLayout pattern="%highlight{[%d{ISO8601}][%-5p][%t][%c{1}] %m%n}{ERROR=bright red}"/>
         </Console>
 
         <File name="CONSISTENCY" fileName="${sys:IGNITE_HOME}/work/log/consistency.log">
