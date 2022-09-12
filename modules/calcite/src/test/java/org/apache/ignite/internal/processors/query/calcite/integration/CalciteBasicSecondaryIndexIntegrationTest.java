@@ -310,6 +310,13 @@ public class CalciteBasicSecondaryIndexIntegrationTest extends AbstractBasicInte
             .check();
     }
 
+    /** */
+    @Test
+    public void test() {
+        assertQuery("SELECT 1, 2, 3, 4, 5, 6, age, name, id FROM Developer WHERE 1 = id and age = 33")
+            .check();
+    }
+
     // ===== No filter =====
 
     /** */
