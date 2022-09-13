@@ -1158,17 +1158,21 @@ public class IgniteCacheDatabaseSharedManager extends GridCacheSharedManagerAdap
 
         WALIterator iter = cctx.wal(true).replay(null, (type, ptr) -> true);
 
-        while (iter.hasNext())
-            iter.next();
+        try {
+            while (iter.hasNext())
+                iter.next();
 
-        WALPointer ptr = iter.lastRead().orElse(null);
+            WALPointer ptr = iter.lastRead().orElse(null);
 
-        if (ptr != null)
-            ptr = ptr.next();
+            if (ptr != null)
+                ptr = ptr.next();
 
-        cctx.wal(true).startAutoReleaseSegments();
-
-        cctx.wal(true).resumeLogging(ptr);
+            cctx.wal(true).startAutoReleaseSegments();
+            cctx.wal(true).resumeLogging(ptr);
+        }
+        finally {
+            iter.close();
+        }
     }
 
     /**

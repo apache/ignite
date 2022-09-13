@@ -1384,10 +1384,10 @@ public class FileWriteAheadLogManager extends GridCacheSharedManagerAdapter impl
                 segmentSize.put(idx, currSize);
             }
             finally {
-                // Move last checkpoint and reserved index to previous segment index.
+                // Move last checkpoint index to previous segment index.
                 // This will allow cleaner to remove segments from archive.
                 if (inMemoryCdc)
-                    segmentAware.lastCheckpointIdx(hnd.getSegmentId() - 1);
+                    segmentAware.lastCheckpointIdx(hnd.getSegmentId());
 
                 if (archiver == null)
                     segmentAware.addSize(idx, currSize - reservedSize);
@@ -3294,10 +3294,8 @@ public class FileWriteAheadLogManager extends GridCacheSharedManagerAdapter impl
                         else {
                             high = fileDesc;
 
-                            size += fileDesc.file.length();
-
                             // Ensure that there will be exactly removed at least one segment.
-                            if (totalSize - size < minWalArchiveSize)
+                            if (totalSize - (size += fileDesc.file.length()) < minWalArchiveSize)
                                 break;
                         }
                     }
