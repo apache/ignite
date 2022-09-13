@@ -93,6 +93,52 @@ public class IgniteClusterSnapshotWalRecordTest extends AbstractSnapshotSelfTest
         assertCacheKeys(snpIgn.cache(DEFAULT_CACHE_NAME), snpData);
     }
 
+    /** */
+    @Test
+    public void testClusterSnapshotRecordIsFirstInSegment() throws Exception {
+        int nodes = 3;
+        int snapshots = 10;
+
+        startGridsWithCache(nodes, 1, key -> new Account(key, key),
+            new CacheConfiguration<>(DEFAULT_CACHE_NAME)
+        );
+
+        for (int i = 0; i < snapshots; i++) {
+            // Start changing data concurrently with performing the ClusterSnapshot operation.
+            snp(grid(0)).createSnapshot(SNAPSHOT_NAME + i).get();
+        }
+
+        for (int i = 0; i < nodes; i++) {
+            grid(i).context().cache().context().wal().flush(null, true);
+
+            WALIterator walIt = wal(grid(i));
+
+            long curSeg = 0;
+            long snpCnt = 0;
+
+            for (IgniteBiTuple<WALPointer, WALRecord> tuple: walIt) {
+                long seg = tuple.getKey().index();
+                WALRecord rec = tuple.getValue();
+
+                if (rec.type() == WALRecord.RecordType.CLUSTER_SNAPSHOT) {
+                    assertFalse(curSeg == seg);
+
+                    SnapshotMetadata metadata = snp(grid(i)).readSnapshotMetadata(
+                        snp(grid(i)).snapshotLocalDir(SNAPSHOT_NAME + snpCnt),
+                        (String)grid(i).configuration().getConsistentId());
+
+                    assertEquals(metadata.lastSegIdx().longValue(), curSeg);
+
+                    snpCnt++;
+                }
+
+                curSeg = seg;
+            }
+
+            assertEquals(snapshots, snpCnt);
+        }
+    }
+
     /**
      * Parsing WAL files and dumping cache states: fisrst is before {@link ClusterSnapshotRecord} was written, and second
      * is after all load operations stopped.

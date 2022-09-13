@@ -68,6 +68,9 @@ public class SnapshotMetadata implements Serializable {
     @GridToStringInclude
     private final Set<String> bltNodes;
 
+    /** Index of last WAL segment that contains data of snapshot. */
+    private final Long lastSegIdx;
+
     /**
      * Map of cache group partitions from which snapshot has been taken on the local node. This map can be empty
      * since for instance, due to the node filter there is no cache data on node.
@@ -86,6 +89,7 @@ public class SnapshotMetadata implements Serializable {
      * @param pageSize Page size of stored snapshot data.
      * @param grpIds The list of cache groups ids which were included into snapshot.
      * @param bltNodes The set of affected by snapshot baseline nodes.
+     * @param lastSegIdx Index of last WAL segment that contains data of snapshot.
      * @param masterKeyDigest Master key digest for encrypted caches.
      */
     public SnapshotMetadata(
@@ -97,6 +101,7 @@ public class SnapshotMetadata implements Serializable {
         List<Integer> grpIds,
         Set<String> bltNodes,
         Set<GroupPartitionId> pairs,
+        @Nullable Long lastSegIdx,
         @Nullable byte[] masterKeyDigest
     ) {
         this.rqId = rqId;
@@ -107,6 +112,7 @@ public class SnapshotMetadata implements Serializable {
         this.grpIds = grpIds;
         this.bltNodes = bltNodes;
         this.masterKeyDigest = masterKeyDigest;
+        this.lastSegIdx = lastSegIdx;
 
         pairs.forEach(p ->
             locParts.computeIfAbsent(p.getGroupId(), k -> new HashSet<>())
@@ -168,6 +174,13 @@ public class SnapshotMetadata implements Serializable {
      */
     public Map<Integer, Set<Integer>> partitions() {
         return Collections.unmodifiableMap(locParts);
+    }
+
+    /**
+     * @return Index of last WAL segment that contains data of snapshot.
+     */
+    public Long lastSegIdx() {
+        return lastSegIdx;
     }
 
     /** Save the state of this <tt>HashMap</tt> partitions and cache groups to a stream. */
