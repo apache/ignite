@@ -22,6 +22,8 @@ import org.apache.calcite.plan.RelOptUtil;
 import org.apache.calcite.rel.type.RelDataTypeFactory;
 import org.apache.calcite.rex.RexFieldAccess;
 import org.apache.calcite.rex.RexNode;
+import org.apache.ignite.internal.processors.query.calcite.prepare.bounds.ExactBounds;
+import org.apache.ignite.internal.processors.query.calcite.prepare.bounds.SearchBounds;
 import org.apache.ignite.internal.processors.query.calcite.rel.IgniteIndexScan;
 import org.apache.ignite.internal.processors.query.calcite.rel.IgniteRel;
 import org.apache.ignite.internal.processors.query.calcite.schema.IgniteSchema;
@@ -93,23 +95,15 @@ public class CorrelatedNestedLoopJoinPlannerTest extends AbstractPlannerTest {
 
         IgniteIndexScan idxScan = findFirstNode(phys, byClass(IgniteIndexScan.class));
 
-        List<RexNode> lBound = idxScan.lowerBound();
+        List<SearchBounds> searchBounds = idxScan.searchBounds();
 
-        assertNotNull("Invalid plan\n" + RelOptUtil.toString(phys), lBound);
-        assertEquals(3, lBound.size());
+        assertNotNull("Invalid plan\n" + RelOptUtil.toString(phys), searchBounds);
+        assertEquals(3, searchBounds.size());
 
-        assertNull(lBound.get(0));
-        assertTrue(lBound.get(1) instanceof RexFieldAccess);
-        assertNull(lBound.get(2));
-
-        List<RexNode> uBound = idxScan.upperBound();
-
-        assertNotNull("Invalid plan\n" + RelOptUtil.toString(phys), uBound);
-        assertEquals(3, uBound.size());
-
-        assertNull(uBound.get(0));
-        assertTrue(uBound.get(1) instanceof RexFieldAccess);
-        assertNull(uBound.get(2));
+        assertNull(searchBounds.get(0));
+        assertTrue(searchBounds.get(1) instanceof ExactBounds);
+        assertTrue(((ExactBounds)searchBounds.get(1)).bound() instanceof RexFieldAccess);
+        assertNull(searchBounds.get(2));
     }
 
     /**

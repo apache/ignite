@@ -31,8 +31,10 @@ import org.apache.calcite.rel.RelWriter;
 import org.apache.calcite.rel.core.Spool;
 import org.apache.calcite.rel.metadata.RelMetadataQuery;
 import org.apache.calcite.rex.RexNode;
+import org.apache.ignite.internal.processors.query.calcite.externalize.RelInputEx;
 import org.apache.ignite.internal.processors.query.calcite.metadata.cost.IgniteCost;
 import org.apache.ignite.internal.processors.query.calcite.metadata.cost.IgniteCostFactory;
+import org.apache.ignite.internal.processors.query.calcite.prepare.bounds.SearchBounds;
 import org.apache.ignite.internal.processors.query.calcite.util.IndexConditions;
 
 /**
@@ -42,6 +44,9 @@ import org.apache.ignite.internal.processors.query.calcite.util.IndexConditions;
 public class IgniteSortedIndexSpool extends Spool implements IgniteRel {
     /** */
     private final RelCollation collation;
+
+    /** */
+    private final List<SearchBounds> searchBounds;
 
     /** Index condition. */
     private final IndexConditions idxCond;
@@ -56,6 +61,7 @@ public class IgniteSortedIndexSpool extends Spool implements IgniteRel {
         RelNode input,
         RelCollation collation,
         RexNode condition,
+        List<SearchBounds> searchBounds,
         IndexConditions idxCond
     ) {
         super(cluster, traits, input, Type.LAZY, Type.EAGER);
@@ -63,6 +69,7 @@ public class IgniteSortedIndexSpool extends Spool implements IgniteRel {
         assert Objects.nonNull(idxCond);
         assert Objects.nonNull(condition);
 
+        this.searchBounds = searchBounds;
         this.idxCond = idxCond;
         this.condition = condition;
         this.collation = collation;
@@ -79,6 +86,7 @@ public class IgniteSortedIndexSpool extends Spool implements IgniteRel {
             input.getInputs().get(0),
             input.getCollation(),
             input.getExpression("condition"),
+            ((RelInputEx)input).getSearchBounds("searchBounds"),
             new IndexConditions(input)
         );
     }
@@ -90,12 +98,12 @@ public class IgniteSortedIndexSpool extends Spool implements IgniteRel {
 
     /** */
     @Override public IgniteRel clone(RelOptCluster cluster, List<IgniteRel> inputs) {
-        return new IgniteSortedIndexSpool(cluster, getTraitSet(), inputs.get(0), collation, condition, idxCond);
+        return new IgniteSortedIndexSpool(cluster, getTraitSet(), inputs.get(0), collation, condition, searchBounds, idxCond);
     }
 
     /** {@inheritDoc} */
     @Override protected Spool copy(RelTraitSet traitSet, RelNode input, Type readType, Type writeType) {
-        return new IgniteSortedIndexSpool(getCluster(), traitSet, input, collation, condition, idxCond);
+        return new IgniteSortedIndexSpool(getCluster(), traitSet, input, collation, condition, searchBounds, idxCond);
     }
 
     /** {@inheritDoc} */
@@ -109,6 +117,7 @@ public class IgniteSortedIndexSpool extends Spool implements IgniteRel {
 
         writer.item("condition", condition);
         writer.item("collation", collation);
+        writer.itemIf("searchBounds", searchBounds, searchBounds != null);
 
         return idxCond.explainTerms(writer);
     }
@@ -116,6 +125,11 @@ public class IgniteSortedIndexSpool extends Spool implements IgniteRel {
     /** {@inheritDoc} */
     @Override public double estimateRowCount(RelMetadataQuery mq) {
         return mq.getRowCount(getInput()) * mq.getSelectivity(this, null);
+    }
+
+    /** */
+    public List<SearchBounds> searchBounds() {
+        return searchBounds;
     }
 
     /** */

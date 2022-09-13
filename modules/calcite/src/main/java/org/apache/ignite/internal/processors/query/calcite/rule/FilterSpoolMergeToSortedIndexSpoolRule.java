@@ -158,6 +158,7 @@ public class FilterSpoolMergeToSortedIndexSpoolRule extends RelRule<FilterSpoolM
             convert(input, input.getTraitSet().replace(traitCollation)),
             searchCollation,
             filter.getCondition(),
+            bounds,
             idxCond
         );
 

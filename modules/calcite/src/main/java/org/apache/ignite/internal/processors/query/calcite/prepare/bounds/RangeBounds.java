@@ -17,6 +17,7 @@
 
 package org.apache.ignite.internal.processors.query.calcite.prepare.bounds;
 
+import java.util.Objects;
 import org.apache.calcite.rex.RexNode;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.jetbrains.annotations.Nullable;
@@ -84,6 +85,25 @@ public class RangeBounds extends SearchBounds {
     /** {@inheritDoc} */
     @Override public Type type() {
         return Type.RANGE;
+    }
+
+    /** {@inheritDoc} */
+    @Override public boolean equals(Object o) {
+        if (this == o)
+            return true;
+
+        if (o == null || getClass() != o.getClass())
+            return false;
+
+        return lowerInclude == ((RangeBounds)o).lowerInclude &&
+            upperInclude == ((RangeBounds)o).upperInclude &&
+            Objects.equals(lowerBound, ((RangeBounds)o).lowerBound) &&
+            Objects.equals(upperBound, ((RangeBounds)o).upperBound);
+    }
+
+    /** {@inheritDoc} */
+    @Override public int hashCode() {
+        return Objects.hash(lowerBound, upperBound, lowerInclude, upperInclude);
     }
 
     /** */

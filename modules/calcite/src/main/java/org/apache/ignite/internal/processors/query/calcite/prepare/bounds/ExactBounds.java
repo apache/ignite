@@ -17,6 +17,7 @@
 
 package org.apache.ignite.internal.processors.query.calcite.prepare.bounds;
 
+import java.util.Objects;
 import org.apache.calcite.rex.RexNode;
 import org.apache.ignite.internal.util.typedef.internal.S;
 
@@ -44,6 +45,22 @@ public class ExactBounds extends SearchBounds {
     /** {@inheritDoc} */
     @Override public Type type() {
         return Type.EXACT;
+    }
+
+    /** {@inheritDoc} */
+    @Override public boolean equals(Object o) {
+        if (this == o)
+            return true;
+
+        if (o == null || getClass() != o.getClass())
+            return false;
+
+        return bound.equals(((ExactBounds)o).bound);
+    }
+
+    /** {@inheritDoc} */
+    @Override public int hashCode() {
+        return Objects.hash(bound);
     }
 
     /** */

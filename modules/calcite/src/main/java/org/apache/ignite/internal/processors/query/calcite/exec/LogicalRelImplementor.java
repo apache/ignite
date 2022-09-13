@@ -65,6 +65,7 @@ import org.apache.ignite.internal.processors.query.calcite.exec.rel.TableSpoolNo
 import org.apache.ignite.internal.processors.query.calcite.exec.rel.UnionAllNode;
 import org.apache.ignite.internal.processors.query.calcite.metadata.AffinityService;
 import org.apache.ignite.internal.processors.query.calcite.metadata.ColocationGroup;
+import org.apache.ignite.internal.processors.query.calcite.prepare.bounds.SearchBounds;
 import org.apache.ignite.internal.processors.query.calcite.rel.IgniteCollect;
 import org.apache.ignite.internal.processors.query.calcite.rel.IgniteCorrelatedNestedLoopJoin;
 import org.apache.ignite.internal.processors.query.calcite.rel.IgniteExchange;
@@ -297,6 +298,7 @@ public class LogicalRelImplementor<Row> implements IgniteRelVisitor<Node<Row>> {
         ImmutableBitSet requiredColumns = rel.requiredColumns();
         List<RexNode> lowerCond = rel.lowerBound();
         List<RexNode> upperCond = rel.upperBound();
+        List<SearchBounds> searchBounds = rel.searchBounds();
 
         RelDataType rowType = tbl.getRowType(typeFactory, requiredColumns);
 
@@ -361,6 +363,16 @@ public class LogicalRelImplementor<Row> implements IgniteRelVisitor<Node<Row>> {
             }
 
             if (spoolNodeRequired) {
+                if (searchBounds != null && requiredColumns != null) {
+                    // Remap index find predicate according to rowType of the spool.
+                    List<SearchBounds> remappedSearchBounds = new ArrayList<>(requiredColumns.cardinality());
+
+                    for (int i = requiredColumns.nextSetBit(0); i != -1; i = requiredColumns.nextSetBit(i + 1))
+                        remappedSearchBounds.add(searchBounds.get(i));
+
+                    // TODO iterator from remappedSearchBounds.
+                }
+
                 if (lowerCond != null || upperCond != null) {
                     if (requiredColumns != null) {
                         // Remap index find predicate according to rowType of the spool.

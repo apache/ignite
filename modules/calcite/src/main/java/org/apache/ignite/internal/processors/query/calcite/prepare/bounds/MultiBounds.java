@@ -18,6 +18,7 @@
 package org.apache.ignite.internal.processors.query.calcite.prepare.bounds;
 
 import java.util.List;
+import java.util.Objects;
 import org.apache.calcite.rex.RexNode;
 import org.apache.ignite.internal.util.typedef.internal.S;
 
@@ -45,6 +46,22 @@ public class MultiBounds extends SearchBounds {
     /** {@inheritDoc} */
     @Override public Type type() {
         return Type.MULTI;
+    }
+
+    /** {@inheritDoc} */
+    @Override public boolean equals(Object o) {
+        if (this == o)
+            return true;
+
+        if (o == null || getClass() != o.getClass())
+            return false;
+
+        return bounds.equals(((MultiBounds)o).bounds);
+    }
+
+    /** {@inheritDoc} */
+    @Override public int hashCode() {
+        return Objects.hash(bounds);
     }
 
     /** */
