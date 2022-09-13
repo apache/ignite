@@ -56,6 +56,7 @@ import java.util.zip.ZipOutputStream;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.IgniteSystemProperties;
+import org.apache.ignite.configuration.DataRegionConfiguration;
 import org.apache.ignite.configuration.DataStorageConfiguration;
 import org.apache.ignite.configuration.DiskPageCompression;
 import org.apache.ignite.configuration.IgniteConfiguration;
@@ -81,6 +82,7 @@ import org.apache.ignite.internal.pagemem.wal.record.delta.PageDeltaRecord;
 import org.apache.ignite.internal.processors.cache.GridCacheSharedContext;
 import org.apache.ignite.internal.processors.cache.GridCacheSharedManagerAdapter;
 import org.apache.ignite.internal.processors.cache.WalStateManager.WALDisableContext;
+import org.apache.ignite.internal.processors.cache.persistence.DataRegion;
 import org.apache.ignite.internal.processors.cache.persistence.DataStorageMetricsImpl;
 import org.apache.ignite.internal.processors.cache.persistence.GridCacheDatabaseSharedManager;
 import org.apache.ignite.internal.processors.cache.persistence.IgniteCacheDatabaseSharedManager;
@@ -341,6 +343,13 @@ public class FileWriteAheadLogManager extends GridCacheSharedManagerAdapter impl
     private final long walForceArchiveTimeout;
 
     /**
+     * {@code True} if WAL enabled only for CDC.
+     * This mean {@link DataRegionConfiguration#isPersistenceEnabled()} is {@code false} for all {@link DataRegion},
+     * and {@link DataRegionConfiguration#isCdcEnabled()} {@code true} for some of them.
+     */
+    private final boolean inMemoryCdc;
+
+    /**
      * Container with last WAL record logged timestamp.<br> Zero value means there was no records logged to current
      * segment, skip possible archiving for this case<br> Value is filled only for case {@link
      * #walAutoArchiveAfterInactivity} > 0<br>
@@ -423,6 +432,7 @@ public class FileWriteAheadLogManager extends GridCacheSharedManagerAdapter impl
         segmentFileInputFactory = new SimpleSegmentFileInputFactory();
         walAutoArchiveAfterInactivity = dsCfg.getWalAutoArchiveAfterInactivity();
         walForceArchiveTimeout = dsCfg.getWalForceArchiveTimeout();
+        inMemoryCdc = !CU.isPersistenceEnabled(dsCfg) && CU.isCdcEnabled(igCfg);
 
         timeoutRolloverMux = (walAutoArchiveAfterInactivity > 0 || walForceArchiveTimeout > 0) ? new Object() : null;
 
@@ -1122,7 +1132,7 @@ public class FileWriteAheadLogManager extends GridCacheSharedManagerAdapter impl
 
             long lastArchived = archivedAbsIdx >= 0 ? archivedAbsIdx : lastArchivedIndex();
 
-            if (desc.idx >= lastCheckpointPtr.index() // We cannot delete segments needed for binary recovery.
+            if ((desc.idx >= lastCheckpointPtr.index() && !inMemoryCdc) // We cannot delete segments needed for binary recovery.
                 || desc.idx >= lastArchived // We cannot delete last segment, it is needed at start of node and avoid gaps.
                 || desc.idx >= high.index() // We cannot delete segments larger than the border.
                 || !segmentAware.minReserveIndex(desc.idx)) // We cannot delete reserved segment.
@@ -1374,6 +1384,11 @@ public class FileWriteAheadLogManager extends GridCacheSharedManagerAdapter impl
                 segmentSize.put(idx, currSize);
             }
             finally {
+                // Move last checkpoint and reserved index to previous segment index.
+                // This will allow cleaner to remove segments from archive.
+                if (inMemoryCdc)
+                    segmentAware.lastCheckpointIdx(hnd.getSegmentId() - 1);
+
                 if (archiver == null)
                     segmentAware.addSize(idx, currSize - reservedSize);
             }
@@ -3274,13 +3289,15 @@ public class FileWriteAheadLogManager extends GridCacheSharedManagerAdapter impl
                     long totalSize = totalSize(walArchiveFiles);
 
                     for (FileDescriptor fileDesc : walArchiveFiles) {
-                        if (fileDesc.idx >= lastCheckpointPtr.index() || segmentAware.reserved(fileDesc.idx))
+                        if ((fileDesc.idx >= lastCheckpointPtr.index() && !inMemoryCdc) || segmentAware.reserved(fileDesc.idx))
                             break;
                         else {
                             high = fileDesc;
 
+                            size += fileDesc.file.length();
+
                             // Ensure that there will be exactly removed at least one segment.
-                            if (totalSize - (size += fileDesc.file.length()) < minWalArchiveSize)
+                            if (totalSize - size < minWalArchiveSize)
                                 break;
                         }
                     }
@@ -3294,7 +3311,8 @@ public class FileWriteAheadLogManager extends GridCacheSharedManagerAdapter impl
                                 + ", maxSize=" + U.humanReadableByteCount(maxWalArchiveSize) + ']');
                         }
 
-                        ((GridCacheDatabaseSharedManager)cctx.database()).onWalTruncated(highPtr);
+                        if (!inMemoryCdc)
+                            ((GridCacheDatabaseSharedManager)cctx.database()).onWalTruncated(highPtr);
 
                         int truncated = truncate(highPtr);
 
