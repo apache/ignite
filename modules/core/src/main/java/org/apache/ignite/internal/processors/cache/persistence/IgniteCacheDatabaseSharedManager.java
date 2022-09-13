@@ -1156,9 +1156,7 @@ public class IgniteCacheDatabaseSharedManager extends GridCacheSharedManagerAdap
         if (!CU.isCdcEnabled(kctx.config()) || kctx.clientNode())
             return;
 
-        WALIterator iter = cctx.wal(true).replay(null, (type, ptr) -> true);
-
-        try {
+        try (WALIterator iter = cctx.wal(true).replay(null, (type, ptr) -> true)) {
             while (iter.hasNext())
                 iter.next();
 
@@ -1169,9 +1167,6 @@ public class IgniteCacheDatabaseSharedManager extends GridCacheSharedManagerAdap
 
             cctx.wal(true).startAutoReleaseSegments();
             cctx.wal(true).resumeLogging(ptr);
-        }
-        finally {
-            iter.close();
         }
     }
 
