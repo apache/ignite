@@ -822,6 +822,8 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
 
                 snpDir.mkdirs();
 
+                SnapshotFutureTaskResult res = (SnapshotFutureTaskResult)fut.result();
+
                 SnapshotMetadata meta = new SnapshotMetadata(req.requestId(),
                     req.snapshotName(),
                     cctx.localNode().consistentId().toString(),
@@ -829,7 +831,8 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
                     cctx.gridConfig().getDataStorageConfiguration().getPageSize(),
                     grpIds,
                     blts,
-                    (Set<GroupPartitionId>)fut.result(),
+                    res.parts(),
+                    res.snapshotPointer() == null ? null : res.snapshotPointer().index() - 1,
                     cctx.gridConfig().getEncryptionSpi().masterKeyDigest()
                 );
 
