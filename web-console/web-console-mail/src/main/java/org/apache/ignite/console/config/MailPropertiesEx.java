@@ -19,7 +19,7 @@ package org.apache.ignite.console.config;
 import java.util.Map;
 import org.apache.ignite.console.notification.INotificationDescriptor;
 import org.apache.ignite.internal.util.typedef.internal.S;
-import org.hibernate.validator.constraints.NotEmpty;
+
 import org.springframework.boot.context.properties.ConfigurationProperties;
 import org.springframework.validation.annotation.Validated;
 
@@ -39,7 +39,7 @@ public class MailPropertiesEx {
     private Map<String, String> templates;
 
     /** Web console url. */
-    @NotEmpty(message = "Please specify the web console url, for example: http://<your-host-name>:<port-if-needed>")
+    //- @NotEmpty(message = "Please specify the web console url, for example: http://<your-host-name>:<port-if-needed>")
     private String webConsoleUrl;
 
     /**

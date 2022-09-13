@@ -51,7 +51,7 @@ public class DatabaseListener {
 	
 	public boolean deactivedCluster(String id) {
 		Integer count = deactivedCluster.compute(id,(k,v)->{ return v==null? 1: ++v;});
-		if(count>10) {
+		if(count>1) {
 			clusters.remove(id);
 			return true;
 		}

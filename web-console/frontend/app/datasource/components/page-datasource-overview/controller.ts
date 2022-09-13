@@ -5,6 +5,7 @@ import naturalCompare from 'natural-compare-lite';
 import {UIRouter} from '@uirouter/angularjs';
 import {ShortCluster} from '../../types';
 import Datasource from 'app/datasource/services/Datasource';
+import AgentManager from 'app/modules/agent/AgentManager.service';
 import {IColumnDefOf} from 'ui-grid';
 import {dbPresets} from 'app/datasource/dbPresets';
 //-import crudPage from './crud-list.json';
@@ -23,6 +24,7 @@ export default class PageDatasourceOverviewController {
     static $inject = [
         '$uiRouter',
         'ConfigureState',
+        'AgentManager',
         'Datasource'        
     ];
     
@@ -30,7 +32,8 @@ export default class PageDatasourceOverviewController {
     constructor(
         private $uiRouter: UIRouter,
         private ConfigureState: ConfigureState,
-        private Datasource: Datasource       
+        private AgentManager: AgentManager,
+        private Datasource: Datasource    
     ) {}
 
     shortClusters$: Observable<Array<ShortCluster>>;    
@@ -47,7 +50,7 @@ export default class PageDatasourceOverviewController {
             enableFiltering: true,
             sort: {direction: 'asc'},
             sortingAlgorithm: naturalCompare,            
-            width: 150
+            width: 180
         },
         {
             name: 'jdbcUrl',
@@ -67,7 +70,7 @@ export default class PageDatasourceOverviewController {
             cellClass: 'ui-grid-number-cell',            
             enableFiltering: false,
             type: 'number',
-            width: 150
+            width: 180
         },
         {
             name: 'schemaName',
@@ -88,7 +91,7 @@ export default class PageDatasourceOverviewController {
             `,
             enableFiltering: false,
             type: 'string',
-            width: 65
+            width: 75
         },
         {
             name: 'id',
@@ -98,7 +101,7 @@ export default class PageDatasourceOverviewController {
             cellTemplate: cellTemplate,
             enableFiltering: false,
             type: 'string',
-            width: 95
+            width: 75
         }
     ];    
 
@@ -109,10 +112,10 @@ export default class PageDatasourceOverviewController {
     
     pingDatasource(clusters: Array<any>) {
       for(let cluster of clusters){
-         this.AgentManager.callClusterService(cluster.id,'datasourceTest',cluster).then((msg) => {
+         this.AgentManager.callClusterService(cluster,'datasourceTest',cluster).then((msg) => {
              if(msg.status){
-                cluster.status = msg.status;
-             }        
+                cluster.status = msg.status;               
+             }      
              
          });         
       }

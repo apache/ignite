@@ -97,7 +97,9 @@ public class DatabaseHandler{
     
     private DatabaseListener  databaseListener = new DatabaseListener();
     
-    /**
+    
+
+	/**
      * @param cfg Config.
      */
     public DatabaseHandler(AgentConfiguration cfg) {
@@ -108,6 +110,10 @@ public class DatabaseHandler{
         
         jdbcExecutor = new JdbcExecutor(databaseListener);
     }
+    
+    public DatabaseListener getDatabaseListener() {
+		return databaseListener;
+	}
 
     /**
      * @param jdbcDriverJar File name of driver jar file.
@@ -250,7 +256,7 @@ public class DatabaseHandler{
      * @return Connection to database.
      * @throws SQLException If failed to connect.
      */
-    private Connection connect(JsonObject args) throws SQLException {
+    public Connection connect(JsonObject args) throws SQLException {
         String jdbcUrl = args.getString("jdbcUrl", "");
         
         if (AgentMetadataDemo.isTestDriveUrl(jdbcUrl)) {
@@ -270,7 +276,7 @@ public class DatabaseHandler{
             return AgentMetadataDemo.testDrive();
         }
         String jdbcDriverJarPath = dbInfo.getDriverJar();
-        if (!new File(dbInfo.getDriverJar()).isAbsolute() && driversFolder != null)
+        if (dbInfo.getDriverJar()!=null && !new File(dbInfo.getDriverJar()).isAbsolute() && driversFolder != null)
             jdbcDriverJarPath = new File(driversFolder, dbInfo.getDriverJar()).getPath();
 
         log.info("Connecting to database[drvJar=" + jdbcDriverJarPath +

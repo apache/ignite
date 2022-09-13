@@ -114,20 +114,22 @@ export default class PageDatasourceBasicController {
     
     pingDatasource() {
       let cluster =  this.clonedCluster;
-      this.AgentManager.callClusterService(cluster.id,'datasourceTest',cluster).then((msg) => {
+      this.AgentManager.callClusterService(cluster,'datasourceTest',cluster).then((msg) => {
           if(msg.status){
              cluster.status = msg.status;
-             this.$scope =msg.status;
+             this.$scope.status = msg.status;
+             this.$scope.message = msg.message;
           }
       });    
     }
     
     disconnectDatasource() {
       let cluster =  this.clonedCluster;
-      this.AgentManager.callClusterService(cluster.id,'datasourceDisconnect').then((msg) => {
+      this.AgentManager.callClusterService(cluster,'datasourceDisconnect').then((msg) => {
           if(msg.status){
              cluster.status = msg.status;
-             this.$scope =msg.status;
+             this.$scope.status = msg.status;
+             this.$scope.message = msg.message;
           }
       });    
     }

@@ -144,12 +144,16 @@ public class DBInfo {
 	public DBInfo buildWith(Map<String, Object> args) throws IllegalArgumentException {
 		if (args.containsKey("jdbcDriverJar"))
 			driverJar = args.get("jdbcDriverJar").toString();
-
-		if (!args.containsKey("jdbcDriverClass"))
+		
+		driverCls = (String)args.get("jdbcDriverClass");
+		if(driverCls==null) {
+			driverCls = (String) args.get("driverCls");
+		}
+		
+		if (driverCls==null)
 			throw new IllegalArgumentException("Missing driverClass in arguments: " + args);
 
-		driverCls = args.get("jdbcDriverClass").toString();
-
+		
 		if (!args.containsKey("jdbcUrl"))
 			throw new IllegalArgumentException("Missing url in arguments: " + args);
 
@@ -166,11 +170,6 @@ public class DBInfo {
 				
 			}
 		}
-
-		if (args.containsKey("info")) {
-			jdbcProp = new Properties();
-			jdbcProp.putAll((Map) args.get("info"));
-		}
 		
 		if (args.containsKey("schema"))	
 			schemaName = args.get("schema").toString();
@@ -181,6 +180,17 @@ public class DBInfo {
 		if (args.containsKey("password"))	
 			password = args.get("password").toString();
 
+		
+		jdbcProp = new Properties();
+		jdbcProp.put("user", userName);
+		jdbcProp.put("password", password);
+		if (args.get("info")!=null) {			
+			jdbcProp.putAll((Map) args.get("info"));
+		}
+		if(args.get("jdbcProp")!=null) {
+			jdbcProp.putAll((Map) args.get("jdbcProp"));
+		}		
+		
 		if (args.containsKey("tablesOnly"))			
 			tablesOnly = Boolean.valueOf(args.get("tablesOnly").toString());		
 		

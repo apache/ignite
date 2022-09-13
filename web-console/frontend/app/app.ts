@@ -46,6 +46,7 @@ import servicesModule from './services';
 import messagesEn from '../i18n/messages.en.json';
 import messagesCn from '../i18n/messages.zh-CN.json';
 import i18n from './data/i18n';
+import i18nCn from './data/i18n-zh';
 
 // Directives.
 import igniteAutoFocus from './directives/auto-focus.directive';
@@ -306,11 +307,12 @@ export default angular
          */
         ($translateProvider, $stateProvider, $locationProvider, $urlRouterProvider) => {
             $translateProvider.translations('en', messagesEn);
-            $translateProvider.translations('en', i18n);
-            $translateProvider.preferredLanguage('en');
+            $translateProvider.translations('en', i18n);            
             
             $translateProvider.translations('zh-CN', messagesCn);
-            $translateProvider.translations('zh-CN', i18n);
+            $translateProvider.translations('zh-CN', i18nCn);            
+            
+            $translateProvider.preferredLanguage('zh-CN');
 
             // Set up the states.
             $stateProvider

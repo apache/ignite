@@ -17,7 +17,7 @@
   ],
   "homepage": "https://ignite.apache.org/",
   "engines": {    
-    "node": ">=8.0.0 <10.0.0"
+    "node": ">=8.0.0 <17.0.0"
   },
   "os": [
     "darwin",
@@ -141,14 +141,14 @@
     "mocha": "^6.1.4",
     "mocha-teamcity-reporter": "1.1.1",
     "node-fetch": "1.7.3",
-    "node-sass": "^4.12.0",
+    "node-sass": "^6.12.0",
     "progress": "2.0.3",
     "progress-bar-webpack-plugin": "1.12.1",
     "pug-html-loader": "1.1.0",
     "pug-loader": "2.4.0",
     "raw-loader": "^2.0.0",
     "resolve-url-loader": "2.1.0",
-    "sass-loader": "6.0.7",
+    "sass-loader": "^10.0.1",
     "sinon": "2.3.8",
     "slash": "1.0.0",
     "style-loader": "0.19.0",

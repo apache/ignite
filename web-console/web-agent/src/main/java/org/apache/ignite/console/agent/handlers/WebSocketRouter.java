@@ -23,6 +23,8 @@ import java.io.IOException;
 import java.net.URI;
 import java.net.URL;
 import java.nio.ByteBuffer;
+import java.sql.Connection;
+import java.sql.SQLException;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
@@ -56,6 +58,7 @@ import org.apache.ignite.console.agent.AgentClusterLauncher;
 import org.apache.ignite.console.agent.AgentConfiguration;
 import org.apache.ignite.console.agent.AgentUtils;
 import org.apache.ignite.console.agent.db.DataSourceManager;
+import org.apache.ignite.console.agent.db.DbSchema;
 import org.apache.ignite.console.agent.rest.RestResult;
 import org.apache.ignite.console.agent.service.CacheAgentService;
 import org.apache.ignite.console.agent.service.ClusterAgentService;
@@ -65,6 +68,7 @@ import org.apache.ignite.console.json.JsonObject;
 import org.apache.ignite.console.utils.Utils;
 import org.apache.ignite.console.websocket.AgentHandshakeRequest;
 import org.apache.ignite.console.websocket.AgentHandshakeResponse;
+import org.apache.ignite.console.websocket.TopologySnapshot;
 import org.apache.ignite.console.websocket.WebSocketRequest;
 import org.apache.ignite.console.websocket.WebSocketResponse;
 import org.apache.ignite.internal.IgnitionEx;
@@ -489,6 +493,35 @@ public class WebSocketRouter implements AutoCloseable {
         if(json.getString("name",null)!=null) {
         	clusterName = Utils.escapeFileName(json.getString("name"));
     	}
+        if(serviceName.equals("datasourceTest")) {
+        	JsonObject args = json.getJsonObject("args");
+        	try (Connection conn = dbHnd.connect(args)) {
+                String catalog = conn.getCatalog();
+
+                log.info("Collected database catalog:" + catalog);            
+                stat.put("message","Connect success!"+(catalog==null?"":" Catalog:"+catalog));
+                stat.put("status", "connected");
+                return stat;
+            }
+        	catch(SQLException e) {	
+	    		stat.put("message", e.getMessage());
+	    		stat.put("status", "fail");
+	    		return stat;
+	    	}
+        	
+        }
+        if(serviceName.equals("datasourceDisconnect")) {
+        	JsonObject args = json.getJsonObject("args");
+        	boolean rv = dbHnd.getDatabaseListener().deactivedCluster(nodeId);
+        	if(!rv) {
+        		stat.put("message", "Try again to remove from List.");
+        	}
+        	else {
+        		stat.put("message", "Remove this connection from List.");
+        	}
+    		stat.put("status", rv);
+    		return stat;
+        }
         if(nodeId!=null) {        	
         	try {
         		ignite = Ignition.ignite(UUID.fromString(nodeId));	    		

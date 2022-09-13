@@ -49,6 +49,7 @@ import {TranslateModule, TranslateService} from '@ngx-translate/core';
 
 import {upgradedComponents} from './upgrade';
 import defaultLanguage from '../i18n/messages.en.json';
+import messagesCn from '../i18n/messages.zh-CN.json';
 
 export const declarations = [
     ServiceBootstrapComponent,
@@ -115,7 +116,11 @@ export class IgniteWebConsoleModule {
 
     constructor(router: UIRouter, translate: TranslateService) {
         translate.setTranslation('en', defaultLanguage);
+        translate.setTranslation('zh-CN', messagesCn);
+        
+        translate.setDefaultLang('en');
         translate.use('zh-CN');
+        
         states(translate).subscribe((s) => router.stateRegistry.register(s));
     }
 

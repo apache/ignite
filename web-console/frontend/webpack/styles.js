@@ -30,7 +30,10 @@ module.exports.devProdScss = (sourceMap = true) => {
             loader: 'sass-loader',
             options: {
                 sourceMap,
-                includePaths: [ path.join(__dirname, '../') ]
+                sassOptions:{
+                    includePaths: [ path.join(__dirname, '../') ]
+                }
+                
             }
         }
     ];

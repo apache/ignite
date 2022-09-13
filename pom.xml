@@ -105,8 +105,7 @@
             <id>all-java</id> <!-- used to update project versions and check all modules compilation -->
             <modules> <!-- sorted alphabetically -->
                 <module>examples</module>
-                <module>modules/benchmarks</module>
-                <module>modules/compatibility</module>
+                <module>modules/benchmarks</module>                
                 <module>modules/ducktests</module>
                 <module>modules/geospatial</module>
                 <module>modules/hibernate-4.2</module>
