@@ -94,7 +94,6 @@ import org.apache.ignite.internal.processors.GridProcessorAdapter;
 import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
 import org.apache.ignite.internal.processors.affinity.GridAffinityAssignmentCache;
 import org.apache.ignite.internal.processors.cache.binary.CacheObjectBinaryProcessorImpl;
-import org.apache.ignite.internal.processors.cache.consistentcut.ConsistentCutManager;
 import org.apache.ignite.internal.processors.cache.datastructures.CacheDataStructuresManager;
 import org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtCache;
 import org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtCacheAdapter;
@@ -3086,20 +3085,6 @@ public class GridCacheProcessor extends GridProcessorAdapter {
 
         CacheDiagnosticManager diagnosticMgr = new CacheDiagnosticManager();
 
-        ConsistentCutManager consistentCutMgr = null;
-
-        if (CU.isPitrEnabled(kernalCtx.config())) {
-            if (!CU.isPersistenceEnabled(kernalCtx.config())) {
-                throw new IgniteCheckedException("PITR can be enabled only for cluster with enabled persistence."
-                    + " Check the DataRegionConfiguration.");
-            }
-
-            consistentCutMgr = ctx.plugins().createComponent(ConsistentCutManager.class);
-
-            if (consistentCutMgr == null)
-                consistentCutMgr = new ConsistentCutManager();
-        }
-
         return new GridCacheSharedContext(
             kernalCtx,
             tm,
@@ -3121,8 +3106,7 @@ public class GridCacheProcessor extends GridProcessorAdapter {
             storeSesLsnrs,
             mvccCachingMgr,
             deadlockDetectionMgr,
-            diagnosticMgr,
-            consistentCutMgr
+            diagnosticMgr
         );
     }
 

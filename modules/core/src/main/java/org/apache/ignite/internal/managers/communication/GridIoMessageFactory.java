@@ -53,7 +53,6 @@ import org.apache.ignite.internal.processors.cache.KeyCacheObjectImpl;
 import org.apache.ignite.internal.processors.cache.WalStateAckMessage;
 import org.apache.ignite.internal.processors.cache.binary.MetadataRequestMessage;
 import org.apache.ignite.internal.processors.cache.binary.MetadataResponseMessage;
-import org.apache.ignite.internal.processors.cache.consistentcut.ConsistentCutFinishResponse;
 import org.apache.ignite.internal.processors.cache.consistentcut.ConsistentCutStartRequest;
 import org.apache.ignite.internal.processors.cache.consistentcut.ConsistentCutVersion;
 import org.apache.ignite.internal.processors.cache.distributed.GridCacheTtlUpdateRequest;
@@ -387,7 +386,6 @@ public class GridIoMessageFactory implements MessageFactoryProvider {
 
         // Consistent Cut.
         factory.register(ConsistentCutStartRequest.TYPE_CODE, ConsistentCutStartRequest::new);
-        factory.register(ConsistentCutFinishResponse.TYPE_CODE, ConsistentCutFinishResponse::new);
         factory.register(ConsistentCutVersion.TYPE_CODE, ConsistentCutVersion::new);
 
         // Index statistics.

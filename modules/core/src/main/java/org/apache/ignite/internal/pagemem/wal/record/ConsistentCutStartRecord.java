@@ -18,7 +18,7 @@
 package org.apache.ignite.internal.pagemem.wal.record;
 
 import org.apache.ignite.internal.processors.cache.consistentcut.ConsistentCut;
-import org.apache.ignite.internal.processors.cache.consistentcut.ConsistentCutManager;
+import org.apache.ignite.internal.processors.cache.consistentcut.ConsistentCutProcessor;
 import org.apache.ignite.internal.processors.cache.consistentcut.ConsistentCutVersion;
 import org.apache.ignite.internal.util.tostring.GridToStringInclude;
 import org.apache.ignite.internal.util.typedef.internal.S;
@@ -33,7 +33,7 @@ import org.apache.ignite.internal.util.typedef.internal.S;
  * Note, there is no strict guarantee for all transactions belonged to the BEFORE side to be physically committed before
  * {@link ConsistentCutStartRecord}, and vice versa. This is the reason for having {@link ConsistentCutFinishRecord}.
  *
- * @see ConsistentCutManager
+ * @see ConsistentCutProcessor
  */
 public class ConsistentCutStartRecord extends WALRecord {
     /**

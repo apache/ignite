@@ -74,7 +74,7 @@ import org.apache.ignite.internal.processors.cache.GridCacheSharedManagerAdapter
 import org.apache.ignite.internal.processors.cache.GridCacheVersionedFuture;
 import org.apache.ignite.internal.processors.cache.GridDeferredAckMessageSender;
 import org.apache.ignite.internal.processors.cache.TxTimeoutOnPartitionMapExchangeChangeMessage;
-import org.apache.ignite.internal.processors.cache.consistentcut.ConsistentCutManager;
+import org.apache.ignite.internal.processors.cache.consistentcut.ConsistentCutProcessor;
 import org.apache.ignite.internal.processors.cache.distributed.GridCacheMappedVersion;
 import org.apache.ignite.internal.processors.cache.distributed.GridCacheTxRecoveryFuture;
 import org.apache.ignite.internal.processors.cache.distributed.GridDistributedCacheEntry;
@@ -1682,7 +1682,7 @@ public class IgniteTxManager extends GridCacheSharedManagerAdapter {
     private boolean activeTx(IgniteInternalTx tx) {
         ConcurrentMap<GridCacheVersion, IgniteInternalTx> txIdMap = transactionMap(tx);
 
-        ConsistentCutManager cutMgr = cctx.consistentCutMgr();
+        ConsistentCutProcessor cutMgr = cctx.consistentCutMgr();
 
         if (cutMgr == null || cutMgr.registerBeforeCommit(tx)) {
             if (txIdMap.remove(tx.xidVersion(), tx))

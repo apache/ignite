@@ -22,7 +22,7 @@ import java.util.List;
 import java.util.Set;
 import java.util.stream.Collectors;
 import org.apache.ignite.internal.processors.cache.consistentcut.ConsistentCut;
-import org.apache.ignite.internal.processors.cache.consistentcut.ConsistentCutManager;
+import org.apache.ignite.internal.processors.cache.consistentcut.ConsistentCutProcessor;
 import org.apache.ignite.internal.processors.cache.version.GridCacheVersion;
 import org.apache.ignite.lang.IgniteUuid;
 
@@ -43,7 +43,7 @@ import org.apache.ignite.lang.IgniteUuid;
  * 1. transactions physically committed before {@link ConsistentCutStartRecord} and were included into {@link #after()};
  * 2. transactions physically committed after {@link ConsistentCutStartRecord} and weren't included into {@link #before()}.
  *
- * @see ConsistentCutManager
+ * @see ConsistentCutProcessor
  */
 public class ConsistentCutFinishRecord extends WALRecord {
     /**

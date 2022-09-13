@@ -158,10 +158,7 @@ public enum GridTopic {
     TOPIC_COMM_SYSTEM,
 
     /** Statistics related messages topic. */
-    TOPIC_STATISTICS,
-
-    /** Processing Consistent Cut messages. */
-    TOPIC_CONSISTENT_CUT;
+    TOPIC_STATISTICS;
 
     /** Enum values. */
     private static final GridTopic[] VALS = values();

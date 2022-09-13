@@ -32,6 +32,7 @@ import org.apache.ignite.internal.processors.cache.GridCacheSharedContext;
 import org.apache.ignite.internal.processors.cache.transactions.IgniteInternalTx;
 import org.apache.ignite.internal.processors.cache.version.GridCacheVersion;
 import org.apache.ignite.internal.util.future.GridCompoundFuture;
+import org.apache.ignite.internal.util.future.GridFutureAdapter;
 import org.apache.ignite.internal.util.tostring.GridToStringInclude;
 import org.apache.ignite.internal.util.typedef.internal.CU;
 import org.apache.ignite.internal.util.typedef.internal.U;
@@ -46,7 +47,7 @@ import static org.apache.ignite.transactions.TransactionState.UNKNOWN;
 /**
  * Describes current Consistent Cut.
  */
-public class ConsistentCut {
+public class ConsistentCut extends GridFutureAdapter<Boolean> {
     /** */
     private final GridCacheSharedContext<?, ?> cctx;
 
@@ -60,7 +61,7 @@ public class ConsistentCut {
      * 1. Transactions belong to the BEFORE side but committed after this record.
      * 2. Transactions belong to the AFTER side but committed before this record.
      *
-     * Collecting all transactions after writing this record guarantees ({@link ConsistentCutManager}) that final collection
+     * Collecting all transactions after writing this record guarantees ({@link ConsistentCutProcessor}) that final collection
      * includes all such transactions to check. Also, there is no need to track all transactions belong to the AFTER side and
      * committed after this record.
      */
@@ -79,19 +80,29 @@ public class ConsistentCut {
     @GridToStringInclude
     private Set<GridCacheVersion> afterCut;
 
+    /**
+     * Version.
+     */
+    @GridToStringInclude
+    private final ConsistentCutVersion ver;
+
     /** */
-    ConsistentCut(GridCacheSharedContext<?, ?> cctx) {
+    ConsistentCut(GridCacheSharedContext<?, ?> cctx, ConsistentCutVersion ver) {
         this.cctx = cctx;
+        this.ver = ver;
 
         log = cctx.logger(ConsistentCut.class);
     }
 
+    /** */
+    public ConsistentCutVersion version() {
+        return ver;
+    }
+
     /**
      * Inits local Consistent Cut: prepares list of active transactions to check which side of Consistent Cut they belong to.
-     *
-     * @param ver Consistent Cut version.
      */
-    protected void init(ConsistentCutVersion ver) throws IgniteCheckedException {
+    protected void init() throws IgniteCheckedException {
         beforeCut = ConcurrentHashMap.newKeySet();
         afterCut = ConcurrentHashMap.newKeySet();
 
@@ -105,8 +116,10 @@ public class ConsistentCut {
         checkTransactions(ver, cctx.tm().activeTransactions().iterator(), checkFut);
         checkTransactions(ver, cctx.consistentCutMgr().committingTxs(), checkFut);
 
+        checkFut.markInitialized();
+
         checkFut.listen(finish -> {
-            if (Boolean.FALSE.equals(finish.result())) {
+            if (Boolean.FALSE.equals(finish.result()) || isDone()) {
                 if (log.isDebugEnabled())
                     log.debug("Cut might be inconsistent for version " + ver + ". Skip writing FinishRecord.");
             }
@@ -116,10 +129,14 @@ public class ConsistentCut {
                 }
                 catch (IgniteCheckedException e) {
                     U.error(log, "Failed to write ConsistentCutFinishRecord to WAL for ver " + ver, e);
+
+                    onDone(e);
+
+                    return;
                 }
             }
 
-            cctx.consistentCutMgr().onFinish(ver);
+            onDone(finish.result());
         });
     }
 
@@ -129,10 +146,8 @@ public class ConsistentCut {
      * @param ver Current Consistent Cut version.
      * @param activeTxs Collection of active transactions to check.
      * @param checkFut Compound future that reduces finishes of checked transactions.
-     * @return Compound future that completes after all active transactions were checked. Completes with {@code true}
-     *         if Consistent Cut finished, otherwise {@code false} in case of any errors.
      */
-    private GridCompoundFuture<Boolean, Boolean> checkTransactions(
+    private void checkTransactions(
         ConsistentCutVersion ver,
         Iterator<IgniteInternalTx> activeTxs,
         GridCompoundFuture<Boolean, Boolean> checkFut
@@ -177,8 +192,6 @@ public class ConsistentCut {
                 checkFut.add(txCheckFut);
             }
         }
-
-        return checkFut.markInitialized();
     }
 
     /**
@@ -212,6 +225,6 @@ public class ConsistentCut {
                 .collect(Collectors.toList());
         }
 
-        return "ConsistentCut [started=" + started + ", before=" + before + ", after=" + after + "]";
+        return "ConsistentCut [ver=" + ver.version() + ", started=" + started + ", before=" + before + ", after=" + after + "]";
     }
 }

@@ -1150,9 +1150,6 @@ public class SnapshotRestoreProcess {
             orElse(checkNodeLeft(opCtx0.nodes(), res.keySet()));
 
         if (failure == null) {
-            if (CU.isPitrEnabled(ctx.config()) && U.isLocalNodeCoordinator(ctx.discovery()))
-                ctx.cache().context().consistentCutMgr().scheduleConsistentCut();
-
             finishProcess(reqId, null);
 
             return;

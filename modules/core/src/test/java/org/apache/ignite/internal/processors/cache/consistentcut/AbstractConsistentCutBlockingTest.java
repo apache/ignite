@@ -19,7 +19,6 @@ package org.apache.ignite.internal.processors.cache.consistentcut;
 
 import java.util.List;
 import java.util.Map;
-import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
@@ -36,7 +35,6 @@ import org.apache.ignite.internal.pagemem.wal.record.TxRecord;
 import org.apache.ignite.internal.pagemem.wal.record.WALRecord;
 import org.apache.ignite.internal.processors.cache.GridCacheSharedContext;
 import org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtTxFinishRequest;
-import org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtTxFinishResponse;
 import org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtTxPrepareRequest;
 import org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtTxPrepareResponse;
 import org.apache.ignite.internal.processors.cache.distributed.near.GridNearTxFinishRequest;
@@ -46,6 +44,7 @@ import org.apache.ignite.internal.processors.cache.distributed.near.GridNearTxPr
 import org.apache.ignite.internal.processors.cache.persistence.StorageException;
 import org.apache.ignite.internal.processors.cache.persistence.wal.FileWriteAheadLogManager;
 import org.apache.ignite.internal.processors.cache.persistence.wal.WALPointer;
+import org.apache.ignite.internal.util.future.GridFutureAdapter;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.T2;
 import org.apache.ignite.internal.util.typedef.internal.U;
@@ -59,7 +58,6 @@ import org.apache.ignite.transactions.TransactionConcurrency;
 import org.apache.ignite.transactions.TransactionState;
 import org.jetbrains.annotations.Nullable;
 
-import static org.apache.ignite.internal.GridTopic.TOPIC_CONSISTENT_CUT;
 import static org.apache.ignite.internal.processors.cache.consistentcut.AbstractConsistentCutBlockingTest.BlkCutType.AFTER_VERSION_UPDATE;
 import static org.apache.ignite.internal.processors.cache.consistentcut.AbstractConsistentCutBlockingTest.BlkCutType.BEFORE_FINISH;
 import static org.apache.ignite.internal.processors.cache.consistentcut.AbstractConsistentCutBlockingTest.BlkCutType.BEFORE_VERSION_UPDATE;
@@ -163,7 +161,7 @@ public abstract class AbstractConsistentCutBlockingTest extends AbstractConsiste
         if (cutBlkType != BlkCutType.NONE)
             cutBlkNodeId = blkNode(nearNodeId, cutBlkNodeType, testCase);
 
-        if (skipMsgTestCase(txBlkNodeId, testCase))
+        if (skipMsgTestCase(txBlkNodeId, nearNodeId, testCase))
             return;
 
         TestRecordingCommunicationSpi.spi(grid(txBlkNodeId)).blockMessages((n, msg) ->
@@ -173,89 +171,75 @@ public abstract class AbstractConsistentCutBlockingTest extends AbstractConsiste
         log.info("START CASE " + (++caseNum) +
             ". Data=" + testCase +
             ", nearNodeId=" + nearNodeId +
+            ", txBlkNodeId=" + txBlkNodeId +
+            ", txBlkNodeType=" + txBlkNodeType +
+            ", cutBlkNodeId=" + cutBlkNodeId +
             ", msg=" + txMsgBlkCls.getSimpleName());
 
         runCase(() -> tx(nearNodeId, testCase, txConcurrency), txBlkNodeId, cutBlkNodeId);
     }
 
     /** */
-    private boolean skipMsgTestCase(int txBlkNodeId, List<T2<Integer, Integer>> testCase) {
+    private boolean skipMsgTestCase(int txBlkNodeId, int nearNodeId, List<T2<Integer, Integer>> testCase) {
         if (txMsgBlkCls.equals(GridNearTxPrepareRequest.class)) {
             if (txBlkNodeType != NEAR)
                 return true;
 
-            // If all primary partitions are on the near node.
-            boolean skip = testCase.stream()
-                .map(IgniteBiTuple::get1)
-                .allMatch(prim -> prim == txBlkNodeId);
-
-            if (skip)
-                return true;
+            return allPrimaryOnNear(testCase, nearNodeId);
         }
 
-        if (txMsgBlkCls.equals(GridNearTxPrepareResponse.class) && txBlkNodeType != PRIMARY)
-            return true;
+        if (txMsgBlkCls.equals(GridNearTxPrepareResponse.class)) {
+            if (txBlkNodeType != PRIMARY || txBlkNodeId == nearNodeId)
+                return true;
+
+            return allPrimaryOnNear(testCase, nearNodeId);
+        }
 
         if (txMsgBlkCls.equals(GridNearTxFinishRequest.class)) {
-            if (onePhase(testCase))
+            if (txBlkNodeType != NEAR || onePhase(testCase))
                 return true;
 
-            if (txBlkNodeType != NEAR)
-                return true;
-
-            // If all primary partitions are on the near node.
-            boolean skip = testCase.stream()
-                .map(IgniteBiTuple::get1)
-                .allMatch(prim -> prim == txBlkNodeId);
-
-            if (skip)
-                return true;
+            return allPrimaryOnNear(testCase, nearNodeId);
         }
 
         if (txMsgBlkCls.equals(GridNearTxFinishResponse.class)) {
-            if (txBlkNodeType != PRIMARY)
+            if (onePhase(testCase) || txBlkNodeType != PRIMARY || txBlkNodeId == nearNodeId)
                  return true;
 
-            if (onePhase(testCase))
-                return true;
+            return allPrimaryOnNear(testCase, nearNodeId);
         }
 
-        if (txMsgBlkCls.equals(GridDhtTxPrepareRequest.class) && txBlkNodeType != BACKUP) {
+        if (txMsgBlkCls.equals(GridDhtTxPrepareRequest.class)) {
             // Near node might send the request to the backup nodes in case if it is collocated.
-            if (txBlkNodeType == NEAR) {
-                return testCase.stream()
-                    .map(IgniteBiTuple::getKey)
-                    .noneMatch(prim -> prim == txBlkNodeId);
-            }
+            if (txBlkNodeType == NEAR)
+                return !allPrimaryOnNear(testCase, nearNodeId);
 
-            return true;
+            return txBlkNodeType == BACKUP;
         }
 
-        if (txMsgBlkCls.equals(GridDhtTxPrepareResponse.class) && txBlkNodeType != BACKUP)
-            return true;
+        if (txMsgBlkCls.equals(GridDhtTxPrepareResponse.class))
+            return txBlkNodeType != BACKUP;
 
         if (txMsgBlkCls.equals(GridDhtTxFinishRequest.class)) {
-            if (onePhase(testCase))
-                return true;
-
-            if (txBlkNodeType == BACKUP)
+            if (txBlkNodeType == BACKUP || onePhase(testCase))
                 return true;
 
             // Near node might send the request to the backup nodes in case if near node is collocated.
-            if (txBlkNodeType == NEAR) {
-                boolean skip = testCase.stream()
-                    .map(IgniteBiTuple::getKey)
-                    .noneMatch(prim -> prim == txBlkNodeId);
+            if (txBlkNodeType == NEAR)
+                return !allPrimaryOnNear(testCase, nearNodeId);
 
-                if (skip)
-                    return true;
-            }
+            return false;
         }
 
-        if (txMsgBlkCls.equals(GridDhtTxFinishResponse.class) && txBlkNodeType != BACKUP)
-            return true;
-
         return false;
+    }
+
+    /** */
+    private boolean allPrimaryOnNear(List<T2<Integer, Integer>> testCase, int nearNodeId) {
+        // If all primary partitions are on the near node.
+        return testCase.stream()
+            .map(IgniteBiTuple::get1)
+            .allMatch(prim -> prim == nearNodeId);
     }
 
     /** */
@@ -282,7 +266,7 @@ public abstract class AbstractConsistentCutBlockingTest extends AbstractConsiste
     protected void runCases(List<List<T2<Integer, Integer>>> cases, boolean walOrMsg) throws Exception {
         // Ignite coordinator, ordinary server node, client node.
         // If test with stopping client node then use it as near node.
-        Set<Integer> nears = F.asSet(0, nodes() - 1, nodes());
+        List<Integer> nears = F.asList(0, nodes() - 1, nodes());
 
         for (int near: nears) {
             for (int c = 0; c < cases.size(); c++) {
@@ -309,61 +293,59 @@ public abstract class AbstractConsistentCutBlockingTest extends AbstractConsiste
      * 2. Block TX somewhere (on sending tx message or on writing tx state to WAL)
      * 3. Start Consistent Cut procedure
      * 4. Optionally block consistent cut on single node (Start WAL / Publishing)
-     * 5. Await consistent cut started on all nodes (excl blocking node)
-     * 5'. Stop client node if needed.
-     * 6. Resume transaction
-     * 7. Await transaction committed
-     * 8. Resume blocking consistent cut
-     * 9. Await Consistent Cut finished.
+     * 5. Resume transaction
+     * 6. Await transaction committed
+     * 7. Resume blocking consistent cut
+     * 8. Await Consistent Cut finished.
      *
      * @param tx Function that performs transaction.
      * @param txBlkNodeId ID of node to block transaction.
      * @param cutBlkNodeId ID of node to block Consistent Cut.
      */
     private void runCase(Runnable tx, int txBlkNodeId, int cutBlkNodeId) throws Exception {
-        long prevVer = grid(0).context().cache().context().consistentCutMgr().cutVersion().version();
-
         // 1. Start transaction.
-        IgniteInternalFuture<?> txFut = multithreadedAsync(() -> {
-            tx.run();
+        IgniteInternalFuture<?> txFut = multithreadedAsync(tx, 1);
 
-            // TODO remove?
-            // In some cases tx isn't blocked and reaches this without counting down the latch.
-            // Then explicitly unblock awaited threads.
-            unblockTx(grid(txBlkNodeId));
-        }, 1);
-
-        // 2. Block transaction.
-        blockTx(grid(txBlkNodeId));
+        // 2. Await transaction has blocked.
+        awaitTxBlocked(grid(txBlkNodeId));
 
         // 3. Start Consistent Cut procedure concurrently with running transaction.
         if (cutBlkNodeId != -1)
-            BlockingConsistentCutManager.cutMgr(grid(cutBlkNodeId)).block(cutBlkType);
+            BlockingConsistentCutProcessor.cutProc(grid(cutBlkNodeId)).block(cutBlkType);
 
-        multithreadedAsync(this::triggerConsistentCut, 1);
+        final GridFutureAdapter<Boolean> cutRes = new GridFutureAdapter<>();
 
-        // 4-5. Await Consistent Cut version received and handled.
+        IgniteInternalFuture<?> cutFut = multithreadedAsync(() ->
+            triggerConsistentCut().listen(f -> {
+                if (f.error() != null)
+                    cutRes.onDone(f.error());
+                else
+                    cutRes.onDone(f.result());
+            })
+        , 1);
+
+        // 4. Await Consistent Cut has blocked.
         if (cutBlkNodeId != -1)
-            BlockingConsistentCutManager.cutMgr(grid(cutBlkNodeId)).awaitBlocked();
+            BlockingConsistentCutProcessor.cutProc(grid(cutBlkNodeId)).awaitBlockedOrFinishedCut(cutFut);
 
-        awaitGlobalCutVersionReceived(prevVer + 1, cutBlkNodeId);
-
-        // 6. Resume the blocking transaction.
+        // 5. Resume the blocking transaction.
         unblockTx(grid(txBlkNodeId));
 
-        // 7. Await transaction completed.
+        // 6. Await transaction completed.
         txFut.get(getTestTimeout(), TimeUnit.MILLISECONDS);
 
-        // 8. Resume the blocking Consistent Cut.
+        // 7. Resume the blocking Consistent Cut.
         if (cutBlkNodeId != -1)
-            BlockingConsistentCutManager.cutMgr(grid(cutBlkNodeId)).unblock(cutBlkType);
+            BlockingConsistentCutProcessor.cutProc(grid(cutBlkNodeId)).unblock(cutBlkType);
 
-        // 9. Await while Consistent Cut completed.
-        awaitGlobalCutReady(prevVer + 1, true);
+        // 8. Await while Consistent Cut completed.
+        cutFut.get(getTestTimeout());
+
+        assertTrue(cutRes.get());
     }
 
     /** */
-    private void blockTx(IgniteEx blkNode) throws Exception {
+    private void awaitTxBlocked(IgniteEx blkNode) throws Exception {
         if (txBlkState != null)
             BlockingWALManager.walMgr(blkNode).awaitBlocked();
         else
@@ -415,8 +397,8 @@ public abstract class AbstractConsistentCutBlockingTest extends AbstractConsiste
     }
 
     /** Manually triggers new Consistent Cut. */
-    private void triggerConsistentCut() {
-        TestConsistentCutManager.cutMgr(grid(0)).triggerConsistentCutOnCluster("explicit");
+    private IgniteInternalFuture<Boolean> triggerConsistentCut() {
+        return TestConsistentCutProcessor.cutProc(grid(0)).triggerConsistentCutOnCluster();
     }
 
     /** */
@@ -507,18 +489,15 @@ public abstract class AbstractConsistentCutBlockingTest extends AbstractConsiste
 
         /** {@inheritDoc} */
         @Override public <T> @Nullable T createComponent(PluginContext ctx, Class<T> cls) {
-            if (ConsistentCutManager.class.equals(cls))
-                return (T)new BlockingConsistentCutManager(((IgniteEx)ctx.grid()).context());
+            if (ConsistentCutProcessor.class.equals(cls))
+                return (T)new BlockingConsistentCutProcessor(((IgniteEx)ctx.grid()).context());
 
             return null;
         }
     }
 
     /** Blocks Consistent Cut procedure on writing ConsistentCutStartRecord or preparing and publishing Consistent Cut state. */
-    static class BlockingConsistentCutManager extends TestConsistentCutManager {
-        /** */
-        private final GridKernalContext ctx;
-
+    static class BlockingConsistentCutProcessor extends TestConsistentCutProcessor {
         /** Latch that blocks before Consistent Cut Version updated. */
         private volatile CountDownLatch beforeUpdVer;
 
@@ -532,51 +511,23 @@ public abstract class AbstractConsistentCutBlockingTest extends AbstractConsiste
         private volatile CountDownLatch blockedLatch;
 
         /** */
-        static BlockingConsistentCutManager cutMgr(IgniteEx ign) {
-            return (BlockingConsistentCutManager)ign.context().cache().context().consistentCutMgr();
+        static BlockingConsistentCutProcessor cutProc(IgniteEx ign) {
+            return (BlockingConsistentCutProcessor)ign.context().consistentCut();
         }
 
         /** {@inheritDoc} */
-        @Override protected void start0() throws IgniteCheckedException {
-            super.start0();
-
-            assertTrue(cctx.kernalContext().io().removeMessageListener(TOPIC_CONSISTENT_CUT));
-
-            cctx.kernalContext().io().addMessageListener(TOPIC_CONSISTENT_CUT, (nodeId, msg, plc) -> {
-                if (msg instanceof ConsistentCutStartRequest) {
-                    // For coordinator sending and processing messages for itself are sequential operations in
-                    // signle thread. Then blocking here blocks sending messages to other nodes. Avoid it with
-                    // submitting handling to separate thread.
-                    cctx.kernalContext().pools().getSystemExecutorService().submit(() -> {
-                        if (beforeUpdVer != null) {
-                            blockedLatch.countDown();
-                            blockedLatch = null;
-
-                            U.awaitQuiet(beforeUpdVer);
-
-                            beforeUpdVer = null;
-                        }
-
-                        handleConsistentCutVersion(((ConsistentCutStartRequest)msg).version());
-                    });
-                }
-                else if (msg instanceof ConsistentCutFinishResponse)
-                    handleConsistentCutFinishResponse(nodeId, (ConsistentCutFinishResponse)msg);
-            });
-        }
-
-        /** */
-        @Override protected void onFinish(ConsistentCutVersion cutVer) {
-            if (beforeFinish != null) {
+        @Override protected ConsistentCut newConsistentCut(ConsistentCutVersion cutVer) {
+            // Blocks only thread for DistributedProcess (then it doesn't block transaction).
+            if (beforeUpdVer != null && Thread.currentThread().getName().contains("disco")) {
                 blockedLatch.countDown();
                 blockedLatch = null;
 
-                U.awaitQuiet(beforeFinish);
+                U.awaitQuiet(beforeUpdVer);
 
-                beforeFinish = null;
+                beforeUpdVer = null;
             }
 
-            super.onFinish(cutVer);
+            return new BlockingConsistentCut(ctx.cache().context(), cutVer);
         }
 
         /** */
@@ -592,8 +543,16 @@ public abstract class AbstractConsistentCutBlockingTest extends AbstractConsiste
         }
 
         /** */
-        public void awaitBlocked() {
-            U.awaitQuiet(blockedLatch);
+        public void awaitBlockedOrFinishedCut(@Nullable IgniteInternalFuture<?> cutFut) {
+            CountDownLatch latch = blockedLatch;
+
+            if (latch == null)
+                return;
+
+            if (cutFut != null)
+                cutFut.listen((f) -> latch.countDown());
+
+            U.awaitQuiet(latch);
         }
 
         /** */
@@ -602,29 +561,25 @@ public abstract class AbstractConsistentCutBlockingTest extends AbstractConsiste
                 beforeUpdVer.countDown();
             else if (type == AFTER_VERSION_UPDATE)
                 afterUpdVer.countDown();
+            // TODO: before finish move to onDone().
             else if (type == BEFORE_FINISH)
                 beforeFinish.countDown();
         }
 
-        /** {@inheritDoc} */
-        @Override protected ConsistentCut newConsistentCut() {
-            return new BlockingConsistentCut(ctx.cache().context());
-        }
-
         /** */
-        public BlockingConsistentCutManager(GridKernalContext ctx) {
-            this.ctx = ctx;
+        public BlockingConsistentCutProcessor(GridKernalContext ctx) {
+            super(ctx);
         }
 
         /** */
         private final class BlockingConsistentCut extends ConsistentCut {
             /** */
-            BlockingConsistentCut(GridCacheSharedContext<?, ?> cctx) {
-                super(cctx);
+            BlockingConsistentCut(GridCacheSharedContext<?, ?> cctx, ConsistentCutVersion ver) {
+                super(cctx, ver);
             }
 
             /** Blocks before or after ConsistentCut preparation. */
-            @Override protected void init(ConsistentCutVersion ver) throws IgniteCheckedException {
+            @Override protected void init() throws IgniteCheckedException {
                 if (afterUpdVer != null) {
                     blockedLatch.countDown();
                     blockedLatch = null;
@@ -634,7 +589,7 @@ public abstract class AbstractConsistentCutBlockingTest extends AbstractConsiste
                     afterUpdVer = null;
                 }
 
-                super.init(ver);
+                super.init();
             }
         }
     }

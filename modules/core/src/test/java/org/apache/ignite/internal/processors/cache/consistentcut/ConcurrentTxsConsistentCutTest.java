@@ -25,6 +25,7 @@ import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.CountDownLatch;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCache;
+import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.T2;
@@ -33,6 +34,8 @@ import org.apache.ignite.transactions.Transaction;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.junit.runners.Parameterized;
+
+import static org.apache.ignite.cache.CacheAtomicityMode.ATOMIC;
 
 /** Load Ignite with transactions and starts Consistent Cut concurrently. */
 @RunWith(Parameterized.class)
@@ -60,13 +63,6 @@ public class ConcurrentTxsConsistentCutTest extends AbstractConsistentCutTest {
     /** */
     @Parameterized.Parameter(2)
     public int repeat;
-
-    /** {@inheritDoc} */
-    @Override protected void beforeTest() throws Exception {
-        super.beforeTest();
-
-        TestConsistentCutManager.cutMgr(grid(0)).scheduleConsistentCut();
-    }
 
     /** */
     @Parameterized.Parameters(name = "nodes={0} backups={1} repeat={2}")
@@ -98,10 +94,20 @@ public class ConcurrentTxsConsistentCutTest extends AbstractConsistentCutTest {
 
     /** */
     @Test
+    public void t() {
+        IgniteCache<Integer, Integer> c = grid(0).createCache(new CacheConfiguration<Integer, Integer>("ATOMIC")
+            .setBackups(0)
+            .setAtomicityMode(ATOMIC));
+
+        c.put(key("ATOMIC", grid(0).localNode(), null), 1);
+
+        stopAllGrids();
+    }
+
+    /** */
+    @Test
     public void noLoadAndCutTest() throws Exception {
         awaitConsistentCuts(CUTS);
-
-        TestConsistentCutManager.cutMgr(grid(0)).disableScheduling(false);
 
         checkWalsConsistency(txOrigNode, CUTS);
     }
@@ -114,8 +120,6 @@ public class ConcurrentTxsConsistentCutTest extends AbstractConsistentCutTest {
         IgniteInternalFuture<?> f = asyncLoadData(2);
 
         awaitConsistentCuts(CUTS);
-
-        TestConsistentCutManager.cutMgr(grid(0)).disableScheduling(false);
 
         stopLoadLatch.countDown();
 
@@ -150,7 +154,7 @@ public class ConcurrentTxsConsistentCutTest extends AbstractConsistentCutTest {
                         cache.put(r.nextInt(), r.nextInt());
                     }
 
-                    tx.commitAsync();
+                    tx.commit();
                 }
             }
         }, threads);

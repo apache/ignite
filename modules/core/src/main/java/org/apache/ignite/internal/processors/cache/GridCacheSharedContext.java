@@ -44,7 +44,7 @@ import org.apache.ignite.internal.managers.systemview.ScanQuerySystemView;
 import org.apache.ignite.internal.pagemem.store.IgnitePageStoreManager;
 import org.apache.ignite.internal.pagemem.wal.IgniteWriteAheadLogManager;
 import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
-import org.apache.ignite.internal.processors.cache.consistentcut.ConsistentCutManager;
+import org.apache.ignite.internal.processors.cache.consistentcut.ConsistentCutProcessor;
 import org.apache.ignite.internal.processors.cache.distributed.dht.topology.GridDhtPartitionTopology;
 import org.apache.ignite.internal.processors.cache.distributed.dht.topology.PartitionsEvictManager;
 import org.apache.ignite.internal.processors.cache.distributed.near.GridNearTxLocal;
@@ -93,9 +93,6 @@ public class GridCacheSharedContext<K, V> {
 
     /** Cache transaction manager. */
     private IgniteTxManager txMgr;
-
-    /** Consistent Cut manager. */
-    private ConsistentCutManager consistentCutMgr;
 
     /** JTA manager. */
     private CacheJtaManagerAdapter jtaMgr;
@@ -220,7 +217,6 @@ public class GridCacheSharedContext<K, V> {
      * @param mvccCachingMgr Mvcc caching manager.
      * @param deadlockDetectionMgr Deadlock detection manager.
      * @param diagnosticMgr Diagnostic manager.
-     * @param consistentCutMgr Consistent Cut manager.
      */
     public GridCacheSharedContext(
         GridKernalContext kernalCtx,
@@ -243,8 +239,7 @@ public class GridCacheSharedContext<K, V> {
         Collection<CacheStoreSessionListener> storeSesLsnrs,
         MvccCachingManager mvccCachingMgr,
         DeadlockDetectionManager deadlockDetectionMgr,
-        CacheDiagnosticManager diagnosticMgr,
-        ConsistentCutManager consistentCutMgr
+        CacheDiagnosticManager diagnosticMgr
     ) {
         this.kernalCtx = kernalCtx;
 
@@ -269,8 +264,7 @@ public class GridCacheSharedContext<K, V> {
             evictMgr,
             mvccCachingMgr,
             deadlockDetectionMgr,
-            diagnosticMgr,
-            consistentCutMgr
+            diagnosticMgr
         );
 
         this.storeSesLsnrs = storeSesLsnrs;
@@ -452,8 +446,7 @@ public class GridCacheSharedContext<K, V> {
             evictMgr,
             mvccCachingMgr,
             deadlockDetectionMgr,
-            diagnosticMgr,
-            consistentCutMgr
+            diagnosticMgr
         );
 
         this.mgrs = mgrs;
@@ -504,8 +497,7 @@ public class GridCacheSharedContext<K, V> {
         PartitionsEvictManager evictMgr,
         MvccCachingManager mvccCachingMgr,
         DeadlockDetectionManager deadlockDetectionMgr,
-        CacheDiagnosticManager diagnosticMgr,
-        ConsistentCutManager consistentCutMgr
+        CacheDiagnosticManager diagnosticMgr
     ) {
         this.diagnosticMgr = add(mgrs, diagnosticMgr);
         this.mvccMgr = add(mgrs, mvccMgr);
@@ -530,7 +522,6 @@ public class GridCacheSharedContext<K, V> {
         this.evictMgr = add(mgrs, evictMgr);
         this.mvccCachingMgr = add(mgrs, mvccCachingMgr);
         this.deadlockDetectionMgr = add(mgrs, deadlockDetectionMgr);
-        this.consistentCutMgr = add(mgrs, consistentCutMgr);
     }
 
     /**
@@ -716,13 +707,6 @@ public class GridCacheSharedContext<K, V> {
     }
 
     /**
-     * @return Consistent Cut manager.
-     */
-    public ConsistentCutManager consistentCutMgr() {
-        return consistentCutMgr;
-    }
-
-    /**
      * @return JTA manager.
      */
     public CacheJtaManagerAdapter jta() {
@@ -891,6 +875,13 @@ public class GridCacheSharedContext<K, V> {
      */
     public MvccProcessor coordinators() {
         return kernalCtx.coordinators();
+    }
+
+    /**
+     * @return Consistent Cut processor.
+     */
+    public ConsistentCutProcessor consistentCutMgr() {
+        return kernalCtx.consistentCut();
     }
 
     /**

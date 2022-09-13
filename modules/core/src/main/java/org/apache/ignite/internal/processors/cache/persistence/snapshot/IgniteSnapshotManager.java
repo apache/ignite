@@ -1004,11 +1004,6 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
 
         clusterSnpReq = null;
 
-        if (endFail.isEmpty() && snpReq.error() == null) {
-            if (CU.isPitrEnabled(cctx.gridConfig()) && U.isLocalNodeCoordinator(cctx.discovery()))
-                cctx.consistentCutMgr().scheduleConsistentCut();
-        }
-
         synchronized (snpOpMux) {
             if (clusterSnpFut != null) {
                 if (endFail.isEmpty() && snpReq.error() == null) {
@@ -1757,7 +1752,7 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
         GridCacheSharedContext<?, ?> sctx = new GridCacheSharedContext<>(ctx, null, null, null,
             null, null, null, null, null, null,
             null, null, null, null, null,
-            null, null, null, null, null, null, null);
+            null, null, null, null, null, null);
 
         return new DataPageIterator(sctx, coctx, pageStore, partId);
     }

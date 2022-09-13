@@ -127,6 +127,7 @@ import org.apache.ignite.internal.processors.cache.GridCacheUtilityKey;
 import org.apache.ignite.internal.processors.cache.IgniteCacheProxy;
 import org.apache.ignite.internal.processors.cache.IgniteInternalCache;
 import org.apache.ignite.internal.processors.cache.binary.CacheObjectBinaryProcessorImpl;
+import org.apache.ignite.internal.processors.cache.consistentcut.ConsistentCutProcessor;
 import org.apache.ignite.internal.processors.cache.mvcc.MvccProcessorImpl;
 import org.apache.ignite.internal.processors.cache.persistence.filename.PdsConsistentIdProcessor;
 import org.apache.ignite.internal.processors.cacheobject.IgniteCacheObjectProcessor;
@@ -1091,6 +1092,7 @@ public class IgniteKernal implements IgniteEx, Externalizable {
                 startProcessor(new DistributedMetaStorageImpl(ctx));
                 startProcessor(new DistributedConfigurationProcessor(ctx));
                 startProcessor(new DurableBackgroundTasksProcessor(ctx));
+                startProcessor(createComponent(ConsistentCutProcessor.class, ctx));
 
                 startTimer.finishGlobalStage("Start processors");
 
@@ -3322,8 +3324,6 @@ public class IgniteKernal implements IgniteEx, Externalizable {
      */
     private static <T extends GridComponent> T createComponent(Class<T> cls, GridKernalContext ctx)
         throws IgniteCheckedException {
-        assert cls.isInterface() : cls;
-
         T comp = ctx.plugins().createComponent(cls);
 
         if (comp != null)
@@ -3343,6 +3343,9 @@ public class IgniteKernal implements IgniteEx, Externalizable {
 
         if (cls.equals(IgniteRestProcessor.class))
             return (T)new GridRestProcessor(ctx);
+
+        if (cls.equals(ConsistentCutProcessor.class))
+            return (T)new ConsistentCutProcessor(ctx);
 
         Class<T> implCls = null;
 

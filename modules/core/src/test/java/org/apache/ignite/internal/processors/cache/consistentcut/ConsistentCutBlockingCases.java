@@ -20,7 +20,6 @@ package org.apache.ignite.internal.processors.cache.consistentcut;
 import java.util.ArrayList;
 import java.util.List;
 import org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtTxFinishRequest;
-import org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtTxFinishResponse;
 import org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtTxPrepareRequest;
 import org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtTxPrepareResponse;
 import org.apache.ignite.internal.processors.cache.distributed.near.GridNearTxFinishRequest;
@@ -117,7 +116,6 @@ public class ConsistentCutBlockingCases {
             msgCls.add(GridDhtTxPrepareRequest.class);
             msgCls.add(GridDhtTxPrepareResponse.class);
             msgCls.add(GridDhtTxFinishRequest.class);
-            msgCls.add(GridDhtTxFinishResponse.class);
         }
 
         return msgCls;

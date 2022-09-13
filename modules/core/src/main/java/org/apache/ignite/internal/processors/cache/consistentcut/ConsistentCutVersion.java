@@ -18,7 +18,6 @@
 package org.apache.ignite.internal.processors.cache.consistentcut;
 
 import java.nio.ByteBuffer;
-import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
 import org.apache.ignite.internal.util.tostring.GridToStringInclude;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.plugin.extensions.communication.Message;
@@ -35,33 +34,26 @@ public class ConsistentCutVersion implements Message, Comparable<ConsistentCutVe
     private static final long serialVersionUID = 0L;
 
     /** */
-    public static final short TYPE_CODE = 202;
+    public static ConsistentCutVersion NONE = new ConsistentCutVersion(0);
+
+    /** */
+    public static final short TYPE_CODE = 201;
 
     /** Incremental version. */
     @GridToStringInclude
     private long ver;
 
-    /** Topology version on which Consistent Cut has started. */
-    @GridToStringInclude
-    private AffinityTopologyVersion topVer;
-
     /** */
     public ConsistentCutVersion() {}
 
     /** */
-    public ConsistentCutVersion(long ver, AffinityTopologyVersion topVer) {
+    public ConsistentCutVersion(long ver) {
         this.ver = ver;
-        this.topVer = topVer;
     }
 
     /** */
     public long version() {
         return ver;
-    }
-
-    /** */
-    public AffinityTopologyVersion topVer() {
-        return topVer;
     }
 
     /** {@inheritDoc} */
@@ -82,12 +74,6 @@ public class ConsistentCutVersion implements Message, Comparable<ConsistentCutVe
 
         switch (writer.state()) {
             case 0:
-                if (!writer.writeAffinityTopologyVersion("topVer", topVer))
-                    return false;
-
-                writer.incrementState();
-
-            case 1:
                 if (!writer.writeLong("ver", ver))
                     return false;
 
@@ -107,14 +93,6 @@ public class ConsistentCutVersion implements Message, Comparable<ConsistentCutVe
 
         switch (reader.state()) {
             case 0:
-                topVer = reader.readAffinityTopologyVersion("topVer");
-
-                if (!reader.isLastRead())
-                    return false;
-
-                reader.incrementState();
-
-            case 1:
                 ver = reader.readLong("ver");
 
                 if (!reader.isLastRead())
@@ -134,7 +112,7 @@ public class ConsistentCutVersion implements Message, Comparable<ConsistentCutVe
 
     /** {@inheritDoc} */
     @Override public byte fieldsCount() {
-        return 2;
+        return 1;
     }
 
     /** {@inheritDoc} */
@@ -144,20 +122,16 @@ public class ConsistentCutVersion implements Message, Comparable<ConsistentCutVe
 
     /** {@inheritDoc} */
     @Override public boolean equals(Object o) {
-        return o instanceof ConsistentCutVersion
-            && ver == ((ConsistentCutVersion)o).version()
-            && topVer.equals(((ConsistentCutVersion)o).topVer);
+        return o instanceof ConsistentCutVersion && ver == ((ConsistentCutVersion)o).version();
     }
 
     /** {@inheritDoc} */
     @Override public int hashCode() {
-        return 31 * Long.hashCode(ver) + topVer.hashCode();
+        return Long.hashCode(ver);
     }
 
     /** {@inheritDoc} */
     @Override public int compareTo(@NotNull ConsistentCutVersion o) {
-        int cutVerCmp = Long.compare(ver, o.ver);
-
-        return cutVerCmp != 0 ? cutVerCmp : topVer.compareTo(o.topVer);
+        return Long.compare(ver, o.ver);
     }
 }

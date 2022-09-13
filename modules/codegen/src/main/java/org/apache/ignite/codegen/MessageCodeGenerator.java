@@ -202,7 +202,7 @@ public class MessageCodeGenerator {
 //        gen.generateAndWrite(GridDhtTxFinishRequest.class);
 //        gen.generateAndWrite(GridDhtTxFinishResponse.class);
 //
-//        gen.generateAndWrite(ConsistentCutStartRequest.class);
+        gen.generateAndWrite(ConsistentCutStartRequest.class);
 //        gen.generateAndWrite(ConsistentCutFinishResponse.class);
 //        gen.generateAndWrite(ConsistentCutVersion.class);
 

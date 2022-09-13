@@ -319,17 +319,14 @@ public class DistributedProcess<I extends Serializable, R extends Serializable> 
             boolean rmvd, isEmpty;
 
             synchronized (mux) {
-                rmvd = p.remaining.remove(nodeId);
+                if (p.remaining.remove(nodeId))
+                    p.singleMsgs.put(nodeId, msg);
 
                 isEmpty = p.remaining.isEmpty();
             }
 
-            if (rmvd) {
-                p.singleMsgs.put(nodeId, msg);
-
-                if (isEmpty)
-                    finishProcess(p);
-            }
+            if (isEmpty)
+                finishProcess(p);
         });
     }
 
@@ -465,6 +462,11 @@ public class DistributedProcess<I extends Serializable, R extends Serializable> 
         /**
          * Cache group restore rollback phase.
          */
-        RESTORE_CACHE_GROUP_SNAPSHOT_ROLLBACK
+        RESTORE_CACHE_GROUP_SNAPSHOT_ROLLBACK,
+
+        /**
+         * Creating Consistent Cut
+         */
+        CONSISTENT_CUT_CREATE
     }
 }

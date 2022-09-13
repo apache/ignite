@@ -28,7 +28,6 @@ import org.apache.ignite.internal.processors.cache.consistency.persistence.PdsAt
 import org.apache.ignite.internal.processors.cache.consistency.persistence.PdsExplicitTransactionalReadRepairTest;
 import org.apache.ignite.internal.processors.cache.consistency.persistence.PdsImplicitTransactionalReadRepairTest;
 import org.apache.ignite.internal.processors.cache.consistentcut.ConcurrentTxsConsistentCutTest;
-import org.apache.ignite.internal.processors.cache.consistentcut.ConsistentCutActivationTest;
 import org.apache.ignite.internal.processors.cache.consistentcut.ConsistentCutNoBackupMessagesBlockingTest;
 import org.apache.ignite.internal.processors.cache.consistentcut.ConsistentCutNoBackupWALBlockingTest;
 import org.apache.ignite.internal.processors.cache.consistentcut.ConsistentCutSingleBackupMessagesBlockingTest;
@@ -61,7 +60,7 @@ import org.junit.runners.Suite;
     SingleBackupImplicitTransactionalReadRepairTest.class,
 
     // Consistent Cut
-    ConsistentCutActivationTest.class,
+//    ConsistentCutActivationTest.class,
     ConsistentCutNoBackupMessagesBlockingTest.class,
     ConsistentCutSingleBackupMessagesBlockingTest.class,
     ConsistentCutTwoBackupMessagesBlockingTest.class,

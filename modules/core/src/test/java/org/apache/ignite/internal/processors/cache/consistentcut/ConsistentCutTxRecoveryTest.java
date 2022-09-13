@@ -37,9 +37,7 @@ public class ConsistentCutTxRecoveryTest extends AbstractConsistentCutBlockingTe
         IgniteInternalFuture<?> loadFut = asyncLoadData();
 
         try {
-            BlockingConsistentCutManager srvCutMgr = BlockingConsistentCutManager.cutMgr(grid(0));
-
-            srvCutMgr.scheduleConsistentCut();
+            BlockingConsistentCutProcessor srvCutMgr = BlockingConsistentCutProcessor.cutProc(grid(0));
 
             awaitGlobalCutReady(1, true);
 
@@ -51,7 +49,7 @@ public class ConsistentCutTxRecoveryTest extends AbstractConsistentCutBlockingTe
 
             // Block Consistent Cut on server.
             srvCutMgr.block(BlkCutType.AFTER_VERSION_UPDATE);
-            srvCutMgr.awaitBlocked();
+            srvCutMgr.awaitBlockedOrFinishedCut(null);
 
             long blkCutVer = srvCutMgr.cutVersion().version();
 
@@ -63,8 +61,6 @@ public class ConsistentCutTxRecoveryTest extends AbstractConsistentCutBlockingTe
             // Await this Consistent Cut and next one.
             srvCutMgr.unblock(BlkCutType.AFTER_VERSION_UPDATE);
             awaitGlobalCutReady(blkCutVer + 1, false);
-
-            srvCutMgr.disableScheduling(false);
 
             // Stop cluster with flushing WALs.
             stopCluster();

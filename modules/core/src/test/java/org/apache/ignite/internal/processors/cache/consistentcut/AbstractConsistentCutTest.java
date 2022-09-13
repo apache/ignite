@@ -37,6 +37,7 @@ import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.DataRegionConfiguration;
 import org.apache.ignite.configuration.DataStorageConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
+import org.apache.ignite.internal.GridKernalContext;
 import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.TestRecordingCommunicationSpi;
 import org.apache.ignite.internal.managers.communication.GridIoMessage;
@@ -65,7 +66,7 @@ import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.apache.ignite.transactions.TransactionState;
 import org.jetbrains.annotations.Nullable;
 
-import static org.apache.ignite.internal.processors.cache.consistentcut.AbstractConsistentCutTest.TestConsistentCutManager.cutMgr;
+import static org.apache.ignite.internal.processors.cache.consistentcut.AbstractConsistentCutTest.TestConsistentCutProcessor.cutProc;
 import static org.apache.ignite.internal.processors.cache.consistentcut.ConsistentCutWalReader.NodeConsistentCutState.INCOMPLETE;
 
 /** Base class for testing Consistency Cut algorithm. */
@@ -87,8 +88,6 @@ public abstract class AbstractConsistentCutTest extends GridCommonAbstractTest {
         IgniteConfiguration cfg = super.getConfiguration(instanceName);
 
         cfg.setDataStorageConfiguration(new DataStorageConfiguration()
-            .setPitrEnabled(true)
-            .setPitrPeriod(CONSISTENT_CUT_PERIOD)
             .setDataRegionConfigurations(new DataRegionConfiguration()
                 .setName("consistent-cut-persist")
                 .setPersistenceEnabled(true)));
@@ -104,9 +103,15 @@ public abstract class AbstractConsistentCutTest extends GridCommonAbstractTest {
 
         cfg.setPluginProviders(new TestConsistentCutManagerPluginProvider());
 
-        cfg.setConsistentId(UUID.randomUUID());
+        int idx = getTestIgniteInstanceIndex(instanceName);
 
-        consistentIds.add((UUID)cfg.getConsistentId());
+        if (consistentIds.size() > idx)
+            cfg.setConsistentId(consistentIds.get(idx));
+        else {
+            cfg.setConsistentId(UUID.randomUUID());
+
+            consistentIds.add((UUID)cfg.getConsistentId());
+        }
 
         return cfg;
     }
@@ -140,16 +145,6 @@ public abstract class AbstractConsistentCutTest extends GridCommonAbstractTest {
     protected abstract int backups();
 
     /**
-     * Await that every node received Consistent Cut version.
-     *
-     * @param cutVer Consistent Cut version.
-     */
-    protected void awaitGlobalCutVersionReceived(long cutVer, int exclNodeId) throws Exception {
-        awaitGlobalCutEvent((ign) ->
-            cutMgr(ign).cutVersion().version() == cutVer, "CutVersionReceived " + cutVer, exclNodeId);
-    }
-
-    /**
      * Await global Consistent Cut has completed, and Ignite is ready for new Consistent Cut.
      *
      * @param expCutVer Expected Consistent Cut version.
@@ -162,12 +157,12 @@ public abstract class AbstractConsistentCutTest extends GridCommonAbstractTest {
 
         // Await all nodes finishes locally.
         awaitGlobalCutEvent(ign -> {
-            ConsistentCutState cutState = cutMgr(ign).currCutState();
+            ConsistentCut cut = cutProc(ign).currCut();
 
-            long cutVer = cutState.version().version();
+            long cutVer = cut.version().version();
 
             if (cutVer >= expCutVer) {
-                boolean ready = cutState.cut() == null;
+                boolean ready = cut.isDone();
 
                 if (ready) {
                     if (strict && cutVer != expCutVer)
@@ -187,7 +182,7 @@ public abstract class AbstractConsistentCutTest extends GridCommonAbstractTest {
             if (!U.isLocalNodeCoordinator(ign.context().discovery()))
                 return true;
 
-            return cutMgr(ign).consistentCutFinished(ver.get(), strict);
+            return cutProc(ign).consistentCutFinished(ver.get(), strict);
         }, "CoordinatorNodeReceivedFinisheds " + expCutVer + " " + strict + " " + ver, -1);
 
         return ver.get();
@@ -220,7 +215,7 @@ public abstract class AbstractConsistentCutTest extends GridCommonAbstractTest {
         bld.append("\n\tCoordinator node0 = ").append(U.isLocalNodeCoordinator(grid(0).context().discovery()));
 
         for (int i = 0; i < nodes(); i++)
-            bld.append("\n\tNode").append(i).append( ": ").append(cutMgr(grid(i)).currCutState());
+            bld.append("\n\tNode").append(i).append( ": ").append(cutProc(grid(i)).currCut());
 
         throw new Exception(bld.toString());
     }
@@ -252,7 +247,9 @@ public abstract class AbstractConsistentCutTest extends GridCommonAbstractTest {
      */
     protected void awaitConsistentCuts(int cuts) throws Exception {
         for (int i = 1; i <= cuts; i++) {
-            awaitGlobalCutReady(i, true);
+            Thread.sleep(1_000);
+
+            cutProc(grid(0)).triggerConsistentCutOnCluster().get(getTestTimeout());
 
             log.info("Consistent Cut finished: " + i);
         }
@@ -381,35 +378,35 @@ public abstract class AbstractConsistentCutTest extends GridCommonAbstractTest {
 
         /** {@inheritDoc} */
         @Override public <T> @Nullable T createComponent(PluginContext ctx, Class<T> cls) {
-            if (ConsistentCutManager.class.equals(cls))
-                return (T)new TestConsistentCutManager();
+            if (ConsistentCutProcessor.class.equals(cls))
+                return (T)new TestConsistentCutProcessor(((IgniteEx)ctx.grid()).context());
 
             return null;
         }
     }
 
     /** ConsistentCutManager with possibility to disable schedulling Consistent Cuts manually. */
-    protected static class TestConsistentCutManager extends ConsistentCutManager {
+    protected static class TestConsistentCutProcessor extends ConsistentCutProcessor {
         /** */
-        static TestConsistentCutManager cutMgr(IgniteEx ign) {
-            return (TestConsistentCutManager)ign.context().cache().context().consistentCutMgr();
+        public TestConsistentCutProcessor(GridKernalContext ctx) {
+            super(ctx);
+        }
+
+        /** */
+        static TestConsistentCutProcessor cutProc(IgniteEx ign) {
+            return (TestConsistentCutProcessor)ign.context().consistentCut();
         }
 
         /** */
         boolean consistentCutFinished(long cutVer, boolean strictVer) {
             boolean ver = strictVer ? cutVersion().version() == cutVer : cutVersion().version() >= cutVer;
 
-            return ver && notFinishedSrvNodes == null;
+            return ver && clusterCutFut == null;
         }
 
         /** */
-        public ConsistentCutState currCutState() {
-            return CONSITENT_CUT_STATE.get(this);
-        }
-
-        /** */
-        static boolean disabled(IgniteEx ign) {
-            return cutMgr(ign).scheduleConsistentCutTask == null;
+        public ConsistentCut currCut() {
+            return CONSISTENT_CUT.get(this);
         }
     }
 

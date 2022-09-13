@@ -194,9 +194,6 @@ public class DataStorageConfiguration implements Serializable {
     private int pageSize = IgniteSystemProperties.getInteger(
         IGNITE_DEFAULT_DATA_STORAGE_PAGE_SIZE, 0);
 
-    /** Default period of preparing recovery points (Consistent Cuts) for the PITR feature. */
-    private static final long DFLT_PITR_CONSISTENT_CUT_PERIOD = 1000;
-
     /** Concurrency level. */
     private int concLvl;
 
@@ -339,14 +336,6 @@ public class DataStorageConfiguration implements Serializable {
 
     /** Default memory allocator for all data regions. */
     @Nullable private MemoryAllocator memoryAllocator = null;
-
-    /** Flag to enable or disable the PITR feature. */
-    @IgniteExperimental
-    private boolean pitrEnabled;
-
-    /** Period of preparing recovery points for the PITR feature, in milliseconds. */
-    @IgniteExperimental
-    private long pitrPeriod = DFLT_PITR_CONSISTENT_CUT_PERIOD;
 
     /**
      * Creates valid durable memory configuration with all default values.
@@ -1369,48 +1358,6 @@ public class DataStorageConfiguration implements Serializable {
      */
     public DataStorageConfiguration setMemoryAllocator(MemoryAllocator allocator) {
         memoryAllocator = allocator;
-
-        return this;
-    }
-
-    /**
-     * @return Whether the PITR feature is enabled.
-     */
-    @IgniteExperimental
-    public boolean isPitrEnabled() {
-        return pitrEnabled;
-    }
-
-    /**
-     * Enables or disables the PITR feature.
-     *
-     * @param pitrEnabled Flag to enable or disable PITR.
-     * @return {@code this} for chaining.
-     */
-    @IgniteExperimental
-    public DataStorageConfiguration setPitrEnabled(boolean pitrEnabled) {
-        this.pitrEnabled = pitrEnabled;
-
-        return this;
-    }
-
-    /**
-     * @return Period of preparing recovery points (Consistent Cuts) for the PITR feature, in milliseconds.
-     */
-    @IgniteExperimental
-    public long getPitrPeriod() {
-        return pitrPeriod;
-    }
-
-    /**
-     * Sets period of preparing recovery points (Consistent Cuts) for the PITR feature, in milliseconds.
-     *
-     * @param pitrPeriod Frequency of points for recovery for PITR feature.
-     * @return {@code this} for chaining.
-     */
-    @IgniteExperimental
-    public DataStorageConfiguration setPitrPeriod(long pitrPeriod) {
-        this.pitrPeriod = pitrPeriod;
 
         return this;
     }
