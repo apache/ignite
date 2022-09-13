@@ -1131,7 +1131,7 @@ public class FileWriteAheadLogManager extends GridCacheSharedManagerAdapter impl
 
             long lastArchived = archivedAbsIdx >= 0 ? archivedAbsIdx : lastArchivedIndex();
 
-            if ((desc.idx >= lastCheckpointPtr.index() && !inMemoryCdc) // We cannot delete segments needed for binary recovery.
+            if (desc.idx >= lastCheckpointPtr.index() // We cannot delete segments needed for binary recovery.
                 || desc.idx >= lastArchived // We cannot delete last segment, it is needed at start of node and avoid gaps.
                 || desc.idx >= high.index() // We cannot delete segments larger than the border.
                 || !segmentAware.minReserveIndex(desc.idx)) // We cannot delete reserved segment.
@@ -1383,10 +1383,10 @@ public class FileWriteAheadLogManager extends GridCacheSharedManagerAdapter impl
                 segmentSize.put(idx, currSize);
             }
             finally {
-                // Move last checkpoint index to previous segment index.
+                // Move checkpoint pointer to the edge as node don't have actual checkpoints in `inMemoryCdc=true` mode.
                 // This will allow cleaner to remove segments from archive.
                 if (inMemoryCdc)
-                    segmentAware.lastCheckpointIdx(hnd.getSegmentId());
+                    notchLastCheckpointPtr(hnd.position());
 
                 if (archiver == null)
                     segmentAware.addSize(idx, currSize - reservedSize);
@@ -3288,7 +3288,7 @@ public class FileWriteAheadLogManager extends GridCacheSharedManagerAdapter impl
                     long totalSize = totalSize(walArchiveFiles);
 
                     for (FileDescriptor fileDesc : walArchiveFiles) {
-                        if ((fileDesc.idx >= lastCheckpointPtr.index() && !inMemoryCdc) || segmentAware.reserved(fileDesc.idx))
+                        if (fileDesc.idx >= lastCheckpointPtr.index() || segmentAware.reserved(fileDesc.idx))
                             break;
                         else {
                             high = fileDesc;
