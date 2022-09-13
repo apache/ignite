@@ -24,6 +24,7 @@ import org.apache.calcite.plan.RelOptTable;
 import org.apache.calcite.plan.RelTraitSet;
 import org.apache.calcite.rex.RexNode;
 import org.apache.calcite.util.ImmutableBitSet;
+import org.apache.ignite.internal.processors.query.calcite.prepare.bounds.SearchBounds;
 import org.apache.ignite.internal.processors.query.calcite.rel.AbstractIndexScan;
 import org.apache.ignite.internal.processors.query.calcite.schema.IgniteIndex;
 import org.apache.ignite.internal.processors.query.calcite.schema.IgniteTable;
@@ -45,6 +46,7 @@ public class IgniteLogicalIndexScan extends AbstractIndexScan {
         IgniteTable tbl = table.unwrap(IgniteTable.class);
         IgniteIndex idx = tbl.getIndex(idxName);
 
+        List<SearchBounds> searchBounds = idx.toSearchBounds(cluster, cond, requiredColumns);
         IndexConditions idxCond = idx.toIndexCondition(cluster, cond, requiredColumns);
 
         return new IgniteLogicalIndexScan(
@@ -54,6 +56,7 @@ public class IgniteLogicalIndexScan extends AbstractIndexScan {
             idxName,
             proj,
             cond,
+            searchBounds,
             idxCond,
             requiredColumns);
     }
@@ -66,6 +69,7 @@ public class IgniteLogicalIndexScan extends AbstractIndexScan {
      * @param idxName Index name.
      * @param proj Projects.
      * @param cond Filters.
+     * @param searchBounds Index search bounds.
      * @param idxCond Index conditions.
      * @param requiredCols Participating columns.
      */
@@ -76,9 +80,10 @@ public class IgniteLogicalIndexScan extends AbstractIndexScan {
         String idxName,
         @Nullable List<RexNode> proj,
         @Nullable RexNode cond,
+        @Nullable List<SearchBounds> searchBounds,
         @Nullable IndexConditions idxCond,
         @Nullable ImmutableBitSet requiredCols
     ) {
-        super(cluster, traits, ImmutableList.of(), tbl, idxName, proj, cond, idxCond, requiredCols);
+        super(cluster, traits, ImmutableList.of(), tbl, idxName, proj, cond, searchBounds, idxCond, requiredCols);
     }
 }

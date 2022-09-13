@@ -18,16 +18,17 @@
 package org.apache.ignite.internal.processors.query.calcite.prepare.bounds;
 
 import org.apache.calcite.rex.RexNode;
+import org.jetbrains.annotations.Nullable;
 
 /**
  * Bounds holder for search row.
  */
 public abstract class SearchBounds {
-    /** */
+    /** Condition required only for cost calculation, no serialization needed. */
     private final RexNode condition;
 
     /** */
-    protected SearchBounds(RexNode condition) {
+    protected SearchBounds(@Nullable RexNode condition) {
         this.condition = condition;
     }
 

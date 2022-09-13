@@ -36,6 +36,7 @@ import org.apache.ignite.internal.cache.query.index.sorted.inline.InlineIndex;
 import org.apache.ignite.internal.processors.query.calcite.exec.ExecutionContext;
 import org.apache.ignite.internal.processors.query.calcite.exec.IndexScan;
 import org.apache.ignite.internal.processors.query.calcite.metadata.ColocationGroup;
+import org.apache.ignite.internal.processors.query.calcite.prepare.bounds.SearchBounds;
 import org.apache.ignite.internal.processors.query.calcite.rel.logical.IgniteLogicalIndexScan;
 import org.apache.ignite.internal.processors.query.calcite.util.Commons;
 import org.apache.ignite.internal.processors.query.calcite.util.IndexConditions;
@@ -165,5 +166,31 @@ public class CacheIndexImpl implements IgniteIndex {
 
         // Empty index find predicate.
         return new IndexConditions();
+    }
+
+    /** {@inheritDoc} */
+    @Override public List<SearchBounds> toSearchBounds(
+        RelOptCluster cluster,
+        @Nullable RexNode cond,
+        @Nullable ImmutableBitSet requiredColumns
+    ) {
+        RelCollation collation = this.collation;
+        RelDataType rowType = tbl.getRowType(cluster.getTypeFactory());
+
+        if (requiredColumns != null)
+            collation = collation.apply(Commons.mapping(requiredColumns, rowType.getFieldCount()));
+
+        if (!collation.getFieldCollations().isEmpty()) {
+            return RexUtils.buildSortedSearchBounds(
+                cluster,
+                collation,
+                cond,
+                rowType,
+                requiredColumns
+            );
+        }
+
+        // Empty index find predicate.
+        return null;
     }
 }

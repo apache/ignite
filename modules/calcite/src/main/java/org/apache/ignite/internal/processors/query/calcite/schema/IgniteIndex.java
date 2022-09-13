@@ -27,6 +27,7 @@ import org.apache.calcite.rex.RexNode;
 import org.apache.calcite.util.ImmutableBitSet;
 import org.apache.ignite.internal.processors.query.calcite.exec.ExecutionContext;
 import org.apache.ignite.internal.processors.query.calcite.metadata.ColocationGroup;
+import org.apache.ignite.internal.processors.query.calcite.prepare.bounds.SearchBounds;
 import org.apache.ignite.internal.processors.query.calcite.rel.logical.IgniteLogicalIndexScan;
 import org.apache.ignite.internal.processors.query.calcite.util.IndexConditions;
 import org.jetbrains.annotations.Nullable;
@@ -71,6 +72,20 @@ public interface IgniteIndex {
      * @return Index condition.
      */
     public IndexConditions toIndexCondition(
+        RelOptCluster cluster,
+        @Nullable RexNode cond,
+        @Nullable ImmutableBitSet requiredColumns
+    );
+
+    /**
+     * Converts condition to index find predicate.
+     *
+     * @param cluster         Custer.
+     * @param cond            Conditions to filter rows.
+     * @param requiredColumns Set of columns to extract from original row.
+     * @return Index condition.
+     */
+    public List<SearchBounds> toSearchBounds(
         RelOptCluster cluster,
         @Nullable RexNode cond,
         @Nullable ImmutableBitSet requiredColumns

@@ -106,6 +106,7 @@ public abstract class LogicalScanConverterRule<T extends ProjectableFilterableTa
                     rel.indexName(),
                     rel.projects(),
                     rel.condition(),
+                    rel.searchBounds(),
                     rel.indexConditions(),
                     rel.requiredColumns(),
                     idx.collation()

@@ -32,7 +32,9 @@ import org.apache.calcite.rex.RexBuilder;
 import org.apache.calcite.rex.RexNode;
 import org.apache.calcite.rex.RexUtil;
 import org.apache.calcite.util.ImmutableBitSet;
+import org.apache.ignite.internal.processors.query.calcite.externalize.RelInputEx;
 import org.apache.ignite.internal.processors.query.calcite.metadata.cost.IgniteCost;
+import org.apache.ignite.internal.processors.query.calcite.prepare.bounds.SearchBounds;
 import org.apache.ignite.internal.processors.query.calcite.util.IndexConditions;
 import org.jetbrains.annotations.Nullable;
 
@@ -42,6 +44,9 @@ import org.jetbrains.annotations.Nullable;
 public abstract class AbstractIndexScan extends ProjectableFilterableTableScan {
     /** */
     protected final String idxName;
+
+    /** */
+    protected final List<SearchBounds> searchBounds;
 
     /** */
     protected final IndexConditions idxCond;
@@ -54,6 +59,7 @@ public abstract class AbstractIndexScan extends ProjectableFilterableTableScan {
     protected AbstractIndexScan(RelInput input) {
         super(input);
         idxName = input.getString("index");
+        searchBounds = ((RelInputEx)input).getSearchBounds("searchBounds");
         idxCond = new IndexConditions(input);
     }
 
@@ -66,12 +72,14 @@ public abstract class AbstractIndexScan extends ProjectableFilterableTableScan {
         String idxName,
         @Nullable List<RexNode> proj,
         @Nullable RexNode cond,
+        @Nullable List<SearchBounds> searchBounds,
         @Nullable IndexConditions idxCond,
         @Nullable ImmutableBitSet reqColumns
     ) {
         super(cluster, traitSet, hints, table, proj, cond, reqColumns);
 
         this.idxName = idxName;
+        this.searchBounds = searchBounds;
         this.idxCond = idxCond;
     }
 
@@ -79,6 +87,7 @@ public abstract class AbstractIndexScan extends ProjectableFilterableTableScan {
     @Override protected RelWriter explainTerms0(RelWriter pw) {
         pw = pw.item("index", idxName);
         pw = super.explainTerms0(pw);
+        pw = pw.itemIf("searchBounds", searchBounds, searchBounds != null);
 
         return idxCond.explainTerms(pw);
     }
@@ -162,5 +171,10 @@ public abstract class AbstractIndexScan extends ProjectableFilterableTableScan {
     /** */
     public IndexConditions indexConditions() {
         return idxCond;
+    }
+
+    /** */
+    public List<SearchBounds> searchBounds() {
+        return searchBounds;
     }
 }

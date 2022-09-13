@@ -27,6 +27,7 @@ import org.apache.calcite.rel.RelInput;
 import org.apache.calcite.rel.RelWriter;
 import org.apache.calcite.rex.RexNode;
 import org.apache.calcite.util.ImmutableBitSet;
+import org.apache.ignite.internal.processors.query.calcite.prepare.bounds.SearchBounds;
 import org.apache.ignite.internal.processors.query.calcite.util.IndexConditions;
 import org.jetbrains.annotations.Nullable;
 
@@ -77,11 +78,12 @@ public class IgniteIndexScan extends AbstractIndexScan implements SourceAwareIgn
         String idxName,
         @Nullable List<RexNode> proj,
         @Nullable RexNode cond,
+        @Nullable List<SearchBounds> searchBounds,
         @Nullable IndexConditions idxCond,
         @Nullable ImmutableBitSet requiredCols,
         RelCollation collation
     ) {
-        this(-1L, cluster, traits, tbl, idxName, proj, cond, idxCond, requiredCols, collation);
+        this(-1L, cluster, traits, tbl, idxName, proj, cond, searchBounds, idxCond, requiredCols, collation);
     }
 
     /**
@@ -103,11 +105,12 @@ public class IgniteIndexScan extends AbstractIndexScan implements SourceAwareIgn
         String idxName,
         @Nullable List<RexNode> proj,
         @Nullable RexNode cond,
+        @Nullable List<SearchBounds> searchBounds,
         @Nullable IndexConditions idxCond,
         @Nullable ImmutableBitSet requiredCols,
         RelCollation collation
     ) {
-        super(cluster, traits, ImmutableList.of(), tbl, idxName, proj, cond, idxCond, requiredCols);
+        super(cluster, traits, ImmutableList.of(), tbl, idxName, proj, cond, searchBounds, idxCond, requiredCols);
 
         this.sourceId = sourceId;
         this.collation = collation;
@@ -133,13 +136,13 @@ public class IgniteIndexScan extends AbstractIndexScan implements SourceAwareIgn
     /** {@inheritDoc} */
     @Override public IgniteRel clone(long sourceId) {
         return new IgniteIndexScan(sourceId, getCluster(), getTraitSet(), getTable(),
-            idxName, projects, condition, idxCond, requiredColumns, collation);
+            idxName, projects, condition, searchBounds, idxCond, requiredColumns, collation);
     }
 
     /** {@inheritDoc} */
     @Override public IgniteRel clone(RelOptCluster cluster, List<IgniteRel> inputs) {
         return new IgniteIndexScan(sourceId, cluster, getTraitSet(), getTable(),
-            idxName, projects, condition, idxCond, requiredColumns, collation);
+            idxName, projects, condition, searchBounds, idxCond, requiredColumns, collation);
     }
 
     /** {@inheritDoc} */
