@@ -1756,4 +1756,14 @@ public class IgniteCacheDatabaseSharedManager extends GridCacheSharedManagerAdap
             (warmUpConfig) -> "Unknown data region warm-up configuration: " + errPostfix.get()
         );
     }
+
+    /**
+     * Wal truncate callback.
+     *
+     * @param highBound Upper bound.
+     * @throws IgniteCheckedException If failed.
+     */
+    public void onWalTruncated(WALPointer highBound) throws IgniteCheckedException {
+        // No-op.
+    }
 }

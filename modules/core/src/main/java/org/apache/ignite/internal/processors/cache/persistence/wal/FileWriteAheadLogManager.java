@@ -84,7 +84,6 @@ import org.apache.ignite.internal.processors.cache.GridCacheSharedManagerAdapter
 import org.apache.ignite.internal.processors.cache.WalStateManager.WALDisableContext;
 import org.apache.ignite.internal.processors.cache.persistence.DataRegion;
 import org.apache.ignite.internal.processors.cache.persistence.DataStorageMetricsImpl;
-import org.apache.ignite.internal.processors.cache.persistence.GridCacheDatabaseSharedManager;
 import org.apache.ignite.internal.processors.cache.persistence.IgniteCacheDatabaseSharedManager;
 import org.apache.ignite.internal.processors.cache.persistence.StorageException;
 import org.apache.ignite.internal.processors.cache.persistence.file.FileIO;
@@ -3309,8 +3308,7 @@ public class FileWriteAheadLogManager extends GridCacheSharedManagerAdapter impl
                                 + ", maxSize=" + U.humanReadableByteCount(maxWalArchiveSize) + ']');
                         }
 
-                        if (!inMemoryCdc)
-                            ((GridCacheDatabaseSharedManager)cctx.database()).onWalTruncated(highPtr);
+                        cctx.database().onWalTruncated(highPtr);
 
                         int truncated = truncate(highPtr);
 
