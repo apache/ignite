@@ -15,7 +15,7 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.internal.processors.query.calcite.util;
+package org.apache.ignite.internal.processors.query.calcite.prepare.bounds;
 
 import org.apache.calcite.rex.RexNode;
 import org.apache.ignite.internal.util.typedef.internal.S;
@@ -40,11 +40,13 @@ public class RangeBounds extends SearchBounds {
     /**
      */
     public RangeBounds(
+        RexNode condition,
         @Nullable RexNode lowerBound,
         @Nullable RexNode upperBound,
         boolean lowerInclude,
         boolean upperInclude
     ) {
+        super(condition);
         this.lowerBound = lowerBound;
         this.upperBound = upperBound;
         this.lowerInclude = lowerInclude;
@@ -63,6 +65,25 @@ public class RangeBounds extends SearchBounds {
      */
     public RexNode upperBound() {
         return upperBound;
+    }
+
+    /**
+     * @return {@code True} if the lower bound is inclusive.
+     */
+    public boolean lowerInclude() {
+        return lowerInclude;
+    }
+
+    /**
+     * @return {@code True} if the upper bound is inclusive.
+     */
+    public boolean upperInclude() {
+        return upperInclude;
+    }
+
+    /** {@inheritDoc} */
+    @Override public Type type() {
+        return Type.RANGE;
     }
 
     /** */

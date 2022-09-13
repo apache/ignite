@@ -15,34 +15,39 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.internal.processors.query.calcite.util;
+package org.apache.ignite.internal.processors.query.calcite.prepare.bounds;
 
-import java.util.List;
 import org.apache.calcite.rex.RexNode;
 import org.apache.ignite.internal.util.typedef.internal.S;
 
 /**
- * Multiple bounds holder for search row.
+ * Exact (equals) bounds holder for search row.
  */
-public class MultiBounds extends SearchBounds {
+public class ExactBounds extends SearchBounds {
     /** */
-    private final List<SearchBounds> bounds;
+    private final RexNode bound;
 
     /**
      */
-    public MultiBounds(List<SearchBounds> bounds) {
-        this.bounds = bounds;
+    public ExactBounds(RexNode condition, RexNode bound) {
+        super(condition);
+        this.bound = bound;
     }
 
     /**
-     * @return Search bounds.
+     * @return Search bound.
      */
-    public List<SearchBounds> bounds() {
-        return bounds;
+    public RexNode bound() {
+        return bound;
+    }
+
+    /** {@inheritDoc} */
+    @Override public Type type() {
+        return Type.EXACT;
     }
 
     /** */
     @Override public String toString() {
-        return S.toString(MultiBounds.class, this);
+        return S.toString(ExactBounds.class, this);
     }
 }

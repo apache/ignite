@@ -15,10 +15,39 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.internal.processors.query.calcite.util;
+package org.apache.ignite.internal.processors.query.calcite.prepare.bounds;
+
+import org.apache.calcite.rex.RexNode;
 
 /**
  * Bounds holder for search row.
  */
 public abstract class SearchBounds {
+    /** */
+    private final RexNode condition;
+
+    /** */
+    protected SearchBounds(RexNode condition) {
+        this.condition = condition;
+    }
+
+    /** */
+    public RexNode condition() {
+        return condition;
+    }
+
+    /** */
+    public abstract Type type();
+
+    /** */
+    public enum Type {
+        /** Exact search value. */
+        EXACT,
+
+        /** Range of values. */
+        RANGE,
+
+        /** Multiple values or multiple ranges. */
+        MULTI
+    }
 }
