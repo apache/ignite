@@ -1890,7 +1890,6 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
                 log.info("Snapshot task has been registered on local node [sctx=" + this +
                     ", task=" + task.getClass().getSimpleName() +
                     ", topVer=" + cctx.discovery().topologyVersionEx() + ']');
-                log.info("");
             }
 
             task.listen(f -> locSnpTasks.remove(rqId));
@@ -3171,7 +3170,7 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
 //                    }
 //                }
 
-                log.error("TEST | sending part " + pair.getPartitionId());
+//                log.error("TEST | sending part " + pair.getPartitionId());
 
                 copy(ioFactory, part, snpPart, len, transferRateLimiter);
 
@@ -3195,8 +3194,8 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
                     ", delta=" + delta + ']');
             }
 
-            log.error("TEST | Start partition snapshot recovery with the given delta page file [part=" + snpPart +
-                ", delta=" + delta + ']');
+//            log.error("TEST | Start partition snapshot recovery with the given delta page file [part=" + snpPart +
+//                ", delta=" + delta + ']');
 
             boolean encrypted = cctx.cache().isEncrypted(pair.getGroupId());
 
@@ -3248,29 +3247,28 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
                 throw new IgniteException(e);
             }
 
-            if(pair.getPartitionId() == 859) {
-                try {
-                    ByteBuffer pageBuff = ByteBuffer.allocateDirect(4096).order(ByteOrder.nativeOrder());
-                    pageBuff.clear();
-
-                    FilePageStore pageStore =
-                        (FilePageStore)storeMgr.getPageStoreFactory(pair.getGroupId(), false)
-                            .createPageStore(getTypeByPartId(pair.getPartitionId()), snpPart::toPath, val -> {
-                            });
-                    pageStore.read(0, pageBuff, true);
-
-                    PagePartitionMetaIO io = PageIO.getPageIO(pageBuff);
-
-                    long pageAddr = GridUnsafe.bufferAddress(pageBuff);
-
-                    long updateCntr = io.getUpdateCounter(pageAddr);
-
-                    log.error("TEST | delted 859 into snp. UpdateCounter: " + updateCntr);
-                } catch (Exception e){
-                    log.error("TEST | err reading update counter.", e);
-                }
-            }
-
+//            if(pair.getPartitionId() == 859) {
+//                try {
+//                    ByteBuffer pageBuff = ByteBuffer.allocateDirect(4096).order(ByteOrder.nativeOrder());
+//                    pageBuff.clear();
+//
+//                    FilePageStore pageStore =
+//                        (FilePageStore)storeMgr.getPageStoreFactory(pair.getGroupId(), false)
+//                            .createPageStore(getTypeByPartId(pair.getPartitionId()), snpPart::toPath, val -> {
+//                            });
+//                    pageStore.read(0, pageBuff, true);
+//
+//                    PagePartitionMetaIO io = PageIO.getPageIO(pageBuff);
+//
+//                    long pageAddr = GridUnsafe.bufferAddress(pageBuff);
+//
+//                    long updateCntr = io.getUpdateCounter(pageAddr);
+//
+//                    log.error("TEST | delted 859 into snp. UpdateCounter: " + updateCntr);
+//                } catch (Exception e){
+//                    log.error("TEST | err reading update counter.", e);
+//                }
+//            }
         }
 
         /** {@inheritDoc} */

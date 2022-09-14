@@ -1645,9 +1645,8 @@ public class IgniteCacheOffheapManagerImpl implements IgniteCacheOffheapManager 
 
         /** {@inheritDoc} */
         @Override public GridLongList finalizeUpdateCounters() {
-            if(this.partId == 859){
-                log.error("TEST | updationg counter 859");
-            }
+//            if(this.partId == 859)
+//                log.error("TEST | updationg counter 859");
 
             return pCntr.finalizeUpdateCounters();
         }

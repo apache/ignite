@@ -416,7 +416,7 @@ public class Checkpointer extends GridWorker {
 
             startCheckpointProgress();
 
-            log.error("TEST | doCheckpoint() begin");
+            //log.error("TEST | doCheckpoint() begin");
 
             try {
                 chp = checkpointWorkflow.markCheckpointBegin(lastCpTs, curCpProgress, tracker, this);
@@ -514,7 +514,7 @@ public class Checkpointer extends GridWorker {
 //        if(U.FLAG2.get())
 //            U.FLAG2.set(false);
 
-        log.error("TEST | doCheckpoint() end");
+        //log.error("TEST | doCheckpoint() end");
     }
 
     /**

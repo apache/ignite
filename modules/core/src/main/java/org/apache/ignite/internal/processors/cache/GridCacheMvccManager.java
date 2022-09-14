@@ -1437,7 +1437,7 @@ public class GridCacheMvccManager extends GridCacheSharedManagerAdapter {
             if (super.onDone(res, err)) {
                 dataStreamerFuts.remove(this);
 
-                log.error("TEST | removed DS future. Left: " + dataStreamerFuts.size());
+//                log.error("TEST | removed DS future. Left: " + dataStreamerFuts.size());
 
                 return true;
             }

@@ -469,7 +469,7 @@ public class DataStorageConfiguration implements Serializable {
      * @return Mapping table concurrency level(always greater than 0).
      */
     public int getConcurrencyLevel() {
-        return concLvl <= 0 ? Runtime.getRuntime().availableProcessors() : concLvl;
+        return 4; //concLvl <= 0 ? Runtime.getRuntime().availableProcessors() : concLvl;
     }
 
     /**

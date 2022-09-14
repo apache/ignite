@@ -59,7 +59,7 @@ import static org.apache.ignite.internal.managers.communication.GridIoPolicy.DAT
  */
 public class DataStreamProcessor<K, V> extends GridProcessorAdapter {
     /** Loaders map (access is not supposed to be highly concurrent). */
-    private Collection<DataStreamerImpl<?, ?>> ldrs = new GridConcurrentHashSet<>();
+    private Collection<DataStreamerImpl> ldrs = new GridConcurrentHashSet<>();
 
     /** Busy lock. */
     private final GridSpinBusyLock busyLock = new GridSpinBusyLock();
@@ -221,8 +221,6 @@ public class DataStreamProcessor<K, V> extends GridProcessorAdapter {
             if (log.isDebugEnabled())
                 log.debug("Processing data load request: " + req);
 
-
-
             AffinityTopologyVersion locAffVer = ctx.cache().context().exchange().readyAffinityVersion();
             AffinityTopologyVersion rmtAffVer = req.topologyVersion();
 
@@ -356,13 +354,9 @@ public class DataStreamProcessor<K, V> extends GridProcessorAdapter {
                         topFut.initialVersion();
 
                     if (topVer.compareTo(req.topologyVersion()) > 0) {
-                        try {
-                            remapErr = new ClusterTopologyCheckedException("DataStreamer will retry " +
-                                "data transfer at stable topology [reqTop=" + req.topologyVersion() +
-                                ", topVer=" + topFut.initialVersion() + ", node=remote]");
-                        } catch (Exception e){
-                            remapErr = new IgniteCheckedException("sudden err", e);
-                        }
+                        remapErr = new ClusterTopologyCheckedException("DataStreamer will retry " +
+                            "data transfer at stable topology [reqTop=" + req.topologyVersion() +
+                            ", topVer=" + topFut.initialVersion() + ", node=remote]");
                     }
                     else if (!topFut.isDone())
                         topWaitFut = topFut;
@@ -383,9 +377,7 @@ public class DataStreamProcessor<K, V> extends GridProcessorAdapter {
                         req.ignoreDeploymentOwnership(),
                         req.skipStore(),
                         req.keepBinary(),
-                        updater,
-                        req.requestId()
-                        );
+                        updater);
 
                     waitFut = allowOverwrite ? null : cctx.mvcc().addDataStreamerFuture(streamerFutTopVer);
                 }
@@ -407,7 +399,11 @@ public class DataStreamProcessor<K, V> extends GridProcessorAdapter {
             }
 
             try {
+                long t = System.nanoTime();
+
                 job.call();
+
+                t = U.nanosToMillis(System.nanoTime() - t);
 
                 sendResponse(nodeId, topic, req.requestId(), null, req.forceLocalDeployment());
             }

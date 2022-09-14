@@ -22,12 +22,16 @@ import org.apache.ignite.IgniteCache;
 import org.apache.ignite.IgniteDataStreamer;
 import org.apache.ignite.cache.CacheAtomicityMode;
 import org.apache.ignite.cache.CacheMode;
+import org.apache.ignite.cache.CacheWriteSynchronizationMode;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.ConnectorConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
+import org.apache.ignite.configuration.WALMode;
 import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.processors.cache.distributed.dht.atomic.GridNearAtomicUpdateFuture;
 import org.apache.ignite.internal.util.typedef.F;
+import org.apache.ignite.internal.util.typedef.G;
+import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.testframework.GridTestUtils;
 import org.junit.Test;
 import org.junit.runners.Parameterized;
@@ -35,6 +39,8 @@ import org.junit.runners.Parameterized;
 import java.sql.Connection;
 import java.sql.SQLException;
 import java.util.Arrays;
+import java.util.HashMap;
+import java.util.Map;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
@@ -53,11 +59,12 @@ public class IgniteClusterShanpshotStreamerTest  extends AbstractSnapshotSelfTes
         IgniteConfiguration cfg = super.getConfiguration(igniteInstanceName);
 
         cfg.getDataStorageConfiguration().getDefaultDataRegionConfiguration().setMaxSize(2 * 1024L * 1024L * 1024L);
+//        cfg.getDataStorageConfiguration().setWalMode(WALMode.NONE);
 //        cfg.getDataStorageConfiguration().setWalSegments(4);
 //        cfg.getDataStorageConfiguration().setWalSegmentSize(16 * 1024 * 1024);
 //        cfg.getDataStorageConfiguration().setMaxWalArchiveSize(128 * 1024 * 1024);
 //        cfg.getDataStorageConfiguration().setCheckpointFrequency(1000);
-        cfg.getDataStorageConfiguration().setCheckpointReadLockTimeout(15_000);
+//        cfg.getDataStorageConfiguration().setCheckpointReadLockTimeout(15_000);
 
         cfg.setConnectorConfiguration(new ConnectorConfiguration());
 
@@ -67,11 +74,11 @@ public class IgniteClusterShanpshotStreamerTest  extends AbstractSnapshotSelfTes
     /** @throws Exception If fails. */
     @Test
     public void testClusterSnapshotConsistencyWithStreamer() throws Exception {
-        int grids = 2;
-        int backups = 1;
+        int grids = 3;
+        int backups = 2;
 
 //        CountDownLatch loadLever = new CountDownLatch(13_403);
-        CountDownLatch loadLever = new CountDownLatch(40_000);
+        CountDownLatch loadLever = new CountDownLatch(100_000_000);
 
         AtomicBoolean stop = new AtomicBoolean(false);
         AtomicInteger idx = new AtomicInteger();
@@ -81,17 +88,28 @@ public class IgniteClusterShanpshotStreamerTest  extends AbstractSnapshotSelfTes
         startGrids(grids);
         grid(0).cluster().state(ACTIVE);
 
-        GridNearAtomicUpdateFuture.TEST_NIDE_UID = grid(1).localNode().id();
+//        GridNearAtomicUpdateFuture.TEST_NODE_UID = grid(0).localNode().id();
 
         IgniteCache<Integer, Integer> cache = grid(0)
             .createCache(new CacheConfiguration<Integer, Integer>("SQL_PUBLIC_" + tableName).setBackups(backups)
                     .setAtomicityMode(CacheAtomicityMode.ATOMIC)
                     .setCacheMode(CacheMode.PARTITIONED)
-//                .setWriteSynchronizationMode(CacheWriteSynchronizationMode.FULL_ASYNC)
+//                .setWriteSynchronizationMode(CacheWriteSynchronizationMode.FULL_SYNC)
                     .setBackups(backups)
 //                                    .setWriteSynchronizationMode(CacheWriteSynchronizationMode.FULL_ASYNC)
 //                            .setGroupName("grp1")
             );
+
+        long n = System.nanoTime();
+
+        runLoad2(tableName, loadLever.getCount());
+
+        n = U.nanosToMillis(System.nanoTime() - n) / 1000;
+
+        System.err.println("TEST | loaded in " + n + " seconds.");
+
+        if(true)
+            return;
 
         IgniteInternalFuture<?> load1 = runLoad(tableName, idx, loadLever, stop);
 //        IgniteInternalFuture<?> load2 = runLoad(tableName, idx, loadLever, stop);
@@ -174,6 +192,36 @@ public class IgniteClusterShanpshotStreamerTest  extends AbstractSnapshotSelfTes
                 e.printStackTrace();
             }
         }, 1, "load-thread-" + tblName);
+    }
+
+    private void runLoad2(String tblName, long cnt) {
+        String cacheName = "SQL_PUBLIC_" + tblName.toUpperCase();
+
+//        Map<Long, Long> batch = new HashMap<>();
+
+        try (Ignite client = startClientGrid(G.allGrids().size())) {
+            try (IgniteDataStreamer<Long, Long> ds = client.dataStreamer(cacheName)) {
+                ds.allowOverwrite(true);
+//                ds.perNodeBufferSize(32);
+
+                for (long i = 0; i < cnt; ++i) {
+                    ds.addData(i, i);
+
+//                    batch.put(i, i);
+//
+//                    if(batch.size() >= 512) {
+//                        grid(0).cache(cacheName).putAll(batch);
+//
+//                        batch = new HashMap<>();
+//                    }
+                }
+
+                ds.flush();
+            }
+        }
+        catch (Exception e) {
+            e.printStackTrace();
+        }
     }
 
     /** */

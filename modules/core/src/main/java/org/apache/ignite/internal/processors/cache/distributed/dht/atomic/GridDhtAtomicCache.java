@@ -3646,8 +3646,8 @@ public class GridDhtAtomicCache<K, V> extends GridDhtCacheAdapter<K, V> {
                 updateFut.onDeferredResponse(nodeId);
             }
             else {
-                U.warn(msgLog, "Failed to find DHT update future for deferred update response [futId=" + id +
-                    ", nodeId=" + nodeId + ", res=" + res + ']');
+//                U.warn(msgLog, "Failed to find DHT update future for deferred update response [futId=" + id +
+//                    ", nodeId=" + nodeId + ", res=" + res + ']');
             }
         }
     }

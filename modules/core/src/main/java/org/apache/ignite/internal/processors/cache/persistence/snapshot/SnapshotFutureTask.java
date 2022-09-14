@@ -316,7 +316,7 @@ class SnapshotFutureTask extends AbstractSnapshotFutureTask<Set<GroupPartitionId
         if (stopping())
             return;
 
-        log.error("TEST | snapshot - beforeCheckpointBegin(). DSFuts: "  +cctx.mvcc().dataStreamerFutures().size());
+//        log.error("TEST | snapshot - beforeCheckpointBegin(). DSFuts: "  +cctx.mvcc().dataStreamerFutures().size());
 
         ctx.finishedStateFut().listen(f -> {
             if (f.error() == null)
@@ -350,7 +350,7 @@ class SnapshotFutureTask extends AbstractSnapshotFutureTask<Set<GroupPartitionId
 
         U.FLAG2.set(false);
 
-        log.error("TEST | snapshot - onMarkCheckpointBegin(). DSFuts: " + cctx.mvcc().dataStreamerFutures().size());
+//        log.error("TEST | snapshot - onMarkCheckpointBegin(). DSFuts: " + cctx.mvcc().dataStreamerFutures().size());
 
         try {
             // Here we have the following warranties:
@@ -458,7 +458,7 @@ class SnapshotFutureTask extends AbstractSnapshotFutureTask<Set<GroupPartitionId
         if (stopping())
             return;
 
-        log.error("TEST | snapshot - onCheckpointBegin. DSFuts: " + cctx.mvcc().dataStreamerFutures().size());
+//        log.error("TEST | snapshot - onCheckpointBegin. DSFuts: " + cctx.mvcc().dataStreamerFutures().size());
 
         assert !processed.isEmpty() : "Partitions to process must be collected under checkpoint mark phase";
 
@@ -521,8 +521,8 @@ class SnapshotFutureTask extends AbstractSnapshotFutureTask<Set<GroupPartitionId
 //                            if(cctx.kernalContext().grid().localNode().order() == 2)
 //                                U.FLAG2.set(true);
 
-                            if(partId == 859)
-                                log.error("TEST | sending delta " + partId);
+//                            if(partId == 859)
+//                                log.error("TEST | sending delta " + partId);
 
                             snpSndr.sendPart(
                                 getPartitionFile(pageStore.workDir(), cacheDirName, partId),
@@ -555,9 +555,8 @@ class SnapshotFutureTask extends AbstractSnapshotFutureTask<Set<GroupPartitionId
 
 //                                log.error("TEST | sending delta " + delta.getName());
 
-                                if(delta.getName().contains("859")){
-                                    log.error("TEST | sending delta " + delta.getName());
-                                }
+//                                if(delta.getName().contains("859"))
+//                                    log.error("TEST | sending delta " + delta.getName());
 
                                 snpSndr.sendDelta(delta, cacheDirName, pair);
 
@@ -996,8 +995,8 @@ class SnapshotFutureTask extends AbstractSnapshotFutureTask<Set<GroupPartitionId
             // Write buffer to the end of the file.
             int len = deltaFileIo.writeFully(pageBuf);
 
-            if (len > 0)
-                log.error("TEST | Wrote delta " + deltaFile.getName());
+//            if (len > 0)
+//                log.error("TEST | Wrote delta " + deltaFile.getName());
 
             totalSize.addAndGet(len);
         }

@@ -19,6 +19,8 @@ package org.apache.ignite.internal.processors.datastreamer;
 
 import java.util.concurrent.Callable;
 import java.util.concurrent.ThreadLocalRandom;
+import java.util.concurrent.atomic.AtomicInteger;
+import java.util.concurrent.atomic.AtomicLong;
 import java.util.concurrent.atomic.LongAdder;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteDataStreamer;
@@ -43,14 +45,13 @@ public class IgniteDataStreamerPerformanceTest extends GridCommonAbstractTest {
     /** */
     private static final int GRID_CNT = 3;
 
-    /** */
-    private static final int ENTRY_CNT = 80000;
+    private static final int LOAD_NUM = 500_000;
 
     /** */
     private boolean useCache;
 
     /** */
-    private String[] vals = new String[2048];
+    private final String[] vals = new String[2048];
 
     /** {@inheritDoc} */
     @Override protected IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {
@@ -84,8 +85,8 @@ public class IgniteDataStreamerPerformanceTest extends GridCommonAbstractTest {
     }
 
     /** {@inheritDoc} */
-    @Override protected void beforeTestsStarted() throws Exception {
-        super.beforeTestsStarted();
+    @Override protected void beforeTest() throws Exception {
+        super.beforeTest();
 
         for (int i = 0; i < vals.length; i++) {
             int valLen = ThreadLocalRandom.current().nextInt(128, 512);
@@ -96,8 +97,6 @@ public class IgniteDataStreamerPerformanceTest extends GridCommonAbstractTest {
                 sb.append('a' + ThreadLocalRandom.current().nextInt(20));
 
             vals[i] = sb.toString();
-
-            info("Value: " + vals[i]);
         }
     }
 
@@ -113,10 +112,6 @@ public class IgniteDataStreamerPerformanceTest extends GridCommonAbstractTest {
      * @throws Exception If failed.
      */
     private void doTest() throws Exception {
-        System.gc();
-        System.gc();
-        System.gc();
-
         try {
             useCache = true;
 
@@ -124,54 +119,62 @@ public class IgniteDataStreamerPerformanceTest extends GridCommonAbstractTest {
 
             useCache = false;
 
-            Ignite ignite = startGrid();
 
-            final IgniteDataStreamer<Integer, String> ldr = ignite.dataStreamer(DEFAULT_CACHE_NAME);
 
-            ldr.perNodeBufferSize(8192);
-            ldr.receiver(DataStreamerCacheUpdaters.<Integer, String>batchedSorted());
-            ldr.autoFlushFrequency(0);
 
             final LongAdder cnt = new LongAdder();
 
-            long start = U.currentTimeMillis();
+            System.gc();
+            System.gc();
+            System.gc();
 
-            Thread t = new Thread(new Runnable() {
-                @SuppressWarnings("BusyWait")
-                @Override public void run() {
-                    while (true) {
-                        try {
-                            Thread.sleep(10000);
-                        }
-                        catch (InterruptedException ignored) {
-                            break;
-                        }
-
-                        info(">>> Adds/sec: " + cnt.sumThenReset() / 10);
-                    }
-                }
-            });
-
-            t.setDaemon(true);
-
-            t.start();
+//            Thread t = new Thread(new Runnable() {
+//                @SuppressWarnings("BusyWait")
+//                @Override public void run() {
+//                    AtomicLong cacheSize = new AtomicLong(grid(0).cache(DEFAULT_CACHE_NAME).size());
+//
+//                    int seconds = 3;
+//
+//                    while (true) {
+//                        try {
+//                            Thread.sleep(seconds * 1000);
+//                        }
+//                        catch (InterruptedException ignored) {
+//                            break;
+//                        }
+//
+//                        long grow = (grow = grid(0).cache(DEFAULT_CACHE_NAME).size()) - cacheSize.getAndSet(grow);
+//
+//                        info(">>> Adds/sec: " + grow / seconds);
+//                    }
+//                }
+//            });
+//
+//            t.setDaemon(true);
+//
+//            t.start();
 
             int threadNum = 2; //Runtime.getRuntime().availableProcessors();
 
-            multithreaded(new Callable<Object>() {
-                @SuppressWarnings("InfiniteLoopStatement")
-                @Override public Object call() throws Exception {
-                    ThreadLocalRandom rnd = ThreadLocalRandom.current();
+            AtomicInteger loadNum = new AtomicInteger(LOAD_NUM);
 
-                    while (true) {
-                        int i = rnd.nextInt(ENTRY_CNT);
+            try (Ignite ignite = startClientGrid(GRID_CNT)){
+                try(IgniteDataStreamer<Integer, String> ldr = ignite.dataStreamer(DEFAULT_CACHE_NAME);){
+                    ldr.receiver(DataStreamerCacheUpdaters.<Integer, String>batchedSorted());
+                    ldr.autoFlushFrequency(0);
 
-                        ldr.addData(i, vals[rnd.nextInt(vals.length)]);
 
-                        cnt.increment();
-                    }
                 }
-            }, threadNum, "loader");
+            }
+
+
+            int i;
+
+            while ((i = loadNum.decrementAndGet()) > 0) {
+                ldr.addData(i, vals[i % vals.length]);
+
+                cnt.increment();
+            }
 
             info("Closing loader...");
 
