@@ -372,7 +372,7 @@ public class ExpressionFactoryImpl<Row> implements ExpressionFactory<Row> {
             boolean fieldUpperInclude;
 
             if (fieldSingleBounds instanceof ExactBounds) {
-                fieldLowerBound = fieldUpperBound = ((ExactBounds)fieldBounds).bound();
+                fieldLowerBound = fieldUpperBound = ((ExactBounds)fieldSingleBounds).bound();
                 fieldLowerInclude = fieldUpperInclude = true;
             }
             else if (fieldSingleBounds instanceof RangeBounds) {

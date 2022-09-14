@@ -108,8 +108,9 @@ public abstract class AbstractIndexScan extends ProjectableFilterableTableScan {
             cost = 0;
 
             if (searchBounds != null) {
-                double selectivity0 = mq.getSelectivity(this, RexUtil.composeConjunction(builder,
-                    Commons.transform(searchBounds, b -> b == null ? null : b.condition())));
+                double selectivity0 = mq.getSelectivity(this, RexUtil.expandSearch(builder, null,
+                    RexUtil.composeConjunction(builder,
+                        Commons.transform(searchBounds, b -> b == null ? null : b.condition()))));
 
                 selectivity -= 1 - selectivity0;
 

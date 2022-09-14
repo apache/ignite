@@ -86,6 +86,9 @@ import static org.apache.calcite.sql.SqlKind.SEARCH;
 
 /** */
 public class RexUtils {
+    /** Maximum amount of search bounds tuples per scan. */
+    public static final int MAX_SEARCH_BOUNDS_COMPLEXITY = 100;
+
     /** */
     public static RexNode makeCast(RexBuilder builder, RexNode node, RelDataType type) {
         return TypeUtils.needCast(builder.getTypeFactory(), node.getType(), type) ? builder.makeCast(type, node) : node;
@@ -215,6 +218,7 @@ public class RexUtils {
 
         List<SearchBounds> bounds = Arrays.asList(new SearchBounds[types.size()]);
         boolean boundsEmpty = true;
+        int prevComplexity = 1;
 
         for (int i = 0; i < collation.getFieldCollations().size(); i++) {
             RelFieldCollation fc = collation.getFieldCollations().get(i);
@@ -229,7 +233,7 @@ public class RexUtils {
             if (mapping != null)
                 collFldIdx = mapping.getSourceOpt(collFldIdx);
 
-            SearchBounds fldBounds = createBounds(fc, collFldPreds, cluster, types.get(collFldIdx));
+            SearchBounds fldBounds = createBounds(fc, collFldPreds, cluster, types.get(collFldIdx), prevComplexity);
 
             if (fldBounds == null)
                 break;
@@ -237,6 +241,13 @@ public class RexUtils {
             boundsEmpty = false;
 
             bounds.set(collFldIdx, fldBounds);
+
+            if (fldBounds instanceof MultiBounds) {
+                prevComplexity *= ((MultiBounds)fldBounds).bounds().size();
+
+                if (((MultiBounds)fldBounds).bounds().stream().anyMatch(b -> b.type() != SearchBounds.Type.EXACT))
+                    break;
+            }
 
             if (fldBounds.type() == SearchBounds.Type.RANGE)
                 break; // TODO https://issues.apache.org/jira/browse/IGNITE-13568
@@ -291,7 +302,7 @@ public class RexUtils {
                 if (mapping != null)
                     fldIdx = mapping.getSourceOpt(fldIdx);
 
-                bounds.set(fldIdx, createBounds(null, Collections.singletonList(pred), cluster, types.get(fldIdx)));
+                bounds.set(fldIdx, createBounds(null, Collections.singletonList(pred), cluster, types.get(fldIdx), 1));
             }
         }
 
@@ -303,7 +314,8 @@ public class RexUtils {
         @Nullable RelFieldCollation fc, // Can be null for EQUALS condition.
         List<RexCall> collFldPreds,
         RelOptCluster cluster,
-        RelDataType fldType
+        RelDataType fldType,
+        int prevComplexity
     ) {
         RexBuilder builder = builder(cluster);
 
@@ -339,8 +351,14 @@ public class RexUtils {
             else if (op.kind == IS_NULL)
                 return new ExactBounds(pred, nullVal);
             else if (op.kind == SEARCH) {
-                // TODO check complexity.
                 Sarg<?> sarg = ((RexLiteral)pred.operands.get(1)).getValueAs(Sarg.class);
+
+                int complexity = prevComplexity * sarg.complexity();
+
+                // Limit amount of search bounds tuples.
+                if (complexity > MAX_SEARCH_BOUNDS_COMPLEXITY)
+                    return null;
+
                 RexNode sargCond = sargRef(builder, pred.operands.get(0), sarg, fldType, RexUnknownAs.UNKNOWN);
                 List<RexNode> disjunctions = RelOptUtil.disjunctions(RexUtil.toDnf(builder, sargCond));
                 List<SearchBounds> bounds = new ArrayList<>(disjunctions.size());
@@ -352,12 +370,11 @@ public class RexUtils {
                     for (RexNode rexNode : conjunctions) {
                         if (isSupportedTreeComparison(rexNode))
                             calls.add((RexCall)rexNode);
+                        else
+                            return null; // Cannot filter using this predicate (NOT_EQUALS for example).
                     }
 
-                    if (calls.isEmpty())
-                        return null; // Cannot filter using this predicate.
-
-                    bounds.add(createBounds(fc, calls, cluster, fldType));
+                    bounds.add(createBounds(fc, calls, cluster, fldType, complexity));
                 }
 
                 return new MultiBounds(pred, bounds);

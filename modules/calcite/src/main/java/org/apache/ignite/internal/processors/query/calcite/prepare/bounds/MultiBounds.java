@@ -20,6 +20,7 @@ package org.apache.ignite.internal.processors.query.calcite.prepare.bounds;
 import java.util.List;
 import java.util.Objects;
 import org.apache.calcite.rex.RexNode;
+import org.apache.ignite.internal.util.tostring.GridToStringInclude;
 import org.apache.ignite.internal.util.typedef.internal.S;
 
 /**
@@ -27,6 +28,7 @@ import org.apache.ignite.internal.util.typedef.internal.S;
  */
 public class MultiBounds extends SearchBounds {
     /** */
+    @GridToStringInclude
     private final List<SearchBounds> bounds;
 
     /**

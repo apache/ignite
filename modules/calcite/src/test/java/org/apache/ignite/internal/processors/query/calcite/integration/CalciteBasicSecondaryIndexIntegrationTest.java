@@ -892,10 +892,8 @@ public class CalciteBasicSecondaryIndexIntegrationTest extends AbstractBasicInte
 
     /** */
     @Test
-    @Ignore("https://issues.apache.org/jira/browse/IGNITE-13710")
     public void testOrCondition2() {
         assertQuery("SELECT * FROM Developer WHERE name='Mozart' AND (depId=1 OR depId=3)")
-            .matches(containsUnion(true))
             .matches(containsIndexScan("PUBLIC", "DEVELOPER", NAME_DEPID_CITY_IDX))
             .returns(1, "Mozart", 3, "Vienna", 33)
             .check();
@@ -903,10 +901,8 @@ public class CalciteBasicSecondaryIndexIntegrationTest extends AbstractBasicInte
 
     /** */
     @Test
-    @Ignore("https://issues.apache.org/jira/browse/IGNITE-13710")
     public void testOrCondition3() {
         assertQuery("SELECT * FROM Developer WHERE name='Mozart' AND (age > 22 AND (depId=1 OR depId=3))")
-            .matches(containsUnion(true))
             .matches(containsIndexScan("PUBLIC", "DEVELOPER", NAME_DEPID_CITY_IDX))
             .returns(1, "Mozart", 3, "Vienna", 33)
             .check();
