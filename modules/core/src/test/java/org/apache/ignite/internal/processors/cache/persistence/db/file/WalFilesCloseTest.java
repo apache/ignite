@@ -70,7 +70,7 @@ public class WalFilesCloseTest extends GridCommonAbstractTest {
                     .setPersistenceEnabled(true)
             ));
 
-        cfg.setPluginProviders(new TestAbstractTestPluginProvider());
+        cfg.setPluginProviders(new TestWalManagerProvider());
 
         return cfg;
     }
@@ -93,7 +93,7 @@ public class WalFilesCloseTest extends GridCommonAbstractTest {
     }
 
     /** Test class to track opened file IO interfaces. */
-    private class TestAbstractTestPluginProvider extends AbstractTestPluginProvider {
+    private class TestWalManagerProvider extends AbstractTestPluginProvider {
         /** {@inheritDoc} */
         @Override public String name() {
             return "testPlugin";
