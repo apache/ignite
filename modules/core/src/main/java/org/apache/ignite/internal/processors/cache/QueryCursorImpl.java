@@ -122,8 +122,10 @@ public class QueryCursorImpl<T> implements QueryCursorEx<T>, FieldsQueryCursor<T
                 T next = iter.next();
 
                 if (next instanceof List) {
-                    if (((List<?>)next).size() != fieldsMeta.size())
-                        throw new RuntimeException("MY TEST size=" + fieldsMeta.size() + " next="+((List<?>)next).size() + " f="+fieldsMeta + " n=" + next);
+                    if (((List<?>)next).size() != fieldsMeta.size()) {
+                        throw new RuntimeException("MY TEST size=" + fieldsMeta.size() +
+                            " next=" + ((List<?>)next).size() + " f=" + fieldsMeta + " n=" + next);
+                    }
                 }
 
                 return next;
