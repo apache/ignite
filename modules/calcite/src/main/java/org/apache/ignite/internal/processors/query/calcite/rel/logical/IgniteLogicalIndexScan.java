@@ -28,7 +28,6 @@ import org.apache.ignite.internal.processors.query.calcite.prepare.bounds.Search
 import org.apache.ignite.internal.processors.query.calcite.rel.AbstractIndexScan;
 import org.apache.ignite.internal.processors.query.calcite.schema.IgniteIndex;
 import org.apache.ignite.internal.processors.query.calcite.schema.IgniteTable;
-import org.apache.ignite.internal.processors.query.calcite.util.IndexConditions;
 import org.jetbrains.annotations.Nullable;
 
 /** */
@@ -47,7 +46,6 @@ public class IgniteLogicalIndexScan extends AbstractIndexScan {
         IgniteIndex idx = tbl.getIndex(idxName);
 
         List<SearchBounds> searchBounds = idx.toSearchBounds(cluster, cond, requiredColumns);
-        IndexConditions idxCond = idx.toIndexCondition(cluster, cond, requiredColumns);
 
         return new IgniteLogicalIndexScan(
             cluster,
@@ -57,7 +55,6 @@ public class IgniteLogicalIndexScan extends AbstractIndexScan {
             proj,
             cond,
             searchBounds,
-            idxCond,
             requiredColumns);
     }
 
@@ -70,7 +67,6 @@ public class IgniteLogicalIndexScan extends AbstractIndexScan {
      * @param proj Projects.
      * @param cond Filters.
      * @param searchBounds Index search bounds.
-     * @param idxCond Index conditions.
      * @param requiredCols Participating columns.
      */
     private IgniteLogicalIndexScan(
@@ -81,9 +77,8 @@ public class IgniteLogicalIndexScan extends AbstractIndexScan {
         @Nullable List<RexNode> proj,
         @Nullable RexNode cond,
         @Nullable List<SearchBounds> searchBounds,
-        @Nullable IndexConditions idxCond,
         @Nullable ImmutableBitSet requiredCols
     ) {
-        super(cluster, traits, ImmutableList.of(), tbl, idxName, proj, cond, searchBounds, idxCond, requiredCols);
+        super(cluster, traits, ImmutableList.of(), tbl, idxName, proj, cond, searchBounds, requiredCols);
     }
 }

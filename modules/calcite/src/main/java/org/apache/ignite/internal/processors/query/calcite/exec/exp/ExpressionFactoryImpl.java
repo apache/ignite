@@ -33,7 +33,6 @@ import java.util.function.BiPredicate;
 import java.util.function.Function;
 import java.util.function.Predicate;
 import java.util.function.Supplier;
-import java.util.stream.Collectors;
 import com.google.common.collect.ImmutableList;
 import com.google.common.primitives.Primitives;
 import org.apache.calcite.DataContext;
@@ -77,7 +76,6 @@ import org.apache.ignite.internal.processors.query.calcite.util.Commons;
 import org.apache.ignite.internal.processors.query.calcite.util.IgniteMethod;
 import org.apache.ignite.internal.util.GridBoundedConcurrentLinkedHashMap;
 import org.apache.ignite.internal.util.typedef.F;
-import org.apache.ignite.internal.util.typedef.T2;
 import org.jetbrains.annotations.NotNull;
 
 /**
@@ -304,6 +302,8 @@ public class ExpressionFactoryImpl<Row> implements ExpressionFactory<Row> {
             true
         );
 
+        Comparator<Row> comparator = comparator(collation);
+
         return new Iterable<BoundsValues<Row>>() {
             @NotNull @Override public Iterator<BoundsValues<Row>> iterator() {
                 boundsValues.forEach(b -> ((BoundsValuesImpl)b).clearCache());
@@ -311,21 +311,8 @@ public class ExpressionFactoryImpl<Row> implements ExpressionFactory<Row> {
                 if (boundsValues.size() == 1)
                     return boundsValues.iterator();
 
-                Comparator<Row> comparator = comparator(collation);
-
                 // Sort bound values using collation comparator to produce sorted output. There should be no ranges
                 // intersection between bounds.
-                // Create intermediate T2 structure to cache calculated lower bound value (scalar executed and rows
-                // are created on each lower()/upper() methods invocation.
-/*
-                return boundsValues.stream()
-                    .map(b -> new T2<>(b.lower(), b))
-                    .sorted((t1, t2) -> comparator.compare(t1.get1(), t2.get1()))
-                    .map(T2::get2)
-                    .collect(Collectors.toList())
-                    .iterator();
-*/
-
                 boundsValues.sort((o1, o2) -> comparator.compare(o1.lower(), o2.lower()));
 
                 return boundsValues.iterator();
@@ -761,7 +748,7 @@ public class ExpressionFactoryImpl<Row> implements ExpressionFactory<Row> {
             return upperInclude;
         }
 
-        /** {@inheritDoc} */
+        /** Compute row. */
         private Row getRow(SingleScalar scalar) {
             Row res = factory.create();
             scalar.execute(ctx, null, res);

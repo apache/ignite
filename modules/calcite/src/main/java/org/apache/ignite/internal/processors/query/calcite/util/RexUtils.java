@@ -175,134 +175,6 @@ public class RexUtils {
             GREATER_THAN_OR_EQUAL, LESS_THAN_OR_EQUAL);
 
     /**
-     * Builds index conditions.
-     */
-    public static IndexConditions buildSortedIndexConditions(
-        RelOptCluster cluster,
-        RelCollation collation,
-        RexNode condition,
-        RelDataType rowType,
-        ImmutableBitSet requiredColumns
-    ) {
-        if (condition == null)
-            return new IndexConditions();
-
-        condition = RexUtil.toCnf(builder(cluster), condition);
-
-        Map<Integer, List<RexCall>> fieldsToPredicates = mapPredicatesToFields(condition, cluster);
-
-        if (F.isEmpty(fieldsToPredicates))
-            return new IndexConditions();
-
-        List<RexNode> lower = new ArrayList<>();
-        List<RexNode> upper = new ArrayList<>();
-
-        // Force collation for all fields of the condition.
-        if (collation == null || collation.isDefault()) {
-            List<Integer> equalsFields = new ArrayList<>(fieldsToPredicates.size());
-            List<Integer> otherFields = new ArrayList<>(fieldsToPredicates.size());
-
-            // It's more effective to put equality conditions in the collation first.
-            fieldsToPredicates.forEach((idx, conds) ->
-                (F.exist(conds, call -> call.getOperator().getKind() == EQUALS) ? equalsFields : otherFields).add(idx));
-
-            collation = TraitUtils.createCollation(F.concat(true, equalsFields, otherFields));
-        }
-
-        for (int i = 0; i < collation.getFieldCollations().size(); i++) {
-            RelFieldCollation fc = collation.getFieldCollations().get(i);
-
-            int collFldIdx = fc.getFieldIndex();
-
-            List<RexCall> collFldPreds = fieldsToPredicates.get(collFldIdx);
-
-            if (F.isEmpty(collFldPreds))
-                break;
-
-            RexNode bestUpper = null;
-            RexNode bestLower = null;
-
-            for (RexCall pred : collFldPreds) {
-                if (U.assertionsEnabled() && pred.operands.size() == 2) {
-                    RexNode cond = removeCast(pred.operands.get(1));
-
-                    assert idxOpSupports(cond) : cond;
-                }
-
-                boolean lowerBoundBelow = !fc.getDirection().isDescending();
-                SqlOperator op = pred.getOperator();
-                switch (op.kind) {
-                    case EQUALS:
-                        bestUpper = pred;
-                        bestLower = pred;
-                        break;
-
-                    case LESS_THAN:
-                    case LESS_THAN_OR_EQUAL:
-                        lowerBoundBelow = !lowerBoundBelow;
-                        // Fall through.
-
-                    case GREATER_THAN:
-                    case GREATER_THAN_OR_EQUAL:
-                        if (lowerBoundBelow)
-                            bestLower = pred;
-                        else
-                            bestUpper = pred;
-                        break;
-
-                    default:
-                        break;
-                        //throw new AssertionError("Unknown condition: " + op.kind);
-                }
-
-                if (bestUpper != null && bestLower != null)
-                    break; // We've found either "=" condition or both lower and upper.
-            }
-
-            if (bestLower == null && bestUpper == null)
-                break; // No bounds, so break the loop.
-
-            if (bestLower != null && bestUpper != null) { // "x>5 AND x<10"
-                upper.add(bestUpper);
-                lower.add(bestLower);
-
-                if (bestLower != bestUpper)
-                    break;
-            }
-            else if (bestLower != null) { // "x>5"
-                lower.add(bestLower);
-
-                break; // TODO https://issues.apache.org/jira/browse/IGNITE-13568
-            }
-            else { // "x<10"
-                upper.add(bestUpper);
-
-                break; // TODO https://issues.apache.org/jira/browse/IGNITE-13568
-            }
-        }
-
-        Mappings.TargetMapping mapping = null;
-
-        if (requiredColumns != null)
-            mapping = Commons.inverseMapping(requiredColumns, rowType.getFieldCount());
-
-        List<RexNode> lowerBound = null;
-        List<RexNode> upperBound = null;
-
-        if (!F.isEmpty(lower))
-            lowerBound = asBound(cluster, lower, rowType, mapping);
-        else
-            lower = null;
-
-        if (!F.isEmpty(upper))
-            upperBound = asBound(cluster, upper, rowType, mapping);
-        else
-            upper = null;
-
-        return new IndexConditions(lower, upper, lowerBound, upperBound);
-    }
-
-    /**
      * Builds sorted search bounds.
      */
     public static List<SearchBounds> buildSortedSearchBounds(
@@ -551,55 +423,18 @@ public class RexUtils {
     public static List<RexNode> buildHashSearchRow(
         RelOptCluster cluster,
         RexNode condition,
-        RelDataType rowType,
-        ImmutableBitSet requiredColumns,
-        boolean ignoreNotEqualPreds
+        RelDataType rowType
     ) {
-        condition = RexUtil.toCnf(builder(cluster), condition);
+        List<SearchBounds> searchBounds = buildHashSearchBounds(cluster, condition, rowType, null, false);
 
-        Map<Integer, List<RexCall>> fieldsToPredicates = mapPredicatesToFields(condition, cluster);
-
-        if (F.isEmpty(fieldsToPredicates))
+        if (searchBounds == null)
             return null;
 
-        List<RexNode> searchPreds = null;
+        return Commons.transform(searchBounds, b -> {
+            assert b == null || b instanceof ExactBounds : b;
 
-        for (int fldIdx : fieldsToPredicates.keySet()) {
-            List<RexCall> collFldPreds = fieldsToPredicates.get(fldIdx);
-
-            if (F.isEmpty(collFldPreds))
-                break;
-
-            for (RexCall pred : collFldPreds) {
-                if (U.assertionsEnabled() && isBinaryComparison(pred)) {
-                    RexNode cond = removeCast(pred.operands.get(1));
-
-                    assert idxOpSupports(cond) : cond;
-                }
-
-                if (pred.getOperator().kind != SqlKind.EQUALS) {
-                    if (ignoreNotEqualPreds)
-                        continue;
-                    else // Only EQUALS predicates allowed in condition.
-                        return null;
-                }
-
-                if (searchPreds == null)
-                    searchPreds = new ArrayList<>();
-
-                searchPreds.add(pred);
-            }
-        }
-
-        if (searchPreds == null)
-            return null;
-
-        Mappings.TargetMapping mapping = null;
-
-        if (requiredColumns != null)
-            mapping = Commons.inverseMapping(requiredColumns, rowType.getFieldCount());
-
-        return asBound(cluster, searchPreds, rowType, mapping);
+            return b == null ? null : ((ExactBounds)b).bound();
+        });
     }
 
     /** */

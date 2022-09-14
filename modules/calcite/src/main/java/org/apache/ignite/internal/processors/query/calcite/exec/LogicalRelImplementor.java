@@ -297,15 +297,11 @@ public class LogicalRelImplementor<Row> implements IgniteRelVisitor<Node<Row>> {
         IgniteTypeFactory typeFactory = ctx.getTypeFactory();
 
         ImmutableBitSet requiredColumns = rel.requiredColumns();
-        List<RexNode> lowerCond = rel.lowerBound();
-        List<RexNode> upperCond = rel.upperBound();
         List<SearchBounds> searchBounds = rel.searchBounds();
 
         RelDataType rowType = tbl.getRowType(typeFactory, requiredColumns);
 
         Predicate<Row> filters = condition == null ? null : expressionFactory.predicate(condition, rowType);
-        Supplier<Row> lower = lowerCond == null ? null : expressionFactory.rowSource(lowerCond);
-        Supplier<Row> upper = upperCond == null ? null : expressionFactory.rowSource(upperCond);
         Function<Row, Row> prj = projects == null ? null : expressionFactory.project(projects, rowType);
         Iterable<BoundsValues<Row>> boundsValues = searchBounds == null ? null :
             expressionFactory.boundsValues(searchBounds, rel.collation(), tbl.getRowType(typeFactory));
@@ -315,7 +311,7 @@ public class LogicalRelImplementor<Row> implements IgniteRelVisitor<Node<Row>> {
         IgniteIndex idx = tbl.getIndex(rel.indexName());
 
         if (idx != null && !tbl.isIndexRebuildInProgress()) {
-            Iterable<Row> rowsIter = idx.scan(ctx, grp, filters, boundsValues, lower, upper, prj, requiredColumns);
+            Iterable<Row> rowsIter = idx.scan(ctx, grp, filters, boundsValues, prj, requiredColumns);
 
             return new ScanNode<>(ctx, rowType, rowsIter);
         }
@@ -377,35 +373,13 @@ public class LogicalRelImplementor<Row> implements IgniteRelVisitor<Node<Row>> {
                     boundsValues = expressionFactory.boundsValues(remappedSearchBounds, collation, rowType);
                 }
 
-                if (lowerCond != null || upperCond != null) {
-                    if (requiredColumns != null) {
-                        // Remap index find predicate according to rowType of the spool.
-                        int cardinality = requiredColumns.cardinality();
-                        List<RexNode> remappedLowerCond = lowerCond != null ? new ArrayList<>(cardinality) : null;
-                        List<RexNode> remappedUpperCond = upperCond != null ? new ArrayList<>(cardinality) : null;
-
-                        for (int i = requiredColumns.nextSetBit(0); i != -1; i = requiredColumns.nextSetBit(i + 1)) {
-                            if (remappedLowerCond != null)
-                                remappedLowerCond.add(lowerCond.get(i));
-
-                            if (remappedUpperCond != null)
-                                remappedUpperCond.add(upperCond.get(i));
-                        }
-
-                        lower = remappedLowerCond == null ? null : expressionFactory.rowSource(remappedLowerCond);
-                        upper = remappedUpperCond == null ? null : expressionFactory.rowSource(remappedUpperCond);
-                    }
-                }
-
                 IndexSpoolNode<Row> spoolNode = IndexSpoolNode.createTreeSpool(
                     ctx,
                     rowType,
                     collation,
                     expressionFactory.comparator(collation),
                     filterHasCorrelation ? filters : null, // Not correlated filter included into table scan.
-                    boundsValues,
-                    lower,
-                    upper
+                    boundsValues
                 );
 
                 spoolNode.register(node);
@@ -532,14 +506,9 @@ public class LogicalRelImplementor<Row> implements IgniteRelVisitor<Node<Row>> {
     @Override public Node<Row> visit(IgniteSortedIndexSpool rel) {
         RelCollation collation = rel.collation();
 
-        assert rel.indexCondition() != null : rel;
-
-        List<RexNode> lowerBound = rel.indexCondition().lowerBound();
-        List<RexNode> upperBound = rel.indexCondition().upperBound();
+        assert rel.searchBounds() != null : rel;
 
         Predicate<Row> filter = expressionFactory.predicate(rel.condition(), rel.getRowType());
-        Supplier<Row> lower = lowerBound == null ? null : expressionFactory.rowSource(lowerBound);
-        Supplier<Row> upper = upperBound == null ? null : expressionFactory.rowSource(upperBound);
         Iterable<BoundsValues<Row>> boundsValues =
             expressionFactory.boundsValues(rel.searchBounds(), collation, rel.getRowType());
 
@@ -549,9 +518,7 @@ public class LogicalRelImplementor<Row> implements IgniteRelVisitor<Node<Row>> {
             collation,
             expressionFactory.comparator(collation),
             filter,
-            boundsValues,
-            lower,
-            upper
+            boundsValues
         );
 
         Node<Row> input = visit(rel.getInput());

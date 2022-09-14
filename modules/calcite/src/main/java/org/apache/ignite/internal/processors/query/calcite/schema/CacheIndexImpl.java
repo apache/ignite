@@ -21,7 +21,6 @@ import java.util.List;
 import java.util.UUID;
 import java.util.function.Function;
 import java.util.function.Predicate;
-import java.util.function.Supplier;
 import org.apache.calcite.plan.RelOptCluster;
 import org.apache.calcite.plan.RelOptTable;
 import org.apache.calcite.rel.RelCollation;
@@ -40,7 +39,6 @@ import org.apache.ignite.internal.processors.query.calcite.metadata.ColocationGr
 import org.apache.ignite.internal.processors.query.calcite.prepare.bounds.SearchBounds;
 import org.apache.ignite.internal.processors.query.calcite.rel.logical.IgniteLogicalIndexScan;
 import org.apache.ignite.internal.processors.query.calcite.util.Commons;
-import org.apache.ignite.internal.processors.query.calcite.util.IndexConditions;
 import org.apache.ignite.internal.processors.query.calcite.util.RexUtils;
 import org.apache.ignite.spi.indexing.IndexingQueryFilter;
 import org.apache.ignite.spi.indexing.IndexingQueryFilterImpl;
@@ -107,16 +105,13 @@ public class CacheIndexImpl implements IgniteIndex {
         ColocationGroup group,
         Predicate<Row> filters,
         Iterable<BoundsValues<Row>> boundsValues,
-        Supplier<Row> lowerIdxConditions,
-        Supplier<Row> upperIdxConditions,
         Function<Row, Row> rowTransformer,
         @Nullable ImmutableBitSet requiredColumns
     ) {
         UUID localNodeId = execCtx.localNodeId();
         if (group.nodeIds().contains(localNodeId) && idx != null) {
             return new IndexScan<>(execCtx, tbl.descriptor(), idx.unwrap(InlineIndex.class), collation.getKeys(),
-                group.partitions(localNodeId), filters, boundsValues, lowerIdxConditions, upperIdxConditions, rowTransformer,
-                requiredColumns);
+                group.partitions(localNodeId), filters, boundsValues, rowTransformer, requiredColumns);
         }
 
         return Collections.emptyList();
@@ -142,32 +137,6 @@ public class CacheIndexImpl implements IgniteIndex {
         }
 
         return cnt;
-    }
-
-    /** {@inheritDoc} */
-    @Override public IndexConditions toIndexCondition(
-        RelOptCluster cluster,
-        @Nullable RexNode cond,
-        @Nullable ImmutableBitSet requiredColumns
-    ) {
-        RelCollation collation = this.collation;
-        RelDataType rowType = tbl.getRowType(cluster.getTypeFactory());
-
-        if (requiredColumns != null)
-            collation = collation.apply(Commons.mapping(requiredColumns, rowType.getFieldCount()));
-
-        if (!collation.getFieldCollations().isEmpty()) {
-            return RexUtils.buildSortedIndexConditions(
-                cluster,
-                collation,
-                cond,
-                rowType,
-                requiredColumns
-            );
-        }
-
-        // Empty index find predicate.
-        return new IndexConditions();
     }
 
     /** {@inheritDoc} */

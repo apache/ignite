@@ -20,8 +20,6 @@ import java.util.Iterator;
 import java.util.NoSuchElementException;
 import java.util.function.Function;
 import java.util.function.Predicate;
-import java.util.function.Supplier;
-
 import org.apache.calcite.rel.type.RelDataType;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.internal.cache.query.index.sorted.inline.IndexQueryContext;
@@ -29,7 +27,6 @@ import org.apache.ignite.internal.processors.query.calcite.exec.exp.BoundsValues
 import org.apache.ignite.internal.util.lang.GridCursor;
 import org.apache.ignite.internal.util.lang.GridIteratorAdapter;
 import org.apache.ignite.internal.util.typedef.F;
-import org.apache.ignite.lang.IgniteClosure;
 import org.jetbrains.annotations.NotNull;
 
 /**
@@ -45,12 +42,6 @@ public abstract class AbstractIndexScan<Row, IdxRow> implements Iterable<Row>, A
     /** Index scan bounds. */
     private final Iterable<BoundsValues<Row>> boundsValues;
 
-    /** Lower index scan bound. */
-    private final Supplier<Row> lowerBound;
-
-    /** Upper index scan bound. */
-    private final Supplier<Row> upperBound;
-
     /** */
     private final Function<Row, Row> rowTransformer;
 
@@ -64,8 +55,7 @@ public abstract class AbstractIndexScan<Row, IdxRow> implements Iterable<Row>, A
      * @param ectx Execution context.
      * @param idx Physical index.
      * @param filters Additional filters.
-     * @param lowerBound Lower index scan bound.
-     * @param upperBound Upper index scan bound.
+     * @param boundsValues Index scan bounds.
      */
     protected AbstractIndexScan(
         ExecutionContext<Row> ectx,
@@ -73,8 +63,6 @@ public abstract class AbstractIndexScan<Row, IdxRow> implements Iterable<Row>, A
         TreeIndex<IdxRow> idx,
         Predicate<Row> filters,
         Iterable<BoundsValues<Row>> boundsValues,
-        Supplier<Row> lowerBound,
-        Supplier<Row> upperBound,
         Function<Row, Row> rowTransformer
     ) {
         this.ectx = ectx;
@@ -82,8 +70,6 @@ public abstract class AbstractIndexScan<Row, IdxRow> implements Iterable<Row>, A
         this.idx = idx;
         this.filters = filters;
         this.boundsValues = boundsValues;
-        this.lowerBound = lowerBound;
-        this.upperBound = upperBound;
         this.rowTransformer = rowTransformer;
     }
 

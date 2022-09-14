@@ -18,7 +18,6 @@
 package org.apache.ignite.internal.processors.query.calcite.rel;
 
 import java.util.List;
-
 import org.apache.calcite.plan.RelOptCluster;
 import org.apache.calcite.plan.RelOptCost;
 import org.apache.calcite.plan.RelOptPlanner;
@@ -35,7 +34,7 @@ import org.apache.calcite.util.ImmutableBitSet;
 import org.apache.ignite.internal.processors.query.calcite.externalize.RelInputEx;
 import org.apache.ignite.internal.processors.query.calcite.metadata.cost.IgniteCost;
 import org.apache.ignite.internal.processors.query.calcite.prepare.bounds.SearchBounds;
-import org.apache.ignite.internal.processors.query.calcite.util.IndexConditions;
+import org.apache.ignite.internal.processors.query.calcite.util.Commons;
 import org.jetbrains.annotations.Nullable;
 
 /**
@@ -48,9 +47,6 @@ public abstract class AbstractIndexScan extends ProjectableFilterableTableScan {
     /** */
     protected final List<SearchBounds> searchBounds;
 
-    /** */
-    protected final IndexConditions idxCond;
-
     /**
      * Constructor used for deserialization.
      *
@@ -60,7 +56,6 @@ public abstract class AbstractIndexScan extends ProjectableFilterableTableScan {
         super(input);
         idxName = input.getString("index");
         searchBounds = ((RelInputEx)input).getSearchBounds("searchBounds");
-        idxCond = new IndexConditions(input);
     }
 
     /** */
@@ -73,14 +68,12 @@ public abstract class AbstractIndexScan extends ProjectableFilterableTableScan {
         @Nullable List<RexNode> proj,
         @Nullable RexNode cond,
         @Nullable List<SearchBounds> searchBounds,
-        @Nullable IndexConditions idxCond,
         @Nullable ImmutableBitSet reqColumns
     ) {
         super(cluster, traitSet, hints, table, proj, cond, reqColumns);
 
         this.idxName = idxName;
         this.searchBounds = searchBounds;
-        this.idxCond = idxCond;
     }
 
     /** {@inheritDoc} */
@@ -89,7 +82,7 @@ public abstract class AbstractIndexScan extends ProjectableFilterableTableScan {
         pw = super.explainTerms0(pw);
         pw = pw.itemIf("searchBounds", searchBounds, searchBounds != null);
 
-        return idxCond.explainTerms(pw);
+        return pw;
     }
 
     /**
@@ -97,34 +90,6 @@ public abstract class AbstractIndexScan extends ProjectableFilterableTableScan {
      */
     public String indexName() {
         return idxName;
-    }
-
-    /**
-     * @return Lower index condition.
-     */
-    public List<RexNode> lowerCondition() {
-        return idxCond == null ? null : idxCond.lowerCondition();
-    }
-
-    /**
-     * @return Lower index condition.
-     */
-    public List<RexNode> lowerBound() {
-        return idxCond == null ? null : idxCond.lowerBound();
-    }
-
-    /**
-     * @return Upper index condition.
-     */
-    public List<RexNode> upperCondition() {
-        return idxCond == null ? null : idxCond.upperCondition();
-    }
-
-    /**
-     * @return Upper index condition.
-     */
-    public List<RexNode> upperBound() {
-        return idxCond == null ? null : idxCond.upperBound();
     }
 
     /** {@inheritDoc} */
@@ -142,18 +107,13 @@ public abstract class AbstractIndexScan extends ProjectableFilterableTableScan {
 
             cost = 0;
 
-            if (lowerCondition() != null) {
-                double selectivity0 = mq.getSelectivity(this, RexUtil.composeConjunction(builder, lowerCondition()));
+            if (searchBounds != null) {
+                double selectivity0 = mq.getSelectivity(this, RexUtil.composeConjunction(builder,
+                    Commons.transform(searchBounds, b -> b == null ? null : b.condition())));
 
                 selectivity -= 1 - selectivity0;
 
                 cost += Math.log(rows) * IgniteCost.ROW_COMPARISON_COST;
-            }
-
-            if (upperCondition() != null && (lowerCondition() == null || !lowerCondition().equals(upperCondition()))) {
-                double selectivity0 = mq.getSelectivity(this, RexUtil.composeConjunction(builder, upperCondition()));
-
-                selectivity -= 1 - selectivity0;
             }
 
             rows *= selectivity;
@@ -166,11 +126,6 @@ public abstract class AbstractIndexScan extends ProjectableFilterableTableScan {
 
         // additional tiny cost for preventing equality with table scan.
         return planner.getCostFactory().makeCost(rows, cost, 0).plus(planner.getCostFactory().makeTinyCost());
-    }
-
-    /** */
-    public IndexConditions indexConditions() {
-        return idxCond;
     }
 
     /** */

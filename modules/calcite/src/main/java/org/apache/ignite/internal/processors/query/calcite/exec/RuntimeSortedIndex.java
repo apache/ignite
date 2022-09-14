@@ -21,7 +21,6 @@ import java.util.Comparator;
 import java.util.List;
 import java.util.Objects;
 import java.util.function.Predicate;
-import java.util.function.Supplier;
 import org.apache.calcite.rel.RelCollation;
 import org.apache.calcite.rel.type.RelDataType;
 import org.apache.ignite.internal.cache.query.index.sorted.inline.IndexQueryContext;
@@ -102,11 +101,9 @@ public class RuntimeSortedIndex<Row> implements RuntimeIndex<Row>, TreeIndex<Row
         ExecutionContext<Row> ectx,
         RelDataType rowType,
         Predicate<Row> filter,
-        Iterable<BoundsValues<Row>> boundsValues,
-        Supplier<Row> lowerBound,
-        Supplier<Row> upperBound
+        Iterable<BoundsValues<Row>> boundsValues
     ) {
-        return new IndexScan(rowType, this, filter, boundsValues, lowerBound, upperBound);
+        return new IndexScan(rowType, this, filter, boundsValues);
     }
 
     /**
@@ -194,18 +191,15 @@ public class RuntimeSortedIndex<Row> implements RuntimeIndex<Row>, TreeIndex<Row
          * @param rowType Row type.
          * @param idx Physical index.
          * @param filter Additional filters.
-         * @param lowerBound Lower index scan bound.
-         * @param upperBound Upper index scan bound.
+         * @param boundsValues Index scan bounds.
          */
         IndexScan(
             RelDataType rowType,
             TreeIndex<Row> idx,
             Predicate<Row> filter,
-            Iterable<BoundsValues<Row>> boundsValues,
-            Supplier<Row> lowerBound,
-            Supplier<Row> upperBound
+            Iterable<BoundsValues<Row>> boundsValues
         ) {
-            super(RuntimeSortedIndex.this.ectx, rowType, idx, filter, boundsValues, lowerBound, upperBound, null);
+            super(RuntimeSortedIndex.this.ectx, rowType, idx, filter, boundsValues, null);
         }
 
         /** {@inheritDoc} */

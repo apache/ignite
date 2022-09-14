@@ -166,9 +166,7 @@ public class IndexSpoolNode<Row> extends AbstractNode<Row> implements SingleNode
         RelCollation collation,
         Comparator<Row> comp,
         Predicate<Row> filter,
-        Iterable<BoundsValues<Row>> boundsValues,
-        Supplier<Row> lowerIdxBound,
-        Supplier<Row> upperIdxBound
+        Iterable<BoundsValues<Row>> boundsValues
     ) {
         RuntimeSortedIndex<Row> idx = new RuntimeSortedIndex<>(ctx, collation, comp);
 
@@ -179,9 +177,7 @@ public class IndexSpoolNode<Row> extends AbstractNode<Row> implements SingleNode
                 ctx,
                 rowType,
                 filter,
-                boundsValues,
-                lowerIdxBound,
-                upperIdxBound
+                boundsValues
             )
         );
 

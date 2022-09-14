@@ -19,7 +19,6 @@ package org.apache.ignite.internal.processors.query.calcite.schema;
 import java.util.List;
 import java.util.function.Function;
 import java.util.function.Predicate;
-import java.util.function.Supplier;
 import org.apache.calcite.plan.RelOptCluster;
 import org.apache.calcite.plan.RelOptTable;
 import org.apache.calcite.rel.RelCollation;
@@ -30,7 +29,6 @@ import org.apache.ignite.internal.processors.query.calcite.exec.exp.BoundsValues
 import org.apache.ignite.internal.processors.query.calcite.metadata.ColocationGroup;
 import org.apache.ignite.internal.processors.query.calcite.prepare.bounds.SearchBounds;
 import org.apache.ignite.internal.processors.query.calcite.rel.logical.IgniteLogicalIndexScan;
-import org.apache.ignite.internal.processors.query.calcite.util.IndexConditions;
 import org.jetbrains.annotations.Nullable;
 
 /**
@@ -72,20 +70,6 @@ public interface IgniteIndex {
      * @param requiredColumns Set of columns to extract from original row.
      * @return Index condition.
      */
-    public IndexConditions toIndexCondition(
-        RelOptCluster cluster,
-        @Nullable RexNode cond,
-        @Nullable ImmutableBitSet requiredColumns
-    );
-
-    /**
-     * Converts condition to index find predicate.
-     *
-     * @param cluster         Custer.
-     * @param cond            Conditions to filter rows.
-     * @param requiredColumns Set of columns to extract from original row.
-     * @return Index condition.
-     */
     public List<SearchBounds> toSearchBounds(
         RelOptCluster cluster,
         @Nullable RexNode cond,
@@ -98,8 +82,6 @@ public interface IgniteIndex {
         ColocationGroup grp,
         Predicate<Row> filters,
         Iterable<BoundsValues<Row>> boundsValues,
-        Supplier<Row> lowerIdxConditions,
-        Supplier<Row> upperIdxConditions,
         Function<Row, Row> rowTransformer,
         @Nullable ImmutableBitSet requiredColumns
     );

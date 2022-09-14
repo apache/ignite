@@ -23,7 +23,6 @@ import java.util.Iterator;
 import java.util.List;
 import java.util.function.Function;
 import java.util.function.Predicate;
-import java.util.function.Supplier;
 import org.apache.calcite.rel.type.RelDataType;
 import org.apache.calcite.util.ImmutableBitSet;
 import org.apache.calcite.util.ImmutableIntList;
@@ -101,8 +100,7 @@ public class IndexScan<Row> extends AbstractIndexScan<Row, IndexRow> {
      * @param idxFieldMapping Mapping from index keys to row fields.
      * @param idx Phisycal index.
      * @param filters Additional filters.
-     * @param lowerBound Lower index scan bound.
-     * @param upperBound Upper index scan bound.
+     * @param boundsValues Index scan bounds.
      */
     public IndexScan(
         ExecutionContext<Row> ectx,
@@ -112,8 +110,6 @@ public class IndexScan<Row> extends AbstractIndexScan<Row, IndexRow> {
         int[] parts,
         Predicate<Row> filters,
         Iterable<BoundsValues<Row>> boundsValues,
-        Supplier<Row> lowerBound,
-        Supplier<Row> upperBound,
         Function<Row, Row> rowTransformer,
         @Nullable ImmutableBitSet requiredColumns
     ) {
@@ -123,8 +119,6 @@ public class IndexScan<Row> extends AbstractIndexScan<Row, IndexRow> {
             new TreeIndexWrapper(idx),
             filters,
             boundsValues,
-            lowerBound,
-            upperBound,
             rowTransformer
         );
 

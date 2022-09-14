@@ -20,7 +20,6 @@ package org.apache.ignite.internal.processors.query.calcite.integration;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.function.Function;
 import java.util.function.Predicate;
-import java.util.function.Supplier;
 import org.apache.calcite.util.ImmutableBitSet;
 import org.apache.ignite.IgniteCache;
 import org.apache.ignite.cache.QueryEntity;
@@ -59,8 +58,6 @@ public class IndexScanlIntegrationTest extends AbstractBasicIntegrationTest {
                 ColocationGroup grp,
                 Predicate<Row> filters,
                 Iterable<BoundsValues<Row>> boundsValues,
-                Supplier<Row> lowerIdxConditions,
-                Supplier<Row> upperIdxConditions,
                 Function<Row, Row> rowTransformer,
                 @Nullable ImmutableBitSet requiredColumns
             ) {
@@ -72,8 +69,7 @@ public class IndexScanlIntegrationTest extends AbstractBasicIntegrationTest {
 
                 filters = filter.and(filters);
 
-                return delegate.scan(execCtx, grp, filters, boundsValues, lowerIdxConditions, upperIdxConditions, rowTransformer,
-                    requiredColumns);
+                return delegate.scan(execCtx, grp, filters, boundsValues, rowTransformer, requiredColumns);
             }
         });
 

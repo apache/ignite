@@ -20,7 +20,6 @@ package org.apache.ignite.internal.processors.query.calcite.integration;
 import java.util.List;
 import java.util.function.Function;
 import java.util.function.Predicate;
-import java.util.function.Supplier;
 import org.apache.calcite.plan.RelOptCluster;
 import org.apache.calcite.plan.RelOptTable;
 import org.apache.calcite.rel.RelCollation;
@@ -46,7 +45,6 @@ import org.apache.ignite.internal.processors.query.calcite.rel.logical.IgniteLog
 import org.apache.ignite.internal.processors.query.calcite.schema.IgniteIndex;
 import org.apache.ignite.internal.processors.query.calcite.schema.IgniteTable;
 import org.apache.ignite.internal.processors.query.calcite.util.Commons;
-import org.apache.ignite.internal.processors.query.calcite.util.IndexConditions;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.G;
 import org.apache.ignite.testframework.junits.WithSystemProperty;
@@ -228,15 +226,6 @@ public class AbstractBasicIntegrationTest extends GridCommonAbstractTest {
         }
 
         /** {@inheritDoc} */
-        @Override public IndexConditions toIndexCondition(
-            RelOptCluster cluster,
-            @Nullable RexNode cond,
-            @Nullable ImmutableBitSet requiredColumns
-        ) {
-            return delegate.toIndexCondition(cluster, cond, requiredColumns);
-        }
-
-        /** {@inheritDoc} */
         @Override public List<SearchBounds> toSearchBounds(
             RelOptCluster cluster,
             @Nullable RexNode cond,
@@ -251,13 +240,10 @@ public class AbstractBasicIntegrationTest extends GridCommonAbstractTest {
             ColocationGroup grp,
             Predicate<Row> filters,
             Iterable<BoundsValues<Row>> boundsValues,
-            Supplier<Row> lowerIdxConditions,
-            Supplier<Row> upperIdxConditions,
             Function<Row, Row> rowTransformer,
             @Nullable ImmutableBitSet requiredColumns
         ) {
-            return delegate.scan(execCtx, grp, filters, boundsValues, lowerIdxConditions, upperIdxConditions, rowTransformer,
-                requiredColumns);
+            return delegate.scan(execCtx, grp, filters, boundsValues, rowTransformer, requiredColumns);
         }
 
         /** {@inheritDoc} */
