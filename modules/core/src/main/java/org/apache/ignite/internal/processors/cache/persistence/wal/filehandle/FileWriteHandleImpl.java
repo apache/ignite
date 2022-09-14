@@ -509,6 +509,9 @@ class FileWriteHandleImpl extends AbstractFileHandle implements FileWriteHandle 
 
                 walWriter.close();
 
+                if (mmap)
+                    U.closeQuiet(fileIO);
+
                 if (!mmap && !rollOver)
                     buf.free();
 
