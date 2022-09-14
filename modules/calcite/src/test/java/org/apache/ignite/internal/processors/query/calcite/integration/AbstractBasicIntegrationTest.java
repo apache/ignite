@@ -39,6 +39,7 @@ import org.apache.ignite.internal.processors.query.QueryEngine;
 import org.apache.ignite.internal.processors.query.calcite.CalciteQueryProcessor;
 import org.apache.ignite.internal.processors.query.calcite.QueryChecker;
 import org.apache.ignite.internal.processors.query.calcite.exec.ExecutionContext;
+import org.apache.ignite.internal.processors.query.calcite.exec.exp.BoundsValues;
 import org.apache.ignite.internal.processors.query.calcite.metadata.ColocationGroup;
 import org.apache.ignite.internal.processors.query.calcite.prepare.bounds.SearchBounds;
 import org.apache.ignite.internal.processors.query.calcite.rel.logical.IgniteLogicalIndexScan;
@@ -249,12 +250,13 @@ public class AbstractBasicIntegrationTest extends GridCommonAbstractTest {
             ExecutionContext<Row> execCtx,
             ColocationGroup grp,
             Predicate<Row> filters,
+            Iterable<BoundsValues<Row>> boundsValues,
             Supplier<Row> lowerIdxConditions,
             Supplier<Row> upperIdxConditions,
             Function<Row, Row> rowTransformer,
             @Nullable ImmutableBitSet requiredColumns
         ) {
-            return delegate.scan(execCtx, grp, filters, lowerIdxConditions, upperIdxConditions, rowTransformer,
+            return delegate.scan(execCtx, grp, filters, boundsValues, lowerIdxConditions, upperIdxConditions, rowTransformer,
                 requiredColumns);
         }
 

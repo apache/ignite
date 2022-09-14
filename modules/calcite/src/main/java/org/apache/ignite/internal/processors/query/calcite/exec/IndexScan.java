@@ -46,6 +46,7 @@ import org.apache.ignite.internal.processors.cache.distributed.dht.topology.Grid
 import org.apache.ignite.internal.processors.cache.distributed.dht.topology.GridDhtPartitionTopology;
 import org.apache.ignite.internal.processors.cache.mvcc.MvccSnapshot;
 import org.apache.ignite.internal.processors.query.calcite.exec.RowHandler.RowFactory;
+import org.apache.ignite.internal.processors.query.calcite.exec.exp.BoundsValues;
 import org.apache.ignite.internal.processors.query.calcite.schema.CacheTableDescriptor;
 import org.apache.ignite.internal.processors.query.calcite.type.IgniteTypeFactory;
 import org.apache.ignite.internal.processors.query.calcite.util.TypeUtils;
@@ -110,6 +111,7 @@ public class IndexScan<Row> extends AbstractIndexScan<Row, IndexRow> {
         ImmutableIntList idxFieldMapping,
         int[] parts,
         Predicate<Row> filters,
+        Iterable<BoundsValues<Row>> boundsValues,
         Supplier<Row> lowerBound,
         Supplier<Row> upperBound,
         Function<Row, Row> rowTransformer,
@@ -120,6 +122,7 @@ public class IndexScan<Row> extends AbstractIndexScan<Row, IndexRow> {
             desc.rowType(ectx.getTypeFactory(), requiredColumns),
             new TreeIndexWrapper(idx),
             filters,
+            boundsValues,
             lowerBound,
             upperBound,
             rowTransformer
@@ -296,9 +299,15 @@ public class IndexScan<Row> extends AbstractIndexScan<Row, IndexRow> {
         }
 
         /** {@inheritDoc} */
-        @Override public GridCursor<IndexRow> find(IndexRow lower, IndexRow upper, IndexQueryContext qctx) {
+        @Override public GridCursor<IndexRow> find(
+            IndexRow lower,
+            IndexRow upper,
+            boolean lowerInclude,
+            boolean upperInclude,
+            IndexQueryContext qctx
+        ) {
             try {
-                return idx.find(lower, upper, true, true, qctx);
+                return idx.find(lower, upper, lowerInclude, upperInclude, qctx);
             }
             catch (IgniteCheckedException e) {
                 throw new IgniteException("Failed to find index rows", e);

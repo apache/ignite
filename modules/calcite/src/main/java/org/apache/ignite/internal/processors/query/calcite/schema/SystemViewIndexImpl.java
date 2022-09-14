@@ -29,6 +29,7 @@ import org.apache.calcite.rex.RexNode;
 import org.apache.calcite.util.ImmutableBitSet;
 import org.apache.ignite.internal.processors.query.calcite.exec.ExecutionContext;
 import org.apache.ignite.internal.processors.query.calcite.exec.SystemViewScan;
+import org.apache.ignite.internal.processors.query.calcite.exec.exp.BoundsValues;
 import org.apache.ignite.internal.processors.query.calcite.metadata.ColocationGroup;
 import org.apache.ignite.internal.processors.query.calcite.prepare.bounds.SearchBounds;
 import org.apache.ignite.internal.processors.query.calcite.rel.logical.IgniteLogicalIndexScan;
@@ -83,6 +84,7 @@ public class SystemViewIndexImpl implements IgniteIndex {
         ExecutionContext<Row> execCtx,
         ColocationGroup grp,
         Predicate<Row> filters,
+        Iterable<BoundsValues<Row>> boundsValues,
         Supplier<Row> lowerIdxConditions,
         Supplier<Row> upperIdxConditions,
         Function<Row, Row> rowTransformer,

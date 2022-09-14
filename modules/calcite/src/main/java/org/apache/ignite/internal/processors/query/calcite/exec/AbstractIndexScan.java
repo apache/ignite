@@ -25,8 +25,11 @@ import java.util.function.Supplier;
 import org.apache.calcite.rel.type.RelDataType;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.internal.cache.query.index.sorted.inline.IndexQueryContext;
+import org.apache.ignite.internal.processors.query.calcite.exec.exp.BoundsValues;
 import org.apache.ignite.internal.util.lang.GridCursor;
 import org.apache.ignite.internal.util.lang.GridIteratorAdapter;
+import org.apache.ignite.internal.util.typedef.F;
+import org.apache.ignite.lang.IgniteClosure;
 import org.jetbrains.annotations.NotNull;
 
 /**
@@ -38,6 +41,9 @@ public abstract class AbstractIndexScan<Row, IdxRow> implements Iterable<Row>, A
 
     /** Additional filters. */
     private final Predicate<Row> filters;
+
+    /** Index scan bounds. */
+    private final Iterable<BoundsValues<Row>> boundsValues;
 
     /** Lower index scan bound. */
     private final Supplier<Row> lowerBound;
@@ -66,6 +72,7 @@ public abstract class AbstractIndexScan<Row, IdxRow> implements Iterable<Row>, A
         RelDataType rowType,
         TreeIndex<IdxRow> idx,
         Predicate<Row> filters,
+        Iterable<BoundsValues<Row>> boundsValues,
         Supplier<Row> lowerBound,
         Supplier<Row> upperBound,
         Function<Row, Row> rowTransformer
@@ -74,6 +81,7 @@ public abstract class AbstractIndexScan<Row, IdxRow> implements Iterable<Row>, A
         this.rowType = rowType;
         this.idx = idx;
         this.filters = filters;
+        this.boundsValues = boundsValues;
         this.lowerBound = lowerBound;
         this.upperBound = upperBound;
         this.rowTransformer = rowTransformer;
@@ -81,10 +89,16 @@ public abstract class AbstractIndexScan<Row, IdxRow> implements Iterable<Row>, A
 
     /** {@inheritDoc} */
     @Override public synchronized Iterator<Row> iterator() {
-        IdxRow lower = lowerBound == null ? null : row2indexRow(lowerBound.get());
-        IdxRow upper = upperBound == null ? null : row2indexRow(upperBound.get());
+        if (boundsValues == null)
+            return new IteratorImpl(idx.find(null, null, true, true, indexQueryContext()));
 
-        return new IteratorImpl(idx.find(lower, upper, indexQueryContext()));
+        return F.flat(F.iterator(boundsValues, bounds -> {
+            IdxRow lower = bounds.lower() == null ? null : row2indexRow(bounds.lower());
+            IdxRow upper = bounds.upper() == null ? null : row2indexRow(bounds.upper());
+
+            return new IteratorImpl(
+                idx.find(lower, upper, bounds.lowerInclude(), bounds.upperInclude(), indexQueryContext()));
+        }, true));
     }
 
     /** */

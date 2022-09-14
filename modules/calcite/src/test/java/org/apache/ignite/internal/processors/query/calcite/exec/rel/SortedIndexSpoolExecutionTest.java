@@ -18,6 +18,7 @@
 package org.apache.ignite.internal.processors.query.calcite.exec.rel;
 
 import java.util.Arrays;
+import java.util.Collections;
 import java.util.Iterator;
 import java.util.List;
 import java.util.UUID;
@@ -140,6 +141,7 @@ public class SortedIndexSpoolExecutionTest extends AbstractExecutionTest {
                 RelCollations.of(ImmutableIntList.of(0)),
                 (o1, o2) -> o1[0] != null ? ((Comparable)o1[0]).compareTo(o2[0]) : 0,
                 testFilter,
+                null, // TODO
                 () -> lower,
                 () -> upper
             );
@@ -188,6 +190,7 @@ public class SortedIndexSpoolExecutionTest extends AbstractExecutionTest {
             collation,
             ctx.expressionFactory().comparator(collation),
             v -> true,
+            null, // TODO
             () -> lower,
             () -> upper
         );

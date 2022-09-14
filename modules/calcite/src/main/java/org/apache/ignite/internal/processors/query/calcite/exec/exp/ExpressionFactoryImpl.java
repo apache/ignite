@@ -20,15 +20,20 @@ package org.apache.ignite.internal.processors.query.calcite.exec.exp;
 import java.lang.reflect.Modifier;
 import java.lang.reflect.Type;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.BitSet;
+import java.util.Collection;
+import java.util.Collections;
 import java.util.Comparator;
 import java.util.HashMap;
+import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 import java.util.function.BiPredicate;
 import java.util.function.Function;
 import java.util.function.Predicate;
 import java.util.function.Supplier;
+import java.util.stream.Collectors;
 import com.google.common.collect.ImmutableList;
 import com.google.common.primitives.Primitives;
 import org.apache.calcite.DataContext;
@@ -63,11 +68,17 @@ import org.apache.ignite.internal.processors.query.calcite.exec.exp.RexToLixTran
 import org.apache.ignite.internal.processors.query.calcite.exec.exp.agg.AccumulatorWrapper;
 import org.apache.ignite.internal.processors.query.calcite.exec.exp.agg.AccumulatorsFactory;
 import org.apache.ignite.internal.processors.query.calcite.exec.exp.agg.AggregateType;
+import org.apache.ignite.internal.processors.query.calcite.prepare.bounds.ExactBounds;
+import org.apache.ignite.internal.processors.query.calcite.prepare.bounds.MultiBounds;
+import org.apache.ignite.internal.processors.query.calcite.prepare.bounds.RangeBounds;
+import org.apache.ignite.internal.processors.query.calcite.prepare.bounds.SearchBounds;
 import org.apache.ignite.internal.processors.query.calcite.type.IgniteTypeFactory;
 import org.apache.ignite.internal.processors.query.calcite.util.Commons;
 import org.apache.ignite.internal.processors.query.calcite.util.IgniteMethod;
 import org.apache.ignite.internal.util.GridBoundedConcurrentLinkedHashMap;
 import org.apache.ignite.internal.util.typedef.F;
+import org.apache.ignite.internal.util.typedef.T2;
+import org.jetbrains.annotations.NotNull;
 
 /**
  * Implements rex expression into a function object. Uses JaninoRexCompiler under the hood.
@@ -270,6 +281,146 @@ public class ExpressionFactoryImpl<Row> implements ExpressionFactory<Row> {
         return rows;
     }
 
+    /** {@inheritDoc} */
+    @Override public Iterable<BoundsValues<Row>> boundsValues(
+        List<SearchBounds> searchBounds,
+        RelCollation collation,
+        RelDataType rowType
+    ) {
+        RowFactory<Row> rowFactory = ctx.rowHandler().factory(typeFactory, rowType);
+
+        List<BoundsValues<Row>> boundsValues = new ArrayList<>();
+
+        expandBounds(
+            boundsValues,
+            searchBounds,
+            rowType,
+            rowFactory,
+            collation.getKeys(),
+            0,
+            Arrays.asList(new RexNode[searchBounds.size()]),
+            Arrays.asList(new RexNode[searchBounds.size()]),
+            true,
+            true
+        );
+
+        return new Iterable<BoundsValues<Row>>() {
+            @NotNull @Override public Iterator<BoundsValues<Row>> iterator() {
+                boundsValues.forEach(b -> ((BoundsValuesImpl)b).clearCache());
+
+                if (boundsValues.size() == 1)
+                    return boundsValues.iterator();
+
+                Comparator<Row> comparator = comparator(collation);
+
+                // Sort bound values using collation comparator to produce sorted output. There should be no ranges
+                // intersection between bounds.
+                // Create intermediate T2 structure to cache calculated lower bound value (scalar executed and rows
+                // are created on each lower()/upper() methods invocation.
+/*
+                return boundsValues.stream()
+                    .map(b -> new T2<>(b.lower(), b))
+                    .sorted((t1, t2) -> comparator.compare(t1.get1(), t2.get1()))
+                    .map(T2::get2)
+                    .collect(Collectors.toList())
+                    .iterator();
+*/
+
+                boundsValues.sort((o1, o2) -> comparator.compare(o1.lower(), o2.lower()));
+
+                return boundsValues.iterator();
+            }
+        };
+    }
+
+    /**
+     * Expand search bounds to list of tuples (lower row/upper row).
+     *
+     * @param boundsValues Bounds values.
+     * @param searchBounds Search bounds.
+     * @param rowType Row type.
+     * @param rowFactory Row factory.
+     * @param collationKeys Collation keys.
+     * @param collationKeyIdx Current collation key index (field to process).
+     * @param curLower Current lower row.
+     * @param curUpper Current upper row.
+     * @param lowerInclude Include current lower row.
+     * @param upperInclude Include current upper row.
+     */
+    private void expandBounds(
+        List<BoundsValues<Row>> boundsValues,
+        List<SearchBounds> searchBounds,
+        RelDataType rowType,
+        RowFactory<Row> rowFactory,
+        List<Integer> collationKeys,
+        int collationKeyIdx,
+        List<RexNode> curLower,
+        List<RexNode> curUpper,
+        boolean lowerInclude,
+        boolean upperInclude
+    ) {
+        if ((collationKeyIdx >= collationKeys.size()) || (!lowerInclude && !upperInclude) ||
+            searchBounds.get(collationKeys.get(collationKeyIdx)) == null) {
+            boundsValues.add(new BoundsValuesImpl(
+                scalar(curLower, rowType),
+                scalar(curUpper, rowType),
+                lowerInclude,
+                upperInclude,
+                rowFactory
+            ));
+
+            return;
+        }
+
+        int fieldIdx = collationKeys.get(collationKeyIdx);
+        SearchBounds fieldBounds = searchBounds.get(fieldIdx);
+
+        Collection<SearchBounds> fieldMultiBounds = fieldBounds instanceof MultiBounds ?
+            ((MultiBounds)fieldBounds).bounds() : Collections.singleton(fieldBounds);
+
+        for (SearchBounds fieldSingleBounds : fieldMultiBounds) {
+            RexNode fieldLowerBound;
+            RexNode fieldUpperBound;
+            boolean fieldLowerInclude;
+            boolean fieldUpperInclude;
+
+            if (fieldSingleBounds instanceof ExactBounds) {
+                fieldLowerBound = fieldUpperBound = ((ExactBounds)fieldBounds).bound();
+                fieldLowerInclude = fieldUpperInclude = true;
+            }
+            else if (fieldSingleBounds instanceof RangeBounds) {
+                fieldLowerBound = ((RangeBounds)fieldSingleBounds).lowerBound();
+                fieldUpperBound = ((RangeBounds)fieldSingleBounds).upperBound();
+                fieldLowerInclude = ((RangeBounds)fieldSingleBounds).lowerInclude();
+                fieldUpperInclude = ((RangeBounds)fieldSingleBounds).upperInclude();
+            }
+            else
+                throw new IllegalStateException("Unexpected bounds: " + fieldSingleBounds);
+
+            if (lowerInclude)
+                curLower.set(fieldIdx, fieldLowerBound);
+
+            if (upperInclude)
+                curUpper.set(fieldIdx, fieldUpperBound);
+
+            expandBounds(
+                boundsValues,
+                searchBounds,
+                rowType,
+                rowFactory,
+                collationKeys,
+                collationKeyIdx + 1,
+                curLower,
+                curUpper,
+                lowerInclude && fieldLowerInclude,
+                upperInclude && fieldUpperInclude
+            );
+        }
+
+        curLower.set(fieldIdx, null);
+        curLower.set(fieldIdx, null);
+    }
+
     /**
      * Creates {@link SingleScalar}, a code-generated expressions evaluator.
      *
@@ -288,7 +439,7 @@ public class ExpressionFactoryImpl<Row> implements ExpressionFactory<Row> {
      * @param type Row type.
      * @return SingleScalar.
      */
-    public SingleScalar scalar(List<RexNode> nodes, RelDataType type) {
+    private SingleScalar scalar(List<RexNode> nodes, RelDataType type) {
         return (SingleScalar)SCALAR_CACHE.computeIfAbsent(digest(nodes, type, false),
             k -> compile(nodes, type, false));
     }
@@ -300,7 +451,7 @@ public class ExpressionFactoryImpl<Row> implements ExpressionFactory<Row> {
      * @param type Row type.
      * @return BiScalar.
      */
-    public BiScalar biScalar(RexNode node, RelDataType type) {
+    private BiScalar biScalar(RexNode node, RelDataType type) {
         ImmutableList<RexNode> nodes = ImmutableList.of(node);
 
         return (BiScalar)SCALAR_CACHE.computeIfAbsent(digest(nodes, type, true),
@@ -549,6 +700,78 @@ public class ExpressionFactoryImpl<Row> implements ExpressionFactory<Row> {
             scalar.execute(ctx, null, res);
 
             return (T)ctx.rowHandler().get(0, res);
+        }
+    }
+
+    /** */
+    private class BoundsValuesImpl implements BoundsValues<Row> {
+        /** */
+        private final SingleScalar lowerBound;
+
+        /** */
+        private final SingleScalar upperBound;
+
+        /** */
+        private final boolean lowerInclude;
+
+        /** */
+        private final boolean upperInclude;
+
+        /** */
+        private Row lowerRow;
+
+        /** */
+        private Row upperRow;
+
+        /** */
+        private final RowFactory<Row> factory;
+
+        /** */
+        private BoundsValuesImpl(
+            SingleScalar lowerBound,
+            SingleScalar upperBound,
+            boolean lowerInclude,
+            boolean upperInclude,
+            RowFactory<Row> factory
+        ) {
+            this.lowerBound = lowerBound;
+            this.upperBound = upperBound;
+            this.lowerInclude = lowerInclude;
+            this.upperInclude = upperInclude;
+            this.factory = factory;
+        }
+
+        /** {@inheritDoc} */
+        @Override public Row lower() {
+            return lowerRow != null ? lowerRow : (lowerRow = getRow(lowerBound));
+        }
+
+        /** {@inheritDoc} */
+        @Override public Row upper() {
+            return upperRow != null ? upperRow : (upperRow = getRow(upperBound));
+        }
+
+        /** {@inheritDoc} */
+        @Override public boolean lowerInclude() {
+            return lowerInclude;
+        }
+
+        /** {@inheritDoc} */
+        @Override public boolean upperInclude() {
+            return upperInclude;
+        }
+
+        /** {@inheritDoc} */
+        private Row getRow(SingleScalar scalar) {
+            Row res = factory.create();
+            scalar.execute(ctx, null, res);
+
+            return res;
+        }
+
+        /** Clear cached rows. */
+        public void clearCache() {
+            lowerRow = upperRow = null;
         }
     }
 

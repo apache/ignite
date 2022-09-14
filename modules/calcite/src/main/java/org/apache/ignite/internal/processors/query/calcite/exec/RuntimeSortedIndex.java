@@ -25,6 +25,7 @@ import java.util.function.Supplier;
 import org.apache.calcite.rel.RelCollation;
 import org.apache.calcite.rel.type.RelDataType;
 import org.apache.ignite.internal.cache.query.index.sorted.inline.IndexQueryContext;
+import org.apache.ignite.internal.processors.query.calcite.exec.exp.BoundsValues;
 import org.apache.ignite.internal.util.lang.GridCursor;
 import org.apache.ignite.internal.util.typedef.F;
 import org.jetbrains.annotations.Nullable;
@@ -74,7 +75,13 @@ public class RuntimeSortedIndex<Row> implements RuntimeIndex<Row>, TreeIndex<Row
     }
 
     /** {@inheritDoc} */
-    @Override public GridCursor<Row> find(Row lower, Row upper, IndexQueryContext qctx) {
+    @Override public GridCursor<Row> find(
+        Row lower,
+        Row upper,
+        boolean lowerInclude,
+        boolean upperInclude,
+        IndexQueryContext qctx
+    ) {
         assert qctx == null;
 
         int firstCol = F.first(collation.getKeys());
@@ -85,7 +92,7 @@ public class RuntimeSortedIndex<Row> implements RuntimeIndex<Row>, TreeIndex<Row
         Row lowerRow = (lowerBound == null) ? null : lower;
         Row upperRow = (upperBound == null) ? null : upper;
 
-        return new Cursor(rows, lowerRow, upperRow);
+        return new Cursor(rows, lowerRow, upperRow, lowerInclude, upperInclude);
     }
 
     /**
@@ -95,10 +102,11 @@ public class RuntimeSortedIndex<Row> implements RuntimeIndex<Row>, TreeIndex<Row
         ExecutionContext<Row> ectx,
         RelDataType rowType,
         Predicate<Row> filter,
+        Iterable<BoundsValues<Row>> boundsValues,
         Supplier<Row> lowerBound,
         Supplier<Row> upperBound
     ) {
-        return new IndexScan(rowType, this, filter, lowerBound, upperBound);
+        return new IndexScan(rowType, this, filter, boundsValues, lowerBound, upperBound);
     }
 
     /**
@@ -111,6 +119,9 @@ public class RuntimeSortedIndex<Row> implements RuntimeIndex<Row>, TreeIndex<Row
         /** Upper bound. */
         private final Row upper;
 
+        /** Include upper bound. */
+        private final boolean includeUpper;
+
         /** Current row. */
         private Row row;
 
@@ -119,14 +130,17 @@ public class RuntimeSortedIndex<Row> implements RuntimeIndex<Row>, TreeIndex<Row
 
         /**
          * @param rows List of rows.
-         * @param lower Lower bound (inclusive).
-         * @param upper Upper bound (inclusive).
+         * @param lower Lower bound.
+         * @param upper Upper bound.
+         * @param lowerInclude {@code True} for inclusive lower bound.
+         * @param upperInclude {@code True} for inclusive upper bound.
          */
-        Cursor(List<Row> rows, @Nullable Row lower, @Nullable Row upper) {
+        Cursor(List<Row> rows, @Nullable Row lower, @Nullable Row upper, boolean lowerInclude, boolean upperInclude) {
             this.rows = rows;
             this.upper = upper;
+            this.includeUpper = upperInclude;
 
-            idx = lower == null ? 0 : lowerBound(rows, lower);
+            idx = lower == null ? 0 : lowerBound(rows, lower, lowerInclude);
         }
 
         /**
@@ -136,7 +150,7 @@ public class RuntimeSortedIndex<Row> implements RuntimeIndex<Row>, TreeIndex<Row
          * @param bound Lower bound.
          * @return Lower bound position in the list.
          */
-        private int lowerBound(List<Row> rows, Row bound) {
+        private int lowerBound(List<Row> rows, Row bound, boolean includeBound) {
             int low = 0, high = rows.size() - 1, idx = -1;
 
             while (low <= high) {
@@ -145,7 +159,7 @@ public class RuntimeSortedIndex<Row> implements RuntimeIndex<Row>, TreeIndex<Row
 
                 if (compRes > 0)
                     high = mid - 1;
-                else if (compRes == 0) {
+                else if (compRes == 0 && includeBound) {
                     idx = mid;
                     high = mid - 1;
                 }
@@ -158,7 +172,7 @@ public class RuntimeSortedIndex<Row> implements RuntimeIndex<Row>, TreeIndex<Row
 
         /** {@inheritDoc} */
         @Override public boolean next() {
-            if (idx == rows.size() || (upper != null && comp.compare(upper, rows.get(idx)) < 0))
+            if (idx == rows.size() || (upper != null && comp.compare(upper, rows.get(idx)) < (includeUpper ? 0 : 1)))
                 return false;
 
             row = rows.get(idx++);
@@ -187,9 +201,11 @@ public class RuntimeSortedIndex<Row> implements RuntimeIndex<Row>, TreeIndex<Row
             RelDataType rowType,
             TreeIndex<Row> idx,
             Predicate<Row> filter,
+            Iterable<BoundsValues<Row>> boundsValues,
             Supplier<Row> lowerBound,
-            Supplier<Row> upperBound) {
-            super(RuntimeSortedIndex.this.ectx, rowType, idx, filter, lowerBound, upperBound, null);
+            Supplier<Row> upperBound
+        ) {
+            super(RuntimeSortedIndex.this.ectx, rowType, idx, filter, boundsValues, lowerBound, upperBound, null);
         }
 
         /** {@inheritDoc} */

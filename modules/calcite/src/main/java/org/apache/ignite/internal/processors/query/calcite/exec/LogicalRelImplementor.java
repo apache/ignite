@@ -39,6 +39,7 @@ import org.apache.calcite.rex.RexNode;
 import org.apache.calcite.util.ImmutableBitSet;
 import org.apache.ignite.internal.processors.failure.FailureProcessor;
 import org.apache.ignite.internal.processors.query.calcite.exec.RowHandler.RowFactory;
+import org.apache.ignite.internal.processors.query.calcite.exec.exp.BoundsValues;
 import org.apache.ignite.internal.processors.query.calcite.exec.exp.ExpressionFactory;
 import org.apache.ignite.internal.processors.query.calcite.exec.exp.agg.AccumulatorWrapper;
 import org.apache.ignite.internal.processors.query.calcite.exec.exp.agg.AggregateType;
@@ -306,13 +307,15 @@ public class LogicalRelImplementor<Row> implements IgniteRelVisitor<Node<Row>> {
         Supplier<Row> lower = lowerCond == null ? null : expressionFactory.rowSource(lowerCond);
         Supplier<Row> upper = upperCond == null ? null : expressionFactory.rowSource(upperCond);
         Function<Row, Row> prj = projects == null ? null : expressionFactory.project(projects, rowType);
+        Iterable<BoundsValues<Row>> boundsValues = searchBounds == null ? null :
+            expressionFactory.boundsValues(searchBounds, rel.collation(), tbl.getRowType(typeFactory));
 
         ColocationGroup grp = ctx.group(rel.sourceId());
 
         IgniteIndex idx = tbl.getIndex(rel.indexName());
 
         if (idx != null && !tbl.isIndexRebuildInProgress()) {
-            Iterable<Row> rowsIter = idx.scan(ctx, grp, filters, lower, upper, prj, requiredColumns);
+            Iterable<Row> rowsIter = idx.scan(ctx, grp, filters, boundsValues, lower, upper, prj, requiredColumns);
 
             return new ScanNode<>(ctx, rowType, rowsIter);
         }
@@ -370,7 +373,8 @@ public class LogicalRelImplementor<Row> implements IgniteRelVisitor<Node<Row>> {
                     for (int i = requiredColumns.nextSetBit(0); i != -1; i = requiredColumns.nextSetBit(i + 1))
                         remappedSearchBounds.add(searchBounds.get(i));
 
-                    // TODO iterator from remappedSearchBounds.
+                    // Collation and row type are already remapped taking into account requiredColumns.
+                    boundsValues = expressionFactory.boundsValues(remappedSearchBounds, collation, rowType);
                 }
 
                 if (lowerCond != null || upperCond != null) {
@@ -399,6 +403,7 @@ public class LogicalRelImplementor<Row> implements IgniteRelVisitor<Node<Row>> {
                     collation,
                     expressionFactory.comparator(collation),
                     filterHasCorrelation ? filters : null, // Not correlated filter included into table scan.
+                    boundsValues,
                     lower,
                     upper
                 );
@@ -535,6 +540,8 @@ public class LogicalRelImplementor<Row> implements IgniteRelVisitor<Node<Row>> {
         Predicate<Row> filter = expressionFactory.predicate(rel.condition(), rel.getRowType());
         Supplier<Row> lower = lowerBound == null ? null : expressionFactory.rowSource(lowerBound);
         Supplier<Row> upper = upperBound == null ? null : expressionFactory.rowSource(upperBound);
+        Iterable<BoundsValues<Row>> boundsValues =
+            expressionFactory.boundsValues(rel.searchBounds(), collation, rel.getRowType());
 
         IndexSpoolNode<Row> node = IndexSpoolNode.createTreeSpool(
             ctx,
@@ -542,6 +549,7 @@ public class LogicalRelImplementor<Row> implements IgniteRelVisitor<Node<Row>> {
             collation,
             expressionFactory.comparator(collation),
             filter,
+            boundsValues,
             lower,
             upper
         );

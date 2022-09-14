@@ -28,6 +28,7 @@ import org.apache.ignite.internal.processors.query.calcite.exec.ExecutionContext
 import org.apache.ignite.internal.processors.query.calcite.exec.RuntimeHashIndex;
 import org.apache.ignite.internal.processors.query.calcite.exec.RuntimeIndex;
 import org.apache.ignite.internal.processors.query.calcite.exec.RuntimeSortedIndex;
+import org.apache.ignite.internal.processors.query.calcite.exec.exp.BoundsValues;
 import org.apache.ignite.internal.util.typedef.F;
 import org.jetbrains.annotations.Nullable;
 
@@ -165,6 +166,7 @@ public class IndexSpoolNode<Row> extends AbstractNode<Row> implements SingleNode
         RelCollation collation,
         Comparator<Row> comp,
         Predicate<Row> filter,
+        Iterable<BoundsValues<Row>> boundsValues,
         Supplier<Row> lowerIdxBound,
         Supplier<Row> upperIdxBound
     ) {
@@ -177,6 +179,7 @@ public class IndexSpoolNode<Row> extends AbstractNode<Row> implements SingleNode
                 ctx,
                 rowType,
                 filter,
+                boundsValues,
                 lowerIdxBound,
                 upperIdxBound
             )
