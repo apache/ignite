@@ -94,7 +94,7 @@
         <hamcrest.version>2.2</hamcrest.version>
         <httpclient.version>4.5.13</httpclient.version>
         <httpcore.version>4.4.14</httpcore.version>
-        <jackson.version>2.12.4</jackson.version>
+        <jackson.version>2.12.7</jackson.version>
         <jaxb.api.version>2.1</jaxb.api.version>
         <jaxb.impl.version>2.1.14</jaxb.impl.version>
         <javassist.version>3.28.0-GA</javassist.version>
@@ -1000,6 +1000,10 @@
                                 <arg>java.base/java.util=ALL-UNNAMED</arg>
                                 <arg>--add-exports</arg>
                                 <arg>java.base/java.lang=ALL-UNNAMED</arg>
+                                <arg>--add-exports</arg>
+                                <arg>java.base/java.lang.invoke=ALL-UNNAMED</arg>
+                                <arg>--add-exports</arg>
+                                <arg>java.sql/java.sql=ALL-UNNAMED</arg>
                             </compilerArgs>
                         </configuration>
                     </plugin>
@@ -1019,6 +1023,8 @@
                                 --add-opens=java.base/java.nio=ALL-UNNAMED
                                 --add-opens=java.base/java.util=ALL-UNNAMED
                                 --add-opens=java.base/java.lang=ALL-UNNAMED
+                                --add-opens=java.base/java.lang.invoke=ALL-UNNAMED
+                                --add-opens=java.sql/java.sql=ALL-UNNAMED
                             </argLine>
                         </configuration>
                     </plugin>

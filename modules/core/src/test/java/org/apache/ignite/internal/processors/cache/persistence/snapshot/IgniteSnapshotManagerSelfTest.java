@@ -146,6 +146,7 @@ public class IgniteSnapshotManagerSelfTest extends AbstractSnapshotSelfTest {
         // Register task but not schedule it on the checkpoint.
         SnapshotFutureTask snpFutTask = (SnapshotFutureTask)mgr.registerSnapshotTask(SNAPSHOT_NAME,
             cctx.localNodeId(),
+            null,
             F.asMap(CU.cacheId(DEFAULT_CACHE_NAME), null),
             encryption,
             new DelegateSnapshotSender(log, mgr.snapshotExecutorService(), mgr.localSnapshotSenderFactory().apply(SNAPSHOT_NAME, null)) {

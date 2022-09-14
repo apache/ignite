@@ -17,43 +17,50 @@
 
 package org.apache.ignite.internal.visor.snapshot;
 
+import java.util.UUID;
 import org.apache.ignite.IgniteException;
-import org.apache.ignite.IgniteSnapshot;
+import org.apache.ignite.internal.processors.cache.persistence.snapshot.IgniteSnapshotManager;
 import org.apache.ignite.internal.processors.cache.persistence.snapshot.SnapshotMXBeanImpl;
 import org.apache.ignite.internal.processors.task.GridInternal;
 import org.apache.ignite.internal.visor.VisorJob;
 
 /**
- * @see IgniteSnapshot#cancelSnapshot(String)
+ * @see IgniteSnapshotManager#cancelSnapshotOperation(UUID)
  */
 @GridInternal
-public class VisorSnapshotCancelTask extends VisorSnapshotOneNodeTask<String, String> {
+public class VisorSnapshotCancelTask extends VisorSnapshotOneNodeTask<VisorSnapshotCancelTaskArg, String> {
     /** Serial version uid. */
     private static final long serialVersionUID = 0L;
 
     /** {@inheritDoc} */
-    @Override protected VisorJob<String, String> job(String arg) {
+    @Override protected VisorJob<VisorSnapshotCancelTaskArg, String> job(VisorSnapshotCancelTaskArg arg) {
         return new VisorSnapshotCancelJob(arg, debug);
     }
 
     /** */
-    private static class VisorSnapshotCancelJob extends VisorJob<String, String> {
+    private static class VisorSnapshotCancelJob extends VisorJob<VisorSnapshotCancelTaskArg, String> {
         /** Serial version uid. */
         private static final long serialVersionUID = 0L;
 
         /**
-         * @param name Snapshot name.
+         * @param taskArg Task argument.
          * @param debug Flag indicating whether debug information should be printed into node log.
          */
-        protected VisorSnapshotCancelJob(String name, boolean debug) {
-            super(name, debug);
+        protected VisorSnapshotCancelJob(VisorSnapshotCancelTaskArg taskArg, boolean debug) {
+            super(taskArg, debug);
         }
 
         /** {@inheritDoc} */
-        @Override protected String run(String name) throws IgniteException {
-            new SnapshotMXBeanImpl(ignite.context()).cancelSnapshot(name);
+        @Override protected String run(VisorSnapshotCancelTaskArg taskArg) throws IgniteException {
+            if (taskArg.requestId() != null) {
+                new SnapshotMXBeanImpl(ignite.context()).cancelSnapshotOperation(taskArg.requestId().toString());
 
-            return "Snapshot operation cancelled.";
+                return "Snapshot operation cancelled [id=" + taskArg.requestId() + "].";
+            }
+
+            new SnapshotMXBeanImpl(ignite.context()).cancelSnapshot(taskArg.snapshotName());
+
+            return "Snapshot operation cancelled [snapshot=" + taskArg.snapshotName() + "].";
         }
     }
 }

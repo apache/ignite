@@ -15,8 +15,9 @@
 # limitations under the License.
 #
 
-# Start from Java 8 based on Alpine Linux image (~5Mb)
-FROM openjdk:8-jre-alpine
+# Start from Java 8 based on Alpine Linux image
+ARG JDK_VERSION=8
+FROM eclipse-temurin:${JDK_VERSION}-jre-alpine
 
 # Settings
 ENV IGNITE_HOME /opt/ignite/apache-ignite
@@ -46,3 +47,4 @@ CMD $IGNITE_HOME/run.sh
 
 # Container port exposure
 EXPOSE 11211 47100 47500 49112 10800 8080
+

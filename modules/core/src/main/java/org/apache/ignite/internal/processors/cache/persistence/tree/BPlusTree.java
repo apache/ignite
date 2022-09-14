@@ -95,7 +95,7 @@ import static org.apache.ignite.internal.processors.cache.persistence.tree.BPlus
 import static org.apache.ignite.internal.processors.cache.persistence.tree.io.PageIoResolver.DEFAULT_PAGE_IO_RESOLVER;
 
 /**
- * <h3>Abstract B+Tree.</h3>
+ * <h3>Abstract B+Tree</h3>
  *
  * B+Tree is a block-based tree structure. Each block is represented with the page ({@link PageIO}) and contains a
  * single tree node. There are two types of pages/nodes: {@link BPlusInnerIO} and {@link BPlusLeafIO}.
@@ -103,7 +103,14 @@ import static org.apache.ignite.internal.processors.cache.persistence.tree.io.Pa
  * Every page in the tree contains a list of <i>items</i>. Item is just a fixed-size binary payload.
  * Inner nodes and leaves may have different item sizes. There's a limit on how many items each page can hold.
  * It is defined by a {@link BPlusIO#getMaxCount(long, int)} method of the corresponding IO. There should be no empty
- * pages in trees, so it's expected to have from {@code 1} to {@code max} items in every page.
+ * pages in trees, so:
+ * <ul>
+ *     <li>a leaf page must have from {@code 1} to {@code max} items</li>
+ *     <li>
+ *         an inner page must have from {@code 0} to {@code max} items (an inner page with 0 items is a routing page,
+ *         it still has 1 pointer to 1 child, it's not considered an empty page; see below)
+ *     </li>
+ * </ul>
  * <p/>
  * Items might have different meaning depending on the type of the page. In case of leaves, every item must describe a
  * key and a value. In case of inner nodes, items describe only keys if {@link #canGetRowFromInner} is {@code false},
@@ -114,7 +121,7 @@ import static org.apache.ignite.internal.processors.cache.persistence.tree.io.Pa
  * All pages in the tree are divided into levels. Leaves are always at the level {@code 0}. Levels of inner pages are
  * thus positive. Each level represents a singly linked list - each page has a link to the <i>forward</i> page at the
  * same level. It can be retrieved by calling {@link BPlusIO#getForward(long)}. This link must be a zero if there's no
- * forward page. Forward links on level {@code 0} allows iterating trees keys and values effectively without traversing
+ * forward page. Forward links on level {@code 0} allow iterating tree's keys and values effectively without traversing
  * any inner nodes ({@code AbstractForwardCursor}). Forward links in inner nodes have different purpose, more on that
  * later.
  * <p/>
@@ -130,11 +137,12 @@ import static org.apache.ignite.internal.processors.cache.persistence.tree.io.Pa
  * {@link BPlusInnerIO#getRight(long, int)}). All items in the left subtree are less or equal to the original item
  * (basic property for the trees).
  * <p/>
- * There's one more important property of these links: {@code forward(left(i)) == right(i)}. It is called a
+ * There's one more important property of these links: {@code forward(left(i)) == right(i)}. It is called the
  * <i>triangle invariant</i>. More information on B+Tree structure can easily be found online. Following documentation
  * concentrates more on specifics of this particular B+Tree implementation.
  * <p/>
- * <h3>General operations.</h3>
+ *
+ * <h3>General operations</h3>
  * This implementation allows for concurrent reads and update. Given that each page locks individually, there are
  * general rules to avoid deadlocks.
  * <ul>
@@ -143,14 +151,14 @@ import static org.apache.ignite.internal.processors.cache.persistence.tree.io.Pa
  *     </li>
  *     <li>
  *         If there's already a lock on the page of level X then no locks should be acquired on levels less than X.
- *         In other words, locks are aquired from the bottom to the top. The only exception to this rule is the
- *         allocation of a new page on a lower level that no one sees yet.
+ *         In other words, locks are aquired from the bottom to the top (in the direction from leaves to root).
+ *         The only exception to this rule is the allocation of a new page on a lower level that no one sees yet.
  *         </li>
  * </ul>
  * All basic operations fit into a similar pattern. First, the search is performed ({@link Get}). It goes recursively
  * from the root to the leaf (if it's needed). On each level several outcomes are possible.
  * <ul>
- *     <li>Exact value is found and operation can be completed.</li>
+ *     <li>Exact value is found on the leaf level and operation can be completed.</li>
  *     <li>Insertion point is found and recursive procedure continues on the lower level.</li>
  *     <li>Insertion point is not found due to concurrent modifications, but retry in the same node is possible.</li>
  *     <li>Insertion point is not found due to concurrent modifications, but retry in the same node is impossible.</li>
@@ -158,6 +166,51 @@ import static org.apache.ignite.internal.processors.cache.persistence.tree.io.Pa
  * All these options, and more, are described in the class {@link Result}. Please refer to its usages for specifics of
  * each operation. Once the path and the leaf for put/remove is found, the operation is then performed from the bottom
  * to the top. Specifics are described in corresponding classes ({@link Put}, {@link Remove}).
+ * <p/>
+ *
+ * <h3>Maintained invariants</h3>
+ * <ol>
+ *     <li>Triangle invariant (see above), used to detect concurrent tree structure changes</li>
+ *     <li>Each key existing in an inner page also exists in exactly one leaf, as its rightmost key</li>
+ *     <li>
+ *         For each leaf that is not the rightmost leaf in the tree (i.e. its forwardId is not 0), its rightmost key
+ *         exists in exactly one of its ancestor blocks.
+ *         <p/>
+ *         The invariant is maintained using special cases in insert with split, replace and remove scenarios.
+ *     </li>
+ * </ol>
+ *
+ * <h3>Invariants that are NOT maintained</h3>
+ * <ol>
+ *     <li>
+ *         Classic <a href="https://en.wikipedia.org/wiki/B-tree">B-Tree</a> (and B+Tree as well) makes sure
+ *         that each non-root node is at least half-full. This implementation does NOT maintain this invariant.
+ *     </li>
+ * </ol>
+ *
+ * <h3>Merge properties</h3>
+ * When a key is removed from a leaf node, the node might become empty and hence a mandatory merge happens. If
+ * the parent is a <em>routing page</em> (see below), another mandatory merge will happen. (Mandatory merges are
+ * the ones that must happen to maintain the tree invariants). This procedure may propagate a few levels up if there
+ * is a chain of routing pages as ancestors.
+ * <p/>
+ * After all mandatory merges happen, we try to go up and make another merge (by merging the reached ancestor and its
+ * sibling, if they fit in one block). Such a merge is called a <em>regular merge</em> in the code. It is not
+ * mandatory to maintain invariants, but it improves tree structure from the point of view of performance. If first
+ * regular merge is successful, the attempt will be repeated one level higher, and so on.
+ * <p/>
+ *
+ * <h3>Routing pages</h3>
+ * An inner (i.e. non-leaf) page is called a <em>routing page</em> if it contains zero items (hence, zero keys), but
+ * it still contains one pointer to a child one level below. (This is valid because an inner page contains one pointer
+ * more than item count.)
+ * <p/>
+ * An inner page becomes a routing page when removing last item from it (as a consequence to one of its children
+ * becoming empty due to a removal somewhere below), AND due to inability to merge the page with its sibling because
+ * the sibling is full.
+ * <p/>
+ * A confusion might arise between routing pages and empty pages. A routing page does not contain any items, but it does
+ * contain a pointer to its single child, so it is not treated as an empty page (and we keep such pages in the tree).
  */
 @SuppressWarnings({"ConstantValueVariableUse"})
 public abstract class BPlusTree<L, T extends L> extends DataStructure implements IgniteTree<L, T> {
@@ -578,7 +631,7 @@ public abstract class BPlusTree<L, T extends L> extends DataStructure implements
         ) throws IgniteCheckedException {
             assert idx >= 0 && idx < cnt : idx;
 
-            // Need to do inner replace when we remove the rightmost element and the leaf have no forward page,
+            // Need to do inner replace when we remove the rightmost element and the leaf has a forward page,
             // i.e. it is not the rightmost leaf of the tree.
             boolean needReplaceInner = canGetRowFromInner && idx == cnt - rmvCnt && io.getForward(leafAddr) != 0;
 
@@ -4928,7 +4981,7 @@ public abstract class BPlusTree<L, T extends L> extends DataStructure implements
                     if (needMergeEmptyBranch == TRUE) {
                         // We can't merge empty branch if tail is a routing page.
                         if (tail.getCount() == 0)
-                            return NOT_FOUND; // Lock the whole branch up to the first non-empty.
+                            return NOT_FOUND; // Lock the whole branch up to the first non-routing.
 
                         // Top-down merge for empty branch. The actual row remove will happen here if everything is ok.
                         Tail<L> t = mergeEmptyBranch();

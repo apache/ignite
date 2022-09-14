@@ -25,10 +25,13 @@ import java.util.Map;
 import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
+import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.concurrent.locks.ReadWriteLock;
 import java.util.concurrent.locks.ReentrantReadWriteLock;
+import java.util.function.Consumer;
 import org.apache.ignite.IgniteCheckedException;
+import org.apache.ignite.IgniteException;
 import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.cache.query.SqlFieldsQuery;
 import org.apache.ignite.cluster.ClusterNode;
@@ -43,6 +46,7 @@ import org.apache.ignite.internal.managers.eventstorage.GridLocalEventListener;
 import org.apache.ignite.internal.managers.systemview.walker.SqlQueryHistoryViewWalker;
 import org.apache.ignite.internal.managers.systemview.walker.SqlQueryViewWalker;
 import org.apache.ignite.internal.processors.cache.query.GridCacheQueryType;
+import org.apache.ignite.internal.processors.closure.GridClosureProcessor;
 import org.apache.ignite.internal.processors.metric.MetricRegistry;
 import org.apache.ignite.internal.processors.metric.impl.AtomicLongMetric;
 import org.apache.ignite.internal.processors.metric.impl.LongAdderMetric;
@@ -53,6 +57,7 @@ import org.apache.ignite.internal.util.GridSpinBusyLock;
 import org.apache.ignite.internal.util.future.GridFutureAdapter;
 import org.apache.ignite.internal.util.lang.GridPlainRunnable;
 import org.apache.ignite.internal.util.typedef.CIX2;
+import org.apache.ignite.internal.util.typedef.internal.A;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.plugin.extensions.communication.Message;
@@ -88,6 +93,9 @@ public class RunningQueryManager {
 
     /** Undefined query ID value. */
     public static final long UNDEFINED_QUERY_ID = 0L;
+
+    /** */
+    private final GridClosureProcessor closure;
 
     /** Keep registered user queries. */
     private final ConcurrentMap<Long, GridRunningQueryInfo> runs = new ConcurrentHashMap<>();
@@ -147,6 +155,12 @@ public class RunningQueryManager {
         }
     };
 
+    /** */
+    private final List<Consumer<GridQueryStartedInfo>> qryStartedListeners = new CopyOnWriteArrayList<>();
+
+    /** */
+    private final List<Consumer<GridQueryFinishedInfo>> qryFinishedListeners = new CopyOnWriteArrayList<>();
+
     /**
      * Constructor.
      *
@@ -160,6 +174,7 @@ public class RunningQueryManager {
         localNodeId = ctx.localNodeId();
 
         histSz = ctx.config().getSqlConfiguration().getSqlQueryHistorySize();
+        closure = ctx.closure();
 
         qryHistTracker = new QueryHistoryTracker(histSz);
 
@@ -229,11 +244,14 @@ public class RunningQueryManager {
      * @param schemaName Schema name.
      * @param loc Local query flag.
      * @param cancel Query cancel. Should be passed in case query is cancelable, or {@code null} otherwise.
+     * @param enforceJoinOrder Enforce join order flag.
+     * @param lazy Lazy flag.
+     * @param distributedJoins Distributed joins flag.
      * @return Id of registered query. Id is a positive number.
      */
     public long register(String qry, GridCacheQueryType qryType, String schemaName, boolean loc,
         @Nullable GridQueryCancel cancel,
-        String qryInitiatorId) {
+        String qryInitiatorId, boolean enforceJoinOrder, boolean lazy, boolean distributedJoins) {
         long qryId = qryIdGen.incrementAndGet();
 
         if (qryInitiatorId == null)
@@ -250,6 +268,9 @@ public class RunningQueryManager {
             cancel,
             loc,
             qryInitiatorId,
+            enforceJoinOrder,
+            lazy,
+            distributedJoins,
             securitySubjectId(ctx)
         );
 
@@ -261,6 +282,41 @@ public class RunningQueryManager {
         assert preRun == null : "Running query already registered [prev_qry=" + preRun + ", newQry=" + run + ']';
 
         run.span().addTag(SQL_QRY_ID, run::globalQueryId);
+
+        if (!qryStartedListeners.isEmpty()) {
+            GridQueryStartedInfo info = new GridQueryStartedInfo(
+                run.id(),
+                localNodeId,
+                run.query(),
+                run.queryType(),
+                run.schemaName(),
+                run.startTime(),
+                run.cancelable(),
+                run.local(),
+                run.enforceJoinOrder(),
+                run.lazy(),
+                run.distributedJoins(),
+                run.queryInitiatorId()
+            );
+
+            try {
+                closure.runLocal(
+                    () -> qryStartedListeners.forEach(lsnr -> {
+                        try {
+                            lsnr.accept(info);
+                        }
+                        catch (Exception ex) {
+                            log.error("Listener fails during handling query started" +
+                                " event [qryId=" + qryId + "]", ex);
+                        }
+                    }),
+                    GridIoPolicy.PUBLIC_POOL
+                );
+            }
+            catch (IgniteCheckedException ex) {
+                throw new IgniteException(ex.getMessage(), ex);
+            }
+        }
 
         return qryId;
     }
@@ -288,6 +344,43 @@ public class RunningQueryManager {
         try {
             if (failed)
                 qrySpan.addTag(ERROR, failReason::getMessage);
+
+            if (!qryFinishedListeners.isEmpty()) {
+                GridQueryFinishedInfo info = new GridQueryFinishedInfo(
+                    qry.id(),
+                    localNodeId,
+                    qry.query(),
+                    qry.queryType(),
+                    qry.schemaName(),
+                    qry.startTime(),
+                    System.currentTimeMillis(),
+                    qry.local(),
+                    qry.enforceJoinOrder(),
+                    qry.lazy(),
+                    qry.distributedJoins(),
+                    failed,
+                    failReason,
+                    qry.queryInitiatorId()
+                );
+
+                try {
+                    closure.runLocal(
+                        () -> qryFinishedListeners.forEach(lsnr -> {
+                            try {
+                                lsnr.accept(info);
+                            }
+                            catch (Exception ex) {
+                                log.error("Listener fails during handling query finished" +
+                                    " event [qryId=" + qryId + "]", ex);
+                            }
+                        }),
+                        GridIoPolicy.PUBLIC_POOL
+                    );
+                }
+                catch (IgniteCheckedException ex) {
+                    throw new IgniteException(ex.getMessage(), ex);
+                }
+            }
 
             //We need to collect query history and metrics only for SQL queries.
             if (isSqlQuery(qry)) {
@@ -347,6 +440,44 @@ public class RunningQueryManager {
         }
 
         return res;
+    }
+
+    /**
+     * @param lsnr Listener.
+     */
+    public void registerQueryStartedListener(Consumer<GridQueryStartedInfo> lsnr) {
+        A.notNull(lsnr, "lsnr");
+
+        qryStartedListeners.add(lsnr);
+    }
+
+    /**
+     * @param lsnr Listener.
+     */
+    @SuppressWarnings("SuspiciousMethodCalls")
+    public boolean unregisterQueryStartedListener(Object lsnr) {
+        A.notNull(lsnr, "lsnr");
+
+        return qryStartedListeners.remove(lsnr);
+    }
+
+    /**
+     * @param lsnr Listener.
+     */
+    public void registerQueryFinishedListener(Consumer<GridQueryFinishedInfo> lsnr) {
+        A.notNull(lsnr, "lsnr");
+
+        qryFinishedListeners.add(lsnr);
+    }
+
+    /**
+     * @param lsnr Listener.
+     */
+    @SuppressWarnings("SuspiciousMethodCalls")
+    public boolean unregisterQueryFinishedListener(Object lsnr) {
+        A.notNull(lsnr, "lsnr");
+
+        return qryFinishedListeners.remove(lsnr);
     }
 
     /**

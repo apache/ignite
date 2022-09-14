@@ -17,10 +17,21 @@
 
 package org.apache.ignite.internal.commandline.snapshot;
 
+import java.util.Arrays;
+import java.util.LinkedHashMap;
+import java.util.Map;
+import java.util.UUID;
 import java.util.logging.Logger;
+import org.apache.ignite.internal.client.GridClientConfiguration;
+import org.apache.ignite.internal.commandline.CommandArgIterator;
+import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.visor.snapshot.VisorSnapshotCancelTask;
+import org.apache.ignite.internal.visor.snapshot.VisorSnapshotCancelTaskArg;
 
 import static org.apache.ignite.internal.commandline.CommandList.SNAPSHOT;
+import static org.apache.ignite.internal.commandline.CommandLogger.or;
+import static org.apache.ignite.internal.commandline.snapshot.SnapshotCancelCommandOption.ID;
+import static org.apache.ignite.internal.commandline.snapshot.SnapshotCancelCommandOption.NAME;
 
 /**
  * Sub-command to cancel running snapshot.
@@ -32,7 +43,42 @@ public class SnapshotCancelCommand extends SnapshotSubcommand {
     }
 
     /** {@inheritDoc} */
+    @Override public Object execute(GridClientConfiguration clientCfg, Logger log) throws Exception {
+        if (!F.isEmpty(((VisorSnapshotCancelTaskArg)cmdArg).snapshotName()))
+            log.warning("'" + NAME.arg() + "' option is deprecated, please use operation request ID to cancel operation.");
+
+        return super.execute(clientCfg, log);
+    }
+
+    /** {@inheritDoc} */
+    @Override public void parseArguments(CommandArgIterator argIter) {
+        UUID reqId = null;
+        String snpName = null;
+        String explainMsg = "One of " + Arrays.toString(SnapshotCancelCommandOption.values()) + " is expected.";
+
+        String arg = argIter.nextArg(explainMsg);
+
+        if (arg.equals(ID.argName()))
+            reqId = UUID.fromString(argIter.nextArg("Expected operation request ID."));
+        else if (arg.equals(NAME.argName()))
+            snpName = argIter.nextArg("Expected snapshot name.");
+        else
+            throw new IllegalArgumentException("Unexpected argument: " + argIter.peekNextArg() + ". " + explainMsg);
+
+        if (argIter.hasNextSubArg())
+            throw new IllegalArgumentException("No more arguments expected.");
+
+        cmdArg = new VisorSnapshotCancelTaskArg(reqId, snpName);
+    }
+
+    /** {@inheritDoc} */
     @Override public void printUsage(Logger log) {
-        usage(log, "Cancel running snapshot:", SNAPSHOT, generalUsageOptions(), name(), SNAPSHOT_NAME_ARG);
+        Map<String, String> params = new LinkedHashMap<>();
+
+        params.put(ID.argName() + " " + ID.arg(), ID.description());
+        params.put(NAME.argName() + " " + NAME.arg(), NAME.description());
+
+        usage(log, "Cancel running snapshot operation:", SNAPSHOT,
+            params, name(), or(ID.argName() + " " + ID.arg(), NAME.argName() + " " + NAME.arg()));
     }
 }
