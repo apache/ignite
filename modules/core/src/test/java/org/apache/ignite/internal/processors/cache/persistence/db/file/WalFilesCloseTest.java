@@ -101,31 +101,30 @@ public class WalFilesCloseTest extends GridCommonAbstractTest {
 
         /** {@inheritDoc} */
         @Override public <T> @Nullable T createComponent(PluginContext ctx, Class<T> cls) {
-            if (IgniteWriteAheadLogManager.class.equals(cls)) {
-                FileWriteAheadLogManager wal = new FileWriteAheadLogManager(((IgniteEx)ctx.grid()).context());
+            if (!IgniteWriteAheadLogManager.class.equals(cls))
+                return null;
 
-                FileIOFactory delegate = GridTestUtils.getFieldValue(wal, "ioFactory");
+            FileWriteAheadLogManager wal = new FileWriteAheadLogManager(((IgniteEx)ctx.grid()).context());
 
-                wal.setFileIOFactory(new FileIOFactory() {
-                    @Override public FileIO create(File file, OpenOption... modes) throws IOException {
-                        FileIODecorator fileIo = new FileIODecorator(delegate.create(file, modes)) {
-                            @Override public void close() throws IOException {
-                                super.close();
+            FileIOFactory delegate = GridTestUtils.getFieldValue(wal, "ioFactory");
 
-                                opened.remove(this);
-                            }
-                        };
+            wal.setFileIOFactory(new FileIOFactory() {
+                @Override public FileIO create(File file, OpenOption... modes) throws IOException {
+                    FileIODecorator fileIo = new FileIODecorator(delegate.create(file, modes)) {
+                        @Override public void close() throws IOException {
+                            super.close();
 
-                        opened.add(fileIo);
+                            opened.remove(this);
+                        }
+                    };
 
-                        return fileIo;
-                    }
-                });
+                    opened.add(fileIo);
 
-                return (T)wal;
-            }
+                    return fileIo;
+                }
+            });
 
-            return null;
+            return (T)wal;
         }
     }
 }
