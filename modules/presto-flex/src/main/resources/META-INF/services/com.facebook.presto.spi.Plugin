@@ -1,2 +1,0 @@
-org.apache.presto.flex.FlexPlugin
-com.shard.jdbc.plugin.ShardingJdbcPlugin

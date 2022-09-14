@@ -96,11 +96,7 @@
                 <artifactId>ignite-slf4j</artifactId>
                 <version>${revision}</version>
             </dependency>
-            <dependency>
-                <groupId>${project.groupId}</groupId>
-                <artifactId>ignite-log4j</artifactId>
-                <version>${revision}</version>
-            </dependency>
+            
             <dependency>
                 <groupId>${project.groupId}</groupId>
                 <artifactId>ignite-log4j2</artifactId>

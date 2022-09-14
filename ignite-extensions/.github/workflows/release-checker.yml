@@ -1,0 +1,126 @@
+#
+# Licensed to the Apache Software Foundation (ASF) under one
+# or more contributor license agreements.  See the NOTICE file
+# distributed with this work for additional information
+# regarding copyright ownership.  The ASF licenses this file
+# to you under the Apache License, Version 2.0 (the
+# "License"); you may not use this file except in compliance
+# with the License.  You may obtain a copy of the License at
+#
+#   http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing,
+# software distributed under the License is distributed on an
+# "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY
+# KIND, either express or implied.  See the License for the
+# specific language governing permissions and limitations
+# under the License.
+#
+
+#
+# This action will check that an extension release candidate is ready for the vote
+# (verify checksums, verify the release signature, rc tag is exist etc.).
+#
+
+name: "Extension Check Release Candidate"
+
+on:
+  workflow_dispatch:
+    inputs:
+      extension-name:
+        description: 'The name of Ignite Extension (e.g. ignite-aws-ext)'
+        required: true
+      release-version:
+        description: 'The Extension release version (e.g. 1.0.0)'
+        required: true
+
+env:
+  SERVER_URL: 'https://dist.apache.org/repos/dist/dev/ignite/ignite-extensions/'
+
+jobs:
+  check:
+    if: github.repository == 'apache/ignite-extensions'
+    runs-on: ubuntu-latest
+    name: Check RC `${{ github.event.inputs.extension-name }}-${{ github.event.inputs.release-version }}`
+    steps:
+      - name: Setup Inputs
+        id: vars
+        shell: bash
+        # see https://www.gnu.org/software/bash/manual/html_node/Shell-Parameter-Expansion.html
+        run: |
+          name=${{ github.event.inputs.extension-name }}
+          ver=${{ github.event.inputs.release-version }}
+          mod_ver=$(echo ${ver} | sed -e 's/^[[:space:]]*//')
+          mod_name=$(echo ${name} | sed -e 's/^[[:space:]]*//')
+          mod_dir=modules/${name#"ignite-"}
+          echo "Extension Version:     $mod_ver"
+          echo "Extension Module Name: $mod_name"
+          echo "Extension Directory:   $mod_dir"
+          echo "EXTENSION_VERSION=${mod_ver}" >> $GITHUB_ENV
+          echo "EXTENSION_NAME=${mod_name}" >> $GITHUB_ENV
+          echo "EXTENSION_DIR=${mod_dir}" >> $GITHUB_ENV
+
+      - name: Checkout Release Branch
+        uses: actions/checkout@v3
+        with:
+          ref: 'release/${{ github.event.inputs.extension-name }}-${{ github.event.inputs.release-version }}'
+
+      - name: Checkout Release tags
+        run: |
+          git fetch --prune --unshallow --tags
+          echo $(git tag -l)
+          echo "GIT_ROOT=$(pwd)" >> $GITHUB_ENV
+
+      - name: Set up Java
+        uses: actions/setup-java@v2
+        with:
+          java-version: 8
+          distribution: 'adopt'
+
+      - name: Extract Branch POM Version and Compare
+        shell: bash
+        run: |
+          mvn -pl ${{ env.EXTENSION_DIR }} help:evaluate -Dexpression=project.artifactId
+          ver=$(mvn -pl ${{ env.EXTENSION_DIR }} help:evaluate -Dexpression=project.version -q -DforceStdout)
+          pom_ver=$(echo ${ver} | sed -e 's/^[[:space:]]*//')
+          missmatch='true'
+          [ "$pom_ver" == "${{ env.EXTENSION_VERSION }}" ] && missmatch='false'
+          echo "Extension pom version: ${pom_ver}"
+          echo "VERSIONS_MISMATCH=${missmatch}" >> $GITHUB_ENV
+          echo "VERSION_POM=${pom_ver}" >> $GITHUB_ENV
+
+      - name: Compare Release Versions With Branch Version
+        if: ${{ env.VERSIONS_MISMATCH == 'true' }}
+        uses: actions/github-script@v3
+        with:
+          script: |
+            core.setFailed('Versions missmatch [branch=${{ env.EXTENSION_VERSION }}, pom=${{ env.VERSION_POM }}]')
+
+      # The RC tag must points to the last commit in the release branch.
+      - name: Extracting RC tag
+        run: |
+          rc_tag=$(git describe --tags --exact-match --abbrev=0)
+          echo "Extension RC tag: ${rc_tag}"
+          echo "EXTENSION_RC_TAG=${rc_tag}" >> $GITHUB_ENV
+
+      - name: Download Binary and Sources
+        run: |
+          wget --recursive --no-parent --no-directories --tries=3 --retry-on-http-error=429,503,504 --accept '.zip,.asc,.sha512' \
+            --execute robots=off "${{ env.SERVER_URL }}${{ env.EXTENSION_RC_TAG }}/" -P ${{ env.EXTENSION_RC_TAG }}
+          ls ${{ env.EXTENSION_RC_TAG }}
+
+      - name: Validate Binary and Sources Checksums
+        run: |
+          cd ${{ env.EXTENSION_RC_TAG }}
+          sha512sum -c *.sha512
+
+      - name: Validate PGP Signatures
+        run: |
+          wget https://dist.apache.org/repos/dist/release/ignite/KEYS
+          gpg --import KEYS
+          for asc in $(find . -name "*.asc" -type f); do gpg --verify $asc; done
+
+      - name: Extenstion Sources Compilation with Checkstyle
+        run: |
+          cd ${{ env.GIT_ROOT }}
+          mvn install -f ${{ env.EXTENSION_DIR }} -am -Pcheckstyle -DskipTests -B -V

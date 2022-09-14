@@ -1,0 +1,12 @@
+Apache Ignite Extensions Release Notes
+======================================
+
+Apache Ignite Spark Module 2.0.0
+---------------------------------
+
+* Update the Apache Ignite Spark integration to support Spark 2.4.
+
+Apache Ignite Spark Module 1.0.0
+---------------------------------
+
+* Initial release of the Apache Ignite Spark 2.3 integration.

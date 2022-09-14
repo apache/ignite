@@ -1,0 +1,70 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<!--
+  Licensed to the Apache Software Foundation (ASF) under one or more
+  contributor license agreements.  See the NOTICE file distributed with
+  this work for additional information regarding copyright ownership.
+  The ASF licenses this file to You under the Apache License, Version 2.0
+  (the "License"); you may not use this file except in compliance with
+  the License.  You may obtain a copy of the License at
+
+       http://www.apache.org/licenses/LICENSE-2.0
+
+  Unless required by applicable law or agreed to in writing, software
+  distributed under the License is distributed on an "AS IS" BASIS,
+  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+  See the License for the specific language governing permissions and
+  limitations under the License.
+-->
+
+<settings xmlns="http://maven.apache.org/SETTINGS/1.0.0"
+          xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+          xsi:schemaLocation="http://maven.apache.org/SETTINGS/1.0.0 http://maven.apache.org/xsd/settings-1.0.0.xsd">
+
+    <servers>
+        <server>
+            <!--
+                NOTE: This is the name of the Maven Central _staging_ repository to upload prepared artifacts to.
+                The repository is inherited from the Apache Ignite main project (see the 'ignite-parent' module)
+                through the maven parent-child relationship. Use your ASF credentials.
+
+                (!) DO NOT use you password directly, see Maven Password Encryption guide:
+                https://maven.apache.org/guides/mini/guide-encryption.html
+             -->
+            <id>apache.releases.https</id>
+            <username>release_manager_login</username>
+            <password>release_manager_password</password>
+        </server>
+    </servers>
+
+    <profiles>
+        <profile>
+            <!--
+                NOTE: This profile is optional. If you have a single [ultimate] pgp key installed it
+                will be used to sign the prepared maven artifacts, sources and binary archives.
+
+                In case you have no pgp key, please follow instructions from the following link:
+                https://www.apache.org/dev/openpgp.html#generate-key
+
+                You should add your newly created public pgp key to the Apache Ignite KEYS file
+                (see https://dist.apache.org/repos/dist/release/ignite/KEYS) located in the svn
+                repository. You can update the file using your ASF credentials.
+
+                Append you key using the commands below.
+                (see Exporting a Public Key https://www.gnupg.org/gph/en/manual/x56.html)
+
+                `gpg -k E38286D5 >> KEYS`
+                `gpg -armor -export E38286D5 >> KEYS`
+            -->
+            <id>gpg</id>
+
+            <properties>
+                <!-- You can find your gpg key using the gpg list-keys command: `gpg -k` -->
+                <gpg.keyname>E38286D5</gpg.keyname>
+                <!-- Don't use the passphrase to your gpg key in any settings file. It will be prompted at the command run. -->
+                <gpg.passphrase>*</gpg.passphrase>
+                <gpg.useagent>false</gpg.useagent>
+            </properties>
+        </profile>
+    </profiles>
+</settings>

@@ -1,0 +1,21 @@
+Apache Ignite Extensions Release Notes
+======================================
+
+Apache Ignite Spring Data Module 2.0.0
+--------------------------------------
+
+* Fixed the deleteAllById method which had the same type erasure
+* The Ignite Spring Data (1.0, 2.0, 2.2) extensions merged into the single Extension project
+
+
+Apache Ignite Spring Data Module 1.0.0
+--------------------------------------
+
+* Added the ability to connect to the Ignite cluster through the Ignite thin client for the Spring Data extensions
+* Fixed closing of Spring Data Ignite resources after destroying the Spring context if they were automatically started by the manager
+
+The following integrations were migrated to the Apache Ignite Extensions repository:
+ - Spring Data 2.2 extension
+ - Spring Data 2.0 extension
+ - Spring Data extension
+

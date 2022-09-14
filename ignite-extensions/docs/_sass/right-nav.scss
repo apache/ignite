@@ -1,0 +1,73 @@
+// Licensed to the Apache Software Foundation (ASF) under one or more
+// contributor license agreements.  See the NOTICE file distributed with
+// this work for additional information regarding copyright ownership.
+// The ASF licenses this file to You under the Apache License, Version 2.0
+// (the "License"); you may not use this file except in compliance with
+// the License.  You may obtain a copy of the License at
+//
+//     http://www.apache.org/licenses/LICENSE-2.0
+//
+// Unless required by applicable law or agreed to in writing, software
+// distributed under the License is distributed on an "AS IS" BASIS,
+// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+// See the License for the specific language governing permissions and
+// limitations under the License.
+.right-nav {
+    width: 289px;
+    padding: 12px 26px;
+    overflow-y: auto;
+    height: calc(100vh - var(--header-height));
+    top: 0;
+    position: -webkit-sticky;
+    position: sticky;
+    display: flex;
+    flex-direction: column;
+    font-family: 'Open sans';
+    padding-top: var(--padding-top);
+
+    h6 {
+        margin: 12px 0;
+        font-size: 16px;
+        font-weight: normal;
+    }
+
+    ul {
+        list-style: none;
+        padding: 0;
+        margin: 0;
+        // margin-bottom: auto;
+    }
+
+    li {
+        padding: 0;
+    }
+
+    a {
+        --border-width: 0px;
+        font-size: 14px;
+        color: #757575;
+        padding-left: calc(15px * var(--nesting-level) + 8px - var(--border-width));
+        margin: 0.3em 0;
+        display: inline-block;
+
+        &:hover {
+          color: var(--link-color);
+        }
+
+        &.active {
+            --border-width: var(--orange-line-thickness);
+            border-left: var(--border-width) solid var(--link-color);
+            color: #393939;
+        }
+    }
+
+    .sectlevel1 {
+        border-left: 2px solid #dddddd;
+    }
+
+    @for $i from 1 through 6 {
+        .sectlevel#{$i} {
+            --nesting-level: #{$i - 1};
+        }
+    }
+}

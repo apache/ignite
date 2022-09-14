@@ -66,21 +66,14 @@
         <module>modules/ssh</module>
         <module>modules/rest-http</module>
         <module>modules/jta</module>
-        <module>modules/log4j</module>
+        
         <module>modules/log4j2</module>
         <module>modules/slf4j</module>
         <module>modules/jcl</module>
         <module>modules/codegen</module>
-       <!--  <module>modules/cloud</module> -->
-       <!--  <module>modules/mesos</module> -->
-       <!--  <module>modules/yarn</module> -->
+    
         <module>modules/zookeeper</module>
-      <!--   
-        <module>modules/hibernate-core</module>
-        <module>modules/osgi-paxlogging</module>
-        <module>modules/osgi-karaf</module>
-        <module>modules/osgi</module>
-       -->
+     
         <!-- 
         <module>modules/web/ignite-appserver-test</module>
         <module>modules/web/ignite-websphere-test</module> 
@@ -106,11 +99,7 @@
             <modules> <!-- sorted alphabetically -->
                 <module>examples</module>
                 <module>modules/benchmarks</module>                
-                <module>modules/ducktests</module>
-                <module>modules/geospatial</module>
-                <module>modules/hibernate-4.2</module>
-                <module>modules/hibernate-5.1</module>
-                <module>modules/hibernate-5.3</module>
+                <module>modules/ducktests</module>               
                 <module>modules/numa-allocator</module>
                 <module>modules/schedule</module>
                 <module>modules/yardstick</module>
@@ -179,13 +168,7 @@
                 </plugins>
             </build>
         </profile>
-
-        <profile>
-            <id>compatibility</id>
-            <modules>
-                <module>modules/compatibility</module>
-            </modules>
-        </profile>
+       
 
         <profile>
             <id>javadoc</id>
@@ -281,17 +264,7 @@
             </build>
         </profile>
 
-        <profile>
-            <id>lgpl</id>
-            <modules>
-                <module>modules/hibernate-4.2</module>
-                <module>modules/hibernate-5.1</module>
-                <module>modules/hibernate-5.3</module>
-                <module>modules/geospatial</module>
-                <module>modules/schedule</module>
-            </modules>
-        </profile>
-
+        
         <profile>
             <id>licenses</id>
             <build>

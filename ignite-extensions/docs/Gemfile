@@ -1,0 +1,17 @@
+source "https://rubygems.org"
+
+# git_source(:github) {|repo_name| "https://github.com/#{repo_name}" }
+
+gem 'asciidoctor'
+gem 'jekyll', group: :jekyll_plugins
+gem 'wdm', '~> 0.1.1' if Gem.win_platform?
+group :jekyll_plugins do
+  gem 'jekyll-asciidoc'
+end
+#gem 'pygments.rb', '~> 1.2.1'
+gem 'thread_safe', '~> 0.3.6'
+gem 'slim', '~> 4.0.1'
+gem 'tilt', '~> 2.0.9'
+
+# Ruby 3.0.0 requires dependency which doesn't contains in the bundle
+gem "webrick", "~> 1.7"

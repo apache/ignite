@@ -99,11 +99,6 @@
             <version>${web-console.ignite.version}</version>
         </dependency>
         
-         <dependency>
-            <groupId>log4j</groupId>
-  			<artifactId>log4j</artifactId>            
-        </dependency>
-        
         <dependency>
 	        <groupId>io.swagger</groupId>
 		    <artifactId>swagger-annotations</artifactId>

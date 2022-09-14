@@ -1,0 +1,7 @@
+Apache Ignite Extensions Release Notes
+======================================
+
+Apache Ignite Spring Boot Module 1.0.0
+--------------------------------------
+
+* Auto configure of Ignite node for spring-boot based applications implemented.

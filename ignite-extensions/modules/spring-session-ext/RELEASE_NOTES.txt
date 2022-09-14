@@ -1,0 +1,7 @@
+Apache Ignite Extensions Release Notes
+======================================
+
+Apache Ignite Spring Session Module 1.0.0
+-----------------------------------------
+
+* Initial release of the SessionRepository implementation that stores sessions in Apache Ignite distributed IgniteCache.

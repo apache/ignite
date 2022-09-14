@@ -1,0 +1,7 @@
+Apache Ignite Extensions Release Notes
+======================================
+
+Apache Ignite AWS Module 1.0.0
+------------------------------
+
+* Initial release of the Apache Ignite AWS module that provides S3-based implementations of checkpoint SPI and IP finder for TCP discovery.
