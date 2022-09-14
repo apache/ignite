@@ -902,23 +902,7 @@ public class IgnitionEx {
         @Nullable GridSpringResourceContext springCtx, @Nullable ClassLoader ldr) throws IgniteCheckedException {
         A.notNull(springCfgUrl, "springCfgUrl");
 
-        boolean isLog4jUsed = U.gridClassLoader().getResource("org/apache/log4j/Appender.class") != null;
-
-        IgniteBiTuple<Object, Object> t = null;
-
-        if (isLog4jUsed) {
-            try {
-                t = U.addLog4jNoOpLogger();
-            }
-            catch (IgniteCheckedException ignore) {
-                isLog4jUsed = false;
-            }
-        }
-
-        Collection<Handler> savedHnds = null;
-
-        if (!isLog4jUsed)
-            savedHnds = U.addJavaNoOpLogger();
+        Collection<Handler> savedHnds = U.addJavaNoOpLogger();
 
         IgniteBiTuple<Collection<IgniteConfiguration>, ? extends GridSpringResourceContext> cfgMap;
 
@@ -926,11 +910,7 @@ public class IgnitionEx {
             cfgMap = loadConfigurations(springCfgUrl);
         }
         finally {
-            if (isLog4jUsed && t != null)
-                U.removeLog4jNoOpLogger(t);
-
-            if (!isLog4jUsed)
-                U.removeJavaNoOpLogger(savedHnds);
+            U.removeJavaNoOpLogger(savedHnds);
         }
 
         return startConfigurations(cfgMap, springCfgUrl, igniteInstanceName, springCtx, ldr);
@@ -982,23 +962,7 @@ public class IgnitionEx {
         @Nullable GridSpringResourceContext springCtx, @Nullable ClassLoader ldr) throws IgniteCheckedException {
         A.notNull(springCfgStream, "springCfgUrl");
 
-        boolean isLog4jUsed = U.gridClassLoader().getResource("org/apache/log4j/Appender.class") != null;
-
-        IgniteBiTuple<Object, Object> t = null;
-
-        if (isLog4jUsed) {
-            try {
-                t = U.addLog4jNoOpLogger();
-            }
-            catch (IgniteCheckedException ignore) {
-                isLog4jUsed = false;
-            }
-        }
-
-        Collection<Handler> savedHnds = null;
-
-        if (!isLog4jUsed)
-            savedHnds = U.addJavaNoOpLogger();
+        Collection<Handler> savedHnds = U.addJavaNoOpLogger();
 
         IgniteBiTuple<Collection<IgniteConfiguration>, ? extends GridSpringResourceContext> cfgMap;
 
@@ -1006,11 +970,7 @@ public class IgnitionEx {
             cfgMap = loadConfigurations(springCfgStream);
         }
         finally {
-            if (isLog4jUsed && t != null)
-                U.removeLog4jNoOpLogger(t);
-
-            if (!isLog4jUsed)
-                U.removeJavaNoOpLogger(savedHnds);
+            U.removeJavaNoOpLogger(savedHnds);
         }
 
         return startConfigurations(cfgMap, null, igniteInstanceName, springCtx, ldr);
@@ -2271,7 +2231,7 @@ public class IgnitionEx {
                     Map<UUID, Map<Integer, Set<Integer>>> proposedSuppliers = new HashMap<>();
 
                     for (CacheGroupContext grpCtx : grid.context().cache().cacheGroups()) {
-                        if (grpCtx.isLocal() || grpCtx.systemCache())
+                        if (grpCtx.systemCache())
                             continue;
 
                         if (grpCtx.config().getCacheMode() == PARTITIONED && grpCtx.config().getBackups() == 0) {

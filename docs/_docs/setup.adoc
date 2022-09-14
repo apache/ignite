@@ -214,8 +214,6 @@ The following modules are available:
 
 |ignite-kubernetes | Ignite Kubernetes module provides a TCP Discovery IP Finder that uses a dedicated Kubernetes service for IP addresses lookup of Ignite pods containerized by Kubernetes.
 
-|ignite-log4j |Support for Log4j
-
 |ignite-log4j2 |Support for Log4j2
 
 

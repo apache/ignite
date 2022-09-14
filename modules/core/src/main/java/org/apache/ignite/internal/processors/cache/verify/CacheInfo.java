@@ -359,7 +359,7 @@ public class CacheInfo extends VisorDataTransferObject {
         out.writeInt(partitions);
         out.writeInt(mapped);
         out.writeObject(topVer);
-        U.writeEnum(out, mode);
+        out.writeByte(CacheMode.toCode(mode));
         out.writeInt(backupsCnt);
         U.writeString(out, affinityClsName);
         out.writeInt(cachesCnt);
@@ -377,7 +377,7 @@ public class CacheInfo extends VisorDataTransferObject {
         partitions = in.readInt();
         mapped = in.readInt();
         topVer = (AffinityTopologyVersion)in.readObject();
-        mode = CacheMode.fromOrdinal(in.readByte());
+        mode = CacheMode.fromCode(in.readByte());
         backupsCnt = in.readInt();
         affinityClsName = U.readString(in);
         cachesCnt = in.readInt();

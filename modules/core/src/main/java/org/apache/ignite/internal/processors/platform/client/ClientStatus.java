@@ -49,6 +49,9 @@ public final class ClientStatus {
     /** Cache already exists. */
     public static final int CACHE_EXISTS = 1001;
 
+    /** Invalid cache configuration. */
+    public static final int CACHE_CONFIG_INVALID = 1002;
+
     /** Too many cursors. */
     public static final int TOO_MANY_CURSORS = 1010;
 

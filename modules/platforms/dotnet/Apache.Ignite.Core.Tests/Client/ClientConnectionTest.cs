@@ -36,6 +36,7 @@ namespace Apache.Ignite.Core.Tests.Client
     using Apache.Ignite.Core.Tests.Client.Cache;
     using Apache.Ignite.Core.Tests.Client.Compute;
     using Apache.Ignite.Core.Tests.Compute;
+    using Apache.Ignite.Core.Tests.Services;
     using NUnit.Framework;
 
     /// <summary>
@@ -952,6 +953,37 @@ namespace Apache.Ignite.Core.Tests.Client
             {
                 Assert.AreEqual(1, client.GetCluster().GetNodes().Count);
             }
+        }
+
+        /// <summary>
+        /// Tests that the stack trace of an exception that occurred during a service call is propagated to the thin
+        /// client side.
+        /// </summary>
+        [Test]
+        public void TestSendServerServiceExceptionStackTraceToClient()
+        {
+            var ignite = Ignition.Start(new IgniteConfiguration(TestUtils.GetTestConfiguration())
+            {
+                ClientConnectorConfiguration = new ClientConnectorConfiguration
+                {
+                    ThinClientConfiguration = new ThinClientConfiguration
+                    {
+                        SendServerExceptionStackTraceToClient = true,
+                    }
+                }
+            });
+
+            const string svcName = "PlatformTestService";
+
+            ignite.GetServices().DeployClusterSingleton(svcName, new PlatformTestService());
+
+            using var client = StartClient();
+
+            var ex = Assert.Catch<Exception>(() =>
+                client.GetServices().GetServiceProxy<IJavaService>(svcName).testException("")).GetBaseException();
+            
+            StringAssert.Contains("ClassName=System.NotImplementedException", ex.Message);
+            StringAssert.Contains("Message=The method or operation is not implemented.", ex.Message);
         }
 
         /// <summary>

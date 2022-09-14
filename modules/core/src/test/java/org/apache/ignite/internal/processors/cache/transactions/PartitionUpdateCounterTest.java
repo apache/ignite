@@ -351,7 +351,7 @@ public class PartitionUpdateCounterTest extends GridCommonAbstractTest {
      *
      */
     @Test
-    public void testGapsSerialization() {
+    public void testGapsSerialization() throws IgniteCheckedException {
         PartitionUpdateCounter pc = new PartitionUpdateCounterTrackingImpl(null);
 
         Random r = new Random();
@@ -368,6 +368,12 @@ public class PartitionUpdateCounterTest extends GridCommonAbstractTest {
         NavigableMap q1 = U.field(pc2, "queue");
 
         assertEquals(q0, q1);
+
+        long reserved = pc2.reserved();
+        long highestApplied = U.invoke(PartitionUpdateCounterTrackingImpl.class, pc2, "highestAppliedCounter");
+
+        // Checking correct initialization.
+        assertEquals(reserved, highestApplied);
     }
 
     /**

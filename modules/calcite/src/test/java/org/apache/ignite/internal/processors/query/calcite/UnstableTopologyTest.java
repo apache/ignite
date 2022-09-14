@@ -17,14 +17,16 @@
 
 package org.apache.ignite.internal.processors.query.calcite;
 
+import java.util.Collection;
 import java.util.Collections;
+import java.util.Iterator;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Random;
 import java.util.concurrent.ThreadLocalRandom;
+import javax.cache.Cache;
 import com.google.common.collect.ImmutableList;
 import org.apache.ignite.Ignite;
-import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteDataStreamer;
 import org.apache.ignite.binary.BinaryObject;
 import org.apache.ignite.cache.CacheAtomicityMode;
@@ -37,16 +39,15 @@ import org.apache.ignite.cluster.ClusterState;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.IgniteEx;
-import org.apache.ignite.internal.processors.cache.GridCacheContext;
-import org.apache.ignite.internal.processors.cache.persistence.CacheDataRow;
-import org.apache.ignite.internal.processors.query.GridQueryProcessor;
-import org.apache.ignite.internal.processors.query.GridQueryTypeDescriptor;
 import org.apache.ignite.internal.processors.query.QueryEngine;
 import org.apache.ignite.internal.processors.query.calcite.util.Commons;
-import org.apache.ignite.internal.processors.query.h2.IgniteH2Indexing;
 import org.apache.ignite.internal.util.typedef.G;
-import org.apache.ignite.internal.util.typedef.internal.U;
+import org.apache.ignite.spi.IgniteSpiAdapter;
+import org.apache.ignite.spi.IgniteSpiException;
+import org.apache.ignite.spi.indexing.IndexingQueryFilter;
+import org.apache.ignite.spi.indexing.IndexingSpi;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
+import org.jetbrains.annotations.Nullable;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.junit.runners.Parameterized;
@@ -183,24 +184,52 @@ public class UnstableTopologyTest extends GridCommonAbstractTest {
         }
     }
 
-    /** Start with custon QueryIndexing. */
+    /** Start with custon indexing SPI. */
     private IgniteEx ignitionStart(int idx, boolean slow) throws Exception {
-        if (slow)
-            GridQueryProcessor.idxCls = BlockingIndexing.class;
+        IgniteConfiguration cfg = getConfiguration(getTestIgniteInstanceName(idx));
 
-        return startGrid(getConfiguration(getTestIgniteInstanceName(idx)));
+        if (slow)
+            cfg.setIndexingSpi(new BlockingIndexingSpi());
+
+        return startGrid(cfg);
     }
 
     /**
-     * Simple blocking indexing processor.
+     * Simple blocking indexing SPI.
      */
-    private static class BlockingIndexing extends IgniteH2Indexing {
-        /** */
-        @Override public void remove(GridCacheContext cctx, GridQueryTypeDescriptor type, CacheDataRow row)
-            throws IgniteCheckedException {
-            U.sleep(50);
+    private static class BlockingIndexingSpi extends IgniteSpiAdapter implements IndexingSpi {
+        /** {@inheritDoc} */
+        @Override public void spiStart(@Nullable String igniteInstanceName) throws IgniteSpiException {
+            // No-op.
+        }
 
-            super.remove(cctx, type, row);
+        /** {@inheritDoc} */
+        @Override public void spiStop() throws IgniteSpiException {
+            // No-op.
+        }
+
+        /** {@inheritDoc} */
+        @Override public Iterator<Cache.Entry<?, ?>> query(
+            @Nullable String cacheName,
+            Collection<Object> params,
+            @Nullable IndexingQueryFilter filters
+        ) throws IgniteSpiException {
+            return null;
+        }
+
+        /** {@inheritDoc} */
+        @Override public void store(
+            @Nullable String cacheName,
+            Object key,
+            Object val,
+            long expirationTime
+        ) throws IgniteSpiException {
+            // No-op.
+        }
+
+        /** {@inheritDoc} */
+        @Override public void remove(@Nullable String cacheName, Object key) throws IgniteSpiException {
+            doSleep(50L);
         }
     }
 }

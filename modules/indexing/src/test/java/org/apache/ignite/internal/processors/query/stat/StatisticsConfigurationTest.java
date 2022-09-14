@@ -22,7 +22,6 @@ import java.util.Arrays;
 import java.util.List;
 import java.util.function.Consumer;
 import java.util.stream.Collectors;
-
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteException;
@@ -33,7 +32,6 @@ import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.IgniteInterruptedCheckedException;
 import org.apache.ignite.internal.processors.cache.persistence.IgniteCacheDatabaseSharedManager;
-import org.apache.ignite.internal.processors.query.h2.IgniteH2Indexing;
 import org.apache.ignite.internal.processors.query.stat.config.StatisticsObjectConfiguration;
 import org.apache.ignite.internal.processors.query.stat.messages.StatisticsObjectData;
 import org.apache.ignite.internal.util.typedef.F;
@@ -105,7 +103,7 @@ public class StatisticsConfigurationTest extends StatisticsAbstractTest {
                 assertNotNull("Column: " + col, colStat);
 
                 assertTrue("Column: " + col, colStat.distinct() > 0);
-                assertTrue("Column: " + col, colStat.max().getInt() > 0);
+                assertTrue("Column: " + col, colStat.max().intValue() > 0);
                 assertTrue("Column: " + col, colStat.total() == stat.rowCount());
             }
         }
@@ -692,7 +690,7 @@ public class StatisticsConfigurationTest extends StatisticsAbstractTest {
     @NotNull private List<ObjectStatisticsImpl> statisticsAllNodes(String schema, String objName) {
         List<IgniteStatisticsManager> mgrs = G.allGrids().stream()
             .filter(ign -> !((IgniteEx)ign).context().clientNode())
-            .map(ign -> ((IgniteH2Indexing)((IgniteEx)ign).context().query().getIndexing()).statsManager())
+            .map(ign -> ((IgniteEx)ign).context().query().statsManager())
             .collect(Collectors.toList());
 
         return mgrs.stream()

@@ -102,7 +102,7 @@ public class GridNearOptimisticTxPrepareFuture extends GridNearOptimisticTxPrepa
         if (tx.remainingTime() == -1)
             return false;
 
-        if ((entry.context().isNear() || entry.context().isLocal()) &&
+        if (entry.context().isNear() &&
             owner != null && tx.hasWriteKey(entry.txKey())) {
             if (keyLockFut != null)
                 keyLockFut.onKeyLocked(entry.txKey());
@@ -436,7 +436,7 @@ public class GridNearOptimisticTxPrepareFuture extends GridNearOptimisticTxPrepa
 
                 ClusterNode primary = updated.primary();
 
-                assert !primary.isLocal() || !cctx.kernalContext().clientNode() || write.context().isLocal();
+                assert !primary.isLocal() || !cctx.kernalContext().clientNode();
 
                 // Minor optimization to not create MappingKey: on client node can not have mapping for local node.
                 Object key = cctx.kernalContext().clientNode() ? primary.id() :
@@ -633,9 +633,7 @@ public class GridNearOptimisticTxPrepareFuture extends GridNearOptimisticTxPrepa
         if (cached0.isDht())
             nodes = cacheCtx.topology().nodes(cached0.partition(), topVer);
         else
-            nodes = cacheCtx.isLocal() ?
-                cacheCtx.affinity().nodesByKey(entry.key(), topVer) :
-                cacheCtx.topology().nodes(cacheCtx.affinity().partition(entry.key()), topVer);
+            nodes = cacheCtx.topology().nodes(cacheCtx.affinity().partition(entry.key()), topVer);
 
         if (F.isEmpty(nodes)) {
             ClusterTopologyServerNotFoundException e = new ClusterTopologyServerNotFoundException("Failed to map " +
@@ -662,12 +660,10 @@ public class GridNearOptimisticTxPrepareFuture extends GridNearOptimisticTxPrepa
         // Must re-initialize cached entry while holding topology lock.
         if (cacheCtx.isNear())
             entry.cached(cacheCtx.nearTx().entryExx(entry.key(), topVer));
-        else if (!cacheCtx.isLocal())
-            entry.cached(cacheCtx.colocated().entryExx(entry.key(), topVer, true));
         else
-            entry.cached(cacheCtx.local().entryEx(entry.key(), topVer));
+            entry.cached(cacheCtx.colocated().entryExx(entry.key(), topVer, true));
 
-        if (cacheCtx.isNear() || cacheCtx.isLocal()) {
+        if (cacheCtx.isNear()) {
             if (entry.explicitVersion() == null && !remap) {
                 if (keyLockFut == null) {
                     keyLockFut = new KeyLockFuture();

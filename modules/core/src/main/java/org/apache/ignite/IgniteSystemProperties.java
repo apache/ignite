@@ -43,6 +43,7 @@ import org.apache.ignite.internal.processors.performancestatistics.FilePerforman
 import org.apache.ignite.internal.processors.query.schema.SchemaIndexCachePartitionWorker;
 import org.apache.ignite.internal.processors.rest.GridRestCommand;
 import org.apache.ignite.internal.util.GridLogThrottle;
+import org.apache.ignite.internal.util.IgniteUtils;
 import org.apache.ignite.lang.IgniteExperimental;
 import org.apache.ignite.mxbean.MetricsMxBean;
 import org.apache.ignite.spi.communication.tcp.TcpCommunicationSpi;
@@ -1004,6 +1005,17 @@ public final class IgniteSystemProperties {
         "system property will overwrite matched property IgniteConfiguration.setConsistentId(Serializable) " +
         "in configuration", type = String.class)
     public static final String IGNITE_OVERRIDE_CONSISTENT_ID = "IGNITE_OVERRIDE_CONSISTENT_ID";
+
+    /**
+     * System property to ignore reading hostname of the local address.
+     * <p>
+     * If set to {@code true} and {@link #IGNITE_LOCAL_HOST} is defined then
+     * {@link IgniteUtils#resolveLocalAddresses} will not add hostname of local address to the list of node's addresses.
+     * Defaults to {@code true}.
+     */
+    @SystemProperty(value = "Ignores local address's hostname if IGNITE_LOCAL_HOST is defined "
+        + "when resolving local node's addresses", defaults = "true")
+    public static final String IGNITE_IGNORE_LOCAL_HOST_NAME = "IGNITE_IGNORE_LOCAL_HOST_NAME";
 
     /** */
     @SystemProperty(value = "IO balance period in milliseconds", type = Long.class,

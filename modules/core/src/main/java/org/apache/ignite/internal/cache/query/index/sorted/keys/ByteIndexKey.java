@@ -85,4 +85,9 @@ public class ByteIndexKey extends NumericIndexKey {
         return o.type() == type() ? Integer.signum(Byte.compare(key, ((ByteIndexKey)o).key))
             : -((NumericIndexKey)o).compareTo(key);
     }
+
+    /** {@inheritDoc} */
+    @Override public String toString() {
+        return String.valueOf(key);
+    }
 }

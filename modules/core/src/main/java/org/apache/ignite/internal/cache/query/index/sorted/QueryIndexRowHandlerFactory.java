@@ -32,6 +32,6 @@ public class QueryIndexRowHandlerFactory implements InlineIndexRowHandlerFactory
 
         List<InlineIndexKeyType> keyTypes = InlineIndexKeyTypeRegistry.types(keyDefs.values(), keyTypeSettings);
 
-        return new QueryIndexRowHandler(sdef.rowDescriptor(), keyDefs, keyTypes, keyTypeSettings);
+        return new QueryIndexRowHandler(sdef.typeDescriptor(), sdef.cacheInfo(), keyDefs, keyTypes, keyTypeSettings);
     }
 }

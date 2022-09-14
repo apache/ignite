@@ -43,7 +43,6 @@ import org.apache.ignite.internal.processors.metastorage.DistributedMetastorageL
 import org.apache.ignite.internal.processors.metastorage.ReadableDistributedMetaStorage;
 import org.apache.ignite.internal.processors.metric.impl.AtomicLongMetric;
 import org.apache.ignite.internal.processors.metric.impl.DoubleMetricImpl;
-import org.apache.ignite.internal.processors.metric.impl.HistogramMetricImpl;
 import org.apache.ignite.internal.processors.metric.impl.HitRateMetric;
 import org.apache.ignite.internal.processors.timeout.GridTimeoutProcessor;
 import org.apache.ignite.internal.util.future.GridCompoundFuture;
@@ -72,9 +71,6 @@ import static org.apache.ignite.internal.util.IgniteUtils.notifyListeners;
  * @see MetricRegistry
  */
 public class GridMetricManager extends GridManagerAdapter<MetricExporterSpi> implements ReadOnlyMetricManager {
-    /** Class name for a SQL view metrics exporter. */
-    public static final String SQL_SPI = "org.apache.ignite.internal.processors.metric.sql.SqlViewMetricExporterSpi";
-
     /** Metrics update frequency. */
     private static final long METRICS_UPDATE_FREQ = 3000;
 
@@ -199,7 +195,7 @@ public class GridMetricManager extends GridManagerAdapter<MetricExporterSpi> imp
         super(ctx, ((Supplier<MetricExporterSpi[]>)() -> {
             MetricExporterSpi[] spi = ctx.config().getMetricExporterSpi();
 
-            if (!IgniteComponentType.INDEXING.inClassPath())
+            if (!IgniteComponentType.INDEXING.inClassPath() && !IgniteComponentType.QUERY_ENGINE.inClassPath())
                 return spi;
 
             MetricExporterSpi[] spiWithSql = new MetricExporterSpi[spi != null ? spi.length + 1 : 1];
@@ -207,12 +203,7 @@ public class GridMetricManager extends GridManagerAdapter<MetricExporterSpi> imp
             if (!F.isEmpty(spi))
                 System.arraycopy(spi, 0, spiWithSql, 0, spi.length);
 
-            try {
-                spiWithSql[spiWithSql.length - 1] = U.newInstance(SQL_SPI);
-            }
-            catch (IgniteCheckedException e) {
-                throw new IgniteException(e);
-            }
+            spiWithSql[spiWithSql.length - 1] = new SqlViewMetricExporterSpi();
 
             return spiWithSql;
         }).get());
@@ -460,7 +451,7 @@ public class GridMetricManager extends GridManagerAdapter<MetricExporterSpi> imp
      *
      * @param name Metric name.
      * @param rateTimeInterval New rateTimeInterval.
-     * @see HistogramMetricImpl#reset(long[])
+     * @see HitRateMetric#reset(long)
      */
     private void onHitRateConfigChanged(String name, @Nullable Long rateTimeInterval) {
         if (rateTimeInterval == null)
@@ -486,12 +477,18 @@ public class GridMetricManager extends GridManagerAdapter<MetricExporterSpi> imp
         if (bounds == null)
             return;
 
-        HistogramMetricImpl m = find(name, HistogramMetricImpl.class);
+        ConfigurableHistogramMetric m = find(name, ConfigurableHistogramMetric.class);
 
         if (m == null)
             return;
 
-        m.reset(bounds);
+        try {
+            m.bounds(bounds);
+        }
+        catch (RuntimeException e) {
+            // Can't throw exceptions here since method is invoked by metastorage listener.
+            log.error("Error during histogram bounds reconfiguration", e);
+        }
     }
 
     /**
@@ -522,7 +519,7 @@ public class GridMetricManager extends GridManagerAdapter<MetricExporterSpi> imp
             return null;
         }
 
-        if (!m.getClass().isAssignableFrom(type)) {
+        if (!type.isAssignableFrom(m.getClass())) {
             log.error("Metric '" + name + "' has wrong type[type=" + m.getClass().getSimpleName() + ']');
 
             return null;

@@ -55,12 +55,12 @@
         </dependency>
 
         <!--
-            At now the new calcite engine reuses some logic
-            and doesn't work without "old" indexing module.
+            Indexing is required for cross-engines tests.
         -->
         <dependency>
             <groupId>${project.groupId}</groupId>
             <artifactId>ignite-indexing</artifactId>
+            <scope>test</scope>
         </dependency>
 
         <dependency>
@@ -181,15 +181,8 @@
         </dependency>
 
         <dependency>
-            <groupId>log4j</groupId>
-            <artifactId>log4j</artifactId>
-            <scope>test</scope>
-        </dependency>
-
-        <dependency>
-            <groupId>org.slf4j</groupId>
-            <artifactId>slf4j-log4j12</artifactId>
-            <version>${slf4j.version}</version>
+            <groupId>org.apache.logging.log4j</groupId>
+            <artifactId>log4j-slf4j-impl</artifactId>
             <scope>test</scope>
         </dependency>
 

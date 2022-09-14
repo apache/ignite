@@ -21,6 +21,7 @@ import javax.cache.expiry.ExpiryPolicy;
 import org.apache.ignite.IgniteCache;
 import org.apache.ignite.binary.BinaryRawReader;
 import org.apache.ignite.internal.processors.cache.DynamicCacheDescriptor;
+import org.apache.ignite.internal.processors.cache.IgniteInternalCache;
 import org.apache.ignite.internal.processors.platform.cache.expiry.PlatformExpiryPolicy;
 import org.apache.ignite.internal.processors.platform.client.ClientConnectionContext;
 import org.apache.ignite.internal.processors.platform.client.ClientRequest;
@@ -74,6 +75,18 @@ public class ClientCacheRequest extends ClientRequest {
      */
     protected IgniteCache cache(ClientConnectionContext ctx) {
         return rawCache(ctx).withKeepBinary();
+    }
+
+    /**
+     * Gets the internal cache implementation, with binary mode enabled.
+     *
+     * @param ctx Kernal context.
+     * @return Cache.
+     */
+    protected IgniteInternalCache<?, ?> cachex(ClientConnectionContext ctx) {
+        String cacheName = cacheDescriptor(ctx).cacheName();
+
+        return ctx.kernalContext().grid().cachex(cacheName).keepBinary();
     }
 
     /**

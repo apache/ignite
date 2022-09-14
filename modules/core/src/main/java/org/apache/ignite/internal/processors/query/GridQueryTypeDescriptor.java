@@ -28,6 +28,13 @@ import org.jetbrains.annotations.Nullable;
  */
 public interface GridQueryTypeDescriptor {
     /**
+     * Gets cache name of this type.
+     *
+     * @return Cache name.
+     */
+    public String cacheName();
+
+    /**
      * Gets type name which uniquely identifies this type.
      *
      * @return Type name which uniquely identifies this type.

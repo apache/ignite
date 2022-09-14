@@ -1,4 +1,5 @@
 <?xml version="1.0" encoding="UTF-8"?>
+
 <!--
   Licensed to the Apache Software Foundation (ASF) under one or more
   contributor license agreements.  See the NOTICE file distributed with
@@ -53,13 +54,15 @@
             a version dependency for Ignite extensions. -->
         <ignite.version>${revision}</ignite.version>
         <ignite.edition>apache-ignite</ignite.edition>
+
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
+        <project.reporting.outputEncoding>UTF-8</project.reporting.outputEncoding>
         <maven.build.timestamp.format>MMMM d yyyy</maven.build.timestamp.format>
         <doxygen.exec>doxygen</doxygen.exec>
         <docfx.exec>docfx</docfx.exec>
         <git.exec>git</git.exec>
         <javadoc.opts>-Xdoclint:none</javadoc.opts>
-        <update.notifier.enabled.by.default>false</update.notifier.enabled.by.default>
+        <update.notifier.enabled.by.default>true</update.notifier.enabled.by.default>
         <failIfNoTests>false</failIfNoTests>
 
         <!-- Dependency versions -->
@@ -68,15 +71,14 @@
         <asm.version>4.2</asm.version>
         <aspectj.bundle.version>1.8.13_1</aspectj.bundle.version>
         <aspectj.version>1.8.13</aspectj.version>
-        <netty.version>4.1.75.Final</netty.version>
-        <camel.version>2.22.0</camel.version>
+        <netty.version>4.1.79.Final</netty.version>
         <bouncycastle.version>1.69</bouncycastle.version>
         <commons.beanutils.bundle.version>1.9.2_1</commons.beanutils.bundle.version>
         <commons.beanutils.version>1.9.4</commons.beanutils.version>
-        <commons.codec.version>1.13</commons.codec.version>
+        <commons.codec.version>1.15</commons.codec.version>
         <commons.collections.version>3.2.2</commons.collections.version>
         <commons.lang.version>2.6</commons.lang.version>
-        <commons.io.version>2.6</commons.io.version>
+        <commons.io.version>2.11.0</commons.io.version>
         <commons.dbcp.version>1.4</commons.dbcp.version>
         <cron4j.version>2.2.5</cron4j.version>
         <curator.version>5.2.0</curator.version>
@@ -92,7 +94,7 @@
         <hamcrest.version>2.2</hamcrest.version>
         <httpclient.version>4.5.13</httpclient.version>
         <httpcore.version>4.4.14</httpcore.version>
-        <jackson.version>2.12.4</jackson.version>
+        <jackson.version>2.12.7</jackson.version>
         <jaxb.api.version>2.1</jaxb.api.version>
         <jaxb.impl.version>2.1.14</jaxb.impl.version>
         <javassist.version>3.28.0-GA</javassist.version>
@@ -101,7 +103,7 @@
         <javax.cache.version>1.0.0</javax.cache.version>
         <jboss.rmi.version>1.0.6.Final</jboss.rmi.version>
         <jetbrains.annotations.version>16.0.3</jetbrains.annotations.version>
-        <jetty.version>9.4.39.v20210325</jetty.version>
+        <jetty.version>9.4.43.v20210629</jetty.version>
         <jmh.version>1.13</jmh.version>
         <jms.spec.version>1.1.1</jms.spec.version>
         <jna.version>4.5.2</jna.version>
@@ -113,12 +115,10 @@
         <jsonlib.version>2.4</jsonlib.version>
         <jtidy.version>r938</jtidy.version>
         <kafka.version>2.0.1</kafka.version>
-        <karaf.version>4.0.2</karaf.version>
         <log4j2.version>2.17.1</log4j2.version>
-        <log4j.version>1.2.17</log4j.version>
         <lucene.bundle.version>7.4.0_1</lucene.bundle.version>
-        <lucene.version>7.4.0</lucene.version>
-        <lz4.version>1.5.0</lz4.version>
+        <lucene.version>8.11.2</lucene.version>
+        <lz4.version>1.8.0</lz4.version>
         <maven.bundle.plugin.version>3.5.0</maven.bundle.plugin.version>
         <maven.checkstyle.plugin.version>3.1.1</maven.checkstyle.plugin.version>
         <maven.flatten.plugin.version>1.2.7</maven.flatten.plugin.version>
@@ -126,11 +126,9 @@
         <maven.model.version>3.8.4</maven.model.version>
         <checkstyle.puppycrawl.version>8.45</checkstyle.puppycrawl.version>
         <mockito.version>3.4.6</mockito.version>
-        <mysql.connector.version>8.0.26</mysql.connector.version>
+        <mysql.connector.version>8.0.30</mysql.connector.version>
         <netlibjava.version>1.1.2</netlibjava.version>
         <oro.bundle.version>2.0.8_6</oro.bundle.version>
-        <osgi.core.version>5.0.0</osgi.core.version>
-        <osgi.enterprise.version>5.0.0</osgi.enterprise.version>
         <paho.version>1.0.2</paho.version>
         <postgres.connector.version>42.3.3</postgres.connector.version>
         <scala210.jline.version>2.10.7</scala210.jline.version>
@@ -140,15 +138,10 @@
         <slf4j.version>1.7.33</slf4j.version>
         <slf4j16.version>1.6.4</slf4j16.version>
         <snappy.version>1.1.7.2</snappy.version>
-        <spark.hadoop.version>2.6.5</spark.hadoop.version>
-        <spark.version>2.3.0</spark.version>
-        <spring.version>4.3.26.RELEASE</spring.version>
-        <spring-5.0.version>5.0.16.RELEASE</spring-5.0.version>
-        <spring-5.2.version>5.2.3.RELEASE</spring-5.2.version>
-        <spring41.osgi.feature.version>4.1.7.RELEASE_1</spring41.osgi.feature.version>
+        <spring.version>5.2.22.RELEASE</spring.version>
         <storm.version>1.1.1</storm.version>
         <surefire.version>3.0.0-M4</surefire.version>
-        <tomcat.version>9.0.10</tomcat.version>
+        <tomcat.version>9.0.63</tomcat.version>
         <twitter.hbc.version>2.2.0</twitter.hbc.version>
         <yammer.metrics.annotation.version>2.2.0</yammer.metrics.annotation.version>
         <yammer.metrics.core.version>2.2.0</yammer.metrics.core.version>
@@ -158,9 +151,6 @@
         <zstd.version>1.3.7-2</zstd.version>
         <opencensus.version>0.22.0</opencensus.version>
         <commons.lang3.version>3.9</commons.lang3.version>
-        <!--Spark 2.4 version support -->
-        <spark24.hadoop.version>2.6.5</spark24.hadoop.version>
-        <spark24.version>2.4.4</spark24.version>
         <ignite-kafka-ext.version>1.0.0</ignite-kafka-ext.version>
 
         <!-- Maven plugins versions -->
@@ -169,10 +159,12 @@
         <!-- OSGI Manifest generation default property values -->
         <osgi.import.package>*</osgi.import.package>
         <osgi.export.package>{local-packages}</osgi.export.package>
-        <osgi.embed.transitive>false</osgi.embed.transitive>
-        <osgi.fail.ok>false</osgi.fail.ok>
 
         <flattenMode>clean</flattenMode>
+
+        <ignite.platform.full.version>
+            ${ignite.majorVersion}.${ignite.minorVersion}.${ignite.incrementalVersion}.${ignite.buildNumber}
+        </ignite.platform.full.version>
     </properties>
 
     <url>https://ignite.apache.org</url>
@@ -313,7 +305,7 @@
                     <artifactId>maven-jar-plugin</artifactId>
                 </plugin>
 
-                <!-- <plugin>
+                <plugin>
                     <groupId>org.apache.maven.plugins</groupId>
                     <artifactId>maven-javadoc-plugin</artifactId>
                     <version>${maven.javadoc.plugin.version}</version>
@@ -384,7 +376,7 @@
                                 ]]>
                         </bottom>
                     </configuration>
-                </plugin> -->
+                </plugin>
 
                 <plugin>
                     <groupId>org.apache.felix</groupId>
@@ -414,10 +406,10 @@
                             <Private-Package>
                                 ${osgi.private.package}
                             </Private-Package>
-                            <Embed-Dependency>${osgi.embed.dependency}</Embed-Dependency>
+                            <Embed-Dependency>false</Embed-Dependency>
                             <Embed-Directory>lib</Embed-Directory>
-                            <Embed-Transitive>${osgi.embed.transitive}</Embed-Transitive>
-                            <_failok>${osgi.fail.ok}</_failok>
+                            <Embed-Transitive>false</Embed-Transitive>
+                            <_failok>false</_failok>
                             <_invalidfilenames/>
                         </instructions>
                     </configuration>
@@ -619,7 +611,7 @@
                 </executions>
             </plugin>
 
-            <!-- <plugin>
+            <plugin>
                 <groupId>org.apache.maven.plugins</groupId>
                 <artifactId>maven-javadoc-plugin</artifactId>
                 <executions>
@@ -631,7 +623,47 @@
                         <phase>package</phase>
                     </execution>
                 </executions>
-            </plugin> -->
+            </plugin>
+
+            <!-- Thin clients have the own versions format. We need to prepare required properties.-->
+            <plugin>
+                <groupId>org.codehaus.mojo</groupId>
+                <artifactId>build-helper-maven-plugin</artifactId>
+                <executions>
+                    <execution>
+                        <!--
+                            This will create the following properties:
+                            ignite.majorVersion, ignite.minorVersion, ignite.incrementalVersion
+                        -->
+                        <id>parse-version</id>
+                        <goals>
+                            <goal>parse-version</goal>
+                        </goals>
+                        <phase>validate</phase>
+                        <configuration>
+                            <propertyPrefix>ignite</propertyPrefix>
+                        </configuration>
+                    </execution>
+                    <execution>
+                        <id>thin-timestamp-property</id>
+                        <goals>
+                            <goal>timestamp-property</goal>
+                        </goals>
+                        <phase>validate</phase>
+                        <configuration>
+                            <name>ignite.buildNumber</name>
+                            <!-- See: https://docs.oracle.com/javase/8/docs/api/java/text/SimpleDateFormat.html -->
+                            <pattern>yywwu</pattern>
+                        </configuration>
+                    </execution>
+                </executions>
+            </plugin>
+
+            <!-- Generate the OSGi MANIFEST.MF for this bundle. -->
+            <plugin>
+                <groupId>org.apache.felix</groupId>
+                <artifactId>maven-bundle-plugin</artifactId>
+            </plugin>
         </plugins>
     </build>
 
@@ -856,7 +888,7 @@
         <profile>
             <id>java-9+</id>
             <activation>
-                <jdk>[1.9,16)</jdk>
+                <jdk>[1.9,15)</jdk>
             </activation>
             <properties>
                 <maven.compiler.source>1.8</maven.compiler.source>
@@ -898,7 +930,6 @@
                             <!-- TODO https://issues.apache.org/jira/browse/IGNITE-13202 -->
                             <additionalOptions>${javadoc.opts} --add-exports=java.base/sun.nio.ch=ALL-UNNAMED --add-exports=java.management/com.sun.jmx.mbeanserver=ALL-UNNAMED</additionalOptions>
                             <detectJavaApiLink>false</detectJavaApiLink>
-                            <skip>true</skip>
                         </configuration>
                     </plugin>
                 </plugins>
@@ -937,7 +968,7 @@
         <profile>
             <id>java-15+</id>
             <activation>
-                <jdk>[16,)</jdk>
+                <jdk>[15,)</jdk>
             </activation>
             <properties>
                 <maven.compiler.source>1.8</maven.compiler.source>
@@ -969,6 +1000,10 @@
                                 <arg>java.base/java.util=ALL-UNNAMED</arg>
                                 <arg>--add-exports</arg>
                                 <arg>java.base/java.lang=ALL-UNNAMED</arg>
+                                <arg>--add-exports</arg>
+                                <arg>java.base/java.lang.invoke=ALL-UNNAMED</arg>
+                                <arg>--add-exports</arg>
+                                <arg>java.sql/java.sql=ALL-UNNAMED</arg>
                             </compilerArgs>
                         </configuration>
                     </plugin>
@@ -988,6 +1023,8 @@
                                 --add-opens=java.base/java.nio=ALL-UNNAMED
                                 --add-opens=java.base/java.util=ALL-UNNAMED
                                 --add-opens=java.base/java.lang=ALL-UNNAMED
+                                --add-opens=java.base/java.lang.invoke=ALL-UNNAMED
+                                --add-opens=java.sql/java.sql=ALL-UNNAMED
                             </argLine>
                         </configuration>
                     </plugin>

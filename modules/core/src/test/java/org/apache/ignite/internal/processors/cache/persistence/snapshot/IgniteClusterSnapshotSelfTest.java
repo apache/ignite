@@ -36,6 +36,7 @@ import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.function.BiFunction;
+import java.util.function.Consumer;
 import java.util.function.Predicate;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCache;
@@ -48,6 +49,7 @@ import org.apache.ignite.cache.query.ScanQuery;
 import org.apache.ignite.cluster.ClusterTopologyException;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
+import org.apache.ignite.internal.GridKernalContext;
 import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.IgniteInterruptedCheckedException;
@@ -98,6 +100,7 @@ import static org.apache.ignite.internal.processors.cache.persistence.snapshot.I
 import static org.apache.ignite.internal.processors.cache.persistence.snapshot.IgniteSnapshotManager.resolveSnapshotWorkDirectory;
 import static org.apache.ignite.testframework.GridTestUtils.assertThrowsAnyCause;
 import static org.apache.ignite.testframework.GridTestUtils.assertThrowsWithCause;
+import static org.apache.ignite.testframework.GridTestUtils.waitForCondition;
 
 /**
  * Cluster-wide snapshot test.
@@ -761,6 +764,35 @@ public class IgniteClusterSnapshotSelfTest extends AbstractSnapshotSelfTest {
 
     /** @throws Exception If fails. */
     @Test
+    public void testClusterSnapshotWithExplicitPathError() throws Exception {
+        startGridsWithCache(2, dfltCacheCfg, 0);
+
+        String invalidPath = "/" + (char)0;
+
+        Consumer<Integer> check = idx -> {
+            GridKernalContext kctx = grid(idx).context();
+
+            assertThrowsAnyCause(log,
+                () -> kctx.cache().context().snapshotMgr().createSnapshot(SNAPSHOT_NAME, invalidPath).get(TIMEOUT),
+                IgniteCheckedException.class,
+                invalidPath);
+
+            ObjectGauge<String> err = kctx.metric().registry(SNAPSHOT_METRICS).findMetric("LastSnapshotErrorMessage");
+
+            assertTrue(err.value().contains(invalidPath));
+        };
+
+        // Check on coordinator.
+        check.accept(0);
+
+        waitForCondition(() -> !grid(1).context().cache().context().snapshotMgr().isSnapshotCreating(), TIMEOUT);
+
+        // Check on non-coordinator.
+        check.accept(1);
+    }
+
+    /** @throws Exception If fails. */
+    @Test
     public void testClusterSnapshotMetrics() throws Exception {
         String newSnapshotName = SNAPSHOT_NAME + "_new";
         CountDownLatch deltaApply = new CountDownLatch(1);
@@ -1020,8 +1052,8 @@ public class IgniteClusterSnapshotSelfTest extends AbstractSnapshotSelfTest {
 
         assertThrowsAnyCause(log,
             fut::get,
-            IgniteException.class,
-            "Snapshot creation has been finished with an error");
+            ClusterTopologyException.class,
+            "Snapshot operation interrupted, because baseline node left the cluster.");
 
         assertEquals("Snapshot futures expected: " + exchFuts, 3, exchFuts.size());
 

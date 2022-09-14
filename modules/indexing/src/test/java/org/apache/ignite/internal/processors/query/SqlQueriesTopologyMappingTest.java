@@ -77,36 +77,6 @@ public class SqlQueriesTopologyMappingTest extends AbstractIndexingCommonTest {
     }
 
     /** */
-    @Test
-    public void testLocalCacheQueryMapping() throws Exception {
-        IgniteEx ign0 = startGrid(0);
-
-        IgniteCache<Object, Object> cache = ign0.createCache(new CacheConfiguration<>(DEFAULT_CACHE_NAME)
-            .setCacheMode(CacheMode.LOCAL)
-            .setSqlSchema("PUBLIC")
-            .setIndexedTypes(Integer.class, Integer.class));
-
-        cache.put(1, 2);
-
-        startGrid(1);
-
-        SqlFieldsQuery qry = new SqlFieldsQuery("select * from Integer");
-
-        {
-            List<List<?>> res0 = grid(0).cache(DEFAULT_CACHE_NAME).query(qry).getAll();
-
-            assertEquals(1, res0.size());
-            assertEqualsCollections(Arrays.asList(1, 2), res0.get(0));
-        }
-
-        {
-            List<List<?>> res1 = grid(1).cache(DEFAULT_CACHE_NAME).query(qry).getAll();
-
-            assertTrue(res1.isEmpty());
-        }
-    }
-
-    /** */
     private void checkQueryWithRebalance(CacheMode cacheMode) throws Exception {
         IgniteEx ign0 = startGrid(0);
 

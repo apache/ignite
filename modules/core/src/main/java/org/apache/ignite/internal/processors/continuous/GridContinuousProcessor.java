@@ -1463,7 +1463,7 @@ public class GridContinuousProcessor extends GridProcessorAdapter {
                         if (proc != null) {
                             GridCacheAdapter cache = ctx.cache().internalCache(hnd.cacheName());
 
-                            if (cache != null && !cache.isLocal() && cache.context().userCache())
+                            if (cache != null && cache.context().userCache())
                                 req.addUpdateCounters(ctx.localNodeId(), hnd.updateCounters());
                         }
                     }
@@ -1621,7 +1621,7 @@ public class GridContinuousProcessor extends GridProcessorAdapter {
                             if (proc != null) {
                                 GridCacheAdapter cache = ctx.cache().internalCache(hnd.cacheName());
 
-                                if (cache != null && !cache.isLocal() && cache.context().userCache()) {
+                                if (cache != null && cache.context().userCache()) {
                                     CachePartitionPartialCountersMap cntrsMap =
                                         cache.context().topology().localUpdateCounters(false);
 
@@ -2651,7 +2651,7 @@ public class GridContinuousProcessor extends GridProcessorAdapter {
 
                         GridCacheContext cctx = interCache != null ? interCache.context() : null;
 
-                        if (cctx != null && cntrsPerNode != null && !cctx.isLocal() && cctx.affinityNode())
+                        if (cctx != null && cntrsPerNode != null && cctx.affinityNode())
                             cntrsPerNode.put(ctx.localNodeId(),
                                 toCountersMap(cctx.topology().localUpdateCounters(false)));
 

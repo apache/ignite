@@ -106,6 +106,9 @@ public class QueryUtils {
     /** Name of Primary Key index for every table. */
     public static final String PRIMARY_KEY_INDEX = "_key_PK";
 
+    /** Affinity key index name. */
+    public static final String AFFINITY_KEY_INDEX = "AFFINITY_KEY";
+
     /** Schema for system view. */
     public static final String SCHEMA_SYS = getBoolean(IGNITE_SQL_SYSTEM_SCHEMA_NAME_IGNITE) ? "IGNITE" : "SYS";
 

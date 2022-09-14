@@ -70,7 +70,7 @@ Now that you have your cluster up and running, you can run `spark-shell` and che
 +
 [source, shell]
 ----
-./bin/spark-shell --jars path/to/ignite-core.jar,path/to/ignite-spark-ext.jar,path/to/cache-api.jar,path/to/ignite-log4j.jar,path/to/log4j.jar --master spark://master_host:master_port
+./bin/spark-shell --jars path/to/ignite-core.jar,path/to/ignite-spark-ext.jar,path/to/cache-api.jar,path/to/ignite-log4j2.jar,path/to/log4j.jar --master spark://master_host:master_port
 ----
 
 You should see Spark shell started up.

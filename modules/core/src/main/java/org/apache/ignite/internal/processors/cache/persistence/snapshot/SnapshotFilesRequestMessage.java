@@ -24,8 +24,10 @@ import java.util.Arrays;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Set;
+import java.util.UUID;
 import java.util.stream.Collectors;
 import org.apache.ignite.internal.GridDirectMap;
+import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.plugin.extensions.communication.MessageCollectionItemType;
@@ -42,6 +44,9 @@ public class SnapshotFilesRequestMessage extends AbstractSnapshotMessage {
 
     /** Serialization version. */
     private static final long serialVersionUID = 0L;
+
+    /** Snapshot operation request ID. */
+    private UUID requestId;
 
     /** Snapshot name to request. */
     private String snpName;
@@ -61,13 +66,15 @@ public class SnapshotFilesRequestMessage extends AbstractSnapshotMessage {
     }
 
     /**
-     * @param reqId Unique request id.
+     * @param reqId Unique message id.
+     * @param requestId Snapshot operation request ID.
      * @param snpName Snapshot name to request.
      * @param snpPath Snapshot directory path.
      * @param parts Map of cache group ids and corresponding set of its partition ids to be snapshot.
      */
     public SnapshotFilesRequestMessage(
         String reqId,
+        UUID requestId,
         String snpName,
         @Nullable String snpPath,
         Map<Integer, Set<Integer>> parts
@@ -76,11 +83,12 @@ public class SnapshotFilesRequestMessage extends AbstractSnapshotMessage {
 
         assert parts != null && !parts.isEmpty();
 
+        this.requestId = requestId;
         this.snpName = snpName;
         this.snpPath = snpPath;
         this.parts = new HashMap<>();
 
-        for (Map.Entry<Integer, Set<Integer>> e : parts.entrySet())
+        for (Map.Entry<Integer, Set<Integer>> e : F.view(parts.entrySet(), e -> !F.isEmpty(e.getValue())))
             this.parts.put(e.getKey(), U.toIntArray(e.getValue()));
     }
 
@@ -90,11 +98,8 @@ public class SnapshotFilesRequestMessage extends AbstractSnapshotMessage {
     public Map<Integer, Set<Integer>> parts() {
         Map<Integer, Set<Integer>> res = new HashMap<>();
 
-        for (Map.Entry<Integer, int[]> e : parts.entrySet()) {
-            res.put(e.getKey(), e.getValue().length == 0 ? null : Arrays.stream(e.getValue())
-                .boxed()
-                .collect(Collectors.toSet()));
-        }
+        for (Map.Entry<Integer, int[]> e : parts.entrySet())
+            res.put(e.getKey(), Arrays.stream(e.getValue()).boxed().collect(Collectors.toSet()));
 
         return res;
     }
@@ -111,6 +116,13 @@ public class SnapshotFilesRequestMessage extends AbstractSnapshotMessage {
      */
     public String snapshotPath() {
         return snpPath;
+    }
+
+    /**
+     * @return Snapshot operation request ID.
+     */
+    public UUID requestId() {
+        return requestId;
     }
 
     /** {@inheritDoc} */
@@ -143,6 +155,13 @@ public class SnapshotFilesRequestMessage extends AbstractSnapshotMessage {
 
         if (writer.state() == 3) {
             if (!writer.writeString("snpPath", snpPath))
+                return false;
+
+            writer.incrementState();
+        }
+
+        if (writer.state() == 4) {
+            if (!writer.writeUuid("reqId", requestId))
                 return false;
 
             writer.incrementState();
@@ -181,6 +200,15 @@ public class SnapshotFilesRequestMessage extends AbstractSnapshotMessage {
 
         if (reader.state() == 3) {
             snpPath = reader.readString("snpPath");
+
+            if (!reader.isLastRead())
+                return false;
+
+            reader.incrementState();
+        }
+
+        if (reader.state() == 4) {
+            requestId = reader.readUuid("reqId");
 
             if (!reader.isLastRead())
                 return false;

@@ -17,9 +17,20 @@
 
 package org.apache.ignite.internal.sql.command;
 
+import java.util.Collection;
+import org.apache.ignite.internal.processors.query.stat.StatisticsTarget;
+
 /**
  * DROP STATISTICS Command.
  */
 public class SqlDropStatisticsCommand extends SqlStatisticsCommands {
+    /** */
+    public SqlDropStatisticsCommand() {
+        // No-op.
+    }
 
+    /** */
+    public SqlDropStatisticsCommand(Collection<StatisticsTarget> targets) {
+        super(targets);
+    }
 }

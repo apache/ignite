@@ -34,8 +34,8 @@ import org.apache.ignite.cache.store.cassandra.datasource.DataSource;
 import org.apache.ignite.cache.store.cassandra.session.pool.SessionPool;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lifecycle.LifecycleEventType;
-import org.apache.ignite.logger.log4j.Log4JLogger;
-import org.apache.log4j.Logger;
+import org.apache.ignite.testframework.junits.logger.GridTestLog4jLogger;
+import org.apache.logging.log4j.Logger;
 import org.springframework.context.ApplicationContext;
 import org.springframework.context.support.ClassPathXmlApplicationContext;
 
@@ -346,7 +346,7 @@ public class CassandraHelper {
         try {
             Field logField = CassandraLifeCycleBean.class.getDeclaredField("log");
             logField.setAccessible(true);
-            logField.set(embeddedCassandraBean, new Log4JLogger(log));
+            logField.set(embeddedCassandraBean, new GridTestLog4jLogger(log));
         }
         catch (Throwable e) {
             throw new RuntimeException("Failed to initialize logger for CassandraLifeCycleBean", e);

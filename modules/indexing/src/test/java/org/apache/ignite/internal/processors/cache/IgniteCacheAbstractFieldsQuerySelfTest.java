@@ -877,10 +877,7 @@ public abstract class IgniteCacheAbstractFieldsQuerySelfTest extends GridCommonA
 
         assert res != null;
 
-        if (cacheMode() == CacheMode.LOCAL)
-            assert res.size() == 20000;
-        else
-            assert res.size() <= 20000;
+        assert res.size() <= 20000;
 
         for (List<?> row : res) {
             assert (Integer)row.get(0) >= 100;

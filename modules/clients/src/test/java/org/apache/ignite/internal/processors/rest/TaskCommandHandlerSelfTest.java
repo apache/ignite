@@ -42,14 +42,10 @@ import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.P1;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
-import org.jetbrains.annotations.NotNull;
 import org.jsr166.ConcurrentLinkedHashMap;
 import org.junit.Test;
-
-import static org.apache.ignite.cache.CacheMode.LOCAL;
 import static org.apache.ignite.cache.CacheMode.PARTITIONED;
 import static org.apache.ignite.cache.CacheMode.REPLICATED;
-import static org.apache.ignite.cache.CacheWriteSynchronizationMode.FULL_SYNC;
 import static org.apache.ignite.internal.client.GridClientProtocol.TCP;
 
 /**
@@ -57,7 +53,10 @@ import static org.apache.ignite.internal.client.GridClientProtocol.TCP;
  */
 public class TaskCommandHandlerSelfTest extends GridCommonAbstractTest {
     /** */
-    private static final String CACHE_NAME = "cache";
+    private static final String REPLICATED_CACHE_NAME = "replicated";
+
+    /** */
+    private static final String PARTITIONED_CACHE_NAME = "partitioned";
 
     /** */
     public static final String HOST = "127.0.0.1";
@@ -107,24 +106,15 @@ public class TaskCommandHandlerSelfTest extends GridCommonAbstractTest {
 
         cfg.setConnectorConfiguration(clientCfg);
 
-        cfg.setCacheConfiguration(cacheConfiguration(DEFAULT_CACHE_NAME), cacheConfiguration("replicated"),
-            cacheConfiguration("partitioned"), cacheConfiguration(CACHE_NAME));
+        CacheConfiguration<?, ?> cfg1 = defaultCacheConfiguration()
+            .setName(REPLICATED_CACHE_NAME)
+            .setCacheMode(REPLICATED);
 
-        return cfg;
-    }
+        CacheConfiguration<?, ?> cfg2 = defaultCacheConfiguration()
+            .setName(PARTITIONED_CACHE_NAME)
+            .setCacheMode(PARTITIONED);
 
-    /**
-     * @param cacheName Cache name.
-     * @return Cache configuration.
-     * @throws Exception In case of error.
-     */
-    private CacheConfiguration cacheConfiguration(@NotNull String cacheName) throws Exception {
-        CacheConfiguration cfg = defaultCacheConfiguration();
-
-        cfg.setCacheMode(DEFAULT_CACHE_NAME.equals(cacheName) || CACHE_NAME.equals(cacheName) ? LOCAL : "replicated".equals(cacheName) ?
-            REPLICATED : PARTITIONED);
-        cfg.setName(cacheName);
-        cfg.setWriteSynchronizationMode(FULL_SYNC);
+        cfg.setCacheConfiguration(cfg1, cfg2);
 
         return cfg;
     }
@@ -139,12 +129,12 @@ public class TaskCommandHandlerSelfTest extends GridCommonAbstractTest {
 
         GridClientDataConfiguration cache = new GridClientDataConfiguration();
 
-        cache.setName(CACHE_NAME);
+        cache.setName(PARTITIONED_CACHE_NAME);
 
         cfg.setDataConfigurations(Arrays.asList(nullCache, cache));
 
         cfg.setProtocol(TCP);
-        cfg.setServers(Arrays.asList("localhost:" + BINARY_PORT));
+        cfg.setServers(Collections.singletonList("localhost:" + BINARY_PORT));
 
         return cfg;
     }

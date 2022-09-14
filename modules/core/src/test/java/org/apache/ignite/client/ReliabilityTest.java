@@ -316,13 +316,13 @@ public class ReliabilityTest extends AbstractThinClientTest {
 
         String nullOpsNames = nullOps.stream().map(Enum::name).collect(Collectors.joining(", "));
 
-        long expectedNullCount = 16;
+        long expectedNullCnt = 19;
 
         String msg = nullOps.size()
                 + " operation codes do not have public equivalent. When adding new codes, update ClientOperationType too. Missing ops: "
                 + nullOpsNames;
 
-        assertEquals(msg, expectedNullCount, nullOps.size());
+        assertEquals(msg, expectedNullCnt, nullOps.size());
     }
 
     /**

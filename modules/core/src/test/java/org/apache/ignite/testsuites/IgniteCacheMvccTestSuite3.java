@@ -21,7 +21,6 @@ import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.List;
 import org.apache.ignite.IgniteSystemProperties;
-import org.apache.ignite.internal.processors.cache.CacheInterceptorPartitionCounterLocalSanityTest;
 import org.apache.ignite.internal.processors.cache.CacheInterceptorPartitionCounterRandomOperationsTest;
 import org.apache.ignite.internal.processors.cache.GridCacheAtomicEntryProcessorDeploymentSelfTest;
 import org.apache.ignite.internal.processors.cache.GridCacheEntryVersionSelfTest;
@@ -31,8 +30,6 @@ import org.apache.ignite.internal.processors.cache.GridCacheInterceptorAtomicRep
 import org.apache.ignite.internal.processors.cache.GridCacheInterceptorAtomicSelfTest;
 import org.apache.ignite.internal.processors.cache.GridCacheInterceptorAtomicWithStoreReplicatedSelfTest;
 import org.apache.ignite.internal.processors.cache.GridCacheInterceptorAtomicWithStoreSelfTest;
-import org.apache.ignite.internal.processors.cache.GridCacheInterceptorLocalAtomicSelfTest;
-import org.apache.ignite.internal.processors.cache.GridCacheInterceptorLocalAtomicWithStoreSelfTest;
 import org.apache.ignite.internal.processors.cache.GridCacheValueBytesPreloadingSelfTest;
 import org.apache.ignite.internal.processors.cache.GridCacheVersionSelfTest;
 import org.apache.ignite.internal.processors.cache.GridCacheVersionTopologyChangeTest;
@@ -77,7 +74,6 @@ public class IgniteCacheMvccTestSuite3 {
         ignoredTests.add(GridCacheEntryVersionSelfTest.class);
         ignoredTests.add(GridCacheVersionTopologyChangeTest.class);
         ignoredTests.add(CacheAsyncOperationsTest.class);
-        ignoredTests.add(CacheInterceptorPartitionCounterLocalSanityTest.class);
         ignoredTests.add(CacheInterceptorPartitionCounterRandomOperationsTest.class);
         ignoredTests.add(IgniteCacheGroupsTest.class);
 
@@ -97,8 +93,6 @@ public class IgniteCacheMvccTestSuite3 {
         ignoredTests.add(IgnteCacheClientWriteBehindStoreAtomicTest.class);
         ignoredTests.add(IgnteCacheClientWriteBehindStoreNonCoalescingTest.class);
 
-        ignoredTests.add(GridCacheInterceptorLocalAtomicSelfTest.class);
-        ignoredTests.add(GridCacheInterceptorLocalAtomicWithStoreSelfTest.class);
         ignoredTests.add(GridCacheInterceptorAtomicSelfTest.class);
         ignoredTests.add(GridCacheInterceptorAtomicNearEnabledSelfTest.class);
         ignoredTests.add(GridCacheInterceptorAtomicWithStoreSelfTest.class);

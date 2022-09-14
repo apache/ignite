@@ -21,6 +21,8 @@ import java.util.UUID;
 import org.apache.ignite.internal.processors.cache.query.GridCacheQueryType;
 import org.apache.ignite.internal.processors.tracing.MTC;
 import org.apache.ignite.internal.processors.tracing.Span;
+import org.apache.ignite.internal.util.tostring.GridToStringExclude;
+import org.apache.ignite.internal.util.typedef.internal.S;
 
 /**
  * Query descriptor.
@@ -54,6 +56,7 @@ public class GridRunningQueryInfo {
     private final boolean loc;
 
     /** */
+    @GridToStringExclude
     private final QueryRunningFuture fut = new QueryRunningFuture();
 
     /** Span of the running query. */
@@ -61,6 +64,15 @@ public class GridRunningQueryInfo {
 
     /** Originator. */
     private final String qryInitiatorId;
+
+    /** Enforce join order flag. */
+    private final boolean enforceJoinOrder;
+
+    /** Lazy flag. */
+    private final boolean lazy;
+
+    /** Distributed joins flag. */
+    private final boolean distributedJoins;
 
     /** Request ID. */
     private long reqId;
@@ -80,6 +92,10 @@ public class GridRunningQueryInfo {
      * @param startTimeNanos Query start time in nanoseconds.
      * @param cancel Query cancel.
      * @param loc Local query flag.
+     * @param qryInitiatorId Query's initiator identifier.
+     * @param enforceJoinOrder Enforce join order flag.
+     * @param lazy Lazy flag.
+     * @param distributedJoins Distributed joins flag.
      * @param subjId Subject ID.
      */
     public GridRunningQueryInfo(
@@ -93,6 +109,9 @@ public class GridRunningQueryInfo {
         GridQueryCancel cancel,
         boolean loc,
         String qryInitiatorId,
+        boolean enforceJoinOrder,
+        boolean lazy,
+        boolean distributedJoins,
         UUID subjId
     ) {
         this.id = id;
@@ -106,6 +125,9 @@ public class GridRunningQueryInfo {
         this.loc = loc;
         this.span = MTC.span();
         this.qryInitiatorId = qryInitiatorId;
+        this.enforceJoinOrder = enforceJoinOrder;
+        this.lazy = lazy;
+        this.distributedJoins = distributedJoins;
         this.subjId = subjId;
     }
 
@@ -223,6 +245,27 @@ public class GridRunningQueryInfo {
         return qryInitiatorId;
     }
 
+    /**
+     * @return Distributed joins.
+     */
+    public boolean distributedJoins() {
+        return distributedJoins;
+    }
+
+    /**
+     * @return Enforce join order flag.
+     */
+    public boolean enforceJoinOrder() {
+        return enforceJoinOrder;
+    }
+
+    /**
+     * @return Lazy flag.
+     */
+    public boolean lazy() {
+        return lazy;
+    }
+
     /** @param reqId Request ID. */
     public void requestId(long reqId) {
         this.reqId = reqId;
@@ -231,5 +274,10 @@ public class GridRunningQueryInfo {
     /** @return Subject ID. */
     public UUID subjectId() {
         return subjId;
+    }
+
+    /**{@inheritDoc} */
+    @Override public String toString() {
+        return S.toString(GridRunningQueryInfo.class, this);
     }
 }

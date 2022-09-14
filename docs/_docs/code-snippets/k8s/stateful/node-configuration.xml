@@ -47,8 +47,8 @@
                     <bean class="org.apache.ignite.spi.discovery.tcp.ipfinder.kubernetes.TcpDiscoveryKubernetesIpFinder">
                         <constructor-arg>
                             <bean class="org.apache.ignite.kubernetes.configuration.KubernetesConnectionConfiguration">
-                                <property name="namespace" value="default" />
-                                <property name="serviceName" value="ignite" />
+                                <property name="namespace" value="ignite" />
+                                <property name="serviceName" value="ignite-service" />
                             </bean>
                         </constructor-arg>
                     </bean>

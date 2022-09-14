@@ -282,12 +282,10 @@ public class IgniteTxStateImpl extends IgniteTxLocalStateAdapter {
 
             GridCacheContext<?, ?> cacheCtx = cctx.cacheContext(cacheId);
 
-            if (!cacheCtx.isLocal()) {
-                if (nonLocCtx == null)
-                    nonLocCtx = cacheCtx;
+            if (nonLocCtx == null)
+                nonLocCtx = cacheCtx;
 
-                cacheCtxs.putIfAbsent(cacheCtx.cacheId(), cacheCtx);
-            }
+            cacheCtxs.putIfAbsent(cacheCtx.cacheId(), cacheCtx);
         }
 
         if (nonLocCtx == null)
@@ -321,11 +319,9 @@ public class IgniteTxStateImpl extends IgniteTxLocalStateAdapter {
 
                 GridCacheContext<?, ?> cacheCtx = cctx.cacheContext(cacheId);
 
-                if (!cacheCtx.isLocal()) {
-                    nonLocCtx = cacheCtx;
+                nonLocCtx = cacheCtx;
 
-                    break;
-                }
+                break;
             }
 
             if (nonLocCtx != null)

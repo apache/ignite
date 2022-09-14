@@ -36,6 +36,7 @@ import org.apache.ignite.cache.QueryEntity;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.internal.processors.cache.IgniteInternalCache;
 import org.apache.ignite.internal.processors.query.IgniteSQLException;
+import org.apache.ignite.internal.processors.query.calcite.QueryChecker;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.testframework.GridTestUtils;
 import org.hamcrest.CustomMatcher;
@@ -774,6 +775,51 @@ public class TableDdlIntegrationTest extends AbstractDdlIntegrationTest {
         sql("insert into my_table (id, val, val2) values (1, '2', '3')");
 
         assertEquals(2, sql("select * from my_table").size());
+    }
+
+    /**
+     * Drop or add column and check indexes works.
+     */
+    @Test
+    public void alterTableChangeColumnAndUseIndex() {
+        sql("create table my_table(c1 int, c2 int, c3 int, c4 int)");
+        sql("create index my_index on my_table(c4)");
+
+        for (int i = 0; i < 100; i++)
+            sql("insert into my_table values (1, 2, 3, ?)", i);
+
+        assertQuery("select * from my_table where c4 = 50")
+            .matches(QueryChecker.containsIndexScan("PUBLIC", "MY_TABLE", "MY_INDEX"))
+            .returns(1, 2, 3, 50)
+            .check();
+
+        sql("alter table my_table add column c5 int");
+
+        assertQuery("select * from my_table where c4 = 50")
+            .matches(QueryChecker.containsIndexScan("PUBLIC", "MY_TABLE", "MY_INDEX"))
+            .returns(1, 2, 3, 50, null)
+            .check();
+
+        sql("alter table my_table drop column c2");
+
+        assertQuery("select * from my_table where c4 = 50")
+            .matches(QueryChecker.containsIndexScan("PUBLIC", "MY_TABLE", "MY_INDEX"))
+            .returns(1, 3, 50, null)
+            .check();
+
+        sql("alter table my_table drop column (c1, c3)");
+
+        assertQuery("select * from my_table where c4 = 50")
+            .matches(QueryChecker.containsIndexScan("PUBLIC", "MY_TABLE", "MY_INDEX"))
+            .returns(50, null)
+            .check();
+
+        sql("alter table my_table drop column (c5)");
+
+        assertQuery("select * from my_table where c4 = 50")
+            .matches(QueryChecker.containsIndexScan("PUBLIC", "MY_TABLE", "MY_INDEX"))
+            .returns(50)
+            .check();
     }
 
     /**

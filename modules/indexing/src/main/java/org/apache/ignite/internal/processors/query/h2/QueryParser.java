@@ -34,7 +34,6 @@ import org.apache.ignite.failure.FailureContext;
 import org.apache.ignite.internal.processors.cache.GridCacheContext;
 import org.apache.ignite.internal.processors.cache.GridCacheContextInfo;
 import org.apache.ignite.internal.processors.cache.mvcc.MvccUtils;
-import org.apache.ignite.internal.processors.cache.query.GridCacheTwoStepQuery;
 import org.apache.ignite.internal.processors.cache.query.IgniteQueryErrorCode;
 import org.apache.ignite.internal.processors.cache.query.SqlFieldsQueryEx;
 import org.apache.ignite.internal.processors.odbc.jdbc.JdbcParameterMeta;
@@ -68,7 +67,6 @@ import org.apache.ignite.internal.util.typedef.internal.U;
 import org.h2.api.ErrorCode;
 import org.h2.command.Prepared;
 import org.jetbrains.annotations.Nullable;
-
 import static org.apache.ignite.failure.FailureType.CRITICAL_ERROR;
 import static org.apache.ignite.internal.processors.query.h2.sql.GridSqlQuerySplitter.keyColumn;
 import static org.apache.ignite.internal.processors.tracing.SpanTags.SQL_PARSER_CACHE_HIT;
@@ -684,7 +682,7 @@ public class QueryParser {
         // Check if caches are started because we may need to collect affinity info later on, so they needs to be
         // available on local node.
         for (GridH2Table h2tbl : tbls)
-            H2Utils.checkAndStartNotStartedCache(idx.kernalContext(), h2tbl);
+            H2Utils.checkAndStartNotStartedCache(idx.kernalContext(), h2tbl.cacheInfo());
 
         // Check MVCC mode.
         GridCacheContextInfo ctx = null;

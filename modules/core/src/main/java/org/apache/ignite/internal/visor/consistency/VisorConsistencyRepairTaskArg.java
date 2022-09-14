@@ -32,7 +32,7 @@ public class VisorConsistencyRepairTaskArg extends IgniteDataTransferObject {
     private static final long serialVersionUID = 0L;
 
     /** Cache name. */
-    private String cacheName;
+    private String cacheOrGrpName;
 
     /** Partition. */
     private int part;
@@ -47,18 +47,18 @@ public class VisorConsistencyRepairTaskArg extends IgniteDataTransferObject {
     }
 
     /**
-     * @param cacheName Cache name.
+     * @param cacheOrGrpName Cache or group name.
      * @param part Part.
      */
-    public VisorConsistencyRepairTaskArg(String cacheName, int part, ReadRepairStrategy strategy) {
-        this.cacheName = cacheName;
+    public VisorConsistencyRepairTaskArg(String cacheOrGrpName, int part, ReadRepairStrategy strategy) {
+        this.cacheOrGrpName = cacheOrGrpName;
         this.part = part;
         this.strategy = strategy;
     }
 
     /** {@inheritDoc} */
     @Override protected void writeExternalData(ObjectOutput out) throws IOException {
-        U.writeString(out, cacheName);
+        U.writeString(out, cacheOrGrpName);
         out.writeInt(part);
         U.writeEnum(out, strategy);
     }
@@ -66,7 +66,7 @@ public class VisorConsistencyRepairTaskArg extends IgniteDataTransferObject {
     /** {@inheritDoc} */
     @Override protected void readExternalData(byte protoVer,
         ObjectInput in) throws IOException, ClassNotFoundException {
-        cacheName = U.readString(in);
+        cacheOrGrpName = U.readString(in);
         part = in.readInt();
         strategy = U.readEnum(in, ReadRepairStrategy.class);
     }
@@ -74,8 +74,8 @@ public class VisorConsistencyRepairTaskArg extends IgniteDataTransferObject {
     /**
      *
      */
-    public String cacheName() {
-        return cacheName;
+    public String cacheOrGroupName() {
+        return cacheOrGrpName;
     }
 
     /**

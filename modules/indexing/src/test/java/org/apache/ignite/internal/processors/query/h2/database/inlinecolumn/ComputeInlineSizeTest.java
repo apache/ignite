@@ -41,8 +41,6 @@ import org.apache.ignite.internal.cache.query.index.sorted.inline.types.ShortInl
 import org.apache.ignite.internal.cache.query.index.sorted.inline.types.TimeInlineIndexKeyType;
 import org.apache.ignite.internal.cache.query.index.sorted.inline.types.TimestampInlineIndexKeyType;
 import org.apache.ignite.internal.cache.query.index.sorted.inline.types.UuidInlineIndexKeyType;
-import org.apache.ignite.internal.processors.cache.GridCacheContext;
-import org.apache.ignite.internal.processors.cache.IgniteInternalCache;
 import org.apache.ignite.internal.processors.cache.index.AbstractIndexingCommonTest;
 import org.apache.ignite.internal.processors.cache.persistence.tree.io.PageIO;
 import org.apache.ignite.internal.util.typedef.F;
@@ -164,7 +162,7 @@ public class ComputeInlineSizeTest extends AbstractIndexingCommonTest {
 
     /** */
     private void checkIdxsInlineSizes() {
-        Collection<Index> idx = ignite.context().indexProcessor().indexes(context());
+        Collection<Index> idx = ignite.context().indexProcessor().indexes(CACHE);
 
         Map<String, Integer> expInlineSize = new HashMap<>();
 
@@ -197,13 +195,6 @@ public class ComputeInlineSizeTest extends AbstractIndexingCommonTest {
     /** */
     private void query(String qry) {
         ignite.context().query().querySqlFields(new SqlFieldsQuery(qry), false, false);
-    }
-
-    /** */
-    private GridCacheContext<Long, Person> context() {
-        IgniteInternalCache<Long, Person> c = ignite.cachex(CACHE);
-
-        return c.context();
     }
 
     /** */

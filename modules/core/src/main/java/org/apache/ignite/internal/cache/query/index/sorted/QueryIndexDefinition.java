@@ -19,7 +19,8 @@ package org.apache.ignite.internal.cache.query.index.sorted;
 
 import java.util.LinkedHashMap;
 import org.apache.ignite.internal.cache.query.index.IndexName;
-import org.apache.ignite.internal.processors.query.GridQueryRowDescriptor;
+import org.apache.ignite.internal.processors.cache.GridCacheContextInfo;
+import org.apache.ignite.internal.processors.query.GridQueryTypeDescriptor;
 
 /**
  * Define query index.
@@ -28,8 +29,11 @@ public class QueryIndexDefinition implements SortedIndexDefinition {
     /** Wrapped key definitions. */
     private final LinkedHashMap<String, IndexKeyDefinition> keyDefs;
 
-    /** Table row descriptor. */
-    private final GridQueryRowDescriptor rowDescriptor;
+    /** Type descriptor. */
+    private final GridQueryTypeDescriptor typeDesc;
+
+    /** Cache info. */
+    private final GridCacheContextInfo<?, ?> cacheInfo;
 
     /** Index name. */
     private final IndexName idxName;
@@ -63,7 +67,8 @@ public class QueryIndexDefinition implements SortedIndexDefinition {
 
     /** */
     public QueryIndexDefinition(
-        GridQueryRowDescriptor rowDescriptor,
+        GridQueryTypeDescriptor typeDesc,
+        GridCacheContextInfo<?, ?> cacheInfo,
         IndexName idxName,
         String treeName,
         IndexRowCache idxRowCache,
@@ -73,11 +78,12 @@ public class QueryIndexDefinition implements SortedIndexDefinition {
         int cfgInlineSize,
         IndexKeyTypeSettings keyTypeSettings
     ) {
-        this.rowDescriptor = rowDescriptor;
+        this.typeDesc = typeDesc;
+        this.cacheInfo = cacheInfo;
         this.idxName = idxName;
         this.treeName = treeName;
         this.idxRowCache = idxRowCache;
-        this.segments = rowDescriptor.context().config().getQueryParallelism();
+        this.segments = cacheInfo.cacheContext().config().getQueryParallelism();
         this.inlineSize = cfgInlineSize;
         this.isPrimary = isPrimary;
         this.isAffinity = isAffinity;
@@ -142,8 +148,13 @@ public class QueryIndexDefinition implements SortedIndexDefinition {
     }
 
     /** {@inheritDoc} */
-    @Override public GridQueryRowDescriptor rowDescriptor() {
-        return rowDescriptor;
+    @Override public GridQueryTypeDescriptor typeDescriptor() {
+        return typeDesc;
+    }
+
+    /** {@inheritDoc} */
+    @Override public GridCacheContextInfo<?, ?> cacheInfo() {
+        return cacheInfo;
     }
 
     /** {@inheritDoc} */

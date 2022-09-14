@@ -126,13 +126,14 @@ import org.apache.ignite.testframework.junits.multijvm.IgniteCacheProcessProxy;
 import org.apache.ignite.testframework.junits.multijvm.IgniteNodeRunner;
 import org.apache.ignite.testframework.junits.multijvm.IgniteProcessProxy;
 import org.apache.ignite.thread.IgniteThread;
-import org.apache.log4j.ConsoleAppender;
-import org.apache.log4j.Level;
-import org.apache.log4j.LogManager;
-import org.apache.log4j.Logger;
-import org.apache.log4j.PatternLayout;
-import org.apache.log4j.Priority;
-import org.apache.log4j.RollingFileAppender;
+import org.apache.logging.log4j.Level;
+import org.apache.logging.log4j.core.LoggerContext;
+import org.apache.logging.log4j.core.appender.ConsoleAppender;
+import org.apache.logging.log4j.core.appender.RollingFileAppender;
+import org.apache.logging.log4j.core.appender.rolling.DefaultRolloverStrategy;
+import org.apache.logging.log4j.core.appender.rolling.SizeBasedTriggeringPolicy;
+import org.apache.logging.log4j.core.config.Configurator;
+import org.apache.logging.log4j.core.config.LoggerConfig;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 import org.junit.After;
@@ -171,6 +172,13 @@ import static org.apache.ignite.testframework.GridTestUtils.getFieldValueHierarc
 import static org.apache.ignite.testframework.GridTestUtils.setFieldValue;
 import static org.apache.ignite.testframework.config.GridTestProperties.BINARY_MARSHALLER_USE_SIMPLE_NAME_MAPPER;
 import static org.apache.ignite.testframework.config.GridTestProperties.IGNITE_CFG_PREPROCESSOR_CLS;
+import static org.apache.ignite.testframework.junits.logger.GridTestLog4jLogger.CONSOLE_ERROR;
+import static org.apache.ignite.testframework.junits.logger.GridTestLog4jLogger.DEFAULT_PATTERN_LAYOUT;
+import static org.apache.ignite.testframework.junits.logger.GridTestLog4jLogger.FILE;
+import static org.apache.ignite.testframework.junits.logger.GridTestLog4jLogger.addRootLoggerAppender;
+import static org.apache.logging.log4j.Level.DEBUG;
+import static org.apache.logging.log4j.Level.WARN;
+import static org.apache.logging.log4j.core.appender.ConsoleAppender.Target.SYSTEM_ERR;
 
 /**
  * Common abstract test for Ignite tests.
@@ -202,7 +210,7 @@ public abstract class GridAbstractTest extends JUnitAssertAware {
     private static final Map<Class<?>, IgniteTestResources> tests = new ConcurrentHashMap<>();
 
     /** Loggers with changed log level for test's purposes. */
-    private static final Map<Logger, Level> changedLevels = new ConcurrentHashMap<>();
+    private static final Map<String, Level> changedLevels = new ConcurrentHashMap<>();
 
     /** */
     private static final MemoryMXBean memoryMxBean = ManagementFactory.getMemoryMXBean();
@@ -345,8 +353,7 @@ public abstract class GridAbstractTest extends JUnitAssertAware {
      */
     protected void afterTest() throws Exception {
         try {
-            for (Map.Entry<Logger, Level> entry : changedLevels.entrySet())
-                entry.getKey().setLevel(entry.getValue());
+            changedLevels.forEach(Configurator::setLevel);
         }
         finally {
             changedLevels.clear();
@@ -462,13 +469,13 @@ public abstract class GridAbstractTest extends JUnitAssertAware {
      * default in {@link #afterTest()}.
      */
     protected final void setLoggerDebugLevel() {
-        Logger logger = LogManager.getLogger("org.apache.ignite");
+        String logName = "org.apache.ignite";
 
-        Level lvl = logger.getLevel() == null ? LogManager.getRootLogger().getLevel() : logger.getLevel();
+        LoggerConfig logCfg = LoggerContext.getContext(false).getConfiguration().getLoggerConfig(logName);
 
-        assertNull(logger + " level: " + Level.DEBUG, changedLevels.put(logger, lvl));
+        assertNull(logCfg + " level: " + Level.DEBUG, changedLevels.put(logName, logCfg.getLevel()));
 
-        logger.setLevel(Level.DEBUG);
+        Configurator.setLevel(logName, DEBUG);
     }
 
     /**
@@ -479,43 +486,31 @@ public abstract class GridAbstractTest extends JUnitAssertAware {
      * @param cat Category.
      * @param cats Additional categories.
      */
-    @SuppressWarnings({"deprecation"})
     protected void resetLog4j(Level log4jLevel, boolean logToFile, String cat, String... cats)
         throws IgniteCheckedException {
         for (String c : F.concat(false, cat, F.asList(cats)))
-            Logger.getLogger(c).setLevel(log4jLevel);
+            Configurator.setLevel(c, log4jLevel);
 
         if (logToFile) {
-            Logger log4j = Logger.getRootLogger();
-
-            log4j.removeAllAppenders();
+            GridTestLog4jLogger.removeAllRootLoggerAppenders();
 
             // Console appender.
-            ConsoleAppender c = new ConsoleAppender();
-
-            c.setName("CONSOLE_ERR");
-            c.setTarget("System.err");
-            c.setThreshold(Priority.WARN);
-            c.setLayout(new PatternLayout("[%d{ISO8601}][%-5p][%t][%c{1}] %m%n"));
-
-            c.activateOptions();
-
-            log4j.addAppender(c);
+            addRootLoggerAppender(WARN, ConsoleAppender.newBuilder()
+                .setName(CONSOLE_ERROR)
+                .setTarget(SYSTEM_ERR)
+                .setLayout(DEFAULT_PATTERN_LAYOUT)
+                .build());
 
             // File appender.
-            RollingFileAppender file = new RollingFileAppender();
-
-            file.setName("FILE");
-            file.setThreshold(log4jLevel);
-            file.setFile(home() + "/work/log/ignite.log");
-            file.setAppend(false);
-            file.setMaxFileSize("10MB");
-            file.setMaxBackupIndex(10);
-            file.setLayout(new PatternLayout("[%d{ISO8601}][%-5p][%t][%c{1}] %m%n"));
-
-            file.activateOptions();
-
-            log4j.addAppender(file);
+            addRootLoggerAppender(log4jLevel, RollingFileAppender.newBuilder()
+                .setName(FILE)
+                .withFileName(home() + "/work/log/ignite.log")
+                .withFilePattern(home() + "/work/log/ignite.log.%i")
+                .withAppend(false)
+                .withPolicy(SizeBasedTriggeringPolicy.createPolicy("10MB"))
+                .withStrategy(DefaultRolloverStrategy.newBuilder().withMax("10").build())
+                .setLayout(DEFAULT_PATTERN_LAYOUT)
+                .build());
         }
     }
 
@@ -1007,7 +1002,7 @@ public abstract class GridAbstractTest extends JUnitAssertAware {
      * @throws Exception If anything failed.
      */
     protected IgniteEx startClientGrid() throws Exception {
-        return startClientGrid(getTestIgniteInstanceName());
+        return startClientGrid(getTestIgniteInstanceName(), (UnaryOperator<IgniteConfiguration>)null);
     }
 
     /**
@@ -1066,6 +1061,16 @@ public abstract class GridAbstractTest extends JUnitAssertAware {
     }
 
     /**
+     * @param idx Index of the grid to start.
+     * @param cfgOp Configuration mutator. Can be used to avoid overcomplification of {@link #getConfiguration()}.
+     * @return Started grid.
+     * @throws Exception If anything failed.
+     */
+    protected IgniteEx startClientGrid(int idx, UnaryOperator<IgniteConfiguration> cfgOp) throws Exception {
+        return startClientGrid(getTestIgniteInstanceName(idx), cfgOp);
+    }
+
+    /**
      * Starts new client grid with given index.
      *
      * @param idx Index of the grid to start.
@@ -1073,7 +1078,7 @@ public abstract class GridAbstractTest extends JUnitAssertAware {
      * @throws Exception If anything failed.
      */
     protected IgniteEx startClientGrid(int idx) throws Exception {
-        return startClientGrid(getTestIgniteInstanceName(idx));
+        return startClientGrid(getTestIgniteInstanceName(idx), (UnaryOperator<IgniteConfiguration>)null);
     }
 
     /**
@@ -1088,7 +1093,7 @@ public abstract class GridAbstractTest extends JUnitAssertAware {
         IgnitionEx.dependencyResolver(rslvr);
 
         try {
-            return startClientGrid(getTestIgniteInstanceName(idx));
+            return startClientGrid(getTestIgniteInstanceName(idx), (UnaryOperator<IgniteConfiguration>)null);
         }
         finally {
             IgnitionEx.dependencyResolver(null);
@@ -1103,10 +1108,22 @@ public abstract class GridAbstractTest extends JUnitAssertAware {
      * @throws Exception If anything failed.
      */
     protected IgniteEx startClientGrid(String igniteInstanceName) throws Exception {
+        return startClientGrid(igniteInstanceName, (UnaryOperator<IgniteConfiguration>)null);
+    }
+
+    /**
+     * Starts new client grid with given name.
+     *
+     * @param igniteInstanceName Ignite instance name.
+     * @param cfgOp Configuration mutator. Can be used to avoid overcomplification of {@link #getConfiguration()}.
+     * @return Started grid.
+     * @throws Exception If anything failed.
+     */
+    protected IgniteEx startClientGrid(String igniteInstanceName, UnaryOperator<IgniteConfiguration> cfgOp) throws Exception {
         IgnitionEx.setClientMode(true);
 
         try {
-            return (IgniteEx)startGrid(igniteInstanceName, (GridSpringResourceContext)null);
+            return (IgniteEx)startGrid(igniteInstanceName, cfgOp, null);
         }
         finally {
             IgnitionEx.setClientMode(false);

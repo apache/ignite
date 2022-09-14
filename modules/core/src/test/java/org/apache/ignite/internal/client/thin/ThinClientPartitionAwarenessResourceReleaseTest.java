@@ -18,7 +18,14 @@
 package org.apache.ignite.internal.client.thin;
 
 import java.lang.management.ThreadInfo;
+import org.apache.ignite.cache.affinity.AffinityFunction;
+import org.apache.ignite.cache.affinity.rendezvous.RendezvousAffinityFunction;
 import org.apache.ignite.client.ClientCache;
+import org.apache.ignite.client.ClientPartitionAwarenessMapper;
+import org.apache.ignite.client.ClientPartitionAwarenessMapperFactory;
+import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
+import org.apache.ignite.internal.processors.cache.IgniteInternalCache;
+import org.apache.ignite.internal.util.typedef.internal.CU;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.testframework.GridTestUtils;
 import org.junit.Test;
@@ -53,6 +60,79 @@ public class ThinClientPartitionAwarenessResourceReleaseTest extends ThinClientA
         assertTrue(channels[0].isClosed());
         assertTrue(channels[1].isClosed());
         assertTrue(GridTestUtils.waitForCondition(() -> threadsCount(THREAD_PREFIX) == 0, 1_000L));
+    }
+
+    /**
+     * @throws Exception If fails.
+     */
+    @Test
+    public void testResourcesReleasedAfterCacheDestroyed() throws Exception {
+        int cacheId = CU.cacheId(PART_CUSTOM_AFFINITY_CACHE_NAME);
+        startGrids(2);
+
+        initClient(getClientConfiguration(0, 1)
+            .setPartitionAwarenessMapperFactory(new ClientPartitionAwarenessMapperFactory() {
+                /** {@inheritDoc} */
+                @Override public ClientPartitionAwarenessMapper create(String cacheName, int partitions) {
+                    assertEquals(cacheName, PART_CUSTOM_AFFINITY_CACHE_NAME);
+
+                    AffinityFunction aff = new RendezvousAffinityFunction(false, partitions);
+
+                    return aff::partition;
+                }
+            }), 0, 1);
+
+        ClientCache<Object, Object> clientCache = client.cache(PART_CUSTOM_AFFINITY_CACHE_NAME);
+        IgniteInternalCache<Object, Object> gridCache = grid(0).context().cache().cache(PART_CUSTOM_AFFINITY_CACHE_NAME);
+
+        clientCache.put(0, 0);
+        TestTcpClientChannel opCh = affinityChannel(0, gridCache);
+
+        assertOpOnChannel(dfltCh, ClientOperation.CACHE_PARTITIONS);
+        assertOpOnChannel(opCh, ClientOperation.CACHE_PUT);
+
+        for (int i = 1; i < KEY_CNT; i++)
+            clientCache.put(i, i);
+
+        ClientCacheAffinityContext affCtx = ((TcpIgniteClient)client).reliableChannel().affinityContext();
+        AffinityTopologyVersion ver = affCtx.currentMapping().topologyVersion();
+
+        grid(0).destroyCache(PART_CUSTOM_AFFINITY_CACHE_NAME);
+        awaitPartitionMapExchange();
+
+        // Cache destroyed, but mappings still exist on the client side.
+        assertEquals(opCh.serverNodeId(), affCtx.affinityNode(cacheId, Integer.valueOf(0)));
+
+        client.cache(PART_CACHE_NAME).put(1, 1);
+
+        // await mappings updated.
+        assertTrue(GridTestUtils.waitForCondition(() -> {
+            ClientCacheAffinityMapping m = affCtx.currentMapping();
+
+            if (m == null)
+                return false;
+
+            return m.topologyVersion().equals(ver.nextMinorVersion());
+        }, 5_000L));
+
+        // Mapping for previous caches become outdated and will be updated on the next request.
+        assertNull(affCtx.currentMapping().affinityNode(cacheId, 0));
+
+        // Trigger the next affinity mappings update. The outdated cache with custom affinity was added
+        // to pending caches list and will be processed and cleared.
+        client.cache(REPL_CACHE_NAME).put(2, 2);
+
+        assertTrue(GridTestUtils.waitForCondition(affCtx.cacheKeyMapperFactoryMap::isEmpty, 5000L));
+    }
+
+    /** {@inheritDoc} */
+    @Override protected void afterTest() throws Exception {
+        super.afterTest();
+
+        stopAllGrids();
+
+        if (client != null)
+            client.close();
     }
 
     /**

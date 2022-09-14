@@ -155,7 +155,7 @@ namespace Apache.Ignite.Core.Tests.Client
             {
                 var size = stream.ReadInt();
                 buf = new byte[size];
-                sock.Read(buf, 0, size);
+                var unused = sock.Read(buf, 0, size);
                 return buf;
             }
         }

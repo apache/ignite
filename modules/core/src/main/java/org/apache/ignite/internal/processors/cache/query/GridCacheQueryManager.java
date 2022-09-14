@@ -136,9 +136,7 @@ import org.apache.ignite.spi.indexing.IndexingQueryFilterImpl;
 import org.apache.ignite.spi.indexing.IndexingSpi;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
-
 import static org.apache.ignite.IgniteSystemProperties.IGNITE_QUIET;
-import static org.apache.ignite.cache.CacheMode.LOCAL;
 import static org.apache.ignite.events.EventType.EVT_CACHE_QUERY_EXECUTED;
 import static org.apache.ignite.events.EventType.EVT_CACHE_QUERY_OBJECT_READ;
 import static org.apache.ignite.events.EventType.EVT_NODE_FAILED;
@@ -637,8 +635,13 @@ public abstract class GridCacheQueryManager<K, V> extends GridCacheManagerAdapte
                     break;
 
                 case INDEX:
+                    int[] parts = null;
+
+                    if (qry.partition() != null)
+                        parts = new int[]{qry.partition()};
+
                     IndexQueryResult<K, V> idxQryRes = qryProc.queryIndex(cacheName, qry.queryClassName(), qry.idxQryDesc(),
-                        qry.scanFilter(), filter(qry), qry.keepBinary());
+                        qry.scanFilter(), filter(qry, parts, parts != null), qry.keepBinary());
 
                     iter = idxQryRes.iter();
                     res.metadata(idxQryRes.metadata());
@@ -820,7 +823,7 @@ public abstract class GridCacheQueryManager<K, V> extends GridCacheManagerAdapte
             else
                 injectResources(keyValFilter);
 
-            Integer part = cctx.isLocal() ? null : qry.partition();
+            Integer part = qry.partition();
 
             if (part != null && (part < 0 || part >= cctx.affinity().partitions()))
                 return new GridEmptyCloseableIterator() {
@@ -864,15 +867,13 @@ public abstract class GridCacheQueryManager<K, V> extends GridCacheManagerAdapte
             else {
                 locPart = null;
 
-                if (!cctx.isLocal()) {
-                    final GridDhtCacheAdapter dht = cctx.isNear() ? cctx.near().dht() : cctx.dht();
+                final GridDhtCacheAdapter dht = cctx.isNear() ? cctx.near().dht() : cctx.dht();
 
-                    Set<Integer> lostParts = dht.topology().lostPartitions();
+                Set<Integer> lostParts = dht.topology().lostPartitions();
 
-                    if (!lostParts.isEmpty()) {
-                        throw new CacheInvalidStateException("Failed to execute scan query because cache partition " +
-                            "has been lost [cacheName=" + cctx.name() + ", part=" + lostParts.iterator().next() + "]");
-                    }
+                if (!lostParts.isEmpty()) {
+                    throw new CacheInvalidStateException("Failed to execute scan query because cache partition " +
+                        "has been lost [cacheName=" + cctx.name() + ", part=" + lostParts.iterator().next() + "]");
                 }
 
                 it = cctx.offheap().cacheIterator(cctx.cacheId(), true, backups, topVer,
@@ -2040,10 +2041,20 @@ public abstract class GridCacheQueryManager<K, V> extends GridCacheManagerAdapte
      * @return Filter.
      */
     private IndexingQueryFilter filter(GridCacheQueryAdapter<?> qry) {
+        return filter(qry, null, false);
+    }
+
+    /**
+     * @param qry Query.
+     * @param partsArr Array of partitions to apply specified query.
+     * @param treatReplicatedAsPartitioned If true, only primary partitions of replicated caches will be used.
+     * @return Filter.
+     */
+    private IndexingQueryFilter filter(GridCacheQueryAdapter<?> qry, @Nullable int[] partsArr, boolean treatReplicatedAsPartitioned) {
         if (qry.includeBackups())
             return null;
 
-        return new IndexingQueryFilterImpl(cctx.kernalContext(), AffinityTopologyVersion.NONE, null);
+        return new IndexingQueryFilterImpl(cctx.kernalContext(), AffinityTopologyVersion.NONE, partsArr, treatReplicatedAsPartitioned);
     }
 
     /**
@@ -2949,9 +2960,18 @@ public abstract class GridCacheQueryManager<K, V> extends GridCacheManagerAdapte
      * @return Created query.
      */
     public <R> CacheQuery<R> createIndexQuery(IndexQuery qry, boolean keepBinary) {
+        if (qry.getPartition() != null) {
+            int part = qry.getPartition();
+
+            A.ensure(part >= 0 && part < cctx.affinity().partitions(),
+                "Specified partition must be in the range [0, N) where N is partition number in the cache.");
+        }
+
         IndexQueryDesc desc = new IndexQueryDesc(qry.getCriteria(), qry.getIndexName(), qry.getValueType());
 
-        GridCacheQueryAdapter q = new GridCacheQueryAdapter<>(cctx, INDEX, desc, qry.getValueType(), qry.getFilter());
+        GridCacheQueryAdapter q = new GridCacheQueryAdapter<>(
+            cctx, INDEX, desc, qry.getPartition(), qry.getValueType(), qry.getFilter());
+
         q.keepBinary(keepBinary);
 
         return q;
@@ -3137,7 +3157,7 @@ public abstract class GridCacheQueryManager<K, V> extends GridCacheManagerAdapte
             // keep binary for remote scans if possible
             keepBinary = (!locNode && scanFilter == null && transformer == null && !readEvt) || qry.keepBinary();
             transform = transformer;
-            dht = cctx.isLocal() ? null : (cctx.isNear() ? cctx.near().dht() : cctx.dht());
+            dht = cctx.isNear() ? cctx.near().dht() : cctx.dht();
             cache = dht != null ? dht : cctx.cache();
             objCtx = cctx.cacheObjectContext();
             cacheName = cctx.name();
@@ -3241,8 +3261,7 @@ public abstract class GridCacheQueryManager<K, V> extends GridCacheManagerAdapte
 
                 // Filter backups for SCAN queries, if it isn't partition scan.
                 // Other types are filtered in indexing manager.
-                if (!cctx.isReplicated() && /*qry.partition()*/this.locPart == null &&
-                    cctx.config().getCacheMode() != LOCAL && !incBackups &&
+                if (!cctx.isReplicated() && /*qry.partition()*/this.locPart == null && !incBackups &&
                     !cctx.affinity().primaryByKey(cctx.localNode(), key, topVer)) {
                     if (log.isDebugEnabled())
                         log.debug("Ignoring backup element [row=" + row +

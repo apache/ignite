@@ -17,7 +17,6 @@
 
 package org.apache.ignite.internal.commandline.snapshot;
 
-import java.util.Collection;
 import java.util.LinkedHashMap;
 import java.util.Map;
 import java.util.Set;
@@ -49,25 +48,54 @@ public class SnapshotRestoreCommand extends SnapshotSubcommand {
 
     /** {@inheritDoc} */
     @Override public Object execute(GridClientConfiguration clientCfg, Logger log) throws Exception {
-        Object res = super.execute(clientCfg, log);
+        explainDeprecatedOptions(cmdArg, log);
 
-        log.info(String.valueOf(res));
+        return super.execute(clientCfg, log);
+    }
 
-        return res;
+    /**
+     * @param cmdArg Command argument.
+     * @param log Logger.
+     */
+    private void explainDeprecatedOptions(Object cmdArg, Logger log) {
+        VisorSnapshotRestoreTaskAction action = ((VisorSnapshotRestoreTaskArg)cmdArg).jobAction();
+
+        if (action == null)
+            return;
+
+        switch (action) {
+            case START:
+                log.warning("Command option '--" + START.toString().toLowerCase() + "' is redundant and must be avoided.");
+
+                break;
+
+            case CANCEL:
+                log.warning("Command deprecated. Use `" + SNAPSHOT + ' ' + SnapshotSubcommands.CANCEL + "' instead.");
+
+                break;
+
+            case STATUS:
+                log.warning("Command deprecated. Use '" + SNAPSHOT + ' ' + SnapshotSubcommands.STATUS + "' instead.");
+
+                break;
+        }
     }
 
     /** {@inheritDoc} */
     @Override public void parseArguments(CommandArgIterator argIter) {
         String snpName = argIter.nextArg("Expected snapshot name.");
-        VisorSnapshotRestoreTaskAction restoreAction = parseAction(argIter);
+        VisorSnapshotRestoreTaskAction restoreAction = parseAction(argIter.peekNextArg());
         String snpPath = null;
         Set<String> grpNames = null;
         boolean sync = false;
 
+        if (restoreAction != null)
+            argIter.nextArg(null);
+
         while (argIter.hasNextSubArg()) {
             String arg = argIter.nextArg(null);
 
-            if (restoreAction != START) {
+            if (restoreAction != null && restoreAction != START) {
                 throw new IllegalArgumentException("Invalid argument: " + arg + ". " +
                     "Action \"--" + restoreAction.name().toLowerCase() + "\" does not support specified option.");
             }
@@ -120,37 +148,35 @@ public class SnapshotRestoreCommand extends SnapshotSubcommand {
         startParams.put(SOURCE.argName() + " " + SOURCE.arg(), SOURCE.description());
         startParams.put(SYNC.argName(), SYNC.description());
 
-        usage(log, "Restore snapshot:", SNAPSHOT, startParams, RESTORE.toString(), SNAPSHOT_NAME_ARG, "--start",
+        usage(log, "Restore snapshot:", SNAPSHOT, startParams, RESTORE.toString(), SNAPSHOT_NAME_ARG,
             optional(GROUPS.argName(), GROUPS.arg()), optional(SOURCE.argName(), SOURCE.arg()), optional(SYNC.argName()));
-        usage(log, "Snapshot restore operation status:", SNAPSHOT, params, RESTORE.toString(), SNAPSHOT_NAME_ARG, "--status");
-        usage(log, "Cancel snapshot restore operation:", SNAPSHOT, params, RESTORE.toString(), SNAPSHOT_NAME_ARG, "--cancel");
+        usage(log, "Snapshot restore operation status (Command deprecated. Use '" + SNAPSHOT + ' '
+            + SnapshotSubcommands.STATUS + "' instead):", SNAPSHOT, params, RESTORE.toString(), SNAPSHOT_NAME_ARG, "--status");
+        usage(log, "Cancel snapshot restore operation (Command deprecated. Use '" + SNAPSHOT + ' '
+            + SnapshotSubcommands.CANCEL + "' instead):", SNAPSHOT, params, RESTORE.toString(), SNAPSHOT_NAME_ARG, "--cancel");
     }
 
     /** {@inheritDoc} */
     @Override public String confirmationPrompt() {
         VisorSnapshotRestoreTaskArg arg = (VisorSnapshotRestoreTaskArg)cmdArg;
 
-        return arg.jobAction() != START || arg.groupNames() != null ? null :
+        return (arg.jobAction() != null && arg.jobAction() != START) || arg.groupNames() != null ? null :
             "Warning: command will restore ALL USER-CREATED CACHE GROUPS from the snapshot " + arg.snapshotName() + '.';
     }
 
     /**
-     * @param argIter Argument iterator.
+     * @param arg Argument.
      * @return Snapshot restore operation management action.
      */
-    private VisorSnapshotRestoreTaskAction parseAction(CommandArgIterator argIter) {
-        Collection<String> cmdNames =
-            F.viewReadOnly(F.asList(VisorSnapshotRestoreTaskAction.values()), v -> "--" + v.toString().toLowerCase());
-
-        String actionErrMsg = "One of " + cmdNames + " is expected.";
-
-        String action = argIter.nextArg(actionErrMsg);
+    private VisorSnapshotRestoreTaskAction parseAction(String arg) {
+        if (arg == null)
+            return null;
 
         for (VisorSnapshotRestoreTaskAction val : VisorSnapshotRestoreTaskAction.values()) {
-            if (action.toLowerCase().equals("--" + val.name().toLowerCase()))
+            if (arg.toLowerCase().equals("--" + val.name().toLowerCase()))
                 return val;
         }
 
-        throw new IllegalArgumentException("Invalid argument: " + action + ". " + actionErrMsg);
+        return null;
     }
 }

@@ -53,6 +53,9 @@ namespace Apache.Ignite.Core.Tests.Services
 
         /** */
         private const string CacheName = "cache1";
+        
+        /** Service method call counter. */
+        private static int _serviceCallCounter;
 
         /** */
         private const int AffKey = 25;
@@ -109,7 +112,17 @@ namespace Apache.Ignite.Core.Tests.Services
 
             _thinClient = Ignition.StartClient(GetClientConfiguration());
 
-            Services.DeployClusterSingleton(PlatformSvcName, new PlatformTestService());
+            var cfg = new ServiceConfiguration
+            {
+                Name = PlatformSvcName,
+                MaxPerNodeCount = 1,
+                TotalCount = 1,
+                NodeFilter = new NodeIdFilter {NodeId = Grid1.GetCluster().GetLocalNode().Id},
+                Service = new PlatformTestService(),
+                Interceptors = new List<IServiceCallInterceptor> { new PlatformTestServiceInterceptor("testInterception") }
+            };
+
+            Services.Deploy(cfg);
 
             _javaSvcName = TestUtils.DeployJavaService(Grid1);
 
@@ -371,7 +384,139 @@ namespace Apache.Ignite.Core.Tests.Services
                 Assert.AreEqual(attrBinValue, stickyProxy.ContextBinaryAttribute(attrBinName));
                 Assert.AreEqual(attrBinValue, dynamicProxy.ContextBinaryAttribute(attrBinName));
                 Assert.AreEqual(attrBinValue, dynamicStickyProxy.ContextBinaryAttribute(attrBinName));
+                
+                Assert.AreEqual(attrValue, proxy.ContextAttributeOtherService(attrName));
+                Assert.AreEqual(attrValue, stickyProxy.ContextAttributeOtherService(attrName));
+                Assert.AreEqual(attrValue, dynamicProxy.ContextAttributeOtherService(attrName));
+                Assert.AreEqual(attrValue, dynamicStickyProxy.ContextAttributeOtherService(attrName));
             }
+        }
+
+        /// <summary>
+        /// Tests service call interceptor.
+        /// </summary>
+        [Test]
+        public void TestServiceCallInterceptor([Values(true, false)] bool binarizable)
+        {
+            const string svcMultName = SvcName + "_Mult";
+            const string svcInjectName = SvcName + "_Inj";
+            const string svcErrName = SvcName + "_ThrowErr";
+            const string svcErrCatchName = SvcName + "_CatchErr";
+            const string svcCheckOrderName = SvcName + "_CHeckOrder";
+            const string svcCheckSkipServiceCall = SvcName + "_SkipServiceCall";
+
+            Services.Deploy(InterceptedServiceConfig(
+                svcMultName, binarizable, TestInterceptorAction.Multiplication, TestInterceptorAction.Multiplication));
+            Services.Deploy(InterceptedServiceConfig(
+                svcCheckOrderName, binarizable, TestInterceptorAction.Invoke1, TestInterceptorAction.Invoke2));
+            Services.Deploy(InterceptedServiceConfig(svcInjectName, binarizable, TestInterceptorAction.ResourceInjection));
+            Services.Deploy(InterceptedServiceConfig(svcErrName, binarizable, TestInterceptorAction.ThrowException));
+            Services.Deploy(InterceptedServiceConfig(svcErrCatchName, binarizable, TestInterceptorAction.CatchException));
+            Services.Deploy(InterceptedServiceConfig(svcCheckSkipServiceCall, binarizable, TestInterceptorAction.SkipServiceCall));
+
+            foreach (var grid in Grids)
+            {
+                var multiplySvc = grid.GetServices().GetServiceProxy<ITestIgniteService>(svcMultName, false);
+                var injectSvc = grid.GetServices().GetServiceProxy<ITestIgniteService>(svcInjectName, false);
+                var errSvc = grid.GetServices().GetServiceProxy<ITestIgniteService>(svcErrName, false);
+                var errCatchSvc = grid.GetServices().GetServiceProxy<ITestIgniteService>(svcErrCatchName, false);
+                var orderSvc = grid.GetServices().GetServiceProxy<ITestIgniteService>(svcCheckOrderName, false);
+                var skipCallSvc = grid.GetServices().GetServiceProxy<ITestIgniteService>(svcCheckSkipServiceCall, false);
+
+                const int expVal = 3;
+                
+                Interlocked.Exchange(ref _serviceCallCounter, 0);
+                // We have two interceptors, each of which will square the result.
+                Assert.AreEqual(Math.Pow(expVal, 2 + 2), multiplySvc.Method(expVal));
+                // The service method must be called exactly once.
+                Assert.AreEqual(1, Interlocked.Exchange(ref _serviceCallCounter, 0));
+
+                // The method should return the number of server nodes using the injected Ignite instance.
+                Assert.AreEqual(grid.GetCluster().ForServers().GetNodes().Count, injectSvc.Method(0));
+
+                var ex = Assert.Throws<ServiceInvocationException>(() => errSvc.Method(0));
+                Assert.NotNull(ex.InnerException);
+                Assert.AreEqual(typeof(InvalidOperationException), ex.InnerException.GetType());
+                Assert.AreEqual("Expected error message", ex.InnerException.Message);
+
+                Assert.AreEqual(nameof(ArgumentNullException), errCatchSvc.ErrMethod(null));
+                Assert.AreEqual("Invoke1 -> Invoke2 -> svc -> Invoke2 -> Invoke1", orderSvc.Method("svc"));
+                
+                Interlocked.Exchange(ref _serviceCallCounter, 0);
+                Assert.AreEqual(expVal, skipCallSvc.Method(expVal));
+
+                // Make sure the service method has not been called.
+                Assert.AreEqual(0, Interlocked.Exchange(ref _serviceCallCounter, 0));
+            }
+        }
+
+        /// <summary>
+        /// Tests service call interceptor.
+        /// </summary>
+        [Test]
+        public void TestServiceCallInterceptorDeploy()
+        {
+            var cfg = InterceptedServiceConfig(SvcName, false, TestInterceptorAction.Multiplication);
+            
+            Services.Deploy(cfg);
+                
+            // Deploy the same configuration.
+            Services.Deploy(cfg);
+            
+            var svc = Services.GetServiceProxy<ITestIgniteService>(SvcName, false);
+
+            const int val = 3; 
+            
+            Assert.AreEqual(val * val, svc.Method(val));
+
+            // Re-deploy with an empty list.
+            cfg.Interceptors = new List<IServiceCallInterceptor>();
+            Services.Cancel(SvcName);
+            Services.Deploy(cfg);
+            
+            cfg.Interceptors.Add(null);
+            Assert.Throws<ArgumentNullException>(() => Services.Deploy(cfg));
+
+            // Try to change configuration without undeploy.
+            cfg.Interceptors = null;
+            var deploymentException = Assert.Throws<ServiceDeploymentException>(() => Services.Deploy(cfg));
+
+            var deployErr = deploymentException.InnerException;
+            Assert.NotNull(deployErr);
+            Assert.AreEqual(deployErr.GetType().Name, nameof(ServiceDeploymentException));
+
+            var javaErr = deployErr.InnerException;
+            Assert.NotNull(javaErr);
+            Assert.AreEqual(javaErr.GetType().Name, nameof(JavaException));
+            Assert.IsTrue(javaErr.Message.Contains("service already exists with different configuration"));
+            
+            // Undeploy service and re-deploy.
+            Services.Cancel(SvcName);
+            Services.Deploy(cfg);
+            
+            Assert.AreEqual(val, svc.Method(val));
+        }
+
+        /// <summary>
+        /// Creates a test service configuration with the specified interceptors. 
+        /// </summary>
+        private ServiceConfiguration InterceptedServiceConfig(string svcName, bool binarizable,
+            params TestInterceptorAction[] actions)
+        {
+            var interceptors = new List<IServiceCallInterceptor>(actions.Length);
+
+            foreach (var action in actions)
+                interceptors.Add(binarizable ? new InterceptorBinarizable(action) : new InterceptorSerializable(action));
+
+            return new ServiceConfiguration
+            {
+                Name = svcName,
+                MaxPerNodeCount = 1,
+                TotalCount = 1,
+                NodeFilter = new NodeIdFilter { NodeId = Grid1.GetCluster().GetLocalNode().Id },
+                Service = binarizable ? new TestIgniteServiceBinarizable() : new TestIgniteServiceSerializable(),
+                Interceptors = interceptors
+            };
         }
 
         /// <summary>
@@ -986,7 +1131,7 @@ namespace Apache.Ignite.Core.Tests.Services
 
             Assert.IsNotNull(ex);
             Assert.AreEqual("Expected exception", ex.Message);
-            Assert.IsTrue(ex.StackTrace.Trim().StartsWith(
+            Assert.IsTrue(ex.StackTrace!.Trim().StartsWith(
                 "at Apache.Ignite.Core.Tests.Services.ServicesTest.TestIgniteServiceSerializable.Init"));
 
             var failedCfgs = deploymentException.FailedConfigurations;
@@ -1125,7 +1270,7 @@ namespace Apache.Ignite.Core.Tests.Services
         [Test]
         public void TestCallPlatformServiceThinClient()
         {
-            var svc = _thinClient.GetServices().GetServiceProxy<IJavaService>(PlatformSvcName);
+            var svc = _thinClient.GetServices().GetServiceProxy<IJavaService>(PlatformSvcName, callContext());
             var binSvc = _thinClient.GetServices().WithKeepBinary().WithServerKeepBinary()
                 .GetServiceProxy<IJavaService>(PlatformSvcName);
 
@@ -1138,9 +1283,9 @@ namespace Apache.Ignite.Core.Tests.Services
         [Test]
         public void TestCallJavaServiceThinClient()
         {
-            var svc = Services.GetServiceProxy<IJavaService>(_javaSvcName, false, callContext());
-            var binSvc = Services.WithKeepBinary().WithServerKeepBinary()
-                .GetServiceProxy<IJavaService>(_javaSvcName, false);
+            var svc = _thinClient.GetServices().GetServiceProxy<IJavaService>(_javaSvcName, callContext());
+            var binSvc = _thinClient.GetServices().WithKeepBinary().WithServerKeepBinary()
+                .GetServiceProxy<IJavaService>(_javaSvcName, callContext());
 
             DoAllServiceTests(svc, binSvc, false, false, false);
         }
@@ -1153,7 +1298,7 @@ namespace Apache.Ignite.Core.Tests.Services
         {
             var svc = new JavaServiceDynamicProxy(Services.GetDynamicServiceProxy(_javaSvcName, true, callContext()));
 
-            DoTestService(svc, true);
+            DoTestService(svc);
 
             DoTestJavaExceptions(svc);
         }
@@ -1161,20 +1306,20 @@ namespace Apache.Ignite.Core.Tests.Services
         /// <summary>
         /// Tests service invocation.
         /// </summary>
-        private void DoAllServiceTests(IJavaService svc, IJavaService binSvc, bool isClient, bool isPlatform, bool supportCtxAttrs = true)
+        private void DoAllServiceTests(IJavaService svc, IJavaService binSvc, bool isClient, bool isPlatform, bool checkException = true)
         {
-            DoTestService(svc, supportCtxAttrs);
+            DoTestService(svc);
 
             DoTestBinary(svc, binSvc, isPlatform);
 
-            if (!isPlatform)
+            if (!isPlatform && checkException)
                 DoTestJavaExceptions(svc, isClient);
         }
 
         /// <summary>
         /// Tests service methods.
         /// </summary>
-        private void DoTestService(IJavaService svc, bool supportCtxAttrs)
+        private void DoTestService(IJavaService svc)
         {
             // Basics
             Assert.IsTrue(svc.isInitialized());
@@ -1302,8 +1447,10 @@ namespace Apache.Ignite.Core.Tests.Services
             Assert.AreEqual(dt1, cache.Get(3));
             Assert.AreEqual(dt2, cache.Get(4));
 
-            if (supportCtxAttrs)
-                Assert.AreEqual("value", svc.contextAttribute("attr"));
+            Assert.AreEqual("value", svc.contextAttribute("attr"));
+
+            const int val = 2;
+            Assert.AreEqual(val * val, svc.testInterception(val));
 
 #if NETCOREAPP
             //This Date in Europe/Moscow have offset +4.
@@ -1332,6 +1479,7 @@ namespace Apache.Ignite.Core.Tests.Services
         /// Creates a test caller context.
         /// </summary>
         /// <returns>Caller context.</returns>
+        // ReSharper disable once InconsistentNaming
         private IServiceCallContext callContext()
         {
             return new ServiceCallContextBuilder().Set("attr", "value").Build();
@@ -1793,6 +1941,9 @@ namespace Apache.Ignite.Core.Tests.Services
             object ContextAttribute(string name);
             
             /** */
+            object ContextAttributeOtherService(string name);
+            
+            /** */
             object ContextAttributeWithAsync(string name);
 
             /** */
@@ -1865,6 +2016,8 @@ namespace Apache.Ignite.Core.Tests.Services
             /** */
             public object Method(object arg)
             {
+                Interlocked.Add(ref _serviceCallCounter, 1);
+
                 return arg;
             }
 
@@ -1928,6 +2081,33 @@ namespace Apache.Ignite.Core.Tests.Services
                 IServiceCallContext ctx = _context.CurrentCallContext;
 
                 return ctx == null ? null : ctx.GetAttribute(name);
+            }
+            
+            /** <inheritdoc /> */
+            public object ContextAttributeOtherService(string name)
+            {
+                const string otherVal = "expected";
+
+                var threadCtx = _context.CurrentCallContext;
+
+                Assert.NotNull(threadCtx);
+                Assert.AreNotEqual(otherVal, threadCtx.GetAttribute(name));
+
+                // Replacing attribute value.
+                var callCtx = new ServiceCallContextBuilder().Set(name, otherVal).Build();
+
+                // Creating proxy with another call context.
+                var svc = _grid.GetServices().GetServiceProxy<ITestIgniteService>(SvcName, false, callCtx);
+                
+                // Ensure that context has been replaced.
+                Assert.AreEqual(otherVal, svc.ContextAttribute(name));
+
+                threadCtx = _context.CurrentCallContext;
+
+                // Ensure that context has been restored.
+                Assert.NotNull(threadCtx);
+
+                return threadCtx.GetAttribute(name);
             }
 
             /** <inheritdoc /> */
@@ -2045,6 +2225,108 @@ namespace Apache.Ignite.Core.Tests.Services
             {
                 ThrowInit = reader.ReadBoolean("ThrowInit");
                 TestProperty = reader.ReadInt("TestProp");
+            }
+        }
+        
+        /// <summary>
+        /// Test interceptor action.
+        /// </summary>
+        private enum TestInterceptorAction
+        {
+            Multiplication,
+            ResourceInjection,
+            ThrowException,
+            CatchException,
+            Invoke1,
+            Invoke2,
+            SkipServiceCall,
+        };
+        
+        /// <summary>
+        /// Test interceptor.
+        /// </summary>
+        [Serializable]
+        private class InterceptorSerializable : IServiceCallInterceptor
+        {
+            /** Injected Ignite instance. */
+            [InstanceResource, NonSerialized]
+            // ReSharper disable once UnassignedField.Local
+            private IIgnite _ignite;
+            
+            /** Interceptor action. */
+            protected TestInterceptorAction InterceptorAction;
+
+            /// <summary>
+            /// Constructor.
+            /// </summary>
+            /// <param name="interceptorAction">Interceptor action.</param>
+            public InterceptorSerializable(TestInterceptorAction interceptorAction)
+            {
+                InterceptorAction = interceptorAction;
+            }
+
+            /** <inheritdoc /> */
+            public object Invoke(string mtd, object[] args, IServiceContext ctx, Func<object> next)
+            {
+                switch (InterceptorAction)
+                {
+                    case TestInterceptorAction.Invoke1:
+                    case TestInterceptorAction.Invoke2:
+                        return InterceptorAction + " -> " + next.Invoke() + " -> " + InterceptorAction;
+
+                    case TestInterceptorAction.SkipServiceCall:
+                        return args[0];
+
+                    case TestInterceptorAction.Multiplication:
+                        var res = next.Invoke();
+
+                        return (int)res * (int)res;
+
+                    case TestInterceptorAction.ResourceInjection:
+                        Assert.NotNull(_ignite);
+
+                        return _ignite.GetCluster().ForServers().GetNodes().Count;
+
+                    case TestInterceptorAction.ThrowException:
+                        throw new InvalidOperationException("Expected error message");
+
+                    case TestInterceptorAction.CatchException:
+                        try
+                        {
+                            // Must throw ArgumentNullException.
+                            next.Invoke();
+
+                            throw new InvalidOperationException();
+                        }
+                        catch (ArgumentNullException e)
+                        {
+                            return e.GetType().Name;
+                        }
+                }
+
+                throw new InvalidOperationException("Invalid interceptor action: " + InterceptorAction);
+            }
+        }
+
+        /// <summary>
+        /// No-op binarizable interceptor.
+        /// </summary>
+        private class InterceptorBinarizable : InterceptorSerializable, IBinarizable
+        {
+            public InterceptorBinarizable(TestInterceptorAction interceptorAction) : base(interceptorAction)
+            {
+            }
+
+            /** <inheritdoc /> */
+            public void WriteBinary(IBinaryWriter writer)
+            {
+                writer.WriteEnum("state", InterceptorAction);
+            }
+
+            /** <inheritdoc /> */
+            public void ReadBinary(IBinaryReader reader)
+            {
+                InterceptorAction = reader.ReadEnum<TestInterceptorAction>("state");
             }
         }
 

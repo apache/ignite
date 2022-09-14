@@ -17,6 +17,7 @@
 
 package org.apache.ignite.internal.processors.query.calcite.schema;
 
+import java.util.Collection;
 import org.apache.calcite.plan.RelOptTable;
 import org.apache.calcite.rel.type.RelDataType;
 import org.apache.calcite.rel.type.RelDataTypeFactory;
@@ -115,4 +116,11 @@ public interface TableDescriptor<TableRow> extends RelProtoDataType, Initializer
      * @return Column descriptor.
      */
     ColumnDescriptor columnDescriptor(String fieldName);
+
+    /**
+     * Returns table column descriptors.
+     *
+     * @return Column descriptors.
+     */
+    Collection<? extends ColumnDescriptor> columnDescriptors();
 }
