@@ -113,7 +113,7 @@ public class QueryCursorImpl<T> implements QueryCursorEx<T>, FieldsQueryCursor<T
         if (lazy)
             iter = new LazyIterator<>(iter);
 
-        int expSize = fieldsMeta.size();
+        int expSize = fieldsMeta != null ? fieldsMeta.size() : 0;
 
         return new Iterator<T>() {
             @Override public boolean hasNext() {
