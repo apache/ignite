@@ -378,6 +378,9 @@ public class RexUtils {
                     bounds.add(createBounds(fc, calls, cluster, fldType, complexity));
                 }
 
+                if (bounds.size() == 1)
+                    return bounds.get(0);
+
                 return new MultiBounds(pred, bounds);
             }
 
