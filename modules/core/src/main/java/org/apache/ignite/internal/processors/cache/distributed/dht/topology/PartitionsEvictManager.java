@@ -39,7 +39,6 @@ import org.apache.ignite.failure.FailureContext;
 import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.NodeStoppingException;
 import org.apache.ignite.internal.cache.query.index.Index;
-import org.apache.ignite.internal.cache.query.index.IndexProcessor;
 import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
 import org.apache.ignite.internal.processors.cache.CacheGroupContext;
 import org.apache.ignite.internal.processors.cache.CacheMetricsImpl;
@@ -82,6 +81,12 @@ public class PartitionsEvictManager extends GridCacheSharedManagerAdapter {
     /** Value of {@link IgniteSystemProperties#IGNITE_ENABLE_BATCH_INDEX_REMOVE}. */
     private static final boolean BATCH_INDEX_REMOVE_ENABLED =
         IgniteSystemProperties.getBoolean(IGNITE_ENABLE_BATCH_INDEX_REMOVE, DFLT_IGNITE_ENABLE_BATCH_INDEX_REMOVE);
+
+    /**
+     * Thread local set of already cleared indexes.
+     * @see PartitionsEvictManager
+     */
+    public static final ThreadLocal<Set<Index>> ALREADY_CLEARED = ThreadLocal.withInitial(Collections::emptySet);
 
     /** Last time of show eviction progress. */
     private long lastShowProgressTimeNanos = System.nanoTime() - U.millisToNanos(evictionProgressFreqMs);
@@ -434,7 +439,7 @@ public class PartitionsEvictManager extends GridCacheSharedManagerAdapter {
             if (reason == EvictReason.EVICTION && BATCH_INDEX_REMOVE_ENABLED)
                 cleared = part.clearAllFromIndexes(grpEvictionCtx);
 
-            IndexProcessor.ALREADY_CLEARED.set(cleared);
+            ALREADY_CLEARED.set(cleared);
 
             try {
                 long clearedEntities = part.clearAll(grpEvictionCtx);
@@ -473,7 +478,7 @@ public class PartitionsEvictManager extends GridCacheSharedManagerAdapter {
             finally {
                 grpEvictionCtx.busyLock.readLock().unlock();
 
-                IndexProcessor.ALREADY_CLEARED.remove();
+                ALREADY_CLEARED.remove();
             }
         }
     }

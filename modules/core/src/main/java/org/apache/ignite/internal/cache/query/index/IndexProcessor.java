@@ -99,12 +99,6 @@ public class IndexProcessor extends GridProcessorAdapter {
         AbstractInlineLeafIO.register();
     }
 
-    /**
-     * Thread local set of already cleared indexes.
-     * @see PartitionsEvictManager
-     */
-    public static final ThreadLocal<Set<Index>> ALREADY_CLEARED = ThreadLocal.withInitial(Collections::emptySet);
-
     /** For tests to emulate long rebuild process. */
     public static Class<? extends IndexesRebuildTask> idxRebuildCls;
 
@@ -357,7 +351,7 @@ public class IndexProcessor extends GridProcessorAdapter {
             if (F.isEmpty(indexes))
                 return;
 
-            Set<Index> alreadyCleared = ALREADY_CLEARED.get();
+            Set<Index> alreadyCleared = PartitionsEvictManager.ALREADY_CLEARED.get();
 
             for (Index idx: indexes.values()) {
                 if (alreadyCleared.contains(idx))
