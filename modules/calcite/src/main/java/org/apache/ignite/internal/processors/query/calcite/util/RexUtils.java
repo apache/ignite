@@ -218,6 +218,9 @@ public class RexUtils {
 
         List<SearchBounds> bounds = Arrays.asList(new SearchBounds[types.size()]);
         boolean boundsEmpty = true;
+        boolean hasRangeBounds = false;
+        boolean rangeAllowProceedLower = true;
+        boolean rangeAllowProceedUpper = true;
         int prevComplexity = 1;
 
         for (int i = 0; i < collation.getFieldCollations().size(); i++) {
@@ -238,6 +241,10 @@ public class RexUtils {
             if (fldBounds == null)
                 break;
 
+            // Multi bounds after range bounds are not allowed, since it can cause intervals intersection.
+            if (fldBounds.type() == SearchBounds.Type.MULTI && hasRangeBounds)
+                break;
+
             boundsEmpty = false;
 
             bounds.set(collFldIdx, fldBounds);
@@ -245,12 +252,22 @@ public class RexUtils {
             if (fldBounds instanceof MultiBounds) {
                 prevComplexity *= ((MultiBounds)fldBounds).bounds().size();
 
+                // Any bounds after multi range bounds are not allowed, since it can cause intervals intersection.
                 if (((MultiBounds)fldBounds).bounds().stream().anyMatch(b -> b.type() != SearchBounds.Type.EXACT))
                     break;
             }
 
-            if (fldBounds.type() == SearchBounds.Type.RANGE)
-                break; // TODO https://issues.apache.org/jira/browse/IGNITE-13568
+            if (fldBounds instanceof RangeBounds) {
+                hasRangeBounds = true;
+                RangeBounds rangeFldBounds = (RangeBounds)fldBounds;
+                rangeAllowProceedLower &= rangeFldBounds.lowerBound() != null && rangeFldBounds.lowerInclude();
+                rangeAllowProceedUpper &= rangeFldBounds.upperBound() != null && rangeFldBounds.upperInclude();
+
+                // Make sence to analize next fields only if it can reduce search space. If bounds of range are already
+                // not included or if there are no bounds set, next field in the search bound will no give any advantages.
+                if (!(rangeAllowProceedLower || rangeAllowProceedUpper))
+                    break;
+            }
         }
 
         return boundsEmpty ? null : bounds;
@@ -529,14 +546,14 @@ public class RexUtils {
     }
 
     /** */
-    public static boolean isBinaryComparison(RexNode exp) {
+    private static boolean isBinaryComparison(RexNode exp) {
         return BINARY_COMPARISON.contains(exp.getKind()) &&
             (exp instanceof RexCall) &&
             ((RexCall)exp).getOperands().size() == 2;
     }
 
     /** */
-    public static boolean isSupportedTreeComparison(RexNode exp) {
+    private static boolean isSupportedTreeComparison(RexNode exp) {
         return TREE_INDEX_COMPARISON.contains(exp.getKind()) &&
             (exp instanceof RexCall);
     }
@@ -554,40 +571,6 @@ public class RexUtils {
             return false;
 
         return !(op instanceof RexLiteral) || !((RexLiteral)op).isNull();
-    }
-
-    /** */
-    public static List<RexNode> asBound(RelOptCluster cluster, Iterable<RexNode> idxCond, RelDataType rowType,
-        @Nullable Mappings.TargetMapping mapping) {
-        if (F.isEmpty(idxCond))
-            return null;
-
-        RexBuilder builder = builder(cluster);
-        List<RelDataType> types = RelOptUtil.getFieldTypeList(rowType);
-        List<RexNode> res = Arrays.asList(new RexNode[types.size()]);
-
-        for (RexNode pred : idxCond) {
-            assert pred instanceof RexCall;
-
-            RexCall call = (RexCall)pred;
-            RexSlot ref = (RexSlot)removeCast(call.operands.get(0));
-
-            int index = mapping == null ? ref.getIndex() : mapping.getSourceOpt(ref.getIndex());
-
-            assert index != -1;
-
-            if (call.operands.size() == 2) {
-                RexNode cond = removeCast(call.operands.get(1));
-
-                assert idxOpSupports(cond) : cond;
-
-                res.set(index, makeCast(builder, cond, types.get(index)));
-            }
-            else if (call.getKind() == IS_NULL)
-                res.set(index, builder.makeNullLiteral(types.get(index)));
-        }
-
-        return res;
     }
 
     /** */
