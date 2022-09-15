@@ -95,14 +95,6 @@
 
         <dependency>
             <groupId>org.apache.ignite</groupId>
-            <artifactId>ignite-compatibility</artifactId>
-            <version>${ignite.version}</version>
-            <type>test-jar</type>
-            <scope>test</scope>
-        </dependency>
-
-        <dependency>
-            <groupId>org.apache.ignite</groupId>
             <artifactId>ignite-spring-data-commons</artifactId>
             <version>${ignite-spring-data-commons.release.version}</version>
             <scope>test</scope>

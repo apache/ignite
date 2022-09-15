@@ -1,49 +1,28 @@
 package de.bwaldvogel.mongo.backend.ignite;
 
 import java.util.ArrayList;
-import java.util.Collections;
-import java.util.HashMap;
 import java.util.Iterator;
 import java.util.List;
-import java.util.Map;
-import java.util.Map.Entry;
 import java.util.NoSuchElementException;
-import java.util.Set;
 import java.util.UUID;
 import java.util.stream.Stream;
 import java.util.stream.StreamSupport;
 
 import javax.cache.Cache;
 
-import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCache;
-import org.apache.ignite.IgniteDataStreamer;
-import org.apache.ignite.Ignition;
-import org.apache.ignite.binary.BinaryObject;
-import org.apache.ignite.binary.BinaryObjectBuilder;
-import org.apache.ignite.cache.CacheEntry;
 import org.apache.ignite.cache.QueryEntity;
 import org.apache.ignite.cache.query.QueryCursor;
 import org.apache.ignite.cache.query.ScanQuery;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.internal.util.typedef.T2;
-import org.apache.ignite.lang.IgniteBiPredicate;
-import org.apache.ignite.stream.StreamVisitor;
-import org.apache.lucene.document.FieldType;
-import org.apache.lucene.document.StringField;
-import org.apache.lucene.document.TextField;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import de.bwaldvogel.mongo.MongoDatabase;
 import de.bwaldvogel.mongo.backend.AbstractMongoCollection;
-import de.bwaldvogel.mongo.backend.Assert;
-import de.bwaldvogel.mongo.backend.DocumentComparator;
 import de.bwaldvogel.mongo.backend.DocumentWithPosition;
 import de.bwaldvogel.mongo.backend.Index;
-import de.bwaldvogel.mongo.backend.IndexKey;
 import de.bwaldvogel.mongo.backend.Missing;
-import de.bwaldvogel.mongo.backend.Utils;
 import de.bwaldvogel.mongo.bson.Document;
 import de.bwaldvogel.mongo.exception.DuplicateKeyError;
 import io.netty.util.internal.StringUtil;
@@ -211,7 +190,7 @@ public class IgniteCollection extends AbstractMongoCollection<Object> {
     	if(StringUtil.isNullOrEmpty(typeName)) {
     		typeName = tableOfCache(dataMap.getName());
     	}    	
-    	return new T2(typeName,keyField);
+    	return new T2<>(typeName,keyField);
     }
     
     

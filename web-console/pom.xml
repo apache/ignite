@@ -38,7 +38,7 @@
         <java.version>1.8</java.version>
         <maven.compiler.source>11</maven.compiler.source>
         <maven.compiler.target>11</maven.compiler.target>
-        <node.version>v10.15.3</node.version>
+        <node.version>v16.13.2</node.version>
         <spring.boot.version>2.2.6.RELEASE</spring.boot.version>
         <web-console.ignite.version>${revision}</web-console.ignite.version>
         <commons.lang3.version>3.1</commons.lang3.version>

@@ -1,40 +1,29 @@
 package de.bwaldvogel.mongo.backend.ignite;
 
+import static org.apache.ignite.internal.processors.query.QueryUtils.KEY_FIELD_NAME;
+
 import java.io.IOException;
-import java.sql.SQLException;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Map.Entry;
 import java.util.Objects;
-import java.util.Set;
 import java.util.TreeSet;
 import java.util.UUID;
-import java.util.Map.Entry;
 import java.util.regex.Matcher;
-import java.util.stream.Collectors;
 
-import javax.cache.Cache;
-
-import org.apache.ignite.IgniteCheckedException;
-import org.apache.ignite.binary.BinaryObject;
 import org.apache.ignite.cache.FullTextLucene;
 import org.apache.ignite.cache.LuceneIndexAccess;
-import org.apache.ignite.cache.query.QueryCursor;
-import org.apache.ignite.cache.query.ScanQuery;
 import org.apache.ignite.internal.GridKernalContext;
 import org.apache.ignite.internal.binary.GridBinaryMarshaller;
 import org.apache.ignite.internal.processors.cache.CacheObjectContext;
 import org.apache.ignite.internal.processors.cache.GridCacheAdapter;
 import org.apache.ignite.internal.processors.cache.binary.CacheObjectBinaryProcessorImpl;
-import org.apache.ignite.internal.processors.platform.utils.PlatformUtils;
-import org.apache.ignite.internal.processors.query.GridQueryTypeDescriptor;
-import org.apache.ignite.internal.processors.query.h2.H2TableDescriptor;
 import org.apache.ignite.internal.processors.query.h2.IgniteH2Indexing;
-import org.apache.ignite.internal.processors.query.h2.opt.GridH2Table;
-import org.apache.ignite.internal.processors.query.h2.opt.GridLuceneIndex;
+import org.apache.ignite.internal.processors.query.schema.management.TableDescriptor;
 import org.apache.ignite.internal.util.typedef.T2;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgniteBiTuple;
@@ -48,7 +37,6 @@ import org.apache.lucene.document.LongPoint;
 import org.apache.lucene.document.StringField;
 import org.apache.lucene.document.TextField;
 import org.apache.lucene.index.Term;
-import org.apache.lucene.queryparser.classic.MultiFieldQueryParser;
 import org.apache.lucene.queryparser.classic.QueryParser;
 import org.apache.lucene.search.BooleanClause;
 import org.apache.lucene.search.BooleanQuery;
@@ -58,11 +46,9 @@ import org.apache.lucene.search.ScoreDoc;
 import org.apache.lucene.search.TermQuery;
 import org.apache.lucene.search.TopDocs;
 import org.apache.lucene.util.BytesRef;
-import org.apache.lucene.util.Version;
 import org.jetbrains.annotations.Nullable;
 
 import de.bwaldvogel.mongo.MongoCollection;
-import de.bwaldvogel.mongo.backend.AbstractMongoCollection;
 import de.bwaldvogel.mongo.backend.Assert;
 import de.bwaldvogel.mongo.backend.CollectionUtils;
 import de.bwaldvogel.mongo.backend.Index;
@@ -71,14 +57,10 @@ import de.bwaldvogel.mongo.backend.KeyValue;
 import de.bwaldvogel.mongo.backend.QueryOperator;
 import de.bwaldvogel.mongo.backend.Utils;
 import de.bwaldvogel.mongo.backend.ValueComparator;
-import de.bwaldvogel.mongo.backend.ignite.IgniteUniqueIndex.EntrySet;
 import de.bwaldvogel.mongo.bson.BsonRegularExpression;
 import de.bwaldvogel.mongo.bson.Document;
 import de.bwaldvogel.mongo.bson.ObjectId;
 import de.bwaldvogel.mongo.exception.KeyConstraintError;
-
-import static org.apache.ignite.internal.processors.query.QueryUtils.KEY_FIELD_NAME;
-import static org.apache.ignite.internal.processors.query.QueryUtils.VAL_FIELD_NAME;
 
 public class IgniteLuceneIndex extends Index<Object> {
 
@@ -189,19 +171,23 @@ public class IgniteLuceneIndex extends Index<Object> {
 		Object key = null;
 		String keyField = "id";
 		if (collection instanceof IgniteCollection) {
+			if (!this.isFirstIndex)
+				return;
+			
 			IgniteCollection coll = (IgniteCollection) collection;
 			T2<String, String> t2 = IgniteCollection.typeNameAndKeyField(coll.dataMap, document);
 			typeName = t2.get1();
 			keyField = t2.get2();
 			key = document.getOrDefault(coll.idField, null);
-			if (!this.isFirstIndex)
-				return;
+			
+			
 		}
 
 		else if (collection instanceof IgniteBinaryCollection) {
 
 			if (!this.isFirstIndex)
 				return;
+			
 			IgniteBinaryCollection coll = (IgniteBinaryCollection) collection;
 			T2<String, String> t2 = IgniteCollection.typeNameAndKeyField(coll.dataMap, document);
 			typeName = t2.get1();
@@ -219,10 +205,11 @@ public class IgniteLuceneIndex extends Index<Object> {
 			IgniteH2Indexing idxing = (IgniteH2Indexing) ctx.query().getIndexing();
 
 			@Nullable
-			H2TableDescriptor table = idxing.schemaManager().tableForType(idxing.schemaManager().schemaName(cacheName),
-					cacheName, typeName);
-			if (table != null && table.luceneIndex() != null) {
-				return;
+			Collection<TableDescriptor> tables = idxing.schemaManager().tablesForCache(cacheName);
+			for(TableDescriptor table: tables) {
+				if (table.type().name().equalsIgnoreCase(typeName) && table.type().textIndex() != null) {
+					return;
+				}
 			}
 		}
 
@@ -236,7 +223,8 @@ public class IgniteLuceneIndex extends Index<Object> {
 			if (idxdTypes[i].tokenized()) {
 				row[i] = fieldVal;
 				
-			}else if(fieldVal instanceof Number) {
+			}
+			else if(fieldVal instanceof Number) {
 				Number obj = (Number) fieldVal;
 				if (obj instanceof Long) {
 					row[i] = new LongPoint(idxdFields[i], (obj).longValue());
@@ -254,7 +242,8 @@ public class IgniteLuceneIndex extends Index<Object> {
 					double d = ((Number) obj).doubleValue();						
 					row[i] = new DoublePoint(idxdFields[i], d);
 				}
-			} else {
+			} 
+			else {
 				byte[] keyBytes = marshaller.marshal(ctx.grid().binary().toBinary(fieldVal), false);
 				BytesRef keyByteRef = new BytesRef(keyBytes);
 				row[i] = keyByteRef;
@@ -569,7 +558,7 @@ public class IgniteLuceneIndex extends Index<Object> {
 			int maxResults = Integer.MAX_VALUE;
 			TopDocs docs = searcher.search(query.build(), maxResults);
 			if (limit == 0) {
-				limit = (int) docs.totalHits;
+				limit = (int) docs.totalHits.value;
 			}
 			result = new ArrayList<>(limit);
 			for (int i = 0; i < limit; i++) {
@@ -639,7 +628,7 @@ public class IgniteLuceneIndex extends Index<Object> {
 			int maxResults = Integer.MAX_VALUE;
 			TopDocs docs = searcher.search(query, maxResults);
 			if (limit == 0) {
-				limit = (int) docs.totalHits;
+				limit = (int) docs.totalHits.value;
 			}
 			result = new ArrayList<>(limit);
 			for (int i = 0; i < limit; i++) {

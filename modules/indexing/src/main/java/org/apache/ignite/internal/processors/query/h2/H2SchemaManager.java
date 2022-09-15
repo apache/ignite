@@ -20,9 +20,11 @@ package org.apache.ignite.internal.processors.query.h2;
 import java.lang.reflect.Method;
 import java.sql.SQLException;
 import java.sql.Statement;
+import java.util.Collection;
 import java.util.List;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
+
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.IgniteLogger;
@@ -43,6 +45,7 @@ import org.apache.ignite.internal.processors.query.h2.sys.view.SystemViewLocal;
 import org.apache.ignite.internal.processors.query.schema.SchemaChangeListener;
 import org.apache.ignite.internal.processors.query.schema.management.IndexDescriptor;
 import org.apache.ignite.internal.processors.query.schema.management.SchemaManager;
+import org.apache.ignite.internal.processors.query.schema.management.TableDescriptor;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.spi.systemview.view.FiltrableSystemView;
@@ -381,6 +384,17 @@ public class H2SchemaManager implements SchemaChangeListener {
 
         if (tbl != null)
             tbl.markRebuildFromHashInProgress(false);
+    }
+    
+
+    /**
+     * Gets collection of table for given schema name.
+     * add@byron
+     * @param cacheName Cache name.
+     * @return Collection of table descriptors.
+     */
+    public Collection<TableDescriptor> tablesForCache(String cacheName) {
+    	return schemaMgr.tablesForCache(cacheName);
     }
 
     /**

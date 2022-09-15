@@ -33,7 +33,7 @@
         <dependency>
             <groupId>org.springframework</groupId>
             <artifactId>spring-context</artifactId>
-            <version>${spring-5.2.version}</version>
+            <version>${spring.version}</version>
             <scope>provided</scope>
         </dependency>
         

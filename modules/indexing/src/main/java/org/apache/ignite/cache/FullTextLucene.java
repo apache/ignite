@@ -48,6 +48,7 @@ import org.apache.ignite.internal.processors.query.h2.IgniteH2Indexing;
 import org.apache.ignite.internal.processors.query.h2.opt.GridH2ValueCacheObject;
 import org.apache.ignite.internal.processors.query.h2.opt.GridLuceneDirectory;
 import org.apache.ignite.internal.processors.query.h2.opt.GridLuceneIndex;
+import org.apache.ignite.internal.processors.query.schema.management.TableDescriptor;
 import org.apache.ignite.internal.util.GridAtomicLong;
 import org.apache.ignite.internal.util.offheap.unsafe.GridUnsafeMemory;
 import org.apache.ignite.internal.util.typedef.internal.U;
@@ -640,8 +641,8 @@ public class FullTextLucene {
 				
 				IgniteH2Indexing idxing = (IgniteH2Indexing)ctx.query().getIndexing();
 		    	
-		    	Collection<H2TableDescriptor> tableDesc = idxing.schemaManager().tablesForCache(cacheName);
-		    	for(H2TableDescriptor tabInfo : tableDesc) {
+		    	Collection<TableDescriptor> tableDesc = idxing.schemaManager().tablesForCache(cacheName);
+		    	for(TableDescriptor tabInfo : tableDesc) {
 		    		access.init(tabInfo.type());
 		    	}
                 
@@ -875,10 +876,10 @@ public class FullTextLucene {
             int maxResults = (limit == 0 ? 100 : limit) + offset;
             TopDocs docs = searcher.search(query.build(), maxResults);
             if (limit == 0) {
-                limit = (int)docs.totalHits;
+                limit = (int)docs.totalHits.value;
             }
             for (int i = 0, len = docs.scoreDocs.length;
-                    i < limit && i + offset < docs.totalHits
+                    i < limit && i + offset < docs.totalHits.value
                     && i + offset < len; i++) {
                 ScoreDoc sd = docs.scoreDocs[i + offset];
                 Document doc = searcher.doc(sd.doc);
