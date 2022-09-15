@@ -3528,13 +3528,13 @@ public class BPlusTreeSelfTest extends GridCommonAbstractTest {
         }
 
         /** {@inheritDoc} */
-        @Override public boolean apply(BPlusTree<Long, Long> tree, BPlusIO<Long> io, long pageAddr, int idx)
-            throws IgniteCheckedException {
-            Long val = io.getLookupRow(tree, pageAddr, idx);
-
-            //System.out.println("TestTreeFindFilteredClosure.apply - " + val);
-
-            return vals.contains(val);
+        @Override public boolean apply(
+            BPlusTree<Long, Long> tree,
+            BPlusIO<Long> io,
+            long pageAddr,
+            int idx
+        ) throws IgniteCheckedException {
+            return vals.contains(io.getLookupRow(tree, pageAddr, idx));
         }
     }
 
