@@ -77,7 +77,6 @@ public abstract class ProjectableFilterableTableScan extends TableScan {
 
         projects = proj;
         condition = cond;
-        //condition = cond == null ? null : RexUtil.expandSearch(cluster.getRexBuilder(), null, cond);
         requiredColumns = reqColumns;
     }
 

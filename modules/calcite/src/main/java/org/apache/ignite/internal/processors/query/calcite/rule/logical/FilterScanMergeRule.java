@@ -85,8 +85,6 @@ public abstract class FilterScanMergeRule<T extends ProjectableFilterableTableSc
             condition = RexUtil.composeConjunction(builder, F.asList(scan.condition(), condition));
 
         // We need to replace RexInputRef with RexLocalRef because TableScan doesn't have inputs.
-        // TODO SEARCH support
-        //condition = RexUtils.replaceInputRefs(RexUtil.expandSearch(builder, null, condition));
         condition = RexUtils.replaceInputRefs(condition);
 
         // Set default traits, real traits will be calculated for physical node.
