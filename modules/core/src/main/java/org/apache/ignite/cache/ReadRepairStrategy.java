@@ -47,10 +47,10 @@ public enum ReadRepairStrategy {
      * <p>
      * Works for an even number of copies (which is typical of Ignite) instead of an absolute majority.
      * <p>
-     * May cause {@link IgniteException} when unable to detect value found more times than any other.
+     * May cause {@link IgniteException} when unable to detect values found more times than any other.
      * <p>
-     * For example, when we have 5 copies (4 backups) and value `A` found twice, but `X`,`Y` and `Z` only once, `A` wins.
-     * But, when `A` found twice, as well as `B`, and `X` only once, the strategy unable to determine the winner.
+     * For example, when we have 5 copies (4 backups) and value `A` is found twice, but `X`, `Y`, and `Z` only once, `A` wins.
+     * But, when `A` is found twice, as well as `B`, and `X` only once, the strategy is unable to determine the winner.
      * <p>
      * When we have 4 copies (3 backups), any value found two or more times, when others are found only once, is the winner.
      */

@@ -160,7 +160,7 @@ public interface IgniteCache<K, V> extends javax.cache.Cache<K, V>, IgniteAsyncS
      *  <li>For transactional caches, values will be repaired:
      *  <ul>
      *      <li>automatically for transactions that have {@link TransactionConcurrency#OPTIMISTIC} concurrency mode
-     *          or {@link TransactionIsolation#READ_COMMITTED} isolation level</li>
+     *          or {@link TransactionIsolation#READ_COMMITTED} isolation level,</li>
      *      <li>at commit() phase for transactions that have {@link TransactionConcurrency#PESSIMISTIC} concurrency mode
      *          and isolation level other than {@link TransactionIsolation#READ_COMMITTED}</li>
      *  </ul>
@@ -183,7 +183,6 @@ public interface IgniteCache<K, V> extends javax.cache.Cache<K, V>, IgniteAsyncS
      * A consistency check is incompatible with the following cache configurations:
      * <ul>
      *     <li>Caches without backups.</li>
-     *     <li>Local caches.</li>
      *     <li>Near caches.</li>
      *     <li>Caches that use "read-through" mode.</li>
      * </ul>
