@@ -65,6 +65,7 @@ import org.apache.ignite.internal.GridKernalContext;
 import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.NodeStoppingException;
 import org.apache.ignite.internal.binary.BinaryMetadata;
+import org.apache.ignite.internal.cache.query.index.Index;
 import org.apache.ignite.internal.cache.query.index.IndexProcessor;
 import org.apache.ignite.internal.cache.query.index.IndexQueryProcessor;
 import org.apache.ignite.internal.cache.query.index.IndexQueryResult;
@@ -3590,6 +3591,15 @@ public class GridQueryProcessor extends GridProcessorAdapter {
 
         if (indexingEnabled())
             idx.remove(cctx, desc, row);
+    }
+
+    /**
+     * @param cctx Cache context.
+     * @param part Partition id.
+     * @return Set of cleared indexes.
+     */
+    public Set<Index> removeAllForPartition(GridCacheContext cctx, int part) {
+        return idxProc.removeAllForPartition(cctx.name(), part);
     }
 
     /**

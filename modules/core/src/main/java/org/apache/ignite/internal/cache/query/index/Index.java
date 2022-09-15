@@ -45,6 +45,23 @@ public interface Index {
     public boolean canHandle(CacheDataRow row) throws IgniteCheckedException;
 
     /**
+     * @return {@code True} if batch remove supported.
+     * @see #remove(int)
+     */
+    public default boolean supportBatchRemove() {
+        return false;
+    }
+
+    /**
+     * Removes all index rows that belongs to the specific partition.
+     *
+     * @param part Partition id.
+     */
+    public default void remove(int part) throws IgniteCheckedException {
+        throw new UnsupportedOperationException();
+    }
+
+    /**
      * Callback that runs when the underlying cache is updated.
      *
      * @param oldRow Cache row that was replaced with newRow.

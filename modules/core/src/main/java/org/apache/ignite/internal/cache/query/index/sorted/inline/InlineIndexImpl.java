@@ -39,7 +39,10 @@ import org.apache.ignite.internal.cache.query.index.sorted.IndexValueCursor;
 import org.apache.ignite.internal.cache.query.index.sorted.InlineIndexRowHandler;
 import org.apache.ignite.internal.cache.query.index.sorted.SortedIndexDefinition;
 import org.apache.ignite.internal.cache.query.index.sorted.ThreadLocalRowHandlerHolder;
+import org.apache.ignite.internal.cache.query.index.sorted.inline.io.InlineIO;
 import org.apache.ignite.internal.metric.IoStatisticsHolderIndex;
+import org.apache.ignite.internal.pagemem.PageIdUtils;
+import org.apache.ignite.internal.pagemem.PageUtils;
 import org.apache.ignite.internal.processors.cache.GridCacheContext;
 import org.apache.ignite.internal.processors.cache.mvcc.MvccSnapshot;
 import org.apache.ignite.internal.processors.cache.persistence.CacheDataRow;
@@ -569,6 +572,20 @@ public class InlineIndexImpl extends AbstractIndex implements InlineIndex {
      */
     public SortedIndexDefinition indexDefinition() {
         return def;
+    }
+
+    /** {@inheritDoc} */
+    @Override public boolean supportBatchRemove() {
+        return true;
+    }
+
+    /** {@inheritDoc} */
+    @Override public void remove(int part) throws IgniteCheckedException {
+        segments[calculateSegment(segmentsCount(), part)].remove((tree, io, pageAddr, idx) -> {
+            long link = PageUtils.getLong(pageAddr, io.offset(idx) + ((InlineIO)io).inlineSize());
+
+            return part == PageIdUtils.partId(PageIdUtils.pageId(link));
+        });
     }
 
     /** Single cursor over multiple segments. The next value is chosen with the index row comparator. */

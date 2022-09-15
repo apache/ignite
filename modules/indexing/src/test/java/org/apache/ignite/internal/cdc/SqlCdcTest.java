@@ -51,7 +51,7 @@ import static org.apache.ignite.testframework.GridTestUtils.runAsync;
 @RunWith(Parameterized.class)
 public class SqlCdcTest extends AbstractCdcTest {
     /** */
-    private static final String SARAH = "Sarah Connor";
+    public static final String SARAH = "Sarah Connor";
 
     /** */
     public static final String USER = "user";
@@ -376,7 +376,7 @@ public class SqlCdcTest extends AbstractCdcTest {
     }
 
     /** */
-    static List<List<?>> executeSql(IgniteEx node, String sqlText, Object... args) {
+    public static List<List<?>> executeSql(IgniteEx node, String sqlText, Object... args) {
         return node.context().query().querySqlFields(new SqlFieldsQuery(sqlText).setArgs(args), true).getAll();
     }
 

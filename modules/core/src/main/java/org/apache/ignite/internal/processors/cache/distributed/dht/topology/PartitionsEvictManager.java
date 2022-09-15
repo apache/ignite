@@ -19,10 +19,12 @@ package org.apache.ignite.internal.processors.cache.distributed.dht.topology;
 
 import java.util.ArrayList;
 import java.util.Collection;
+import java.util.Collections;
 import java.util.EnumMap;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Map.Entry;
+import java.util.Set;
 import java.util.StringJoiner;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.atomic.AtomicInteger;
@@ -31,10 +33,13 @@ import java.util.concurrent.locks.ReadWriteLock;
 import java.util.concurrent.locks.ReentrantReadWriteLock;
 import java.util.function.BiConsumer;
 import org.apache.ignite.IgniteCheckedException;
+import org.apache.ignite.IgniteSystemProperties;
 import org.apache.ignite.SystemProperty;
 import org.apache.ignite.failure.FailureContext;
 import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.NodeStoppingException;
+import org.apache.ignite.internal.cache.query.index.Index;
+import org.apache.ignite.internal.cache.query.index.IndexProcessor;
 import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
 import org.apache.ignite.internal.processors.cache.CacheGroupContext;
 import org.apache.ignite.internal.processors.cache.CacheMetricsImpl;
@@ -49,6 +54,7 @@ import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.thread.IgniteThreadPoolExecutor;
 
 import static java.util.Objects.nonNull;
+import static org.apache.ignite.IgniteSystemProperties.IGNITE_ENABLE_BATCH_INDEX_REMOVE;
 import static org.apache.ignite.IgniteSystemProperties.getLong;
 import static org.apache.ignite.failure.FailureType.SYSTEM_WORKER_TERMINATION;
 import static org.apache.ignite.internal.processors.cache.distributed.dht.topology.GridDhtPartitionState.RENTING;
@@ -69,6 +75,13 @@ public class PartitionsEvictManager extends GridCacheSharedManagerAdapter {
     /** Eviction progress frequency in ms. */
     private final long evictionProgressFreqMs =
         getLong(SHOW_EVICTION_PROGRESS_FREQ, DEFAULT_SHOW_EVICTION_PROGRESS_FREQ_MS);
+
+    /** Default value of {@link IgniteSystemProperties#IGNITE_ENABLE_BATCH_INDEX_REMOVE}. */
+    public static final boolean DFLT_IGNITE_ENABLE_BATCH_INDEX_REMOVE = true;
+
+    /** Value of {@link IgniteSystemProperties#IGNITE_ENABLE_BATCH_INDEX_REMOVE}. */
+    private static final boolean BATCH_INDEX_REMOVE_ENABLED =
+        IgniteSystemProperties.getBoolean(IGNITE_ENABLE_BATCH_INDEX_REMOVE, DFLT_IGNITE_ENABLE_BATCH_INDEX_REMOVE);
 
     /** Last time of show eviction progress. */
     private long lastShowProgressTimeNanos = System.nanoTime() - U.millisToNanos(evictionProgressFreqMs);
@@ -416,6 +429,13 @@ public class PartitionsEvictManager extends GridCacheSharedManagerAdapter {
             // [-] 4. If flag set then don't try to clear index on partition remove.
             // [-] 5. Check failover by WAL record.
 
+            Set<Index> cleared = Collections.emptySet();
+
+            if (reason == EvictReason.EVICTION && BATCH_INDEX_REMOVE_ENABLED)
+                cleared = part.clearAllFromIndexes(grpEvictionCtx);
+
+            IndexProcessor.ALREADY_CLEARED.set(cleared);
+
             try {
                 long clearedEntities = part.clearAll(grpEvictionCtx);
 
@@ -452,6 +472,8 @@ public class PartitionsEvictManager extends GridCacheSharedManagerAdapter {
             }
             finally {
                 grpEvictionCtx.busyLock.readLock().unlock();
+
+                IndexProcessor.ALREADY_CLEARED.remove();
             }
         }
     }
