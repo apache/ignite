@@ -1113,7 +1113,7 @@ public class GridDhtLocalPartition extends GridCacheConcurrentMapImpl implements
      * Clears all data for this partition from indexes.
      * @return Set of cleared indexes.
      */
-    public Set<Index> clearAllFromIndexes(EvictionContext grpEvictionCtx) {
+    public Set<Index> removeAllFromIndexes(EvictionContext grpEvictionCtx) {
         if (!QueryUtils.isEnabled(grp.config()))
             return Collections.emptySet();
 

@@ -228,6 +228,9 @@ public class IndexProcessor extends GridProcessorAdapter {
             Set<Index> res = new HashSet<>();
 
             for (Index idx: indexes.values()) {
+                if (evictionCtx.shouldStop())
+                    break;
+
                 if (!idx.supportBatchRemove()) {
                     if (log.isDebugEnabled()) {
                         log.debug("Batch remove of partition data not supported for index" +
@@ -240,9 +243,8 @@ public class IndexProcessor extends GridProcessorAdapter {
                 if (log.isDebugEnabled())
                     log.debug("Removing partition data from index[idx=" + idx.name() + ", part=" + part + ']');
 
-                idx.remove(part, evictionCtx);
-
-                res.add(idx);
+                if (idx.remove(part, evictionCtx))
+                    res.add(idx);
             }
 
             return res;

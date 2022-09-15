@@ -437,7 +437,7 @@ public class PartitionsEvictManager extends GridCacheSharedManagerAdapter {
             Set<Index> cleared = Collections.emptySet();
 
             if (reason == EvictReason.EVICTION && BATCH_INDEX_REMOVE_ENABLED)
-                cleared = part.clearAllFromIndexes(grpEvictionCtx);
+                cleared = part.removeAllFromIndexes(grpEvictionCtx);
 
             ALREADY_CLEARED.set(cleared);
 
