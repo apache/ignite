@@ -379,8 +379,8 @@ public class ExpressionFactoryImpl<Row> implements ExpressionFactory<Row> {
                 RangeBounds fieldRangeBounds = (RangeBounds)fieldSingleBounds;
                 fieldLowerBound = fieldRangeBounds.lowerBound();
                 fieldUpperBound = fieldRangeBounds.upperBound();
-                fieldLowerInclude = fieldRangeBounds.lowerInclude() && fieldLowerBound != null;
-                fieldUpperInclude = fieldRangeBounds.upperInclude() && fieldUpperBound != null;
+                fieldLowerInclude = fieldRangeBounds.lowerInclude();
+                fieldUpperInclude = fieldRangeBounds.upperInclude();
             }
             else
                 throw new IllegalStateException("Unexpected bounds: " + fieldSingleBounds);
