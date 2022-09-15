@@ -40,7 +40,7 @@ public interface Index {
      * Checks whether index handles specified cache row.
      *
      * @param row Cache row.
-     * @return Whether index handles specified cache row
+     * @return Whether index handles specified cache row.
      */
     public boolean canHandle(CacheDataRow row) throws IgniteCheckedException;
 
@@ -55,6 +55,7 @@ public interface Index {
     /**
      * Removes all index rows that belongs to the specific partition.
      *
+     * @see #supportBatchRemove()
      * @param part Partition id.
      */
     public default void remove(int part) throws IgniteCheckedException {
