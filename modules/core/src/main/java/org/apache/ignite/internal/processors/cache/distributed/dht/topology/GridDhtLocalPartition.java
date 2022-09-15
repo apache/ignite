@@ -1122,7 +1122,7 @@ public class GridDhtLocalPartition extends GridCacheConcurrentMapImpl implements
         Set<Index> res = new HashSet<>();
 
         for (GridCacheContext<?, ?> cctx : gctx.group().caches())
-            res.addAll(ctx.kernalContext().query().removeAllForPartition(cctx, id));
+            res.addAll(ctx.kernalContext().query().removeAllForPartition(cctx, id, grpEvictionCtx));
 
         return res;
     }

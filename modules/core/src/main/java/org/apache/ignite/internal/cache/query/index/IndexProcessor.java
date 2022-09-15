@@ -53,6 +53,7 @@ import org.apache.ignite.internal.processors.GridProcessorAdapter;
 import org.apache.ignite.internal.processors.cache.CacheGroupContext;
 import org.apache.ignite.internal.processors.cache.GridCacheContext;
 import org.apache.ignite.internal.processors.cache.GridCacheContextInfo;
+import org.apache.ignite.internal.processors.cache.distributed.dht.topology.EvictionContext;
 import org.apache.ignite.internal.processors.cache.distributed.dht.topology.PartitionsEvictManager;
 import org.apache.ignite.internal.processors.cache.persistence.CacheDataRow;
 import org.apache.ignite.internal.processors.cache.persistence.IgniteCacheDatabaseSharedManager;
@@ -212,9 +213,10 @@ public class IndexProcessor extends GridProcessorAdapter {
     /**
      * @param cacheName Cache name.
      * @param part Partition.
+     * @param evictionCtx Group eviction context.
      * @return Set of cleared indexes.
      */
-    public Set<Index> removeAllForPartition(String cacheName, int part) {
+    public Set<Index> removeAllForPartition(String cacheName, int part, EvictionContext evictionCtx) {
         ddlLock.readLock().lock();
 
         try {
@@ -238,7 +240,7 @@ public class IndexProcessor extends GridProcessorAdapter {
                 if (log.isDebugEnabled())
                     log.debug("Removing partition data from index[idx=" + idx.name() + ", part=" + part + ']');
 
-                idx.remove(part);
+                idx.remove(part, evictionCtx);
 
                 res.add(idx);
             }

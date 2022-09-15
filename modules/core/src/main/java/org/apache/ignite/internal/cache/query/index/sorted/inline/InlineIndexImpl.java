@@ -44,6 +44,7 @@ import org.apache.ignite.internal.metric.IoStatisticsHolderIndex;
 import org.apache.ignite.internal.pagemem.PageIdUtils;
 import org.apache.ignite.internal.pagemem.PageUtils;
 import org.apache.ignite.internal.processors.cache.GridCacheContext;
+import org.apache.ignite.internal.processors.cache.distributed.dht.topology.EvictionContext;
 import org.apache.ignite.internal.processors.cache.mvcc.MvccSnapshot;
 import org.apache.ignite.internal.processors.cache.persistence.CacheDataRow;
 import org.apache.ignite.internal.util.lang.GridCursor;
@@ -580,12 +581,19 @@ public class InlineIndexImpl extends AbstractIndex implements InlineIndex {
     }
 
     /** {@inheritDoc} */
-    @Override public void remove(int part) throws IgniteCheckedException {
+    @Override public boolean remove(int part, EvictionContext evictionCtx) throws IgniteCheckedException {
+        int[] stopCntr = new int[1];
+
         segments[calculateSegment(segmentsCount(), part)].remove((tree, io, pageAddr, idx) -> {
+            if ((stopCntr[0] = (stopCntr[0] + 1) & 1023) == 0 && evictionCtx.shouldStop())
+                return false;
+
             long link = PageUtils.getLong(pageAddr, io.offset(idx) + ((InlineIO)io).inlineSize());
 
             return part == PageIdUtils.partId(PageIdUtils.pageId(link));
         });
+
+        return evictionCtx.shouldStop();
     }
 
     /** Single cursor over multiple segments. The next value is chosen with the index row comparator. */
