@@ -218,9 +218,6 @@ public class RexUtils {
 
         List<SearchBounds> bounds = Arrays.asList(new SearchBounds[types.size()]);
         boolean boundsEmpty = true;
-        boolean hasRangeBounds = false;
-        boolean rangeAllowProceedLower = true;
-        boolean rangeAllowProceedUpper = true;
         int prevComplexity = 1;
 
         for (int i = 0; i < collation.getFieldCollations().size(); i++) {
@@ -241,10 +238,6 @@ public class RexUtils {
             if (fldBounds == null)
                 break;
 
-            // Multi bounds after range bounds are not allowed, since it can cause intervals intersection.
-            if (fldBounds.type() == SearchBounds.Type.MULTI && hasRangeBounds)
-                break;
-
             boundsEmpty = false;
 
             bounds.set(collFldIdx, fldBounds);
@@ -257,17 +250,8 @@ public class RexUtils {
                     break;
             }
 
-            if (fldBounds instanceof RangeBounds) {
-                hasRangeBounds = true;
-                RangeBounds rangeFldBounds = (RangeBounds)fldBounds;
-                rangeAllowProceedLower &= rangeFldBounds.lowerBound() != null && rangeFldBounds.lowerInclude();
-                rangeAllowProceedUpper &= rangeFldBounds.upperBound() != null && rangeFldBounds.upperInclude();
-
-                // Make sence to analize next fields only if it can reduce search space. If bounds of range are already
-                // not included or if there are no bounds set, next field in the search bound will no give any advantages.
-                if (!(rangeAllowProceedLower || rangeAllowProceedUpper))
-                    break;
-            }
+            if (fldBounds.type() == SearchBounds.Type.RANGE)
+                break; // TODO https://issues.apache.org/jira/browse/IGNITE-13568
         }
 
         return boundsEmpty ? null : bounds;
