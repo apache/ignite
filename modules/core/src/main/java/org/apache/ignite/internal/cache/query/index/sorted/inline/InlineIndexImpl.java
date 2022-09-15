@@ -47,6 +47,8 @@ import org.apache.ignite.internal.processors.cache.GridCacheContext;
 import org.apache.ignite.internal.processors.cache.distributed.dht.topology.EvictionContext;
 import org.apache.ignite.internal.processors.cache.mvcc.MvccSnapshot;
 import org.apache.ignite.internal.processors.cache.persistence.CacheDataRow;
+import org.apache.ignite.internal.processors.cache.persistence.tree.BPlusTree;
+import org.apache.ignite.internal.processors.cache.persistence.tree.io.BPlusIO;
 import org.apache.ignite.internal.util.lang.GridCursor;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.spi.indexing.IndexingQueryCacheFilter;
@@ -582,15 +584,18 @@ public class InlineIndexImpl extends AbstractIndex implements InlineIndex {
 
     /** {@inheritDoc} */
     @Override public boolean remove(int part, EvictionContext evictionCtx) throws IgniteCheckedException {
-        int[] stopCntr = new int[1];
+        segments[calculateSegment(segmentsCount(), part)].remove(new BPlusTree.TreeRowClosure<IndexRow, IndexRow>() {
+            int stopCntr;
 
-        segments[calculateSegment(segmentsCount(), part)].remove((tree, io, pageAddr, idx) -> {
-            if ((stopCntr[0] = (stopCntr[0] + 1) & 1023) == 0 && evictionCtx.shouldStop())
-                return false;
+            @Override public boolean apply(BPlusTree<IndexRow, IndexRow> tree, BPlusIO<IndexRow> io, long pageAddr, int idx) {
+                long link = PageUtils.getLong(pageAddr, io.offset(idx) + ((InlineIO)io).inlineSize());
 
-            long link = PageUtils.getLong(pageAddr, io.offset(idx) + ((InlineIO)io).inlineSize());
+                return part == PageIdUtils.partId(PageIdUtils.pageId(link));
+            }
 
-            return part == PageIdUtils.partId(PageIdUtils.pageId(link));
+            @Override public boolean stop() {
+                return (stopCntr = (stopCntr + 1) & 1023) == 0 && evictionCtx.shouldStop();
+            }
         });
 
         return evictionCtx.shouldStop();

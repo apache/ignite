@@ -5814,6 +5814,7 @@ public abstract class BPlusTree<L, T extends L> extends DataStructure implements
         /** */
         private Result remove(long pageId) throws IgniteCheckedException {
             long page = acquirePage(pageId);
+            boolean stop = false;
 
             try {
                 long pageAddr = writeLock(pageId, page);
@@ -5835,7 +5836,7 @@ public abstract class BPlusTree<L, T extends L> extends DataStructure implements
                     if (cnt != 0) {
                         nextPageId = io.getForward(pageAddr);
 
-                        removeByFilter(pageId, pageAddr, page, io, cnt);
+                        stop = removeByFilter(pageId, pageAddr, page, io, cnt);
                     }
                 }
                 finally {
@@ -5852,6 +5853,9 @@ public abstract class BPlusTree<L, T extends L> extends DataStructure implements
                 removeRow = null;
             }
 
+            if (stop)
+                nextPageId = 0;
+
             return FOUND;
         }
 
@@ -5863,7 +5867,7 @@ public abstract class BPlusTree<L, T extends L> extends DataStructure implements
          * @param cnt Count of items on the page.
          * @throws IgniteCheckedException If failed.
          */
-        private void removeByFilter(
+        private boolean removeByFilter(
             long pageId,
             long pageAddr,
             long page,
@@ -5877,15 +5881,26 @@ public abstract class BPlusTree<L, T extends L> extends DataStructure implements
 
             int idxsCnt = 0;
 
+            boolean stop = false;
+
             for (int idx = 0; idx < cnt - 1; idx++) {
                 if (p.apply(BPlusTree.this, io, pageAddr, idx))
                     idxs[idxsCnt++] = idx;
+
+                stop = p.stop();
+
+                if (stop)
+                    break;
             }
 
-            lastRow = io.getLookupRow(BPlusTree.this, pageAddr, cnt - 1);
+            if (!stop) {
+                stop = p.stop();
 
-            if (p.apply(BPlusTree.this, io, pageAddr, cnt - 1))
-                removeRow = lastRow;
+                lastRow = io.getLookupRow(BPlusTree.this, pageAddr, cnt - 1);
+
+                if (p.apply(BPlusTree.this, io, pageAddr, cnt - 1))
+                    removeRow = lastRow;
+            }
 
             if (idxsCnt > 0) {
                 io.remove(pageAddr, idxs, idxsCnt);
@@ -5893,6 +5908,8 @@ public abstract class BPlusTree<L, T extends L> extends DataStructure implements
                 if (needWalDeltaRecord(pageId, page, null))
                     wal.log(new FilterRemoveRecord(grpId, pageId, idxs, idxsCnt, cnt - idxsCnt));
             }
+
+            return stop;
         }
     }
 
@@ -6553,6 +6570,13 @@ public abstract class BPlusTree<L, T extends L> extends DataStructure implements
          */
         public boolean apply(BPlusTree<L, T> tree, BPlusIO<L> io, long pageAddr, int idx)
             throws IgniteCheckedException;
+
+        /**
+         * @return {@code True} if iteration should be stopped.
+         */
+        public default boolean stop() {
+            return false;
+        }
     }
 
     /**
