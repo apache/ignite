@@ -167,12 +167,14 @@ public abstract class AbstractSnapshotSelfTest extends GridCommonAbstractTest {
         if (dfltCacheCfg != null)
             cfg.setCacheConfiguration(dfltCacheCfg);
 
+//        if(true) return cfg;
+
         return cfg.setConsistentId(igniteInstanceName)
             .setCommunicationSpi(new TestRecordingCommunicationSpi())
             .setDataStorageConfiguration(new DataStorageConfiguration()
                 .setDefaultDataRegionConfiguration(new DataRegionConfiguration()
-                    .setMaxSize(100L * 1024 * 1024)
-                    .setPersistenceEnabled(persistence))
+                    .setMaxSize(2 * 1024L * 1024 * 1024)
+                    /*.setPersistenceEnabled(persistence)*/)
                 .setCheckpointFrequency(3000)
                 .setPageSize(DFLT_PAGE_SIZE))
             .setClusterStateOnStart(INACTIVE)

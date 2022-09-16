@@ -33,6 +33,7 @@ import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.G;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.testframework.GridTestUtils;
+import org.apache.ignite.testframework.junits.GridAbstractTest;
 import org.junit.Test;
 import org.junit.runners.Parameterized;
 
@@ -58,7 +59,7 @@ public class IgniteClusterShanpshotStreamerTest  extends AbstractSnapshotSelfTes
     @Override protected IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {
         IgniteConfiguration cfg = super.getConfiguration(igniteInstanceName);
 
-        cfg.getDataStorageConfiguration().getDefaultDataRegionConfiguration().setMaxSize(2 * 1024L * 1024L * 1024L);
+//        cfg.getDataStorageConfiguration().getDefaultDataRegionConfiguration().setMaxSize(2 * 1024L * 1024L * 1024L);
 //        cfg.getDataStorageConfiguration().setWalMode(WALMode.NONE);
 //        cfg.getDataStorageConfiguration().setWalSegments(4);
 //        cfg.getDataStorageConfiguration().setWalSegmentSize(16 * 1024 * 1024);
@@ -66,7 +67,7 @@ public class IgniteClusterShanpshotStreamerTest  extends AbstractSnapshotSelfTes
 //        cfg.getDataStorageConfiguration().setCheckpointFrequency(1000);
 //        cfg.getDataStorageConfiguration().setCheckpointReadLockTimeout(15_000);
 
-        cfg.setConnectorConfiguration(new ConnectorConfiguration());
+//        cfg.setConnectorConfiguration(new ConnectorConfiguration());
 
         return cfg;
     }
@@ -78,14 +79,14 @@ public class IgniteClusterShanpshotStreamerTest  extends AbstractSnapshotSelfTes
         int backups = 2;
 
 //        CountDownLatch loadLever = new CountDownLatch(13_403);
-        CountDownLatch loadLever = new CountDownLatch(100_000_000);
+        CountDownLatch loadLever = new CountDownLatch(20_000_000);
 
         AtomicBoolean stop = new AtomicBoolean(false);
         AtomicInteger idx = new AtomicInteger();
         dfltCacheCfg = null;
         String tableName = "TEST_TBL1";
 
-        startGrids(grids);
+        startGridsMultiThreaded(grids);
         grid(0).cluster().state(ACTIVE);
 
 //        GridNearAtomicUpdateFuture.TEST_NODE_UID = grid(0).localNode().id();
@@ -215,8 +216,6 @@ public class IgniteClusterShanpshotStreamerTest  extends AbstractSnapshotSelfTes
 //                        batch = new HashMap<>();
 //                    }
                 }
-
-                ds.flush();
             }
         }
         catch (Exception e) {

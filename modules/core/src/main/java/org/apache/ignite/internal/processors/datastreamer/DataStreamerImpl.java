@@ -42,6 +42,7 @@ import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.concurrent.atomic.LongAdder;
+import java.util.stream.Stream;
 import javax.cache.CacheException;
 import javax.cache.expiry.ExpiryPolicy;
 import org.apache.ignite.Ignite;
@@ -56,6 +57,8 @@ import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.cluster.ClusterTopologyException;
 import org.apache.ignite.configuration.CacheConfiguration;
+import org.apache.ignite.configuration.DataRegionConfiguration;
+import org.apache.ignite.configuration.DataStorageConfiguration;
 import org.apache.ignite.events.DiscoveryEvent;
 import org.apache.ignite.events.Event;
 import org.apache.ignite.internal.GridKernalContext;
@@ -131,6 +134,9 @@ import static org.apache.ignite.internal.GridTopic.TOPIC_DATASTREAM;
 public class DataStreamerImpl<K, V> implements IgniteDataStreamer<K, V>, Delayed {
     /** Per thread buffer size. */
     private int bufLdrSzPerThread = DFLT_PER_THREAD_BUFFER_SIZE;
+
+    /** Unresponded batches to wait before sending next if the persistence is enabled. */
+    private static final int DFLT_MAX_UPRESPONDED_OPS_WITH_PERSISTENCE = 2;
 
     /**
      * Thread buffer map: on each thread there are future and list of entries which will be streamed after filling
@@ -805,8 +811,6 @@ public class DataStreamerImpl<K, V> implements IgniteDataStreamer<K, V>, Delayed
         ClusterNode remapNode,
         AffinityTopologyVersion remapTopVer
     ) {
-//        log.error("TEST | DataStreamer:load0(), BEGIN. Entries: " + entries.size());
-
         try {
             assert entries != null;
 
@@ -854,14 +858,10 @@ public class DataStreamerImpl<K, V> implements IgniteDataStreamer<K, V>, Delayed
             // It is safe to block here even if the cache gate is acquired.
             topVer = exchFut.get();
 
-//            log.error("TEST | load entries with topology top " + topVer);
-
             List<List<ClusterNode>> assignments = cctx.affinity().assignments(topVer);
 
             if (!allowOverwrite()) { // Cases where cctx required.
                 gate = cctx.gate();
-
-               // System.err.println("TEST | gate.enter() in DataStreamer.load0()");
 
                 gate.enter();
             }
@@ -1086,9 +1086,6 @@ public class DataStreamerImpl<K, V> implements IgniteDataStreamer<K, V>, Delayed
         catch (Exception ex) {
             resFut.onDone(new IgniteCheckedException("DataStreamer data loading failed.", ex));
         }
-//        finally {
-//            log.error("TEST | DataStreamer:load0(), END.");
-//        }
     }
 
     /**
@@ -1465,16 +1462,13 @@ public class DataStreamerImpl<K, V> implements IgniteDataStreamer<K, V>, Delayed
         boolean remove = false;
 
         for (DataStreamerEntry e : entries) {
-            if (e.val == null) {
+            if (e.val == null)
                 remove = true;
-            }
-            else {
+            else
                 add = true;
-            }
 
-            if (add && remove) {
+            if (add && remove)
                 break;
-            }
         }
 
         if (add)
@@ -1509,9 +1503,34 @@ public class DataStreamerImpl<K, V> implements IgniteDataStreamer<K, V>, Delayed
     }
 
     /**
+     * @return Optimal max active parallel operations on the related node.
+     */
+    private int dfltParallelOps(int poolSize) {
+        DataStorageConfiguration storageCfg = cacheObjCtx.kernalContext().config().getDataStorageConfiguration();
+
+        if (storageCfg == null)
+            return poolSize;
+
+        DataRegionConfiguration[] dsCfgs = storageCfg.getDataRegionConfigurations();
+
+        String regionName = cacheObjCtx.kernalContext().cache().cache(cacheName).configuration().getDataRegionName();
+
+//        System.err.println("TEST | regionName: " + regionName);
+//        System.err.println("TEST | dsCfgs: " + (dsCfgs == null ? "null" : dsCfgs.length));
+
+        DataRegionConfiguration regionCfg = regionName == null ? storageCfg.getDefaultDataRegionConfiguration()
+            : Stream.of(dsCfgs).filter(ds -> ds.getName().equals(regionName)).findFirst().get();
+
+        assert storageCfg != null;
+
+        return regionCfg != null && regionCfg.isPersistenceEnabled() ? DFLT_MAX_UPRESPONDED_OPS_WITH_PERSISTENCE
+            : poolSize;
+    }
+
+    /**
      *
      */
-    private class ThreadBuffer {
+    private static final class ThreadBuffer {
         /** Entries. */
         private final List<DataStreamerEntry> entries;
 
@@ -1548,7 +1567,7 @@ public class DataStreamerImpl<K, V> implements IgniteDataStreamer<K, V>, Delayed
     /**
      *
      */
-    private class Buffer {
+    private final class Buffer {
         /** Node. */
         private final ClusterNode node;
 
@@ -1570,17 +1589,9 @@ public class DataStreamerImpl<K, V> implements IgniteDataStreamer<K, V>, Delayed
         /** */
         private final Semaphore sem;
 
-//        /** */
-//        private final int perNodeParallelOps;
-
         /** Closure to signal on task finish. */
         @GridToStringExclude
-        private final IgniteInClosure<IgniteInternalFuture<Object>> signalC =
-            new IgniteInClosure<IgniteInternalFuture<Object>>() {
-                @Override public void apply(IgniteInternalFuture<Object> t) {
-                    signalTaskFinished(t);
-                }
-            };
+        private final IgniteInClosure<IgniteInternalFuture<Object>> signalC = this::signalTaskFinished;
 
         /**
          * @param node Node.
@@ -1599,10 +1610,8 @@ public class DataStreamerImpl<K, V> implements IgniteDataStreamer<K, V>, Delayed
             Integer attrStreamerPoolSize = node.attribute(IgniteNodeAttributes.ATTR_DATA_STREAMER_POOL_SIZE);
 
             int streamerPoolSize = attrStreamerPoolSize != null ? attrStreamerPoolSize : node.metrics().getTotalCpus();
-
-//            perNodeParallelOps = parallelOps > 0 ? parallelOps : IgniteDataStreamer.DFLT_PARALLEL_PER_NODE_BATCHES;
-
-            sem = new Semaphore(parallelOps > 0 ? parallelOps : IgniteDataStreamer.DFLT_PARALLEL_PER_NODE_BATCHES);
+            
+            sem = new Semaphore(parallelOps > 0 ? parallelOps : dfltParallelOps(streamerPoolSize));
 
             stripes = (PerStripeBuffer[])Array.newInstance(PerStripeBuffer.class, streamerPoolSize);
 
