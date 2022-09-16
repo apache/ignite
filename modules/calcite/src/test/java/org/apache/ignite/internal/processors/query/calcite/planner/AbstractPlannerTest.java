@@ -125,7 +125,7 @@ public abstract class AbstractPlannerTest extends GridCommonAbstractTest {
     protected volatile Throwable lastE;
 
     /** Last error message. */
-    private String lastErrorMsg;
+    protected String lastErrorMsg;
 
     /** */
     @Before

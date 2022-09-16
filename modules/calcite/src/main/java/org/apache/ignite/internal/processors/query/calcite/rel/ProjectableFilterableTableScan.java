@@ -117,8 +117,10 @@ public abstract class ProjectableFilterableTableScan extends TableScan {
 
     /** */
     protected RelWriter explainTerms0(RelWriter pw) {
-        if (condition != null)
-            pw.item("filters", RexUtil.expandSearch(getCluster().getRexBuilder(), null, condition));
+        if (condition != null) {
+            pw.item("filters", pw.nest() ? condition :
+                RexUtil.expandSearch(getCluster().getRexBuilder(), null, condition));
+        }
 
         return pw
             .itemIf("projects", projects, projects != null)

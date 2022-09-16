@@ -532,7 +532,7 @@ class RelJson {
                 else if (type.getSqlTypeName().getFamily() == SqlTypeFamily.BINARY)
                     literal = toByteString(literal);
 
-                return rexBuilder.makeLiteral(literal, type, false);
+                return rexBuilder.makeLiteral(literal, type, true);
             }
 
             throw new UnsupportedOperationException("cannot convert to rex " + o);

@@ -333,16 +333,11 @@ public class RexUtils {
             RexNode val = null;
 
             if (isBinaryComparison(pred)) {
-                val = pred.operands.get(1);
+                val = removeCast(pred.operands.get(1));
 
-                if (val.getType() != fldType)
-                    val = makeCast(builder, removeCast(val), fldType);
+                assert idxOpSupports(val) : val;
 
-                if (U.assertionsEnabled()) {
-                    RexNode cond = removeCast(pred.operands.get(1));
-
-                    assert idxOpSupports(cond) : cond;
-                }
+                val = makeCast(builder, val, fldType);
             }
 
             SqlOperator op = pred.getOperator();
