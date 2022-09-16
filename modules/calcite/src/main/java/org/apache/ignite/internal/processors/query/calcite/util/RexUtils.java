@@ -467,7 +467,7 @@ public class RexUtils {
             RexSlot ref;
 
             if (isBinaryComparison(rexNode)) {
-                ref = (RexSlot)extractRefFromBinary(predCall);
+                ref = (RexSlot)extractRefFromBinary(predCall, cluster);
 
                 if (ref == null)
                     continue;
@@ -476,8 +476,12 @@ public class RexUtils {
                 if (refOnTheRight(predCall))
                     predCall = (RexCall)RexUtil.invert(builder(cluster), predCall);
             }
-            else
-                ref = (RexSlot)extractRefFromFirstOperand(predCall);
+            else {
+                ref = (RexSlot)extractRefFromFirstOperand(predCall, cluster);
+
+                if (ref == null)
+                    continue;
+            }
 
             List<RexCall> fldPreds = res.computeIfAbsent(ref.getIndex(), k -> new ArrayList<>(conjunctions.size()));
 
@@ -487,7 +491,7 @@ public class RexUtils {
     }
 
     /** */
-    private static RexNode extractRefFromBinary(RexCall call) {
+    private static RexNode extractRefFromBinary(RexCall call, RelOptCluster cluster) {
         assert isBinaryComparison(call);
 
         RexNode leftOp = call.getOperands().get(0);
@@ -496,23 +500,28 @@ public class RexUtils {
         leftOp = removeCast(leftOp);
         rightOp = removeCast(rightOp);
 
-        if ((leftOp instanceof RexLocalRef || leftOp instanceof RexInputRef) && idxOpSupports(rightOp))
+        // Can proceed without ref cast only if cast was redundant in terms of values comparison.
+        if ((leftOp instanceof RexLocalRef || leftOp instanceof RexInputRef) && idxOpSupports(rightOp) &&
+            !TypeUtils.needCast(cluster.getTypeFactory(), leftOp.getType(), call.getOperands().get(0).getType()))
             return leftOp;
-        else if ((rightOp instanceof RexLocalRef || rightOp instanceof RexInputRef) && idxOpSupports(leftOp))
+        else if ((rightOp instanceof RexLocalRef || rightOp instanceof RexInputRef) && idxOpSupports(leftOp) &&
+            !TypeUtils.needCast(cluster.getTypeFactory(), rightOp.getType(), call.getOperands().get(1).getType()))
             return rightOp;
 
         return null;
     }
 
     /** */
-    private static RexNode extractRefFromFirstOperand(RexCall call) {
+    private static RexNode extractRefFromFirstOperand(RexCall call, RelOptCluster cluster) {
         assert isSupportedTreeComparison(call);
 
         RexNode op = call.getOperands().get(0);
 
         op = removeCast(op);
 
-        if ((op instanceof RexLocalRef || op instanceof RexInputRef))
+        // Can proceed without ref cast only if cast was redundant in terms of values comparison.
+        if ((op instanceof RexLocalRef || op instanceof RexInputRef) &&
+            !TypeUtils.needCast(cluster.getTypeFactory(), op.getType(), call.getOperands().get(0).getType()))
             return op;
 
         return null;

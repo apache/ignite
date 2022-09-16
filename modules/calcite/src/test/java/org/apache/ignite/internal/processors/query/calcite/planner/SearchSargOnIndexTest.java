@@ -161,11 +161,31 @@ public class SearchSargOnIndexTest extends AbstractPlannerTest {
         );
     }
 
-    /** SEARCH/SARG with DESC ordering. */
+    /** Tests bounds with DESC ordering. */
     @Test
     public void testBoundsDescOrdering() throws Exception {
         tbl.addIndex(RelCollations.of(TraitUtils.createFieldCollation(3, false),
             TraitUtils.createFieldCollation(2, true)), "C4");
+
+        assertBounds("SELECT * FROM TEST WHERE C4 > 1",
+            empty(),
+            empty(),
+            empty(),
+            range(null, 1, true, false));
+
+        assertBounds("SELECT * FROM TEST WHERE C4 < 1",
+            empty(),
+            empty(),
+            empty(),
+            range(1, "null", false, false));
+
+        assertBounds("SELECT * FROM TEST WHERE C4 IS NULL", empty(), empty(), empty(), exact("null"));
+
+        assertBounds("SELECT * FROM TEST WHERE C4 IS NOT NULL",
+            empty(),
+            empty(),
+            empty(),
+            range(null, "null", true, false));
 
         assertBounds("SELECT * FROM TEST WHERE C4 IN (1, 2, 3) AND C3 > 1",
             empty(),
@@ -184,7 +204,7 @@ public class SearchSargOnIndexTest extends AbstractPlannerTest {
         );
     }
 
-    /** SEARCH/SARG with conditions on several fields. */
+    /** Tests bounds with conditions on several fields. */
     @Test
     public void testBoundsSeveralFieldsSearch() throws Exception {
         assertBounds("SELECT * FROM TEST WHERE C1 = 1 AND C2 IN ('a', 'b')",
@@ -255,7 +275,7 @@ public class SearchSargOnIndexTest extends AbstractPlannerTest {
         );
     }
 
-    /** Test max complexity of SEARCH/SARG to include into index scan. */
+    /** Tests max complexity of SEARCH/SARG to include into index scan. */
     @Test
     public void testBoundsMaxComplexity() throws Exception {
         int limit = RexUtils.MAX_SEARCH_BOUNDS_COMPLEXITY;
@@ -275,26 +295,39 @@ public class SearchSargOnIndexTest extends AbstractPlannerTest {
         );
     }
 
-    /** SEARCH/SARG with wrong literal types. */
+    /** Tests bounds with wrong literal types. */
     @Test
     public void testBoundsTypeConversion() throws Exception {
+        // Implicit cast of all filter values to INTEGER.
+        assertBounds("SELECT * FROM TEST WHERE C1 IN ('1', '2', '3')",
+            multi(exact(1), exact(2), exact(3))
+        );
+
+        // Implicit cast of '1' to INTEGER.
         assertBounds("SELECT * FROM TEST WHERE C1 IN ('1', 2, 3)",
             multi(exact(1), exact(2), exact(3))
         );
 
-        // TODO
+        // Casted to INTEGER type C2 column cannot be used as index bound.
         assertBounds("SELECT * FROM TEST WHERE C1 = 1 AND C2 > 1",
             exact(1),
             empty()
         );
 
+        // Casted to INTEGER type C2 column cannot be used as index bound.
         assertBounds("SELECT * FROM TEST WHERE C1 = 1 AND C2 IN (2, 3)",
             exact(1),
             empty()
         );
+
+        // Implicit cast of 2 to VARCHAR.
+        assertBounds("SELECT * FROM TEST WHERE C1 = 1 AND C2 IN (2, '3')",
+            exact(1),
+            multi(exact("2"), exact("3"))
+        );
     }
 
-    /** Test dynamic parameters search. */
+    /** Tests bounds with dynamic parameters. */
     @Test
     public void testBoundsDynamicParams() throws Exception {
         // Cannot optimize dynamic parameters to SEARCH/SARG, query is splitted by or-to-union rule.
@@ -314,10 +347,25 @@ public class SearchSargOnIndexTest extends AbstractPlannerTest {
         );
     }
 
+    /** Tests bounds with correlated value. */
+    @Test
+    public void testBoundsWithCorrelate() throws Exception {
+        assertBounds("SELECT (SELECT C1 FROM TEST t2 WHERE t2.C1 = t1.C1) FROM TEST t1",
+            exact("$cor0.C1")
+        );
+
+        assertBounds(
+            "SELECT (SELECT C1 FROM TEST t2 WHERE C1 = 1 AND C2 = 'a' AND C3 IN (t1.C3, 0, 1, 2)) FROM TEST t1",
+            exact(1),
+            exact("a"),
+            empty()
+        );
+    }
+
     /** */
     private void assertBounds(String sql, Predicate<SearchBounds>... predicates) throws Exception {
-        assertPlan(sql, publicSchema, isInstanceOf(IgniteIndexScan.class)
-            .and(scan -> matchBounds(scan.searchBounds(), predicates)));
+        assertPlan(sql, publicSchema, nodeOrAnyChild(isInstanceOf(IgniteIndexScan.class)
+            .and(scan -> matchBounds(scan.searchBounds(), predicates))));
     }
 
     /** */
