@@ -58,23 +58,33 @@ public class IgniteClusterSnapshotWalRecordTest extends AbstractSnapshotSelfTest
         CountDownLatch loadStopLatch = new CountDownLatch(1);
 
         // Start changing data concurrently with performing the ClusterSnapshot operation.
-        IgniteInternalFuture<?> loadFut = GridTestUtils.runMultiThreadedAsync(() -> {
-            Random r = new Random();
+        IgniteInternalFuture<?> loadFut = null;
 
-            while (loadStopLatch.getCount() > 0) {
-                int key = r.nextInt(CACHE_KEYS_RANGE);
+        try {
+            loadFut = GridTestUtils.runMultiThreadedAsync(() -> {
+                Random r = new Random();
 
-                Account acc = new Account(r.nextInt(), r.nextInt());
+                while (loadStopLatch.getCount() > 0 && !Thread.interrupted()) {
+                    int key = r.nextInt(CACHE_KEYS_RANGE);
 
-                ign.cache(DEFAULT_CACHE_NAME).put(key, acc);
-            }
-        }, 5, "cache-loader-");
+                    Account acc = new Account(r.nextInt(), r.nextInt());
 
-        snp(ign).createSnapshot(SNAPSHOT_NAME).get();
+                    ign.cache(DEFAULT_CACHE_NAME).put(key, acc);
+                }
+            }, 5, "cache-loader-");
 
-        loadStopLatch.countDown();
+            snp(ign).createSnapshot(SNAPSHOT_NAME).get();
 
-        loadFut.get();
+            loadStopLatch.countDown();
+
+            loadFut.get();
+        }
+        catch (Throwable err) {
+            if (loadFut != null)
+                loadFut.cancel();
+
+            throw err;
+        }
 
         T2<Map<Integer, Account>, Map<Integer, Account>> data = parseWalCacheState(ign, SNAPSHOT_NAME);
 
