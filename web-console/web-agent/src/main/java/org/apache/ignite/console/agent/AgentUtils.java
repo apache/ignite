@@ -49,7 +49,7 @@ import org.apache.ignite.IgniteException;
 import org.apache.ignite.console.websocket.WebSocketResponse;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.internal.U;
-import org.apache.log4j.Logger;
+
 import org.eclipse.jetty.client.HttpClient;
 import org.eclipse.jetty.client.HttpProxy;
 import org.eclipse.jetty.client.Origin;
@@ -58,6 +58,8 @@ import org.eclipse.jetty.client.Socks4Proxy;
 import org.eclipse.jetty.client.util.BasicAuthentication;
 import org.eclipse.jetty.util.ssl.SslContextFactory;
 import org.eclipse.jetty.websocket.api.Session;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import javax.crypto.SecretKey;
 
@@ -72,7 +74,7 @@ import static org.eclipse.jetty.client.api.Authentication.ANY_REALM;
  */
 public class AgentUtils {
     /** */
-    private static final Logger log = Logger.getLogger(AgentUtils.class.getName());
+    private static final Logger log = LoggerFactory.getLogger(AgentUtils.class.getName());
 
     /** */
     public static final String[] EMPTY = {};

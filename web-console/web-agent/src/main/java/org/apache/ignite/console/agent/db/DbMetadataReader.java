@@ -35,14 +35,16 @@ import org.apache.ignite.console.agent.db.dialect.JdbcMetadataDialect;
 import org.apache.ignite.console.agent.db.dialect.MySQLMetadataDialect;
 import org.apache.ignite.console.agent.db.dialect.OracleMetadataDialect;
 import org.apache.ignite.console.db.DBInfo;
-import org.apache.log4j.Logger;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
 
 /**
  * Singleton to extract database metadata.
  */
 public class DbMetadataReader {
     /** Logger. */
-    private static final Logger log = Logger.getLogger(DbMetadataReader.class.getName());
+    private static final Logger log = LoggerFactory.getLogger(DbMetadataReader.class.getName());
 
     /** */
     private final Map<String, Driver> drivers = new HashMap<>();

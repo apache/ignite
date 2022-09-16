@@ -307,7 +307,7 @@ public class DatabaseHandler{
             Collection<String> schemas = dbMetaReader.schemas(conn, true);
             Collection<GridClientCacheBean> caches = new ArrayList<>();
             schemas.forEach((name)->{    
-            	GridClientCacheBean cache = new GridClientCacheBean(name,GridClientCacheMode.LOCAL,name);
+            	GridClientCacheBean cache = new GridClientCacheBean(name,GridClientCacheMode.REPLICATED,name);
             	caches.add(cache);
             });
             return caches;

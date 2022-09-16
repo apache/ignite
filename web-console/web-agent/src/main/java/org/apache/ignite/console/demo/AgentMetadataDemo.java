@@ -23,9 +23,11 @@ import java.sql.Connection;
 import java.sql.DriverManager;
 import java.sql.SQLException;
 import java.util.concurrent.atomic.AtomicBoolean;
-import org.apache.log4j.Logger;
+
 import org.h2.tools.RunScript;
 import org.h2.tools.Server;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import static org.apache.ignite.console.agent.AgentUtils.resolvePath;
 
@@ -36,7 +38,7 @@ import static org.apache.ignite.console.agent.AgentUtils.resolvePath;
  */
 public class AgentMetadataDemo {
     /** */
-    private static final Logger log = Logger.getLogger(AgentMetadataDemo.class.getName());
+    private static final Logger log = LoggerFactory.getLogger(AgentMetadataDemo.class.getName());
 
     /** */
     private static final AtomicBoolean initLatch = new AtomicBoolean();

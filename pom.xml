@@ -108,10 +108,7 @@
 
         <profile>
             <id>all-scala</id><!-- used to update project versions and check all modules compilation -->
-            <modules><!-- sorted alphabetically -->
-                <module>modules/spark</module>
-                <module>modules/spark-2.4</module>
-                <module>modules/visor-console-2.10</module>
+            <modules><!-- sorted alphabetically -->                              
                 <module>modules/visor-console</module>
                 <module>modules/visor-plugins</module>
             </modules>
@@ -537,33 +534,6 @@
             <id>benchmarks</id>
             <modules>
                 <module>modules/benchmarks</module>
-            </modules>
-        </profile>
-
-        
-
-        <profile>
-            <id>spark-2.4</id>
-
-            <activation>
-                <property><name>spark-2.4</name></property>
-            </activation>
-
-            <modules>
-                <module>modules/spark-2.4</module>
-            </modules>
-        </profile>
-
-        <profile>
-            <id>scala-2.10</id>
-
-            <activation>
-                <property><name>scala-2.10</name></property>
-            </activation>
-
-            <modules>
-                <module>modules/visor-console-2.10</module>
-                <module>modules/visor-plugins</module>
             </modules>
         </profile>
 

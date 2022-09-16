@@ -766,5 +766,5 @@ public class HibernateCacheProxy implements IgniteInternalCache<Object, Object> 
             res.put(keyTransformer.transform(e.getKey()), e.getValue());
 
         return res;
-    }
+    }	
 }
