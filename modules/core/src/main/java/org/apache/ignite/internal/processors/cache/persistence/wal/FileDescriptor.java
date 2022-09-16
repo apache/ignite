@@ -113,15 +113,6 @@ public class FileDescriptor implements Comparable<FileDescriptor>, AbstractWalRe
     }
 
     /**
-     * Return absolute WAL segment file index.
-     *
-     * @return Absolute WAL segment file index.
-     */
-    public long getIdx() {
-        return idx;
-    }
-
-    /**
      * Return absolute pathname string of this file descriptor pathname.
      *
      * @return Absolute pathname string of this file descriptor pathname.

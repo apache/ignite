@@ -43,6 +43,14 @@ public interface IgniteSnapshot {
     public IgniteFuture<Void> createSnapshot(String name);
 
     /**
+     * Create a consistent copy of all persistence cache groups from the whole cluster.
+     *
+     * @param name Snapshot unique name which satisfies the following name pattern [a-zA-Z0-9_].
+     * @return Future which will be completed when a process ends.
+     */
+    public IgniteFuture<Void> createIncrementalSnapshot(String name);
+
+    /**
      * Cancel running snapshot operation. All intermediate results of cancelled snapshot operation will be deleted.
      * If snapshot already created this command will have no effect.
      *

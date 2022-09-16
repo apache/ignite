@@ -62,7 +62,11 @@ public class SnapshotOperationRequest implements Serializable {
     private transient volatile boolean startStageEnded;
 
     /** Operation start time. */
+    // TODO: use for prepare incremental snapshot
     private final long startTime;
+
+    /** */
+    private final boolean incremental;
 
     /**
      * @param reqId Request ID.
@@ -78,7 +82,8 @@ public class SnapshotOperationRequest implements Serializable {
         String snpName,
         String snpPath,
         @Nullable Collection<String> grps,
-        Set<UUID> nodes
+        Set<UUID> nodes,
+        boolean incremental
     ) {
         this.reqId = reqId;
         this.opNodeId = opNodeId;
@@ -86,6 +91,7 @@ public class SnapshotOperationRequest implements Serializable {
         this.grps = grps;
         this.nodes = nodes;
         this.snpPath = snpPath;
+        this.incremental = incremental;
         startTime = U.currentTimeMillis();
     }
 
@@ -143,6 +149,11 @@ public class SnapshotOperationRequest implements Serializable {
      */
     public void error(Throwable err) {
         this.err = err;
+    }
+
+    /** */
+    public boolean incremental() {
+        return incremental;
     }
 
     /** @return Start time. */

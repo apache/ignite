@@ -457,6 +457,20 @@ public class DistributedProcess<I extends Serializable, R extends Serializable> 
         /**
          * Cache group restore rollback phase.
          */
-        RESTORE_CACHE_GROUP_SNAPSHOT_ROLLBACK
+        RESTORE_CACHE_GROUP_SNAPSHOT_ROLLBACK,
+
+        /**
+         * Start incremental snapshot procedure.
+         *
+         * @see IgniteSnapshotManager
+         */
+        START_INC_SNAPSHOT,
+
+        /**
+         * End incremental snapshot procedure.
+         *
+         * @see IgniteSnapshotManager
+         */
+        END_INC_SNAPSHOT
     }
 }
