@@ -533,7 +533,7 @@ Please, refer to the link:events/listening-to-events#enabling-events[Enabling Ev
 `idle_verify` command provides the inconsistent cache group names and partitions list as a result.
 The `repair` command allows performing cache consistency check and repair (when possible) using the link:key-value-api/read-repair[Read Repair] approach for every inconsistent partition found by `idle_verify`.
 
-The command uses special strategies to perform the repair. It's recommended to use `CHECK_ONLY` strategy to list inconsistent values and then chose the proper link:key-value-api/read-repair#strategies[Repair Strategy].
+The command uses special strategies to perform the repair. It's recommended to use `CHECK_ONLY` strategy to list inconsistent values and then choose the proper link:key-value-api/read-repair#strategies[Repair Strategy].
 
 By default, found inconsistent entries will be listed in the application log, you may change the location by configuring the logger for a special logging path for the `org.apache.ignite.internal.visor.consistency` package.
 
