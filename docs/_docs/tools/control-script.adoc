@@ -559,7 +559,7 @@ Parameters:
 | Parameter | Description
 | `cache-name`| Cache (or cache group) name to be checked/repaired.
 | `partition`| Cache's partition to be checked/repaired.
-| `strategy`| see link:key-value-api/read-repair#strategies[Repair Strategies].
+| `strategy`| See link:key-value-api/read-repair#strategies[Repair Strategies].
 |===
 
 Optional parameters:
