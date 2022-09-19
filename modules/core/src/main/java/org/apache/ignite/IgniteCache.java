@@ -174,8 +174,8 @@ public interface IgniteCache<K, V> extends javax.cache.Cache<K, V>, IgniteAsyncS
      *  <p>
      *  Warning:
      *  <p>
-     *  Due to the nature of the atomic cache, false-positive results can be observed. For example, an attempt to check
-     *  consistency under cache loading may lead to a consistency violation exception. By default, the implementation tries
+     *  Due to the nature of an atomic cache, false-positive results can be observed. For example, an attempt to check
+     *  consistency under cache's loading may lead to a consistency violation exception. By default, the implementation tries
      *  to check the given key three times. The number of attempts can be changed using
      *  {@link IgniteSystemProperties#IGNITE_NEAR_GET_MAX_REMAPS} property.
      *  </li>
