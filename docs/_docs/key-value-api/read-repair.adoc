@@ -80,7 +80,7 @@ Values will be repaired::
 ====
 [discrete]
 === Limitations
-This proxy usage does not guarantee "all copies check" in case the value is already cached inside the transaction.
+This proxy usage does not guarantee "all copies check" in case the value have been already cached inside the transaction.
 
 In case you do use not a `READ_COMMITTED` isolation mode and already have a cached value, for example already read the value or performed a write, you'll just gain the cached value.
 ====
