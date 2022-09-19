@@ -45,7 +45,7 @@ import org.junit.Test;
 /**
  * Planner test for SEARCH/SARG condition on indexed fields.
  */
-public class SearchSargOnIndexTest extends AbstractPlannerTest {
+public class SearchSargOnIndexPlannerTest extends AbstractPlannerTest {
     /** */
     private IgniteSchema publicSchema;
 
@@ -148,6 +148,17 @@ public class SearchSargOnIndexTest extends AbstractPlannerTest {
             multi(
                 range(1, 2, false, false),
                 range(2, 3, false, false)));
+
+        assertBounds("SELECT * FROM TEST WHERE C1 = 1 AND " +
+                "((C2 > '1' AND C2 < '3') OR (C2 > '11' AND C2 < '33') OR C2 > '4')",
+            exact(1),
+            multi(
+                range("1", "33", false, false),
+                range("4", null, false, true)));
+
+        assertBounds("SELECT * FROM TEST WHERE C1 = 1 AND (C2 > '1' OR C2 < '3')",
+            exact(1),
+            range("null", null, false, true));
     }
 
     /** Simple SEARCH/SARG with "IS NULL" condition. */
@@ -210,6 +221,11 @@ public class SearchSargOnIndexTest extends AbstractPlannerTest {
         assertBounds("SELECT * FROM TEST WHERE C1 = 1 AND C2 IN ('a', 'b')",
             exact(1),
             multi(exact("a"), exact("b"))
+        );
+
+        assertBounds("SELECT * FROM TEST WHERE C1 = 1 AND C2 > 'a'",
+            exact(1),
+            range("a", null, false, true)
         );
 
         assertBounds("SELECT * FROM TEST WHERE C1 IN (1, 2, 3) AND C2 = 'a'",
