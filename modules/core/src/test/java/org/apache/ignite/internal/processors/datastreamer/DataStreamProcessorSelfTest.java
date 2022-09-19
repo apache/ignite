@@ -36,6 +36,7 @@ import org.apache.ignite.IgniteException;
 import org.apache.ignite.cache.CacheAtomicityMode;
 import org.apache.ignite.cache.CacheMode;
 import org.apache.ignite.cache.CachePeekMode;
+import org.apache.ignite.cache.CacheWriteSynchronizationMode;
 import org.apache.ignite.cache.affinity.Affinity;
 import org.apache.ignite.cache.store.CacheStore;
 import org.apache.ignite.cache.store.CacheStoreAdapter;
@@ -73,6 +74,7 @@ import static org.apache.ignite.cache.CacheAtomicityMode.TRANSACTIONAL;
 import static org.apache.ignite.cache.CacheMode.PARTITIONED;
 import static org.apache.ignite.cache.CacheMode.REPLICATED;
 import static org.apache.ignite.cache.CacheWriteSynchronizationMode.FULL_SYNC;
+import static org.apache.ignite.cache.CacheWriteSynchronizationMode.PRIMARY_SYNC;
 import static org.apache.ignite.events.EventType.EVT_CACHE_OBJECT_PUT;
 
 /**
@@ -84,6 +86,9 @@ public class DataStreamProcessorSelfTest extends GridCommonAbstractTest {
 
     /** */
     private CacheMode mode = PARTITIONED;
+
+    /** */
+    private CacheWriteSynchronizationMode cacheSyncMode = FULL_SYNC;
 
     /** */
     private boolean nearEnabled = true;
@@ -137,7 +142,7 @@ public class DataStreamProcessorSelfTest extends GridCommonAbstractTest {
                 cc.setNearConfiguration(nearCfg);
             }
 
-            cc.setWriteSynchronizationMode(FULL_SYNC);
+            cc.setWriteSynchronizationMode(cacheSyncMode);
 
             if (store != null) {
                 cc.setCacheStoreFactory(new IgniteReflectionFactory<CacheStore>(TestStore.class));
@@ -214,6 +219,41 @@ public class DataStreamProcessorSelfTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    @Test
+    public void testOnlyPrimarySync() throws Exception {
+        int entriesToLoad = 100_000;
+
+        StreamReceiver<Integer, Object> receiver = DataStreamerCacheUpdaters.individual();
+
+        mode = PARTITIONED;
+
+        cacheSyncMode = PRIMARY_SYNC;
+
+//        try {
+//            startGridsMultiThreaded(3);
+//
+//            try (Ignite ldr = startClientGrid(3)) {
+//                try (IgniteDataStreamer<Integer, Object> streamer = ldr.dataStreamer(DEFAULT_CACHE_NAME)) {
+//                    if (receiver != null)
+//                        streamer.receiver(receiver);
+//
+//                    randomizeLoadData();
+//
+//                    for (int e = 1; e <= entriesToLoad; ++e)
+//                        streamer.addData(e, vals[e % vals.length]);
+//                }
+//
+//                assert grid(0).cache(DEFAULT_CACHE_NAME).size() == entriesToLoad;
+//            }
+//        }
+//        finally {
+//            stopAllGrids();
+//        }
+    }
+
+    /**
+     * @throws Exception If failed.
+     */
     private void checkDataStreamer() throws Exception {
         try {
             useCache = true;
@@ -239,7 +279,7 @@ public class DataStreamProcessorSelfTest extends GridCommonAbstractTest {
             final CountDownLatch l1 = new CountDownLatch(threads);
 
             IgniteInternalFuture<?> f1 = multithreadedAsync(new Callable<Object>() {
-                @Override public Object call() throws Exception {
+                @Override public Object call() {
                     Collection<IgniteFuture<?>> futs = new ArrayList<>(cnt);
 
                     for (int i = 0; i < cnt; i++) {
