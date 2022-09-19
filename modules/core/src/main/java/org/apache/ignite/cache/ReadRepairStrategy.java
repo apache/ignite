@@ -49,10 +49,10 @@ public enum ReadRepairStrategy {
      * <p>
      * May cause {@link IgniteException} when it is unable to detect values found more times than any other.
      * <p>
-     * For example, when we have 5 copies (4 backups) and value `A` is found twice, but `X`, `Y`, and `Z` only once, `A` wins.
+     * For example, when 5 copies (4 backups) are given and value `A` is found twice, but `X`, `Y`, and `Z` only once, `A` wins.
      * But, when `A` is found twice, as well as `B`, and `X` only once, the strategy is unable to determine the winner.
      * <p>
-     * When we have 4 copies (3 backups), any value found two or more times, when others are found only once, is the winner.
+     * When 4 copies (3 backups) are given, any value found two or more times, when others are found only once, is the winner.
      */
     RELATIVE_MAJORITY("RELATIVE_MAJORITY"),
 
