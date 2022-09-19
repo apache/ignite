@@ -157,7 +157,6 @@ namespace Apache.Ignite.Core.Tests.Compute
 
             public ComputeJobResultPolicy OnResult(IComputeJobResult<int> res, IList<IComputeJobResult<int>> rcvd)
             {
-                Thread.Sleep(MillisecondsTimeout);
                 return ComputeJobResultPolicy.Wait;
             }
 
