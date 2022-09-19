@@ -118,7 +118,6 @@ namespace Apache.Ignite.Core.Tests.Compute
                 Assert.IsFalse(task.IsCanceled);
 
                 Job.StartEvent.Wait();
-                Job.FinishEvent.Set();
 
                 cts.Cancel();
                 TestUtils.WaitForTrueCondition(() => task.IsCanceled);
@@ -190,6 +189,8 @@ namespace Apache.Ignite.Core.Tests.Compute
 
             public void Cancel()
             {
+                FinishEvent.Set();
+
                 Cancelled = true;
             }
         }
