@@ -32,7 +32,7 @@ A consistency check is incompatible with the following cache configurations:
 
 The `Read Repair` mode is designed to maintain consistency. However, read operations become {tilde}2 times more costly because backup copies are checked in addition to the primary copy. It is generally not advisable to use this mode all the time, but rather on a once-in-a-while basis.
 
-To enable the `Read Repair` mode, it is necessary obtain an instance of the cache that enables Read Repair reads as follows:
+To enable the `Read Repair` mode, it is necessary to obtain an instance of the cache that enables Read Repair reads as follows:
 
 [source, java]
 ----
