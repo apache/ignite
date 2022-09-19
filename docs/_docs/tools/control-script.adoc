@@ -527,7 +527,7 @@ Command execution MUST be checked on the test environment using the data/configu
 ===  Additional configuration required
 The command uses special link:https://ignite.apache.org/releases/{version}/javadoc/org/apache/ignite/events/EventType.html#EVT_CONSISTENCY_VIOLATION[Consistency Violation Event] to detect the consistency violations. This event must be enabled before the command execution.
 
-Refer to the link:events/listening-to-events#enabling-events[Enabling Events] section for details.
+Please, refer to the link:events/listening-to-events#enabling-events[Enabling Events] section for details.
 ====
 
 `idle_verify` command provides the inconsistent cache group names and partitions list as a result.

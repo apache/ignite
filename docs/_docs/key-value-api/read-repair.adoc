@@ -68,7 +68,7 @@ When 4 copies (3 backups) are given, any value found two or more times, when oth
 == Events
 link:https://ignite.apache.org/releases/{version}/javadoc/org/apache/ignite/events/EventType.html#EVT_CONSISTENCY_VIOLATION[Сonsistency Violation Event] will be recorded for each violation in case it's configured as recordable. You can listen to this event to get notified about inconsistency issues.
 
-Refer to the link:events/listening-to-events[Working with Events] section for the information on how to listen to events.
+Please, refer to the link:events/listening-to-events[Working with Events] section for the information on how to listen to events.
 
 == Transactional Caches
 Values will be repaired::
