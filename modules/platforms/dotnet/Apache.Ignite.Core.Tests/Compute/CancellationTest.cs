@@ -110,7 +110,7 @@ namespace Apache.Ignite.Core.Tests.Compute
         {
             Job.Cancelled = false;
             Job.StartEvent.Reset();
-            Job.FinishEvent.Reset();
+            Job.CancelEvent.Reset();
 
             using (var cts = new CancellationTokenSource())
             {
@@ -173,22 +173,21 @@ namespace Apache.Ignite.Core.Tests.Compute
         {
             public static readonly ManualResetEventSlim StartEvent = new ManualResetEventSlim(false);
 
-            public static readonly ManualResetEventSlim FinishEvent = new ManualResetEventSlim(false);
+            public static readonly ManualResetEventSlim CancelEvent = new ManualResetEventSlim(false);
 
             public static volatile bool Cancelled;
 
             public int Execute()
             {
                 StartEvent.Set();
-                FinishEvent.Wait();
+                CancelEvent.Wait();
 
                 return 1;
             }
 
             public void Cancel()
             {
-                FinishEvent.Set();
-
+                CancelEvent.Set();
                 Cancelled = true;
             }
         }
