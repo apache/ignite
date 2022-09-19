@@ -40,6 +40,7 @@ import org.apache.ignite.internal.visor.query.VisorScanQueryCancelTaskArg;
 import org.apache.ignite.internal.visor.service.VisorCancelServiceTask;
 import org.apache.ignite.internal.visor.service.VisorCancelServiceTaskArg;
 import org.apache.ignite.internal.visor.snapshot.VisorSnapshotCancelTask;
+import org.apache.ignite.internal.visor.snapshot.VisorSnapshotCancelTaskArg;
 import org.apache.ignite.internal.visor.tx.VisorTxOperation;
 import org.apache.ignite.internal.visor.tx.VisorTxTask;
 import org.apache.ignite.internal.visor.tx.VisorTxTaskArg;
@@ -192,7 +193,9 @@ public class KillCommand extends AbstractCommand<Object> {
                 break;
 
             case SNAPSHOT:
-                taskArgs = argIter.nextArg("Expected snapshot name.");
+                String arg = argIter.nextArg("Expected snapshot operation request ID.");
+
+                taskArgs = new VisorSnapshotCancelTaskArg(UUID.fromString(arg), null);
 
                 taskName = VisorSnapshotCancelTask.class.getName();
 

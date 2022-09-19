@@ -2951,7 +2951,7 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
      * @param highBound Upper bound.
      * @throws IgniteCheckedException If failed.
      */
-    public void onWalTruncated(@Nullable WALPointer highBound) throws IgniteCheckedException {
+    @Override public void onWalTruncated(@Nullable WALPointer highBound) throws IgniteCheckedException {
         checkpointManager.removeCheckpointsUntil(highBound);
     }
 

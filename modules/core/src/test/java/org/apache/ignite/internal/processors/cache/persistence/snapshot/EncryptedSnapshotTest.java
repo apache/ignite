@@ -283,7 +283,7 @@ public class EncryptedSnapshotTest extends AbstractSnapshotSelfTest {
 
         GridTestUtils.assertThrowsAnyCause(log,
             () -> snp(ig).registerSnapshotTask(SNAPSHOT_NAME, ig.localNode().id(),
-                F.asMap(CU.cacheId(dfltCacheCfg.getName()), null), false,
+                null, F.asMap(CU.cacheId(dfltCacheCfg.getName()), null), false,
                 snp(ig).localSnapshotSenderFactory().apply(SNAPSHOT_NAME, null)).get(TIMEOUT),
             IgniteCheckedException.class,
             "Metastore is required because it holds encryption keys");

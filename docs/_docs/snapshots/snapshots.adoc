@@ -113,12 +113,6 @@ control.(sh|bat) --snapshot create snapshot_09062021 --sync
 
 # Create a cluster snapshot named "snapshot_09062021" in the "/tmp/ignite/snapshots" folder (the full path to the snapshot files will be /tmp/ignite/snapshots/snapshot_09062021):
 control.(sh|bat) --snapshot create snapshot_09062021 -dest /tmp/ignite/snapshots
-
-# Cancel a running snapshot named "snapshot_09062021":
-control.(sh|bat) --snapshot cancel snapshot_09062021
-
-# Kill a running snapshot named "snapshot_09062021":
-control.(sh|bat) --kill SNAPSHOT snapshot_09062021
 ----
 
 === Using JMX
@@ -129,7 +123,6 @@ Use the `SnapshotMXBean` interface to perform the snapshot-specific procedures v
 |===
 |Method | Description
 |createSnapshot(String snpName) | Create a snapshot.
-|cancelSnapshot(String snpName) | Cancel a snapshot on the node initiated its creation.
 |===
 
 === Using Java API
@@ -213,7 +206,7 @@ tab:CLI[]
 [source,shell]
 ----
 # Restore cache group "snapshot-cache" from the snapshot "snapshot_02092020".
-control.(sh|bat) --snapshot restore snapshot_02092020 --start --groups snapshot-cache
+control.(sh|bat) --snapshot restore snapshot_02092020 --groups snapshot-cache
 ----
 --
 
@@ -223,19 +216,16 @@ The `control.sh|bat` script provides the ability to start and stop the restore o
 [source,shell]
 ----
 # Start restoring all user-created cache groups from the snapshot "snapshot_09062021" in the background.
-control.(sh|bat) --snapshot restore snapshot_09062021 --start
+control.(sh|bat) --snapshot restore snapshot_09062021
 
 # Start restoring all user-created cache groups from the snapshot "snapshot_09062021" and wait for the entire operation to complete.
-control.(sh|bat) --snapshot restore snapshot_09062021 --start --sync
+control.(sh|bat) --snapshot restore snapshot_09062021 --sync
 
 # Start restoring all user-created cache groups from the snapshot "snapshot_09062021" located in the "/tmp/ignite/snapshots" folder (the full path to the snapshot files should be /tmp/ignite/snapshots/snapshot_09062021):
 control.(sh|bat) --snapshot restore snapshot_09062021 --src /tmp/ignite/snapshots
 
 # Start restoring only "cache-group1" and "cache-group2" from the snapshot "snapshot_09062021" in the background.
-control.(sh|bat) --snapshot restore snapshot_09062021 --start --groups cache-group1,cache-group2
-
-# Cancel the restore operation for "snapshot_09062021".
-control.(sh|bat) --snapshot restore snapshot_09062021 --cancel
+control.(sh|bat) --snapshot restore snapshot_09062021 --groups cache-group1,cache-group2
 ----
 
 == Getting Snapshot Operation Status
@@ -266,6 +256,44 @@ SnapshotMXBean mxBean = ...;
 
 // The status of a current snapshot operation in the cluster.
 String status = mxBean.status();
+----
+--
+
+== Cancelling Snapshot Operation
+
+To abort create/restore snapshot operation you need to obtain an `operation request ID`.
+This identifier is displayed when you start a snapshot operation using the CLI. It can also be obtained using the status command and from snapshot metrics.
+
+[tabs]
+--
+tab:Unix[]
+[source,shell]
+----
+# Cancel a running snapshot operation with ID "9ec229f1-e0df-41ff-9434-6f08ba7d05bd":
+control.sh --snapshot cancel --id 9ec229f1-e0df-41ff-9434-6f08ba7d05bd
+
+# Kill a running snapshot operation with ID "9ec229f1-e0df-41ff-9434-6f08ba7d05bd":
+control.sh --kill SNAPSHOT 9ec229f1-e0df-41ff-9434-6f08ba7d05bd
+----
+
+tab:Windows[]
+[source,shell]
+----
+# Cancel a running snapshot operation with ID "9ec229f1-e0df-41ff-9434-6f08ba7d05bd":
+control.bat --snapshot cancel --id 9ec229f1-e0df-41ff-9434-6f08ba7d05bd
+
+# Kill a running snapshot operation with ID "9ec229f1-e0df-41ff-9434-6f08ba7d05bd":
+control.bat --kill SNAPSHOT 9ec229f1-e0df-41ff-9434-6f08ba7d05bd
+----
+
+tab:JMX[]
+You can also abort a snapshot operation via the `SnapshotMXBean` interface:
+[source,java]
+----
+SnapshotMXBean mxBean = ...;
+
+// Cancel a running snapshot operation with ID "9ec229f1-e0df-41ff-9434-6f08ba7d05bd":
+mxBean.cancelSnapshotOperation("9ec229f1-e0df-41ff-9434-6f08ba7d05bd");
 ----
 --
 

@@ -18,10 +18,11 @@
 package org.apache.ignite.internal.visor.snapshot;
 
 import org.apache.ignite.IgniteException;
+import org.apache.ignite.internal.processors.cache.persistence.snapshot.IgniteSnapshotManager;
 import org.apache.ignite.internal.processors.task.GridInternal;
+import org.apache.ignite.internal.util.future.IgniteFutureImpl;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.visor.VisorJob;
-import org.apache.ignite.lang.IgniteFuture;
 
 /**
  * Visor snapshot restore task.
@@ -33,7 +34,10 @@ public class VisorSnapshotRestoreTask extends VisorSnapshotOneNodeTask<VisorSnap
 
     /** {@inheritDoc} */
     @Override protected VisorJob<VisorSnapshotRestoreTaskArg, String> job(VisorSnapshotRestoreTaskArg arg) {
-        switch (arg.jobAction()) {
+        VisorSnapshotRestoreTaskAction action =
+            arg.jobAction() == null ? VisorSnapshotRestoreTaskAction.START : arg.jobAction();
+
+        switch (action) {
             case START:
                 return new VisorSnapshotStartRestoreJob(arg, debug);
 
@@ -63,20 +67,29 @@ public class VisorSnapshotRestoreTask extends VisorSnapshotOneNodeTask<VisorSnap
 
         /** {@inheritDoc} */
         @Override protected String run(VisorSnapshotRestoreTaskArg arg) throws IgniteException {
-            IgniteFuture<Void> fut = ignite.context().cache().context().snapshotMgr()
+            IgniteFutureImpl<Void> fut = ignite.context().cache().context().snapshotMgr()
                 .restoreSnapshot(arg.snapshotName(), arg.snapshotPath(), arg.groupNames());
+
+            IgniteSnapshotManager.ClusterSnapshotFuture snpFut =
+                fut.internalFuture() instanceof IgniteSnapshotManager.ClusterSnapshotFuture ?
+                    (IgniteSnapshotManager.ClusterSnapshotFuture)fut.internalFuture() : null;
 
             if (arg.sync() || fut.isDone())
                 fut.get();
-            
+
             String msgSuff = arg.sync() ? "completed successfully" : "started";
             String msgGrps = arg.groupNames() == null ? "" : ", group(s)=" + F.concat(arg.groupNames(), ",");
+            String msgId = snpFut != null && snpFut.requestId() != null ? ", id=" + snpFut.requestId() : "";
 
-            return "Snapshot cache group restore operation " + msgSuff + " [snapshot=" + arg.snapshotName() + msgGrps + ']';
+            return "Snapshot cache group restore operation " + msgSuff +
+                " [name=" + arg.snapshotName() + msgGrps + msgId + ']';
         }
     }
 
-    /** */
+    /**
+     * @deprecated Use {@link VisorSnapshotCancelTask} instead.
+     */
+    @Deprecated
     private static class VisorSnapshotRestoreCancelJob extends VisorJob<VisorSnapshotRestoreTaskArg, String> {
         /** Serial version uid. */
         private static final long serialVersionUID = 0L;

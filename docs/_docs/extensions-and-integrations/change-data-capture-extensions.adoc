@@ -148,9 +148,11 @@ NOTE: Please, enable `ignite-cdc-ext` to be able to run `kafka-to-ignite.sh`.
 ==== Configuration
 
 Application configuration should be done using POJO classes or Spring xml file like regular Ignite node configuration.
-Kafka to ignite configuration file should contain the following beans that will be loaded during startup:
+Kafka to Ignite configuration file should contain the following beans that will be loaded during startup:
 
-. `IgniteConfiguration` bean: Configuration of the client node that will connect to the destination cluster.
+. One of the configuration beans to define a client type that will connect to the destination cluster:
+- `IgniteConfiguration` bean: Configuration of a client node.
+- `ClientConfiguration` bean: Configuration of a link:thin-clients/java-thin-client[Java Thin Client].
 . `java.util.Properties` bean with the name `kafkaProperties`: Single Kafka consumer configuration.
 . `org.apache.ignite.cdc.kafka.KafkaToIgniteCdcStreamerConfiguration` bean: Options specific to `kafka-to-ignite.sh` application.
 
