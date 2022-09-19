@@ -476,7 +476,7 @@ Let's review these usage scenarios in more detail.
 
 === Verifying Partition Checksums
 
-Even if update counters and size are equal on the primary and backup nodes, there might be a case when the primary and backup diverge due to some critical failure.
+Even if update counters and size are equal on the primary and backup nodes, the primary and backup might diverge due to some critical failure.
 
 The `idle_verify` command compares the hash of the primary partition with that of the backup partitions and reports any differences.
 The differences might be the result of node failure or incorrect shutdown during an update operation.
