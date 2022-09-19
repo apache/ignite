@@ -54,7 +54,7 @@ May cause IgniteException when the fix is impossible (unable to detect the newes
 | `RELATIVE_MAJORITY` a| The relative majority, any value found more times than any other wins.
 Works for an even number of copies (which is typical of Ignite) instead of an absolute majority.
 
-May cause IgniteException when unable to detect values found more times than any other.
+May cause IgniteException when it is unable to detect values found more times than any other.
 
 For example, when we have 5 copies (4 backups)::
 * and value `A` found twice, but `X`, `Y` and `Z` only once, `A` wins,
