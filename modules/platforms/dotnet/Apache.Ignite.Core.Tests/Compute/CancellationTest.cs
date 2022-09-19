@@ -108,7 +108,7 @@ namespace Apache.Ignite.Core.Tests.Compute
 
         private void TestTask(Func<ICompute, CancellationToken, System.Threading.Tasks.Task> runner)
         {
-            Job.CancelCount = 0;
+            Job.Cancelled = false;
             Job.StartEvent.Reset();
             Job.FinishEvent.Reset();
 
@@ -127,7 +127,7 @@ namespace Apache.Ignite.Core.Tests.Compute
                 Assert.IsTrue(runner(Compute, cts.Token).IsCanceled);
             }
 
-            Assert.IsTrue(TestUtils.WaitForCondition(() => Job.CancelCount > 0, 5000));
+            Assert.IsTrue(TestUtils.WaitForCondition(() => Job.Cancelled, 5000));
         }
 
         private void TestClosure(Func<ICompute, CancellationToken, System.Threading.Tasks.Task> runner, int delay = 0)
@@ -174,17 +174,11 @@ namespace Apache.Ignite.Core.Tests.Compute
         [Serializable]
         private class Job : IComputeJob<int>
         {
-            private static int _cancelCount;
-
             public static readonly ManualResetEventSlim StartEvent = new ManualResetEventSlim(false);
 
             public static readonly ManualResetEventSlim FinishEvent = new ManualResetEventSlim(false);
 
-            public static int CancelCount
-            {
-                get { return Thread.VolatileRead(ref _cancelCount); }
-                set { Thread.VolatileWrite(ref _cancelCount, value); }
-            }
+            public static volatile bool Cancelled;
 
             public int Execute()
             {
@@ -196,7 +190,7 @@ namespace Apache.Ignite.Core.Tests.Compute
 
             public void Cancel()
             {
-                Interlocked.Increment(ref _cancelCount);
+                Cancelled = true;
             }
         }
 
