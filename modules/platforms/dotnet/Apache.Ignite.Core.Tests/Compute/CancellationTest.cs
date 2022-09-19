@@ -152,9 +152,7 @@ namespace Apache.Ignite.Core.Tests.Compute
         {
             public IDictionary<IComputeJob<int>, IClusterNode> Map(IList<IClusterNode> subgrid, object arg)
             {
-                return Enumerable.Range(1, 2)
-                    .SelectMany(x => subgrid)
-                    .ToDictionary(x => (IComputeJob<int>)new Job(), x => x);
+                return subgrid.Where(x => !x.IsLocal).Take(1).ToDictionary(x => (IComputeJob<int>)new Job(), x => x);
             }
 
             public ComputeJobResultPolicy OnResult(IComputeJobResult<int> res, IList<IComputeJobResult<int>> rcvd)
