@@ -35,7 +35,6 @@ import org.apache.calcite.avatica.util.TimeUnit;
 import org.apache.calcite.jdbc.JavaTypeFactoryImpl;
 import org.apache.calcite.rel.type.RelDataType;
 import org.apache.calcite.rel.type.RelDataTypeSystem;
-import org.apache.calcite.runtime.Geometries;
 import org.apache.calcite.sql.SqlIntervalQualifier;
 import org.apache.calcite.sql.SqlUtil;
 import org.apache.calcite.sql.parser.SqlParserPos;
@@ -54,9 +53,6 @@ public class IgniteTypeFactory extends JavaTypeFactoryImpl {
     /** Interval qualifier to create day-time interval types. */
     private static final SqlIntervalQualifier INTERVAL_QUALIFIER_DAY_TIME = new SqlIntervalQualifier(TimeUnit.DAY,
         TimeUnit.SECOND, SqlParserPos.ZERO);
-
-    /** */
-    private final RelDataType unknownType;
 
     /** */
     private final Charset charset;
@@ -80,8 +76,6 @@ public class IgniteTypeFactory extends JavaTypeFactoryImpl {
             // If JVM default charset is not supported by Calcite - use UTF-8.
             charset = StandardCharsets.UTF_8;
         }
-
-        unknownType = createUnknownType();
     }
 
     /** {@inheritDoc} */
@@ -132,7 +126,7 @@ public class IgniteTypeFactory extends JavaTypeFactoryImpl {
                 case VARBINARY:
                     return ByteString.class;
                 case GEOMETRY:
-                    return Geometries.Geom.class;
+                    throw new IllegalStateException("Unsupported data type: " + type);
                 case SYMBOL:
                     return Enum.class;
                 case ANY:
@@ -218,7 +212,7 @@ public class IgniteTypeFactory extends JavaTypeFactoryImpl {
                 case VARBINARY:
                     return byte[].class;
                 case GEOMETRY:
-                    return Geometries.Geom.class;
+                    throw new IllegalStateException("Unsupported data type: " + type);
                 case SYMBOL:
                     return Enum.class;
                 case ANY:
@@ -299,11 +293,6 @@ public class IgniteTypeFactory extends JavaTypeFactoryImpl {
 
     /** {@inheritDoc} */
     @Override public RelDataType createTypeWithNullability(RelDataType type, boolean nullable) {
-        // TODO workaround for https://issues.apache.org/jira/browse/CALCITE-4872
-        // Remove this after update to Calcite 1.30.
-        if (unknownType.equals(type))
-            return type;
-
         if (type instanceof IgniteCustomType && type.isNullable() != nullable)
             return createCustomType(((IgniteCustomType)type).storageType(), nullable);
 

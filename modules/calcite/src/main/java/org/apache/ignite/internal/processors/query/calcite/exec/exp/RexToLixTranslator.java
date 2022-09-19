@@ -58,8 +58,6 @@ import org.apache.calcite.rex.RexSubQuery;
 import org.apache.calcite.rex.RexTableInputRef;
 import org.apache.calcite.rex.RexUtil;
 import org.apache.calcite.rex.RexVisitor;
-import org.apache.calcite.runtime.GeoFunctions;
-import org.apache.calcite.runtime.Geometries;
 import org.apache.calcite.sql.SqlIntervalQualifier;
 import org.apache.calcite.sql.SqlOperator;
 import org.apache.calcite.sql.fun.SqlStdOperatorTable;
@@ -742,10 +740,7 @@ public class RexToLixTranslator implements RexVisitor<RexToLixTranslator.Result>
                         literal.getValueAs(byte[].class),
                         byte[].class));
             case GEOMETRY:
-                final Geometries.Geom geom = literal.getValueAs(Geometries.Geom.class);
-                final String wkt = GeoFunctions.ST_AsWKT(geom);
-                return Expressions.call(null, BuiltInMethod.ST_GEOM_FROM_TEXT.method,
-                    Expressions.constant(wkt));
+                throw new IllegalStateException("Unsupported data type: " + literal.getType());
             case SYMBOL:
                 value2 = literal.getValueAs(Enum.class);
                 javaClass = value2.getClass();
