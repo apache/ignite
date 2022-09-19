@@ -168,7 +168,7 @@ public interface IgniteCache<K, V> extends javax.cache.Cache<K, V>, IgniteAsyncS
      *  <p>
      *  This proxy usage does not guarantee "all copies check" in case the value have been already cached inside the transaction.
      *  In case you don't use a READ_COMMITTED isolation mode and already have a cached value, for example have already
-     *  read the value or performed a write, you'll just gain the cached value.
+     *  read the value or performed a write, you'll just get the cached value.
      *  </li>
      *  <li>For atomic caches, values will be repaired automatically.
      *  <p>
