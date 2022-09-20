@@ -160,22 +160,22 @@ public interface IgniteCache<K, V> extends javax.cache.Cache<K, V>, IgniteAsyncS
      *  <li>For transactional caches, values will be repaired:
      *  <ul>
      *      <li>automatically for transactions that have {@link TransactionConcurrency#OPTIMISTIC} concurrency mode
-     *          or {@link TransactionIsolation#READ_COMMITTED} isolation level</li>
+     *          or {@link TransactionIsolation#READ_COMMITTED} isolation level,</li>
      *      <li>at commit() phase for transactions that have {@link TransactionConcurrency#PESSIMISTIC} concurrency mode
      *          and isolation level other than {@link TransactionIsolation#READ_COMMITTED}</li>
      *  </ul>
      *  Warning:
      *  <p>
-     *  This proxy usage does not guarantee "all copies check" in case the value is already cached inside the transaction.
-     *  In case you use not a READ_COMMITTED isolation mode and already have a cached value, for example already read the
-     *  value or performed a write, you'll just gain the cached value.
+     *  This proxy usage does not guarantee "all copies check" in case the value have been already cached inside the transaction.
+     *  In case you don't use a READ_COMMITTED isolation mode and already have a cached value, for example have already
+     *  read the value or performed a write, you'll just get the cached value.
      *  </li>
      *  <li>For atomic caches, values will be repaired automatically.
      *  <p>
      *  Warning:
      *  <p>
-     *  Due to the nature of the atomic cache, false-positive results can be observed. For example, an attempt to check
-     *  consistency under cache loading may lead to a consistency violation exception. By default, the implementation tries
+     *  Due to the nature of an atomic cache, false-positive results can be observed. For example, an attempt to check
+     *  consistency under cache's loading may lead to a consistency violation exception. By default, the implementation tries
      *  to check the given key three times. The number of attempts can be changed using
      *  {@link IgniteSystemProperties#IGNITE_NEAR_GET_MAX_REMAPS} property.
      *  </li>
@@ -183,7 +183,6 @@ public interface IgniteCache<K, V> extends javax.cache.Cache<K, V>, IgniteAsyncS
      * A consistency check is incompatible with the following cache configurations:
      * <ul>
      *     <li>Caches without backups.</li>
-     *     <li>Local caches.</li>
      *     <li>Near caches.</li>
      *     <li>Caches that use "read-through" mode.</li>
      * </ul>
