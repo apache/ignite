@@ -17,205 +17,78 @@
 
 package org.apache.ignite.internal.processors.datastreamer;
 
+import java.util.concurrent.Callable;
 import java.util.concurrent.ThreadLocalRandom;
+import java.util.concurrent.atomic.LongAdder;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteDataStreamer;
-import org.apache.ignite.cache.CacheAtomicityMode;
 import org.apache.ignite.configuration.CacheConfiguration;
-import org.apache.ignite.configuration.DataRegionConfiguration;
-import org.apache.ignite.configuration.DataStorageConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
-import org.apache.ignite.configuration.WALMode;
-import org.apache.ignite.internal.util.typedef.G;
 import org.apache.ignite.internal.util.typedef.internal.U;
-import org.apache.ignite.stream.StreamReceiver;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
-import org.jetbrains.annotations.Nullable;
 import org.junit.Test;
 
 import static org.apache.ignite.cache.CacheMode.PARTITIONED;
-import static org.apache.ignite.cache.CacheWriteSynchronizationMode.PRIMARY_SYNC;
-import static org.apache.ignite.configuration.DataStorageConfiguration.DFLT_PAGE_SIZE;
+import static org.apache.ignite.cache.CacheWriteSynchronizationMode.FULL_SYNC;
+import static org.apache.ignite.events.EventType.EVT_JOB_MAPPED;
+import static org.apache.ignite.events.EventType.EVT_TASK_FAILED;
+import static org.apache.ignite.events.EventType.EVT_TASK_FINISHED;
 
 /**
- * Data streamer performance test.
+ * Data streamer performance test. Compares group lock data streamer to traditional lock.
+ * <p>
+ * Disable assertions and give at least 2 GB heap to run this test.
  */
 public class IgniteDataStreamerPerformanceTest extends GridCommonAbstractTest {
     /** */
-    private static final int GRIDS = 3;
+    private static final int GRID_CNT = 3;
 
     /** */
-    private static final int BACKUPS = 2;
+    private static final int ENTRY_CNT = 80000;
 
     /** */
-    private static final int DATA_REGION_SIZE_MB = 512;
+    private boolean useCache;
 
     /** */
-    private static final int ENTRIES_TO_LOAD_PER_ROUND = 20_000;
-
-    /** */
-    private static final int ROUNDS = 5;
-
-    /** */
-    private static final int HEATING = 3;
-
-    /** */
-    private final String[] vals = new String[1024];
-
-    /** {@inheritDoc} */
-    @Override protected long getTestTimeout() {
-        return 600_000_000;
-    }
+    private String[] vals = new String[2048];
 
     /** {@inheritDoc} */
     @Override protected IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {
         IgniteConfiguration cfg = super.getConfiguration(igniteInstanceName);
 
-        cfg.setDataStorageConfiguration(new DataStorageConfiguration()
-                .setWalMode(WALMode.NONE)
-            .setDefaultDataRegionConfiguration(new DataRegionConfiguration()
-                .setMaxSize(DATA_REGION_SIZE_MB * 1024L * 1024L)
-                .setPersistenceEnabled(true))
-            .setCheckpointFrequency(3000)
-            .setPageSize(DFLT_PAGE_SIZE));
+        cfg.setIncludeProperties();
 
-        CacheConfiguration<?, ?> cc = new CacheConfiguration<>(DEFAULT_CACHE_NAME);
-        cc.setCacheMode(PARTITIONED);
-        cc.setAtomicityMode(CacheAtomicityMode.ATOMIC);
-        cc.setBackups(BACKUPS);
-        cc.setWriteSynchronizationMode(PRIMARY_SYNC);
+        cfg.setIncludeEventTypes(EVT_TASK_FAILED, EVT_TASK_FINISHED, EVT_JOB_MAPPED);
 
-        cfg.setCacheConfiguration(cc);
+        cfg.setConnectorConfiguration(null);
+
+        cfg.setPeerClassLoadingEnabled(true);
+
+        if (useCache) {
+            CacheConfiguration cc = defaultCacheConfiguration();
+
+            cc.setCacheMode(PARTITIONED);
+
+            cc.setNearConfiguration(null);
+            cc.setWriteSynchronizationMode(FULL_SYNC);
+
+            cc.setBackups(1);
+
+            cfg.setCacheSanityCheckEnabled(false);
+            cfg.setCacheConfiguration(cc);
+        }
+        else
+            cfg.setCacheConfiguration();
 
         return cfg;
     }
 
-    /** */
-    @Override protected void beforeTest() throws Exception {
-        super.beforeTest();
+    /** {@inheritDoc} */
+    @Override protected void beforeTestsStarted() throws Exception {
+        super.beforeTestsStarted();
 
-        cleanPersistenceDir();
-    }
-
-    /**
-     * Test loading from client and default receiver.
-     *
-     * @throws Exception If failed.
-     */
-    @Test
-    public void testClientDefault() throws Exception {
-       doTest(true, null);
-    }
-
-    /**
-     * Test loading from server node and default receiver.
-     *
-     * @throws Exception If failed.
-     */
-    @Test
-    public void testServerDefault() throws Exception {
-        doTest(true, null);
-    }
-
-    /**
-     * Test loading from client and batched sorted receiver.
-     *
-     * @throws Exception If failed.
-     */
-    @Test
-    public void testClientBatchedSorted() throws Exception {
-        doTest(true, DataStreamerCacheUpdaters.batchedSorted());
-    }
-
-    /**
-     * Test loading from client and batched receiver.
-     *
-     * @throws Exception If failed.
-     */
-    @Test
-    public void testClientBatched() throws Exception {
-        doTest(true, DataStreamerCacheUpdaters.batched());
-    }
-
-    /**
-     * Test loading from client and individual receiver.
-     *
-     * @throws Exception If failed.
-     */
-    @Test
-    public void testClientIndividual() throws Exception {
-        doTest(true, DataStreamerCacheUpdaters.individual());
-    }
-
-    /**
-     * Test loading from server node and individual receiver.
-     *
-     * @throws Exception If failed.
-     */
-    @Test
-    public void testServerIndividual() throws Exception {
-        doTest(false, DataStreamerCacheUpdaters.individual());
-    }
-
-    /** */
-    private void doTest(boolean client, @Nullable StreamReceiver<Integer, Object> receiver) throws Exception {
-        long total = 0;
-
-        try {
-            startGridsMultiThreaded(GRIDS);
-
-            try (Ignite ldr = client ? startClientGrid(GRIDS) : startGrid(GRIDS)) {
-                for (int r = 0; r < ROUNDS + HEATING; ++r) {
-                    assert grid(0).cache(DEFAULT_CACHE_NAME).size() == 0;
-
-                    long start;
-
-                    try (IgniteDataStreamer<Integer, Object> streamer = ldr.dataStreamer(DEFAULT_CACHE_NAME)) {
-                        if (receiver != null)
-                            streamer.receiver(receiver);
-
-                        randomizeLoadData();
-
-                        start = U.currentTimeMillis();
-
-                        if (r < HEATING)
-                            info("Heatings left: " + (HEATING - r));
-                        else
-                            info("Rounds left: " + (ROUNDS - r + HEATING));
-
-                        for (int e = 1; e <= ENTRIES_TO_LOAD_PER_ROUND; ++e)
-                            streamer.addData(e, vals[e % vals.length]);
-                    }
-
-                    forceCheckpoint(G.allGrids());
-
-                    long end = U.currentTimeMillis();
-
-                    assert grid(0).cache(DEFAULT_CACHE_NAME).size() == ENTRIES_TO_LOAD_PER_ROUND;
-
-                    if (r >= HEATING) {
-                        long loaded = (ENTRIES_TO_LOAD_PER_ROUND * 1000) / (end - start);
-
-                        total += loaded;
-
-                        info("Adds/sec: " + loaded);
-                    }
-
-                    grid(0).cache(DEFAULT_CACHE_NAME).clear();
-                }
-
-                info("Average add rate: " + (total / ROUNDS) + " / sec.");
-            }
-        }
-        finally {
-            stopAllGrids();
-        }
-    }
-
-    /** */
-    private void randomizeLoadData(){
         for (int i = 0; i < vals.length; i++) {
-            int valLen = ThreadLocalRandom.current().nextInt(4, 7 * 1024);
+            int valLen = ThreadLocalRandom.current().nextInt(128, 512);
 
             StringBuilder sb = new StringBuilder();
 
@@ -223,6 +96,93 @@ public class IgniteDataStreamerPerformanceTest extends GridCommonAbstractTest {
                 sb.append('a' + ThreadLocalRandom.current().nextInt(20));
 
             vals[i] = sb.toString();
+
+            info("Value: " + vals[i]);
+        }
+    }
+
+    /**
+     * @throws Exception If failed.
+     */
+    @Test
+    public void testPerformance() throws Exception {
+        doTest();
+    }
+
+    /**
+     * @throws Exception If failed.
+     */
+    private void doTest() throws Exception {
+        System.gc();
+        System.gc();
+        System.gc();
+
+        try {
+            useCache = true;
+
+            startGridsMultiThreaded(GRID_CNT);
+
+            useCache = false;
+
+            Ignite ignite = startGrid();
+
+            final IgniteDataStreamer<Integer, String> ldr = ignite.dataStreamer(DEFAULT_CACHE_NAME);
+
+            ldr.perNodeBufferSize(8192);
+            ldr.receiver(DataStreamerCacheUpdaters.<Integer, String>batchedSorted());
+            ldr.autoFlushFrequency(0);
+
+            final LongAdder cnt = new LongAdder();
+
+            long start = U.currentTimeMillis();
+
+            Thread t = new Thread(new Runnable() {
+                @SuppressWarnings("BusyWait")
+                @Override public void run() {
+                    while (true) {
+                        try {
+                            Thread.sleep(10000);
+                        }
+                        catch (InterruptedException ignored) {
+                            break;
+                        }
+
+                        info(">>> Adds/sec: " + cnt.sumThenReset() / 10);
+                    }
+                }
+            });
+
+            t.setDaemon(true);
+
+            t.start();
+
+            int threadNum = 2; //Runtime.getRuntime().availableProcessors();
+
+            multithreaded(new Callable<Object>() {
+                @SuppressWarnings("InfiniteLoopStatement")
+                @Override public Object call() throws Exception {
+                    ThreadLocalRandom rnd = ThreadLocalRandom.current();
+
+                    while (true) {
+                        int i = rnd.nextInt(ENTRY_CNT);
+
+                        ldr.addData(i, vals[rnd.nextInt(vals.length)]);
+
+                        cnt.increment();
+                    }
+                }
+            }, threadNum, "loader");
+
+            info("Closing loader...");
+
+            ldr.close(false);
+
+            long duration = U.currentTimeMillis() - start;
+
+            info("Finished performance test. Duration: " + duration + "ms.");
+        }
+        finally {
+            stopAllGrids();
         }
     }
 }
