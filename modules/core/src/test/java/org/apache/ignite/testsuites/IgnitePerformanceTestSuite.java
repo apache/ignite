@@ -23,7 +23,6 @@ import org.apache.ignite.internal.processors.cache.IgniteCacheStartStopLoadTest;
 import org.apache.ignite.internal.processors.cache.distributed.dht.GridCacheDhtPreloadPerformanceTest;
 import org.apache.ignite.internal.processors.cache.distributed.near.GridCachePartitionedAffinityExcludeNeighborsPerformanceTest;
 import org.apache.ignite.internal.processors.cache.eviction.sorted.SortedEvictionPolicyPerformanceTest;
-import org.apache.ignite.internal.processors.datastreamer.IgniteDataStreamerPerformanceTest;
 import org.apache.ignite.internal.util.offheap.unsafe.GridUnsafeMapPerformanceTest;
 import org.apache.ignite.internal.util.offheap.unsafe.GridUnsafePartitionedMapPerformanceTest;
 import org.apache.ignite.lang.GridBasicPerformanceTest;
@@ -89,7 +88,6 @@ import org.junit.runners.Suite;
     GridTcpCommunicationSpiLanLoadTest.class,
     GridUnsafeMapPerformanceTest.class,
     GridUnsafePartitionedMapPerformanceTest.class,
-    IgniteDataStreamerPerformanceTest.class,
     SortedEvictionPolicyPerformanceTest.class,
     IgniteCacheStartStopLoadTest.class,
 
