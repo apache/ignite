@@ -61,7 +61,7 @@ import org.openjdk.jmh.runner.options.OptionsBuilder;
 @Warmup(iterations = 5)
 public class JmhStreamerReceiverBenchmark {
     /** */
-    private static final long ENTRIES_TO_LOAD = 500_000;
+    private static final long ENTRIES_TO_LOAD = 2_000_000;
 
     /** */
     private static final int AVERAGE_RECORD_LEN = 150;
@@ -73,25 +73,25 @@ public class JmhStreamerReceiverBenchmark {
     private static final boolean LOAD_FROM_CLIENT = true;
 
     /** */
-    private static final int SERVERS = 3;
+    private static final int SERVERS = 2;
 
     /** Cache backups num. */
     private static final int BACKUPS = 1;
 
     /** Cache sync mode: full or primary only. */
-    private static final boolean FULL_SYNC = false;
+    private static final boolean FULL_SYNC = true;
 
     /** Thread buffer size in DataStreamer.perThreadBufferSize() depending on DataStreamer.perNodeBatchSize(). */
-    private static final int THREAD_BATCH_SIZE_MULT = 8;
+    private static final int THREAD_BATCH_SIZE_MULT = 4;
 
     /** */
     private static final int CHECKPOINT_FREQUENCY = 1000;
 
     /** Enabled or disables checkpoint after loading in the load iteration. */
-    private static final boolean CHECKPOINT_AFTER_LOAD = false;
+    private static final boolean CHECKPOINT_AFTER_LOAD = true;
 
     /** Some fixed minimal + doubled average record size. */
-    private static final long REGION_SIZE = 512L * 1024L * 1024L + ENTRIES_TO_LOAD * AVERAGE_RECORD_LEN * 2;
+    private static final long REGION_SIZE = 128L * 1024L * 1024L + ENTRIES_TO_LOAD * AVERAGE_RECORD_LEN * 2;
 
     /** */
     private static final int VALUES_BANK_SIZE = 3000;
@@ -515,7 +515,8 @@ public class JmhStreamerReceiverBenchmark {
 
             time = System.currentTimeMillis() - time;
 
-            System.err.println("TEST | doTest() - checkpoint duration: " + (time / 1000) + " seconds.");
+            System.out.println(getClass().getSimpleName() + ": checkpoint duration = " + ((float)time / 1000.0f) +
+                " seconds.");
         }
 
         assert nodes.get(0).cache(CACHE_NAME).size() == ENTRIES_TO_LOAD;
@@ -532,7 +533,7 @@ public class JmhStreamerReceiverBenchmark {
      * @param args Args.
      */
     public static void main(String[] args) throws RunnerException {
-        String heapMb = 512 + SERVERS * 1024 + "m";
+        String heapMb = 384 + SERVERS * 748 + "m";
 
         final Options options = new OptionsBuilder()
             .include(JmhStreamerReceiverBenchmark.class.getSimpleName())

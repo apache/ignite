@@ -120,7 +120,7 @@ public class GridCacheMvccManager extends GridCacheSharedManagerAdapter {
     private final ConcurrentHashMap<Long, GridCacheAtomicFuture<?>> atomicFuts = new ConcurrentHashMap<>();
 
     /** Pending data streamer futures. */
-    public final GridConcurrentHashSet<DataStreamerFuture> dataStreamerFuts = new GridConcurrentHashSet<>();
+    private final GridConcurrentHashSet<DataStreamerFuture> dataStreamerFuts = new GridConcurrentHashSet<>();
 
     /** */
     private final ConcurrentMap<IgniteUuid, GridCacheFuture<?>> futs = new ConcurrentHashMap<>();
@@ -561,9 +561,6 @@ public class GridCacheMvccManager extends GridCacheSharedManagerAdapter {
         boolean add = dataStreamerFuts.add(fut);
 
         assert add;
-
-//        if(add)
-//            log.error("TEST | addDataStreamerFuture(). Total: " + atomicFuts.size());
 
         return fut;
     }
@@ -1436,8 +1433,6 @@ public class GridCacheMvccManager extends GridCacheSharedManagerAdapter {
         @Override public boolean onDone(@Nullable Void res, @Nullable Throwable err) {
             if (super.onDone(res, err)) {
                 dataStreamerFuts.remove(this);
-
-//                log.error("TEST | removed DS future. Left: " + dataStreamerFuts.size());
 
                 return true;
             }
