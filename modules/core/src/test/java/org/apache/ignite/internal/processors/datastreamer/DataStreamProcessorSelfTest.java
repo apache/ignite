@@ -54,13 +54,11 @@ import org.apache.ignite.events.Event;
 import org.apache.ignite.events.EventType;
 import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.IgniteInternalFuture;
-import org.apache.ignite.internal.IgniteInterruptedCheckedException;
 import org.apache.ignite.internal.IgniteKernal;
 import org.apache.ignite.internal.managers.communication.GridIoMessage;
 import org.apache.ignite.internal.processors.cache.GridCacheAdapter;
 import org.apache.ignite.internal.processors.cache.GridCacheEntryEx;
 import org.apache.ignite.internal.processors.cache.distributed.dht.atomic.GridDhtAtomicAbstractUpdateRequest;
-import org.apache.ignite.internal.processors.cache.distributed.dht.atomic.GridDhtAtomicDeferredUpdateResponse;
 import org.apache.ignite.internal.processors.cache.distributed.near.GridNearCacheAdapter;
 import org.apache.ignite.internal.util.lang.GridAbsPredicate;
 import org.apache.ignite.internal.util.typedef.G;
@@ -265,7 +263,7 @@ public class DataStreamProcessorSelfTest extends GridCommonAbstractTest {
     public void testAtomicPrimarySyncStability() throws Exception {
         int grids = 2;
         int entriesToLoad = 100_000;
-        int avgEntryLen = 50;
+        int avgEntryLen = 100;
 
         StreamReceiver<Integer, Object> receiver = DataStreamerCacheUpdaters.individual();
 
@@ -277,14 +275,16 @@ public class DataStreamProcessorSelfTest extends GridCommonAbstractTest {
         nearEnabled = false;
 
         persistence = true;
-        regionSize = Math.max(100L * 1024L * 1024L, (long)entriesToLoad * avgEntryLen * 2);
+        regionSize = 256L * 1024L * 1024L;
         checkpointFreq = 3000;
 
         Object[] vals = loadData(Math.max(100, entriesToLoad / 100), avgEntryLen);
 
-        int perNodeBufSize = 512;
-        int perThreadBufSize = perNodeBufSize * 4;
-        int maxWaitFutures = 25_000;
+        //Fixed buffers, close to the defaults at the moment but others. To avoid changes of defaults in the future.
+        int perNodeBufSize = 384;
+        int perThreadBufSize = perNodeBufSize * 3;
+
+        int maxWaitFutures = (perNodeBufSize * 2) * 5;
 
         try {
             for (int n = 0; n < grids; ++n) {
@@ -295,7 +295,7 @@ public class DataStreamProcessorSelfTest extends GridCommonAbstractTest {
 
             grid(0).cluster().state(ClusterState.ACTIVE);
 
-            communicationSpi = new UpdatesQueueCheckingCommunicationSpi(0, 0);
+            communicationSpi = new UpdatesQueueCheckingCommunicationSpi(0);
 
             try (Ignite ldr = startClientGrid(grids)) {
                 try (IgniteDataStreamer<Integer, Object> streamer = ldr.dataStreamer(DEFAULT_CACHE_NAME)) {
@@ -310,9 +310,9 @@ public class DataStreamProcessorSelfTest extends GridCommonAbstractTest {
                         streamer.addData(e, vals[e % vals.length]);
                 }
 
-                assert grid(0).cache(DEFAULT_CACHE_NAME).size() == entriesToLoad;
-
                 awaitPartitionMapExchange();
+
+                assertEquals(grid(0).cache(DEFAULT_CACHE_NAME).size(), entriesToLoad);
 
                 for (int e = 0; e < entriesToLoad; ++e)
                     assertEquals(grid(0).cache(DEFAULT_CACHE_NAME).get(e), vals[e % vals.length]);
@@ -324,20 +324,15 @@ public class DataStreamProcessorSelfTest extends GridCommonAbstractTest {
     }
 
     /** */
-    private Object[] loadData(int len, int avgDataLen) {
-        int minLen = avgDataLen - avgDataLen / 10;
-        int maxLen = avgDataLen + avgDataLen / 10;
-
+    private Object[] loadData(int len, int entryLen) {
         Random rnd = new Random();
 
         Object[] values = new Object[len];
 
         for (int v = 0; v < len; v++) {
-            int valLen = minLen + (maxLen > minLen ? rnd.nextInt(maxLen - minLen) : 0);
-
             StringBuilder sb = new StringBuilder();
 
-            for (int ch = 0; ch < valLen; ++ch)
+            for (int ch = 0; ch < entryLen; ++ch)
                 sb.append((char)((int)'a' + rnd.nextInt(20)));
 
             values[v] = sb.toString();
@@ -1327,16 +1322,12 @@ public class DataStreamProcessorSelfTest extends GridCommonAbstractTest {
         /** Max unresponded update futures.. */
         private final int maxWaitingFuts;
 
-        /** Send update delay in mills. */
-        private final int updResDelay;
-
         private final AtomicInteger max = new AtomicInteger();
 
         /** Ctor. */
-        private UpdatesQueueCheckingCommunicationSpi(int maxWaitingFuts, int updResDelay) {
+        private UpdatesQueueCheckingCommunicationSpi(int maxWaitingFuts) {
             this.maxWaitingFuts = maxWaitingFuts;
-            this.updResDelay = updResDelay;
-            this.max.set((int)(maxWaitingFuts * 0.9));
+            this.max.set((int)(maxWaitingFuts * 0.75));
         }
 
         /** {@inheritDoc} */
@@ -1360,31 +1351,23 @@ public class DataStreamProcessorSelfTest extends GridCommonAbstractTest {
             if (msg instanceof GridIoMessage) {
                 GridIoMessage ioMsg = (GridIoMessage)msg;
 
-                if (updResDelay > 0 && (ioMsg.message() instanceof GridDhtAtomicDeferredUpdateResponse)) {
-                    try {
-                        U.sleep(updResDelay);
-                    }
-                    catch (IgniteInterruptedCheckedException ignored) {
-                        // No-op.
-                    }
-                }
                 if (maxWaitingFuts > 0 && ioMsg.message() instanceof GridDhtAtomicAbstractUpdateRequest) {
                     int updtFutsCnt = ((IgniteEx)ignite).context().cache().context().mvcc().atomicFuturesCount();
 
-                    if(updtFutsCnt > max.get()){
-                        synchronized (max){
-                            if(updtFutsCnt>max.get()){
+                    if (updtFutsCnt > max.get()) {
+                        synchronized (max) {
+                            if (updtFutsCnt > max.get()) {
                                 max.set(updtFutsCnt);
 
-                                log.error("TEST | new max: " + max);
+                                log.info("Max count of unresponded futures: " + max);
                             }
 
                         }
                     }
 
-//                    if (updtFutsCnt > maxWaitingFuts)
-//                        throw new IllegalStateException("Too many unresponded update awaiting futures: " +
-//                            maxWaitingFuts + '.');
+                    if (updtFutsCnt > maxWaitingFuts)
+                        throw new IllegalStateException("Too many unresponded update awaiting futures: " +
+                            maxWaitingFuts + '.');
                 }
             }
         }

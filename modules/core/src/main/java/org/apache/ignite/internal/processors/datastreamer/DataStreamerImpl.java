@@ -1608,10 +1608,10 @@ public class DataStreamerImpl<K, V> implements IgniteDataStreamer<K, V>, Delayed
 
             int streamerPoolSize = attrStreamerPoolSize != null ? attrStreamerPoolSize : node.metrics().getTotalCpus();
 
-            int perNodeParallelOps = parallelOps != 0 ? parallelOps :
-                streamerPoolSize * IgniteDataStreamer.DFLT_PARALLEL_OPS_MULTIPLIER;
-            sem = new Semaphore(perNodeParallelOps);
-//            sem = new Semaphore(parallelOps > 0 ? parallelOps : dfltParallelOps(streamerPoolSize));
+//            int perNodeParallelOps = parallelOps != 0 ? parallelOps :
+//                streamerPoolSize * IgniteDataStreamer.DFLT_PARALLEL_OPS_MULTIPLIER;
+//            sem = new Semaphore(perNodeParallelOps);
+            sem = new Semaphore(parallelOps > 0 ? parallelOps : dfltParallelOps(streamerPoolSize));
 
             stripes = (PerStripeBuffer[])Array.newInstance(PerStripeBuffer.class, streamerPoolSize);
 
