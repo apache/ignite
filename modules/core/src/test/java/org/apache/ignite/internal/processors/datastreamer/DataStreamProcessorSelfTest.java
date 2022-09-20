@@ -22,6 +22,7 @@ import java.util.Arrays;
 import java.util.Collection;
 import java.util.List;
 import java.util.Map;
+import java.util.Random;
 import java.util.UUID;
 import java.util.concurrent.Callable;
 import java.util.concurrent.ConcurrentHashMap;
@@ -41,6 +42,7 @@ import org.apache.ignite.cache.affinity.Affinity;
 import org.apache.ignite.cache.store.CacheStore;
 import org.apache.ignite.cache.store.CacheStoreAdapter;
 import org.apache.ignite.cluster.ClusterNode;
+import org.apache.ignite.cluster.ClusterState;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.DataRegionConfiguration;
 import org.apache.ignite.configuration.DataStorageConfiguration;
@@ -50,10 +52,13 @@ import org.apache.ignite.configuration.NearCacheConfiguration;
 import org.apache.ignite.configuration.WALMode;
 import org.apache.ignite.events.Event;
 import org.apache.ignite.events.EventType;
+import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.IgniteKernal;
+import org.apache.ignite.internal.managers.communication.GridIoMessage;
 import org.apache.ignite.internal.processors.cache.GridCacheAdapter;
 import org.apache.ignite.internal.processors.cache.GridCacheEntryEx;
+import org.apache.ignite.internal.processors.cache.distributed.dht.atomic.GridDhtAtomicAbstractUpdateRequest;
 import org.apache.ignite.internal.processors.cache.distributed.near.GridNearCacheAdapter;
 import org.apache.ignite.internal.util.lang.GridAbsPredicate;
 import org.apache.ignite.internal.util.typedef.G;
@@ -62,20 +67,29 @@ import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgniteClosure;
 import org.apache.ignite.lang.IgniteFuture;
 import org.apache.ignite.lang.IgniteFutureCancelledException;
+import org.apache.ignite.lang.IgniteInClosure;
 import org.apache.ignite.lang.IgnitePredicate;
+import org.apache.ignite.plugin.extensions.communication.Message;
+import org.apache.ignite.spi.IgniteSpiException;
+import org.apache.ignite.spi.communication.tcp.TcpCommunicationSpi;
 import org.apache.ignite.stream.StreamReceiver;
 import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.testframework.MvccFeatureChecker;
+import org.apache.ignite.testframework.junits.WithSystemProperty;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.jetbrains.annotations.Nullable;
 import org.junit.Test;
 import static java.util.concurrent.TimeUnit.MILLISECONDS;
+import static org.apache.ignite.IgniteSystemProperties.IGNITE_ATOMIC_DEFERRED_ACK_BUFFER_SIZE;
+import static org.apache.ignite.IgniteSystemProperties.IGNITE_DISABLE_REBALANCING_CANCELLATION_OPTIMIZATION;
+import static org.apache.ignite.cache.CacheAtomicityMode.ATOMIC;
 import static org.apache.ignite.cache.CacheAtomicityMode.TRANSACTIONAL;
 import static org.apache.ignite.cache.CacheMode.PARTITIONED;
 import static org.apache.ignite.cache.CacheMode.REPLICATED;
 import static org.apache.ignite.cache.CacheWriteSynchronizationMode.FULL_SYNC;
 import static org.apache.ignite.cache.CacheWriteSynchronizationMode.PRIMARY_SYNC;
 import static org.apache.ignite.events.EventType.EVT_CACHE_OBJECT_PUT;
+import static org.apache.ignite.internal.IgniteNodeAttributes.ATTR_DATA_STREAMER_POOL_SIZE;
 
 /**
  *
@@ -88,7 +102,13 @@ public class DataStreamProcessorSelfTest extends GridCommonAbstractTest {
     private CacheMode mode = PARTITIONED;
 
     /** */
+    private CacheAtomicityMode cacheAtomicityMode = TRANSACTIONAL;
+
+    /** */
     private CacheWriteSynchronizationMode cacheSyncMode = FULL_SYNC;
+
+    /** */
+    private int cacheBackups = 0;
 
     /** */
     private boolean nearEnabled = true;
@@ -97,14 +117,25 @@ public class DataStreamProcessorSelfTest extends GridCommonAbstractTest {
     private boolean useCache;
 
     /** */
+    private boolean persistence;
+
+    /** */
+    private long regionSize = 512L * 1024L * 1024L;
+
+    /** */
+    private long checkpointFreq = -1;
+
+    /** */
+    private TcpCommunicationSpi communicationSpi;
+
+    /** */
     private TestStore store;
 
     /** {@inheritDoc} */
     @Override protected void beforeTest() throws Exception {
         super.beforeTest();
 
-        if (persistenceEnabled())
-            cleanPersistenceDir();
+        cleanPersistenceDir();
     }
 
     /** {@inheritDoc} */
@@ -118,7 +149,7 @@ public class DataStreamProcessorSelfTest extends GridCommonAbstractTest {
      * @return {@code True} if persistent store is enabled for test.
      */
     public boolean persistenceEnabled() {
-        return false;
+        return persistence;
     }
 
     /** {@inheritDoc} */
@@ -130,19 +161,22 @@ public class DataStreamProcessorSelfTest extends GridCommonAbstractTest {
 
         cfg.setIncludeProperties();
 
+        if (communicationSpi != null)
+            cfg.setCommunicationSpi(communicationSpi);
+
         if (useCache) {
             CacheConfiguration cc = defaultCacheConfiguration();
 
             cc.setCacheMode(mode);
             cc.setAtomicityMode(getCacheAtomicityMode());
+            cc.setWriteSynchronizationMode(cacheSyncMode);
+            cc.setBackups(cacheBackups);
 
             if (nearEnabled) {
                 NearCacheConfiguration nearCfg = new NearCacheConfiguration();
 
                 cc.setNearConfiguration(nearCfg);
             }
-
-            cc.setWriteSynchronizationMode(cacheSyncMode);
 
             if (store != null) {
                 cc.setCacheStoreFactory(new IgniteReflectionFactory<CacheStore>(TestStore.class));
@@ -152,11 +186,12 @@ public class DataStreamProcessorSelfTest extends GridCommonAbstractTest {
 
             cfg.setCacheConfiguration(cc);
 
-            if (persistenceEnabled())
+            if (persistenceEnabled()) {
                 cfg.setDataStorageConfiguration(new DataStorageConfiguration()
+                    .setWalMode(WALMode.LOG_ONLY)
                     .setDefaultDataRegionConfiguration(new DataRegionConfiguration()
-                            .setPersistenceEnabled(true))
-                    .setWalMode(WALMode.LOG_ONLY));
+                        .setPersistenceEnabled(true).setMaxSize(regionSize)));
+            }
         }
         else {
             cfg.setCacheConfiguration();
@@ -173,7 +208,7 @@ public class DataStreamProcessorSelfTest extends GridCommonAbstractTest {
      * @return Default cache atomicity mode.
      */
     protected CacheAtomicityMode getCacheAtomicityMode() {
-        return TRANSACTIONAL;
+        return cacheAtomicityMode;
     }
 
     /**
@@ -217,38 +252,93 @@ public class DataStreamProcessorSelfTest extends GridCommonAbstractTest {
     }
 
     /**
+     * Tests DataStreamer doesn't overflow update requests and related awaiting futures and other serving objects.
+     *
      * @throws Exception If failed.
      */
     @Test
-    public void testOnlyPrimarySync() throws Exception {
+    @WithSystemProperty(key = IGNITE_DISABLE_REBALANCING_CANCELLATION_OPTIMIZATION, value = "true")
+    @WithSystemProperty(key = ATTR_DATA_STREAMER_POOL_SIZE, value = "6")
+    @WithSystemProperty(key = IGNITE_ATOMIC_DEFERRED_ACK_BUFFER_SIZE, value = "256")
+    public void testAtomicPrimarySyncStability() throws Exception {
+        int grids = 2;
         int entriesToLoad = 100_000;
+        int avgEntryLen = 100;
 
         StreamReceiver<Integer, Object> receiver = DataStreamerCacheUpdaters.individual();
 
+        useCache = true;
         mode = PARTITIONED;
-
+        cacheAtomicityMode = ATOMIC;
         cacheSyncMode = PRIMARY_SYNC;
+        cacheBackups = 1;
+        nearEnabled = false;
 
-//        try {
-//            startGridsMultiThreaded(3);
-//
-//            try (Ignite ldr = startClientGrid(3)) {
-//                try (IgniteDataStreamer<Integer, Object> streamer = ldr.dataStreamer(DEFAULT_CACHE_NAME)) {
-//                    if (receiver != null)
-//                        streamer.receiver(receiver);
-//
-//                    randomizeLoadData();
-//
-//                    for (int e = 1; e <= entriesToLoad; ++e)
-//                        streamer.addData(e, vals[e % vals.length]);
-//                }
-//
-//                assert grid(0).cache(DEFAULT_CACHE_NAME).size() == entriesToLoad;
-//            }
-//        }
-//        finally {
-//            stopAllGrids();
-//        }
+        persistence = true;
+        regionSize = 256L * 1024L * 1024L;
+        checkpointFreq = 3000;
+
+        Object[] vals = loadData(Math.max(100, entriesToLoad / 100), avgEntryLen);
+
+        //Fixed buffers, close to the defaults at the moment but others. To avoid changes of defaults in the future.
+        int perNodeBufSize = 384;
+        int perThreadBufSize = perNodeBufSize * 3;
+
+        int maxWaitFutures = (perNodeBufSize * 2) * 5;
+
+        try {
+            for (int n = 0; n < grids; ++n) {
+                communicationSpi = new UpdatesQueueCheckingCommunicationSpi(maxWaitFutures);
+
+                startGrid(n);
+            }
+
+            grid(0).cluster().state(ClusterState.ACTIVE);
+
+            communicationSpi = new UpdatesQueueCheckingCommunicationSpi(0);
+
+            try (Ignite ldr = startClientGrid(grids)) {
+                try (IgniteDataStreamer<Integer, Object> streamer = ldr.dataStreamer(DEFAULT_CACHE_NAME)) {
+                    if (receiver != null)
+                        streamer.receiver(receiver);
+
+                    streamer.perNodeBufferSize(perNodeBufSize);
+                    streamer.perThreadBufferSize(perThreadBufSize);
+                    streamer.autoFlushFrequency(0);
+
+                    for (int e = 0; e < entriesToLoad; ++e)
+                        streamer.addData(e, vals[e % vals.length]);
+                }
+
+                awaitPartitionMapExchange();
+
+                assertEquals(grid(0).cache(DEFAULT_CACHE_NAME).size(), entriesToLoad);
+
+                for (int e = 0; e < entriesToLoad; ++e)
+                    assertEquals(grid(0).cache(DEFAULT_CACHE_NAME).get(e), vals[e % vals.length]);
+            }
+        }
+        finally {
+            stopAllGrids();
+        }
+    }
+
+    /** */
+    private Object[] loadData(int len, int entryLen) {
+        Random rnd = new Random();
+
+        Object[] values = new Object[len];
+
+        for (int v = 0; v < len; v++) {
+            StringBuilder sb = new StringBuilder();
+
+            for (int ch = 0; ch < entryLen; ++ch)
+                sb.append((char)((int)'a' + rnd.nextInt(20)));
+
+            values[v] = sb.toString();
+        }
+
+        return values;
     }
 
     /**
@@ -1224,6 +1314,62 @@ public class DataStreamProcessorSelfTest extends GridCommonAbstractTest {
             String threadName = Thread.currentThread().getName();
 
             cache.put("key", threadName);
+        }
+    }
+
+    /** */
+    private static class UpdatesQueueCheckingCommunicationSpi extends TcpCommunicationSpi {
+        /** Max unresponded update futures.. */
+        private final int maxWaitingFuts;
+
+        private final AtomicInteger max = new AtomicInteger();
+
+        /** Ctor. */
+        private UpdatesQueueCheckingCommunicationSpi(int maxWaitingFuts) {
+            this.maxWaitingFuts = maxWaitingFuts;
+            this.max.set((int)(maxWaitingFuts * 0.75));
+        }
+
+        /** {@inheritDoc} */
+        @Override public void sendMessage(ClusterNode node, Message msg,
+            IgniteInClosure<IgniteException> ackC) throws IgniteSpiException {
+
+            check(msg);
+
+            super.sendMessage(node, msg, ackC);
+        }
+
+        /** {@inheritDoc} */
+        @Override public void sendMessage(ClusterNode node, Message msg) throws IgniteSpiException {
+            check(msg);
+
+            super.sendMessage(node, msg);
+        }
+
+        /** */
+        private void check(Message msg) {
+            if (msg instanceof GridIoMessage) {
+                GridIoMessage ioMsg = (GridIoMessage)msg;
+
+                if (maxWaitingFuts > 0 && ioMsg.message() instanceof GridDhtAtomicAbstractUpdateRequest) {
+                    int updtFutsCnt = ((IgniteEx)ignite).context().cache().context().mvcc().atomicFuturesCount();
+
+                    if (updtFutsCnt > max.get()) {
+                        synchronized (max) {
+                            if (updtFutsCnt > max.get()) {
+                                max.set(updtFutsCnt);
+
+                                log.info("Max count of unresponded futures: " + max);
+                            }
+
+                        }
+                    }
+
+                    if (updtFutsCnt > maxWaitingFuts)
+                        throw new IllegalStateException("Too many unresponded update awaiting futures: " +
+                            maxWaitingFuts + '.');
+                }
+            }
         }
     }
 }
