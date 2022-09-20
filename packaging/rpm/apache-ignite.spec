@@ -12,7 +12,7 @@
 #
 
 Name:             apache-ignite
-Version:          2.13.0
+Version:          2.14.0
 Release:          1
 Summary:          Apache Ignite In-Memory Computing, Database and Caching Platform
 Group:            Development/System
@@ -267,6 +267,9 @@ ln -sf %{_log}/%{name} %{buildroot}%{_sharedstatedir}/%{name}/log
 # Changelog
 #
 
+* Fri Sep 09 2022 Taras Ledkov <tledkov@apache.org> - 2.13.0-1
+- Updated Apache Ignite to version 2.14.0
+
 * Thu Apr 07 2022 Nikita Amelchev <namelchev@apache.org> - 2.13.0-1
 - Updated Apache Ignite to version 2.13.0
 
@@ -308,4 +311,3 @@ ln -sf %{_log}/%{name} %{buildroot}%{_sharedstatedir}/%{name}/log
 
 * Wed Jan 17 2018 Peter Ivanov <mr.weider@gmail.com> - 2.4.0-1
 - Initial package release
-

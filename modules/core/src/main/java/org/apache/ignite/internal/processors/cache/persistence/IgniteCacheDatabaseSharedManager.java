@@ -1156,17 +1156,18 @@ public class IgniteCacheDatabaseSharedManager extends GridCacheSharedManagerAdap
         if (!CU.isCdcEnabled(kctx.config()) || kctx.clientNode())
             return;
 
-        WALIterator iter = cctx.wal(true).replay(null, (type, ptr) -> true);
+        try (WALIterator iter = cctx.wal(true).replay(null, (type, ptr) -> true)) {
+            while (iter.hasNext())
+                iter.next();
 
-        while (iter.hasNext())
-            iter.next();
+            WALPointer ptr = iter.lastRead().orElse(null);
 
-        WALPointer ptr = iter.lastRead().orElse(null);
+            if (ptr != null)
+                ptr = ptr.next();
 
-        if (ptr != null)
-            ptr = ptr.next();
-
-        cctx.wal(true).resumeLogging(ptr);
+            cctx.wal(true).startAutoReleaseSegments();
+            cctx.wal(true).resumeLogging(ptr);
+        }
     }
 
     /**
@@ -1749,5 +1750,15 @@ public class IgniteCacheDatabaseSharedManager extends GridCacheSharedManagerAdap
             warmUpStrategies,
             (warmUpConfig) -> "Unknown data region warm-up configuration: " + errPostfix.get()
         );
+    }
+
+    /**
+     * Wal truncate callback.
+     *
+     * @param highBound Upper bound.
+     * @throws IgniteCheckedException If failed.
+     */
+    public void onWalTruncated(WALPointer highBound) throws IgniteCheckedException {
+        // No-op.
     }
 }
