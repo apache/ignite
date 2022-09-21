@@ -91,7 +91,6 @@ import static org.apache.ignite.cache.CacheWriteSynchronizationMode.PRIMARY_SYNC
 import static org.apache.ignite.configuration.DataStorageConfiguration.DFLT_CHECKPOINT_FREQ;
 import static org.apache.ignite.configuration.DataStorageConfiguration.DFLT_DATA_REGION_MAX_SIZE;
 import static org.apache.ignite.events.EventType.EVT_CACHE_OBJECT_PUT;
-import static org.apache.ignite.internal.IgniteNodeAttributes.ATTR_DATA_STREAMER_POOL_SIZE;
 
 /**
  *
@@ -120,6 +119,9 @@ public class DataStreamProcessorSelfTest extends GridCommonAbstractTest {
 
     /** */
     private boolean persistence;
+
+    /** */
+    private int streamerPoolSize = -1;
 
     /** */
     private long regionSize = DFLT_DATA_REGION_MAX_SIZE;
@@ -198,6 +200,9 @@ public class DataStreamProcessorSelfTest extends GridCommonAbstractTest {
                     .setDefaultDataRegionConfiguration(new DataRegionConfiguration()
                         .setPersistenceEnabled(true).setMaxSize(regionSize)));
             }
+
+            if (streamerPoolSize > 0)
+                cfg.setDataStreamerThreadPoolSize(streamerPoolSize);
         }
         else {
             cfg.setCacheConfiguration();
@@ -264,11 +269,10 @@ public class DataStreamProcessorSelfTest extends GridCommonAbstractTest {
      */
     @Test
     @WithSystemProperty(key = IGNITE_DISABLE_REBALANCING_CANCELLATION_OPTIMIZATION, value = "true")
-    @WithSystemProperty(key = ATTR_DATA_STREAMER_POOL_SIZE, value = "6")
     @WithSystemProperty(key = IGNITE_ATOMIC_DEFERRED_ACK_BUFFER_SIZE, value = "256")
     public void testAtomicPrimarySyncStability() throws Exception {
-        int grids = 3;
-        int entriesToLoad = 5_000_000;
+        int grids = 2;
+        int entriesToLoad = 300_000;
         int avgEntryLen = 100;
 
         useCache = true;
@@ -278,6 +282,8 @@ public class DataStreamProcessorSelfTest extends GridCommonAbstractTest {
         cacheBackups = grids - 1;
         nearEnabled = false;
 
+        streamerPoolSize = 6;
+
         persistence = true;
         regionSize = 256L * 1024L * 1024L;
         walMode = WALMode.LOG_ONLY;
@@ -286,29 +292,29 @@ public class DataStreamProcessorSelfTest extends GridCommonAbstractTest {
         Object[] vals = loadData(Math.max(100, entriesToLoad / 100), avgEntryLen);
 
         //Fixed buffers, close to the defaults at the moment but others. To avoid changes of the defaults in the future.
-        int perNodeBufSize = 384;
-        int perThreadBufSize = perNodeBufSize * 3;
+        int nodeBufSize = 384;
+        int threadBufSize = nodeBufSize * 3;
 
         //There is no reason to send more than 2 buffered requests if already keeping a couple of unresponded requests.
         //Collecting unresponded requests consumes memory infinitely.
         //Every single cache update creates one update future for primary and one future for all the backups.
-        //So, if node keeps collecting significantly more than (preNodeBuffer * 2) * 2 update futures, it is a trouble.
+        //So, if node keeps collecting significantly more than (preNodeBuffer * 2) * 2 update futures, it is A problem.
         //This race we can't win. Streamer doesn't know about unfinished backup waiting futures on the primary node.
         //It proceeds once gets response from primary node. Which doesn't mean this primary node got all the backups
-        //answears.
-        //Things stuck at disk writes like checkpoints, WALs, grids count and network issues etc.
-        //However, Streamer should consider how many batches it has sent lacking the answers.
+        //answers.
+        //Things stuck at disk writes like checkpoints, WALs, WAL rolling. Streamer should take in account how many
+        //batches it sends to a persistent cache.
+        int minParOps = U.field(DataStreamerImpl.class, "DFLT_MIN_PARALLEL_OPS_WITH_PERSISTENCE");
+        float parOpsFactor = U.field(DataStreamerImpl.class, "DFTL_PERSISTENT_PAR_OPS_MULT");
+        int maxUnrespondedBatchesPerNode = Math.max(Math.round(streamerPoolSize * parOpsFactor), minParOps);
+        int estimatedPendingUpdateFutures = ((nodeBufSize * maxUnrespondedBatchesPerNode) * (cacheBackups > 0 ? 2 : 1));
 
-        //Math.max(6 declared streamer threads, DataStreamerImpl.DFLT_MIN_UPRESPONDED_OPS_WITH_PERSISTENCE)
-        int maxUnrespondedBatchesPerNode = 4;
-
-        int targetUpdateFuturesCnt = ((perNodeBufSize * maxUnrespondedBatchesPerNode) * (cacheBackups > 0 ? 2 : 1));
-        //Let's take reserve of 5
-        int maxUpdateFutures = targetUpdateFuturesCnt * 5;
+        //Let's take reserve of 3.
+        int maxTestUpdateFutures = estimatedPendingUpdateFutures * 3;
 
         try {
             for (int n = 0; n < grids; ++n) {
-                communicationSpi = new UpdatesQueueCheckingCommunicationSpi(maxUpdateFutures);
+                communicationSpi = new UpdatesQueueCheckingCommunicationSpi(maxTestUpdateFutures);
 
                 startGrid(n);
             }
@@ -323,8 +329,8 @@ public class DataStreamProcessorSelfTest extends GridCommonAbstractTest {
                 try (IgniteDataStreamer<Integer, Object> streamer = ldr.dataStreamer(DEFAULT_CACHE_NAME)) {
                     streamer.receiver(DataStreamerCacheUpdaters.individual());
 
-                    streamer.perNodeBufferSize(perNodeBufSize);
-                    streamer.perThreadBufferSize(perThreadBufSize);
+                    streamer.perNodeBufferSize(nodeBufSize);
+                    streamer.perThreadBufferSize(threadBufSize);
                     streamer.autoFlushFrequency(0);
                     //No need to remap if failed.
                     ((DataStreamerImpl)streamer).maxRemapCount(0);
@@ -1340,7 +1346,9 @@ public class DataStreamProcessorSelfTest extends GridCommonAbstractTest {
         }
     }
 
-    /** */
+    /**
+     * Monitors pending update futures. Fails if the threshold exceeded.
+     */
     private static class UpdatesQueueCheckingCommunicationSpi extends TcpCommunicationSpi {
         /** Max unresponded update futures.. */
         private final int maxWaitingFuts;
