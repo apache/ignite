@@ -209,7 +209,7 @@ class FileWriteHandleImpl extends AbstractFileHandle implements FileWriteHandle 
 
         prepareSerializerVersionBuffer(getSegmentId(), serializerVer, false, seg.buffer());
 
-            seg.release();
+        seg.release();
     }
 
     /**
@@ -220,8 +220,6 @@ class FileWriteHandleImpl extends AbstractFileHandle implements FileWriteHandle 
      */
     @Override @Nullable public WALPointer addRecord(WALRecord rec) throws StorageException, IgniteCheckedException {
         assert rec.size() > 0 : rec;
-
-//        log.error("TETS | addRecord " + rec.getClass().getSimpleName());
 
         for (; ; ) {
             checkNode();

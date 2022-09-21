@@ -4330,8 +4330,6 @@ public class GridDhtPartitionsExchangeFuture extends GridDhtTopologyFutureAdapte
         // Reserve at least 2 threads for system operations.
         int parallelismLvl = U.availableThreadCount(cctx.kernalContext(), GridIoPolicy.SYSTEM_POOL, 2);
 
-//        log.error("TEST | finalizePartitionCounters()");
-
         try {
             U.<CacheGroupContext, Void>doInParallelUninterruptibly(
                 parallelismLvl,

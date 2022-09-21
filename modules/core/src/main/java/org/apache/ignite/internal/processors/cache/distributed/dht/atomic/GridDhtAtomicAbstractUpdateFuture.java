@@ -429,9 +429,6 @@ public abstract class GridDhtAtomicAbstractUpdateFuture extends GridCacheFutureA
             needReplyToNear = true;
         }
 
-//        if (cctx.shared().snapshotMgr().isSnapshotCreating())
-//            log.error("TEST | send dht requests");
-
         // If there are readers updates then nearNode should not finish before primary response received.
         sendDhtRequests(nearNode, ret, !readersOnlyNodes);
 

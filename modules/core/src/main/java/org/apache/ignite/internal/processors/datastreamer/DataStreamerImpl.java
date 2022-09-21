@@ -42,7 +42,6 @@ import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.concurrent.atomic.LongAdder;
-import java.util.stream.Stream;
 import javax.cache.CacheException;
 import javax.cache.expiry.ExpiryPolicy;
 import org.apache.ignite.Ignite;
@@ -57,8 +56,6 @@ import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.cluster.ClusterTopologyException;
 import org.apache.ignite.configuration.CacheConfiguration;
-import org.apache.ignite.configuration.DataRegionConfiguration;
-import org.apache.ignite.configuration.DataStorageConfiguration;
 import org.apache.ignite.events.DiscoveryEvent;
 import org.apache.ignite.events.Event;
 import org.apache.ignite.internal.GridKernalContext;
@@ -135,8 +132,21 @@ public class DataStreamerImpl<K, V> implements IgniteDataStreamer<K, V>, Delayed
     /** Per thread buffer size. */
     private int bufLdrSzPerThread = DFLT_PER_THREAD_BUFFER_SIZE;
 
-    /** Unresponded batches to wait before sending next if the persistence is enabled. */
-    private static final int DFLT_MAX_UPRESPONDED_OPS_WITH_PERSISTENCE = 2;
+    /**
+     * Вefault minimal parallel per node operations for persistent caches.
+     *
+     * @see IgniteDataStreamer#perNodeParallelOperations(int)
+     * @see IgniteNodeAttributes#ATTR_DATA_STREAMER_POOL_SIZE
+     */
+    private static final int DFLT_MIN_PARALLEL_OPS_WITH_PERSISTENCE = 4;
+
+    /**
+     * Default parallel per node operation factor for persistent caches.
+     *
+     * @see IgniteDataStreamer#perNodeParallelOperations(int)
+     * @see IgniteNodeAttributes#ATTR_DATA_STREAMER_POOL_SIZE
+     */
+    private static final float DFTL_PERSISTENT_PAR_OPS_MULT = 0.4f;
 
     /**
      * Thread buffer map: on each thread there are future and list of entries which will be streamed after filling
@@ -1503,28 +1513,6 @@ public class DataStreamerImpl<K, V> implements IgniteDataStreamer<K, V>, Delayed
     }
 
     /**
-     * @return Optimal max active parallel operations on the related node.
-     */
-    private int dfltParallelOps(int poolSize) {
-        DataStorageConfiguration storageCfg = cacheObjCtx.kernalContext().config().getDataStorageConfiguration();
-
-        if (storageCfg == null)
-            return poolSize;
-
-        DataRegionConfiguration[] dsCfgs = storageCfg.getDataRegionConfigurations();
-
-        String regionName = cacheObjCtx.kernalContext().cache().cache(cacheName).configuration().getDataRegionName();
-
-        DataRegionConfiguration regionCfg = regionName == null ? storageCfg.getDefaultDataRegionConfiguration()
-            : Stream.of(dsCfgs).filter(ds -> ds.getName().equals(regionName)).findFirst().get();
-
-        assert storageCfg != null;
-
-        return regionCfg != null && regionCfg.isPersistenceEnabled() ? DFLT_MAX_UPRESPONDED_OPS_WITH_PERSISTENCE
-            : poolSize;
-    }
-
-    /**
      *
      */
     private static final class ThreadBuffer {
@@ -1608,10 +1596,17 @@ public class DataStreamerImpl<K, V> implements IgniteDataStreamer<K, V>, Delayed
 
             int streamerPoolSize = attrStreamerPoolSize != null ? attrStreamerPoolSize : node.metrics().getTotalCpus();
 
-            int perNodeParallelOps = parallelOps != 0 ? parallelOps :
-                streamerPoolSize * IgniteDataStreamer.DFLT_PARALLEL_OPS_MULTIPLIER;
+            int perNodeParallelOps = parallelOps > 0 ? parallelOps : -1;
+
+            if (perNodeParallelOps < 0) {
+                if (ctx.cache().cacheDescriptor(cacheName).groupDescriptor().persistenceEnabled())
+                    perNodeParallelOps = Math.max(DFLT_MIN_PARALLEL_OPS_WITH_PERSISTENCE,
+                        Math.round(streamerPoolSize * DFTL_PERSISTENT_PAR_OPS_MULT));
+                else
+                    perNodeParallelOps = streamerPoolSize;
+            }
+
             sem = new Semaphore(perNodeParallelOps);
-//            sem = new Semaphore(parallelOps > 0 ? parallelOps : dfltParallelOps(streamerPoolSize));
 
             stripes = (PerStripeBuffer[])Array.newInstance(PerStripeBuffer.class, streamerPoolSize);
 
@@ -2443,7 +2438,8 @@ public class DataStreamerImpl<K, V> implements IgniteDataStreamer<K, V>, Delayed
          * @param partId Partition ID.
          * @param c Signal closure.
          */
-        public PerStripeBuffer(int partId,
+        public PerStripeBuffer(
+            int partId,
             IgniteInClosure<? super IgniteInternalFuture<Object>> c
         ) {
             this.partId = partId;

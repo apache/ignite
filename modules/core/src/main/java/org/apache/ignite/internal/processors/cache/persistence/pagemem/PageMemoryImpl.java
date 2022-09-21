@@ -756,19 +756,9 @@ public class PageMemoryImpl implements PageMemoryEx {
 
         Segment seg = segment(grpId, pageId);
 
-//        long t0;// = System.nanoTime();
-
         seg.readLock().lock();
 
-//        t = U.nanosToMillis(System.nanoTime() - t);
-//        if (t > 700)
-//            log.error("TEST long seg.readLock().lock(): " + t);
-
-//        long t0 = System.nanoTime(), t;
-
         try {
-//            t0 = System.nanoTime();
-
             long relPtr = seg.loadedPages.get(
                 grpId,
                 PageIdUtils.effectivePageId(pageId),
@@ -776,10 +766,6 @@ public class PageMemoryImpl implements PageMemoryEx {
                 INVALID_REL_PTR,
                 INVALID_REL_PTR
             );
-
-//            t = U.nanosToMillis(System.nanoTime() - t0);
-//            if (t > 500)
-//                log.error("TEST long working after seg.readLock().lock() 1: " + t);
 
             // The page is loaded to the memory.
             if (relPtr != INVALID_REL_PTR) {
@@ -791,30 +777,16 @@ public class PageMemoryImpl implements PageMemoryEx {
 
                 statHolder.trackLogicalRead(absPtr + PAGE_OVERHEAD);
 
-//                t = U.nanosToMillis(System.nanoTime() - t0);
-//                if (t > 500)
-//                    log.error("TEST long working after seg.readLock().lock() 2: " + t);
-
                 return absPtr;
             }
         }
         finally {
-//            t = U.nanosToMillis(System.nanoTime() - t0);
-//            if (t > 500)
-//                log.error("TEST long working after seg.readLock().lock(): " + t);
-
             seg.readLock().unlock();
         }
 
         FullPageId fullId = new FullPageId(pageId, grpId);
 
-//        t = System.nanoTime();
-
         seg.writeLock().lock();
-
-//        t = U.nanosToMillis(System.nanoTime() - t);
-//        if (t > 500)
-//            log.error("TEST long seg.writeLock().lock(): " + t);
 
         long lockedPageAbsPtr = -1;
         boolean readPageFromStore = false;
@@ -2158,10 +2130,6 @@ public class PageMemoryImpl implements PageMemoryEx {
             PageHeader.acquirePage(absPtr);
 
             updateAtomicInt(acquiredPagesPtr, 1);
-        }
-
-        @Override public ReadLock readLock() {
-            return super.readLock();
         }
 
         /**

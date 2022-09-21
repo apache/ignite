@@ -88,6 +88,8 @@ import static org.apache.ignite.cache.CacheMode.PARTITIONED;
 import static org.apache.ignite.cache.CacheMode.REPLICATED;
 import static org.apache.ignite.cache.CacheWriteSynchronizationMode.FULL_SYNC;
 import static org.apache.ignite.cache.CacheWriteSynchronizationMode.PRIMARY_SYNC;
+import static org.apache.ignite.configuration.DataStorageConfiguration.DFLT_CHECKPOINT_FREQ;
+import static org.apache.ignite.configuration.DataStorageConfiguration.DFLT_DATA_REGION_MAX_SIZE;
 import static org.apache.ignite.events.EventType.EVT_CACHE_OBJECT_PUT;
 import static org.apache.ignite.internal.IgniteNodeAttributes.ATTR_DATA_STREAMER_POOL_SIZE;
 
@@ -108,7 +110,7 @@ public class DataStreamProcessorSelfTest extends GridCommonAbstractTest {
     private CacheWriteSynchronizationMode cacheSyncMode = FULL_SYNC;
 
     /** */
-    private int cacheBackups = 0;
+    private int cacheBackups;
 
     /** */
     private boolean nearEnabled = true;
@@ -120,10 +122,13 @@ public class DataStreamProcessorSelfTest extends GridCommonAbstractTest {
     private boolean persistence;
 
     /** */
-    private long regionSize = 512L * 1024L * 1024L;
+    private long regionSize = DFLT_DATA_REGION_MAX_SIZE;
 
     /** */
-    private long checkpointFreq = -1;
+    private WALMode walMode = WALMode.LOG_ONLY;
+
+    /** */
+    private int checkpointFreq = DFLT_CHECKPOINT_FREQ;
 
     /** */
     private TcpCommunicationSpi communicationSpi;
@@ -188,7 +193,8 @@ public class DataStreamProcessorSelfTest extends GridCommonAbstractTest {
 
             if (persistenceEnabled()) {
                 cfg.setDataStorageConfiguration(new DataStorageConfiguration()
-                    .setWalMode(WALMode.LOG_ONLY)
+                    .setWalMode(walMode)
+                    .setCheckpointFrequency(checkpointFreq)
                     .setDefaultDataRegionConfiguration(new DataRegionConfiguration()
                         .setPersistenceEnabled(true).setMaxSize(regionSize)));
             }
@@ -262,20 +268,19 @@ public class DataStreamProcessorSelfTest extends GridCommonAbstractTest {
     @WithSystemProperty(key = IGNITE_ATOMIC_DEFERRED_ACK_BUFFER_SIZE, value = "256")
     public void testAtomicPrimarySyncStability() throws Exception {
         int grids = 3;
-        int entriesToLoad = 100_000;
+        int entriesToLoad = 5_000_000;
         int avgEntryLen = 100;
-
-        StreamReceiver<Integer, Object> receiver = DataStreamerCacheUpdaters.individual();
 
         useCache = true;
         mode = PARTITIONED;
         cacheAtomicityMode = ATOMIC;
         cacheSyncMode = PRIMARY_SYNC;
-        cacheBackups = 1;
+        cacheBackups = grids - 1;
         nearEnabled = false;
 
         persistence = true;
         regionSize = 256L * 1024L * 1024L;
+        walMode = WALMode.LOG_ONLY;
         checkpointFreq = 3000;
 
         Object[] vals = loadData(Math.max(100, entriesToLoad / 100), avgEntryLen);
@@ -292,8 +297,11 @@ public class DataStreamProcessorSelfTest extends GridCommonAbstractTest {
         //It proceeds once gets response from primary node. Which doesn't mean this primary node got all the backups
         //answears.
         //Things stuck at disk writes like checkpoints, WALs, grids count and network issues etc.
-        //However, Streamer should consider how much it has sent and wait a little.
-        int maxUnrespondedBatchesPerNode = 2;
+        //However, Streamer should consider how many batches it has sent lacking the answers.
+
+        //Math.max(6 declared streamer threads, DataStreamerImpl.DFLT_MIN_UPRESPONDED_OPS_WITH_PERSISTENCE)
+        int maxUnrespondedBatchesPerNode = 4;
+
         int targetUpdateFuturesCnt = ((perNodeBufSize * maxUnrespondedBatchesPerNode) * (cacheBackups > 0 ? 2 : 1));
         //Let's take reserve of 5
         int maxUpdateFutures = targetUpdateFuturesCnt * 5;
@@ -309,10 +317,11 @@ public class DataStreamProcessorSelfTest extends GridCommonAbstractTest {
 
             communicationSpi = new UpdatesQueueCheckingCommunicationSpi(0);
 
+            useCache = false;
+
             try (Ignite ldr = startClientGrid(grids)) {
                 try (IgniteDataStreamer<Integer, Object> streamer = ldr.dataStreamer(DEFAULT_CACHE_NAME)) {
-                    if (receiver != null)
-                        streamer.receiver(receiver);
+                    streamer.receiver(DataStreamerCacheUpdaters.individual());
 
                     streamer.perNodeBufferSize(perNodeBufSize);
                     streamer.perThreadBufferSize(perThreadBufSize);

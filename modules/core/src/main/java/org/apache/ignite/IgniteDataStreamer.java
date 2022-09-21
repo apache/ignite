@@ -73,7 +73,6 @@ import org.jetbrains.annotations.Nullable;
  *      this setting limits maximum allowed number of parallel buffered stream messages that
  *      are being processed on remote nodes. If this number is exceeded, then
  *      {@link #addData(Object, Object)} method will block to control memory utilization.
- *      Default is equal to CPU count on remote node multiply by {@link #DFLT_PARALLEL_OPS_MULTIPLIER}.
  *  </li>
  *  <li>
  *      {@link #autoFlushFrequency(long)} - automatic flush frequency in milliseconds. Essentially,
@@ -113,13 +112,13 @@ public interface IgniteDataStreamer<K, V> extends AutoCloseable {
      *
      * @see IgniteConfiguration#getDataStreamerThreadPoolSize()
      * @see #perNodeParallelOperations()
-     * @deprecated Is not used anymore.
+     * @deprecated Is not used anymore. Should depend on cache type (persistent or not), receiver.
      */
     @Deprecated
     public static final int DFLT_PARALLEL_OPS_MULTIPLIER = 8;
 
     /** Default operations batch size to sent to remote node for loading. */
-    public static final int DFLT_PER_NODE_BUFFER_SIZE = 128;
+    public static final int DFLT_PER_NODE_BUFFER_SIZE = 512;
 
     /** Default batch size per thread to send to buffer on node. */
     public static final int DFLT_PER_THREAD_BUFFER_SIZE = 4096;
@@ -221,8 +220,7 @@ public interface IgniteDataStreamer<K, V> extends AutoCloseable {
      * <p>
      * This method should be called prior to {@link #addData(Object, Object)} call.
      * <p>
-     * If not provided, default value is calculated as follows
-     * {@link #DFLT_PARALLEL_OPS_MULTIPLIER} * {@code DATA_STREAMER_POOL_SIZE_ON_REMOTE_NODE}.
+     * If not provided, default value is calculated.
      *
      * @param parallelOps Maximum number of parallel stream operations for a single node.
      * @see IgniteConfiguration#getDataStreamerThreadPoolSize()

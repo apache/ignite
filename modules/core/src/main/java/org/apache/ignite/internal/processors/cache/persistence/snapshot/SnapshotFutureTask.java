@@ -209,11 +209,7 @@ class SnapshotFutureTask extends AbstractSnapshotFutureTask<Set<GroupPartitionId
     }
 
     /** {@inheritDoc} */
-    @Override public boolean onDone(@Nullable Set<GroupPartitionId> res, @Nullable Throwable err) {;
-        log.error("TEST | snapshot - onDone(), dataStreamerFutures().size(): " + cctx.mvcc().dataStreamerFutures().size());
-
-//        U.FLAG2.set(false);
-
+    @Override public boolean onDone(@Nullable Set<GroupPartitionId> res, @Nullable Throwable err) {
         for (PageStoreSerialWriter writer : partDeltaWriters.values())
             U.closeQuiet(writer);
 
@@ -318,8 +314,6 @@ class SnapshotFutureTask extends AbstractSnapshotFutureTask<Set<GroupPartitionId
         if (stopping())
             return;
 
-//        log.error("TEST | snapshot - beforeCheckpointBegin(). DSFuts: "  +cctx.mvcc().dataStreamerFutures().size());
-
         ctx.finishedStateFut().listen(f -> {
             if (f.error() == null)
                 cpEndFut.complete(true);
@@ -349,10 +343,6 @@ class SnapshotFutureTask extends AbstractSnapshotFutureTask<Set<GroupPartitionId
         // Write lock is hold. Partition pages counters has been collected under write lock.
         if (stopping())
             return;
-
-        U.FLAG2.set(false);
-
-//        log.error("TEST | snapshot - onMarkCheckpointBegin(). DSFuts: " + cctx.mvcc().dataStreamerFutures().size());
 
         try {
             // Here we have the following warranties:
@@ -460,8 +450,6 @@ class SnapshotFutureTask extends AbstractSnapshotFutureTask<Set<GroupPartitionId
         if (stopping())
             return;
 
-//        log.error("TEST | snapshot - onCheckpointBegin. DSFuts: " + cctx.mvcc().dataStreamerFutures().size());
-
         assert !processed.isEmpty() : "Partitions to process must be collected under checkpoint mark phase";
 
         wrapExceptionIfStarted(() -> snpSndr.init(processed.values().stream().mapToInt(Set::size).sum()))
@@ -519,13 +507,6 @@ class SnapshotFutureTask extends AbstractSnapshotFutureTask<Set<GroupPartitionId
 
                     CompletableFuture<Void> fut0 = CompletableFuture.runAsync(
                         wrapExceptionIfStarted(() -> {
-//                            U.FLAG2.set(true);
-//                            if(cctx.kernalContext().grid().localNode().order() == 2)
-//                                U.FLAG2.set(true);
-
-//                            if(partId == 859)
-//                                log.error("TEST | sending delta " + partId);
-
                             snpSndr.sendPart(
                                 getPartitionFile(pageStore.workDir(), cacheDirName, partId),
                                 cacheDirName,
@@ -552,14 +533,6 @@ class SnapshotFutureTask extends AbstractSnapshotFutureTask<Set<GroupPartitionId
                                     throw new IgniteCheckedException(ex);
                                 }
 
-//                                if(cctx.kernalContext().grid().localNode().order() == 2)
-//                                    U.FLAG2.set(true);
-
-//                                log.error("TEST | sending delta " + delta.getName());
-
-//                                if(delta.getName().contains("859"))
-//                                    log.error("TEST | sending delta " + delta.getName());
-
                                 snpSndr.sendDelta(delta, cacheDirName, pair);
 
                                 processedSize.addAndGet(delta.length());
@@ -567,9 +540,6 @@ class SnapshotFutureTask extends AbstractSnapshotFutureTask<Set<GroupPartitionId
                                 boolean deleted = delta.delete();
 
                                 assert deleted;
-
-//                                if(delta.getName().contains("851"))
-//                                    log.error("TEST | send delta " + delta.getName());
                             }),
                             snpSndr.executor());
 
@@ -996,9 +966,6 @@ class SnapshotFutureTask extends AbstractSnapshotFutureTask<Set<GroupPartitionId
 
             // Write buffer to the end of the file.
             int len = deltaFileIo.writeFully(pageBuf);
-
-//            if (len > 0)
-//                log.error("TEST | Wrote delta " + deltaFile.getName());
 
             totalSize.addAndGet(len);
         }

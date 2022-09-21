@@ -216,8 +216,6 @@ public class DataStreamProcessor<K, V> extends GridProcessorAdapter {
         }
 
         try {
-//            log.error("TEST | Processing data load request: " + req.requestId());
-
             if (log.isDebugEnabled())
                 log.debug("Processing data load request: " + req);
 
@@ -399,11 +397,7 @@ public class DataStreamProcessor<K, V> extends GridProcessorAdapter {
             }
 
             try {
-                long t = System.nanoTime();
-
                 job.call();
-
-                t = U.nanosToMillis(System.nanoTime() - t);
 
                 sendResponse(nodeId, topic, req.requestId(), null, req.forceLocalDeployment());
             }
@@ -493,13 +487,5 @@ public class DataStreamProcessor<K, V> extends GridProcessorAdapter {
         X.println(">>>");
         X.println(">>> Data streamer processor memory stats [igniteInstanceName=" + ctx.igniteInstanceName() + ']');
         X.println(">>>   ldrsSize: " + ldrs.size());
-    }
-
-    public void unmarkStreamed(String cacheName, UUID nodeId) {
-
-    }
-
-    public void markStreamed(String cacheName) {
-
     }
 }

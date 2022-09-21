@@ -17,38 +17,29 @@
 
 package org.apache.ignite.internal.processors.cache.persistence.snapshot;
 
+import java.sql.Connection;
+import java.sql.SQLException;
+import java.util.Arrays;
+import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.concurrent.atomic.AtomicInteger;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCache;
 import org.apache.ignite.IgniteDataStreamer;
 import org.apache.ignite.cache.CacheAtomicityMode;
 import org.apache.ignite.cache.CacheMode;
-import org.apache.ignite.cache.CacheWriteSynchronizationMode;
 import org.apache.ignite.configuration.CacheConfiguration;
-import org.apache.ignite.configuration.ConnectorConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
-import org.apache.ignite.configuration.WALMode;
 import org.apache.ignite.internal.IgniteInternalFuture;
-import org.apache.ignite.internal.processors.cache.distributed.dht.atomic.GridNearAtomicUpdateFuture;
 import org.apache.ignite.internal.util.typedef.F;
-import org.apache.ignite.internal.util.typedef.G;
-import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.testframework.GridTestUtils;
-import org.apache.ignite.testframework.junits.GridAbstractTest;
 import org.junit.Test;
 import org.junit.runners.Parameterized;
 
-import java.sql.Connection;
-import java.sql.SQLException;
-import java.util.Arrays;
-import java.util.HashMap;
-import java.util.Map;
-import java.util.concurrent.CountDownLatch;
-import java.util.concurrent.atomic.AtomicBoolean;
-import java.util.concurrent.atomic.AtomicInteger;
-
 import static org.apache.ignite.cluster.ClusterState.ACTIVE;
 
-public class IgniteClusterShanpshotStreamerTest  extends AbstractSnapshotSelfTest {
+/** */
+public class IgniteClusterShanpshotStreamerTest extends AbstractSnapshotSelfTest {
     /** Parameters. */
     @Parameterized.Parameters(name = "Encryption={0}")
     public static Iterable<Boolean> encryptionParams() {
@@ -101,19 +92,7 @@ public class IgniteClusterShanpshotStreamerTest  extends AbstractSnapshotSelfTes
 //                            .setGroupName("grp1")
             );
 
-        long n = System.nanoTime();
-
-        runLoad2(tableName, loadLever.getCount());
-
-        n = U.nanosToMillis(System.nanoTime() - n) / 1000;
-
-        System.err.println("TEST | loaded in " + n + " seconds.");
-
-        if(true)
-            return;
-
         IgniteInternalFuture<?> load1 = runLoad(tableName, idx, loadLever, stop);
-//        IgniteInternalFuture<?> load2 = runLoad(tableName, idx, loadLever, stop);
 
         loadLever.await();
 
@@ -193,34 +172,6 @@ public class IgniteClusterShanpshotStreamerTest  extends AbstractSnapshotSelfTes
                 e.printStackTrace();
             }
         }, 1, "load-thread-" + tblName);
-    }
-
-    private void runLoad2(String tblName, long cnt) {
-        String cacheName = "SQL_PUBLIC_" + tblName.toUpperCase();
-
-//        Map<Long, Long> batch = new HashMap<>();
-
-        try (Ignite client = startClientGrid(G.allGrids().size())) {
-            try (IgniteDataStreamer<Long, Long> ds = client.dataStreamer(cacheName)) {
-                ds.allowOverwrite(true);
-//                ds.perNodeBufferSize(32);
-
-                for (long i = 0; i < cnt; ++i) {
-                    ds.addData(i, i);
-
-//                    batch.put(i, i);
-//
-//                    if(batch.size() >= 512) {
-//                        grid(0).cache(cacheName).putAll(batch);
-//
-//                        batch = new HashMap<>();
-//                    }
-                }
-            }
-        }
-        catch (Exception e) {
-            e.printStackTrace();
-        }
     }
 
     /** */

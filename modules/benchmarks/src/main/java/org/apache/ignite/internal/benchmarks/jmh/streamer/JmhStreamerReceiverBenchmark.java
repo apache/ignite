@@ -57,14 +57,14 @@ import org.openjdk.jmh.runner.options.OptionsBuilder;
 @BenchmarkMode(Mode.AverageTime)
 @State(Scope.Benchmark)
 @Threads(1)
-@Measurement(iterations = 7, batchSize = 1)
-@Warmup(iterations = 5)
+@Measurement(iterations = 5)
+@Warmup(iterations = 3)
 public class JmhStreamerReceiverBenchmark {
     /** */
-    private static final long ENTRIES_TO_LOAD = 2_000_000;
+    private static final long ENTRIES_TO_LOAD = 4_000_000;
 
     /** */
-    private static final int AVERAGE_RECORD_LEN = 150;
+    private static final int AVERAGE_RECORD_LEN = 100;
 
     /** */
     private static final int RECORD_LEN_DELTA = AVERAGE_RECORD_LEN / 10;
@@ -73,31 +73,34 @@ public class JmhStreamerReceiverBenchmark {
     private static final boolean LOAD_FROM_CLIENT = true;
 
     /** */
+    private static final boolean PERSISTENT = true;
+
+    /** */
     private static final int SERVERS = 2;
 
     /** Cache backups num. */
-    private static final int BACKUPS = 1;
+    private static final int BACKUPS = SERVERS - 1;
 
     /** Cache sync mode: full or primary only. */
-    private static final boolean FULL_SYNC = true;
+    private static final boolean FULL_SYNC = false;
 
     /** Thread buffer size in DataStreamer.perThreadBufferSize() depending on DataStreamer.perNodeBatchSize(). */
     private static final int THREAD_BATCH_SIZE_MULT = 4;
 
     /** */
-    private static final int CHECKPOINT_FREQUENCY = 1000;
+    private static final int CHECKPOINT_FREQUENCY = 3000;
 
     /** Enabled or disables checkpoint after loading in the load iteration. */
-    private static final boolean CHECKPOINT_AFTER_LOAD = true;
+    private static final boolean CHECKPOINT_AFTER_LOAD = false;
 
     /** Some fixed minimal + doubled average record size. */
     private static final long REGION_SIZE = 128L * 1024L * 1024L + ENTRIES_TO_LOAD * AVERAGE_RECORD_LEN * 2;
 
     /** */
-    private static final int VALUES_BANK_SIZE = 3000;
+    private static final String CACHE_NAME = "testCache";
 
     /** */
-    private static final String CACHE_NAME = "testCache";
+    private static final int VALUES_BANK_SIZE = 2000;
 
     /** */
     private final Random rnd = new Random();
@@ -128,13 +131,25 @@ public class JmhStreamerReceiverBenchmark {
         else {
             cfg.setGridLogger(new NullLogger());
 
-            cfg.setDataStorageConfiguration(new DataStorageConfiguration()
-                    .setPageSize(DataStorageConfiguration.DFLT_PAGE_SIZE)
-                .setWalMode(WALMode.NONE)
-                .setDefaultDataRegionConfiguration(new DataRegionConfiguration()
-                    .setPersistenceEnabled(true)
-                    .setMaxSize(REGION_SIZE))
-                .setCheckpointFrequency(CHECKPOINT_FREQUENCY));
+            DataStorageConfiguration dsCfg = new DataStorageConfiguration();
+
+            DataRegionConfiguration regCfg = new DataRegionConfiguration();
+
+            regCfg.setPersistenceEnabled(PERSISTENT);
+
+            if (PERSISTENT) {
+                //Reduce affection of side I/O.
+                dsCfg.setWalMode(WALMode.NONE);
+
+                dsCfg.setCheckpointFrequency(CHECKPOINT_FREQUENCY);
+
+                regCfg.setMaxSize(REGION_SIZE);
+                regCfg.setInitialSize(REGION_SIZE);
+            }
+
+            dsCfg.setDefaultDataRegionConfiguration(regCfg);
+
+            cfg.setDataStorageConfiguration(dsCfg);
 
             cfg.setFailureHandler(new StopNodeFailureHandler());
         }
@@ -219,8 +234,6 @@ public class JmhStreamerReceiverBenchmark {
 
         nodes.get(0).createCache(cacheCfg(CACHE_NAME));
 
-        assert VALUES_BANK_SIZE > 0;
-
         values = new Object[VALUES_BANK_SIZE];
     }
 
@@ -247,49 +260,17 @@ public class JmhStreamerReceiverBenchmark {
     }
 
     /**
-     * Test cache.putAll() to compare.
+     * Test with batched receiver.
      */
-    //@Benchmark
-    public void bchCachePutAll_128_1() throws Exception {
-        doTest(128, 1);
-    }
-
-    /**
-     * Test cache.putAll() to compare.
-     */
-    //@Benchmark
-    public void bchCachePutAll_128_2() throws Exception {
-        doTest(128, 4);
-    }
-
-    /**
-     * Test cache.putAll() to compare.
-     */
-    //@Benchmark
-    public void bchCachePutAll_512_1() throws Exception {
-        doTest(512, 1);
-    }
-
-    /**
-     * Test cache.putAll() to compare.
-     */
-    //@Benchmark
-    public void bchCachePutAll_512_2() throws Exception {
-        doTest(512, 2);
+    @Benchmark
+    public void bchIndividual_512_1() throws Exception {
+        doTest(DataStreamerCacheUpdaters.individual(), 1, 512);
     }
 
     /**
      * Test with default receiver.
      */
-    @Benchmark
-    public void bchDefaultIsolated_128_4() throws Exception {
-        doTest(null, 4, 128);
-    }
-
-    /**
-     * Test with default receiver.
-     */
-    @Benchmark
+    //@Benchmark
     public void bchDefaultIsolated_128_1() throws Exception {
         doTest(null, 1, 128);
     }
@@ -297,15 +278,15 @@ public class JmhStreamerReceiverBenchmark {
     /**
      * Test with default receiver.
      */
-    @Benchmark
+    //@Benchmark
     public void bchDefaultIsolated_128_2() throws Exception {
-        doTest(null, 1, 128);
+        doTest(null, 2, 128);
     }
 
     /**
      * Test with default receiver.
      */
-    @Benchmark
+    //@Benchmark
     public void bchDefaultIsolated_256_1() throws Exception {
         doTest(null, 1, 256);
     }
@@ -313,7 +294,7 @@ public class JmhStreamerReceiverBenchmark {
     /**
      * Test with default receiver.
      */
-    @Benchmark
+    //@Benchmark
     public void bchDefaultIsolated_256_2() throws Exception {
         doTest(null, 2, 256);
     }
@@ -321,15 +302,7 @@ public class JmhStreamerReceiverBenchmark {
     /**
      * Test with default receiver.
      */
-    @Benchmark
-    public void bchDefaultIsolated_256_4() throws Exception {
-        doTest(null, 4, 256);
-    }
-
-    /**
-     * Test with default receiver.
-     */
-    @Benchmark
+    //@Benchmark
     public void bchDefaultIsolated_512_1() throws Exception {
         doTest(null, 1, 512);
     }
@@ -337,47 +310,15 @@ public class JmhStreamerReceiverBenchmark {
     /**
      * Test with default receiver.
      */
-    @Benchmark
+    //@Benchmark
     public void bchDefaultIsolated_512_2() throws Exception {
         doTest(null, 2, 512);
     }
 
     /**
-     * Test with default receiver.
-     */
-    @Benchmark
-    public void bchDefaultIsolated_512_4() throws Exception {
-        doTest(null, 2, 512);
-    }
-
-    /**
      * Test with batched receiver.
      */
-    @Benchmark
-    public void bchBatched_256_1() throws Exception {
-        doTest(DataStreamerCacheUpdaters.batched(), 1, 256);
-    }
-
-    /**
-     * Test with batched receiver.
-     */
-    @Benchmark
-    public void bchBatched_256_2() throws Exception {
-        doTest(DataStreamerCacheUpdaters.batched(), 2, 256);
-    }
-
-    /**
-     * Test with batched receiver.
-     */
-    @Benchmark
-    public void bchBatched_256_4() throws Exception {
-        doTest(DataStreamerCacheUpdaters.batched(), 4, 256);
-    }
-
-    /**
-     * Test with batched receiver.
-     */
-    @Benchmark
+    //@Benchmark
     public void bchBatched_128_1() throws Exception {
         doTest(DataStreamerCacheUpdaters.batched(), 1, 128);
     }
@@ -385,7 +326,7 @@ public class JmhStreamerReceiverBenchmark {
     /**
      * Test with batched receiver.
      */
-    @Benchmark
+    //@Benchmark
     public void bchBatched_128_2() throws Exception {
         doTest(DataStreamerCacheUpdaters.batched(), 2, 128);
     }
@@ -393,15 +334,23 @@ public class JmhStreamerReceiverBenchmark {
     /**
      * Test with batched receiver.
      */
-    @Benchmark
-    public void bchBatched_128_4() throws Exception {
-        doTest(DataStreamerCacheUpdaters.batched(), 4, 128);
+    //@Benchmark
+    public void bchBatched_256_1() throws Exception {
+        doTest(DataStreamerCacheUpdaters.batched(), 1, 256);
     }
 
     /**
      * Test with batched receiver.
      */
-    @Benchmark
+    //@Benchmark
+    public void bchBatched_256_2() throws Exception {
+        doTest(DataStreamerCacheUpdaters.batched(), 2, 256);
+    }
+
+    /**
+     * Test with batched receiver.
+     */
+    //@Benchmark
     public void bchBatched_512_1() throws Exception {
         doTest(DataStreamerCacheUpdaters.batched(), 1, 512);
     }
@@ -409,16 +358,8 @@ public class JmhStreamerReceiverBenchmark {
     /**
      * Test with batched receiver.
      */
-    @Benchmark
+    //@Benchmark
     public void bchBatched_512_2() throws Exception {
-        doTest(DataStreamerCacheUpdaters.batched(), 2, 512);
-    }
-
-    /**
-     * Test with batched receiver.
-     */
-    @Benchmark
-    public void bchBatched_512_4() throws Exception {
         doTest(DataStreamerCacheUpdaters.batched(), 2, 512);
     }
 
@@ -498,9 +439,7 @@ public class JmhStreamerReceiverBenchmark {
             }
         }
 
-        if (CHECKPOINT_AFTER_LOAD) {
-            long time = System.currentTimeMillis();
-
+        if (PERSISTENT && CHECKPOINT_AFTER_LOAD) {
             CompletableFuture.allOf(nodes.stream().filter(n -> !n.configuration().isClientMode())
                 .map(n -> CompletableFuture.runAsync(new Runnable() {
                     @Override public void run() {
@@ -512,11 +451,6 @@ public class JmhStreamerReceiverBenchmark {
                         }
                     }
                 })).toArray(CompletableFuture[]::new)).get();
-
-            time = System.currentTimeMillis() - time;
-
-            System.out.println(getClass().getSimpleName() + ": checkpoint duration = " + ((float)time / 1000.0f) +
-                " seconds.");
         }
 
         assert nodes.get(0).cache(CACHE_NAME).size() == ENTRIES_TO_LOAD;
@@ -533,7 +467,7 @@ public class JmhStreamerReceiverBenchmark {
      * @param args Args.
      */
     public static void main(String[] args) throws RunnerException {
-        String heapMb = 384 + SERVERS * 748 + "m";
+        String heapMb = 333 + SERVERS * 555 + "m";
 
         final Options options = new OptionsBuilder()
             .include(JmhStreamerReceiverBenchmark.class.getSimpleName())
