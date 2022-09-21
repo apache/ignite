@@ -50,16 +50,5 @@ public class StringIndexKey implements IndexKey {
     @Override public String toString() {
         return key;
     }
-
-//    /** {@inheritDoc} */
-//    @Override public int hashCode() {
-//        return key.hashCode();
-//    }
-//
-//    /** {@inheritDoc} */
-//    @Override public boolean equals(Object o) {
-//        return o instanceof StringIndexKey && compare((IndexKey)o) == 0;
-//    }
-
 }
 
