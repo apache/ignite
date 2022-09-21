@@ -261,7 +261,7 @@ public class DataStreamProcessorSelfTest extends GridCommonAbstractTest {
     @WithSystemProperty(key = ATTR_DATA_STREAMER_POOL_SIZE, value = "6")
     @WithSystemProperty(key = IGNITE_ATOMIC_DEFERRED_ACK_BUFFER_SIZE, value = "256")
     public void testAtomicPrimarySyncStability() throws Exception {
-        int grids = 2;
+        int grids = 3;
         int entriesToLoad = 100_000;
         int avgEntryLen = 100;
 
@@ -280,15 +280,27 @@ public class DataStreamProcessorSelfTest extends GridCommonAbstractTest {
 
         Object[] vals = loadData(Math.max(100, entriesToLoad / 100), avgEntryLen);
 
-        //Fixed buffers, close to the defaults at the moment but others. To avoid changes of defaults in the future.
+        //Fixed buffers, close to the defaults at the moment but others. To avoid changes of the defaults in the future.
         int perNodeBufSize = 384;
         int perThreadBufSize = perNodeBufSize * 3;
 
-        int maxWaitFutures = (perNodeBufSize * 2) * 5;
+        //There is no reason to send more than 2 buffered requests if already keeping a couple of unresponded requests.
+        //Collecting unresponded requests consumes memory infinitely.
+        //Every single cache update creates one update future for primary and one future for all the backups.
+        //So, if node keeps collecting significantly more than (preNodeBuffer * 2) * 2 update futures, it is a trouble.
+        //This race we can't win. Streamer doesn't know about unfinished backup waiting futures on the primary node.
+        //It proceeds once gets response from primary node. Which doesn't mean this primary node got all the backups
+        //answears.
+        //Things stuck at disk writes like checkpoints, WALs, grids count and network issues etc.
+        //However, Streamer should consider how much it has sent and wait a little.
+        int maxUnrespondedBatchesPerNode = 2;
+        int targetUpdateFuturesCnt = ((perNodeBufSize * maxUnrespondedBatchesPerNode) * (cacheBackups > 0 ? 2 : 1));
+        //Let's take reserve of 5
+        int maxUpdateFutures = targetUpdateFuturesCnt * 5;
 
         try {
             for (int n = 0; n < grids; ++n) {
-                communicationSpi = new UpdatesQueueCheckingCommunicationSpi(maxWaitFutures);
+                communicationSpi = new UpdatesQueueCheckingCommunicationSpi(maxUpdateFutures);
 
                 startGrid(n);
             }
@@ -305,6 +317,8 @@ public class DataStreamProcessorSelfTest extends GridCommonAbstractTest {
                     streamer.perNodeBufferSize(perNodeBufSize);
                     streamer.perThreadBufferSize(perThreadBufSize);
                     streamer.autoFlushFrequency(0);
+                    //No need to remap if failed.
+                    ((DataStreamerImpl)streamer).maxRemapCount(0);
 
                     for (int e = 0; e < entriesToLoad; ++e)
                         streamer.addData(e, vals[e % vals.length]);
@@ -1322,12 +1336,9 @@ public class DataStreamProcessorSelfTest extends GridCommonAbstractTest {
         /** Max unresponded update futures.. */
         private final int maxWaitingFuts;
 
-        private final AtomicInteger max = new AtomicInteger();
-
         /** Ctor. */
         private UpdatesQueueCheckingCommunicationSpi(int maxWaitingFuts) {
             this.maxWaitingFuts = maxWaitingFuts;
-            this.max.set((int)(maxWaitingFuts * 0.75));
         }
 
         /** {@inheritDoc} */
@@ -1353,17 +1364,6 @@ public class DataStreamProcessorSelfTest extends GridCommonAbstractTest {
 
                 if (maxWaitingFuts > 0 && ioMsg.message() instanceof GridDhtAtomicAbstractUpdateRequest) {
                     int updtFutsCnt = ((IgniteEx)ignite).context().cache().context().mvcc().atomicFuturesCount();
-
-                    if (updtFutsCnt > max.get()) {
-                        synchronized (max) {
-                            if (updtFutsCnt > max.get()) {
-                                max.set(updtFutsCnt);
-
-                                log.info("Max count of unresponded futures: " + max);
-                            }
-
-                        }
-                    }
 
                     if (updtFutsCnt > maxWaitingFuts)
                         throw new IllegalStateException("Too many unresponded update awaiting futures: " +
