@@ -26,15 +26,17 @@ public class MongoPluginConfiguration implements PluginConfiguration {
     private boolean isWithBinaryStorage  = false;
     
     /** Host. */
-    private String host = "127.0.0.1";
+    private String host = "0.0.0.0";
     
     private int port = 27018;
 
     /** Number of backups in mongodb storage cache. */
-    private Integer mdlStorageBackups;
+    private int mdlStorageBackups;
 
     /** Number of backups in mongodb descriptor storage cache. */
-    private Integer mdlDescStorageBackups;
+    private int mdlDescStorageBackups;
+    
+    private boolean partitioned = true;
 
     /** */
     public boolean isWithBinaryStorage() {
@@ -57,22 +59,22 @@ public class MongoPluginConfiguration implements PluginConfiguration {
     }
 
     /** */
-    public Integer getMdlStorageBackups() {
+    public int getMdlStorageBackups() {
         return mdlStorageBackups;
     }
 
     /** */
-    public void setMdlStorageBackups(Integer mdlStorageBackups) {
+    public void setMdlStorageBackups(int mdlStorageBackups) {
         this.mdlStorageBackups = mdlStorageBackups;
     }
 
     /** */
-    public Integer getMdlDescStorageBackups() {
+    public int getMdlDescStorageBackups() {
         return mdlDescStorageBackups;
     }
 
     /** */
-    public void setMdlDescStorageBackups(Integer mdlDescStorageBackups) {
+    public void setMdlDescStorageBackups(int mdlDescStorageBackups) {
         this.mdlDescStorageBackups = mdlDescStorageBackups;
     }
 
@@ -82,5 +84,13 @@ public class MongoPluginConfiguration implements PluginConfiguration {
 
 	public void setHost(String host) {
 		this.host = host;
+	}
+
+	public boolean isPartitioned() {
+		return partitioned;
+	}
+
+	public void setPartitioned(boolean partitioned) {
+		this.partitioned = partitioned;
 	}
 }

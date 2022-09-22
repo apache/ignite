@@ -16,7 +16,7 @@ License: Apache License,   Version 2.0 http://www.apache.org/licenses/LICENSE-2.
 2. Build a using maven build with package goal
 3. A deployable war file is generated in the target-Folder 
 4. Deploy in Tomcat 7 or 8
-5. Or deploy to $IgniteHome/webapp use jetty as webserver.
+5. Or deploy to $IgniteHome/webapps use jetty as webserver.
 
 
 ### Ignite backend

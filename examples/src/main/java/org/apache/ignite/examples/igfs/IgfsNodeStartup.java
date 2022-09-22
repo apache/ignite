@@ -42,7 +42,7 @@ public class IgfsNodeStartup {
      * @throws Exception If example execution failed.
      */
     public static void main(String[] args) throws Exception {
-        Ignite ignite = Ignition.start("examples/config/example-igfs.xml");
+        Ignite ignite = Ignition.start("config/example-igfs.xml");
         
         while(!ignite.cluster().active()){
         	Thread.sleep(100);

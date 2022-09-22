@@ -57,14 +57,11 @@ public class SimpleSecurityProcessor extends GridProcessorAdapter implements Gri
     /**
      * Constructor.
      */
-    public SimpleSecurityProcessor(GridKernalContext ctx, SimpleSecurityData nodeSecData,
-        Collection<SimpleSecurityData> predefinedAuthData) {
+    public SimpleSecurityProcessor(GridKernalContext ctx, SimpleSecurityData nodeSecData, Collection<SimpleSecurityData> predefinedAuthData) {
         super(ctx);
 
         this.nodeSecData = nodeSecData;
-        this.predefinedAuthData = predefinedAuthData.isEmpty()
-            ? Collections.emptyList()
-            : new ArrayList<>(predefinedAuthData);
+        this.predefinedAuthData = predefinedAuthData;
     }
 
     /** {@inheritDoc} */

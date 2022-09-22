@@ -34,7 +34,7 @@ try {
         "host" => "localhost",
         "port" => 11211),array(
         "host" => "localhost",
-        "port" => 11212)],2);
+        "port" => 11211)],2);
 
     
 

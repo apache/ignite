@@ -1,5 +1,6 @@
 package de.bwaldvogel.mongo;
 
+import org.apache.ignite.internal.processors.mongo.MongoPluginConfiguration;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -11,13 +12,13 @@ public class IgniteMongoServer extends MongoServer {
     private static final Logger log = LoggerFactory.getLogger(IgniteMongoServer.class);
 
     public static void main(String[] args) throws Exception {
-    	    	
+    	MongoPluginConfiguration cfg = new MongoPluginConfiguration();
         final MongoServer mongoServer;
         if (args.length >= 1) {
             String fileName = args[0];
-            mongoServer = new IgniteMongoServer(fileName);
+            mongoServer = new IgniteMongoServer(fileName,cfg);
         } else {
-            mongoServer = new IgniteMongoServer();
+            mongoServer = new IgniteMongoServer(cfg);
         }
         
         Runtime.getRuntime().addShutdownHook(new Thread() {
@@ -28,15 +29,15 @@ public class IgniteMongoServer extends MongoServer {
             }
         });
 
-        mongoServer.bind("0.0.0.0", 27018);
+        mongoServer.bind(cfg.getHost(), cfg.getPort());
         
     }
 
-    public IgniteMongoServer() {
-        super(IgniteBackend.inMemory());
+    public IgniteMongoServer(MongoPluginConfiguration cfg) {
+        super(IgniteBackend.inMemory(cfg));
     }
 
-    public IgniteMongoServer(String fileName) {
-        super(new IgniteBackend(fileName));
+    public IgniteMongoServer(String fileName,MongoPluginConfiguration cfg) {
+        super(new IgniteBackend(fileName,cfg));
     }
 }

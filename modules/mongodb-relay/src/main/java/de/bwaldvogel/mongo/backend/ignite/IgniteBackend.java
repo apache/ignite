@@ -6,30 +6,33 @@ import java.util.stream.Collectors;
 
 import org.apache.ignite.Ignite;
 import org.apache.ignite.Ignition;
-
+import org.apache.ignite.internal.processors.mongo.MongoPluginConfiguration;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import de.bwaldvogel.mongo.MongoDatabase;
 import de.bwaldvogel.mongo.backend.AbstractMongoBackend;
 import de.bwaldvogel.mongo.backend.Utils;
+import de.bwaldvogel.mongo.exception.MongoServerException;
 
 
 public class IgniteBackend extends AbstractMongoBackend {
 
     private static final Logger log = LoggerFactory.getLogger(IgniteBackend.class);
 
-    private Ignite mvStore;
+    private final Ignite admin; // admin store
     
-    private boolean isKeepBinary = !true;
+    private final MongoPluginConfiguration cfg;
+    
+    private boolean isKeepBinary = true;
     
     long oldVersion = System.nanoTime();
 
-    public static IgniteBackend inMemory() {
+    public static IgniteBackend inMemory(MongoPluginConfiguration cfg) {
     	
     	Ignite mvStore = Ignition.start();
     	
-        return new IgniteBackend(mvStore);
+        return new IgniteBackend(mvStore,cfg);
     }
     
 	public void commit() {      
@@ -37,12 +40,13 @@ public class IgniteBackend extends AbstractMongoBackend {
         log.debug("Committed MVStore (old: {} new: {})", oldVersion, newVersion);
     }
 
-    public IgniteBackend(Ignite mvStore) {
-        this.mvStore = mvStore;
+    public IgniteBackend(Ignite mvStore,MongoPluginConfiguration cfg) {
+        this.admin = mvStore;
+        this.cfg = cfg;        
     }
 
-    public IgniteBackend(String fileName) {
-        this(openMvStore(fileName));
+    public IgniteBackend(String fileName,MongoPluginConfiguration cfg) {
+        this(openMvStore(fileName),cfg);
     }
 
     private static Ignite openMvStore(String fileName) {
@@ -66,8 +70,14 @@ public class IgniteBackend extends AbstractMongoBackend {
     		gridName = null;
     		databaseName = IgniteDatabase.DEFAULT_DB_NAME;
     	}    	
-    	Ignite mvStore = Ignition.ignite(gridName);
-        return new IgniteDatabase(databaseName, this, mvStore);
+    	try {
+	    	Ignite mvStore = Ignition.ignite(gridName);
+	        return new IgniteDatabase(databaseName, this, mvStore);
+        
+    	}
+    	catch(Exception e) {
+    		throw new MongoServerException(String.format("Database %s not install!",databaseName),e);
+    	}
     }
     
     
@@ -78,13 +88,12 @@ public class IgniteBackend extends AbstractMongoBackend {
     @Override
     public void close() {
         log.info("closing {}", this);
-        if(mvStore!=null)
-        	mvStore.close();
-        mvStore = null;
+        
+        //Ignition.stopAll(false);
     }
 
     public boolean isInMemory() {
-        return !mvStore.configuration().getDataStorageConfiguration().getDefaultDataRegionConfiguration().isPersistenceEnabled();
+        return !admin.configuration().getDataStorageConfiguration().getDefaultDataRegionConfiguration().isPersistenceEnabled();
     }
 
     @Override
@@ -92,7 +101,7 @@ public class IgniteBackend extends AbstractMongoBackend {
         if (isInMemory()) {
             return getClass().getSimpleName() + "[inMemory]";
         } else {
-            return getClass().getSimpleName() + "[" + mvStore.name() + "]";
+            return getClass().getSimpleName() + "[" + admin.name() + "]";
         }
     }
 
@@ -102,6 +111,10 @@ public class IgniteBackend extends AbstractMongoBackend {
 
 	public void setKeepBinary(boolean isKeepBinary) {
 		this.isKeepBinary = isKeepBinary;
+	}
+
+	public MongoPluginConfiguration getCfg() {
+		return cfg;
 	}
 	
 }

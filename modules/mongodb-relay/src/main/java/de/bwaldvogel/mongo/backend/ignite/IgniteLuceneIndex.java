@@ -99,7 +99,7 @@ public class IgniteLuceneIndex extends Index<Object> {
 
 				marshaller = cacheObjProc.marshaller();
 				// marshaller = PlatformUtils.marshaller();
-				String typeName = IgniteCollection.tableOfCache(cacheName);
+				String typeName = IgniteBinaryCollection.tableOfCache(cacheName);
 				Map<String, FieldType> fields = indexAccess.fields(typeName);
 				for (IndexKey ik : this.getKeys()) {
 					fields.put(ik.getKey(), TextField.TYPE_NOT_STORED);
@@ -170,26 +170,13 @@ public class IgniteLuceneIndex extends Index<Object> {
 		String typeName = collection.getCollectionName();
 		Object key = null;
 		String keyField = "id";
-		if (collection instanceof IgniteCollection) {
-			if (!this.isFirstIndex)
-				return;
-			
-			IgniteCollection coll = (IgniteCollection) collection;
-			T2<String, String> t2 = IgniteCollection.typeNameAndKeyField(coll.dataMap, document);
-			typeName = t2.get1();
-			keyField = t2.get2();
-			key = document.getOrDefault(coll.idField, null);
-			
-			
-		}
-
-		else if (collection instanceof IgniteBinaryCollection) {
+		if (collection instanceof IgniteBinaryCollection) {
 
 			if (!this.isFirstIndex)
 				return;
 			
 			IgniteBinaryCollection coll = (IgniteBinaryCollection) collection;
-			T2<String, String> t2 = IgniteCollection.typeNameAndKeyField(coll.dataMap, document);
+			T2<String, String> t2 = IgniteBinaryCollection.typeNameAndKeyField(coll.dataMap, document);
 			typeName = t2.get1();
 			keyField = t2.get2();
 			key = document.getOrDefault(coll.idField, null);
@@ -282,14 +269,8 @@ public class IgniteLuceneIndex extends Index<Object> {
 		if(!this.isFirstIndex) {
 			return null;
 		}
-		if (collection instanceof IgniteCollection) {
-			IgniteCollection coll = (IgniteCollection) collection;
-			key = document.getOrDefault(coll.idField, null);
-		}
-		else if(collection instanceof IgniteBinaryCollection){			
-			IgniteBinaryCollection coll = (IgniteBinaryCollection) collection;
-			key = document.getOrDefault(coll.idField, null);			
-		}
+		IgniteBinaryCollection coll = (IgniteBinaryCollection) collection;
+		key = document.getOrDefault(coll.idField, null);
 		try {
 			
 			if (key != null) {

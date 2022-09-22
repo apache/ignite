@@ -1,0 +1,141 @@
+<project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
+
+  	<modelVersion>4.0.0</modelVersion>
+  	<groupId>de.kp.works</groupId>
+  	<artifactId>ignite-janus</artifactId>
+  	<version>0.6.2</version>
+	<name>Janus-Ignite</name>
+	
+  	<properties>
+   		<maven.compiler.source>1.8</maven.compiler.source>
+   		<maven.compiler.target>1.8</maven.compiler.target>
+   		<encoding>UTF-8</encoding>
+
+		<ignite.version>2.14.0</ignite.version>
+		<janus.version>0.6.2</janus.version>
+		<lucene-solr.version>8.8.2</lucene-solr.version>
+	</properties>
+
+	<dependencies>
+
+		<!-- JANUSGRAPH
+		-->
+		<dependency>
+			<groupId>org.janusgraph</groupId>
+			<artifactId>janusgraph-core</artifactId>
+			<version>${janus.version}</version>
+		</dependency>
+		
+		<dependency>
+			<groupId>org.janusgraph</groupId>
+			<artifactId>janusgraph-inmemory</artifactId>
+			<version>${janus.version}</version>			
+		</dependency>
+		
+		<dependency>
+			<groupId>org.janusgraph</groupId>
+			<artifactId>janusgraph-server</artifactId>
+			<version>${janus.version}</version>			
+		</dependency>
+				
+		<dependency>
+			<groupId>org.janusgraph</groupId>
+			<artifactId>janusgraph-driver</artifactId>
+			<version>${janus.version}</version>			
+		</dependency>
+		
+		<!-- https://mvnrepository.com/artifact/org.apache.tinkerpop/gremlin-console -->
+		<dependency>
+		    <groupId>org.apache.tinkerpop</groupId>
+		    <artifactId>gremlin-console</artifactId>
+		    <version>3.5.3</version>
+		</dependency>
+		
+		
+		<!-- https://mvnrepository.com/artifact/com.github.jbellis/jamm -->
+		<dependency>
+		    <groupId>com.github.jbellis</groupId>
+		    <artifactId>jamm</artifactId>
+		    <version>0.3.0</version>
+		</dependency>
+
+		<dependency>
+            <groupId>org.apache.lucene</groupId>
+            <artifactId>lucene-spatial-extras</artifactId>
+            <version>${lucene-solr.version}</version>
+        </dependency>
+        <dependency>
+            <groupId>org.apache.lucene</groupId>
+            <artifactId>lucene-backward-codecs</artifactId>
+            <version>${lucene-solr.version}</version>
+        </dependency>
+
+        <dependency>
+            <groupId>org.janusgraph</groupId>
+            <artifactId>janusgraph-test</artifactId>
+            <version>${janus.version}</version>
+            <scope>test</scope>
+        </dependency>
+
+		<!-- APACHE IGNITE
+		-->
+		<dependency>
+		    <groupId>org.apache.ignite</groupId>
+		    <artifactId>ignite-core</artifactId>
+		    <version>${ignite.version}</version>
+		</dependency>
+
+		<dependency>
+		    <groupId>org.apache.ignite</groupId>
+		    <artifactId>ignite-indexing</artifactId>
+		    <version>${ignite.version}</version>		    
+		</dependency>
+		
+		<dependency>
+		    <groupId>org.apache.ignite</groupId>
+		    <artifactId>ignite-spring</artifactId>
+		    <version>${ignite.version}</version>
+		</dependency>
+		
+		
+		<dependency>
+            <groupId>org.apache.ignite</groupId>
+            <artifactId>ignite-log4j2</artifactId>
+            <version>${ignite.version}</version>
+        </dependency>
+        
+        <dependency>
+            <groupId>org.apache.logging.log4j</groupId>
+            <version>2.17.1</version>
+            <artifactId>log4j-slf4j-impl</artifactId>           
+        </dependency>
+
+	</dependencies>	
+	
+    <build>
+        <plugins>
+            <plugin>
+                <artifactId>maven-dependency-plugin</artifactId>
+                <executions>
+                    <execution>
+                        <phase>package</phase>
+                        <goals>
+                            <goal>copy-dependencies</goal>
+                        </goals>
+                        <configuration>
+                            <outputDirectory>${project.build.directory}/libs</outputDirectory>
+                            <includeScope>compile</includeScope>
+                            <!-- <excludeArtifactIds>ignite-core,ignite-spring,ignite-indexing</excludeArtifactIds> -->
+                        </configuration>
+                    </execution>
+                </executions>
+            </plugin>
+        </plugins>
+    </build>
+    
+	<organization>
+		<name>Dr. Krusche &amp; Partner PartG</name>
+		<url>https://www.dr-kruscheundpartner.de</url>
+	</organization>
+	<description>An Apache Ignite backend for JanusGraph v0.5.3</description>
+</project>

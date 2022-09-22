@@ -363,7 +363,7 @@ public class IgniteKernal implements IgniteEx, Externalizable {
      * <p>
      * Value is {@code 30 sec}.
      */
-    public static final long DFLT_PERIODIC_STARVATION_CHECK_FREQ = 1000 * 30;
+    public static final long DFLT_PERIODIC_STARVATION_CHECK_FREQ = 1000 * 60;
 
     /** Object is used to force completion the previous reconnection attempt. See {@link ReconnectState} for details. */
     private static final Object STOP_RECONNECT = new Object();

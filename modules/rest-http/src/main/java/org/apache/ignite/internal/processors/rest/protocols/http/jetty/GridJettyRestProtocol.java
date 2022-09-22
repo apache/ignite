@@ -385,13 +385,14 @@ public class GridJettyRestProtocol extends GridRestProtocolAdapter {
 		        	continue;
 		        }
 			    
-			    //webApp.setClassLoader(Thread.currentThread().getContextClassLoader());  
+			    webApp.setClassLoader(Thread.currentThread().getContextClassLoader());  
 				webApp.setParentLoaderPriority(false);
 				webApp.setServer(httpSrv);
 				webApp.setErrorHandler(new ErrorHandler());
 				webApp.setAttribute("gridKernalContext", ctx);
 				
-				plugins.add(webApp);	
+				log.info("start webapp: "+contextPath);
+				plugins.add(webApp);
 			
 		    }
 		}

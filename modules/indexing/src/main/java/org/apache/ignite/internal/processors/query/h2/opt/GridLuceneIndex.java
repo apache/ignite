@@ -441,7 +441,7 @@ public class GridLuceneIndex implements AutoCloseable {
                 float score;
 
                 try {
-                    doc = searcher.doc(docs[idx++].doc);                   
+                    doc = searcher.doc(docs[idx].doc);                   
                     score = docs[idx].score;
 
                     idx++;

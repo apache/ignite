@@ -5,6 +5,7 @@ import static org.junit.Assert.assertEquals;
 
 import java.net.InetSocketAddress;
 
+import org.apache.ignite.internal.processors.mongo.MongoPluginConfiguration;
 import org.bson.Document;
 import org.junit.After;
 import org.junit.Before;
@@ -26,7 +27,7 @@ public class SimpleTest {
 
     @Before
     public void setUp() {
-        server = new MongoServer(IgniteBackend.inMemory());
+        server = new MongoServer(IgniteBackend.inMemory(new MongoPluginConfiguration()));
 
         // bind on a random local port
         InetSocketAddress serverAddress = server.bind();

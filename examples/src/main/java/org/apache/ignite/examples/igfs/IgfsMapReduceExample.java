@@ -66,7 +66,7 @@ public class IgfsMapReduceExample {
         else if (args.length == 1)
             System.out.println("Please provide regular expression.");
         else {
-            try (Ignite ignite = Ignition.start("examples/config/example-igfs.xml")) {
+            try (Ignite ignite = Ignition.start("config/example-igfs.xml")) {
                 System.out.println();
                 System.out.println(">>> IGFS map reduce example started.");
 

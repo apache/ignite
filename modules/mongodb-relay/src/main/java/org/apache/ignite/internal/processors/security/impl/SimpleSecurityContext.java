@@ -121,7 +121,7 @@ public class SimpleSecurityContext implements SecurityContext, Serializable {
     /** {@inheritDoc} */
     @Override public String toString() {
         return 
-        	"TestSecurityContext{" +
+        	"SimpleSecurityContext{" +
         		"subject=" + subject +
             '}';
     }

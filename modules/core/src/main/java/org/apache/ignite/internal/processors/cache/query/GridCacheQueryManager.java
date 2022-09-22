@@ -2937,7 +2937,7 @@ public abstract class GridCacheQueryManager<K, V> extends GridCacheManagerAdapte
 	
 	//add@byron support text search filter
     public CacheQuery<Map.Entry<K, V>> createFullTextQuery(String clsName,
-        String search,int limit, IgniteBiPredicate<Object, Object> filter, boolean keepBinary) {
+        String search, IgniteBiPredicate<Object, Object> filter, int limit,  int pageSize, boolean keepBinary) {
         A.notNull("clsName", clsName);
         A.notNull("search", search);
 
@@ -2949,7 +2949,9 @@ public abstract class GridCacheQueryManager<K, V> extends GridCacheManagerAdapte
             null,
             false,
             keepBinary,
-			null).limit(limit);
+			null)
+        	.limit(limit)
+        	.pageSize(pageSize);
     }
 
     /**

@@ -27,9 +27,7 @@ import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.configuration.IgniteConfiguration;
-import org.apache.ignite.internal.GridKernalContext;
-import org.apache.ignite.internal.IgniteEx;
-import org.apache.ignite.internal.processors.security.GridSecurityProcessor;
+
 import org.apache.ignite.plugin.CachePluginContext;
 import org.apache.ignite.plugin.CachePluginProvider;
 import org.apache.ignite.plugin.ExtensionRegistry;
@@ -46,17 +44,18 @@ import de.bwaldvogel.mongo.backend.ignite.IgniteBackend;
 /**
  * Security processor provider for tests.
  */
-public class MongoServerPluginProvider implements PluginProvider {
-	
+public class MongoServerPluginProvider implements PluginProvider<MongoPluginConfiguration> {
+	 private String databaseName;
 	 
 	 /** Ignite logger. */
-     IgniteLogger log;
+	 private IgniteLogger log;
      
 	
-	 MongoPluginConfiguration cfg;
+     private MongoPluginConfiguration cfg;
      
 	 //Singerton
-     static MongoServer mongoServer;
+     public static MongoServer mongoServer;
+     public static IgniteBackend backend;
 
 	
     /** {@inheritDoc} */
@@ -75,8 +74,9 @@ public class MongoServerPluginProvider implements PluginProvider {
     }
 
     /** {@inheritDoc} */
-    @Override public IgnitePlugin plugin() {
-        return new IgnitePlugin() {
+    @Override public <T extends IgnitePlugin> T plugin() {
+        return (T)new IgnitePlugin() {
+            // No-op.
         };
     }
 
@@ -97,7 +97,8 @@ public class MongoServerPluginProvider implements PluginProvider {
                  }
              }
          }
-         if(cfg == null) {
+         if(cfg == null && "admin".equals(ctx.grid().name())) {
+        	 // if node name == 'admin' auto enable create mongodb server
         	 cfg = new MongoPluginConfiguration();
          }
          boolean per = ignite.configuration().getDataStorageConfiguration().getDefaultDataRegionConfiguration().isPersistenceEnabled();
@@ -108,20 +109,11 @@ public class MongoServerPluginProvider implements PluginProvider {
 
     /** {@inheritDoc} */
     @SuppressWarnings("unchecked")
-    @Override public @Nullable Object createComponent(PluginContext ctx, Class cls) {
-        if (cls.isAssignableFrom(GridSecurityProcessor.class))
-            return securityProcessor(((IgniteEx)ctx.grid()).context());
-
+    @Override public @Nullable  <T> T createComponent(PluginContext ctx, Class<T> cls) {
         return null;
     }
 
-    /**
-     * @param ctx Grid kernal context.
-     * @return {@link GridSecurityProcessor} istance.
-     */
-    protected GridSecurityProcessor securityProcessor(GridKernalContext ctx) {
-    	return null;
-    }
+    
 
     /** {@inheritDoc} */
     @Override public CachePluginProvider createCacheProvider(CachePluginContext ctx) {
@@ -130,17 +122,11 @@ public class MongoServerPluginProvider implements PluginProvider {
 
     /** {@inheritDoc} */
     @Override public void start(PluginContext ctx) {
-    	 // start mongodb singerton
-    	if(cfg!=null && mongoServer==null) {
-	       IgniteBackend backend = new IgniteBackend(ctx.grid());
-	       backend.setKeepBinary(cfg.isWithBinaryStorage());	       
-	       try {	    	  
-	    	   mongoServer = new MongoServer(backend);
-	    	   mongoServer.bind(cfg.getHost(),cfg.getPort());
-	    	   log.info("mongoServer","listern on "+cfg.getHost()+":"+cfg.getPort());
-	       }catch(Exception e) {
-	    	   log.error("mongoServer bind fail.",e);
-	       }
+    	 // start mongodb singerton when admin grid start
+    	databaseName = ctx.igniteConfiguration().getIgniteInstanceName();
+    	if(cfg!=null && backend ==null) {
+    	   backend = new IgniteBackend(ctx.grid(),cfg);
+ 	       backend.setKeepBinary(cfg.isWithBinaryStorage());
     	}
     }
 
@@ -155,11 +141,20 @@ public class MongoServerPluginProvider implements PluginProvider {
 
     /** {@inheritDoc} */
     @Override public void onIgniteStart() {
-       
+    	if(cfg!=null && mongoServer==null) {    		      
+ 	       try {	    	  
+ 	    	   mongoServer = new MongoServer(backend);
+ 	    	   mongoServer.bind(cfg.getHost(),cfg.getPort());
+ 	    	   log.info("mongoServer","listern on "+cfg.getHost()+":"+cfg.getPort());
+ 	    	   
+ 	       }catch(Exception e) {
+ 	    	   log.error("mongoServer bind fail.",e);
+ 	       }
+     	}
     }
 
     /** {@inheritDoc} */
-    @Override public void onIgniteStop(boolean cancel) {
+    @Override public void onIgniteStop(boolean cancel) {    	
     	
     }
 
@@ -177,13 +172,4 @@ public class MongoServerPluginProvider implements PluginProvider {
     @Override public void validateNewNode(ClusterNode node) throws PluginValidationException {
         // No-op.
     }
-    
-    public MongoPluginConfiguration getCfg() {
-		return cfg;
-	}
-
-	public void setCfg(MongoPluginConfiguration cfg) {
-		this.cfg = cfg;
-	}
-
 }

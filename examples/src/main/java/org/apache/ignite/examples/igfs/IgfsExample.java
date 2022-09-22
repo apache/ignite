@@ -50,8 +50,8 @@ public final class IgfsExample {
      * @throws Exception If example execution failed.
      */
     public static void main(String[] args) throws Exception {
-        Ignite ignite = Ignition.start("examples/config/example-igfs.xml");
-        //-ignite.active(true);     
+        Ignite ignite = Ignition.start("config/example-igfs.xml");
+        ignite.active(true);     
         
         while(!ignite.cluster().active()){
         	Thread.sleep(100);
