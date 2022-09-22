@@ -23,6 +23,9 @@ import java.util.Map;
 import org.apache.ignite.IgniteCache;
 import org.apache.ignite.IgniteDataStreamer;
 import org.apache.ignite.IgniteException;
+import org.apache.ignite.cluster.ClusterNode;
+import org.apache.ignite.configuration.CacheConfiguration;
+import org.apache.ignite.internal.processors.datastreamer.DataStreamerImpl;
 
 /**
  * Updates cache with batch of entries. Usually it is enough to configure {@link IgniteDataStreamer#allowOverwrite(boolean)}
@@ -41,4 +44,19 @@ public interface StreamReceiver<K, V> extends Serializable {
      * @throws org.apache.ignite.IgniteException If failed.
      */
     public void receive(IgniteCache<K, V> cache, Collection<Map.Entry<K, V>> entries) throws IgniteException;
+
+    /**
+     * Sets max parallel batches (operations) per node if {@link IgniteDataStreamer#perNodeParallelOperations()} is not
+     * positive. In same way takes place only if positive.
+     *
+     * @param node       Node to send to.
+     * @param ccfg       The cache configuration.
+     * @param persistant {@code True} if the cache is persistent. {@code False} otherwise.
+     *
+     * @return Max parallel batches.
+     * @see IgniteDataStreamer#perNodeParallelOperations(int)
+     */
+    public default int perNodeParallelOperations(ClusterNode node, CacheConfiguration<?, ?> ccfg, boolean persistant) {
+        return DataStreamerImpl.perNodeParallelOperations(node, ccfg, persistant);
+    }
 }

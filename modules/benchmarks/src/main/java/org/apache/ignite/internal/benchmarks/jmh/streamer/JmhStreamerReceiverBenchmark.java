@@ -61,7 +61,7 @@ import org.openjdk.jmh.runner.options.OptionsBuilder;
 @Warmup(iterations = 3)
 public class JmhStreamerReceiverBenchmark {
     /** */
-    private static final long ENTRIES_TO_LOAD = 4_000_000;
+    private static final long ENTRIES_TO_LOAD = 2_000_000;
 
     /** */
     private static final int AVERAGE_RECORD_LEN = 100;
@@ -90,8 +90,8 @@ public class JmhStreamerReceiverBenchmark {
     /** */
     private static final int CHECKPOINT_FREQUENCY = 3000;
 
-    /** Enabled or disables checkpoint after loading in the load iteration. */
-    private static final boolean CHECKPOINT_AFTER_LOAD = false;
+    /** Enables or disables final checkpoint into the measurement. */
+    private static final boolean INCLUDE_CHECKPOINT = false;
 
     /** Some fixed minimal + doubled average record size. */
     private static final long REGION_SIZE = 128L * 1024L * 1024L + ENTRIES_TO_LOAD * AVERAGE_RECORD_LEN * 2;
@@ -270,23 +270,7 @@ public class JmhStreamerReceiverBenchmark {
     /**
      * Test with default receiver.
      */
-    //@Benchmark
-    public void bchDefaultIsolated_128_1() throws Exception {
-        doTest(null, 1, 128);
-    }
-
-    /**
-     * Test with default receiver.
-     */
-    //@Benchmark
-    public void bchDefaultIsolated_128_2() throws Exception {
-        doTest(null, 2, 128);
-    }
-
-    /**
-     * Test with default receiver.
-     */
-    //@Benchmark
+    @Benchmark
     public void bchDefaultIsolated_256_1() throws Exception {
         doTest(null, 1, 256);
     }
@@ -294,7 +278,7 @@ public class JmhStreamerReceiverBenchmark {
     /**
      * Test with default receiver.
      */
-    //@Benchmark
+    @Benchmark
     public void bchDefaultIsolated_256_2() throws Exception {
         doTest(null, 2, 256);
     }
@@ -302,7 +286,7 @@ public class JmhStreamerReceiverBenchmark {
     /**
      * Test with default receiver.
      */
-    //@Benchmark
+    @Benchmark
     public void bchDefaultIsolated_512_1() throws Exception {
         doTest(null, 1, 512);
     }
@@ -310,7 +294,7 @@ public class JmhStreamerReceiverBenchmark {
     /**
      * Test with default receiver.
      */
-    //@Benchmark
+    @Benchmark
     public void bchDefaultIsolated_512_2() throws Exception {
         doTest(null, 2, 512);
     }
@@ -318,23 +302,7 @@ public class JmhStreamerReceiverBenchmark {
     /**
      * Test with batched receiver.
      */
-    //@Benchmark
-    public void bchBatched_128_1() throws Exception {
-        doTest(DataStreamerCacheUpdaters.batched(), 1, 128);
-    }
-
-    /**
-     * Test with batched receiver.
-     */
-    //@Benchmark
-    public void bchBatched_128_2() throws Exception {
-        doTest(DataStreamerCacheUpdaters.batched(), 2, 128);
-    }
-
-    /**
-     * Test with batched receiver.
-     */
-    //@Benchmark
+    @Benchmark
     public void bchBatched_256_1() throws Exception {
         doTest(DataStreamerCacheUpdaters.batched(), 1, 256);
     }
@@ -342,7 +310,7 @@ public class JmhStreamerReceiverBenchmark {
     /**
      * Test with batched receiver.
      */
-    //@Benchmark
+    @Benchmark
     public void bchBatched_256_2() throws Exception {
         doTest(DataStreamerCacheUpdaters.batched(), 2, 256);
     }
@@ -350,7 +318,7 @@ public class JmhStreamerReceiverBenchmark {
     /**
      * Test with batched receiver.
      */
-    //@Benchmark
+    @Benchmark
     public void bchBatched_512_1() throws Exception {
         doTest(DataStreamerCacheUpdaters.batched(), 1, 512);
     }
@@ -358,7 +326,7 @@ public class JmhStreamerReceiverBenchmark {
     /**
      * Test with batched receiver.
      */
-    //@Benchmark
+    @Benchmark
     public void bchBatched_512_2() throws Exception {
         doTest(DataStreamerCacheUpdaters.batched(), 2, 512);
     }
@@ -439,7 +407,7 @@ public class JmhStreamerReceiverBenchmark {
             }
         }
 
-        if (PERSISTENT && CHECKPOINT_AFTER_LOAD) {
+        if (PERSISTENT && INCLUDE_CHECKPOINT) {
             CompletableFuture.allOf(nodes.stream().filter(n -> !n.configuration().isClientMode())
                 .map(n -> CompletableFuture.runAsync(new Runnable() {
                     @Override public void run() {

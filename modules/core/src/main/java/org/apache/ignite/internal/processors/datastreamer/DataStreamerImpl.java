@@ -133,20 +133,22 @@ public class DataStreamerImpl<K, V> implements IgniteDataStreamer<K, V>, Delayed
     private int bufLdrSzPerThread = DFLT_PER_THREAD_BUFFER_SIZE;
 
     /**
-     * Вefault minimal parallel per node operations for persistent caches.
+     * Default minimal parallel per node operations for persistent caches.
      *
      * @see IgniteDataStreamer#perNodeParallelOperations(int)
+     * @see StreamReceiver#perNodeParallelOperations(ClusterNode, CacheConfiguration, boolean)
      * @see IgniteNodeAttributes#ATTR_DATA_STREAMER_POOL_SIZE
      */
-    private static final int DFLT_MIN_PARALLEL_OPS_WITH_PERSISTENCE = 4;
+    private static final int DFLT_MIN_PARALLEL_PERSISTENCE_OPS = 4;
 
     /**
-     * Default parallel per node operation factor for persistent caches.
+     * Default parallel per node operation ratio of the pool size for persistent caches.
      *
      * @see IgniteDataStreamer#perNodeParallelOperations(int)
+     * @see StreamReceiver#perNodeParallelOperations(ClusterNode, CacheConfiguration, boolean)
      * @see IgniteNodeAttributes#ATTR_DATA_STREAMER_POOL_SIZE
      */
-    private static final float DFTL_PERSISTENT_PAR_OPS_MULT = 0.4f;
+    private static final float DFLT_PARALLEL_PERSISTENCE_OPS_MULT = 0.25f;
 
     /**
      * Thread buffer map: on each thread there are future and list of entries which will be streamed after filling
@@ -1599,11 +1601,13 @@ public class DataStreamerImpl<K, V> implements IgniteDataStreamer<K, V>, Delayed
             int perNodeParallelOps = parallelOps > 0 ? parallelOps : -1;
 
             if (perNodeParallelOps < 0) {
-                if (ctx.cache().cacheDescriptor(cacheName).groupDescriptor().persistenceEnabled())
-                    perNodeParallelOps = Math.max(DFLT_MIN_PARALLEL_OPS_WITH_PERSISTENCE,
-                        Math.round(streamerPoolSize * DFTL_PERSISTENT_PAR_OPS_MULT));
-                else
-                    perNodeParallelOps = streamerPoolSize;
+                perNodeParallelOps = rcvr.perNodeParallelOperations(node, ctx.cache().cacheConfiguration(cacheName),
+                    ctx.cache().cacheDescriptor(cacheName).groupDescriptor().persistenceEnabled());
+            }
+
+            if (perNodeParallelOps < 0) {
+                perNodeParallelOps = perNodeParallelOperations(node, ctx.cache().cacheConfiguration(cacheName),
+                    ctx.cache().cacheDescriptor(cacheName).groupDescriptor().persistenceEnabled());
             }
 
             sem = new Semaphore(perNodeParallelOps);
@@ -2161,6 +2165,28 @@ public class DataStreamerImpl<K, V> implements IgniteDataStreamer<K, V>, Delayed
     }
 
     /**
+     * @param node Node to send to.
+     * @param ccfg The cache configuration.
+     * @param persistant {@code True} if the cache is persistent. {@code False} otherwise.
+     * @return Max parallel operations per node.
+     */
+    public static int perNodeParallelOperations(ClusterNode node, CacheConfiguration<?, ?> ccfg, boolean persistant) {
+        int poolSize = streamerPoolSize(node);
+
+        return persistant ? Math.max(DFLT_MIN_PARALLEL_PERSISTENCE_OPS,
+            Math.round(poolSize * DFLT_PARALLEL_PERSISTENCE_OPS_MULT)) : poolSize;
+    }
+
+    /**
+     * @return Streamer pool size.
+     */
+    private static int streamerPoolSize(ClusterNode node) {
+        Integer attrStreamerPoolSize = node.attribute(IgniteNodeAttributes.ATTR_DATA_STREAMER_POOL_SIZE);
+
+        return attrStreamerPoolSize != null ? attrStreamerPoolSize : node.metrics().getTotalCpus();
+    }
+
+    /**
      * Data streamer peer-deploy aware.
      */
     private class DataStreamerPda implements GridPeerDeployAware {
@@ -2237,6 +2263,12 @@ public class DataStreamerImpl<K, V> implements IgniteDataStreamer<K, V>, Delayed
         DataStreamerCacheUpdaters.InternalUpdater {
         /** */
         private static final long serialVersionUID = 0L;
+
+        /** Max ratio of parallel operations for persistent cache based on the pool size. */
+        private static final int PERSISTENT_PARALLEL_OPS_MULT = 2;
+
+        /** Max ratio of parallel operations based on the pool size. */
+        private static final int PARALLEL_OPS_MULT = 4;
 
         /** {@inheritDoc} */
         @Override public void receive(
@@ -2375,6 +2407,13 @@ public class DataStreamerImpl<K, V> implements IgniteDataStreamer<K, V>, Delayed
                     throw new IgniteException("Failed to write preloaded entries into write-ahead log.", e);
                 }
             }
+        }
+
+        /** {@inheritDoc} */
+        @Override public int perNodeParallelOperations(ClusterNode node, CacheConfiguration<?, ?> ccfg, boolean persistant) {
+            int poolSize = streamerPoolSize(node);
+
+            return poolSize * (persistant ? PERSISTENT_PARALLEL_OPS_MULT : PARALLEL_OPS_MULT);
         }
     }
 

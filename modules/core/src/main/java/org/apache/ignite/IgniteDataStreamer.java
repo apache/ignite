@@ -20,6 +20,8 @@ package org.apache.ignite;
 import java.util.Collection;
 import java.util.Map;
 import javax.cache.CacheException;
+import org.apache.ignite.cluster.ClusterNode;
+import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.lang.IgniteBiPredicate;
 import org.apache.ignite.lang.IgniteFuture;
@@ -210,6 +212,9 @@ public interface IgniteDataStreamer<K, V> extends AutoCloseable {
 
     /**
      * Gets maximum number of parallel stream operations for a single node.
+     * <p>
+     * If positive, prevails over
+     * {@link StreamReceiver#perNodeParallelOperations(ClusterNode, CacheConfiguration, boolean)}
      *
      * @return Maximum number of parallel stream operations for a single node.
      */
@@ -220,7 +225,8 @@ public interface IgniteDataStreamer<K, V> extends AutoCloseable {
      * <p>
      * This method should be called prior to {@link #addData(Object, Object)} call.
      * <p>
-     * If not provided, default value is calculated.
+     * If not provided, {@link StreamReceiver#perNodeParallelOperations(ClusterNode, CacheConfiguration, boolean)} is
+     * used. If StreamReceiver doesn't provide a positive value, default value is calculated.
      *
      * @param parallelOps Maximum number of parallel stream operations for a single node.
      * @see IgniteConfiguration#getDataStreamerThreadPoolSize()
