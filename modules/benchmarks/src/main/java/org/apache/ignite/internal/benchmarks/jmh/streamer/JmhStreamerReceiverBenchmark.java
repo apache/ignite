@@ -243,7 +243,7 @@ public class JmhStreamerReceiverBenchmark {
 
         nodes.get(0).cluster().state(ClusterState.ACTIVE);
 
-        if(LOAD_FROM_CLIENT)
+        if (LOAD_FROM_CLIENT)
             nodes.add(ldrNode = Ignition.start(configuration("client", true)));
         else
             ldrNode = nodes.get(rnd.nextInt(SERVERS));
