@@ -87,8 +87,8 @@ import static org.apache.ignite.cache.CacheAtomicityMode.ATOMIC;
 import static org.apache.ignite.cache.CacheAtomicityMode.TRANSACTIONAL;
 import static org.apache.ignite.cache.CacheMode.PARTITIONED;
 import static org.apache.ignite.cache.CacheMode.REPLICATED;
+import static org.apache.ignite.cache.CacheWriteSynchronizationMode.FULL_ASYNC;
 import static org.apache.ignite.cache.CacheWriteSynchronizationMode.FULL_SYNC;
-import static org.apache.ignite.cache.CacheWriteSynchronizationMode.PRIMARY_SYNC;
 import static org.apache.ignite.configuration.DataStorageConfiguration.DFLT_CHECKPOINT_FREQ;
 import static org.apache.ignite.configuration.DataStorageConfiguration.DFLT_DATA_REGION_MAX_SIZE;
 import static org.apache.ignite.events.EventType.EVT_CACHE_OBJECT_PUT;
@@ -278,7 +278,7 @@ public class DataStreamProcessorSelfTest extends GridCommonAbstractTest {
         useCache = true;
         mode = PARTITIONED;
         cacheAtomicityMode = ATOMIC;
-        cacheSyncMode = PRIMARY_SYNC;
+        cacheSyncMode = FULL_ASYNC;
         cacheBackups = grids - 1;
         nearEnabled = false;
 
@@ -303,8 +303,7 @@ public class DataStreamProcessorSelfTest extends GridCommonAbstractTest {
 
             grid(0).cluster().state(ClusterState.ACTIVE);
 
-            int maxBatchesPerNode = receiver.perNodeParallelOperations(grid(0).localNode(),
-                grid(0).cache(DEFAULT_CACHE_NAME).getConfiguration(CacheConfiguration.class), persistenceEnabled());
+            int maxBatchesPerNode = receiver.perNodeParallelOperations(grid(0).localNode(), persistenceEnabled());
 
             //Every single cache update creates one update future for the primary and one future for all the backups.
             //Collecting update futures and related objects consumes heap. Streamer doesn't know about unfinished

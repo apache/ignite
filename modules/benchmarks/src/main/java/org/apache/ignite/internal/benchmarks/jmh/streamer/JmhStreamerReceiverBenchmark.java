@@ -64,7 +64,7 @@ public class JmhStreamerReceiverBenchmark {
     private static final long ENTRIES_TO_LOAD = 2_000_000;
 
     /** */
-    private static final int AVERAGE_RECORD_LEN = 100;
+    private static final int AVERAGE_RECORD_LEN = 500;
 
     /** */
     private static final int RECORD_LEN_DELTA = AVERAGE_RECORD_LEN / 10;
@@ -81,8 +81,8 @@ public class JmhStreamerReceiverBenchmark {
     /** Cache backups num. */
     private static final int BACKUPS = SERVERS - 1;
 
-    /** Cache sync mode: full or primary only. */
-    private static final boolean FULL_SYNC = false;
+    /** Cache sync mode. */
+    private static final CacheWriteSynchronizationMode WRITE_SYNC_MODE = CacheWriteSynchronizationMode.PRIMARY_SYNC;
 
     /** Thread buffer size in DataStreamer.perThreadBufferSize() depending on DataStreamer.perNodeBatchSize(). */
     private static final int THREAD_BATCH_SIZE_MULT = 4;
@@ -94,7 +94,7 @@ public class JmhStreamerReceiverBenchmark {
     private static final boolean INCLUDE_CHECKPOINT = false;
 
     /** Some fixed minimal + doubled average record size. */
-    private static final long REGION_SIZE = 128L * 1024L * 1024L + ENTRIES_TO_LOAD * AVERAGE_RECORD_LEN * 2;
+    private static final long REGION_SIZE = 100L * 1024L * 1024L + ENTRIES_TO_LOAD * AVERAGE_RECORD_LEN * 2;
 
     /** */
     private static final String CACHE_NAME = "testCache";
@@ -163,9 +163,8 @@ public class JmhStreamerReceiverBenchmark {
 
         ccfg.setAtomicityMode(CacheAtomicityMode.ATOMIC);
         ccfg.setBackups(BACKUPS);
-        ccfg.setWriteSynchronizationMode(FULL_SYNC ? CacheWriteSynchronizationMode.FULL_SYNC :
-            CacheWriteSynchronizationMode.PRIMARY_SYNC);
-        ccfg.setCacheMode(CacheMode.REPLICATED);
+        ccfg.setWriteSynchronizationMode(WRITE_SYNC_MODE);
+        ccfg.setCacheMode(CacheMode.PARTITIONED);
 
         return ccfg;
     }

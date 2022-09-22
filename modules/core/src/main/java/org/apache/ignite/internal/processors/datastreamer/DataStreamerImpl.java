@@ -136,7 +136,7 @@ public class DataStreamerImpl<K, V> implements IgniteDataStreamer<K, V>, Delayed
      * Default minimal parallel per node operations for persistent caches.
      *
      * @see IgniteDataStreamer#perNodeParallelOperations(int)
-     * @see StreamReceiver#perNodeParallelOperations(ClusterNode, CacheConfiguration, boolean)
+     * @see StreamReceiver#perNodeParallelOperations(ClusterNode, boolean)
      * @see IgniteNodeAttributes#ATTR_DATA_STREAMER_POOL_SIZE
      */
     private static final int DFLT_MIN_PARALLEL_PERSISTENCE_OPS = 4;
@@ -145,7 +145,7 @@ public class DataStreamerImpl<K, V> implements IgniteDataStreamer<K, V>, Delayed
      * Default parallel per node operation ratio of the pool size for persistent caches.
      *
      * @see IgniteDataStreamer#perNodeParallelOperations(int)
-     * @see StreamReceiver#perNodeParallelOperations(ClusterNode, CacheConfiguration, boolean)
+     * @see StreamReceiver#perNodeParallelOperations(ClusterNode, boolean)
      * @see IgniteNodeAttributes#ATTR_DATA_STREAMER_POOL_SIZE
      */
     private static final float DFLT_PARALLEL_PERSISTENCE_OPS_MULT = 0.25f;
@@ -1601,12 +1601,12 @@ public class DataStreamerImpl<K, V> implements IgniteDataStreamer<K, V>, Delayed
             int perNodeParallelOps = parallelOps > 0 ? parallelOps : -1;
 
             if (perNodeParallelOps < 0) {
-                perNodeParallelOps = rcvr.perNodeParallelOperations(node, ctx.cache().cacheConfiguration(cacheName),
+                perNodeParallelOps = rcvr.perNodeParallelOperations(node,
                     ctx.cache().cacheDescriptor(cacheName).groupDescriptor().persistenceEnabled());
             }
 
             if (perNodeParallelOps < 0) {
-                perNodeParallelOps = perNodeParallelOperations(node, ctx.cache().cacheConfiguration(cacheName),
+                perNodeParallelOps = perNodeParallelOperations(node,
                     ctx.cache().cacheDescriptor(cacheName).groupDescriptor().persistenceEnabled());
             }
 
@@ -2166,11 +2166,10 @@ public class DataStreamerImpl<K, V> implements IgniteDataStreamer<K, V>, Delayed
 
     /**
      * @param node Node to send to.
-     * @param ccfg The cache configuration.
      * @param persistant {@code True} if the cache is persistent. {@code False} otherwise.
      * @return Max parallel operations per node.
      */
-    public static int perNodeParallelOperations(ClusterNode node, CacheConfiguration<?, ?> ccfg, boolean persistant) {
+    public static int perNodeParallelOperations(ClusterNode node, boolean persistant) {
         int poolSize = streamerPoolSize(node);
 
         return persistant ? Math.max(DFLT_MIN_PARALLEL_PERSISTENCE_OPS,
@@ -2410,7 +2409,7 @@ public class DataStreamerImpl<K, V> implements IgniteDataStreamer<K, V>, Delayed
         }
 
         /** {@inheritDoc} */
-        @Override public int perNodeParallelOperations(ClusterNode node, CacheConfiguration<?, ?> ccfg, boolean persistant) {
+        @Override public int perNodeParallelOperations(ClusterNode node, boolean persistant) {
             int poolSize = streamerPoolSize(node);
 
             return poolSize * (persistant ? PERSISTENT_PARALLEL_OPS_MULT : PARALLEL_OPS_MULT);
