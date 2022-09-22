@@ -79,6 +79,7 @@ import org.apache.ignite.testframework.junits.WithSystemProperty;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.jetbrains.annotations.Nullable;
 import org.junit.Test;
+
 import static java.util.concurrent.TimeUnit.MILLISECONDS;
 import static org.apache.ignite.IgniteSystemProperties.IGNITE_ATOMIC_DEFERRED_ACK_BUFFER_SIZE;
 import static org.apache.ignite.IgniteSystemProperties.IGNITE_DISABLE_REBALANCING_CANCELLATION_OPTIMIZATION;
@@ -125,9 +126,6 @@ public class DataStreamProcessorSelfTest extends GridCommonAbstractTest {
 
     /** */
     private long regionSize = DFLT_DATA_REGION_MAX_SIZE;
-
-    /** */
-    private WALMode walMode = WALMode.LOG_ONLY;
 
     /** */
     private int checkpointFreq = DFLT_CHECKPOINT_FREQ;
@@ -195,10 +193,10 @@ public class DataStreamProcessorSelfTest extends GridCommonAbstractTest {
 
             if (persistenceEnabled()) {
                 cfg.setDataStorageConfiguration(new DataStorageConfiguration()
-                    .setWalMode(walMode)
                     .setCheckpointFrequency(checkpointFreq)
                     .setDefaultDataRegionConfiguration(new DataRegionConfiguration()
-                        .setPersistenceEnabled(true).setMaxSize(regionSize)));
+                        .setPersistenceEnabled(true).setMaxSize(regionSize))
+                    .setWalMode(WALMode.LOG_ONLY));
             }
 
             if (streamerPoolSize > 0)
@@ -271,9 +269,11 @@ public class DataStreamProcessorSelfTest extends GridCommonAbstractTest {
     @WithSystemProperty(key = IGNITE_DISABLE_REBALANCING_CANCELLATION_OPTIMIZATION, value = "true")
     @WithSystemProperty(key = IGNITE_ATOMIC_DEFERRED_ACK_BUFFER_SIZE, value = "256")
     public void testAtomicPrimarySyncStability() throws Exception {
-        int grids = 2;
+        int grids = 3;
         int entriesToLoad = 300_000;
-        int avgEntryLen = 100;
+        int avgEntryLen = 500;
+
+        StreamReceiver<Integer, Object> receiver = DataStreamerCacheUpdaters.individual();
 
         useCache = true;
         mode = PARTITIONED;
@@ -285,49 +285,41 @@ public class DataStreamProcessorSelfTest extends GridCommonAbstractTest {
         streamerPoolSize = 6;
 
         persistence = true;
-        regionSize = 256L * 1024L * 1024L;
-        walMode = WALMode.LOG_ONLY;
+        regionSize = 200L * 1024L * 1024L;
         checkpointFreq = 3000;
 
         Object[] vals = loadData(Math.max(100, entriesToLoad / 100), avgEntryLen);
 
         //Fixed buffers, close to the defaults at the moment but others. To avoid changes of the defaults in the future.
-        int nodeBufSize = 384;
-        int threadBufSize = nodeBufSize * 3;
-
-        //There is no reason to send more than 2 buffered requests if already keeping a couple of unresponded requests.
-        //Collecting unresponded requests consumes memory infinitely.
-        //Every single cache update creates one update future for primary and one future for all the backups.
-        //So, if node keeps collecting significantly more than (preNodeBuffer * 2) * 2 update futures, it is A problem.
-        //This race we can't win. Streamer doesn't know about unfinished backup waiting futures on the primary node.
-        //It proceeds once gets response from primary node. Which doesn't mean this primary node got all the backups
-        //answers.
-        //Things stuck at disk writes like checkpoints, WALs, WAL rolling. Streamer should take in account how many
-        //batches it sends to a persistent cache.
-        int minParOps = U.field(DataStreamerImpl.class, "DFLT_MIN_PARALLEL_OPS_WITH_PERSISTENCE");
-        float parOpsFactor = U.field(DataStreamerImpl.class, "DFTL_PERSISTENT_PAR_OPS_MULT");
-        int maxUnrespondedBatchesPerNode = Math.max(Math.round(streamerPoolSize * parOpsFactor), minParOps);
-        int estimatedPendingUpdateFutures = ((nodeBufSize * maxUnrespondedBatchesPerNode) * (cacheBackups > 0 ? 2 : 1));
-
-        //Let's take reserve of 3.
-        int maxTestUpdateFutures = estimatedPendingUpdateFutures * 3;
+        int nodeBufSize = 512;
+        int threadBufSize = nodeBufSize * 4;
 
         try {
             for (int n = 0; n < grids; ++n) {
-                communicationSpi = new UpdatesQueueCheckingCommunicationSpi(maxTestUpdateFutures);
+                communicationSpi = new UpdatesQueueCheckingCommunicationSpi();
 
                 startGrid(n);
             }
 
             grid(0).cluster().state(ClusterState.ACTIVE);
 
-            communicationSpi = new UpdatesQueueCheckingCommunicationSpi(0);
+            int maxBatchesPerNode = receiver.perNodeParallelOperations(grid(0).localNode(),
+                grid(0).cache(DEFAULT_CACHE_NAME).getConfiguration(CacheConfiguration.class), persistenceEnabled());
 
+            //Every single cache update creates one update future for the primary and one future for all the backups.
+            //Collecting update futures and related objects consumes heap. Streamer doesn't know about unfinished
+            //backup updates and proceeds more update requests once it gets response from primary node.
+            //This race we can't win. Things stuck at unpredictable checkpoint durations, WAL writes, WAL rollings, GCs.
+            // However, Streamer should take in account how many unresponded batches it has
+            // sent. Let's take reserve of 5 for test. Where 1 is for primary update.
+            UpdatesQueueCheckingCommunicationSpi.maxWaitingFuts.set(maxBatchesPerNode * nodeBufSize * 5);
+
+            communicationSpi = new UpdatesQueueCheckingCommunicationSpi();
             useCache = false;
 
             try (Ignite ldr = startClientGrid(grids)) {
                 try (IgniteDataStreamer<Integer, Object> streamer = ldr.dataStreamer(DEFAULT_CACHE_NAME)) {
-                    streamer.receiver(DataStreamerCacheUpdaters.individual());
+                    streamer.receiver(receiver);
 
                     streamer.perNodeBufferSize(nodeBufSize);
                     streamer.perThreadBufferSize(threadBufSize);
@@ -1351,12 +1343,7 @@ public class DataStreamProcessorSelfTest extends GridCommonAbstractTest {
      */
     private static class UpdatesQueueCheckingCommunicationSpi extends TcpCommunicationSpi {
         /** Max unresponded update futures.. */
-        private final int maxWaitingFuts;
-
-        /** Ctor. */
-        private UpdatesQueueCheckingCommunicationSpi(int maxWaitingFuts) {
-            this.maxWaitingFuts = maxWaitingFuts;
-        }
+        private static final AtomicInteger maxWaitingFuts = new AtomicInteger();
 
         /** {@inheritDoc} */
         @Override public void sendMessage(ClusterNode node, Message msg,
@@ -1379,10 +1366,10 @@ public class DataStreamProcessorSelfTest extends GridCommonAbstractTest {
             if (msg instanceof GridIoMessage) {
                 GridIoMessage ioMsg = (GridIoMessage)msg;
 
-                if (maxWaitingFuts > 0 && ioMsg.message() instanceof GridDhtAtomicAbstractUpdateRequest) {
+                if (ioMsg.message() instanceof GridDhtAtomicAbstractUpdateRequest) {
                     int updtFutsCnt = ((IgniteEx)ignite).context().cache().context().mvcc().atomicFuturesCount();
 
-                    if (updtFutsCnt > maxWaitingFuts)
+                    if (maxWaitingFuts.get() > 0 && updtFutsCnt > maxWaitingFuts.get())
                         throw new IllegalStateException("Too many unresponded update awaiting futures: " +
                             maxWaitingFuts + '.');
                 }
