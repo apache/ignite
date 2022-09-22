@@ -214,7 +214,7 @@ public interface IgniteDataStreamer<K, V> extends AutoCloseable {
      * Gets maximum number of parallel stream operations for a single node.
      * <p>
      * If positive, prevails over
-     * {@link StreamReceiver#perNodeParallelOperations(ClusterNode, CacheConfiguration, boolean)}
+     * {@link StreamReceiver#perNodeParallelOperations(ClusterNode, boolean)}
      *
      * @return Maximum number of parallel stream operations for a single node.
      */
@@ -225,7 +225,7 @@ public interface IgniteDataStreamer<K, V> extends AutoCloseable {
      * <p>
      * This method should be called prior to {@link #addData(Object, Object)} call.
      * <p>
-     * If not provided, {@link StreamReceiver#perNodeParallelOperations(ClusterNode, CacheConfiguration, boolean)} is
+     * If not provided, {@link StreamReceiver#perNodeParallelOperations(ClusterNode, boolean)} is
      * used. If StreamReceiver doesn't provide a positive value, default value is calculated.
      *
      * @param parallelOps Maximum number of parallel stream operations for a single node.
