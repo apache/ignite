@@ -42,6 +42,7 @@ import org.apache.ignite.internal.processors.cache.persistence.db.file.IgnitePds
 import org.apache.ignite.internal.processors.cache.persistence.db.file.IgnitePdsNoActualWalHistoryTest;
 import org.apache.ignite.internal.processors.cache.persistence.db.file.IgnitePdsThreadInterruptionRandomAccessWalTest;
 import org.apache.ignite.internal.processors.cache.persistence.db.file.IgnitePdsThreadInterruptionTest;
+import org.apache.ignite.internal.processors.cache.persistence.db.file.WalFilesCloseTest;
 import org.apache.ignite.internal.processors.cache.persistence.db.wal.IgniteWalRebalanceTest;
 import org.apache.ignite.internal.processors.cache.persistence.db.wal.IgniteWalRecoveryPPCTest;
 import org.apache.ignite.internal.processors.cache.persistence.db.wal.IgniteWalRecoveryTest;
@@ -93,6 +94,7 @@ import org.junit.runners.Suite;
     IgnitePdsMarshallerMappingRestoreOnNodeStartTest.class,
     IgnitePdsThreadInterruptionTest.class,
     IgnitePdsThreadInterruptionRandomAccessWalTest.class,
+    WalFilesCloseTest.class,
     IgnitePdsBinarySortObjectFieldsTest.class,
 
     IgnitePdsCorruptedIndexTest.class,
