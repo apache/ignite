@@ -260,8 +260,8 @@ public class JmhStreamerReceiverBenchmark {
 
         assert nodes.get(0).cache(CACHE_NAME).size() == 0;
 
-        int minLen = Math.max(1, AVERAGE_RECORD_LEN - RECORD_LEN_DELTA/2);
-        int maxLen = Math.max(1, AVERAGE_RECORD_LEN + RECORD_LEN_DELTA/2);
+        int minLen = Math.max(1, AVERAGE_RECORD_LEN - RECORD_LEN_DELTA / 2);
+        int maxLen = Math.max(1, AVERAGE_RECORD_LEN + RECORD_LEN_DELTA / 2);
 
         for (int v = 0; v < values.length; v++) {
             int valLen = minLen + (maxLen > minLen ? rnd.nextInt(maxLen - minLen) : 0);
