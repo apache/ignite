@@ -40,6 +40,7 @@ import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.junit.After;
 import org.junit.Assert;
 import org.junit.Before;
+import org.junit.Ignore;
 import org.junit.Test;
 
 /**
@@ -189,6 +190,7 @@ public class IgnitePdsThreadInterruptionTest extends GridCommonAbstractTest {
      * @throws Exception If failed.
      */
     @Test
+    @Ignore("https://issues.apache.org/jira/browse/IGNITE-17719")
     public void testInterruptsOnWALWrite() throws Exception {
         Ignite ignite = startGrid();
 
