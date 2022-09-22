@@ -14,6 +14,6 @@ public class IncrementalSnapshotTest extends AbstractSnapshotSelfTest {
 
         snp(ign).createSnapshot(SNAPSHOT_NAME).get();
 
-        snp(ign).createIncrementalSnapshot(SNAPSHOT_NAME, null).get();
+        snp(ign).createIncrementalSnapshot(SNAPSHOT_NAME).get();
     }
 }

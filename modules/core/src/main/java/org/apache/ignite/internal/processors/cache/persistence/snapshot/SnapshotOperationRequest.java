@@ -62,7 +62,6 @@ public class SnapshotOperationRequest implements Serializable {
     private transient volatile boolean startStageEnded;
 
     /** Operation start time. */
-    // TODO: use for prepare incremental snapshot
     private final long startTime;
 
     /** */

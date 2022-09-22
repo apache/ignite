@@ -136,7 +136,7 @@ public class SnapshotRestoreCommand extends SnapshotSubcommand {
             }
         }
 
-        cmdArg = new VisorSnapshotRestoreTaskArg(snpName, snpPath, sync, false, restoreAction, grpNames);
+        cmdArg = new VisorSnapshotRestoreTaskArg(snpName, snpPath, sync, restoreAction, grpNames);
     }
 
     /** {@inheritDoc} */

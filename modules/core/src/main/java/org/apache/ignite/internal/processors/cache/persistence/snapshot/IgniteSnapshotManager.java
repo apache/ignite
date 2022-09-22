@@ -40,7 +40,6 @@ import java.util.Arrays;
 import java.util.BitSet;
 import java.util.Collection;
 import java.util.Collections;
-import java.util.Comparator;
 import java.util.Deque;
 import java.util.EnumMap;
 import java.util.HashMap;
@@ -91,7 +90,6 @@ import org.apache.ignite.internal.IgniteFutureCancelledCheckedException;
 import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.IgniteInterruptedCheckedException;
 import org.apache.ignite.internal.NodeStoppingException;
-import org.apache.ignite.internal.binary.BinaryMetadata;
 import org.apache.ignite.internal.cluster.ClusterTopologyCheckedException;
 import org.apache.ignite.internal.cluster.DistributedConfigurationUtils;
 import org.apache.ignite.internal.events.DiscoveryCustomEvent;
@@ -108,7 +106,6 @@ import org.apache.ignite.internal.managers.eventstorage.DiscoveryEventListener;
 import org.apache.ignite.internal.managers.systemview.walker.SnapshotViewWalker;
 import org.apache.ignite.internal.pagemem.store.PageStore;
 import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
-import org.apache.ignite.internal.processors.cache.CacheGroupContext;
 import org.apache.ignite.internal.processors.cache.CacheGroupDescriptor;
 import org.apache.ignite.internal.processors.cache.CacheObjectContext;
 import org.apache.ignite.internal.processors.cache.CacheType;
@@ -133,10 +130,7 @@ import org.apache.ignite.internal.processors.cache.persistence.partstate.GroupPa
 import org.apache.ignite.internal.processors.cache.persistence.tree.io.DataPageIO;
 import org.apache.ignite.internal.processors.cache.persistence.tree.io.DataPagePayload;
 import org.apache.ignite.internal.processors.cache.persistence.tree.io.PageIO;
-import org.apache.ignite.internal.processors.cache.persistence.wal.FileDescriptor;
-import org.apache.ignite.internal.processors.cache.persistence.wal.FileWriteAheadLogManager;
 import org.apache.ignite.internal.processors.cache.persistence.wal.crc.FastCrc;
-import org.apache.ignite.internal.processors.cache.persistence.wal.reader.IgniteWalIteratorFactory;
 import org.apache.ignite.internal.processors.cache.persistence.wal.reader.StandaloneGridKernalContext;
 import org.apache.ignite.internal.processors.cache.tree.DataRow;
 import org.apache.ignite.internal.processors.cache.verify.IdleVerifyResultV2;
@@ -208,7 +202,6 @@ import static org.apache.ignite.internal.processors.cache.binary.CacheObjectBina
 import static org.apache.ignite.internal.processors.cache.binary.CacheObjectBinaryProcessorImpl.resolveBinaryWorkDir;
 import static org.apache.ignite.internal.processors.cache.persistence.file.FilePageStoreManager.INDEX_FILE_NAME;
 import static org.apache.ignite.internal.processors.cache.persistence.file.FilePageStoreManager.PART_FILE_TEMPLATE;
-import static org.apache.ignite.internal.processors.cache.persistence.file.FilePageStoreManager.cacheDataFile;
 import static org.apache.ignite.internal.processors.cache.persistence.file.FilePageStoreManager.cacheDirectories;
 import static org.apache.ignite.internal.processors.cache.persistence.file.FilePageStoreManager.getPartitionFile;
 import static org.apache.ignite.internal.processors.cache.persistence.file.FilePageStoreManager.getPartitionFileName;
@@ -226,9 +219,7 @@ import static org.apache.ignite.internal.processors.task.GridTaskThreadContextKe
 import static org.apache.ignite.internal.processors.task.GridTaskThreadContextKey.TC_SUBGRID;
 import static org.apache.ignite.internal.util.GridUnsafe.bufferAddress;
 import static org.apache.ignite.internal.util.IgniteUtils.isLocalNodeCoordinator;
-import static org.apache.ignite.internal.util.distributed.DistributedProcess.DistributedProcessType.END_INC_SNAPSHOT;
 import static org.apache.ignite.internal.util.distributed.DistributedProcess.DistributedProcessType.END_SNAPSHOT;
-import static org.apache.ignite.internal.util.distributed.DistributedProcess.DistributedProcessType.START_INC_SNAPSHOT;
 import static org.apache.ignite.internal.util.distributed.DistributedProcess.DistributedProcessType.START_SNAPSHOT;
 import static org.apache.ignite.plugin.security.SecurityPermission.ADMIN_SNAPSHOT;
 import static org.apache.ignite.spi.systemview.view.SnapshotView.SNAPSHOT_SYS_VIEW;
@@ -346,12 +337,6 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
     /** Check previously performed snapshot operation and delete uncompleted files if we need. */
     private final DistributedProcess<SnapshotOperationRequest, SnapshotOperationResponse> endSnpProc;
 
-    /** Take snapshot operation procedure. */
-    private final DistributedProcess<SnapshotOperationRequest, SnapshotOperationResponse> startIncSnpProc;
-
-    /** Check previously performed snapshot operation and delete uncompleted files if we need. */
-    private final DistributedProcess<SnapshotOperationRequest, SnapshotOperationResponse> endIncSnpProc;
-
     /** Marshaller. */
     private final Marshaller marsh;
 
@@ -427,12 +412,6 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
             this::processLocalSnapshotStartStageResult, SnapshotStartDiscoveryMessage::new);
 
         endSnpProc = new DistributedProcess<>(ctx, END_SNAPSHOT, this::initLocalSnapshotEndStage,
-            this::processLocalSnapshotEndStageResult);
-
-        startIncSnpProc = new DistributedProcess<>(ctx, START_INC_SNAPSHOT, this::startIncrementalSnapshot,
-            this::processLocalSnapshotStartStageResult, SnapshotStartDiscoveryMessage::new);
-
-        endIncSnpProc = new DistributedProcess<>(ctx, END_INC_SNAPSHOT, this::initLocalSnapshotEndStage,
             this::processLocalSnapshotEndStageResult);
 
         marsh = MarshallerUtils.jdkMarshaller(ctx.igniteInstanceName());
@@ -752,128 +731,6 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
         assert tmpWorkDir != null;
 
         return tmpWorkDir;
-    }
-
-    /** */
-    private void checkIncrementalSnapshot(SnapshotOperationRequest req) throws IgniteCheckedException {
-        File snpDir = snapshotLocalDir(req.snapshotName(), req.snapshotPath());
-
-        SnapshotMetadata snpMeta = readSnapshotMetadata(snpDir, (String)cctx.localNode().consistentId());
-
-        // Snapshot created on older version of Ignite. Skip.
-        if (snpMeta.lastSegIdx() == null)
-            throw new IgniteCheckedException(String.format(
-                "Base snapshot [%s] created on older Ignite version, no last WAL segment index is present.",
-                req.snapshotName()));
-
-        List<IncrementalSnapshotMetadata> incMetas = readIncrementalSnapshotMetadatas(snpDir);
-
-        if (log.isInfoEnabled())
-            log.info(String.format("Found [%d] previous incremental snapshots.", incMetas.size()));
-
-        long seg = snpMeta.lastSegIdx();
-
-        String prevSnp = req.snapshotName();
-
-        for (IncrementalSnapshotMetadata incMeta: incMetas) {
-            if (incMeta.firstSegIdx() != seg + 1) {
-                throw new IgniteCheckedException(
-                    String.format("Missed WAL segment [%d]. Previous snapshot is [%s], next is [%s].",
-                        seg + 1, prevSnp, incMeta.snapshotName()));
-            }
-
-            validateIncrementalSnapshotSegments(snpDir, incMeta);
-
-            seg = incMeta.lastSegIdx();
-            prevSnp = incMeta.snapshotName();
-        }
-
-        // No gaps between last snapshot and current segments (in archive too).
-        validateCurrentSegments(seg);
-
-        checkCacheData(snpMeta, snpDir.toPath());
-        checkBinaryMeta(snpMeta, snpDir.toPath());
-
-        // Those checks must be on coordinator?
-        // Check baseline topology
-        // Check cache_data, binary_meta, marshaller_data for changes.
-        // binary_meta and marshaller_data can differ from node to node?
-
-
-        return null;
-    }
-
-    /** */
-    private void checkBinaryMeta(SnapshotMetadata meta, Path snpDir) {
-        File snpBinMetaDir = snpDir.resolve(DFLT_BINARY_METADATA_PATH).toFile();
-
-        File[] files = snpBinMetaDir.listFiles();
-
-        // TODO: is it possible?
-        if (files == null)
-            throw new IgniteException("No binary meta in dir " + snpBinMetaDir);
-
-        Map<Integer, File> snpBinMetas = Arrays.stream(files)
-            .filter(File::isDirectory)
-            .filter(f -> f.getName().toLowerCase().endsWith(".bin"))
-            .collect(Collectors.toMap(
-                // "-123.bin", len = 8,
-                f -> Integer.valueOf(f.getName().substring(0, f.getName().length() - 4)),
-                f -> f
-            ));
-
-        Collection<BinaryType> locMeta = cctx.kernalContext().cacheObjects().metadata();
-
-        for (BinaryType type: locMeta) {
-            File snpBinTypeMeta = snpBinMetas.get(type.typeId());
-
-            try (FileInputStream in = new FileInputStream(snpBinTypeMeta)) {
-                BinaryMetadata readMetaData = U.unmarshal(cctx.marshaller(), in, U.gridClassLoader());
-
-
-
-            }
-            catch (Exception e) {
-                U.warn(log, "Failed to read metadata from file: " + file.getName() +
-                    "; exception was thrown: " + e.getMessage());
-            }
-
-
-            cctx.kernalContext().cacheObjects().binary().
-
-            type.typeId();
-        }
-
-
-    }
-
-    /**
-     * Checks that cache configurations and schemas hasn't changed since full snapshot.
-     */
-    private void checkCacheData(SnapshotMetadata meta, Path snpDir) throws IgniteCheckedException {
-        // TODO: is it possible to cache groups be null or empty - for full snapshot?
-        List<Integer> cacheGrps = meta.cacheGroupIds();
-
-        File snpCacheDirs = snpDir.resolve(databaseRelativePath(meta.folderName())).toFile();
-
-        for (Integer cg: cacheGrps) {
-            CacheGroupContext cgctx = cctx.cache().cacheGroup(cg);
-
-            List<File> snpCacheDir = cacheDirectories(snpCacheDirs, name -> name.equals(cgctx.name()));
-
-            if (snpCacheDir.size() != 1)
-                throw new IgniteException();
-
-            File cacheData = cacheDataFile(snpCacheDir.get(0));
-
-            StoredCacheData snpData = cctx.cache().configManager().readCacheData(cacheData);
-
-            StoredCacheData locData = new StoredCacheData(cctx.cache().cacheConfiguration(cgctx.name()));
-
-            if (!snpData.equals(locData))
-                throw new IgniteCheckedException(String.format(
-                    "Cache configuration for cache [%s] has changed since full snapshot.", cgctx.name()));
-        }
     }
 
     /**
@@ -1593,97 +1450,6 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
     }
 
     /**
-     * @param smf File denoting to snapshot metafile.
-     * @return Snapshot metadata instance.
-     */
-    private IncrementalSnapshotMetadata readIncrementalSnapshotMetadata(File smf) {
-        try (InputStream in = new BufferedInputStream(new FileInputStream(smf))) {
-            return marsh.unmarshal(in, U.resolveClassLoader(cctx.gridConfig()));
-        }
-        catch (IgniteCheckedException | IOException e) {
-            throw new IgniteException("An error occurred during reading snapshot metadata file [file=" +
-                smf.getAbsolutePath() + "]", e);
-        }
-    }
-
-    /**
-     * Validates that incremental snapshot contains all required WAL segments.
-     */
-    private void validateIncrementalSnapshotSegments(File snpDir, IncrementalSnapshotMetadata meta) {
-        Path incSnpWals = snpDir.toPath()
-            .resolve(INCREMENTAL_SNAPSHOTS_DIR)
-            .resolve(meta.snapshotName())
-            .resolve("wal");
-
-        List<File> wals = new ArrayList<>();
-
-        try (DirectoryStream<Path> ds = Files.newDirectoryStream(incSnpWals)) {
-            for (Path d : ds) {
-                if (Files.isRegularFile(d) && d.getFileName().toString().toLowerCase().endsWith(".wal.zip"))
-                    wals.add(d.toFile());
-            }
-        }
-        catch (IOException e) {
-            throw new IgniteException(e);
-        }
-
-        if (wals.isEmpty())
-            throw new IgniteException(String.format("Incremental snapshot [%s] has no WAL files", meta.snapshotName()));
-
-        IgniteWalIteratorFactory walItFct = new IgniteWalIteratorFactory(log);
-
-        List<FileDescriptor> fileDesc = walItFct
-            .resolveWalFiles(new IgniteWalIteratorFactory.IteratorParametersBuilder().filesOrDirs(wals.toArray(new File[0])));
-
-        List<T2<Long, Long>> walGaps = new IgniteWalIteratorFactory(log).hasGaps(fileDesc);
-
-        if (!walGaps.isEmpty()) {
-            throw new IgniteException(String.format(
-                "Incremental snapshot [%s] has gaps in WAL files: %s", meta.snapshotName(), walGaps));
-        }
-
-        if (fileDesc.get(0).idx() != meta.firstSegIdx()) {
-            throw new IgniteException(String.format(
-                "Incremental snapshot [%s] misses WAL segment %d", meta.snapshotName(), meta.firstSegIdx()));
-        }
-
-        if (fileDesc.get(fileDesc.size() - 1).idx() != meta.lastSegIdx()) {
-            throw new IgniteException(String.format(
-                "Incremental snapshot [%s] misses WAL segment %d", meta.snapshotName(), meta.lastSegIdx()));
-        }
-    }
-
-    /**
-     * Validates that current WAL segments have no gaps since last snapshot.
-     *
-     * @param lastSnpSeg Last snapshot segment.
-     */
-    private void validateCurrentSegments(long lastSnpSeg) {
-        IgniteWalIteratorFactory walItFct = new IgniteWalIteratorFactory(log);
-
-        FileWriteAheadLogManager walMgr = (FileWriteAheadLogManager)cctx.cache().context().wal();
-
-        File segments = walMgr.walWorkDir();
-        File archive = walMgr.walArchiveDir();
-
-        List<FileDescriptor> fileDesc = walItFct
-            .resolveWalFiles(new IgniteWalIteratorFactory.IteratorParametersBuilder()
-                .filesOrDirs(segments, archive));
-
-        List<T2<Long, Long>> walGaps = new IgniteWalIteratorFactory(log).hasGaps(fileDesc);
-
-        if (!walGaps.isEmpty()) {
-            throw new IgniteException(String.format(
-                "Not enough WAL segments to prepare incremental snapshot, missed segments: %s", walGaps));
-        }
-
-        if (fileDesc.get(0).idx() != lastSnpSeg + 1) {
-            throw new IgniteException(String.format(
-                "Not enough WAL segments to prepare incremental snapshot, missed segment: %s", lastSnpSeg + 1));
-        }
-    }
-
-    /**
      * @param snpName Snapshot name.
      * @param snpPath Snapshot directory path.
      * @return List of snapshot metadata for the given snapshot name on local node.
@@ -1743,31 +1509,9 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
         }
     }
 
-    /** */
-    public List<IncrementalSnapshotMetadata> readIncrementalSnapshotMetadatas(File snpDir) {
-        if (!(snpDir.exists() && snpDir.isDirectory()))
-            return Collections.emptyList();
-
-        List<IncrementalSnapshotMetadata> metas = new ArrayList<>();
-
-        try (DirectoryStream<Path> ds = Files.newDirectoryStream(snpDir.toPath())) {
-            for (Path d : ds) {
-                if (Files.isRegularFile(d) && d.getFileName().toString().equals(INCREMENTAL_SNAPSHOT_METAFILE))
-                    metas.add(readIncrementalSnapshotMetadata(d.toFile()));
-            }
-        }
-        catch (IOException e) {
-            throw new IgniteException(e);
-        }
-
-        metas.sort(Comparator.comparingLong(IncrementalSnapshotMetadata::firstSegIdx));
-
-        return metas;
-    }
-
     /** {@inheritDoc} */
     @Override public IgniteFuture<Void> createSnapshot(String name) {
-        return createSnapshot(name, null);
+        return createSnapshot(name, null, false);
     }
 
     /** {@inheritDoc} */
@@ -1782,17 +1526,6 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
      * @param snpPath Snapshot directory path.
      * @return Future which will be completed when a process ends.
      */
-    public IgniteFutureImpl<Void> createSnapshot(String name, @Nullable String snpPath) {
-        return createSnapshot(name, snpPath, false);
-    }
-
-        /**
-         * Create a consistent copy of all persistence cache groups from the whole cluster.
-         *
-         * @param name Snapshot unique name which satisfies the following name pattern [a-zA-Z0-9_].
-         * @param snpPath Snapshot directory path.
-         * @return Future which will be completed when a process ends.
-         */
     public IgniteFutureImpl<Void> createSnapshot(String name, @Nullable String snpPath, boolean incremental) {
         A.notNullOrEmpty(name, "Snapshot name cannot be null or empty.");
         A.ensure(U.alphanumericUnderscore(name), "Snapshot name must satisfy the following name pattern: a-zA-Z0-9_");
@@ -1887,9 +1620,6 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
 
             Set<UUID> bltNodeIds =
                 new HashSet<>(F.viewReadOnly(srvNodes, F.node2id(), (node) -> CU.baselineNode(node, clusterState)));
-
-            if (incremental)
-                createIncrementalSnapshot()
 
             startSnpProc.start(snpFut0.rqId,
                 new SnapshotOperationRequest(snpFut0.rqId, cctx.localNodeId(), name, snpPath, grps, bltNodeIds, incremental));

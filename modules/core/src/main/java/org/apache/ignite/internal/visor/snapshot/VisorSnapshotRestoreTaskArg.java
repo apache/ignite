@@ -46,7 +46,6 @@ public class VisorSnapshotRestoreTaskArg extends VisorSnapshotCreateTaskArg {
     /**
      * @param snpName Snapshot name.
      * @param sync Synchronous execution flag.
-     * @param incremental Incremental snapshot flag.
      * @param action Snapshot restore operation management action.
      * @param grpNames Cache group names.
      */
@@ -54,11 +53,10 @@ public class VisorSnapshotRestoreTaskArg extends VisorSnapshotCreateTaskArg {
         String snpName,
         String snpPath,
         boolean sync,
-        boolean incremental,
         VisorSnapshotRestoreTaskAction action,
         @Nullable Collection<String> grpNames
     ) {
-        super(snpName, snpPath, sync, incremental);
+        super(snpName, snpPath, sync, false);
 
         this.action = action;
         this.grpNames = grpNames;

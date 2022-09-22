@@ -462,14 +462,6 @@ public class FileWriteAheadLogManager extends GridCacheSharedManagerAdapter impl
         this.ioFactory = ioFactory;
     }
 
-    public File walWorkDir() {
-        return walWorkDir;
-    }
-
-    public File walArchiveDir() {
-        return walArchiveDir;
-    }
-
     /** {@inheritDoc} */
     @Override public void start0() throws IgniteCheckedException {
         if (cctx.kernalContext().clientNode())

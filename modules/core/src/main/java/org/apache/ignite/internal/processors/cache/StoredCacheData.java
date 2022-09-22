@@ -214,21 +214,4 @@ public class StoredCacheData implements Serializable, CdcCacheEvent {
     @Override public CacheConfiguration<?, ?> configuration() {
         return ccfg;
     }
-
-    /** {@inheritDoc} */
-    @Override public boolean equals(Object other) {
-        if (this == other)
-            return true;
-
-        if (!(other instanceof StoredCacheData))
-            return false;
-
-        StoredCacheData data = (StoredCacheData)other;
-
-        return ccfg.equals(data.ccfg)
-            && qryEntities.equals(data.qryEntities)
-            && sql == data.sql;
-
-        // TODO: enc key.
-    }
 }
