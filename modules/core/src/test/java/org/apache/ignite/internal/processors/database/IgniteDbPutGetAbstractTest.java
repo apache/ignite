@@ -30,10 +30,10 @@ import java.util.UUID;
 import java.util.concurrent.ConcurrentSkipListSet;
 import java.util.concurrent.ThreadLocalRandom;
 import javax.cache.Cache;
+import javax.cache.CacheException;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCache;
 import org.apache.ignite.IgniteDataStreamer;
-import org.apache.ignite.cache.CachePartialUpdateException;
 import org.apache.ignite.cache.CachePeekMode;
 import org.apache.ignite.cache.affinity.Affinity;
 import org.apache.ignite.cache.query.QueryCursor;
@@ -329,7 +329,7 @@ public abstract class IgniteDbPutGetAbstractTest extends IgniteDbAbstractTest {
         assertThrows(
             log,
             () -> atomicCache.put(atomicPrimaryKey, newVal),
-            CachePartialUpdateException.class,
+            CacheException.class,
             null);
         assertNull("Unexpected non-null value.", atomicCache.get(atomicPrimaryKey));
         assertTrue("Unexpected system critical error.", failedNodes.isEmpty());
@@ -344,7 +344,7 @@ public abstract class IgniteDbPutGetAbstractTest extends IgniteDbAbstractTest {
             assertThrows(
                 log,
                 () -> atomicCache.put(atomicBackupKey, newVal),
-                CachePartialUpdateException.class,
+                CacheException.class,
                 "Failed to update keys");
 
             assertThat(
