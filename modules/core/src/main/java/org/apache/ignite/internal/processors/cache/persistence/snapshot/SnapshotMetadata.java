@@ -113,8 +113,8 @@ public class SnapshotMetadata implements Serializable {
         this.pageSize = pageSize;
         this.grpIds = grpIds;
         this.bltNodes = bltNodes;
-        this.masterKeyDigest = masterKeyDigest;
         this.snpRecPtr = snpRecPtr;
+        this.masterKeyDigest = masterKeyDigest;
 
         pairs.forEach(p ->
             locParts.computeIfAbsent(p.getGroupId(), k -> new HashSet<>())

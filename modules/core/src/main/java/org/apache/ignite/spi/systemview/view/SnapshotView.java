@@ -46,7 +46,7 @@ public class SnapshotView {
     private final String cacheGrps;
 
     /** WAL segment that contains {@link ClusterSnapshotRecord} if exists. */
-    private final String snpRecSeg;
+    private final Long snpRecSeg;
 
     /**
      * @param meta Snapshot metadata.
@@ -59,7 +59,7 @@ public class SnapshotView {
         name = meta.snapshotName();
         consistentId = meta.consistentId();
         baselineNodes = F.concat(meta.baselineNodes(), ",");
-        snpRecSeg = meta.snapshotRecordPointer() == null ? null : String.valueOf(meta.snapshotRecordPointer().index());
+        snpRecSeg = meta.snapshotRecordPointer() == null ? null : meta.snapshotRecordPointer().index();
 
         this.cacheGrps = F.concat(cacheGrps, ",");
     }
@@ -100,7 +100,7 @@ public class SnapshotView {
      * @return WAL segment that contains {@link ClusterSnapshotRecord} if exists.
      */
     @Order(4)
-    public String snapshotRecordSegment() {
+    public Long snapshotRecordSegment() {
         return snpRecSeg;
     }
 }

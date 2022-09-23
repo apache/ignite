@@ -149,7 +149,7 @@ public class IgniteClusterSnapshotWalRecordTest extends AbstractSnapshotSelfTest
                     List<SnapshotView> snpNodesView = StreamSupport.stream(snpView.spliterator(), false)
                         .filter(v -> v.name().equals(metadata.snapshotName()))
                         .filter(v -> v.consistentId().equals(ign.localNode().consistentId()))
-                        .filter(v -> v.snapshotRecordSegment().equals(String.valueOf(tuple.getKey().index())))
+                        .filter(v -> v.snapshotRecordSegment().equals(tuple.getKey().index()))
                         .collect(Collectors.toList());
 
                     assertEquals(1, snpNodesView.size());
