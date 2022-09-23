@@ -33,8 +33,8 @@ public enum SnapshotCreateCommandOption implements CommandArg {
         "the default configured snapshot directory will be used."),
 
     /** Incremental snapshot flag. */
-    INCREMENTAL("--incremental", null, "Create an incremental snapshot for base snapshot, name of base snapshot " +
-        "has to be specified with `create command`.");
+    INCREMENTAL("--incremental", null, "Create an incremental snapshot for previously created full snapshot. " +
+        "Base snapshot must be accessible --dest or snapshot_name.");
 
     /** Name. */
     private final String name;
