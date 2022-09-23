@@ -332,7 +332,14 @@ public class SnapshotRestoreProcess {
             Collection<UUID> bltNodes = F.viewReadOnly(ctx.discovery().discoCache().aliveBaselineNodes(), F.node2id());
 
             SnapshotOperationRequest req = new SnapshotOperationRequest(
-                fut0.rqId, F.first(dataNodes), snpName, snpPath, cacheGrpNames, new HashSet<>(bltNodes));
+                fut0.rqId,
+                F.first(dataNodes),
+                snpName,
+                snpPath,
+                cacheGrpNames,
+                new HashSet<>(bltNodes),
+                false
+            );
 
             prepareRestoreProc.start(req.requestId(), req);
         });

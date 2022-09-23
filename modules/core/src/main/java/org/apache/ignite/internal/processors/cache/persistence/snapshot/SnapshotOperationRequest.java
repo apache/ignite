@@ -64,7 +64,7 @@ public class SnapshotOperationRequest implements Serializable {
     /** Operation start time. */
     private final long startTime;
 
-    /** */
+    /** If {@code true} then incremental snapshot requested. */
     private final boolean incremental;
 
     /**

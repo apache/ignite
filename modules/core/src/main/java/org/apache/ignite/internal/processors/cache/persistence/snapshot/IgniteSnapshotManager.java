@@ -1505,7 +1505,12 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
 
     /** {@inheritDoc} */
     @Override public IgniteFuture<Void> createSnapshot(String name) {
-        return createSnapshot(name, null);
+        return createSnapshot(name, null, false);
+    }
+
+    /** {@inheritDoc} */
+    @Override public IgniteFuture<Void> createIncrementalSnapshot(String name) {
+        return createSnapshot(name, null, true);
     }
 
     /**
@@ -1515,7 +1520,7 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
      * @param snpPath Snapshot directory path.
      * @return Future which will be completed when a process ends.
      */
-    public IgniteFutureImpl<Void> createSnapshot(String name, @Nullable String snpPath) {
+    public IgniteFutureImpl<Void> createSnapshot(String name, @Nullable String snpPath, boolean incremental) {
         A.notNullOrEmpty(name, "Snapshot name cannot be null or empty.");
         A.ensure(U.alphanumericUnderscore(name), "Snapshot name must satisfy the following name pattern: a-zA-Z0-9_");
 
@@ -1565,9 +1570,17 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
                 if (clusterSnpReq != null)
                     throw new IgniteException("Create snapshot request has been rejected. Parallel snapshot processes are not allowed.");
 
-                if (localSnapshotNames().contains(name)) {
+                boolean snpExists = localSnapshotNames().contains(name);
+
+                if (!incremental && snpExists) {
                     throw new IgniteException(
                         "Create snapshot request has been rejected. Snapshot with given name already exists on local node."
+                    );
+                }
+
+                if (incremental && !snpExists) {
+                    throw new IgniteException(
+                        "Create snapshot request has been rejected. Base snapshot with given name doesn't exist on local node."
                     );
                 }
 
@@ -1603,7 +1616,7 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
                 new HashSet<>(F.viewReadOnly(srvNodes, F.node2id(), (node) -> CU.baselineNode(node, clusterState)));
 
             startSnpProc.start(snpFut0.rqId,
-                new SnapshotOperationRequest(snpFut0.rqId, cctx.localNodeId(), name, snpPath, grps, bltNodeIds));
+                new SnapshotOperationRequest(snpFut0.rqId, cctx.localNodeId(), name, snpPath, grps, bltNodeIds, incremental));
 
             String msg = "Cluster-wide snapshot operation started [snpName=" + name + ", grps=" + grps + ']';
 

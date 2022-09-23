@@ -52,11 +52,11 @@ public class VisorSnapshotCreateTask extends VisorSnapshotOneNodeTask<VisorSnaps
 
         /** {@inheritDoc} */
         @Override protected String run(VisorSnapshotCreateTaskArg arg) throws IgniteException {
-            IgniteSnapshotManager mgr = ignite.context().cache().context().snapshotMgr();
-
-            IgniteFutureImpl<Void> fut = arg.incremental()
-                ? mgr.createSnapshot(arg.snapshotName(), null, true)
-                : mgr.createSnapshot(arg.snapshotName(), arg.snapshotPath(), false);
+            IgniteFutureImpl<Void> fut = ignite.context().cache().context().snapshotMgr().createSnapshot(
+                arg.snapshotName(),
+                arg.snapshotPath(),
+                arg.incremental()
+            );
 
             IgniteSnapshotManager.ClusterSnapshotFuture snpFut =
                 fut.internalFuture() instanceof IgniteSnapshotManager.ClusterSnapshotFuture ?

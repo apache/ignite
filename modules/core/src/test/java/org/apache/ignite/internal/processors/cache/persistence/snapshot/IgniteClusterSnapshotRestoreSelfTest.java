@@ -138,7 +138,9 @@ public class IgniteClusterSnapshotRestoreSelfTest extends IgniteClusterSnapshotR
             for (int i = 0; i < CACHE_KEYS_RANGE; i++)
                 ignite.cache(DEFAULT_CACHE_NAME).put(i, i);
 
-            ignite.context().cache().context().snapshotMgr().createSnapshot(SNAPSHOT_NAME, snpDir.toString()).get(TIMEOUT);
+            ignite.context().cache().context().snapshotMgr()
+                .createSnapshot(SNAPSHOT_NAME, snpDir.toString(), false)
+                .get(TIMEOUT);
 
             // Check snapshot.
             IdleVerifyResultV2 res = snp(ignite).checkSnapshot(SNAPSHOT_NAME, snpDir.getAbsolutePath()).get(TIMEOUT);

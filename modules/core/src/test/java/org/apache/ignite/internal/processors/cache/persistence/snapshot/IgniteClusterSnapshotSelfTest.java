@@ -747,7 +747,7 @@ public class IgniteClusterSnapshotSelfTest extends AbstractSnapshotSelfTest {
                 ignite.cache(DEFAULT_CACHE_NAME).put(i, i);
 
             ignite.context().cache().context().snapshotMgr()
-                .createSnapshot(SNAPSHOT_NAME, cfgPath ? null : snpDir.getAbsolutePath()).get();
+                .createSnapshot(SNAPSHOT_NAME, cfgPath ? null : snpDir.getAbsolutePath(), false).get();
 
             stopAllGrids();
 
@@ -773,7 +773,9 @@ public class IgniteClusterSnapshotSelfTest extends AbstractSnapshotSelfTest {
             GridKernalContext kctx = grid(idx).context();
 
             assertThrowsAnyCause(log,
-                () -> kctx.cache().context().snapshotMgr().createSnapshot(SNAPSHOT_NAME, invalidPath).get(TIMEOUT),
+                () -> kctx.cache().context().snapshotMgr()
+                    .createSnapshot(SNAPSHOT_NAME, invalidPath, false)
+                    .get(TIMEOUT),
                 IgniteCheckedException.class,
                 invalidPath);
 
