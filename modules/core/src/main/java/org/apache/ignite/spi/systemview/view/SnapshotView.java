@@ -17,7 +17,11 @@
 
 package org.apache.ignite.spi.systemview.view;
 
+import java.util.Collection;
 import org.apache.ignite.internal.managers.systemview.walker.Order;
+import org.apache.ignite.internal.pagemem.wal.record.delta.ClusterSnapshotRecord;
+import org.apache.ignite.internal.processors.cache.persistence.snapshot.SnapshotMetadata;
+import org.apache.ignite.internal.util.typedef.F;
 
 /**
  * Snapshot representation for a {@link SystemView}.
@@ -41,22 +45,23 @@ public class SnapshotView {
     /** Cache group names that were included in the snapshot. */
     private final String cacheGrps;
 
+    /** WAL segment that contains {@link ClusterSnapshotRecord} if exists. */
+    private final Long snpRecSeg;
+
     /**
-     * @param name Snapshot name.
-     * @param consistentId Node consistent ID.
-     * @param baselineNodes Baseline nodes affected by the snapshot.
+     * @param meta Snapshot metadata.
      * @param cacheGrps Cache group names that were included in the snapshot.
      */
     public SnapshotView(
-        String name,
-        String consistentId,
-        String baselineNodes,
-        String cacheGrps
+        SnapshotMetadata meta,
+        Collection<String> cacheGrps
     ) {
-        this.name = name;
-        this.consistentId = consistentId;
-        this.baselineNodes = baselineNodes;
-        this.cacheGrps = cacheGrps;
+        name = meta.snapshotName();
+        consistentId = meta.consistentId();
+        baselineNodes = F.concat(meta.baselineNodes(), ",");
+        snpRecSeg = meta.snapshotRecordPointer() == null ? null : meta.snapshotRecordPointer().index();
+
+        this.cacheGrps = F.concat(cacheGrps, ",");
     }
 
     /**
@@ -89,5 +94,13 @@ public class SnapshotView {
     @Order(3)
     public String cacheGroups() {
         return cacheGrps;
+    }
+
+    /**
+     * @return WAL segment that contains {@link ClusterSnapshotRecord} if exists.
+     */
+    @Order(4)
+    public Long snapshotRecordSegment() {
+        return snpRecSeg;
     }
 }

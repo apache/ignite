@@ -29,7 +29,9 @@ import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
 import java.util.UUID;
+import org.apache.ignite.internal.pagemem.wal.record.delta.ClusterSnapshotRecord;
 import org.apache.ignite.internal.processors.cache.persistence.partstate.GroupPartitionId;
+import org.apache.ignite.internal.processors.cache.persistence.wal.WALPointer;
 import org.apache.ignite.internal.util.tostring.GridToStringInclude;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.internal.util.typedef.internal.U;
@@ -68,6 +70,9 @@ public class SnapshotMetadata implements Serializable {
     @GridToStringInclude
     private final Set<String> bltNodes;
 
+    /** WAL pointer to {@link ClusterSnapshotRecord} if exists. */
+    private final @Nullable WALPointer snpRecPtr;
+
     /**
      * Map of cache group partitions from which snapshot has been taken on the local node. This map can be empty
      * since for instance, due to the node filter there is no cache data on node.
@@ -86,6 +91,7 @@ public class SnapshotMetadata implements Serializable {
      * @param pageSize Page size of stored snapshot data.
      * @param grpIds The list of cache groups ids which were included into snapshot.
      * @param bltNodes The set of affected by snapshot baseline nodes.
+     * @param snpRecPtr WAL pointer to {@link ClusterSnapshotRecord} if exists.
      * @param masterKeyDigest Master key digest for encrypted caches.
      */
     public SnapshotMetadata(
@@ -97,6 +103,7 @@ public class SnapshotMetadata implements Serializable {
         List<Integer> grpIds,
         Set<String> bltNodes,
         Set<GroupPartitionId> pairs,
+        @Nullable WALPointer snpRecPtr,
         @Nullable byte[] masterKeyDigest
     ) {
         this.rqId = rqId;
@@ -106,6 +113,7 @@ public class SnapshotMetadata implements Serializable {
         this.pageSize = pageSize;
         this.grpIds = grpIds;
         this.bltNodes = bltNodes;
+        this.snpRecPtr = snpRecPtr;
         this.masterKeyDigest = masterKeyDigest;
 
         pairs.forEach(p ->
@@ -168,6 +176,13 @@ public class SnapshotMetadata implements Serializable {
      */
     public Map<Integer, Set<Integer>> partitions() {
         return Collections.unmodifiableMap(locParts);
+    }
+
+    /**
+     * @return WAL pointer to {@link ClusterSnapshotRecord} if exists.
+     */
+    public @Nullable WALPointer snapshotRecordPointer() {
+        return snpRecPtr;
     }
 
     /** Save the state of this <tt>HashMap</tt> partitions and cache groups to a stream. */

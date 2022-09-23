@@ -822,6 +822,8 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
 
                 snpDir.mkdirs();
 
+                SnapshotFutureTaskResult res = (SnapshotFutureTaskResult)fut.result();
+
                 SnapshotMetadata meta = new SnapshotMetadata(req.requestId(),
                     req.snapshotName(),
                     cctx.localNode().consistentId().toString(),
@@ -829,7 +831,8 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
                     cctx.gridConfig().getDataStorageConfiguration().getPageSize(),
                     grpIds,
                     blts,
-                    (Set<GroupPartitionId>)fut.result(),
+                    res.parts(),
+                    res.snapshotPointer(),
                     cctx.gridConfig().getEncryptionSpi().masterKeyDigest()
                 );
 
@@ -2183,7 +2186,7 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
         List<File> dirs = snapshotCacheDirectories(meta.snapshotName(), null, meta.folderName(), name -> true);
         Collection<String> cacheGrps = F.viewReadOnly(dirs, FilePageStoreManager::cacheGroupName);
 
-        return new SnapshotView(meta.snapshotName(), meta.consistentId(), F.concat(meta.baselineNodes(), ","), F.concat(cacheGrps, ","));
+        return new SnapshotView(meta, cacheGrps);
     }
 
     /** @return Snapshot handlers. */

@@ -67,6 +67,7 @@ import org.apache.ignite.internal.processors.cache.persistence.file.FilePageStor
 import org.apache.ignite.internal.processors.cache.persistence.metastorage.MetaStorage;
 import org.apache.ignite.internal.processors.cache.persistence.partstate.GroupPartitionId;
 import org.apache.ignite.internal.processors.cache.persistence.tree.io.PageIO;
+import org.apache.ignite.internal.processors.cache.persistence.wal.WALPointer;
 import org.apache.ignite.internal.processors.cache.persistence.wal.crc.FastCrc;
 import org.apache.ignite.internal.processors.marshaller.MappedName;
 import org.apache.ignite.internal.processors.metastorage.persistence.DistributedMetaStorageImpl;
@@ -94,7 +95,7 @@ import static org.apache.ignite.internal.processors.cache.persistence.snapshot.I
  * If partitions for particular cache group are not provided that they will be collected and added
  * on checkpoint under the write-lock.
  */
-class SnapshotFutureTask extends AbstractSnapshotFutureTask<Set<GroupPartitionId>> implements CheckpointListener {
+class SnapshotFutureTask extends AbstractSnapshotFutureTask<SnapshotFutureTaskResult> implements CheckpointListener {
     /** File page store manager for accessing cache group associated files. */
     private final FilePageStoreManager pageStore;
 
@@ -139,6 +140,9 @@ class SnapshotFutureTask extends AbstractSnapshotFutureTask<Set<GroupPartitionId
 
     /** Future which will be completed when task requested to be closed. Will be executed on system pool. */
     private volatile CompletableFuture<Void> closeFut;
+
+    /** Pointer to {@link ClusterSnapshotRecord}. */
+    private volatile @Nullable WALPointer snpPtr;
 
     /** Flag indicates that task already scheduled on checkpoint. */
     private final AtomicBoolean started = new AtomicBoolean();
@@ -209,7 +213,7 @@ class SnapshotFutureTask extends AbstractSnapshotFutureTask<Set<GroupPartitionId
     }
 
     /** {@inheritDoc} */
-    @Override public boolean onDone(@Nullable Set<GroupPartitionId> res, @Nullable Throwable err) {
+    @Override public boolean onDone(@Nullable SnapshotFutureTaskResult res, @Nullable Throwable err) {
         for (PageStoreSerialWriter writer : partDeltaWriters.values())
             U.closeQuiet(writer);
 
@@ -349,7 +353,7 @@ class SnapshotFutureTask extends AbstractSnapshotFutureTask<Set<GroupPartitionId
             // 1. Checkpoint holds write acquire lock and Snapshot holds PME. Then there are not any concurrent updates.
             // 2. This record is written before the related CheckpointRecord, and is flushed with CheckpointRecord or instead it.
             if (cctx.wal() != null) {
-                cctx.wal().log(new ClusterSnapshotRecord(snpName));
+                snpPtr = cctx.wal().log(new ClusterSnapshotRecord(snpName));
 
                 ctx.walFlush(true);
             }
@@ -614,7 +618,7 @@ class SnapshotFutureTask extends AbstractSnapshotFutureTask<Set<GroupPartitionId
                 .map(Map.Entry::getKey)
                 .collect(Collectors.toSet());
 
-            closeFut = CompletableFuture.runAsync(() -> onDone(taken, err0),
+            closeFut = CompletableFuture.runAsync(() -> onDone(new SnapshotFutureTaskResult(taken, snpPtr), err0),
                 cctx.kernalContext().pools().getSystemExecutorService());
         }
 
