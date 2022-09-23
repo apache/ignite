@@ -36,9 +36,6 @@ public interface RunnableX extends IgniteRunnable {
         try {
             runx();
         }
-        catch (RuntimeException e) {
-            throw e;
-        }
         catch (Exception e) {
             throw new IgniteException(e);
         }
