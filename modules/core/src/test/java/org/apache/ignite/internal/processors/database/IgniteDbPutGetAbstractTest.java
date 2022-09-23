@@ -98,6 +98,7 @@ public abstract class IgniteDbPutGetAbstractTest extends IgniteDbAbstractTest {
         return cfg;
     }
 
+    /** {@inheritDoc} */
     @Override protected FailureHandler getFailureHandler(String igniteInstanceName) {
         return (ignite, failureCtx) -> {
             failedNodes.add(ignite.name());
