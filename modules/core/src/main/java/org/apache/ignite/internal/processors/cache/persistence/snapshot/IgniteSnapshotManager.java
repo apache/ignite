@@ -265,12 +265,6 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
     /** Snapshot metafile extension. */
     public static final String SNAPSHOT_METAFILE_EXT = ".smf";
 
-    /** Directory for storing incremental snapshots. */
-    public static final String INCREMENTAL_SNAPSHOTS_DIR = "inc";
-
-    /** Incremental snapshot metafile. */
-    public static final String INCREMENTAL_SNAPSHOT_METAFILE = "meta.ismf";
-
     /** Prefix for snapshot threads. */
     public static final String SNAPSHOT_RUNNER_THREAD_PREFIX = "snapshot-runner";
 
@@ -838,7 +832,7 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
                     grpIds,
                     blts,
                     res.parts(),
-                    res.snapshotPointer() == null ? null : res.snapshotPointer().index() - 1,
+                    res.snapshotPointer(),
                     cctx.gridConfig().getEncryptionSpi().masterKeyDigest()
                 );
 
@@ -1511,12 +1505,7 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
 
     /** {@inheritDoc} */
     @Override public IgniteFuture<Void> createSnapshot(String name) {
-        return createSnapshot(name, null, false);
-    }
-
-    /** {@inheritDoc} */
-    @Override public IgniteFuture<Void> createIncrementalSnapshot(String name) {
-        return createSnapshot(name, null, true);
+        return createSnapshot(name, null);
     }
 
     /**
@@ -1526,7 +1515,7 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
      * @param snpPath Snapshot directory path.
      * @return Future which will be completed when a process ends.
      */
-    public IgniteFutureImpl<Void> createSnapshot(String name, @Nullable String snpPath, boolean incremental) {
+    public IgniteFutureImpl<Void> createSnapshot(String name, @Nullable String snpPath) {
         A.notNullOrEmpty(name, "Snapshot name cannot be null or empty.");
         A.ensure(U.alphanumericUnderscore(name), "Snapshot name must satisfy the following name pattern: a-zA-Z0-9_");
 
@@ -1557,7 +1546,7 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
 
                 return new IgniteSnapshotFutureImpl(cctx.kernalContext().closure()
                     .callAsyncNoFailover(BALANCE,
-                        new CreateSnapshotCallable(name, incremental),
+                        new CreateSnapshotCallable(name),
                         Collections.singletonList(crd),
                         false,
                         0,
@@ -1576,17 +1565,9 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
                 if (clusterSnpReq != null)
                     throw new IgniteException("Create snapshot request has been rejected. Parallel snapshot processes are not allowed.");
 
-                boolean snpExists = localSnapshotNames().contains(name);
-
-                if (!incremental && snpExists) {
+                if (localSnapshotNames().contains(name)) {
                     throw new IgniteException(
                         "Create snapshot request has been rejected. Snapshot with given name already exists on local node."
-                    );
-                }
-
-                if (incremental && !snpExists) {
-                    throw new IgniteException(
-                        "Create snapshot request has been rejected. Base snapshot with given name doesn't exist on local node."
                     );
                 }
 
@@ -1622,7 +1603,7 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
                 new HashSet<>(F.viewReadOnly(srvNodes, F.node2id(), (node) -> CU.baselineNode(node, clusterState)));
 
             startSnpProc.start(snpFut0.rqId,
-                new SnapshotOperationRequest(snpFut0.rqId, cctx.localNodeId(), name, snpPath, grps, bltNodeIds, incremental));
+                new SnapshotOperationRequest(snpFut0.rqId, cctx.localNodeId(), name, snpPath, grps, bltNodeIds));
 
             String msg = "Cluster-wide snapshot operation started [snpName=" + name + ", grps=" + grps + ']';
 
@@ -1808,13 +1789,6 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
      */
     private static String snapshotMetaFileName(String consId) {
         return U.maskForFileName(consId) + SNAPSHOT_METAFILE_EXT;
-    }
-
-    /**
-     * @return Incremental snapshot metadata file name.
-     */
-    private static String incSnapshotMetaFileName() {
-        return INCREMENTAL_SNAPSHOT_METAFILE;
     }
 
     /**
@@ -2212,7 +2186,7 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
         List<File> dirs = snapshotCacheDirectories(meta.snapshotName(), null, meta.folderName(), name -> true);
         Collection<String> cacheGrps = F.viewReadOnly(dirs, FilePageStoreManager::cacheGroupName);
 
-        return new SnapshotView(meta.snapshotName(), meta.consistentId(), F.concat(meta.baselineNodes(), ","), F.concat(cacheGrps, ","));
+        return new SnapshotView(meta, cacheGrps);
     }
 
     /** @return Snapshot handlers. */
@@ -3460,9 +3434,6 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
         /** Snapshot name. */
         private final String snpName;
 
-        /** Snapshot name. */
-        private final boolean incremental;
-
         /** Auto-injected grid instance. */
         @IgniteInstanceResource
         private transient IgniteEx ignite;
@@ -3470,17 +3441,13 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
         /**
          * @param snpName Snapshot name.
          */
-        public CreateSnapshotCallable(String snpName, boolean incremental) {
+        public CreateSnapshotCallable(String snpName) {
             this.snpName = snpName;
-            this.incremental = incremental;
         }
 
         /** {@inheritDoc} */
         @Override public Void call() throws Exception {
-            if (incremental)
-                ignite.snapshot().createIncrementalSnapshot(snpName).get();
-            else
-                ignite.snapshot().createSnapshot(snpName).get();
+            ignite.snapshot().createSnapshot(snpName).get();
 
             return null;
         }

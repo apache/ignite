@@ -28,14 +28,10 @@ import org.jetbrains.annotations.Nullable;
  * Represents result of {@link SnapshotFutureTask}.
  */
 class SnapshotFutureTaskResult {
-    /**
-     * Partitions for which snapshot was created.
-     */
+    /** Partitions for which snapshot was created. */
     private final Set<GroupPartitionId> parts;
 
-    /**
-     * Pointer to {@link ClusterSnapshotRecord} in WAL.
-     */
+    /** Pointer to {@link ClusterSnapshotRecord} in WAL. */
     private final @Nullable WALPointer snpPtr;
 
     /** */
