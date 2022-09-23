@@ -2101,6 +2101,7 @@ public class SystemViewSelfTest extends GridCommonAbstractTest {
 
             assertEquals(testSnap0, view.name());
             assertEquals(ignite.localNode().consistentId().toString(), view.consistentId());
+            assertFalse(F.isEmpty(view.snapshotRecordSegment()));
 
             Collection<?> constIds = F.nodeConsistentIds(ignite.cluster().nodes());
 

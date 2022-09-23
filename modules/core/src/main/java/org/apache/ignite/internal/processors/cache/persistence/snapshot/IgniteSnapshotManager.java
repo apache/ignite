@@ -832,7 +832,7 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
                     grpIds,
                     blts,
                     res.parts(),
-                    res.snapshotPointer() == null ? null : res.snapshotPointer().index() - 1,
+                    res.snapshotPointer(),
                     cctx.gridConfig().getEncryptionSpi().masterKeyDigest()
                 );
 
@@ -2186,7 +2186,12 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
         List<File> dirs = snapshotCacheDirectories(meta.snapshotName(), null, meta.folderName(), name -> true);
         Collection<String> cacheGrps = F.viewReadOnly(dirs, FilePageStoreManager::cacheGroupName);
 
-        return new SnapshotView(meta.snapshotName(), meta.consistentId(), F.concat(meta.baselineNodes(), ","), F.concat(cacheGrps, ","));
+        return new SnapshotView(
+            meta.snapshotName(),
+            meta.consistentId(),
+            F.concat(meta.baselineNodes(), ","),
+            F.concat(cacheGrps, ","),
+            String.valueOf(meta.snapshotRecordPointer().index()));
     }
 
     /** @return Snapshot handlers. */

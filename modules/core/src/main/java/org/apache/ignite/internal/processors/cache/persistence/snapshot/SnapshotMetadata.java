@@ -29,7 +29,9 @@ import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
 import java.util.UUID;
+import org.apache.ignite.internal.pagemem.wal.record.delta.ClusterSnapshotRecord;
 import org.apache.ignite.internal.processors.cache.persistence.partstate.GroupPartitionId;
+import org.apache.ignite.internal.processors.cache.persistence.wal.WALPointer;
 import org.apache.ignite.internal.util.tostring.GridToStringInclude;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.internal.util.typedef.internal.U;
@@ -68,8 +70,8 @@ public class SnapshotMetadata implements Serializable {
     @GridToStringInclude
     private final Set<String> bltNodes;
 
-    /** Index of last WAL segment that contains data of snapshot. */
-    private final Long lastSegIdx;
+    /** WAL pointer to {@link ClusterSnapshotRecord} if exists. */
+    private final @Nullable WALPointer snpRecPtr;
 
     /**
      * Map of cache group partitions from which snapshot has been taken on the local node. This map can be empty
@@ -89,7 +91,7 @@ public class SnapshotMetadata implements Serializable {
      * @param pageSize Page size of stored snapshot data.
      * @param grpIds The list of cache groups ids which were included into snapshot.
      * @param bltNodes The set of affected by snapshot baseline nodes.
-     * @param lastSegIdx Index of last WAL segment that contains data of snapshot.
+     * @param snpRecPtr WAL pointer to {@link ClusterSnapshotRecord} if exists.
      * @param masterKeyDigest Master key digest for encrypted caches.
      */
     public SnapshotMetadata(
@@ -101,7 +103,7 @@ public class SnapshotMetadata implements Serializable {
         List<Integer> grpIds,
         Set<String> bltNodes,
         Set<GroupPartitionId> pairs,
-        @Nullable Long lastSegIdx,
+        @Nullable WALPointer snpRecPtr,
         @Nullable byte[] masterKeyDigest
     ) {
         this.rqId = rqId;
@@ -112,7 +114,7 @@ public class SnapshotMetadata implements Serializable {
         this.grpIds = grpIds;
         this.bltNodes = bltNodes;
         this.masterKeyDigest = masterKeyDigest;
-        this.lastSegIdx = lastSegIdx;
+        this.snpRecPtr = snpRecPtr;
 
         pairs.forEach(p ->
             locParts.computeIfAbsent(p.getGroupId(), k -> new HashSet<>())
@@ -177,10 +179,10 @@ public class SnapshotMetadata implements Serializable {
     }
 
     /**
-     * @return Index of last WAL segment that contains data of snapshot.
+     * @return WAL pointer to {@link ClusterSnapshotRecord} if exists.
      */
-    public Long lastSegIdx() {
-        return lastSegIdx;
+    public @Nullable WALPointer snapshotRecordPointer() {
+        return snpRecPtr;
     }
 
     /** Save the state of this <tt>HashMap</tt> partitions and cache groups to a stream. */

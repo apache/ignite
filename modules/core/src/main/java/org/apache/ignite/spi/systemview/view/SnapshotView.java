@@ -18,6 +18,7 @@
 package org.apache.ignite.spi.systemview.view;
 
 import org.apache.ignite.internal.managers.systemview.walker.Order;
+import org.apache.ignite.internal.pagemem.wal.record.delta.ClusterSnapshotRecord;
 
 /**
  * Snapshot representation for a {@link SystemView}.
@@ -41,22 +42,28 @@ public class SnapshotView {
     /** Cache group names that were included in the snapshot. */
     private final String cacheGrps;
 
+    /** WAL segment that contains {@link ClusterSnapshotRecord} if exists. */
+    private final String snpRecSeg;
+
     /**
      * @param name Snapshot name.
      * @param consistentId Node consistent ID.
      * @param baselineNodes Baseline nodes affected by the snapshot.
      * @param cacheGrps Cache group names that were included in the snapshot.
+     * @param snpRecSeg WAL segment that contains {@link ClusterSnapshotRecord} if exists.
      */
     public SnapshotView(
         String name,
         String consistentId,
         String baselineNodes,
-        String cacheGrps
+        String cacheGrps,
+        String snpRecSeg
     ) {
         this.name = name;
         this.consistentId = consistentId;
         this.baselineNodes = baselineNodes;
         this.cacheGrps = cacheGrps;
+        this.snpRecSeg = snpRecSeg;
     }
 
     /**
@@ -89,5 +96,13 @@ public class SnapshotView {
     @Order(3)
     public String cacheGroups() {
         return cacheGrps;
+    }
+
+    /**
+     * @return WAL segment that contains {@link ClusterSnapshotRecord} if exists.
+     */
+    @Order(4)
+    public String snapshotRecordSegment() {
+        return snpRecSeg;
     }
 }
