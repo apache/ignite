@@ -1598,12 +1598,8 @@ public class DataStreamerImpl<K, V> implements IgniteDataStreamer<K, V>, Delayed
 
             int streamerPoolSize = attrStreamerPoolSize != null ? attrStreamerPoolSize : node.metrics().getTotalCpus();
 
-            int perNodeParallelOps = parallelOps > 0 ? parallelOps : -1;
-
-            if (perNodeParallelOps < 0) {
-                perNodeParallelOps = rcvr.perNodeParallelOperations(node,
-                    ctx.cache().cacheDescriptor(cacheName).groupDescriptor().persistenceEnabled());
-            }
+            int perNodeParallelOps = parallelOps > 0 ? parallelOps : rcvr.perNodeParallelOperations(node,
+                ctx.cache().cacheDescriptor(cacheName).groupDescriptor().persistenceEnabled());
 
             if (perNodeParallelOps < 0) {
                 perNodeParallelOps = perNodeParallelOperations(node,
