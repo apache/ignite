@@ -29,15 +29,12 @@ import java.util.Iterator;
 import java.util.NoSuchElementException;
 import java.util.Set;
 
-public final class IgniteVertexProperty<V> implements VertexProperty<V> {
-
-    protected final IgniteGraph graph;
+public final class IgniteVertexProperty<V> implements VertexProperty<V>,java.io.Serializable {
     protected final IgniteVertex vertex;
     protected final String key;
     protected final V value;
 
-    public IgniteVertexProperty(final IgniteGraph graph, final IgniteVertex vertex, final String key, final V value) {
-        this.graph = graph;
+    public IgniteVertexProperty(final IgniteVertex vertex, final String key, final V value) {      
         this.vertex = vertex;
         this.key = key;
         this.value = value;

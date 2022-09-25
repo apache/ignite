@@ -22,6 +22,7 @@ import com.google.common.cache.Cache;
 import com.google.common.cache.CacheBuilder;
 import de.kp.works.ignite.graph.ElementType;
 import de.kp.works.ignite.gremlin.exception.IgniteGraphNotFoundException;
+import de.kp.works.ignite.gremlin.models.EdgeModel;
 import de.kp.works.ignite.gremlin.models.VertexModel;
 import jdk.nashorn.internal.ir.annotations.Ignore;
 import org.apache.tinkerpop.gremlin.structure.*;
@@ -87,11 +88,14 @@ public class IgniteVertex extends IgniteElement implements Vertex {
     @Override
     public Edge addEdge(final String label, final Vertex inVertex, final Object... keyValues) {
         if (null == inVertex) throw Graph.Exceptions.argumentCanNotBeNull("inVertex");
+        IgniteGraph graph = graph();
         ElementHelper.validateLabel(label);
         ElementHelper.legalPropertyKeyValueArray(keyValues);
         Object idValue = ElementHelper.getIdValue(keyValues).orElse(null);
-
-        idValue = IgniteGraphUtils.generateIdIfNeeded(idValue);
+        if(idValue==null || "".equals(idValue)) {
+        	idValue = String.format("%s,%s,%s",this.id(),label,inVertex.id());
+        }
+        
         long now = System.currentTimeMillis();
         IgniteEdge newEdge = new IgniteEdge(graph, idValue, label, now, now, IgniteGraphUtils.propertiesToMap(keyValues), inVertex, this);
         newEdge.validate();
@@ -129,7 +133,7 @@ public class IgniteVertex extends IgniteElement implements Vertex {
 
         setDeleted(true);
         if (!isCached()) {
-            IgniteVertex cachedVertex = (IgniteVertex) graph.findVertex(id, false);
+            IgniteVertex cachedVertex = (IgniteVertex) graph().findVertex(id, false);
             if (cachedVertex != null) cachedVertex.setDeleted(true);
         }
     }
@@ -142,7 +146,7 @@ public class IgniteVertex extends IgniteElement implements Vertex {
             throw VertexProperty.Exceptions.metaPropertiesNotSupported();
         if (value != null) {
             setProperty(key, value);
-            return new IgniteVertexProperty<>(graph, this, key, value);
+            return new IgniteVertexProperty<>(this, key, value);
         } else {
             removeProperty(key);
             return VertexProperty.empty();
@@ -152,7 +156,7 @@ public class IgniteVertex extends IgniteElement implements Vertex {
     @Override
     public <V> VertexProperty<V> property(final String key) {
         V value = getProperty(key);
-        return value != null ? new IgniteVertexProperty<>(graph, this, key, value) : VertexProperty.empty();
+        return value != null ? new IgniteVertexProperty<>(this, key, value) : VertexProperty.empty();
     }
 
     @Override
@@ -161,23 +165,23 @@ public class IgniteVertex extends IgniteElement implements Vertex {
         Iterator<String> filter = IteratorUtils.filter(keys.iterator(),
                 key -> ElementHelper.keyExists(key, propertyKeys));
         return IteratorUtils.map(filter,
-                key -> new IgniteVertexProperty<>(graph, this, key, getProperty(key)));
+                key -> new IgniteVertexProperty<>(this, key, getProperty(key)));
     }
 
     /** EDGE RELATED **/
 
     @Override
     public Iterator<Edge> edges(final Direction direction, final String... edgeLabels) {
-        return graph.getEdgeModel().edges(this, direction, edgeLabels);
+        return getEdgeModel().edges(this, direction, edgeLabels);
     }
 
     public Iterator<Edge> edges(final Direction direction, final String label, final String key, final Object value) {
-        return graph.getEdgeModel().edges(this, direction, label, key, value);
+        return getEdgeModel().edges(this, direction, label, key, value);
     }
 
     public Iterator<Edge> edgesInRange(final Direction direction, final String label, final String key,
                                        final Object inclusiveFromValue, final Object exclusiveToValue) {
-        return graph.getEdgeModel().edgesInRange(this, direction, label, key, inclusiveFromValue, exclusiveToValue);
+        return getEdgeModel().edgesInRange(this, direction, label, key, inclusiveFromValue, exclusiveToValue);
     }
 
     public Iterator<Edge> edgesWithLimit(final Direction direction, final String label, final String key,
@@ -187,23 +191,23 @@ public class IgniteVertex extends IgniteElement implements Vertex {
 
     public Iterator<Edge> edgesWithLimit(final Direction direction, final String label, final String key,
                                          final Object fromValue, final int limit, final boolean reversed) {
-        return graph.getEdgeModel().edgesWithLimit(this, direction, label, key, fromValue, limit, reversed);
+        return getEdgeModel().edgesWithLimit(this, direction, label, key, fromValue, limit, reversed);
     }
 
     /** VERTEX RELATED **/
 
     @Override
     public Iterator<Vertex> vertices(final Direction direction, final String... edgeLabels) {
-        return graph.getEdgeModel().vertices(this, direction, edgeLabels);
+        return getEdgeModel().vertices(this, direction, edgeLabels);
     }
 
     public Iterator<Vertex> vertices(final Direction direction, final String label, final String key, final Object value) {
-        return graph.getEdgeModel().vertices(this, direction, label, key, value);
+        return getEdgeModel().vertices(this, direction, label, key, value);
     }
 
     public Iterator<Vertex> verticesInRange(final Direction direction, final String label, final String key,
                                             final Object inclusiveFromValue, final Object exclusiveToValue) {
-        return graph.getEdgeModel().verticesInRange(this, direction, label, key, inclusiveFromValue, exclusiveToValue);
+        return getEdgeModel().verticesInRange(this, direction, label, key, inclusiveFromValue, exclusiveToValue);
     }
 
     public Iterator<Vertex> verticesWithLimit(final Direction direction, final String label, final String key,
@@ -213,12 +217,16 @@ public class IgniteVertex extends IgniteElement implements Vertex {
 
     public Iterator<Vertex> verticesWithLimit(final Direction direction, final String label, final String key,
                                               final Object fromValue, final int limit, final boolean reversed) {
-        return graph.getEdgeModel().verticesWithLimit(this, direction, label, key, fromValue, limit, reversed);
+        return getEdgeModel().verticesWithLimit(this, direction, label, key, fromValue, limit, reversed);
     }
 
     @Override
     public VertexModel getModel() {
-        return graph.getVertexModel();
+        return graph().getVertexModel();
+    }
+    
+    public EdgeModel getEdgeModel() {
+        return graph().getEdgeModel();
     }
 
     @Override

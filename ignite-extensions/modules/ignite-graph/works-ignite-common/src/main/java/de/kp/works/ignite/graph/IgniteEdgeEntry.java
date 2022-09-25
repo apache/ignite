@@ -33,7 +33,7 @@ public class IgniteEdgeEntry {
     public Long updatedAt;
     public String propKey;
     public String propType;
-    public String propValue;
+    public Object propValue;
 
     public IgniteEdgeEntry(
             String cacheKey,
@@ -48,7 +48,7 @@ public class IgniteEdgeEntry {
             Long updatedAt,
             String propKey,
             String propType,
-            String propValue) {
+            Object propValue) {
 
         this.cacheKey = cacheKey;
         this.id = id;

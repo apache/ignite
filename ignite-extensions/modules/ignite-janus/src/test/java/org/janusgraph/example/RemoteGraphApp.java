@@ -23,7 +23,7 @@ import org.apache.tinkerpop.gremlin.driver.ResultSet;
 import org.apache.tinkerpop.gremlin.process.traversal.Bindings;
 import org.apache.tinkerpop.gremlin.process.traversal.dsl.graph.GraphTraversalSource;
 import org.apache.tinkerpop.gremlin.structure.Vertex;
-import org.janusgraph.core.JanusGraph;
+
 import org.janusgraph.core.attribute.Geoshape;
 import org.janusgraph.util.system.ConfigurationUtil;
 import org.slf4j.Logger;
@@ -47,7 +47,7 @@ public class RemoteGraphApp extends JanusGraphApp {
     private static final String OUT_V = "outV";
     private static final String IN_V = "inV";
 
-    protected JanusGraph janusgraph;
+    
     protected Cluster cluster;
     protected Client client;
     protected Configuration conf;
@@ -67,7 +67,7 @@ public class RemoteGraphApp extends JanusGraphApp {
     public GraphTraversalSource openGraph() throws ConfigurationException, IOException {
         LOGGER.info("opening graph");
         conf = ConfigurationUtil.loadPropertiesConfig(propFileName);
-
+        useMixedIndex = useMixedIndex && conf.containsKey("index." + mixedIndexConfigName + ".backend");
         // using the remote driver for schema
         try {
             cluster = Cluster.open(conf.getString("gremlin.remote.driver.clusterFile"));
@@ -77,7 +77,8 @@ public class RemoteGraphApp extends JanusGraphApp {
         }
 
         // using the remote graph for queries
-        return traversal().withRemote(conf);
+        g = traversal().withRemote(conf);
+        return g;
     }
 
     @Override
@@ -135,7 +136,7 @@ public class RemoteGraphApp extends JanusGraphApp {
             g.V(b.of(OUT_V, hercules)).as("a").V(b.of(IN_V, cerberus)).addE(b.of(LABEL, "battled"))
                     .property(TIME, b.of(TIME, 12)).property(PLACE, b.of(PLACE, Geoshape.point(39f, 22f))).from("a")
                     .next();
-        } else {
+        } else  {
             g.V(b.of(OUT_V, hercules)).as("a").V(b.of(IN_V, nemean)).addE(b.of(LABEL, "battled"))
                     .property(TIME, b.of(TIME, 1)).property(PLACE, b.of(PLACE, getGeoFloatArray(38.1f, 23.7f)))
                     .from("a").next();
@@ -189,8 +190,11 @@ public class RemoteGraphApp extends JanusGraphApp {
     }
 
     public static void main(String[] args) {
-        final String fileName = (args != null && args.length > 0) ? args[0] : "conf/jgex-remote.properties";
+        String fileName = (args != null && args.length > 0) ? args[0] : "conf/remote-jgex.properties";
+       
         final RemoteGraphApp app = new RemoteGraphApp(fileName);
+        app.supportsSchema = false;
+        app.supportsGeoshape = false;
         app.runApp();
     }
 }

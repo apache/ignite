@@ -21,35 +21,77 @@ package de.kp.works.ignite;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.Ignition;
 import org.apache.ignite.configuration.IgniteConfiguration;
+import org.apache.ignite.logger.java.JavaLogger;
+import org.janusgraph.diskstorage.StandardStoreManager;
+import org.janusgraph.diskstorage.configuration.ConfigOption;
+import org.janusgraph.graphdb.configuration.GraphDatabaseConfiguration;
 
 public class IgniteContext {
-    /*
-     * Reference to Apache Ignite that is transferred to the key value
-     * store to enable cache operations
+	/*
+	 * Reference to Apache Ignite that is transferred to the key value store to
+	 * enable cache operations
+	 */
+	private final Ignite ignite;
+
+	private static IgniteContext instance;
+	
+	public static JavaLogger logger = new JavaLogger();
+
+    /**
+     * Define the storage backed to use for persistence
      */
-    private final Ignite ignite;
+    public static final ConfigOption<String> STORAGE_CFG = new ConfigOption<>(GraphDatabaseConfiguration.STORAGE_NS,"cfg",
+            "The config file path of ignite.",
+            ConfigOption.Type.LOCAL, String.class);
 
-    private static IgniteContext instance;
-    
-    private IgniteContext(IgniteConfiguration config){
+	private IgniteContext(IgniteConfiguration config) {
 
-        if (config == null) ignite = Ignition.start();
-        else {
-            ignite = Ignition.getOrStart(config);
-        }
-    }
+		if (config == null && Ignition.allGrids().size()==0)
+			ignite = Ignition.start();
+		else if (config == null && Ignition.allGrids().size()==1)
+			ignite = Ignition.allGrids().get(0);
+		else if (config == null && Ignition.allGrids().size()>1)
+			ignite = Ignition.ignite();
+		else {			
+			ignite = Ignition.getOrStart(config);
+		}
+	}
 
-    public static IgniteContext getInstance() {
-    		return getInstance(null);
-    }
+	private IgniteContext(String cfg) {			
+		this(fromConfig(cfg));
+	}
 
-    public static IgniteContext getInstance(IgniteConfiguration config) {
-    		if (instance == null) instance = new IgniteContext(config);
-    		return instance;
-    }
+	public static IgniteConfiguration fromConfig(String cfg) {	  
+	  try {
+		  IgniteConfiguration config = Ignition.loadSpringBean(cfg, "ignite.cfg");
+		  return config;
+	  }
+	  catch(Exception e) {
+		  logger.error("Error load config from "+cfg,e);
+	  }
+	  return null; 	  
+   }
+	
 
-    public Ignite getIgnite() {
-    		return ignite;
-    }
+	public static IgniteContext getInstance(String cfg) {
+		if(cfg==null) {
+			cfg = "conf/ignite/backend-config.xml";
+		}
+		if (instance == null)
+			instance = new IgniteContext(cfg);
+		return instance;
+	}
+
+	
+
+	public static IgniteContext getInstance(IgniteConfiguration config) {
+		if (instance == null)
+			instance = new IgniteContext(config);
+		return instance;
+	}
+
+	public Ignite getIgnite() {
+		return ignite;
+	}
 
 }

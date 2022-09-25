@@ -63,7 +63,7 @@ public class IgniteGraph {
 		 * must be done before any graph operations is initiated (even the configuration
 		 * of a certain graph)
 		 */
-		igniteContext = IgniteContext.getInstance();
+		igniteContext = IgniteContext.getInstance(igniteConfig);
 
 		Ignite ignite = igniteContext.getIgnite();
 		if (ignite == null)

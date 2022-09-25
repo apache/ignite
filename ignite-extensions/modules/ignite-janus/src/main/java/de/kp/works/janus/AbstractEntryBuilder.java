@@ -25,6 +25,7 @@ import org.janusgraph.diskstorage.util.StaticArrayBuffer;
 
 import java.io.UnsupportedEncodingException;
 import java.nio.ByteBuffer;
+import java.nio.charset.StandardCharsets;
 import java.util.Arrays;
 
 public class AbstractEntryBuilder {
@@ -65,33 +66,25 @@ public class AbstractEntryBuilder {
     public static String encodeKeyBufferAsHexString(final StaticBuffer input, String defaultKey) {
 
 		if (input == null || input.length() == 0) {
-        return defaultKey;
-    }
-
-    final ByteBuffer buf = input.asByteBuffer();
-    final byte[] bytes = Arrays.copyOf(buf.array(), buf.limit());
+			return defaultKey;
+	    }
+	
+	    final ByteBuffer buf = input.asByteBuffer();
+	    final char[] chats = Hex.encodeHex(buf);	    
+	    return new String(chats);
+	
+	}
     
-    return Hex.encodeHexString(bytes);
+   
 
-}
-
-    public static String encodeKeyBufferAsString(final StaticBuffer input, String defaultKey) {
-
-    		if (input == null || input.length() == 0) {
+    public static String _encodeKeyBufferAsString(final StaticBuffer input, String defaultKey) {
+    	if (input == null || input.length() == 0) {
             return defaultKey;
         }
 
         final ByteBuffer buf = input.asByteBuffer();
-        final byte[] bytes = Arrays.copyOf(buf.array(), buf.limit());
-        
-        try {
-			return new String(bytes, "UTF-8");
-
-        } catch (UnsupportedEncodingException e) {
-			e.printStackTrace();
-			return null;
-		}
-    
+       
+		return new String(buf.array(), 0, buf.limit(),StandardCharsets.UTF_8);
     }
  
     /********** VALUE SUPPORT **********/
@@ -109,37 +102,47 @@ public class AbstractEntryBuilder {
     
     public StaticBuffer decodeValue(final IgniteValue val) {
 
-    		if (null == val) return null;
-    		return StaticArrayBuffer.of(val.getB());
+    	if (null == val) return null;
+    	return StaticArrayBuffer.of(val.getB());
     
     }
 
     public StaticBuffer decodeHashKey(IgniteValue key) {
  
         final String value = key.getS();
+        //not modfiy@byron
         return decodeKeyFromHexString(value);
+        //return decodeKeyFromString(value);
  
     }
 
     public static StaticBuffer decodeKeyFromHexString(final String name) {
         try {
-            return new StaticArrayBuffer(Hex.decodeHex(name.toCharArray()));
+            return new StaticArrayBuffer(Hex.decodeHex(name));
   
         } catch (DecoderException e) {
             throw new RuntimeException(e);
         }
     
     }	
+    
+    public static StaticBuffer _decodeKeyFromString(final String name) {
+    	return new StaticArrayBuffer(name.getBytes(StandardCharsets.UTF_8));    
+    }	
 
     public StaticBuffer decodeRangeKey(IgniteValue key) {
  
         final String value = key.getS();
+        //not modfiy@byron
         return decodeKeyFromHexString(value);
+        //-return decodeKeyFromString(value);
   
     }
   
     public StaticBuffer decodeRangeKey(String value) {
+    	//not modfiy@byron
         return decodeKeyFromHexString(value);
+        //-return decodeKeyFromString(value);
   
     }
    

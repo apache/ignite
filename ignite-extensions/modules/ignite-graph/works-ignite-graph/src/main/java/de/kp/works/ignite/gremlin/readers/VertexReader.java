@@ -45,7 +45,7 @@ public class VertexReader extends LoadingElementReader<Vertex> {
 
     @Override
     public void load(Vertex vertex, IgniteResult result) {
-        if (result.isEmpty()) {
+        if (result==null || result.isEmpty()) {
             throw new IgniteGraphNotFoundException(vertex, "Vertex does not exist: " + vertex.id());
         }
         String label   = null;

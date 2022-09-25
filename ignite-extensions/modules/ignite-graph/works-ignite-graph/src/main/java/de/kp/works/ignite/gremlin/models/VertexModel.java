@@ -57,7 +57,7 @@ public class VertexModel extends ElementModel {
          * The parser converts results from Ignite
          * queries to vertices.
          */
-        VertexReader parser = new VertexReader(graph);
+        VertexReader parser = getReader();
         /*
          * The query is responsible for retrieving the
          * requested vertices from the Ignite cache.
@@ -73,7 +73,7 @@ public class VertexModel extends ElementModel {
          * The parser converts results from Ignite
          * queries to vertices.
          */
-        final VertexReader parser = new VertexReader(graph);
+        final VertexReader parser = getReader();
         /*
          * The query is responsible for retrieving the
          * requested vertices from the Ignite cache.
@@ -97,7 +97,7 @@ public class VertexModel extends ElementModel {
          * The parser converts results from Ignite
          * queries to vertices.
          */
-        VertexReader parser = new VertexReader(graph);
+        VertexReader parser = getReader();
         /*
          * The query is responsible for retrieving the
          * requested vertices from the Ignite cache.
@@ -118,7 +118,7 @@ public class VertexModel extends ElementModel {
          * The parser converts results from Ignite
          * queries to vertices.
          */
-        VertexReader parser = new VertexReader(graph);
+        VertexReader parser = getReader();
         /*
          * The query is responsible for retrieving the
          * requested vertices from the Ignite cache.
@@ -137,7 +137,7 @@ public class VertexModel extends ElementModel {
          * The parser converts results from Ignite
          * queries to vertices.
          */
-        VertexReader parser = new VertexReader(graph);
+        VertexReader parser = getReader();
         /*
          * The query is responsible for retrieving the
          * requested vertices from the Ignite cache.
@@ -155,7 +155,7 @@ public class VertexModel extends ElementModel {
          * The parser converts results from Ignite
          * queries to vertices.
          */
-        VertexReader parser = new VertexReader(graph);
+        VertexReader parser = getReader();
         /*
          * The query is responsible for retrieving the
          * requested vertices from the Ignite cache.

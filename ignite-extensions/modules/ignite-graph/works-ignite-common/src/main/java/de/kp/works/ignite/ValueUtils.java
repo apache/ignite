@@ -20,13 +20,18 @@ package de.kp.works.ignite;
 
 import com.esotericsoftware.kryo.KryoSerializable;
 import org.apache.commons.lang3.SerializationUtils;
+import org.apache.ignite.binary.BinaryObject;
 
 import java.io.Serializable;
 import java.math.BigDecimal;
+import java.nio.charset.StandardCharsets;
 import java.time.Duration;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.time.LocalTime;
+import java.util.Base64;
+import java.util.List;
+import java.util.Map;
 import java.util.UUID;
 
 public final class ValueUtils {
@@ -66,11 +71,15 @@ public final class ValueUtils {
             return ValueType.ENUM;
         } else if (o instanceof UUID) {
             return ValueType.UUID;
-        } else if (o instanceof KryoSerializable) {
-            return ValueType.KRYO_SERIALIZABLE;
-        } else if (o instanceof Serializable) {
+        } else if (o instanceof Map) {
+            return ValueType.MAP;
+        } else if (o.getClass().isArray() || o instanceof List) {
+            return ValueType.ARRAY;
+        } 
+        else if (o instanceof Serializable) {
             return ValueType.SERIALIZABLE;
-        } else {
+        }
+        else {
             throw new IllegalArgumentException("Unexpected data of type : " + o.getClass().getName());
         }
     }
@@ -79,9 +88,54 @@ public final class ValueUtils {
         if (target == null) return null;
         return SerializationUtils.deserialize(target);
     }
+    
+    public static Object deserializeFromString(String target) {
+        if (target == null) return null;
+        return SerializationUtils.deserialize(Base64.getDecoder().decode(target));
+    }
 
     public static byte[] serialize(Object o) {
         return SerializationUtils.serialize((Serializable) o);
     }
 
+    public static String serializeToString(Object o) {
+        return Base64.getEncoder().encodeToString(SerializationUtils.serialize((Serializable) o));
+    }
+    
+    public static Object parseValue(String input,ValueType toType) {
+    	if(input==null) {
+    		return input;
+    	}
+    	if(toType==ValueType.STRING) {
+    		return input;
+    	}
+    	if(toType==ValueType.DATE) {
+    		return new java.util.Date(input);
+    	}
+    	if(toType==ValueType.INT) {
+    		return Integer.valueOf(input);
+    	}
+    	if(toType==ValueType.LONG) {
+    		return Long.valueOf(input);
+    	}
+    	if(toType==ValueType.FLOAT) {
+    		return Float.valueOf(input);
+    	}
+    	if(toType==ValueType.DOUBLE) {
+    		return Double.valueOf(input);
+    	}
+    	if(toType==ValueType.BINARY) {
+    		return Base64.getDecoder().decode(input);
+    	}
+    	if(toType==ValueType.ARRAY) {
+    		return deserializeFromString(input);
+    	}
+    	if(toType==ValueType.SERIALIZABLE) {
+    		return deserializeFromString(input);
+    	}
+    	if(toType==ValueType.ANY) {
+    		return deserializeFromString(input);
+    	}
+    	return input;
+    }
 }

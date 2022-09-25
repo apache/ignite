@@ -24,6 +24,7 @@ import de.kp.works.ignite.ValueType;
 import org.apache.tinkerpop.gremlin.structure.T;
 import org.apache.tinkerpop.gremlin.structure.util.ElementHelper;
 
+import java.util.Arrays;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.UUID;
@@ -104,7 +105,18 @@ public final class IgniteGraphUtils {
             Object value = keyValues[i + 1];
             if (value == null) continue;
             ElementHelper.validateProperty(keyStr, value);
-            props.put(keyStr, value);
+            // add@byron
+            if(IgniteGraph.stringedPropertyType) {
+            	if(value.getClass().isArray() && value instanceof Object[]) {
+            		props.put(keyStr, value);
+            	}
+            	else {
+            		props.put(keyStr, value.toString());
+            	}
+            }
+            else {
+            	props.put(keyStr, value);
+            }
         }
         return props;
     }

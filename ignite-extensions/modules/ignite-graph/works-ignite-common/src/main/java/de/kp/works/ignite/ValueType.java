@@ -53,11 +53,12 @@ public enum ValueType {
     INTERVAL(14),
     BINARY(15),
     ENUM(16),
-    KRYO_SERIALIZABLE(17),
+    MAP(17),
     SERIALIZABLE(18),
     UUID(19),
     ANY(20),
-    COUNTER(21);
+    COUNTER(21),
+    ARRAY(22);
 
     private final byte code;
 
@@ -104,7 +105,7 @@ public enum ValueType {
             case 16:
                 return ENUM;
             case 17:
-                return KRYO_SERIALIZABLE;
+                return MAP;
             case 18:
                 return SERIALIZABLE;
             case 19:
@@ -113,6 +114,8 @@ public enum ValueType {
                 return ANY;
             case 21:
                 return COUNTER;
+            case 22:
+                return ARRAY;
             default:
                 return null;
         }

@@ -21,11 +21,14 @@ package de.kp.works.ignite.query;
 import de.kp.works.ignite.IgniteAdmin;
 import de.kp.works.ignite.IgniteConstants;
 import de.kp.works.ignite.IgniteTransform;
+import de.kp.works.ignite.ValueType;
+import de.kp.works.ignite.ValueUtils;
 import de.kp.works.ignite.graph.ElementType;
 import de.kp.works.ignite.graph.IgniteEdgeEntry;
 import de.kp.works.ignite.graph.IgniteVertexEntry;
 import org.apache.ignite.IgniteCache;
 import org.apache.ignite.binary.BinaryObject;
+import org.apache.ignite.cache.query.FieldsQueryCursor;
 import org.apache.ignite.cache.query.SqlFieldsQuery;
 import org.apache.tinkerpop.gremlin.structure.Direction;
 import org.slf4j.Logger;
@@ -58,6 +61,9 @@ public abstract class IgniteQuery {
             }
             else if (name.equals(admin.namespace() + "_" + IgniteConstants.VERTICES)) {
                 elementType = ElementType.VERTEX;
+            }
+            else if (name.startsWith(admin.namespace() + "_")) {
+                elementType = ElementType.DOCUMENT;
             }
             else
                 elementType = ElementType.UNDEFINED;
@@ -171,10 +177,11 @@ public abstract class IgniteQuery {
             if (cache == null)
                 throw new Exception("Cache is not initialized.");
 
-            List<List<?>> sqlResult = getSqlResult();
+            
             String cacheName = cache.getName();
 
             if (elementType.equals(ElementType.EDGE)) {
+            	List<List<?>> sqlResult = getSqlResult();
                 /*
                  * Parse sql result and extract edge specific entries
                  */
@@ -186,6 +193,7 @@ public abstract class IgniteQuery {
                         .transformEdgeEntries(entries);
             }
             else if (elementType.equals(ElementType.VERTEX)) {
+            	List<List<?>> sqlResult = getSqlResult();
                 /*
                  * Parse sql result and extract Vertex specific entries
                  */
@@ -196,6 +204,13 @@ public abstract class IgniteQuery {
                 return IgniteTransform
                         .transformVertexEntries(entries);
 
+            }
+            else if (elementType.equals(ElementType.DOCUMENT)) {
+            	 /*
+                 * Parse sql result and extract Document specific entries
+                 */
+                List<IgniteResult> entries = getSqlResultWithMeta();                
+                return entries;
             }
             else
                 throw new Exception("Cache '" + cacheName +  "' is not supported.");
@@ -242,7 +257,10 @@ public abstract class IgniteQuery {
 
             String propKey   = (String)result.get(10);
             String propType  = (String)result.get(11);
-            String propValue = (String)result.get(12);
+            Object propValue = result.get(12);
+            if(propValue instanceof String && !propType.equals("STRING")) {
+            	propValue = ValueUtils.parseValue(propValue.toString(), ValueType.valueOf(propType));
+            }
 
             return new IgniteEdgeEntry(
                     cacheKey,
@@ -289,7 +307,11 @@ public abstract class IgniteQuery {
 
             String propKey   = (String)result.get(6);
             String propType  = (String)result.get(7);
-            String propValue = (String)result.get(8);
+            Object propValue = result.get(8);
+            
+            if(propValue instanceof String && !propType.equals("STRING")) {
+            	propValue = ValueUtils.parseValue(propValue.toString(), ValueType.valueOf(propType));
+            }
 
             return new IgniteVertexEntry(
                     cacheKey,
@@ -304,12 +326,27 @@ public abstract class IgniteQuery {
 
         }).collect(Collectors.toList());
     }
-
+    
     protected abstract void createSql(Map<String, String> fields);
 
     protected List<List<?>> getSqlResult() {
         SqlFieldsQuery sqlQuery = new SqlFieldsQuery(sqlStatement);
         return cache.query(sqlQuery).getAll();
+    }
+    
+    protected List<IgniteResult> getSqlResultWithMeta() {
+        SqlFieldsQuery sqlQuery = new SqlFieldsQuery(sqlStatement);
+        FieldsQueryCursor<List<?>> cursor = cache.query(sqlQuery);
+        List<List<?>> sqlResult = cursor.getAll();
+        List<IgniteResult> result = new ArrayList<>();
+    	for(List<?> row: sqlResult) {
+    		IgniteResult item = new IgniteResult();
+    		for(int i=0;i<cursor.getColumnsCount();i++) {
+    			item.addColumn(cursor.getFieldName(i), row.getClass().getSimpleName(), row);
+            }
+    		
+    	}
+    	return result;
     }
 
     protected void buildSelectPart() throws Exception {
@@ -420,6 +457,10 @@ public abstract class IgniteQuery {
              */
             columns.add(IgniteConstants.PROPERTY_VALUE_COL_NAME);
             return columns;
+        }
+        if (elementType.equals(ElementType.DOCUMENT)) {
+        	columns.add("*");
+        	return columns;
         }
         throw new Exception("Cache '" + cacheName +  "' is not supported.");
 

@@ -11,13 +11,14 @@
     <modules>
         <module>works-ignite-common</module>
         <module>works-ignite-graph</module>
-        <module>works-ignite-streamer</module>
-        <module>works-ignite-spark</module>
+        <!-- <module>works-ignite-streamer</module>
+        <module>works-ignite-spark</module> -->
     </modules>
 
     <properties>
         <maven.compiler.source>1.8</maven.compiler.source>
         <maven.compiler.target>1.8</maven.compiler.target>
+        <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
 
         <scala.binary.version>2.11</scala.binary.version>
 

@@ -27,8 +27,8 @@ import java.util.List;
 
 public class IgniteTable extends IgniteBaseTable {
 
-    public IgniteTable(String name, IgniteAdmin admin) {
-        super(name, admin);
+    public IgniteTable(String name, ElementType elementType, IgniteAdmin admin) {
+        super(name, elementType, admin);
     }
     /**
      * This method adds or updates an Ignite cache entry;

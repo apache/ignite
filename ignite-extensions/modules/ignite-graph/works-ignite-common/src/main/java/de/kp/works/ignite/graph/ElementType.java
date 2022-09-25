@@ -21,5 +21,6 @@ package de.kp.works.ignite.graph;
 public enum ElementType {
     EDGE,
     VERTEX,
-    UNDEFINED
+    UNDEFINED,
+    DOCUMENT
 }

@@ -51,6 +51,8 @@ public class JanusGraphApp extends GraphApp {
 
     protected boolean useMixedIndex;
     protected String mixedIndexConfigName;
+    
+    protected JanusGraph janusgraph;
 
     /**
      * Constructs a graph app using the given properties.
@@ -96,6 +98,7 @@ public class JanusGraphApp extends GraphApp {
      * Returns the JanusGraph instance.
      */
     protected JanusGraph getJanusGraph() {
+    	janusgraph = (JanusGraph) graph;
         return (JanusGraph) graph;
     }
 

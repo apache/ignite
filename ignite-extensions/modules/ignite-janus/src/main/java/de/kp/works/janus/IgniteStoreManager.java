@@ -42,8 +42,9 @@ public class IgniteStoreManager implements KeyColumnValueStoreManager {
      * Reference to Apache Ignite that is transferred to the key value
      * store to enable cache operations
      */
-    private final Ignite ignite = IgniteContext.getInstance().getIgnite();
-    private final IgniteClient database = new IgniteClient(ignite);
+    private final Ignite ignite; 
+    private final IgniteClient database;
+    private final String namespace;
 
     /*
      * JanusGraph leverages multiple stores to manage and persist
@@ -51,7 +52,11 @@ public class IgniteStoreManager implements KeyColumnValueStoreManager {
      */
     private final ConcurrentHashMap<String, IgniteStore> stores;
 
-	public IgniteStoreManager(final Configuration configuration) {
+	public IgniteStoreManager(final Configuration configuration) {		
+		String cfg = configuration.get(IgniteContext.STORAGE_CFG);
+		ignite = IgniteContext.getInstance(cfg).getIgnite();
+		namespace = ignite.name();
+		database = new IgniteClient(ignite);
 		
         /*
          * Initialize minimal store features; JanusGraph comes with

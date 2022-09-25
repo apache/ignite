@@ -22,9 +22,12 @@ import com.google.common.cache.Cache;
 import com.google.common.cache.CacheBuilder;
 import com.google.common.cache.RemovalListener;
 import de.kp.works.ignite.IgniteAdmin;
+import de.kp.works.ignite.IgniteConf;
 import de.kp.works.ignite.IgniteConstants;
 import de.kp.works.ignite.ValueUtils;
+import de.kp.works.ignite.graph.ElementType;
 import de.kp.works.ignite.gremlin.exception.IgniteGraphException;
+import de.kp.works.ignite.gremlin.models.DocumentModel;
 import de.kp.works.ignite.gremlin.models.EdgeModel;
 import de.kp.works.ignite.gremlin.models.VertexModel;
 import de.kp.works.ignite.gremlin.process.strategy.optimization.IgniteGraphStepStrategy;
@@ -42,8 +45,10 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.nio.ByteBuffer;
+import java.util.Hashtable;
 import java.util.Iterator;
 import java.util.List;
+import java.util.Map;
 import java.util.concurrent.TimeUnit;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
@@ -59,6 +64,8 @@ public class IgniteGraph implements Graph {
                         IgniteGraphStepStrategy.instance()
                 ));
     }
+    
+    static Map<String,IgniteGraph> graphInstances = new Hashtable<>();
 
     private final IgniteGraphConfiguration config;
 
@@ -70,6 +77,8 @@ public class IgniteGraph implements Graph {
 
     private final Cache<ByteBuffer, Edge> edgeCache;
     private final Cache<ByteBuffer, Vertex> vertexCache;
+    
+    public static boolean stringedPropertyType = false;
 
     /**
      * This method is invoked by Gremlin's GraphFactory
@@ -78,9 +87,13 @@ public class IgniteGraph implements Graph {
     public static IgniteGraph open(final Configuration properties) throws IgniteGraphException {
         return new IgniteGraph(properties);
     }
+    
+    public static IgniteGraph getGraph(String name) throws IgniteGraphException {
+        return graphInstances.get(name);
+    }
 
     public IgniteGraph(Configuration properties) {
-        this(new IgniteGraphConfiguration(properties));
+        this(new IgniteGraphConfiguration(properties));        
     }
 
     public IgniteGraph(IgniteGraphConfiguration config) throws IgniteGraphException {
@@ -93,6 +106,17 @@ public class IgniteGraph implements Graph {
         this.admin = connection.getAdmin();
 
         this.features = new IgniteGraphFeatures(true);
+        
+        String propertyType = config.getString("gremlin.graph.propertyType");
+        if(propertyType!=null && propertyType.equals("STRING")) {
+        	stringedPropertyType = true;
+        }
+        
+        String igniteCfg = config.getString("gremlin.graph.ignite.cfg");
+        if(igniteCfg!=null && !igniteCfg.isEmpty()) {
+        	IgniteConf.file = igniteCfg;
+        }        
+        
         /*
          * Create the Ignite caches that are used as the
          * backed for this graph implementation
@@ -105,10 +129,10 @@ public class IgniteGraph implements Graph {
 
         /* Edge & Vertex models */
         this.edgeModel = new EdgeModel(this,
-                admin.getTable(IgniteGraphUtils.getTableName(config, IgniteConstants.EDGES)));
+                admin.getTable(IgniteGraphUtils.getTableName(config, IgniteConstants.EDGES),ElementType.EDGE));
 
         this.vertexModel = new VertexModel(this,
-                admin.getTable(IgniteGraphUtils.getTableName(config, IgniteConstants.VERTICES)));
+                admin.getTable(IgniteGraphUtils.getTableName(config, IgniteConstants.VERTICES),ElementType.VERTEX));
 
         this.edgeCache = CacheBuilder.newBuilder()
                 .maximumSize(config.getElementCacheMaxSize())
@@ -121,9 +145,15 @@ public class IgniteGraph implements Graph {
                 .expireAfterAccess(config.getElementCacheTtlSecs(), TimeUnit.SECONDS)
                 .removalListener((RemovalListener<ByteBuffer, Vertex>) notif -> ((IgniteVertex) notif.getValue()).setCached(false))
                 .build();
+        
+        graphInstances.put(config.getGraphNamespace(), this);
 
     }
-
+    
+    public IgniteGraphConfiguration getIgniteGraphConfiguration() {
+    	return config;
+    	
+    }
     public EdgeModel getEdgeModel() {
         return edgeModel;
     }
@@ -131,6 +161,41 @@ public class IgniteGraph implements Graph {
     public VertexModel getVertexModel() {
         return vertexModel;
     }
+    
+    public DocumentModel getDocumentModel(String label) {
+    	if (label == null) {
+            throw Exceptions.argumentCanNotBeNull("label");
+        }
+    	if(IgniteConstants.VERTICES.equals(label.toLowerCase()) || IgniteConstants.EDGES.equals(label.toLowerCase())) {
+    		 throw Exceptions.variablesNotSupported();
+    	}
+    	DocumentModel vertexModel = new DocumentModel(this,admin.getTable(IgniteGraphUtils.getTableName(config, label),ElementType.EDGE));
+        return vertexModel;
+    }
+    
+    /** Document RELATED **/    
+    public Vertex addDocument(final Object... keyValues) {
+        ElementHelper.legalPropertyKeyValueArray(keyValues);
+        /*
+         * Vertices that define an `id` in the provided keyValues
+         * use this value (long or numeric). Otherwise `null` is
+         * returned.
+         */
+        Object idValue = ElementHelper.getIdValue(keyValues).orElse(null);
+        final String label = ElementHelper.getLabelValue(keyValues).orElse(Vertex.DEFAULT_LABEL);
+        /*
+         * The `idValue` either is a provided [Long] or a random
+         * UUID as [String].
+         */
+        idValue = IgniteGraphUtils.generateIdIfNeeded(idValue);
+        long now = System.currentTimeMillis();
+        IgniteDocument newVertex = new IgniteDocument(this, idValue, label, now, now, IgniteGraphUtils.propertiesToMap(keyValues));
+        newVertex.validate();
+        newVertex.writeToModel();
+        
+        return newVertex;
+    }
+
 
     /** VERTEX RELATED **/
 
@@ -199,6 +264,8 @@ public class IgniteGraph implements Graph {
     public Vertex findOrCreateVertex(Object id) {
         return findVertex(id, true);
     }
+    
+  
 
     /**
      * Retrieve vertex from cache or build new
@@ -220,8 +287,13 @@ public class IgniteGraph implements Graph {
         vertex.setCached(true);
         return vertex;
     }
+    
 
     public void removeVertex(Vertex vertex) {
+        vertex.remove();
+    }
+    
+    public void removeDocument(Vertex vertex) {
         vertex.remove();
     }
 

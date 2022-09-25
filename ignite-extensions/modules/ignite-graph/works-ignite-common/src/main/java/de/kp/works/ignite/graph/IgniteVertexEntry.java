@@ -29,7 +29,7 @@ public class IgniteVertexEntry {
     public Long updatedAt;
     public String propKey;
     public String propType;
-    public String propValue;
+    public Object propValue;
 
     public IgniteVertexEntry(
             String cacheKey,
@@ -40,7 +40,7 @@ public class IgniteVertexEntry {
             Long updatedAt,
             String propKey,
             String propType,
-            String propValue) {
+            Object propValue) {
 
         this.cacheKey = cacheKey;
         this.id = id;

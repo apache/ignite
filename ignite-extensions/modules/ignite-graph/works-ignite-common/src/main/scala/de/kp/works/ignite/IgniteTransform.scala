@@ -47,8 +47,8 @@ object IgniteTransform {
         val fromId: String = head.fromId
         val fromIdType: String = head.fromIdType
 
-        val createdAt: String = head.createdAt.toString
-        val updatedAt: String = head.updatedAt.toString
+        val createdAt: Long = head.createdAt.asInstanceOf[Long]
+        val updatedAt: Long = head.updatedAt.asInstanceOf[Long]
         /*
          * Add common fields
          */
@@ -91,8 +91,8 @@ object IgniteTransform {
         val idType: String = head.idType
         val label: String = head.label
 
-        val createdAt: String = head.createdAt.toString
-        val updatedAt: String = head.updatedAt.toString
+        val createdAt: Long = head.createdAt.asInstanceOf[Long]
+        val updatedAt: Long = head.updatedAt.asInstanceOf[Long]
         /*
          * Add common fields
          */
@@ -114,7 +114,7 @@ object IgniteTransform {
 
           val propKey: String = value.propKey
           val propType: String = value.propType
-          val propValue: String = value.propValue
+          val propValue: Object = value.propValue
 
           igniteResult
             .addColumn(propKey, propType, propValue)

@@ -71,8 +71,9 @@ class IgniteConnect(val graphNS: String) {
      * Rebalancing is called here in case of partitioned
      * Apache Ignite caches; the default configuration,
      * however, is to use replicated caches
+     * cache.rebalance().get()
      */
-    cache.rebalance().get()
+    
     cache
   }
 

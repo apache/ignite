@@ -23,15 +23,12 @@ import org.apache.tinkerpop.gremlin.structure.Property;
 import org.apache.tinkerpop.gremlin.structure.util.ElementHelper;
 import org.apache.tinkerpop.gremlin.structure.util.StringFactory;
 
-public final class IgniteProperty<V> implements Property<V> {
-
-    protected final IgniteGraph graph;
+public final class IgniteProperty<V> implements Property<V>,java.io.Serializable {   
     protected final IgniteElement element;
     protected final String key;
     protected final V value;
 
-    public IgniteProperty(final IgniteGraph graph, final IgniteElement element, final String key, final V value) {
-        this.graph = graph;
+    public IgniteProperty(final IgniteElement element, final String key, final V value) {      
         this.element = element;
         this.key = key;
         this.value = value;

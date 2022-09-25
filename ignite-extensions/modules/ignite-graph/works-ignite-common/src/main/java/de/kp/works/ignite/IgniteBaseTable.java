@@ -40,20 +40,12 @@ public class IgniteBaseTable {
 
     protected final ElementType elementType;
 
-    public IgniteBaseTable(String name, IgniteAdmin admin) {
+    public IgniteBaseTable(String name,ElementType elementType,IgniteAdmin admin) {
 
         this.name = name;
         this.admin = admin;
-
-        if (name.equals(admin.namespace() + "_" + IgniteConstants.EDGES)) {
-            elementType = ElementType.EDGE;
-        }
-        else if (name.equals(admin.namespace() + "_" + IgniteConstants.VERTICES)) {
-            elementType = ElementType.VERTEX;
-        }
-        else
-            elementType = ElementType.UNDEFINED;
-
+        this.elementType = elementType;
+        
         admin.createTable(name);
 
     }
@@ -227,11 +219,17 @@ public class IgniteBaseTable {
                     break;
                 }
                 case IgniteConstants.CREATED_AT_COL_NAME: {
-                    createdAt = Long.parseLong((String) column.getColValue());
+                	if(column.getColValue() instanceof Long)
+                		createdAt = (Long) column.getColValue();
+                	else
+                		createdAt = Long.parseLong((String) column.getColValue());
                     break;
                 }
                 case IgniteConstants.UPDATED_AT_COL_NAME: {
-                    updatedAt = Long.parseLong((String) column.getColValue());
+                	if(column.getColValue() instanceof Long)
+                		updatedAt = (Long) column.getColValue();
+                	else
+                		updatedAt = Long.parseLong((String) column.getColValue());
                     break;
                 }
                 default:
@@ -264,7 +262,7 @@ public class IgniteBaseTable {
                      */
                     String propKey   = column.getColName();
                     String propType  = column.getColType();
-                    String propValue = column.getColValue().toString();
+                    Object propValue = column.getColValue();
                     /*
                      * For a create request, we must generate
                      * a unique cache key for each entry
@@ -355,10 +353,12 @@ public class IgniteBaseTable {
                      * Determine provided values that matches
                      * the property key of the entry
                      */
-                    IgniteColumn property = knownProps.stream()
-                            .filter(p -> p.getColName().equals(propKey)).collect(Collectors.toList()).get(0);
-
-                    Object newValue = property.getColValue();
+                    List<IgniteColumn> property = knownProps.stream()
+                            .filter(p -> p.getColName().equals(propKey)).collect(Collectors.toList());
+                    if(property.size()==0) {
+                    	return null;
+                    }
+                    Object newValue = property.get(0).getColValue();
                     return new IgniteEdgeEntry(
                             entry.cacheKey,
                             entry.id,
@@ -378,6 +378,7 @@ public class IgniteBaseTable {
                             newValue.toString());
 
                 })
+                .filter(entry->entry!=null)
                 .collect(Collectors.toList());
 
         writeEdge(updatedEntries);
@@ -445,7 +446,7 @@ public class IgniteBaseTable {
         if (entries.isEmpty()) return null;
         IgniteEdgeEntry entry = entries.get(0);
 
-        long oldValue = Long.parseLong(entry.propValue);
+        long oldValue = entry.propValue instanceof Number? ((Number)entry.propValue).longValue(): Long.parseLong(entry.propValue.toString());
         Long newValue = oldValue + 1;
 
         IgniteEdgeEntry newEntry = new IgniteEdgeEntry(
@@ -461,7 +462,7 @@ public class IgniteBaseTable {
                 System.currentTimeMillis(),
                 entry.propKey,
                 entry.propType,
-                newValue.toString());
+                newValue);
 
         writeEdge(Collections.singletonList(newEntry));
         return newValue;
@@ -495,11 +496,17 @@ public class IgniteBaseTable {
                     break;
                 }
                 case IgniteConstants.CREATED_AT_COL_NAME: {
-                    createdAt = Long.parseLong((String) column.getColValue());
+                	if(column.getColValue() instanceof Long)
+                		createdAt = (Long) column.getColValue();
+                	else
+                		createdAt = Long.parseLong((String) column.getColValue());
                     break;
                 }
                 case IgniteConstants.UPDATED_AT_COL_NAME: {
-                    updatedAt = Long.parseLong((String) column.getColValue());
+                	if(column.getColValue() instanceof Long)
+                		updatedAt = (Long) column.getColValue();
+                	else
+                		updatedAt = Long.parseLong((String) column.getColValue());
                     break;
                 }
                 default:
@@ -525,11 +532,11 @@ public class IgniteBaseTable {
                 }
                 default: {
                     /*
-                     * Build an entry for each property
+                     * Build an entry for each propert
                      */
                     String propKey   = column.getColName();
                     String propType  = column.getColType();
-                    String propValue = column.getColValue().toString();
+                    Object propValue = column.getColValue();
                     /*
                      * For a create request, we must generate
                      * a unique cache key for each entry
@@ -611,10 +618,12 @@ public class IgniteBaseTable {
                      * Determine provided values that matches
                      * the property key of the entry
                      */
-                    IgniteColumn property = knownProps.stream()
-                            .filter(p -> p.getColName().equals(propKey)).collect(Collectors.toList()).get(0);
-
-                    Object newValue = property.getColValue();
+                    List<IgniteColumn> property = knownProps.stream()
+                            .filter(p -> p.getColName().equals(propKey)).collect(Collectors.toList());
+                    if(property.size()==0) {
+                    	return null;
+                    }
+                    Object newValue = property.get(0).getColValue();
                     return new IgniteVertexEntry(
                             entry.cacheKey,
                             entry.id,
@@ -627,9 +636,10 @@ public class IgniteBaseTable {
                             System.currentTimeMillis(),
                             entry.propKey,
                             entry.propType,
-                            newValue.toString());
+                            newValue);
 
                 })
+                .filter(entry->entry!=null)
                 .collect(Collectors.toList());
 
         writeVertex(updatedEntries);
@@ -654,7 +664,7 @@ public class IgniteBaseTable {
                             System.currentTimeMillis(),
                             property.getColName(),
                             property.getColType(),
-                            property.getColValue().toString());
+                            property.getColValue());
                 })
                 .collect(Collectors.toList());
 
@@ -685,7 +695,7 @@ public class IgniteBaseTable {
          * provided column
          */
         String colName = column.getColName();
-        String colValue = column.getColValue().toString();
+        Object colValue = column.getColValue();
 
         List<IgniteVertexEntry> entries = vertex.stream()
                 .filter(entry -> entry.propKey.equals(colName) && entry.propType.equals(colType) && entry.propValue.equals(colValue))
@@ -694,7 +704,7 @@ public class IgniteBaseTable {
         if (entries.isEmpty()) return null;
         IgniteVertexEntry entry = entries.get(0);
 
-        long oldValue = Long.parseLong(entry.propValue);
+        long oldValue = entry.propValue instanceof Number? ((Number)entry.propValue).longValue() : Long.parseLong(entry.propValue.toString());
         Long newValue = oldValue + 1;
 
         IgniteVertexEntry newEntry = new IgniteVertexEntry(
@@ -706,7 +716,7 @@ public class IgniteBaseTable {
                 System.currentTimeMillis(),
                 entry.propKey,
                 entry.propType,
-                newValue.toString());
+                newValue);
 
         writeVertex(Collections.singletonList(newEntry));
         return newValue;

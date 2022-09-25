@@ -22,10 +22,22 @@ import de.kp.works.janus.AbstractEntryBuilder;
 import de.kp.works.janus.IgniteValue;
 
 import java.nio.ByteBuffer;
+import java.nio.charset.StandardCharsets;
 import java.security.MessageDigest;
+import java.security.NoSuchAlgorithmException;
 import java.util.Map;
 
 public class IgniteCacheEntry extends AbstractEntryBuilder {
+	static MessageDigest MD5 = null;
+	
+	static{
+		try {
+			MD5 = MessageDigest.getInstance("MD5");
+		} catch (NoSuchAlgorithmException e) {
+			// TODO Auto-generated catch block
+			e.printStackTrace();
+		}
+	}
 
 	String hashKey;
 	String rangeKey;
@@ -53,7 +65,7 @@ public class IgniteCacheEntry extends AbstractEntryBuilder {
 	public String getCacheKey() {
 		String serialized = toString();
 		try {
-			return MessageDigest.getInstance("MD5").digest(serialized.getBytes("UTF-8")).toString();
+			return new String(MD5.digest(serialized.getBytes(StandardCharsets.UTF_8)),StandardCharsets.UTF_8);
 
 		} catch (Exception e) {
 			return null;

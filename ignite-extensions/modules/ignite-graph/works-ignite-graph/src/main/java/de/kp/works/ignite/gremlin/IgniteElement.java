@@ -32,9 +32,9 @@ import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 
-public abstract class IgniteElement implements Element {
-
-    protected IgniteGraph graph;
+public abstract class IgniteElement implements Element,java.io.Serializable {
+  
+    protected String namespace;
     protected final Object id;
     protected String label;
     protected Long createdAt;
@@ -52,8 +52,8 @@ public abstract class IgniteElement implements Element {
                             Long createdAt,
                             Long updatedAt,
                             Map<String, Object> properties,
-                            boolean propertiesFullyLoaded) {
-        this.graph = graph;
+                            boolean propertiesFullyLoaded) {       
+        this.namespace = graph.getIgniteGraphConfiguration().getGraphNamespace();
         this.id = id;
         this.label = label;
         this.createdAt = createdAt;
@@ -71,13 +71,9 @@ public abstract class IgniteElement implements Element {
     }
 
     @Override
-    public Graph graph() {
-        return graph;
-    }
-
-    public void setGraph(IgniteGraph graph) {
-        this.graph = graph;
-    }
+    public IgniteGraph graph() {
+        return IgniteGraph.getGraph(namespace);
+    }   
 
     @Override
     public Object id() {

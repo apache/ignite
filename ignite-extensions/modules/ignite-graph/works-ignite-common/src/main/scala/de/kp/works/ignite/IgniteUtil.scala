@@ -36,14 +36,16 @@ object IgniteUtil {
      * table name
      */
     val tableType = if (table == namespace + "_" + IgniteConstants.EDGES)
-      ElementType.EDGE
+      	  ElementType.EDGE
 
-    else if (table == namespace + "_" + IgniteConstants.VERTICES)
-      ElementType.VERTEX
-
-    else
-
-      throw new Exception("Table '" + table + "' is not supported.")
+	    else if (table == namespace + "_" + IgniteConstants.VERTICES)
+	      ElementType.VERTEX
+	    else if (table.startsWith(namespace + "_" ))
+	      ElementType.DOCUMENT
+	
+	    else
+	
+	      throw new Exception("Table '" + table + "' is not supported.")
 
     val cfg = createCacheCfg(table, tableType, cacheMode)
     ignite.createCache(cfg)
@@ -100,9 +102,10 @@ object IgniteUtil {
      */
     if (elementType == ElementType.EDGE)
       qe.setFields(buildEdgeFields)
-
     else if (elementType == ElementType.VERTEX)
       qe.setFields(buildVertexFields())
+    else if (elementType == ElementType.DOCUMENT)
+      qe.setFields(buildDocumentFields())
 
     else
       throw new Exception("Table '" + table + "' is not supported.")
@@ -193,6 +196,42 @@ object IgniteUtil {
      * The serialized property value
      */
     fields.put(IgniteConstants.PROPERTY_VALUE_COL_NAME, "java.lang.String")
+    fields
+  }
+  
+   def buildDocumentFields(): util.LinkedHashMap[String, String] = {
+
+    val fields: util.LinkedHashMap[String, String] = new util.LinkedHashMap[String, String]()
+    /*
+     * The vertex identifier used by TinkerPop to identify
+     * an equivalent of a data row
+     */
+    fields.put(IgniteConstants.ID_COL_NAME, "java.lang.String")
+    /*
+     * The vertex identifier type to reconstruct the
+     * respective value. IgniteGraph supports [Long]
+     * as well as [String] as identifier.
+     */
+    fields.put(IgniteConstants.ID_TYPE_COL_NAME, "java.lang.String")
+    /*
+     * The vertex label used by TinkerPop and IgniteGraph
+     */
+    fields.put(IgniteConstants.LABEL_COL_NAME, "java.lang.String")
+    /*
+     * The timestamp this cache entry has been created.
+     */
+    fields.put(IgniteConstants.CREATED_AT_COL_NAME, "java.lang.Long")
+    /*
+     * The timestamp this cache entry has been updated.
+     */
+    fields.put(IgniteConstants.UPDATED_AT_COL_NAME, "java.lang.Long")
+    /*
+     * The property section of this cache entry
+     */
+    fields.put("name", "java.lang.String")
+    fields.put("title", "java.lang.String")
+  
+    fields.put("uid", "java.lang.String")
     fields
   }
 

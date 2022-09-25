@@ -29,7 +29,7 @@ public class IgnitePut extends IgniteMutation {
         mutationType = IgniteMutationType.PUT;
     }
 
-    public void addColumn(String colName, String colType, String colValue) {
+    public void addColumn(String colName, String colType, Object colValue) {
         columns.add(new IgniteColumn(colName, colType, colValue));
     }
 

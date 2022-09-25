@@ -52,16 +52,16 @@ public class PropertyWriter implements Mutator {
         IgnitePut put = new IgnitePut(id, elementType);
 
         put.addColumn(IgniteConstants.ID_COL_NAME, ValueUtils.getValueType(id).name(),
-                id.toString());
+                id);
 
         Long updatedAt = ((IgniteElement) element).updatedAt();
         put.addColumn(IgniteConstants.UPDATED_AT_COL_NAME, IgniteConstants.LONG_COL_TYPE,
-                updatedAt.toString());
+                updatedAt);
 
         /* Put property */
 
         String colType = ValueUtils.getValueType(value).name();
-        String colValue = value.toString();
+        Object colValue = value;
 
         put.addColumn(key, colType, colValue);
         return IteratorUtils.of(put);

@@ -47,3 +47,12 @@ and provide a powerful knowledge base for cyber threat intelligence and cyber op
 
 OpenCTI ships with a variety of connectors to widely known threat intelligence data sources like AlienVault, 
 CrowdStrike, FireEye and MISP, MITRE ATT&CK and more.
+
+
+## Document vs Vertex 
+
+Vertext: id,label,propKey1,propValue1
+         id,label,propKey2,propValue2
+
+Document:id,label,prop1,prop2,prop3
+

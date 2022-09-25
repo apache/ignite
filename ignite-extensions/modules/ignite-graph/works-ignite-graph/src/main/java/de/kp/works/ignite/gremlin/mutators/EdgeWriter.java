@@ -51,30 +51,28 @@ public class EdgeWriter implements Creator {
         IgnitePut put = new IgnitePut(id, ElementType.EDGE);
 
         put.addColumn(IgniteConstants.ID_COL_NAME, ValueUtils.getValueType(id).name(),
-                id.toString());
+                id);
 
         put.addColumn(IgniteConstants.LABEL_COL_NAME, IgniteConstants.STRING_COL_TYPE,
                 label);
-
+        // modify@byron use label instead id type
         Object toId = edge.inVertex().id();
-        put.addColumn(IgniteConstants.TO_COL_NAME, ValueUtils.getValueType(toId).name(),
-                toId.toString());
+        put.addColumn(IgniteConstants.TO_COL_NAME, edge.inVertex().label(),toId);
 
         Object fromId = edge.outVertex().id();
-        put.addColumn(IgniteConstants.FROM_COL_NAME, ValueUtils.getValueType(fromId).name(),
-                fromId.toString());
+        put.addColumn(IgniteConstants.FROM_COL_NAME, edge.outVertex().label(),fromId);
+        
+        // end@
 
         Long createdAt = ((IgniteEdge) edge).createdAt();
-        put.addColumn(IgniteConstants.CREATED_AT_COL_NAME, IgniteConstants.LONG_COL_TYPE,
-                createdAt.toString());
+        put.addColumn(IgniteConstants.CREATED_AT_COL_NAME, IgniteConstants.LONG_COL_TYPE, createdAt);
 
         Long updatedAt = ((IgniteEdge) edge).updatedAt();
-        put.addColumn(IgniteConstants.UPDATED_AT_COL_NAME, IgniteConstants.LONG_COL_TYPE,
-                updatedAt.toString());
+        put.addColumn(IgniteConstants.UPDATED_AT_COL_NAME, IgniteConstants.LONG_COL_TYPE, updatedAt);
 
         ((IgniteEdge) edge).getProperties().forEach((key, value) -> {
             String colType = ValueUtils.getValueType(value).name();
-            String colValue = value.toString();
+            Object colValue = value;
 
             put.addColumn(key, colType, colValue);
         });

@@ -55,7 +55,12 @@ public abstract class ElementModel extends BaseModel {
         LOGGER.trace("Executing Get, type: {}, id: {}", getClass().getSimpleName(), element.id());
 
         IgniteResult result = table.get(element.id());
-        getReader().load(element, result);
+        if(result!=null) {
+        	getReader().load(element, result);
+        }
+        else {
+        	throw new IgniteGraphNotFoundException(element, "element does not exist: " + element.id());
+        }
     }
 
     /**

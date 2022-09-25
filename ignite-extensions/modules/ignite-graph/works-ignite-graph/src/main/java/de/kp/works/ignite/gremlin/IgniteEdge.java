@@ -123,7 +123,7 @@ public class IgniteEdge extends IgniteElement implements Edge {
 
         setDeleted(true);
         if (!isCached()) {
-            IgniteEdge cachedEdge = (IgniteEdge) graph.findEdge(id, false);
+            IgniteEdge cachedEdge = (IgniteEdge) graph().findEdge(id, false);
             if (cachedEdge != null) cachedEdge.setDeleted(true);
         }
     }
@@ -134,20 +134,20 @@ public class IgniteEdge extends IgniteElement implements Edge {
         Iterator<String> filter = IteratorUtils.filter(keys.iterator(),
                 key -> ElementHelper.keyExists(key, propertyKeys));
         return IteratorUtils.map(filter,
-                key -> new IgniteProperty<>(graph, this, key, getProperty(key)));
+                key -> new IgniteProperty<>(this, key, getProperty(key)));
     }
 
     @Override
     public <V> Property<V> property(final String key) {
         V value = getProperty(key);
-        return value != null ? new IgniteProperty<>(graph, this, key, value) : Property.empty();
+        return value != null ? new IgniteProperty<>(this, key, value) : Property.empty();
     }
 
     @Override
     public <V> Property<V> property(final String key, final V value) {
         if (value != null) {
             setProperty(key, value);
-            return new IgniteProperty<>(graph, this, key, value);
+            return new IgniteProperty<>(this, key, value);
         } else {
             removeProperty(key);
             return Property.empty();
@@ -156,7 +156,7 @@ public class IgniteEdge extends IgniteElement implements Edge {
 
     @Override
     public EdgeModel getModel() {
-        return graph.getEdgeModel();
+        return graph().getEdgeModel();
     }
 
     @Override
@@ -171,6 +171,9 @@ public class IgniteEdge extends IgniteElement implements Edge {
 
     @Override
     public String toString() {
-        return StringFactory.edgeString(this);
+    	if(this.id.toString().length()<=32) {
+    		return StringFactory.edgeString(this);
+    	}
+    	return "e["+this.id()+"]";
     }
 }

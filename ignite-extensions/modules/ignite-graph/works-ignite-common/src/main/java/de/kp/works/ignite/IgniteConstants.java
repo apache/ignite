@@ -35,8 +35,8 @@ public class IgniteConstants {
     public static final String CREATED_AT_COL_NAME = "created_at";
     public static final String UPDATED_AT_COL_NAME = "updated_at";
 
-    public static final String FROM_COL_NAME = "from";
-    public static final String FROM_TYPE_COL_NAME = "from_type";
+    public static final String FROM_COL_NAME = "source";
+    public static final String FROM_TYPE_COL_NAME = "source_type";
     public static final String TO_COL_NAME = "to";
     public static final String TO_TYPE_COL_NAME = "to_type";
 

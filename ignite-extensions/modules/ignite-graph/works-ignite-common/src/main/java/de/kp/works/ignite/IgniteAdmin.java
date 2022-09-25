@@ -18,14 +18,17 @@ package de.kp.works.ignite;
  *
  */
 
+import de.kp.works.ignite.graph.ElementType;
 import de.kp.works.ignite.graph.IgniteEdgeEntry;
 import de.kp.works.ignite.graph.IgniteVertexEntry;
 import de.kp.works.ignite.mutate.IgniteDelete;
+import de.kp.works.ignite.mutate.IgnitePut;
 import de.kp.works.ignite.query.IgniteEdgesExistQuery;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCache;
 import org.apache.ignite.binary.BinaryObject;
 import org.apache.ignite.binary.BinaryObjectBuilder;
+import org.apache.tinkerpop.gremlin.structure.io.graphson.ToStringGraphSONSerializer;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 /*
@@ -47,15 +50,21 @@ import org.slf4j.LoggerFactory;
  *
  */
 
+import com.fasterxml.jackson.databind.json.JsonMapper;
+
+import java.util.Base64;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
+import java.util.TreeMap;
 import java.util.stream.Collectors;
 
 public class IgniteAdmin {
 
     private static final Logger LOGGER = LoggerFactory.getLogger(IgniteAdmin.class);
+    
+    public  ToStringGraphSONSerializer mapper = new ToStringGraphSONSerializer();
     private IgniteConnect connect = null;
 
     private final String NO_CONNECT_INITIALIZATION = "IgniteConnect is not initialized.";
@@ -121,13 +130,13 @@ public class IgniteAdmin {
      * access to the underlying cache. Note, this method
      * does not verify whether the cache exists or not.
      */
-    public IgniteTable getTable(String tableName) {
+    public IgniteTable getTable(String tableName,ElementType elementType) {
         if (connect == null) {
             LOGGER.error(NO_CONNECT_INITIALIZATION);
             return null;
         }
 
-        return new IgniteTable(tableName, this);
+        return new IgniteTable(tableName, elementType, this);
     }
 
     /**
@@ -170,8 +179,9 @@ public class IgniteAdmin {
              * All cache entries that refer to a certain
              * property key must be deleted
              */
+        	// modify@byron c.getColValue()->c.getColValue()
             List<String> propKeys = igniteDelete.getProperties()
-                    .map(c -> c.getColValue().toString())
+                    .map(c -> c.getColName())
                     .collect(Collectors.toList());
 
             cacheKeys = edge.stream()
@@ -197,7 +207,7 @@ public class IgniteAdmin {
         Ignite ignite = connect.getIgnite();
         IgniteCache<String, BinaryObject> cache = ignite.cache(cacheName);
 
-        Map<String,BinaryObject> row = new HashMap<>();
+        Map<String,BinaryObject> row = new TreeMap<>();
         for (IgniteEdgeEntry entry : entries) {
             BinaryObjectBuilder valueBuilder = ignite.binary().builder(cacheName);
 
@@ -216,17 +226,22 @@ public class IgniteAdmin {
 
             valueBuilder.setField(IgniteConstants.PROPERTY_KEY_COL_NAME,  entry.propKey);
             valueBuilder.setField(IgniteConstants.PROPERTY_TYPE_COL_NAME,  entry.propType);
-            valueBuilder.setField(IgniteConstants.PROPERTY_VALUE_COL_NAME, entry.propValue);
+            String value = null;
+            if(entry.propType.equals("ARRAY")  || entry.propType.equals("ANY") || entry.propType.equals("SERIALIZABLE")) {
+            	value = ValueUtils.serializeToString(entry.propValue);
+            }
+            else if(entry.propType.equals("BINARY")) {
+            	value = Base64.getEncoder().encodeToString((byte[])entry.propValue);
+            }
+            valueBuilder.setField(IgniteConstants.PROPERTY_VALUE_COL_NAME, value);
 
             String cacheKey = entry.cacheKey;
             BinaryObject cacheValue = valueBuilder.build();
 
             row.put(cacheKey, cacheValue);
         }
-
-        for (Map.Entry<String,BinaryObject> entry : row.entrySet()) {
-            cache.put(entry.getKey(), entry.getValue());
-        }
+        cache.putAll(row);
+        
     }
 
     /**
@@ -281,6 +296,61 @@ public class IgniteAdmin {
 
         cache.removeAll(new HashSet<>(cacheKeys));
     }
+    
+    /**
+     * This method supports the deletion of an entire vertex
+     * or just specific properties of an existing vertex.
+     *
+     * When and entire vertex must be deleted, this methods
+     * also checks whether the vertex is referenced by an edge
+     */
+    public void deleteDocument(IgniteDelete igniteDelete, String cacheName) throws Exception {
+
+        Ignite ignite = connect.getIgnite();
+        IgniteCache<String, BinaryObject> cache = ignite.cache(cacheName);
+        
+
+        List<IgniteColumn> columns = igniteDelete.getColumns();
+        Object id = igniteDelete.getId();
+        /*
+         * STEP #1: Check whether we must delete the
+         * entire vertex or just a certain column
+         */
+        if (columns.isEmpty()) {
+            /*
+             * All cache entries that refer to the specific
+             * vertex must be deleted.
+             */
+            
+            if (hasEdges(id, cacheName))
+                throw new Exception("The doc '" + id.toString() + "' is referenced by at least one edge.");
+
+            
+            cache.remove(id.toString());
+        }
+        else {
+            /*
+             * All cache entries that refer to a certain
+             * property key must be deleted
+             */
+            List<String> propKeys = igniteDelete.getProperties()
+                    .map(IgniteColumn::getColName)
+                    .collect(Collectors.toList());
+
+            BinaryObject doc = cache.get(id.toString());
+            if(doc==null) {
+            	throw new Exception("The doc '" + id.toString() + "' is not existed.");
+            }
+            BinaryObjectBuilder builder = doc.toBuilder();
+            for(String field: propKeys) {
+            	builder.removeField(field);
+            }
+            cache.put(id.toString(), builder.build());
+
+        }
+
+        
+    }
 
     /**
      * Supports create and update operations for vertices
@@ -290,7 +360,7 @@ public class IgniteAdmin {
         Ignite ignite = connect.getIgnite();
         IgniteCache<String, BinaryObject> cache = ignite.cache(cacheName);
 
-        Map<String,BinaryObject> row = new HashMap<>();
+        Map<String,BinaryObject> row = new TreeMap<>();
         for (IgniteVertexEntry entry : entries) {
             BinaryObjectBuilder valueBuilder = ignite.binary().builder(cacheName);
 
@@ -302,7 +372,17 @@ public class IgniteAdmin {
 
             valueBuilder.setField(IgniteConstants.PROPERTY_KEY_COL_NAME,  entry.propKey);
             valueBuilder.setField(IgniteConstants.PROPERTY_TYPE_COL_NAME,  entry.propType);
-            valueBuilder.setField(IgniteConstants.PROPERTY_VALUE_COL_NAME, entry.propValue);
+            String value = null;
+            if(entry.propType.equals("ARRAY")  || entry.propType.equals("ANY") || entry.propType.equals("SERIALIZABLE")) {
+            	value = ValueUtils.serializeToString(entry.propValue);
+            }
+            else if(entry.propType.equals("BINARY")) {
+            	value = Base64.getEncoder().encodeToString((byte[])entry.propValue);
+            }
+            else {
+            	value = entry.propValue.toString();            	
+            }
+            valueBuilder.setField(IgniteConstants.PROPERTY_VALUE_COL_NAME, value);
 
             String cacheKey = entry.cacheKey;
             BinaryObject cacheValue = valueBuilder.build();
@@ -310,9 +390,32 @@ public class IgniteAdmin {
             row.put(cacheKey, cacheValue);
         }
 
-        for (Map.Entry<String,BinaryObject> entry : row.entrySet()) {
-            cache.put(entry.getKey(), entry.getValue());
-        }
+        cache.putAll(row);
     }
 
+    /**
+     * Supports create and update operations for vertices
+     */
+    public void writeDocument(List<IgnitePut> entries, String cacheName) {
+
+        Ignite ignite = connect.getIgnite();
+        IgniteCache<String, BinaryObject> cache = ignite.cache(cacheName);
+
+        Map<String,BinaryObject> row = new TreeMap<>();
+        for (IgnitePut entry : entries) {
+            BinaryObjectBuilder valueBuilder = ignite.binary().builder(cacheName);
+            
+            for (IgniteColumn column : entry.getColumns()) {
+            	if(IgniteConstants.ID_COL_NAME.equals(column.getColName())){
+            		continue;
+            	}
+            	valueBuilder.setField(column.getColName(), column.getColValue());
+            }
+            
+            BinaryObject cacheValue = valueBuilder.build();
+
+            row.put(entry.id.toString(), cacheValue);
+        }
+        cache.putAll(row);
+    }
 }

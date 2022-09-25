@@ -46,6 +46,7 @@ import org.apache.ignite.transactions.Transaction;
 import org.janusgraph.diskstorage.Entry;
 import org.janusgraph.diskstorage.StaticBuffer;
 import org.janusgraph.diskstorage.keycolumnvalue.KeyIterator;
+import org.janusgraph.diskstorage.keycolumnvalue.KeyRangeQuery;
 import org.janusgraph.diskstorage.keycolumnvalue.KeySliceQuery;
 import org.janusgraph.diskstorage.keycolumnvalue.SliceQuery;
 import org.janusgraph.diskstorage.util.StaticArrayEntry;
@@ -149,6 +150,118 @@ public class IgniteClient extends AbstractEntryBuilder {
 		}
 
 	}
+	
+
+	/*
+	 * This method retrieves a certain column slice (range key) and returns the
+	 * respective row keys (hash keys);
+	 * 
+	 * hash & range keys are encoded as hex strings, i.e. lexical ordering is
+	 * supported and will be used within this key query mechanism
+	 * 
+	 */
+	public KeyIterator getKeyRangeSlice(IgniteCache<String, BinaryObject> cache, KeyRangeQuery query,
+			Map<String, IgniteValue> items) {
+
+		Transaction tx = ignite.transactions().txStart();
+
+		try {
+
+			String cacheName = cache.getName();
+			/*
+			 * Retrieve columns (or range keys) in their hexadecimal [String] representation
+			 */
+			String rangeKeyStart = items.get(RANGE_KEY_START).getS();
+			String rangeKeyEnd = items.get(RANGE_KEY_END).getS();
+			
+			String hashKeyStart = items.get(HASH_KEY_START).getS();
+			String hashKeyEnd = items.get(HASH_KEY_END).getS();
+			
+			/*
+			 * Build the initial Apache Ignite SQL statement to specify the return fields
+			 * and the associated cache
+			 */
+			String sql = "select HASH_KEY, RANGE_KEY, BYTE_BUFFER from " + cacheName+ " where ";
+			
+			/*
+			 * Check whether a single range key is provided with the respect
+			 */
+			if (hashKeyStart.compareTo(hashKeyEnd) >= 0) {
+				/*
+				 * This is a request that does not provide a range key slice but focuses on a
+				 * single column value
+				 */
+				sql += " HASH_KEY = '" + hashKeyStart + "'";
+
+			} else {
+				sql += " HASH_KEY >= '" + hashKeyStart + "' and HASH_KEY < '" + hashKeyEnd + "'";
+
+			}
+			
+			/*
+			 * Check whether a single range key is provided with the respect
+			 */
+			if (rangeKeyStart.compareTo(rangeKeyEnd) >= 0) {
+				/*
+				 * This is a request that does not provide a range key slice but focuses on a
+				 * single column value
+				 */
+				sql += " and RANGE_KEY = '" + rangeKeyStart + "'";
+
+			} else {
+				sql += " and RANGE_KEY >= '" + rangeKeyStart + "' and RANGE_KEY < '" + rangeKeyEnd + "'";
+
+			}
+			/*
+			 * EXPERIENCE: JanusGraph offers a variety of features from ordered keys to
+			 * ordered and unordered scans; but, even for unordered scans, and, limited to a
+			 * single result, JanusGraph requires the largest row key
+			 */
+			sql += " order by HASH_KEY ASC";
+			SqlFieldsQuery sqlQuery = new SqlFieldsQuery(sql);
+
+			/*
+			 * The result contains all rows that the provided column values; note,
+			 * JanusGraph leverages the column name as its value and the associated byte
+			 * buffer is not relevant in this case
+			 */
+			List<List<?>> results = cache.query(sqlQuery).getAll();
+
+			tx.commit();
+
+			/* HASH_KEY (0), RANGE_KEY (1), BYTE_BUFFER (2) */
+
+			List<Entry> entries = results.stream().map(result -> {
+
+				String rowKey = (String) result.get(0);
+				StaticBuffer hashKey = decodeKeyFromHexString(rowKey);
+
+				ByteBuffer byteBuffer = (ByteBuffer) result.get(2);
+				StaticBuffer value = decodeValue(byteBuffer);
+
+				if (value == null)
+					return StaticArrayEntry.of(hashKey);
+
+				else
+					return StaticArrayEntry.of(hashKey, value);
+
+			}).collect(Collectors.toList());
+
+			return new IgniteKeyIterator(entries);
+
+		} catch (Exception e) {
+
+			log.error(String.format("[IgniteClient] getKeySlice failed with: %s", e.getLocalizedMessage()));
+
+			tx.rollback();
+
+			List<Entry> entries = Collections.emptyList();
+			return new IgniteKeyIterator(entries);
+
+		}
+
+	}
+
 
 	public List<Entry> getColumnRange(IgniteCache<String, BinaryObject> cache, KeySliceQuery query,
 			Map<String, IgniteValue> items) {

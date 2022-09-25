@@ -46,6 +46,8 @@ import org.janusgraph.diskstorage.keycolumnvalue.StoreTransaction;
 import org.janusgraph.diskstorage.util.RecordIterator;
 import org.janusgraph.diskstorage.util.StaticArrayEntryList;
 
+import com.google.common.collect.Maps;
+
 public class IgniteStore implements KeyColumnValueStore {
 
 	private final IgniteStoreManager igniteManager;
@@ -68,8 +70,7 @@ public class IgniteStore implements KeyColumnValueStore {
 	 *  Remove all entries from the Ignite cache; this is achieved
 	 *  by leveraging the 'clear' method of Apache Ignite
 	 */
-    public void clear() {
-    	
+    public void clear() {    	
 		if (this.cache == null) return;
 		this.cache.clear();
     		
@@ -113,8 +114,13 @@ public class IgniteStore implements KeyColumnValueStore {
    	
 	@Override
 	public Map<StaticBuffer, EntryList> getSlice(List<StaticBuffer> keys, SliceQuery query, StoreTransaction txh) {
+		 Map<StaticBuffer,EntryList> result = Maps.newHashMap();
+	     for (StaticBuffer key : keys) {
+	    	 result.put(key,getSlice(new KeySliceQuery(key,query),txh));
+	     }
+	     return result;
 
-		throw new UnsupportedOperationException("[IgniteStore] getSlice based on SliceQuery is not supported.");
+		//-throw new UnsupportedOperationException("[IgniteStore] getSlice based on SliceQuery is not supported.");
 	}
 
 	@Override
@@ -139,8 +145,23 @@ public class IgniteStore implements KeyColumnValueStore {
 	}
 	
 	@Override
-	public KeyIterator getKeys(KeyRangeQuery query, StoreTransaction txh) {
-        throw new UnsupportedOperationException("[IgniteStore] getKeys based on KeyRangeQuery is not supported.");
+	public KeyIterator getKeys(KeyRangeQuery query, StoreTransaction txh) {        
+		// add@byron
+		
+		IgniteEntryBuilder builder = new IgniteEntryBuilder();	
+
+		builder.hashKeyStart(query.getKeyStart());
+		builder.hashKeyEnd(query.getKeyEnd());	
+		
+		builder.rangeKeyStart(query.getSliceStart());
+		builder.rangeKeyEnd(query.getSliceEnd());		
+		
+		
+		Map<String, IgniteValue> items = builder.build();
+		return this.igniteClient.getKeyRangeSlice(cache, query, items);
+		
+		// end@
+		//throw new UnsupportedOperationException("[IgniteStore] getKeys based on KeyRangeQuery is not supported.");
         
 	}
 
