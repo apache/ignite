@@ -26,7 +26,7 @@ import org.apache.ignite.cache.QueryEntity;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.internal.processors.query.calcite.QueryChecker;
 import org.apache.ignite.internal.processors.query.calcite.exec.ExecutionContext;
-import org.apache.ignite.internal.processors.query.calcite.exec.exp.BoundsValues;
+import org.apache.ignite.internal.processors.query.calcite.exec.exp.RangeIterable;
 import org.apache.ignite.internal.processors.query.calcite.metadata.ColocationGroup;
 import org.apache.ignite.internal.processors.query.calcite.schema.IgniteTable;
 import org.apache.ignite.internal.util.typedef.F;
@@ -57,7 +57,7 @@ public class IndexScanlIntegrationTest extends AbstractBasicIntegrationTest {
                 ExecutionContext<Row> execCtx,
                 ColocationGroup grp,
                 Predicate<Row> filters,
-                Iterable<BoundsValues<Row>> boundsValues,
+                RangeIterable<Row> ranges,
                 Function<Row, Row> rowTransformer,
                 @Nullable ImmutableBitSet requiredColumns
             ) {
@@ -69,7 +69,7 @@ public class IndexScanlIntegrationTest extends AbstractBasicIntegrationTest {
 
                 filters = filter.and(filters);
 
-                return delegate.scan(execCtx, grp, filters, boundsValues, rowTransformer, requiredColumns);
+                return delegate.scan(execCtx, grp, filters, ranges, rowTransformer, requiredColumns);
             }
         });
 

@@ -113,7 +113,7 @@ public interface ExpressionFactory<Row> {
      * @param collation Collation.
      * @param rowType Row type.
      */
-    Iterable<BoundsValues<Row>> boundsValues(
+    RangeIterable<Row> ranges(
         List<SearchBounds> searchBounds,
         RelCollation collation,
         RelDataType rowType

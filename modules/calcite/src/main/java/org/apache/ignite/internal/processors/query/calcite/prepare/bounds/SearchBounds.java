@@ -22,6 +22,8 @@ import org.jetbrains.annotations.Nullable;
 
 /**
  * Bounds holder for search row.
+ *
+ * This class is describing bounds on per-column basis, and such choice was made to optimize serialization of a plan.
  */
 public abstract class SearchBounds {
     /** Condition required only for cost calculation, no serialization needed. */

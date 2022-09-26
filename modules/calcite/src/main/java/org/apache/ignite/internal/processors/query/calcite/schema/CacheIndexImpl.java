@@ -34,7 +34,7 @@ import org.apache.ignite.internal.cache.query.index.sorted.inline.IndexQueryCont
 import org.apache.ignite.internal.cache.query.index.sorted.inline.InlineIndex;
 import org.apache.ignite.internal.processors.query.calcite.exec.ExecutionContext;
 import org.apache.ignite.internal.processors.query.calcite.exec.IndexScan;
-import org.apache.ignite.internal.processors.query.calcite.exec.exp.BoundsValues;
+import org.apache.ignite.internal.processors.query.calcite.exec.exp.RangeIterable;
 import org.apache.ignite.internal.processors.query.calcite.metadata.ColocationGroup;
 import org.apache.ignite.internal.processors.query.calcite.prepare.bounds.SearchBounds;
 import org.apache.ignite.internal.processors.query.calcite.rel.logical.IgniteLogicalIndexScan;
@@ -104,14 +104,14 @@ public class CacheIndexImpl implements IgniteIndex {
         ExecutionContext<Row> execCtx,
         ColocationGroup group,
         Predicate<Row> filters,
-        Iterable<BoundsValues<Row>> boundsValues,
+        RangeIterable<Row> ranges,
         Function<Row, Row> rowTransformer,
         @Nullable ImmutableBitSet requiredColumns
     ) {
         UUID localNodeId = execCtx.localNodeId();
         if (group.nodeIds().contains(localNodeId) && idx != null) {
             return new IndexScan<>(execCtx, tbl.descriptor(), idx.unwrap(InlineIndex.class), collation.getKeys(),
-                group.partitions(localNodeId), filters, boundsValues, rowTransformer, requiredColumns);
+                group.partitions(localNodeId), filters, ranges, rowTransformer, requiredColumns);
         }
 
         return Collections.emptyList();

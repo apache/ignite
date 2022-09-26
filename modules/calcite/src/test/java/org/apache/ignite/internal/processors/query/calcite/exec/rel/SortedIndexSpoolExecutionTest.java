@@ -28,7 +28,8 @@ import org.apache.calcite.rel.RelCollations;
 import org.apache.calcite.rel.type.RelDataType;
 import org.apache.calcite.util.ImmutableIntList;
 import org.apache.ignite.internal.processors.query.calcite.exec.ExecutionContext;
-import org.apache.ignite.internal.processors.query.calcite.exec.exp.BoundsValues;
+import org.apache.ignite.internal.processors.query.calcite.exec.exp.RangeCondition;
+import org.apache.ignite.internal.processors.query.calcite.exec.exp.RangeIterable;
 import org.apache.ignite.internal.processors.query.calcite.type.IgniteTypeFactory;
 import org.apache.ignite.internal.processors.query.calcite.util.TypeUtils;
 import org.apache.ignite.internal.util.lang.GridTuple4;
@@ -142,7 +143,7 @@ public class SortedIndexSpoolExecutionTest extends AbstractExecutionTest {
                 RelCollations.of(ImmutableIntList.of(0)),
                 (o1, o2) -> o1[0] != null ? ((Comparable)o1[0]).compareTo(o2[0]) : 0,
                 testFilter,
-                Collections.singleton(new StaticBoundsValues(lower, upper))
+                new StaticRangeIterable(lower, upper)
             );
 
             spool.register(Arrays.asList(scan));
@@ -189,7 +190,7 @@ public class SortedIndexSpoolExecutionTest extends AbstractExecutionTest {
             collation,
             ctx.expressionFactory().comparator(collation),
             v -> true,
-            Collections.singleton(new StaticBoundsValues(lower, upper))
+            new StaticRangeIterable(lower, upper)
         );
 
         spool.register(scan);
@@ -241,7 +242,7 @@ public class SortedIndexSpoolExecutionTest extends AbstractExecutionTest {
     }
 
     /** */
-    private static class StaticBoundsValues implements BoundsValues<Object[]> {
+    private static class StaticRangeIterable implements RangeIterable<Object[]> {
         /** */
         private final Object[] lower;
 
@@ -249,29 +250,37 @@ public class SortedIndexSpoolExecutionTest extends AbstractExecutionTest {
         private final Object[] upper;
 
         /** */
-        private StaticBoundsValues(Object[] lower, Object[] upper) {
+        private StaticRangeIterable(Object[] lower, Object[] upper) {
             this.lower = lower;
             this.upper = upper;
         }
 
         /** {@inheritDoc} */
-        @Override public Object[] lower() {
-            return lower;
+        @Override public int size() {
+            return 1;
         }
 
         /** {@inheritDoc} */
-        @Override public Object[] upper() {
-            return upper;
-        }
+        @Override public Iterator<RangeCondition<Object[]>> iterator() {
+            RangeCondition<Object[]> range = new RangeCondition<Object[]>() {
+                @Override public Object[] lower() {
+                    return lower;
+                }
 
-        /** {@inheritDoc} */
-        @Override public boolean lowerInclude() {
-            return true;
-        }
+                @Override public Object[] upper() {
+                    return upper;
+                }
 
-        /** {@inheritDoc} */
-        @Override public boolean upperInclude() {
-            return true;
+                @Override public boolean lowerInclude() {
+                    return true;
+                }
+
+                @Override public boolean upperInclude() {
+                    return true;
+                }
+            };
+
+            return Collections.singleton(range).iterator();
         }
     }
 }

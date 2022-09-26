@@ -76,7 +76,6 @@ import org.apache.ignite.internal.processors.query.calcite.util.Commons;
 import org.apache.ignite.internal.processors.query.calcite.util.IgniteMethod;
 import org.apache.ignite.internal.util.GridBoundedConcurrentLinkedHashMap;
 import org.apache.ignite.internal.util.typedef.F;
-import org.jetbrains.annotations.NotNull;
 
 /**
  * Implements rex expression into a function object. Uses JaninoRexCompiler under the hood.
@@ -280,17 +279,17 @@ public class ExpressionFactoryImpl<Row> implements ExpressionFactory<Row> {
     }
 
     /** {@inheritDoc} */
-    @Override public Iterable<BoundsValues<Row>> boundsValues(
+    @Override public RangeIterable<Row> ranges(
         List<SearchBounds> searchBounds,
         RelCollation collation,
         RelDataType rowType
     ) {
         RowFactory<Row> rowFactory = ctx.rowHandler().factory(typeFactory, rowType);
 
-        List<BoundsValues<Row>> boundsValues = new ArrayList<>();
+        List<RangeCondition<Row>> ranges = new ArrayList<>();
 
         expandBounds(
-            boundsValues,
+            ranges,
             searchBounds,
             rowType,
             rowFactory,
@@ -302,28 +301,13 @@ public class ExpressionFactoryImpl<Row> implements ExpressionFactory<Row> {
             true
         );
 
-        Comparator<Row> comparator = comparator(collation);
-
-        return new Iterable<BoundsValues<Row>>() {
-            @NotNull @Override public Iterator<BoundsValues<Row>> iterator() {
-                boundsValues.forEach(b -> ((BoundsValuesImpl)b).clearCache());
-
-                if (boundsValues.size() == 1)
-                    return boundsValues.iterator();
-
-                // Sort bound values using collation comparator to produce sorted output. There should be no ranges
-                // intersection between bounds.
-                boundsValues.sort((o1, o2) -> comparator.compare(o1.lower(), o2.lower()));
-
-                return boundsValues.iterator();
-            }
-        };
+        return new RangeIterableImpl(ranges, comparator(collation));
     }
 
     /**
-     * Expand search bounds to list of tuples (lower row/upper row).
+     * Expand column-oriented {@link SearchBounds} to a row-oriented list of ranges ({@link RangeCondition}).
      *
-     * @param boundsValues Bounds values.
+     * @param ranges List of ranges.
      * @param searchBounds Search bounds.
      * @param rowType Row type.
      * @param rowFactory Row factory.
@@ -335,7 +319,7 @@ public class ExpressionFactoryImpl<Row> implements ExpressionFactory<Row> {
      * @param upperInclude Include current upper row.
      */
     private void expandBounds(
-        List<BoundsValues<Row>> boundsValues,
+        List<RangeCondition<Row>> ranges,
         List<SearchBounds> searchBounds,
         RelDataType rowType,
         RowFactory<Row> rowFactory,
@@ -348,7 +332,7 @@ public class ExpressionFactoryImpl<Row> implements ExpressionFactory<Row> {
     ) {
         if ((collationKeyIdx >= collationKeys.size()) || (!lowerInclude && !upperInclude) ||
             searchBounds.get(collationKeys.get(collationKeyIdx)) == null) {
-            boundsValues.add(new BoundsValuesImpl(
+            ranges.add(new RangeConditionImpl(
                 scalar(curLower, rowType),
                 scalar(curUpper, rowType),
                 lowerInclude,
@@ -392,7 +376,7 @@ public class ExpressionFactoryImpl<Row> implements ExpressionFactory<Row> {
                 curUpper.set(fieldIdx, fieldUpperBound);
 
             expandBounds(
-                boundsValues,
+                ranges,
                 searchBounds,
                 rowType,
                 rowFactory,
@@ -692,7 +676,7 @@ public class ExpressionFactoryImpl<Row> implements ExpressionFactory<Row> {
     }
 
     /** */
-    private class BoundsValuesImpl implements BoundsValues<Row> {
+    private class RangeConditionImpl implements RangeCondition<Row> {
         /** */
         private final SingleScalar lowerBound;
 
@@ -715,7 +699,7 @@ public class ExpressionFactoryImpl<Row> implements ExpressionFactory<Row> {
         private final RowFactory<Row> factory;
 
         /** */
-        private BoundsValuesImpl(
+        private RangeConditionImpl(
             SingleScalar lowerBound,
             SingleScalar upperBound,
             boolean lowerInclude,
@@ -760,6 +744,48 @@ public class ExpressionFactoryImpl<Row> implements ExpressionFactory<Row> {
         /** Clear cached rows. */
         public void clearCache() {
             lowerRow = upperRow = null;
+        }
+    }
+
+    /** */
+    private class RangeIterableImpl implements RangeIterable<Row> {
+        /** */
+        private final List<RangeCondition<Row>> ranges;
+
+        /** */
+        private final Comparator<Row> comparator;
+
+        /** */
+        private boolean sorted;
+
+        /** */
+        public RangeIterableImpl(List<RangeCondition<Row>> ranges, Comparator<Row> comparator) {
+            this.ranges = ranges;
+            this.comparator = comparator;
+        }
+
+        /** {@inheritDoc} */
+        @Override public int size() {
+            return ranges.size();
+        }
+
+        /** {@inheritDoc} */
+        @Override public Iterator<RangeCondition<Row>> iterator() {
+            ranges.forEach(b -> ((RangeConditionImpl)b).clearCache());
+
+            if (ranges.size() == 1)
+                return ranges.iterator();
+
+            // Sort ranges using collation comparator to produce sorted output. There should be no ranges
+            // intersection.
+            // Do not sort again if ranges already were sorted before, different values of correlated variables
+            // should not affect ordering.
+            if (!sorted) {
+                ranges.sort((o1, o2) -> comparator.compare(o1.lower(), o2.lower()));
+                sorted = true;
+            }
+
+            return ranges.iterator();
         }
     }
 

@@ -23,10 +23,12 @@ import java.util.function.Predicate;
 import org.apache.calcite.rel.type.RelDataType;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.internal.cache.query.index.sorted.inline.IndexQueryContext;
-import org.apache.ignite.internal.processors.query.calcite.exec.exp.BoundsValues;
+import org.apache.ignite.internal.processors.query.calcite.exec.exp.RangeCondition;
+import org.apache.ignite.internal.processors.query.calcite.exec.exp.RangeIterable;
 import org.apache.ignite.internal.util.lang.GridCursor;
 import org.apache.ignite.internal.util.lang.GridIteratorAdapter;
 import org.apache.ignite.internal.util.typedef.F;
+import org.apache.ignite.lang.IgniteClosure;
 import org.jetbrains.annotations.NotNull;
 
 /**
@@ -40,7 +42,7 @@ public abstract class AbstractIndexScan<Row, IdxRow> implements Iterable<Row>, A
     private final Predicate<Row> filters;
 
     /** Index scan bounds. */
-    private final Iterable<BoundsValues<Row>> boundsValues;
+    private final RangeIterable<Row> ranges;
 
     /** */
     private final Function<Row, Row> rowTransformer;
@@ -55,36 +57,41 @@ public abstract class AbstractIndexScan<Row, IdxRow> implements Iterable<Row>, A
      * @param ectx Execution context.
      * @param idx Physical index.
      * @param filters Additional filters.
-     * @param boundsValues Index scan bounds.
+     * @param ranges Index scan bounds.
      */
     protected AbstractIndexScan(
         ExecutionContext<Row> ectx,
         RelDataType rowType,
         TreeIndex<IdxRow> idx,
         Predicate<Row> filters,
-        Iterable<BoundsValues<Row>> boundsValues,
+        RangeIterable<Row> ranges,
         Function<Row, Row> rowTransformer
     ) {
         this.ectx = ectx;
         this.rowType = rowType;
         this.idx = idx;
         this.filters = filters;
-        this.boundsValues = boundsValues;
+        this.ranges = ranges;
         this.rowTransformer = rowTransformer;
     }
 
     /** {@inheritDoc} */
     @Override public synchronized Iterator<Row> iterator() {
-        if (boundsValues == null)
+        if (ranges == null)
             return new IteratorImpl(idx.find(null, null, true, true, indexQueryContext()));
 
-        return F.flat(F.iterator(boundsValues, bounds -> {
-            IdxRow lower = bounds.lower() == null ? null : row2indexRow(bounds.lower());
-            IdxRow upper = bounds.upper() == null ? null : row2indexRow(bounds.upper());
+        IgniteClosure<RangeCondition<Row>, IteratorImpl> clo = range -> {
+            IdxRow lower = range.lower() == null ? null : row2indexRow(range.lower());
+            IdxRow upper = range.upper() == null ? null : row2indexRow(range.upper());
 
             return new IteratorImpl(
-                idx.find(lower, upper, bounds.lowerInclude(), bounds.upperInclude(), indexQueryContext()));
-        }, true));
+                idx.find(lower, upper, range.lowerInclude(), range.upperInclude(), indexQueryContext()));
+        };
+
+        if (ranges.size() == 1)
+            return clo.apply(ranges.iterator().next());
+
+        return F.flat(F.iterator(ranges, clo, true));
     }
 
     /** */

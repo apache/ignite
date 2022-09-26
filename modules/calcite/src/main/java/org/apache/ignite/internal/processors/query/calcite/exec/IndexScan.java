@@ -45,7 +45,7 @@ import org.apache.ignite.internal.processors.cache.distributed.dht.topology.Grid
 import org.apache.ignite.internal.processors.cache.distributed.dht.topology.GridDhtPartitionTopology;
 import org.apache.ignite.internal.processors.cache.mvcc.MvccSnapshot;
 import org.apache.ignite.internal.processors.query.calcite.exec.RowHandler.RowFactory;
-import org.apache.ignite.internal.processors.query.calcite.exec.exp.BoundsValues;
+import org.apache.ignite.internal.processors.query.calcite.exec.exp.RangeIterable;
 import org.apache.ignite.internal.processors.query.calcite.schema.CacheTableDescriptor;
 import org.apache.ignite.internal.processors.query.calcite.type.IgniteTypeFactory;
 import org.apache.ignite.internal.processors.query.calcite.util.TypeUtils;
@@ -100,7 +100,7 @@ public class IndexScan<Row> extends AbstractIndexScan<Row, IndexRow> {
      * @param idxFieldMapping Mapping from index keys to row fields.
      * @param idx Phisycal index.
      * @param filters Additional filters.
-     * @param boundsValues Index scan bounds.
+     * @param ranges Index scan bounds.
      */
     public IndexScan(
         ExecutionContext<Row> ectx,
@@ -109,7 +109,7 @@ public class IndexScan<Row> extends AbstractIndexScan<Row, IndexRow> {
         ImmutableIntList idxFieldMapping,
         int[] parts,
         Predicate<Row> filters,
-        Iterable<BoundsValues<Row>> boundsValues,
+        RangeIterable<Row> ranges,
         Function<Row, Row> rowTransformer,
         @Nullable ImmutableBitSet requiredColumns
     ) {
@@ -118,7 +118,7 @@ public class IndexScan<Row> extends AbstractIndexScan<Row, IndexRow> {
             desc.rowType(ectx.getTypeFactory(), requiredColumns),
             new TreeIndexWrapper(idx),
             filters,
-            boundsValues,
+            ranges,
             rowTransformer
         );
 
