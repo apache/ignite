@@ -442,7 +442,8 @@ public class CachePartitionDefragmentationManager {
                         try {
                             for (PageStore store : filePageStoreMgr.getStores(grpId))
                                 store.stop(false);
-                        } catch (Exception e) {
+                        }
+                        catch (Exception e) {
                             throw new IgniteException("Failed to stop page store for group " + grpId, e);
                         }
 
