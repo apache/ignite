@@ -6,7 +6,7 @@
  * (the "License"); you may not use this file except in compliance with
  * the License.  You may obtain a copy of the License at
  *
- * http://www.apache.org/licenses/LICENSE-2.0
+ *     http://www.apache.org/licenses/LICENSE-2.0
  *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
@@ -14,25 +14,13 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.apache.ignite.internal.processors.query.calcite.externalize;
 
-import java.util.List;
-import org.apache.calcite.rel.RelCollation;
-import org.apache.calcite.rel.RelInput;
-import org.apache.ignite.internal.processors.query.calcite.prepare.bounds.SearchBounds;
+package org.apache.ignite.internal.processors.query.calcite.exec.exp;
 
-/** */
-public interface RelInputEx extends RelInput {
-    /**
-     * @param tag Tag.
-     * @return A collation value.
-     */
-    RelCollation getCollation(String tag);
-
-    /**
-     *
-     * @param tag Tag.
-     * @return Search bounds.
-     */
-    List<SearchBounds> getSearchBounds(String tag);
+/**
+ * Iterable over range conditions.
+ */
+public interface RangeIterable<Row> extends Iterable<RangeCondition<Row>> {
+    /** Count of ranges in iterable. */
+    public int size();
 }
