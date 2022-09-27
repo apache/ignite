@@ -187,8 +187,8 @@ public enum IndexKeyType {
         if (code == UNKNOWN.code)
             return UNKNOWN;
 
-        A.ensure(code >= 0 && code < keyTypesByCode.length,
-            "code >= 0 && code < keyTypesByCode.length [code=" + code + ']');
+        if (code < 0 || code >= keyTypesByCode.length)
+            throw new IllegalArgumentException("Argument is invalid: " + code);
 
         return keyTypesByCode[code];
     }
