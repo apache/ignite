@@ -33,24 +33,26 @@ import static org.apache.ignite.internal.cache.query.index.sorted.inline.types.N
  * 1. NULL is the least value.
  * 2. Comparison of different types is not supported.
  */
-public class IndexRowCompartorImpl implements IndexRowComparator {
+public class IndexRowComparatorImpl implements IndexRowComparator {
     /** Key type settings for this index. */
     protected final IndexKeyTypeSettings keyTypeSettings;
 
     /** */
-    public IndexRowCompartorImpl(IndexKeyTypeSettings settings) {
+    public IndexRowComparatorImpl(IndexKeyTypeSettings settings) {
         keyTypeSettings = settings;
     }
 
     /** {@inheritDoc} */
     @Override public int compareKey(long pageAddr, int off, int maxSize, IndexKey key, InlineIndexKeyType type) {
-        if (type.type() == IndexKeyType.UNKNOWN)
+        IndexKeyType inlineKeyType = type.type();
+
+        if (inlineKeyType == IndexKeyType.UNKNOWN)
             return CANT_BE_COMPARE;
 
         // Value can be set up by user in query with different data type. Don't compare uncomparable types in this comparator.
-        if (isInlineComparable(type, key)) {
+        if (inlineKeyType == key.type() || isInlineComparable(type, key)) {
             // If inlining of POJO is not supported then don't compare it here.
-            if (type.type() != IndexKeyType.JAVA_OBJECT || keyTypeSettings.inlineObjSupported())
+            if (inlineKeyType != IndexKeyType.JAVA_OBJECT || keyTypeSettings.inlineObjSupported())
                 return type.compare(pageAddr, off, maxSize, key);
             else
                 return CANT_BE_COMPARE;
@@ -88,7 +90,7 @@ public class IndexRowCompartorImpl implements IndexRowComparator {
             else if (rkey == NullIndexKey.INSTANCE)
                 return 1;
 
-            if (lkey.isComparableTo(rkey))
+            if (lkey.type() == rkey.type() || lkey.isComparableTo(rkey))
                 return lkey.compare(rkey);
             else if (rkey.isComparableTo(lkey))
                 return -rkey.compare(lkey);
