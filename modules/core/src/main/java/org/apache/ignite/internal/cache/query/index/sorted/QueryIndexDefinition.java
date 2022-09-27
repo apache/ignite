@@ -89,7 +89,7 @@ public class QueryIndexDefinition implements SortedIndexDefinition {
         this.isAffinity = isAffinity;
         this.keyDefs = keyDefs;
         this.keyTypeSettings = keyTypeSettings;
-        this.rowComparator = new IndexRowCompartorImpl(keyTypeSettings);
+        this.rowComparator = new IndexRowComparatorImpl(keyTypeSettings);
     }
 
     /** {@inheritDoc} */

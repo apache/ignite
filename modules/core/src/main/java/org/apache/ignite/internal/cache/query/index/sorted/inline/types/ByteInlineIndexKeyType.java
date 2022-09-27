@@ -19,6 +19,7 @@ package org.apache.ignite.internal.cache.query.index.sorted.inline.types;
 
 import org.apache.ignite.internal.cache.query.index.sorted.IndexKeyType;
 import org.apache.ignite.internal.cache.query.index.sorted.keys.ByteIndexKey;
+import org.apache.ignite.internal.cache.query.index.sorted.keys.IndexKey;
 import org.apache.ignite.internal.cache.query.index.sorted.keys.NumericIndexKey;
 import org.apache.ignite.internal.pagemem.PageUtils;
 
@@ -32,10 +33,10 @@ public class ByteInlineIndexKeyType extends NumericInlineIndexKeyType<ByteIndexK
     }
 
     /** {@inheritDoc} */
-    @Override public int compareNumeric(NumericIndexKey key, long pageAddr, int off) {
-        byte byte1 = PageUtils.getByte(pageAddr, off + 1);
+    @Override public int compare0(long pageAddr, int off, IndexKey key) {
+        byte val = PageUtils.getByte(pageAddr, off + 1);
 
-        return key.compareTo(byte1);
+        return -Integer.signum(((NumericIndexKey)key).compareTo(val));
     }
 
     /** {@inheritDoc} */
