@@ -82,22 +82,11 @@ public class ShortIndexKey extends NumericIndexKey {
 
     /** {@inheritDoc} */
     @Override public int compare(IndexKey o) {
-        return o.type() == type() ? Integer.compare(key, ((ShortIndexKey)o).key) : -((NumericIndexKey)o).compareTo(key);
+        return -((NumericIndexKey)o).compareTo(key);
     }
 
     /** {@inheritDoc} */
     @Override public String toString() {
         return String.valueOf(key);
     }
-
-//    /** {@inheritDoc} */
-//    @Override public int hashCode() {
-//        return key;
-//    }
-//
-//    /** {@inheritDoc} */
-//    @Override public boolean equals(Object o) {
-//        return o instanceof ShortIndexKey && key == ((ShortIndexKey)o).key;
-//    }
-
 }
