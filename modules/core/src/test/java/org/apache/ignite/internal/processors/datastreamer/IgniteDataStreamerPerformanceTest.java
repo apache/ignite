@@ -129,6 +129,7 @@ public class IgniteDataStreamerPerformanceTest extends GridCommonAbstractTest {
             final IgniteDataStreamer<Integer, String> ldr = ignite.dataStreamer(DEFAULT_CACHE_NAME);
 
             ldr.perNodeBufferSize(8192);
+            ldr.allowOverwrite(true);
             ldr.receiver(DataStreamerCacheUpdaters.<Integer, String>batchedSorted());
             ldr.autoFlushFrequency(0);
 

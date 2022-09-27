@@ -319,7 +319,7 @@ public class DataStreamProcessor<K, V> extends GridProcessorAdapter {
         final DataStreamerRequest req,
         final StreamReceiver<K, V> updater,
         final Object topic) {
-        final boolean allowOverwrite = !(updater instanceof DataStreamerCacheUpdaters.IsolatedUpdater);
+        final boolean allowOverwrite = !(updater instanceof DataStreamerImpl.IsolatedUpdater);
 
         try {
             GridCacheAdapter cache = ctx.cache().internalCache(req.cacheName());

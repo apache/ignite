@@ -18,23 +18,28 @@
 
 == Overview
 
-Ignite provides a Data Streaming API that can be used to inject large amounts of continuous streams of data into an Ignite cluster.
-The Data Streaming API is designed to be scalable and fault-tolerant, and provides _at-least-once_ delivery semantics for the data streamed into Ignite, meaning each entry is processed at least once.
-
-Data is streamed into a cache via a <<Data Streamers, data streamer>> associated with the cache. Data streamers automatically buffer the data and group it into batches for better performance and send it in parallel to multiple nodes.
-
-The Data Streaming API provides the following features:
-
-* The data that is added to a data streamer is automatically partitioned and distributed between the nodes.
-* You can process the data concurrently in a colocated fashion.
-* Clients can perform concurrent SQL queries on the data as it is being streamed in.
+Ignite provides a Data Streaming API that can be used to inject large amounts of data into an Ignite cluster. The main goal of the streaming is efficient, quick data loading. The data that is added to the streamer is automatically organized and distributed between the nodes in partition-aware and parallel manner.
 
 image:images/data_streaming.png[Data Streaming]
+
+The Data Streaming API is designed to be scalable and fault-tolerant, and provides _at-least-once_ delivery semantics for the data streamed into Ignite, meaning each entry is processed at least once.
+
+Good use of streaming is data preloading.
+
+== Limitations
+Ignite data streamer doesn't guarantee:
+
+- Data order. Data records may be put in cache with dirrefent order than in streamer.
+- Immediate data loading. Data can be kept for a while before sending.
+- In general, data consistency until finished.
+- Working with external storages.
+
+See <<receivers>>
 
 == Data Streamers
 A data streamer is associated with a specific cache and provides an interface for streaming data into the cache.
 
-In a typical scenario, you obtain a data streamer and use one of its methods to stream data into the cache, and Ignite takes care of data partitioning and colocation by batching data entries according to partitioning rules to avoid unnecessary data movement.
+In a typical scenario, you obtain a data streamer and use one of its methods to stream data into the cache, and Ignite takes care of the rest.
 
 You can obtain the data streamer for a specific cache as follows:
 [tabs]
@@ -57,9 +62,19 @@ include::code-snippets/dotnet/DataStreaming.cs[tag=dataStreamer1,indent=0]
 tab:C++[unsupported]
 --
 
-== Overwriting Existing Keys
+== Stream receivers. [[receivers]]
 
-By default, data streamers do not overwrite existing data and skip entries that are already in the cache. You can change that behavior by setting the `allowOverwrite` property of the data streamer to `true`.
+Ignite DataStreamer is an orchestrator. It doesn't write data itself. link:{javadoc_base_url}/org/apache/ignite/stream/StreameReceiver.html[StreamerReceiver] does.
+
+The default receiver is designed for fastest data load and fewer network requests. With this receiver, streamer focuses
+on parallel transfer of backup and primary records. As result, primary records might be accepted and written after the
+backups and won't be visible in your requests.
+
+You can set your own receiver. See
+
+Default doesn't overwrite existing keys.
+
+You can change that behavior by setting the `allowOverwrite` property of the data streamer to `true`.
 
 [tabs]
 --
@@ -112,7 +127,7 @@ The class definitions of the stream receivers to be executed on remote nodes mus
 * Enable link:code-deployment/peer-class-loading[peer class loading].
 ====
 
-=== Stream Transformer
+=== Stream Transformer [transfomer]
 A stream transformer is a convenient implementation of a stream receiver, that updates the data in the stream.
 Stream transformers take advantage of the colocation feature and update the data on the node where it is going to be stored.
 
@@ -135,7 +150,7 @@ include::code-snippets/dotnet/DataStreaming.cs[tag=streamTransformer,indent=0]
 tab:C++[unsupported]
 --
 
-=== Stream Visitor
+=== Stream Visitor [visitor]
 
 A stream visitor is another implementation of a stream receiver, which visits every key-value pair in the stream. The visitor does not update the cache. If a pair needs to be stored in the cache, one of the `put(...)` methods must be called explicitly.
 
