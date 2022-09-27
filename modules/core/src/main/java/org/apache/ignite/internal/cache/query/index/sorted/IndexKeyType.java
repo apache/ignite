@@ -32,7 +32,6 @@ import java.util.Collections;
 import java.util.Comparator;
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.internal.processors.query.QueryUtils;
-import org.apache.ignite.internal.util.typedef.internal.A;
 import org.apache.ignite.internal.util.typedef.internal.U;
 
 /**
