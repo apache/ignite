@@ -23,6 +23,7 @@
 
 #include <ignite/thin/cache/query/query_sql_fields.h>
 #include <ignite/thin/cache/query/query_scan.h>
+#include <ignite/thin/cache/event/java_cache_entry_event_filter.h>
 
 #include <ignite/impl/thin/cache/continuous/continuous_query_client_holder.h>
 
@@ -315,10 +316,12 @@ namespace ignite
                      * Starts the continuous query execution
                      *
                      * @param continuousQuery Continuous query.
+                     * @param filter Remote Java filter.
                      * @return Query handle. Once all instances are destroyed query execution stopped.
                      */
                     query::continuous::SP_ContinuousQueryHandleClientImpl QueryContinuous(
-                            const query::continuous::SP_ContinuousQueryClientHolderBase& continuousQuery);
+                            const query::continuous::SP_ContinuousQueryClientHolderBase& continuousQuery,
+                            const ignite::thin::cache::event::JavaCacheEntryEventFilter& filter);
 
                 private:
                     /**

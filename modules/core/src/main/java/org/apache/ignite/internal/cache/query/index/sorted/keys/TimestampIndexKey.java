@@ -107,15 +107,4 @@ public class TimestampIndexKey extends DateTimeIndexKey {
     @Override public String toString() {
         return dateVal + " " + nanos;
     }
-//
-//    /** {@inheritDoc} */
-//    @Override public int hashCode() {
-//        return (int)(dateVal ^ dateVal >>> 32 ^ nanos ^ nanos >>> 32);
-//    }
-//
-//    /** {@inheritDoc} */
-//    @Override public boolean equals(Object o) {
-//        return o instanceof TimestampIndexKey && dateVal == ((TimestampIndexKey)o).dateVal && nanos == ((TimestampIndexKey)o).nanos;
-//    }
-
 }
