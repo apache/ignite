@@ -95,6 +95,9 @@ public class DataStreamerRequest implements Message {
     /** */
     private int partId;
 
+    /** Last request before closing streaming. */
+    private Boolean closer;
+
     /**
      * {@code Externalizable} support.
      */
@@ -268,6 +271,13 @@ public class DataStreamerRequest implements Message {
      */
     public int partition() {
         return partId;
+    }
+
+    /**
+     * @return {@code True} if this request is final for this streaming.
+     */
+    public boolean closer() {
+        return closer != null && closer;
     }
 
     /** {@inheritDoc} */
