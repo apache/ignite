@@ -42,7 +42,7 @@ public class IncrementalSnapshotTest extends AbstractSnapshotSelfTest {
 
     /** */
     @Test
-    public void test() throws Exception {
+    public void testSimplest() throws Exception {
         IgniteEx ign = startGridsWithCache(1, CACHE_KEYS_RANGE, key -> new Account(key, key),
             new CacheConfiguration<>(DEFAULT_CACHE_NAME));
 

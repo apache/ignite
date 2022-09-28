@@ -67,6 +67,9 @@ public class SnapshotOperationRequest implements Serializable {
     /** If {@code true} then incremental snapshot requested. */
     private final boolean incremental;
 
+    /** Index of incremental snapshot. */
+    private final int incIdx;
+
     /**
      * @param reqId Request ID.
      * @param opNodeId Operational node ID.
@@ -74,6 +77,8 @@ public class SnapshotOperationRequest implements Serializable {
      * @param snpPath Snapshot directory path.
      * @param grps List of cache group names.
      * @param nodes Baseline node IDs that must be alive to complete the operation.
+     * @param incremental {@code True} if incremental snapshot requested.
+     * @param incIdx Incremental snapshot index.
      */
     public SnapshotOperationRequest(
         UUID reqId,
@@ -82,7 +87,8 @@ public class SnapshotOperationRequest implements Serializable {
         String snpPath,
         @Nullable Collection<String> grps,
         Set<UUID> nodes,
-        boolean incremental
+        boolean incremental,
+        int incIdx
     ) {
         this.reqId = reqId;
         this.opNodeId = opNodeId;
@@ -91,6 +97,7 @@ public class SnapshotOperationRequest implements Serializable {
         this.nodes = nodes;
         this.snpPath = snpPath;
         this.incremental = incremental;
+        this.incIdx = incIdx;
         startTime = U.currentTimeMillis();
     }
 
@@ -150,9 +157,14 @@ public class SnapshotOperationRequest implements Serializable {
         this.err = err;
     }
 
-    /** */
+    /** @return {@code True} if incremental snapshot requested. */
     public boolean incremental() {
         return incremental;
+    }
+
+    /** @return Incremental index. */
+    public int incrementIdx() {
+        return incIdx;
     }
 
     /** @return Start time. */

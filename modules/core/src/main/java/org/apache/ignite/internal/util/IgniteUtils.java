@@ -3365,6 +3365,28 @@ public abstract class IgniteUtils {
     }
 
     /**
+     * Generates file name from index.
+     *
+     * @param idx Index.
+     * @param len Length of the name.
+     * @param ext Optional extension
+     * @return File name.
+     */
+    public static String fileName(long idx, int len, @Nullable String ext) {
+        SB b = new SB();
+
+        String segmentStr = Long.toString(idx);
+
+        for (int i = segmentStr.length(); i < len; i++)
+            b.a('0');
+
+        if (ext != null)
+            b.a(segmentStr).a(ext);
+
+        return b.toString();
+    }
+
+    /**
      * Verifier always returns successful result for any host.
      */
     private static class DeploymentHostnameVerifier implements HostnameVerifier {

@@ -34,7 +34,7 @@ public enum SnapshotCreateCommandOption implements CommandArg {
 
     /** Incremental snapshot flag. */
     INCREMENTAL("--incremental", null, "Create an incremental snapshot for previously created full snapshot. " +
-        "Base snapshot must be accessible --dest or snapshot_name.");
+        "Full snapshot must be accessible via --dest or snapshot_name.");
 
     /** Name. */
     private final String name;

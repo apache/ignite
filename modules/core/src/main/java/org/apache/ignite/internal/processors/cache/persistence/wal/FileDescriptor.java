@@ -24,7 +24,7 @@ import org.apache.ignite.internal.processors.cache.persistence.file.FileIOFactor
 import org.apache.ignite.internal.processors.cache.persistence.file.FilePageStoreManager;
 import org.apache.ignite.internal.processors.cache.persistence.file.UnzipFileIO;
 import org.apache.ignite.internal.processors.cache.persistence.wal.io.SegmentIO;
-import org.apache.ignite.internal.util.typedef.internal.SB;
+import org.apache.ignite.internal.util.IgniteUtils;
 import org.jetbrains.annotations.Nullable;
 
 import static java.nio.file.StandardOpenOption.READ;
@@ -77,16 +77,7 @@ public class FileDescriptor implements Comparable<FileDescriptor>, AbstractWalRe
      * @return Segment file name.
      */
     public static String fileName(long idx) {
-        SB b = new SB();
-
-        String segmentStr = Long.toString(idx);
-
-        for (int i = segmentStr.length(); i < WAL_SEGMENT_FILE_NAME_LENGTH; i++)
-            b.a('0');
-
-        b.a(segmentStr).a(WAL_SEGMENT_FILE_EXT);
-
-        return b.toString();
+        return IgniteUtils.fileName(idx, WAL_SEGMENT_FILE_NAME_LENGTH, WAL_SEGMENT_FILE_EXT);
     }
 
     /** {@inheritDoc} */

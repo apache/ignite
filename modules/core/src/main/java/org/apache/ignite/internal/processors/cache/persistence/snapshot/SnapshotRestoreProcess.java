@@ -338,7 +338,8 @@ public class SnapshotRestoreProcess {
                 snpPath,
                 cacheGrpNames,
                 new HashSet<>(bltNodes),
-                false
+                false,
+                -1
             );
 
             prepareRestoreProc.start(req.requestId(), req);

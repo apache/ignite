@@ -66,6 +66,7 @@ import java.util.function.BooleanSupplier;
 import java.util.function.Consumer;
 import java.util.function.Function;
 import java.util.function.Predicate;
+import java.util.regex.Pattern;
 import java.util.stream.Collectors;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteException;
@@ -307,6 +308,9 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
 
     /** Total snapshot files count which receiver should expect to receive. */
     private static final String SNP_PARTITIONS_CNT = "partsCnt";
+
+    /** Pattern for incremental snapshot directory names. */
+    public static final Pattern INC_SNP_NAME_PATTERN = Pattern.compile("\\d{4}");
 
     /**
      * Local buffer to perform copy-on-write operations with pages for {@code SnapshotFutureTask.PageStoreSerialWriter}s.
@@ -773,6 +777,73 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
                 "on the local node [missed=" + leftGrps + ", nodeId=" + cctx.localNodeId() + ']'));
         }
 
+        if (req.incremental())
+            return initLocalIncrementalSnapshot(req);
+        else
+            return initLocalFullSnapshot(req, grpIds, withMetaStorage);
+    }
+
+    /**
+     * @param req
+     * @return
+     */
+    private IgniteInternalFuture<SnapshotOperationResponse> initLocalIncrementalSnapshot(SnapshotOperationRequest req) {
+        IgniteInternalFuture<SnapshotOperationResponse> res = registerTask(req.snapshotName(), new IncrementalSnapshotFutureTask(
+            cctx,
+            req.operationalNodeId(),
+            req.requestId(),
+            req.snapshotName(),
+            tmpWorkDir,
+            ioFactory,
+            req.incrementIdx()
+        )).chain(fut -> {
+            System.out.println("IgniteSnapshotManager.initLocalIncrementalSnapshot");
+
+            //TODO: execute handlers here.
+
+            return new SnapshotOperationResponse();
+        });
+
+        if (res.isDone())
+            return res;
+
+        if (log.isDebugEnabled()) {
+            log.debug("Incremental snapshot operation submited for execution" +
+                "[snpName=" + req.snapshotName() + ", incIdx=" + req.incrementIdx());
+        }
+
+        cctx.kernalContext().pools().getSystemExecutorService().submit(() -> {
+            SnapshotOperationRequest snpReq = clusterSnpReq;
+
+            AbstractSnapshotFutureTask<?> task = locSnpTasks.get(snpReq.snapshotName());
+
+            if (task == null)
+                return;
+
+            if (log.isDebugEnabled()) {
+                log.debug("Incremental snapshot operation started" +
+                    "[snpName=" + req.snapshotName() + ", incIdx=" + req.incrementIdx());
+            }
+
+            if (task.start()) {
+
+            }
+        });
+
+        return res;
+    }
+
+    /**
+     * @param req Request
+     * @param grpIds Groups.
+     * @param withMetaStorage Flag to include metastorage.
+     * @return Create snapshot future.
+     */
+    private IgniteInternalFuture<SnapshotOperationResponse> initLocalFullSnapshot(
+        SnapshotOperationRequest req,
+        List<Integer> grpIds,
+        boolean withMetaStorage
+    ) {
         Map<Integer, Set<Integer>> parts = new HashMap<>();
 
         // Prepare collection of pairs group and appropriate cache partition to be snapshot.
@@ -1121,6 +1192,24 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
                 .map(File::getName)
                 .collect(Collectors.toList());
         }
+    }
+
+    /**
+     * @param snpName Full snapshot name.
+     * @return List of
+     */
+    private int maxLocalIncrementSnapshot(String snpName, @Nullable String snpPath) throws IgniteCheckedException {
+        if (cctx.kernalContext().clientNode())
+            throw new UnsupportedOperationException("Client and daemon nodes can not perform this operation.");
+
+        assert locSnpDir != null;
+
+        return Arrays.stream(resolveSnapshotDir(snpName, snpPath).listFiles(File::isDirectory))
+            .filter(dir -> INC_SNP_NAME_PATTERN.matcher(dir.getName()).matches())
+            .map(File::getName)
+            .mapToInt(Integer::parseInt)
+            .max()
+            .orElse(0);
     }
 
     /** {@inheritDoc} */
@@ -1559,6 +1648,7 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
             }
 
             ClusterSnapshotFuture snpFut0;
+            int incIdx = -1;
 
             synchronized (snpOpMux) {
                 if (clusterSnpFut != null && !clusterSnpFut.isDone()) {
@@ -1573,15 +1663,17 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
                 boolean snpExists = localSnapshotNames().contains(name);
 
                 if (!incremental && snpExists) {
-                    throw new IgniteException(
-                        "Create snapshot request has been rejected. Snapshot with given name already exists on local node."
-                    );
+                    throw new IgniteException("Create snapshot request has been rejected. " +
+                        "Snapshot with given name already exists on local node.");
                 }
 
-                if (incremental && !snpExists) {
-                    throw new IgniteException(
-                        "Create snapshot request has been rejected. Base snapshot with given name doesn't exist on local node."
-                    );
+                if (incremental) {
+                    if (!snpExists) {
+                        throw new IgniteException("Create snapshot request has been rejected. " +
+                                "Base snapshot with given name doesn't exist on local node.");
+                    }
+
+                    incIdx = maxLocalIncrementSnapshot(name, snpPath) + 1;
                 }
 
                 if (isRestoring()) {
@@ -1615,10 +1707,21 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
             Set<UUID> bltNodeIds =
                 new HashSet<>(F.viewReadOnly(srvNodes, F.node2id(), (node) -> CU.baselineNode(node, clusterState)));
 
-            startSnpProc.start(snpFut0.rqId,
-                new SnapshotOperationRequest(snpFut0.rqId, cctx.localNodeId(), name, snpPath, grps, bltNodeIds, incremental));
+            startSnpProc.start(snpFut0.rqId, new SnapshotOperationRequest(
+                snpFut0.rqId,
+                cctx.localNodeId(),
+                name,
+                snpPath,
+                grps,
+                bltNodeIds,
+                incremental,
+                incIdx
+            ));
 
-            String msg = "Cluster-wide snapshot operation started [snpName=" + name + ", grps=" + grps + ']';
+            String msg =
+                "Cluster-wide snapshot operation started [snpName=" + name + ", grps=" + grps +
+                    (incremental ? "" : (", incremental=true, index=" + 0)) +
+                ']';
 
             recordSnapshotEvent(name, msg, EVT_CLUSTER_SNAPSHOT_STARTED);
 
