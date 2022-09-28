@@ -138,7 +138,8 @@ public interface IgniteDataStreamer<K, V> extends AutoCloseable {
      * <p>
      * This flag is disabled by default (default is {@code false}).
      *
-     * @return {@code True} if overwriting is allowed, {@code false} otherwise..
+     * @return {@code True} if overwriting is allowed. {@code True} if receiver is changed by
+     * {@link #receiver(StreamReceiver)}. {@code False} otherwise.
      */
     public boolean allowOverwrite();
 
@@ -318,6 +319,8 @@ public interface IgniteDataStreamer<K, V> extends AutoCloseable {
 
     /**
      * Sets custom stream receiver to this data streamer.
+     * <p>
+     * Disables {@link #allowOverwrite(boolean)} and makes {@link #allowOverwrite()} return {@code true}.
      *
      * @param rcvr Stream receiver.
      */
