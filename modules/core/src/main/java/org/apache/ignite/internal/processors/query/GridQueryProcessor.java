@@ -3080,9 +3080,11 @@ public class GridQueryProcessor extends GridProcessorAdapter {
                         QueryEngine qryEngine = engineForQuery(cliCtx, qry);
 
                         if (qryEngine != null) {
+                            QueryProperties qryProps = new QueryProperties(keepBinary);
+
                             if (qry instanceof SqlFieldsQueryEx && ((SqlFieldsQueryEx)qry).isBatched()) {
                                 res = qryEngine.queryBatched(
-                                    QueryContext.of(qry, cliCtx, cancel),
+                                    QueryContext.of(qry, cliCtx, cancel, qryProps),
                                     schemaName,
                                     qry.getSql(),
                                     ((SqlFieldsQueryEx)qry).batchedArguments()
@@ -3090,7 +3092,7 @@ public class GridQueryProcessor extends GridProcessorAdapter {
                             }
                             else {
                                 res = qryEngine.query(
-                                    QueryContext.of(qry, cliCtx, cancel),
+                                    QueryContext.of(qry, cliCtx, cancel, qryProps),
                                     schemaName,
                                     qry.getSql(),
                                     qry.getArgs() != null ? qry.getArgs() : X.EMPTY_OBJECT_ARRAY
