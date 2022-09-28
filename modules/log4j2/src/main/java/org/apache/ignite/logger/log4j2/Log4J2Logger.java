@@ -238,6 +238,8 @@ public class Log4J2Logger implements IgniteLogger, LoggerNodeIdAndApplicationAwa
      */
     static void cleanup() {
         synchronized (mux) {
+            System.clearProperty(APP_ID);
+
             if (inited)
                 LogManager.shutdown();
 
