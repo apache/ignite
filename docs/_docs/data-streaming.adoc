@@ -30,7 +30,7 @@ Good use of streaming is data preloading.
 == Limitations
 Ignite data streamer doesn't guarantee:
 []
-- Data order. Data records may be put in cache with dirrefent order than in streamer.
+- Data order. Data records may be put in cache with different order than in streamer.
 - Immediate data loading. Data can be kept for a while before sending.
 - In general, data consistency until finished.
 - Working with external storages.
@@ -98,14 +98,14 @@ The class definitions of the stream receivers to be executed on remote nodes mus
 * Enable link:code-deployment/peer-class-loading[peer class loading].
 ====
 
-Changing receiver to non-default changes data distribution algorythm. With non-default receiver streamer sneds data batches only to primary nodes where reciver acceps them. This is slower if cache has backups. In this case primary node needs another request or requests to write backup.
+Changing receiver to non-default changes data distribution algorithm. With non-default receiver streamer sends data batches only to primary node receiver. This is slower if cache has backups. In this case primary node needs another request or requests to send backup.
 
 NOTE: A stream receiver does not put data into cache automatically. You need to call one of the `put` methods explicitly.
 
 
-== Overwritting data. [[overwritting]]
+==  data. [[]]
 
-By default, existing keys aren't overwritten. You can change that behavior by setting the `allowOverwrite` property of the data streamer to `true`. Since the default receiver does not overwrite data, other provided one is automatically chosen. Any non-default reciver is considered as not-overwritting. And `allowOverwrite` property says `false`.
+By default, existing keys aren't overwritten. You can change that behavior by setting the `allowOverwrite` property of the data streamer to `true`. Since the default receiver does not overwrite data, other provided one is automatically chosen. Any non-default receiver is considered as not-. And `allowOverwrite` property says `false`.
 
 NOTE: When `allowOverwrite` is set to `false` (default), the updates are not propagated to the link:persistence/external-storage[external storage] (if it is used).
 
@@ -174,7 +174,7 @@ tab:C++[unsupported]
 --
 
 == Configuring Data Streamer Thread Pool Size
-The data streamer thread pool is dedicated to process messages coming from the data streamers.
+The data streamer thread pool is dedicated to process batches coming from the data streamers.
 
 The default pool size is `max(8, total number of cores)`.
 Use `IgniteConfiguration.setDataStreamerThreadPoolSize(...)` to change the pool size.
