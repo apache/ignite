@@ -625,7 +625,7 @@ namespace ignite
 
                     SP_ContinuousQueryClientHolderBase holder(new ContinuousQueryClientHolder<K, V>(continuousQuery));
 
-                    return proxy.QueryContinuous(holder);
+                    return proxy.QueryContinuous(holder, continuousQuery.GetJavaFilter());
                 }
 
                 /**

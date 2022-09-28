@@ -105,6 +105,7 @@ import org.apache.ignite.internal.processors.cache.warmup.BlockedWarmUpStrategy;
 import org.apache.ignite.internal.processors.cache.warmup.WarmUpTestPluginProvider;
 import org.apache.ignite.internal.processors.cluster.ChangeGlobalStateFinishMessage;
 import org.apache.ignite.internal.processors.cluster.GridClusterStateProcessor;
+import org.apache.ignite.internal.processors.metric.MetricRegistry;
 import org.apache.ignite.internal.util.BasicRateLimiter;
 import org.apache.ignite.internal.util.distributed.SingleNodeMessage;
 import org.apache.ignite.internal.util.future.IgniteFinishedFutureImpl;
@@ -126,6 +127,7 @@ import org.apache.ignite.lang.IgniteUuid;
 import org.apache.ignite.plugin.extensions.communication.Message;
 import org.apache.ignite.spi.communication.tcp.TcpCommunicationSpi;
 import org.apache.ignite.spi.metric.LongMetric;
+import org.apache.ignite.spi.metric.Metric;
 import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.testframework.junits.WithSystemProperty;
 import org.apache.ignite.transactions.Transaction;
@@ -166,9 +168,11 @@ import static org.apache.ignite.internal.processors.cache.persistence.snapshot.I
 import static org.apache.ignite.internal.processors.cache.persistence.snapshot.IgniteSnapshotManager.SNAPSHOT_METRICS;
 import static org.apache.ignite.internal.processors.cache.persistence.snapshot.IgniteSnapshotManager.SNAPSHOT_TRANSFER_RATE_DMS_KEY;
 import static org.apache.ignite.internal.processors.cache.persistence.snapshot.IgniteSnapshotManager.resolveSnapshotWorkDirectory;
+import static org.apache.ignite.internal.processors.cache.persistence.snapshot.SnapshotRestoreProcess.SNAPSHOT_RESTORE_METRICS;
 import static org.apache.ignite.internal.processors.cache.verify.IdleVerifyUtility.GRID_NOT_IDLE_MSG;
 import static org.apache.ignite.internal.processors.diagnostic.DiagnosticProcessor.DEFAULT_TARGET_FOLDER;
 import static org.apache.ignite.testframework.GridTestUtils.assertContains;
+import static org.apache.ignite.testframework.GridTestUtils.assertNotContains;
 import static org.apache.ignite.testframework.GridTestUtils.assertThrows;
 import static org.apache.ignite.testframework.GridTestUtils.runAsync;
 import static org.apache.ignite.testframework.GridTestUtils.waitForCondition;
@@ -3088,8 +3092,16 @@ public class GridCommandHandlerTest extends GridCommandHandlerClusterPerMethodAb
 
         assertEquals(EXIT_CODE_OK, execute(h, args));
 
-        LongMetric opEndTimeMetric = ig.context().metric().registry(SNAPSHOT_METRICS).findMetric("LastSnapshotEndTime");
+        MetricRegistry metrics = ig.context().metric().registry(SNAPSHOT_METRICS);
+
+        LongMetric opEndTimeMetric = metrics.findMetric("LastSnapshotEndTime");
         BooleanSupplier endTimeMetricPredicate = () -> opEndTimeMetric.value() > 0;
+
+        String reqId = metrics.findMetric("LastRequestId").getAsString();
+        assertFalse(F.isEmpty(reqId));
+
+        // Make sure the operation ID has been shown to the user.
+        assertContains(log, testOut.toString(), reqId);
 
         if (syncMode)
             assertTrue(endTimeMetricPredicate.getAsBoolean());
@@ -3133,14 +3145,26 @@ public class GridCommandHandlerTest extends GridCommandHandlerClusterPerMethodAb
         IgniteEx srv = startGrid(0);
         IgniteEx startCli = startClientGrid(CLIENT_NODE_NAME_PREFIX);
 
+        injectTestSystemOut();
+
         srv.cluster().state(ACTIVE);
 
         createCacheAndPreload(startCli, 100);
 
         CommandHandler h = new CommandHandler();
 
+        // Cancel snapshot using operation ID.
         doSnapshotCancellationTest(startCli, Collections.singletonList(srv), startCli.cache(DEFAULT_CACHE_NAME),
-            snpName -> assertEquals(EXIT_CODE_OK, execute(h, "--snapshot", "cancel", snpName)));
+            snpName -> {
+                String reqId = srv.context().metric().registry(SNAPSHOT_METRICS).findMetric("LastRequestId").getAsString();
+                assertFalse(F.isEmpty(reqId));
+
+                assertEquals(EXIT_CODE_OK, execute(h, "--snapshot", "cancel", "--id", reqId));
+            });
+
+        // Cancel snapshot using snapshot name.
+        doSnapshotCancellationTest(startCli, Collections.singletonList(srv), startCli.cache(DEFAULT_CACHE_NAME),
+            snpName -> assertEquals(EXIT_CODE_OK, execute(h, "--snapshot", "cancel", "--name", snpName)));
     }
 
     /** @throws Exception If fails. */
@@ -3190,20 +3214,17 @@ public class GridCommandHandlerTest extends GridCommandHandlerClusterPerMethodAb
         autoConfirmation = false;
 
         // Invalid command syntax checks.
-        assertEquals(EXIT_CODE_INVALID_ARGUMENTS, execute(h, "--snapshot", "restore", snpName));
-        assertContains(log, testOut.toString(), "One of [--start, --cancel, --status] is expected.");
-
         assertEquals(EXIT_CODE_INVALID_ARGUMENTS, execute(h, "--snapshot", "restore", snpName, "--cancel", "--sync"));
         assertContains(log, testOut.toString(), "Invalid argument: --sync.");
 
         assertEquals(EXIT_CODE_INVALID_ARGUMENTS, execute(h, "--snapshot", "restore", snpName, "blah"));
-        assertContains(log, testOut.toString(), "Invalid argument: blah. One of [--start, --cancel, --status] is expected.");
+        assertContains(log, testOut.toString(), "Invalid argument: blah. Possible options: --groups, --src, --sync.");
 
         assertEquals(EXIT_CODE_INVALID_ARGUMENTS, execute(h, "--snapshot", "restore", snpName, "--status", "--sync"));
         assertContains(log, testOut.toString(), "Invalid argument: --sync. Action \"--status\" does not support specified option.");
 
         assertEquals(EXIT_CODE_INVALID_ARGUMENTS, execute(h, "--snapshot", "restore", snpName, "--sync", "--start"));
-        assertContains(log, testOut.toString(), "Invalid argument: --sync.");
+        assertContains(log, testOut.toString(), "Invalid argument: --start.");
 
         assertEquals(EXIT_CODE_INVALID_ARGUMENTS, execute(h, "--snapshot", "restore", snpName, "--start", "blah"));
         assertContains(log, testOut.toString(), "Invalid argument: blah. Possible options: --groups, --src, --sync.");
@@ -3212,13 +3233,15 @@ public class GridCommandHandlerTest extends GridCommandHandlerClusterPerMethodAb
 
         // Cache exists.
         assertEquals(EXIT_CODE_UNEXPECTED_ERROR, execute(h, "--snapshot", "restore", snpName, "--start", "--sync"));
+        assertContains(log, testOut.toString(), "Command option '--start' is redundant and must be avoided.");
         assertContains(log, testOut.toString(), "Unable to restore cache group - directory is not empty. " +
             "Cache group should be destroyed manually before perform restore operation [group=" + cacheName);
 
         ig.cache(cacheName).destroy();
         awaitPartitionMapExchange();
 
-        assertEquals(EXIT_CODE_OK, execute(h, "--snapshot", "restore", snpName, "--start", "--sync"));
+        assertEquals(EXIT_CODE_OK, execute(h, "--snapshot", "restore", snpName, "--sync"));
+        assertNotContains(log, testOut.toString(), "Command option '--start' is redundant and must be avoided.");
         assertContains(log, testOut.toString(), "Snapshot cache group restore operation completed successfully");
 
         IgniteCache<Object, Object> cache = ig.cache(cacheName);
@@ -3269,16 +3292,21 @@ public class GridCommandHandlerTest extends GridCommandHandlerClusterPerMethodAb
 
         CommandHandler h = new CommandHandler();
 
-        assertEquals(EXIT_CODE_INVALID_ARGUMENTS, execute(h, "--snapshot", "restore", snpName, "--start", cacheName1));
+        assertEquals(EXIT_CODE_INVALID_ARGUMENTS, execute(h, "--snapshot", "restore", snpName, cacheName1));
         assertContains(log, testOut.toString(),
             "Invalid argument: " + cacheName1 + ". Possible options: --groups, --src, --sync.");
 
         // Restore single cache group.
-        assertEquals(EXIT_CODE_OK, execute(h, "--snapshot", "restore", snpName, "--start", "--groups", cacheName1));
-        assertContains(log, testOut.toString(),
-            "Snapshot cache group restore operation started [snapshot=" + snpName + ", group(s)=" + cacheName1 + ']');
+        assertEquals(EXIT_CODE_OK, execute(h, "--snapshot", "restore", snpName, "--groups", cacheName1));
 
         waitForCondition(() -> ig.cache(cacheName1) != null, getTestTimeout());
+
+        MetricRegistry metrics = ig.context().metric().registry(SNAPSHOT_RESTORE_METRICS);
+        Metric operIdMetric = metrics.findMetric("requestId");
+        assertNotNull(operIdMetric);
+
+        assertContains(log, testOut.toString(), "Snapshot cache group restore operation started " +
+            "[name=" + snpName + ", group(s)=" + cacheName1 + ", id=" + operIdMetric.getAsString() + ']');
 
         cache1 = ig.cache(cacheName1);
 
@@ -3298,9 +3326,9 @@ public class GridCommandHandlerTest extends GridCommandHandlerClusterPerMethodAb
         String cacheNames = cacheName1 + ',' + cacheName2;
 
         // Restore two (of three) groups of caches.
-        assertEquals(EXIT_CODE_OK, execute(h, "--snapshot", "restore", snpName, "--start", "--groups", cacheNames));
+        assertEquals(EXIT_CODE_OK, execute(h, "--snapshot", "restore", snpName, "--groups", cacheNames));
         assertContains(log, testOut.toString(),
-            "Snapshot cache group restore operation started [snapshot=" + snpName + ", group(s)=");
+            "Snapshot cache group restore operation started [name=" + snpName + ", group(s)=");
 
         waitForCondition(() -> ig.cache(cacheName1) != null, getTestTimeout());
         waitForCondition(() -> ig.cache(cacheName2) != null, getTestTimeout());
@@ -3326,10 +3354,10 @@ public class GridCommandHandlerTest extends GridCommandHandlerClusterPerMethodAb
         assertNull(ig.cache(cacheName3));
 
         // Restore all public cache groups.
-        assertEquals(EXIT_CODE_OK, execute(h, "--snapshot", "restore", snpName, "--start"));
+        assertEquals(EXIT_CODE_OK, execute(h, "--snapshot", "restore", snpName));
         String out = testOut.toString();
         assertContains(log, out, "Warning: command will restore ALL USER-CREATED CACHE GROUPS from the snapshot");
-        assertContains(log, out, "Snapshot cache group restore operation started [snapshot=" + snpName + ']');
+        assertContains(log, out, "Snapshot cache group restore operation started [name=" + snpName);
 
         waitForCondition(() -> ig.cache(cacheName1) != null, getTestTimeout());
         waitForCondition(() -> ig.cache(cacheName2) != null, getTestTimeout());
@@ -3376,11 +3404,11 @@ public class GridCommandHandlerTest extends GridCommandHandlerClusterPerMethodAb
 
             ignite.destroyCache(DEFAULT_CACHE_NAME);
 
-            assertEquals(EXIT_CODE_INVALID_ARGUMENTS, execute(h, "--snapshot", "restore", snpName, "--start", "--sync"));
+            assertEquals(EXIT_CODE_INVALID_ARGUMENTS, execute(h, "--snapshot", "restore", snpName, "--sync"));
             assertContains(log, testOut.toString(), "Snapshot does not exists [snapshot=" + snpName);
 
             assertEquals(EXIT_CODE_INVALID_ARGUMENTS,
-                execute(h, "--snapshot", "restore", snpName, "--start", "--src", "A", "--src", "B"));
+                execute(h, "--snapshot", "restore", snpName, "--src", "A", "--src", "B"));
             assertContains(log, testOut.toString(), "--src arg specified twice.");
 
             // The check command simply prints the results of the check, it always ends with a zero exit code.
@@ -3391,7 +3419,7 @@ public class GridCommandHandlerTest extends GridCommandHandlerClusterPerMethodAb
             assertContains(log, testOut.toString(), "The check procedure has finished, no conflicts have been found.");
 
             assertEquals(EXIT_CODE_OK,
-                execute(h, "--snapshot", "restore", snpName, "--start", "--sync", "--src", snpDir.getAbsolutePath()));
+                execute(h, "--snapshot", "restore", snpName, "--sync", "--src", snpDir.getAbsolutePath()));
 
             IgniteCache<Integer, Integer> cache = ignite.cache(DEFAULT_CACHE_NAME);
 
@@ -3440,9 +3468,14 @@ public class GridCommandHandlerTest extends GridCommandHandlerClusterPerMethodAb
         assertFalse(restoreFut.isDone());
 
         // Check the status with a control command.
-        assertEquals(EXIT_CODE_OK, execute(h, "--snapshot", "restore", snpName, "--status"));
-        assertContains(log, testOut.toString(),
-            "Snapshot cache group restore operation is running [snapshot=" + snpName + ']');
+        assertEquals(EXIT_CODE_OK, execute(h, "--snapshot", "status"));
+
+        Pattern operIdPtrn = Pattern.compile("Operation request ID: (?<id>[-\\w]{36})");
+        Matcher matcher = operIdPtrn.matcher(testOut.toString());
+        assertTrue(matcher.find());
+
+        String operIdStr = matcher.group("id");
+        assertNotNull(operIdStr);
 
         // Check "status" with the wrong snapshot name.
         assertEquals(EXIT_CODE_OK, execute(h, "--snapshot", "restore", missingSnpName, "--status"));
@@ -3455,9 +3488,9 @@ public class GridCommandHandlerTest extends GridCommandHandlerClusterPerMethodAb
             "Snapshot cache group restore operation is NOT running [snapshot=" + missingSnpName + ']');
 
         // Cancel operation using control command.
-        assertEquals(EXIT_CODE_OK, execute(h, "--snapshot", "restore", snpName, "--cancel"));
+        assertEquals(EXIT_CODE_OK, execute(h, "--snapshot", "cancel", "--id", operIdStr));
         assertContains(log, testOut.toString(),
-            "Snapshot cache group restore operation canceled [snapshot=" + snpName + ']');
+            "Snapshot operation cancelled [id=" + operIdStr + ']');
 
         GridTestUtils.assertThrowsAnyCause(log, () -> restoreFut.get(getTestTimeout()), IgniteCheckedException.class,
             "Operation has been canceled by the user.");
@@ -3468,9 +3501,8 @@ public class GridCommandHandlerTest extends GridCommandHandlerClusterPerMethodAb
 
         assertTrue(ctxDisposed);
 
-        assertEquals(EXIT_CODE_OK, execute(h, "--snapshot", "restore", snpName, "--status"));
-        assertContains(log, testOut.toString(),
-            "Snapshot cache group restore operation is NOT running [snapshot=" + snpName + ']');
+        assertEquals(EXIT_CODE_OK, execute(h, "--snapshot", "status"));
+        assertContains(log, testOut.toString(), "There is no create or restore snapshot operation in progress.");
 
         assertNull(ig.cache(DEFAULT_CACHE_NAME));
     }
@@ -3519,6 +3551,8 @@ public class GridCommandHandlerTest extends GridCommandHandlerClusterPerMethodAb
 
         srv.destroyCache(DEFAULT_CACHE_NAME);
 
+        awaitPartitionMapExchange();
+
         spi.blockMessages((node, msg) -> msg instanceof SingleNodeMessage);
 
         fut = srv.snapshot().restoreSnapshot(snapshotName, F.asList(DEFAULT_CACHE_NAME));
@@ -3540,7 +3574,7 @@ public class GridCommandHandlerTest extends GridCommandHandlerClusterPerMethodAb
      * @param expName Expected snapshot name.
      */
     private void checkSnapshotStatus(boolean isCreating, boolean isRestoring, String expName) throws Exception {
-        Collection<Ignite> srvs = F.view(G.allGrids(), n -> !n.cluster().localNode().isLocal());
+        Collection<Ignite> srvs = F.view(G.allGrids(), n -> !n.cluster().localNode().isClient());
 
         assertTrue(waitForCondition(() -> srvs.stream().allMatch(
                 ignite -> {
