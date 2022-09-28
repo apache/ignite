@@ -22,19 +22,25 @@ Ignite provides a Data Streaming API that can be used to inject large amounts of
 
 image:images/data_streaming.png[Data Streaming]
 
-The Data Streaming API is designed to be scalable and fault-tolerant, and provides _at-least-once_ delivery semantics for the data streamed into Ignite, meaning each entry is processed at least once.
+The Data Streaming API is designed to be scalable and fault-tolerant, and provides _at-least-once_ delivery semantics
+for the data streamed into Ignite, meaning each entry is processed at least once.
 
 Good use of streaming is data preloading.
 
 == Limitations
 Ignite data streamer doesn't guarantee:
-
+[]
 - Data order. Data records may be put in cache with dirrefent order than in streamer.
 - Immediate data loading. Data can be kept for a while before sending.
 - In general, data consistency until finished.
 - Working with external storages.
 
-See <<receivers>> and <<overwritting>>.
+You should avoid:
+[]
+- Having the same keys repeating in the data being streamed;
+- Concurrent updates of the cache that is being streamed into;
+- Rebalance on that cache;
+- Creating snapshots while streaming.
 
 == Usage
 A data streamer is associated with a specific cache and provides an interface for streaming data into the cache.
@@ -52,9 +58,6 @@ include::{javaFile}[tag=dataStreamer1,indent=0]
 
 In the Java version of Ignite, a data streamer is an implementation of the `IgniteDataStreamer` interface. `IgniteDataStreamer` provides a number of `addData(...)` methods for adding key-value pairs to caches. Refer to the link:{javadoc_base_url}/org/apache/ignite/internal/processors/datastreamer/DataStreamerCacheUpdaters.html[IgniteDataStreamer] javadoc for the complete list of methods.
 
-
-
-
 tab:C#/.NET[]
 [source,csharp]
 ----
@@ -64,7 +67,7 @@ include::code-snippets/dotnet/DataStreaming.cs[tag=dataStreamer1,indent=0]
 tab:C++[unsupported]
 --
 
-== Stream receivers. [[receivers]]
+== Streamer receivers. [[receivers]]
 
 Ignite Streamer is an orchestrator and doesn't write data itself. link:{javadoc_base_url}/org/apache/ignite/stream/StreameReceiver.html[StreamerReceiver] does. The default receiver is designed for fastest data load and fewer network requests. With this receiver, streamer focuses on parallel transfer of backup and primary records.
 
@@ -83,7 +86,6 @@ tab:C#/.NET[]
 ----
 include::code-snippets/dotnet/DataStreaming.cs[tag=streamReceiver,indent=0]
 ----
-
 
 tab:C++[unsupported]
 --
@@ -149,7 +151,7 @@ tab:C++[unsupported]
 
 === Stream Visitor [[visitor]]
 
-A stream visitor is another implementation of a stream receiver, which visits every key-value pair in the stream. The visitor does not update the cache. If a pair needs to be stored in the cache, one of the `put(...)` methods must be called explicitly.
+A stream visitor is another implementation of a stream receiver, which visits every key-value pair in the stream.
 
 In the example below, we have 2 caches: "marketData", and "instruments". We receive market data ticks and put them into the streamer for the "marketData" cache. The stream visitor for the "marketData" streamer is invoked on the cluster member mapped to the particular market symbol. Upon receiving individual market ticks it updates the "instrument" cache with the latest market price.
 

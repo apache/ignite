@@ -52,7 +52,6 @@ import org.apache.ignite.IgniteDataStreamerTimeoutException;
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.IgniteInterruptedException;
 import org.apache.ignite.IgniteLogger;
-import org.apache.ignite.cache.CacheAtomicityMode;
 import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.cluster.ClusterTopologyException;
 import org.apache.ignite.configuration.CacheConfiguration;
@@ -494,7 +493,7 @@ public class DataStreamerImpl<K, V> implements IgniteDataStreamer<K, V>, Delayed
         if (node == null)
             throw new CacheException("Failed to get node for cache: " + cacheName);
 
-        rcvr = allow ? defaultOverwrittingReceiver() : ISOLATED_UPDATER;
+        rcvr = allow ? DataStreamerCacheUpdaters.<K, V>individual() : ISOLATED_UPDATER;
     }
 
     /** {@inheritDoc} */
@@ -1497,15 +1496,6 @@ public class DataStreamerImpl<K, V> implements IgniteDataStreamer<K, V>, Delayed
                 throw new IgniteException(ex);
             }
         }
-    }
-
-    /**
-     * @return Default, not {@code IsolatedUpdater}, allowing to overwrite data.
-     */
-    private StreamReceiver<K, V> defaultOverwrittingReceiver() {
-        return ctx.cache().cache(cacheName).configuration().getAtomicityMode() == CacheAtomicityMode.ATOMIC
-            ? DataStreamerCacheUpdaters.batched()
-            : DataStreamerCacheUpdaters.<K, V>individual();
     }
 
     /**
