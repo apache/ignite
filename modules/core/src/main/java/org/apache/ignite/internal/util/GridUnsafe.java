@@ -1249,10 +1249,10 @@ public abstract class GridUnsafe {
         long off = 0;
 
         for (; off + PAGE_SIZE <= len; off += PAGE_SIZE)
-            copyMemory(EMPTY_PAGE, BYTE_ARR_OFF, null, addr + off, PAGE_SIZE);
+            UNSAFE.copyMemory(EMPTY_PAGE, BYTE_ARR_OFF, null, addr + off, PAGE_SIZE);
 
         if (len != off)
-            copyMemory(EMPTY_PAGE, BYTE_ARR_OFF, null, addr + off, len - off);
+            UNSAFE.copyMemory(EMPTY_PAGE, BYTE_ARR_OFF, null, addr + off, len - off);
     }
 
     /**
