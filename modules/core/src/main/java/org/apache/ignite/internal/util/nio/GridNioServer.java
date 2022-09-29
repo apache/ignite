@@ -4403,6 +4403,9 @@ public class GridNioServer<T> {
 
         /** {@inheritDoc} */
         @Override public void run() {
+            if (clientWorkers.size() < 2)
+                return;
+
             ThreadLocalRandom rnd = ThreadLocalRandom.current();
 
             int w1 = rnd.nextInt(clientWorkers.size());
