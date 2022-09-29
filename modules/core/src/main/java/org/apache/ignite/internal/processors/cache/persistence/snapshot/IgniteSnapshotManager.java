@@ -29,12 +29,9 @@ import java.nio.ByteBuffer;
 import java.nio.ByteOrder;
 import java.nio.channels.FileChannel;
 import java.nio.file.DirectoryStream;
-import java.nio.file.FileVisitResult;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
-import java.nio.file.SimpleFileVisitor;
-import java.nio.file.attribute.BasicFileAttributes;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.BitSet;
@@ -645,89 +642,29 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
         if (!snpDir.isDirectory())
             return;
 
-        try {
-            File binDir = binaryWorkDir(snpDir.getAbsolutePath(), folderName);
-            File nodeDbDir = new File(snpDir.getAbsolutePath(), databaseRelativePath(folderName));
+        File binDir = binaryWorkDir(snpDir.getAbsolutePath(), folderName);
+        File nodeDbDir = new File(snpDir.getAbsolutePath(), databaseRelativePath(folderName));
 
-            U.delete(binDir);
-            U.delete(nodeDbDir);
+        U.delete(binDir);
+        U.delete(nodeDbDir);
 
-            File marshDir = mappingFileStoreWorkDir(snpDir.getAbsolutePath());
+        File marshDir = mappingFileStoreWorkDir(snpDir.getAbsolutePath());
 
-            // Concurrently traverse the snapshot marshaller directory and delete all files.
-            Files.walkFileTree(marshDir.toPath(), new SimpleFileVisitor<Path>() {
-                @Override public FileVisitResult visitFile(Path file, BasicFileAttributes attrs) {
-                    U.delete(file);
+        // Concurrently traverse the snapshot marshaller directory and delete all files.
+        U.delete(marshDir);
 
-                    return FileVisitResult.CONTINUE;
-                }
+        File binMetadataDfltDir = new File(snpDir, DFLT_BINARY_METADATA_PATH);
+        File marshallerDfltDir = new File(snpDir, DFLT_MARSHALLER_PATH);
 
-                @Override public FileVisitResult visitFileFailed(Path file, IOException exc) {
-                    // Skip files which can be concurrently removed from FileTree.
-                    return FileVisitResult.CONTINUE;
-                }
+        U.delete(binMetadataDfltDir);
+        U.delete(marshallerDfltDir);
 
-                @Override public FileVisitResult postVisitDirectory(Path dir, IOException exc) {
-                    dir.toFile().delete();
+        File db = new File(snpDir, DB_DEFAULT_FOLDER);
 
-                    if (log.isInfoEnabled() && exc != null)
-                        log.info("Marshaller directory cleaned with an exception: " + exc.getMessage());
-
-                    return FileVisitResult.CONTINUE;
-                }
-            });
-
-            File binMetadataDfltDir = new File(snpDir, DFLT_BINARY_METADATA_PATH);
-            File marshallerDfltDir = new File(snpDir, DFLT_MARSHALLER_PATH);
-
-            U.delete(binMetadataDfltDir);
-            U.delete(marshallerDfltDir);
-
-            File db = new File(snpDir, DB_DEFAULT_FOLDER);
-
-            if (!db.exists() || F.isEmpty(db.list())) {
-                marshDir.delete();
-                db.delete();
-                U.delete(snpDir);
-            }
-        }
-        catch (IOException e) {
-            throw new IgniteException(e);
-        }
-    }
-
-    /**
-     * @param snpDir     Snapshot directory.
-     * @param folderName Local node folder name (see {@link U#maskForFileName} with consistent id).
-     * @param incIdx Incremental index.
-     */
-    private void deleteIncrementalSnapshot(File snpDir, String folderName, int incIdx) {
-        try {
-            // Concurrently traverse the snapshot marshaller directory and delete all files.
-            Files.walkFileTree(snpDir.toPath(), new SimpleFileVisitor<Path>() {
-                @Override public FileVisitResult visitFile(Path file, BasicFileAttributes attrs) {
-                    U.delete(file);
-
-                    return FileVisitResult.CONTINUE;
-                }
-
-                @Override public FileVisitResult visitFileFailed(Path file, IOException exc) {
-                    // Skip files which can be concurrently removed from FileTree.
-                    return FileVisitResult.CONTINUE;
-                }
-
-                @Override public FileVisitResult postVisitDirectory(Path dir, IOException exc) {
-                    dir.toFile().delete();
-
-                    if (log.isInfoEnabled() && exc != null)
-                        log.info("Marshaller directory cleaned with an exception: " + exc.getMessage());
-
-                    return FileVisitResult.CONTINUE;
-                }
-            });
-        }
-        catch (IOException e) {
-            throw new IgniteException(e);
+        if (!db.exists() || F.isEmpty(db.list())) {
+            marshDir.delete();
+            db.delete();
+            U.delete(snpDir);
         }
     }
 
@@ -1145,13 +1082,8 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
             if (req.error() != null) {
                 snpReq.error(req.error());
 
-                if (req.incremental()) {
-                    deleteIncrementalSnapshot(
-                        snapshotLocalDir(req.snapshotName(), req.snapshotPath()),
-                        pdsSettings.folderName(),
-                        req.incrementIndex()
-                    );
-                }
+                if (req.incremental())
+                    U.delete(incrementalSnapshotLocalDir(req.snapshotName(), req.snapshotPath(), req.incrementIndex()));
                 else
                     deleteSnapshot(snapshotLocalDir(req.snapshotName(), req.snapshotPath()), pdsSettings.folderName());
             }
