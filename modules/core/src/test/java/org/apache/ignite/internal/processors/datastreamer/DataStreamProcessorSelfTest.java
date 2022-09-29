@@ -389,7 +389,7 @@ public class DataStreamProcessorSelfTest extends GridCommonAbstractTest {
             final CountDownLatch l1 = new CountDownLatch(threads);
 
             IgniteInternalFuture<?> f1 = multithreadedAsync(new Callable<Object>() {
-                @Override public Object call() {
+                @Override public Object call() throws Exception {
                     Collection<IgniteFuture<?>> futs = new ArrayList<>(cnt);
 
                     for (int i = 0; i < cnt; i++) {

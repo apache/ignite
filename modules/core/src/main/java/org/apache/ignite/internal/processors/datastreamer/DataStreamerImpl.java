@@ -1474,13 +1474,16 @@ public class DataStreamerImpl<K, V> implements IgniteDataStreamer<K, V>, Delayed
         boolean remove = false;
 
         for (DataStreamerEntry e : entries) {
-            if (e.val == null)
+            if (e.val == null) {
                 remove = true;
-            else
+            }
+            else {
                 add = true;
+            }
 
-            if (add && remove)
+            if (add && remove) {
                 break;
+            }
         }
 
         if (add)
@@ -1517,18 +1520,18 @@ public class DataStreamerImpl<K, V> implements IgniteDataStreamer<K, V>, Delayed
     /**
      *
      */
-    private static final class ThreadBuffer {
+    private class ThreadBuffer {
         /** Entries. */
         private final List<DataStreamerEntry> entries;
 
         /** Future. */
-        private final IgniteCacheFutureImpl<?> fut;
+        private final IgniteCacheFutureImpl fut;
 
         /**
          * @param fut Future.
          * @param entries Entries.
          */
-        private ThreadBuffer(IgniteCacheFutureImpl<?> fut, List<DataStreamerEntry> entries) {
+        private ThreadBuffer(IgniteCacheFutureImpl fut, List<DataStreamerEntry> entries) {
             assert fut != null;
             assert entries != null;
 
@@ -1546,7 +1549,7 @@ public class DataStreamerImpl<K, V> implements IgniteDataStreamer<K, V>, Delayed
         /**
          * @return Future.
          */
-        private IgniteCacheFutureImpl<?> getFuture() {
+        private IgniteCacheFutureImpl getFuture() {
             return fut;
         }
     }
@@ -1578,7 +1581,12 @@ public class DataStreamerImpl<K, V> implements IgniteDataStreamer<K, V>, Delayed
 
         /** Closure to signal on task finish. */
         @GridToStringExclude
-        private final IgniteInClosure<IgniteInternalFuture<Object>> signalC = this::signalTaskFinished;
+        private final IgniteInClosure<IgniteInternalFuture<Object>> signalC =
+            new IgniteInClosure<IgniteInternalFuture<Object>>() {
+                @Override public void apply(IgniteInternalFuture<Object> t) {
+                    signalTaskFinished(t);
+                }
+            };
 
         /**
          * @param node Node.
