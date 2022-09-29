@@ -248,7 +248,7 @@ public class LogicalRelImplementorTest extends GridCommonAbstractTest {
             "IDX",
             project,
             filter,
-            RexUtils.buildSortedIndexConditions(cluster, idxCollation, filter, rowType, requiredColumns),
+            RexUtils.buildSortedSearchBounds(cluster, idxCollation, filter, rowType, requiredColumns),
             requiredColumns,
             idxCollation
         );
@@ -333,7 +333,7 @@ public class LogicalRelImplementorTest extends GridCommonAbstractTest {
             templateScan.indexName(),
             projects,
             filters,
-            templateScan.indexConditions(),
+            templateScan.searchBounds(),
             requiredColumns,
             templateScan.collation()
         );

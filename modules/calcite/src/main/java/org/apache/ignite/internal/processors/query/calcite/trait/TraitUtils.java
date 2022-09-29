@@ -52,6 +52,8 @@ import org.apache.calcite.util.ControlFlowException;
 import org.apache.calcite.util.ImmutableBitSet;
 import org.apache.calcite.util.Pair;
 import org.apache.calcite.util.mapping.Mappings;
+import org.apache.ignite.internal.processors.query.calcite.externalize.RelInputEx;
+import org.apache.ignite.internal.processors.query.calcite.prepare.bounds.SearchBounds;
 import org.apache.ignite.internal.processors.query.calcite.rel.IgniteConvention;
 import org.apache.ignite.internal.processors.query.calcite.rel.IgniteExchange;
 import org.apache.ignite.internal.processors.query.calcite.rel.IgniteRel;
@@ -266,7 +268,7 @@ public class TraitUtils {
 
         RelTraitSet traitSet0 = traitSet;
 
-        return new RelInput() {
+        return new RelInputEx() {
             @Override public RelOptCluster getCluster() {
                 return input.getCluster();
             }
@@ -358,6 +360,14 @@ public class TraitUtils {
 
             @Override public boolean getBoolean(String tag, boolean default_) {
                 return input.getBoolean(tag, default_);
+            }
+
+            @Override public RelCollation getCollation(String tag) {
+                return ((RelInputEx)input).getCollation(tag);
+            }
+
+            @Override public List<SearchBounds> getSearchBounds(String tag) {
+                return ((RelInputEx)input).getSearchBounds(tag);
             }
         };
     }

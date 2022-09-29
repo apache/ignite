@@ -16,8 +16,10 @@
  */
 package org.apache.ignite.internal.processors.query.calcite.externalize;
 
+import java.util.List;
 import org.apache.calcite.rel.RelCollation;
 import org.apache.calcite.rel.RelInput;
+import org.apache.ignite.internal.processors.query.calcite.prepare.bounds.SearchBounds;
 
 /** */
 public interface RelInputEx extends RelInput {
@@ -26,4 +28,11 @@ public interface RelInputEx extends RelInput {
      * @return A collation value.
      */
     RelCollation getCollation(String tag);
+
+    /**
+     *
+     * @param tag Tag.
+     * @return Search bounds.
+     */
+    List<SearchBounds> getSearchBounds(String tag);
 }

@@ -32,6 +32,7 @@ import org.apache.calcite.rex.RexLiteral;
 import org.apache.calcite.rex.RexNode;
 import org.apache.ignite.internal.processors.query.calcite.exec.exp.agg.AccumulatorWrapper;
 import org.apache.ignite.internal.processors.query.calcite.exec.exp.agg.AggregateType;
+import org.apache.ignite.internal.processors.query.calcite.prepare.bounds.SearchBounds;
 
 /**
  * Expression factory.
@@ -105,6 +106,18 @@ public interface ExpressionFactory<Row> {
      */
     Supplier<Row> rowSource(List<RexNode> values);
 
+    /**
+     * Creates iterable search bounds tuples (lower row/upper row) by search bounds expressions.
+     *
+     * @param searchBounds Search bounds.
+     * @param collation Collation.
+     * @param rowType Row type.
+     */
+    RangeIterable<Row> ranges(
+        List<SearchBounds> searchBounds,
+        RelCollation collation,
+        RelDataType rowType
+    );
 
     /**
      * Executes expression.
