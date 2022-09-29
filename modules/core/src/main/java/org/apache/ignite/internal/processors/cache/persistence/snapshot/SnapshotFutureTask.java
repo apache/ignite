@@ -557,9 +557,8 @@ class SnapshotFutureTask extends AbstractSnapshotFutureTask<Set<GroupPartitionId
 
 //                                log.error("TEST | sending delta " + delta.getName());
 
-                                if(delta.getName().contains("859")){
+                                if (delta.getName().contains("859"))
                                     log.error("TEST | sending delta " + delta.getName());
-                                }
 
                                 snpSndr.sendDelta(delta, cacheDirName, pair);
 
@@ -998,8 +997,8 @@ class SnapshotFutureTask extends AbstractSnapshotFutureTask<Set<GroupPartitionId
             // Write buffer to the end of the file.
             int len = deltaFileIo.writeFully(pageBuf);
 
-            if (len > 0)
-                log.error("TEST | Wrote delta " + deltaFile.getName());
+//            if (len > 0)
+//                log.error("TEST | Wrote delta " + deltaFile.getName());
 
             totalSize.addAndGet(len);
         }

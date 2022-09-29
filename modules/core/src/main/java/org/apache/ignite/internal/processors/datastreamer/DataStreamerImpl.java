@@ -86,6 +86,7 @@ import org.apache.ignite.internal.processors.cache.GridCacheUtils;
 import org.apache.ignite.internal.processors.cache.IgniteCacheFutureImpl;
 import org.apache.ignite.internal.processors.cache.IgniteCacheProxy;
 import org.apache.ignite.internal.processors.cache.KeyCacheObject;
+import org.apache.ignite.internal.processors.cache.KeyCacheObjectImpl;
 import org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtTopologyFuture;
 import org.apache.ignite.internal.processors.cache.distributed.dht.IgniteClusterReadOnlyException;
 import org.apache.ignite.internal.processors.cache.distributed.dht.preloader.GridDhtPartitionsExchangeFuture;
@@ -805,7 +806,7 @@ public class DataStreamerImpl<K, V> implements IgniteDataStreamer<K, V>, Delayed
         ClusterNode remapNode,
         AffinityTopologyVersion remapTopVer
     ) {
-        log.error("TEST | DataStreamer:load0(), BEGIN. Entries: " + entries.size());
+//        log.error("TEST | DataStreamer:load0(), BEGIN. Entries: " + entries.size());
 
         try {
             assert entries != null;
@@ -854,7 +855,7 @@ public class DataStreamerImpl<K, V> implements IgniteDataStreamer<K, V>, Delayed
             // It is safe to block here even if the cache gate is acquired.
             topVer = exchFut.get();
 
-            log.error("TEST | load entries with topology top " + topVer);
+//            log.error("TEST | load entries with topology top " + topVer);
 
             List<List<ClusterNode>> assignments = cctx.affinity().assignments(topVer);
 
@@ -1087,7 +1088,7 @@ public class DataStreamerImpl<K, V> implements IgniteDataStreamer<K, V>, Delayed
             resFut.onDone(new IgniteCheckedException("DataStreamer data loading failed.", ex));
         }
         finally {
-            log.error("TEST | DataStreamer:load0(), END.");
+//            log.error("TEST | DataStreamer:load0(), END.");
         }
     }
 
@@ -1707,7 +1708,6 @@ public class DataStreamerImpl<K, V> implements IgniteDataStreamer<K, V>, Delayed
                         }
                     }
 
-
                     // double check, it's possible that current future was already overwritten on buffer overflow
                     curFut0.onDone(null, new IgniteCheckedException("Topology changed during batch preparation." +
                         "[batchTopVer=" + curBatchTopVer + ", topVer=" + topVer + "]"));
@@ -1957,10 +1957,7 @@ public class DataStreamerImpl<K, V> implements IgniteDataStreamer<K, V>, Delayed
 
                 ctx.dataStream().markStreamed(cacheName);
 
-                if(initWaitFut == null)
-                    initWaitFut = ctx.cache().context().mvcc().addDataStreamerFuture(topVer);
-
-                localUpdate(entries, topVer, curFut, plc, localRq.incrementAndGet());
+                localUpdate(entries, topVer, curFut, plc);
             } else {
                 try {
                     for (DataStreamerEntry e : entries) {

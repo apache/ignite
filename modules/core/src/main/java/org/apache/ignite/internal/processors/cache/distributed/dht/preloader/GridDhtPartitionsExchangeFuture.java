@@ -1918,7 +1918,7 @@ public class GridDhtPartitionsExchangeFuture extends GridDhtTopologyFutureAdapte
 
         long waitStartNanos = System.nanoTime();
 
-        long waitTimeout = 20 * cfg.getNetworkTimeout();
+        long waitTimeout = 2 * cfg.getNetworkTimeout();
 
         boolean txRolledBack = !doRollback;
 
@@ -4329,8 +4329,6 @@ public class GridDhtPartitionsExchangeFuture extends GridDhtTopologyFutureAdapte
     private void finalizePartitionCounters() {
         // Reserve at least 2 threads for system operations.
         int parallelismLvl = U.availableThreadCount(cctx.kernalContext(), GridIoPolicy.SYSTEM_POOL, 2);
-
-        log.error("TEST | finalizePartitionCounters()");
 
         try {
             U.<CacheGroupContext, Void>doInParallelUninterruptibly(

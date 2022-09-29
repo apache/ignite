@@ -383,8 +383,7 @@ public class DataStreamProcessor<K, V> extends GridProcessorAdapter {
                         req.ignoreDeploymentOwnership(),
                         req.skipStore(),
                         req.keepBinary(),
-                        updater,
-                        req.requestId()
+                        updater
                         );
 
                     waitFut = allowOverwrite ? null : cctx.mvcc().addDataStreamerFuture(streamerFutTopVer);

@@ -273,7 +273,7 @@ public class GridCacheOffheapManager extends IgniteCacheOffheapManagerImpl imple
     @Override public void beforeCheckpointBegin(Context ctx) throws IgniteCheckedException {
         assert F.size(cacheDataStores().iterator(), CacheDataStore::destroyed) == 0;
 
-        log.error("TEST | beforeCheckpointBegin() -> syncMetadata()");
+//        log.error("TEST | beforeCheckpointBegin() -> syncMetadata()");
 
         // Optimization: reducing the holding time of checkpoint write lock.
         syncMetadata(ctx, ctx.executor(), false);

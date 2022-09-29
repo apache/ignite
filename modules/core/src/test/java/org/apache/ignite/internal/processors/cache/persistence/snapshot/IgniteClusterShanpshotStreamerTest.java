@@ -27,6 +27,7 @@ import org.apache.ignite.configuration.ConnectorConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.processors.cache.distributed.dht.atomic.GridNearAtomicUpdateFuture;
+import org.apache.ignite.internal.processors.datastreamer.DataStreamerCacheUpdaters;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.testframework.GridTestUtils;
 import org.junit.Test;
@@ -71,7 +72,7 @@ public class IgniteClusterShanpshotStreamerTest  extends AbstractSnapshotSelfTes
         int backups = 1;
 
 //        CountDownLatch loadLever = new CountDownLatch(13_403);
-        CountDownLatch loadLever = new CountDownLatch(40_000);
+        CountDownLatch loadLever = new CountDownLatch(100_000);
 
         AtomicBoolean stop = new AtomicBoolean(false);
         AtomicInteger idx = new AtomicInteger();
@@ -132,6 +133,8 @@ public class IgniteClusterShanpshotStreamerTest  extends AbstractSnapshotSelfTes
 //                IgniteCache<Integer, Integer> cache = grid(0).cache(cacheName);
 
                 try (IgniteDataStreamer<Integer, Integer> ds = client.dataStreamer(cacheName)) {
+                    //ds.receiver(DataStreamerCacheUpdaters.batched());
+
                     ds.allowOverwrite(false);
 //                    ds.allowOverwrite(true);
 //                    ds.skipStore(false);
