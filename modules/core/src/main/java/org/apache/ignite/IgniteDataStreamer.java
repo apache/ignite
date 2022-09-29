@@ -42,9 +42,21 @@ import org.jetbrains.annotations.Nullable;
  * This way batches can be applied within transaction(s) on target node.
  * See {@link #receiver(StreamReceiver)} for details.
  * <p>
- * Note that streamer will stream data concurrently by multiple internal threads, so the
- * data may get to remote nodes in different order from which it was added to
- * the streamer.
+ * Certain behaviour of streamer is defined by {@link StreamReceiver}. In general, data streamer doesn’t guarantee:
+ * <ul>
+ *  <li>Data order. Data records may be put in cache with different order than in streamer;</li>
+ *  <li>Immediate data loading. Data can be kept for a while before sending;</li>
+ *  <li>Data consistency until finished;</li>
+ *  <li>Working with external storages.</li>
+ * </ul>
+ * <p>
+ * You should avoid:
+ * <ul>
+ *  <li>Having the same keys repeating in the data being streamed;</li>
+ *  <li>Concurrent updates of the cache that is being streamed into;</li>
+ *  <li>Rebalancing the cache;</li>
+ *  <li>Creating snapshots while streaming.</li>
+ * </ul>
  * <p>
  * Also note that {@code IgniteDataStreamer} is not the only way to add data into cache.
  * Alternatively you can use {@link IgniteCache#loadCache(IgniteBiPredicate, Object...)}
