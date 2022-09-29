@@ -76,6 +76,7 @@ import org.apache.ignite.internal.util.GridSpinBusyLock;
 import org.apache.ignite.internal.util.lang.GridCursor;
 import org.apache.ignite.internal.util.typedef.CIX2;
 import org.apache.ignite.internal.util.typedef.T2;
+import org.apache.ignite.internal.util.typedef.internal.LT;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgniteBiTuple;
 import org.apache.ignite.plugin.extensions.communication.Message;
@@ -135,9 +136,6 @@ public class H2TreeIndex extends H2TreeIndexBase {
 
     /** */
     private final GridMessageListener msgLsnr;
-
-    /** Warned about index column type mismatch. */
-    private boolean idxTypeMismatchWarn;
 
     /** */
     private final CIX2<ClusterNode, Message> locNodeHnd = new CIX2<ClusterNode, Message>() {
@@ -292,14 +290,9 @@ public class H2TreeIndex extends H2TreeIndexBase {
                 if (Value.getHigherOrder(colType.code(), v.getType()) == colType.code())
                     v = v.convertTo(colType.code());
                 else {
-                    if (!idxTypeMismatchWarn) {
-                        log.warning("Provided value can't be used as index search bound due to column data type " +
-                            "mismatch. This can lead to full index scans instead of range index scans. " +
-                            "[index=" + idxName + ", colType=" + colType + ", valType=" +
-                            IndexKeyType.forCode(v.getType()) + ']');
-
-                        idxTypeMismatchWarn = true;
-                    }
+                    LT.warn(log, "Provided value can't be used as index search bound due to column data type " +
+                        "mismatch. This can lead to full index scans instead of range index scans. [index=" +
+                        idxName + ", colType=" + colType + ", valType=" + IndexKeyType.forCode(v.getType()) + ']');
 
                     break;
                 }
