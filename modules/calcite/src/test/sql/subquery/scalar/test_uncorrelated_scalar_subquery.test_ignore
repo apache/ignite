@@ -71,8 +71,6 @@ NULL
 # we choose to agree with postgres here
 statement error
 SELECT * FROM integers WHERE i=(SELECT i FROM integers WHERE i IS NOT NULL ORDER BY i)
-----
-1
 
 # i.e. the above query is equivalent to this query
 query I
