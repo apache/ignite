@@ -36,12 +36,10 @@ import java.util.List;
 import java.util.Map;
 import java.util.NoSuchElementException;
 import java.util.Objects;
-import java.util.Set;
 import java.util.TreeMap;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 import java.util.stream.Collectors;
-import com.google.common.collect.ImmutableSet;
 import org.apache.calcite.avatica.util.ByteString;
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.IgniteLogger;
@@ -54,6 +52,7 @@ import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.jetbrains.annotations.NotNull;
+
 import static org.apache.ignite.internal.util.IgniteUtils.byteArray2HexString;
 
 /**
@@ -66,9 +65,6 @@ public class SqlScriptRunner {
     /** Hashing label pattern. */
     private static final Pattern HASHING_PTRN = Pattern.compile("([0-9]+) values hashing to ([0-9a-fA-F]+)");
 
-    /** Ignored statements. */
-    private static final Set<String> ignoredStmts = ImmutableSet.of("PRAGMA");
-
     /** NULL label. */
     private static final String NULL = "NULL";
 
@@ -76,7 +72,7 @@ public class SqlScriptRunner {
     private static final String schemaPublic = "PUBLIC";
 
     /** Comparator for "rowsort" sort mode. */
-    private static final Comparator<List<?>> ROW_COMPARATOR = (r1, r2) -> {
+    private final Comparator<List<?>> ROW_COMPARATOR = (r1, r2) -> {
         int rows = r1.size();
 
         for (int i = 0; i < rows; ++i) {
@@ -114,6 +110,9 @@ public class SqlScriptRunner {
     /** Script. */
     private Script script;
 
+    /** String presentation of null's. */
+    private String nullLbl = NULL;
+
     /** nl to bytes representation. */
     private static final byte[] NL_BYTES = "\n".getBytes();
 
@@ -141,6 +140,7 @@ public class SqlScriptRunner {
     public void run() throws Exception {
         try (Script s = new Script(test)) {
             script = s;
+            nullLbl = NULL;
 
             for (Command cmd : script) {
                 try {
@@ -172,8 +172,10 @@ public class SqlScriptRunner {
     }
 
     /** */
-    private static String toString(Object res) {
-        if (res instanceof byte[])
+    private String toString(Object res) {
+        if (res == null)
+            return nullLbl;
+        else if (res instanceof byte[])
             return ByteString.toString((byte[])res, 16);
         else if (res instanceof Map)
             return mapToString((Map<?, ?>)res);
@@ -182,9 +184,9 @@ public class SqlScriptRunner {
     }
 
     /** */
-    private static String mapToString(Map<?, ?> map) {
+    private String mapToString(Map<?, ?> map) {
         if (map == null)
-            return NULL;
+            return nullLbl;
 
         List<String> entries = (new TreeMap<>(map)).entrySet().stream()
             .map(e -> toString(e.getKey()) + ":" + toString(e.getValue()))
@@ -437,8 +439,13 @@ public class SqlScriptRunner {
             for (String qry : queries) {
                 String[] toks = qry.split("\\s+");
 
-                if (ignoredStmts.contains(toks[0])) {
-                    log.info("Ignore: " + toString());
+                if ("PRAGMA".equals(toks[0])) {
+                    String[] pragmaParams = toks[1].split("=");
+
+                    if ("null".equals(pragmaParams[0]))
+                        nullLbl = pragmaParams[1];
+                    else
+                        log.info("Ignore: " + toString());
 
                     continue;
                 }
@@ -569,7 +576,7 @@ public class SqlScriptRunner {
 
                     try {
                         if (singleValOnLine) {
-                            row.add(NULL.equals(vals[0]) ? null : vals[0]);
+                            row.add(nullLbl.equals(vals[0]) ? null : vals[0]);
 
                             if (row.size() == resTypes.size()) {
                                 expectedRes.add(row);
@@ -579,7 +586,7 @@ public class SqlScriptRunner {
                         }
                         else {
                             for (String val : vals)
-                                row.add(NULL.equals(val) ? null : val);
+                                row.add(nullLbl.equals(val) ? null : val);
 
                             expectedRes.add(row);
                             row = new ArrayList<>();
@@ -602,7 +609,7 @@ public class SqlScriptRunner {
 
                 checkResult(res);
             }
-            catch (IgniteSQLException e) {
+            catch (Throwable e) {
                 throw new IgniteException("Error at: " + posDesc + ". sql: " + sql, e);
             }
         }
@@ -664,7 +671,7 @@ public class SqlScriptRunner {
                 for (int j = 0; j < expectedRow.size(); ++j) {
                     checkEquals("Not expected result at: " + posDesc +
                         ". [row=" + i + ", col=" + j +
-                        ", expected=" + expectedRow.get(j) + ", actual=" + SqlScriptRunner.toString(row.get(j)) + ']',
+                        ", expected=" + expectedRow.get(j) + ", actual=" + SqlScriptRunner.this.toString(row.get(j)) + ']',
                         expectedRow.get(j),
                         row.get(j)
                     );
@@ -674,11 +681,15 @@ public class SqlScriptRunner {
 
         /** */
         private void checkEquals(String msg, String expectedStr, Object actual) {
-            if (actual == null && String.valueOf(actual).equalsIgnoreCase(expectedStr))
+            if (actual == null && (expectedStr == null || nullLbl.equalsIgnoreCase(expectedStr)))
                 return;
 
             if (actual != null ^ expectedStr != null)
                 throw new AssertionError(msg);
+
+            // Alternative values for boolean "0" and "1".
+            if (actual instanceof Boolean && expectedStr.equals((Boolean)actual ? "1" : "0"))
+                return;
 
             if (actual instanceof Number) {
                 if ("NaN".equals(expectedStr) || expectedStr.endsWith("Infinity")) {
@@ -700,8 +711,8 @@ public class SqlScriptRunner {
                     throw new AssertionError(msg);
             }
             else {
-                if (!String.valueOf(expectedStr).equals(SqlScriptRunner.toString(actual)) &&
-                    !("(empty)".equals(expectedStr) && SqlScriptRunner.toString(actual).isEmpty()))
+                if (!expectedStr.equals(SqlScriptRunner.this.toString(actual)) &&
+                    !("(empty)".equals(expectedStr) && SqlScriptRunner.this.toString(actual).isEmpty()))
                      throw new AssertionError(msg);
             }
         }
@@ -714,7 +725,7 @@ public class SqlScriptRunner {
 
             for (List<?> row : res) {
                 for (Object col : row) {
-                    messageDigest.update(SqlScriptRunner.toString(col).getBytes(Charset.forName(UTF_8.name())));
+                    messageDigest.update(SqlScriptRunner.this.toString(col).getBytes(Charset.forName(UTF_8.name())));
                     messageDigest.update(NL_BYTES);
                 }
             }

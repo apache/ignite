@@ -68,8 +68,8 @@ NULL
 # return more than one row in a scalar subquery
 # controversial: in postgres this gives an error
 # but SQLite accepts it and just uses the first value
-# we choose to agree with SQLite here
-query I
+# we choose to agree with postgres here
+statement error
 SELECT * FROM integers WHERE i=(SELECT i FROM integers WHERE i IS NOT NULL ORDER BY i)
 ----
 1
@@ -88,7 +88,7 @@ statement error
 SELECT * FROM integers WHERE i=(SELECT i, i + 2 FROM integers)
 
 # but not for EXISTS queries!
-query I
+query I rowsort
 SELECT * FROM integers WHERE EXISTS (SELECT 1, 2)
 ----
 1
@@ -96,7 +96,7 @@ SELECT * FROM integers WHERE EXISTS (SELECT 1, 2)
 3
 NULL
 
-query I
+query I rowsort
 SELECT * FROM integers WHERE EXISTS (SELECT i, i + 2 FROM integers)
 ----
 1
@@ -120,7 +120,7 @@ SELECT (SELECT i FROM integers WHERE i=1)
 ----
 1
 
-query I
+query I rowsort
 SELECT * FROM integers WHERE i > (SELECT i FROM integers WHERE i=1)
 ----
 2
