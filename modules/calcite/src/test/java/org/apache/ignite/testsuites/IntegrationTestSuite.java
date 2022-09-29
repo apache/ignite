@@ -41,6 +41,7 @@ import org.apache.ignite.internal.processors.query.calcite.integration.KillQuery
 import org.apache.ignite.internal.processors.query.calcite.integration.MetadataIntegrationTest;
 import org.apache.ignite.internal.processors.query.calcite.integration.QueryEngineConfigurationIntegrationTest;
 import org.apache.ignite.internal.processors.query.calcite.integration.RunningQueriesIntegrationTest;
+import org.apache.ignite.internal.processors.query.calcite.integration.SearchSargOnIndexIntegrationTest;
 import org.apache.ignite.internal.processors.query.calcite.integration.ServerStatisticsIntegrationTest;
 import org.apache.ignite.internal.processors.query.calcite.integration.SetOpIntegrationTest;
 import org.apache.ignite.internal.processors.query.calcite.integration.SortAggregateIntegrationTest;
@@ -103,6 +104,7 @@ import org.junit.runners.Suite;
     SystemViewsIntegrationTest.class,
     IndexRebuildIntegrationTest.class,
     QueryEngineConfigurationIntegrationTest.class,
+    SearchSargOnIndexIntegrationTest.class,
 })
 public class IntegrationTestSuite {
 }

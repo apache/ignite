@@ -19,7 +19,6 @@ package org.apache.ignite.internal.processors.query.calcite.schema;
 import java.util.List;
 import java.util.function.Function;
 import java.util.function.Predicate;
-import java.util.function.Supplier;
 import org.apache.calcite.plan.RelOptCluster;
 import org.apache.calcite.plan.RelOptTable;
 import org.apache.calcite.rel.RelCollation;
@@ -29,9 +28,10 @@ import org.apache.calcite.rex.RexNode;
 import org.apache.calcite.util.ImmutableBitSet;
 import org.apache.ignite.internal.processors.query.calcite.exec.ExecutionContext;
 import org.apache.ignite.internal.processors.query.calcite.exec.SystemViewScan;
+import org.apache.ignite.internal.processors.query.calcite.exec.exp.RangeIterable;
 import org.apache.ignite.internal.processors.query.calcite.metadata.ColocationGroup;
+import org.apache.ignite.internal.processors.query.calcite.prepare.bounds.SearchBounds;
 import org.apache.ignite.internal.processors.query.calcite.rel.logical.IgniteLogicalIndexScan;
-import org.apache.ignite.internal.processors.query.calcite.util.IndexConditions;
 import org.apache.ignite.internal.processors.query.calcite.util.RexUtils;
 import org.jetbrains.annotations.Nullable;
 
@@ -82,15 +82,14 @@ public class SystemViewIndexImpl implements IgniteIndex {
         ExecutionContext<Row> execCtx,
         ColocationGroup grp,
         Predicate<Row> filters,
-        Supplier<Row> lowerIdxConditions,
-        Supplier<Row> upperIdxConditions,
+        RangeIterable<Row> ranges,
         Function<Row, Row> rowTransformer,
         @Nullable ImmutableBitSet requiredColumns
     ) {
         return new SystemViewScan<>(
             execCtx,
             tbl.descriptor(),
-            lowerIdxConditions, // Should have the same values as upperIdxConditions.
+            ranges,
             filters,
             rowTransformer,
             requiredColumns
@@ -103,18 +102,16 @@ public class SystemViewIndexImpl implements IgniteIndex {
     }
 
     /** {@inheritDoc} */
-    @Override public IndexConditions toIndexCondition(
+    @Override public List<SearchBounds> toSearchBounds(
         RelOptCluster cluster,
         @Nullable RexNode cond,
         @Nullable ImmutableBitSet requiredColumns
     ) {
         if (cond == null)
-            return new IndexConditions();
+            return null;
 
         RelDataType rowType = tbl.getRowType(cluster.getTypeFactory());
 
-        List<RexNode> searchRow = RexUtils.buildHashSearchRow(cluster, cond, rowType, requiredColumns, true);
-
-        return new IndexConditions(searchRow, searchRow, searchRow, searchRow);
+        return RexUtils.buildHashSearchBounds(cluster, cond, rowType, requiredColumns, true);
     }
 }

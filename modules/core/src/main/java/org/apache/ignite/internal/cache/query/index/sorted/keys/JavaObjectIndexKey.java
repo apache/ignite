@@ -117,9 +117,4 @@ public abstract class JavaObjectIndexKey implements IndexKey {
     @Override public String toString() {
         return key().toString();
     }
-
-//    /** {@inheritDoc} */
-//    @Override public boolean equals(Object o) {
-//        return o instanceof JavaObjectIndexKey && compare((IndexKey)o) == 0;
-//    }
 }

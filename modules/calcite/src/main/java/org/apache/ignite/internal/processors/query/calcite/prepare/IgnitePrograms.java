@@ -53,6 +53,8 @@ public class IgnitePrograms {
             final HepPlanner hepPlanner = new HepPlanner(builder.build(), Commons.context(rel), true,
                 null, Commons.context(rel).config().getCostFactory());
 
+            hepPlanner.setExecutor(planner.getExecutor());
+
             for (RelOptMaterialization materialization : materializations)
                 hepPlanner.addMaterialization(materialization);
 

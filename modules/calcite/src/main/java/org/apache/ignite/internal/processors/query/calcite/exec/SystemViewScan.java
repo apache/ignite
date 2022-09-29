@@ -22,10 +22,11 @@ import java.util.Iterator;
 import java.util.Map;
 import java.util.function.Function;
 import java.util.function.Predicate;
-import java.util.function.Supplier;
 import org.apache.calcite.rel.type.RelDataType;
 import org.apache.calcite.util.ImmutableBitSet;
 import org.apache.ignite.internal.processors.query.calcite.exec.RowHandler.RowFactory;
+import org.apache.ignite.internal.processors.query.calcite.exec.exp.RangeCondition;
+import org.apache.ignite.internal.processors.query.calcite.exec.exp.RangeIterable;
 import org.apache.ignite.internal.processors.query.calcite.schema.SystemViewColumnDescriptor;
 import org.apache.ignite.internal.processors.query.calcite.schema.SystemViewTableDescriptorImpl;
 import org.apache.ignite.internal.processors.query.calcite.util.TypeUtils;
@@ -48,7 +49,7 @@ public class SystemViewScan<Row, ViewRow> implements Iterable<Row> {
     private final RowFactory<Row> factory;
 
     /** */
-    private final Supplier<Row> searchRow;
+    private final RangeIterable<Row> ranges;
 
     /** */
     private final Predicate<Row> filters;
@@ -69,14 +70,14 @@ public class SystemViewScan<Row, ViewRow> implements Iterable<Row> {
     public SystemViewScan(
         ExecutionContext<Row> ectx,
         SystemViewTableDescriptorImpl<ViewRow> desc,
-        @Nullable Supplier<Row> searchRow,
+        @Nullable RangeIterable<Row> ranges,
         Predicate<Row> filters,
         Function<Row, Row> rowTransformer,
         @Nullable ImmutableBitSet requiredColumns
     ) {
         this.ectx = ectx;
         this.desc = desc;
-        this.searchRow = searchRow;
+        this.ranges = ranges;
         this.filters = filters;
         this.rowTransformer = rowTransformer;
         this.requiredColumns = requiredColumns;
@@ -104,10 +105,15 @@ public class SystemViewScan<Row, ViewRow> implements Iterable<Row> {
 
         Iterator<ViewRow> viewIter;
 
-        if (searchRow != null) {
+        if (ranges != null) {
             assert view instanceof FiltrableSystemView : view;
 
-            Row searchValues = searchRow.get();
+            Iterator<RangeCondition<Row>> rangesIter = ranges.iterator();
+            RangeCondition<Row> range = rangesIter.next();
+
+            assert !rangesIter.hasNext();
+
+            Row searchValues = range.lower(); // Lower bound for the hash index should be the same as upper bound.
 
             RowHandler<Row> rowHnd = ectx.rowHandler();
             Map<String, Object> filterMap = null;

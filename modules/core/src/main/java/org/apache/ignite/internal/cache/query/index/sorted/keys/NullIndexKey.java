@@ -48,14 +48,4 @@ public class NullIndexKey implements IndexKey {
     @Override public String toString() {
         return "null";
     }
-
-//    /** {@inheritDoc} */
-//    @Override public int hashCode() {
-//        return 0;
-//    }
-//
-//    /** {@inheritDoc} */
-//    @Override public boolean equals(Object o) {
-//        return o instanceof NullIndexKey;
-//    }
 }
