@@ -18,6 +18,7 @@
 package org.apache.ignite.internal.processors.query.calcite.exec.rel;
 
 import java.util.Arrays;
+import java.util.Collections;
 import java.util.Iterator;
 import java.util.List;
 import java.util.UUID;
@@ -27,6 +28,8 @@ import org.apache.calcite.rel.RelCollations;
 import org.apache.calcite.rel.type.RelDataType;
 import org.apache.calcite.util.ImmutableIntList;
 import org.apache.ignite.internal.processors.query.calcite.exec.ExecutionContext;
+import org.apache.ignite.internal.processors.query.calcite.exec.exp.RangeCondition;
+import org.apache.ignite.internal.processors.query.calcite.exec.exp.RangeIterable;
 import org.apache.ignite.internal.processors.query.calcite.type.IgniteTypeFactory;
 import org.apache.ignite.internal.processors.query.calcite.util.TypeUtils;
 import org.apache.ignite.internal.util.lang.GridTuple4;
@@ -140,8 +143,7 @@ public class SortedIndexSpoolExecutionTest extends AbstractExecutionTest {
                 RelCollations.of(ImmutableIntList.of(0)),
                 (o1, o2) -> o1[0] != null ? ((Comparable)o1[0]).compareTo(o2[0]) : 0,
                 testFilter,
-                () -> lower,
-                () -> upper
+                new StaticRangeIterable(lower, upper)
             );
 
             spool.register(Arrays.asList(scan));
@@ -188,8 +190,7 @@ public class SortedIndexSpoolExecutionTest extends AbstractExecutionTest {
             collation,
             ctx.expressionFactory().comparator(collation),
             v -> true,
-            () -> lower,
-            () -> upper
+            new StaticRangeIterable(lower, upper)
         );
 
         spool.register(scan);
@@ -237,6 +238,49 @@ public class SortedIndexSpoolExecutionTest extends AbstractExecutionTest {
                 return true;
             else
                 return delegate.test(objects);
+        }
+    }
+
+    /** */
+    private static class StaticRangeIterable implements RangeIterable<Object[]> {
+        /** */
+        private final Object[] lower;
+
+        /** */
+        private final Object[] upper;
+
+        /** */
+        private StaticRangeIterable(Object[] lower, Object[] upper) {
+            this.lower = lower;
+            this.upper = upper;
+        }
+
+        /** {@inheritDoc} */
+        @Override public int size() {
+            return 1;
+        }
+
+        /** {@inheritDoc} */
+        @Override public Iterator<RangeCondition<Object[]>> iterator() {
+            RangeCondition<Object[]> range = new RangeCondition<Object[]>() {
+                @Override public Object[] lower() {
+                    return lower;
+                }
+
+                @Override public Object[] upper() {
+                    return upper;
+                }
+
+                @Override public boolean lowerInclude() {
+                    return true;
+                }
+
+                @Override public boolean upperInclude() {
+                    return true;
+                }
+            };
+
+            return Collections.singleton(range).iterator();
         }
     }
 }

@@ -30,8 +30,10 @@ public interface TreeIndex<R> {
      *
      * @param lower Lower bound.
      * @param upper Upper bound.
+     * @param lowerInclude Inclusive lower bound.
+     * @param upperInclude Inclusive upper bound.
      * @param qctx Index query context.
      * @return Cursor over the rows within bounds.
      */
-    public GridCursor<R> find(R lower, R upper, IndexQueryContext qctx);
+    public GridCursor<R> find(R lower, R upper, boolean lowerInclude, boolean upperInclude, IndexQueryContext qctx);
 }

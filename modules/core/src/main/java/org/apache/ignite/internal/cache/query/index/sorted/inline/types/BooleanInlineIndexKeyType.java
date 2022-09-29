@@ -19,6 +19,7 @@ package org.apache.ignite.internal.cache.query.index.sorted.inline.types;
 
 import org.apache.ignite.internal.cache.query.index.sorted.IndexKeyType;
 import org.apache.ignite.internal.cache.query.index.sorted.keys.BooleanIndexKey;
+import org.apache.ignite.internal.cache.query.index.sorted.keys.IndexKey;
 import org.apache.ignite.internal.cache.query.index.sorted.keys.NumericIndexKey;
 import org.apache.ignite.internal.pagemem.PageUtils;
 
@@ -47,9 +48,9 @@ public class BooleanInlineIndexKeyType extends NumericInlineIndexKeyType<Boolean
     }
 
     /** {@inheritDoc} */
-    @Override public int compareNumeric(NumericIndexKey key, long pageAddr, int off) {
-        boolean bool1 = PageUtils.getByte(pageAddr, off + 1) != 0;
+    @Override public int compare0(long pageAddr, int off, IndexKey key) {
+        boolean val = PageUtils.getByte(pageAddr, off + 1) != 0;
 
-        return key.compareTo(bool1);
+        return -Integer.signum(((NumericIndexKey)key).compareTo(val));
     }
 }

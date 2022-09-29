@@ -40,9 +40,9 @@ public interface IndexKey {
     public int compare(IndexKey o) throws IgniteCheckedException;
 
     /**
-     * @return {@code True} if index key can be compared to another index key.
+     * @return {@code True} if index key can be compared to another index key (in case keys have different types).
      */
     public default boolean isComparableTo(IndexKey k) {
-        return type() == k.type();
+        return false;
     }
 }

@@ -18,6 +18,7 @@
 package org.apache.ignite.internal.cache.query.index.sorted.inline.types;
 
 import org.apache.ignite.internal.cache.query.index.sorted.IndexKeyType;
+import org.apache.ignite.internal.cache.query.index.sorted.keys.IndexKey;
 import org.apache.ignite.internal.cache.query.index.sorted.keys.NumericIndexKey;
 import org.apache.ignite.internal.cache.query.index.sorted.keys.ShortIndexKey;
 import org.apache.ignite.internal.pagemem.PageUtils;
@@ -32,10 +33,10 @@ public class ShortInlineIndexKeyType extends NumericInlineIndexKeyType<ShortInde
     }
 
     /** {@inheritDoc} */
-    @Override public int compareNumeric(NumericIndexKey key, long pageAddr, int off) {
-        short val1 = PageUtils.getShort(pageAddr, off + 1);
+    @Override public int compare0(long pageAddr, int off, IndexKey key) {
+        short val = PageUtils.getShort(pageAddr, off + 1);
 
-        return key.compareTo(val1);
+        return -Integer.signum(((NumericIndexKey)key).compareTo(val));
     }
 
     /** {@inheritDoc} */

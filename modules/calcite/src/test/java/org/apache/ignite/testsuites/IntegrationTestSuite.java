@@ -36,11 +36,13 @@ import org.apache.ignite.internal.processors.query.calcite.integration.IndexScan
 import org.apache.ignite.internal.processors.query.calcite.integration.IndexSpoolIntegrationTest;
 import org.apache.ignite.internal.processors.query.calcite.integration.IntervalTest;
 import org.apache.ignite.internal.processors.query.calcite.integration.JoinIntegrationTest;
+import org.apache.ignite.internal.processors.query.calcite.integration.KeepBinaryIntegrationTest;
 import org.apache.ignite.internal.processors.query.calcite.integration.KillCommandDdlIntegrationTest;
 import org.apache.ignite.internal.processors.query.calcite.integration.KillQueryCommandDdlIntegrationTest;
 import org.apache.ignite.internal.processors.query.calcite.integration.MetadataIntegrationTest;
 import org.apache.ignite.internal.processors.query.calcite.integration.QueryEngineConfigurationIntegrationTest;
 import org.apache.ignite.internal.processors.query.calcite.integration.RunningQueriesIntegrationTest;
+import org.apache.ignite.internal.processors.query.calcite.integration.SearchSargOnIndexIntegrationTest;
 import org.apache.ignite.internal.processors.query.calcite.integration.ServerStatisticsIntegrationTest;
 import org.apache.ignite.internal.processors.query.calcite.integration.SetOpIntegrationTest;
 import org.apache.ignite.internal.processors.query.calcite.integration.SortAggregateIntegrationTest;
@@ -103,6 +105,8 @@ import org.junit.runners.Suite;
     SystemViewsIntegrationTest.class,
     IndexRebuildIntegrationTest.class,
     QueryEngineConfigurationIntegrationTest.class,
+    SearchSargOnIndexIntegrationTest.class,
+    KeepBinaryIntegrationTest.class,
 })
 public class IntegrationTestSuite {
 }

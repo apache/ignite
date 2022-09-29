@@ -82,8 +82,7 @@ public class ByteIndexKey extends NumericIndexKey {
 
     /** {@inheritDoc} */
     @Override public int compare(IndexKey o) {
-        return o.type() == type() ? Integer.signum(Byte.compare(key, ((ByteIndexKey)o).key))
-            : -((NumericIndexKey)o).compareTo(key);
+        return -((NumericIndexKey)o).compareTo(key);
     }
 
     /** {@inheritDoc} */
