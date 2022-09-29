@@ -89,6 +89,7 @@ public abstract class IgniteDbAbstractTest extends GridCommonAbstractTest {
         ccfg.setWriteSynchronizationMode(FULL_SYNC);
         ccfg.setRebalanceMode(SYNC);
         ccfg.setAffinity(new RendezvousAffinityFunction(false, 32));
+        ccfg.setBackups(1);
 
         CacheConfiguration ccfg2 = new CacheConfiguration("non-primitive");
 
@@ -99,6 +100,7 @@ public abstract class IgniteDbAbstractTest extends GridCommonAbstractTest {
         ccfg2.setWriteSynchronizationMode(FULL_SYNC);
         ccfg2.setRebalanceMode(SYNC);
         ccfg2.setAffinity(new RendezvousAffinityFunction(false, 32));
+        ccfg2.setBackups(1);
 
         CacheConfiguration ccfg3 = new CacheConfiguration("large");
 
@@ -109,6 +111,7 @@ public abstract class IgniteDbAbstractTest extends GridCommonAbstractTest {
         ccfg3.setWriteSynchronizationMode(FULL_SYNC);
         ccfg3.setRebalanceMode(SYNC);
         ccfg3.setAffinity(new RendezvousAffinityFunction(false, 32));
+        ccfg3.setBackups(1);
 
         CacheConfiguration ccfg4 = new CacheConfiguration("tiny");
 
@@ -116,6 +119,7 @@ public abstract class IgniteDbAbstractTest extends GridCommonAbstractTest {
         ccfg4.setWriteSynchronizationMode(FULL_SYNC);
         ccfg4.setRebalanceMode(SYNC);
         ccfg4.setAffinity(new RendezvousAffinityFunction(1, null));
+        ccfg4.setBackups(1);
 
         CacheConfiguration ccfg5 = new CacheConfiguration("atomic");
 
@@ -126,6 +130,7 @@ public abstract class IgniteDbAbstractTest extends GridCommonAbstractTest {
         ccfg5.setWriteSynchronizationMode(FULL_SYNC);
         ccfg5.setRebalanceMode(SYNC);
         ccfg5.setAffinity(new RendezvousAffinityFunction(false, 32));
+        ccfg5.setBackups(1);
 
         if (!client)
             cfg.setCacheConfiguration(ccfg, ccfg2, ccfg3, ccfg4, ccfg5);
