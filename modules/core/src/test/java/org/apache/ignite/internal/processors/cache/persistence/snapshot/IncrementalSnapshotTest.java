@@ -17,11 +17,13 @@
 
 package org.apache.ignite.internal.processors.cache.persistence.snapshot;
 
+import java.io.File;
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.internal.IgniteEx;
 import org.junit.Test;
 
+import static org.apache.ignite.internal.processors.cache.persistence.snapshot.IgniteSnapshotManager.incrementalSnapshotMetaFileName;
 import static org.apache.ignite.testframework.GridTestUtils.assertThrowsWithCause;
 
 /** */
@@ -34,9 +36,15 @@ public class IncrementalSnapshotTest extends AbstractSnapshotSelfTest {
 
         snp(ign).createSnapshot(SNAPSHOT_NAME).get();
 
-        snp(ign).createIncrementalSnapshot(SNAPSHOT_NAME).get();
+        for (int idx = 1; idx < 3; idx++) {
+            snp(ign).createIncrementalSnapshot(SNAPSHOT_NAME).get();
 
-        snp(ign).createIncrementalSnapshot(SNAPSHOT_NAME).get();
+            File incSnpDir = snp(ign).incrementalSnapshotLocalDir(SNAPSHOT_NAME, null, idx);
+
+            assertTrue(incSnpDir.exists());
+            assertTrue(incSnpDir.isDirectory());
+            assertTrue(new File(incSnpDir, incrementalSnapshotMetaFileName(idx)).exists());
+        }
     }
 
     /** */
@@ -44,6 +52,11 @@ public class IncrementalSnapshotTest extends AbstractSnapshotSelfTest {
     public void testFailForUnknownBaseSnapshot() throws Exception {
         IgniteEx ign = startGridsWithCache(1, CACHE_KEYS_RANGE, key -> new Account(key, key),
             new CacheConfiguration<>(DEFAULT_CACHE_NAME));
+
+        assertThrowsWithCause(
+            () -> snp(ign).createIncrementalSnapshot("unknown").get(),
+            IgniteException.class
+        );
 
         snp(ign).createSnapshot(SNAPSHOT_NAME).get();
 

@@ -1945,7 +1945,7 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
      * @param incIdx Increment index.
      * @return Snapshot metadata file name.
      */
-    private static String incrementalSnapshotMetaFileName(int incIdx) {
+    public static String incrementalSnapshotMetaFileName(int incIdx) {
         return U.fileName(incIdx, INC_DIR_LENGTH, SNAPSHOT_METAFILE_EXT);
     }
 
