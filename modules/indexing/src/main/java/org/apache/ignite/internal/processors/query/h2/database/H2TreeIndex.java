@@ -76,6 +76,7 @@ import org.apache.ignite.internal.util.GridSpinBusyLock;
 import org.apache.ignite.internal.util.lang.GridCursor;
 import org.apache.ignite.internal.util.typedef.CIX2;
 import org.apache.ignite.internal.util.typedef.T2;
+import org.apache.ignite.internal.util.typedef.internal.LT;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgniteBiTuple;
 import org.apache.ignite.plugin.extensions.communication.Message;
@@ -277,19 +278,23 @@ public class H2TreeIndex extends H2TreeIndexBase {
             IndexKeyType colType = rowHnd.indexKeyDefinitions().get(i).idxType();
 
             if (v == null)
-                continue;
+                break;
 
             // If it's possible to convert search row to index value type - do it. In this case converted value
-            // can be used for the inline search. Otherwise, wrap search row into index key and exploit
-            // comparison/convertion provided by H2. In this case indexed value will be converted to search row type on
-            // each comparison.
+            // can be used for the inline search.
+            // Otherwise, we can't use search row as index find bound, since different types have different comparison
+            // rules (for example, '2' > '10' for strings and 2 < 10 for integers). Best we can do here is leave search
+            // bound empty. In this case index scan by bounds can be extended to full index scan and rows will be
+            // filtered out by original condition on H2 level.
             if (colType.code() != v.getType()) {
                 if (Value.getHigherOrder(colType.code(), v.getType()) == colType.code())
                     v = v.convertTo(colType.code());
                 else {
-                    keys[i] = new H2ValueIndexKey(rowDescriptor().context().cacheObjectContext(), tbl, v);
+                    LT.warn(log, "Provided value can't be used as index search bound due to column data type " +
+                        "mismatch. This can lead to full index scans instead of range index scans. [index=" +
+                        idxName + ", colType=" + colType + ", valType=" + IndexKeyType.forCode(v.getType()) + ']');
 
-                    continue;
+                    break;
                 }
             }
 

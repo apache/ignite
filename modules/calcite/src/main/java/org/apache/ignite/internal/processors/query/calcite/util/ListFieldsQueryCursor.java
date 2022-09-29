@@ -49,13 +49,13 @@ public class ListFieldsQueryCursor<Row> implements FieldsQueryCursor<List<?>>, Q
      * @param it Iterator.
      * @param ectx Row converter.
      */
-    public ListFieldsQueryCursor(MultiStepPlan plan, Iterator<Row> it, ExecutionContext<Row> ectx) {
+    public ListFieldsQueryCursor(MultiStepPlan plan, Iterator<List<?>> it, ExecutionContext<Row> ectx) {
         FieldsMetadata metadata0 = plan.fieldsMetadata();
         assert metadata0 != null;
         fieldsMeta = metadata0.queryFieldsMetadata(ectx.getTypeFactory());
         isQry = plan.type() == QueryPlan.Type.QUERY;
 
-        this.it = new ConvertingClosableIterator<>(it, ectx);
+        this.it = it;
     }
 
     /** {@inheritDoc} */
