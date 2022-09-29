@@ -18,7 +18,6 @@
 package org.apache.ignite.internal.cache.query.index.sorted;
 
 import java.util.ArrayList;
-import java.util.Collections;
 import java.util.LinkedHashMap;
 import java.util.List;
 import org.apache.ignite.IgniteCheckedException;
@@ -60,8 +59,8 @@ public class QueryIndexRowHandler implements InlineIndexRowHandler {
         List<InlineIndexKeyType> keyTypes,
         IndexKeyTypeSettings keyTypeSettings
     ) {
-        this.keyTypes = Collections.unmodifiableList(keyTypes);
-        this.keyDefs = Collections.unmodifiableList(new ArrayList<>(keyDefs.values()));
+        this.keyTypes = new ArrayList<>(keyTypes);
+        this.keyDefs = new ArrayList<>(keyDefs.values());
 
         props = new GridQueryProperty[keyDefs.size()];
         int propIdx = 0;

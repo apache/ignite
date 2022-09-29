@@ -32,6 +32,11 @@
 
 namespace ignite
 {
+    namespace binary
+    {
+        class IGNITE_IMPORT_EXPORT BinaryRawWriter;
+    }
+
     namespace impl
     {
         namespace interop
@@ -43,12 +48,22 @@ namespace ignite
 
         namespace binary
         {
+            class IGNITE_IMPORT_EXPORT BinaryWriterImpl;
+
             /**
              * Binary uilts.
              */
             class IGNITE_IMPORT_EXPORT BinaryUtils
             {
             public:
+                /**
+                 * Get implementation from a facade.
+                 *
+                 * @param facade Facade.
+                 * @return Implementation reference.
+                 */
+                static BinaryWriterImpl& ImplFromFacade(::ignite::binary::BinaryRawWriter& facade);
+
                 /**
                  * Get data hash code.
                  *

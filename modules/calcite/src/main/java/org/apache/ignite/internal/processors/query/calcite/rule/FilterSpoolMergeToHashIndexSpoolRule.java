@@ -64,13 +64,7 @@ public class FilterSpoolMergeToHashIndexSpoolRule extends RelRule<FilterSpoolMer
 
         RelNode input = spool.getInput();
 
-        List<RexNode> searchRow = RexUtils.buildHashSearchRow(
-            cluster,
-            filter.getCondition(),
-            spool.getRowType(),
-            null,
-            false
-        );
+        List<RexNode> searchRow = RexUtils.buildHashSearchRow(cluster, filter.getCondition(), spool.getRowType());
 
         if (F.isEmpty(searchRow))
             return;

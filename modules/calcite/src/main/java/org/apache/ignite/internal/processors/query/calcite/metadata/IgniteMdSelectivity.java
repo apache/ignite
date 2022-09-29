@@ -38,6 +38,7 @@ import org.apache.calcite.rex.RexLiteral;
 import org.apache.calcite.rex.RexLocalRef;
 import org.apache.calcite.rex.RexNode;
 import org.apache.calcite.rex.RexSlot;
+import org.apache.calcite.rex.RexUtil;
 import org.apache.calcite.schema.Statistic;
 import org.apache.calcite.sql.SqlKind;
 import org.apache.calcite.sql.SqlOperator;
@@ -204,6 +205,12 @@ public class IgniteMdSelectivity extends RelMdSelectivity {
                 assert pred instanceof RexCall;
 
                 sel *= 1 - getTablePredicateBasedSelectivity(rel, mq, ((RexCall)pred).getOperands().get(0));
+
+                continue;
+            }
+            else if (predKind == SqlKind.SEARCH) {
+                sel *= getTablePredicateBasedSelectivity(rel, mq,
+                    RexUtil.expandSearch(rel.getCluster().getRexBuilder(), null, pred));
 
                 continue;
             }

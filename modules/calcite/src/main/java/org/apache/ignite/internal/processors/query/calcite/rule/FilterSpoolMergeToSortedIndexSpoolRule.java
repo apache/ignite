@@ -20,6 +20,7 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Set;
 import java.util.stream.Collectors;
+import org.apache.calcite.linq4j.Ord;
 import org.apache.calcite.plan.RelOptCluster;
 import org.apache.calcite.plan.RelOptRule;
 import org.apache.calcite.plan.RelOptRuleCall;
@@ -31,13 +32,12 @@ import org.apache.calcite.rel.RelFieldCollation;
 import org.apache.calcite.rel.RelNode;
 import org.apache.calcite.rel.core.Filter;
 import org.apache.calcite.rel.core.Spool;
-import org.apache.calcite.rex.RexNode;
+import org.apache.ignite.internal.processors.query.calcite.prepare.bounds.SearchBounds;
 import org.apache.ignite.internal.processors.query.calcite.rel.IgniteFilter;
 import org.apache.ignite.internal.processors.query.calcite.rel.IgniteSortedIndexSpool;
 import org.apache.ignite.internal.processors.query.calcite.rel.IgniteTableSpool;
 import org.apache.ignite.internal.processors.query.calcite.trait.CorrelationTrait;
 import org.apache.ignite.internal.processors.query.calcite.trait.TraitUtils;
-import org.apache.ignite.internal.processors.query.calcite.util.IndexConditions;
 import org.apache.ignite.internal.processors.query.calcite.util.RexUtils;
 import org.apache.ignite.internal.util.typedef.F;
 import org.immutables.value.Value;
@@ -72,7 +72,7 @@ public class FilterSpoolMergeToSortedIndexSpoolRule extends RelRule<FilterSpoolM
 
         RelCollation inCollation = TraitUtils.collation(input);
 
-        IndexConditions idxCond = RexUtils.buildSortedIndexConditions(
+        List<SearchBounds> bounds = RexUtils.buildSortedSearchBounds(
             cluster,
             inCollation,
             filter.getCondition(),
@@ -80,31 +80,21 @@ public class FilterSpoolMergeToSortedIndexSpoolRule extends RelRule<FilterSpoolM
             null
         );
 
-        if (F.isEmpty(idxCond.lowerCondition()) && F.isEmpty(idxCond.upperCondition()))
+        if (F.isEmpty(bounds))
             return;
 
         RelCollation traitCollation;
         RelCollation searchCollation;
 
         if (inCollation == null || inCollation.isDefault()) {
-            // Create collation by index condition.
-            List<RexNode> lowerBound = idxCond.lowerBound();
-            List<RexNode> upperBound = idxCond.upperBound();
-
-            assert lowerBound == null || upperBound == null || lowerBound.size() == upperBound.size();
-
-            int cardinality = lowerBound != null ? lowerBound.size() : upperBound.size();
-
-            List<Integer> equalsFields = new ArrayList<>(cardinality);
-            List<Integer> otherFields = new ArrayList<>(cardinality);
+            // Create collation by index bounds.
+            List<Integer> equalsFields = new ArrayList<>(bounds.size());
+            List<Integer> otherFields = new ArrayList<>(bounds.size());
 
             // First, add all equality filters to collation, then add other fields.
-            for (int i = 0; i < cardinality; i++) {
-                RexNode lowerNode = lowerBound != null ? lowerBound.get(i) : null;
-                RexNode upperNode = upperBound != null ? upperBound.get(i) : null;
-
-                if (RexUtils.isNotNull(lowerNode) || RexUtils.isNotNull(upperNode))
-                    (F.eq(lowerNode, upperNode) ? equalsFields : otherFields).add(i);
+            for (int i = 0; i < bounds.size(); i++) {
+                if (bounds.get(i) != null)
+                    (bounds.get(i).type() == SearchBounds.Type.EXACT ? equalsFields : otherFields).add(i);
             }
 
             searchCollation = traitCollation = TraitUtils.createCollation(F.concat(true, equalsFields, otherFields));
@@ -113,7 +103,10 @@ public class FilterSpoolMergeToSortedIndexSpoolRule extends RelRule<FilterSpoolM
             // Create search collation as a prefix of input collation.
             traitCollation = inCollation;
 
-            Set<Integer> searchKeys = idxCond.keys();
+            Set<Integer> searchKeys = Ord.zip(bounds).stream()
+                .filter(v -> v.e != null)
+                .map(v -> v.i)
+                .collect(Collectors.toSet());
 
             List<RelFieldCollation> collationFields = inCollation.getFieldCollations().subList(0, searchKeys.size());
 
@@ -130,7 +123,7 @@ public class FilterSpoolMergeToSortedIndexSpoolRule extends RelRule<FilterSpoolM
             convert(input, input.getTraitSet().replace(traitCollation)),
             searchCollation,
             filter.getCondition(),
-            idxCond
+            bounds
         );
 
         call.transformTo(res);
