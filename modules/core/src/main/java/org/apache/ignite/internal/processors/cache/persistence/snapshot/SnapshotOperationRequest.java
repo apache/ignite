@@ -163,7 +163,7 @@ public class SnapshotOperationRequest implements Serializable {
     }
 
     /** @return Incremental index. */
-    public int incrementIdx() {
+    public int incrementIndex() {
         return incIdx;
     }
 

@@ -28,6 +28,19 @@ import static org.apache.ignite.testframework.GridTestUtils.assertThrowsWithCaus
 public class IncrementalSnapshotTest extends AbstractSnapshotSelfTest {
     /** */
     @Test
+    public void testCreation() throws Exception {
+        IgniteEx ign = startGridsWithCache(1, CACHE_KEYS_RANGE, key -> new Account(key, key),
+            new CacheConfiguration<>(DEFAULT_CACHE_NAME));
+
+        snp(ign).createSnapshot(SNAPSHOT_NAME).get();
+
+        snp(ign).createIncrementalSnapshot(SNAPSHOT_NAME).get();
+
+        snp(ign).createIncrementalSnapshot(SNAPSHOT_NAME).get();
+    }
+
+    /** */
+    @Test
     public void testFailForUnknownBaseSnapshot() throws Exception {
         IgniteEx ign = startGridsWithCache(1, CACHE_KEYS_RANGE, key -> new Account(key, key),
             new CacheConfiguration<>(DEFAULT_CACHE_NAME));
@@ -38,16 +51,5 @@ public class IncrementalSnapshotTest extends AbstractSnapshotSelfTest {
             () -> snp(ign).createIncrementalSnapshot("unknown").get(),
             IgniteException.class
         );
-    }
-
-    /** */
-    @Test
-    public void testSimplest() throws Exception {
-        IgniteEx ign = startGridsWithCache(1, CACHE_KEYS_RANGE, key -> new Account(key, key),
-            new CacheConfiguration<>(DEFAULT_CACHE_NAME));
-
-        snp(ign).createSnapshot(SNAPSHOT_NAME).get();
-
-        snp(ign).createIncrementalSnapshot(SNAPSHOT_NAME).get();
     }
 }

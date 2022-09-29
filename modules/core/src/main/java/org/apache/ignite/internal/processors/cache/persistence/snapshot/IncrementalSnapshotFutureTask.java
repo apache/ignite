@@ -19,6 +19,7 @@ package org.apache.ignite.internal.processors.cache.persistence.snapshot;
 
 import java.io.File;
 import java.util.UUID;
+import org.apache.ignite.IgniteException;
 import org.apache.ignite.internal.processors.cache.GridCacheSharedContext;
 import org.apache.ignite.internal.processors.cache.persistence.file.FileIOFactory;
 import org.apache.ignite.internal.processors.cache.persistence.partstate.GroupPartitionId;
@@ -38,26 +39,47 @@ class IncrementalSnapshotFutureTask extends AbstractSnapshotFutureTask<Increment
         FileIOFactory ioFactory,
         int incrementIdx
     ) {
-        super(cctx, srcNodeId, reqNodeId, snpName, tmpWorkDir, ioFactory, new SnapshotSender(null, null) {
-            @Override protected void init(int partsCnt) {
-                // No-op.
-            }
+        super(
+            cctx,
+            srcNodeId,
+            reqNodeId,
+            snpName,
+            tmpWorkDir,
+            ioFactory,
+            new SnapshotSender(
+                cctx.logger(IncrementalSnapshotFutureTask.class),
+                cctx.kernalContext().pools().getSnapshotExecutorService()
+            ) {
+                @Override protected void init(int partsCnt) {
+                    // No-op.
+                }
 
-            @Override protected void sendPart0(File part, String cacheDirName, GroupPartitionId pair, Long length) {
-                // No-op.
-            }
+                @Override protected void sendPart0(File part, String cacheDirName, GroupPartitionId pair, Long length) {
+                    // No-op.
+                }
 
-            @Override protected void sendDelta0(File delta, String cacheDirName, GroupPartitionId pair) {
-                // No-op.
-            }
-        }, null);
+                @Override protected void sendDelta0(File delta, String cacheDirName, GroupPartitionId pair) {
+                    // No-op.
+                }
+            },
+            null
+        );
 
         this.incrementIdx = incrementIdx;
     }
 
     /** {@inheritDoc} */
     @Override public boolean start() {
-        System.out.println("IncrementalSnapshotFutureTask.start");
+        File incSnpDir = cctx.snapshotMgr().incrementalSnapshotLocalDir(snpName, null, incrementIdx);
+
+        if (!incSnpDir.mkdirs()) {
+            onDone(new IgniteException("Can't create snapshot directory[dir=" + incSnpDir.getAbsolutePath() + ']'));
+
+            return false;
+        }
+
+        onDone(new IncrementalSnapshotFutureTaskResult());
+
         return true;
     }
 

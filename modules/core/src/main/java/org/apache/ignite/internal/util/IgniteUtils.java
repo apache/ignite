@@ -3380,8 +3380,10 @@ public abstract class IgniteUtils {
         for (int i = segmentStr.length(); i < len; i++)
             b.a('0');
 
+        b.a(segmentStr);
+
         if (ext != null)
-            b.a(segmentStr).a(ext);
+            b.a(ext);
 
         return b.toString();
     }

@@ -147,6 +147,7 @@ import org.apache.ignite.internal.processors.task.GridInternal;
 import org.apache.ignite.internal.util.BasicRateLimiter;
 import org.apache.ignite.internal.util.GridBusyLock;
 import org.apache.ignite.internal.util.GridCloseableIteratorAdapter;
+import org.apache.ignite.internal.util.IgniteUtils;
 import org.apache.ignite.internal.util.distributed.DistributedProcess;
 import org.apache.ignite.internal.util.distributed.InitMessage;
 import org.apache.ignite.internal.util.future.GridCompoundFuture;
@@ -175,6 +176,7 @@ import org.apache.ignite.spi.encryption.EncryptionSpi;
 import org.apache.ignite.spi.systemview.view.SnapshotView;
 import org.jetbrains.annotations.Nullable;
 
+import static java.nio.charset.StandardCharsets.UTF_8;
 import static java.nio.file.StandardOpenOption.READ;
 import static org.apache.ignite.configuration.DataStorageConfiguration.DFLT_BINARY_METADATA_PATH;
 import static org.apache.ignite.configuration.DataStorageConfiguration.DFLT_MARSHALLER_PATH;
@@ -309,8 +311,14 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
     /** Total snapshot files count which receiver should expect to receive. */
     private static final String SNP_PARTITIONS_CNT = "partsCnt";
 
+    /** Incremental snapshots directory name. */
+    public static final String INC_SNP_DIR = "increments";
+
+    /** Count of numbers in incremental snapshot directory. */
+    public static final int INC_DIR_LENGTH = 4;
+
     /** Pattern for incremental snapshot directory names. */
-    public static final Pattern INC_SNP_NAME_PATTERN = Pattern.compile("\\d{4}");
+    public static final Pattern INC_SNP_NAME_PATTERN = Pattern.compile("\\d{" + INC_DIR_LENGTH + "}");
 
     /**
      * Local buffer to perform copy-on-write operations with pages for {@code SnapshotFutureTask.PageStoreSerialWriter}s.
@@ -689,6 +697,41 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
     }
 
     /**
+     * @param snpDir     Snapshot directory.
+     * @param folderName Local node folder name (see {@link U#maskForFileName} with consistent id).
+     * @param incIdx Incremental index.
+     */
+    private void deleteIncrementalSnapshot(File snpDir, String folderName, int incIdx) {
+        try {
+            // Concurrently traverse the snapshot marshaller directory and delete all files.
+            Files.walkFileTree(snpDir.toPath(), new SimpleFileVisitor<Path>() {
+                @Override public FileVisitResult visitFile(Path file, BasicFileAttributes attrs) {
+                    U.delete(file);
+
+                    return FileVisitResult.CONTINUE;
+                }
+
+                @Override public FileVisitResult visitFileFailed(Path file, IOException exc) {
+                    // Skip files which can be concurrently removed from FileTree.
+                    return FileVisitResult.CONTINUE;
+                }
+
+                @Override public FileVisitResult postVisitDirectory(Path dir, IOException exc) {
+                    dir.toFile().delete();
+
+                    if (log.isInfoEnabled() && exc != null)
+                        log.info("Marshaller directory cleaned with an exception: " + exc.getMessage());
+
+                    return FileVisitResult.CONTINUE;
+                }
+            });
+        }
+        catch (IOException e) {
+            throw new IgniteException(e);
+        }
+    }
+
+    /**
      * @param snpName Snapshot name.
      * @return Local snapshot directory for snapshot with given name.
      */
@@ -706,6 +749,38 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
         assert U.alphanumericUnderscore(snpName) : snpName;
 
         return snpPath == null ? new File(locSnpDir, snpName) : new File(snpPath, snpName);
+    }
+
+    /**
+     * Returns path to specific incremental snapshot.
+     * For example, {@code "work/snapshots/mybackup/increments/node01/0001"}.
+     *
+     * @param snpName Snapshot name.
+     * @param snpPath Snapshot directory path.
+     * @param incIdx Increment index.
+     * @return Local snapshot directory where snapshot files are located.
+     */
+    public File incrementalSnapshotLocalDir(String snpName, @Nullable String snpPath, int incIdx) {
+        return Paths.get(
+            incrementalSnapshotsLocalRootDir(snpName, snpPath).getAbsolutePath(),
+            IgniteUtils.fileName(incIdx, INC_DIR_LENGTH, null)
+        ).toFile();
+    }
+
+    /**
+     * Returns root folder for incremental snapshot.
+     * For example, {@code "work/snapshots/mybackup/increments/node01"}.
+     *
+     * @param snpName Snapshot name.
+     * @param snpPath Snapshot directory path.
+     * @return Local snapshot directory where snapshot files are located.
+     */
+    public File incrementalSnapshotsLocalRootDir(String snpName, @Nullable String snpPath) {
+        return Paths.get(
+            snapshotLocalDir(snpName, snpPath).getAbsolutePath(),
+            INC_SNP_DIR,
+            pdsSettings.folderName()
+        ).toFile();
     }
 
     /**
@@ -784,8 +859,8 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
     }
 
     /**
-     * @param req
-     * @return
+     * @param req Request on snapshot creation.
+     * @return Future which will be completed when a snapshot has been started.
      */
     private IgniteInternalFuture<SnapshotOperationResponse> initLocalIncrementalSnapshot(SnapshotOperationRequest req) {
         IgniteInternalFuture<SnapshotOperationResponse> res = registerTask(req.snapshotName(), new IncrementalSnapshotFutureTask(
@@ -795,11 +870,23 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
             req.snapshotName(),
             tmpWorkDir,
             ioFactory,
-            req.incrementIdx()
+            req.incrementIndex()
         )).chain(fut -> {
-            System.out.println("IgniteSnapshotManager.initLocalIncrementalSnapshot");
+            if (fut.error() != null)
+                throw F.wrap(fut.error());
 
-            //TODO: execute handlers here.
+            File incSnpDir = incrementalSnapshotLocalDir(req.snapshotName(), req.snapshotPath(), req.incrementIndex());
+
+            assert incSnpDir.exists();
+
+            File smf = new File(incSnpDir, incrementalSnapshotMetaFileName(req.incrementIndex()));
+
+            try (FileOutputStream os = new FileOutputStream(smf)) {
+                os.write("Hello, world!".getBytes(UTF_8));
+            }
+            catch (IOException e) {
+                throw new IgniteException(e);
+            }
 
             return new SnapshotOperationResponse();
         });
@@ -809,10 +896,12 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
 
         if (log.isDebugEnabled()) {
             log.debug("Incremental snapshot operation submited for execution" +
-                "[snpName=" + req.snapshotName() + ", incIdx=" + req.incrementIdx());
+                "[snpName=" + req.snapshotName() + ", incIdx=" + req.incrementIndex());
         }
 
-        cctx.kernalContext().pools().getSystemExecutorService().submit(() -> {
+        clusterSnpReq = req;
+
+        cctx.kernalContext().pools().getSnapshotExecutorService().submit(() -> {
             SnapshotOperationRequest snpReq = clusterSnpReq;
 
             AbstractSnapshotFutureTask<?> task = locSnpTasks.get(snpReq.snapshotName());
@@ -822,12 +911,10 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
 
             if (log.isDebugEnabled()) {
                 log.debug("Incremental snapshot operation started" +
-                    "[snpName=" + req.snapshotName() + ", incIdx=" + req.incrementIdx());
+                    "[snpName=" + req.snapshotName() + ", incIdx=" + req.incrementIndex());
             }
 
-            if (task.start()) {
-
-            }
+            task.start();
         });
 
         return res;
@@ -1058,7 +1145,15 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
             if (req.error() != null) {
                 snpReq.error(req.error());
 
-                deleteSnapshot(snapshotLocalDir(req.snapshotName(), req.snapshotPath()), pdsSettings.folderName());
+                if (req.incremental()) {
+                    deleteIncrementalSnapshot(
+                        snapshotLocalDir(req.snapshotName(), req.snapshotPath()),
+                        pdsSettings.folderName(),
+                        req.incrementIndex()
+                    );
+                }
+                else
+                    deleteSnapshot(snapshotLocalDir(req.snapshotName(), req.snapshotPath()), pdsSettings.folderName());
             }
 
             removeLastMetaStorageKey();
@@ -1204,12 +1299,19 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
 
         assert locSnpDir != null;
 
-        return Arrays.stream(resolveSnapshotDir(snpName, snpPath).listFiles(File::isDirectory))
-            .filter(dir -> INC_SNP_NAME_PATTERN.matcher(dir.getName()).matches())
-            .map(File::getName)
-            .mapToInt(Integer::parseInt)
-            .max()
-            .orElse(0);
+        synchronized (snpOpMux) {
+            File[] incDirs = incrementalSnapshotsLocalRootDir(snpName, snpPath).listFiles(File::isDirectory);
+
+            if (incDirs == null)
+                return 0;
+
+            return Arrays.stream(incDirs)
+                .map(File::getName)
+                .filter(name -> INC_SNP_NAME_PATTERN.matcher(name).matches())
+                .mapToInt(Integer::parseInt)
+                .max()
+                .orElse(0);
+        }
     }
 
     /** {@inheritDoc} */
@@ -1905,6 +2007,14 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
      */
     private static String snapshotMetaFileName(String consId) {
         return U.maskForFileName(consId) + SNAPSHOT_METAFILE_EXT;
+    }
+
+    /**
+     * @param incIdx Increment index.
+     * @return Snapshot metadata file name.
+     */
+    private static String incrementalSnapshotMetaFileName(int incIdx) {
+        return U.fileName(incIdx, INC_DIR_LENGTH, SNAPSHOT_METAFILE_EXT);
     }
 
     /**
