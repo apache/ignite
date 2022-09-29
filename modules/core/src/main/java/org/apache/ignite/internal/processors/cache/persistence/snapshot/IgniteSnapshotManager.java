@@ -800,7 +800,7 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
      * @return Future which will be completed when a snapshot has been started.
      */
     private IgniteInternalFuture<SnapshotOperationResponse> initLocalIncrementalSnapshot(SnapshotOperationRequest req) {
-        IgniteInternalFuture<SnapshotOperationResponse> res = registerTask(req.snapshotName(), new IncrementalSnapshotFutureTask(
+        IgniteInternalFuture<SnapshotOperationResponse> task0 = registerTask(req.snapshotName(), new IncrementalSnapshotFutureTask(
             cctx,
             req.operationalNodeId(),
             req.requestId(),
@@ -828,8 +828,8 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
             return new SnapshotOperationResponse();
         });
 
-        if (res.isDone())
-            return res;
+        if (task0.isDone())
+            return task0;
 
         if (log.isDebugEnabled()) {
             log.debug("Incremental snapshot operation submited for execution" +
@@ -854,7 +854,7 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
             task.start();
         });
 
-        return res;
+        return task0;
     }
 
     /**
