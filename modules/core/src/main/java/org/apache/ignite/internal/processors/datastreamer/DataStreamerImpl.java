@@ -1124,7 +1124,7 @@ public class DataStreamerImpl<K, V> implements IgniteDataStreamer<K, V>, Delayed
      *
      * @throws IgniteCheckedException If failed.
      */
-    private void doFlush() throws IgniteCheckedException {
+    private void doFlush(boolean finalize) throws IgniteCheckedException {
         lastFlushTime = U.currentTimeMillis();
 
         List<IgniteInternalFuture> activeFuts0 = null;
@@ -1243,7 +1243,7 @@ public class DataStreamerImpl<K, V> implements IgniteDataStreamer<K, V>, Delayed
         lock(true);
 
         try {
-            doFlush();
+            doFlush(false);
         }
         catch (IgniteCheckedException e) {
             throw CU.convertToCacheException(e);
@@ -1352,7 +1352,7 @@ public class DataStreamerImpl<K, V> implements IgniteDataStreamer<K, V>, Delayed
                         buf.cancelAll(cancellationErr);
                 }
                 else
-                    doFlush();
+                    doFlush(true);
 
                 ctx.event().removeLocalEventListener(discoLsnr);
 
