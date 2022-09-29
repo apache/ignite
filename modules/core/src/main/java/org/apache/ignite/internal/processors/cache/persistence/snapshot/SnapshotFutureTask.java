@@ -507,6 +507,9 @@ class SnapshotFutureTask extends AbstractSnapshotFutureTask<Set<GroupPartitionId
 
                     CompletableFuture<Void> fut0 = CompletableFuture.runAsync(
                         wrapExceptionIfStarted(() -> {
+                            if(!cctx.mvcc().dataStreamerFutures().isEmpty())
+                                log.error("TEST | no data storage futures");
+
                             snpSndr.sendPart(
                                 getPartitionFile(pageStore.workDir(), cacheDirName, partId),
                                 cacheDirName,
