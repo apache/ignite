@@ -2170,13 +2170,13 @@ public class DataStreamerImpl<K, V> implements IgniteDataStreamer<K, V>, Delayed
 
     /**
      * @param node Node to send to.
-     * @param persistant {@code True} if the cache is persistent. {@code False} otherwise.
+     * @param persistent {@code True} if the cache is persistent. {@code False} otherwise.
      * @return Max parallel operations per node.
      */
-    public static int perNodeParallelOperations(ClusterNode node, boolean persistant) {
+    public static int perNodeParallelOperations(ClusterNode node, boolean persistent) {
         int poolSize = streamerPoolSize(node);
 
-        return persistant ? Math.max(DFLT_MIN_PARALLEL_PERSISTENCE_OPS,
+        return persistent ? Math.max(DFLT_MIN_PARALLEL_PERSISTENCE_OPS,
             Math.round(poolSize * DFLT_PARALLEL_PERSISTENCE_OPS_MULT)) : poolSize;
     }
 
@@ -2413,10 +2413,10 @@ public class DataStreamerImpl<K, V> implements IgniteDataStreamer<K, V>, Delayed
         }
 
         /** {@inheritDoc} */
-        @Override public int perNodeParallelOperations(ClusterNode node, boolean persistant) {
+        @Override public int perNodeParallelOperations(ClusterNode node, boolean persistent) {
             int poolSize = streamerPoolSize(node);
 
-            return poolSize * (persistant ? PERSISTENT_PARALLEL_OPS_MULT : PARALLEL_OPS_MULT);
+            return poolSize * (persistent ? PERSISTENT_PARALLEL_OPS_MULT : PARALLEL_OPS_MULT);
         }
     }
 

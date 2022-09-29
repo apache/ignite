@@ -49,12 +49,12 @@ public interface StreamReceiver<K, V> extends Serializable {
      * positive. In same way takes place only if positive.
      *
      * @param node       Node to send to.
-     * @param persistant {@code True} if the cache is persistent. {@code False} otherwise.
+     * @param persistent {@code True} if the cache is persistent. {@code False} otherwise.
      *
      * @return Max parallel batches.
      * @see IgniteDataStreamer#perNodeParallelOperations(int)
      */
-    public default int perNodeParallelOperations(ClusterNode node, boolean persistant) {
-        return DataStreamerImpl.perNodeParallelOperations(node, persistant);
+    public default int perNodeParallelOperations(ClusterNode node, boolean persistent) {
+        return DataStreamerImpl.perNodeParallelOperations(node, persistent);
     }
 }
