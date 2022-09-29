@@ -78,7 +78,7 @@ namespace Apache.Ignite.Core.Tests
             {
                 "-XX:+HeapDumpOnOutOfMemoryError",
                 "-Xms2g",
-                "-Xmx6g",
+                "-Xmx4g",
                 "-ea",
                 "-DIGNITE_QUIET=true",
                 "-Duser.timezone=UTC"

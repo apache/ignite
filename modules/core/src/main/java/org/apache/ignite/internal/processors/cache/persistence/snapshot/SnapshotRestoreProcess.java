@@ -211,7 +211,7 @@ public class SnapshotRestoreProcess {
      * @param cacheGrpNames Cache groups to be restored or {@code null} to restore all cache groups from the snapshot.
      * @return Future that will be completed when the restore operation is complete and the cache groups are started.
      */
-    public IgniteFuture<Void> start(String snpName, @Nullable String snpPath, @Nullable Collection<String> cacheGrpNames) {
+    public IgniteFutureImpl<Void> start(String snpName, @Nullable String snpPath, @Nullable Collection<String> cacheGrpNames) {
         IgniteSnapshotManager snpMgr = ctx.cache().context().snapshotMgr();
         ClusterSnapshotFuture fut0;
 
@@ -465,26 +465,29 @@ public class SnapshotRestoreProcess {
     /**
      * Cancel the currently running local restore procedure.
      *
-     * @param reason Interruption reason.
+     * @param reqId Snapshot operation request ID.
      * @param snpName Snapshot name.
      * @return Future that will be finished when process the process is complete. The result of this future will be
      * {@code false} if the restore process with the specified snapshot name is not running at all.
      */
-    public IgniteFuture<Boolean> cancel(IgniteCheckedException reason, String snpName) {
+    public IgniteFuture<Boolean> cancel(UUID reqId, @Deprecated String snpName) {
+        assert (reqId == null && snpName != null) || (reqId != null && snpName == null);
+
+        IgniteCheckedException reason = new IgniteCheckedException("Operation has been canceled by the user.");
         SnapshotRestoreContext opCtx0;
         ClusterSnapshotFuture fut0 = null;
 
         synchronized (this) {
             opCtx0 = opCtx;
 
-            if (fut != null && fut.name.equals(snpName)) {
+            if (fut != null && (fut.rqId.equals(reqId) || fut.name.equals(snpName))) {
                 fut0 = fut;
 
                 fut0.interruptEx = reason;
             }
         }
 
-        boolean ctxStop = opCtx0 != null && opCtx0.snpName.equals(snpName);
+        boolean ctxStop = opCtx0 != null && (opCtx0.reqId.equals(reqId) || opCtx0.snpName.equals(snpName));
 
         if (ctxStop)
             interrupt(opCtx0, reason);
@@ -1001,6 +1004,7 @@ public class SnapshotRestoreProcess {
                 for (Map.Entry<UUID, Map<Integer, Set<Integer>>> m : snpAff.entrySet()) {
                     ctx.cache().context().snapshotMgr()
                         .requestRemoteSnapshotFiles(m.getKey(),
+                            opCtx0.reqId,
                             opCtx0.snpName,
                             opCtx0.snpPath,
                             m.getValue(),

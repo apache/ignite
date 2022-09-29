@@ -26,6 +26,7 @@
 #include <ignite/reference.h>
 
 #include <ignite/thin/cache/event/cache_entry_event_listener.h>
+#include <ignite/thin/cache/event/java_cache_entry_event_filter.h>
 
 namespace ignite
 {
@@ -81,7 +82,8 @@ namespace ignite
                             bufferSize(DEFAULT_BUFFER_SIZE),
                             timeInterval(DEFAULT_TIME_INTERVAL),
                             includeExpired(false),
-                            listener(lsnr)
+                            listener(lsnr),
+                            filter()
                         {
                             // No-op.
                         }
@@ -210,6 +212,37 @@ namespace ignite
                             return *listener.Get();
                         }
 
+                        /**
+                         * Set Java event filter to be used on server to determine what events should be transferred
+                         * to local event listener.
+                         *
+                         * @param fltr Java remote filter.
+                         */
+                        void SetJavaFilter(const event::JavaCacheEntryEventFilter& fltr)
+                        {
+                            filter = fltr;
+                        }
+
+                        /**
+                         * Get remote Java filter reference.
+                         *
+                         * @return Remote Java filter.
+                         */
+                        event::JavaCacheEntryEventFilter& GetJavaFilter()
+                        {
+                            return filter;
+                        }
+
+                        /**
+                         * Get remote Java filter reference.
+                         *
+                         * @return Remote Java filter.
+                         */
+                        const event::JavaCacheEntryEventFilter& GetJavaFilter() const
+                        {
+                            return filter;
+                        }
+
                     private:
                         /** Buffer size. */
                         int32_t bufferSize;
@@ -222,6 +255,9 @@ namespace ignite
 
                         /** Listener. */
                         Reference<event::CacheEntryEventListener<K, V> > listener;
+
+                        /** Remote filter. */
+                        event::JavaCacheEntryEventFilter filter;
                     };
                 }
             }

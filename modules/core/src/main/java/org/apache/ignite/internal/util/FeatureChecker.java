@@ -41,6 +41,8 @@ public class FeatureChecker {
         "--add-opens=java.base/java.io=ALL-UNNAMED\n" +
         "--add-opens=java.base/java.nio=ALL-UNNAMED\n" +
         "--add-opens=java.base/java.util=ALL-UNNAMED\n" +
+        "--add-opens=java.base/java.util.concurrent=ALL-UNNAMED\n" +
+        "--add-opens=java.base/java.util.concurrent.locks=ALL-UNNAMED\n" +
         "--add-opens=java.base/java.lang=ALL-UNNAMED";
 
     /** Java version specific warning to be added in case access failed */
