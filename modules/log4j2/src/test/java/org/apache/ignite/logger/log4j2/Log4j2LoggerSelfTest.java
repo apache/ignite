@@ -146,6 +146,11 @@ public class Log4j2LoggerSelfTest {
 
         assertEquals(U.id8(id), System.getProperty("nodeId"));
         assertEquals("other-app", System.getProperty("appId"));
+
+        new Log4J2Logger(LOG_PATH_TEST).setApplicationAndNode(null, id);
+
+        assertEquals(U.id8(id), System.getProperty("nodeId"));
+        assertEquals("other-app", System.getProperty("appId"));
     }
 
     /**

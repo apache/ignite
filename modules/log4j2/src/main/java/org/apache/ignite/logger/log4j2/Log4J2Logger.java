@@ -238,6 +238,8 @@ public class Log4J2Logger implements IgniteLogger, LoggerNodeIdAndApplicationAwa
      */
     static void cleanup() {
         synchronized (mux) {
+            System.clearProperty(APP_ID);
+
             if (inited)
                 LogManager.shutdown();
 
@@ -424,7 +426,9 @@ public class Log4J2Logger implements IgniteLogger, LoggerNodeIdAndApplicationAwa
 
         // Set nodeId as system variable to be used at configuration.
         System.setProperty(NODE_ID, U.id8(nodeId));
-        System.setProperty(APP_ID, application != null ? application : "ignite");
+        System.setProperty(APP_ID, application != null
+            ? application
+            : System.getProperty(APP_ID, "ignite"));
 
         if (inited) {
             synchronized (mux) {
