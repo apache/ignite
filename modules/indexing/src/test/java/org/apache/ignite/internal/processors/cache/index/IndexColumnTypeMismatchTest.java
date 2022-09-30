@@ -30,6 +30,10 @@ import org.junit.Test;
  */
 public class IndexColumnTypeMismatchTest extends AbstractIndexingCommonTest {
     /** */
+    private static final String LOG_MSG =
+        "Provided value can't be used as index search bound due to column data type mismatch";
+
+    /** */
     private final ListeningTestLogger listeningLog = new ListeningTestLogger(log);
 
     /** */
@@ -40,21 +44,23 @@ public class IndexColumnTypeMismatchTest extends AbstractIndexingCommonTest {
         return super.getConfiguration(igniteInstanceName).setGridLogger(listeningLog);
     }
 
+    /** {@inheritDoc} */
+    @Override protected void afterTest() throws Exception {
+        super.afterTest();
+
+        stopAllGrids();
+    }
+
     /** */
     @Test
     public void testIndexColTypeMismatch() throws Exception {
-        LogListener lsnr = LogListener
-            .matches("Provided value can't be used as index search bound due to column data type mismatch")
-            .times(1)
-            .build();
+        LogListener lsnr = LogListener.matches(LOG_MSG).times(1).build();
 
         listeningLog.registerListener(lsnr);
 
         IgniteEx ignite = startGrid(0);
-        String cacheName = "test";
 
-        sql(ignite, "CREATE TABLE test (id INTEGER, val VARCHAR, PRIMARY KEY (id)) " +
-            "WITH \"CACHE_NAME=" + cacheName + "\"");
+        sql(ignite, "CREATE TABLE test (id INTEGER, val VARCHAR, PRIMARY KEY (id)) WITH \"CACHE_NAME=test\"");
 
         sql(ignite, "CREATE INDEX test_idx ON test (val)");
 
@@ -70,6 +76,37 @@ public class IndexColumnTypeMismatchTest extends AbstractIndexingCommonTest {
         }
 
         List<List<?>> res = sql(ignite, "SELECT val FROM test WHERE val < ?", 50);
+
+        assertEquals(50, res.size());
+
+        assertTrue(lsnr.check());
+    }
+
+    /** */
+    @Test
+    public void testIndexDifferentTypesComparable() throws Exception {
+        LogListener lsnr = LogListener.matches(LOG_MSG).times(0).build();
+
+        listeningLog.registerListener(lsnr);
+
+        IgniteEx ignite = startGrid(0);
+
+        sql(ignite, "CREATE TABLE test (id INTEGER, val INTEGER, PRIMARY KEY (id)) WITH \"CACHE_NAME=test\"");
+
+        sql(ignite, "CREATE INDEX test_idx ON test (val)");
+
+        for (int i = 0; i < ROW_COUNT; i++)
+            sql(ignite, "INSERT INTO test VALUES (?, ?)", i, i);
+
+        for (long i = 0; i < ROW_COUNT; i++) {
+            // Use 'long' as a search row for 'int' index.
+            List<List<?>> res = sql(ignite, "SELECT val FROM test WHERE val = ?", i);
+
+            assertEquals(1, res.size());
+            assertEquals((int)i, res.get(0).get(0));
+        }
+
+        List<List<?>> res = sql(ignite, "SELECT val FROM test WHERE val < ?", 50L);
 
         assertEquals(50, res.size());
 
