@@ -37,12 +37,11 @@ public class IncrementalSnapshotMetadata implements Serializable {
     private final WALPointer cutPtr;
 
     /**
-     * @param rqId
-     * @param snpName
-     * @param incIdx
-     * @param consId
-     * @param folderName
-     * @param cutPtr
+     * @param rqId Unique request id.
+     * @param snpName Snapshot name.
+     * @param consId Consistent id of a node to which this metadata relates.
+     * @param folderName Directory name which stores the data files.
+     * @param cutPtr Pointer to consistent cut record.
      */
     public IncrementalSnapshotMetadata(
         UUID rqId,
