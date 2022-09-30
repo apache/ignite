@@ -2608,7 +2608,7 @@ public class PageMemoryImpl implements PageMemoryEx {
                                 seg.dirtyPagesCntr.decrementAndGet();
                         }
 
-                        GridUnsafe.setMemory(absPtr + PAGE_OVERHEAD, pageSize, (byte)0);
+                        // GridUnsafe.setMemory(absPtr + PAGE_OVERHEAD, pageSize, (byte)0);
 
                         seg.pageReplacementPolicy.onRemove(relPtr);
 
