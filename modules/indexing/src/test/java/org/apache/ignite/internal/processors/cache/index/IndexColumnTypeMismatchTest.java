@@ -17,7 +17,11 @@
 
 package org.apache.ignite.internal.processors.cache.index;
 
+import java.sql.Date;
+import java.sql.Timestamp;
+import java.util.Calendar;
 import java.util.List;
+import java.util.function.IntFunction;
 import org.apache.ignite.cache.query.SqlFieldsQuery;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.IgniteEx;
@@ -60,24 +64,7 @@ public class IndexColumnTypeMismatchTest extends AbstractIndexingCommonTest {
 
         IgniteEx ignite = startGrid(0);
 
-        sql(ignite, "CREATE TABLE test (id INTEGER, val VARCHAR, PRIMARY KEY (id)) WITH \"CACHE_NAME=test\"");
-
-        sql(ignite, "CREATE INDEX test_idx ON test (val)");
-
-        for (int i = 0; i < ROW_COUNT; i++)
-            sql(ignite, "INSERT INTO test VALUES (?, ?)", i, i);
-
-        for (int i = 0; i < ROW_COUNT; i++) {
-            // Use 'int' as a search row for 'string' index.
-            List<List<?>> res = sql(ignite, "SELECT val FROM test WHERE val = ?", i);
-
-            assertEquals(1, res.size());
-            assertEquals(String.valueOf(i), res.get(0).get(0));
-        }
-
-        List<List<?>> res = sql(ignite, "SELECT val FROM test WHERE val < ?", 50);
-
-        assertEquals(50, res.size());
+        checkIndexQuery(ignite, "VARCHAR", String::valueOf, i -> i);
 
         assertTrue(lsnr.check());
     }
@@ -91,26 +78,54 @@ public class IndexColumnTypeMismatchTest extends AbstractIndexingCommonTest {
 
         IgniteEx ignite = startGrid(0);
 
-        sql(ignite, "CREATE TABLE test (id INTEGER, val INTEGER, PRIMARY KEY (id)) WITH \"CACHE_NAME=test\"");
-
-        sql(ignite, "CREATE INDEX test_idx ON test (val)");
-
-        for (int i = 0; i < ROW_COUNT; i++)
-            sql(ignite, "INSERT INTO test VALUES (?, ?)", i, i);
-
-        for (long i = 0; i < ROW_COUNT; i++) {
-            // Use 'long' as a search row for 'int' index.
-            List<List<?>> res = sql(ignite, "SELECT val FROM test WHERE val = ?", i);
-
-            assertEquals(1, res.size());
-            assertEquals((int)i, res.get(0).get(0));
-        }
-
-        List<List<?>> res = sql(ignite, "SELECT val FROM test WHERE val < ?", 50L);
-
-        assertEquals(50, res.size());
+        checkIndexQuery(ignite, "INT", i -> i, i -> (long)i);
+        checkIndexQuery(ignite, "BIGINT", i -> (long)i, i -> i);
+        checkIndexQuery(ignite, "DATE", i -> new Date(millis(i)), i -> new Timestamp(millis(i)));
+        checkIndexQuery(ignite, "TIMESTAMP", i -> new Timestamp(millis(i)), i -> new Date(millis(i)));
+        checkIndexQuery(ignite, "INT", i -> i, String::valueOf);
 
         assertTrue(lsnr.check());
+    }
+
+    /** */
+    private void checkIndexQuery(
+        IgniteEx ignite,
+        String indexedType,
+        IntFunction<Object> indexedValFactory,
+        IntFunction<Object> searchRowFactory
+    ) {
+        try {
+            sql(ignite, "CREATE TABLE test (id INTEGER, val " + indexedType +
+                ", PRIMARY KEY (id)) WITH \"CACHE_NAME=test\"");
+
+            sql(ignite, "CREATE INDEX test_idx ON test (val)");
+
+            for (int i = 0; i < ROW_COUNT; i++)
+                sql(ignite, "INSERT INTO test VALUES (?, ?)", i, indexedValFactory.apply(i));
+
+            for (int i = 0; i < ROW_COUNT; i++) {
+                List<List<?>> res = sql(ignite, "SELECT val FROM test WHERE val = ?", searchRowFactory.apply(i));
+
+                assertEquals(1, res.size());
+                assertEquals(indexedValFactory.apply(i), res.get(0).get(0));
+            }
+
+            List<List<?>> res = sql(ignite, "SELECT val FROM test WHERE val < ?", searchRowFactory.apply(50));
+
+            assertEquals(50, res.size());
+        }
+        finally {
+            sql(ignite, "DROP TABLE test");
+        }
+    }
+
+    /** */
+    private long millis(int day) {
+        Calendar cal = Calendar.getInstance();
+        cal.clear();
+        cal.set(2022, Calendar.JANUARY, 1);
+        cal.add(Calendar.DATE, day);
+        return cal.getTimeInMillis();
     }
 
     /** */
