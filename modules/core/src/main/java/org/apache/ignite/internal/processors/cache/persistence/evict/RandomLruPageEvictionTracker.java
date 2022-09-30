@@ -73,7 +73,7 @@ public class RandomLruPageEvictionTracker extends PageAbstractEvictionTracker {
     @Override public void start() throws IgniteException {
         trackingArrPtr = GridUnsafe.allocateMemory(trackingSize * 4l);
 
-        GridUnsafe.setMemory(trackingArrPtr, trackingSize * 4l, (byte)0);
+        GridUnsafe.zeroMemory(trackingArrPtr, trackingSize * 4l);
     }
 
     /** {@inheritDoc} */
@@ -86,9 +86,9 @@ public class RandomLruPageEvictionTracker extends PageAbstractEvictionTracker {
         int pageIdx = PageIdUtils.pageIndex(pageId);
 
         long res = compactTimestamp(U.currentTimeMillis());
-        
+
         assert res >= 0 && res < Integer.MAX_VALUE;
-        
+
         GridUnsafe.putIntVolatile(null, trackingArrPtr + trackingIdx(pageIdx) * 4, (int)res);
     }
 

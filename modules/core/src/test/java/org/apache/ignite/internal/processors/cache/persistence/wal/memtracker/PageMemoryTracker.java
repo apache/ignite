@@ -250,7 +250,7 @@ public class PageMemoryTracker implements IgnitePlugin {
 
         memoryRegion = memoryProvider.nextRegion();
 
-        GridUnsafe.setMemory(memoryRegion.address(), memoryRegion.size(), (byte)0);
+        GridUnsafe.zeroMemory(memoryRegion.address(), memoryRegion.size());
 
         maxPages = (int)(maxMemorySize / pageSize);
 
@@ -426,7 +426,7 @@ public class PageMemoryTracker implements IgnitePlugin {
 
                 if (pageSlot.owningPage() != null) {
                     // Clear memory if slot was already used.
-                    GridUnsafe.setMemory(pageAddr, pageSize, (byte)0);
+                    GridUnsafe.zeroMemory(pageAddr, pageSize);
                 }
 
                 pageSlot.owningPage(page);
