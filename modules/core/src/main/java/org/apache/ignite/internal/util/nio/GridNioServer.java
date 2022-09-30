@@ -2133,6 +2133,7 @@ public class GridNioServer<T> {
                                         f.movedSocketChannel((SocketChannel)key.channel());
 
                                         key.cancel();
+                                        commitKeyCancellation();
 
                                         clientWorkers.get(f.toIndex()).offer(f);
                                     }
@@ -2220,12 +2221,14 @@ public class GridNioServer<T> {
                         }
                     }
 
-                    int res = 0;
+                    for (long i = 0; i < selectorSpins && selector.selectedKeys().isEmpty(); i++) {
+                        // We ignore selectNow() returned value and look at selectedKeys() size because we might
+                        // call a selectNow() during session migration (to make sure the selector is deregistered
+                        // before trying to re-register it again), and in such a case our selectNow() could return 0,
+                        // even though the selection set is not empty.
+                        selector.selectNow();
 
-                    for (long i = 0; i < selectorSpins && res == 0; i++) {
-                        res = selector.selectNow();
-
-                        if (res > 0) {
+                        if (!selector.selectedKeys().isEmpty()) {
                             // Walk through the ready keys collection and process network events.
                             updateHeartbeat();
 
@@ -2261,11 +2264,16 @@ public class GridNioServer<T> {
                         blockingSectionBegin();
 
                         // Wake up every 2 seconds to check if closed.
-                        int numKeys = selector.select(2000);
+
+                        // We ignore select() returned value and look at selectedKeys() size because we might
+                        // call a selectNow() during session migration (to make sure the selector is deregistered
+                        // before trying to re-register it again), and in such a case our select() could return 0,
+                        // even though the selection set is not empty.
+                        selector.select(2000);
 
                         blockingSectionEnd();
 
-                        if (numKeys > 0) {
+                        if (!selector.selectedKeys().isEmpty()) {
                             // Walk through the ready keys collection and process network events.
                             if (selectedKeys == null)
                                 processSelectedKeys(selector.selectedKeys());
@@ -2322,6 +2330,16 @@ public class GridNioServer<T> {
                     U.close(selector, log);
                 }
             }
+        }
+
+        /**
+         * Makes sure that pending key cancellations are executed and the corresponding channels can be
+         * re-registered with our selector without causing {@link java.nio.channels.CancelledKeyException}s.
+         *
+         * @throws IOException If something goes wrong.
+         */
+        private void commitKeyCancellation() throws IOException {
+            selector.selectNow();
         }
 
         /**
