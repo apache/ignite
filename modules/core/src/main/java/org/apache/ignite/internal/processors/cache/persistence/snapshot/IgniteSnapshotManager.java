@@ -173,7 +173,6 @@ import org.apache.ignite.spi.encryption.EncryptionSpi;
 import org.apache.ignite.spi.systemview.view.SnapshotView;
 import org.jetbrains.annotations.Nullable;
 
-import static java.nio.charset.StandardCharsets.UTF_8;
 import static java.nio.file.StandardOpenOption.READ;
 import static org.apache.ignite.configuration.DataStorageConfiguration.DFLT_BINARY_METADATA_PATH;
 import static org.apache.ignite.configuration.DataStorageConfiguration.DFLT_MARSHALLER_PATH;
@@ -816,14 +815,19 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
 
             assert incSnpDir.exists();
 
-            File smf = new File(incSnpDir, incrementalSnapshotMetaFileName(req.incrementIndex()));
+            IncrementalSnapshotMetadata meta = new IncrementalSnapshotMetadata(
+                req.requestId(),
+                req.snapshotName(),
+                req.incrementIndex(),
+                cctx.localNode().consistentId().toString(),
+                pdsSettings.folderName(),
+                null /* WAL Pointer for CUT record goes here. */
+            );
 
-            try (FileOutputStream os = new FileOutputStream(smf)) {
-                os.write("Hello, world!".getBytes(UTF_8));
-            }
-            catch (IOException e) {
-                throw new IgniteException(e);
-            }
+            writeSnapshotMetafile(
+                new File(incSnpDir, incrementalSnapshotMetaFileName(req.incrementIndex())),
+                meta
+            );
 
             return new SnapshotOperationResponse();
         });
@@ -914,11 +918,6 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
 
                 File snpDir = snapshotLocalDir(req.snapshotName(), req.snapshotPath());
 
-                File smf = new File(snpDir, snapshotMetaFileName(cctx.localNode().consistentId().toString()));
-
-                if (smf.exists())
-                    throw new GridClosureException(new IgniteException("Snapshot metafile must not exist: " + smf.getAbsolutePath()));
-
                 snpDir.mkdirs();
 
                 SnapshotFutureTaskResult res = (SnapshotFutureTaskResult)fut.result();
@@ -935,29 +934,46 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
                     cctx.gridConfig().getEncryptionSpi().masterKeyDigest()
                 );
 
-                try (OutputStream out = Files.newOutputStream(smf.toPath())) {
-                    byte[] bytes = U.marshal(marsh, meta);
-                    int blockSize = SNAPSHOT_LIMITED_TRANSFER_BLOCK_SIZE_BYTES;
-
-                    for (int off = 0; off < bytes.length; off += blockSize) {
-                        int len = Math.min(blockSize, bytes.length - off);
-
-                        transferRateLimiter.acquire(len);
-
-                        out.write(bytes, off, len);
-                    }
-                }
-
-                log.info("Snapshot metafile has been created: " + smf.getAbsolutePath());
+                writeSnapshotMetafile(
+                    new File(snpDir, snapshotMetaFileName(cctx.localNode().consistentId().toString())),
+                    meta
+                );
 
                 SnapshotHandlerContext ctx = new SnapshotHandlerContext(meta, req.groups(), cctx.localNode(), snpDir);
 
                 return new SnapshotOperationResponse(handlers.invokeAll(SnapshotHandlerType.CREATE, ctx));
             }
-            catch (IOException | IgniteCheckedException e) {
+            catch (IgniteCheckedException e) {
                 throw F.wrap(e);
             }
         });
+    }
+
+    /**
+     * @param smf File to write to.
+     * @param meta Snapshot meta information.
+     */
+    private <M extends Serializable> void writeSnapshotMetafile(File smf, M meta) {
+        if (smf.exists())
+            throw new GridClosureException(new IgniteException("Snapshot metafile must not exist: " + smf.getAbsolutePath()));
+
+        try (OutputStream out = Files.newOutputStream(smf.toPath())) {
+            byte[] bytes = U.marshal(marsh, meta);
+            int blockSize = SNAPSHOT_LIMITED_TRANSFER_BLOCK_SIZE_BYTES;
+
+            for (int off = 0; off < bytes.length; off += blockSize) {
+                int len = Math.min(blockSize, bytes.length - off);
+
+                transferRateLimiter.acquire(len);
+
+                out.write(bytes, off, len);
+            }
+        }
+        catch (IOException | IgniteCheckedException e) {
+            throw new IgniteException(e);
+        }
+
+        log.info("Snapshot metafile has been created: " + smf.getAbsolutePath());
     }
 
     /**

@@ -26,7 +26,9 @@ import org.junit.Test;
 import static org.apache.ignite.internal.processors.cache.persistence.snapshot.IgniteSnapshotManager.incrementalSnapshotMetaFileName;
 import static org.apache.ignite.testframework.GridTestUtils.assertThrowsWithCause;
 
-/** */
+/**
+ * Basic tests for incremental snapshots.
+ */
 public class IncrementalSnapshotTest extends AbstractSnapshotSelfTest {
     /** */
     @Test
