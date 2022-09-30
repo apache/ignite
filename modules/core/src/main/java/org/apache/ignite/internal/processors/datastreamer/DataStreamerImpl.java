@@ -2311,8 +2311,6 @@ public class DataStreamerImpl<K, V> implements IgniteDataStreamer<K, V>, Delayed
 
                         boolean primary = cctx.affinity().primaryByKey(cctx.localNode(), entry.key(), topVer);
 
-                        notifySnapshot(cctx);
-
                         entry.initialValue(e.getValue(),
                             ver,
                             ttl,
@@ -2366,17 +2364,6 @@ public class DataStreamerImpl<K, V> implements IgniteDataStreamer<K, V>, Delayed
                     throw new IgniteException("Failed to write preloaded entries into write-ahead log.", e);
                 }
             }
-        }
-
-        /** TODO */
-        private void notifySnapshot(GridCacheContext<?, ?> cctx) {
-            if (!cctx.group().persistenceEnabled())
-                return;
-
-            IgniteSnapshotManager snpMngr = cctx.kernalContext().cache().context().snapshotMgr();
-
-            if (snpMngr.isSnapshotCreating())
-                snpMngr.onDataStreamerUpdate(cctx.cache().name());
         }
     }
 

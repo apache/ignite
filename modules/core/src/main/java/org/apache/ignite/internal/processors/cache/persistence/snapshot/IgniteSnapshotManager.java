@@ -1781,21 +1781,6 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
     }
 
     /**
-     * Notifies snapshot process of inconsistent updates.
-     *
-     * @param cacheName Related cache name.
-     */
-    public void onDataStreamerUpdate(String cacheName) {
-        SnapshotFutureTask task = currentSnapshotTask();
-
-        if (task != null && task.err.get() == null) {
-            task.acceptException(new IgniteException("Prohibited concurrent streaming update " +
-                "occured to cache '" + cacheName + "'. Streaming should not work while snapshot creating with " +
-                "'allowOverwrite' set to false."));
-        }
-    }
-
-    /**
      * @param consId Consistent node id.
      * @return Snapshot metadata file name.
      */
