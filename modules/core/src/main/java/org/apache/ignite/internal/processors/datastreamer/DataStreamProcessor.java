@@ -18,16 +18,10 @@
 package org.apache.ignite.internal.processors.datastreamer;
 
 import java.util.Collection;
-import java.util.HashSet;
-import java.util.Map;
-import java.util.Set;
 import java.util.UUID;
-import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.DelayQueue;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.cluster.ClusterNode;
-import org.apache.ignite.events.DiscoveryEvent;
-import org.apache.ignite.events.EventType;
 import org.apache.ignite.internal.GridKernalContext;
 import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.IgniteInterruptedCheckedException;
@@ -35,8 +29,6 @@ import org.apache.ignite.internal.cluster.ClusterTopologyCheckedException;
 import org.apache.ignite.internal.managers.communication.GridIoManager;
 import org.apache.ignite.internal.managers.communication.GridMessageListener;
 import org.apache.ignite.internal.managers.deployment.GridDeployment;
-import org.apache.ignite.internal.managers.discovery.DiscoCache;
-import org.apache.ignite.internal.managers.eventstorage.DiscoveryEventListener;
 import org.apache.ignite.internal.processors.GridProcessorAdapter;
 import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
 import org.apache.ignite.internal.processors.cache.GridCacheAdapter;
@@ -65,7 +57,7 @@ import static org.apache.ignite.internal.managers.communication.GridIoPolicy.DAT
 /**
  * Data stream processor.
  */
-public class DataStreamProcessor<K, V> extends GridProcessorAdapter implements DiscoveryEventListener {
+public class DataStreamProcessor<K, V> extends GridProcessorAdapter {
     /** Loaders map (access is not supposed to be highly concurrent). */
     private Collection<DataStreamerImpl> ldrs = new GridConcurrentHashSet<>();
 
@@ -84,9 +76,6 @@ public class DataStreamProcessor<K, V> extends GridProcessorAdapter implements D
     /** */
     private byte[] marshErrBytes;
 
-    /** Current caches being streamed into. */
-    private final Map<String, Set<UUID>> streamedCaches = new ConcurrentHashMap<>();
-
     /**
      * @param ctx Kernal context.
      */
@@ -104,8 +93,6 @@ public class DataStreamProcessor<K, V> extends GridProcessorAdapter implements D
         }
 
         marsh = ctx.config().getMarshaller();
-
-        ctx.event().addDiscoveryEventListener(this, EventType.EVT_NODE_FAILED, EventType.EVT_NODE_LEFT);
     }
 
     /** {@inheritDoc} */
@@ -160,8 +147,6 @@ public class DataStreamProcessor<K, V> extends GridProcessorAdapter implements D
         U.interrupt(flusher);
         U.join(flusher, log);
 
-        streamedCaches.clear();
-
         for (DataStreamerImpl<?, ?> ldr : ldrs) {
             if (log.isDebugEnabled())
                 log.debug("Closing active data streamer on grid stop [ldr=" + ldr + ", cancel=" + cancel + ']');
@@ -183,27 +168,8 @@ public class DataStreamProcessor<K, V> extends GridProcessorAdapter implements D
 
     /** {@inheritDoc} */
     @Override public void onDisconnected(IgniteFuture<?> reconnectFut) throws IgniteCheckedException {
-        streamedCaches.clear();
-
         for (DataStreamerImpl<?, ?> ldr : ldrs)
             ldr.onDisconnected(reconnectFut);
-    }
-
-    /** {@inheritDoc} */
-    @Override public void onEvent(DiscoveryEvent evt, DiscoCache discoCache) {
-        if (evt.type() == EventType.EVT_NODE_FAILED || evt.type() == EventType.EVT_NODE_LEFT)
-            finishStreamer(evt.eventNode().id());
-    }
-
-    /** */
-    private void finishStreamer(UUID nodeId) {
-        //TODO
-        synchronized (streamedCaches) {
-            streamedCaches.forEach((cacheName, updatingNodes) -> {
-                if (updatingNodes != null)
-                    updatingNodes.remove(nodeId);
-            });
-        }
     }
 
     /**
@@ -430,22 +396,10 @@ public class DataStreamProcessor<K, V> extends GridProcessorAdapter implements D
                 return;
             }
 
-            streamedCaches.compute(req.cacheName(), (cacheName, loadingNodes) -> {
-                if (loadingNodes == null)
-                    loadingNodes = new HashSet<>();
-
-                loadingNodes.add(nodeId);
-
-                return loadingNodes;
-            });
-
             try {
                 job.call();
 
                 sendResponse(nodeId, topic, req.requestId(), null, req.forceLocalDeployment());
-
-                if (req.closer())
-                    finishStreamer(nodeId);
             }
             finally {
                 if (waitFut != null)

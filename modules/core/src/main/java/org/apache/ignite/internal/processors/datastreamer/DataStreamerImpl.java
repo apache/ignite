@@ -92,6 +92,7 @@ import org.apache.ignite.internal.processors.cache.distributed.dht.preloader.Gri
 import org.apache.ignite.internal.processors.cache.distributed.dht.topology.GridDhtInvalidPartitionException;
 import org.apache.ignite.internal.processors.cache.distributed.dht.topology.GridDhtLocalPartition;
 import org.apache.ignite.internal.processors.cache.distributed.dht.topology.GridDhtPartitionState;
+import org.apache.ignite.internal.processors.cache.persistence.snapshot.IgniteSnapshotManager;
 import org.apache.ignite.internal.processors.cache.version.GridCacheVersion;
 import org.apache.ignite.internal.processors.cacheobject.IgniteCacheObjectProcessor;
 import org.apache.ignite.internal.processors.dr.GridDrType;
@@ -1124,7 +1125,7 @@ public class DataStreamerImpl<K, V> implements IgniteDataStreamer<K, V>, Delayed
      *
      * @throws IgniteCheckedException If failed.
      */
-    private void doFlush(boolean finalize) throws IgniteCheckedException {
+    private void doFlush() throws IgniteCheckedException {
         lastFlushTime = U.currentTimeMillis();
 
         List<IgniteInternalFuture> activeFuts0 = null;
@@ -1243,7 +1244,7 @@ public class DataStreamerImpl<K, V> implements IgniteDataStreamer<K, V>, Delayed
         lock(true);
 
         try {
-            doFlush(false);
+            doFlush();
         }
         catch (IgniteCheckedException e) {
             throw CU.convertToCacheException(e);
@@ -1352,7 +1353,7 @@ public class DataStreamerImpl<K, V> implements IgniteDataStreamer<K, V>, Delayed
                         buf.cancelAll(cancellationErr);
                 }
                 else
-                    doFlush(true);
+                    doFlush();
 
                 ctx.event().removeLocalEventListener(discoLsnr);
 
@@ -2310,6 +2311,8 @@ public class DataStreamerImpl<K, V> implements IgniteDataStreamer<K, V>, Delayed
 
                         boolean primary = cctx.affinity().primaryByKey(cctx.localNode(), entry.key(), topVer);
 
+                        notifySnapshot(cctx);
+
                         entry.initialValue(e.getValue(),
                             ver,
                             ttl,
@@ -2363,6 +2366,21 @@ public class DataStreamerImpl<K, V> implements IgniteDataStreamer<K, V>, Delayed
                     throw new IgniteException("Failed to write preloaded entries into write-ahead log.", e);
                 }
             }
+        }
+
+        /**
+         * Notifies snapshot process of concurrent inconsistent updates.
+         *
+         * @param
+         */
+        private void notifySnapshot(GridCacheContext<?, ?> cctx) {
+            if (!cctx.group().persistenceEnabled())
+                return;
+
+            IgniteSnapshotManager snpMngr = cctx.kernalContext().cache().context().snapshotMgr();
+
+            if (snpMngr.isSnapshotCreating())
+                snpMngr.onDataStreamerUpdate(cctx.cache().name());
         }
     }
 
