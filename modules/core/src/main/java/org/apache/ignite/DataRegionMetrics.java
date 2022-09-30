@@ -128,9 +128,12 @@ public interface DataRegionMetrics {
     public float getLargeEntriesPagesPercentage();
 
     /**
-     * Returns the ratio of space occupied by user and system data to the whole allocated space.
+     * Returns the ratio of space occupied by user and system data to the size of all pages that contain this data.
+     * <p>
+     * This metric can help to determine how much space of a data page is occupied on average. Low fill factor can
+     * indicate that data pages are very fragmented (i.e. there is a lot of empty space across all data pages).
      *
-     * @return Ratio of space occupied by user and system data to the whole allocated space.
+     * @return Ratio of space occupied by user and system data to the size of all pages that contain ant data.
      */
     public float getPagesFillFactor();
 
