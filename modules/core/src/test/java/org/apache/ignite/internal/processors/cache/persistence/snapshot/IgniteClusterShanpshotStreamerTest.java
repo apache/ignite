@@ -17,31 +17,31 @@
 
 package org.apache.ignite.internal.processors.cache.persistence.snapshot;
 
-import org.apache.ignite.Ignite;
-import org.apache.ignite.IgniteCache;
-import org.apache.ignite.IgniteDataStreamer;
-import org.apache.ignite.cache.CacheAtomicityMode;
-import org.apache.ignite.cache.CacheMode;
-import org.apache.ignite.configuration.CacheConfiguration;
-import org.apache.ignite.configuration.ConnectorConfiguration;
-import org.apache.ignite.configuration.IgniteConfiguration;
-import org.apache.ignite.internal.IgniteInternalFuture;
-import org.apache.ignite.internal.processors.cache.distributed.dht.atomic.GridNearAtomicUpdateFuture;
-import org.apache.ignite.internal.util.typedef.F;
-import org.apache.ignite.internal.util.typedef.G;
-import org.apache.ignite.testframework.GridTestUtils;
-import org.junit.Test;
-import org.junit.runners.Parameterized;
-
-import java.sql.Connection;
-import java.sql.SQLException;
 import java.util.Arrays;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
+import jdk.internal.jline.internal.Nullable;
+import org.apache.ignite.Ignite;
+import org.apache.ignite.IgniteDataStreamer;
+import org.apache.ignite.IgniteException;
+import org.apache.ignite.cache.CacheAtomicityMode;
+import org.apache.ignite.cache.CacheMode;
+import org.apache.ignite.configuration.IgniteConfiguration;
+import org.apache.ignite.internal.IgniteInternalFuture;
+import org.apache.ignite.internal.processors.datastreamer.DataStreamerCacheUpdaters;
+import org.apache.ignite.internal.util.typedef.G;
+import org.apache.ignite.stream.StreamReceiver;
+import org.apache.ignite.testframework.GridTestUtils;
+import org.junit.Test;
+import org.junit.runners.Parameterized;
 
 import static org.apache.ignite.cluster.ClusterState.ACTIVE;
+import static org.apache.ignite.testframework.GridTestUtils.assertThrows;
 
+/**
+ * Tests snapshot is consistent under streaming load.
+ */
 public class IgniteClusterShanpshotStreamerTest  extends AbstractSnapshotSelfTest {
     /** Parameters. */
     @Parameterized.Parameters(name = "Encryption={0}")
@@ -50,145 +50,105 @@ public class IgniteClusterShanpshotStreamerTest  extends AbstractSnapshotSelfTes
     }
 
     /** {@inheritDoc} */
+    @Override public void beforeTestSnapshot() throws Exception {
+        super.beforeTestSnapshot();
+
+        dfltCacheCfg = defaultCacheConfiguration();
+
+        dfltCacheCfg.setAtomicityMode(CacheAtomicityMode.ATOMIC).setCacheMode(CacheMode.PARTITIONED).setBackups(2);
+    }
+
+    /** {@inheritDoc} */
     @Override protected IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {
         IgniteConfiguration cfg = super.getConfiguration(igniteInstanceName);
 
-        cfg.getDataStorageConfiguration().getDefaultDataRegionConfiguration().setMaxSize(2 * 1024L * 1024L * 1024L);
-        cfg.getDataStorageConfiguration().setWalSegments(4);
-        cfg.getDataStorageConfiguration().setWalSegmentSize(16 * 1024 * 1024);
-        cfg.getDataStorageConfiguration().setMaxWalArchiveSize(128 * 1024 * 1024);
+        cfg.getDataStorageConfiguration().getDefaultDataRegionConfiguration().setPersistenceEnabled(true);
         cfg.getDataStorageConfiguration().setCheckpointFrequency(1000);
-        cfg.getDataStorageConfiguration().setCheckpointReadLockTimeout(15_000);
-
-        cfg.setConnectorConfiguration(new ConnectorConfiguration());
 
         return cfg;
     }
 
     /** @throws Exception If fails. */
     @Test
-    public void testClusterSnapshotConsistencyWithStreamer() throws Exception {
-        int grids = 3;
-        int backups = grids - 1;
+    public void testFailsWithDefaultReceiver() throws Exception {
+       doTest(true, null);
+    }
 
-//        CountDownLatch loadLever = new CountDownLatch(13_403);
-        CountDownLatch loadLever = new CountDownLatch(100_000);
+    /** @throws Exception If fails. */
+    @Test
+    public void testFailsWithBatchedReceiver() throws Exception {
+        doTest(false, DataStreamerCacheUpdaters.batched());
+    }
 
-        AtomicBoolean stop = new AtomicBoolean(false);
-        AtomicInteger idx = new AtomicInteger();
-        dfltCacheCfg = null;
-        String tableName = "TEST_TBL1";
+    /** @throws Exception If fails. */
+    @Test
+    public void testFailsWithIndividualReceiver() throws Exception {
+        doTest(false, DataStreamerCacheUpdaters.individual());
+    }
 
-        startGrids(grids);
+    /**  */
+    private void doTest(boolean expectFailure, @Nullable StreamReceiver<Integer, Integer> receiver) throws Exception {
+        startGrids(3);
+
         grid(0).cluster().state(ACTIVE);
 
-        IgniteCache<Integer, Integer> cache = grid(0)
-            .createCache(new CacheConfiguration<Integer, Integer>("SQL_PUBLIC_" + tableName).setBackups(backups)
-                    .setAtomicityMode(CacheAtomicityMode.ATOMIC)
-                    .setCacheMode(CacheMode.PARTITIONED)
-//                .setWriteSynchronizationMode(CacheWriteSynchronizationMode.FULL_ASYNC)
-                    .setBackups(backups)
-//                                    .setWriteSynchronizationMode(CacheWriteSynchronizationMode.FULL_ASYNC)
-//                            .setGroupName("grp1")
-            );
+        CountDownLatch loadBeforeSnd = new CountDownLatch(50_000);
+        AtomicBoolean stop = new AtomicBoolean(false);
+        AtomicInteger keyProvider = new AtomicInteger();
 
-        IgniteInternalFuture<?> load1 = runLoad(tableName, idx, loadLever, stop);
-//        IgniteInternalFuture<?> load2 = runLoad(tableName, idx, loadLever, stop);
+        IgniteInternalFuture<?> load = runLoad(receiver, keyProvider, loadBeforeSnd, stop);
 
-        loadLever.await();
+        loadBeforeSnd.await();
 
-        log.info("TEST | createSnapshot.");
-
-        grid(0).snapshot().createSnapshot(SNAPSHOT_NAME).get();
+        if (expectFailure) {
+            assertThrows(null, () -> {
+                grid(0).snapshot().createSnapshot(SNAPSHOT_NAME).get();
+            }, IgniteException.class, "Streaming should not work while snapshott");
+        }
+        else
+            grid(0).snapshot().createSnapshot(SNAPSHOT_NAME).get();
 
         stop.set(true);
-        load1.get();
-//        load2.get();
 
-        log.info("TEST | stop loading, destroy cache.");
+        load.get();
 
-        grid(0).cache("SQL_PUBLIC_" + tableName).destroy();
-//        grid(0).cache("cache2").destroy();
+        if (!expectFailure) {
+            grid(0).cache(dfltCacheCfg.getName()).destroy();
 
-        awaitPartitionMapExchange();
+            awaitPartitionMapExchange();
 
-        log.info("TEST | restoreSnapshot.");
-
-//        grid(0).snapshot().restoreSnapshot(SNAPSHOT_NAME, F.asList("cache2")).get();
-        grid(0).snapshot().restoreSnapshot(SNAPSHOT_NAME, F.asList("SQL_PUBLIC_" + tableName)).get();
-//        grid(0).snapshot().restoreSnapshot(SNAPSHOT_NAME, F.asList("grp1")).get();
-
-        assertEquals(grid(0).cache("SQL_PUBLIC_" + tableName).get(1),
-            grid(1).cache("SQL_PUBLIC_" + tableName).get(1));
+            grid(0).snapshot().restoreSnapshot(SNAPSHOT_NAME, null).get();
+        }
     }
 
     /** */
-    private IgniteInternalFuture<?> runLoad(String tblName, AtomicInteger idx, CountDownLatch startSnp, AtomicBoolean stop) {
+    private IgniteInternalFuture<?> runLoad(StreamReceiver<Integer, Integer> receiver, AtomicInteger idx,
+        CountDownLatch startSnp, AtomicBoolean stop) {
         return GridTestUtils.runMultiThreadedAsync(() -> {
-            String cacheName = "SQL_PUBLIC_" + tblName.toUpperCase();
-
             try (Ignite client = startClientGrid(G.allGrids().size())) {
-//                IgniteCache<Integer, Integer> cache = grid(0).cache(cacheName);
 
-                try (IgniteDataStreamer<Integer, Integer> ds = client.dataStreamer(cacheName)) {
-//                    ds.allowOverwrite(true);
-//                    ds.skipStore(false);
+                try (IgniteDataStreamer<Integer, Integer> ds = client.dataStreamer(dfltCacheCfg.getName())) {
+                    if (receiver != null)
+                        ds.receiver(receiver);
 
                     while (!stop.get()) {
                         int i = idx.incrementAndGet();
 
                         ds.addData(i, i);
-//                        cache.put(i, new Account(i, i - 1));
-
-//                        batch.put(i, new Account(i, i - 1));
-//
-//                        if(batch.size() > 99){
-//                            cache.putAll(batch);
-//
-//                            batch.clear();
-//                        }
 
                         startSnp.countDown();
-
-                        Thread.yield();
                     }
-
-//                    cache.putAll(batch);
-
-//                    batch.clear();
                 }
                 catch (Exception e) {
                     while (startSnp.getCount() > 0)
                         startSnp.countDown();
 
-                    log.error("Datastramer closed with error.", e);
-
-                    // throw new IgniteException("Unable to load.", e);
+                    throw e;
                 }
-
-                log.error("TEST | datastreamer futures left: " + grid(2).context().cache().context().mvcc().dataStreamerFutures().size());
             }
             catch (Exception e) {
                 e.printStackTrace();
             }
-        }, 1, "load-thread-" + tblName);
-    }
-
-    /** */
-    @Override protected long getTestTimeout() {
-        return 30 * 60 * 1000;
-    }
-
-    /** */
-    private void createTable(Connection conn, String tableName, int backups) throws SQLException {
-        conn.prepareStatement("create table " + tableName +
-            " (\n" +
-            "id int,\n" +
-            "name varchar not null,\n" +
-            "orgid int not null,\n" +
-            "dep int default 0,\n" +
-            "primary key (id, orgid)\n" +
-            ")\n" +
-            "with \"template=partitioned,backups=" + backups + "\";").execute();
+        }, 1, "load-thread");
     }
 }
