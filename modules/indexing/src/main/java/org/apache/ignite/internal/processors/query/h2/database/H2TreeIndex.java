@@ -39,6 +39,8 @@ import org.apache.ignite.internal.cache.query.index.sorted.InlineIndexRowHandler
 import org.apache.ignite.internal.cache.query.index.sorted.SortedIndexDefinition;
 import org.apache.ignite.internal.cache.query.index.sorted.inline.IndexQueryContext;
 import org.apache.ignite.internal.cache.query.index.sorted.inline.InlineIndexImpl;
+import org.apache.ignite.internal.cache.query.index.sorted.inline.InlineIndexKeyType;
+import org.apache.ignite.internal.cache.query.index.sorted.inline.InlineIndexKeyTypeRegistry;
 import org.apache.ignite.internal.cache.query.index.sorted.keys.IndexKey;
 import org.apache.ignite.internal.cache.query.index.sorted.keys.IndexKeyFactory;
 import org.apache.ignite.internal.managers.communication.GridIoPolicy;
@@ -282,14 +284,25 @@ public class H2TreeIndex extends H2TreeIndexBase {
 
             // If it's possible to convert search row to index value type - do it. In this case converted value
             // can be used for the inline search.
-            // Otherwise, we can't use search row as index find bound, since different types have different comparison
-            // rules (for example, '2' > '10' for strings and 2 < 10 for integers). Best we can do here is leave search
-            // bound empty. In this case index scan by bounds can be extended to full index scan and rows will be
-            // filtered out by original condition on H2 level.
+            // Otherwise, we can use search row as index find bound only if types have the same comparison rules.
+            // If types have different comparison rules (for example, '2' > '10' for strings and 2 < 10 for integers)
+            // best we can do here is leave search bound empty. In this case index scan by bounds can be extended to
+            // full index scan and rows will be filtered out by original condition on H2 level.
             if (colType.code() != v.getType()) {
                 if (Value.getHigherOrder(colType.code(), v.getType()) == colType.code())
                     v = v.convertTo(colType.code());
                 else {
+                    InlineIndexKeyType colKeyType = InlineIndexKeyTypeRegistry.get(colType, queryIndex.keyTypeSettings());
+
+                    IndexKey idxKey = IndexKeyFactory.wrap(v.getObject(), v.getType(), cctx.cacheObjectContext(),
+                        queryIndex.keyTypeSettings());
+
+                    if (colKeyType.isComparableTo(idxKey)) {
+                        keys[i] = idxKey;
+
+                        continue;
+                    }
+
                     LT.warn(log, "Provided value can't be used as index search bound due to column data type " +
                         "mismatch. This can lead to full index scans instead of range index scans. [index=" +
                         idxName + ", colType=" + colType + ", valType=" + IndexKeyType.forCode(v.getType()) + ']');
