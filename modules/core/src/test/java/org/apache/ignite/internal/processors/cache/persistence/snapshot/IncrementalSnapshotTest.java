@@ -34,10 +34,10 @@ public class IncrementalSnapshotTest extends AbstractSnapshotSelfTest {
         IgniteEx ign = startGridsWithCache(1, CACHE_KEYS_RANGE, key -> new Account(key, key),
             new CacheConfiguration<>(DEFAULT_CACHE_NAME));
 
-        snp(ign).createSnapshot(SNAPSHOT_NAME).get();
+        snp(ign).createSnapshot(SNAPSHOT_NAME).get(TIMEOUT);
 
         for (int idx = 1; idx < 3; idx++) {
-            snp(ign).createIncrementalSnapshot(SNAPSHOT_NAME).get();
+            snp(ign).createIncrementalSnapshot(SNAPSHOT_NAME).get(TIMEOUT);
 
             File incSnpDir = snp(ign).incrementalSnapshotLocalDir(SNAPSHOT_NAME, null, idx);
 
@@ -54,14 +54,14 @@ public class IncrementalSnapshotTest extends AbstractSnapshotSelfTest {
             new CacheConfiguration<>(DEFAULT_CACHE_NAME));
 
         assertThrowsWithCause(
-            () -> snp(ign).createIncrementalSnapshot("unknown").get(),
+            () -> snp(ign).createIncrementalSnapshot("unknown").get(TIMEOUT),
             IgniteException.class
         );
 
-        snp(ign).createSnapshot(SNAPSHOT_NAME).get();
+        snp(ign).createSnapshot(SNAPSHOT_NAME).get(TIMEOUT);
 
         assertThrowsWithCause(
-            () -> snp(ign).createIncrementalSnapshot("unknown").get(),
+            () -> snp(ign).createIncrementalSnapshot("unknown").get(TIMEOUT),
             IgniteException.class
         );
     }
