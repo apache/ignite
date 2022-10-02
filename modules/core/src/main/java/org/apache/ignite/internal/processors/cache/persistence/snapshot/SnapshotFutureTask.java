@@ -511,10 +511,6 @@ class SnapshotFutureTask extends AbstractSnapshotFutureTask<Set<GroupPartitionId
                                 if (cctx.mvcc().dataStreamerFutures()
                                     .get(cctx.cache().cacheGroup(e.getKey()).cacheOrGroupName()) != null &&
                                     err.get() == null) {
-//                                    throw new IgniteException("Prohibited concurrent streaming update " +
-//                                        "occured to cache '" + cctx.cache().cacheGroup(e.getKey()).cacheOrGroupName() +
-//                                        "'. Streaming should not work while snapshot creating with allowOverwrite' set " +
-//                                        "to false.");
                                     acceptException(new IgniteException("Prohibited concurrent streaming update " +
                                         "occured to cache '" + cctx.cache().cacheGroup(e.getKey()).cacheOrGroupName() +
                                         "'. Streaming should not work while snapshot creating with allowOverwrite' set " +
