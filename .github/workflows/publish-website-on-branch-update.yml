@@ -36,8 +36,13 @@ on:
 concurrency:
   group: publish-website-group
 
+permissions:
+  contents: read
+
 jobs:
   publish-documentation:
+    permissions:
+      contents: write  # for Git to git push
     name: Publish documentation
     runs-on: ubuntu-latest
     steps:
