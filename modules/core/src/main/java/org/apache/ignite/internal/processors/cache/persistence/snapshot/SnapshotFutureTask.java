@@ -47,6 +47,7 @@ import java.util.function.BiConsumer;
 import java.util.function.BooleanSupplier;
 import java.util.stream.Collectors;
 import org.apache.ignite.IgniteCheckedException;
+import org.apache.ignite.IgniteException;
 import org.apache.ignite.binary.BinaryType;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.internal.IgniteFutureCancelledCheckedException;
@@ -506,10 +507,25 @@ class SnapshotFutureTask extends AbstractSnapshotFutureTask<Set<GroupPartitionId
                     totalSize.addAndGet(partLen);
 
                     CompletableFuture<Void> fut0 = CompletableFuture.runAsync(
-                        wrapExceptionIfStarted(() -> {
-                            snpSndr.sendPart(
-                                getPartitionFile(pageStore.workDir(), cacheDirName, partId),
-                                cacheDirName,
+                            wrapExceptionIfStarted(() -> {
+                                if (cctx.mvcc().dataStreamerFutures()
+                                    .get(cctx.cache().cacheGroup(e.getKey()).cacheOrGroupName()) != null &&
+                                    err.get() == null) {
+//                                    throw new IgniteException("Prohibited concurrent streaming update " +
+//                                        "occured to cache '" + cctx.cache().cacheGroup(e.getKey()).cacheOrGroupName() +
+//                                        "'. Streaming should not work while snapshot creating with allowOverwrite' set " +
+//                                        "to false.");
+                                    acceptException(new IgniteException("Prohibited concurrent streaming update " +
+                                        "occured to cache '" + cctx.cache().cacheGroup(e.getKey()).cacheOrGroupName() +
+                                        "'. Streaming should not work while snapshot creating with allowOverwrite' set " +
+                                        "to false."));
+
+                                    return;
+                                }
+
+                                snpSndr.sendPart(
+                                    getPartitionFile(pageStore.workDir(), cacheDirName, partId),
+                                    cacheDirName,
                                 pair,
                                 partLen);
 

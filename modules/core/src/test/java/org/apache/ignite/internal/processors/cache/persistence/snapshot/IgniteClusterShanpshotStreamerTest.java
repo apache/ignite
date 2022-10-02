@@ -103,7 +103,7 @@ public class IgniteClusterShanpshotStreamerTest  extends AbstractSnapshotSelfTes
         if (expectFailure) {
             assertThrows(null, () -> {
                 grid(0).snapshot().createSnapshot(SNAPSHOT_NAME).get();
-            }, IgniteException.class, "Streaming should not work while snapshott");
+            }, IgniteException.class, "Streaming should not work while snapshot");
         }
         else
             grid(0).snapshot().createSnapshot(SNAPSHOT_NAME).get();

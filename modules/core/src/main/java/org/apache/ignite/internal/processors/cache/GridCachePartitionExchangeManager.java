@@ -2557,14 +2557,16 @@ public class GridCachePartitionExchangeManager<K, V> extends GridCacheSharedMana
 
             first = true;
 
-            for (IgniteInternalFuture<?> fut : mvcc.dataStreamerFutures()) {
-                if (first) {
-                    U.warn(diagnosticLog, "Pending data streamer futures:");
+            for (Set<? extends IgniteInternalFuture> futs : mvcc.dataStreamerFutures().values()) {
+                for (IgniteInternalFuture<?> fut : futs) {
+                    if (first) {
+                        U.warn(diagnosticLog, "Pending data streamer futures:");
 
-                    first = false;
+                        first = false;
+                    }
+
+                    dumpDiagnosticInfo(fut, diagCtx);
                 }
-
-                dumpDiagnosticInfo(fut, diagCtx);
             }
 
             if (tm != null) {
