@@ -104,6 +104,7 @@ import org.apache.ignite.internal.managers.eventstorage.DiscoveryEventListener;
 import org.apache.ignite.internal.managers.systemview.walker.SnapshotViewWalker;
 import org.apache.ignite.internal.pagemem.store.PageStore;
 import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
+import org.apache.ignite.internal.processors.cache.CacheGroupContext;
 import org.apache.ignite.internal.processors.cache.CacheGroupDescriptor;
 import org.apache.ignite.internal.processors.cache.CacheObjectContext;
 import org.apache.ignite.internal.processors.cache.CacheType;
@@ -799,11 +800,16 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
      * @return Future which will be completed when a snapshot has been started.
      */
     private IgniteInternalFuture<SnapshotOperationResponse> initLocalIncrementalSnapshot(SnapshotOperationRequest req) {
+        SnapshotMetadata meta = readSnapshotMetadata(new File(
+            snapshotLocalDir(req.snapshotName(), req.snapshotPath()),
+            snapshotMetaFileName(cctx.localNode().consistentId().toString())
+        ));
+
         IgniteInternalFuture<SnapshotOperationResponse> task0 = registerTask(req.snapshotName(), new IncrementalSnapshotFutureTask(
             cctx,
             req.operationalNodeId(),
             req.requestId(),
-            req.snapshotName(),
+            meta,
             tmpWorkDir,
             ioFactory,
             req.incrementIndex()
@@ -815,7 +821,7 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
 
             assert incSnpDir.exists();
 
-            IncrementalSnapshotMetadata meta = new IncrementalSnapshotMetadata(
+            IncrementalSnapshotMetadata incMeta = new IncrementalSnapshotMetadata(
                 req.requestId(),
                 req.snapshotName(),
                 req.incrementIndex(),
@@ -826,7 +832,7 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
 
             writeSnapshotMetafile(
                 new File(incSnpDir, incrementalSnapshotMetaFileName(req.incrementIndex())),
-                meta
+                incMeta
             );
 
             return new SnapshotOperationResponse();
@@ -1728,22 +1734,7 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
                                 "Base snapshot with given name doesn't exist on local node.");
                     }
 
-                    SnapshotMetadata meta = readSnapshotMetadata(new File(
-                        snapshotLocalDir(name, snpPath),
-                        snapshotMetaFileName(cctx.localNode().consistentId().toString())
-                    ));
-
-                    Set<String> aliveNodesConsIds = cctx.discovery().aliveServerNodes()
-                        .stream()
-                        .map(node -> node.consistentId().toString())
-                        .collect(Collectors.toSet());
-
-                    for (String consId : meta.baselineNodes()) {
-                        if (!aliveNodesConsIds.contains(consId)) {
-                            throw new IgniteException("Create incremental snapshot request has been rejected. " +
-                                    "One of nodes from full snapshot offline [consistenId=" + consId + ']');
-                        }
-                    }
+                    checkIncrementalCanBeCreated(name, snpPath);
 
                     incIdx = maxLocalIncrementSnapshot(name, snpPath) + 1;
                 }
@@ -1972,7 +1963,7 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
         for (AbstractSnapshotFutureTask<?> sctx : F.view(locSnpTasks.values(), t -> t instanceof SnapshotFutureTask)) {
             Set<Integer> retain = new HashSet<>(grps);
 
-            retain.retainAll(((SnapshotFutureTask)sctx).affectedCacheGroups());
+            retain.retainAll(sctx.affectedCacheGroups());
 
             if (!retain.isEmpty()) {
                 sctx.acceptException(new IgniteCheckedException("Snapshot has been interrupted due to some of the required " +
@@ -2400,6 +2391,43 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
         cctx.kernalContext().task().setThreadContext(TC_SUBGRID, bltNodes);
 
         return new IgniteFutureImpl<>(cctx.kernalContext().task().execute(taskCls, snpName));
+    }
+
+    /**
+     * Checks that incremental snapshot can be created for given full snapshot and current cluster state.
+     *
+     * @param name Full snapshot name.
+     * @param snpPath Snapshot path.
+     */
+    private void checkIncrementalCanBeCreated(String name, @Nullable String snpPath) {
+        SnapshotMetadata meta = readSnapshotMetadata(new File(
+            snapshotLocalDir(name, snpPath),
+            snapshotMetaFileName(cctx.localNode().consistentId().toString())
+        ));
+
+        Set<String> aliveNodesConsIds = cctx.discovery().aliveServerNodes()
+            .stream()
+            .map(node -> node.consistentId().toString())
+            .collect(Collectors.toSet());
+
+        for (String consId : meta.baselineNodes()) {
+            if (!aliveNodesConsIds.contains(consId)) {
+                throw new IgniteException("Create incremental snapshot request has been rejected. " +
+                    "Node from full snapshot offline [consistenId=" + consId + ']');
+            }
+        }
+
+        for (int grpId : meta.cacheGroupIds()) {
+            if (grpId == METASTORAGE_CACHE_ID)
+                continue;
+
+            CacheGroupContext grpCtx = cctx.kernalContext().cache().cacheGroup(grpId);
+
+            if (grpCtx == null) {
+                throw new IgniteException("Create incremental snapshot request has been rejected. " +
+                    "Cache group destroyed [groupId=" + grpId + ']');
+            }
+        }
     }
 
     /**

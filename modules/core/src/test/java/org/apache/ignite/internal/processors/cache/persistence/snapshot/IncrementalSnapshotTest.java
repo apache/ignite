@@ -22,6 +22,7 @@ import org.apache.ignite.IgniteException;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.IgniteEx;
+import org.apache.ignite.internal.util.typedef.internal.CU;
 import org.junit.Test;
 
 import static org.apache.ignite.testframework.GridTestUtils.assertThrows;
@@ -110,13 +111,15 @@ public class IncrementalSnapshotTest extends AbstractSnapshotSelfTest {
         // Stop some node.
         stopGrid(1);
 
-        assertThrows(
+        Runnable check = () -> assertThrows(
             null,
             () -> snpCreate.createIncrementalSnapshot(SNAPSHOT_NAME).get(TIMEOUT),
             IgniteException.class,
             "Create incremental snapshot request has been rejected. " +
                 "One of nodes from full snapshot offline [consistenId=" + consId + ']'
         );
+
+        check.run();
 
         // Start another.
         startGrid(
@@ -127,19 +130,42 @@ public class IncrementalSnapshotTest extends AbstractSnapshotSelfTest {
 
         srv.cluster().setBaselineTopology(srv.cluster().topologyVersion());
 
-        assertThrows(
-            null,
-            () -> snpCreate.createIncrementalSnapshot(SNAPSHOT_NAME).get(TIMEOUT),
-            IgniteException.class,
-            "Create incremental snapshot request has been rejected. " +
-                                    "One of nodes from full snapshot offline [consistenId=" + consId + ']'
-        );
+        check.run();
     }
 
     /** */
     @Test
     public void testIncrementalSnapshotFailsOnCachesChange() throws Exception {
-        // TODO: test that incremental snapshot fail if current cache state differs from base snapshot state.
+        for (String cache2rvm : new String[] {"other-cache", "my-grouped-cache2"}) {
+            IgniteEx srv = startGridsWithCache(
+                1,
+                CACHE_KEYS_RANGE,
+                key -> new Account(key, key),
+                new CacheConfiguration<>(DEFAULT_CACHE_NAME),
+                new CacheConfiguration<>("other-cache"),
+                new CacheConfiguration<Integer, Object>("my-grouped-cache1").setGroupName("mygroup"),
+                new CacheConfiguration<Integer, Object>("my-grouped-cache2").setGroupName("mygroup")
+            );
+
+            IgniteSnapshotManager snpCreate = snp(srv);
+
+            snpCreate.createSnapshot(SNAPSHOT_NAME).get(TIMEOUT);
+
+            snpCreate.createIncrementalSnapshot(SNAPSHOT_NAME).get(TIMEOUT);
+
+            srv.destroyCache(cache2rvm);
+
+            assertThrows(
+                null,
+                () -> snpCreate.createIncrementalSnapshot(SNAPSHOT_NAME).get(TIMEOUT),
+                IgniteException.class,
+                "Create incremental snapshot request has been rejected. " +
+                    "Cache group destroyed [groupId=" + CU.cacheId(cache2rvm) + ']'
+            );
+
+            stopAllGrids();
+            cleanPersistenceDir();
+        }
     }
 
     /** */

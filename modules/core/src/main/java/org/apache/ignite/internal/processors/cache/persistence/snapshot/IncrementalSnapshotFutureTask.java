@@ -18,6 +18,8 @@
 package org.apache.ignite.internal.processors.cache.persistence.snapshot;
 
 import java.io.File;
+import java.util.HashSet;
+import java.util.Set;
 import java.util.UUID;
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.internal.processors.cache.GridCacheSharedContext;
@@ -27,23 +29,26 @@ import org.apache.ignite.internal.processors.cache.persistence.partstate.GroupPa
 /** */
 class IncrementalSnapshotFutureTask extends AbstractSnapshotFutureTask<IncrementalSnapshotFutureTaskResult> {
     /** Index of incremental snapshot. */
-    private final int incrementIdx;
+    private final int incIdx;
+
+    /** Metadata of the full snapshot. */
+    private final Set<Integer> affectedCacheGrps;
 
     /** */
     public IncrementalSnapshotFutureTask(
         GridCacheSharedContext<?, ?> cctx,
         UUID srcNodeId,
         UUID reqNodeId,
-        String snpName,
+        SnapshotMetadata meta,
         File tmpWorkDir,
         FileIOFactory ioFactory,
-        int incrementIdx
+        int incIdx
     ) {
         super(
             cctx,
             srcNodeId,
             reqNodeId,
-            snpName,
+            meta.snapshotName(),
             tmpWorkDir,
             ioFactory,
             new SnapshotSender(
@@ -65,12 +70,18 @@ class IncrementalSnapshotFutureTask extends AbstractSnapshotFutureTask<Increment
             null
         );
 
-        this.incrementIdx = incrementIdx;
+        this.incIdx = incIdx;
+        this.affectedCacheGrps = new HashSet<>(meta.cacheGroupIds());
+    }
+
+    /** {@inheritDoc} */
+    @Override public Set<Integer> affectedCacheGroups() {
+        return affectedCacheGrps;
     }
 
     /** {@inheritDoc} */
     @Override public boolean start() {
-        File incSnpDir = cctx.snapshotMgr().incrementalSnapshotLocalDir(snpName, null, incrementIdx);
+        File incSnpDir = cctx.snapshotMgr().incrementalSnapshotLocalDir(snpName, null, incIdx);
 
         if (!incSnpDir.mkdirs()) {
             onDone(new IgniteException("Can't create snapshot directory[dir=" + incSnpDir.getAbsolutePath() + ']'));
