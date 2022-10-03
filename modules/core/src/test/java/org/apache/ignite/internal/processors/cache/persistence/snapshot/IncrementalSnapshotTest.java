@@ -111,26 +111,13 @@ public class IncrementalSnapshotTest extends AbstractSnapshotSelfTest {
         // Stop some node.
         stopGrid(1);
 
-        Runnable check = () -> assertThrows(
+        assertThrows(
             null,
             () -> snpCreate.createIncrementalSnapshot(SNAPSHOT_NAME).get(TIMEOUT),
             IgniteException.class,
             "Create incremental snapshot request has been rejected. " +
-                "One of nodes from full snapshot offline [consistenId=" + consId + ']'
+                "Node from full snapshot offline [consistentId=" + consId + ']'
         );
-
-        check.run();
-
-        // Start another.
-        startGrid(
-            GRID_CND,
-            (UnaryOperator<IgniteConfiguration>)
-                cfg -> cfg.setCacheConfiguration(new CacheConfiguration<>(DEFAULT_CACHE_NAME))
-        );
-
-        srv.cluster().setBaselineTopology(srv.cluster().topologyVersion());
-
-        check.run();
     }
 
     /** */

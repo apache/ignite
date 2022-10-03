@@ -789,8 +789,16 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
                 "on the local node [missed=" + leftGrps + ", nodeId=" + cctx.localNodeId() + ']'));
         }
 
-        if (req.incremental())
+        if (req.incremental()) {
+            try {
+                checkIncrementalCanBeCreated(req.snapshotName(), req.snapshotPath());
+            }
+            catch (IgniteCheckedException e) {
+                return new GridFinishedFuture<>(e);
+            }
+
             return initLocalIncrementalSnapshot(req);
+        }
         else
             return initLocalFullSnapshot(req, grpIds, withMetaStorage);
     }
@@ -1734,8 +1742,6 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
                                 "Base snapshot with given name doesn't exist on local node.");
                     }
 
-                    checkIncrementalCanBeCreated(name, snpPath);
-
                     incIdx = maxLocalIncrementSnapshot(name, snpPath) + 1;
                 }
 
@@ -2399,7 +2405,7 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
      * @param name Full snapshot name.
      * @param snpPath Snapshot path.
      */
-    private void checkIncrementalCanBeCreated(String name, @Nullable String snpPath) {
+    private void checkIncrementalCanBeCreated(String name, @Nullable String snpPath) throws IgniteCheckedException {
         SnapshotMetadata meta = readSnapshotMetadata(new File(
             snapshotLocalDir(name, snpPath),
             snapshotMetaFileName(cctx.localNode().consistentId().toString())
@@ -2412,8 +2418,8 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
 
         for (String consId : meta.baselineNodes()) {
             if (!aliveNodesConsIds.contains(consId)) {
-                throw new IgniteException("Create incremental snapshot request has been rejected. " +
-                    "Node from full snapshot offline [consistenId=" + consId + ']');
+                throw new IgniteCheckedException("Create incremental snapshot request has been rejected. " +
+                    "Node from full snapshot offline [consistentId=" + consId + ']');
             }
         }
 
@@ -2424,7 +2430,7 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
             CacheGroupContext grpCtx = cctx.kernalContext().cache().cacheGroup(grpId);
 
             if (grpCtx == null) {
-                throw new IgniteException("Create incremental snapshot request has been rejected. " +
+                throw new IgniteCheckedException("Create incremental snapshot request has been rejected. " +
                     "Cache group destroyed [groupId=" + grpId + ']');
             }
         }
