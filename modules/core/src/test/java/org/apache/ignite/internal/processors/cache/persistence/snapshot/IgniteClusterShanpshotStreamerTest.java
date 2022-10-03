@@ -48,6 +48,8 @@ public class IgniteClusterShanpshotStreamerTest extends AbstractSnapshotSelfTest
         dfltCacheCfg = defaultCacheConfiguration();
 
         dfltCacheCfg.setAtomicityMode(CacheAtomicityMode.ATOMIC).setCacheMode(CacheMode.PARTITIONED).setBackups(2);
+
+        cleanPersistenceDir();
     }
 
     /** {@inheritDoc} */
