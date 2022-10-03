@@ -60,7 +60,7 @@ public class IncrementalSnapshotTest extends AbstractSnapshotSelfTest {
                 snpCreate.createIncrementalSnapshot(snpName).get(TIMEOUT);
 
                 for (int gridIdx = 0; gridIdx < GRID_CND; gridIdx++)
-                    assertTrue(checkIncremental(snpName, incIdx, grid(gridIdx)));
+                    assertTrue(checkIncremental(grid(gridIdx), snpName, incIdx));
             }
         }
     }

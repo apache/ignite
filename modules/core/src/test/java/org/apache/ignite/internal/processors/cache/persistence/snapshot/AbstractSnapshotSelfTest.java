@@ -648,7 +648,7 @@ public abstract class AbstractSnapshotSelfTest extends GridCommonAbstractTest {
     }
 
     /** Checks incremental snapshot exists. */
-    protected boolean checkIncremental(String snpName, int incIdx, IgniteEx node) {
+    protected boolean checkIncremental(IgniteEx node, String snpName, int incIdx) {
         File incSnpDir = snp(node).incrementalSnapshotLocalDir(snpName, null, incIdx);
 
         return incSnpDir.exists()
