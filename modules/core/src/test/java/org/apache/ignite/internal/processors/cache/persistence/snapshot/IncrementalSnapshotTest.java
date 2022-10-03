@@ -18,8 +18,10 @@
 package org.apache.ignite.internal.processors.cache.persistence.snapshot;
 
 import java.io.File;
+import java.util.function.UnaryOperator;
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.configuration.CacheConfiguration;
+import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.IgniteEx;
 import org.junit.Test;
 
@@ -31,21 +33,43 @@ import static org.apache.ignite.testframework.GridTestUtils.assertThrowsWithCaus
  */
 public class IncrementalSnapshotTest extends AbstractSnapshotSelfTest {
     /** */
+    public static final int GRID_CND = 3;
+
+    /** */
     @Test
     public void testCreation() throws Exception {
-        IgniteEx ign = startGridsWithCache(3, CACHE_KEYS_RANGE, key -> new Account(key, key),
-            new CacheConfiguration<>(DEFAULT_CACHE_NAME));
+        IgniteEx srv = startGridsWithCache(
+            GRID_CND,
+            CACHE_KEYS_RANGE,
+            key -> new Account(key, key),
+            new CacheConfiguration<>(DEFAULT_CACHE_NAME)
+        );
 
-        snp(ign).createSnapshot(SNAPSHOT_NAME).get(TIMEOUT);
+        IgniteEx cli = startClientGrid(
+            GRID_CND,
+            (UnaryOperator<IgniteConfiguration>)
+                cfg -> cfg.setCacheConfiguration(new CacheConfiguration<>(DEFAULT_CACHE_NAME))
+        );
 
-        for (int idx = 1; idx < 3; idx++) {
-            snp(ign).createIncrementalSnapshot(SNAPSHOT_NAME).get(TIMEOUT);
+        for (boolean client : new boolean[] {false, true}) {
+            IgniteSnapshotManager snpCreate = snp(client ? cli : srv);
 
-            File incSnpDir = snp(ign).incrementalSnapshotLocalDir(SNAPSHOT_NAME, null, idx);
+            String snpName = SNAPSHOT_NAME + "_" + client;
 
-            assertTrue(incSnpDir.exists());
-            assertTrue(incSnpDir.isDirectory());
-            assertTrue(new File(incSnpDir, incrementalSnapshotMetaFileName(idx)).exists());
+            snpCreate.createSnapshot(snpName).get(TIMEOUT);
+
+            for (int incIdx = 1; incIdx < 3; incIdx++) {
+                snpCreate.createIncrementalSnapshot(snpName).get(TIMEOUT);
+
+                for (int gridIdx = 0; gridIdx < GRID_CND; gridIdx++) {
+                    File incSnpDir =
+                        snp(grid(gridIdx)).incrementalSnapshotLocalDir(snpName, null, incIdx);
+
+                    assertTrue(incSnpDir.exists());
+                    assertTrue(incSnpDir.isDirectory());
+                    assertTrue(new File(incSnpDir, incrementalSnapshotMetaFileName(incIdx)).exists());
+                }
+            }
         }
     }
 
@@ -71,5 +95,54 @@ public class IncrementalSnapshotTest extends AbstractSnapshotSelfTest {
     /** */
     @Test
     public void testIncrementalSnapshotNotEnoughSpace() throws Exception {
+        // TODO: test that check exception that throw from smf file creation.
+    }
+
+    /** */
+    @Test
+    public void testIncrementalSnapshotFailsOnTopologyChange() throws Exception {
+        // TODO: test that incremental snapshot fail if current topology differs from base snapshot topology.
+    }
+
+    /** */
+    @Test
+    public void testClusterSnapshotWithOfflineBlt() throws Exception {
+        // TODO: test that incremental snapshot fail if some blt node offline.
+    }
+
+    /** */
+    @Test
+    public void testIncrementalSnapshotFailsOnCachesChange() throws Exception {
+        // TODO: test that incremental snapshot fail if current cache state differs from base snapshot state.
+    }
+
+    /** */
+    @Test
+    public void testIncrementalSnapshotCleanedOnLeft() throws Exception {
+        // TODO: test that incremental snapshot cleared if node left during creation.
+    }
+
+    /** */
+    @Test
+    public void testIncrementalSnapshotFailsIfRebalanceHappen() throws Exception {
+        // TODO: test that incremental snapshot fail if rebalance happens between creation.
+    }
+
+    /** */
+    @Test
+    public void testIncrementalSnapshotWithExplicitPath() throws Exception {
+        // TODO: test that incremental snapshot may be created with custom snapshot path.
+    }
+
+    /** */
+    @Test
+    public void testIncrementalSnapshotWithExplicitPathError() throws Exception {
+        // TODO: test that incremental snapshot fails for invalid custom snapshot path.
+    }
+
+    /** */
+    @Test
+    public void testConcurrentIncrementalSnapshotFromClient() throws Exception {
+        // See for cluster snapshot.
     }
 }

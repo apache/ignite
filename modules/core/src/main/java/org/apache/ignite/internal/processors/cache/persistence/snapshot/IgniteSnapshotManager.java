@@ -1695,7 +1695,7 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
 
                 return new IgniteSnapshotFutureImpl(cctx.kernalContext().closure()
                     .callAsyncNoFailover(BALANCE,
-                        new CreateSnapshotCallable(name),
+                        new CreateSnapshotCallable(name, incremental),
                         Collections.singletonList(crd),
                         false,
                         0,
@@ -3630,6 +3630,9 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
         /** Snapshot name. */
         private final String snpName;
 
+        /** Incremental flag. */
+        private final boolean incremental;
+
         /** Auto-injected grid instance. */
         @IgniteInstanceResource
         private transient IgniteEx ignite;
@@ -3637,13 +3640,17 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
         /**
          * @param snpName Snapshot name.
          */
-        public CreateSnapshotCallable(String snpName) {
+        public CreateSnapshotCallable(String snpName, boolean incremental) {
             this.snpName = snpName;
+            this.incremental = incremental;
         }
 
         /** {@inheritDoc} */
         @Override public Void call() throws Exception {
-            ignite.snapshot().createSnapshot(snpName).get();
+            if (incremental)
+                ignite.snapshot().createIncrementalSnapshot(snpName).get();
+            else
+                ignite.snapshot().createSnapshot(snpName).get();
 
             return null;
         }
