@@ -1577,6 +1577,9 @@ public class DataStreamerImpl<K, V> implements IgniteDataStreamer<K, V>, Delayed
      * Notifies to free marks of streaming into the cache.
      */
     public static class CloseStreamerCmd implements DiscoveryCustomMessage {
+        /** */
+        private static final long serialVersionUID = 0L;
+
         /** Cache that was being streamed into. */
         private final String cacheName;
 
