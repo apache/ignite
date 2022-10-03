@@ -24,6 +24,7 @@ import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.IgniteEx;
 import org.junit.Test;
 
+import static org.apache.ignite.testframework.GridTestUtils.assertThrows;
 import static org.apache.ignite.testframework.GridTestUtils.assertThrowsWithCause;
 
 /**
@@ -93,7 +94,38 @@ public class IncrementalSnapshotTest extends AbstractSnapshotSelfTest {
     /** */
     @Test
     public void testIncrementalSnapshotFailsOnTopologyChange() throws Exception {
-        // TODO: test that incremental snapshot fail if current topology differs from base snapshot topology.
+        IgniteEx srv = startGridsWithCache(
+            GRID_CND,
+            CACHE_KEYS_RANGE,
+            key -> new Account(key, key),
+            new CacheConfiguration<>(DEFAULT_CACHE_NAME)
+        );
+
+        IgniteSnapshotManager snpCreate = snp(srv);
+
+        snpCreate.createSnapshot(SNAPSHOT_NAME).get(TIMEOUT);
+
+        String consId = grid(1).context().discovery().localNode().consistentId().toString();
+
+        // Stop some node.
+        stopGrid(1);
+
+        // Start another.
+        startGrid(
+            GRID_CND,
+            (UnaryOperator<IgniteConfiguration>)
+                cfg -> cfg.setCacheConfiguration(new CacheConfiguration<>(DEFAULT_CACHE_NAME))
+        );
+
+        srv.cluster().setBaselineTopology(srv.cluster().topologyVersion());
+
+        assertThrows(
+            null,
+            () -> snpCreate.createIncrementalSnapshot(SNAPSHOT_NAME).get(TIMEOUT),
+            IgniteException.class,
+            "Create incremental snapshot request has been rejected. " +
+                                    "One of nodes from full snapshot offline [consistenId=" + consId + ']'
+        );
     }
 
     /** */
