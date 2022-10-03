@@ -17,7 +17,6 @@
 
 package org.apache.ignite.internal.processors.cache.persistence.snapshot;
 
-import java.util.Arrays;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
@@ -34,7 +33,6 @@ import org.apache.ignite.internal.util.typedef.G;
 import org.apache.ignite.stream.StreamReceiver;
 import org.apache.ignite.testframework.GridTestUtils;
 import org.junit.Test;
-import org.junit.runners.Parameterized;
 
 import static org.apache.ignite.cluster.ClusterState.ACTIVE;
 import static org.apache.ignite.testframework.GridTestUtils.assertThrows;
@@ -43,12 +41,6 @@ import static org.apache.ignite.testframework.GridTestUtils.assertThrows;
  * Tests snapshot is consistent under streaming load.
  */
 public class IgniteClusterShanpshotStreamerTest extends AbstractSnapshotSelfTest {
-    /** Parameters. */
-    @Parameterized.Parameters(name = "Encryption={0}")
-    public static Iterable<Boolean> encryptionParams() {
-        return Arrays.asList(false);
-    }
-
     /** {@inheritDoc} */
     @Override public void beforeTestSnapshot() throws Exception {
         super.beforeTestSnapshot();
