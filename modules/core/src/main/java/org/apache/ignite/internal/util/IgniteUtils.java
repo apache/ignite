@@ -3367,15 +3367,15 @@ public abstract class IgniteUtils {
     /**
      * Generates file name from index.
      *
-     * @param idx Index.
+     * @param num Number to generate file name.
      * @param len Length of the name.
      * @param ext Optional extension
      * @return File name.
      */
-    public static String fileName(long idx, int len, @Nullable String ext) {
+    public static String fixedLengthNumberName(long num, int len, @Nullable String ext) {
         SB b = new SB();
 
-        String segmentStr = Long.toString(idx);
+        String segmentStr = Long.toString(num);
 
         for (int i = segmentStr.length(); i < len; i++)
             b.a('0');

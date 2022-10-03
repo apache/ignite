@@ -33,7 +33,7 @@ public class IncrementalSnapshotTest extends AbstractSnapshotSelfTest {
     /** */
     @Test
     public void testCreation() throws Exception {
-        IgniteEx ign = startGridsWithCache(1, CACHE_KEYS_RANGE, key -> new Account(key, key),
+        IgniteEx ign = startGridsWithCache(3, CACHE_KEYS_RANGE, key -> new Account(key, key),
             new CacheConfiguration<>(DEFAULT_CACHE_NAME));
 
         snp(ign).createSnapshot(SNAPSHOT_NAME).get(TIMEOUT);
@@ -66,5 +66,10 @@ public class IncrementalSnapshotTest extends AbstractSnapshotSelfTest {
             () -> snp(ign).createIncrementalSnapshot("unknown").get(TIMEOUT),
             IgniteException.class
         );
+    }
+
+    /** */
+    @Test
+    public void testIncrementalSnapshotNotEnoughSpace() throws Exception {
     }
 }

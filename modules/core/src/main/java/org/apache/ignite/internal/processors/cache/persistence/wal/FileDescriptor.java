@@ -77,7 +77,7 @@ public class FileDescriptor implements Comparable<FileDescriptor>, AbstractWalRe
      * @return Segment file name.
      */
     public static String fileName(long idx) {
-        return IgniteUtils.fileName(idx, WAL_SEGMENT_FILE_NAME_LENGTH, WAL_SEGMENT_FILE_EXT);
+        return IgniteUtils.fixedLengthNumberName(idx, WAL_SEGMENT_FILE_NAME_LENGTH, WAL_SEGMENT_FILE_EXT);
     }
 
     /** {@inheritDoc} */

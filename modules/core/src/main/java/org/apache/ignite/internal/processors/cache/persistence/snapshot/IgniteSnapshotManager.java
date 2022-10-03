@@ -699,7 +699,7 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
     public File incrementalSnapshotLocalDir(String snpName, @Nullable String snpPath, int incIdx) {
         return Paths.get(
             incrementalSnapshotsLocalRootDir(snpName, snpPath).getAbsolutePath(),
-            IgniteUtils.fileName(incIdx, INC_DIR_LENGTH, null)
+            IgniteUtils.fixedLengthNumberName(incIdx, INC_DIR_LENGTH, null)
         ).toFile();
     }
 
@@ -1243,9 +1243,10 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
 
     /**
      * @param snpName Full snapshot name.
-     * @return List of
+     * @param snpPath Snapshot path.
+     * @return Maximum existing incremental snapshot index.
      */
-    private int maxLocalIncrementSnapshot(String snpName, @Nullable String snpPath) throws IgniteCheckedException {
+    private int maxLocalIncrementSnapshot(String snpName, @Nullable String snpPath) {
         if (cctx.kernalContext().clientNode())
             throw new UnsupportedOperationException("Client and daemon nodes can not perform this operation.");
 
@@ -1774,7 +1775,7 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
 
             String msg =
                 "Cluster-wide snapshot operation started [snpName=" + name + ", grps=" + grps +
-                    (incremental ? "" : (", incremental=true, index=" + 0)) +
+                    (incremental ? "" : (", incremental=true, index=" + incIdx)) +
                 ']';
 
             recordSnapshotEvent(name, msg, EVT_CLUSTER_SNAPSHOT_STARTED);
@@ -1973,7 +1974,7 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
      * @return Snapshot metadata file name.
      */
     public static String incrementalSnapshotMetaFileName(int incIdx) {
-        return U.fileName(incIdx, INC_DIR_LENGTH, SNAPSHOT_METAFILE_EXT);
+        return U.fixedLengthNumberName(incIdx, INC_DIR_LENGTH, SNAPSHOT_METAFILE_EXT);
     }
 
     /**
