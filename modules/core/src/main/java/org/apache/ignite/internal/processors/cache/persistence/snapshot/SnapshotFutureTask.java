@@ -490,8 +490,17 @@ class SnapshotFutureTask extends AbstractSnapshotFutureTask<Set<GroupPartitionId
             snpSndr.executor()));
 
         // Send configuration files of all cache groups.
-        for (CacheConfigurationSender ccfgSndr : ccfgSndrs)
+        for (CacheConfigurationSender ccfgSndr : ccfgSndrs) {
+            if (cctx.mvcc().dataStreamerFutures().get(ccfgSndr.cacheName) != null && err.get() == null) {
+                acceptException(new IgniteException("Prohibited concurrent streaming update  occured to cache '" +
+                    ccfgSndr.cacheName + "'. Streaming should not work while snapshot creating with allowOverwrite' " +
+                    "set to false."));
+
+                return;
+            }
+
             futs.add(CompletableFuture.runAsync(wrapExceptionIfStarted(ccfgSndr::sendCacheConfig), snpSndr.executor()));
+        }
 
         try {
             for (Map.Entry<Integer, Set<Integer>> e : processed.entrySet()) {
@@ -507,21 +516,10 @@ class SnapshotFutureTask extends AbstractSnapshotFutureTask<Set<GroupPartitionId
                     totalSize.addAndGet(partLen);
 
                     CompletableFuture<Void> fut0 = CompletableFuture.runAsync(
-                            wrapExceptionIfStarted(() -> {
-                                if (cctx.mvcc().dataStreamerFutures()
-                                    .get(cctx.cache().cacheGroup(e.getKey()).cacheOrGroupName()) != null &&
-                                    err.get() == null) {
-                                    acceptException(new IgniteException("Prohibited concurrent streaming update " +
-                                        "occured to cache '" + cctx.cache().cacheGroup(e.getKey()).cacheOrGroupName() +
-                                        "'. Streaming should not work while snapshot creating with allowOverwrite' set " +
-                                        "to false."));
-
-                                    return;
-                                }
-
-                                snpSndr.sendPart(
-                                    getPartitionFile(pageStore.workDir(), cacheDirName, partId),
-                                    cacheDirName,
+                        wrapExceptionIfStarted(() -> {
+                            snpSndr.sendPart(
+                                getPartitionFile(pageStore.workDir(), cacheDirName, partId),
+                                cacheDirName,
                                 pair,
                                 partLen);
 

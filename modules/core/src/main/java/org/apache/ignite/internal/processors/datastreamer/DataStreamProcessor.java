@@ -18,18 +18,10 @@
 package org.apache.ignite.internal.processors.datastreamer;
 
 import java.util.Collection;
-import java.util.Collections;
-import java.util.HashMap;
-import java.util.HashSet;
-import java.util.Map;
-import java.util.Set;
 import java.util.UUID;
 import java.util.concurrent.DelayQueue;
-import java.util.concurrent.locks.ReadWriteLock;
-import java.util.concurrent.locks.ReentrantReadWriteLock;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.cluster.ClusterNode;
-import org.apache.ignite.events.DiscoveryEvent;
 import org.apache.ignite.internal.GridKernalContext;
 import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.IgniteInterruptedCheckedException;
@@ -37,8 +29,6 @@ import org.apache.ignite.internal.cluster.ClusterTopologyCheckedException;
 import org.apache.ignite.internal.managers.communication.GridIoManager;
 import org.apache.ignite.internal.managers.communication.GridMessageListener;
 import org.apache.ignite.internal.managers.deployment.GridDeployment;
-import org.apache.ignite.internal.managers.discovery.DiscoCache;
-import org.apache.ignite.internal.managers.eventstorage.DiscoveryEventListener;
 import org.apache.ignite.internal.processors.GridProcessorAdapter;
 import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
 import org.apache.ignite.internal.processors.cache.GridCacheAdapter;
@@ -61,15 +51,13 @@ import org.apache.ignite.thread.IgniteThread;
 import org.apache.ignite.thread.OomExceptionHandler;
 import org.jetbrains.annotations.Nullable;
 
-import static org.apache.ignite.events.EventType.EVT_NODE_FAILED;
-import static org.apache.ignite.events.EventType.EVT_NODE_LEFT;
 import static org.apache.ignite.internal.GridTopic.TOPIC_DATASTREAM;
 import static org.apache.ignite.internal.managers.communication.GridIoPolicy.DATA_STREAMER_POOL;
 
 /**
  * Data stream processor.
  */
-public class DataStreamProcessor<K, V> extends GridProcessorAdapter implements DiscoveryEventListener {
+public class DataStreamProcessor<K, V> extends GridProcessorAdapter {
     /** Loaders map (access is not supposed to be highly concurrent). */
     private Collection<DataStreamerImpl> ldrs = new GridConcurrentHashSet<>();
 
@@ -88,15 +76,6 @@ public class DataStreamProcessor<K, V> extends GridProcessorAdapter implements D
     /** */
     private byte[] marshErrBytes;
 
-    /** */
-    private final Map<String, Set<UUID>> cachesUnderLoad = new HashMap<>();
-
-    /** */
-    private final Map<UUID, Set<String>> loadingNodes = new HashMap<>();
-
-    /** */
-    private final ReadWriteLock cachesUnderLoadLock = new ReentrantReadWriteLock(false);
-
     /**
      * @param ctx Kernal context.
      */
@@ -114,8 +93,6 @@ public class DataStreamProcessor<K, V> extends GridProcessorAdapter implements D
         }
 
         marsh = ctx.config().getMarshaller();
-
-        ctx.event().addDiscoveryEventListener(this, EVT_NODE_LEFT, EVT_NODE_FAILED);
     }
 
     /** {@inheritDoc} */
@@ -420,9 +397,6 @@ public class DataStreamProcessor<K, V> extends GridProcessorAdapter implements D
                 return;
             }
 
-            if (waitFut != null)
-                markCacheUnderLoad(req.cacheName(), nodeId);
-
             try {
                 job.call();
 
@@ -432,9 +406,6 @@ public class DataStreamProcessor<K, V> extends GridProcessorAdapter implements D
                 if (waitFut != null)
                     waitFut.onDone();
             }
-
-            if (waitFut != null && req.isCloser())
-                unmarkCacheUnderLoad(req.cacheName(), nodeId);
         }
         catch (Throwable e) {
             sendResponse(nodeId, topic, req.requestId(), e, req.forceLocalDeployment());
@@ -442,80 +413,6 @@ public class DataStreamProcessor<K, V> extends GridProcessorAdapter implements D
             if (e instanceof Error)
                 throw (Error)e;
         }
-    }
-
-    /**
-     * Marks cache as being under inconsistent loading.
-     */
-    private void markCacheUnderLoad(String cacheName, UUID nodeId) {
-        cachesUnderLoadLock.writeLock().lock();
-
-        try {
-            cachesUnderLoad.compute(cacheName, (cn, nodes) -> {
-                if (nodes == null)
-                    nodes = new HashSet<>();
-
-                nodes.add(nodeId);
-
-                return nodes;
-            });
-
-            loadingNodes.compute(nodeId, (node, caches) -> {
-                if (caches == null)
-                    caches = new HashSet<>();
-
-                caches.add(cacheName);
-
-                return caches;
-            });
-        }
-        finally {
-            cachesUnderLoadLock.writeLock().unlock();
-        }
-    }
-
-    /**
-     * Unmarks cache as being under inconsistent loading.
-     */
-    private void unmarkCacheUnderLoad(String cacheName, UUID nodeId) {
-        cachesUnderLoadLock.writeLock().lock();
-
-        try {
-            cachesUnderLoad.compute(cacheName, (cn, nodes) -> {
-                if (nodes != null && nodes.remove(nodeId) && nodes.isEmpty())
-                    return null;
-
-                return nodes;
-            });
-
-            loadingNodes.compute(nodeId, (node, caches) -> {
-                if (caches != null && caches.remove(cacheName) && caches.isEmpty())
-                    return null;
-
-                return caches;
-            });
-        }
-        finally {
-            cachesUnderLoadLock.writeLock().unlock();
-        }
-    }
-
-    /**
-     * @return Set of node id which is streaming into the cache.
-     */
-    public Set<UUID> isCacheUnderInconsictentLoad(String cacheName) {
-        cachesUnderLoadLock.readLock().lock();
-
-        Set<UUID> res;
-
-        try {
-            res = cachesUnderLoad.get(cacheName);
-        }
-        finally {
-            cachesUnderLoadLock.readLock().unlock();
-        }
-
-        return res == null ? null : Collections.unmodifiableSet(res);
     }
 
     /**
@@ -591,22 +488,5 @@ public class DataStreamProcessor<K, V> extends GridProcessorAdapter implements D
         X.println(">>>");
         X.println(">>> Data streamer processor memory stats [igniteInstanceName=" + ctx.igniteInstanceName() + ']');
         X.println(">>>   ldrsSize: " + ldrs.size());
-    }
-
-    /** {@inheritDoc} */
-    @Override public void onEvent(DiscoveryEvent evt, DiscoCache discoCache) {
-        assert evt.type() == EVT_NODE_LEFT || evt.type() == EVT_NODE_FAILED;
-
-        cachesUnderLoadLock.writeLock().lock();
-
-        try {
-            Set<String> caches = loadingNodes.remove(evt.eventNode().id());
-
-            if (caches != null)
-                caches.forEach(cacheName -> unmarkCacheUnderLoad(cacheName, evt.eventNode().id()));
-        }
-        finally {
-            cachesUnderLoadLock.writeLock().unlock();
-        }
     }
 }
