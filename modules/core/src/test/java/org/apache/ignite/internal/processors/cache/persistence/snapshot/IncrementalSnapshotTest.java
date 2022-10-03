@@ -110,6 +110,14 @@ public class IncrementalSnapshotTest extends AbstractSnapshotSelfTest {
         // Stop some node.
         stopGrid(1);
 
+        assertThrows(
+            null,
+            () -> snpCreate.createIncrementalSnapshot(SNAPSHOT_NAME).get(TIMEOUT),
+            IgniteException.class,
+            "Create incremental snapshot request has been rejected. " +
+                "One of nodes from full snapshot offline [consistenId=" + consId + ']'
+        );
+
         // Start another.
         startGrid(
             GRID_CND,
@@ -126,12 +134,6 @@ public class IncrementalSnapshotTest extends AbstractSnapshotSelfTest {
             "Create incremental snapshot request has been rejected. " +
                                     "One of nodes from full snapshot offline [consistenId=" + consId + ']'
         );
-    }
-
-    /** */
-    @Test
-    public void testClusterSnapshotWithOfflineBlt() throws Exception {
-        // TODO: test that incremental snapshot fail if some blt node offline.
     }
 
     /** */
