@@ -139,7 +139,7 @@ public class IgniteClusterShanpshotStreamerTest extends AbstractSnapshotSelfTest
                 }
             }
             catch (Exception e) {
-                e.printStackTrace();
+                log.error("Unable to close client.", e);
             }
         }, 1, "load-thread");
     }
