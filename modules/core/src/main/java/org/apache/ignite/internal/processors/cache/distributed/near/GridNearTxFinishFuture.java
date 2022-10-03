@@ -34,11 +34,12 @@ import org.apache.ignite.internal.cluster.ClusterTopologyCheckedException;
 import org.apache.ignite.internal.processors.cache.CacheInvalidStateException;
 import org.apache.ignite.internal.processors.cache.GridCacheCompoundIdentityFuture;
 import org.apache.ignite.internal.processors.cache.GridCacheFuture;
+import org.apache.ignite.internal.processors.cache.GridCacheMessage;
 import org.apache.ignite.internal.processors.cache.GridCacheReturn;
 import org.apache.ignite.internal.processors.cache.GridCacheReturnCompletableWrapper;
 import org.apache.ignite.internal.processors.cache.GridCacheSharedContext;
 import org.apache.ignite.internal.processors.cache.GridCacheVersionedFuture;
-import org.apache.ignite.internal.processors.cache.consistentcut.ConsistentCutVersion;
+import org.apache.ignite.internal.processors.cache.consistentcut.ConsistentCutMarker;
 import org.apache.ignite.internal.processors.cache.distributed.GridDistributedTxMapping;
 import org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtTxFinishRequest;
 import org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtTxFinishResponse;
@@ -360,12 +361,12 @@ public final class GridNearTxFinishFuture<K, V> extends GridCacheCompoundIdentit
                             finishOnePhase(commit);
 
                         try {
-                            ConsistentCutVersion cutVer = null;
+                            ConsistentCutMarker txMarker = null;
 
-                            if (cctx.consistentCutMgr() != null && tx.currentPrepareFuture() != null)
-                                cutVer = ((GridNearTxPrepareFutureAdapter)tx.currentPrepareFuture()).txCutVer();
+                            if (tx.currentPrepareFuture() != null)
+                                txMarker = ((GridNearTxPrepareFutureAdapter)tx.currentPrepareFuture()).tx().marker();
 
-                            tx.tmFinish(commit, nodeStop, true, cutVer);
+                            tx.tmFinish(commit, nodeStop, true, txMarker);
                         }
                         catch (IgniteCheckedException e) {
                             U.error(log, "Failed to finish tx: " + tx, e);
@@ -656,7 +657,9 @@ public final class GridNearTxFinishFuture<K, V> extends GridCacheCompoundIdentit
                         GridDhtTxFinishRequest finishReq = checkCommittedRequest(mini.futureId(), false);
 
                         try {
-                            cctx.io().send(backup, finishReq, tx.ioPolicy());
+                            GridCacheMessage cacheMsg = cctx.consistentCutMgr().wrapTxMsgIfCutRunning(finishReq, tx.marker());
+
+                            cctx.io().send(backup, cacheMsg, tx.ioPolicy());
 
                             if (msgLog.isDebugEnabled()) {
                                 msgLog.debug("Near finish fut, sent check committed request [" +
@@ -792,11 +795,6 @@ public final class GridNearTxFinishFuture<K, V> extends GridCacheCompoundIdentit
             tx.mvccSnapshot(),
             tx.activeCachesDeploymentEnabled());
 
-        if (cctx.consistentCutMgr() != null) {
-            req.cutVersion(cctx.consistentCutMgr().cutVersion());
-            req.txCutVersion(tx.txCutVersion());
-        }
-
         // If this is the primary node for the keys.
         if (n.isLocal()) {
             req.miniId(miniId);
@@ -815,7 +813,9 @@ public final class GridNearTxFinishFuture<K, V> extends GridCacheCompoundIdentit
             add(fut); // Append new future.
 
             try {
-                cctx.io().send(n, req, tx.ioPolicy());
+                GridCacheMessage cacheMsg = cctx.consistentCutMgr().wrapTxMsgIfCutRunning(req, tx.marker());
+
+                cctx.io().send(n, cacheMsg, tx.ioPolicy());
 
                 if (msgLog.isDebugEnabled()) {
                     msgLog.debug("Near finish fut, sent request [" +
@@ -933,11 +933,6 @@ public final class GridNearTxFinishFuture<K, V> extends GridCacheCompoundIdentit
             null);
 
         finishReq.checkCommitted(true);
-
-        if (cctx.consistentCutMgr() != null) {
-            finishReq.cutVersion(cctx.consistentCutMgr().cutVersion());
-            finishReq.txCutVersion(tx.txCutVersion());
-        }
 
         return finishReq;
     }

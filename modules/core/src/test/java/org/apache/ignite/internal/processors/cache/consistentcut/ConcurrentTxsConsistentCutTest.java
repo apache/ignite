@@ -25,7 +25,6 @@ import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.CountDownLatch;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCache;
-import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.T2;
@@ -34,8 +33,6 @@ import org.apache.ignite.transactions.Transaction;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.junit.runners.Parameterized;
-
-import static org.apache.ignite.cache.CacheAtomicityMode.ATOMIC;
 
 /** Load Ignite with transactions and starts Consistent Cut concurrently. */
 @RunWith(Parameterized.class)
@@ -46,7 +43,7 @@ public class ConcurrentTxsConsistentCutTest extends AbstractConsistentCutTest {
     /** How many times repeat the test. */
     private static final int REPEAT = 1;
 
-    /** */
+    /** Map {nearXidVersion -> nearNodeId}. */
     private final Map<IgniteUuid, Integer> txOrigNode = new ConcurrentHashMap<>();
 
     /** Notifies data loader to stop preparing new transactions. */
@@ -90,18 +87,6 @@ public class ConcurrentTxsConsistentCutTest extends AbstractConsistentCutTest {
     /** {@inheritDoc} */
     @Override protected int backups() {
         return backups;
-    }
-
-    /** */
-    @Test
-    public void t() {
-        IgniteCache<Integer, Integer> c = grid(0).createCache(new CacheConfiguration<Integer, Integer>("ATOMIC")
-            .setBackups(0)
-            .setAtomicityMode(ATOMIC));
-
-        c.put(key("ATOMIC", grid(0).localNode(), null), 1);
-
-        stopAllGrids();
     }
 
     /** */

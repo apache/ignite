@@ -74,7 +74,6 @@ import org.apache.ignite.internal.processors.cache.GridCacheSharedManagerAdapter
 import org.apache.ignite.internal.processors.cache.GridCacheVersionedFuture;
 import org.apache.ignite.internal.processors.cache.GridDeferredAckMessageSender;
 import org.apache.ignite.internal.processors.cache.TxTimeoutOnPartitionMapExchangeChangeMessage;
-import org.apache.ignite.internal.processors.cache.consistentcut.ConsistentCutProcessor;
 import org.apache.ignite.internal.processors.cache.distributed.GridCacheMappedVersion;
 import org.apache.ignite.internal.processors.cache.distributed.GridCacheTxRecoveryFuture;
 import org.apache.ignite.internal.processors.cache.distributed.GridDistributedCacheEntry;
@@ -1609,7 +1608,11 @@ public class IgniteTxManager extends GridCacheSharedManagerAdapter {
                 ", tx=" + tx.getClass().getSimpleName() + ']');
         }
 
-        if (activeTx(tx)) {
+        cctx.consistentCutMgr().registerBeforeCommit(tx);
+
+        ConcurrentMap<GridCacheVersion, IgniteInternalTx> txIdMap = transactionMap(tx);
+
+        if (txIdMap.remove(tx.xidVersion(), tx)) {
             // 2. Must process completed entries before unlocking!
             processCompletedEntries(tx);
 
@@ -1672,27 +1675,6 @@ public class IgniteTxManager extends GridCacheSharedManagerAdapter {
         }
         else if (log.isDebugEnabled())
             log.debug("Did not commit from TM (was already committed): " + tx);
-    }
-
-    /**
-     * Checks whether specified tx is active. Register committing transactions for Consistent Cut.
-     *
-     * @return {@code true} if {@code tx} is active transaction, otherwise {@code false}.
-     */
-    private boolean activeTx(IgniteInternalTx tx) {
-        ConcurrentMap<GridCacheVersion, IgniteInternalTx> txIdMap = transactionMap(tx);
-
-        ConsistentCutProcessor cutMgr = cctx.consistentCutMgr();
-
-        if (cutMgr == null || cutMgr.registerBeforeCommit(tx)) {
-            if (txIdMap.remove(tx.xidVersion(), tx))
-                return true;
-
-            if (cutMgr != null)
-                cutMgr.cancelRegisterBeforeCommit(tx);
-        }
-
-        return false;
     }
 
     /**

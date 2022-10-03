@@ -59,7 +59,6 @@ import org.apache.ignite.transactions.TransactionState;
 import org.jetbrains.annotations.Nullable;
 
 import static org.apache.ignite.internal.processors.cache.consistentcut.AbstractConsistentCutBlockingTest.BlkCutType.AFTER_VERSION_UPDATE;
-import static org.apache.ignite.internal.processors.cache.consistentcut.AbstractConsistentCutBlockingTest.BlkCutType.BEFORE_FINISH;
 import static org.apache.ignite.internal.processors.cache.consistentcut.AbstractConsistentCutBlockingTest.BlkCutType.BEFORE_VERSION_UPDATE;
 import static org.apache.ignite.internal.processors.cache.consistentcut.AbstractConsistentCutBlockingTest.BlkNodeType.BACKUP;
 import static org.apache.ignite.internal.processors.cache.consistentcut.AbstractConsistentCutBlockingTest.BlkNodeType.NEAR;
@@ -311,7 +310,7 @@ public abstract class AbstractConsistentCutBlockingTest extends AbstractConsiste
 
         // 3. Start Consistent Cut procedure concurrently with running transaction.
         if (cutBlkNodeId != -1)
-            BlockingConsistentCutProcessor.cutProc(grid(cutBlkNodeId)).block(cutBlkType);
+            BlockingConsistentCutManager.cutMgr(grid(cutBlkNodeId)).block(cutBlkType);
 
         final GridFutureAdapter<Boolean> cutRes = new GridFutureAdapter<>();
 
@@ -321,12 +320,11 @@ public abstract class AbstractConsistentCutBlockingTest extends AbstractConsiste
                     cutRes.onDone(f.error());
                 else
                     cutRes.onDone(f.result());
-            })
-        , 1);
+            }), 1);
 
         // 4. Await Consistent Cut has blocked.
         if (cutBlkNodeId != -1)
-            BlockingConsistentCutProcessor.cutProc(grid(cutBlkNodeId)).awaitBlockedOrFinishedCut(cutFut);
+            BlockingConsistentCutManager.cutMgr(grid(cutBlkNodeId)).awaitBlockedOrFinishedCut(cutFut);
 
         // 5. Resume the blocking transaction.
         unblockTx(grid(txBlkNodeId));
@@ -336,7 +334,7 @@ public abstract class AbstractConsistentCutBlockingTest extends AbstractConsiste
 
         // 7. Resume the blocking Consistent Cut.
         if (cutBlkNodeId != -1)
-            BlockingConsistentCutProcessor.cutProc(grid(cutBlkNodeId)).unblock(cutBlkType);
+            BlockingConsistentCutManager.cutMgr(grid(cutBlkNodeId)).unblock(cutBlkType);
 
         // 8. Await while Consistent Cut completed.
         cutFut.get(getTestTimeout());
@@ -398,7 +396,7 @@ public abstract class AbstractConsistentCutBlockingTest extends AbstractConsiste
 
     /** Manually triggers new Consistent Cut. */
     private IgniteInternalFuture<Boolean> triggerConsistentCut() {
-        return TestConsistentCutProcessor.cutProc(grid(0)).triggerConsistentCutOnCluster();
+        return TestConsistentCutManager.cutMgr(grid(0)).triggerConsistentCutOnCluster();
     }
 
     /** */
@@ -489,34 +487,31 @@ public abstract class AbstractConsistentCutBlockingTest extends AbstractConsiste
 
         /** {@inheritDoc} */
         @Override public <T> @Nullable T createComponent(PluginContext ctx, Class<T> cls) {
-            if (ConsistentCutProcessor.class.equals(cls))
-                return (T)new BlockingConsistentCutProcessor(((IgniteEx)ctx.grid()).context());
+            if (ConsistentCutManager.class.equals(cls))
+                return (T)new BlockingConsistentCutManager();
 
             return null;
         }
     }
 
     /** Blocks Consistent Cut procedure on writing ConsistentCutStartRecord or preparing and publishing Consistent Cut state. */
-    static class BlockingConsistentCutProcessor extends TestConsistentCutProcessor {
+    static class BlockingConsistentCutManager extends TestConsistentCutManager {
         /** Latch that blocks before Consistent Cut Version updated. */
         private volatile CountDownLatch beforeUpdVer;
 
         /** Latch that blocks after Consistent Cut Version updated. */
         private volatile CountDownLatch afterUpdVer;
 
-        /** Latch that blocks before Consistent Cut finished. */
-        private volatile CountDownLatch beforeFinish;
-
         /** */
         private volatile CountDownLatch blockedLatch;
 
         /** */
-        static BlockingConsistentCutProcessor cutProc(IgniteEx ign) {
-            return (BlockingConsistentCutProcessor)ign.context().consistentCut();
+        static BlockingConsistentCutManager cutMgr(IgniteEx ign) {
+            return (BlockingConsistentCutManager)ign.context().cache().context().consistentCutMgr();
         }
 
         /** {@inheritDoc} */
-        @Override protected ConsistentCut newConsistentCut(ConsistentCutVersion cutVer) {
+        @Override protected ConsistentCut newConsistentCut(ConsistentCutMarker marker) {
             // Blocks only thread for DistributedProcess (then it doesn't block transaction).
             if (beforeUpdVer != null && Thread.currentThread().getName().contains("disco")) {
                 blockedLatch.countDown();
@@ -527,7 +522,7 @@ public abstract class AbstractConsistentCutBlockingTest extends AbstractConsiste
                 beforeUpdVer = null;
             }
 
-            return new BlockingConsistentCut(ctx.cache().context(), cutVer);
+            return new BlockingConsistentCut(context(), marker);
         }
 
         /** */
@@ -538,8 +533,6 @@ public abstract class AbstractConsistentCutBlockingTest extends AbstractConsiste
                 beforeUpdVer = new CountDownLatch(1);
             else if (type == AFTER_VERSION_UPDATE)
                 afterUpdVer = new CountDownLatch(1);
-            else if (type == BEFORE_FINISH)
-                beforeFinish = new CountDownLatch(1);
         }
 
         /** */
@@ -557,29 +550,21 @@ public abstract class AbstractConsistentCutBlockingTest extends AbstractConsiste
 
         /** */
         public void unblock(BlkCutType type) {
-            if (type == BEFORE_VERSION_UPDATE)
+            if (type == BEFORE_VERSION_UPDATE && beforeUpdVer != null)
                 beforeUpdVer.countDown();
-            else if (type == AFTER_VERSION_UPDATE)
+            else if (type == AFTER_VERSION_UPDATE && afterUpdVer != null)
                 afterUpdVer.countDown();
-            // TODO: before finish move to onDone().
-            else if (type == BEFORE_FINISH)
-                beforeFinish.countDown();
-        }
-
-        /** */
-        public BlockingConsistentCutProcessor(GridKernalContext ctx) {
-            super(ctx);
         }
 
         /** */
         private final class BlockingConsistentCut extends ConsistentCut {
             /** */
-            BlockingConsistentCut(GridCacheSharedContext<?, ?> cctx, ConsistentCutVersion ver) {
-                super(cctx, ver);
+            BlockingConsistentCut(GridCacheSharedContext<?, ?> cctx, ConsistentCutMarker marker) {
+                super(cctx, marker);
             }
 
             /** Blocks before or after ConsistentCut preparation. */
-            @Override protected void init() throws IgniteCheckedException {
+            @Override protected void init(ConsistentCutMarker marker) throws IgniteCheckedException {
                 if (afterUpdVer != null) {
                     blockedLatch.countDown();
                     blockedLatch = null;
@@ -589,7 +574,7 @@ public abstract class AbstractConsistentCutBlockingTest extends AbstractConsiste
                     afterUpdVer = null;
                 }
 
-                super.init();
+                super.init(marker);
             }
         }
     }
@@ -616,13 +601,5 @@ public abstract class AbstractConsistentCutBlockingTest extends AbstractConsiste
 
         /** */
         AFTER_VERSION_UPDATE,
-
-        /** */
-        BEFORE_FINISH;
-
-        /** */
-        public static BlkCutType[] blkTestValues() {
-            return new BlkCutType[] { NONE, BEFORE_VERSION_UPDATE, AFTER_VERSION_UPDATE };
-        }
     }
 }

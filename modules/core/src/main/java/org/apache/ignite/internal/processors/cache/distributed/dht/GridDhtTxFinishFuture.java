@@ -33,8 +33,9 @@ import org.apache.ignite.internal.NodeStoppingException;
 import org.apache.ignite.internal.cluster.ClusterTopologyCheckedException;
 import org.apache.ignite.internal.processors.cache.GridCacheCompoundIdentityFuture;
 import org.apache.ignite.internal.processors.cache.GridCacheFuture;
+import org.apache.ignite.internal.processors.cache.GridCacheMessage;
 import org.apache.ignite.internal.processors.cache.GridCacheSharedContext;
-import org.apache.ignite.internal.processors.cache.consistentcut.ConsistentCutVersion;
+import org.apache.ignite.internal.processors.cache.consistentcut.ConsistentCutMarker;
 import org.apache.ignite.internal.processors.cache.distributed.GridDistributedTxMapping;
 import org.apache.ignite.internal.processors.cache.distributed.near.GridNearTxPrepareFutureAdapter;
 import org.apache.ignite.internal.processors.cache.mvcc.MvccFuture;
@@ -241,20 +242,20 @@ public final class GridDhtTxFinishFuture<K, V> extends GridCacheCompoundIdentity
                     try {
                         boolean nodeStopping = X.hasCause(err, NodeStoppingException.class);
 
-                        ConsistentCutVersion txCutVer = null;
+                        ConsistentCutMarker txMarker = null;
 
                         if (cctx.consistentCutMgr() != null && this.tx.currentPrepareFuture() != null) {
                             if (this.tx.near())
-                                txCutVer = ((GridNearTxPrepareFutureAdapter)this.tx.currentPrepareFuture()).txCutVer();
+                                txMarker = ((GridNearTxPrepareFutureAdapter)this.tx.currentPrepareFuture()).tx().marker();
                             else
-                                txCutVer = ((GridDhtTxPrepareFuture)this.tx.currentPrepareFuture()).txCutVer();
+                                txMarker = ((GridDhtTxPrepareFuture)this.tx.currentPrepareFuture()).tx().marker();
                         }
 
                         this.tx.tmFinish(
                             err == null,
                             nodeStopping || cctx.kernalContext().failure().nodeStopping(),
                             false,
-                            txCutVer);
+                            txMarker);
                     }
                     catch (IgniteCheckedException finishErr) {
                         U.error(log, "Failed to finish tx: " + tx, e);
@@ -470,8 +471,6 @@ public final class GridDhtTxFinishFuture<K, V> extends GridCacheCompoundIdentity
         if (mvccSnapshot != null)
             mvccSnapshot = mvccSnapshot.withoutActiveTransactions();
 
-        ConsistentCutVersion txVer = tx.txCutVersion();
-
         // Create mini futures.
         for (GridDistributedTxMapping dhtMapping : dhtMap.values()) {
             ClusterNode n = dhtMapping.primary();
@@ -518,11 +517,6 @@ public final class GridDhtTxFinishFuture<K, V> extends GridCacheCompoundIdentity
 
             req.writeVersion(tx.writeVersion() != null ? tx.writeVersion() : tx.xidVersion());
 
-            if (cctx.consistentCutMgr() != null) {
-                req.cutVersion(cctx.consistentCutMgr().cutVersion());
-                req.txCutVersion(txVer);
-            }
-
             try {
                 if (isNull(cctx.discovery().getAlive(n.id()))) {
                     log.error("Unable to send message (node left topology): " + n);
@@ -531,7 +525,9 @@ public final class GridDhtTxFinishFuture<K, V> extends GridCacheCompoundIdentity
                         + n.id()));
                 }
                 else {
-                    cctx.io().send(n, req, tx.ioPolicy());
+                    GridCacheMessage cacheMsg = cctx.consistentCutMgr().wrapTxMsgIfCutRunning(req, tx.marker());
+
+                    cctx.io().send(n, cacheMsg, tx.ioPolicy());
 
                     if (msgLog.isDebugEnabled()) {
                         msgLog.debug("DHT finish fut, sent request dht [txId=" + tx.nearXidVersion() +
@@ -601,13 +597,10 @@ public final class GridDhtTxFinishFuture<K, V> extends GridCacheCompoundIdentity
 
                 req.writeVersion(tx.writeVersion());
 
-                if (cctx.consistentCutMgr() != null) {
-                    req.cutVersion(cctx.consistentCutMgr().cutVersion());
-                    req.txCutVersion(txVer);
-                }
-
                 try {
-                    cctx.io().send(nearMapping.primary(), req, tx.ioPolicy());
+                    GridCacheMessage cacheMsg = cctx.consistentCutMgr().wrapTxMsgIfCutRunning(req, tx.marker());
+
+                    cctx.io().send(nearMapping.primary(), cacheMsg, tx.ioPolicy());
 
                     if (msgLog.isDebugEnabled()) {
                         msgLog.debug("DHT finish fut, sent request near [txId=" + tx.nearXidVersion() +

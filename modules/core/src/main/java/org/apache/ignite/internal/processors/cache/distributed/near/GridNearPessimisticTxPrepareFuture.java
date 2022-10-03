@@ -31,6 +31,7 @@ import org.apache.ignite.internal.cluster.ClusterTopologyServerNotFoundException
 import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
 import org.apache.ignite.internal.processors.cache.GridCacheContext;
 import org.apache.ignite.internal.processors.cache.GridCacheEntryEx;
+import org.apache.ignite.internal.processors.cache.GridCacheMessage;
 import org.apache.ignite.internal.processors.cache.GridCacheMvccCandidate;
 import org.apache.ignite.internal.processors.cache.GridCacheSharedContext;
 import org.apache.ignite.internal.processors.cache.distributed.GridDistributedTxMapping;
@@ -238,8 +239,7 @@ public class GridNearPessimisticTxPrepareFuture extends GridNearTxPrepareFutureA
             false,
             true,
             tx.activeCachesDeploymentEnabled(),
-            tx.txState().recovery(),
-            cctx.consistentCutMgr() != null ? cctx.consistentCutMgr().cutVersion() : null);
+            tx.txState().recovery());
 
         req.queryUpdate(m.queryUpdate());
 
@@ -408,7 +408,9 @@ public class GridNearPessimisticTxPrepareFuture extends GridNearTxPrepareFutureA
                 add((IgniteInternalFuture)fut);
 
                 try {
-                    cctx.io().send(primary, req, tx.ioPolicy());
+                    GridCacheMessage cacheMsg = cctx.consistentCutMgr().wrapTxMsgIfCutRunning(req, null);
+
+                    cctx.io().send(primary, cacheMsg, tx.ioPolicy());
 
                     if (msgLog.isDebugEnabled()) {
                         msgLog.debug("Near pessimistic prepare, sent request [txId=" + tx.nearXidVersion() +

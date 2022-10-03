@@ -30,6 +30,7 @@ import org.apache.ignite.internal.pagemem.wal.record.ConsistentCutStartRecord;
 import org.apache.ignite.internal.pagemem.wal.record.WALRecord;
 import org.apache.ignite.internal.processors.cache.GridCacheSharedContext;
 import org.apache.ignite.internal.processors.cache.transactions.IgniteInternalTx;
+import org.apache.ignite.internal.processors.cache.transactions.IgniteTxManager;
 import org.apache.ignite.internal.processors.cache.version.GridCacheVersion;
 import org.apache.ignite.internal.util.future.GridCompoundFuture;
 import org.apache.ignite.internal.util.future.GridFutureAdapter;
@@ -38,10 +39,11 @@ import org.apache.ignite.internal.util.typedef.internal.CU;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgniteUuid;
 
+import static org.apache.ignite.internal.processors.cache.transactions.IgniteInternalTx.FinalizationStatus.RECOVERY_FINISH;
 import static org.apache.ignite.transactions.TransactionState.ACTIVE;
 import static org.apache.ignite.transactions.TransactionState.COMMITTED;
+import static org.apache.ignite.transactions.TransactionState.MARKED_ROLLBACK;
 import static org.apache.ignite.transactions.TransactionState.ROLLED_BACK;
-import static org.apache.ignite.transactions.TransactionState.SUSPENDED;
 import static org.apache.ignite.transactions.TransactionState.UNKNOWN;
 
 /**
@@ -54,81 +56,70 @@ public class ConsistentCut extends GridFutureAdapter<Boolean> {
     /** */
     private final IgniteLogger log;
 
-    /**
-     * Sets to {@code true} after {@link ConsistentCutStartRecord} was written. It's volatile to provide happens-before
-     * between this record and collecting of active transactions. It must write {@link ConsistentCutStartRecord} before
-     * it collected transactions. There are two types of transactions to check:
-     * 1. Transactions belong to the BEFORE side but committed after this record.
-     * 2. Transactions belong to the AFTER side but committed before this record.
-     *
-     * Collecting all transactions after writing this record guarantees ({@link ConsistentCutProcessor}) that final collection
-     * includes all such transactions to check. Also, there is no need to track all transactions belong to the AFTER side and
-     * committed after this record.
-     */
-    @GridToStringInclude
-    private volatile boolean started;
+    /** Marker that initialized this cut. */
+    private final ConsistentCutMarker marker;
 
-    /**
-     * Set of checked transactions belonging to the BEFORE side.
-     */
+    /** Set of checked transactions belonging to the BEFORE side. */
     @GridToStringInclude
     private Set<GridCacheVersion> beforeCut;
 
-    /**
-     * Set of checked transactions belonging to the AFTER side.
-     */
+    /** Set of checked transactions belonging to the AFTER side. */
     @GridToStringInclude
     private Set<GridCacheVersion> afterCut;
 
     /**
-     * Version.
+     * Collection of committing and committed transactions. Track them additionally to {@link IgniteTxManager#activeTransactions()}
+     * due to concurrency between threads that remove transactions from the collection and a thread that parses it in
+     * {@link #init(ConsistentCutMarker)}. It is filled while preparing a transaction to commit.
      */
-    @GridToStringInclude
-    private final ConsistentCutVersion ver;
+    private final Set<IgniteInternalFuture<IgniteInternalTx>> committingTxs = ConcurrentHashMap.newKeySet();
 
     /** */
-    ConsistentCut(GridCacheSharedContext<?, ?> cctx, ConsistentCutVersion ver) {
+    ConsistentCut(GridCacheSharedContext<?, ?> cctx, ConsistentCutMarker marker) {
         this.cctx = cctx;
-        this.ver = ver;
+        this.marker = marker;
 
         log = cctx.logger(ConsistentCut.class);
     }
 
     /** */
-    public ConsistentCutVersion version() {
-        return ver;
+    public ConsistentCutMarker marker() {
+        return marker;
     }
 
     /**
      * Inits local Consistent Cut: prepares list of active transactions to check which side of Consistent Cut they belong to.
      */
-    protected void init() throws IgniteCheckedException {
+    protected void init(ConsistentCutMarker marker) throws IgniteCheckedException {
         beforeCut = ConcurrentHashMap.newKeySet();
         afterCut = ConcurrentHashMap.newKeySet();
 
-        started = walLog(new ConsistentCutStartRecord(ver));
-
         GridCompoundFuture<Boolean, Boolean> checkFut = new GridCompoundFuture<>(CU.boolReducer());
 
-        // Invoke sequentially over two iterators:
-        // 1. iterators are weakly consistent.
-        // 2. we need a guarantee to handle `committingTxs` after `activeTxs` to avoid misses of transactions.
-        checkTransactions(ver, cctx.tm().activeTransactions().iterator(), checkFut);
-        checkTransactions(ver, cctx.consistentCutMgr().committingTxs(), checkFut);
+        Iterator<IgniteInternalFuture<IgniteInternalTx>> finFutIt = cctx.tm().activeTransactions().stream()
+            .filter(tx -> tx.state() != ACTIVE)
+            .map(IgniteInternalTx::finishFuture)
+            .iterator();
+
+        checkTransactions(finFutIt, checkFut);
+
+        walLog(new ConsistentCutStartRecord(marker));
+
+        checkTransactions(committingTxs.iterator(), checkFut);
 
         checkFut.markInitialized();
 
         checkFut.listen(finish -> {
             if (Boolean.FALSE.equals(finish.result()) || isDone()) {
-                if (log.isDebugEnabled())
-                    log.debug("Cut might be inconsistent for version " + ver + ". Skip writing FinishRecord.");
+                if (log.isInfoEnabled())
+                    log.info("Cut might be inconsistent for marker " + marker + ". Skip writing FinishRecord.");
             }
             else {
                 try {
                     walLog(new ConsistentCutFinishRecord(beforeCut, afterCut));
                 }
                 catch (IgniteCheckedException e) {
-                    U.error(log, "Failed to write ConsistentCutFinishRecord to WAL for ver " + ver, e);
+                    U.error(log, "Failed to write ConsistentCutFinishRecord to WAL for marker " + marker, e);
 
                     onDone(e);
 
@@ -141,56 +132,68 @@ public class ConsistentCut extends GridFutureAdapter<Boolean> {
     }
 
     /**
+     * Registers transaction before commit it, sets Consistent Cut Version if needed (for non-near nodes).
+     * It invokes before committing transactions leave {@link IgniteTxManager#activeTransactions()}.
+     *
+     * @param txFinFut Transaction finish future.
+     */
+    public void addCommittingTransaction(IgniteInternalFuture<IgniteInternalTx> txFinFut) {
+        committingTxs.add(txFinFut);
+    }
+
+    /**
      * Checks active transactions - decides which side of Consistent Cut they belong to after they finished.
      *
-     * @param ver Current Consistent Cut version.
-     * @param activeTxs Collection of active transactions to check.
+     * @param activeTxFinFuts Collection of active transactions to check.
      * @param checkFut Compound future that reduces finishes of checked transactions.
      */
     private void checkTransactions(
-        ConsistentCutVersion ver,
-        Iterator<IgniteInternalTx> activeTxs,
+        Iterator<IgniteInternalFuture<IgniteInternalTx>> activeTxFinFuts,
         GridCompoundFuture<Boolean, Boolean> checkFut
     ) {
-        while (activeTxs.hasNext()) {
-            IgniteInternalTx activeTx = activeTxs.next();
+        while (activeTxFinFuts.hasNext()) {
+            IgniteInternalFuture<Boolean> txCheckFut = activeTxFinFuts.next().chain(txFut -> {
+                // txFut never fails and always returns IgniteInternalTx.
+                IgniteInternalTx tx = txFut.result();
 
-            if (activeTx.state() != ACTIVE && activeTx.state() != SUSPENDED) {
-                IgniteInternalFuture<Boolean> txCheckFut = activeTx.finishFuture().chain(txFut -> {
-                    // txFut never fails and always returns IgniteInternalTx.
-                    IgniteInternalTx tx = txFut.result();
+                if (!(tx.state() == UNKNOWN
+                    || tx.state() == MARKED_ROLLBACK
+                    || tx.state() == ROLLED_BACK
+                    || tx.state() == COMMITTED)
+                ) {
+                    U.warn(log, String.format(
+                            "Transaction is in unexpected state [%s]. Cut might be inconsistent. Transaction: %s",
+                            tx.state(), tx));
 
-                    assert tx.state() == UNKNOWN || tx.state() == ROLLED_BACK || tx.state() == COMMITTED : tx;
+                    return false;
+                }
 
-                    if (tx.state() == UNKNOWN) {
-                        U.warn(log, "Transaction is in UNKNOWN state. Cut might be inconsistent. Transaction: " + tx);
+                if (tx.state() == UNKNOWN) {
+                    U.warn(log, "Transaction is in UNKNOWN state. Cut might be inconsistent. Transaction: " + tx);
 
-                        return false;
-                    }
+                    return false;
+                }
 
-                    // ROLLED_BACK transactions don't change data then don't care.
-                    if (tx.state() == ROLLED_BACK)
-                        return true;
-
-                    if (tx.txCutVersion() == null) {
-                        if (log.isDebugEnabled()) {
-                            log.debug("Transaction committed after recovery process and CutVersion isn't defined. " +
-                                "Cut might be inconsistent. Transaction: " + tx);
-                        }
-
-                        return false;
-                    }
-
-                    if (ver.compareTo(tx.txCutVersion()) > 0)
-                        beforeCut.add(tx.nearXidVersion());
-                    else
-                        afterCut.add(tx.nearXidVersion());
-
+                // ROLLED_BACK transactions don't change data then don't care.
+                if (tx.state() == ROLLED_BACK || tx.state() == MARKED_ROLLBACK)
                     return true;
-                });
 
-                checkFut.add(txCheckFut);
-            }
+                if (tx.finalizationStatus() == RECOVERY_FINISH) {
+                    U.warn(log, "Transaction committed after recovery process and CutVersion isn't defined. " +
+                            "Cut might be inconsistent. Transaction: " + tx);
+
+                    return false;
+                }
+
+                if (tx.marker() == null || tx.marker().compareTo(marker) < 0)
+                    beforeCut.add(tx.nearXidVersion());
+                else
+                    afterCut.add(tx.nearXidVersion());
+
+                return true;
+            });
+
+            checkFut.add(txCheckFut);
         }
     }
 
@@ -225,6 +228,6 @@ public class ConsistentCut extends GridFutureAdapter<Boolean> {
                 .collect(Collectors.toList());
         }
 
-        return "ConsistentCut [ver=" + ver.version() + ", started=" + started + ", before=" + before + ", after=" + after + "]";
+        return "ConsistentCut [before=" + before + ", after=" + after + "]";
     }
 }

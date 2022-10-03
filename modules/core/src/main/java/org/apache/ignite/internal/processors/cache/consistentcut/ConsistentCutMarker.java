@@ -18,42 +18,55 @@
 package org.apache.ignite.internal.processors.cache.consistentcut;
 
 import java.nio.ByteBuffer;
+import java.util.Objects;
+import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
 import org.apache.ignite.internal.util.tostring.GridToStringInclude;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.plugin.extensions.communication.Message;
 import org.apache.ignite.plugin.extensions.communication.MessageReader;
 import org.apache.ignite.plugin.extensions.communication.MessageWriter;
+import org.jetbrains.annotations.NotNull;
 
 /**
- * Message requests to start Consistent Cut procedure on a node.
+ * Marker that inites {@link ConsistentCut}.
  */
-public class ConsistentCutStartRequest implements Message {
+public class ConsistentCutMarker implements Message, Comparable<ConsistentCutMarker> {
     /** */
     private static final long serialVersionUID = 0L;
 
     /** */
-    public static final short TYPE_CODE = 200;
+    public static final short TYPE_CODE = 201;
 
-    /**
-     * Consistent Cut Version.
-     */
+    /** Incremental version. */
     @GridToStringInclude
-    private ConsistentCutMarker marker;
+    private long ts;
 
     /** */
-    public ConsistentCutStartRequest() {
+    @GridToStringInclude
+    private AffinityTopologyVersion topVer;
+
+    /** */
+    public ConsistentCutMarker() {}
+
+    /** */
+    public ConsistentCutMarker(long ts, AffinityTopologyVersion topVer) {
+        this.ts = ts;
+        this.topVer = topVer;
     }
 
     /** */
-    public ConsistentCutStartRequest(ConsistentCutMarker marker) {
-        this.marker = marker;
+    public long timestamp() {
+        return ts;
     }
 
-    /**
-     * @return Consistent Cut Version.
-     */
-    public ConsistentCutMarker marker() {
-        return marker;
+    /** */
+    public AffinityTopologyVersion topVer() {
+        return topVer;
+    }
+
+    /** {@inheritDoc} */
+    @Override public String toString() {
+        return S.toString(ConsistentCutMarker.class, this);
     }
 
     /** {@inheritDoc} */
@@ -69,7 +82,13 @@ public class ConsistentCutStartRequest implements Message {
 
         switch (writer.state()) {
             case 0:
-                if (!writer.writeMessage("marker", marker))
+                if (!writer.writeAffinityTopologyVersion("topVer", topVer))
+                    return false;
+
+                writer.incrementState();
+
+            case 1:
+                if (!writer.writeLong("ts", ts))
                     return false;
 
                 writer.incrementState();
@@ -88,7 +107,15 @@ public class ConsistentCutStartRequest implements Message {
 
         switch (reader.state()) {
             case 0:
-                marker = reader.readMessage("marker");
+                topVer = reader.readAffinityTopologyVersion("topVer");
+
+                if (!reader.isLastRead())
+                    return false;
+
+                reader.incrementState();
+
+            case 1:
+                ts = reader.readLong("ts");
 
                 if (!reader.isLastRead())
                     return false;
@@ -97,7 +124,7 @@ public class ConsistentCutStartRequest implements Message {
 
         }
 
-        return reader.afterMessageRead(ConsistentCutStartRequest.class);
+        return reader.afterMessageRead(ConsistentCutMarker.class);
     }
 
     /** {@inheritDoc} */
@@ -107,7 +134,7 @@ public class ConsistentCutStartRequest implements Message {
 
     /** {@inheritDoc} */
     @Override public byte fieldsCount() {
-        return 1;
+        return 2;
     }
 
     /** {@inheritDoc} */
@@ -116,7 +143,24 @@ public class ConsistentCutStartRequest implements Message {
     }
 
     /** {@inheritDoc} */
-    @Override public String toString() {
-        return S.toString(ConsistentCutStartRequest.class, this);
+    @Override public boolean equals(Object o) {
+        return o instanceof ConsistentCutMarker
+            && topVer.equals(((ConsistentCutMarker)o).topVer)
+            && ts == ((ConsistentCutMarker)o).ts;
+    }
+
+    /** {@inheritDoc} */
+    @Override public int hashCode() {
+        return Objects.hash(topVer, ts);
+    }
+
+    /** {@inheritDoc} */
+    @Override public int compareTo(@NotNull ConsistentCutMarker o) {
+        int cmp;
+
+        if ((cmp = topVer.compareTo(o.topVer)) != 0)
+            return cmp;
+
+        return Long.compare(ts, o.ts);
     }
 }

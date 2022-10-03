@@ -32,8 +32,6 @@ import org.apache.ignite.internal.GridDirectMap;
 import org.apache.ignite.internal.GridDirectTransient;
 import org.apache.ignite.internal.processors.cache.GridCacheContext;
 import org.apache.ignite.internal.processors.cache.GridCacheSharedContext;
-import org.apache.ignite.internal.processors.cache.consistentcut.ConsistentCutVersion;
-import org.apache.ignite.internal.processors.cache.consistentcut.ConsistentCutVersionAware;
 import org.apache.ignite.internal.processors.cache.transactions.IgniteInternalTx;
 import org.apache.ignite.internal.processors.cache.transactions.IgniteTxEntry;
 import org.apache.ignite.internal.processors.cache.transactions.IgniteTxKey;
@@ -58,8 +56,7 @@ import org.jetbrains.annotations.Nullable;
  * Transaction prepare request for optimistic and eventually consistent
  * transactions.
  */
-public class GridDistributedTxPrepareRequest
-    extends GridDistributedBaseMessage implements IgniteTxStateAware, ConsistentCutVersionAware {
+public class GridDistributedTxPrepareRequest extends GridDistributedBaseMessage implements IgniteTxStateAware {
     /** */
     private static final long serialVersionUID = 0L;
 
@@ -163,9 +160,6 @@ public class GridDistributedTxPrepareRequest
     @GridToStringExclude
     private byte flags;
 
-    /** Version of the latest known Consistent Cut on local node. */
-    private ConsistentCutVersion cutVer;
-
     /**
      * Required by {@link Externalizable}.
      */
@@ -183,7 +177,6 @@ public class GridDistributedTxPrepareRequest
      * @param last Last request flag.
      * @param onePhaseCommit One phase commit flag.
      * @param addDepInfo Deployment info flag.
-     * @param cutVer Version of the latest known Consistent Cut.
      */
     public GridDistributedTxPrepareRequest(
         IgniteInternalTx tx,
@@ -194,8 +187,7 @@ public class GridDistributedTxPrepareRequest
         boolean retVal,
         boolean last,
         boolean onePhaseCommit,
-        boolean addDepInfo,
-        ConsistentCutVersion cutVer
+        boolean addDepInfo
     ) {
         super(tx.xidVersion(), 0, addDepInfo);
 
@@ -210,8 +202,6 @@ public class GridDistributedTxPrepareRequest
         this.reads = reads;
         this.writes = writes;
         this.txNodes = txNodes;
-
-        this.cutVer = cutVer;
 
         setFlag(tx.system(), SYSTEM_TX_FLAG_MASK);
         setFlag(retVal, NEED_RETURN_VALUE_FLAG_MASK);
@@ -413,12 +403,6 @@ public class GridDistributedTxPrepareRequest
     }
 
     /** {@inheritDoc} */
-    @Override public ConsistentCutVersion cutVersion() {
-        return cutVer;
-    }
-
-    /** {@inheritDoc}
-     * @param ctx*/
     @Override public void prepareMarshal(GridCacheSharedContext ctx) throws IgniteCheckedException {
         super.prepareMarshal(ctx);
 
@@ -527,78 +511,72 @@ public class GridDistributedTxPrepareRequest
                 writer.incrementState();
 
             case 9:
-                if (!writer.writeMessage("cutVer", cutVer))
-                    return false;
-
-                writer.incrementState();
-
-            case 10:
                 if (!writer.writeCollection("dhtVerKeys", dhtVerKeys, MessageCollectionItemType.MSG))
                     return false;
 
                 writer.incrementState();
 
-            case 11:
+            case 10:
                 if (!writer.writeCollection("dhtVerVals", dhtVerVals, MessageCollectionItemType.MSG))
                     return false;
 
                 writer.incrementState();
 
-            case 12:
+            case 11:
                 if (!writer.writeByte("flags", flags))
                     return false;
 
                 writer.incrementState();
 
-            case 13:
+            case 12:
                 if (!writer.writeByte("isolation", isolation != null ? (byte)isolation.ordinal() : -1))
                     return false;
 
                 writer.incrementState();
 
-            case 14:
+            case 13:
                 if (!writer.writeByte("plc", plc))
                     return false;
 
                 writer.incrementState();
 
-            case 15:
+            case 14:
                 if (!writer.writeCollection("reads", reads, MessageCollectionItemType.MSG))
                     return false;
 
                 writer.incrementState();
 
-            case 16:
+            case 15:
                 if (!writer.writeLong("threadId", threadId))
                     return false;
 
                 writer.incrementState();
 
-            case 17:
+            case 16:
                 if (!writer.writeLong("timeout", timeout))
                     return false;
 
                 writer.incrementState();
 
-            case 18:
+            case 17:
                 if (!writer.writeMap("txNodesMsg", txNodesMsg, MessageCollectionItemType.UUID, MessageCollectionItemType.MSG))
                     return false;
 
                 writer.incrementState();
 
-            case 19:
+            case 18:
                 if (!writer.writeInt("txSize", txSize))
                     return false;
 
                 writer.incrementState();
 
-            case 20:
+            case 19:
                 if (!writer.writeMessage("writeVer", writeVer))
                     return false;
 
                 writer.incrementState();
 
-            case 21:
+            case 20:
                 if (!writer.writeCollection("writes", writes, MessageCollectionItemType.MSG))
                     return false;
 
@@ -633,14 +611,6 @@ public class GridDistributedTxPrepareRequest
                 reader.incrementState();
 
             case 9:
-                cutVer = reader.readMessage("cutVer");
-
-                if (!reader.isLastRead())
-                    return false;
-
-                reader.incrementState();
-
-            case 10:
                 dhtVerKeys = reader.readCollection("dhtVerKeys", MessageCollectionItemType.MSG);
 
                 if (!reader.isLastRead())
@@ -648,7 +618,7 @@ public class GridDistributedTxPrepareRequest
 
                 reader.incrementState();
 
-            case 11:
+            case 10:
                 dhtVerVals = reader.readCollection("dhtVerVals", MessageCollectionItemType.MSG);
 
                 if (!reader.isLastRead())
@@ -656,7 +626,7 @@ public class GridDistributedTxPrepareRequest
 
                 reader.incrementState();
 
-            case 12:
+            case 11:
                 flags = reader.readByte("flags");
 
                 if (!reader.isLastRead())
@@ -664,7 +634,7 @@ public class GridDistributedTxPrepareRequest
 
                 reader.incrementState();
 
-            case 13:
+            case 12:
                 byte isolationOrd;
 
                 isolationOrd = reader.readByte("isolation");
@@ -676,7 +646,7 @@ public class GridDistributedTxPrepareRequest
 
                 reader.incrementState();
 
-            case 14:
+            case 13:
                 plc = reader.readByte("plc");
 
                 if (!reader.isLastRead())
@@ -684,7 +654,7 @@ public class GridDistributedTxPrepareRequest
 
                 reader.incrementState();
 
-            case 15:
+            case 14:
                 reads = reader.readCollection("reads", MessageCollectionItemType.MSG);
 
                 if (!reader.isLastRead())
@@ -692,7 +662,7 @@ public class GridDistributedTxPrepareRequest
 
                 reader.incrementState();
 
-            case 16:
+            case 15:
                 threadId = reader.readLong("threadId");
 
                 if (!reader.isLastRead())
@@ -700,7 +670,7 @@ public class GridDistributedTxPrepareRequest
 
                 reader.incrementState();
 
-            case 17:
+            case 16:
                 timeout = reader.readLong("timeout");
 
                 if (!reader.isLastRead())
@@ -708,7 +678,7 @@ public class GridDistributedTxPrepareRequest
 
                 reader.incrementState();
 
-            case 18:
+            case 17:
                 txNodesMsg = reader.readMap("txNodesMsg", MessageCollectionItemType.UUID, MessageCollectionItemType.MSG, false);
 
                 if (!reader.isLastRead())
@@ -716,7 +686,7 @@ public class GridDistributedTxPrepareRequest
 
                 reader.incrementState();
 
-            case 19:
+            case 18:
                 txSize = reader.readInt("txSize");
 
                 if (!reader.isLastRead())
@@ -724,7 +694,7 @@ public class GridDistributedTxPrepareRequest
 
                 reader.incrementState();
 
-            case 20:
+            case 19:
                 writeVer = reader.readMessage("writeVer");
 
                 if (!reader.isLastRead())
@@ -732,7 +702,7 @@ public class GridDistributedTxPrepareRequest
 
                 reader.incrementState();
 
-            case 21:
+            case 20:
                 writes = reader.readCollection("writes", MessageCollectionItemType.MSG);
 
                 if (!reader.isLastRead())
@@ -752,7 +722,7 @@ public class GridDistributedTxPrepareRequest
 
     /** {@inheritDoc} */
     @Override public byte fieldsCount() {
-        return 22;
+        return 21;
     }
 
     /** {@inheritDoc} */

@@ -29,7 +29,6 @@ import org.apache.ignite.internal.processors.cache.GridCacheContext;
 import org.apache.ignite.internal.processors.cache.GridCacheEntryRemovedException;
 import org.apache.ignite.internal.processors.cache.GridCacheSharedContext;
 import org.apache.ignite.internal.processors.cache.GridCacheVersionedFuture;
-import org.apache.ignite.internal.processors.cache.consistentcut.ConsistentCutVersion;
 import org.apache.ignite.internal.processors.cache.distributed.GridDistributedTxMapping;
 import org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtTxMapping;
 import org.apache.ignite.internal.processors.cache.distributed.dht.colocated.GridDhtDetachedCacheEntry;
@@ -95,9 +94,6 @@ public abstract class GridNearTxPrepareFutureAdapter extends
     /** Trackable flag. */
     protected boolean trackable = true;
 
-    /** The Latest Consistent Cut Version AFTER which this transaction committed. */
-    private ConsistentCutVersion txCutVer;
-
     /**
      * @param cctx Context.
      * @param tx Transaction.
@@ -117,18 +113,6 @@ public abstract class GridNearTxPrepareFutureAdapter extends
             msgLog = cctx.txFinishMessageLogger();
             log = U.logger(cctx.kernalContext(), logRef, GridNearTxPrepareFutureAdapter.class);
         }
-    }
-
-    /** */
-    public ConsistentCutVersion txCutVer() {
-        return txCutVer;
-    }
-
-    /** */
-    public void txCutVer(ConsistentCutVersion txCutVer) {
-        this.txCutVer = txCutVer;
-
-        tx.txCutVersion(txCutVer);
     }
 
     /** {@inheritDoc} */

@@ -17,53 +17,60 @@
 
 package org.apache.ignite.internal.processors.cache.consistentcut;
 
+import java.io.Externalizable;
 import java.nio.ByteBuffer;
-import org.apache.ignite.internal.util.tostring.GridToStringInclude;
-import org.apache.ignite.internal.util.typedef.internal.S;
-import org.apache.ignite.plugin.extensions.communication.Message;
+import org.apache.ignite.internal.processors.cache.distributed.GridDistributedBaseMessage;
 import org.apache.ignite.plugin.extensions.communication.MessageReader;
 import org.apache.ignite.plugin.extensions.communication.MessageWriter;
-import org.jetbrains.annotations.NotNull;
 
-/**
- * Composite version of Consistent Cut. It consists of two fields: incremental version and timestamp of starting
- * Consistent Cut. Both fields set on the coordinator node.
- */
-public class ConsistentCutVersion implements Message, Comparable<ConsistentCutVersion> {
+/** Message that holds transaction finish message and {@link ConsistentCutMarker}. */
+public class ConsistentCutMarkerTxFinishMessage extends ConsistentCutMarkerMessage {
     /** */
     private static final long serialVersionUID = 0L;
 
     /** */
-    public static ConsistentCutVersion NONE = new ConsistentCutVersion(0);
+    public static final short TYPE_CODE = 203;
 
-    /** */
-    public static final short TYPE_CODE = 201;
+    /**
+     * Marker of the latest Consistent Cut AFTER which this transaction committed.
+     */
+    private ConsistentCutMarker txMarker;
 
-    /** Incremental version. */
-    @GridToStringInclude
-    private long ver;
-
-    /** */
-    public ConsistentCutVersion() {}
-
-    /** */
-    public ConsistentCutVersion(long ver) {
-        this.ver = ver;
+    /**
+     * Empty constructor required for {@link Externalizable}.
+     */
+    public ConsistentCutMarkerTxFinishMessage() {
     }
 
     /** */
-    public long version() {
-        return ver;
+    public ConsistentCutMarkerTxFinishMessage(
+        GridDistributedBaseMessage payload,
+        ConsistentCutMarker marker,
+        ConsistentCutMarker txMarker
+    ) {
+        super(payload, marker);
+
+        this.txMarker = txMarker;
+    }
+
+    /**
+     * @return Holds Consistent Cut Version for 2PC transactions.
+     */
+    public ConsistentCutMarker txMarker() {
+        return txMarker;
     }
 
     /** {@inheritDoc} */
-    @Override public String toString() {
-        return S.toString(ConsistentCutVersion.class, this);
+    @Override public short directType() {
+        return TYPE_CODE;
     }
 
     /** {@inheritDoc} */
     @Override public boolean writeTo(ByteBuffer buf, MessageWriter writer) {
         writer.setBuffer(buf);
+
+        if (!super.writeTo(buf, writer))
+            return false;
 
         if (!writer.isHeaderWritten()) {
             if (!writer.writeHeader(directType(), fieldsCount()))
@@ -73,8 +80,8 @@ public class ConsistentCutVersion implements Message, Comparable<ConsistentCutVe
         }
 
         switch (writer.state()) {
-            case 0:
-                if (!writer.writeLong("ver", ver))
+            case 6:
+                if (!writer.writeMessage("txMarker", txMarker))
                     return false;
 
                 writer.incrementState();
@@ -91,9 +98,12 @@ public class ConsistentCutVersion implements Message, Comparable<ConsistentCutVe
         if (!reader.beforeMessageRead())
             return false;
 
+        if (!super.readFrom(buf, reader))
+            return false;
+
         switch (reader.state()) {
-            case 0:
-                ver = reader.readLong("ver");
+            case 6:
+                txMarker = reader.readMessage("txMarker");
 
                 if (!reader.isLastRead())
                     return false;
@@ -102,36 +112,11 @@ public class ConsistentCutVersion implements Message, Comparable<ConsistentCutVe
 
         }
 
-        return reader.afterMessageRead(ConsistentCutVersion.class);
-    }
-
-    /** {@inheritDoc} */
-    @Override public short directType() {
-        return TYPE_CODE;
+        return reader.afterMessageRead(ConsistentCutMarkerTxFinishMessage.class);
     }
 
     /** {@inheritDoc} */
     @Override public byte fieldsCount() {
-        return 1;
-    }
-
-    /** {@inheritDoc} */
-    @Override public void onAckReceived() {
-        // No-op.
-    }
-
-    /** {@inheritDoc} */
-    @Override public boolean equals(Object o) {
-        return o instanceof ConsistentCutVersion && ver == ((ConsistentCutVersion)o).version();
-    }
-
-    /** {@inheritDoc} */
-    @Override public int hashCode() {
-        return Long.hashCode(ver);
-    }
-
-    /** {@inheritDoc} */
-    @Override public int compareTo(@NotNull ConsistentCutVersion o) {
-        return Long.compare(ver, o.ver);
+        return 7;
     }
 }

@@ -25,9 +25,6 @@ import org.apache.ignite.cache.CacheWriteSynchronizationMode;
 import org.apache.ignite.internal.GridDirectTransient;
 import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
 import org.apache.ignite.internal.processors.cache.GridCacheSharedContext;
-import org.apache.ignite.internal.processors.cache.consistentcut.ConsistentCutVersion;
-import org.apache.ignite.internal.processors.cache.consistentcut.ConsistentCutVersionAware;
-import org.apache.ignite.internal.processors.cache.consistentcut.TxConsistentCutVersionAware;
 import org.apache.ignite.internal.processors.cache.transactions.IgniteTxState;
 import org.apache.ignite.internal.processors.cache.transactions.IgniteTxStateAware;
 import org.apache.ignite.internal.processors.cache.version.GridCacheVersion;
@@ -43,8 +40,7 @@ import static org.apache.ignite.cache.CacheWriteSynchronizationMode.FULL_SYNC;
 /**
  * Transaction completion message.
  */
-public class GridDistributedTxFinishRequest extends GridDistributedBaseMessage
-    implements IgniteTxStateAware, ConsistentCutVersionAware, TxConsistentCutVersionAware {
+public class GridDistributedTxFinishRequest extends GridDistributedBaseMessage implements IgniteTxStateAware {
     /** */
     private static final long serialVersionUID = 0L;
 
@@ -108,15 +104,6 @@ public class GridDistributedTxFinishRequest extends GridDistributedBaseMessage
     /** Transient TX state. */
     @GridDirectTransient
     private IgniteTxState txState;
-
-    /** Version of the latest known Consistent Cut on local node. */
-    private ConsistentCutVersion cutVer;
-
-    /**
-     * Version of the latest Consistent Cut AFTER which this transaction committed.
-     * Sets on near node to notify other nodes in 2PC algorithm.
-     */
-    private ConsistentCutVersion txCutVer;
 
     /**
      * Empty constructor required by {@link Externalizable}.
@@ -306,28 +293,6 @@ public class GridDistributedTxFinishRequest extends GridDistributedBaseMessage
     }
 
     /** {@inheritDoc} */
-    @Override public ConsistentCutVersion cutVersion() {
-        return cutVer;
-    }
-
-    /** */
-    public void cutVersion(ConsistentCutVersion cutVer) {
-        this.cutVer = cutVer;
-    }
-
-    /**
-     * @return Holds Consistent Cut Cersion for 2PC transactions.
-     */
-    @Override public ConsistentCutVersion txCutVersion() {
-        return txCutVer;
-    }
-
-    /** {@inheritDoc} */
-    @Override public void txCutVersion(ConsistentCutVersion txCutVer) {
-        this.txCutVer = txCutVer;
-    }
-
-    /** {@inheritDoc} */
     @Override public IgniteLogger messageLogger(GridCacheSharedContext ctx) {
         return ctx.txFinishMessageLogger();
     }
@@ -366,72 +331,60 @@ public class GridDistributedTxFinishRequest extends GridDistributedBaseMessage
                 writer.incrementState();
 
             case 11:
-                if (!writer.writeMessage("cutVer", cutVer))
-                    return false;
-
-                writer.incrementState();
-
-            case 12:
                 if (!writer.writeByte("flags", flags))
                     return false;
 
                 writer.incrementState();
 
-            case 13:
+            case 12:
                 if (!writer.writeIgniteUuid("futId", futId))
                     return false;
 
                 writer.incrementState();
 
-            case 14:
+            case 13:
                 if (!writer.writeBoolean("invalidate", invalidate))
                     return false;
 
                 writer.incrementState();
 
-            case 15:
+            case 14:
                 if (!writer.writeByte("plc", plc))
                     return false;
 
                 writer.incrementState();
 
-            case 16:
+            case 15:
                 if (!writer.writeByte("syncMode", syncMode != null ? (byte)syncMode.ordinal() : -1))
                     return false;
 
                 writer.incrementState();
 
-            case 17:
+            case 16:
                 if (!writer.writeBoolean("sys", sys))
                     return false;
 
                 writer.incrementState();
 
-            case 18:
+            case 17:
                 if (!writer.writeInt("taskNameHash", taskNameHash))
                     return false;
 
                 writer.incrementState();
 
-            case 19:
+            case 18:
                 if (!writer.writeLong("threadId", threadId))
                     return false;
 
                 writer.incrementState();
 
-            case 20:
+            case 19:
                 if (!writer.writeAffinityTopologyVersion("topVer", topVer))
                     return false;
 
                 writer.incrementState();
 
-            case 21:
-                if (!writer.writeMessage("txCutVer", txCutVer))
-                    return false;
-
-                writer.incrementState();
-
-            case 22:
+            case 20:
                 if (!writer.writeInt("txSize", txSize))
                     return false;
 
@@ -478,14 +431,6 @@ public class GridDistributedTxFinishRequest extends GridDistributedBaseMessage
                 reader.incrementState();
 
             case 11:
-                cutVer = reader.readMessage("cutVer");
-
-                if (!reader.isLastRead())
-                    return false;
-
-                reader.incrementState();
-
-            case 12:
                 flags = reader.readByte("flags");
 
                 if (!reader.isLastRead())
@@ -493,7 +438,7 @@ public class GridDistributedTxFinishRequest extends GridDistributedBaseMessage
 
                 reader.incrementState();
 
-            case 13:
+            case 12:
                 futId = reader.readIgniteUuid("futId");
 
                 if (!reader.isLastRead())
@@ -501,7 +446,7 @@ public class GridDistributedTxFinishRequest extends GridDistributedBaseMessage
 
                 reader.incrementState();
 
-            case 14:
+            case 13:
                 invalidate = reader.readBoolean("invalidate");
 
                 if (!reader.isLastRead())
@@ -509,7 +454,7 @@ public class GridDistributedTxFinishRequest extends GridDistributedBaseMessage
 
                 reader.incrementState();
 
-            case 15:
+            case 14:
                 plc = reader.readByte("plc");
 
                 if (!reader.isLastRead())
@@ -517,7 +462,7 @@ public class GridDistributedTxFinishRequest extends GridDistributedBaseMessage
 
                 reader.incrementState();
 
-            case 16:
+            case 15:
                 byte syncModeOrd;
 
                 syncModeOrd = reader.readByte("syncMode");
@@ -529,7 +474,7 @@ public class GridDistributedTxFinishRequest extends GridDistributedBaseMessage
 
                 reader.incrementState();
 
-            case 17:
+            case 16:
                 sys = reader.readBoolean("sys");
 
                 if (!reader.isLastRead())
@@ -537,7 +482,7 @@ public class GridDistributedTxFinishRequest extends GridDistributedBaseMessage
 
                 reader.incrementState();
 
-            case 18:
+            case 17:
                 taskNameHash = reader.readInt("taskNameHash");
 
                 if (!reader.isLastRead())
@@ -545,7 +490,7 @@ public class GridDistributedTxFinishRequest extends GridDistributedBaseMessage
 
                 reader.incrementState();
 
-            case 19:
+            case 18:
                 threadId = reader.readLong("threadId");
 
                 if (!reader.isLastRead())
@@ -553,7 +498,7 @@ public class GridDistributedTxFinishRequest extends GridDistributedBaseMessage
 
                 reader.incrementState();
 
-            case 20:
+            case 19:
                 topVer = reader.readAffinityTopologyVersion("topVer");
 
                 if (!reader.isLastRead())
@@ -561,15 +506,7 @@ public class GridDistributedTxFinishRequest extends GridDistributedBaseMessage
 
                 reader.incrementState();
 
-            case 21:
-                txCutVer = reader.readMessage("txCutVer");
-
-                if (!reader.isLastRead())
-                    return false;
-
-                reader.incrementState();
-
-            case 22:
+            case 20:
                 txSize = reader.readInt("txSize");
 
                 if (!reader.isLastRead())
@@ -589,7 +526,7 @@ public class GridDistributedTxFinishRequest extends GridDistributedBaseMessage
 
     /** {@inheritDoc} */
     @Override public byte fieldsCount() {
-        return 23;
+        return 21;
     }
 
     /** {@inheritDoc} */

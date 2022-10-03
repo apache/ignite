@@ -46,7 +46,7 @@ public class ConsistentCutSingleBackupMessagesBlockingTest extends AbstractConsi
 
         for (BlkNodeType txN: BlkNodeType.values()) {
             for (BlkNodeType cutN: BlkNodeType.values()) {
-                for (BlkCutType c : BlkCutType.blkTestValues())
+                for (BlkCutType c : BlkCutType.values())
                     p.add(new Object[] {txN, c, cutN});
             }
         }

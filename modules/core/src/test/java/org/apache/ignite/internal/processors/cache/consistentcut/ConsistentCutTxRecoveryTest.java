@@ -37,9 +37,9 @@ public class ConsistentCutTxRecoveryTest extends AbstractConsistentCutBlockingTe
         IgniteInternalFuture<?> loadFut = asyncLoadData();
 
         try {
-            BlockingConsistentCutProcessor srvCutMgr = BlockingConsistentCutProcessor.cutProc(grid(0));
+            BlockingConsistentCutManager srvCutMgr = BlockingConsistentCutManager.cutMgr(grid(0));
 
-            awaitGlobalCutReady(1, true);
+            assertTrue(srvCutMgr.triggerConsistentCutOnCluster().get(getTestTimeout()));
 
             // Blocks finish message from client to server.
             TestRecordingCommunicationSpi clnComm = TestRecordingCommunicationSpi.spi(grid(nodes()));
@@ -49,9 +49,12 @@ public class ConsistentCutTxRecoveryTest extends AbstractConsistentCutBlockingTe
 
             // Block Consistent Cut on server.
             srvCutMgr.block(BlkCutType.AFTER_VERSION_UPDATE);
+
+            IgniteInternalFuture<Boolean> cutFut = srvCutMgr.triggerConsistentCutOnCluster();
+
             srvCutMgr.awaitBlockedOrFinishedCut(null);
 
-            long blkCutVer = srvCutMgr.cutVersion().version();
+            long blkCutVer = srvCutMgr.lastSeenMarker().timestamp();
 
             // Stop client node.
             stopGrid(nodes());
@@ -60,13 +63,15 @@ public class ConsistentCutTxRecoveryTest extends AbstractConsistentCutBlockingTe
 
             // Await this Consistent Cut and next one.
             srvCutMgr.unblock(BlkCutType.AFTER_VERSION_UPDATE);
-            awaitGlobalCutReady(blkCutVer + 1, false);
+            assertFalse(cutFut.get());
+
+            assertTrue(srvCutMgr.triggerConsistentCutOnCluster().get(getTestTimeout()));
 
             // Stop cluster with flushing WALs.
             stopCluster();
 
             for (int i = 0; i < nodes(); i++)
-                assertWalConsistentRecords(i, blkCutVer, i == 0);
+                assertWalConsistentRecords(i, blkCutVer);
         }
         finally {
             loadFut.cancel();
@@ -74,12 +79,12 @@ public class ConsistentCutTxRecoveryTest extends AbstractConsistentCutBlockingTe
     }
 
     /** */
-    private void assertWalConsistentRecords(int nodeIdx, long blkVer, boolean skipBlkVer) throws Exception {
+    private void assertWalConsistentRecords(int nodeIdx, long blkVer) throws Exception {
         WALIterator iter = walIter(nodeIdx);
 
         boolean expFinRec = false;
 
-        boolean lastVerChecked = false;
+        long lastVerChecked = 0;
 
         while (iter.hasNext()) {
             WALRecord rec = iter.next().getValue();
@@ -87,13 +92,9 @@ public class ConsistentCutTxRecoveryTest extends AbstractConsistentCutBlockingTe
             if (rec.type() == WALRecord.RecordType.CONSISTENT_CUT_START_RECORD) {
                 ConsistentCutStartRecord startRec = (ConsistentCutStartRecord)rec;
 
-                if (skipBlkVer)
-                    expFinRec = startRec.version().version() != blkVer;
-                else
-                    expFinRec = true;
+                expFinRec = startRec.marker().timestamp() != blkVer;
 
-                lastVerChecked = startRec.version().version() == blkVer + 1;
-
+                lastVerChecked = startRec.marker().timestamp();
             }
             else if (rec.type() == WALRecord.RecordType.CONSISTENT_CUT_FINISH_RECORD) {
                 assertTrue("Unexpect Finish Record. Blk ver " + blkVer, expFinRec);
@@ -102,7 +103,7 @@ public class ConsistentCutTxRecoveryTest extends AbstractConsistentCutBlockingTe
             }
         }
 
-        assertTrue("Should reach version after blk " + blkVer, lastVerChecked);
+        assertTrue("Should reach version after blk " + blkVer, lastVerChecked > blkVer);
     }
 
     /** */

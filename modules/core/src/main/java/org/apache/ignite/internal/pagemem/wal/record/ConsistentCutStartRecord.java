@@ -18,8 +18,8 @@
 package org.apache.ignite.internal.pagemem.wal.record;
 
 import org.apache.ignite.internal.processors.cache.consistentcut.ConsistentCut;
-import org.apache.ignite.internal.processors.cache.consistentcut.ConsistentCutProcessor;
-import org.apache.ignite.internal.processors.cache.consistentcut.ConsistentCutVersion;
+import org.apache.ignite.internal.processors.cache.consistentcut.ConsistentCutManager;
+import org.apache.ignite.internal.processors.cache.consistentcut.ConsistentCutMarker;
 import org.apache.ignite.internal.util.tostring.GridToStringInclude;
 import org.apache.ignite.internal.util.typedef.internal.S;
 
@@ -27,29 +27,29 @@ import org.apache.ignite.internal.util.typedef.internal.S;
  * {@link ConsistentCut} splits timeline on 2 global areas - BEFORE and AFTER. It guarantees that every transaction committed
  * BEFORE also will be committed BEFORE on every other node. It means that an Ignite node can safely recover itself to this
  * point without any coordination with other nodes.
- *
+ * <p>
  * This record is written to WAL in moment when {@link ConsistentCut} starts on a local node.
- *
+ * <p>
  * Note, there is no strict guarantee for all transactions belonged to the BEFORE side to be physically committed before
  * {@link ConsistentCutStartRecord}, and vice versa. This is the reason for having {@link ConsistentCutFinishRecord}.
  *
- * @see ConsistentCutProcessor
+ * @see ConsistentCutManager
  */
 public class ConsistentCutStartRecord extends WALRecord {
     /**
      * Consistent Cut Version.
      */
     @GridToStringInclude
-    private final ConsistentCutVersion ver;
+    private final ConsistentCutMarker marker;
 
     /** */
-    public ConsistentCutStartRecord(ConsistentCutVersion ver) {
-        this.ver = ver;
+    public ConsistentCutStartRecord(ConsistentCutMarker marker) {
+        this.marker = marker;
     }
 
     /** */
-    public ConsistentCutVersion version() {
-        return ver;
+    public ConsistentCutMarker marker() {
+        return marker;
     }
 
     /** {@inheritDoc} */

@@ -53,7 +53,7 @@ import org.apache.ignite.internal.processors.cache.GridCacheSharedContext;
 import org.apache.ignite.internal.processors.cache.GridCacheUpdateTxResult;
 import org.apache.ignite.internal.processors.cache.IgniteCacheExpiryPolicy;
 import org.apache.ignite.internal.processors.cache.KeyCacheObject;
-import org.apache.ignite.internal.processors.cache.consistentcut.ConsistentCutVersion;
+import org.apache.ignite.internal.processors.cache.consistentcut.ConsistentCutMarker;
 import org.apache.ignite.internal.processors.cache.distributed.dht.PartitionUpdateCountersMessage;
 import org.apache.ignite.internal.processors.cache.distributed.dht.topology.GridDhtLocalPartition;
 import org.apache.ignite.internal.processors.cache.distributed.dht.topology.GridDhtPartitionTopology;
@@ -155,9 +155,6 @@ public abstract class IgniteTxLocalAdapter extends IgniteTxAdapter implements Ig
 
     /** */
     protected volatile boolean qryEnlisted;
-
-    /** The latest Consistent Cut Version AFTER which this transaction committed. */
-    private ConsistentCutVersion txCutVer;
 
     /**
      * @param cctx Cache registry.
@@ -379,17 +376,6 @@ public abstract class IgniteTxLocalAdapter extends IgniteTxAdapter implements Ig
      */
     protected boolean commitAfterLock() {
         return implicit() && (!dht() || colocated());
-    }
-
-    /** {@inheritDoc} */
-    @Override public ConsistentCutVersion txCutVersion() {
-        return txCutVer;
-    }
-
-    /** {@inheritDoc} */
-    @Override public void txCutVersion(ConsistentCutVersion txCutVer) {
-        if (this.txCutVer == null)
-            this.txCutVer = txCutVer;
     }
 
     /** {@inheritDoc} */
@@ -1037,19 +1023,19 @@ public abstract class IgniteTxLocalAdapter extends IgniteTxAdapter implements Ig
      * @param commit If {@code true} commits transaction, otherwise rollbacks.
      * @param clearThreadMap If {@code true} removes {@link GridNearTxLocal} from thread map.
      * @param nodeStop If {@code true} tx is cancelled on node stop.
-     * @param txCutVer If transaction committed with specific ConsistentCutVersion then use it.
+     * @param txMarker If transaction committed with specific ConsistentCutVersion then use it.
      * @throws IgniteCheckedException If failed.
      */
     public void tmFinish(
         boolean commit,
         boolean nodeStop,
         boolean clearThreadMap,
-        ConsistentCutVersion txCutVer
+        @Nullable ConsistentCutMarker txMarker
     ) throws IgniteCheckedException {
         assert onePhaseCommit();
 
-        if (txCutVer != null)
-            txCutVersion(txCutVer);
+        if (txMarker != null)
+            marker(txMarker);
 
         if (DONE_FLAG_UPD.compareAndSet(this, 0, 1)) {
             if (!nodeStop) {

@@ -54,13 +54,13 @@ import org.apache.ignite.internal.processors.cache.GridCacheContext;
 import org.apache.ignite.internal.processors.cache.GridCacheEntryEx;
 import org.apache.ignite.internal.processors.cache.GridCacheEntryInfo;
 import org.apache.ignite.internal.processors.cache.GridCacheEntryRemovedException;
+import org.apache.ignite.internal.processors.cache.GridCacheMessage;
 import org.apache.ignite.internal.processors.cache.GridCacheMvccCandidate;
 import org.apache.ignite.internal.processors.cache.GridCacheOperation;
 import org.apache.ignite.internal.processors.cache.GridCacheReturn;
 import org.apache.ignite.internal.processors.cache.GridCacheSharedContext;
 import org.apache.ignite.internal.processors.cache.GridCacheVersionedFuture;
 import org.apache.ignite.internal.processors.cache.KeyCacheObject;
-import org.apache.ignite.internal.processors.cache.consistentcut.ConsistentCutVersion;
 import org.apache.ignite.internal.processors.cache.distributed.GridDistributedCacheEntry;
 import org.apache.ignite.internal.processors.cache.distributed.GridDistributedTxMapping;
 import org.apache.ignite.internal.processors.cache.distributed.dht.topology.GridDhtLocalPartition;
@@ -233,9 +233,6 @@ public final class GridDhtTxPrepareFuture extends GridCacheCompoundFuture<Ignite
     @GridToStringExclude
     protected final IgniteUuid deploymentLdrId;
 
-    /** The Latest Consistent Cut Version AFTER which this transaction committed. */
-    private ConsistentCutVersion txCutVer;
-
     /**
      * @param cctx Context.
      * @param tx Transaction.
@@ -283,18 +280,6 @@ public final class GridDhtTxPrepareFuture extends GridCacheCompoundFuture<Ignite
 
         if (tx.onePhaseCommit())
             timeoutAddedLatch = new CountDownLatch(1);
-    }
-
-    /** */
-    public ConsistentCutVersion txCutVer() {
-        return txCutVer;
-    }
-
-    /** */
-    public void txCutVer(ConsistentCutVersion txCutVer) {
-        this.txCutVer = txCutVer;
-
-        tx.txCutVersion(txCutVer);
     }
 
     /** {@inheritDoc} */
@@ -799,17 +784,12 @@ public final class GridDhtTxPrepareFuture extends GridCacheCompoundFuture<Ignite
                                     res.error(fut.error());
 
                                 if (REPLIED_UPD.compareAndSet(GridDhtTxPrepareFuture.this, 0, 1)) {
-                                    if (cctx.consistentCutMgr() != null) {
-                                        if (res.onePhaseCommit() && fut.result() != null) {
-                                            ConsistentCutVersion v = fut.result().txCutVersion();
+                                    GridCacheMessage msg = res;
 
-                                            res.txCutVersion(v);
-                                        }
+                                    if (res.onePhaseCommit() && fut.result() != null)
+                                        msg = cctx.consistentCutMgr().wrapTxMsgIfCutRunning(res, fut.result().marker());
 
-                                        res.cutVersion(cctx.consistentCutMgr().cutVersion());
-                                    }
-
-                                    sendPrepareResponse(res);
+                                    sendPrepareResponse(msg);
                                 }
                             }
                         };
@@ -862,10 +842,9 @@ public final class GridDhtTxPrepareFuture extends GridCacheCompoundFuture<Ignite
                     // Will call super.onDone().
                     onComplete(res);
 
-                    if (cctx.consistentCutMgr() != null)
-                        res.cutVersion(cctx.consistentCutMgr().cutVersion());
+                    GridCacheMessage msg = cctx.consistentCutMgr().wrapTxMsgIfCutRunning(res, null);
 
-                    sendPrepareResponse(res);
+                    sendPrepareResponse(msg);
 
                     return true;
                 }
@@ -891,7 +870,7 @@ public final class GridDhtTxPrepareFuture extends GridCacheCompoundFuture<Ignite
     /**
      * @param res Response.
      */
-    private void sendPrepareResponse(GridNearTxPrepareResponse res) {
+    private void sendPrepareResponse(GridCacheMessage res) {
         if (!tx.nearNodeId().equals(cctx.localNodeId())) {
             Throwable err = this.err;
 
@@ -1478,8 +1457,7 @@ public final class GridDhtTxPrepareFuture extends GridCacheCompoundFuture<Ignite
                 tx.storeWriteThrough(),
                 retVal,
                 mvccSnapshot,
-                cctx.tm().txHandler().filterUpdateCountersForBackupNode(tx, n),
-                cctx.consistentCutMgr() != null ? cctx.consistentCutMgr().cutVersion() : null);
+                cctx.tm().txHandler().filterUpdateCountersForBackupNode(tx, n));
 
             req.queryUpdate(dhtMapping.queryUpdate());
 
@@ -1545,7 +1523,9 @@ public final class GridDhtTxPrepareFuture extends GridCacheCompoundFuture<Ignite
             assert req.transactionNodes() != null;
 
             try {
-                cctx.io().send(n, req, tx.ioPolicy());
+                GridCacheMessage cacheMsg = cctx.consistentCutMgr().wrapTxMsgIfCutRunning(req, null);
+
+                cctx.io().send(n, cacheMsg, tx.ioPolicy());
 
                 if (msgLog.isDebugEnabled()) {
                     msgLog.debug("DHT prepare fut, sent request dht [txId=" + tx.nearXidVersion() +
@@ -1593,8 +1573,7 @@ public final class GridDhtTxPrepareFuture extends GridCacheCompoundFuture<Ignite
                     tx.storeWriteThrough(),
                     retVal,
                     mvccSnapshot,
-                    null,
-                    cctx.consistentCutMgr() != null ? cctx.consistentCutMgr().cutVersion() : null);
+                    null);
 
                 for (IgniteTxEntry entry : nearMapping.entries()) {
                     if (CU.writes().apply(entry)) {
@@ -1626,7 +1605,9 @@ public final class GridDhtTxPrepareFuture extends GridCacheCompoundFuture<Ignite
                 assert req.transactionNodes() != null;
 
                 try {
-                    cctx.io().send(nearMapping.primary(), req, tx.ioPolicy());
+                    GridCacheMessage cacheMsg = cctx.consistentCutMgr().wrapTxMsgIfCutRunning(req, null);
+
+                    cctx.io().send(nearMapping.primary(), cacheMsg, tx.ioPolicy());
 
                     if (msgLog.isDebugEnabled()) {
                         msgLog.debug("DHT prepare fut, sent request near [txId=" + tx.nearXidVersion() +
@@ -2065,9 +2046,6 @@ public final class GridDhtTxPrepareFuture extends GridCacheCompoundFuture<Ignite
                         }
                     }
                 }
-
-                if (res.txCutVersion() != null)
-                    tx.txCutVersion(res.txCutVersion());
 
                 // Finish mini future.
                 onDone(tx);

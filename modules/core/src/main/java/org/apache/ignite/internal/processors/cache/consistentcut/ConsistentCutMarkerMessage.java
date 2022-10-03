@@ -17,48 +17,75 @@
 
 package org.apache.ignite.internal.processors.cache.consistentcut;
 
+import java.io.Externalizable;
 import java.nio.ByteBuffer;
-import org.apache.ignite.internal.util.tostring.GridToStringInclude;
-import org.apache.ignite.internal.util.typedef.internal.S;
-import org.apache.ignite.plugin.extensions.communication.Message;
+import org.apache.ignite.IgniteCheckedException;
+import org.apache.ignite.internal.processors.cache.GridCacheIdMessage;
+import org.apache.ignite.internal.processors.cache.GridCacheSharedContext;
+import org.apache.ignite.internal.processors.cache.distributed.GridDistributedBaseMessage;
 import org.apache.ignite.plugin.extensions.communication.MessageReader;
 import org.apache.ignite.plugin.extensions.communication.MessageWriter;
 
-/**
- * Message requests to start Consistent Cut procedure on a node.
- */
-public class ConsistentCutStartRequest implements Message {
+/** Message that holds {@link ConsistentCutMarker}. */
+public class ConsistentCutMarkerMessage extends GridCacheIdMessage {
     /** */
     private static final long serialVersionUID = 0L;
 
     /** */
-    public static final short TYPE_CODE = 200;
-
-    /**
-     * Consistent Cut Version.
-     */
-    @GridToStringInclude
-    private ConsistentCutMarker marker;
+    public static final short TYPE_CODE = 202;
 
     /** */
-    public ConsistentCutStartRequest() {
+    private GridDistributedBaseMessage payload;
+
+    /** */
+    private ConsistentCutMarker marker;
+
+    /**
+     * Empty constructor required for {@link Externalizable}.
+     */
+    public ConsistentCutMarkerMessage() {
     }
 
     /** */
-    public ConsistentCutStartRequest(ConsistentCutMarker marker) {
+    public ConsistentCutMarkerMessage(
+        GridDistributedBaseMessage payload,
+        ConsistentCutMarker marker
+    ) {
+        this.payload = payload;
         this.marker = marker;
     }
 
-    /**
-     * @return Consistent Cut Version.
-     */
+    /** */
     public ConsistentCutMarker marker() {
         return marker;
+    }
+
+    /** */
+    public void marker(ConsistentCutMarker marker) {
+        this.marker = marker;
+    }
+
+    /** */
+    public GridDistributedBaseMessage payload() {
+        return payload;
+    }
+
+    /** {@inheritDoc} */
+    @Override public void prepareMarshal(GridCacheSharedContext ctx) throws IgniteCheckedException {
+        payload.prepareMarshal(ctx);
+    }
+
+    /** {@inheritDoc} */
+    @Override public void finishUnmarshal(GridCacheSharedContext ctx, ClassLoader ldr) throws IgniteCheckedException {
+        payload.finishUnmarshal(ctx, ldr);
     }
 
     /** {@inheritDoc} */
     @Override public boolean writeTo(ByteBuffer buf, MessageWriter writer) {
         writer.setBuffer(buf);
+
+        if (!super.writeTo(buf, writer))
+            return false;
 
         if (!writer.isHeaderWritten()) {
             if (!writer.writeHeader(directType(), fieldsCount()))
@@ -68,8 +95,14 @@ public class ConsistentCutStartRequest implements Message {
         }
 
         switch (writer.state()) {
-            case 0:
+            case 4:
                 if (!writer.writeMessage("marker", marker))
+                    return false;
+
+                writer.incrementState();
+
+            case 5:
+                if (!writer.writeMessage("payload", payload))
                     return false;
 
                 writer.incrementState();
@@ -86,9 +119,20 @@ public class ConsistentCutStartRequest implements Message {
         if (!reader.beforeMessageRead())
             return false;
 
+        if (!super.readFrom(buf, reader))
+            return false;
+
         switch (reader.state()) {
-            case 0:
+            case 4:
                 marker = reader.readMessage("marker");
+
+                if (!reader.isLastRead())
+                    return false;
+
+                reader.incrementState();
+
+            case 5:
+                payload = reader.readMessage("payload");
 
                 if (!reader.isLastRead())
                     return false;
@@ -97,7 +141,7 @@ public class ConsistentCutStartRequest implements Message {
 
         }
 
-        return reader.afterMessageRead(ConsistentCutStartRequest.class);
+        return reader.afterMessageRead(ConsistentCutMarkerMessage.class);
     }
 
     /** {@inheritDoc} */
@@ -107,16 +151,11 @@ public class ConsistentCutStartRequest implements Message {
 
     /** {@inheritDoc} */
     @Override public byte fieldsCount() {
-        return 1;
+        return 6;
     }
 
     /** {@inheritDoc} */
-    @Override public void onAckReceived() {
-        // No-op.
-    }
-
-    /** {@inheritDoc} */
-    @Override public String toString() {
-        return S.toString(ConsistentCutStartRequest.class, this);
+    @Override public boolean addDeploymentInfo() {
+        return false;
     }
 }

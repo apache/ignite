@@ -23,9 +23,6 @@ import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.internal.GridDirectTransient;
 import org.apache.ignite.internal.processors.cache.GridCacheSharedContext;
-import org.apache.ignite.internal.processors.cache.consistentcut.ConsistentCutVersion;
-import org.apache.ignite.internal.processors.cache.consistentcut.ConsistentCutVersionAware;
-import org.apache.ignite.internal.processors.cache.consistentcut.TxConsistentCutVersionAware;
 import org.apache.ignite.internal.processors.cache.transactions.IgniteTxState;
 import org.apache.ignite.internal.processors.cache.transactions.IgniteTxStateAware;
 import org.apache.ignite.internal.processors.cache.version.GridCacheVersion;
@@ -38,8 +35,7 @@ import org.apache.ignite.plugin.extensions.communication.MessageWriter;
 /**
  * Response to prepare request.
  */
-public class GridDistributedTxPrepareResponse
-    extends GridDistributedBaseMessage implements IgniteTxStateAware, ConsistentCutVersionAware, TxConsistentCutVersionAware {
+public class GridDistributedTxPrepareResponse extends GridDistributedBaseMessage implements IgniteTxStateAware {
     /** */
     private static final long serialVersionUID = 0L;
 
@@ -60,15 +56,6 @@ public class GridDistributedTxPrepareResponse
 
     /** */
     protected byte flags;
-
-    /** Version of the latest known Consistent Cut on local node. */
-    private ConsistentCutVersion cutVer;
-
-    /**
-     * Version of the latest Consistent Cut AFTER which this transaction committed.
-     * Sets on backup (or primary) node to notify other nodes in 1PC algorithm.
-     */
-    private ConsistentCutVersion txCutVer;
 
     /**
      * Empty constructor (required by {@link Externalizable}).
@@ -156,28 +143,6 @@ public class GridDistributedTxPrepareResponse
     }
 
     /** {@inheritDoc} */
-    @Override public ConsistentCutVersion cutVersion() {
-        return cutVer;
-    }
-
-    /** */
-    public void cutVersion(ConsistentCutVersion cutVer) {
-        this.cutVer = cutVer;
-    }
-
-    /**
-     * @return Holds Consistent Cut Cersion for 1PC transactions.
-     */
-    @Override public ConsistentCutVersion txCutVersion() {
-        return txCutVer;
-    }
-
-    /** {@inheritDoc} */
-    @Override public void txCutVersion(ConsistentCutVersion ver) {
-        txCutVer = ver;
-    }
-
-    /** {@inheritDoc} */
     @Override public IgniteLogger messageLogger(GridCacheSharedContext ctx) {
         return ctx.txPrepareMessageLogger();
     }
@@ -214,31 +179,19 @@ public class GridDistributedTxPrepareResponse
 
         switch (writer.state()) {
             case 8:
-                if (!writer.writeMessage("cutVer", cutVer))
-                    return false;
-
-                writer.incrementState();
-
-            case 9:
                 if (!writer.writeByteArray("errBytes", errBytes))
                     return false;
 
                 writer.incrementState();
 
-            case 10:
+            case 9:
                 if (!writer.writeByte("flags", flags))
                     return false;
 
                 writer.incrementState();
 
-            case 11:
+            case 10:
                 if (!writer.writeInt("part", part))
-                    return false;
-
-                writer.incrementState();
-
-            case 12:
-                if (!writer.writeMessage("txCutVer", txCutVer))
                     return false;
 
                 writer.incrementState();
@@ -260,14 +213,6 @@ public class GridDistributedTxPrepareResponse
 
         switch (reader.state()) {
             case 8:
-                cutVer = reader.readMessage("cutVer");
-
-                if (!reader.isLastRead())
-                    return false;
-
-                reader.incrementState();
-
-            case 9:
                 errBytes = reader.readByteArray("errBytes");
 
                 if (!reader.isLastRead())
@@ -275,7 +220,7 @@ public class GridDistributedTxPrepareResponse
 
                 reader.incrementState();
 
-            case 10:
+            case 9:
                 flags = reader.readByte("flags");
 
                 if (!reader.isLastRead())
@@ -283,16 +228,8 @@ public class GridDistributedTxPrepareResponse
 
                 reader.incrementState();
 
-            case 11:
+            case 10:
                 part = reader.readInt("part");
-
-                if (!reader.isLastRead())
-                    return false;
-
-                reader.incrementState();
-
-            case 12:
-                txCutVer = reader.readMessage("txCutVer");
 
                 if (!reader.isLastRead())
                     return false;
@@ -311,7 +248,7 @@ public class GridDistributedTxPrepareResponse
 
     /** {@inheritDoc} */
     @Override public byte fieldsCount() {
-        return 13;
+        return 11;
     }
 
     /** {@inheritDoc} */

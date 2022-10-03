@@ -22,7 +22,7 @@ import java.util.List;
 import java.util.Set;
 import java.util.stream.Collectors;
 import org.apache.ignite.internal.processors.cache.consistentcut.ConsistentCut;
-import org.apache.ignite.internal.processors.cache.consistentcut.ConsistentCutProcessor;
+import org.apache.ignite.internal.processors.cache.consistentcut.ConsistentCutManager;
 import org.apache.ignite.internal.processors.cache.version.GridCacheVersion;
 import org.apache.ignite.lang.IgniteUuid;
 
@@ -30,20 +30,20 @@ import org.apache.ignite.lang.IgniteUuid;
  * {@link ConsistentCut} splits timeline on 2 global areas - BEFORE and AFTER. It guarantees that every transaction committed
  * BEFORE also will be committed BEFORE on every other node. It means that an Ignite node can safely recover itself to this
  * point without any coordination with other nodes.
- *
+ * <p>
  * This record is written to WAL after Consistent Cut stopped analyzing transactions from {@link ConsistentCut} and
  * storing them in a particular collection - {@link #before()} or {@link #after()}.
- *
+ * <p>
  * It guarantees that the BEFORE side consist of:
  * 1. transactions physically committed before {@link ConsistentCutStartRecord} and weren't included into {@link #after()};
  * 2. transactions physically committed between {@link ConsistentCutStartRecord} and {@link ConsistentCutFinishRecord}
  *    and were included into {@link #before()}.
- *
+ * <p>
  * It guarantees that the AFTER side consist of:
  * 1. transactions physically committed before {@link ConsistentCutStartRecord} and were included into {@link #after()};
  * 2. transactions physically committed after {@link ConsistentCutStartRecord} and weren't included into {@link #before()}.
  *
- * @see ConsistentCutProcessor
+ * @see ConsistentCutManager
  */
 public class ConsistentCutFinishRecord extends WALRecord {
     /**

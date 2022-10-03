@@ -57,7 +57,6 @@ import org.apache.ignite.internal.processors.affinity.GridAffinityProcessor;
 import org.apache.ignite.internal.processors.cache.CacheConflictResolutionManager;
 import org.apache.ignite.internal.processors.cache.GridCacheProcessor;
 import org.apache.ignite.internal.processors.cache.binary.CacheObjectBinaryProcessorImpl;
-import org.apache.ignite.internal.processors.cache.consistentcut.ConsistentCutProcessor;
 import org.apache.ignite.internal.processors.cache.mvcc.MvccProcessor;
 import org.apache.ignite.internal.processors.cache.persistence.defragmentation.IgniteDefragmentation;
 import org.apache.ignite.internal.processors.cache.persistence.defragmentation.IgniteDefragmentationImpl;
@@ -336,10 +335,6 @@ public class GridKernalContextImpl implements GridKernalContext, Externalizable 
 
     /** */
     @GridToStringExclude
-    private ConsistentCutProcessor consistentCutProc;
-
-    /** */
-    @GridToStringExclude
     private List<GridComponent> comps = new LinkedList<>();
 
     /** */
@@ -598,8 +593,6 @@ public class GridKernalContextImpl implements GridKernalContext, Externalizable 
             perfStatProc = (PerformanceStatisticsProcessor)comp;
         else if (comp instanceof IndexProcessor)
             indexProc = (IndexProcessor)comp;
-        else if (comp instanceof ConsistentCutProcessor)
-            consistentCutProc = (ConsistentCutProcessor)comp;
         else if (!(comp instanceof DiscoveryNodeValidationProcessor
             || comp instanceof PlatformPluginProcessor
             || comp instanceof QueryEngine))
@@ -901,11 +894,6 @@ public class GridKernalContextImpl implements GridKernalContext, Externalizable 
     /** {@inheritDoc} */
     @Override public DiagnosticProcessor diagnostic() {
         return diagnosticProcessor;
-    }
-
-    /** {@inheritDoc} */
-    @Override public ConsistentCutProcessor consistentCut() {
-        return consistentCutProc;
     }
 
     /** {@inheritDoc} */

@@ -34,6 +34,7 @@ import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
 import org.apache.ignite.internal.processors.cache.GridCacheContext;
 import org.apache.ignite.internal.processors.cache.GridCacheEntryEx;
 import org.apache.ignite.internal.processors.cache.GridCacheEntryRemovedException;
+import org.apache.ignite.internal.processors.cache.GridCacheMessage;
 import org.apache.ignite.internal.processors.cache.GridCacheMvccCandidate;
 import org.apache.ignite.internal.processors.cache.GridCacheSharedContext;
 import org.apache.ignite.internal.processors.cache.distributed.GridDistributedTxMapping;
@@ -484,7 +485,9 @@ public class GridNearOptimisticSerializableTxPrepareFuture extends GridNearOptim
                     m.reads(),
                     m.writes());
 
-                cctx.io().send(primary, req, tx.ioPolicy());
+                GridCacheMessage cacheMsg = cctx.consistentCutMgr().wrapTxMsgIfCutRunning(req, null);
+
+                cctx.io().send(primary, cacheMsg, tx.ioPolicy());
             }
             catch (ClusterTopologyCheckedException e) {
                 e.retryReadyFuture(cctx.nextAffinityReadyFuture(tx.topologyVersion()));
@@ -537,8 +540,7 @@ public class GridNearOptimisticSerializableTxPrepareFuture extends GridNearOptim
             m.clientFirst(),
             txNodes.size() == 1,
             tx.activeCachesDeploymentEnabled(),
-            tx.txState().recovery(),
-            cctx.consistentCutMgr() != null ? cctx.consistentCutMgr().cutVersion() : null);
+            tx.txState().recovery());
 
         for (IgniteTxEntry txEntry : writes) {
             if (txEntry.op() == TRANSFORM)

@@ -53,8 +53,10 @@ import org.apache.ignite.internal.processors.cache.KeyCacheObjectImpl;
 import org.apache.ignite.internal.processors.cache.WalStateAckMessage;
 import org.apache.ignite.internal.processors.cache.binary.MetadataRequestMessage;
 import org.apache.ignite.internal.processors.cache.binary.MetadataResponseMessage;
+import org.apache.ignite.internal.processors.cache.consistentcut.ConsistentCutMarker;
+import org.apache.ignite.internal.processors.cache.consistentcut.ConsistentCutMarkerMessage;
+import org.apache.ignite.internal.processors.cache.consistentcut.ConsistentCutMarkerTxFinishMessage;
 import org.apache.ignite.internal.processors.cache.consistentcut.ConsistentCutStartRequest;
-import org.apache.ignite.internal.processors.cache.consistentcut.ConsistentCutVersion;
 import org.apache.ignite.internal.processors.cache.distributed.GridCacheTtlUpdateRequest;
 import org.apache.ignite.internal.processors.cache.distributed.GridCacheTxRecoveryRequest;
 import org.apache.ignite.internal.processors.cache.distributed.GridCacheTxRecoveryResponse;
@@ -386,7 +388,9 @@ public class GridIoMessageFactory implements MessageFactoryProvider {
 
         // Consistent Cut.
         factory.register(ConsistentCutStartRequest.TYPE_CODE, ConsistentCutStartRequest::new);
-        factory.register(ConsistentCutVersion.TYPE_CODE, ConsistentCutVersion::new);
+        factory.register(ConsistentCutMarker.TYPE_CODE, ConsistentCutMarker::new);
+        factory.register(ConsistentCutMarkerMessage.TYPE_CODE, ConsistentCutMarkerMessage::new);
+        factory.register(ConsistentCutMarkerTxFinishMessage.TYPE_CODE, ConsistentCutMarkerTxFinishMessage::new);
 
         // Index statistics.
         factory.register(StatisticsKeyMessage.TYPE_CODE, StatisticsKeyMessage::new);
@@ -398,7 +402,7 @@ public class GridIoMessageFactory implements MessageFactoryProvider {
 
         // [-3..119] [124..129] [-23..-28] [-36..-55] [183..188] - this
         // [120..123] - DR
-        // [200..202] - Consistent Cut
+        // [200..203] - Consistent Cut
         // [-4..-22, -30..-35, -54..-57] - SQL
         // [2048..2053] - Snapshots
         // [-42..-37] - former hadoop.

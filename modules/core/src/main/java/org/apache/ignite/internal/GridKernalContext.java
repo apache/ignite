@@ -37,7 +37,6 @@ import org.apache.ignite.internal.managers.loadbalancer.GridLoadBalancerManager;
 import org.apache.ignite.internal.managers.systemview.GridSystemViewManager;
 import org.apache.ignite.internal.processors.affinity.GridAffinityProcessor;
 import org.apache.ignite.internal.processors.cache.GridCacheProcessor;
-import org.apache.ignite.internal.processors.cache.consistentcut.ConsistentCutProcessor;
 import org.apache.ignite.internal.processors.cache.mvcc.MvccProcessor;
 import org.apache.ignite.internal.processors.cache.persistence.defragmentation.IgniteDefragmentation;
 import org.apache.ignite.internal.processors.cache.persistence.filename.PdsFoldersResolver;
@@ -471,13 +470,6 @@ public interface GridKernalContext extends Iterable<GridComponent> {
      * @return Diagnostic processor.
      */
     public DiagnosticProcessor diagnostic();
-
-    /**
-     * Consistent cut processor.
-     *
-     * @return Consistent cut processor.
-     */
-    public ConsistentCutProcessor consistentCut();
 
     /**
      * Checks whether this node is invalid due to a critical error or not.

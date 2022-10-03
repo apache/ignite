@@ -56,7 +56,7 @@ import org.apache.ignite.internal.processors.cache.GridCacheOperation;
 import org.apache.ignite.internal.processors.cache.GridCacheReturn;
 import org.apache.ignite.internal.processors.cache.GridCacheSharedContext;
 import org.apache.ignite.internal.processors.cache.KeyCacheObject;
-import org.apache.ignite.internal.processors.cache.consistentcut.ConsistentCutVersion;
+import org.apache.ignite.internal.processors.cache.consistentcut.ConsistentCutMarker;
 import org.apache.ignite.internal.processors.cache.distributed.dht.topology.GridDhtInvalidPartitionException;
 import org.apache.ignite.internal.processors.cache.distributed.dht.topology.GridDhtLocalPartition;
 import org.apache.ignite.internal.processors.cache.distributed.dht.topology.GridDhtPartitionState;
@@ -267,6 +267,19 @@ public abstract class IgniteTxAdapter extends GridMetadataAwareAdapter implement
     /** Mvcc tx update snapshot. */
     @GridToStringInclude
     protected volatile MvccSnapshot mvccSnapshot;
+
+    /** */
+    private @Nullable ConsistentCutMarker marker;
+
+    /** {@inheritDoc} */
+    @Override public ConsistentCutMarker marker() {
+        return marker;
+    }
+
+    /** {@inheritDoc} */
+    @Override public void marker(ConsistentCutMarker marker) {
+        this.marker = marker;
+    }
 
     /** {@code True} if tx should skip adding itself to completed version map on finish. */
     private boolean skipCompletedVers;
@@ -1250,9 +1263,6 @@ public abstract class IgniteTxAdapter extends GridMetadataAwareAdapter implement
 
             if (fut != null)
                 fut.onDone(this);
-
-            if (cctx.consistentCutMgr() != null)
-                cctx.consistentCutMgr().unregisterAfterCommit(this);
         }
 
         return valid;
@@ -2090,6 +2100,16 @@ public abstract class IgniteTxAdapter extends GridMetadataAwareAdapter implement
         }
 
         /** {@inheritDoc} */
+        @Override public ConsistentCutMarker marker() {
+            return null;
+        }
+
+        /** {@inheritDoc} */
+        @Override public void marker(ConsistentCutMarker marker) {
+            throw new IllegalStateException("Deserialized transaction can only be used as read-only.");
+        }
+
+        /** {@inheritDoc} */
         @Override public boolean localResult() {
             return false;
         }
@@ -2579,16 +2599,6 @@ public abstract class IgniteTxAdapter extends GridMetadataAwareAdapter implement
         /** {@inheritDoc} */
         @Override public String toString() {
             return S.toString(TxShadow.class, this);
-        }
-
-        /** {@inheritDoc} */
-        @Override public @Nullable ConsistentCutVersion txCutVersion() {
-            return null;
-        }
-
-        /** {@inheritDoc} */
-        @Override public void txCutVersion(ConsistentCutVersion cutVer) {
-            throw new IllegalStateException("Deserialized transaction can only be used as read-only.");
         }
     }
 

@@ -48,7 +48,6 @@ import org.apache.ignite.internal.processors.cache.GridCacheReturnCompletableWra
 import org.apache.ignite.internal.processors.cache.GridCacheSharedContext;
 import org.apache.ignite.internal.processors.cache.GridCacheUpdateTxResult;
 import org.apache.ignite.internal.processors.cache.KeyCacheObject;
-import org.apache.ignite.internal.processors.cache.consistentcut.ConsistentCutVersion;
 import org.apache.ignite.internal.processors.cache.distributed.dht.topology.GridDhtInvalidPartitionException;
 import org.apache.ignite.internal.processors.cache.distributed.dht.topology.GridDhtLocalPartition;
 import org.apache.ignite.internal.processors.cache.distributed.near.GridNearCacheEntry;
@@ -127,11 +126,6 @@ public abstract class GridDistributedTxRemoteAdapter extends IgniteTxAdapter imp
     @Nullable private String txLbl;
 
     /**
-     * Latest Consistent Cut Version that AFTER which this transaction committed.
-     */
-    private ConsistentCutVersion txCutVer;
-
-    /**
      * @param ctx Cache registry.
      * @param nodeId Node ID.
      * @param xidVer XID version.
@@ -185,16 +179,6 @@ public abstract class GridDistributedTxRemoteAdapter extends IgniteTxAdapter imp
 
         // Must set started flag after concurrency and isolation.
         started = true;
-    }
-
-    /** {@inheritDoc} */
-    @Override public ConsistentCutVersion txCutVersion() {
-        return txCutVer;
-    }
-
-    /** {@inheritDoc} */
-    @Override public void txCutVersion(ConsistentCutVersion txCutVer) {
-        this.txCutVer = txCutVer;
     }
 
     /** {@inheritDoc} */
