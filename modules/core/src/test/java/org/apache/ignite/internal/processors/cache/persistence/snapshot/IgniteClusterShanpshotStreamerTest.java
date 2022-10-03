@@ -43,7 +43,7 @@ import static org.apache.ignite.testframework.GridTestUtils.assertThrows;
 /**
  * Tests snapshot is consistent under streaming load.
  */
-public class IgniteClusterShanpshotStreamerTest  extends AbstractSnapshotSelfTest {
+public class IgniteClusterShanpshotStreamerTest extends AbstractSnapshotSelfTest {
     /** Parameters. */
     @Parameterized.Parameters(name = "Encryption={0}")
     public static Iterable<Boolean> encryptionParams() {
@@ -72,7 +72,7 @@ public class IgniteClusterShanpshotStreamerTest  extends AbstractSnapshotSelfTes
     /** @throws Exception If fails. */
     @Test
     public void testFailsWithDefaultReceiver() throws Exception {
-       doTest(true, null);
+        doTest(true, null);
     }
 
     /** @throws Exception If fails. */
