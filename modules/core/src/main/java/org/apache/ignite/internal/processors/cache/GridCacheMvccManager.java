@@ -20,7 +20,6 @@ package org.apache.ignite.internal.processors.cache;
 import java.util.ArrayDeque;
 import java.util.ArrayList;
 import java.util.Collection;
-import java.util.Collections;
 import java.util.Deque;
 import java.util.HashMap;
 import java.util.HashSet;
@@ -121,7 +120,7 @@ public class GridCacheMvccManager extends GridCacheSharedManagerAdapter {
     private final ConcurrentHashMap<Long, GridCacheAtomicFuture<?>> atomicFuts = new ConcurrentHashMap<>();
 
     /** Pending data streamer futures. */
-    private final Map<String, Set<DataStreamerFuture>> dataStreamerFuts = new ConcurrentHashMap<>();
+    private final GridConcurrentHashSet<DataStreamerFuture> dataStreamerFuts = new GridConcurrentHashSet<>();
 
     /** */
     private final ConcurrentMap<IgniteUuid, GridCacheFuture<?>> futs = new ConcurrentHashMap<>();
@@ -517,8 +516,8 @@ public class GridCacheMvccManager extends GridCacheSharedManagerAdapter {
     /**
      * @return Collection of pending data streamer futures.
      */
-    public Map<String, Set<? extends IgniteInternalFuture>> dataStreamerFutures() {
-        return Collections.unmodifiableMap(dataStreamerFuts);
+    public Collection<DataStreamerFuture> dataStreamerFutures() {
+        return dataStreamerFuts;
     }
 
     /**
@@ -553,23 +552,15 @@ public class GridCacheMvccManager extends GridCacheSharedManagerAdapter {
     }
 
     /**
-     * @param cacheName Related cache name.
      * @param topVer Topology version.
      * @return Future.
      */
-    public GridFutureAdapter addDataStreamerFuture(String cacheName, AffinityTopologyVersion topVer) {
+    public GridFutureAdapter addDataStreamerFuture(AffinityTopologyVersion topVer) {
         final DataStreamerFuture fut = new DataStreamerFuture(topVer);
 
-        dataStreamerFuts.compute(cacheName, (cn, futSet) -> {
-            if (futSet == null)
-                futSet = new GridConcurrentHashSet<>();
+        boolean add = dataStreamerFuts.add(fut);
 
-            fut.holder = futSet;
-
-            futSet.add(fut);
-
-            return futSet;
-        });
+        assert add;
 
         return fut;
     }
@@ -1160,11 +1151,9 @@ public class GridCacheMvccManager extends GridCacheSharedManagerAdapter {
     public IgniteInternalFuture<?> finishDataStreamerUpdates(AffinityTopologyVersion topVer) {
         GridCompoundFuture<Void, Object> res = new CacheObjectsReleaseFuture<>("DataStreamer", topVer);
 
-        for (Set<DataStreamerFuture> futs : dataStreamerFuts.values()) {
-            for (DataStreamerFuture fut : futs) {
-                if (fut.topVer.compareTo(topVer) < 0)
-                    res.add(fut);
-            }
+        for (DataStreamerFuture fut : dataStreamerFuts) {
+            if (fut.topVer.compareTo(topVer) < 0)
+                res.add(fut);
         }
 
         res.markInitialized();
@@ -1433,11 +1422,7 @@ public class GridCacheMvccManager extends GridCacheSharedManagerAdapter {
         @GridToStringInclude
         private final AffinityTopologyVersion topVer;
 
-        /** Future holder. */
-        private Set<DataStreamerFuture> holder;
-
         /**
-         * @param topVer Future holder..
          * @param topVer Topology version.
          */
         DataStreamerFuture(AffinityTopologyVersion topVer) {
@@ -1447,7 +1432,7 @@ public class GridCacheMvccManager extends GridCacheSharedManagerAdapter {
         /** {@inheritDoc} */
         @Override public boolean onDone(@Nullable Void res, @Nullable Throwable err) {
             if (super.onDone(res, err)) {
-                holder.remove(this);
+                dataStreamerFuts.remove(this);
 
                 return true;
             }

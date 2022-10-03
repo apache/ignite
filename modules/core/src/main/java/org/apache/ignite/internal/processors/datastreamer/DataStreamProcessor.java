@@ -37,6 +37,7 @@ import org.apache.ignite.internal.cluster.ClusterTopologyCheckedException;
 import org.apache.ignite.internal.managers.communication.GridIoManager;
 import org.apache.ignite.internal.managers.communication.GridMessageListener;
 import org.apache.ignite.internal.managers.deployment.GridDeployment;
+import org.apache.ignite.internal.managers.discovery.CustomEventListener;
 import org.apache.ignite.internal.managers.discovery.DiscoCache;
 import org.apache.ignite.internal.managers.eventstorage.DiscoveryEventListener;
 import org.apache.ignite.internal.processors.GridProcessorAdapter;
@@ -69,7 +70,8 @@ import static org.apache.ignite.internal.managers.communication.GridIoPolicy.DAT
 /**
  * Data stream processor.
  */
-public class DataStreamProcessor<K, V> extends GridProcessorAdapter implements DiscoveryEventListener {
+public class DataStreamProcessor<K, V> extends GridProcessorAdapter implements DiscoveryEventListener,
+    CustomEventListener<DataStreamerImpl.CloseStreamerCmd> {
     /** Loaders map (access is not supposed to be highly concurrent). */
     private Collection<DataStreamerImpl> ldrs = new GridConcurrentHashSet<>();
 
@@ -116,6 +118,8 @@ public class DataStreamProcessor<K, V> extends GridProcessorAdapter implements D
         marsh = ctx.config().getMarshaller();
 
         ctx.event().addDiscoveryEventListener(this, EVT_NODE_LEFT, EVT_NODE_FAILED);
+
+        ctx.discovery().setCustomEventListener(DataStreamerImpl.CloseStreamerCmd.class, this);
     }
 
     /** {@inheritDoc} */
@@ -398,10 +402,10 @@ public class DataStreamProcessor<K, V> extends GridProcessorAdapter implements D
                         req.ignoreDeploymentOwnership(),
                         req.skipStore(),
                         req.keepBinary(),
-                        updater);
+                        updater,
+                        nodeId);
 
-                    waitFut = allowOverwrite ? null : cctx.mvcc().addDataStreamerFuture(req.cacheName(),
-                        streamerFutTopVer);
+                    waitFut = allowOverwrite ? null : cctx.mvcc().addDataStreamerFuture(streamerFutTopVer);
                 }
             }
             finally {
@@ -432,9 +436,6 @@ public class DataStreamProcessor<K, V> extends GridProcessorAdapter implements D
                 if (waitFut != null)
                     waitFut.onDone();
             }
-
-            if (waitFut != null && req.isCloser())
-                unmarkCacheUnderLoad(req.cacheName(), nodeId);
         }
         catch (Throwable e) {
             sendResponse(nodeId, topic, req.requestId(), e, req.forceLocalDeployment());
@@ -477,7 +478,7 @@ public class DataStreamProcessor<K, V> extends GridProcessorAdapter implements D
     /**
      * Unmarks cache as being under inconsistent loading.
      */
-    private void unmarkCacheUnderLoad(String cacheName, UUID nodeId) {
+    void unmarkCacheUnderLoad(String cacheName, UUID nodeId) {
         cachesUnderLoadLock.writeLock().lock();
 
         try {
@@ -503,7 +504,7 @@ public class DataStreamProcessor<K, V> extends GridProcessorAdapter implements D
     /**
      * @return Set of node id which is streaming into the cache.
      */
-    public Set<UUID> isCacheUnderInconsictentLoad(String cacheName) {
+    public Set<UUID> loadingNodes(String cacheName) {
         cachesUnderLoadLock.readLock().lock();
 
         Set<UUID> res;
@@ -515,7 +516,7 @@ public class DataStreamProcessor<K, V> extends GridProcessorAdapter implements D
             cachesUnderLoadLock.readLock().unlock();
         }
 
-        return res == null ? null : Collections.unmodifiableSet(res);
+        return res == null ? Collections.emptySet() : Collections.unmodifiableSet(res);
     }
 
     /**
@@ -608,5 +609,11 @@ public class DataStreamProcessor<K, V> extends GridProcessorAdapter implements D
         finally {
             cachesUnderLoadLock.writeLock().unlock();
         }
+    }
+
+    /** {@inheritDoc} */
+    @Override public void onCustomEvent(AffinityTopologyVersion topVer, ClusterNode snd,
+        DataStreamerImpl.CloseStreamerCmd msg) {
+        unmarkCacheUnderLoad(msg.cacheName(), msg.nodeId());
     }
 }

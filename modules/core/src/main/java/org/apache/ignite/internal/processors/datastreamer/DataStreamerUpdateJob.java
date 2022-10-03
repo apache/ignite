@@ -19,6 +19,7 @@ package org.apache.ignite.internal.processors.datastreamer;
 
 import java.util.Collection;
 import java.util.Map;
+import java.util.UUID;
 import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.internal.GridKernalContext;
 import org.apache.ignite.internal.managers.deployment.P2PClassLoadingIssues;
@@ -61,28 +62,33 @@ class DataStreamerUpdateJob implements GridPlainCallable<Object> {
     /** */
     private boolean keepBinary;
 
+    /** Updater node. */
+    private final UUID updaterNode;
+
     /**
      * @param ctx Context.
      * @param log Log.
      * @param cacheName Cache name.
-     * @param col Entries to put.
+     * @param col Entries to put. {@code Null} is considered as closing job.
      * @param ignoreDepOwnership {@code True} to ignore deployment ownership.
      * @param skipStore Skip store flag.
      * @param rcvr Updater.
+     * @param updaterNode Updater node id.
      */
     DataStreamerUpdateJob(
         GridKernalContext ctx,
         IgniteLogger log,
         @Nullable String cacheName,
-        Collection<DataStreamerEntry> col,
+        @Nullable Collection<DataStreamerEntry> col,
         boolean ignoreDepOwnership,
         boolean skipStore,
         boolean keepBinary,
-        StreamReceiver<?, ?> rcvr) {
+        StreamReceiver<?, ?> rcvr,
+        UUID updaterNode) {
         this.ctx = ctx;
         this.log = log;
 
-        assert col != null && !col.isEmpty();
+        assert col == null || !col.isEmpty();
         assert rcvr != null;
 
         this.cacheName = cacheName;
@@ -91,6 +97,7 @@ class DataStreamerUpdateJob implements GridPlainCallable<Object> {
         this.skipStore = skipStore;
         this.keepBinary = keepBinary;
         this.rcvr = rcvr;
+        this.updaterNode = updaterNode;
     }
 
     /** {@inheritDoc} */
@@ -115,33 +122,37 @@ class DataStreamerUpdateJob implements GridPlainCallable<Object> {
         try {
             final GridCacheContext cctx = cache.context();
 
-            for (DataStreamerEntry e : col) {
-                e.getKey().finishUnmarshal(cctx.cacheObjectContext(), cctx.deploy().globalLoader());
+            if (col == null)
+                ctx.dataStream().unmarkCacheUnderLoad(cacheName, updaterNode);
+            else {
+                for (DataStreamerEntry e : col) {
+                    e.getKey().finishUnmarshal(cctx.cacheObjectContext(), cctx.deploy().globalLoader());
 
-                CacheObject val = e.getValue();
+                    CacheObject val = e.getValue();
 
-                if (val != null) {
-                    checkSecurityPermission(SecurityPermission.CACHE_PUT);
+                    if (val != null) {
+                        checkSecurityPermission(SecurityPermission.CACHE_PUT);
 
-                    val.finishUnmarshal(cctx.cacheObjectContext(), cctx.deploy().globalLoader());
+                        val.finishUnmarshal(cctx.cacheObjectContext(), cctx.deploy().globalLoader());
+                    }
+                    else
+                        checkSecurityPermission(SecurityPermission.CACHE_REMOVE);
+                }
+
+                StreamReceiver receiver = SecurityUtils.sandboxedProxy(ctx, StreamReceiver.class, rcvr);
+
+                if (unwrapEntries()) {
+                    Collection<Map.Entry> col0 = F.viewReadOnly(col, new C1<DataStreamerEntry, Map.Entry>() {
+                        @Override public Map.Entry apply(DataStreamerEntry e) {
+                            return e.toEntry(cctx, keepBinary);
+                        }
+                    });
+
+                    receiver.receive(cache, col0);
                 }
                 else
-                    checkSecurityPermission(SecurityPermission.CACHE_REMOVE);
+                    receiver.receive(cache, col);
             }
-
-            StreamReceiver receiver = SecurityUtils.sandboxedProxy(ctx, StreamReceiver.class, rcvr);
-
-            if (unwrapEntries()) {
-                Collection<Map.Entry> col0 = F.viewReadOnly(col, new C1<DataStreamerEntry, Map.Entry>() {
-                    @Override public Map.Entry apply(DataStreamerEntry e) {
-                        return e.toEntry(cctx, keepBinary);
-                    }
-                });
-
-                receiver.receive(cache, col0);
-            }
-            else
-                receiver.receive(cache, col);
 
             return null;
         }

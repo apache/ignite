@@ -69,6 +69,9 @@ import org.apache.ignite.internal.cluster.ClusterTopologyServerNotFoundException
 import org.apache.ignite.internal.managers.communication.GridIoMessage;
 import org.apache.ignite.internal.managers.communication.GridMessageListener;
 import org.apache.ignite.internal.managers.deployment.GridDeployment;
+import org.apache.ignite.internal.managers.discovery.DiscoCache;
+import org.apache.ignite.internal.managers.discovery.DiscoveryCustomMessage;
+import org.apache.ignite.internal.managers.discovery.GridDiscoveryManager;
 import org.apache.ignite.internal.managers.eventstorage.GridLocalEventListener;
 import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
 import org.apache.ignite.internal.processors.affinity.GridAffinityProcessor;
@@ -1354,6 +1357,9 @@ public class DataStreamerImpl<K, V> implements IgniteDataStreamer<K, V>, Delayed
                 else
                     doFlush();
 
+                if (rcvr instanceof IsolatedUpdater)
+                    sendClosers();
+
                 ctx.event().removeLocalEventListener(discoLsnr);
 
                 ctx.io().removeMessageListener(topic);
@@ -1375,6 +1381,37 @@ public class DataStreamerImpl<K, V> implements IgniteDataStreamer<K, V>, Delayed
         finally {
             busyLock.writeUnlock();
         }
+    }
+
+    /** Sneds closer requests. */
+    private void sendClosers() throws IgniteCheckedException {
+        boolean failedSendClosers = false;
+
+        try {
+            acquireRemapSemaphore();
+
+            GridCompoundFuture<Object, ?> compoundFut = new GridCompoundFuture<>();
+
+            for (Buffer buf : bufMappings.values()) {
+                GridFutureAdapter<Object> fut = new GridFutureAdapter<>();
+
+                compoundFut.add(fut);
+
+                buf.submit(null, null, fut, false, 0);
+            }
+
+            compoundFut.markInitialized();
+
+            compoundFut.get();
+        }
+        catch (Exception e) {
+            failedSendClosers = true;
+
+            log.warning("Unable to send closing datastreamer requests. A discovery closing message will be sent.", e);
+        }
+
+        if (failedSendClosers)
+            ctx.discovery().sendCustomEvent(new CloseStreamerCmd(cacheName, cacheObjCtx.kernalContext().localNodeId()));
     }
 
     /**
@@ -1533,6 +1570,57 @@ public class DataStreamerImpl<K, V> implements IgniteDataStreamer<K, V>, Delayed
          */
         private IgniteCacheFutureImpl getFuture() {
             return fut;
+        }
+    }
+
+    /**
+     * Notifies to free marks of streaming into the cache.
+     */
+    public static class CloseStreamerCmd implements DiscoveryCustomMessage {
+        /** Cache that was being streamed into. */
+        private final String cacheName;
+
+        /** Loading node. */
+        private final UUID nodeId;
+
+        /** */
+        private final IgniteUuid id = IgniteUuid.randomUuid();
+
+        /** */
+        private CloseStreamerCmd(String cacheName, UUID nodeId) {
+            this.cacheName = cacheName;
+            this.nodeId = nodeId;
+        }
+
+        /** */
+        public String cacheName() {
+            return cacheName;
+        }
+
+        /** */
+        public UUID nodeId() {
+            return nodeId;
+        }
+
+        /** {@inheritDoc} */
+        @Override public IgniteUuid id() {
+            return id;
+        }
+
+        /** {@inheritDoc} */
+        @Override public @Nullable DiscoveryCustomMessage ackMessage() {
+            return null;
+        }
+
+        /** {@inheritDoc} */
+        @Override public boolean isMutable() {
+            return false;
+        }
+
+        /** */
+        @Override public DiscoCache createDiscoCache(GridDiscoveryManager mgr, AffinityTopologyVersion topVer,
+            DiscoCache discoCache) {
+            return null;
         }
     }
 
@@ -1834,13 +1922,14 @@ public class DataStreamerImpl<K, V> implements IgniteDataStreamer<K, V>, Delayed
                                 false,
                                 skipStore,
                                 keepBinary,
-                                rcvr),
+                                rcvr,
+                                node.id()),
                             plc);
 
                         locFuts.add(callFut);
 
                         final GridFutureAdapter waitFut =
-                            lockTop ? cctx.mvcc().addDataStreamerFuture(cacheName, streamerFutTopVer) : null;
+                            lockTop ? cctx.mvcc().addDataStreamerFuture(streamerFutTopVer) : null;
 
                         callFut.listen(new IgniteInClosure<IgniteInternalFuture<Object>>() {
                             @Override public void apply(IgniteInternalFuture<Object> t) {
@@ -1882,7 +1971,7 @@ public class DataStreamerImpl<K, V> implements IgniteDataStreamer<K, V>, Delayed
         }
 
         /**
-         * @param entries Entries to submit.
+         * @param entries Entries to submit. {@code Null} is considered as closing request.
          * @param topVer Topology version.
          * @param curFut Current future.
          * @param remap Remapping flag.
@@ -1890,14 +1979,13 @@ public class DataStreamerImpl<K, V> implements IgniteDataStreamer<K, V>, Delayed
          * @throws IgniteInterruptedCheckedException If interrupted.
          */
         private void submit(
-            final Collection<DataStreamerEntry> entries,
+            @Nullable final Collection<DataStreamerEntry> entries,
             @Nullable AffinityTopologyVersion topVer,
             final GridFutureAdapter<Object> curFut,
             boolean remap,
             int partId
         ) throws IgniteInterruptedCheckedException {
-            assert entries != null;
-            assert !entries.isEmpty();
+            assert entries == null || !entries.isEmpty();
             assert curFut != null;
 
             if (!remap) {
@@ -1919,13 +2007,15 @@ public class DataStreamerImpl<K, V> implements IgniteDataStreamer<K, V>, Delayed
                 localUpdate(entries, topVer, curFut, plc);
             else {
                 try {
-                    for (DataStreamerEntry e : entries) {
-                        e.getKey().prepareMarshal(cacheObjCtx);
+                    if (entries != null) {
+                        for (DataStreamerEntry e : entries) {
+                            e.getKey().prepareMarshal(cacheObjCtx);
 
-                        CacheObject val = e.getValue();
+                            CacheObject val = e.getValue();
 
-                        if (val != null)
-                            val.prepareMarshal(cacheObjCtx);
+                            if (val != null)
+                                val.prepareMarshal(cacheObjCtx);
+                        }
                     }
 
                     if (updaterBytes == null) {

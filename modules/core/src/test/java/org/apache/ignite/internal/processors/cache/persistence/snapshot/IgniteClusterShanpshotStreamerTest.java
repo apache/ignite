@@ -28,6 +28,7 @@ import org.apache.ignite.IgniteException;
 import org.apache.ignite.cache.CacheAtomicityMode;
 import org.apache.ignite.cache.CacheMode;
 import org.apache.ignite.configuration.IgniteConfiguration;
+import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.processors.datastreamer.DataStreamerCacheUpdaters;
 import org.apache.ignite.internal.util.typedef.G;
@@ -96,58 +97,57 @@ public class IgniteClusterShanpshotStreamerTest  extends AbstractSnapshotSelfTes
         AtomicBoolean stop = new AtomicBoolean(false);
         AtomicInteger keyProvider = new AtomicInteger();
 
-        IgniteInternalFuture<?> load = runLoad(receiver, keyProvider, loadBeforeSnd, stop);
+        try (Ignite client = startClientGrid(G.allGrids().size())) {
+            IgniteInternalFuture<?> load = runLoad(client, receiver, keyProvider, loadBeforeSnd, stop);
 
-        loadBeforeSnd.await();
+            loadBeforeSnd.await();
 
-        if (expectFailure) {
-            assertThrows(null, () -> {
+            if (expectFailure) {
+                assertThrows(null, () -> {
+                    grid(0).snapshot().createSnapshot(SNAPSHOT_NAME).get();
+                }, IgniteException.class, "Streaming should not work while snapshot");
+            }
+            else
                 grid(0).snapshot().createSnapshot(SNAPSHOT_NAME).get();
-            }, IgniteException.class, "Streaming should not work while snapshot");
-        }
-        else
-            grid(0).snapshot().createSnapshot(SNAPSHOT_NAME).get();
 
-        stop.set(true);
+            stop.set(true);
 
-        load.get();
+            load.get();
 
-        if (!expectFailure) {
-            grid(0).cache(dfltCacheCfg.getName()).destroy();
+            if (!expectFailure) {
+                grid(0).cache(dfltCacheCfg.getName()).destroy();
 
-            awaitPartitionMapExchange();
+                awaitPartitionMapExchange();
 
-            grid(0).snapshot().restoreSnapshot(SNAPSHOT_NAME, null).get();
+                grid(0).snapshot().restoreSnapshot(SNAPSHOT_NAME, null).get();
+            }
+
+            G.allGrids().forEach(g ->
+                assertEquals(0, ((IgniteEx)g).context().dataStream().loadingNodes(DEFAULT_CACHE_NAME).size()));
         }
     }
 
     /** */
-    private IgniteInternalFuture<?> runLoad(StreamReceiver<Integer, Integer> receiver, AtomicInteger idx,
+    private IgniteInternalFuture<?> runLoad(Ignite ldr, StreamReceiver<Integer, Integer> receiver, AtomicInteger idx,
         CountDownLatch startSnp, AtomicBoolean stop) {
         return GridTestUtils.runMultiThreadedAsync(() -> {
-            try (Ignite client = startClientGrid(G.allGrids().size())) {
+            try (IgniteDataStreamer<Integer, Integer> ds = ldr.dataStreamer(dfltCacheCfg.getName())) {
+                if (receiver != null)
+                    ds.receiver(receiver);
 
-                try (IgniteDataStreamer<Integer, Integer> ds = client.dataStreamer(dfltCacheCfg.getName())) {
-                    if (receiver != null)
-                        ds.receiver(receiver);
+                while (!stop.get()) {
+                    int i = idx.incrementAndGet();
 
-                    while (!stop.get()) {
-                        int i = idx.incrementAndGet();
+                    ds.addData(i, i);
 
-                        ds.addData(i, i);
-
-                        startSnp.countDown();
-                    }
-                }
-                catch (Exception e) {
-                    while (startSnp.getCount() > 0)
-                        startSnp.countDown();
-
-                    throw e;
+                    startSnp.countDown();
                 }
             }
             catch (Exception e) {
-                e.printStackTrace();
+                while (startSnp.getCount() > 0)
+                    startSnp.countDown();
+
+                throw e;
             }
         }, 1, "load-thread");
     }
