@@ -1385,7 +1385,7 @@ public class DataStreamerImpl<K, V> implements IgniteDataStreamer<K, V>, Delayed
 
     /** Sneds closer requests. */
     private void sendClosers() throws IgniteCheckedException {
-        boolean failedSendClosers = false;
+        boolean sendingFailed = false;
 
         try {
             acquireRemapSemaphore();
@@ -1405,12 +1405,12 @@ public class DataStreamerImpl<K, V> implements IgniteDataStreamer<K, V>, Delayed
             compoundFut.get();
         }
         catch (Exception e) {
-            failedSendClosers = true;
+            sendingFailed = true;
 
             log.warning("Unable to send closing datastreamer requests. A discovery closing message will be sent.", e);
         }
 
-        if (failedSendClosers)
+        if (sendingFailed)
             ctx.discovery().sendCustomEvent(new CloseStreamerCmd(cacheName, cacheObjCtx.kernalContext().localNodeId()));
     }
 

@@ -518,19 +518,19 @@ class SnapshotFutureTask extends AbstractSnapshotFutureTask<Set<GroupPartitionId
                     totalSize.addAndGet(partLen);
 
                     CompletableFuture<Void> fut0 = CompletableFuture.runAsync(
-                            wrapExceptionIfStarted(() -> {
-                                snpSndr.sendPart(
-                                    getPartitionFile(pageStore.workDir(), cacheDirName, partId),
-                                    cacheDirName,
-                                    pair,
-                                    partLen);
+                        wrapExceptionIfStarted(() -> {
+                            snpSndr.sendPart(
+                                getPartitionFile(pageStore.workDir(), cacheDirName, partId),
+                                cacheDirName,
+                                pair,
+                                partLen);
 
-                                // Stop partition writer.
-                                partDeltaWriters.get(pair).markPartitionProcessed();
+                            // Stop partition writer.
+                            partDeltaWriters.get(pair).markPartitionProcessed();
 
-                                processedSize.addAndGet(partLen);
-                            }),
-                            snpSndr.executor())
+                            processedSize.addAndGet(partLen);
+                        }),
+                        snpSndr.executor())
                         // Wait for the completion of both futures - checkpoint end, copy partition.
                         .runAfterBothAsync(cpEndFut,
                             wrapExceptionIfStarted(() -> {

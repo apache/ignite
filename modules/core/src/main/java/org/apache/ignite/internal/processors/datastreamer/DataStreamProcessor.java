@@ -507,16 +507,14 @@ public class DataStreamProcessor<K, V> extends GridProcessorAdapter implements D
     public Set<UUID> loadingNodes(String cacheName) {
         cachesUnderLoadLock.readLock().lock();
 
-        Set<UUID> res;
-
         try {
-            res = cachesUnderLoad.get(cacheName);
+            Set<UUID> res = cachesUnderLoad.get(cacheName);
+
+            return res == null ? Collections.emptySet() : Collections.unmodifiableSet(res);
         }
         finally {
             cachesUnderLoadLock.readLock().unlock();
         }
-
-        return res == null ? Collections.emptySet() : Collections.unmodifiableSet(res);
     }
 
     /**
