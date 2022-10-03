@@ -494,9 +494,9 @@ class SnapshotFutureTask extends AbstractSnapshotFutureTask<Set<GroupPartitionId
             Set<UUID> loadingNodes = cctx.kernalContext().dataStream().loadingNodes(ccfgSndr.cacheName);
 
             if (!loadingNodes.isEmpty() && err.get() == null) {
-                acceptException(new IgniteException("Prohibited concurrent streaming update " +
-                    "occured to cache '" + ccfgSndr.cacheName + "'. Streaming should not work while snapshot creating " +
-                    "with allowOverwrite' set to false."));
+                acceptException(new IgniteException("Prohibited concurrent streaming update occured to cache '" +
+                    ccfgSndr.cacheName + "'. Streaming should not work while snapshot creating with allowOverwrite' " +
+                    "set to false."));
 
                 return;
             }
