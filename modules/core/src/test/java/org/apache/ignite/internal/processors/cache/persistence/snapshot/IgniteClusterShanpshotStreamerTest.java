@@ -55,7 +55,12 @@ public class IgniteClusterShanpshotStreamerTest  extends AbstractSnapshotSelfTes
 
         dfltCacheCfg = defaultCacheConfiguration();
 
-        dfltCacheCfg.setAtomicityMode(CacheAtomicityMode.ATOMIC).setCacheMode(CacheMode.PARTITIONED).setBackups(2);
+        dfltCacheCfg
+            .setAtomicityMode(CacheAtomicityMode.ATOMIC)
+            .setCacheMode(CacheMode.PARTITIONED)
+            .setBackups(2);
+
+        cleanPersistenceDir();
     }
 
     /** {@inheritDoc} */
@@ -103,7 +108,7 @@ public class IgniteClusterShanpshotStreamerTest  extends AbstractSnapshotSelfTes
         if (expectFailure) {
             assertThrows(null, () -> {
                 grid(0).snapshot().createSnapshot(SNAPSHOT_NAME).get();
-            }, IgniteException.class, "Streaming should not work while snapshott");
+            }, IgniteException.class, "Streaming should not work while snapshot");
         }
         else
             grid(0).snapshot().createSnapshot(SNAPSHOT_NAME).get();
@@ -126,7 +131,6 @@ public class IgniteClusterShanpshotStreamerTest  extends AbstractSnapshotSelfTes
         CountDownLatch startSnp, AtomicBoolean stop) {
         return GridTestUtils.runMultiThreadedAsync(() -> {
             try (Ignite client = startClientGrid(G.allGrids().size())) {
-
                 try (IgniteDataStreamer<Integer, Integer> ds = client.dataStreamer(dfltCacheCfg.getName())) {
                     if (receiver != null)
                         ds.receiver(receiver);
@@ -143,11 +147,12 @@ public class IgniteClusterShanpshotStreamerTest  extends AbstractSnapshotSelfTes
                     while (startSnp.getCount() > 0)
                         startSnp.countDown();
 
-                    throw e;
+                    if(!(e instanceof IllegalStateException && e.getMessage().contains("streamer has been closed.")))
+                        throw e;
                 }
             }
             catch (Exception e) {
-                e.printStackTrace();
+                log.error("Unable to close client.", e);
             }
         }, 1, "load-thread");
     }
