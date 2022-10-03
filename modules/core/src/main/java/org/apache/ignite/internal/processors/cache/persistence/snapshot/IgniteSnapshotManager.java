@@ -1881,6 +1881,9 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
 
         SnapshotOperationRequest snpReq = clusterSnpReq;
 
+        if (snpReq.incremental())
+            return;
+
         AbstractSnapshotFutureTask<?> task = locSnpTasks.get(snpReq.snapshotName());
 
         if (task == null)

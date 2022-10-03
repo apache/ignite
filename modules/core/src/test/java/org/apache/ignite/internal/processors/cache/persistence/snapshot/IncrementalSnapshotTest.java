@@ -17,7 +17,6 @@
 
 package org.apache.ignite.internal.processors.cache.persistence.snapshot;
 
-import java.io.File;
 import java.util.function.UnaryOperator;
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.configuration.CacheConfiguration;
@@ -25,7 +24,6 @@ import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.IgniteEx;
 import org.junit.Test;
 
-import static org.apache.ignite.internal.processors.cache.persistence.snapshot.IgniteSnapshotManager.incrementalSnapshotMetaFileName;
 import static org.apache.ignite.testframework.GridTestUtils.assertThrowsWithCause;
 
 /**
@@ -61,14 +59,8 @@ public class IncrementalSnapshotTest extends AbstractSnapshotSelfTest {
             for (int incIdx = 1; incIdx < 3; incIdx++) {
                 snpCreate.createIncrementalSnapshot(snpName).get(TIMEOUT);
 
-                for (int gridIdx = 0; gridIdx < GRID_CND; gridIdx++) {
-                    File incSnpDir =
-                        snp(grid(gridIdx)).incrementalSnapshotLocalDir(snpName, null, incIdx);
-
-                    assertTrue(incSnpDir.exists());
-                    assertTrue(incSnpDir.isDirectory());
-                    assertTrue(new File(incSnpDir, incrementalSnapshotMetaFileName(incIdx)).exists());
-                }
+                for (int gridIdx = 0; gridIdx < GRID_CND; gridIdx++)
+                    assertTrue(checkIncremental(snpName, incIdx, grid(gridIdx)));
             }
         }
     }

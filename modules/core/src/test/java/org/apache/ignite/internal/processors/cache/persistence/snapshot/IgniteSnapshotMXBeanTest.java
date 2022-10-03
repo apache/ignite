@@ -17,7 +17,6 @@
 
 package org.apache.ignite.internal.processors.cache.persistence.snapshot;
 
-import java.io.File;
 import java.util.Collections;
 import javax.management.AttributeNotFoundException;
 import javax.management.DynamicMBean;
@@ -39,7 +38,6 @@ import org.apache.ignite.testframework.GridTestUtils;
 import org.junit.Test;
 
 import static org.apache.ignite.internal.processors.cache.persistence.snapshot.IgniteSnapshotManager.SNAPSHOT_METRICS;
-import static org.apache.ignite.internal.processors.cache.persistence.snapshot.IgniteSnapshotManager.incrementalSnapshotMetaFileName;
 import static org.apache.ignite.internal.processors.cache.persistence.snapshot.SnapshotRestoreProcess.SNAPSHOT_RESTORE_METRICS;
 import static org.apache.ignite.internal.util.distributed.DistributedProcess.DistributedProcessType.RESTORE_CACHE_GROUP_SNAPSHOT_PREPARE;
 import static org.apache.ignite.testframework.GridTestUtils.assertContains;
@@ -79,14 +77,10 @@ public class IgniteSnapshotMXBeanTest extends AbstractSnapshotSelfTest {
 
         mxBean.createIncrementalSnapshot(SNAPSHOT_NAME, "");
 
-        assertTrue("Waiting for incremental snapshot failed", GridTestUtils.waitForCondition(() -> {
-            File incSnpDir =
-                snp(ignite).incrementalSnapshotLocalDir(SNAPSHOT_NAME, null, 1);
-
-            return incSnpDir.exists()
-                && incSnpDir.isDirectory()
-                && new File(incSnpDir, incrementalSnapshotMetaFileName(1)).exists();
-        }, TIMEOUT));
+        assertTrue(
+            "Waiting for incremental snapshot failed",
+            GridTestUtils.waitForCondition(() -> checkIncremental(SNAPSHOT_NAME, 1, ignite), TIMEOUT)
+        );
 
         stopAllGrids();
 
