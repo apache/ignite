@@ -240,11 +240,17 @@ public class ReliabilityTest extends AbstractThinClientTest {
             ClientCache<Integer, Integer> cache = client.createCache("cache");
             dropAllThinClientConnections(Ignition.allGrids().get(0));
 
-            Throwable ex = GridTestUtils.assertThrows(null, () -> cache.getAsync(0).get(),
+            Throwable asyncEx = GridTestUtils.assertThrows(null, () -> cache.getAsync(0).get(),
                     ExecutionException.class, "Channel is closed");
 
-            ClientConnectionException cause = (ClientConnectionException) ex.getCause();
-            assertEquals("Error in policy.", cause.getSuppressed()[0].getMessage());
+            dropAllThinClientConnections(Ignition.allGrids().get(0));
+
+            Throwable syncEx = GridTestUtils.assertThrows(null, () -> cache.get(0),
+                    ClientConnectionException.class, "Channel is closed");
+
+            for (Throwable t : new Throwable[] {asyncEx.getCause(), syncEx}) {
+                assertEquals("Error in policy.", t.getSuppressed()[0].getMessage());
+            }
         }
     }
 
