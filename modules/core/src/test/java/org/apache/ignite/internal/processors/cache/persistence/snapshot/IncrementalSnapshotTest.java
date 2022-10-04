@@ -198,12 +198,6 @@ public class IncrementalSnapshotTest extends AbstractSnapshotSelfTest {
 
     /** */
     @Test
-    public void testIncrementalSnapshotCleanedOnLeft() throws Exception {
-        // TODO: test that incremental snapshot cleared if node left during creation.
-    }
-
-    /** */
-    @Test
     public void testIncrementalSnapshotFailsIfRebalanceHappen() throws Exception {
         // TODO: test that incremental snapshot fail if rebalance happens between creation.
     }
