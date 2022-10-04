@@ -28,6 +28,7 @@ import org.apache.ignite.internal.util.typedef.internal.CU;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.junit.Test;
 
+import static org.apache.ignite.internal.processors.cache.persistence.snapshot.IgniteSnapshotManager.incrementalSnapshotMetaFileName;
 import static org.apache.ignite.testframework.GridTestUtils.assertThrows;
 import static org.apache.ignite.testframework.GridTestUtils.assertThrowsWithCause;
 
@@ -120,12 +121,6 @@ public class IncrementalSnapshotTest extends AbstractSnapshotSelfTest {
 
     /** */
     @Test
-    public void testIncrementalSnapshotNotEnoughSpace() throws Exception {
-        // TODO: test that check exception that throw from smf file creation.
-    }
-
-    /** */
-    @Test
     public void testIncrementalSnapshotFailsOnTopologyChange() throws Exception {
         IgniteEx srv = startGridsWithCache(
             GRID_CND,
@@ -163,6 +158,48 @@ public class IncrementalSnapshotTest extends AbstractSnapshotSelfTest {
 
         // TODO: add cache configuration change test.
         // TODO: add concurrent cache configuration change notification.
+    }
+
+    /** */
+    @Test
+    public void testIncrementalSnapshotMetaFileError() throws Exception {
+        IgniteEx srv = startGridsWithCache(
+            GRID_CND,
+            CACHE_KEYS_RANGE,
+            key -> new Account(key, key),
+            new CacheConfiguration<>(DEFAULT_CACHE_NAME)
+        );
+
+        snp(srv).createSnapshot(SNAPSHOT_NAME).get(TIMEOUT);
+
+        assertTrue(snp(srv).incrementalSnapshotsLocalRootDir(SNAPSHOT_NAME, null).mkdirs());
+        assertTrue(snp(srv).incrementalSnapshotLocalDir(SNAPSHOT_NAME, null, 1).createNewFile());
+
+        assertThrows(
+            null,
+            () -> snp(srv).createIncrementalSnapshot(SNAPSHOT_NAME).get(TIMEOUT),
+            IgniteException.class,
+            "Can't create snapshot directory"
+        );
+
+        for (int i = 0; i < GRID_CND; i++)
+            assertFalse(snp(srv).incrementalSnapshotLocalDir(SNAPSHOT_NAME, null, 1).exists());
+
+        File snpDir = snp(srv).incrementalSnapshotLocalDir(SNAPSHOT_NAME, null, 1);
+
+        assertTrue(snpDir.mkdirs());
+        assertTrue(new File(snpDir, incrementalSnapshotMetaFileName(1)).createNewFile());
+
+        // TODO: fix this test.
+        assertThrows(
+            null,
+            () -> snp(srv).createIncrementalSnapshot(SNAPSHOT_NAME).get(TIMEOUT),
+            IgniteException.class,
+            "Snapshot metafile must not exist"
+        );
+
+        for (int i = 0; i < GRID_CND; i++)
+            assertFalse(snp(srv).incrementalSnapshotLocalDir(SNAPSHOT_NAME, null, 1).exists());
     }
 
     /** */

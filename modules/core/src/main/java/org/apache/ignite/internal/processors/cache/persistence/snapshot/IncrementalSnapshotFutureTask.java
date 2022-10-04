@@ -21,6 +21,7 @@ import java.io.File;
 import java.util.HashSet;
 import java.util.Set;
 import java.util.UUID;
+import java.util.function.BiConsumer;
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.internal.processors.cache.GridCacheSharedContext;
 import org.apache.ignite.internal.processors.cache.persistence.file.FileIOFactory;
@@ -29,7 +30,9 @@ import org.apache.ignite.internal.util.typedef.internal.CU;
 import org.jetbrains.annotations.Nullable;
 
 /** */
-class IncrementalSnapshotFutureTask extends AbstractSnapshotFutureTask<IncrementalSnapshotFutureTaskResult> {
+class IncrementalSnapshotFutureTask
+    extends AbstractSnapshotFutureTask<IncrementalSnapshotFutureTaskResult>
+    implements BiConsumer<String, File> {
     /** Index of incremental snapshot. */
     private final int incIdx;
 
@@ -80,10 +83,7 @@ class IncrementalSnapshotFutureTask extends AbstractSnapshotFutureTask<Increment
         this.snpPath = snpPath;
         this.affectedCacheGrps = new HashSet<>(meta.cacheGroupIds());
 
-        cctx.cache().configManager().addConfigurationChangeListener(
-            (name, file) ->
-                onDone(new IgniteException(IgniteSnapshotManager.cacheChangedException(CU.cacheId(name), name)))
-        );
+        cctx.cache().configManager().addConfigurationChangeListener(this);
     }
 
     /** {@inheritDoc} */
@@ -93,21 +93,33 @@ class IncrementalSnapshotFutureTask extends AbstractSnapshotFutureTask<Increment
 
     /** {@inheritDoc} */
     @Override public boolean start() {
-        File incSnpDir = cctx.snapshotMgr().incrementalSnapshotLocalDir(snpName, snpPath, incIdx);
+        try {
+            File incSnpDir = cctx.snapshotMgr().incrementalSnapshotLocalDir(snpName, snpPath, incIdx);
 
-        if (!incSnpDir.mkdirs()) {
-            onDone(new IgniteException("Can't create snapshot directory[dir=" + incSnpDir.getAbsolutePath() + ']'));
+            if (!incSnpDir.mkdirs()) {
+                onDone(new IgniteException("Can't create snapshot directory[dir=" + incSnpDir.getAbsolutePath() + ']'));
 
-            return false;
+                return false;
+            }
+
+            onDone(new IncrementalSnapshotFutureTaskResult());
+
+            return true;
         }
-
-        onDone(new IncrementalSnapshotFutureTaskResult());
-
-        return true;
+        finally {
+            cctx.cache().configManager().removeConfigurationChangeListener(this);
+        }
     }
 
     /** {@inheritDoc} */
     @Override public void acceptException(Throwable th) {
+        cctx.cache().configManager().removeConfigurationChangeListener(this);
+
         onDone(th);
+    }
+
+    /** {@inheritDoc} */
+    @Override public void accept(String name, File file) {
+        onDone(new IgniteException(IgniteSnapshotManager.cacheChangedException(CU.cacheId(name), name)));
     }
 }

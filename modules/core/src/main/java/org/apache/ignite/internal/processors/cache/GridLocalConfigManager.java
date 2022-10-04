@@ -360,9 +360,18 @@ public class GridLocalConfigManager {
      * @param lsnr Instance of listener to add.
      */
     public void addConfigurationChangeListener(BiConsumer<String, File> lsnr) {
-        assert chgLock.isWriteLockedByCurrentThread();
+        if (chgLock.isWriteLockedByCurrentThread())
+            lsnrs.add(lsnr);
+        else {
+            chgLock.writeLock().lock();
 
-        lsnrs.add(lsnr);
+            try {
+                lsnrs.add(lsnr);
+            }
+            finally {
+                chgLock.writeLock().unlock();
+            }
+        }
     }
 
     /**
