@@ -23,6 +23,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Random;
 import java.util.concurrent.CyclicBarrier;
+import java.util.concurrent.ExecutionException;
 import java.util.concurrent.Executors;
 import java.util.concurrent.Future;
 import java.util.concurrent.TimeUnit;
@@ -228,7 +229,7 @@ public class ReliabilityTest extends AbstractThinClientTest {
      * Tests retry policy exception handling.
      */
     @Test
-    public void testExceptionInRetryPolicyPropagatesToCaller() {
+    public void testExceptionInRetryPolicyPropagatesToCaller() throws ExecutionException, InterruptedException {
         try (LocalIgniteCluster cluster = LocalIgniteCluster.start(1);
              IgniteClient client = Ignition.startClient(getClientConfiguration()
                  .setRetryPolicy(new ExceptionRetryPolicy())
@@ -237,15 +238,8 @@ public class ReliabilityTest extends AbstractThinClientTest {
                      cluster.clientAddresses().iterator().next()))
         ) {
             ClientCache<Integer, Integer> cache = client.createCache("cache");
-
-            // Before fail.
-            cachePut(cache, 0, 0);
-
-            // Fail.
             dropAllThinClientConnections(Ignition.allGrids().get(0));
-
-            // Reuse second address without fail.
-            cache.get(0);
+            cache.getAsync(0).get();
         }
     }
 
