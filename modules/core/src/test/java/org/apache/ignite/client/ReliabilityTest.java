@@ -230,6 +230,9 @@ public class ReliabilityTest extends AbstractThinClientTest {
      */
     @Test
     public void testExceptionInRetryPolicyPropagatesToCaller() {
+        if (isPartitionAware())
+            return;
+
         try (LocalIgniteCluster cluster = LocalIgniteCluster.start(1);
              IgniteClient client = Ignition.startClient(getClientConfiguration()
                  .setRetryPolicy(new ExceptionRetryPolicy())
