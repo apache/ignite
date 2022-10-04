@@ -2485,12 +2485,35 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
                     nodeCacheData,
                     cctx.kernalContext().config().getEncryptionSpi()
                 )) {
-                    throw new IgniteCheckedException("Create incremental snapshot request has been rejected. " +
-                        "Cache changed [cacheId=" + snpCacheData.cacheId() +
-                        ", cacheName=" + snpCacheData.config().getName() + ']');
+                    throw new IgniteCheckedException(
+                        cacheChangedException(snpCacheData.cacheId(), snpCacheData.config().getName())
+                    );
                 }
             }
         }
+    }
+
+    /**
+     * Throw cache changed exception.
+     *
+     * @param cacheId Cache id.
+     * @param name Cache name.
+     */
+    public static String cacheChangedException(int cacheId, String name) {
+        return "Create incremental snapshot request has been rejected. " +
+            "Cache changed [cacheId=" + cacheId + ", cacheName=" + name + ']';
+    }
+
+    /** Adds {@link StoredCacheData#groupKeyEncrypted(GroupKeyEncrypted)} if encryption enabled. */
+    private void addEncryptionInfoIfEnabled(StoredCacheData cacheData) throws IgniteCheckedException {
+        if (!cacheData.config().isEncryptionEnabled())
+            return;
+
+        EncryptionSpi encSpi = cctx.kernalContext().config().getEncryptionSpi();
+
+        GroupKey gKey = cctx.kernalContext().encryption().getActiveKey(CU.cacheGroupId(cacheData.config()));
+
+        cacheData.groupKeyEncrypted(new GroupKeyEncrypted(gKey.id(), encSpi.encryptKey(gKey.key())));
     }
 
     /**
@@ -3603,18 +3626,6 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
                     log.debug("Local snapshot sender closed due to an error occurred: " + th.getMessage());
             }
         }
-    }
-
-    /** */
-    private void addEncryptionInfoIfEnabled(StoredCacheData cacheData) throws IgniteCheckedException {
-        if (!cacheData.config().isEncryptionEnabled())
-            return;
-
-        EncryptionSpi encSpi = cctx.kernalContext().config().getEncryptionSpi();
-
-        GroupKey gKey = cctx.kernalContext().encryption().getActiveKey(CU.cacheGroupId(cacheData.config()));
-
-        cacheData.groupKeyEncrypted(new GroupKeyEncrypted(gKey.id(), encSpi.encryptKey(gKey.key())));
     }
 
     /** */

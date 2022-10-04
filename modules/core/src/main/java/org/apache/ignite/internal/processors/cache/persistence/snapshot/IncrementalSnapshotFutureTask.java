@@ -25,6 +25,7 @@ import org.apache.ignite.IgniteException;
 import org.apache.ignite.internal.processors.cache.GridCacheSharedContext;
 import org.apache.ignite.internal.processors.cache.persistence.file.FileIOFactory;
 import org.apache.ignite.internal.processors.cache.persistence.partstate.GroupPartitionId;
+import org.apache.ignite.internal.util.typedef.internal.CU;
 import org.jetbrains.annotations.Nullable;
 
 /** */
@@ -78,6 +79,11 @@ class IncrementalSnapshotFutureTask extends AbstractSnapshotFutureTask<Increment
         this.incIdx = incIdx;
         this.snpPath = snpPath;
         this.affectedCacheGrps = new HashSet<>(meta.cacheGroupIds());
+
+        cctx.cache().configManager().addConfigurationChangeListener(
+            (name, file) ->
+                onDone(new IgniteException(IgniteSnapshotManager.cacheChangedException(CU.cacheId(name), name)))
+        );
     }
 
     /** {@inheritDoc} */

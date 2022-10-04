@@ -96,7 +96,6 @@ public class IncrementalSnapshotTest extends AbstractSnapshotSelfTest {
                     }
                 }
             }
-
         }
     }
 
@@ -164,12 +163,6 @@ public class IncrementalSnapshotTest extends AbstractSnapshotSelfTest {
 
         // TODO: add cache configuration change test.
         // TODO: add concurrent cache configuration change notification.
-    }
-
-    /** */
-    @Test
-    public void testIncrementalSnapshotWithExplicitPathError() throws Exception {
-        // TODO: test that incremental snapshot fails for invalid custom snapshot path.
     }
 
     /** */
