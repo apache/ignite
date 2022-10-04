@@ -195,16 +195,4 @@ public class IncrementalSnapshotTest extends AbstractSnapshotSelfTest {
         stopAllGrids();
         cleanPersistenceDir();
     }
-
-    /** */
-    @Test
-    public void testIncrementalSnapshotFailsIfRebalanceHappen() throws Exception {
-        // TODO: test that incremental snapshot fail if rebalance happens between creation.
-    }
-
-    /** */
-    @Test
-    public void testConcurrentIncrementalSnapshotFromClient() throws Exception {
-        // See for cluster snapshot.
-    }
 }
