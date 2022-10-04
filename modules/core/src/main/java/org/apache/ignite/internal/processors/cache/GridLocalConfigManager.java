@@ -20,10 +20,9 @@ package org.apache.ignite.internal.processors.cache;
 import java.io.BufferedInputStream;
 import java.io.BufferedOutputStream;
 import java.io.File;
-import java.io.FileInputStream;
-import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
+import java.io.ObjectInputStream;
 import java.io.OutputStream;
 import java.nio.file.DirectoryStream;
 import java.nio.file.Files;
@@ -205,10 +204,16 @@ public class GridLocalConfigManager {
         Marshaller marshaller,
         IgniteConfiguration cfg
     ) throws IgniteCheckedException {
-        try (InputStream stream = new BufferedInputStream(new FileInputStream(conf))) {
+        try (InputStream stream = new BufferedInputStream(Files.newInputStream(conf.toPath()))) {
+            if (marshaller == null || cfg == null) {
+                try (ObjectInputStream ostream = new ObjectInputStream(stream)) {
+                    return (StoredCacheData)ostream.readObject();
+                }
+            }
+
             return marshaller.unmarshal(stream, U.resolveClassLoader(cfg));
         }
-        catch (IgniteCheckedException | IOException e) {
+        catch (IgniteCheckedException | IOException | ClassNotFoundException e) {
             throw new IgniteCheckedException("An error occurred during cache configuration loading from file [file=" +
                 conf.getAbsolutePath() + "]", e);
         }
@@ -221,7 +226,7 @@ public class GridLocalConfigManager {
      */
     public void writeCacheData(StoredCacheData cacheData, File conf) throws IgniteCheckedException {
         // Pre-existing file will be truncated upon stream open.
-        try (OutputStream stream = new BufferedOutputStream(new FileOutputStream(conf))) {
+        try (OutputStream stream = new BufferedOutputStream(Files.newOutputStream(conf.toPath()))) {
             marshaller.marshal(cacheData, stream);
         }
         catch (IOException e) {

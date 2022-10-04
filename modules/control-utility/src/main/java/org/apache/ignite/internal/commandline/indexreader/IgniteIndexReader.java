@@ -18,10 +18,7 @@
 package org.apache.ignite.internal.commandline.indexreader;
 
 import java.io.File;
-import java.io.IOException;
-import java.io.ObjectInputStream;
 import java.nio.ByteBuffer;
-import java.nio.file.Files;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
@@ -62,6 +59,7 @@ import org.apache.ignite.internal.commandline.indexreader.ScanContext.PagesStati
 import org.apache.ignite.internal.commandline.systemview.SystemViewCommand;
 import org.apache.ignite.internal.pagemem.PageIdAllocator;
 import org.apache.ignite.internal.pagemem.PageUtils;
+import org.apache.ignite.internal.processors.cache.GridLocalConfigManager;
 import org.apache.ignite.internal.processors.cache.StoredCacheData;
 import org.apache.ignite.internal.processors.cache.persistence.IndexStorageImpl;
 import org.apache.ignite.internal.processors.cache.persistence.StorageException;
@@ -118,7 +116,6 @@ import static org.apache.ignite.internal.pagemem.PageIdUtils.itemId;
 import static org.apache.ignite.internal.pagemem.PageIdUtils.pageId;
 import static org.apache.ignite.internal.pagemem.PageIdUtils.pageIndex;
 import static org.apache.ignite.internal.pagemem.PageIdUtils.partId;
-import static org.apache.ignite.internal.processors.cache.persistence.file.FilePageStoreManager.CACHE_DATA_FILENAME;
 import static org.apache.ignite.internal.processors.cache.persistence.file.FilePageStoreManager.INDEX_FILE_NAME;
 import static org.apache.ignite.internal.processors.cache.persistence.file.FilePageStoreManager.PART_FILE_TEMPLATE;
 import static org.apache.ignite.internal.util.GridUnsafe.allocateBuffer;
@@ -285,13 +282,13 @@ public class IgniteIndexReader implements AutoCloseable {
         for (int i = 0; i < partCnt; i++)
             partStores[i] = filePageStore(i, FLAG_DATA, storeFactory);
 
-        Arrays.stream(root.listFiles(f -> f.getName().endsWith(CACHE_DATA_FILENAME))).forEach(f -> {
-            try (ObjectInputStream stream = new ObjectInputStream(Files.newInputStream(f.toPath()))) {
-                StoredCacheData data = (StoredCacheData)stream.readObject();
+        Arrays.stream(FilePageStoreManager.cacheDataFiles(root)).forEach(f -> {
+            try {
+                StoredCacheData data = GridLocalConfigManager.readCacheData(f, null, null);
 
                 storedCacheData.put(CU.cacheId(data.config().getName()), data);
             }
-            catch (ClassNotFoundException | IOException e) {
+            catch (IgniteCheckedException e) {
                 log.log(WARNING, "Can't read stored cache data. Inline for this cache will not be analyzed [f=" + f.getName() + ']', e);
             }
         });

@@ -36,6 +36,12 @@ public class IncrementalSnapshotTest extends AbstractSnapshotSelfTest {
     public static final int GRID_CND = 3;
 
     /** */
+    public static final String OTHER_CACHE = "other-cache";
+
+    /** */
+    public static final String GROUPED_CACHE = "my-grouped-cache2";
+
+    /** */
     @Test
     public void testCreation() throws Exception {
         IgniteEx srv = startGridsWithCache(
@@ -123,36 +129,45 @@ public class IncrementalSnapshotTest extends AbstractSnapshotSelfTest {
     /** */
     @Test
     public void testIncrementalSnapshotFailsOnCachesChange() throws Exception {
-        for (String cache2rvm : new String[] {"other-cache", "my-grouped-cache2"}) {
-            IgniteEx srv = startGridsWithCache(
-                1,
-                CACHE_KEYS_RANGE,
-                key -> new Account(key, key),
-                new CacheConfiguration<>(DEFAULT_CACHE_NAME),
-                new CacheConfiguration<>("other-cache"),
-                new CacheConfiguration<Integer, Object>("my-grouped-cache1").setGroupName("mygroup"),
-                new CacheConfiguration<Integer, Object>("my-grouped-cache2").setGroupName("mygroup")
-            );
+        checkFailWhenCacheDestroyed(OTHER_CACHE, "Create incremental snapshot request has been rejected. " +
+            "Cache group destroyed [groupId=" + CU.cacheId(OTHER_CACHE) + ']');
 
-            IgniteSnapshotManager snpCreate = snp(srv);
+        checkFailWhenCacheDestroyed(GROUPED_CACHE, "Create incremental snapshot request has been rejected. " +
+            "Cache destroyed [cacheId=" + CU.cacheId(GROUPED_CACHE) + ", cacheName=" + GROUPED_CACHE + ']');
 
-            snpCreate.createSnapshot(SNAPSHOT_NAME).get(TIMEOUT);
+        // TODO: add cache configuration change test.
+        // TODO: add concurrent cache configuration change notification.
+    }
 
-            snpCreate.createIncrementalSnapshot(SNAPSHOT_NAME).get(TIMEOUT);
+    /** */
+    private void checkFailWhenCacheDestroyed(String cache2rvm, String errMsg) throws Exception {
+        IgniteEx srv = startGridsWithCache(
+            1,
+            CACHE_KEYS_RANGE,
+            key -> new Account(key, key),
+            new CacheConfiguration<>(DEFAULT_CACHE_NAME),
+            new CacheConfiguration<>(OTHER_CACHE),
+            new CacheConfiguration<Integer, Object>("my-grouped-cache1").setGroupName("mygroup"),
+            new CacheConfiguration<Integer, Object>(GROUPED_CACHE).setGroupName("mygroup")
+        );
 
-            srv.destroyCache(cache2rvm);
+        IgniteSnapshotManager snpCreate = snp(srv);
 
-            assertThrows(
-                null,
-                () -> snpCreate.createIncrementalSnapshot(SNAPSHOT_NAME).get(TIMEOUT),
-                IgniteException.class,
-                "Create incremental snapshot request has been rejected. " +
-                    "Cache group destroyed [groupId=" + CU.cacheId(cache2rvm) + ']'
-            );
+        snpCreate.createSnapshot(SNAPSHOT_NAME).get(TIMEOUT);
 
-            stopAllGrids();
-            cleanPersistenceDir();
-        }
+        snpCreate.createIncrementalSnapshot(SNAPSHOT_NAME).get(TIMEOUT);
+
+        srv.destroyCache(cache2rvm);
+
+        assertThrows(
+            null,
+            () -> snpCreate.createIncrementalSnapshot(SNAPSHOT_NAME).get(TIMEOUT),
+            IgniteException.class,
+            errMsg
+        );
+
+        stopAllGrids();
+        cleanPersistenceDir();
     }
 
     /** */

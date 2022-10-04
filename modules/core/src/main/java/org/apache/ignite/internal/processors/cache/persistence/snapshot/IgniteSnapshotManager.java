@@ -169,6 +169,7 @@ import org.apache.ignite.lang.IgniteFuture;
 import org.apache.ignite.lang.IgniteUuid;
 import org.apache.ignite.marshaller.Marshaller;
 import org.apache.ignite.marshaller.MarshallerUtils;
+import org.apache.ignite.marshaller.jdk.JdkMarshaller;
 import org.apache.ignite.resources.IgniteInstanceResource;
 import org.apache.ignite.spi.encryption.EncryptionSpi;
 import org.apache.ignite.spi.systemview.view.SnapshotView;
@@ -2406,8 +2407,10 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
      * @param snpPath Snapshot path.
      */
     private void checkIncrementalCanBeCreated(String name, @Nullable String snpPath) throws IgniteCheckedException {
+        File snpDir = snapshotLocalDir(name, snpPath);
+
         SnapshotMetadata meta = readSnapshotMetadata(new File(
-            snapshotLocalDir(name, snpPath),
+            snpDir,
             snapshotMetaFileName(cctx.localNode().consistentId().toString())
         ));
 
@@ -2423,15 +2426,62 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
             }
         }
 
+        File rootSnpCachesDir = new File(snpDir, databaseRelativePath(meta.folderName()));
+
         for (int grpId : meta.cacheGroupIds()) {
             if (grpId == METASTORAGE_CACHE_ID)
                 continue;
 
-            CacheGroupContext grpCtx = cctx.kernalContext().cache().cacheGroup(grpId);
+            CacheGroupContext gctx = cctx.kernalContext().cache().cacheGroup(grpId);
 
-            if (grpCtx == null) {
+            if (gctx == null) {
                 throw new IgniteCheckedException("Create incremental snapshot request has been rejected. " +
                     "Cache group destroyed [groupId=" + grpId + ']');
+            }
+
+            List<File> snpCacheDir =
+                cacheDirectories(rootSnpCachesDir, grpName -> gctx.cacheOrGroupName().equals(grpName));
+
+            if (snpCacheDir.isEmpty()) {
+                throw new IgniteCheckedException("Create incremental snapshot request has been rejected. " +
+                    "Cache group directory not found [groupId=" + grpId + ']');
+            }
+
+            assert snpCacheDir.size() == 1;
+
+            JdkMarshaller marsh = MarshallerUtils.jdkMarshaller(cctx.kernalContext().igniteInstanceName());
+
+            for (File snpDataFile : FilePageStoreManager.cacheDataFiles(snpCacheDir.get(0))) {
+                StoredCacheData snpCacheData = GridLocalConfigManager.readCacheData(
+                    snpDataFile,
+                    marsh,
+                    cctx.kernalContext().config()
+                );
+
+                File nodeDataFile = new File(snpDataFile.getAbsolutePath().replace(
+                    rootSnpCachesDir.getAbsolutePath(),
+                    pdsSettings.persistentStoreNodePath().getAbsolutePath()
+                ));
+
+                if (!nodeDataFile.exists()) {
+                    throw new IgniteCheckedException("Create incremental snapshot request has been rejected. " +
+                        "Cache destroyed [cacheId=" + snpCacheData.cacheId() +
+                        ", cacheName=" + snpCacheData.config().getName() + ']');
+                }
+
+                StoredCacheData nodeCacheData = GridLocalConfigManager.readCacheData(
+                    nodeDataFile,
+                    marsh,
+                    cctx.gridConfig()
+                );
+
+                addEncryptionInfoIfEnabled(nodeCacheData);
+
+                if (!snpCacheData.encryptedAwareEquals(nodeCacheData, cctx.kernalContext().config().getEncryptionSpi())) {
+                    throw new IgniteCheckedException("Create incremental snapshot request has been rejected. " +
+                        "Cache changed [cacheId=" + snpCacheData.cacheId() +
+                        ", cacheName=" + snpCacheData.config().getName() + ']');
+                }
             }
         }
     }
@@ -3419,15 +3469,10 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
 
                 StoredCacheData cacheData = locCfgMgr.readCacheData(targetCacheCfg);
 
-                if (cacheData.config().isEncryptionEnabled()) {
-                    EncryptionSpi encSpi = cctx.kernalContext().config().getEncryptionSpi();
+                addEncryptionInfoIfEnabled(cacheData);
 
-                    GroupKey gKey = cctx.kernalContext().encryption().getActiveKey(CU.cacheGroupId(cacheData.config()));
-
-                    cacheData.groupKeyEncrypted(new GroupKeyEncrypted(gKey.id(), encSpi.encryptKey(gKey.key())));
-
+                if (cacheData.config().isEncryptionEnabled())
                     locCfgMgr.writeCacheData(cacheData, targetCacheCfg);
-                }
             }
             catch (IgniteCheckedException e) {
                 throw new IgniteException(e);
@@ -3551,6 +3596,18 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
                     log.debug("Local snapshot sender closed due to an error occurred: " + th.getMessage());
             }
         }
+    }
+
+    /** */
+    private void addEncryptionInfoIfEnabled(StoredCacheData cacheData) throws IgniteCheckedException {
+        if (!cacheData.config().isEncryptionEnabled())
+            return;
+
+        EncryptionSpi encSpi = cctx.kernalContext().config().getEncryptionSpi();
+
+        GroupKey gKey = cctx.kernalContext().encryption().getActiveKey(CU.cacheGroupId(cacheData.config()));
+
+        cacheData.groupKeyEncrypted(new GroupKeyEncrypted(gKey.id(), encSpi.encryptKey(gKey.key())));
     }
 
     /** */
