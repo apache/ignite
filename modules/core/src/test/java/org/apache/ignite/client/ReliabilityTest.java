@@ -225,6 +225,31 @@ public class ReliabilityTest extends AbstractThinClientTest {
     }
 
     /**
+     * Tests retry policy exception handling.
+     */
+    @Test
+    public void testExceptionInRetryPolicyPropagatesToCaller() {
+        try (LocalIgniteCluster cluster = LocalIgniteCluster.start(1);
+             IgniteClient client = Ignition.startClient(getClientConfiguration()
+                 .setRetryPolicy(new ExceptionRetryPolicy())
+                 .setAddresses(
+                     cluster.clientAddresses().iterator().next(),
+                     cluster.clientAddresses().iterator().next()))
+        ) {
+            ClientCache<Integer, Integer> cache = client.createCache("cache");
+
+            // Before fail.
+            cachePut(cache, 0, 0);
+
+            // Fail.
+            dropAllThinClientConnections(Ignition.allGrids().get(0));
+
+            // Reuse second address without fail.
+            cache.get(0);
+        }
+    }
+
+    /**
      * Tests that retry limit of 1 effectively disables retry/failover.
      */
     @SuppressWarnings("ThrowableNotThrown")
