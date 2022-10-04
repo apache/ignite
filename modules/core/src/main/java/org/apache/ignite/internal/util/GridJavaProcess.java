@@ -142,8 +142,7 @@ public final class GridJavaProcess {
 
         List<String> procCommands = new ArrayList<>();
 
-        String javaBin = (javaHome == null ? System.getProperty("java.home") : javaHome) +
-            File.separator + "bin" + File.separator + "java";
+        String javaBin = resolveJavaBin(javaHome);
 
         procCommands.add(javaBin);
         procCommands.addAll(jvmArgs == null ? U.jvmArgs() : jvmArgs);
@@ -181,6 +180,25 @@ public final class GridJavaProcess {
         gjProc.proc = proc;
 
         return gjProc;
+    }
+
+    /**
+     * Resolves path to java binary (that can be executed using exec). Either the provided java home directory
+     * is used, or, if it's null, the java.home system property is consulted with.
+     *
+     * @param javaHome Java home directory where to look for bin/java; if null, then java.home property value is used.
+     * @return Path to Java executable.
+     */
+    public static String resolveJavaBin(@Nullable String javaHome) {
+        return resolveJavaHome(javaHome) + File.separator + "bin" + File.separator + "java";
+    }
+
+    /**
+     * Returns the provided java home path or, if it's null, falls back to the path obtained via 'java.home'
+     * system property.
+     */
+    private static String resolveJavaHome(@Nullable String javaHome) {
+        return javaHome == null ? System.getProperty("java.home") : javaHome;
     }
 
     /**
