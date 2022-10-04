@@ -229,7 +229,7 @@ public class ReliabilityTest extends AbstractThinClientTest {
      * Tests retry policy exception handling.
      */
     @Test
-    public void testExceptionInRetryPolicyPropagatesToCaller() throws ExecutionException, InterruptedException {
+    public void testExceptionInRetryPolicyPropagatesToCaller() {
         try (LocalIgniteCluster cluster = LocalIgniteCluster.start(1);
              IgniteClient client = Ignition.startClient(getClientConfiguration()
                  .setRetryPolicy(new ExceptionRetryPolicy())
@@ -239,7 +239,12 @@ public class ReliabilityTest extends AbstractThinClientTest {
         ) {
             ClientCache<Integer, Integer> cache = client.createCache("cache");
             dropAllThinClientConnections(Ignition.allGrids().get(0));
-            cache.getAsync(0).get();
+
+            Throwable ex = GridTestUtils.assertThrows(null, () -> cache.getAsync(0).get(),
+                    ExecutionException.class, "Channel is closed");
+
+            ClientConnectionException cause = (ClientConnectionException) ex.getCause();
+            assertEquals("Error in policy.", cause.getSuppressed()[0].getMessage());
         }
     }
 
