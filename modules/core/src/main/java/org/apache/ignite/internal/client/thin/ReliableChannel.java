@@ -876,7 +876,8 @@ final class ReliableChannel implements AutoCloseable {
 
         try {
             return plc.shouldRetry(ctx);
-        } catch (Throwable t) {
+        }
+        catch (Throwable t) {
             exception.addSuppressed(t);
             return false;
         }
