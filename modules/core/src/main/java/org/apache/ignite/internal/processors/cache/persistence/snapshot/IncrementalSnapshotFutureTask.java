@@ -108,6 +108,6 @@ class IncrementalSnapshotFutureTask extends AbstractSnapshotFutureTask<Increment
 
     /** {@inheritDoc} */
     @Override public void acceptException(Throwable th) {
-
+        onDone(th);
     }
 }
