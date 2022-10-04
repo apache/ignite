@@ -79,7 +79,7 @@ public class IgniteSnapshotMXBeanTest extends AbstractSnapshotSelfTest {
 
         assertTrue(
             "Waiting for incremental snapshot failed",
-            GridTestUtils.waitForCondition(() -> checkIncremental(ignite, SNAPSHOT_NAME, 1), TIMEOUT)
+            GridTestUtils.waitForCondition(() -> checkIncremental(ignite, SNAPSHOT_NAME, null, 1), TIMEOUT)
         );
 
         stopAllGrids();

@@ -17,12 +17,15 @@
 
 package org.apache.ignite.internal.processors.cache.persistence.snapshot;
 
+import java.io.File;
 import java.util.function.UnaryOperator;
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.IgniteEx;
+import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.internal.CU;
+import org.apache.ignite.internal.util.typedef.internal.U;
 import org.junit.Test;
 
 import static org.apache.ignite.testframework.GridTestUtils.assertThrows;
@@ -51,25 +54,49 @@ public class IncrementalSnapshotTest extends AbstractSnapshotSelfTest {
             new CacheConfiguration<>(DEFAULT_CACHE_NAME)
         );
 
+        File snpDir = U.resolveWorkDirectory(U.defaultWorkDirectory(), "ex_snapshots", true);
+
+        assertTrue("Target directory is not empty: " + snpDir, F.isEmpty(snpDir.list()));
+
         IgniteEx cli = startClientGrid(
             GRID_CND,
             (UnaryOperator<IgniteConfiguration>)
                 cfg -> cfg.setCacheConfiguration(new CacheConfiguration<>(DEFAULT_CACHE_NAME))
         );
 
+        File exSnpDir = U.resolveWorkDirectory(U.defaultWorkDirectory(), "ex_snapshots", true);
+
         for (boolean client : new boolean[] {false, true}) {
             IgniteSnapshotManager snpCreate = snp(client ? cli : srv);
 
-            String snpName = SNAPSHOT_NAME + "_" + client;
+            for (File snpPath : new File[] {null, exSnpDir}) {
+                if (client && snpPath != null) // Set snapshot path not supported for snapshot from client nodes.
+                    continue;
 
-            snpCreate.createSnapshot(snpName).get(TIMEOUT);
+                String snpName = SNAPSHOT_NAME + "_" + client + "_" + (snpPath == null ? "" : snpPath.getName());
 
-            for (int incIdx = 1; incIdx < 3; incIdx++) {
-                snpCreate.createIncrementalSnapshot(snpName).get(TIMEOUT);
+                if (snpPath == null)
+                    snpCreate.createSnapshot(snpName).get(TIMEOUT);
+                else
+                    snpCreate.createSnapshot(snpName, snpPath.getAbsolutePath(), false).get(TIMEOUT);
 
-                for (int gridIdx = 0; gridIdx < GRID_CND; gridIdx++)
-                    assertTrue(checkIncremental(grid(gridIdx), snpName, incIdx));
+                for (int incIdx = 1; incIdx < 3; incIdx++) {
+                    if (snpPath == null)
+                        snpCreate.createIncrementalSnapshot(snpName).get(TIMEOUT);
+                    else
+                        snpCreate.createSnapshot(snpName, snpPath.getAbsolutePath(), true).get(TIMEOUT);
+
+                    for (int gridIdx = 0; gridIdx < GRID_CND; gridIdx++) {
+                        assertTrue("Incremental snapshot must exists on node " + gridIdx, checkIncremental(
+                            grid(gridIdx),
+                            snpName,
+                            snpPath == null ? null : snpPath.getAbsolutePath(),
+                            incIdx
+                        ));
+                    }
+                }
             }
+
         }
     }
 
@@ -140,6 +167,12 @@ public class IncrementalSnapshotTest extends AbstractSnapshotSelfTest {
     }
 
     /** */
+    @Test
+    public void testIncrementalSnapshotWithExplicitPathError() throws Exception {
+        // TODO: test that incremental snapshot fails for invalid custom snapshot path.
+    }
+
+    /** */
     private void checkFailWhenCacheDestroyed(String cache2rvm, String errMsg) throws Exception {
         IgniteEx srv = startGridsWithCache(
             1,
@@ -180,18 +213,6 @@ public class IncrementalSnapshotTest extends AbstractSnapshotSelfTest {
     @Test
     public void testIncrementalSnapshotFailsIfRebalanceHappen() throws Exception {
         // TODO: test that incremental snapshot fail if rebalance happens between creation.
-    }
-
-    /** */
-    @Test
-    public void testIncrementalSnapshotWithExplicitPath() throws Exception {
-        // TODO: test that incremental snapshot may be created with custom snapshot path.
-    }
-
-    /** */
-    @Test
-    public void testIncrementalSnapshotWithExplicitPathError() throws Exception {
-        // TODO: test that incremental snapshot fails for invalid custom snapshot path.
     }
 
     /** */

@@ -25,11 +25,15 @@ import org.apache.ignite.IgniteException;
 import org.apache.ignite.internal.processors.cache.GridCacheSharedContext;
 import org.apache.ignite.internal.processors.cache.persistence.file.FileIOFactory;
 import org.apache.ignite.internal.processors.cache.persistence.partstate.GroupPartitionId;
+import org.jetbrains.annotations.Nullable;
 
 /** */
 class IncrementalSnapshotFutureTask extends AbstractSnapshotFutureTask<IncrementalSnapshotFutureTaskResult> {
     /** Index of incremental snapshot. */
     private final int incIdx;
+
+    /** Snapshot path. */
+    private final @Nullable String snpPath;
 
     /** Metadata of the full snapshot. */
     private final Set<Integer> affectedCacheGrps;
@@ -40,9 +44,10 @@ class IncrementalSnapshotFutureTask extends AbstractSnapshotFutureTask<Increment
         UUID srcNodeId,
         UUID reqNodeId,
         SnapshotMetadata meta,
+        String snpPath,
+        int incIdx,
         File tmpWorkDir,
-        FileIOFactory ioFactory,
-        int incIdx
+        FileIOFactory ioFactory
     ) {
         super(
             cctx,
@@ -71,6 +76,7 @@ class IncrementalSnapshotFutureTask extends AbstractSnapshotFutureTask<Increment
         );
 
         this.incIdx = incIdx;
+        this.snpPath = snpPath;
         this.affectedCacheGrps = new HashSet<>(meta.cacheGroupIds());
     }
 
@@ -81,7 +87,7 @@ class IncrementalSnapshotFutureTask extends AbstractSnapshotFutureTask<Increment
 
     /** {@inheritDoc} */
     @Override public boolean start() {
-        File incSnpDir = cctx.snapshotMgr().incrementalSnapshotLocalDir(snpName, null, incIdx);
+        File incSnpDir = cctx.snapshotMgr().incrementalSnapshotLocalDir(snpName, snpPath, incIdx);
 
         if (!incSnpDir.mkdirs()) {
             onDone(new IgniteException("Can't create snapshot directory[dir=" + incSnpDir.getAbsolutePath() + ']'));
