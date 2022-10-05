@@ -498,7 +498,7 @@ public class GridLocalConfigManager {
      * @param ccfg Cache configuration.
      * @return Cache configuration file with respect to {@link CacheConfiguration#getGroupName} value.
      */
-    private File cacheConfigurationFile(CacheConfiguration<?, ?> ccfg) {
+    public File cacheConfigurationFile(CacheConfiguration<?, ?> ccfg) {
         File cacheWorkDir = cacheWorkDir(ccfg);
 
         return ccfg.getGroupName() == null ? new File(cacheWorkDir, CACHE_DATA_FILENAME) :

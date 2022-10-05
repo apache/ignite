@@ -18,17 +18,20 @@
 package org.apache.ignite.internal.processors.cache.persistence.snapshot;
 
 import java.io.File;
+import java.util.Collections;
 import java.util.function.UnaryOperator;
 import org.apache.ignite.IgniteException;
+import org.apache.ignite.cache.QueryEntity;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.IgniteEx;
+import org.apache.ignite.internal.processors.cache.GridLocalConfigManager;
+import org.apache.ignite.internal.processors.cache.StoredCacheData;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.internal.CU;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.junit.Test;
 
-import static org.apache.ignite.internal.processors.cache.persistence.snapshot.IgniteSnapshotManager.incrementalSnapshotMetaFileName;
 import static org.apache.ignite.testframework.GridTestUtils.assertThrows;
 import static org.apache.ignite.testframework.GridTestUtils.assertThrowsWithCause;
 
@@ -149,20 +152,51 @@ public class IncrementalSnapshotTest extends AbstractSnapshotSelfTest {
 
     /** */
     @Test
-    public void testIncrementalSnapshotFailsOnCachesChange() throws Exception {
+    public void testIncrementalSnapshotFailsOnCacheDestroy() throws Exception {
         checkFailWhenCacheDestroyed(OTHER_CACHE, "Create incremental snapshot request has been rejected. " +
             "Cache group destroyed [groupId=" + CU.cacheId(OTHER_CACHE) + ']');
 
         checkFailWhenCacheDestroyed(GROUPED_CACHE, "Create incremental snapshot request has been rejected. " +
             "Cache destroyed [cacheId=" + CU.cacheId(GROUPED_CACHE) + ", cacheName=" + GROUPED_CACHE + ']');
 
-        // TODO: add cache configuration change test.
         // TODO: add concurrent cache configuration change notification.
     }
 
     /** */
     @Test
-    public void testIncrementalSnapshotMetaFileError() throws Exception {
+    public void testIncrementalSnapshotFailsOnCacheChange() throws Exception {
+        CacheConfiguration<Integer, Account> ccfg = new CacheConfiguration<>(DEFAULT_CACHE_NAME);
+
+        IgniteEx srv = startGridsWithCache(1, CACHE_KEYS_RANGE, key -> new Account(key, key), ccfg);
+
+        snp(srv).createSnapshot(SNAPSHOT_NAME).get(TIMEOUT);
+
+        GridLocalConfigManager locCfgMgr = srv.context().cache().configManager();
+
+        File ccfgFile = locCfgMgr.cacheConfigurationFile(ccfg);
+
+        StoredCacheData cacheData = locCfgMgr.readCacheData(ccfgFile);
+
+        assertNotNull(cacheData);
+
+        cacheData.queryEntities(Collections.singletonList(new QueryEntity(String.class, Account.class)));
+
+        locCfgMgr.writeCacheData(cacheData, ccfgFile);
+
+        assertThrows(
+            null,
+            () -> snp(srv).createIncrementalSnapshot(SNAPSHOT_NAME).get(TIMEOUT),
+            IgniteException.class,
+            "Cache changed [cacheId=" + CU.cacheId(DEFAULT_CACHE_NAME) + ", cacheName=" + DEFAULT_CACHE_NAME + ']'
+        );
+
+        stopAllGrids();
+        cleanPersistenceDir();
+    }
+
+    /** */
+    @Test
+    public void testIncrementalSnapshotFailOnDirtyDir() throws Exception {
         IgniteEx srv = startGridsWithCache(
             GRID_CND,
             CACHE_KEYS_RANGE,
@@ -180,22 +214,6 @@ public class IncrementalSnapshotTest extends AbstractSnapshotSelfTest {
             () -> snp(srv).createIncrementalSnapshot(SNAPSHOT_NAME).get(TIMEOUT),
             IgniteException.class,
             "Can't create snapshot directory"
-        );
-
-        for (int i = 0; i < GRID_CND; i++)
-            assertFalse(snp(srv).incrementalSnapshotLocalDir(SNAPSHOT_NAME, null, 1).exists());
-
-        File snpDir = snp(srv).incrementalSnapshotLocalDir(SNAPSHOT_NAME, null, 1);
-
-        assertTrue(snpDir.mkdirs());
-        assertTrue(new File(snpDir, incrementalSnapshotMetaFileName(1)).createNewFile());
-
-        // TODO: fix this test.
-        assertThrows(
-            null,
-            () -> snp(srv).createIncrementalSnapshot(SNAPSHOT_NAME).get(TIMEOUT),
-            IgniteException.class,
-            "Snapshot metafile must not exist"
         );
 
         for (int i = 0; i < GRID_CND; i++)
