@@ -96,6 +96,8 @@ public class SnapshotMXBeanImpl implements SnapshotMXBean {
 
         if (req != null) {
             return "Create snapshot operation is in progress [name=" + req.snapshotName() +
+                ", incremental=" + req.incremental() +
+                (req.incremental() ? (", incrementalIndex=" + req.incrementIndex()) : "") +
                 ", id=" + req.requestId() + ']';
         }
 
