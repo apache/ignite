@@ -3080,7 +3080,7 @@ public class GridCommandHandlerTest extends GridCommandHandlerClusterPerMethodAb
 
         // Invalid command syntax check.
         assertEquals(EXIT_CODE_INVALID_ARGUMENTS, execute(h, "--snapshot", "create", snpName, "blah"));
-        assertContains(log, testOut.toString(), "Invalid argument: blah. Possible options: --sync, --dest.");
+        assertContains(log, testOut.toString(), "Invalid argument: blah. Possible options: --sync, --dest, --incremental.");
 
         assertEquals(EXIT_CODE_INVALID_ARGUMENTS, execute(h, "--snapshot", "create", snpName, "--sync", "blah"));
         assertContains(log, testOut.toString(), "Invalid argument: blah.");
