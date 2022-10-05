@@ -957,6 +957,7 @@ public class CacheGroupReencryptionTest extends AbstractEncryptionTest {
         /** Reencrypted page index. */
         final int pageIdx;
 
+        /** Constructor. */
         private ReencryptionStatus(int grpId, int partId, int pageIdx) {
             this.grpId = grpId;
             this.partId = partId;
