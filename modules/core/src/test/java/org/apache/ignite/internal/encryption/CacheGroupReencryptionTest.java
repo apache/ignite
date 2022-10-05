@@ -45,23 +45,29 @@ import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.IgniteFutureCancelledCheckedException;
 import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.IgniteInterruptedCheckedException;
+import org.apache.ignite.internal.managers.encryption.ReencryptStateUtils;
+import org.apache.ignite.internal.processors.cache.CacheGroupContext;
 import org.apache.ignite.internal.processors.cache.CacheGroupMetricsImpl;
 import org.apache.ignite.internal.processors.cache.persistence.file.FileIO;
 import org.apache.ignite.internal.processors.cache.persistence.file.FileIODecorator;
 import org.apache.ignite.internal.processors.cache.persistence.file.FileIOFactory;
 import org.apache.ignite.internal.processors.cache.persistence.file.RandomAccessFileIOFactory;
 import org.apache.ignite.internal.processors.metric.MetricRegistry;
+import org.apache.ignite.internal.util.lang.GridTuple3;
 import org.apache.ignite.internal.util.typedef.G;
 import org.apache.ignite.internal.util.typedef.T2;
 import org.apache.ignite.internal.util.typedef.internal.CU;
 import org.apache.ignite.spi.metric.BooleanMetric;
 import org.apache.ignite.spi.metric.LongMetric;
 import org.apache.ignite.testframework.GridTestUtils;
+import org.apache.ignite.testframework.junits.WithSystemProperty;
 import org.junit.Test;
 
 import static org.apache.ignite.configuration.EncryptionConfiguration.DFLT_REENCRYPTION_RATE_MBPS;
 import static org.apache.ignite.configuration.WALMode.LOG_ONLY;
 import static org.apache.ignite.internal.managers.encryption.GridEncryptionManager.INITIAL_KEY_ID;
+import static org.apache.ignite.internal.pagemem.PageIdAllocator.INDEX_PARTITION;
+import static org.apache.ignite.internal.processors.cache.persistence.GridCacheDatabaseSharedManager.IGNITE_PDS_SKIP_CHECKPOINT_ON_NODE_STOP;
 import static org.apache.ignite.internal.processors.metric.impl.MetricUtils.metricName;
 import static org.apache.ignite.testframework.GridTestUtils.assertThrowsAnyCause;
 import static org.apache.ignite.testframework.GridTestUtils.waitForCondition;
@@ -581,6 +587,7 @@ public class CacheGroupReencryptionTest extends AbstractEncryptionTest {
      * @throws Exception If failed.
      */
     @Test
+    @WithSystemProperty(key = IGNITE_PDS_SKIP_CHECKPOINT_ON_NODE_STOP, value = "true")
     public void testReencryptionOnUnstableTopology() throws Exception {
         backups = 1;
         pageScanRate = 2;
@@ -615,7 +622,24 @@ public class CacheGroupReencryptionTest extends AbstractEncryptionTest {
 
             stopGrid(gridName);
 
-            startGrid(gridName);
+            IgniteEx restarted = startGrid(gridName);
+
+            // Find page index of reencrypted of currently reencrypted partition.
+            GridTuple3<Integer, Integer, Integer> firstNotReencrypted = findFirstNotReencrypted(restarted, cacheGroups);
+
+            if (firstNotReencrypted != null) {
+                Integer grpId = firstNotReencrypted.get1();
+                Integer partId = firstNotReencrypted.get2();
+                Integer idx = firstNotReencrypted.get3();
+
+                // Wait until reencryption status changes.
+                boolean updated = waitForCondition(() -> reencryptionPageIndex(restarted, grpId, partId) > idx, TimeUnit.SECONDS.toMillis(10));
+
+                // If reencryption page index changed, make a checkpoint, so that status of reencryption is saved.
+                if (updated) {
+                    forceCheckpoint(restarted);
+                }
+            }
         }
 
         stopAllGrids();
@@ -833,10 +857,17 @@ public class CacheGroupReencryptionTest extends AbstractEncryptionTest {
      */
     private boolean isReencryptionInProgress(Iterable<String> cacheGroups) {
         for (Ignite node : G.allGrids()) {
-            for (String groupName : cacheGroups) {
-                if (isReencryptionInProgress((IgniteEx)node, CU.cacheId(groupName)))
-                    return true;
-            }
+            if (isReencryptionInProgress(node, cacheGroups))
+                return true;
+        }
+
+        return false;
+    }
+
+    private boolean isReencryptionInProgress(Ignite node, Iterable<String> cacheGroups) {
+        for (String groupName : cacheGroups) {
+            if (isReencryptionInProgress((IgniteEx)node, CU.cacheId(groupName)))
+                return true;
         }
 
         return false;
@@ -920,5 +951,53 @@ public class CacheGroupReencryptionTest extends AbstractEncryptionTest {
         @Override public int hashCode() {
             return Objects.hash(name, id);
         }
+    }
+
+    /**
+     * Finds first not reencrypted partition and returns tuple with cache group id, partition id and reencrypted page index.
+     */
+    private static GridTuple3<Integer, Integer, Integer> findFirstNotReencrypted(IgniteEx node, Iterable<String> cacheGrps) {
+        for (String cacheGrp : cacheGrps) {
+            int grpId = CU.cacheId(cacheGrp);
+
+            CacheGroupContext grp = node.context().cache().cacheGroup(grpId);
+
+            if (grp == null || !grp.affinityNode())
+                return null;
+
+            for (int p = 0; p < grp.affinity().partitions(); p++) {
+                long state = node.context().encryption().getEncryptionState(grpId, p);
+
+                int pageIndex = ReencryptStateUtils.pageIndex(state);
+
+                if (pageIndex != ReencryptStateUtils.pageCount(state))
+                    return new GridTuple3<>(grpId, p, pageIndex);
+            }
+
+            long state = node.context().encryption().getEncryptionState(grpId, INDEX_PARTITION);
+
+            int pageIndex = ReencryptStateUtils.pageIndex(state);
+
+            if (pageIndex != ReencryptStateUtils.pageCount(state))
+                return new GridTuple3<>(grpId, INDEX_PARTITION, pageIndex);
+        }
+
+        return null;
+    }
+
+    /** Gets reencryption page index of partition. */
+    private static int reencryptionPageIndex(IgniteEx node, int grpId, int partId) {
+        long state = node.context().encryption().getEncryptionState(grpId, partId);
+
+        int pageIndex = ReencryptStateUtils.pageIndex(state);
+
+        if (ReencryptStateUtils.pageCount(state) == pageIndex) {
+            // In case if reencryption finished, page count will be zero along with page index,
+            // making pageIndex lesser than previously obtained. Return MAX_VALUE so that it will always be higher than
+            // previously obtained value.
+            return Integer.MAX_VALUE;
+        }
+
+        return pageIndex;
     }
 }
