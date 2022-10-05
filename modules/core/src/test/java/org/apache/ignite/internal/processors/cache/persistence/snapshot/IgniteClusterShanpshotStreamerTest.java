@@ -17,18 +17,22 @@
 
 package org.apache.ignite.internal.processors.cache.persistence.snapshot;
 
+import java.util.Arrays;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.atomic.AtomicBoolean;
-import java.util.concurrent.atomic.AtomicInteger;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteDataStreamer;
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.cache.CacheAtomicityMode;
 import org.apache.ignite.cache.CacheMode;
+import org.apache.ignite.cache.CacheWriteSynchronizationMode;
 import org.apache.ignite.configuration.IgniteConfiguration;
+import org.apache.ignite.configuration.WALMode;
+import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.processors.datastreamer.DataStreamerCacheUpdaters;
 import org.apache.ignite.internal.util.typedef.G;
+import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.stream.StreamReceiver;
 import org.apache.ignite.testframework.GridTestUtils;
 import org.jetbrains.annotations.Nullable;
@@ -50,6 +54,7 @@ public class IgniteClusterShanpshotStreamerTest extends AbstractSnapshotSelfTest
         dfltCacheCfg
             .setAtomicityMode(CacheAtomicityMode.ATOMIC)
             .setCacheMode(CacheMode.PARTITIONED)
+            .setWriteSynchronizationMode(CacheWriteSynchronizationMode.PRIMARY_SYNC)
             .setBackups(1);
 
         cleanPersistenceDir();
@@ -60,7 +65,9 @@ public class IgniteClusterShanpshotStreamerTest extends AbstractSnapshotSelfTest
         IgniteConfiguration cfg = super.getConfiguration(igniteInstanceName);
 
         cfg.getDataStorageConfiguration().getDefaultDataRegionConfiguration().setPersistenceEnabled(true);
-        cfg.getDataStorageConfiguration().setCheckpointFrequency(1000);
+        cfg.getDataStorageConfiguration().getDefaultDataRegionConfiguration().setMaxSize(100L * 1024L * 1204L);
+        cfg.getDataStorageConfiguration().setWalMode(WALMode.NONE);
+        cfg.getDataStorageConfiguration().setCheckpointFrequency(3000);
 
         return cfg;
     }
@@ -84,56 +91,66 @@ public class IgniteClusterShanpshotStreamerTest extends AbstractSnapshotSelfTest
     }
 
     /**  */
-    private void doTest(boolean expectFailure, @Nullable StreamReceiver<Integer, Integer> receiver) throws Exception {
-        startGrids(3);
+    private void doTest(boolean mustFail, @Nullable StreamReceiver<Integer, Integer> receiver) throws Exception {
+        int preLoadCnt = 10_000;
+
+        startGridsMultiThreaded(2);
 
         grid(0).cluster().state(ACTIVE);
 
-        CountDownLatch loadBeforeSnd = new CountDownLatch(50_000);
-        AtomicBoolean stop = new AtomicBoolean(false);
-        AtomicInteger keyProvider = new AtomicInteger();
+        grid(0).cluster().setBaselineTopology(grid(0).cluster().topologyVersion());
 
-        try (Ignite client = startClientGrid(G.allGrids().size())) {
-            IgniteInternalFuture<?> load = runLoad(client, receiver, keyProvider, loadBeforeSnd, stop);
+        IgniteEx secondarySrv = startGrid(G.allGrids().size());
 
-            loadBeforeSnd.await();
+        IgniteEx client = startClientGrid(G.allGrids().size());
 
-            if (expectFailure) {
-                assertThrows(null, () -> {
-                    grid(0).snapshot().createSnapshot(SNAPSHOT_NAME).get();
-                }, IgniteException.class, "streaming loading with the streamer's property 'alowOverwrite' " +
-                    "set to `false`. Such updates doesn't guarantee consistency until finished. The snapshot might " +
-                    "not be entirely restored.");
+        IgniteSnapshotManager snpMngr = snp(grid(0));
+
+        // We need to check the datastreamer from all node types: baseline server, non-baseline server and client.
+        for (Ignite loaderNode : Arrays.asList(grid(1), secondarySrv, client)) {
+            U.delete(snpMngr.snapshotLocalDir(SNAPSHOT_NAME, null));
+
+            grid(0).cache(dfltCacheCfg.getName()).clear();
+
+            CountDownLatch loadBeforeSnapshot = new CountDownLatch(preLoadCnt);
+            AtomicBoolean stopLoading = new AtomicBoolean(false);
+
+            IgniteInternalFuture<?> loadFut = runLoad(loaderNode, receiver, loadBeforeSnapshot, stopLoading);
+
+            loadBeforeSnapshot.await();
+
+            if (mustFail) {
+                String errMsg = "streaming loading with the streamer's property 'alowOverwrite' set to `false`. Such " +
+                    "updates doesn't guarantee consistency until finished. The snapshot might not be entirely restored.";
+
+                assertThrows(null, () -> grid(0).snapshot().createSnapshot(SNAPSHOT_NAME).get(),
+                    IgniteException.class, errMsg);
             }
             else
                 grid(0).snapshot().createSnapshot(SNAPSHOT_NAME).get();
 
-            stop.set(true);
-
-            load.get();
-
-            if (!expectFailure) {
-                grid(0).cache(dfltCacheCfg.getName()).destroy();
-
-                awaitPartitionMapExchange();
-
-                grid(0).snapshot().restoreSnapshot(SNAPSHOT_NAME, null).get();
-            }
+            stopLoading.set(true);
+            loadFut.get();
         }
     }
 
     /** */
-    private IgniteInternalFuture<?> runLoad(Ignite ldr, StreamReceiver<Integer, Integer> receiver, AtomicInteger idx,
+    private IgniteInternalFuture<?> runLoad(Ignite ldr, StreamReceiver<Integer, Integer> receiver,
         CountDownLatch startSnp, AtomicBoolean stop) {
+
+        grid(0).getOrCreateCache(dfltCacheCfg);
+
         return GridTestUtils.runMultiThreadedAsync(() -> {
+            int idx = 0;
+
             try (IgniteDataStreamer<Integer, Integer> ds = ldr.dataStreamer(dfltCacheCfg.getName())) {
                 if (receiver != null)
                     ds.receiver(receiver);
 
                 while (!stop.get()) {
-                    int i = idx.incrementAndGet();
+                    ds.addData(idx, idx);
 
-                    ds.addData(i, i);
+                    idx++;
 
                     startSnp.countDown();
                 }
