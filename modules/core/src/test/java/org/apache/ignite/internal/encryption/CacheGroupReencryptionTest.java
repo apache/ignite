@@ -977,19 +977,15 @@ public class CacheGroupReencryptionTest extends AbstractEncryptionTest {
                 continue;
 
             for (int p = 0; p < grp.affinity().partitions(); p++) {
-                long state = node.context().encryption().getEncryptionState(grpId, p);
+                int pageIdx = reencryptionPageIndex(node, grpId, p);
 
-                int pageIdx = ReencryptStateUtils.pageIndex(state);
-
-                if (pageIdx != ReencryptStateUtils.pageCount(state))
+                if (pageIdx != Integer.MAX_VALUE)
                     return new ReencryptionStatus(grpId, p, pageIdx);
             }
 
-            long state = node.context().encryption().getEncryptionState(grpId, INDEX_PARTITION);
+            int pageIdx = reencryptionPageIndex(node, grpId, INDEX_PARTITION);
 
-            int pageIdx = ReencryptStateUtils.pageIndex(state);
-
-            if (pageIdx != ReencryptStateUtils.pageCount(state))
+            if (pageIdx != Integer.MAX_VALUE)
                 return new ReencryptionStatus(grpId, INDEX_PARTITION, pageIdx);
         }
 
