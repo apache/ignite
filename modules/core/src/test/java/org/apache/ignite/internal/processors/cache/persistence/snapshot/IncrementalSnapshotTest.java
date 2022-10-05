@@ -158,8 +158,6 @@ public class IncrementalSnapshotTest extends AbstractSnapshotSelfTest {
 
         checkFailWhenCacheDestroyed(GROUPED_CACHE, "Create incremental snapshot request has been rejected. " +
             "Cache destroyed [cacheId=" + CU.cacheId(GROUPED_CACHE) + ", cacheName=" + GROUPED_CACHE + ']');
-
-        // TODO: add concurrent cache configuration change notification.
     }
 
     /** */
