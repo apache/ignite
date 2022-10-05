@@ -633,7 +633,8 @@ public class CacheGroupReencryptionTest extends AbstractEncryptionTest {
                 Integer idx = firstNotReencrypted.get3();
 
                 // Wait until reencryption status changes.
-                boolean updated = waitForCondition(() -> reencryptionPageIndex(restarted, grpId, partId) > idx, TimeUnit.SECONDS.toMillis(10));
+                boolean updated = waitForCondition(() ->
+                        reencryptionPageIndex(restarted, grpId, partId) > idx, TimeUnit.SECONDS.toMillis(10));
 
                 // If reencryption page index changed, make a checkpoint, so that status of reencryption is saved.
                 if (updated) {
@@ -857,17 +858,10 @@ public class CacheGroupReencryptionTest extends AbstractEncryptionTest {
      */
     private boolean isReencryptionInProgress(Iterable<String> cacheGroups) {
         for (Ignite node : G.allGrids()) {
-            if (isReencryptionInProgress(node, cacheGroups))
-                return true;
-        }
-
-        return false;
-    }
-
-    private boolean isReencryptionInProgress(Ignite node, Iterable<String> cacheGroups) {
-        for (String groupName : cacheGroups) {
-            if (isReencryptionInProgress((IgniteEx)node, CU.cacheId(groupName)))
-                return true;
+            for (String groupName : cacheGroups) {
+                if (isReencryptionInProgress((IgniteEx)node, CU.cacheId(groupName)))
+                    return true;
+            }
         }
 
         return false;
