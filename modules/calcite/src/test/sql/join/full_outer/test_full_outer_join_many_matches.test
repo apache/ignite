@@ -3,6 +3,9 @@
 # group: [full_outer]
 
 statement ok
+PRAGMA null=null
+
+statement ok
 CREATE TABLE integers AS SELECT a i, 1 j FROM table(system_range(0, 1999, 1)) t1(a)
 
 statement ok

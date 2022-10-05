@@ -521,7 +521,7 @@ public abstract class PageHandler<X, R> {
      */
     public static void zeroMemory(ByteBuffer buf, int off, int len) {
         if (buf.isDirect())
-            GridUnsafe.setMemory(GridUnsafe.bufferAddress(buf) + off, len, (byte)0);
+            GridUnsafe.zeroMemory(GridUnsafe.bufferAddress(buf) + off, len);
 
         else {
             for (int i = off; i < off + len; i++)
@@ -546,6 +546,6 @@ public abstract class PageHandler<X, R> {
      * @param len Length.
      */
     public static void zeroMemory(long addr, int off, int len) {
-        GridUnsafe.setMemory(addr + off, len, (byte)0);
+        GridUnsafe.zeroMemory(addr + off, len);
     }
 }
