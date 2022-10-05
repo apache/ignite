@@ -18,7 +18,9 @@
 package org.apache.ignite.internal.processors.cache.persistence.snapshot;
 
 import java.io.Serializable;
+import java.util.ArrayList;
 import java.util.Collection;
+import java.util.List;
 import java.util.Set;
 import java.util.UUID;
 import org.apache.ignite.internal.util.distributed.DistributedProcess;
@@ -48,6 +50,10 @@ public class SnapshotOperationRequest implements Serializable {
     @GridToStringInclude
     private final Set<UUID> nodes;
 
+    /** All nodes on initial stage. */
+    @GridToStringInclude
+    private final Set<UUID> allNodes;
+
     /** List of cache group names. */
     @GridToStringInclude
     private final Collection<String> grps;
@@ -71,6 +77,7 @@ public class SnapshotOperationRequest implements Serializable {
      * @param snpPath Snapshot directory path.
      * @param grps List of cache group names.
      * @param nodes Baseline node IDs that must be alive to complete the operation.
+     * @param nodes All nodes on initial stage.
      */
     public SnapshotOperationRequest(
         UUID reqId,
@@ -78,13 +85,15 @@ public class SnapshotOperationRequest implements Serializable {
         String snpName,
         String snpPath,
         @Nullable Collection<String> grps,
-        Set<UUID> nodes
+        Set<UUID> nodes,
+        Set<UUID> allNodes
     ) {
         this.reqId = reqId;
         this.opNodeId = opNodeId;
         this.snpName = snpName;
         this.grps = grps;
         this.nodes = nodes;
+        this.allNodes = allNodes;
         this.snpPath = snpPath;
         startTime = U.currentTimeMillis();
     }
@@ -122,6 +131,13 @@ public class SnapshotOperationRequest implements Serializable {
      */
     public Set<UUID> nodes() {
         return nodes;
+    }
+
+    /**
+     * @return All nodes on initial stage.
+     */
+    public Set<UUID> allNodes() {
+        return allNodes;
     }
 
     /**

@@ -573,23 +573,28 @@ public class IgniteClusterSnapshotSelfTest extends AbstractSnapshotSelfTest {
         CountDownLatch partProcessed = new CountDownLatch(1);
 
         IgniteEx ignite = startGridsWithCache(2, dfltCacheCfg, CACHE_KEYS_RANGE);
+        IgniteEx client = startClientGrid();
 
         File locSnpDir = snp(ignite).snapshotLocalDir(SNAPSHOT_NAME);
         String dirNameIgnite0 = folderName(ignite);
 
         String dirNameIgnite1 = folderName(grid(1));
 
-        snp(grid(1)).localSnapshotSenderFactory(
-            blockingLocalSnapshotSender(grid(1), partProcessed, block));
-
-        TestRecordingCommunicationSpi commSpi1 = TestRecordingCommunicationSpi.spi(grid(1));
+//        snp(grid(1)).localSnapshotSenderFactory(
+//            blockingLocalSnapshotSender(grid(1), partProcessed, block));
+//        TestRecordingCommunicationSpi commSpi1 = TestRecordingCommunicationSpi.spi(grid(1));
+//        commSpi1.blockMessages((node, msg) -> msg instanceof SingleNodeMessage);
+        snp(client).localSnapshotSenderFactory(
+            blockingLocalSnapshotSender(client, partProcessed, block));
+        TestRecordingCommunicationSpi commSpi1 = TestRecordingCommunicationSpi.spi(client);
         commSpi1.blockMessages((node, msg) -> msg instanceof SingleNodeMessage);
 
         IgniteFuture<?> fut = ignite.snapshot().createSnapshot(SNAPSHOT_NAME);
 
         U.await(partProcessed, TIMEOUT, TimeUnit.MILLISECONDS);
 
-        stopGrid(1);
+//        stopGrid(1);
+        stopGrid(2);
 
         block.countDown();
 

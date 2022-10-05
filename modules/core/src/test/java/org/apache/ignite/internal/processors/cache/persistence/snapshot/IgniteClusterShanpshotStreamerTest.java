@@ -71,7 +71,6 @@ public class IgniteClusterShanpshotStreamerTest  extends AbstractSnapshotSelfTes
         int grids = 2;
         int backups = 1;
 
-//        CountDownLatch loadLever = new CountDownLatch(13_403);
         CountDownLatch loadLever = new CountDownLatch(100_000);
 
         AtomicBoolean stop = new AtomicBoolean(false);
@@ -88,10 +87,7 @@ public class IgniteClusterShanpshotStreamerTest  extends AbstractSnapshotSelfTes
             .createCache(new CacheConfiguration<Integer, Integer>("SQL_PUBLIC_" + tableName).setBackups(backups)
                     .setAtomicityMode(CacheAtomicityMode.ATOMIC)
                     .setCacheMode(CacheMode.PARTITIONED)
-//                .setWriteSynchronizationMode(CacheWriteSynchronizationMode.FULL_ASYNC)
                     .setBackups(backups)
-//                                    .setWriteSynchronizationMode(CacheWriteSynchronizationMode.FULL_ASYNC)
-//                            .setGroupName("grp1")
             );
 
         IgniteInternalFuture<?> load1 = runLoad(tableName, idx, loadLever, stop);

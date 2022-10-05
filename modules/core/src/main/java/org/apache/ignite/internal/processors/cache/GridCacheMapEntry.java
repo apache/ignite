@@ -3128,16 +3128,16 @@ public abstract class GridCacheMapEntry extends GridMetadataAwareAdapter impleme
                 if (!preload) {
                     updateCntr = nextPartitionCounter(topVer, true, true, null);
 
-                    if (partition() == 859 && U.FLAG2.get()) {
-                        log.error("TEST | partition 859 counter: " + updateCntr);
-
-                        U.PART_859.compute(cctx.kernalContext().grid().localNode().order(), (k, v) -> {
-                            if (v == null)
-                                return 1;
-
-                            return v + 1;
-                        });
-                    }
+//                    if (partition() == 859 && U.FLAG2.get()) {
+//                        log.error("TEST | partition 859 counter: " + updateCntr);
+//
+//                        U.PART_859.compute(cctx.kernalContext().grid().localNode().order(), (k, v) -> {
+//                            if (v == null)
+//                                return 1;
+//
+//                            return v + 1;
+//                        });
+//                    }
                 }
 
                 if (walEnabled) {

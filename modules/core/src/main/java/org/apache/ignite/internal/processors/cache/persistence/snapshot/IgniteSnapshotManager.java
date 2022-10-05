@@ -130,7 +130,6 @@ import org.apache.ignite.internal.processors.cache.persistence.partstate.GroupPa
 import org.apache.ignite.internal.processors.cache.persistence.tree.io.DataPageIO;
 import org.apache.ignite.internal.processors.cache.persistence.tree.io.DataPagePayload;
 import org.apache.ignite.internal.processors.cache.persistence.tree.io.PageIO;
-import org.apache.ignite.internal.processors.cache.persistence.tree.io.PagePartitionMetaIO;
 import org.apache.ignite.internal.processors.cache.persistence.wal.crc.FastCrc;
 import org.apache.ignite.internal.processors.cache.persistence.wal.reader.StandaloneGridKernalContext;
 import org.apache.ignite.internal.processors.cache.tree.DataRow;
@@ -147,7 +146,6 @@ import org.apache.ignite.internal.processors.task.GridInternal;
 import org.apache.ignite.internal.util.BasicRateLimiter;
 import org.apache.ignite.internal.util.GridBusyLock;
 import org.apache.ignite.internal.util.GridCloseableIteratorAdapter;
-import org.apache.ignite.internal.util.GridUnsafe;
 import org.apache.ignite.internal.util.distributed.DistributedProcess;
 import org.apache.ignite.internal.util.distributed.InitMessage;
 import org.apache.ignite.internal.util.future.GridCompoundFuture;
@@ -381,6 +379,11 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
     /** Current snapshot operation on local node. */
     private volatile SnapshotOperationRequest clusterSnpReq;
 
+    /** TODO */
+    private volatile Map<UUID, String> curSnpWarnings;
+
+    private volatile SnapshotMetadata curSnpMeta;
+
     /** {@code true} if recovery process occurred for snapshot. */
     private volatile boolean recovered;
 
@@ -443,6 +446,8 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
 
         GridKernalContext ctx = cctx.kernalContext();
 
+        handlers.initialize(ctx, ctx.pools().getSnapshotExecutorService());
+
         if (ctx.clientNode())
             return;
 
@@ -492,8 +497,6 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
                 }
             }
         );
-
-        handlers.initialize(ctx, ctx.pools().getSnapshotExecutorService());
 
         MetricRegistry mreg = cctx.kernalContext().metric().registry(SNAPSHOT_METRICS);
 
@@ -735,8 +738,22 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
      */
     private IgniteInternalFuture<SnapshotOperationResponse> initLocalSnapshotStartStage(SnapshotOperationRequest req) {
         if (cctx.kernalContext().clientNode() ||
-            !CU.baselineNode(cctx.localNode(), cctx.kernalContext().state().clusterState()))
-            return new GridFinishedFuture<>();
+            !CU.baselineNode(cctx.localNode(), cctx.kernalContext().state().clusterState())) {
+            return new GridFinishedFuture<>().chain(fut -> {
+                if (fut.error() != null)
+                    throw F.wrap(fut.error());
+
+                try {
+                    SnapshotHandlerContext ctx = new SnapshotHandlerContext(null, req.groups(),
+                        cctx.localNode(), null);
+
+                    return new SnapshotOperationResponse(handlers.invokeAll(SnapshotHandlerType.CREATE, ctx));
+                }
+                catch (IgniteCheckedException e) {
+                    throw F.wrap(e);
+                }
+            });
+        }
 
         // Executed inside discovery notifier thread, prior to firing discovery custom event,
         // so it is safe to set new snapshot task inside this method without synchronization.
@@ -817,14 +834,10 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
 
                 File snpDir = snapshotLocalDir(req.snapshotName(), req.snapshotPath());
 
-                File smf = new File(snpDir, snapshotMetaFileName(cctx.localNode().consistentId().toString()));
-
-                if (smf.exists())
-                    throw new GridClosureException(new IgniteException("Snapshot metafile must not exist: " + smf.getAbsolutePath()));
-
                 snpDir.mkdirs();
 
-                SnapshotMetadata meta = new SnapshotMetadata(req.requestId(),
+                //TODO: clean if error
+                curSnpMeta = new SnapshotMetadata(req.requestId(),
                     req.snapshotName(),
                     cctx.localNode().consistentId().toString(),
                     pdsSettings.folderName(),
@@ -835,26 +848,13 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
                     cctx.gridConfig().getEncryptionSpi().masterKeyDigest()
                 );
 
-                try (OutputStream out = Files.newOutputStream(smf.toPath())) {
-                    byte[] bytes = U.marshal(marsh, meta);
-                    int blockSize = SNAPSHOT_LIMITED_TRANSFER_BLOCK_SIZE_BYTES;
-
-                    for (int off = 0; off < bytes.length; off += blockSize) {
-                        int len = Math.min(blockSize, bytes.length - off);
-
-                        transferRateLimiter.acquire(len);
-
-                        out.write(bytes, off, len);
-                    }
-                }
-
-                log.info("Snapshot metafile has been created: " + smf.getAbsolutePath());
-
-                SnapshotHandlerContext ctx = new SnapshotHandlerContext(meta, req.groups(), cctx.localNode(), snpDir);
+                SnapshotHandlerContext ctx = new SnapshotHandlerContext(curSnpMeta, req.groups(), cctx.localNode(), snpDir);
 
                 return new SnapshotOperationResponse(handlers.invokeAll(SnapshotHandlerType.CREATE, ctx));
             }
-            catch (IOException | IgniteCheckedException e) {
+            catch (Exception e) {
+                curSnpMeta = null;
+
                 throw F.wrap(e);
             }
         });
@@ -866,6 +866,9 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
      * @param err Errors.
      */
     private void processLocalSnapshotStartStageResult(UUID id, Map<UUID, SnapshotOperationResponse> res, Map<UUID, Exception> err) {
+        log.error("TEST | processLocalSnapshotStartStageResult(), node: " + cctx.localNode().order());
+
+        //TODO: check with non-baseline node
         if (cctx.kernalContext().clientNode())
             return;
 
@@ -891,6 +894,46 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
                 return;
             }
         }
+
+        Map<UUID, String> initStageWarnings = new HashMap<>();
+
+        res.entrySet().forEach(e -> {
+            e.getValue().handlerResults().values().forEach(hr -> {
+                if (hr.data() instanceof SnapshotHandlerWarning) {
+                    initStageWarnings.put(e.getKey(), ((SnapshotHandlerWarning)hr.data()).get());
+                }
+            });
+        });
+
+        if (!initStageWarnings.isEmpty()) {
+            assert curSnpWarnings == null;
+
+            curSnpWarnings = new HashMap<>(initStageWarnings);
+
+            if (clusterSnpFut != null) {
+                synchronized (snpOpMux) {
+                    if (clusterSnpFut != null)
+                        clusterSnpFut.warnings.putAll(initStageWarnings);
+                }
+            }
+
+
+            curSnpMeta.addWarnings(initStageWarnings.values());
+        }
+
+        assert clusterSnpReq != null;
+
+        //TODO: test error
+        try {
+            storeSnapshotMeta(curSnpMeta, clusterSnpReq);
+        }
+        catch (Exception e) {
+            clusterSnpReq.error(new IgniteException("Unable to store snapshot metadata.", e));
+
+            log.error("Unable to store snapshot metadata.", e);
+        }
+
+        curSnpMeta = null;
 
         snpReq.startStageEnded(true);
 
@@ -953,7 +996,8 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
 
             handlers().execSvc.submit(() -> {
                 try {
-                    handlers.completeAll(SnapshotHandlerType.CREATE, req.snapshotName(), clusterHndResults, req.nodes());
+                    handlers.completeAll(SnapshotHandlerType.CREATE, req.snapshotName(), clusterHndResults,
+                        req.allNodes());
 
                     resultFut.onDone();
                 }
@@ -977,6 +1021,8 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
      * @return Future which will be completed when the snapshot will be finalized.
      */
     private IgniteInternalFuture<SnapshotOperationResponse> initLocalSnapshotEndStage(SnapshotOperationRequest req) {
+        log.error("TEST | initLocalSnapshotEndStage(). Client " + cctx.kernalContext().config().isClientMode());
+
         SnapshotOperationRequest snpReq = clusterSnpReq;
 
         if (snpReq == null || !F.eq(req.requestId(), snpReq.requestId()))
@@ -1442,6 +1488,31 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
         }
     }
 
+    /** */
+    private void storeSnapshotMeta(SnapshotMetadata meta, SnapshotOperationRequest req) throws IOException, IgniteCheckedException {
+        File snpDir = snapshotLocalDir(req.snapshotName(), req.snapshotPath());
+
+        File smf = new File(snpDir, snapshotMetaFileName(cctx.localNode().consistentId().toString()));
+
+        if (smf.exists())
+            throw new GridClosureException(new IgniteException("Snapshot metafile must not exist: " + smf.getAbsolutePath()));
+
+        snpDir.mkdirs();
+
+        try (OutputStream out = Files.newOutputStream(smf.toPath())) {
+            byte[] bytes = U.marshal(marsh, meta);
+            int blockSize = SNAPSHOT_LIMITED_TRANSFER_BLOCK_SIZE_BYTES;
+
+            for (int off = 0; off < bytes.length; off += blockSize) {
+                int len = Math.min(blockSize, bytes.length - off);
+
+                transferRateLimiter.acquire(len);
+
+                out.write(bytes, off, len);
+            }
+        }
+    }
+
     /**
      * @param snpName Snapshot name.
      * @param snpPath Snapshot directory path.
@@ -1589,7 +1660,9 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
 
             grps.add(METASTORAGE_CACHE_NAME);
 
-            List<ClusterNode> srvNodes = cctx.discovery().serverNodes(AffinityTopologyVersion.NONE);
+            //TODO: all nodes
+            List<ClusterNode> allNodes = new ArrayList<>(cctx.discovery().nodes(AffinityTopologyVersion.NONE));
+//            List<ClusterNode> srvNodes = cctx.discovery().serverNodes(AffinityTopologyVersion.NONE);
 
             snpFut0.listen(f -> {
                 if (f.error() == null)
@@ -1598,11 +1671,15 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
                     recordSnapshotEvent(name, SNAPSHOT_FAILED_MSG + f.error().getMessage(), EVT_CLUSTER_SNAPSHOT_FAILED);
             });
 
+            //TODO: baseline nodes
             Set<UUID> bltNodeIds =
-                new HashSet<>(F.viewReadOnly(srvNodes, F.node2id(), (node) -> CU.baselineNode(node, clusterState)));
+                new HashSet<>(F.viewReadOnly(allNodes, F.node2id(), (node) -> CU.baselineNode(node, clusterState)));
+            Set<UUID> allNodeIds =
+                new HashSet<>(F.viewReadOnly(allNodes, F.node2id()));
 
             startSnpProc.start(snpFut0.rqId,
-                new SnapshotOperationRequest(snpFut0.rqId, cctx.localNodeId(), name, snpPath, grps, bltNodeIds));
+                new SnapshotOperationRequest(snpFut0.rqId, cctx.localNodeId(), name, snpPath, grps, bltNodeIds,
+                    allNodeIds));
 
             String msg = "Cluster-wide snapshot operation started [snpName=" + name + ", grps=" + grps + ']';
 
@@ -1945,6 +2022,8 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
                     rqId));
             }
 
+            log.error("TEST | locSnpTasks.putIfAbsent(rqId, task);");
+
             AbstractSnapshotFutureTask<?> prev = locSnpTasks.putIfAbsent(rqId, task);
 
             if (prev != null)
@@ -2211,6 +2290,9 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
             // Register system default snapshot integrity check that is used before the restore operation.
             SnapshotHandler<?> sysCheck = new SnapshotPartitionsVerifyHandler(ctx.cache().context());
             handlers.put(sysCheck.type(), new ArrayList<>(F.asList((SnapshotHandler<Object>)sysCheck)));
+
+            SnapshotHandler<?> snpCheck = new SnapshotDataStreamerVerifyHandler(ctx);
+            handlers.put(snpCheck.type(), new ArrayList<>(F.asList((SnapshotHandler<Object>)snpCheck)));
 
             // Register custom handlers.
             SnapshotHandler<Object>[] extHnds = (SnapshotHandler<Object>[])ctx.plugins().extensions(SnapshotHandler.class);
@@ -3260,28 +3342,28 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
         @Override public void sendDelta0(File delta, String cacheDirName, GroupPartitionId pair) {
             File snpPart = getPartitionFile(dbDir, cacheDirName, pair.getPartitionId());
 
-            if(pair.getPartitionId() == 859) {
-                try {
-                    ByteBuffer pageBuff = ByteBuffer.allocateDirect(4096).order(ByteOrder.nativeOrder());
-                    pageBuff.clear();
-
-                    FilePageStore pageStore =
-                        (FilePageStore)storeMgr.getPageStoreFactory(pair.getGroupId(), false)
-                            .createPageStore(getTypeByPartId(pair.getPartitionId()), snpPart::toPath, val -> {
-                            });
-                    pageStore.read(0, pageBuff, true);
-
-                    PagePartitionMetaIO io = PageIO.getPageIO(pageBuff);
-
-                    long pageAddr = GridUnsafe.bufferAddress(pageBuff);
-
-                    long updateCntr = io.getUpdateCounter(pageAddr);
-
-                    log.error("TEST | before delted 859 into snp. UpdateCounter: " + updateCntr);
-                } catch (Exception e){
-                    log.error("TEST | err reading update counter.", e);
-                }
-            }
+//            if(pair.getPartitionId() == 859) {
+//                try {
+//                    ByteBuffer pageBuff = ByteBuffer.allocateDirect(4096).order(ByteOrder.nativeOrder());
+//                    pageBuff.clear();
+//
+//                    FilePageStore pageStore =
+//                        (FilePageStore)storeMgr.getPageStoreFactory(pair.getGroupId(), false)
+//                            .createPageStore(getTypeByPartId(pair.getPartitionId()), snpPart::toPath, val -> {
+//                            });
+//                    pageStore.read(0, pageBuff, true);
+//
+//                    PagePartitionMetaIO io = PageIO.getPageIO(pageBuff);
+//
+//                    long pageAddr = GridUnsafe.bufferAddress(pageBuff);
+//
+//                    long updateCntr = io.getUpdateCounter(pageAddr);
+//
+//                    log.error("TEST | before delted 859 into snp. UpdateCounter: " + updateCntr);
+//                } catch (Exception e){
+//                    log.error("TEST | err reading update counter.", e);
+//                }
+//            }
 
             if (log.isDebugEnabled()) {
                 log.debug("Start partition snapshot recovery with the given delta page file [part=" + snpPart +
@@ -3338,28 +3420,28 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
                 throw new IgniteException(e);
             }
 
-            if(pair.getPartitionId() == 859) {
-                try {
-                    ByteBuffer pageBuff = ByteBuffer.allocateDirect(4096).order(ByteOrder.nativeOrder());
-                    pageBuff.clear();
-
-                    FilePageStore pageStore =
-                        (FilePageStore)storeMgr.getPageStoreFactory(pair.getGroupId(), false)
-                            .createPageStore(getTypeByPartId(pair.getPartitionId()), snpPart::toPath, val -> {
-                            });
-                    pageStore.read(0, pageBuff, true);
-
-                    PagePartitionMetaIO io = PageIO.getPageIO(pageBuff);
-
-                    long pageAddr = GridUnsafe.bufferAddress(pageBuff);
-
-                    long updateCntr = io.getUpdateCounter(pageAddr);
-
-                    log.error("TEST | delted 859 into snp. UpdateCounter: " + updateCntr);
-                } catch (Exception e){
-                    log.error("TEST | err reading update counter.", e);
-                }
-            }
+//            if(pair.getPartitionId() == 859) {
+//                try {
+//                    ByteBuffer pageBuff = ByteBuffer.allocateDirect(4096).order(ByteOrder.nativeOrder());
+//                    pageBuff.clear();
+//
+//                    FilePageStore pageStore =
+//                        (FilePageStore)storeMgr.getPageStoreFactory(pair.getGroupId(), false)
+//                            .createPageStore(getTypeByPartId(pair.getPartitionId()), snpPart::toPath, val -> {
+//                            });
+//                    pageStore.read(0, pageBuff, true);
+//
+//                    PagePartitionMetaIO io = PageIO.getPageIO(pageBuff);
+//
+//                    long pageAddr = GridUnsafe.bufferAddress(pageBuff);
+//
+//                    long updateCntr = io.getUpdateCounter(pageAddr);
+//
+//                    log.error("TEST | delted 859 into snp. UpdateCounter: " + updateCntr);
+//                } catch (Exception e){
+//                    log.error("TEST | err reading update counter.", e);
+//                }
+//            }
         }
 
         /** {@inheritDoc} */
@@ -3451,6 +3533,9 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
         /** Operation interruption exception. */
         volatile IgniteCheckedException interruptEx;
 
+        /** */
+        final Map<UUID, String> warnings = new HashMap<>();
+
         /**
          * Default constructor.
          */
@@ -3489,6 +3574,16 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
         /** {@inheritDoc} */
         @Override protected boolean onDone(@Nullable Void res, @Nullable Throwable err, boolean cancel) {
             endTime = U.currentTimeMillis();
+
+            if (!warnings.isEmpty() && err == null) {
+                StringBuilder sb = new StringBuilder();
+
+                sb.append("Snapshot task '").append(name).append("' completed with warnings:");
+
+                warnings.forEach((n, w) -> sb.append("\n\tNode '").append(n).append("': ").append(w));
+
+                err = new IgniteException(sb.toString());
+            }
 
             return super.onDone(res, err, cancel);
         }

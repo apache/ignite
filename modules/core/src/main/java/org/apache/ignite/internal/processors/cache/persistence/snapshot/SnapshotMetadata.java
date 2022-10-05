@@ -20,7 +20,9 @@ package org.apache.ignite.internal.processors.cache.persistence.snapshot;
 import java.io.IOException;
 import java.io.InvalidObjectException;
 import java.io.Serializable;
+import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Collection;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.HashSet;
@@ -78,6 +80,9 @@ public class SnapshotMetadata implements Serializable {
     /** Master key digest for encrypted caches. */
     @GridToStringInclude
     @Nullable private final byte[] masterKeyDigest;
+
+    /** TODO */
+    @Nullable private List<String> warnings;
 
     /**
      * F@param snpName Snapshot name.
@@ -249,20 +254,30 @@ public class SnapshotMetadata implements Serializable {
 
         SnapshotMetadata meta = (SnapshotMetadata)o;
 
+        /** TODO */
         return rqId.equals(meta.rqId) &&
             snpName.equals(meta.snpName) &&
             consId.equals(meta.consId) &&
             Objects.equals(grpIds, meta.grpIds) &&
-            Objects.equals(bltNodes, meta.bltNodes);
+            Objects.equals(bltNodes, meta.bltNodes) &&
+            Objects.equals(warnings, meta.warnings);
     }
 
     /** {@inheritDoc} */
     @Override public int hashCode() {
-        return Objects.hash(rqId, snpName, consId, grpIds, bltNodes);
+        return Objects.hash(rqId, snpName, consId, grpIds, bltNodes, warnings);
     }
 
     /** {@inheritDoc} */
     @Override public String toString() {
         return S.toString(SnapshotMetadata.class, this);
+    }
+
+    /** */
+    public void addWarnings(Collection<String> updaters) {
+        if (warnings == null)
+            warnings = new ArrayList<>();
+
+        warnings.addAll(updaters);
     }
 }

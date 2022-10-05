@@ -1342,50 +1342,45 @@ public class DataStreamerImpl<K, V> implements IgniteDataStreamer<K, V>, Delayed
                 log.debug("Closing data streamer [ldr=" + this + ", cancel=" + cancel + ']');
 
             try {
+                // Assuming that no methods are called on this loader after this method is called.
+                if (cancel) {
+                    cancelled = true;
 
-                try {
-                    // Assuming that no methods are called on this loader after this method is called.
-                    if (cancel) {
-                        cancelled = true;
+                    IgniteCheckedException cancellationErr = err;
 
-                        IgniteCheckedException cancellationErr = err;
+                    if (cancellationErr == null)
+                        cancellationErr = new IgniteCheckedException("Data streamer has been cancelled: " +
+                            DataStreamerImpl.this);
 
-                        if (cancellationErr == null)
-                            cancellationErr = new IgniteCheckedException("Data streamer has been cancelled: " +
-                                DataStreamerImpl.this);
+                    for (ThreadBuffer buf : threadBufMap.values()) {
+                        GridFutureAdapter internalFut = (GridFutureAdapter)buf.getFuture().internalFuture();
 
-                        for (ThreadBuffer buf : threadBufMap.values()) {
-                            GridFutureAdapter internalFut = (GridFutureAdapter)buf.getFuture().internalFuture();
-
-                            internalFut.onDone(cancellationErr);
-                        }
-
-                        for (Buffer buf : bufMappings.values())
-                            buf.cancelAll(cancellationErr);
+                        internalFut.onDone(cancellationErr);
                     }
-                    else
-                        doFlush();
 
-                    ctx.event().removeLocalEventListener(discoLsnr);
-
-                    ctx.io().removeMessageListener(topic);
+                    for (Buffer buf : bufMappings.values())
+                        buf.cancelAll(cancellationErr);
                 }
-                catch (IgniteCheckedException | IgniteDataStreamerTimeoutException e) {
-                    fut.onDone(e);
-                    throw e;
-                }
+                else
+                    doFlush();
 
-                long failed = failCntr.longValue();
+                ctx.event().removeLocalEventListener(discoLsnr);
 
-                if (failed > 0 && err == null)
-                    err = new IgniteCheckedException("Some of DataStreamer operations failed [failedCount=" + failed + "]");
-
-                fut.onDone(err);
-
-                return err;
-            } finally {
-                ctx.dataStream().unmarkStreamed(cacheName, ctx.grid().localNode().id());
+                ctx.io().removeMessageListener(topic);
             }
+            catch (IgniteCheckedException | IgniteDataStreamerTimeoutException e) {
+                fut.onDone(e);
+                throw e;
+            }
+
+            long failed = failCntr.longValue();
+
+            if (failed > 0 && err == null)
+                err = new IgniteCheckedException("Some of DataStreamer operations failed [failedCount=" + failed + "]");
+
+            fut.onDone(err);
+
+            return err;
         }
         finally {
             busyLock.writeUnlock();
@@ -1955,8 +1950,6 @@ public class DataStreamerImpl<K, V> implements IgniteDataStreamer<K, V>, Delayed
                     }
                 }
 
-                ctx.dataStream().markStreamed(cacheName);
-
                 localUpdate(entries, topVer, curFut, plc);
             } else {
                 try {
@@ -2173,8 +2166,8 @@ public class DataStreamerImpl<K, V> implements IgniteDataStreamer<K, V>, Delayed
                 }
             }
 
-            if (err != null)
-                log.error("TEST | Finished future [fut=" + f + ", reqId=" + res.requestId() + ", err=" + err + ']');
+//            if (err != null)
+//                log.error("TEST | Finished future [fut=" + f + ", reqId=" + res.requestId() + ", err=" + err + ']');
 
             f.onDone(null, err);
 
@@ -2330,11 +2323,11 @@ public class DataStreamerImpl<K, V> implements IgniteDataStreamer<K, V>, Delayed
                 for (Entry<KeyCacheObject, CacheObject> e : entries) {
                     Integer v = ((Integer)((KeyCacheObjectImpl)e.getKey()).val);
 
-                    if (v == U.TEST_VALUE && cctx.kernalContext().grid().localNode().order() == 2) {
-                        log.error("TEST | receive test value before checkpointReadLock()" + v);
+//                    if (v == U.TEST_VALUE && cctx.kernalContext().grid().localNode().order() == 2) {
+//                        log.error("TEST | receive test value before checkpointReadLock()" + v);
 
-                        break;
-                    }
+//                        break;
+//                    }
 
                     cctx.shared().database().checkpointReadLock();
 
@@ -2342,11 +2335,11 @@ public class DataStreamerImpl<K, V> implements IgniteDataStreamer<K, V>, Delayed
                         e.getKey().finishUnmarshal(cctx.cacheObjectContext(), cctx.deploy().globalLoader());
 
                         int p = cctx.affinity().partition(e.getKey());
-                        if (v == U.TEST_VALUE  && cctx.kernalContext().grid().localNode().order() == 2) {
-                            log.error("TEST | receive test value after checkpointReadLock()" + v);
-
-                            break;
-                        }
+//                        if (v == U.TEST_VALUE  && cctx.kernalContext().grid().localNode().order() == 2) {
+//                            log.error("TEST | receive test value after checkpointReadLock()" + v);
+//
+//                            break;
+//                        }
 
                         if (ignoredParts.contains(p))
                             continue;
@@ -2402,8 +2395,8 @@ public class DataStreamerImpl<K, V> implements IgniteDataStreamer<K, V>, Delayed
 
                                 Integer vvv = ((Integer)((KeyCacheObjectImpl)e.getKey()).val);
 
-                                if (vvv == 859)
-                                    log.error("TEST | writting" + vvv);
+//                                if (vvv == 859)
+//                                    log.error("TEST | writting" + vvv);
 
                                 set.add(cctx.kernalContext().grid().localNode().order());
 

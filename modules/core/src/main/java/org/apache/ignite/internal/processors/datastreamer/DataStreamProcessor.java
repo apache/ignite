@@ -18,8 +18,11 @@
 package org.apache.ignite.internal.processors.datastreamer;
 
 import java.util.Collection;
+import java.util.Collections;
+import java.util.List;
 import java.util.UUID;
 import java.util.concurrent.DelayQueue;
+import java.util.stream.Collectors;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.internal.GridKernalContext;
@@ -203,6 +206,28 @@ public class DataStreamProcessor<K, V> extends GridProcessorAdapter {
         }
     }
 
+    /** TODO */
+    public @Nullable List<String> cachesUnderInconsistentUpdaters() {
+        if (!busyLock.enterBusy())
+            throw new IllegalStateException("Failed to check for inconsistent streamers (grid is stopping).");
+
+        try {
+            if (ldrs.isEmpty())
+                return Collections.emptyList();
+
+            //TODO:
+            if(true) return Collections.singletonList("default");
+
+            return ldrs.stream().filter(ds -> !ds.allowOverwrite() &&
+                    ctx.cache().cacheDescriptor(ds.cacheName()).groupDescriptor().persistenceEnabled())
+                .map(DataStreamerImpl::cacheName)
+                .collect(Collectors.toList());
+        }
+        finally {
+            busyLock.leaveBusy();
+        }
+    }
+
     /**
      * @param nodeId Sender ID.
      * @param req Request.
@@ -220,8 +245,6 @@ public class DataStreamProcessor<K, V> extends GridProcessorAdapter {
 
             if (log.isDebugEnabled())
                 log.debug("Processing data load request: " + req);
-
-
 
             AffinityTopologyVersion locAffVer = ctx.cache().context().exchange().readyAffinityVersion();
             AffinityTopologyVersion rmtAffVer = req.topologyVersion();
@@ -496,13 +519,5 @@ public class DataStreamProcessor<K, V> extends GridProcessorAdapter {
         X.println(">>>");
         X.println(">>> Data streamer processor memory stats [igniteInstanceName=" + ctx.igniteInstanceName() + ']');
         X.println(">>>   ldrsSize: " + ldrs.size());
-    }
-
-    public void unmarkStreamed(String cacheName, UUID nodeId) {
-
-    }
-
-    public void markStreamed(String cacheName) {
-
     }
 }

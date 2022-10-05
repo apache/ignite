@@ -263,6 +263,8 @@ class SnapshotFutureTask extends AbstractSnapshotFutureTask<Set<GroupPartitionId
         if (stopping())
             return false;
 
+        log.error("TEST | SnapshotFutureTasl.start()");
+
         try {
             if (!started.compareAndSet(false, true))
                 return false;
@@ -318,7 +320,7 @@ class SnapshotFutureTask extends AbstractSnapshotFutureTask<Set<GroupPartitionId
         if (stopping())
             return;
 
-        log.error("TEST | snapshot - beforeCheckpointBegin(). DSFuts: "  +cctx.mvcc().dataStreamerFutures().size());
+        log.error("TEST | snapshot - beforeCheckpointBegin(). DSFuts: " + cctx.mvcc().dataStreamerFutures().size());
 
         ctx.finishedStateFut().listen(f -> {
             if (f.error() == null)

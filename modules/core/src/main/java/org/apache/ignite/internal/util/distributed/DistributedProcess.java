@@ -154,11 +154,18 @@ public class DistributedProcess<I extends Serializable, R extends Serializable> 
                 else
                     p.resFut.onDone(f.result());
 
-                if (!ctx.clientNode()) {
-                    assert crd != null;
+                assert crd != null;
 
-                    sendSingleMessage(p);
-                }
+                log.error("TEST | sendSingleMessage() on init message by START_SNP. Client: " + ctx.clientNode());
+
+                sendSingleMessage(p);
+
+                //TODO:
+//                if (!ctx.clientNode()) {
+//                    assert crd != null;
+//
+//                    sendSingleMessage(p);
+//                }
             });
 
             p.initFut.onDone();
@@ -213,6 +220,8 @@ public class DistributedProcess<I extends Serializable, R extends Serializable> 
                         if (crd.isLocal())
                             initCoordinator(p, discoCache.version());
 
+
+//                        p.resFut.listen(f -> sendSingleMessage(p));
                         if (!ctx.clientNode())
                             p.resFut.listen(f -> sendSingleMessage(p));
                     }
@@ -260,7 +269,8 @@ public class DistributedProcess<I extends Serializable, R extends Serializable> 
 
             assert p.remaining.isEmpty();
 
-            p.remaining.addAll(F.viewReadOnly(ctx.discovery().serverNodes(topVer), F.node2id()));
+//            p.remaining.addAll(F.viewReadOnly(ctx.discovery().serverNodes(topVer), F.node2id()));
+            p.remaining.addAll(F.viewReadOnly(ctx.discovery().nodes(topVer), F.node2id()));
 
             p.initCrdFut.onDone();
         }
@@ -273,6 +283,9 @@ public class DistributedProcess<I extends Serializable, R extends Serializable> 
      */
     private void sendSingleMessage(Process p) {
         assert p.resFut.isDone();
+
+        //TODO:
+        log.error("TEST | sendSingleMessage(). ClientNode: " + ctx.clientNode());
 
         SingleNodeMessage<R> singleMsg = new SingleNodeMessage<>(p.id, type, p.resFut.result(),
             (Exception)p.resFut.error());

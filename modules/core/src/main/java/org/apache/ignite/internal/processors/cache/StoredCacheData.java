@@ -59,8 +59,7 @@ public class StoredCacheData implements Serializable, CdcCacheEvent {
      * Encryption key. {@code Null} if encryption is disabled.
      * <p>
      * To restore an encrypted snapshot, we have to read the keys it was encrypted with. The better place for the is
-     * Metastore. But it is currently unreadable as simple structure. Once it is done, we should move snapshot
-     * encryption keys there.
+     * Metastore. But it is currently unreadable as simple structure. Once it is done, encryptKey.
      */
     private GroupKeyEncrypted grpKeyEncrypted;
 

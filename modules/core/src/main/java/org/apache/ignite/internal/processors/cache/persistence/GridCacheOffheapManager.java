@@ -451,8 +451,8 @@ public class GridCacheOffheapManager extends IgniteCacheOffheapManagerImpl imple
                         if (changed)
                             partStore.saveMetadata(grp.statisticsHolderData());
 
-                        if(part.id() == 859)
-                            log.error("TEST | saveStoreMetadata() -> update counter on part 859: " + updCntr);
+//                        if(part.id() == 859)
+//                            log.error("TEST | saveStoreMetadata() -> update counter on part 859: " + updCntr);
 
                         changed |= io.setUpdateCounter(partMetaPageAddr, updCntr);
 
