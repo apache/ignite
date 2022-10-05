@@ -1,7 +1,6 @@
 # name: test/sql/subquery/scalar/test_complex_correlated_subquery.test
 # description: Test complex correlated subqueries
 # group: [scalar]
-# Ignore https://issues.apache.org/jira/browse/IGNITE-15595
 # Ignore https://issues.apache.org/jira/browse/IGNITE-15594
 # Ignore https://issues.apache.org/jira/browse/IGNITE-15593
 # Ignore https://issues.apache.org/jira/browse/IGNITE-15588
