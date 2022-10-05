@@ -324,17 +324,6 @@ import static org.apache.ignite.internal.util.GridUnsafe.staticFieldOffset;
  */
 @SuppressWarnings({"UnusedReturnValue"})
 public abstract class IgniteUtils {
-//    public static final Map<Long, Set<Long>> FLAG = new ConcurrentHashMap<>();
-//    public static final ConcurrentHashMap<Long, Long> FLAG = new ConcurrentHashMap<>();
-
-    public static final ConcurrentHashMap<Long, Integer> PART_859 = new ConcurrentHashMap<>();
-
-    public static final ConcurrentHashMap<KeyCacheObject, Set<Long>> PART_859_2 = new ConcurrentHashMap<>();
-
-    public static final AtomicBoolean FLAG2 = new AtomicBoolean(true);
-
-    public static final int TEST_VALUE = 859;
-
     /** Logger. */
     private static final Logger log = Logger.getLogger(IgniteUtils.class.getName());
 

@@ -78,8 +78,7 @@ class DataStreamerUpdateJob implements GridPlainCallable<Object> {
         boolean ignoreDepOwnership,
         boolean skipStore,
         boolean keepBinary,
-        StreamReceiver rcvr
-        ) {
+        StreamReceiver<?, ?> rcvr) {
         this.ctx = ctx;
         this.log = log;
 

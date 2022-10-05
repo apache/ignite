@@ -23,7 +23,6 @@ import java.util.Arrays;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.HashMap;
-import java.util.HashSet;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
@@ -70,7 +69,6 @@ import org.apache.ignite.internal.processors.cache.GridCacheReturn;
 import org.apache.ignite.internal.processors.cache.GridCacheUpdateAtomicResult;
 import org.apache.ignite.internal.processors.cache.IgniteCacheExpiryPolicy;
 import org.apache.ignite.internal.processors.cache.KeyCacheObject;
-import org.apache.ignite.internal.processors.cache.KeyCacheObjectImpl;
 import org.apache.ignite.internal.processors.cache.LockedEntriesInfo;
 import org.apache.ignite.internal.processors.cache.binary.CacheObjectBinaryProcessorImpl;
 import org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtCacheAdapter;
@@ -2553,21 +2551,6 @@ public class GridDhtAtomicCache<K, V> extends GridDhtCacheAdapter<K, V> {
                 // Get readers before innerUpdate (reader cleared after remove).
                 GridDhtCacheEntry.ReaderId[] readers = entry.readersLocked();
 
-                if (entry.key().partition() == 859)
-                    U.PART_859_2.compute(entry.key(), (kk, set) -> {
-                        if (set == null)
-                            set = new HashSet<>();
-
-                        Integer vvv = ((Integer)((KeyCacheObjectImpl)entry.key()).val);
-
-                        if (vvv == 859)
-                            log.error("TEST | writting" + vvv);
-
-                        set.add(ctx.kernalContext().grid().localNode().order());
-
-                        return set;
-                    });
-
                 GridCacheUpdateAtomicResult updRes = entry.innerUpdate(
                     ver,
                     nearNode.id(),
@@ -3320,21 +3303,6 @@ public class GridDhtAtomicCache<K, V> extends GridDhtCacheAdapter<K, V> {
 
                             long ttl = req.ttl(i);
                             long expireTime = req.conflictExpireTime(i);
-
-                            if (entry.key().partition() == 859)
-                                U.PART_859_2.compute(entry.key(), (k, set) -> {
-                                    if (set == null)
-                                        set = new HashSet<>();
-
-                                    Integer vvv = ((Integer)((KeyCacheObjectImpl)k).val);
-
-                                    if (vvv == 859)
-                                        log.error("TEST | writting" + vvv);
-
-                                    set.add(ctx.kernalContext().grid().localNode().order());
-
-                                    return set;
-                                });
 
                             GridCacheUpdateAtomicResult updRes = entry.innerUpdate(
                                 ver,

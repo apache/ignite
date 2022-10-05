@@ -41,7 +41,7 @@ public abstract class CacheObjectAdapter implements CacheObject, Externalizable 
     /** */
     @GridToStringInclude(sensitive = true)
     @GridDirectTransient
-    public Object val;
+    protected Object val;
 
     /** */
     protected byte[] valBytes;

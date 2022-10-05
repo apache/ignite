@@ -62,7 +62,7 @@ import static org.apache.ignite.internal.managers.communication.GridIoPolicy.DAT
  */
 public class DataStreamProcessor<K, V> extends GridProcessorAdapter {
     /** Loaders map (access is not supposed to be highly concurrent). */
-    private Collection<DataStreamerImpl<?, ?>> ldrs = new GridConcurrentHashSet<>();
+    private Collection<DataStreamerImpl> ldrs = new GridConcurrentHashSet<>();
 
     /** Busy lock. */
     private final GridSpinBusyLock busyLock = new GridSpinBusyLock();
@@ -215,9 +215,6 @@ public class DataStreamProcessor<K, V> extends GridProcessorAdapter {
             if (ldrs.isEmpty())
                 return Collections.emptyList();
 
-            //TODO:
-            if(true) return Collections.singletonList("default");
-
             return ldrs.stream().filter(ds -> !ds.allowOverwrite() &&
                     ctx.cache().cacheDescriptor(ds.cacheName()).groupDescriptor().persistenceEnabled())
                 .map(DataStreamerImpl::cacheName)
@@ -241,8 +238,6 @@ public class DataStreamProcessor<K, V> extends GridProcessorAdapter {
         }
 
         try {
-//            log.error("TEST | Processing data load request: " + req.requestId());
-
             if (log.isDebugEnabled())
                 log.debug("Processing data load request: " + req);
 
@@ -379,13 +374,9 @@ public class DataStreamProcessor<K, V> extends GridProcessorAdapter {
                         topFut.initialVersion();
 
                     if (topVer.compareTo(req.topologyVersion()) > 0) {
-                        try {
-                            remapErr = new ClusterTopologyCheckedException("DataStreamer will retry " +
-                                "data transfer at stable topology [reqTop=" + req.topologyVersion() +
-                                ", topVer=" + topFut.initialVersion() + ", node=remote]");
-                        } catch (Exception e){
-                            remapErr = new IgniteCheckedException("sudden err", e);
-                        }
+                        remapErr = new ClusterTopologyCheckedException("DataStreamer will retry " +
+                            "data transfer at stable topology [reqTop=" + req.topologyVersion() +
+                            ", topVer=" + topFut.initialVersion() + ", node=remote]");
                     }
                     else if (!topFut.isDone())
                         topWaitFut = topFut;
@@ -406,8 +397,7 @@ public class DataStreamProcessor<K, V> extends GridProcessorAdapter {
                         req.ignoreDeploymentOwnership(),
                         req.skipStore(),
                         req.keepBinary(),
-                        updater
-                        );
+                        updater);
 
                     waitFut = allowOverwrite ? null : cctx.mvcc().addDataStreamerFuture(streamerFutTopVer);
                 }

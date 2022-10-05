@@ -98,7 +98,7 @@ public class DistributedProcess<I extends Serializable, R extends Serializable> 
         Function<I, IgniteInternalFuture<R>> exec,
         CI3<UUID, Map<UUID, R>, Map<UUID, Exception>> finish
     ) {
-        this(ctx, type, exec, finish, (id, req) -> new InitMessage<>(id, type, req));
+        this(ctx, type, exec, finish, (id, req) -> new InitMessage<>(id, type, req), false);
     }
 
     /**
@@ -107,13 +107,15 @@ public class DistributedProcess<I extends Serializable, R extends Serializable> 
      * @param exec Execute action and returns future with the single node result to send to the coordinator.
      * @param finish Finish process closure. Called on each node when all single nodes results received.
      * @param initMsgFactory Factory which creates custom {@link InitMessage} for distributed process initialization.
+     * @param initOnClient TODO.
      */
     public DistributedProcess(
         GridKernalContext ctx,
         DistributedProcessType type,
         Function<I, IgniteInternalFuture<R>> exec,
         CI3<UUID, Map<UUID, R>, Map<UUID, Exception>> finish,
-        BiFunction<UUID, I, ? extends InitMessage<I>> initMsgFactory
+        BiFunction<UUID, I, ? extends InitMessage<I>> initMsgFactory,
+        boolean initOnClient
     ) {
         this.ctx = ctx;
         this.type = type;
@@ -144,7 +146,7 @@ public class DistributedProcess<I extends Serializable, R extends Serializable> 
             p.crdId = crd.id();
 
             if (crd.isLocal())
-                initCoordinator(p, topVer);
+                initCoordinator(p, topVer, initOnClient);
 
             IgniteInternalFuture<R> fut = exec.apply((I)msg.request());
 
@@ -154,18 +156,11 @@ public class DistributedProcess<I extends Serializable, R extends Serializable> 
                 else
                     p.resFut.onDone(f.result());
 
-                assert crd != null;
+                if (!ctx.clientNode() || initOnClient) {
+                    assert crd != null;
 
-                log.error("TEST | sendSingleMessage() on init message by START_SNP. Client: " + ctx.clientNode());
-
-                sendSingleMessage(p);
-
-                //TODO:
-//                if (!ctx.clientNode()) {
-//                    assert crd != null;
-//
-//                    sendSingleMessage(p);
-//                }
+                    sendSingleMessage(p);
+                }
             });
 
             p.initFut.onDone();
@@ -218,11 +213,9 @@ public class DistributedProcess<I extends Serializable, R extends Serializable> 
                         p.crdId = crd.id();
 
                         if (crd.isLocal())
-                            initCoordinator(p, discoCache.version());
+                            initCoordinator(p, discoCache.version(), initOnClient);
 
-
-//                        p.resFut.listen(f -> sendSingleMessage(p));
-                        if (!ctx.clientNode())
+                        if (!ctx.clientNode() || initOnClient)
                             p.resFut.listen(f -> sendSingleMessage(p));
                     }
                     else if (F.eq(ctx.localNodeId(), p.crdId)) {
@@ -261,16 +254,17 @@ public class DistributedProcess<I extends Serializable, R extends Serializable> 
      *
      * @param p Process.
      * @param topVer Topology version.
+     * @param listenClients TODO
      */
-    private void initCoordinator(Process p, AffinityTopologyVersion topVer) {
+    private void initCoordinator(Process p, AffinityTopologyVersion topVer, boolean listenClients) {
         synchronized (mux) {
             if (p.initCrdFut.isDone())
                 return;
 
             assert p.remaining.isEmpty();
 
-//            p.remaining.addAll(F.viewReadOnly(ctx.discovery().serverNodes(topVer), F.node2id()));
-            p.remaining.addAll(F.viewReadOnly(ctx.discovery().nodes(topVer), F.node2id()));
+            p.remaining.addAll(F.viewReadOnly(
+                listenClients ? ctx.discovery().nodes(topVer) : ctx.discovery().serverNodes(topVer), F.node2id()));
 
             p.initCrdFut.onDone();
         }
@@ -283,9 +277,6 @@ public class DistributedProcess<I extends Serializable, R extends Serializable> 
      */
     private void sendSingleMessage(Process p) {
         assert p.resFut.isDone();
-
-        //TODO:
-        log.error("TEST | sendSingleMessage(). ClientNode: " + ctx.clientNode());
 
         SingleNodeMessage<R> singleMsg = new SingleNodeMessage<>(p.id, type, p.resFut.result(),
             (Exception)p.resFut.error());

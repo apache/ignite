@@ -18,9 +18,7 @@
 package org.apache.ignite.internal.processors.cache.persistence.snapshot;
 
 import java.io.Serializable;
-import java.util.ArrayList;
 import java.util.Collection;
-import java.util.List;
 import java.util.Set;
 import java.util.UUID;
 import org.apache.ignite.internal.util.distributed.DistributedProcess;
@@ -138,6 +136,12 @@ public class SnapshotOperationRequest implements Serializable {
      */
     public Set<UUID> allNodes() {
         return allNodes;
+    }
+
+    public void ignoreAllNodes(){
+        allNodes.clear();
+
+        allNodes.addAll(nodes);
     }
 
     /**

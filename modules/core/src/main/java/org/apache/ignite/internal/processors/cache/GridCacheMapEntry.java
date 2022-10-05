@@ -1971,22 +1971,8 @@ public abstract class GridCacheMapEntry extends GridMetadataAwareAdapter impleme
 
                 c.call(dataRow);
             }
-            else {
-//                if (localPartition().id() == 859) {
-//                    U.PART_859.compute(key.value(cctx.cacheObjectContext(), true), (k, v) -> {
-//                        if (v == null)
-//                            v = new HashSet<>();
-//
-//                        v.add(cctx.kernalContext().grid().localNode().order());
-//
-//                        return v;
-//                    });
-//                }
-//                if (localPartition().id() == 851 && U.FLAG2.get() && cctx.kernalContext().grid().localNode().order() == 2 /* && new Random().nextInt(100) > 90*/)
-//                    log.error("TEST | entry.innerUpdate() part 851");
-
+            else
                 cctx.offheap().invoke(cctx, key, localPartition(), c);
-            }
 
             GridCacheUpdateAtomicResult updateRes = c.updateRes;
 
@@ -2092,9 +2078,6 @@ public abstract class GridCacheMapEntry extends GridMetadataAwareAdapter impleme
                     taskName,
                     keepBinary);
             }
-
-//            if(((KeyCacheObjectImpl)key).val.equals(1))
-//                System.err.println("TEST | update on " + cctx.kernalContext().grid().localNode().order());
 
             if (c.op == UPDATE) {
                 updateVal = val;
@@ -3125,20 +3108,8 @@ public abstract class GridCacheMapEntry extends GridMetadataAwareAdapter impleme
 
                 long updateCntr = 0;
 
-                if (!preload) {
+                if (!preload)
                     updateCntr = nextPartitionCounter(topVer, true, true, null);
-
-//                    if (partition() == 859 && U.FLAG2.get()) {
-//                        log.error("TEST | partition 859 counter: " + updateCntr);
-//
-//                        U.PART_859.compute(cctx.kernalContext().grid().localNode().order(), (k, v) -> {
-//                            if (v == null)
-//                                return 1;
-//
-//                            return v + 1;
-//                        });
-//                    }
-                }
 
                 if (walEnabled) {
                     if (cctx.mvccEnabled()) {
@@ -4006,16 +3977,6 @@ public abstract class GridCacheMapEntry extends GridMetadataAwareAdapter impleme
 
         UpdateClosure closure = new UpdateClosure(this, val, ver, expireTime, predicate, row);
 
-//        if (localPartition().id() == 859) {
-//            U.PART_859.compute(key.value(cctx.cacheObjectContext(), true), (k, v) -> {
-//                if (v == null)
-//                    v = new HashSet<>();
-//
-//                v.add(cctx.kernalContext().grid().localNode().order());
-//
-//                return v;
-//            });
-//        }
         cctx.offheap().invoke(cctx, key, localPartition(), closure);
 
         return closure.treeOp != IgniteTree.OperationType.NOOP;
@@ -6207,10 +6168,6 @@ public abstract class GridCacheMapEntry extends GridMetadataAwareAdapter impleme
             }
 
             long updateCntr0 = entry.nextPartitionCounter(topVer, primary, false, updateCntr);
-
-//            if (entry.partition() == 859)
-//                log.error("TEST | AtomicCacheUpdateClosure() -> got next update counter of 859: " + updateCntr0 +
-//                    ", primaryCounter: " + updateCntr);
 
             entry.logUpdate(op, updated, newVer, newExpireTime, updateCntr0, primary);
 

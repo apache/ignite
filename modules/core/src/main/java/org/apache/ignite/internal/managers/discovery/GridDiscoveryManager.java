@@ -612,9 +612,6 @@ public class GridDiscoveryManager extends GridManagerAdapter<DiscoverySpi> {
                 DiscoveryCustomMessage customMsg = notification.getCustomMsgData() == null ? null
                     : ((CustomMessageWrapper)notification.getCustomMsgData()).delegate();
 
-//                if(customMsg instanceof SnapshotDiscoveryMessage)
-//                    log.error("TEST | received discovery snapshot message: " + customMsg);
-
                 if (skipMessage(notification.type(), customMsg))
                     return;
 
