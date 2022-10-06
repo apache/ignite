@@ -248,4 +248,11 @@ public class IncrementalSnapshotTest extends AbstractSnapshotSelfTest {
         stopAllGrids();
         cleanPersistenceDir();
     }
+
+    //TODO: test fail when hardlink not available.
+    //TODO: test fail when archive disabled.
+    //TODO: test success and waiting for segments to be compressed.
+    //TODO: test success and waiting for segments if compaction disabled.
+    //TODO: test fail if previous inc snapshot not available.
+    //TODO: can segment be deleted when link creating.
 }

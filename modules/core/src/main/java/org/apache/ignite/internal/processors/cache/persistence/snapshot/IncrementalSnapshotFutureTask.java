@@ -121,10 +121,18 @@ class IncrementalSnapshotFutureTask
                     long lowIdx = lowPtr.index() + 1;
                     long highIdx = highPtr.index();
 
-                    cctx.wal().awaitCompressed(highPtr.index());
+                    boolean compactionEnabled =
+                        cctx.gridConfig().getDataStorageConfiguration().isWalCompactionEnabled();
+
+                    if (compactionEnabled)
+                        cctx.wal().awaitCompressed(highPtr.index());
+                    else
+                        cctx.wal().awaitArchived(highPtr.index());
 
                     for (; lowIdx <= highIdx; lowIdx++) {
-                        File seg = cctx.wal().compressedSegment(lowIdx);
+                        File seg = compactionEnabled
+                            ? cctx.wal().compressedSegment(lowIdx)
+                            : cctx.wal().archiveSegment(lowIdx);
 
                         assert seg.exists();
 

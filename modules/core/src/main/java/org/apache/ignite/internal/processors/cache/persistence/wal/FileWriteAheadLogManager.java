@@ -2471,8 +2471,8 @@ public class FileWriteAheadLogManager extends GridCacheSharedManagerAdapter impl
         }
     }
 
-    /** */
-    private File archiveSegment(long idx) {
+    /** {@inheritDoc} */
+    @Override public File archiveSegment(long idx) {
         return archiveSegment(idx, null);
     }
 
@@ -2484,6 +2484,11 @@ public class FileWriteAheadLogManager extends GridCacheSharedManagerAdapter impl
     /** {@inheritDoc} */
     @Override public void awaitCompressed(long idx) throws IgniteInterruptedCheckedException {
         segmentAware.awaitSegmentCompressed(idx);
+    }
+
+    /** {@inheritDoc} */
+    @Override public void awaitArchived(long idx) throws IgniteInterruptedCheckedException {
+        segmentAware.awaitSegmentArchived(idx);
     }
 
     /** */
