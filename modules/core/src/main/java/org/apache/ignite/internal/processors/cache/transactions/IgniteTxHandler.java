@@ -2314,6 +2314,8 @@ public class IgniteTxHandler {
 
                                     boolean updated = part.updateCounter(start, delta);
 
+                                    assert updated || rollback;
+
                                     // Need to log rolled back range for logical recovery.
                                     if (updated && rollback) {
                                         CacheGroupContext grpCtx = part.group();
@@ -2330,8 +2332,6 @@ public class IgniteTxHandler {
                                                 topVer, rollbackOnPrimary);
                                         }
                                     }
-                                    else
-                                        assert updated;
                                 }
                                 else
                                     invalid = true;
