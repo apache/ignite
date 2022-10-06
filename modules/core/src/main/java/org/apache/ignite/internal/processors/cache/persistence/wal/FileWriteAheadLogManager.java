@@ -622,12 +622,8 @@ public class FileWriteAheadLogManager extends GridCacheSharedManagerAdapter impl
         }
     }
 
-    /**
-     * Archiver can be not created, all files will be written to WAL folder, using absolute segment index.
-     *
-     * @return flag indicating if archiver is disabled.
-     */
-    private boolean isArchiverEnabled() {
+    /** {@inheritDoc} */
+    @Override public boolean isArchiverEnabled() {
         if (walArchiveDir != null && walWorkDir != null)
             return !walArchiveDir.equals(walWorkDir);
 
@@ -654,10 +650,8 @@ public class FileWriteAheadLogManager extends GridCacheSharedManagerAdapter impl
         List<File> res = new ArrayList<>();
 
         for (long i = low.index(); i < high.index(); i++) {
-            String segmentName = fileName(i);
-
-            File file = new File(walArchiveDir, segmentName);
-            File fileZip = new File(walArchiveDir, segmentName + ZIP_SUFFIX);
+            File file = archiveSegment(i);
+            File fileZip = archiveSegment(i, ZIP_SUFFIX);
 
             if (file.exists())
                 res.add(file);
@@ -1101,10 +1095,8 @@ public class FileWriteAheadLogManager extends GridCacheSharedManagerAdapter impl
      * @return {@code True} exists.
      */
     private boolean hasIndex(long absIdx) {
-        String segmentName = fileName(absIdx);
-
-        boolean inArchive = new File(walArchiveDir, segmentName).exists() ||
-            new File(walArchiveDir, segmentName + ZIP_SUFFIX).exists();
+        boolean inArchive = archiveSegment(absIdx).exists() ||
+            archiveSegment(absIdx, ZIP_SUFFIX).exists();
 
         if (inArchive)
             return true;
@@ -2063,11 +2055,8 @@ public class FileWriteAheadLogManager extends GridCacheSharedManagerAdapter impl
 
             File origFile = new File(walWorkDir, fileName(segIdx));
 
-            String name = fileName(absIdx);
-
-            File dstTmpFile = new File(walArchiveDir, name + TMP_SUFFIX);
-
-            File dstFile = new File(walArchiveDir, name);
+            File dstTmpFile = FileWriteAheadLogManager.this.archiveSegment(absIdx, TMP_SUFFIX);
+            File dstFile = FileWriteAheadLogManager.this.archiveSegment(absIdx);
 
             if (log.isInfoEnabled()) {
                 log.info("Starting to copy WAL segment [absIdx=" + absIdx + ", segIdx=" + segIdx +
@@ -2314,13 +2303,9 @@ public class FileWriteAheadLogManager extends GridCacheSharedManagerAdapter impl
                     if ((segIdx = tryReserveNextSegmentOrWait()) == -1)
                         continue;
 
-                    String segmentFileName = fileName(segIdx);
-
-                    File tmpZip = new File(walArchiveDir, segmentFileName + ZIP_SUFFIX + TMP_SUFFIX);
-
-                    File zip = new File(walArchiveDir, segmentFileName + ZIP_SUFFIX);
-
-                    File raw = new File(walArchiveDir, segmentFileName);
+                    File tmpZip = archiveSegment(segIdx, ZIP_SUFFIX + TMP_SUFFIX);
+                    File zip = archiveSegment(segIdx, ZIP_SUFFIX);
+                    File raw = archiveSegment(segIdx);
 
                     long currSize = 0;
                     long reservedSize = raw.length();
@@ -2482,6 +2467,28 @@ public class FileWriteAheadLogManager extends GridCacheSharedManagerAdapter impl
     }
 
     /**
+     * @param idx Segment index.
+     * @return Path to archive segment.
+     */
+    private File archiveSegment(long idx) {
+        return archiveSegment(idx, null);
+    }
+
+    /**
+     * @param idx Segment index.
+     * @param ext Optional extension
+     * @return Path to archive segment.
+     */
+    private File archiveSegment(long idx, @Nullable String ext) {
+        String fileName = fileName(idx);
+
+        if (ext != null)
+            fileName += ext;
+
+        return new File(walArchiveDir, fileName);
+    }
+
+    /**
      * Responsible for decompressing previously compressed segments of WAL archive if they are needed for replay.
      */
     private class FileDecompressor extends GridWorker {
@@ -2525,11 +2532,9 @@ public class FileWriteAheadLogManager extends GridCacheSharedManagerAdapter impl
                     if (segmentToDecompress == -1)
                         continue;
 
-                    String segmentFileName = fileName(segmentToDecompress);
-
-                    File zip = new File(walArchiveDir, segmentFileName + ZIP_SUFFIX);
-                    File unzipTmp = new File(walArchiveDir, segmentFileName + TMP_SUFFIX);
-                    File unzip = new File(walArchiveDir, segmentFileName);
+                    File zip = archiveSegment(segmentToDecompress, ZIP_SUFFIX);
+                    File unzipTmp = archiveSegment(segmentToDecompress, TMP_SUFFIX);
+                    File unzip = archiveSegment(segmentToDecompress);
 
                     long currSize = 0;
                     long reservedSize = U.uncompressedSize(zip);
@@ -2606,7 +2611,7 @@ public class FileWriteAheadLogManager extends GridCacheSharedManagerAdapter impl
             if (decompressionFutures.containsKey(idx))
                 return decompressionFutures.get(idx);
 
-            File f = new File(walArchiveDir, fileName(idx));
+            File f = archiveSegment(idx);
 
             if (f.exists())
                 return new GridFinishedFuture<>();

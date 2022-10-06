@@ -231,4 +231,11 @@ public interface IgniteWriteAheadLogManager extends GridCacheSharedManager, Igni
      * Start automatically releasing segments when reaching {@link DataStorageConfiguration#getMaxWalArchiveSize()}.
      */
     void startAutoReleaseSegments();
+
+    /**
+     * Archiver can be not created, all files will be written to WAL folder, using absolute segment index.
+     *
+     * @return flag indicating if archiver is disabled.
+     */
+    boolean isArchiverEnabled();
 }

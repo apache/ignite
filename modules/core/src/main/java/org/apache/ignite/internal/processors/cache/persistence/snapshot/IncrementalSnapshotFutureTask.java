@@ -22,10 +22,12 @@ import java.util.HashSet;
 import java.util.Set;
 import java.util.UUID;
 import java.util.function.BiConsumer;
+import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.internal.processors.cache.GridCacheSharedContext;
 import org.apache.ignite.internal.processors.cache.persistence.file.FileIOFactory;
 import org.apache.ignite.internal.processors.cache.persistence.partstate.GroupPartitionId;
+import org.apache.ignite.internal.processors.cache.persistence.wal.WALPointer;
 import org.apache.ignite.internal.util.typedef.internal.CU;
 import org.jetbrains.annotations.Nullable;
 
@@ -42,6 +44,12 @@ class IncrementalSnapshotFutureTask
     /** Metadata of the full snapshot. */
     private final Set<Integer> affectedCacheGrps;
 
+    /** Current consistent cut WAL pointer. */
+    private final WALPointer lowPtr;
+
+    /** Preivous pointer. */
+    private final WALPointer highPtr;
+
     /** */
     public IncrementalSnapshotFutureTask(
         GridCacheSharedContext<?, ?> cctx,
@@ -51,7 +59,9 @@ class IncrementalSnapshotFutureTask
         String snpPath,
         int incIdx,
         File tmpWorkDir,
-        FileIOFactory ioFactory
+        FileIOFactory ioFactory,
+        WALPointer lowPtr,
+        WALPointer highPtr
     ) {
         super(
             cctx,
@@ -82,6 +92,8 @@ class IncrementalSnapshotFutureTask
         this.incIdx = incIdx;
         this.snpPath = snpPath;
         this.affectedCacheGrps = new HashSet<>(meta.cacheGroupIds());
+        this.lowPtr = lowPtr;
+        this.highPtr = highPtr;
 
         cctx.cache().configManager().addConfigurationChangeListener(this);
     }
@@ -102,7 +114,20 @@ class IncrementalSnapshotFutureTask
                 return false;
             }
 
-            onDone(new IncrementalSnapshotFutureTaskResult());
+            cctx.kernalContext().pools().getSnapshotExecutorService().submit(() -> {
+                try {
+                    long lowIdx = lowPtr.index();
+                    long highIdx = highPtr.index();
+
+                    // TODO: wait here for ONLY compressed segments.
+                    // cctx.wal().await(new WALPointer(lowPtr.index() + 1, 0, 0), highPtr);
+
+                    onDone(new IncrementalSnapshotFutureTaskResult());
+                }
+                catch (IgniteCheckedException e) {
+                    onDone(e);
+                }
+            });
 
             return true;
         }

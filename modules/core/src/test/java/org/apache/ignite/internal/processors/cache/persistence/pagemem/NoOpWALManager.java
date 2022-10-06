@@ -201,4 +201,9 @@ public class NoOpWALManager implements IgniteWriteAheadLogManager {
     @Override public void startAutoReleaseSegments() {
         // No-op.
     }
+
+    /** {@inheritDoc} */
+    @Override public boolean isArchiverEnabled() {
+        return false;
+    }
 }
