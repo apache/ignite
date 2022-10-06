@@ -184,9 +184,9 @@ public final class GridJavaProcess {
 
     /**
      * Resolves path to java binary (that can be executed using exec). Either the provided java home directory
-     * is used, or, if it's null, the java.home system property is consulted with.
+     * is used, or, if it's {@code null}, the java.home system property is consulted with.
      *
-     * @param javaHome Java home directory where to look for bin/java; if null, then java.home property value is used.
+     * @param javaHome Java home directory where to look for bin/java; if {@code null}, then java.home property value is used.
      * @return Path to Java executable.
      */
     public static String resolveJavaBin(@Nullable String javaHome) {
@@ -194,7 +194,7 @@ public final class GridJavaProcess {
     }
 
     /**
-     * Returns the provided java home path or, if it's null, falls back to the path obtained via 'java.home'
+     * Returns the provided java home path or, if it's {@code null}, falls back to the path obtained via 'java.home'
      * system property.
      */
     private static String resolveJavaHome(@Nullable String javaHome) {
