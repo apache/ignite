@@ -18,12 +18,14 @@
 package org.apache.ignite.internal.processors.cache.persistence.snapshot;
 
 import java.io.File;
+import java.io.IOException;
+import java.nio.file.Files;
 import java.util.HashSet;
 import java.util.Set;
 import java.util.UUID;
 import java.util.function.BiConsumer;
-import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteException;
+import org.apache.ignite.internal.IgniteInterruptedCheckedException;
 import org.apache.ignite.internal.processors.cache.GridCacheSharedContext;
 import org.apache.ignite.internal.processors.cache.persistence.file.FileIOFactory;
 import org.apache.ignite.internal.processors.cache.persistence.partstate.GroupPartitionId;
@@ -116,15 +118,22 @@ class IncrementalSnapshotFutureTask
 
             cctx.kernalContext().pools().getSnapshotExecutorService().submit(() -> {
                 try {
-                    long lowIdx = lowPtr.index();
+                    long lowIdx = lowPtr.index() + 1;
                     long highIdx = highPtr.index();
 
-                    // TODO: wait here for ONLY compressed segments.
-                    // cctx.wal().await(new WALPointer(lowPtr.index() + 1, 0, 0), highPtr);
+                    cctx.wal().awaitCompressed(highPtr.index());
+
+                    for (; lowIdx <= highIdx; lowIdx++) {
+                        File seg = cctx.wal().compressedSegment(lowIdx);
+
+                        assert seg.exists();
+
+                        Files.createLink(incSnpDir.toPath().resolve(seg.getName()), seg.toPath());
+                    }
 
                     onDone(new IncrementalSnapshotFutureTaskResult());
                 }
-                catch (IgniteCheckedException e) {
+                catch (IgniteInterruptedCheckedException | IOException e) {
                     onDone(e);
                 }
             });

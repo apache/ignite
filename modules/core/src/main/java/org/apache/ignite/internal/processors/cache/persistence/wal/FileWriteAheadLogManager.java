@@ -630,6 +630,11 @@ public class FileWriteAheadLogManager extends GridCacheSharedManagerAdapter impl
         return !new File(dsCfg.getWalArchivePath()).equals(new File(dsCfg.getWalPath()));
     }
 
+    /** {@inheritDoc} */
+    @Override public @Nullable File archiveDir() {
+        return walArchiveDir;
+    }
+
     /**
      * Collects WAL segments from the archive only if they are all present.
      * Will wait for the last segment to be archived if it is not.
@@ -651,7 +656,7 @@ public class FileWriteAheadLogManager extends GridCacheSharedManagerAdapter impl
 
         for (long i = low.index(); i < high.index(); i++) {
             File file = archiveSegment(i);
-            File fileZip = archiveSegment(i, ZIP_SUFFIX);
+            File fileZip = compressedSegment(i);
 
             if (file.exists())
                 res.add(file);
@@ -1096,7 +1101,7 @@ public class FileWriteAheadLogManager extends GridCacheSharedManagerAdapter impl
      */
     private boolean hasIndex(long absIdx) {
         boolean inArchive = archiveSegment(absIdx).exists() ||
-            archiveSegment(absIdx, ZIP_SUFFIX).exists();
+            compressedSegment(absIdx).exists();
 
         if (inArchive)
             return true;
@@ -2304,7 +2309,7 @@ public class FileWriteAheadLogManager extends GridCacheSharedManagerAdapter impl
                         continue;
 
                     File tmpZip = archiveSegment(segIdx, ZIP_SUFFIX + TMP_SUFFIX);
-                    File zip = archiveSegment(segIdx, ZIP_SUFFIX);
+                    File zip = compressedSegment(segIdx);
                     File raw = archiveSegment(segIdx);
 
                     long currSize = 0;
@@ -2466,20 +2471,33 @@ public class FileWriteAheadLogManager extends GridCacheSharedManagerAdapter impl
         }
     }
 
-    /**
-     * @param idx Segment index.
-     * @return Path to archive segment.
-     */
+    /** */
     private File archiveSegment(long idx) {
         return archiveSegment(idx, null);
     }
 
+    /** {@inheritDoc} */
+    @Override public File compressedSegment(long idx) {
+        return archiveSegment(idx, ZIP_SUFFIX);
+    }
+
+    /** {@inheritDoc} */
+    @Override public void awaitCompressed(long idx) throws IgniteInterruptedCheckedException {
+        segmentAware.awaitSegmentCompressed(idx);
+    }
+
+    /** */
+    private File archiveSegment(long idx, @Nullable String ext) {
+        return archiveSegment(walArchiveDir, idx, ext);
+    }
+
     /**
+     * @param walArchiveDir WAL archive directory.
      * @param idx Segment index.
      * @param ext Optional extension
      * @return Path to archive segment.
      */
-    private File archiveSegment(long idx, @Nullable String ext) {
+    static File archiveSegment(File walArchiveDir, long idx, String ext) {
         String fileName = fileName(idx);
 
         if (ext != null)
@@ -2532,7 +2550,7 @@ public class FileWriteAheadLogManager extends GridCacheSharedManagerAdapter impl
                     if (segmentToDecompress == -1)
                         continue;
 
-                    File zip = archiveSegment(segmentToDecompress, ZIP_SUFFIX);
+                    File zip = compressedSegment(segmentToDecompress);
                     File unzipTmp = archiveSegment(segmentToDecompress, TMP_SUFFIX);
                     File unzip = archiveSegment(segmentToDecompress);
 
@@ -2887,8 +2905,7 @@ public class FileWriteAheadLogManager extends GridCacheSharedManagerAdapter impl
             AbstractFileDescriptor currDesc = desc;
 
             if (!desc.file().exists()) {
-                FileDescriptor zipFile = new FileDescriptor(
-                    new File(walArchiveDir, fileName(desc.idx()) + ZIP_SUFFIX));
+                FileDescriptor zipFile = new FileDescriptor(archiveSegment(walArchiveDir, desc.idx(), ZIP_SUFFIX));
 
                 if (!zipFile.file.exists()) {
                     throw new FileNotFoundException("Both compressed and raw segment files are missing in archive " +

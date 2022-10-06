@@ -17,6 +17,7 @@
 
 package org.apache.ignite.internal.processors.cache.persistence.pagemem;
 
+import java.io.File;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.internal.GridKernalContext;
 import org.apache.ignite.internal.pagemem.wal.IgniteWriteAheadLogManager;
@@ -205,5 +206,20 @@ public class NoOpWALManager implements IgniteWriteAheadLogManager {
     /** {@inheritDoc} */
     @Override public boolean isArchiverEnabled() {
         return false;
+    }
+
+    /** {@inheritDoc} */
+    @Override public @Nullable File archiveDir() {
+        return null;
+    }
+
+    /** {@inheritDoc} */
+    @Override public @Nullable File compressedSegment(long idx) {
+        return null;
+    }
+
+    /** {@inheritDoc} */
+    @Override public void awaitCompressed(long idx) {
+        // No-op.
     }
 }

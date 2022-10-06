@@ -130,13 +130,23 @@ public class SegmentAware {
     }
 
     /**
-     * Method will wait activation of particular WAL segment index.
+     * Method will wait archivation of particular WAL segment index.
      *
-     * @param awaitIdx absolute index  {@link #lastArchivedAbsoluteIndex()} to become true.
+     * @param awaitIdx absolute index {@link #lastArchivedAbsoluteIndex()} to become true.
      * @throws IgniteInterruptedCheckedException if interrupted.
      */
     public void awaitSegmentArchived(long awaitIdx) throws IgniteInterruptedCheckedException {
         segmentArchivedStorage.awaitSegmentArchived(awaitIdx);
+    }
+
+    /**
+     * Method will wait activation of particular WAL segment index.
+     *
+     * @param awaitIdx absolute index {@link #lastCompressedIdx()} to become true.
+     * @throws IgniteInterruptedCheckedException if interrupted.
+     */
+    public void awaitSegmentCompressed(long awaitIdx) throws IgniteInterruptedCheckedException {
+        segmentCompressStorage.awaitSegmentCompressed(awaitIdx);
     }
 
     /**

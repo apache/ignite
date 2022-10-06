@@ -17,9 +17,11 @@
 
 package org.apache.ignite.internal.pagemem.wal;
 
+import java.io.File;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.configuration.DataStorageConfiguration;
+import org.apache.ignite.internal.IgniteInterruptedCheckedException;
 import org.apache.ignite.internal.pagemem.wal.record.RolloverType;
 import org.apache.ignite.internal.pagemem.wal.record.WALRecord;
 import org.apache.ignite.internal.processors.cache.GridCacheSharedManager;
@@ -238,4 +240,25 @@ public interface IgniteWriteAheadLogManager extends GridCacheSharedManager, Igni
      * @return flag indicating if archiver is disabled.
      */
     boolean isArchiverEnabled();
+
+    /**
+     * Archive directory if any.
+     *
+     * @return Arvhice directory.
+     */
+    @Nullable File archiveDir();
+
+    /**
+     * @param idx Segment index.
+     * @return Path to compressed archive segment.
+     */
+    @Nullable File compressedSegment(long idx);
+
+    /**
+     * Blocks current thread while segment with the {@code index} not compressed.
+     * If segment compressed, already, returns immediately.
+     *
+     * @param idx Index.
+     */
+    void awaitCompressed(long idx) throws IgniteInterruptedCheckedException;
 }

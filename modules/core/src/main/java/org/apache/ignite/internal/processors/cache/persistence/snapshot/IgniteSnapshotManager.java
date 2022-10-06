@@ -222,6 +222,7 @@ import static org.apache.ignite.internal.util.GridUnsafe.bufferAddress;
 import static org.apache.ignite.internal.util.IgniteUtils.isLocalNodeCoordinator;
 import static org.apache.ignite.internal.util.distributed.DistributedProcess.DistributedProcessType.END_SNAPSHOT;
 import static org.apache.ignite.internal.util.distributed.DistributedProcess.DistributedProcessType.START_SNAPSHOT;
+import static org.apache.ignite.internal.util.io.GridFileUtils.ensureHardLinkAvailable;
 import static org.apache.ignite.plugin.security.SecurityPermission.ADMIN_SNAPSHOT;
 import static org.apache.ignite.spi.systemview.view.SnapshotView.SNAPSHOT_SYS_VIEW;
 import static org.apache.ignite.spi.systemview.view.SnapshotView.SNAPSHOT_SYS_VIEW_DESC;
@@ -2441,6 +2442,8 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
      */
     private void checkIncrementalCanBeCreated(String name, @Nullable String snpPath) throws IgniteCheckedException {
         File snpDir = snapshotLocalDir(name, snpPath);
+
+        ensureHardLinkAvailable(cctx.wal().archiveDir().toPath(), snpDir.toPath());
 
         SnapshotMetadata meta = readSnapshotMetadata(new File(
             snpDir,
