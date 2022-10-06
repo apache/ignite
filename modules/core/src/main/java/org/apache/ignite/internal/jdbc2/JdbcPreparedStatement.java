@@ -366,7 +366,7 @@ public class JdbcPreparedStatement extends JdbcStatement implements PreparedStat
         setupQuery(qry);
 
         try {
-            List<JdbcParameterMeta> params = conn.ignite().context().query().getIndexing().parameterMetaData(conn.schemaName(), qry);
+            List<JdbcParameterMeta> params = conn.ignite().context().query().parameterMetaData(null, qry, null);
 
             return new JdbcThinParameterMetadata(params);
         }

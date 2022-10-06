@@ -23,6 +23,7 @@ import java.util.UUID;
 
 import org.apache.ignite.cache.query.FieldsQueryCursor;
 import org.apache.ignite.internal.processors.GridProcessor;
+import org.apache.ignite.internal.util.typedef.T2;
 import org.jetbrains.annotations.Nullable;
 
 /**
@@ -42,8 +43,20 @@ public interface QueryEngine extends GridProcessor {
         String schemaName,
         String qry,
         Object... params
-    )
-        throws IgniteSQLException;
+    ) throws IgniteSQLException;
+
+    /**
+     * @param ctx Query context, may be null.
+     * @param schemaName Schema name.
+     * @param qry Query.
+     * @return List of queries' metadata.
+     * @throws IgniteSQLException If failed.
+     */
+    List<T2<List<GridQueryFieldMetadata>, List<GridQueryFieldMetadata>>> queryMetadata(
+        @Nullable QueryContext ctx,
+        String schemaName,
+        String qry
+    ) throws IgniteSQLException;
 
     /**
      * @param ctx Query context, may be null.

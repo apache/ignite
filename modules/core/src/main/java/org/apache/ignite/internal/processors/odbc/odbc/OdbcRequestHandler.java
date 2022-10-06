@@ -766,7 +766,7 @@ public class OdbcRequestHandler implements ClientListenerRequestHandler {
 
             SqlFieldsQueryEx qry = makeQuery(schema, sql);
 
-            List<JdbcParameterMeta> params = ctx.query().getIndexing().parameterMetaData(schema, qry);
+            List<JdbcParameterMeta> params = ctx.query().parameterMetaData(null, qry, cliCtx);
 
             byte[] typeIds = new byte[params.size()];
 

@@ -42,12 +42,14 @@ import org.apache.calcite.sql.validate.SqlValidator;
 import org.apache.calcite.sql2rel.SqlToRelConverter;
 import org.apache.calcite.tools.FrameworkConfig;
 import org.apache.calcite.tools.Frameworks;
+import org.apache.calcite.util.CancelFlag;
 import org.apache.ignite.SystemProperty;
 import org.apache.ignite.cache.query.FieldsQueryCursor;
 import org.apache.ignite.internal.GridKernalContext;
 import org.apache.ignite.internal.processors.GridProcessorAdapter;
 import org.apache.ignite.internal.processors.cache.query.IgniteQueryErrorCode;
 import org.apache.ignite.internal.processors.failure.FailureProcessor;
+import org.apache.ignite.internal.processors.query.GridQueryFieldMetadata;
 import org.apache.ignite.internal.processors.query.IgniteSQLException;
 import org.apache.ignite.internal.processors.query.QueryContext;
 import org.apache.ignite.internal.processors.query.QueryEngine;
@@ -69,9 +71,12 @@ import org.apache.ignite.internal.processors.query.calcite.metadata.AffinityServ
 import org.apache.ignite.internal.processors.query.calcite.metadata.MappingService;
 import org.apache.ignite.internal.processors.query.calcite.metadata.MappingServiceImpl;
 import org.apache.ignite.internal.processors.query.calcite.metadata.cost.IgniteCostFactory;
+import org.apache.ignite.internal.processors.query.calcite.prepare.BaseQueryContext;
 import org.apache.ignite.internal.processors.query.calcite.prepare.CacheKey;
 import org.apache.ignite.internal.processors.query.calcite.prepare.IgniteConvertletTable;
 import org.apache.ignite.internal.processors.query.calcite.prepare.IgniteTypeCoercion;
+import org.apache.ignite.internal.processors.query.calcite.prepare.MultiStepPlan;
+import org.apache.ignite.internal.processors.query.calcite.prepare.PlanningContext;
 import org.apache.ignite.internal.processors.query.calcite.prepare.PrepareServiceImpl;
 import org.apache.ignite.internal.processors.query.calcite.prepare.QueryPlan;
 import org.apache.ignite.internal.processors.query.calcite.prepare.QueryPlanCache;
@@ -89,6 +94,7 @@ import org.apache.ignite.internal.processors.query.calcite.type.IgniteTypeSystem
 import org.apache.ignite.internal.processors.query.calcite.util.Commons;
 import org.apache.ignite.internal.processors.query.calcite.util.LifecycleAware;
 import org.apache.ignite.internal.processors.query.calcite.util.Service;
+import org.apache.ignite.internal.util.typedef.T2;
 import org.jetbrains.annotations.Nullable;
 
 import static org.apache.ignite.IgniteSystemProperties.getLong;
@@ -365,6 +371,52 @@ public class CalciteQueryProcessor extends GridProcessorAdapter implements Query
         return cursors;
     }
 
+    /** {@inheritDoc}
+     * @return*/
+    @Override public List<T2<List<GridQueryFieldMetadata>, List<GridQueryFieldMetadata>>> queryMetadata(
+        @Nullable QueryContext ctx,
+        String schemaName,
+        String sql
+    ) throws IgniteSQLException {
+        SchemaPlus schema = schemaHolder.schema(schemaName);
+
+        assert schema != null : "Schema not found: " + schemaName;
+
+        QueryPlan plan = queryPlanCache().queryPlan(new CacheKey(schema.getName(), sql));
+
+        if (plan != null)
+            return Collections.singletonList(fieldsMeta(plan));
+
+        SqlNodeList qryList = Commons.parse(sql, FRAMEWORK_CONFIG.getParserConfig());
+
+        List<T2<List<GridQueryFieldMetadata>, List<GridQueryFieldMetadata>>> res = new ArrayList<>(qryList.size());
+
+        for (final SqlNode sqlNode: qryList) {
+            if (qryList.size() == 1)
+                plan = queryPlanCache().queryPlan(new CacheKey(schemaName, sql), () -> planQuery(sqlNode, schema));
+            else
+                plan = planQuery(sqlNode, schema);
+
+            res.add(fieldsMeta(plan));
+        }
+
+        return res;
+    }
+
+    /** */
+    private static T2<List<GridQueryFieldMetadata>, List<GridQueryFieldMetadata>> fieldsMeta(QueryPlan plan) {
+        switch (plan.type()) {
+            case QUERY:
+            case DML:
+                MultiStepPlan msPlan = (MultiStepPlan)plan;
+
+                return new T2<>(msPlan.fieldsMetadata().queryFieldsMetadata(Commons.typeFactory()),
+                    msPlan.paramsMetadata().queryFieldsMetadata(Commons.typeFactory()));
+            default:
+                return new T2<>(Collections.emptyList(), Collections.emptyList());
+        }
+    }
+
     /** {@inheritDoc} */
     @Override public List<FieldsQueryCursor<List<?>>> queryBatched(
         @Nullable QueryContext qryCtx,
@@ -452,6 +504,29 @@ public class CalciteQueryProcessor extends GridProcessorAdapter implements Query
             else
                 throw e;
         }
+    }
+
+    /** */
+    private QueryPlan planQuery(
+        SqlNode sqlNode,
+        SchemaPlus schema
+    ) {
+        PlanningContext pctx = PlanningContext.builder()
+            .parentContext(
+                BaseQueryContext.builder()
+                    .frameworkConfig(
+                        Frameworks.newConfigBuilder(FRAMEWORK_CONFIG)
+                            .defaultSchema(schema)
+                            .build()
+                    )
+                    .logger(log)
+                    .build()
+            )
+            .query(sqlNode.toString())
+            .plannerTimeout(queryPlannerTimeout)
+            .build();
+
+        return prepareSvc.prepareSingle(sqlNode, pctx);
     }
 
     /** */

@@ -24,6 +24,7 @@ import java.util.UUID;
 import org.apache.ignite.cache.query.FieldsQueryCursor;
 import org.apache.ignite.internal.GridKernalContext;
 import org.apache.ignite.internal.processors.GridProcessorAdapter;
+import org.apache.ignite.internal.util.typedef.T2;
 import org.jetbrains.annotations.Nullable;
 
 /** No op implementation. */
@@ -41,6 +42,16 @@ public class NoOpQueryEngine extends GridProcessorAdapter implements QueryEngine
         String schemaName,
         String query,
         Object... params
+    ) throws IgniteSQLException {
+        return Collections.emptyList();
+    }
+
+    /** {@inheritDoc}
+     * @return*/
+    @Override public List<T2<List<GridQueryFieldMetadata>, List<GridQueryFieldMetadata>>> queryMetadata(
+        @Nullable QueryContext ctx,
+        String schemaName,
+        String qry
     ) throws IgniteSQLException {
         return Collections.emptyList();
     }

@@ -21,6 +21,7 @@ import java.io.Serializable;
 import java.sql.BatchUpdateException;
 import java.sql.Connection;
 import java.sql.DriverManager;
+import java.sql.ParameterMetaData;
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.ResultSetMetaData;
@@ -202,10 +203,11 @@ public class JdbcQueryTest extends GridCommonAbstractTest {
     /** Test batched execution of prepared statement. */
     @Test
     public void testBatchPrepared() throws Exception {
-        stmt.execute("CREATE TABLE Person(\"id\" INT, PRIMARY KEY(\"id\"), \"name\" VARCHAR)");
+        stmt.execute("CREATE TABLE Person(\"id\" DECIMAL(10, 3), PRIMARY KEY(\"id\"), \"name\" VARCHAR)");
 
         try (PreparedStatement stmt0 = conn.prepareStatement("INSERT INTO Person VALUES (?, ?);" +
             "INSERT INTO Person VALUES (?, ?)")) {
+            ParameterMetaData paramMeta = stmt0.getParameterMetaData();
             stmt0.setInt(1, 0);
             stmt0.setString(2, "Name");
             stmt0.setInt(2, 1);

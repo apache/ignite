@@ -36,6 +36,7 @@ import java.util.concurrent.ConcurrentMap;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
+import java.util.stream.Collectors;
 import javax.cache.Cache;
 import javax.cache.CacheException;
 import org.apache.ignite.IgniteCheckedException;
@@ -94,6 +95,7 @@ import org.apache.ignite.internal.processors.cache.query.IgniteQueryErrorCode;
 import org.apache.ignite.internal.processors.cache.query.IndexQueryDesc;
 import org.apache.ignite.internal.processors.cache.query.SqlFieldsQueryEx;
 import org.apache.ignite.internal.processors.cacheobject.IgniteCacheObjectProcessor;
+import org.apache.ignite.internal.processors.odbc.jdbc.JdbcParameterMeta;
 import org.apache.ignite.internal.processors.platform.PlatformContext;
 import org.apache.ignite.internal.processors.platform.PlatformProcessor;
 import org.apache.ignite.internal.processors.query.aware.IndexBuildStatusStorage;
@@ -3118,6 +3120,41 @@ public class GridQueryProcessor extends GridProcessorAdapter {
                 };
 
             return executeQuery(qryType, qry.getSql(), cctx, clo, true);
+        });
+    }
+
+    /** */
+    public List<JdbcParameterMeta> parameterMetaData(
+        @Nullable final GridCacheContext<?, ?> cctx,
+        final SqlFieldsQuery qry,
+        @Nullable final SqlClientContext cliCtx
+    ) {
+
+        if (!moduleEnabled()) {
+            throw new IgniteException("Failed to execute query because indexing is disabled and no query engine is " +
+                "configured (consider adding module " + INDEXING.module() + " to classpath or moving it " +
+                "from 'optional' to 'libs' folder or configuring any query engine with " +
+                "IgniteConfiguration.SqlConfiguration.QueryEnginesConfiguration property).");
+        }
+
+        return executeQuerySafe(cctx, () -> {
+            final String schemaName = qry.getSchema() == null ? schemaName(cctx) : qry.getSchema();
+
+            QueryEngine qryEngine = engineForQuery(cliCtx, qry);
+
+            if (qryEngine != null) {
+                List<T2<List<GridQueryFieldMetadata>, List<GridQueryFieldMetadata>>> meta = qryEngine.queryMetadata(
+                    QueryContext.of(qry, cliCtx),
+                    schemaName,
+                    qry.getSql());
+
+                return meta.stream()
+                    .flatMap(pair -> pair.get2().stream().map(JdbcParameterMeta::new))
+                    .collect(Collectors.toList());
+            }
+            else
+                return idx.parameterMetaData(schemaName, qry);
+
         });
     }
 

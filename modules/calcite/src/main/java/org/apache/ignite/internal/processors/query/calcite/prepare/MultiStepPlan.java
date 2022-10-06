@@ -20,9 +20,11 @@ package org.apache.ignite.internal.processors.query.calcite.prepare;
 import java.util.List;
 import java.util.Map;
 import java.util.UUID;
+import org.apache.ignite.internal.processors.query.GridQueryFieldMetadata;
 import org.apache.ignite.internal.processors.query.calcite.metadata.ColocationGroup;
 import org.apache.ignite.internal.processors.query.calcite.metadata.FragmentMapping;
 import org.apache.ignite.internal.processors.query.calcite.metadata.MappingService;
+import org.jetbrains.annotations.Nullable;
 
 /**
  * Regular query or DML
@@ -37,6 +39,9 @@ public interface MultiStepPlan extends QueryPlan {
      * @return Fields metadata.
      */
     FieldsMetadata fieldsMetadata();
+
+    /** */
+    FieldsMetadata paramsMetadata();
 
     /**
      * @param fragment Fragment.

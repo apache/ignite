@@ -17,11 +17,13 @@
 
 package org.apache.ignite.internal.processors.query.calcite.prepare;
 
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 import java.util.UUID;
+import org.apache.ignite.internal.processors.query.GridQueryFieldMetadata;
 import org.apache.ignite.internal.processors.query.calcite.metadata.ColocationGroup;
 import org.apache.ignite.internal.processors.query.calcite.metadata.FragmentMapping;
 import org.apache.ignite.internal.processors.query.calcite.metadata.MappingService;
@@ -29,6 +31,7 @@ import org.apache.ignite.internal.processors.query.calcite.rel.IgniteReceiver;
 import org.apache.ignite.internal.processors.query.calcite.rel.IgniteSender;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.internal.U;
+import org.jetbrains.annotations.Nullable;
 
 /**
  *
@@ -38,15 +41,23 @@ public abstract class AbstractMultiStepPlan implements MultiStepPlan {
     protected final FieldsMetadata fieldsMetadata;
 
     /** */
+    protected final FieldsMetadata paramsMetadata;
+
+    /** */
     protected final QueryTemplate queryTemplate;
 
     /** */
     protected ExecutionPlan executionPlan;
 
     /** */
-    protected AbstractMultiStepPlan(QueryTemplate queryTemplate, FieldsMetadata fieldsMetadata) {
+    protected AbstractMultiStepPlan(
+        QueryTemplate queryTemplate,
+        FieldsMetadata fieldsMetadata,
+        @Nullable FieldsMetadata paramsMetadata
+    ) {
         this.queryTemplate = queryTemplate;
         this.fieldsMetadata = fieldsMetadata;
+        this.paramsMetadata = paramsMetadata;
     }
 
     /** {@inheritDoc} */
@@ -57,6 +68,11 @@ public abstract class AbstractMultiStepPlan implements MultiStepPlan {
     /** {@inheritDoc} */
     @Override public FieldsMetadata fieldsMetadata() {
         return fieldsMetadata;
+    }
+
+    /** {@inheritDoc} */
+    @Override public FieldsMetadata paramsMetadata() {
+        return paramsMetadata;
     }
 
     /** {@inheritDoc} */
