@@ -2330,6 +2330,8 @@ public class IgniteTxHandler {
                                                 topVer, rollbackOnPrimary);
                                         }
                                     }
+                                    else
+                                        assert updated;
                                 }
                                 else
                                     invalid = true;
