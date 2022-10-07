@@ -212,6 +212,8 @@ class SnapshotFutureTask extends AbstractSnapshotFutureTask<Set<GroupPartitionId
     @Override public boolean onDone(@Nullable Set<GroupPartitionId> res, @Nullable Throwable err) {;
         log.error("TEST | snapshot - onDone(), dataStreamerFutures().size(): " + cctx.mvcc().dataStreamerFutures().size());
 
+//        U.FLAG2.set(false);
+
         for (PageStoreSerialWriter writer : partDeltaWriters.values())
             U.closeQuiet(writer);
 
@@ -318,6 +320,8 @@ class SnapshotFutureTask extends AbstractSnapshotFutureTask<Set<GroupPartitionId
         if (stopping())
             return;
 
+        log.error("TEST | snapshot - beforeCheckpointBegin(). DSFuts: " + cctx.mvcc().dataStreamerFutures().size());
+
         ctx.finishedStateFut().listen(f -> {
             if (f.error() == null)
                 cpEndFut.complete(true);
@@ -347,6 +351,8 @@ class SnapshotFutureTask extends AbstractSnapshotFutureTask<Set<GroupPartitionId
         // Write lock is hold. Partition pages counters has been collected under write lock.
         if (stopping())
             return;
+
+        U.FLAG2.set(false);
 
         log.error("TEST | snapshot - onMarkCheckpointBegin(). DSFuts: " + cctx.mvcc().dataStreamerFutures().size());
 
@@ -455,6 +461,8 @@ class SnapshotFutureTask extends AbstractSnapshotFutureTask<Set<GroupPartitionId
     @Override public void onCheckpointBegin(Context ctx) {
         if (stopping())
             return;
+
+        U.FLAG2.set(false);
 
         log.error("TEST | snapshot - onCheckpointBegin. DSFuts: " + cctx.mvcc().dataStreamerFutures().size());
 

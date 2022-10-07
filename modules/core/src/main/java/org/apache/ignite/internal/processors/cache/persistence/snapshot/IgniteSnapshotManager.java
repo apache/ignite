@@ -3418,7 +3418,7 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
         /** Operation interruption exception. */
         volatile IgniteCheckedException interruptEx;
 
-        /** */
+        /** TODO */
         final Map<UUID, String> warnings = new HashMap<>();
 
         /**

@@ -668,7 +668,7 @@ public class GridCachePartitionExchangeManager<K, V> extends GridCacheSharedMana
                 && ((SnapshotDiscoveryMessage)customMsg).needExchange()) {
                 exchId = exchangeId(n.id(), affinityTopologyVersion(evt), evt);
 
-                log.error("TEST | wait for exchange by discovery snapshot message " + customMsg);
+//                log.error("TEST | wait for exchange by discovery snapshot message " + customMsg);
 
                 exchFut = exchangeFuture(exchId, evt, null, null, null);
             }

@@ -188,6 +188,8 @@ public class DataStreamProcessor<K, V> extends GridProcessorAdapter {
 
             ldrs.add(ldr);
 
+            log.error("TEST | ds added");
+
             ldr.internalFuture().listen(new CI1<IgniteInternalFuture<?>>() {
                 @Override public void apply(IgniteInternalFuture<?> f) {
                     boolean b = ldrs.remove(ldr);
@@ -323,6 +325,8 @@ public class DataStreamProcessor<K, V> extends GridProcessorAdapter {
 
                 return;
             }
+
+//            log.error("TEST | Updating on " + ctx.cluster().get().localNode().order());
 
             localUpdate(nodeId, req, updater, topic);
         }

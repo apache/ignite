@@ -42,7 +42,6 @@ public class SnapshotDataStreamerVerifyHandler implements SnapshotHandler<Snapsh
     @Override public SnapshotHandlerWarning invoke(SnapshotHandlerContext ctx) throws Exception {
         List<String> cachesUnderDsLoad = kctx.dataStream().cachesUnderInconsistentUpdaters();
 
-        //TODO
         if (!cachesUnderDsLoad.isEmpty()) {
             return new SnapshotHandlerWarning("During the snapshot, caches: " +
                 cachesUnderDsLoad.stream().map(cn -> "'" + cn + "'").collect(Collectors.joining(",")) +
