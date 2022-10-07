@@ -164,6 +164,12 @@ public class IncrementalSnapshotTest extends AbstractSnapshotSelfTest {
 
         checkFailWhenCacheDestroyed(OTHER_CACHE, "Create incremental snapshot request has been rejected. " +
             "Cache group destroyed [groupId=" + CU.cacheId(OTHER_CACHE) + ']');
+    }
+
+    /** */
+    @Test
+    public void testIncrementalSnapshotFailsOnGroupedCacheDestroy() throws Exception {
+        assumeFalse("https://issues.apache.org/jira/browse/IGNITE-17819", encryption);
 
         checkFailWhenCacheDestroyed(GROUPED_CACHE, "Create incremental snapshot request has been rejected. " +
             "Cache destroyed [cacheId=" + CU.cacheId(GROUPED_CACHE) + ", cacheName=" + GROUPED_CACHE + ']');
@@ -254,8 +260,5 @@ public class IncrementalSnapshotTest extends AbstractSnapshotSelfTest {
             IgniteException.class,
             errMsg
         );
-
-        stopAllGrids();
-        cleanPersistenceDir();
     }
 }
