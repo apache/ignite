@@ -101,6 +101,7 @@ import static org.apache.ignite.internal.processors.cache.persistence.snapshot.I
 import static org.apache.ignite.testframework.GridTestUtils.assertThrowsAnyCause;
 import static org.apache.ignite.testframework.GridTestUtils.assertThrowsWithCause;
 import static org.apache.ignite.testframework.GridTestUtils.waitForCondition;
+import static org.junit.Assume.assumeFalse;
 
 /**
  * Cluster-wide snapshot test.
@@ -530,8 +531,11 @@ public class IgniteClusterSnapshotSelfTest extends AbstractSnapshotSelfTest {
         for (boolean inc : new boolean[] {false, true}) {
             IgniteEx ignite = startGridsWithCache(2, dfltCacheCfg, CACHE_KEYS_RANGE);
 
-            if (inc)
+            if (inc) {
+                assumeFalse("https://issues.apache.org/jira/browse/IGNITE-17819", encryption);
+
                 ignite.snapshot().createSnapshot(SNAPSHOT_NAME).get(TIMEOUT);
+            }
 
             BlockingCustomMessageDiscoverySpi spi = discoSpi(ignite);
             spi.block((msg) -> msg instanceof FullMessage);

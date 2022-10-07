@@ -61,6 +61,7 @@ import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgniteUuid;
 import org.apache.ignite.marshaller.Marshaller;
 import org.apache.ignite.marshaller.MarshallerUtils;
+import org.jetbrains.annotations.Nullable;
 
 import static java.nio.file.Files.newDirectoryStream;
 import static org.apache.ignite.cache.CacheAtomicityMode.TRANSACTIONAL_SNAPSHOT;
@@ -196,13 +197,15 @@ public class GridLocalConfigManager {
 
     /**
      * @param conf File with stored cache data.
+     * @param marshaller Marshaller.
+     * @param cfg Ignite configuration.
      * @return Cache data.
      * @throws IgniteCheckedException If failed.
      */
     public static StoredCacheData readCacheData(
         File conf,
-        Marshaller marshaller,
-        IgniteConfiguration cfg
+        @Nullable Marshaller marshaller,
+        @Nullable IgniteConfiguration cfg
     ) throws IgniteCheckedException {
         try (InputStream stream = new BufferedInputStream(Files.newInputStream(conf.toPath()))) {
             if (marshaller == null || cfg == null) {

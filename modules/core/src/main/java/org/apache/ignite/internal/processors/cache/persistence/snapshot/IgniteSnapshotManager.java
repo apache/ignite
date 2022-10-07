@@ -28,9 +28,12 @@ import java.nio.ByteBuffer;
 import java.nio.ByteOrder;
 import java.nio.channels.FileChannel;
 import java.nio.file.DirectoryStream;
+import java.nio.file.FileVisitResult;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
+import java.nio.file.SimpleFileVisitor;
+import java.nio.file.attribute.BasicFileAttributes;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.BitSet;
@@ -315,11 +318,8 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
     /** Incremental snapshots directory name. */
     public static final String INC_SNP_DIR = "increments";
 
-    /** Count of numbers in incremental snapshot directory. */
-    public static final int INC_DIR_LENGTH = 4;
-
     /** Pattern for incremental snapshot directory names. */
-    public static final Pattern INC_SNP_NAME_PATTERN = Pattern.compile("\\d{" + INC_DIR_LENGTH + "}");
+    public static final Pattern INC_SNP_NAME_PATTERN = U.fixedLengthNumberNamePattern(null);
 
     /**
      * Local buffer to perform copy-on-write operations with pages for {@code SnapshotFutureTask.PageStoreSerialWriter}s.
@@ -646,29 +646,54 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
         if (!snpDir.isDirectory())
             return;
 
-        File binDir = binaryWorkDir(snpDir.getAbsolutePath(), folderName);
-        File nodeDbDir = new File(snpDir.getAbsolutePath(), databaseRelativePath(folderName));
+        try {
+            File binDir = binaryWorkDir(snpDir.getAbsolutePath(), folderName);
+            File nodeDbDir = new File(snpDir.getAbsolutePath(), databaseRelativePath(folderName));
 
-        U.delete(binDir);
-        U.delete(nodeDbDir);
+            U.delete(binDir);
+            U.delete(nodeDbDir);
 
-        File marshDir = mappingFileStoreWorkDir(snpDir.getAbsolutePath());
+            File marshDir = mappingFileStoreWorkDir(snpDir.getAbsolutePath());
 
-        // Concurrently traverse the snapshot marshaller directory and delete all files.
-        U.delete(marshDir);
+            // Concurrently traverse the snapshot marshaller directory and delete all files.
+            Files.walkFileTree(marshDir.toPath(), new SimpleFileVisitor<Path>() {
+                @Override public FileVisitResult visitFile(Path file, BasicFileAttributes attrs) {
+                    U.delete(file);
 
-        File binMetadataDfltDir = new File(snpDir, DFLT_BINARY_METADATA_PATH);
-        File marshallerDfltDir = new File(snpDir, DFLT_MARSHALLER_PATH);
+                    return FileVisitResult.CONTINUE;
+                }
 
-        U.delete(binMetadataDfltDir);
-        U.delete(marshallerDfltDir);
+                @Override public FileVisitResult visitFileFailed(Path file, IOException exc) {
+                    // Skip files which can be concurrently removed from FileTree.
+                    return FileVisitResult.CONTINUE;
+                }
 
-        File db = new File(snpDir, DB_DEFAULT_FOLDER);
+                @Override public FileVisitResult postVisitDirectory(Path dir, IOException exc) {
+                    dir.toFile().delete();
 
-        if (!db.exists() || F.isEmpty(db.list())) {
-            marshDir.delete();
-            db.delete();
-            U.delete(snpDir);
+                    if (log.isInfoEnabled() && exc != null)
+                        log.info("Marshaller directory cleaned with an exception: " + exc.getMessage());
+
+                    return FileVisitResult.CONTINUE;
+                }
+            });
+
+            File binMetadataDfltDir = new File(snpDir, DFLT_BINARY_METADATA_PATH);
+            File marshallerDfltDir = new File(snpDir, DFLT_MARSHALLER_PATH);
+
+            U.delete(binMetadataDfltDir);
+            U.delete(marshallerDfltDir);
+
+            File db = new File(snpDir, DB_DEFAULT_FOLDER);
+
+            if (!db.exists() || F.isEmpty(db.list())) {
+                marshDir.delete();
+                db.delete();
+                U.delete(snpDir);
+            }
+        }
+        catch (IOException e) {
+            throw new IgniteException(e);
         }
     }
 
@@ -704,7 +729,7 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
     public File incrementalSnapshotLocalDir(String snpName, @Nullable String snpPath, int incIdx) {
         return Paths.get(
             incrementalSnapshotsLocalRootDir(snpName, snpPath).getAbsolutePath(),
-            IgniteUtils.fixedLengthNumberName(incIdx, INC_DIR_LENGTH, null)
+            IgniteUtils.fixedLengthNumberName(incIdx, null)
         ).toFile();
     }
 
@@ -794,14 +819,19 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
         }
 
         if (req.incremental()) {
+            SnapshotMetadata meta = readSnapshotMetadata(new File(
+                snapshotLocalDir(req.snapshotName(), req.snapshotPath()),
+                snapshotMetaFileName(cctx.localNode().consistentId().toString())
+            ));
+
             try {
-                checkIncrementalCanBeCreated(req.snapshotName(), req.snapshotPath());
+                checkIncrementalCanBeCreated(req.snapshotName(), req.snapshotPath(), meta);
             }
             catch (IgniteCheckedException e) {
                 return new GridFinishedFuture<>(e);
             }
 
-            return initLocalIncrementalSnapshot(req);
+            return initLocalIncrementalSnapshot(req, meta);
         }
         else
             return initLocalFullSnapshot(req, grpIds, withMetaStorage);
@@ -809,16 +839,14 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
 
     /**
      * @param req Request on snapshot creation.
+     * @param meta Full snapshot metadata.
      * @return Future which will be completed when a snapshot has been started.
      */
-    private IgniteInternalFuture<SnapshotOperationResponse> initLocalIncrementalSnapshot(SnapshotOperationRequest req) {
-        SnapshotMetadata meta = readSnapshotMetadata(new File(
-            snapshotLocalDir(req.snapshotName(), req.snapshotPath()),
-            snapshotMetaFileName(cctx.localNode().consistentId().toString())
-        ));
-
+    private IgniteInternalFuture<SnapshotOperationResponse> initLocalIncrementalSnapshot(
+        SnapshotOperationRequest req,
+        SnapshotMetadata meta
+    ) {
         File incSnpDir = incrementalSnapshotLocalDir(req.snapshotName(), req.snapshotPath(), req.incrementIndex());
-
         WALPointer lowPtr;
 
         if (req.incrementIndex() == 1)
@@ -1920,7 +1948,7 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
         for (File tmp : snapshotTmpDir().listFiles())
             U.delete(tmp);
 
-        if (INC_SNP_NAME_PATTERN.matcher(snpDir.getName()).matches())
+        if (INC_SNP_NAME_PATTERN.matcher(snpDir.getName()).matches() && snpDir.getAbsolutePath().contains(INC_SNP_DIR))
             U.delete(snpDir);
         else
             deleteSnapshot(snpDir, pdsSettings.folderName());
@@ -2044,7 +2072,7 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
      * @return Snapshot metadata file name.
      */
     public static String incrementalSnapshotMetaFileName(int incIdx) {
-        return U.fixedLengthNumberName(incIdx, INC_DIR_LENGTH, SNAPSHOT_METAFILE_EXT);
+        return U.fixedLengthNumberName(incIdx, SNAPSHOT_METAFILE_EXT);
     }
 
     /**
@@ -2457,16 +2485,16 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
      *
      * @param name Full snapshot name.
      * @param snpPath Snapshot path.
+     * @param meta Full snapshot metadata.
      */
-    private void checkIncrementalCanBeCreated(String name, @Nullable String snpPath) throws IgniteCheckedException {
+    private void checkIncrementalCanBeCreated(
+        String name,
+        @Nullable String snpPath,
+        SnapshotMetadata meta
+    ) throws IgniteCheckedException {
         File snpDir = snapshotLocalDir(name, snpPath);
 
         ensureHardLinkAvailable(cctx.wal().archiveDir().toPath(), snpDir.toPath());
-
-        SnapshotMetadata meta = readSnapshotMetadata(new File(
-            snpDir,
-            snapshotMetaFileName(cctx.localNode().consistentId().toString())
-        ));
 
         Set<String> aliveNodesConsIds = cctx.discovery().aliveServerNodes()
             .stream()
@@ -2491,6 +2519,11 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
             if (gctx == null) {
                 throw new IgniteCheckedException("Create incremental snapshot request has been rejected. " +
                     "Cache group destroyed [groupId=" + grpId + ']');
+            }
+
+            if (gctx.config().isEncryptionEnabled()) {
+                throw new IgniteCheckedException("Create incremental snapshot request has been rejected. " +
+                    "Encrypted cache groups not supported [groupId=" + grpId + ']');
             }
 
             List<File> snpCacheDir =
