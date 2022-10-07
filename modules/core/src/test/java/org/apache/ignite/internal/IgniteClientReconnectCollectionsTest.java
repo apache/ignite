@@ -64,6 +64,17 @@ public class IgniteClientReconnectCollectionsTest extends IgniteClientReconnectA
     }
 
     /**
+     *
+     */
+    private void testCheckstule() {
+        try {
+            if (true)
+                throw new RuntimeException();
+        } catch (Throwable t) {
+            t.printStackTrace();
+        }
+    }
+    /**
      * @throws Exception If failed.
      */
     @Test
