@@ -187,9 +187,6 @@ public class IncrementalSnapshotTest extends AbstractSnapshotSelfTest {
             IgniteException.class,
             "Cache changed [cacheId=" + CU.cacheId(DEFAULT_CACHE_NAME) + ", cacheName=" + DEFAULT_CACHE_NAME + ']'
         );
-
-        stopAllGrids();
-        cleanPersistenceDir();
     }
 
     /** */
