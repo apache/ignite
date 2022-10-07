@@ -1897,7 +1897,7 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
         for (File tmp : snapshotTmpDir().listFiles())
             U.delete(tmp);
 
-        if (INC_SNP_NAME_PATTERN.matcher(snpDir.getName()).matches())
+        if (INC_SNP_NAME_PATTERN.matcher(snpDir.getName()).matches() && snpDir.getAbsolutePath().contains(INC_SNP_DIR))
             U.delete(snpDir);
         else
             deleteSnapshot(snpDir, pdsSettings.folderName());
