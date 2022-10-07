@@ -29,9 +29,12 @@ import java.nio.ByteBuffer;
 import java.nio.ByteOrder;
 import java.nio.channels.FileChannel;
 import java.nio.file.DirectoryStream;
+import java.nio.file.FileVisitResult;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
+import java.nio.file.SimpleFileVisitor;
+import java.nio.file.attribute.BasicFileAttributes;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.BitSet;
@@ -640,29 +643,54 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
         if (!snpDir.isDirectory())
             return;
 
-        File binDir = binaryWorkDir(snpDir.getAbsolutePath(), folderName);
-        File nodeDbDir = new File(snpDir.getAbsolutePath(), databaseRelativePath(folderName));
+        try {
+            File binDir = binaryWorkDir(snpDir.getAbsolutePath(), folderName);
+            File nodeDbDir = new File(snpDir.getAbsolutePath(), databaseRelativePath(folderName));
 
-        U.delete(binDir);
-        U.delete(nodeDbDir);
+            U.delete(binDir);
+            U.delete(nodeDbDir);
 
-        File marshDir = mappingFileStoreWorkDir(snpDir.getAbsolutePath());
+            File marshDir = mappingFileStoreWorkDir(snpDir.getAbsolutePath());
 
-        // Concurrently traverse the snapshot marshaller directory and delete all files.
-        U.delete(marshDir);
+            // Concurrently traverse the snapshot marshaller directory and delete all files.
+            Files.walkFileTree(marshDir.toPath(), new SimpleFileVisitor<Path>() {
+                @Override public FileVisitResult visitFile(Path file, BasicFileAttributes attrs) {
+                    U.delete(file);
 
-        File binMetadataDfltDir = new File(snpDir, DFLT_BINARY_METADATA_PATH);
-        File marshallerDfltDir = new File(snpDir, DFLT_MARSHALLER_PATH);
+                    return FileVisitResult.CONTINUE;
+                }
 
-        U.delete(binMetadataDfltDir);
-        U.delete(marshallerDfltDir);
+                @Override public FileVisitResult visitFileFailed(Path file, IOException exc) {
+                    // Skip files which can be concurrently removed from FileTree.
+                    return FileVisitResult.CONTINUE;
+                }
 
-        File db = new File(snpDir, DB_DEFAULT_FOLDER);
+                @Override public FileVisitResult postVisitDirectory(Path dir, IOException exc) {
+                    dir.toFile().delete();
 
-        if (!db.exists() || F.isEmpty(db.list())) {
-            marshDir.delete();
-            db.delete();
-            U.delete(snpDir);
+                    if (log.isInfoEnabled() && exc != null)
+                        log.info("Marshaller directory cleaned with an exception: " + exc.getMessage());
+
+                    return FileVisitResult.CONTINUE;
+                }
+            });
+
+            File binMetadataDfltDir = new File(snpDir, DFLT_BINARY_METADATA_PATH);
+            File marshallerDfltDir = new File(snpDir, DFLT_MARSHALLER_PATH);
+
+            U.delete(binMetadataDfltDir);
+            U.delete(marshallerDfltDir);
+
+            File db = new File(snpDir, DB_DEFAULT_FOLDER);
+
+            if (!db.exists() || F.isEmpty(db.list())) {
+                marshDir.delete();
+                db.delete();
+                U.delete(snpDir);
+            }
+        }
+        catch (IOException e) {
+            throw new IgniteException(e);
         }
     }
 
