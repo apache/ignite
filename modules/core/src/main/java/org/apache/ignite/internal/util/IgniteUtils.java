@@ -3398,7 +3398,7 @@ public abstract class IgniteUtils {
         String pattern = "\\d{" + NUMBER_FILE_NAME_LENGTH + "}";
 
         if (ext != null)
-            pattern += ext.replaceAll("\\.", "\\\\.");
+            pattern += ext.replaceAll("\\.", "\\\\\\.");
 
         return Pattern.compile(pattern);
     }
