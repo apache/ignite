@@ -816,14 +816,19 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
         }
 
         if (req.incremental()) {
+            SnapshotMetadata meta = readSnapshotMetadata(new File(
+                snapshotLocalDir(req.snapshotName(), req.snapshotPath()),
+                snapshotMetaFileName(cctx.localNode().consistentId().toString())
+            ));
+
             try {
-                checkIncrementalCanBeCreated(req.snapshotName(), req.snapshotPath());
+                checkIncrementalCanBeCreated(req.snapshotName(), req.snapshotPath(), meta);
             }
             catch (IgniteCheckedException e) {
                 return new GridFinishedFuture<>(e);
             }
 
-            return initLocalIncrementalSnapshot(req);
+            return initLocalIncrementalSnapshot(req, meta);
         }
         else
             return initLocalFullSnapshot(req, grpIds, withMetaStorage);
@@ -831,14 +836,13 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
 
     /**
      * @param req Request on snapshot creation.
+     * @param meta Full snapshot metadata.
      * @return Future which will be completed when a snapshot has been started.
      */
-    private IgniteInternalFuture<SnapshotOperationResponse> initLocalIncrementalSnapshot(SnapshotOperationRequest req) {
-        SnapshotMetadata meta = readSnapshotMetadata(new File(
-            snapshotLocalDir(req.snapshotName(), req.snapshotPath()),
-            snapshotMetaFileName(cctx.localNode().consistentId().toString())
-        ));
-
+    private IgniteInternalFuture<SnapshotOperationResponse> initLocalIncrementalSnapshot(
+        SnapshotOperationRequest req,
+        SnapshotMetadata meta
+    ) {
         IgniteInternalFuture<SnapshotOperationResponse> task0 = registerTask(req.snapshotName(), new IncrementalSnapshotFutureTask(
             cctx,
             req.operationalNodeId(),
@@ -2434,14 +2438,14 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
      *
      * @param name Full snapshot name.
      * @param snpPath Snapshot path.
+     * @param meta Full snapshot metadata.
      */
-    private void checkIncrementalCanBeCreated(String name, @Nullable String snpPath) throws IgniteCheckedException {
+    private void checkIncrementalCanBeCreated(
+        String name,
+        @Nullable String snpPath,
+        SnapshotMetadata meta
+    ) throws IgniteCheckedException {
         File snpDir = snapshotLocalDir(name, snpPath);
-
-        SnapshotMetadata meta = readSnapshotMetadata(new File(
-            snpDir,
-            snapshotMetaFileName(cctx.localNode().consistentId().toString())
-        ));
 
         Set<String> aliveNodesConsIds = cctx.discovery().aliveServerNodes()
             .stream()
