@@ -19,9 +19,9 @@ package org.apache.ignite.internal.processors.query.calcite.prepare;
 
 import java.lang.reflect.Type;
 import java.util.Collection;
-import java.util.HashMap;
 import java.util.List;
-import java.util.Map;
+import java.util.SortedMap;
+import java.util.TreeMap;
 import com.google.common.collect.ImmutableList;
 import org.apache.calcite.rel.type.RelDataType;
 import org.apache.calcite.rex.RexDynamicParam;
@@ -44,7 +44,7 @@ import org.apache.ignite.internal.processors.query.calcite.type.IgniteTypeFactor
 /** */
 public class DynamicParamTypeExtractor extends IgniteRelShuttle {
     /** */
-    private final Map<Integer, RexDynamicParam> acc = new HashMap<>();
+    private final SortedMap<Integer, RexDynamicParam> acc = new TreeMap<>();
     
     /** */
     private final DynamicParamsShuttle paramsShuttle = new DynamicParamsShuttle();
@@ -118,6 +118,7 @@ public class DynamicParamTypeExtractor extends IgniteRelShuttle {
         return super.visit(rel);
     }
 
+    /** {@inheritDoc} */
     @Override public IgniteRel visit(IgniteTableModify rel) {
         paramsShuttle.apply(rel.getSourceExpressionList());
 
@@ -146,11 +147,6 @@ public class DynamicParamTypeExtractor extends IgniteRelShuttle {
 
         /** {@inheritDoc} */
         @Override public RelDataType rowType() {
-            return null;
-        }
-
-        /** {@inheritDoc} */
-        @Override public List<List<String>> origins() {
             return null;
         }
 

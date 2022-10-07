@@ -305,7 +305,7 @@ public class JdbcPreparedStatement extends JdbcStatement implements PreparedStat
         setupQuery(qry);
 
         try {
-            List<GridQueryFieldMetadata> meta = conn.ignite().context().query().getIndexing().resultMetaData(conn.schemaName(), qry);
+            List<GridQueryFieldMetadata> meta = conn.ignite().context().query().resultSetMetaData(null, qry, null);
 
             if (meta == null)
                 return null;

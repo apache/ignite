@@ -42,7 +42,6 @@ import org.apache.calcite.sql.validate.SqlValidator;
 import org.apache.calcite.sql2rel.SqlToRelConverter;
 import org.apache.calcite.tools.FrameworkConfig;
 import org.apache.calcite.tools.Frameworks;
-import org.apache.calcite.util.CancelFlag;
 import org.apache.ignite.SystemProperty;
 import org.apache.ignite.cache.query.FieldsQueryCursor;
 import org.apache.ignite.internal.GridKernalContext;
@@ -90,6 +89,7 @@ import org.apache.ignite.internal.processors.query.calcite.sql.generated.IgniteS
 import org.apache.ignite.internal.processors.query.calcite.trait.CorrelationTraitDef;
 import org.apache.ignite.internal.processors.query.calcite.trait.DistributionTraitDef;
 import org.apache.ignite.internal.processors.query.calcite.trait.RewindabilityTraitDef;
+import org.apache.ignite.internal.processors.query.calcite.type.IgniteTypeFactory;
 import org.apache.ignite.internal.processors.query.calcite.type.IgniteTypeSystem;
 import org.apache.ignite.internal.processors.query.calcite.util.Commons;
 import org.apache.ignite.internal.processors.query.calcite.util.LifecycleAware;
@@ -405,13 +405,15 @@ public class CalciteQueryProcessor extends GridProcessorAdapter implements Query
 
     /** */
     private static T2<List<GridQueryFieldMetadata>, List<GridQueryFieldMetadata>> fieldsMeta(QueryPlan plan) {
+        IgniteTypeFactory typeFactory = Commons.typeFactory();
+
         switch (plan.type()) {
             case QUERY:
             case DML:
                 MultiStepPlan msPlan = (MultiStepPlan)plan;
 
-                return new T2<>(msPlan.fieldsMetadata().queryFieldsMetadata(Commons.typeFactory()),
-                    msPlan.paramsMetadata().queryFieldsMetadata(Commons.typeFactory()));
+                return new T2<>(msPlan.fieldsMetadata().queryFieldsMetadata(typeFactory),
+                    msPlan.paramsMetadata().queryFieldsMetadata(typeFactory));
             default:
                 return new T2<>(Collections.emptyList(), Collections.emptyList());
         }

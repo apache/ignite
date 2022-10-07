@@ -801,7 +801,7 @@ public class OdbcRequestHandler implements ClientListenerRequestHandler {
 
             SqlFieldsQueryEx qry = makeQuery(schema, sql);
 
-            List<GridQueryFieldMetadata> columns = ctx.query().getIndexing().resultMetaData(schema, qry);
+            List<GridQueryFieldMetadata> columns = ctx.query().resultSetMetaData(null, qry, cliCtx);
             Collection<OdbcColumnMeta> meta = OdbcUtils.convertMetadata(columns);
 
             OdbcQueryGetResultsetMetaResult res = new OdbcQueryGetResultsetMetaResult(meta);

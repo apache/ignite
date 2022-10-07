@@ -188,7 +188,7 @@ public class PrepareServiceImpl extends AbstractService implements PrepareServic
         RelDataType resultType = TypeUtils.getResultType(
             ctx.typeFactory(), ctx.catalogReader(), sqlType, origins);
 
-        return new FieldsMetadataImpl(resultType, origins);
+        return new FieldsMetadataImpl(sqlType, resultType, origins);
     }
 
     /** */
