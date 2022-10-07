@@ -312,11 +312,8 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
     /** Incremental snapshots directory name. */
     public static final String INC_SNP_DIR = "increments";
 
-    /** Count of numbers in incremental snapshot directory. */
-    public static final int INC_DIR_LENGTH = 4;
-
     /** Pattern for incremental snapshot directory names. */
-    public static final Pattern INC_SNP_NAME_PATTERN = Pattern.compile("\\d{" + INC_DIR_LENGTH + "}");
+    public static final Pattern INC_SNP_NAME_PATTERN = U.fixedLengthNumberNamePattern(null);
 
     /**
      * Local buffer to perform copy-on-write operations with pages for {@code SnapshotFutureTask.PageStoreSerialWriter}s.
@@ -701,7 +698,7 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
     public File incrementalSnapshotLocalDir(String snpName, @Nullable String snpPath, int incIdx) {
         return Paths.get(
             incrementalSnapshotsLocalRootDir(snpName, snpPath).getAbsolutePath(),
-            IgniteUtils.fixedLengthNumberName(incIdx, INC_DIR_LENGTH, null)
+            IgniteUtils.fixedLengthNumberName(incIdx, null)
         ).toFile();
     }
 
@@ -1996,7 +1993,7 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
      * @return Snapshot metadata file name.
      */
     public static String incrementalSnapshotMetaFileName(int incIdx) {
-        return U.fixedLengthNumberName(incIdx, INC_DIR_LENGTH, SNAPSHOT_METAFILE_EXT);
+        return U.fixedLengthNumberName(incIdx, SNAPSHOT_METAFILE_EXT);
     }
 
     /**

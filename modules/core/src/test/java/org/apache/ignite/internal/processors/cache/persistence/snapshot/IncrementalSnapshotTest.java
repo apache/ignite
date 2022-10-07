@@ -40,7 +40,7 @@ import static org.apache.ignite.testframework.GridTestUtils.assertThrowsWithCaus
  */
 public class IncrementalSnapshotTest extends AbstractSnapshotSelfTest {
     /** */
-    public static final int GRID_CND = 3;
+    public static final int GRID_CNT = 3;
 
     /** */
     public static final String OTHER_CACHE = "other-cache";
@@ -52,7 +52,7 @@ public class IncrementalSnapshotTest extends AbstractSnapshotSelfTest {
     @Test
     public void testCreation() throws Exception {
         IgniteEx srv = startGridsWithCache(
-            GRID_CND,
+            GRID_CNT,
             CACHE_KEYS_RANGE,
             key -> new Account(key, key),
             new CacheConfiguration<>(DEFAULT_CACHE_NAME)
@@ -63,7 +63,7 @@ public class IncrementalSnapshotTest extends AbstractSnapshotSelfTest {
         assertTrue("Target directory is not empty: " + snpDir, F.isEmpty(snpDir.list()));
 
         IgniteEx cli = startClientGrid(
-            GRID_CND,
+            GRID_CNT,
             (UnaryOperator<IgniteConfiguration>)
                 cfg -> cfg.setCacheConfiguration(new CacheConfiguration<>(DEFAULT_CACHE_NAME))
         );
@@ -90,7 +90,7 @@ public class IncrementalSnapshotTest extends AbstractSnapshotSelfTest {
                     else
                         snpCreate.createSnapshot(snpName, snpPath.getAbsolutePath(), true).get(TIMEOUT);
 
-                    for (int gridIdx = 0; gridIdx < GRID_CND; gridIdx++) {
+                    for (int gridIdx = 0; gridIdx < GRID_CNT; gridIdx++) {
                         assertTrue("Incremental snapshot must exists on node " + gridIdx, checkIncremental(
                             grid(gridIdx),
                             snpName,
@@ -126,7 +126,7 @@ public class IncrementalSnapshotTest extends AbstractSnapshotSelfTest {
     @Test
     public void testIncrementalSnapshotFailsOnTopologyChange() throws Exception {
         IgniteEx srv = startGridsWithCache(
-            GRID_CND,
+            GRID_CNT,
             CACHE_KEYS_RANGE,
             key -> new Account(key, key),
             new CacheConfiguration<>(DEFAULT_CACHE_NAME)
@@ -196,7 +196,7 @@ public class IncrementalSnapshotTest extends AbstractSnapshotSelfTest {
     @Test
     public void testIncrementalSnapshotFailOnDirtyDir() throws Exception {
         IgniteEx srv = startGridsWithCache(
-            GRID_CND,
+            GRID_CNT,
             CACHE_KEYS_RANGE,
             key -> new Account(key, key),
             new CacheConfiguration<>(DEFAULT_CACHE_NAME)
@@ -214,7 +214,7 @@ public class IncrementalSnapshotTest extends AbstractSnapshotSelfTest {
             "Can't create snapshot directory"
         );
 
-        for (int i = 0; i < GRID_CND; i++)
+        for (int i = 0; i < GRID_CNT; i++)
             assertFalse(snp(srv).incrementalSnapshotLocalDir(SNAPSHOT_NAME, null, 1).exists());
     }
 

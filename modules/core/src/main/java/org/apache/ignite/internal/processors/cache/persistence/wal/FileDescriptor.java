@@ -28,6 +28,7 @@ import org.apache.ignite.internal.util.IgniteUtils;
 import org.jetbrains.annotations.Nullable;
 
 import static java.nio.file.StandardOpenOption.READ;
+import static org.apache.ignite.internal.util.IgniteUtils.NUMBER_FILE_NAME_LENGTH;
 
 /**
  * WAL file descriptor.
@@ -35,9 +36,6 @@ import static java.nio.file.StandardOpenOption.READ;
 public class FileDescriptor implements Comparable<FileDescriptor>, AbstractWalRecordsIterator.AbstractFileDescriptor {
     /** file extension of WAL segment. */
     private static final String WAL_SEGMENT_FILE_EXT = ".wal";
-
-    /** Length of WAL segment file name. */
-    private static final int WAL_SEGMENT_FILE_NAME_LENGTH = 16;
 
     /** File represented by this class. */
     protected final File file;
@@ -67,7 +65,7 @@ public class FileDescriptor implements Comparable<FileDescriptor>, AbstractWalRe
 
         assert fileName.contains(WAL_SEGMENT_FILE_EXT);
 
-        this.idx = idx == null ? Long.parseLong(fileName.substring(0, WAL_SEGMENT_FILE_NAME_LENGTH)) : idx;
+        this.idx = idx == null ? Long.parseLong(fileName.substring(0, NUMBER_FILE_NAME_LENGTH)) : idx;
     }
 
     /**
@@ -77,7 +75,7 @@ public class FileDescriptor implements Comparable<FileDescriptor>, AbstractWalRe
      * @return Segment file name.
      */
     public static String fileName(long idx) {
-        return IgniteUtils.fixedLengthNumberName(idx, WAL_SEGMENT_FILE_NAME_LENGTH, WAL_SEGMENT_FILE_EXT);
+        return IgniteUtils.fixedLengthNumberName(idx, WAL_SEGMENT_FILE_EXT);
     }
 
     /** {@inheritDoc} */
