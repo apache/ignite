@@ -38,11 +38,14 @@ import java.util.Collection;
 import java.util.Collections;
 import java.util.List;
 import java.util.Map;
+import java.util.Timer;
+import java.util.TimerTask;
 import java.util.UUID;
 import java.util.concurrent.Callable;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
 import java.util.concurrent.TimeoutException;
+import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.Consumer;
@@ -734,7 +737,7 @@ public abstract class GridAbstractTest extends JUnitAssertAware {
         printJvmMemoryStatistic();
 
         try {
-            afterTest();
+            runAfterTest();
         }
         finally {
             if (!keepSerializedObjects())
@@ -745,6 +748,36 @@ public abstract class GridAbstractTest extends JUnitAssertAware {
             clsLdr = null;
 
             cleanReferences();
+        }
+    }
+
+    /**
+     * Runs afterTest() callback method with necessary scaffolding.
+     */
+    private void runAfterTest() throws Exception {
+        AtomicBoolean afterTestFinished = new AtomicBoolean(false);
+
+        Timer timer = new Timer("after-test-timer-" + getClass().getName(), true);
+        timer.schedule(new TimerTask() {
+            @Override public void run() {
+                timer.cancel();
+
+                if (!afterTestFinished.get()) {
+                    log.info(GridAbstractTest.this.getClass().getName() +
+                        ".afterTest() timed out, dumping threads (afterTest() still keeps running)");
+
+                    dumpThreadsReliably();
+                }
+            }
+        }, getTestTimeout());
+
+        try {
+            afterTest();
+        }
+        finally {
+            afterTestFinished.set(true);
+
+            timer.cancel();
         }
     }
 
@@ -2475,11 +2508,7 @@ public abstract class GridAbstractTest extends JUnitAssertAware {
                 for (Ignite node : nodes)
                     ((IgniteKernal)node).dumpDebugInfo();
 
-                // We dump threads to stdout, because we can loose logs in case
-                // the build is cancelled on TeamCity.
-                U.dumpThreads(null);
-
-                U.dumpThreads(log);
+                dumpThreadsReliably();
 
                 U.interrupt(runner);
 
@@ -2512,6 +2541,17 @@ public abstract class GridAbstractTest extends JUnitAssertAware {
                 log.error("Failed to execute tear down after test (will ignore)", e);
             }
         }
+    }
+
+    /**
+     * Dumps threads both to the console and log.
+     */
+    private static void dumpThreadsReliably() {
+        // We dump threads to stdout, because we can lose logs in case
+        // the build is cancelled on TeamCity.
+        U.dumpThreads(null);
+
+        U.dumpThreads(log);
     }
 
     /**
@@ -2569,14 +2609,14 @@ public abstract class GridAbstractTest extends JUnitAssertAware {
     }
 
     /**
-     * @return Test case timeout.
+     * @return Test case timeout (in millis).
      */
     protected long getTestTimeout() {
         return getDefaultTestTimeout();
     }
 
     /**
-     * @return Default test case timeout.
+     * @return Default test case timeout (in millis).
      */
     private long getDefaultTestTimeout() {
         String timeout = GridTestProperties.getProperty("test.timeout");
