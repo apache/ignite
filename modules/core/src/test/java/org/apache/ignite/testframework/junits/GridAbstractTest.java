@@ -38,12 +38,13 @@ import java.util.Collection;
 import java.util.Collections;
 import java.util.List;
 import java.util.Map;
-import java.util.Timer;
-import java.util.TimerTask;
 import java.util.UUID;
 import java.util.concurrent.Callable;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
+import java.util.concurrent.Executors;
+import java.util.concurrent.ScheduledExecutorService;
+import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
@@ -757,19 +758,7 @@ public abstract class GridAbstractTest extends JUnitAssertAware {
     private void runAfterTest() throws Exception {
         AtomicBoolean afterTestFinished = new AtomicBoolean(false);
 
-        Timer timer = new Timer("after-test-timer-" + getClass().getName(), true);
-        timer.schedule(new TimerTask() {
-            @Override public void run() {
-                timer.cancel();
-
-                if (!afterTestFinished.get()) {
-                    log.info(GridAbstractTest.this.getClass().getName() +
-                        ".afterTest() timed out, dumping threads (afterTest() still keeps running)");
-
-                    dumpThreadsReliably();
-                }
-            }
-        }, getTestTimeout());
+        ScheduledExecutorService scheduler = scheduleThreadDumpOnAfterTestTimeOut(afterTestFinished);
 
         try {
             afterTest();
@@ -777,8 +766,35 @@ public abstract class GridAbstractTest extends JUnitAssertAware {
         finally {
             afterTestFinished.set(true);
 
-            timer.cancel();
+            scheduler.shutdown();
         }
+    }
+
+    /**
+     * Schedules a task that will print a thread dump if {@code afterTest()} times out.
+     *
+     * @param afterTestFinished Boolean flag used to tell whether {@code afterTest()} finished execution.
+     * @return Scheduled executor used when scheduling.
+     */
+    private ScheduledExecutorService scheduleThreadDumpOnAfterTestTimeOut(AtomicBoolean afterTestFinished) {
+        ScheduledExecutorService scheduler = Executors.newScheduledThreadPool(1, task -> {
+            Thread thread = new Thread(task, "after-test-timer-" + getClass().getName());
+            thread.setDaemon(true);
+            return thread;
+        });
+
+        scheduler.schedule(() -> {
+            scheduler.shutdown();
+
+            if (!afterTestFinished.get()) {
+                log.info(getClass().getName() +
+                    ".afterTest() timed out, dumping threads (afterTest() still keeps running)");
+
+                dumpThreadsReliably();
+            }
+        }, getTestTimeout(), TimeUnit.MILLISECONDS);
+
+        return scheduler;
     }
 
     /** Prints JVM memory statistic. */
