@@ -34,6 +34,7 @@ import org.junit.Test;
 
 import static org.apache.ignite.testframework.GridTestUtils.assertThrows;
 import static org.apache.ignite.testframework.GridTestUtils.assertThrowsWithCause;
+import static org.junit.Assume.assumeFalse;
 
 /**
  * Basic tests for incremental snapshots.
@@ -51,6 +52,8 @@ public class IncrementalSnapshotTest extends AbstractSnapshotSelfTest {
     /** */
     @Test
     public void testCreation() throws Exception {
+        assumeFalse("https://issues.apache.org/jira/browse/IGNITE-17819", encryption);
+
         IgniteEx srv = startGridsWithCache(
             GRID_CNT,
             CACHE_KEYS_RANGE,
@@ -106,6 +109,8 @@ public class IncrementalSnapshotTest extends AbstractSnapshotSelfTest {
     /** */
     @Test
     public void testFailForUnknownBaseSnapshot() throws Exception {
+        assumeFalse("https://issues.apache.org/jira/browse/IGNITE-17819", encryption);
+
         IgniteEx ign = startGridsWithCache(1, CACHE_KEYS_RANGE, key -> new Account(key, key),
             new CacheConfiguration<>(DEFAULT_CACHE_NAME));
 
@@ -125,6 +130,8 @@ public class IncrementalSnapshotTest extends AbstractSnapshotSelfTest {
     /** */
     @Test
     public void testIncrementalSnapshotFailsOnTopologyChange() throws Exception {
+        assumeFalse("https://issues.apache.org/jira/browse/IGNITE-17819", encryption);
+
         IgniteEx srv = startGridsWithCache(
             GRID_CNT,
             CACHE_KEYS_RANGE,
@@ -153,6 +160,8 @@ public class IncrementalSnapshotTest extends AbstractSnapshotSelfTest {
     /** */
     @Test
     public void testIncrementalSnapshotFailsOnCacheDestroy() throws Exception {
+        assumeFalse("https://issues.apache.org/jira/browse/IGNITE-17819", encryption);
+
         checkFailWhenCacheDestroyed(OTHER_CACHE, "Create incremental snapshot request has been rejected. " +
             "Cache group destroyed [groupId=" + CU.cacheId(OTHER_CACHE) + ']');
 
@@ -163,6 +172,8 @@ public class IncrementalSnapshotTest extends AbstractSnapshotSelfTest {
     /** */
     @Test
     public void testIncrementalSnapshotFailsOnCacheChange() throws Exception {
+        assumeFalse("https://issues.apache.org/jira/browse/IGNITE-17819", encryption);
+
         CacheConfiguration<Integer, Account> ccfg = new CacheConfiguration<>(DEFAULT_CACHE_NAME);
 
         IgniteEx srv = startGridsWithCache(1, CACHE_KEYS_RANGE, key -> new Account(key, key), ccfg);
@@ -192,6 +203,8 @@ public class IncrementalSnapshotTest extends AbstractSnapshotSelfTest {
     /** */
     @Test
     public void testIncrementalSnapshotFailOnDirtyDir() throws Exception {
+        assumeFalse("https://issues.apache.org/jira/browse/IGNITE-17819", encryption);
+
         IgniteEx srv = startGridsWithCache(
             GRID_CNT,
             CACHE_KEYS_RANGE,

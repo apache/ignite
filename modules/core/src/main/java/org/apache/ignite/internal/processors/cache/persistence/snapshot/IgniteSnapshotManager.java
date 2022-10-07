@@ -2468,6 +2468,11 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
                     "Cache group destroyed [groupId=" + grpId + ']');
             }
 
+            if (gctx.config().isEncryptionEnabled()) {
+                throw new IgniteCheckedException("Create incremental snapshot request has been rejected. " +
+                    "Encrypted cache groups not supported [groupId=" + grpId + ']');
+            }
+
             List<File> snpCacheDir =
                 cacheDirectories(rootSnpCachesDir, grpName -> gctx.cacheOrGroupName().equals(grpName));
 
