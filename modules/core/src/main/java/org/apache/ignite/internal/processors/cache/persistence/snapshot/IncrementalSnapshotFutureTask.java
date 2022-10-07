@@ -20,6 +20,7 @@ package org.apache.ignite.internal.processors.cache.persistence.snapshot;
 import java.io.File;
 import java.io.IOException;
 import java.nio.file.Files;
+import java.nio.file.Path;
 import java.util.HashSet;
 import java.util.Set;
 import java.util.UUID;
@@ -124,6 +125,12 @@ class IncrementalSnapshotFutureTask
                     boolean compactionEnabled =
                         cctx.gridConfig().getDataStorageConfiguration().isWalCompactionEnabled();
 
+                    if (log.isInfoEnabled()) {
+                        log.info("Waiting for WAL segments archivation[lowIdx=" + lowIdx +
+                            ", highIdx=" + highIdx +
+                            ", compaction=" + compactionEnabled + ']');
+                    }
+
                     if (compactionEnabled)
                         cctx.wal().awaitCompressed(highPtr.index());
                     else
@@ -136,7 +143,12 @@ class IncrementalSnapshotFutureTask
 
                         assert seg.exists();
 
-                        Files.createLink(incSnpDir.toPath().resolve(seg.getName()), seg.toPath());
+                        Path segLink = incSnpDir.toPath().resolve(seg.getName());
+
+                        if (log.isDebugEnabled())
+                            log.debug("Creaing segment link [path=" + segLink.toAbsolutePath() + ']');
+
+                        Files.createLink(segLink, seg.toPath());
                     }
 
                     onDone(new IncrementalSnapshotFutureTaskResult());

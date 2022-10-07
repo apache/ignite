@@ -102,6 +102,8 @@ import org.apache.ignite.internal.managers.encryption.GroupKeyEncrypted;
 import org.apache.ignite.internal.managers.eventstorage.DiscoveryEventListener;
 import org.apache.ignite.internal.managers.systemview.walker.SnapshotViewWalker;
 import org.apache.ignite.internal.pagemem.store.PageStore;
+import org.apache.ignite.internal.pagemem.wal.record.RolloverType;
+import org.apache.ignite.internal.pagemem.wal.record.delta.ClusterSnapshotRecord;
 import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
 import org.apache.ignite.internal.processors.cache.CacheGroupContext;
 import org.apache.ignite.internal.processors.cache.CacheGroupDescriptor;
@@ -829,6 +831,22 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
         }
 
         WALPointer highPtr = new WALPointer(cctx.wal().currentSegment(), 0, 0);
+
+        cctx.database().checkpointReadLock();
+
+        try {
+            cctx.wal().log(new ClusterSnapshotRecord(req.snapshotName()), RolloverType.NEXT_SEGMENT);
+        }
+        catch (IgniteCheckedException e) {
+            return new GridFinishedFuture<>(e);
+        }
+        finally {
+            cctx.database().checkpointReadUnlock();
+        }
+
+        // TODO: FIXME this must be removed on actual consistent cut implementation.
+        // For now, forcefully rollover to the next WAL segments to make segments waiting possible.
+        assert cctx.wal().currentSegment() > highPtr.index() : "Rollover must be invoked.";
 
         IgniteInternalFuture<SnapshotOperationResponse> task0 = registerTask(req.snapshotName(), new IncrementalSnapshotFutureTask(
             cctx,

@@ -48,6 +48,13 @@ public class IncrementalSnapshotTest extends AbstractSnapshotSelfTest {
     /** */
     public static final String GROUPED_CACHE = "my-grouped-cache2";
 
+    /** {@inheritDoc} */
+    @Override protected IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {
+        System.out.println("IncrementalSnapshotTest.getConfiguration");
+
+        return super.getConfiguration(igniteInstanceName);
+    }
+
     /** */
     @Test
     public void testCreation() throws Exception {
