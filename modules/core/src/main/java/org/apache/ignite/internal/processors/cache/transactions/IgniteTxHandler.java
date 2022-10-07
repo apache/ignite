@@ -2314,12 +2314,15 @@ public class IgniteTxHandler {
 
                                     boolean updated = part.updateCounter(start, delta);
 
-                                    assert updated || rollback;
+                                    CacheGroupContext grpCtx = part.group();
+
+                                    assert updated ||
+                                        rollback ||
+                                        !grpCtx.persistenceEnabled() ||
+                                        grpCtx.hasAtomicCaches();
 
                                     // Need to log rolled back range for logical recovery.
                                     if (updated && rollback) {
-                                        CacheGroupContext grpCtx = part.group();
-
                                         if (grpCtx.persistenceEnabled() && grpCtx.walEnabled() && !grpCtx.mvccEnabled()) {
                                             RollbackRecord rec =
                                                 new RollbackRecord(grpCtx.groupId(), part.id(), start, delta);
