@@ -766,7 +766,7 @@ public abstract class GridAbstractTest extends JUnitAssertAware {
         finally {
             afterTestFinished.set(true);
 
-            scheduler.shutdown();
+            scheduler.shutdownNow();
         }
     }
 
@@ -777,17 +777,20 @@ public abstract class GridAbstractTest extends JUnitAssertAware {
      * @return Scheduled executor used when scheduling.
      */
     private ScheduledExecutorService scheduleThreadDumpOnAfterTestTimeOut(AtomicBoolean afterTestFinished) {
+        // Compute class name as string to avoid holding reference to the test class instance in task.
+        String testClassName = getClass().getName();
+
         ScheduledExecutorService scheduler = Executors.newScheduledThreadPool(1, task -> {
-            Thread thread = new Thread(task, "after-test-timer-" + getClass().getName());
+            Thread thread = new Thread(task, "after-test-timeout-" + testClassName);
             thread.setDaemon(true);
             return thread;
         });
 
         scheduler.schedule(() -> {
-            scheduler.shutdown();
+            scheduler.shutdownNow();
 
             if (!afterTestFinished.get()) {
-                log.info(getClass().getName() +
+                log.info(testClassName +
                     ".afterTest() timed out, dumping threads (afterTest() still keeps running)");
 
                 dumpThreadsReliably();
