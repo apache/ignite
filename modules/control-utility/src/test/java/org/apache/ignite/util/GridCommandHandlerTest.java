@@ -3072,7 +3072,7 @@ public class GridCommandHandlerTest extends GridCommandHandlerClusterPerMethodAb
     }
 
     /**
-     * Test {@code EXIT_CODE_UNEXPECTED_ERROR} status of snapshot operation producing a warning.
+     * Test 'not OK' status of snapshot operation producing a warning.
      *
      * @throws Exception If failed.
      */
@@ -3087,11 +3087,13 @@ public class GridCommandHandlerTest extends GridCommandHandlerClusterPerMethodAb
                 @Override public void initExtensions(PluginContext ctx, ExtensionRegistry registry) {
                     super.initExtensions(ctx, registry);
 
+                    List<String> streamedCaches = Collections.singletonList(DEFAULT_CACHE_NAME);
+
                     registry.registerExtension(SnapshotHandler.class,
-                        new SnapshotDataStreamerVerifyHandler(((IgniteEx)ctx.grid()).context()) {
+                        new SnapshotDataStreamerVerifyHandler(()->streamedCaches) {
                             /** {@inheritDoc} */
                             @Nullable @Override public SnapshotHandlerWarning invoke(SnapshotHandlerContext ctx) {
-                                return createWarning(Collections.singletonList(DEFAULT_CACHE_NAME));
+                                return createWarning(streamedCaches, ctx.localNode().id());
                             }
                         });
                 }
@@ -3120,13 +3122,13 @@ public class GridCommandHandlerTest extends GridCommandHandlerClusterPerMethodAb
             }
         });
 
-        CommandHandler h = new CommandHandler(log);
+        CommandHandler hnd = new CommandHandler(log);
 
         List<String> args = new ArrayList<>(F.asList("--snapshot", "create", snpName, "--sync"));
 
-        assertEquals(EXIT_CODE_UNEXPECTED_ERROR, execute(h, args));
+        assertEquals(EXIT_CODE_UNEXPECTED_ERROR, execute(hnd, args));
 
-        assertTrue("Snapshotinconsistency warning not found.", wrnFound.get());
+        assertTrue("Snapshot inconsistency warning not found.", wrnFound.get());
     }
 
     /**

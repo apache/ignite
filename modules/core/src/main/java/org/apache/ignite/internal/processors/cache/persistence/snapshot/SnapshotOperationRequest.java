@@ -175,9 +175,9 @@ public class SnapshotOperationRequest implements Serializable {
      * Finishes start stage.
      */
     protected void finishStartStage() {
-        this.startStageEnded = true;
+        startStageEnded = true;
 
-        this.initNodes.clear();
+        initNodes.clear();
     }
 
     /** {@inheritDoc} */

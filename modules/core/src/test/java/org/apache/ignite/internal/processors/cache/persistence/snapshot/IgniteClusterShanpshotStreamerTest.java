@@ -54,7 +54,6 @@ import org.apache.ignite.stream.StreamReceiver;
 import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.testframework.junits.WithSystemProperty;
 import org.jetbrains.annotations.Nullable;
-import org.junit.Ignore;
 import org.junit.Test;
 
 import static org.apache.ignite.IgniteSystemProperties.IGNITE_SKIP_CONFIGURATION_CONSISTENCY_CHECK;
@@ -83,7 +82,7 @@ public class IgniteClusterShanpshotStreamerTest extends AbstractSnapshotSelfTest
     private Ignite ignoredServer;
 
     /** */
-    private Ignite notBaselineServer;
+    private IgniteEx notBaselineServer;
 
     /** */
     private IgniteEx client;
@@ -152,27 +151,44 @@ public class IgniteClusterShanpshotStreamerTest extends AbstractSnapshotSelfTest
 
     /** @throws Exception If fails. */
     @Test
-    public void testDsAfterFirstStageDfltRcvrClient() throws Exception {
-        doTestDsNextToFirstStage(null, client);
-    }
-
-    /** @throws Exception If fails. */
-    @Test
-    public void testDsAfterFirstStageDfltRcvrBlSrv() throws Exception {
+    public void testDsNextToStageDfltRcvrBlSrv() throws Exception {
         doTestDsNextToFirstStage(null, baselineServer);
     }
 
     /** @throws Exception If fails. */
     @Test
-    public void testDsAfterFirstStageBatchRcvrClient() throws Exception {
+    public void testDsNextToStageDfltRcvrNotBlSrv() throws Exception {
+        doTestDsNextToFirstStage(null, notBaselineServer);
+    }
+
+    /** @throws Exception If fails. */
+    @Test
+    public void testDsNextToStageDfltRcvrClient() throws Exception {
+        doTestDsNextToFirstStage(null, client);
+    }
+
+    /** @throws Exception If fails. */
+    @Test
+    public void intestDsNextToStageDfltRcvrBlSrv() throws Exception {
+        doTestDsNextToFirstStage(null, baselineServer);
+    }
+
+    /** @throws Exception If fails. */
+    @Test
+    public void testDsNextToStageBatchRcvrClient() throws Exception {
         doTestDsNextToFirstStage(DataStreamerCacheUpdaters.batched(), client);
     }
 
     /** @throws Exception If fails. */
     @Test
-    @Ignore
-    public void testDsAfterFirstStageBatchRcvrBlSrv() throws Exception {
+    public void testDsNextToStageBatchRcvrBlSrv() throws Exception {
         doTestDsNextToFirstStage(DataStreamerCacheUpdaters.batched(), baselineServer);
+    }
+
+    /** @throws Exception If fails. */
+    @Test
+    public void testDsNextToStageBatchRcvrNotBlSrv() throws Exception {
+        doTestDsNextToFirstStage(DataStreamerCacheUpdaters.batched(), notBaselineServer);
     }
 
     /** @throws Exception If fails. */
@@ -245,7 +261,7 @@ public class IgniteClusterShanpshotStreamerTest extends AbstractSnapshotSelfTest
      */
     private void dotestDsBeforeSnp(Ignite ldrNode, boolean mustFail,
         @Nullable StreamReceiver<Integer, Object> receiver) throws Exception {
-        int preLoadCnt = 10_000;
+        int preLoadCnt = 5_000;
 
         grid(0).cache(dfltCacheCfg.getName()).clear();
 
@@ -277,6 +293,8 @@ public class IgniteClusterShanpshotStreamerTest extends AbstractSnapshotSelfTest
      * Test snapshot consistency when streamer starts right after first-stage request.
      */
     private void doTestDsNextToFirstStage(StreamReceiver<Integer, Object> rcvr, IgniteEx ldr) throws Exception {
+        fillCache(5_000, ldr);
+
         AtomicBoolean stopLoading = new AtomicBoolean();
         AtomicBoolean doLoadAtSnp = new AtomicBoolean(true);
         AtomicReference<IgniteInternalFuture<?>> loadDuringSnp = new AtomicReference<>();
@@ -299,8 +317,6 @@ public class IgniteClusterShanpshotStreamerTest extends AbstractSnapshotSelfTest
             }
         });
 
-        fillCache(5_000, ldr);
-
         try {
             snpMngr.createSnapshot(SNAPSHOT_NAME).get();
         }
@@ -319,7 +335,7 @@ public class IgniteClusterShanpshotStreamerTest extends AbstractSnapshotSelfTest
      * Test snapshot consistency when streamer starts at the middle of snapshot process.
      */
     private void doTestDsAtSecondStage(@Nullable StreamReceiver<Integer, Object> receiver, Ignite dsNode) throws Exception {
-        int preLoadCnt = 10_000;
+        int preLoadCnt = 5_000;
 
         fillCache(preLoadCnt, dsNode);
 

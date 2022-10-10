@@ -60,6 +60,7 @@ import java.util.concurrent.Executor;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.RejectedExecutionException;
 import java.util.concurrent.atomic.AtomicInteger;
+import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.BiConsumer;
 import java.util.function.BiFunction;
 import java.util.function.BooleanSupplier;
@@ -394,6 +395,9 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
     /** Snapshot transfer rate limit in bytes/sec. */
     private final DistributedLongProperty snapshotTransferRate = detachedLongProperty(SNAPSHOT_TRANSFER_RATE_DMS_KEY);
 
+    /** Caches under streamed load at the start stage. */
+    private final AtomicReference<List<String>> streamedCaches = new AtomicReference<>();
+
     /**
      * @param ctx Kernal context.
      */
@@ -591,6 +595,8 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
 
             snpRmtMgr.stop();
 
+            streamedCaches.set(Collections.emptyList());
+
             synchronized (snpOpMux) {
                 if (clusterSnpFut != null) {
                     clusterSnpFut.onDone(new NodeStoppingException(SNP_NODE_STOPPING_ERR_MSG));
@@ -758,6 +764,8 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
                 "re-encryption process is not finished yet."));
         }
 
+        streamedCaches.set(cctx.kernalContext().dataStream().cachesUnderInconsistentUpdaters());
+
         if (cctx.kernalContext().clientNode() ||
             !CU.baselineNode(cctx.localNode(), cctx.kernalContext().state().clusterState())) {
 
@@ -879,6 +887,8 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
      * @param err Errors.
      */
     private void processLocalSnapshotStartStageResult(UUID id, Map<UUID, SnapshotOperationResponse> res, Map<UUID, Exception> err) {
+        streamedCaches.set(Collections.emptyList());
+
         if (cctx.kernalContext().clientNode())
             return;
 
@@ -2226,7 +2236,7 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
     }
 
     /** Snapshot operation handlers. */
-    protected static class SnapshotHandlers {
+    protected class SnapshotHandlers {
         /** Snapshot operation handlers. */
         private final Map<SnapshotHandlerType, List<SnapshotHandler<Object>>> handlers = new EnumMap<>(SnapshotHandlerType.class);
 
@@ -2244,7 +2254,7 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
             SnapshotHandler<?> sysCheck = new SnapshotPartitionsVerifyHandler(ctx.cache().context());
             handlers.put(sysCheck.type(), new ArrayList<>(F.asList((SnapshotHandler<Object>)sysCheck)));
 
-            SnapshotHandler<?> snpCheck = new SnapshotDataStreamerVerifyHandler(ctx);
+            SnapshotHandler<?> snpCheck = new SnapshotDataStreamerVerifyHandler(streamedCaches::get);
             handlers.put(snpCheck.type(), new ArrayList<>(F.asList((SnapshotHandler<Object>)snpCheck)));
 
             // Register custom handlers.
@@ -3456,7 +3466,7 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
             if (!warnings.isEmpty() && err == null) {
                 StringBuilder sb = new StringBuilder();
 
-                sb.append("Snapshot task '").append(name).append("' completed with  warnings.");
+                sb.append("Snapshot task '").append(name).append("' completed with warnings:");
 
                 warnings.forEach((n, w) -> sb.append("\n\tNode '").append(n).append("': ").append(w));
 

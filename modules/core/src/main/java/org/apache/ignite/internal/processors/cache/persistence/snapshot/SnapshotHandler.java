@@ -44,7 +44,8 @@ public interface SnapshotHandler<T> extends Extension {
     public SnapshotHandlerType type();
 
     /**
-     * Local processing of a snapshot operation. Called on every node that contains snapshot data.
+     * Local processing of a snapshot operation. Called on every node that contains snapshot data or should check
+     * snapshot operation.
      *
      * @param ctx Snapshot handler context.
      * @return Result of local processing. This result will be returned in {@link SnapshotHandlerResult#data()} method
