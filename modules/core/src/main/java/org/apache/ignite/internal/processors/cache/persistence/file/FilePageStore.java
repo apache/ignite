@@ -467,7 +467,7 @@ public class FilePageStore implements PageStore {
      * @param pageBuf Page buffer.
      * @return Number of bytes to calculate CRC on.
      */
-    int getCrcSize(long pageId, ByteBuffer pageBuf) throws IOException {
+    private int getCrcSize(long pageId, ByteBuffer pageBuf) throws IOException {
         int compressedSize = PageIO.getCompressedSize(pageBuf);
 
         if (compressedSize == 0)
@@ -792,7 +792,7 @@ public class FilePageStore implements PageStore {
      * @param pageBuf Page buffer.
      * @param pageSize Page size.
      */
-    static int calcCrc32(ByteBuffer pageBuf, int pageSize) {
+    private static int calcCrc32(ByteBuffer pageBuf, int pageSize) {
         try {
             pageBuf.position(0);
 
