@@ -792,7 +792,7 @@ public class FilePageStore implements PageStore {
      * @param pageBuf Page buffer.
      * @param pageSize Page size.
      */
-    public static int calcCrc32(ByteBuffer pageBuf, int pageSize) {
+    static int calcCrc32(ByteBuffer pageBuf, int pageSize) {
         try {
             pageBuf.position(0);
 
