@@ -206,7 +206,7 @@ public class DataStreamProcessor<K, V> extends GridProcessorAdapter {
         }
     }
 
-    /** TODO */
+    /** @return Cache that may be under inconsistent updates. */
     public @Nullable List<String> cachesUnderInconsistentUpdaters() {
         if (!busyLock.enterBusy())
             throw new IllegalStateException("Failed to check for inconsistent streamers (grid is stopping).");

@@ -23,34 +23,39 @@ import org.apache.ignite.internal.GridKernalContext;
 
 import static org.apache.ignite.internal.processors.cache.persistence.snapshot.SnapshotHandlerType.CREATE;
 
-/** TODO */
+/**
+ * Checks for dangerous streaming updates during snapshot.
+ */
 public class SnapshotDataStreamerVerifyHandler implements SnapshotHandler<SnapshotHandlerWarning> {
     /** Kernal context. */
     private final GridKernalContext kctx;
 
-    /** TODO */
+    /** Ctor. */
     public SnapshotDataStreamerVerifyHandler(GridKernalContext kctx) {
         this.kctx = kctx;
     }
 
-    /** TODO */
+    /** {@inheritDoc} */
     @Override public SnapshotHandlerType type() {
         return CREATE;
     }
 
-    /** TODO */
+    /** {@inheritDoc} */
     @Override public SnapshotHandlerWarning invoke(SnapshotHandlerContext ctx) throws Exception {
         List<String> cachesUnderDsLoad = kctx.dataStream().cachesUnderInconsistentUpdaters();
 
-        if (!cachesUnderDsLoad.isEmpty()) {
-            return new SnapshotHandlerWarning("During the snapshot, caches: " +
-                cachesUnderDsLoad.stream().map(cn -> "'" + cn + "'").collect(Collectors.joining(",")) +
-                " were under streaming loading with the streamer's property 'alowOverwrite' set to `false`. " +
-                "Such updates doesn't guarantee consistency until finished. " +
-                "The snapshot might not be entirely restored. " +
-                "However, you would be able to restore the rest of snapshot, excluding there caches.");
-        }
+        if (!cachesUnderDsLoad.isEmpty())
+            return createWarning(cachesUnderDsLoad);
 
         return null;
+    }
+
+    /** */
+    protected SnapshotHandlerWarning createWarning(List<String> caches) {
+        return new SnapshotHandlerWarning("Caches " +
+            caches.stream().map(cn -> "'" + cn + "'").collect(Collectors.joining(",")) +
+            " were under streaming loading from node '" + kctx.localNodeId() + "' with the streamer's property " +
+            "'alowOverwrite' set to `false`. Such updates may break data consistency until finished. Snapshot " +
+            "might not be entirely restored. However, you would be able to restore other caches from snapshot.");
     }
 }

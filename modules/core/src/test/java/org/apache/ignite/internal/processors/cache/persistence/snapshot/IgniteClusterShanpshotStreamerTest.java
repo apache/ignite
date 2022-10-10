@@ -54,6 +54,7 @@ import org.apache.ignite.stream.StreamReceiver;
 import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.testframework.junits.WithSystemProperty;
 import org.jetbrains.annotations.Nullable;
+import org.junit.Ignore;
 import org.junit.Test;
 
 import static org.apache.ignite.IgniteSystemProperties.IGNITE_SKIP_CONFIGURATION_CONSISTENCY_CHECK;
@@ -69,9 +70,8 @@ public class IgniteClusterShanpshotStreamerTest extends AbstractSnapshotSelfTest
     private static final TcpDiscoveryIpFinder IP_FINDER = new TcpDiscoveryVmIpFinder(true);
 
     /** */
-    private static final String ERR_MSG = "streaming loading with the streamer's property 'alowOverwrite' set to " +
-        "`false`. Such updates doesn't guarantee consistency until finished. The snapshot might not be entirely " +
-        "restored.";
+    private static final String ERR_MSG = "Such updates may break data consistency until finished. Snapshot might " +
+        "not be entirely restored";
 
     /** */
     private TcpDiscoverySpi discoverySpi;
@@ -145,7 +145,7 @@ public class IgniteClusterShanpshotStreamerTest extends AbstractSnapshotSelfTest
 
         ((TcpDiscoverySpi)cfg.getDiscoverySpi()).setIpFinder(IP_FINDER);
 
-        cfg.setCommunicationSpi(new SabotagingCommunicationSpi());
+        cfg.setCommunicationSpi(new DataLoosingCommunicationSpi());
 
         return cfg;
     }
@@ -153,49 +153,50 @@ public class IgniteClusterShanpshotStreamerTest extends AbstractSnapshotSelfTest
     /** @throws Exception If fails. */
     @Test
     public void testDsAfterFirstStageDfltRcvrClient() throws Exception {
-        doTestDsAfterFirstStage(null, client);
+        doTestDsNextToFirstStage(null, client);
     }
 
     /** @throws Exception If fails. */
     @Test
     public void testDsAfterFirstStageDfltRcvrBlSrv() throws Exception {
-        doTestDsAfterFirstStage(null, baselineServer);
+        doTestDsNextToFirstStage(null, baselineServer);
     }
 
     /** @throws Exception If fails. */
     @Test
     public void testDsAfterFirstStageBatchRcvrClient() throws Exception {
-        doTestDsAfterFirstStage(null, client);
+        doTestDsNextToFirstStage(DataStreamerCacheUpdaters.batched(), client);
     }
 
     /** @throws Exception If fails. */
     @Test
+    @Ignore
     public void testDsAfterFirstStageBatchRcvrBlSrv() throws Exception {
-        doTestDsAfterFirstStage(null, baselineServer);
+        doTestDsNextToFirstStage(DataStreamerCacheUpdaters.batched(), baselineServer);
     }
 
     /** @throws Exception If fails. */
     @Test
-    public void testDsAtSecondStageBatcRcvrClient() throws Exception {
-        doTestDsAtSecondStage(client, DataStreamerCacheUpdaters.batched());
+    public void testDsAtSecondStageBatchRcvrClient() throws Exception {
+        doTestDsAtSecondStage(DataStreamerCacheUpdaters.batched(), client);
     }
 
     /** @throws Exception If fails. */
     @Test
     public void testDsAtSecondStageDftRcvrClient() throws Exception {
-        doTestDsAtSecondStage(client, null);
+        doTestDsAtSecondStage(null, client);
     }
 
     /** @throws Exception If fails. */
     @Test
     public void testDsAtSecondStageDftRcvrBsSrv() throws Exception {
-        doTestDsAtSecondStage(baselineServer, null);
+        doTestDsAtSecondStage( null, baselineServer);
     }
 
     /** @throws Exception If fails. */
     @Test
     public void testDsAtSecondStageDftRcvrNonBsSrv() throws Exception {
-        doTestDsAtSecondStage(notBaselineServer, null);
+        doTestDsAtSecondStage( null, notBaselineServer);
     }
 
     /** @throws Exception If fails. */
@@ -218,19 +219,19 @@ public class IgniteClusterShanpshotStreamerTest extends AbstractSnapshotSelfTest
 
     /** @throws Exception If fails. */
     @Test
-    public void testDsBeforeSnpBatcRcvrClient() throws Exception {
+    public void testDsBeforeSnpBatchRcvrClient() throws Exception {
         dotestDsBeforeSnp(client, false, DataStreamerCacheUpdaters.batched());
     }
 
     /** @throws Exception If fails. */
     @Test
-    public void testDsBeforeSnpBatcRcvrBsSrv() throws Exception {
+    public void testDsBeforeSnpBatchRcvrBsSrv() throws Exception {
         dotestDsBeforeSnp(baselineServer, false, DataStreamerCacheUpdaters.batched());
     }
 
     /** @throws Exception If fails. */
     @Test
-    public void testDsBeforeSnpBatcRcvrNotBsSrv() throws Exception {
+    public void testDsBeforeSnpBatchRcvrNotBsSrv() throws Exception {
         dotestDsBeforeSnp(notBaselineServer, false, DataStreamerCacheUpdaters.batched());
     }
 
@@ -273,11 +274,12 @@ public class IgniteClusterShanpshotStreamerTest extends AbstractSnapshotSelfTest
     }
 
     /**
-     * Test snsphot consistency when streamer starts right after first-stage request.
+     * Test snapshot consistency when streamer starts right after first-stage request.
      */
-    private void doTestDsAfterFirstStage(StreamReceiver<Integer, Object> rcvr, IgniteEx ldr) throws Exception {
+    private void doTestDsNextToFirstStage(StreamReceiver<Integer, Object> rcvr, IgniteEx ldr) throws Exception {
         AtomicBoolean stopLoading = new AtomicBoolean();
         AtomicBoolean doLoadAtSnp = new AtomicBoolean(true);
+        AtomicReference<IgniteInternalFuture<?>> loadDuringSnp = new AtomicReference<>();
 
         ldr.context().discovery().setCustomEventListener(InitMessage.class, (topVer, sender, msg) -> {
             SnapshotOperationRequest snpRq = extractSnpRequest(msg);
@@ -285,10 +287,10 @@ public class IgniteClusterShanpshotStreamerTest extends AbstractSnapshotSelfTest
             if (snpRq == null || !doLoadAtSnp.compareAndSet(true, false))
                 return;
 
-            CountDownLatch loadLatch = new CountDownLatch(5_000);
+            CountDownLatch loadLatch = new CountDownLatch(1_000);
 
             try {
-                runLoad(ldr, rcvr, loadLatch, stopLoading, true);
+                loadDuringSnp.set(runLoad(ldr, rcvr, loadLatch, stopLoading, true));
 
                 loadLatch.await();
             }
@@ -297,24 +299,26 @@ public class IgniteClusterShanpshotStreamerTest extends AbstractSnapshotSelfTest
             }
         });
 
-        fillCache(5_000, baselineServer);
+        fillCache(5_000, ldr);
 
         try {
             snpMngr.createSnapshot(SNAPSHOT_NAME).get();
         }
         finally {
             stopLoading.set(true);
+            assert loadDuringSnp.get() != null;
+            loadDuringSnp.get().get();
         }
 
         IdleVerifyResultV2 checkRes = snpMngr.checkSnapshot(SNAPSHOT_NAME, null).get();
 
-        assertFalse(checkRes.hasConflicts() || !checkRes.exceptions().isEmpty());
+        assertTrue(!checkRes.hasConflicts() && checkRes.exceptions().isEmpty());
     }
 
     /**
-     * Test snsphot consistency when streamer starts at the middle of snapshot process.
+     * Test snapshot consistency when streamer starts at the middle of snapshot process.
      */
-    private void doTestDsAtSecondStage(Ignite dsNode, @Nullable StreamReceiver<Integer, Object> receiver) throws Exception {
+    private void doTestDsAtSecondStage(@Nullable StreamReceiver<Integer, Object> receiver, Ignite dsNode) throws Exception {
         int preLoadCnt = 10_000;
 
         fillCache(preLoadCnt, dsNode);
@@ -377,7 +381,7 @@ public class IgniteClusterShanpshotStreamerTest extends AbstractSnapshotSelfTest
         CountDownLatch dataSendCounter, AtomicBoolean stop, boolean sabotageBatches) {
 
         return GridTestUtils.runMultiThreadedAsync(() -> {
-            SabotagingCommunicationSpi cm = (SabotagingCommunicationSpi)ldr.configuration().getCommunicationSpi();
+            DataLoosingCommunicationSpi cm = (DataLoosingCommunicationSpi)ldr.configuration().getCommunicationSpi();
 
             if (sabotageBatches) {
                 Set<Object> bl = grid(0).cluster().currentBaselineTopology().stream().map(BaselineNode::consistentId)
@@ -492,7 +496,7 @@ public class IgniteClusterShanpshotStreamerTest extends AbstractSnapshotSelfTest
      * Drops datastreamer entries from the batches to certain node. Simulates late data income to the node. Makes data
      * inconsistent if data contains backup records.
      */
-    private static class SabotagingCommunicationSpi extends TcpCommunicationSpi {
+    private static class DataLoosingCommunicationSpi extends TcpCommunicationSpi {
         /** */
         private final AtomicReference<ClusterNode> block = new AtomicReference<>();
 

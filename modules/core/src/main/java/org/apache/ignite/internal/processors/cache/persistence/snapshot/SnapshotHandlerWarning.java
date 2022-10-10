@@ -20,7 +20,13 @@ package org.apache.ignite.internal.processors.cache.persistence.snapshot;
 import java.io.Serializable;
 import java.util.function.Supplier;
 
-/** TODO */
+/**
+ * Warning result of the snapshot handler. Warnings do not stop or cancel snapshot, but produce warning exception at the
+ * end if no other errors uccured. As result, snapshot process is done but doesn't return 'OK' status.
+ * Warning are collected on each node at end of the init stage.
+ *
+ * @see SnapshotHandler
+ */
 public class SnapshotHandlerWarning implements Supplier<String>, Serializable {
     /** Serial version uid. */
     private static final long serialVersionUID = 0L;
@@ -28,8 +34,8 @@ public class SnapshotHandlerWarning implements Supplier<String>, Serializable {
     /** */
     private final String wrn;
 
-    /** Ctro. */
-    public SnapshotHandlerWarning(String wrn) {
+    /** Ctor. */
+    SnapshotHandlerWarning(String wrn) {
         this.wrn = wrn;
     }
 

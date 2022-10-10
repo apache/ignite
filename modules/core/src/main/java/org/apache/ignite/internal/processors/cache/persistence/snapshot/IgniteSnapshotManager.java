@@ -3456,7 +3456,7 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
             if (!warnings.isEmpty() && err == null) {
                 StringBuilder sb = new StringBuilder();
 
-                sb.append("Snapshot task '").append(name).append("' completed with the warnings:");
+                sb.append("Snapshot task '").append(name).append("' completed with  warnings.");
 
                 warnings.forEach((n, w) -> sb.append("\n\tNode '").append(n).append("': ").append(w));
 

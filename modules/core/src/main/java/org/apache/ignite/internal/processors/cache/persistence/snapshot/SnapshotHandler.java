@@ -27,7 +27,8 @@ import org.jetbrains.annotations.Nullable;
  * <p>
  * The execution of the handler consists of two steps:
  * <ol>
- * <li>Local call of {@link #invoke(SnapshotHandlerContext)} method on all nodes containing the snapshot data.</li>
+ * <li>Local call of {@link #invoke(SnapshotHandlerContext)} method on all nodes containing the snapshot data or
+ * validatin snapshot operation.</li>
  * <li>Processing the results of local invocations in the {@link #complete(String, Collection)} method on one of the
  * nodes containing the snapshot data.</li>
  * </ol>
@@ -35,6 +36,8 @@ import org.jetbrains.annotations.Nullable;
  *       case the {@link #complete(String, Collection)} method may not be called.
  *
  * @param <T> Type of the local processing result.
+ *
+ * @see SnapshotHandlerWarning
  */
 public interface SnapshotHandler<T> extends Extension {
     /** Snapshot handler type. */
