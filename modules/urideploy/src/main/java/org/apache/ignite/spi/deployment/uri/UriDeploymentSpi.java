@@ -308,7 +308,7 @@ import org.jetbrains.annotations.Nullable;
  * @see org.apache.ignite.spi.deployment.DeploymentSpi
  */
 @IgniteSpiMultipleInstancesSupport(true)
-@IgniteSpiConsistencyChecked(optional = false)
+@IgniteSpiConsistencyChecked(optional = false, checkClient=false)
 @SuppressWarnings({"FieldAccessedSynchronizedAndUnsynchronized"})
 public class UriDeploymentSpi extends IgniteSpiAdapter implements DeploymentSpi {
     /**
