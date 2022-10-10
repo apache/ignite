@@ -3090,7 +3090,7 @@ public class GridCommandHandlerTest extends GridCommandHandlerClusterPerMethodAb
                     List<String> streamedCaches = Collections.singletonList(DEFAULT_CACHE_NAME);
 
                     registry.registerExtension(SnapshotHandler.class,
-                        new SnapshotDataStreamerVerifyHandler(()->streamedCaches) {
+                        new SnapshotDataStreamerVerifyHandler(() -> streamedCaches) {
                             /** {@inheritDoc} */
                             @Nullable @Override public SnapshotHandlerWarning invoke(SnapshotHandlerContext ctx) {
                                 return createWarning(streamedCaches, ctx.localNode().id());
