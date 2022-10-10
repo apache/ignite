@@ -33,6 +33,7 @@ from ignitetest.services.ignite_execution_exception import IgniteExecutionExcept
 from ignitetest.services.utils.control_utility import ControlUtility
 from ignitetest.services.utils.ignite_configuration import IgniteConfiguration
 from ignitetest.services.utils.ignite_configuration.event_type import EventType
+from ignitetest.tests.rebalance.util import preload_data
 from ignitetest.utils import cluster, ignite_versions
 from ignitetest.utils.ignite_test import IgniteTest
 from ignitetest.utils.version import DEV_BRANCH, IgniteVersion
@@ -108,3 +109,24 @@ class ConsistencyTest(IgniteTest):
             raise IgniteExecutionException("Fail.")
         except TimeoutError:
             pass
+
+    @cluster(num_nodes=4)
+    @ignite_versions(str(DEV_BRANCH))
+    def test_logging(self, ignite_version):
+
+        ignites = start_ignite(self.test_context, ignite_version, reb_params)
+
+        control_utility = ControlUtility(ignites)
+
+        control_utility.activate()
+
+        cfg = IgniteConfiguration(
+            version=IgniteVersion(ignite_version),
+            cluster_state="INACTIVE",
+            include_event_types=[EventType.EVT_CONSISTENCY_VIOLATION]
+        ),
+
+        preload_time = preload_data(
+            self.test_context,
+            ignites.config._replace(client_mode=True, discovery_spi=from_ignite_cluster(ignites)),
+            rebalance_params=reb_params)
