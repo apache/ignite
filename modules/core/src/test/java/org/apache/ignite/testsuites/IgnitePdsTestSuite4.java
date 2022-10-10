@@ -46,6 +46,7 @@ import org.apache.ignite.internal.processors.cache.persistence.db.IgnitePdsStart
 import org.apache.ignite.internal.processors.cache.persistence.db.IgnitePdsTransactionsHangTest;
 import org.apache.ignite.internal.processors.cache.persistence.db.wal.WalRebalanceRestartTest;
 import org.apache.ignite.internal.processors.cache.persistence.file.FileDownloaderTest;
+import org.apache.ignite.internal.processors.cache.persistence.file.FilePageStoreSelfTest;
 import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.testframework.junits.DynamicSuite;
 import org.junit.runner.RunWith;
@@ -92,6 +93,7 @@ public class IgnitePdsTestSuite4 {
         GridTestUtils.addTestIfNeeded(suite, ReleaseSegmentOnHistoricalRebalanceTest.class, ignoredTests);
         GridTestUtils.addTestIfNeeded(suite, AutoReleaseSegmentSelfTest.class, ignoredTests);
         GridTestUtils.addTestIfNeeded(suite, IgnitePdsCheckpointMapSnapshotTest.class, ignoredTests);
+        GridTestUtils.addTestIfNeeded(suite, FilePageStoreSelfTest.class, ignoredTests);
 
         return suite;
     }
