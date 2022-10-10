@@ -569,7 +569,7 @@ public class SnapshotRestoreProcess {
                     "process is not finished yet."));
             }
 
-            for (UUID nodeId : req.nodes()) {
+            for (UUID nodeId : req.workingNodes()) {
                 ClusterNode node = ctx.discovery().node(nodeId);
 
                 if (node == null || !CU.baselineNode(node, state) || !ctx.discovery().alive(node)) {
@@ -658,7 +658,7 @@ public class SnapshotRestoreProcess {
         // Collection of baseline nodes that must survive and additional discovery data required for the affinity calculation.
         DiscoCache discoCache = ctx.discovery().discoCache();
 
-        if (!F.transform(discoCache.aliveBaselineNodes(), F.node2id()).containsAll(req.nodes()))
+        if (!F.transform(discoCache.aliveBaselineNodes(), F.node2id()).containsAll(req.workingNodes()))
             throw new IgniteCheckedException("Restore context cannot be inited since the required baseline nodes missed: " + discoCache);
 
         DiscoCache discoCache0 = discoCache.copy(discoCache.version(), null);

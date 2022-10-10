@@ -107,7 +107,7 @@ public class DistributedProcess<I extends Serializable, R extends Serializable> 
      * @param exec Execute action and returns future with the single node result to send to the coordinator.
      * @param finish Finish process closure. Called on each node when all single nodes results received.
      * @param initMsgFactory Factory which creates custom {@link InitMessage} for distributed process initialization.
-     * @param initOnClient TODO.
+     * @param initOnClient {@code True}, if the process sgould be initialized on client node. {@code False} otherwise.
      */
     public DistributedProcess(
         GridKernalContext ctx,

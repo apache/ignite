@@ -36,6 +36,7 @@ import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.managers.communication.GridIoMessage;
 import org.apache.ignite.internal.managers.discovery.CustomMessageWrapper;
+import org.apache.ignite.internal.processors.cache.verify.IdleVerifyResultV2;
 import org.apache.ignite.internal.processors.datastreamer.DataStreamerCacheUpdaters;
 import org.apache.ignite.internal.processors.datastreamer.DataStreamerRequest;
 import org.apache.ignite.internal.util.distributed.InitMessage;
@@ -152,7 +153,7 @@ public class IgniteClusterShanpshotStreamerTest extends AbstractSnapshotSelfTest
     /** @throws Exception If fails. */
     @Test
     public void testDsAfterFirstStageDfltRcvrClient() throws Exception {
-       doTestDsAfterFirstStage(null, client);
+        doTestDsAfterFirstStage(null, client);
     }
 
     /** @throws Exception If fails. */
@@ -266,7 +267,9 @@ public class IgniteClusterShanpshotStreamerTest extends AbstractSnapshotSelfTest
             loadFut.get();
         }
 
-        assertTrue(mustFail != snpMngr.checkSnapshot(SNAPSHOT_NAME, null).get().hashConflicts().isEmpty());
+        IdleVerifyResultV2 checkRes = snpMngr.checkSnapshot(SNAPSHOT_NAME, null).get();
+
+        assertTrue(checkRes.exceptions().isEmpty() && mustFail == checkRes.hasConflicts());
     }
 
     /**
@@ -303,7 +306,9 @@ public class IgniteClusterShanpshotStreamerTest extends AbstractSnapshotSelfTest
             stopLoading.set(true);
         }
 
-        assertFalse(snpMngr.checkSnapshot(SNAPSHOT_NAME, null).get().hasConflicts());
+        IdleVerifyResultV2 checkRes = snpMngr.checkSnapshot(SNAPSHOT_NAME, null).get();
+
+        assertFalse(checkRes.hasConflicts() || !checkRes.exceptions().isEmpty());
     }
 
     /**
@@ -329,29 +334,21 @@ public class IgniteClusterShanpshotStreamerTest extends AbstractSnapshotSelfTest
 
         IgniteInternalFuture<?> loadFut = runLoad(dsNode, receiver, dataLoadCounter, stopLoading, true);
 
-        log.error("TEST | waiting for preload...");
-
         dsRegisteredLock.await();
         dataLoadCounter.await();
 
-        log.error("TEST | continuing snapshot...");
-
         try {
-           snpFut.get();
+            snpFut.get();
         }
         finally {
-            log.error("TEST | stop loading");
-
             stopLoading.set(true);
 
-            log.error("TEST | waiting for load stop");
-
             loadFut.get();
-
-            log.error("TEST | loading stopped");
         }
 
-        assertTrue(snpMngr.checkSnapshot(SNAPSHOT_NAME, null).get().hashConflicts().isEmpty());
+        IdleVerifyResultV2 checkRes = snpMngr.checkSnapshot(SNAPSHOT_NAME, null).get();
+
+        assertTrue(checkRes.hashConflicts().isEmpty() && checkRes.exceptions().isEmpty());
     }
 
     /**
@@ -431,8 +428,6 @@ public class IgniteClusterShanpshotStreamerTest extends AbstractSnapshotSelfTest
                             ds.flush();
                     }
                 }
-
-                log.error("TEST | loading finished");
             }
             finally {
                 cm.block.set(null);
@@ -456,11 +451,7 @@ public class IgniteClusterShanpshotStreamerTest extends AbstractSnapshotSelfTest
                     if (launchDsLock != null && snpRq.startStageEnded()) {
                         assert dsRegisteredLock != null;
 
-                        log.error("TEST | snapshot says launchDsLock.countDown()");
-
                         launchDsLock.countDown();
-
-                        log.error("TEST | snapshot allowed ds.");
 
                         try {
                             dsRegisteredLock.await();

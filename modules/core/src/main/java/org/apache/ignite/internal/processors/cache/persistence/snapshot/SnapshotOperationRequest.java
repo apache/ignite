@@ -50,7 +50,7 @@ public class SnapshotOperationRequest implements Serializable {
 
     /** All nodes on initial stage. */
     @GridToStringInclude
-    private final Set<UUID> allNodes;
+    private final Set<UUID> initNodes;
 
     /** List of cache group names. */
     @GridToStringInclude
@@ -75,7 +75,7 @@ public class SnapshotOperationRequest implements Serializable {
      * @param snpPath Snapshot directory path.
      * @param grps List of cache group names.
      * @param nodes Baseline node IDs that must be alive to complete the operation.
-     * @param nodes All nodes on initial stage.
+     * @param initNodes All nodes on initial stage.
      */
     public SnapshotOperationRequest(
         UUID reqId,
@@ -84,14 +84,14 @@ public class SnapshotOperationRequest implements Serializable {
         String snpPath,
         @Nullable Collection<String> grps,
         Set<UUID> nodes,
-        Set<UUID> allNodes
+        Set<UUID> initNodes
     ) {
         this.reqId = reqId;
         this.opNodeId = opNodeId;
         this.snpName = snpName;
         this.grps = grps;
         this.nodes = nodes;
-        this.allNodes = allNodes;
+        this.initNodes = initNodes;
         this.snpPath = snpPath;
         startTime = U.currentTimeMillis();
     }
@@ -127,21 +127,24 @@ public class SnapshotOperationRequest implements Serializable {
     /**
      * @return Baseline node IDs that must be alive to complete the operation.
      */
-    public Set<UUID> nodes() {
+    Set<UUID> workingNodes() {
         return nodes;
     }
 
     /**
-     * @return All nodes on initial stage.
+     * @return Nodes at initial stage to begin snapshot or check snapshot operation.
      */
-    public Set<UUID> allNodes() {
-        return allNodes;
+    Set<UUID> initNodes() {
+        assert !startStageEnded;
+
+        return initNodes;
     }
 
-    public void ignoreAllNodes(){
-        allNodes.clear();
-
-        allNodes.addAll(nodes);
+    /**
+     * @return Nodes at current stage to begin snapshot or check snapshot operation.
+     */
+    Set<UUID> nodes() {
+        return startStageEnded ? workingNodes() : initNodes();
     }
 
     /**
@@ -178,10 +181,12 @@ public class SnapshotOperationRequest implements Serializable {
     }
 
     /**
-     * @param startStageEnded Flag indicating that the {@link DistributedProcessType#START_SNAPSHOT} phase has completed.
+     * Finishes start stage.
      */
-    protected void startStageEnded(boolean startStageEnded) {
-        this.startStageEnded = startStageEnded;
+    protected void finishStartStage() {
+        this.startStageEnded = true;
+
+        this.initNodes.clear();
     }
 
     /** {@inheritDoc} */

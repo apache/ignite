@@ -20,7 +20,6 @@ package org.apache.ignite.internal.processors.cache;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
-import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
@@ -1972,20 +1971,8 @@ public abstract class GridCacheMapEntry extends GridMetadataAwareAdapter impleme
 
                 c.call(dataRow);
             }
-            else {
-                if (localPartition().id() == 859 && U.FLAG2.get()) {
-                    U.PART_859_2.compute(key.value(cctx.cacheObjectContext(), true), (k, v) -> {
-                        if (v == null)
-                            v = new HashSet<>();
-
-                        v.add(cctx.kernalContext().grid().localNode().order());
-
-                        return v;
-                    });
-                }
-
+            else
                 cctx.offheap().invoke(cctx, key, localPartition(), c);
-            }
 
             GridCacheUpdateAtomicResult updateRes = c.updateRes;
 
@@ -3121,22 +3108,8 @@ public abstract class GridCacheMapEntry extends GridMetadataAwareAdapter impleme
 
                 long updateCntr = 0;
 
-                if (!preload) {
+                if (!preload)
                     updateCntr = nextPartitionCounter(topVer, true, true, null);
-
-                    if (localPartition().id() == 859 && U.FLAG2.get()) {
-                        U.PART_859_2.compute(key.value(cctx.cacheObjectContext(), true), (k, v) -> {
-                            if (v == null)
-                                v = new HashSet<>();
-
-                            long localNode = cctx.kernalContext().grid().localNode().order();
-
-                            v.add(localNode);
-
-                            return v;
-                        });
-                    }
-                }
 
                 if (walEnabled) {
                     if (cctx.mvccEnabled()) {
