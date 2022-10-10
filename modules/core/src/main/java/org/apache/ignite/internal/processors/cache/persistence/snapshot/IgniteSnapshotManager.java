@@ -739,7 +739,7 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
                 "Another snapshot operation in progress [req=" + req + ", curr=" + clusterSnpReq + ']'));
         }
 
-        Set<UUID> leftNodes = new HashSet<>(req.initNodes());
+        Set<UUID> leftNodes = new HashSet<>(req.nodes());
         leftNodes.removeAll(F.viewReadOnly(cctx.discovery().nodes(AffinityTopologyVersion.NONE),
             F.node2id()));
 
@@ -915,7 +915,7 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
         });
 
         if (isLocalNodeCoordinator(cctx.discovery())) {
-            Set<UUID> missed = new HashSet<>(snpReq.initNodes());
+            Set<UUID> missed = new HashSet<>(snpReq.nodes());
             missed.removeAll(res.keySet());
             missed.removeAll(err.keySet());
 
@@ -932,6 +932,8 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
                     "Uncompleted snapshot will be deleted [err=" + err + ']'));
             }
 
+            snpReq.finishStartStage();
+
             completeHandlersAsyncIfNeeded(snpReq, res.values())
                 .listen(f -> {
                         if (f.error() != null)
@@ -942,8 +944,6 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
                                     clusterSnpFut.warnings.putAll(initStageWarnings);
                             }
                         }
-
-                        snpReq.finishStartStage();
 
                         endSnpProc.start(snpReq.requestId(), snpReq);
                     }
@@ -983,8 +983,7 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
 
             handlers().execSvc.submit(() -> {
                 try {
-                    handlers.completeAll(SnapshotHandlerType.CREATE, req.snapshotName(), clusterHndResults,
-                        req.nodes());
+                    handlers.completeAll(SnapshotHandlerType.CREATE, req.snapshotName(), clusterHndResults, req.nodes());
 
                     resultFut.onDone();
                 }
@@ -1040,7 +1039,7 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
         if (snpReq == null || !F.eq(id, snpReq.requestId()))
             return;
 
-        Set<UUID> endFail = new HashSet<>(snpReq.workingNodes());
+        Set<UUID> endFail = new HashSet<>(snpReq.nodes());
         endFail.removeAll(res.keySet());
 
         clusterSnpReq = null;

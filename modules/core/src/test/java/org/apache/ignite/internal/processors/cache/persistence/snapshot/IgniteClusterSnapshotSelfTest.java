@@ -1053,7 +1053,7 @@ public class IgniteClusterSnapshotSelfTest extends AbstractSnapshotSelfTest {
         assertThrowsAnyCause(log,
             fut::get,
             ClusterTopologyException.class,
-            "Snapshot operation interrupted, because baseline node left the cluster.");
+            "Snapshot operation interrupted, because node left the cluster.");
 
         assertEquals("Snapshot futures expected: " + exchFuts, 3, exchFuts.size());
 

@@ -48,7 +48,7 @@ public class SnapshotOperationRequest implements Serializable {
     @GridToStringInclude
     private final Set<UUID> nodes;
 
-    /** All nodes on initial stage. */
+    /** All nodes at initial stage. */
     @GridToStringInclude
     private final Set<UUID> initNodes;
 
@@ -125,26 +125,17 @@ public class SnapshotOperationRequest implements Serializable {
     }
 
     /**
-     * @return Baseline node IDs that must be alive to complete the operation.
+     * @return Nodes at current snapshot process stage.
+     */
+    Set<UUID> nodes() {
+        return startStageEnded ? nodes : initNodes;
+    }
+
+    /**
+     * @return Working nodes only.
      */
     Set<UUID> workingNodes() {
         return nodes;
-    }
-
-    /**
-     * @return Nodes at initial stage to begin snapshot or check snapshot operation.
-     */
-    Set<UUID> initNodes() {
-        assert !startStageEnded;
-
-        return initNodes;
-    }
-
-    /**
-     * @return Nodes at current stage to begin snapshot or check snapshot operation.
-     */
-    Set<UUID> nodes() {
-        return startStageEnded ? workingNodes() : initNodes();
     }
 
     /**
