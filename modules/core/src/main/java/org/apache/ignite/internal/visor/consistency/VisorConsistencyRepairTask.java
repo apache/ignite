@@ -21,6 +21,8 @@ import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Map;
 import java.util.Set;
+import java.util.concurrent.ExecutionException;
+import java.util.concurrent.ExecutorService;
 import java.util.stream.Collectors;
 import javax.cache.CacheException;
 import org.apache.ignite.IgniteCache;
@@ -37,6 +39,7 @@ import org.apache.ignite.internal.processors.cache.distributed.near.consistency.
 import org.apache.ignite.internal.processors.cache.persistence.CacheDataRow;
 import org.apache.ignite.internal.util.GridConcurrentHashSet;
 import org.apache.ignite.internal.util.lang.GridCursor;
+import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.internal.CU;
 import org.apache.ignite.internal.visor.VisorJob;
 import org.apache.ignite.lang.IgnitePredicate;
@@ -89,10 +92,35 @@ public class VisorConsistencyRepairTask extends AbstractConsistencyTask<VisorCon
 
         /** {@inheritDoc} */
         @Override protected String run(VisorConsistencyRepairTaskArg arg) throws IgniteException {
+            ExecutorService sys = ignite.context().pools().getSystemExecutorService();
+
+            StringBuilder res = new StringBuilder();
+
+            arg.parts().stream()
+                .map(p -> F.t(p, sys.submit(() -> processPartition(p, arg))))
+                .map(t -> {
+                    try {
+                        return F.t(t.get1(), t.get2().get());
+                    }
+                    catch (ExecutionException | InterruptedException e) {
+                        throw new IgniteException(e);
+                    }
+                })
+                .filter(t -> t.get2() != null)
+                .forEach(t -> res.append("    Partition ").append(t.get1()).append(' ').append(t.get2()).append('\n'));
+
+            return res.toString();
+        }
+
+        /**
+         * @param p Partition.
+         * @param arg Taks arguments.
+         * @return Partition results.
+         */
+        private String processPartition(int p, VisorConsistencyRepairTaskArg arg) {
             String cacheOrGrpName = arg.cacheOrGroupName();
             ReadRepairStrategy strategy = arg.strategy();
 
-            int p = arg.part();
             int batchSize = 128;
             int statusDelay = 60_000; // Every minute.
 
@@ -110,7 +138,7 @@ public class VisorConsistencyRepairTask extends AbstractConsistencyTask<VisorCon
             if (grpCtx == null)
                 if (ignite.context().cache().cacheGroupDescriptor(cacheOrGrpId) != null ||
                     ignite.context().cache().cacheDescriptor(cacheOrGrpName) != null)
-                    return null; // Node filtered by node filter.
+                    return null;
                 else
                     throw new IgniteException("Cache (or cache group) not found [name=" + cacheOrGrpName + "]");
 
@@ -120,7 +148,7 @@ public class VisorConsistencyRepairTask extends AbstractConsistencyTask<VisorCon
             GridDhtLocalPartition part = grpCtx.topology().localPartition(p);
 
             if (part == null)
-                return null; // Partition does not belong to the node.
+                return null;
 
             log.info("Consistency check started " +
                 "[grp=" + grpCtx.cacheOrGroupName() + ", part=" + p + ", strategy=" + strategy + "]");

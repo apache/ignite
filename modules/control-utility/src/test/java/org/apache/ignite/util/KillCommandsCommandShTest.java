@@ -347,7 +347,7 @@ public class KillCommandsCommandShTest extends GridCommandHandlerClusterByClassA
         List<String> cmd = new ArrayList<>(Arrays.asList(
             "--consistency", "repair",
             ConsistencyCommand.STRATEGY, ReadRepairStrategy.CHECK_ONLY.toString(),
-            ConsistencyCommand.PARTITION, "0",
+            ConsistencyCommand.PARTITIONS, "0",
             ConsistencyCommand.CACHE, consistencyCacheName));
 
         if (parallel)

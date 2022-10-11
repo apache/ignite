@@ -295,7 +295,7 @@ public class GridCommandHandlerConsistencyTest extends GridCommandHandlerCluster
             assertEquals(EXIT_CODE_UNEXPECTED_ERROR,
                 execute("--consistency", "repair",
                     ConsistencyCommand.CACHE, "non-existent",
-                    ConsistencyCommand.PARTITION, String.valueOf(i),
+                    ConsistencyCommand.PARTITIONS, String.valueOf(i),
                     ConsistencyCommand.STRATEGY, strategy.toString()));
 
             assertTrue(VisorConsistencyStatusTask.MAP.isEmpty());
@@ -311,7 +311,7 @@ public class GridCommandHandlerConsistencyTest extends GridCommandHandlerCluster
         for (int i = 0; i < PARTITIONS; i++) {
             assertEquals(EXIT_CODE_OK, execute("--consistency", "repair",
                 ConsistencyCommand.CACHE, callByGrp ? cacheName + GRP_POSTFIX : cacheName,
-                ConsistencyCommand.PARTITION, String.valueOf(i),
+                ConsistencyCommand.PARTITIONS, String.valueOf(i),
                 ConsistencyCommand.STRATEGY, strategy.toString()));
 
             assertTrue(VisorConsistencyStatusTask.MAP.isEmpty());
