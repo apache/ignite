@@ -103,7 +103,7 @@ public class VisorConsistencyRepairTask extends AbstractConsistencyTask<VisorCon
                         return F.t(t.get1(), t.get2().get());
                     }
                     catch (ExecutionException | InterruptedException e) {
-                        throw new IgniteException(e);
+                        throw new IgniteException("Consistency task was interrupted", e);
                     }
                 })
                 .filter(t -> t.get2() != null)
