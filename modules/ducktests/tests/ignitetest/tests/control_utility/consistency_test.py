@@ -27,13 +27,17 @@ This module contains consistency check/repair tests.
 """
 
 from ducktape.errors import TimeoutError
+from ducktape.mark import defaults
 
+from ignitetest.services.ignite import IgniteService
 from ignitetest.services.ignite_app import IgniteApplicationService
 from ignitetest.services.ignite_execution_exception import IgniteExecutionException
 from ignitetest.services.utils.control_utility import ControlUtility
-from ignitetest.services.utils.ignite_configuration import IgniteConfiguration
+from ignitetest.services.utils.ignite_configuration import IgniteConfiguration, DataStorageConfiguration
+from ignitetest.services.utils.ignite_configuration.data_storage import DataRegionConfiguration
+from ignitetest.services.utils.ignite_configuration.discovery import from_ignite_cluster
 from ignitetest.services.utils.ignite_configuration.event_type import EventType
-from ignitetest.tests.rebalance.util import preload_data
+from ignitetest.tests.rebalance.util import preload_data, DataGenerationParams, current_millis
 from ignitetest.utils import cluster, ignite_versions
 from ignitetest.utils.ignite_test import IgniteTest
 from ignitetest.utils.version import DEV_BRANCH, IgniteVersion
@@ -112,21 +116,77 @@ class ConsistencyTest(IgniteTest):
 
     @cluster(num_nodes=4)
     @ignite_versions(str(DEV_BRANCH))
-    def test_logging(self, ignite_version):
+    @defaults(backups=[1], cache_count=[1], entry_count=[50_000], entry_size=[50_000], preloaders=[1])
+    def test_consistency_check_performance(self, ignite_version, backups, cache_count, entry_count, entry_size,
+                                           preloaders):
+        """
+        Tests time of performing consistency check and idle_verify utilities over the same data.
+        """
 
-        ignites = start_ignite(self.test_context, ignite_version, reb_params)
+        data_gen_params = DataGenerationParams(backups=backups, cache_count=cache_count, entry_count=entry_count,
+                                               entry_size=entry_size, preloaders=preloaders)
+
+        node_config = IgniteConfiguration(
+            version=IgniteVersion(ignite_version),
+            cluster_state="INACTIVE",
+            include_event_types=[EventType.EVT_CONSISTENCY_VIOLATION],
+            data_storage=DataStorageConfiguration(
+                max_wal_archive_size=2 * data_gen_params.data_region_max_size,
+                default=DataRegionConfiguration(
+                    persistence_enabled=True,
+                    max_size=data_gen_params.data_region_max_size
+                )
+            ),
+            metric_exporters={"org.apache.ignite.spi.metric.jmx.JmxMetricExporterSpi"}
+        )
+
+        ignites = IgniteService(self.test_context,
+                                config=node_config,
+                                num_nodes=self.test_context.available_cluster_size - data_gen_params.preloaders)
+        ignites.start()
 
         control_utility = ControlUtility(ignites)
 
         control_utility.activate()
 
-        cfg = IgniteConfiguration(
-            version=IgniteVersion(ignite_version),
-            cluster_state="INACTIVE",
-            include_event_types=[EventType.EVT_CONSISTENCY_VIOLATION]
-        ),
-
         preload_time = preload_data(
             self.test_context,
             ignites.config._replace(client_mode=True, discovery_spi=from_ignite_cluster(ignites)),
-            rebalance_params=reb_params)
+            data_gen_params=data_gen_params)
+
+        start = current_millis()
+
+        control_utility.idle_verify()
+
+        finish = current_millis()
+
+        idle_verify_time = {
+            'start': start,
+            'finish': finish,
+            'time_to_run': (finish - start)
+        }
+
+        self.logger.info("Idle verify finished [time_to_run=" + str(idle_verify_time['time_to_run']) + ']')
+
+        start = current_millis()
+
+        for p in range(0, 1024):
+            self.logger.debug('Running repair[p=' + str(p) + ']')
+            # checking/repairing
+            control_utility.check_consistency(f"repair --cache test-cache-1 --strategy LWW --partition " + str(p))
+
+        finish = current_millis()
+
+        check_consistency_time = {
+            'start': start,
+            'finish': finish,
+            'time_to_run': (finish - start)
+        }
+
+        self.logger.info("Check consistency finished [time_to_run=" + str(check_consistency_time['time_to_run']) + ']')
+
+        return {
+            'idle_verify': idle_verify_time,
+            'check_consistency': check_consistency_time,
+            'preload': preload_time
+        }

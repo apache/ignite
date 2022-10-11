@@ -17,6 +17,7 @@
 Utils for rebalanced tests.
 """
 import sys
+import time
 from datetime import datetime
 from enum import IntEnum
 from itertools import chain, product
@@ -44,29 +45,23 @@ class TriggerEvent(IntEnum):
     NODE_LEFT = 1
 
 
-class RebalanceParams(NamedTuple):
+class DataGenerationParams(NamedTuple):
     """
-    Rebalance parameters
+    Data generation parameters.
+    See org.apache.ignite.internal.ducktest.tests.rebalance.DataGenerationApplication in java code.
     """
-    trigger_event: TriggerEvent = TriggerEvent.NODE_JOIN
     backups: int = 1
     cache_count: int = 1
     entry_count: int = 15_000
     entry_size: int = 50_000
     preloaders: int = 1
-    thread_pool_size: int = None
-    batch_size: int = None
-    batches_prefetch_count: int = None
-    throttle: int = None
-    persistent: bool = False
-    jvm_opts: list = None
 
     @property
     def data_region_max_size(self):
         """
         Max size for DataRegionConfiguration.
         """
-        return max(self.cache_count * self.entry_count * self.entry_size * (self.backups + 1), DEFAULT_DATA_REGION_SZ)\
+        return max(self.cache_count * self.entry_count * self.entry_size * (self.backups + 1), DEFAULT_DATA_REGION_SZ) \
 
 
     @property
@@ -75,6 +70,19 @@ class RebalanceParams(NamedTuple):
         Entry count per preloader.
         """
         return int(self.entry_count / self.preloaders)
+
+
+class RebalanceParams(DataGenerationParams):
+    """
+    Rebalance parameters
+    """
+    trigger_event: TriggerEvent = TriggerEvent.NODE_JOIN
+    thread_pool_size: int = None
+    batch_size: int = None
+    batches_prefetch_count: int = None
+    throttle: int = None
+    persistent: bool = False
+    jvm_opts: list = None
 
 
 class RebalanceMetrics(NamedTuple):
@@ -129,19 +137,19 @@ def start_ignite(test_context, ignite_version: str, rebalance_params: RebalanceP
     return ignites
 
 
-def preload_data(context, config, rebalance_params: RebalanceParams, timeout=3600):
+def preload_data(context, config, data_gen_params: DataGenerationParams, timeout=3600):
     """
     Puts entry_count of key-value pairs of entry_size bytes to cache_count caches.
     :param context: Test context.
     :param config: Ignite configuration.
-    :param rebalance_params: Rebalance parameters.
+    :param data_gen_params: Data generation parameters.
     :param timeout: Timeout in seconds for application finished.
     :return: Time taken for data preloading.
     """
-    assert rebalance_params.preloaders > 0
-    assert rebalance_params.cache_count > 0
-    assert rebalance_params.entry_count > 0
-    assert rebalance_params.entry_size > 0
+    assert data_gen_params.preloaders > 0
+    assert data_gen_params.cache_count > 0
+    assert data_gen_params.entry_count > 0
+    assert data_gen_params.entry_size > 0
 
     apps = []
 
@@ -151,9 +159,9 @@ def preload_data(context, config, rebalance_params: RebalanceParams, timeout=360
             config=config,
             java_class_name="org.apache.ignite.internal.ducktest.tests.rebalance.DataGenerationApplication",
             params={
-                "backups": rebalance_params.backups,
-                "cacheCount": rebalance_params.cache_count,
-                "entrySize": rebalance_params.entry_size,
+                "backups": data_gen_params.backups,
+                "cacheCount": data_gen_params.cache_count,
+                "entrySize": data_gen_params.entry_size,
                 "from": _from,
                 "to": _to
             },
@@ -162,15 +170,15 @@ def preload_data(context, config, rebalance_params: RebalanceParams, timeout=360
 
         apps.append(app)
 
-    count = rebalance_params.entry_count_per_preloader
+    count = data_gen_params.entry_count_per_preloader
     end = 0
 
-    for _ in range(rebalance_params.preloaders - 1):
+    for _ in range(data_gen_params.preloaders - 1):
         start = end
         end += count
         start_app(start, end)
 
-    start_app(end, rebalance_params.entry_count)
+    start_app(end, data_gen_params.entry_count)
 
     for app in apps:
         app.await_stopped()
@@ -316,3 +324,7 @@ def check_type_of_rebalancing(rebalance_nodes: list, is_full: bool = True):
             assert msg in i, i
 
         return output
+
+
+def current_millis():
+    return round(time.time() * 1000)
