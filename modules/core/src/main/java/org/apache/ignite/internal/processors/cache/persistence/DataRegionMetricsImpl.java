@@ -362,12 +362,14 @@ public class DataRegionMetricsImpl implements DataRegionMetrics {
         if (!metricsEnabled)
             return 0;
 
-        long totalSpace = getTotalAllocatedSize();
+        long totalUsedSize = getTotalUsedSize();
 
-        if (totalSpace == 0)
+        if (totalUsedSize == 0)
             return 0;
 
-        return (float)getSizeUsedByData() / totalSpace;
+        long freeSpaceInPages = dataRegionMetricsProvider.partiallyFilledPagesFreeSpace();
+
+        return (float)(totalUsedSize - freeSpaceInPages) / totalUsedSize;
     }
 
     /**
@@ -699,7 +701,8 @@ public class DataRegionMetricsImpl implements DataRegionMetrics {
 
         mreg.register("PagesFillFactor",
             this::getPagesFillFactor,
-            "Returns the ratio of space occupied by user and system data to the whole allocated space");
+            "Returns the ratio of space occupied by user and system data to the size of all pages that contain " +
+                "this data");
 
         mreg.register("SizeUsedByData",
             this::getSizeUsedByData,

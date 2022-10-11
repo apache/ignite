@@ -92,11 +92,11 @@ JDBC:
 * Fixed handling of BinaryObjectException on response to deserialization at the thin JDBC client
 * Fixed parsing quoted delimiters in CSV fields content for SQL command COPY.
 
-.Net thin client:
+.NET thin client:
 * Added AtomicLong.
 
-.Net:
-* Fixed ServiceCallContext access from async methods.
+.NET:
+* Added service interceptors.
 * Fixed StringComparer serialization.
 * Fixed net461 release binaries.
 * Improved Java detection on Linux.
