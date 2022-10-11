@@ -63,6 +63,41 @@ public class SqlParserMultiStatementSelfTest extends SqlParserAbstractSelfTest {
      */
     @Test
     public void testComments() {
+        String sql = " -- Creating new index \n" +
+            " CREATE INDEX IDX1 on TABLE1(id); \n" +
+            " -- Creating one more index \n" +
+            " CREATE INDEX IDX2 on TABLE2(id); \n" +
+            " -- All done.";
+
+        SqlParser parser = new SqlParser("schema", sql);
+
+        // Haven't parse anything yet.
+        assertEquals(null, parser.lastCommandSql());
+        assertEquals(sql, parser.remainingSql());
+
+        SqlCommand cmd = parser.nextCommand();
+
+        assertTrue(cmd instanceof SqlCreateIndexCommand);
+        assertEquals("CREATE INDEX IDX1 on TABLE1(id)", parser.lastCommandSql());
+        assertEquals(" \n -- Creating one more index \n" +
+            " CREATE INDEX IDX2 on TABLE2(id); \n" +
+            " -- All done.", parser.remainingSql());
+
+        cmd = parser.nextCommand();
+
+        assertTrue(cmd instanceof SqlCreateIndexCommand);
+        assertEquals("CREATE INDEX IDX2 on TABLE2(id)", parser.lastCommandSql());
+        assertEquals(" \n -- All done.", parser.remainingSql());
+
+        cmd = parser.nextCommand();
+
+        assertNull(cmd);
+        assertEquals(null, parser.lastCommandSql());
+        assertEquals(null, parser.remainingSql());
+    }
+
+    @Test
+    public void testEmptyTransaction() {
         String beginSql = "BEGIN  ;" + "  \n";
         String noteSql = "  -- Let's start an empty transaction; $1M idea!\n";
         String commitSql = "COMMIT;" + ";;";
