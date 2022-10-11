@@ -17,6 +17,7 @@
 
 package org.apache.ignite.internal.managers.discovery;
 
+import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
 
@@ -29,5 +30,5 @@ public interface CustomEventListener<T extends DiscoveryCustomMessage> {
      * @param snd Sender.
      * @param msg Message.
      */
-    public void onCustomEvent(AffinityTopologyVersion topVer, ClusterNode snd, T msg);
+    public void onCustomEvent(AffinityTopologyVersion topVer, ClusterNode snd, T msg) throws IgniteCheckedException;
 }

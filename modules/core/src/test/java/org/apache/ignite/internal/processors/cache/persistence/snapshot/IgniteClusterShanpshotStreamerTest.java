@@ -17,6 +17,7 @@
 
 package org.apache.ignite.internal.processors.cache.persistence.snapshot;
 
+import java.util.List;
 import java.util.Set;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.atomic.AtomicBoolean;
@@ -28,6 +29,7 @@ import org.apache.ignite.IgniteDataStreamer;
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.cache.CacheAtomicityMode;
 import org.apache.ignite.cache.CacheMode;
+import org.apache.ignite.cache.CacheWriteSynchronizationMode;
 import org.apache.ignite.cluster.BaselineNode;
 import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.configuration.IgniteConfiguration;
@@ -41,6 +43,7 @@ import org.apache.ignite.internal.processors.datastreamer.DataStreamerCacheUpdat
 import org.apache.ignite.internal.processors.datastreamer.DataStreamerRequest;
 import org.apache.ignite.internal.util.distributed.InitMessage;
 import org.apache.ignite.internal.util.typedef.G;
+import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgniteFuture;
 import org.apache.ignite.lang.IgniteInClosure;
 import org.apache.ignite.plugin.extensions.communication.Message;
@@ -76,19 +79,7 @@ public class IgniteClusterShanpshotStreamerTest extends AbstractSnapshotSelfTest
     private TcpDiscoverySpi discoverySpi;
 
     /** */
-    private IgniteEx baselineServer;
-
-    /** Excluded by cache filter. */
-    private Ignite ignoredServer;
-
-    /** */
-    private IgniteEx notBaselineServer;
-
-    /** */
-    private IgniteEx client;
-
-    /** */
-    private IgniteSnapshotManager snpMngr;
+    private IgniteSnapshotManager coordinatorSnpMgr;
 
     /** */
     private volatile @Nullable CountDownLatch launchDsLock;
@@ -108,26 +99,26 @@ public class IgniteClusterShanpshotStreamerTest extends AbstractSnapshotSelfTest
 
         discoverySpi = null;
 
-        baselineServer = startGrid(1);
-
-        ignoredServer = startGrid(2);
+        // One more server node.
+        startGrid(1);
 
         grid(0).cluster().state(ACTIVE);
 
         grid(0).cluster().setBaselineTopology(grid(0).cluster().topologyVersion());
 
-        notBaselineServer = startGrid(G.allGrids().size());
+        // Not-baseline server node.
+        startGrid(G.allGrids().size());
 
-        client = startClientGrid(G.allGrids().size());
+        startClientGrid(G.allGrids().size());
 
-        snpMngr = snp(grid(0));
+        coordinatorSnpMgr = snp(grid(0));
 
         dfltCacheCfg = defaultCacheConfiguration();
 
         dfltCacheCfg
             .setAtomicityMode(CacheAtomicityMode.ATOMIC)
             .setCacheMode(CacheMode.PARTITIONED)
-            .setNodeFilter(n -> !n.id().equals(ignoredServer.cluster().localNode().id()))
+            .setWriteSynchronizationMode(CacheWriteSynchronizationMode.PRIMARY_SYNC)
             .setBackups(1);
     }
 
@@ -136,6 +127,7 @@ public class IgniteClusterShanpshotStreamerTest extends AbstractSnapshotSelfTest
         IgniteConfiguration cfg = super.getConfiguration(igniteInstanceName);
 
         cfg.getDataStorageConfiguration().setWalMode(WALMode.NONE);
+        cfg.getDataStorageConfiguration().getDefaultDataRegionConfiguration().setMaxSize(128L * 1024L * 1024L);
 
         if (discoverySpi != null)
             cfg.setDiscoverySpi(discoverySpi);
@@ -149,121 +141,89 @@ public class IgniteClusterShanpshotStreamerTest extends AbstractSnapshotSelfTest
         return cfg;
     }
 
-    /** @throws Exception If fails. */
+    /**
+     * Test snapshot consistency when streamer starts right after init snapshot process request. Default receiver.
+     */
     @Test
-    public void testDsNextToStageDfltRcvrBlSrv() throws Exception {
-        doTestDsNextToFirstStage(null, baselineServer);
-    }
+    public void testDsBeginsAtStartStageDflt() throws Exception {
+        for (Ignite ldr : testGrids()) {
+            prepareRunWithNewNode(ldr);
 
-    /** @throws Exception If fails. */
-    @Test
-    public void testDsNextToStageDfltRcvrNotBlSrv() throws Exception {
-        doTestDsNextToFirstStage(null, notBaselineServer);
-    }
-
-    /** @throws Exception If fails. */
-    @Test
-    public void testDsNextToStageDfltRcvrClient() throws Exception {
-        doTestDsNextToFirstStage(null, client);
-    }
-
-    /** @throws Exception If fails. */
-    @Test
-    public void intestDsNextToStageDfltRcvrBlSrv() throws Exception {
-        doTestDsNextToFirstStage(null, baselineServer);
-    }
-
-    /** @throws Exception If fails. */
-    @Test
-    public void testDsNextToStageBatchRcvrClient() throws Exception {
-        doTestDsNextToFirstStage(DataStreamerCacheUpdaters.batched(), client);
-    }
-
-    /** @throws Exception If fails. */
-    @Test
-    public void testDsNextToStageBatchRcvrBlSrv() throws Exception {
-        doTestDsNextToFirstStage(DataStreamerCacheUpdaters.batched(), baselineServer);
-    }
-
-    /** @throws Exception If fails. */
-    @Test
-    public void testDsNextToStageBatchRcvrNotBlSrv() throws Exception {
-        doTestDsNextToFirstStage(DataStreamerCacheUpdaters.batched(), notBaselineServer);
-    }
-
-    /** @throws Exception If fails. */
-    @Test
-    public void testDsAtSecondStageBatchRcvrClient() throws Exception {
-        doTestDsAtSecondStage(DataStreamerCacheUpdaters.batched(), client);
-    }
-
-    /** @throws Exception If fails. */
-    @Test
-    public void testDsAtSecondStageDftRcvrClient() throws Exception {
-        doTestDsAtSecondStage(null, client);
-    }
-
-    /** @throws Exception If fails. */
-    @Test
-    public void testDsAtSecondStageDftRcvrBsSrv() throws Exception {
-        doTestDsAtSecondStage( null, baselineServer);
-    }
-
-    /** @throws Exception If fails. */
-    @Test
-    public void testDsAtSecondStageDftRcvrNonBsSrv() throws Exception {
-        doTestDsAtSecondStage( null, notBaselineServer);
-    }
-
-    /** @throws Exception If fails. */
-    @Test
-    public void testDsBeforeSnpDftRcvrClient() throws Exception {
-        dotestDsBeforeSnp(client, true, null);
-    }
-
-    /** @throws Exception If fails. */
-    @Test
-    public void testDsBeforeSnpDftRcvrBsSrv() throws Exception {
-        dotestDsBeforeSnp(baselineServer, true, null);
-    }
-
-    /** @throws Exception If fails. */
-    @Test
-    public void testDsBeforeSnpDftRcvrNotBsSrv() throws Exception {
-        dotestDsBeforeSnp(notBaselineServer, true, null);
-    }
-
-    /** @throws Exception If fails. */
-    @Test
-    public void testDsBeforeSnpBatchRcvrClient() throws Exception {
-        dotestDsBeforeSnp(client, false, DataStreamerCacheUpdaters.batched());
-    }
-
-    /** @throws Exception If fails. */
-    @Test
-    public void testDsBeforeSnpBatchRcvrBsSrv() throws Exception {
-        dotestDsBeforeSnp(baselineServer, false, DataStreamerCacheUpdaters.batched());
-    }
-
-    /** @throws Exception If fails. */
-    @Test
-    public void testDsBeforeSnpBatchRcvrNotBsSrv() throws Exception {
-        dotestDsBeforeSnp(notBaselineServer, false, DataStreamerCacheUpdaters.batched());
+            doTestDsBeginsAtStartStage(null, (IgniteEx)ldr);
+        }
     }
 
     /**
-     * Tests snapshot consistecy when snapshot process starts in the middle of streaming loading.
+     * Test snapshot consistency when streamer starts right after init snapshot process request. Batched receiver.
+     */
+    @Test
+    public void testDsBeginsAtStartStageBatched() throws Exception {
+        for (Ignite ldr : testGrids()) {
+            prepareRunWithNewNode(ldr);
+
+            doTestDsBeginsAtStartStage(DataStreamerCacheUpdaters.batched(), (IgniteEx)ldr);
+        }
+    }
+
+    /**
+     * Test snapshot consistency when streamer starts when snapshot process is not finished yet. Default receiver.
+     */
+    @Test
+    public void testDsBeginsAtEndStageDflt() throws Exception {
+        for (Ignite ldr : testGrids()) {
+            prepareRunWithNewNode(ldr);
+
+            doTestDsBeginsAtEndStage(null, ldr);
+        }
+    }
+
+    /**
+     * Test snapshot consistency when streamer starts when snapshot process is not finished yet. Batched receiver.
+     */
+    @Test
+    public void testDsBeginsAtEndStageBatched() throws Exception {
+        for (Ignite ldr : testGrids()) {
+            prepareRunWithNewNode(ldr);
+
+            doTestDsBeginsAtEndStage(DataStreamerCacheUpdaters.batched(), ldr);
+        }
+    }
+
+    /**
+     * Tests snapshot consistency wnen streamer starts before snapshot. Default receiver.
+     */
+    @Test
+    public void testDsBeginsBeforeSnpDflt() throws Exception {
+        for (Ignite ldr : testGrids()) {
+            prepareRunWithNewNode(ldr);
+
+            doTestDsBeginsBeforeSnp(ldr, true, null);
+        }
+    }
+
+    /**
+     * Tests snapshot consistency wnen streamer starts before snapshot. Batched receiver.
+     */
+    @Test
+    public void testDsBeginsBeforeSnpBatched() throws Exception {
+        for (Ignite ldr : testGrids()) {
+            prepareRunWithNewNode(ldr);
+
+            doTestDsBeginsBeforeSnp(ldr, false, DataStreamerCacheUpdaters.batched());
+        }
+    }
+
+    /**
+     * Tests snapshot consistecy when datastreamer starts before snapshot.
      *
      * @param ldrNode  Streaming node.
-     * @param mustFail If {@code true}, checks snapshot prcess warns of inconsistency and ensures snapshot validation
+     * @param mustFail If {@code true}, checks snapshot process warns of inconsistency and ensures snapshot validation
      *                 finds errors. Otherwise, ensures snapshot validation is ok.
      * @param receiver Stream receiver. {@code Null} for default.
      */
-    private void dotestDsBeforeSnp(Ignite ldrNode, boolean mustFail,
+    private void doTestDsBeginsBeforeSnp(Ignite ldrNode, boolean mustFail,
         @Nullable StreamReceiver<Integer, Object> receiver) throws Exception {
         int preLoadCnt = 5_000;
-
-        grid(0).cache(dfltCacheCfg.getName()).clear();
 
         CountDownLatch preload = new CountDownLatch(preLoadCnt);
         AtomicBoolean stopLoading = new AtomicBoolean(false);
@@ -284,15 +244,19 @@ public class IgniteClusterShanpshotStreamerTest extends AbstractSnapshotSelfTest
             loadFut.get();
         }
 
-        IdleVerifyResultV2 checkRes = snpMngr.checkSnapshot(SNAPSHOT_NAME, null).get();
+        IdleVerifyResultV2 checkRes = coordinatorSnpMgr.checkSnapshot(SNAPSHOT_NAME, null).get();
 
-        assertTrue(checkRes.exceptions().isEmpty() && mustFail == checkRes.hasConflicts());
+        assertTrue(mustFail == checkRes.hasConflicts());
+        assertTrue(checkRes.exceptions().isEmpty());
     }
 
     /**
-     * Test snapshot consistency when streamer starts right after first-stage request.
+     * Test snapshot consistency when streamer starts right after init snapshot process request.
+     *
+     * @param rcvr Stream receiver.
+     * @param ldr Loader node.
      */
-    private void doTestDsNextToFirstStage(StreamReceiver<Integer, Object> rcvr, IgniteEx ldr) throws Exception {
+    private void doTestDsBeginsAtStartStage(StreamReceiver<Integer, Object> rcvr, IgniteEx ldr) throws Exception {
         fillCache(5_000, ldr);
 
         AtomicBoolean stopLoading = new AtomicBoolean();
@@ -305,7 +269,7 @@ public class IgniteClusterShanpshotStreamerTest extends AbstractSnapshotSelfTest
             if (snpRq == null || !doLoadAtSnp.compareAndSet(true, false))
                 return;
 
-            CountDownLatch loadLatch = new CountDownLatch(1_000);
+            CountDownLatch loadLatch = new CountDownLatch(2_000);
 
             try {
                 loadDuringSnp.set(runLoad(ldr, rcvr, loadLatch, stopLoading, true));
@@ -318,7 +282,7 @@ public class IgniteClusterShanpshotStreamerTest extends AbstractSnapshotSelfTest
         });
 
         try {
-            snpMngr.createSnapshot(SNAPSHOT_NAME).get();
+            coordinatorSnpMgr.createSnapshot(SNAPSHOT_NAME).get();
         }
         finally {
             stopLoading.set(true);
@@ -326,18 +290,23 @@ public class IgniteClusterShanpshotStreamerTest extends AbstractSnapshotSelfTest
             loadDuringSnp.get().get();
         }
 
-        IdleVerifyResultV2 checkRes = snpMngr.checkSnapshot(SNAPSHOT_NAME, null).get();
+        IdleVerifyResultV2 checkRes = coordinatorSnpMgr.checkSnapshot(SNAPSHOT_NAME, null).get();
 
-        assertTrue(!checkRes.hasConflicts() && checkRes.exceptions().isEmpty());
+        assertTrue(!checkRes.hasConflicts());
+        assertTrue(checkRes.exceptions().isEmpty());
     }
 
     /**
-     * Test snapshot consistency when streamer starts at the middle of snapshot process.
+     * Test snapshot consistency when streamer starts when snapshot process is not finished yet.
+     *
+     * @param receiver Stream receiver. {@code Null} for default.
+     * @param ldr Loader node.
      */
-    private void doTestDsAtSecondStage(@Nullable StreamReceiver<Integer, Object> receiver, Ignite dsNode) throws Exception {
+    private void doTestDsBeginsAtEndStage(@Nullable StreamReceiver<Integer, Object> receiver, Ignite ldr)
+        throws Exception {
         int preLoadCnt = 5_000;
 
-        fillCache(preLoadCnt, dsNode);
+        fillCache(preLoadCnt, ldr);
 
         // Datastreamer won't be launched before snapshot process initialized.
         launchDsLock = new CountDownLatch(1);
@@ -352,7 +321,7 @@ public class IgniteClusterShanpshotStreamerTest extends AbstractSnapshotSelfTest
         AtomicBoolean stopLoading = new AtomicBoolean();
         CountDownLatch dataLoadCounter = new CountDownLatch(preLoadCnt);
 
-        IgniteInternalFuture<?> loadFut = runLoad(dsNode, receiver, dataLoadCounter, stopLoading, true);
+        IgniteInternalFuture<?> loadFut = runLoad(ldr, receiver, dataLoadCounter, stopLoading, true);
 
         dsRegisteredLock.await();
         dataLoadCounter.await();
@@ -366,9 +335,10 @@ public class IgniteClusterShanpshotStreamerTest extends AbstractSnapshotSelfTest
             loadFut.get();
         }
 
-        IdleVerifyResultV2 checkRes = snpMngr.checkSnapshot(SNAPSHOT_NAME, null).get();
+        IdleVerifyResultV2 checkRes = coordinatorSnpMgr.checkSnapshot(SNAPSHOT_NAME, null).get();
 
-        assertTrue(checkRes.hashConflicts().isEmpty() && checkRes.exceptions().isEmpty());
+        assertTrue(checkRes.hashConflicts().isEmpty());
+        assertTrue(checkRes.exceptions().isEmpty());
     }
 
     /**
@@ -387,56 +357,55 @@ public class IgniteClusterShanpshotStreamerTest extends AbstractSnapshotSelfTest
     /**
      * Loads or pre-loads cache.
      *
-     * @param ldr             Loader node.
-     * @param receiver        StreamReceiver. {@code Null} for default.
+     * @param ldr Loader node.
+     * @param receiver StreamReceiver. {@code Null} for default.
      * @param dataSendCounter Accumulator of submitted to streamer data.
-     * @param stop            Stop load flag.
-     * @param sabotageBatches If {@code true}, corrupts batches to one of server node to ensure snapshot inconsistency.
+     * @param stop Stop load flag.
+     * @param maleficent If {@code true}, corrupts batches to one of server node to ensure snapshot inconsistency.
      */
     private IgniteInternalFuture<?> runLoad(Ignite ldr, @Nullable StreamReceiver<Integer, Object> receiver,
-        CountDownLatch dataSendCounter, AtomicBoolean stop, boolean sabotageBatches) {
+        CountDownLatch dataSendCounter, AtomicBoolean stop, boolean maleficent) {
 
         return GridTestUtils.runMultiThreadedAsync(() -> {
             DataLoosingCommunicationSpi cm = (DataLoosingCommunicationSpi)ldr.configuration().getCommunicationSpi();
 
-            if (sabotageBatches) {
+            boolean blockSet = false;
+
+            if (maleficent) {
                 Set<Object> bl = grid(0).cluster().currentBaselineTopology().stream().map(BaselineNode::consistentId)
                     .collect(Collectors.toSet());
 
-                boolean blocked = false;
-
                 for (Ignite ig : G.allGrids()) {
                     if (ig.cluster().localNode().isClient()
-                        || ig.equals(ignoredServer)
                         || ig.cluster().localNode().id().equals(ldr.cluster().localNode().id())
                         || !bl.contains(ig.cluster().localNode().consistentId()))
                         continue;
 
-                    cm.block.set(ig.cluster().localNode());
+                    cm.block(ig.cluster().localNode());
 
-                    blocked = true;
+                    blockSet = true;
 
                     break;
                 }
 
-                assert blocked;
+                assert blockSet;
             }
 
             try (IgniteDataStreamer<Integer, Object> ds = ldr.dataStreamer(dfltCacheCfg.getName())) {
                 if (receiver != null)
                     ds.receiver(receiver);
 
-                ds.perNodeBufferSize(128);
-                ds.perThreadBufferSize(ds.perNodeBufferSize() * 2);
-                ds.perNodeParallelOperations(2);
-                ds.autoFlushFrequency(1000);
+                // Makes predictable batches sequence.
+                ds.perNodeBufferSize(256);
+                ds.perThreadBufferSize(ds.perNodeBufferSize() * 4);
+                ds.perNodeParallelOperations(3);
 
                 int idx = 0;
 
                 while (!stop.get()) {
                     ds.addData(idx, idx);
 
-                    if (dsRegisteredLock != null && dsRegisteredLock.getCount() > 0)
+                    if (dsRegisteredLock != null)
                         dsRegisteredLock.countDown();
 
                     idx++;
@@ -450,10 +419,11 @@ public class IgniteClusterShanpshotStreamerTest extends AbstractSnapshotSelfTest
                 }
             }
             finally {
-                cm.block.set(null);
-
                 while (dataSendCounter.getCount() > 0)
                     dataSendCounter.countDown();
+
+                if (blockSet)
+                    cm.stopBlocking();
             }
         }, 1, "load-thread");
     }
@@ -487,6 +457,27 @@ public class IgniteClusterShanpshotStreamerTest extends AbstractSnapshotSelfTest
         };
     }
 
+    /** */
+    private void prepareRunWithNewNode(Ignite node) throws InterruptedException {
+        if (log.isInfoEnabled()) {
+            log.info("Testing with loader node: " + node.cluster().localNode().id() +
+                ", order: " + node.cluster().localNode().order() +
+                ", client: " + node.cluster().localNode().isClient() +
+                ", baseline: " + node.cluster().currentBaselineTopology().stream().map(BaselineNode::consistentId)
+                .collect(Collectors.toSet()).contains(node.cluster().localNode().consistentId()));
+        }
+
+        U.delete(coordinatorSnpMgr.snapshotLocalDir(SNAPSHOT_NAME));
+
+        grid(0).destroyCache(dfltCacheCfg.getName());
+
+        awaitPartitionMapExchange();
+
+        grid(0).createCache(dfltCacheCfg);
+
+        awaitPartitionMapExchange();
+    }
+
     /**
      * @param msg Message.
      * @return SnapshotOperationRequest if {@code msg} is snapshot operation message. {@code Null} otherwise.
@@ -509,12 +500,27 @@ public class IgniteClusterShanpshotStreamerTest extends AbstractSnapshotSelfTest
     }
 
     /**
+     * @return Test grids to start streaming from.
+     */
+    private List<Ignite> testGrids() {
+        List<Ignite> testNodes = G.allGrids();
+
+        // No need to run from both server nodes.
+        testNodes.removeIf(n -> n.cluster().localNode().order() == 1);
+
+        return testNodes;
+    }
+
+    /**
      * Drops datastreamer entries from the batches to certain node. Simulates late data income to the node. Makes data
      * inconsistent if data contains backup records.
      */
     private static class DataLoosingCommunicationSpi extends TcpCommunicationSpi {
         /** */
         private final AtomicReference<ClusterNode> block = new AtomicReference<>();
+        
+        /** */
+        private final AtomicBoolean blocked = new AtomicBoolean();
 
         /** {@inheritDoc} */
         @Override public void sendMessage(ClusterNode node, Message msg, IgniteInClosure<IgniteException> ackC)
@@ -523,6 +529,8 @@ public class IgniteClusterShanpshotStreamerTest extends AbstractSnapshotSelfTest
                 ClusterNode toBlock = block.get();
 
                 if (toBlock != null && toBlock.id().equals(node.id())) {
+                    blocked.set(true);
+                    
                     DataStreamerRequest dsrq = ((DataStreamerRequest)((GridIoMessage)msg).message());
 
                     AtomicInteger cnt = new AtomicInteger(dsrq.entries().size());
@@ -532,6 +540,20 @@ public class IgniteClusterShanpshotStreamerTest extends AbstractSnapshotSelfTest
             }
 
             super.sendMessage(node, msg, ackC);
+        }
+        
+        /** */
+        public void block(ClusterNode n) {
+            block.set(n);
+
+            blocked.set(false);
+        }
+        
+        /** */
+        public void stopBlocking() {
+            block.set(null);
+
+            assertTrue("No messages was blocked.", blocked.compareAndSet(true, false));
         }
     }
 }
