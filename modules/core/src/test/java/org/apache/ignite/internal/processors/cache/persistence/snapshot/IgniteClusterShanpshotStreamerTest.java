@@ -79,7 +79,7 @@ public class IgniteClusterShanpshotStreamerTest extends AbstractSnapshotSelfTest
     private TcpDiscoverySpi discoverySpi;
 
     /** */
-    private IgniteSnapshotManager coordinatorSnpMgr;
+    private IgniteSnapshotManager snpMgr;
 
     /** */
     private volatile @Nullable CountDownLatch launchDsLock;
@@ -111,7 +111,7 @@ public class IgniteClusterShanpshotStreamerTest extends AbstractSnapshotSelfTest
 
         startClientGrid(G.allGrids().size());
 
-        coordinatorSnpMgr = snp(grid(0));
+        snpMgr = snp(grid(0));
 
         dfltCacheCfg = defaultCacheConfiguration();
 
@@ -244,7 +244,7 @@ public class IgniteClusterShanpshotStreamerTest extends AbstractSnapshotSelfTest
             loadFut.get();
         }
 
-        IdleVerifyResultV2 checkRes = coordinatorSnpMgr.checkSnapshot(SNAPSHOT_NAME, null).get();
+        IdleVerifyResultV2 checkRes = snpMgr.checkSnapshot(SNAPSHOT_NAME, null).get();
 
         assertTrue(mustFail == checkRes.hasConflicts());
         assertTrue(checkRes.exceptions().isEmpty());
@@ -282,7 +282,7 @@ public class IgniteClusterShanpshotStreamerTest extends AbstractSnapshotSelfTest
         });
 
         try {
-            coordinatorSnpMgr.createSnapshot(SNAPSHOT_NAME).get();
+            snpMgr.createSnapshot(SNAPSHOT_NAME).get();
         }
         finally {
             stopLoading.set(true);
@@ -290,7 +290,7 @@ public class IgniteClusterShanpshotStreamerTest extends AbstractSnapshotSelfTest
             loadDuringSnp.get().get();
         }
 
-        IdleVerifyResultV2 checkRes = coordinatorSnpMgr.checkSnapshot(SNAPSHOT_NAME, null).get();
+        IdleVerifyResultV2 checkRes = snpMgr.checkSnapshot(SNAPSHOT_NAME, null).get();
 
         assertTrue(!checkRes.hasConflicts());
         assertTrue(checkRes.exceptions().isEmpty());
@@ -335,7 +335,7 @@ public class IgniteClusterShanpshotStreamerTest extends AbstractSnapshotSelfTest
             loadFut.get();
         }
 
-        IdleVerifyResultV2 checkRes = coordinatorSnpMgr.checkSnapshot(SNAPSHOT_NAME, null).get();
+        IdleVerifyResultV2 checkRes = snpMgr.checkSnapshot(SNAPSHOT_NAME, null).get();
 
         assertTrue(checkRes.hashConflicts().isEmpty());
         assertTrue(checkRes.exceptions().isEmpty());
@@ -467,7 +467,7 @@ public class IgniteClusterShanpshotStreamerTest extends AbstractSnapshotSelfTest
                 .collect(Collectors.toSet()).contains(node.cluster().localNode().consistentId()));
         }
 
-        U.delete(coordinatorSnpMgr.snapshotLocalDir(SNAPSHOT_NAME));
+        U.delete(snpMgr.snapshotLocalDir(SNAPSHOT_NAME));
 
         grid(0).destroyCache(dfltCacheCfg.getName());
 
