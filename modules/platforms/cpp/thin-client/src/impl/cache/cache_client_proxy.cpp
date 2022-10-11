@@ -169,9 +169,10 @@ namespace ignite
                 }
 
                 ContinuousQueryHandleClient CacheClientProxy::QueryContinuous(
-                    const query::continuous::SP_ContinuousQueryClientHolderBase &continuousQuery)
+                    const query::continuous::SP_ContinuousQueryClientHolderBase &continuousQuery,
+                    const ignite::thin::cache::event::JavaCacheEntryEventFilter& filter)
                 {
-                    return ContinuousQueryHandleClient(GetCacheImpl(impl).QueryContinuous(continuousQuery));
+                    return ContinuousQueryHandleClient(GetCacheImpl(impl).QueryContinuous(continuousQuery, filter));
                 }
             }
         }

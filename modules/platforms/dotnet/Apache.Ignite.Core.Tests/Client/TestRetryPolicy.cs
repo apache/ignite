@@ -17,6 +17,7 @@
 
 namespace Apache.Ignite.Core.Tests.Client
 {
+    using System;
     using System.Collections.Generic;
     using System.Linq;
     using Apache.Ignite.Core.Client;
@@ -46,10 +47,20 @@ namespace Apache.Ignite.Core.Tests.Client
         /// </summary>
         public IReadOnlyList<IClientRetryPolicyContext> Invocations => _invocations;
 
+        /// <summary>
+        /// Gets or sets a value indicating whether this policy should throw an exception.
+        /// </summary>
+        public bool ShouldThrow { get; set; }
+
         /** <inheritDoc /> */
         public bool ShouldRetry(IClientRetryPolicyContext context)
         {
             _invocations.Add(context);
+
+            if (ShouldThrow)
+            {
+                throw new Exception("Error in policy.");
+            }
 
             return _allowedOperations.Contains(context.Operation);
         }

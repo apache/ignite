@@ -40,6 +40,12 @@ public class BulkLoadCsvFormat extends BulkLoadFormat {
     /** Line comment start pattern. */
     @Nullable public static final Pattern DEFAULT_COMMENT_CHARS = null;
 
+    /** A string value to be replaced with NULL. */
+    @Nullable public static final String DEFAULT_NULL_STRING = "";
+
+    /** Whether leading and trailing spaces should be trimmed. */
+    @Nullable public static final boolean DEFAULT_TRIM_SPACES = true;
+
     /** Format name. */
     public static final String NAME = "CSV";
 
@@ -60,6 +66,12 @@ public class BulkLoadCsvFormat extends BulkLoadFormat {
 
     /** File charset. */
     @Nullable private String inputCharsetName;
+
+    /**    */
+    @Nullable private String nullString;
+
+    /**    */
+    @Nullable private boolean trim;
 
     /**
      * Returns the name of the format.
@@ -176,5 +188,41 @@ public class BulkLoadCsvFormat extends BulkLoadFormat {
      */
     public void inputCharsetName(@Nullable String inputCharsetName) {
         this.inputCharsetName = inputCharsetName;
+    }
+
+    /**
+     * Returns the string to be used for null values, null if not specified.
+     *
+     * @return The string to be used for null values, null if not specified.
+     */
+    public String nullString() {
+        return nullString;
+    }
+
+    /**
+     * Sets the string to be used for null values.
+     *
+     * @param nullString The string to be used for null values.
+     */
+    public void nullString(@Nullable String nullString) {
+        this.nullString = nullString;
+    }
+
+    /**
+     * Returns whether the field content must be trimmed of leading and trailing spaces.
+     *
+     * @return Whether the field content must be trimmed.
+     */
+    public boolean trim() {
+        return trim;
+    }
+
+    /**
+     * Sets whether the field content must be trimmed of leading and trailing spaces.
+     *
+     * @param trim Whether the field content must be trimmed.
+     */
+    public void trim(@Nullable boolean trim) {
+        this.trim = trim;
     }
 }

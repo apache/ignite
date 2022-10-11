@@ -18,7 +18,6 @@
 package org.apache.ignite.internal.cache.query.index.sorted;
 
 import java.util.ArrayList;
-import java.util.Collections;
 import java.util.LinkedHashMap;
 import java.util.List;
 import org.apache.ignite.IgniteCheckedException;
@@ -29,16 +28,16 @@ import org.apache.ignite.internal.cache.query.index.sorted.keys.IndexKey;
 import org.apache.ignite.internal.cache.query.index.sorted.keys.IndexKeyFactory;
 import org.apache.ignite.internal.processors.cache.CacheObject;
 import org.apache.ignite.internal.processors.cache.CacheObjectContext;
+import org.apache.ignite.internal.processors.cache.GridCacheContextInfo;
 import org.apache.ignite.internal.processors.cache.persistence.CacheDataRow;
 import org.apache.ignite.internal.processors.query.GridQueryProperty;
-import org.apache.ignite.internal.processors.query.GridQueryRowDescriptor;
 import org.apache.ignite.internal.processors.query.GridQueryTypeDescriptor;
 import org.apache.ignite.internal.processors.query.QueryUtils;
 
 /** Maps CacheDataRow to IndexRow using columns references. */
 public class QueryIndexRowHandler implements InlineIndexRowHandler {
-    /** Cache descriptor. */
-    private final GridQueryRowDescriptor rowDescriptor;
+    /** Cache info. */
+    private final GridCacheContextInfo<?, ?> cacheInfo;
 
     /** List of key types for inlined index keys. */
     private final List<InlineIndexKeyType> keyTypes;
@@ -54,17 +53,17 @@ public class QueryIndexRowHandler implements InlineIndexRowHandler {
 
     /** */
     public QueryIndexRowHandler(
-        GridQueryRowDescriptor rowDescriptor,
+        GridQueryTypeDescriptor type,
+        GridCacheContextInfo<?, ?> cacheInfo,
         LinkedHashMap<String, IndexKeyDefinition> keyDefs,
         List<InlineIndexKeyType> keyTypes,
         IndexKeyTypeSettings keyTypeSettings
     ) {
-        this.keyTypes = Collections.unmodifiableList(keyTypes);
-        this.keyDefs = Collections.unmodifiableList(new ArrayList<>(keyDefs.values()));
+        this.keyTypes = new ArrayList<>(keyTypes);
+        this.keyDefs = new ArrayList<>(keyDefs.values());
 
         props = new GridQueryProperty[keyDefs.size()];
         int propIdx = 0;
-        GridQueryTypeDescriptor type = rowDescriptor.type();
 
         for (String propName : keyDefs.keySet()) {
             GridQueryProperty prop;
@@ -83,7 +82,7 @@ public class QueryIndexRowHandler implements InlineIndexRowHandler {
             props[propIdx++] = prop;
         }
 
-        this.rowDescriptor = rowDescriptor;
+        this.cacheInfo = cacheInfo;
         this.keyTypeSettings = keyTypeSettings;
     }
 
@@ -93,7 +92,7 @@ public class QueryIndexRowHandler implements InlineIndexRowHandler {
             return IndexKeyFactory.wrap(
                 props[idx].value(row.key(), row.value()),
                 keyDefs.get(idx).idxType(),
-                rowDescriptor.context().cacheObjectContext(),
+                cacheInfo.cacheContext().cacheObjectContext(),
                 keyTypeSettings
             );
         }
@@ -121,7 +120,7 @@ public class QueryIndexRowHandler implements InlineIndexRowHandler {
     @Override public int partition(CacheDataRow row) {
         Object key = unwrap(row.key());
 
-        return rowDescriptor.context().affinity().partition(key);
+        return cacheInfo.cacheContext().affinity().partition(key);
     }
 
     /** {@inheritDoc} */
@@ -141,7 +140,7 @@ public class QueryIndexRowHandler implements InlineIndexRowHandler {
         if (o != null)
             return o;
 
-        CacheObjectContext coctx = rowDescriptor.context().cacheObjectContext();
+        CacheObjectContext coctx = cacheInfo.cacheContext().cacheObjectContext();
 
         return val.value(coctx, false);
     }

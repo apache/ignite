@@ -23,7 +23,6 @@ import java.util.Iterator;
 import java.util.List;
 import java.util.function.Function;
 import java.util.function.Predicate;
-import java.util.function.Supplier;
 import org.apache.calcite.rel.type.RelDataType;
 import org.apache.calcite.util.ImmutableBitSet;
 import org.apache.calcite.util.ImmutableIntList;
@@ -46,6 +45,7 @@ import org.apache.ignite.internal.processors.cache.distributed.dht.topology.Grid
 import org.apache.ignite.internal.processors.cache.distributed.dht.topology.GridDhtPartitionTopology;
 import org.apache.ignite.internal.processors.cache.mvcc.MvccSnapshot;
 import org.apache.ignite.internal.processors.query.calcite.exec.RowHandler.RowFactory;
+import org.apache.ignite.internal.processors.query.calcite.exec.exp.RangeIterable;
 import org.apache.ignite.internal.processors.query.calcite.schema.CacheTableDescriptor;
 import org.apache.ignite.internal.processors.query.calcite.type.IgniteTypeFactory;
 import org.apache.ignite.internal.processors.query.calcite.util.TypeUtils;
@@ -100,8 +100,7 @@ public class IndexScan<Row> extends AbstractIndexScan<Row, IndexRow> {
      * @param idxFieldMapping Mapping from index keys to row fields.
      * @param idx Phisycal index.
      * @param filters Additional filters.
-     * @param lowerBound Lower index scan bound.
-     * @param upperBound Upper index scan bound.
+     * @param ranges Index scan bounds.
      */
     public IndexScan(
         ExecutionContext<Row> ectx,
@@ -110,8 +109,7 @@ public class IndexScan<Row> extends AbstractIndexScan<Row, IndexRow> {
         ImmutableIntList idxFieldMapping,
         int[] parts,
         Predicate<Row> filters,
-        Supplier<Row> lowerBound,
-        Supplier<Row> upperBound,
+        RangeIterable<Row> ranges,
         Function<Row, Row> rowTransformer,
         @Nullable ImmutableBitSet requiredColumns
     ) {
@@ -120,8 +118,7 @@ public class IndexScan<Row> extends AbstractIndexScan<Row, IndexRow> {
             desc.rowType(ectx.getTypeFactory(), requiredColumns),
             new TreeIndexWrapper(idx),
             filters,
-            lowerBound,
-            upperBound,
+            ranges,
             rowTransformer
         );
 
@@ -296,9 +293,15 @@ public class IndexScan<Row> extends AbstractIndexScan<Row, IndexRow> {
         }
 
         /** {@inheritDoc} */
-        @Override public GridCursor<IndexRow> find(IndexRow lower, IndexRow upper, IndexQueryContext qctx) {
+        @Override public GridCursor<IndexRow> find(
+            IndexRow lower,
+            IndexRow upper,
+            boolean lowerInclude,
+            boolean upperInclude,
+            IndexQueryContext qctx
+        ) {
             try {
-                return idx.find(lower, upper, true, true, qctx);
+                return idx.find(lower, upper, lowerInclude, upperInclude, qctx);
             }
             catch (IgniteCheckedException e) {
                 throw new IgniteException("Failed to find index rows", e);

@@ -41,7 +41,6 @@ import org.apache.ignite.internal.processors.query.calcite.prepare.MappingQueryC
 import org.apache.ignite.internal.processors.query.calcite.rel.logical.IgniteLogicalTableScan;
 import org.apache.ignite.internal.processors.query.calcite.trait.IgniteDistribution;
 import org.apache.ignite.internal.processors.query.calcite.type.IgniteTypeFactory;
-import org.apache.ignite.internal.processors.query.h2.IgniteH2Indexing;
 import org.apache.ignite.internal.processors.query.stat.ObjectStatisticsImpl;
 import org.apache.ignite.internal.processors.query.stat.StatisticsKey;
 import org.apache.ignite.internal.util.typedef.internal.U;
@@ -79,12 +78,10 @@ public class CacheTableImpl extends AbstractTable implements IgniteCacheTable {
 
     /** {@inheritDoc} */
     @Override public Statistic getStatistic() {
-        IgniteH2Indexing idx = (IgniteH2Indexing)ctx.query().getIndexing();
-
         final String tblName = desc.typeDescription().tableName();
         final String schemaName = desc.typeDescription().schemaName();
 
-        ObjectStatisticsImpl statistics = (ObjectStatisticsImpl)idx.statsManager().getLocalStatistics(
+        ObjectStatisticsImpl statistics = (ObjectStatisticsImpl)ctx.query().statsManager().getLocalStatistics(
             new StatisticsKey(schemaName, tblName));
 
         if (statistics != null)

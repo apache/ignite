@@ -38,7 +38,6 @@ import org.apache.ignite.internal.processors.cache.GridCacheContextInfo;
 import org.apache.ignite.internal.processors.cache.GridCacheProcessor;
 import org.apache.ignite.internal.processors.cache.query.IgniteQueryErrorCode;
 import org.apache.ignite.internal.processors.query.GridQueryProcessor;
-import org.apache.ignite.internal.processors.query.GridQuerySchemaManager;
 import org.apache.ignite.internal.processors.query.GridQueryTypeDescriptor;
 import org.apache.ignite.internal.processors.query.IgniteSQLException;
 import org.apache.ignite.internal.processors.query.QueryEntityEx;
@@ -56,6 +55,8 @@ import org.apache.ignite.internal.processors.query.calcite.schema.IgniteCacheTab
 import org.apache.ignite.internal.processors.query.calcite.type.IgniteTypeFactory;
 import org.apache.ignite.internal.processors.query.calcite.util.Commons;
 import org.apache.ignite.internal.processors.query.schema.SchemaOperationException;
+import org.apache.ignite.internal.processors.query.schema.management.SchemaManager;
+import org.apache.ignite.internal.processors.query.schema.management.TableDescriptor;
 import org.apache.ignite.internal.processors.security.IgniteSecurity;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.lang.IgniteUuid;
@@ -67,10 +68,10 @@ import static org.apache.ignite.internal.processors.query.QueryUtils.isDdlOnSche
 /** */
 public class DdlCommandHandler {
     /** */
-    private final Supplier<GridQueryProcessor> qryProcessorSupp;
+    private final GridQueryProcessor qryProc;
 
     /** */
-    private final GridCacheProcessor cacheProcessor;
+    private final GridCacheProcessor cacheProc;
 
     /** */
     private final IgniteSecurity security;
@@ -82,17 +83,17 @@ public class DdlCommandHandler {
     private final NativeCommandHandler nativeCmdHnd;
 
     /** */
-    private final GridQuerySchemaManager schemaMgr;
+    private final SchemaManager schemaMgr;
 
     /** */
-    public DdlCommandHandler(Supplier<GridQueryProcessor> qryProcessorSupp, GridCacheProcessor cacheProcessor,
+    public DdlCommandHandler(GridQueryProcessor qryProc, GridCacheProcessor cacheProc,
         IgniteSecurity security, Supplier<SchemaPlus> schemaSupp) {
-        this.qryProcessorSupp = qryProcessorSupp;
-        this.cacheProcessor = cacheProcessor;
+        this.qryProc = qryProc;
+        this.cacheProc = cacheProc;
         this.security = security;
         this.schemaSupp = schemaSupp;
-        schemaMgr = new SchemaManager(schemaSupp);
-        nativeCmdHnd = new NativeCommandHandler(cacheProcessor.context().kernalContext(), schemaMgr);
+        schemaMgr = qryProc.schemaManager();
+        nativeCmdHnd = new NativeCommandHandler(cacheProc.context().kernalContext());
     }
 
     /** */
@@ -143,13 +144,13 @@ public class DdlCommandHandler {
         ccfg.setSqlSchema(cmd.schemaName());
 
         SchemaOperationException err =
-            QueryUtils.checkQueryEntityConflicts(ccfg, cacheProcessor.cacheDescriptors().values());
+            QueryUtils.checkQueryEntityConflicts(ccfg, cacheProc.cacheDescriptors().values());
 
         if (err != null)
             throw convert(err);
 
-        if (!F.isEmpty(cmd.cacheName()) && cacheProcessor.cacheDescriptor(cmd.cacheName()) != null) {
-            qryProcessorSupp.get().dynamicAddQueryEntity(
+        if (!F.isEmpty(cmd.cacheName()) && cacheProc.cacheDescriptor(cmd.cacheName()) != null) {
+            qryProc.dynamicAddQueryEntity(
                 cmd.cacheName(),
                 cmd.schemaName(),
                 e,
@@ -158,7 +159,7 @@ public class DdlCommandHandler {
             ).get();
         }
         else {
-            qryProcessorSupp.get().dynamicTableCreate(
+            qryProc.dynamicTableCreate(
                 cmd.schemaName(),
                 e,
                 cmd.templateName(),
@@ -195,20 +196,22 @@ public class DdlCommandHandler {
 
         security.authorize(cacheName, SecurityPermission.CACHE_DESTROY);
 
-        qryProcessorSupp.get().dynamicTableDrop(cacheName, cmd.tableName(), cmd.ifExists());
+        qryProc.dynamicTableDrop(cacheName, cmd.tableName(), cmd.ifExists());
     }
 
     /** */
     private void handle0(AlterTableAddCommand cmd) throws IgniteCheckedException {
         isDdlOnSchemaSupported(cmd.schemaName());
 
-        GridQueryTypeDescriptor typeDesc = schemaMgr.typeDescriptorForTable(cmd.schemaName(), cmd.tableName());
+        TableDescriptor tblDesc = schemaMgr.table(cmd.schemaName(), cmd.tableName());
 
-        if (typeDesc == null) {
+        if (tblDesc == null) {
             if (!cmd.ifTableExists())
                 throw new SchemaOperationException(SchemaOperationException.CODE_TABLE_NOT_FOUND, cmd.tableName());
         }
         else {
+            GridQueryTypeDescriptor typeDesc = tblDesc.type();
+
             if (QueryUtils.isSqlType(typeDesc.valueClass())) {
                 throw new SchemaOperationException("Cannot add column(s) because table was created " +
                     "with WRAP_VALUE=false option.");
@@ -243,14 +246,14 @@ public class DdlCommandHandler {
             }
 
             if (!F.isEmpty(cols)) {
-                GridCacheContextInfo<?, ?> ctxInfo = schemaMgr.cacheInfoForTable(cmd.schemaName(), cmd.tableName());
+                GridCacheContextInfo<?, ?> ctxInfo = tblDesc.cacheInfo();
 
                 assert ctxInfo != null;
 
                 if (!allFieldsNullable)
                     QueryUtils.checkNotNullAllowed(ctxInfo.config());
 
-                qryProcessorSupp.get().dynamicColumnAdd(ctxInfo.name(), cmd.schemaName(),
+                qryProc.dynamicColumnAdd(ctxInfo.name(), cmd.schemaName(),
                     typeDesc.tableName(), cols, cmd.ifTableExists(), cmd.ifColumnNotExists()).get();
             }
         }
@@ -260,14 +263,15 @@ public class DdlCommandHandler {
     private void handle0(AlterTableDropCommand cmd) throws IgniteCheckedException {
         isDdlOnSchemaSupported(cmd.schemaName());
 
-        GridQueryTypeDescriptor typeDesc = schemaMgr.typeDescriptorForTable(cmd.schemaName(), cmd.tableName());
+        TableDescriptor tblDesc = schemaMgr.table(cmd.schemaName(), cmd.tableName());
 
-        if (typeDesc == null) {
+        if (tblDesc == null) {
             if (!cmd.ifTableExists())
                 throw new SchemaOperationException(SchemaOperationException.CODE_TABLE_NOT_FOUND, cmd.tableName());
         }
         else {
-            GridCacheContextInfo<?, ?> ctxInfo = schemaMgr.cacheInfoForTable(cmd.schemaName(), cmd.tableName());
+            GridQueryTypeDescriptor typeDesc = tblDesc.type();
+            GridCacheContextInfo<?, ?> ctxInfo = tblDesc.cacheInfo();
 
             GridCacheContext<?, ?> cctx = ctxInfo.cacheContext();
 
@@ -302,7 +306,7 @@ public class DdlCommandHandler {
             }
 
             if (!F.isEmpty(cols)) {
-                qryProcessorSupp.get().dynamicColumnRemove(ctxInfo.name(), cmd.schemaName(),
+                qryProc.dynamicColumnRemove(ctxInfo.name(), cmd.schemaName(),
                     typeDesc.tableName(), cols, cmd.ifTableExists(), cmd.ifColumnExists()).get();
             }
         }

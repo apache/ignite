@@ -388,11 +388,14 @@ namespace ignite
                 }
 
                 query::continuous::SP_ContinuousQueryHandleClientImpl CacheClientImpl::QueryContinuous(
-                        const query::continuous::SP_ContinuousQueryClientHolderBase& continuousQuery)
+                        const query::continuous::SP_ContinuousQueryClientHolderBase& continuousQuery,
+                        const ignite::thin::cache::event::JavaCacheEntryEventFilter& filter)
                 {
                     const query::continuous::ContinuousQueryClientHolderBase& cq = *continuousQuery.Get();
 
-                    ContinuousQueryRequest req(id, cq.GetBufferSize(), cq.GetTimeInterval(), cq.GetIncludeExpired());
+                    ContinuousQueryRequest req(id, cq.GetBufferSize(),cq.GetTimeInterval(),
+                        cq.GetIncludeExpired(), filter.factory.Get());
+
                     ContinuousQueryResponse rsp;
 
                     SP_DataChannel channel = SyncMessage(req, rsp);

@@ -42,6 +42,7 @@ import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.processors.cache.index.AbstractIndexingCommonTest;
+import org.apache.ignite.internal.processors.query.GridQueryProcessor;
 import org.apache.ignite.internal.processors.query.IgniteSQLException;
 import org.apache.ignite.internal.processors.query.QueryUtils;
 import org.apache.ignite.internal.processors.query.h2.H2PooledConnection;
@@ -976,15 +977,15 @@ public class GridQueryParsingTest extends AbstractIndexingCommonTest {
      *
      */
     private H2PooledConnection connection() throws Exception {
-        IgniteH2Indexing idx = (IgniteH2Indexing)((IgniteEx)ignite).context().query().getIndexing();
+        GridQueryProcessor qryProc = ((IgniteEx)ignite).context().query();
+        IgniteH2Indexing idx = (IgniteH2Indexing)qryProc.getIndexing();
 
-        return idx.connections().connection(idx.schema(DEFAULT_CACHE_NAME));
+        return idx.connections().connection(qryProc.schemaManager().schemaName(DEFAULT_CACHE_NAME));
     }
 
     /**
      * @param sql Sql.
      */
-    @SuppressWarnings("unchecked")
     private <T extends Prepared> T parse(String sql) throws Exception {
         try (H2PooledConnection conn = connection()) {
             Session ses = H2Utils.session(conn);

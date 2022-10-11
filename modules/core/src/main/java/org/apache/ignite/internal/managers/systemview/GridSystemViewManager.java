@@ -29,12 +29,10 @@ import java.util.function.Consumer;
 import java.util.function.Function;
 import java.util.function.Supplier;
 import org.apache.ignite.IgniteCheckedException;
-import org.apache.ignite.IgniteException;
 import org.apache.ignite.internal.GridKernalContext;
 import org.apache.ignite.internal.IgniteComponentType;
 import org.apache.ignite.internal.managers.GridManagerAdapter;
 import org.apache.ignite.internal.util.typedef.F;
-import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.spi.systemview.ReadOnlySystemViewRegistry;
 import org.apache.ignite.spi.systemview.SystemViewExporterSpi;
 import org.apache.ignite.spi.systemview.view.SystemView;
@@ -52,9 +50,6 @@ import static org.apache.ignite.internal.util.IgniteUtils.notifyListeners;
  */
 public class GridSystemViewManager extends GridManagerAdapter<SystemViewExporterSpi>
     implements ReadOnlySystemViewRegistry {
-    /** Class name for a SQL view exporter of system views. */
-    public static final String SYSTEM_VIEW_SQL_SPI = "org.apache.ignite.internal.managers.systemview.SqlViewExporterSpi";
-
     /** Registered system views. */
     private final ConcurrentHashMap<String, SystemView<?>> systemViews = new ConcurrentHashMap<>();
 
@@ -236,7 +231,7 @@ public class GridSystemViewManager extends GridManagerAdapter<SystemViewExporter
     private static SystemViewExporterSpi[] addStandardExporters(SystemViewExporterSpi[] spis) {
         int newSz = F.isEmpty(spis) ? 1 : spis.length + 1;
 
-        boolean addSql = IgniteComponentType.INDEXING.inClassPath();
+        boolean addSql = IgniteComponentType.INDEXING.inClassPath() || IgniteComponentType.QUERY_ENGINE.inClassPath();
 
         if (addSql)
             newSz += 1;
@@ -246,14 +241,8 @@ public class GridSystemViewManager extends GridManagerAdapter<SystemViewExporter
         if (!F.isEmpty(spis))
             System.arraycopy(spis, 0, newSpis, 0, spis.length);
 
-        if (addSql) {
-            try {
-                newSpis[newSpis.length - 2] = U.newInstance(SYSTEM_VIEW_SQL_SPI);
-            }
-            catch (IgniteCheckedException e) {
-                throw new IgniteException(e);
-            }
-        }
+        if (addSql)
+            newSpis[newSpis.length - 2] = new SqlViewExporterSpi();
 
         newSpis[newSpis.length - 1] = new JmxSystemViewExporterSpi();
 

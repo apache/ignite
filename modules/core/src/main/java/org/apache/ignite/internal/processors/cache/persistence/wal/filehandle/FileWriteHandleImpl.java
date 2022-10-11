@@ -226,11 +226,17 @@ class FileWriteHandleImpl extends AbstractFileHandle implements FileWriteHandle 
 
             SegmentedRingByteBuffer.WriteSegment seg;
 
-            // Buffer can be in open state in case of resuming with different serializer version.
-            if (rec.type() == SWITCH_SEGMENT_RECORD && !resume)
-                seg = buf.offerSafe(rec.size());
-            else
-                seg = buf.offer(rec.size());
+            try {
+                // Buffer can be in open state in case of resuming with different serializer version.
+                if (rec.type() == SWITCH_SEGMENT_RECORD && !resume)
+                    seg = buf.offerSafe(rec.size());
+                else
+                    seg = buf.offer(rec.size());
+            }
+            catch (IgniteException e) {
+                // WAL record size is greater than the buffer's capacity.
+                throw new IgniteCheckedException(e);
+            }
 
             WALPointer ptr = null;
 
@@ -507,7 +513,10 @@ class FileWriteHandleImpl extends AbstractFileHandle implements FileWriteHandle 
                     lastFsyncPos = written;
                 }
 
-                walWriter.close();
+                if (mmap)
+                    U.closeQuiet(fileIO);
+                else
+                    walWriter.close();
 
                 if (!mmap && !rollOver)
                     buf.free();

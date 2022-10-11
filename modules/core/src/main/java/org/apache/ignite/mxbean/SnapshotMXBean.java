@@ -44,9 +44,19 @@ public interface SnapshotMXBean {
      * Cancel previously started snapshot operation on the node initiator.
      *
      * @param snpName Snapshot name to cancel.
+     * @deprecated Use {@link #cancelSnapshotOperation(String)} instead.
      */
     @MXBeanDescription("Cancel started cluster-wide snapshot on the node initiator.")
+    @Deprecated
     public void cancelSnapshot(@MXBeanParameter(name = "snpName", description = "Snapshot name.") String snpName);
+
+    /**
+     * Cancel previously started snapshot operation.
+     *
+     * @param reqId Snapshot operation request ID.
+     */
+    @MXBeanDescription("Cancel started cluster-wide snapshot operation.")
+    public void cancelSnapshotOperation(@MXBeanParameter(name = "requestId", description = "Snapshot operation request ID.") String reqId);
 
     /**
      * Restore cluster-wide snapshot.
@@ -71,8 +81,10 @@ public interface SnapshotMXBean {
      *
      * @param name Snapshot name.
      * @see IgniteSnapshot#cancelSnapshotRestore(String)
+     * @deprecated Use {@link #cancelSnapshotOperation(String)} instead.
      */
     @MXBeanDescription("Cancel previously started snapshot restore operation.")
+    @Deprecated
     public void cancelSnapshotRestore(@MXBeanParameter(name = "snpName", description = "Snapshot name.") String name);
 
     /**

@@ -129,8 +129,6 @@ public class OrToUnionRuleTest extends GridCommonAbstractTest {
 
     /**
      * Check 'OR -> UNION' rule is applied for equality conditions on indexed columns.
-     *
-     * @throws Exception If failed.
      */
     @Test
     public void testEqualityOrToUnionAllRewrite() {
@@ -150,9 +148,7 @@ public class OrToUnionRuleTest extends GridCommonAbstractTest {
     }
 
     /**
-     * Check 'OR -> UNION' rule is applied for equality conditions on indexed columns.
-     *
-     * @throws Exception If failed.
+     * Check 'OR -> UNION' rule is NOT applied for conditions on the same indexed column.
      */
     @Test
     public void testNonDistinctOrToUnionAllRewrite() {
@@ -160,8 +156,7 @@ public class OrToUnionRuleTest extends GridCommonAbstractTest {
             "FROM products " +
             "WHERE subcategory = 'Camera Lens' " +
             "OR subcategory = 'Other'")
-            .matches(containsUnion(true))
-            .matches(containsIndexScan("PUBLIC", "PRODUCTS", "IDX_SUBCATEGORY"))
+            .matches(CoreMatchers.not(containsUnion(true)))
             .matches(containsIndexScan("PUBLIC", "PRODUCTS", "IDX_SUBCATEGORY"))
             .returns(3, "Photo", 1, "Camera Lens", 12, "Lens 1")
             .returns(4, "Photo", 1, "Other", 12, "Charger 1")
@@ -172,8 +167,6 @@ public class OrToUnionRuleTest extends GridCommonAbstractTest {
 
     /**
      * Check 'OR -> UNION' rule is applied for mixed conditions on indexed columns.
-     *
-     * @throws Exception If failed.
      */
     @Test
     public void testMixedOrToUnionAllRewrite() {
@@ -254,8 +247,6 @@ public class OrToUnionRuleTest extends GridCommonAbstractTest {
 
     /**
      * Check 'OR -> UNION' rule is not applied if all columns are not indexed.
-     *
-     * @throws Exception If failed.
      */
     @Test
     public void testAllNonIndexedOrToUnionAllRewrite() {

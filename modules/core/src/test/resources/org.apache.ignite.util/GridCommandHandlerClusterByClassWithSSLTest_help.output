@@ -147,11 +147,12 @@ This utility can do the following commands:
       --dest path    - Path to the directory where the snapshot will be saved. If not specified, the default configured snapshot directory will be used.
       --sync         - Run the operation synchronously, the command will wait for the entire operation to complete. Otherwise, it will be performed in the background, and the command will immediately return control.
 
-  Cancel running snapshot:
-    control.(sh|bat) --snapshot cancel snapshot_name
+  Cancel running snapshot operation:
+    control.(sh|bat) --snapshot cancel --id id|--name name
 
     Parameters:
-      snapshot_name  - Snapshot name.
+      --id id      - Snapshot operation request ID.
+      --name name  - Snapshot name (deprecated).
 
   Check snapshot:
     control.(sh|bat) --snapshot check snapshot_name [--src path]
@@ -161,7 +162,7 @@ This utility can do the following commands:
       --src path     - Path to the directory where the snapshot files are located. If not specified, the default configured snapshot directory will be used.
 
   Restore snapshot:
-    control.(sh|bat) --snapshot restore snapshot_name --start [--groups group1,...groupN] [--src path] [--sync]
+    control.(sh|bat) --snapshot restore snapshot_name [--groups group1,...groupN] [--src path] [--sync]
 
     Parameters:
       snapshot_name              - Snapshot name.
@@ -169,13 +170,13 @@ This utility can do the following commands:
       --src path                 - Path to the directory where the snapshot files are located. If not specified, the default configured snapshot directory will be used.
       --sync                     - Run the operation synchronously, the command will wait for the entire operation to complete. Otherwise, it will be performed in the background, and the command will immediately return control.
 
-  Snapshot restore operation status (Command deprecated. Use '--snapshot status' instead.):
+  Snapshot restore operation status (Command deprecated. Use '--snapshot status' instead):
     control.(sh|bat) --snapshot restore snapshot_name --status
 
     Parameters:
       snapshot_name  - Snapshot name.
 
-  Cancel snapshot restore operation:
+  Cancel snapshot restore operation (Command deprecated. Use '--snapshot cancel' instead):
     control.(sh|bat) --snapshot restore snapshot_name --cancel
 
     Parameters:
@@ -310,7 +311,7 @@ If the file name isn't specified the output file name is: '<typeId>.bin'
     control.(sh|bat) --performance-statistics status
 
   [EXPERIMENTAL]
-  Checks/Repairs cache consistency using Read Repair approach:
+  Check/Repair cache consistency using Read Repair approach:
     control.(sh|bat) --consistency repair cache-name partition
 
     Parameters:
@@ -320,6 +321,10 @@ If the file name isn't specified the output file name is: '<typeId>.bin'
   [EXPERIMENTAL]
   Cache consistency check/repair operations status:
     control.(sh|bat) --consistency status
+
+  [EXPERIMENTAL]
+  Finalize partitions update counters:
+    control.(sh|bat) --consistency finalize
 
 By default commands affecting the cluster require interactive confirmation.
 Use --yes option to disable it.

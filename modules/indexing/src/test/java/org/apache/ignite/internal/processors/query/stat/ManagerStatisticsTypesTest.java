@@ -24,7 +24,6 @@ import java.time.LocalDateTime;
 import java.time.LocalTime;
 import java.time.Month;
 import java.util.UUID;
-import org.apache.ignite.internal.processors.query.h2.IgniteH2Indexing;
 import org.apache.ignite.internal.util.GridClientByteUtils;
 import org.junit.Test;
 
@@ -42,10 +41,8 @@ public class ManagerStatisticsTypesTest extends StatisticsTypesAbstractTest {
      */
     @Test
     public void testCollectedStatistics() {
-
-        IgniteH2Indexing indexing = (IgniteH2Indexing)grid(0).context().query().getIndexing();
-        ObjectStatisticsImpl dtypesStat = (ObjectStatisticsImpl)indexing.statsManager().getLocalStatistics(
-            new StatisticsKey(SCHEMA, "DTYPES"));
+        ObjectStatisticsImpl dtypesStat = (ObjectStatisticsImpl)grid(0).context().query().statsManager()
+            .getLocalStatistics(new StatisticsKey(SCHEMA, "DTYPES"));
 
         assertNotNull(dtypesStat);
 

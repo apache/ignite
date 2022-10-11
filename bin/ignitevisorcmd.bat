@@ -131,7 +131,7 @@ if %ERRORLEVEL% neq 0 (
 ::
 :: ADD YOUR/CHANGE ADDITIONAL OPTIONS HERE
 ::
-if "%JVM_OPTS_VISOR%" == "" set JVM_OPTS_VISOR=-Xms1g -Xmx1g -XX:MaxPermSize=128M
+if "%JVM_OPTS_VISOR%" == "" set JVM_OPTS_VISOR=-Xms1g -Xmx1g
 
 ::
 :: Uncomment to set preference to IPv4 stack.

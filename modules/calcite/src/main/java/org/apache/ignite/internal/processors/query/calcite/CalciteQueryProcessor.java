@@ -194,6 +194,9 @@ public class CalciteQueryProcessor extends GridProcessorAdapter implements Query
     /** */
     private final QueryRegistry qryReg;
 
+    /** */
+    private volatile boolean started;
+
     /**
      * @param ctx Kernal context.
      */
@@ -283,7 +286,7 @@ public class CalciteQueryProcessor extends GridProcessorAdapter implements Query
     }
 
     /** {@inheritDoc} */
-    @Override public void start() {
+    @Override public void onKernalStart(boolean active) {
         onStart(ctx,
             executionSvc,
             mailboxRegistry,
@@ -296,22 +299,28 @@ public class CalciteQueryProcessor extends GridProcessorAdapter implements Query
             exchangeSvc,
             qryReg
         );
+
+        started = true;
     }
 
     /** {@inheritDoc} */
-    @Override public void stop(boolean cancel) {
-        onStop(
-            qryReg,
-            executionSvc,
-            mailboxRegistry,
-            partSvc,
-            schemaHolder,
-            msgSvc,
-            taskExecutor,
-            mappingSvc,
-            qryPlanCache,
-            exchangeSvc
-        );
+    @Override public void onKernalStop(boolean cancel) {
+        if (started) {
+            started = false;
+
+            onStop(
+                qryReg,
+                executionSvc,
+                mailboxRegistry,
+                partSvc,
+                schemaHolder,
+                msgSvc,
+                taskExecutor,
+                mappingSvc,
+                qryPlanCache,
+                exchangeSvc
+            );
+        }
     }
 
     /** {@inheritDoc} */

@@ -121,7 +121,7 @@ public class GridH2ProxyIndex extends H2IndexCostedBase {
 
     /** {@inheritDoc} */
     @Override public void remove(Session session) {
-        throw DbException.getUnsupportedException("remove index");
+        // No-op.
     }
 
     /** {@inheritDoc} */
@@ -169,11 +169,6 @@ public class GridH2ProxyIndex extends H2IndexCostedBase {
         GridQueryRowDescriptor rowDesc = ((GridH2Table)idx.getTable()).rowDescriptor();
 
         return new ProxyDistributedLookupBatch(batch, rowDesc);
-    }
-
-    /** {@inheritDoc} */
-    @Override public void removeChildrenAndResources(Session session) {
-        // No-op. Will be removed when underlying index is removed
     }
 
     /**
