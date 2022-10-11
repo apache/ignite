@@ -109,7 +109,7 @@ public class VisorConsistencyRepairTask extends AbstractConsistencyTask<VisorCon
                 .filter(t -> t.get2() != null)
                 .forEach(t -> res.append("    Partition ").append(t.get1()).append(' ').append(t.get2()).append('\n'));
 
-            return res.toString();
+            return res.length() == 0 ? null : res.toString();
         }
 
         /**
@@ -138,7 +138,7 @@ public class VisorConsistencyRepairTask extends AbstractConsistencyTask<VisorCon
             if (grpCtx == null)
                 if (ignite.context().cache().cacheGroupDescriptor(cacheOrGrpId) != null ||
                     ignite.context().cache().cacheDescriptor(cacheOrGrpName) != null)
-                    return null;
+                    return null; // Node filtered by node filter.
                 else
                     throw new IgniteException("Cache (or cache group) not found [name=" + cacheOrGrpName + "]");
 
@@ -148,7 +148,7 @@ public class VisorConsistencyRepairTask extends AbstractConsistencyTask<VisorCon
             GridDhtLocalPartition part = grpCtx.topology().localPartition(p);
 
             if (part == null)
-                return null;
+                return null; // Partition does not belong to the node.
 
             log.info("Consistency check started " +
                 "[grp=" + grpCtx.cacheOrGroupName() + ", part=" + p + ", strategy=" + strategy + "]");
