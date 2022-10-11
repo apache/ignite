@@ -46,8 +46,7 @@ public class NoOpQueryEngine extends GridProcessorAdapter implements QueryEngine
         return Collections.emptyList();
     }
 
-    /** {@inheritDoc}
-     * @return*/
+    /** {@inheritDoc} */
     @Override public List<T2<List<GridQueryFieldMetadata>, List<GridQueryFieldMetadata>>> queryMetadata(
         @Nullable QueryContext ctx,
         String schemaName,

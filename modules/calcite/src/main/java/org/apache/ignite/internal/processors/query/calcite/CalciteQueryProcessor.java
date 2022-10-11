@@ -372,8 +372,7 @@ public class CalciteQueryProcessor extends GridProcessorAdapter implements Query
         return cursors;
     }
 
-    /** {@inheritDoc}
-     * @return*/
+    /** {@inheritDoc} */
     @Override public List<T2<List<GridQueryFieldMetadata>, List<GridQueryFieldMetadata>>> queryMetadata(
         @Nullable QueryContext ctx,
         String schemaName,
