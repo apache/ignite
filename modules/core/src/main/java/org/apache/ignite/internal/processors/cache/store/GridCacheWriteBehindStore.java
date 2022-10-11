@@ -577,7 +577,8 @@ public class GridCacheWriteBehindStore<K, V> implements CacheStore<K, V>, Lifecy
 
     /** {@inheritDoc} */
     @Override public void sessionEnd(boolean commit) {
-        //todo
+        // To prevent connection leaks, we must call CacheStore#sessionEnd
+        // on stores that manage connections themselves.
         store.sessionEnd(commit);
     }
 

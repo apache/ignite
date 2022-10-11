@@ -38,13 +38,14 @@ import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.apache.ignite.transactions.Transaction;
+import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
 
 /**
  * Ensures that there are no connection leaks when working with an external data source.
  */
-public class CacheJdbcConnectionLeakTest extends GridCommonAbstractTest {
+public class CacheJdbcPojoWriteBehindConnectionLeakTest extends GridCommonAbstractTest {
     /** Table name. */
     private static final String TABLE_NAME = "person";
 
@@ -94,18 +95,30 @@ public class CacheJdbcConnectionLeakTest extends GridCommonAbstractTest {
 
     /** */
     @Before
-    public void setUp() throws Exception {
-        String query = "CREATE TABLE " + TABLE_NAME + "(ID INT UNSIGNED PRIMARY KEY, NAME VARCHAR(100));";
+    public void setUp() throws SQLException {
+        execStandalonequeery("CREATE TABLE IF NOT EXISTS " + TABLE_NAME + "(ID INT UNSIGNED PRIMARY KEY, NAME VARCHAR(20));");
+    }
 
+    /** */
+    @After
+    public void tearDown() throws SQLException {
+        execStandalonequeery("DROP TABLE " + TABLE_NAME);
+    }
+
+    /**
+     * @param sql SQL query.
+     * @throws SQLException If failed.
+     */
+    private void execStandalonequeery(String sql) throws SQLException {
         try (Connection connection = h2DsFactory.create().getConnection();
-             PreparedStatement statement = connection.prepareStatement(query)) {
+             PreparedStatement statement = connection.prepareStatement(sql)) {
             statement.execute();
         }
     }
 
     /** */
     @Test
-    public void testConnectionLeak() throws Exception {
+    public void testInvoke() throws Exception {
         try (IgniteEx ignite = startGrid(0)) {
             IgniteCache<Integer, Person> cache = ignite.getOrCreateCache(DEFAULT_CACHE_NAME);
 
@@ -126,7 +139,7 @@ public class CacheJdbcConnectionLeakTest extends GridCommonAbstractTest {
 
         // We close ignite before assertion to be sure that
         // write-behind flushing is finished, and we can
-        // safely proceed to connection open/close counting
+        // safely proceed to connection open/close counting.
         connLsnr.assertNotLeaked();
     }
 
