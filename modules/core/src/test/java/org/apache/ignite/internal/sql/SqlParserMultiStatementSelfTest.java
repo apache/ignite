@@ -96,6 +96,9 @@ public class SqlParserMultiStatementSelfTest extends SqlParserAbstractSelfTest {
         assertEquals(null, parser.remainingSql());
     }
 
+    /**
+     * Check that comments between statements work.
+     */
     @Test
     public void testEmptyTransaction() {
         String beginSql = "BEGIN  ;" + "  \n";
