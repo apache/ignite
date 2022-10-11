@@ -78,11 +78,11 @@ public class IgniteClusterShanpshotStreamerTest extends AbstractSnapshotSelfTest
     /** */
     private IgniteSnapshotManager snpMgr;
 
-    /** Notifies that streamer can be launched after snapshot init message received. */
-    private volatile @Nullable CountDownLatch launchDsLock;
+    /** */
+    private volatile @Nullable CountDownLatch beginSecondStageLatch;
 
-    /** Notifies that datastreame is registered on one of the nodes. */
-    private volatile @Nullable CountDownLatch dsRegisteredLock;
+    /** */
+    private volatile @Nullable CountDownLatch continueSecondStageLatch;
 
     /** {@inheritDoc} */
     @Override public void beforeTestSnapshot() throws Exception {
@@ -305,21 +305,21 @@ public class IgniteClusterShanpshotStreamerTest extends AbstractSnapshotSelfTest
         fillCache(preLoadCnt, ldr);
 
         // Streamer won't be launched before snapshot process initialized.
-        launchDsLock = new CountDownLatch(1);
+        beginSecondStageLatch = new CountDownLatch(1);
         // Snapshot process won't continue before streamer set.
-        dsRegisteredLock = new CountDownLatch(1);
+        continueSecondStageLatch = new CountDownLatch(1);
 
         IgniteFuture<?> snpFut = grid(0).snapshot().createSnapshot(SNAPSHOT_NAME);
 
         // Wait for the snapshot initialization.
-        launchDsLock.await();
+        beginSecondStageLatch.await();
 
         AtomicBoolean stopLoading = new AtomicBoolean();
         CountDownLatch dataLoadCounter = new CountDownLatch(preLoadCnt);
 
         IgniteInternalFuture<?> loadFut = runLoad(ldr, receiver, dataLoadCounter, stopLoading, true);
 
-        dsRegisteredLock.await();
+        continueSecondStageLatch.await();
         dataLoadCounter.await();
 
         try {
@@ -401,8 +401,8 @@ public class IgniteClusterShanpshotStreamerTest extends AbstractSnapshotSelfTest
                 while (!stop.get()) {
                     ds.addData(idx, idx);
 
-                    if (dsRegisteredLock != null)
-                        dsRegisteredLock.countDown();
+                    if (continueSecondStageLatch != null)
+                        continueSecondStageLatch.countDown();
 
                     idx++;
 
@@ -434,13 +434,13 @@ public class IgniteClusterShanpshotStreamerTest extends AbstractSnapshotSelfTest
                 SnapshotOperationRequest snpRq = extractSnpRequest(msg);
 
                 if (snpRq != null) {
-                    if (launchDsLock != null && snpRq.startStageEnded()) {
-                        assert dsRegisteredLock != null;
+                    if (beginSecondStageLatch != null && snpRq.startStageEnded()) {
+                        assert continueSecondStageLatch != null;
 
-                        launchDsLock.countDown();
+                        beginSecondStageLatch.countDown();
 
                         try {
-                            dsRegisteredLock.await();
+                            continueSecondStageLatch.await();
                         }
                         catch (InterruptedException e) {
                             throw new IgniteException("Unable to wait for streamer started.", e);

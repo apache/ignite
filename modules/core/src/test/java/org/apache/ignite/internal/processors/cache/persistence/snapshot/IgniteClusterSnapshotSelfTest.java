@@ -49,7 +49,9 @@ import org.apache.ignite.cache.query.ScanQuery;
 import org.apache.ignite.cluster.ClusterTopologyException;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
+import org.apache.ignite.events.DiscoveryEvent;
 import org.apache.ignite.internal.GridKernalContext;
+import org.apache.ignite.internal.GridTopic;
 import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.IgniteInterruptedCheckedException;
@@ -91,6 +93,8 @@ import static org.apache.ignite.events.EventType.EVTS_CLUSTER_SNAPSHOT;
 import static org.apache.ignite.events.EventType.EVT_CLUSTER_SNAPSHOT_FAILED;
 import static org.apache.ignite.events.EventType.EVT_CLUSTER_SNAPSHOT_FINISHED;
 import static org.apache.ignite.events.EventType.EVT_CLUSTER_SNAPSHOT_STARTED;
+import static org.apache.ignite.events.EventType.EVT_NODE_FAILED;
+import static org.apache.ignite.events.EventType.EVT_NODE_LEFT;
 import static org.apache.ignite.internal.events.DiscoveryCustomEvent.EVT_DISCOVERY_CUSTOM_EVT;
 import static org.apache.ignite.internal.processors.cache.distributed.rebalancing.GridCacheRebalancingSyncSelfTest.checkPartitionMapExchangeFinished;
 import static org.apache.ignite.internal.processors.cache.persistence.snapshot.IgniteSnapshotManager.SNAPSHOT_METRICS;
@@ -98,8 +102,10 @@ import static org.apache.ignite.internal.processors.cache.persistence.snapshot.I
 import static org.apache.ignite.internal.processors.cache.persistence.snapshot.IgniteSnapshotManager.SNP_NODE_STOPPING_ERR_MSG;
 import static org.apache.ignite.internal.processors.cache.persistence.snapshot.IgniteSnapshotManager.isSnapshotOperation;
 import static org.apache.ignite.internal.processors.cache.persistence.snapshot.IgniteSnapshotManager.resolveSnapshotWorkDirectory;
+import static org.apache.ignite.testframework.GridTestUtils.assertThrows;
 import static org.apache.ignite.testframework.GridTestUtils.assertThrowsAnyCause;
 import static org.apache.ignite.testframework.GridTestUtils.assertThrowsWithCause;
+import static org.apache.ignite.testframework.GridTestUtils.runAsync;
 import static org.apache.ignite.testframework.GridTestUtils.waitForCondition;
 
 /**
@@ -564,6 +570,87 @@ public class IgniteClusterSnapshotSelfTest extends AbstractSnapshotSelfTest {
         assertSnapshotCacheKeys(snp.cache(dfltCacheCfg.getName()));
 
         waitForEvents(EVT_CLUSTER_SNAPSHOT_STARTED, EVT_CLUSTER_SNAPSHOT_FAILED);
+    }
+
+    /**
+     * Tests snapshot continues if client exists after the start stage response.
+     */
+    @Test
+    public void testSnpContinuesOnClientLeavesAfterFirstStageResponse() throws Exception {
+        IgniteEx grid0 = startGridsWithCache(2, dfltCacheCfg, CACHE_KEYS_RANGE);
+
+        IgniteEx client = startClientGrid(2);
+
+        CountDownLatch continueSnp = new CountDownLatch(1);
+
+        grid0.context().io().addMessageListener(GridTopic.TOPIC_DISTRIBUTED_PROCESS, (nodeId, msg, plc) -> {
+            if (msg instanceof SingleNodeMessage && nodeId.equals(client.localNode().id())) {
+                runAsync(() -> stopGrid(client.configuration().getIgniteInstanceName(), true));
+
+                try {
+                    continueSnp.await();
+                }
+                catch (InterruptedException ignored) {
+                    // No-op.
+                }
+            }
+        });
+
+        grid0.events().localListen(evt -> {
+            DiscoveryEvent de = (DiscoveryEvent)evt;
+
+            assertTrue("Only client must leave.", de.eventNode().isClient());
+
+            continueSnp.countDown();
+
+            return false;
+        }, EVT_NODE_FAILED, EVT_NODE_LEFT);
+
+        IgniteFuture<?> snpFut = grid0.snapshot().createSnapshot(SNAPSHOT_NAME);
+
+        snpFut.get();
+    }
+
+    /**
+     * Tests snapshot is fails if client exists without sending the first stage response.
+     */
+    @Test
+    public void testSnpFailsOnClientUnrespondedFirstStage() throws Exception {
+        IgniteEx ignite = startGridsWithCache(2, dfltCacheCfg, CACHE_KEYS_RANGE);
+
+        CountDownLatch continueSnp = new CountDownLatch(1);
+
+        TestRecordingCommunicationSpi clientCommunication = new TestRecordingCommunicationSpi();
+        IgniteConfiguration cfg = getConfiguration(getTestIgniteInstanceName(2));
+        cfg.setClientMode(true);
+        cfg.setCommunicationSpi(clientCommunication);
+
+        IgniteEx client = startClientGrid(cfg);
+
+        clientCommunication.blockMessages(SingleNodeMessage.class, getTestIgniteInstanceName(0));
+
+        ignite.events().localListen(event -> {
+            assertTrue("Only client must leave.", ((DiscoveryEvent)event).eventNode().isClient());
+
+            continueSnp.countDown();
+
+            clientCommunication.stopBlock();
+
+            return false;
+        }, EVT_NODE_LEFT, EVT_NODE_FAILED);
+
+        GridTestUtils.runAsync(() -> {
+            clientCommunication.waitForBlocked();
+
+            stopGrid(client.configuration().getIgniteInstanceName(), true);
+        });
+
+        IgniteFuture<?> snpFut = grid(0).snapshot().createSnapshot(SNAPSHOT_NAME);
+
+        continueSnp.await();
+
+        assertThrows(null, () -> snpFut.get(), ClusterTopologyException.class, "Snapshot operation " +
+            "interrupted because required node left the cluster");
     }
 
     /** @throws Exception If fails. */

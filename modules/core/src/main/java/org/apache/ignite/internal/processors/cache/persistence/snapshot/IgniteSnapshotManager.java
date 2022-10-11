@@ -541,6 +541,10 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
                     SnapshotOperationRequest snpReq = clusterSnpReq;
                     String err = "Snapshot operation interrupted because required node left the cluster: " + leftNodeId;
                     boolean reqNodeLeft = snpReq != null && snpReq.nodes().contains(leftNodeId);
+                    boolean startStageNodeLeft = reqNodeLeft && !snpReq.workingNodes().contains(leftNodeId);
+
+                    if (startStageNodeLeft && startSnpProc.responded(snpReq.requestId(), leftNodeId))
+                        reqNodeLeft = false;
 
                     // If the coordinator left the cluster and did not start
                     // the final snapshot phase (SNAPSHOT_END), we start it from a new one.

@@ -366,6 +366,13 @@ public class DistributedProcess<I extends Serializable, R extends Serializable> 
         return U.oldest(ctx.discovery().aliveServerNodes(), null);
     }
 
+    /** @return {@code True} if node {@code nodeId} has responded to process {@code procId}. {@code False} otherwise. */
+    public boolean responded(UUID procId, UUID nodeId) {
+        Process p = processes.get(procId);
+
+        return p != null && !p.remaining.contains(nodeId);
+    }
+
     /** The process meta information. */
     private class Process {
         /** Process id. */
