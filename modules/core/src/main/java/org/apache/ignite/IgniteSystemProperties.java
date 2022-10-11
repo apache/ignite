@@ -604,13 +604,6 @@ public final class IgniteSystemProperties {
     public static final String IGNITE_PERFORMANCE_SUGGESTIONS_DISABLED = "IGNITE_PERFORMANCE_SUGGESTIONS_DISABLED";
 
     /**
-     * Flag indicating whether atomic operations allowed for use inside transactions.
-     */
-    @SystemProperty(value = "Allows atomic operations inside transactions",
-        defaults = "true")
-    public static final String IGNITE_ALLOW_ATOMIC_OPS_IN_TX = "IGNITE_ALLOW_ATOMIC_OPS_IN_TX";
-
-    /**
      * Atomic cache deferred update response buffer size.
      */
     @SystemProperty(value = "Atomic cache deferred update response buffer size", type = Integer.class,
