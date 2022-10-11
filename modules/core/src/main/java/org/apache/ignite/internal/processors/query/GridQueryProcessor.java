@@ -4029,6 +4029,16 @@ public class GridQueryProcessor extends GridProcessorAdapter {
     }
 
     /**
+     * Performs necessary actions on disconnect of a stateful client (say, one associated with a transaction).
+     *
+     * @throws IgniteCheckedException If failed.
+     */
+    public void onClientDisconnect() throws IgniteCheckedException {
+        if (idx != null)
+            idx.onClientDisconnect();
+    }
+
+    /**
      * @param ver Version.
      */
     public static void setRequestAffinityTopologyVersion(AffinityTopologyVersion ver) {

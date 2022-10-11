@@ -28,6 +28,9 @@ import org.apache.calcite.rex.RexDynamicParam;
 import org.apache.calcite.rex.RexNode;
 import org.apache.calcite.rex.RexShuttle;
 import org.apache.ignite.internal.processors.query.GridQueryFieldMetadata;
+import org.apache.ignite.internal.processors.query.calcite.prepare.bounds.MultiBounds;
+import org.apache.ignite.internal.processors.query.calcite.prepare.bounds.RangeBounds;
+import org.apache.ignite.internal.processors.query.calcite.prepare.bounds.SearchBounds;
 import org.apache.ignite.internal.processors.query.calcite.rel.IgniteCorrelatedNestedLoopJoin;
 import org.apache.ignite.internal.processors.query.calcite.rel.IgniteFilter;
 import org.apache.ignite.internal.processors.query.calcite.rel.IgniteHashIndexSpool;
@@ -52,7 +55,9 @@ public class DynamicParamTypeExtractor extends IgniteRelShuttle {
     /** */
     public static ParamsMetadata go(IgniteRel root) {
         DynamicParamTypeExtractor extractor = new DynamicParamTypeExtractor();
+
         extractor.visit(root);
+
         return new ParamsMetadata(extractor.acc.values());
     }
 
@@ -73,18 +78,21 @@ public class DynamicParamTypeExtractor extends IgniteRelShuttle {
     /** {@inheritDoc} */
     @Override public IgniteRel visit(IgniteNestedLoopJoin rel) {
         paramsShuttle.apply(rel.getCondition());
+
         return super.visit(rel);
     }
 
     /** {@inheritDoc} */
     @Override public IgniteRel visit(IgniteCorrelatedNestedLoopJoin rel) {
         paramsShuttle.apply(rel.getCondition());
+
         return super.visit(rel);
     }
 
     /** {@inheritDoc} */
     @Override public IgniteRel visit(IgniteMergeJoin rel) {
         paramsShuttle.apply(rel.getCondition());
+
         return super.visit(rel);
     }
 
@@ -92,6 +100,7 @@ public class DynamicParamTypeExtractor extends IgniteRelShuttle {
     @Override public IgniteRel visit(IgniteIndexScan rel) {
         paramsShuttle.apply(rel.projects());
         paramsShuttle.apply(rel.condition());
+        paramsShuttle.apply(rel.searchBounds());
 
         return super.visit(rel);
     }
@@ -107,6 +116,7 @@ public class DynamicParamTypeExtractor extends IgniteRelShuttle {
     /** {@inheritDoc} */
     @Override public IgniteRel visit(IgniteSortedIndexSpool rel) {
         paramsShuttle.apply(rel.condition());
+        paramsShuttle.apply(rel.searchBounds());
 
         return super.visit(rel);
     }
@@ -114,6 +124,7 @@ public class DynamicParamTypeExtractor extends IgniteRelShuttle {
     /** {@inheritDoc} */
     @Override public IgniteRel visit(IgniteHashIndexSpool rel) {
         paramsShuttle.apply(rel.condition());
+        paramsShuttle.apply(rel.searchRow());
 
         return super.visit(rel);
     }
@@ -132,6 +143,39 @@ public class DynamicParamTypeExtractor extends IgniteRelShuttle {
             acc.put(param.getIndex(), param);
 
             return super.visitDynamicParam(param);
+        }
+
+        /** */
+        public void apply(Collection<SearchBounds> bounds) {
+            if (bounds == null)
+                return;
+
+            for (SearchBounds b: bounds) {
+                if (b == null)
+                    continue;
+
+                switch (b.type()) {
+                    case EXACT:
+                        apply(b.condition());
+
+                        break;
+                    case RANGE:
+                        RangeBounds rb = (RangeBounds)b;
+
+                        apply(rb.lowerBound());
+                        apply(rb.upperBound());
+
+                        break;
+
+                    case MULTI:
+                        MultiBounds mb = (MultiBounds)b;
+
+                        apply(mb.bounds());
+
+                        break;
+
+                }
+            }
         }
     }
 

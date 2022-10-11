@@ -72,6 +72,7 @@ import org.apache.ignite.internal.processors.query.calcite.metadata.MappingServi
 import org.apache.ignite.internal.processors.query.calcite.metadata.cost.IgniteCostFactory;
 import org.apache.ignite.internal.processors.query.calcite.prepare.BaseQueryContext;
 import org.apache.ignite.internal.processors.query.calcite.prepare.CacheKey;
+import org.apache.ignite.internal.processors.query.calcite.prepare.ExplainPlan;
 import org.apache.ignite.internal.processors.query.calcite.prepare.IgniteConvertletTable;
 import org.apache.ignite.internal.processors.query.calcite.prepare.IgniteTypeCoercion;
 import org.apache.ignite.internal.processors.query.calcite.prepare.MultiStepPlan;
@@ -404,7 +405,7 @@ public class CalciteQueryProcessor extends GridProcessorAdapter implements Query
     }
 
     /** */
-    private static T2<List<GridQueryFieldMetadata>, List<GridQueryFieldMetadata>> fieldsMeta(QueryPlan plan) {
+    private T2<List<GridQueryFieldMetadata>, List<GridQueryFieldMetadata>> fieldsMeta(QueryPlan plan) {
         IgniteTypeFactory typeFactory = Commons.typeFactory();
 
         switch (plan.type()) {
@@ -414,6 +415,10 @@ public class CalciteQueryProcessor extends GridProcessorAdapter implements Query
 
                 return new T2<>(msPlan.fieldsMetadata().queryFieldsMetadata(typeFactory),
                     msPlan.paramsMetadata().queryFieldsMetadata(typeFactory));
+            case EXPLAIN:
+                ExplainPlan exPlan = (ExplainPlan)plan;
+
+                return new T2<>(exPlan.fieldsMeta().queryFieldsMetadata(typeFactory), Collections.emptyList());
             default:
                 return new T2<>(Collections.emptyList(), Collections.emptyList());
         }
