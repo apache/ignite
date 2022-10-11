@@ -653,6 +653,49 @@ public class IgniteClusterSnapshotSelfTest extends AbstractSnapshotSelfTest {
             "interrupted because required node left the cluster");
     }
 
+    /**
+     * Tests snapshot restoration continues if client exists at first stage.
+     */
+    @Test
+    public void testSnpRestoreContinuesOnClientLeavesAtFirstStage() throws Exception {
+        IgniteEx grid0 = startGridsWithCache(2, dfltCacheCfg, CACHE_KEYS_RANGE);
+
+        IgniteEx client = startClientGrid(2);
+
+        grid(0).snapshot().createSnapshot(SNAPSHOT_NAME).get();
+
+        grid(0).destroyCache(dfltCacheCfg.getName());
+
+        awaitPartitionMapExchange();
+
+        CountDownLatch continueSnp = new CountDownLatch(1);
+
+        grid0.events().localListen(event -> {
+            assertTrue("Only client must leave.", ((DiscoveryEvent)event).eventNode().isClient());
+
+            continueSnp.countDown();
+
+            return false;
+        }, EVT_NODE_LEFT, EVT_NODE_FAILED);
+
+        grid0.context().io().addMessageListener(GridTopic.TOPIC_DISTRIBUTED_PROCESS, (nodeId, msg, plc) -> {
+            if (msg instanceof SingleNodeMessage) {
+                runAsync(() -> stopGrid(client.configuration().getIgniteInstanceName()));
+
+                try {
+                    continueSnp.await();
+                }
+                catch (InterruptedException ignored) {
+                    // No-op.
+                }
+            }
+        });
+
+        IgniteFuture<?> snpFut = grid(0).snapshot().restoreSnapshot(SNAPSHOT_NAME, null);
+
+        snpFut.get();
+    }
+
     /** @throws Exception If fails. */
     @Test
     public void testClusterSnapshotCleanedOnLeft() throws Exception {
