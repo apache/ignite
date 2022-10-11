@@ -1115,6 +1115,49 @@ public class CalciteBasicSecondaryIndexIntegrationTest extends AbstractBasicInte
             .check();
     }
 
+    /**
+     * Test index search bounds merge.
+     */
+    @Test
+    public void testIndexBoundsMerge() {
+        assertQuery("SELECT id FROM Developer WHERE depId > 19 AND depId > ?")
+            .withParams(20)
+            .matches(containsIndexScan("PUBLIC", "DEVELOPER", DEPID_IDX))
+            .returns(22)
+            .returns(23)
+            .check();
+
+        assertQuery("SELECT id FROM Developer WHERE depId > 20 AND depId > ?")
+            .withParams(19)
+            .matches(containsIndexScan("PUBLIC", "DEVELOPER", DEPID_IDX))
+            .returns(22)
+            .returns(23)
+            .check();
+
+        assertQuery("SELECT id FROM Developer WHERE depId >= 20 AND depId > ?")
+            .withParams(19)
+            .matches(containsIndexScan("PUBLIC", "DEVELOPER", DEPID_IDX))
+            .returns(21)
+            .returns(22)
+            .returns(23)
+            .check();
+
+        assertQuery("SELECT id FROM Developer WHERE depId BETWEEN ? AND ? AND depId > 19")
+            .withParams(19, 21)
+            .matches(containsIndexScan("PUBLIC", "DEVELOPER", DEPID_IDX))
+            .returns(21)
+            .returns(22)
+            .check();
+
+        // Index with DESC ordering.
+        assertQuery("SELECT id FROM Birthday WHERE name BETWEEN 'B' AND 'D' AND name > ?")
+            .withParams("Bach")
+            .matches(containsIndexScan("PUBLIC", "BIRTHDAY", NAME_DATE_IDX))
+            .returns(2)
+            .returns(6)
+            .check();
+    }
+
     /** */
     private static class Developer {
         /** */
