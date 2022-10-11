@@ -48,9 +48,9 @@ public class SnapshotOperationRequest implements Serializable {
     @GridToStringInclude
     private final Set<UUID> nodes;
 
-    /** All nodes at initial stage. */
+    /** Node IDs that must be alive at the start stage. */
     @GridToStringInclude
-    private final Set<UUID> initNodes;
+    private final Set<UUID> startNodes;
 
     /** List of cache group names. */
     @GridToStringInclude
@@ -75,7 +75,7 @@ public class SnapshotOperationRequest implements Serializable {
      * @param snpPath Snapshot directory path.
      * @param grps List of cache group names.
      * @param nodes Baseline node IDs that must be alive to complete the operation.
-     * @param initNodes All nodes on initial stage.
+     * @param startNodes Node IDs that must be alive at the start stage.
      */
     public SnapshotOperationRequest(
         UUID reqId,
@@ -84,14 +84,14 @@ public class SnapshotOperationRequest implements Serializable {
         String snpPath,
         @Nullable Collection<String> grps,
         Set<UUID> nodes,
-        Set<UUID> initNodes
+        Set<UUID> startNodes
     ) {
         this.reqId = reqId;
         this.opNodeId = opNodeId;
         this.snpName = snpName;
         this.grps = grps;
         this.nodes = nodes;
-        this.initNodes = initNodes;
+        this.startNodes = startNodes;
         this.snpPath = snpPath;
         startTime = U.currentTimeMillis();
     }
@@ -125,14 +125,14 @@ public class SnapshotOperationRequest implements Serializable {
     }
 
     /**
-     * @return Nodes at current snapshot process stage.
+     * @return Node IDs that must be alive at current stage.
      */
     Set<UUID> nodes() {
-        return startStageEnded ? nodes : initNodes;
+        return startStageEnded ? nodes : startNodes;
     }
 
     /**
-     * @return Working nodes only.
+     * @return Baseline node IDs that must be alive to complete the operation.
      */
     Set<UUID> workingNodes() {
         return nodes;
@@ -177,7 +177,7 @@ public class SnapshotOperationRequest implements Serializable {
     protected void finishStartStage() {
         startStageEnded = true;
 
-        initNodes.clear();
+        startNodes.clear();
     }
 
     /** {@inheritDoc} */

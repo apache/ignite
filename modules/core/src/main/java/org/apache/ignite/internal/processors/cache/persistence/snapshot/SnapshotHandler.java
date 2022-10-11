@@ -28,16 +28,14 @@ import org.jetbrains.annotations.Nullable;
  * The execution of the handler consists of two steps:
  * <ol>
  * <li>Local call of {@link #invoke(SnapshotHandlerContext)} method on all nodes containing the snapshot data or
- * validatin snapshot operation.</li>
+ * validating snapshot operation.</li>
  * <li>Processing the results of local invocations in the {@link #complete(String, Collection)} method on one of the
  * nodes containing the snapshot data.</li>
  * </ol>
  * Note: If during the execution of a snapshot operation some node exits, then whole operation is rolled back, in which
  *       case the {@link #complete(String, Collection)} method may not be called.
  *
- * @param <T> Type of the local processing result.
- *
- * @see SnapshotHandlerWarning
+ * @param <T> Type of the local processing result. Could be a warning result, {@link SnapshotHandlerWarning}
  */
 public interface SnapshotHandler<T> extends Extension {
     /** Snapshot handler type. */
@@ -52,6 +50,7 @@ public interface SnapshotHandler<T> extends Extension {
      *      passed into {@link #complete(String, Collection)} handler method.
      * @throws Exception If invocation caused an exception. This exception will be returned in {@link
      *      SnapshotHandlerResult#error()}} method passed into {@link #complete(String, Collection)} handler method.
+     * @see SnapshotHandlerWarning
      */
     public @Nullable T invoke(SnapshotHandlerContext ctx) throws Exception;
 

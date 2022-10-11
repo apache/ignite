@@ -107,7 +107,7 @@ public class DistributedProcess<I extends Serializable, R extends Serializable> 
      * @param exec Execute action and returns future with the single node result to send to the coordinator.
      * @param finish Finish process closure. Called on each node when all single nodes results received.
      * @param initMsgFactory Factory which creates custom {@link InitMessage} for distributed process initialization.
-     * @param initOnClient {@code True}, if the process sgould be initialized on client node. {@code False} otherwise.
+     * @param initOnClient {@code True}, if the process is initialized on client node. {@code False} otherwise.
      */
     public DistributedProcess(
         GridKernalContext ctx,
@@ -254,9 +254,9 @@ public class DistributedProcess<I extends Serializable, R extends Serializable> 
      *
      * @param p Process.
      * @param topVer Topology version.
-     * @param listenClients TODO
+     * @param initOnClient {@code True} if the process is executed on clients. {@code False} otherwise.
      */
-    private void initCoordinator(Process p, AffinityTopologyVersion topVer, boolean listenClients) {
+    private void initCoordinator(Process p, AffinityTopologyVersion topVer, boolean initOnClient) {
         synchronized (mux) {
             if (p.initCrdFut.isDone())
                 return;
@@ -264,7 +264,7 @@ public class DistributedProcess<I extends Serializable, R extends Serializable> 
             assert p.remaining.isEmpty();
 
             p.remaining.addAll(F.viewReadOnly(
-                listenClients ? ctx.discovery().nodes(topVer) : ctx.discovery().serverNodes(topVer), F.node2id()));
+                initOnClient ? ctx.discovery().nodes(topVer) : ctx.discovery().serverNodes(topVer), F.node2id()));
 
             p.initCrdFut.onDone();
         }

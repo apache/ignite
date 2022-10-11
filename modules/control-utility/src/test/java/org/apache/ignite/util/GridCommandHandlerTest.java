@@ -3087,6 +3087,7 @@ public class GridCommandHandlerTest extends GridCommandHandlerClusterPerMethodAb
                 @Override public void initExtensions(PluginContext ctx, ExtensionRegistry registry) {
                     super.initExtensions(ctx, registry);
 
+                    // Simulates concurrent datastreamer check warning.
                     registry.registerExtension(SnapshotHandler.class,
                         new SnapshotDataStreamerVerifyHandler() {
                             /** {@inheritDoc} */

@@ -596,7 +596,7 @@ public class IgniteClusterSnapshotSelfTest extends AbstractSnapshotSelfTest {
         assertThrowsAnyCause(log,
             fut::get,
             ClusterTopologyException.class,
-            "Snapshot operation interrupted, because baseline node left the cluster");
+            "Snapshot operation interrupted because required node left the cluster");
 
         waitForEvents(EVT_CLUSTER_SNAPSHOT_STARTED, EVT_CLUSTER_SNAPSHOT_FAILED);
 
@@ -650,7 +650,7 @@ public class IgniteClusterSnapshotSelfTest extends AbstractSnapshotSelfTest {
         assertThrowsAnyCause(log,
             () -> ignite.snapshot().createSnapshot(SNAPSHOT_NAME).get(),
             ClusterTopologyException.class,
-            "Snapshot operation interrupted, because baseline node left the cluster");
+            "Snapshot operation interrupted because required node left the cluster");
 
         assertTrue("Snapshot directory must be empty: " + grid0Dir,
             !searchDirectoryRecursively(locSnpDir.toPath(), grid0Dir).isPresent());
@@ -1053,7 +1053,7 @@ public class IgniteClusterSnapshotSelfTest extends AbstractSnapshotSelfTest {
         assertThrowsAnyCause(log,
             fut::get,
             ClusterTopologyException.class,
-            "Snapshot operation interrupted, because node left the cluster.");
+            "Snapshot operation interrupted because required node left the cluster.");
 
         assertEquals("Snapshot futures expected: " + exchFuts, 3, exchFuts.size());
 

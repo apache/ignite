@@ -29,7 +29,6 @@ import org.apache.ignite.IgniteDataStreamer;
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.cache.CacheAtomicityMode;
 import org.apache.ignite.cache.CacheMode;
-import org.apache.ignite.cache.CacheWriteSynchronizationMode;
 import org.apache.ignite.cluster.BaselineNode;
 import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.configuration.IgniteConfiguration;
@@ -40,6 +39,7 @@ import org.apache.ignite.internal.managers.communication.GridIoMessage;
 import org.apache.ignite.internal.managers.discovery.CustomMessageWrapper;
 import org.apache.ignite.internal.processors.cache.verify.IdleVerifyResultV2;
 import org.apache.ignite.internal.processors.datastreamer.DataStreamerCacheUpdaters;
+import org.apache.ignite.internal.processors.datastreamer.DataStreamerImpl;
 import org.apache.ignite.internal.processors.datastreamer.DataStreamerRequest;
 import org.apache.ignite.internal.util.distributed.InitMessage;
 import org.apache.ignite.internal.util.typedef.G;
@@ -55,18 +55,15 @@ import org.apache.ignite.spi.discovery.tcp.ipfinder.TcpDiscoveryIpFinder;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.TcpDiscoveryVmIpFinder;
 import org.apache.ignite.stream.StreamReceiver;
 import org.apache.ignite.testframework.GridTestUtils;
-import org.apache.ignite.testframework.junits.WithSystemProperty;
 import org.jetbrains.annotations.Nullable;
 import org.junit.Test;
 
-import static org.apache.ignite.IgniteSystemProperties.IGNITE_SKIP_CONFIGURATION_CONSISTENCY_CHECK;
 import static org.apache.ignite.cluster.ClusterState.ACTIVE;
 import static org.apache.ignite.testframework.GridTestUtils.assertThrows;
 
 /**
- * Tests snapshot is consistent under streaming load.
+ * Tests snapshot is consistent or warned under streaming load.
  */
-@WithSystemProperty(key = IGNITE_SKIP_CONFIGURATION_CONSISTENCY_CHECK, value = "true")
 public class IgniteClusterShanpshotStreamerTest extends AbstractSnapshotSelfTest {
     /** */
     private static final TcpDiscoveryIpFinder IP_FINDER = new TcpDiscoveryVmIpFinder(true);
@@ -81,10 +78,10 @@ public class IgniteClusterShanpshotStreamerTest extends AbstractSnapshotSelfTest
     /** */
     private IgniteSnapshotManager snpMgr;
 
-    /** */
+    /** Notifies that streamer can be launched after snapshot init message received. */
     private volatile @Nullable CountDownLatch launchDsLock;
 
-    /** */
+    /** Notifies that datastreame is registered on one of the nodes. */
     private volatile @Nullable CountDownLatch dsRegisteredLock;
 
     /** {@inheritDoc} */
@@ -93,7 +90,7 @@ public class IgniteClusterShanpshotStreamerTest extends AbstractSnapshotSelfTest
 
         persistence = true;
 
-        discoverySpi = waitingAtSnpProcSecondStageDiscoSpi();
+        discoverySpi = waitingAtSecondStageDiscoSpi();
 
         startGrid(0);
 
@@ -118,7 +115,6 @@ public class IgniteClusterShanpshotStreamerTest extends AbstractSnapshotSelfTest
         dfltCacheCfg
             .setAtomicityMode(CacheAtomicityMode.ATOMIC)
             .setCacheMode(CacheMode.PARTITIONED)
-            .setWriteSynchronizationMode(CacheWriteSynchronizationMode.PRIMARY_SYNC)
             .setBackups(1);
     }
 
@@ -214,7 +210,7 @@ public class IgniteClusterShanpshotStreamerTest extends AbstractSnapshotSelfTest
     }
 
     /**
-     * Tests snapshot consistecy when datastreamer starts before snapshot.
+     * Tests snapshot consistecy when streamer starts before snapshot.
      *
      * @param ldrNode  Streaming node.
      * @param mustFail If {@code true}, checks snapshot process warns of inconsistency and ensures snapshot validation
@@ -308,9 +304,9 @@ public class IgniteClusterShanpshotStreamerTest extends AbstractSnapshotSelfTest
 
         fillCache(preLoadCnt, ldr);
 
-        // Datastreamer won't be launched before snapshot process initialized.
+        // Streamer won't be launched before snapshot process initialized.
         launchDsLock = new CountDownLatch(1);
-        // Snapshot process won't continue before datastreamer set.
+        // Snapshot process won't continue before streamer set.
         dsRegisteredLock = new CountDownLatch(1);
 
         IgniteFuture<?> snpFut = grid(0).snapshot().createSnapshot(SNAPSHOT_NAME);
@@ -342,13 +338,13 @@ public class IgniteClusterShanpshotStreamerTest extends AbstractSnapshotSelfTest
     }
 
     /**
-     * Pre-laod cache for snapshot and close streamer.
+     * Pre-laods cache.
      */
-    private void fillCache(int preLoadCnt, Ignite loaderNode) throws Exception {
+    private void fillCache(int preLoadCnt, Ignite ldrNode) throws Exception {
         CountDownLatch preload = new CountDownLatch(preLoadCnt);
         AtomicBoolean stopLoading = new AtomicBoolean(false);
 
-        IgniteInternalFuture<?> loadFut = runLoad(loaderNode, null, preload, stopLoading, false);
+        IgniteInternalFuture<?> loadFut = runLoad(ldrNode, null, preload, stopLoading, false);
         preload.await();
         stopLoading.set(true);
         loadFut.get();
@@ -358,10 +354,10 @@ public class IgniteClusterShanpshotStreamerTest extends AbstractSnapshotSelfTest
      * Loads or pre-loads cache.
      *
      * @param ldr Loader node.
-     * @param receiver StreamReceiver. {@code Null} for default.
-     * @param dataSendCounter Accumulator of submitted to streamer data.
+     * @param receiver Stream receiver. {@code Null} for default.
+     * @param dataSendCounter Data counter submitted to the streamer.
      * @param stop Stop load flag.
-     * @param maleficent If {@code true}, corrupts batches to one of server node to ensure snapshot inconsistency.
+     * @param maleficent If {@code true}, erases batches to one of server node to ensure of snapshot inconsistency.
      */
     private IgniteInternalFuture<?> runLoad(Ignite ldr, @Nullable StreamReceiver<Integer, Object> receiver,
         CountDownLatch dataSendCounter, AtomicBoolean stop, boolean maleficent) {
@@ -431,7 +427,7 @@ public class IgniteClusterShanpshotStreamerTest extends AbstractSnapshotSelfTest
     /**
      * @return DiscoverySpi able to wait for data streamer start in the middle of snapshot process.
      */
-    private TcpDiscoverySpi waitingAtSnpProcSecondStageDiscoSpi() {
+    private TcpDiscoverySpi waitingAtSecondStageDiscoSpi() {
         return new TcpDiscoverySpi() {
             /** {@inheritDoc} */
             @Override public void sendCustomEvent(DiscoverySpiCustomMessage msg) throws IgniteException {
@@ -447,7 +443,7 @@ public class IgniteClusterShanpshotStreamerTest extends AbstractSnapshotSelfTest
                             dsRegisteredLock.await();
                         }
                         catch (InterruptedException e) {
-                            throw new IgniteException("Unable to wait for datastreamer started.", e);
+                            throw new IgniteException("Unable to wait for streamer started.", e);
                         }
                     }
                 }
@@ -460,7 +456,7 @@ public class IgniteClusterShanpshotStreamerTest extends AbstractSnapshotSelfTest
     /** */
     private void prepareRunWithNewNode(Ignite node) throws InterruptedException {
         if (log.isInfoEnabled()) {
-            log.info("Testing with loader node: " + node.cluster().localNode().id() +
+            log.info("Testing with node: " + node.cluster().localNode().id() +
                 ", order: " + node.cluster().localNode().order() +
                 ", client: " + node.cluster().localNode().isClient() +
                 ", baseline: " + node.cluster().currentBaselineTopology().stream().map(BaselineNode::consistentId)
@@ -508,12 +504,16 @@ public class IgniteClusterShanpshotStreamerTest extends AbstractSnapshotSelfTest
         // No need to run from both server nodes.
         testNodes.removeIf(n -> n.cluster().localNode().order() == 1);
 
+        assert testNodes.size() == G.allGrids().size() - 1;
+
         return testNodes;
     }
 
     /**
-     * Drops datastreamer entries from the batches to certain node. Simulates late data income to the node. Makes data
-     * inconsistent if data contains backup records.
+     * Drops streamer entries from the batches to certain node. Simulates late data income to the node. Makes data
+     * inconsistent if data contains separates backup and primary records. {@link DataStreamerImpl.IsolatedUpdater}
+     * does so. Doesn't affect consistency with normal cache loads with 'cache.put()' or 'cache.putAll()' witch are
+     * used with stream receivers like {@link DataStreamerCacheUpdaters#batched()}.
      */
     private static class DataLoosingCommunicationSpi extends TcpCommunicationSpi {
         /** */

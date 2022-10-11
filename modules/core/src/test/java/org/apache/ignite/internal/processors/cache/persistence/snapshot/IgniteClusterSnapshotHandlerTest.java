@@ -344,7 +344,7 @@ public class IgniteClusterSnapshotHandlerTest extends IgniteClusterSnapshotResto
         stopGrid(0, true);
 
         GridTestUtils.assertThrowsAnyCause(log, () -> fut.get(TIMEOUT), ClusterTopologyCheckedException.class,
-            "Snapshot operation interrupted, because baseline node left the cluster: " + crdNodeId);
+            "Snapshot operation interrupted because required node left the cluster: " + crdNodeId);
 
         startGrid(0);
         grid(0).snapshot().createSnapshot(SNAPSHOT_NAME);

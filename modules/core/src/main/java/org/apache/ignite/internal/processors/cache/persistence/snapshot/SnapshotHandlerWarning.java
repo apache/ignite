@@ -21,9 +21,9 @@ import java.io.Serializable;
 import java.util.function.Supplier;
 
 /**
- * Warning result of the snapshot handler. Warnings do not stop or cancel snapshot, but produce warning exception at the
- * end if no other errors uccured. As result, snapshot process is done but doesn't return 'OK' status.
- * Warning are collected on each node at end of the init stage.
+ * Warning result of {@link SnapshotHandler#invoke(SnapshotHandlerContext)}. Warnings do not stop or cancel current
+ * snapshot operation, but produce an exception when operation completes if no other error uccured. As result, snapshot
+ * process is done but doesn't return 'OK' status.
  *
  * @see SnapshotHandler
  */

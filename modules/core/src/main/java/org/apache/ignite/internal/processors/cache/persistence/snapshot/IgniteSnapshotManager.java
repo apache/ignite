@@ -539,7 +539,7 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
 
                 if (evt.type() == EVT_NODE_LEFT || evt.type() == EVT_NODE_FAILED) {
                     SnapshotOperationRequest snpReq = clusterSnpReq;
-                    String err = "Snapshot operation interrupted, because baseline node left the cluster: " + leftNodeId;
+                    String err = "Snapshot operation interrupted because required node left the cluster: " + leftNodeId;
                     boolean reqNodeLeft = snpReq != null && snpReq.nodes().contains(leftNodeId);
 
                     // If the coordinator left the cluster and did not start
@@ -758,7 +758,9 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
                 "re-encryption process is not finished yet."));
         }
 
-        List<String> streamedCaches = cctx.kernalContext().dataStream().cachesUnderInconsistentUpdaters();
+        // If more inititalization checks required, SnapshoHandler and SnapshotHandlerContext should be revised.
+        // Something like SnapshotHandler.init() might be involved.
+        List<String> streamedCaches = cctx.kernalContext().dataStream().cachesUnderInconsistentUpdates();
 
         if (cctx.kernalContext().clientNode() ||
             !CU.baselineNode(cctx.localNode(), cctx.kernalContext().state().clusterState())) {
@@ -927,8 +929,8 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
                     "has been cancelled by external process [err=" + err + ", missed=" + missed + ']'));
             }
             else if (!missed.isEmpty()) {
-                snpReq.error(new ClusterTopologyCheckedException("Snapshot operation interrupted, because " +
-                    "node left the cluster. Uncompleted snapshot will be deleted [missed=" + missed + ']'));
+                snpReq.error(new ClusterTopologyCheckedException("Snapshot operation interrupted because " +
+                    "required node left the cluster. Uncompleted snapshot will be deleted [missed=" + missed + ']'));
             }
             else if (!F.isEmpty(err)) {
                 snpReq.error(new IgniteCheckedException("Execution of local snapshot tasks fails. " +
@@ -1633,8 +1635,7 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
 
             Set<UUID> bltNodeIds =
                 new HashSet<>(F.viewReadOnly(allNodes, F.node2id(), (node) -> CU.baselineNode(node, clusterState)));
-            Set<UUID> allNodeIds =
-                new HashSet<>(F.viewReadOnly(allNodes, F.node2id()));
+            Set<UUID> allNodeIds = new HashSet<>(F.viewReadOnly(allNodes, F.node2id()));
 
             startSnpProc.start(snpFut0.rqId, new SnapshotOperationRequest(snpFut0.rqId, cctx.localNodeId(), name,
                 snpPath, grps, bltNodeIds, allNodeIds));
@@ -2229,7 +2230,7 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
     }
 
     /** Snapshot operation handlers. */
-    protected class SnapshotHandlers {
+    protected static class SnapshotHandlers {
         /** Snapshot operation handlers. */
         private final Map<SnapshotHandlerType, List<SnapshotHandler<Object>>> handlers = new EnumMap<>(SnapshotHandlerType.class);
 
@@ -2247,6 +2248,7 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
             SnapshotHandler<?> sysCheck = new SnapshotPartitionsVerifyHandler(ctx.cache().context());
             handlers.put(sysCheck.type(), new ArrayList<>(F.asList((SnapshotHandler<Object>)sysCheck)));
 
+            // Register system default concurrent datastreamer updates check.
             SnapshotHandler<?> snpCheck = new SnapshotDataStreamerVerifyHandler();
             handlers.put(snpCheck.type(), new ArrayList<>(F.asList((SnapshotHandler<Object>)snpCheck)));
 
@@ -3414,7 +3416,10 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
         /** Operation interruption exception. */
         volatile IgniteCheckedException interruptEx;
 
-        /** Warnongs map. */
+        /**
+         * Warnings which produces an error after snapshot completes if no other error occured. But doesn't
+         * stop or cancel snapshot operation.
+         */
         final Map<UUID, String> warnings = new ConcurrentHashMap<>();
 
         /**

@@ -329,10 +329,11 @@ public class SnapshotRestoreProcess {
                 return;
             }
 
-            Set<UUID> bltNodes = new HashSet<>(F.viewReadOnly(ctx.discovery().discoCache().aliveBaselineNodes(), F.node2id()));
+            Set<UUID> bltNodes = new HashSet<>(F.viewReadOnly(ctx.discovery().discoCache().aliveBaselineNodes(),
+                F.node2id()));
 
-            SnapshotOperationRequest req = new SnapshotOperationRequest(
-                fut0.rqId, F.first(dataNodes), snpName, snpPath, cacheGrpNames, bltNodes, bltNodes);
+            SnapshotOperationRequest req = new SnapshotOperationRequest(fut0.rqId, F.first(dataNodes), snpName,
+                snpPath, cacheGrpNames, bltNodes, bltNodes);
 
             prepareRestoreProc.start(req.requestId(), req);
         });
