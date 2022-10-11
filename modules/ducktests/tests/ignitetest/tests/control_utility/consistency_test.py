@@ -37,7 +37,7 @@ from ignitetest.services.utils.ignite_configuration import IgniteConfiguration, 
 from ignitetest.services.utils.ignite_configuration.data_storage import DataRegionConfiguration
 from ignitetest.services.utils.ignite_configuration.discovery import from_ignite_cluster
 from ignitetest.services.utils.ignite_configuration.event_type import EventType
-from ignitetest.tests.rebalance.util import preload_data, DataGenerationParams, current_millis
+from ignitetest.tests.util import preload_data, DataGenerationParams, current_millis
 from ignitetest.utils import cluster, ignite_versions
 from ignitetest.utils.ignite_test import IgniteTest
 from ignitetest.utils.version import DEV_BRANCH, IgniteVersion

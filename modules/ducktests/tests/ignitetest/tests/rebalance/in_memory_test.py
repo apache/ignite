@@ -20,8 +20,9 @@ from ducktape.mark import defaults
 
 from ignitetest.services.ignite import IgniteService
 from ignitetest.services.utils.ignite_configuration.discovery import from_ignite_cluster
-from ignitetest.tests.rebalance.util import preload_data, start_ignite, get_result, TriggerEvent, NUM_NODES, \
+from ignitetest.tests.rebalance.util import start_ignite, get_result, TriggerEvent, NUM_NODES, \
     await_rebalance_start, RebalanceParams
+from ignitetest.tests.util import preload_data
 from ignitetest.utils import cluster, ignite_versions
 from ignitetest.utils.ignite_test import IgniteTest
 from ignitetest.utils.version import DEV_BRANCH, LATEST

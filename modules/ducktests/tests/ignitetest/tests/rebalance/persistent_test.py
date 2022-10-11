@@ -24,7 +24,8 @@ from ignitetest.services.utils.control_utility import ControlUtility
 from ignitetest.services.utils.ignite_aware import IgniteAwareService
 from ignitetest.services.utils.ignite_configuration.discovery import from_ignite_cluster
 from ignitetest.tests.rebalance.util import NUM_NODES, start_ignite, TriggerEvent, \
-    preload_data, get_result, check_type_of_rebalancing, await_rebalance_start, RebalanceParams
+    get_result, check_type_of_rebalancing, await_rebalance_start, RebalanceParams
+from ignitetest.tests.util import preload_data
 from ignitetest.utils import cluster, ignite_versions
 from ignitetest.utils.ignite_test import IgniteTest
 from ignitetest.utils.version import DEV_BRANCH, LATEST
