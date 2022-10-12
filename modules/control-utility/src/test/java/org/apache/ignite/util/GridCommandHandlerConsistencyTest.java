@@ -315,6 +315,7 @@ public class GridCommandHandlerConsistencyTest extends GridCommandHandlerCluster
 
         while (i < PARTITIONS) {
             int from = i;
+
             i = Math.min(i + ThreadLocalRandom.current().nextInt(1, 10), PARTITIONS);
 
             assertEquals(EXIT_CODE_OK, execute("--consistency", "repair",

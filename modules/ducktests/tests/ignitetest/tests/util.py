@@ -27,7 +27,7 @@ DEFAULT_DATA_REGION_SZ = 1 << 30
 class DataGenerationParams(NamedTuple):
     """
     Data generation parameters.
-    See org.apache.ignite.internal.ducktest.tests.rebalance.DataGenerationApplication in java code.
+    See org.apache.ignite.internal.ducktest.tests.DataGenerationApplication in java code.
     """
     backups: int = 1
     cache_count: int = 1
@@ -71,7 +71,7 @@ def preload_data(context, config, data_gen_params: DataGenerationParams, timeout
         app = IgniteApplicationService(
             context,
             config=config,
-            java_class_name="org.apache.ignite.internal.ducktest.tests.rebalance.DataGenerationApplication",
+            java_class_name="org.apache.ignite.internal.ducktest.tests.DataGenerationApplication",
             params={
                 "backups": data_gen_params.backups,
                 "cacheCount": data_gen_params.cache_count,

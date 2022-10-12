@@ -116,7 +116,7 @@ class ConsistencyTest(IgniteTest):
 
     @cluster(num_nodes=4)
     @ignite_versions(str(DEV_BRANCH))
-    @defaults(backups=[1], cache_count=[1], entry_count=[50_000], entry_size=[50_000], preloaders=[1])
+    @defaults(backups=[2], cache_count=[1], entry_count=[50_000], entry_size=[50_000], preloaders=[1])
     def test_consistency_check_performance(self, ignite_version, backups, cache_count, entry_count, entry_size,
                                            preloaders):
         """
@@ -130,14 +130,7 @@ class ConsistencyTest(IgniteTest):
             version=IgniteVersion(ignite_version),
             cluster_state="INACTIVE",
             include_event_types=[EventType.EVT_CONSISTENCY_VIOLATION],
-            data_storage=DataStorageConfiguration(
-                max_wal_archive_size=2 * data_gen_params.data_region_max_size,
-                default=DataRegionConfiguration(
-                    persistence_enabled=True,
-                    max_size=data_gen_params.data_region_max_size
-                )
-            ),
-            metric_exporters={"org.apache.ignite.spi.metric.jmx.JmxMetricExporterSpi"}
+            data_storage=DataStorageConfiguration(default=DataRegionConfiguration(persistence_enabled=True))
         )
 
         ignites = IgniteService(self.test_context,
@@ -174,7 +167,7 @@ class ConsistencyTest(IgniteTest):
             # checking 20 partitions at a time
             p = ','.join([str(x) for x in range(pi*20, (pi+1)*20)])
 
-            self.logger.debug('Running repair[p=' + p + ']')
+            self.logger.debug('Running repair [p=' + p + ']')
             # checking/repairing
             control_utility.check_consistency(f"repair --cache test-cache-1 --strategy LWW --partitions " + p)
 

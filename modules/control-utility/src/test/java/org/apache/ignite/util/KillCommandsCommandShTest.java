@@ -356,7 +356,7 @@ public class KillCommandsCommandShTest extends GridCommandHandlerClusterByClassA
         assertEquals(EXIT_CODE_UNEXPECTED_ERROR, execute(cmd));
 
         assertContains(log, testOut.toString(), "Operation execution cancelled.");
-        assertContains(log, testOut.toString(), "Consistency task was interrupted");
+        assertContains(log, testOut.toString(), "Consistency task was interrupted.");
         assertNotContains(log, testOut.toString(), VisorConsistencyRepairTask.CONSISTENCY_VIOLATIONS_FOUND);
 
         thLatch.await();

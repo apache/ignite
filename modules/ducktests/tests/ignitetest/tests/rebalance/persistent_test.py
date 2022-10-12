@@ -156,7 +156,7 @@ class RebalancePersistentTest(IgniteTest):
         preloader = IgniteApplicationService(
             self.test_context,
             preloader_config,
-            java_class_name="org.apache.ignite.internal.ducktest.tests.rebalance.DataGenerationApplication",
+            java_class_name="org.apache.ignite.internal.ducktest.tests.DataGenerationApplication",
             params={"backups": 1, "cacheCount": 1, "entrySize": 1, "from": 0, "to": preload_entries}
         )
 
