@@ -18,10 +18,14 @@
 package org.apache.ignite.internal.processors.cache.index;
 
 import java.util.List;
+import java.util.Map;
+import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCache;
 import org.apache.ignite.IgniteCheckedException;
+import org.apache.ignite.IgniteLogger;
+import org.apache.ignite.cache.QueryIndexType;
 import org.apache.ignite.cache.query.SqlFieldsQuery;
 import org.apache.ignite.client.Person;
 import org.apache.ignite.configuration.CacheConfiguration;
@@ -29,6 +33,7 @@ import org.apache.ignite.configuration.DataRegionConfiguration;
 import org.apache.ignite.configuration.DataStorageConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.failure.StopNodeFailureHandler;
+import org.apache.ignite.internal.GridKernalContext;
 import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.cache.query.index.Index;
@@ -38,19 +43,27 @@ import org.apache.ignite.internal.processors.cache.GridCacheContext;
 import org.apache.ignite.internal.processors.cache.index.IndexingTestUtils.BreakBuildIndexConsumer;
 import org.apache.ignite.internal.processors.cache.index.IndexingTestUtils.SlowdownBuildIndexConsumer;
 import org.apache.ignite.internal.processors.cache.index.IndexingTestUtils.StopBuildIndexConsumer;
+import org.apache.ignite.internal.processors.cache.persistence.CacheDataRow;
+import org.apache.ignite.internal.processors.query.GridQueryIndexDescriptor;
 import org.apache.ignite.internal.processors.query.aware.IndexBuildStatusHolder;
 import org.apache.ignite.internal.processors.query.aware.IndexBuildStatusStorage;
+import org.apache.ignite.internal.processors.query.schema.SchemaIndexCacheVisitor;
+import org.apache.ignite.internal.processors.query.schema.management.IndexDescriptor;
+import org.apache.ignite.internal.processors.query.schema.management.SchemaManager;
+import org.apache.ignite.internal.processors.query.schema.management.SortedIndexDescriptorFactory;
+import org.apache.ignite.internal.processors.query.schema.management.TableDescriptor;
+import org.apache.ignite.internal.util.lang.IgniteThrowableConsumer;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.G;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.jetbrains.annotations.Nullable;
 
+import static java.util.Collections.emptyMap;
 import static java.util.stream.Collectors.toList;
 import static org.apache.ignite.cluster.ClusterState.ACTIVE;
-import static org.apache.ignite.internal.processors.cache.index.IgniteH2IndexingEx.addIdxCreateCacheRowConsumer;
 import static org.apache.ignite.internal.processors.cache.index.IndexesRebuildTaskEx.addCacheRowConsumer;
+import static org.apache.ignite.internal.processors.cache.index.IndexingTestUtils.DO_NOTHING_CACHE_DATA_ROW_CONSUMER;
 import static org.apache.ignite.internal.processors.cache.index.IndexingTestUtils.nodeName;
-import static org.apache.ignite.testframework.GridTestUtils.cacheContext;
 import static org.apache.ignite.testframework.GridTestUtils.deleteIndexBin;
 import static org.apache.ignite.testframework.GridTestUtils.getFieldValue;
 
@@ -62,8 +75,9 @@ public abstract class AbstractRebuildIndexTest extends GridCommonAbstractTest {
     @Override protected void beforeTest() throws Exception {
         super.beforeTest();
 
+        SchemaManager.registerIndexDescriptorFactory(QueryIndexType.SORTED, new SortedIndexDescriptorFactoryEx(log));
+        SortedIndexDescriptorFactoryEx.clean(getTestIgniteInstanceName());
         IndexesRebuildTaskEx.clean(getTestIgniteInstanceName());
-        IgniteH2IndexingEx.clean(getTestIgniteInstanceName());
 
         stopAllGrids();
         cleanPersistenceDir();
@@ -73,8 +87,9 @@ public abstract class AbstractRebuildIndexTest extends GridCommonAbstractTest {
     @Override protected void afterTest() throws Exception {
         super.afterTest();
 
+        SchemaManager.unregisterIndexDescriptorFactory(QueryIndexType.SORTED);
+        SortedIndexDescriptorFactoryEx.clean(getTestIgniteInstanceName());
         IndexesRebuildTaskEx.clean(getTestIgniteInstanceName());
-        IgniteH2IndexingEx.clean(getTestIgniteInstanceName());
 
         stopAllGrids();
         cleanPersistenceDir();
@@ -155,7 +170,8 @@ public abstract class AbstractRebuildIndexTest extends GridCommonAbstractTest {
     }
 
     /**
-     * Registering a {@link SlowdownBuildIndexConsumer} to {@link IgniteH2IndexingEx#addIdxCreateCacheRowConsumer}.
+     * Registering a {@link SlowdownBuildIndexConsumer} to
+     * {@link SortedIndexDescriptorFactoryEx#addIdxCreateCacheRowConsumer}.
      *
      * @param n Node.
      * @param idxName Index name.
@@ -165,13 +181,14 @@ public abstract class AbstractRebuildIndexTest extends GridCommonAbstractTest {
     protected SlowdownBuildIndexConsumer addSlowdownIdxCreateConsumer(IgniteEx n, String idxName, long sleepTime) {
         SlowdownBuildIndexConsumer consumer = new SlowdownBuildIndexConsumer(getTestTimeout(), sleepTime);
 
-        addIdxCreateCacheRowConsumer(nodeName(n), idxName, consumer);
+        SortedIndexDescriptorFactoryEx.addIdxCreateCacheRowConsumer(nodeName(n), idxName, consumer);
 
         return consumer;
     }
 
     /**
-     * Registering a {@link BreakBuildIndexConsumer} to {@link IgniteH2IndexingEx#addIdxCreateCacheRowConsumer}.
+     * Registering a {@link BreakBuildIndexConsumer} to
+     * {@link SortedIndexDescriptorFactoryEx#addIdxCreateCacheRowConsumer}.
      *
      * @param n Node.
      * @param idxName Index name.
@@ -184,7 +201,7 @@ public abstract class AbstractRebuildIndexTest extends GridCommonAbstractTest {
             (c, r) -> c.visitCnt.get() >= breakCnt
         );
 
-        addIdxCreateCacheRowConsumer(nodeName(n), idxName, consumer);
+        SortedIndexDescriptorFactoryEx.addIdxCreateCacheRowConsumer(nodeName(n), idxName, consumer);
 
         return consumer;
     }
@@ -356,9 +373,82 @@ public abstract class AbstractRebuildIndexTest extends GridCommonAbstractTest {
      * @return Index.
      */
     @Nullable protected Index index(IgniteEx n, IgniteCache<Integer, Person> cache, String idxName) {
-        return n.context().indexProcessor().indexes(cacheContext(cache)).stream()
+        return n.context().indexProcessor().indexes(cache.getName()).stream()
             .filter(i -> idxName.equals(i.name()))
             .findAny()
             .orElse(null);
+    }
+
+    /** */
+    private static class SortedIndexDescriptorFactoryEx extends SortedIndexDescriptorFactory {
+        /**
+         * Consumer for cache rows when creating an index on a node.
+         * Mapping: Node name -> Index name -> Consumer.
+         */
+        private static final Map<String, Map<String, IgniteThrowableConsumer<CacheDataRow>>> idxCreateCacheRowConsumer =
+            new ConcurrentHashMap<>();
+
+        /**
+         * Cleaning of internal structures. It is recommended to clean at
+         * {@code GridCommonAbstractTest#beforeTest} and {@code GridCommonAbstractTest#afterTest}.
+         *
+         * @param nodeNamePrefix Prefix of node name ({@link GridKernalContext#igniteInstanceName()})
+         *      for which internal structures will be removed, if {@code null} will be removed for all.
+         *
+         * @see GridCommonAbstractTest#getTestIgniteInstanceName()
+         */
+        static void clean(@Nullable String nodeNamePrefix) {
+            if (nodeNamePrefix == null)
+                idxCreateCacheRowConsumer.clear();
+            else
+                idxCreateCacheRowConsumer.entrySet().removeIf(e -> e.getKey().startsWith(nodeNamePrefix));
+        }
+
+        /**
+         * Registering a consumer for cache rows when creating an index on a node.
+         *
+         * @param nodeName The name of the node,
+         *      the value of which will return {@link GridKernalContext#igniteInstanceName()}.
+         * @param idxName Index name.
+         * @param c Cache row consumer.
+         *
+         * @see IndexingTestUtils#nodeName(GridKernalContext)
+         * @see IndexingTestUtils#nodeName(IgniteEx)
+         * @see IndexingTestUtils#nodeName(GridCacheContext)
+         * @see GridCommonAbstractTest#getTestIgniteInstanceName(int)
+         */
+        static void addIdxCreateCacheRowConsumer(
+            String nodeName,
+            String idxName,
+            IgniteThrowableConsumer<CacheDataRow> c
+        ) {
+            idxCreateCacheRowConsumer.computeIfAbsent(nodeName, s -> new ConcurrentHashMap<>()).put(idxName, c);
+        }
+
+        /** */
+        public SortedIndexDescriptorFactoryEx(IgniteLogger log) {
+            super(log);
+        }
+
+        /** {@inheritDoc} */
+        @Override public IndexDescriptor create(
+            GridKernalContext ctx,
+            GridQueryIndexDescriptor idxDesc,
+            TableDescriptor tbl,
+            @Nullable SchemaIndexCacheVisitor cacheVisitor
+        ) {
+            return super.create(ctx, idxDesc, tbl, clo -> {
+                if (cacheVisitor != null) {
+                    cacheVisitor.visit(row -> {
+                        idxCreateCacheRowConsumer
+                            .getOrDefault(nodeName(ctx), emptyMap())
+                            .getOrDefault(idxDesc.name(), DO_NOTHING_CACHE_DATA_ROW_CONSUMER)
+                            .accept(row);
+
+                        clo.apply(row);
+                    });
+                }
+            });
+        }
     }
 }

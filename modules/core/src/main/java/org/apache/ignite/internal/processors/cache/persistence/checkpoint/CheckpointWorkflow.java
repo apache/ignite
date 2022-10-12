@@ -362,7 +362,7 @@ public class CheckpointWorkflow {
             return new Checkpoint(checkpointEntry, cpPages, curr);
         }
         else {
-            if (curr.nextSnapshot() && wal != null)
+            if (ctx0.walFlush() && wal != null)
                 wal.flush(null, true);
 
             return new Checkpoint(null, GridConcurrentMultiPairQueue.EMPTY, curr);
@@ -379,7 +379,7 @@ public class CheckpointWorkflow {
         GridCompoundFuture grpHandleFut = checkpointCollectPagesInfoPool == null ? null : new GridCompoundFuture();
 
         for (CacheGroupContext grp : cacheGroupsContexts.get()) {
-            if (grp.isLocal() || !grp.walEnabled())
+            if (!grp.walEnabled())
                 continue;
 
             Runnable r = () -> {

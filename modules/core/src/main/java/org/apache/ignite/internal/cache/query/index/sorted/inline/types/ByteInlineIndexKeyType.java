@@ -17,29 +17,31 @@
 
 package org.apache.ignite.internal.cache.query.index.sorted.inline.types;
 
-import org.apache.ignite.internal.cache.query.index.sorted.IndexKeyTypes;
+import org.apache.ignite.internal.cache.query.index.sorted.IndexKeyType;
 import org.apache.ignite.internal.cache.query.index.sorted.keys.ByteIndexKey;
+import org.apache.ignite.internal.cache.query.index.sorted.keys.IndexKey;
+import org.apache.ignite.internal.cache.query.index.sorted.keys.NumericIndexKey;
 import org.apache.ignite.internal.pagemem.PageUtils;
 
 /**
  * Inline index key implementation for inlining {@link Byte} values.
  */
-public class ByteInlineIndexKeyType extends NullableInlineIndexKeyType<ByteIndexKey> {
+public class ByteInlineIndexKeyType extends NumericInlineIndexKeyType<ByteIndexKey> {
     /** */
     public ByteInlineIndexKeyType() {
-        super(IndexKeyTypes.BYTE, (short)1);
+        super(IndexKeyType.BYTE, (short)1);
     }
 
     /** {@inheritDoc} */
-    @Override public int compare0(long pageAddr, int off, ByteIndexKey key) {
-        byte byte1 = PageUtils.getByte(pageAddr, off + 1);
+    @Override public int compare0(long pageAddr, int off, IndexKey key) {
+        byte val = PageUtils.getByte(pageAddr, off + 1);
 
-        return Integer.signum(byte1 - (byte)key.key());
+        return -Integer.signum(((NumericIndexKey)key).compareTo(val));
     }
 
     /** {@inheritDoc} */
     @Override protected int put0(long pageAddr, int off, ByteIndexKey key, int maxSize) {
-        PageUtils.putByte(pageAddr, off, (byte)type());
+        PageUtils.putByte(pageAddr, off, (byte)type().code());
         PageUtils.putByte(pageAddr, off + 1, (byte)key.key());
 
         return keySize + 1;
@@ -50,10 +52,5 @@ public class ByteInlineIndexKeyType extends NullableInlineIndexKeyType<ByteIndex
         byte b = PageUtils.getByte(pageAddr, off + 1);
 
         return new ByteIndexKey(b);
-    }
-
-    /** {@inheritDoc} */
-    @Override protected int inlineSize0(ByteIndexKey key) {
-        return keySize + 1;
     }
 }

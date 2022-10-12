@@ -46,18 +46,6 @@
         <property name="cacheConfiguration">
             <list>
                 <bean parent="cache-template">
-                    <property name="name" value="local"/>
-                    <property name="cacheMode" value="LOCAL"/>
-                    <property name="atomicityMode" value="TRANSACTIONAL"/>
-                </bean>
-
-                <bean parent="cache-template">
-                    <property name="name" value="local_atomic"/>
-                    <property name="cacheMode" value="LOCAL"/>
-                    <property name="atomicityMode" value="ATOMIC"/>
-                </bean>
-
-                <bean parent="cache-template">
                     <property name="name" value="partitioned"/>
                     <property name="cacheMode" value="PARTITIONED"/>
                     <property name="atomicityMode" value="TRANSACTIONAL"/>

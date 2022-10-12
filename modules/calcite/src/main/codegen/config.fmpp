@@ -36,6 +36,7 @@ data: {
       "org.apache.ignite.lang.IgniteUuid",
       "org.apache.calcite.sql.ddl.SqlDdlNodes",
       "org.apache.ignite.internal.processors.query.calcite.sql.*",
+      "org.apache.ignite.internal.processors.query.calcite.sql.stat.*",
     ]
 
     # List of new keywords. Example: "DATABASES", "TABLES". If the keyword is
@@ -66,7 +67,12 @@ data: {
       "SERVICE"
       "COMPUTE"
       "ASYNC"
-      "QUERY"
+      "QUERY",
+      "STATISTICS",
+      "REFRESH",
+      "ANALYZE",
+      "MAX_CHANGED_PARTITION_ROWS_PERCENT",
+      "TOTAL"
     ]
 
     # List of non-reserved keywords to add;
@@ -96,6 +102,11 @@ data: {
       "COMPUTE"
       "ASYNC"
       "QUERY"
+      "STATISTICS",
+      "REFRESH",
+      "ANALYZE",
+      "MAX_CHANGED_PARTITION_ROWS_PERCENT",
+      "TOTAL",
 
       # The following keywords are reserved in core Calcite,
       # are reserved in some version of SQL,
@@ -621,6 +632,9 @@ data: {
       "SqlKillQuery()",
       "SqlCommitTransaction()",
       "SqlRollbackTransaction()"
+      "SqlStatisticsAnalyze()"
+      "SqlStatisticsRefresh()"
+      "SqlStatisticsDrop()"
     ]
 
     # List of methods for parsing extensions to "CREATE [OR REPLACE]" calls.

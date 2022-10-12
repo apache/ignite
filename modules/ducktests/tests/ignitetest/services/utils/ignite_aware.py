@@ -338,22 +338,24 @@ class IgniteAwareService(BackgroundThreadService, IgnitePathAware, metaclass=ABC
 
         return time_holder.get()
 
-    @staticmethod
-    def __exec_on_node(node, task, start_waiter=None, delay_ms=0, time_holder=None):
-        if start_waiter:
-            start_waiter.count_down()
-            start_waiter.wait()
+    def __exec_on_node(self, node, task, start_waiter=None, delay_ms=0, time_holder=None):
+        try:
+            if start_waiter:
+                start_waiter.count_down()
+                start_waiter.wait()
 
-        if delay_ms > 0:
-            time.sleep(delay_ms / 1000.0)
+            if delay_ms > 0:
+                time.sleep(delay_ms / 1000.0)
 
-        if time_holder:
-            mono = time.monotonic()
-            timestamp = datetime.now()
+            if time_holder:
+                mono = time.monotonic()
+                timestamp = datetime.now()
 
-            time_holder.compare_and_set(None, (mono, timestamp))
-
-        task(node)
+                time_holder.compare_and_set(None, (mono, timestamp))
+            task(node)
+        except BaseException:
+            self.logger.error("async task threw exception:", exc_info=1)
+            raise
 
     @property
     def netfilter_store_path(self):
@@ -383,8 +385,8 @@ class IgniteAwareService(BackgroundThreadService, IgnitePathAware, metaclass=ABC
         cm_spi = self.config.communication_spi
         dsc_spi = self.config.discovery_spi
 
-        cm_ports = str(cm_spi.port) if cm_spi.port_range < 1 else str(cm_spi.port) + ':' + str(
-            cm_spi.port + cm_spi.port_range)
+        cm_ports = str(cm_spi.local_port) if cm_spi.local_port_range < 1 else str(cm_spi.local_port) + ':' + str(
+            cm_spi.local_port + cm_spi.local_port_range)
 
         dsc_ports = str(dsc_spi.port) if not hasattr(dsc_spi, 'port_range') or dsc_spi.port_range < 1 else str(
             dsc_spi.port) + ':' + str(dsc_spi.port + dsc_spi.port_range)

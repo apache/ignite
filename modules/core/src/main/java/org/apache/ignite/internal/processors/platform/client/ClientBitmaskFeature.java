@@ -20,6 +20,7 @@ package org.apache.ignite.internal.processors.platform.client;
 import java.util.EnumSet;
 import org.apache.ignite.client.ClientServices;
 import org.apache.ignite.internal.ThinProtocolFeature;
+import org.apache.ignite.internal.client.thin.TcpClientCache;
 
 /**
  * Defines supported features for thin client.
@@ -59,7 +60,16 @@ public enum ClientBitmaskFeature implements ThinProtocolFeature {
     SERVICE_INVOKE_CALLCTX(10),
 
     /** Handle OP_HEARTBEAT and OP_GET_IDLE_TIMEOUT. */
-    HEARTBEAT(11);
+    HEARTBEAT(11),
+
+    /** Data replication operations: {@link TcpClientCache#putAllConflict}, {@link TcpClientCache#removeAllConflict}. */
+    DATA_REPLICATION_OPERATIONS(12),
+
+    /** Send all mappings to the client including non-default affinity functions. */
+    ALL_AFFINITY_MAPPINGS(13),
+
+    /** IndexQuery. */
+    INDEX_QUERY(14);
 
     /** */
     private static final EnumSet<ClientBitmaskFeature> ALL_FEATURES_AS_ENUM_SET =

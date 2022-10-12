@@ -49,6 +49,7 @@ import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.IgniteKernal;
 import org.apache.ignite.internal.managers.discovery.GridDiscoveryManager;
 import org.apache.ignite.internal.managers.systemview.walker.PagesListViewWalker;
+import org.apache.ignite.internal.managers.systemview.walker.PagesTimestampHistogramViewWalker;
 import org.apache.ignite.internal.mem.DirectMemoryProvider;
 import org.apache.ignite.internal.mem.DirectMemoryRegion;
 import org.apache.ignite.internal.mem.IgniteOutOfMemoryException;
@@ -82,6 +83,7 @@ import org.apache.ignite.internal.processors.cache.persistence.wal.WALPointer;
 import org.apache.ignite.internal.processors.cache.warmup.WarmUpStrategy;
 import org.apache.ignite.internal.processors.cluster.IgniteChangeGlobalStateSupport;
 import org.apache.ignite.internal.util.TimeBag;
+import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.T2;
 import org.apache.ignite.internal.util.typedef.internal.CU;
 import org.apache.ignite.internal.util.typedef.internal.LT;
@@ -127,6 +129,12 @@ public class IgniteCacheDatabaseSharedManager extends GridCacheSharedManagerAdap
 
     /** System view description for page lists. */
     public static final String DATA_REGION_PAGE_LIST_VIEW_DESC = "Data region page lists";
+
+    /** System view name for pages timestamp histogram. */
+    public static final String PAGE_TS_HISTOGRAM_VIEW = "pagesTimestampHistogram";
+
+    /** System view description for pages timestamp histogram. */
+    public static final String PAGE_TS_HISTOGRAM_VIEW_DESC = "Data region pages timestamp histogram";
 
     /** Minimum size of memory chunk */
     private static final long MIN_PAGE_MEMORY_SIZE = 10L * 1024 * 1024;
@@ -229,6 +237,15 @@ public class IgniteCacheDatabaseSharedManager extends GridCacheSharedManagerAdap
                     bucket -> new PagesListView(fl, bucket))).collect(Collectors.toList());
             },
             Function.identity()
+        );
+
+        cctx.kernalContext().systemView().registerInnerCollectionView(
+            PAGE_TS_HISTOGRAM_VIEW,
+            PAGE_TS_HISTOGRAM_VIEW_DESC,
+            new PagesTimestampHistogramViewWalker(),
+            F.viewReadOnly(dataRegions(), DataRegion::metrics),
+            DataRegionMetricsImpl::pagesTimestampHistogramView,
+            (pageMemory, view) -> view
         );
     }
 
@@ -1139,17 +1156,18 @@ public class IgniteCacheDatabaseSharedManager extends GridCacheSharedManagerAdap
         if (!CU.isCdcEnabled(kctx.config()) || kctx.clientNode())
             return;
 
-        WALIterator iter = cctx.wal(true).replay(null, (type, ptr) -> true);
+        try (WALIterator iter = cctx.wal(true).replay(null, (type, ptr) -> true)) {
+            while (iter.hasNext())
+                iter.next();
 
-        while (iter.hasNext())
-            iter.next();
+            WALPointer ptr = iter.lastRead().orElse(null);
 
-        WALPointer ptr = iter.lastRead().orElse(null);
+            if (ptr != null)
+                ptr = ptr.next();
 
-        if (ptr != null)
-            ptr = ptr.next();
-
-        cctx.wal(true).resumeLogging(ptr);
+            cctx.wal(true).startAutoReleaseSegments();
+            cctx.wal(true).resumeLogging(ptr);
+        }
     }
 
     /**
@@ -1190,7 +1208,20 @@ public class IgniteCacheDatabaseSharedManager extends GridCacheSharedManagerAdap
      * @param stoppedGrps A collection of tuples (cache group, destroy flag).
      */
     public void onCacheGroupsStopped(Collection<IgniteBiTuple<CacheGroupContext, Boolean>> stoppedGrps) {
-        // No-op.
+        for (IgniteBiTuple<CacheGroupContext, Boolean> tup : stoppedGrps) {
+            CacheGroupContext grp = tup.get1();
+
+            try {
+                boolean destroy = tup.get2();
+
+                if (destroy && CU.storeCacheConfig(cctx, grp.config()))
+                    cctx.cache().configManager().removeCacheGroupConfigurationData(grp);
+            }
+            catch (IgniteCheckedException e) {
+                U.error(log, "Failed to gracefully clean page store resources for destroyed cache " +
+                    "[cache=" + grp.cacheOrGroupName() + "]", e);
+            }
+        }
     }
 
     /**
@@ -1719,5 +1750,15 @@ public class IgniteCacheDatabaseSharedManager extends GridCacheSharedManagerAdap
             warmUpStrategies,
             (warmUpConfig) -> "Unknown data region warm-up configuration: " + errPostfix.get()
         );
+    }
+
+    /**
+     * Wal truncate callback.
+     *
+     * @param highBound Upper bound.
+     * @throws IgniteCheckedException If failed.
+     */
+    public void onWalTruncated(WALPointer highBound) throws IgniteCheckedException {
+        // No-op.
     }
 }

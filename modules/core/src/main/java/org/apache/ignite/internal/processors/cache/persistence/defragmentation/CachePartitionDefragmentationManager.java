@@ -391,7 +391,7 @@ public class CachePartitionDefragmentationManager {
                         )
                     );
 
-                    // A bit too general for now, but I like it more then saving only the last checkpoint future.
+                    // A bit too general for now, but I like it more than saving only the last checkpoint future.
                     cmpFut.markInitialized().get();
 
                     idxDfrgFut = new GridFinishedFuture<>();
@@ -438,6 +438,14 @@ public class CachePartitionDefragmentationManager {
                         renameTempIndexFile(workDir);
 
                         writeDefragmentationCompletionMarker(filePageStoreMgr.getPageStoreFileIoFactory(), workDir, log);
+
+                        try {
+                            for (PageStore store : filePageStoreMgr.getStores(grpId))
+                                store.stop(false);
+                        }
+                        catch (Exception e) {
+                            throw new IgniteException("Failed to stop page store for group " + grpId, e);
+                        }
 
                         batchRenameDefragmentedCacheGroupPartitions(workDir, log);
 

@@ -253,9 +253,6 @@ public class GatewayProtectedCacheProxy<K, V> extends AsyncSupportAdapter<Ignite
                 throw new UnsupportedOperationException("Read-repair is incompatible with caches that use readThrough.");
             }
 
-            if (context().isLocal())
-                throw new UnsupportedOperationException("Read-repair is incompatible with local caches.");
-
             if (context().config().getBackups() == 0) {
                 throw new UnsupportedOperationException("Read-repair is suitable only in case " +
                     "at least 1 backup configured for cache.");

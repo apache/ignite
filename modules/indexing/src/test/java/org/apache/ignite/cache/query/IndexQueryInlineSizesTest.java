@@ -18,32 +18,36 @@
 package org.apache.ignite.cache.query;
 
 import java.math.BigDecimal;
+import java.util.Collections;
 import java.util.List;
 import java.util.Random;
 import java.util.function.BiFunction;
+import java.util.function.Function;
 import java.util.stream.Collectors;
 import java.util.stream.IntStream;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteDataStreamer;
 import org.apache.ignite.binary.BinaryObject;
+import org.apache.ignite.cache.QueryEntity;
+import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.processors.query.h2.IgniteH2Indexing;
 import org.apache.ignite.internal.processors.query.h2.database.H2TreeIndexBase;
 import org.apache.ignite.internal.processors.query.h2.opt.GridH2Table;
+import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.junit.runners.Parameterized;
 
+import static org.apache.ignite.cache.query.IndexQueryCriteriaBuilder.eq;
 import static org.apache.ignite.cache.query.IndexQueryCriteriaBuilder.gt;
+import static org.apache.ignite.cache.query.IndexQueryCriteriaBuilder.in;
 import static org.apache.ignite.cache.query.IndexQueryCriteriaBuilder.lt;
 
 /** */
 @RunWith(Parameterized.class)
 public class IndexQueryInlineSizesTest extends GridCommonAbstractTest {
-    /** */
-    private static final String CACHE = "TEST_CACHE";
-
     /** */
     private static final String TABLE_CACHE = "TEST_CACHE_TABLE";
 
@@ -85,6 +89,22 @@ public class IndexQueryInlineSizesTest extends GridCommonAbstractTest {
             check((low, high) -> new IndexQuery<Integer, BinaryObject>(VALUE_TYPE, idx.idxName)
                 .setCriteria(gt("fld1", low), lt("fld2", high)));
         }
+
+        try (Index idx = new Index(inlineSize, "fld5", inlineSize > 10 ? 10 : inlineSize)) {
+            checkEquals((val) -> new IndexQuery<Integer, BinaryObject>(VALUE_TYPE, idx.idxName)
+                .setCriteria(eq("fld5", pojoFieldVal(val))));
+
+            checkEquals((val) -> new IndexQuery<Integer, BinaryObject>(VALUE_TYPE, idx.idxName)
+                .setCriteria(in("fld5", Collections.singleton(pojoFieldVal(val)))));
+        }
+
+        try (Index idx = new Index(inlineSize, "fld1, fld5", inlineSize > 15 ? 15 : inlineSize)) {
+            checkEquals((val) -> new IndexQuery<Integer, BinaryObject>(VALUE_TYPE, idx.idxName)
+                .setCriteria(eq("fld1", val), in("fld5", Collections.singleton(pojoFieldVal(val)))));
+
+            checkEquals((val) -> new IndexQuery<Integer, BinaryObject>(VALUE_TYPE, idx.idxName)
+                .setCriteria(eq("fld1", val), eq("fld5", pojoFieldVal(val))));
+        }
     }
 
     /** */
@@ -93,6 +113,11 @@ public class IndexQueryInlineSizesTest extends GridCommonAbstractTest {
         try (Index idx = new Index(inlineSize, "fld1, fld3")) {
             check((low, high) -> new IndexQuery<Integer, BinaryObject>(VALUE_TYPE, idx.idxName)
                 .setCriteria(gt("fld1", low), lt("fld3", strFieldVal(high))));
+
+            checkEquals((val) -> new IndexQuery<Integer, BinaryObject>(VALUE_TYPE, idx.idxName)
+                .setCriteria(
+                    in("fld1", Collections.singleton(val)),
+                    in("fld3", Collections.singleton(strFieldVal(val)))));
         }
     }
 
@@ -102,6 +127,11 @@ public class IndexQueryInlineSizesTest extends GridCommonAbstractTest {
         try (Index idx = new Index(inlineSize, "fld3, fld1")) {
             check((low, high) -> new IndexQuery<Integer, BinaryObject>(VALUE_TYPE, idx.idxName)
                 .setCriteria(gt("fld1", low), lt("fld3", strFieldVal(high))));
+
+            checkEquals((val) -> new IndexQuery<Integer, BinaryObject>(VALUE_TYPE, idx.idxName)
+                .setCriteria(
+                    eq("fld1", val),
+                    in("fld3", Collections.singleton(strFieldVal(val)))));
         }
     }
 
@@ -114,6 +144,11 @@ public class IndexQueryInlineSizesTest extends GridCommonAbstractTest {
         try (Index idx = new Index(inlineSize, "fld1, fld4", inlineSize > 5 ? 5 : inlineSize)) {
             check((low, high) -> new IndexQuery<Integer, BinaryObject>(VALUE_TYPE, idx.idxName)
                 .setCriteria(gt("fld1", low), lt("fld4", new BigDecimal(high))));
+
+            checkEquals((val) -> new IndexQuery<Integer, BinaryObject>(VALUE_TYPE, idx.idxName)
+                .setCriteria(
+                    eq("fld1", val),
+                    in("fld4", Collections.singleton(new BigDecimal(val)))));
         }
     }
 
@@ -123,6 +158,11 @@ public class IndexQueryInlineSizesTest extends GridCommonAbstractTest {
         try (Index idx = new Index(inlineSize, "fld4, fld1", 0)) {
             check((low, high) -> new IndexQuery<Integer, BinaryObject>(VALUE_TYPE, idx.idxName)
                 .setCriteria(gt("fld1", low), lt("fld4", new BigDecimal(high))));
+
+            checkEquals((val) -> new IndexQuery<Integer, BinaryObject>(VALUE_TYPE, idx.idxName)
+                .setCriteria(
+                    eq("fld1", val),
+                    in("fld4", Collections.singleton(new BigDecimal(val)))));
         }
     }
 
@@ -132,6 +172,11 @@ public class IndexQueryInlineSizesTest extends GridCommonAbstractTest {
         try (Index idx = new Index(inlineSize, "fld3, fld4")) {
             check((low, high) -> new IndexQuery<Integer, BinaryObject>(VALUE_TYPE, idx.idxName)
                 .setCriteria(gt("fld3", strFieldVal(low)), lt("fld4", new BigDecimal(high))));
+
+            checkEquals((val) -> new IndexQuery<Integer, BinaryObject>(VALUE_TYPE, idx.idxName)
+                .setCriteria(
+                    eq("fld3", strFieldVal(val)),
+                    in("fld4", Collections.singleton(new BigDecimal(val)))));
         }
     }
 
@@ -150,12 +195,35 @@ public class IndexQueryInlineSizesTest extends GridCommonAbstractTest {
     }
 
     /** */
-    private void prepareTable(Ignite crd) {
-        SqlFieldsQuery tblQry = new SqlFieldsQuery("create table " + TABLE +
-            "(id int PRIMARY KEY, fld1 int, fld2 int, fld3 varchar, fld4 decimal)" +
-            " with \"CACHE_NAME=" + TABLE_CACHE + ",VALUE_TYPE=" + VALUE_TYPE + "\";");
+    private void checkEquals(Function<Integer, IndexQuery<Integer, BinaryObject>> qryBld) {
+        Random r = new Random();
 
-        crd.getOrCreateCache(CACHE).query(tblQry);
+        int val = r.nextInt(CNT);
+
+        IndexQuery<Integer, BinaryObject> qry = qryBld.apply(val);
+
+        List<?> result = crd.cache(TABLE_CACHE).withKeepBinary().query(qry).getAll();
+
+        assertEquals(1, result.size());
+    }
+
+    /** */
+    private void prepareTable(Ignite crd) {
+        QueryEntity qe = new QueryEntity()
+            .setTableName(TABLE)
+            .setKeyType(Integer.class.getName())
+            .setValueType(VALUE_TYPE)
+            .setKeyFieldName("id")
+            .addQueryField("id", Integer.class.getName(), null)
+            .addQueryField("fld1", Integer.class.getName(), null)
+            .addQueryField("fld2", Integer.class.getName(), null)
+            .addQueryField("fld3", String.class.getName(), null)
+            .addQueryField("fld4", BigDecimal.class.getName(), null)
+            .addQueryField("fld5", IndexQueryAllTypesTest.PojoField.class.getName(), null);
+
+        crd.createCache(new CacheConfiguration<>(TABLE_CACHE)
+            .setSqlSchema("PUBLIC")
+            .setQueryEntities(F.asList(qe)));
 
         try (IgniteDataStreamer<Integer, BinaryObject> s = crd.dataStreamer(TABLE_CACHE)) {
             IntStream.range(0, CNT).forEach((v) -> {
@@ -164,6 +232,7 @@ public class IndexQueryInlineSizesTest extends GridCommonAbstractTest {
                     .setField("fld2", v)
                     .setField("fld3", strFieldVal(v))
                     .setField("fld4", new BigDecimal(v))
+                    .setField("fld5", new IndexQueryAllTypesTest.PojoField(v))
                     .build();
 
                 s.addData(v, bo);
@@ -174,6 +243,11 @@ public class IndexQueryInlineSizesTest extends GridCommonAbstractTest {
     /** */
     private static String strFieldVal(int val) {
         return String.format("%10s", val).replace(" ", "0");
+    }
+
+    /** */
+    private static IndexQueryAllTypesTest.PojoField pojoFieldVal(int val) {
+        return new IndexQueryAllTypesTest.PojoField(val);
     }
 
     /** */
@@ -193,7 +267,7 @@ public class IndexQueryInlineSizesTest extends GridCommonAbstractTest {
             SqlFieldsQuery idxQry = new SqlFieldsQuery(
                 "create index " + idxName + " on " + TABLE + "(" + flds + ") INLINE_SIZE " + inlineSize);
 
-            crd.cache(CACHE).query(idxQry).getAll();
+            crd.cache(TABLE_CACHE).query(idxQry).getAll();
 
             GridH2Table tbl = ((IgniteH2Indexing)crd.context().query().getIndexing()).schemaManager()
                 .dataTable("PUBLIC", TABLE);
@@ -205,7 +279,7 @@ public class IndexQueryInlineSizesTest extends GridCommonAbstractTest {
         @Override public void close() throws Exception {
             SqlFieldsQuery idxQry = new SqlFieldsQuery("drop index " + idxName);
 
-            crd.cache(CACHE).query(idxQry).getAll();
+            crd.cache(TABLE_CACHE).query(idxQry).getAll();
         }
     }
 }

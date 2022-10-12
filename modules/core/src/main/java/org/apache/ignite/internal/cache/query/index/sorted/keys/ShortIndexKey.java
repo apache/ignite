@@ -17,10 +17,11 @@
 
 package org.apache.ignite.internal.cache.query.index.sorted.keys;
 
-import org.apache.ignite.internal.cache.query.index.sorted.IndexKeyTypes;
+import java.math.BigDecimal;
+import org.apache.ignite.internal.cache.query.index.sorted.IndexKeyType;
 
 /** */
-public class ShortIndexKey implements IndexKey {
+public class ShortIndexKey extends NumericIndexKey {
     /** */
     private final short key;
 
@@ -35,13 +36,57 @@ public class ShortIndexKey implements IndexKey {
     }
 
     /** {@inheritDoc} */
-    @Override public int type() {
-        return IndexKeyTypes.SHORT;
+    @Override public IndexKeyType type() {
+        return IndexKeyType.SHORT;
+    }
+
+    /** {@inheritDoc} */
+    @Override public int compareTo(boolean val) {
+        return Boolean.compare(key != (short)0, val);
+    }
+
+    /** {@inheritDoc} */
+    @Override public int compareTo(byte val) {
+        return Integer.compare(key, val);
+    }
+
+    /** {@inheritDoc} */
+    @Override public int compareTo(short val) {
+        return Integer.compare(key, val);
+    }
+
+    /** {@inheritDoc} */
+    @Override public int compareTo(int val) {
+        return Integer.compare(key, val);
+    }
+
+    /** {@inheritDoc} */
+    @Override public int compareTo(long val) {
+        return Long.compare(key, val);
+    }
+
+    /** {@inheritDoc} */
+    @Override public int compareTo(float val) {
+        return Float.compare(key, val);
+    }
+
+    /** {@inheritDoc} */
+    @Override public int compareTo(double val) {
+        return Double.compare(key, val);
+    }
+
+    /** {@inheritDoc} */
+    @Override public int compareTo(BigDecimal val) {
+        return BigDecimal.valueOf(key).compareTo(val);
     }
 
     /** {@inheritDoc} */
     @Override public int compare(IndexKey o) {
-        // Keep old logic there.
-        return Integer.compare(key, ((ShortIndexKey)o).key);
+        return -((NumericIndexKey)o).compareTo(key);
+    }
+
+    /** {@inheritDoc} */
+    @Override public String toString() {
+        return String.valueOf(key);
     }
 }

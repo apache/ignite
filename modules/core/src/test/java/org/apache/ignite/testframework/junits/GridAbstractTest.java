@@ -42,7 +42,11 @@ import java.util.UUID;
 import java.util.concurrent.Callable;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
+import java.util.concurrent.Executors;
+import java.util.concurrent.ScheduledExecutorService;
+import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
+import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.Consumer;
@@ -126,13 +130,14 @@ import org.apache.ignite.testframework.junits.multijvm.IgniteCacheProcessProxy;
 import org.apache.ignite.testframework.junits.multijvm.IgniteNodeRunner;
 import org.apache.ignite.testframework.junits.multijvm.IgniteProcessProxy;
 import org.apache.ignite.thread.IgniteThread;
-import org.apache.log4j.ConsoleAppender;
-import org.apache.log4j.Level;
-import org.apache.log4j.LogManager;
-import org.apache.log4j.Logger;
-import org.apache.log4j.PatternLayout;
-import org.apache.log4j.Priority;
-import org.apache.log4j.RollingFileAppender;
+import org.apache.logging.log4j.Level;
+import org.apache.logging.log4j.core.LoggerContext;
+import org.apache.logging.log4j.core.appender.ConsoleAppender;
+import org.apache.logging.log4j.core.appender.RollingFileAppender;
+import org.apache.logging.log4j.core.appender.rolling.DefaultRolloverStrategy;
+import org.apache.logging.log4j.core.appender.rolling.SizeBasedTriggeringPolicy;
+import org.apache.logging.log4j.core.config.Configurator;
+import org.apache.logging.log4j.core.config.LoggerConfig;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 import org.junit.After;
@@ -171,6 +176,13 @@ import static org.apache.ignite.testframework.GridTestUtils.getFieldValueHierarc
 import static org.apache.ignite.testframework.GridTestUtils.setFieldValue;
 import static org.apache.ignite.testframework.config.GridTestProperties.BINARY_MARSHALLER_USE_SIMPLE_NAME_MAPPER;
 import static org.apache.ignite.testframework.config.GridTestProperties.IGNITE_CFG_PREPROCESSOR_CLS;
+import static org.apache.ignite.testframework.junits.logger.GridTestLog4jLogger.CONSOLE_ERROR;
+import static org.apache.ignite.testframework.junits.logger.GridTestLog4jLogger.DEFAULT_PATTERN_LAYOUT;
+import static org.apache.ignite.testframework.junits.logger.GridTestLog4jLogger.FILE;
+import static org.apache.ignite.testframework.junits.logger.GridTestLog4jLogger.addRootLoggerAppender;
+import static org.apache.logging.log4j.Level.DEBUG;
+import static org.apache.logging.log4j.Level.WARN;
+import static org.apache.logging.log4j.core.appender.ConsoleAppender.Target.SYSTEM_ERR;
 
 /**
  * Common abstract test for Ignite tests.
@@ -202,7 +214,7 @@ public abstract class GridAbstractTest extends JUnitAssertAware {
     private static final Map<Class<?>, IgniteTestResources> tests = new ConcurrentHashMap<>();
 
     /** Loggers with changed log level for test's purposes. */
-    private static final Map<Logger, Level> changedLevels = new ConcurrentHashMap<>();
+    private static final Map<String, Level> changedLevels = new ConcurrentHashMap<>();
 
     /** */
     private static final MemoryMXBean memoryMxBean = ManagementFactory.getMemoryMXBean();
@@ -345,8 +357,7 @@ public abstract class GridAbstractTest extends JUnitAssertAware {
      */
     protected void afterTest() throws Exception {
         try {
-            for (Map.Entry<Logger, Level> entry : changedLevels.entrySet())
-                entry.getKey().setLevel(entry.getValue());
+            changedLevels.forEach(Configurator::setLevel);
         }
         finally {
             changedLevels.clear();
@@ -462,13 +473,13 @@ public abstract class GridAbstractTest extends JUnitAssertAware {
      * default in {@link #afterTest()}.
      */
     protected final void setLoggerDebugLevel() {
-        Logger logger = LogManager.getLogger("org.apache.ignite");
+        String logName = "org.apache.ignite";
 
-        Level lvl = logger.getLevel() == null ? LogManager.getRootLogger().getLevel() : logger.getLevel();
+        LoggerConfig logCfg = LoggerContext.getContext(false).getConfiguration().getLoggerConfig(logName);
 
-        assertNull(logger + " level: " + Level.DEBUG, changedLevels.put(logger, lvl));
+        assertNull(logCfg + " level: " + Level.DEBUG, changedLevels.put(logName, logCfg.getLevel()));
 
-        logger.setLevel(Level.DEBUG);
+        Configurator.setLevel(logName, DEBUG);
     }
 
     /**
@@ -479,43 +490,31 @@ public abstract class GridAbstractTest extends JUnitAssertAware {
      * @param cat Category.
      * @param cats Additional categories.
      */
-    @SuppressWarnings({"deprecation"})
     protected void resetLog4j(Level log4jLevel, boolean logToFile, String cat, String... cats)
         throws IgniteCheckedException {
         for (String c : F.concat(false, cat, F.asList(cats)))
-            Logger.getLogger(c).setLevel(log4jLevel);
+            Configurator.setLevel(c, log4jLevel);
 
         if (logToFile) {
-            Logger log4j = Logger.getRootLogger();
-
-            log4j.removeAllAppenders();
+            GridTestLog4jLogger.removeAllRootLoggerAppenders();
 
             // Console appender.
-            ConsoleAppender c = new ConsoleAppender();
-
-            c.setName("CONSOLE_ERR");
-            c.setTarget("System.err");
-            c.setThreshold(Priority.WARN);
-            c.setLayout(new PatternLayout("[%d{ISO8601}][%-5p][%t][%c{1}] %m%n"));
-
-            c.activateOptions();
-
-            log4j.addAppender(c);
+            addRootLoggerAppender(WARN, ConsoleAppender.newBuilder()
+                .setName(CONSOLE_ERROR)
+                .setTarget(SYSTEM_ERR)
+                .setLayout(DEFAULT_PATTERN_LAYOUT)
+                .build());
 
             // File appender.
-            RollingFileAppender file = new RollingFileAppender();
-
-            file.setName("FILE");
-            file.setThreshold(log4jLevel);
-            file.setFile(home() + "/work/log/ignite.log");
-            file.setAppend(false);
-            file.setMaxFileSize("10MB");
-            file.setMaxBackupIndex(10);
-            file.setLayout(new PatternLayout("[%d{ISO8601}][%-5p][%t][%c{1}] %m%n"));
-
-            file.activateOptions();
-
-            log4j.addAppender(file);
+            addRootLoggerAppender(log4jLevel, RollingFileAppender.newBuilder()
+                .setName(FILE)
+                .withFileName(home() + "/work/log/ignite.log")
+                .withFilePattern(home() + "/work/log/ignite.log.%i")
+                .withAppend(false)
+                .withPolicy(SizeBasedTriggeringPolicy.createPolicy("10MB"))
+                .withStrategy(DefaultRolloverStrategy.newBuilder().withMax("10").build())
+                .setLayout(DEFAULT_PATTERN_LAYOUT)
+                .build());
         }
     }
 
@@ -739,7 +738,7 @@ public abstract class GridAbstractTest extends JUnitAssertAware {
         printJvmMemoryStatistic();
 
         try {
-            afterTest();
+            runAfterTest();
         }
         finally {
             if (!keepSerializedObjects())
@@ -751,6 +750,54 @@ public abstract class GridAbstractTest extends JUnitAssertAware {
 
             cleanReferences();
         }
+    }
+
+    /**
+     * Runs afterTest() callback method with necessary scaffolding.
+     */
+    private void runAfterTest() throws Exception {
+        AtomicBoolean afterTestFinished = new AtomicBoolean(false);
+
+        ScheduledExecutorService scheduler = scheduleThreadDumpOnAfterTestTimeOut(afterTestFinished);
+
+        try {
+            afterTest();
+        }
+        finally {
+            afterTestFinished.set(true);
+
+            scheduler.shutdownNow();
+        }
+    }
+
+    /**
+     * Schedules a task that will print a thread dump if {@code afterTest()} times out.
+     *
+     * @param afterTestFinished Boolean flag used to tell whether {@code afterTest()} finished execution.
+     * @return Scheduled executor used when scheduling.
+     */
+    private ScheduledExecutorService scheduleThreadDumpOnAfterTestTimeOut(AtomicBoolean afterTestFinished) {
+        // Compute class name as string to avoid holding reference to the test class instance in task.
+        String testClassName = getClass().getName();
+
+        ScheduledExecutorService scheduler = Executors.newScheduledThreadPool(1, task -> {
+            Thread thread = new Thread(task, "after-test-timeout-" + testClassName);
+            thread.setDaemon(true);
+            return thread;
+        });
+
+        scheduler.schedule(() -> {
+            scheduler.shutdownNow();
+
+            if (!afterTestFinished.get()) {
+                log.info(testClassName +
+                    ".afterTest() timed out, dumping threads (afterTest() still keeps running)");
+
+                dumpThreadsReliably();
+            }
+        }, getTestTimeout(), TimeUnit.MILLISECONDS);
+
+        return scheduler;
     }
 
     /** Prints JVM memory statistic. */
@@ -1007,7 +1054,7 @@ public abstract class GridAbstractTest extends JUnitAssertAware {
      * @throws Exception If anything failed.
      */
     protected IgniteEx startClientGrid() throws Exception {
-        return startClientGrid(getTestIgniteInstanceName());
+        return startClientGrid(getTestIgniteInstanceName(), (UnaryOperator<IgniteConfiguration>)null);
     }
 
     /**
@@ -1066,6 +1113,16 @@ public abstract class GridAbstractTest extends JUnitAssertAware {
     }
 
     /**
+     * @param idx Index of the grid to start.
+     * @param cfgOp Configuration mutator. Can be used to avoid overcomplification of {@link #getConfiguration()}.
+     * @return Started grid.
+     * @throws Exception If anything failed.
+     */
+    protected IgniteEx startClientGrid(int idx, UnaryOperator<IgniteConfiguration> cfgOp) throws Exception {
+        return startClientGrid(getTestIgniteInstanceName(idx), cfgOp);
+    }
+
+    /**
      * Starts new client grid with given index.
      *
      * @param idx Index of the grid to start.
@@ -1073,7 +1130,7 @@ public abstract class GridAbstractTest extends JUnitAssertAware {
      * @throws Exception If anything failed.
      */
     protected IgniteEx startClientGrid(int idx) throws Exception {
-        return startClientGrid(getTestIgniteInstanceName(idx));
+        return startClientGrid(getTestIgniteInstanceName(idx), (UnaryOperator<IgniteConfiguration>)null);
     }
 
     /**
@@ -1088,7 +1145,7 @@ public abstract class GridAbstractTest extends JUnitAssertAware {
         IgnitionEx.dependencyResolver(rslvr);
 
         try {
-            return startClientGrid(getTestIgniteInstanceName(idx));
+            return startClientGrid(getTestIgniteInstanceName(idx), (UnaryOperator<IgniteConfiguration>)null);
         }
         finally {
             IgnitionEx.dependencyResolver(null);
@@ -1103,10 +1160,22 @@ public abstract class GridAbstractTest extends JUnitAssertAware {
      * @throws Exception If anything failed.
      */
     protected IgniteEx startClientGrid(String igniteInstanceName) throws Exception {
+        return startClientGrid(igniteInstanceName, (UnaryOperator<IgniteConfiguration>)null);
+    }
+
+    /**
+     * Starts new client grid with given name.
+     *
+     * @param igniteInstanceName Ignite instance name.
+     * @param cfgOp Configuration mutator. Can be used to avoid overcomplification of {@link #getConfiguration()}.
+     * @return Started grid.
+     * @throws Exception If anything failed.
+     */
+    protected IgniteEx startClientGrid(String igniteInstanceName, UnaryOperator<IgniteConfiguration> cfgOp) throws Exception {
         IgnitionEx.setClientMode(true);
 
         try {
-            return (IgniteEx)startGrid(igniteInstanceName, (GridSpringResourceContext)null);
+            return (IgniteEx)startGrid(igniteInstanceName, cfgOp, null);
         }
         finally {
             IgnitionEx.setClientMode(false);
@@ -1412,7 +1481,7 @@ public abstract class GridAbstractTest extends JUnitAssertAware {
             }
         }
 
-        return new IgniteProcessProxy(cfg, cfg.getGridLogger(), (x) -> grid(0), resetDiscovery, additionalRemoteJvmArgs());
+        return new IgniteProcessProxy(cfg, cfg.getGridLogger(), () -> grid(0), resetDiscovery, additionalRemoteJvmArgs());
     }
 
     /**
@@ -1589,6 +1658,15 @@ public abstract class GridAbstractTest extends JUnitAssertAware {
         finally {
             IgniteProcessProxy.killAll(); // In multi-JVM case.
         }
+    }
+
+    /**
+     * Stops all grids (even those grids that have not been started successfully are tried to be stopped).
+     * This differs from {@link #stopAllGrids()} in one aspect: {@code stopAllGrids()} waits for all grids
+     * to be started, and, if any of them hangs during startup, it hangs as well.
+     */
+    protected void stopAllGridsNoWait() {
+        stopAllGrids(true, false);
     }
 
     /**
@@ -2449,11 +2527,7 @@ public abstract class GridAbstractTest extends JUnitAssertAware {
                 for (Ignite node : nodes)
                     ((IgniteKernal)node).dumpDebugInfo();
 
-                // We dump threads to stdout, because we can loose logs in case
-                // the build is cancelled on TeamCity.
-                U.dumpThreads(null);
-
-                U.dumpThreads(log);
+                dumpThreadsReliably();
 
                 U.interrupt(runner);
 
@@ -2486,6 +2560,17 @@ public abstract class GridAbstractTest extends JUnitAssertAware {
                 log.error("Failed to execute tear down after test (will ignore)", e);
             }
         }
+    }
+
+    /**
+     * Dumps threads both to the console and log.
+     */
+    private static void dumpThreadsReliably() {
+        // We dump threads to stdout, because we can lose logs in case
+        // the build is cancelled on TeamCity.
+        U.dumpThreads(null);
+
+        U.dumpThreads(log);
     }
 
     /**
@@ -2543,14 +2628,14 @@ public abstract class GridAbstractTest extends JUnitAssertAware {
     }
 
     /**
-     * @return Test case timeout.
+     * @return Test case timeout (in millis).
      */
     protected long getTestTimeout() {
         return getDefaultTestTimeout();
     }
 
     /**
-     * @return Default test case timeout.
+     * @return Default test case timeout (in millis).
      */
     private long getDefaultTestTimeout() {
         String timeout = GridTestProperties.getProperty("test.timeout");

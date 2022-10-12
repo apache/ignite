@@ -190,7 +190,7 @@ public class CacheExchangeMergeTest extends GridCommonAbstractTest {
     @Override protected void afterTest() throws Exception {
         listeningLog.clearListeners();
 
-        stopAllGrids();
+        stopAllGridsNoWait();
 
         super.afterTest();
     }

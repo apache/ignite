@@ -33,12 +33,14 @@ import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.processors.resource.GridSpringResourceContext;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgniteInClosure;
+import org.apache.ignite.lang.IgniteProductVersion;
 import org.apache.ignite.testframework.ListeningTestLogger;
 import org.apache.ignite.testframework.LogListener;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.apache.ignite.testframework.junits.multijvm.IgniteProcessProxy;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
+
 import static org.apache.ignite.compatibility.testframework.junits.Dependency.APACHE_IGNITE_GROUP_ID;
 
 /**
@@ -143,7 +145,7 @@ public abstract class IgniteCompatibilityAbstractTest extends GridCommonAbstract
 
         final ListeningTestLogger logger = new ListeningTestLogger(log);
 
-        IgniteProcessProxy ignite = new IgniteProcessProxy(cfg, logger, locJvmInstance == null ? null : (x) -> locJvmInstance, true) {
+        IgniteProcessProxy ignite = new IgniteProcessProxy(cfg, logger, locJvmInstance == null ? null : () -> locJvmInstance, true) {
             @Override protected IgniteLogger logger(IgniteLogger log, Object ctgr) {
                 return logger.getLogger(ctgr + "#" + ver.replaceAll("\\.", "_"));
             }
@@ -251,6 +253,9 @@ public abstract class IgniteCompatibilityAbstractTest extends GridCommonAbstract
 
         dependencies.add(new Dependency("core", "ignite-core", false));
         dependencies.add(new Dependency("core", "ignite-core", true));
+
+        if (IgniteProductVersion.fromString("2.14.0").compareTo(IgniteProductVersion.fromString(igniteVer)) > 0)
+            dependencies.add(new Dependency("log4j", "log4j", "log4j", "1.2.17", false));
 
         return dependencies;
     }

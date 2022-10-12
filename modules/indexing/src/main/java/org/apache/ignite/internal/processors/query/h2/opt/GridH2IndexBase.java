@@ -61,10 +61,8 @@ public abstract class GridH2IndexBase extends H2IndexCostedBase {
      * Attempts to destroys index and release all the resources.
      * We use this method instead of {@link #close(Session)} because that method
      * is used by H2 internally.
-     *
-     * @param rmv Flag remove.
      */
-    public void destroy(boolean rmv) {
+    public void destroy() {
         // No-op.
     }
 
@@ -158,18 +156,6 @@ public abstract class GridH2IndexBase extends H2IndexCostedBase {
         return false;
     }
 
-    /** {@inheritDoc} */
-    @Override public void removeChildrenAndResources(Session session) {
-        // The sole purpose of this override is to pass session to table.removeIndex
-        assert table instanceof GridH2Table;
-
-        ((GridH2Table)table).removeIndex(session, this);
-
-        remove(session);
-
-        database.removeMeta(session, getId());
-    }
-
     /**
      * @return Index segments count.
      */
@@ -231,7 +217,7 @@ public abstract class GridH2IndexBase extends H2IndexCostedBase {
      * @return Query context registry.
      */
     protected QueryContextRegistry queryContextRegistry() {
-        return ((GridH2Table)table).rowDescriptor().indexing().queryContextRegistry();
+        return ((GridH2Table)table).tableDescriptor().indexing().queryContextRegistry();
     }
 
 

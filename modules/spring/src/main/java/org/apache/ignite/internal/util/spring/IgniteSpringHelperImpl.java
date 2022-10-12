@@ -33,6 +33,7 @@ import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.processors.resource.GridSpringResourceContext;
 import org.apache.ignite.internal.processors.resource.GridSpringResourceContextImpl;
+import org.apache.ignite.internal.util.lang.GridTuple3;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.X;
 import org.apache.ignite.internal.util.typedef.internal.U;
@@ -151,6 +152,29 @@ public class IgniteSpringHelperImpl implements IgniteSpringHelper {
 
         ApplicationContext springCtx = initContext(cfgUrl);
 
+        Map<Class<?>, Collection> beans = loadBeans(springCtx, beanClasses);
+
+        return F.t(beans, new GridSpringResourceContextImpl(springCtx));
+    }
+
+    /** {@inheritDoc} */
+    @Override public GridTuple3<Map<String, ?>, Map<Class<?>, Collection>, ? extends GridSpringResourceContext> loadBeans(
+        URL cfgUrl,
+        Collection<String> beanNames,
+        Class<?>... beanClasses
+    ) throws IgniteCheckedException {
+        ApplicationContext springCtx = initContext(cfgUrl);
+
+        Map<String, ?> beansByName = new HashMap<>();
+
+        for (String name : beanNames)
+            beansByName.put(name, loadBean(springCtx, name));
+
+        return F.t(beansByName, loadBeans(springCtx, beanClasses), new GridSpringResourceContextImpl(springCtx));
+    }
+
+    /** Loads bean instances that match the given types. */
+    private Map<Class<?>, Collection> loadBeans(ApplicationContext springCtx, Class<?>... beanClasses) {
         Map<Class<?>, Collection> beans = new HashMap<>();
 
         for (Class<?> cls : beanClasses) {
@@ -160,11 +184,10 @@ public class IgniteSpringHelperImpl implements IgniteSpringHelper {
                 beans.put(cls, clsBeans.values());
         }
 
-        return F.t(beans, new GridSpringResourceContextImpl(springCtx));
+        return beans;
     }
 
     /** {@inheritDoc} */
-    @SuppressWarnings("unchecked")
     @Override public <T> T loadBean(URL url, String beanName) throws IgniteCheckedException {
         ApplicationContext springCtx = initContext(url);
 
@@ -182,37 +205,31 @@ public class IgniteSpringHelperImpl implements IgniteSpringHelper {
     }
 
     /** {@inheritDoc} */
-    @SuppressWarnings("unchecked")
     @Override public <T> T loadBean(InputStream cfgStream, String beanName) throws IgniteCheckedException {
         ApplicationContext springCtx = initContext(cfgStream);
 
-        try {
-            return (T)springCtx.getBean(beanName);
-        }
-        catch (NoSuchBeanDefinitionException ignored) {
-            throw new IgniteCheckedException("Spring bean with provided name doesn't exist " +
-                ", beanName=" + beanName + ']');
-        }
-        catch (BeansException e) {
-            throw new IgniteCheckedException("Failed to load Spring bean with provided name " +
-                ", beanName=" + beanName + ']', e);
-        }
+        return loadBean(springCtx, beanName);
     }
 
     /** {@inheritDoc} */
     @Override public <T> T loadBeanFromAppContext(Object appContext, String beanName) throws IgniteCheckedException {
         ApplicationContext springCtx = (ApplicationContext)appContext;
 
+        return loadBean(springCtx, beanName);
+    }
+
+    /** Loads bean instance that match the given name. */
+    private <T> T loadBean(ApplicationContext springCtx, String beanName) throws IgniteCheckedException {
         try {
             return (T)springCtx.getBean(beanName);
         }
         catch (NoSuchBeanDefinitionException ignored) {
-            throw new IgniteCheckedException("Spring bean with provided name doesn't exist " +
-                ", beanName=" + beanName + ']');
+            throw new IgniteCheckedException("Spring bean with provided name doesn't exist [beanName=" +
+                beanName + ']');
         }
         catch (BeansException e) {
-            throw new IgniteCheckedException("Failed to load Spring bean with provided name " +
-                ", beanName=" + beanName + ']', e);
+            throw new IgniteCheckedException("Failed to load Spring bean with provided name [beanName=" +
+                beanName + ']', e);
         }
     }
 

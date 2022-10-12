@@ -32,7 +32,7 @@ from ignitetest.utils.version import DEV_BRANCH, LATEST, IgniteVersion
 WRONG_PASSWORD = "wrong_password"
 TEST_USERNAME = "admin"
 TEST_PASSWORD = "qwe123"
-TEST_PASSWORD2 = "123qwe"
+TEST_PASSWORD2 = "123qwe_ßß_üü"
 
 ADD_USER = 'adduser'
 UPDATE_USER = 'updateuser'
@@ -57,7 +57,7 @@ class AuthenticationTests(IgniteTest):
             auth_enabled=True,
             version=IgniteVersion(ignite_version),
             data_storage=DataStorageConfiguration(
-                default=DataRegionConfiguration(persistent=True)),
+                default=DataRegionConfiguration(persistence_enabled=True)),
             client_connector_configuration=ClientConnectorConfiguration()
         )
 

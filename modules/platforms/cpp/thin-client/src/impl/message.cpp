@@ -28,6 +28,22 @@
 
 namespace ignite
 {
+
+    /**
+     * Client platform codes.
+     */
+    struct ClientPlatform
+    {
+        enum Type
+        {
+            UNKNOWN = 0,
+
+            JAVA = 1,
+
+            CPP = 3
+        };
+    };
+
     namespace impl
     {
         namespace thin
@@ -431,8 +447,13 @@ namespace ignite
                 writer.WriteInt64(timeInterval);
                 writer.WriteBool(includeExpired);
 
-                // TODO: IGNITE-16291: Implement remote filters for Continuous Queries.
-                writer.WriteNull();
+                if (!filter)
+                    writer.WriteNull();
+                else
+                {
+                    writer.WriteTopObject(filter);
+                    writer.WriteInt8(ClientPlatform::JAVA);
+                }
             }
 
             void ContinuousQueryResponse::ReadOnSuccess(binary::BinaryReaderImpl& reader, const ProtocolContext&)

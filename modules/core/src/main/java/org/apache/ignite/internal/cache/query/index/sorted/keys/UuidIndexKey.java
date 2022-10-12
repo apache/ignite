@@ -18,7 +18,7 @@
 package org.apache.ignite.internal.cache.query.index.sorted.keys;
 
 import java.util.UUID;
-import org.apache.ignite.internal.cache.query.index.sorted.IndexKeyTypes;
+import org.apache.ignite.internal.cache.query.index.sorted.IndexKeyType;
 
 /** */
 public class UuidIndexKey implements IndexKey {
@@ -36,8 +36,8 @@ public class UuidIndexKey implements IndexKey {
     }
 
     /** {@inheritDoc} */
-    @Override public int type() {
-        return IndexKeyTypes.UUID;
+    @Override public IndexKeyType type() {
+        return IndexKeyType.UUID;
     }
 
     /** {@inheritDoc} */
@@ -49,5 +49,10 @@ public class UuidIndexKey implements IndexKey {
             return Long.compare(key.getLeastSignificantBits(), okey.getLeastSignificantBits());
         else
             return key.getMostSignificantBits() > okey.getMostSignificantBits() ? 1 : -1;
+    }
+
+    /** {@inheritDoc} */
+    @Override public String toString() {
+        return String.valueOf(key);
     }
 }

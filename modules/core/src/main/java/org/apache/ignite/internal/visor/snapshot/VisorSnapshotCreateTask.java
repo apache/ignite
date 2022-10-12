@@ -19,9 +19,10 @@ package org.apache.ignite.internal.visor.snapshot;
 
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.IgniteSnapshot;
+import org.apache.ignite.internal.processors.cache.persistence.snapshot.IgniteSnapshotManager;
 import org.apache.ignite.internal.processors.task.GridInternal;
+import org.apache.ignite.internal.util.future.IgniteFutureImpl;
 import org.apache.ignite.internal.visor.VisorJob;
-import org.apache.ignite.lang.IgniteFuture;
 
 /**
  * @see IgniteSnapshot#createSnapshot(String)
@@ -51,14 +52,20 @@ public class VisorSnapshotCreateTask extends VisorSnapshotOneNodeTask<VisorSnaps
 
         /** {@inheritDoc} */
         @Override protected String run(VisorSnapshotCreateTaskArg arg) throws IgniteException {
-            IgniteFuture<Void> fut =
+            IgniteFutureImpl<Void> fut =
                 ignite.context().cache().context().snapshotMgr().createSnapshot(arg.snapshotName(), arg.snapshotPath());
+
+            IgniteSnapshotManager.ClusterSnapshotFuture snpFut =
+                fut.internalFuture() instanceof IgniteSnapshotManager.ClusterSnapshotFuture ?
+                    (IgniteSnapshotManager.ClusterSnapshotFuture)fut.internalFuture() : null;
 
             if (arg.sync() || fut.isDone())
                 fut.get();
 
-            return "Snapshot operation " +
-                (arg.sync() ? "completed successfully" : "started") + ": " + arg.snapshotName();
+            String msgOperId = snpFut != null && snpFut.requestId() != null ? ", id=" + snpFut.requestId() : "";
+
+            return "Snapshot create operation " + (arg.sync() ? "completed successfully" : "started") +
+                " [name=" + arg.snapshotName() + msgOperId + ']';
         }
     }
 }

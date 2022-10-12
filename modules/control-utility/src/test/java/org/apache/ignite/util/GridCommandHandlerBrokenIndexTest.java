@@ -18,31 +18,25 @@
 package org.apache.ignite.util;
 
 import java.util.ArrayList;
-import java.util.Collection;
 import java.util.List;
 import java.util.regex.Pattern;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.IgniteEx;
+import org.apache.ignite.internal.cache.query.index.Index;
+import org.apache.ignite.internal.cache.query.index.IndexName;
+import org.apache.ignite.internal.cache.query.index.sorted.IndexRow;
+import org.apache.ignite.internal.cache.query.index.sorted.QueryIndexDefinition;
+import org.apache.ignite.internal.cache.query.index.sorted.SortedIndexDefinition;
+import org.apache.ignite.internal.cache.query.index.sorted.inline.IndexQueryContext;
+import org.apache.ignite.internal.cache.query.index.sorted.inline.InlineIndexImpl;
+import org.apache.ignite.internal.cache.query.index.sorted.inline.InlineIndexTree;
 import org.apache.ignite.internal.processors.cache.CacheGroupContext;
 import org.apache.ignite.internal.processors.cache.GridCacheContext;
-import org.apache.ignite.internal.processors.query.GridQueryProcessor;
-import org.apache.ignite.internal.processors.query.GridQueryTypeDescriptor;
-import org.apache.ignite.internal.processors.query.h2.IgniteH2Indexing;
-import org.apache.ignite.internal.processors.query.h2.database.H2TreeIndexBase;
-import org.apache.ignite.internal.processors.query.h2.opt.GridH2Table;
-import org.apache.ignite.internal.processors.query.h2.opt.H2CacheRow;
-import org.apache.ignite.internal.util.typedef.F;
+import org.apache.ignite.internal.util.lang.GridCursor;
 import org.apache.ignite.internal.util.typedef.internal.CU;
-import org.apache.ignite.spi.indexing.IndexingQueryCacheFilter;
 import org.apache.ignite.testframework.ListeningTestLogger;
 import org.apache.ignite.testframework.LogListener;
-import org.h2.engine.Session;
-import org.h2.index.Cursor;
-import org.h2.index.Index;
-import org.h2.index.IndexType;
-import org.h2.result.SearchRow;
-import org.h2.table.IndexColumn;
 import org.junit.Test;
 
 import static org.apache.ignite.internal.commandline.CommandHandler.EXIT_CODE_OK;
@@ -94,7 +88,7 @@ public class GridCommandHandlerBrokenIndexTest extends GridCommandHandlerCluster
     /**
      * Tests Cursor initialisation failure by adding artificial index that will fail in required way.
      *
-     * @see H2TreeIndexBase#find(Session, SearchRow, SearchRow)
+     * @see InlineIndexImpl#find(IndexRow, IndexRow, boolean, boolean, int, IndexQueryContext)
      */
     @Test
     public void testIndexFindFail() throws Exception {
@@ -149,38 +143,34 @@ public class GridCommandHandlerBrokenIndexTest extends GridCommandHandlerCluster
 
         assertNotNull(grpCtx);
 
-        GridQueryProcessor qry = ignite.context().query();
+        for (GridCacheContext<?, ?> ctx : grpCtx.caches()) {
+            for (Index idx : ignite.context().indexProcessor().indexes(ctx.name())) {
+                InlineIndexImpl idx0 = idx.unwrap(InlineIndexImpl.class);
 
-        IgniteH2Indexing indexing = (IgniteH2Indexing)qry.getIndexing();
+                if (idx0 != null) {
+                    SortedIndexDefinition idxDef = idx0.indexDefinition();
+                    IndexName idxName = idxDef.idxName();
 
-        outer:
-        for (GridCacheContext ctx : grpCtx.caches()) {
-            Collection<GridQueryTypeDescriptor> types = qry.types(ctx.name());
+                    SortedIndexDefinition badIdxDef = new QueryIndexDefinition(
+                        idxDef.typeDescriptor(),
+                        idxDef.cacheInfo(),
+                        new IndexName(idxName.cacheName(), idxName.schemaName(), idxName.tableName(), IDX_NAME),
+                        idxDef.treeName(),
+                        idxDef.idxRowCache(),
+                        idxDef.primary(),
+                        idxDef.affinity(),
+                        idxDef.indexKeyDefinitions(),
+                        idxDef.inlineSize(),
+                        idxDef.keyTypeSettings()
+                    );
 
-            if (!F.isEmpty(types)) {
-                for (GridQueryTypeDescriptor type : types) {
-                    GridH2Table gridH2Tbl = indexing.schemaManager().dataTable(ctx.name(), type.tableName());
+                    ignite.context().indexProcessor().createIndex(
+                        ctx,
+                        (c, d) -> new BadIndex(c, (SortedIndexDefinition)d, new InlineIndexTree[] {idx0.segment(0)}),
+                        badIdxDef
+                    );
 
-                    if (gridH2Tbl == null)
-                        continue;
-
-                    ArrayList<Index> indexes = gridH2Tbl.getIndexes();
-
-                    BadIndex bi = null;
-
-                    for (Index idx : indexes) {
-                        if (idx instanceof H2TreeIndexBase) {
-                            bi = new BadIndex(gridH2Tbl, IDX_NAME, idx.getIndexColumns(), idx.getIndexType());
-
-                            break;
-                        }
-                    }
-
-                    if (bi != null) {
-                        indexes.add(bi);
-
-                        break outer;
-                    }
+                    return;
                 }
             }
         }
@@ -189,57 +179,22 @@ public class GridCommandHandlerBrokenIndexTest extends GridCommandHandlerCluster
     /**
      * Artificial index that throws exception on {@code find()}.
      */
-    private class BadIndex extends H2TreeIndexBase {
-        /**
-         * Constructor.
-         */
-        protected BadIndex(GridH2Table tbl, String name, IndexColumn[] cols, IndexType type) {
-            super(tbl, name, cols, type);
+    private static class BadIndex extends InlineIndexImpl {
+        /** */
+        public BadIndex(GridCacheContext<?, ?> cctx, SortedIndexDefinition def, InlineIndexTree[] segments) {
+            super(cctx, def, segments, null);
         }
 
-        /** */
-        @Override public int inlineSize() {
-            return 0;
-        }
-
-        /** */
-        @Override public H2CacheRow put(H2CacheRow row) {
-            return null;
-        }
-
-        /** */
-        @Override public boolean putx(H2CacheRow row) {
-            return false;
-        }
-
-        /** */
-        @Override public boolean removex(SearchRow row) {
-            return false;
-        }
-
-        /** */
-        @Override public int segmentsCount() {
-            return 0;
-        }
-
-        /** */
-        @Override public long totalRowCount(IndexingQueryCacheFilter partsFilter) {
-            return 0;
-        }
-
-        /** */
-        @Override public Cursor find(Session session, SearchRow first, SearchRow last) {
+        /** {@inheritDoc} */
+        @Override public GridCursor<IndexRow> find(
+            IndexRow lower,
+            IndexRow upper,
+            boolean lowIncl,
+            boolean upIncl,
+            int segment,
+            IndexQueryContext qryCtx
+        ) {
             throw new RuntimeException(EXCEPTION_MSG);
-        }
-
-        /** */
-        @Override public Cursor findFirstOrLast(Session session, boolean first) {
-            return null;
-        }
-
-        /** */
-        @Override public long getRowCount(Session session) {
-            return 0;
         }
     }
 }

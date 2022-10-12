@@ -54,6 +54,7 @@ import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.pagemem.PageIdUtils;
 import org.apache.ignite.internal.pagemem.store.PageStore;
 import org.apache.ignite.internal.pagemem.store.PageWriteListener;
+import org.apache.ignite.internal.pagemem.wal.record.delta.ClusterSnapshotRecord;
 import org.apache.ignite.internal.processors.cache.CacheGroupContext;
 import org.apache.ignite.internal.processors.cache.GridCacheSharedContext;
 import org.apache.ignite.internal.processors.cache.distributed.dht.topology.GridDhtLocalPartition;
@@ -151,6 +152,7 @@ class SnapshotFutureTask extends AbstractSnapshotFutureTask<Set<GroupPartitionId
     /**
      * @param cctx Shared context.
      * @param srcNodeId Node id which cause snapshot task creation.
+     * @param reqId Snapshot operation request ID.
      * @param snpName Unique identifier of snapshot process.
      * @param tmpWorkDir Working directory for intermediate snapshot results.
      * @param ioFactory Factory to working with snapshot files.
@@ -161,6 +163,7 @@ class SnapshotFutureTask extends AbstractSnapshotFutureTask<Set<GroupPartitionId
     public SnapshotFutureTask(
         GridCacheSharedContext<?, ?> cctx,
         UUID srcNodeId,
+        UUID reqId,
         String snpName,
         File tmpWorkDir,
         FileIOFactory ioFactory,
@@ -169,7 +172,7 @@ class SnapshotFutureTask extends AbstractSnapshotFutureTask<Set<GroupPartitionId
         boolean withMetaStorage,
         ThreadLocal<ByteBuffer> locBuff
     ) {
-        super(cctx, srcNodeId, snpName, tmpWorkDir, ioFactory, snpSndr, parts);
+        super(cctx, srcNodeId, reqId, snpName, tmpWorkDir, ioFactory, snpSndr, parts);
 
         assert snpName != null : "Snapshot name cannot be empty or null.";
         assert snpSndr != null : "Snapshot sender which handles execution tasks must be not null.";
@@ -342,6 +345,15 @@ class SnapshotFutureTask extends AbstractSnapshotFutureTask<Set<GroupPartitionId
             return;
 
         try {
+            // Here we have the following warranties:
+            // 1. Checkpoint holds write acquire lock and Snapshot holds PME. Then there are not any concurrent updates.
+            // 2. This record is written before the related CheckpointRecord, and is flushed with CheckpointRecord or instead it.
+            if (cctx.wal() != null) {
+                cctx.wal().log(new ClusterSnapshotRecord(snpName));
+
+                ctx.walFlush(true);
+            }
+
             for (Map.Entry<Integer, Set<Integer>> e : parts.entrySet()) {
                 int grpId = e.getKey();
                 Set<Integer> grpParts = e.getValue();

@@ -38,13 +38,10 @@ import org.apache.ignite.internal.util.typedef.G;
 import org.apache.ignite.internal.util.typedef.internal.CU;
 import org.apache.ignite.lang.IgnitePredicate;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
-import org.junit.Ignore;
 import org.junit.Test;
-
 import static org.apache.ignite.cache.CacheAtomicityMode.ATOMIC;
 import static org.apache.ignite.cache.CacheAtomicityMode.TRANSACTIONAL;
 import static org.apache.ignite.cache.CacheAtomicityMode.TRANSACTIONAL_SNAPSHOT;
-import static org.apache.ignite.cache.CacheMode.LOCAL;
 
 /**
  * Test partition preload for varios cache modes.
@@ -545,44 +542,6 @@ public class IgnitePdsPartitionPreloadTest extends GridCommonAbstractTest {
             () -> G.allGrids().stream().filter(BackupNodePredicate.INSTANCE).findFirst().get(), PreloadMode.ASYNC);
     }
 
-    /** */
-    @Test
-    public void testPreloadLocalTransactionalSync() throws Exception {
-        cfgFactory = () -> cacheConfiguration(TRANSACTIONAL).setCacheMode(LOCAL);
-
-        preloadPartition(
-            () -> G.allGrids().stream().filter(PrimaryNodePredicate.INSTANCE).findFirst().get(), PreloadMode.SYNC);
-    }
-
-    /** */
-    @Ignore("https://issues.apache.org/jira/browse/IGNITE-9530")
-    @Test
-    public void testPreloadLocalTransactionalSyncMvcc() throws Exception {
-        cfgFactory = () -> cacheConfiguration(TRANSACTIONAL_SNAPSHOT).setCacheMode(LOCAL);
-
-        preloadPartition(
-            () -> G.allGrids().stream().filter(PrimaryNodePredicate.INSTANCE).findFirst().get(), PreloadMode.SYNC);
-    }
-
-    /** */
-    @Test
-    public void testPreloadLocalTransactionalAsync() throws Exception {
-        cfgFactory = () -> cacheConfiguration(TRANSACTIONAL).setCacheMode(LOCAL);
-
-        preloadPartition(
-            () -> G.allGrids().stream().filter(PrimaryNodePredicate.INSTANCE).findFirst().get(), PreloadMode.ASYNC);
-    }
-
-    /** */
-    @Ignore("https://issues.apache.org/jira/browse/IGNITE-9530")
-    @Test
-    public void testPreloadLocalTransactionalAsyncMvcc() throws Exception {
-        cfgFactory = () -> cacheConfiguration(TRANSACTIONAL_SNAPSHOT).setCacheMode(LOCAL);
-
-        preloadPartition(
-            () -> G.allGrids().stream().filter(PrimaryNodePredicate.INSTANCE).findFirst().get(), PreloadMode.ASYNC);
-    }
-
     /**
      * @param execNodeFactory Test node factory.
      * @param preloadMode Preload mode.
@@ -595,8 +554,6 @@ public class IgnitePdsPartitionPreloadTest extends GridCommonAbstractTest {
         Object consistentId = testNode.cluster().localNode().consistentId();
 
         assertEquals(PRIMARY_NODE, testNode.cluster().localNode().consistentId());
-
-        boolean locCacheMode = testNode.cache(DEFAULT_CACHE_NAME).getConfiguration(CacheConfiguration.class).getCacheMode() == LOCAL;
 
         Integer key = primaryKey(testNode.cache(DEFAULT_CACHE_NAME));
 
@@ -627,8 +584,7 @@ public class IgnitePdsPartitionPreloadTest extends GridCommonAbstractTest {
         testNode = G.allGrids().stream().
             filter(ignite -> PRIMARY_NODE.equals(ignite.cluster().localNode().consistentId())).findFirst().get();
 
-        if (!locCacheMode)
-            assertEquals(testNode, primaryNode(key, DEFAULT_CACHE_NAME));
+        assertEquals(testNode, primaryNode(key, DEFAULT_CACHE_NAME));
 
         Ignite execNode = execNodeFactory.get();
 
@@ -636,19 +592,9 @@ public class IgnitePdsPartitionPreloadTest extends GridCommonAbstractTest {
             case SYNC:
                 execNode.cache(DEFAULT_CACHE_NAME).preloadPartition(preloadPart);
 
-                if (locCacheMode) {
-                    testNode = G.allGrids().stream().filter(ignite ->
-                        ignite.cluster().localNode().consistentId().equals(consistentId)).findFirst().get();
-                }
-
                 break;
             case ASYNC:
                 execNode.cache(DEFAULT_CACHE_NAME).preloadPartitionAsync(preloadPart).get();
-
-                if (locCacheMode) {
-                    testNode = G.allGrids().stream().filter(ignite ->
-                        ignite.cluster().localNode().consistentId().equals(consistentId)).findFirst().get();
-                }
 
                 break;
             case LOCAL:

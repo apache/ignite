@@ -151,7 +151,7 @@ public class JdbcMetadataInfo {
      * @return List of metadatas of tables that matches.
      */
     public List<JdbcTableMeta> getTablesMeta(String schemaNamePtrn, String tblNamePtrn, String[] tblTypes) {
-        Collection<TableInformation> tblsMeta = ctx.query().getIndexing()
+        Collection<TableInformation> tblsMeta = ctx.query().schemaManager()
             .tablesInformation(schemaNamePtrn, tblNamePtrn, tblTypes);
 
         return tblsMeta.stream()
@@ -176,7 +176,7 @@ public class JdbcMetadataInfo {
 
         Collection<JdbcColumnMeta> metas = new LinkedHashSet<>();
 
-        Collection<ColumnInformation> colsInfo = ctx.query().getIndexing()
+        Collection<ColumnInformation> colsInfo = ctx.query().schemaManager()
             .columnsInformation(schemaNamePtrn, tblNamePtrn, colNamePtrn);
 
         colsInfo.stream().sorted(bySchemaThenTabNameThenColOrder)
@@ -217,7 +217,7 @@ public class JdbcMetadataInfo {
     public SortedSet<String> getSchemasMeta(String schemaNamePtrn) {
         SortedSet<String> schemas = new TreeSet<>(); // to have values sorted.
 
-        for (String schema : ctx.query().getIndexing().schemasNames()) {
+        for (String schema : ctx.query().schemaManager().schemaNames()) {
             if (matches(schema, schemaNamePtrn))
                 schemas.add(schema);
         }

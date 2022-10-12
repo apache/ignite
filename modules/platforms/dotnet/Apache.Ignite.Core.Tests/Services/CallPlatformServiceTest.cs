@@ -46,10 +46,10 @@ namespace Apache.Ignite.Core.Tests.Services
         private const string CheckThinTaskName = "org.apache.ignite.platform.PlatformServiceCallThinTask";
         
         /** */
-        private const string NODE_TYPE_ATTR = "TYPE";
+        private const string NodeTypeAttr = "TYPE";
         
         /** */
-        private const string DOTNET_SRV_NODE_TYPE = "dotnet-srv";
+        private const string DotnetSrvNodeType = "dotnet-srv";
 
         /** */
         private const string CheckCollectionsThinTaskName =
@@ -121,11 +121,12 @@ namespace Apache.Ignite.Core.Tests.Services
             {
                 Name = ServiceName,
                 TotalCount = 1,
-                Service = new TestPlatformService()
+                Service = new TestPlatformService(),
+                Interceptors = new List<IServiceCallInterceptor> { new PlatformTestServiceInterceptor("Intercepted") }
             };
 
             if (withNodeFilter)
-                cfg.NodeFilter = new NodeTypeFilter(DOTNET_SRV_NODE_TYPE);
+                cfg.NodeFilter = new NodeTypeFilter(DotnetSrvNodeType);
 
             Grid1.GetServices().Deploy(cfg);
 
@@ -169,7 +170,7 @@ namespace Apache.Ignite.Core.Tests.Services
                     NameMapper = BinaryBasicNameMapper.SimpleNameInstance
                 },
                 LifecycleHandlers = _useBinaryArray ? new[] { new SetUseBinaryArray() } : null,
-                UserAttributes = new Dictionary<string, object> {{NODE_TYPE_ATTR, DOTNET_SRV_NODE_TYPE}}
+                UserAttributes = new Dictionary<string, object> {{NodeTypeAttr, DotnetSrvNodeType}}
             };
         }
         
@@ -193,13 +194,8 @@ namespace Apache.Ignite.Core.Tests.Services
             /** <inheritdoc /> */
             public bool Invoke(IClusterNode node)
             {
-                if (node.TryGetAttribute<string>(NODE_TYPE_ATTR, out var attr) 
-                    && string.Compare(attr, _type, true) == 0)
-                {
-                    return true;
-                }
-                
-                return false;
+                return node.TryGetAttribute<string>(NodeTypeAttr, out var attr)
+                       && string.Compare(attr, _type, StringComparison.OrdinalIgnoreCase) == 0;
             }
         }
 
@@ -231,8 +227,10 @@ namespace Apache.Ignite.Core.Tests.Services
             BinarizableTestValue AddOne(BinarizableTestValue val);
 
             /** */
-            // ReSharper disable once InconsistentNaming
-            string contextAttribute(string name);
+            string ContextAttribute(string name);
+            
+            /** */
+            int Intercepted(int val);
         }
 
         #pragma warning disable 649
@@ -300,7 +298,7 @@ namespace Apache.Ignite.Core.Tests.Services
 
                     var v = new TestValue()
                     {
-                        Id = ((TestValue)pair.Value).Id + 1,
+                        Id = (((TestValue)pair.Value)!).Id + 1,
                         Name = ((TestValue)pair.Value).Name
                     };
 
@@ -320,11 +318,18 @@ namespace Apache.Ignite.Core.Tests.Services
                 };
             }
 
-            public string contextAttribute(string name)
+            /** <inheritdoc /> */
+            public string ContextAttribute(string name)
             {
                 IServiceCallContext callCtx = _ctx.CurrentCallContext;
 
                 return callCtx == null ? null : callCtx.GetAttribute(name);
+            }
+
+            /** <inheritdoc /> */
+            public int Intercepted(int val)
+            {
+                return val;
             }
 
             /** <inheritdoc /> */

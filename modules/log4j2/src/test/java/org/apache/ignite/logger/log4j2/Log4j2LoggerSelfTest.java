@@ -42,10 +42,10 @@ import static org.junit.Assert.assertTrue;
  */
 public class Log4j2LoggerSelfTest {
     /** */
-    private static final String LOG_PATH_TEST = "modules/core/src/test/config/log4j2-test.xml";
+    private static final String LOG_PATH_TEST = "modules/log4j2/src/test/config/log4j2-test.xml";
 
     /** */
-    private static final String LOG_PATH_MAIN = "config/ignite-log4j2.xml";
+    private static final String LOG_PATH_MAIN = "config/ignite-log4j.xml";
 
     /** */
     @Before
@@ -143,6 +143,11 @@ public class Log4j2LoggerSelfTest {
         assertEquals("ignite", System.getProperty("appId"));
 
         new Log4J2Logger(LOG_PATH_TEST).setApplicationAndNode("other-app", id);
+
+        assertEquals(U.id8(id), System.getProperty("nodeId"));
+        assertEquals("other-app", System.getProperty("appId"));
+
+        new Log4J2Logger(LOG_PATH_TEST).setApplicationAndNode(null, id);
 
         assertEquals(U.id8(id), System.getProperty("nodeId"));
         assertEquals("other-app", System.getProperty("appId"));

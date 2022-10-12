@@ -150,12 +150,12 @@ public class TcpDiscoverySslParametersTest extends GridCommonAbstractTest {
             null,
             new String[][] {
                 new String[] {
-                    "TLSv1.1",
+                    "TLSv1.2",
                     "SSLv3"
                 },
                 new String[] {
                     "TLSv1",
-                    "TLSv1.2",
+                    "TLSv1.3",
                 }
             }
         );
@@ -214,7 +214,7 @@ public class TcpDiscoverySslParametersTest extends GridCommonAbstractTest {
                     "TLSv1.2",
                 },
                 new String[] {
-                    "TLSv1.1",
+                    "TLSv1.2",
                     "SSLv3"
                 }
             }

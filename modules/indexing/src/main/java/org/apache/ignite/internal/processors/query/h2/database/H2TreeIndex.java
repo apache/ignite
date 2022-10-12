@@ -30,6 +30,7 @@ import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.internal.GridKernalContext;
 import org.apache.ignite.internal.GridTopic;
 import org.apache.ignite.internal.cache.query.index.Index;
+import org.apache.ignite.internal.cache.query.index.sorted.IndexKeyType;
 import org.apache.ignite.internal.cache.query.index.sorted.IndexRow;
 import org.apache.ignite.internal.cache.query.index.sorted.IndexRowImpl;
 import org.apache.ignite.internal.cache.query.index.sorted.IndexSearchRowImpl;
@@ -38,6 +39,8 @@ import org.apache.ignite.internal.cache.query.index.sorted.InlineIndexRowHandler
 import org.apache.ignite.internal.cache.query.index.sorted.SortedIndexDefinition;
 import org.apache.ignite.internal.cache.query.index.sorted.inline.IndexQueryContext;
 import org.apache.ignite.internal.cache.query.index.sorted.inline.InlineIndexImpl;
+import org.apache.ignite.internal.cache.query.index.sorted.inline.InlineIndexKeyType;
+import org.apache.ignite.internal.cache.query.index.sorted.inline.InlineIndexKeyTypeRegistry;
 import org.apache.ignite.internal.cache.query.index.sorted.keys.IndexKey;
 import org.apache.ignite.internal.cache.query.index.sorted.keys.IndexKeyFactory;
 import org.apache.ignite.internal.managers.communication.GridIoPolicy;
@@ -45,10 +48,11 @@ import org.apache.ignite.internal.managers.communication.GridMessageListener;
 import org.apache.ignite.internal.processors.cache.GridCacheContext;
 import org.apache.ignite.internal.processors.cache.persistence.CacheDataRow;
 import org.apache.ignite.internal.processors.cache.persistence.tree.BPlusTree;
+import org.apache.ignite.internal.processors.query.GridQueryRowDescriptor;
+import org.apache.ignite.internal.processors.query.QueryUtils;
 import org.apache.ignite.internal.processors.query.h2.H2Cursor;
 import org.apache.ignite.internal.processors.query.h2.H2Utils;
 import org.apache.ignite.internal.processors.query.h2.IgniteH2Indexing;
-import org.apache.ignite.internal.processors.query.h2.opt.GridH2RowDescriptor;
 import org.apache.ignite.internal.processors.query.h2.opt.GridH2Table;
 import org.apache.ignite.internal.processors.query.h2.opt.H2CacheRow;
 import org.apache.ignite.internal.processors.query.h2.opt.H2Row;
@@ -74,6 +78,7 @@ import org.apache.ignite.internal.util.GridSpinBusyLock;
 import org.apache.ignite.internal.util.lang.GridCursor;
 import org.apache.ignite.internal.util.typedef.CIX2;
 import org.apache.ignite.internal.util.typedef.T2;
+import org.apache.ignite.internal.util.typedef.internal.LT;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgniteBiTuple;
 import org.apache.ignite.plugin.extensions.communication.Message;
@@ -108,19 +113,19 @@ import static org.h2.result.Row.MEMORY_CALCULATE;
 @SuppressWarnings({"unchecked"})
 public class H2TreeIndex extends H2TreeIndexBase {
     /** Underlying Ignite index. */
-    private InlineIndexImpl queryIndex;
+    private final InlineIndexImpl queryIndex;
 
     /** Kernal context. */
-    private GridKernalContext ctx;
+    private final GridKernalContext ctx;
 
     /** Cache context. */
-    private GridCacheContext<?, ?> cctx;
+    private final GridCacheContext<?, ?> cctx;
 
     /** Table name. */
-    private String tblName;
+    private final String tblName;
 
     /** Index name. */
-    private String idxName;
+    private final String idxName;
 
     /** */
     private final IgniteLogger log;
@@ -164,7 +169,7 @@ public class H2TreeIndex extends H2TreeIndexBase {
 
         msgLsnr = new GridMessageListener() {
             @Override public void onMessage(UUID nodeId, Object msg, byte plc) {
-                GridSpinBusyLock l = tbl.rowDescriptor().indexing().busyLock();
+                GridSpinBusyLock l = tbl.tableDescriptor().indexing().busyLock();
 
                 if (!l.enterBusy())
                     return;
@@ -272,7 +277,41 @@ public class H2TreeIndex extends H2TreeIndexBase {
 
             Value v = row.getValue(colId);
 
-            keys[i] = v == null ? null : IndexKeyFactory.wrap(
+            IndexKeyType colType = rowHnd.indexKeyDefinitions().get(i).idxType();
+
+            if (v == null)
+                break;
+
+            // If it's possible to convert search row to index value type - do it. In this case converted value
+            // can be used for the inline search.
+            // Otherwise, we can use search row as index find bound only if types have the same comparison rules.
+            // If types have different comparison rules (for example, '2' > '10' for strings and 2 < 10 for integers)
+            // best we can do here is leave search bound empty. In this case index scan by bounds can be extended to
+            // full index scan and rows will be filtered out by original condition on H2 level.
+            if (colType.code() != v.getType()) {
+                if (Value.getHigherOrder(colType.code(), v.getType()) == colType.code())
+                    v = v.convertTo(colType.code());
+                else {
+                    InlineIndexKeyType colKeyType = InlineIndexKeyTypeRegistry.get(colType, queryIndex.keyTypeSettings());
+
+                    IndexKey idxKey = IndexKeyFactory.wrap(v.getObject(), v.getType(), cctx.cacheObjectContext(),
+                        queryIndex.keyTypeSettings());
+
+                    if (colKeyType.isComparableTo(idxKey)) {
+                        keys[i] = idxKey;
+
+                        continue;
+                    }
+
+                    LT.warn(log, "Provided value can't be used as index search bound due to column data type " +
+                        "mismatch. This can lead to full index scans instead of range index scans. [index=" +
+                        idxName + ", colType=" + colType + ", valType=" + IndexKeyType.forCode(v.getType()) + ']');
+
+                    break;
+                }
+            }
+
+            keys[i] = IndexKeyFactory.wrap(
                 v.getObject(), v.getType(), cctx.cacheObjectContext(), queryIndex.keyTypeSettings());
         }
 
@@ -328,29 +367,9 @@ public class H2TreeIndex extends H2TreeIndexBase {
     }
 
     /** {@inheritDoc} */
-    @Override public void destroy(boolean rmvIdx) {
+    @Override public void destroy() {
         try {
-            queryIndex.destroy(!rmvIdx);
-
-            super.destroy(rmvIdx);
-
-        }
-        finally {
-            if (msgLsnr != null)
-                ctx.io().removeMessageListener(msgTopic, msgLsnr);
-        }
-    }
-
-    /**
-     * Destroy index immediately.
-     *
-     * @throws IgniteCheckedException If failed.
-     */
-    public void destroyImmediately() throws IgniteCheckedException {
-        try {
-            queryIndex.destroy0(false, true);
-
-            super.destroy(false);
+            super.destroy();
         }
         finally {
             if (msgLsnr != null)
@@ -381,7 +400,7 @@ public class H2TreeIndex extends H2TreeIndexBase {
             return null;
 
         IndexColumn affCol = getTable().getAffinityKeyColumn();
-        GridH2RowDescriptor desc = getTable().rowDescriptor();
+        GridQueryRowDescriptor desc = getTable().rowDescriptor();
 
         int affColId = -1;
         boolean ucast = false;
@@ -392,7 +411,8 @@ public class H2TreeIndex extends H2TreeIndexBase {
 
             if (masks != null) {
                 ucast = (masks[affColId] & IndexCondition.EQUALITY) != 0 ||
-                    desc.checkKeyIndexCondition(masks, IndexCondition.EQUALITY);
+                    (masks[QueryUtils.KEY_COL] & IndexCondition.EQUALITY) != 0 ||
+                    (masks[desc.getAlternativeColumnId(QueryUtils.KEY_COL)] & IndexCondition.EQUALITY) != 0;
             }
         }
 
@@ -404,7 +424,7 @@ public class H2TreeIndex extends H2TreeIndexBase {
      * @param msg Message.
      */
     public void send(Collection<ClusterNode> nodes, Message msg) {
-        boolean res = getTable().rowDescriptor().indexing().send(msgTopic,
+        boolean res = getTable().tableDescriptor().indexing().send(msgTopic,
             -1,
             nodes,
             msg,

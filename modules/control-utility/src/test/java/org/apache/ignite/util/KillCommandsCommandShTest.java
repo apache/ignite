@@ -46,6 +46,7 @@ import org.junit.Test;
 import static org.apache.ignite.internal.commandline.CommandHandler.EXIT_CODE_OK;
 import static org.apache.ignite.internal.commandline.CommandHandler.EXIT_CODE_UNEXPECTED_ERROR;
 import static org.apache.ignite.internal.processors.cache.persistence.snapshot.AbstractSnapshotSelfTest.doSnapshotCancellationTest;
+import static org.apache.ignite.internal.processors.cache.persistence.snapshot.IgniteSnapshotManager.SNAPSHOT_METRICS;
 import static org.apache.ignite.internal.processors.job.GridJobProcessor.JOBS_VIEW;
 import static org.apache.ignite.testframework.GridTestUtils.assertContains;
 import static org.apache.ignite.testframework.GridTestUtils.assertNotContains;
@@ -156,18 +157,12 @@ public class KillCommandsCommandShTest extends GridCommandHandlerClusterByClassA
     @Test
     public void testCancelSnapshot() {
         doSnapshotCancellationTest(client, srvs, client.cache(DEFAULT_CACHE_NAME), snpName -> {
-            int res = execute("--kill", "snapshot", snpName);
+            String id = grid(0).context().metric().registry(SNAPSHOT_METRICS).findMetric("LastRequestId").getAsString();
+
+            int res = execute("--kill", "snapshot", id);
 
             assertEquals(EXIT_CODE_OK, res);
         });
-    }
-
-    /** */
-    @Test
-    public void testCancelUnknownSnapshot() {
-        int res = execute("--kill", "snapshot", "unknown");
-
-        assertEquals(EXIT_CODE_OK, res);
     }
 
     /** */
@@ -293,7 +288,7 @@ public class KillCommandsCommandShTest extends GridCommandHandlerClusterByClassA
 
             assertEquals(EXIT_CODE_OK, res);
 
-            assertContains(log, testOut.toString(), "Status: 1024/" + entries);
+            assertContains(log, testOut.toString(), "Status: 128/" + entries);
             assertNotContains(log, testOut.toString(), VisorConsistencyStatusTask.NOTHING_FOUND);
 
             testOut.reset();

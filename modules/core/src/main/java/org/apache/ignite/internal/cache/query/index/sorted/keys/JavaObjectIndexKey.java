@@ -18,13 +18,13 @@
 package org.apache.ignite.internal.cache.query.index.sorted.keys;
 
 import java.util.Arrays;
-import org.apache.ignite.internal.cache.query.index.sorted.IndexKeyTypes;
+import org.apache.ignite.internal.cache.query.index.sorted.IndexKeyType;
 import org.apache.ignite.internal.util.typedef.F;
 
 /**
  * Represents an index key that stores as Java Object.
  *
- * {@link IndexKeyTypes#JAVA_OBJECT}.
+ * {@link IndexKeyType#JAVA_OBJECT}.
  */
 public abstract class JavaObjectIndexKey implements IndexKey {
     /** {@inheritDoc} */
@@ -33,8 +33,8 @@ public abstract class JavaObjectIndexKey implements IndexKey {
     }
 
     /** {@inheritDoc} */
-    @Override public int type() {
-        return IndexKeyTypes.JAVA_OBJECT;
+    @Override public IndexKeyType type() {
+        return IndexKeyType.JAVA_OBJECT;
     }
 
     /** {@inheritDoc} */
@@ -111,5 +111,10 @@ public abstract class JavaObjectIndexKey implements IndexKey {
             int len = bytes.length;
             return len == 0 ? EMPTY_BYTES : Arrays.copyOf(bytes, len);
         }
+    }
+
+    /** {@inheritDoc} */
+    @Override public String toString() {
+        return key().toString();
     }
 }

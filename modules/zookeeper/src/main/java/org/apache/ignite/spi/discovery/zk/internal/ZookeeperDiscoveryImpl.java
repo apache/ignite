@@ -2588,10 +2588,38 @@ public class ZookeeperDiscoveryImpl {
         if (log.isDebugEnabled())
             log.debug("Generated CUSTOM event [evt=" + evtData + ", msg=" + msg + ']');
 
+        boolean fastStopProcess = false;
+
         if (msg instanceof ZkInternalMessage)
             processInternalMessage(evtData, (ZkInternalMessage)msg);
-        else
+        else {
             notifyCustomEvent(evtData, msg);
+
+            if (msg.stopProcess()) {
+                if (log.isDebugEnabled())
+                    log.debug("Fast stop process custom event [evt=" + evtData + ", msg=" + msg + ']');
+
+                fastStopProcess = true;
+
+                // No need to process this event on others nodes, skip this event.
+                evtsData.evts.remove(evtData.eventId());
+
+                evtsData.evtIdGen--;
+
+                DiscoverySpiCustomMessage ack = msg.ackMessage();
+
+                if (ack != null) {
+                    evtData = createAckEvent(ack, evtData);
+
+                    if (log.isDebugEnabled())
+                        log.debug("Generated CUSTOM event (ack for fast stop process) [evt=" + evtData + ", msg=" + msg + ']');
+
+                    notifyCustomEvent(evtData, ack);
+                }
+                else
+                    evtData = null;
+            }
+        }
 
         if (evtData != null) {
             evtsData.addEvent(rtState.top.nodesByOrder.values(), evtData);
@@ -2599,6 +2627,9 @@ public class ZookeeperDiscoveryImpl {
             rtState.locNodeInfo.lastProcEvt = evtData.eventId();
 
             saveAndProcessNewEvents();
+
+            if (fastStopProcess)
+                deleteCustomEventDataAsync(zkClient, evtPath);
 
             if (failedNode != null) {
                 deleteAliveNode(failedNode.internalId());

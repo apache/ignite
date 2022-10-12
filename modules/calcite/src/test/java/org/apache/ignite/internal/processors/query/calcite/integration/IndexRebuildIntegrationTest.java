@@ -90,7 +90,6 @@ public class IndexRebuildIntegrationTest extends AbstractBasicIntegrationTest {
         executeSql("CREATE TABLE tbl (id INT PRIMARY KEY, val VARCHAR, val2 VARCHAR) WITH CACHE_NAME=\"test\"");
         executeSql("CREATE INDEX idx_id_val ON tbl (id DESC, val)");
         executeSql("CREATE INDEX idx_id_val2 ON tbl (id, val2 DESC)");
-        executeSql("CREATE INDEX idx_val ON tbl (val DESC)");
 
         for (int i = 0; i < 100; i++)
             executeSql("INSERT INTO tbl VALUES (?, ?, ?)", i, "val" + i, "val" + i);
@@ -190,16 +189,23 @@ public class IndexRebuildIntegrationTest extends AbstractBasicIntegrationTest {
         checkRebuildIndexQuery(grid(1), checker, checker);
 
         // Order by another collation.
-        sql = "SELECT * FROM tbl WHERE val BETWEEN 'val10' AND 'val15' ORDER BY val";
+        executeSql("CREATE INDEX idx_val ON tbl (val DESC)");
 
-        checker = assertQuery(initNode, sql)
-            .matches(QueryChecker.containsSubPlan("IgniteSort"))
-            .matches(QueryChecker.containsIndexScan("PUBLIC", "TBL", "IDX_VAL"))
-            .returns(10, "val10", "val10").returns(11, "val11", "val11").returns(12, "val12", "val12")
-            .returns(13, "val13", "val13").returns(14, "val14", "val14").returns(15, "val15", "val15")
-            .ordered();
+        try {
+            sql = "SELECT * FROM tbl WHERE val BETWEEN 'val10' AND 'val15' ORDER BY val";
 
-        checkRebuildIndexQuery(grid(1), checker, checker);
+            checker = assertQuery(initNode, sql)
+                .matches(QueryChecker.containsSubPlan("IgniteSort"))
+                .matches(QueryChecker.containsIndexScan("PUBLIC", "TBL", "IDX_VAL"))
+                .returns(10, "val10", "val10").returns(11, "val11", "val11").returns(12, "val12", "val12")
+                .returns(13, "val13", "val13").returns(14, "val14", "val14").returns(15, "val15", "val15")
+                .ordered();
+
+            checkRebuildIndexQuery(grid(1), checker, checker);
+        }
+        finally {
+            executeSql("DROP INDEX idx_val");
+        }
     }
 
     /**

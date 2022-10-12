@@ -21,9 +21,7 @@ import java.util.Collection;
 import java.util.List;
 import java.util.UUID;
 import javax.cache.Cache;
-import javax.cache.expiry.ExpiryPolicy;
 import javax.cache.processor.EntryProcessor;
-import javax.cache.processor.EntryProcessorResult;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.cache.eviction.EvictableEntry;
 import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
@@ -41,7 +39,6 @@ import org.apache.ignite.internal.processors.cache.version.GridCacheVersion;
 import org.apache.ignite.internal.processors.cache.version.GridCacheVersionedEntryEx;
 import org.apache.ignite.internal.processors.dr.GridDrType;
 import org.apache.ignite.internal.processors.query.schema.SchemaIndexCacheVisitorClosure;
-import org.apache.ignite.internal.util.lang.GridTuple3;
 import org.apache.ignite.lang.IgniteUuid;
 import org.jetbrains.annotations.Nullable;
 
@@ -566,45 +563,6 @@ public interface GridCacheEntryEx {
         @Nullable CacheObject prevVal,
         @Nullable Long updateCntr,
         @Nullable GridDhtAtomicAbstractUpdateFuture fut,
-        boolean transformOp
-    ) throws IgniteCheckedException, GridCacheEntryRemovedException;
-
-    /**
-     * Update method for local cache in atomic mode.
-     *
-     * @param ver Cache version.
-     * @param op Operation.
-     * @param writeObj Value. Type depends on operation.
-     * @param invokeArgs Optional arguments for EntryProcessor.
-     * @param writeThrough Write through flag.
-     * @param readThrough Read through flag.
-     * @param retval Return value flag.
-     * @param expiryPlc Expiry policy..
-     * @param evt Event flag.
-     * @param metrics Metrics update flag.
-     * @param filter Optional filter to check.
-     * @param intercept If {@code true} then calls cache interceptor.
-     * @param taskName Task name.
-     * @param transformOp {@code True} if transform operation caused update.
-     * @return Tuple containing success flag, old value and result for invoke operation.
-     * @throws IgniteCheckedException If update failed.
-     * @throws GridCacheEntryRemovedException If entry is obsolete.
-     */
-    public GridTuple3<Boolean, Object, EntryProcessorResult<Object>> innerUpdateLocal(
-        GridCacheVersion ver,
-        GridCacheOperation op,
-        @Nullable Object writeObj,
-        @Nullable Object[] invokeArgs,
-        boolean writeThrough,
-        boolean readThrough,
-        boolean retval,
-        boolean keepBinary,
-        @Nullable ExpiryPolicy expiryPlc,
-        boolean evt,
-        boolean metrics,
-        @Nullable CacheEntryPredicate[] filter,
-        boolean intercept,
-        String taskName,
         boolean transformOp
     ) throws IgniteCheckedException, GridCacheEntryRemovedException;
 

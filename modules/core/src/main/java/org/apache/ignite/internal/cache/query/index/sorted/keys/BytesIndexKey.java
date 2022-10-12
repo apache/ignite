@@ -17,7 +17,8 @@
 
 package org.apache.ignite.internal.cache.query.index.sorted.keys;
 
-import org.apache.ignite.internal.cache.query.index.sorted.IndexKeyTypes;
+import java.util.Arrays;
+import org.apache.ignite.internal.cache.query.index.sorted.IndexKeyType;
 
 /** */
 public class BytesIndexKey implements IndexKey {
@@ -35,8 +36,8 @@ public class BytesIndexKey implements IndexKey {
     }
 
     /** {@inheritDoc} */
-    @Override public int type() {
-        return IndexKeyTypes.BYTES;
+    @Override public IndexKeyType type() {
+        return IndexKeyType.BYTES;
     }
 
     /** {@inheritDoc} */
@@ -60,5 +61,10 @@ public class BytesIndexKey implements IndexKey {
         }
 
         return Integer.signum(Integer.compare(arr0.length, arr1.length));
+    }
+
+    /** {@inheritDoc} */
+    @Override public String toString() {
+        return Arrays.toString(key);
     }
 }

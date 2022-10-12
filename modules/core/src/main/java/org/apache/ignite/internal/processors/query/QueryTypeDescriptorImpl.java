@@ -166,10 +166,8 @@ public class QueryTypeDescriptorImpl implements GridQueryTypeDescriptor {
         this.log = coCtx.kernalContext().log(getClass());
     }
 
-    /**
-     * @return Cache name.
-     */
-    public String cacheName() {
+    /** {@inheritDoc} */
+    @Override public String cacheName() {
         return cacheName;
     }
 
@@ -726,9 +724,7 @@ public class QueryTypeDescriptorImpl implements GridQueryTypeDescriptor {
 
             GridQueryIndexing indexing = coCtx.kernalContext().query().getIndexing();
 
-            assert indexing != null;
-
-            if (indexing.isConvertibleToColumnType(schemaName, tableName(), colName, val.getClass()))
+            if (indexing != null && indexing.isConvertibleToColumnType(schemaName, tableName(), colName, val.getClass()))
                 return true;
 
             return expColType.isArray()

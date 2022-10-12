@@ -68,6 +68,9 @@ public class CdcConsumerState {
     /** */
     public static final String MAPPINGS_STATE_FILE_NAME = "cdc-mappings-state" + FILE_SUFFIX;
 
+    /** */
+    public static final String CACHES_STATE_FILE_NAME = "cdc-caches-state" + FILE_SUFFIX;
+
     /** Log. */
     private final IgniteLogger log;
 
@@ -89,6 +92,12 @@ public class CdcConsumerState {
     /** Mappings types state file. */
     private final Path tmpMappings;
 
+    /** Cache state file. */
+    private final Path caches;
+
+    /** Mappings types state file. */
+    private final Path tmpCaches;
+
     /**
      * @param stateDir State directory.
      */
@@ -100,6 +109,8 @@ public class CdcConsumerState {
         tmpTypes = stateDir.resolve(TYPES_STATE_FILE_NAME + TMP_SUFFIX);
         mappings = stateDir.resolve(MAPPINGS_STATE_FILE_NAME);
         tmpMappings = stateDir.resolve(MAPPINGS_STATE_FILE_NAME + TMP_SUFFIX);
+        caches = stateDir.resolve(CACHES_STATE_FILE_NAME);
+        tmpCaches = stateDir.resolve(CACHES_STATE_FILE_NAME + TMP_SUFFIX);
     }
 
     /**
@@ -177,6 +188,32 @@ public class CdcConsumerState {
             log.info("Initial WAL state loaded [ptr=" + state.get1() + ", idx=" + state.get2() + ']');
 
         return state;
+    }
+
+    /**
+     * Loads CDC caches state from file.
+     *
+     * @return Saved state.
+     */
+    public Map<Integer, Long> loadCaches() {
+        Map<Integer, Long> state = load(caches, HashMap::new);
+
+        log.info("Initial caches state loaded [cachesCnt=" + state.size() + ']');
+
+        if (log.isDebugEnabled()) {
+            for (Map.Entry<Integer, Long> entry : state.entrySet())
+                log.debug("Cache [cacheId=" + entry.getKey() + ", lastModified=" + entry.getValue() + ']');
+        }
+
+        return state;
+    }
+
+    /**
+     * Saves caches state to file.
+     * @param cachesState State of caches.
+     */
+    public void saveCaches(Map<Integer, Long> cachesState) throws IOException {
+        save(cachesState, tmpCaches, caches);
     }
 
     /**

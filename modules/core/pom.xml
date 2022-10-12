@@ -34,22 +34,6 @@
 
     <properties>
         <ignite.update.notifier.product>apache-ignite</ignite.update.notifier.product>
-
-        <!-- Imports:
-                - com.sun.jmx.mbeanserver => only used from TCKMBeanServerBuilder which has no usages within Ignite's
-                  runtime codebase. Therefore, it's likely that code will not be hit during normal operation and we exclude it.
-                - javax.enterprise.util is optional.
-        -->
-        <osgi.import.package>
-            javax.enterprise.util;resolution:=optional,
-            !com.sun.jmx.mbeanserver,
-            *
-        </osgi.import.package>
-        <osgi.export.package>
-            org.apache.ignite.*,
-            org.jsr166.*;version=1.0.0;
-            {local-packages}
-        </osgi.export.package>
     </properties>
 
     <dependencies>
@@ -156,8 +140,8 @@
         </dependency>
 
         <dependency>
-            <groupId>log4j</groupId>
-            <artifactId>log4j</artifactId>
+            <groupId>org.apache.logging.log4j</groupId>
+            <artifactId>log4j-core</artifactId>
             <scope>test</scope>
         </dependency>
 
@@ -235,6 +219,17 @@
             <testResource>
                 <directory>src/test/resources</directory>
             </testResource>
+            <testResource>
+                <directory>src/test/config</directory>
+                <includes>
+                    <include>log4j2-test.xml</include>
+                    <include>tests.properties</include>
+                </includes>
+                <!-- Hide the test logger configuration from the log4j autoconfigurator
+                     in case the user starts Ignite with test.jar on the classpath. -->
+                <targetPath>${project.build.testOutputDirectory}/test/config</targetPath>
+            </testResource>
+
         </testResources>
 
         <plugins>
@@ -290,12 +285,6 @@
                         </configuration>
                     </execution>
                 </executions>
-            </plugin>
-
-            <!-- Generate the OSGi MANIFEST.MF for this bundle. -->
-            <plugin>
-                <groupId>org.apache.felix</groupId>
-                <artifactId>maven-bundle-plugin</artifactId>
             </plugin>
 
             <plugin>

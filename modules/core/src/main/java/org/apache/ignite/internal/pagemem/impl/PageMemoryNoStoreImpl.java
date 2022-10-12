@@ -369,7 +369,7 @@ public class PageMemoryNoStoreImpl implements PageMemory {
         writePageId(absPtr, pageId);
 
         // TODO pass an argument to decide whether the page should be cleaned.
-        GridUnsafe.setMemory(absPtr + PAGE_OVERHEAD, sysPageSize - PAGE_OVERHEAD, (byte)0);
+        GridUnsafe.zeroMemory(absPtr + PAGE_OVERHEAD, sysPageSize - PAGE_OVERHEAD);
 
         return pageId;
     }

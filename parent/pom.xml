@@ -49,7 +49,7 @@
         <maven.compiler.source>1.8</maven.compiler.source>
         <maven.compiler.target>1.8</maven.compiler.target>
 
-        <revision>2.14.0-SNAPSHOT</revision>
+        <revision>2.15.0-SNAPSHOT</revision>
         <!-- Ignite version will be substituted with the flatten-maven-plugin and used as
             a version dependency for Ignite extensions. -->
         <ignite.version>${revision}</ignite.version>
@@ -71,8 +71,7 @@
         <asm.version>4.2</asm.version>
         <aspectj.bundle.version>1.8.13_1</aspectj.bundle.version>
         <aspectj.version>1.8.13</aspectj.version>
-        <netty.version>4.1.75.Final</netty.version>
-        <camel.version>2.22.0</camel.version>
+        <netty.version>4.1.79.Final</netty.version>
         <bouncycastle.version>1.69</bouncycastle.version>
         <commons.beanutils.bundle.version>1.9.2_1</commons.beanutils.bundle.version>
         <commons.beanutils.version>1.9.4</commons.beanutils.version>
@@ -95,7 +94,7 @@
         <hamcrest.version>2.2</hamcrest.version>
         <httpclient.version>4.5.13</httpclient.version>
         <httpcore.version>4.4.14</httpcore.version>
-        <jackson.version>2.12.4</jackson.version>
+        <jackson.version>2.12.7</jackson.version>
         <jaxb.api.version>2.1</jaxb.api.version>
         <jaxb.impl.version>2.1.14</jaxb.impl.version>
         <javassist.version>3.28.0-GA</javassist.version>
@@ -104,7 +103,7 @@
         <javax.cache.version>1.0.0</javax.cache.version>
         <jboss.rmi.version>1.0.6.Final</jboss.rmi.version>
         <jetbrains.annotations.version>16.0.3</jetbrains.annotations.version>
-        <jetty.version>9.4.39.v20210325</jetty.version>
+        <jetty.version>9.4.43.v20210629</jetty.version>
         <jmh.version>1.13</jmh.version>
         <jms.spec.version>1.1.1</jms.spec.version>
         <jna.version>4.5.2</jna.version>
@@ -116,11 +115,9 @@
         <jsonlib.version>2.4</jsonlib.version>
         <jtidy.version>r938</jtidy.version>
         <kafka.version>2.0.1</kafka.version>
-        <karaf.version>4.0.2</karaf.version>
-        <log4j2.version>2.17.1</log4j2.version>
-        <log4j.version>1.2.17</log4j.version>
+        <log4j2.version>2.18.0</log4j2.version>
         <lucene.bundle.version>7.4.0_1</lucene.bundle.version>
-        <lucene.version>7.4.0</lucene.version>
+        <lucene.version>8.11.2</lucene.version>
         <lz4.version>1.8.0</lz4.version>
         <maven.bundle.plugin.version>3.5.0</maven.bundle.plugin.version>
         <maven.checkstyle.plugin.version>3.1.1</maven.checkstyle.plugin.version>
@@ -129,11 +126,9 @@
         <maven.model.version>3.8.4</maven.model.version>
         <checkstyle.puppycrawl.version>8.45</checkstyle.puppycrawl.version>
         <mockito.version>3.4.6</mockito.version>
-        <mysql.connector.version>8.0.26</mysql.connector.version>
+        <mysql.connector.version>8.0.30</mysql.connector.version>
         <netlibjava.version>1.1.2</netlibjava.version>
         <oro.bundle.version>2.0.8_6</oro.bundle.version>
-        <osgi.core.version>5.0.0</osgi.core.version>
-        <osgi.enterprise.version>5.0.0</osgi.enterprise.version>
         <paho.version>1.0.2</paho.version>
         <postgres.connector.version>42.3.3</postgres.connector.version>
         <scala210.jline.version>2.10.7</scala210.jline.version>
@@ -143,8 +138,7 @@
         <slf4j.version>1.7.33</slf4j.version>
         <slf4j16.version>1.6.4</slf4j16.version>
         <snappy.version>1.1.7.2</snappy.version>
-        <spring.version>5.2.21.RELEASE</spring.version>
-        <spring41.osgi.feature.version>4.1.7.RELEASE_1</spring41.osgi.feature.version>
+        <spring.version>5.2.22.RELEASE</spring.version>
         <storm.version>1.1.1</storm.version>
         <surefire.version>3.0.0-M4</surefire.version>
         <tomcat.version>9.0.63</tomcat.version>
@@ -165,8 +159,6 @@
         <!-- OSGI Manifest generation default property values -->
         <osgi.import.package>*</osgi.import.package>
         <osgi.export.package>{local-packages}</osgi.export.package>
-        <osgi.embed.transitive>false</osgi.embed.transitive>
-        <osgi.fail.ok>false</osgi.fail.ok>
 
         <flattenMode>clean</flattenMode>
 
@@ -414,10 +406,10 @@
                             <Private-Package>
                                 ${osgi.private.package}
                             </Private-Package>
-                            <Embed-Dependency>${osgi.embed.dependency}</Embed-Dependency>
+                            <Embed-Dependency>false</Embed-Dependency>
                             <Embed-Directory>lib</Embed-Directory>
-                            <Embed-Transitive>${osgi.embed.transitive}</Embed-Transitive>
-                            <_failok>${osgi.fail.ok}</_failok>
+                            <Embed-Transitive>false</Embed-Transitive>
+                            <_failok>false</_failok>
                             <_invalidfilenames/>
                         </instructions>
                     </configuration>
@@ -665,6 +657,12 @@
                         </configuration>
                     </execution>
                 </executions>
+            </plugin>
+
+            <!-- Generate the OSGi MANIFEST.MF for this bundle. -->
+            <plugin>
+                <groupId>org.apache.felix</groupId>
+                <artifactId>maven-bundle-plugin</artifactId>
             </plugin>
         </plugins>
     </build>
@@ -1002,6 +1000,10 @@
                                 <arg>java.base/java.util=ALL-UNNAMED</arg>
                                 <arg>--add-exports</arg>
                                 <arg>java.base/java.lang=ALL-UNNAMED</arg>
+                                <arg>--add-exports</arg>
+                                <arg>java.base/java.lang.invoke=ALL-UNNAMED</arg>
+                                <arg>--add-exports</arg>
+                                <arg>java.sql/java.sql=ALL-UNNAMED</arg>
                             </compilerArgs>
                         </configuration>
                     </plugin>
@@ -1020,7 +1022,11 @@
                                 --add-opens=java.base/java.io=ALL-UNNAMED
                                 --add-opens=java.base/java.nio=ALL-UNNAMED
                                 --add-opens=java.base/java.util=ALL-UNNAMED
+                                --add-opens=java.base/java.util.concurrent=ALL-UNNAMED
+                                --add-opens=java.base/java.util.concurrent.locks=ALL-UNNAMED
                                 --add-opens=java.base/java.lang=ALL-UNNAMED
+                                --add-opens=java.base/java.lang.invoke=ALL-UNNAMED
+                                --add-opens=java.sql/java.sql=ALL-UNNAMED
                             </argLine>
                         </configuration>
                     </plugin>

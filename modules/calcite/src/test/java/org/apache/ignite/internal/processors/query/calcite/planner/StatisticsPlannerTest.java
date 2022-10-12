@@ -37,19 +37,10 @@ import org.apache.ignite.internal.processors.query.calcite.type.IgniteTypeFactor
 import org.apache.ignite.internal.processors.query.calcite.type.IgniteTypeSystem;
 import org.apache.ignite.internal.processors.query.stat.ColumnStatistics;
 import org.apache.ignite.internal.processors.query.stat.ObjectStatisticsImpl;
-import org.h2.value.ValueBoolean;
-import org.h2.value.ValueByte;
-import org.h2.value.ValueDate;
-import org.h2.value.ValueDouble;
-import org.h2.value.ValueFloat;
-import org.h2.value.ValueInt;
-import org.h2.value.ValueLong;
-import org.h2.value.ValueShort;
-import org.h2.value.ValueString;
-import org.h2.value.ValueTime;
-import org.h2.value.ValueTimestamp;
 import org.junit.Before;
 import org.junit.Test;
+
+import static org.apache.ignite.internal.processors.query.stat.StatisticsUtils.toDecimal;
 
 /**
  * Statistic related simple tests.
@@ -150,40 +141,35 @@ public class StatisticsPlannerTest extends AbstractPlannerTest {
         tbl4.addIndex("TBL4_SHORT_LONG", 6, 7);
 
         HashMap<String, ColumnStatistics> colStat1 = new HashMap<>();
-        colStat1.put("T1C1INT", new ColumnStatistics(ValueInt.get(1), ValueInt.get(1000),
-            0, 1000, t1rc, 4, null, 1, 0));
+        colStat1.put("T1C1INT", new ColumnStatistics(toDecimal(1), toDecimal(1000), 0, 1000, t1rc, 4, null, 1, 0));
 
-        colStat1.put("T1C2STR", new ColumnStatistics(ValueString.get("A1"), ValueString.get("Z9"),
-            100, 20, t1rc, 2, null, 1, 0));
+        colStat1.put("T1C2STR", new ColumnStatistics(null, null, 100, 20, t1rc, 2, null, 1, 0));
 
-        colStat1.put("T1C3DBL", new ColumnStatistics(ValueDouble.get(0.01), ValueDouble.get(0.99),
-            10, 1000, t1rc, 8, null, 1, 0));
+        colStat1.put("T1C3DBL", new ColumnStatistics(toDecimal(0.01), toDecimal(0.99), 10, 1000, t1rc, 8, null, 1, 0));
 
-        colStat1.put("T1C4BYTE", new ColumnStatistics(ValueByte.get((byte)0), ValueByte.get((byte)255),
-            10, 1000, t1rc, 8, null, 1, 0));
+        colStat1.put("T1C4BYTE", new ColumnStatistics(toDecimal((byte)0), toDecimal((byte)255), 10, 1000, t1rc, 8, null,
+            1, 0));
 
-        colStat1.put("T1C5BOOLEAN", new ColumnStatistics(ValueBoolean.get(false), ValueBoolean.get(true),
-            0, 2, t1rc, 1, null, 1, 0));
+        colStat1.put("T1C5BOOLEAN", new ColumnStatistics(toDecimal(false), toDecimal(true), 0, 2, t1rc, 1, null, 1, 0));
 
-        colStat1.put("T1C6CHARACTER", new ColumnStatistics(ValueString.get("A"), ValueString.get("Z"),
-            10, 10, t1rc, 1, null, 1, 0));
+        colStat1.put("T1C6CHARACTER", new ColumnStatistics(null, null, 10, 10, t1rc, 1, null, 1, 0));
 
-        colStat1.put("T1C7SHORT", new ColumnStatistics(ValueShort.get((short)1), ValueShort.get((short)5000),
+        colStat1.put("T1C7SHORT", new ColumnStatistics(toDecimal((short)1), toDecimal((short)5000),
             110, 500, t1rc, 2, null, 1, 0));
 
-        colStat1.put("T1C8LONG", new ColumnStatistics(ValueLong.get(1L), ValueLong.get(100000L),
+        colStat1.put("T1C8LONG", new ColumnStatistics(toDecimal(1L), toDecimal(100000L),
             10, 100000, t1rc, 8, null, 1, 0));
 
-        colStat1.put("T1C9FLOAT", new ColumnStatistics(ValueFloat.get((float)0.1), ValueFloat.get((float)0.9),
+        colStat1.put("T1C9FLOAT", new ColumnStatistics(toDecimal((float)0.1), toDecimal((float)0.9),
             10, 1000, t1rc, 8, null, 1, 0));
 
-        colStat1.put("T1C10DATE", new ColumnStatistics(ValueDate.get(MIN_DATE), ValueDate.get(MAX_DATE),
+        colStat1.put("T1C10DATE", new ColumnStatistics(toDecimal(MIN_DATE), toDecimal(MAX_DATE),
             20, 1000, t1rc, 8, null, 1, 0));
 
-        colStat1.put("T1C11TIME", new ColumnStatistics(ValueTime.get(MIN_TIME), ValueTime.get(MAX_TIME),
+        colStat1.put("T1C11TIME", new ColumnStatistics(toDecimal(MIN_TIME), toDecimal(MAX_TIME),
             10, 1000, t1rc, 8, null, 1, 0));
 
-        colStat1.put("T1C12TIMESTAMP", new ColumnStatistics(ValueTimestamp.get(MIN_TIMESTAMP), ValueTimestamp.get(MAX_TIMESTAMP),
+        colStat1.put("T1C12TIMESTAMP", new ColumnStatistics(toDecimal(MIN_TIMESTAMP), toDecimal(MAX_TIMESTAMP),
             20, 1000, t1rc, 8, null, 1, 0));
 
         tbl1stat = new IgniteStatisticsImpl(new ObjectStatisticsImpl(1000, colStat1));
@@ -226,7 +212,7 @@ public class StatisticsPlannerTest extends AbstractPlannerTest {
     }
 
     /**
-     * Check index choosing with is null condition. Due to AbstractIndexScan logic - no index should be choosen.
+     * Check index choosing with is null condition.
      */
     @Test
     public void testIsNull() throws Exception {
@@ -245,14 +231,15 @@ public class StatisticsPlannerTest extends AbstractPlannerTest {
 
                 String idxName = getIdxName(1, field.getName().toUpperCase());
 
-                checkIdxNotUsed(isNullSql, idxName);
-                checkIdxNotUsed(isNullPKSql, idxName);
+                assertPlan(isNullSql, publicSchema, hasChildThat(isIndexScan("TBL1", idxName)));
+                assertPlan(isNullPKSql, publicSchema, hasChildThat(isIndexScan("TBL1", idxName)
+                    .or(isIndexScan("TBL1", "PK"))));
             }
         }
     }
 
     /**
-     * Check index choosing with not null condition. Due to AbstractIndexScan logic - no index should be choosen.
+     * Check index choosing with not null condition.
      */
     @Test
     public void testNotNull() throws Exception {
@@ -271,8 +258,9 @@ public class StatisticsPlannerTest extends AbstractPlannerTest {
 
                 String idxName = getIdxName(1, field.getName().toUpperCase());
 
-                checkIdxNotUsed(isNullSql, idxName);
-                checkIdxNotUsed(isNullPKSql, idxName);
+                assertPlan(isNullSql, publicSchema, hasChildThat(isIndexScan("TBL1", idxName)));
+                assertPlan(isNullPKSql, publicSchema, hasChildThat(isIndexScan("TBL1", idxName)
+                    .or(isIndexScan("TBL1", "PK"))));
             }
         }
     }
@@ -339,20 +327,6 @@ public class StatisticsPlannerTest extends AbstractPlannerTest {
 
         assertNotNull(idxScan);
         assertEquals(idxName, idxScan.indexName());
-    }
-
-    /**
-     * Check index is not used.
-     *
-     * @param sql Query.
-     * @param idxName Not expected index name.
-     * @throws Exception In case of errors.
-     */
-    private void checkIdxNotUsed(String sql, String idxName) throws Exception {
-        IgniteRel phys = physicalPlan(sql, publicSchema);
-        IgniteIndexScan idxScan = findFirstNode(phys, byClass(IgniteIndexScan.class));
-
-        assertTrue(idxScan == null || !idxName.equals(idxScan.indexName()));
     }
 
     /**
@@ -437,10 +411,9 @@ public class StatisticsPlannerTest extends AbstractPlannerTest {
         int rowCnt = 10_000;
 
         HashMap<String, ColumnStatistics> colStat1 = new HashMap<>();
-        colStat1.put("T1C2STR", new ColumnStatistics(ValueString.get("A1"), ValueString.get("Z9"),
-            0, 1, rowCnt, 2, null, 1, 0));
+        colStat1.put("T1C2STR", new ColumnStatistics(null, null, 0, 1, rowCnt, 2, null, 1, 0));
 
-        colStat1.put("T1C7SHORT", new ColumnStatistics(ValueShort.get((short)1), ValueShort.get((short)5000),
+        colStat1.put("T1C7SHORT", new ColumnStatistics(toDecimal((short)1), toDecimal((short)5000),
             0, rowCnt, rowCnt, 2, null, 1, 0));
 
         IgniteStatisticsImpl stat = new IgniteStatisticsImpl(new ObjectStatisticsImpl(1000, colStat1));

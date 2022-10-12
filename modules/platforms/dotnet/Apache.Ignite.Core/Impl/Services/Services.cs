@@ -353,7 +353,7 @@ namespace Apache.Ignite.Core.Impl.Services
                     var res = new List<T>(count);
 
                     for (var i = 0; i < count; i++)
-                        res.Add(Marshaller.Ignite.HandleRegistry.Get<T>(r.ReadLong()));
+                        res.Add((T)Marshaller.Ignite.HandleRegistry.Get<ServiceContext>(r.ReadLong()).Service);
 
                     return res;
                 });
@@ -501,6 +501,13 @@ namespace Apache.Ignite.Core.Impl.Services
             IgniteArgumentCheck.NotNull(configuration, argName);
             IgniteArgumentCheck.NotNullOrEmpty(configuration.Name, string.Format("{0}.Name", argName));
             IgniteArgumentCheck.NotNull(configuration.Service, string.Format("{0}.Service", argName));
+
+            if (configuration.Interceptors != null)
+            {
+                foreach (var interceptor in configuration.Interceptors)
+                    IgniteArgumentCheck.NotNull(interceptor, string.Format("{0}.Interceptors[]", argName));
+            }
+
         }
 
         /// <summary>

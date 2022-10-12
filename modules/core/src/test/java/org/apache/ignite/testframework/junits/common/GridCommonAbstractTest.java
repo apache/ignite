@@ -106,7 +106,6 @@ import org.apache.ignite.internal.processors.cache.distributed.dht.topology.Grid
 import org.apache.ignite.internal.processors.cache.distributed.dht.topology.GridDhtPartitionState;
 import org.apache.ignite.internal.processors.cache.distributed.dht.topology.GridDhtPartitionTopology;
 import org.apache.ignite.internal.processors.cache.distributed.near.GridNearCacheAdapter;
-import org.apache.ignite.internal.processors.cache.local.GridLocalCache;
 import org.apache.ignite.internal.processors.cache.persistence.GridCacheDatabaseSharedManager;
 import org.apache.ignite.internal.processors.cache.persistence.IgniteCacheDatabaseSharedManager;
 import org.apache.ignite.internal.processors.cache.persistence.metastorage.MetaStorage;
@@ -147,11 +146,9 @@ import org.apache.ignite.transactions.TransactionIsolation;
 import org.apache.ignite.transactions.TransactionRollbackException;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
-
 import static java.util.Collections.emptyList;
 import static java.util.stream.Collectors.toList;
 import static java.util.stream.Collectors.toSet;
-import static org.apache.ignite.cache.CacheMode.LOCAL;
 import static org.apache.ignite.cache.CacheRebalanceMode.NONE;
 import static org.apache.ignite.configuration.IgniteConfiguration.DFLT_NETWORK_TIMEOUT;
 import static org.apache.ignite.configuration.IgniteConfiguration.DFLT_SNAPSHOT_DIRECTORY;
@@ -338,13 +335,6 @@ public abstract class GridCommonAbstractTest extends GridAbstractTest {
             res.add(entry.getKey());
 
         return res;
-    }
-
-    /**
-     * @return Cache.
-     */
-    protected <K, V> GridLocalCache<K, V> local() {
-        return (GridLocalCache<K, V>)((IgniteKernal)grid()).<K, V>internalCache(DEFAULT_CACHE_NAME);
     }
 
     /**
@@ -702,8 +692,7 @@ public abstract class GridCommonAbstractTest extends GridAbstractTest {
                 if (cfg == null || cacheNames != null && !cacheNames.contains(cfg.getName()))
                     continue;
 
-                if (cfg.getCacheMode() != LOCAL &&
-                    cfg.getRebalanceMode() != NONE &&
+                if (cfg.getRebalanceMode() != NONE &&
                     g.cluster().nodes().size() > 1) {
                     AffinityFunction aff = cfg.getAffinity();
 
@@ -1898,7 +1887,8 @@ public abstract class GridCommonAbstractTest extends GridAbstractTest {
             (exp.size() == act.size()));
 
         for (T obj : exp)
-            assertEquals("Collections are not equal (element " + obj + " frequency is different):",
+            assertEquals("Collections are not equal (element " + obj + " frequency is different)." +
+                    "\nCollections: " + exp + ", " + act,
                 Collections.frequency(exp, obj), Collections.frequency(act, obj));
     }
 

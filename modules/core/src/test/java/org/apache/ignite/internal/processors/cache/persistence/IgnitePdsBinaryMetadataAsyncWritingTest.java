@@ -58,6 +58,7 @@ import org.junit.Test;
 
 import static org.apache.ignite.cache.CacheWriteSynchronizationMode.FULL_SYNC;
 import static org.apache.ignite.cache.CacheWriteSynchronizationMode.PRIMARY_SYNC;
+import static org.apache.ignite.cluster.ClusterState.ACTIVE;
 import static org.apache.ignite.testframework.GridTestUtils.suppressException;
 
 /**
@@ -248,13 +249,22 @@ public class IgnitePdsBinaryMetadataAsyncWritingTest extends GridCommonAbstractT
 
         IgniteEx ig1 = startGrid(1);
 
-        ig0.cluster().active(true);
-
-        int ig1Key = findAffinityKeyForNode(ig0.affinity(DEFAULT_CACHE_NAME), ig1.localNode());
+        ig0.cluster().state(ACTIVE);
 
         IgniteCache<Object, Object> cache = ig0.cache(DEFAULT_CACHE_NAME);
 
-        cache.put(ig1Key, new TestAddress(0, "USA", "NYC", "6th Ave"));
+        try {
+            ig1.binary().builder(TestAddress.class.getName())
+                .setField("id", 0)
+                .setField("country", "USA")
+                .setField("city", "NYC")
+                .setField("street", "6th Ave")
+                .build();
+        }
+        catch (Exception ignored) {
+            // Creating binary object will fail as underlying storage for binary meta files is broken.
+            // We expect the node that has caught that error to be stopped by failure handler.
+        }
 
         waitForTopology(1);
     }

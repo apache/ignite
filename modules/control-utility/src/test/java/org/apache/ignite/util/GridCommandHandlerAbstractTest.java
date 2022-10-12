@@ -33,7 +33,7 @@ import java.util.logging.Handler;
 import java.util.logging.Logger;
 import java.util.stream.Collectors;
 import org.apache.ignite.Ignite;
-import org.apache.ignite.IgniteCache;
+import org.apache.ignite.IgniteDataStreamer;
 import org.apache.ignite.cache.affinity.rendezvous.RendezvousAffinityFunction;
 import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.configuration.AtomicConfiguration;
@@ -171,6 +171,10 @@ public abstract class GridCommandHandlerAbstractTest extends GridCommonAbstractT
             U.delete(f);
 
         GridClientFactory.stopAll(false);
+
+        stopAllGrids(true);
+
+        cleanPersistenceDir();
     }
 
     /** {@inheritDoc} */
@@ -455,9 +459,10 @@ public abstract class GridCommandHandlerAbstractTest extends GridCommonAbstractT
 
         ignite.createCache(ccfg);
 
-        IgniteCache<Object, Object> cache = ignite.cache(cacheName);
-        for (int i = 0; i < countEntries; i++)
-            cache.put(i, i);
+        try (IgniteDataStreamer<Object, Object> streamer = ignite.dataStreamer(cacheName)) {
+            for (int i = 0; i < countEntries; i++)
+                streamer.addData(i, i);
+        }
     }
 
     /**

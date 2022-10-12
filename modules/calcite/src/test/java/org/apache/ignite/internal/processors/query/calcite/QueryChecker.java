@@ -35,6 +35,7 @@ import org.apache.ignite.internal.IgniteInterruptedCheckedException;
 import org.apache.ignite.internal.processors.cache.distributed.dht.atomic.GridDhtAtomicCache;
 import org.apache.ignite.internal.processors.cache.distributed.dht.topology.GridDhtLocalPartition;
 import org.apache.ignite.internal.processors.query.QueryEngine;
+import org.apache.ignite.internal.processors.query.schema.management.SchemaManager;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.G;
 import org.apache.ignite.internal.util.typedef.X;
@@ -87,7 +88,11 @@ public abstract class QueryChecker {
      * @return Matcher.
      */
     public static Matcher<String> containsIndexScan(String schema, String tblName, String idxName) {
-        return containsSubPlan("IgniteIndexScan(table=[[" + schema + ", " + tblName + "]], index=[" + idxName + ']');
+        return CoreMatchers.anyOf(
+            containsSubPlan("IgniteIndexScan(table=[[" + schema + ", " + tblName + "]], index=[" + idxName + ']'),
+            containsSubPlan("IgniteIndexScan(table=[[" + schema + ", " + tblName + "]], index=[" +
+                SchemaManager.generateProxyIdxName(idxName) + ']')
+        );
     }
 
     /**

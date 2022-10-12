@@ -214,26 +214,11 @@ The following modules are available:
 
 |ignite-kubernetes | Ignite Kubernetes module provides a TCP Discovery IP Finder that uses a dedicated Kubernetes service for IP addresses lookup of Ignite pods containerized by Kubernetes.
 
-|ignite-log4j |Support for Log4j
-
 |ignite-log4j2 |Support for Log4j2
 
 
 |ignite-ml | Ignite ML Grid provides machine learning features and relevant data structures and methods of linear algebra, including on heap and off heap, dense and sparse, local and distributed implementations.
 Refer to the link:machine-learning/ml[Machine Learning] documentation for details.
-
-|ignite-osgi | This module provides bridging components to make Ignite run seamlessly inside an OSGi container such as Apache Karaf.
-
-|ignite-osgi-karaf | This module contains a feature repository to facilitate installing Ignite into an Apache Karaf container.
-
-|ignite-osgi-paxlogging a|
-This module is an OSGi fragment that exposes the following packages from the Pax Logging API bundle:
-
-- org.apache.log4j.varia
-- org.apache.log4j.xml
-
-These packages are required when installing the ignite-log4j bundle, and are not exposed by default
-by the Pax Logging API - the logging framework used by Apache Karaf.
 
 |ignite-rest-http | Ignite REST-HTTP starts a Jetty-based server within a node that can be used to execute tasks and/or cache commands in grid using HTTP-based link:restapi[RESTful APIs].
 
@@ -267,6 +252,10 @@ The following extensions are available:
 |ignite-azure-ext| Ignite Azure provides Azure Blob Storage-based implementation of IP finder for TCP discovery.
 
 |ignite-cloud-ext | Ignite Cloud provides Apache jclouds implementations of the IP finder for TCP discovery.
+
+|ignite-osgi-ext | This module provides bridging components to make Ignite run seamlessly inside an OSGi container such as Apache Karaf.
+
+|ignite-osgi-karaf-ext | This module contains a feature repository to facilitate installing Ignite into an Apache Karaf container.
 
 |ignite-gce-ext | Ignite GCE provides Google Cloud Storage based implementations of IP finder for TCP discovery.
 

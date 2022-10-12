@@ -19,6 +19,8 @@ package org.apache.ignite.internal.processors.query.h2.opt;
 
 import java.util.HashSet;
 import java.util.List;
+import org.apache.ignite.internal.processors.query.GridQueryRowDescriptor;
+import org.apache.ignite.internal.processors.query.QueryUtils;
 import org.apache.ignite.internal.processors.query.h2.opt.join.ProxyDistributedLookupBatch;
 import org.h2.engine.Session;
 import org.h2.index.Cursor;
@@ -33,6 +35,7 @@ import org.h2.result.SortOrder;
 import org.h2.table.Column;
 import org.h2.table.IndexColumn;
 import org.h2.table.TableFilter;
+import org.h2.value.Value;
 
 /**
  * Allows to have 'free' index for alias columns
@@ -94,8 +97,8 @@ public class GridH2ProxyIndex extends H2IndexCostedBase {
 
     /** {@inheritDoc} */
     @Override public Cursor find(Session session, SearchRow first, SearchRow last) {
-        GridH2RowDescriptor desc = ((GridH2Table)idx.getTable()).rowDescriptor();
-        return idx.find(session, desc.prepareProxyIndexRow(first), desc.prepareProxyIndexRow(last));
+        GridQueryRowDescriptor desc = ((GridH2Table)idx.getTable()).rowDescriptor();
+        return idx.find(session, prepareProxyIndexRow(desc, first), prepareProxyIndexRow(desc, last));
     }
 
     /** {@inheritDoc} */
@@ -118,7 +121,7 @@ public class GridH2ProxyIndex extends H2IndexCostedBase {
 
     /** {@inheritDoc} */
     @Override public void remove(Session session) {
-        throw DbException.getUnsupportedException("remove index");
+        // No-op.
     }
 
     /** {@inheritDoc} */
@@ -163,14 +166,49 @@ public class GridH2ProxyIndex extends H2IndexCostedBase {
         if (batch == null)
             return null;
 
-        GridH2RowDescriptor rowDesc = ((GridH2Table)idx.getTable()).rowDescriptor();
+        GridQueryRowDescriptor rowDesc = ((GridH2Table)idx.getTable()).rowDescriptor();
 
         return new ProxyDistributedLookupBatch(batch, rowDesc);
     }
 
-    /** {@inheritDoc} */
-    @Override public void removeChildrenAndResources(Session session) {
-        // No-op. Will be removed when underlying index is removed
+    /**
+     * Clones provided row and copies values of alias key and val columns
+     * into respective key and val positions.
+     *
+     * @param desc Row descriptor.
+     * @param row Source row.
+     * @return Result.
+     */
+    public static SearchRow prepareProxyIndexRow(GridQueryRowDescriptor desc, SearchRow row) {
+        if (row == null)
+            return null;
+
+        Value[] data = new Value[row.getColumnCount()];
+
+        for (int idx = 0; idx < data.length; idx++)
+            data[idx] = row.getValue(idx);
+
+        copyAliasColumnData(data, QueryUtils.KEY_COL, desc.getAlternativeColumnId(QueryUtils.KEY_COL));
+        copyAliasColumnData(data, QueryUtils.VAL_COL, desc.getAlternativeColumnId(QueryUtils.VAL_COL));
+
+        return H2PlainRowFactory.create(data);
     }
 
+    /**
+     * Copies data between original and alias columns.
+     *
+     * @param data Array of values.
+     * @param colId Original column id.
+     * @param aliasColId Alias column id.
+     */
+    private static void copyAliasColumnData(Value[] data, int colId, int aliasColId) {
+        if (aliasColId == colId)
+            return;
+
+        if (data[aliasColId] == null && data[colId] != null)
+            data[aliasColId] = data[colId];
+
+        if (data[colId] == null && data[aliasColId] != null)
+            data[colId] = data[aliasColId];
+    }
 }

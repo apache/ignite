@@ -56,6 +56,7 @@ import java.util.zip.ZipOutputStream;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.IgniteSystemProperties;
+import org.apache.ignite.configuration.DataRegionConfiguration;
 import org.apache.ignite.configuration.DataStorageConfiguration;
 import org.apache.ignite.configuration.DiskPageCompression;
 import org.apache.ignite.configuration.IgniteConfiguration;
@@ -81,8 +82,8 @@ import org.apache.ignite.internal.pagemem.wal.record.delta.PageDeltaRecord;
 import org.apache.ignite.internal.processors.cache.GridCacheSharedContext;
 import org.apache.ignite.internal.processors.cache.GridCacheSharedManagerAdapter;
 import org.apache.ignite.internal.processors.cache.WalStateManager.WALDisableContext;
+import org.apache.ignite.internal.processors.cache.persistence.DataRegion;
 import org.apache.ignite.internal.processors.cache.persistence.DataStorageMetricsImpl;
-import org.apache.ignite.internal.processors.cache.persistence.GridCacheDatabaseSharedManager;
 import org.apache.ignite.internal.processors.cache.persistence.IgniteCacheDatabaseSharedManager;
 import org.apache.ignite.internal.processors.cache.persistence.StorageException;
 import org.apache.ignite.internal.processors.cache.persistence.file.FileIO;
@@ -341,6 +342,13 @@ public class FileWriteAheadLogManager extends GridCacheSharedManagerAdapter impl
     private final long walForceArchiveTimeout;
 
     /**
+     * {@code True} if WAL enabled only for CDC.
+     * This mean {@link DataRegionConfiguration#isPersistenceEnabled()} is {@code false} for all {@link DataRegion},
+     * and {@link DataRegionConfiguration#isCdcEnabled()} {@code true} for some of them.
+     */
+    private final boolean inMemoryCdc;
+
+    /**
      * Container with last WAL record logged timestamp.<br> Zero value means there was no records logged to current
      * segment, skip possible archiving for this case<br> Value is filled only for case {@link
      * #walAutoArchiveAfterInactivity} > 0<br>
@@ -423,6 +431,7 @@ public class FileWriteAheadLogManager extends GridCacheSharedManagerAdapter impl
         segmentFileInputFactory = new SimpleSegmentFileInputFactory();
         walAutoArchiveAfterInactivity = dsCfg.getWalAutoArchiveAfterInactivity();
         walForceArchiveTimeout = dsCfg.getWalForceArchiveTimeout();
+        inMemoryCdc = !CU.isPersistenceEnabled(dsCfg) && CU.isCdcEnabled(igCfg);
 
         timeoutRolloverMux = (walAutoArchiveAfterInactivity > 0 || walForceArchiveTimeout > 0) ? new Object() : null;
 
@@ -1374,6 +1383,11 @@ public class FileWriteAheadLogManager extends GridCacheSharedManagerAdapter impl
                 segmentSize.put(idx, currSize);
             }
             finally {
+                // Move checkpoint pointer to the edge as node don't have actual checkpoints in `inMemoryCdc=true` mode.
+                // This will allow cleaner to remove segments from archive.
+                if (inMemoryCdc)
+                    notchLastCheckpointPtr(hnd.position());
+
                 if (archiver == null)
                     segmentAware.addSize(idx, currSize - reservedSize);
             }
@@ -2181,13 +2195,24 @@ public class FileWriteAheadLogManager extends GridCacheSharedManagerAdapter impl
          * Checks if there are already compressed segments and assigns counters if needed.
          */
         private void initAlreadyCompressedSegments() {
-            FileDescriptor[] alreadyCompressed = scan(walArchiveDir.listFiles(WAL_SEGMENT_FILE_COMPACTED_FILTER));
+            long firstArchivedIdx = -1;
+            long lastCompactedIdx = -1;
 
-            if (alreadyCompressed.length > 0)
-                segmentAware.onSegmentCompressed(alreadyCompressed[alreadyCompressed.length - 1].idx());
+            for (FileDescriptor segment : walArchiveFiles()) {
+                if (segment.isCompressed()) {
+                    lastCompactedIdx = segment.idx();
 
-            for (FileDescriptor fd : alreadyCompressed)
-                metrics.onWalSegmentCompressed(fd.file().length());
+                    metrics.onWalSegmentCompressed(segment.file().length());
+                }
+                else if (firstArchivedIdx == -1)
+                    firstArchivedIdx = segment.idx();
+            }
+
+            // We have to set a starting index for the compressor.
+            if (lastCompactedIdx >= 0)
+                segmentAware.onSegmentCompressed(lastCompactedIdx);
+            else if (firstArchivedIdx >= 0)
+                segmentAware.onSegmentCompressed(firstArchivedIdx - 1);
         }
 
         /**
@@ -2266,6 +2291,9 @@ public class FileWriteAheadLogManager extends GridCacheSharedManagerAdapter impl
             if (reserved)
                 return segmentToCompress;
             else {
+                if (log.isDebugEnabled())
+                    log.debug("Skipping segment compression [idx=" + segmentToCompress + ']');
+
                 segmentAware.onSegmentCompressed(segmentToCompress);
 
                 return -1;
@@ -2319,6 +2347,9 @@ public class FileWriteAheadLogManager extends GridCacheSharedManagerAdapter impl
                         metrics.onWalSegmentCompressed(currSize);
 
                         segmentAware.onSegmentCompressed(segIdx);
+
+                        if (log.isDebugEnabled())
+                            log.debug("Segment compressed notification [idx=" + segIdx + ']');
 
                         if (evt.isRecordable(EVT_WAL_SEGMENT_COMPACTED) && !cctx.kernalContext().recoveryMode())
                             evt.record(new WalSegmentCompactedEvent(cctx.localNode(), segIdx, zip.getAbsoluteFile()));
@@ -3277,7 +3308,7 @@ public class FileWriteAheadLogManager extends GridCacheSharedManagerAdapter impl
                                 + ", maxSize=" + U.humanReadableByteCount(maxWalArchiveSize) + ']');
                         }
 
-                        ((GridCacheDatabaseSharedManager)cctx.database()).onWalTruncated(highPtr);
+                        cctx.database().onWalTruncated(highPtr);
 
                         int truncated = truncate(highPtr);
 

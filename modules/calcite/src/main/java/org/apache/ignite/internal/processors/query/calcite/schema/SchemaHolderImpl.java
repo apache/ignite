@@ -28,20 +28,25 @@ import org.apache.calcite.rel.RelCollations;
 import org.apache.calcite.rel.RelFieldCollation;
 import org.apache.calcite.schema.SchemaPlus;
 import org.apache.calcite.tools.Frameworks;
+import org.apache.calcite.util.ImmutableBitSet;
+import org.apache.calcite.util.mapping.Mappings;
 import org.apache.ignite.cache.CacheMode;
 import org.apache.ignite.cache.affinity.AffinityFunction;
 import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.internal.GridKernalContext;
-import org.apache.ignite.internal.cache.query.index.Index;
+import org.apache.ignite.internal.cache.query.index.SortOrder;
+import org.apache.ignite.internal.cache.query.index.sorted.IndexKeyDefinition;
 import org.apache.ignite.internal.processors.cache.GridCacheContextInfo;
-import org.apache.ignite.internal.processors.query.GridQueryIndexDescriptor;
 import org.apache.ignite.internal.processors.query.GridQueryTypeDescriptor;
+import org.apache.ignite.internal.processors.query.QueryField;
 import org.apache.ignite.internal.processors.query.calcite.exec.exp.IgniteScalarFunction;
 import org.apache.ignite.internal.processors.query.calcite.trait.TraitUtils;
 import org.apache.ignite.internal.processors.query.calcite.type.IgniteTypeFactory;
 import org.apache.ignite.internal.processors.query.calcite.util.AbstractService;
+import org.apache.ignite.internal.processors.query.calcite.util.Commons;
 import org.apache.ignite.internal.processors.query.schema.SchemaChangeListener;
+import org.apache.ignite.internal.processors.query.schema.management.IndexDescriptor;
 import org.apache.ignite.internal.processors.subscription.GridInternalSubscriptionProcessor;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.lang.IgnitePredicate;
@@ -158,42 +163,102 @@ public class SchemaHolderImpl extends AbstractService implements SchemaHolder, S
     }
 
     /** {@inheritDoc} */
-    @Override public synchronized void onSchemaCreated(String schemaName) {
+    @Override public void onSchemaCreated(String schemaName) {
         igniteSchemas.putIfAbsent(schemaName, new IgniteSchema(schemaName));
         rebuild();
     }
 
     /** {@inheritDoc} */
-    @Override public synchronized void onSchemaDropped(String schemaName) {
+    @Override public void onSchemaDropped(String schemaName) {
         igniteSchemas.remove(schemaName);
         rebuild();
     }
 
     /** {@inheritDoc} */
-    @Override public synchronized void onSqlTypeCreated(
+    @Override public void onSqlTypeCreated(
         String schemaName,
         GridQueryTypeDescriptor typeDesc,
         GridCacheContextInfo<?, ?> cacheInfo
     ) {
-        IgniteSchema schema = igniteSchemas.computeIfAbsent(schemaName, IgniteSchema::new);
-
-        String tblName = typeDesc.tableName();
-
-        CacheTableDescriptorImpl desc =
-            new CacheTableDescriptorImpl(cacheInfo, typeDesc, affinityIdentity(cacheInfo.config()));
-
-        schema.addTable(tblName, new CacheTableImpl(ctx, desc));
-
-        rebuild();
+        publishTable(schemaName, typeDesc.tableName(), createTable(typeDesc, cacheInfo));
     }
 
     /** {@inheritDoc} */
-    @Override public void onSqlTypeUpdated(
+    @Override public void onColumnsAdded(
         String schemaName,
+        GridQueryTypeDescriptor typeDesc,
+        GridCacheContextInfo<?, ?> cacheInfo,
+        List<QueryField> cols
+    ) {
+        IgniteCacheTable oldTbl = table(schemaName, typeDesc.tableName());
+        assert oldTbl != null;
+
+        IgniteCacheTable newTbl = createTable(typeDesc, cacheInfo);
+
+        // Recreate indexes for the new table without columns shift.
+        for (IgniteIndex idx : oldTbl.indexes().values()) {
+            CacheIndexImpl idx0 = (CacheIndexImpl)idx;
+
+            newTbl.addIndex(new CacheIndexImpl(idx0.collation(), idx0.name(), idx0.queryIndex(), newTbl));
+        }
+
+        publishTable(schemaName, typeDesc.tableName(), newTbl);
+    }
+
+    /** {@inheritDoc} */
+    @Override public void onColumnsDropped(
+        String schemaName,
+        GridQueryTypeDescriptor typeDesc,
+        GridCacheContextInfo<?, ?> cacheInfo,
+        List<String> cols
+    ) {
+        IgniteCacheTable oldTbl = table(schemaName, typeDesc.tableName());
+        assert oldTbl != null;
+
+        IgniteCacheTable newTbl = createTable(typeDesc, cacheInfo);
+
+        // Recreate indexes for the new table with columns shift.
+        int colsCnt = oldTbl.descriptor().columnDescriptors().size();
+        ImmutableBitSet.Builder retainedCols = ImmutableBitSet.builder();
+        retainedCols.set(0, colsCnt);
+
+        for (String droppedCol : cols)
+            retainedCols.clear(oldTbl.descriptor().columnDescriptor(droppedCol).fieldIndex());
+
+        Mappings.TargetMapping mapping = Commons.mapping(retainedCols.build(), colsCnt);
+
+        for (IgniteIndex idx : oldTbl.indexes().values()) {
+            CacheIndexImpl idx0 = (CacheIndexImpl)idx;
+
+            newTbl.addIndex(new CacheIndexImpl(RelCollations.permute(idx0.collation(), mapping), idx0.name(),
+                idx0.queryIndex(), newTbl));
+        }
+
+        publishTable(schemaName, typeDesc.tableName(), newTbl);
+    }
+
+    /** */
+    private IgniteCacheTable createTable(
         GridQueryTypeDescriptor typeDesc,
         GridCacheContextInfo<?, ?> cacheInfo
     ) {
-        onSqlTypeCreated(schemaName, typeDesc, cacheInfo);
+        CacheTableDescriptorImpl desc =
+            new CacheTableDescriptorImpl(cacheInfo, typeDesc, affinityIdentity(cacheInfo.config()));
+
+        return new CacheTableImpl(ctx, desc);
+    }
+
+    /** */
+    private void publishTable(
+        String schemaName,
+        String tblName,
+        IgniteTable tbl
+    ) {
+        IgniteSchema schema = igniteSchemas.computeIfAbsent(schemaName, IgniteSchema::new);
+
+        schema.addTable(tblName, tbl);
+
+        rebuild();
     }
 
     /** */
@@ -204,9 +269,10 @@ public class SchemaHolderImpl extends AbstractService implements SchemaHolder, S
     }
 
     /** {@inheritDoc} */
-    @Override public synchronized void onSqlTypeDropped(
+    @Override public void onSqlTypeDropped(
         String schemaName,
-        GridQueryTypeDescriptor typeDesc
+        GridQueryTypeDescriptor typeDesc,
+        boolean destroy
     ) {
         IgniteSchema schema = igniteSchemas.computeIfAbsent(schemaName, IgniteSchema::new);
 
@@ -216,17 +282,18 @@ public class SchemaHolderImpl extends AbstractService implements SchemaHolder, S
     }
 
     /** {@inheritDoc} */
-    @Override public synchronized void onIndexCreated(String schemaName, String tblName, String idxName,
-        GridQueryIndexDescriptor idxDesc, @Nullable Index gridIdx) {
-        IgniteSchema schema = igniteSchemas.get(schemaName);
-        assert schema != null;
-
-        IgniteCacheTable tbl = (IgniteCacheTable)schema.getTable(tblName);
+    @Override public void onIndexCreated(
+        String schemaName,
+        String tblName,
+        String idxName,
+        IndexDescriptor idxDesc
+    ) {
+        IgniteCacheTable tbl = table(schemaName, tblName);
         assert tbl != null;
 
         RelCollation idxCollation = deriveSecondaryIndexCollation(idxDesc, tbl);
 
-        IgniteIndex idx = new CacheIndexImpl(idxCollation, idxName, gridIdx, tbl);
+        IgniteIndex idx = new CacheIndexImpl(idxCollation, idxName, idxDesc.index(), tbl);
         tbl.addIndex(idx);
     }
 
@@ -234,18 +301,18 @@ public class SchemaHolderImpl extends AbstractService implements SchemaHolder, S
      * @return Index collation.
      */
     @NotNull private static RelCollation deriveSecondaryIndexCollation(
-        GridQueryIndexDescriptor idxDesc,
+        IndexDescriptor idxDesc,
         IgniteCacheTable tbl
     ) {
         CacheTableDescriptor tblDesc = tbl.descriptor();
-        List<RelFieldCollation> collations = new ArrayList<>(idxDesc.fields().size());
+        List<RelFieldCollation> collations = new ArrayList<>(idxDesc.keyDefinitions().size());
 
-        for (String idxField : idxDesc.fields()) {
-            ColumnDescriptor fieldDesc = tblDesc.columnDescriptor(idxField);
+        for (Map.Entry<String, IndexKeyDefinition> keyDef : idxDesc.keyDefinitions().entrySet()) {
+            ColumnDescriptor fieldDesc = tblDesc.columnDescriptor(keyDef.getKey());
 
             assert fieldDesc != null;
 
-            boolean descending = idxDesc.descending(idxField);
+            boolean descending = keyDef.getValue().order().sortOrder() == SortOrder.DESC;
             int fieldIdx = fieldDesc.fieldIndex();
 
             collations.add(TraitUtils.createFieldCollation(fieldIdx, !descending));
@@ -255,11 +322,8 @@ public class SchemaHolderImpl extends AbstractService implements SchemaHolder, S
     }
 
     /** {@inheritDoc} */
-    @Override public synchronized void onIndexDropped(String schemaName, String tblName, String idxName) {
-        IgniteSchema schema = igniteSchemas.get(schemaName);
-        assert schema != null;
-
-        IgniteTable tbl = (IgniteTable)schema.getTable(tblName);
+    @Override public void onIndexDropped(String schemaName, String tblName, String idxName) {
+        IgniteTable tbl = table(schemaName, tblName);
         assert tbl != null;
 
         tbl.removeIndex(idxName);
@@ -269,10 +333,7 @@ public class SchemaHolderImpl extends AbstractService implements SchemaHolder, S
 
     /** {@inheritDoc} */
     @Override public void onIndexRebuildStarted(String schemaName, String tblName) {
-        IgniteSchema schema = igniteSchemas.get(schemaName);
-        assert schema != null;
-
-        IgniteTable tbl = (IgniteTable)schema.getTable(tblName);
+        IgniteTable tbl = table(schemaName, tblName);
         assert tbl != null;
 
         tbl.markIndexRebuildInProgress(true);
@@ -280,17 +341,14 @@ public class SchemaHolderImpl extends AbstractService implements SchemaHolder, S
 
     /** {@inheritDoc} */
     @Override public void onIndexRebuildFinished(String schemaName, String tblName) {
-        IgniteSchema schema = igniteSchemas.get(schemaName);
-        assert schema != null;
-
-        IgniteTable tbl = (IgniteTable)schema.getTable(tblName);
+        IgniteTable tbl = table(schemaName, tblName);
         assert tbl != null;
 
         tbl.markIndexRebuildInProgress(false);
     }
 
     /** {@inheritDoc} */
-    @Override public void onFunctionCreated(String schemaName, String name, Method method) {
+    @Override public void onFunctionCreated(String schemaName, String name, boolean deterministic, Method method) {
         IgniteSchema schema = igniteSchemas.computeIfAbsent(schemaName, IgniteSchema::new);
 
         schema.addFunction(name.toUpperCase(), IgniteScalarFunction.create(method));
@@ -312,6 +370,16 @@ public class SchemaHolderImpl extends AbstractService implements SchemaHolder, S
     /** {@inheritDoc} */
     @Override public SchemaPlus schema(@Nullable String schema) {
         return schema != null ? calciteSchema.getSubSchema(schema) : calciteSchema;
+    }
+
+    /** */
+    private IgniteCacheTable table(String schemaName, String tableName) {
+        IgniteSchema schema = igniteSchemas.get(schemaName);
+
+        if (schema != null)
+            return (IgniteCacheTable)schema.getTable(tableName);
+
+        return null;
     }
 
     /** */

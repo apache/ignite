@@ -18,8 +18,9 @@
 package org.apache.ignite.internal.cache.query.index.sorted.inline.types;
 
 import java.util.Arrays;
-import org.apache.ignite.internal.cache.query.index.sorted.IndexKeyTypes;
+import org.apache.ignite.internal.cache.query.index.sorted.IndexKeyType;
 import org.apache.ignite.internal.cache.query.index.sorted.keys.BytesIndexKey;
+import org.apache.ignite.internal.cache.query.index.sorted.keys.IndexKey;
 import org.apache.ignite.internal.cache.query.index.sorted.keys.SignedBytesIndexKey;
 import org.apache.ignite.internal.pagemem.PageUtils;
 import org.apache.ignite.internal.util.GridUnsafe;
@@ -33,28 +34,28 @@ public class BytesInlineIndexKeyType extends NullableInlineIndexKeyType<BytesInd
 
     /** */
     public BytesInlineIndexKeyType() {
-        this(IndexKeyTypes.BYTES);
+        this(IndexKeyType.BYTES);
     }
 
     /** */
-    public BytesInlineIndexKeyType(int type) {
+    public BytesInlineIndexKeyType(IndexKeyType type) {
         this(type, true);
     }
 
     /** */
     public BytesInlineIndexKeyType(boolean compareBinaryUnsigned) {
-        this(IndexKeyTypes.BYTES, compareBinaryUnsigned);
+        this(IndexKeyType.BYTES, compareBinaryUnsigned);
     }
 
     /** */
-    public BytesInlineIndexKeyType(int type, boolean compareBinaryUnsigned) {
+    public BytesInlineIndexKeyType(IndexKeyType type, boolean compareBinaryUnsigned) {
         super(type, (short)-1);
 
         this.compareBinaryUnsigned = compareBinaryUnsigned;
     }
 
     /** {@inheritDoc} */
-    @Override public int compare0(long pageAddr, int off, BytesIndexKey bytes) {
+    @Override public int compare0(long pageAddr, int off, IndexKey bytes) {
         long addr = pageAddr + off + 1; // Skip type.
 
         int len1 = PageUtils.getShort(pageAddr, off + 1) & 0x7FFF;
@@ -88,7 +89,7 @@ public class BytesInlineIndexKeyType extends NullableInlineIndexKeyType<BytesInd
 
         int res = Integer.signum(len1 - len2);
 
-        if (isValueFull(pageAddr, off))
+        if (inlinedFullValue(pageAddr, off))
             return res;
 
         if (res >= 0)
@@ -104,7 +105,7 @@ public class BytesInlineIndexKeyType extends NullableInlineIndexKeyType<BytesInd
     @Override protected int put0(long pageAddr, int off, BytesIndexKey key, int maxSize) {
         short size;
 
-        PageUtils.putByte(pageAddr, off, (byte)type());
+        PageUtils.putByte(pageAddr, off, (byte)type().code());
 
         byte[] val = (byte[])key.key();
 
@@ -143,12 +144,8 @@ public class BytesInlineIndexKeyType extends NullableInlineIndexKeyType<BytesInd
         return compareBinaryUnsigned;
     }
 
-    /**
-     * @param pageAddr Page address.
-     * @param off Offset.
-     * @return {@code True} if string is not truncated on save.
-     */
-    private boolean isValueFull(long pageAddr, int off) {
+    /** {@inheritDoc} */
+    @Override public boolean inlinedFullValue(long pageAddr, int off) {
         return (PageUtils.getShort(pageAddr, off + 1) & 0x8000) == 0;
     }
 }

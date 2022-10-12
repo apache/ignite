@@ -20,6 +20,7 @@ package org.apache.ignite.testsuites;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.List;
+import org.apache.ignite.cdc.CdcCacheConfigOnRestartTest;
 import org.apache.ignite.cdc.CdcCacheVersionTest;
 import org.apache.ignite.cdc.CdcSelfTest;
 import org.apache.ignite.cdc.RestartWithWalForceArchiveTimeoutTest;
@@ -47,6 +48,7 @@ import org.apache.ignite.internal.processors.cache.persistence.db.checkpoint.Che
 import org.apache.ignite.internal.processors.cache.persistence.db.checkpoint.CheckpointFreeListTest;
 import org.apache.ignite.internal.processors.cache.persistence.db.checkpoint.CheckpointListenerForRegionTest;
 import org.apache.ignite.internal.processors.cache.persistence.db.checkpoint.CheckpointStartLoggingTest;
+import org.apache.ignite.internal.processors.cache.persistence.db.checkpoint.CheckpointTimeoutLockTest;
 import org.apache.ignite.internal.processors.cache.persistence.db.checkpoint.IgniteCheckpointDirtyPagesForLowLoadTest;
 import org.apache.ignite.internal.processors.cache.persistence.db.checkpoint.LightweightCheckpointTest;
 import org.apache.ignite.internal.processors.cache.persistence.db.filename.IgniteUidAsConsistentIdMigrationTest;
@@ -152,6 +154,7 @@ public class IgnitePdsTestSuite2 {
         GridTestUtils.addTestIfNeeded(suite, CdcCacheVersionTest.class, ignoredTests);
         GridTestUtils.addTestIfNeeded(suite, RestartWithWalForceArchiveTimeoutTest.class, ignoredTests);
         GridTestUtils.addTestIfNeeded(suite, WalForCdcTest.class, ignoredTests);
+        GridTestUtils.addTestIfNeeded(suite, CdcCacheConfigOnRestartTest.class, ignoredTests);
 
         // new style folders with generated consistent ID test
         GridTestUtils.addTestIfNeeded(suite, IgniteUidAsConsistentIdMigrationTest.class, ignoredTests);
@@ -169,6 +172,7 @@ public class IgnitePdsTestSuite2 {
         GridTestUtils.addTestIfNeeded(suite, CheckpointListenerForRegionTest.class, ignoredTests);
         GridTestUtils.addTestIfNeeded(suite, LightweightCheckpointTest.class, ignoredTests);
         GridTestUtils.addTestIfNeeded(suite, CheckpointStartLoggingTest.class, ignoredTests);
+        GridTestUtils.addTestIfNeeded(suite, CheckpointTimeoutLockTest.class, ignoredTests);
         GridTestUtils.addTestIfNeeded(suite, FreeListCachingTest.class, ignoredTests);
         GridTestUtils.addTestIfNeeded(suite, IgniteWalIteratorSwitchSegmentTest.class, ignoredTests);
         GridTestUtils.addTestIfNeeded(suite, IgniteWalIteratorExceptionDuringReadTest.class, ignoredTests);

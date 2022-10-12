@@ -1427,9 +1427,6 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
                 cctx.kernalContext().pools().getSystemExecutorService(),
                 cctx.cache().cacheGroups(),
                 cacheGroup -> {
-                    if (cacheGroup.isLocal())
-                        return null;
-
                     cctx.database().checkpointReadLock();
 
                     try {
@@ -1789,9 +1786,6 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
         Map<Integer, Set<Integer>> res = new HashMap<>();
 
         for (CacheGroupContext grp : cctx.cache().cacheGroups()) {
-            if (grp.isLocal())
-                continue;
-
             for (GridDhtLocalPartition locPart : grp.topology().currentLocalPartitions()) {
                 if (locPart.state() == OWNING && (preferWalRebalance() ||
                     locPart.fullSize() > historicalRebalanceThreshold.getOrDefault(walRebalanceThresholdLegacy)))
@@ -2055,6 +2049,19 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
         catch (IgniteCheckedException e) {
             throw new IgniteException(e);
         }
+
+        return res;
+    }
+
+    /**
+     * @param f Consumer.
+     * @return Accumulated result for all page stores.
+     */
+    public long forAllPageStores(ToLongFunction<PageStore> f) {
+        long res = 0;
+
+        for (CacheGroupContext gctx : cacheGroupContexts())
+            res += forGroupPageStores(gctx, f);
 
         return res;
     }
@@ -2726,7 +2733,7 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
 
                         CacheGroupContext ctx = cctx.cache().cacheGroup(rbRec.groupId());
 
-                        if (ctx != null && !ctx.isLocal()) {
+                        if (ctx != null) {
                             GridDhtLocalPartition part = ctx.topology().forceCreatePartition(rbRec.partitionId());
 
                             ctx.offheap().dataStore(part).updateInitialCounter(rbRec.start(), rbRec.range());
@@ -2944,7 +2951,7 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
      * @param highBound Upper bound.
      * @throws IgniteCheckedException If failed.
      */
-    public void onWalTruncated(@Nullable WALPointer highBound) throws IgniteCheckedException {
+    @Override public void onWalTruncated(@Nullable WALPointer highBound) throws IgniteCheckedException {
         checkpointManager.removeCheckpointsUntil(highBound);
     }
 
@@ -2961,7 +2968,7 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
         if (partId == -1)
             partId = cacheCtx.affinity().partition(dataEntry.key());
 
-        GridDhtLocalPartition locPart = cacheCtx.isLocal() ? null : cacheCtx.topology().forceCreatePartition(partId);
+        GridDhtLocalPartition locPart = cacheCtx.topology().forceCreatePartition(partId);
 
         switch (dataEntry.op()) {
             case CREATE:
@@ -3176,11 +3183,6 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
     }
 
     /** {@inheritDoc} */
-    @Override public DataStorageMetricsImpl dataStorageMetricsImpl() {
-        return dsMetrics;
-    }
-
-    /** {@inheritDoc} */
     @Override public MetaStorage metaStorage() {
         return metaStorage;
     }
@@ -3347,7 +3349,7 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
     private static void dumpPartitionsInfo(GridCacheSharedContext cctx,
         IgniteLogger log) throws IgniteCheckedException {
         for (CacheGroupContext grp : cctx.cache().cacheGroups()) {
-            if (grp.isLocal() || !grp.persistenceEnabled())
+            if (!grp.persistenceEnabled())
                 continue;
 
             dumpPartitionsInfo(grp, log);

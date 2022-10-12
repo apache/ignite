@@ -680,7 +680,7 @@ public class VisorCacheMetrics extends VisorDataTransferObject {
     /** {@inheritDoc} */
     @Override protected void writeExternalData(ObjectOutput out) throws IOException {
         U.writeString(out, name);
-        U.writeEnum(out, mode);
+        out.writeByte(CacheMode.toCode(mode));
 
         out.writeBoolean(sys);
         out.writeInt(size);
@@ -743,7 +743,7 @@ public class VisorCacheMetrics extends VisorDataTransferObject {
     /** {@inheritDoc} */
     @Override protected void readExternalData(byte protoVer, ObjectInput in) throws IOException, ClassNotFoundException {
         name = U.readString(in);
-        mode = CacheMode.fromOrdinal(in.readByte());
+        mode = CacheMode.fromCode(in.readByte());
         sys = in.readBoolean();
         size = in.readInt();
         keySize = in.readInt();

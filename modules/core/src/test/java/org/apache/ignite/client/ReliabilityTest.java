@@ -23,6 +23,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Random;
 import java.util.concurrent.CyclicBarrier;
+import java.util.concurrent.ExecutionException;
 import java.util.concurrent.Executors;
 import java.util.concurrent.Future;
 import java.util.concurrent.TimeUnit;
@@ -225,6 +226,38 @@ public class ReliabilityTest extends AbstractThinClientTest {
     }
 
     /**
+     * Tests retry policy exception handling.
+     */
+    @Test
+    public void testExceptionInRetryPolicyPropagatesToCaller() {
+        if (isPartitionAware())
+            return;
+
+        try (LocalIgniteCluster cluster = LocalIgniteCluster.start(1);
+             IgniteClient client = Ignition.startClient(getClientConfiguration()
+                 .setRetryPolicy(new ExceptionRetryPolicy())
+                 .setAddresses(
+                     cluster.clientAddresses().iterator().next(),
+                     cluster.clientAddresses().iterator().next()))
+        ) {
+            ClientCache<Integer, Integer> cache = client.createCache("cache");
+            dropAllThinClientConnections(Ignition.allGrids().get(0));
+
+            Throwable asyncEx = GridTestUtils.assertThrows(null, () -> cache.getAsync(0).get(),
+                    ExecutionException.class, "Channel is closed");
+
+            dropAllThinClientConnections(Ignition.allGrids().get(0));
+
+            Throwable syncEx = GridTestUtils.assertThrows(null, () -> cache.get(0),
+                    ClientConnectionException.class, "Channel is closed");
+
+            for (Throwable t : new Throwable[] {asyncEx.getCause(), syncEx}) {
+                assertEquals("Error in policy.", t.getSuppressed()[0].getMessage());
+            }
+        }
+    }
+
+    /**
      * Tests that retry limit of 1 effectively disables retry/failover.
      */
     @SuppressWarnings("ThrowableNotThrown")
@@ -316,13 +349,13 @@ public class ReliabilityTest extends AbstractThinClientTest {
 
         String nullOpsNames = nullOps.stream().map(Enum::name).collect(Collectors.joining(", "));
 
-        long expectedNullCount = 16;
+        long expectedNullCnt = 19;
 
         String msg = nullOps.size()
                 + " operation codes do not have public equivalent. When adding new codes, update ClientOperationType too. Missing ops: "
                 + nullOpsNames;
 
-        assertEquals(msg, expectedNullCount, nullOps.size());
+        assertEquals(msg, expectedNullCnt, nullOps.size());
     }
 
     /**

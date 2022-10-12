@@ -30,10 +30,10 @@ import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.IgniteSystemProperties;
 import org.apache.ignite.cache.CacheAtomicityMode;
 import org.apache.ignite.cache.query.SqlFieldsQuery;
+import org.apache.ignite.failure.FailureContext;
 import org.apache.ignite.internal.processors.cache.GridCacheContext;
 import org.apache.ignite.internal.processors.cache.GridCacheContextInfo;
 import org.apache.ignite.internal.processors.cache.mvcc.MvccUtils;
-import org.apache.ignite.internal.processors.cache.query.GridCacheTwoStepQuery;
 import org.apache.ignite.internal.processors.cache.query.IgniteQueryErrorCode;
 import org.apache.ignite.internal.processors.cache.query.SqlFieldsQueryEx;
 import org.apache.ignite.internal.processors.odbc.jdbc.JdbcParameterMeta;
@@ -64,9 +64,10 @@ import org.apache.ignite.internal.sql.command.SqlCommand;
 import org.apache.ignite.internal.util.GridBoundedConcurrentLinkedHashMap;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.internal.U;
+import org.h2.api.ErrorCode;
 import org.h2.command.Prepared;
 import org.jetbrains.annotations.Nullable;
-
+import static org.apache.ignite.failure.FailureType.CRITICAL_ERROR;
 import static org.apache.ignite.internal.processors.query.h2.sql.GridSqlQuerySplitter.keyColumn;
 import static org.apache.ignite.internal.processors.tracing.SpanTags.SQL_PARSER_CACHE_HIT;
 import static org.apache.ignite.internal.processors.tracing.SpanType.SQL_QRY_PARSE;
@@ -585,7 +586,17 @@ public class QueryParser {
                     null
                 );
             }
-            catch (IgniteCheckedException | SQLException e) {
+            catch (SQLException e) {
+                if (e.getErrorCode() == ErrorCode.DATABASE_IS_CLOSED) {
+                    idx.kernalContext().failure().process(new FailureContext(CRITICAL_ERROR, e));
+
+                    throw new IgniteSQLException("Critical database error. " + e.getMessage(),
+                        IgniteQueryErrorCode.DB_UNRECOVERABLE_ERROR, e);
+                }
+                else
+                    throw new IgniteSQLException("Failed to parse query. " + e.getMessage(), IgniteQueryErrorCode.PARSING, e);
+            }
+            catch (IgniteCheckedException e) {
                 throw new IgniteSQLException("Failed to parse query. " + e.getMessage(), IgniteQueryErrorCode.PARSING, e);
             }
             finally {
@@ -671,7 +682,7 @@ public class QueryParser {
         // Check if caches are started because we may need to collect affinity info later on, so they needs to be
         // available on local node.
         for (GridH2Table h2tbl : tbls)
-            H2Utils.checkAndStartNotStartedCache(idx.kernalContext(), h2tbl);
+            H2Utils.checkAndStartNotStartedCache(idx.kernalContext(), h2tbl.cacheInfo());
 
         // Check MVCC mode.
         GridCacheContextInfo ctx = null;

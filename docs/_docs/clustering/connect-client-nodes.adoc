@@ -76,7 +76,7 @@ There are two discovery events that are triggered on the client node when it is 
 * `EVT_CLIENT_NODE_RECONNECTED`
 
 You can listen to these events and execute custom actions in response.
-Refer to the link:events/listening-to-events[Listening to events] section for a code example.
+Please, refer to the link:events/listening-to-events[Listening to events] section for a code example.
 
 == Managing Slow Client Nodes
 

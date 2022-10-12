@@ -19,16 +19,16 @@ package org.apache.ignite.internal.processors.query.calcite.schema;
 import java.util.List;
 import java.util.function.Function;
 import java.util.function.Predicate;
-import java.util.function.Supplier;
 import org.apache.calcite.plan.RelOptCluster;
 import org.apache.calcite.plan.RelOptTable;
 import org.apache.calcite.rel.RelCollation;
 import org.apache.calcite.rex.RexNode;
 import org.apache.calcite.util.ImmutableBitSet;
 import org.apache.ignite.internal.processors.query.calcite.exec.ExecutionContext;
+import org.apache.ignite.internal.processors.query.calcite.exec.exp.RangeIterable;
 import org.apache.ignite.internal.processors.query.calcite.metadata.ColocationGroup;
+import org.apache.ignite.internal.processors.query.calcite.prepare.bounds.SearchBounds;
 import org.apache.ignite.internal.processors.query.calcite.rel.logical.IgniteLogicalIndexScan;
-import org.apache.ignite.internal.processors.query.calcite.util.IndexConditions;
 import org.jetbrains.annotations.Nullable;
 
 /**
@@ -70,7 +70,7 @@ public interface IgniteIndex {
      * @param requiredColumns Set of columns to extract from original row.
      * @return Index condition.
      */
-    public IndexConditions toIndexCondition(
+    public List<SearchBounds> toSearchBounds(
         RelOptCluster cluster,
         @Nullable RexNode cond,
         @Nullable ImmutableBitSet requiredColumns
@@ -81,8 +81,7 @@ public interface IgniteIndex {
         ExecutionContext<Row> execCtx,
         ColocationGroup grp,
         Predicate<Row> filters,
-        Supplier<Row> lowerIdxConditions,
-        Supplier<Row> upperIdxConditions,
+        RangeIterable<Row> ranges,
         Function<Row, Row> rowTransformer,
         @Nullable ImmutableBitSet requiredColumns
     );

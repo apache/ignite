@@ -30,7 +30,6 @@ import java.sql.SQLException;
 import java.sql.Time;
 import java.sql.Timestamp;
 import java.sql.Types;
-import java.text.MessageFormat;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.time.LocalTime;
@@ -56,35 +55,35 @@ import org.apache.ignite.internal.binary.BinaryUtils;
 import org.apache.ignite.internal.processors.cache.CacheObject;
 import org.apache.ignite.internal.processors.cache.CacheObjectValueContext;
 import org.apache.ignite.internal.processors.cache.GridCacheContext;
+import org.apache.ignite.internal.processors.cache.GridCacheContextInfo;
 import org.apache.ignite.internal.processors.cache.GridCacheSharedContext;
 import org.apache.ignite.internal.processors.cache.QueryCursorImpl;
 import org.apache.ignite.internal.processors.cache.mvcc.MvccUtils;
 import org.apache.ignite.internal.processors.cache.query.IgniteQueryErrorCode;
-import org.apache.ignite.internal.processors.cache.query.QueryTable;
 import org.apache.ignite.internal.processors.odbc.jdbc.JdbcParameterMeta;
 import org.apache.ignite.internal.processors.query.GridQueryFieldMetadata;
 import org.apache.ignite.internal.processors.query.GridQueryProperty;
-import org.apache.ignite.internal.processors.query.GridQueryTypeDescriptor;
 import org.apache.ignite.internal.processors.query.IgniteSQLException;
 import org.apache.ignite.internal.processors.query.QueryUtils;
 import org.apache.ignite.internal.processors.query.h2.opt.GridH2IndexBase;
 import org.apache.ignite.internal.processors.query.h2.opt.GridH2RetryException;
-import org.apache.ignite.internal.processors.query.h2.opt.GridH2RowDescriptor;
 import org.apache.ignite.internal.processors.query.h2.opt.GridH2Table;
 import org.apache.ignite.internal.processors.query.h2.opt.GridH2ValueCacheObject;
 import org.apache.ignite.internal.processors.query.h2.opt.QueryContext;
 import org.apache.ignite.internal.processors.query.h2.twostep.msg.GridH2RowMessage;
 import org.apache.ignite.internal.processors.query.h2.twostep.msg.GridH2ValueMessage;
 import org.apache.ignite.internal.processors.query.h2.twostep.msg.GridH2ValueMessageFactory;
+import org.apache.ignite.internal.processors.query.schema.management.IndexDescriptor;
+import org.apache.ignite.internal.processors.query.schema.management.TableDescriptor;
 import org.apache.ignite.internal.util.GridStringBuilder;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.internal.SB;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.h2.engine.Session;
+import org.h2.index.Index;
 import org.h2.jdbc.JdbcConnection;
 import org.h2.result.Row;
 import org.h2.result.SortOrder;
-import org.h2.table.Column;
 import org.h2.table.IndexColumn;
 import org.h2.util.LocalDateTimeUtils;
 import org.h2.value.CompareMode;
@@ -108,11 +107,9 @@ import org.h2.value.ValueString;
 import org.h2.value.ValueTime;
 import org.h2.value.ValueTimestamp;
 import org.h2.value.ValueUuid;
-import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
 import static java.sql.ResultSetMetaData.columnNullableUnknown;
-import static org.apache.ignite.internal.processors.query.QueryUtils.KEY_COL;
 import static org.apache.ignite.internal.processors.query.QueryUtils.KEY_FIELD_NAME;
 import static org.apache.ignite.internal.processors.query.QueryUtils.VAL_FIELD_NAME;
 
@@ -182,37 +179,6 @@ public class H2Utils {
     }
 
     /**
-     * @param cols Columns list.
-     * @param col Column to find.
-     * @return {@code true} If found.
-     */
-    @SuppressWarnings("BooleanMethodIsAlwaysInverted")
-    public static boolean containsColumn(List<IndexColumn> cols, IndexColumn col) {
-        for (int i = cols.size() - 1; i >= 0; i--) {
-            if (equals(cols.get(i), col))
-                return true;
-        }
-
-        return false;
-    }
-
-    /**
-     * Check whether columns list contains key or key alias column.
-     *
-     * @param desc Row descriptor.
-     * @param cols Columns list.
-     * @return Result.
-     */
-    public static boolean containsKeyColumn(GridH2RowDescriptor desc, List<IndexColumn> cols) {
-        for (int i = cols.size() - 1; i >= 0; i--) {
-            if (desc.isKeyColumn(cols.get(i).column.getColumnId()))
-                return true;
-        }
-
-        return false;
-    }
-
-    /**
      * Prepare SQL statement for CREATE TABLE command.
      *
      * @param tbl Table descriptor.
@@ -264,7 +230,7 @@ public class H2Utils {
      * @param ifNotExists Quietly skip index creation if it exists.
      * @return Statement string.
      */
-    public static String indexCreateSql(String fullTblName, GridH2IndexBase h2Idx, boolean ifNotExists) {
+    public static String indexCreateSql(String fullTblName, Index h2Idx, boolean ifNotExists) {
         boolean spatial = F.eq(SPATIAL_IDX_CLS, h2Idx.getClass().getName());
 
         GridStringBuilder sb = new SB("CREATE ")
@@ -318,43 +284,37 @@ public class H2Utils {
     }
 
     /**
-     * @param desc Row descriptor.
-     * @param cols Columns list.
-     * @param keyCol Primary key column.
-     * @param affCol Affinity key column.
-     * @return The same list back.
-     */
-    public static List<IndexColumn> treeIndexColumns(GridH2RowDescriptor desc, List<IndexColumn> cols,
-        IndexColumn keyCol, IndexColumn affCol) {
-        assert keyCol != null;
-
-        if (!containsKeyColumn(desc, cols))
-            cols.add(keyCol);
-
-        if (affCol != null && !containsColumn(cols, affCol))
-            cols.add(affCol);
-
-        return cols;
-    }
-
-    /**
      * Create spatial index.
      *
      * @param tbl Table.
-     * @param idxName Index name.
+     * @param idxDesc Index descriptor.
      * @param cols Columns.
      */
     @SuppressWarnings("ConstantConditions")
-    public static GridH2IndexBase createSpatialIndex(GridH2Table tbl, String idxName, List<IndexColumn> cols) {
+    public static GridH2IndexBase createSpatialIndex(GridH2Table tbl, IndexDescriptor idxDesc, List<IndexColumn> cols) {
         try {
             Class<?> fctCls = Class.forName(SPATIAL_IDX_FACTORY_CLS);
 
-            Method fctMethod = fctCls.getMethod("createIndex", GridH2Table.class, String.class, List.class);
+            Method fctMethod = fctCls.getMethod("createIndex", GridH2Table.class, IndexDescriptor.class, List.class);
 
-            return (GridH2IndexBase)fctMethod.invoke(null, tbl, idxName, cols);
+            return (GridH2IndexBase)fctMethod.invoke(null, tbl, idxDesc, cols);
         }
         catch (Exception e) {
             throw new IgniteException("Failed to instantiate: " + SPATIAL_IDX_CLS, e);
+        }
+    }
+
+    /**
+     * Check if spatial indexes are enabled.
+     */
+    public static boolean checkSpatialIndexEnabled() {
+        try {
+            Class.forName(SPATIAL_IDX_FACTORY_CLS);
+
+            return true;
+        }
+        catch (Exception e) {
+            return false;
         }
     }
 
@@ -512,12 +472,12 @@ public class H2Utils {
      * Convert value to column's expected type by means of H2.
      *
      * @param val Source value.
-     * @param idx Row descriptor.
+     * @param coCtx Cache object context.
      * @param type Expected column type to convert to.
      * @return Converted object.
      * @throws IgniteCheckedException if failed.
      */
-    public static Object convert(Object val, IgniteH2Indexing idx, int type) throws IgniteCheckedException {
+    public static Object convert(Object val, CacheObjectValueContext coCtx, int type) throws IgniteCheckedException {
         if (val == null)
             return null;
 
@@ -526,7 +486,7 @@ public class H2Utils {
         if (objType == type)
             return val;
 
-        Value h2Val = wrap(idx.objectContext(), val, objType);
+        Value h2Val = wrap(coCtx, val, objType);
 
         return h2Val.convertTo(type).getObject();
     }
@@ -552,28 +512,15 @@ public class H2Utils {
     }
 
     /**
-     * Add only new columns to destination list.
+     * Check that given cache is not started and start it for such case.
      *
-     * @param dest List of index columns to add new elements from src list.
-     * @param src List of IndexColumns to add to dest list.
-     */
-    public static void addUniqueColumns(List<IndexColumn> dest, List<IndexColumn> src) {
-        for (IndexColumn col : src) {
-            if (!containsColumn(dest, col))
-                dest.add(col);
-        }
-    }
-
-    /**
-     * Check that given table has not started cache and start it for such case.
-     *
-     * @param tbl Table to check on not started cache.
+     * @param cacheInfo Cache context info.
      * @return {@code true} in case not started and has been started.
      */
     @SuppressWarnings({"ConstantConditions", "UnusedReturnValue"})
-    public static boolean checkAndStartNotStartedCache(GridKernalContext ctx, GridH2Table tbl) {
-        if (tbl != null && tbl.isCacheLazy()) {
-            String cacheName = tbl.cacheInfo().config().getName();
+    public static boolean checkAndStartNotStartedCache(GridKernalContext ctx, GridCacheContextInfo<?, ?> cacheInfo) {
+        if (cacheInfo != null && !cacheInfo.isCacheContextInited()) {
+            String cacheName = cacheInfo.config().getName();
 
             try {
                 Boolean res = ctx.cache().dynamicStartCache(null, cacheName, null, false, true, true).get();
@@ -695,33 +642,6 @@ public class H2Utils {
         }
 
         throw new IgniteCheckedException("Failed to wrap value[type=" + type + ", value=" + obj + "]");
-    }
-
-    /**
-     * Validates properties described by query types.
-     *
-     * @param type Type descriptor.
-     * @throws IgniteCheckedException If validation failed.
-     */
-    @SuppressWarnings("CollectionAddAllCanBeReplacedWithConstructor")
-    public static void validateTypeDescriptor(GridQueryTypeDescriptor type)
-        throws IgniteCheckedException {
-        assert type != null;
-
-        Collection<String> names = new HashSet<>();
-
-        names.addAll(type.fields().keySet());
-
-        if (names.size() < type.fields().size())
-            throw new IgniteCheckedException("Found duplicated properties with the same name [keyType=" +
-                type.keyClass().getName() + ", valueType=" + type.valueClass().getName() + "]");
-
-        String ptrn = "Name ''{0}'' is reserved and cannot be used as a field name [type=" + type.name() + "]";
-
-        for (String name : names) {
-            if (name.equalsIgnoreCase(KEY_FIELD_NAME) || name.equalsIgnoreCase(VAL_FIELD_NAME))
-                throw new IgniteCheckedException(MessageFormat.format(ptrn, name));
-        }
     }
 
     /**
@@ -922,12 +842,12 @@ public class H2Utils {
 
         if (!F.isEmpty(tbls)) {
             for (QueryTable tblKey : tbls) {
-                GridH2Table tbl = idx.schemaManager().dataTable(tblKey.schema(), tblKey.table());
+                TableDescriptor tbl = idx.kernalContext().query().schemaManager().table(tblKey.schema(), tblKey.table());
 
                 if (tbl != null) {
-                    checkAndStartNotStartedCache(idx.kernalContext(), tbl);
+                    checkAndStartNotStartedCache(idx.kernalContext(), tbl.cacheInfo());
 
-                    caches0.add(tbl.cacheId());
+                    caches0.add(tbl.cacheInfo().cacheId());
                 }
             }
         }
@@ -1025,66 +945,6 @@ public class H2Utils {
                 }
             }
         }
-    }
-
-    /**
-     * Create list of index columns. Where possible _KEY columns will be unwrapped.
-     *
-     * @param tbl GridH2Table instance
-     * @param idxCols List of index columns.
-     *
-     * @return Array of key and affinity columns. Key's, if it possible, splitted into simple components.
-     */
-    @NotNull public static IndexColumn[] unwrapKeyColumns(GridH2Table tbl, IndexColumn[] idxCols) {
-        ArrayList<IndexColumn> keyCols = new ArrayList<>();
-
-        boolean isSql = tbl.rowDescriptor().tableDescriptor().sql();
-
-        if (!isSql)
-            return idxCols;
-
-        GridQueryTypeDescriptor type = tbl.rowDescriptor().type();
-
-        for (IndexColumn idxCol : idxCols) {
-            if (idxCol.column.getColumnId() == KEY_COL) {
-                if (QueryUtils.isSqlType(type.keyClass())) {
-                    int altKeyColId = tbl.rowDescriptor().getAlternativeColumnId(QueryUtils.KEY_COL);
-
-                    //Remap simple key to alternative column.
-                    IndexColumn idxKeyCol = new IndexColumn();
-
-                    idxKeyCol.column = tbl.getColumn(altKeyColId);
-                    idxKeyCol.columnName = idxKeyCol.column.getName();
-                    idxKeyCol.sortType = idxCol.sortType;
-
-                    keyCols.add(idxKeyCol);
-                }
-                else {
-                    boolean added = false;
-
-                    for (String propName : type.fields().keySet()) {
-                        GridQueryProperty prop = type.property(propName);
-
-                        if (prop.key()) {
-                            added = true;
-
-                            Column col = tbl.getColumn(propName);
-
-                            keyCols.add(tbl.indexColumn(col.getColumnId(), SortOrder.ASCENDING));
-                        }
-                    }
-
-                    // If key is object but the user has not specified any particular columns,
-                    // we have to fall back to whole-key index.
-                    if (!added)
-                        keyCols.add(idxCol);
-                }
-            }
-            else
-                keyCols.add(idxCol);
-        }
-
-        return keyCols.toArray(new IndexColumn[0]);
     }
 
     /**

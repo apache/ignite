@@ -71,10 +71,8 @@ import org.apache.ignite.lang.IgniteFuture;
 import org.apache.ignite.lang.IgnitePredicate;
 import org.apache.ignite.plugin.CacheTopologyValidatorProvider;
 import org.jetbrains.annotations.Nullable;
-
 import static org.apache.ignite.cache.CacheAtomicityMode.ATOMIC;
 import static org.apache.ignite.cache.CacheAtomicityMode.TRANSACTIONAL_SNAPSHOT;
-import static org.apache.ignite.cache.CacheMode.LOCAL;
 import static org.apache.ignite.cache.CacheMode.REPLICATED;
 import static org.apache.ignite.cache.CacheRebalanceMode.NONE;
 import static org.apache.ignite.events.EventType.EVT_CACHE_REBALANCE_PART_MISSED;
@@ -704,13 +702,6 @@ public class CacheGroupContext {
     /**
      * @return {@code True} if cache is local.
      */
-    public boolean isLocal() {
-        return ccfg.getCacheMode() == LOCAL;
-    }
-
-    /**
-     * @return {@code True} if cache is local.
-     */
     public boolean isReplicated() {
         return ccfg.getCacheMode() == REPLICATED;
     }
@@ -878,18 +869,14 @@ public class CacheGroupContext {
     private void initializeIO() throws IgniteCheckedException {
         assert !recoveryMode.get() : "Couldn't initialize I/O handlers, recovery mode is on for group " + this;
 
-        if (ccfg.getCacheMode() != LOCAL) {
-            if (!ctx.kernalContext().clientNode()) {
-                ctx.io().addCacheGroupHandler(groupId(), GridDhtAffinityAssignmentRequest.class,
-                    (IgniteBiInClosure<UUID, GridDhtAffinityAssignmentRequest>)this::processAffinityAssignmentRequest);
-            }
-
-            preldr = new GridDhtPreloader(this);
-
-            preldr.start();
+        if (!ctx.kernalContext().clientNode()) {
+            ctx.io().addCacheGroupHandler(groupId(), GridDhtAffinityAssignmentRequest.class,
+                (IgniteBiInClosure<UUID, GridDhtAffinityAssignmentRequest>)this::processAffinityAssignmentRequest);
         }
-        else
-            preldr = new GridCachePreloaderAdapter(this);
+
+        preldr = new GridDhtPreloader(this);
+
+        preldr.start();
     }
 
     /**
@@ -944,7 +931,6 @@ public class CacheGroupContext {
     public void addCacheWithContinuousQuery(GridCacheContext cctx) {
         assert sharedGroup() : cacheOrGroupName();
         assert cctx.group() == this : cctx.name();
-        assert !cctx.isLocal() : cctx.name();
 
         List<GridCacheContext> contQryCaches = this.contQryCaches;
 
@@ -962,7 +948,6 @@ public class CacheGroupContext {
     public void removeCacheWithContinuousQuery(GridCacheContext cctx) {
         assert sharedGroup() : cacheOrGroupName();
         assert cctx.group() == this : cctx.name();
-        assert !cctx.isLocal() : cctx.name();
         assert listenerLock.isWriteLockedByCurrentThread();
 
         List<GridCacheContext> contQryCaches = this.contQryCaches;
@@ -998,11 +983,9 @@ public class CacheGroupContext {
         int part,
         long cntr,
         AffinityTopologyVersion topVer,
-        boolean primary) {
+        boolean primary
+    ) {
         assert sharedGroup();
-
-        if (isLocal())
-            return;
 
         List<GridCacheContext> contQryCaches;
 
@@ -1065,11 +1048,9 @@ public class CacheGroupContext {
 
         aff = affCache == null ? GridAffinityAssignmentCache.create(ctx.kernalContext(), ccfg.getAffinity(), ccfg) : affCache;
 
-        if (ccfg.getCacheMode() != LOCAL) {
-            top = ctx.kernalContext().resource().resolve(new GridDhtPartitionTopologyImpl(ctx, this));
+        top = ctx.kernalContext().resource().resolve(new GridDhtPartitionTopologyImpl(ctx, this));
 
-            metrics.onTopologyInitialized();
-        }
+        metrics.onTopologyInitialized();
 
         try {
             offheapMgr = ctx.kernalContext().resource().resolve(persistenceEnabled

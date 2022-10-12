@@ -38,9 +38,8 @@ ODBC module is disabled by default, you can enable it by setting CMake option -D
 OPENSSL_ROOT_DIR environment variable must be set to openssl installation directory on Windows, on other platforms
 it is required if you want to use non-system openssl.
 
-Building and installing the Apache Ignite C++ components:
- * Navigate to the directory $IGNITE_HOME/platforms/cpp
- * Execute the following commands one by one to build the project:
+To build the Apache Ignite C++ components the following steps and command line commands should be executed one by one:
+ * cd $IGNITE_HOME/platforms/cpp
  * mkdir cmake-build-[release|debug]
  * cd ./cmake-build-[release|debug]
  * run CMake configuration:
@@ -53,7 +52,22 @@ Building and installing the Apache Ignite C++ components:
 
     CMake by default generate on Windows Visual Studio projects. You can find generated projects in CMake
     build directory (./cmake-build-[release|debug]) and open Ignite.C++.sln in Visual Studio.
- * cmake --build . --target install --config [Release|Debug]
+
+    CMAKE_INSTALL_PREFIX option should only be used if you want to install Ignite in non-default directory. This option
+    will only be used later during installation step, so you may safely ignore it if you are not planning on installing
+    Ignite or if you are OK with the default installation directory.
+
+ * Build Ignite C++ using following command:
+   cmake --build . --config [Release|Debug]
+
+   Note, that installing Ignite in default installation directory will most probably require a super-user privileges,
+   so if you don't have them or don't want to install Ignite C++ using them you should make sure you have set your
+   CMAKE_INSTALL_PREFIX option appropriately in the previous step.
+
+ * Install Ignite C++ using following command:
+   cmake --build . --target install --config [Release|Debug]
+
+   This step is optional, but it is required to build and run examples as they can only find installed Ignite C++.
 
 Testing:
  Tests are disabled by default, you can enable them by setting CMake option -DWITH_TESTS=ON.
@@ -103,6 +117,7 @@ Building with QT Creator (tm):
 ------------------------------
  * File -> Open file or project -> and choose from ($IGNITE_HOME/modules/platforms) CMakeLists.txt
  * If you have no $JAVA_HOME env variable, you need to append it.
- * Additionally for odbc-test or thin-client-test you need to append IGNITE_NATIVE_TEST_CPP_THIN_CONFIG_PATH and set it 
-   $IGNITE_HOME/modules/platforms/cpp/thin-client-test/config for thin-client-test and $IGNITE_HOME/modules/platforms/cpp/odbc-test/config for odbc-test
+ * Additionally for odbc-test or thin-client-test you need to set following environment variables:
+   IGNITE_NATIVE_TEST_CPP_THIN_CONFIG_PATH=$IGNITE_HOME/modules/platforms/cpp/thin-client-test/config for thin-client-test
+   IGNITE_NATIVE_TEST_ODBC_CONFIG_PATH=$IGNITE_HOME/modules/platforms/cpp/odbc-test/config for odbc-test
  * Command line arguments for tests running need to have this additional lines : --catch_system_errors=no --log_level=all

@@ -26,7 +26,7 @@
         <property name="connectorConfiguration"><null/></property>
 
         <property name="gridLogger">
-            <bean class="org.apache.ignite.logger.log4j.Log4JLogger">
+            <bean class="org.apache.ignite.logger.log4j2.Log4J2Logger">
                 <constructor-arg type="java.lang.String" value="config\log\dotnet-log4j.xml"/>
             </bean>
         </property>

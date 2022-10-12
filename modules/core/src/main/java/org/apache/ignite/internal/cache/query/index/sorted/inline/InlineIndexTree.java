@@ -39,11 +39,9 @@ import org.apache.ignite.internal.cache.query.index.sorted.inline.io.AbstractInl
 import org.apache.ignite.internal.cache.query.index.sorted.inline.io.AbstractInlineLeafIO;
 import org.apache.ignite.internal.cache.query.index.sorted.inline.io.MvccIO;
 import org.apache.ignite.internal.metric.IoStatisticsHolder;
-import org.apache.ignite.internal.pagemem.FullPageId;
 import org.apache.ignite.internal.pagemem.PageIdAllocator;
 import org.apache.ignite.internal.pagemem.PageIdUtils;
 import org.apache.ignite.internal.pagemem.PageMemory;
-import org.apache.ignite.internal.pagemem.wal.record.PageSnapshot;
 import org.apache.ignite.internal.processors.cache.CacheGroupContext;
 import org.apache.ignite.internal.processors.cache.IgniteCacheOffheapManager;
 import org.apache.ignite.internal.processors.cache.mvcc.MvccUtils;
@@ -163,9 +161,6 @@ public class InlineIndexTree extends BPlusTree<IndexRow, IndexRow> {
             // Page is ready - read meta information.
             MetaPageInfo metaInfo = metaInfo();
 
-            if (def != null)
-                def.initByMeta(initNew, metaInfo);
-
             inlineSize = metaInfo.inlineSize();
             setIos(inlineSize, mvccEnabled);
 
@@ -179,11 +174,8 @@ public class InlineIndexTree extends BPlusTree<IndexRow, IndexRow> {
 
             if (!metaInfo.flagsSupported())
                 upgradeMetaPage(inlineObjSupported);
-
         }
         else {
-            def.initByMeta(initNew, null);
-
             rowHnd = rowHndFactory.create(def, keyTypeSettings);
 
             inlineSize = computeInlineSize(
@@ -279,8 +271,7 @@ public class InlineIndexTree extends BPlusTree<IndexRow, IndexRow> {
         int off = io.offset(idx);
 
         List<IndexKeyDefinition> keyDefs = rowHnd.indexKeyDefinitions();
-
-        List<InlineIndexKeyType> keyTypes = rowHandler().inlineIndexKeyTypes();
+        List<InlineIndexKeyType> keyTypes = rowHnd.inlineIndexKeyTypes();
 
         for (keyIdx = 0; keyIdx < keyTypes.size(); keyIdx++) {
             try {
@@ -288,10 +279,6 @@ public class InlineIndexTree extends BPlusTree<IndexRow, IndexRow> {
                 // possible keys for that comparison).
                 if (row.key(keyIdx) == null)
                     return 0;
-
-                // Other keys are not inlined. Should compare as rows.
-                if (keyIdx >= keyTypes.size())
-                    break;
 
                 int maxSize = inlineSize - fieldOff;
 
@@ -511,26 +498,7 @@ public class InlineIndexTree extends BPlusTree<IndexRow, IndexRow> {
      * @throws IgniteCheckedException If failed.
      */
     public MetaPageInfo metaInfo() throws IgniteCheckedException {
-        final long metaPage = acquirePage(metaPageId);
-
-        try {
-            long pageAddr = readLock(metaPageId, metaPage); // Meta can't be removed.
-
-            assert pageAddr != 0 : "Failed to read lock meta page [metaPageId=" +
-                U.hexLong(metaPageId) + ']';
-
-            try {
-                BPlusMetaIO io = BPlusMetaIO.VERSIONS.forPage(pageAddr);
-
-                return new MetaPageInfo(io, pageAddr);
-            }
-            finally {
-                readUnlock(metaPageId, metaPage, pageAddr);
-            }
-        }
-        finally {
-            releasePage(metaPageId, metaPage);
-        }
+        return MetaPageInfo.read(metaPageId, grpId, pageMem);
     }
 
     /**
@@ -546,18 +514,13 @@ public class InlineIndexTree extends BPlusTree<IndexRow, IndexRow> {
         try {
             long pageAddr = writeLock(metaPageId, metaPage); // Meta can't be removed.
 
-            assert pageAddr != 0 : "Failed to read lock meta page [metaPageId=" +
-                U.hexLong(metaPageId) + ']';
+            assert pageAddr != 0 : "Failed to write lock meta page [metaPageId=" + U.hexLong(metaPageId) + ']';
 
             try {
                 BPlusMetaIO.upgradePageVersion(pageAddr, inlineObjSupported, false, pageSize());
-
-                if (wal != null)
-                    wal.log(new PageSnapshot(new FullPageId(metaPageId, grpId),
-                        pageAddr, pageMem.pageSize(), pageMem.realPageSize(grpId)));
             }
             finally {
-                writeUnlock(metaPageId, metaPage, pageAddr, true);
+                writeUnlock(metaPageId, metaPage, pageAddr, Boolean.TRUE, true);
             }
         }
         finally {
@@ -571,30 +534,7 @@ public class InlineIndexTree extends BPlusTree<IndexRow, IndexRow> {
      * @throws IgniteCheckedException If failed.
      */
     public void copyMetaInfo(MetaPageInfo info) throws IgniteCheckedException {
-        final long metaPage = acquirePage(metaPageId);
-
-        try {
-            long pageAddr = writeLock(metaPageId, metaPage); // Meta can't be removed.
-
-            assert pageAddr != 0 : "Failed to read lock meta page [metaPageId=" +
-                U.hexLong(metaPageId) + ']';
-
-            try {
-                BPlusMetaIO.setValues(
-                    pageAddr,
-                    info.inlineSize(),
-                    info.useUnwrappedPk(),
-                    info.inlineObjectSupported(),
-                    info.inlineObjectHash()
-                );
-            }
-            finally {
-                writeUnlock(metaPageId, metaPage, pageAddr, true);
-            }
-        }
-        finally {
-            releasePage(metaPageId, metaPage);
-        }
+        info.write(metaPageId, grpId, pageMem);
     }
 
     /** */

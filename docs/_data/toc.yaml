@@ -182,7 +182,7 @@
     - title: Using Cache Queries
       url: key-value-api/using-cache-queries
     - title: Read Repair
-      url: read-repair
+      url: key-value-api/read-repair
 - title: Performing Transactions
   url: key-value-api/transactions
 - title: Working with SQL
@@ -368,8 +368,6 @@
       url: data-structures/atomic-types
     - title: CountDownLatch 
       url: data-structures/countdownlatch
-    - title: Atomic Sequence 
-      url: data-structures/atomic-sequence
     - title:  Semaphore 
       url: data-structures/semaphore
     - title: ID Generator

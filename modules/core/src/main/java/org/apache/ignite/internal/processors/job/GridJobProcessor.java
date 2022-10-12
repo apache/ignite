@@ -1839,7 +1839,7 @@ public class GridJobProcessor extends GridProcessorAdapter {
                     if (!cctx.started()) // Cache not started.
                         return reserved;
 
-                    if (cctx.isLocal() || !cctx.rebalanceEnabled())
+                    if (!cctx.rebalanceEnabled())
                         continue;
 
                     boolean checkPartMapping = false;

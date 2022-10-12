@@ -1288,9 +1288,6 @@ public class CacheMetricsImpl implements CacheMetrics {
      * @return Valid ot not.
      */
     private boolean isValidForOperation(boolean read) {
-        if (cctx.isLocal())
-            return true;
-
         try {
             GridDhtTopologyFuture fut = cctx.shared().exchange().lastFinishedFuture();
 
@@ -1359,43 +1356,34 @@ public class CacheMetricsImpl implements CacheMetrics {
                 sizeLong = cache.localSizeLong(null);
             }
 
-            if (cctx.isLocal()) {
-                if (cache != null) {
-                    offHeapPrimaryEntriesCnt = offHeapEntriesCnt;
+            IntSet primaries = ImmutableIntSet.wrap(cctx.affinity().primaryPartitions(cctx.localNodeId(), topVer));
+            IntSet backups = ImmutableIntSet.wrap(cctx.affinity().backupPartitions(cctx.localNodeId(), topVer));
 
-                    heapEntriesCnt = cache.sizeLong();
-                }
-            }
-            else {
-                IntSet primaries = ImmutableIntSet.wrap(cctx.affinity().primaryPartitions(cctx.localNodeId(), topVer));
-                IntSet backups = ImmutableIntSet.wrap(cctx.affinity().backupPartitions(cctx.localNodeId(), topVer));
+            if (cctx.isNear() && cache != null)
+                heapEntriesCnt = cache.nearSize();
 
-                if (cctx.isNear() && cache != null)
-                    heapEntriesCnt = cache.nearSize();
+            for (GridDhtLocalPartition part : cctx.topology().currentLocalPartitions()) {
+                // Partitions count.
+                GridDhtPartitionState partState = part.state();
 
-                for (GridDhtLocalPartition part : cctx.topology().currentLocalPartitions()) {
-                    // Partitions count.
-                    GridDhtPartitionState partState = part.state();
+                if (partState == GridDhtPartitionState.OWNING)
+                    owningPartCnt++;
 
-                    if (partState == GridDhtPartitionState.OWNING)
-                        owningPartCnt++;
+                if (partState == GridDhtPartitionState.MOVING)
+                    movingPartCnt++;
 
-                    if (partState == GridDhtPartitionState.MOVING)
-                        movingPartCnt++;
+                // Offheap entries count
+                if (cache == null)
+                    continue;
 
-                    // Offheap entries count
-                    if (cache == null)
-                        continue;
+                long cacheSize = part.dataStore().cacheSize(cctx.cacheId());
 
-                    long cacheSize = part.dataStore().cacheSize(cctx.cacheId());
+                if (primaries.contains(part.id()))
+                    offHeapPrimaryEntriesCnt += cacheSize;
+                else if (backups.contains(part.id()))
+                    offHeapBackupEntriesCnt += cacheSize;
 
-                    if (primaries.contains(part.id()))
-                        offHeapPrimaryEntriesCnt += cacheSize;
-                    else if (backups.contains(part.id()))
-                        offHeapBackupEntriesCnt += cacheSize;
-
-                    heapEntriesCnt += part.publicSize(cctx.cacheId());
-                }
+                heapEntriesCnt += part.publicSize(cctx.cacheId());
             }
         }
         catch (Exception e) {

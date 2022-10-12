@@ -34,7 +34,6 @@ import java.util.function.Predicate;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 import java.util.stream.Collectors;
-
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteException;
@@ -44,7 +43,7 @@ import org.apache.ignite.configuration.DataStorageConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.processors.cache.query.SqlFieldsQueryEx;
-import org.apache.ignite.internal.processors.query.h2.IgniteH2Indexing;
+import org.apache.ignite.internal.processors.query.GridQueryProcessor;
 import org.apache.ignite.internal.processors.query.stat.config.StatisticsColumnConfiguration;
 import org.apache.ignite.internal.processors.query.stat.config.StatisticsObjectConfiguration;
 import org.apache.ignite.internal.util.typedef.F;
@@ -83,7 +82,7 @@ public abstract class StatisticsAbstractTest extends GridCommonAbstractTest {
     static final StatisticsTarget SMALL_TARGET = new StatisticsTarget(SMALL_KEY, null);
 
     /** Async operation timeout for test */
-    static final int TIMEOUT = 5_000;
+    static final int TIMEOUT = 10_000;
 
     static {
         assertTrue(SMALL_SIZE < MED_SIZE && MED_SIZE < BIG_SIZE);
@@ -229,9 +228,7 @@ public abstract class StatisticsAbstractTest extends GridCommonAbstractTest {
      * @param grid Grid to process obsolescence on.
      */
     private void processObsolescence(IgniteEx grid) {
-        IgniteH2Indexing indexing = (IgniteH2Indexing)grid.context().query().getIndexing();
-
-        ((IgniteStatisticsManagerImpl)indexing.statsManager()).processObsolescence();
+        ((IgniteStatisticsManagerImpl)grid.context().query().statsManager()).processObsolescence();
     }
 
     /**
@@ -552,7 +549,7 @@ public abstract class StatisticsAbstractTest extends GridCommonAbstractTest {
     ) throws Exception {
         long t0 = U.currentTimeMillis();
 
-        IgniteH2Indexing indexing = (IgniteH2Indexing)ign.context().query().getIndexing();
+        GridQueryProcessor qryProc = ign.context().query();
 
         while (true) {
             try {
@@ -571,12 +568,12 @@ public abstract class StatisticsAbstractTest extends GridCommonAbstractTest {
 
                     switch (type) {
                         case LOCAL:
-                            s = (ObjectStatisticsImpl)indexing.statsManager().getLocalStatistics(target.key());
+                            s = (ObjectStatisticsImpl)qryProc.statsManager().getLocalStatistics(target.key());
 
                             break;
 
                         case GLOBAL:
-                            s = (ObjectStatisticsImpl)indexing.statsManager().getGlobalStatistics(target.key());
+                            s = (ObjectStatisticsImpl)qryProc.statsManager().getGlobalStatistics(target.key());
 
                             break;
 
@@ -727,9 +724,7 @@ public abstract class StatisticsAbstractTest extends GridCommonAbstractTest {
      * @return Statistics manager implementation.
      */
     public IgniteStatisticsManagerImpl statisticsMgr(int nodeIdx) {
-        IgniteH2Indexing indexing = (IgniteH2Indexing)grid(nodeIdx).context().query().getIndexing();
-
-        return (IgniteStatisticsManagerImpl)indexing.statsManager();
+        return statisticsMgr(grid(nodeIdx));
     }
 
     /**
@@ -739,9 +734,7 @@ public abstract class StatisticsAbstractTest extends GridCommonAbstractTest {
      * @return Statistics manager implementation.
      */
     public IgniteStatisticsManagerImpl statisticsMgr(IgniteEx ign) {
-        IgniteH2Indexing indexing = (IgniteH2Indexing)ign.context().query().getIndexing();
-
-        return (IgniteStatisticsManagerImpl)indexing.statsManager();
+        return (IgniteStatisticsManagerImpl)ign.context().query().statsManager();
     }
 
     /**

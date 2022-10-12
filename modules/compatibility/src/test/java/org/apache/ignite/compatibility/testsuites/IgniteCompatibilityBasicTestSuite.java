@@ -17,10 +17,11 @@
 
 package org.apache.ignite.compatibility.testsuites;
 
-import org.apache.ignite.compatibility.cache.LocalCacheTest;
 import org.apache.ignite.compatibility.clients.JavaThinCompatibilityTest;
 import org.apache.ignite.compatibility.clients.JdbcThinCompatibilityTest;
+import org.apache.ignite.compatibility.persistence.CompoundIndexCompatibilityTest;
 import org.apache.ignite.compatibility.persistence.FoldersReuseCompatibilityTest;
+import org.apache.ignite.compatibility.persistence.IgnitePKIndexesMigrationToUnwrapPkTest;
 import org.apache.ignite.compatibility.persistence.IndexTypesCompatibilityTest;
 import org.apache.ignite.compatibility.persistence.InlineJavaObjectCompatibilityTest;
 import org.apache.ignite.compatibility.persistence.MetaStorageCompatibilityTest;
@@ -41,10 +42,11 @@ import org.junit.runners.Suite;
     FoldersReuseCompatibilityTest.class,
     MigratingToWalV2SerializerWithCompactionTest.class,
     MetaStorageCompatibilityTest.class,
-    LocalCacheTest.class,
     MoveBinaryMetadataCompatibility.class,
     JdbcThinCompatibilityTest.class,
-    JavaThinCompatibilityTest.class
+    JavaThinCompatibilityTest.class,
+    IgnitePKIndexesMigrationToUnwrapPkTest.class,
+    CompoundIndexCompatibilityTest.class,
 })
 public class IgniteCompatibilityBasicTestSuite {
 }

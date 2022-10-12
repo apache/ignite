@@ -21,7 +21,6 @@ import java.util.List;
 import java.util.UUID;
 import java.util.function.Function;
 import java.util.function.Predicate;
-import java.util.function.Supplier;
 import org.apache.calcite.plan.RelOptCluster;
 import org.apache.calcite.plan.RelOptTable;
 import org.apache.calcite.rel.RelCollation;
@@ -35,10 +34,11 @@ import org.apache.ignite.internal.cache.query.index.sorted.inline.IndexQueryCont
 import org.apache.ignite.internal.cache.query.index.sorted.inline.InlineIndex;
 import org.apache.ignite.internal.processors.query.calcite.exec.ExecutionContext;
 import org.apache.ignite.internal.processors.query.calcite.exec.IndexScan;
+import org.apache.ignite.internal.processors.query.calcite.exec.exp.RangeIterable;
 import org.apache.ignite.internal.processors.query.calcite.metadata.ColocationGroup;
+import org.apache.ignite.internal.processors.query.calcite.prepare.bounds.SearchBounds;
 import org.apache.ignite.internal.processors.query.calcite.rel.logical.IgniteLogicalIndexScan;
 import org.apache.ignite.internal.processors.query.calcite.util.Commons;
-import org.apache.ignite.internal.processors.query.calcite.util.IndexConditions;
 import org.apache.ignite.internal.processors.query.calcite.util.RexUtils;
 import org.apache.ignite.spi.indexing.IndexingQueryFilter;
 import org.apache.ignite.spi.indexing.IndexingQueryFilterImpl;
@@ -83,6 +83,11 @@ public class CacheIndexImpl implements IgniteIndex {
         return tbl;
     }
 
+    /** Underlying query index. */
+    public Index queryIndex() {
+        return idx;
+    }
+
     /** {@inheritDoc} */
     @Override public IgniteLogicalIndexScan toRel(
         RelOptCluster cluster,
@@ -99,16 +104,14 @@ public class CacheIndexImpl implements IgniteIndex {
         ExecutionContext<Row> execCtx,
         ColocationGroup group,
         Predicate<Row> filters,
-        Supplier<Row> lowerIdxConditions,
-        Supplier<Row> upperIdxConditions,
+        RangeIterable<Row> ranges,
         Function<Row, Row> rowTransformer,
         @Nullable ImmutableBitSet requiredColumns
     ) {
         UUID localNodeId = execCtx.localNodeId();
-
         if (group.nodeIds().contains(localNodeId) && idx != null) {
-            return createScan(localNodeId, execCtx, group, filters, lowerIdxConditions, upperIdxConditions,
-                rowTransformer, requiredColumns);
+            return new IndexScan<>(execCtx, tbl.descriptor(), idx.unwrap(InlineIndex.class), collation.getKeys(),
+                group.partitions(localNodeId), filters, ranges, rowTransformer, requiredColumns);
         }
 
         return Collections.emptyList();
@@ -158,7 +161,7 @@ public class CacheIndexImpl implements IgniteIndex {
     }
 
     /** {@inheritDoc} */
-    @Override public IndexConditions toIndexCondition(
+    @Override public List<SearchBounds> toSearchBounds(
         RelOptCluster cluster,
         @Nullable RexNode cond,
         @Nullable ImmutableBitSet requiredColumns
@@ -170,7 +173,7 @@ public class CacheIndexImpl implements IgniteIndex {
             collation = collation.apply(Commons.mapping(requiredColumns, rowType.getFieldCount()));
 
         if (!collation.getFieldCollations().isEmpty()) {
-            return RexUtils.buildSortedIndexConditions(
+            return RexUtils.buildSortedSearchBounds(
                 cluster,
                 collation,
                 cond,
@@ -180,7 +183,7 @@ public class CacheIndexImpl implements IgniteIndex {
         }
 
         // Empty index find predicate.
-        return new IndexConditions();
+        return null;
     }
 
     /** */

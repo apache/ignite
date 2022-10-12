@@ -44,6 +44,8 @@ import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.junit.runners.Parameterized;
 
+import static org.apache.ignite.internal.processors.cache.distributed.CachePartitionLossWithPersistenceTest.checkLostPartitionAcrossCluster;
+
 /**
  *
  */
@@ -204,6 +206,10 @@ public class CachePartitionLossWithRestartsTest extends GridCommonAbstractTest {
 
         GridDhtPartitionTopology top = startGrid(1).cachex(DEFAULT_CACHE_NAME).context().topology();
         assertEquals(lost1, top.lostPartitions());
+
+        // Check that all lost partitions have the same state on all cluster nodes.
+        for (Integer lostPart : lost1)
+            checkLostPartitionAcrossCluster(DEFAULT_CACHE_NAME, lostPart);
 
         // TODO https://issues.apache.org/jira/browse/IGNITE-13053
         grid(1).resetLostPartitions(Collections.singleton(DEFAULT_CACHE_NAME));

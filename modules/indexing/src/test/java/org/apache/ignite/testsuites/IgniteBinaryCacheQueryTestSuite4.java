@@ -22,7 +22,6 @@ import org.apache.ignite.internal.metric.SqlStatisticsUserQueriesLongTest;
 import org.apache.ignite.internal.processors.cache.distributed.near.GridCachePartitionedTxMultiNodeSelfTest;
 import org.apache.ignite.internal.processors.cache.distributed.near.IgniteCacheQueryReservationOnUnstableTopologyTest;
 import org.apache.ignite.internal.processors.cache.distributed.replicated.GridCacheReplicatedTxMultiNodeBasicTest;
-import org.apache.ignite.internal.processors.cache.local.IgniteCacheLocalQueryDefaultTimeoutSelfTest;
 import org.apache.ignite.internal.processors.query.DmlBatchSizeDeadlockTest;
 import org.apache.ignite.internal.processors.query.IgniteSqlCreateTableTemplateTest;
 import org.apache.ignite.internal.processors.query.LocalQueryLazyTest;
@@ -88,8 +87,6 @@ import org.junit.runners.Suite;
     SqlDataTypesCoverageTests.class,
     SqlByteArrayTest.class,
     SqlPartOfComplexPkLookupTest.class,
-
-    IgniteCacheLocalQueryDefaultTimeoutSelfTest.class,
 
     SqlQueriesTopologyMappingTest.class,
 
