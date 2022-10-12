@@ -30,7 +30,7 @@ import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.cluster.ClusterTopologyException;
 import org.apache.ignite.internal.GridKernalContext;
-import org.apache.ignite.internal.cache.query.index.sorted.IndexKeyTypes;
+import org.apache.ignite.internal.cache.query.index.sorted.IndexKeyType;
 import org.apache.ignite.internal.cache.query.index.sorted.IndexRow;
 import org.apache.ignite.internal.cache.query.index.sorted.IndexSearchRowImpl;
 import org.apache.ignite.internal.cache.query.index.sorted.InlineIndexRowHandler;
@@ -170,7 +170,7 @@ public class IndexScan<Row> extends AbstractIndexScan<Row, IndexRow> {
             /** {@inheritDoc} */
             @Override public boolean apply(BPlusTree<IndexRow, IndexRow> tree, BPlusIO<IndexRow> io, long pageAddr,
                 int idx) throws IgniteCheckedException {
-                return io.getLookupRow(tree, pageAddr, idx).key(0).type() != IndexKeyTypes.NULL;
+                return io.getLookupRow(tree, pageAddr, idx).key(0).type() != IndexKeyType.NULL;
             }
         };
         IndexQueryContext qctx = new IndexQueryContext(filter, rowFilter, ectx.mvccSnapshot());

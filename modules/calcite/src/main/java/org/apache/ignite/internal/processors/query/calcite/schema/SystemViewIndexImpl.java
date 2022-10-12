@@ -107,7 +107,7 @@ public class SystemViewIndexImpl implements IgniteIndex {
     /** {@inheritDoc} */
     @Override public <Row> List<Row> findFirstOrLast(boolean first, ExecutionContext<Row> ectx,
         ColocationGroup grp, @Nullable ImmutableBitSet requiredColumns) {
-        Iterator<Row> it = scan(ectx, grp, null, null, null, null, requiredColumns).iterator();
+        Iterator<Row> it = scan(ectx, grp, null, null, null, requiredColumns).iterator();
 
         Row curRow = null;
 

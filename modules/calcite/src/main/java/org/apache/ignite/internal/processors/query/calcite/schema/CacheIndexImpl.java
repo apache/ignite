@@ -150,7 +150,6 @@ public class CacheIndexImpl implements IgniteIndex {
                 null,
                 null,
                 null,
-                null,
                 requiredColumns
             )) {
                 return scan.firstOrLast(first);
@@ -184,5 +183,20 @@ public class CacheIndexImpl implements IgniteIndex {
 
         // Empty index find predicate.
         return null;
+    }
+
+    /** */
+    private <Row> IndexScan<Row> createScan(
+        UUID localNodeId,
+        ExecutionContext<Row> execCtx,
+        ColocationGroup group,
+        Predicate<Row> filters,
+        RangeIterable<Row> ranges,
+        Function<Row, Row> rowTransformer,
+        @Nullable ImmutableBitSet requiredColumns
+
+    ) {
+        return new IndexScan<>(execCtx, tbl.descriptor(), idx.unwrap(InlineIndex.class), collation.getKeys(),
+            group.partitions(localNodeId), filters, ranges, rowTransformer, requiredColumns);
     }
 }
