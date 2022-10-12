@@ -145,10 +145,17 @@ public class AbstractBasicIntegrationTest extends GridCommonAbstractTest {
 
     /** */
     protected IgniteCache<Integer, Employer> createAndPopulateTable() {
+        return createAndPopulateTable(2, CacheMode.PARTITIONED);
+    }
+
+    /** */
+    protected IgniteCache<Integer, Employer> createAndPopulateTable(int backups, CacheMode cacheMode) {
         IgniteCache<Integer, Employer> person = client.getOrCreateCache(new CacheConfiguration<Integer, Employer>()
             .setName(TABLE_NAME)
             .setSqlSchema("PUBLIC")
             .setQueryEntities(F.asList(new QueryEntity(Integer.class, Employer.class).setTableName(TABLE_NAME)))
+            .setCacheMode(cacheMode)
+            .setBackups(backups)
         );
 
         int idx = 0;

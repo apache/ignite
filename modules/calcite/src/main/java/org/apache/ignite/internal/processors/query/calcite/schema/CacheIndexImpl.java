@@ -185,21 +185,4 @@ public class CacheIndexImpl implements IgniteIndex {
         // Empty index find predicate.
         return null;
     }
-
-    /** */
-    private <Row> IndexScan<Row> createScan(
-        UUID localNodeId,
-        ExecutionContext<Row> execCtx,
-        ColocationGroup group,
-        Predicate<Row> filters,
-        Supplier<Row> lowerIdxConditions,
-        Supplier<Row> upperIdxConditions,
-        Function<Row, Row> rowTransformer,
-        @Nullable ImmutableBitSet requiredColumns
-
-    ) {
-        return new IndexScan<>(execCtx, tbl.descriptor(), idx.unwrap(InlineIndex.class), collation.getKeys(),
-            group.partitions(localNodeId), filters, lowerIdxConditions, upperIdxConditions, rowTransformer,
-            requiredColumns);
-    }
 }
