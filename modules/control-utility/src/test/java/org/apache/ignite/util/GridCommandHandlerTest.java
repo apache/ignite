@@ -3103,6 +3103,8 @@ public class GridCommandHandlerTest extends GridCommandHandlerClusterPerMethodAb
                 }
             });
 
+        cfg.getConnectorConfiguration().setHost("localhost");
+
         IgniteEx ig = startGrid(cfg);
         ig.cluster().state(ACTIVE);
 
@@ -3116,7 +3118,7 @@ public class GridCommandHandlerTest extends GridCommandHandlerClusterPerMethodAb
             /** {@inheritDoc} */
             @Override public synchronized void publish(LogRecord record) {
                 if (record.getMessage() != null && !wrnFound.get() && record.getMessage().contains("Such updates may " +
-                    "break data consistency until finished. Snapshot might not be entirely restored"))
+                    "break data consistency until finished. Snapshot might not be entirely restored."))
                     wrnFound.set(true);
             }
         });
