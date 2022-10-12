@@ -94,6 +94,7 @@ JDBC:
 
 .NET thin client:
 * Added AtomicLong.
+* Added IgniteSet.
 
 .NET:
 * Added service interceptors.
