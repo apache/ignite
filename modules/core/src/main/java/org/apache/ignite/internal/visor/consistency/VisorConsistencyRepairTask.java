@@ -17,12 +17,15 @@
 
 package org.apache.ignite.internal.visor.consistency;
 
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.HashSet;
+import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.ExecutorService;
+import java.util.function.Consumer;
 import java.util.stream.Collectors;
 import javax.cache.CacheException;
 import org.apache.ignite.IgniteCache;
@@ -42,6 +45,7 @@ import org.apache.ignite.internal.util.lang.GridCursor;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.internal.CU;
 import org.apache.ignite.internal.visor.VisorJob;
+import org.apache.ignite.lang.IgniteBiTuple;
 import org.apache.ignite.lang.IgnitePredicate;
 import org.apache.ignite.resources.LoggerResource;
 
@@ -94,9 +98,7 @@ public class VisorConsistencyRepairTask extends AbstractConsistencyTask<VisorCon
         @Override protected String run(VisorConsistencyRepairTaskArg arg) throws IgniteException {
             ExecutorService sys = ignite.context().pools().getSystemExecutorService();
 
-            StringBuilder res = new StringBuilder();
-
-            arg.parts().stream()
+            Map<Boolean, List<IgniteBiTuple<Integer, String>>> res = arg.parts().stream()
                 .map(p -> F.t(p, sys.submit(() -> processPartition(p, arg))))
                 .map(t -> {
                     try {
@@ -107,9 +109,17 @@ public class VisorConsistencyRepairTask extends AbstractConsistencyTask<VisorCon
                     }
                 })
                 .filter(t -> t.get2() != null)
-                .forEach(t -> res.append("    Partition ").append(t.get1()).append(' ').append(t.get2()).append('\n'));
+                .collect(Collectors.groupingBy(t -> t.get2().startsWith(NOTHING_FOUND)));
 
-            return res.length() == 0 ? null : res.toString();
+            StringBuilder res0 = new StringBuilder();
+
+            Consumer<IgniteBiTuple<Integer, String>> resAppend =
+                t -> res0.append("    Partition ").append(t.get1()).append(' ').append(t.get2()).append('\n');
+
+            res.getOrDefault(true, Collections.emptyList()).forEach(resAppend); // Consistent parts goes first in output.
+            res.getOrDefault(false, Collections.emptyList()).forEach(resAppend);
+
+            return res0.length() == 0 ? null : res0.toString();
         }
 
         /**
