@@ -18,7 +18,6 @@
 package org.apache.ignite.internal.util.lang;
 
 import java.io.IOException;
-import java.lang.reflect.Array;
 import java.nio.file.DirectoryStream;
 import java.nio.file.Files;
 import java.nio.file.Path;
@@ -1183,42 +1182,6 @@ public class GridFunc {
         for (T element : c)
             if (element != null)
                 return false;
-
-        return true;
-    }
-
-    /**
-     * Tests if the given object is null, is empty array, empty map or contains only nulls.
-     *
-     * @param o Object to test.
-     * @return {@code True}, is given object is null, is empty array, empty map or contains only nulls.
-     * {@code False} otherwise.
-     */
-    public static boolean isEmptyOrNulls(@Nullable Object o) {
-        if (o == null)
-            return true;
-
-        if (isArray(o)) {
-            int len = Array.getLength(o);
-
-            for (int i = 0; i < len; ++i)
-                if (!isEmptyOrNulls(Array.get(o, i)))
-                    return false;
-        }
-        else if (Iterable.class.isAssignableFrom(o.getClass())) {
-            for (Object i : (Iterable<?>)o)
-                if (!isEmptyOrNulls(i))
-                    return false;
-        }
-        else if (Map.class.isAssignableFrom(o.getClass())) {
-            Map<?, ?> map = (Map<?, ?>)o;
-
-            for (Map.Entry<?, ?> e : map.entrySet())
-                if (!isEmptyOrNulls(e.getKey()) || !isEmptyOrNulls(e.getValue()))
-                    return false;
-        }
-        else
-            return false;
 
         return true;
     }

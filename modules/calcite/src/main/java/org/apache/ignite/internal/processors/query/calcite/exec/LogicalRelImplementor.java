@@ -429,10 +429,8 @@ public class LogicalRelImplementor<Row> implements IgniteRelVisitor<Node<Row>> {
         ImmutableBitSet requiredColumns = rel.requiredColumns();
         RelDataType rowType = tbl.getRowType(typeFactory, requiredColumns);
 
-        if (idx != null && !tbl.isIndexRebuildInProgress()) {
-            return new ScanNode<>(ctx, rowType, idx.findFirstOrLast(rel.first(), ctx, ctx.group(rel.sourceId()),
-                requiredColumns));
-        }
+        if (idx != null && !tbl.isIndexRebuildInProgress())
+            return new ScanNode<>(ctx, rowType, idx.firstOrLast(rel.first(), ctx, grp, requiredColumns));
         else {
             Iterable<Row> rowsIter = tbl.scan(
                 ctx,
@@ -454,7 +452,11 @@ public class LogicalRelImplementor<Row> implements IgniteRelVisitor<Node<Row>> {
 
             sortNode.register(scanNode);
 
-            return sortNode;
+            LimitNode<Row> limit = new LimitNode<>(ctx, rel.getRowType(), null, () -> 1);
+
+            limit.register(sortNode);
+
+            return limit;
         }
     }
 

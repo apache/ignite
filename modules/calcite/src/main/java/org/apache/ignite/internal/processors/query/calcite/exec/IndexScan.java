@@ -30,7 +30,6 @@ import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.cluster.ClusterTopologyException;
 import org.apache.ignite.internal.GridKernalContext;
-import org.apache.ignite.internal.cache.query.index.sorted.IndexKeyType;
 import org.apache.ignite.internal.cache.query.index.sorted.IndexRow;
 import org.apache.ignite.internal.cache.query.index.sorted.IndexSearchRowImpl;
 import org.apache.ignite.internal.cache.query.index.sorted.InlineIndexRowHandler;
@@ -45,8 +44,6 @@ import org.apache.ignite.internal.processors.cache.distributed.dht.topology.Grid
 import org.apache.ignite.internal.processors.cache.distributed.dht.topology.GridDhtPartitionState;
 import org.apache.ignite.internal.processors.cache.distributed.dht.topology.GridDhtPartitionTopology;
 import org.apache.ignite.internal.processors.cache.mvcc.MvccSnapshot;
-import org.apache.ignite.internal.processors.cache.persistence.tree.BPlusTree;
-import org.apache.ignite.internal.processors.cache.persistence.tree.io.BPlusIO;
 import org.apache.ignite.internal.processors.query.calcite.exec.RowHandler.RowFactory;
 import org.apache.ignite.internal.processors.query.calcite.exec.exp.RangeIterable;
 import org.apache.ignite.internal.processors.query.calcite.schema.CacheTableDescriptor;
@@ -116,17 +113,40 @@ public class IndexScan<Row> extends AbstractIndexScan<Row, IndexRow> {
         Function<Row, Row> rowTransformer,
         @Nullable ImmutableBitSet requiredColumns
     ) {
+       this(ectx, desc, new TreeIndexWrapper(idx), idxFieldMapping, parts, filters, ranges, rowTransformer,
+           requiredColumns);
+    }
+
+    /**
+     * @param ectx Execution context.
+     * @param desc Table descriptor.
+     * @param idxFieldMapping Mapping from index keys to row fields.
+     * @param treeIdx Phisycal index wrapper.
+     * @param filters Additional filters.
+     * @param ranges Index scan bounds.
+     */
+    protected IndexScan(
+        ExecutionContext<Row> ectx,
+        CacheTableDescriptor desc,
+        TreeIndexWrapper treeIdx,
+        ImmutableIntList idxFieldMapping,
+        int[] parts,
+        Predicate<Row> filters,
+        RangeIterable<Row> ranges,
+        Function<Row, Row> rowTransformer,
+        @Nullable ImmutableBitSet requiredColumns
+    ) {
         super(
             ectx,
             desc.rowType(ectx.getTypeFactory(), requiredColumns),
-            new TreeIndexWrapper(idx),
+            treeIdx,
             filters,
             ranges,
             rowTransformer
         );
 
         this.desc = desc;
-        this.idx = idx;
+        this.idx = treeIdx.idx;
         cctx = desc.cacheContext();
         kctx = cctx.kernalContext();
 
@@ -157,44 +177,6 @@ public class IndexScan<Row> extends AbstractIndexScan<Row, IndexRow> {
 
             throw e;
         }
-    }
-
-    /**
-     * Gets first or last records from all segments.
-     */
-    public List<Row> firstOrLast(boolean first) {
-        reserve();
-
-        IndexingQueryFilter filter = new IndexingQueryFilterImpl(kctx, topVer, parts);
-        BPlusTree.TreeRowClosure<IndexRow, IndexRow> rowFilter = new BPlusTree.TreeRowClosure<IndexRow, IndexRow>() {
-            /** {@inheritDoc} */
-            @Override public boolean apply(BPlusTree<IndexRow, IndexRow> tree, BPlusIO<IndexRow> io, long pageAddr,
-                int idx) throws IgniteCheckedException {
-                return io.getLookupRow(tree, pageAddr, idx).key(0).type() != IndexKeyType.NULL;
-            }
-        };
-        IndexQueryContext qctx = new IndexQueryContext(filter, rowFilter, ectx.mvccSnapshot());
-        List<Row> lst = new ArrayList<>();
-
-        try {
-            for (int s = 0; s < idx.segmentsCount(); ++s) {
-                GridCursor<IndexRow> cursor = first ? idx.findFirst(s, qctx) : idx.findLast(s, qctx);
-
-                IndexRow row = cursor.next() ? cursor.get() : null;
-
-                assert !cursor.next();
-
-                if (row != null)
-                    lst.add(indexRow2Row(row));
-            }
-        }
-        catch (IgniteCheckedException e) {
-            release();
-
-            throw new IgniteException("Unable to get " + (first ? "first" : "last") + " record from the index.", e);
-        }
-
-        return lst;
     }
 
     /** {@inheritDoc} */
@@ -324,12 +306,17 @@ public class IndexScan<Row> extends AbstractIndexScan<Row, IndexRow> {
     }
 
     /** */
-    private static class TreeIndexWrapper implements TreeIndex<IndexRow> {
+    protected TreeIndex<IndexRow> wrapIdx(InlineIndex idx){
+        return new TreeIndexWrapper(idx);
+    }
+
+    /** */
+    protected static class TreeIndexWrapper implements TreeIndex<IndexRow> {
         /** Underlying index. */
-        private final InlineIndex idx;
+        protected final InlineIndex idx;
 
         /** */
-        private TreeIndexWrapper(InlineIndex idx) {
+        protected TreeIndexWrapper(InlineIndex idx) {
             this.idx = idx;
         }
 

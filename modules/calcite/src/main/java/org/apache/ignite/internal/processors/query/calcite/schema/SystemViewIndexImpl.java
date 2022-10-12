@@ -16,8 +16,6 @@
  */
 package org.apache.ignite.internal.processors.query.calcite.schema;
 
-import java.util.Collections;
-import java.util.Iterator;
 import java.util.List;
 import java.util.function.Function;
 import java.util.function.Predicate;
@@ -28,6 +26,7 @@ import org.apache.calcite.rel.RelCollations;
 import org.apache.calcite.rel.type.RelDataType;
 import org.apache.calcite.rex.RexNode;
 import org.apache.calcite.util.ImmutableBitSet;
+import org.apache.ignite.IgniteException;
 import org.apache.ignite.internal.processors.query.calcite.exec.ExecutionContext;
 import org.apache.ignite.internal.processors.query.calcite.exec.SystemViewScan;
 import org.apache.ignite.internal.processors.query.calcite.exec.exp.RangeIterable;
@@ -35,7 +34,6 @@ import org.apache.ignite.internal.processors.query.calcite.metadata.ColocationGr
 import org.apache.ignite.internal.processors.query.calcite.prepare.bounds.SearchBounds;
 import org.apache.ignite.internal.processors.query.calcite.rel.logical.IgniteLogicalIndexScan;
 import org.apache.ignite.internal.processors.query.calcite.util.RexUtils;
-import org.apache.ignite.internal.util.typedef.F;
 import org.jetbrains.annotations.Nullable;
 
 /**
@@ -107,20 +105,7 @@ public class SystemViewIndexImpl implements IgniteIndex {
     /** {@inheritDoc} */
     @Override public <Row> List<Row> findFirstOrLast(boolean first, ExecutionContext<Row> ectx,
         ColocationGroup grp, @Nullable ImmutableBitSet requiredColumns) {
-        Iterator<Row> it = scan(ectx, grp, null, null, null, requiredColumns).iterator();
-
-        Row curRow = null;
-
-        while (F.isEmptyOrNulls(curRow) && it.hasNext())
-            curRow = it.next();
-
-        // No take-last underlying implementation. A minor ticket might be brought for the system views.
-        Row res = F.isEmptyOrNulls(curRow) ? null : curRow;
-
-        while (!first && it.hasNext())
-            res = F.isEmptyOrNulls(curRow = it.next()) ? res : curRow;
-
-        return res == null ? F.asList(res) : Collections.emptyList();
+        throw new IgniteException("Taking first or last value is not implemented for system view index.");
     }
 
     /** {@inheritDoc} */

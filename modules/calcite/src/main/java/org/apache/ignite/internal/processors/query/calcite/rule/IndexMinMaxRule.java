@@ -21,7 +21,6 @@ import org.apache.calcite.plan.RelOptRuleCall;
 import org.apache.calcite.plan.RelRule;
 import org.apache.calcite.sql.SqlAggFunction;
 import org.apache.calcite.sql.SqlKind;
-import org.apache.ignite.internal.processors.query.calcite.rel.AbstractIndexScan;
 import org.apache.ignite.internal.processors.query.calcite.rel.IgniteAggregate;
 import org.apache.ignite.internal.processors.query.calcite.rel.IgniteIndexBound;
 import org.apache.ignite.internal.processors.query.calcite.rel.IgniteIndexScan;
@@ -54,6 +53,7 @@ public class IndexMinMaxRule extends RelRule<IndexMinMaxRule.Config> {
         if (
             table.isIndexRebuildInProgress() ||
                 idxScan.condition() != null ||
+                idxScan.projects()  != null ||
                 aggr.getGroupCount() > 0 ||
                 aggr.getAggCallList().stream().filter(a -> a.getAggregation().getKind() == SqlKind.MIN
                     || a.getAggregation().getKind() == SqlKind.MAX).count() != 1 ||
@@ -63,7 +63,7 @@ public class IndexMinMaxRule extends RelRule<IndexMinMaxRule.Config> {
             return;
 
         SqlAggFunction aggFun = aggr.getAggCallList().get(0).getAggregation();
-        boolean firstIdxValue = (aggFun.getKind() == SqlKind.MIN) !=
+        boolean firstIdxVal = (aggFun.getKind() == SqlKind.MIN) !=
             idx.collation().getFieldCollations().get(0).getDirection().isDescending();
 
         IgniteIndexBound newAggrInput = new IgniteIndexBound(
@@ -71,7 +71,7 @@ public class IndexMinMaxRule extends RelRule<IndexMinMaxRule.Config> {
             idxScan.getCluster(),
             idxScan.getTraitSet().replace(RewindabilityTrait.REWINDABLE),
             idxScan.indexName(),
-            firstIdxValue,
+            firstIdxVal,
             idx.collation()
         );
 
@@ -85,7 +85,7 @@ public class IndexMinMaxRule extends RelRule<IndexMinMaxRule.Config> {
         IndexMinMaxRule.Config DEFAULT = ImmutableIndexMinMaxRule.Config.of()
             .withDescription("IndexMinMaxRule")
             .withOperandSupplier(r -> r.operand(IgniteAggregate.class)
-                .oneInput(i -> i.operand(AbstractIndexScan.class).anyInputs()));
+                .oneInput(i -> i.operand(IgniteIndexScan.class).anyInputs()));
 
         /** {@inheritDoc} */
         @Override default IndexMinMaxRule toRule() {

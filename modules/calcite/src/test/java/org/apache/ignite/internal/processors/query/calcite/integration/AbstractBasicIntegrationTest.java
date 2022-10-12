@@ -252,9 +252,9 @@ public class AbstractBasicIntegrationTest extends GridCommonAbstractTest {
         }
 
         /** {@inheritDoc} */
-        @Override public <Row> List<Row> findFirstOrLast(boolean first, ExecutionContext<Row> ectx,
-            ColocationGroup grp, @Nullable ImmutableBitSet requiredColumns) {
-            return delegate.findFirstOrLast(first, ectx, grp, requiredColumns);
+        @Override public <Row> Iterable<Row> firstOrLast(boolean first, ExecutionContext<Row> ectx, ColocationGroup grp,
+            @Nullable ImmutableBitSet requiredColumns) {
+            return delegate.firstOrLast(first, ectx, grp, requiredColumns);
         }
     }
 

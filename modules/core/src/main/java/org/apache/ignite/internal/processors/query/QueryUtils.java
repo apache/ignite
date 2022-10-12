@@ -226,17 +226,6 @@ public class QueryUtils {
     }
 
     /**
-     * Get index name by table name and field name.
-     *
-     * @param tableName Table name.
-     * @param fieldName Field name.
-     * @return Index name.
-     */
-    public static String indexName(String tableName, String fieldName) {
-        return tableName + "_" + fieldName + "_idx";
-    }
-
-    /**
      * Get index name.
      *
      * @param tblName Table name.

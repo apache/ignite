@@ -32,7 +32,9 @@ import org.apache.ignite.IgniteException;
 import org.apache.ignite.internal.cache.query.index.Index;
 import org.apache.ignite.internal.cache.query.index.sorted.inline.IndexQueryContext;
 import org.apache.ignite.internal.cache.query.index.sorted.inline.InlineIndex;
+import org.apache.ignite.internal.cache.query.index.sorted.inline.InlineIndexImpl;
 import org.apache.ignite.internal.processors.query.calcite.exec.ExecutionContext;
+import org.apache.ignite.internal.processors.query.calcite.exec.IndexFirstLastScan;
 import org.apache.ignite.internal.processors.query.calcite.exec.IndexScan;
 import org.apache.ignite.internal.processors.query.calcite.exec.exp.RangeIterable;
 import org.apache.ignite.internal.processors.query.calcite.metadata.ColocationGroup;
@@ -117,6 +119,19 @@ public class CacheIndexImpl implements IgniteIndex {
         return Collections.emptyList();
     }
 
+    /** */
+    @Override public <Row> Iterable<Row> firstOrLast(boolean first, ExecutionContext<Row> ectx, ColocationGroup grp,
+        @Nullable ImmutableBitSet requiredColumns) {
+        UUID localNodeId = ectx.localNodeId();
+
+        if (grp.nodeIds().contains(localNodeId) && idx != null) {
+            return new IndexFirstLastScan<>(first, ectx, tbl.descriptor(), idx.unwrap(InlineIndexImpl.class),
+                collation.getKeys(), grp.partitions(localNodeId), requiredColumns);
+        }
+
+        return Collections.emptyList();
+    }
+
     /** {@inheritDoc} */
     @Override public long count(ExecutionContext<?> ectx, ColocationGroup grp) {
         long cnt = 0;
@@ -137,26 +152,6 @@ public class CacheIndexImpl implements IgniteIndex {
         }
 
         return cnt;
-    }
-
-    /** {@inheritDoc} */
-    @Override public <Row> List<Row> findFirstOrLast(boolean first, ExecutionContext<Row> ectx,
-        ColocationGroup grp, @Nullable ImmutableBitSet requiredColumns) {
-        if (idx != null && grp.nodeIds().contains(ectx.localNodeId())) {
-            try (IndexScan<Row> scan = createScan(
-                ectx.localNodeId(),
-                ectx,
-                grp,
-                null,
-                null,
-                null,
-                requiredColumns
-            )) {
-                return scan.firstOrLast(first);
-            }
-        }
-
-        return null;
     }
 
     /** {@inheritDoc} */
@@ -183,20 +178,5 @@ public class CacheIndexImpl implements IgniteIndex {
 
         // Empty index find predicate.
         return null;
-    }
-
-    /** */
-    private <Row> IndexScan<Row> createScan(
-        UUID localNodeId,
-        ExecutionContext<Row> execCtx,
-        ColocationGroup group,
-        Predicate<Row> filters,
-        RangeIterable<Row> ranges,
-        Function<Row, Row> rowTransformer,
-        @Nullable ImmutableBitSet requiredColumns
-
-    ) {
-        return new IndexScan<>(execCtx, tbl.descriptor(), idx.unwrap(InlineIndex.class), collation.getKeys(),
-            group.partitions(localNodeId), filters, ranges, rowTransformer, requiredColumns);
     }
 }

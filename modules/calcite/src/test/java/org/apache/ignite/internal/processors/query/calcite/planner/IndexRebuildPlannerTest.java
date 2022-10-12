@@ -52,7 +52,7 @@ public class IndexRebuildPlannerTest extends AbstractPlannerTest {
         super.setup();
 
         tbl = createTable("TBL", 100, IgniteDistributions.single(), "ID", Integer.class, "VAL", String.class)
-            .addIndex(QueryUtils.PRIMARY_KEY_INDEX, 0).addIndex(QueryUtils.indexName("TBL", "VAL"), 1);
+            .addIndex(QueryUtils.PRIMARY_KEY_INDEX, 0).addIndex("TBL_VAL_IDX", 1);
 
         publicSchema = createSchema(tbl);
     }
@@ -120,12 +120,12 @@ public class IndexRebuildPlannerTest extends AbstractPlannerTest {
         assertPlan("SELECT MIN(VAL) FROM TBL", publicSchema, nodeOrAnyChild(isInstanceOf(IgniteAggregate.class)
             .and(a -> a.getAggCallList().stream().filter(agg -> agg.getAggregation().getKind() == MIN).count() == 1)
             .and(nodeOrAnyChild(isInstanceOf(IgniteIndexBound.class)
-                .and(is -> is.indexName().equals(QueryUtils.indexName("TBL", "VAL")))))));
+                .and(is -> "TBL_VAL_IDX".equals(is.indexName()))))));
 
         assertPlan("SELECT MAX(VAL) FROM TBL", publicSchema, nodeOrAnyChild(isInstanceOf(IgniteAggregate.class)
             .and(a -> a.getAggCallList().stream().filter(agg -> agg.getAggregation().getKind() == MAX).count() == 1)
             .and(nodeOrAnyChild(isInstanceOf(IgniteIndexBound.class)
-                .and(is -> is.indexName().equals(QueryUtils.indexName("TBL", "VAL")))))));
+                .and(is -> "TBL_VAL_IDX".equals(is.indexName()))))));
     }
 
     /** */
@@ -205,13 +205,13 @@ public class IndexRebuildPlannerTest extends AbstractPlannerTest {
                 assertPlan("SELECT MIN(VAL) FROM TBL", publicSchema,
                     nodeOrAnyChild(isInstanceOf(IgniteAggregate.class)
                         .and(input(isInstanceOf(IgniteIndexBound.class)
-                            .and(is -> is.indexName().equals(QueryUtils.indexName("TBL", "VAL"))))
+                            .and(is -> "TBL_VAL_IDX".equals(is.indexName())))
                             .or(input(isInstanceOf(IgniteTableScan.class))))));
 
                 assertPlan("SELECT MAX(VAL) FROM TBL", publicSchema,
                     nodeOrAnyChild(isInstanceOf(IgniteAggregate.class)
                         .and(input(isInstanceOf(IgniteIndexBound.class)
-                            .and(is -> is.indexName().equals(QueryUtils.indexName("TBL", "VAL"))))
+                            .and(is -> "TBL_VAL_IDX".equals(is.indexName())))
                             .or(input(isInstanceOf(IgniteTableScan.class))))));
             }
         }

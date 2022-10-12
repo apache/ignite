@@ -96,15 +96,14 @@ public interface IgniteIndex {
     public long count(ExecutionContext<?> ectx, ColocationGroup grp);
 
     /**
-     * Gets first or last index records from all index segments. Doesn't contain nulls. Values number might not
-     * match segments number.
+     * Takes only first or last index value.
      *
-     * @return List of first or last values from all index segments.
+     * @param first {@code True} to take first index value. {@code False} to take last value.
+     * @param ectx Execution context.
+     * @param grp Colocation group.
+     * @param requiredColumns  Required columns.
+     * @return Index records number for {@code group}.
      */
-    public <Row> List<Row> findFirstOrLast(
-        boolean first,
-        ExecutionContext<Row> ectx,
-        ColocationGroup grp,
-        @Nullable ImmutableBitSet requiredColumns
-    );
+    public <Row> Iterable<Row> firstOrLast(boolean first, ExecutionContext<Row> ectx, ColocationGroup grp,
+        @Nullable ImmutableBitSet requiredColumns);
 }

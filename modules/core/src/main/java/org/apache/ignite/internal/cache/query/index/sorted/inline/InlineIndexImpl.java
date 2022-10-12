@@ -121,6 +121,28 @@ public class InlineIndexImpl extends AbstractIndex implements InlineIndex {
         }
     }
 
+    /** */
+    public GridCursor<IndexRow> takeFirstOrLast(IndexQueryContext qryCtx, boolean first) throws IgniteCheckedException {
+        lock.readLock().lock();
+
+        try {
+            int segmentsCnt = segmentsCount();
+
+            if (segmentsCnt == 1)
+                return first ? findFirst(0, qryCtx) : findLast(0, qryCtx);
+
+            final GridCursor<IndexRow>[] segmentCursors = new GridCursor[segmentsCnt];
+
+            for (int i = 0; i < segmentsCnt; i++)
+                segmentCursors[i] = first ? findFirst(i, qryCtx) : findLast(i, qryCtx);
+
+            return new SegmentedIndexCursor(segmentCursors, def);
+        }
+        finally {
+            lock.readLock().unlock();
+        }
+    }
+
     /** {@inheritDoc} */
     @Override public GridCursor<IndexRow> find(
         IndexRow lower,
