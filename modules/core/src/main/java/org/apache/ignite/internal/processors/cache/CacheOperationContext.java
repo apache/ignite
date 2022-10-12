@@ -17,24 +17,18 @@
 
 package org.apache.ignite.internal.processors.cache;
 
-import java.io.Serializable;
-import javax.cache.expiry.ExpiryPolicy;
-import org.apache.ignite.IgniteSystemProperties;
 import org.apache.ignite.cache.ReadRepairStrategy;
 import org.apache.ignite.internal.util.tostring.GridToStringInclude;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.jetbrains.annotations.Nullable;
 
-import static org.apache.ignite.IgniteSystemProperties.IGNITE_ALLOW_ATOMIC_OPS_IN_TX;
+import javax.cache.expiry.ExpiryPolicy;
+import java.io.Serializable;
 
 /**
  * Cache operation context.
  */
 public class CacheOperationContext implements Serializable {
-    /** */
-    //TODO IGNITE-8801 remove this and set default as `false`.
-    public static final boolean DFLT_ALLOW_ATOMIC_OPS_IN_TX =
-        IgniteSystemProperties.getBoolean(IGNITE_ALLOW_ATOMIC_OPS_IN_TX, true);
 
     /** */
     private static final long serialVersionUID = 0L;
@@ -76,7 +70,7 @@ public class CacheOperationContext implements Serializable {
         recovery = false;
         readRepairStrategy = null;
         dataCenterId = null;
-        allowAtomicOpsInTx = DFLT_ALLOW_ATOMIC_OPS_IN_TX;
+        allowAtomicOpsInTx = false;
     }
 
     /**
