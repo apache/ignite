@@ -170,10 +170,13 @@ class ConsistencyTest(IgniteTest):
 
         start = current_millis()
 
-        for p in range(0, 1024):
-            self.logger.debug('Running repair[p=' + str(p) + ']')
+        for pi in range(0, 50):
+            # checking 20 partitions at a time
+            p = ','.join([str(x) for x in range(pi*20, (pi+1)*20)])
+
+            self.logger.debug('Running repair[p=' + p + ']')
             # checking/repairing
-            control_utility.check_consistency(f"repair --cache test-cache-1 --strategy LWW --partition " + str(p))
+            control_utility.check_consistency(f"repair --cache test-cache-1 --strategy LWW --partitions " + p)
 
         finish = current_millis()
 
