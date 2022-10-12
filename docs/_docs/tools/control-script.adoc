@@ -544,12 +544,12 @@ By default, found inconsistent entries will be listed as is but may be masked by
 tab:Unix[]
 [source,shell]
 ----
-control.sh --enable-experimental --consistency repair --cache cache-name --partitions 0,1 --strategy strategy
+control.sh --enable-experimental --consistency repair --cache cache-name --partitions partitions --strategy strategy
 ----
 tab:Window[]
 [source,shell]
 ----
-control.bat --enable-experimental --consistency repair --cache cache-name --partitions 0,1 --strategy strategy
+control.bat --enable-experimental --consistency repair --cache cache-name --partitions partitions --strategy strategy
 ----
 --
 Parameters:
