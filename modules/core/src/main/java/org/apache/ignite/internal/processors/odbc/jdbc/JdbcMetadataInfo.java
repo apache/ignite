@@ -25,21 +25,26 @@ import java.util.Comparator;
 import java.util.HashSet;
 import java.util.LinkedHashSet;
 import java.util.List;
+import java.util.Map;
 import java.util.SortedSet;
 import java.util.TreeSet;
 import java.util.stream.Collectors;
 import org.apache.ignite.internal.GridKernalContext;
 import org.apache.ignite.internal.processors.odbc.ClientListenerProtocolVersion;
 import org.apache.ignite.internal.processors.query.ColumnInformation;
-import org.apache.ignite.internal.processors.query.GridQueryIndexDescriptor;
 import org.apache.ignite.internal.processors.query.GridQueryTypeDescriptor;
 import org.apache.ignite.internal.processors.query.QueryUtils;
 import org.apache.ignite.internal.processors.query.TableInformation;
+import org.apache.ignite.internal.processors.query.schema.management.IndexDescriptor;
+import org.apache.ignite.internal.processors.query.schema.management.SchemaManager;
+import org.apache.ignite.internal.processors.query.schema.management.TableDescriptor;
 import org.jetbrains.annotations.Nullable;
 
+import static org.apache.ignite.internal.jdbc2.JdbcUtils.TYPE_TABLE;
 import static org.apache.ignite.internal.processors.odbc.jdbc.JdbcConnectionContext.VER_2_3_0;
 import static org.apache.ignite.internal.processors.odbc.jdbc.JdbcConnectionContext.VER_2_4_0;
 import static org.apache.ignite.internal.processors.odbc.jdbc.JdbcConnectionContext.VER_2_7_0;
+import static org.apache.ignite.internal.processors.query.QueryUtils.PRIMARY_KEY_INDEX;
 import static org.apache.ignite.internal.processors.query.QueryUtils.matches;
 
 /**
@@ -227,32 +232,38 @@ public class JdbcMetadataInfo {
 
     /**
      * See {@link DatabaseMetaData#getIndexInfo(String, String, String, boolean, boolean)} for details.
+     * There are some tips:
+     * <p>
+     * Extra sorting by TABLE_NAME column is performed for the cases when information about multiple tables is requested.
+     * Thus, sorting order is: TABLE_NAME -> NON_UNIQUE -> TYPE -> INDEX_NAME -> ORDINAL_POSITION.
+     * <p>
+     * Ignite has only one possible CATALOG_NAME, it is handled on the client (driver) side.
+     * <p>
+     * Ignite has the only unique indexes - primary key indexes.
+     * <p>
+     * Parameters {@code unique}, {@code approximate} are ignored.
      *
-     * Ignite has only one possible CATALOG_NAME, it is handled on the client (driver) side. Parameters {@code unique}
-     * {@code approximate} are ignored.
-     *
-     * @return Sorted by index name collection of index info, filtered according to specified criterias.
+     * @return Sorted index metadata collection, filtered according to specified criterias.
      */
     public SortedSet<JdbcIndexMeta> getIndexesMeta(String schemaNamePtrn, String tblNamePtrn) {
-        final Comparator<JdbcIndexMeta> byIndexName = new Comparator<JdbcIndexMeta>() {
-            @Override public int compare(JdbcIndexMeta o1, JdbcIndexMeta o2) {
-                return o1.indexName().compareTo(o2.indexName());
-            }
-        };
+        Comparator<JdbcIndexMeta> metaComparator = Comparator.comparing(JdbcIndexMeta::schemaName)
+            .thenComparing(JdbcIndexMeta::tableName)
+            .thenComparing(meta -> !meta.indexName().startsWith(PRIMARY_KEY_INDEX))
+            .thenComparing(JdbcIndexMeta::indexName);
 
-        TreeSet<JdbcIndexMeta> meta = new TreeSet<>(byIndexName);
+        TreeSet<JdbcIndexMeta> meta = new TreeSet<>(metaComparator);
 
-        for (String cacheName : ctx.cache().publicCacheNames()) {
-            for (GridQueryTypeDescriptor table : ctx.query().types(cacheName)) {
-                if (!matches(table.schemaName(), schemaNamePtrn))
-                    continue;
+        SchemaManager schemaMgr = ctx.query().schemaManager();
 
-                if (!matches(table.tableName(), tblNamePtrn))
-                    continue;
+        Collection<TableInformation> tablesInfo = schemaMgr.tablesInformation(schemaNamePtrn, tblNamePtrn, TYPE_TABLE);
 
-                for (GridQueryIndexDescriptor idxDesc : table.indexes().values())
-                    meta.add(new JdbcIndexMeta(table.schemaName(), table.tableName(), idxDesc));
-            }
+        for (TableInformation tableInfo : tablesInfo) {
+            TableDescriptor table = schemaMgr.table(tableInfo.schemaName(), tableInfo.tableName());
+
+            Map<String, IndexDescriptor> indexes = table.indexes();
+
+            for (String idxName : indexes.keySet())
+                meta.add(new JdbcIndexMeta(tableInfo.schemaName(), tableInfo.tableName(), indexes.get(idxName)));
         }
 
         return meta;

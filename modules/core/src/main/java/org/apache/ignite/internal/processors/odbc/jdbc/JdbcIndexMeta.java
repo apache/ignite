@@ -19,12 +19,16 @@ package org.apache.ignite.internal.processors.odbc.jdbc;
 
 import java.util.ArrayList;
 import java.util.Collections;
+import java.util.LinkedHashMap;
 import java.util.List;
+import java.util.stream.Collectors;
 import org.apache.ignite.binary.BinaryObjectException;
 import org.apache.ignite.cache.QueryIndexType;
 import org.apache.ignite.internal.binary.BinaryReaderExImpl;
 import org.apache.ignite.internal.binary.BinaryWriterExImpl;
-import org.apache.ignite.internal.processors.query.GridQueryIndexDescriptor;
+import org.apache.ignite.internal.cache.query.index.SortOrder;
+import org.apache.ignite.internal.cache.query.index.sorted.IndexKeyDefinition;
+import org.apache.ignite.internal.processors.query.schema.management.IndexDescriptor;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.internal.S;
 
@@ -60,24 +64,27 @@ public class JdbcIndexMeta implements JdbcRawBinarylizable {
     /**
      * @param schemaName Schema name.
      * @param tblName Table name.
-     * @param idx Index info.
+     * @param idx Index descriptor.
      */
-    JdbcIndexMeta(String schemaName, String tblName, GridQueryIndexDescriptor idx) {
+    JdbcIndexMeta(String schemaName, String tblName, IndexDescriptor idx) {
         assert tblName != null;
         assert idx != null;
-        assert idx.fields() != null;
+        assert idx.keyDefinitions() != null;
 
         this.schemaName = schemaName;
         this.tblName = tblName;
 
         idxName = idx.name();
         type = idx.type();
-        fields = new ArrayList(idx.fields());
 
-        fieldsAsc = new ArrayList<>(fields.size());
+        LinkedHashMap<String, IndexKeyDefinition> definitions = idx.keyDefinitions();
 
-        for (int i = 0; i < fields.size(); ++i)
-            fieldsAsc.add(!idx.descending(fields.get(i)));
+        fields = new ArrayList<>(definitions.keySet());
+
+        fieldsAsc = definitions.values()
+            .stream()
+            .map(d -> d.order().sortOrder() == SortOrder.ASC)
+            .collect(Collectors.toList());
     }
 
     /**

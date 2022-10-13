@@ -35,6 +35,7 @@ import java.util.Collections;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.LinkedHashMap;
+import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.TreeSet;
@@ -47,7 +48,6 @@ import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.configuration.SqlConfiguration;
 import org.apache.ignite.internal.IgniteVersionUtils;
-import org.apache.ignite.internal.jdbc2.JdbcUtils;
 import org.apache.ignite.internal.processors.query.QueryEntityEx;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.testframework.GridTestUtils;
@@ -61,6 +61,7 @@ import static java.sql.Types.OTHER;
 import static java.sql.Types.VARCHAR;
 import static org.apache.ignite.cache.CacheMode.PARTITIONED;
 import static org.apache.ignite.cache.CacheWriteSynchronizationMode.FULL_SYNC;
+import static org.apache.ignite.internal.jdbc2.JdbcUtils.CATALOG_NAME;
 import static org.apache.ignite.internal.processors.query.QueryUtils.DFLT_SCHEMA;
 import static org.apache.ignite.internal.processors.query.QueryUtils.KEY_FIELD_NAME;
 import static org.apache.ignite.internal.processors.query.QueryUtils.SCHEMA_SYS;
@@ -350,7 +351,7 @@ public class JdbcThinMetadataSelfTest extends JdbcThinAbstractSelfTest {
             assertNotNull(rs);
             assertTrue(rs.next());
             assertEquals("TABLE", rs.getString("TABLE_TYPE"));
-            assertEquals(JdbcUtils.CATALOG_NAME, rs.getString("TABLE_CAT"));
+            assertEquals(CATALOG_NAME, rs.getString("TABLE_CAT"));
             assertEquals("PERSON", rs.getString("TABLE_NAME"));
 
             assertFalse(rs.next());
@@ -359,7 +360,7 @@ public class JdbcThinMetadataSelfTest extends JdbcThinAbstractSelfTest {
             assertNotNull(rs);
             assertTrue(rs.next());
             assertEquals("TABLE", rs.getString("TABLE_TYPE"));
-            assertEquals(JdbcUtils.CATALOG_NAME, rs.getString("TABLE_CAT"));
+            assertEquals(CATALOG_NAME, rs.getString("TABLE_CAT"));
             assertEquals("ORGANIZATION", rs.getString("TABLE_NAME"));
 
             assertFalse(rs.next());
@@ -368,7 +369,7 @@ public class JdbcThinMetadataSelfTest extends JdbcThinAbstractSelfTest {
             assertNotNull(rs);
             assertTrue(rs.next());
             assertEquals("TABLE", rs.getString("TABLE_TYPE"));
-            assertEquals(JdbcUtils.CATALOG_NAME, rs.getString("TABLE_CAT"));
+            assertEquals(CATALOG_NAME, rs.getString("TABLE_CAT"));
             assertEquals("PERSON", rs.getString("TABLE_NAME"));
 
             assertFalse(rs.next());
@@ -377,7 +378,7 @@ public class JdbcThinMetadataSelfTest extends JdbcThinAbstractSelfTest {
             assertNotNull(rs);
             assertTrue(rs.next());
             assertEquals("TABLE", rs.getString("TABLE_TYPE"));
-            assertEquals(JdbcUtils.CATALOG_NAME, rs.getString("TABLE_CAT"));
+            assertEquals(CATALOG_NAME, rs.getString("TABLE_CAT"));
             assertEquals("ORGANIZATION", rs.getString("TABLE_NAME"));
 
             assertFalse(rs.next());
@@ -1179,38 +1180,82 @@ public class JdbcThinMetadataSelfTest extends JdbcThinAbstractSelfTest {
      */
     @Test
     public void testIndexMetadata() throws Exception {
-        try (Connection conn = DriverManager.getConnection(URL);
-             ResultSet rs = conn.getMetaData().getIndexInfo(null, "pers", "PERSON", false, false)) {
+        String persCache = "pers";
+        String personTable = "PERSON";
 
-            int cnt = 0;
+        List<Map<String, String>> expPersIdxMeta = expectedPersonTableIndexMeta();
+
+        try (Connection conn = DriverManager.getConnection(URL);
+             ResultSet rs = conn.getMetaData().getIndexInfo(null, persCache, personTable, false, false)) {
+
+            List<Map<String, String>> resIdxMeta = new ArrayList<>();
 
             while (rs.next()) {
-                String idxName = rs.getString("INDEX_NAME");
-                String field = rs.getString("COLUMN_NAME");
-                String ascOrDesc = rs.getString("ASC_OR_DESC");
+                Map<String, String> resIdxMetaRow = new HashMap<>();
 
-                assert rs.getShort("TYPE") == DatabaseMetaData.tableIndexOther;
+                resIdxMetaRow.put("NON_UNIQUE", String.valueOf(rs.getBoolean("NON_UNIQUE")));
+                resIdxMetaRow.put("INDEX_NAME", rs.getString("INDEX_NAME"));
+                resIdxMetaRow.put("ORDINAL_POSITION", String.valueOf(rs.getInt("ORDINAL_POSITION")));
+                resIdxMetaRow.put("COLUMN_NAME", rs.getString("COLUMN_NAME"));
+                resIdxMetaRow.put("ASC_OR_DESC", rs.getString("ASC_OR_DESC"));
 
-                if ("PERSON_ORGID_ASC_IDX".equals(idxName)) {
-                    assert "ORGID".equals(field);
-                    assert "A".equals(ascOrDesc);
-                }
-                else if ("PERSON_NAME_ASC_AGE_DESC_IDX".equals(idxName)) {
-                    if ("NAME".equals(field))
-                        assert "A".equals(ascOrDesc);
-                    else if ("AGE".equals(field))
-                        assert "D".equals(ascOrDesc);
-                    else
-                        fail("Unexpected field: " + field);
-                }
-                else
-                    fail("Unexpected index: " + idxName);
+                resIdxMeta.add(resIdxMetaRow);
 
-                cnt++;
+                // Below values are constant for a cache
+                assertEquals(CATALOG_NAME, rs.getString("TABLE_CAT"));
+                assertEquals(persCache, rs.getString("TABLE_SCHEM"));
+                assertEquals(personTable, rs.getString("TABLE_NAME"));
+                assertNull(rs.getObject("INDEX_QUALIFIER"));
+                assertEquals(DatabaseMetaData.tableIndexOther, rs.getShort("TYPE"));
+                assertEquals(0, rs.getInt("CARDINALITY"));
+                assertEquals(0, rs.getInt("PAGES"));
+                assertNull(rs.getString("FILTER_CONDITION"));
             }
 
-            assert cnt == 3;
+            assertEquals(expPersIdxMeta.size(), resIdxMeta.size());
+
+            for (int i = 0; i < expPersIdxMeta.size(); i++)
+                assertEqualsMaps(expPersIdxMeta.get(i), resIdxMeta.get(i));
         }
+    }
+
+    /** */
+    private List<Map<String, String>> expectedPersonTableIndexMeta() {
+        List<Map<String, String>> expPersIdxMeta = new ArrayList<>();
+
+        Map<String, String> persRowKeyPkIdx = indexMetaRow(false, "_key_PK", 1, "_KEY", "A");
+
+        Map<String, String> persNameAgeIdxNameAsc = indexMetaRow(true, "PERSON_NAME_ASC_AGE_DESC_IDX", 1, "NAME", "A");
+        Map<String, String> persNameAgeIdxAgeDesc = indexMetaRow(true, "PERSON_NAME_ASC_AGE_DESC_IDX", 2, "AGE", "D");
+        Map<String, String> persNameAgeIdxKeyAsc = indexMetaRow(true, "PERSON_NAME_ASC_AGE_DESC_IDX", 3, "_KEY", "A");
+
+        Map<String, String> persOrgIdIdxOrgIdAsc = indexMetaRow(true, "PERSON_ORGID_ASC_IDX", 1, "ORGID", "A");
+        Map<String, String> persOrgIdIdxKeyAsc = indexMetaRow(true, "PERSON_ORGID_ASC_IDX", 2, "_KEY", "A");
+
+        expPersIdxMeta.add(persRowKeyPkIdx);
+
+        expPersIdxMeta.add(persNameAgeIdxNameAsc);
+        expPersIdxMeta.add(persNameAgeIdxAgeDesc);
+        expPersIdxMeta.add(persNameAgeIdxKeyAsc);
+
+        expPersIdxMeta.add(persOrgIdIdxOrgIdAsc);
+        expPersIdxMeta.add(persOrgIdIdxKeyAsc);
+
+        return expPersIdxMeta;
+    }
+
+    /** */
+    private Map<String, String> indexMetaRow(boolean nonUnique, String idxName, Integer ordPosition, String colName,
+        String ascOrDesc) {
+        Map<String, String> retVal = new HashMap<>();
+
+        retVal.put("NON_UNIQUE", String.valueOf(nonUnique));
+        retVal.put("INDEX_NAME", idxName);
+        retVal.put("ORDINAL_POSITION", String.valueOf(ordPosition));
+        retVal.put("COLUMN_NAME", colName);
+        retVal.put("ASC_OR_DESC", ascOrDesc);
+
+        return retVal;
     }
 
     /**
@@ -1221,24 +1266,48 @@ public class JdbcThinMetadataSelfTest extends JdbcThinAbstractSelfTest {
         try (Connection conn = DriverManager.getConnection(URL)) {
             ResultSet rs = conn.getMetaData().getIndexInfo(null, null, null, false, false);
 
-            Set<String> expectedIdxs = new HashSet<>(Arrays.asList(
-                "org.ORGANIZATION.ORGANIZATION_ID_ASC_IDX",
-                "org.ORGANIZATION.ORG_NAME_INDEX",
-                "pers.PERSON.PERSON_ORGID_ASC_IDX",
-                "pers.PERSON.PERSON_NAME_ASC_AGE_DESC_IDX",
-                "PUBLIC.TEST.IDX",
-                "PUBLIC.Quoted.MyTestIndex quoted"));
+            List<String> expectedIdxs = Arrays.asList(
+                "PUBLIC.Quoted._key_PK.Id",
+                "PUBLIC.Quoted.AFFINITY_KEY.Id",
+                "PUBLIC.Quoted.MyTestIndex quoted.Id",
+                "PUBLIC.TEST._key_PK.ID",
+                "PUBLIC.TEST._key_PK.NAME",
+                "PUBLIC.TEST.IDX.ID",
+                "PUBLIC.TEST.IDX.NAME",
+                "PUBLIC.TEST.IDX._KEY",
+                "PUBLIC.TEST_DECIMAL_COLUMN._key_PK._KEY",
+                "PUBLIC.TEST_DECIMAL_COLUMN._key_PK_proxy.ID",
+                "PUBLIC.TEST_DECIMAL_COLUMN_PRECISION._key_PK._KEY",
+                "PUBLIC.TEST_DECIMAL_COLUMN_PRECISION._key_PK_proxy.ID",
+                "PUBLIC.TEST_DECIMAL_DATE_COLUMN_META._key_PK._KEY",
+                "PUBLIC.TEST_DECIMAL_DATE_COLUMN_META._key_PK_proxy.ID",
+                "dep.DEPARTMENT._key_PK._KEY",
+                "org.ORGANIZATION._key_PK._KEY",
+                "org.ORGANIZATION.ORGANIZATION_ID_ASC_IDX.ID",
+                "org.ORGANIZATION.ORGANIZATION_ID_ASC_IDX._KEY",
+                "org.ORGANIZATION.ORG_NAME_INDEX.NAME",
+                "org.ORGANIZATION.ORG_NAME_INDEX._KEY",
+                "pers.PERSON._key_PK._KEY",
+                "pers.PERSON.PERSON_NAME_ASC_AGE_DESC_IDX.NAME",
+                "pers.PERSON.PERSON_NAME_ASC_AGE_DESC_IDX.AGE",
+                "pers.PERSON.PERSON_NAME_ASC_AGE_DESC_IDX._KEY",
+                "pers.PERSON.PERSON_ORGID_ASC_IDX.ORGID",
+                "pers.PERSON.PERSON_ORGID_ASC_IDX._KEY"
+            );
 
-            Set<String> actualIdxs = new HashSet<>(expectedIdxs.size());
+            List<String> actualIdxs = new ArrayList<>();
 
             while (rs.next()) {
                 actualIdxs.add(rs.getString("TABLE_SCHEM") +
                     '.' + rs.getString("TABLE_NAME") +
-                    '.' + rs.getString("INDEX_NAME"));
+                    '.' + rs.getString("INDEX_NAME") +
+                    '.' + rs.getString("COLUMN_NAME"));
             }
 
-            assert expectedIdxs.equals(actualIdxs) : "expectedIdxs=" + expectedIdxs +
-                ", actualIdxs" + actualIdxs;
+            assertEquals("Unexpected indexes count", expectedIdxs.size(), actualIdxs.size());
+
+            for (int i = 0; i < actualIdxs.size(); i++)
+                assertEquals("Unexpected index", expectedIdxs.get(i), actualIdxs.get(i));
         }
     }
 
@@ -1414,7 +1483,7 @@ public class JdbcThinMetadataSelfTest extends JdbcThinAbstractSelfTest {
                 schemas.add(rs.getString(1));
 
                 assertEquals("There is only one possible catalog.",
-                    JdbcUtils.CATALOG_NAME, rs.getString(2));
+                    CATALOG_NAME, rs.getString(2));
             }
 
             assert expectedSchemas.equals(schemas) : "Unexpected schemas: " + schemas +

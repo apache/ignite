@@ -92,7 +92,7 @@ public class TableDescriptor {
     }
 
     /** */
-    Map<String, IndexDescriptor> indexes() {
+    public Map<String, IndexDescriptor> indexes() {
         return Collections.unmodifiableMap(idxs);
     }
 
