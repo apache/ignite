@@ -154,43 +154,47 @@ class ConsistencyTest(IgniteTest):
         assert "The check procedure failed on nodes" not in output
 
         finish = current_millis()
+        time_to_run = finish - start
 
         idle_verify_time = {
             'start': start,
             'finish': finish,
-            'time_to_run': (finish - start)
+            'time_to_run': time_to_run
         }
 
-        self.logger.info("Idle verify finished [time_to_run=" + str(idle_verify_time['time_to_run']) + ']')
+        self.logger.info(f"Idle verify finished [time_to_run={time_to_run}]")
 
         start = current_millis()
 
         batch_sz = 100
         parts_cnt = 1024
 
-        for pi in range(0, int(parts_cnt/batch_sz + 1)):
-            _from = pi*batch_sz
-            _to = min((pi+1)*batch_sz, parts_cnt)
+        for c in range(1, cache_count + 1):
+            for pi in range(0, int(parts_cnt/batch_sz + 1)):
+                _from = pi*batch_sz
+                _to = min((pi+1)*batch_sz, parts_cnt)
 
-            # checking 20 partitions at a time
-            p = ','.join([str(x) for x in range(_from, _to)])
+                # checking 20 partitions at a time
+                p = ','.join([str(x) for x in range(_from, _to)])
 
-            self.logger.debug('Running repair [p=' + p + ']')
-            # checking/repairing
-            output = control_utility.check_consistency(f"repair --cache test-cache-1 --strategy LWW --partitions " + p)
+                self.logger.debug(f"Running repair [p={p}]")
+                # checking/repairing
+                output = control_utility.check_consistency(
+                    f"repair --cache test-cache-{c} --strategy LWW --partitions " + p)
 
-            for part in range(_from, _to):
-                assert f"Partition {part}" in output, str(part)
+                for part in range(_from, _to):
+                    assert f"Partition {part}" in output, str(part)
 
         finish = current_millis()
+        time_to_run = finish - start
 
         check_consistency_time = {
             'start': start,
             'finish': finish,
-            'time_to_run': (finish - start)
+            'time_to_run': time_to_run
         }
 
-        self.logger.info("Check consistency finished [time_to_run=" + str(check_consistency_time['time_to_run']) + ']')
+        self.logger.info(f"Check consistency finished [time_to_run={time_to_run}]")
 
         return {
             'idle_verify': idle_verify_time,
