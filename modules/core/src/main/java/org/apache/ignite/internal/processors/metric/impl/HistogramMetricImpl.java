@@ -58,8 +58,6 @@ public class HistogramMetricImpl extends AbstractMetric implements ConfigurableH
      * @param x Value.
      */
     public void value(long x) {
-        assert x >= 0;
-
         HistogramHolder h = holder;
 
         //Expect arrays of few elements.
