@@ -49,7 +49,7 @@ On startup event processing will be continued from the last saved state.
 [cols="20%,45%,35%",opts="header"]
 |===
 |Name |Description | Default value
-| `DataStorageConfiguration#cdcEnabled` | Flag to enable CDC on the server node. | `false`
+| `DataRegionConfiguration#cdcEnabled` | Flag to enable CDC on the server node. | `false`
 | `DataStorageConfiguration#cdcWalPath` | Path to the CDC directory | `"db/wal/cdc"`
 | `DataStorageConfiguration#walForceArchiveTimeout` | Timeout to forcefully archive the WAL segment even it is not complete. | `-1` (disabled)
 |===
