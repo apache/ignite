@@ -165,7 +165,7 @@ class ConsistencyTest(IgniteTest):
 
         start = current_millis()
 
-        for pi in range(0, 51):
+        for pi in range(0, 52):
             _from = pi*20
             _to = min((pi+1)*20, 1024)
 
