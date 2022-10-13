@@ -118,27 +118,13 @@ public class VisorConsistencyRepairTask extends AbstractConsistencyTask<VisorCon
             if (err.get() != null)
                 throw new IgniteException("Consistency task was interrupted.", err.get());
 
-            StringBuilder res0 = new StringBuilder();
+            StringBuilder resStr = new StringBuilder();
 
-            if (res.containsKey(true)) {
-                res0.append("\n    ").append(NOTHING_FOUND);
+            makeResult(res, true, resStr, NOTHING_FOUND);
 
-                // Consistent parts goes first in output.
-                res.get(true).forEach(t ->
-                    res0.append("      Partition ").append(t.get1()).append(' ').append(t.get2()).append('\n')
-                );
-            }
+            makeResult(res, false, resStr, CONSISTENCY_VIOLATIONS_FOUND);
 
-            if (res.containsKey(false)) {
-                res0.append("\n    ").append(CONSISTENCY_VIOLATIONS_FOUND);
-
-                res.get(false).forEach(t ->
-                    res0.append("      Partition ").append(t.get1()).append(' ').append(t.get2()).append('\n')
-                );
-
-            }
-
-            return res0.length() == 0 ? null : res0.toString();
+            return resStr.length() == 0 ? null : resStr.toString();
         }
 
         /**
@@ -410,5 +396,23 @@ public class VisorConsistencyRepairTask extends AbstractConsistencyTask<VisorCon
                 keys = new HashSet<>();
             }
         }
+    }
+
+    /** */
+    private static void makeResult(
+        Map<Boolean, List<IgniteBiTuple<Integer, String>>> res,
+        boolean flag,
+        StringBuilder resStr,
+        String msg
+    ) {
+        if (!res.containsKey(flag))
+            return;
+
+        resStr.append("\n    ").append(msg);
+
+        // Consistent parts goes first in output.
+        res.get(flag).forEach(t ->
+            resStr.append("      Partition ").append(t.get1()).append(' ').append(t.get2()).append('\n')
+        );
     }
 }
