@@ -352,7 +352,7 @@ public class KillCommandsCommandShTest extends GridCommandHandlerClusterByClassA
         List<String> cmd = new ArrayList<>(Arrays.asList(
             "--consistency", "repair",
             ConsistencyCommand.STRATEGY, ReadRepairStrategy.CHECK_ONLY.toString(),
-            ConsistencyCommand.PARTITION, "0",
+            ConsistencyCommand.PARTITIONS, "0",
             ConsistencyCommand.CACHE, consistencyCacheName));
 
         if (parallel)
@@ -361,7 +361,7 @@ public class KillCommandsCommandShTest extends GridCommandHandlerClusterByClassA
         assertEquals(EXIT_CODE_UNEXPECTED_ERROR, execute(cmd));
 
         assertContains(log, testOut.toString(), "Operation execution cancelled.");
-        assertContains(log, testOut.toString(), VisorConsistencyRepairTask.NOTHING_FOUND);
+        assertContains(log, testOut.toString(), "Consistency task was interrupted.");
         assertNotContains(log, testOut.toString(), VisorConsistencyRepairTask.CONSISTENCY_VIOLATIONS_FOUND);
 
         thLatch.await();

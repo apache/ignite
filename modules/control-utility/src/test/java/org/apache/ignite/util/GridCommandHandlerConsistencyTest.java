@@ -20,7 +20,10 @@ package org.apache.ignite.util;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
+import java.util.concurrent.ThreadLocalRandom;
 import java.util.concurrent.atomic.AtomicInteger;
+import java.util.stream.Collectors;
+import java.util.stream.IntStream;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.binary.BinaryObjectBuilder;
 import org.apache.ignite.cache.ReadRepairStrategy;
@@ -295,7 +298,7 @@ public class GridCommandHandlerConsistencyTest extends GridCommandHandlerCluster
             assertEquals(EXIT_CODE_UNEXPECTED_ERROR,
                 execute("--consistency", "repair",
                     ConsistencyCommand.CACHE, "non-existent",
-                    ConsistencyCommand.PARTITION, String.valueOf(i),
+                    ConsistencyCommand.PARTITIONS, String.valueOf(i),
                     ConsistencyCommand.STRATEGY, strategy.toString()));
 
             assertTrue(VisorConsistencyStatusTask.MAP.isEmpty());
@@ -308,10 +311,17 @@ public class GridCommandHandlerConsistencyTest extends GridCommandHandlerCluster
      *
      */
     private void readRepair(AtomicInteger brokenParts, String cacheName, Integer repairsPerEntry) {
-        for (int i = 0; i < PARTITIONS; i++) {
+        int i = 0;
+
+        while (i < PARTITIONS) {
+            int from = i;
+
+            i = Math.min(i + ThreadLocalRandom.current().nextInt(1, 10), PARTITIONS);
+
             assertEquals(EXIT_CODE_OK, execute("--consistency", "repair",
                 ConsistencyCommand.CACHE, callByGrp ? cacheName + GRP_POSTFIX : cacheName,
-                ConsistencyCommand.PARTITION, String.valueOf(i),
+                ConsistencyCommand.PARTITIONS,
+                    IntStream.range(from, i).mapToObj(Integer::toString).collect(Collectors.joining(",")),
                 ConsistencyCommand.STRATEGY, strategy.toString()));
 
             assertTrue(VisorConsistencyStatusTask.MAP.isEmpty());
@@ -322,7 +332,7 @@ public class GridCommandHandlerConsistencyTest extends GridCommandHandlerCluster
             assertEquals(EXIT_CODE_OK, execute("--cache", "idle_verify"));
 
             if (repairsPerEntry > 0) {
-                brokenParts.decrementAndGet();
+                brokenParts.addAndGet(-(i - from));
 
                 if (brokenParts.get() > 0)
                     assertContains(log, testOut.toString(),

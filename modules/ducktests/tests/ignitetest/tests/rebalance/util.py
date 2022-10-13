@@ -25,14 +25,13 @@ from typing import NamedTuple
 from ducktape.errors import TimeoutError
 
 from ignitetest.services.ignite import IgniteService
-from ignitetest.services.ignite_app import IgniteApplicationService
 from ignitetest.services.utils.ignite_configuration import IgniteConfiguration, DataStorageConfiguration
 from ignitetest.services.utils.ignite_configuration.data_storage import DataRegionConfiguration
+from ignitetest.tests.util import DataGenerationParams
 from ignitetest.utils.enum import constructible
 from ignitetest.utils.version import IgniteVersion
 
 NUM_NODES = 4
-DEFAULT_DATA_REGION_SZ = 1 << 30
 
 
 @constructible
@@ -44,37 +43,17 @@ class TriggerEvent(IntEnum):
     NODE_LEFT = 1
 
 
-class RebalanceParams(NamedTuple):
+class RebalanceParams(DataGenerationParams):
     """
     Rebalance parameters
     """
     trigger_event: TriggerEvent = TriggerEvent.NODE_JOIN
-    backups: int = 1
-    cache_count: int = 1
-    entry_count: int = 15_000
-    entry_size: int = 50_000
-    preloaders: int = 1
     thread_pool_size: int = None
     batch_size: int = None
     batches_prefetch_count: int = None
     throttle: int = None
     persistent: bool = False
     jvm_opts: list = None
-
-    @property
-    def data_region_max_size(self):
-        """
-        Max size for DataRegionConfiguration.
-        """
-        return max(self.cache_count * self.entry_count * self.entry_size * (self.backups + 1), DEFAULT_DATA_REGION_SZ)\
-
-
-    @property
-    def entry_count_per_preloader(self):
-        """
-        Entry count per preloader.
-        """
-        return int(self.entry_count / self.preloaders)
 
 
 class RebalanceMetrics(NamedTuple):
@@ -127,56 +106,6 @@ def start_ignite(test_context, ignite_version: str, rebalance_params: RebalanceP
     ignites.start()
 
     return ignites
-
-
-def preload_data(context, config, rebalance_params: RebalanceParams, timeout=3600):
-    """
-    Puts entry_count of key-value pairs of entry_size bytes to cache_count caches.
-    :param context: Test context.
-    :param config: Ignite configuration.
-    :param rebalance_params: Rebalance parameters.
-    :param timeout: Timeout in seconds for application finished.
-    :return: Time taken for data preloading.
-    """
-    assert rebalance_params.preloaders > 0
-    assert rebalance_params.cache_count > 0
-    assert rebalance_params.entry_count > 0
-    assert rebalance_params.entry_size > 0
-
-    apps = []
-
-    def start_app(_from, _to):
-        app = IgniteApplicationService(
-            context,
-            config=config,
-            java_class_name="org.apache.ignite.internal.ducktest.tests.rebalance.DataGenerationApplication",
-            params={
-                "backups": rebalance_params.backups,
-                "cacheCount": rebalance_params.cache_count,
-                "entrySize": rebalance_params.entry_size,
-                "from": _from,
-                "to": _to
-            },
-            shutdown_timeout_sec=timeout)
-        app.start_async()
-
-        apps.append(app)
-
-    count = rebalance_params.entry_count_per_preloader
-    end = 0
-
-    for _ in range(rebalance_params.preloaders - 1):
-        start = end
-        end += count
-        start_app(start, end)
-
-    start_app(end, rebalance_params.entry_count)
-
-    for app in apps:
-        app.await_stopped()
-
-    return (max(map(lambda app: app.get_finish_time(), apps)) -
-            min(map(lambda app: app.get_init_time(), apps))).total_seconds()
 
 
 def await_rebalance_start(service: IgniteService, timeout: int = 30):
