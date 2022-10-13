@@ -42,6 +42,7 @@ public class FeatureChecker {
         "--add-opens=java.base/java.nio=ALL-UNNAMED\n" +
         "--add-opens=java.base/java.util=ALL-UNNAMED\n" +
         "--add-opens=java.base/java.util.concurrent=ALL-UNNAMED\n" +
+        "--add-opens=java.base/java.util.concurrent.atomic=ALL-UNNAMED\n" +
         "--add-opens=java.base/java.util.concurrent.locks=ALL-UNNAMED\n" +
         "--add-opens=java.base/java.lang=ALL-UNNAMED";
 

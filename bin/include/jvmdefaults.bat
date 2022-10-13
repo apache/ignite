@@ -67,6 +67,7 @@ if %java_version% GEQ 15 (
     --add-opens=java.base/java.nio=ALL-UNNAMED ^
     --add-opens=java.base/java.util=ALL-UNNAMED ^
     --add-opens=java.base/java.util.concurrent=ALL-UNNAMED ^
+    --add-opens=java.base/java.util.concurrent.atomic=ALL-UNNAMED ^
     --add-opens=java.base/java.util.concurrent.locks=ALL-UNNAMED ^
     --add-opens=java.base/java.lang=ALL-UNNAMED ^
     --add-opens=java.base/java.lang.invoke=ALL-UNNAMED ^
