@@ -24,6 +24,7 @@ import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.ForkJoinPool;
+import java.util.concurrent.atomic.AtomicReference;
 import java.util.stream.Collectors;
 import javax.cache.CacheException;
 import org.apache.ignite.IgniteCache;
@@ -94,6 +95,8 @@ public class VisorConsistencyRepairTask extends AbstractConsistencyTask<VisorCon
 
         /** {@inheritDoc} */
         @Override protected String run(VisorConsistencyRepairTaskArg arg) throws IgniteException {
+            AtomicReference<Exception> err = new AtomicReference<>();
+
             Map<Boolean, List<IgniteBiTuple<Integer, IgniteBiTuple<Long, String>>>> res = arg.parts().stream()
                 .map(p -> F.t(p, ForkJoinPool.commonPool().submit(() -> processPartition(p, arg))))
                 .map(t -> {
@@ -101,11 +104,16 @@ public class VisorConsistencyRepairTask extends AbstractConsistencyTask<VisorCon
                         return F.t(t.get1(), t.get2().get());
                     }
                     catch (ExecutionException | InterruptedException e) {
-                        throw new IgniteException("Consistency task was interrupted.", e);
+                        err.set(e);
+
+                        return F.<Integer, IgniteBiTuple<Long, String>>t(t.get1(), null);
                     }
                 })
                 .filter(t -> t.get2() != null)
                 .collect(Collectors.groupingBy(t -> t.get2().get1() != null));
+
+            if (err.get() != null)
+                throw new IgniteException("Consistency task was interrupted.", err.get());
 
             StringBuilder res0 = new StringBuilder();
 
