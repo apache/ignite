@@ -149,7 +149,9 @@ class ConsistencyTest(IgniteTest):
 
         start = current_millis()
 
-        control_utility.idle_verify()
+        output = control_utility.idle_verify()
+
+        assert "The check procedure failed on nodes" not in output
 
         finish = current_millis()
 
@@ -163,13 +165,19 @@ class ConsistencyTest(IgniteTest):
 
         start = current_millis()
 
-        for pi in range(0, 50):
+        for pi in range(0, 51):
+            _from = pi*20
+            _to = min((pi+1)*20, 1024)
+
             # checking 20 partitions at a time
-            p = ','.join([str(x) for x in range(pi*20, (pi+1)*20)])
+            p = ','.join([str(x) for x in range(_from, _to)])
 
             self.logger.debug('Running repair [p=' + p + ']')
             # checking/repairing
-            control_utility.check_consistency(f"repair --cache test-cache-1 --strategy LWW --partitions " + p)
+            output = control_utility.check_consistency(f"repair --cache test-cache-1 --strategy LWW --partitions " + p)
+
+            for part in range(_from, _to):
+                assert f"Partition {part}" in output, str(part)
 
         finish = current_millis()
 

@@ -163,6 +163,7 @@ class ControlUtility:
             msg = 'The check procedure has finished, no conflicts have been found.'
 
         assert (msg in data), data
+        return data
 
     def idle_verify_dump(self, node=None):
         """
@@ -182,6 +183,7 @@ class ControlUtility:
         data = self.__run(f"--consistency {args} --enable-experimental")
 
         assert ('Command [CONSISTENCY] finished with code: 0' in data), data
+        return data
 
     def snapshot_create(self, snapshot_name: str, timeout_sec: int = 60):
         """
