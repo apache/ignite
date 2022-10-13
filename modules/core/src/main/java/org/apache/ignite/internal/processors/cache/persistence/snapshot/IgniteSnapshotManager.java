@@ -148,7 +148,6 @@ import org.apache.ignite.internal.processors.task.GridInternal;
 import org.apache.ignite.internal.util.BasicRateLimiter;
 import org.apache.ignite.internal.util.GridBusyLock;
 import org.apache.ignite.internal.util.GridCloseableIteratorAdapter;
-import org.apache.ignite.internal.util.IgniteUtils;
 import org.apache.ignite.internal.util.distributed.DistributedProcess;
 import org.apache.ignite.internal.util.distributed.InitMessage;
 import org.apache.ignite.internal.util.future.GridCompoundFuture;
@@ -726,7 +725,7 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
     public File incrementalSnapshotLocalDir(String snpName, @Nullable String snpPath, int incIdx) {
         return Paths.get(
             incrementalSnapshotsLocalRootDir(snpName, snpPath).getAbsolutePath(),
-            IgniteUtils.fixedLengthNumberName(incIdx, null)
+            U.fixedLengthNumberName(incIdx, null)
         ).toFile();
     }
 
@@ -843,6 +842,8 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
         SnapshotOperationRequest req,
         SnapshotMetadata meta
     ) {
+        File incSnpDir = incrementalSnapshotLocalDir(req.snapshotName(), req.snapshotPath(), req.incrementIndex());
+
         IgniteInternalFuture<SnapshotOperationResponse> task0 = registerTask(req.snapshotName(), new IncrementalSnapshotFutureTask(
             cctx,
             req.operationalNodeId(),
@@ -855,8 +856,6 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
         )).chain(fut -> {
             if (fut.error() != null)
                 throw F.wrap(fut.error());
-
-            File incSnpDir = incrementalSnapshotLocalDir(req.snapshotName(), req.snapshotPath(), req.incrementIndex());
 
             assert incSnpDir.exists() : "Incremental snapshot directory must exists";
 
@@ -900,9 +899,7 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
                     "[snpName=" + req.snapshotName() + ", incIdx=" + req.incrementIndex());
             }
 
-            writeSnapshotDirectoryToMetastorage(
-                incrementalSnapshotLocalDir(req.snapshotName(), req.snapshotPath(), req.incrementIndex())
-            );
+            writeSnapshotDirectoryToMetastorage(incSnpDir);
 
             task.start();
         });
@@ -2513,12 +2510,12 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
                     cctx.gridConfig()
                 );
 
-                addEncryptionInfoIfEnabled(nodeCacheData);
+                if (!nodeCacheData.config().isEncryptionEnabled()) {
+                    throw new IgniteCheckedException("Create incremental snapshot request has been rejected. " +
+                        "Encrypted cache not supported [cacheId=" + snpCacheData.cacheId() + ']');
+                }
 
-                if (!snpCacheData.encryptedAwareEquals(
-                    nodeCacheData,
-                    cctx.kernalContext().config().getEncryptionSpi()
-                )) {
+                if (!snpCacheData.equals(nodeCacheData)) {
                     throw new IgniteCheckedException(
                         cacheChangedException(snpCacheData.cacheId(), snpCacheData.config().getName())
                     );
@@ -2536,18 +2533,6 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
     public static String cacheChangedException(int cacheId, String name) {
         return "Create incremental snapshot request has been rejected. " +
             "Cache changed [cacheId=" + cacheId + ", cacheName=" + name + ']';
-    }
-
-    /** Adds {@link StoredCacheData#groupKeyEncrypted(GroupKeyEncrypted)} if encryption enabled. */
-    private void addEncryptionInfoIfEnabled(StoredCacheData cacheData) throws IgniteCheckedException {
-        if (!cacheData.config().isEncryptionEnabled())
-            return;
-
-        EncryptionSpi encSpi = cctx.kernalContext().config().getEncryptionSpi();
-
-        GroupKey gKey = cctx.kernalContext().encryption().getActiveKey(CU.cacheGroupId(cacheData.config()));
-
-        cacheData.groupKeyEncrypted(new GroupKeyEncrypted(gKey.id(), encSpi.encryptKey(gKey.key())));
     }
 
     /**
@@ -3533,10 +3518,15 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
 
                 StoredCacheData cacheData = locCfgMgr.readCacheData(targetCacheCfg);
 
-                addEncryptionInfoIfEnabled(cacheData);
+                if (cacheData.config().isEncryptionEnabled()) {
+                    EncryptionSpi encSpi = cctx.kernalContext().config().getEncryptionSpi();
 
-                if (cacheData.config().isEncryptionEnabled())
+                    GroupKey gKey = cctx.kernalContext().encryption().getActiveKey(CU.cacheGroupId(cacheData.config()));
+
+                    cacheData.groupKeyEncrypted(new GroupKeyEncrypted(gKey.id(), encSpi.encryptKey(gKey.key())));
+
                     locCfgMgr.writeCacheData(cacheData, targetCacheCfg);
+                }
             }
             catch (IgniteCheckedException e) {
                 throw new IgniteException(e);

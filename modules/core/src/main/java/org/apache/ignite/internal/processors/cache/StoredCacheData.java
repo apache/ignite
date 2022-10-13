@@ -26,13 +26,11 @@ import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.internal.managers.encryption.GroupKeyEncrypted;
 import org.apache.ignite.internal.pagemem.store.IgnitePageStoreManager;
 import org.apache.ignite.internal.util.tostring.GridToStringInclude;
-import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.T2;
 import org.apache.ignite.internal.util.typedef.internal.A;
 import org.apache.ignite.internal.util.typedef.internal.CU;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.marshaller.jdk.JdkMarshaller;
-import org.apache.ignite.spi.encryption.EncryptionSpi;
 
 /**
  * Cache data to write to and read from {@link IgnitePageStoreManager}. In a nutshell, contains (most importantly)
@@ -218,33 +216,25 @@ public class StoredCacheData implements Serializable, CdcCacheEvent {
         return ccfg;
     }
 
-    /**
-     * Equals implementation that works regarding encryption SPI.
-     * @param cacheData Object to compare.
-     * @param encSpi Encryption spi.
-     * @return {@code True} if {@code this} and {@code cacheData} logically equals.
-     */
-    public boolean encryptedAwareEquals(StoredCacheData cacheData, EncryptionSpi encSpi) {
-        if (this == cacheData)
+    /** {@inheritDoc} */
+    @Override public boolean equals(Object o) {
+        if (this == o)
             return true;
 
-        if ((grpKeyEncrypted == null) != (cacheData.grpKeyEncrypted == null))
+        if (o == null || getClass() != o.getClass())
             return false;
 
-        if (grpKeyEncrypted != null) {
-            if (grpKeyEncrypted.id() != cacheData.grpKeyEncrypted.id())
-                return false;
-
-            Serializable thisKey = encSpi.decryptKey(grpKeyEncrypted.key());
-            Serializable thatKey = encSpi.decryptKey(cacheData.grpKeyEncrypted.key());
-
-            if (!F.eq(thisKey, thatKey))
-                return false;
-        }
+        StoredCacheData cacheData = (StoredCacheData)o;
 
         return sql == cacheData.sql
             && Objects.equals(ccfg, cacheData.ccfg)
             && Objects.equals(qryEntities, cacheData.qryEntities)
-            && Objects.equals(cacheConfigurationEnrichment, cacheData.cacheConfigurationEnrichment);
+            && Objects.equals(cacheConfigurationEnrichment, cacheData.cacheConfigurationEnrichment)
+            && Objects.equals(grpKeyEncrypted, cacheData.grpKeyEncrypted);
+    }
+
+    /** {@inheritDoc} */
+    @Override public int hashCode() {
+        return Objects.hash(ccfg, qryEntities, sql, cacheConfigurationEnrichment, grpKeyEncrypted);
     }
 }

@@ -3391,6 +3391,14 @@ public abstract class IgniteUtils {
     }
 
     /**
+     * @param fileName File name.
+     * @return Number of this file.
+     */
+    public static long fixedLengthFileNumber(String fileName) {
+        return Long.parseLong(fileName.substring(0, NUMBER_FILE_NAME_LENGTH));
+    }
+
+    /**
      * @param ext Optional extension.
      * @return Pattern to match numbered file name with the specific extension.
      */
