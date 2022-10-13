@@ -115,7 +115,7 @@ public class VisorConsistencyRepairTask extends AbstractConsistencyTask<VisorCon
                 .filter(t -> t.get2() != null)
                 .collect(Collectors.groupingBy(t -> t.get2().startsWith(PROCESSED_PREFIX)));
 
-            if (err.get() != null)
+            if (err.get() != null || isCancelled())
                 throw new IgniteException("Consistency task was interrupted.", err.get());
 
             StringBuilder resStr = new StringBuilder();
