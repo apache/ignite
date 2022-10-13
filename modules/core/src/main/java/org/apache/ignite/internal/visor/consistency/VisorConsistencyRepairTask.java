@@ -66,6 +66,9 @@ public class VisorConsistencyRepairTask extends AbstractConsistencyTask<VisorCon
     /** Violations recorder. */
     public static final String CONSISTENCY_VIOLATIONS_RECORDED = "Cache consistency violations recorded.";
 
+    /** Processed prefix. */
+    public static final String PROCESSED_PREFIX = "[processed=";
+
     /** {@inheritDoc} */
     @Override protected VisorJob<VisorConsistencyRepairTaskArg, String> job(VisorConsistencyRepairTaskArg arg) {
         return new VisorConsistencyRepairJob(arg, debug);
@@ -97,7 +100,7 @@ public class VisorConsistencyRepairTask extends AbstractConsistencyTask<VisorCon
         @Override protected String run(VisorConsistencyRepairTaskArg arg) throws IgniteException {
             AtomicReference<Exception> err = new AtomicReference<>();
 
-            Map<Boolean, List<IgniteBiTuple<Integer, IgniteBiTuple<Long, String>>>> res = arg.parts().stream()
+            Map<Boolean, List<IgniteBiTuple<Integer, String>>> res = arg.parts().stream()
                 .map(p -> F.t(p, ForkJoinPool.commonPool().submit(() -> processPartition(p, arg))))
                 .map(t -> {
                     try {
@@ -106,11 +109,11 @@ public class VisorConsistencyRepairTask extends AbstractConsistencyTask<VisorCon
                     catch (ExecutionException | InterruptedException e) {
                         err.set(e);
 
-                        return F.<Integer, IgniteBiTuple<Long, String>>t(t.get1(), null);
+                        return F.<Integer, String>t(t.get1(), null);
                     }
                 })
                 .filter(t -> t.get2() != null)
-                .collect(Collectors.groupingBy(t -> t.get2().get1() != null));
+                .collect(Collectors.groupingBy(t -> t.get2().startsWith(PROCESSED_PREFIX)));
 
             if (err.get() != null)
                 throw new IgniteException("Consistency task was interrupted.", err.get());
@@ -122,11 +125,7 @@ public class VisorConsistencyRepairTask extends AbstractConsistencyTask<VisorCon
 
                 // Consistent parts goes first in output.
                 res.get(true).forEach(t ->
-                    res0.append("      Partition ")
-                        .append(t.get1())
-                        .append(" [processed=")
-                        .append(t.get2().get1())
-                        .append("]\n")
+                    res0.append("      Partition ").append(t.get1()).append(' ').append(t.get2()).append('\n')
                 );
             }
 
@@ -134,7 +133,7 @@ public class VisorConsistencyRepairTask extends AbstractConsistencyTask<VisorCon
                 res0.append("\n    ").append(CONSISTENCY_VIOLATIONS_FOUND);
 
                 res.get(false).forEach(t ->
-                    res0.append("      Partition ").append(t.get1()).append(' ').append(t.get2().get2()).append('\n')
+                    res0.append("      Partition ").append(t.get1()).append(' ').append(t.get2()).append('\n')
                 );
 
             }
@@ -147,7 +146,7 @@ public class VisorConsistencyRepairTask extends AbstractConsistencyTask<VisorCon
          * @param arg Taks arguments.
          * @return Partition results.
          */
-        private IgniteBiTuple<Long, String> processPartition(int p, VisorConsistencyRepairTaskArg arg) {
+        private String processPartition(int p, VisorConsistencyRepairTaskArg arg) {
             String cacheOrGrpName = arg.cacheOrGroupName();
             ReadRepairStrategy strategy = arg.strategy();
 
@@ -278,7 +277,7 @@ public class VisorConsistencyRepairTask extends AbstractConsistencyTask<VisorCon
             if (!evts.isEmpty())
                 return processEvents(p, checked);
             else
-                return F.t(checked, null);
+                return PROCESSED_PREFIX + checked + "]";
         }
 
         /**
@@ -299,7 +298,7 @@ public class VisorConsistencyRepairTask extends AbstractConsistencyTask<VisorCon
         /**
          *
          */
-        private IgniteBiTuple<Long, String> processEvents(int part, long cnt) {
+        private String processEvents(int part, long cnt) {
             int found = 0;
             int repaired = 0;
 
@@ -355,10 +354,10 @@ public class VisorConsistencyRepairTask extends AbstractConsistencyTask<VisorCon
             if (!res.isEmpty()) {
                 log.warning(CONSISTENCY_VIOLATIONS_RECORDED + "\n" + res);
 
-                return F.t(null, "[found=" + found + ", repaired=" + repaired + ", processed=" + cnt + "]");
+                return "[found=" + found + ", repaired=" + repaired + ", processed=" + cnt + "]";
             }
             else
-                return F.t(cnt, null);
+                return PROCESSED_PREFIX + cnt + "]";
         }
 
         /**
