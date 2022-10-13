@@ -24,7 +24,8 @@ from ignitetest.services.utils.control_utility import ControlUtility
 from ignitetest.services.utils.ignite_aware import IgniteAwareService
 from ignitetest.services.utils.ignite_configuration.discovery import from_ignite_cluster
 from ignitetest.tests.rebalance.util import NUM_NODES, start_ignite, TriggerEvent, \
-    preload_data, get_result, check_type_of_rebalancing, await_rebalance_start, RebalanceParams
+    get_result, check_type_of_rebalancing, await_rebalance_start, RebalanceParams
+from ignitetest.tests.util import preload_data
 from ignitetest.utils import cluster, ignite_versions
 from ignitetest.utils.ignite_test import IgniteTest
 from ignitetest.utils.version import DEV_BRANCH, LATEST
@@ -58,7 +59,7 @@ class RebalancePersistentTest(IgniteTest):
         preload_time = preload_data(
             self.test_context,
             ignites.config._replace(client_mode=True, discovery_spi=from_ignite_cluster(ignites)),
-            rebalance_params=reb_params)
+            data_gen_params=reb_params)
 
         new_node = IgniteService(self.test_context, ignites.config._replace(discovery_spi=from_ignite_cluster(ignites)),
                                  num_nodes=1)
@@ -104,7 +105,7 @@ class RebalancePersistentTest(IgniteTest):
         preload_time = preload_data(
             self.test_context,
             ignites.config._replace(client_mode=True, discovery_spi=from_ignite_cluster(ignites)),
-            rebalance_params=reb_params)
+            data_gen_params=reb_params)
 
         self.logger.debug(f'DB size before rebalance: {get_database_size_mb(ignites.nodes, ignites.database_dir)}')
 
@@ -155,7 +156,7 @@ class RebalancePersistentTest(IgniteTest):
         preloader = IgniteApplicationService(
             self.test_context,
             preloader_config,
-            java_class_name="org.apache.ignite.internal.ducktest.tests.rebalance.DataGenerationApplication",
+            java_class_name="org.apache.ignite.internal.ducktest.tests.DataGenerationApplication",
             params={"backups": 1, "cacheCount": 1, "entrySize": 1, "from": 0, "to": preload_entries}
         )
 
@@ -173,7 +174,7 @@ class RebalancePersistentTest(IgniteTest):
         preload_time = preload_data(
             self.test_context,
             ignites.config._replace(client_mode=True, discovery_spi=from_ignite_cluster(ignites)),
-            rebalance_params=reb_params)
+            data_gen_params=reb_params)
 
         control_utility.deactivate()
         control_utility.activate()

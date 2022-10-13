@@ -20,6 +20,7 @@ package org.apache.ignite.internal.visor.consistency;
 import java.io.IOException;
 import java.io.ObjectInput;
 import java.io.ObjectOutput;
+import java.util.Collection;
 import org.apache.ignite.cache.ReadRepairStrategy;
 import org.apache.ignite.internal.dto.IgniteDataTransferObject;
 import org.apache.ignite.internal.util.typedef.internal.U;
@@ -34,8 +35,8 @@ public class VisorConsistencyRepairTaskArg extends IgniteDataTransferObject {
     /** Cache name. */
     private String cacheOrGrpName;
 
-    /** Partition. */
-    private int part;
+    /** Partitions. */
+    private Collection<Integer> parts;
 
     /** Strategy. */
     ReadRepairStrategy strategy;
@@ -48,26 +49,28 @@ public class VisorConsistencyRepairTaskArg extends IgniteDataTransferObject {
 
     /**
      * @param cacheOrGrpName Cache or group name.
-     * @param part Part.
+     * @param parts Part.
      */
-    public VisorConsistencyRepairTaskArg(String cacheOrGrpName, int part, ReadRepairStrategy strategy) {
+    public VisorConsistencyRepairTaskArg(String cacheOrGrpName, Collection<Integer> parts, ReadRepairStrategy strategy) {
         this.cacheOrGrpName = cacheOrGrpName;
-        this.part = part;
+        this.parts = parts;
         this.strategy = strategy;
     }
 
     /** {@inheritDoc} */
     @Override protected void writeExternalData(ObjectOutput out) throws IOException {
         U.writeString(out, cacheOrGrpName);
-        out.writeInt(part);
+        U.writeCollection(out, parts);
         U.writeEnum(out, strategy);
     }
 
     /** {@inheritDoc} */
-    @Override protected void readExternalData(byte protoVer,
-        ObjectInput in) throws IOException, ClassNotFoundException {
+    @Override protected void readExternalData(
+        byte protoVer,
+        ObjectInput in
+    ) throws IOException, ClassNotFoundException {
         cacheOrGrpName = U.readString(in);
-        part = in.readInt();
+        parts = U.readCollection(in);
         strategy = U.readEnum(in, ReadRepairStrategy.class);
     }
 
@@ -81,8 +84,8 @@ public class VisorConsistencyRepairTaskArg extends IgniteDataTransferObject {
     /**
      *
      */
-    public int part() {
-        return part;
+    public Collection<Integer> parts() {
+        return parts;
     }
 
     /**
