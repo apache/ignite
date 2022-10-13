@@ -23,7 +23,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.ExecutionException;
-import java.util.concurrent.ExecutorService;
+import java.util.concurrent.ForkJoinPool;
 import java.util.stream.Collectors;
 import javax.cache.CacheException;
 import org.apache.ignite.IgniteCache;
@@ -94,10 +94,8 @@ public class VisorConsistencyRepairTask extends AbstractConsistencyTask<VisorCon
 
         /** {@inheritDoc} */
         @Override protected String run(VisorConsistencyRepairTaskArg arg) throws IgniteException {
-            ExecutorService sys = ignite.context().pools().getSystemExecutorService();
-
             Map<Boolean, List<IgniteBiTuple<Integer, IgniteBiTuple<Long, String>>>> res = arg.parts().stream()
-                .map(p -> F.t(p, sys.submit(() -> processPartition(p, arg))))
+                .map(p -> F.t(p, ForkJoinPool.commonPool().submit(() -> processPartition(p, arg))))
                 .map(t -> {
                     try {
                         return F.t(t.get1(), t.get2().get());
