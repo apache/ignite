@@ -65,7 +65,7 @@ import org.jsr166.ConcurrentLinkedHashMap;
  * @see org.apache.ignite.spi.deployment.DeploymentSpi
  */
 @IgniteSpiMultipleInstancesSupport(true)
-@IgniteSpiConsistencyChecked(optional = false, checkClient=false)
+@IgniteSpiConsistencyChecked(optional = false, checkClient = false)
 @IgnoreIfPeerClassLoadingDisabled
 public class LocalDeploymentSpi extends IgniteSpiAdapter implements DeploymentSpi {
     /** Enables additional check for resource name on resources removal. */
