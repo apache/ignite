@@ -34,6 +34,7 @@ from ignitetest.services.ignite_app import IgniteApplicationService
 from ignitetest.services.ignite_execution_exception import IgniteExecutionException
 from ignitetest.services.utils.control_utility import ControlUtility
 from ignitetest.services.utils.ignite_configuration import IgniteConfiguration, DataStorageConfiguration
+from ignitetest.services.utils.ignite_configuration.cache import DFLT_PARTS_CNT
 from ignitetest.services.utils.ignite_configuration.data_storage import DataRegionConfiguration
 from ignitetest.services.utils.ignite_configuration.discovery import from_ignite_cluster
 from ignitetest.services.utils.ignite_configuration.event_type import EventType
@@ -148,8 +149,9 @@ class ConsistencyTest(IgniteTest):
             data_gen_params=data_gen_params)
 
         start = current_millis()
+        cache_names = ','.join([f"test-cache-{x+1}" for x in range(0, cache_count)])
 
-        output = control_utility.idle_verify()
+        output = control_utility.idle_verify(cache_names)
 
         assert "The check procedure failed on nodes" not in output
 
@@ -162,28 +164,20 @@ class ConsistencyTest(IgniteTest):
             'time_to_run': time_to_run
         }
 
-        self.logger.info(f"Idle verify finished [time_to_run={time_to_run}]")
+        self.logger.info(f"Idle verify finished [time_to_run={time_to_run}, caches={cache_names}]")
 
         start = current_millis()
 
-        batch_sz = 100
-        parts_cnt = 1024
-
         for c in range(1, cache_count + 1):
-            for pi in range(0, int(parts_cnt/batch_sz + 1)):
-                _from = pi*batch_sz
-                _to = min((pi+1)*batch_sz, parts_cnt)
+            p = ','.join([str(x) for x in range(0, DFLT_PARTS_CNT)])
 
-                # checking 20 partitions at a time
-                p = ','.join([str(x) for x in range(_from, _to)])
+            self.logger.debug(f"Running repair [p={p}]")
+            # checking/repairing
+            output = control_utility.check_consistency(
+                f"repair --cache test-cache-{c} --strategy LWW --partitions {p}")
 
-                self.logger.debug(f"Running repair [p={p}]")
-                # checking/repairing
-                output = control_utility.check_consistency(
-                    f"repair --cache test-cache-{c} --strategy LWW --partitions " + p)
-
-                for part in range(_from, _to):
-                    assert f"Partition {part}" in output, str(part)
+            for part in range(0, DFLT_PARTS_CNT):
+                assert f"Partition {part}" in output, str(part)
 
         finish = current_millis()
         time_to_run = finish - start
