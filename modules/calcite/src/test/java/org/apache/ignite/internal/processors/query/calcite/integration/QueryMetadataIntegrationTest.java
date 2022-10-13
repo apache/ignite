@@ -227,14 +227,15 @@ public class QueryMetadataIntegrationTest extends AbstractBasicIntegrationTest {
 
         /** */
         public void check() throws Exception {
-            List<T2<List<GridQueryFieldMetadata>, List<GridQueryFieldMetadata>>> actual =
-                qryEngine.queryMetadata(null, schema, sql);
+            List<List<GridQueryFieldMetadata>> actualRsMeta = qryEngine.resultSetMetaData(null, schema, sql);
+            List<List<GridQueryFieldMetadata>> actualParamMeta = qryEngine.parameterMetaData(null, schema, sql);
 
-            assertEquals(expected.size(), actual.size());
+            assertEquals(expected.size(), actualRsMeta.size());
+            assertEquals(expected.size(), actualParamMeta.size());
 
-            for (int i = 0; i < actual.size(); ++i) {
-                checkMeta(expected.get(i).getKey(), actual.get(i).getKey());
-                checkMeta(expected.get(i).getValue(), actual.get(i).getValue());
+            for (int i = 0; i < expected.size(); ++i) {
+                checkMeta(expected.get(i).getKey(), actualRsMeta.get(i));
+                checkMeta(expected.get(i).getValue(), actualParamMeta.get(i));
             }
         }
 

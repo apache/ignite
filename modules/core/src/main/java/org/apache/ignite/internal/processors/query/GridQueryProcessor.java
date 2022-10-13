@@ -2890,6 +2890,18 @@ public class GridQueryProcessor extends GridProcessorAdapter {
     }
 
     /**
+     * @throws IgniteException If indexing is disabled.
+     */
+    private void checkxModuleEnabled() throws IgniteException {
+        if (!moduleEnabled()) {
+            throw new IgniteException("Failed to execute query because indexing is disabled and no query engine is " +
+                "configured (consider adding module " + INDEXING.module() + " to classpath or moving it " +
+                "from 'optional' to 'libs' folder or configuring any query engine with " +
+                "IgniteConfiguration.SqlConfiguration.QueryEnginesConfiguration property).");
+        }
+    }
+
+    /**
      * Execute update on DHT node (i.e. when it is possible to execute and update on all nodes independently).
      *
      * @param cctx Cache context.
@@ -3056,12 +3068,7 @@ public class GridQueryProcessor extends GridProcessorAdapter {
         GridCacheQueryType qryType,
         @Nullable final GridQueryCancel cancel
     ) {
-        if (!moduleEnabled()) {
-            throw new IgniteException("Failed to execute query because indexing is disabled and no query engine is " +
-                "configured (consider adding module " + INDEXING.module() + " to classpath or moving it " +
-                "from 'optional' to 'libs' folder or configuring any query engine with " +
-                "IgniteConfiguration.SqlConfiguration.QueryEnginesConfiguration property).");
-        }
+        checkxModuleEnabled();
 
         if (qry.isDistributedJoins() && qry.getPartitions() != null)
             throw new CacheException("Using both partitions and distributed JOINs is not supported for the same query");
@@ -3125,31 +3132,24 @@ public class GridQueryProcessor extends GridProcessorAdapter {
 
     /** */
     public List<JdbcParameterMeta> parameterMetaData(
-        @Nullable final GridCacheContext<?, ?> cctx,
         final SqlFieldsQuery qry,
         @Nullable final SqlClientContext cliCtx
     ) {
+        checkxModuleEnabled();
 
-        if (!moduleEnabled()) {
-            throw new IgniteException("Failed to execute query because indexing is disabled and no query engine is " +
-                "configured (consider adding module " + INDEXING.module() + " to classpath or moving it " +
-                "from 'optional' to 'libs' folder or configuring any query engine with " +
-                "IgniteConfiguration.SqlConfiguration.QueryEnginesConfiguration property).");
-        }
-
-        return executeQuerySafe(cctx, () -> {
-            final String schemaName = qry.getSchema() == null ? schemaName(cctx) : qry.getSchema();
+        return executeQuerySafe(null, () -> {
+            final String schemaName = qry.getSchema() == null ? QueryUtils.DFLT_SCHEMA : qry.getSchema();
 
             QueryEngine qryEngine = engineForQuery(cliCtx, qry);
 
             if (qryEngine != null) {
-                List<T2<List<GridQueryFieldMetadata>, List<GridQueryFieldMetadata>>> meta = qryEngine.queryMetadata(
+                List<List<GridQueryFieldMetadata>> meta = qryEngine.parameterMetaData(
                     QueryContext.of(qry, cliCtx),
                     schemaName,
                     qry.getSql());
 
                 return meta.stream()
-                    .flatMap(pair -> pair.getValue().stream().map(JdbcParameterMeta::new))
+                    .flatMap(m -> m.stream().map(JdbcParameterMeta::new))
                     .collect(Collectors.toList());
             }
             else
@@ -3160,30 +3160,24 @@ public class GridQueryProcessor extends GridProcessorAdapter {
 
     /** */
     public List<GridQueryFieldMetadata> resultSetMetaData(
-        @Nullable final GridCacheContext<?, ?> cctx,
         final SqlFieldsQuery qry,
         @Nullable final SqlClientContext cliCtx
     ) {
-        if (!moduleEnabled()) {
-            throw new IgniteException("Failed to execute query because indexing is disabled and no query engine is " +
-                "configured (consider adding module " + INDEXING.module() + " to classpath or moving it " +
-                "from 'optional' to 'libs' folder or configuring any query engine with " +
-                "IgniteConfiguration.SqlConfiguration.QueryEnginesConfiguration property).");
-        }
+        checkxModuleEnabled();
 
-        return executeQuerySafe(cctx, () -> {
-            final String schemaName = qry.getSchema() == null ? schemaName(cctx) : qry.getSchema();
+        return executeQuerySafe(null, () -> {
+            final String schemaName = qry.getSchema() == null ? QueryUtils.DFLT_SCHEMA : qry.getSchema();
 
             QueryEngine qryEngine = engineForQuery(cliCtx, qry);
 
             if (qryEngine != null) {
-                List<T2<List<GridQueryFieldMetadata>, List<GridQueryFieldMetadata>>> meta = qryEngine.queryMetadata(
+                List<List<GridQueryFieldMetadata>> meta = qryEngine.resultSetMetaData(
                     QueryContext.of(qry, cliCtx),
                     schemaName,
                     qry.getSql());
 
                 if (meta.size() == 1)
-                    return meta.get(0).getKey();
+                    return meta.get(0);
 
                 return null;
             }

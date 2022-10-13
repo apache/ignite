@@ -766,7 +766,7 @@ public class OdbcRequestHandler implements ClientListenerRequestHandler {
 
             SqlFieldsQueryEx qry = makeQuery(schema, sql);
 
-            List<JdbcParameterMeta> params = ctx.query().parameterMetaData(null, qry, cliCtx);
+            List<JdbcParameterMeta> params = ctx.query().parameterMetaData(qry, cliCtx);
 
             byte[] typeIds = new byte[params.size()];
 
@@ -801,7 +801,7 @@ public class OdbcRequestHandler implements ClientListenerRequestHandler {
 
             SqlFieldsQueryEx qry = makeQuery(schema, sql);
 
-            List<GridQueryFieldMetadata> columns = ctx.query().resultSetMetaData(null, qry, cliCtx);
+            List<GridQueryFieldMetadata> columns = ctx.query().resultSetMetaData(qry, cliCtx);
             Collection<OdbcColumnMeta> meta = OdbcUtils.convertMetadata(columns);
 
             OdbcQueryGetResultsetMetaResult res = new OdbcQueryGetResultsetMetaResult(meta);

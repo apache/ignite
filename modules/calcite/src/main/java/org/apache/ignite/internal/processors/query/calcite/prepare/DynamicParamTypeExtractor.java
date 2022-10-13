@@ -22,24 +22,24 @@ import java.util.Collection;
 import java.util.List;
 import java.util.SortedMap;
 import java.util.TreeMap;
-import com.google.common.collect.ImmutableList;
+import java.util.stream.Collectors;
 import org.apache.calcite.rel.type.RelDataType;
 import org.apache.calcite.rex.RexDynamicParam;
 import org.apache.calcite.rex.RexNode;
 import org.apache.calcite.rex.RexShuttle;
 import org.apache.ignite.internal.processors.query.GridQueryFieldMetadata;
-import org.apache.ignite.internal.processors.query.calcite.prepare.bounds.MultiBounds;
-import org.apache.ignite.internal.processors.query.calcite.prepare.bounds.RangeBounds;
-import org.apache.ignite.internal.processors.query.calcite.prepare.bounds.SearchBounds;
 import org.apache.ignite.internal.processors.query.calcite.rel.IgniteCorrelatedNestedLoopJoin;
 import org.apache.ignite.internal.processors.query.calcite.rel.IgniteFilter;
 import org.apache.ignite.internal.processors.query.calcite.rel.IgniteHashIndexSpool;
 import org.apache.ignite.internal.processors.query.calcite.rel.IgniteIndexScan;
+import org.apache.ignite.internal.processors.query.calcite.rel.IgniteLimit;
 import org.apache.ignite.internal.processors.query.calcite.rel.IgniteMergeJoin;
 import org.apache.ignite.internal.processors.query.calcite.rel.IgniteNestedLoopJoin;
 import org.apache.ignite.internal.processors.query.calcite.rel.IgniteProject;
 import org.apache.ignite.internal.processors.query.calcite.rel.IgniteRel;
+import org.apache.ignite.internal.processors.query.calcite.rel.IgniteSort;
 import org.apache.ignite.internal.processors.query.calcite.rel.IgniteSortedIndexSpool;
+import org.apache.ignite.internal.processors.query.calcite.rel.IgniteTableFunctionScan;
 import org.apache.ignite.internal.processors.query.calcite.rel.IgniteTableModify;
 import org.apache.ignite.internal.processors.query.calcite.rel.IgniteTableScan;
 import org.apache.ignite.internal.processors.query.calcite.type.IgniteTypeFactory;
@@ -100,7 +100,6 @@ public class DynamicParamTypeExtractor extends IgniteRelShuttle {
     @Override public IgniteRel visit(IgniteIndexScan rel) {
         paramsShuttle.apply(rel.projects());
         paramsShuttle.apply(rel.condition());
-        paramsShuttle.apply(rel.searchBounds());
 
         return super.visit(rel);
     }
@@ -116,7 +115,6 @@ public class DynamicParamTypeExtractor extends IgniteRelShuttle {
     /** {@inheritDoc} */
     @Override public IgniteRel visit(IgniteSortedIndexSpool rel) {
         paramsShuttle.apply(rel.condition());
-        paramsShuttle.apply(rel.searchBounds());
 
         return super.visit(rel);
     }
@@ -136,6 +134,30 @@ public class DynamicParamTypeExtractor extends IgniteRelShuttle {
         return super.visit(rel);
     }
 
+    /** {@inheritDoc} */
+    @Override public IgniteRel visit(IgniteLimit rel) {
+        paramsShuttle.apply(rel.fetch());
+        paramsShuttle.apply(rel.offset());
+
+        return super.visit(rel);
+    }
+
+    /** {@inheritDoc} */
+    @Override public IgniteRel visit(IgniteSort rel) {
+        paramsShuttle.apply(rel.offset);
+        paramsShuttle.apply(rel.fetch);
+        paramsShuttle.apply(rel.getSortExps());
+
+        return super.visit(rel);
+    }
+
+    /** {@inheritDoc} */
+    @Override public IgniteRel visit(IgniteTableFunctionScan rel) {
+        paramsShuttle.apply(rel.getCall());
+
+        return super.visit(rel);
+    }
+
     /** */
     private final class DynamicParamsShuttle extends RexShuttle {
         /** {@inheritDoc} */
@@ -143,39 +165,6 @@ public class DynamicParamTypeExtractor extends IgniteRelShuttle {
             acc.put(param.getIndex(), param);
 
             return super.visitDynamicParam(param);
-        }
-
-        /** */
-        public void apply(Collection<SearchBounds> bounds) {
-            if (bounds == null)
-                return;
-
-            for (SearchBounds b: bounds) {
-                if (b == null)
-                    continue;
-
-                switch (b.type()) {
-                    case EXACT:
-                        apply(b.condition());
-
-                        break;
-                    case RANGE:
-                        RangeBounds rb = (RangeBounds)b;
-
-                        apply(rb.lowerBound());
-                        apply(rb.upperBound());
-
-                        break;
-
-                    case MULTI:
-                        MultiBounds mb = (MultiBounds)b;
-
-                        apply(mb.bounds());
-
-                        break;
-
-                }
-            }
         }
     }
 
@@ -209,7 +198,7 @@ public class DynamicParamTypeExtractor extends IgniteRelShuttle {
                     paramType.getScale(),
                     paramType.isNullable()
                 );
-            }).collect(ImmutableList.toImmutableList());
+            }).collect(Collectors.toList());
         }
     }
 }
