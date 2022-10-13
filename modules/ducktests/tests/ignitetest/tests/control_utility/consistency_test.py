@@ -165,9 +165,12 @@ class ConsistencyTest(IgniteTest):
 
         start = current_millis()
 
-        for pi in range(0, 52):
-            _from = pi*20
-            _to = min((pi+1)*20, 1024)
+        batch_sz = 100
+        parts_cnt = 1024
+
+        for pi in range(0, int(parts_cnt/batch_sz + 1)):
+            _from = pi*batch_sz
+            _to = min((pi+1)*batch_sz, parts_cnt)
 
             # checking 20 partitions at a time
             p = ','.join([str(x) for x in range(_from, _to)])
