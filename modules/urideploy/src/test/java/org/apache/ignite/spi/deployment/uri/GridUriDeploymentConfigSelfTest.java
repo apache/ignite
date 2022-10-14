@@ -17,11 +17,15 @@
 
 package org.apache.ignite.spi.deployment.uri;
 
-import java.util.Collections;
+import org.apache.ignite.configuration.IgniteConfiguration;
+import org.apache.ignite.testframework.config.GridTestProperties;
 import org.apache.ignite.testframework.junits.spi.GridSpiAbstractConfigTest;
 import org.apache.ignite.testframework.junits.spi.GridSpiTest;
 import org.junit.Test;
 
+import java.io.File;
+import java.util.Arrays;
+import java.util.Collections;
 /**
  *
  */
@@ -35,5 +39,30 @@ public class GridUriDeploymentConfigSelfTest extends GridSpiAbstractConfigTest<U
         checkNegativeSpiProperty(new UriDeploymentSpi(), "uriList", null);
         checkNegativeSpiProperty(new UriDeploymentSpi(), "uriList", Collections.singletonList("qwertyuiop"), false);
         checkNegativeSpiProperty(new UriDeploymentSpi(), "uriList", Collections.singletonList(null), false);
+    }
+
+    /**
+     *
+     * @throws Exception
+     */
+    @Test
+    public void testClientSpiConsistencyChecked() throws Exception {
+        IgniteConfiguration scfg = super.getConfiguration();
+
+        UriDeploymentSpi deploymentSpi = new UriDeploymentSpi();
+        String tmpDir = GridTestProperties.getProperty("deploy.uri.tmpdir");
+        File tmp = new File(tmpDir);
+        if (!tmp.exists()){
+            tmp.mkdir();
+        }
+        deploymentSpi.setUriList(Arrays.asList("file://" + tmpDir));
+        scfg.setDeploymentSpi(deploymentSpi);
+        startGrid("server" , scfg);
+
+        IgniteConfiguration ccfg = super.getConfiguration();
+        startClientGrid("client" , ccfg);
+
+        stopGrid("server");
+        stopGrid("client");
     }
 }
