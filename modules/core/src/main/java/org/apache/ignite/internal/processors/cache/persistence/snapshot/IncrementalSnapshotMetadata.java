@@ -18,7 +18,6 @@
 package org.apache.ignite.internal.processors.cache.persistence.snapshot;
 
 import java.io.Serializable;
-import java.util.Objects;
 import java.util.UUID;
 import org.apache.ignite.internal.processors.cache.persistence.wal.WALPointer;
 import org.apache.ignite.internal.util.typedef.internal.S;
@@ -74,29 +73,6 @@ public class IncrementalSnapshotMetadata implements Serializable {
         this.consId = consId;
         this.folderName = folderName;
         this.cutPtr = cutPtr;
-    }
-
-    /** {@inheritDoc} */
-    @Override public boolean equals(Object o) {
-        if (this == o)
-            return true;
-
-        if (o == null || getClass() != o.getClass())
-            return false;
-
-        IncrementalSnapshotMetadata metadata = (IncrementalSnapshotMetadata)o;
-
-        return incIdx == metadata.incIdx
-            && Objects.equals(rqId, metadata.rqId)
-            && Objects.equals(snpName, metadata.snpName)
-            && Objects.equals(consId, metadata.consId)
-            && Objects.equals(folderName, metadata.folderName)
-            && Objects.equals(cutPtr, metadata.cutPtr);
-    }
-
-    /** {@inheritDoc} */
-    @Override public int hashCode() {
-        return Objects.hash(rqId, snpName, incIdx, consId, folderName, cutPtr);
     }
 
     /** {@inheritDoc} */
