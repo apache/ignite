@@ -27,7 +27,6 @@ import java.util.Arrays;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicReference;
 import org.apache.ignite.Ignite;
-import org.apache.ignite.IgniteCache;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.cache.CacheAtomicityMode;
 import org.apache.ignite.cache.CacheRebalanceMode;
@@ -152,49 +151,6 @@ public class IgnitePdsCorruptedStoreTest extends GridCommonAbstractTest {
         ccfg.setBackups(2);
 
         return ccfg;
-    }
-
-    /**
-     * @throws Exception If test failed.
-     */
-    @Test
-    public void testNodeInvalidatedWhenPersistenceIsCorrupted() throws Exception {
-        Ignite ignite = startGrid(0);
-
-        startGrid(1);
-
-        ignite.cluster().active(true);
-
-        awaitPartitionMapExchange();
-
-        IgniteCache<Integer, String> cache1 = ignite.cache(CACHE_NAME1);
-
-        for (int i = 0; i < 100; ++i)
-            cache1.put(i, String.valueOf(i));
-
-        forceCheckpoint();
-
-        cache1.put(2, "test");
-
-        String nodeName = ignite.name().replaceAll("\\.", "_");
-
-        stopAllGrids();
-
-        U.delete(file(String.format("db/%s/cache-%s/part-2.bin", nodeName, CACHE_NAME1)));
-
-        startGrid(1);
-
-        try {
-            startGrid(0);
-        }
-        catch (IgniteCheckedException ex) {
-            if (X.hasCause(ex, StorageException.class, IOException.class))
-                return; // Success;
-
-            throw ex;
-        }
-
-        waitFailure(StorageException.class);
     }
 
     /**
