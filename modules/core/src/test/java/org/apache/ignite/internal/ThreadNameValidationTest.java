@@ -34,6 +34,7 @@ import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.testframework.junits.GridAbstractTest;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
+import org.apache.ignite.testframework.junits.logger.GridTestLog4jLogger;
 import org.junit.ClassRule;
 import org.junit.Test;
 import org.junit.rules.RuleChain;
@@ -48,14 +49,19 @@ import org.junit.runners.model.Statement;
  */
 public class ThreadNameValidationTest extends GridCommonAbstractTest {
 
+    static {
+        // Make sure that log4j init happens before we fill #defaultThreadFactoryCountBeforeTest.
+        initLoggingSubsystem();
+    }
+
     /** {@link Executors.DefaultThreadFactory} count before test. */
-    private static transient int defaultThreadFactoryCountBeforeTest;
+    private static int defaultThreadFactoryCountBeforeTest;
 
     /** {@link Thread#threadInitNumber} count before test. */
-    private static transient int anonymousThreadCountBeforeTest;
+    private static int anonymousThreadCountBeforeTest;
 
     /** Sequence for sets objects. */
-    private static final transient AtomicLong SEQUENCE = new AtomicLong();
+    private static final AtomicLong SEQUENCE = new AtomicLong();
 
     /** */
     private static final TestRule beforeAllTestRule = (base, description) -> new Statement() {
@@ -74,6 +80,14 @@ public class ThreadNameValidationTest extends GridCommonAbstractTest {
 
     /** */
     private Set<Long> externalAnonymousThreads;
+
+    /**
+     * Makes sure that Log4j logging subsystem is initialized. This method must be invoked before
+     * #defaultThreadFactoryCountBeforeTest is filled as Log4j initialization creates a default thread factory.
+     */
+    private static void initLoggingSubsystem() {
+        new GridTestLog4jLogger();
+    }
 
     /** {@inheritDoc} */
     @Override protected IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {

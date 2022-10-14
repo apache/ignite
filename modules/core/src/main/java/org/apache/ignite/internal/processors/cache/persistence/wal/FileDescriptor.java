@@ -24,11 +24,10 @@ import org.apache.ignite.internal.processors.cache.persistence.file.FileIOFactor
 import org.apache.ignite.internal.processors.cache.persistence.file.FilePageStoreManager;
 import org.apache.ignite.internal.processors.cache.persistence.file.UnzipFileIO;
 import org.apache.ignite.internal.processors.cache.persistence.wal.io.SegmentIO;
-import org.apache.ignite.internal.util.IgniteUtils;
+import org.apache.ignite.internal.util.typedef.internal.U;
 import org.jetbrains.annotations.Nullable;
 
 import static java.nio.file.StandardOpenOption.READ;
-import static org.apache.ignite.internal.util.IgniteUtils.NUMBER_FILE_NAME_LENGTH;
 
 /**
  * WAL file descriptor.
@@ -65,7 +64,7 @@ public class FileDescriptor implements Comparable<FileDescriptor>, AbstractWalRe
 
         assert fileName.contains(WAL_SEGMENT_FILE_EXT);
 
-        this.idx = idx == null ? Long.parseLong(fileName.substring(0, NUMBER_FILE_NAME_LENGTH)) : idx;
+        this.idx = idx == null ? U.fixedLengthFileNumber(fileName) : idx;
     }
 
     /**
@@ -75,7 +74,7 @@ public class FileDescriptor implements Comparable<FileDescriptor>, AbstractWalRe
      * @return Segment file name.
      */
     public static String fileName(long idx) {
-        return IgniteUtils.fixedLengthNumberName(idx, WAL_SEGMENT_FILE_EXT);
+        return U.fixedLengthNumberName(idx, WAL_SEGMENT_FILE_EXT);
     }
 
     /** {@inheritDoc} */
