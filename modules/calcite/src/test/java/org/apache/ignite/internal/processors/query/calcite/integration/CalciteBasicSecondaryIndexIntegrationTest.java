@@ -1158,6 +1158,31 @@ public class CalciteBasicSecondaryIndexIntegrationTest extends AbstractBasicInte
             .check();
     }
 
+    /**
+     * Test index search bounds on complex index expression.
+     */
+    @Test
+    public void testComplexIndexExpression() {
+        assertQuery("SELECT id FROM Developer WHERE depId BETWEEN ? - 1 AND ? + 1")
+            .withParams(20, 20)
+            .matches(containsIndexScan("PUBLIC", "DEVELOPER", DEPID_IDX))
+            .returns(20)
+            .returns(21)
+            .returns(22)
+            .check();
+
+        assertQuery("SELECT id FROM Birthday WHERE name = SUBSTRING(?::VARCHAR, 1, 4)")
+            .withParams("BachBach")
+            .matches(containsIndexScan("PUBLIC", "BIRTHDAY", NAME_DATE_IDX))
+            .returns(3)
+            .check();
+
+        assertQuery("SELECT id FROM Birthday WHERE name = SUBSTRING(name, 1, 4)")
+            .matches(containsTableScan("PUBLIC", "BIRTHDAY"))
+            .returns(3)
+            .check();
+    }
+
     /** */
     private static class Developer {
         /** */

@@ -423,6 +423,33 @@ public class IndexSearchBoundsPlannerTest extends AbstractPlannerTest {
         );
     }
 
+    /** Tests complex bounds expressions. */
+    @Test
+    public void testBoundsComplex() throws Exception {
+        assertBounds("SELECT * FROM TEST WHERE C1 = ? + 10",
+            exact("+(?0, 10)")
+        );
+
+        assertBounds("SELECT * FROM TEST WHERE C1 = 1 AND C2 > SUBSTRING(?::VARCHAR, 1, 2) || '3'",
+            exact(1),
+            range("||(SUBSTRING(?0, 1, 2), _UTF-8'3')", null, false, true)
+        );
+
+        assertBounds("SELECT * FROM TEST WHERE C1 = 1 AND C2 > SUBSTRING(C3::VARCHAR, 1, 2) || '3'",
+            exact(1),
+            empty()
+        );
+
+        assertBounds("SELECT (SELECT C1 FROM TEST t2 WHERE t2.C1 = t1.C1 + t1.C3 * ?) FROM TEST t1",
+            exact("+($cor0.C1, *($cor0.C3, ?0))")
+        );
+
+        assertPlan("SELECT * FROM TEST WHERE C1 = ? + C3", publicSchema, isTableScan("TEST"));
+
+        assertPlan("SELECT (SELECT C1 FROM TEST t2 WHERE t2.C1 < t1.C1 + t2.C1) FROM TEST t1", publicSchema,
+            nodeOrAnyChild(isIndexScan("TEST", "C1C2C3")).negate());
+    }
+
     /** String representation of LEAST or CREATEST operator converted to CASE. */
     private String leastOrGreatest(boolean least, String val0, String val1, String type) {
         return "CASE(OR(IS NULL(" + val0 + "), IS NULL(" + val1 + ")), null:" + type + ", " + (least ? '<' : '>') +
