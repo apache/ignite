@@ -943,6 +943,14 @@ public class FilePageStoreManager extends GridCacheSharedManagerAdapter implemen
             throw new IgniteException("Directory doesn't match the cache or cache group prefix: " + dir);
     }
 
+    /**
+     * @param root Root directory.
+     * @return Array of cache data files.
+     */
+    public static File[] cacheDataFiles(File root) {
+        return root.listFiles(f -> f.getName().endsWith(CACHE_DATA_FILENAME));
+    }
+
     /** {@inheritDoc} */
     @Override public boolean hasIndexStore(int grpId) {
         return !grpsWithoutIdx.contains(grpId);

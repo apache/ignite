@@ -401,6 +401,9 @@ public abstract class IgniteUtils {
     /** Alphanumeric with underscore regexp pattern. */
     private static final Pattern ALPHANUMERIC_UNDERSCORE_PATTERN = Pattern.compile("^[a-zA-Z_0-9]+$");
 
+    /** Length of numbered file name. */
+    public static final int NUMBER_FILE_NAME_LENGTH = 16;
+
     /** Project home directory. */
     private static volatile GridTuple<String> ggHome;
 
@@ -3362,6 +3365,50 @@ public abstract class IgniteUtils {
         String pre = (si ? "kMGTPE" : "KMGTPE").charAt(exp - 1) + (si ? "" : "i");
 
         return String.format("%.1f %sB", bytes / Math.pow(unit, exp), pre);
+    }
+
+    /**
+     * Generates file name from index.
+     *
+     * @param num Number to generate file name.
+     * @param ext Optional extension
+     * @return File name.
+     */
+    public static String fixedLengthNumberName(long num, @Nullable String ext) {
+        SB b = new SB();
+
+        String segmentStr = Long.toString(num);
+
+        for (int i = segmentStr.length(); i < NUMBER_FILE_NAME_LENGTH; i++)
+            b.a('0');
+
+        b.a(segmentStr);
+
+        if (ext != null)
+            b.a(ext);
+
+        return b.toString();
+    }
+
+    /**
+     * @param fileName File name.
+     * @return Number of this file.
+     */
+    public static long fixedLengthFileNumber(String fileName) {
+        return Long.parseLong(fileName.substring(0, NUMBER_FILE_NAME_LENGTH));
+    }
+
+    /**
+     * @param ext Optional extension.
+     * @return Pattern to match numbered file name with the specific extension.
+     */
+    public static Pattern fixedLengthNumberNamePattern(@Nullable String ext) {
+        String pattern = "\\d{" + NUMBER_FILE_NAME_LENGTH + "}";
+
+        if (ext != null)
+            pattern += ext.replaceAll("\\.", "\\\\\\.");
+
+        return Pattern.compile(pattern);
     }
 
     /**

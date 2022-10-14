@@ -101,6 +101,7 @@ import static org.apache.ignite.internal.processors.cache.persistence.snapshot.I
 import static org.apache.ignite.testframework.GridTestUtils.assertThrowsAnyCause;
 import static org.apache.ignite.testframework.GridTestUtils.assertThrowsWithCause;
 import static org.apache.ignite.testframework.GridTestUtils.waitForCondition;
+import static org.junit.Assume.assumeFalse;
 
 /**
  * Cluster-wide snapshot test.
@@ -466,7 +467,7 @@ public class IgniteClusterSnapshotSelfTest extends AbstractSnapshotSelfTest {
 
         IgniteFuture<Void> fut = ignite.snapshot().createSnapshot(SNAPSHOT_NAME);
 
-        spi.waitBlocked(10_000L);
+        spi.waitBlocked(TIMEOUT);
 
         // Creating of new caches should not be blocked.
         ignite.getOrCreateCache(dfltCacheCfg.setName("default2"))
@@ -502,7 +503,7 @@ public class IgniteClusterSnapshotSelfTest extends AbstractSnapshotSelfTest {
 
         IgniteFuture<Void> fut = ignite.snapshot().createSnapshot(SNAPSHOT_NAME);
 
-        spi.waitBlocked(10_000L);
+        spi.waitBlocked(TIMEOUT);
 
         // Not baseline node joins successfully.
         String grid4Dir = folderName(startGrid(4));
@@ -527,21 +528,34 @@ public class IgniteClusterSnapshotSelfTest extends AbstractSnapshotSelfTest {
     /** @throws Exception If fails. */
     @Test
     public void testClusterSnapshotExOnInitiatorLeft() throws Exception {
-        IgniteEx ignite = startGridsWithCache(2, dfltCacheCfg, CACHE_KEYS_RANGE);
+        for (boolean inc : new boolean[] {false, true}) {
+            IgniteEx ignite = startGridsWithCache(2, dfltCacheCfg, CACHE_KEYS_RANGE);
 
-        BlockingCustomMessageDiscoverySpi spi = discoSpi(ignite);
-        spi.block((msg) -> msg instanceof FullMessage);
+            if (inc) {
+                assumeFalse("https://issues.apache.org/jira/browse/IGNITE-17819", encryption);
 
-        IgniteFuture<Void> fut = ignite.snapshot().createSnapshot(SNAPSHOT_NAME);
+                ignite.snapshot().createSnapshot(SNAPSHOT_NAME).get(TIMEOUT);
+            }
 
-        spi.waitBlocked(10_000L);
+            BlockingCustomMessageDiscoverySpi spi = discoSpi(ignite);
+            spi.block((msg) -> msg instanceof FullMessage);
 
-        ignite.close();
+            IgniteFuture<Void> fut = inc
+                ? ignite.snapshot().createIncrementalSnapshot(SNAPSHOT_NAME)
+                : ignite.snapshot().createSnapshot(SNAPSHOT_NAME);
 
-        assertThrowsAnyCause(log,
-            fut::get,
-            NodeStoppingException.class,
-            SNP_NODE_STOPPING_ERR_MSG);
+            spi.waitBlocked(TIMEOUT);
+
+            ignite.close();
+
+            assertThrowsAnyCause(log,
+                fut::get,
+                NodeStoppingException.class,
+                SNP_NODE_STOPPING_ERR_MSG);
+
+            stopAllGrids();
+            cleanPersistenceDir();
+        }
     }
 
     /** @throws Exception If fails. */
@@ -611,7 +625,7 @@ public class IgniteClusterSnapshotSelfTest extends AbstractSnapshotSelfTest {
         assertTrue("Snapshot directory must be empty for node 1 due to snapshot future fail: " + dirNameIgnite1,
             !searchDirectoryRecursively(locSnpDir.toPath(), dirNameIgnite1).isPresent());
 
-        List<String> allSnapshots = snp(ignite).localSnapshotNames();
+        List<String> allSnapshots = snp(ignite).localSnapshotNames(null);
 
         assertTrue("Snapshot directory must be empty due to snapshot fail: " + allSnapshots,
             allSnapshots.isEmpty());
@@ -668,7 +682,10 @@ public class IgniteClusterSnapshotSelfTest extends AbstractSnapshotSelfTest {
 
         awaitPartitionMapExchange();
 
-        assertTrue("Snapshot directory must be empty", grid2.context().cache().context().snapshotMgr().localSnapshotNames().isEmpty());
+        assertTrue(
+            "Snapshot directory must be empty",
+            grid2.context().cache().context().snapshotMgr().localSnapshotNames(null).isEmpty()
+        );
 
         ignite.snapshot().createSnapshot(SNAPSHOT_NAME)
             .get();
@@ -747,7 +764,7 @@ public class IgniteClusterSnapshotSelfTest extends AbstractSnapshotSelfTest {
                 ignite.cache(DEFAULT_CACHE_NAME).put(i, i);
 
             ignite.context().cache().context().snapshotMgr()
-                .createSnapshot(SNAPSHOT_NAME, cfgPath ? null : snpDir.getAbsolutePath()).get();
+                .createSnapshot(SNAPSHOT_NAME, cfgPath ? null : snpDir.getAbsolutePath(), false).get();
 
             stopAllGrids();
 
@@ -773,7 +790,9 @@ public class IgniteClusterSnapshotSelfTest extends AbstractSnapshotSelfTest {
             GridKernalContext kctx = grid(idx).context();
 
             assertThrowsAnyCause(log,
-                () -> kctx.cache().context().snapshotMgr().createSnapshot(SNAPSHOT_NAME, invalidPath).get(TIMEOUT),
+                () -> kctx.cache().context().snapshotMgr()
+                    .createSnapshot(SNAPSHOT_NAME, invalidPath, false)
+                    .get(TIMEOUT),
                 IgniteCheckedException.class,
                 invalidPath);
 

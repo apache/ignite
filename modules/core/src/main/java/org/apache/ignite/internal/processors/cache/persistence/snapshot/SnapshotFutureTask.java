@@ -190,13 +190,6 @@ class SnapshotFutureTask extends AbstractSnapshotFutureTask<SnapshotFutureTaskRe
     }
 
     /**
-     * @return Set of cache groups included into snapshot operation.
-     */
-    public Set<Integer> affectedCacheGroups() {
-        return parts.keySet();
-    }
-
-    /**
      * @param th An exception which occurred during snapshot processing.
      */
     @Override public void acceptException(Throwable th) {

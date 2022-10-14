@@ -41,6 +41,21 @@ public interface SnapshotMXBean {
     );
 
     /**
+     * Create the cluster-wide incremental snapshot for the given base snapshot.
+     *
+     * @param fullSnapshot Full snapshot name to attach incremental snapshot to.
+     * @param fullSnapshotPath Full snapshot directory path.
+     * @see IgniteSnapshot#createSnapshot(String)
+     * @see IgniteSnapshot#createIncrementalSnapshot(String)
+     */
+    public void createIncrementalSnapshot(
+        @MXBeanParameter(name = "fullSnapshot", description = "Snapshot name.")
+            String fullSnapshot,
+        @MXBeanParameter(name = "fullSnapshotPath", description = "Optional snapshot directory path.")
+            String fullSnapshotPath
+    );
+
+    /**
      * Cancel previously started snapshot operation on the node initiator.
      *
      * @param snpName Snapshot name to cancel.

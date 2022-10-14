@@ -85,7 +85,8 @@ public class SnapshotMetadata implements Serializable {
     @Nullable private final byte[] masterKeyDigest;
 
     /**
-     * F@param snpName Snapshot name.
+     * @param rqId Unique request id.
+     * @param snpName Snapshot name.
      * @param consId Consistent id of a node to which this metadata relates.
      * @param folderName Directory name which stores the data files.
      * @param pageSize Page size of stored snapshot data.
