@@ -79,10 +79,7 @@ public interface GridComponent {
         META_STORAGE,
 
         /** Performance statistics processor. */
-        PERFORMANCE_STAT_PROC,
-
-        /** Consistent Cut manager. */
-        CONSISTENT_CUT_PROC;
+        PERFORMANCE_STAT_PROC;
 
         /** Cached values array. */
         public static final DiscoveryDataExchangeType[] VALUES = values();

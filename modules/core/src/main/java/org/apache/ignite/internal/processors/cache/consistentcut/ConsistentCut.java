@@ -56,7 +56,12 @@ public class ConsistentCut extends GridFutureAdapter<Boolean> {
     /** */
     private final IgniteLogger log;
 
-    /** Marker that initialized this cut. */
+    /**
+     * Marker that inits this cut.
+     *
+     * a) To guarantee happens-before between versions are received and sent after by the same node.
+     * b) To guarantee that every transaction committed after the version update isn't cleaned from {@link #committingTxs}.
+     */
     private final ConsistentCutMarker marker;
 
     /** Set of checked transactions belonging to the BEFORE side. */
@@ -70,16 +75,17 @@ public class ConsistentCut extends GridFutureAdapter<Boolean> {
     /**
      * Collection of committing and committed transactions. Track them additionally to {@link IgniteTxManager#activeTransactions()}
      * due to concurrency between threads that remove transactions from the collection and a thread that parses it in
-     * {@link #init(ConsistentCutMarker)}. It is filled while preparing a transaction to commit.
+     * {@link #init()}.
      */
     private final Set<IgniteInternalFuture<IgniteInternalTx>> committingTxs = ConcurrentHashMap.newKeySet();
 
     /** */
     ConsistentCut(GridCacheSharedContext<?, ?> cctx, ConsistentCutMarker marker) {
         this.cctx = cctx;
-        this.marker = marker;
 
         log = cctx.logger(ConsistentCut.class);
+
+        this.marker = marker;
     }
 
     /** */
@@ -90,7 +96,7 @@ public class ConsistentCut extends GridFutureAdapter<Boolean> {
     /**
      * Inits local Consistent Cut: prepares list of active transactions to check which side of Consistent Cut they belong to.
      */
-    protected void init(ConsistentCutMarker marker) throws IgniteCheckedException {
+    protected void init() throws IgniteCheckedException {
         beforeCut = ConcurrentHashMap.newKeySet();
         afterCut = ConcurrentHashMap.newKeySet();
 
@@ -101,6 +107,9 @@ public class ConsistentCut extends GridFutureAdapter<Boolean> {
             .map(IgniteInternalTx::finishFuture)
             .iterator();
 
+        // Invoke sequentially over two iterators:
+        // 1. iterators are weakly consistent.
+        // 2. we need a guarantee to handle `committingTxs` after `activeTxs` to avoid missed transactions.
         checkTransactions(finFutIt, checkFut);
 
         walLog(new ConsistentCutStartRecord(marker));
@@ -111,8 +120,8 @@ public class ConsistentCut extends GridFutureAdapter<Boolean> {
 
         checkFut.listen(finish -> {
             if (Boolean.FALSE.equals(finish.result()) || isDone()) {
-                if (log.isInfoEnabled())
-                    log.info("Cut might be inconsistent for marker " + marker + ". Skip writing FinishRecord.");
+                if (log.isDebugEnabled())
+                    log.debug("Cut might be inconsistent for marker " + marker + ". Skip writing FinishRecord.");
             }
             else {
                 try {
@@ -138,7 +147,8 @@ public class ConsistentCut extends GridFutureAdapter<Boolean> {
      * @param txFinFut Transaction finish future.
      */
     public void addCommittingTransaction(IgniteInternalFuture<IgniteInternalTx> txFinFut) {
-        committingTxs.add(txFinFut);
+        if (!isDone())
+            committingTxs.add(txFinFut);
     }
 
     /**
@@ -159,11 +169,9 @@ public class ConsistentCut extends GridFutureAdapter<Boolean> {
                 if (!(tx.state() == UNKNOWN
                     || tx.state() == MARKED_ROLLBACK
                     || tx.state() == ROLLED_BACK
-                    || tx.state() == COMMITTED)
-                ) {
-                    U.warn(log, String.format(
-                            "Transaction is in unexpected state [%s]. Cut might be inconsistent. Transaction: %s",
-                            tx.state(), tx));
+                    || tx.state() == COMMITTED)) {
+                    U.warn(log, "Transaction is in unexepcted state: " + tx.state() +
+                        ". Cut might be inconsistent. Transaction: " + tx);
 
                     return false;
                 }
@@ -179,8 +187,10 @@ public class ConsistentCut extends GridFutureAdapter<Boolean> {
                     return true;
 
                 if (tx.finalizationStatus() == RECOVERY_FINISH) {
-                    U.warn(log, "Transaction committed after recovery process and CutVersion isn't defined. " +
+                    if (log.isDebugEnabled()) {
+                        log.debug("Transaction committed after recovery process and CutVersion isn't defined. " +
                             "Cut might be inconsistent. Transaction: " + tx);
+                    }
 
                     return false;
                 }
@@ -216,6 +226,7 @@ public class ConsistentCut extends GridFutureAdapter<Boolean> {
         List<IgniteUuid> before = null;
         List<IgniteUuid> after = null;
 
+        // Write IgniteUuid because it's more convenient for debug purposes than GridCacheVersion.
         if (beforeCut != null) {
             before = beforeCut.stream()
                 .map(GridCacheVersion::asIgniteUuid)

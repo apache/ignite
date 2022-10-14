@@ -303,11 +303,11 @@ public abstract class AbstractConsistentCutTest extends GridCommonAbstractTest {
         }
 
         /** */
-        boolean consistentCutFinished(long ts) {
+        boolean consistentCutFinished(long ver) {
             if (CONSISTENT_CUT.get(this) != null)
                 return false;
 
-            return lastSeenMarker().timestamp() == ts && clusterCutFut == null;
+            return lastFinishedCutMarker.version() == ver && clusterCutFut == null;
         }
     }
 

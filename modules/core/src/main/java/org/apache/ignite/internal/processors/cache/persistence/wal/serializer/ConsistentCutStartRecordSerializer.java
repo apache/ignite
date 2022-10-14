@@ -33,7 +33,7 @@ public class ConsistentCutStartRecordSerializer {
      * @param buf Byte buffer.
      */
     public void write(ConsistentCutStartRecord rec, ByteBuffer buf) {
-        buf.putLong(rec.marker().timestamp());
+        buf.putLong(rec.marker().version());
 
         buf.putLong(rec.marker().topVer().topologyVersion());
         buf.putInt(rec.marker().topVer().minorTopologyVersion());

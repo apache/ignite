@@ -3322,6 +3322,8 @@ public class IgniteKernal implements IgniteEx, Externalizable {
      */
     private static <T extends GridComponent> T createComponent(Class<T> cls, GridKernalContext ctx)
         throws IgniteCheckedException {
+        assert cls.isInterface() : cls;
+
         T comp = ctx.plugins().createComponent(cls);
 
         if (comp != null)

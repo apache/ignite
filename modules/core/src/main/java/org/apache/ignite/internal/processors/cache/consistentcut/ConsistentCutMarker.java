@@ -28,7 +28,7 @@ import org.apache.ignite.plugin.extensions.communication.MessageWriter;
 import org.jetbrains.annotations.NotNull;
 
 /**
- * Marker that inites {@link ConsistentCut}.
+ * Marker that inits {@link ConsistentCut}.
  */
 public class ConsistentCutMarker implements Message, Comparable<ConsistentCutMarker> {
     /** */
@@ -37,9 +37,9 @@ public class ConsistentCutMarker implements Message, Comparable<ConsistentCutMar
     /** */
     public static final short TYPE_CODE = 201;
 
-    /** Incremental version. */
+    /** Incremental version. Ignite guarantees that it's monotonically rising. */
     @GridToStringInclude
-    private long ts;
+    private long ver;
 
     /** */
     @GridToStringInclude
@@ -49,14 +49,14 @@ public class ConsistentCutMarker implements Message, Comparable<ConsistentCutMar
     public ConsistentCutMarker() {}
 
     /** */
-    public ConsistentCutMarker(long ts, AffinityTopologyVersion topVer) {
-        this.ts = ts;
+    public ConsistentCutMarker(long ver, AffinityTopologyVersion topVer) {
+        this.ver = ver;
         this.topVer = topVer;
     }
 
     /** */
-    public long timestamp() {
-        return ts;
+    public long version() {
+        return ver;
     }
 
     /** */
@@ -88,7 +88,7 @@ public class ConsistentCutMarker implements Message, Comparable<ConsistentCutMar
                 writer.incrementState();
 
             case 1:
-                if (!writer.writeLong("ts", ts))
+                if (!writer.writeLong("ver", ver))
                     return false;
 
                 writer.incrementState();
@@ -115,7 +115,7 @@ public class ConsistentCutMarker implements Message, Comparable<ConsistentCutMar
                 reader.incrementState();
 
             case 1:
-                ts = reader.readLong("ts");
+                ver = reader.readLong("ver");
 
                 if (!reader.isLastRead())
                     return false;
@@ -146,12 +146,12 @@ public class ConsistentCutMarker implements Message, Comparable<ConsistentCutMar
     @Override public boolean equals(Object o) {
         return o instanceof ConsistentCutMarker
             && topVer.equals(((ConsistentCutMarker)o).topVer)
-            && ts == ((ConsistentCutMarker)o).ts;
+            && ver == ((ConsistentCutMarker)o).ver;
     }
 
     /** {@inheritDoc} */
     @Override public int hashCode() {
-        return Objects.hash(topVer, ts);
+        return Objects.hash(topVer, ver);
     }
 
     /** {@inheritDoc} */
@@ -161,6 +161,6 @@ public class ConsistentCutMarker implements Message, Comparable<ConsistentCutMar
         if ((cmp = topVer.compareTo(o.topVer)) != 0)
             return cmp;
 
-        return Long.compare(ts, o.ts);
+        return Long.compare(ver, o.ver);
     }
 }

@@ -54,7 +54,7 @@ public class ConsistentCutTxRecoveryTest extends AbstractConsistentCutBlockingTe
 
             srvCutMgr.awaitBlockedOrFinishedCut(null);
 
-            long blkCutVer = srvCutMgr.lastSeenMarker().timestamp();
+            long blkCutVer = srvCutMgr.lastFinishedCutMarker.version();
 
             // Stop client node.
             stopGrid(nodes());
@@ -92,9 +92,9 @@ public class ConsistentCutTxRecoveryTest extends AbstractConsistentCutBlockingTe
             if (rec.type() == WALRecord.RecordType.CONSISTENT_CUT_START_RECORD) {
                 ConsistentCutStartRecord startRec = (ConsistentCutStartRecord)rec;
 
-                expFinRec = startRec.marker().timestamp() != blkVer;
+                expFinRec = startRec.marker().version() != blkVer;
 
-                lastVerChecked = startRec.marker().timestamp();
+                lastVerChecked = startRec.marker().version();
             }
             else if (rec.type() == WALRecord.RecordType.CONSISTENT_CUT_FINISH_RECORD) {
                 assertTrue("Unexpect Finish Record. Blk ver " + blkVer, expFinRec);

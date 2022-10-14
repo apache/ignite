@@ -564,7 +564,7 @@ public abstract class AbstractConsistentCutBlockingTest extends AbstractConsiste
             }
 
             /** Blocks before or after ConsistentCut preparation. */
-            @Override protected void init(ConsistentCutMarker marker) throws IgniteCheckedException {
+            @Override protected void init() throws IgniteCheckedException {
                 if (afterUpdVer != null) {
                     blockedLatch.countDown();
                     blockedLatch = null;
@@ -574,7 +574,7 @@ public abstract class AbstractConsistentCutBlockingTest extends AbstractConsiste
                     afterUpdVer = null;
                 }
 
-                super.init(marker);
+                super.init();
             }
         }
     }

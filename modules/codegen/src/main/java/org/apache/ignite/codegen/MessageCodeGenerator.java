@@ -47,19 +47,8 @@ import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
 import org.apache.ignite.internal.processors.cache.consistentcut.ConsistentCutMarker;
 import org.apache.ignite.internal.processors.cache.consistentcut.ConsistentCutMarkerMessage;
 import org.apache.ignite.internal.processors.cache.consistentcut.ConsistentCutMarkerTxFinishMessage;
-import org.apache.ignite.internal.processors.cache.consistentcut.ConsistentCutStartRequest;
-import org.apache.ignite.internal.processors.cache.distributed.GridDistributedTxFinishRequest;
-import org.apache.ignite.internal.processors.cache.distributed.GridDistributedTxFinishResponse;
-import org.apache.ignite.internal.processors.cache.distributed.GridDistributedTxPrepareRequest;
-import org.apache.ignite.internal.processors.cache.distributed.GridDistributedTxPrepareResponse;
-import org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtTxFinishRequest;
-import org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtTxFinishResponse;
-import org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtTxPrepareRequest;
-import org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtTxPrepareResponse;
-import org.apache.ignite.internal.processors.cache.distributed.near.GridNearTxFinishRequest;
-import org.apache.ignite.internal.processors.cache.distributed.near.GridNearTxFinishResponse;
-import org.apache.ignite.internal.processors.cache.distributed.near.GridNearTxPrepareRequest;
-import org.apache.ignite.internal.processors.cache.distributed.near.GridNearTxPrepareResponse;
+import org.apache.ignite.internal.processors.cache.mvcc.DeadlockProbe;
+import org.apache.ignite.internal.processors.cache.mvcc.ProbedTx;
 import org.apache.ignite.internal.util.IgniteUtils;
 import org.apache.ignite.internal.util.typedef.internal.SB;
 import org.apache.ignite.internal.util.typedef.internal.U;
@@ -187,8 +176,8 @@ public class MessageCodeGenerator {
 
         MessageCodeGenerator gen = new MessageCodeGenerator(srcDir);
 
-//        gen.generateAndWrite(ProbedTx.class);
-//        gen.generateAndWrite(DeadlockProbe.class);
+        gen.generateAndWrite(ProbedTx.class);
+        gen.generateAndWrite(DeadlockProbe.class);
 
 //        gen.generateAll(true);
 
@@ -203,25 +192,25 @@ public class MessageCodeGenerator {
 //        gen.generateAndWrite(GridNearLockResponse.class);
 //        gen.generateAndWrite(GridDhtLockRequest.class);
 //        gen.generateAndWrite(GridDhtLockResponse.class);
-//
-        gen.generateAndWrite(GridDistributedTxPrepareRequest.class);
-        gen.generateAndWrite(GridDistributedTxPrepareResponse.class);
-        gen.generateAndWrite(GridNearTxPrepareRequest.class);
-        gen.generateAndWrite(GridNearTxPrepareResponse.class);
-        gen.generateAndWrite(GridDhtTxPrepareRequest.class);
-        gen.generateAndWrite(GridDhtTxPrepareResponse.class);
 
-        gen.generateAndWrite(GridDistributedTxFinishRequest.class);
-        gen.generateAndWrite(GridDistributedTxFinishResponse.class);
-        gen.generateAndWrite(GridNearTxFinishRequest.class);
-        gen.generateAndWrite(GridNearTxFinishResponse.class);
-        gen.generateAndWrite(GridDhtTxFinishRequest.class);
-        gen.generateAndWrite(GridDhtTxFinishResponse.class);
+//        gen.generateAndWrite(GridDistributedTxPrepareRequest.class);
+//        gen.generateAndWrite(GridDistributedTxPrepareResponse.class);
+//        gen.generateAndWrite(GridNearTxPrepareRequest.class);
+//        gen.generateAndWrite(GridNearTxPrepareResponse.class);
+//        gen.generateAndWrite(GridDhtTxPrepareRequest.class);
+//        gen.generateAndWrite(GridDhtTxPrepareResponse.class);
+
+//        gen.generateAndWrite(GridDistributedTxFinishRequest.class);
+//        gen.generateAndWrite(GridDistributedTxFinishResponse.class);
+//        gen.generateAndWrite(GridNearTxFinishRequest.class);
+//        gen.generateAndWrite(GridNearTxFinishResponse.class);
+//        gen.generateAndWrite(GridDhtTxFinishRequest.class);
+//        gen.generateAndWrite(GridDhtTxFinishResponse.class);
 
         gen.generateAndWrite(ConsistentCutMarker.class);
         gen.generateAndWrite(ConsistentCutMarkerMessage.class);
         gen.generateAndWrite(ConsistentCutMarkerTxFinishMessage.class);
-        gen.generateAndWrite(ConsistentCutStartRequest.class);
+//        gen.generateAndWrite(ConsistentCutStartRequest.class);
 
 //        gen.generateAndWrite(GridCacheTxRecoveryRequest.class);
 //        gen.generateAndWrite(GridCacheTxRecoveryResponse.class);

@@ -37,7 +37,7 @@ import org.apache.ignite.internal.util.typedef.internal.S;
  */
 public class ConsistentCutStartRecord extends WALRecord {
     /**
-     * Consistent Cut Version.
+     * Consistent Cut Marker.
      */
     @GridToStringInclude
     private final ConsistentCutMarker marker;

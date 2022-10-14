@@ -135,6 +135,9 @@ import static org.apache.ignite.transactions.TransactionState.ROLLING_BACK;
  * Isolated logic to process cache messages.
  */
 public class IgniteTxHandler {
+    /** */
+    private static final int TX_MSG_HND_ID = 0;
+
     /** Logger. */
     private final IgniteLogger log;
 
@@ -220,87 +223,137 @@ public class IgniteTxHandler {
         txPrepareMsgLog = ctx.logger(CU.TX_MSG_PREPARE_LOG_CATEGORY);
         txFinishMsgLog = ctx.logger(CU.TX_MSG_FINISH_LOG_CATEGORY);
 
-        ctx.io().addCacheHandler(0, GridNearTxPrepareRequest.class, new CI2<UUID, GridCacheMessage>() {
+        ctx.io().addCacheHandler(TX_MSG_HND_ID, GridNearTxPrepareRequest.class, new CI2<UUID, GridCacheMessage>() {
             @Override public void apply(UUID nodeId, GridCacheMessage msg) {
                 processNearTxPrepareRequest(nodeId, (GridNearTxPrepareRequest)msg);
             }
         });
 
-        ctx.io().addCacheHandler(0, GridNearTxPrepareResponse.class, new CI2<UUID, GridCacheMessage>() {
+        ctx.io().addCacheHandler(TX_MSG_HND_ID, GridNearTxPrepareResponse.class, new CI2<UUID, GridCacheMessage>() {
             @Override public void apply(UUID nodeId, GridCacheMessage msg) {
                 processNearTxPrepareResponse(nodeId, (GridNearTxPrepareResponse)msg);
             }
         });
 
-        ctx.io().addCacheHandler(0, GridNearTxFinishRequest.class, new CI2<UUID, GridCacheMessage>() {
+        ctx.io().addCacheHandler(TX_MSG_HND_ID, GridNearTxFinishRequest.class, new CI2<UUID, GridCacheMessage>() {
             @Override public void apply(UUID nodeId, GridCacheMessage msg) {
                 processNearTxFinishRequest(nodeId, (GridNearTxFinishRequest)msg);
             }
         });
 
-        ctx.io().addCacheHandler(0, GridNearTxFinishResponse.class, new CI2<UUID, GridCacheMessage>() {
+        ctx.io().addCacheHandler(TX_MSG_HND_ID, GridNearTxFinishResponse.class, new CI2<UUID, GridCacheMessage>() {
             @Override public void apply(UUID nodeId, GridCacheMessage msg) {
                 processNearTxFinishResponse(nodeId, (GridNearTxFinishResponse)msg);
             }
         });
 
-        ctx.io().addCacheHandler(0, GridDhtTxPrepareRequest.class, new CI2<UUID, GridCacheMessage>() {
+        ctx.io().addCacheHandler(TX_MSG_HND_ID, GridDhtTxPrepareRequest.class, new CI2<UUID, GridCacheMessage>() {
             @Override public void apply(UUID nodeId, GridCacheMessage msg) {
                 processDhtTxPrepareRequest(nodeId, (GridDhtTxPrepareRequest)msg);
             }
         });
 
-        ctx.io().addCacheHandler(0, GridDhtTxPrepareResponse.class, new CI2<UUID, GridCacheMessage>() {
+        ctx.io().addCacheHandler(TX_MSG_HND_ID, GridDhtTxPrepareResponse.class, new CI2<UUID, GridCacheMessage>() {
             @Override public void apply(UUID nodeId, GridCacheMessage msg) {
                 processDhtTxPrepareResponse(nodeId, (GridDhtTxPrepareResponse)msg);
             }
         });
 
-        ctx.io().addCacheHandler(0, GridDhtTxFinishRequest.class, new CI2<UUID, GridCacheMessage>() {
+        ctx.io().addCacheHandler(TX_MSG_HND_ID, GridDhtTxFinishRequest.class, new CI2<UUID, GridCacheMessage>() {
             @Override public void apply(UUID nodeId, GridCacheMessage msg) {
                 processDhtTxFinishRequest(nodeId, (GridDhtTxFinishRequest)msg);
             }
         });
 
-        ctx.io().addCacheHandler(0, GridDhtTxOnePhaseCommitAckRequest.class, new CI2<UUID, GridCacheMessage>() {
+        ctx.io().addCacheHandler(TX_MSG_HND_ID, GridDhtTxOnePhaseCommitAckRequest.class, new CI2<UUID, GridCacheMessage>() {
             @Override public void apply(UUID nodeId, GridCacheMessage msg) {
                 processDhtTxOnePhaseCommitAckRequest(nodeId, (GridDhtTxOnePhaseCommitAckRequest)msg);
             }
         });
 
-        ctx.io().addCacheHandler(0, GridDhtTxFinishResponse.class, new CI2<UUID, GridCacheMessage>() {
+        ctx.io().addCacheHandler(TX_MSG_HND_ID, GridDhtTxFinishResponse.class, new CI2<UUID, GridCacheMessage>() {
             @Override public void apply(UUID nodeId, GridCacheMessage msg) {
                 processDhtTxFinishResponse(nodeId, (GridDhtTxFinishResponse)msg);
             }
         });
 
-        ctx.io().addCacheHandler(0, GridCacheTxRecoveryRequest.class,
+        ctx.io().addCacheHandler(TX_MSG_HND_ID, GridCacheTxRecoveryRequest.class,
             new CI2<UUID, GridCacheTxRecoveryRequest>() {
                 @Override public void apply(UUID nodeId, GridCacheTxRecoveryRequest req) {
                     processCheckPreparedTxRequest(nodeId, req);
                 }
             });
 
-        ctx.io().addCacheHandler(0, GridCacheTxRecoveryResponse.class,
+        ctx.io().addCacheHandler(TX_MSG_HND_ID, GridCacheTxRecoveryResponse.class,
             new CI2<UUID, GridCacheTxRecoveryResponse>() {
                 @Override public void apply(UUID nodeId, GridCacheTxRecoveryResponse res) {
                     processCheckPreparedTxResponse(nodeId, res);
                 }
             });
 
-        ctx.io().addCacheHandler(0, ConsistentCutMarkerMessage.class,
+        ctx.io().addCacheHandler(TX_MSG_HND_ID, ConsistentCutMarkerMessage.class,
             new CI2<UUID, ConsistentCutMarkerMessage>() {
                 @Override public void apply(UUID nodeId, ConsistentCutMarkerMessage msg) {
                     processConsistentCutMarkerMessage(nodeId, msg);
                 }
             });
 
-        ctx.io().addCacheHandler(0, ConsistentCutMarkerTxFinishMessage.class,
-            new CI2<UUID, ConsistentCutMarkerMessage>() {
-                @Override public void apply(UUID nodeId, ConsistentCutMarkerMessage msg) {
+        ctx.io().addCacheHandler(TX_MSG_HND_ID, ConsistentCutMarkerTxFinishMessage.class,
+            new CI2<UUID, ConsistentCutMarkerTxFinishMessage>() {
+                @Override public void apply(UUID nodeId, ConsistentCutMarkerTxFinishMessage msg) {
                     processConsistentCutMarkerFinishTxMessage(nodeId, msg);
                 }
             });
+    }
+
+    /** */
+    private void processConsistentCutMarkerFinishTxMessage(UUID nodeId, ConsistentCutMarkerTxFinishMessage msg) {
+        ctx.consistentCutMgr().handleConsistentCutMarker(msg.marker());
+
+        IgniteInternalTx tx = null;
+
+        if (msg.payload() instanceof GridNearTxFinishRequest) {
+            GridNearTxFinishRequest req = (GridNearTxFinishRequest)msg.payload();
+
+            GridCacheVersion dhtVer = ctx.tm().mappedVersion(req.version());
+
+            tx = ctx.tm().tx(dhtVer);
+        }
+        else if (msg.payload() instanceof GridDhtTxFinishRequest) {
+            GridDhtTxFinishRequest req = (GridDhtTxFinishRequest)msg.payload();
+
+            tx = ctx.tm().tx(req.version());
+        }
+        else if (msg.payload() instanceof GridDhtTxPrepareResponse) {
+            GridDhtTxPrepareResponse res = (GridDhtTxPrepareResponse)msg.payload();
+
+            GridDhtTxPrepareFuture fut =
+                (GridDhtTxPrepareFuture)ctx.mvcc().versionedFuture(res.version(), res.futureId());
+
+            tx = fut.tx();
+        }
+        else if (msg.payload() instanceof GridNearTxPrepareResponse) {
+            GridNearTxPrepareResponse res = (GridNearTxPrepareResponse)msg.payload();
+
+            GridNearTxPrepareFutureAdapter fut =
+                (GridNearTxPrepareFutureAdapter)ctx.mvcc().versionedFuture(res.version(), res.futureId());
+
+            tx = fut.tx();
+        }
+
+        if (tx == null) {
+            U.warn(log, "Failed to find transaction for message [msg=" + msg.payload() + "]");
+
+            return;
+        }
+
+        ctx.consistentCutMgr().registerCommitting(tx, msg.txMarker());
+
+        GridCacheMessage cacheMsg = msg.payload();
+
+        ctx.io()
+            .cacheHandler(TX_MSG_HND_ID, cacheMsg.getClass())
+            .apply(nodeId, cacheMsg);
     }
 
     /** */
@@ -310,56 +363,7 @@ public class IgniteTxHandler {
         GridCacheMessage cacheMsg = msg.payload();
 
         ctx.io()
-            .cacheHandler(0, cacheMsg.getClass())
-            .apply(nodeId, cacheMsg);
-    }
-
-    /** */
-    private void processConsistentCutMarkerFinishTxMessage(UUID nodeId, ConsistentCutMarkerMessage msg) {
-        if (msg.payload() instanceof GridNearTxFinishRequest) {
-            GridNearTxFinishRequest req = (GridNearTxFinishRequest)msg.payload();
-
-            GridCacheVersion dhtVer = ctx.tm().mappedVersion(req.version());
-
-            IgniteInternalTx tx = ctx.tm().tx(dhtVer);
-
-            tx.marker(msg.marker());
-        }
-        else if (msg.payload() instanceof GridDhtTxFinishRequest) {
-            GridDhtTxFinishRequest req = (GridDhtTxFinishRequest)msg.payload();
-
-            GridDhtTxRemote dhtTx = ctx.tm().tx(req.version());
-            GridNearTxRemote nearTx = ctx.tm().nearTx(req.version());
-
-            if (dhtTx != null)
-                dhtTx.marker(msg.marker());
-
-            if (nearTx != null)
-                nearTx.marker(msg.marker());
-        }
-        else if (msg.payload() instanceof GridDhtTxPrepareResponse) {
-            GridDhtTxPrepareResponse res = (GridDhtTxPrepareResponse)msg.payload();
-
-            GridDhtTxPrepareFuture fut =
-                (GridDhtTxPrepareFuture)ctx.mvcc().versionedFuture(res.version(), res.futureId());
-
-            fut.tx().marker(msg.marker());
-        }
-        else if (msg.payload() instanceof GridNearTxPrepareResponse) {
-            GridNearTxPrepareResponse res = (GridNearTxPrepareResponse)msg.payload();
-
-            GridNearTxPrepareFutureAdapter fut = (GridNearTxPrepareFutureAdapter)ctx.mvcc()
-                .<IgniteInternalTx>versionedFuture(res.version(), res.futureId());
-
-            fut.tx().marker(msg.marker());
-        }
-
-        ctx.consistentCutMgr().handleConsistentCutMarker(msg.marker());
-
-        GridCacheMessage cacheMsg = msg.payload();
-
-        ctx.io()
-            .cacheHandler(0, cacheMsg.getClass())
+            .cacheHandler(TX_MSG_HND_ID, cacheMsg.getClass())
             .apply(nodeId, cacheMsg);
     }
 

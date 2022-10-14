@@ -407,7 +407,6 @@ public class GridIoMessageFactory implements MessageFactoryProvider {
         // [2048..2053] - Snapshots
         // [-42..-37] - former hadoop.
         // [64..71] - former IGFS.
-        // [183..187] - GridH2ValueMessageFactory
     }
 
     /** {@inheritDoc} */

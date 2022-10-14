@@ -41,18 +41,20 @@ import org.apache.ignite.lang.IgniteUuid;
  * <p>
  * It guarantees that the AFTER side consist of:
  * 1. transactions physically committed before {@link ConsistentCutStartRecord} and were included into {@link #after()};
- * 2. transactions physically committed after {@link ConsistentCutStartRecord} and weren't included into {@link #before()}.
+ * 2. transactions physically committed between {@link ConsistentCutStartRecord} and {@link ConsistentCutFinishRecord}
+ *    and weren't included into {@link #before()}.
  *
  * @see ConsistentCutManager
  */
 public class ConsistentCutFinishRecord extends WALRecord {
     /**
-     * Set of transactions to include to the BEFORE side of Consistent Cut.
+     * Set of transactions committed between {@link ConsistentCutStartRecord} and {@link ConsistentCutFinishRecord}
+     * to include to the BEFORE side of Consistent Cut.
      */
     private final Set<GridCacheVersion> before;
 
     /**
-     * Set of transactions to include to the AFTER side of Consistent Cut.
+     * Set of transactions committed before {@link ConsistentCutStartRecord} to include to the AFTER side of Consistent Cut.
      */
     private final Set<GridCacheVersion> after;
 
@@ -79,14 +81,15 @@ public class ConsistentCutFinishRecord extends WALRecord {
 
     /** {@inheritDoc} */
     @Override public String toString() {
-        List<IgniteUuid> incl = before.stream()
+        // Dump IgniteUuid as it more convenient for debug purposes than GridCacheVersion.
+        List<IgniteUuid> txBefore = before.stream()
             .map(GridCacheVersion::asIgniteUuid)
             .collect(Collectors.toList());
 
-        List<IgniteUuid> excl = after.stream()
+        List<IgniteUuid> txAfter = after.stream()
             .map(GridCacheVersion::asIgniteUuid)
             .collect(Collectors.toList());
 
-        return "ConsistentCutFinishRecord [before=" + incl + ", after=" + excl + "]";
+        return "ConsistentCutFinishRecord [before=" + txBefore + ", after=" + txAfter + "]";
     }
 }

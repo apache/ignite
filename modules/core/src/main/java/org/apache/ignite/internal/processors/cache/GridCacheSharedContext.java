@@ -148,7 +148,7 @@ public class GridCacheSharedContext<K, V> {
     /** Deadlock detection manager. */
     private DeadlockDetectionManager deadlockDetectionMgr;
 
-    /** Deadlock detection manager. */
+    /** Consistent cut manager. */
     private ConsistentCutManager consistentCutMgr;
 
     /** Cache contexts map. */
@@ -886,7 +886,7 @@ public class GridCacheSharedContext<K, V> {
     }
 
     /**
-     * @return Consistent Cut manager.
+     * @return Consistent cut manager.
      */
     public ConsistentCutManager consistentCutMgr() {
         return consistentCutMgr;

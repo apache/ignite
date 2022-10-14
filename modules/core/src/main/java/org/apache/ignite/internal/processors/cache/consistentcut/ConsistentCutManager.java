@@ -17,7 +17,6 @@
 
 package org.apache.ignite.internal.processors.cache.consistentcut;
 
-import java.util.Collection;
 import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
@@ -37,12 +36,10 @@ import org.apache.ignite.internal.processors.cache.GridCacheSharedManagerAdapter
 import org.apache.ignite.internal.processors.cache.distributed.GridDistributedBaseMessage;
 import org.apache.ignite.internal.processors.cache.distributed.dht.preloader.GridDhtPartitionsExchangeFuture;
 import org.apache.ignite.internal.processors.cache.distributed.dht.preloader.PartitionsExchangeAware;
-import org.apache.ignite.internal.processors.cache.distributed.near.GridNearTxLocal;
 import org.apache.ignite.internal.processors.cache.transactions.IgniteInternalTx;
 import org.apache.ignite.internal.util.distributed.DistributedProcess;
 import org.apache.ignite.internal.util.future.GridFinishedFuture;
 import org.apache.ignite.internal.util.future.GridFutureAdapter;
-import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.transactions.TransactionState;
 import org.jetbrains.annotations.Nullable;
@@ -77,8 +74,8 @@ import static org.apache.ignite.internal.util.distributed.DistributedProcess.Dis
  *        b) For 1PC case on backup node this node always choose the greatest version to send on other nodes. And then
  *           it will always be on the AFTER side.
  * 4. It awaits every transaction in this collection to be committed to decide which side of Consistent Cut they belong to.
- * 5. Every transaction is signed with the latest {@link ConsistentCutMarker} AFTER which it committed. This version is defined
- *    at single node within a transaction - {@link #isSetterTxCutVersion(IgniteInternalTx)}.
+ * 5. Every transaction is signed with the latest {@link ConsistentCutMarker} AFTER which it committed. This marker is defined
+ *    at single node within a transaction before it starts committing {@link #registerBeforeCommit(IgniteInternalTx)}.
  * 6. After the check-list is empty it finishes Consistent Cut with writing {@link ConsistentCutFinishRecord} that contains
  *    collection of transactions on the BEFORE and AFTER sides.
  * 7. After Consistent Cut finished and all transactions from BEFORE side committed, it notifies coordinator that local node
@@ -89,17 +86,17 @@ public class ConsistentCutManager extends GridCacheSharedManagerAdapter implemen
     protected static final AtomicReferenceFieldUpdater<ConsistentCutManager, ConsistentCut> CONSISTENT_CUT =
         AtomicReferenceFieldUpdater.newUpdater(ConsistentCutManager.class, ConsistentCut.class, "cut");
 
-    /** Running consistent cut, {@code null} if not running. */
+    /** Running {@link ConsistentCut}, {@code null} if not running. */
     private volatile @Nullable ConsistentCut cut;
 
-    /** Future that completes after cut has finished. */
+    /** Future that completes after Consistent Cut finished on every node in a cluster. */
     protected volatile ClusterConsistentCutFuture clusterCutFut;
 
     /** Distributed process for performing distributed Consistent Cut algorithm. */
     private DistributedProcess<ConsistentCutStartRequest, Boolean> consistentCutProc;
 
-    /** The last handled {@link ConsistentCutMarker}. */
-    private volatile ConsistentCutMarker lastSeenMarker;
+    /** Marker of the last finished Consistent Cut. Required to avoid re-run Consistent Cut with the same marker. */
+    protected volatile ConsistentCutMarker lastFinishedCutMarker;
 
     /** {@inheritDoc} */
     @Override public void start0() throws IgniteCheckedException {
@@ -129,13 +126,7 @@ public class ConsistentCutManager extends GridCacheSharedManagerAdapter implemen
     }
 
     /**
-     * Mark transaction with {@link ConsistentCutMarker} for specified transaction if it hadn't been marked yet.
-     * Single node is responsible for marking a transaction (see {@link #isSetterTxCutVersion(IgniteInternalTx)}). Other nodes
-     * recieves this mark with Finish messages.
-     * <p>
-     * Note, there are some cases when marker equals to {@code null} even after this method:
-     * 1. Transaction committed with transaction recovery mechanism.
-     * 2. Cut wasn't run while transaction is committing.
+     * Registers transaction before it starts committing.
      *
      * @param tx Transaction.
      */
@@ -143,24 +134,48 @@ public class ConsistentCutManager extends GridCacheSharedManagerAdapter implemen
         ConsistentCut cut = CONSISTENT_CUT.get(this);
 
         if (cut != null) {
-            // Mark all new committing  transactions to be on the AFTER side.
-            if (isSetterTxCutVersion(tx))
-                tx.marker(cut.marker());
+            tx.marker(cut.marker());
 
             cut.addCommittingTransaction(tx.finishFuture());
         }
 
-        if (log.isInfoEnabled()) {
+        if (log.isDebugEnabled()) {
+            log.info("`registerFirstCommit` from " + tx.nearXidVersion().asIgniteUuid() + " to " + tx.xid()
+                + " , txMarker=" + tx.marker() + ", cutMarker = " + (cut == null ? null : cut.marker()));
+        }
+    }
+
+    /**
+     * Registers specified committing transaction.
+     *
+     * @param tx Transaction.
+     * @param marker Marker with that transaction was signed in {@link #registerBeforeCommit(IgniteInternalTx)},
+     *               or {@code null} if not specified.
+     */
+    public void registerCommitting(IgniteInternalTx tx, @Nullable ConsistentCutMarker marker) {
+        tx.marker(marker);
+
+        ConsistentCut cut = CONSISTENT_CUT.get(this);
+
+        if (cut != null)
+            cut.addCommittingTransaction(tx.finishFuture());
+
+        if (log.isDebugEnabled()) {
             log.info("`registerBeforeCommit` from " + tx.nearXidVersion().asIgniteUuid() + " to " + tx.xid()
                 + " , txMarker=" + tx.marker() + ", cutMarker = " + (cut == null ? null : cut.marker()));
         }
     }
 
-    /** Mark transaction messages with {@link ConsistentCutMarker} if needed. */
+    /**
+     * Wraps transaction message to marker messages if cut is running.
+     *
+     * @param txMsg Transaction message to wrap.
+     * @param txMarker {@code null} if message isn't a finish message, non-null otherwise.
+     */
     public GridCacheMessage wrapTxMsgIfCutRunning(GridDistributedBaseMessage txMsg, @Nullable ConsistentCutMarker txMarker) {
         GridCacheMessage msg = txMsg;
 
-        ConsistentCutMarker marker = runningCut();
+        ConsistentCutMarker marker = runningCutMarker();
 
         if (marker != null) {
             msg = txMarker == null ?
@@ -172,25 +187,23 @@ public class ConsistentCutManager extends GridCacheSharedManagerAdapter implemen
     }
 
     /**
-     * Handles received {@link ConsistentCutMarker} from remote node. It compares it with the latest marker that local node
-     * is aware of. Init local {@link ConsistentCut} procedure if received version is greater than the local.
+     * Handles received marker from remote node. It compares it with the latest marker that local node is aware of.
+     * Init local Consistent Cut procedure if received marker is a new one.
      *
      * @param marker Received Cut marker from different node.
      */
     public void handleConsistentCutMarker(ConsistentCutMarker marker) {
         ConsistentCut cut = CONSISTENT_CUT.get(this);
 
-        if (cut == null && !marker.equals(lastSeenMarker) && cctx.discovery().topologyVersionEx().compareTo(marker.topVer()) == 0) {
+        if (cut == null && !marker.equals(lastFinishedCutMarker) && cctx.discovery().topologyVersionEx().compareTo(marker.topVer()) == 0) {
             ConsistentCut newCut = newConsistentCut(marker);
 
             if (CONSISTENT_CUT.compareAndSet(this, cut, newCut)) {
-                lastSeenMarker = marker;
-
                 cctx.kernalContext().pools().getSystemExecutorService().submit(() -> {
                     try {
-                        newCut.init(marker);
+                        newCut.init();
 
-                        if (log.isInfoEnabled())
+                        if (log.isDebugEnabled())
                             log.info("Prepared Consistent Cut: " + newCut);
                     }
                     catch (IgniteCheckedException e) {
@@ -237,26 +250,19 @@ public class ConsistentCutManager extends GridCacheSharedManagerAdapter implemen
 
         consistentCutProc.start(UUID.randomUUID(), new ConsistentCutStartRequest(marker));
 
-        if (log.isInfoEnabled())
+        if (log.isDebugEnabled())
             log.info("Start Consistent Cut, marker = " + marker);
 
         return fut;
     }
 
     /**
-     * @return Latest {@link ConsistentCutMarker} for running cut, or {@code null} if not cut is running.
+     * @return Marker of current running Consistent Cut, if cut isn't running then {@code null}.
      */
-    private @Nullable ConsistentCutMarker runningCut() {
+    private @Nullable ConsistentCutMarker runningCutMarker() {
         ConsistentCut cut = CONSISTENT_CUT.get(this);
 
         return cut == null ? null : cut.marker();
-    }
-
-    /**
-     * @return Latest seen {@link ConsistentCutMarker}, no matter whether this Consistent Cut has just started or already finished.
-     */
-    protected @Nullable ConsistentCutMarker lastSeenMarker() {
-        return lastSeenMarker;
     }
 
     /**
@@ -266,8 +272,20 @@ public class ConsistentCutManager extends GridCacheSharedManagerAdapter implemen
      * @return Future that completes with {@code true} for consistent cut, {@code false} for inconsistent cut.
      */
     private IgniteInternalFuture<Boolean> startLocalCut(ConsistentCutStartRequest req) {
-        if (log.isInfoEnabled())
-            log.info("StartLocalCut for " + req.marker() + " " + cctx.localNodeId());
+        if (log.isDebugEnabled())
+            log.info("`startLocalCut` for " + req.marker() + " " + cctx.localNodeId());
+
+        // Checks whether this ConsistentCutVersion has already started.
+        // This check can be reliably performed only on the coordinator node, as after version applied on coordinator
+        // it started spreading across cluster by Communication SPI with transaction messages.
+        if (U.isLocalNodeCoordinator(cctx.discovery())
+            && lastFinishedCutMarker != null
+            && req.marker().compareTo(lastFinishedCutMarker) <= 0) {
+            return new GridFinishedFuture<>(new IgniteCheckedException(
+                String.format("Consistent Cut for marker [%s] already started, last seen marker [%s].",
+                    req.marker(), lastFinishedCutMarker)
+            ));
+        }
 
         handleConsistentCutMarker(req.marker());
 
@@ -275,12 +293,15 @@ public class ConsistentCutManager extends GridCacheSharedManagerAdapter implemen
     }
 
     /**
+     * Finishes local Consistent Cut, stop signing outgoing messages with marker.
+     *
      * @param reqId Consistent Cut request ID.
      * @param results Consistent Cut results from all nodes: {@code true} for consistent cut, {@code false} for inconsistent.
      * @param exceptions Errors raised from all nodes.
      */
     private void finishLocalCut(UUID reqId, Map<UUID, Boolean> results, Map<UUID, Exception> exceptions) {
-        // Stops signing messages.
+        lastFinishedCutMarker = CONSISTENT_CUT.get(this).marker();
+
         CONSISTENT_CUT.set(this, null);
 
         if (clusterCutFut != null) {
@@ -333,41 +354,6 @@ public class ConsistentCutManager extends GridCacheSharedManagerAdapter implemen
 
             clusterCutFut = null;
         }
-    }
-
-    /**
-     * Finds whether local node is responsible for setting Consistent Cut version for specified transaction.
-     * - For 2PC transactions the version is inherited in direct order (from originated to primary and backup nodes).
-     * - For 1PC transactions the version is inherited in reverse order (from backup to primary).
-     *
-     * @return Whether local node for the specified transaction sets Consistent Cut Version for whole transaction.
-     */
-    private boolean isSetterTxCutVersion(IgniteInternalTx tx) {
-        if (log.isInfoEnabled()) {
-            log.info("`txCutVerSetNode` " + tx.nearXidVersion().asIgniteUuid() + " " + getClass().getSimpleName()
-                + " 1pc=" + tx.onePhaseCommit() + " node=" + tx.nodeId() + " nodes=" + tx.transactionNodes() + " " + "client="
-                + cctx.kernalContext().clientNode() + " near=" + tx.near() + " local=" + tx.local() + " dht=" + tx.dht());
-        }
-
-        if (tx.onePhaseCommit()) {
-            if (tx.near() && cctx.kernalContext().clientNode())
-                return false;
-
-            Collection<UUID> backups = tx.transactionNodes().get(tx.nodeId());
-
-            // We are on backup node. It's by default set the version.
-            if (tx.dht() && backups == null)
-                return true;
-
-            // Near can set version iff it's colocated and there is no backups.
-            if (tx.near())
-                return F.isEmpty(backups) && ((GridNearTxLocal)tx).colocatedLocallyMapped();
-
-            // This is a backup or primary node. Primary node sets the version iff cache doesn't have backups.
-            return (tx.dht() && !tx.local()) || backups.isEmpty();
-        }
-        else
-            return tx.near();
     }
 
     /**
