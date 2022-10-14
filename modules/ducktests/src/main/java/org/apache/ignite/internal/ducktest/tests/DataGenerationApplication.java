@@ -15,7 +15,7 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.internal.ducktest.tests.rebalance;
+package org.apache.ignite.internal.ducktest.tests;
 
 import java.util.concurrent.ThreadLocalRandom;
 import com.fasterxml.jackson.databind.JsonNode;
