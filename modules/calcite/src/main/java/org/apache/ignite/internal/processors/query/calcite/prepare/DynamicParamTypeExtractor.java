@@ -28,138 +28,25 @@ import org.apache.calcite.rex.RexDynamicParam;
 import org.apache.calcite.rex.RexNode;
 import org.apache.calcite.rex.RexShuttle;
 import org.apache.ignite.internal.processors.query.GridQueryFieldMetadata;
-import org.apache.ignite.internal.processors.query.calcite.rel.IgniteCorrelatedNestedLoopJoin;
-import org.apache.ignite.internal.processors.query.calcite.rel.IgniteFilter;
-import org.apache.ignite.internal.processors.query.calcite.rel.IgniteHashIndexSpool;
-import org.apache.ignite.internal.processors.query.calcite.rel.IgniteIndexScan;
-import org.apache.ignite.internal.processors.query.calcite.rel.IgniteLimit;
-import org.apache.ignite.internal.processors.query.calcite.rel.IgniteMergeJoin;
-import org.apache.ignite.internal.processors.query.calcite.rel.IgniteNestedLoopJoin;
-import org.apache.ignite.internal.processors.query.calcite.rel.IgniteProject;
 import org.apache.ignite.internal.processors.query.calcite.rel.IgniteRel;
-import org.apache.ignite.internal.processors.query.calcite.rel.IgniteSort;
-import org.apache.ignite.internal.processors.query.calcite.rel.IgniteSortedIndexSpool;
-import org.apache.ignite.internal.processors.query.calcite.rel.IgniteTableFunctionScan;
-import org.apache.ignite.internal.processors.query.calcite.rel.IgniteTableModify;
-import org.apache.ignite.internal.processors.query.calcite.rel.IgniteTableScan;
 import org.apache.ignite.internal.processors.query.calcite.type.IgniteTypeFactory;
 
 /** */
-public class DynamicParamTypeExtractor extends IgniteRelShuttle {
-    /** */
-    private final SortedMap<Integer, RexDynamicParam> acc = new TreeMap<>();
-    
-    /** */
-    private final DynamicParamsShuttle paramsShuttle = new DynamicParamsShuttle();
-
+public class DynamicParamTypeExtractor {
     /** */
     public static ParamsMetadata go(IgniteRel root) {
-        DynamicParamTypeExtractor extractor = new DynamicParamTypeExtractor();
+        DynamicParamsShuttle paramsShuttle = new DynamicParamsShuttle();
 
-        extractor.visit(root);
+        new IgniteRelRexNodeShuttle(paramsShuttle).visit(root);
 
-        return new ParamsMetadata(extractor.acc.values());
-    }
-
-    /** {@inheritDoc} */
-    @Override public IgniteRel visit(IgniteFilter rel) {
-        paramsShuttle.apply(rel.getCondition());
-
-        return super.visit(rel);
-    }
-
-    /** {@inheritDoc} */
-    @Override public IgniteRel visit(IgniteProject rel) {
-        paramsShuttle.apply(rel.getProjects());
-
-        return super.visit(rel);
-    }
-
-    /** {@inheritDoc} */
-    @Override public IgniteRel visit(IgniteNestedLoopJoin rel) {
-        paramsShuttle.apply(rel.getCondition());
-
-        return super.visit(rel);
-    }
-
-    /** {@inheritDoc} */
-    @Override public IgniteRel visit(IgniteCorrelatedNestedLoopJoin rel) {
-        paramsShuttle.apply(rel.getCondition());
-
-        return super.visit(rel);
-    }
-
-    /** {@inheritDoc} */
-    @Override public IgniteRel visit(IgniteMergeJoin rel) {
-        paramsShuttle.apply(rel.getCondition());
-
-        return super.visit(rel);
-    }
-
-    /** {@inheritDoc} */
-    @Override public IgniteRel visit(IgniteIndexScan rel) {
-        paramsShuttle.apply(rel.projects());
-        paramsShuttle.apply(rel.condition());
-
-        return super.visit(rel);
-    }
-
-    /** {@inheritDoc} */
-    @Override public IgniteRel visit(IgniteTableScan rel) {
-        paramsShuttle.apply(rel.projects());
-        paramsShuttle.apply(rel.condition());
-
-        return super.visit(rel);
-    }
-
-    /** {@inheritDoc} */
-    @Override public IgniteRel visit(IgniteSortedIndexSpool rel) {
-        paramsShuttle.apply(rel.condition());
-
-        return super.visit(rel);
-    }
-
-    /** {@inheritDoc} */
-    @Override public IgniteRel visit(IgniteHashIndexSpool rel) {
-        paramsShuttle.apply(rel.condition());
-        paramsShuttle.apply(rel.searchRow());
-
-        return super.visit(rel);
-    }
-
-    /** {@inheritDoc} */
-    @Override public IgniteRel visit(IgniteTableModify rel) {
-        paramsShuttle.apply(rel.getSourceExpressionList());
-
-        return super.visit(rel);
-    }
-
-    /** {@inheritDoc} */
-    @Override public IgniteRel visit(IgniteLimit rel) {
-        paramsShuttle.apply(rel.fetch());
-        paramsShuttle.apply(rel.offset());
-
-        return super.visit(rel);
-    }
-
-    /** {@inheritDoc} */
-    @Override public IgniteRel visit(IgniteSort rel) {
-        paramsShuttle.apply(rel.offset);
-        paramsShuttle.apply(rel.fetch);
-        paramsShuttle.apply(rel.getSortExps());
-
-        return super.visit(rel);
-    }
-
-    /** {@inheritDoc} */
-    @Override public IgniteRel visit(IgniteTableFunctionScan rel) {
-        paramsShuttle.apply(rel.getCall());
-
-        return super.visit(rel);
+        return new ParamsMetadata(paramsShuttle.acc.values());
     }
 
     /** */
-    private final class DynamicParamsShuttle extends RexShuttle {
+    private static final class DynamicParamsShuttle extends RexShuttle {
+        /** */
+        private final SortedMap<Integer, RexDynamicParam> acc = new TreeMap<>();
+
         /** {@inheritDoc} */
         @Override public RexNode visitDynamicParam(RexDynamicParam param) {
             acc.put(param.getIndex(), param);
