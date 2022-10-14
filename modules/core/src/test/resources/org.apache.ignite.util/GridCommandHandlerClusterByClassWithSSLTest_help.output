@@ -146,7 +146,7 @@ This utility can do the following commands:
       snapshot_name  - Snapshot name. In case incremental snapshot (--incremental) full snapshot name must be provided.
       --dest path    - Path to the directory where the snapshot will be saved. If not specified, the default configured snapshot directory will be used.
       --sync         - Run the operation synchronously, the command will wait for the entire operation to complete. Otherwise, it will be performed in the background, and the command will immediately return control.
-      --incremental  - Create an incremental snapshot for previously created full snapshot. Full snapshot must be accessible via --dest or snapshot_name.
+      --incremental  - Create an incremental snapshot for previously created full snapshot. Full snapshot must be accessible via --dest and snapshot_name.
 
   Cancel running snapshot operation:
     control.(sh|bat) --snapshot cancel --id id|--name name
