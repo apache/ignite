@@ -171,7 +171,6 @@ import org.apache.ignite.lang.IgniteFuture;
 import org.apache.ignite.lang.IgniteUuid;
 import org.apache.ignite.marshaller.Marshaller;
 import org.apache.ignite.marshaller.MarshallerUtils;
-import org.apache.ignite.marshaller.jdk.JdkMarshaller;
 import org.apache.ignite.resources.IgniteInstanceResource;
 import org.apache.ignite.spi.encryption.EncryptionSpi;
 import org.apache.ignite.spi.systemview.view.SnapshotView;
@@ -823,7 +822,7 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
             try {
                 checkIncrementalCanBeCreated(req.snapshotName(), req.snapshotPath(), meta);
             }
-            catch (IgniteCheckedException e) {
+            catch (IgniteCheckedException | IOException e) {
                 return new GridFinishedFuture<>(e);
             }
 
@@ -2441,7 +2440,7 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
         String name,
         @Nullable String snpPath,
         SnapshotMetadata meta
-    ) throws IgniteCheckedException {
+    ) throws IgniteCheckedException, IOException {
         File snpDir = snapshotLocalDir(name, snpPath);
 
         Set<String> aliveNodesConsIds = cctx.discovery().aliveServerNodes()
@@ -2484,14 +2483,14 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
 
             assert snpCacheDir.size() == 1 : "Single snapshot cache directory must be found";
 
-            JdkMarshaller marsh = MarshallerUtils.jdkMarshaller(cctx.kernalContext().igniteInstanceName());
-
             for (File snpDataFile : FilePageStoreManager.cacheDataFiles(snpCacheDir.get(0))) {
                 StoredCacheData snpCacheData = GridLocalConfigManager.readCacheData(
                     snpDataFile,
-                    marsh,
+                    MarshallerUtils.jdkMarshaller(cctx.kernalContext().igniteInstanceName()),
                     cctx.kernalContext().config()
                 );
+
+                byte[] snpCacheDataBytes = Files.readAllBytes(snpDataFile.toPath());
 
                 File nodeDataFile = new File(snpDataFile.getAbsolutePath().replace(
                     rootSnpCachesDir.getAbsolutePath(),
@@ -2504,19 +2503,9 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
                         ", cacheName=" + snpCacheData.config().getName() + ']');
                 }
 
-                StoredCacheData nodeCacheData = GridLocalConfigManager.readCacheData(
-                    nodeDataFile,
-                    marsh,
-                    cctx.gridConfig()
-                );
+                byte[] nodeCacheDataBytes = Files.readAllBytes(nodeDataFile.toPath());
 
-                if (!nodeCacheData.config().isEncryptionEnabled()) {
-                    throw new IgniteCheckedException("Create incremental snapshot request has been rejected. " +
-                        "Encrypted cache not supported [cacheId=" + snpCacheData.cacheId() + ']');
-                }
-
-                // TOOD: fixme.
-                if (!snpCacheData.equals(nodeCacheData)) {
+                if (!Arrays.equals(snpCacheDataBytes, nodeCacheDataBytes)) {
                     throw new IgniteCheckedException(
                         cacheChangedException(snpCacheData.cacheId(), snpCacheData.config().getName())
                     );
