@@ -19,10 +19,8 @@ package org.apache.ignite.internal.processors.cache;
 
 import java.io.Serializable;
 import java.util.Map;
-import java.util.Objects;
 import java.util.Set;
 import org.apache.ignite.internal.util.tostring.GridToStringInclude;
-import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.internal.S;
 
 /**
@@ -94,24 +92,5 @@ public class CacheConfigurationEnrichment implements Serializable {
     /** {@inheritDoc} */
     @Override public String toString() {
         return S.toString(CacheConfigurationEnrichment.class, this);
-    }
-
-    /** {@inheritDoc} */
-    @Override public boolean equals(Object o) {
-        if (this == o)
-            return true;
-
-        if (o == null || getClass() != o.getClass())
-            return false;
-
-        CacheConfigurationEnrichment that = (CacheConfigurationEnrichment)o;
-
-        return F.eqNotOrdered(enrichFields, that.enrichFields)
-            && F.eqNotOrdered(fieldClassNames, that.fieldClassNames);
-    }
-
-    /** {@inheritDoc} */
-    @Override public int hashCode() {
-        return Objects.hash(enrichFields, fieldClassNames);
     }
 }

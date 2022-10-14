@@ -2515,6 +2515,7 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
                         "Encrypted cache not supported [cacheId=" + snpCacheData.cacheId() + ']');
                 }
 
+                // TOOD: fixme.
                 if (!snpCacheData.equals(nodeCacheData)) {
                     throw new IgniteCheckedException(
                         cacheChangedException(snpCacheData.cacheId(), snpCacheData.config().getName())

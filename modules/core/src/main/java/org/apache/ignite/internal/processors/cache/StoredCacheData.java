@@ -19,7 +19,6 @@ package org.apache.ignite.internal.processors.cache;
 
 import java.io.Serializable;
 import java.util.Collection;
-import java.util.Objects;
 import org.apache.ignite.cache.QueryEntity;
 import org.apache.ignite.cdc.CdcCacheEvent;
 import org.apache.ignite.configuration.CacheConfiguration;
@@ -214,27 +213,5 @@ public class StoredCacheData implements Serializable, CdcCacheEvent {
     /** {@inheritDoc} */
     @Override public CacheConfiguration<?, ?> configuration() {
         return ccfg;
-    }
-
-    /** {@inheritDoc} */
-    @Override public boolean equals(Object o) {
-        if (this == o)
-            return true;
-
-        if (o == null || getClass() != o.getClass())
-            return false;
-
-        StoredCacheData cacheData = (StoredCacheData)o;
-
-        return sql == cacheData.sql
-            && Objects.equals(ccfg, cacheData.ccfg)
-            && Objects.equals(qryEntities, cacheData.qryEntities)
-            && Objects.equals(cacheConfigurationEnrichment, cacheData.cacheConfigurationEnrichment)
-            && Objects.equals(grpKeyEncrypted, cacheData.grpKeyEncrypted);
-    }
-
-    /** {@inheritDoc} */
-    @Override public int hashCode() {
-        return Objects.hash(ccfg, qryEntities, sql, cacheConfigurationEnrichment, grpKeyEncrypted);
     }
 }
