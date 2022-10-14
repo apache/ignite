@@ -47,7 +47,7 @@ public interface QueryEngine extends GridProcessor {
      * @param ctx Query context, may be null.
      * @param schemaName Schema name.
      * @param qry Query.
-     * @return List of query parameters metadata.
+     * @return List of queries' parameters metadata. Size of list depends on number of distinct queries in {@code qry}.
      * @throws IgniteSQLException If failed.
      */
     List<List<GridQueryFieldMetadata>> parameterMetaData(
@@ -60,7 +60,7 @@ public interface QueryEngine extends GridProcessor {
      * @param ctx Query context, may be null.
      * @param schemaName Schema name.
      * @param qry Query.
-     * @return List of query's result set metadata.
+     * @return List of queries' result sets metadata. Size of list depends on number of distinct queries in {@code qry}.
      * @throws IgniteSQLException If failed.
      */
     List<List<GridQueryFieldMetadata>> resultSetMetaData(
