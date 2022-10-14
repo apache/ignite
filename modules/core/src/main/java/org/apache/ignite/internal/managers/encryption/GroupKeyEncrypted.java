@@ -18,8 +18,6 @@
 package org.apache.ignite.internal.managers.encryption;
 
 import java.io.Serializable;
-import java.util.Arrays;
-import java.util.Objects;
 
 /**
  * Cache group encryption key with identifier. Key is encrypted.
@@ -55,27 +53,5 @@ public class GroupKeyEncrypted implements Serializable {
      */
     public byte[] key() {
         return key;
-    }
-
-    /** {@inheritDoc} */
-    @Override public boolean equals(Object o) {
-        if (this == o)
-            return true;
-
-        if (o == null || getClass() != o.getClass())
-            return false;
-
-        GroupKeyEncrypted encrypted = (GroupKeyEncrypted)o;
-
-        return id == encrypted.id && Arrays.equals(key, encrypted.key);
-    }
-
-    /** {@inheritDoc} */
-    @Override public int hashCode() {
-        int result = Objects.hash(id);
-
-        result = 31 * result + Arrays.hashCode(key);
-
-        return result;
     }
 }
