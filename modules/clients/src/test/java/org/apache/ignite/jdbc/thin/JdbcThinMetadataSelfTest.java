@@ -1180,31 +1180,31 @@ public class JdbcThinMetadataSelfTest extends JdbcThinAbstractSelfTest {
      */
     @Test
     public void testIndexMetadata() throws Exception {
-        String persCache = "pers";
-        String personTable = "PERSON";
-
-        List<Map<String, String>> expPersIdxMeta = expectedPersonTableIndexMeta();
+        List<String> expectedIdxs = Arrays.asList(
+            "_key_PK.1._KEY.A",
+            "PERSON_NAME_ASC_AGE_DESC_IDX.1.NAME.A",
+            "PERSON_NAME_ASC_AGE_DESC_IDX.2.AGE.D",
+            "PERSON_NAME_ASC_AGE_DESC_IDX.3._KEY.A",
+            "PERSON_ORGID_ASC_IDX.1.ORGID.A",
+            "PERSON_ORGID_ASC_IDX.2._KEY.A"
+        );
 
         try (Connection conn = DriverManager.getConnection(URL);
-             ResultSet rs = conn.getMetaData().getIndexInfo(null, persCache, personTable, false, false)) {
+             ResultSet rs = conn.getMetaData().getIndexInfo(null, "pers", "PERSON", false, false)) {
 
-            List<Map<String, String>> resIdxMeta = new ArrayList<>();
+            List<String> actualIdxs = new ArrayList<>();
 
             while (rs.next()) {
-                Map<String, String> resIdxMetaRow = new HashMap<>();
-
-                resIdxMetaRow.put("NON_UNIQUE", String.valueOf(rs.getBoolean("NON_UNIQUE")));
-                resIdxMetaRow.put("INDEX_NAME", rs.getString("INDEX_NAME"));
-                resIdxMetaRow.put("ORDINAL_POSITION", String.valueOf(rs.getInt("ORDINAL_POSITION")));
-                resIdxMetaRow.put("COLUMN_NAME", rs.getString("COLUMN_NAME"));
-                resIdxMetaRow.put("ASC_OR_DESC", rs.getString("ASC_OR_DESC"));
-
-                resIdxMeta.add(resIdxMetaRow);
+                actualIdxs.add(String.join(".",
+                    rs.getString("INDEX_NAME"),
+                    String.valueOf(rs.getInt("ORDINAL_POSITION")),
+                    rs.getString("COLUMN_NAME"),
+                    rs.getString("ASC_OR_DESC")));
 
                 // Below values are constant for a cache
                 assertEquals(CATALOG_NAME, rs.getString("TABLE_CAT"));
-                assertEquals(persCache, rs.getString("TABLE_SCHEM"));
-                assertEquals(personTable, rs.getString("TABLE_NAME"));
+                assertEquals("pers", rs.getString("TABLE_SCHEM"));
+                assertEquals("PERSON", rs.getString("TABLE_NAME"));
                 assertNull(rs.getObject("INDEX_QUALIFIER"));
                 assertEquals(DatabaseMetaData.tableIndexOther, rs.getShort("TYPE"));
                 assertEquals(0, rs.getInt("CARDINALITY"));
@@ -1212,50 +1212,11 @@ public class JdbcThinMetadataSelfTest extends JdbcThinAbstractSelfTest {
                 assertNull(rs.getString("FILTER_CONDITION"));
             }
 
-            assertEquals(expPersIdxMeta.size(), resIdxMeta.size());
+            assertEquals("Unexpected indexes count", expectedIdxs.size(), actualIdxs.size());
 
-            for (int i = 0; i < expPersIdxMeta.size(); i++)
-                assertEqualsMaps(expPersIdxMeta.get(i), resIdxMeta.get(i));
+            for (int i = 0; i < actualIdxs.size(); i++)
+                assertEquals("Unexpected index", expectedIdxs.get(i), actualIdxs.get(i));
         }
-    }
-
-    /** */
-    private List<Map<String, String>> expectedPersonTableIndexMeta() {
-        List<Map<String, String>> expPersIdxMeta = new ArrayList<>();
-
-        Map<String, String> persRowKeyPkIdx = indexMetaRow(false, "_key_PK", 1, "_KEY", "A");
-
-        Map<String, String> persNameAgeIdxNameAsc = indexMetaRow(true, "PERSON_NAME_ASC_AGE_DESC_IDX", 1, "NAME", "A");
-        Map<String, String> persNameAgeIdxAgeDesc = indexMetaRow(true, "PERSON_NAME_ASC_AGE_DESC_IDX", 2, "AGE", "D");
-        Map<String, String> persNameAgeIdxKeyAsc = indexMetaRow(true, "PERSON_NAME_ASC_AGE_DESC_IDX", 3, "_KEY", "A");
-
-        Map<String, String> persOrgIdIdxOrgIdAsc = indexMetaRow(true, "PERSON_ORGID_ASC_IDX", 1, "ORGID", "A");
-        Map<String, String> persOrgIdIdxKeyAsc = indexMetaRow(true, "PERSON_ORGID_ASC_IDX", 2, "_KEY", "A");
-
-        expPersIdxMeta.add(persRowKeyPkIdx);
-
-        expPersIdxMeta.add(persNameAgeIdxNameAsc);
-        expPersIdxMeta.add(persNameAgeIdxAgeDesc);
-        expPersIdxMeta.add(persNameAgeIdxKeyAsc);
-
-        expPersIdxMeta.add(persOrgIdIdxOrgIdAsc);
-        expPersIdxMeta.add(persOrgIdIdxKeyAsc);
-
-        return expPersIdxMeta;
-    }
-
-    /** */
-    private Map<String, String> indexMetaRow(boolean nonUnique, String idxName, Integer ordPosition, String colName,
-        String ascOrDesc) {
-        Map<String, String> retVal = new HashMap<>();
-
-        retVal.put("NON_UNIQUE", String.valueOf(nonUnique));
-        retVal.put("INDEX_NAME", idxName);
-        retVal.put("ORDINAL_POSITION", String.valueOf(ordPosition));
-        retVal.put("COLUMN_NAME", colName);
-        retVal.put("ASC_OR_DESC", ascOrDesc);
-
-        return retVal;
     }
 
     /**
@@ -1298,10 +1259,11 @@ public class JdbcThinMetadataSelfTest extends JdbcThinAbstractSelfTest {
             List<String> actualIdxs = new ArrayList<>();
 
             while (rs.next()) {
-                actualIdxs.add(rs.getString("TABLE_SCHEM") +
-                    '.' + rs.getString("TABLE_NAME") +
-                    '.' + rs.getString("INDEX_NAME") +
-                    '.' + rs.getString("COLUMN_NAME"));
+                actualIdxs.add(String.join(".",
+                    rs.getString("TABLE_SCHEM"),
+                    rs.getString("TABLE_NAME"),
+                    rs.getString("INDEX_NAME"),
+                    rs.getString("COLUMN_NAME")));
             }
 
             assertEquals("Unexpected indexes count", expectedIdxs.size(), actualIdxs.size());
