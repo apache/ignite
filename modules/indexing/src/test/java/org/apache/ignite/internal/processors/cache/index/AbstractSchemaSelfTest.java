@@ -62,6 +62,8 @@ import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgniteBiTuple;
 import org.jetbrains.annotations.Nullable;
 
+import static org.apache.ignite.internal.processors.query.QueryUtils.KEY_FIELD_NAME;
+
 /**
  * Tests for dynamic schema changes.
  */
@@ -221,7 +223,8 @@ public abstract class AbstractSchemaSelfTest extends AbstractIndexingCommonTest 
     static void assertIndex(String cacheName, String tblName, String idxName,
         int inlineSize, IgniteBiTuple<String, Boolean>... fields) {
         for (Ignite node : Ignition.allGrids())
-            assertIndex(node, cacheName, tblName, idxName, inlineSize, fields);
+            assertIndex(node, cacheName, tblName, idxName, inlineSize,
+                F.concat(fields, F.t("ID", true), F.t(KEY_FIELD_NAME, true)));
     }
 
     /**
@@ -254,7 +257,7 @@ public abstract class AbstractSchemaSelfTest extends AbstractIndexingCommonTest 
                 }
             }
 
-            assertTrue("Index not found: " + idxName, res.size() > 0);
+            assertFalse("Index not found: " + idxName, res.isEmpty());
 
             assertEquals(Arrays.asList(fields), res);
         }

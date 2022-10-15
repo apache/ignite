@@ -38,6 +38,7 @@ import org.apache.ignite.internal.processors.query.IgniteSQLException;
 import org.apache.ignite.internal.processors.query.schema.SchemaOperationException;
 import org.apache.ignite.internal.util.lang.RunnableX;
 import org.apache.ignite.internal.util.typedef.F;
+import org.apache.ignite.lang.IgniteBiTuple;
 import org.apache.ignite.testframework.junits.WithSystemProperty;
 import org.junit.Test;
 
@@ -46,6 +47,7 @@ import static org.apache.ignite.cache.CacheAtomicityMode.ATOMIC;
 import static org.apache.ignite.cache.CacheAtomicityMode.TRANSACTIONAL;
 import static org.apache.ignite.cache.CacheMode.PARTITIONED;
 import static org.apache.ignite.cache.CacheMode.REPLICATED;
+import static org.apache.ignite.internal.processors.query.QueryUtils.KEY_FIELD_NAME;
 import static org.apache.ignite.testframework.GridTestUtils.assertThrows;
 
 /**
@@ -1199,7 +1201,7 @@ public abstract class DynamicIndexAbstractBasicSelfTest extends DynamicIndexAbst
         final QueryIndex idx = index(IDX_NAME_2, field(FIELD_NAME_1));
 
         dynamicIndexCreate(STATIC_CACHE_NAME, TBL_NAME, idx, true, 0);
-        assertIndex(STATIC_CACHE_NAME, TBL_NAME, IDX_NAME_1, QueryIndex.DFLT_INLINE_SIZE, field(FIELD_NAME_1_ESCAPED));
+        assertIndexInStaticCache(STATIC_CACHE_NAME, TBL_NAME, IDX_NAME_1, QueryIndex.DFLT_INLINE_SIZE, field(FIELD_NAME_1_ESCAPED));
 
         dynamicIndexDrop(STATIC_CACHE_NAME, IDX_NAME_1, true);
         assertNoIndex(STATIC_CACHE_NAME, TBL_NAME, IDX_NAME_1);
@@ -1478,5 +1480,21 @@ public abstract class DynamicIndexAbstractBasicSelfTest extends DynamicIndexAbst
      */
     private void dynamicIndexDrop(String cacheName, String idxName, boolean ifExists) throws Exception {
         dynamicIndexDrop(node(), cacheName, idxName, ifExists);
+    }
+
+    /**
+     * Assert index on static cache.
+     *
+     * @param cacheName Cache name.
+     * @param tblName Table name.
+     * @param idxName Index name.
+     * @param inlineSize Inline size.
+     * @param fields Fields.
+     */
+    private static void assertIndexInStaticCache(String cacheName, String tblName, String idxName,
+        int inlineSize, IgniteBiTuple<String, Boolean>... fields) {
+        for (Ignite node : Ignition.allGrids())
+            assertIndex(node, cacheName, tblName, idxName, inlineSize,
+                F.concat(fields, F.t(KEY_FIELD_NAME, true)));
     }
 }
