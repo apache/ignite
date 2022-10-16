@@ -87,8 +87,7 @@ public class GridDhtTxPrepareResponse extends GridDistributedTxPrepareResponse {
         GridCacheVersion xid,
         IgniteUuid futId,
         int miniId,
-        boolean addDepInfo
-    ) {
+        boolean addDepInfo) {
         super(part, xid, addDepInfo);
 
         assert futId != null;
@@ -112,8 +111,7 @@ public class GridDhtTxPrepareResponse extends GridDistributedTxPrepareResponse {
         IgniteUuid futId,
         int miniId,
         Throwable err,
-        boolean addDepInfo
-    ) {
+        boolean addDepInfo) {
         super(part, xid, err, addDepInfo);
 
         assert futId != null;

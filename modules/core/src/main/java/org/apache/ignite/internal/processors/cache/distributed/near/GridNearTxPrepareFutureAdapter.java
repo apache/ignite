@@ -98,7 +98,7 @@ public abstract class GridNearTxPrepareFutureAdapter extends
      * @param cctx Context.
      * @param tx Transaction.
      */
-    protected GridNearTxPrepareFutureAdapter(GridCacheSharedContext cctx, final GridNearTxLocal tx) {
+    public GridNearTxPrepareFutureAdapter(GridCacheSharedContext cctx, final GridNearTxLocal tx) {
         super(REDUCER);
 
         assert cctx != null;

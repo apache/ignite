@@ -34,9 +34,16 @@ import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
 import org.apache.ignite.internal.processors.cache.GridCacheMessage;
 import org.apache.ignite.internal.processors.cache.GridCacheSharedManagerAdapter;
 import org.apache.ignite.internal.processors.cache.distributed.GridDistributedBaseMessage;
+import org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtTxFinishRequest;
+import org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtTxPrepareFuture;
+import org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtTxPrepareResponse;
 import org.apache.ignite.internal.processors.cache.distributed.dht.preloader.GridDhtPartitionsExchangeFuture;
 import org.apache.ignite.internal.processors.cache.distributed.dht.preloader.PartitionsExchangeAware;
+import org.apache.ignite.internal.processors.cache.distributed.near.GridNearTxFinishRequest;
+import org.apache.ignite.internal.processors.cache.distributed.near.GridNearTxPrepareFutureAdapter;
+import org.apache.ignite.internal.processors.cache.distributed.near.GridNearTxPrepareResponse;
 import org.apache.ignite.internal.processors.cache.transactions.IgniteInternalTx;
+import org.apache.ignite.internal.processors.cache.version.GridCacheVersion;
 import org.apache.ignite.internal.util.distributed.DistributedProcess;
 import org.apache.ignite.internal.util.future.GridFinishedFuture;
 import org.apache.ignite.internal.util.future.GridFutureAdapter;
@@ -148,14 +155,24 @@ public class ConsistentCutManager extends GridCacheSharedManagerAdapter implemen
     /**
      * Registers specified committing transaction.
      *
-     * @param tx Transaction.
-     * @param marker Marker with that transaction was signed in {@link #registerBeforeCommit(IgniteInternalTx)},
-     *               or {@code null} if not specified.
+     * @param msg Finish message signed with {@link ConsistentCutMarker}.
      */
-    public void registerCommitting(IgniteInternalTx tx, @Nullable ConsistentCutMarker marker) {
-        tx.marker(marker);
+    public void registerCommitting(ConsistentCutMarkerTxFinishMessage msg) {
+        IgniteInternalTx tx = extractTransactionFromFinishMessage(msg.payload());
 
         ConsistentCut cut = CONSISTENT_CUT.get(this);
+
+        if (tx == null) {
+            if (cut != null) {
+                U.warn(log, "Failed to find transaction for message [msg=" + msg.payload() + "]. Cut might be inconsistent.");
+
+                cut.onDone(false);
+            }
+
+            return;
+        }
+
+        tx.marker(msg.txMarker());
 
         if (cut != null)
             cut.addCommittingTransaction(tx.finishFuture());
@@ -164,6 +181,45 @@ public class ConsistentCutManager extends GridCacheSharedManagerAdapter implemen
             log.info("`registerBeforeCommit` from " + tx.nearXidVersion().asIgniteUuid() + " to " + tx.xid()
                 + " , txMarker=" + tx.marker() + ", cutMarker = " + (cut == null ? null : cut.marker()));
         }
+    }
+
+    /**
+     * @param msg Transaction finish message.
+     * @return Transaction, or {@code null} if not found.
+     */
+    private @Nullable IgniteInternalTx extractTransactionFromFinishMessage(GridDistributedBaseMessage msg) {
+        IgniteInternalTx tx = null;
+
+        if (msg instanceof GridNearTxFinishRequest) {
+            GridNearTxFinishRequest req = (GridNearTxFinishRequest)msg;
+
+            GridCacheVersion dhtVer = cctx.tm().mappedVersion(req.version());
+
+            tx = cctx.tm().tx(dhtVer);
+        }
+        else if (msg instanceof GridDhtTxFinishRequest) {
+            GridDhtTxFinishRequest req = (GridDhtTxFinishRequest)msg;
+
+            tx = cctx.tm().tx(req.version());
+        }
+        else if (msg instanceof GridDhtTxPrepareResponse) {
+            GridDhtTxPrepareResponse res = (GridDhtTxPrepareResponse)msg;
+
+            GridDhtTxPrepareFuture fut =
+                (GridDhtTxPrepareFuture)cctx.mvcc().versionedFuture(res.version(), res.futureId());
+
+            tx = fut.tx();
+        }
+        else if (msg instanceof GridNearTxPrepareResponse) {
+            GridNearTxPrepareResponse res = (GridNearTxPrepareResponse)msg;
+
+            GridNearTxPrepareFutureAdapter fut =
+                (GridNearTxPrepareFutureAdapter)cctx.mvcc().versionedFuture(res.version(), res.futureId());
+
+            tx = fut.tx();
+        }
+
+        return tx;
     }
 
     /**
@@ -195,7 +251,11 @@ public class ConsistentCutManager extends GridCacheSharedManagerAdapter implemen
     public void handleConsistentCutMarker(ConsistentCutMarker marker) {
         ConsistentCut cut = CONSISTENT_CUT.get(this);
 
-        if (cut == null && !marker.equals(lastFinishedCutMarker) && cctx.discovery().topologyVersionEx().compareTo(marker.topVer()) == 0) {
+        // Doesn't start Consistent Cut if topology version is outdated.
+        if (cut == null
+            && (lastFinishedCutMarker == null || marker.version() > lastFinishedCutMarker.version())
+            && cctx.discovery().topologyVersionEx().compareTo(marker.topVer()) == 0
+        ) {
             ConsistentCut newCut = newConsistentCut(marker);
 
             if (CONSISTENT_CUT.compareAndSet(this, cut, newCut)) {
@@ -234,19 +294,20 @@ public class ConsistentCutManager extends GridCacheSharedManagerAdapter implemen
     }
 
     /**
-     * Triggers global Consistent Cut procedure.
+     * Triggers cluster Consistent Cut procedure.
      *
-     * @return New Consistent Cut Version.
+     * @param ver Version to start Consistent Cut.
+     * @return Cluster Consistent Cut future.
      */
-    public synchronized IgniteInternalFuture<Boolean> triggerConsistentCutOnCluster() {
+    public synchronized IgniteInternalFuture<Boolean> triggerConsistentCutOnCluster(long ver) {
         if (clusterCutFut != null || CONSISTENT_CUT.get(this) != null)
             return new GridFinishedFuture<>(new IgniteCheckedException("Previous Consistent Cut is still running."));
 
         AffinityTopologyVersion topVer = cctx.discovery().topologyVersionEx();
 
-        ConsistentCutMarker marker = new ConsistentCutMarker(System.currentTimeMillis(), topVer);
+        ConsistentCutMarker marker = new ConsistentCutMarker(ver, topVer);
 
-        ClusterConsistentCutFuture fut = clusterCutFut = new ClusterConsistentCutFuture(topVer);
+        ClusterConsistentCutFuture fut = clusterCutFut = new ClusterConsistentCutFuture(marker, topVer);
 
         consistentCutProc.start(UUID.randomUUID(), new ConsistentCutStartRequest(marker));
 
@@ -259,7 +320,7 @@ public class ConsistentCutManager extends GridCacheSharedManagerAdapter implemen
     /**
      * @return Marker of current running Consistent Cut, if cut isn't running then {@code null}.
      */
-    private @Nullable ConsistentCutMarker runningCutMarker() {
+    protected @Nullable ConsistentCutMarker runningCutMarker() {
         ConsistentCut cut = CONSISTENT_CUT.get(this);
 
         return cut == null ? null : cut.marker();
@@ -273,23 +334,20 @@ public class ConsistentCutManager extends GridCacheSharedManagerAdapter implemen
      */
     private IgniteInternalFuture<Boolean> startLocalCut(ConsistentCutStartRequest req) {
         if (log.isDebugEnabled())
-            log.info("`startLocalCut` for " + req.marker() + " " + cctx.localNodeId());
+            log.debug("`startLocalCut` for " + req.marker() + " " + cctx.localNodeId());
 
-        // Checks whether this ConsistentCutVersion has already started.
-        // This check can be reliably performed only on the coordinator node, as after version applied on coordinator
-        // it started spreading across cluster by Communication SPI with transaction messages.
-        if (U.isLocalNodeCoordinator(cctx.discovery())
-            && lastFinishedCutMarker != null
-            && req.marker().compareTo(lastFinishedCutMarker) <= 0) {
+        handleConsistentCutMarker(req.marker());
+
+        ConsistentCut cut = CONSISTENT_CUT.get(this);
+
+        if (cut == null) {
             return new GridFinishedFuture<>(new IgniteCheckedException(
-                String.format("Consistent Cut for marker [%s] already started, last seen marker [%s].",
+                String.format("Consistent Cut for marker [%s] has already started before, last seen marker [%s].",
                     req.marker(), lastFinishedCutMarker)
             ));
         }
 
-        handleConsistentCutMarker(req.marker());
-
-        return CONSISTENT_CUT.get(this);
+        return cut;
     }
 
     /**
@@ -300,7 +358,24 @@ public class ConsistentCutManager extends GridCacheSharedManagerAdapter implemen
      * @param exceptions Errors raised from all nodes.
      */
     private void finishLocalCut(UUID reqId, Map<UUID, Boolean> results, Map<UUID, Exception> exceptions) {
-        lastFinishedCutMarker = CONSISTENT_CUT.get(this).marker();
+        if (log.isDebugEnabled())
+            log.debug("`finishLocalCut` for " + runningCutMarker() + " " + results);
+
+        ConsistentCut cut = CONSISTENT_CUT.get(this);
+
+        if (cut == null) {
+            if (clusterCutFut != null) {
+                clusterCutFut.onDone(new IgniteCheckedException(
+                    String.format("Consistent Cut for marker [%s] has already finished before, last seen marker [%s].",
+                        clusterCutFut.marker, lastFinishedCutMarker)));
+
+                clusterCutFut = null;
+            }
+
+            return;
+        }
+
+        lastFinishedCutMarker = cut.marker();
 
         CONSISTENT_CUT.set(this, null);
 
@@ -314,6 +389,8 @@ public class ConsistentCutManager extends GridCacheSharedManagerAdapter implemen
                         " Cluster topology is changing too fast. Consider increasing `GNITE_DISCOVERY_HISTORY_SIZE` property.",
                         clusterCutFut.topVer))
                 );
+
+                clusterCutFut = null;
 
                 return;
             }
@@ -365,8 +442,12 @@ public class ConsistentCutManager extends GridCacheSharedManagerAdapter implemen
         private final AffinityTopologyVersion topVer;
 
         /** */
-        private ClusterConsistentCutFuture(AffinityTopologyVersion ver) {
-            topVer = ver;
+        private final ConsistentCutMarker marker;
+
+        /** */
+        private ClusterConsistentCutFuture(ConsistentCutMarker marker, AffinityTopologyVersion topVer) {
+            this.topVer = topVer;
+            this.marker = marker;
         }
     }
 }

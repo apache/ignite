@@ -1244,7 +1244,7 @@ public abstract class IgniteTxAdapter extends GridMetadataAwareAdapter implement
         }
 
         if (valid) {
-            if (ptr != null && (state == COMMITTED || state == ROLLED_BACK)) {
+            if (ptr != null && (state == COMMITTED || state == ROLLED_BACK))
                 try {
                     cctx.wal().flush(ptr, false);
                 }
@@ -1255,7 +1255,6 @@ public abstract class IgniteTxAdapter extends GridMetadataAwareAdapter implement
 
                     throw new IgniteException(msg, e);
                 }
-            }
         }
 
         if (notify) {

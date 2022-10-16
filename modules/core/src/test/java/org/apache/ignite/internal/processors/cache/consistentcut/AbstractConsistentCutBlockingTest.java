@@ -396,7 +396,31 @@ public abstract class AbstractConsistentCutBlockingTest extends AbstractConsiste
 
     /** Manually triggers new Consistent Cut. */
     private IgniteInternalFuture<Boolean> triggerConsistentCut() {
-        return TestConsistentCutManager.cutMgr(grid(0)).triggerConsistentCutOnCluster();
+        return TestConsistentCutManager.cutMgr(grid(0)).triggerConsistentCutOnCluster(caseNum);
+    }
+
+    /** */
+    protected void waitForCutIsStartedOnAllNodes() throws Exception {
+        GridTestUtils.waitForCondition(() -> {
+            boolean allNodeStartedCut = true;
+
+            for (int i = 0; i < nodes(); i++)
+                allNodeStartedCut &= BlockingConsistentCutManager.cutMgr(grid(i)).runningCutMarker() != null;
+
+            return allNodeStartedCut;
+        }, getTestTimeout(), 10);
+    }
+
+    /** */
+    protected void waitForCutIsFinishedOnAllNodes() throws Exception {
+        GridTestUtils.waitForCondition(() -> {
+            boolean allNodeFinishedCut = true;
+
+            for (int i = 0; i < nodes(); i++)
+                allNodeFinishedCut &= BlockingConsistentCutManager.cutMgr(grid(i)).runningCutMarker() == null;
+
+            return allNodeFinishedCut;
+        }, getTestTimeout(), 10);
     }
 
     /** */

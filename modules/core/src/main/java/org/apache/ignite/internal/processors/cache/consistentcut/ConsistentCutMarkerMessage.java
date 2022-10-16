@@ -17,7 +17,6 @@
 
 package org.apache.ignite.internal.processors.cache.consistentcut;
 
-import java.io.Externalizable;
 import java.nio.ByteBuffer;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.internal.processors.cache.GridCacheIdMessage;
@@ -26,7 +25,7 @@ import org.apache.ignite.internal.processors.cache.distributed.GridDistributedBa
 import org.apache.ignite.plugin.extensions.communication.MessageReader;
 import org.apache.ignite.plugin.extensions.communication.MessageWriter;
 
-/** Message that holds {@link ConsistentCutMarker}. */
+/** Message that holds a transaction message and {@link ConsistentCutMarker}. */
 public class ConsistentCutMarkerMessage extends GridCacheIdMessage {
     /** */
     private static final long serialVersionUID = 0L;
@@ -34,15 +33,13 @@ public class ConsistentCutMarkerMessage extends GridCacheIdMessage {
     /** */
     public static final short TYPE_CODE = 202;
 
-    /** */
+    /** Original transaction message signed with {@link #marker}. */
     private GridDistributedBaseMessage payload;
 
     /** */
     private ConsistentCutMarker marker;
 
-    /**
-     * Empty constructor required for {@link Externalizable}.
-     */
+    /** */
     public ConsistentCutMarkerMessage() {
     }
 

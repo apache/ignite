@@ -310,44 +310,7 @@ public class IgniteTxHandler {
     private void processConsistentCutMarkerFinishTxMessage(UUID nodeId, ConsistentCutMarkerTxFinishMessage msg) {
         ctx.consistentCutMgr().handleConsistentCutMarker(msg.marker());
 
-        IgniteInternalTx tx = null;
-
-        if (msg.payload() instanceof GridNearTxFinishRequest) {
-            GridNearTxFinishRequest req = (GridNearTxFinishRequest)msg.payload();
-
-            GridCacheVersion dhtVer = ctx.tm().mappedVersion(req.version());
-
-            tx = ctx.tm().tx(dhtVer);
-        }
-        else if (msg.payload() instanceof GridDhtTxFinishRequest) {
-            GridDhtTxFinishRequest req = (GridDhtTxFinishRequest)msg.payload();
-
-            tx = ctx.tm().tx(req.version());
-        }
-        else if (msg.payload() instanceof GridDhtTxPrepareResponse) {
-            GridDhtTxPrepareResponse res = (GridDhtTxPrepareResponse)msg.payload();
-
-            GridDhtTxPrepareFuture fut =
-                (GridDhtTxPrepareFuture)ctx.mvcc().versionedFuture(res.version(), res.futureId());
-
-            tx = fut.tx();
-        }
-        else if (msg.payload() instanceof GridNearTxPrepareResponse) {
-            GridNearTxPrepareResponse res = (GridNearTxPrepareResponse)msg.payload();
-
-            GridNearTxPrepareFutureAdapter fut =
-                (GridNearTxPrepareFutureAdapter)ctx.mvcc().versionedFuture(res.version(), res.futureId());
-
-            tx = fut.tx();
-        }
-
-        if (tx == null) {
-            U.warn(log, "Failed to find transaction for message [msg=" + msg.payload() + "]");
-
-            return;
-        }
-
-        ctx.consistentCutMgr().registerCommitting(tx, msg.txMarker());
+        ctx.consistentCutMgr().registerCommitting(msg);
 
         GridCacheMessage cacheMsg = msg.payload();
 

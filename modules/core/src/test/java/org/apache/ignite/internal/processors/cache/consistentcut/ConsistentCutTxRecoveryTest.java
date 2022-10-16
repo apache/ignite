@@ -34,38 +34,36 @@ public class ConsistentCutTxRecoveryTest extends AbstractConsistentCutBlockingTe
     /** */
     @Test
     public void testSkipFinishRecordOnTxRecovery() throws Exception {
-        IgniteInternalFuture<?> loadFut = asyncLoadData();
+        IgniteInternalFuture<?> loadFut = null;
 
         try {
             BlockingConsistentCutManager srvCutMgr = BlockingConsistentCutManager.cutMgr(grid(0));
 
-            assertTrue(srvCutMgr.triggerConsistentCutOnCluster().get(getTestTimeout()));
+            assertTrue(srvCutMgr.triggerConsistentCutOnCluster(0).get(getTestTimeout()));
 
             // Blocks finish message from client to server.
             TestRecordingCommunicationSpi clnComm = TestRecordingCommunicationSpi.spi(grid(nodes()));
 
             clnComm.blockMessages(GridNearTxFinishRequest.class, grid(0).name());
+
+            loadFut = asyncRunTx();
+
             clnComm.waitForBlocked();
 
-            // Block Consistent Cut on server.
-            srvCutMgr.block(BlkCutType.AFTER_VERSION_UPDATE);
+            IgniteInternalFuture<Boolean> cutFut = srvCutMgr.triggerConsistentCutOnCluster(1);
 
-            IgniteInternalFuture<Boolean> cutFut = srvCutMgr.triggerConsistentCutOnCluster();
+            waitForCutIsStartedOnAllNodes();
 
-            srvCutMgr.awaitBlockedOrFinishedCut(null);
-
-            long blkCutVer = srvCutMgr.lastFinishedCutMarker.version();
+            long blkCutVer = srvCutMgr.runningCutMarker().version();
 
             // Stop client node.
             stopGrid(nodes());
 
             loadFut.cancel();
 
-            // Await this Consistent Cut and next one.
-            srvCutMgr.unblock(BlkCutType.AFTER_VERSION_UPDATE);
             assertFalse(cutFut.get());
 
-            assertTrue(srvCutMgr.triggerConsistentCutOnCluster().get(getTestTimeout()));
+            assertTrue(srvCutMgr.triggerConsistentCutOnCluster(2).get(getTestTimeout()));
 
             // Stop cluster with flushing WALs.
             stopCluster();
@@ -74,7 +72,8 @@ public class ConsistentCutTxRecoveryTest extends AbstractConsistentCutBlockingTe
                 assertWalConsistentRecords(i, blkCutVer);
         }
         finally {
-            loadFut.cancel();
+            if (loadFut != null)
+                loadFut.cancel();
         }
     }
 
@@ -107,24 +106,23 @@ public class ConsistentCutTxRecoveryTest extends AbstractConsistentCutBlockingTe
     }
 
     /** */
-    private IgniteInternalFuture<?> asyncLoadData() throws Exception {
+    private IgniteInternalFuture<?> asyncRunTx() throws Exception {
         return multithreadedAsync(() -> {
             Random r = new Random();
 
-            while (!Thread.interrupted()) {
-                Ignite g = grid(nodes());
+            // Start on the client node.
+            Ignite g = grid(nodes());
 
-                try (Transaction tx = g.transactions().txStart()) {
-                    for (int j = 0; j < nodes(); j++) {
-                        IgniteCache<Integer, Integer> cache = g.cache(CACHE);
+            try (Transaction tx = g.transactions().txStart()) {
+                for (int j = 0; j < nodes(); j++) {
+                    IgniteCache<Integer, Integer> cache = g.cache(CACHE);
 
-                        int k = key(CACHE, grid(j).localNode(), grid((j + 1) % nodes()).localNode());
+                    int k = key(CACHE, grid(j).localNode(), grid((j + 1) % nodes()).localNode());
 
-                        cache.put(k, r.nextInt());
-                    }
-
-                    tx.commit();
+                    cache.put(k, r.nextInt());
                 }
+
+                tx.commit();
             }
         }, 1);
     }

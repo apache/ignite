@@ -47,14 +47,14 @@ public class ConsistentCutStartRecordSerializer {
      * @throws IOException In case of fail.
      */
     public ConsistentCutStartRecord read(ByteBufferBackedDataInput in) throws IOException {
-        long ts = in.readLong();
+        long ver = in.readLong();
 
         long topVer = in.readLong();
         int minorTopVer = in.readInt();
 
         AffinityTopologyVersion top = new AffinityTopologyVersion(topVer, minorTopVer);
 
-        return new ConsistentCutStartRecord(new ConsistentCutMarker(ts, top));
+        return new ConsistentCutStartRecord(new ConsistentCutMarker(ver, top));
     }
 
     /**

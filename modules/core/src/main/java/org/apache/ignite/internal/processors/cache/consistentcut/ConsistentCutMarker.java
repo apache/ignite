@@ -18,19 +18,17 @@
 package org.apache.ignite.internal.processors.cache.consistentcut;
 
 import java.nio.ByteBuffer;
-import java.util.Objects;
 import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
 import org.apache.ignite.internal.util.tostring.GridToStringInclude;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.plugin.extensions.communication.Message;
 import org.apache.ignite.plugin.extensions.communication.MessageReader;
 import org.apache.ignite.plugin.extensions.communication.MessageWriter;
-import org.jetbrains.annotations.NotNull;
 
 /**
  * Marker that inits {@link ConsistentCut}.
  */
-public class ConsistentCutMarker implements Message, Comparable<ConsistentCutMarker> {
+public class ConsistentCutMarker implements Message {
     /** */
     private static final long serialVersionUID = 0L;
 
@@ -41,7 +39,7 @@ public class ConsistentCutMarker implements Message, Comparable<ConsistentCutMar
     @GridToStringInclude
     private long ver;
 
-    /** */
+    /** Topology version. */
     @GridToStringInclude
     private AffinityTopologyVersion topVer;
 
@@ -140,27 +138,5 @@ public class ConsistentCutMarker implements Message, Comparable<ConsistentCutMar
     /** {@inheritDoc} */
     @Override public void onAckReceived() {
         // No-op.
-    }
-
-    /** {@inheritDoc} */
-    @Override public boolean equals(Object o) {
-        return o instanceof ConsistentCutMarker
-            && topVer.equals(((ConsistentCutMarker)o).topVer)
-            && ver == ((ConsistentCutMarker)o).ver;
-    }
-
-    /** {@inheritDoc} */
-    @Override public int hashCode() {
-        return Objects.hash(topVer, ver);
-    }
-
-    /** {@inheritDoc} */
-    @Override public int compareTo(@NotNull ConsistentCutMarker o) {
-        int cmp;
-
-        if ((cmp = topVer.compareTo(o.topVer)) != 0)
-            return cmp;
-
-        return Long.compare(ver, o.ver);
     }
 }

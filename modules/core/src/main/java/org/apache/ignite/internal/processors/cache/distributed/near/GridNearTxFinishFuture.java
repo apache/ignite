@@ -793,7 +793,8 @@ public final class GridNearTxFinishFuture<K, V> extends GridCacheCompoundIdentit
             tx.size(),
             tx.taskNameHash(),
             tx.mvccSnapshot(),
-            tx.activeCachesDeploymentEnabled());
+            tx.activeCachesDeploymentEnabled()
+        );
 
         // If this is the primary node for the keys.
         if (n.isLocal()) {

@@ -27,14 +27,6 @@ import org.apache.ignite.internal.processors.cache.consistency.inmem.SingleBacku
 import org.apache.ignite.internal.processors.cache.consistency.persistence.PdsAtomicReadRepairTest;
 import org.apache.ignite.internal.processors.cache.consistency.persistence.PdsExplicitTransactionalReadRepairTest;
 import org.apache.ignite.internal.processors.cache.consistency.persistence.PdsImplicitTransactionalReadRepairTest;
-import org.apache.ignite.internal.processors.cache.consistentcut.ConcurrentTxsConsistentCutTest;
-import org.apache.ignite.internal.processors.cache.consistentcut.ConsistentCutNoBackupMessagesBlockingTest;
-import org.apache.ignite.internal.processors.cache.consistentcut.ConsistentCutNoBackupWALBlockingTest;
-import org.apache.ignite.internal.processors.cache.consistentcut.ConsistentCutSingleBackupMessagesBlockingTest;
-import org.apache.ignite.internal.processors.cache.consistentcut.ConsistentCutSingleBackupWALBlockingTest;
-import org.apache.ignite.internal.processors.cache.consistentcut.ConsistentCutTwoBackupMessagesBlockingTest;
-import org.apache.ignite.internal.processors.cache.consistentcut.ConsistentCutTwoBackupWALBlockingTest;
-import org.apache.ignite.internal.processors.cache.consistentcut.ConsistentCutTxRecoveryTest;
 import org.junit.runner.RunWith;
 import org.junit.runners.Suite;
 
@@ -57,18 +49,7 @@ import org.junit.runners.Suite;
     ReplicatedExplicitTransactionalReadRepairTest.class,
     ReplicatedImplicitTransactionalReadRepairTest.class,
     SingleBackupExplicitTransactionalReadRepairTest.class,
-    SingleBackupImplicitTransactionalReadRepairTest.class,
-
-    // Consistent Cut
-//    ConsistentCutActivationTest.class,
-    ConsistentCutNoBackupMessagesBlockingTest.class,
-    ConsistentCutSingleBackupMessagesBlockingTest.class,
-    ConsistentCutTwoBackupMessagesBlockingTest.class,
-    ConsistentCutNoBackupWALBlockingTest.class,
-    ConsistentCutSingleBackupWALBlockingTest.class,
-    ConsistentCutTwoBackupWALBlockingTest.class,
-    ConcurrentTxsConsistentCutTest.class,
-    ConsistentCutTxRecoveryTest.class
+    SingleBackupImplicitTransactionalReadRepairTest.class
 })
 public class IgniteCacheConsistencySelfTestSuite {
 }

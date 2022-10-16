@@ -220,6 +220,7 @@ public class GridCacheSharedContext<K, V> {
      * @param mvccCachingMgr Mvcc caching manager.
      * @param deadlockDetectionMgr Deadlock detection manager.
      * @param diagnosticMgr Diagnostic manager.
+     * @param consistentCutMgr Consistent cut manager.
      */
     public GridCacheSharedContext(
         GridKernalContext kernalCtx,

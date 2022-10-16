@@ -57,8 +57,7 @@ public class ConsistentCut extends GridFutureAdapter<Boolean> {
     private final IgniteLogger log;
 
     /**
-     * Marker that inits this cut.
-     *
+     * Marker that inits this cut. Bind it with {@link ConsistentCut} by 2 reasons:
      * a) To guarantee happens-before between versions are received and sent after by the same node.
      * b) To guarantee that every transaction committed after the version update isn't cleaned from {@link #committingTxs}.
      */
@@ -187,15 +186,15 @@ public class ConsistentCut extends GridFutureAdapter<Boolean> {
                     return true;
 
                 if (tx.finalizationStatus() == RECOVERY_FINISH) {
-                    if (log.isDebugEnabled()) {
-                        log.debug("Transaction committed after recovery process and CutVersion isn't defined. " +
+                    if (log.isInfoEnabled()) {
+                        log.info("Transaction committed after recovery process and CutVersion isn't defined. " +
                             "Cut might be inconsistent. Transaction: " + tx);
                     }
 
                     return false;
                 }
 
-                if (tx.marker() == null || tx.marker().compareTo(marker) < 0)
+                if (tx.marker() == null || tx.marker().version() < marker.version())
                     beforeCut.add(tx.nearXidVersion());
                 else
                     afterCut.add(tx.nearXidVersion());

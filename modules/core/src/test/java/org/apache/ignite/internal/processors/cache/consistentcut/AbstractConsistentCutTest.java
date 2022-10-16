@@ -164,7 +164,7 @@ public abstract class AbstractConsistentCutTest extends GridCommonAbstractTest {
         for (int i = 1; i <= cuts; i++) {
             Thread.sleep(100);
 
-            cutMgr(grid(0)).triggerConsistentCutOnCluster().get(getTestTimeout());
+            cutMgr(grid(0)).triggerConsistentCutOnCluster(i).get(getTestTimeout());
 
             log.info("Consistent Cut finished: " + i);
         }

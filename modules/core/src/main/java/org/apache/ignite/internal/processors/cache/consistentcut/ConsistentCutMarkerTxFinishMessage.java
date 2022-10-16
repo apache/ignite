@@ -23,7 +23,7 @@ import org.apache.ignite.internal.processors.cache.distributed.GridDistributedBa
 import org.apache.ignite.plugin.extensions.communication.MessageReader;
 import org.apache.ignite.plugin.extensions.communication.MessageWriter;
 
-/** Message that holds transaction finish message and {@link ConsistentCutMarker}. */
+/** Message that holds a transaction finish message and {@link ConsistentCutMarker}. */
 public class ConsistentCutMarkerTxFinishMessage extends ConsistentCutMarkerMessage {
     /** */
     private static final long serialVersionUID = 0L;
@@ -31,14 +31,10 @@ public class ConsistentCutMarkerTxFinishMessage extends ConsistentCutMarkerMessa
     /** */
     public static final short TYPE_CODE = 203;
 
-    /**
-     * Marker of the latest Consistent Cut AFTER which this transaction committed.
-     */
+    /** Marker of the latest Consistent Cut AFTER which this transaction committed. */
     private ConsistentCutMarker txMarker;
 
-    /**
-     * Empty constructor required for {@link Externalizable}.
-     */
+    /** Empty constructor required for {@link Externalizable}. */
     public ConsistentCutMarkerTxFinishMessage() {
     }
 
@@ -53,9 +49,7 @@ public class ConsistentCutMarkerTxFinishMessage extends ConsistentCutMarkerMessa
         this.txMarker = txMarker;
     }
 
-    /**
-     * @return Holds Consistent Cut Version for 2PC transactions.
-     */
+    /** */
     public ConsistentCutMarker txMarker() {
         return txMarker;
     }

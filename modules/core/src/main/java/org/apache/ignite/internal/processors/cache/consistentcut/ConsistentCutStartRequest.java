@@ -34,9 +34,7 @@ public class ConsistentCutStartRequest implements Message {
     /** */
     public static final short TYPE_CODE = 200;
 
-    /**
-     * Consistent Cut Version.
-     */
+    /** Marker that inits Consistent Cut. */
     @GridToStringInclude
     private ConsistentCutMarker marker;
 
@@ -49,9 +47,7 @@ public class ConsistentCutStartRequest implements Message {
         this.marker = marker;
     }
 
-    /**
-     * @return Consistent Cut Version.
-     */
+    /** */
     public ConsistentCutMarker marker() {
         return marker;
     }
