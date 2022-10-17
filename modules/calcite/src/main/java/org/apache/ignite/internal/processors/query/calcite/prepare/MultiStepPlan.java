@@ -39,6 +39,11 @@ public interface MultiStepPlan extends QueryPlan {
     FieldsMetadata fieldsMetadata();
 
     /**
+     * @return Parameters metadata;
+     */
+    FieldsMetadata paramsMetadata();
+
+    /**
      * @param fragment Fragment.
      * @return Mapping for a given fragment.
      */
