@@ -18,6 +18,7 @@
 package org.apache.ignite.internal.processors.cache.consistentcut;
 
 import java.util.Map;
+import java.util.Objects;
 import java.util.Optional;
 import java.util.Set;
 import java.util.UUID;
@@ -42,6 +43,7 @@ import org.apache.ignite.internal.processors.cache.distributed.dht.preloader.Par
 import org.apache.ignite.internal.processors.cache.distributed.near.GridNearTxFinishRequest;
 import org.apache.ignite.internal.processors.cache.distributed.near.GridNearTxPrepareFutureAdapter;
 import org.apache.ignite.internal.processors.cache.distributed.near.GridNearTxPrepareResponse;
+import org.apache.ignite.internal.processors.cache.persistence.wal.WALPointer;
 import org.apache.ignite.internal.processors.cache.transactions.IgniteInternalTx;
 import org.apache.ignite.internal.processors.cache.version.GridCacheVersion;
 import org.apache.ignite.internal.util.distributed.DistributedProcess;
@@ -100,7 +102,7 @@ public class ConsistentCutManager extends GridCacheSharedManagerAdapter implemen
     protected volatile ClusterConsistentCutFuture clusterCutFut;
 
     /** Distributed process for performing distributed Consistent Cut algorithm. */
-    private DistributedProcess<ConsistentCutStartRequest, Boolean> consistentCutProc;
+    private DistributedProcess<ConsistentCutStartRequest, WALPointer> consistentCutProc;
 
     /** Marker of the last finished Consistent Cut. Required to avoid re-run Consistent Cut with the same marker. */
     protected volatile ConsistentCutMarker lastFinishedCutMarker;
@@ -166,7 +168,7 @@ public class ConsistentCutManager extends GridCacheSharedManagerAdapter implemen
             if (cut != null) {
                 U.warn(log, "Failed to find transaction for message [msg=" + msg.payload() + "]. Cut might be inconsistent.");
 
-                cut.onDone(false);
+                cut.onDone(null, null);
             }
 
             return;
@@ -330,9 +332,10 @@ public class ConsistentCutManager extends GridCacheSharedManagerAdapter implemen
      * Starts {@link ConsistentCut} in the discovery thread if not started yet within a transaction thread.
      *
      * @param req ConsistentCut start request.
-     * @return Future that completes with {@code true} for consistent cut, {@code false} for inconsistent cut.
+     * @return Future that completes with {@link WALPointer} to {@link ConsistentCutFinishRecord} for consistent cut,
+     *         or {@code null} for inconsistent cut.
      */
-    private IgniteInternalFuture<Boolean> startLocalCut(ConsistentCutStartRequest req) {
+    private IgniteInternalFuture<WALPointer> startLocalCut(ConsistentCutStartRequest req) {
         if (log.isDebugEnabled())
             log.debug("`startLocalCut` for " + req.marker() + " " + cctx.localNodeId());
 
@@ -354,12 +357,12 @@ public class ConsistentCutManager extends GridCacheSharedManagerAdapter implemen
      * Finishes local Consistent Cut, stop signing outgoing messages with marker.
      *
      * @param reqId Consistent Cut request ID.
-     * @param results Consistent Cut results from all nodes: {@code true} for consistent cut, {@code false} for inconsistent.
+     * @param results Consistent Cut results from all nodes: {@link WALPointer} for consistent cut, {@code null} for inconsistent.
      * @param exceptions Errors raised from all nodes.
      */
-    private void finishLocalCut(UUID reqId, Map<UUID, Boolean> results, Map<UUID, Exception> exceptions) {
-        if (log.isDebugEnabled())
-            log.debug("`finishLocalCut` for " + runningCutMarker() + " " + results);
+    private void finishLocalCut(UUID reqId, Map<UUID, WALPointer> results, Map<UUID, Exception> exceptions) {
+        if (log.isInfoEnabled())
+            log.info("`finishLocalCut` for " + runningCutMarker() + " " + results);
 
         ConsistentCut cut = CONSISTENT_CUT.get(this);
 
@@ -412,22 +415,20 @@ public class ConsistentCutManager extends GridCacheSharedManagerAdapter implemen
                 return;
             }
 
-            Map<UUID, Boolean> baselineRes = results.entrySet().stream()
-                .filter(e -> baselineTop.contains(e.getKey()))
-                .collect(Collectors.toMap(Map.Entry::getKey, Map.Entry::getValue));
+            results.keySet().forEach(baselineTop::remove);
 
-            if (baselineTop.size() != baselineRes.size()) {
-                baselineTop.removeAll(baselineRes.keySet());
-
+            if (!baselineTop.isEmpty()) {
                 clusterCutFut.onDone(
                     new IgniteCheckedException(String.format("Baseline nodes failed: %s", baselineTop)));
 
                 return;
             }
 
-            clusterCutFut.onDone(
-                baselineRes.values().stream().reduce(true, (l, r) -> l && r)
-            );
+            long inconsistentCnt = results.values().stream()
+                .filter(Objects::isNull)
+                .count();
+
+            clusterCutFut.onDone(inconsistentCnt == 0);
 
             clusterCutFut = null;
         }

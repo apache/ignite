@@ -29,6 +29,7 @@ import org.apache.ignite.internal.pagemem.wal.record.ConsistentCutFinishRecord;
 import org.apache.ignite.internal.pagemem.wal.record.ConsistentCutStartRecord;
 import org.apache.ignite.internal.pagemem.wal.record.WALRecord;
 import org.apache.ignite.internal.processors.cache.GridCacheSharedContext;
+import org.apache.ignite.internal.processors.cache.persistence.wal.WALPointer;
 import org.apache.ignite.internal.processors.cache.transactions.IgniteInternalTx;
 import org.apache.ignite.internal.processors.cache.transactions.IgniteTxManager;
 import org.apache.ignite.internal.processors.cache.version.GridCacheVersion;
@@ -38,6 +39,7 @@ import org.apache.ignite.internal.util.tostring.GridToStringInclude;
 import org.apache.ignite.internal.util.typedef.internal.CU;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgniteUuid;
+import org.jetbrains.annotations.Nullable;
 
 import static org.apache.ignite.internal.processors.cache.transactions.IgniteInternalTx.FinalizationStatus.RECOVERY_FINISH;
 import static org.apache.ignite.transactions.TransactionState.ACTIVE;
@@ -49,7 +51,7 @@ import static org.apache.ignite.transactions.TransactionState.UNKNOWN;
 /**
  * Describes current Consistent Cut.
  */
-public class ConsistentCut extends GridFutureAdapter<Boolean> {
+public class ConsistentCut extends GridFutureAdapter<WALPointer> {
     /** */
     private final GridCacheSharedContext<?, ?> cctx;
 
@@ -121,21 +123,22 @@ public class ConsistentCut extends GridFutureAdapter<Boolean> {
             if (Boolean.FALSE.equals(finish.result()) || isDone()) {
                 if (log.isDebugEnabled())
                     log.debug("Cut might be inconsistent for marker " + marker + ". Skip writing FinishRecord.");
-            }
-            else {
-                try {
-                    walLog(new ConsistentCutFinishRecord(beforeCut, afterCut));
-                }
-                catch (IgniteCheckedException e) {
-                    U.error(log, "Failed to write ConsistentCutFinishRecord to WAL for marker " + marker, e);
 
-                    onDone(e);
+                onDone(null, null);
 
-                    return;
-                }
+                return;
             }
 
-            onDone(finish.result());
+            try {
+                WALPointer ptr = walLog(new ConsistentCutFinishRecord(beforeCut, afterCut));
+
+                onDone(ptr);
+            }
+            catch (IgniteCheckedException e) {
+                U.error(log, "Failed to write ConsistentCutFinishRecord to WAL for marker " + marker, e);
+
+                onDone(e);
+            }
         });
     }
 
@@ -208,16 +211,19 @@ public class ConsistentCut extends GridFutureAdapter<Boolean> {
 
     /**
      * Logs Consistent Cut Record to WAL.
+     *
+     * @param record Record to write to WAL.
+     * @return Pointer to the record in WAL, or {@code null} if WAL is disabled.
      */
-    private boolean walLog(WALRecord record) throws IgniteCheckedException {
+    private @Nullable WALPointer walLog(WALRecord record) throws IgniteCheckedException {
         if (cctx.wal() != null) {
             if (log.isDebugEnabled())
                 log.debug("Writing Consistent Cut WAL record: " + record);
 
-            cctx.wal().log(record);
+            return cctx.wal().log(record);
         }
 
-        return true;
+        return null;
     }
 
     /** {@inheritDoc} */
