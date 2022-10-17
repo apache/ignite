@@ -43,7 +43,7 @@ class TriggerEvent(IntEnum):
     NODE_LEFT = 1
 
 
-class RebalanceParams(DataGenerationParams):
+class RebalanceParams(NamedTuple):
     """
     Rebalance parameters
     """
@@ -67,28 +67,30 @@ class RebalanceMetrics(NamedTuple):
     node: str = None
 
 
-def start_ignite(test_context, ignite_version: str, rebalance_params: RebalanceParams) -> IgniteService:
+def start_ignite(test_context, ignite_version: str, rebalance_params: RebalanceParams,
+                 data_gen_params: DataGenerationParams) -> IgniteService:
     """
     Start IgniteService:
 
     :param test_context: Test context.
     :param ignite_version: Ignite version.
     :param rebalance_params: Rebalance parameters.
+    :param data_gen_params: Data generation parameters.
     :return: IgniteService.
     """
-    node_count = test_context.available_cluster_size - rebalance_params.preloaders
+    node_count = test_context.available_cluster_size - data_gen_params.preloaders
 
     if rebalance_params.persistent:
         data_storage = DataStorageConfiguration(
-            max_wal_archive_size=2 * rebalance_params.data_region_max_size,
+            max_wal_archive_size=2 * data_gen_params.data_region_max_size,
             default=DataRegionConfiguration(
                 persistence_enabled=True,
-                max_size=rebalance_params.data_region_max_size
+                max_size=data_gen_params.data_region_max_size
             )
         )
     else:
         data_storage = DataStorageConfiguration(
-            default=DataRegionConfiguration(max_size=rebalance_params.data_region_max_size)
+            default=DataRegionConfiguration(max_size=data_gen_params.data_region_max_size)
         )
 
     node_config = IgniteConfiguration(
