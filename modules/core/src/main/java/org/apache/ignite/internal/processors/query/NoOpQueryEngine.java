@@ -46,10 +46,28 @@ public class NoOpQueryEngine extends GridProcessorAdapter implements QueryEngine
     }
 
     /** {@inheritDoc} */
+    @Override public List<List<GridQueryFieldMetadata>> parameterMetaData(
+        @Nullable QueryContext ctx,
+        String schemaName,
+        String qry
+    ) throws IgniteSQLException {
+        return Collections.emptyList();
+    }
+
+    /** {@inheritDoc} */
+    @Override public List<List<GridQueryFieldMetadata>> resultSetMetaData(
+        @Nullable QueryContext ctx,
+        String schemaName,
+        String qry
+    ) throws IgniteSQLException {
+        return Collections.emptyList();
+    }
+
+    /** {@inheritDoc} */
     @Override public List<FieldsQueryCursor<List<?>>> queryBatched(
         @Nullable QueryContext ctx,
         String schemaName,
-        String query,
+        String qry,
         List<Object[]> batchedParams
     ) throws IgniteSQLException {
         return Collections.emptyList();
