@@ -119,14 +119,16 @@ class IncrementalSnapshotFutureTask
 
             cctx.kernalContext().pools().getSnapshotExecutorService().submit(() -> {
                 try {
-                    long lowIdx = lowPtr.index() + 1;
+                    // First increment must include low segment, because full snapshot knows nothing about WAL.
+                    // All other begins from the next segment because lowPtr already saved inside previous increment.
+                    long lowIdx = lowPtr.index() + (incIdx == 1 ? 0 : 1);
                     long highIdx = highPtr.index();
 
                     boolean compactionEnabled =
                         cctx.gridConfig().getDataStorageConfiguration().isWalCompactionEnabled();
 
                     if (log.isInfoEnabled()) {
-                        log.info("Waiting for WAL segments archivation[lowIdx=" + lowIdx +
+                        log.info("Waiting for WAL segments archivation [lowIdx=" + lowIdx +
                             ", highIdx=" + highIdx +
                             ", compaction=" + compactionEnabled + ']');
                     }
@@ -135,6 +137,12 @@ class IncrementalSnapshotFutureTask
                         cctx.wal().awaitCompressed(highPtr.index());
                     else
                         cctx.wal().awaitArchived(highPtr.index());
+
+                    if (log.isInfoEnabled()) {
+                        log.info("Linking WAL segments into incremental snapshot [lowIdx=" + lowIdx +
+                            ", highIdx=" + highIdx +
+                            ", compaction=" + compactionEnabled + ']');
+                    }
 
                     for (; lowIdx <= highIdx; lowIdx++) {
                         File seg = compactionEnabled

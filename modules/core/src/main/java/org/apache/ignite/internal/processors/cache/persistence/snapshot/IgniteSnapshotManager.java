@@ -845,7 +845,7 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
         SnapshotMetadata meta
     ) {
         File incSnpDir = incrementalSnapshotLocalDir(req.snapshotName(), req.snapshotPath(), req.incrementIndex());
-        WALPointer lowPtr;
+        WALPointer lowPtr, highPtr;
 
         if (req.incrementIndex() == 1)
             lowPtr = meta.snapshotRecordPointer();
@@ -856,12 +856,11 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
             lowPtr = prevIncSnpMeta.cutPointer();
         }
 
-        WALPointer highPtr = new WALPointer(cctx.wal().currentSegment(), 0, 0);
-
         cctx.database().checkpointReadLock();
 
         try {
-            cctx.wal().log(new ClusterSnapshotRecord(req.snapshotName()), RolloverType.NEXT_SEGMENT);
+            // TODO: replace me with the actual cut record.
+            highPtr = cctx.wal().log(new ClusterSnapshotRecord(req.snapshotName()), RolloverType.NEXT_SEGMENT);
         }
         catch (IgniteCheckedException e) {
             return new GridFinishedFuture<>(e);
@@ -870,7 +869,6 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
             cctx.database().checkpointReadUnlock();
         }
 
-        // TODO: FIXME this must be removed on actual consistent cut implementation.
         // For now, forcefully rollover to the next WAL segments to make segments waiting possible.
         assert cctx.wal().currentSegment() > highPtr.index() : "Rollover must be invoked.";
 
