@@ -183,7 +183,7 @@ public class PeriodicHistogramMetricImpl extends AbstractMetric implements Confi
         long curTs = U.currentTimeMillis();
 
         if (curTs >= upperBoundTs)
-            shiftBuckets();
+            shiftBuckets(curTs);
 
         int cnt = (int)((upperBoundTs - lowerBoundTs) / bucketsInterval) + 1;
 
@@ -250,10 +250,12 @@ public class PeriodicHistogramMetricImpl extends AbstractMetric implements Confi
     private void add(long ts, int val) {
         long curTs = U.currentTimeMillis();
 
-        assert ts <= curTs : "Unexpected timestamp [curTs = " + curTs + ", ts=" + ts + ']';
+        // In case time was changed in OS manually or synced by NTP ts can be greater than current time.
+        if (ts > curTs)
+            curTs = ts;
 
         if (curTs >= upperBoundTs)
-            shiftBuckets();
+            shiftBuckets(curTs);
 
         if (ts < lowerBoundTs)
             outOfBoundsBucket.addAndGet(val);
@@ -291,9 +293,7 @@ public class PeriodicHistogramMetricImpl extends AbstractMetric implements Confi
     /**
      * Shift buckets to ensure that upper bound of the buckets array is always greater then current timestamp.
      */
-    private synchronized void shiftBuckets() {
-        long curTs = U.currentTimeMillis();
-
+    private synchronized void shiftBuckets(long curTs) {
         long oldLowerBoundTs = lowerBoundTs;
         long oldUpperBoundTs = upperBoundTs;
 

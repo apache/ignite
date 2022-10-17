@@ -17,8 +17,14 @@
 
 package org.apache.ignite.internal.processors.query.calcite.prepare;
 
+import java.lang.reflect.Type;
 import java.util.List;
+import com.google.common.collect.ImmutableList;
 import org.apache.calcite.rel.type.RelDataType;
+import org.apache.calcite.rel.type.RelDataTypeField;
+import org.apache.ignite.internal.processors.query.GridQueryFieldMetadata;
+import org.apache.ignite.internal.processors.query.calcite.type.IgniteTypeFactory;
+import org.apache.ignite.internal.util.typedef.F;
 
 /** */
 public class FieldsMetadataImpl implements FieldsMetadata {
@@ -26,13 +32,25 @@ public class FieldsMetadataImpl implements FieldsMetadata {
     private final RelDataType rowType;
 
     /** */
+    private final RelDataType sqlRowType;
+
+    /** */
     private final List<List<String>> origins;
 
     /** */
     public FieldsMetadataImpl(RelDataType rowType, List<List<String>> origins) {
         this.rowType = rowType;
+        sqlRowType = rowType;
         this.origins = origins;
     }
+
+    /** */
+    public FieldsMetadataImpl(RelDataType sqlRowType, RelDataType rowType, List<List<String>> origins) {
+        this.rowType = rowType;
+        this.sqlRowType = sqlRowType;
+        this.origins = origins;
+    }
+
 
     /** {@inheritDoc} */
     @Override public RelDataType rowType() {
@@ -40,7 +58,30 @@ public class FieldsMetadataImpl implements FieldsMetadata {
     }
 
     /** {@inheritDoc} */
-    @Override public List<List<String>> origins() {
-        return origins;
+    @Override public List<GridQueryFieldMetadata> queryFieldsMetadata(IgniteTypeFactory typeFactory) {
+        List<RelDataTypeField> fields = sqlRowType.getFieldList();
+
+        assert origins == null || fields.size() == origins.size();
+
+        ImmutableList.Builder<GridQueryFieldMetadata> b = ImmutableList.builder();
+
+        for (int i = 0; i < fields.size(); i++) {
+            List<String> origin = origins != null ? origins.get(i) : null;
+            RelDataTypeField field = fields.get(i);
+            RelDataType fieldType = field.getType();
+            Type fieldCls = typeFactory.getResultClass(fieldType);
+
+            b.add(new CalciteQueryFieldMetadata(
+                F.isEmpty(origin) ? null : origin.get(0),
+                F.isEmpty(origin) ? null : origin.get(1),
+                F.isEmpty(origin) ? field.getName() : origin.get(2),
+                fieldCls == null ? Void.class.getName() : fieldCls.getTypeName(),
+                fieldType.getPrecision(),
+                fieldType.getScale(),
+                fieldType.isNullable()
+            ));
+        }
+
+        return b.build();
     }
 }
