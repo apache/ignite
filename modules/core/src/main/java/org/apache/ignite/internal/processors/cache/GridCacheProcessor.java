@@ -1067,7 +1067,7 @@ public class GridCacheProcessor extends GridProcessorAdapter {
                 ctx.kernalContext().query().onCacheStop(cacheInfo, rmvIdx, clearIdx);
             }
             else
-                ctx.kernalContext().query().getIndexing().closeCacheOnClient(ctx.name());
+                ctx.kernalContext().query().onClientCacheStop(cacheInfo);
 
             if (isNearEnabled(ctx)) {
                 GridDhtCacheAdapter dht = ctx.near().dht();
@@ -4025,6 +4025,20 @@ public class GridCacheProcessor extends GridProcessorAdapter {
 
             reqs.add(req);
         }
+
+        return initiateCacheChanges(reqs).stream().collect(IgniteCollectors.toCompoundFuture());
+    }
+
+    /**
+     * Finalizes partitions update counters.
+     *
+     * @return Future that will be completed when state is changed for all caches.
+     */
+    public IgniteInternalFuture<?> finalizePartitionsCounters() {
+        sharedCtx.tm().checkEmptyTransactions(
+            () -> format(CHECK_EMPTY_TRANSACTIONS_ERROR_MSG_FORMAT, null, "finalizePartitionUpdateCounters"));
+
+        Collection<DynamicCacheChangeRequest> reqs = Collections.singleton(DynamicCacheChangeRequest.finalizePartitionCounters(ctx));
 
         return initiateCacheChanges(reqs).stream().collect(IgniteCollectors.toCompoundFuture());
     }

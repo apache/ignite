@@ -182,7 +182,7 @@
     - title: Using Cache Queries
       url: key-value-api/using-cache-queries
     - title: Read Repair
-      url: read-repair
+      url: key-value-api/read-repair
 - title: Performing Transactions
   url: key-value-api/transactions
 - title: Working with SQL

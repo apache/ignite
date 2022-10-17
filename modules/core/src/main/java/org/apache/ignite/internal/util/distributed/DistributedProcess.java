@@ -217,20 +217,15 @@ public class DistributedProcess<I extends Serializable, R extends Serializable> 
                             p.resFut.listen(f -> sendSingleMessage(p));
                     }
                     else if (F.eq(ctx.localNodeId(), p.crdId)) {
-                        boolean rmvd, isEmpty;
+                        boolean isEmpty = false;
 
                         synchronized (mux) {
-                            rmvd = p.remaining.remove(leftNodeId);
-
-                            isEmpty = p.remaining.isEmpty();
+                            if (p.remaining.remove(leftNodeId))
+                                isEmpty = p.remaining.isEmpty();
                         }
 
-                        if (rmvd) {
-                            assert !p.singleMsgs.containsKey(leftNodeId);
-
-                            if (isEmpty)
-                                finishProcess(p);
-                        }
+                        if (isEmpty)
+                            finishProcess(p);
                     }
                 });
             }
@@ -316,7 +311,7 @@ public class DistributedProcess<I extends Serializable, R extends Serializable> 
         Process p = processes.computeIfAbsent(msg.processId(), id -> new Process(msg.processId()));
 
         p.initCrdFut.listen(f -> {
-            boolean rmvd, isEmpty;
+            boolean isEmpty;
 
             synchronized (mux) {
                 if (p.remaining.remove(nodeId))

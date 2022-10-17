@@ -103,6 +103,7 @@ import static org.apache.ignite.internal.processors.cache.persistence.file.FileP
 import static org.apache.ignite.internal.processors.cache.persistence.file.FilePageStoreManager.PART_FILE_PREFIX;
 import static org.apache.ignite.internal.processors.cache.persistence.snapshot.IgniteSnapshotManager.CP_SNAPSHOT_REASON;
 import static org.apache.ignite.internal.processors.cache.persistence.snapshot.IgniteSnapshotManager.DFLT_SNAPSHOT_TMP_DIR;
+import static org.apache.ignite.internal.processors.cache.persistence.snapshot.IgniteSnapshotManager.incrementalSnapshotMetaFileName;
 import static org.apache.ignite.internal.processors.cache.persistence.snapshot.IgniteSnapshotManager.resolveSnapshotWorkDirectory;
 import static org.apache.ignite.testframework.GridTestUtils.assertThrowsAnyCause;
 import static org.apache.ignite.testframework.GridTestUtils.waitForCondition;
@@ -626,8 +627,8 @@ public abstract class AbstractSnapshotSelfTest extends GridCommonAbstractTest {
         boolean withMetaStorage,
         SnapshotSender snpSndr
     ) throws IgniteCheckedException {
-        AbstractSnapshotFutureTask<?> task = cctx.snapshotMgr().registerSnapshotTask(snpName, cctx.localNodeId(), parts,
-            withMetaStorage, snpSndr);
+        AbstractSnapshotFutureTask<?> task = cctx.snapshotMgr().registerSnapshotTask(snpName, cctx.localNodeId(), null,
+            parts, withMetaStorage, snpSndr);
 
         if (!(task instanceof SnapshotFutureTask))
             throw new IgniteCheckedException("Snapshot task hasn't been registered: " + task);
@@ -644,6 +645,15 @@ public abstract class AbstractSnapshotSelfTest extends GridCommonAbstractTest {
         snpFutTask.started().get();
 
         return snpFutTask;
+    }
+
+    /** Checks incremental snapshot exists. */
+    protected boolean checkIncremental(IgniteEx node, String snpName, String snpPath, int incIdx) {
+        File incSnpDir = snp(node).incrementalSnapshotLocalDir(snpName, snpPath, incIdx);
+
+        return incSnpDir.exists()
+            && incSnpDir.isDirectory()
+            && new File(incSnpDir, incrementalSnapshotMetaFileName(incIdx)).exists();
     }
 
     /**

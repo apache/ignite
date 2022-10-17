@@ -283,11 +283,11 @@ public class VisorTxInfo extends VisorDataTransferObject {
             ", label=" + getLabel() +
             ", state=" + getState() +
             ", startTime=" + getFormattedStartTime() +
-            ", duration=" + getDuration() / 1000 +
+            ", duration=" + getDuration() / 1000 + " sec" +
             ", isolation=" + getIsolation() +
             ", concurrency=" + getConcurrency() +
             ", topVer=" + (getTopologyVersion() == null ? "N/A" : getTopologyVersion()) +
-            ", timeout=" + getTimeout() +
+            ", timeout=" + getTimeout() / 1000 + " sec" +
             ", size=" + getSize() +
             ", dhtNodes=" + (getPrimaryNodes() == null ? "N/A" :
             F.transform(getPrimaryNodes(), new IgniteClosure<UUID, String>() {

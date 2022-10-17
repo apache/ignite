@@ -264,7 +264,7 @@ public class IndexQueryFailoverTest extends GridCommonAbstractTest {
         GridCacheContext cctx = ((GatewayProtectedCacheProxy)cache).context();
 
         cctx.kernalContext().indexProcessor()
-            .removeIndex(cctx, idxName, false);
+            .removeIndex(idxName, false);
     }
 
     /** */

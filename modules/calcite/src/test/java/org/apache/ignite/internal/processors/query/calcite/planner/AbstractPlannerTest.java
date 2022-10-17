@@ -125,7 +125,7 @@ public abstract class AbstractPlannerTest extends GridCommonAbstractTest {
     protected volatile Throwable lastE;
 
     /** Last error message. */
-    private String lastErrorMsg;
+    protected String lastErrorMsg;
 
     /** */
     @Before
@@ -399,7 +399,7 @@ public abstract class AbstractPlannerTest extends GridCommonAbstractTest {
     }
 
     /** */
-    protected static void createTable(IgniteSchema schema, String name, RelDataType type, IgniteDistribution distr,
+    protected static TestTable createTable(IgniteSchema schema, String name, RelDataType type, IgniteDistribution distr,
         List<List<UUID>> assignment) {
         TestTable table = new TestTable(type) {
             @Override public ColocationGroup colocationGroup(MappingQueryContext ctx) {
@@ -419,6 +419,8 @@ public abstract class AbstractPlannerTest extends GridCommonAbstractTest {
         };
 
         schema.addTable(name, table);
+
+        return table;
     }
 
     /** */
@@ -747,6 +749,11 @@ public abstract class AbstractPlannerTest extends GridCommonAbstractTest {
         @Override public ColumnDescriptor columnDescriptor(String fieldName) {
             RelDataTypeField field = rowType.getField(fieldName, false, false);
             return new TestColumnDescriptor(field.getIndex(), fieldName);
+        }
+
+        /** {@inheritDoc} */
+        @Override public Collection<ColumnDescriptor> columnDescriptors() {
+            throw new AssertionError();
         }
 
         /** {@inheritDoc} */

@@ -137,6 +137,7 @@ import org.apache.ignite.internal.processors.query.h2.GridSubqueryJoinOptimizerS
 import org.apache.ignite.internal.processors.query.h2.H2ResultSetIteratorNullifyOnEndSelfTest;
 import org.apache.ignite.internal.processors.query.h2.IgniteSqlBigIntegerKeyTest;
 import org.apache.ignite.internal.processors.query.h2.IgniteSqlQueryMinMaxTest;
+import org.apache.ignite.internal.processors.query.h2.IgniteSqlQueryStartFinishListenerTest;
 import org.apache.ignite.internal.processors.query.h2.QueryDataPageScanTest;
 import org.apache.ignite.internal.processors.query.h2.sql.ExplainSelfTest;
 import org.apache.ignite.internal.processors.query.h2.sql.GridQueryParsingTest;
@@ -302,6 +303,7 @@ import org.junit.runners.Suite;
 
     IgniteCacheMultipleIndexedTypesTest.class,
     IgniteSqlQueryMinMaxTest.class,
+    IgniteSqlQueryStartFinishListenerTest.class,
 
     GridCircularQueueTest.class,
     IndexingSpiQueryWithH2IndexingSelfTest.class,

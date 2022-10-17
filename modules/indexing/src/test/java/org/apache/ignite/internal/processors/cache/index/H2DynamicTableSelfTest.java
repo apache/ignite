@@ -61,10 +61,11 @@ import org.apache.ignite.internal.processors.query.IgniteSQLException;
 import org.apache.ignite.internal.processors.query.QueryTypeDescriptorImpl;
 import org.apache.ignite.internal.processors.query.QueryUtils;
 import org.apache.ignite.internal.processors.query.h2.CommandProcessor;
-import org.apache.ignite.internal.processors.query.h2.H2TableDescriptor;
 import org.apache.ignite.internal.processors.query.h2.IgniteH2Indexing;
 import org.apache.ignite.internal.processors.query.h2.opt.GridH2Table;
 import org.apache.ignite.internal.processors.query.schema.SchemaOperationException;
+import org.apache.ignite.internal.processors.query.schema.management.SchemaManager;
+import org.apache.ignite.internal.processors.query.schema.management.TableDescriptor;
 import org.apache.ignite.internal.util.GridStringBuilder;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.G;
@@ -1766,19 +1767,17 @@ public class H2DynamicTableSelfTest extends AbstractSchemaSelfTest {
             execute("create table t1(id int primary key, name varchar)");
             execute("create table t2(id int primary key, name varchar)");
 
-            IgniteH2Indexing h2Idx = (IgniteH2Indexing)grid(0).context().query().getIndexing();
+            SchemaManager schemaMgr = grid(0).context().query().schemaManager();
 
             String cacheName = cacheName("T1");
 
-            Collection<H2TableDescriptor> col = h2Idx.schemaManager().tablesForCache(cacheName);
+            Collection<TableDescriptor> col = schemaMgr.tablesForCache(cacheName);
 
             assertNotNull(col);
 
-            H2TableDescriptor[] tables = col.toArray(new H2TableDescriptor[col.size()]);
+            assertEquals(1, col.size());
 
-            assertEquals(1, tables.length);
-
-            assertEquals(tables[0].table().getName(), "T1");
+            assertEquals("T1", F.first(col).type().tableName());
         }
         finally {
             execute("drop table t1 if exists");

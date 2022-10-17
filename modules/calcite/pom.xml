@@ -35,10 +35,9 @@
 
     <!-- Module specific package versions -->
     <properties>
-        <avatica.version>1.20.0</avatica.version>
-        <calcite.version>1.30.0</calcite.version>
+        <avatica.version>1.22.0</avatica.version>
+        <calcite.version>1.32.0</calcite.version>
         <checker.version>3.10.0</checker.version>
-        <esri.geometry.version>2.2.0</esri.geometry.version>
         <immutables.version>2.8.2</immutables.version>
         <janino.version>3.1.6</janino.version>
         <javacc-maven-plugin>2.4</javacc-maven-plugin>
@@ -55,12 +54,12 @@
         </dependency>
 
         <!--
-            At now the new calcite engine reuses some logic
-            and doesn't work without "old" indexing module.
+            Indexing is required for cross-engines tests.
         -->
         <dependency>
             <groupId>${project.groupId}</groupId>
             <artifactId>ignite-indexing</artifactId>
+            <scope>test</scope>
         </dependency>
 
         <dependency>
@@ -139,12 +138,6 @@
             <groupId>org.javassist</groupId>
             <artifactId>javassist</artifactId>
             <version>${javassist.version}</version>
-        </dependency>
-
-        <dependency>
-            <groupId>com.esri.geometry</groupId>
-            <artifactId>esri-geometry-api</artifactId>
-            <version>${esri.geometry.version}</version>
         </dependency>
 
         <dependency>

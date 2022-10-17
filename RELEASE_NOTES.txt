@@ -1,6 +1,121 @@
 Apache Ignite Release Notes
 ===========================
 
+Apache Ignite In-Memory Distributed Database 2.14.0
+-----------------------------------------------------------
+
+(!) WARNINGS:
+* Removed LOCAL caches support.
+* Removed scalar module.
+
+Ignite:
+* Added CDC binary meta change events.
+* Added a control.sh command that schedules index rebuild via the maintenance mode.
+* Added a pluggable affinity mapping function for the partition awareness usage.
+* Added a snapshot creation operation metrics.
+* Added a snapshot status command to control.sh and JMX.
+* Added a user info to the sql queries view.
+* Added an opportunity to specify a single partition for IndexQuery.
+* Added cache change events for CDCConsumer.
+* Added cache metrics command for Control Script.
+* Added support of optional beans for SpringResource annotation injection.
+* Added system view and histogram to show the distribution of hot and cold pages in the page memory.
+* Added the ability to define a custom path for the snapshot operation.
+* Added the ability to intercept calls to service methods.
+* Fixed 'Integer value is out of bounds' issue when the dataregion maxSize is large enough.
+* Fixed 'Invalid cross-device link error' when extending WAL segments size.
+* Fixed ClassCastException that appears during deployment manager stop in Java versions 11.0.16+ and 17.0.4+.
+* Fixed an issue that caused inconsistent keys after deletion during rebalance.
+* Fixed an issue that could lead to a block of the management pool in case of using clearSync.
+* Fixed an issue that could lead to unexpected partition map exchange on client nodes.
+* Fixed an issue where the snapshot error was not propagated to the initiating node.
+* Fixed an issue with potential node failure during the cancellation of computing jobs with cache operations.
+* Fixed applying expiration to CDC-replicated cache entries.
+* Fixed asynchronous operation permits overflow for explicit transaction with single write entry.
+* Fixed durable background task start on BLT node joined to the active cluster.
+* Fixed idle_verify command of control.sh utility.
+* Fixed incorrect node hostname resolution despite IP is configured with IGNITE_LOCAL_HOST.
+* Fixed incorrect params of GridCacheManager#stop method.
+* Fixed node resolving stale addresses from previously restarted and killed nodes.
+* Fixed nofication for node start event.
+* Fixed partition update counter tracking after the node restart.
+* Fixed potential deadlock in transactions recovery on node failure.
+* Fixed propagation of a service call exception stacktrace to the client side.
+* Fixed race condition in GridNioServer.
+* Fixed server-side message parsing for big messages from thin clients.
+* Fixed tasks for sending snapshot files.
+* Fixed the "io.datastorage.StorageSize" metrics in case of multiple persistence data regions.
+* Fixed the move of remote partition files during snapshot restore operations.
+* Fixed the run of ignitevisorcmd in JDK 17 environment.
+* Fixed writing of an empty binary object.
+* Fixed wrong checkpoint locks count calculation after lock timeout (wrong calculation leads to node failure in some cases).
+* Improved REST commands: skip authorization for  'Probe' and 'Version' commands.
+* Improved `--consistency repair` command of the control.sh utility; Read Repair now supports arrays and collections as values.
+* Improved `--consistency repair` command of the control.sh utility; Read Repair now supports binary keys.
+* Improved `--consistency repair` command of the control.sh utility; atomic caches can now be repaired by Read Repair.
+* Improved behavior of the speed-based throttling when a dirty-page ratio is low.
+* Improved consistency check, it now supports cacheGroup as a param as well.
+* Improved consistency check, it's now able to fix counters.
+* Improved index-reader.sh utility: add free size calculation.
+* Improved index-reader.sh utility: analyze and output information about the actual usage of inline space in the index.
+* Improved index-reader.sh utility: exclude repeated stack traces.
+* Improved inline size adjustment for fixed size index items.
+* Improved logging levels for situations when dealing with a client node.
+* Improved registered service name lookup performance and reduced service shutdown time.
+* Improved service name lookup performance and reduced service startup time.
+* Improved speed of the index-reader.sh utility.
+* Moved ignite-cloud IP Finder to the Ignite Extensions project.
+* Moved ignite-mesos to the Ignite Extensions project.
+* Moved ignite-spark modules to the Ignite Extensions project.
+* Moved ignite-yarn to the Ignite Extensions project.
+* Moved inigte-aop module to the Ignite Extensions project.
+* Removed deprecated log4j 1.x module.
+* Update Tomcat Servlet API dependency version to 9.0.63.
+* Update jsonpath dependency to 2.7.0.
+* Updated Jackson Databind dependency to 2.12.7 (CVE-2020-36518).
+* Updated Jetty dependency to 9.4.43.
+* Updated Lucene library version to 8.11.2.
+* Updated Spring dependency to 5.2.22.
+* Updated the MySql connector dependency version (fixes CVE-2021-2471, CVE-2022-21363).
+
+Java thin client:
+* Added AtomicLong.
+* Added IgniteSet.
+* Added automatic binary configuration. Name mapper and compact footer settings will be set according to cluster configuration.
+* Added partition awareness to AtomicLong - send network requests directly to the primary node for the given instance.
+* Added support of IndexQuery feature in Java thin client.
+* Fixed an issue that caused addresses not to be reloaded from ClientAddressFinder on connection loss.
+* Fixed hang on client startup when deprecated TLS version is used.
+* Fixed race condition and potential hang on client close.
+
+JDBC:
+* Fixed handling of BinaryObjectException on response to deserialization at the thin JDBC client
+* Fixed parsing quoted delimiters in CSV fields content for SQL command COPY.
+
+.NET thin client:
+* Added AtomicLong.
+* Added IgniteSet.
+
+.NET:
+* Added service interceptors.
+* Fixed StringComparer serialization.
+* Fixed net461 release binaries.
+* Improved Java detection on Linux.
+
+C++ thin client:
+* Added partition property to SqlFieldsQuery for C++ thin client.
+* Added support ScanQuery for C++ thin client.
+* Added user thread pool size to public configuration of the C++ thin client.
+
+SQL:
+* Added segmented indexes support for Calcite engine.
+* Added support for IN criterion for IndexQuery: IndexQuery.setCriteria(in("A", Arrays.asList(1, 2 ,3))).
+* Calcite-based SQL engine is now independent of H2-based SQL engine and doesn't require 'ignite-indexing' module and H2 to be in classpath anymore.
+* Fixed incorrect query result if a subquery with a filter was used on the left shoulder of a LEFT JOIN.
+* Fixed indexes registration after add/drop column for Calcite engine.
+* Fixed insertion of values with java LocalDate, LocalTime  and LocalDateTime types via SQL.
+* Improved SQL calcite: use index count scan for COUNT(*).
+
 Apache Ignite In-Memory Distributed Database 2.13.0
 -----------------------------------------------------------
 

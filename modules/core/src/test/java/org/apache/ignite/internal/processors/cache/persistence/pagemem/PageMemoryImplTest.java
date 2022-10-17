@@ -689,6 +689,7 @@ public class PageMemoryImplTest extends GridCommonAbstractTest {
                 }
             };
 
+        mem.metrics().pageMemory(mem);
         mem.metrics().enableMetrics();
 
         mem.start();

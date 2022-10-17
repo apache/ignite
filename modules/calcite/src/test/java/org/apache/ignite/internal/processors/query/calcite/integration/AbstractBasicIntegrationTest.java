@@ -20,7 +20,6 @@ package org.apache.ignite.internal.processors.query.calcite.integration;
 import java.util.List;
 import java.util.function.Function;
 import java.util.function.Predicate;
-import java.util.function.Supplier;
 import org.apache.calcite.plan.RelOptCluster;
 import org.apache.calcite.plan.RelOptTable;
 import org.apache.calcite.rel.RelCollation;
@@ -39,12 +38,13 @@ import org.apache.ignite.internal.processors.query.QueryEngine;
 import org.apache.ignite.internal.processors.query.calcite.CalciteQueryProcessor;
 import org.apache.ignite.internal.processors.query.calcite.QueryChecker;
 import org.apache.ignite.internal.processors.query.calcite.exec.ExecutionContext;
+import org.apache.ignite.internal.processors.query.calcite.exec.exp.RangeIterable;
 import org.apache.ignite.internal.processors.query.calcite.metadata.ColocationGroup;
+import org.apache.ignite.internal.processors.query.calcite.prepare.bounds.SearchBounds;
 import org.apache.ignite.internal.processors.query.calcite.rel.logical.IgniteLogicalIndexScan;
 import org.apache.ignite.internal.processors.query.calcite.schema.IgniteIndex;
 import org.apache.ignite.internal.processors.query.calcite.schema.IgniteTable;
 import org.apache.ignite.internal.processors.query.calcite.util.Commons;
-import org.apache.ignite.internal.processors.query.calcite.util.IndexConditions;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.G;
 import org.apache.ignite.testframework.junits.WithSystemProperty;
@@ -226,12 +226,12 @@ public class AbstractBasicIntegrationTest extends GridCommonAbstractTest {
         }
 
         /** {@inheritDoc} */
-        @Override public IndexConditions toIndexCondition(
+        @Override public List<SearchBounds> toSearchBounds(
             RelOptCluster cluster,
             @Nullable RexNode cond,
             @Nullable ImmutableBitSet requiredColumns
         ) {
-            return delegate.toIndexCondition(cluster, cond, requiredColumns);
+            return delegate.toSearchBounds(cluster, cond, requiredColumns);
         }
 
         /** {@inheritDoc} */
@@ -239,13 +239,11 @@ public class AbstractBasicIntegrationTest extends GridCommonAbstractTest {
             ExecutionContext<Row> execCtx,
             ColocationGroup grp,
             Predicate<Row> filters,
-            Supplier<Row> lowerIdxConditions,
-            Supplier<Row> upperIdxConditions,
+            RangeIterable<Row> ranges,
             Function<Row, Row> rowTransformer,
             @Nullable ImmutableBitSet requiredColumns
         ) {
-            return delegate.scan(execCtx, grp, filters, lowerIdxConditions, upperIdxConditions, rowTransformer,
-                requiredColumns);
+            return delegate.scan(execCtx, grp, filters, ranges, rowTransformer, requiredColumns);
         }
 
         /** {@inheritDoc} */

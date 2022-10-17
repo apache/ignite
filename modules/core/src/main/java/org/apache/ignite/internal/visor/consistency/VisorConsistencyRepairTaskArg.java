@@ -20,6 +20,7 @@ package org.apache.ignite.internal.visor.consistency;
 import java.io.IOException;
 import java.io.ObjectInput;
 import java.io.ObjectOutput;
+import java.util.Collection;
 import org.apache.ignite.cache.ReadRepairStrategy;
 import org.apache.ignite.internal.dto.IgniteDataTransferObject;
 import org.apache.ignite.internal.util.typedef.internal.U;
@@ -32,10 +33,10 @@ public class VisorConsistencyRepairTaskArg extends IgniteDataTransferObject {
     private static final long serialVersionUID = 0L;
 
     /** Cache name. */
-    private String cacheName;
+    private String cacheOrGrpName;
 
-    /** Partition. */
-    private int part;
+    /** Partitions. */
+    private Collection<Integer> parts;
 
     /** Strategy. */
     ReadRepairStrategy strategy;
@@ -47,42 +48,44 @@ public class VisorConsistencyRepairTaskArg extends IgniteDataTransferObject {
     }
 
     /**
-     * @param cacheName Cache name.
-     * @param part Part.
+     * @param cacheOrGrpName Cache or group name.
+     * @param parts Part.
      */
-    public VisorConsistencyRepairTaskArg(String cacheName, int part, ReadRepairStrategy strategy) {
-        this.cacheName = cacheName;
-        this.part = part;
+    public VisorConsistencyRepairTaskArg(String cacheOrGrpName, Collection<Integer> parts, ReadRepairStrategy strategy) {
+        this.cacheOrGrpName = cacheOrGrpName;
+        this.parts = parts;
         this.strategy = strategy;
     }
 
     /** {@inheritDoc} */
     @Override protected void writeExternalData(ObjectOutput out) throws IOException {
-        U.writeString(out, cacheName);
-        out.writeInt(part);
+        U.writeString(out, cacheOrGrpName);
+        U.writeCollection(out, parts);
         U.writeEnum(out, strategy);
     }
 
     /** {@inheritDoc} */
-    @Override protected void readExternalData(byte protoVer,
-        ObjectInput in) throws IOException, ClassNotFoundException {
-        cacheName = U.readString(in);
-        part = in.readInt();
+    @Override protected void readExternalData(
+        byte protoVer,
+        ObjectInput in
+    ) throws IOException, ClassNotFoundException {
+        cacheOrGrpName = U.readString(in);
+        parts = U.readCollection(in);
         strategy = U.readEnum(in, ReadRepairStrategy.class);
     }
 
     /**
      *
      */
-    public String cacheName() {
-        return cacheName;
+    public String cacheOrGroupName() {
+        return cacheOrGrpName;
     }
 
     /**
      *
      */
-    public int part() {
-        return part;
+    public Collection<Integer> parts() {
+        return parts;
     }
 
     /**

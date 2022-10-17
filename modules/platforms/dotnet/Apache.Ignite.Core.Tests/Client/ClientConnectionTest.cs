@@ -36,6 +36,7 @@ namespace Apache.Ignite.Core.Tests.Client
     using Apache.Ignite.Core.Tests.Client.Cache;
     using Apache.Ignite.Core.Tests.Client.Compute;
     using Apache.Ignite.Core.Tests.Compute;
+    using Apache.Ignite.Core.Tests.Services;
     using NUnit.Framework;
 
     /// <summary>
@@ -855,6 +856,35 @@ namespace Apache.Ignite.Core.Tests.Client
         }
 
         /// <summary>
+        /// Test retry policy exception handling.
+        /// </summary>
+        [Test]
+        public void TestExceptionInRetryPolicyPropagatesToCaller([Values(true, false)] bool async)
+        {
+            Ignition.Start(TestUtils.GetTestConfiguration());
+
+            var cfg = new IgniteClientConfiguration
+            {
+                Endpoints = new[] { "127.0.0.1" },
+                RetryPolicy = new TestRetryPolicy { ShouldThrow = true },
+                RetryLimit = 2
+            };
+
+            using (var client = Ignition.StartClient(cfg))
+            {
+                var cache = client.GetOrCreateCache<int, int>("c");
+
+                Ignition.StopAll(true);
+
+                var ex = async
+                    ? Assert.CatchAsync(() => cache.GetAsync(0))
+                    : Assert.Catch(() => cache.Get(0));
+
+                Assert.AreEqual("Error in policy.", ex.Message);
+            }
+        }
+
+        /// <summary>
         /// Tests that client stops it's receiver thread upon disposal.
         /// </summary>
         [Test]
@@ -952,6 +982,37 @@ namespace Apache.Ignite.Core.Tests.Client
             {
                 Assert.AreEqual(1, client.GetCluster().GetNodes().Count);
             }
+        }
+
+        /// <summary>
+        /// Tests that the stack trace of an exception that occurred during a service call is propagated to the thin
+        /// client side.
+        /// </summary>
+        [Test]
+        public void TestSendServerServiceExceptionStackTraceToClient()
+        {
+            var ignite = Ignition.Start(new IgniteConfiguration(TestUtils.GetTestConfiguration())
+            {
+                ClientConnectorConfiguration = new ClientConnectorConfiguration
+                {
+                    ThinClientConfiguration = new ThinClientConfiguration
+                    {
+                        SendServerExceptionStackTraceToClient = true,
+                    }
+                }
+            });
+
+            const string svcName = "PlatformTestService";
+
+            ignite.GetServices().DeployClusterSingleton(svcName, new PlatformTestService());
+
+            using var client = StartClient();
+
+            var ex = Assert.Catch<Exception>(() =>
+                client.GetServices().GetServiceProxy<IJavaService>(svcName).testException("")).GetBaseException();
+            
+            StringAssert.Contains("ClassName=System.NotImplementedException", ex.Message);
+            StringAssert.Contains("Message=The method or operation is not implemented.", ex.Message);
         }
 
         /// <summary>

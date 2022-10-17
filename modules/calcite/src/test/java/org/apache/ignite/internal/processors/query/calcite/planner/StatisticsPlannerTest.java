@@ -212,7 +212,7 @@ public class StatisticsPlannerTest extends AbstractPlannerTest {
     }
 
     /**
-     * Check index choosing with is null condition. Due to AbstractIndexScan logic - no index should be choosen.
+     * Check index choosing with is null condition.
      */
     @Test
     public void testIsNull() throws Exception {
@@ -231,14 +231,15 @@ public class StatisticsPlannerTest extends AbstractPlannerTest {
 
                 String idxName = getIdxName(1, field.getName().toUpperCase());
 
-                checkIdxNotUsed(isNullSql, idxName);
-                checkIdxNotUsed(isNullPKSql, idxName);
+                assertPlan(isNullSql, publicSchema, hasChildThat(isIndexScan("TBL1", idxName)));
+                assertPlan(isNullPKSql, publicSchema, hasChildThat(isIndexScan("TBL1", idxName)
+                    .or(isIndexScan("TBL1", "PK"))));
             }
         }
     }
 
     /**
-     * Check index choosing with not null condition. Due to AbstractIndexScan logic - no index should be choosen.
+     * Check index choosing with not null condition.
      */
     @Test
     public void testNotNull() throws Exception {
@@ -257,8 +258,9 @@ public class StatisticsPlannerTest extends AbstractPlannerTest {
 
                 String idxName = getIdxName(1, field.getName().toUpperCase());
 
-                checkIdxNotUsed(isNullSql, idxName);
-                checkIdxNotUsed(isNullPKSql, idxName);
+                assertPlan(isNullSql, publicSchema, hasChildThat(isIndexScan("TBL1", idxName)));
+                assertPlan(isNullPKSql, publicSchema, hasChildThat(isIndexScan("TBL1", idxName)
+                    .or(isIndexScan("TBL1", "PK"))));
             }
         }
     }
@@ -325,20 +327,6 @@ public class StatisticsPlannerTest extends AbstractPlannerTest {
 
         assertNotNull(idxScan);
         assertEquals(idxName, idxScan.indexName());
-    }
-
-    /**
-     * Check index is not used.
-     *
-     * @param sql Query.
-     * @param idxName Not expected index name.
-     * @throws Exception In case of errors.
-     */
-    private void checkIdxNotUsed(String sql, String idxName) throws Exception {
-        IgniteRel phys = physicalPlan(sql, publicSchema);
-        IgniteIndexScan idxScan = findFirstNode(phys, byClass(IgniteIndexScan.class));
-
-        assertTrue(idxScan == null || !idxName.equals(idxScan.indexName()));
     }
 
     /**

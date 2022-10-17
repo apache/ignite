@@ -49,6 +49,7 @@ import org.apache.calcite.rex.RexNode;
 import org.apache.calcite.rex.RexShuttle;
 import org.apache.calcite.rex.RexSimplify;
 import org.apache.calcite.rex.RexSlot;
+import org.apache.calcite.rex.RexUnknownAs;
 import org.apache.calcite.rex.RexUtil;
 import org.apache.calcite.rex.RexVisitor;
 import org.apache.calcite.rex.RexVisitorImpl;
@@ -59,22 +60,35 @@ import org.apache.calcite.sql.type.SqlTypeName;
 import org.apache.calcite.util.ControlFlowException;
 import org.apache.calcite.util.ImmutableBitSet;
 import org.apache.calcite.util.Litmus;
+import org.apache.calcite.util.Sarg;
 import org.apache.calcite.util.Util;
 import org.apache.calcite.util.mapping.MappingType;
 import org.apache.calcite.util.mapping.Mappings;
+import org.apache.ignite.internal.processors.query.calcite.prepare.bounds.ExactBounds;
+import org.apache.ignite.internal.processors.query.calcite.prepare.bounds.MultiBounds;
+import org.apache.ignite.internal.processors.query.calcite.prepare.bounds.RangeBounds;
+import org.apache.ignite.internal.processors.query.calcite.prepare.bounds.SearchBounds;
 import org.apache.ignite.internal.processors.query.calcite.trait.TraitUtils;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.jetbrains.annotations.Nullable;
 
+import static org.apache.calcite.rex.RexUtil.removeCast;
+import static org.apache.calcite.rex.RexUtil.sargRef;
 import static org.apache.calcite.sql.SqlKind.EQUALS;
 import static org.apache.calcite.sql.SqlKind.GREATER_THAN;
 import static org.apache.calcite.sql.SqlKind.GREATER_THAN_OR_EQUAL;
+import static org.apache.calcite.sql.SqlKind.IS_NOT_NULL;
+import static org.apache.calcite.sql.SqlKind.IS_NULL;
 import static org.apache.calcite.sql.SqlKind.LESS_THAN;
 import static org.apache.calcite.sql.SqlKind.LESS_THAN_OR_EQUAL;
+import static org.apache.calcite.sql.SqlKind.SEARCH;
 
 /** */
 public class RexUtils {
+    /** Maximum amount of search bounds tuples per scan. */
+    public static final int MAX_SEARCH_BOUNDS_COMPLEXITY = 100;
+
     /** */
     public static RexNode makeCast(RexBuilder builder, RexNode node, RelDataType type) {
         return TypeUtils.needCast(builder.getTypeFactory(), node.getType(), type) ? builder.makeCast(type, node) : node;
@@ -149,17 +163,24 @@ public class RexUtils {
         return true;
     }
 
+    /** Binary comparison operations. */
+    private static final Set<SqlKind> BINARY_COMPARISON =
+        EnumSet.of(EQUALS, LESS_THAN, GREATER_THAN, GREATER_THAN_OR_EQUAL, LESS_THAN_OR_EQUAL);
+
     /** Supported index operations. */
     private static final Set<SqlKind> TREE_INDEX_COMPARISON =
         EnumSet.of(
+            SEARCH,
+            IS_NULL,
+            IS_NOT_NULL,
             EQUALS,
             LESS_THAN, GREATER_THAN,
             GREATER_THAN_OR_EQUAL, LESS_THAN_OR_EQUAL);
 
     /**
-     * Builds index conditions.
+     * Builds sorted search bounds.
      */
-    public static IndexConditions buildSortedIndexConditions(
+    public static List<SearchBounds> buildSortedSearchBounds(
         RelOptCluster cluster,
         RelCollation collation,
         RexNode condition,
@@ -167,17 +188,14 @@ public class RexUtils {
         ImmutableBitSet requiredColumns
     ) {
         if (condition == null)
-            return new IndexConditions();
+            return null;
 
         condition = RexUtil.toCnf(builder(cluster), condition);
 
         Map<Integer, List<RexCall>> fieldsToPredicates = mapPredicatesToFields(condition, cluster);
 
         if (F.isEmpty(fieldsToPredicates))
-            return new IndexConditions();
-
-        List<RexNode> lower = new ArrayList<>();
-        List<RexNode> upper = new ArrayList<>();
+            return null;
 
         // Force collation for all fields of the condition.
         if (collation == null || collation.isDefault()) {
@@ -191,6 +209,17 @@ public class RexUtils {
             collation = TraitUtils.createCollation(F.concat(true, equalsFields, otherFields));
         }
 
+        List<RelDataType> types = RelOptUtil.getFieldTypeList(rowType);
+
+        Mappings.TargetMapping mapping = null;
+
+        if (requiredColumns != null)
+            mapping = Commons.inverseMapping(requiredColumns, types.size());
+
+        List<SearchBounds> bounds = Arrays.asList(new SearchBounds[types.size()]);
+        boolean boundsEmpty = true;
+        int prevComplexity = 1;
+
         for (int i = 0; i < collation.getFieldCollations().size(); i++) {
             RelFieldCollation fc = collation.getFieldCollations().get(i);
 
@@ -201,92 +230,37 @@ public class RexUtils {
             if (F.isEmpty(collFldPreds))
                 break;
 
-            RexNode bestUpper = null;
-            RexNode bestLower = null;
+            if (mapping != null)
+                collFldIdx = mapping.getSourceOpt(collFldIdx);
 
-            for (RexCall pred : collFldPreds) {
-                if (U.assertionsEnabled()) {
-                    RexNode cond = RexUtil.removeCast(pred.operands.get(1));
+            SearchBounds fldBounds = createBounds(fc, collFldPreds, cluster, types.get(collFldIdx), prevComplexity);
 
-                    assert idxOpSupports(cond) : cond;
-                }
+            if (fldBounds == null)
+                break;
 
-                boolean lowerBoundBelow = !fc.getDirection().isDescending();
-                SqlOperator op = pred.getOperator();
-                switch (op.kind) {
-                    case EQUALS:
-                        bestUpper = pred;
-                        bestLower = pred;
-                        break;
+            boundsEmpty = false;
 
-                    case LESS_THAN:
-                    case LESS_THAN_OR_EQUAL:
-                        lowerBoundBelow = !lowerBoundBelow;
-                        // Fall through.
+            bounds.set(collFldIdx, fldBounds);
 
-                    case GREATER_THAN:
-                    case GREATER_THAN_OR_EQUAL:
-                        if (lowerBoundBelow)
-                            bestLower = pred;
-                        else
-                            bestUpper = pred;
-                        break;
+            if (fldBounds instanceof MultiBounds) {
+                prevComplexity *= ((MultiBounds)fldBounds).bounds().size();
 
-                    default:
-                        throw new AssertionError("Unknown condition: " + op.kind);
-                }
-
-                if (bestUpper != null && bestLower != null)
-                    break; // We've found either "=" condition or both lower and upper.
-            }
-
-            if (bestLower == null && bestUpper == null)
-                break; // No bounds, so break the loop.
-
-            if (bestLower != null && bestUpper != null) { // "x>5 AND x<10"
-                upper.add(bestUpper);
-                lower.add(bestLower);
-
-                if (bestLower != bestUpper)
+                // Any bounds after multi range bounds are not allowed, since it can cause intervals intersection.
+                if (((MultiBounds)fldBounds).bounds().stream().anyMatch(b -> b.type() != SearchBounds.Type.EXACT))
                     break;
             }
-            else if (bestLower != null) { // "x>5"
-                lower.add(bestLower);
 
+            if (fldBounds.type() == SearchBounds.Type.RANGE)
                 break; // TODO https://issues.apache.org/jira/browse/IGNITE-13568
-            }
-            else { // "x<10"
-                upper.add(bestUpper);
-
-                break; // TODO https://issues.apache.org/jira/browse/IGNITE-13568
-            }
         }
 
-        Mappings.TargetMapping mapping = null;
-
-        if (requiredColumns != null)
-            mapping = Commons.inverseMapping(requiredColumns, rowType.getFieldCount());
-
-        List<RexNode> lowerBound = null;
-        List<RexNode> upperBound = null;
-
-        if (!F.isEmpty(lower))
-            lowerBound = asBound(cluster, lower, rowType, mapping);
-        else
-            lower = null;
-
-        if (!F.isEmpty(upper))
-            upperBound = asBound(cluster, upper, rowType, mapping);
-        else
-            upper = null;
-
-        return new IndexConditions(lower, upper, lowerBound, upperBound);
+        return boundsEmpty ? null : bounds;
     }
 
     /**
-     * Builds index conditions.
+     * Builds hash index search bounds.
      */
-    public static List<RexNode> buildHashSearchRow(
+    public static List<SearchBounds> buildHashSearchBounds(
         RelOptCluster cluster,
         RexNode condition,
         RelDataType rowType,
@@ -300,7 +274,14 @@ public class RexUtils {
         if (F.isEmpty(fieldsToPredicates))
             return null;
 
-        List<RexNode> searchPreds = null;
+        List<SearchBounds> bounds = null;
+
+        List<RelDataType> types = RelOptUtil.getFieldTypeList(rowType);
+
+        Mappings.TargetMapping mapping = null;
+
+        if (requiredColumns != null)
+            mapping = Commons.inverseMapping(requiredColumns, types.size());
 
         for (int fldIdx : fieldsToPredicates.keySet()) {
             List<RexCall> collFldPreds = fieldsToPredicates.get(fldIdx);
@@ -309,12 +290,6 @@ public class RexUtils {
                 break;
 
             for (RexCall pred : collFldPreds) {
-                if (U.assertionsEnabled()) {
-                    RexNode cond = RexUtil.removeCast(pred.operands.get(1));
-
-                    assert idxOpSupports(cond) : cond;
-                }
-
                 if (pred.getOperator().kind != SqlKind.EQUALS) {
                     if (ignoreNotEqualPreds)
                         continue;
@@ -322,22 +297,262 @@ public class RexUtils {
                         return null;
                 }
 
-                if (searchPreds == null)
-                    searchPreds = new ArrayList<>();
+                if (bounds == null)
+                    bounds = Arrays.asList(new SearchBounds[types.size()]);
 
-                searchPreds.add(pred);
+                if (mapping != null)
+                    fldIdx = mapping.getSourceOpt(fldIdx);
+
+                bounds.set(fldIdx, createBounds(null, Collections.singletonList(pred), cluster, types.get(fldIdx), 1));
             }
         }
 
-        if (searchPreds == null)
+        return bounds;
+    }
+
+    /** Create index search bound by conditions of the field. */
+    private static SearchBounds createBounds(
+        @Nullable RelFieldCollation fc, // Can be null for EQUALS condition.
+        List<RexCall> collFldPreds,
+        RelOptCluster cluster,
+        RelDataType fldType,
+        int prevComplexity
+    ) {
+        RexBuilder builder = builder(cluster);
+
+        RexNode nullVal = builder.makeNullLiteral(fldType);
+
+        RexNode upperCond = null;
+        RexNode lowerCond = null;
+        RexNode upperBound = null;
+        RexNode lowerBound = null;
+        boolean upperInclude = true;
+        boolean lowerInclude = true;
+
+        for (RexCall pred : collFldPreds) {
+            RexNode val = null;
+            RexNode ref = pred.getOperands().get(0);
+
+            if (isBinaryComparison(pred)) {
+                val = removeCast(pred.operands.get(1));
+
+                assert idxOpSupports(val) : val;
+
+                val = makeCast(builder, val, fldType);
+            }
+
+            SqlOperator op = pred.getOperator();
+
+            if (op.kind == EQUALS)
+                return new ExactBounds(pred, val);
+            else if (op.kind == IS_NULL)
+                return new ExactBounds(pred, nullVal);
+            else if (op.kind == SEARCH) {
+                Sarg<?> sarg = ((RexLiteral)pred.operands.get(1)).getValueAs(Sarg.class);
+
+                List<SearchBounds> bounds = expandSargToBounds(fc, cluster, fldType, prevComplexity, sarg, ref);
+
+                if (bounds == null)
+                    continue;
+
+                if (bounds.size() == 1) {
+                    if (bounds.get(0) instanceof RangeBounds && collFldPreds.size() > 1) {
+                        // Try to merge bounds.
+                        boolean ascDir = !fc.getDirection().isDescending();
+                        RangeBounds rangeBounds = (RangeBounds)bounds.get(0);
+                        if (rangeBounds.lowerBound() != null) {
+                            if (lowerBound != null && lowerBound != nullVal) {
+                                lowerBound = leastOrGreatest(builder, !ascDir, lowerBound, rangeBounds.lowerBound(), nullVal);
+                                lowerInclude |= rangeBounds.lowerInclude();
+                            }
+                            else {
+                                lowerBound = rangeBounds.lowerBound();
+                                lowerInclude = rangeBounds.lowerInclude();
+                            }
+                            lowerCond = lessOrGreater(builder, !ascDir, lowerInclude, ref, lowerBound);
+                        }
+
+                        if (rangeBounds.upperBound() != null) {
+                            if (upperBound != null && upperBound != nullVal) {
+                                upperBound = leastOrGreatest(builder, ascDir, upperBound, rangeBounds.upperBound(), nullVal);
+                                upperInclude |= rangeBounds.upperInclude();
+                            }
+                            else {
+                                upperBound = rangeBounds.upperBound();
+                                upperInclude = rangeBounds.upperInclude();
+                            }
+                            upperCond = lessOrGreater(builder, ascDir, upperInclude, ref, upperBound);
+                        }
+
+                        continue;
+                    }
+                    else
+                        return bounds.get(0);
+                }
+
+                return new MultiBounds(pred, bounds);
+            }
+
+            // Range bounds.
+            boolean lowerBoundBelow = !fc.getDirection().isDescending();
+            boolean includeBound = op.kind == GREATER_THAN_OR_EQUAL || op.kind == LESS_THAN_OR_EQUAL;
+            boolean lessCondition = false;
+
+            switch (op.kind) {
+                case LESS_THAN:
+                case LESS_THAN_OR_EQUAL:
+                    lessCondition = true;
+                    lowerBoundBelow = !lowerBoundBelow;
+                    // Fall through.
+
+                case GREATER_THAN:
+                case GREATER_THAN_OR_EQUAL:
+                    if (lowerBoundBelow) {
+                        if (lowerBound == null || lowerBound == nullVal) {
+                            lowerCond = pred;
+                            lowerBound = val;
+                            lowerInclude = includeBound;
+                        }
+                        else {
+                            lowerBound = leastOrGreatest(builder, lessCondition, lowerBound, val, nullVal);
+                            lowerInclude |= includeBound;
+                            lowerCond = lessOrGreater(builder, lessCondition, lowerInclude, ref, lowerBound);
+                        }
+                    }
+                    else {
+                        if (upperBound == null || upperBound == nullVal) {
+                            upperCond = pred;
+                            upperBound = val;
+                            upperInclude = includeBound;
+                        }
+                        else {
+                            upperBound = leastOrGreatest(builder, lessCondition, upperBound, val, nullVal);
+                            upperInclude |= includeBound;
+                            upperCond = lessOrGreater(builder, lessCondition, upperInclude, ref, upperBound);
+                        }
+                    }
+                    // Fall through.
+
+                case IS_NOT_NULL:
+                    if (fc.nullDirection == RelFieldCollation.NullDirection.FIRST && lowerBound == null) {
+                        lowerCond = pred;
+                        lowerBound = nullVal;
+                        lowerInclude = false;
+                    }
+                    else if (fc.nullDirection == RelFieldCollation.NullDirection.LAST && upperBound == null) {
+                        upperCond = pred;
+                        upperBound = nullVal;
+                        upperInclude = false;
+                    }
+                    break;
+
+                default:
+                    throw new AssertionError("Unknown condition: " + op.kind);
+            }
+        }
+
+        if (lowerBound == null && upperBound == null)
+            return null; // No bounds.
+
+        // Found upper bound, lower bound or both.
+        RexNode cond = lowerCond == null ? upperCond :
+            upperCond == null ? lowerCond :
+                upperCond == lowerCond ? lowerCond : builder.makeCall(SqlStdOperatorTable.AND, lowerCond, upperCond);
+
+        return new RangeBounds(cond, lowerBound, upperBound, lowerInclude, upperInclude);
+    }
+
+    /** */
+    private static List<SearchBounds> expandSargToBounds(
+        RelFieldCollation fc,
+        RelOptCluster cluster,
+        RelDataType fldType,
+        int prevComplexity,
+        Sarg<?> sarg,
+        RexNode ref
+    ) {
+        int complexity = prevComplexity * sarg.complexity();
+
+        // Limit amount of search bounds tuples.
+        if (complexity > MAX_SEARCH_BOUNDS_COMPLEXITY)
             return null;
 
-        Mappings.TargetMapping mapping = null;
+        RexBuilder builder = builder(cluster);
 
-        if (requiredColumns != null)
-            mapping = Commons.inverseMapping(requiredColumns, rowType.getFieldCount());
+        RexNode sargCond = sargRef(builder, ref, sarg, fldType, RexUnknownAs.UNKNOWN);
+        List<RexNode> disjunctions = RelOptUtil.disjunctions(RexUtil.toDnf(builder, sargCond));
+        List<SearchBounds> bounds = new ArrayList<>(disjunctions.size());
 
-        return asBound(cluster, searchPreds, rowType, mapping);
+        for (RexNode bound : disjunctions) {
+            List<RexNode> conjunctions = RelOptUtil.conjunctions(bound);
+            List<RexCall> calls = new ArrayList<>(conjunctions.size());
+
+            for (RexNode rexNode : conjunctions) {
+                if (isSupportedTreeComparison(rexNode))
+                    calls.add((RexCall)rexNode);
+                else // Cannot filter using this predicate (NOT_EQUALS for example), give a chance to other predicates.
+                    return null;
+            }
+
+            bounds.add(createBounds(fc, calls, cluster, fldType, complexity));
+        }
+
+        return bounds;
+    }
+
+    /** */
+    private static RexNode leastOrGreatest(RexBuilder builder, boolean least, RexNode arg0, RexNode arg1, RexNode nullVal) {
+        // There is no implementor for LEAST/GREATEST, so convert this calls directly to CASE operator.
+        List<RexNode> argList = new ArrayList<>();
+
+        // CASE
+        //  WHEN arg0 IS NULL OR arg1 IS NULL THEN NULL
+        //  WHEN arg0 < arg1 THEN arg0
+        //  ELSE arg1
+        // END
+        argList.add(builder.makeCall(SqlStdOperatorTable.OR,
+            builder.makeCall(SqlStdOperatorTable.IS_NULL, arg0),
+            builder.makeCall(SqlStdOperatorTable.IS_NULL, arg1)));
+        argList.add(nullVal);
+        argList.add(builder.makeCall(least ? SqlStdOperatorTable.LESS_THAN : SqlStdOperatorTable.GREATER_THAN, arg0, arg1));
+        argList.add(arg0);
+        argList.add(arg1);
+
+        return builder.makeCall(SqlStdOperatorTable.CASE, argList);
+    }
+
+    /** */
+    private static RexNode lessOrGreater(
+        RexBuilder builder,
+        boolean less,
+        boolean includeBound,
+        RexNode arg0,
+        RexNode arg1
+    ) {
+        return builder.makeCall(less ?
+            (includeBound ? SqlStdOperatorTable.LESS_THAN_OR_EQUAL : SqlStdOperatorTable.LESS_THAN) :
+            (includeBound ? SqlStdOperatorTable.GREATER_THAN_OR_EQUAL : SqlStdOperatorTable.GREATER_THAN),
+            arg0, arg1);
+    }
+
+    /**
+     * Builds index conditions.
+     */
+    public static List<RexNode> buildHashSearchRow(
+        RelOptCluster cluster,
+        RexNode condition,
+        RelDataType rowType
+    ) {
+        List<SearchBounds> searchBounds = buildHashSearchBounds(cluster, condition, rowType, null, false);
+
+        if (searchBounds == null)
+            return null;
+
+        return Commons.transform(searchBounds, b -> {
+            assert b == null || b instanceof ExactBounds : b;
+
+            return b == null ? null : ((ExactBounds)b).bound();
+        });
     }
 
     /** */
@@ -347,18 +562,28 @@ public class RexUtils {
         Map<Integer, List<RexCall>> res = new HashMap<>(conjunctions.size());
 
         for (RexNode rexNode : conjunctions) {
-            if (!isBinaryComparison(rexNode))
+            if (!isSupportedTreeComparison(rexNode))
                 continue;
 
             RexCall predCall = (RexCall)rexNode;
-            RexSlot ref = (RexSlot)extractRef(predCall);
+            RexSlot ref;
 
-            if (ref == null)
-                continue;
+            if (isBinaryComparison(rexNode)) {
+                ref = (RexSlot)extractRefFromBinary(predCall, cluster);
 
-            // Let RexLocalRef be on the left side.
-            if (refOnTheRight(predCall))
-                predCall = (RexCall)RexUtil.invert(builder(cluster), predCall);
+                if (ref == null)
+                    continue;
+
+                // Let RexLocalRef be on the left side.
+                if (refOnTheRight(predCall))
+                    predCall = (RexCall)RexUtil.invert(builder(cluster), predCall);
+            }
+            else {
+                ref = (RexSlot)extractRefFromOperand(predCall, cluster, 0);
+
+                if (ref == null)
+                    continue;
+            }
 
             List<RexCall> fldPreds = res.computeIfAbsent(ref.getIndex(), k -> new ArrayList<>(conjunctions.size()));
 
@@ -368,19 +593,36 @@ public class RexUtils {
     }
 
     /** */
-    private static RexNode extractRef(RexCall call) {
+    private static RexNode extractRefFromBinary(RexCall call, RelOptCluster cluster) {
         assert isBinaryComparison(call);
 
-        RexNode leftOp = call.getOperands().get(0);
+        RexNode leftRef = extractRefFromOperand(call, cluster, 0);
         RexNode rightOp = call.getOperands().get(1);
 
-        leftOp = RexUtil.removeCast(leftOp);
-        rightOp = RexUtil.removeCast(rightOp);
+        if (leftRef != null)
+            return idxOpSupports(removeCast(rightOp)) ? leftRef : null;
 
-        if ((leftOp instanceof RexLocalRef || leftOp instanceof RexInputRef) && idxOpSupports(rightOp))
-            return leftOp;
-        else if ((rightOp instanceof RexLocalRef || rightOp instanceof RexInputRef) && idxOpSupports(leftOp))
-            return rightOp;
+        RexNode rightRef = extractRefFromOperand(call, cluster, 1);
+        RexNode leftOp = call.getOperands().get(0);
+
+        if (rightRef != null)
+            return idxOpSupports(removeCast(leftOp)) ? rightRef : null;
+
+        return null;
+    }
+
+    /** */
+    private static RexNode extractRefFromOperand(RexCall call, RelOptCluster cluster, int operandNum) {
+        assert isSupportedTreeComparison(call);
+
+        RexNode op = call.getOperands().get(operandNum);
+
+        op = removeCast(op);
+
+        // Can proceed without ref cast only if cast was redundant in terms of values comparison.
+        if ((op instanceof RexSlot) &&
+            !TypeUtils.needCast(cluster.getTypeFactory(), op.getType(), call.getOperands().get(operandNum).getType()))
+            return op;
 
         return null;
     }
@@ -389,16 +631,22 @@ public class RexUtils {
     private static boolean refOnTheRight(RexCall predCall) {
         RexNode rightOp = predCall.getOperands().get(1);
 
-        rightOp = RexUtil.removeCast(rightOp);
+        rightOp = removeCast(rightOp);
 
         return rightOp.isA(SqlKind.LOCAL_REF) || rightOp.isA(SqlKind.INPUT_REF);
     }
 
     /** */
-    public static boolean isBinaryComparison(RexNode exp) {
-        return TREE_INDEX_COMPARISON.contains(exp.getKind()) &&
+    private static boolean isBinaryComparison(RexNode exp) {
+        return BINARY_COMPARISON.contains(exp.getKind()) &&
             (exp instanceof RexCall) &&
             ((RexCall)exp).getOperands().size() == 2;
+    }
+
+    /** */
+    private static boolean isSupportedTreeComparison(RexNode exp) {
+        return TREE_INDEX_COMPARISON.contains(exp.getKind()) &&
+            (exp instanceof RexCall);
     }
 
     /** */
@@ -414,35 +662,6 @@ public class RexUtils {
             return false;
 
         return !(op instanceof RexLiteral) || !((RexLiteral)op).isNull();
-    }
-
-    /** */
-    public static List<RexNode> asBound(RelOptCluster cluster, Iterable<RexNode> idxCond, RelDataType rowType,
-        @Nullable Mappings.TargetMapping mapping) {
-        if (F.isEmpty(idxCond))
-            return null;
-
-        RexBuilder builder = builder(cluster);
-        List<RelDataType> types = RelOptUtil.getFieldTypeList(rowType);
-        List<RexNode> res = Arrays.asList(new RexNode[types.size()]);
-
-        for (RexNode pred : idxCond) {
-            assert pred instanceof RexCall;
-
-            RexCall call = (RexCall)pred;
-            RexSlot ref = (RexSlot)RexUtil.removeCast(call.operands.get(0));
-            RexNode cond = RexUtil.removeCast(call.operands.get(1));
-
-            assert idxOpSupports(cond) : cond;
-
-            int index = mapping == null ? ref.getIndex() : mapping.getSourceOpt(ref.getIndex());
-
-            assert index != -1;
-
-            res.set(index, makeCast(builder, cond, types.get(index)));
-        }
-
-        return res;
     }
 
     /** */

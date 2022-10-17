@@ -17,7 +17,6 @@
 
 package org.apache.ignite.internal.processors.cache;
 
-import java.util.Collection;
 import java.util.Collections;
 import java.util.HashSet;
 import java.util.Random;
@@ -32,10 +31,8 @@ import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.configuration.NearCacheConfiguration;
 import org.apache.ignite.internal.IgniteKernal;
-import org.apache.ignite.internal.processors.query.ColumnInformation;
 import org.apache.ignite.internal.processors.query.DummyQueryIndexing;
 import org.apache.ignite.internal.processors.query.GridQueryProcessor;
-import org.apache.ignite.internal.processors.query.TableInformation;
 import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.junit.Ignore;
@@ -240,26 +237,6 @@ public class IgniteClientCacheInitializationFailTest extends GridCommonAbstractT
             GridCacheContextInfo<?, ?> cacheInfo) throws IgniteCheckedException {
             if (FAILED_CACHES.contains(cacheInfo.name()) && cacheInfo.cacheContext().kernalContext().clientNode())
                 throw new IgniteCheckedException("Test query exception " + cacheInfo.name() + " " + new Random().nextInt());
-        }
-
-        /** {@inheritDoc} */
-        @Override public boolean initCacheContext(GridCacheContext ctx) throws IgniteCheckedException {
-            if (FAILED_CACHES.contains(ctx.name()) && ctx.kernalContext().clientNode())
-                throw new IgniteCheckedException("Test query exception " + ctx.name() + " " + new Random().nextInt());
-
-            return true;
-        }
-
-        /** {@inheritDoc} */
-        @Override public Collection<TableInformation> tablesInformation(String schemaNamePtrn, String tblNamePtrn,
-            String[] tblTypes) {
-            return null;
-        }
-
-        /** {@inheritDoc} */
-        @Override public Collection<ColumnInformation> columnsInformation(String schemaNamePtrn, String tblNamePtrn,
-            String colNamePtrn) {
-            return null;
         }
     }
 }

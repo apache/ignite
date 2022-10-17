@@ -129,9 +129,10 @@ public class BasicCacheOperations {
 
         try (Ignite ignite = Ignition.start()) {
             //tag::read-repair[]
-            IgniteCache<Object, Object> cache = ignite.cache("my_cache").withReadRepair();
+            IgniteCache<Object, Object> cache =
+                ignite.cache("my_cache").withReadRepair(ReadRepairStrategy.CHECK_ONLY);
 
-            Object value = cache.get(10);
+            Object value = cache.get(42);
             //end::read-repair[]
         }
 

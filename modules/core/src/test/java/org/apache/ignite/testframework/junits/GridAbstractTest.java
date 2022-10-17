@@ -42,7 +42,11 @@ import java.util.UUID;
 import java.util.concurrent.Callable;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
+import java.util.concurrent.Executors;
+import java.util.concurrent.ScheduledExecutorService;
+import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
+import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.Consumer;
@@ -734,7 +738,7 @@ public abstract class GridAbstractTest extends JUnitAssertAware {
         printJvmMemoryStatistic();
 
         try {
-            afterTest();
+            runAfterTest();
         }
         finally {
             if (!keepSerializedObjects())
@@ -746,6 +750,54 @@ public abstract class GridAbstractTest extends JUnitAssertAware {
 
             cleanReferences();
         }
+    }
+
+    /**
+     * Runs afterTest() callback method with necessary scaffolding.
+     */
+    private void runAfterTest() throws Exception {
+        AtomicBoolean afterTestFinished = new AtomicBoolean(false);
+
+        ScheduledExecutorService scheduler = scheduleThreadDumpOnAfterTestTimeOut(afterTestFinished);
+
+        try {
+            afterTest();
+        }
+        finally {
+            afterTestFinished.set(true);
+
+            scheduler.shutdownNow();
+        }
+    }
+
+    /**
+     * Schedules a task that will print a thread dump if {@code afterTest()} times out.
+     *
+     * @param afterTestFinished Boolean flag used to tell whether {@code afterTest()} finished execution.
+     * @return Scheduled executor used when scheduling.
+     */
+    private ScheduledExecutorService scheduleThreadDumpOnAfterTestTimeOut(AtomicBoolean afterTestFinished) {
+        // Compute class name as string to avoid holding reference to the test class instance in task.
+        String testClassName = getClass().getName();
+
+        ScheduledExecutorService scheduler = Executors.newScheduledThreadPool(1, task -> {
+            Thread thread = new Thread(task, "after-test-timeout-" + testClassName);
+            thread.setDaemon(true);
+            return thread;
+        });
+
+        scheduler.schedule(() -> {
+            scheduler.shutdownNow();
+
+            if (!afterTestFinished.get()) {
+                log.info(testClassName +
+                    ".afterTest() timed out, dumping threads (afterTest() still keeps running)");
+
+                dumpThreadsReliably();
+            }
+        }, getTestTimeout(), TimeUnit.MILLISECONDS);
+
+        return scheduler;
     }
 
     /** Prints JVM memory statistic. */
@@ -1002,7 +1054,7 @@ public abstract class GridAbstractTest extends JUnitAssertAware {
      * @throws Exception If anything failed.
      */
     protected IgniteEx startClientGrid() throws Exception {
-        return startClientGrid(getTestIgniteInstanceName());
+        return startClientGrid(getTestIgniteInstanceName(), (UnaryOperator<IgniteConfiguration>)null);
     }
 
     /**
@@ -1061,6 +1113,16 @@ public abstract class GridAbstractTest extends JUnitAssertAware {
     }
 
     /**
+     * @param idx Index of the grid to start.
+     * @param cfgOp Configuration mutator. Can be used to avoid overcomplification of {@link #getConfiguration()}.
+     * @return Started grid.
+     * @throws Exception If anything failed.
+     */
+    protected IgniteEx startClientGrid(int idx, UnaryOperator<IgniteConfiguration> cfgOp) throws Exception {
+        return startClientGrid(getTestIgniteInstanceName(idx), cfgOp);
+    }
+
+    /**
      * Starts new client grid with given index.
      *
      * @param idx Index of the grid to start.
@@ -1068,7 +1130,7 @@ public abstract class GridAbstractTest extends JUnitAssertAware {
      * @throws Exception If anything failed.
      */
     protected IgniteEx startClientGrid(int idx) throws Exception {
-        return startClientGrid(getTestIgniteInstanceName(idx));
+        return startClientGrid(getTestIgniteInstanceName(idx), (UnaryOperator<IgniteConfiguration>)null);
     }
 
     /**
@@ -1083,7 +1145,7 @@ public abstract class GridAbstractTest extends JUnitAssertAware {
         IgnitionEx.dependencyResolver(rslvr);
 
         try {
-            return startClientGrid(getTestIgniteInstanceName(idx));
+            return startClientGrid(getTestIgniteInstanceName(idx), (UnaryOperator<IgniteConfiguration>)null);
         }
         finally {
             IgnitionEx.dependencyResolver(null);
@@ -1098,10 +1160,22 @@ public abstract class GridAbstractTest extends JUnitAssertAware {
      * @throws Exception If anything failed.
      */
     protected IgniteEx startClientGrid(String igniteInstanceName) throws Exception {
+        return startClientGrid(igniteInstanceName, (UnaryOperator<IgniteConfiguration>)null);
+    }
+
+    /**
+     * Starts new client grid with given name.
+     *
+     * @param igniteInstanceName Ignite instance name.
+     * @param cfgOp Configuration mutator. Can be used to avoid overcomplification of {@link #getConfiguration()}.
+     * @return Started grid.
+     * @throws Exception If anything failed.
+     */
+    protected IgniteEx startClientGrid(String igniteInstanceName, UnaryOperator<IgniteConfiguration> cfgOp) throws Exception {
         IgnitionEx.setClientMode(true);
 
         try {
-            return (IgniteEx)startGrid(igniteInstanceName, (GridSpringResourceContext)null);
+            return (IgniteEx)startGrid(igniteInstanceName, cfgOp, null);
         }
         finally {
             IgnitionEx.setClientMode(false);
@@ -1407,7 +1481,7 @@ public abstract class GridAbstractTest extends JUnitAssertAware {
             }
         }
 
-        return new IgniteProcessProxy(cfg, cfg.getGridLogger(), (x) -> grid(0), resetDiscovery, additionalRemoteJvmArgs());
+        return new IgniteProcessProxy(cfg, cfg.getGridLogger(), () -> grid(0), resetDiscovery, additionalRemoteJvmArgs());
     }
 
     /**
@@ -1584,6 +1658,15 @@ public abstract class GridAbstractTest extends JUnitAssertAware {
         finally {
             IgniteProcessProxy.killAll(); // In multi-JVM case.
         }
+    }
+
+    /**
+     * Stops all grids (even those grids that have not been started successfully are tried to be stopped).
+     * This differs from {@link #stopAllGrids()} in one aspect: {@code stopAllGrids()} waits for all grids
+     * to be started, and, if any of them hangs during startup, it hangs as well.
+     */
+    protected void stopAllGridsNoWait() {
+        stopAllGrids(true, false);
     }
 
     /**
@@ -2444,11 +2527,7 @@ public abstract class GridAbstractTest extends JUnitAssertAware {
                 for (Ignite node : nodes)
                     ((IgniteKernal)node).dumpDebugInfo();
 
-                // We dump threads to stdout, because we can loose logs in case
-                // the build is cancelled on TeamCity.
-                U.dumpThreads(null);
-
-                U.dumpThreads(log);
+                dumpThreadsReliably();
 
                 U.interrupt(runner);
 
@@ -2481,6 +2560,17 @@ public abstract class GridAbstractTest extends JUnitAssertAware {
                 log.error("Failed to execute tear down after test (will ignore)", e);
             }
         }
+    }
+
+    /**
+     * Dumps threads both to the console and log.
+     */
+    private static void dumpThreadsReliably() {
+        // We dump threads to stdout, because we can lose logs in case
+        // the build is cancelled on TeamCity.
+        U.dumpThreads(null);
+
+        U.dumpThreads(log);
     }
 
     /**
@@ -2538,14 +2628,14 @@ public abstract class GridAbstractTest extends JUnitAssertAware {
     }
 
     /**
-     * @return Test case timeout.
+     * @return Test case timeout (in millis).
      */
     protected long getTestTimeout() {
         return getDefaultTestTimeout();
     }
 
     /**
-     * @return Default test case timeout.
+     * @return Default test case timeout (in millis).
      */
     private long getDefaultTestTimeout() {
         String timeout = GridTestProperties.getProperty("test.timeout");

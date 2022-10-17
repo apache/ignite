@@ -79,7 +79,7 @@ import org.apache.ignite.lang.IgniteFuture;
 import org.apache.ignite.lang.IgnitePredicate;
 import org.apache.ignite.lang.IgniteRunnable;
 import org.apache.ignite.spi.discovery.tcp.internal.TcpDiscoveryNode;
-import org.apache.ignite.spi.systemview.view.SqlTableView;
+import org.apache.ignite.spi.systemview.view.sql.SqlTableView;
 import org.apache.ignite.testframework.GridTestUtils;
 import org.junit.Assert;
 import org.junit.Test;
@@ -286,43 +286,34 @@ public class SqlSystemViewsSelfTest extends AbstractIndexingCommonTest {
 
         //ToDo: As of now we can see duplicates columns within index due to https://issues.apache.org/jira/browse/IGNITE-11125
 
+        // TODO fix test
         Object[][] expectedResults = {
-                {-825022849, "SQL_PUBLIC_AFF_CACHE", "PUBLIC", "AFF_CACHE", "AFFINITY_KEY", "BTREE", "\"ID2\" ASC, \"ID1\" ASC",
-                    false, false, 10},
-                {-825022849, "SQL_PUBLIC_AFF_CACHE", "PUBLIC", "AFF_CACHE", "__SCAN_", "SCAN", null, false, false, null},
-                {-825022849, "SQL_PUBLIC_AFF_CACHE", "PUBLIC", "AFF_CACHE", "_key_PK", "BTREE", "\"ID1\" ASC, \"ID2\" ASC", true, true, 10},
-                {-825022849, "SQL_PUBLIC_AFF_CACHE", "PUBLIC", "AFF_CACHE", "_key_PK_hash", "HASH",
-                    "\"ID1\" ASC, \"ID2\" ASC, \"ID2\" ASC", false, true, null},
-
-                {707660652, "SQL_PUBLIC_CACHE_SQL", "PUBLIC", "CACHE_SQL", "IDX_2", "BTREE", "\"ID\" DESC, \"ID\" ASC", false, false, 10},
-                {707660652, "SQL_PUBLIC_CACHE_SQL", "PUBLIC", "CACHE_SQL", "__SCAN_", "SCAN", null, false, false, null},
-                {707660652, "SQL_PUBLIC_CACHE_SQL", "PUBLIC", "CACHE_SQL", "_key_PK", "BTREE", "\"ID\" ASC", true, true, 5},
-                {707660652, "SQL_PUBLIC_CACHE_SQL", "PUBLIC", "CACHE_SQL", "_key_PK_hash", "HASH", "\"ID\" ASC", false, true, null},
-
-                {1374144180, "SQL_PUBLIC_DFLT_AFF_CACHE", "PUBLIC", "DFLT_AFF_CACHE", "AFFINITY_KEY", "BTREE",
-                    "\"ID1\" ASC, \"ID2\" ASC", false, false, 10},
-                {1374144180, "SQL_PUBLIC_DFLT_AFF_CACHE", "PUBLIC", "DFLT_AFF_CACHE", "IDX_AFF_1", "BTREE",
-                    "\"ID2\" DESC, \"ID1\" ASC, \"MY_VAL\" DESC", false, false, 20},
-                {1374144180, "SQL_PUBLIC_DFLT_AFF_CACHE", "PUBLIC", "DFLT_AFF_CACHE", "__SCAN_", "SCAN", null, false, false, null},
-                {1374144180, "SQL_PUBLIC_DFLT_AFF_CACHE", "PUBLIC", "DFLT_AFF_CACHE", "_key_PK", "BTREE",
-                    "\"ID1\" ASC, \"ID2\" ASC", true, true, 10},
-                {1374144180, "SQL_PUBLIC_DFLT_AFF_CACHE", "PUBLIC", "DFLT_AFF_CACHE", "_key_PK_hash", "HASH",
-                    "\"ID1\" ASC, \"ID2\" ASC, \"ID1\" ASC", false, true, null},
-
-                {1102275506, "SQL_PUBLIC_DFLT_CACHE", "PUBLIC", "DFLT_CACHE", "IDX_1", "BTREE",
-                    "\"ID2\" DESC, \"ID1\" ASC, \"MY_VAL\" DESC, \"ID1\" ASC, \"ID2\" ASC", false, false, 25},
-                {1102275506, "SQL_PUBLIC_DFLT_CACHE", "PUBLIC", "DFLT_CACHE", "IDX_3", "BTREE",
-                    "\"MY_VAL\" ASC, \"ID1\" ASC, \"ID2\" ASC, \"ID1\" ASC, \"ID2\" ASC", false, false, 25},
-                {1102275506, "SQL_PUBLIC_DFLT_CACHE", "PUBLIC", "DFLT_CACHE", "__SCAN_", "SCAN", null, false, false, null},
-                {1102275506, "SQL_PUBLIC_DFLT_CACHE", "PUBLIC", "DFLT_CACHE", "_key_PK", "BTREE",
-                    "\"ID1\" ASC, \"ID2\" ASC", true, true, 10},
-                {1102275506, "SQL_PUBLIC_DFLT_CACHE", "PUBLIC", "DFLT_CACHE", "_key_PK_hash", "HASH",
-                    "\"ID1\" ASC, \"ID2\" ASC", false, true, null},
-
-                {2584860, "TST1", "TST1", "VALUECLASS", "TST1_INDEX", "BTREE", "\"KEY\" ASC, \"_KEY\" ASC", false, false, 10},
-                {2584860, "TST1", "TST1", "VALUECLASS", "__SCAN_", "SCAN", null, false, false, null},
-                {2584860, "TST1", "TST1", "VALUECLASS", "_key_PK", "BTREE", "\"_KEY\" ASC", true, true, 5},
-                {2584860, "TST1", "TST1", "VALUECLASS", "_key_PK_hash", "HASH", "\"_KEY\" ASC", false, true, null},
+            {-825022849, "SQL_PUBLIC_AFF_CACHE", "PUBLIC", "AFF_CACHE", "AFFINITY_KEY", "SORTED", "\"ID2\" ASC, \"ID1\" ASC",
+                false, false, 10},
+            {-825022849, "SQL_PUBLIC_AFF_CACHE", "PUBLIC", "AFF_CACHE", "_key_PK", "SORTED", "\"ID1\" ASC, \"ID2\" ASC", true, true, 10},
+            {707660652, "SQL_PUBLIC_CACHE_SQL", "PUBLIC", "CACHE_SQL", "IDX_2", "SORTED", "\"ID\" DESC, \"_KEY\" ASC", false, false, 10},
+            {707660652, "SQL_PUBLIC_CACHE_SQL", "PUBLIC", "CACHE_SQL", "IDX_2_proxy", "SORTED",
+                "\"_KEY\" DESC, \"ID\" ASC", false, false, 10},
+            {707660652, "SQL_PUBLIC_CACHE_SQL", "PUBLIC", "CACHE_SQL", "_key_PK", "SORTED", "\"_KEY\" ASC", true, true, 5},
+            {707660652, "SQL_PUBLIC_CACHE_SQL", "PUBLIC", "CACHE_SQL", "_key_PK_proxy", "SORTED",
+                "\"ID\" ASC", false, true, 5},
+            {1374144180, "SQL_PUBLIC_DFLT_AFF_CACHE", "PUBLIC", "DFLT_AFF_CACHE", "AFFINITY_KEY", "SORTED",
+                "\"ID1\" ASC, \"ID2\" ASC", false, false, 10},
+            {1374144180, "SQL_PUBLIC_DFLT_AFF_CACHE", "PUBLIC", "DFLT_AFF_CACHE", "IDX_AFF_1", "SORTED",
+                "\"ID2\" DESC, \"ID1\" ASC, \"MY_VAL\" DESC", false, false, 20},
+            {1374144180, "SQL_PUBLIC_DFLT_AFF_CACHE", "PUBLIC", "DFLT_AFF_CACHE", "_key_PK", "SORTED",
+                "\"ID1\" ASC, \"ID2\" ASC", true, true, 10},
+            {1102275506, "SQL_PUBLIC_DFLT_CACHE", "PUBLIC", "DFLT_CACHE", "IDX_1", "SORTED",
+                "\"ID2\" DESC, \"ID1\" ASC, \"MY_VAL\" DESC, \"_KEY\" ASC", false, false, 25},
+            {1102275506, "SQL_PUBLIC_DFLT_CACHE", "PUBLIC", "DFLT_CACHE", "IDX_3", "SORTED",
+                "\"MY_VAL\" ASC, \"ID1\" ASC, \"ID2\" ASC, \"_KEY\" ASC", false, false, 25},
+            {1102275506, "SQL_PUBLIC_DFLT_CACHE", "PUBLIC", "DFLT_CACHE", "_key_PK", "SORTED",
+                "\"ID1\" ASC, \"ID2\" ASC", true, true, 10},
+            {2584860, "TST1", "TST1", "VALUECLASS", "TST1_INDEX", "SORTED", "\"KEY\" ASC, \"_KEY\" ASC", false, false, 10},
+            {2584860, "TST1", "TST1", "VALUECLASS", "TST1_INDEX_proxy", "SORTED",
+                "\"_KEY\" ASC, \"KEY\" ASC", false, false, 10},
+            {2584860, "TST1", "TST1", "VALUECLASS", "_key_PK", "SORTED", "\"_KEY\" ASC", true, true, 5},
+            {2584860, "TST1", "TST1", "VALUECLASS", "_key_PK_proxy", "SORTED", "\"KEY\" ASC", false, true, 5},
         };
 
         assertEquals(expectedResults.length, srvNodeIndexes.size());

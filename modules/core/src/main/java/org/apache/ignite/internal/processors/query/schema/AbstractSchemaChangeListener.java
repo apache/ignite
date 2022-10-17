@@ -19,11 +19,10 @@ package org.apache.ignite.internal.processors.query.schema;
 
 import java.lang.reflect.Method;
 import java.util.List;
-import org.apache.ignite.internal.cache.query.index.Index;
 import org.apache.ignite.internal.processors.cache.GridCacheContextInfo;
-import org.apache.ignite.internal.processors.query.GridQueryIndexDescriptor;
 import org.apache.ignite.internal.processors.query.GridQueryTypeDescriptor;
 import org.apache.ignite.internal.processors.query.QueryField;
+import org.apache.ignite.internal.processors.query.schema.management.IndexDescriptor;
 import org.apache.ignite.spi.systemview.view.SystemView;
 
 /**
@@ -45,8 +44,7 @@ public abstract class AbstractSchemaChangeListener implements SchemaChangeListen
         String schemaName,
         String tblName,
         String idxName,
-        GridQueryIndexDescriptor idxDesc,
-        Index idx
+        IndexDescriptor idxDesc
     ) {
         // No-op.
     }
@@ -91,7 +89,7 @@ public abstract class AbstractSchemaChangeListener implements SchemaChangeListen
         GridQueryTypeDescriptor typeDesc,
         GridCacheContextInfo<?, ?> cacheInfo,
         List<String> cols
-    ){
+    ) {
         // No-op.
     }
 
@@ -105,7 +103,7 @@ public abstract class AbstractSchemaChangeListener implements SchemaChangeListen
     }
 
     /** {@inheritDoc} */
-    @Override public void onFunctionCreated(String schemaName, String name, Method method) {
+    @Override public void onFunctionCreated(String schemaName, String name, boolean deterministic, Method method) {
         // No-op.
     }
 

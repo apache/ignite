@@ -18,6 +18,7 @@
 #include <cstring>
 
 #include "ignite/ignite_error.h"
+#include "ignite/binary/binary_raw_writer.h"
 
 #include "ignite/impl/interop/interop.h"
 #include "ignite/impl/binary/binary_utils.h"
@@ -87,6 +88,11 @@ namespace ignite
     {
         namespace binary
         {
+            BinaryWriterImpl &BinaryUtils::ImplFromFacade(::ignite::binary::BinaryRawWriter& facade)
+            {
+                return *facade.impl;
+            }
+
             IGNORE_SIGNED_OVERFLOW
             int32_t BinaryUtils::GetDataHashCode(const void * data, size_t size)
             {
