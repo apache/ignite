@@ -790,7 +790,13 @@ class TcpClientChannel implements ClientChannel, ClientMessageHandler, ClientCon
         if (recommendedHeartbeatInterval < MIN_RECOMMENDED_HEARTBEAT_INTERVAL)
             recommendedHeartbeatInterval = MIN_RECOMMENDED_HEARTBEAT_INTERVAL;
 
-        return Math.min(configuredInterval, recommendedHeartbeatInterval);
+        long res = Math.min(configuredInterval, recommendedHeartbeatInterval);
+
+        if (log.isInfoEnabled())
+            log.info("Using heartbeat interval: " + res + " (configured: " + configuredInterval +
+                    ", recommended: " + recommendedHeartbeatInterval + ", server-side IdleTimeout: " + serverIdleTimeoutMs + ")");
+
+        return res;
     }
 
     /**
