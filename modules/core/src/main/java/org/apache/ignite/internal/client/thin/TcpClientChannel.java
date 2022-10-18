@@ -706,7 +706,11 @@ class TcpClientChannel implements ClientChannel, ClientMessageHandler, ClientCon
                         srvVer,
                         err
                     ));
-                else { // Retry with server version.
+                else {
+                    // Retry with server version.
+                    if (log.isDebugEnabled())
+                        log.debug("Retrying handshake with server version [protocolVersion=" + srvVer + ']');
+
                     handshake(srvVer, user, pwd, userAttrs);
                 }
             }
