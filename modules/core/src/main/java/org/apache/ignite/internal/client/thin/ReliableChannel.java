@@ -881,8 +881,12 @@ final class ReliableChannel implements AutoCloseable {
     private boolean shouldRetry(ClientOperation op, int iteration, ClientConnectionException exception) {
         ClientOperationType opType = op.toPublicOperationType();
 
-        if (opType == null)
+        if (opType == null) {
+            if (log.isDebugEnabled())
+                log.debug("Retrying system operation [op=" + op + ", iteration=" + iteration + ']');
+
             return true; // System operation.
+        }
 
         ClientRetryPolicy plc = clientCfg.getRetryPolicy();
 
@@ -892,7 +896,12 @@ final class ReliableChannel implements AutoCloseable {
         ClientRetryPolicyContext ctx = new ClientRetryPolicyContextImpl(clientCfg, opType, iteration, exception);
 
         try {
-            return plc.shouldRetry(ctx);
+            boolean res = plc.shouldRetry(ctx);
+
+            if (log.isDebugEnabled())
+                log.debug("Retry policy returned " + res +  " [op=" + op + ", iteration=" + iteration + ']');
+
+            return res;
         }
         catch (Throwable t) {
             exception.addSuppressed(t);
