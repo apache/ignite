@@ -184,6 +184,9 @@ class TcpClientChannel implements ClientChannel, ClientMessageHandler, ClientCon
 
         sock = connMgr.open(cfg.getAddress(), this, this);
 
+        if (log.isDebugEnabled())
+            log.debug("Connection establised: " + cfg.getAddress());
+
         handshake(DEFAULT_VERSION, cfg.getUserName(), cfg.getUserPassword(), cfg.getUserAttributes());
 
         heartbeatTimer = protocolCtx.isFeatureSupported(HEARTBEAT) && cfg.getHeartbeatEnabled()
@@ -673,6 +676,9 @@ class TcpClientChannel implements ClientChannel, ClientMessageHandler, ClientCon
                     // Reading server UUID
                     srvNodeId = reader.readUuid();
                 }
+
+                if (log.isDebugEnabled())
+                    log.debug("Handshake succeeded [protocolVersion=" + protocolCtx.version() + ", srvNodeId=" + srvNodeId + ']');
             }
             else {
                 ProtocolVersion srvVer = new ProtocolVersion(res.readShort(), res.readShort(), res.readShort());
@@ -682,6 +688,9 @@ class TcpClientChannel implements ClientChannel, ClientMessageHandler, ClientCon
 
                 if (res.remaining() > 0)
                     errCode = reader.readInt();
+
+                if (log.isDebugEnabled())
+                    log.debug("Handshake failed [protocolVersion=" + srvVer + ", err=" + err + ", errCode=" + errCode + ']');
 
                 if (errCode == ClientStatus.AUTH_FAILED)
                     throw new ClientAuthenticationException(err);
