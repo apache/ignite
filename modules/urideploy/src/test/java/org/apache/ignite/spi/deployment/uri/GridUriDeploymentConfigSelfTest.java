@@ -17,15 +17,15 @@
 
 package org.apache.ignite.spi.deployment.uri;
 
+import java.io.File;
+import java.util.Arrays;
+import java.util.Collections;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.testframework.config.GridTestProperties;
 import org.apache.ignite.testframework.junits.spi.GridSpiAbstractConfigTest;
 import org.apache.ignite.testframework.junits.spi.GridSpiTest;
 import org.junit.Test;
 
-import java.io.File;
-import java.util.Arrays;
-import java.util.Collections;
 /**
  *
  */
@@ -52,15 +52,15 @@ public class GridUriDeploymentConfigSelfTest extends GridSpiAbstractConfigTest<U
         UriDeploymentSpi deploymentSpi = new UriDeploymentSpi();
         String tmpDir = GridTestProperties.getProperty("deploy.uri.tmpdir");
         File tmp = new File(tmpDir);
-        if (!tmp.exists()){
+        if (!tmp.exists()) {
             tmp.mkdir();
         }
         deploymentSpi.setUriList(Arrays.asList("file://" + tmpDir));
         scfg.setDeploymentSpi(deploymentSpi);
-        startGrid("server" , scfg);
+        startGrid("server", scfg);
 
         IgniteConfiguration ccfg = super.getConfiguration();
-        startClientGrid("client" , ccfg);
+        startClientGrid("client", ccfg);
 
         stopGrid("server");
         stopGrid("client");
