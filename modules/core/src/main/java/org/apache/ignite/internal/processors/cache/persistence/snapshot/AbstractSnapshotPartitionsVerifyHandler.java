@@ -146,12 +146,12 @@ abstract class AbstractSnapshotPartitionsVerifyHandler<R> implements SnapshotHan
                     int grpId = CU.cacheId(grpName);
                     int partId = partId(part.getName());
 
+                    PartitionKeyV2 partKey = new PartitionKeyV2(grpId, partId, grpName);
+
                     try (FilePageStore pageStore =
                              (FilePageStore)storeMgr.getPageStoreFactory(grpId, snpEncrKeyProvider.getActiveKey(grpId) != null ?
                                  snpEncrKeyProvider : null).createPageStore(getTypeByPartId(partId), part::toPath, val -> {})
                     ) {
-                        PartitionKeyV2 partKey = new PartitionKeyV2(grpId, partId, grpName);
-
                         R partRes = validatePartition(hndCtx, opCtx, partKey, pageStore);
 
                         if (partRes != null)

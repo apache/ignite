@@ -98,11 +98,14 @@ import org.apache.ignite.internal.processors.cache.persistence.db.IgniteCacheGro
 import org.apache.ignite.internal.processors.cache.persistence.diagnostic.pagelocktracker.dumpprocessors.ToFileDumpProcessor;
 import org.apache.ignite.internal.processors.cache.persistence.file.FileIO;
 import org.apache.ignite.internal.processors.cache.persistence.file.FileIOFactory;
+import org.apache.ignite.internal.processors.cache.persistence.snapshot.IgniteClusterShanpshotStreamerTest;
 import org.apache.ignite.internal.processors.cache.persistence.snapshot.IgniteSnapshotManager;
-import org.apache.ignite.internal.processors.cache.persistence.snapshot.SnapshotDataStreamerVerifyHandler;
 import org.apache.ignite.internal.processors.cache.persistence.snapshot.SnapshotHandler;
 import org.apache.ignite.internal.processors.cache.persistence.snapshot.SnapshotHandlerContext;
+import org.apache.ignite.internal.processors.cache.persistence.snapshot.SnapshotHandlerResult;
+import org.apache.ignite.internal.processors.cache.persistence.snapshot.SnapshotHandlerType;
 import org.apache.ignite.internal.processors.cache.persistence.snapshot.SnapshotHandlerWarning;
+import org.apache.ignite.internal.processors.cache.persistence.snapshot.SnapshotPartitionsCountersVerifyHandler;
 import org.apache.ignite.internal.processors.cache.transactions.IgniteInternalTx;
 import org.apache.ignite.internal.processors.cache.transactions.IgniteTxEntry;
 import org.apache.ignite.internal.processors.cache.transactions.TransactionProxyImpl;
@@ -3089,10 +3092,22 @@ public class GridCommandHandlerTest extends GridCommandHandlerClusterPerMethodAb
 
                     // Simulates concurrent datastreamer check warning.
                     registry.registerExtension(SnapshotHandler.class,
-                        new SnapshotDataStreamerVerifyHandler() {
+                        new SnapshotHandler<Void>() {
                             /** {@inheritDoc} */
-                            @Override public SnapshotHandlerWarning invoke(SnapshotHandlerContext c) {
-                                return createWarning(Collections.singletonList(DEFAULT_CACHE_NAME), c.localNode().id());
+                            @Override public SnapshotHandlerType type() {
+                                return SnapshotHandlerType.CREATE;
+                            }
+
+                            /** {@inheritDoc} */
+                            @Nullable @Override public Void invoke(SnapshotHandlerContext ctx) {
+                                return null;
+                            }
+
+                            /** {@inheritDoc} */
+                            @Override public SnapshotHandlerWarning complete(String name,
+                                Collection<SnapshotHandlerResult<Void>> results) {
+                                return new SnapshotHandlerWarning(SnapshotPartitionsCountersVerifyHandler.wrnMsg(
+                                    Collections.singletonList(CU.cacheId(DEFAULT_CACHE_NAME))));
                             }
                         });
                 }
@@ -3117,8 +3132,8 @@ public class GridCommandHandlerTest extends GridCommandHandlerClusterPerMethodAb
         log.addHandler(new StreamHandler() {
             /** {@inheritDoc} */
             @Override public synchronized void publish(LogRecord record) {
-                if (record.getMessage() != null && !wrnFound.get() && record.getMessage().contains("Such updates may " +
-                    "break data consistency until finished. Snapshot might not be entirely restored."))
+                if (record.getMessage() != null && !wrnFound.get() &&
+                    record.getMessage().contains(IgniteClusterShanpshotStreamerTest.ERR_MSG))
                     wrnFound.set(true);
             }
         });

@@ -1465,11 +1465,7 @@ public class GridIoManager extends GridManagerAdapter<CommunicationSpi<Serializa
         }
 
         if (plc == GridIoPolicy.DATA_STREAMER_POOL && part != GridIoMessage.STRIPE_DISABLED_PART) {
-            try {
-                ctx.pools().getDataStreamerExecutorService().execute(part, c);
-            } catch (Exception e){
-                throw e;
-            }
+            ctx.pools().getDataStreamerExecutorService().execute(part, c);
 
             return;
         }

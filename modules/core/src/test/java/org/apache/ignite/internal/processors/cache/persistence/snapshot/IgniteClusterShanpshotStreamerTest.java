@@ -36,7 +36,6 @@ import org.apache.ignite.cluster.BaselineNode;
 import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.configuration.WALMode;
-import org.apache.ignite.events.DiscoveryEvent;
 import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.managers.communication.GridIoMessage;
@@ -63,8 +62,6 @@ import org.jetbrains.annotations.Nullable;
 import org.junit.Test;
 
 import static org.apache.ignite.cluster.ClusterState.ACTIVE;
-import static org.apache.ignite.events.EventType.EVT_NODE_FAILED;
-import static org.apache.ignite.events.EventType.EVT_NODE_LEFT;
 import static org.apache.ignite.testframework.GridTestUtils.assertThrows;
 
 /**
@@ -75,7 +72,7 @@ public class IgniteClusterShanpshotStreamerTest extends AbstractSnapshotSelfTest
     private static final TcpDiscoveryIpFinder IP_FINDER = new TcpDiscoveryVmIpFinder(true);
 
     /** */
-    private static final String ERR_MSG = "You won't be able to restore this snapshot entirely. But " +
+    public static final String ERR_MSG = "You won't be able to restore this snapshot entirely. But " +
         "you will be able restore rest the caches of the snapshot. This may happen if DataStreamer with the " +
         "property 'allowOverwrite' set to `false` is loading during the snapshot or hadn't successfully earlier. " +
         "It doesn't guarantee data consistency until completes without errors.";
@@ -262,7 +259,7 @@ public class IgniteClusterShanpshotStreamerTest extends AbstractSnapshotSelfTest
         CountDownLatch preload = new CountDownLatch(preLoadCnt);
         AtomicBoolean stopLoading = new AtomicBoolean(false);
 
-        IgniteInternalFuture<?> loadFut = runLoad(ldrNode, receiver, preload, stopLoading, true);
+        IgniteInternalFuture<?> loadFut = runLoad(ldrNode, receiver, preload, stopLoading, false, true);
 
         preload.await();
 
@@ -303,7 +300,7 @@ public class IgniteClusterShanpshotStreamerTest extends AbstractSnapshotSelfTest
             CountDownLatch loadLatch = new CountDownLatch(2_000);
 
             try {
-                loadDuringSnp.set(runLoad(ldr, rcvr, loadLatch, stopLoading, true));
+                loadDuringSnp.set(runLoad(ldr, rcvr, loadLatch, stopLoading, false, true));
 
                 loadLatch.await();
             }
@@ -349,7 +346,7 @@ public class IgniteClusterShanpshotStreamerTest extends AbstractSnapshotSelfTest
         AtomicBoolean stopLoading = new AtomicBoolean();
         CountDownLatch dataLoadCounter = new CountDownLatch(preLoadCnt);
 
-        IgniteInternalFuture<?> loadFut = runLoad(ldr, receiver, dataLoadCounter, stopLoading, true);
+        IgniteInternalFuture<?> loadFut = runLoad(ldr, receiver, dataLoadCounter, stopLoading, false, true);
 
         continueSecondStageLatch.await();
         dataLoadCounter.await();
@@ -374,27 +371,11 @@ public class IgniteClusterShanpshotStreamerTest extends AbstractSnapshotSelfTest
         CountDownLatch preloadLatch = new CountDownLatch(10_000);
         AtomicBoolean stopLoad = new AtomicBoolean();
 
-        runLoad(ldr, receiver, preloadLatch, stopLoad, true);
+        IgniteInternalFuture<?> loadFut = runLoad(ldr, receiver, preloadLatch, stopLoad, true, true);
 
         preloadLatch.await();
-
-        CountDownLatch nodeLeftLatch = new CountDownLatch(1);
-
-        UUID ldrId = ldr.cluster().localNode().id();
-
-        grid(0).events().localListen(evt -> {
-            DiscoveryEvent de = (DiscoveryEvent)evt;
-
-            assert de.eventNode().id().equals(ldrId);
-
-            nodeLeftLatch.countDown();
-
-            return false;
-        }, EVT_NODE_LEFT, EVT_NODE_FAILED);
-
-        GridTestUtils.runAsync(()->stopGrid(ldr.name(), true));
-
-        nodeLeftLatch.await();
+        stopLoad.set(true);
+        loadFut.get();
 
         createAndCheckSnp(mustFail);
     }
@@ -425,7 +406,7 @@ public class IgniteClusterShanpshotStreamerTest extends AbstractSnapshotSelfTest
         CountDownLatch preload = new CountDownLatch(preLoadCnt);
         AtomicBoolean stopLoading = new AtomicBoolean(false);
 
-        IgniteInternalFuture<?> loadFut = runLoad(ldrNode, null, preload, stopLoading, false);
+        IgniteInternalFuture<?> loadFut = runLoad(ldrNode, null, preload, stopLoading, false, false);
         preload.await();
         stopLoading.set(true);
         loadFut.get();
@@ -438,10 +419,11 @@ public class IgniteClusterShanpshotStreamerTest extends AbstractSnapshotSelfTest
      * @param receiver Stream receiver. {@code Null} for default.
      * @param dataSendCounter Data counter submitted to the streamer.
      * @param stop Stop load flag.
+     * @param stop f {@code true}, cancels streaming without graceful flushing.
      * @param maleficent If {@code true}, erases batches to one of server node to ensure of snapshot inconsistency.
      */
     private IgniteInternalFuture<?> runLoad(Ignite ldr, @Nullable StreamReceiver<Integer, Object> receiver,
-        CountDownLatch dataSendCounter, AtomicBoolean stop, boolean maleficent) {
+        CountDownLatch dataSendCounter, AtomicBoolean stop, boolean cancel, boolean maleficent) {
 
         return GridTestUtils.runMultiThreadedAsync(() -> {
             DataLoosingCommunicationSpi cm = (DataLoosingCommunicationSpi)ldr.configuration().getCommunicationSpi();
@@ -493,6 +475,9 @@ public class IgniteClusterShanpshotStreamerTest extends AbstractSnapshotSelfTest
                             ds.flush();
                     }
                 }
+
+                if (cancel)
+                    ds.close(true);
             }
             finally {
                 while (dataSendCounter.getCount() > 0)

@@ -20,6 +20,7 @@ package org.apache.ignite.internal.processors.cache.persistence.snapshot;
 import java.nio.ByteBuffer;
 import java.nio.ByteOrder;
 import java.util.Collection;
+import java.util.Collections;
 import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
@@ -28,12 +29,15 @@ import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.internal.GridKernalContext;
 import org.apache.ignite.internal.processors.cache.GridCacheSharedContext;
 import org.apache.ignite.internal.processors.cache.persistence.file.FilePageStore;
+import org.apache.ignite.internal.processors.cache.persistence.metastorage.MetaStorage;
 import org.apache.ignite.internal.processors.cache.persistence.tree.io.PageIO;
 import org.apache.ignite.internal.processors.cache.persistence.tree.io.PagePartitionMetaIO;
 import org.apache.ignite.internal.processors.cache.verify.PartitionKeyV2;
 import org.apache.ignite.internal.util.GridConcurrentHashSet;
 import org.apache.ignite.internal.util.GridUnsafe;
 import org.apache.ignite.internal.util.typedef.internal.U;
+
+import static org.apache.ignite.internal.pagemem.PageIdAllocator.INDEX_PARTITION;
 
 /**
  *
@@ -55,9 +59,12 @@ public class SnapshotPartitionsCountersVerifyHandler extends AbstractSnapshotPar
     @Override protected Long validatePartition(
         SnapshotHandlerContext hndCtx,
         GridKernalContext opCtx,
-        PartitionKeyV2 partKey,
+        PartitionKeyV2 key,
         FilePageStore pageStore
     ) throws IgniteCheckedException {
+        if (key.partitionId() == INDEX_PARTITION || key.groupId() == MetaStorage.METASTORAGE_CACHE_ID)
+            return null;
+
         ThreadLocal<ByteBuffer> buff =
             ThreadLocal.withInitial(() -> ByteBuffer.allocateDirect(hndCtx.metadata().pageSize()).
                 order(ByteOrder.nativeOrder()));
@@ -87,7 +94,7 @@ public class SnapshotPartitionsCountersVerifyHandler extends AbstractSnapshotPar
             nodeResult -> {
                 U.doInParallel(
                     cctx.snapshotMgr().snapshotExecutorService(),
-                    nodeResult.data().entrySet(),
+                    nodeResult.data() == null ? Collections.emptySet() : nodeResult.data().entrySet(),
                     partResult -> {
                         if (wrnGroups.contains(partResult.getKey().groupId()))
                             return null;
@@ -121,7 +128,7 @@ public class SnapshotPartitionsCountersVerifyHandler extends AbstractSnapshotPar
     }
 
     /** */
-    private String wrnMsg(Collection<Integer> corruptedGroups) {
+    public static String wrnMsg(Collection<Integer> corruptedGroups) {
         return "Cache partitions differ for cache groups " + corruptedGroups.stream().map(String::valueOf)
             .collect(Collectors.joining(",")) + ". You won't be able to restore this snapshot entirely. But " +
             "you will be able restore rest the caches of the snapshot. This may happen if DataStreamer with the " +

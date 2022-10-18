@@ -36,7 +36,7 @@ public class SnapshotHandlerWarning implements Supplier<String>, Serializable {
     private final String wrn;
 
     /** Ctor. */
-    SnapshotHandlerWarning(String wrn) {
+    public SnapshotHandlerWarning(String wrn) {
         this.wrn = wrn;
     }
 
