@@ -85,7 +85,7 @@ final class ReliableChannel implements AutoCloseable {
     private final ClientConfiguration clientCfg;
 
     /** Logger. */
-    private final IgniteLogger logger;
+    private final IgniteLogger log;
 
     /** Node channels. */
     private final Map<UUID, ClientChannelHolder> nodeChannels = new ConcurrentHashMap<>();
@@ -133,7 +133,7 @@ final class ReliableChannel implements AutoCloseable {
 
         this.clientCfg = clientCfg;
         this.chFactory = chFactory;
-        logger = clientCfg.getLogger() == null ? new NullLogger() : clientCfg.getLogger();
+        log = clientCfg.getLogger() == null ? new NullLogger() : clientCfg.getLogger();
 
         partitionAwarenessEnabled = clientCfg.isPartitionAwarenessEnabled();
 
@@ -141,10 +141,16 @@ final class ReliableChannel implements AutoCloseable {
 
         connMgr = new GridNioClientConnectionMultiplexer(clientCfg);
         connMgr.start();
+
+        if (log.isDebugEnabled())
+            log.debug("ReliableChannel created");
     }
 
     /** {@inheritDoc} */
     @Override public synchronized void close() {
+        if (log.isDebugEnabled())
+            log.debug("ReliableChannel stopping");
+
         closed = true;
 
         connMgr.stop();
@@ -155,6 +161,9 @@ final class ReliableChannel implements AutoCloseable {
             for (ClientChannelHolder hld: holders)
                 hld.close();
         }
+
+        if (log.isDebugEnabled())
+            log.debug("ReliableChannel stopped");
     }
 
     /**
