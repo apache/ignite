@@ -605,9 +605,12 @@ public final class IgniteSystemProperties {
 
     /**
      * Flag indicating whether atomic operations allowed for use inside transactions.
+     *
+     * @deprecated Since version 2.15.0. To be deleted since version 2.16.0.
      */
     @SystemProperty(value = "Allows atomic operations inside transactions",
         defaults = "true")
+    @Deprecated
     public static final String IGNITE_ALLOW_ATOMIC_OPS_IN_TX = "IGNITE_ALLOW_ATOMIC_OPS_IN_TX";
 
     /**
