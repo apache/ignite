@@ -40,6 +40,7 @@ import java.util.stream.Collectors;
 import java.util.stream.IntStream;
 import org.apache.ignite.IgniteBinary;
 import org.apache.ignite.IgniteCheckedException;
+import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.client.ClientAuthenticationException;
 import org.apache.ignite.client.ClientAuthorizationException;
 import org.apache.ignite.client.ClientConnectionException;
@@ -56,6 +57,7 @@ import org.apache.ignite.internal.client.thin.io.gridnioserver.GridNioClientConn
 import org.apache.ignite.internal.util.HostAndPortRange;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.internal.U;
+import org.apache.ignite.logger.NullLogger;
 
 /**
  * Communication channel with failover and partition awareness.
@@ -81,6 +83,9 @@ final class ReliableChannel implements AutoCloseable {
 
     /** Client configuration. */
     private final ClientConfiguration clientCfg;
+
+    /** Logger. */
+    private final IgniteLogger logger;
 
     /** Node channels. */
     private final Map<UUID, ClientChannelHolder> nodeChannels = new ConcurrentHashMap<>();
@@ -128,6 +133,7 @@ final class ReliableChannel implements AutoCloseable {
 
         this.clientCfg = clientCfg;
         this.chFactory = chFactory;
+        logger = clientCfg.getLogger() == null ? new NullLogger() : clientCfg.getLogger();
 
         partitionAwarenessEnabled = clientCfg.isPartitionAwarenessEnabled();
 
