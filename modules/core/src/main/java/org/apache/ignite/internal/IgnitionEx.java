@@ -85,6 +85,7 @@ import org.apache.ignite.internal.processors.datastructures.DataStructuresProces
 import org.apache.ignite.internal.processors.metastorage.DistributedMetaStorage;
 import org.apache.ignite.internal.processors.metastorage.persistence.DistributedMetaStorageImpl;
 import org.apache.ignite.internal.processors.resource.DependencyResolver;
+import org.apache.ignite.internal.processors.resource.GridInjectResourceContext;
 import org.apache.ignite.internal.processors.resource.GridSpringResourceContext;
 import org.apache.ignite.internal.util.GridConcurrentHashSet;
 import org.apache.ignite.internal.util.IgniteUtils;
@@ -538,7 +539,26 @@ public class IgnitionEx {
      *      also if default grid has already been started.
      */
     public static Ignite start() throws IgniteCheckedException {
-        return start((GridSpringResourceContext)null);
+        return start((GridSpringResourceContext) null);
+    }
+
+    /**
+     * Starts grid with default configuration. By default this method will
+     * use grid configuration defined in {@code IGNITE_HOME/config/default-config.xml}
+     * configuration file. If such file is not found, then all system defaults will be used.
+     *
+     * @param injectCtx Optional injection context, possibly {@code null}.
+     *      If provided, this context can be used to inject specific beans into grid tasks and grid jobs using
+     *      {@link org.apache.ignite.resources.InjectResource} annotation.
+     * @return Started grid.
+     * @throws IgniteCheckedException If default grid could not be started. This exception will be thrown
+     *      also if default grid has already been started.
+     */
+    public static Ignite start(@Nullable GridInjectResourceContext injectCtx) throws IgniteCheckedException {
+        URL url = U.resolveIgniteUrl(DFLT_CFG);
+
+        return start0(new GridStartContext(new IgniteConfiguration(), url, injectCtx), true)
+            .get1().grid();
     }
 
     /**
@@ -610,6 +630,24 @@ public class IgnitionEx {
         catch (IgniteCheckedException e) {
             throw U.convertException(e);
         }
+    }
+
+    /**
+     * Starts grid with given configuration. Note that this method will throw and exception if grid with the name
+     * provided in given configuration is already started.
+     *
+     * @param cfg Grid configuration. This cannot be {@code null}.
+     * @param injectCtx Optional injection context, possibly {@code null}.
+     *      If provided, this context can be used to inject specific beans into grid tasks and grid jobs using
+     *      {@link org.apache.ignite.resources.InjectResource} annotation.
+     * @return Started grid.
+     * @throws IgniteCheckedException If grid could not be started. This exception will be thrown
+     *      also if named grid has already been started.
+     */
+    public static Ignite start(IgniteConfiguration cfg, @Nullable GridInjectResourceContext resourceCtx) throws IgniteCheckedException {
+        A.notNull(cfg, "cfg");
+
+        return start0(new GridStartContext(cfg, null, resourceCtx), true).get1().grid();
     }
 
     /**
@@ -1477,8 +1515,25 @@ public class IgnitionEx {
         /** Optional Spring application context. */
         private GridSpringResourceContext springCtx;
 
+        /** Optional injection context. */
+        private GridInjectResourceContext injectCtx;
+
         /** Whether or not this is a single grid instance in current VM. */
         private boolean single;
+
+        /**
+         *
+         * @param cfg User-defined configuration.
+         * @param cfgUrl Optional configuration path.
+         * @param injectCtx Optional Spring application context.
+         */
+        GridStartContext(IgniteConfiguration cfg, @Nullable URL cfgUrl, @Nullable GridInjectResourceContext injectCtx) {
+            assert (cfg != null);
+
+            this.cfg = cfg;
+            this.cfgUrl = cfgUrl;
+            this.injectCtx = injectCtx;
+        }
 
         /**
          *
@@ -1541,6 +1596,13 @@ public class IgnitionEx {
          */
         public GridSpringResourceContext springContext() {
             return springCtx;
+        }
+
+        /**
+         * @return Optional injection context.
+         */
+        public GridInjectResourceContext injectionContext() {
+            return injectCtx;
         }
     }
 
@@ -1747,7 +1809,7 @@ public class IgnitionEx {
             boolean started = false;
 
             try {
-                IgniteKernal grid0 = new IgniteKernal(startCtx.springContext());
+                IgniteKernal grid0 = new IgniteKernal(startCtx.springContext(), startCtx.injectionContext());
 
                 // Init here to make grid available to lifecycle listeners.
                 grid = grid0;

@@ -15,34 +15,26 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.internal.processors.resource;
+package org.apache.ignite.ioc;
 
+import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCheckedException;
+import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.IgnitionEx;
+import org.apache.ignite.ioc.internal.processors.resource.GridInjectResourceContextImpl;
+import org.jetbrains.annotations.Nullable;;
 
 /**
- * Interface was introduced to avoid compile-time dependency on spring framework. Spring resource context
- * provides optional spring resource injectors, it can be passed to factory method
- * starting Ignite {@link IgnitionEx#start(GridSpringResourceContext)}.
+ * Helper for launching ignite with specific bean registry.
  */
-@Deprecated
-public interface GridSpringResourceContext {
-    /**
-     * @return Spring bean injector.
-     */
-    public GridResourceInjector springBeanInjector();
+public class IgniteIoc {
 
-    /**
-     * @return Spring context injector.
-     */
-    public GridResourceInjector springContextInjector();
+    public static Ignite start(@Nullable Registry registry) throws IgniteCheckedException {
+        return IgnitionEx.start(new GridInjectResourceContextImpl(registry));
+    }
 
-    /**
-     * Return original object if AOP used with proxy objects.
-     *
-     * @param target Target object.
-     * @return Original object wrapped by proxy.
-     * @throws IgniteCheckedException If unwrap failed.
-     */
-    public Object unwrapTarget(Object target) throws IgniteCheckedException;
+    public static Ignite start(IgniteConfiguration cfg, @Nullable Registry registry) throws IgniteCheckedException {
+        return IgnitionEx.start(cfg, new GridInjectResourceContextImpl(registry));
+    }
+
 }

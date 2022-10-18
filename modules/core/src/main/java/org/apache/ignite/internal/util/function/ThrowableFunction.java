@@ -17,6 +17,8 @@
 
 package org.apache.ignite.internal.util.function;
 
+import java.util.Objects;
+
 /**
  * Specific interface for transmitting exceptions from lambda to external method without a catch.
  *
@@ -34,4 +36,13 @@ public interface ThrowableFunction<R, T, E extends Exception> {
      * @throws E If failed.
      */
     R apply(T t) throws E;
+
+    default <V> ThrowableFunction<V, T, E> andThen(ThrowableFunction<V, R, E> after) {
+        Objects.requireNonNull(after);
+        return (T t) -> after.apply(apply(t));
+    }
+
+    static <I, E extends Exception> ThrowableFunction<I, I, E> identity() {
+        return (I t) -> t;
+    }
 }
