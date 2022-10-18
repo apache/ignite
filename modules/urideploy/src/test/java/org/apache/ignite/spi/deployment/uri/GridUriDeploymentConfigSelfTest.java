@@ -18,8 +18,8 @@
 package org.apache.ignite.spi.deployment.uri;
 
 import java.io.File;
-import java.util.Arrays;
 import java.util.Collections;
+
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.testframework.config.GridTestProperties;
 import org.apache.ignite.testframework.junits.spi.GridSpiAbstractConfigTest;
@@ -68,9 +68,9 @@ public class GridUriDeploymentConfigSelfTest extends GridSpiAbstractConfigTest<U
 
             IgniteConfiguration clientCfg = getConfiguration();
             startClientGrid(clientName, clientCfg);
-        } finally {
-            stopGrid(srvName);
-            stopGrid(clientName);
+        }
+        finally {
+            stopAllGrids();
         }
     }
 }
