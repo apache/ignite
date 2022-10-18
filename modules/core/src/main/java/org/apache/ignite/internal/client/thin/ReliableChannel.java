@@ -243,7 +243,7 @@ final class ReliableChannel implements AutoCloseable {
                 if (err instanceof ClientConnectionException) {
                     try {
                         // Will try to reinit channels if topology changed.
-                        onChannelFailure(ch);
+                        onChannelFailure(ch, err);
                     }
                     catch (Throwable ex) {
                         fut.completeExceptionally(ex);
@@ -384,7 +384,7 @@ final class ReliableChannel implements AutoCloseable {
 
                             try {
                                 // Will try to reinit channels if topology changed.
-                                onChannelFailure(channel);
+                                onChannelFailure(channel, err);
                             }
                             catch (Throwable ex) {
                                 fut.completeExceptionally(ex);
@@ -544,17 +544,19 @@ final class ReliableChannel implements AutoCloseable {
     /**
      * On current channel failure.
      */
-    private void onChannelFailure(ClientChannel ch) {
+    private void onChannelFailure(ClientChannel ch, Throwable t) {
         // There is nothing wrong if curChIdx was concurrently changed, since channel was closed by another thread
         // when current index was changed and no other wrong channel will be closed by current thread because
         // onChannelFailure checks channel binded to the holder before closing it.
-        onChannelFailure(channels.get(curChIdx), ch);
+        onChannelFailure(channels.get(curChIdx), ch, t);
     }
 
     /**
      * On channel of the specified holder failure.
      */
-    private void onChannelFailure(ClientChannelHolder hld, ClientChannel ch) {
+    private void onChannelFailure(ClientChannelHolder hld, ClientChannel ch, Throwable t) {
+        log.warning("Channel failure [address=" + hld.chCfg.getAddress() + ", err=" + t.getMessage() + ']', t);
+
         if (ch != null && ch == hld.ch)
             hld.closeChannel();
 
@@ -770,7 +772,7 @@ final class ReliableChannel implements AutoCloseable {
                 return function.apply(channel);
         }
         catch (ClientConnectionException e) {
-            onChannelFailure(hld, channel);
+            onChannelFailure(hld, channel, e);
         }
 
         return null;
@@ -821,7 +823,7 @@ final class ReliableChannel implements AutoCloseable {
                 else
                     failure.addSuppressed(e);
 
-                onChannelFailure(hld, c);
+                onChannelFailure(hld, c, e);
 
                 if (op != null && !shouldRetry(op, attempt, e))
                     break;
@@ -851,7 +853,7 @@ final class ReliableChannel implements AutoCloseable {
 
             }
             catch (ClientConnectionException e) {
-                onChannelFailure(hld, channel);
+                onChannelFailure(hld, channel, e);
 
                 retryLimit -= 1;
 
