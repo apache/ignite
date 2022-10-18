@@ -31,15 +31,20 @@ import static org.apache.ignite.IgniteSystemProperties.IGNITE_ALLOW_ATOMIC_OPS_I
  * Cache operation context.
  */
 public class CacheOperationContext implements Serializable {
-    /** */
     //TODO IGNITE-8801 remove this and set default as `false`.
+    /** @deprecated Since version 2.15.0. To be deleted since version 2.16.0. */
+    @Deprecated
     public static final boolean DFLT_ALLOW_ATOMIC_OPS_IN_TX =
-        IgniteSystemProperties.getBoolean(IGNITE_ALLOW_ATOMIC_OPS_IN_TX, true);
+            IgniteSystemProperties.getBoolean(IGNITE_ALLOW_ATOMIC_OPS_IN_TX, true);
 
-    /** */
+    /**
+     *
+     */
     private static final long serialVersionUID = 0L;
 
-    /** Skip store. */
+    /**
+     * Skip store.
+     */
     @GridToStringInclude
     private final boolean skipStore;
 
