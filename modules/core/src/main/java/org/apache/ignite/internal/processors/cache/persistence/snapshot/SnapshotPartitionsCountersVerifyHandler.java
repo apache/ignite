@@ -40,12 +40,11 @@ import org.apache.ignite.internal.util.typedef.internal.U;
 import static org.apache.ignite.internal.pagemem.PageIdAllocator.INDEX_PARTITION;
 
 /**
- *
+ * Quick partitions verifier. Warns if partiton counters are different among the nodes. Mighe be caused by concurrent
+ * or canceled/failed DataStreamer.
  */
 public class SnapshotPartitionsCountersVerifyHandler extends AbstractSnapshotPartitionsVerifyHandler<Long> {
-    /**
-     * @param cctx     Shared context.
-     */
+    /** {@inheritDoc} */
     public SnapshotPartitionsCountersVerifyHandler(GridCacheSharedContext<?, ?> cctx) {
         super(cctx);
     }
@@ -80,7 +79,7 @@ public class SnapshotPartitionsCountersVerifyHandler extends AbstractSnapshotPar
     }
 
     /** {@inheritDoc} */
-    @Override public SnapshotHandlerWarning complete(String name,
+    @Override public void complete(String name,
         Collection<SnapshotHandlerResult<Map<PartitionKeyV2, Long>>> results) throws IgniteCheckedException {
 
         // Group id -> Part id -> Counters set without node id.
@@ -124,16 +123,16 @@ public class SnapshotPartitionsCountersVerifyHandler extends AbstractSnapshotPar
             }
         );
 
-        return wrnGroups.isEmpty() ? null : new SnapshotHandlerWarning(wrnMsg(wrnGroups));
+        if (!wrnGroups.isEmpty())
+            throw new SnapshotHandlerWarningException(wrnMsg(wrnGroups));
     }
 
     /** */
-    public static String wrnMsg(Collection<Integer> corruptedGroups) {
-        return "Cache partitions differ for cache groups " + corruptedGroups.stream().map(String::valueOf)
-            .collect(Collectors.joining(",")) + ". You won't be able to restore this snapshot entirely. But " +
-            "you will be able restore rest the caches of the snapshot. This may happen if DataStreamer with the " +
-            "property 'allowOverwrite' set to `false` is loading during the snapshot or hadn't successfully earlier. " +
-            "It doesn't guarantee data consistency until completes without errors. For more details of snapshotted " +
-            "partition states lauch the snapshot chack task.";
+    public static String wrnMsg(Collection<Integer> cacheGrps) {
+        return "Cache partitions differ for cache groups " + cacheGrps.stream().map(String::valueOf)
+            .collect(Collectors.joining(",")) + ". This may happen if DataStreamer with property 'allowOverwrite' " +
+            "set to `false` is loading during the snapshot or hadn't successfully finished earlier. However, you " +
+            "will be able restore rest the caches of the snapshot. For more details of snapshotted partitions states " +
+            "lauch the snapshot chack task.";
     }
 }

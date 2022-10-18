@@ -27,30 +27,27 @@ import org.jetbrains.annotations.Nullable;
  * <p>
  * The execution of the handler consists of two steps:
  * <ol>
- * <li>Local call of {@link #invoke(SnapshotHandlerContext)} method on all nodes containing the snapshot data or
- * validating snapshot operation.</li>
+ * <li>Local call of {@link #invoke(SnapshotHandlerContext)} method on all nodes containing the snapshot data.</li>
  * <li>Processing the results of local invocations in the {@link #complete(String, Collection)} method on one of the
  * nodes containing the snapshot data.</li>
  * </ol>
  * Note: If during the execution of a snapshot operation some node exits, then whole operation is rolled back, in which
  *       case the {@link #complete(String, Collection)} method may not be called.
  *
- * @param <T> Type of the local processing result. Could be a warning result, {@link SnapshotHandlerWarning}
+ * @param <T> Type of the local processing result.
  */
 public interface SnapshotHandler<T> extends Extension {
     /** Snapshot handler type. */
     public SnapshotHandlerType type();
 
     /**
-     * Local processing of a snapshot operation. Called on every node that contains snapshot data or should check
-     * snapshot operation.
+     * Local processing of a snapshot operation. Called on every node that contains snapshot data.
      *
      * @param ctx Snapshot handler context.
      * @return Result of local processing. This result will be returned in {@link SnapshotHandlerResult#data()} method
      *      passed into {@link #complete(String, Collection)} handler method.
      * @throws Exception If invocation caused an exception. This exception will be returned in {@link
      *      SnapshotHandlerResult#error()}} method passed into {@link #complete(String, Collection)} handler method.
-     * @see SnapshotHandlerWarning
      */
     public @Nullable T invoke(SnapshotHandlerContext ctx) throws Exception;
 
@@ -64,13 +61,12 @@ public interface SnapshotHandler<T> extends Extension {
      *
      * @param name Snapshot name.
      * @param results Results from all nodes.
-     * @return Snapshot handler warning. {@code Null} if no warning occured.
      * @throws Exception If the snapshot operation needs to be aborted.
-     * @throws SnapshotHandlerWarning If the snapshot operation has warnings.
+     * @throws SnapshotHandlerWarningException If the snapshot operation has warnings.
      * @see SnapshotHandlerResult
-     * @see SnapshotHandlerWarning
      */
-    public default SnapshotHandlerWarning complete(String name, Collection<SnapshotHandlerResult<T>> results) throws Exception {
+    public default void complete(String name, Collection<SnapshotHandlerResult<T>> results)
+        throws SnapshotHandlerWarningException, Exception {
         for (SnapshotHandlerResult<T> res : results) {
             if (res.error() == null)
                 continue;
@@ -80,7 +76,5 @@ public interface SnapshotHandler<T> extends Extension {
                 ", handler=" + getClass().getName() +
                 ", nodeId=" + res.node().id() + "].", res.error());
         }
-
-        return null;
     }
 }

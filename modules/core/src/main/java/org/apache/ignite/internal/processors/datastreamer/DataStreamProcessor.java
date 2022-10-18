@@ -18,11 +18,8 @@
 package org.apache.ignite.internal.processors.datastreamer;
 
 import java.util.Collection;
-import java.util.Collections;
-import java.util.List;
 import java.util.UUID;
 import java.util.concurrent.DelayQueue;
-import java.util.stream.Collectors;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.internal.GridKernalContext;
@@ -200,27 +197,6 @@ public class DataStreamProcessor<K, V> extends GridProcessorAdapter {
             });
 
             return ldr;
-        }
-        finally {
-            busyLock.leaveBusy();
-        }
-    }
-
-    /**
-     * @return Caches that may be corrupted ath the moment by current inconsistent updates.
-     */
-    public @Nullable List<String> cachesUnderInconsistentUpdates() {
-        if (!busyLock.enterBusy())
-            throw new IllegalStateException("Failed to check for inconsistent streamers (grid is stopping).");
-
-        try {
-            if (ldrs.isEmpty())
-                return Collections.emptyList();
-
-            return ldrs.stream().filter(ds -> !ds.allowOverwrite() &&
-                    ctx.cache().cacheDescriptor(ds.cacheName()).groupDescriptor().persistenceEnabled())
-                .map(DataStreamerImpl::cacheName)
-                .collect(Collectors.toList());
         }
         finally {
             busyLock.leaveBusy();

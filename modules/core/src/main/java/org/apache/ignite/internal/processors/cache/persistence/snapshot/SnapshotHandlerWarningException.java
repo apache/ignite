@@ -17,31 +17,20 @@
 
 package org.apache.ignite.internal.processors.cache.persistence.snapshot;
 
-import java.io.Serializable;
 import java.util.Collection;
-import java.util.function.Supplier;
+import org.apache.ignite.IgniteCheckedException;
 
 /**
- * Warning result of {@link SnapshotHandler#complete(String, Collection)}. Warnings do not cancel current snapshot
+ * A warning of {@link SnapshotHandler#complete(String, Collection)}. Warnings do not cancel current snapshot
  * operation, but produce an exception when operation completes if no other error uccured. As result, snapshot process
  * is done but doesn't return 'OK' status.
- *
- * @see SnapshotHandler
  */
-public class SnapshotHandlerWarning implements Supplier<String>, Serializable {
+public class SnapshotHandlerWarningException extends IgniteCheckedException {
     /** Serial version uid. */
     private static final long serialVersionUID = 0L;
 
-    /** */
-    private final String wrn;
-
     /** Ctor. */
-    public SnapshotHandlerWarning(String wrn) {
-        this.wrn = wrn;
-    }
-
-    /** */
-    @Override public String get() {
-        return wrn;
+    public SnapshotHandlerWarningException(String wrnMsg) {
+        super(wrnMsg);
     }
 }

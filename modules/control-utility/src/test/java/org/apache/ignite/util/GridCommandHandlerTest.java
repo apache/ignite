@@ -104,7 +104,7 @@ import org.apache.ignite.internal.processors.cache.persistence.snapshot.Snapshot
 import org.apache.ignite.internal.processors.cache.persistence.snapshot.SnapshotHandlerContext;
 import org.apache.ignite.internal.processors.cache.persistence.snapshot.SnapshotHandlerResult;
 import org.apache.ignite.internal.processors.cache.persistence.snapshot.SnapshotHandlerType;
-import org.apache.ignite.internal.processors.cache.persistence.snapshot.SnapshotHandlerWarning;
+import org.apache.ignite.internal.processors.cache.persistence.snapshot.SnapshotHandlerWarningException;
 import org.apache.ignite.internal.processors.cache.persistence.snapshot.SnapshotPartitionsCountersVerifyHandler;
 import org.apache.ignite.internal.processors.cache.transactions.IgniteInternalTx;
 import org.apache.ignite.internal.processors.cache.transactions.IgniteTxEntry;
@@ -3104,9 +3104,9 @@ public class GridCommandHandlerTest extends GridCommandHandlerClusterPerMethodAb
                             }
 
                             /** {@inheritDoc} */
-                            @Override public SnapshotHandlerWarning complete(String name,
-                                Collection<SnapshotHandlerResult<Void>> results) {
-                                return new SnapshotHandlerWarning(SnapshotPartitionsCountersVerifyHandler.wrnMsg(
+                            @Override public void complete(String name,
+                                Collection<SnapshotHandlerResult<Void>> results) throws SnapshotHandlerWarningException {
+                                throw new SnapshotHandlerWarningException(SnapshotPartitionsCountersVerifyHandler.wrnMsg(
                                     Collections.singletonList(CU.cacheId(DEFAULT_CACHE_NAME))));
                             }
                         });

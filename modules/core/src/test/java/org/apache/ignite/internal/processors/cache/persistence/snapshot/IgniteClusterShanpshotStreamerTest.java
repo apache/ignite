@@ -72,10 +72,7 @@ public class IgniteClusterShanpshotStreamerTest extends AbstractSnapshotSelfTest
     private static final TcpDiscoveryIpFinder IP_FINDER = new TcpDiscoveryVmIpFinder(true);
 
     /** */
-    public static final String ERR_MSG = "You won't be able to restore this snapshot entirely. But " +
-        "you will be able restore rest the caches of the snapshot. This may happen if DataStreamer with the " +
-        "property 'allowOverwrite' set to `false` is loading during the snapshot or hadn't successfully earlier. " +
-        "It doesn't guarantee data consistency until completes without errors.";
+    public static final String ERR_MSG = "Cache partitions differ for cache groups ";
 
     /** */
     private TcpDiscoverySpi discoverySpi;
@@ -578,7 +575,8 @@ public class IgniteClusterShanpshotStreamerTest extends AbstractSnapshotSelfTest
      * Drops streamer entries from the batches to certain node. Simulates late data income to the node. Makes data
      * inconsistent if data contains separates backup and primary records. {@link DataStreamerImpl.IsolatedUpdater}
      * does so. Doesn't affect consistency with normal cache loads with 'cache.put()' or 'cache.putAll()' witch are
-     * used with stream receivers like {@link DataStreamerCacheUpdaters#batched()}.
+     * used with stream receivers like {@link DataStreamerCacheUpdaters#batched()}. Doesn't drop messages to allow
+     * Datastreamer work further.
      */
     private static class DataLoosingCommunicationSpi extends TcpCommunicationSpi {
         /** */

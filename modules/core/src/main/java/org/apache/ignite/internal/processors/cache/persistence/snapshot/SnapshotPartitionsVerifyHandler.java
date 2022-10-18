@@ -51,9 +51,7 @@ import static org.apache.ignite.internal.processors.cache.verify.IdleVerifyUtili
  * Default snapshot restore handler for checking snapshot partitions consistency.
  */
 public class SnapshotPartitionsVerifyHandler extends AbstractSnapshotPartitionsVerifyHandler<PartitionHashRecordV2> {
-    /**
-     * @param cctx Shared context.
-     */
+    /** {@inheritDoc} */
     SnapshotPartitionsVerifyHandler(GridCacheSharedContext<?, ?> cctx) {
         super(cctx);
     }
@@ -124,7 +122,7 @@ public class SnapshotPartitionsVerifyHandler extends AbstractSnapshotPartitionsV
     }
 
     /** {@inheritDoc} */
-    @Override public SnapshotHandlerWarning complete(String name,
+    @Override public void complete(String name,
         Collection<SnapshotHandlerResult<Map<PartitionKeyV2, PartitionHashRecordV2>>> results) throws IgniteCheckedException {
         Map<PartitionKeyV2, List<PartitionHashRecordV2>> clusterHashes = new HashMap<>();
         Map<ClusterNode, Exception> errs = new HashMap<>();
@@ -143,7 +141,7 @@ public class SnapshotPartitionsVerifyHandler extends AbstractSnapshotPartitionsV
         IdleVerifyResultV2 verifyResult = new IdleVerifyResultV2(clusterHashes, errs);
 
         if (errs.isEmpty() && !verifyResult.hasConflicts())
-            return null;
+            return;
 
         GridStringBuilder buf = new GridStringBuilder();
 

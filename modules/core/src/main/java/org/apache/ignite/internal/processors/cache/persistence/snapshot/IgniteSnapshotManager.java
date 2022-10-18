@@ -912,14 +912,15 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
 
             completeHandlersAsyncIfNeeded(snpReq, res.values())
                 .listen(f -> {
-                        if (f.error() != null)
-                            snpReq.error(f.error());
-                        else if (clusterSnpFut != null && !f.result().isEmpty()) {
-                            synchronized (snpOpMux) {
-                                if (clusterSnpFut != null)
-                                    clusterSnpFut.warnings.addAll(f.result().values().stream()
-                                        .map(SnapshotHandlerWarning::get).collect(Collectors.toList()));
+                        if (f.error() != null) {
+                            if (f.error() instanceof SnapshotHandlerWarningException) {
+                                synchronized (snpOpMux) {
+                                    if (clusterSnpFut != null)
+                                        clusterSnpFut.warning = (SnapshotHandlerWarningException)f.error();
+                                }
                             }
+                            else
+                                snpReq.error(f.error());
                         }
 
                         endSnpProc.start(snpReq.requestId(), snpReq);
@@ -935,12 +936,10 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
      * @param res Results.
      * @return Future that will be completed when the handlers are finished executing.
      */
-    private IgniteInternalFuture<Map<String, SnapshotHandlerWarning>> completeHandlersAsyncIfNeeded(
-        SnapshotOperationRequest req,
-        Collection<SnapshotOperationResponse> res
-    ) {
+    private IgniteInternalFuture<Void> completeHandlersAsyncIfNeeded(SnapshotOperationRequest req,
+        Collection<SnapshotOperationResponse> res) {
         if (req.error() != null)
-            return new GridFinishedFuture<>(Collections.emptyMap());
+            return new GridFinishedFuture<>();
 
         Map<String, List<SnapshotHandlerResult<?>>> clusterHndResults = new HashMap<>();
 
@@ -953,15 +952,19 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
         }
 
         if (clusterHndResults.isEmpty())
-            return new GridFinishedFuture<>(Collections.emptyMap());
+            return new GridFinishedFuture<>();
 
         try {
-            GridFutureAdapter<Map<String, SnapshotHandlerWarning>> resultFut = new GridFutureAdapter<>();
+            GridFutureAdapter<Void> resultFut = new GridFutureAdapter<>();
 
             handlers().execSvc.submit(() -> {
                 try {
-                    resultFut.onDone(handlers.completeAll(SnapshotHandlerType.CREATE, req.snapshotName(),
-                        clusterHndResults, req.nodes()));
+                    handlers.completeAll(SnapshotHandlerType.CREATE, req.snapshotName(), clusterHndResults, req.nodes());
+
+                    resultFut.onDone();
+                }
+                catch (SnapshotHandlerWarningException e) {
+                    resultFut.onDone(e);
                 }
                 catch (Exception e) {
                     log.warning("The snapshot operation will be aborted due to a handler error " +
@@ -2265,19 +2268,19 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
          * @param snpName Snapshot name.
          * @param res Results from all nodes and handlers with the specified type.
          * @param reqNodes Node IDs on which the handlers were executed.
-         * @return Snapshot handler warnings.
          * @throws Exception If failed.
-         * @see SnapshotHandlerWarning
+         * @throws SnapshotHandlerWarningException A composite warning if the handler warnings occured.
+         * @see SnapshotHandlerWarningException
          */
         @SuppressWarnings({"rawtypes", "unchecked"})
-        protected Map<String, SnapshotHandlerWarning> completeAll(
+        protected void completeAll(
             SnapshotHandlerType type,
             String snpName,
             Map<String, List<SnapshotHandlerResult<?>>> res,
             Collection<UUID> reqNodes
-        ) throws Exception {
+        ) throws SnapshotHandlerWarningException, Exception {
             if (res.isEmpty())
-                return Collections.emptyMap();
+                return;
 
             List<SnapshotHandler<Object>> hnds = handlers.get(type);
 
@@ -2288,7 +2291,7 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
                     ", rmtHnds=" + res.keySet() + "].");
             }
 
-            Map<String, SnapshotHandlerWarning> warnings = new HashMap<>();
+            Map<String, SnapshotHandlerWarningException> warnings = null;
 
             for (SnapshotHandler hnd : hnds) {
                 List<SnapshotHandlerResult<?>> nodesRes = res.get(hnd.getClass().getName());
@@ -2304,13 +2307,30 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
                         "The current operation will be aborted [missing=" + missing + "].");
                 }
 
-                SnapshotHandlerWarning wrn = hnd.complete(snpName, nodesRes);
+                SnapshotHandlerWarningException wrn = null;
 
-                if (wrn != null)
+                try {
+                    hnd.complete(snpName, nodesRes);
+                }
+                catch (SnapshotHandlerWarningException e) {
+                    wrn = e;
+                }
+
+                if (wrn != null) {
+                    if (warnings == null)
+                        warnings = new HashMap<>();
+
                     warnings.putIfAbsent(hnd.getClass().getName(), wrn);
+                }
             }
 
-            return Collections.unmodifiableMap(warnings);
+            if (warnings != null) {
+                StringBuilder sb = new StringBuilder("Snapshot operation completed with the warnings:");
+
+                warnings.values().forEach(w -> sb.append("\n\t").append(w.getMessage()));
+
+                throw new SnapshotHandlerWarningException(sb.toString());
+            }
         }
 
         /**
@@ -3396,10 +3416,10 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
         volatile IgniteCheckedException interruptEx;
 
         /**
-         * Warnings which produces an error after snapshot completes if no other error occured. But doesn't
+         * Warning which produces an error after snapshot completes if no other error occured. But doesn't
          * stop or cancel snapshot operation.
          */
-        final List<String> warnings = new ArrayList<>();
+        volatile SnapshotHandlerWarningException warning;
 
         /**
          * Default constructor.
@@ -3440,15 +3460,8 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
         @Override protected boolean onDone(@Nullable Void res, @Nullable Throwable err, boolean cancel) {
             endTime = U.currentTimeMillis();
 
-            if (!warnings.isEmpty() && err == null) {
-                StringBuilder sb = new StringBuilder();
-
-                sb.append("Snapshot task '").append(name).append("' completed with warnings:");
-
-                warnings.forEach(wrn -> sb.append("\n\t").append(wrn));
-
-                err = new IgniteException(sb.toString());
-            }
+            if (warning != null && err == null)
+                err = warning;
 
             return super.onDone(res, err, cancel);
         }
