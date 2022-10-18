@@ -24,7 +24,6 @@ import org.apache.ignite.testframework.junits.spi.GridSpiTest;
 import org.junit.Test;
 
 import java.io.File;
-import java.util.Arrays;
 import java.util.Collections;
 /**
  *
@@ -42,27 +41,35 @@ public class GridUriDeploymentConfigSelfTest extends GridSpiAbstractConfigTest<U
     }
 
     /**
+     * Verifies that mixing LocalDeploymentSpi and UriDeploymentSpi doesn't violate configuration consistency rules.
      *
-     * @throws Exception
+     * @throws Exception If failed.
      */
     @Test
     public void testClientSpiConsistencyChecked() throws Exception {
-        IgniteConfiguration scfg = super.getConfiguration();
+        String srvName = "server";
+        String clientName = "client";
+
+        IgniteConfiguration srvCfg = getConfiguration();
 
         UriDeploymentSpi deploymentSpi = new UriDeploymentSpi();
         String tmpDir = GridTestProperties.getProperty("deploy.uri.tmpdir");
         File tmp = new File(tmpDir);
-        if (!tmp.exists()){
+
+        if (!tmp.exists())
             tmp.mkdir();
+
+        deploymentSpi.setUriList(Collections.singletonList("file://" + tmpDir));
+        srvCfg.setDeploymentSpi(deploymentSpi);
+
+        try {
+            startGrid(srvName, srvCfg);
+
+            IgniteConfiguration clientCfg = getConfiguration();
+            startClientGrid(clientName, clientCfg);
+        } finally {
+            stopGrid(srvName);
+            stopGrid(clientName);
         }
-        deploymentSpi.setUriList(Arrays.asList("file://" + tmpDir));
-        scfg.setDeploymentSpi(deploymentSpi);
-        startGrid("server" , scfg);
-
-        IgniteConfiguration ccfg = super.getConfiguration();
-        startClientGrid("client" , ccfg);
-
-        stopGrid("server");
-        stopGrid("client");
     }
 }
