@@ -183,7 +183,8 @@ namespace ignite
                     InvalidateChannelLocked(channel);
                 }
 
-                channel.Get()->FailPendingRequests(err);
+                if (channel.IsValid())
+                    channel.Get()->FailPendingRequests(err);
             }
 
             void DataRouter::OnMessageReceived(uint64_t id, const network::DataBuffer& msg)
