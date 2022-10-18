@@ -777,8 +777,13 @@ class TcpClientChannel implements ClientChannel, ClientMessageHandler, ClientCon
     private long getHeartbeatInterval(long configuredInterval) {
         long serverIdleTimeoutMs = service(ClientOperation.GET_IDLE_TIMEOUT, null, in -> in.in().readLong());
 
-        if (serverIdleTimeoutMs <= 0)
+        if (serverIdleTimeoutMs <= 0) {
+            if (log.isInfoEnabled())
+                log.info("Server-side IdleTimeout is not set, using configured ClientConfiguration.heartbeatInterval: " +
+                        configuredInterval);
+
             return configuredInterval;
+        }
 
         long recommendedHeartbeatInterval = serverIdleTimeoutMs / 3;
 
