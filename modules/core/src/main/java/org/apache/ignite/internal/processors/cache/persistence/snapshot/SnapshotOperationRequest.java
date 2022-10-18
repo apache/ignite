@@ -48,10 +48,6 @@ public class SnapshotOperationRequest implements Serializable {
     @GridToStringInclude
     private final Set<UUID> nodes;
 
-    /** Node IDs that must be alive at the start stage. */
-    @GridToStringInclude
-    private final Set<UUID> startNodes;
-
     /** List of cache group names. */
     @GridToStringInclude
     private final Collection<String> grps;
@@ -75,7 +71,6 @@ public class SnapshotOperationRequest implements Serializable {
      * @param snpPath Snapshot directory path.
      * @param grps List of cache group names.
      * @param nodes Baseline node IDs that must be alive to complete the operation.
-     * @param startNodes Node IDs that must be alive at the start stage.
      */
     public SnapshotOperationRequest(
         UUID reqId,
@@ -83,15 +78,13 @@ public class SnapshotOperationRequest implements Serializable {
         String snpName,
         String snpPath,
         @Nullable Collection<String> grps,
-        Set<UUID> nodes,
-        Set<UUID> startNodes
+        Set<UUID> nodes
     ) {
         this.reqId = reqId;
         this.opNodeId = opNodeId;
         this.snpName = snpName;
         this.grps = grps;
         this.nodes = nodes;
-        this.startNodes = startNodes;
         this.snpPath = snpPath;
         startTime = U.currentTimeMillis();
     }
@@ -125,16 +118,9 @@ public class SnapshotOperationRequest implements Serializable {
     }
 
     /**
-     * @return Node IDs that must be alive at current stage.
-     */
-    Set<UUID> nodes() {
-        return startStageEnded ? nodes : startNodes;
-    }
-
-    /**
      * @return Baseline node IDs that must be alive to complete the operation.
      */
-    Set<UUID> workingNodes() {
+    public Set<UUID> nodes() {
         return nodes;
     }
 
@@ -172,12 +158,10 @@ public class SnapshotOperationRequest implements Serializable {
     }
 
     /**
-     * Finishes start stage.
+     * @param startStageEnded Flag indicating that the {@link DistributedProcessType#START_SNAPSHOT} phase has completed.
      */
-    protected void finishStartStage() {
-        startStageEnded = true;
-
-        startNodes.clear();
+    protected void startStageEnded(boolean startStageEnded) {
+        this.startStageEnded = startStageEnded;
     }
 
     /** {@inheritDoc} */

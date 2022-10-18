@@ -18,12 +18,13 @@
 package org.apache.ignite.internal.processors.cache.persistence.snapshot;
 
 import java.io.Serializable;
+import java.util.Collection;
 import java.util.function.Supplier;
 
 /**
- * Warning result of {@link SnapshotHandler#invoke(SnapshotHandlerContext)}. Warnings do not stop or cancel current
- * snapshot operation, but produce an exception when operation completes if no other error uccured. As result, snapshot
- * process is done but doesn't return 'OK' status.
+ * Warning result of {@link SnapshotHandler#complete(String, Collection)}. Warnings do not cancel current snapshot
+ * operation, but produce an exception when operation completes if no other error uccured. As result, snapshot process
+ * is done but doesn't return 'OK' status.
  *
  * @see SnapshotHandler
  */

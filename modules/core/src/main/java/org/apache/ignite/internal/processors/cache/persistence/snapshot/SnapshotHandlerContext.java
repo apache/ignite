@@ -19,8 +19,6 @@ package org.apache.ignite.internal.processors.cache.persistence.snapshot;
 
 import java.io.File;
 import java.util.Collection;
-import java.util.Collections;
-import java.util.List;
 import org.apache.ignite.cluster.ClusterNode;
 import org.jetbrains.annotations.Nullable;
 
@@ -28,11 +26,11 @@ import org.jetbrains.annotations.Nullable;
  * Snapshot operation handler context.
  */
 public class SnapshotHandlerContext {
-    /** Snapshot metadata. {@code Null} for client on not-baseline node. */
-    private final @Nullable SnapshotMetadata metadata;
+    /** Snapshot metadata. */
+    private final SnapshotMetadata metadata;
 
-    /** The full path to the snapshot files. {@code Null} for client on not-baseline node. */
-    private final @Nullable File snpDir;
+    /** The full path to the snapshot files. */
+    private final File snpDir;
 
     /** The names of the cache groups on which the operation is performed. */
     private final Collection<String> grps;
@@ -40,45 +38,28 @@ public class SnapshotHandlerContext {
     /** Local node. */
     private final ClusterNode locNode;
 
-    /** Caches being streamed into at snapshot start stage. */
-    private final List<String> streamedCaches;
-
     /**
-     * @param metadata Snapshot metadata. {@code Null} for client on not-baseline node.
+     * @param metadata Snapshot metadata.
      * @param grps The names of the cache groups on which the operation is performed.
      * @param locNode Local node.
-     * @param snpDir The full path to the snapshot files. {@code Null} for client on not-baseline node.
-     * @param streamedCaches Caches being streamed into at snapshot start stage.
+     * @param snpDir The full path to the snapshot files.
      */
-    public SnapshotHandlerContext(@Nullable SnapshotMetadata metadata, @Nullable Collection<String> grps,
-        ClusterNode locNode, @Nullable File snpDir, List<String> streamedCaches) {
+    public SnapshotHandlerContext(SnapshotMetadata metadata, @Nullable Collection<String> grps, ClusterNode locNode, File snpDir) {
         this.metadata = metadata;
         this.grps = grps;
         this.locNode = locNode;
         this.snpDir = snpDir;
-        this.streamedCaches = streamedCaches;
     }
 
     /**
-     * @param metadata Snapshot metadata. {@code Null} for client on not-baseline node.
-     * @param grps The names of the cache groups on which the operation is performed.
-     * @param locNode Local node.
-     * @param snpDir The full path to the snapshot files. {@code Null} for client on not-baseline node.
-     */
-    public SnapshotHandlerContext(@Nullable SnapshotMetadata metadata, @Nullable Collection<String> grps,
-        ClusterNode locNode, @Nullable File snpDir) {
-        this(metadata, grps, locNode, snpDir, Collections.emptyList());
-    }
-
-    /**
-     * @return Snapshot metadata. {@code Null} for client on not-baseline node.
+     * @return Snapshot metadata.
      */
     public SnapshotMetadata metadata() {
         return metadata;
     }
 
     /**
-     * @return The full path to the snapshot files. {@code Null} for client on not-baseline node.
+     * @return The full path to the snapshot files.
      */
     public File snapshotDirectory() {
         return snpDir;
@@ -97,12 +78,5 @@ public class SnapshotHandlerContext {
      */
     public ClusterNode localNode() {
         return locNode;
-    }
-
-    /**
-     * Caches being streamed into at snapshot start stage.
-     */
-    public List<String> streamedCaches() {
-        return streamedCaches;
     }
 }

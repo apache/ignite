@@ -98,7 +98,7 @@ public class DistributedProcess<I extends Serializable, R extends Serializable> 
         Function<I, IgniteInternalFuture<R>> exec,
         CI3<UUID, Map<UUID, R>, Map<UUID, Exception>> finish
     ) {
-        this(ctx, type, exec, finish, (id, req) -> new InitMessage<>(id, type, req), false);
+        this(ctx, type, exec, finish, (id, req) -> new InitMessage<>(id, type, req));
     }
 
     /**
@@ -107,15 +107,13 @@ public class DistributedProcess<I extends Serializable, R extends Serializable> 
      * @param exec Execute action and returns future with the single node result to send to the coordinator.
      * @param finish Finish process closure. Called on each node when all single nodes results received.
      * @param initMsgFactory Factory which creates custom {@link InitMessage} for distributed process initialization.
-     * @param initOnClient {@code True}, if the process is initialized on client node. {@code False} otherwise.
      */
     public DistributedProcess(
         GridKernalContext ctx,
         DistributedProcessType type,
         Function<I, IgniteInternalFuture<R>> exec,
         CI3<UUID, Map<UUID, R>, Map<UUID, Exception>> finish,
-        BiFunction<UUID, I, ? extends InitMessage<I>> initMsgFactory,
-        boolean initOnClient
+        BiFunction<UUID, I, ? extends InitMessage<I>> initMsgFactory
     ) {
         this.ctx = ctx;
         this.type = type;
@@ -146,7 +144,7 @@ public class DistributedProcess<I extends Serializable, R extends Serializable> 
             p.crdId = crd.id();
 
             if (crd.isLocal())
-                initCoordinator(p, topVer, initOnClient);
+                initCoordinator(p, topVer);
 
             IgniteInternalFuture<R> fut = exec.apply((I)msg.request());
 
@@ -156,7 +154,7 @@ public class DistributedProcess<I extends Serializable, R extends Serializable> 
                 else
                     p.resFut.onDone(f.result());
 
-                if (!ctx.clientNode() || initOnClient) {
+                if (!ctx.clientNode()) {
                     assert crd != null;
 
                     sendSingleMessage(p);
@@ -213,9 +211,9 @@ public class DistributedProcess<I extends Serializable, R extends Serializable> 
                         p.crdId = crd.id();
 
                         if (crd.isLocal())
-                            initCoordinator(p, discoCache.version(), initOnClient);
+                            initCoordinator(p, discoCache.version());
 
-                        if (!ctx.clientNode() || initOnClient)
+                        if (!ctx.clientNode())
                             p.resFut.listen(f -> sendSingleMessage(p));
                     }
                     else if (F.eq(ctx.localNodeId(), p.crdId)) {
@@ -254,17 +252,15 @@ public class DistributedProcess<I extends Serializable, R extends Serializable> 
      *
      * @param p Process.
      * @param topVer Topology version.
-     * @param initOnClient {@code True} if the process is executed on clients. {@code False} otherwise.
      */
-    private void initCoordinator(Process p, AffinityTopologyVersion topVer, boolean initOnClient) {
+    private void initCoordinator(Process p, AffinityTopologyVersion topVer) {
         synchronized (mux) {
             if (p.initCrdFut.isDone())
                 return;
 
             assert p.remaining.isEmpty();
 
-            p.remaining.addAll(F.viewReadOnly(
-                initOnClient ? ctx.discovery().nodes(topVer) : ctx.discovery().serverNodes(topVer), F.node2id()));
+            p.remaining.addAll(F.viewReadOnly(ctx.discovery().serverNodes(topVer), F.node2id()));
 
             p.initCrdFut.onDone();
         }
@@ -364,13 +360,6 @@ public class DistributedProcess<I extends Serializable, R extends Serializable> 
     /** @return Cluster coordinator, {@code null} if failed to determine. */
     private @Nullable ClusterNode coordinator() {
         return U.oldest(ctx.discovery().aliveServerNodes(), null);
-    }
-
-    /** @return {@code True} if node {@code nodeId} has responded to process {@code procId}. {@code False} otherwise. */
-    public boolean responded(UUID procId, UUID nodeId) {
-        Process p = processes.get(procId);
-
-        return p != null && !p.remaining.contains(nodeId);
     }
 
     /** The process meta information. */

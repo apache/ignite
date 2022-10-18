@@ -98,12 +98,14 @@ public class IgniteClusterSnapshotHandlerTest extends IgniteClusterSnapshotResto
                 return ctx.metadata().requestId();
             }
 
-            @Override public void complete(String name,
+            @Override public SnapshotHandlerWarning complete(String name,
                 Collection<SnapshotHandlerResult<UUID>> results) throws IgniteCheckedException {
                 for (SnapshotHandlerResult<UUID> res : results) {
                     if (!reqIdRef.compareAndSet(null, res.data()) && !reqIdRef.get().equals(res.data()))
                         throw new IgniteCheckedException("The request ID must be the same on all nodes.");
                 }
+
+                return null;
             }
         });
 
@@ -116,12 +118,14 @@ public class IgniteClusterSnapshotHandlerTest extends IgniteClusterSnapshotResto
                 return ctx.metadata().requestId();
             }
 
-            @Override public void complete(String name,
+            @Override public SnapshotHandlerWarning complete(String name,
                 Collection<SnapshotHandlerResult<UUID>> results) throws IgniteCheckedException {
                 for (SnapshotHandlerResult<UUID> res : results) {
                     if (!reqIdRef.get().equals(res.data()))
                         throw new IgniteCheckedException(expMsg);
                 }
+
+                return null;
             }
         });
 
@@ -323,13 +327,15 @@ public class IgniteClusterSnapshotHandlerTest extends IgniteClusterSnapshotResto
                 return null;
             }
 
-            @Override public void complete(String name, Collection<SnapshotHandlerResult<Void>> results)
+            @Override public SnapshotHandlerWarning complete(String name, Collection<SnapshotHandlerResult<Void>> results)
                 throws Exception {
                 if (latch.getCount() == 1) {
                     latch.countDown();
 
                     Thread.sleep(Long.MAX_VALUE);
                 }
+
+                return null;
             }
         });
 
@@ -344,7 +350,7 @@ public class IgniteClusterSnapshotHandlerTest extends IgniteClusterSnapshotResto
         stopGrid(0, true);
 
         GridTestUtils.assertThrowsAnyCause(log, () -> fut.get(TIMEOUT), ClusterTopologyCheckedException.class,
-            "Snapshot operation interrupted because required node left the cluster: " + crdNodeId);
+            "Snapshot operation interrupted, because baseline node left the cluster: " + crdNodeId);
 
         startGrid(0);
         grid(0).snapshot().createSnapshot(SNAPSHOT_NAME);

@@ -64,10 +64,13 @@ public interface SnapshotHandler<T> extends Extension {
      *
      * @param name Snapshot name.
      * @param results Results from all nodes.
+     * @return Snapshot handler warning. {@code Null} if no warning occured.
      * @throws Exception If the snapshot operation needs to be aborted.
+     * @throws SnapshotHandlerWarning If the snapshot operation has warnings.
      * @see SnapshotHandlerResult
+     * @see SnapshotHandlerWarning
      */
-    public default void complete(String name, Collection<SnapshotHandlerResult<T>> results) throws Exception {
+    public default SnapshotHandlerWarning complete(String name, Collection<SnapshotHandlerResult<T>> results) throws Exception {
         for (SnapshotHandlerResult<T> res : results) {
             if (res.error() == null)
                 continue;
@@ -77,5 +80,7 @@ public interface SnapshotHandler<T> extends Extension {
                 ", handler=" + getClass().getName() +
                 ", nodeId=" + res.node().id() + "].", res.error());
         }
+
+        return null;
     }
 }
