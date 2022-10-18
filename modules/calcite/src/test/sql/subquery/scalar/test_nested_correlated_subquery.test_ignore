@@ -1,6 +1,7 @@
 # name: test/sql/subquery/scalar/test_nested_correlated_subquery.test
 # description: Test nested correlated subqueries
 # group: [scalar]
+# Ignore https://issues.apache.org/jira/browse/IGNITE-16000
 
 statement ok
 PRAGMA enable_verification

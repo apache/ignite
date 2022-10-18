@@ -62,7 +62,7 @@ public class SegmentedLruPageList {
         flagsPtr = memPtr + (((long)totalPagesCnt) << 3);
 
         GridUnsafe.setMemory(linksPtr, ((long)totalPagesCnt) << 3, (byte)0xFF);
-        GridUnsafe.setMemory(flagsPtr, (totalPagesCnt + 7) >> 3, (byte)0);
+        GridUnsafe.zeroMemory(flagsPtr, (totalPagesCnt + 7) >> 3);
 
         protectedPagesLimit = (int)(totalPagesCnt * PROTECTED_TO_TOTAL_PAGES_RATIO);
     }

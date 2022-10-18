@@ -261,7 +261,7 @@ public class PlatformMemoryUtils {
     public static long allocatePool() {
         long poolPtr = GridUnsafe.allocateMemory(POOL_HDR_LEN);
 
-        GridUnsafe.setMemory(poolPtr, POOL_HDR_LEN, (byte)0);
+        GridUnsafe.zeroMemory(poolPtr, POOL_HDR_LEN);
 
         flags(poolPtr + POOL_HDR_OFF_MEM_1, FLAG_POOLED);
         flags(poolPtr + POOL_HDR_OFF_MEM_2, FLAG_POOLED);
