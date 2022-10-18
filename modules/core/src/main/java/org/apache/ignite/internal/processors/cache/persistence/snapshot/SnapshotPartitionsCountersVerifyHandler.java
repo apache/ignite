@@ -44,7 +44,9 @@ import static org.apache.ignite.internal.pagemem.PageIdAllocator.INDEX_PARTITION
  * or canceled/failed DataStreamer.
  */
 public class SnapshotPartitionsCountersVerifyHandler extends AbstractSnapshotPartitionsVerifyHandler<Long> {
-    /** {@inheritDoc} */
+    /**
+     * @param cctx Shared context.
+     */
     public SnapshotPartitionsCountersVerifyHandler(GridCacheSharedContext<?, ?> cctx) {
         super(cctx);
     }

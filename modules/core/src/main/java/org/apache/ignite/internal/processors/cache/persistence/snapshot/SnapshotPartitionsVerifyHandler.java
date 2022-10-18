@@ -51,7 +51,9 @@ import static org.apache.ignite.internal.processors.cache.verify.IdleVerifyUtili
  * Default snapshot restore handler for checking snapshot partitions consistency.
  */
 public class SnapshotPartitionsVerifyHandler extends AbstractSnapshotPartitionsVerifyHandler<PartitionHashRecordV2> {
-    /** {@inheritDoc} */
+    /**
+     * @param cctx Shared context.
+     */
     SnapshotPartitionsVerifyHandler(GridCacheSharedContext<?, ?> cctx) {
         super(cctx);
     }
