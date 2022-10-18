@@ -824,6 +824,7 @@ public final class ClientConfiguration implements Serializable {
      * Sets the logger.
      *
      * @param logger Logger.
+     * @return {@code this} for chaining.
      */
     public ClientConfiguration setLogger(IgniteLogger logger) {
         this.logger = logger;
@@ -834,6 +835,7 @@ public final class ClientConfiguration implements Serializable {
     /**
      * Gets the logger.
      *
+     * @return Logger.
      */
     public IgniteLogger getLogger() {
         return logger;

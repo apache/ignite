@@ -899,7 +899,7 @@ final class ReliableChannel implements AutoCloseable {
             boolean res = plc.shouldRetry(ctx);
 
             if (log.isDebugEnabled())
-                log.debug("Retry policy returned " + res +  " [op=" + op + ", iteration=" + iteration + ']');
+                log.debug("Retry policy returned " + res + " [op=" + op + ", iteration=" + iteration + ']');
 
             return res;
         }
