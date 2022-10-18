@@ -326,6 +326,8 @@ class TcpClientChannel implements ClientChannel, ClientMessageHandler, ClientCon
             return payloadReader.apply(new PayloadInputChannel(this, payload));
         }
         catch (IgniteCheckedException e) {
+            log.warning("Failed to process response: " + e.getMessage(), e);
+
             throw convertException(e);
         }
     }
@@ -352,6 +354,8 @@ class TcpClientChannel implements ClientChannel, ClientMessageHandler, ClientCon
                 }
             }
             catch (Throwable t) {
+                log.warning("Failed to process response: " + t.getMessage(), t);
+
                 fut.completeExceptionally(convertException(t));
             }
         }));
