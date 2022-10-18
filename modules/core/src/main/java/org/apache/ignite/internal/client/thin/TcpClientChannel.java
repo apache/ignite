@@ -206,6 +206,11 @@ class TcpClientChannel implements ClientChannel, ClientMessageHandler, ClientCon
 
     /** {@inheritDoc} */
     @Override public void onDisconnected(@Nullable Exception e) {
+        if (e == null)
+            log.warning("Client disconnected without error");
+        else
+            log.warning("Client disconnected with error: " + e.getMessage(), e);
+
         close(e);
     }
 
