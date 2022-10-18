@@ -67,9 +67,9 @@ public class GridUriDeploymentConfigSelfTest extends GridSpiAbstractConfigTest<U
 
             IgniteConfiguration clientCfg = getConfiguration();
             startClientGrid(clientName, clientCfg);
-        } finally {
-            stopGrid(srvName);
-            stopGrid(clientName);
+        }
+        finally {
+            stopAllGrids();
         }
     }
 }
