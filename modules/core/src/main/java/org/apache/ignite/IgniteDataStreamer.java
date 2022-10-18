@@ -42,21 +42,22 @@ import org.jetbrains.annotations.Nullable;
  * This way batches can be applied within transaction(s) on target node.
  * See {@link #receiver(StreamReceiver)} for details.
  * <p>
- * Certain behaviour of streamer is defined by {@link StreamReceiver}. In general, data streamer doesn’t guarantee:
+ * Data streamer doesn’t guarantee:
  * <ul>
- *  <li>Data order. Data records may be put in cache with different order than in streamer;</li>
- *  <li>Immediate data loading. Data can be kept for a while before sending;</li>
- *  <li>Data consistency until finished;</li>
- *  <li>Working with external storages.</li>
+ *  <li>Data order. Data records may be load with different order that it was put into streamer;</li>
+ *  <li>Immediate data loading. Data can be kept for a while before loading;</li>
+ *  <li>By default, data consistency until successfully finished;</li>
+ *  <li>By default, working with external storages.</li>
  * </ul>
  * <p>
- * You should avoid:
+ * If {@link #allowOverwrite()} setting is {@code false} (default), you should avoid:
  * <ul>
  *  <li>Having the same keys repeating in the data being streamed;</li>
- *  <li>Concurrent updates of the cache that is being streamed into;</li>
- *  <li>Rebalancing the cache;</li>
+ *  <li>Streamer cancelation or streamer node failure;</li>
+ *  <li>Using data loaded with canceled or failed streamer;</li>
  *  <li>Creating snapshots while streaming.</li>
  * </ul>
+ * Most important behaviour of data streamer is defined by {@link StreamReceiver} and {@link #allowOverwrite()} property.
  * <p>
  * Also note that {@code IgniteDataStreamer} is not the only way to add data into cache.
  * Alternatively you can use {@link IgniteCache#loadCache(IgniteBiPredicate, Object...)}
