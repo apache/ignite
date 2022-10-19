@@ -42,7 +42,7 @@ namespace Apache.Ignite.Core.Tests.Services
     /// <summary>
     /// Services tests.
     /// </summary>
-#pragma warning disable 618
+#pragma warning disable CS0618 // Method is obsolete.
     public class ServicesTest
     {
         /** */
