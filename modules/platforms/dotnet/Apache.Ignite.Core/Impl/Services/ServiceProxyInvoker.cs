@@ -74,6 +74,11 @@ namespace Apache.Ignite.Core.Impl.Services
 
         /// <summary>
         /// Finds suitable method in the specified type, or throws an exception.
+        /// <para />
+        /// We do not try to cover all kinds of intricate use cases with complex class hierarchies,
+        /// explicit interface implementations, and so on.
+        /// It is not possible given only the type, name, and arguments - the call can come from other languages too.
+        /// So we do our best or throw an error.
         /// </summary>
         private static Func<object, object[], object> GetMethodOrThrow(Type svcType, string methodName,
             object[] arguments)
@@ -100,6 +105,7 @@ namespace Apache.Ignite.Core.Impl.Services
             if (methods.Length == 0)
             {
                 // Check default interface implementations.
+                // This does not cover exotic use cases when methods with same signature come from multiple interfaces.
                 methods = svcType.GetInterfaces().SelectMany(x => x.GetMethods(bindingFlags))
                     .Where(m => !m.IsAbstract && CleanupMethodName(m) == methodName && m.GetParameters().Length == argsLength)
                     .ToArray();
