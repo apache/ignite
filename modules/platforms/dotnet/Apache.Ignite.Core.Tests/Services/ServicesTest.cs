@@ -1697,12 +1697,15 @@ namespace Apache.Ignite.Core.Tests.Services
         [Test]
         public void TestDefaultInterfaceImplementationOverridden()
         {
+            var svcImpl = new TestServiceWithDefaultImplOverridden();
+
             var name = nameof(TestDefaultInterfaceImplementationOverridden);
-            Services.DeployClusterSingleton(name, new TestServiceWithDefaultImpl());
+            Services.DeployClusterSingleton(name, svcImpl);
 
             var prx = Services.GetServiceProxy<ITestServiceWithDefaultImpl>(name);
             var res = prx.GetInt();
 
+            Assert.AreEqual(43, ((ITestServiceWithDefaultImpl)svcImpl).GetInt());
             Assert.AreEqual(43, res);
         }
 
