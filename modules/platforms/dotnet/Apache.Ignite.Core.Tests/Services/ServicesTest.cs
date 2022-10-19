@@ -2460,7 +2460,7 @@ namespace Apache.Ignite.Core.Tests.Services
         {
             int GetInt() => 42;
 
-            int GetLong();
+            int GetInt(int x) => x + 42;
         }
         
         private class TestServiceWithDefaultImpl : ITestServiceWithDefaultImpl, IService
@@ -2480,7 +2480,8 @@ namespace Apache.Ignite.Core.Tests.Services
                 // No-op.
             }
 
-            public int GetLong() => ((ITestServiceWithDefaultImpl)this).GetInt();
+            // ReSharper disable once UnusedMember.Local (ensure overload resolution)
+            int GetInt(string x) => x.Length;
         }
 
         private class TestServiceWithDefaultImplOverridden : ITestServiceWithDefaultImpl, IService
@@ -2501,8 +2502,6 @@ namespace Apache.Ignite.Core.Tests.Services
             }
 
             int ITestServiceWithDefaultImpl.GetInt() => 43;
-
-            public int GetLong() => 43;
         }
 
 #if NETCOREAPP
