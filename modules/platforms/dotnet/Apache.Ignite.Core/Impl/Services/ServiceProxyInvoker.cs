@@ -91,7 +91,12 @@ namespace Apache.Ignite.Core.Impl.Services
                 return res;
 
             // 1) Find methods by name
-            var methods = svcType.GetMethods(BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.Instance)
+            var types = new List<Type> { svcType };
+
+            // TODO: Filter out non-implemented methods?
+            types.AddRange(svcType.GetInterfaces());
+
+            var methods = types.SelectMany(t => t.GetMethods(BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.Instance))
                 .Where(m => CleanupMethodName(m) == methodName && m.GetParameters().Length == argsLength)
                 .ToArray();
 
