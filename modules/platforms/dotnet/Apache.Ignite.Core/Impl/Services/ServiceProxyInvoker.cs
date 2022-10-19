@@ -93,11 +93,12 @@ namespace Apache.Ignite.Core.Impl.Services
             // 1) Find methods by name
             var types = new List<Type> { svcType };
 
-            // TODO: Filter out non-implemented methods?
+            // TODO: Filter out non-implemented methods? - IsAbstract.
+            // TODO: Filter out overridden methods?
             types.AddRange(svcType.GetInterfaces());
 
             var methods = types.SelectMany(t => t.GetMethods(BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.Instance))
-                .Where(m => CleanupMethodName(m) == methodName && m.GetParameters().Length == argsLength)
+                .Where(m => !m.IsAbstract && CleanupMethodName(m) == methodName && m.GetParameters().Length == argsLength)
                 .ToArray();
 
             if (methods.Length == 1)
