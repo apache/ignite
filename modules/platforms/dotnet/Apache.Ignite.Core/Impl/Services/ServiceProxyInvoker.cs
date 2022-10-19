@@ -91,14 +91,12 @@ namespace Apache.Ignite.Core.Impl.Services
                 return res;
 
             // 1) Find methods by name
-            var types = new List<Type> { svcType };
+            // Handle default interface implementations by including non-abstract methods from all interfaces.
+            var bindingFlags = BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.Instance;
 
-            // TODO: Filter out non-implemented methods? - IsAbstract.
-            // TODO: Filter out overridden methods?
-            types.AddRange(svcType.GetInterfaces());
-
-            var methods = types.SelectMany(t => t.GetMethods(BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.Instance))
-                .Where(m => !m.IsAbstract && CleanupMethodName(m) == methodName && m.GetParameters().Length == argsLength)
+            var methods = svcType.GetMethods(bindingFlags)
+                .Concat(svcType.GetInterfaces().SelectMany(x => x.GetMethods(bindingFlags)).Where(x => !x.IsAbstract))
+                .Where(m => CleanupMethodName(m) == methodName && m.GetParameters().Length == argsLength)
                 .ToArray();
 
             if (methods.Length == 1)
@@ -110,7 +108,7 @@ namespace Apache.Ignite.Core.Impl.Services
             if (methods.Length == 0)
                 throw new InvalidOperationException(
                     string.Format(CultureInfo.InvariantCulture,
-                        "Failed to invoke proxy: there is no method '{0}' in type '{1}' with {2} arguments", 
+                        "Failed to invoke proxy: there is no method '{0}' in type '{1}' with {2} arguments",
                         methodName, svcType, argsLength));
 
             // 2) There is more than 1 method with specified name - resolve with argument types.
