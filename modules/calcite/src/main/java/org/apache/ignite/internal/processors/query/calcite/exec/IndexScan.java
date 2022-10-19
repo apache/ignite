@@ -113,8 +113,8 @@ public class IndexScan<Row> extends AbstractIndexScan<Row, IndexRow> {
         Function<Row, Row> rowTransformer,
         @Nullable ImmutableBitSet requiredColumns
     ) {
-       this(ectx, desc, new TreeIndexWrapper(idx), idxFieldMapping, parts, filters, ranges, rowTransformer,
-           requiredColumns);
+        this(ectx, desc, new TreeIndexWrapper(idx), idxFieldMapping, parts, filters, ranges, rowTransformer,
+            requiredColumns);
     }
 
     /**
@@ -306,7 +306,7 @@ public class IndexScan<Row> extends AbstractIndexScan<Row, IndexRow> {
     }
 
     /** */
-    protected TreeIndex<IndexRow> wrapIdx(InlineIndex idx){
+    protected TreeIndex<IndexRow> wrapIdx(InlineIndex idx) {
         return new TreeIndexWrapper(idx);
     }
 

@@ -53,7 +53,7 @@ public class IndexMinMaxRule extends RelRule<IndexMinMaxRule.Config> {
         if (
             table.isIndexRebuildInProgress() ||
                 idxScan.condition() != null ||
-                idxScan.projects()  != null ||
+                idxScan.projects() != null ||
                 aggr.getGroupCount() > 0 ||
                 aggr.getAggCallList().stream().filter(a -> a.getAggregation().getKind() == SqlKind.MIN
                     || a.getAggregation().getKind() == SqlKind.MAX).count() != 1 ||

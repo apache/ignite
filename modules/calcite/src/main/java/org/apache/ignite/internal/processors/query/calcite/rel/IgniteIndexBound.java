@@ -17,6 +17,7 @@
 
 package org.apache.ignite.internal.processors.query.calcite.rel;
 
+import java.math.BigInteger;
 import java.util.List;
 import java.util.stream.Collectors;
 import org.apache.calcite.plan.RelOptCluster;

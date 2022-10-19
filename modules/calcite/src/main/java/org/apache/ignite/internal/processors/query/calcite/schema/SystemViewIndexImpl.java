@@ -102,9 +102,8 @@ public class SystemViewIndexImpl implements IgniteIndex {
         return tbl.descriptor().systemView().size();
     }
 
-    /** {@inheritDoc} */
-    @Override public <Row> List<Row> findFirstOrLast(boolean first, ExecutionContext<Row> ectx,
-        ColocationGroup grp, @Nullable ImmutableBitSet requiredColumns) {
+    @Override public <Row> Iterable<Row> firstOrLast(boolean first, ExecutionContext<Row> ectx, ColocationGroup grp,
+        @Nullable ImmutableBitSet requiredColumns) {
         throw new IgniteException("Taking first or last value is not implemented for system view index.");
     }
 
