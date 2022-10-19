@@ -1676,13 +1676,14 @@ namespace Apache.Ignite.Core.Tests.Services
             }
         }
 
+#if NETCOREAPP
         /// <summary>
         /// Tests service method with default interface implementation.
         /// </summary>
         [Test]
-        public void TestDefaultInterfaceImplementation()
+        public void TestDefaultInterfaceMethod()
         {
-            var name = nameof(TestDefaultInterfaceImplementation);
+            var name = nameof(TestDefaultInterfaceMethod);
             Services.DeployClusterSingleton(name, new TestServiceWithDefaultImpl());
 
             var prx = Services.GetServiceProxy<ITestServiceWithDefaultImpl>(name);
@@ -1695,11 +1696,11 @@ namespace Apache.Ignite.Core.Tests.Services
         /// Tests service method with default interface implementation that is overridden in the class.
         /// </summary>
         [Test]
-        public void TestDefaultInterfaceImplementationOverridden()
+        public void TestDefaultInterfaceMethodOverridden()
         {
             var svcImpl = new TestServiceWithDefaultImplOverridden();
 
-            var name = nameof(TestDefaultInterfaceImplementationOverridden);
+            var name = nameof(TestDefaultInterfaceMethodOverridden);
             Services.DeployClusterSingleton(name, svcImpl);
 
             var prx = Services.GetServiceProxy<ITestServiceWithDefaultImpl>(name);
@@ -1708,6 +1709,7 @@ namespace Apache.Ignite.Core.Tests.Services
             Assert.AreEqual(43, ((ITestServiceWithDefaultImpl)svcImpl).GetInt());
             Assert.AreEqual(43, res);
         }
+#endif
 
         /// <summary>
         /// Starts the grids.
@@ -2456,6 +2458,7 @@ namespace Apache.Ignite.Core.Tests.Services
             }
         }
 
+#if NETCOREAPP
         public interface ITestServiceWithDefaultImpl
         {
             int GetInt() => 42;
@@ -2504,7 +2507,6 @@ namespace Apache.Ignite.Core.Tests.Services
             int ITestServiceWithDefaultImpl.GetInt() => 43;
         }
 
-#if NETCOREAPP
         /// <summary>
         /// Adds support of the local dates to the Ignite timestamp serialization.
         /// </summary>
