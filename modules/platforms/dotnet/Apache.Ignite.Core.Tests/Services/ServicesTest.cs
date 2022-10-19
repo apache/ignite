@@ -1676,6 +1676,9 @@ namespace Apache.Ignite.Core.Tests.Services
             }
         }
 
+        /// <summary>
+        /// Tests service method with default interface implementation.
+        /// </summary>
         [Test]
         public void TestDefaultInterfaceImplementation()
         {
