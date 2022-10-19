@@ -171,8 +171,9 @@ public class DataStreamerImplSelfTest extends GridCommonAbstractTest {
      * Test inconsistency log warning of the streamer. Must appear only once for one streamer instance or must not
      * apper at all depending on thre receiver.
      *
-     * @param mustWarn {@code True}, if just one warning expected. {@code False} if no warning expected.
-     * @param receivers Stream receivers to load with the same streamer instance.
+     * @param mustWarn  {@code True}, if just one warning expected. {@code False} if no warning expected.
+     * @param receivers Stream receivers to load with the same streamer instance. Must not be empty. Pass
+     *                  {@code null} entry for default receiver.
      * @throws Exception If failed.
      */
     private void doTestInconsistencyWarning(boolean mustWarn,
@@ -202,10 +203,11 @@ public class DataStreamerImplSelfTest extends GridCommonAbstractTest {
 
         try (IgniteDataStreamer<Integer, Integer> ds = ldr.dataStreamer(ccfg.getName())) {
             for (StreamReceiver<Integer, Integer> rcvr : receivers) {
-                if (rcvr != null)
-                    ds.receiver(rcvr);
-                else
+                // Actually, resets the default receiver.
+                if (rcvr == null)
                     ds.allowOverwrite(false);
+                else
+                    ds.receiver(rcvr);
 
                 AtomicInteger loadCnt = new AtomicInteger(ldrThreads * 100);
                 CountDownLatch loadLatch = new CountDownLatch(ldrThreads);
