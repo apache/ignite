@@ -1676,6 +1676,18 @@ namespace Apache.Ignite.Core.Tests.Services
             }
         }
 
+        [Test]
+        public void TestDefaultInterfaceImplementation()
+        {
+            var name = nameof(TestDefaultInterfaceImplementation);
+            Services.DeployClusterSingleton(name, new TestServiceWithDefaultImpl());
+
+            var prx = Services.GetServiceProxy<ITestServiceWithDefaultImpl>(name);
+            var res = prx.GetInt();
+
+            Assert.AreEqual(42, res);
+        }
+
         /// <summary>
         /// Starts the grids.
         /// </summary>
@@ -2420,6 +2432,29 @@ namespace Apache.Ignite.Core.Tests.Services
             public byte[] GetBinaryAttribute(string name)
             {
                 return null;
+            }
+        }
+
+        private interface ITestServiceWithDefaultImpl
+        {
+            int GetInt() => 42;
+        }
+        
+        private class TestServiceWithDefaultImpl : ITestServiceWithDefaultImpl, IService
+        {
+            public void Init(IServiceContext context)
+            {
+                // No-op.
+            }
+
+            public void Execute(IServiceContext context)
+            {
+                // No-op.
+            }
+
+            public void Cancel(IServiceContext context)
+            {
+                // No-op.
             }
         }
 
