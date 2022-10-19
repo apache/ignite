@@ -50,7 +50,9 @@ import org.apache.ignite.lang.IgniteFuture;
 import org.apache.ignite.lang.IgniteInClosure;
 import org.apache.ignite.plugin.extensions.communication.Message;
 import org.apache.ignite.spi.communication.tcp.TcpCommunicationSpi;
+import org.apache.ignite.stream.StreamReceiver;
 import org.apache.ignite.testframework.GridTestUtils;
+import org.apache.ignite.testframework.ListeningTestLogger;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.apache.logging.log4j.core.appender.WriterAppender;
 import org.junit.Ignore;
@@ -129,6 +131,106 @@ public class DataStreamerImplSelfTest extends GridCommonAbstractTest {
 
         for (IgniteFuture fut : futures)
             assertTrue(fut.isDone());
+    }
+
+    /**
+     * Test inconsistency log warning of the streamer. Default receiver goest first and set again after a consistent
+     * receiver. The warning must appear only once.
+     *
+     * @throws Exception If failed.
+     */
+    @Test
+    public void testInconsistencyWarningDfltReceiverFirst() throws Exception {
+        doTestInconsistencyWarning(true, null, DataStreamerCacheUpdaters.batched(), null);
+    }
+
+    /**
+     * Test inconsistency log warning of the streamer when default receiver is set after a consistent receiver. The
+     * warning must appear only once.
+     *
+     * @throws Exception If failed.
+     */
+    @Test
+    public void testInconsistencyWarningDfltReceiverFollows() throws Exception {
+        doTestInconsistencyWarning(true, DataStreamerCacheUpdaters.batched(), null,
+            DataStreamerCacheUpdaters.individual(), null);
+    }
+
+    /**
+     * Test inconsistency log warning of the streamer. Must not appear with the consistent receivers.
+     *
+     * @throws Exception If failed.
+     */
+    @Test
+    public void testInconsistencyWarningOtherReceivers() throws Exception {
+        doTestInconsistencyWarning(false, DataStreamerCacheUpdaters.batched(),
+            DataStreamerCacheUpdaters.individual(), DataStreamerCacheUpdaters.batchedSorted());
+    }
+
+    /**
+     * Test inconsistency log warning of the streamer. Must appear only once for one streamer instance or must not
+     * apper at all depending on thre receiver.
+     *
+     * @param mustWarn {@code True}, if just one warning expected. {@code False} if no warning expected.
+     * @param receivers Stream receivers to load with the same streamer instance.
+     * @throws Exception If failed.
+     */
+    private void doTestInconsistencyWarning(boolean mustWarn,
+        StreamReceiver<Integer, Integer>... receivers) throws Exception {
+        assert receivers.length > 0;
+
+        startGrids(2);
+
+        AtomicInteger logCnt = new AtomicInteger();
+
+        IgniteConfiguration cfg = getConfiguration(getTestIgniteInstanceName(G.allGrids().size()));
+        cfg.setClientMode(true);
+        ListeningTestLogger log = new ListeningTestLogger(cfg.getGridLogger());
+        log.registerListener(logStr -> {
+            if (logStr.contains("You are loading data with default stream receiver. It doesn't guarantie data " +
+                "consistency until successfully finishes"))
+                logCnt.incrementAndGet();
+        });
+        cfg.setGridLogger(log);
+
+        IgniteEx ldr = startClientGrid(cfg);
+
+        CacheConfiguration<?, ?> ccfg = defaultCacheConfiguration();
+        ldr.getOrCreateCache(ccfg);
+
+        int ldrThreads = 3;
+
+        try (IgniteDataStreamer<Integer, Integer> ds = ldr.dataStreamer(ccfg.getName())) {
+            for (StreamReceiver<Integer, Integer> rcvr : receivers) {
+                if (rcvr != null)
+                    ds.receiver(rcvr);
+                else
+                    ds.allowOverwrite(false);
+
+                AtomicInteger loadCnt = new AtomicInteger(ldrThreads * 100);
+                CountDownLatch loadLatch = new CountDownLatch(ldrThreads);
+
+                GridTestUtils.runMultiThreadedAsync(() -> {
+                    int v;
+
+                    while (loadCnt.get() > 0) {
+                        v = loadCnt.getAndDecrement();
+
+                        if (v >= 0)
+                            ds.addData(v, v);
+                    }
+
+                    loadLatch.countDown();
+                }, ldrThreads, "testDsLoader");
+
+                loadLatch.await();
+            }
+        }
+
+        if (mustWarn)
+            assertTrue("The warning must appear only once. Actual: " + logCnt.get(), logCnt.get() == 1);
+        else
+            assertTrue("The warning must not appear. Actual: " + logCnt.get(), logCnt.get() == 0);
     }
 
     /**

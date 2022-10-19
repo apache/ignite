@@ -287,7 +287,7 @@ public class DataStreamerImpl<K, V> implements IgniteDataStreamer<K, V>, Delayed
     private final AtomicBoolean remapOwning = new AtomicBoolean();
 
     /** Flag to warn into the log once if streamer is inconsistent until successfully finished. */
-    private volatile boolean inconsistencyWarned;
+    private final AtomicBoolean inconsistencyWarned = new AtomicBoolean();
 
     /**
      * @param ctx Grid kernal context.
@@ -645,14 +645,10 @@ public class DataStreamerImpl<K, V> implements IgniteDataStreamer<K, V>, Delayed
 
         lock(false);
 
-        if (!inconsistencyWarned) {
-            inconsistencyWarned = true;
-
-            if (rcvr instanceof IsolatedUpdater) {
-                log.warning("You are loading data with default stream receiver. It doesn't guarantie data " +
-                    "consistency until successfully finishes. Avoid streamer cancelation, streamer node failure, " +
-                    "creating snapshots while streaming.");
-            }
+        if (rcvr instanceof IsolatedUpdater && inconsistencyWarned.compareAndSet(false, true)) {
+            log.warning("You are loading data with default stream receiver. It doesn't guarantie data " +
+                "consistency until successfully finishes. Avoid streamer cancelation, streamer node failure, " +
+                "creating snapshots while streaming.");
         }
 
         try {
