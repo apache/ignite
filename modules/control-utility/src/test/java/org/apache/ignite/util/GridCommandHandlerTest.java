@@ -105,7 +105,6 @@ import org.apache.ignite.internal.processors.cache.persistence.snapshot.Snapshot
 import org.apache.ignite.internal.processors.cache.persistence.snapshot.SnapshotHandlerResult;
 import org.apache.ignite.internal.processors.cache.persistence.snapshot.SnapshotHandlerType;
 import org.apache.ignite.internal.processors.cache.persistence.snapshot.SnapshotHandlerWarningException;
-import org.apache.ignite.internal.processors.cache.persistence.snapshot.SnapshotPartitionsCountersVerifyHandler;
 import org.apache.ignite.internal.processors.cache.transactions.IgniteInternalTx;
 import org.apache.ignite.internal.processors.cache.transactions.IgniteTxEntry;
 import org.apache.ignite.internal.processors.cache.transactions.TransactionProxyImpl;
@@ -3106,8 +3105,7 @@ public class GridCommandHandlerTest extends GridCommandHandlerClusterPerMethodAb
                             /** {@inheritDoc} */
                             @Override public void complete(String name,
                                 Collection<SnapshotHandlerResult<Void>> results) throws SnapshotHandlerWarningException {
-                                throw new SnapshotHandlerWarningException(SnapshotPartitionsCountersVerifyHandler.wrnMsg(
-                                    Collections.singletonList(CU.cacheId(DEFAULT_CACHE_NAME))));
+                                throw new SnapshotHandlerWarningException(IgniteClusterShanpshotStreamerTest.ERR_MSG);
                             }
                         });
                 }

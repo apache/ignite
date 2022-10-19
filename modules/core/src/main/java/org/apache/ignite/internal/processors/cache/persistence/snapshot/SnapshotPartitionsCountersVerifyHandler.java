@@ -40,7 +40,7 @@ import org.apache.ignite.internal.util.typedef.internal.U;
 import static org.apache.ignite.internal.pagemem.PageIdAllocator.INDEX_PARTITION;
 
 /**
- * Quick partitions verifier. Warns if partiton counters are different among the nodes. Mighe be caused by concurrent
+ * Quick partitions verifier. Warns if partiton counters are different among the nodes. May be caused by concurrent
  * or canceled/failed DataStreamer.
  */
 public class SnapshotPartitionsCountersVerifyHandler extends AbstractSnapshotPartitionsVerifyHandler<Long> {
@@ -56,14 +56,22 @@ public class SnapshotPartitionsCountersVerifyHandler extends AbstractSnapshotPar
         return SnapshotHandlerType.CREATE;
     }
 
-    /** {@inheritDoc} */
+    /**
+     * Validates certain partition. Including the meta and index.
+     *
+     * @param hndCtx Snapshot handler context.
+     * @param opCtx Snapshot operation context.
+     * @param partKey Partition key.
+     * @param pageStore Store to read and check from.
+     * @return Update counter for data partition. {@code Null} for other partitions.
+     */
     @Override protected Long validatePartition(
         SnapshotHandlerContext hndCtx,
         GridKernalContext opCtx,
-        PartitionKeyV2 key,
+        PartitionKeyV2 partKey,
         FilePageStore pageStore
     ) throws IgniteCheckedException {
-        if (key.partitionId() == INDEX_PARTITION || key.groupId() == MetaStorage.METASTORAGE_CACHE_ID)
+        if (partKey.partitionId() == INDEX_PARTITION || partKey.groupId() == MetaStorage.METASTORAGE_CACHE_ID)
             return null;
 
         ThreadLocal<ByteBuffer> buff =
@@ -130,7 +138,7 @@ public class SnapshotPartitionsCountersVerifyHandler extends AbstractSnapshotPar
     }
 
     /** */
-    public static String wrnMsg(Collection<Integer> cacheGrps) {
+    private static String wrnMsg(Collection<Integer> cacheGrps) {
         return "Cache partitions differ for cache groups " + cacheGrps.stream().map(String::valueOf)
             .collect(Collectors.joining(",")) + ". This may happen if DataStreamer with property 'allowOverwrite' " +
             "set to `false` is loading during the snapshot or hadn't successfully finished earlier. However, you " +

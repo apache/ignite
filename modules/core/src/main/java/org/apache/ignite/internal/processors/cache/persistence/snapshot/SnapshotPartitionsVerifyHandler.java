@@ -67,17 +67,17 @@ public class SnapshotPartitionsVerifyHandler extends AbstractSnapshotPartitionsV
     @Override protected PartitionHashRecordV2 validatePartition(
         SnapshotHandlerContext hndCtx,
         GridKernalContext opCtx,
-        PartitionKeyV2 key,
+        PartitionKeyV2 partKey,
         FilePageStore pageStore
     ) throws IgniteCheckedException {
-        if (key.partitionId() == INDEX_PARTITION) {
+        if (partKey.partitionId() == INDEX_PARTITION) {
             checkPartitionsPageCrcSum(() -> pageStore, INDEX_PARTITION, FLAG_IDX);
 
             return null;
         }
 
-        if (key.groupId() == MetaStorage.METASTORAGE_CACHE_ID) {
-            checkPartitionsPageCrcSum(() -> pageStore, key.partitionId(), FLAG_DATA);
+        if (partKey.groupId() == MetaStorage.METASTORAGE_CACHE_ID) {
+            checkPartitionsPageCrcSum(() -> pageStore, partKey.partitionId(), FLAG_DATA);
 
             return null;
         }
@@ -104,21 +104,21 @@ public class SnapshotPartitionsVerifyHandler extends AbstractSnapshotPartitionsV
         long size = io.getSize(pageAddr);
 
         if (log.isDebugEnabled()) {
-            log.debug("Partition [grpId=" + key.groupId()
-                + ", id=" + key.partitionId()
+            log.debug("Partition [grpId=" + partKey.groupId()
+                + ", id=" + partKey.partitionId()
                 + ", counter=" + updateCntr
                 + ", size=" + size + "]");
         }
 
-        PartitionHashRecordV2 hash = calculatePartitionHash(key,
+        PartitionHashRecordV2 hash = calculatePartitionHash(partKey,
             updateCntr,
             hndCtx.metadata().consistentId(),
             GridDhtPartitionState.OWNING,
             false,
             size,
-            cctx.snapshotMgr().partitionRowIterator(opCtx, key.groupName(), key.partitionId(), pageStore));
+            cctx.snapshotMgr().partitionRowIterator(opCtx, partKey.groupName(), partKey.partitionId(), pageStore));
 
-        assert hash != null : "OWNING must have hash: " + key;
+        assert hash != null : "OWNING must have hash: " + partKey;
 
         return hash;
     }

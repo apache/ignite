@@ -146,7 +146,7 @@ public class IgniteClusterShanpshotStreamerTest extends AbstractSnapshotSelfTest
     }
 
     /**
-     * Tests snapshot consistency wnen streamer failed or canceled before snapshot. Default receiver.
+     * Tests snapshot consistency when streamer failed or canceled before snapshot. Default receiver.
      */
     @Test
     public void testDsFailsLongAgoDflt() throws Exception {
@@ -158,7 +158,7 @@ public class IgniteClusterShanpshotStreamerTest extends AbstractSnapshotSelfTest
     }
 
     /**
-     * Tests snapshot consistency wnen streamer failed or canceled before snapshot. Batched receiver.
+     * Tests snapshot consistency when streamer failed or canceled before snapshot. Batched receiver.
      */
     @Test
     public void testDsFailsLongAgoBatched() throws Exception {
@@ -218,7 +218,7 @@ public class IgniteClusterShanpshotStreamerTest extends AbstractSnapshotSelfTest
     }
 
     /**
-     * Tests snapshot consistency wnen streamer starts before snapshot. Default receiver.
+     * Tests snapshot consistency when streamer starts before snapshot. Default receiver.
      */
     @Test
     public void testDsBeginsBeforeSnpDflt() throws Exception {
@@ -230,7 +230,7 @@ public class IgniteClusterShanpshotStreamerTest extends AbstractSnapshotSelfTest
     }
 
     /**
-     * Tests snapshot consistency wnen streamer starts before snapshot. Batched receiver.
+     * Tests snapshot consistency when streamer starts before snapshot. Batched receiver.
      */
     @Test
     public void testDsBeginsBeforeSnpBatched() throws Exception {
@@ -276,7 +276,8 @@ public class IgniteClusterShanpshotStreamerTest extends AbstractSnapshotSelfTest
     }
 
     /**
-     * Test snapshot consistency when streamer starts right after init snapshot process request.
+     * Test snapshot consistency when streamer starts right after init snapshot process request. No validation error and
+     * snapshot warnings must occur.
      *
      * @param rcvr Stream receiver.
      * @param ldr Loader node.
@@ -319,7 +320,8 @@ public class IgniteClusterShanpshotStreamerTest extends AbstractSnapshotSelfTest
     }
 
     /**
-     * Test snapshot consistency when streamer starts when snapshot process is not finished yet.
+     * Test snapshot consistency when streamer starts at the end stage of snapshot process. No validation error and
+     * snapshot warnings must occur.
      *
      * @param receiver Stream receiver. {@code Null} for default.
      * @param ldr Loader node.
@@ -361,7 +363,7 @@ public class IgniteClusterShanpshotStreamerTest extends AbstractSnapshotSelfTest
     }
 
     /**
-     * Tests snapshot consistency wnen streamer failed or canceled before snapshot.
+     * Tests snapshot consistency when streamer failed or canceled before snapshot.
      */
     private void doTestDsFailsBeforeSnp(Ignite ldr, boolean mustFail,
         @Nullable StreamReceiver<Integer, Object> receiver) throws Exception {

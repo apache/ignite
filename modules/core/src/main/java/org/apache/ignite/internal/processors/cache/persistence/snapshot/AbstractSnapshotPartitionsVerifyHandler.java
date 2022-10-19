@@ -180,7 +180,15 @@ abstract class AbstractSnapshotPartitionsVerifyHandler<R> implements SnapshotHan
         return res;
     }
 
-    /** */
+    /**
+     * Validates certain partition. Including the meta and index.
+     *
+     * @param hndCtx Snapshot handler context.
+     * @param opCtx Snapshot operation context.
+     * @param partKey Partition key.
+     * @param pageStore Store to read and check from.
+     * @return A result for the partition or {@code null}.
+     */
     protected abstract R validatePartition(
         SnapshotHandlerContext hndCtx,
         GridKernalContext opCtx,
