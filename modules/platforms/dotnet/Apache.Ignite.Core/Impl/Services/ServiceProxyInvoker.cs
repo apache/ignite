@@ -91,13 +91,19 @@ namespace Apache.Ignite.Core.Impl.Services
                 return res;
 
             // 1) Find methods by name
-            // Handle default interface implementations by including non-abstract methods from all interfaces.
             var bindingFlags = BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.Instance;
 
             var methods = svcType.GetMethods(bindingFlags)
-                .Concat(svcType.GetInterfaces().SelectMany(x => x.GetMethods(bindingFlags)).Where(x => !x.IsAbstract))
                 .Where(m => CleanupMethodName(m) == methodName && m.GetParameters().Length == argsLength)
                 .ToArray();
+
+            if (methods.Length == 0)
+            {
+                // Check default interface implementations.
+                methods = svcType.GetInterfaces().SelectMany(x => x.GetMethods(bindingFlags))
+                    .Where(m => !m.IsAbstract && CleanupMethodName(m) == methodName && m.GetParameters().Length == argsLength)
+                    .ToArray();
+            }
 
             if (methods.Length == 1)
             {
