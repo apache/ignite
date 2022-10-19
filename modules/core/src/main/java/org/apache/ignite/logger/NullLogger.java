@@ -25,6 +25,7 @@ import org.jetbrains.annotations.Nullable;
  * Logger which does not output anything.
  */
 public class NullLogger implements IgniteLogger {
+    /** Singleton instance. */
     public static final NullLogger INSTANCE = new NullLogger();
 
     /**
