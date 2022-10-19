@@ -2438,7 +2438,7 @@ namespace Apache.Ignite.Core.Tests.Services
             }
         }
 
-        private interface ITestServiceWithDefaultImpl
+        public interface ITestServiceWithDefaultImpl
         {
             int GetInt() => 42;
         }
