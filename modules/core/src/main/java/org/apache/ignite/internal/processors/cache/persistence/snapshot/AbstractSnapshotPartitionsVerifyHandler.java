@@ -57,6 +57,8 @@ import static org.apache.ignite.internal.processors.cache.persistence.snapshot.I
 
 /**
  * Snapshot handler base for checking snapshot partitions consistency.
+ *
+ * @param <R> Partition check result.
  */
 abstract class AbstractSnapshotPartitionsVerifyHandler<R> implements SnapshotHandler<Map<PartitionKeyV2, R>> {
     /** Shared context. */
