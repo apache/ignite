@@ -2442,6 +2442,8 @@ namespace Apache.Ignite.Core.Tests.Services
         public interface ITestServiceWithDefaultImpl
         {
             int GetInt() => 42;
+
+            int GetLong();
         }
         
         private class TestServiceWithDefaultImpl : ITestServiceWithDefaultImpl, IService
@@ -2460,6 +2462,8 @@ namespace Apache.Ignite.Core.Tests.Services
             {
                 // No-op.
             }
+
+            public int GetLong() => ((ITestServiceWithDefaultImpl)this).GetInt();
         }
 
 #if NETCOREAPP
