@@ -1682,6 +1682,7 @@ namespace Apache.Ignite.Core.Tests.Services
         [Test]
         public void TestDefaultInterfaceImplementation()
         {
+            // TODO: Test when the method is also overridden in the class.
             var name = nameof(TestDefaultInterfaceImplementation);
             Services.DeployClusterSingleton(name, new TestServiceWithDefaultImpl());
 
