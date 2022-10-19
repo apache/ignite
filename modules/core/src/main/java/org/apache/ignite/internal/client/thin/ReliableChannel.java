@@ -133,7 +133,7 @@ final class ReliableChannel implements AutoCloseable {
 
         this.clientCfg = clientCfg;
         this.chFactory = chFactory;
-        log = clientCfg.getLogger() == null ? new NullLogger() : clientCfg.getLogger();
+        log = NullLogger.whenNull(clientCfg.getLogger());
 
         partitionAwarenessEnabled = clientCfg.isPartitionAwarenessEnabled();
 

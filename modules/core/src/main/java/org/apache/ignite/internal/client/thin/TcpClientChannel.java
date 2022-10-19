@@ -170,7 +170,7 @@ class TcpClientChannel implements ClientChannel, ClientMessageHandler, ClientCon
         throws ClientConnectionException, ClientAuthenticationException, ClientProtocolError {
         validateConfiguration(cfg);
 
-        log = cfg.getLogger() == null ? new NullLogger() : cfg.getLogger();
+        log = NullLogger.whenNull(cfg.getLogger());
 
         for (ClientNotificationType type : ClientNotificationType.values()) {
             if (type.keepNotificationsWithoutListener())

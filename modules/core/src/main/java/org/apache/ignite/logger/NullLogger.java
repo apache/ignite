@@ -25,6 +25,16 @@ import org.jetbrains.annotations.Nullable;
  * Logger which does not output anything.
  */
 public class NullLogger implements IgniteLogger {
+    public static final NullLogger INSTANCE = new NullLogger();
+
+    /**
+     * @param log Logger.
+     * @return Specified logger if it is not {@code null}, {@code NullLogger} otherwise.
+     */
+    public static IgniteLogger whenNull(IgniteLogger log) {
+        return log == null ? INSTANCE : log;
+    }
+
     /** {@inheritDoc} */
     @Override public IgniteLogger getLogger(Object ctgr) {
         return this;
