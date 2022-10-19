@@ -18,9 +18,12 @@
 package org.apache.ignite.internal.processors.query.calcite.jdbc;
 
 import java.io.Serializable;
+import java.math.BigDecimal;
 import java.sql.BatchUpdateException;
 import java.sql.Connection;
 import java.sql.DriverManager;
+import java.sql.JDBCType;
+import java.sql.ParameterMetaData;
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.ResultSetMetaData;
@@ -344,6 +347,52 @@ public class JdbcQueryTest extends GridCommonAbstractTest {
         stmt.execute("DROP TABLE t1");
 
         stmt.close();
+    }
+
+    /**
+     * @throws SQLException If failed.
+     */
+    @Test
+    public void testParametersMetadata() throws Exception {
+        stmt.execute("CREATE TABLE Person(id BIGINT, PRIMARY KEY(id), name VARCHAR, amount DECIMAL(10,2))");
+
+        try (PreparedStatement stmt = conn.prepareStatement("INSERT INTO Person VALUES (?, ?, ?)")) {
+            ParameterMetaData meta = stmt.getParameterMetaData();
+
+            assertEquals(3, meta.getParameterCount(), 3);
+
+            assertEquals(Long.class.getName(), meta.getParameterClassName(1));
+            assertEquals(String.class.getName(), meta.getParameterClassName(2));
+            assertEquals(BigDecimal.class.getName(), meta.getParameterClassName(3));
+
+            assertEquals(JDBCType.valueOf(Types.BIGINT).getName(), meta.getParameterTypeName(1));
+            assertEquals(JDBCType.valueOf(Types.VARCHAR).getName(), meta.getParameterTypeName(2));
+            assertEquals(JDBCType.valueOf(Types.DECIMAL).getName(), meta.getParameterTypeName(3));
+
+            assertEquals(Types.BIGINT, meta.getParameterType(1));
+            assertEquals(Types.VARCHAR, meta.getParameterType(2));
+            assertEquals(Types.DECIMAL, meta.getParameterType(3));
+
+            assertEquals(19, meta.getPrecision(1));
+            assertEquals(-1, meta.getPrecision(2));
+            assertEquals(10, meta.getPrecision(3));
+
+            assertEquals(0, meta.getScale(1));
+            assertEquals(Integer.MIN_VALUE, meta.getScale(2));
+            assertEquals(2, meta.getScale(3));
+
+            assertEquals(ParameterMetaData.parameterNullable, meta.isNullable(1));
+            assertEquals(ParameterMetaData.parameterNullable, meta.isNullable(2));
+            assertEquals(ParameterMetaData.parameterNullable, meta.isNullable(3));
+
+            assertEquals(ParameterMetaData.parameterModeIn, meta.getParameterMode(1));
+            assertEquals(ParameterMetaData.parameterModeIn, meta.getParameterMode(2));
+            assertEquals(ParameterMetaData.parameterModeIn, meta.getParameterMode(3));
+
+            assertTrue(meta.isSigned(1));
+            assertTrue(meta.isSigned(2));
+            assertTrue(meta.isSigned(3));
+        }
     }
 
     /** Some object to store. */

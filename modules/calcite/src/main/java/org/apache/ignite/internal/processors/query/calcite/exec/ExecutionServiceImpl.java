@@ -28,7 +28,6 @@ import java.util.stream.Collectors;
 import org.apache.calcite.plan.Context;
 import org.apache.calcite.plan.Contexts;
 import org.apache.calcite.plan.RelOptUtil;
-import org.apache.calcite.rel.type.RelDataType;
 import org.apache.calcite.sql.SqlInsert;
 import org.apache.calcite.sql.SqlKind;
 import org.apache.calcite.tools.Frameworks;
@@ -73,13 +72,11 @@ import org.apache.ignite.internal.processors.query.calcite.prepare.BaseQueryCont
 import org.apache.ignite.internal.processors.query.calcite.prepare.CacheKey;
 import org.apache.ignite.internal.processors.query.calcite.prepare.DdlPlan;
 import org.apache.ignite.internal.processors.query.calcite.prepare.ExplainPlan;
-import org.apache.ignite.internal.processors.query.calcite.prepare.FieldsMetadata;
 import org.apache.ignite.internal.processors.query.calcite.prepare.FieldsMetadataImpl;
 import org.apache.ignite.internal.processors.query.calcite.prepare.Fragment;
 import org.apache.ignite.internal.processors.query.calcite.prepare.FragmentPlan;
 import org.apache.ignite.internal.processors.query.calcite.prepare.MappingQueryContext;
 import org.apache.ignite.internal.processors.query.calcite.prepare.MultiStepPlan;
-import org.apache.ignite.internal.processors.query.calcite.prepare.PlanningContext;
 import org.apache.ignite.internal.processors.query.calcite.prepare.PrepareServiceImpl;
 import org.apache.ignite.internal.processors.query.calcite.prepare.QueryPlan;
 import org.apache.ignite.internal.processors.query.calcite.prepare.QueryPlanCache;
@@ -90,7 +87,6 @@ import org.apache.ignite.internal.processors.query.calcite.util.AbstractService;
 import org.apache.ignite.internal.processors.query.calcite.util.Commons;
 import org.apache.ignite.internal.processors.query.calcite.util.ConvertingClosableIterator;
 import org.apache.ignite.internal.processors.query.calcite.util.ListFieldsQueryCursor;
-import org.apache.ignite.internal.processors.query.calcite.util.TypeUtils;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.X;
 import org.apache.ignite.internal.util.typedef.internal.U;
@@ -656,14 +652,6 @@ public class ExecutionServiceImpl<Row> extends AbstractService implements Execut
                 throw wrpEx;
             }
         }
-    }
-
-    /** */
-    private FieldsMetadata queryFieldsMetadata(PlanningContext ctx, RelDataType sqlType,
-        @Nullable List<List<String>> origins) {
-        RelDataType resultType = TypeUtils.getResultType(
-            ctx.typeFactory(), ctx.catalogReader(), sqlType, origins);
-        return new FieldsMetadataImpl(resultType, origins);
     }
 
     /** */
