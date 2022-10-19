@@ -82,6 +82,7 @@ import static org.apache.calcite.sql.SqlKind.IS_NOT_NULL;
 import static org.apache.calcite.sql.SqlKind.IS_NULL;
 import static org.apache.calcite.sql.SqlKind.LESS_THAN;
 import static org.apache.calcite.sql.SqlKind.LESS_THAN_OR_EQUAL;
+import static org.apache.calcite.sql.SqlKind.NOT;
 import static org.apache.calcite.sql.SqlKind.SEARCH;
 
 /** */
@@ -562,6 +563,8 @@ public class RexUtils {
         Map<Integer, List<RexCall>> res = new HashMap<>(conjunctions.size());
 
         for (RexNode rexNode : conjunctions) {
+            rexNode = expandBooleanFieldComparison(rexNode, builder(cluster));
+
             if (!isSupportedTreeComparison(rexNode))
                 continue;
 
@@ -590,6 +593,19 @@ public class RexUtils {
             fldPreds.add(predCall);
         }
         return res;
+    }
+
+    /** */
+    private static RexNode expandBooleanFieldComparison(RexNode rexNode, RexBuilder builder) {
+        if (rexNode instanceof RexSlot)
+            return builder.makeCall(SqlStdOperatorTable.EQUALS, rexNode, builder.makeLiteral(true));
+        else if (rexNode instanceof RexCall && rexNode.getKind() == NOT &&
+            ((RexCall)rexNode).getOperands().get(0) instanceof RexSlot) {
+            return builder.makeCall(SqlStdOperatorTable.EQUALS, ((RexCall)rexNode).getOperands().get(0),
+                builder.makeLiteral(false));
+        }
+
+        return rexNode;
     }
 
     /** */

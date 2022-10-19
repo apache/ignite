@@ -129,4 +129,29 @@ public class IndexScanlIntegrationTest extends AbstractBasicIntegrationTest {
             .returns("emp60")
             .check();
     }
+
+    /** */
+    @Test
+    public void testScanBooleanField() {
+        executeSql("CREATE TABLE t(i INTEGER, b BOOLEAN)");
+        executeSql("INSERT INTO t VALUES (0, TRUE), (1, TRUE), (2, FALSE), (3, FALSE), (4, null)");
+        executeSql("CREATE INDEX t_idx ON t(b)");
+
+        assertQuery("SELECT i FROM t WHERE b = TRUE")
+            .matches(QueryChecker.containsIndexScan("PUBLIC", "T", "T_IDX"))
+            .returns(0)
+            .returns(1)
+            .check();
+
+        assertQuery("SELECT i FROM t WHERE b = FALSE")
+            .matches(QueryChecker.containsIndexScan("PUBLIC", "T", "T_IDX"))
+            .returns(2)
+            .returns(3)
+            .check();
+
+        assertQuery("SELECT i FROM t WHERE b IS NULL")
+            .matches(QueryChecker.containsIndexScan("PUBLIC", "T", "T_IDX"))
+            .returns(4)
+            .check();
+    }
 }
