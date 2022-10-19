@@ -1682,7 +1682,6 @@ namespace Apache.Ignite.Core.Tests.Services
         [Test]
         public void TestDefaultInterfaceImplementation()
         {
-            // TODO: Test when the method is also overridden in the class.
             var name = nameof(TestDefaultInterfaceImplementation);
             Services.DeployClusterSingleton(name, new TestServiceWithDefaultImpl());
 
@@ -1690,6 +1689,21 @@ namespace Apache.Ignite.Core.Tests.Services
             var res = prx.GetInt();
 
             Assert.AreEqual(42, res);
+        }
+
+        /// <summary>
+        /// Tests service method with default interface implementation that is overridden in the class.
+        /// </summary>
+        [Test]
+        public void TestDefaultInterfaceImplementationOverridden()
+        {
+            var name = nameof(TestDefaultInterfaceImplementationOverridden);
+            Services.DeployClusterSingleton(name, new TestServiceWithDefaultImpl());
+
+            var prx = Services.GetServiceProxy<ITestServiceWithDefaultImpl>(name);
+            var res = prx.GetInt();
+
+            Assert.AreEqual(43, res);
         }
 
         /// <summary>
@@ -2464,6 +2478,28 @@ namespace Apache.Ignite.Core.Tests.Services
             }
 
             public int GetLong() => ((ITestServiceWithDefaultImpl)this).GetInt();
+        }
+
+        private class TestServiceWithDefaultImplOverridden : ITestServiceWithDefaultImpl, IService
+        {
+            public void Init(IServiceContext context)
+            {
+                // No-op.
+            }
+
+            public void Execute(IServiceContext context)
+            {
+                // No-op.
+            }
+
+            public void Cancel(IServiceContext context)
+            {
+                // No-op.
+            }
+
+            int ITestServiceWithDefaultImpl.GetInt() => 43;
+
+            public int GetLong() => 43;
         }
 
 #if NETCOREAPP
