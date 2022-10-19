@@ -67,7 +67,6 @@ public class IgniteClusterShanpshotStreamerTest extends AbstractSnapshotSelfTest
     /** */
     public static final String ERR_MSG = "Cache partitions differ for cache groups ";
 
-
     /** */
     private IgniteSnapshotManager grid0SnpMgr;
 
