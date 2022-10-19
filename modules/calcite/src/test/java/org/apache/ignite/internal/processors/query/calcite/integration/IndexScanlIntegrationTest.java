@@ -149,6 +149,34 @@ public class IndexScanlIntegrationTest extends AbstractBasicIntegrationTest {
             .returns(3)
             .check();
 
+        assertQuery("SELECT i FROM t WHERE b IS TRUE")
+            .matches(QueryChecker.containsIndexScan("PUBLIC", "T", "T_IDX"))
+            .returns(0)
+            .returns(1)
+            .check();
+
+        assertQuery("SELECT i FROM t WHERE b IS FALSE")
+            .matches(QueryChecker.containsIndexScan("PUBLIC", "T", "T_IDX"))
+            .returns(2)
+            .returns(3)
+            .check();
+
+        // Support index scans for IS TRUE, IS FALSE but not for IS NOT TRUE, IS NOT FALSE, since it requeres multi
+        // bounds scan and may not be effective.
+        assertQuery("SELECT i FROM t WHERE b IS NOT TRUE")
+            .matches(QueryChecker.containsTableScan("PUBLIC", "T"))
+            .returns(2)
+            .returns(3)
+            .returns(4)
+            .check();
+
+        assertQuery("SELECT i FROM t WHERE b IS NOT FALSE")
+            .matches(QueryChecker.containsTableScan("PUBLIC", "T"))
+            .returns(0)
+            .returns(1)
+            .returns(4)
+            .check();
+
         assertQuery("SELECT i FROM t WHERE b IS NULL")
             .matches(QueryChecker.containsIndexScan("PUBLIC", "T", "T_IDX"))
             .returns(4)
