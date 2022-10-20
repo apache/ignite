@@ -29,6 +29,7 @@ import java.util.function.BiFunction;
 import java.util.function.Consumer;
 import org.apache.ignite.IgniteBinary;
 import org.apache.ignite.IgniteCheckedException;
+import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.binary.BinaryBasicNameMapper;
 import org.apache.ignite.binary.BinaryObjectException;
 import org.apache.ignite.binary.BinaryType;
@@ -69,6 +70,7 @@ import org.apache.ignite.internal.processors.platform.client.IgniteClientExcepti
 import org.apache.ignite.internal.util.GridArgumentCheck;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgnitePredicate;
+import org.apache.ignite.logger.NullLogger;
 import org.apache.ignite.marshaller.MarshallerContext;
 import org.apache.ignite.marshaller.MarshallerUtils;
 import org.apache.ignite.marshaller.jdk.JdkMarshaller;
@@ -473,12 +475,23 @@ public class TcpIgniteClient implements IgniteClient {
         if (clusterCfg == null)
             return;
 
+        IgniteLogger log = NullLogger.whenNull(cfg.getLogger());
+
+        if (log.isDebugEnabled())
+            log.debug("Cluster binary configuration retrieved: " + clusterCfg);
+
         BinaryConfiguration resCfg = cfg.getBinaryConfiguration();
 
         if (resCfg == null)
             resCfg = new BinaryConfiguration();
 
-        resCfg.setCompactFooter(clusterCfg.compactFooter());
+        if (resCfg.isCompactFooter() != clusterCfg.compactFooter()) {
+            if (log.isInfoEnabled())
+                log.info("Overriding compact footer setting according to cluster configuration: " +
+                        resCfg.isCompactFooter() + " -> " + clusterCfg.compactFooter());
+
+            resCfg.setCompactFooter(clusterCfg.compactFooter());
+        }
 
         switch (clusterCfg.binaryNameMapperMode()) {
             case BASIC_FULL:
