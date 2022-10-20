@@ -22,6 +22,8 @@ import java.util.Map;
 import java.util.concurrent.Executor;
 import javax.cache.configuration.Factory;
 import javax.net.ssl.SSLContext;
+
+import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.client.SslMode;
 import org.apache.ignite.client.SslProtocol;
 import org.apache.ignite.configuration.ClientConfiguration;
@@ -105,6 +107,9 @@ final class ClientChannelConfiguration {
     /** Automatic binary configuration. */
     private final boolean autoBinaryConfigurationEnabled;
 
+    /** */
+    private final IgniteLogger logger;
+
     /**
      * Constructor.
      */
@@ -135,6 +140,7 @@ final class ClientChannelConfiguration {
         this.heartbeatEnabled = cfg.isHeartbeatEnabled();
         this.heartbeatInterval = cfg.getHeartbeatInterval();
         this.autoBinaryConfigurationEnabled = cfg.isAutoBinaryConfigurationEnabled();
+        this.logger = cfg.getLogger();
     }
 
     /**
@@ -311,5 +317,12 @@ final class ClientChannelConfiguration {
      */
     public boolean isAutoBinaryConfigurationEnabled() {
         return autoBinaryConfigurationEnabled;
+    }
+
+    /**
+     * @return Logger.
+     */
+    public IgniteLogger getLogger() {
+        return logger;
     }
 }
