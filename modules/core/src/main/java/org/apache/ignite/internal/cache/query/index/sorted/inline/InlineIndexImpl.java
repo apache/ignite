@@ -138,7 +138,7 @@ public class InlineIndexImpl extends AbstractIndex implements InlineIndex {
             for (int i = 0; i < segmentsCnt; i++)
                 segmentCursors[i] = first ? findFirst(i, qryCtx) : findLast(i, qryCtx);
 
-            return new FirstAndSingleValueIndexCursor(segmentCursors, def);
+            return new FirstSegmentSingleValueIndexCursor(segmentCursors, def);
         }
         finally {
             lock.readLock().unlock();
@@ -674,12 +674,12 @@ public class InlineIndexImpl extends AbstractIndex implements InlineIndex {
     }
 
     /** First-only, single-value-only segmented cursor. */
-    private static class FirstAndSingleValueIndexCursor extends SegmentedIndexCursor {
+    private static class FirstSegmentSingleValueIndexCursor extends SegmentedIndexCursor {
         /**
          * @param cursors
          * @param idxDef
          */
-        FirstAndSingleValueIndexCursor(
+        FirstSegmentSingleValueIndexCursor(
             GridCursor<IndexRow>[] cursors, SortedIndexDefinition idxDef) throws IgniteCheckedException {
             super(cursors, idxDef);
         }
@@ -687,10 +687,10 @@ public class InlineIndexImpl extends AbstractIndex implements InlineIndex {
         /** {@inheritDoc} */
         @Override protected Queue<GridCursor<IndexRow>> cursorsQueue(
             GridCursor<IndexRow>[] cursors) throws IgniteCheckedException {
-            Queue<GridCursor<IndexRow>> q = super.cursorsQueue(cursors);
+            Queue<GridCursor<IndexRow>> srcQueue = super.cursorsQueue(cursors);
 
-            if (!q.isEmpty()) {
-                GridCursor<IndexRow> cur = q.poll();
+            if (!srcQueue.isEmpty()) {
+                GridCursor<IndexRow> cur = srcQueue.poll();
 
                 IndexRow row = cur.get();
 
@@ -699,7 +699,7 @@ public class InlineIndexImpl extends AbstractIndex implements InlineIndex {
                 return new ArrayDeque<>(Collections.singleton(new SingleCursor<>(row)));
             }
 
-            return q;
+            return srcQueue;
         }
     }
 }

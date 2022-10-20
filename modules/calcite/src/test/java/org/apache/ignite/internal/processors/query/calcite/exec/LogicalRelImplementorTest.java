@@ -56,6 +56,7 @@ import org.apache.ignite.internal.processors.query.calcite.type.IgniteTypeFactor
 import org.apache.ignite.internal.processors.query.calcite.util.Commons;
 import org.apache.ignite.internal.processors.query.calcite.util.RexUtils;
 import org.apache.ignite.internal.util.typedef.F;
+import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.junit.Test;
 
@@ -177,7 +178,6 @@ public class LogicalRelImplementorTest extends GridCommonAbstractTest {
             cluster.traitSet(),
             QueryUtils.PRIMARY_KEY_INDEX,
             first,
-            tbl.getIndex(QueryUtils.PRIMARY_KEY_INDEX).collation(),
             ImmutableBitSet.of(idxColumn)
         );
 
@@ -191,6 +191,7 @@ public class LogicalRelImplementorTest extends GridCommonAbstractTest {
         node = relImplementor.visit(idxScan);
 
         assertTrue(node instanceof SortNode);
+        assertEquals(1, (int)U.field(node, "limit"));
         assertTrue(node.sources() != null && node.sources().size() == 1);
         assertTrue(node.sources().get(0) instanceof ScanNode);
     }

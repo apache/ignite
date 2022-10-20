@@ -72,7 +72,6 @@ public class IndexMinMaxRule extends RelRule<IndexMinMaxRule.Config> {
             idxScan.getTraitSet().replace(RewindabilityTrait.REWINDABLE),
             idxScan.indexName(),
             firstIdxVal,
-            idx.collation(),
             idxScan.requiredColumns()
         );
 

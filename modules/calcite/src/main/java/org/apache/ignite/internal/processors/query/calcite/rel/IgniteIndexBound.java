@@ -24,7 +24,6 @@ import org.apache.calcite.plan.RelOptPlanner;
 import org.apache.calcite.plan.RelOptTable;
 import org.apache.calcite.plan.RelTraitSet;
 import org.apache.calcite.rel.AbstractRelNode;
-import org.apache.calcite.rel.RelCollation;
 import org.apache.calcite.rel.RelInput;
 import org.apache.calcite.rel.RelWriter;
 import org.apache.calcite.rel.metadata.RelMetadataQuery;
@@ -54,9 +53,6 @@ public class IgniteIndexBound extends AbstractRelNode implements SourceAwareIgni
     private final RelOptTable tbl;
 
     /** */
-    private final RelCollation collation;
-
-    /** */
     private final ImmutableBitSet requiredCols;
 
     /**
@@ -67,7 +63,6 @@ public class IgniteIndexBound extends AbstractRelNode implements SourceAwareIgni
      * @param traits Traits of this relational expression.
      * @param idxName Index name.
      * @param first {@code True} if first not null index value required. {@code False} if last.
-     * @param collation Collation.
      * @param requiredCols Required columns.
      */
     public IgniteIndexBound(
@@ -76,10 +71,9 @@ public class IgniteIndexBound extends AbstractRelNode implements SourceAwareIgni
         RelTraitSet traits,
         String idxName,
         boolean first,
-        RelCollation collation,
         ImmutableBitSet requiredCols
     ) {
-        this(-1, tbl, cluster, traits, idxName, first, collation, requiredCols);
+        this(-1, tbl, cluster, traits, idxName, first, requiredCols);
     }
 
     /**
@@ -91,7 +85,6 @@ public class IgniteIndexBound extends AbstractRelNode implements SourceAwareIgni
      * @param traits Traits of this relational expression.
      * @param idxName Index name.
      * @param first {@code True} if first not null index value required. {@code False} if last.
-     * @param collation Collation.
      * @param requiredCols Required columns.
      */
     private IgniteIndexBound(
@@ -101,7 +94,6 @@ public class IgniteIndexBound extends AbstractRelNode implements SourceAwareIgni
         RelTraitSet traits,
         String idxName,
         boolean first,
-        RelCollation collation,
         ImmutableBitSet requiredCols
     ) {
         super(cluster, traits);
@@ -110,7 +102,6 @@ public class IgniteIndexBound extends AbstractRelNode implements SourceAwareIgni
         this.tbl = tbl;
         this.idxName = idxName;
         this.first = first;
-        this.collation = collation;
         this.requiredCols = requiredCols;
     }
 
@@ -134,8 +125,6 @@ public class IgniteIndexBound extends AbstractRelNode implements SourceAwareIgni
 
         first = input.getBoolean("first", true);
 
-        collation = input.getCollation();
-
         requiredCols = input.getBitSet("requiredCols");
     }
 
@@ -158,7 +147,6 @@ public class IgniteIndexBound extends AbstractRelNode implements SourceAwareIgni
             .item("table", tbl.getQualifiedName())
             .item("index", idxName)
             .item("first", first)
-            .item("collation", collation)
             .item("requiredCols", requiredCols);
     }
 
@@ -169,7 +157,7 @@ public class IgniteIndexBound extends AbstractRelNode implements SourceAwareIgni
 
     /** {@inheritDoc} */
     @Override public IgniteRel clone(RelOptCluster cluster, List<IgniteRel> inputs) {
-        return new IgniteIndexBound(sourceId, tbl, cluster, traitSet, idxName, first, collation, requiredCols);
+        return new IgniteIndexBound(sourceId, tbl, cluster, traitSet, idxName, first, requiredCols);
     }
 
     /** {@inheritDoc} */
@@ -179,7 +167,7 @@ public class IgniteIndexBound extends AbstractRelNode implements SourceAwareIgni
 
     /** {@inheritDoc} */
     @Override public IgniteRel clone(long sourceId) {
-        return new IgniteIndexBound(sourceId, tbl, getCluster(), traitSet, idxName, first, collation, requiredCols);
+        return new IgniteIndexBound(sourceId, tbl, getCluster(), traitSet, idxName, first, requiredCols);
     }
 
     /** {@inheritDoc} */
@@ -202,10 +190,5 @@ public class IgniteIndexBound extends AbstractRelNode implements SourceAwareIgni
     /** */
     public ImmutableBitSet requiredColumns() {
         return requiredCols;
-    }
-
-    /** {@inheritDoc} */
-    @Override public RelCollation collation() {
-        return collation;
     }
 }
