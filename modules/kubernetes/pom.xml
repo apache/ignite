@@ -101,7 +101,7 @@
         <dependency>
             <groupId>org.mock-server</groupId>
             <artifactId>mockserver-netty</artifactId>
-            <version>5.11.1</version>
+            <version>5.14.0</version>
             <scope>test</scope>
         </dependency>
 
