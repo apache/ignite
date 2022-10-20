@@ -239,6 +239,8 @@ public class IndexRebuildIntegrationTest extends AbstractBasicIntegrationTest {
 
                 AtomicBoolean stop = new AtomicBoolean();
 
+                tbl3.markIndexRebuildInProgress(false);
+
                 IgniteInternalFuture<?> fut = GridTestUtils.runAsync(() -> {
                     boolean lever = true;
 

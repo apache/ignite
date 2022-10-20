@@ -178,7 +178,8 @@ public class LogicalRelImplementorTest extends GridCommonAbstractTest {
             cluster.traitSet(),
             QueryUtils.PRIMARY_KEY_INDEX,
             first,
-            tbl.getIndex(QueryUtils.PRIMARY_KEY_INDEX).collation()
+            tbl.getIndex(QueryUtils.PRIMARY_KEY_INDEX).collation(),
+            ImmutableBitSet.of(1)
         );
 
         Node<?> node = relImplementor.visit(idxScan);

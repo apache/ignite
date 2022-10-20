@@ -17,9 +17,7 @@
 
 package org.apache.ignite.internal.processors.query.calcite.rel;
 
-import java.math.BigInteger;
 import java.util.List;
-import java.util.stream.Collectors;
 import org.apache.calcite.plan.RelOptCluster;
 import org.apache.calcite.plan.RelOptCost;
 import org.apache.calcite.plan.RelOptPlanner;
@@ -27,7 +25,6 @@ import org.apache.calcite.plan.RelOptTable;
 import org.apache.calcite.plan.RelTraitSet;
 import org.apache.calcite.rel.AbstractRelNode;
 import org.apache.calcite.rel.RelCollation;
-import org.apache.calcite.rel.RelFieldCollation;
 import org.apache.calcite.rel.RelInput;
 import org.apache.calcite.rel.RelWriter;
 import org.apache.calcite.rel.metadata.RelMetadataQuery;
@@ -59,6 +56,9 @@ public class IgniteIndexBound extends AbstractRelNode implements SourceAwareIgni
     /** */
     private final RelCollation collation;
 
+    /** */
+    private final ImmutableBitSet requiredCols;
+
     /**
      * Ctor.
      *
@@ -74,9 +74,10 @@ public class IgniteIndexBound extends AbstractRelNode implements SourceAwareIgni
         RelTraitSet traits,
         String idxName,
         boolean first,
-        RelCollation collation
+        RelCollation collation,
+        ImmutableBitSet requiredCols
     ) {
-        this(-1, tbl, cluster, traits, idxName, first, collation);
+        this(-1, tbl, cluster, traits, idxName, first, collation, requiredCols);
     }
 
     /**
@@ -97,7 +98,8 @@ public class IgniteIndexBound extends AbstractRelNode implements SourceAwareIgni
         RelTraitSet traits,
         String idxName,
         boolean first,
-        RelCollation collation
+        RelCollation collation,
+        ImmutableBitSet requiredCols
     ) {
         super(cluster, traits);
 
@@ -106,6 +108,7 @@ public class IgniteIndexBound extends AbstractRelNode implements SourceAwareIgni
         this.idxName = idxName;
         this.first = first;
         this.collation = collation;
+        this.requiredCols = requiredCols;
     }
 
     /**
@@ -129,6 +132,8 @@ public class IgniteIndexBound extends AbstractRelNode implements SourceAwareIgni
         first = input.getBoolean("first", true);
 
         collation = input.getCollation();
+
+        requiredCols = input.getBitSet("requiredCols");
     }
 
     /** {@inheritDoc} */
@@ -140,7 +145,7 @@ public class IgniteIndexBound extends AbstractRelNode implements SourceAwareIgni
 
     /** {@inheritDoc} */
     @Override public RelDataType deriveRowType() {
-        return tbl.unwrap(IgniteTable.class).getRowType(Commons.typeFactory(getCluster()), requiredColumns());
+        return tbl.unwrap(IgniteTable.class).getRowType(Commons.typeFactory(getCluster()), requiredCols);
     }
 
     /** {@inheritDoc} */
@@ -150,7 +155,8 @@ public class IgniteIndexBound extends AbstractRelNode implements SourceAwareIgni
             .item("table", tbl.getQualifiedName())
             .item("index", idxName)
             .item("first", first)
-            .item("collation", collation);
+            .item("collation", collation)
+            .item("requiredCols", requiredCols);
     }
 
     /** {@inheritDoc} */
@@ -160,7 +166,7 @@ public class IgniteIndexBound extends AbstractRelNode implements SourceAwareIgni
 
     /** {@inheritDoc} */
     @Override public IgniteRel clone(RelOptCluster cluster, List<IgniteRel> inputs) {
-        return new IgniteIndexBound(sourceId, tbl, cluster, traitSet, idxName, first, collation);
+        return new IgniteIndexBound(sourceId, tbl, cluster, traitSet, idxName, first, collation, requiredCols);
     }
 
     /** {@inheritDoc} */
@@ -170,7 +176,7 @@ public class IgniteIndexBound extends AbstractRelNode implements SourceAwareIgni
 
     /** {@inheritDoc} */
     @Override public IgniteRel clone(long sourceId) {
-        return new IgniteIndexBound(sourceId, tbl, getCluster(), traitSet, idxName, first, collation);
+        return new IgniteIndexBound(sourceId, tbl, getCluster(), traitSet, idxName, first, collation, requiredCols);
     }
 
     /** {@inheritDoc} */
@@ -192,8 +198,7 @@ public class IgniteIndexBound extends AbstractRelNode implements SourceAwareIgni
 
     /** */
     public ImmutableBitSet requiredColumns() {
-        return ImmutableBitSet.of(collation.getFieldCollations().stream().map(RelFieldCollation::getFieldIndex)
-            .collect(Collectors.toList()));
+        return requiredCols;
     }
 
     /** {@inheritDoc} */

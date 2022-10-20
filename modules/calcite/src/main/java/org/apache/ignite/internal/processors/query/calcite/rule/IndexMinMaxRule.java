@@ -66,16 +66,17 @@ public class IndexMinMaxRule extends RelRule<IndexMinMaxRule.Config> {
         boolean firstIdxVal = (aggFun.getKind() == SqlKind.MIN) !=
             idx.collation().getFieldCollations().get(0).getDirection().isDescending();
 
-        IgniteIndexBound newAggrInput = new IgniteIndexBound(
+        IgniteIndexBound idxMinMaxRel = new IgniteIndexBound(
             idxScan.getTable(),
             idxScan.getCluster(),
             idxScan.getTraitSet().replace(RewindabilityTrait.REWINDABLE),
             idxScan.indexName(),
             firstIdxVal,
-            idx.collation()
+            idx.collation(),
+            idxScan.requiredColumns()
         );
 
-        call.transformTo(aggr.clone(aggr.getCluster(), F.asList(newAggrInput)));
+        call.transformTo(aggr.clone(aggr.getCluster(), F.asList(idxMinMaxRel)));
     }
 
     /** The rule config. */

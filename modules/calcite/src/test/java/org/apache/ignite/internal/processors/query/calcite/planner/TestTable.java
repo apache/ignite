@@ -63,9 +63,6 @@ public class TestTable implements IgniteCacheTable {
     private final RelProtoDataType protoType;
 
     /** */
-    private final RelDataType rawType;
-
-    /** */
     private final Map<String, IgniteIndex> indexes = new HashMap<>();
 
     /** */
@@ -92,7 +89,6 @@ public class TestTable implements IgniteCacheTable {
 
     /** */
     protected TestTable(String name, RelDataType type, double rowCnt) {
-        rawType = type;
         protoType = RelDataTypeImpl.proto(type);
         statistics = new IgniteStatisticsImpl(new ObjectStatisticsImpl((long)rowCnt, Collections.emptyMap()));
         this.name = name;

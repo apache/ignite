@@ -20,9 +20,12 @@ import org.apache.calcite.util.ImmutableBitSet;
 import org.apache.calcite.util.ImmutableIntList;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteException;
+import org.apache.ignite.internal.cache.query.index.sorted.IndexKeyType;
 import org.apache.ignite.internal.cache.query.index.sorted.IndexRow;
 import org.apache.ignite.internal.cache.query.index.sorted.inline.IndexQueryContext;
 import org.apache.ignite.internal.cache.query.index.sorted.inline.InlineIndexImpl;
+import org.apache.ignite.internal.processors.cache.persistence.tree.BPlusTree;
+import org.apache.ignite.internal.processors.cache.persistence.tree.io.BPlusIO;
 import org.apache.ignite.internal.processors.query.calcite.schema.CacheTableDescriptor;
 import org.apache.ignite.internal.util.lang.GridCursor;
 import org.jetbrains.annotations.Nullable;
@@ -49,6 +52,26 @@ public class IndexFirstLastScan<Row> extends IndexScan<Row> {
             requiredColumns);
     }
 
+    /** {@inheritDoc} */
+    @Override protected IndexQueryContext indexQueryContext() {
+        IndexQueryContext res = super.indexQueryContext();
+
+        BPlusTree.TreeRowClosure<IndexRow, IndexRow> f = res.rowFilter();
+
+        return new IndexQueryContext(res.cacheFilter(), new BPlusTree.TreeRowClosure<IndexRow, IndexRow>() {
+            /**
+             * {@inheritDoc}
+             */
+            @Override public boolean apply(BPlusTree<IndexRow, IndexRow> tree, BPlusIO<IndexRow> io, long pageAddr,
+                int idx) throws IgniteCheckedException {
+                if (f != null && !f.apply(tree, io, pageAddr, idx))
+                    return false;
+
+                return io.getLookupRow(tree, pageAddr, idx).key(0).type() != IndexKeyType.NULL;
+            }
+        }, res.mvccSnapshot());
+    }
+
     /** */
     private static class FirstLastIndexWrapper extends IndexScan.TreeIndexWrapper {
         /** */
@@ -67,7 +90,7 @@ public class IndexFirstLastScan<Row> extends IndexScan<Row> {
         @Override public GridCursor<IndexRow> find(IndexRow lower, IndexRow upper, boolean lowerInclude,
             boolean upperInclude, IndexQueryContext qctx) {
             assert lower == null && upper == null;
-            assert !(lowerInclude || upperInclude);
+            assert lowerInclude && upperInclude;
 
             try {
                 return ((InlineIndexImpl)idx).takeFirstOrLast(qctx, first);

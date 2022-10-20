@@ -34,8 +34,10 @@ import org.apache.calcite.rel.core.JoinRelType;
 import org.apache.calcite.rel.core.Minus;
 import org.apache.calcite.rel.core.Spool;
 import org.apache.calcite.rel.type.RelDataType;
+import org.apache.calcite.rex.RexBuilder;
 import org.apache.calcite.rex.RexLiteral;
 import org.apache.calcite.rex.RexNode;
+import org.apache.calcite.sql.fun.SqlStdOperatorTable;
 import org.apache.calcite.util.ImmutableBitSet;
 import org.apache.ignite.internal.processors.failure.FailureProcessor;
 import org.apache.ignite.internal.processors.query.calcite.exec.RowHandler.RowFactory;
@@ -421,23 +423,27 @@ public class LogicalRelImplementor<Row> implements IgniteRelVisitor<Node<Row>> {
     }
 
     /** {@inheritDoc} */
-    @Override public Node<Row> visit(IgniteIndexBound rel) {
-        IgniteTable tbl = rel.getTable().unwrap(IgniteTable.class);
-        IgniteIndex idx = tbl.getIndex(rel.indexName());
+    @Override public Node<Row> visit(IgniteIndexBound idxBndRel) {
+        IgniteTable tbl = idxBndRel.getTable().unwrap(IgniteTable.class);
+        IgniteIndex idx = tbl.getIndex(idxBndRel.indexName());
         IgniteTypeFactory typeFactory = ctx.getTypeFactory();
-        ColocationGroup grp = ctx.group(rel.sourceId());
-        ImmutableBitSet requiredColumns = rel.requiredColumns();
+        ColocationGroup grp = ctx.group(idxBndRel.sourceId());
+        ImmutableBitSet requiredColumns = idxBndRel.requiredColumns();
         RelDataType rowType = tbl.getRowType(typeFactory, requiredColumns);
 
         if (idx != null && !tbl.isIndexRebuildInProgress())
-            return new ScanNode<>(ctx, rowType, idx.firstOrLast(rel.first(), ctx, grp, requiredColumns));
+            return new ScanNode<>(ctx, rowType, idx.firstOrLast(idxBndRel.first(), ctx, grp, requiredColumns));
         else {
+            assert requiredColumns.asList().size() == 1;
+
+            RexBuilder b = new RexBuilder(typeFactory);
+
             Iterable<Row> rowsIter = tbl.scan(
                 ctx,
-                grp,
+                grp, expressionFactory.predicate(b.makeCall(SqlStdOperatorTable.IS_NOT_NULL,
+                    b.makeLocalRef(rowType.getFieldList().get(0).getType(), 0)), rowType),
                 null,
-                null,
-                rel.requiredColumns()
+                idxBndRel.requiredColumns()
             );
 
             Node<Row> scanNode = new ScanNode<>(ctx, rowType, rowsIter);
@@ -448,15 +454,14 @@ public class LogicalRelImplementor<Row> implements IgniteRelVisitor<Node<Row>> {
                 tbl.getRowType(typeFactory).getFieldCount()
             ));
 
-            SortNode<Row> sortNode = new SortNode<>(ctx, rowType, expressionFactory.comparator(collation));
+            Comparator<Row> cmp = expressionFactory.comparator(collation);
+
+            SortNode<Row> sortNode = new SortNode<>(ctx, rowType, idxBndRel.first() ? cmp : cmp.reversed(), null,
+                () -> 1);
 
             sortNode.register(scanNode);
 
-            LimitNode<Row> limit = new LimitNode<>(ctx, rel.getRowType(), null, () -> 1);
-
-            limit.register(sortNode);
-
-            return limit;
+            return sortNode;
         }
     }
 
