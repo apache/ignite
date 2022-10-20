@@ -306,11 +306,6 @@ public class IndexScan<Row> extends AbstractIndexScan<Row, IndexRow> {
     }
 
     /** */
-    protected TreeIndex<IndexRow> wrapIdx(InlineIndex idx) {
-        return new TreeIndexWrapper(idx);
-    }
-
-    /** */
     protected static class TreeIndexWrapper implements TreeIndex<IndexRow> {
         /** Underlying index. */
         protected final InlineIndex idx;

@@ -31,15 +31,17 @@ import org.apache.ignite.internal.util.lang.GridCursor;
 import org.jetbrains.annotations.Nullable;
 
 /**
- * Takes only first or last index value.
+ * Takes only first or last index value excluding nulls.
  */
 public class IndexFirstLastScan<Row> extends IndexScan<Row> {
     /**
      * @param first {@code True} to take first index value. {@code False} to take last value.
      * @param ectx Execution context.
      * @param desc Table descriptor.
-     * @param idxFieldMapping Mapping from index keys to row fields.
      * @param idx Phisycal index.
+     * @param idxFieldMapping Mapping from index keys to row fields.
+     * @param parts Mapping from index keys to row fields.
+     * @param requiredColumns Required columns.
      */
     public IndexFirstLastScan(boolean first,
         ExecutionContext<Row> ectx,
@@ -96,7 +98,7 @@ public class IndexFirstLastScan<Row> extends IndexScan<Row> {
                 return ((InlineIndexImpl)idx).takeFirstOrLast(qctx, first);
             }
             catch (IgniteCheckedException e) {
-                throw new IgniteException("Failed to take " + (lowerInclude ? "first" : "last") + " index row.", e);
+                throw new IgniteException("Failed to take " + (first ? "first" : "last") + " not-null index value.", e);
             }
         }
     }

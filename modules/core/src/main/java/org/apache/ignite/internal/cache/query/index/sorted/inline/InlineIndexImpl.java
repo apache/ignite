@@ -121,7 +121,9 @@ public class InlineIndexImpl extends AbstractIndex implements InlineIndex {
         }
     }
 
-    /** */
+    /**
+     * Takes only one not-null-valued first or last index record.
+     */
     public GridCursor<IndexRow> takeFirstOrLast(IndexQueryContext qryCtx, boolean first) throws IgniteCheckedException {
         lock.readLock().lock();
 

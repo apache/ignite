@@ -119,7 +119,7 @@ public class CacheIndexImpl implements IgniteIndex {
         return Collections.emptyList();
     }
 
-    /** */
+    /** {@inheritDoc} */
     @Override public <Row> Iterable<Row> firstOrLast(boolean first, ExecutionContext<Row> ectx, ColocationGroup grp,
         @Nullable ImmutableBitSet requiredColumns) {
         UUID localNodeId = ectx.localNodeId();

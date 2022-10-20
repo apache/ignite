@@ -66,7 +66,9 @@ public class IgniteIndexBound extends AbstractRelNode implements SourceAwareIgni
      * @param cluster Cluster that this relational expression belongs to.
      * @param traits Traits of this relational expression.
      * @param idxName Index name.
-     * @param first Take-first / take-last not null idex record flag.
+     * @param first {@code True} if first not null index value required. {@code False} if last.
+     * @param collation Collation.
+     * @param requiredCols Required columns.
      */
     public IgniteIndexBound(
         RelOptTable tbl,
@@ -88,8 +90,9 @@ public class IgniteIndexBound extends AbstractRelNode implements SourceAwareIgni
      * @param cluster Cluster that this relational expression belongs to.
      * @param traits Traits of this relational expression.
      * @param idxName Index name.
-     * @param first Take-first / take-last not null idex record flag.
+     * @param first {@code True} if first not null index value required. {@code False} if last.
      * @param collation Collation.
+     * @param requiredCols Required columns.
      */
     private IgniteIndexBound(
         long sourceId,

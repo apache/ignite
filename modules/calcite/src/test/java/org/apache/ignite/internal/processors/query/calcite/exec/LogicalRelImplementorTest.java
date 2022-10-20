@@ -40,7 +40,6 @@ import org.apache.calcite.util.mapping.Mappings;
 import org.apache.ignite.internal.processors.query.QueryUtils;
 import org.apache.ignite.internal.processors.query.calcite.exec.rel.CollectNode;
 import org.apache.ignite.internal.processors.query.calcite.exec.rel.IndexSpoolNode;
-import org.apache.ignite.internal.processors.query.calcite.exec.rel.LimitNode;
 import org.apache.ignite.internal.processors.query.calcite.exec.rel.Node;
 import org.apache.ignite.internal.processors.query.calcite.exec.rel.ProjectNode;
 import org.apache.ignite.internal.processors.query.calcite.exec.rel.ScanNode;
@@ -179,7 +178,7 @@ public class LogicalRelImplementorTest extends GridCommonAbstractTest {
             QueryUtils.PRIMARY_KEY_INDEX,
             first,
             tbl.getIndex(QueryUtils.PRIMARY_KEY_INDEX).collation(),
-            ImmutableBitSet.of(1)
+            ImmutableBitSet.of(idxColumn)
         );
 
         Node<?> node = relImplementor.visit(idxScan);
@@ -191,11 +190,7 @@ public class LogicalRelImplementorTest extends GridCommonAbstractTest {
 
         node = relImplementor.visit(idxScan);
 
-        assertTrue(node instanceof LimitNode);
-        assertTrue(node.sources() != null && node.sources().size() == 1);
-        assertTrue(node.sources().get(0) instanceof SortNode);
-
-        node = node.sources().get(0);
+        assertTrue(node instanceof SortNode);
         assertTrue(node.sources() != null && node.sources().size() == 1);
         assertTrue(node.sources().get(0) instanceof ScanNode);
     }

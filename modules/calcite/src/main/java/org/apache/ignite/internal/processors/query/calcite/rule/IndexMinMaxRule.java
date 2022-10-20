@@ -31,7 +31,7 @@ import org.apache.ignite.internal.util.typedef.F;
 import org.immutables.value.Value;
 
 /**
- * Tries to optimize MIN() and MAX() so that taking only first or last index record is engaged.
+ * Tries to optimize MIN() and MAX() so that it takes only first or last not-null index record.
  */
 @Value.Enclosing
 public class IndexMinMaxRule extends RelRule<IndexMinMaxRule.Config> {

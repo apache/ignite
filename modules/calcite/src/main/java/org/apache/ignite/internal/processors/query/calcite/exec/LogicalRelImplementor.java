@@ -440,7 +440,8 @@ public class LogicalRelImplementor<Row> implements IgniteRelVisitor<Node<Row>> {
 
             Iterable<Row> rowsIter = tbl.scan(
                 ctx,
-                grp, expressionFactory.predicate(b.makeCall(SqlStdOperatorTable.IS_NOT_NULL,
+                grp,
+                expressionFactory.predicate(b.makeCall(SqlStdOperatorTable.IS_NOT_NULL,
                     b.makeLocalRef(rowType.getFieldList().get(0).getType(), 0)), rowType),
                 null,
                 idxBndRel.requiredColumns()
@@ -456,8 +457,15 @@ public class LogicalRelImplementor<Row> implements IgniteRelVisitor<Node<Row>> {
 
             Comparator<Row> cmp = expressionFactory.comparator(collation);
 
-            SortNode<Row> sortNode = new SortNode<>(ctx, rowType, idxBndRel.first() ? cmp : cmp.reversed(), null,
-                () -> 1);
+            assert cmp != null;
+
+            SortNode<Row> sortNode = new SortNode<>(
+                ctx,
+                rowType,
+                idxBndRel.first() ? cmp : cmp.reversed(),
+                null,
+                () -> 1
+            );
 
             sortNode.register(scanNode);
 
