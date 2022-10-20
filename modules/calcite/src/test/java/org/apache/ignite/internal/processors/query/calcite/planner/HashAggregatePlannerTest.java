@@ -89,7 +89,10 @@ public class HashAggregatePlannerTest extends AbstractAggregatePlannerTest {
                     !targetFldIdxAcc, publicSchema);
                 assertIndexFirstOrLastRecord("SELECT MAX(VAL0) FROM TEST", !targetFldIdxAcc, publicSchema);
 
-                //Must not be optimized
+                assertNoIndexFirstOrLastRecord("SELECT MIN(VAL0) FROM TEST GROUP BY GRP0", publicSchema);
+                assertNoIndexFirstOrLastRecord("SELECT MIN(VAL0) FROM TEST GROUP BY GRP0, GRP1 ORDER BY GRP1 DESC",
+                    publicSchema);
+
                 assertNoIndexFirstOrLastRecord("SELECT MIN(VAL1) FROM TEST", publicSchema);
                 assertNoIndexFirstOrLastRecord("SELECT MAX(VAL1) FROM TEST", publicSchema);
 
