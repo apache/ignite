@@ -539,7 +539,7 @@ public class IgnitionEx {
      *      also if default grid has already been started.
      */
     public static Ignite start() throws IgniteCheckedException {
-        return start((GridSpringResourceContext) null);
+        return start((GridSpringResourceContext)null);
     }
 
     /**
