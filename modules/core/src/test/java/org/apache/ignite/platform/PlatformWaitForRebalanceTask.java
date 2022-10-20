@@ -17,6 +17,9 @@
 
 package org.apache.ignite.platform;
 
+import java.util.Collections;
+import java.util.List;
+import java.util.Map;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.cluster.ClusterNode;
@@ -34,10 +37,6 @@ import org.apache.ignite.resources.IgniteInstanceResource;
 import org.apache.ignite.testframework.GridTestUtils;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
-
-import java.util.Collections;
-import java.util.List;
-import java.util.Map;
 
 /**
  * Task that waits for rebalance to complete.
@@ -62,8 +61,10 @@ public class PlatformWaitForRebalanceTask extends ComputeTaskAdapter<Object[], B
         /** Expected version. */
         private final AffinityTopologyVersion topVer;
 
+        /** Cache name. */
         private final String cacheName;
 
+        /** Timeout. */
         private final long timeout;
 
         /** Ignite. */
@@ -76,15 +77,15 @@ public class PlatformWaitForRebalanceTask extends ComputeTaskAdapter<Object[], B
          * @param args Args.
          */
         private Job(Object[] args) {
-            cacheName = (String) args[0];
-            topVer = new AffinityTopologyVersion((Long) args[1], (Integer) args[2]);
-            timeout = (Long) args[3];
+            cacheName = (String)args[0];
+            topVer = new AffinityTopologyVersion((Long)args[1], (Integer)args[2]);
+            timeout = (Long)args[3];
         }
 
         /** {@inheritDoc} */
         @Override public Boolean execute() throws IgniteException {
             final GridDhtPartitionTopology top =
-                    ((IgniteEx) ignite).context().cache().context().cacheContext(CU.cacheId(cacheName)).topology();
+                    ((IgniteEx)ignite).context().cache().context().cacheContext(CU.cacheId(cacheName)).topology();
 
             try {
 
@@ -94,7 +95,8 @@ public class PlatformWaitForRebalanceTask extends ComputeTaskAdapter<Object[], B
 
                     return top.rebalanceFinished(topVer);
                 }, timeout);
-            } catch (IgniteInterruptedCheckedException e) {
+            }
+            catch (IgniteInterruptedCheckedException e) {
                 throw new RuntimeException(e);
             }
         }
