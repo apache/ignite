@@ -36,11 +36,11 @@ import org.apache.ignite.resources.InjectResource;
  * developer or application itself.
  */
 public class GridResourceIocBeanInjector implements GridResourceInjector {
-    /** */
-    private Registry registry;
+    /** Resource registry. */
+    private final Registry registry;
 
     /**
-     * Creates injector object.
+     * Constructor.
      *
      * @param registry Bean registry.
      */
@@ -68,9 +68,8 @@ public class GridResourceIocBeanInjector implements GridResourceInjector {
         if (registry != null) {
             Object bean = getBeanByResourceAnnotation(ann);
 
-            if (bean != null) {
+            if (bean != null)
                 GridResourceUtils.inject(field.getField(), target, bean);
-            }
         }
     }
 
@@ -81,15 +80,16 @@ public class GridResourceIocBeanInjector implements GridResourceInjector {
 
         assert ann != null;
 
-        if (mtd.getMethod().getParameterTypes().length != 1)
-            throw new IgniteCheckedException("Method injection setter must have only one parameter: " + mtd.getMethod());
+        if (mtd.getMethod().getParameterTypes().length != 1) {
+            throw new IgniteCheckedException("Method injection setter must have only one parameter: "
+                + mtd.getMethod());
+        }
 
         if (registry != null) {
             Object bean = getBeanByResourceAnnotation(ann);
 
-            if (bean != null) {
+            if (bean != null)
                 GridResourceUtils.inject(mtd.getMethod(), target, bean);
-            }
         }
     }
 
@@ -125,10 +125,11 @@ public class GridResourceIocBeanInjector implements GridResourceInjector {
 
         try {
             return beanName.trim().isEmpty() ? registry.lookup(beanName) : registry.lookup(beanCls);
-        } catch (Exception e) {
-            if (annotation.required()) {
+        }
+        catch (Exception e) {
+            if (annotation.required())
                 throw new IgniteCheckedException(e);
-            }
+
             return null;
         }
     }

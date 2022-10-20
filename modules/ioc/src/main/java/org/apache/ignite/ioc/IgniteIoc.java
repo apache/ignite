@@ -22,19 +22,32 @@ import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.IgnitionEx;
 import org.apache.ignite.ioc.internal.processors.resource.GridInjectResourceContextImpl;
-import org.jetbrains.annotations.Nullable;;
+import org.jetbrains.annotations.Nullable;
 
 /**
  * Helper for launching ignite with specific bean registry.
  */
 public class IgniteIoc {
-
+    /**
+     * Starts ignite node with default configuration and IoC registry as injection context.
+     *
+     * @param registry IoC registry.
+     * @return Ignite node.
+     * @throws IgniteCheckedException If failed to start.
+     */
     public static Ignite start(@Nullable Registry registry) throws IgniteCheckedException {
         return IgnitionEx.start(new GridInjectResourceContextImpl(registry));
     }
 
+    /**
+     * Starts ignite node with IoC registry as injection context.
+     *
+     * @param cfg Configuration.
+     * @param registry IoC registry.
+     * @return Ignite node.
+     * @throws IgniteCheckedException If failed to start.
+     */
     public static Ignite start(IgniteConfiguration cfg, @Nullable Registry registry) throws IgniteCheckedException {
         return IgnitionEx.start(cfg, new GridInjectResourceContextImpl(registry));
     }
-
 }

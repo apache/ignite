@@ -27,26 +27,29 @@ import org.jetbrains.annotations.Nullable;
  * Implementation of {@link GridInjectResourceContext}.
  */
 public class GridInjectResourceContextImpl implements GridInjectResourceContext {
-    /** Spring application context injector. */
+    /** Resource injector. */
     private GridResourceInjector beanInjector;
+
+    /** Resource registry. */
     private Registry registry;
 
     /**
-     * @param registry Spring application context.
+     * Constructor.
+     *
+     * @param registry Resource registry.
      */
     public GridInjectResourceContextImpl(@Nullable Registry registry) {
         beanInjector = new GridResourceIocBeanInjector(registry);
         this.registry = registry;
     }
 
-    @Override
-    public GridResourceInjector beanInjector() {
+    /** {@inheritDoc} */
+    @Override public GridResourceInjector beanInjector() {
         return beanInjector;
     }
 
     /** {@inheritDoc} */
-    @Override
-    public Object unwrapTarget(Object target) throws IgniteCheckedException {
+    @Override public Object unwrapTarget(Object target) throws IgniteCheckedException {
         return registry.unwrapTarget(target);
     }
 }

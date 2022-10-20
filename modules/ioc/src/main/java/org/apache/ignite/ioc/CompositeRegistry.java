@@ -21,46 +21,51 @@ import org.apache.ignite.IgniteCheckedException;
 
 /**
  * Implementation of registry which can combine many sources of beans.
- *
+ * <p>
  * Lookups are ordered in passing order of registries, so first one returning non-null value will
  * drive the result.
  */
 public class CompositeRegistry implements Registry {
+    /** Resource registries. */
+    private final List<Registry> registries;
 
-  private final List<Registry> registries;
+    /**
+     * Constructor.
+     *
+     * @param registries Resource registries.
+     */
+    public CompositeRegistry(List<Registry> registries) {
+        this.registries = registries;
+    }
 
-  public CompositeRegistry(List<Registry> registries) {
-    this.registries = registries;
-  }
+    /** {@inheritDoc} */
+    @Override public <T> T lookup(Class<T> type) {
+        for (Registry registry : registries) {
+            T bean = registry.lookup(type);
+            if (bean != null) {
+                return bean;
+            }
+        }
+        return null;
+    }
 
-  @Override
-  public <T> T lookup(Class<T> type) {
-    for (Registry registry : registries) {
-      T bean = registry.lookup(type);
-      if (bean != null) {
+    /** {@inheritDoc} */
+    @Override public Object lookup(String name) {
+        for (Registry registry : registries) {
+            Object bean = registry.lookup(name);
+            if (bean != null) {
+                return bean;
+            }
+        }
+        return null;
+    }
+
+    /** {@inheritDoc} */
+    @Override public Object unwrapTarget(Object target) throws IgniteCheckedException {
+        Object bean = target;
+        for (Registry registry : registries) {
+            bean = registry.unwrapTarget(target);
+        }
         return bean;
-      }
     }
-    return null;
-  }
-
-  @Override
-  public Object lookup(String name) {
-    for (Registry registry : registries) {
-      Object bean = registry.lookup(name);
-      if (bean != null) {
-        return bean;
-      }
-    }
-    return null;
-  }
-
-  @Override
-  public Object unwrapTarget(Object target) throws IgniteCheckedException {
-    Object bean = target;
-    for (Registry registry : registries) {
-      bean = registry.unwrapTarget(target);
-    }
-    return bean;
-  }
 }

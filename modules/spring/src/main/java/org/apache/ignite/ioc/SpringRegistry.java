@@ -24,39 +24,43 @@ import org.springframework.context.ApplicationContext;
  * Implementation of injection {@link Registry} backed by Spring Framework {@link ApplicationContext}.
  */
 public class SpringRegistry implements Registry {
+    /** Spring application context. */
+    private final ApplicationContext applicationContext;
 
-  private final ApplicationContext applicationContext;
-
-  public SpringRegistry(ApplicationContext applicationContext) {
-    this.applicationContext = applicationContext;
-  }
-
-  @Override
-  public <T> T lookup(Class<T> type) {
-    if (type.isInstance(applicationContext)) {
-      return type.cast(applicationContext);
+    /**
+     * Constructor.
+     *
+     * @param applicationContext Spring application context.
+     */
+    public SpringRegistry(ApplicationContext applicationContext) {
+        this.applicationContext = applicationContext;
     }
 
-    return applicationContext.getBean(type);
-  }
+    /** {@inheritDoc} */
+    @Override public <T> T lookup(Class<T> type) {
+        if (type.isInstance(applicationContext))
+            return type.cast(applicationContext);
 
-  @Override
-  public Object lookup(String name) {
-    return applicationContext.getBean(name);
-  }
-
-  @Override
-  public Object unwrapTarget(Object target) throws IgniteCheckedException {
-    if (target instanceof Advised) {
-      try {
-        return ((Advised)target).getTargetSource().getTarget();
-      }
-      catch (Exception e) {
-        throw new IgniteCheckedException("Failed to unwrap Spring proxy target [cls=" + target.getClass().getName() +
-            ", target=" + target + ']', e);
-      }
+        return applicationContext.getBean(type);
     }
 
-    return target;
-  }
+    /** {@inheritDoc} */
+    @Override public Object lookup(String name) {
+        return applicationContext.getBean(name);
+    }
+
+    /** {@inheritDoc} */
+    @Override public Object unwrapTarget(Object target) throws IgniteCheckedException {
+        if (target instanceof Advised) {
+            try {
+                return ((Advised)target).getTargetSource().getTarget();
+            }
+            catch (Exception e) {
+                throw new IgniteCheckedException("Failed to unwrap Spring proxy target [cls="
+                    + target.getClass().getName() + ", target=" + target + ']', e);
+            }
+        }
+
+        return target;
+    }
 }
