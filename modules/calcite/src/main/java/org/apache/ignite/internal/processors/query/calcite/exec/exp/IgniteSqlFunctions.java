@@ -154,6 +154,30 @@ public class IgniteSqlFunctions {
         return b == null ? null : new String(b.getBytes(), Commons.typeFactory().getDefaultCharset());
     }
 
+    /** LEAST2. */
+    public static Object least2(Object arg0, Object arg1) {
+        return leastOrGreatest(true, arg0, arg1);
+    }
+
+    /** GREATEST2. */
+    public static Object greatest2(Object arg0, Object arg1) {
+        return leastOrGreatest(false, arg0, arg1);
+    }
+
+    /** */
+    private static Object leastOrGreatest(boolean least, Object arg0, Object arg1) {
+        if (arg0 == null)
+            return arg1;
+
+        if (arg1 == null)
+            return arg0;
+
+        if (((Comparable<Object>)arg0).compareTo(arg1) < 0)
+            return least ? arg0 : arg1;
+        else
+            return least ? arg1 : arg0;
+    }
+
     /** */
     private static class RangeTable implements ScannableTable {
         /** Start of the range. */

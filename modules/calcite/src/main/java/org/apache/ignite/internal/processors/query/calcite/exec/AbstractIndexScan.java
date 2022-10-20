@@ -25,7 +25,9 @@ import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.internal.cache.query.index.sorted.inline.IndexQueryContext;
 import org.apache.ignite.internal.processors.query.calcite.exec.exp.RangeCondition;
 import org.apache.ignite.internal.processors.query.calcite.exec.exp.RangeIterable;
+import org.apache.ignite.internal.util.GridEmptyIterator;
 import org.apache.ignite.internal.util.lang.GridCursor;
+import org.apache.ignite.internal.util.lang.GridIterator;
 import org.apache.ignite.internal.util.lang.GridIteratorAdapter;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.lang.IgniteClosure;
@@ -80,12 +82,17 @@ public abstract class AbstractIndexScan<Row, IdxRow> implements Iterable<Row>, A
         if (ranges == null)
             return new IteratorImpl(idx.find(null, null, true, true, indexQueryContext()));
 
-        IgniteClosure<RangeCondition<Row>, IteratorImpl> clo = range -> {
-            IdxRow lower = range.lower() == null ? null : row2indexRow(range.lower());
-            IdxRow upper = range.upper() == null ? null : row2indexRow(range.upper());
+        IgniteClosure<RangeCondition<Row>, GridIterator<Row>> clo = range -> {
+            try {
+                IdxRow lower = range.lower() == null ? null : row2indexRow(range.lower());
+                IdxRow upper = range.upper() == null ? null : row2indexRow(range.upper());
 
-            return new IteratorImpl(
-                idx.find(lower, upper, range.lowerInclude(), range.upperInclude(), indexQueryContext()));
+                return new IteratorImpl(
+                    idx.find(lower, upper, range.lowerInclude(), range.upperInclude(), indexQueryContext()));
+            }
+            catch (NullBoundException e) {
+                return new GridEmptyIterator<>();
+            }
         };
 
         if (ranges.size() == 1)
@@ -95,7 +102,7 @@ public abstract class AbstractIndexScan<Row, IdxRow> implements Iterable<Row>, A
     }
 
     /** */
-    protected abstract IdxRow row2indexRow(Row bound);
+    protected abstract IdxRow row2indexRow(Row bound) throws NullBoundException;
 
     /** */
     protected abstract Row indexRow2Row(IdxRow idxRow) throws IgniteCheckedException;
@@ -106,6 +113,11 @@ public abstract class AbstractIndexScan<Row, IdxRow> implements Iterable<Row>, A
     /** {@inheritDoc} */
     @Override public void close() {
         // No-op.
+    }
+
+    /** */
+    protected static class NullBoundException extends Exception {
+        /** No-op. */
     }
 
     /** */

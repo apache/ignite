@@ -230,6 +230,9 @@ import static org.apache.calcite.sql.fun.SqlStdOperatorTable.UPPER;
 import static org.apache.ignite.internal.processors.query.calcite.sql.fun.IgniteOwnSqlOperatorTable.QUERY_ENGINE;
 import static org.apache.ignite.internal.processors.query.calcite.sql.fun.IgniteOwnSqlOperatorTable.SYSTEM_RANGE;
 import static org.apache.ignite.internal.processors.query.calcite.sql.fun.IgniteOwnSqlOperatorTable.TYPEOF;
+import static org.apache.ignite.internal.processors.query.calcite.sql.fun.IgniteOwnSqlOperatorTable.GREATEST2;
+import static org.apache.ignite.internal.processors.query.calcite.sql.fun.IgniteOwnSqlOperatorTable.LEAST2;
+import static org.apache.ignite.internal.processors.query.calcite.sql.fun.IgniteOwnSqlOperatorTable.NULL_BOUND;
 
 /**
  * Contains implementations of Rex operators as Java code.
@@ -513,18 +516,22 @@ public class RexImpTable {
                 new MethodImplementor(BuiltInMethod.IS_JSON_SCALAR.method,
                     NullPolicy.NONE, false)));
 
-        // System functions
+        // System functions.
         final SystemFunctionImplementor systemFunctionImplementor = new SystemFunctionImplementor();
         map.put(SYSTEM_RANGE, systemFunctionImplementor);
 
-        // Current time functions
+        // Current time functions.
         map.put(CURRENT_TIME, systemFunctionImplementor);
         map.put(CURRENT_TIMESTAMP, systemFunctionImplementor);
         map.put(CURRENT_DATE, systemFunctionImplementor);
         map.put(LOCALTIME, systemFunctionImplementor);
         map.put(LOCALTIMESTAMP, systemFunctionImplementor);
+
         map.put(TYPEOF, systemFunctionImplementor);
         map.put(QUERY_ENGINE, systemFunctionImplementor);
+
+        defineMethod(LEAST2, IgniteMethod.LEAST2.method(), NullPolicy.ALL);
+        defineMethod(GREATEST2, IgniteMethod.GREATEST2.method(), NullPolicy.ALL);
     }
 
     /** */
@@ -1694,6 +1701,8 @@ public class RexImpTable {
             }
             else if (op == QUERY_ENGINE)
                 return Expressions.constant(CalciteQueryEngineConfiguration.ENGINE_NAME);
+            else if (op == NULL_BOUND)
+                return Expressions.call(IgniteMethod.CONTEXT_NULL_BOUND.method(), root);
 
             throw new AssertionError("unknown function " + op);
         }

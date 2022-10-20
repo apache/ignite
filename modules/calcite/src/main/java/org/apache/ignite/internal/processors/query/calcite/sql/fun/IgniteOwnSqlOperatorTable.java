@@ -21,6 +21,8 @@ import org.apache.calcite.sql.SqlFunctionCategory;
 import org.apache.calcite.sql.SqlKind;
 import org.apache.calcite.sql.type.OperandTypes;
 import org.apache.calcite.sql.type.ReturnTypes;
+import org.apache.calcite.sql.type.SqlTypeName;
+import org.apache.calcite.sql.type.SqlTypeTransforms;
 import org.apache.calcite.sql.util.ReflectiveSqlOperatorTable;
 
 /**
@@ -74,6 +76,51 @@ public class IgniteOwnSqlOperatorTable extends ReflectiveSqlOperatorTable {
             ReturnTypes.VARCHAR_2000,
             null,
             OperandTypes.NILADIC,
+            SqlFunctionCategory.SYSTEM);
+
+    /**
+     * Replacement for NULL values in search bounds. Required to distinguish searchable NULL values
+     * (for example, 'a IS NULL' condition) and not searchable NULL values (for example, 'a = NULL' condition).
+     *
+     * Note: System function, cannot be used by user.
+     */
+    public static final SqlFunction NULL_BOUND =
+        new SqlFunction(
+            "$NULL_BOUND",
+            SqlKind.OTHER_FUNCTION,
+            ReturnTypes.explicit(SqlTypeName.NULL),
+            null,
+            OperandTypes.NILADIC,
+            SqlFunctionCategory.SYSTEM);
+
+    /**
+     * Least of two arguments. Unlike LEAST, which is converted to CASE WHEN THEN END clause, this function
+     * is natively implemented.
+     *
+     * Note: System function, cannot be used by user.
+     */
+    public static final SqlFunction LEAST2 =
+        new SqlFunction(
+            "$LEAST2",
+            SqlKind.OTHER_FUNCTION,
+            ReturnTypes.LEAST_RESTRICTIVE.andThen(SqlTypeTransforms.TO_NULLABLE),
+            null,
+            OperandTypes.SAME_SAME,
+            SqlFunctionCategory.SYSTEM);
+
+    /**
+     * Greatest of two arguments. Unlike GREATEST, which is converted to CASE WHEN THEN END clause, this function
+     * is natively implemented.
+     *
+     * Note: System function, cannot be used by user.
+     */
+    public static final SqlFunction GREATEST2 =
+        new SqlFunction(
+            "$GREATEST2",
+            SqlKind.OTHER_FUNCTION,
+            ReturnTypes.LEAST_RESTRICTIVE.andThen(SqlTypeTransforms.TO_NULLABLE),
+            null,
+            OperandTypes.SAME_SAME,
             SqlFunctionCategory.SYSTEM);
 
     /**

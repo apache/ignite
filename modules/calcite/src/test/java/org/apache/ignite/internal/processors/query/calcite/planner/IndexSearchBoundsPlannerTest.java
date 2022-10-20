@@ -382,26 +382,19 @@ public class IndexSearchBoundsPlannerTest extends AbstractPlannerTest {
     @Test
     public void testBoundsMerge() throws Exception {
         assertBounds("SELECT * FROM TEST WHERE C1 > ? AND C1 >= 1",
-            range(leastOrGreatest(false, "?0", "1", "INTEGER"), null, true, true)
+            range("$GREATEST2(?0, 1)", null, true, true)
         );
 
         assertBounds("SELECT * FROM TEST WHERE C1 > ? AND C1 >= ? AND C1 > ?",
-            range(
-                leastOrGreatest(false, leastOrGreatest(false, "?0", "?1", "INTEGER"), "?2", "INTEGER"),
-                null, true, true
-            )
+            range("$GREATEST2($GREATEST2(?0, ?1), ?2)", null, true, true)
         );
 
         assertBounds("SELECT * FROM TEST WHERE C1 > ? AND C1 >= 1 AND C1 < ? AND C1 < ?",
-            range(
-                leastOrGreatest(false, "?0", "1", "INTEGER"),
-                leastOrGreatest(true, "?1", "?2", "INTEGER"),
-                true, false
-            )
+            range("$GREATEST2(?0, 1)", "$LEAST2(?1, ?2)", true, false)
         );
 
         assertBounds("SELECT * FROM TEST WHERE C1 < ? AND C1 BETWEEN 1 AND 10 ",
-            range(1, leastOrGreatest(true, "?0", "10", "INTEGER"), true, true)
+            range(1, "$LEAST2(?0, 10)", true, true)
         );
 
         assertBounds("SELECT * FROM TEST WHERE C1 NOT IN (1, 2) AND C1 >= ?",
@@ -415,11 +408,7 @@ public class IndexSearchBoundsPlannerTest extends AbstractPlannerTest {
             empty(),
             empty(),
             empty(),
-            range(
-                leastOrGreatest(true, "?1", "?2", "INTEGER"),
-                leastOrGreatest(false, "?0", "1", "INTEGER"),
-                false, true
-            )
+            range("$LEAST2(?1, ?2)", "$GREATEST2(?0, 1)", false, true)
         );
     }
 
@@ -448,12 +437,6 @@ public class IndexSearchBoundsPlannerTest extends AbstractPlannerTest {
 
         assertPlan("SELECT (SELECT C1 FROM TEST t2 WHERE t2.C1 < t1.C1 + t2.C1) FROM TEST t1", publicSchema,
             nodeOrAnyChild(isIndexScan("TEST", "C1C2C3")).negate());
-    }
-
-    /** String representation of LEAST or CREATEST operator converted to CASE. */
-    private String leastOrGreatest(boolean least, String val0, String val1, String type) {
-        return "CASE(OR(IS NULL(" + val0 + "), IS NULL(" + val1 + ")), null:" + type + ", " + (least ? '<' : '>') +
-            '(' + val0 + ", " + val1 + "), " + val0 + ", " + val1 + ')';
     }
 
     /** */

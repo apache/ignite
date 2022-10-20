@@ -203,7 +203,33 @@ public class RuntimeSortedIndex<Row> implements RuntimeIndex<Row>, TreeIndex<Row
         }
 
         /** {@inheritDoc} */
-        @Override protected Row row2indexRow(Row bound) {
+        @Override protected Row row2indexRow(Row bound) throws NullBoundException {
+            if (bound == null)
+                return null;
+
+            boolean boundChanged = false;
+
+            for (int i = 0; i < ectx.rowHandler().columnCount(bound); i++) {
+                if (ectx.rowHandler().get(i, bound) == null)
+                    throw new NullBoundException();
+
+                if (ectx.rowHandler().get(i, bound) == ectx.nullBound()) {
+                    if (!boundChanged) {
+                        boundChanged = true;
+
+                        // Copy bound.
+                        Row newBound = ectx.rowHandler().factory(ectx.getTypeFactory(), rowType).create();
+
+                        for (int j = 0; j < ectx.rowHandler().columnCount(bound); j++)
+                            ectx.rowHandler().set(j, newBound, ectx.rowHandler().get(i, bound));
+
+                        bound = newBound;
+                    }
+
+                    ectx.rowHandler().set(i, bound, null);
+                }
+            }
+
             return bound;
         }
 
