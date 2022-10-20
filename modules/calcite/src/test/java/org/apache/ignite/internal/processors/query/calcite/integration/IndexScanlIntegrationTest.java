@@ -209,6 +209,38 @@ public class IndexScanlIntegrationTest extends AbstractBasicIntegrationTest {
     }
 
     /** */
+    @Test
+    public void testIsNotDistinctFrom() {
+        executeSql("CREATE TABLE t1(i1 INTEGER) WITH TEMPLATE=REPLICATED");
+        executeSql("INSERT INTO t1 VALUES (1), (2), (null), (3)");
+
+        executeSql("CREATE TABLE t2(i2 INTEGER, i3 INTEGER) WITH TEMPLATE=REPLICATED");
+        executeSql("INSERT INTO t2 VALUES (1, 1), (2, 2), (null, 3), (4, null)");
+        executeSql("CREATE INDEX t2_idx ON t2(i2)");
+
+        String sql = "SELECT /*+ DISABLE_RULE('NestedLoopJoinConverter', 'MergeJoinConverter') */ i1, i3 " +
+            "FROM t1 JOIN t2 ON i1 IS NOT DISTINCT FROM i2";
+
+        assertQuery(sql)
+            .matches(QueryChecker.containsIndexScan("PUBLIC", "T2", "T2_IDX"))
+            .returns(1, 1)
+            .returns(2, 2)
+            .returns(null, 3)
+            .check();
+
+        // Collapse expanded IS_NOT_DISTINCT_FROM.
+        sql = "SELECT /*+ DISABLE_RULE('NestedLoopJoinConverter', 'MergeJoinConverter') */ i1, i3 " +
+            "FROM t1 JOIN t2 ON i1 = i2 OR (i1 IS NULL AND i2 IS NULL)";
+
+        assertQuery(sql)
+            .matches(QueryChecker.containsIndexScan("PUBLIC", "T2", "T2_IDX"))
+            .returns(1, 1)
+            .returns(2, 2)
+            .returns(null, 3)
+            .check();
+    }
+
+    /** */
     private static class RowCountingIndex extends DelegatingIgniteIndex {
         /** */
         private final AtomicInteger filteredRows = new AtomicInteger();
