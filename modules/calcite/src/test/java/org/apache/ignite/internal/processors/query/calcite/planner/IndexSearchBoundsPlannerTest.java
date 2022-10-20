@@ -81,7 +81,7 @@ public class IndexSearchBoundsPlannerTest extends AbstractPlannerTest {
             range(1, 3, false, true));
 
         assertBounds("SELECT * FROM TEST WHERE C1 < 3 AND C1 IS NOT NULL",
-            range("null", 3, false, false));
+            range("$NULL_BOUND()", 3, false, false));
 
         // Redundant "IS NOT NULL condition".
         assertBounds("SELECT * FROM TEST WHERE C1 > 3 AND C1 IS NOT NULL",
@@ -158,14 +158,14 @@ public class IndexSearchBoundsPlannerTest extends AbstractPlannerTest {
 
         assertBounds("SELECT * FROM TEST WHERE C1 = 1 AND (C2 > '1' OR C2 < '3')",
             exact(1),
-            range("null", null, false, true));
+            range("$NULL_BOUND()", null, false, true));
     }
 
     /** Simple SEARCH/SARG with "IS NULL" condition. */
     @Test
     public void testBoundsOneFieldSearchWithNull() throws Exception {
         assertBounds("SELECT * FROM TEST WHERE C1 IN (1, 2, 3) OR C1 IS NULL",
-            multi(exact("null"), exact(1), exact(2), exact(3)),
+            multi(exact("$NULL_BOUND()"), exact(1), exact(2), exact(3)),
             empty(),
             empty(),
             empty()
@@ -188,15 +188,15 @@ public class IndexSearchBoundsPlannerTest extends AbstractPlannerTest {
             empty(),
             empty(),
             empty(),
-            range(1, "null", false, false));
+            range(1, "$NULL_BOUND()", false, false));
 
-        assertBounds("SELECT * FROM TEST WHERE C4 IS NULL", empty(), empty(), empty(), exact("null"));
+        assertBounds("SELECT * FROM TEST WHERE C4 IS NULL", empty(), empty(), empty(), exact("$NULL_BOUND()"));
 
         assertBounds("SELECT * FROM TEST WHERE C4 IS NOT NULL",
             empty(),
             empty(),
             empty(),
-            range(null, "null", true, false));
+            range(null, "$NULL_BOUND()", true, false));
 
         assertBounds("SELECT * FROM TEST WHERE C4 IN (1, 2, 3) AND C3 > 1",
             empty(),

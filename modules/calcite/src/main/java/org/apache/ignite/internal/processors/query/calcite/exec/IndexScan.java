@@ -157,7 +157,7 @@ public class IndexScan<Row> extends AbstractIndexScan<Row, IndexRow> {
     }
 
     /** {@inheritDoc} */
-    @Override protected IndexRow row2indexRow(Row bound) throws NullBoundException {
+    @Override protected IndexRow row2indexRow(Row bound) {
         if (bound == null)
             return null;
 
@@ -175,13 +175,7 @@ public class IndexScan<Row> extends AbstractIndexScan<Row, IndexRow> {
             int fieldIdx = idxFieldMapping.getInt(i);
             Object key = rowHnd.get(fieldIdx, bound);
 
-            if (key == null)
-                throw new NullBoundException();
-
             if (key != ectx.unspecifiedValue()) {
-                if (key == ectx.nullBound())
-                    key = null;
-
                 key = TypeUtils.fromInternal(ectx, key, fieldsStoreTypes[fieldIdx]);
 
                 keys[i] = IndexKeyFactory.wrap(key, idxRowHnd.indexKeyDefinitions().get(i).idxType(),

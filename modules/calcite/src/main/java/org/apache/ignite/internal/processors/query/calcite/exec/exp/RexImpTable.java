@@ -529,6 +529,7 @@ public class RexImpTable {
 
         map.put(TYPEOF, systemFunctionImplementor);
         map.put(QUERY_ENGINE, systemFunctionImplementor);
+        map.put(NULL_BOUND, systemFunctionImplementor);
 
         defineMethod(LEAST2, IgniteMethod.LEAST2.method(), NullPolicy.ALL);
         defineMethod(GREATEST2, IgniteMethod.GREATEST2.method(), NullPolicy.ALL);
@@ -1702,7 +1703,7 @@ public class RexImpTable {
             else if (op == QUERY_ENGINE)
                 return Expressions.constant(CalciteQueryEngineConfiguration.ENGINE_NAME);
             else if (op == NULL_BOUND)
-                return Expressions.call(IgniteMethod.CONTEXT_NULL_BOUND.method(), root);
+                return Expressions.call(root, IgniteMethod.CONTEXT_NULL_BOUND.method());
 
             throw new AssertionError("unknown function " + op);
         }

@@ -214,7 +214,7 @@ public class SortedIndexSpoolPlannerTest extends AbstractPlannerTest {
                         assertTrue(fld1Bounds.lowerBound() instanceof RexFieldAccess);
                         assertFalse(fld1Bounds.lowerInclude());
                         // NULLS LAST in collation, so nulls can be skipped by upper bound.
-                        assertTrue(((RexLiteral)fld1Bounds.upperBound()).isNull());
+                        assertEquals("$NULL_BOUND()", fld1Bounds.upperBound().toString());
                         assertFalse(fld1Bounds.upperInclude());
                         assertNull(searchBounds.get(2));
 

@@ -88,7 +88,7 @@ public class IgniteOwnSqlOperatorTable extends ReflectiveSqlOperatorTable {
         new SqlFunction(
             "$NULL_BOUND",
             SqlKind.OTHER_FUNCTION,
-            ReturnTypes.explicit(SqlTypeName.NULL),
+            ReturnTypes.explicit(SqlTypeName.OTHER),
             null,
             OperandTypes.NILADIC,
             SqlFunctionCategory.SYSTEM);
