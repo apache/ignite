@@ -93,7 +93,7 @@ public abstract class AbstractIndexScan<Row, IdxRow> implements Iterable<Row>, A
             Iterator<RangeCondition<Row>> it = ranges.iterator();
 
             if (it.hasNext())
-                return clo.apply(ranges.iterator().next());
+                return clo.apply(it.next());
             else
                 return Collections.emptyIterator();
         }
