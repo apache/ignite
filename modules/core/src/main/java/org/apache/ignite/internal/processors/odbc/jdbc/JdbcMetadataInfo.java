@@ -25,9 +25,9 @@ import java.util.Comparator;
 import java.util.HashSet;
 import java.util.LinkedHashSet;
 import java.util.List;
-import java.util.Map;
 import java.util.SortedSet;
 import java.util.TreeSet;
+import java.util.regex.Pattern;
 import java.util.stream.Collectors;
 import org.apache.ignite.internal.GridKernalContext;
 import org.apache.ignite.internal.processors.odbc.ClientListenerProtocolVersion;
@@ -35,17 +35,16 @@ import org.apache.ignite.internal.processors.query.ColumnInformation;
 import org.apache.ignite.internal.processors.query.GridQueryTypeDescriptor;
 import org.apache.ignite.internal.processors.query.QueryUtils;
 import org.apache.ignite.internal.processors.query.TableInformation;
-import org.apache.ignite.internal.processors.query.schema.management.IndexDescriptor;
-import org.apache.ignite.internal.processors.query.schema.management.SchemaManager;
-import org.apache.ignite.internal.processors.query.schema.management.TableDescriptor;
+import org.apache.ignite.spi.systemview.view.SystemView;
+import org.apache.ignite.spi.systemview.view.sql.SqlIndexView;
 import org.jetbrains.annotations.Nullable;
 
-import static org.apache.ignite.internal.jdbc2.JdbcUtils.TYPE_TABLE;
 import static org.apache.ignite.internal.processors.odbc.jdbc.JdbcConnectionContext.VER_2_3_0;
 import static org.apache.ignite.internal.processors.odbc.jdbc.JdbcConnectionContext.VER_2_4_0;
 import static org.apache.ignite.internal.processors.odbc.jdbc.JdbcConnectionContext.VER_2_7_0;
 import static org.apache.ignite.internal.processors.query.QueryUtils.PRIMARY_KEY_INDEX;
 import static org.apache.ignite.internal.processors.query.QueryUtils.matches;
+import static org.apache.ignite.internal.processors.query.schema.management.SchemaManager.SQL_IDXS_VIEW;
 
 /**
  * Facade over {@link GridKernalContext} to get information about database entities in terms of JDBC.
@@ -253,17 +252,19 @@ public class JdbcMetadataInfo {
 
         TreeSet<JdbcIndexMeta> meta = new TreeSet<>(metaComparator);
 
-        SchemaManager schemaMgr = ctx.query().schemaManager();
+        SystemView<SqlIndexView> indexesView = ctx.systemView().view(SQL_IDXS_VIEW);
 
-        Collection<TableInformation> tablesInfo = schemaMgr.tablesInformation(schemaNamePtrn, tblNamePtrn, TYPE_TABLE);
+        Pattern schemaNameRegex = schemaNamePtrn != null ? Pattern.compile(schemaNamePtrn) : null;
+        Pattern tableNameRegex = tblNamePtrn != null ? Pattern.compile(tblNamePtrn) : null;
 
-        for (TableInformation tableInfo : tablesInfo) {
-            TableDescriptor table = schemaMgr.table(tableInfo.schemaName(), tableInfo.tableName());
+        for (SqlIndexView view : indexesView) {
+            if (schemaNameRegex != null && !schemaNameRegex.matcher(view.schemaName()).matches())
+                continue;
 
-            Map<String, IndexDescriptor> indexes = table.indexes();
+            if (tblNamePtrn != null && !tableNameRegex.matcher(view.tableName()).matches())
+                continue;
 
-            for (String idxName : indexes.keySet())
-                meta.add(new JdbcIndexMeta(tableInfo.schemaName(), tableInfo.tableName(), indexes.get(idxName)));
+            meta.add(new JdbcIndexMeta(view));
         }
 
         return meta;
