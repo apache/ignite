@@ -166,11 +166,8 @@ public class IgniteSqlFunctions {
 
     /** */
     private static Object leastOrGreatest(boolean least, Object arg0, Object arg1) {
-        if (arg0 == null)
-            return arg1;
-
-        if (arg1 == null)
-            return arg0;
+        if (arg0 == null || arg1 == null)
+            return null;
 
         if (((Comparable<Object>)arg0).compareTo(arg1) < 0)
             return least ? arg0 : arg1;
