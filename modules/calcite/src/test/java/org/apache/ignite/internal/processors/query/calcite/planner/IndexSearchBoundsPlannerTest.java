@@ -43,9 +43,9 @@ import org.apache.ignite.internal.processors.query.calcite.util.RexUtils;
 import org.junit.Test;
 
 /**
- * Planner test for SEARCH/SARG condition on indexed fields.
+ * Planner test for indexed fields scans.
  */
-public class SearchSargOnIndexPlannerTest extends AbstractPlannerTest {
+public class IndexSearchBoundsPlannerTest extends AbstractPlannerTest {
     /** */
     private IgniteSchema publicSchema;
 
@@ -376,6 +376,84 @@ public class SearchSargOnIndexPlannerTest extends AbstractPlannerTest {
             exact("a"),
             empty()
         );
+    }
+
+    /** Tests bounds merge. */
+    @Test
+    public void testBoundsMerge() throws Exception {
+        assertBounds("SELECT * FROM TEST WHERE C1 > ? AND C1 >= 1",
+            range(leastOrGreatest(false, "?0", "1", "INTEGER"), null, true, true)
+        );
+
+        assertBounds("SELECT * FROM TEST WHERE C1 > ? AND C1 >= ? AND C1 > ?",
+            range(
+                leastOrGreatest(false, leastOrGreatest(false, "?0", "?1", "INTEGER"), "?2", "INTEGER"),
+                null, true, true
+            )
+        );
+
+        assertBounds("SELECT * FROM TEST WHERE C1 > ? AND C1 >= 1 AND C1 < ? AND C1 < ?",
+            range(
+                leastOrGreatest(false, "?0", "1", "INTEGER"),
+                leastOrGreatest(true, "?1", "?2", "INTEGER"),
+                true, false
+            )
+        );
+
+        assertBounds("SELECT * FROM TEST WHERE C1 < ? AND C1 BETWEEN 1 AND 10 ",
+            range(1, leastOrGreatest(true, "?0", "10", "INTEGER"), true, true)
+        );
+
+        assertBounds("SELECT * FROM TEST WHERE C1 NOT IN (1, 2) AND C1 >= ?",
+            range("?0", null, true, true)
+        );
+
+        tbl.addIndex(RelCollations.of(TraitUtils.createFieldCollation(3, false),
+            TraitUtils.createFieldCollation(2, true)), "C4");
+
+        assertBounds("SELECT * FROM TEST WHERE C4 > ? AND C4 >= 1 AND C4 < ? AND C4 < ?",
+            empty(),
+            empty(),
+            empty(),
+            range(
+                leastOrGreatest(true, "?1", "?2", "INTEGER"),
+                leastOrGreatest(false, "?0", "1", "INTEGER"),
+                false, true
+            )
+        );
+    }
+
+    /** Tests complex bounds expressions. */
+    @Test
+    public void testBoundsComplex() throws Exception {
+        assertBounds("SELECT * FROM TEST WHERE C1 = ? + 10",
+            exact("+(?0, 10)")
+        );
+
+        assertBounds("SELECT * FROM TEST WHERE C1 = 1 AND C2 > SUBSTRING(?::VARCHAR, 1, 2) || '3'",
+            exact(1),
+            range("||(SUBSTRING(?0, 1, 2), _UTF-8'3')", null, false, true)
+        );
+
+        assertBounds("SELECT * FROM TEST WHERE C1 = 1 AND C2 > SUBSTRING(C3::VARCHAR, 1, 2) || '3'",
+            exact(1),
+            empty()
+        );
+
+        assertBounds("SELECT (SELECT C1 FROM TEST t2 WHERE t2.C1 = t1.C1 + t1.C3 * ?) FROM TEST t1",
+            exact("+($cor0.C1, *($cor0.C3, ?0))")
+        );
+
+        assertPlan("SELECT * FROM TEST WHERE C1 = ? + C3", publicSchema, isTableScan("TEST"));
+
+        assertPlan("SELECT (SELECT C1 FROM TEST t2 WHERE t2.C1 < t1.C1 + t2.C1) FROM TEST t1", publicSchema,
+            nodeOrAnyChild(isIndexScan("TEST", "C1C2C3")).negate());
+    }
+
+    /** String representation of LEAST or CREATEST operator converted to CASE. */
+    private String leastOrGreatest(boolean least, String val0, String val1, String type) {
+        return "CASE(OR(IS NULL(" + val0 + "), IS NULL(" + val1 + ")), null:" + type + ", " + (least ? '<' : '>') +
+            '(' + val0 + ", " + val1 + "), " + val0 + ", " + val1 + ')';
     }
 
     /** */

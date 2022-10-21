@@ -151,11 +151,15 @@ class ControlUtility:
 
         assert ('no issues found.' in data), data
 
-    def idle_verify(self):
+    def idle_verify(self, cache_names=None):
         """
         Idle verify.
         """
-        data = self.__run("--cache idle_verify")
+
+        if cache_names is None:
+            data = self.__run("--cache idle_verify")
+        else:
+            data = self.__run(f"--cache idle_verify {cache_names}")
 
         if self._cluster.config.version < V_2_11_0:
             msg = 'idle_verify check has finished, no conflicts have been found.'
@@ -163,6 +167,7 @@ class ControlUtility:
             msg = 'The check procedure has finished, no conflicts have been found.'
 
         assert (msg in data), data
+        return data
 
     def idle_verify_dump(self, node=None):
         """
@@ -182,6 +187,7 @@ class ControlUtility:
         data = self.__run(f"--consistency {args} --enable-experimental")
 
         assert ('Command [CONSISTENCY] finished with code: 0' in data), data
+        return data
 
     def snapshot_create(self, snapshot_name: str, timeout_sec: int = 60):
         """

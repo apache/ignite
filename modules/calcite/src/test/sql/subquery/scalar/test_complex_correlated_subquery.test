@@ -20,6 +20,15 @@ NULL	NULL
 2	2
 3	3
 
+# join on two subqueries that both have a correlated expression in them
+query II
+SELECT i, (SELECT s1.i FROM (SELECT i FROM integers WHERE i=i1.i) s1 INNER JOIN (SELECT i FROM integers WHERE i=4-i1.i) s2 ON s1.i>s2.i) AS j FROM integers i1 ORDER BY i;
+----
+NULL	NULL
+1	NULL
+2	NULL
+3	3
+
 # implicit join with correlated expression in filter
 query II
 SELECT i, (SELECT s1.i FROM integers s1, integers s2 WHERE s1.i=s2.i AND s1.i=4-i1.i) AS j FROM integers i1 ORDER BY i;
@@ -63,10 +72,37 @@ SELECT i, (SELECT SUM(s1.i) FROM integers s1 FULL OUTER JOIN integers s2 ON s1.i
 statement error
 SELECT i, (SELECT row_number() OVER (ORDER BY i)) FROM integers i1 ORDER BY i;
 
+# union with correlated expression
+query II
+SELECT i, (SELECT i FROM integers WHERE i=i1.i UNION SELECT i FROM integers WHERE i=i1.i) AS j FROM integers i1 ORDER BY i;
+----
+NULL	NULL
+1	1
+2	2
+3	3
+
 # except with correlated expression
 query II
 SELECT i, (SELECT i FROM integers WHERE i IS NOT NULL EXCEPT SELECT i FROM integers WHERE i<>i1.i) AS j FROM integers i1 WHERE i IS NOT NULL ORDER BY i;
 ----
+1	1
+2	2
+3	3
+
+# intersect with correlated expression
+query II
+SELECT i, (SELECT i FROM integers WHERE i=i1.i INTERSECT SELECT i FROM integers WHERE i=i1.i) AS j FROM integers i1 ORDER BY i;
+----
+NULL	NULL
+1	1
+2	2
+3	3
+
+# multiple setops
+query II
+SELECT i, (SELECT i FROM integers WHERE i=i1.i UNION SELECT i FROM integers WHERE i<>i1.i EXCEPT SELECT i FROM integers WHERE i<>i1.i) AS j FROM integers i1 ORDER BY i;
+----
+NULL	NULL
 1	1
 2	2
 3	3

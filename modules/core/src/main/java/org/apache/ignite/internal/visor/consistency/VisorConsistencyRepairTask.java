@@ -19,8 +19,12 @@ package org.apache.ignite.internal.visor.consistency;
 
 import java.util.HashMap;
 import java.util.HashSet;
+import java.util.List;
 import java.util.Map;
 import java.util.Set;
+import java.util.concurrent.ExecutionException;
+import java.util.concurrent.ForkJoinPool;
+import java.util.concurrent.atomic.AtomicReference;
 import java.util.stream.Collectors;
 import javax.cache.CacheException;
 import org.apache.ignite.IgniteCache;
@@ -37,8 +41,10 @@ import org.apache.ignite.internal.processors.cache.distributed.near.consistency.
 import org.apache.ignite.internal.processors.cache.persistence.CacheDataRow;
 import org.apache.ignite.internal.util.GridConcurrentHashSet;
 import org.apache.ignite.internal.util.lang.GridCursor;
+import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.internal.CU;
 import org.apache.ignite.internal.visor.VisorJob;
+import org.apache.ignite.lang.IgniteBiTuple;
 import org.apache.ignite.lang.IgnitePredicate;
 import org.apache.ignite.resources.LoggerResource;
 
@@ -52,13 +58,16 @@ public class VisorConsistencyRepairTask extends AbstractConsistencyTask<VisorCon
     private static final long serialVersionUID = 0L;
 
     /** Nothing found. */
-    public static final String NOTHING_FOUND = "Consistency violations were NOT found";
+    public static final String NOTHING_FOUND = "Consistency violations were NOT found:\n";
 
     /** Found. */
-    public static final String CONSISTENCY_VIOLATIONS_FOUND = "Consistency violations were FOUND";
+    public static final String CONSISTENCY_VIOLATIONS_FOUND = "Consistency violations were FOUND:\n";
 
     /** Violations recorder. */
     public static final String CONSISTENCY_VIOLATIONS_RECORDED = "Cache consistency violations recorded.";
+
+    /** Processed prefix. */
+    public static final String PROCESSED_PREFIX = "[processed=";
 
     /** {@inheritDoc} */
     @Override protected VisorJob<VisorConsistencyRepairTaskArg, String> job(VisorConsistencyRepairTaskArg arg) {
@@ -89,10 +98,44 @@ public class VisorConsistencyRepairTask extends AbstractConsistencyTask<VisorCon
 
         /** {@inheritDoc} */
         @Override protected String run(VisorConsistencyRepairTaskArg arg) throws IgniteException {
+            AtomicReference<Exception> err = new AtomicReference<>();
+
+            Map<Boolean, List<IgniteBiTuple<Integer, String>>> res = arg.parts().stream()
+                .map(p -> F.t(p, ForkJoinPool.commonPool().submit(() -> processPartition(p, arg))))
+                .map(t -> {
+                    try {
+                        return F.t(t.get1(), t.get2().get());
+                    }
+                    catch (ExecutionException | InterruptedException e) {
+                        err.set(e);
+
+                        return F.<Integer, String>t(t.get1(), null);
+                    }
+                })
+                .filter(t -> t.get2() != null)
+                .collect(Collectors.groupingBy(t -> t.get2().startsWith(PROCESSED_PREFIX)));
+
+            if (err.get() != null || isCancelled())
+                throw new IgniteException("Consistency task was interrupted.", err.get());
+
+            StringBuilder resStr = new StringBuilder();
+
+            makeResult(res, true, resStr, NOTHING_FOUND);
+
+            makeResult(res, false, resStr, CONSISTENCY_VIOLATIONS_FOUND);
+
+            return resStr.length() == 0 ? null : resStr.toString();
+        }
+
+        /**
+         * @param p Partition.
+         * @param arg Taks arguments.
+         * @return Partition results.
+         */
+        private String processPartition(int p, VisorConsistencyRepairTaskArg arg) {
             String cacheOrGrpName = arg.cacheOrGroupName();
             ReadRepairStrategy strategy = arg.strategy();
 
-            int p = arg.part();
             int batchSize = 128;
             int statusDelay = 60_000; // Every minute.
 
@@ -220,7 +263,7 @@ public class VisorConsistencyRepairTask extends AbstractConsistencyTask<VisorCon
             if (!evts.isEmpty())
                 return processEvents(p, checked);
             else
-                return NOTHING_FOUND + " [processed=" + checked + "]\n";
+                return PROCESSED_PREFIX + checked + "]";
         }
 
         /**
@@ -297,10 +340,10 @@ public class VisorConsistencyRepairTask extends AbstractConsistencyTask<VisorCon
             if (!res.isEmpty()) {
                 log.warning(CONSISTENCY_VIOLATIONS_RECORDED + "\n" + res);
 
-                return CONSISTENCY_VIOLATIONS_FOUND + " [found=" + found + ", repaired=" + repaired + ", processed=" + cnt + "]";
+                return "[found=" + found + ", repaired=" + repaired + ", processed=" + cnt + "]";
             }
             else
-                return NOTHING_FOUND + " [processed=" + cnt + "]\n";
+                return PROCESSED_PREFIX + cnt + "]";
         }
 
         /**
@@ -353,5 +396,23 @@ public class VisorConsistencyRepairTask extends AbstractConsistencyTask<VisorCon
                 keys = new HashSet<>();
             }
         }
+    }
+
+    /** */
+    private static void makeResult(
+        Map<Boolean, List<IgniteBiTuple<Integer, String>>> res,
+        boolean flag,
+        StringBuilder resStr,
+        String msg
+    ) {
+        if (!res.containsKey(flag))
+            return;
+
+        resStr.append("\n    ").append(msg);
+
+        // Consistent parts goes first in output.
+        res.get(flag).forEach(t ->
+            resStr.append("      Partition ").append(t.get1()).append(' ').append(t.get2()).append('\n')
+        );
     }
 }
