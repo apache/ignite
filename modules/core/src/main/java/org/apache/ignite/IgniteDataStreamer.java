@@ -20,7 +20,6 @@ package org.apache.ignite;
 import java.util.Collection;
 import java.util.Map;
 import javax.cache.CacheException;
-import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.lang.IgniteBiPredicate;
 import org.apache.ignite.lang.IgniteFuture;
@@ -113,10 +112,8 @@ public interface IgniteDataStreamer<K, V> extends AutoCloseable {
      *
      * @see IgniteConfiguration#getDataStreamerThreadPoolSize()
      * @see #perNodeParallelOperations()
-     * @deprecated Is not used anymore. Should depend on cache type (persistent or not), receiver.
      */
-    @Deprecated
-    public static final int DFLT_PARALLEL_OPS_MULTIPLIER = 8;
+    public static final int DFLT_PARALLEL_OPS_MULTIPLIER = 16;
 
     /** Default operations batch size to sent to remote node for loading. */
     public static final int DFLT_PER_NODE_BUFFER_SIZE = 512;
@@ -211,9 +208,6 @@ public interface IgniteDataStreamer<K, V> extends AutoCloseable {
 
     /**
      * Gets maximum number of parallel stream operations for a single node.
-     * <p>
-     * If positive, prevails over
-     * {@link StreamReceiver#perNodeParallelOperations(ClusterNode, boolean)}
      *
      * @return Maximum number of parallel stream operations for a single node.
      */
@@ -224,8 +218,8 @@ public interface IgniteDataStreamer<K, V> extends AutoCloseable {
      * <p>
      * This method should be called prior to {@link #addData(Object, Object)} call.
      * <p>
-     * If not provided, {@link StreamReceiver#perNodeParallelOperations(ClusterNode, boolean)} is
-     * used. If StreamReceiver doesn't provide a positive value, default value is calculated.
+     * If not provided, default value is calculated as follows
+     * {@link #DFLT_PARALLEL_OPS_MULTIPLIER} * {@code DATA_STREAMER_POOL_SIZE_ON_REMOTE_NODE}.
      *
      * @param parallelOps Maximum number of parallel stream operations for a single node.
      * @see IgniteConfiguration#getDataStreamerThreadPoolSize()

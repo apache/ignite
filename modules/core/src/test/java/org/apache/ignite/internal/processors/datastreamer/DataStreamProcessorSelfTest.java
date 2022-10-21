@@ -303,7 +303,7 @@ public class DataStreamProcessorSelfTest extends GridCommonAbstractTest {
 
             grid(0).cluster().state(ClusterState.ACTIVE);
 
-            int maxBatchesPerNode = receiver.perNodeParallelOperations(grid(0).localNode(), persistenceEnabled());
+            int maxBatchesPerNode = IgniteDataStreamer.DFLT_PER_NODE_BUFFER_SIZE;
 
             //Every single cache update creates one update future for the primary and one future for all the backups.
             //Collecting update futures and related objects consumes heap. Streamer doesn't know about unfinished
@@ -381,6 +381,7 @@ public class DataStreamProcessorSelfTest extends GridCommonAbstractTest {
             final IgniteDataStreamer<Integer, Integer> ldr = igniteWithoutCache.dataStreamer(DEFAULT_CACHE_NAME);
 
             ldr.receiver(DataStreamerCacheUpdaters.<Integer, Integer>batchedSorted());
+//            ldr.receiver(DataStreamerCacheUpdaters.<Integer, Integer>batched());
 
             final AtomicInteger idxGen = new AtomicInteger();
             final int cnt = 400;

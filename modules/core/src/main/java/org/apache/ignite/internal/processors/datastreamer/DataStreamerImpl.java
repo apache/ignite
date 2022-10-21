@@ -120,6 +120,7 @@ import org.apache.ignite.plugin.security.SecurityPermission;
 import org.apache.ignite.stream.StreamReceiver;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
+
 import static org.apache.ignite.events.EventType.EVT_NODE_FAILED;
 import static org.apache.ignite.events.EventType.EVT_NODE_LEFT;
 import static org.apache.ignite.internal.GridTopic.TOPIC_DATASTREAM;
@@ -131,24 +132,6 @@ import static org.apache.ignite.internal.GridTopic.TOPIC_DATASTREAM;
 public class DataStreamerImpl<K, V> implements IgniteDataStreamer<K, V>, Delayed {
     /** Per thread buffer size. */
     private int bufLdrSzPerThread = DFLT_PER_THREAD_BUFFER_SIZE;
-
-    /**
-     * Default minimal parallel per node operations for persistent caches.
-     *
-     * @see IgniteDataStreamer#perNodeParallelOperations(int)
-     * @see StreamReceiver#perNodeParallelOperations(ClusterNode, boolean)
-     * @see IgniteNodeAttributes#ATTR_DATA_STREAMER_POOL_SIZE
-     */
-    private static final int DFLT_MIN_PARALLEL_PERSISTENCE_OPS = 4;
-
-    /**
-     * Default parallel per node operation ratio of the pool size for persistent caches.
-     *
-     * @see IgniteDataStreamer#perNodeParallelOperations(int)
-     * @see StreamReceiver#perNodeParallelOperations(ClusterNode, boolean)
-     * @see IgniteNodeAttributes#ATTR_DATA_STREAMER_POOL_SIZE
-     */
-    private static final float DFLT_PARALLEL_PERSISTENCE_OPS_MULT = 0.25f;
 
     /**
      * Thread buffer map: on each thread there are future and list of entries which will be streamed after filling
@@ -1606,13 +1589,17 @@ public class DataStreamerImpl<K, V> implements IgniteDataStreamer<K, V>, Delayed
 
             int streamerPoolSize = attrStreamerPoolSize != null ? attrStreamerPoolSize : node.metrics().getTotalCpus();
 
-            int perNodeParallelOps = parallelOps > 0 ? parallelOps : rcvr.perNodeParallelOperations(node,
-                ctx.cache().cacheDescriptor(cacheName).groupDescriptor().persistenceEnabled());
+            int perNodeParallelOps = parallelOps > 0 ? parallelOps : -1;
 
-            if (perNodeParallelOps < 0) {
-                perNodeParallelOps = perNodeParallelOperations(node,
-                    ctx.cache().cacheDescriptor(cacheName).groupDescriptor().persistenceEnabled());
+            if (perNodeParallelOps < 0 && rcvr instanceof DataStreamerCacheUpdaters.InternalUpdater) {
+                boolean persistence = ctx.cache().cacheDescriptor(cacheName).groupDescriptor().persistenceEnabled();
+
+                perNodeParallelOps = ((DataStreamerCacheUpdaters.InternalUpdater)rcvr)
+                    .maxPerNodeBatches(streamerPoolSize, persistence);
             }
+
+            if (perNodeParallelOps < 0)
+                perNodeParallelOps = streamerPoolSize * DFLT_PARALLEL_OPS_MULTIPLIER;
 
             sem = new Semaphore(perNodeParallelOps);
 
@@ -2169,18 +2156,6 @@ public class DataStreamerImpl<K, V> implements IgniteDataStreamer<K, V>, Delayed
     }
 
     /**
-     * @param node Node to send to.
-     * @param persistent {@code True} if the cache is persistent. {@code False} otherwise.
-     * @return Max parallel operations per node.
-     */
-    public static int perNodeParallelOperations(ClusterNode node, boolean persistent) {
-        int poolSize = streamerPoolSize(node);
-
-        return persistent ? Math.max(DFLT_MIN_PARALLEL_PERSISTENCE_OPS,
-            Math.round(poolSize * DFLT_PARALLEL_PERSISTENCE_OPS_MULT)) : poolSize;
-    }
-
-    /**
      * @return Streamer pool size.
      */
     private static int streamerPoolSize(ClusterNode node) {
@@ -2413,10 +2388,8 @@ public class DataStreamerImpl<K, V> implements IgniteDataStreamer<K, V>, Delayed
         }
 
         /** {@inheritDoc} */
-        @Override public int perNodeParallelOperations(ClusterNode node, boolean persistent) {
-            int poolSize = streamerPoolSize(node);
-
-            return poolSize * (persistent ? PERSISTENT_PARALLEL_OPS_MULT : PARALLEL_OPS_MULT);
+        @Override public int maxPerNodeBatches(int streamerPoolSize, boolean persistent) {
+            return streamerPoolSize * (persistent ? PERSISTENT_PARALLEL_OPS_MULT : PARALLEL_OPS_MULT);
         }
     }
 

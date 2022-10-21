@@ -161,7 +161,8 @@ class DataStreamerUpdateJob implements GridPlainCallable<Object> {
      * @return {@code True} if need to unwrap internal entries.
      */
     private boolean unwrapEntries() {
-        return !(rcvr instanceof DataStreamerCacheUpdaters.InternalUpdater);
+        return !(rcvr instanceof DataStreamerCacheUpdaters.InternalUpdater) ||
+            ((DataStreamerCacheUpdaters.InternalUpdater)rcvr).unwrapEntries();
     }
 
     /**
