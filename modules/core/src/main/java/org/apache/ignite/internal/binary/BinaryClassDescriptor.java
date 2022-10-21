@@ -17,6 +17,7 @@
 
 package org.apache.ignite.internal.binary;
 
+import java.io.Serializable;
 import java.lang.reflect.Constructor;
 import java.lang.reflect.Field;
 import java.lang.reflect.InvocationTargetException;
@@ -54,6 +55,7 @@ import org.apache.ignite.marshaller.MarshallerExclusions;
 import org.jetbrains.annotations.Nullable;
 
 import static org.apache.ignite.internal.processors.query.QueryUtils.isGeometryClass;
+import static org.apache.ignite.internal.util.IgniteUtils.isLambda;
 
 /**
  * Binary class descriptor.
@@ -318,61 +320,71 @@ public class BinaryClassDescriptor {
                 // Must not use constructor to honor transient fields semantics.
                 ctor = null;
 
-                Map<Object, BinaryFieldAccessor> fields0;
+                if (isLambda(cls)) {
+                    if (!Serializable.class.isAssignableFrom(cls))
+                        throw new BinaryObjectException("Lambda is not serializable: " + cls);
 
-                if (BinaryUtils.FIELDS_SORTED_ORDER) {
-                    fields0 = new TreeMap<>();
+                    // We don't need fields for serializable lambdas, because we resort to SerializedLambda.
+                    fields = null;
+                    stableFieldsMeta = null;
+                    stableSchema = null;
+                } else {
+                    Map<Object, BinaryFieldAccessor> fields0;
 
-                    stableFieldsMeta = metaDataEnabled ? new TreeMap<String, BinaryFieldMetadata>() : null;
-                }
-                else {
-                    fields0 = new LinkedHashMap<>();
+                    if (BinaryUtils.FIELDS_SORTED_ORDER) {
+                        fields0 = new TreeMap<>();
 
-                    stableFieldsMeta = metaDataEnabled ? new LinkedHashMap<String, BinaryFieldMetadata>() : null;
-                }
+                        stableFieldsMeta = metaDataEnabled ? new TreeMap<String, BinaryFieldMetadata>() : null;
+                    }
+                    else {
+                        fields0 = new LinkedHashMap<>();
 
-                Set<String> duplicates = duplicateFields(cls);
+                        stableFieldsMeta = metaDataEnabled ? new LinkedHashMap<String, BinaryFieldMetadata>() : null;
+                    }
 
-                Collection<String> names = new HashSet<>();
-                Collection<Integer> ids = new HashSet<>();
+                    Set<String> duplicates = duplicateFields(cls);
 
-                for (Class<?> c = cls; c != null && !c.equals(Object.class); c = c.getSuperclass()) {
-                    for (Field f : c.getDeclaredFields()) {
-                        if (serializeField(f)) {
-                            f.setAccessible(true);
+                    Collection<String> names = new HashSet<>();
+                    Collection<Integer> ids = new HashSet<>();
 
-                            String name = f.getName();
+                    for (Class<?> c = cls; c != null && !c.equals(Object.class); c = c.getSuperclass()) {
+                        for (Field f : c.getDeclaredFields()) {
+                            if (serializeField(f)) {
+                                f.setAccessible(true);
 
-                            if (duplicates.contains(name))
-                                name = BinaryUtils.qualifiedFieldName(c, name);
+                                String name = f.getName();
 
-                            boolean added = names.add(name);
+                                if (duplicates.contains(name))
+                                    name = BinaryUtils.qualifiedFieldName(c, name);
 
-                            assert added : name;
+                                boolean added = names.add(name);
 
-                            int fieldId = this.mapper.fieldId(typeId, name);
+                                assert added : name;
 
-                            if (!ids.add(fieldId))
-                                throw new BinaryObjectException("Duplicate field ID: " + name);
+                                int fieldId = this.mapper.fieldId(typeId, name);
 
-                            BinaryFieldAccessor fieldInfo = BinaryFieldAccessor.create(f, fieldId);
+                                if (!ids.add(fieldId))
+                                    throw new BinaryObjectException("Duplicate field ID: " + name);
 
-                            fields0.put(name, fieldInfo);
+                                BinaryFieldAccessor fieldInfo = BinaryFieldAccessor.create(f, fieldId);
 
-                            if (metaDataEnabled)
-                                stableFieldsMeta.put(name, new BinaryFieldMetadata(fieldInfo));
+                                fields0.put(name, fieldInfo);
+
+                                if (metaDataEnabled)
+                                    stableFieldsMeta.put(name, new BinaryFieldMetadata(fieldInfo));
+                            }
                         }
                     }
+
+                    fields = fields0.values().toArray(new BinaryFieldAccessor[fields0.size()]);
+
+                    BinarySchema.Builder schemaBuilder = BinarySchema.Builder.newBuilder();
+
+                    for (BinaryFieldAccessor field : fields)
+                        schemaBuilder.addField(field.id);
+
+                    stableSchema = schemaBuilder.build();
                 }
-
-                fields = fields0.values().toArray(new BinaryFieldAccessor[fields0.size()]);
-
-                BinarySchema.Builder schemaBuilder = BinarySchema.Builder.newBuilder();
-
-                for (BinaryFieldAccessor field : fields)
-                    schemaBuilder.addField(field.id);
-
-                stableSchema = schemaBuilder.build();
 
                 intfs = null;
 
