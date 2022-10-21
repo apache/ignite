@@ -68,6 +68,7 @@ import org.apache.ignite.internal.processors.query.calcite.prepare.bounds.ExactB
 import org.apache.ignite.internal.processors.query.calcite.prepare.bounds.MultiBounds;
 import org.apache.ignite.internal.processors.query.calcite.prepare.bounds.RangeBounds;
 import org.apache.ignite.internal.processors.query.calcite.prepare.bounds.SearchBounds;
+import org.apache.ignite.internal.processors.query.calcite.sql.fun.IgniteOwnSqlOperatorTable;
 import org.apache.ignite.internal.processors.query.calcite.trait.TraitUtils;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.internal.U;
@@ -321,7 +322,7 @@ public class RexUtils {
     ) {
         RexBuilder builder = builder(cluster);
 
-        RexNode nullVal = builder.makeNullLiteral(fldType);
+        RexNode nullBound = builder.makeCall(IgniteOwnSqlOperatorTable.NULL_BOUND);
 
         RexNode upperCond = null;
         RexNode lowerCond = null;
@@ -347,7 +348,7 @@ public class RexUtils {
             if (op.kind == EQUALS)
                 return new ExactBounds(pred, val);
             else if (op.kind == IS_NULL)
-                return new ExactBounds(pred, nullVal);
+                return new ExactBounds(pred, nullBound);
             else if (op.kind == SEARCH) {
                 Sarg<?> sarg = ((RexLiteral)pred.operands.get(1)).getValueAs(Sarg.class);
 
@@ -362,8 +363,8 @@ public class RexUtils {
                         boolean ascDir = !fc.getDirection().isDescending();
                         RangeBounds rangeBounds = (RangeBounds)bounds.get(0);
                         if (rangeBounds.lowerBound() != null) {
-                            if (lowerBound != null && lowerBound != nullVal) {
-                                lowerBound = leastOrGreatest(builder, !ascDir, lowerBound, rangeBounds.lowerBound(), nullVal);
+                            if (lowerBound != null && lowerBound != nullBound) {
+                                lowerBound = leastOrGreatest(builder, !ascDir, lowerBound, rangeBounds.lowerBound());
                                 lowerInclude |= rangeBounds.lowerInclude();
                             }
                             else {
@@ -374,8 +375,8 @@ public class RexUtils {
                         }
 
                         if (rangeBounds.upperBound() != null) {
-                            if (upperBound != null && upperBound != nullVal) {
-                                upperBound = leastOrGreatest(builder, ascDir, upperBound, rangeBounds.upperBound(), nullVal);
+                            if (upperBound != null && upperBound != nullBound) {
+                                upperBound = leastOrGreatest(builder, ascDir, upperBound, rangeBounds.upperBound());
                                 upperInclude |= rangeBounds.upperInclude();
                             }
                             else {
@@ -409,25 +410,25 @@ public class RexUtils {
                 case GREATER_THAN:
                 case GREATER_THAN_OR_EQUAL:
                     if (lowerBoundBelow) {
-                        if (lowerBound == null || lowerBound == nullVal) {
+                        if (lowerBound == null || lowerBound == nullBound) {
                             lowerCond = pred;
                             lowerBound = val;
                             lowerInclude = includeBound;
                         }
                         else {
-                            lowerBound = leastOrGreatest(builder, lessCondition, lowerBound, val, nullVal);
+                            lowerBound = leastOrGreatest(builder, lessCondition, lowerBound, val);
                             lowerInclude |= includeBound;
                             lowerCond = lessOrGreater(builder, lessCondition, lowerInclude, ref, lowerBound);
                         }
                     }
                     else {
-                        if (upperBound == null || upperBound == nullVal) {
+                        if (upperBound == null || upperBound == nullBound) {
                             upperCond = pred;
                             upperBound = val;
                             upperInclude = includeBound;
                         }
                         else {
-                            upperBound = leastOrGreatest(builder, lessCondition, upperBound, val, nullVal);
+                            upperBound = leastOrGreatest(builder, lessCondition, upperBound, val);
                             upperInclude |= includeBound;
                             upperCond = lessOrGreater(builder, lessCondition, upperInclude, ref, upperBound);
                         }
@@ -437,12 +438,12 @@ public class RexUtils {
                 case IS_NOT_NULL:
                     if (fc.nullDirection == RelFieldCollation.NullDirection.FIRST && lowerBound == null) {
                         lowerCond = pred;
-                        lowerBound = nullVal;
+                        lowerBound = nullBound;
                         lowerInclude = false;
                     }
                     else if (fc.nullDirection == RelFieldCollation.NullDirection.LAST && upperBound == null) {
                         upperCond = pred;
-                        upperBound = nullVal;
+                        upperBound = nullBound;
                         upperInclude = false;
                     }
                     break;
@@ -502,24 +503,12 @@ public class RexUtils {
     }
 
     /** */
-    private static RexNode leastOrGreatest(RexBuilder builder, boolean least, RexNode arg0, RexNode arg1, RexNode nullVal) {
-        // There is no implementor for LEAST/GREATEST, so convert this calls directly to CASE operator.
-        List<RexNode> argList = new ArrayList<>();
-
-        // CASE
-        //  WHEN arg0 IS NULL OR arg1 IS NULL THEN NULL
-        //  WHEN arg0 < arg1 THEN arg0
-        //  ELSE arg1
-        // END
-        argList.add(builder.makeCall(SqlStdOperatorTable.OR,
-            builder.makeCall(SqlStdOperatorTable.IS_NULL, arg0),
-            builder.makeCall(SqlStdOperatorTable.IS_NULL, arg1)));
-        argList.add(nullVal);
-        argList.add(builder.makeCall(least ? SqlStdOperatorTable.LESS_THAN : SqlStdOperatorTable.GREATER_THAN, arg0, arg1));
-        argList.add(arg0);
-        argList.add(arg1);
-
-        return builder.makeCall(SqlStdOperatorTable.CASE, argList);
+    private static RexNode leastOrGreatest(RexBuilder builder, boolean least, RexNode arg0, RexNode arg1) {
+        return builder.makeCall(
+            least ? IgniteOwnSqlOperatorTable.LEAST2 : IgniteOwnSqlOperatorTable.GREATEST2,
+            arg0,
+            arg1
+        );
     }
 
     /** */
