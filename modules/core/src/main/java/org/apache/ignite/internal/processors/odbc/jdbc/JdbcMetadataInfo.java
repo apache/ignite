@@ -27,7 +27,6 @@ import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.SortedSet;
 import java.util.TreeSet;
-import java.util.regex.Pattern;
 import java.util.stream.Collectors;
 import org.apache.ignite.internal.GridKernalContext;
 import org.apache.ignite.internal.processors.odbc.ClientListenerProtocolVersion;
@@ -254,14 +253,11 @@ public class JdbcMetadataInfo {
 
         SystemView<SqlIndexView> indexesView = ctx.systemView().view(SQL_IDXS_VIEW);
 
-        Pattern schemaNameRegex = schemaNamePtrn != null ? Pattern.compile(schemaNamePtrn) : null;
-        Pattern tableNameRegex = tblNamePtrn != null ? Pattern.compile(tblNamePtrn) : null;
-
         for (SqlIndexView view : indexesView) {
-            if (schemaNameRegex != null && !schemaNameRegex.matcher(view.schemaName()).matches())
+            if (!matches(view.schemaName(), schemaNamePtrn))
                 continue;
 
-            if (tblNamePtrn != null && !tableNameRegex.matcher(view.tableName()).matches())
+            if (!matches(view.tableName(), tblNamePtrn))
                 continue;
 
             meta.add(new JdbcIndexMeta(view));
