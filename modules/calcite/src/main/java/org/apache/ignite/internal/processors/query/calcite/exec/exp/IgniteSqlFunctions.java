@@ -169,6 +169,9 @@ public class IgniteSqlFunctions {
         if (arg0 == null || arg1 == null)
             return null;
 
+        assert arg0 instanceof Comparable && arg1 instanceof Comparable :
+            "Unexpected class [arg0=" + arg0.getClass().getName() + ", arg1=" + arg1.getClass().getName() + ']';
+
         if (((Comparable<Object>)arg0).compareTo(arg1) < 0)
             return least ? arg0 : arg1;
         else
