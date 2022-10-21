@@ -113,7 +113,24 @@ public interface IgniteDataStreamer<K, V> extends AutoCloseable {
      * @see IgniteConfiguration#getDataStreamerThreadPoolSize()
      * @see #perNodeParallelOperations()
      */
-    public static final int DFLT_PARALLEL_OPS_MULTIPLIER = 16;
+    public static final int DFLT_PARALLEL_OPS_MULTIPLIER = 8;
+
+    /**
+     * Default multiplier for data streamer pool size to get concurrent batches count for each remote node for
+     * persistent cache.
+     *
+     * @see IgniteConfiguration#getDataStreamerThreadPoolSize()
+     * @see #perNodeParallelOperations()
+     */
+    public static final float DFLT_PARALLEL_OPS_PERSISTENT_MULTIPLIER = 0.25f;
+
+    /**
+     * Default minimal concurrent batches count for each remote node for persistent cache.
+     *
+     * @see IgniteConfiguration#getDataStreamerThreadPoolSize()
+     * @see #perNodeParallelOperations()
+     */
+    public static final int DFLT_MIN_PARALLEL_OPS_PERSISTENT = 4;
 
     /** Default operations batch size to sent to remote node for loading. */
     public static final int DFLT_PER_NODE_BUFFER_SIZE = 512;

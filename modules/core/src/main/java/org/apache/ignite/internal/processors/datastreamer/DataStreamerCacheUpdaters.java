@@ -25,9 +25,7 @@ import java.util.Set;
 import java.util.TreeMap;
 import java.util.TreeSet;
 import org.apache.ignite.IgniteCache;
-import org.apache.ignite.IgniteDataStreamer;
 import org.apache.ignite.IgniteException;
-import org.apache.ignite.internal.IgniteNodeAttributes;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.stream.StreamReceiver;
 import org.jetbrains.annotations.Nullable;
@@ -168,7 +166,7 @@ public class DataStreamerCacheUpdaters {
     /**
      * Batched updater. Updates cache using batch operations thus is dead lock prone.
      */
-    private static class BatchedSorted<K, V> implements StreamReceiver<K, V>, InternalUpdater {
+    private static class BatchedSorted<K, V> implements StreamReceiver<K, V> {
         /** */
         private static final long serialVersionUID = 0L;
 
@@ -203,41 +201,12 @@ public class DataStreamerCacheUpdaters {
 
             updateAll(cache, rmvAll, putAll);
         }
-
-        /** {@inheritDoc} */
-        @Override public boolean unwrapEntries() {
-            return true;
-        }
     }
 
     /**
-     * Marker interface for internal updaters.
+     * Marker interface for updaters which do not need to unwrap cache objects.
      */
     public static interface InternalUpdater {
-        /**
-         * Default minimal parallel per node operations.
-         *
-         * @see IgniteDataStreamer#perNodeParallelOperations(int)
-         * @see IgniteNodeAttributes#ATTR_DATA_STREAMER_POOL_SIZE
-         */
-        public static final int DFLT_MIN_PARALLEL_PERSISTENCE_OPS = 4;
-
-        /**
-         * Default parallel per node operation ratio of the pool size for persistent caches.
-         *
-         * @see IgniteDataStreamer#perNodeParallelOperations(int)
-         * @see IgniteNodeAttributes#ATTR_DATA_STREAMER_POOL_SIZE
-         */
-        public static final float DFLT_PARALLEL_PERSISTENCE_OPS_MULT = 0.25f;
-
-        /** @return {@code True} if . */
-        default boolean unwrapEntries() {
-            return false;
-        }
-
-        /** TODO */
-        default int perNodeParallelOperations(int threads, boolean persistent) {
-            return threads * IgniteDataStreamer.DFLT_PARALLEL_OPS_MULTIPLIER;
-        }
+        // No-op.
     }
 }
