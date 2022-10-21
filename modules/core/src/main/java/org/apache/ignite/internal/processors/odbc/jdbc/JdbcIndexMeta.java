@@ -20,7 +20,6 @@ package org.apache.ignite.internal.processors.odbc.jdbc;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
-import java.util.regex.Pattern;
 import java.util.stream.Collectors;
 import org.apache.ignite.binary.BinaryObjectException;
 import org.apache.ignite.cache.QueryIndexType;
@@ -35,9 +34,6 @@ import org.apache.ignite.internal.util.typedef.internal.S;
  * JDBC index metadata.
  */
 public class JdbcIndexMeta implements JdbcRawBinarylizable {
-    /** Field pattern. */
-    private static final Pattern PATTERN = Pattern.compile("\"(.+)\" (ASC|DESC)");
-
     /** Index schema name. */
     private String schemaName;
 
