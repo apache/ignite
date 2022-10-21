@@ -637,14 +637,15 @@ public class IgnitionEx {
      * provided in given configuration is already started.
      *
      * @param cfg Grid configuration. This cannot be {@code null}.
-     * @param injectCtx Optional injection context, possibly {@code null}.
+     * @param resourceCtx Optional injection context, possibly {@code null}.
      *      If provided, this context can be used to inject specific beans into grid tasks and grid jobs using
      *      {@link org.apache.ignite.resources.InjectResource} annotation.
      * @return Started grid.
      * @throws IgniteCheckedException If grid could not be started. This exception will be thrown
      *      also if named grid has already been started.
      */
-    public static Ignite start(IgniteConfiguration cfg, @Nullable GridInjectResourceContext resourceCtx) throws IgniteCheckedException {
+    public static Ignite start(IgniteConfiguration cfg, @Nullable GridInjectResourceContext resourceCtx)
+        throws IgniteCheckedException {
         A.notNull(cfg, "cfg");
 
         return start0(new GridStartContext(cfg, null, resourceCtx), true).get1().grid();
