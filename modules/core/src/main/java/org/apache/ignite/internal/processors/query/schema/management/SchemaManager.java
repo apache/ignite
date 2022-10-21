@@ -36,6 +36,7 @@ import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.locks.ReentrantReadWriteLock;
+import java.util.stream.Collectors;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.IgniteSystemProperties;
@@ -1084,6 +1085,20 @@ public class SchemaManager {
         finally {
             lock.readLock().unlock();
         }
+    }
+
+    /**
+     * @param schemaNamePtrn Filter by schema name. Can be {@code null} to don't use the filter.
+     * @param tblNamePtrn Filter by table name. Can be {@code null} to don't use the filter.
+     *
+     * @return Collection of index descriptors filtered by a given patterns.
+     */
+    public Collection<IndexDescriptor> indexes(String schemaNamePtrn, String tblNamePtrn) {
+        return id2tbl.values().stream()
+            .filter(t -> matches(t.type().schemaName(), schemaNamePtrn))
+            .filter(t -> matches(t.type().tableName(), tblNamePtrn))
+            .flatMap(t -> t.indexes().values().stream())
+            .collect(Collectors.toList());
     }
 
     /**

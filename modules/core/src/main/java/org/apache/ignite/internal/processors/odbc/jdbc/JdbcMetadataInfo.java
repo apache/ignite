@@ -34,8 +34,6 @@ import org.apache.ignite.internal.processors.query.ColumnInformation;
 import org.apache.ignite.internal.processors.query.GridQueryTypeDescriptor;
 import org.apache.ignite.internal.processors.query.QueryUtils;
 import org.apache.ignite.internal.processors.query.TableInformation;
-import org.apache.ignite.spi.systemview.view.SystemView;
-import org.apache.ignite.spi.systemview.view.sql.SqlIndexView;
 import org.jetbrains.annotations.Nullable;
 
 import static org.apache.ignite.internal.processors.odbc.jdbc.JdbcConnectionContext.VER_2_3_0;
@@ -43,7 +41,6 @@ import static org.apache.ignite.internal.processors.odbc.jdbc.JdbcConnectionCont
 import static org.apache.ignite.internal.processors.odbc.jdbc.JdbcConnectionContext.VER_2_7_0;
 import static org.apache.ignite.internal.processors.query.QueryUtils.PRIMARY_KEY_INDEX;
 import static org.apache.ignite.internal.processors.query.QueryUtils.matches;
-import static org.apache.ignite.internal.processors.query.schema.management.SchemaManager.SQL_IDXS_VIEW;
 
 /**
  * Facade over {@link GridKernalContext} to get information about database entities in terms of JDBC.
@@ -249,20 +246,10 @@ public class JdbcMetadataInfo {
             .thenComparing(meta -> !meta.indexName().startsWith(PRIMARY_KEY_INDEX))
             .thenComparing(JdbcIndexMeta::indexName);
 
-        TreeSet<JdbcIndexMeta> meta = new TreeSet<>(metaComparator);
-
-        SystemView<SqlIndexView> indexesView = ctx.systemView().view(SQL_IDXS_VIEW);
-
-        for (SqlIndexView view : indexesView) {
-            if (!matches(view.schemaName(), schemaNamePtrn))
-                continue;
-
-            if (!matches(view.tableName(), tblNamePtrn))
-                continue;
-
-            meta.add(new JdbcIndexMeta(view));
-        }
-
-        return meta;
+        return ctx.query().schemaManager()
+            .indexes(schemaNamePtrn, tblNamePtrn)
+            .stream()
+            .map(JdbcIndexMeta::new)
+            .collect(Collectors.toCollection(() -> new TreeSet<>(metaComparator)));
     }
 }

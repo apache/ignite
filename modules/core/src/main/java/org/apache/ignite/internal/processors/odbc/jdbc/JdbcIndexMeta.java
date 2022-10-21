@@ -20,15 +20,16 @@ package org.apache.ignite.internal.processors.odbc.jdbc;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
-import java.util.regex.Matcher;
 import java.util.regex.Pattern;
+import java.util.stream.Collectors;
 import org.apache.ignite.binary.BinaryObjectException;
 import org.apache.ignite.cache.QueryIndexType;
 import org.apache.ignite.internal.binary.BinaryReaderExImpl;
 import org.apache.ignite.internal.binary.BinaryWriterExImpl;
+import org.apache.ignite.internal.cache.query.index.SortOrder;
+import org.apache.ignite.internal.processors.query.schema.management.IndexDescriptor;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.internal.S;
-import org.apache.ignite.spi.systemview.view.sql.SqlIndexView;
 
 /**
  * JDBC index metadata.
@@ -63,33 +64,20 @@ public class JdbcIndexMeta implements JdbcRawBinarylizable {
     }
 
     /**
-     * @param view SqlIndex system view.
+     * @param idx Index descriptor.
      */
-    JdbcIndexMeta(SqlIndexView view) {
-        assert view != null;
+    JdbcIndexMeta(IndexDescriptor idx) {
+        schemaName = idx.table().type().schemaName();
+        tblName = idx.table().type().tableName();
+        idxName = idx.name();
 
-        schemaName = view.schemaName();
-        tblName = view.tableName();
-        idxName = view.indexName();
+        type = idx.type();
 
-        type = QueryIndexType.valueOf(QueryIndexType.class, view.indexType());
+        fields = new ArrayList<>(idx.keyDefinitions().keySet());
 
-        String[] columns = view.columns().split(", ");
-
-        fields = new ArrayList<>(columns.length);
-        fieldsAsc = new ArrayList<>(columns.length);
-
-        for (String field : columns) {
-            Matcher matcher = PATTERN.matcher(field);
-
-            if (matcher.matches()) {
-                String fieldName = matcher.group(1);
-                boolean ascending = "ASC".equals(matcher.group(2));
-
-                fields.add(fieldName);
-                fieldsAsc.add(ascending);
-            }
-        }
+        fieldsAsc = idx.keyDefinitions().values().stream()
+            .map(d -> d.order().sortOrder() == SortOrder.ASC)
+            .collect(Collectors.toList());
     }
 
     /**
