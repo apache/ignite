@@ -264,7 +264,7 @@ public class DataStreamProcessorSelfTest extends GridCommonAbstractTest {
     public void testAtomicPrimarySyncStability() throws Exception {
         int grids = 3;
         int entriesToLoad = 1_000_000;
-        int avgEntryLen = 500;
+        int avgEntryLen = 1024;
 
         useCache = true;
         mode = PARTITIONED;
@@ -272,8 +272,6 @@ public class DataStreamProcessorSelfTest extends GridCommonAbstractTest {
         cacheSyncMode = PRIMARY_SYNC;
         cacheBackups = grids - 1;
         nearEnabled = false;
-
-//        streamerPoolSize = 8;
 
         persistence = true;
         regionSize = 500L * 1024L * 1024L;
