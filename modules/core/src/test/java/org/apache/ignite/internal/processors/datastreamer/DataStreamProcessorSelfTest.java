@@ -52,6 +52,8 @@ import org.apache.ignite.configuration.NearCacheConfiguration;
 import org.apache.ignite.configuration.WALMode;
 import org.apache.ignite.events.Event;
 import org.apache.ignite.events.EventType;
+import org.apache.ignite.failure.FailureContext;
+import org.apache.ignite.failure.FailureHandler;
 import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.IgniteKernal;
@@ -75,20 +77,17 @@ import org.apache.ignite.spi.communication.tcp.TcpCommunicationSpi;
 import org.apache.ignite.stream.StreamReceiver;
 import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.testframework.MvccFeatureChecker;
-import org.apache.ignite.testframework.junits.WithSystemProperty;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.jetbrains.annotations.Nullable;
 import org.junit.Test;
 
 import static java.util.concurrent.TimeUnit.MILLISECONDS;
-import static org.apache.ignite.IgniteSystemProperties.IGNITE_ATOMIC_DEFERRED_ACK_BUFFER_SIZE;
-import static org.apache.ignite.IgniteSystemProperties.IGNITE_DISABLE_REBALANCING_CANCELLATION_OPTIMIZATION;
 import static org.apache.ignite.cache.CacheAtomicityMode.ATOMIC;
 import static org.apache.ignite.cache.CacheAtomicityMode.TRANSACTIONAL;
 import static org.apache.ignite.cache.CacheMode.PARTITIONED;
 import static org.apache.ignite.cache.CacheMode.REPLICATED;
-import static org.apache.ignite.cache.CacheWriteSynchronizationMode.FULL_ASYNC;
 import static org.apache.ignite.cache.CacheWriteSynchronizationMode.FULL_SYNC;
+import static org.apache.ignite.cache.CacheWriteSynchronizationMode.PRIMARY_SYNC;
 import static org.apache.ignite.configuration.DataStorageConfiguration.DFLT_CHECKPOINT_FREQ;
 import static org.apache.ignite.configuration.DataStorageConfiguration.DFLT_DATA_REGION_MAX_SIZE;
 import static org.apache.ignite.events.EventType.EVT_CACHE_OBJECT_PUT;
@@ -131,9 +130,6 @@ public class DataStreamProcessorSelfTest extends GridCommonAbstractTest {
     private int checkpointFreq = DFLT_CHECKPOINT_FREQ;
 
     /** */
-    private TcpCommunicationSpi communicationSpi;
-
-    /** */
     private TestStore store;
 
     /** {@inheritDoc} */
@@ -165,9 +161,6 @@ public class DataStreamProcessorSelfTest extends GridCommonAbstractTest {
         cfg.setPeerClassLoadingEnabled(false);
 
         cfg.setIncludeProperties();
-
-        if (communicationSpi != null)
-            cfg.setCommunicationSpi(communicationSpi);
 
         if (useCache) {
             CacheConfiguration cc = defaultCacheConfiguration();
@@ -260,84 +253,73 @@ public class DataStreamProcessorSelfTest extends GridCommonAbstractTest {
         checkDataStreamer();
     }
 
+
+
     /**
-     * Tests DataStreamer doesn't overflow update requests and related awaiting futures and other serving objects.
+     * Tests DataStreamer doesn't overflow update streamer requests with default settings with 'allowOverwrite == false'.
      *
      * @throws Exception If failed.
      */
     @Test
-    @WithSystemProperty(key = IGNITE_DISABLE_REBALANCING_CANCELLATION_OPTIMIZATION, value = "true")
-    @WithSystemProperty(key = IGNITE_ATOMIC_DEFERRED_ACK_BUFFER_SIZE, value = "256")
     public void testAtomicPrimarySyncStability() throws Exception {
         int grids = 3;
-        int entriesToLoad = 300_000;
+        int entriesToLoad = 1_000_000;
         int avgEntryLen = 500;
-
-        StreamReceiver<Integer, Object> receiver = DataStreamerCacheUpdaters.individual();
 
         useCache = true;
         mode = PARTITIONED;
         cacheAtomicityMode = ATOMIC;
-        cacheSyncMode = FULL_ASYNC;
+        cacheSyncMode = PRIMARY_SYNC;
         cacheBackups = grids - 1;
         nearEnabled = false;
 
-        streamerPoolSize = 6;
+//        streamerPoolSize = 8;
 
         persistence = true;
-        regionSize = 200L * 1024L * 1024L;
+        regionSize = 500L * 1024L * 1024L;
         checkpointFreq = 3000;
 
         Object[] vals = loadData(Math.max(100, entriesToLoad / 100), avgEntryLen);
 
-        //Fixed buffers, close to the defaults at the moment but others. To avoid changes of the defaults in the future.
-        int nodeBufSize = 512;
-        int threadBufSize = nodeBufSize * 4;
+        AtomicBoolean oomOccured = new AtomicBoolean();
 
         try {
             for (int n = 0; n < grids; ++n) {
-                communicationSpi = new UpdatesQueueCheckingCommunicationSpi();
+                IgniteConfiguration cfg = getConfiguration(getTestIgniteInstanceName(n));
 
-                startGrid(n);
+                cfg.setFailureHandler(new FailureHandler() {
+                    @Override public boolean onFailure(Ignite ignite, FailureContext failureCtx) {
+                        if (failureCtx.error() instanceof OutOfMemoryError) {
+                            oomOccured.set(true);
+
+                            return true;
+                        }
+
+                        return false;
+                    }
+                });
+
+                startGrid(cfg);
             }
 
             grid(0).cluster().state(ClusterState.ACTIVE);
 
-            int maxBatchesPerNode = DataStreamerImpl.perNodeParallelOperations(grid(0).localNode(),
-                persistenceEnabled());
-
-            //Every single cache update creates one update future for the primary and one future for all the backups.
-            //Collecting update futures and related objects consumes heap. Streamer doesn't know about unfinished
-            //backup updates and proceeds more update requests once it gets response from primary node.
-            //This race we can't win. Things stuck at unpredictable checkpoint durations, WAL writes, WAL rollings, GCs.
-            // However, Streamer should take in account how many unresponded batches it has
-            // sent. Let's take reserve of 5 for test. Where 1 is for primary update.
-            UpdatesQueueCheckingCommunicationSpi.maxWaitingFuts.set(maxBatchesPerNode * nodeBufSize * 5);
-
-            communicationSpi = new UpdatesQueueCheckingCommunicationSpi();
             useCache = false;
 
-            try (Ignite ldr = startClientGrid(grids)) {
-                try (IgniteDataStreamer<Integer, Object> streamer = ldr.dataStreamer(DEFAULT_CACHE_NAME)) {
-                    streamer.receiver(receiver);
+            Ignite ldr = startClientGrid(G.allGrids().size());
 
-                    streamer.perNodeBufferSize(nodeBufSize);
-                    streamer.perThreadBufferSize(threadBufSize);
-                    streamer.autoFlushFrequency(0);
-                    //No need to remap if failed.
-                    ((DataStreamerImpl)streamer).maxRemapCount(0);
-
-                    for (int e = 0; e < entriesToLoad; ++e)
-                        streamer.addData(e, vals[e % vals.length]);
-                }
-
-                awaitPartitionMapExchange();
-
-                assertEquals(grid(0).cache(DEFAULT_CACHE_NAME).size(), entriesToLoad);
+            try (IgniteDataStreamer<Integer, Object> streamer = ldr.dataStreamer(DEFAULT_CACHE_NAME)) {
+                streamer.allowOverwrite(true);
 
                 for (int e = 0; e < entriesToLoad; ++e)
-                    assertEquals(grid(0).cache(DEFAULT_CACHE_NAME).get(e), vals[e % vals.length]);
+                    streamer.addData(e, vals[e % vals.length]);
             }
+
+            assertFalse(oomOccured.get());
+
+            assertEquals(grids + 1, grid(0).cluster().nodes().size());
+
+            assertEquals(grid(0).cache(DEFAULT_CACHE_NAME).size(), entriesToLoad);
         }
         finally {
             stopAllGrids();
