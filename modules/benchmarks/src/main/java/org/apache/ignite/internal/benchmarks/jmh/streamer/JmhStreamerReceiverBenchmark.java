@@ -71,7 +71,7 @@ import org.openjdk.jmh.runner.options.OptionsBuilder;
 /**
  * For research of the streamer settings and the receivers.
  */
-@BenchmarkMode(Mode.AverageTime)
+//@BenchmarkMode(Mode.AverageTime)
 @State(Scope.Benchmark)
 @Threads(1)
 @Measurement(iterations = 5)
@@ -286,7 +286,7 @@ public class JmhStreamerReceiverBenchmark {
     /**
      * Test with default receiver.
      */
-    @Benchmark
+    //@Benchmark
     public void bchDefaultIsolated_256_1() throws Exception {
         doTest(null, 1, 256);
     }
@@ -294,7 +294,7 @@ public class JmhStreamerReceiverBenchmark {
     /**
      * Test with default receiver.
      */
-    @Benchmark
+    //@Benchmark
     public void bchDefaultIsolated_256_2() throws Exception {
         doTest(null, 2, 256);
     }
@@ -302,7 +302,7 @@ public class JmhStreamerReceiverBenchmark {
     /**
      * Test with default receiver.
      */
-    @Benchmark
+    //@Benchmark
     public void bchDefaultIsolated_512_1() throws Exception {
         doTest(null, 1, 512);
     }
@@ -310,15 +310,23 @@ public class JmhStreamerReceiverBenchmark {
     /**
      * Test with default receiver.
      */
-    @Benchmark
+    //@Benchmark
     public void bchDefaultIsolated_512_2() throws Exception {
         doTest(null, 2, 512);
     }
 
     /**
+     * Test with individual receiver.
+     */
+    //@Benchmark
+    public void bchIndividual_256_1() throws Exception {
+        doTest(DataStreamerCacheUpdaters.individual(), 1, 256);
+    }
+
+    /**
      * Test with batched receiver.
      */
-    @Benchmark
+    //@Benchmark
     public void bchBatched_256_1() throws Exception {
         doTest(DataStreamerCacheUpdaters.batched(), 1, 256);
     }
@@ -326,7 +334,7 @@ public class JmhStreamerReceiverBenchmark {
     /**
      * Test with batched receiver.
      */
-    @Benchmark
+    //@Benchmark
     public void bchBatched_256_2() throws Exception {
         doTest(DataStreamerCacheUpdaters.batched(), 2, 256);
     }
@@ -334,7 +342,7 @@ public class JmhStreamerReceiverBenchmark {
     /**
      * Test with batched receiver.
      */
-    @Benchmark
+    //@Benchmark
     public void bchBatched_512_1() throws Exception {
         doTest(DataStreamerCacheUpdaters.batched(), 1, 512);
     }
@@ -342,7 +350,7 @@ public class JmhStreamerReceiverBenchmark {
     /**
      * Test with batched receiver.
      */
-    @Benchmark
+    //@Benchmark
     public void bchBatched_512_2() throws Exception {
         doTest(DataStreamerCacheUpdaters.batched(), 2, 512);
     }

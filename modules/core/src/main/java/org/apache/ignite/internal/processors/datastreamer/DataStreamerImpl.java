@@ -1595,7 +1595,8 @@ public class DataStreamerImpl<K, V> implements IgniteDataStreamer<K, V>, Delayed
 
                 perNodeParallelOps = perNodeParallelOperations(node, persistent);
             }
-
+//            perNodeParallelOps = streamerPoolSize * 16;
+            
             sem = new Semaphore(perNodeParallelOps);
 
             stripes = (PerStripeBuffer[])Array.newInstance(PerStripeBuffer.class, streamerPoolSize);

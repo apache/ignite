@@ -267,7 +267,7 @@ public class DataStreamProcessorSelfTest extends GridCommonAbstractTest {
     @Test
     public void testAtomicPrimarySyncStability() throws Exception {
         int grids = 3;
-        int entriesToLoad = 1_000_000;
+        int entriesToLoad = 300_000;
         int avgEntryLen = 500;
 
         useCache = true;
@@ -276,9 +276,6 @@ public class DataStreamProcessorSelfTest extends GridCommonAbstractTest {
         cacheSyncMode = PRIMARY_SYNC;
         cacheBackups = grids - 1;
         nearEnabled = false;
-
-        // Some fixed pool size.
-        streamerPoolSize = 6;
 
         persistence = true;
         regionSize = 200L * 1024L * 1024L;
@@ -314,7 +311,6 @@ public class DataStreamProcessorSelfTest extends GridCommonAbstractTest {
                 // Let's take reserve of 5 for test. 1 is for primary writting.
                 UpdatesQueueCheckingCommunicationSpi.maxWaitingFuts.set(maxBatchesPerNode * ds.perNodeBufferSize() * 5);
 
-                ds.autoFlushFrequency(0);
                 //No need to remap if failed.
                 ((DataStreamerImpl)ds).maxRemapCount(0);
 
@@ -322,13 +318,7 @@ public class DataStreamProcessorSelfTest extends GridCommonAbstractTest {
                     ds.addData(e, vals[e % vals.length]);
             }
 
-            awaitPartitionMapExchange();
-
             assertEquals(grid(0).cache(DEFAULT_CACHE_NAME).size(), entriesToLoad);
-
-            for (int e = 0; e < entriesToLoad; ++e)
-                assertEquals(grid(0).cache(DEFAULT_CACHE_NAME).get(e), vals[e % vals.length]);
-
         }
         finally {
             stopAllGrids();
