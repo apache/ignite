@@ -87,6 +87,7 @@ import org.apache.ignite.internal.processors.metastorage.persistence.Distributed
 import org.apache.ignite.internal.processors.resource.DependencyResolver;
 import org.apache.ignite.internal.processors.resource.GridInjectResourceContext;
 import org.apache.ignite.internal.processors.resource.GridSpringResourceContext;
+import org.apache.ignite.internal.processors.resource.GridSpringResourceContextBridge;
 import org.apache.ignite.internal.util.GridConcurrentHashSet;
 import org.apache.ignite.internal.util.IgniteUtils;
 import org.apache.ignite.internal.util.TimeBag;
@@ -1513,9 +1514,6 @@ public class IgnitionEx {
         /** Optional configuration path. */
         private URL cfgUrl;
 
-        /** Optional Spring application context. */
-        private GridSpringResourceContext springCtx;
-
         /** Optional injection context. */
         private GridInjectResourceContext injectCtx;
 
@@ -1547,7 +1545,9 @@ public class IgnitionEx {
 
             this.cfg = cfg;
             this.cfgUrl = cfgUrl;
-            this.springCtx = springCtx;
+
+            if (springCtx != null)
+                injectCtx = new GridSpringResourceContextBridge(springCtx);
         }
 
         /**
@@ -1590,13 +1590,6 @@ public class IgnitionEx {
          */
         void configUrl(URL cfgUrl) {
             this.cfgUrl = cfgUrl;
-        }
-
-        /**
-         * @return Optional Spring application context.
-         */
-        public GridSpringResourceContext springContext() {
-            return springCtx;
         }
 
         /**
@@ -1810,7 +1803,7 @@ public class IgnitionEx {
             boolean started = false;
 
             try {
-                IgniteKernal grid0 = new IgniteKernal(startCtx.springContext(), startCtx.injectionContext());
+                IgniteKernal grid0 = new IgniteKernal(startCtx.injectionContext());
 
                 // Init here to make grid available to lifecycle listeners.
                 grid = grid0;

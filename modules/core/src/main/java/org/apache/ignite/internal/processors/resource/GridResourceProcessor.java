@@ -113,39 +113,21 @@ public class GridResourceProcessor extends GridProcessorAdapter {
     }
 
     /**
-     * Sets resource injection context.
+     * Sets Spring resource context.
      *
-     * @param rsrcCtx Spring resource context.
+     * @param rsrcCtx Inject resource context.
      */
     public void setInjectionContext(@Nullable GridInjectResourceContext rsrcCtx) {
         if (rsrcCtx == null) {
             return;
         }
-
         this.unpackFn = unpackFn.andThen(rsrcCtx::unwrapTarget);
 
-        GridResourceInjector beanInjector = rsrcCtx != null ? rsrcCtx.beanInjector() : nullInjector;
+        GridResourceInjector rsrcInjector = rsrcCtx != null ? rsrcCtx.beanInjector() : nullInjector;
 
-        injectorByAnnotation[GridResourceIoc.ResourceAnnotation.RESOURCE.ordinal()] = beanInjector;
-    }
-
-    /**
-     * Sets Spring resource context.
-     *
-     * @param rsrcCtx Spring resource context.
-     */
-    public void setSpringContext(@Nullable GridSpringResourceContext rsrcCtx) {
-        if (rsrcCtx == null) {
-            return;
-        }
-        this.unpackFn = unpackFn.andThen(rsrcCtx::unwrapTarget);
-
-        GridResourceInjector springCtxInjector = rsrcCtx != null ? rsrcCtx.springContextInjector() : nullInjector;
-        GridResourceInjector springBeanInjector = rsrcCtx != null ? rsrcCtx.springBeanInjector() : nullInjector;
-
-        injectorByAnnotation[GridResourceIoc.ResourceAnnotation.SPRING.ordinal()] = springBeanInjector;
+        injectorByAnnotation[GridResourceIoc.ResourceAnnotation.SPRING.ordinal()] = rsrcInjector;
         injectorByAnnotation[GridResourceIoc.ResourceAnnotation.SPRING_APPLICATION_CONTEXT.ordinal()] =
-            springCtxInjector;
+            rsrcInjector;
     }
 
     /**
