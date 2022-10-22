@@ -52,8 +52,6 @@ import org.apache.ignite.configuration.NearCacheConfiguration;
 import org.apache.ignite.configuration.WALMode;
 import org.apache.ignite.events.Event;
 import org.apache.ignite.events.EventType;
-import org.apache.ignite.failure.FailureContext;
-import org.apache.ignite.failure.FailureHandler;
 import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.IgniteKernal;
@@ -130,6 +128,9 @@ public class DataStreamProcessorSelfTest extends GridCommonAbstractTest {
     private int checkpointFreq = DFLT_CHECKPOINT_FREQ;
 
     /** */
+    private TcpCommunicationSpi communicationSpi;
+
+    /** */
     private TestStore store;
 
     /** {@inheritDoc} */
@@ -161,6 +162,9 @@ public class DataStreamProcessorSelfTest extends GridCommonAbstractTest {
         cfg.setPeerClassLoadingEnabled(false);
 
         cfg.setIncludeProperties();
+
+        if (communicationSpi != null)
+            cfg.setCommunicationSpi(communicationSpi);
 
         if (useCache) {
             CacheConfiguration cc = defaultCacheConfiguration();
@@ -264,7 +268,7 @@ public class DataStreamProcessorSelfTest extends GridCommonAbstractTest {
     public void testAtomicPrimarySyncStability() throws Exception {
         int grids = 3;
         int entriesToLoad = 1_000_000;
-        int avgEntryLen = 1024;
+        int avgEntryLen = 500;
 
         useCache = true;
         mode = PARTITIONED;
@@ -273,51 +277,58 @@ public class DataStreamProcessorSelfTest extends GridCommonAbstractTest {
         cacheBackups = grids - 1;
         nearEnabled = false;
 
+        // Some fixed pool size.
+        streamerPoolSize = 6;
+
         persistence = true;
-        regionSize = 500L * 1024L * 1024L;
+        regionSize = 200L * 1024L * 1024L;
         checkpointFreq = 3000;
 
         Object[] vals = loadData(Math.max(100, entriesToLoad / 100), avgEntryLen);
 
-        AtomicBoolean oomOccured = new AtomicBoolean();
-
         try {
             for (int n = 0; n < grids; ++n) {
-                IgniteConfiguration cfg = getConfiguration(getTestIgniteInstanceName(n));
+                communicationSpi = new UpdatesQueueCheckingCommunicationSpi();
 
-                cfg.setFailureHandler(new FailureHandler() {
-                    @Override public boolean onFailure(Ignite ignite, FailureContext failureCtx) {
-                        if (failureCtx.error() instanceof OutOfMemoryError) {
-                            oomOccured.set(true);
-
-                            return true;
-                        }
-
-                        return false;
-                    }
-                });
-
-                startGrid(cfg);
+                startGrid(n);
             }
 
             grid(0).cluster().state(ClusterState.ACTIVE);
 
+            communicationSpi = new UpdatesQueueCheckingCommunicationSpi();
             useCache = false;
 
-            Ignite ldr = startClientGrid(G.allGrids().size());
+            Ignite ldr = startClientGrid(grids);
 
-            try (IgniteDataStreamer<Integer, Object> streamer = ldr.dataStreamer(DEFAULT_CACHE_NAME)) {
-                streamer.allowOverwrite(true);
+            try (IgniteDataStreamer<Integer, Object> ds = ldr.dataStreamer(DEFAULT_CACHE_NAME)) {
+                ds.allowOverwrite(true);
+
+                int maxBatchesPerNode = DataStreamerImpl.perNodeParallelOperations(grid(0).localNode(),
+                    persistenceEnabled());
+
+                // Every single cache update creates one update future for the primary and one future for all the
+                // backups.Collecting update futures and related objects consumes heap. Streamer doesn't know about
+                // unfinished backup updates and proceeds more update requests once it gets response from primary node.
+                // This race we can't win. Things stuck at unpredictable checkpoint durations, WAL writes, WAL
+                // rollings, GCs. However, Streamer should take in account how many unresponded batches it has sent.
+                // Let's take reserve of 5 for test. 1 is for primary writting.
+                UpdatesQueueCheckingCommunicationSpi.maxWaitingFuts.set(maxBatchesPerNode * ds.perNodeBufferSize() * 5);
+
+                ds.autoFlushFrequency(0);
+                //No need to remap if failed.
+                ((DataStreamerImpl)ds).maxRemapCount(0);
 
                 for (int e = 0; e < entriesToLoad; ++e)
-                    streamer.addData(e, vals[e % vals.length]);
+                    ds.addData(e, vals[e % vals.length]);
             }
 
-            assertFalse(oomOccured.get());
-
-            assertEquals(grids + 1, grid(0).cluster().nodes().size());
+            awaitPartitionMapExchange();
 
             assertEquals(grid(0).cache(DEFAULT_CACHE_NAME).size(), entriesToLoad);
+
+            for (int e = 0; e < entriesToLoad; ++e)
+                assertEquals(grid(0).cache(DEFAULT_CACHE_NAME).get(e), vals[e % vals.length]);
+
         }
         finally {
             stopAllGrids();
