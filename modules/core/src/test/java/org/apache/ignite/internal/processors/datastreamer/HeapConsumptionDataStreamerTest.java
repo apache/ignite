@@ -17,6 +17,9 @@
 
 package org.apache.ignite.internal.processors.datastreamer;
 
+import java.util.Random;
+import java.util.function.Function;
+import java.util.function.Supplier;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteDataStreamer;
 import org.apache.ignite.cluster.ClusterState;
@@ -66,13 +69,34 @@ public class HeapConsumptionDataStreamerTest extends GridCommonAbstractTest {
     }
 
     /**
-     * Tested with 1G heap / 10 bil records and 4g heap / 10bils records.
+     * Putting values comparable to page size.
+     * Tested with 1G heap.
      * Larger heap stays longer. But it is still a race.
      */
     @Test
     public void testHeap() throws Exception {
         int entriesToLoad = 1_000_000;
+        int avgDataLen = 500;
 
+        Object[] values = loadData(2000, avgDataLen);
+
+        doTestHeap(entriesToLoad, i -> values[i % values.length]);
+    }
+
+    /**
+     * Putting just integer.
+     * Tested with 1G heap.
+     * Larger heap stays longer. But it is still a race.
+     */
+    @Test
+    public void testHeapSimpleValue() throws Exception {
+        int entriesToLoad = 10_000_000;
+
+        doTestHeap(entriesToLoad, i -> i);
+    }
+
+    /** */
+    public void doTestHeap(int entriesToLoad, Function<Integer, Object> val) throws Exception {
         startGrids(3);
 
         grid(0).cluster().state(ClusterState.ACTIVE);
@@ -83,9 +107,27 @@ public class HeapConsumptionDataStreamerTest extends GridCommonAbstractTest {
             ds.allowOverwrite(true);
 
             for (int e = 0; e < entriesToLoad; ++e)
-                ds.addData(e, e);
+                ds.addData(e, val.apply(e));
         }
 
         assertEquals(grid(0).cache(DEFAULT_CACHE_NAME).size(), entriesToLoad);
+    }
+
+    /** */
+    private Object[] loadData(int len, int entryLen) {
+        Random rnd = new Random();
+
+        Object[] values = new Object[len];
+
+        for (int v = 0; v < len; v++) {
+            StringBuilder sb = new StringBuilder();
+
+            for (int ch = 0; ch < entryLen; ++ch)
+                sb.append((char)((int)'a' + rnd.nextInt(20)));
+
+            values[v] = sb.toString();
+        }
+
+        return values;
     }
 }

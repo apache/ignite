@@ -1595,6 +1595,8 @@ public class DataStreamerImpl<K, V> implements IgniteDataStreamer<K, V>, Delayed
 
                 perNodeParallelOps = persistent ? DFLT_MAX_PARALLEL_PERSISTENT_OPS : streamerPoolSize *
                     DFLT_PARALLEL_OPS_MULTIPLIER;
+
+                perNodeParallelOps = streamerPoolSize * DFLT_PARALLEL_OPS_MULTIPLIER;
             }
 
             sem = new Semaphore(perNodeParallelOps);

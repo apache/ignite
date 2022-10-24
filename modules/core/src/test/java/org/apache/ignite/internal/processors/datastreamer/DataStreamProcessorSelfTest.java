@@ -316,14 +316,14 @@ public class DataStreamProcessorSelfTest extends GridCommonAbstractTest {
 
         try {
             for (int n = 0; n < 3; ++n) {
-//                communicationSpi = new UpdatesQueueCheckingCommunicationSpi();
+                communicationSpi = new UpdatesQueueCheckingCommunicationSpi();
 
                 startGrid(n);
             }
 
             grid(0).cluster().state(ClusterState.ACTIVE);
 
-//            communicationSpi = new UpdatesQueueCheckingCommunicationSpi();
+            communicationSpi = new UpdatesQueueCheckingCommunicationSpi();
             useCache = false;
 
             Ignite ldr = startClientGrid(3);
@@ -340,7 +340,7 @@ public class DataStreamProcessorSelfTest extends GridCommonAbstractTest {
                 UpdatesQueueCheckingCommunicationSpi.maxWaitingFuts.set(ds.perNodeBufferSize() * 10000);
 
                 //No need to remap if test-failed.
-//                ((DataStreamerImpl)ds).maxRemapCount(0);
+                ((DataStreamerImpl)ds).maxRemapCount(0);
 
                 for (int e = 0; e < entriesToLoad; ++e)
                     ds.addData(e, vals[e % vals.length]);
