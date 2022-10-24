@@ -19,7 +19,6 @@ package org.apache.ignite.internal.processors.datastreamer;
 
 import java.util.Random;
 import java.util.function.Function;
-import java.util.function.Supplier;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteDataStreamer;
 import org.apache.ignite.cluster.ClusterState;
