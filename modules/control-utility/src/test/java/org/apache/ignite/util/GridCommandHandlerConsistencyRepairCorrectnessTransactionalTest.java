@@ -329,7 +329,7 @@ public class GridCommandHandlerConsistencyRepairCorrectnessTransactionalTest ext
                 List<String> cmd = new ArrayList<>(Arrays.asList(
                     "--consistency", "repair",
                     ConsistencyCommand.CACHE, cacheName,
-                    ConsistencyCommand.PARTITION, String.valueOf(i),
+                    ConsistencyCommand.PARTITIONS, String.valueOf(i),
                     ConsistencyCommand.STRATEGY, strategy.toString()));
 
                 if (parallel)

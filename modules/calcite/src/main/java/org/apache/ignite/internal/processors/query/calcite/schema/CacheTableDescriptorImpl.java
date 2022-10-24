@@ -156,23 +156,23 @@ public class CacheTableDescriptorImpl extends NullInitializerExpressionFactory
         int valField = QueryUtils.VAL_COL;
 
         for (String field : fields) {
+            GridQueryProperty prop = typeDesc.property(field);
+
             if (Objects.equals(field, typeDesc.keyFieldAlias())) {
                 keyField = descriptors.size();
 
                 virtualFields.set(0);
 
-                descriptors.add(new KeyValDescriptor(typeDesc.keyFieldAlias(), typeDesc.keyClass(), true, fldIdx++));
+                descriptors.add(new KeyValDescriptor(typeDesc.keyFieldAlias(), prop, true, fldIdx++));
             }
             else if (Objects.equals(field, typeDesc.valueFieldAlias())) {
                 valField = descriptors.size();
 
                 virtualFields.set(1);
 
-                descriptors.add(new KeyValDescriptor(typeDesc.valueFieldAlias(), typeDesc.valueClass(), false, fldIdx++));
+                descriptors.add(new KeyValDescriptor(typeDesc.valueFieldAlias(), prop, false, fldIdx++));
             }
             else {
-                GridQueryProperty prop = typeDesc.property(field);
-
                 virtualFields.set(prop.key() ? 0 : 1);
 
                 descriptors.add(new FieldDescriptor(prop, fldIdx++));
@@ -639,6 +639,9 @@ public class CacheTableDescriptorImpl extends NullInitializerExpressionFactory
     /** */
     private static class KeyValDescriptor implements CacheColumnDescriptor {
         /** */
+        private final GridQueryProperty desc;
+
+        /** */
         private final String name;
 
         /** */
@@ -658,8 +661,19 @@ public class CacheTableDescriptorImpl extends NullInitializerExpressionFactory
             this.name = name;
             this.isKey = isKey;
             this.fieldIdx = fieldIdx;
+            desc = null;
 
             storageType = type;
+        }
+
+        /** */
+        private KeyValDescriptor(String name, GridQueryProperty desc, boolean isKey, int fieldIdx) {
+            this.name = name;
+            this.isKey = isKey;
+            this.fieldIdx = fieldIdx;
+            this.desc = desc;
+
+            storageType = desc.type();
         }
 
         /** {@inheritDoc} */
@@ -694,8 +708,14 @@ public class CacheTableDescriptorImpl extends NullInitializerExpressionFactory
 
         /** {@inheritDoc} */
         @Override public RelDataType logicalType(IgniteTypeFactory f) {
-            if (logicalType == null)
-                logicalType = TypeUtils.sqlType(f, storageType, PRECISION_NOT_SPECIFIED, SCALE_NOT_SPECIFIED);
+            if (logicalType == null) {
+                logicalType = TypeUtils.sqlType(
+                    f,
+                    storageType,
+                    desc != null && desc.precision() != -1 ? desc.precision() : PRECISION_NOT_SPECIFIED,
+                    desc != null && desc.scale() != -1 ? desc.scale() : SCALE_NOT_SPECIFIED
+                );
+            }
 
             return logicalType;
         }

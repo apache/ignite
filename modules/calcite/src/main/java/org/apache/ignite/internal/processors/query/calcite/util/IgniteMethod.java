@@ -51,6 +51,9 @@ public enum IgniteMethod {
     /** See {@link ExecutionContext#unspecifiedValue()} */
     CONTEXT_UNSPECIFIED_VALUE(ExecutionContext.class, "unspecifiedValue"),
 
+    /** See {@link ExecutionContext#nullBound()} */
+    CONTEXT_NULL_BOUND(ExecutionContext.class, "nullBound"),
+
     /** See {@link ExecutionContext#getCorrelated(int)} */
     CONTEXT_GET_CORRELATED_VALUE(ExecutionContext.class, "getCorrelated", int.class),
 
@@ -82,7 +85,13 @@ public enum IgniteMethod {
     BYTESTRING_TO_STRING(IgniteSqlFunctions.class, "toString", ByteString.class),
 
     /** See {@link IgniteSqlFunctions#toByteString(String)} */
-    STRING_TO_BYTESTRING(IgniteSqlFunctions.class, "toByteString", String.class);
+    STRING_TO_BYTESTRING(IgniteSqlFunctions.class, "toByteString", String.class),
+
+    /** See {@link IgniteSqlFunctions#least2(Object, Object)} */
+    LEAST2(IgniteSqlFunctions.class, "least2", Object.class, Object.class),
+
+    /** See {@link IgniteSqlFunctions#greatest2(Object, Object)} */
+    GREATEST2(IgniteSqlFunctions.class, "greatest2", Object.class, Object.class);
 
     /** */
     private final Method method;

@@ -23,7 +23,6 @@ import org.apache.calcite.plan.RelOptUtil;
 import org.apache.calcite.rel.RelCollations;
 import org.apache.calcite.rel.type.RelDataTypeFactory;
 import org.apache.calcite.rex.RexFieldAccess;
-import org.apache.calcite.rex.RexLiteral;
 import org.apache.ignite.internal.processors.query.calcite.prepare.bounds.ExactBounds;
 import org.apache.ignite.internal.processors.query.calcite.prepare.bounds.RangeBounds;
 import org.apache.ignite.internal.processors.query.calcite.prepare.bounds.SearchBounds;
@@ -214,7 +213,7 @@ public class SortedIndexSpoolPlannerTest extends AbstractPlannerTest {
                         assertTrue(fld1Bounds.lowerBound() instanceof RexFieldAccess);
                         assertFalse(fld1Bounds.lowerInclude());
                         // NULLS LAST in collation, so nulls can be skipped by upper bound.
-                        assertTrue(((RexLiteral)fld1Bounds.upperBound()).isNull());
+                        assertEquals("$NULL_BOUND()", fld1Bounds.upperBound().toString());
                         assertFalse(fld1Bounds.upperInclude());
                         assertNull(searchBounds.get(2));
 
