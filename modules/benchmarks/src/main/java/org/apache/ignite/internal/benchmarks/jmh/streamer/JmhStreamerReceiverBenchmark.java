@@ -18,24 +18,18 @@
 package org.apache.ignite.internal.benchmarks.jmh.streamer;
 
 import java.io.File;
-import java.util.Collections;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Random;
 import java.util.concurrent.CompletableFuture;
-import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.concurrent.ExecutionException;
-import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicLong;
-import java.util.function.IntFunction;
-import java.util.function.Supplier;
-import java.util.stream.Stream;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteDataStreamer;
 import org.apache.ignite.Ignition;
 import org.apache.ignite.cache.CacheAtomicityMode;
 import org.apache.ignite.cache.CacheMode;
-import org.apache.ignite.cache.CacheWriteSynchronizationMode;
 import org.apache.ignite.cluster.ClusterState;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.DataRegionConfiguration;
@@ -81,9 +75,6 @@ public class JmhStreamerReceiverBenchmark {
     private static final int AVERAGE_RECORD_LEN = 500;
 
     /** */
-    private static final int RECORD_LEN_DELTA = AVERAGE_RECORD_LEN / 10;
-
-    /** */
     private static final boolean LOAD_FROM_CLIENT = true;
 
     /** */
@@ -102,7 +93,7 @@ public class JmhStreamerReceiverBenchmark {
     private static final boolean INCLUDE_CHECKPOINT = false;
 
     /** Some fixed minimal + doubled average record size. */
-    private static final long REGION_SIZE = 100L * 1024L * 1024L + ENTRIES_TO_LOAD * AVERAGE_RECORD_LEN * 2;
+    private static final long REGION_SIZE = 1024L * 1024L * 1024L;
 
     /** */
     private static final String CACHE_NAME = "testCache";
@@ -114,7 +105,7 @@ public class JmhStreamerReceiverBenchmark {
     private final Random rnd = new Random();
 
     /** */
-    private List<Ignite> nodes;
+    private final List<Ignite> nodes = new ArrayList<>();
 
     /** */
     private Ignite ldrNode;
@@ -134,11 +125,11 @@ public class JmhStreamerReceiverBenchmark {
 
         cfg.setWorkDirectory(workDirectory(instName));
 
+        cfg.setGridLogger(new NullLogger());
+
         if (isClient)
             cfg.setClientMode(true);
         else {
-            cfg.setGridLogger(new NullLogger());
-
             DataStorageConfiguration dsCfg = new DataStorageConfiguration();
 
             DataRegionConfiguration regCfg = new DataRegionConfiguration();
@@ -149,7 +140,7 @@ public class JmhStreamerReceiverBenchmark {
                 //Reduce affection of side I/O.
                 dsCfg.setCheckpointFrequency(CHECKPOINT_FREQUENCY);
 
-                //dsCfg.setWalMode(WALMode.LOG_ONLY);
+                dsCfg.setWalMode(WALMode.LOG_ONLY);
 
                 regCfg.setMaxSize(REGION_SIZE);
                 regCfg.setInitialSize(REGION_SIZE);
@@ -172,7 +163,6 @@ public class JmhStreamerReceiverBenchmark {
         ccfg.setAtomicityMode(CacheAtomicityMode.ATOMIC);
         ccfg.setBackups(BACKUPS);
         ccfg.setCacheMode(CacheMode.PARTITIONED);
-        ccfg.setWriteSynchronizationMode(CacheWriteSynchronizationMode.PRIMARY_SYNC);
 
         return ccfg;
     }
@@ -189,22 +179,7 @@ public class JmhStreamerReceiverBenchmark {
      */
     @TearDown
     public void tearDown() throws Exception {
-        Collections.reverse(nodes);
-
-        CompletableFuture.allOf(nodes.stream().map(n -> CompletableFuture.runAsync(new Runnable() {
-            @Override public void run() {
-                String workDir = n.configuration().getWorkDirectory();
-
-                try {
-                    n.close();
-                }
-                catch (Exception ignore) {
-                    // No-op
-                }
-
-                IgniteUtils.delete(new File(workDir));
-            }
-        })).toArray(CompletableFuture[]::new)).get();
+        Ignition.stopAll(true);
 
         nodes.clear();
     }
@@ -214,23 +189,13 @@ public class JmhStreamerReceiverBenchmark {
      */
     @Setup(Level.Trial)
     public void setup() throws ExecutionException, InterruptedException {
-        nodes = new CopyOnWriteArrayList<>();
+        for (int s = 0; s < SERVERS; ++s) {
+            IgniteConfiguration cfg = configuration("srv" + 1, false);
 
-        AtomicInteger idx = new AtomicInteger();
+            IgniteUtils.delete(new File(cfg.getWorkDirectory()));
 
-        CompletableFuture.allOf(Stream.generate(new Supplier<CompletableFuture<?>>() {
-            @Override public CompletableFuture<?> get() {
-                return CompletableFuture.runAsync(new Runnable() {
-                    @Override public void run() {
-                        IgniteConfiguration cfg = configuration("srv" + idx.getAndIncrement(), false);
-
-                        IgniteUtils.delete(new File(cfg.getWorkDirectory()));
-
-                        nodes.add(Ignition.start(cfg));
-                    }
-                });
-            }
-        }).limit(SERVERS).toArray((IntFunction<CompletableFuture<?>[]>)CompletableFuture[]::new)).get();
+            nodes.add(Ignition.start(cfg));
+        }
 
         nodes.get(0).cluster().state(ClusterState.ACTIVE);
 
@@ -251,8 +216,8 @@ public class JmhStreamerReceiverBenchmark {
 
         assert nodes.get(0).cache(CACHE_NAME).size() == 0;
 
-        int minLen = Math.max(1, AVERAGE_RECORD_LEN - RECORD_LEN_DELTA / 2);
-        int maxLen = Math.max(1, AVERAGE_RECORD_LEN + RECORD_LEN_DELTA / 2);
+        int minLen = Math.max(1, (int)(AVERAGE_RECORD_LEN * 0.9f));
+        int maxLen = Math.max(1, (int)(AVERAGE_RECORD_LEN * 1.1f));
 
         for (int v = 0; v < values.length; v++) {
             int valLen = minLen + (maxLen > minLen ? rnd.nextInt(maxLen - minLen) : 0);
@@ -316,7 +281,6 @@ public class JmhStreamerReceiverBenchmark {
     
     /** Launches test with all available params. */
     private void runLoad(@Nullable StreamReceiver<Long, Object> receiver, int batchSize) throws Exception {
-
         AtomicLong keySupplier = new AtomicLong();
 
         try (IgniteDataStreamer<Long, Object> streamer = ldrNode.dataStreamer(CACHE_NAME)) {

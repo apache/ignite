@@ -1593,7 +1593,8 @@ public class DataStreamerImpl<K, V> implements IgniteDataStreamer<K, V>, Delayed
             if (perNodeParallelOps < 0) {
                 boolean persistent = ctx.cache().cacheDescriptor(cacheName).groupDescriptor().persistenceEnabled();
 
-                perNodeParallelOps = perNodeParallelOperations(node, persistent);
+                perNodeParallelOps = persistent ? DFLT_MAX_PARALLEL_PERSISTENT_OPS : streamerPoolSize *
+                    DFLT_PARALLEL_OPS_MULTIPLIER;
             }
 
             sem = new Semaphore(perNodeParallelOps);
@@ -2148,28 +2149,6 @@ public class DataStreamerImpl<K, V> implements IgniteDataStreamer<K, V>, Delayed
                 "locFutsSize", locFuts.size(),
                 "reqsSize", reqs.size());
         }
-    }
-
-    /**
-     * @param node Node to send to.
-     * @param persistent {@code True} if the cache is persistent. {@code False} otherwise.
-     * @return Max parallel operations per node.
-     */
-    static int perNodeParallelOperations(ClusterNode node, boolean persistent) {
-        int poolSize = streamerPoolSize(node);
-
-        return persistent
-            ? Math.max(DFLT_MIN_PARALLEL_PERSISTENT_OPS, Math.round(DFLT_PARALLEL_PERSISTENT_OPS_MULTIPLIER * poolSize))
-            : poolSize * DFLT_PARALLEL_OPS_MULTIPLIER;
-    }
-
-    /**
-     * @return Streamer pool size.
-     */
-    private static int streamerPoolSize(ClusterNode node) {
-        Integer attrStreamerPoolSize = node.attribute(IgniteNodeAttributes.ATTR_DATA_STREAMER_POOL_SIZE);
-
-        return attrStreamerPoolSize != null ? attrStreamerPoolSize : node.metrics().getTotalCpus();
     }
 
     /**
