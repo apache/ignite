@@ -450,7 +450,8 @@ class OptimizedClassDescriptor {
                     if (isLambda(cls)) {
                         if (!isSerial)
                             throw new NotSerializableException("Lambda is not serializable: " + cls);
-                    } else {
+                    }
+                    else {
                         for (c = cls; c != null && !c.equals(Object.class); c = c.getSuperclass()) {
                             Method mtd;
 
@@ -549,7 +550,7 @@ class OptimizedClassDescriptor {
 
                                     serFieldsDesc.setAccessible(true);
 
-                                ObjectStreamField[] serFields = (ObjectStreamField[])serFieldsDesc.get(null);
+                                    ObjectStreamField[] serFields = (ObjectStreamField[])serFieldsDesc.get(null);
 
                                     for (int i = 0; i < serFields.length; i++) {
                                         ObjectStreamField serField = serFields[i];

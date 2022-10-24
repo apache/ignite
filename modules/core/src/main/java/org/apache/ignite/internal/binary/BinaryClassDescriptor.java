@@ -328,7 +328,8 @@ public class BinaryClassDescriptor {
                     fields = null;
                     stableFieldsMeta = null;
                     stableSchema = null;
-                } else {
+                }
+                else {
                     Map<Object, BinaryFieldAccessor> fields0;
 
                     if (BinaryUtils.FIELDS_SORTED_ORDER) {

@@ -1536,11 +1536,11 @@ public class IgniteUtilsSelfTest extends GridCommonAbstractTest {
         assertTrue(IgniteUtils.isLambda(methodReference.getClass()));
     }
 
-    // Test nested class.
+    /** Test nested class. */
     private static class TestNestedClass {
     }
 
-    // Test inner class.
+    /** Test inner class. */
     private class TestInnerClass {
     }
 
