@@ -2218,11 +2218,11 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
             this.execSvc = execSvc;
 
             // Register system default snapshot integrity check that is used before the restore operation.
-            SnapshotHandler<?> sysCheck = new SnapshotPartitionsVerifyHandler(ctx.cache().context());
+            SnapshotHandler<?> sysCheck = new SnapshotPartitionsVerifyHandler(ctx.cache().context(), true);
             handlers.put(sysCheck.type(), new ArrayList<>(F.asList((SnapshotHandler<Object>)sysCheck)));
 
             // Register system default page counters check that is used at the creation operation.
-            SnapshotHandler<?> sysPrecheck = new SnapshotPartitionsCountersVerifyHandler(ctx.cache().context());
+            SnapshotHandler<?> sysPrecheck = new SnapshotPartitionsVerifyHandler(ctx.cache().context(), false);
             handlers.put(sysPrecheck.type(), new ArrayList<>(F.asList((SnapshotHandler<Object>)sysPrecheck)));
 
             // Register custom handlers.
