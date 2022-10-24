@@ -70,22 +70,23 @@ public class HeapConsumptionDataStreamerTest extends GridCommonAbstractTest {
 
     /**
      * Putting values comparable to page size.
-     * Tested with 1G heap.
+     * Tested with 1G-2G heap.
      * Larger heap stays longer. But it is still a race.
      */
     @Test
     public void testHeap() throws Exception {
-        int entriesToLoad = 1_000_000;
         int avgDataLen = 500;
+
+        long entriesToLoad = 2_000_000;
 
         Object[] values = loadData(2000, avgDataLen);
 
-        doTestHeap(entriesToLoad, i -> values[i % values.length]);
+        doTestHeap((int)entriesToLoad, i -> values[i % values.length]);
     }
 
     /**
      * Putting just integer.
-     * Tested with 1G heap.
+     * Tested with 1G-2G heap.
      * Larger heap stays longer. But it is still a race.
      */
     @Test
