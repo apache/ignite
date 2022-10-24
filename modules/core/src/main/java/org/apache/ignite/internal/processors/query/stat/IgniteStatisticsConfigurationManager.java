@@ -508,6 +508,13 @@ public class IgniteStatisticsConfigurationManager {
         return resultFuture;
     }
 
+    /**
+     * Drop statistics target configuration from metastore.
+     *
+     * @param target Statistics target.
+     * @param validate Validation flag.
+     * @return Operation future.
+     */
     private IgniteInternalFuture<Boolean> removeFromMetastore(StatisticsTarget target, boolean validate) {
         String key = key2String(target.key());
 
