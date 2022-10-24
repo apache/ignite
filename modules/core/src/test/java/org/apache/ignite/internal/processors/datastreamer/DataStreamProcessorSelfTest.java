@@ -52,6 +52,8 @@ import org.apache.ignite.configuration.NearCacheConfiguration;
 import org.apache.ignite.configuration.WALMode;
 import org.apache.ignite.events.Event;
 import org.apache.ignite.events.EventType;
+import org.apache.ignite.failure.FailureContext;
+import org.apache.ignite.failure.FailureHandler;
 import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.IgniteKernal;
@@ -257,8 +259,6 @@ public class DataStreamProcessorSelfTest extends GridCommonAbstractTest {
         checkDataStreamer();
     }
 
-
-
     /**
      * Tests DataStreamer doesn't overflow update streamer requests with default settings with 'allowOverwrite == false'.
      *
@@ -266,25 +266,24 @@ public class DataStreamProcessorSelfTest extends GridCommonAbstractTest {
      */
     @Test
     public void testAtomicPrimarySyncStability() throws Exception {
-        int grids = 3;
-        int entriesToLoad = 300_000;
+        int entriesToLoad = 1_000_000;
         int avgEntryLen = 500;
 
         useCache = true;
         mode = PARTITIONED;
         cacheAtomicityMode = ATOMIC;
         cacheSyncMode = PRIMARY_SYNC;
-        cacheBackups = grids - 1;
+        cacheBackups = 2;
         nearEnabled = false;
 
         persistence = true;
-        regionSize = 200L * 1024L * 1024L;
+        regionSize = 1024L * 1024L * 1024L;
         checkpointFreq = 3000;
 
         Object[] vals = loadData(Math.max(100, entriesToLoad / 100), avgEntryLen);
 
         try {
-            for (int n = 0; n < grids; ++n) {
+            for (int n = 0; n < 3; ++n) {
                 communicationSpi = new UpdatesQueueCheckingCommunicationSpi();
 
                 startGrid(n);
@@ -295,13 +294,10 @@ public class DataStreamProcessorSelfTest extends GridCommonAbstractTest {
             communicationSpi = new UpdatesQueueCheckingCommunicationSpi();
             useCache = false;
 
-            Ignite ldr = startClientGrid(grids);
+            Ignite ldr = startClientGrid(3);
 
             try (IgniteDataStreamer<Integer, Object> ds = ldr.dataStreamer(DEFAULT_CACHE_NAME)) {
                 ds.allowOverwrite(true);
-
-                int maxBatchesPerNode = DataStreamerImpl.perNodeParallelOperations(grid(0).localNode(),
-                    persistenceEnabled());
 
                 // Every single cache update creates one update future for the primary and one future for all the
                 // backups.Collecting update futures and related objects consumes heap. Streamer doesn't know about
@@ -309,9 +305,9 @@ public class DataStreamProcessorSelfTest extends GridCommonAbstractTest {
                 // This race we can't win. Things stuck at unpredictable checkpoint durations, WAL writes, WAL
                 // rollings, GCs. However, Streamer should take in account how many unresponded batches it has sent.
                 // Let's take reserve of 5 for test. 1 is for primary writting.
-                UpdatesQueueCheckingCommunicationSpi.maxWaitingFuts.set(maxBatchesPerNode * ds.perNodeBufferSize() * 5);
+                UpdatesQueueCheckingCommunicationSpi.maxWaitingFuts.set(ds.perNodeBufferSize() * 100);
 
-                //No need to remap if failed.
+                //No need to remap if test-failed.
                 ((DataStreamerImpl)ds).maxRemapCount(0);
 
                 for (int e = 0; e < entriesToLoad; ++e)
@@ -1323,7 +1319,7 @@ public class DataStreamProcessorSelfTest extends GridCommonAbstractTest {
      * Monitors pending update futures. Fails if the threshold exceeded.
      */
     private static class UpdatesQueueCheckingCommunicationSpi extends TcpCommunicationSpi {
-        /** Max unresponded update futures.. */
+        /** Max pending update futures. */
         private static final AtomicInteger maxWaitingFuts = new AtomicInteger();
 
         /** {@inheritDoc} */

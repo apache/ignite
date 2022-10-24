@@ -19,9 +19,7 @@ package org.apache.ignite.internal.benchmarks.jmh.streamer;
 
 import java.io.File;
 import java.util.Collections;
-import java.util.HashMap;
 import java.util.List;
-import java.util.Map;
 import java.util.Random;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CopyOnWriteArrayList;
@@ -32,7 +30,6 @@ import java.util.function.IntFunction;
 import java.util.function.Supplier;
 import java.util.stream.Stream;
 import org.apache.ignite.Ignite;
-import org.apache.ignite.IgniteCache;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteDataStreamer;
 import org.apache.ignite.Ignition;
@@ -71,14 +68,14 @@ import org.openjdk.jmh.runner.options.OptionsBuilder;
 /**
  * For research of the streamer settings and the receivers.
  */
-//@BenchmarkMode(Mode.AverageTime)
+@BenchmarkMode(Mode.AverageTime)
 @State(Scope.Benchmark)
 @Threads(1)
-@Measurement(iterations = 5)
+@Measurement(iterations = 7)
 @Warmup(iterations = 3)
 public class JmhStreamerReceiverBenchmark {
     /** */
-    private static final long ENTRIES_TO_LOAD = 2_000_000;
+    private static final long ENTRIES_TO_LOAD = 500_000;
 
     /** */
     private static final int AVERAGE_RECORD_LEN = 500;
@@ -93,16 +90,10 @@ public class JmhStreamerReceiverBenchmark {
     private static final boolean PERSISTENT = true;
 
     /** */
-    private static final int SERVERS = 2;
+    private static final int SERVERS = 1;
 
     /** Cache backups num. */
     private static final int BACKUPS = SERVERS - 1;
-
-    /** Cache sync mode. */
-    private static final CacheWriteSynchronizationMode WRITE_SYNC_MODE = CacheWriteSynchronizationMode.PRIMARY_SYNC;
-
-    /** Thread buffer size in DataStreamer.perThreadBufferSize() depending on DataStreamer.perNodeBatchSize(). */
-    private static final int THREAD_BATCH_SIZE_MULT = 4;
 
     /** */
     private static final int CHECKPOINT_FREQUENCY = 3000;
@@ -156,9 +147,9 @@ public class JmhStreamerReceiverBenchmark {
 
             if (PERSISTENT) {
                 //Reduce affection of side I/O.
-                dsCfg.setWalMode(WALMode.NONE);
-
                 dsCfg.setCheckpointFrequency(CHECKPOINT_FREQUENCY);
+
+                //dsCfg.setWalMode(WALMode.LOG_ONLY);
 
                 regCfg.setMaxSize(REGION_SIZE);
                 regCfg.setInitialSize(REGION_SIZE);
@@ -180,8 +171,8 @@ public class JmhStreamerReceiverBenchmark {
 
         ccfg.setAtomicityMode(CacheAtomicityMode.ATOMIC);
         ccfg.setBackups(BACKUPS);
-        ccfg.setWriteSynchronizationMode(WRITE_SYNC_MODE);
         ccfg.setCacheMode(CacheMode.PARTITIONED);
+        ccfg.setWriteSynchronizationMode(CacheWriteSynchronizationMode.PRIMARY_SYNC);
 
         return ccfg;
     }
@@ -279,156 +270,66 @@ public class JmhStreamerReceiverBenchmark {
      * Test with batched receiver.
      */
     @Benchmark
-    public void bchIndividual_512_1() throws Exception {
-        doTest(DataStreamerCacheUpdaters.individual(), 1, 512);
+    public void bchIndividual_512() throws Exception {
+        runLoad(DataStreamerCacheUpdaters.individual(), 512);
     }
 
     /**
      * Test with default receiver.
      */
-    //@Benchmark
-    public void bchDefaultIsolated_256_1() throws Exception {
-        doTest(null, 1, 256);
+    @Benchmark
+    public void bchDefaultIsolated_256() throws Exception {
+        runLoad(null, 256);
     }
 
     /**
      * Test with default receiver.
      */
-    //@Benchmark
-    public void bchDefaultIsolated_256_2() throws Exception {
-        doTest(null, 2, 256);
-    }
-
-    /**
-     * Test with default receiver.
-     */
-    //@Benchmark
-    public void bchDefaultIsolated_512_1() throws Exception {
-        doTest(null, 1, 512);
-    }
-
-    /**
-     * Test with default receiver.
-     */
-    //@Benchmark
-    public void bchDefaultIsolated_512_2() throws Exception {
-        doTest(null, 2, 512);
+    @Benchmark
+    public void bchDefaultIsolated_512() throws Exception {
+        runLoad(null, 512);
     }
 
     /**
      * Test with individual receiver.
      */
-    //@Benchmark
-    public void bchIndividual_256_1() throws Exception {
-        doTest(DataStreamerCacheUpdaters.individual(), 1, 256);
+    @Benchmark
+    public void bchIndividual_256() throws Exception {
+        runLoad(DataStreamerCacheUpdaters.individual(), 256);
     }
 
     /**
      * Test with batched receiver.
      */
-    //@Benchmark
-    public void bchBatched_256_1() throws Exception {
-        doTest(DataStreamerCacheUpdaters.batched(), 1, 256);
+    @Benchmark
+    public void bchBatched_256() throws Exception {
+        runLoad(DataStreamerCacheUpdaters.batched(), 256);
     }
 
     /**
      * Test with batched receiver.
      */
-    //@Benchmark
-    public void bchBatched_256_2() throws Exception {
-        doTest(DataStreamerCacheUpdaters.batched(), 2, 256);
+    @Benchmark
+    public void bchBatched_512() throws Exception {
+        runLoad(DataStreamerCacheUpdaters.batched(), 512);
     }
-
-    /**
-     * Test with batched receiver.
-     */
-    //@Benchmark
-    public void bchBatched_512_1() throws Exception {
-        doTest(DataStreamerCacheUpdaters.batched(), 1, 512);
-    }
-
-    /**
-     * Test with batched receiver.
-     */
-    //@Benchmark
-    public void bchBatched_512_2() throws Exception {
-        doTest(DataStreamerCacheUpdaters.batched(), 2, 512);
-    }
-
-    /** Tests with data streamer only and single thread. */
-    private void doTest(@Nullable StreamReceiver<Long, Object> receiver, int batchSize) throws Exception {
-        runLoad(receiver, 1, batchSize, false);
-    }
-
-    /** Tests with data streamer. */
-    private void doTest(@Nullable StreamReceiver<Long, Object> receiver, int threads,
-        int batchSize) throws Exception {
-        runLoad(receiver, threads, batchSize, false);
-    }
-
-    /** Tests with cache only. */
-    private void doTest(int batchSize, int threads) throws Exception {
-        runLoad(null, threads, batchSize, true);
-    }
-
+    
     /** Launches test with all available params. */
-    private void runLoad(@Nullable StreamReceiver<Long, Object> receiver, int threads, int batchSize,
-        boolean useCache) throws Exception {
+    private void runLoad(@Nullable StreamReceiver<Long, Object> receiver, int batchSize) throws Exception {
 
         AtomicLong keySupplier = new AtomicLong();
 
-        if (useCache) {
-            CompletableFuture.allOf(Stream.generate(new Supplier<CompletableFuture<?>>() {
-                @Override public CompletableFuture<?> get() {
-                    return CompletableFuture.runAsync(new Runnable() {
-                        @Override public void run() {
-                            IgniteCache<Long, Object> cache = ldrNode.cache(CACHE_NAME);
+        try (IgniteDataStreamer<Long, Object> streamer = ldrNode.dataStreamer(CACHE_NAME)) {
+            if (receiver != null)
+                streamer.receiver(receiver);
 
-                            Map<Long, Object> putAllBatch = new HashMap<>(batchSize);
+            if (batchSize > 0)
+                streamer.perNodeBufferSize(batchSize);
 
-                            long key;
+            long key;
 
-                            while ((key = keySupplier.getAndIncrement()) < ENTRIES_TO_LOAD) {
-                                putAllBatch.put(key, value(key));
-
-                                if (putAllBatch.size() >= batchSize) {
-                                    cache.putAll(putAllBatch);
-
-                                    putAllBatch.clear();
-                                }
-                            }
-
-                            if (!putAllBatch.isEmpty())
-                                cache.putAll(putAllBatch);
-                        }
-                    });
-                }
-            }).limit(threads).toArray((IntFunction<CompletableFuture<?>[]>)CompletableFuture[]::new)).get();
-        }
-        else {
-            try (IgniteDataStreamer<Long, Object> streamer = ldrNode.dataStreamer(CACHE_NAME)) {
-                if (receiver != null)
-                    streamer.receiver(receiver);
-
-                if (batchSize > 0) {
-                    streamer.perNodeBufferSize(batchSize);
-
-                    streamer.perThreadBufferSize(batchSize * THREAD_BATCH_SIZE_MULT);
-                }
-
-                CompletableFuture.allOf(Stream.generate(new Supplier<CompletableFuture<?>>() {
-                    @Override public CompletableFuture<?> get() {
-                        return CompletableFuture.runAsync(new Runnable() {
-                            @Override public void run() {
-                                long key;
-
-                                while ((key = keySupplier.getAndIncrement()) < ENTRIES_TO_LOAD)
-                                    streamer.addData(key, value(key));
-                            }
-                        });
-                    }
-                }).limit(threads).toArray((IntFunction<CompletableFuture<?>[]>)CompletableFuture[]::new)).get();
-            }
+            while ((key = keySupplier.getAndIncrement()) < ENTRIES_TO_LOAD)
+                streamer.addData(key, value(key));
         }
 
         if (PERSISTENT && INCLUDE_CHECKPOINT) {
@@ -459,13 +360,10 @@ public class JmhStreamerReceiverBenchmark {
      * @param args Args.
      */
     public static void main(String[] args) throws RunnerException {
-        String heapMb = 333 + SERVERS * 555 + "m";
-
         final Options options = new OptionsBuilder()
             .include(JmhStreamerReceiverBenchmark.class.getSimpleName())
             .forks(1)
-            .jvmArgs("-Xms" + heapMb, "-Xmx" + heapMb, "-server",
-                "-XX:+AlwaysPreTouch")
+            .jvmArgs("-Xms1g", "-Xmx1g", "-server", "-XX:+AlwaysPreTouch")
             .build();
 
         new Runner(options).run();

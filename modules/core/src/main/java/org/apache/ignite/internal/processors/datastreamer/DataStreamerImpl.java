@@ -1595,8 +1595,7 @@ public class DataStreamerImpl<K, V> implements IgniteDataStreamer<K, V>, Delayed
 
                 perNodeParallelOps = perNodeParallelOperations(node, persistent);
             }
-//            perNodeParallelOps = streamerPoolSize * 16;
-            
+
             sem = new Semaphore(perNodeParallelOps);
 
             stripes = (PerStripeBuffer[])Array.newInstance(PerStripeBuffer.class, streamerPoolSize);
@@ -2160,7 +2159,7 @@ public class DataStreamerImpl<K, V> implements IgniteDataStreamer<K, V>, Delayed
         int poolSize = streamerPoolSize(node);
 
         return persistent
-            ? Math.max(DFLT_MIN_PARALLEL_OPS_PERSISTENT, Math.round(poolSize * DFLT_PARALLEL_OPS_PERSISTENT_MULTIPLIER))
+            ? Math.max(DFLT_MIN_PARALLEL_PERSISTENT_OPS, Math.round(DFLT_PARALLEL_PERSISTENT_OPS_MULTIPLIER * poolSize))
             : poolSize * DFLT_PARALLEL_OPS_MULTIPLIER;
     }
 

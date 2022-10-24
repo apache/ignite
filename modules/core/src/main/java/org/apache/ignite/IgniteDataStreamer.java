@@ -67,12 +67,14 @@ import org.jetbrains.annotations.Nullable;
  *  <li>
  *      {@link #perNodeParallelOperations(int)} - sometimes data may be added
  *      to the data streamer via {@link #addData(Object, Object)} method faster than it can
- *      be put in cache. In this case, new buffered stream messages are sent to remote nodes
- *      before responses from previous ones are received. This could cause unlimited heap
- *      memory utilization growth on local and remote nodes. To control memory utilization,
- *      this setting limits maximum allowed number of parallel buffered stream messages that
- *      are being processed on remote nodes. If this number is exceeded, then
- *      {@link #addData(Object, Object)} method will block to control memory utilization.
+ *      be put in cache. Especially in a persistent cache. In this case, new buffered stream
+ *      messages are sent to remote nodes before responses from previous ones are received.
+ *      Also, {@link #receiver(StreamReceiver)} could send and (wait for) its own backup record requests after
+ *      streamer batch request is already responded to. New streamer requests can be accepted before
+ *      backups are written. All these issues could cause unlimited heap memory utilization growth on
+ *      local and remote nodes. To control memory utilization, this setting limits maximum allowed number
+ *      of parallel buffered stream messages that are being processed on remote nodes. If this number
+ *      is exceeded, then {@link #addData(Object, Object)} method will block to control memory utilization.
  *  </li>
  *  <li>
  *      {@link #autoFlushFrequency(long)} - automatic flush frequency in milliseconds. Essentially,
@@ -108,7 +110,8 @@ public interface IgniteDataStreamer<K, V> extends AutoCloseable {
     public static final int DFLT_MAX_PARALLEL_OPS = 16;
 
     /**
-     * Default multiplier for data streamer pool size to get concurrent batches count for each remote node.
+     * Default multiplier for data streamer pool size to get unresponded batches count for each remote node for
+     * non-persistent.
      *
      * @see IgniteConfiguration#getDataStreamerThreadPoolSize()
      * @see #perNodeParallelOperations()
@@ -117,20 +120,21 @@ public interface IgniteDataStreamer<K, V> extends AutoCloseable {
 
     /**
      * Default multiplier for data streamer pool size to get concurrent batches count for each remote node for
-     * persistent cache.
+     * persistent caches.
      *
      * @see IgniteConfiguration#getDataStreamerThreadPoolSize()
      * @see #perNodeParallelOperations()
+     * @see #DFLT_MIN_PARALLEL_PERSISTENT_OPS
      */
-    public static final float DFLT_PARALLEL_OPS_PERSISTENT_MULTIPLIER = 0.25f;
+    public static final float DFLT_PARALLEL_PERSISTENT_OPS_MULTIPLIER = 0.5f;
 
     /**
-     * Default minimal concurrent batches count for each remote node for persistent cache.
+     * Default minimal concurrent batches count for each remote node for persistent caches.
      *
      * @see IgniteConfiguration#getDataStreamerThreadPoolSize()
      * @see #perNodeParallelOperations()
      */
-    public static final int DFLT_MIN_PARALLEL_OPS_PERSISTENT = 4;
+    public static final int DFLT_MIN_PARALLEL_PERSISTENT_OPS = 16;
 
     /** Default operations batch size to sent to remote node for loading. */
     public static final int DFLT_PER_NODE_BUFFER_SIZE = 512;
@@ -236,10 +240,12 @@ public interface IgniteDataStreamer<K, V> extends AutoCloseable {
      * This method should be called prior to {@link #addData(Object, Object)} call.
      * <p>
      * If not provided, default value is calculated as follows
-     * {@link #DFLT_PARALLEL_OPS_MULTIPLIER} * {@code DATA_STREAMER_POOL_SIZE_ON_REMOTE_NODE}.
+     * {@link #DFLT_PARALLEL_OPS_MULTIPLIER} * {@code DATA_STREAMER_POOL_SIZE_ON_REMOTE_NODE} or
+     * {@link #DFLT_PARALLEL_PERSISTENT_OPS_MULTIPLIER} * {@code DATA_STREAMER_POOL_SIZE_ON_REMOTE_NODE}.
      *
      * @param parallelOps Maximum number of parallel stream operations for a single node.
      * @see IgniteConfiguration#getDataStreamerThreadPoolSize()
+     * @see #DFLT_MIN_PARALLEL_PERSISTENT_OPS
      */
     public void perNodeParallelOperations(int parallelOps);
 
