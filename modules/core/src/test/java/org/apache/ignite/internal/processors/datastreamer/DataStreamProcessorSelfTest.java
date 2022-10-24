@@ -119,9 +119,6 @@ public class DataStreamProcessorSelfTest extends GridCommonAbstractTest {
     private boolean persistence;
 
     /** */
-    private int streamerPoolSize = -1;
-
-    /** */
     private long regionSize = DFLT_DATA_REGION_MAX_SIZE;
 
     /** */
@@ -195,9 +192,6 @@ public class DataStreamProcessorSelfTest extends GridCommonAbstractTest {
                         .setPersistenceEnabled(true).setMaxSize(regionSize))
                     .setWalMode(WALMode.LOG_ONLY));
             }
-
-            if (streamerPoolSize > 0)
-                cfg.setDataStreamerThreadPoolSize(streamerPoolSize);
         }
         else {
             cfg.setCacheConfiguration();
@@ -257,6 +251,47 @@ public class DataStreamProcessorSelfTest extends GridCommonAbstractTest {
         checkDataStreamer();
     }
 
+    /** */
+    @Test
+    public void testHeap() throws Exception {
+        int entriesToLoad = 1_000_000;
+        int avgEntryLen = 500;
+
+        useCache = true;
+        mode = PARTITIONED;
+        cacheAtomicityMode = ATOMIC;
+        cacheSyncMode = PRIMARY_SYNC;
+        cacheBackups = 2;
+        nearEnabled = false;
+
+        persistence = true;
+        checkpointFreq = 3000;
+
+        Object[] vals = loadData(Math.max(100, entriesToLoad / 100), avgEntryLen);
+
+        try {
+            startGrids(3);
+
+            grid(0).cluster().state(ClusterState.ACTIVE);
+
+            useCache = false;
+
+            Ignite ldr = startClientGrid(3);
+
+            try (IgniteDataStreamer<Integer, Object> ds = ldr.dataStreamer(DEFAULT_CACHE_NAME)) {
+                ds.allowOverwrite(true);
+
+                for (int e = 0; e < entriesToLoad; ++e)
+                    ds.addData(e, vals[e % vals.length]);
+            }
+
+            assertEquals(grid(0).cache(DEFAULT_CACHE_NAME).size(), entriesToLoad);
+        }
+        finally {
+            stopAllGrids();
+        }
+    }
+
     /**
      * Tests DataStreamer doesn't overflow update streamer requests with default settings with 'allowOverwrite == false'.
      *
@@ -275,21 +310,20 @@ public class DataStreamProcessorSelfTest extends GridCommonAbstractTest {
         nearEnabled = false;
 
         persistence = true;
-        regionSize = 1024L * 1024L * 1024L;
         checkpointFreq = 3000;
 
         Object[] vals = loadData(Math.max(100, entriesToLoad / 100), avgEntryLen);
 
         try {
             for (int n = 0; n < 3; ++n) {
-                communicationSpi = new UpdatesQueueCheckingCommunicationSpi();
+//                communicationSpi = new UpdatesQueueCheckingCommunicationSpi();
 
                 startGrid(n);
             }
 
             grid(0).cluster().state(ClusterState.ACTIVE);
 
-            communicationSpi = new UpdatesQueueCheckingCommunicationSpi();
+//            communicationSpi = new UpdatesQueueCheckingCommunicationSpi();
             useCache = false;
 
             Ignite ldr = startClientGrid(3);
@@ -303,10 +337,10 @@ public class DataStreamProcessorSelfTest extends GridCommonAbstractTest {
                 // This race we can't win. Things stuck at unpredictable checkpoint durations, WAL writes, WAL
                 // rollings, GCs. However, Streamer should take in account how many unresponded batches it has sent.
                 // We consume heap if keep collecting updating futures and related structures and requests.
-                UpdatesQueueCheckingCommunicationSpi.maxWaitingFuts.set(ds.perNodeBufferSize() * 100);
+                UpdatesQueueCheckingCommunicationSpi.maxWaitingFuts.set(ds.perNodeBufferSize() * 10000);
 
                 //No need to remap if test-failed.
-                ((DataStreamerImpl)ds).maxRemapCount(0);
+//                ((DataStreamerImpl)ds).maxRemapCount(0);
 
                 for (int e = 0; e < entriesToLoad; ++e)
                     ds.addData(e, vals[e % vals.length]);
