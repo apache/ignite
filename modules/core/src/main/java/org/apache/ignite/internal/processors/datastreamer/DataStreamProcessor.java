@@ -20,7 +20,6 @@ package org.apache.ignite.internal.processors.datastreamer;
 import java.util.Collection;
 import java.util.UUID;
 import java.util.concurrent.DelayQueue;
-import java.util.concurrent.atomic.AtomicInteger;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.internal.GridKernalContext;

@@ -52,8 +52,6 @@ import org.apache.ignite.configuration.NearCacheConfiguration;
 import org.apache.ignite.configuration.WALMode;
 import org.apache.ignite.events.Event;
 import org.apache.ignite.events.EventType;
-import org.apache.ignite.failure.FailureContext;
-import org.apache.ignite.failure.FailureHandler;
 import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.IgniteKernal;
@@ -300,11 +298,11 @@ public class DataStreamProcessorSelfTest extends GridCommonAbstractTest {
                 ds.allowOverwrite(true);
 
                 // Every single cache update creates one update future for the primary and one future for all the
-                // backups.Collecting update futures and related objects consumes heap. Streamer doesn't know about
+                // backups. Collecting update futures and related objects consumes heap. Streamer doesn't know about
                 // unfinished backup updates and proceeds more update requests once it gets response from primary node.
                 // This race we can't win. Things stuck at unpredictable checkpoint durations, WAL writes, WAL
                 // rollings, GCs. However, Streamer should take in account how many unresponded batches it has sent.
-                // Let's take reserve of 5 for test. 1 is for primary writting.
+                // We consume heap if keep collecting updating futures and related structures and requests.
                 UpdatesQueueCheckingCommunicationSpi.maxWaitingFuts.set(ds.perNodeBufferSize() * 100);
 
                 //No need to remap if test-failed.

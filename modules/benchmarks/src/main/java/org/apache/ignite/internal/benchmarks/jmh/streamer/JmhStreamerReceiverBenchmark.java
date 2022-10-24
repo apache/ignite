@@ -30,6 +30,7 @@ import org.apache.ignite.IgniteDataStreamer;
 import org.apache.ignite.Ignition;
 import org.apache.ignite.cache.CacheAtomicityMode;
 import org.apache.ignite.cache.CacheMode;
+import org.apache.ignite.cache.CacheWriteSynchronizationMode;
 import org.apache.ignite.cluster.ClusterState;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.DataRegionConfiguration;
@@ -48,6 +49,7 @@ import org.openjdk.jmh.annotations.BenchmarkMode;
 import org.openjdk.jmh.annotations.Level;
 import org.openjdk.jmh.annotations.Measurement;
 import org.openjdk.jmh.annotations.Mode;
+import org.openjdk.jmh.annotations.Param;
 import org.openjdk.jmh.annotations.Scope;
 import org.openjdk.jmh.annotations.Setup;
 import org.openjdk.jmh.annotations.State;
@@ -60,7 +62,7 @@ import org.openjdk.jmh.runner.options.Options;
 import org.openjdk.jmh.runner.options.OptionsBuilder;
 
 /**
- * For research of the streamer settings and the receivers.
+ * For research of the streamer throughput with different settings and the receivers.
  */
 @BenchmarkMode(Mode.AverageTime)
 @State(Scope.Benchmark)
@@ -79,12 +81,6 @@ public class JmhStreamerReceiverBenchmark {
 
     /** */
     private static final boolean PERSISTENT = true;
-
-    /** */
-    private static final int SERVERS = 1;
-
-    /** Cache backups num. */
-    private static final int BACKUPS = SERVERS - 1;
 
     /** */
     private static final int CHECKPOINT_FREQUENCY = 3000;
@@ -113,6 +109,9 @@ public class JmhStreamerReceiverBenchmark {
     /** */
     private Object[] values;
 
+    /** */
+    private Params runParams;
+
     /**
      * Create Ignite configuration.
      *
@@ -140,7 +139,7 @@ public class JmhStreamerReceiverBenchmark {
                 //Reduce affection of side I/O.
                 dsCfg.setCheckpointFrequency(CHECKPOINT_FREQUENCY);
 
-                dsCfg.setWalMode(WALMode.LOG_ONLY);
+                dsCfg.setWalMode(runParams.walMode);
 
                 regCfg.setMaxSize(REGION_SIZE);
                 regCfg.setInitialSize(REGION_SIZE);
@@ -161,8 +160,9 @@ public class JmhStreamerReceiverBenchmark {
         CacheConfiguration<?, ?> ccfg = new CacheConfiguration<>(cacheName);
 
         ccfg.setAtomicityMode(CacheAtomicityMode.ATOMIC);
-        ccfg.setBackups(BACKUPS);
+        ccfg.setBackups(runParams.servers - 1);
         ccfg.setCacheMode(CacheMode.PARTITIONED);
+        ccfg.setWriteSynchronizationMode(runParams.cacheWriteMode);
 
         return ccfg;
     }
@@ -184,13 +184,13 @@ public class JmhStreamerReceiverBenchmark {
         nodes.clear();
     }
 
-    /**
-     * Start 2 servers and 1 client.
-     */
+    /** */
     @Setup(Level.Trial)
-    public void setup() throws ExecutionException, InterruptedException {
-        for (int s = 0; s < SERVERS; ++s) {
-            IgniteConfiguration cfg = configuration("srv" + 1, false);
+    public void setup(Params params) throws ExecutionException, InterruptedException {
+        this.runParams = params;
+
+        for (int s = 0; s < params.servers; ++s) {
+            IgniteConfiguration cfg = configuration("srv" + s, false);
 
             IgniteUtils.delete(new File(cfg.getWorkDirectory()));
 
@@ -202,7 +202,7 @@ public class JmhStreamerReceiverBenchmark {
         if (LOAD_FROM_CLIENT)
             nodes.add(ldrNode = Ignition.start(configuration("client", true)));
         else
-            ldrNode = nodes.get(rnd.nextInt(SERVERS));
+            ldrNode = nodes.get(rnd.nextInt(params.servers));
 
         nodes.get(0).createCache(cacheCfg(CACHE_NAME));
 
@@ -235,60 +235,43 @@ public class JmhStreamerReceiverBenchmark {
      * Test with batched receiver.
      */
     @Benchmark
-    public void bchIndividual_512() throws Exception {
-        runLoad(DataStreamerCacheUpdaters.individual(), 512);
+    public void benchIndividual() throws Exception {
+        runLoad(DataStreamerCacheUpdaters.individual());
     }
 
     /**
      * Test with default receiver.
      */
     @Benchmark
-    public void bchDefaultIsolated_256() throws Exception {
-        runLoad(null, 256);
-    }
-
-    /**
-     * Test with default receiver.
-     */
-    @Benchmark
-    public void bchDefaultIsolated_512() throws Exception {
-        runLoad(null, 512);
-    }
-
-    /**
-     * Test with individual receiver.
-     */
-    @Benchmark
-    public void bchIndividual_256() throws Exception {
-        runLoad(DataStreamerCacheUpdaters.individual(), 256);
+    public void benchDefaultIsolated() throws Exception {
+        runLoad(null);
     }
 
     /**
      * Test with batched receiver.
      */
     @Benchmark
-    public void bchBatched_256() throws Exception {
-        runLoad(DataStreamerCacheUpdaters.batched(), 256);
-    }
-
-    /**
-     * Test with batched receiver.
-     */
-    @Benchmark
-    public void bchBatched_512() throws Exception {
-        runLoad(DataStreamerCacheUpdaters.batched(), 512);
+    public void benchBatched() throws Exception {
+        runLoad(DataStreamerCacheUpdaters.batched());
     }
     
     /** Launches test with all available params. */
-    private void runLoad(@Nullable StreamReceiver<Long, Object> receiver, int batchSize) throws Exception {
+    private void runLoad(@Nullable StreamReceiver<Long, Object> receiver) throws Exception {
         AtomicLong keySupplier = new AtomicLong();
 
         try (IgniteDataStreamer<Long, Object> streamer = ldrNode.dataStreamer(CACHE_NAME)) {
             if (receiver != null)
                 streamer.receiver(receiver);
 
-            if (batchSize > 0)
-                streamer.perNodeBufferSize(batchSize);
+            assert runParams.dsBatchSize != 0;
+
+            if (runParams.dsBatchSize > 0)
+                streamer.perNodeBufferSize(runParams.dsBatchSize);
+
+            assert runParams.maxDsOps != 0;
+
+            if (runParams.maxDsOps > 0)
+                streamer.perNodeParallelOperations(runParams.maxDsOps);
 
             long key;
 
@@ -331,5 +314,23 @@ public class JmhStreamerReceiverBenchmark {
             .build();
 
         new Runner(options).run();
+    }
+
+    @State(Scope.Benchmark)
+    public static class Params {
+        @Param({"1", "2"})
+        private int servers;
+
+        @Param({"4", "8", "16"})
+        private int maxDsOps;
+
+        @Param({"256", "512", "1024"})
+        private int dsBatchSize;
+
+        @Param({"FSYNC", "LOG_ONLY", "NONE"})
+        private WALMode walMode;
+
+        @Param({"PRIMARY_SYNC", "FULL_SYNC"})
+        private CacheWriteSynchronizationMode cacheWriteMode;
     }
 }
