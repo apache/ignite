@@ -18,7 +18,7 @@
 package org.apache.ignite.internal.processors.cache.consistentcut;
 
 import java.nio.ByteBuffer;
-import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
+import java.util.UUID;
 import org.apache.ignite.internal.util.tostring.GridToStringInclude;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.plugin.extensions.communication.Message;
@@ -35,31 +35,30 @@ public class ConsistentCutMarker implements Message {
     /** */
     public static final short TYPE_CODE = 201;
 
-    /** Incremental version. Ignite guarantees that it's monotonically rising. */
+    /** Incremental index. Ignite guarantees that it's growing monotonically. */
     @GridToStringInclude
-    private long ver;
+    private long idx;
 
-    /** Topology version. */
-    @GridToStringInclude
-    private AffinityTopologyVersion topVer;
+    /** ID of the marker. */
+    private UUID id;
 
     /** */
     public ConsistentCutMarker() {}
 
     /** */
-    public ConsistentCutMarker(long ver, AffinityTopologyVersion topVer) {
-        this.ver = ver;
-        this.topVer = topVer;
+    public ConsistentCutMarker(long idx, UUID id) {
+        this.idx = idx;
+        this.id = id;
     }
 
     /** */
-    public long version() {
-        return ver;
+    public long index() {
+        return idx;
     }
 
     /** */
-    public AffinityTopologyVersion topVer() {
-        return topVer;
+    public UUID id() {
+        return id;
     }
 
     /** {@inheritDoc} */
@@ -80,13 +79,13 @@ public class ConsistentCutMarker implements Message {
 
         switch (writer.state()) {
             case 0:
-                if (!writer.writeAffinityTopologyVersion("topVer", topVer))
+                if (!writer.writeUuid("id", id))
                     return false;
 
                 writer.incrementState();
 
             case 1:
-                if (!writer.writeLong("ver", ver))
+                if (!writer.writeLong("idx", idx))
                     return false;
 
                 writer.incrementState();
@@ -105,7 +104,7 @@ public class ConsistentCutMarker implements Message {
 
         switch (reader.state()) {
             case 0:
-                topVer = reader.readAffinityTopologyVersion("topVer");
+                id = reader.readUuid("id");
 
                 if (!reader.isLastRead())
                     return false;
@@ -113,7 +112,7 @@ public class ConsistentCutMarker implements Message {
                 reader.incrementState();
 
             case 1:
-                ver = reader.readLong("ver");
+                idx = reader.readLong("idx");
 
                 if (!reader.isLastRead())
                     return false;

@@ -336,10 +336,9 @@ public class SnapshotRestoreProcess {
                 F.first(dataNodes),
                 snpName,
                 snpPath,
+                null,
                 cacheGrpNames,
-                new HashSet<>(bltNodes),
-                false,
-                -1
+                new HashSet<>(bltNodes)
             );
 
             prepareRestoreProc.start(req.requestId(), req);

@@ -20,14 +20,19 @@ package org.apache.ignite.internal.processors.cache.consistentcut;
 import java.util.Random;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCache;
+import org.apache.ignite.IgniteException;
 import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.TestRecordingCommunicationSpi;
 import org.apache.ignite.internal.pagemem.wal.WALIterator;
 import org.apache.ignite.internal.pagemem.wal.record.ConsistentCutStartRecord;
 import org.apache.ignite.internal.pagemem.wal.record.WALRecord;
 import org.apache.ignite.internal.processors.cache.distributed.near.GridNearTxFinishRequest;
+import org.apache.ignite.lang.IgniteFuture;
+import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.transactions.Transaction;
 import org.junit.Test;
+
+import static org.apache.ignite.internal.processors.cache.persistence.snapshot.AbstractSnapshotSelfTest.snp;
 
 /***/
 public class ConsistentCutTxRecoveryTest extends AbstractConsistentCutBlockingTest {
@@ -37,9 +42,7 @@ public class ConsistentCutTxRecoveryTest extends AbstractConsistentCutBlockingTe
         IgniteInternalFuture<?> loadFut = null;
 
         try {
-            BlockingConsistentCutManager srvCutMgr = BlockingConsistentCutManager.cutMgr(grid(0));
-
-            assertTrue(srvCutMgr.triggerConsistentCutOnCluster(0).get(getTestTimeout()));
+            snp(grid(0)).createIncrementalSnapshot(SNP).get(getTestTimeout());
 
             // Blocks finish message from client to server.
             TestRecordingCommunicationSpi clnComm = TestRecordingCommunicationSpi.spi(grid(nodes()));
@@ -50,26 +53,30 @@ public class ConsistentCutTxRecoveryTest extends AbstractConsistentCutBlockingTe
 
             clnComm.waitForBlocked();
 
-            IgniteInternalFuture<Boolean> cutFut = srvCutMgr.triggerConsistentCutOnCluster(1);
+            awaitAllNodesReadyForIncrementalSnapshot();
+
+            IgniteFuture<Void> snpFut = snp(grid(0)).createIncrementalSnapshot(SNP);
 
             waitForCutIsStartedOnAllNodes();
 
-            long blkCutVer = srvCutMgr.runningCutMarker().version();
+            ConsistentCutMarker blkCutMarker = BlockingConsistentCutManager.cutMgr(grid(0)).runningCutMarker();
 
             // Stop client node.
             stopGrid(nodes());
 
             loadFut.cancel();
 
-            assertFalse(cutFut.get());
+            GridTestUtils.assertThrows(log, () -> snpFut.get(), IgniteException.class, "Cut is inconsistent");
 
-            assertTrue(srvCutMgr.triggerConsistentCutOnCluster(2).get(getTestTimeout()));
+            awaitAllNodesReadyForIncrementalSnapshot();
+
+            snp(grid(0)).createIncrementalSnapshot(SNP).get(getTestTimeout());
 
             // Stop cluster with flushing WALs.
             stopCluster();
 
             for (int i = 0; i < nodes(); i++)
-                assertWalConsistentRecords(i, blkCutVer);
+                assertWalConsistentRecords(i, blkCutMarker);
         }
         finally {
             if (loadFut != null)
@@ -78,10 +85,11 @@ public class ConsistentCutTxRecoveryTest extends AbstractConsistentCutBlockingTe
     }
 
     /** */
-    private void assertWalConsistentRecords(int nodeIdx, long blkVer) throws Exception {
+    private void assertWalConsistentRecords(int nodeIdx, ConsistentCutMarker blkMarker) throws Exception {
         WALIterator iter = walIter(nodeIdx);
 
         boolean expFinRec = false;
+        boolean reachInconsistent = false;
 
         long lastVerChecked = 0;
 
@@ -91,18 +99,22 @@ public class ConsistentCutTxRecoveryTest extends AbstractConsistentCutBlockingTe
             if (rec.type() == WALRecord.RecordType.CONSISTENT_CUT_START_RECORD) {
                 ConsistentCutStartRecord startRec = (ConsistentCutStartRecord)rec;
 
-                expFinRec = startRec.marker().version() != blkVer;
+                expFinRec = !startRec.marker().id().equals(blkMarker.id());
 
-                lastVerChecked = startRec.marker().version();
+                if (!expFinRec)
+                    reachInconsistent = true;
+
+                lastVerChecked = startRec.marker().index();
             }
             else if (rec.type() == WALRecord.RecordType.CONSISTENT_CUT_FINISH_RECORD) {
-                assertTrue("Unexpect Finish Record. Blk ver " + blkVer, expFinRec);
+                assertTrue("Unexpect Finish Record. " + blkMarker, expFinRec);
 
                 expFinRec = false;
             }
         }
 
-        assertTrue("Should reach version after blk " + blkVer, lastVerChecked > blkVer);
+        assertTrue("Should reach StartRecord for bad snapshot", reachInconsistent);
+        assertTrue("Should reach marker after " + blkMarker, lastVerChecked == blkMarker.index());
     }
 
     /** */

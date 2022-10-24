@@ -17,21 +17,12 @@
 
 package org.apache.ignite.internal.processors.cache.consistentcut;
 
-import java.util.Map;
-import java.util.Objects;
-import java.util.Optional;
-import java.util.Set;
-import java.util.UUID;
 import java.util.concurrent.atomic.AtomicReferenceFieldUpdater;
-import java.util.stream.Collectors;
 import org.apache.ignite.IgniteCheckedException;
-import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.events.EventType;
 import org.apache.ignite.internal.IgniteInternalFuture;
-import org.apache.ignite.internal.managers.discovery.DiscoCache;
 import org.apache.ignite.internal.pagemem.wal.record.ConsistentCutFinishRecord;
 import org.apache.ignite.internal.pagemem.wal.record.ConsistentCutStartRecord;
-import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
 import org.apache.ignite.internal.processors.cache.GridCacheMessage;
 import org.apache.ignite.internal.processors.cache.GridCacheSharedManagerAdapter;
 import org.apache.ignite.internal.processors.cache.distributed.GridDistributedBaseMessage;
@@ -46,14 +37,10 @@ import org.apache.ignite.internal.processors.cache.distributed.near.GridNearTxPr
 import org.apache.ignite.internal.processors.cache.persistence.wal.WALPointer;
 import org.apache.ignite.internal.processors.cache.transactions.IgniteInternalTx;
 import org.apache.ignite.internal.processors.cache.version.GridCacheVersion;
-import org.apache.ignite.internal.util.distributed.DistributedProcess;
 import org.apache.ignite.internal.util.future.GridFinishedFuture;
-import org.apache.ignite.internal.util.future.GridFutureAdapter;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.transactions.TransactionState;
 import org.jetbrains.annotations.Nullable;
-
-import static org.apache.ignite.internal.util.distributed.DistributedProcess.DistributedProcessType.CONSISTENT_CUT_CREATE;
 
 /**
  * Processes all stuff related to Consistent Cut.
@@ -98,12 +85,6 @@ public class ConsistentCutManager extends GridCacheSharedManagerAdapter implemen
     /** Running {@link ConsistentCut}, {@code null} if not running. */
     private volatile @Nullable ConsistentCut cut;
 
-    /** Future that completes after Consistent Cut finished on every node in a cluster. */
-    protected volatile ClusterConsistentCutFuture clusterCutFut;
-
-    /** Distributed process for performing distributed Consistent Cut algorithm. */
-    private DistributedProcess<ConsistentCutStartRequest, WALPointer> consistentCutProc;
-
     /** Marker of the last finished Consistent Cut. Required to avoid re-run Consistent Cut with the same marker. */
     protected volatile ConsistentCutMarker lastFinishedCutMarker;
 
@@ -112,13 +93,6 @@ public class ConsistentCutManager extends GridCacheSharedManagerAdapter implemen
         super.start0();
 
         cctx.exchange().registerExchangeAwareComponent(this);
-
-        consistentCutProc = new DistributedProcess<>(
-            cctx.kernalContext(),
-            CONSISTENT_CUT_CREATE,
-            this::startLocalCut,
-            this::finishLocalCut
-        );
     }
 
     /** {@inheritDoc} */
@@ -253,15 +227,11 @@ public class ConsistentCutManager extends GridCacheSharedManagerAdapter implemen
     public void handleConsistentCutMarker(ConsistentCutMarker marker) {
         ConsistentCut cut = CONSISTENT_CUT.get(this);
 
-        // Doesn't start Consistent Cut if topology version is outdated.
-        if (cut == null
-            && (lastFinishedCutMarker == null || marker.version() > lastFinishedCutMarker.version())
-            && cctx.discovery().topologyVersionEx().compareTo(marker.topVer()) == 0
-        ) {
+        if (cut == null && newMarker(marker)) {
             ConsistentCut newCut = newConsistentCut(marker);
 
             if (CONSISTENT_CUT.compareAndSet(this, cut, newCut)) {
-                cctx.kernalContext().pools().getSystemExecutorService().submit(() -> {
+                cctx.kernalContext().pools().getSnapshotExecutorService().submit(() -> {
                     try {
                         newCut.init();
 
@@ -278,6 +248,13 @@ public class ConsistentCutManager extends GridCacheSharedManagerAdapter implemen
         }
     }
 
+    /** */
+    boolean newMarker(ConsistentCutMarker marker) {
+        ConsistentCutMarker m = lastFinishedCutMarker;
+
+        return m == null || !marker.id().equals(m.id());
+    }
+
     /** Creates new Consistent Cut instance. */
     protected ConsistentCut newConsistentCut(ConsistentCutMarker marker) {
         return new ConsistentCut(cctx, marker);
@@ -288,35 +265,11 @@ public class ConsistentCutManager extends GridCacheSharedManagerAdapter implemen
      *
      * @param err Error.
      */
-    private void cancelCut(Exception err) {
+    private void cancelCut(Throwable err) {
         ConsistentCut cut = CONSISTENT_CUT.get(this);
 
         if (cut != null && !cut.isDone())
             cut.onDone(err);
-    }
-
-    /**
-     * Triggers cluster Consistent Cut procedure.
-     *
-     * @param ver Version to start Consistent Cut.
-     * @return Cluster Consistent Cut future.
-     */
-    public synchronized IgniteInternalFuture<Boolean> triggerConsistentCutOnCluster(long ver) {
-        if (clusterCutFut != null || CONSISTENT_CUT.get(this) != null)
-            return new GridFinishedFuture<>(new IgniteCheckedException("Previous Consistent Cut is still running."));
-
-        AffinityTopologyVersion topVer = cctx.discovery().topologyVersionEx();
-
-        ConsistentCutMarker marker = new ConsistentCutMarker(ver, topVer);
-
-        ClusterConsistentCutFuture fut = clusterCutFut = new ClusterConsistentCutFuture(marker, topVer);
-
-        consistentCutProc.start(UUID.randomUUID(), new ConsistentCutStartRequest(marker));
-
-        if (log.isDebugEnabled())
-            log.info("Start Consistent Cut, marker = " + marker);
-
-        return fut;
     }
 
     /**
@@ -329,25 +282,29 @@ public class ConsistentCutManager extends GridCacheSharedManagerAdapter implemen
     }
 
     /**
+     * @return Current running Consistent Cut, if cut isn't running then {@code null}.
+     */
+    public @Nullable ConsistentCut runningCut() {
+        return CONSISTENT_CUT.get(this);
+    }
+
+    /**
      * Starts {@link ConsistentCut} in the discovery thread if not started yet within a transaction thread.
      *
-     * @param req ConsistentCut start request.
-     * @return Future that completes with {@link WALPointer} to {@link ConsistentCutFinishRecord} for consistent cut,
-     *         or {@code null} for inconsistent cut.
+     * @param marker Marker that inits consistent cut.
      */
-    private IgniteInternalFuture<WALPointer> startLocalCut(ConsistentCutStartRequest req) {
+    public IgniteInternalFuture<WALPointer> startLocalCut(ConsistentCutMarker marker) {
         if (log.isDebugEnabled())
-            log.debug("`startLocalCut` for " + req.marker() + " " + cctx.localNodeId());
+            log.debug("`startLocalCut` for " + marker + " " + cctx.localNodeId());
 
-        handleConsistentCutMarker(req.marker());
+        handleConsistentCutMarker(marker);
 
         ConsistentCut cut = CONSISTENT_CUT.get(this);
 
         if (cut == null) {
             return new GridFinishedFuture<>(new IgniteCheckedException(
                 String.format("Consistent Cut for marker [%s] has already started before, last seen marker [%s].",
-                    req.marker(), lastFinishedCutMarker)
-            ));
+                    marker, lastFinishedCutMarker)));
         }
 
         return cut;
@@ -356,99 +313,21 @@ public class ConsistentCutManager extends GridCacheSharedManagerAdapter implemen
     /**
      * Finishes local Consistent Cut, stop signing outgoing messages with marker.
      *
-     * @param reqId Consistent Cut request ID.
-     * @param results Consistent Cut results from all nodes: {@link WALPointer} for consistent cut, {@code null} for inconsistent.
-     * @param exceptions Errors raised from all nodes.
+     * @return Pointer to {@link ConsistentCutFinishRecord}.
      */
-    private void finishLocalCut(UUID reqId, Map<UUID, WALPointer> results, Map<UUID, Exception> exceptions) {
-        if (log.isInfoEnabled())
-            log.info("`finishLocalCut` for " + runningCutMarker() + " " + results);
+    public @Nullable WALPointer finishLocalCut() {
+        if (log.isDebugEnabled())
+            log.debug("`finishLocalCut` for " + runningCutMarker());
 
         ConsistentCut cut = CONSISTENT_CUT.get(this);
 
-        if (cut == null) {
-            if (clusterCutFut != null) {
-                clusterCutFut.onDone(new IgniteCheckedException(
-                    String.format("Consistent Cut for marker [%s] has already finished before, last seen marker [%s].",
-                        clusterCutFut.marker, lastFinishedCutMarker)));
-
-                clusterCutFut = null;
-            }
-
-            return;
-        }
+        if (cut == null)
+            return null;
 
         lastFinishedCutMarker = cut.marker();
 
         CONSISTENT_CUT.set(this, null);
 
-        if (clusterCutFut != null) {
-            DiscoCache discoCache = cctx.discovery().discoCache(clusterCutFut.topVer);
-
-            // Can't check that all baseline nodes are finished.
-            if (discoCache == null) {
-                clusterCutFut.onDone(new IgniteCheckedException(
-                    String.format("No baseline description found for topology [%s] on which Consistent Cut started." +
-                        " Cluster topology is changing too fast. Consider increasing `GNITE_DISCOVERY_HISTORY_SIZE` property.",
-                        clusterCutFut.topVer))
-                );
-
-                clusterCutFut = null;
-
-                return;
-            }
-
-            Set<UUID> baselineTop = discoCache.serverNodes().stream()
-                .map(ClusterNode::id)
-                .filter(discoCache::baselineNode)
-                .collect(Collectors.toSet());
-
-            Optional<Map.Entry<UUID, Exception>> baselineExcp = exceptions.entrySet().stream()
-                .filter(e -> baselineTop.contains(e.getKey()))
-                .findFirst();
-
-            if (baselineExcp.isPresent()) {
-                clusterCutFut.onDone(new IgniteCheckedException(
-                    String.format("Baseline node [%s] failed: %s", baselineExcp.get().getKey(), baselineExcp.get().getValue().getMessage())
-                ));
-
-                return;
-            }
-
-            results.keySet().forEach(baselineTop::remove);
-
-            if (!baselineTop.isEmpty()) {
-                clusterCutFut.onDone(
-                    new IgniteCheckedException(String.format("Baseline nodes failed: %s", baselineTop)));
-
-                return;
-            }
-
-            long inconsistentCnt = results.values().stream()
-                .filter(Objects::isNull)
-                .count();
-
-            clusterCutFut.onDone(inconsistentCnt == 0);
-
-            clusterCutFut = null;
-        }
-    }
-
-    /**
-     * Future that completes after Consistent Cut finished on all nodes. It is set only on a node that started new
-     * iteration of Consistent Cut.
-     */
-    private static class ClusterConsistentCutFuture extends GridFutureAdapter<Boolean> {
-        /** */
-        private final AffinityTopologyVersion topVer;
-
-        /** */
-        private final ConsistentCutMarker marker;
-
-        /** */
-        private ClusterConsistentCutFuture(ConsistentCutMarker marker, AffinityTopologyVersion topVer) {
-            this.topVer = topVer;
-            this.marker = marker;
-        }
+        return cut.result();
     }
 }

@@ -21,6 +21,7 @@ import java.util.Collections;
 import java.util.EnumMap;
 import java.util.HashMap;
 import java.util.Map;
+import java.util.UUID;
 import java.util.function.Supplier;
 import org.apache.ignite.internal.pagemem.FullPageId;
 import org.apache.ignite.internal.pagemem.wal.record.CheckpointRecord;
@@ -85,7 +86,6 @@ import org.apache.ignite.internal.pagemem.wal.record.delta.RotatedIdPartRecord;
 import org.apache.ignite.internal.pagemem.wal.record.delta.SplitExistingPageRecord;
 import org.apache.ignite.internal.pagemem.wal.record.delta.TrackingPageDeltaRecord;
 import org.apache.ignite.internal.pagemem.wal.record.delta.TrackingPageRepairDeltaRecord;
-import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
 import org.apache.ignite.internal.processors.cache.consistentcut.ConsistentCutMarker;
 import org.apache.ignite.internal.processors.cache.distributed.dht.topology.GridDhtPartitionState;
 import org.apache.ignite.internal.processors.cache.mvcc.MvccVersionImpl;
@@ -640,7 +640,7 @@ public class RecordUtils {
 
     /** **/
     public static ConsistentCutStartRecord buildConsistentCutStartRecord() {
-        return new ConsistentCutStartRecord(new ConsistentCutMarker(1204L, AffinityTopologyVersion.NONE));
+        return new ConsistentCutStartRecord(new ConsistentCutMarker(1204L, UUID.randomUUID()));
     }
 
     /** **/

@@ -272,7 +272,7 @@ class ConsistentCutWalReader {
     private void handleStartConsistentCutRecord(ConsistentCutStartRecord rec, NodeConsistentCutState cut) {
         log("START " + cut.num + " CUT[" + rec + "], state = " + cut);
 
-        cut.ts = rec.marker().version();
+        cut.ts = rec.marker().index();
     }
 
     /** */

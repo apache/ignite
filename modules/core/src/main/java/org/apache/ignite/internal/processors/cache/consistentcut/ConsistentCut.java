@@ -124,7 +124,7 @@ public class ConsistentCut extends GridFutureAdapter<WALPointer> {
                 if (log.isDebugEnabled())
                     log.debug("Cut might be inconsistent for marker " + marker + ". Skip writing FinishRecord.");
 
-                onDone(null, null);
+                onDone(null, new IgniteCheckedException("Cut is inconsistent."));
 
                 return;
             }
@@ -197,7 +197,7 @@ public class ConsistentCut extends GridFutureAdapter<WALPointer> {
                     return false;
                 }
 
-                if (tx.marker() == null || tx.marker().version() < marker.version())
+                if (beforeCut(tx.marker()))
                     beforeCut.add(tx.nearXidVersion());
                 else
                     afterCut.add(tx.nearXidVersion());
@@ -207,6 +207,15 @@ public class ConsistentCut extends GridFutureAdapter<WALPointer> {
 
             checkFut.add(txCheckFut);
         }
+    }
+
+    /**
+     * Transaction is BEFORE if it wasn't signed yet (started committing before cut), or signed with the previous marker.
+     *
+     * @return {@code true} if transaction is BEFORE current cut.
+     */
+    boolean beforeCut(ConsistentCutMarker txMarker) {
+        return txMarker == null || !txMarker.id().equals(marker.id());
     }
 
     /**

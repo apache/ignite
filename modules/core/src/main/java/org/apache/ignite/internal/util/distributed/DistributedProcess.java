@@ -457,11 +457,6 @@ public class DistributedProcess<I extends Serializable, R extends Serializable> 
         /**
          * Cache group restore rollback phase.
          */
-        RESTORE_CACHE_GROUP_SNAPSHOT_ROLLBACK,
-
-        /**
-         * Creating Consistent Cut
-         */
-        CONSISTENT_CUT_CREATE
+        RESTORE_CACHE_GROUP_SNAPSHOT_ROLLBACK
     }
 }

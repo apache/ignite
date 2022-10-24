@@ -36,9 +36,9 @@ public class IncrementalSnapshotMetadata implements Serializable {
 
     /** Snapshot name. */
     private final String snpName;
-    
+
     /** Increment index. */
-    private final int incIdx;
+    private final long incIdx;
 
     /** Consistent id of a node to which this metadata relates. */
     private final String consId;
@@ -62,7 +62,7 @@ public class IncrementalSnapshotMetadata implements Serializable {
     public IncrementalSnapshotMetadata(
         UUID rqId,
         String snpName,
-        int incIdx,
+        long incIdx,
         String consId,
         String folderName,
         WALPointer cutPtr

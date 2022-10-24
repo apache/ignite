@@ -49,6 +49,7 @@ import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.T2;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgniteBiTuple;
+import org.apache.ignite.lang.IgniteFuture;
 import org.apache.ignite.lang.IgniteUuid;
 import org.apache.ignite.plugin.AbstractTestPluginProvider;
 import org.apache.ignite.plugin.PluginContext;
@@ -63,6 +64,7 @@ import static org.apache.ignite.internal.processors.cache.consistentcut.Abstract
 import static org.apache.ignite.internal.processors.cache.consistentcut.AbstractConsistentCutBlockingTest.BlkNodeType.BACKUP;
 import static org.apache.ignite.internal.processors.cache.consistentcut.AbstractConsistentCutBlockingTest.BlkNodeType.NEAR;
 import static org.apache.ignite.internal.processors.cache.consistentcut.AbstractConsistentCutBlockingTest.BlkNodeType.PRIMARY;
+import static org.apache.ignite.internal.processors.cache.persistence.snapshot.AbstractSnapshotSelfTest.snp;
 import static org.apache.ignite.transactions.TransactionIsolation.SERIALIZABLE;
 
 /** Base class for testing Consistency Cut blocking some events. */
@@ -312,15 +314,10 @@ public abstract class AbstractConsistentCutBlockingTest extends AbstractConsiste
         if (cutBlkNodeId != -1)
             BlockingConsistentCutManager.cutMgr(grid(cutBlkNodeId)).block(cutBlkType);
 
-        final GridFutureAdapter<Boolean> cutRes = new GridFutureAdapter<>();
+        final GridFutureAdapter<IgniteFuture> cutRes = new GridFutureAdapter<>();
 
         IgniteInternalFuture<?> cutFut = multithreadedAsync(() ->
-            triggerConsistentCut().listen(f -> {
-                if (f.error() != null)
-                    cutRes.onDone(f.error());
-                else
-                    cutRes.onDone(f.result());
-            }), 1);
+            triggerConsistentCut().listen(cutRes::onDone), 1);
 
         // 4. Await Consistent Cut has blocked.
         if (cutBlkNodeId != -1)
@@ -339,7 +336,7 @@ public abstract class AbstractConsistentCutBlockingTest extends AbstractConsiste
         // 8. Await while Consistent Cut completed.
         cutFut.get(getTestTimeout());
 
-        assertTrue(cutRes.get());
+        cutRes.get().get();
     }
 
     /** */
@@ -395,8 +392,10 @@ public abstract class AbstractConsistentCutBlockingTest extends AbstractConsiste
     }
 
     /** Manually triggers new Consistent Cut. */
-    private IgniteInternalFuture<Boolean> triggerConsistentCut() {
-        return TestConsistentCutManager.cutMgr(grid(0)).triggerConsistentCutOnCluster(caseNum);
+    private IgniteFuture<Void> triggerConsistentCut() {
+        awaitAllNodesReadyForIncrementalSnapshot();
+
+        return snp(grid(0)).createIncrementalSnapshot(SNP);
     }
 
     /** */

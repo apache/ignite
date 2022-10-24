@@ -36,6 +36,7 @@ import org.apache.ignite.configuration.DataRegionConfiguration;
 import org.apache.ignite.configuration.DataStorageConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.IgniteEx;
+import org.apache.ignite.internal.IgniteInterruptedCheckedException;
 import org.apache.ignite.internal.TestRecordingCommunicationSpi;
 import org.apache.ignite.internal.managers.communication.GridIoMessage;
 import org.apache.ignite.internal.pagemem.wal.IgniteWriteAheadLogManager;
@@ -58,15 +59,19 @@ import org.apache.ignite.plugin.AbstractTestPluginProvider;
 import org.apache.ignite.plugin.PluginContext;
 import org.apache.ignite.plugin.extensions.communication.Message;
 import org.apache.ignite.spi.IgniteSpiException;
+import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.jetbrains.annotations.Nullable;
 
-import static org.apache.ignite.internal.processors.cache.consistentcut.AbstractConsistentCutTest.TestConsistentCutManager.cutMgr;
+import static org.apache.ignite.internal.processors.cache.persistence.snapshot.AbstractSnapshotSelfTest.snp;
 
 /** Base class for testing Consistency Cut algorithm. */
 public abstract class AbstractConsistentCutTest extends GridCommonAbstractTest {
     /** */
     protected static final String CACHE = "CACHE";
+
+    /** */
+    protected static final String SNP = "base";
 
     /** */
     private final Random rnd = new Random();
@@ -114,6 +119,8 @@ public abstract class AbstractConsistentCutTest extends GridCommonAbstractTest {
         startGrids(nodes());
 
         grid(0).cluster().state(ClusterState.ACTIVE);
+
+        snp(grid(0)).createSnapshot(SNP).get();
 
         startClientGrid(nodes());
     }
@@ -164,9 +171,28 @@ public abstract class AbstractConsistentCutTest extends GridCommonAbstractTest {
         for (int i = 1; i <= cuts; i++) {
             Thread.sleep(100);
 
-            cutMgr(grid(0)).triggerConsistentCutOnCluster(i).get(getTestTimeout());
+            awaitAllNodesReadyForIncrementalSnapshot();
+
+            snp(grid(0)).createIncrementalSnapshot(SNP).get(getTestTimeout());
 
             log.info("Consistent Cut finished: " + i);
+        }
+    }
+
+    /** */
+    protected void awaitAllNodesReadyForIncrementalSnapshot() {
+        try {
+            GridTestUtils.waitForCondition(() -> {
+                boolean ready = true;
+
+                for (int n = 0; n < nodes(); n++)
+                    ready &= snp(grid(n)).currentCreateRequest() == null;
+
+                return ready;
+            }, 10);
+        }
+        catch (IgniteInterruptedCheckedException e) {
+            throw new IgniteException(e);
         }
     }
 
@@ -307,7 +333,7 @@ public abstract class AbstractConsistentCutTest extends GridCommonAbstractTest {
             if (CONSISTENT_CUT.get(this) != null)
                 return false;
 
-            return lastFinishedCutMarker.version() == ver && clusterCutFut == null;
+            return lastFinishedCutMarker.index() == ver;
         }
     }
 

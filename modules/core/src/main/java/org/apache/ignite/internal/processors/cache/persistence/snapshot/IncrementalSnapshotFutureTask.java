@@ -18,6 +18,7 @@
 package org.apache.ignite.internal.processors.cache.persistence.snapshot;
 
 import java.io.File;
+import java.util.Collections;
 import java.util.HashSet;
 import java.util.Set;
 import java.util.UUID;
@@ -33,12 +34,6 @@ import org.jetbrains.annotations.Nullable;
 class IncrementalSnapshotFutureTask
     extends AbstractSnapshotFutureTask<IncrementalSnapshotFutureTaskResult>
     implements BiConsumer<String, File> {
-    /** Index of incremental snapshot. */
-    private final int incIdx;
-
-    /** Snapshot path. */
-    private final @Nullable String snpPath;
-
     /** Metadata of the full snapshot. */
     private final Set<Integer> affectedCacheGrps;
 
@@ -48,8 +43,6 @@ class IncrementalSnapshotFutureTask
         UUID srcNodeId,
         UUID reqNodeId,
         SnapshotMetadata meta,
-        String snpPath,
-        int incIdx,
         File tmpWorkDir,
         FileIOFactory ioFactory
     ) {
@@ -79,42 +72,30 @@ class IncrementalSnapshotFutureTask
             null
         );
 
-        this.incIdx = incIdx;
-        this.snpPath = snpPath;
-        this.affectedCacheGrps = new HashSet<>(meta.cacheGroupIds());
+        affectedCacheGrps = new HashSet<>(meta.cacheGroupIds());
 
         cctx.cache().configManager().addConfigurationChangeListener(this);
     }
 
     /** {@inheritDoc} */
     @Override public Set<Integer> affectedCacheGroups() {
-        return affectedCacheGrps;
+        return Collections.unmodifiableSet(affectedCacheGrps);
     }
 
     /** {@inheritDoc} */
     @Override public boolean start() {
-        try {
-            File incSnpDir = cctx.snapshotMgr().incrementalSnapshotLocalDir(snpName, snpPath, incIdx);
+        return true;
+    }
 
-            if (!incSnpDir.mkdirs()) {
-                onDone(new IgniteException("Can't create snapshot directory[dir=" + incSnpDir.getAbsolutePath() + ']'));
+    /** {@inheritDoc} */
+    @Override public boolean onDone(@Nullable IncrementalSnapshotFutureTaskResult res, @Nullable Throwable err, boolean cancel) {
+        cctx.cache().configManager().removeConfigurationChangeListener(this);
 
-                return false;
-            }
-
-            onDone(new IncrementalSnapshotFutureTaskResult());
-
-            return true;
-        }
-        finally {
-            cctx.cache().configManager().removeConfigurationChangeListener(this);
-        }
+        return super.onDone(res, err, cancel);
     }
 
     /** {@inheritDoc} */
     @Override public void acceptException(Throwable th) {
-        cctx.cache().configManager().removeConfigurationChangeListener(this);
-
         onDone(th);
     }
 

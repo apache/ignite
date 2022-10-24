@@ -19,8 +19,8 @@ package org.apache.ignite.internal.processors.cache.persistence.wal.serializer;
 
 import java.io.IOException;
 import java.nio.ByteBuffer;
+import java.util.UUID;
 import org.apache.ignite.internal.pagemem.wal.record.ConsistentCutStartRecord;
-import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
 import org.apache.ignite.internal.processors.cache.consistentcut.ConsistentCutMarker;
 import org.apache.ignite.internal.processors.cache.persistence.wal.ByteBufferBackedDataInput;
 
@@ -33,10 +33,10 @@ public class ConsistentCutStartRecordSerializer {
      * @param buf Byte buffer.
      */
     public void write(ConsistentCutStartRecord rec, ByteBuffer buf) {
-        buf.putLong(rec.marker().version());
+        buf.putLong(rec.marker().index());
 
-        buf.putLong(rec.marker().topVer().topologyVersion());
-        buf.putInt(rec.marker().topVer().minorTopologyVersion());
+        buf.putLong(rec.marker().id().getMostSignificantBits());
+        buf.putLong(rec.marker().id().getLeastSignificantBits());
     }
 
     /**
@@ -49,12 +49,10 @@ public class ConsistentCutStartRecordSerializer {
     public ConsistentCutStartRecord read(ByteBufferBackedDataInput in) throws IOException {
         long ver = in.readLong();
 
-        long topVer = in.readLong();
-        int minorTopVer = in.readInt();
+        long mst = in.readLong();
+        long lst = in.readLong();
 
-        AffinityTopologyVersion top = new AffinityTopologyVersion(topVer, minorTopVer);
-
-        return new ConsistentCutStartRecord(new ConsistentCutMarker(ver, top));
+        return new ConsistentCutStartRecord(new ConsistentCutMarker(ver, new UUID(mst, lst)));
     }
 
     /**
@@ -64,6 +62,6 @@ public class ConsistentCutStartRecordSerializer {
      * @return Size of ConsistentCutStartRecord in bytes.
      */
     public int size(ConsistentCutStartRecord rec) {
-        return 8 + 8 + 4;
+        return 8 + 8 + 8;
     }
 }
