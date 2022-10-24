@@ -249,7 +249,7 @@ public class ConsistentCutManager extends GridCacheSharedManagerAdapter implemen
     }
 
     /** */
-    boolean newMarker(ConsistentCutMarker marker) {
+    private boolean newMarker(ConsistentCutMarker marker) {
         ConsistentCutMarker m = lastFinishedCutMarker;
 
         return m == null || !marker.id().equals(m.id());
@@ -313,7 +313,7 @@ public class ConsistentCutManager extends GridCacheSharedManagerAdapter implemen
     /**
      * Finishes local Consistent Cut, stop signing outgoing messages with marker.
      *
-     * @return Pointer to {@link ConsistentCutFinishRecord}.
+     * @return Pointer to {@link ConsistentCutFinishRecord}, or {@code null} if no message was written.
      */
     public @Nullable WALPointer finishLocalCut() {
         if (log.isDebugEnabled())

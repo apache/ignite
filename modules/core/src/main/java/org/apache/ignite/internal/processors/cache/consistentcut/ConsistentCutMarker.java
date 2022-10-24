@@ -35,7 +35,7 @@ public class ConsistentCutMarker implements Message {
     /** */
     public static final short TYPE_CODE = 201;
 
-    /** Incremental index. Ignite guarantees that it's growing monotonically. */
+    /** Incremental index. */
     @GridToStringInclude
     private long idx;
 
