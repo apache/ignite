@@ -1088,15 +1088,10 @@ public class SchemaManager {
     }
 
     /**
-     * @param schemaNamePtrn Filter by schema name. Can be {@code null} to don't use the filter.
-     * @param tblNamePtrn Filter by table name. Can be {@code null} to don't use the filter.
-     *
-     * @return Collection of index descriptors filtered by a given patterns.
+     * @return Collection of all present index descriptors.
      */
-    public Collection<IndexDescriptor> indexes(String schemaNamePtrn, String tblNamePtrn) {
+    public Collection<IndexDescriptor> getAllIndexes() {
         return id2tbl.values().stream()
-            .filter(t -> matches(t.type().schemaName(), schemaNamePtrn))
-            .filter(t -> matches(t.type().tableName(), tblNamePtrn))
             .flatMap(t -> t.indexes().values().stream())
             .collect(Collectors.toList());
     }

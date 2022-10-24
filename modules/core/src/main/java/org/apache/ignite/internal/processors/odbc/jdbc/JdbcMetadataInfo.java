@@ -34,6 +34,7 @@ import org.apache.ignite.internal.processors.query.ColumnInformation;
 import org.apache.ignite.internal.processors.query.GridQueryTypeDescriptor;
 import org.apache.ignite.internal.processors.query.QueryUtils;
 import org.apache.ignite.internal.processors.query.TableInformation;
+import org.apache.ignite.internal.processors.query.schema.management.IndexDescriptor;
 import org.jetbrains.annotations.Nullable;
 
 import static org.apache.ignite.internal.processors.odbc.jdbc.JdbcConnectionContext.VER_2_3_0;
@@ -246,10 +247,16 @@ public class JdbcMetadataInfo {
             .thenComparing(meta -> !meta.indexName().startsWith(PRIMARY_KEY_INDEX))
             .thenComparing(JdbcIndexMeta::indexName);
 
-        return ctx.query().schemaManager()
-            .indexes(schemaNamePtrn, tblNamePtrn)
-            .stream()
-            .map(JdbcIndexMeta::new)
-            .collect(Collectors.toCollection(() -> new TreeSet<>(metaComparator)));
+        TreeSet<JdbcIndexMeta> meta = new TreeSet<>(metaComparator);
+
+        for (IndexDescriptor indexDescriptor : ctx.query().schemaManager().getAllIndexes()) {
+            GridQueryTypeDescriptor typeDescriptor = indexDescriptor.table().type();
+
+            if (matches(typeDescriptor.schemaName(), schemaNamePtrn) &&
+                matches(typeDescriptor.tableName(), tblNamePtrn))
+                meta.add(new JdbcIndexMeta(indexDescriptor));
+        }
+
+        return meta;
     }
 }
