@@ -67,13 +67,11 @@ import org.jetbrains.annotations.Nullable;
  *  <li>
  *      {@link #perNodeParallelOperations(int)} - sometimes data may be added
  *      to the data streamer via {@link #addData(Object, Object)} method faster than it can
- *      be put in cache. Especially in a persistent cache. In this case, new buffered stream
- *      messages are sent to remote nodes before responses from previous ones are received.
- *      Also, {@link #receiver(StreamReceiver)} could send and (wait for) its own backup record requests after
- *      streamer batch request is already responded to. New streamer requests can be accepted before
- *      backups are written. All these issues could cause unlimited heap memory utilization growth on
- *      local and remote nodes. To control memory utilization, this setting limits maximum allowed number
- *      of parallel buffered stream messages that are being processed on remote nodes. If this number
+ *      be put in cache. Especially in a persistent cache. Also, {@link #receiver(StreamReceiver)} could send
+ *      and (wait for) its own backup record requests after streamer batch request is already responded to. New
+ *      streamer requests can be accepted beforebackups are written. All these issues could cause unlimited heap memory
+ *      utilization growth on local and remote nodes. To control memory utilization, this setting limits maximum
+ *      allowed number of parallel buffered stream messages that are being processed on remote nodes. If this number
  *      is exceeded, then {@link #addData(Object, Object)} method will block to control memory utilization.
  *  </li>
  *  <li>
@@ -110,18 +108,16 @@ public interface IgniteDataStreamer<K, V> extends AutoCloseable {
     public static final int DFLT_MAX_PARALLEL_OPS = 16;
 
     /**
-     * Default multiplier for data streamer pool size to get unresponded batches count for each remote node for
-     * non-persistent.
+     * Default multiplier for data streamer pool size to get concurrent batches count for each remote node.
      *
      * @see IgniteConfiguration#getDataStreamerThreadPoolSize()
      * @see #perNodeParallelOperations()
      */
-    public static final int DFLT_PARALLEL_OPS_MULTIPLIER = 16;
+    public static final int DFLT_PARALLEL_OPS_MULTIPLIER = 8;
 
     /**
-     * Default maximal unresponded batches count for each remote node for persistent caches.
+     * Default maximal concurrent batches count for each remote node for persistent caches.
      *
-     * @see IgniteConfiguration#getDataStreamerThreadPoolSize()
      * @see #perNodeParallelOperations()
      */
     public static final int DFLT_MAX_PARALLEL_PERSISTENT_OPS = 8;
