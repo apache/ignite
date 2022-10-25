@@ -124,6 +124,8 @@ class IncrementalSnapshotFutureTask
                     long lowIdx = lowPtr.index() + (incIdx == 1 ? 0 : 1);
                     long highIdx = highPtr.index();
 
+                    assert lowIdx <= highIdx;
+
                     boolean compactionEnabled =
                         cctx.gridConfig().getDataStorageConfiguration().isWalCompactionEnabled();
 
@@ -133,10 +135,16 @@ class IncrementalSnapshotFutureTask
                             ", compaction=" + compactionEnabled + ']');
                     }
 
-                    if (compactionEnabled)
+                    cctx.wal().awaitArchived(highPtr.index());
+
+                    if (compactionEnabled) {
+                        if (log.isInfoEnabled()) {
+                            log.info("Waiting for WAL segments compression [lowIdx=" + lowIdx +
+                                ", highIdx=" + highIdx + ']');
+                        }
+
                         cctx.wal().awaitCompressed(highPtr.index());
-                    else
-                        cctx.wal().awaitArchived(highPtr.index());
+                    }
 
                     if (log.isInfoEnabled()) {
                         log.info("Linking WAL segments into incremental snapshot [lowIdx=" + lowIdx +

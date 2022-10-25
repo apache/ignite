@@ -2465,8 +2465,11 @@ public class FileWriteAheadLogManager extends GridCacheSharedManagerAdapter impl
                 if (segmentReservedOrLocked(desc.idx))
                     return;
 
-                if (desc.idx < lastCheckpointPtr.index() && duplicateIndices.contains(desc.idx))
-                    segmentAware.addSize(desc.idx, -deleteArchiveFiles(desc.file));
+                if (desc.idx < lastCheckpointPtr.index() && duplicateIndices.contains(desc.idx)) {
+                    long sz = deleteArchiveFiles(desc.file);
+
+                    segmentAware.addSize(desc.idx, -sz);
+                }
             }
         }
     }

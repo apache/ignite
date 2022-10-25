@@ -850,8 +850,12 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
         if (req.incrementIndex() == 1)
             lowPtr = meta.snapshotRecordPointer();
         else {
-            IncrementalSnapshotMetadata prevIncSnpMeta =
-                readFromFile(new File(incSnpDir, incrementalSnapshotMetaFileName(req.incrementIndex() - 1)));
+            int prevIdx = req.incrementIndex() - 1;
+
+            IncrementalSnapshotMetadata prevIncSnpMeta = readFromFile(new File(
+                incrementalSnapshotLocalDir(req.snapshotName(), req.snapshotPath(), prevIdx),
+                incrementalSnapshotMetaFileName(prevIdx)
+            ));
 
             lowPtr = prevIncSnpMeta.cutPointer();
         }
@@ -859,8 +863,11 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
         cctx.database().checkpointReadLock();
 
         try {
-            // TODO: replace me with the actual cut record.
-            highPtr = cctx.wal().log(new ClusterSnapshotRecord(req.snapshotName()), RolloverType.NEXT_SEGMENT);
+            highPtr = cctx.wal().log(new ClusterSnapshotRecord(req.snapshotName()));
+
+            // Dummy way to forcefully switch to the next segment.
+            // TODO: Must be replaced with the actual ConsistentCut logging.
+            cctx.wal().log(new ClusterSnapshotRecord(req.snapshotName()), RolloverType.NEXT_SEGMENT);
         }
         catch (IgniteCheckedException e) {
             return new GridFinishedFuture<>(e);
@@ -870,7 +877,7 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
         }
 
         // For now, forcefully rollover to the next WAL segments to make segments waiting possible.
-        assert cctx.wal().currentSegment() > highPtr.index() : "Rollover must be invoked.";
+        assert cctx.wal().currentSegment() >= highPtr.index() : "Rollover must be invoked.";
 
         IgniteInternalFuture<SnapshotOperationResponse> task0 = registerTask(req.snapshotName(), new IncrementalSnapshotFutureTask(
             cctx,

@@ -264,7 +264,7 @@ public interface IgniteWriteAheadLogManager extends GridCacheSharedManager, Igni
      * Blocks current thread while segment with the {@code index} not compressed.
      * If segment compressed, already, returns immediately.
      *
-     * @param idx Index.
+     * @param idx Segment index.
      */
     void awaitCompressed(long idx) throws IgniteInterruptedCheckedException;
 
@@ -272,7 +272,7 @@ public interface IgniteWriteAheadLogManager extends GridCacheSharedManager, Igni
      * Blocks current thread while segment with the {@code index} not archived.
      * If segment compressed, already, returns immediately.
      *
-     * @param idx Index.
+     * @param idx Segment index.
      */
     void awaitArchived(long idx) throws IgniteInterruptedCheckedException;
 }
