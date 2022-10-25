@@ -832,7 +832,7 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
      */
     private IgniteInternalFuture<SnapshotOperationResponse> initLocalIncrementalSnapshotStartStage(SnapshotOperationRequest req) {
         // Start ConsistentCut in background immediately on every node (cluster-wide operation).
-        cctx.consistentCutMgr().startLocalCut(req.marker());
+        IgniteInternalFuture<WALPointer> cutFut = cctx.consistentCutMgr().startLocalCut(req.marker());
 
         if (clusterSnpReq != null) {
             return new GridFinishedFuture<>(new IgniteCheckedException("Snapshot operation has been rejected. " +
@@ -854,7 +854,14 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
 
             checkIncrementCanBeCreated(req.snapshotName(), req.snapshotPath(), meta);
 
-            return initLocalIncrementalSnapshot(req, meta);
+            initLocalIncrementalSnapshot(req, meta);
+
+            return cutFut.chain(f -> {
+                if (f.error() != null)
+                    throw F.wrap(f.error());
+
+                return new SnapshotOperationResponse();
+            });
         }
         catch (Throwable e) {
             return new GridFinishedFuture<>(e);
@@ -864,15 +871,14 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
     /**
      * @param req Request on snapshot creation.
      * @param meta Full snapshot metadata.
-     * @return Future which will be completed when a snapshot has been started.
      */
-    private IgniteInternalFuture<SnapshotOperationResponse> initLocalIncrementalSnapshot(
+    private void initLocalIncrementalSnapshot(
         SnapshotOperationRequest req,
         SnapshotMetadata meta
     ) {
         File incSnpDir = incrementalSnapshotLocalDir(req.snapshotName(), req.snapshotPath(), req.marker().index());
 
-        IgniteInternalFuture<SnapshotOperationResponse> task0 = registerTask(req.snapshotName(), new IncrementalSnapshotFutureTask(
+        registerTask(req.snapshotName(), new IncrementalSnapshotFutureTask(
             cctx,
             req.operationalNodeId(),
             req.requestId(),
@@ -902,11 +908,8 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
                 incMeta
             );
 
-            return new SnapshotOperationResponse();
+            return null;
         });
-
-        if (task0.isDone())
-            return task0;
 
         if (log.isDebugEnabled()) {
             log.debug("Incremental snapshot operation submited for execution" +
@@ -914,8 +917,6 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
         }
 
         writeSnapshotDirectoryToMetastorage(incSnpDir);
-
-        return task0;
     }
 
     /**
@@ -1042,8 +1043,13 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
 
             IncrementalSnapshotFutureTask task = (IncrementalSnapshotFutureTask)locSnpTasks.get(snpReq.snapshotName());
 
-            if (task != null && F.isEmpty(err))
+            if (task == null)
+                return;
+
+            if (F.isEmpty(err))
                 task.onDone(new IncrementalSnapshotFutureTaskResult(finishIncSnpRec));
+            else
+                task.onDone(new IgniteCheckedException("Snapshot operation failed. " + err));
         }
 
         if (cctx.kernalContext().clientNode())

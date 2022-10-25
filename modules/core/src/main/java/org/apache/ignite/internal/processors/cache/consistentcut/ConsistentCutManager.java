@@ -154,7 +154,7 @@ public class ConsistentCutManager extends GridCacheSharedManagerAdapter implemen
             cut.addCommittingTransaction(tx.finishFuture());
 
         if (log.isDebugEnabled()) {
-            log.info("`registerBeforeCommit` from " + tx.nearXidVersion().asIgniteUuid() + " to " + tx.xid()
+            log.debug("`registerBeforeCommit` from " + tx.nearXidVersion().asIgniteUuid() + " to " + tx.xid()
                 + " , txMarker=" + tx.marker() + ", cutMarker = " + (cut == null ? null : cut.marker()));
         }
     }
@@ -236,7 +236,7 @@ public class ConsistentCutManager extends GridCacheSharedManagerAdapter implemen
                         newCut.init();
 
                         if (log.isDebugEnabled())
-                            log.info("Prepared Consistent Cut: " + newCut);
+                            log.debug("Prepared Consistent Cut: " + newCut);
                     }
                     catch (IgniteCheckedException e) {
                         U.error(log, "Failed to handle Consistent Cut version.", e);

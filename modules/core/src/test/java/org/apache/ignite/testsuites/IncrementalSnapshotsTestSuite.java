@@ -25,6 +25,7 @@ import org.apache.ignite.internal.processors.cache.consistentcut.ConsistentCutSi
 import org.apache.ignite.internal.processors.cache.consistentcut.ConsistentCutTwoBackupMessagesBlockingTest;
 import org.apache.ignite.internal.processors.cache.consistentcut.ConsistentCutTwoBackupWALBlockingTest;
 import org.apache.ignite.internal.processors.cache.consistentcut.ConsistentCutTxRecoveryTest;
+import org.apache.ignite.internal.processors.cache.persistence.snapshot.IncrementalSnapshotTest;
 import org.junit.runner.RunWith;
 import org.junit.runners.Suite;
 
@@ -41,7 +42,10 @@ import org.junit.runners.Suite;
     ConsistentCutSingleBackupWALBlockingTest.class,
     ConsistentCutTwoBackupWALBlockingTest.class,
     ConcurrentTxsConsistentCutTest.class,
-    ConsistentCutTxRecoveryTest.class
+    ConsistentCutTxRecoveryTest.class,
+
+    // Incremental snapshots
+    IncrementalSnapshotTest.class
 })
 public class IncrementalSnapshotsTestSuite {
 }
