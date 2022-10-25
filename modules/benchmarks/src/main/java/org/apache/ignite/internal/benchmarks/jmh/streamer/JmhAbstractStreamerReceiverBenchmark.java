@@ -22,8 +22,6 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Random;
 import java.util.concurrent.CompletableFuture;
-import java.util.concurrent.ExecutionException;
-import java.util.concurrent.atomic.AtomicLong;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteDataStreamer;
@@ -42,45 +40,29 @@ import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.processors.datastreamer.DataStreamerCacheUpdaters;
 import org.apache.ignite.internal.util.IgniteUtils;
 import org.apache.ignite.logger.NullLogger;
+import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi;
+import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.TcpDiscoveryVmIpFinder;
 import org.apache.ignite.stream.StreamReceiver;
 import org.jetbrains.annotations.Nullable;
 import org.openjdk.jmh.annotations.Benchmark;
-import org.openjdk.jmh.annotations.BenchmarkMode;
 import org.openjdk.jmh.annotations.Level;
-import org.openjdk.jmh.annotations.Measurement;
-import org.openjdk.jmh.annotations.Mode;
-import org.openjdk.jmh.annotations.Param;
-import org.openjdk.jmh.annotations.Scope;
 import org.openjdk.jmh.annotations.Setup;
-import org.openjdk.jmh.annotations.State;
 import org.openjdk.jmh.annotations.TearDown;
-import org.openjdk.jmh.annotations.Threads;
-import org.openjdk.jmh.annotations.Warmup;
-import org.openjdk.jmh.runner.Runner;
-import org.openjdk.jmh.runner.RunnerException;
 import org.openjdk.jmh.runner.options.Options;
 import org.openjdk.jmh.runner.options.OptionsBuilder;
 
 /**
  * For research of the streamer throughput with different settings and the receivers.
  */
-@BenchmarkMode(Mode.AverageTime)
-@State(Scope.Benchmark)
-@Threads(1)
-@Measurement(iterations = 7)
-@Warmup(iterations = 3)
-public class JmhStreamerReceiverBenchmark {
+abstract class JmhAbstractStreamerReceiverBenchmark {
     /** */
-    private static final long ENTRIES_TO_LOAD = 500_000;
+    private static final TcpDiscoveryVmIpFinder IP_FINDER = new TcpDiscoveryVmIpFinder(true);
 
     /** */
-    private static final int AVERAGE_RECORD_LEN = 500;
+    protected static final long DFLT_DATA_AMOUNT_TO_LOAD = 100L * 1024L * 1024L;
 
     /** */
     private static final boolean LOAD_FROM_CLIENT = true;
-
-    /** */
-    private static final boolean PERSISTENT = true;
 
     /** */
     private static final int CHECKPOINT_FREQUENCY = 3000;
@@ -88,14 +70,11 @@ public class JmhStreamerReceiverBenchmark {
     /** Enables or disables final checkpoint into the measurement. */
     private static final boolean INCLUDE_CHECKPOINT = false;
 
-    /** Some fixed minimal + doubled average record size. */
-    private static final long REGION_SIZE = 1024L * 1024L * 1024L;
+    /** */
+    private static final long REGION_SIZE = 512L * 1024L * 1024L;
 
     /** */
     private static final String CACHE_NAME = "testCache";
-
-    /** */
-    private static final int VALUES_BANK_SIZE = 2000;
 
     /** */
     private final Random rnd = new Random();
@@ -104,20 +83,32 @@ public class JmhStreamerReceiverBenchmark {
     private final List<Ignite> nodes = new ArrayList<>();
 
     /** */
-    private Ignite ldrNode;
+    private final boolean persistent;
 
     /** */
+    protected final long dataAmountToLoad;
+
+    /** Loader node. */
+    private Ignite ldrNode;
+
+    /** Values to laod bank. */
     private Object[] values;
 
     /** */
     private Params runParams;
+
+    /** */
+    protected JmhAbstractStreamerReceiverBenchmark(boolean persistent, long dataAmountToLoad) {
+        this.persistent = persistent;
+        this.dataAmountToLoad = dataAmountToLoad > 0 ? dataAmountToLoad : DFLT_DATA_AMOUNT_TO_LOAD;
+    }
 
     /**
      * Create Ignite configuration.
      *
      * @return Ignite configuration.
      */
-    private IgniteConfiguration configuration(String instName, boolean isClient) {
+    protected IgniteConfiguration configuration(String instName, boolean isClient) {
         IgniteConfiguration cfg = new IgniteConfiguration();
 
         cfg.setIgniteInstanceName(instName);
@@ -126,6 +117,11 @@ public class JmhStreamerReceiverBenchmark {
 
         cfg.setGridLogger(new NullLogger());
 
+        TcpDiscoverySpi discoverySpi = new TcpDiscoverySpi();
+        discoverySpi.setIpFinder(IP_FINDER);
+        cfg.setDiscoverySpi(discoverySpi);
+        cfg.setLocalHost("127.0.0.1");
+
         if (isClient)
             cfg.setClientMode(true);
         else {
@@ -133,13 +129,12 @@ public class JmhStreamerReceiverBenchmark {
 
             DataRegionConfiguration regCfg = new DataRegionConfiguration();
 
-            regCfg.setPersistenceEnabled(PERSISTENT);
+            regCfg.setPersistenceEnabled(persistent);
 
-            if (PERSISTENT) {
-                //Reduce affection of side I/O.
+            if (persistent) {
                 dsCfg.setCheckpointFrequency(CHECKPOINT_FREQUENCY);
 
-                dsCfg.setWalMode(runParams.walMode);
+                dsCfg.setWalMode(runParams.walMode());
 
                 regCfg.setMaxSize(REGION_SIZE);
                 regCfg.setInitialSize(REGION_SIZE);
@@ -156,13 +151,13 @@ public class JmhStreamerReceiverBenchmark {
     }
 
     /** */
-    private CacheConfiguration<?, ?> cacheCfg(String cacheName) {
+    protected CacheConfiguration<?, ?> cacheCfg(String cacheName) {
         CacheConfiguration<?, ?> ccfg = new CacheConfiguration<>(cacheName);
 
         ccfg.setAtomicityMode(CacheAtomicityMode.ATOMIC);
-        ccfg.setBackups(runParams.servers - 1);
+        ccfg.setBackups(runParams.servers() - 1);
         ccfg.setCacheMode(CacheMode.PARTITIONED);
-        ccfg.setWriteSynchronizationMode(runParams.cacheWriteMode);
+        ccfg.setWriteSynchronizationMode(runParams.cacheWriteMode());
 
         return ccfg;
     }
@@ -185,11 +180,10 @@ public class JmhStreamerReceiverBenchmark {
     }
 
     /** */
-    @Setup(Level.Trial)
-    public void setup(Params params) throws ExecutionException, InterruptedException {
+    protected void setup(Params params) {
         this.runParams = params;
 
-        for (int s = 0; s < params.servers; ++s) {
+        for (int s = 0; s < params.servers(); ++s) {
             IgniteConfiguration cfg = configuration("srv" + s, false);
 
             IgniteUtils.delete(new File(cfg.getWorkDirectory()));
@@ -202,11 +196,11 @@ public class JmhStreamerReceiverBenchmark {
         if (LOAD_FROM_CLIENT)
             nodes.add(ldrNode = Ignition.start(configuration("client", true)));
         else
-            ldrNode = nodes.get(rnd.nextInt(params.servers));
+            ldrNode = nodes.get(rnd.nextInt(params.servers()));
 
         nodes.get(0).createCache(cacheCfg(CACHE_NAME));
 
-        values = new Object[VALUES_BANK_SIZE];
+        values = new Object[2000];
     }
 
     /** */
@@ -216,8 +210,10 @@ public class JmhStreamerReceiverBenchmark {
 
         assert nodes.get(0).cache(CACHE_NAME).size() == 0;
 
-        int minLen = Math.max(1, (int)(AVERAGE_RECORD_LEN * 0.9f));
-        int maxLen = Math.max(1, (int)(AVERAGE_RECORD_LEN * 1.1f));
+        assert runParams.avgDataSize() != 0;
+
+        int minLen = Math.max(1, (int)(runParams.avgDataSize() * 0.9f));
+        int maxLen = Math.max(1, (int)(runParams.avgDataSize() * 1.1f));
 
         for (int v = 0; v < values.length; v++) {
             int valLen = minLen + (maxLen > minLen ? rnd.nextInt(maxLen - minLen) : 0);
@@ -232,7 +228,7 @@ public class JmhStreamerReceiverBenchmark {
     }
 
     /**
-     * Test with batched receiver.
+     * Test with batched receiver. When 'allowOverwrite' is 'true'.
      */
     @Benchmark
     public void benchIndividual() throws Exception {
@@ -240,7 +236,7 @@ public class JmhStreamerReceiverBenchmark {
     }
 
     /**
-     * Test with default receiver.
+     * Test with default (isolated) receiver. When 'allowOverwrite' is 'false'.
      */
     @Benchmark
     public void benchDefaultIsolated() throws Exception {
@@ -257,29 +253,27 @@ public class JmhStreamerReceiverBenchmark {
     
     /** Launches test with all available params. */
     private void runLoad(@Nullable StreamReceiver<Long, Object> receiver) throws Exception {
-        AtomicLong keySupplier = new AtomicLong();
+        long loadCnt = dataAmountToLoad / runParams.avgDataSize();
 
         try (IgniteDataStreamer<Long, Object> streamer = ldrNode.dataStreamer(CACHE_NAME)) {
             if (receiver != null)
                 streamer.receiver(receiver);
 
-            assert runParams.dsBatchSize != 0;
+            assert runParams.dsBatchSize() != 0;
 
-            if (runParams.dsBatchSize > 0)
-                streamer.perNodeBufferSize(runParams.dsBatchSize);
+            if (runParams.dsBatchSize() > 0)
+                streamer.perNodeBufferSize(runParams.dsBatchSize());
 
-            assert runParams.maxDsOps != 0;
+            assert runParams.maxDsOps() != 0;
 
-            if (runParams.maxDsOps > 0)
-                streamer.perNodeParallelOperations(runParams.maxDsOps);
+            if (runParams.maxDsOps() > 0)
+                streamer.perNodeParallelOperations(runParams.maxDsOps());
 
-            long key;
-
-            while ((key = keySupplier.getAndIncrement()) < ENTRIES_TO_LOAD)
-                streamer.addData(key, value(key));
+            for (long i = 0; i < loadCnt; ++i)
+                streamer.addData(i, value(i));
         }
 
-        if (PERSISTENT && INCLUDE_CHECKPOINT) {
+        if (persistent && INCLUDE_CHECKPOINT) {
             CompletableFuture.allOf(nodes.stream().filter(n -> !n.configuration().isClientMode())
                 .map(n -> CompletableFuture.runAsync(new Runnable() {
                     @Override public void run() {
@@ -293,7 +287,7 @@ public class JmhStreamerReceiverBenchmark {
                 })).toArray(CompletableFuture[]::new)).get();
         }
 
-        assert nodes.get(0).cache(CACHE_NAME).size() == ENTRIES_TO_LOAD;
+        assert nodes.get(0).cache(CACHE_NAME).size() == loadCnt;
     }
 
     /** Extracts a value. */
@@ -301,42 +295,41 @@ public class JmhStreamerReceiverBenchmark {
         return values[(int)(key % values.length)];
     }
 
-    /**
-     * Run benchmark.
-     *
-     * @param args Args.
-     */
-    public static void main(String[] args) throws RunnerException {
-        final Options options = new OptionsBuilder()
-            .include(JmhStreamerReceiverBenchmark.class.getSimpleName())
+    /** */
+    protected static Options options(Class<? extends JmhAbstractStreamerReceiverBenchmark> bchClazz) {
+        return new OptionsBuilder()
+            .include(bchClazz.getSimpleName())
             .forks(1)
-            .jvmArgs("-Xms1g", "-Xmx1g", "-server", "-XX:+AlwaysPreTouch")
+            .jvmArgs("-Xms4g", "-Xmx4g", "-server", "-XX:+AlwaysPreTouch")
             .build();
-
-        new Runner(options).run();
     }
 
     /** */
-    @State(Scope.Benchmark)
-    public static class Params {
+    protected interface Params {
         /** */
-        @Param({"1", "2"})
-        private int servers;
+        default int servers() {
+            return 2;
+        }
 
         /** */
-        @Param({"4", "8", "16"})
-        private int maxDsOps;
+        default WALMode walMode(){ return null; }
 
         /** */
-        @Param({"256", "512", "1024"})
-        private int dsBatchSize;
+        default CacheWriteSynchronizationMode cacheWriteMode() {
+            return null;
+        }
 
         /** */
-        @Param({"FSYNC", "LOG_ONLY", "NONE"})
-        private WALMode walMode;
+        int avgDataSize();
 
         /** */
-        @Param({"PRIMARY_SYNC", "FULL_SYNC"})
-        private CacheWriteSynchronizationMode cacheWriteMode;
+        default int dsBatchSize() {
+            return 512;
+        }
+
+        /** */
+        default int maxDsOps() {
+            return -1;
+        }
     }
 }
