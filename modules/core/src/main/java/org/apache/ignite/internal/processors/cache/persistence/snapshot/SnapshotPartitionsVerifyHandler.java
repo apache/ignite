@@ -59,6 +59,7 @@ import org.apache.ignite.internal.util.GridUnsafe;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.internal.CU;
 import org.apache.ignite.internal.util.typedef.internal.U;
+import org.apache.ignite.lang.IgnitePredicate;
 import org.jetbrains.annotations.Nullable;
 
 import static org.apache.ignite.internal.pagemem.PageIdAllocator.FLAG_DATA;
@@ -149,6 +150,20 @@ public class SnapshotPartitionsVerifyHandler implements SnapshotHandler<Map<Part
         }
 
         if (!grps.isEmpty()) {
+            if (type() == SnapshotHandlerType.CREATE) {
+                Set<Integer> grpChk = new HashSet<>(grps);
+
+                grpChk.removeIf(grpId -> {
+                    IgnitePredicate<ClusterNode> f =
+                        cctx.cache().cacheDescriptor(grpId).cacheConfiguration().getNodeFilter();
+
+                    return f != null && !f.apply(cctx.localNode());
+                });
+
+                if (grpChk.isEmpty())
+                    return Collections.emptyMap();
+            }
+
             throw new IgniteException("Snapshot data doesn't contain required cache groups " +
                 "[grps=" + grps + ", snpName=" + meta.snapshotName() + ", consId=" + meta.consistentId() +
                 ", meta=" + meta + ']');
