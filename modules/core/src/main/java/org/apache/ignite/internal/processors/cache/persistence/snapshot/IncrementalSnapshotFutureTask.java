@@ -18,7 +18,6 @@
 package org.apache.ignite.internal.processors.cache.persistence.snapshot;
 
 import java.io.File;
-import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.HashSet;
@@ -26,7 +25,6 @@ import java.util.Set;
 import java.util.UUID;
 import java.util.function.BiConsumer;
 import org.apache.ignite.IgniteException;
-import org.apache.ignite.internal.IgniteInterruptedCheckedException;
 import org.apache.ignite.internal.processors.cache.GridCacheSharedContext;
 import org.apache.ignite.internal.processors.cache.persistence.file.FileIOFactory;
 import org.apache.ignite.internal.processors.cache.persistence.partstate.GroupPartitionId;
@@ -124,8 +122,6 @@ class IncrementalSnapshotFutureTask
                     long lowIdx = lowPtr.index() + (incIdx == 1 ? 0 : 1);
                     long highIdx = highPtr.index();
 
-                    assert lowIdx <= highIdx;
-
                     boolean compactionEnabled =
                         cctx.gridConfig().getDataStorageConfiguration().isWalCompactionEnabled();
 
@@ -134,6 +130,8 @@ class IncrementalSnapshotFutureTask
                             ", highIdx=" + highIdx +
                             ", compaction=" + compactionEnabled + ']');
                     }
+
+                    assert lowIdx <= highIdx;
 
                     cctx.wal().awaitArchived(highPtr.index());
 
@@ -169,7 +167,7 @@ class IncrementalSnapshotFutureTask
 
                     onDone(new IncrementalSnapshotFutureTaskResult());
                 }
-                catch (IgniteInterruptedCheckedException | IOException e) {
+                catch (Throwable e) {
                     onDone(e);
                 }
             });

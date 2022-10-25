@@ -73,8 +73,6 @@ public class IncrementalSnapshotTest extends AbstractSnapshotSelfTest {
 
     /** {@inheritDoc} */
     @Override protected IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {
-        System.out.println("IncrementalSnapshotTest.getConfiguration");
-
         IgniteConfiguration cfg = super.getConfiguration(igniteInstanceName);
 
         cfg.getDataStorageConfiguration().setWalCompactionEnabled(compactionEnabled);

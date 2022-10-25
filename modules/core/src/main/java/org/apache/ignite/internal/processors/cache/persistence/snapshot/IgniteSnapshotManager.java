@@ -902,7 +902,7 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
                 req.incrementIndex(),
                 cctx.localNode().consistentId().toString(),
                 pdsSettings.folderName(),
-                null /* WAL Pointer for CUT record goes here. */
+                highPtr
             );
 
             writeSnapshotMetafile(
