@@ -695,6 +695,9 @@ public class ExpressionFactoryImpl<Row> implements ExpressionFactory<Row> {
         /** */
         private Row upperRow;
 
+        /** Cached skip range flag. */
+        private Boolean skip;
+
         /** */
         private final RowFactory<Row> factory;
 
@@ -738,12 +741,41 @@ public class ExpressionFactoryImpl<Row> implements ExpressionFactory<Row> {
             Row res = factory.create();
             scalar.execute(ctx, null, res);
 
+            RowHandler<Row> hnd = ctx.rowHandler();
+
+            // Check bound for NULL values. If bound contains NULLs, the whole range should be skipped.
+            // There is special placeholder for searchable NULLs, make this replacement here too.
+            for (int i = 0; i < hnd.columnCount(res); i++) {
+                Object fldVal = hnd.get(i, res);
+
+                if (fldVal == null)
+                    skip = Boolean.TRUE;
+
+                if (fldVal == ctx.nullBound())
+                    hnd.set(i, res, null);
+            }
+
             return res;
         }
 
         /** Clear cached rows. */
         public void clearCache() {
             lowerRow = upperRow = null;
+            skip = null;
+        }
+
+        /** Skip this range. */
+        public boolean skip() {
+            if (skip == null) {
+                // Precalculate skip flag.
+                lower();
+                upper();
+
+                if (skip == null)
+                    skip = Boolean.FALSE;
+            }
+
+            return skip;
         }
     }
 
@@ -765,16 +797,20 @@ public class ExpressionFactoryImpl<Row> implements ExpressionFactory<Row> {
         }
 
         /** {@inheritDoc} */
-        @Override public int size() {
-            return ranges.size();
+        @Override public boolean multiBounds() {
+            return ranges.size() > 1;
         }
 
         /** {@inheritDoc} */
         @Override public Iterator<RangeCondition<Row>> iterator() {
             ranges.forEach(b -> ((RangeConditionImpl)b).clearCache());
 
-            if (ranges.size() == 1)
-                return ranges.iterator();
+            if (ranges.size() == 1) {
+                if (((RangeConditionImpl)ranges.get(0)).skip())
+                    return Collections.emptyIterator();
+                else
+                    return ranges.iterator();
+            }
 
             // Sort ranges using collation comparator to produce sorted output. There should be no ranges
             // intersection.
@@ -785,7 +821,7 @@ public class ExpressionFactoryImpl<Row> implements ExpressionFactory<Row> {
                 sorted = true;
             }
 
-            return ranges.iterator();
+            return F.iterator(ranges.iterator(), r -> r, true, r -> !((RangeConditionImpl)r).skip());
         }
     }
 

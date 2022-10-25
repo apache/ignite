@@ -225,10 +225,10 @@ public class GridDhtPartitionsExchangeFuture extends GridDhtTopologyFutureAdapte
      * Busy lock to prevent activities from accessing exchanger while it's stopping. Stopping uses write lock, so every
      * {@link #enterBusy()} will be failed as false. But regular operation uses read lock acquired multiple times.
      */
-    private ReadWriteLock busyLock;
+    private final ReadWriteLock busyLock;
 
     /** */
-    private AtomicBoolean added = new AtomicBoolean(false);
+    private final AtomicBoolean added = new AtomicBoolean(false);
 
     /** Exchange type. */
     private volatile ExchangeType exchangeType;
@@ -242,7 +242,7 @@ public class GridDhtPartitionsExchangeFuture extends GridDhtTopologyFutureAdapte
     private final CountDownLatch evtLatch = new CountDownLatch(1);
 
     /** Exchange future init method completes this future. */
-    private GridFutureAdapter<Boolean> initFut;
+    private final GridFutureAdapter<Boolean> initFut;
 
     /** */
     @GridToStringExclude
@@ -252,7 +252,7 @@ public class GridDhtPartitionsExchangeFuture extends GridDhtTopologyFutureAdapte
     private boolean init;
 
     /** Last committed cache version before next topology version use. */
-    private AtomicReference<GridCacheVersion> lastVer = new AtomicReference<>();
+    private final AtomicReference<GridCacheVersion> lastVer = new AtomicReference<>();
 
     /**
      * Message received from node joining cluster (if this is 'node join' exchange),
@@ -311,7 +311,7 @@ public class GridDhtPartitionsExchangeFuture extends GridDhtTopologyFutureAdapte
     private volatile boolean cacheChangeFailureMsgSent;
 
     /** */
-    private ConcurrentMap<UUID, GridDhtPartitionsSingleMessage> msgs = new ConcurrentHashMap<>();
+    private final ConcurrentMap<UUID, GridDhtPartitionsSingleMessage> msgs = new ConcurrentHashMap<>();
 
     /** Single messages from merged 'node join' exchanges. */
     @GridToStringExclude
@@ -383,7 +383,7 @@ public class GridDhtPartitionsExchangeFuture extends GridDhtTopologyFutureAdapte
     private final TimeBag timeBag;
 
     /** Start time of exchange. */
-    private long startTime = System.currentTimeMillis();
+    private final long startTime = System.currentTimeMillis();
 
     /** Init time of exchange in milliseconds. */
     private volatile long initTime;

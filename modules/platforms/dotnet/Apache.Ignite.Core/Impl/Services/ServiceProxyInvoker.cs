@@ -74,6 +74,11 @@ namespace Apache.Ignite.Core.Impl.Services
 
         /// <summary>
         /// Finds suitable method in the specified type, or throws an exception.
+        /// <para />
+        /// We do not try to cover all kinds of intricate use cases with complex class hierarchies,
+        /// explicit interface implementations, and so on.
+        /// It is not possible given only the type, name, and arguments - the call can come from other languages too.
+        /// So we do our best or throw an error.
         /// </summary>
         private static Func<object, object[], object> GetMethodOrThrow(Type svcType, string methodName,
             object[] arguments)
@@ -91,9 +96,20 @@ namespace Apache.Ignite.Core.Impl.Services
                 return res;
 
             // 1) Find methods by name
-            var methods = svcType.GetMethods(BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.Instance)
+            var bindingFlags = BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.Instance;
+
+            var methods = svcType.GetMethods(bindingFlags)
                 .Where(m => CleanupMethodName(m) == methodName && m.GetParameters().Length == argsLength)
                 .ToArray();
+
+            if (methods.Length == 0)
+            {
+                // Check default interface implementations.
+                // This does not cover exotic use cases when methods with same signature come from multiple interfaces.
+                methods = svcType.GetInterfaces().SelectMany(x => x.GetMethods(bindingFlags))
+                    .Where(m => !m.IsAbstract && CleanupMethodName(m) == methodName && m.GetParameters().Length == argsLength)
+                    .ToArray();
+            }
 
             if (methods.Length == 1)
             {
@@ -104,7 +120,7 @@ namespace Apache.Ignite.Core.Impl.Services
             if (methods.Length == 0)
                 throw new InvalidOperationException(
                     string.Format(CultureInfo.InvariantCulture,
-                        "Failed to invoke proxy: there is no method '{0}' in type '{1}' with {2} arguments", 
+                        "Failed to invoke proxy: there is no method '{0}' in type '{1}' with {2} arguments",
                         methodName, svcType, argsLength));
 
             // 2) There is more than 1 method with specified name - resolve with argument types.
