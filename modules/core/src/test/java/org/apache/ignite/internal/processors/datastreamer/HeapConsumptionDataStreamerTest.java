@@ -19,6 +19,7 @@ package org.apache.ignite.internal.processors.datastreamer;
 
 import java.util.Random;
 import java.util.function.Function;
+import jdk.internal.jline.internal.Nullable;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteDataStreamer;
 import org.apache.ignite.cluster.ClusterState;
@@ -26,6 +27,8 @@ import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.DataRegionConfiguration;
 import org.apache.ignite.configuration.DataStorageConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
+import org.apache.ignite.internal.util.typedef.G;
+import org.apache.ignite.stream.StreamReceiver;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.junit.Test;
 
@@ -69,48 +72,69 @@ public class HeapConsumptionDataStreamerTest extends GridCommonAbstractTest {
 
     /**
      * Putting values comparable to page size.
-     * Tested with 1G-2G heap.
+     * Tested with 1G heap.
      * Larger heap stays longer. But it is still a race.
      */
     @Test
-    public void testHeap() throws Exception {
+    public void testLoad() throws Exception {
         int avgDataLen = 500;
 
-        long entriesToLoad = 2_000_000;
+        long entriesToLoad = 1_000_000;
 
         Object[] values = loadData(2000, avgDataLen);
 
-        doTestHeap((int)entriesToLoad, i -> values[i % values.length]);
+        doLoad((int)entriesToLoad, i -> values[i % values.length], null);
     }
 
     /**
-     * Putting just integer.
-     * Tested with 1G-2G heap.
+     * Putting trivial.
+     * Tested with 1G heap.
      * Larger heap stays longer. But it is still a race.
      */
     @Test
-    public void testHeapSimpleValue() throws Exception {
-        int entriesToLoad = 10_000_000;
+    public void testLoadSimpleValue() throws Exception {
+        int entriesToLoad = 1_000_000;
 
-        doTestHeap(entriesToLoad, i -> i);
+        doLoad(entriesToLoad, i -> i, null);
+    }
+
+    /**
+     * Putting trivial with batches.
+     * Tested with 1G heap.
+     * Larger heap stays longer. But it is still a race.
+     */
+    @Test
+    public void testLoadSimpleValueBatched() throws Exception {
+        int entriesToLoad = 2_000_000;
+
+        doLoad(entriesToLoad, i -> i, DataStreamerCacheUpdaters.batched());
     }
 
     /** */
-    public void doTestHeap(int entriesToLoad, Function<Integer, Object> val) throws Exception {
-        startGrids(3);
+    public void doLoad(int entriesToLoad, Function<Integer, Object> val,
+        @Nullable StreamReceiver<Object, Object> rcvr) throws Exception {
+        try {
+            startGrids(3);
 
-        grid(0).cluster().state(ClusterState.ACTIVE);
+            grid(0).cluster().state(ClusterState.ACTIVE);
 
-        Ignite ldr = startClientGrid(3);
+            Ignite ldr = startClientGrid(3);
 
-        try (IgniteDataStreamer<Integer, Object> ds = ldr.dataStreamer(DEFAULT_CACHE_NAME)) {
-            ds.allowOverwrite(true);
+            try (IgniteDataStreamer<Object, Object> ds = ldr.dataStreamer(DEFAULT_CACHE_NAME)) {
+                if (rcvr != null)
+                    ds.receiver(rcvr);
+                else
+                    ds.allowOverwrite(true);
 
-            for (int e = 0; e < entriesToLoad; ++e)
-                ds.addData(e, val.apply(e));
+                for (int e = 0; e < entriesToLoad; ++e)
+                    ds.addData(e, val.apply(e));
+            }
+
+            assertEquals(grid(0).cache(DEFAULT_CACHE_NAME).size(), entriesToLoad);
         }
-
-        assertEquals(grid(0).cache(DEFAULT_CACHE_NAME).size(), entriesToLoad);
+        finally {
+            G.stopAll(true);
+        }
     }
 
     /** */
