@@ -139,6 +139,42 @@ public class IncrementalSnapshotTest extends AbstractSnapshotSelfTest {
 
     /** */
     @Test
+    public void testFailIfPreviousIncrementNotAvailable() throws Exception {
+        assumeFalse("https://issues.apache.org/jira/browse/IGNITE-17819", encryption);
+
+        IgniteEx srv = startGridsWithCache(
+            GRID_CNT,
+            CACHE_KEYS_RANGE,
+            key -> new Account(key, key),
+            new CacheConfiguration<>(DEFAULT_CACHE_NAME)
+        );
+
+        IgniteEx cli = startClientGrid(
+            GRID_CNT,
+            (UnaryOperator<IgniteConfiguration>)
+                cfg -> cfg.setCacheConfiguration(new CacheConfiguration<>(DEFAULT_CACHE_NAME))
+        );
+
+        cli.snapshot().createSnapshot(SNAPSHOT_NAME).get(TIMEOUT);
+
+        cli.snapshot().createIncrementalSnapshot(SNAPSHOT_NAME).get(TIMEOUT);
+        cli.snapshot().createIncrementalSnapshot(SNAPSHOT_NAME).get(TIMEOUT);
+
+        File toRmv = snp(ignite(GRID_CNT - 1)).incrementalSnapshotLocalDir(SNAPSHOT_NAME, null, 2);
+
+        assertTrue(toRmv.exists());
+        assertTrue(toRmv.isDirectory());
+
+        U.delete(toRmv);
+
+        assertThrowsWithCause(
+            () -> cli.snapshot().createIncrementalSnapshot(SNAPSHOT_NAME).get(TIMEOUT),
+            IgniteException.class
+        );
+    }
+
+    /** */
+    @Test
     public void testFailForUnknownBaseSnapshot() throws Exception {
         assumeFalse("https://issues.apache.org/jira/browse/IGNITE-17819", encryption);
 
@@ -295,8 +331,4 @@ public class IncrementalSnapshotTest extends AbstractSnapshotSelfTest {
 
     //TODO: test fail when hardlink not available.
     //TODO: test fail when archive disabled.
-    //TODO: test success and waiting for segments to be compressed.
-    //TODO: test success and waiting for segments if compaction disabled.
-    //TODO: test fail if previous inc snapshot not available.
-    //TODO: can segment be deleted when link creating.
 }

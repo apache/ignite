@@ -817,12 +817,14 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
         }
 
         if (req.incremental()) {
-            SnapshotMetadata meta = readSnapshotMetadata(new File(
-                snapshotLocalDir(req.snapshotName(), req.snapshotPath()),
-                snapshotMetaFileName(cctx.localNode().consistentId().toString())
-            ));
+            SnapshotMetadata meta;
 
             try {
+                meta = readSnapshotMetadata(new File(
+                    snapshotLocalDir(req.snapshotName(), req.snapshotPath()),
+                    snapshotMetaFileName(cctx.localNode().consistentId().toString())
+                ));
+
                 checkIncrementalCanBeCreated(req.snapshotName(), req.snapshotPath(), meta);
             }
             catch (IgniteCheckedException | IOException e) {
@@ -852,10 +854,17 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
         else {
             int prevIdx = req.incrementIndex() - 1;
 
-            IncrementalSnapshotMetadata prevIncSnpMeta = readFromFile(new File(
-                incrementalSnapshotLocalDir(req.snapshotName(), req.snapshotPath(), prevIdx),
-                incrementalSnapshotMetaFileName(prevIdx)
-            ));
+            IncrementalSnapshotMetadata prevIncSnpMeta;
+
+            try {
+                prevIncSnpMeta = readFromFile(new File(
+                    incrementalSnapshotLocalDir(req.snapshotName(), req.snapshotPath(), prevIdx),
+                    incrementalSnapshotMetaFileName(prevIdx)
+                ));
+            }
+            catch (IgniteCheckedException | IOException e) {
+                return new GridFinishedFuture<>(e);
+            }
 
             lowPtr = prevIncSnpMeta.cutPointer();
         }
@@ -1638,7 +1647,7 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
      * @param consId Node consistent id to read metadata for.
      * @return Snapshot metadata instance.
      */
-    public SnapshotMetadata readSnapshotMetadata(File snpDir, String consId) {
+    public SnapshotMetadata readSnapshotMetadata(File snpDir, String consId) throws IgniteCheckedException, IOException {
         return readSnapshotMetadata(new File(snpDir, snapshotMetaFileName(consId)));
     }
 
@@ -1646,7 +1655,7 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
      * @param smf File denoting to snapshot metafile.
      * @return Snapshot metadata instance.
      */
-    private SnapshotMetadata readSnapshotMetadata(File smf) {
+    private SnapshotMetadata readSnapshotMetadata(File smf) throws IgniteCheckedException, IOException {
         SnapshotMetadata meta = readFromFile(smf);
 
         String smfName = smf.getName().substring(0, smf.getName().length() - SNAPSHOT_METAFILE_EXT.length());
@@ -1665,16 +1674,12 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
      * @return Read metadata.
      * @param <T> Type of metadata.
      */
-    private <T> T readFromFile(File smf) {
+    private <T> T readFromFile(File smf) throws IgniteCheckedException, IOException {
         if (!smf.exists())
-            throw new IgniteException("Snapshot metafile cannot be read due to it doesn't exist: " + smf);
+            throw new IgniteCheckedException("Snapshot metafile cannot be read due to it doesn't exist: " + smf);
 
         try (InputStream in = new BufferedInputStream(Files.newInputStream(smf.toPath()))) {
             return marsh.unmarshal(in, U.resolveClassLoader(cctx.gridConfig()));
-        }
-        catch (IgniteCheckedException | IOException e) {
-            throw new IgniteException("An error occurred during reading snapshot metadata file [file=" +
-                smf.getAbsolutePath() + "]", e);
         }
     }
 
@@ -1712,15 +1717,20 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
         Map<String, SnapshotMetadata> metasMap = new HashMap<>();
         SnapshotMetadata prev = null;
 
-        for (File smf : smfs) {
-            SnapshotMetadata curr = readSnapshotMetadata(smf);
+        try {
+            for (File smf : smfs) {
+                SnapshotMetadata curr = readSnapshotMetadata(smf);
 
-            if (prev != null && !prev.sameSnapshot(curr))
-                throw new IgniteException("Snapshot metadata files are from different snapshots [prev=" + prev + ", curr=" + curr);
+                if (prev != null && !prev.sameSnapshot(curr))
+                    throw new IgniteException("Snapshot metadata files are from different snapshots [prev=" + prev + ", curr=" + curr);
 
-            metasMap.put(curr.consistentId(), curr);
+                metasMap.put(curr.consistentId(), curr);
 
-            prev = curr;
+                prev = curr;
+            }
+        }
+        catch (IgniteCheckedException | IOException e) {
+            throw new IgniteException(e);
         }
 
         SnapshotMetadata currNodeSmf = metasMap.remove(cctx.localNode().consistentId().toString());
