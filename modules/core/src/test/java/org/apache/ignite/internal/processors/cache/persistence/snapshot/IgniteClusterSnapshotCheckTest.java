@@ -92,6 +92,7 @@ import static org.apache.ignite.internal.processors.cache.persistence.snapshot.I
 import static org.apache.ignite.internal.processors.dr.GridDrType.DR_NONE;
 import static org.apache.ignite.testframework.GridTestUtils.assertContains;
 import static org.apache.ignite.testframework.GridTestUtils.assertNotContains;
+import static org.apache.ignite.testframework.GridTestUtils.assertThrows;
 import static org.apache.ignite.testframework.GridTestUtils.waitForCondition;
 
 /**
@@ -440,7 +441,12 @@ public class IgniteClusterSnapshotCheckTest extends AbstractSnapshotSelfTest {
 
         db.waitForCheckpoint("test-checkpoint");
 
-        ignite.snapshot().createSnapshot(SNAPSHOT_NAME).get();
+        assertThrows(
+            null,
+            () -> ignite.snapshot().createSnapshot(SNAPSHOT_NAME).get(),
+            IgniteException.class,
+            IgniteClusterShanpshotStreamerTest.ERR_MSG
+        );
 
         Path part0 = U.searchFileRecursively(snp(ignite).snapshotLocalDir(SNAPSHOT_NAME).toPath(),
             getPartitionFileName(PART_ID));
