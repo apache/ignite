@@ -52,6 +52,22 @@ public class PlainSnapshotTest extends AbstractSnapshotSelfTest {
         return Collections.singletonList(false);
     }
 
+    /** {@link AbstractSnapshotSelfTest.Account} with custom toString method. */
+    private static class AccountOverrideToString extends AbstractSnapshotSelfTest.Account {
+        /**
+         * @param id      User id.
+         * @param balance User balance.
+         */
+        public AccountOverrideToString(int id, int balance) {
+            super(id, balance);
+        }
+
+        /** {@inheritDoc} */
+        @Override public String toString() {
+            return "_" + super.toString();
+        }
+    }
+
     /**
      * Checks, compares CRCs of partitions in snapshot data files against the source.
      * <p>
@@ -70,13 +86,8 @@ public class PlainSnapshotTest extends AbstractSnapshotSelfTest {
         IgniteEx ig = startGridsWithCache(1, 4096, key -> new AbstractSnapshotSelfTest.Account(key, key),
             new CacheConfiguration<>(DEFAULT_CACHE_NAME));
 
-        for (int i = 4096; i < 8192; i++) {
-            ig.cache(DEFAULT_CACHE_NAME).put(i, new AbstractSnapshotSelfTest.Account(i, i) {
-                @Override public String toString() {
-                    return "_" + super.toString();
-                }
-            });
-        }
+        for (int i = 4096; i < 8192; i++)
+            ig.cache(DEFAULT_CACHE_NAME).put(i, new AccountOverrideToString(i, i));
 
         GridCacheSharedContext<?, ?> cctx = ig.context().cache().context();
         IgniteSnapshotManager mgr = snp(ig);
