@@ -1216,6 +1216,9 @@ public abstract class GridDhtCacheAdapter<K, V> extends GridDistributedCacheAdap
         if (curVer.isBetween(lastAffChangedTopVer, mapVer))
             return false;
 
+        if (ctx.shared().snapshotMgr().lastSnapshotTopologyVersion().after(mapVer))
+            return true;
+
         // TODO IGNITE-7164 check mvcc crd for mvcc enabled txs.
 
         Collection<ClusterNode> cacheNodes0 = ctx.discovery().cacheGroupAffinityNodes(ctx.groupId(), mapVer);

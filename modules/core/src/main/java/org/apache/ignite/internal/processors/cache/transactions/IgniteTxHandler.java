@@ -721,8 +721,11 @@ public class IgniteTxHandler {
 
         AffinityTopologyVersion lastAffChangedTopVer = ctx.exchange().lastAffinityChangedTopologyVersion(expVer);
 
-        if (curVer.compareTo(expVer) <= 0 && curVer.compareTo(lastAffChangedTopVer) >= 0)
+        if (curVer.isBetween(lastAffChangedTopVer, expVer))
             return false;
+
+        if (ctx.snapshotMgr().lastSnapshotTopologyVersion().after(expVer))
+            return true;
 
         // TODO IGNITE-6754 check mvcc crd for mvcc enabled txs.
 

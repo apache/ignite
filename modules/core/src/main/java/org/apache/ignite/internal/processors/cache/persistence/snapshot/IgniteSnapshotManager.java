@@ -394,6 +394,9 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
     /** Snapshot transfer rate limit in bytes/sec. */
     private final DistributedLongProperty snapshotTransferRate = detachedLongProperty(SNAPSHOT_TRANSFER_RATE_DMS_KEY);
 
+    /** Version of a topology on which the last snapshot was initiated. */
+    private volatile AffinityTopologyVersion lastSnapshotTopVer = AffinityTopologyVersion.NONE;
+
     /**
      * @param ctx Kernal context.
      */
@@ -1714,6 +1717,16 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
     }
 
     /** {@inheritDoc} */
+    @Override public void onInitBeforeTopologyLock(GridDhtPartitionsExchangeFuture fut) {
+        SnapshotFutureTask task = currentSnapshotTask();
+
+        if (task == null || task.started().isDone())
+            return;
+
+        lastSnapshotTopVer = fut.initialVersion();
+    }
+
+    /** {@inheritDoc} */
     @Override public void onDoneBeforeTopologyUnlock(GridDhtPartitionsExchangeFuture fut) {
         if (clusterSnpReq == null || cctx.kernalContext().clientNode())
             return;
@@ -2083,6 +2096,11 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
      */
     public FileIOFactory ioFactory() {
         return ioFactory;
+    }
+
+    /** @return  Version of a topology on which the last snapshot was initiated. */
+    public AffinityTopologyVersion lastSnapshotTopologyVersion() {
+        return lastSnapshotTopVer;
     }
 
     /**
