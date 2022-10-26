@@ -660,7 +660,7 @@ public class FileWriteAheadLogManager extends GridCacheSharedManagerAdapter impl
 
         for (long i = low.index(); i < high.index(); i++) {
             File file = archiveSegment(i, null);
-            File fileZip = compressedSegment(i);
+            File fileZip = compactedSegment(i);
 
             if (file.exists())
                 res.add(file);
@@ -1105,7 +1105,7 @@ public class FileWriteAheadLogManager extends GridCacheSharedManagerAdapter impl
      */
     private boolean hasIndex(long absIdx) {
         boolean inArchive = archiveSegment(absIdx, null).exists() ||
-            compressedSegment(absIdx).exists();
+            compactedSegment(absIdx).exists();
 
         if (inArchive)
             return true;
@@ -2313,7 +2313,7 @@ public class FileWriteAheadLogManager extends GridCacheSharedManagerAdapter impl
                         continue;
 
                     File tmpZip = archiveSegment(segIdx, ZIP_SUFFIX + TMP_SUFFIX);
-                    File zip = compressedSegment(segIdx);
+                    File zip = compactedSegment(segIdx);
                     File raw = archiveSegment(segIdx, null);
 
                     long currSize = 0;
@@ -2479,12 +2479,12 @@ public class FileWriteAheadLogManager extends GridCacheSharedManagerAdapter impl
     }
 
     /** {@inheritDoc} */
-    @Override public File compressedSegment(long idx) {
+    @Override public File compactedSegment(long idx) {
         return archiveSegment(idx, ZIP_SUFFIX);
     }
 
     /** {@inheritDoc} */
-    @Override public void awaitCompressed(long idx) throws IgniteInterruptedCheckedException {
+    @Override public void awaitCompacted(long idx) throws IgniteInterruptedCheckedException {
         segmentAware.awaitSegmentCompressed(idx);
     }
 
@@ -2499,7 +2499,7 @@ public class FileWriteAheadLogManager extends GridCacheSharedManagerAdapter impl
      * @param ext Optional extension
      * @return Path to archive segment.
      */
-    static File archiveSegment(File walArchiveDir, long idx, String ext) {
+    public static File archiveSegment(File walArchiveDir, long idx, String ext) {
         String fileName = fileName(idx);
 
         if (ext != null)
@@ -2552,7 +2552,7 @@ public class FileWriteAheadLogManager extends GridCacheSharedManagerAdapter impl
                     if (segmentToDecompress == -1)
                         continue;
 
-                    File zip = compressedSegment(segmentToDecompress);
+                    File zip = compactedSegment(segmentToDecompress);
                     File unzipTmp = archiveSegment(segmentToDecompress, TMP_SUFFIX);
                     File unzip = archiveSegment(segmentToDecompress, null);
 

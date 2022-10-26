@@ -19,7 +19,10 @@ package org.apache.ignite.internal.processors.cache.persistence.snapshot;
 
 import java.io.File;
 import java.util.Collections;
+import java.util.concurrent.ThreadLocalRandom;
+import java.util.concurrent.atomic.AtomicInteger;
 import java.util.function.UnaryOperator;
+import org.apache.ignite.IgniteCache;
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.cache.QueryEntity;
 import org.apache.ignite.configuration.CacheConfiguration;
@@ -28,6 +31,7 @@ import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.processors.cache.GridLocalConfigManager;
 import org.apache.ignite.internal.processors.cache.StoredCacheData;
+import org.apache.ignite.internal.processors.cache.persistence.wal.FileWriteAheadLogManager;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.internal.CU;
 import org.apache.ignite.internal.util.typedef.internal.U;
@@ -35,6 +39,7 @@ import org.junit.Test;
 
 import static org.apache.ignite.testframework.GridTestUtils.assertThrows;
 import static org.apache.ignite.testframework.GridTestUtils.assertThrowsWithCause;
+import static org.apache.ignite.testframework.GridTestUtils.waitForCondition;
 import static org.junit.Assume.assumeFalse;
 
 /**
@@ -53,11 +58,16 @@ public class IncrementalSnapshotTest extends AbstractSnapshotSelfTest {
     /** @see DataStorageConfiguration#isWalCompactionEnabled() */
     public boolean walCompactionEnabled = true;
 
+    /** */
+    private AtomicInteger cntr = new AtomicInteger();
+
     /** {@inheritDoc} */
     @Override protected IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {
         IgniteConfiguration cfg = super.getConfiguration(igniteInstanceName);
 
-        cfg.getDataStorageConfiguration().setWalCompactionEnabled(walCompactionEnabled);
+        cfg.getDataStorageConfiguration()
+            .setWalCompactionEnabled(walCompactionEnabled)
+            .setWalSegmentSize((int)U.MB);
 
         return cfg;
     }
@@ -101,6 +111,8 @@ public class IncrementalSnapshotTest extends AbstractSnapshotSelfTest {
                     snpCreate.createSnapshot(snpName, snpPath.getAbsolutePath(), false).get(TIMEOUT);
 
                 for (int incIdx = 1; incIdx < 3; incIdx++) {
+                    addData(cli);
+
                     if (snpPath == null)
                         snpCreate.createIncrementalSnapshot(snpName).get(TIMEOUT);
                     else
@@ -116,6 +128,19 @@ public class IncrementalSnapshotTest extends AbstractSnapshotSelfTest {
                     }
                 }
             }
+        }
+    }
+
+    /** */
+    private void addData(IgniteEx node) {
+        IgniteCache<Integer, byte[]> cache = node.getOrCreateCache(DEFAULT_CACHE_NAME);
+
+        for (int i = 0; i < (int)(U.MB * 3 * GRID_CNT / U.KB); i++) {
+            byte[] bytes = new byte[(int)U.KB];
+
+            ThreadLocalRandom.current().nextBytes(bytes);
+
+            cache.put(cntr.incrementAndGet(), bytes);
         }
     }
 
@@ -172,6 +197,36 @@ public class IncrementalSnapshotTest extends AbstractSnapshotSelfTest {
 
         assertThrowsWithCause(
             () -> cli.snapshot().createIncrementalSnapshot(SNAPSHOT_NAME).get(TIMEOUT),
+            IgniteException.class
+        );
+    }
+
+    /** */
+    @Test
+    public void testFailIfSegmentNotFound() throws Exception {
+        assumeFalse("https://issues.apache.org/jira/browse/IGNITE-17819", encryption);
+
+        IgniteEx srv = startGridsWithCache(
+            1,
+            CACHE_KEYS_RANGE,
+            key -> new Account(key, key),
+            new CacheConfiguration<>(DEFAULT_CACHE_NAME)
+        );
+
+        srv.snapshot().createSnapshot(SNAPSHOT_NAME).get(TIMEOUT);
+
+        addData(srv);
+
+        FileWriteAheadLogManager wal = (FileWriteAheadLogManager)srv.context().cache().context().wal();
+
+        assertTrue(waitForCondition(() -> wal.lastCompactedSegment() >= 0, getTestTimeout()));
+
+        long segIdx = wal.lastCompactedSegment();
+
+        U.delete(wal.compactedSegment(segIdx));
+
+        assertThrowsWithCause(
+            () -> srv.snapshot().createIncrementalSnapshot(SNAPSHOT_NAME).get(TIMEOUT),
             IgniteException.class
         );
     }

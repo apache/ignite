@@ -134,7 +134,7 @@ class IncrementalSnapshotFutureTask
                     if (log.isInfoEnabled())
                         log.info("Waiting for WAL segments compression [lowIdx=" + lowIdx + ", highIdx=" + highIdx + ']');
 
-                    cctx.wal().awaitCompressed(highPtr.index());
+                    cctx.wal().awaitCompacted(highPtr.index());
 
                     if (log.isInfoEnabled()) {
                         log.info("Linking WAL segments into incremental snapshot [lowIdx=" + lowIdx + ", " +
@@ -142,9 +142,13 @@ class IncrementalSnapshotFutureTask
                     }
 
                     for (; lowIdx <= highIdx; lowIdx++) {
-                        File seg = cctx.wal().compressedSegment(lowIdx);
+                        File seg = cctx.wal().compactedSegment(lowIdx);
 
-                        assert seg.exists();
+                        if (!seg.exists()) {
+                            onDone(new IgniteException("WAL segment not found in archive [idx=" + lowIdx + ']'));
+
+                            return;
+                        }
 
                         Path segLink = incSnpDir.toPath().resolve(seg.getName());
 

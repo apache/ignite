@@ -209,12 +209,12 @@ public class NoOpWALManager implements IgniteWriteAheadLogManager {
     }
 
     /** {@inheritDoc} */
-    @Override public @Nullable File compressedSegment(long idx) {
+    @Override public @Nullable File compactedSegment(long idx) {
         return null;
     }
 
     /** {@inheritDoc} */
-    @Override public void awaitCompressed(long idx) {
+    @Override public void awaitCompacted(long idx) {
         // No-op.
     }
 }
