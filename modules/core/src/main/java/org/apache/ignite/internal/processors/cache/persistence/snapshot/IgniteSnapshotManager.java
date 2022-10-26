@@ -105,6 +105,7 @@ import org.apache.ignite.internal.managers.encryption.GroupKeyEncrypted;
 import org.apache.ignite.internal.managers.eventstorage.DiscoveryEventListener;
 import org.apache.ignite.internal.managers.systemview.walker.SnapshotViewWalker;
 import org.apache.ignite.internal.pagemem.store.PageStore;
+import org.apache.ignite.internal.pagemem.wal.IgniteWriteAheadLogManager;
 import org.apache.ignite.internal.pagemem.wal.record.RolloverType;
 import org.apache.ignite.internal.pagemem.wal.record.delta.ClusterSnapshotRecord;
 import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
@@ -2505,7 +2506,23 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
     ) throws IgniteCheckedException, IOException {
         File snpDir = snapshotLocalDir(name, snpPath);
 
-        ensureHardLinkAvailable(cctx.wal().archiveDir().toPath(), snpDir.toPath());
+        IgniteWriteAheadLogManager wal = cctx.wal();
+
+        if (wal == null) {
+            throw new IgniteCheckedException("Create incremental snapshot request has been rejected. " +
+                "WAL must be eanbled."
+            );
+        }
+
+        File archiveDir = wal.archiveDir();
+
+        if (archiveDir == null) {
+            throw new IgniteCheckedException("Create incremental snapshot request has been rejected. " +
+                "WAL archive must be eanbled."
+            );
+        }
+
+        ensureHardLinkAvailable(archiveDir.toPath(), snpDir.toPath());
 
         Set<String> aliveNodesConsIds = cctx.discovery().aliveServerNodes()
             .stream()

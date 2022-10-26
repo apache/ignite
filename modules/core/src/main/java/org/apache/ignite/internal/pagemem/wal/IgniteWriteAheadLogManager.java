@@ -248,7 +248,7 @@ public interface IgniteWriteAheadLogManager extends GridCacheSharedManager, Igni
     @Nullable File compactedSegment(long idx);
 
     /**
-     * Blocks current thread while segment with the {@code index} not compressed.
+     * Blocks current thread while segment with the {@code idx} not compressed.
      * If segment compressed, already, returns immediately.
      *
      * @param idx Segment index.
