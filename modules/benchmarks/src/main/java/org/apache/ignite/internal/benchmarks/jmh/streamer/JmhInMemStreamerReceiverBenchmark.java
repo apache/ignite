@@ -18,6 +18,8 @@
 package org.apache.ignite.internal.benchmarks.jmh.streamer;
 
 import org.apache.ignite.cache.CacheWriteSynchronizationMode;
+import org.apache.ignite.configuration.DataPageEvictionMode;
+import org.apache.ignite.configuration.DataRegionConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.openjdk.jmh.annotations.BenchmarkMode;
 import org.openjdk.jmh.annotations.Level;
@@ -38,11 +40,14 @@ import org.openjdk.jmh.runner.RunnerException;
 @BenchmarkMode(Mode.AverageTime)
 @State(Scope.Benchmark)
 @Threads(1)
-@Measurement(iterations = 5)
-@Warmup(iterations = 5)
+@Measurement(iterations = 3)
+@Warmup(iterations = 10)
 public class JmhInMemStreamerReceiverBenchmark extends JmhAbstractStreamerReceiverBenchmark {
     /** */
     private static final long DATA_AMOUNT_TO_LOAD = 1024L * 1024L * 1024L;
+
+    /** */
+    private static final boolean EVICTION = false;
 
     /** */
     public JmhInMemStreamerReceiverBenchmark() {
@@ -60,10 +65,15 @@ public class JmhInMemStreamerReceiverBenchmark extends JmhAbstractStreamerReceiv
         IgniteConfiguration cfg = super.configuration(instName, isClient);
 
         if (!isClient) {
-            long regionSize = 3 * dataAmountToLoad;
+            long regionSize = Math.round(2.5 * dataAmountToLoad);
 
-            cfg.getDataStorageConfiguration().getDefaultDataRegionConfiguration().setInitialSize(regionSize);
-            cfg.getDataStorageConfiguration().getDefaultDataRegionConfiguration().setMaxSize(regionSize);
+            DataRegionConfiguration regCfg = cfg.getDataStorageConfiguration().getDefaultDataRegionConfiguration();
+
+            regCfg.setInitialSize(regionSize);
+            regCfg.setMaxSize(regionSize);
+
+            if (EVICTION)
+                regCfg.setPageEvictionMode(DataPageEvictionMode.RANDOM_2_LRU);
 
             assert !cfg.getDataStorageConfiguration().getDefaultDataRegionConfiguration().isPersistenceEnabled();
         }
@@ -87,35 +97,17 @@ public class JmhInMemStreamerReceiverBenchmark extends JmhAbstractStreamerReceiv
         @Param({"2", "3"})
         private int servers;
 
-        /** Tested with smaller values. Like 50. Looks like the bigger, the better for the throughput. */
-        @Param({"777"})
-        private int avgDataSize;
-
         /** */
-        @Param({"3", "10"})
+        @Param({"5"})
         private int sendMsgDelay;
 
         /** */
         @Param({"PRIMARY_SYNC", "FULL_SYNC"})
         private CacheWriteSynchronizationMode cacheWriteMode;
 
-        /** */
-        @Param({"512"})
-        private int dsBatchSize;
-
         /** {@inheritDoc} */
         @Override public int serversCnt() {
             return servers;
-        }
-
-        /** {@inheritDoc} */
-        @Override public int avgDataSize() {
-            return avgDataSize;
-        }
-
-        /** {@inheritDoc} */
-        @Override public int dsBatchSize() {
-            return dsBatchSize;
         }
 
         /** {@inheritDoc} */

@@ -356,6 +356,7 @@ abstract class JmhAbstractStreamerReceiverBenchmark {
 
         /**
          * Average data size. Default is {@link #DEFAULT_AVG_DATA_SIZE}.
+         * Tested with values like 50, 500. Looks like the larger, the better. Default value looks OK for the tests.
          */
         default int avgDataSize() {
             return -1;
@@ -363,6 +364,7 @@ abstract class JmhAbstractStreamerReceiverBenchmark {
 
         /**
          * Batch size per node. Default is {@link #DEFAULT_BATCH_SIZE}.
+         * Tested with values like 256, 512. Looks like the larger, the better. Default value looks OK for the tests.
          */
         default int dsBatchSize() {
             return -1;
