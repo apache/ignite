@@ -67,12 +67,13 @@ import org.jetbrains.annotations.Nullable;
  *  <li>
  *      {@link #perNodeParallelOperations(int)} - sometimes data may be added
  *      to the data streamer via {@link #addData(Object, Object)} method faster than it can
- *      be put in cache. Especially in a persistent cache. Also, {@link #receiver(StreamReceiver)} could send
- *      and (wait for) its own backup record requests after streamer batch request is already responded to. New
- *      streamer requests can be accepted beforebackups are written. All these issues could cause unlimited heap memory
- *      utilization growth on local and remote nodes. To control memory utilization, this setting limits maximum
- *      allowed number of parallel buffered stream messages that are being processed on remote nodes. If this number
- *      is exceeded, then {@link #addData(Object, Object)} method will block to control memory utilization.
+ *      be put in cache. Especially in persistent cache. Also, changed or allowing overwrite
+ *      {@link #receiver(StreamReceiver)} could send and wait for its own backup updates after streamer batch request
+ *      is already responded to. New streamer requests can be accepted beforebackups are written. All these issues
+ *      could cause unlimited heap memory utilization growth on local and remote nodes. To control memory utilization,
+ *      this setting limits maximum allowed number of parallel buffered stream messages that are being processed on
+ *      remote nodes. If this number is exceeded, then {@link #addData(Object, Object)} method will block to control
+ *      memory utilization.
  *  </li>
  *  <li>
  *      {@link #autoFlushFrequency(long)} - automatic flush frequency in milliseconds. Essentially,
@@ -120,7 +121,7 @@ public interface IgniteDataStreamer<K, V> extends AutoCloseable {
      *
      * @see #perNodeParallelOperations()
      */
-    public static final int DFLT_MAX_PARALLEL_PERSISTENT_OPS = 8;
+    public static final int DFLT_MAX_PARALLEL_PERSISTENT_OPS = 32;
 
     /** Default operations batch size to sent to remote node for loading. */
     public static final int DFLT_PER_NODE_BUFFER_SIZE = 512;

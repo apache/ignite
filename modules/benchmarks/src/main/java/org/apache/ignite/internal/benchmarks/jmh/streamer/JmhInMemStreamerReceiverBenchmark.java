@@ -40,11 +40,11 @@ import org.openjdk.jmh.runner.RunnerException;
 @BenchmarkMode(Mode.AverageTime)
 @State(Scope.Benchmark)
 @Threads(1)
-@Measurement(iterations = 3)
+@Measurement(iterations = 5)
 @Warmup(iterations = 10)
 public class JmhInMemStreamerReceiverBenchmark extends JmhAbstractStreamerReceiverBenchmark {
     /** */
-    private static final long DATA_AMOUNT_TO_LOAD = 1024L * 1024L * 1024L;
+    private static final long DATA_AMOUNT_TO_LOAD = 1500L * 1024L * 1024L;
 
     /** */
     private static final boolean EVICTION = false;
@@ -98,7 +98,7 @@ public class JmhInMemStreamerReceiverBenchmark extends JmhAbstractStreamerReceiv
         private int servers;
 
         /** */
-        @Param({"5"})
+        @Param({"0", "5"})
         private int sendMsgDelay;
 
         /** */

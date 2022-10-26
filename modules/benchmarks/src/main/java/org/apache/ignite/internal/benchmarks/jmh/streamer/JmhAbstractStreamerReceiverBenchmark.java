@@ -269,6 +269,7 @@ abstract class JmhAbstractStreamerReceiverBenchmark {
      * This receiver is much slower any batched one.
      * Add @Benchmark to enable the test.
      */
+    @Benchmark
     public void benchIndividual() throws Exception {
         runLoad(DataStreamerCacheUpdaters.individual());
     }

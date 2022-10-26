@@ -251,47 +251,6 @@ public class DataStreamProcessorSelfTest extends GridCommonAbstractTest {
         checkDataStreamer();
     }
 
-    /** */
-    @Test
-    public void testHeap() throws Exception {
-        int entriesToLoad = 1_000_000;
-        int avgEntryLen = 500;
-
-        useCache = true;
-        mode = PARTITIONED;
-        cacheAtomicityMode = ATOMIC;
-        cacheSyncMode = PRIMARY_SYNC;
-        cacheBackups = 2;
-        nearEnabled = false;
-
-        persistence = true;
-        checkpointFreq = 3000;
-
-        Object[] vals = loadData(Math.max(100, entriesToLoad / 100), avgEntryLen);
-
-        try {
-            startGrids(3);
-
-            grid(0).cluster().state(ClusterState.ACTIVE);
-
-            useCache = false;
-
-            Ignite ldr = startClientGrid(3);
-
-            try (IgniteDataStreamer<Integer, Object> ds = ldr.dataStreamer(DEFAULT_CACHE_NAME)) {
-                ds.allowOverwrite(true);
-
-                for (int e = 0; e < entriesToLoad; ++e)
-                    ds.addData(e, vals[e % vals.length]);
-            }
-
-            assertEquals(grid(0).cache(DEFAULT_CACHE_NAME).size(), entriesToLoad);
-        }
-        finally {
-            stopAllGrids();
-        }
-    }
-
     /**
      * Tests DataStreamer doesn't overflow update streamer requests with default settings with 'allowOverwrite == false'.
      *
@@ -337,7 +296,7 @@ public class DataStreamProcessorSelfTest extends GridCommonAbstractTest {
                 // This race we can't win. Things stuck at unpredictable checkpoint durations, WAL writes, WAL
                 // rollings, GCs. However, Streamer should take in account how many unresponded batches it has sent.
                 // We consume heap if keep collecting updating futures and related structures and requests.
-                UpdatesQueueCheckingCommunicationSpi.maxWaitingFuts.set(ds.perNodeBufferSize() * 10000);
+                UpdatesQueueCheckingCommunicationSpi.maxWaitingFuts.set(ds.perNodeBufferSize() * 500);
 
                 //No need to remap if test-failed.
                 ((DataStreamerImpl)ds).maxRemapCount(0);
