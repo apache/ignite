@@ -1367,7 +1367,7 @@ public class SnapshotRestoreProcess {
     private static String partitionsMapToCompactString(Map<Integer, Set<Integer>> map) {
         return map.entrySet()
             .stream()
-            .collect(Collectors.toMap(Map.Entry::getKey, e -> S.compact(e.getValue())))
+            .collect(Collectors.toMap(Map.Entry::getKey, e -> F.toStringSortedDistinct(e.getValue())))
             .toString();
     }
 

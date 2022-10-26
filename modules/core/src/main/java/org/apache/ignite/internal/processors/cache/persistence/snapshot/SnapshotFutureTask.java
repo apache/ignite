@@ -397,7 +397,7 @@ class SnapshotFutureTask extends AbstractSnapshotFutureTask<Set<GroupPartitionId
                     if (!missed.isEmpty()) {
                         throw new IgniteCheckedException("Snapshot operation cancelled due to " +
                             "not all of requested partitions has OWNING state on local node [grpId=" + grpId +
-                            ", missed=" + S.compact(missed) + ']');
+                            ", missed=" + F.toStringSortedDistinct(missed) + ']');
                     }
                 }
                 else {
@@ -406,7 +406,7 @@ class SnapshotFutureTask extends AbstractSnapshotFutureTask<Set<GroupPartitionId
                     if (!missed.isEmpty()) {
                         log.warning("All local cache group partitions in OWNING state have been included into a snapshot. " +
                             "Partitions which have different states skipped. Index partitions has also been skipped " +
-                            "[snpName=" + snpName + ", grpId=" + grpId + ", missed=" + S.compact(missed) + ']');
+                            "[snpName=" + snpName + ", grpId=" + grpId + ", missed=" + F.toStringSortedDistinct(missed) + ']');
                     }
                     else if (affNode && missed.isEmpty() && cctx.kernalContext().query().moduleEnabled())
                         owning.add(INDEX_PARTITION);
@@ -465,7 +465,7 @@ class SnapshotFutureTask extends AbstractSnapshotFutureTask<Set<GroupPartitionId
 
         if (log.isInfoEnabled()) {
             log.info("Submit partition processing tasks to the snapshot execution pool " +
-                "[map=" + compactGroupPartitions(partFileLengths.keySet()) +
+                "[map=" + groupByGroupId(partFileLengths.keySet()) +
                 ", totalSize=" + U.humanReadableByteCount(partFileLengths.values().stream().mapToLong(v -> v).sum()) + ']');
         }
 
@@ -649,16 +649,17 @@ class SnapshotFutureTask extends AbstractSnapshotFutureTask<Set<GroupPartitionId
 
     /**
      * @param grps List of processing pairs.
-     * @return Map of cache group id their partitions compacted by {@link S#compact(Collection)}.
+     *
+     * @return Map with cache group id's associated to corresponding partitions.
      */
-    private static Map<Integer, String> compactGroupPartitions(Collection<GroupPartitionId> grps) {
+    private static Map<Integer, String> groupByGroupId(Collection<GroupPartitionId> grps) {
         return grps.stream()
             .collect(Collectors.groupingBy(GroupPartitionId::getGroupId,
                 Collectors.mapping(GroupPartitionId::getPartitionId,
                     Collectors.toSet())))
             .entrySet()
             .stream()
-            .collect(Collectors.toMap(Map.Entry::getKey, e -> S.compact(e.getValue())));
+            .collect(Collectors.toMap(Map.Entry::getKey, e -> F.toStringSortedDistinct(e.getValue())));
     }
 
     /** {@inheritDoc} */

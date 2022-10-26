@@ -58,7 +58,6 @@ import org.apache.ignite.internal.util.tostring.GridToStringExclude;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.X;
 import org.apache.ignite.internal.util.typedef.internal.CU;
-import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.jetbrains.annotations.Nullable;
 
@@ -1308,8 +1307,8 @@ public class GridClientPartitionTopology implements GridDhtPartitionTopology {
                     U.warn(log, "Partitions have been scheduled for rebalancing due to outdated update counter "
                         + "[grpId=" + grpId
                         + ", nodeId=" + nodeId
-                        + ", partsFull=" + S.compact(partsToRebalance)
-                        + ", partsHistorical=" + S.compact(historical) + "]");
+                        + ", partsFull=" + F.toStringSortedDistinct(partsToRebalance)
+                        + ", partsHistorical=" + F.toStringSortedDistinct(historical) + "]");
                 }
             }
 

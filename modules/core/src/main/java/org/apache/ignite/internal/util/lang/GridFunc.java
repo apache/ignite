@@ -35,6 +35,7 @@ import java.util.Map;
 import java.util.NavigableSet;
 import java.util.RandomAccess;
 import java.util.Set;
+import java.util.TreeSet;
 import java.util.UUID;
 import java.util.concurrent.Callable;
 import java.util.concurrent.ConcurrentMap;
@@ -317,6 +318,19 @@ public class GridFunc {
                 break;
 
         return f.reduce();
+    }
+
+    /**
+     * Creates string representation of a specified collection with preliminary sorting and duplicates removing.
+     *
+     * @param c Input collection.
+     * @return String representation of collection.
+     */
+    public static String toStringSortedDistinct(Collection<? extends Comparable<?>> c) {
+        if (c.isEmpty())
+            return "[]";
+
+        return '[' + concat(new TreeSet<>(c), ",") + ']';
     }
 
     /**
