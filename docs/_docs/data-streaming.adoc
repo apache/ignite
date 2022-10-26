@@ -60,17 +60,16 @@ Good use of streaming is data preloading.
 == Limitations
 DataStreamer doesn't guarantee:
 []
-- Data order. Data records may be load with different order that it was put into streamer;
-- Immediate data loading. Data can be kept for a while before loading;
 - By default, data consistency until successfully finished;
+- Immediate data loading. Data can be kept for a while before loading;
+- Data order. Data records may be load with different order that it was put into streamer;
 - By default, working with external storages.
 
-If <<overwritting, 'allowOverwrite'>>  property is 'false' (default), you should avoid:
+If <<overwritting, 'allowOverwrite'>> property is 'false' (default), consider:
 []
-- Having the same keys repeating in the data being streamed;
-- Streamer cancelation or streamer node failure;
-- Using data loaded with canceled or failed streamer;
-- Creating snapshots while streaming.
+- You should not have the same keys repeating in the data being streamed;
+- Streamer cancelation or streamer node failure can cause data inconsistency;
+- Concurrently created snapshot may contain inconsistent data and might not be restored entirely.
 
 Most important behaviour of Ignite Data Streamer is defined by <<receivers, stream receiver>> and
 <<overwritting, 'allowOverwite' setting.>>

@@ -53,6 +53,7 @@ import org.apache.ignite.spi.communication.tcp.TcpCommunicationSpi;
 import org.apache.ignite.stream.StreamReceiver;
 import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.testframework.ListeningTestLogger;
+import org.apache.ignite.testframework.LogListener;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.apache.logging.log4j.core.appender.WriterAppender;
 import org.junit.Ignore;
@@ -182,16 +183,14 @@ public class DataStreamerImplSelfTest extends GridCommonAbstractTest {
 
         startGrids(2);
 
-        AtomicInteger logCnt = new AtomicInteger();
-
         IgniteConfiguration cfg = getConfiguration(getTestIgniteInstanceName(G.allGrids().size()));
-        cfg.setClientMode(true);
         ListeningTestLogger log = new ListeningTestLogger(cfg.getGridLogger());
-        log.registerListener(logStr -> {
-            if (logStr.contains("You are loading data with default stream receiver. It doesn't guarantie data " +
-                "consistency until successfully finishes"))
-                logCnt.incrementAndGet();
-        });
+
+        LogListener logListener = LogListener.matches("You are loading data with default stream receiver. It " +
+            "doesn't guarantie data consistency until successfully finishes").times(mustWarn ? 1 : 0).build();
+
+        log.registerListener(logListener);
+
         cfg.setGridLogger(log);
 
         IgniteEx ldr = startClientGrid(cfg);
@@ -209,10 +208,10 @@ public class DataStreamerImplSelfTest extends GridCommonAbstractTest {
                 else
                     ds.receiver(rcvr);
 
-                AtomicInteger loadCnt = new AtomicInteger(ldrThreads * 100);
-                CountDownLatch loadLatch = new CountDownLatch(ldrThreads);
+                // Put some amount of data.
+                AtomicInteger loadCnt = new AtomicInteger(1000);
 
-                GridTestUtils.runMultiThreadedAsync(() -> {
+                GridTestUtils.runMultiThreaded(() -> {
                     int v;
 
                     while (loadCnt.get() > 0) {
@@ -221,18 +220,11 @@ public class DataStreamerImplSelfTest extends GridCommonAbstractTest {
                         if (v >= 0)
                             ds.addData(v, v);
                     }
-
-                    loadLatch.countDown();
                 }, ldrThreads, "testDsLoader");
-
-                loadLatch.await();
             }
         }
 
-        if (mustWarn)
-            assertTrue("The warning must appear only once. Actual: " + logCnt.get(), logCnt.get() == 1);
-        else
-            assertTrue("The warning must not appear. Actual: " + logCnt.get(), logCnt.get() == 0);
+        logListener.check();
     }
 
     /**

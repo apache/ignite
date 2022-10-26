@@ -646,9 +646,10 @@ public class DataStreamerImpl<K, V> implements IgniteDataStreamer<K, V>, Delayed
         lock(false);
 
         if (rcvr instanceof IsolatedUpdater && inconsistencyWarned.compareAndSet(false, true)) {
-            log.warning("You are loading data with default stream receiver. It doesn't guarantie data " +
-                "consistency until successfully finishes. Avoid streamer cancelation, streamer node failure, " +
-                "creating snapshots while streaming.");
+            log.warning("You are loading data the setting 'allowOverwrite' set to false (default). It doesn't " +
+                "guarantie data consistency until successfully finishes. Streamer cancelation or streamer node " +
+                "failure can cause data inconsistency. Concurrently created snapshot may contain inconsistent data " +
+                "and might not be restored entirely.");
         }
 
         try {

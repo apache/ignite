@@ -64,8 +64,15 @@ SET STREAMING [OFF|ON];
 Using the `SET` command, you can stream data in bulk into a SQL table in your cluster. When streaming is enabled, the JDBC/ODBC driver will pack your commands in batches and send them to the server (Ignite cluster). On the server side, the batch is converted into a stream of cache update commands which are distributed asynchronously between server nodes. Performing this asynchronously increases peak throughput because at any given time all cluster nodes are busy with data loading.
 
 === Usage
-To stream data into your cluster, prepare a file with the `SET STREAMING ON` command followed by `INSERT` commands for data that needs to be loaded. For example:
+To stream data into your cluster, prepare a file with the `SET STREAMING ON` command followed by `INSERT` commands for data that needs to be loaded.
 
+[NOTE]
+====
+Setting streaming on uses link:../data-streaming.adoc#_limitations[DataStreamer] which doesn't guarantie data consistency until successfully finished by default.
+====
+
+
+Example:
 [source,sql]
 ----
 SET STREAMING ON;
