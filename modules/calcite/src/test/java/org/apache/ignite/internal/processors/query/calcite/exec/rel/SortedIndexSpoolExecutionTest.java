@@ -256,8 +256,8 @@ public class SortedIndexSpoolExecutionTest extends AbstractExecutionTest {
         }
 
         /** {@inheritDoc} */
-        @Override public int size() {
-            return 1;
+        @Override public boolean multiBounds() {
+            return false;
         }
 
         /** {@inheritDoc} */
