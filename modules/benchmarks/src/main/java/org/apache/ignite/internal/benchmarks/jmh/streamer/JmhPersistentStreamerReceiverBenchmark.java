@@ -31,8 +31,6 @@ import org.openjdk.jmh.annotations.Threads;
 import org.openjdk.jmh.annotations.Warmup;
 import org.openjdk.jmh.runner.Runner;
 import org.openjdk.jmh.runner.RunnerException;
-import org.openjdk.jmh.runner.options.Options;
-import org.openjdk.jmh.runner.options.OptionsBuilder;
 
 /**
  * For research of the streamer throughput with different settings and the receivers and with persistent cache.
@@ -50,7 +48,7 @@ public class JmhPersistentStreamerReceiverBenchmark extends JmhAbstractStreamerR
 
     /** */
     @Setup(Level.Trial)
-    public void setupPersistent(PersistentParams params){
+    public void setupPersistent(PersistentParams params) {
         setup(params);
     }
 
@@ -66,26 +64,32 @@ public class JmhPersistentStreamerReceiverBenchmark extends JmhAbstractStreamerR
     /** */
     @State(Scope.Benchmark)
     public static class PersistentParams implements Params {
+        /** */
         @Param({"1", "2"})
         private int servers;
 
+        /** */
         @Param({"NONE", "LOG_ONLY"})
         private WALMode walMode;
 
+        /** */
         @Param({"PRIMARY_SYNC", "FULL_SYNC"})
         private CacheWriteSynchronizationMode cacheWriteMode;
 
-        @Param({"50", "500"})
+        /** */
+        @Param({"777"})
         private int avgDataSize;
 
-        @Param({"256", "512"})
+        /** */
+        @Param({"512"})
         private int dsBatchSize;
 
+        /** */
         @Param({"4", "8", "16"})
         private int maxDsOps;
 
         /** {@inheritDoc} */
-        @Override public int servers() {
+        @Override public int serversCnt() {
             return servers;
         }
 

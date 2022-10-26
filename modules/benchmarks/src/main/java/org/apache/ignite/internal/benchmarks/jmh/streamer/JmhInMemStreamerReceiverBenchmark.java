@@ -17,6 +17,7 @@
 
 package org.apache.ignite.internal.benchmarks.jmh.streamer;
 
+import org.apache.ignite.cache.CacheWriteSynchronizationMode;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.openjdk.jmh.annotations.BenchmarkMode;
 import org.openjdk.jmh.annotations.Level;
@@ -41,10 +42,10 @@ import org.openjdk.jmh.runner.RunnerException;
 @Warmup(iterations = 5)
 public class JmhInMemStreamerReceiverBenchmark extends JmhAbstractStreamerReceiverBenchmark {
     /** */
-    private static final long DATA_AMOUNT_TO_LOAD = 500L * 1024L * 1024L;
+    private static final long DATA_AMOUNT_TO_LOAD = 1024L * 1024L * 1024L;
 
     /** */
-    public JmhInMemStreamerReceiverBenchmark(){
+    public JmhInMemStreamerReceiverBenchmark() {
         super(false, DATA_AMOUNT_TO_LOAD);
     }
 
@@ -58,7 +59,7 @@ public class JmhInMemStreamerReceiverBenchmark extends JmhAbstractStreamerReceiv
     @Override protected IgniteConfiguration configuration(String instName, boolean isClient) {
         IgniteConfiguration cfg = super.configuration(instName, isClient);
 
-        if(!isClient){
+        if (!isClient) {
             long regionSize = 3 * dataAmountToLoad;
 
             cfg.getDataStorageConfiguration().getDefaultDataRegionConfiguration().setInitialSize(regionSize);
@@ -83,19 +84,27 @@ public class JmhInMemStreamerReceiverBenchmark extends JmhAbstractStreamerReceiv
     @State(Scope.Benchmark)
     public static class InMemParams implements Params {
         /** */
-        @Param({"1", "2", "4"})
+        @Param({"2", "3"})
         private int servers;
 
-        /** */
-        @Param({"500"})
+        /** Tested with smaller values. Like 50. Looks like the bigger, the better for the throughput. */
+        @Param({"777"})
         private int avgDataSize;
+
+        /** */
+        @Param({"3", "10"})
+        private int sendMsgDelay;
+
+        /** */
+        @Param({"PRIMARY_SYNC", "FULL_SYNC"})
+        private CacheWriteSynchronizationMode cacheWriteMode;
 
         /** */
         @Param({"512"})
         private int dsBatchSize;
 
         /** {@inheritDoc} */
-        @Override public int servers() {
+        @Override public int serversCnt() {
             return servers;
         }
 
@@ -107,6 +116,16 @@ public class JmhInMemStreamerReceiverBenchmark extends JmhAbstractStreamerReceiv
         /** {@inheritDoc} */
         @Override public int dsBatchSize() {
             return dsBatchSize;
+        }
+
+        /** {@inheritDoc} */
+        @Override public CacheWriteSynchronizationMode cacheWriteMode() {
+            return cacheWriteMode;
+        }
+
+        /** {@inheritDoc} */
+        @Override public int sendMsgDelayMs() {
+            return sendMsgDelay;
         }
     }
 }
