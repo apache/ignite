@@ -365,7 +365,4 @@ public class IncrementalSnapshotTest extends AbstractSnapshotSelfTest {
             errMsg
         );
     }
-
-    //TODO: test fail when hardlink not available.
-    //TODO: test fail when archive disabled.
 }
