@@ -33,7 +33,7 @@ import org.openjdk.jmh.runner.Runner;
 import org.openjdk.jmh.runner.RunnerException;
 
 /**
- * For research of the streamer throughput with different settings and the receivers and with persistent cache.
+ * Compares streamer receivers with persistent caches.
  */
 @BenchmarkMode(Mode.AverageTime)
 @State(Scope.Benchmark)
@@ -42,8 +42,11 @@ import org.openjdk.jmh.runner.RunnerException;
 @Warmup(iterations = 3)
 public class JmhPersistentStreamerReceiverBenchmark extends JmhAbstractStreamerReceiverBenchmark {
     /** */
+    protected static final long DATA_AMOUNT_TO_LOAD = 300L * 1024L * 1024L;
+
+    /** */
     public JmhPersistentStreamerReceiverBenchmark() {
-        super(false, -1);
+        super(false, DATA_AMOUNT_TO_LOAD);
     }
 
     /** */
@@ -65,11 +68,11 @@ public class JmhPersistentStreamerReceiverBenchmark extends JmhAbstractStreamerR
     @State(Scope.Benchmark)
     public static class PersistentParams implements Params {
         /** */
-        @Param({"1", "2"})
+        @Param({"1", "2", "3"})
         private int servers;
 
         /** */
-        @Param({"NONE", "LOG_ONLY"})
+        @Param({"NONE"})
         private WALMode walMode;
 
         /** */
@@ -77,16 +80,12 @@ public class JmhPersistentStreamerReceiverBenchmark extends JmhAbstractStreamerR
         private CacheWriteSynchronizationMode cacheWriteMode;
 
         /** */
-        @Param({"777"})
-        private int avgDataSize;
-
-        /** */
-        @Param({"512"})
-        private int dsBatchSize;
-
-        /** */
-        @Param({"4", "8", "16"})
+        @Param({"8", "16"})
         private int maxDsOps;
+
+        /** */
+        @Param({"3", "10"})
+        private int sendMsgDelay;
 
         /** {@inheritDoc} */
         @Override public int serversCnt() {
@@ -104,18 +103,13 @@ public class JmhPersistentStreamerReceiverBenchmark extends JmhAbstractStreamerR
         }
 
         /** {@inheritDoc} */
-        @Override public int avgDataSize() {
-            return avgDataSize;
-        }
-
-        /** {@inheritDoc} */
-        @Override public int dsBatchSize() {
-            return dsBatchSize;
-        }
-
-        /** {@inheritDoc} */
         @Override public int maxDsOps() {
             return maxDsOps;
+        }
+
+        /** {@inheritDoc} */
+        @Override public int sendMsgDelayMs() {
+            return sendMsgDelay;
         }
     }
 }

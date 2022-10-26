@@ -65,14 +65,11 @@ import org.openjdk.jmh.runner.options.Options;
 import org.openjdk.jmh.runner.options.OptionsBuilder;
 
 /**
- * For research of the streamer throughput with different settings and the receivers.
+ * Compares streamer receivers.
  */
 abstract class JmhAbstractStreamerReceiverBenchmark {
     /** */
     private static final TcpDiscoveryVmIpFinder IP_FINDER = new TcpDiscoveryVmIpFinder(true);
-
-    /** */
-    protected static final long DFLT_DATA_AMOUNT_TO_LOAD = 100L * 1024L * 1024L;
 
     /** */
     private static final boolean LOAD_FROM_CLIENT = true;
@@ -88,6 +85,12 @@ abstract class JmhAbstractStreamerReceiverBenchmark {
 
     /** */
     private static final boolean DELAY_ONLY_IO_RESPONSES = true;
+
+    /** */
+    private static final int DEFAULT_BATCH_SIZE = 512;
+
+    /** */
+    private static final int DEFAULT_AVG_DATA_SIZE = 777;
 
     /** */
     private static final String CACHE_NAME = "testCache";
@@ -111,12 +114,15 @@ abstract class JmhAbstractStreamerReceiverBenchmark {
     private Object[] values;
 
     /** */
+    protected int avgDataSize;
+
+    /** */
     private Params runParams;
 
     /** */
     protected JmhAbstractStreamerReceiverBenchmark(boolean persistent, long dataAmountToLoad) {
         this.persistent = persistent;
-        this.dataAmountToLoad = dataAmountToLoad > 0 ? dataAmountToLoad : DFLT_DATA_AMOUNT_TO_LOAD;
+        this.dataAmountToLoad = dataAmountToLoad;
     }
 
     /**
@@ -241,10 +247,10 @@ abstract class JmhAbstractStreamerReceiverBenchmark {
 
         assert nodes.get(0).cache(CACHE_NAME).size() == 0;
 
-        assert runParams.avgDataSize() != 0;
+        avgDataSize = runParams.avgDataSize() > 0 ? runParams.avgDataSize() : DEFAULT_AVG_DATA_SIZE;
 
-        int minLen = Math.max(1, (int)(runParams.avgDataSize() * 0.9f));
-        int maxLen = Math.max(1, (int)(runParams.avgDataSize() * 1.1f));
+        int minLen = Math.max(1, (int)(avgDataSize * 0.9f));
+        int maxLen = Math.max(1, (int)(avgDataSize * 1.1f));
 
         for (int v = 0; v < values.length; v++) {
             int valLen = minLen + (maxLen > minLen ? rnd.nextInt(maxLen - minLen) : 0);
@@ -285,18 +291,13 @@ abstract class JmhAbstractStreamerReceiverBenchmark {
     
     /** Launches test with all available params. */
     private void runLoad(@Nullable StreamReceiver<Long, Object> receiver) throws Exception {
-        long loadCnt = dataAmountToLoad / runParams.avgDataSize();
+        long loadCnt = dataAmountToLoad / avgDataSize;
 
         try (IgniteDataStreamer<Long, Object> streamer = ldrNode.dataStreamer(CACHE_NAME)) {
             if (receiver != null)
                 streamer.receiver(receiver);
 
-            assert runParams.dsBatchSize() != 0;
-
-            if (runParams.dsBatchSize() > 0)
-                streamer.perNodeBufferSize(runParams.dsBatchSize());
-
-            assert runParams.maxDsOps() != 0;
+            streamer.perNodeBufferSize(runParams.dsBatchSize() > 0 ? runParams.dsBatchSize() : DEFAULT_BATCH_SIZE);
 
             if (runParams.maxDsOps() > 0)
                 streamer.perNodeParallelOperations(runParams.maxDsOps());
@@ -354,15 +355,17 @@ abstract class JmhAbstractStreamerReceiverBenchmark {
         }
 
         /**
-         * Average data size.
+         * Average data size. Default is {@link #DEFAULT_AVG_DATA_SIZE}.
          */
-        int avgDataSize();
+        default int avgDataSize() {
+            return -1;
+        }
 
         /**
-         * Batch size per node.
+         * Batch size per node. Default is {@link #DEFAULT_BATCH_SIZE}.
          */
         default int dsBatchSize() {
-            return 512;
+            return -1;
         }
 
         /**
@@ -400,6 +403,7 @@ abstract class JmhAbstractStreamerReceiverBenchmark {
 
             super.sendMessage(node, msg);
         }
+
         /** {@inheritDoc} */
         @Override public void sendMessage(ClusterNode node, Message msg, IgniteInClosure<IgniteException> ackC)
             throws IgniteSpiException {

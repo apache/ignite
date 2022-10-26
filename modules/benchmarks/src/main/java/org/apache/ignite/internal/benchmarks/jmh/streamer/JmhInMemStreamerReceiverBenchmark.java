@@ -33,7 +33,7 @@ import org.openjdk.jmh.runner.Runner;
 import org.openjdk.jmh.runner.RunnerException;
 
 /**
- * For research of the streamer throughput with different settings and the receivers.
+ * Compares streamer receivers with in-memory caches.
  */
 @BenchmarkMode(Mode.AverageTime)
 @State(Scope.Benchmark)
