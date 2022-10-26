@@ -25,6 +25,8 @@ Notice how queries must pass through the proxy server node, where they are route
 With partition awareness in place, the thin client can directly route queries and operations to the primary nodes that own the data required for the queries.
 This eliminates the bottleneck, allowing the application to scale more easily.
 
+NOTE: This functionality works for a single key operations API without explicit ⁣ ⁣transactions (initiated via org.apache.ignite.client.ClientTransactions#txStart()). But for different platforms, the functionality may differ, for example, for java there is an implementation ScanQuery/IndexQuery with specified part.
+
 image::images/partitionawareness02.png[With Partition Awareness]
 
 

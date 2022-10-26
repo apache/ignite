@@ -525,6 +525,9 @@ public final class ClientConfiguration implements Serializable {
     }
 
     /**
+     * Used only whith a single key operations API without explicit transactions
+     * (initiated via org.apache.ignite.client.ClientTransactions#txStart) and ScanQuery/IndexQuery with specified part.
+     *
      * @return A value indicating whether partition awareness should be enabled.
      * <p>
      * Default is {@code true}: client sends requests directly to the primary node for the given cache key.
@@ -538,6 +541,9 @@ public final class ClientConfiguration implements Serializable {
 
     /**
      * Sets a value indicating whether partition awareness should be enabled.
+     * <p>
+     * Used only whith a single key operations API without explicit transactions
+     * (initiated via org.apache.ignite.client.ClientTransactions#txStart) and ScanQuery/IndexQuery with specified part.
      * <p>
      * Default is {@code true}: client sends requests directly to the primary node for the given cache key.
      * To do so, connection is established to every known server node.
