@@ -43,6 +43,7 @@ import static org.apache.ignite.configuration.DataStorageConfiguration.DFLT_WAL_
 import static org.apache.ignite.internal.pagemem.wal.record.WALRecord.RecordPurpose.LOGICAL;
 import static org.apache.ignite.internal.pagemem.wal.record.WALRecord.RecordPurpose.PHYSICAL;
 import static org.apache.ignite.internal.pagemem.wal.record.WALRecord.RecordType.CHECKPOINT_RECORD;
+import static org.apache.ignite.testframework.GridTestUtils.deleteLastCheckpointEndMarker;
 
 /** */
 public class IgniteWithoutArchiverWalIteratorInvalidCrcTest extends GridCommonAbstractTest {
@@ -133,7 +134,9 @@ public class IgniteWithoutArchiverWalIteratorInvalidCrcTest extends GridCommonAb
     public void nodeShouldStartIfBinaryRecordCorruptedBeforeEndCheckpoint() throws Exception {
         startNodeAndPopulate();
 
-        stopGrid(0, true);
+        stopGrid(0, false);
+
+        deleteLastCheckpointEndMarker(ignite);
 
         IgniteWriteAheadLogManager walMgr = ignite.context().cache().context().wal();
 
@@ -167,7 +170,7 @@ public class IgniteWithoutArchiverWalIteratorInvalidCrcTest extends GridCommonAb
     public void nodeShouldNotStartIfLastCheckpointRecordCorrupted() throws Exception {
         startNodeAndPopulate();
 
-        stopGrid(0, true);
+        stopGrid(0, false);
 
         IgniteWriteAheadLogManager walMgr = ignite.context().cache().context().wal();
 

@@ -24,6 +24,8 @@ import java.util.concurrent.Executor;
 import java.util.concurrent.ForkJoinPool;
 import javax.cache.configuration.Factory;
 import javax.net.ssl.SSLContext;
+
+import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.client.ClientAddressFinder;
 import org.apache.ignite.client.ClientPartitionAwarenessMapper;
 import org.apache.ignite.client.ClientPartitionAwarenessMapperFactory;
@@ -149,6 +151,9 @@ public final class ClientConfiguration implements Serializable {
      * Whether automatic binary configuration should be enabled.
      */
     private boolean autoBinaryConfigurationEnabled = true;
+
+    /** Logger. */
+    private IgniteLogger logger;
 
     /**
      * @return Host addresses.
@@ -813,5 +818,26 @@ public final class ClientConfiguration implements Serializable {
      */
     public ClientPartitionAwarenessMapperFactory getPartitionAwarenessMapperFactory() {
         return partitionAwarenessMapperFactory;
+    }
+
+    /**
+     * Sets the logger.
+     *
+     * @param logger Logger.
+     * @return {@code this} for chaining.
+     */
+    public ClientConfiguration setLogger(IgniteLogger logger) {
+        this.logger = logger;
+
+        return this;
+    }
+
+    /**
+     * Gets the logger.
+     *
+     * @return Logger.
+     */
+    public IgniteLogger getLogger() {
+        return logger;
     }
 }

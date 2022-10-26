@@ -328,6 +328,16 @@ public class PeriodicHistogramMetricImplTest extends GridCommonAbstractTest {
         assertEquals(6, bucket(0));
     }
 
+    /** Tests that histogram worked properly with timestamps greater than current time. */
+    @Test
+    public void testCurrentTimeDecreasing() {
+        long ts = curTime.get();
+
+        histogram.increment(ts + 1000);
+
+        assertEquals(1, bucket(-1));
+    }
+
     /**
      * Gets bucket values of current histogram.
      */

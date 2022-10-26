@@ -151,12 +151,16 @@ public class PrepareServiceImpl extends AbstractService implements PrepareServic
 
         IgniteRel igniteRel = optimize(sqlNode, planner, log);
 
+        // Extract parameters meta.
+        FieldsMetadata params = DynamicParamTypeExtractor.go(igniteRel);
+
         // Split query plan to query fragments.
         List<Fragment> fragments = new Splitter().go(igniteRel);
 
         QueryTemplate template = new QueryTemplate(fragments);
 
-        return new MultiStepQueryPlan(template, queryFieldsMetadata(ctx, validated.dataType(), validated.origins()));
+        return new MultiStepQueryPlan(template, queryFieldsMetadata(ctx, validated.dataType(), validated.origins()),
+            params);
     }
 
     /** */
@@ -169,12 +173,15 @@ public class PrepareServiceImpl extends AbstractService implements PrepareServic
         // Convert to Relational operators graph
         IgniteRel igniteRel = optimize(sqlNode, planner, log);
 
+        // Extract parameters meta.
+        FieldsMetadata params = DynamicParamTypeExtractor.go(igniteRel);
+
         // Split query plan to query fragments.
         List<Fragment> fragments = new Splitter().go(igniteRel);
 
         QueryTemplate template = new QueryTemplate(fragments);
 
-        return new MultiStepDmlPlan(template, queryFieldsMetadata(ctx, igniteRel.getRowType(), null));
+        return new MultiStepDmlPlan(template, queryFieldsMetadata(ctx, igniteRel.getRowType(), null), params);
     }
 
     /** */
@@ -183,7 +190,7 @@ public class PrepareServiceImpl extends AbstractService implements PrepareServic
         RelDataType resultType = TypeUtils.getResultType(
             ctx.typeFactory(), ctx.catalogReader(), sqlType, origins);
 
-        return new FieldsMetadataImpl(resultType, origins);
+        return new FieldsMetadataImpl(sqlType, resultType, origins);
     }
 
     /** */

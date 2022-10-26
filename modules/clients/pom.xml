@@ -189,7 +189,7 @@
                                 <phase>prepare-package</phase>
                                 <configuration>
                                     <target>
-                                        <exec executable="${docfx.exec}" searchpath="true" dir="../platforms/dotnet/docfx/">
+                                        <exec executable="${docfx.exec}" searchpath="true" dir="../platforms/dotnet/docfx/" failonerror="true">
                                             <arg value="Apache.Ignite.docfx.json" />
                                         </exec>
                                     </target>
@@ -204,7 +204,7 @@
                                 <phase>prepare-package</phase>
                                 <configuration>
                                     <target>
-                                        <exec executable="${doxygen.exec}" searchpath="true" dir="../platforms/cpp/">
+                                        <exec executable="${doxygen.exec}" searchpath="true" dir="../platforms/cpp/" failonerror="true">
                                             <arg value="cpp.dxg" />
                                         </exec>
                                     </target>

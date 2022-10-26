@@ -460,7 +460,7 @@ public class GridCommandHandlerConsistencyCountersTest extends GridCommandHandle
 
         assertEquals(EXIT_CODE_OK, execute("--consistency", "repair",
             ConsistencyCommand.CACHE, DEFAULT_CACHE_NAME,
-            ConsistencyCommand.PARTITION, "0",
+            ConsistencyCommand.PARTITIONS, "0",
             ConsistencyCommand.STRATEGY, strategy.toString()));
 
         int repairedCnt = repairedEntriesCount();
@@ -504,7 +504,7 @@ public class GridCommandHandlerConsistencyCountersTest extends GridCommandHandle
         // Repairing one more time, but with guarantee to fix (primary strategy);
         assertEquals(EXIT_CODE_OK, execute("--consistency", "repair",
             ConsistencyCommand.CACHE, DEFAULT_CACHE_NAME,
-            ConsistencyCommand.PARTITION, "0",
+            ConsistencyCommand.PARTITIONS, "0",
             ConsistencyCommand.STRATEGY, PRIMARY.toString()));
 
         repairedCnt += repairedEntriesCount();
