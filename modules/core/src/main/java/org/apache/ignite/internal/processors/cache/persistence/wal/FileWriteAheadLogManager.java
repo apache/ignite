@@ -622,8 +622,12 @@ public class FileWriteAheadLogManager extends GridCacheSharedManagerAdapter impl
         }
     }
 
-    /** {@inheritDoc} */
-    @Override public boolean isArchiverEnabled() {
+    /**
+     * Archiver can be not created, all files will be written to WAL folder, using absolute segment index.
+     *
+     * @return flag indicating if archiver is disabled.
+     */
+    private boolean isArchiverEnabled() {
         if (walArchiveDir != null && walWorkDir != null)
             return !walArchiveDir.equals(walWorkDir);
 
@@ -655,7 +659,7 @@ public class FileWriteAheadLogManager extends GridCacheSharedManagerAdapter impl
         List<File> res = new ArrayList<>();
 
         for (long i = low.index(); i < high.index(); i++) {
-            File file = archiveSegment(i);
+            File file = archiveSegment(i, null);
             File fileZip = compressedSegment(i);
 
             if (file.exists())
@@ -1100,7 +1104,7 @@ public class FileWriteAheadLogManager extends GridCacheSharedManagerAdapter impl
      * @return {@code True} exists.
      */
     private boolean hasIndex(long absIdx) {
-        boolean inArchive = archiveSegment(absIdx).exists() ||
+        boolean inArchive = archiveSegment(absIdx, null).exists() ||
             compressedSegment(absIdx).exists();
 
         if (inArchive)
@@ -2061,7 +2065,7 @@ public class FileWriteAheadLogManager extends GridCacheSharedManagerAdapter impl
             File origFile = new File(walWorkDir, fileName(segIdx));
 
             File dstTmpFile = FileWriteAheadLogManager.this.archiveSegment(absIdx, TMP_SUFFIX);
-            File dstFile = FileWriteAheadLogManager.this.archiveSegment(absIdx);
+            File dstFile = FileWriteAheadLogManager.this.archiveSegment(absIdx, null);
 
             if (log.isInfoEnabled()) {
                 log.info("Starting to copy WAL segment [absIdx=" + absIdx + ", segIdx=" + segIdx +
@@ -2310,7 +2314,7 @@ public class FileWriteAheadLogManager extends GridCacheSharedManagerAdapter impl
 
                     File tmpZip = archiveSegment(segIdx, ZIP_SUFFIX + TMP_SUFFIX);
                     File zip = compressedSegment(segIdx);
-                    File raw = archiveSegment(segIdx);
+                    File raw = archiveSegment(segIdx, null);
 
                     long currSize = 0;
                     long reservedSize = raw.length();
@@ -2475,11 +2479,6 @@ public class FileWriteAheadLogManager extends GridCacheSharedManagerAdapter impl
     }
 
     /** {@inheritDoc} */
-    @Override public File archiveSegment(long idx) {
-        return archiveSegment(idx, null);
-    }
-
-    /** {@inheritDoc} */
     @Override public File compressedSegment(long idx) {
         return archiveSegment(idx, ZIP_SUFFIX);
     }
@@ -2487,11 +2486,6 @@ public class FileWriteAheadLogManager extends GridCacheSharedManagerAdapter impl
     /** {@inheritDoc} */
     @Override public void awaitCompressed(long idx) throws IgniteInterruptedCheckedException {
         segmentAware.awaitSegmentCompressed(idx);
-    }
-
-    /** {@inheritDoc} */
-    @Override public void awaitArchived(long idx) throws IgniteInterruptedCheckedException {
-        segmentAware.awaitSegmentArchived(idx);
     }
 
     /** */
@@ -2560,7 +2554,7 @@ public class FileWriteAheadLogManager extends GridCacheSharedManagerAdapter impl
 
                     File zip = compressedSegment(segmentToDecompress);
                     File unzipTmp = archiveSegment(segmentToDecompress, TMP_SUFFIX);
-                    File unzip = archiveSegment(segmentToDecompress);
+                    File unzip = archiveSegment(segmentToDecompress, null);
 
                     long currSize = 0;
                     long reservedSize = U.uncompressedSize(zip);
@@ -2637,7 +2631,7 @@ public class FileWriteAheadLogManager extends GridCacheSharedManagerAdapter impl
             if (decompressionFutures.containsKey(idx))
                 return decompressionFutures.get(idx);
 
-            File f = archiveSegment(idx);
+            File f = archiveSegment(idx, null);
 
             if (f.exists())
                 return new GridFinishedFuture<>();

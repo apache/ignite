@@ -18,9 +18,7 @@
 package org.apache.ignite.internal.processors.cache.persistence.snapshot;
 
 import java.io.File;
-import java.util.ArrayList;
 import java.util.Collections;
-import java.util.List;
 import java.util.function.UnaryOperator;
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.cache.QueryEntity;
@@ -30,13 +28,10 @@ import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.processors.cache.GridLocalConfigManager;
 import org.apache.ignite.internal.processors.cache.StoredCacheData;
-import org.apache.ignite.internal.processors.cache.persistence.wal.FileWriteAheadLogManager;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.internal.CU;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.junit.Test;
-import org.junit.runner.RunWith;
-import org.junit.runners.Parameterized;
 
 import static org.apache.ignite.testframework.GridTestUtils.assertThrows;
 import static org.apache.ignite.testframework.GridTestUtils.assertThrowsWithCause;
@@ -45,7 +40,6 @@ import static org.junit.Assume.assumeFalse;
 /**
  * Basic tests for incremental snapshots.
  */
-@RunWith(Parameterized.class)
 public class IncrementalSnapshotTest extends AbstractSnapshotSelfTest {
     /** */
     public static final int GRID_CNT = 3;
@@ -56,33 +50,14 @@ public class IncrementalSnapshotTest extends AbstractSnapshotSelfTest {
     /** */
     public static final String GROUPED_CACHE = "my-grouped-cache2";
 
-    /** Generates values for the {@link #compactionEnabled} parameter. */
-    @Parameterized.Parameters(name = "encryption={0}, compaction = {1}")
-    public static Iterable<Object[]> params() {
-        List<Object[]> params = new ArrayList<>();
-
-        for (boolean enc : new boolean[] {false, true})
-            for (boolean compaction : new boolean[] {false, true})
-                params.add(new Object[] { enc, compaction });
-
-        return params;
-    }
-
     /** @see DataStorageConfiguration#isWalCompactionEnabled() */
-    @Parameterized.Parameter(1)
-    public boolean compactionEnabled;
-
-    /** @see FileWriteAheadLogManager#isArchiverEnabled() */
-    public boolean walArchiveEnabled = true;
+    public boolean walCompactionEnabled = true;
 
     /** {@inheritDoc} */
     @Override protected IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {
         IgniteConfiguration cfg = super.getConfiguration(igniteInstanceName);
 
-        cfg.getDataStorageConfiguration().setWalCompactionEnabled(compactionEnabled);
-
-        if (!walArchiveEnabled)
-            cfg.getDataStorageConfiguration().setWalArchivePath(cfg.getDataStorageConfiguration().getWalPath());
+        cfg.getDataStorageConfiguration().setWalCompactionEnabled(walCompactionEnabled);
 
         return cfg;
     }
@@ -310,10 +285,10 @@ public class IncrementalSnapshotTest extends AbstractSnapshotSelfTest {
 
     /** */
     @Test
-    public void testFailIfWalArchivationDisabled() throws Exception {
+    public void testFailIfWalCompactionDisabled() throws Exception {
         assumeFalse("https://issues.apache.org/jira/browse/IGNITE-17819", encryption);
 
-        walArchiveEnabled = false;
+        walCompactionEnabled = false;
 
         try {
             IgniteEx srv = startGridsWithCache(
@@ -329,11 +304,11 @@ public class IncrementalSnapshotTest extends AbstractSnapshotSelfTest {
                 null,
                 () -> srv.snapshot().createIncrementalSnapshot(SNAPSHOT_NAME).get(TIMEOUT),
                 IgniteException.class,
-                "Create incremental snapshot request has been rejected. WAL archiver must be enabled."
+                "Create incremental snapshot request has been rejected. WAL compaction must be enabled."
             );
         }
         finally {
-            walArchiveEnabled = true;
+            walCompactionEnabled = true;
         }
 
     }

@@ -57,7 +57,7 @@ class IncrementalSnapshotFutureTask
         UUID srcNodeId,
         UUID reqNodeId,
         SnapshotMetadata meta,
-        String snpPath,
+        @Nullable String snpPath,
         int incIdx,
         File tmpWorkDir,
         FileIOFactory ioFactory,
@@ -122,38 +122,22 @@ class IncrementalSnapshotFutureTask
                     long lowIdx = lowPtr.index() + (incIdx == 1 ? 0 : 1);
                     long highIdx = highPtr.index();
 
-                    boolean compactionEnabled =
-                        cctx.gridConfig().getDataStorageConfiguration().isWalCompactionEnabled();
-
-                    if (log.isInfoEnabled()) {
-                        log.info("Waiting for WAL segments archivation [lowIdx=" + lowIdx +
-                            ", highIdx=" + highIdx +
-                            ", compaction=" + compactionEnabled + ']');
-                    }
-
+                    assert cctx.gridConfig().getDataStorageConfiguration().isWalCompactionEnabled()
+                        : "WAL Compaction must be enabled";
                     assert lowIdx <= highIdx;
 
-                    cctx.wal().awaitArchived(highPtr.index());
+                    if (log.isInfoEnabled())
+                        log.info("Waiting for WAL segments compression [lowIdx=" + lowIdx + ", highIdx=" + highIdx + ']');
 
-                    if (compactionEnabled) {
-                        if (log.isInfoEnabled()) {
-                            log.info("Waiting for WAL segments compression [lowIdx=" + lowIdx +
-                                ", highIdx=" + highIdx + ']');
-                        }
-
-                        cctx.wal().awaitCompressed(highPtr.index());
-                    }
+                    cctx.wal().awaitCompressed(highPtr.index());
 
                     if (log.isInfoEnabled()) {
-                        log.info("Linking WAL segments into incremental snapshot [lowIdx=" + lowIdx +
-                            ", highIdx=" + highIdx +
-                            ", compaction=" + compactionEnabled + ']');
+                        log.info("Linking WAL segments into incremental snapshot [lowIdx=" + lowIdx + ", " +
+                            "highIdx=" + highIdx + ']');
                     }
 
                     for (; lowIdx <= highIdx; lowIdx++) {
-                        File seg = compactionEnabled
-                            ? cctx.wal().compressedSegment(lowIdx)
-                            : cctx.wal().archiveSegment(lowIdx);
+                        File seg = cctx.wal().compressedSegment(lowIdx);
 
                         assert seg.exists();
 

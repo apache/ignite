@@ -235,24 +235,11 @@ public interface IgniteWriteAheadLogManager extends GridCacheSharedManager, Igni
     void startAutoReleaseSegments();
 
     /**
-     * Archiver can be not created, all files will be written to WAL folder, using absolute segment index.
-     *
-     * @return flag indicating if archiver is disabled.
-     */
-    boolean isArchiverEnabled();
-
-    /**
      * Archive directory if any.
      *
      * @return Arvhice directory.
      */
     @Nullable File archiveDir();
-
-    /**
-     * @param idx Segment index.
-     * @return Path to compressed archive segment.
-     */
-    @Nullable File archiveSegment(long idx);
 
     /**
      * @param idx Segment index.
@@ -267,12 +254,4 @@ public interface IgniteWriteAheadLogManager extends GridCacheSharedManager, Igni
      * @param idx Segment index.
      */
     void awaitCompressed(long idx) throws IgniteInterruptedCheckedException;
-
-    /**
-     * Blocks current thread while segment with the {@code index} not archived.
-     * If segment compressed, already, returns immediately.
-     *
-     * @param idx Segment index.
-     */
-    void awaitArchived(long idx) throws IgniteInterruptedCheckedException;
 }

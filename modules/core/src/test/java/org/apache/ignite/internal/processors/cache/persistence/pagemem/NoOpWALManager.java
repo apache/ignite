@@ -204,17 +204,7 @@ public class NoOpWALManager implements IgniteWriteAheadLogManager {
     }
 
     /** {@inheritDoc} */
-    @Override public boolean isArchiverEnabled() {
-        return false;
-    }
-
-    /** {@inheritDoc} */
     @Override public @Nullable File archiveDir() {
-        return null;
-    }
-
-    /** {@inheritDoc} */
-    @Override public @Nullable File archiveSegment(long idx) {
         return null;
     }
 
@@ -225,11 +215,6 @@ public class NoOpWALManager implements IgniteWriteAheadLogManager {
 
     /** {@inheritDoc} */
     @Override public void awaitCompressed(long idx) {
-        // No-op.
-    }
-
-    /** {@inheritDoc} */
-    @Override public void awaitArchived(long idx) {
         // No-op.
     }
 }

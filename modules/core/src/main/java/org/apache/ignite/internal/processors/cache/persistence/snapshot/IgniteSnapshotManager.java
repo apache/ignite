@@ -1824,9 +1824,9 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
                 }
 
                 if (incremental) {
-                    if (!cctx.wal().isArchiverEnabled()) {
+                    if (!cctx.gridConfig().getDataStorageConfiguration().isWalCompactionEnabled()) {
                         throw new IgniteException("Create incremental snapshot request has been rejected. " +
-                            "WAL archiver must be enabled.");
+                            "WAL compaction must be enabled.");
                     }
 
                     if (!snpExists) {
