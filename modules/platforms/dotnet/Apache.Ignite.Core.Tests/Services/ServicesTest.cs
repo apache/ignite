@@ -42,7 +42,7 @@ namespace Apache.Ignite.Core.Tests.Services
     /// <summary>
     /// Services tests.
     /// </summary>
-#pragma warning disable 618
+#pragma warning disable CS0618 // Method is obsolete.
     public class ServicesTest
     {
         /** */
@@ -1676,6 +1676,41 @@ namespace Apache.Ignite.Core.Tests.Services
             }
         }
 
+#if NETCOREAPP
+        /// <summary>
+        /// Tests service method with default interface implementation.
+        /// </summary>
+        [Test]
+        public void TestDefaultInterfaceMethod()
+        {
+            var name = nameof(TestDefaultInterfaceMethod);
+            Services.DeployClusterSingleton(name, new TestServiceWithDefaultImpl());
+
+            var prx = Services.GetServiceProxy<ITestServiceWithDefaultImpl>(name);
+            var res = prx.GetInt();
+
+            Assert.AreEqual(42, res);
+        }
+
+        /// <summary>
+        /// Tests service method with default interface implementation that is overridden in the class.
+        /// </summary>
+        [Test]
+        public void TestDefaultInterfaceMethodOverridden()
+        {
+            var svcImpl = new TestServiceWithDefaultImplOverridden();
+
+            var name = nameof(TestDefaultInterfaceMethodOverridden);
+            Services.DeployClusterSingleton(name, svcImpl);
+
+            var prx = Services.GetServiceProxy<ITestServiceWithDefaultImpl>(name);
+            var res = prx.GetInt();
+
+            Assert.AreEqual(43, ((ITestServiceWithDefaultImpl)svcImpl).GetInt());
+            Assert.AreEqual(43, res);
+        }
+#endif
+
         /// <summary>
         /// Starts the grids.
         /// </summary>
@@ -2424,6 +2459,54 @@ namespace Apache.Ignite.Core.Tests.Services
         }
 
 #if NETCOREAPP
+        public interface ITestServiceWithDefaultImpl
+        {
+            int GetInt() => 42;
+
+            int GetInt(int x) => x + 42;
+        }
+        
+        private class TestServiceWithDefaultImpl : ITestServiceWithDefaultImpl, IService
+        {
+            public void Init(IServiceContext context)
+            {
+                // No-op.
+            }
+
+            public void Execute(IServiceContext context)
+            {
+                // No-op.
+            }
+
+            public void Cancel(IServiceContext context)
+            {
+                // No-op.
+            }
+
+            // ReSharper disable once UnusedMember.Local (ensure overload resolution)
+            int GetInt(string x) => x.Length;
+        }
+
+        private class TestServiceWithDefaultImplOverridden : ITestServiceWithDefaultImpl, IService
+        {
+            public void Init(IServiceContext context)
+            {
+                // No-op.
+            }
+
+            public void Execute(IServiceContext context)
+            {
+                // No-op.
+            }
+
+            public void Cancel(IServiceContext context)
+            {
+                // No-op.
+            }
+
+            int ITestServiceWithDefaultImpl.GetInt() => 43;
+        }
+
         /// <summary>
         /// Adds support of the local dates to the Ignite timestamp serialization.
         /// </summary>

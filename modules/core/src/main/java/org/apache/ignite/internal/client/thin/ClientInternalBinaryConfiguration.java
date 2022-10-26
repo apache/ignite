@@ -18,6 +18,7 @@
 package org.apache.ignite.internal.client.thin;
 
 import org.apache.ignite.internal.binary.streams.BinaryInputStream;
+import org.apache.ignite.internal.util.typedef.internal.S;
 
 /**
  * Cluster binary configuration.
@@ -51,5 +52,10 @@ class ClientInternalBinaryConfiguration {
      */
     public BinaryNameMapperMode binaryNameMapperMode() {
         return binaryNameMapperMode;
+    }
+
+    /** {@inheritDoc} */
+    @Override public String toString() {
+        return S.toString(ClientInternalBinaryConfiguration.class, this);
     }
 }

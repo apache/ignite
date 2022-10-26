@@ -16,6 +16,7 @@
  */
 package org.apache.ignite.internal.processors.query.calcite.exec;
 
+import java.util.Collections;
 import java.util.Iterator;
 import java.util.NoSuchElementException;
 import java.util.function.Function;
@@ -88,8 +89,14 @@ public abstract class AbstractIndexScan<Row, IdxRow> implements Iterable<Row>, A
                 idx.find(lower, upper, range.lowerInclude(), range.upperInclude(), indexQueryContext()));
         };
 
-        if (ranges.size() == 1)
-            return clo.apply(ranges.iterator().next());
+        if (!ranges.multiBounds()) {
+            Iterator<RangeCondition<Row>> it = ranges.iterator();
+
+            if (it.hasNext())
+                return clo.apply(it.next());
+            else
+                return Collections.emptyIterator();
+        }
 
         return F.flat(F.iterator(ranges, clo, true));
     }
