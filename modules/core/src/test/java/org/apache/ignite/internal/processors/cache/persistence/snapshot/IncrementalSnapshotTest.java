@@ -30,6 +30,7 @@ import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.processors.cache.GridLocalConfigManager;
 import org.apache.ignite.internal.processors.cache.StoredCacheData;
+import org.apache.ignite.internal.processors.cache.persistence.wal.FileWriteAheadLogManager;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.internal.CU;
 import org.apache.ignite.internal.util.typedef.internal.U;
@@ -71,11 +72,17 @@ public class IncrementalSnapshotTest extends AbstractSnapshotSelfTest {
     @Parameterized.Parameter(1)
     public boolean compactionEnabled;
 
+    /** @see FileWriteAheadLogManager#isArchiverEnabled() */
+    public boolean walArchiveEnabled = true;
+
     /** {@inheritDoc} */
     @Override protected IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {
         IgniteConfiguration cfg = super.getConfiguration(igniteInstanceName);
 
         cfg.getDataStorageConfiguration().setWalCompactionEnabled(compactionEnabled);
+
+        if (!walArchiveEnabled)
+            cfg.getDataStorageConfiguration().setWalArchivePath(cfg.getDataStorageConfiguration().getWalPath());
 
         return cfg;
     }
@@ -139,6 +146,27 @@ public class IncrementalSnapshotTest extends AbstractSnapshotSelfTest {
 
     /** */
     @Test
+    public void testFailForUnknownBaseSnapshot() throws Exception {
+        assumeFalse("https://issues.apache.org/jira/browse/IGNITE-17819", encryption);
+
+        IgniteEx ign = startGridsWithCache(1, CACHE_KEYS_RANGE, key -> new Account(key, key),
+            new CacheConfiguration<>(DEFAULT_CACHE_NAME));
+
+        assertThrowsWithCause(
+            () -> snp(ign).createIncrementalSnapshot("unknown").get(TIMEOUT),
+            IgniteException.class
+        );
+
+        snp(ign).createSnapshot(SNAPSHOT_NAME).get(TIMEOUT);
+
+        assertThrowsWithCause(
+            () -> snp(ign).createIncrementalSnapshot("unknown").get(TIMEOUT),
+            IgniteException.class
+        );
+    }
+
+    /** */
+    @Test
     public void testFailIfPreviousIncrementNotAvailable() throws Exception {
         assumeFalse("https://issues.apache.org/jira/browse/IGNITE-17819", encryption);
 
@@ -169,27 +197,6 @@ public class IncrementalSnapshotTest extends AbstractSnapshotSelfTest {
 
         assertThrowsWithCause(
             () -> cli.snapshot().createIncrementalSnapshot(SNAPSHOT_NAME).get(TIMEOUT),
-            IgniteException.class
-        );
-    }
-
-    /** */
-    @Test
-    public void testFailForUnknownBaseSnapshot() throws Exception {
-        assumeFalse("https://issues.apache.org/jira/browse/IGNITE-17819", encryption);
-
-        IgniteEx ign = startGridsWithCache(1, CACHE_KEYS_RANGE, key -> new Account(key, key),
-            new CacheConfiguration<>(DEFAULT_CACHE_NAME));
-
-        assertThrowsWithCause(
-            () -> snp(ign).createIncrementalSnapshot("unknown").get(TIMEOUT),
-            IgniteException.class
-        );
-
-        snp(ign).createSnapshot(SNAPSHOT_NAME).get(TIMEOUT);
-
-        assertThrowsWithCause(
-            () -> snp(ign).createIncrementalSnapshot("unknown").get(TIMEOUT),
             IgniteException.class
         );
     }
@@ -299,6 +306,36 @@ public class IncrementalSnapshotTest extends AbstractSnapshotSelfTest {
 
         for (int i = 0; i < GRID_CNT; i++)
             assertFalse(snp(srv).incrementalSnapshotLocalDir(SNAPSHOT_NAME, null, 1).exists());
+    }
+
+    /** */
+    @Test
+    public void testFailIfWalArchivationDisabled() throws Exception {
+        assumeFalse("https://issues.apache.org/jira/browse/IGNITE-17819", encryption);
+
+        walArchiveEnabled = false;
+
+        try {
+            IgniteEx srv = startGridsWithCache(
+                1,
+                CACHE_KEYS_RANGE,
+                key -> new Account(key, key),
+                new CacheConfiguration<>(DEFAULT_CACHE_NAME)
+            );
+
+            srv.snapshot().createSnapshot(SNAPSHOT_NAME).get(TIMEOUT);
+
+            assertThrows(
+                null,
+                () -> srv.snapshot().createIncrementalSnapshot(SNAPSHOT_NAME).get(TIMEOUT),
+                IgniteException.class,
+                "Create incremental snapshot request has been rejected. WAL archiver must be enabled."
+            );
+        }
+        finally {
+            walArchiveEnabled = true;
+        }
+
     }
 
     /** */
