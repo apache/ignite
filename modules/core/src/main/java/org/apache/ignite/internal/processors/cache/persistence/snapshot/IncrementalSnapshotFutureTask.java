@@ -25,6 +25,7 @@ import java.util.Set;
 import java.util.UUID;
 import java.util.function.BiConsumer;
 import org.apache.ignite.IgniteException;
+import org.apache.ignite.internal.pagemem.wal.record.delta.ClusterSnapshotRecord;
 import org.apache.ignite.internal.processors.cache.GridCacheSharedContext;
 import org.apache.ignite.internal.processors.cache.persistence.file.FileIOFactory;
 import org.apache.ignite.internal.processors.cache.persistence.partstate.GroupPartitionId;
@@ -45,10 +46,14 @@ class IncrementalSnapshotFutureTask
     /** Metadata of the full snapshot. */
     private final Set<Integer> affectedCacheGrps;
 
-    /** Current consistent cut WAL pointer. */
+    /**
+     * Pointer to the previous snapshot record.
+     * In case first increment snapshot will point to the {@link ClusterSnapshotRecord}.
+     * For second and subsequent incements on the previous consistent cut record.
+     */
     private final WALPointer lowPtr;
 
-    /** Preivous pointer. */
+    /** Current consistent cut WAL pointer. */
     private final WALPointer highPtr;
 
     /** */

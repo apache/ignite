@@ -237,13 +237,13 @@ public interface IgniteWriteAheadLogManager extends GridCacheSharedManager, Igni
     /**
      * Archive directory if any.
      *
-     * @return Arvhice directory.
+     * @return Archive directory.
      */
     @Nullable File archiveDir();
 
     /**
      * @param idx Segment index.
-     * @return Path to compressed archive segment.
+     * @return Compressed archive segment.
      */
     @Nullable File compressedSegment(long idx);
 
