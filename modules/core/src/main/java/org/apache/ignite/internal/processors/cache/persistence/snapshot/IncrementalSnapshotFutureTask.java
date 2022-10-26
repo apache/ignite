@@ -18,14 +18,18 @@
 package org.apache.ignite.internal.processors.cache.persistence.snapshot;
 
 import java.io.File;
+import java.nio.file.Files;
+import java.nio.file.Path;
 import java.util.HashSet;
 import java.util.Set;
 import java.util.UUID;
 import java.util.function.BiConsumer;
 import org.apache.ignite.IgniteException;
+import org.apache.ignite.internal.pagemem.wal.record.delta.ClusterSnapshotRecord;
 import org.apache.ignite.internal.processors.cache.GridCacheSharedContext;
 import org.apache.ignite.internal.processors.cache.persistence.file.FileIOFactory;
 import org.apache.ignite.internal.processors.cache.persistence.partstate.GroupPartitionId;
+import org.apache.ignite.internal.processors.cache.persistence.wal.WALPointer;
 import org.apache.ignite.internal.util.typedef.internal.CU;
 import org.jetbrains.annotations.Nullable;
 
@@ -42,16 +46,28 @@ class IncrementalSnapshotFutureTask
     /** Metadata of the full snapshot. */
     private final Set<Integer> affectedCacheGrps;
 
+    /**
+     * Pointer to the previous snapshot record.
+     * In case first increment snapshot will point to the {@link ClusterSnapshotRecord}.
+     * For second and subsequent incements on the previous consistent cut record.
+     */
+    private final WALPointer lowPtr;
+
+    /** Current consistent cut WAL pointer. */
+    private final WALPointer highPtr;
+
     /** */
     public IncrementalSnapshotFutureTask(
         GridCacheSharedContext<?, ?> cctx,
         UUID srcNodeId,
         UUID reqNodeId,
         SnapshotMetadata meta,
-        String snpPath,
+        @Nullable String snpPath,
         int incIdx,
         File tmpWorkDir,
-        FileIOFactory ioFactory
+        FileIOFactory ioFactory,
+        WALPointer lowPtr,
+        WALPointer highPtr
     ) {
         super(
             cctx,
@@ -82,6 +98,8 @@ class IncrementalSnapshotFutureTask
         this.incIdx = incIdx;
         this.snpPath = snpPath;
         this.affectedCacheGrps = new HashSet<>(meta.cacheGroupIds());
+        this.lowPtr = lowPtr;
+        this.highPtr = highPtr;
 
         cctx.cache().configManager().addConfigurationChangeListener(this);
     }
@@ -102,7 +120,50 @@ class IncrementalSnapshotFutureTask
                 return false;
             }
 
-            onDone(new IncrementalSnapshotFutureTaskResult());
+            cctx.kernalContext().pools().getSnapshotExecutorService().submit(() -> {
+                try {
+                    // First increment must include low segment, because full snapshot knows nothing about WAL.
+                    // All other begins from the next segment because lowPtr already saved inside previous increment.
+                    long lowIdx = lowPtr.index() + (incIdx == 1 ? 0 : 1);
+                    long highIdx = highPtr.index();
+
+                    assert cctx.gridConfig().getDataStorageConfiguration().isWalCompactionEnabled()
+                        : "WAL Compaction must be enabled";
+                    assert lowIdx <= highIdx;
+
+                    if (log.isInfoEnabled())
+                        log.info("Waiting for WAL segments compression [lowIdx=" + lowIdx + ", highIdx=" + highIdx + ']');
+
+                    cctx.wal().awaitCompacted(highPtr.index());
+
+                    if (log.isInfoEnabled()) {
+                        log.info("Linking WAL segments into incremental snapshot [lowIdx=" + lowIdx + ", " +
+                            "highIdx=" + highIdx + ']');
+                    }
+
+                    for (; lowIdx <= highIdx; lowIdx++) {
+                        File seg = cctx.wal().compactedSegment(lowIdx);
+
+                        if (!seg.exists()) {
+                            onDone(new IgniteException("WAL segment not found in archive [idx=" + lowIdx + ']'));
+
+                            return;
+                        }
+
+                        Path segLink = incSnpDir.toPath().resolve(seg.getName());
+
+                        if (log.isDebugEnabled())
+                            log.debug("Creaing segment link [path=" + segLink.toAbsolutePath() + ']');
+
+                        Files.createLink(segLink, seg.toPath());
+                    }
+
+                    onDone(new IncrementalSnapshotFutureTaskResult());
+                }
+                catch (Throwable e) {
+                    onDone(e);
+                }
+            });
 
             return true;
         }

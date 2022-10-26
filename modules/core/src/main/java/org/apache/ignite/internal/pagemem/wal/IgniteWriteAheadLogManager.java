@@ -17,9 +17,11 @@
 
 package org.apache.ignite.internal.pagemem.wal;
 
+import java.io.File;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.configuration.DataStorageConfiguration;
+import org.apache.ignite.internal.IgniteInterruptedCheckedException;
 import org.apache.ignite.internal.pagemem.wal.record.RolloverType;
 import org.apache.ignite.internal.pagemem.wal.record.WALRecord;
 import org.apache.ignite.internal.processors.cache.GridCacheSharedManager;
@@ -231,4 +233,25 @@ public interface IgniteWriteAheadLogManager extends GridCacheSharedManager, Igni
      * Start automatically releasing segments when reaching {@link DataStorageConfiguration#getMaxWalArchiveSize()}.
      */
     void startAutoReleaseSegments();
+
+    /**
+     * Archive directory if any.
+     *
+     * @return Archive directory.
+     */
+    @Nullable File archiveDir();
+
+    /**
+     * @param idx Segment index.
+     * @return Compressed archive segment.
+     */
+    @Nullable File compactedSegment(long idx);
+
+    /**
+     * Blocks current thread while segment with the {@code idx} not compressed.
+     * If segment compressed, already, returns immediately.
+     *
+     * @param idx Segment index.
+     */
+    void awaitCompacted(long idx) throws IgniteInterruptedCheckedException;
 }

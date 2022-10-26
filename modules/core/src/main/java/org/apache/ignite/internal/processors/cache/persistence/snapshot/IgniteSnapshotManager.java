@@ -19,7 +19,6 @@ package org.apache.ignite.internal.processors.cache.persistence.snapshot;
 
 import java.io.BufferedInputStream;
 import java.io.File;
-import java.io.FileInputStream;
 import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
@@ -106,6 +105,9 @@ import org.apache.ignite.internal.managers.encryption.GroupKeyEncrypted;
 import org.apache.ignite.internal.managers.eventstorage.DiscoveryEventListener;
 import org.apache.ignite.internal.managers.systemview.walker.SnapshotViewWalker;
 import org.apache.ignite.internal.pagemem.store.PageStore;
+import org.apache.ignite.internal.pagemem.wal.IgniteWriteAheadLogManager;
+import org.apache.ignite.internal.pagemem.wal.record.RolloverType;
+import org.apache.ignite.internal.pagemem.wal.record.delta.ClusterSnapshotRecord;
 import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
 import org.apache.ignite.internal.processors.cache.CacheGroupContext;
 import org.apache.ignite.internal.processors.cache.CacheGroupDescriptor;
@@ -132,6 +134,7 @@ import org.apache.ignite.internal.processors.cache.persistence.partstate.GroupPa
 import org.apache.ignite.internal.processors.cache.persistence.tree.io.DataPageIO;
 import org.apache.ignite.internal.processors.cache.persistence.tree.io.DataPagePayload;
 import org.apache.ignite.internal.processors.cache.persistence.tree.io.PageIO;
+import org.apache.ignite.internal.processors.cache.persistence.wal.WALPointer;
 import org.apache.ignite.internal.processors.cache.persistence.wal.crc.FastCrc;
 import org.apache.ignite.internal.processors.cache.persistence.wal.reader.StandaloneGridKernalContext;
 import org.apache.ignite.internal.processors.cache.tree.DataRow;
@@ -223,6 +226,7 @@ import static org.apache.ignite.internal.util.GridUnsafe.bufferAddress;
 import static org.apache.ignite.internal.util.IgniteUtils.isLocalNodeCoordinator;
 import static org.apache.ignite.internal.util.distributed.DistributedProcess.DistributedProcessType.END_SNAPSHOT;
 import static org.apache.ignite.internal.util.distributed.DistributedProcess.DistributedProcessType.START_SNAPSHOT;
+import static org.apache.ignite.internal.util.io.GridFileUtils.ensureHardLinkAvailable;
 import static org.apache.ignite.plugin.security.SecurityPermission.ADMIN_SNAPSHOT;
 import static org.apache.ignite.spi.systemview.view.SnapshotView.SNAPSHOT_SYS_VIEW;
 import static org.apache.ignite.spi.systemview.view.SnapshotView.SNAPSHOT_SYS_VIEW_DESC;
@@ -814,12 +818,14 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
         }
 
         if (req.incremental()) {
-            SnapshotMetadata meta = readSnapshotMetadata(new File(
-                snapshotLocalDir(req.snapshotName(), req.snapshotPath()),
-                snapshotMetaFileName(cctx.localNode().consistentId().toString())
-            ));
+            SnapshotMetadata meta;
 
             try {
+                meta = readSnapshotMetadata(new File(
+                    snapshotLocalDir(req.snapshotName(), req.snapshotPath()),
+                    snapshotMetaFileName(cctx.localNode().consistentId().toString())
+                ));
+
                 checkIncrementalCanBeCreated(req.snapshotName(), req.snapshotPath(), meta);
             }
             catch (IgniteCheckedException | IOException e) {
@@ -842,6 +848,46 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
         SnapshotMetadata meta
     ) {
         File incSnpDir = incrementalSnapshotLocalDir(req.snapshotName(), req.snapshotPath(), req.incrementIndex());
+        WALPointer lowPtr, highPtr;
+
+        if (req.incrementIndex() == 1)
+            lowPtr = meta.snapshotRecordPointer();
+        else {
+            int prevIdx = req.incrementIndex() - 1;
+
+            IncrementalSnapshotMetadata prevIncSnpMeta;
+
+            try {
+                prevIncSnpMeta = readFromFile(new File(
+                    incrementalSnapshotLocalDir(req.snapshotName(), req.snapshotPath(), prevIdx),
+                    incrementalSnapshotMetaFileName(prevIdx)
+                ));
+            }
+            catch (IgniteCheckedException | IOException e) {
+                return new GridFinishedFuture<>(e);
+            }
+
+            lowPtr = prevIncSnpMeta.cutPointer();
+        }
+
+        cctx.database().checkpointReadLock();
+
+        try {
+            highPtr = cctx.wal().log(new ClusterSnapshotRecord(req.snapshotName()));
+
+            // Dummy way to forcefully switch to the next segment.
+            // TODO: Must be replaced with the actual ConsistentCut logging.
+            cctx.wal().log(new ClusterSnapshotRecord(req.snapshotName()), RolloverType.NEXT_SEGMENT);
+        }
+        catch (IgniteCheckedException e) {
+            return new GridFinishedFuture<>(e);
+        }
+        finally {
+            cctx.database().checkpointReadUnlock();
+        }
+
+        // For now, forcefully rollover to the next WAL segments to make segments waiting possible.
+        assert cctx.wal().currentSegment() >= highPtr.index() : "Rollover must be invoked.";
 
         IgniteInternalFuture<SnapshotOperationResponse> task0 = registerTask(req.snapshotName(), new IncrementalSnapshotFutureTask(
             cctx,
@@ -851,7 +897,9 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
             req.snapshotPath(),
             req.incrementIndex(),
             tmpWorkDir,
-            ioFactory
+            ioFactory,
+            lowPtr,
+            highPtr
         )).chain(fut -> {
             if (fut.error() != null)
                 throw F.wrap(fut.error());
@@ -864,7 +912,7 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
                 req.incrementIndex(),
                 cctx.localNode().consistentId().toString(),
                 pdsSettings.folderName(),
-                null /* WAL Pointer for CUT record goes here. */
+                highPtr
             );
 
             writeSnapshotMetafile(
@@ -1600,7 +1648,7 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
      * @param consId Node consistent id to read metadata for.
      * @return Snapshot metadata instance.
      */
-    public SnapshotMetadata readSnapshotMetadata(File snpDir, String consId) {
+    public SnapshotMetadata readSnapshotMetadata(File snpDir, String consId) throws IgniteCheckedException, IOException {
         return readSnapshotMetadata(new File(snpDir, snapshotMetaFileName(consId)));
     }
 
@@ -1608,26 +1656,31 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
      * @param smf File denoting to snapshot metafile.
      * @return Snapshot metadata instance.
      */
-    private SnapshotMetadata readSnapshotMetadata(File smf) {
-        if (!smf.exists())
-            throw new IgniteException("Snapshot metafile cannot be read due to it doesn't exist: " + smf);
+    private SnapshotMetadata readSnapshotMetadata(File smf) throws IgniteCheckedException, IOException {
+        SnapshotMetadata meta = readFromFile(smf);
 
         String smfName = smf.getName().substring(0, smf.getName().length() - SNAPSHOT_METAFILE_EXT.length());
 
-        try (InputStream in = new BufferedInputStream(new FileInputStream(smf))) {
-            SnapshotMetadata meta = marsh.unmarshal(in, U.resolveClassLoader(cctx.gridConfig()));
-
-            if (!U.maskForFileName(meta.consistentId()).equals(smfName)) {
-                throw new IgniteException(
-                    "Error reading snapshot metadata [smfName=" + smfName + ", consId=" + U.maskForFileName(meta.consistentId())
-                );
-            }
-
-            return meta;
+        if (!U.maskForFileName(meta.consistentId()).equals(smfName)) {
+            throw new IgniteException(
+                "Error reading snapshot metadata [smfName=" + smfName + ", consId=" + U.maskForFileName(meta.consistentId())
+            );
         }
-        catch (IgniteCheckedException | IOException e) {
-            throw new IgniteException("An error occurred during reading snapshot metadata file [file=" +
-                smf.getAbsolutePath() + "]", e);
+
+        return meta;
+    }
+
+    /**
+     * @param smf File to read.
+     * @return Read metadata.
+     * @param <T> Type of metadata.
+     */
+    private <T> T readFromFile(File smf) throws IgniteCheckedException, IOException {
+        if (!smf.exists())
+            throw new IgniteCheckedException("Snapshot metafile cannot be read due to it doesn't exist: " + smf);
+
+        try (InputStream in = new BufferedInputStream(Files.newInputStream(smf.toPath()))) {
+            return marsh.unmarshal(in, U.resolveClassLoader(cctx.gridConfig()));
         }
     }
 
@@ -1665,15 +1718,20 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
         Map<String, SnapshotMetadata> metasMap = new HashMap<>();
         SnapshotMetadata prev = null;
 
-        for (File smf : smfs) {
-            SnapshotMetadata curr = readSnapshotMetadata(smf);
+        try {
+            for (File smf : smfs) {
+                SnapshotMetadata curr = readSnapshotMetadata(smf);
 
-            if (prev != null && !prev.sameSnapshot(curr))
-                throw new IgniteException("Snapshot metadata files are from different snapshots [prev=" + prev + ", curr=" + curr);
+                if (prev != null && !prev.sameSnapshot(curr))
+                    throw new IgniteException("Snapshot metadata files are from different snapshots [prev=" + prev + ", curr=" + curr);
 
-            metasMap.put(curr.consistentId(), curr);
+                metasMap.put(curr.consistentId(), curr);
 
-            prev = curr;
+                prev = curr;
+            }
+        }
+        catch (IgniteCheckedException | IOException e) {
+            throw new IgniteException(e);
         }
 
         SnapshotMetadata currNodeSmf = metasMap.remove(cctx.localNode().consistentId().toString());
@@ -1767,6 +1825,11 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
                 }
 
                 if (incremental) {
+                    if (!cctx.gridConfig().getDataStorageConfiguration().isWalCompactionEnabled()) {
+                        throw new IgniteException("Create incremental snapshot request has been rejected. " +
+                            "WAL compaction must be enabled.");
+                    }
+
                     if (!snpExists) {
                         throw new IgniteException("Create incremental snapshot request has been rejected. " +
                                 "Base snapshot with given name doesn't exist on local node.");
@@ -2442,6 +2505,24 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
         SnapshotMetadata meta
     ) throws IgniteCheckedException, IOException {
         File snpDir = snapshotLocalDir(name, snpPath);
+
+        IgniteWriteAheadLogManager wal = cctx.wal();
+
+        if (wal == null) {
+            throw new IgniteCheckedException("Create incremental snapshot request has been rejected. " +
+                "WAL must be eanbled."
+            );
+        }
+
+        File archiveDir = wal.archiveDir();
+
+        if (archiveDir == null) {
+            throw new IgniteCheckedException("Create incremental snapshot request has been rejected. " +
+                "WAL archive must be eanbled."
+            );
+        }
+
+        ensureHardLinkAvailable(archiveDir.toPath(), snpDir.toPath());
 
         Set<String> aliveNodesConsIds = cctx.discovery().aliveServerNodes()
             .stream()

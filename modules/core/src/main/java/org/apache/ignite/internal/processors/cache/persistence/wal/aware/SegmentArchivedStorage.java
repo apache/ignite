@@ -65,9 +65,9 @@ class SegmentArchivedStorage extends SegmentObservable {
     }
 
     /**
-     * Method will wait activation of particular WAL segment index.
+     * Method will wait archivation of particular WAL segment index.
      *
-     * @param awaitIdx absolute index  {@link #lastArchivedAbsoluteIndex()} to become true.
+     * @param awaitIdx absolute index {@link #lastArchivedAbsoluteIndex()} to become true.
      * @throws IgniteInterruptedCheckedException if interrupted.
      */
     synchronized void awaitSegmentArchived(long awaitIdx) throws IgniteInterruptedCheckedException {
