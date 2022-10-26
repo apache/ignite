@@ -38,11 +38,11 @@ import org.openjdk.jmh.runner.RunnerException;
 @BenchmarkMode(Mode.AverageTime)
 @State(Scope.Benchmark)
 @Threads(1)
-@Measurement(iterations = 5)
-@Warmup(iterations = 3)
+@Measurement(iterations = 3)
+@Warmup(iterations = 10)
 public class JmhPersistentStreamerReceiverBenchmark extends JmhAbstractStreamerReceiverBenchmark {
     /** */
-    protected static final long DATA_AMOUNT_TO_LOAD = 300L * 1024L * 1024L;
+    protected static final long DATA_AMOUNT_TO_LOAD = 512L * 1024L * 1024L;
 
     /** */
     public JmhPersistentStreamerReceiverBenchmark() {
@@ -68,11 +68,11 @@ public class JmhPersistentStreamerReceiverBenchmark extends JmhAbstractStreamerR
     @State(Scope.Benchmark)
     public static class PersistentParams implements Params {
         /** */
-        @Param({"1", "2", "3"})
+        @Param({"2", "3"})
         private int servers;
 
         /** */
-        @Param({"NONE"})
+        @Param({"LOG_ONLY"})
         private WALMode walMode;
 
         /** */
@@ -80,11 +80,11 @@ public class JmhPersistentStreamerReceiverBenchmark extends JmhAbstractStreamerR
         private CacheWriteSynchronizationMode cacheWriteMode;
 
         /** */
-        @Param({"8", "16"})
+        @Param({"8", "16", "32"})
         private int maxDsOps;
 
         /** */
-        @Param({"3", "10"})
+        @Param({"5"})
         private int sendMsgDelay;
 
         /** {@inheritDoc} */
