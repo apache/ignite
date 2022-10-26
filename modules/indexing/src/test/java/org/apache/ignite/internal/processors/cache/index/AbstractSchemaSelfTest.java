@@ -29,11 +29,13 @@ import java.util.HashMap;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.stream.Collectors;
 import javax.cache.CacheException;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCache;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.Ignition;
+import org.apache.ignite.cache.QueryEntity;
 import org.apache.ignite.cache.QueryIndex;
 import org.apache.ignite.cache.QueryIndexType;
 import org.apache.ignite.cache.query.SqlFieldsQuery;
@@ -223,8 +225,7 @@ public abstract class AbstractSchemaSelfTest extends AbstractIndexingCommonTest 
     static void assertIndex(String cacheName, String tblName, String idxName,
         int inlineSize, IgniteBiTuple<String, Boolean>... fields) {
         for (Ignite node : Ignition.allGrids())
-            assertIndex(node, cacheName, tblName, idxName, inlineSize,
-                F.concat(fields, F.t("ID", true), F.t(KEY_FIELD_NAME, true)));
+            assertIndex(node, cacheName, tblName, idxName, inlineSize, fields);
     }
 
     /**
@@ -241,7 +242,7 @@ public abstract class AbstractSchemaSelfTest extends AbstractIndexingCommonTest 
         String idxName, int inlineSize, IgniteBiTuple<String, Boolean>... fields) {
         awaitCompletion();
 
-        node.cache(cacheName);
+        IgniteCache<?, ?> cache = node.cache(cacheName);
 
         IgniteEx node0 = (IgniteEx)node;
 
@@ -259,7 +260,7 @@ public abstract class AbstractSchemaSelfTest extends AbstractIndexingCommonTest 
 
             assertFalse("Index not found: " + idxName, res.isEmpty());
 
-            assertEquals(Arrays.asList(fields), res);
+            assertEquals(idxFields(cache, idxName, fields), res);
         }
         catch (SQLException e) {
             throw new AssertionError(e);
@@ -269,6 +270,39 @@ public abstract class AbstractSchemaSelfTest extends AbstractIndexingCommonTest 
         QueryTypeDescriptorImpl typeDesc = typeExisting(node0, cacheName, tblName);
 
         assertInternalIndexParams(typeDesc, idxName, inlineSize);
+    }
+
+    /**
+     * Forms full list of index fields. It is assumed that cache has the only QueryEntity.
+     *
+     * @param cache Cache with index.
+     * @param idxName Index name.
+     * @param fields Index fields specified in configuration or DDL.
+     */
+    static Collection<IgniteBiTuple<String, Boolean>> idxFields(IgniteCache<?, ?> cache, String idxName,
+        IgniteBiTuple<String, Boolean>... fields) {
+        QueryEntity qryEntity = (QueryEntity)cache.getConfiguration(CacheConfiguration.class)
+            .getQueryEntities().iterator().next();
+
+        List<IgniteBiTuple<String, Boolean>> fieldsList = new ArrayList<>(Arrays.asList(fields));
+
+        boolean isStaticIdx = qryEntity.getIndexes().stream()
+            .map(QueryIndex::getName)
+            .anyMatch(name -> name.equals(idxName));
+
+        // Indexes, created dynamically via DDL contains extra unwrapped primary key fields.
+        List<IgniteBiTuple<String, Boolean>> keyFields = isStaticIdx ? new ArrayList<>() :
+            qryEntity.getKeyFields()
+                .stream()
+                .map(f -> F.t(f.toUpperCase(), true))
+                .collect(Collectors.toList());
+
+        // All indexes have system field '_KEY'.
+        keyFields.add(F.t(KEY_FIELD_NAME, true));
+
+        fieldsList.addAll(keyFields);
+
+        return fieldsList;
     }
 
     /**

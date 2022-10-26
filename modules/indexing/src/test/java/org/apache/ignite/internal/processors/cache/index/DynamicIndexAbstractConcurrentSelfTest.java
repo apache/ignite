@@ -65,7 +65,6 @@ import org.jetbrains.annotations.Nullable;
 import org.junit.Test;
 
 import static org.apache.ignite.internal.IgniteClientReconnectAbstractTest.TestTcpDiscoverySpi;
-import static org.apache.ignite.internal.processors.query.QueryUtils.KEY_FIELD_NAME;
 
 /**
  * Concurrency tests for dynamic index create/drop.
@@ -724,7 +723,7 @@ public abstract class DynamicIndexAbstractConcurrentSelfTest extends DynamicInde
         });
 
         assertIndex(cli, CACHE_NAME, TBL_NAME, IDX_NAME_1,
-            QueryIndex.DFLT_INLINE_SIZE, field(FIELD_NAME_1), field("ID"), field(KEY_FIELD_NAME));
+            QueryIndex.DFLT_INLINE_SIZE, field(FIELD_NAME_1));
         assertIndexUsed(IDX_NAME_1, SQL_SIMPLE_FIELD_1, SQL_ARG_1);
 
         // Check index drop.
@@ -744,7 +743,7 @@ public abstract class DynamicIndexAbstractConcurrentSelfTest extends DynamicInde
         queryProcessor(srv).dynamicIndexCreate(CACHE_NAME, CACHE_NAME, TBL_NAME, idx, false, 0).get();
 
         assertIndex(cli, CACHE_NAME, TBL_NAME, IDX_NAME_2, QueryIndex.DFLT_INLINE_SIZE,
-            field(aliasUnescaped(FIELD_NAME_2)), field("ID"), field(KEY_FIELD_NAME));
+            field(aliasUnescaped(FIELD_NAME_2)));
 
         assertIndexUsed(IDX_NAME_2, SQL_SIMPLE_FIELD_2, SQL_ARG_2);
 
