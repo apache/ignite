@@ -175,7 +175,8 @@ public abstract class AbstractSnapshotSelfTest extends GridCommonAbstractTest {
                     .setMaxSize(100L * 1024 * 1024)
                     .setPersistenceEnabled(persistence))
                 .setCheckpointFrequency(3000)
-                .setPageSize(DFLT_PAGE_SIZE))
+                .setPageSize(DFLT_PAGE_SIZE)
+                .setWalCompactionEnabled(true))
             .setClusterStateOnStart(INACTIVE)
             .setIncludeEventTypes(EVTS_CLUSTER_SNAPSHOT)
             .setDiscoverySpi(discoSpi);
