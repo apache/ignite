@@ -38,7 +38,6 @@ import org.apache.ignite.configuration.DataRegionConfiguration;
 import org.apache.ignite.configuration.DataStorageConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.configuration.WALMode;
-import org.apache.ignite.failure.StopNodeFailureHandler;
 import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.IgniteInterruptedCheckedException;
 import org.apache.ignite.internal.managers.communication.GridIoMessage;
@@ -77,11 +76,14 @@ abstract class JmhAbstractStreamerReceiverBenchmark {
     /** */
     private static final int CHECKPOINT_FREQUENCY = 3000;
 
+    /** */
+    private static final WALMode DEFAULT_WAL_MODE = WALMode.LOG_ONLY;
+
     /** Enables or disables final checkpoint into the measurement. */
     private static final boolean INCLUDE_CHECKPOINT = false;
 
     /** */
-    private static final long REGION_SIZE = 512L * 1024L * 1024L;
+    private static final long REGION_SIZE = 1024L * 1024L * 1024L;
 
     /** */
     private static final boolean DELAY_ONLY_IO_RESPONSES = true;
@@ -90,7 +92,7 @@ abstract class JmhAbstractStreamerReceiverBenchmark {
     private static final int DEFAULT_BATCH_SIZE = 512;
 
     /** */
-    private static final int DEFAULT_AVG_DATA_SIZE = 777;
+    private static final int DEFAULT_AVG_DATA_SIZE = 500;
 
     /** */
     private static final String CACHE_NAME = "testCache";
@@ -102,10 +104,10 @@ abstract class JmhAbstractStreamerReceiverBenchmark {
     private final List<Ignite> nodes = new ArrayList<>();
 
     /** */
-    private final boolean persistent;
+    protected final long dataAmountToLoad;
 
     /** */
-    protected final long dataAmountToLoad;
+    protected final boolean persistent;
 
     /** Loader node. */
     private Ignite ldrNode;
@@ -120,9 +122,9 @@ abstract class JmhAbstractStreamerReceiverBenchmark {
     private Params runParams;
 
     /** */
-    protected JmhAbstractStreamerReceiverBenchmark(boolean persistent, long dataAmountToLoad) {
-        this.persistent = persistent;
+    protected JmhAbstractStreamerReceiverBenchmark(long dataAmountToLoad, boolean persistent) {
         this.dataAmountToLoad = dataAmountToLoad;
+        this.persistent = persistent;
     }
 
     /**
@@ -147,26 +149,15 @@ abstract class JmhAbstractStreamerReceiverBenchmark {
         if (isClient)
             cfg.setClientMode(true);
         else {
-            DataStorageConfiguration dsCfg = new DataStorageConfiguration();
-
-            DataRegionConfiguration regCfg = new DataRegionConfiguration();
-
-            regCfg.setPersistenceEnabled(persistent);
-
-            if (persistent) {
-                dsCfg.setCheckpointFrequency(CHECKPOINT_FREQUENCY);
-
-                dsCfg.setWalMode(runParams.walMode());
-
-                regCfg.setMaxSize(REGION_SIZE);
-                regCfg.setInitialSize(REGION_SIZE);
-            }
-
-            dsCfg.setDefaultDataRegionConfiguration(regCfg);
-
-            cfg.setDataStorageConfiguration(dsCfg);
-
-            cfg.setFailureHandler(new StopNodeFailureHandler());
+            cfg.setDataStorageConfiguration(new DataStorageConfiguration()
+                .setDefaultDataRegionConfiguration(new DataRegionConfiguration()
+                    .setPersistenceEnabled(persistent)
+                    .setName("configuredDefaultDataRegion")
+                    .setMaxSize(REGION_SIZE)
+                    .setInitialSize(REGION_SIZE))
+                .setCheckpointFrequency(CHECKPOINT_FREQUENCY)
+                .setWalMode(runParams.walMode() == null ? DEFAULT_WAL_MODE : runParams.walMode())
+            );
         }
 
         if (DELAY_ONLY_IO_RESPONSES) {
@@ -201,7 +192,7 @@ abstract class JmhAbstractStreamerReceiverBenchmark {
 
     /** */
     private String workDirectory(String instName) {
-        return System.getProperty("java.io.tmpdir") + File.separator + "ignite" + File.separator + instName;
+        return System.getProperty("user.home") + File.separator + ".ignite_work_delete_me" + File.separator + instName;
     }
 
     /**
@@ -283,9 +274,8 @@ abstract class JmhAbstractStreamerReceiverBenchmark {
     }
 
     /**
-     * Test with batched receiver.
+     * Test with batched receiver. Not a default receiver. Add @Benchmark to run.
      */
-    @Benchmark
     public void benchBatched() throws Exception {
         runLoad(DataStreamerCacheUpdaters.batched());
     }

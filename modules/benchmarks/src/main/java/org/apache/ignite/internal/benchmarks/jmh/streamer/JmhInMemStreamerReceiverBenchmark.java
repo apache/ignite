@@ -41,17 +41,17 @@ import org.openjdk.jmh.runner.RunnerException;
 @State(Scope.Benchmark)
 @Threads(1)
 @Measurement(iterations = 5)
-@Warmup(iterations = 10)
+@Warmup(iterations = 5)
 public class JmhInMemStreamerReceiverBenchmark extends JmhAbstractStreamerReceiverBenchmark {
     /** */
-    private static final long DATA_AMOUNT_TO_LOAD = 1500L * 1024L * 1024L;
+    private static final long DATA_AMOUNT_TO_LOAD = 1024L * 1024L * 1024L;
 
     /** */
     private static final boolean EVICTION = false;
 
     /** */
     public JmhInMemStreamerReceiverBenchmark() {
-        super(false, DATA_AMOUNT_TO_LOAD);
+        super( DATA_AMOUNT_TO_LOAD, false);
     }
 
     /** */
@@ -75,7 +75,7 @@ public class JmhInMemStreamerReceiverBenchmark extends JmhAbstractStreamerReceiv
             if (EVICTION)
                 regCfg.setPageEvictionMode(DataPageEvictionMode.RANDOM_2_LRU);
 
-            assert !cfg.getDataStorageConfiguration().getDefaultDataRegionConfiguration().isPersistenceEnabled();
+            assert !regCfg.isPersistenceEnabled();
         }
 
         return cfg;
@@ -94,15 +94,19 @@ public class JmhInMemStreamerReceiverBenchmark extends JmhAbstractStreamerReceiv
     @State(Scope.Benchmark)
     public static class InMemParams implements Params {
         /** */
-        @Param({"2", "3"})
+        @Param({"1", "3"})
         private int servers;
 
         /** */
-        @Param({"0", "5"})
+        @Param({"16", "32", "64", "128"})
+        private int maxDsOps;
+
+        /** */
+        @Param({"3"})
         private int sendMsgDelay;
 
         /** */
-        @Param({"PRIMARY_SYNC", "FULL_SYNC"})
+        @Param({"FULL_SYNC", "PRIMARY_SYNC"})
         private CacheWriteSynchronizationMode cacheWriteMode;
 
         /** {@inheritDoc} */
@@ -118,6 +122,11 @@ public class JmhInMemStreamerReceiverBenchmark extends JmhAbstractStreamerReceiv
         /** {@inheritDoc} */
         @Override public int sendMsgDelayMs() {
             return sendMsgDelay;
+        }
+
+        /** {@inheritDoc} */
+        @Override public int maxDsOps() {
+            return maxDsOps;
         }
     }
 }

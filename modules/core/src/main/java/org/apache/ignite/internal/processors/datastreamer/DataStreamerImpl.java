@@ -1593,8 +1593,8 @@ public class DataStreamerImpl<K, V> implements IgniteDataStreamer<K, V>, Delayed
             if (perNodeParallelOps < 0) {
                 boolean persistent = ctx.cache().cacheDescriptor(cacheName).groupDescriptor().persistenceEnabled();
 
-                perNodeParallelOps = persistent ? DFLT_MAX_PARALLEL_PERSISTENT_OPS : streamerPoolSize *
-                    DFLT_PARALLEL_OPS_MULTIPLIER;
+                perNodeParallelOps = streamerPoolSize * (persistent ? DFLT_PARALLEL_OPS_PERSISTENT_MULTIPLIER :
+                    DFLT_PARALLEL_OPS_MULTIPLIER);
             }
 
             sem = new Semaphore(perNodeParallelOps);

@@ -109,19 +109,23 @@ public interface IgniteDataStreamer<K, V> extends AutoCloseable {
     public static final int DFLT_MAX_PARALLEL_OPS = 16;
 
     /**
-     * Default multiplier for data streamer pool size to get concurrent batches count for each remote node.
+     * Default multiplier for data streamer pool size to get concurrent batches count for each remote node for
+     * in-memory caches.
      *
      * @see IgniteConfiguration#getDataStreamerThreadPoolSize()
      * @see #perNodeParallelOperations()
+     * @see #DFLT_PARALLEL_OPS_PERSISTENT_MULTIPLIER
      */
     public static final int DFLT_PARALLEL_OPS_MULTIPLIER = 8;
 
     /**
-     * Default maximal concurrent batches count for each remote node for persistent caches.
+     * Default multiplier for data streamer pool size to get concurrent batches count for each remote node for
+     * persistent caches.
      *
      * @see #perNodeParallelOperations()
+     * @see #DFLT_PARALLEL_OPS_MULTIPLIER
      */
-    public static final int DFLT_MAX_PARALLEL_PERSISTENT_OPS = 32;
+    public static final int DFLT_PARALLEL_OPS_PERSISTENT_MULTIPLIER = 2;
 
     /** Default operations batch size to sent to remote node for loading. */
     public static final int DFLT_PER_NODE_BUFFER_SIZE = 512;
@@ -227,8 +231,9 @@ public interface IgniteDataStreamer<K, V> extends AutoCloseable {
      * This method should be called prior to {@link #addData(Object, Object)} call.
      * <p>
      * If not provided, default value is calculated as follows
-     * {@link #DFLT_PARALLEL_OPS_MULTIPLIER} * {@code DATA_STREAMER_POOL_SIZE_ON_REMOTE_NODE} or
-     * {@link #DFLT_MAX_PARALLEL_PERSISTENT_OPS} for persistent caches.
+     * {@link #DFLT_PARALLEL_OPS_MULTIPLIER} * {@code DATA_STREAMER_POOL_SIZE_ON_REMOTE_NODE} for in-memory caches or
+     * {@link #DFLT_PARALLEL_OPS_PERSISTENT_MULTIPLIER} * {@code DATA_STREAMER_POOL_SIZE_ON_REMOTE_NODE}} for
+     * persistent caches.
      *
      * @param parallelOps Maximum number of parallel stream operations for a single node.
      * @see IgniteConfiguration#getDataStreamerThreadPoolSize()
