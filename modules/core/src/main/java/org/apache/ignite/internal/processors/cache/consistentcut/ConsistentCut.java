@@ -27,6 +27,7 @@ import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.pagemem.wal.record.ConsistentCutFinishRecord;
 import org.apache.ignite.internal.pagemem.wal.record.ConsistentCutStartRecord;
+import org.apache.ignite.internal.pagemem.wal.record.RolloverType;
 import org.apache.ignite.internal.pagemem.wal.record.WALRecord;
 import org.apache.ignite.internal.processors.cache.GridCacheSharedContext;
 import org.apache.ignite.internal.processors.cache.persistence.wal.WALPointer;
@@ -113,7 +114,7 @@ public class ConsistentCut extends GridFutureAdapter<WALPointer> {
         // 2. we need a guarantee to handle `committingTxs` after `activeTxs` to avoid missed transactions.
         checkTransactions(finFutIt, checkFut);
 
-        walLog(new ConsistentCutStartRecord(marker));
+        walLog(new ConsistentCutStartRecord(marker), false);
 
         checkTransactions(committingTxs.iterator(), checkFut);
 
@@ -130,7 +131,7 @@ public class ConsistentCut extends GridFutureAdapter<WALPointer> {
             }
 
             try {
-                WALPointer ptr = walLog(new ConsistentCutFinishRecord(beforeCut, afterCut));
+                WALPointer ptr = walLog(new ConsistentCutFinishRecord(beforeCut, afterCut), true);
 
                 onDone(ptr);
             }
@@ -224,12 +225,23 @@ public class ConsistentCut extends GridFutureAdapter<WALPointer> {
      * @param record Record to write to WAL.
      * @return Pointer to the record in WAL, or {@code null} if WAL is disabled.
      */
-    private @Nullable WALPointer walLog(WALRecord record) throws IgniteCheckedException {
+    private @Nullable WALPointer walLog(WALRecord record, boolean finalRec) throws IgniteCheckedException {
         if (cctx.wal() != null) {
             if (log.isDebugEnabled())
                 log.debug("Writing Consistent Cut WAL record: " + record);
 
-            return cctx.wal().log(record);
+            if (finalRec) {
+                cctx.database().checkpointReadLock();
+
+                try {
+                    return cctx.wal().log(record, RolloverType.CURRENT_SEGMENT);
+                }
+                finally {
+                    cctx.database().checkpointReadUnlock();
+                }
+            }
+            else
+                return cctx.wal().log(record);
         }
 
         return null;

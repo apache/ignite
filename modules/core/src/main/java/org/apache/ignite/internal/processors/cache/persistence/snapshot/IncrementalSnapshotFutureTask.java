@@ -23,8 +23,11 @@ import java.util.HashSet;
 import java.util.Set;
 import java.util.UUID;
 import java.util.function.BiConsumer;
+import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.internal.processors.cache.GridCacheSharedContext;
+import org.apache.ignite.internal.processors.cache.consistentcut.ConsistentCut;
+import org.apache.ignite.internal.processors.cache.consistentcut.ConsistentCutMarker;
 import org.apache.ignite.internal.processors.cache.persistence.file.FileIOFactory;
 import org.apache.ignite.internal.processors.cache.persistence.partstate.GroupPartitionId;
 import org.apache.ignite.internal.util.typedef.internal.CU;
@@ -38,10 +41,14 @@ class IncrementalSnapshotFutureTask
     private final Set<Integer> affectedCacheGrps;
 
     /** */
+    private final ConsistentCutMarker marker;
+
+    /** */
     public IncrementalSnapshotFutureTask(
         GridCacheSharedContext<?, ?> cctx,
         UUID srcNodeId,
         UUID reqNodeId,
+        ConsistentCutMarker marker,
         SnapshotMetadata meta,
         File tmpWorkDir,
         FileIOFactory ioFactory
@@ -73,6 +80,7 @@ class IncrementalSnapshotFutureTask
         );
 
         affectedCacheGrps = new HashSet<>(meta.cacheGroupIds());
+        this.marker = marker;
 
         cctx.cache().configManager().addConfigurationChangeListener(this);
     }
@@ -84,7 +92,16 @@ class IncrementalSnapshotFutureTask
 
     /** {@inheritDoc} */
     @Override public boolean start() {
-        cctx.consistentCutMgr().runningCut().listen(snpPtrFut -> {
+        ConsistentCut cut = cctx.consistentCutMgr().runningCut();
+
+        if (cut == null) {
+            onDone(new IgniteCheckedException(
+                String.format("Consistent Cut for marker [%s] wasn't  started.", marker)));
+
+            return false;
+        }
+
+        cut.listen(snpPtrFut -> {
             if (snpPtrFut.error() != null)
                 onDone(snpPtrFut.error());
             else

@@ -20,7 +20,6 @@ package org.apache.ignite.internal.processors.cache.consistentcut;
 import java.util.concurrent.atomic.AtomicReferenceFieldUpdater;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.events.EventType;
-import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.pagemem.wal.record.ConsistentCutFinishRecord;
 import org.apache.ignite.internal.pagemem.wal.record.ConsistentCutStartRecord;
 import org.apache.ignite.internal.processors.cache.GridCacheMessage;
@@ -34,10 +33,8 @@ import org.apache.ignite.internal.processors.cache.distributed.dht.preloader.Par
 import org.apache.ignite.internal.processors.cache.distributed.near.GridNearTxFinishRequest;
 import org.apache.ignite.internal.processors.cache.distributed.near.GridNearTxPrepareFutureAdapter;
 import org.apache.ignite.internal.processors.cache.distributed.near.GridNearTxPrepareResponse;
-import org.apache.ignite.internal.processors.cache.persistence.wal.WALPointer;
 import org.apache.ignite.internal.processors.cache.transactions.IgniteInternalTx;
 import org.apache.ignite.internal.processors.cache.version.GridCacheVersion;
-import org.apache.ignite.internal.util.future.GridFinishedFuture;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.transactions.TransactionState;
 import org.jetbrains.annotations.Nullable;
@@ -293,41 +290,27 @@ public class ConsistentCutManager extends GridCacheSharedManagerAdapter implemen
      *
      * @param marker Marker that inits consistent cut.
      */
-    public IgniteInternalFuture<WALPointer> startLocalCut(ConsistentCutMarker marker) {
+    public void startLocalCut(ConsistentCutMarker marker) {
         if (log.isDebugEnabled())
             log.debug("`startLocalCut` for " + marker + " " + cctx.localNodeId());
 
         handleConsistentCutMarker(marker);
-
-        ConsistentCut cut = CONSISTENT_CUT.get(this);
-
-        if (cut == null) {
-            return new GridFinishedFuture<>(new IgniteCheckedException(
-                String.format("Consistent Cut for marker [%s] has already started before, last seen marker [%s].",
-                    marker, lastFinishedCutMarker)));
-        }
-
-        return cut;
     }
 
     /**
      * Finishes local Consistent Cut, stop signing outgoing messages with marker.
-     *
-     * @return Pointer to {@link ConsistentCutFinishRecord}, or {@code null} if no message was written.
      */
-    public @Nullable WALPointer finishLocalCut() {
+    public void finishLocalCut() {
         if (log.isDebugEnabled())
             log.debug("`finishLocalCut` for " + runningCutMarker());
 
         ConsistentCut cut = CONSISTENT_CUT.get(this);
 
         if (cut == null)
-            return null;
+            return;
 
         lastFinishedCutMarker = cut.marker();
 
         CONSISTENT_CUT.set(this, null);
-
-        return cut.result();
     }
 }
