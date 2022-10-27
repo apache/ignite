@@ -84,6 +84,13 @@ class IncrementalSnapshotFutureTask
 
     /** {@inheritDoc} */
     @Override public boolean start() {
+        cctx.consistentCutMgr().runningCut().listen(snpPtrFut -> {
+            if (snpPtrFut.error() != null)
+                onDone(snpPtrFut.error());
+            else
+                onDone(new IncrementalSnapshotFutureTaskResult(snpPtrFut.result()));
+        });
+
         return true;
     }
 

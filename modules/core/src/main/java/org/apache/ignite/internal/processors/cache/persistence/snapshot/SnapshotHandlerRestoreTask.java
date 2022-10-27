@@ -18,6 +18,7 @@
 package org.apache.ignite.internal.processors.cache.persistence.snapshot;
 
 import java.io.File;
+import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.HashMap;
@@ -144,7 +145,7 @@ public class SnapshotHandlerRestoreTask extends AbstractSnapshotVerificationTask
                 return snpMgr.handlers().invokeAll(SnapshotHandlerType.RESTORE,
                     new SnapshotHandlerContext(meta, grps, ignite.localNode(), snpDir));
             }
-            catch (IgniteCheckedException e) {
+            catch (IgniteCheckedException | IOException e) {
                 throw new IgniteException(e);
             }
         }

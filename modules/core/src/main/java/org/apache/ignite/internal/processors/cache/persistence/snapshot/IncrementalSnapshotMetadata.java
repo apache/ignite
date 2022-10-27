@@ -75,6 +75,11 @@ public class IncrementalSnapshotMetadata implements Serializable {
         this.cutPtr = cutPtr;
     }
 
+    /** @return Pointer to consistent cut record. */
+    public WALPointer cutPointer() {
+        return cutPtr;
+    }
+
     /** {@inheritDoc} */
     @Override public String toString() {
         return S.toString(IncrementalSnapshotMetadata.class, this);
