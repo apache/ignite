@@ -19,7 +19,6 @@ package org.apache.ignite.internal.processors.cache.consistentcut;
 
 import java.nio.ByteBuffer;
 import java.util.UUID;
-import org.apache.ignite.internal.util.tostring.GridToStringInclude;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.plugin.extensions.communication.Message;
 import org.apache.ignite.plugin.extensions.communication.MessageReader;
@@ -35,25 +34,15 @@ public class ConsistentCutMarker implements Message {
     /** */
     public static final short TYPE_CODE = 201;
 
-    /** Incremental index. */
-    @GridToStringInclude
-    private long idx;
-
-    /** ID of the marker. */
+    /** Snapshot request ID. */
     private UUID id;
 
     /** */
     public ConsistentCutMarker() {}
 
     /** */
-    public ConsistentCutMarker(long idx, UUID id) {
-        this.idx = idx;
+    public ConsistentCutMarker(UUID id) {
         this.id = id;
-    }
-
-    /** */
-    public long index() {
-        return idx;
     }
 
     /** */
@@ -84,12 +73,6 @@ public class ConsistentCutMarker implements Message {
 
                 writer.incrementState();
 
-            case 1:
-                if (!writer.writeLong("idx", idx))
-                    return false;
-
-                writer.incrementState();
-
         }
 
         return true;
@@ -111,14 +94,6 @@ public class ConsistentCutMarker implements Message {
 
                 reader.incrementState();
 
-            case 1:
-                idx = reader.readLong("idx");
-
-                if (!reader.isLastRead())
-                    return false;
-
-                reader.incrementState();
-
         }
 
         return reader.afterMessageRead(ConsistentCutMarker.class);
@@ -131,7 +106,7 @@ public class ConsistentCutMarker implements Message {
 
     /** {@inheritDoc} */
     @Override public byte fieldsCount() {
-        return 2;
+        return 1;
     }
 
     /** {@inheritDoc} */

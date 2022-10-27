@@ -21,7 +21,6 @@ import java.io.Serializable;
 import java.util.Collection;
 import java.util.Set;
 import java.util.UUID;
-import org.apache.ignite.internal.processors.cache.consistentcut.ConsistentCutMarker;
 import org.apache.ignite.internal.util.distributed.DistributedProcess;
 import org.apache.ignite.internal.util.distributed.DistributedProcess.DistributedProcessType;
 import org.apache.ignite.internal.util.tostring.GridToStringInclude;
@@ -65,8 +64,11 @@ public class SnapshotOperationRequest implements Serializable {
     /** Operation start time. */
     private final long startTime;
 
-    /** Marker to init Consistent Cut for incremental snapshot. */
-    private final @Nullable ConsistentCutMarker marker;
+    /** If {@code true} then incremental snapshot requested. */
+    private final boolean incremental;
+
+    /** Index of incremental snapshot. */
+    private final long incIdx;
 
     /**
      * @param reqId Request ID.
@@ -75,16 +77,18 @@ public class SnapshotOperationRequest implements Serializable {
      * @param snpPath Snapshot directory path.
      * @param grps List of cache group names.
      * @param nodes Baseline node IDs that must be alive to complete the operation.
-     * @param marker Marker for incremental snapshot, {@code null} for full snapshot.
+     * @param incremental {@code True} if incremental snapshot requested.
+     * @param incIdx Incremental snapshot index.
      */
     public SnapshotOperationRequest(
         UUID reqId,
         UUID opNodeId,
         String snpName,
         String snpPath,
-        @Nullable ConsistentCutMarker marker,
         @Nullable Collection<String> grps,
-        Set<UUID> nodes
+        Set<UUID> nodes,
+        boolean incremental,
+        long incIdx
     ) {
         this.reqId = reqId;
         this.opNodeId = opNodeId;
@@ -92,7 +96,8 @@ public class SnapshotOperationRequest implements Serializable {
         this.grps = grps;
         this.nodes = nodes;
         this.snpPath = snpPath;
-        this.marker = marker;
+        this.incremental = incremental;
+        this.incIdx = incIdx;
         startTime = U.currentTimeMillis();
     }
 
@@ -154,12 +159,12 @@ public class SnapshotOperationRequest implements Serializable {
 
     /** @return {@code True} if incremental snapshot requested. */
     public boolean incremental() {
-        return marker != null;
+        return incremental;
     }
 
-    /** @return Marker for incremental snapshot, {@code null} for full snapshot. */
-    public @Nullable ConsistentCutMarker marker() {
-        return marker;
+    /** @return Incremental snapshot index. */
+    public long incrementIndex() {
+        return incIdx;
     }
 
     /** @return Start time. */

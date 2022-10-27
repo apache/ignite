@@ -331,10 +331,7 @@ public abstract class AbstractConsistentCutTest extends GridCommonAbstractTest {
 
         /** */
         boolean consistentCutFinished(long ver) {
-            if (CONSISTENT_CUT.get(this) != null)
-                return false;
-
-            return lastFinishedCutMarker.index() == ver;
+            return CONSISTENT_CUT.get(this) == null;
         }
     }
 

@@ -165,9 +165,7 @@ class ConsistentCutWalReader {
             else if (rec.type() == CONSISTENT_CUT_START_RECORD) {
                 assert beforeStartRec : "Lost Finish record";
 
-                ConsistentCutStartRecord r = (ConsistentCutStartRecord)rec;
-
-                handleStartConsistentCutRecord(r, cut);
+                log("START " + cut.num + " CUT[" + rec + "], state = " + cut);
 
                 beforeStartRec = false;
             }
@@ -269,13 +267,6 @@ class ConsistentCutWalReader {
     }
 
     /** */
-    private void handleStartConsistentCutRecord(ConsistentCutStartRecord rec, NodeConsistentCutState cut) {
-        log("START " + cut.num + " CUT[" + rec + "], state = " + cut);
-
-        cut.ts = rec.marker().index();
-    }
-
-    /** */
     private void handleFinishConsistentCutRecord(ConsistentCutFinishRecord rec, NodeConsistentCutState cut) {
         Set<IgniteUuid> include = rec.before().stream()
             .map(GridCacheVersion::asIgniteUuid)
@@ -327,10 +318,6 @@ class ConsistentCutWalReader {
         /** */
         @GridToStringExclude
         private NodeConsistentCutState next;
-
-        /** Consistent Cut timestamp. Set after reach {@link ConsistentCutStartRecord}. */
-        @GridToStringInclude
-        Long ts;
 
         /** If {@link ConsistentCutFinishRecord} is written for this cut, than this cut is completed. */
         @GridToStringInclude

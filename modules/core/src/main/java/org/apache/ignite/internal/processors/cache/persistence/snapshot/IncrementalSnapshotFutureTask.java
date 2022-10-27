@@ -27,7 +27,6 @@ import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.internal.processors.cache.GridCacheSharedContext;
 import org.apache.ignite.internal.processors.cache.consistentcut.ConsistentCut;
-import org.apache.ignite.internal.processors.cache.consistentcut.ConsistentCutMarker;
 import org.apache.ignite.internal.processors.cache.persistence.file.FileIOFactory;
 import org.apache.ignite.internal.processors.cache.persistence.partstate.GroupPartitionId;
 import org.apache.ignite.internal.util.typedef.internal.CU;
@@ -41,14 +40,14 @@ class IncrementalSnapshotFutureTask
     private final Set<Integer> affectedCacheGrps;
 
     /** */
-    private final ConsistentCutMarker marker;
+    private final long incIdx;
 
     /** */
     public IncrementalSnapshotFutureTask(
         GridCacheSharedContext<?, ?> cctx,
         UUID srcNodeId,
         UUID reqNodeId,
-        ConsistentCutMarker marker,
+        long incIdx,
         SnapshotMetadata meta,
         File tmpWorkDir,
         FileIOFactory ioFactory
@@ -80,7 +79,7 @@ class IncrementalSnapshotFutureTask
         );
 
         affectedCacheGrps = new HashSet<>(meta.cacheGroupIds());
-        this.marker = marker;
+        this.incIdx = incIdx;
 
         cctx.cache().configManager().addConfigurationChangeListener(this);
     }
@@ -96,7 +95,7 @@ class IncrementalSnapshotFutureTask
 
         if (cut == null) {
             onDone(new IgniteCheckedException(
-                String.format("Consistent Cut for marker [%s] wasn't  started.", marker)));
+                String.format("Consistent Cut for incremental snapshot [%s] wasn't started.", incIdx)));
 
             return false;
         }

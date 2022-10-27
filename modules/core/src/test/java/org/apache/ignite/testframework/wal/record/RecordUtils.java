@@ -640,7 +640,7 @@ public class RecordUtils {
 
     /** **/
     public static ConsistentCutStartRecord buildConsistentCutStartRecord() {
-        return new ConsistentCutStartRecord(new ConsistentCutMarker(1204L, UUID.randomUUID()));
+        return new ConsistentCutStartRecord(new ConsistentCutMarker(UUID.randomUUID()));
     }
 
     /** **/

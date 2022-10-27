@@ -33,8 +33,6 @@ public class ConsistentCutStartRecordSerializer {
      * @param buf Byte buffer.
      */
     public void write(ConsistentCutStartRecord rec, ByteBuffer buf) {
-        buf.putLong(rec.marker().index());
-
         buf.putLong(rec.marker().id().getMostSignificantBits());
         buf.putLong(rec.marker().id().getLeastSignificantBits());
     }
@@ -47,12 +45,10 @@ public class ConsistentCutStartRecordSerializer {
      * @throws IOException In case of fail.
      */
     public ConsistentCutStartRecord read(ByteBufferBackedDataInput in) throws IOException {
-        long ver = in.readLong();
-
         long mst = in.readLong();
         long lst = in.readLong();
 
-        return new ConsistentCutStartRecord(new ConsistentCutMarker(ver, new UUID(mst, lst)));
+        return new ConsistentCutStartRecord(new ConsistentCutMarker(new UUID(mst, lst)));
     }
 
     /**
@@ -62,6 +58,6 @@ public class ConsistentCutStartRecordSerializer {
      * @return Size of ConsistentCutStartRecord in bytes.
      */
     public int size(ConsistentCutStartRecord rec) {
-        return 8 + 8 + 8;
+        return 8 + 8;
     }
 }

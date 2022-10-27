@@ -76,7 +76,7 @@ public class ConsistentCutTxRecoveryTest extends AbstractConsistentCutBlockingTe
             stopCluster();
 
             for (int i = 0; i < nodes(); i++)
-                assertWalConsistentRecords(i, blkCutMarker);
+                assertWalConsistentRecords(i, blkCutMarker, 2);
         }
         finally {
             if (loadFut != null)
@@ -85,13 +85,13 @@ public class ConsistentCutTxRecoveryTest extends AbstractConsistentCutBlockingTe
     }
 
     /** */
-    private void assertWalConsistentRecords(int nodeIdx, ConsistentCutMarker blkMarker) throws Exception {
+    private void assertWalConsistentRecords(int nodeIdx, ConsistentCutMarker blkMarker, int incSnpCnt) throws Exception {
         WALIterator iter = walIter(nodeIdx);
 
         boolean expFinRec = false;
         boolean reachInconsistent = false;
 
-        long lastVerChecked = 0;
+        int actIncSnpCnt = 0;
 
         while (iter.hasNext()) {
             WALRecord rec = iter.next().getValue();
@@ -103,18 +103,18 @@ public class ConsistentCutTxRecoveryTest extends AbstractConsistentCutBlockingTe
 
                 if (!expFinRec)
                     reachInconsistent = true;
-
-                lastVerChecked = startRec.marker().index();
             }
             else if (rec.type() == WALRecord.RecordType.CONSISTENT_CUT_FINISH_RECORD) {
                 assertTrue("Unexpect Finish Record. " + blkMarker, expFinRec);
 
                 expFinRec = false;
+
+                actIncSnpCnt++;
             }
         }
 
         assertTrue("Should reach StartRecord for bad snapshot", reachInconsistent);
-        assertTrue("Should reach marker after " + blkMarker, lastVerChecked == blkMarker.index());
+        assertEquals("Should reach marker after " + blkMarker, incSnpCnt, actIncSnpCnt);
     }
 
     /** */
