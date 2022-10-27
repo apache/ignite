@@ -213,6 +213,7 @@ class IncrementalSnapshotFutureTask
      *
      * @param fromDir From directory.
      * @param toDir To directory.
+     * @param filter File filter.
      */
     private void copyFiles(File fromDir, File toDir, FileFilter filter) throws IOException {
         assert fromDir.exists() && fromDir.isDirectory();
