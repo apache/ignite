@@ -18,6 +18,8 @@
 package org.apache.ignite.internal.processors.cache.persistence.snapshot;
 
 import java.io.File;
+import java.io.FileFilter;
+import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.HashSet;
@@ -25,13 +27,21 @@ import java.util.Set;
 import java.util.UUID;
 import java.util.function.BiConsumer;
 import org.apache.ignite.IgniteException;
+import org.apache.ignite.configuration.DataStorageConfiguration;
+import org.apache.ignite.internal.IgniteInterruptedCheckedException;
+import org.apache.ignite.internal.MarshallerContextImpl;
+import org.apache.ignite.internal.binary.BinaryUtils;
 import org.apache.ignite.internal.pagemem.wal.record.delta.ClusterSnapshotRecord;
 import org.apache.ignite.internal.processors.cache.GridCacheSharedContext;
 import org.apache.ignite.internal.processors.cache.persistence.file.FileIOFactory;
+import org.apache.ignite.internal.processors.cache.persistence.filename.PdsFolderSettings;
 import org.apache.ignite.internal.processors.cache.persistence.partstate.GroupPartitionId;
 import org.apache.ignite.internal.processors.cache.persistence.wal.WALPointer;
 import org.apache.ignite.internal.util.typedef.internal.CU;
 import org.jetbrains.annotations.Nullable;
+
+import static org.apache.ignite.internal.binary.BinaryUtils.METADATA_FILE_SUFFIX;
+import static org.apache.ignite.internal.processors.cache.binary.CacheObjectBinaryProcessorImpl.binaryWorkDir;
 
 /** */
 class IncrementalSnapshotFutureTask
@@ -122,41 +132,25 @@ class IncrementalSnapshotFutureTask
 
             cctx.kernalContext().pools().getSnapshotExecutorService().submit(() -> {
                 try {
-                    // First increment must include low segment, because full snapshot knows nothing about WAL.
-                    // All other begins from the next segment because lowPtr already saved inside previous increment.
-                    long lowIdx = lowPtr.index() + (incIdx == 1 ? 0 : 1);
-                    long highIdx = highPtr.index();
+                    copyWal(incSnpDir);
 
-                    assert cctx.gridConfig().getDataStorageConfiguration().isWalCompactionEnabled()
-                        : "WAL Compaction must be enabled";
-                    assert lowIdx <= highIdx;
+                    File snpMarshallerDir = MarshallerContextImpl.mappingFileStoreWorkDir(incSnpDir.getAbsolutePath());
 
-                    if (log.isInfoEnabled())
-                        log.info("Waiting for WAL segments compression [lowIdx=" + lowIdx + ", highIdx=" + highIdx + ']');
+                    copyFiles(
+                        MarshallerContextImpl.mappingFileStoreWorkDir(cctx.gridConfig().getWorkDirectory()),
+                        snpMarshallerDir,
+                        BinaryUtils::notTmpFile
+                    );
 
-                    cctx.wal().awaitCompacted(highPtr.index());
+                    PdsFolderSettings<?> pdsSettings = cctx.kernalContext().pdsFolderResolver().resolveFolders();
 
-                    if (log.isInfoEnabled()) {
-                        log.info("Linking WAL segments into incremental snapshot [lowIdx=" + lowIdx + ", " +
-                            "highIdx=" + highIdx + ']');
-                    }
+                    File snpBinMetaDir = new File(incSnpDir, DataStorageConfiguration.DFLT_BINARY_METADATA_PATH);
 
-                    for (; lowIdx <= highIdx; lowIdx++) {
-                        File seg = cctx.wal().compactedSegment(lowIdx);
-
-                        if (!seg.exists()) {
-                            onDone(new IgniteException("WAL segment not found in archive [idx=" + lowIdx + ']'));
-
-                            return;
-                        }
-
-                        Path segLink = incSnpDir.toPath().resolve(seg.getName());
-
-                        if (log.isDebugEnabled())
-                            log.debug("Creaing segment link [path=" + segLink.toAbsolutePath() + ']');
-
-                        Files.createLink(segLink, seg.toPath());
-                    }
+                    copyFiles(
+                        binaryWorkDir(cctx.gridConfig().getWorkDirectory(), pdsSettings.folderName()),
+                        snpBinMetaDir,
+                        file -> file.getName().endsWith(METADATA_FILE_SUFFIX)
+                    );
 
                     onDone(new IncrementalSnapshotFutureTaskResult());
                 }
@@ -170,6 +164,65 @@ class IncrementalSnapshotFutureTask
         finally {
             cctx.cache().configManager().removeConfigurationChangeListener(this);
         }
+    }
+
+    /**
+     * Copies WAL segments to the incremental snapshot directory.
+     *
+     * @param incSnpDir Incremental snapshot directory.
+     * @throws IgniteInterruptedCheckedException If failed.
+     * @throws IOException If failed.
+     */
+    private void copyWal(File incSnpDir) throws IgniteInterruptedCheckedException, IOException {
+        // First increment must include low segment, because full snapshot knows nothing about WAL.
+        // All other begins from the next segment because lowPtr already saved inside previous increment.
+        long lowIdx = lowPtr.index() + (incIdx == 1 ? 0 : 1);
+        long highIdx = highPtr.index();
+
+        assert cctx.gridConfig().getDataStorageConfiguration().isWalCompactionEnabled()
+            : "WAL Compaction must be enabled";
+        assert lowIdx <= highIdx;
+
+        if (log.isInfoEnabled())
+            log.info("Waiting for WAL segments compression [lowIdx=" + lowIdx + ", highIdx=" + highIdx + ']');
+
+        cctx.wal().awaitCompacted(highPtr.index());
+
+        if (log.isInfoEnabled()) {
+            log.info("Linking WAL segments into incremental snapshot [lowIdx=" + lowIdx + ", " +
+                "highIdx=" + highIdx + ']');
+        }
+
+        for (; lowIdx <= highIdx; lowIdx++) {
+            File seg = cctx.wal().compactedSegment(lowIdx);
+
+            if (!seg.exists())
+                throw new IgniteException("WAL segment not found in archive [idx=" + lowIdx + ']');
+
+            Path segLink = incSnpDir.toPath().resolve(seg.getName());
+
+            if (log.isDebugEnabled())
+                log.debug("Creaing segment link [path=" + segLink.toAbsolutePath() + ']');
+
+            Files.createLink(segLink, seg.toPath());
+        }
+    }
+
+    /**
+     * Copy files {@code fromDir} to {@code toDir}.
+     *
+     * @param fromDir From directory.
+     * @param toDir To directory.
+     * @param filter File filter.
+     */
+    private void copyFiles(File fromDir, File toDir, FileFilter filter) throws IOException {
+        assert fromDir.exists() && fromDir.isDirectory();
+
+        if (!toDir.isDirectory() && !toDir.exists() && !toDir.mkdirs())
+            throw new IgniteException("Target directory can't be created [target=" + toDir.getAbsolutePath() + ']');
+
+        for (File from : fromDir.listFiles(filter))
+            Files.copy(from.toPath(), new File(toDir, from.getName()).toPath());
     }
 
     /** {@inheritDoc} */
