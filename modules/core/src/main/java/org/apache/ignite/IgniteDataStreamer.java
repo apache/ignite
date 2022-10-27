@@ -73,6 +73,10 @@ import org.jetbrains.annotations.Nullable;
  *      this setting limits maximum allowed number of parallel buffered stream messages that
  *      are being processed on remote nodes. If this number is exceeded, then
  *      {@link #addData(Object, Object)} method will block to control memory utilization.
+ *      Default for in-memory caches, for default {@link #allowOverwrite()} ({@code false}) and any custom
+ *      {@link #receiver(StreamReceiver)} is equal to CPU count on remote node multiply by
+ *      {@link #DFLT_PARALLEL_OPS_MULTIPLIER}. For persistent caches setting {@link #allowOverwrite()} to {@code true}
+ *      reduces the multiplier to {@link #DFLT_OVERWRITING_PERSISTENT_OPS_MULTIPLIER}
  *  </li>
  *  <li>
  *      {@link #autoFlushFrequency(long)} - automatic flush frequency in milliseconds. Essentially,
@@ -112,8 +116,19 @@ public interface IgniteDataStreamer<K, V> extends AutoCloseable {
      *
      * @see IgniteConfiguration#getDataStreamerThreadPoolSize()
      * @see #perNodeParallelOperations()
+     * @see #DFLT_OVERWRITING_PERSISTENT_OPS_MULTIPLIER
      */
-    public static final int DFLT_PARALLEL_OPS_MULTIPLIER = 16;
+    public static final int DFLT_PARALLEL_OPS_MULTIPLIER = 8;
+
+    /**
+     * Default multiplier for data streamer pool size to get concurrent batches count for each remote node for
+     * persistent caches when {@link #allowOverwrite()} is {@code true}.
+     *
+     * @see IgniteConfiguration#getDataStreamerThreadPoolSize()
+     * @see #perNodeParallelOperations()
+     * @see #DFLT_PARALLEL_OPS_MULTIPLIER
+     */
+    public static final int DFLT_OVERWRITING_PERSISTENT_OPS_MULTIPLIER = 2;
 
     /** Default operations batch size to sent to remote node for loading. */
     public static final int DFLT_PER_NODE_BUFFER_SIZE = 512;

@@ -120,7 +120,6 @@ import org.apache.ignite.plugin.security.SecurityPermission;
 import org.apache.ignite.stream.StreamReceiver;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
-
 import static org.apache.ignite.events.EventType.EVT_NODE_FAILED;
 import static org.apache.ignite.events.EventType.EVT_NODE_LEFT;
 import static org.apache.ignite.internal.GridTopic.TOPIC_DATASTREAM;
@@ -1595,7 +1594,7 @@ public class DataStreamerImpl<K, V> implements IgniteDataStreamer<K, V>, Delayed
                 boolean persistence = ctx.cache().cacheDescriptor(cacheName).groupDescriptor().persistenceEnabled();
 
                 perNodeParallelOps = ((DataStreamerCacheUpdaters.InternalUpdater)rcvr)
-                    .maxPerNodeBatches(streamerPoolSize, persistence);
+                    .perNodeParallelOperations(streamerPoolSize, persistence);
             }
 
             if (perNodeParallelOps < 0)
@@ -2156,15 +2155,6 @@ public class DataStreamerImpl<K, V> implements IgniteDataStreamer<K, V>, Delayed
     }
 
     /**
-     * @return Streamer pool size.
-     */
-    private static int streamerPoolSize(ClusterNode node) {
-        Integer attrStreamerPoolSize = node.attribute(IgniteNodeAttributes.ATTR_DATA_STREAMER_POOL_SIZE);
-
-        return attrStreamerPoolSize != null ? attrStreamerPoolSize : node.metrics().getTotalCpus();
-    }
-
-    /**
      * Data streamer peer-deploy aware.
      */
     private class DataStreamerPda implements GridPeerDeployAware {
@@ -2241,12 +2231,6 @@ public class DataStreamerImpl<K, V> implements IgniteDataStreamer<K, V>, Delayed
         DataStreamerCacheUpdaters.InternalUpdater {
         /** */
         private static final long serialVersionUID = 0L;
-
-        /** Max ratio of parallel operations for persistent cache based on the pool size. */
-        private static final int PERSISTENT_PARALLEL_OPS_MULT = 2;
-
-        /** Max ratio of parallel operations based on the pool size. */
-        private static final int PARALLEL_OPS_MULT = 4;
 
         /** {@inheritDoc} */
         @Override public void receive(
@@ -2388,8 +2372,9 @@ public class DataStreamerImpl<K, V> implements IgniteDataStreamer<K, V>, Delayed
         }
 
         /** {@inheritDoc} */
-        @Override public int maxPerNodeBatches(int streamerPoolSize, boolean persistent) {
-            return streamerPoolSize * (persistent ? PERSISTENT_PARALLEL_OPS_MULT : PARALLEL_OPS_MULT);
+        @Override public int perNodeParallelOperations(int streamerPoolSize, boolean persistent) {
+            return streamerPoolSize * (persistent ? DFLT_OVERWRITING_PERSISTENT_OPS_MULTIPLIER :
+                DFLT_PARALLEL_OPS_MULTIPLIER);
         }
     }
 
