@@ -21,6 +21,10 @@ package org.apache.ignite.internal.processors.query.calcite.exec.exp;
  * Iterable over range conditions.
  */
 public interface RangeIterable<Row> extends Iterable<RangeCondition<Row>> {
-    /** Count of ranges in iterable. */
-    public int size();
+    /**
+     * Multi bounds condition.
+     *
+     * @return {@code True} if iterable can have more than one item.
+     */
+    public boolean multiBounds();
 }
