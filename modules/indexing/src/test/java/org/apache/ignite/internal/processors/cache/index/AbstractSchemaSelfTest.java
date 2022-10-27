@@ -284,8 +284,6 @@ public abstract class AbstractSchemaSelfTest extends AbstractIndexingCommonTest 
         QueryEntity qryEntity = (QueryEntity)cache.getConfiguration(CacheConfiguration.class)
             .getQueryEntities().iterator().next();
 
-        List<IgniteBiTuple<String, Boolean>> fieldsList = new ArrayList<>(Arrays.asList(fields));
-
         boolean isStaticIdx = qryEntity.getIndexes().stream()
             .map(QueryIndex::getName)
             .anyMatch(name -> name.equals(idxName));
@@ -300,6 +298,8 @@ public abstract class AbstractSchemaSelfTest extends AbstractIndexingCommonTest 
         // All indexes have system field '_KEY'.
         keyFields.add(F.t(KEY_FIELD_NAME, true));
 
+        // Index fields are followed by primary key fields and _KEY field.
+        List<IgniteBiTuple<String, Boolean>> fieldsList = new ArrayList<>(Arrays.asList(fields));
         fieldsList.addAll(keyFields);
 
         return fieldsList;
