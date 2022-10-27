@@ -100,7 +100,8 @@ import static org.apache.ignite.transactions.TransactionState.UNKNOWN;
 /**
  * Transaction created by system implicitly on remote nodes.
  */
-public abstract class GridDistributedTxRemoteAdapter extends IgniteTxAdapter implements IgniteTxRemoteEx {
+public abstract class GridDistributedTxRemoteAdapter extends IgniteTxAdapter
+    implements IgniteTxRemoteEx {
     /** Commit allowed field updater. */
     private static final AtomicIntegerFieldUpdater<GridDistributedTxRemoteAdapter> COMMIT_ALLOWED_UPD =
         AtomicIntegerFieldUpdater.newUpdater(GridDistributedTxRemoteAdapter.class, "commitAllowed");

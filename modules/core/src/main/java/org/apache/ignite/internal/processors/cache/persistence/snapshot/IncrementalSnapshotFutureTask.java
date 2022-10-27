@@ -36,11 +36,11 @@ import org.jetbrains.annotations.Nullable;
 class IncrementalSnapshotFutureTask
     extends AbstractSnapshotFutureTask<IncrementalSnapshotFutureTaskResult>
     implements BiConsumer<String, File> {
+    /** Index of incremental snapshot. */
+    private final long incIdx;
+
     /** Metadata of the full snapshot. */
     private final Set<Integer> affectedCacheGrps;
-
-    /** */
-    private final long incIdx;
 
     /** */
     public IncrementalSnapshotFutureTask(
@@ -119,11 +119,15 @@ class IncrementalSnapshotFutureTask
 
     /** {@inheritDoc} */
     @Override public void acceptException(Throwable th) {
-        onDone(th);
+        if (onDone(th))
+            cctx.consistentCutMgr().cancelCut(th);
     }
 
     /** {@inheritDoc} */
     @Override public void accept(String name, File file) {
-        onDone(new IgniteException(IgniteSnapshotManager.cacheChangedException(CU.cacheId(name), name)));
+        Throwable th = new IgniteException(IgniteSnapshotManager.cacheChangedException(CU.cacheId(name), name));
+
+        if (onDone(th))
+            cctx.consistentCutMgr().cancelCut(th);
     }
 }

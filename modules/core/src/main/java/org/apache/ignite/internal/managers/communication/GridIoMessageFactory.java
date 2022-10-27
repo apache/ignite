@@ -56,7 +56,6 @@ import org.apache.ignite.internal.processors.cache.binary.MetadataResponseMessag
 import org.apache.ignite.internal.processors.cache.consistentcut.ConsistentCutMarker;
 import org.apache.ignite.internal.processors.cache.consistentcut.ConsistentCutMarkerMessage;
 import org.apache.ignite.internal.processors.cache.consistentcut.ConsistentCutMarkerTxFinishMessage;
-import org.apache.ignite.internal.processors.cache.consistentcut.ConsistentCutStartRequest;
 import org.apache.ignite.internal.processors.cache.distributed.GridCacheTtlUpdateRequest;
 import org.apache.ignite.internal.processors.cache.distributed.GridCacheTxRecoveryRequest;
 import org.apache.ignite.internal.processors.cache.distributed.GridCacheTxRecoveryResponse;
@@ -387,7 +386,6 @@ public class GridIoMessageFactory implements MessageFactoryProvider {
         factory.register(SnapshotFilesFailureMessage.TYPE_CODE, SnapshotFilesFailureMessage::new);
 
         // Consistent Cut.
-        factory.register(ConsistentCutStartRequest.TYPE_CODE, ConsistentCutStartRequest::new);
         factory.register(ConsistentCutMarker.TYPE_CODE, ConsistentCutMarker::new);
         factory.register(ConsistentCutMarkerMessage.TYPE_CODE, ConsistentCutMarkerMessage::new);
         factory.register(ConsistentCutMarkerTxFinishMessage.TYPE_CODE, ConsistentCutMarkerTxFinishMessage::new);

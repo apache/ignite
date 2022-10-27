@@ -361,12 +361,13 @@ public final class GridNearTxFinishFuture<K, V> extends GridCacheCompoundIdentit
                             finishOnePhase(commit);
 
                         try {
-                            ConsistentCutMarker txMarker = null;
+                            if (tx.currentPrepareFuture() != null) {
+                                ConsistentCutMarker txMarker = ((GridNearTxPrepareFutureAdapter)tx.currentPrepareFuture()).tx().marker();
 
-                            if (tx.currentPrepareFuture() != null)
-                                txMarker = ((GridNearTxPrepareFutureAdapter)tx.currentPrepareFuture()).tx().marker();
+                                tx.marker(txMarker);
+                            }
 
-                            tx.tmFinish(commit, nodeStop, true, txMarker);
+                            tx.tmFinish(commit, nodeStop, true);
                         }
                         catch (IgniteCheckedException e) {
                             U.error(log, "Failed to finish tx: " + tx, e);

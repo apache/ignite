@@ -32,7 +32,7 @@ import org.apache.ignite.internal.util.typedef.internal.S;
  * <p>
  * Note, there is no strict guarantee for all transactions belonged to the BEFORE side to be physically committed before
  * {@link ConsistentCutStartRecord}, and vice versa. This is the reason for having {@link ConsistentCutFinishRecord}.
- *
+ * <p>
  * @see ConsistentCutManager
  */
 public class ConsistentCutStartRecord extends WALRecord {

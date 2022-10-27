@@ -242,20 +242,21 @@ public final class GridDhtTxFinishFuture<K, V> extends GridCacheCompoundIdentity
                     try {
                         boolean nodeStopping = X.hasCause(err, NodeStoppingException.class);
 
-                        ConsistentCutMarker txMarker = null;
-
                         if (cctx.consistentCutMgr() != null && this.tx.currentPrepareFuture() != null) {
+                            ConsistentCutMarker txMarker;
+
                             if (this.tx.near())
                                 txMarker = ((GridNearTxPrepareFutureAdapter)this.tx.currentPrepareFuture()).tx().marker();
                             else
                                 txMarker = ((GridDhtTxPrepareFuture)this.tx.currentPrepareFuture()).tx().marker();
+
+                            this.tx.marker(txMarker);
                         }
 
                         this.tx.tmFinish(
                             err == null,
                             nodeStopping || cctx.kernalContext().failure().nodeStopping(),
-                            false,
-                            txMarker);
+                            false);
                     }
                     catch (IgniteCheckedException finishErr) {
                         U.error(log, "Failed to finish tx: " + tx, e);

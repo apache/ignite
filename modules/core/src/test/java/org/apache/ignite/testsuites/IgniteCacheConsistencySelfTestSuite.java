@@ -49,7 +49,7 @@ import org.junit.runners.Suite;
     ReplicatedExplicitTransactionalReadRepairTest.class,
     ReplicatedImplicitTransactionalReadRepairTest.class,
     SingleBackupExplicitTransactionalReadRepairTest.class,
-    SingleBackupImplicitTransactionalReadRepairTest.class
+    SingleBackupImplicitTransactionalReadRepairTest.class,
 })
 public class IgniteCacheConsistencySelfTestSuite {
 }

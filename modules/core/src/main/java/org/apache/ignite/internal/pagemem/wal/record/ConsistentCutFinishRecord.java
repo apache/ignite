@@ -34,16 +34,16 @@ import org.apache.ignite.lang.IgniteUuid;
  * This record is written to WAL after Consistent Cut stopped analyzing transactions from {@link ConsistentCut} and
  * storing them in a particular collection - {@link #before()} or {@link #after()}.
  * <p>
- * It guarantees that the BEFORE side consist of:
+ * It guarantees that the BEFORE side consists of:
  * 1. transactions physically committed before {@link ConsistentCutStartRecord} and weren't included into {@link #after()};
  * 2. transactions physically committed between {@link ConsistentCutStartRecord} and {@link ConsistentCutFinishRecord}
  *    and were included into {@link #before()}.
  * <p>
- * It guarantees that the AFTER side consist of:
+ * It guarantees that the AFTER side consists of:
  * 1. transactions physically committed before {@link ConsistentCutStartRecord} and were included into {@link #after()};
  * 2. transactions physically committed between {@link ConsistentCutStartRecord} and {@link ConsistentCutFinishRecord}
  *    and weren't included into {@link #before()}.
- *
+ * <p>
  * @see ConsistentCutManager
  */
 public class ConsistentCutFinishRecord extends WALRecord {

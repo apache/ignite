@@ -44,7 +44,6 @@ import org.apache.ignite.internal.processors.cache.distributed.near.GridNearTxPr
 import org.apache.ignite.internal.processors.cache.persistence.StorageException;
 import org.apache.ignite.internal.processors.cache.persistence.wal.FileWriteAheadLogManager;
 import org.apache.ignite.internal.processors.cache.persistence.wal.WALPointer;
-import org.apache.ignite.internal.util.future.GridFutureAdapter;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.T2;
 import org.apache.ignite.internal.util.typedef.internal.U;
@@ -314,10 +313,7 @@ public abstract class AbstractConsistentCutBlockingTest extends AbstractConsiste
         if (cutBlkNodeId != -1)
             BlockingConsistentCutManager.cutMgr(grid(cutBlkNodeId)).block(cutBlkType);
 
-        final GridFutureAdapter<IgniteFuture> cutRes = new GridFutureAdapter<>();
-
-        IgniteInternalFuture<?> cutFut = multithreadedAsync(() ->
-            triggerConsistentCut().listen(cutRes::onDone), 1);
+        IgniteFuture<Void> cutFut = triggerConsistentCut();
 
         // 4. Await Consistent Cut has blocked.
         if (cutBlkNodeId != -1)
@@ -335,8 +331,6 @@ public abstract class AbstractConsistentCutBlockingTest extends AbstractConsiste
 
         // 8. Await while Consistent Cut completed.
         cutFut.get(getTestTimeout());
-
-        cutRes.get().get();
     }
 
     /** */
@@ -534,9 +528,8 @@ public abstract class AbstractConsistentCutBlockingTest extends AbstractConsiste
         }
 
         /** {@inheritDoc} */
-        @Override protected ConsistentCut newConsistentCut(ConsistentCutMarker marker) {
-            // Blocks only thread for DistributedProcess (then it doesn't block transaction).
-            if (beforeUpdVer != null && Thread.currentThread().getName().contains("disco")) {
+        @Override public void startLocalCut(ConsistentCutMarker marker) {
+            if (beforeUpdVer != null) {
                 blockedLatch.countDown();
                 blockedLatch = null;
 
@@ -545,6 +538,11 @@ public abstract class AbstractConsistentCutBlockingTest extends AbstractConsiste
                 beforeUpdVer = null;
             }
 
+            super.startLocalCut(marker);
+        }
+
+        /** {@inheritDoc} */
+        @Override protected ConsistentCut newConsistentCut(ConsistentCutMarker marker) {
             return new BlockingConsistentCut(context(), marker);
         }
 
@@ -559,14 +557,13 @@ public abstract class AbstractConsistentCutBlockingTest extends AbstractConsiste
         }
 
         /** */
-        public void awaitBlockedOrFinishedCut(@Nullable IgniteInternalFuture<?> cutFut) {
+        public void awaitBlockedOrFinishedCut(@Nullable IgniteFuture<?> cutFut) {
             CountDownLatch latch = blockedLatch;
 
             if (latch == null)
                 return;
 
-            if (cutFut != null)
-                cutFut.listen((f) -> latch.countDown());
+            cutFut.listen((f) -> latch.countDown());
 
             U.awaitQuiet(latch);
         }

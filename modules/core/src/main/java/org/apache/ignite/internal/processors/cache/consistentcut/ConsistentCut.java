@@ -61,8 +61,8 @@ public class ConsistentCut extends GridFutureAdapter<WALPointer> {
 
     /**
      * Marker that inits this cut. Bind it with {@link ConsistentCut} by 2 reasons:
-     * a) To guarantee happens-before between versions are received and sent after by the same node.
-     * b) To guarantee that every transaction committed after the version update isn't cleaned from {@link #committingTxs}.
+     * a) To guarantee happens-before receiving marker and sending it after by the same node.
+     * b) To guarantee that every transaction committed after receiving marker isn't cleaned from {@link #committingTxs}.
      */
     private final ConsistentCutMarker marker;
 
@@ -144,8 +144,7 @@ public class ConsistentCut extends GridFutureAdapter<WALPointer> {
     }
 
     /**
-     * Registers transaction before commit it, sets Consistent Cut Version if needed (for non-near nodes).
-     * It invokes before committing transactions leave {@link IgniteTxManager#activeTransactions()}.
+     * Registers transaction before commit it. Invokes before a committing transaction leaves {@link IgniteTxManager#activeTransactions()}.
      *
      * @param txFinFut Transaction finish future.
      */
@@ -191,7 +190,7 @@ public class ConsistentCut extends GridFutureAdapter<WALPointer> {
 
                 if (tx.finalizationStatus() == RECOVERY_FINISH) {
                     if (log.isInfoEnabled()) {
-                        log.info("Transaction committed after recovery process and CutVersion isn't defined. " +
+                        log.info("Transaction committed after recovery process. " +
                             "Cut might be inconsistent. Transaction: " + tx);
                     }
 
@@ -211,7 +210,7 @@ public class ConsistentCut extends GridFutureAdapter<WALPointer> {
     }
 
     /**
-     * Transaction is BEFORE if it wasn't signed yet (started committing before cut), or signed with the previous marker.
+     * Transaction is BEFORE if it wasn't signed yet (started committing before cut), or signed with the obsolete marker.
      *
      * @return {@code true} if transaction is BEFORE current cut.
      */
@@ -223,6 +222,7 @@ public class ConsistentCut extends GridFutureAdapter<WALPointer> {
      * Logs Consistent Cut Record to WAL.
      *
      * @param record Record to write to WAL.
+     * @param finalRec {@code false} for {@link ConsistentCutStartRecord}, {@code true} for {@link ConsistentCutFinishRecord}.
      * @return Pointer to the record in WAL, or {@code null} if WAL is disabled.
      */
     private @Nullable WALPointer walLog(WALRecord record, boolean finalRec) throws IgniteCheckedException {

@@ -46,19 +46,17 @@ import org.jetbrains.annotations.Nullable;
  * also will be committed BEFORE on every other node. It means that an Ignite node can safely recover itself to this
  * point without any coordination with other nodes.
  * <p>
- * The algorithm starts on Ignite coordinator node by user command. Other nodes notifies with discovery message
- * {@link ConsistentCutStartRequest} or by transaction messages with marker {@link ConsistentCutMarkerMessage}. {@link ConsistentCut}
- * can be finished with {@code true} for consistent cut, and {@code false} for inconsistent cut. If at least single instance
- * is inconsistent then whole process is inconsistent.
- * <p>
- * Ignit guarantees that {@link ConsistentCutMarker} is growing monotonously.
+ * The algorithm starts on Ignite node by snapshot creation command. Other nodes notifies with discovery message of snapshot
+ * distributed process or by transaction messages with marker {@link ConsistentCutMarkerMessage}.
  * <p>
  * The algorithm consist of steps:
  * 1. On receiving new {@link ConsistentCutMarker} it immediately creates new {@link ConsistentCut} before it processed
  *    a message (that holds marker) itself.
- * 2. It writes {@link ConsistentCutStartRecord} to limit amount of transactions on the AFTER side of Consistent Cut.
+ * 2. It starts wrapping all transaction messages to {@link ConsistentCutMarkerMessage} or {@link ConsistentCutMarkerTxFinishMessage}
+ *    that contains actual {@link ConsistentCutMarker}.
+ * 3. It writes {@link ConsistentCutStartRecord} to limit amount of transactions on the AFTER side of Consistent Cut.
  *    After writing this record it's safe to miss transactions on the AFTER side.
- * 3. It collects transactions with PREPARING+ state to check which side of Consistent Cut they belong to. This collection
+ * 4. It collects transactions with PREPARING+ state to check which side of Consistent Cut they belong to. This collection
  *    contains all transactions on the BEFORE side. It's guaranteed with:
  *        a) For 2PC case (and for 1PC near/primary nodes) there are 2 transaction messages (PrepareResponse, FinishRequest)
  *           to transfer transaction from {@link TransactionState#ACTIVE} to {@link TransactionState#COMMITTED}.
@@ -66,20 +64,19 @@ import org.jetbrains.annotations.Nullable;
  *           Then in such case transaction will never be on the BEFORE side.
  *        b) For 1PC case on backup node this node always choose the greatest version to send on other nodes. And then
  *           it will always be on the AFTER side.
- * 4. It awaits every transaction in this collection to be committed to decide which side of Consistent Cut they belong to.
- * 5. Every transaction is signed with the latest {@link ConsistentCutMarker} AFTER which it committed. This marker is defined
+ * 5. It awaits every transaction in this collection to be committed to decide which side of Consistent Cut they belong to.
+ * 6. Every transaction is signed with the latest {@link ConsistentCutMarker} AFTER which it committed. This marker is defined
  *    at single node within a transaction before it starts committing {@link #registerBeforeCommit(IgniteInternalTx)}.
- * 6. After the check-list is empty it finishes Consistent Cut with writing {@link ConsistentCutFinishRecord} that contains
+ * 7. After the check-list is empty it finishes Consistent Cut with writing {@link ConsistentCutFinishRecord} that contains
  *    collection of transactions on the BEFORE and AFTER sides.
- * 7. After Consistent Cut finished and all transactions from BEFORE side committed, it notifies coordinator that local node
- *    is ready for next Consistent Cut process.
+ * 8. After Consistent Cut finished globally, it clears {@link ConsistentCut} variable and stops wrapping messages.
  */
 public class ConsistentCutManager extends GridCacheSharedManagerAdapter implements PartitionsExchangeAware {
     /** It serves updates of {@link #cut} with CAS. */
     protected static final AtomicReferenceFieldUpdater<ConsistentCutManager, ConsistentCut> CONSISTENT_CUT =
         AtomicReferenceFieldUpdater.newUpdater(ConsistentCutManager.class, ConsistentCut.class, "cut");
 
-    /** Running {@link ConsistentCut}, {@code null} if not running. */
+    /** {@link ConsistentCut}, if running. */
     private volatile @Nullable ConsistentCut cut;
 
     /** Marker of the last finished Consistent Cut. Required to avoid re-run Consistent Cut with the same marker. */
@@ -120,7 +117,7 @@ public class ConsistentCutManager extends GridCacheSharedManagerAdapter implemen
         }
 
         if (log.isDebugEnabled()) {
-            log.info("`registerFirstCommit` from " + tx.nearXidVersion().asIgniteUuid() + " to " + tx.xid()
+            log.info("`registerBeforeCommit` from " + tx.nearXidVersion().asIgniteUuid() + " to " + tx.xid()
                 + " , txMarker=" + tx.marker() + ", cutMarker = " + (cut == null ? null : cut.marker()));
         }
     }
@@ -151,7 +148,7 @@ public class ConsistentCutManager extends GridCacheSharedManagerAdapter implemen
             cut.addCommittingTransaction(tx.finishFuture());
 
         if (log.isDebugEnabled()) {
-            log.debug("`registerBeforeCommit` from " + tx.nearXidVersion().asIgniteUuid() + " to " + tx.xid()
+            log.debug("`registerCommitting` from " + tx.nearXidVersion().asIgniteUuid() + " to " + tx.xid()
                 + " , txMarker=" + tx.marker() + ", cutMarker = " + (cut == null ? null : cut.marker()));
         }
     }
@@ -161,19 +158,17 @@ public class ConsistentCutManager extends GridCacheSharedManagerAdapter implemen
      * @return Transaction, or {@code null} if not found.
      */
     private @Nullable IgniteInternalTx extractTransactionFromFinishMessage(GridDistributedBaseMessage msg) {
-        IgniteInternalTx tx = null;
-
         if (msg instanceof GridNearTxFinishRequest) {
             GridNearTxFinishRequest req = (GridNearTxFinishRequest)msg;
 
             GridCacheVersion dhtVer = cctx.tm().mappedVersion(req.version());
 
-            tx = cctx.tm().tx(dhtVer);
+            return cctx.tm().tx(dhtVer);
         }
         else if (msg instanceof GridDhtTxFinishRequest) {
             GridDhtTxFinishRequest req = (GridDhtTxFinishRequest)msg;
 
-            tx = cctx.tm().tx(req.version());
+            return cctx.tm().tx(req.version());
         }
         else if (msg instanceof GridDhtTxPrepareResponse) {
             GridDhtTxPrepareResponse res = (GridDhtTxPrepareResponse)msg;
@@ -181,7 +176,7 @@ public class ConsistentCutManager extends GridCacheSharedManagerAdapter implemen
             GridDhtTxPrepareFuture fut =
                 (GridDhtTxPrepareFuture)cctx.mvcc().versionedFuture(res.version(), res.futureId());
 
-            tx = fut.tx();
+            return fut.tx();
         }
         else if (msg instanceof GridNearTxPrepareResponse) {
             GridNearTxPrepareResponse res = (GridNearTxPrepareResponse)msg;
@@ -189,17 +184,17 @@ public class ConsistentCutManager extends GridCacheSharedManagerAdapter implemen
             GridNearTxPrepareFutureAdapter fut =
                 (GridNearTxPrepareFutureAdapter)cctx.mvcc().versionedFuture(res.version(), res.futureId());
 
-            tx = fut.tx();
+            return fut.tx();
         }
 
-        return tx;
+        return null;
     }
 
     /**
      * Wraps transaction message to marker messages if cut is running.
      *
      * @param txMsg Transaction message to wrap.
-     * @param txMarker {@code null} if message isn't a finish message, non-null otherwise.
+     * @param txMarker {@code null} if message is not a finish message.
      */
     public GridCacheMessage wrapTxMsgIfCutRunning(GridDistributedBaseMessage txMsg, @Nullable ConsistentCutMarker txMarker) {
         GridCacheMessage msg = txMsg;
@@ -245,7 +240,7 @@ public class ConsistentCutManager extends GridCacheSharedManagerAdapter implemen
         }
     }
 
-    /** */
+    /** Checks whether {@code marker} is new one. */
     private boolean newMarker(ConsistentCutMarker marker) {
         ConsistentCutMarker m = lastFinishedCutMarker;
 
@@ -258,15 +253,17 @@ public class ConsistentCutManager extends GridCacheSharedManagerAdapter implemen
     }
 
     /**
-     * Stops local Consistent Cut on error.
+     * Cancels local Consistent Cut with error.
      *
      * @param err Error.
      */
-    private void cancelCut(Throwable err) {
+    public void cancelCut(Throwable err) {
         ConsistentCut cut = CONSISTENT_CUT.get(this);
 
         if (cut != null && !cut.isDone())
             cut.onDone(err);
+
+        finishLocalCut();
     }
 
     /**

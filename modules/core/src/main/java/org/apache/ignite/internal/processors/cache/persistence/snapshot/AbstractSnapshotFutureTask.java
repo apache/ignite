@@ -138,7 +138,6 @@ abstract class AbstractSnapshotFutureTask<T> extends GridFutureAdapter<T> {
     /**
      * @param th An exception which occurred during snapshot processing.
      */
-    // TODO: 2 futures?
     public abstract void acceptException(Throwable th);
 
     /** {@inheritDoc} */
