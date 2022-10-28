@@ -162,6 +162,9 @@ public class JavaLogger implements IgniteLogger, LoggerNodeIdAndApplicationAware
         catch (IOException e) {
             error("Failed to read logging configuration: " + cfgUrl, e);
         }
+        catch (Throwable e) {
+            e.printStackTrace();
+        }
 
         cfg = cfgUrl.getPath();
     }
@@ -192,11 +195,31 @@ public class JavaLogger implements IgniteLogger, LoggerNodeIdAndApplicationAware
      * @param impl Java Logging implementation to use.
      */
     public JavaLogger(final Logger impl) {
+        this(impl, true);
+    }
+
+    /**
+     * Creates new logger with given implementation.
+     *
+     * @param impl Java Logging implementation to use.
+     * @param configure Configure logger.
+     */
+    public JavaLogger(final Logger impl, boolean configure) {
         assert impl != null;
 
-        configure(impl);
+        if (configure)
+            configure(impl);
+        else
+            this.impl = impl;
 
         quiet = quiet0;
+    }
+
+    /**
+     * @return Underlying logger.
+     */
+    public Logger implementation() {
+        return impl;
     }
 
     /** {@inheritDoc} */

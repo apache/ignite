@@ -31,6 +31,7 @@ import java.util.function.Predicate;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 import java.util.stream.Collectors;
+import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.ShutdownPolicy;
 import org.apache.ignite.cluster.ClusterState;
 import org.apache.ignite.internal.commandline.baseline.BaselineArguments;
@@ -46,6 +47,7 @@ import org.apache.ignite.internal.visor.tx.VisorTxOperation;
 import org.apache.ignite.internal.visor.tx.VisorTxProjection;
 import org.apache.ignite.internal.visor.tx.VisorTxSortOrder;
 import org.apache.ignite.internal.visor.tx.VisorTxTaskArg;
+import org.apache.ignite.logger.java.JavaLogger;
 import org.apache.ignite.spi.tracing.Scope;
 import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.testframework.junits.SystemPropertiesRule;
@@ -1180,7 +1182,7 @@ public class CommandHandlerParsingTest {
     /**
      * @return logger for tests.
      */
-    private Logger setupTestLogger() {
+    private IgniteLogger setupTestLogger() {
         Logger result;
 
         result = Logger.getLogger(getClass().getName());
@@ -1189,7 +1191,7 @@ public class CommandHandlerParsingTest {
 
         result.addHandler(CommandHandler.setupStreamHandler());
 
-        return result;
+        return new JavaLogger(result, false);
     }
 
     /**

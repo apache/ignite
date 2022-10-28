@@ -33,12 +33,12 @@ import java.util.Set;
 import java.util.concurrent.ThreadLocalRandom;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.logging.Handler;
-import java.util.logging.Logger;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 import java.util.stream.Collectors;
 import org.apache.ignite.IgniteCache;
 import org.apache.ignite.IgniteCheckedException;
+import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.cache.QueryEntity;
 import org.apache.ignite.cache.QueryIndex;
 import org.apache.ignite.cache.affinity.rendezvous.RendezvousAffinityFunction;
@@ -63,6 +63,7 @@ import org.apache.ignite.internal.util.lang.IgnitePair;
 import org.apache.ignite.internal.util.typedef.internal.A;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgniteBiTuple;
+import org.apache.ignite.logger.java.JavaLogger;
 import org.apache.ignite.util.GridCommandHandlerAbstractTest;
 import org.jetbrains.annotations.Nullable;
 import org.junit.Test;
@@ -284,7 +285,7 @@ public class IgniteIndexReaderTest extends GridCommandHandlerAbstractTest {
         // Take any inner page from tree.
         AtomicLong anyLeafId = new AtomicLong();
 
-        Logger log = createTestLogger();
+        IgniteLogger log = createTestLogger();
 
         IgniteIndexReader reader0 = new IgniteIndexReader(PAGE_SIZE, PART_CNT, PAGE_STORE_VER, dir, null, false, log) {
             @Override ScanContext createContext(
@@ -735,7 +736,7 @@ public class IgniteIndexReaderTest extends GridCommandHandlerAbstractTest {
     ) throws IgniteCheckedException {
         testOut.reset();
 
-        Logger logger = createTestLogger();
+        IgniteLogger logger = createTestLogger();
 
         IgniteIndexReader reader0 = new IgniteIndexReader(
             PAGE_SIZE,
@@ -756,7 +757,8 @@ public class IgniteIndexReaderTest extends GridCommandHandlerAbstractTest {
         }
 
         // Flush all Logger handlers to make log data available to test.
-        Arrays.stream(logger.getHandlers()).forEach(Handler::flush);
+        if (logger instanceof JavaLogger)
+            Arrays.stream(((JavaLogger)logger).implementation().getHandlers()).forEach(Handler::flush);
 
         return testOut.toString();
     }

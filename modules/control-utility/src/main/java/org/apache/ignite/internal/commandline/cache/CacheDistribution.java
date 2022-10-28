@@ -20,7 +20,7 @@ package org.apache.ignite.internal.commandline.cache;
 import java.util.HashSet;
 import java.util.Set;
 import java.util.UUID;
-import java.util.logging.Logger;
+import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.internal.client.GridClient;
 import org.apache.ignite.internal.client.GridClientConfiguration;
 import org.apache.ignite.internal.commandline.AbstractCommand;
@@ -48,7 +48,7 @@ import static org.apache.ignite.internal.commandline.cache.argument.Distribution
  */
 public class CacheDistribution extends AbstractCommand<CacheDistribution.Arguments> {
     /** {@inheritDoc} */
-    @Override public void printUsage(Logger logger) {
+    @Override public void printUsage(IgniteLogger logger) {
         String CACHES = "cacheName1,...,cacheNameN";
         String description = "Prints the information about partition distribution.";
 
@@ -109,7 +109,7 @@ public class CacheDistribution extends AbstractCommand<CacheDistribution.Argumen
     }
 
     /** {@inheritDoc} */
-    @Override public Object execute(GridClientConfiguration clientCfg, Logger logger) throws Exception {
+    @Override public Object execute(GridClientConfiguration clientCfg, IgniteLogger logger) throws Exception {
         CacheDistributionTaskArg taskArg = new CacheDistributionTaskArg(args.caches(), args.getUserAttributes());
 
         UUID nodeId = args.nodeId() == null ? BROADCAST_UUID : args.nodeId();

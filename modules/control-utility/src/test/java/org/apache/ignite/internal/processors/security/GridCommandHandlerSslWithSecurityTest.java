@@ -24,7 +24,7 @@ import java.util.Arrays;
 import java.util.List;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.logging.Handler;
-import java.util.logging.Logger;
+import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.configuration.ConnectorConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.IgniteEx;
@@ -32,6 +32,7 @@ import org.apache.ignite.internal.commandline.CommandHandler;
 import org.apache.ignite.internal.commandline.NoopConsole;
 import org.apache.ignite.internal.processors.security.impl.TestSecurityPluginProvider;
 import org.apache.ignite.internal.util.typedef.internal.U;
+import org.apache.ignite.logger.java.JavaLogger;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.junit.Test;
 
@@ -95,8 +96,10 @@ public class GridCommandHandlerSslWithSecurityTest extends GridCommonAbstractTes
      * @param hnd Command handler.
      */
     private void flushCommandOutput(CommandHandler hnd) {
-        Logger log = U.field(hnd, "logger");
-        Arrays.stream(log.getHandlers()).forEach(Handler::flush);
+        IgniteLogger log = U.field(hnd, "logger");
+
+        if (log instanceof JavaLogger)
+            Arrays.stream(((JavaLogger)log).implementation().getHandlers()).forEach(Handler::flush);
     }
 
     /** {@inheritDoc} */

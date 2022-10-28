@@ -34,6 +34,7 @@ import java.util.logging.Logger;
 import java.util.stream.Collectors;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteDataStreamer;
+import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.cache.affinity.rendezvous.RendezvousAffinityFunction;
 import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.configuration.AtomicConfiguration;
@@ -57,6 +58,7 @@ import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.G;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgnitePredicate;
+import org.apache.ignite.logger.java.JavaLogger;
 import org.apache.ignite.spi.encryption.keystore.KeystoreEncryptionSpi;
 import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.testframework.junits.WithSystemProperty;
@@ -204,13 +206,13 @@ public abstract class GridCommandHandlerAbstractTest extends GridCommonAbstractT
     /**
      * @return Logger.
      */
-    public static Logger createTestLogger() {
+    public static IgniteLogger createTestLogger() {
         Logger log = CommandHandler.initLogger(null);
 
         // Adding logging to console.
         log.addHandler(CommandHandler.setupStreamHandler());
 
-        return log;
+        return new JavaLogger(log, false);
     }
 
     /** */
@@ -330,8 +332,10 @@ public abstract class GridCommandHandlerAbstractTest extends GridCommonAbstractT
         lastOperationResult = hnd.getLastOperationResult();
 
         // Flush all Logger handlers to make log data available to test.
-        Logger logger = U.field(hnd, "logger");
-        Arrays.stream(logger.getHandlers()).forEach(Handler::flush);
+        IgniteLogger logger = U.field(hnd, "logger");
+
+        if (logger instanceof JavaLogger)
+            Arrays.stream(((JavaLogger)logger).implementation().getHandlers()).forEach(Handler::flush);
 
         return exitCode;
     }

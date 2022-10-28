@@ -23,9 +23,9 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
-import java.util.logging.Logger;
 import java.util.regex.Pattern;
 import java.util.regex.PatternSyntaxException;
+import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.internal.IgniteFeatures;
 import org.apache.ignite.internal.client.GridClient;
@@ -66,10 +66,10 @@ public class TxCommands extends AbstractCommand<VisorTxTaskArg> {
     private VisorTxTaskArg args;
 
     /** Logger. */
-    private Logger logger;
+    private IgniteLogger logger;
 
     /** {@inheritDoc} */
-    @Override public void printUsage(Logger logger) {
+    @Override public void printUsage(IgniteLogger logger) {
         usage(logger, "List or kill transactions:", TX, getTxOptions());
         usage(logger, "Print detailed information (topology and key lock ownership) about specific transaction:",
             TX, TX_INFO.argName(), or("<TX identifier as GridCacheVersion [topVer=..., order=..., nodeOrder=...] " +
@@ -108,7 +108,7 @@ public class TxCommands extends AbstractCommand<VisorTxTaskArg> {
      *
      * @param clientCfg Client configuration.
      */
-    @Override public Object execute(GridClientConfiguration clientCfg, Logger logger) throws Exception {
+    @Override public Object execute(GridClientConfiguration clientCfg, IgniteLogger logger) throws Exception {
         this.logger = logger;
 
         try (GridClient client = Command.startClient(clientCfg)) {
@@ -145,8 +145,8 @@ public class TxCommands extends AbstractCommand<VisorTxTaskArg> {
             return res;
         }
         catch (Throwable e) {
-            logger.severe("Failed to perform operation.");
-            logger.severe(CommandLogger.errorMessage(e));
+            logger.error("Failed to perform operation.");
+            logger.error(CommandLogger.errorMessage(e));
 
             throw e;
         }
@@ -180,7 +180,7 @@ public class TxCommands extends AbstractCommand<VisorTxTaskArg> {
             }
         }
         catch (Throwable e) {
-            logger.severe("Failed to perform operation.");
+            logger.error("Failed to perform operation.");
 
             throw e;
         }

@@ -35,6 +35,7 @@ import java.util.logging.Logger;
 import java.util.logging.StreamHandler;
 import java.util.stream.Collectors;
 import org.apache.ignite.IgniteCheckedException;
+import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.IgniteSystemProperties;
 import org.apache.ignite.internal.client.GridClientAuthenticationException;
 import org.apache.ignite.internal.client.GridClientClosedException;
@@ -48,6 +49,7 @@ import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.X;
 import org.apache.ignite.internal.util.typedef.internal.SB;
 import org.apache.ignite.internal.util.typedef.internal.U;
+import org.apache.ignite.logger.java.JavaLogger;
 import org.apache.ignite.logger.java.JavaLoggerFileHandler;
 import org.apache.ignite.logger.java.JavaLoggerFormatter;
 import org.apache.ignite.plugin.security.SecurityCredentials;
@@ -118,7 +120,7 @@ public class CommandHandler {
     public static final String NULL = "null";
 
     /** JULs logger. */
-    private final Logger logger;
+    private final IgniteLogger logger;
 
     /** Session. */
     protected final String ses = U.id8(UUID.randomUUID());
@@ -144,7 +146,7 @@ public class CommandHandler {
     /**
      * @return prepared JULs logger.
      */
-    public static Logger setupJavaLogger(String appName, Class<?> cls) {
+    public static IgniteLogger setupJavaLogger(String appName, Class<?> cls) {
         Logger result = initLogger(cls.getName() + "Log");
 
         // Adding logging to file.
@@ -165,7 +167,7 @@ public class CommandHandler {
         // Adding logging to console.
         result.addHandler(setupStreamHandler());
 
-        return result;
+        return new JavaLogger(result, false);
     }
 
     /**
@@ -208,7 +210,7 @@ public class CommandHandler {
     /**
      * @param logger Logger to use.
      */
-    public CommandHandler(Logger logger) {
+    public CommandHandler(IgniteLogger logger) {
         this.logger = logger;
     }
 
@@ -309,7 +311,7 @@ public class CommandHandler {
             return EXIT_CODE_OK;
         }
         catch (IllegalArgumentException e) {
-            logger.severe("Check arguments. " + errorMessage(e));
+            logger.error("Check arguments. " + errorMessage(e));
             logger.info("Command [" + commandName + "] finished with code: " + EXIT_CODE_INVALID_ARGUMENTS);
 
             if (verbose)
@@ -319,7 +321,7 @@ public class CommandHandler {
         }
         catch (Throwable e) {
             if (isAuthError(e)) {
-                logger.severe("Authentication error. " + errorMessage(e));
+                logger.error("Authentication error. " + errorMessage(e));
                 logger.info("Command [" + commandName + "] finished with code: " + ERR_AUTHENTICATION_FAILED);
 
                 if (verbose)
@@ -332,13 +334,13 @@ public class CommandHandler {
                 IgniteCheckedException cause = X.cause(e, IgniteCheckedException.class);
 
                 if (isConnectionClosedSilentlyException(e))
-                    logger.severe("Connection to cluster failed. Please check firewall settings and " +
+                    logger.error("Connection to cluster failed. Please check firewall settings and " +
                         "client and server are using the same SSL configuration.");
                 else {
                     if (isSSLMisconfigurationError(cause))
                         e = cause;
 
-                    logger.severe("Connection to cluster failed. " + errorMessage(e));
+                    logger.error("Connection to cluster failed. " + errorMessage(e));
 
                 }
 
@@ -353,7 +355,7 @@ public class CommandHandler {
             if (X.hasCause(e, IllegalArgumentException.class)) {
                 IllegalArgumentException iae = X.cause(e, IllegalArgumentException.class);
 
-                logger.severe("Check arguments. " + errorMessage(iae));
+                logger.error("Check arguments. " + errorMessage(iae));
                 logger.info("Command [" + commandName + "] finished with code: " + EXIT_CODE_INVALID_ARGUMENTS);
 
                 if (verbose)
@@ -362,7 +364,7 @@ public class CommandHandler {
                 return EXIT_CODE_INVALID_ARGUMENTS;
             }
 
-            logger.severe(errorMessage(e));
+            logger.error(errorMessage(e));
             logger.info("Command [" + commandName + "] finished with code: " + EXIT_CODE_UNEXPECTED_ERROR);
 
             err = e;
@@ -380,9 +382,11 @@ public class CommandHandler {
             logger.info("Control utility has completed execution at: " + endTime.format(formatter));
             logger.info("Execution time: " + diff.toMillis() + " ms");
 
-            Arrays.stream(logger.getHandlers())
-                  .filter(handler -> handler instanceof FileHandler)
-                  .forEach(Handler::close);
+            if (logger instanceof JavaLogger) {
+                Arrays.stream(((JavaLogger)logger).implementation().getHandlers())
+                    .filter(handler -> handler instanceof FileHandler)
+                    .forEach(Handler::close);
+            }
         }
     }
 
