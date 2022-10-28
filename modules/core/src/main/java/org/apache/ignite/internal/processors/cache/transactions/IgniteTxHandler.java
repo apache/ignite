@@ -530,7 +530,9 @@ public class IgniteTxHandler {
                             req.deployInfo() != null);
 
                         try {
-                            GridCacheMessage cacheMsg = ctx.consistentCutMgr().wrapTxMsgIfCutRunning(res, null);
+                            GridCacheMessage cacheMsg = ctx.consistentCutMgr() != null
+                                ? ctx.consistentCutMgr().wrapTxMsgIfCutRunning(res, null)
+                                : res;
 
                             ctx.io().send(nearNode, cacheMsg, req.policy());
 
@@ -1359,13 +1361,17 @@ public class IgniteTxHandler {
                     });
                 }
                 else {
-                    GridCacheMessage cacheMsg = ctx.consistentCutMgr().wrapTxMsgIfCutRunning(res, dhtTx.marker());
+                    GridCacheMessage cacheMsg = ctx.consistentCutMgr() != null
+                        ? ctx.consistentCutMgr().wrapTxMsgIfCutRunning(res, dhtTx.marker())
+                        : res;
 
                     sendReply(nodeId, req, cacheMsg, dhtTx, nearTx);
                 }
             }
             else {
-                GridCacheMessage cacheMsg = ctx.consistentCutMgr().wrapTxMsgIfCutRunning(res, null);
+                GridCacheMessage cacheMsg = ctx.consistentCutMgr() != null
+                    ? ctx.consistentCutMgr().wrapTxMsgIfCutRunning(res, null)
+                    : res;
 
                 sendReply(nodeId, req, cacheMsg, dhtTx, nearTx);
             }

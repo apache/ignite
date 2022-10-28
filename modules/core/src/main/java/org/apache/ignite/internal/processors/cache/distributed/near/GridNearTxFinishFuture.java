@@ -658,7 +658,9 @@ public final class GridNearTxFinishFuture<K, V> extends GridCacheCompoundIdentit
                         GridDhtTxFinishRequest finishReq = checkCommittedRequest(mini.futureId(), false);
 
                         try {
-                            GridCacheMessage cacheMsg = cctx.consistentCutMgr().wrapTxMsgIfCutRunning(finishReq, tx.marker());
+                            GridCacheMessage cacheMsg = cctx.consistentCutMgr() != null
+                                ? cctx.consistentCutMgr().wrapTxMsgIfCutRunning(finishReq, tx.marker())
+                                : finishReq;
 
                             cctx.io().send(backup, cacheMsg, tx.ioPolicy());
 
@@ -815,7 +817,9 @@ public final class GridNearTxFinishFuture<K, V> extends GridCacheCompoundIdentit
             add(fut); // Append new future.
 
             try {
-                GridCacheMessage cacheMsg = cctx.consistentCutMgr().wrapTxMsgIfCutRunning(req, tx.marker());
+                GridCacheMessage cacheMsg = cctx.consistentCutMgr() != null
+                    ? cctx.consistentCutMgr().wrapTxMsgIfCutRunning(req, tx.marker())
+                    : req;
 
                 cctx.io().send(n, cacheMsg, tx.ioPolicy());
 

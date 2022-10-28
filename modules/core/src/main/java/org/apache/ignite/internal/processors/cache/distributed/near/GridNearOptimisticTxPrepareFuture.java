@@ -578,7 +578,9 @@ public class GridNearOptimisticTxPrepareFuture extends GridNearOptimisticTxPrepa
                 }
                 else {
                     try {
-                        GridCacheMessage cacheMsg = cctx.consistentCutMgr().wrapTxMsgIfCutRunning(req, null);
+                        GridCacheMessage cacheMsg = cctx.consistentCutMgr() != null
+                            ? cctx.consistentCutMgr().wrapTxMsgIfCutRunning(req, null)
+                            : req;
 
                         cctx.io().send(n, cacheMsg, tx.ioPolicy());
 

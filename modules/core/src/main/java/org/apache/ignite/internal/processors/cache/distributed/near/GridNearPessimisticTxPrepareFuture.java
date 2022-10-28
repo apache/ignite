@@ -408,7 +408,9 @@ public class GridNearPessimisticTxPrepareFuture extends GridNearTxPrepareFutureA
                 add((IgniteInternalFuture)fut);
 
                 try {
-                    GridCacheMessage cacheMsg = cctx.consistentCutMgr().wrapTxMsgIfCutRunning(req, null);
+                    GridCacheMessage cacheMsg = cctx.consistentCutMgr() != null
+                        ? cctx.consistentCutMgr().wrapTxMsgIfCutRunning(req, null)
+                        : req;
 
                     cctx.io().send(primary, cacheMsg, tx.ioPolicy());
 

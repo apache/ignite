@@ -244,7 +244,7 @@ public class GridCacheSharedContext<K, V> {
         MvccCachingManager mvccCachingMgr,
         DeadlockDetectionManager deadlockDetectionMgr,
         CacheDiagnosticManager diagnosticMgr,
-        ConsistentCutManager consistentCutMgr
+        @Nullable ConsistentCutManager consistentCutMgr
     ) {
         this.kernalCtx = kernalCtx;
 
