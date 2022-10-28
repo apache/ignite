@@ -914,6 +914,12 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
                 .listen(f -> {
                         if (f.error() != null)
                             snpReq.error(f.error());
+                        else if (clusterSnpFut != null && !initStageWarnings.isEmpty()) {
+                            synchronized (snpOpMux) {
+                                if (clusterSnpFut != null)
+                                    clusterSnpFut.warnings.putAll(initStageWarnings);
+                            }
+                        }
 
                         endSnpProc.start(snpReq.requestId(), snpReq);
                     }
@@ -3375,6 +3381,12 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
         volatile IgniteCheckedException interruptEx;
 
         /**
+         * Warnings which produces an error after snapshot completes if no other error occured. But doesn't
+         * stop or cancel snapshot operation.
+         */
+        final Map<UUID, String> warnings = new ConcurrentHashMap<>();
+
+        /**
          * Default constructor.
          */
         public ClusterSnapshotFuture() {
@@ -3412,6 +3424,16 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
         /** {@inheritDoc} */
         @Override protected boolean onDone(@Nullable Void res, @Nullable Throwable err, boolean cancel) {
             endTime = U.currentTimeMillis();
+
+            if (!warnings.isEmpty() && err == null) {
+                StringBuilder sb = new StringBuilder();
+
+                sb.append("Snapshot task '").append(name).append("' completed with warnings:");
+
+                warnings.forEach((n, w) -> sb.append("\n\tNode '").append(n).append("': ").append(w));
+
+                err = new IgniteException(sb.toString());
+            }
 
             return super.onDone(res, err, cancel);
         }

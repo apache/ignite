@@ -48,6 +48,9 @@ import java.util.concurrent.atomic.LongAdder;
 import java.util.function.BooleanSupplier;
 import java.util.function.Function;
 import java.util.function.UnaryOperator;
+import java.util.logging.LogRecord;
+import java.util.logging.Logger;
+import java.util.logging.StreamHandler;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 import java.util.stream.Collectors;
@@ -96,6 +99,10 @@ import org.apache.ignite.internal.processors.cache.persistence.diagnostic.pagelo
 import org.apache.ignite.internal.processors.cache.persistence.file.FileIO;
 import org.apache.ignite.internal.processors.cache.persistence.file.FileIOFactory;
 import org.apache.ignite.internal.processors.cache.persistence.snapshot.IgniteSnapshotManager;
+import org.apache.ignite.internal.processors.cache.persistence.snapshot.SnapshotDataStreamerVerifyHandler;
+import org.apache.ignite.internal.processors.cache.persistence.snapshot.SnapshotHandler;
+import org.apache.ignite.internal.processors.cache.persistence.snapshot.SnapshotHandlerContext;
+import org.apache.ignite.internal.processors.cache.persistence.snapshot.SnapshotHandlerWarning;
 import org.apache.ignite.internal.processors.cache.transactions.IgniteInternalTx;
 import org.apache.ignite.internal.processors.cache.transactions.IgniteTxEntry;
 import org.apache.ignite.internal.processors.cache.transactions.TransactionProxyImpl;
@@ -124,6 +131,9 @@ import org.apache.ignite.lang.IgniteFuture;
 import org.apache.ignite.lang.IgniteInClosure;
 import org.apache.ignite.lang.IgnitePredicate;
 import org.apache.ignite.lang.IgniteUuid;
+import org.apache.ignite.plugin.AbstractTestPluginProvider;
+import org.apache.ignite.plugin.ExtensionRegistry;
+import org.apache.ignite.plugin.PluginContext;
 import org.apache.ignite.plugin.extensions.communication.Message;
 import org.apache.ignite.spi.communication.tcp.TcpCommunicationSpi;
 import org.apache.ignite.spi.metric.LongMetric;
@@ -3059,6 +3069,67 @@ public class GridCommandHandlerTest extends GridCommandHandlerClusterPerMethodAb
     @Test
     public void testClusterSnapshotCreateSynchronously() throws Exception {
         doClusterSnapshotCreate(true);
+    }
+
+    /**
+     * Test 'not OK' status of snapshot operation producing a warning.
+     *
+     * @throws Exception If failed.
+     */
+    @Test
+    public void testClusterCreateSnapshotWarning() throws Exception {
+        int keysCnt = 100;
+        String snpName = "snapshot_wrn";
+
+        IgniteConfiguration cfg = getConfiguration(getTestIgniteInstanceName(0))
+            .setPluginProviders(new AbstractTestPluginProvider() {
+                /** {@inheritDoc} */
+                @Override public void initExtensions(PluginContext ctx, ExtensionRegistry registry) {
+                    super.initExtensions(ctx, registry);
+
+                    // Simulates concurrent datastreamer check warning.
+                    registry.registerExtension(SnapshotHandler.class,
+                        new SnapshotDataStreamerVerifyHandler() {
+                            /** {@inheritDoc} */
+                            @Override public SnapshotHandlerWarning invoke(SnapshotHandlerContext c) {
+                                return createWarning(Collections.singletonList(DEFAULT_CACHE_NAME), c.localNode().id());
+                            }
+                        });
+                }
+
+                /** {@inheritDoc} */
+                @Override public String name() {
+                    return "SnapshotTestPlugin";
+                }
+            });
+
+        cfg.getConnectorConfiguration().setHost("localhost");
+
+        IgniteEx ig = startGrid(cfg);
+        ig.cluster().state(ACTIVE);
+
+        createCacheAndPreload(ig, keysCnt);
+
+        Logger log = CommandHandler.initLogger("testSnpWarnResult");
+
+        AtomicBoolean wrnFound = new AtomicBoolean();
+
+        log.addHandler(new StreamHandler() {
+            /** {@inheritDoc} */
+            @Override public synchronized void publish(LogRecord record) {
+                if (record.getMessage() != null && !wrnFound.get() && record.getMessage().contains("Such updates may " +
+                    "break data consistency until finished. Snapshot might not be entirely restored."))
+                    wrnFound.set(true);
+            }
+        });
+
+        CommandHandler hnd = new CommandHandler(log);
+
+        List<String> args = new ArrayList<>(F.asList("--snapshot", "create", snpName, "--sync"));
+
+        assertEquals(EXIT_CODE_UNEXPECTED_ERROR, execute(hnd, args));
+
+        assertTrue("Snapshot inconsistency warning not found.", wrnFound.get());
     }
 
     /**
