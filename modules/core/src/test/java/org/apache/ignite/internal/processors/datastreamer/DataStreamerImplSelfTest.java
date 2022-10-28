@@ -187,7 +187,7 @@ public class DataStreamerImplSelfTest extends GridCommonAbstractTest {
         ListeningTestLogger log = new ListeningTestLogger(cfg.getGridLogger());
 
         LogListener lsnr = LogListener.matches("You are loading data the setting 'allowOverwrite' set to " +
-            "false (default). It doesn't guarantie data consistency until successfully finishes")
+                "false (default). It doesn't guarantie data consistency until successfully finishes")
             .times(mustWarn ? 1 : 0).build();
 
         log.registerListener(lsnr);
