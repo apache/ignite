@@ -29,12 +29,12 @@ import java.util.logging.LogManager;
 import java.util.logging.Logger;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteLogger;
+import org.apache.ignite.internal.logger.LoggerNodeIdAndApplicationAware;
 import org.apache.ignite.internal.util.tostring.GridToStringExclude;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.internal.A;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.internal.util.typedef.internal.U;
-import org.apache.ignite.logger.LoggerNodeIdAndApplicationAware;
 import org.jetbrains.annotations.Nullable;
 
 import static java.util.logging.Level.FINE;
@@ -413,11 +413,6 @@ public class JavaLogger implements IgniteLogger, LoggerNodeIdAndApplicationAware
         catch (IgniteCheckedException | IOException e) {
             throw new RuntimeException("Failed to enable file handler.", e);
         }
-    }
-
-    /** {@inheritDoc} */
-    @Override public UUID getNodeId() {
-        return nodeId;
     }
 
     /**

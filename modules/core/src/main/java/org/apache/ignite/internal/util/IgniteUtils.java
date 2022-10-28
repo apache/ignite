@@ -214,6 +214,7 @@ import org.apache.ignite.internal.cluster.ClusterTopologyCheckedException;
 import org.apache.ignite.internal.compute.ComputeTaskCancelledCheckedException;
 import org.apache.ignite.internal.compute.ComputeTaskTimeoutCheckedException;
 import org.apache.ignite.internal.events.DiscoveryCustomEvent;
+import org.apache.ignite.internal.logger.LoggerNodeIdAndApplicationAware;
 import org.apache.ignite.internal.managers.communication.GridIoManager;
 import org.apache.ignite.internal.managers.communication.GridIoPolicy;
 import org.apache.ignite.internal.managers.deployment.GridDeployment;
@@ -264,8 +265,6 @@ import org.apache.ignite.lang.IgniteProductVersion;
 import org.apache.ignite.lang.IgniteRunnable;
 import org.apache.ignite.lang.IgniteUuid;
 import org.apache.ignite.lifecycle.LifecycleAware;
-import org.apache.ignite.logger.LoggerNodeIdAndApplicationAware;
-import org.apache.ignite.logger.LoggerNodeIdAware;
 import org.apache.ignite.logger.java.JavaLogger;
 import org.apache.ignite.marshaller.Marshaller;
 import org.apache.ignite.plugin.PluginProvider;
@@ -4741,7 +4740,7 @@ public abstract class IgniteUtils {
         return initLogger(
             cfg.getGridLogger(),
             app,
-            cfg.getNodeId() != null ? cfg.getNodeId() : UUID.randomUUID(),
+            null,
             cfg.getWorkDirectory()
         );
     }
@@ -4757,7 +4756,7 @@ public abstract class IgniteUtils {
     public static IgniteLogger initLogger(
         @Nullable IgniteLogger cfgLog,
         @Nullable String app,
-        UUID nodeId,
+        @Nullable UUID nodeId,
         String workDir
     ) throws IgniteCheckedException {
         try {
@@ -4824,8 +4823,6 @@ public abstract class IgniteUtils {
             // Set node IDs for all file appenders.
             if (cfgLog instanceof LoggerNodeIdAndApplicationAware)
                 ((LoggerNodeIdAndApplicationAware)cfgLog).setApplicationAndNode(app, nodeId);
-            else if (cfgLog instanceof LoggerNodeIdAware)
-                ((LoggerNodeIdAware)cfgLog).setNodeId(nodeId);
 
             if (log4jInitErr != null)
                 U.warn(cfgLog, "Failed to initialize Log4J2Logger (falling back to standard java logging): "

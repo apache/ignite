@@ -17,7 +17,6 @@
 
 package org.apache.ignite.internal.commandline;
 
-import java.io.File;
 import java.time.Duration;
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
@@ -35,6 +34,7 @@ import java.util.logging.Logger;
 import java.util.logging.StreamHandler;
 import java.util.stream.Collectors;
 import org.apache.ignite.IgniteCheckedException;
+import org.apache.ignite.IgniteException;
 import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.IgniteSystemProperties;
 import org.apache.ignite.internal.client.GridClientAuthenticationException;
@@ -50,8 +50,6 @@ import org.apache.ignite.internal.util.typedef.X;
 import org.apache.ignite.internal.util.typedef.internal.SB;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.logger.java.JavaLogger;
-import org.apache.ignite.logger.java.JavaLoggerFileHandler;
-import org.apache.ignite.logger.java.JavaLoggerFormatter;
 import org.apache.ignite.plugin.security.SecurityCredentials;
 import org.apache.ignite.plugin.security.SecurityCredentialsBasicProvider;
 import org.apache.ignite.plugin.security.SecurityCredentialsProvider;
@@ -146,28 +144,14 @@ public class CommandHandler {
     /**
      * @return prepared JULs logger.
      */
-    public static IgniteLogger setupJavaLogger(String appName, Class<?> cls) {
-        Logger result = initLogger(cls.getName() + "Log");
-
-        // Adding logging to file.
+    public static IgniteLogger setupJavaLogger(String appName) {
         try {
-            String absPathPattern =
-                new File(JavaLoggerFileHandler.logDirectory(U.defaultWorkDirectory()), appName + "-%g.log").getAbsolutePath();
-
-            FileHandler fileHandler = new FileHandler(absPathPattern, 5 * 1024 * 1024, 5);
-
-            fileHandler.setFormatter(new JavaLoggerFormatter());
-
-            result.addHandler(fileHandler);
+            // Forcefully add console appender.
+            return U.initLogger(null, appName, null, U.defaultWorkDirectory());
         }
-        catch (Exception e) {
-            System.out.println("Failed to configure logging to file");
+        catch (IgniteCheckedException e) {
+            throw new IgniteException(e);
         }
-
-        // Adding logging to console.
-        result.addHandler(setupStreamHandler());
-
-        return new JavaLogger(result, false);
     }
 
     /**
@@ -204,7 +188,7 @@ public class CommandHandler {
      *
      */
     public CommandHandler() {
-        logger = setupJavaLogger("control-utility", CommandHandler.class);
+        logger = setupJavaLogger("control-utility");
     }
 
     /**

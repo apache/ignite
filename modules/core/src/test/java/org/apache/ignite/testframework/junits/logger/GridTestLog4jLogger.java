@@ -24,6 +24,7 @@ import java.util.Collection;
 import java.util.UUID;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteLogger;
+import org.apache.ignite.internal.logger.LoggerNodeIdAndApplicationAware;
 import org.apache.ignite.internal.util.GridConcurrentHashSet;
 import org.apache.ignite.internal.util.tostring.GridToStringExclude;
 import org.apache.ignite.internal.util.typedef.C1;
@@ -33,7 +34,6 @@ import org.apache.ignite.internal.util.typedef.internal.A;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgniteClosure;
-import org.apache.ignite.logger.LoggerNodeIdAndApplicationAware;
 import org.apache.logging.log4j.Level;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
@@ -136,10 +136,6 @@ public class GridTestLog4jLogger implements IgniteLogger, LoggerNodeIdAndApplica
 
     /** Quiet flag. */
     private final boolean quiet;
-
-    /** Node ID. */
-    @GridToStringExclude
-    private UUID nodeId;
 
     /**
      * Creates new logger and automatically detects if root logger already
@@ -449,18 +445,11 @@ public class GridTestLog4jLogger implements IgniteLogger, LoggerNodeIdAndApplica
     }
 
     /** {@inheritDoc} */
-    @Override public void setApplicationAndNode(@Nullable String application, UUID nodeId) {
-        A.notNull(nodeId, "nodeId");
+    @Override public void setApplicationAndNode(@Nullable String application, @Nullable UUID nodeId) {
+        if (nodeId != null)
+            System.setProperty(NODE_ID, U.id8(nodeId));
 
-        this.nodeId = nodeId;
-
-        System.setProperty(NODE_ID, U.id8(nodeId));
         System.setProperty(APP_ID, application != null ? application : "ignite");
-    }
-
-    /** {@inheritDoc} */
-    @Override public UUID getNodeId() {
-        return nodeId;
     }
 
     /**

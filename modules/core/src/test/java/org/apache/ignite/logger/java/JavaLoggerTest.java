@@ -19,8 +19,8 @@ package org.apache.ignite.logger.java;
 
 import java.util.UUID;
 import org.apache.ignite.IgniteLogger;
+import org.apache.ignite.internal.logger.LoggerNodeIdAndApplicationAware;
 import org.apache.ignite.internal.util.typedef.internal.U;
-import org.apache.ignite.logger.LoggerNodeIdAndApplicationAware;
 import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.testframework.junits.common.GridCommonTest;
 import org.junit.Test;

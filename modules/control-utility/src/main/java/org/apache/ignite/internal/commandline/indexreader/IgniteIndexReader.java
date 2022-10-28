@@ -335,7 +335,7 @@ public class IgniteIndexReader implements AutoCloseable {
             new File(p.<String>get(DIR_ARG)),
             idxs.isEmpty() ? null : idxs::contains,
             p.get(CHECK_PARTS_ARG),
-            CommandHandler.setupJavaLogger("index-reader", IgniteIndexReader.class)
+            CommandHandler.setupJavaLogger("index-reader")
         )) {
             reader.readIndex();
         }
