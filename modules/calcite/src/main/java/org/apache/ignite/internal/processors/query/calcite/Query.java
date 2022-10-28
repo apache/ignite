@@ -35,6 +35,9 @@ import org.apache.ignite.internal.processors.query.QueryState;
 import org.apache.ignite.internal.processors.query.RunningQuery;
 import org.apache.ignite.internal.processors.query.calcite.exec.ExchangeService;
 import org.apache.ignite.internal.processors.query.calcite.exec.ExecutionCancelledException;
+import org.apache.ignite.internal.processors.query.calcite.exec.tracker.MemoryTracker;
+import org.apache.ignite.internal.processors.query.calcite.exec.tracker.NoOpMemoryTracker;
+import org.apache.ignite.internal.processors.query.calcite.exec.tracker.QueryMemoryTracker;
 import org.apache.ignite.internal.util.typedef.internal.S;
 
 /** */
@@ -74,6 +77,9 @@ public class Query<RowT> implements RunningQuery {
 
     /** Logger. */
     protected final IgniteLogger log;
+
+    /** */
+    private MemoryTracker memoryTracker;
 
     /** */
     public Query(
@@ -127,6 +133,11 @@ public class Query<RowT> implements RunningQuery {
                     unregister.accept(this);
 
             }, frag.root()::onError);
+        }
+
+        synchronized (mux) {
+            if (memoryTracker != null)
+                memoryTracker.reset();
         }
     }
 
@@ -233,6 +244,20 @@ public class Query<RowT> implements RunningQuery {
     public boolean isExchangeWithInitNodeStarted(long fragmentId) {
         // On remote node exchange ID is the same as fragment ID.
         return initNodeStartedExchanges.contains(fragmentId);
+    }
+
+    /** */
+    public MemoryTracker createMemoryTracker(MemoryTracker globalMemoryTracker, long quota) {
+        synchronized (mux) {
+            // Query can have multiple fragments, each fragment requests memory tracker, but there should be only
+            // one memory tracker per query on each node, store it inside Query instance.
+            if (memoryTracker == null) {
+                memoryTracker = quota > 0 || globalMemoryTracker != NoOpMemoryTracker.INSTANCE ?
+                    new QueryMemoryTracker(globalMemoryTracker, quota) : NoOpMemoryTracker.INSTANCE;
+            }
+
+            return memoryTracker;
+        }
     }
 
     /** {@inheritDoc} */

@@ -6,7 +6,7 @@
 query II
 SELECT ARRAY_AGG(NULL), ARRAY_AGG(42)
 ----
-[null]	[42]
+[NULL]	[42]
 
 # simple ARRAY_AGG
 query I
@@ -30,7 +30,7 @@ SELECT ARRAY_CONCAT_AGG(a) FROM (SELECT ARRAY[1, 2, 3] UNION ALL SELECT NULL) T(
 query I
 SELECT ARRAY_CONCAT_AGG(a) FROM (SELECT ARRAY[1, 2, 3] UNION ALL SELECT ARRAY[NULL]) T(a)
 ----
-[1, 2, 3, null]
+[1, 2, 3, NULL]
 
 # ARRAY_CONCAT_AGG with NULL array
 query I

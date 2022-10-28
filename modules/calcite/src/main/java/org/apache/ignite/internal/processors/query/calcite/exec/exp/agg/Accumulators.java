@@ -1093,7 +1093,7 @@ public class Accumulators {
     }
 
     /** */
-    private abstract static class AggAccumulator<Row> extends AbstractAccumulator<Row> implements Iterable<Row> {
+    private abstract static class AggAccumulator<Row> extends AbstractAccumulator<Row> implements IterableAccumulator<Row> {
         /** */
         private final List<Row> buf;
 
