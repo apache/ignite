@@ -44,6 +44,7 @@ import org.apache.ignite.internal.processors.cache.persistence.db.IgnitePdsPageR
 import org.apache.ignite.internal.processors.cache.persistence.db.IgnitePdsPartitionPreloadTest;
 import org.apache.ignite.internal.processors.cache.persistence.db.IgnitePdsStartWIthEmptyArchive;
 import org.apache.ignite.internal.processors.cache.persistence.db.IgnitePdsTransactionsHangTest;
+import org.apache.ignite.internal.processors.cache.persistence.db.wal.IgniteDisableWalOnRebalanceTest;
 import org.apache.ignite.internal.processors.cache.persistence.db.wal.WalRebalanceRestartTest;
 import org.apache.ignite.internal.processors.cache.persistence.file.FileDownloaderTest;
 import org.apache.ignite.testframework.GridTestUtils;
@@ -84,6 +85,7 @@ public class IgnitePdsTestSuite4 {
         GridTestUtils.addTestIfNeeded(suite, NotOptimizedRebalanceTest.class, ignoredTests);
         GridTestUtils.addTestIfNeeded(suite, BreakRebalanceChainTest.class, ignoredTests);
         GridTestUtils.addTestIfNeeded(suite, WalRebalanceRestartTest.class, ignoredTests);
+        GridTestUtils.addTestIfNeeded(suite, IgniteDisableWalOnRebalanceTest.class, ignoredTests);
 
         GridTestUtils.addTestIfNeeded(suite, IgnitePdsRestartAfterFailedToWriteMetaPageTest.class, ignoredTests);
         GridTestUtils.addTestIfNeeded(suite, IgnitePdsRemoveDuringRebalancingTest.class, ignoredTests);

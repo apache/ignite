@@ -114,7 +114,7 @@ import static org.apache.ignite.internal.commandline.cache.CacheDestroy.DESTROY_
 import static org.apache.ignite.internal.commandline.cache.CacheSubcommands.DESTROY;
 import static org.apache.ignite.internal.commandline.cache.CacheSubcommands.HELP;
 import static org.apache.ignite.internal.commandline.consistency.ConsistencyCommand.CACHE;
-import static org.apache.ignite.internal.commandline.consistency.ConsistencyCommand.PARTITION;
+import static org.apache.ignite.internal.commandline.consistency.ConsistencyCommand.PARTITIONS;
 import static org.apache.ignite.internal.commandline.consistency.ConsistencyCommand.STRATEGY;
 import static org.apache.ignite.testframework.GridTestUtils.assertContains;
 import static org.apache.ignite.testframework.GridTestUtils.assertNotContains;
@@ -1666,7 +1666,7 @@ public class GridCommandHandlerClusterByClassTest extends GridCommandHandlerClus
         cmdArgs.put(METADATA, asList(new String[] {"help"}, new String[] {"list"}));
         cmdArgs.put(TRACING_CONFIGURATION, Collections.singletonList(new String[] {"get_all"}));
         cmdArgs.put(CONSISTENCY, asList(
-            new String[] {"repair", CACHE, "cache", PARTITION, "0", STRATEGY, "LWW"},
+            new String[] {"repair", CACHE, "cache", PARTITIONS, "0", STRATEGY, "LWW"},
             new String[] {"status"},
             new String[] {"finalize"}));
 

@@ -41,6 +41,7 @@ import java.util.concurrent.locks.ReentrantReadWriteLock;
 import java.util.function.Consumer;
 import java.util.function.Function;
 import org.apache.ignite.IgniteCheckedException;
+import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.client.ClientAuthenticationException;
 import org.apache.ignite.client.ClientAuthorizationException;
 import org.apache.ignite.client.ClientConnectionException;
@@ -70,6 +71,7 @@ import org.apache.ignite.internal.util.future.GridFutureAdapter;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.T2;
 import org.apache.ignite.internal.util.typedef.internal.U;
+import org.apache.ignite.logger.NullLogger;
 import org.jetbrains.annotations.Nullable;
 
 import static org.apache.ignite.internal.client.thin.ProtocolBitmaskFeature.HEARTBEAT;
@@ -157,6 +159,9 @@ class TcpClientChannel implements ClientChannel, ClientMessageHandler, ClientCon
     /** Heartbeat timer. */
     private final Timer heartbeatTimer;
 
+    /** Log. */
+    private final IgniteLogger log;
+
     /** Last send operation timestamp. */
     private volatile long lastSendMillis;
 
@@ -164,6 +169,8 @@ class TcpClientChannel implements ClientChannel, ClientMessageHandler, ClientCon
     TcpClientChannel(ClientChannelConfiguration cfg, ClientConnectionMultiplexer connMgr)
         throws ClientConnectionException, ClientAuthenticationException, ClientProtocolError {
         validateConfiguration(cfg);
+
+        log = NullLogger.whenNull(cfg.getLogger());
 
         for (ClientNotificationType type : ClientNotificationType.values()) {
             if (type.keepNotificationsWithoutListener())
@@ -176,6 +183,9 @@ class TcpClientChannel implements ClientChannel, ClientMessageHandler, ClientCon
         timeout = cfg.getTimeout();
 
         sock = connMgr.open(cfg.getAddress(), this, this);
+
+        if (log.isDebugEnabled())
+            log.debug("Connection establised: " + cfg.getAddress());
 
         handshake(DEFAULT_VERSION, cfg.getUserName(), cfg.getUserPassword(), cfg.getUserAttributes());
 
@@ -196,6 +206,11 @@ class TcpClientChannel implements ClientChannel, ClientMessageHandler, ClientCon
 
     /** {@inheritDoc} */
     @Override public void onDisconnected(@Nullable Exception e) {
+        if (e == null)
+            log.info("Client disconnected");
+        else
+            log.warning("Client disconnected: " + e.getMessage(), e);
+
         close(e);
     }
 
@@ -316,6 +331,8 @@ class TcpClientChannel implements ClientChannel, ClientMessageHandler, ClientCon
             return payloadReader.apply(new PayloadInputChannel(this, payload));
         }
         catch (IgniteCheckedException e) {
+            log.warning("Failed to process response: " + e.getMessage(), e);
+
             throw convertException(e);
         }
     }
@@ -342,6 +359,8 @@ class TcpClientChannel implements ClientChannel, ClientMessageHandler, ClientCon
                 }
             }
             catch (Throwable t) {
+                log.warning("Failed to process response: " + t.getMessage(), t);
+
                 fut.completeExceptionally(convertException(t));
             }
         }));
@@ -666,6 +685,9 @@ class TcpClientChannel implements ClientChannel, ClientMessageHandler, ClientCon
                     // Reading server UUID
                     srvNodeId = reader.readUuid();
                 }
+
+                if (log.isDebugEnabled())
+                    log.debug("Handshake succeeded [protocolVersion=" + protocolCtx.version() + ", srvNodeId=" + srvNodeId + ']');
             }
             else {
                 ProtocolVersion srvVer = new ProtocolVersion(res.readShort(), res.readShort(), res.readShort());
@@ -675,6 +697,9 @@ class TcpClientChannel implements ClientChannel, ClientMessageHandler, ClientCon
 
                 if (res.remaining() > 0)
                     errCode = reader.readInt();
+
+                if (log.isDebugEnabled())
+                    log.debug("Handshake failed [protocolVersion=" + srvVer + ", err=" + err + ", errCode=" + errCode + ']');
 
                 if (errCode == ClientStatus.AUTH_FAILED)
                     throw new ClientAuthenticationException(err);
@@ -690,7 +715,11 @@ class TcpClientChannel implements ClientChannel, ClientMessageHandler, ClientCon
                         srvVer,
                         err
                     ));
-                else { // Retry with server version.
+                else {
+                    // Retry with server version.
+                    if (log.isDebugEnabled())
+                        log.debug("Retrying handshake with server version [protocolVersion=" + srvVer + ']');
+
                     handshake(srvVer, user, pwd, userAttrs);
                 }
             }
@@ -753,15 +782,26 @@ class TcpClientChannel implements ClientChannel, ClientMessageHandler, ClientCon
     private long getHeartbeatInterval(long configuredInterval) {
         long serverIdleTimeoutMs = service(ClientOperation.GET_IDLE_TIMEOUT, null, in -> in.in().readLong());
 
-        if (serverIdleTimeoutMs <= 0)
+        if (serverIdleTimeoutMs <= 0) {
+            if (log.isInfoEnabled())
+                log.info("Server-side IdleTimeout is not set, using configured ClientConfiguration.heartbeatInterval: " +
+                        configuredInterval);
+
             return configuredInterval;
+        }
 
         long recommendedHeartbeatInterval = serverIdleTimeoutMs / 3;
 
         if (recommendedHeartbeatInterval < MIN_RECOMMENDED_HEARTBEAT_INTERVAL)
             recommendedHeartbeatInterval = MIN_RECOMMENDED_HEARTBEAT_INTERVAL;
 
-        return Math.min(configuredInterval, recommendedHeartbeatInterval);
+        long res = Math.min(configuredInterval, recommendedHeartbeatInterval);
+
+        if (log.isInfoEnabled())
+            log.info("Using heartbeat interval: " + res + " (configured: " + configuredInterval +
+                    ", recommended: " + recommendedHeartbeatInterval + ", server-side IdleTimeout: " + serverIdleTimeoutMs + ")");
+
+        return res;
     }
 
     /**

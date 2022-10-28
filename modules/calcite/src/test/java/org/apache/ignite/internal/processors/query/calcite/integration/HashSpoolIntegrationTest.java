@@ -80,4 +80,33 @@ public class HashSpoolIntegrationTest extends AbstractBasicIntegrationTest {
             .returns(2, null)
             .check();
     }
+
+    /** */
+    @Test
+    public void testIsNotDistinctFrom() {
+        executeSql("CREATE TABLE t1(i1 INTEGER, i2 INTEGER)");
+        executeSql("INSERT INTO t1 VALUES (1, null), (2, 2), (null, 3), (3, null)");
+
+        executeSql("CREATE TABLE t2(i3 INTEGER, i4 INTEGER)");
+        executeSql("INSERT INTO t2 VALUES (1, 1), (2, 2), (null, 3), (4, null)");
+
+        String sql = "SELECT /*+ DISABLE_RULE('NestedLoopJoinConverter', 'MergeJoinConverter') */ i1, i4 " +
+            "FROM t1 JOIN t2 ON i1 IS NOT DISTINCT FROM i3";
+
+        assertQuery(sql)
+            .matches(QueryChecker.containsSubPlan("IgniteHashIndexSpool"))
+            .returns(1, 1)
+            .returns(2, 2)
+            .returns(null, 3)
+            .check();
+
+        sql = "SELECT /*+ DISABLE_RULE('NestedLoopJoinConverter', 'MergeJoinConverter') */ i1, i4 " +
+            "FROM t1 JOIN t2 ON i1 IS NOT DISTINCT FROM i3 AND i2 = i4";
+
+        assertQuery(sql)
+            .matches(QueryChecker.containsSubPlan("IgniteHashIndexSpool"))
+            .returns(2, 2)
+            .returns(null, 3)
+            .check();
+    }
 }

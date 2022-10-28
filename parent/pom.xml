@@ -49,7 +49,7 @@
         <maven.compiler.source>1.8</maven.compiler.source>
         <maven.compiler.target>1.8</maven.compiler.target>
 
-        <revision>2.14.0-SNAPSHOT</revision>
+        <revision>2.15.0-SNAPSHOT</revision>
         <!-- Ignite version will be substituted with the flatten-maven-plugin and used as
             a version dependency for Ignite extensions. -->
         <ignite.version>${revision}</ignite.version>
@@ -103,7 +103,7 @@
         <javax.cache.version>1.0.0</javax.cache.version>
         <jboss.rmi.version>1.0.6.Final</jboss.rmi.version>
         <jetbrains.annotations.version>16.0.3</jetbrains.annotations.version>
-        <jetty.version>9.4.43.v20210629</jetty.version>
+        <jetty.version>9.4.49.v20220914</jetty.version>
         <jmh.version>1.13</jmh.version>
         <jms.spec.version>1.1.1</jms.spec.version>
         <jna.version>4.5.2</jna.version>
@@ -1024,8 +1024,10 @@
                                 --add-opens=java.base/java.util=ALL-UNNAMED
                                 --add-opens=java.base/java.util.concurrent=ALL-UNNAMED
                                 --add-opens=java.base/java.util.concurrent.locks=ALL-UNNAMED
+                                --add-opens=java.base/java.util.concurrent.atomic=ALL-UNNAMED
                                 --add-opens=java.base/java.lang=ALL-UNNAMED
                                 --add-opens=java.base/java.lang.invoke=ALL-UNNAMED
+                                --add-opens=java.base/java.math=ALL-UNNAMED
                                 --add-opens=java.sql/java.sql=ALL-UNNAMED
                             </argLine>
                         </configuration>

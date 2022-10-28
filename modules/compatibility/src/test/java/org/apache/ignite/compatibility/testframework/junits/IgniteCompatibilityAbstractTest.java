@@ -145,7 +145,7 @@ public abstract class IgniteCompatibilityAbstractTest extends GridCommonAbstract
 
         final ListeningTestLogger logger = new ListeningTestLogger(log);
 
-        IgniteProcessProxy ignite = new IgniteProcessProxy(cfg, logger, locJvmInstance == null ? null : (x) -> locJvmInstance, true) {
+        IgniteProcessProxy ignite = new IgniteProcessProxy(cfg, logger, locJvmInstance == null ? null : () -> locJvmInstance, true) {
             @Override protected IgniteLogger logger(IgniteLogger log, Object ctgr) {
                 return logger.getLogger(ctgr + "#" + ver.replaceAll("\\.", "_"));
             }

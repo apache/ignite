@@ -208,7 +208,7 @@ public class PageIOFreeSizeTest extends GridCommonAbstractTest {
     private <I extends PageIO> I io(IOVersions<I> versions) {
         I io = versions.latest();
 
-        GridUnsafe.setMemory(addr, pageSz, (byte)0);
+        GridUnsafe.zeroMemory(addr, pageSz);
 
         io.initNewPage(addr, 1, pageSz, mock);
 
