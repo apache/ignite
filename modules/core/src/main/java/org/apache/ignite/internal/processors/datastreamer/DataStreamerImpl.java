@@ -2255,6 +2255,8 @@ public class DataStreamerImpl<K, V> implements IgniteDataStreamer<K, V>, Delayed
             Collection<Integer> reservedParts = new HashSet<>();
             Collection<Integer> ignoredParts = new HashSet<>();
 
+            wrnSnapshot(cctx);
+
             try {
                 for (Entry<KeyCacheObject, CacheObject> e : entries) {
                     cctx.shared().database().checkpointReadLock();
@@ -2310,8 +2312,6 @@ public class DataStreamerImpl<K, V> implements IgniteDataStreamer<K, V>, Delayed
                         }
 
                         boolean primary = cctx.affinity().primaryByKey(cctx.localNode(), entry.key(), topVer);
-
-                        notifySnapshot(cctx);
 
                         entry.initialValue(e.getValue(),
                             ver,
@@ -2369,18 +2369,15 @@ public class DataStreamerImpl<K, V> implements IgniteDataStreamer<K, V>, Delayed
         }
 
         /**
-         * Notifies snapshot process of concurrent inconsistent updates.
+         * Notifies snapshot process of inconsistent-by-nature updates by the streaming.
          *
-         * @param
+         * @param cctx Cache context.
          */
-        private void notifySnapshot(GridCacheContext<?, ?> cctx) {
+        private static void wrnSnapshot(GridCacheContext<?, ?> cctx) {
             if (!cctx.group().persistenceEnabled())
                 return;
 
-            IgniteSnapshotManager snpMngr = cctx.kernalContext().cache().context().snapshotMgr();
-
-            if (snpMngr.isSnapshotCreating())
-                snpMngr.onDataStreamerUpdate(cctx.cache().name());
+            cctx.kernalContext().cache().context().snapshotMgr().streamedCaches(cctx.cache().name());
         }
     }
 

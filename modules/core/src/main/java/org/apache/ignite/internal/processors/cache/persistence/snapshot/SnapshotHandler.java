@@ -27,27 +27,30 @@ import org.jetbrains.annotations.Nullable;
  * <p>
  * The execution of the handler consists of two steps:
  * <ol>
- * <li>Local call of {@link #invoke(SnapshotHandlerContext)} method on all nodes containing the snapshot data.</li>
+ * <li>Local call of {@link #invoke(SnapshotHandlerContext)} method on all nodes containing the snapshot data or
+ * validating snapshot operation.</li>
  * <li>Processing the results of local invocations in the {@link #complete(String, Collection)} method on one of the
  * nodes containing the snapshot data.</li>
  * </ol>
  * Note: If during the execution of a snapshot operation some node exits, then whole operation is rolled back, in which
  *       case the {@link #complete(String, Collection)} method may not be called.
  *
- * @param <T> Type of the local processing result.
+ * @param <T> Type of the local processing result. Could be a warning result, {@link SnapshotHandlerWarning}
  */
 public interface SnapshotHandler<T> extends Extension {
     /** Snapshot handler type. */
     public SnapshotHandlerType type();
 
     /**
-     * Local processing of a snapshot operation. Called on every node that contains snapshot data.
+     * Local processing of a snapshot operation. Called on every node that contains snapshot data or should check
+     * snapshot operation.
      *
      * @param ctx Snapshot handler context.
      * @return Result of local processing. This result will be returned in {@link SnapshotHandlerResult#data()} method
      *      passed into {@link #complete(String, Collection)} handler method.
      * @throws Exception If invocation caused an exception. This exception will be returned in {@link
      *      SnapshotHandlerResult#error()}} method passed into {@link #complete(String, Collection)} handler method.
+     * @see SnapshotHandlerWarning
      */
     public @Nullable T invoke(SnapshotHandlerContext ctx) throws Exception;
 

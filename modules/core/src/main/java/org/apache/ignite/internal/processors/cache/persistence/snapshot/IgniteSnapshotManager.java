@@ -68,6 +68,7 @@ import java.util.function.Function;
 import java.util.function.Predicate;
 import java.util.stream.Collectors;
 import org.apache.ignite.IgniteCheckedException;
+import org.apache.ignite.IgniteDataStreamer;
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.IgniteInterruptedException;
 import org.apache.ignite.IgniteLogger;
@@ -139,6 +140,7 @@ import org.apache.ignite.internal.processors.cluster.IgniteChangeGlobalStateSupp
 import org.apache.ignite.internal.processors.configuration.distributed.DistributedConfigurationLifecycleListener;
 import org.apache.ignite.internal.processors.configuration.distributed.DistributedLongProperty;
 import org.apache.ignite.internal.processors.configuration.distributed.DistributedPropertyDispatcher;
+import org.apache.ignite.internal.processors.datastreamer.DataStreamerRequest;
 import org.apache.ignite.internal.processors.marshaller.MappedName;
 import org.apache.ignite.internal.processors.metastorage.persistence.DistributedMetaStorageImpl;
 import org.apache.ignite.internal.processors.metric.MetricRegistry;
@@ -804,6 +806,10 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
             clusterSnpReq = req;
         }
 
+        boolean streamedCaches = !cctx.mvcc().dataStreamerFutures().isEmpty();
+
+        log.error("TETS | creatingSnpTask. StreamFutsCnt: " + !cctx.mvcc().dataStreamerFutures().isEmpty());
+
         return task0.chain(fut -> {
             if (fut.error() != null)
                 throw F.wrap(fut.error());
@@ -890,7 +896,14 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
             }
         }
 
-        snpReq.startStageEnded(true);
+        Map<UUID, String> initStageWarnings = new HashMap<>();
+
+        res.entrySet().forEach(e -> {
+            e.getValue().handlerResults().values().forEach(hr -> {
+                if (hr.data() instanceof SnapshotHandlerWarning)
+                    initStageWarnings.put(e.getKey(), ((SnapshotHandlerWarning)hr.data()).get());
+            });
+        });
 
         if (isLocalNodeCoordinator(cctx.discovery())) {
             Set<UUID> missed = new HashSet<>(snpReq.nodes());
@@ -914,6 +927,12 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
                 .listen(f -> {
                         if (f.error() != null)
                             snpReq.error(f.error());
+                        else if (clusterSnpFut != null && !initStageWarnings.isEmpty()) {
+                            synchronized (snpOpMux) {
+                                if (clusterSnpFut != null)
+                                    clusterSnpFut.warnings.putAll(initStageWarnings);
+                            }
+                        }
 
                         endSnpProc.start(snpReq.requestId(), snpReq);
                     }
@@ -1308,7 +1327,7 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
 
         kctx0.task().execute(SnapshotMetadataCollectorTask.class, taskArg).listen(f0 -> {
             if (f0.error() == null) {
-                Map<ClusterNode, List<SnapshotMetadata>> metas = f0.result();
+                Map<ClusterNode, List<SnapshotMetadata>> metas1 = f0.result();
 
                 Map<Integer, String> grpIds = grps == null ? Collections.emptyMap() :
                     grps.stream().collect(Collectors.toMap(CU::cacheId, v -> v));
@@ -1781,18 +1800,16 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
     }
 
     /**
-     * Notifies snapshot process of inconsistent updates.
+     * Notifies snapshot process of inconsistent-by-nature updates by the streaming.
      *
      * @param cacheName Related cache name.
+     * @see IgniteDataStreamer
      */
-    public void onDataStreamerUpdate(String cacheName) {
+    public void streamedCaches(String cacheName) {
         SnapshotFutureTask task = currentSnapshotTask();
 
-        if (task != null && task.err.get() == null) {
-            task.acceptException(new IgniteException("Prohibited concurrent streaming update " +
-                "occured to cache '" + cacheName + "'. Streaming should not work while snapshot creating with " +
-                "'allowOverwrite' set to false."));
-        }
+        if (task != null)
+            task.streamedCaches.add(cacheName);
     }
 
     /**
@@ -3390,6 +3407,12 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
         volatile IgniteCheckedException interruptEx;
 
         /**
+         * Warnings which produces an error after snapshot completes if no other error occured. But doesn't
+         * stop or cancel snapshot operation.
+         */
+        final Map<UUID, String> warnings = new ConcurrentHashMap<>();
+
+        /**
          * Default constructor.
          */
         public ClusterSnapshotFuture() {
@@ -3427,6 +3450,16 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
         /** {@inheritDoc} */
         @Override protected boolean onDone(@Nullable Void res, @Nullable Throwable err, boolean cancel) {
             endTime = U.currentTimeMillis();
+
+            if (!warnings.isEmpty() && err == null) {
+                StringBuilder sb = new StringBuilder();
+
+                sb.append("Snapshot task '").append(name).append("' completed with warnings:");
+
+                warnings.forEach((n, w) -> sb.append("\n\tNode '").append(n).append("': ").append(w));
+
+                err = new IgniteException(sb.toString());
+            }
 
             return super.onDone(res, err, cancel);
         }
