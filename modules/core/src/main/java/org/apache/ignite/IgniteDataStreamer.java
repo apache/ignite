@@ -50,12 +50,11 @@ import org.jetbrains.annotations.Nullable;
  *  <li>By default, working with external storages.</li>
  * </ul>
  * <p>
- * If {@link #allowOverwrite()} setting is {@code false} (default), you should avoid:
+ * If {@link #allowOverwrite()} setting is {@code false} (default), consider:
  * <ul>
- *  <li>Having the same keys repeating in the data being streamed;</li>
- *  <li>Streamer cancelation or streamer node failure;</li>
- *  <li>Using data loaded with canceled or failed streamer;</li>
- *  <li>Creating snapshots while streaming.</li>
+ *  <li>You should not have the same keys repeating in the data being streamed;</li>
+ *  <li>Streamer cancelation or streamer node failure can cause data inconsistency;</li>
+ *  <li>Concurrently created snapshot may contain inconsistent data and might not be restored entirely.</li>
  * </ul>
  * Most important behaviour of data streamer is defined by {@link StreamReceiver} and {@link #allowOverwrite()} property.
  * <p>

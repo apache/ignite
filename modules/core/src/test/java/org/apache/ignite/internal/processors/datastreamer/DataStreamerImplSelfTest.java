@@ -186,10 +186,10 @@ public class DataStreamerImplSelfTest extends GridCommonAbstractTest {
         IgniteConfiguration cfg = getConfiguration(getTestIgniteInstanceName(G.allGrids().size()));
         ListeningTestLogger log = new ListeningTestLogger(cfg.getGridLogger());
 
-        LogListener logListener = LogListener.matches("You are loading data with default stream receiver. It " +
+        LogListener lsnr = LogListener.matches("You are loading data with default stream receiver. It " +
             "doesn't guarantie data consistency until successfully finishes").times(mustWarn ? 1 : 0).build();
 
-        log.registerListener(logListener);
+        log.registerListener(lsnr);
 
         cfg.setGridLogger(log);
 
@@ -197,8 +197,6 @@ public class DataStreamerImplSelfTest extends GridCommonAbstractTest {
 
         CacheConfiguration<?, ?> ccfg = defaultCacheConfiguration();
         ldr.getOrCreateCache(ccfg);
-
-        int ldrThreads = 3;
 
         try (IgniteDataStreamer<Integer, Integer> ds = ldr.dataStreamer(ccfg.getName())) {
             for (StreamReceiver<Integer, Integer> rcvr : receivers) {
@@ -220,11 +218,11 @@ public class DataStreamerImplSelfTest extends GridCommonAbstractTest {
                         if (v >= 0)
                             ds.addData(v, v);
                     }
-                }, ldrThreads, "testDsLoader");
+                }, 3, "testDsLoader");
             }
         }
 
-        logListener.check();
+        lsnr.check();
     }
 
     /**
