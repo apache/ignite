@@ -189,9 +189,10 @@ public class IndexSpoolNode<Row> extends AbstractNode<Row> implements SingleNode
         RelDataType rowType,
         ImmutableBitSet keys,
         @Nullable Predicate<Row> filter,
-        Supplier<Row> searchRow
+        Supplier<Row> searchRow,
+        boolean allowNulls
     ) {
-        RuntimeHashIndex<Row> idx = new RuntimeHashIndex<>(ctx, keys);
+        RuntimeHashIndex<Row> idx = new RuntimeHashIndex<>(ctx, keys, allowNulls);
 
         ScanNode<Row> scan = new ScanNode<>(
             ctx,
