@@ -256,6 +256,11 @@ public class MetricsSelfTest extends GridCommonAbstractTest {
 
         futs.add(runAsync(() -> {
             for (int i = 0; i < cnt; i++)
+                h.value(-100);
+        }));
+
+        futs.add(runAsync(() -> {
+            for (int i = 0; i < cnt; i++)
                 h.value(9);
         }));
 
@@ -279,7 +284,7 @@ public class MetricsSelfTest extends GridCommonAbstractTest {
 
         long[] res = h.value();
 
-        assertEquals(cnt, res[0]);
+        assertEquals(cnt * 2, res[0]);
         assertEquals(cnt * 2, res[1]);
         assertEquals(cnt * 3, res[2]);
         assertEquals(cnt * 4, res[3]);

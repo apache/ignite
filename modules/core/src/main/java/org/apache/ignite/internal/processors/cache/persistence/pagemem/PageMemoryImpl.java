@@ -595,7 +595,7 @@ public class PageMemoryImpl implements PageMemoryEx {
 
             long absPtr = seg.absolute(relPtr);
 
-            GridUnsafe.setMemory(absPtr + PAGE_OVERHEAD, pageSize(), (byte)0);
+            GridUnsafe.zeroMemory(absPtr + PAGE_OVERHEAD, pageSize());
 
             PageHeader.fullPageId(absPtr, fullId);
 
@@ -848,7 +848,7 @@ public class PageMemoryImpl implements PageMemoryEx {
                     readPageFromStore = true;
                 }
                 else {
-                    GridUnsafe.setMemory(absPtr + PAGE_OVERHEAD, pageSize(), (byte)0);
+                    GridUnsafe.zeroMemory(absPtr + PAGE_OVERHEAD, pageSize());
 
                     // Must init page ID in order to ensure RWLock tag consistency.
                     PageIO.setPageId(pageAddr, pageId);
@@ -873,7 +873,7 @@ public class PageMemoryImpl implements PageMemoryEx {
 
                 long pageAddr = absPtr + PAGE_OVERHEAD;
 
-                GridUnsafe.setMemory(pageAddr, pageSize(), (byte)0);
+                GridUnsafe.zeroMemory(pageAddr, pageSize());
 
                 PageHeader.fullPageId(absPtr, fullId);
 
@@ -1336,7 +1336,7 @@ public class PageMemoryImpl implements PageMemoryEx {
 
                 PageHeader.fullPageId(tmpAbsPtr, NULL_PAGE);
 
-                GridUnsafe.setMemory(tmpAbsPtr + PAGE_OVERHEAD, pageSize(), (byte)0);
+                GridUnsafe.zeroMemory(tmpAbsPtr + PAGE_OVERHEAD, pageSize());
 
                 if (tracker != null)
                     tracker.onCowPageWritten();
@@ -2276,14 +2276,14 @@ public class PageMemoryImpl implements PageMemoryEx {
 
             long absPtr = absolute(relPtr);
 
-            GridUnsafe.setMemory(absPtr + PAGE_OVERHEAD, pageSize(), (byte)0);
+            GridUnsafe.zeroMemory(absPtr + PAGE_OVERHEAD, pageSize());
 
             PageHeader.dirty(absPtr, false);
 
             long tmpBufPtr = PageHeader.tempBufferPointer(absPtr);
 
             if (tmpBufPtr != INVALID_REL_PTR) {
-                GridUnsafe.setMemory(checkpointPool.absolute(tmpBufPtr) + PAGE_OVERHEAD, pageSize(), (byte)0);
+                GridUnsafe.zeroMemory(checkpointPool.absolute(tmpBufPtr) + PAGE_OVERHEAD, pageSize());
 
                 PageHeader.tempBufferPointer(absPtr, INVALID_REL_PTR);
 
@@ -2607,8 +2607,6 @@ public class PageMemoryImpl implements PageMemoryEx {
                             if (seg.dirtyPages.remove(fullId))
                                 seg.dirtyPagesCntr.decrementAndGet();
                         }
-
-                        GridUnsafe.setMemory(absPtr + PAGE_OVERHEAD, pageSize, (byte)0);
 
                         seg.pageReplacementPolicy.onRemove(relPtr);
 

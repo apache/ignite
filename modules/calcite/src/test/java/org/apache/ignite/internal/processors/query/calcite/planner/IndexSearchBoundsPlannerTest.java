@@ -43,9 +43,9 @@ import org.apache.ignite.internal.processors.query.calcite.util.RexUtils;
 import org.junit.Test;
 
 /**
- * Planner test for SEARCH/SARG condition on indexed fields.
+ * Planner test for indexed fields scans.
  */
-public class SearchSargOnIndexPlannerTest extends AbstractPlannerTest {
+public class IndexSearchBoundsPlannerTest extends AbstractPlannerTest {
     /** */
     private IgniteSchema publicSchema;
 
@@ -81,7 +81,7 @@ public class SearchSargOnIndexPlannerTest extends AbstractPlannerTest {
             range(1, 3, false, true));
 
         assertBounds("SELECT * FROM TEST WHERE C1 < 3 AND C1 IS NOT NULL",
-            range("null", 3, false, false));
+            range("$NULL_BOUND()", 3, false, false));
 
         // Redundant "IS NOT NULL condition".
         assertBounds("SELECT * FROM TEST WHERE C1 > 3 AND C1 IS NOT NULL",
@@ -158,14 +158,14 @@ public class SearchSargOnIndexPlannerTest extends AbstractPlannerTest {
 
         assertBounds("SELECT * FROM TEST WHERE C1 = 1 AND (C2 > '1' OR C2 < '3')",
             exact(1),
-            range("null", null, false, true));
+            range("$NULL_BOUND()", null, false, true));
     }
 
     /** Simple SEARCH/SARG with "IS NULL" condition. */
     @Test
     public void testBoundsOneFieldSearchWithNull() throws Exception {
         assertBounds("SELECT * FROM TEST WHERE C1 IN (1, 2, 3) OR C1 IS NULL",
-            multi(exact("null"), exact(1), exact(2), exact(3)),
+            multi(exact("$NULL_BOUND()"), exact(1), exact(2), exact(3)),
             empty(),
             empty(),
             empty()
@@ -188,15 +188,15 @@ public class SearchSargOnIndexPlannerTest extends AbstractPlannerTest {
             empty(),
             empty(),
             empty(),
-            range(1, "null", false, false));
+            range(1, "$NULL_BOUND()", false, false));
 
-        assertBounds("SELECT * FROM TEST WHERE C4 IS NULL", empty(), empty(), empty(), exact("null"));
+        assertBounds("SELECT * FROM TEST WHERE C4 IS NULL", empty(), empty(), empty(), exact("$NULL_BOUND()"));
 
         assertBounds("SELECT * FROM TEST WHERE C4 IS NOT NULL",
             empty(),
             empty(),
             empty(),
-            range(null, "null", true, false));
+            range(null, "$NULL_BOUND()", true, false));
 
         assertBounds("SELECT * FROM TEST WHERE C4 IN (1, 2, 3) AND C3 > 1",
             empty(),
@@ -376,6 +376,67 @@ public class SearchSargOnIndexPlannerTest extends AbstractPlannerTest {
             exact("a"),
             empty()
         );
+    }
+
+    /** Tests bounds merge. */
+    @Test
+    public void testBoundsMerge() throws Exception {
+        assertBounds("SELECT * FROM TEST WHERE C1 > ? AND C1 >= 1",
+            range("$GREATEST2(?0, 1)", null, true, true)
+        );
+
+        assertBounds("SELECT * FROM TEST WHERE C1 > ? AND C1 >= ? AND C1 > ?",
+            range("$GREATEST2($GREATEST2(?0, ?1), ?2)", null, true, true)
+        );
+
+        assertBounds("SELECT * FROM TEST WHERE C1 > ? AND C1 >= 1 AND C1 < ? AND C1 < ?",
+            range("$GREATEST2(?0, 1)", "$LEAST2(?1, ?2)", true, false)
+        );
+
+        assertBounds("SELECT * FROM TEST WHERE C1 < ? AND C1 BETWEEN 1 AND 10 ",
+            range(1, "$LEAST2(?0, 10)", true, true)
+        );
+
+        assertBounds("SELECT * FROM TEST WHERE C1 NOT IN (1, 2) AND C1 >= ?",
+            range("?0", null, true, true)
+        );
+
+        tbl.addIndex(RelCollations.of(TraitUtils.createFieldCollation(3, false),
+            TraitUtils.createFieldCollation(2, true)), "C4");
+
+        assertBounds("SELECT * FROM TEST WHERE C4 > ? AND C4 >= 1 AND C4 < ? AND C4 < ?",
+            empty(),
+            empty(),
+            empty(),
+            range("$LEAST2(?1, ?2)", "$GREATEST2(?0, 1)", false, true)
+        );
+    }
+
+    /** Tests complex bounds expressions. */
+    @Test
+    public void testBoundsComplex() throws Exception {
+        assertBounds("SELECT * FROM TEST WHERE C1 = ? + 10",
+            exact("+(?0, 10)")
+        );
+
+        assertBounds("SELECT * FROM TEST WHERE C1 = 1 AND C2 > SUBSTRING(?::VARCHAR, 1, 2) || '3'",
+            exact(1),
+            range("||(SUBSTRING(?0, 1, 2), _UTF-8'3')", null, false, true)
+        );
+
+        assertBounds("SELECT * FROM TEST WHERE C1 = 1 AND C2 > SUBSTRING(C3::VARCHAR, 1, 2) || '3'",
+            exact(1),
+            empty()
+        );
+
+        assertBounds("SELECT (SELECT C1 FROM TEST t2 WHERE t2.C1 = t1.C1 + t1.C3 * ?) FROM TEST t1",
+            exact("+($cor0.C1, *($cor0.C3, ?0))")
+        );
+
+        assertPlan("SELECT * FROM TEST WHERE C1 = ? + C3", publicSchema, isTableScan("TEST"));
+
+        assertPlan("SELECT (SELECT C1 FROM TEST t2 WHERE t2.C1 < t1.C1 + t2.C1) FROM TEST t1", publicSchema,
+            nodeOrAnyChild(isIndexScan("TEST", "C1C2C3")).negate());
     }
 
     /** */

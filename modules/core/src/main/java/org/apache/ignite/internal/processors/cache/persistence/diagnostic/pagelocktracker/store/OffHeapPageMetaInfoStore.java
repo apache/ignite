@@ -77,7 +77,7 @@ public class OffHeapPageMetaInfoStore implements PageMetaInfoStore {
     private long allocate(int size) {
         long ptr = GridUnsafe.allocateMemory(size);
 
-        GridUnsafe.setMemory(ptr, size, (byte)0);
+        GridUnsafe.zeroMemory(ptr, size);
 
         return ptr;
     }

@@ -266,9 +266,6 @@ public class GridNioSslFilter extends GridNioFilterAdapter {
             onSessionOpenedException = e;
             U.error(log, "Failed to start SSL handshake (will close inbound connection): " + ses, e);
 
-            if (rejectedSesCnt != null)
-                rejectedSesCnt.increment();
-
             ses.close();
         }
     }
@@ -278,8 +275,12 @@ public class GridNioSslFilter extends GridNioFilterAdapter {
         try {
             GridNioFutureImpl<?> fut = ses.removeMeta(HANDSHAKE_FUT_META_KEY);
 
-            if (fut != null)
+            if (fut != null) {
+                if (rejectedSesCnt != null)
+                    rejectedSesCnt.increment();
+
                 fut.onDone(new IgniteCheckedException("SSL handshake failed (connection closed).", onSessionOpenedException));
+            }
 
             if (ses.meta(SSL_META.ordinal()) == null)
                 return;
@@ -416,9 +417,6 @@ public class GridNioSslFilter extends GridNioFilterAdapter {
             }
         }
         catch (SSLException e) {
-            if (rejectedSesCnt != null)
-                rejectedSesCnt.increment();
-
             throw new GridNioException("Failed to decode SSL data: " + ses, e);
         }
         finally {

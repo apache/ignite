@@ -34,7 +34,6 @@ import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.resources.LoggerResource;
 import org.apache.ignite.spi.IgniteSpiAdapter;
-import org.apache.ignite.spi.IgniteSpiConsistencyChecked;
 import org.apache.ignite.spi.IgniteSpiException;
 import org.apache.ignite.spi.IgniteSpiMBeanAdapter;
 import org.apache.ignite.spi.IgniteSpiMultipleInstancesSupport;
@@ -65,7 +64,6 @@ import org.jsr166.ConcurrentLinkedHashMap;
  * @see org.apache.ignite.spi.deployment.DeploymentSpi
  */
 @IgniteSpiMultipleInstancesSupport(true)
-@IgniteSpiConsistencyChecked(optional = false)
 @IgnoreIfPeerClassLoadingDisabled
 public class LocalDeploymentSpi extends IgniteSpiAdapter implements DeploymentSpi {
     /** Enables additional check for resource name on resources removal. */
