@@ -32,7 +32,6 @@ import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.internal.logger.LoggerNodeIdAndApplicationAware;
 import org.apache.ignite.internal.util.tostring.GridToStringExclude;
 import org.apache.ignite.internal.util.typedef.F;
-import org.apache.ignite.internal.util.typedef.internal.A;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.jetbrains.annotations.Nullable;
@@ -224,8 +223,11 @@ public class JavaLogger implements IgniteLogger, LoggerNodeIdAndApplicationAware
 
     /** {@inheritDoc} */
     @Override public IgniteLogger getLogger(Object ctgr) {
-        return new JavaLogger(ctgr == null ? Logger.getLogger("") : Logger.getLogger(
-            ctgr instanceof Class ? ((Class)ctgr).getName() : String.valueOf(ctgr)));
+        return new JavaLogger(ctgr == null
+            ? Logger.getLogger("")
+            : Logger.getLogger(ctgr instanceof Class
+                ? ((Class<?>)ctgr).getName()
+                : String.valueOf(ctgr)));
     }
 
     /**
@@ -257,8 +259,8 @@ public class JavaLogger implements IgniteLogger, LoggerNodeIdAndApplicationAware
 
             defaultConfiguration();
 
-            boolean quiet = Boolean.valueOf(System.getProperty(IGNITE_QUIET, "true"));
-            boolean useConsoleAppender = Boolean.valueOf(System.getProperty(IGNITE_CONSOLE_APPENDER, "true"));
+            boolean quiet = Boolean.parseBoolean(System.getProperty(IGNITE_QUIET, "true"));
+            boolean useConsoleAppender = Boolean.parseBoolean(System.getProperty(IGNITE_CONSOLE_APPENDER, "true"));
 
             if (useConsoleAppender) {
                 ConsoleHandler consoleHnd = findHandler(impl, ConsoleHandler.class);
@@ -388,9 +390,7 @@ public class JavaLogger implements IgniteLogger, LoggerNodeIdAndApplicationAware
     }
 
     /** {@inheritDoc} */
-    @Override public void setApplicationAndNode(@Nullable String application, UUID nodeId) {
-        A.notNull(nodeId, "nodeId");
-
+    @Override public void setApplicationAndNode(@Nullable String application, @Nullable UUID nodeId) {
         if (this.nodeId != null)
             return;
 

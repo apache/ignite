@@ -144,10 +144,10 @@ public class CommandHandler {
     /**
      * @return prepared JULs logger.
      */
-    public static IgniteLogger setupJavaLogger(String appName) {
+    public static IgniteLogger setupJavaLogger(String appName, Class<?> cls) {
         try {
-            // Forcefully add console appender.
-            return U.initLogger(null, appName, null, U.defaultWorkDirectory());
+            // TODO: Forcefully add console appender.
+            return U.initLogger(null, appName, null, U.defaultWorkDirectory()).getLogger(cls.getName() + "Log");
         }
         catch (IgniteCheckedException e) {
             throw new IgniteException(e);
@@ -188,7 +188,7 @@ public class CommandHandler {
      *
      */
     public CommandHandler() {
-        logger = setupJavaLogger("control-utility");
+        logger = setupJavaLogger("control-utility", CommandHandler.class);
     }
 
     /**
