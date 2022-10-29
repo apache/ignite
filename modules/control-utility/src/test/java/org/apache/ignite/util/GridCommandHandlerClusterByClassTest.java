@@ -1751,7 +1751,7 @@ public class GridCommandHandlerClusterByClassTest extends GridCommandHandlerClus
     public void testErrUnexpectedWithWithoutVerbose() {
         injectTestSystemOut();
 
-        Logger log = CommandHandler.initLogger(null);
+        Logger log = GridCommandHandlerAbstractTest.initLogger(null);
         log.addHandler(new StreamHandler(System.out, new Formatter() {
             /** {@inheritDoc} */
             @Override public String format(LogRecord record) {

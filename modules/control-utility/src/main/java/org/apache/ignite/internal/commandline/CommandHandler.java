@@ -26,12 +26,7 @@ import java.util.List;
 import java.util.Scanner;
 import java.util.UUID;
 import java.util.logging.FileHandler;
-import java.util.logging.Formatter;
 import java.util.logging.Handler;
-import java.util.logging.Level;
-import java.util.logging.LogRecord;
-import java.util.logging.Logger;
-import java.util.logging.StreamHandler;
 import java.util.stream.Collectors;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteException;
@@ -55,7 +50,6 @@ import org.apache.ignite.plugin.security.SecurityCredentialsBasicProvider;
 import org.apache.ignite.plugin.security.SecurityCredentialsProvider;
 import org.apache.ignite.ssl.SslContextFactory;
 import org.jetbrains.annotations.NotNull;
-import org.jetbrains.annotations.Nullable;
 
 import static java.lang.System.lineSeparator;
 import static java.util.Objects.nonNull;
@@ -152,36 +146,6 @@ public class CommandHandler {
         catch (IgniteCheckedException e) {
             throw new IgniteException(e);
         }
-    }
-
-    /**
-     * @return StreamHandler with empty formatting
-     */
-    public static StreamHandler setupStreamHandler() {
-        return new StreamHandler(System.out, new Formatter() {
-            @Override public String format(LogRecord record) {
-                return record.getMessage() + "\n";
-            }
-        });
-    }
-
-    /**
-     * Initialises JULs logger with basic settings
-     * @param loggerName logger name. If {@code null} anonymous logger is returned.
-     * @return logger
-     */
-    public static Logger initLogger(@Nullable String loggerName) {
-        Logger result;
-
-        if (loggerName == null)
-            result = Logger.getAnonymousLogger();
-        else
-            result = Logger.getLogger(loggerName);
-
-        result.setLevel(Level.INFO);
-        result.setUseParentHandlers(false);
-
-        return result;
     }
 
     /**

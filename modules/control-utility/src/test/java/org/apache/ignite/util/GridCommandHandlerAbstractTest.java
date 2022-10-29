@@ -29,8 +29,12 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
 import java.util.List;
+import java.util.logging.Formatter;
 import java.util.logging.Handler;
+import java.util.logging.Level;
+import java.util.logging.LogRecord;
 import java.util.logging.Logger;
+import java.util.logging.StreamHandler;
 import java.util.stream.Collectors;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteDataStreamer;
@@ -207,12 +211,35 @@ public abstract class GridCommandHandlerAbstractTest extends GridCommonAbstractT
      * @return Logger.
      */
     public static IgniteLogger createTestLogger() {
-        Logger log = CommandHandler.initLogger(null);
+        Logger log = initLogger(null);
 
         // Adding logging to console.
-        log.addHandler(CommandHandler.setupStreamHandler());
+        log.addHandler(new StreamHandler(System.out, new Formatter() {
+            @Override public String format(LogRecord record) {
+                return record.getMessage() + "\n";
+            }
+        }));
 
         return new JavaLogger(log, false);
+    }
+
+    /**
+     * Initialises JULs logger with basic settings
+     * @param loggerName logger name. If {@code null} anonymous logger is returned.
+     * @return logger
+     */
+    public static Logger initLogger(@Nullable String loggerName) {
+        Logger result;
+
+        if (loggerName == null)
+            result = Logger.getAnonymousLogger();
+        else
+            result = Logger.getLogger(loggerName);
+
+        result.setLevel(Level.INFO);
+        result.setUseParentHandlers(false);
+
+        return result;
     }
 
     /** */
