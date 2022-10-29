@@ -49,8 +49,10 @@ import java.util.stream.Collectors;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.binary.BinaryType;
 import org.apache.ignite.configuration.CacheConfiguration;
+import org.apache.ignite.internal.GridTopic;
 import org.apache.ignite.internal.IgniteFutureCancelledCheckedException;
 import org.apache.ignite.internal.IgniteInternalFuture;
+import org.apache.ignite.internal.managers.communication.GridMessageListener;
 import org.apache.ignite.internal.pagemem.PageIdUtils;
 import org.apache.ignite.internal.pagemem.store.PageStore;
 import org.apache.ignite.internal.pagemem.store.PageWriteListener;
@@ -70,7 +72,6 @@ import org.apache.ignite.internal.processors.cache.persistence.tree.io.PageIO;
 import org.apache.ignite.internal.processors.cache.persistence.wal.crc.FastCrc;
 import org.apache.ignite.internal.processors.marshaller.MappedName;
 import org.apache.ignite.internal.processors.metastorage.persistence.DistributedMetaStorageImpl;
-import org.apache.ignite.internal.util.GridConcurrentHashSet;
 import org.apache.ignite.internal.util.future.GridFutureAdapter;
 import org.apache.ignite.internal.util.lang.IgniteThrowableRunner;
 import org.apache.ignite.internal.util.tostring.GridToStringExclude;
@@ -95,7 +96,8 @@ import static org.apache.ignite.internal.processors.cache.persistence.snapshot.I
  * If partitions for particular cache group are not provided that they will be collected and added
  * on checkpoint under the write-lock.
  */
-class SnapshotFutureTask extends AbstractSnapshotFutureTask<Set<GroupPartitionId>> implements CheckpointListener {
+class SnapshotFutureTask extends AbstractSnapshotFutureTask<Set<GroupPartitionId>> implements CheckpointListener,
+    GridMessageListener {
     /** File page store manager for accessing cache group associated files. */
     private final FilePageStoreManager pageStore;
 
@@ -150,8 +152,8 @@ class SnapshotFutureTask extends AbstractSnapshotFutureTask<Set<GroupPartitionId
     /** Processed snapshot size in bytes. */
     private final AtomicLong processedSize = new AtomicLong();
 
-    // TODO
-    public final Set<String> streamedCaches = new GridConcurrentHashSet<>();
+    /** Flag of concurrent inconsistent-by-nature updates. */
+    private volatile boolean streamUpdates;
 
     /**
      * @param cctx Shared context.
@@ -187,6 +189,8 @@ class SnapshotFutureTask extends AbstractSnapshotFutureTask<Set<GroupPartitionId
         this.withMetaStorage = withMetaStorage;
         this.pageStore = (FilePageStoreManager)cctx.pageStore();
         this.locBuff = locBuff;
+
+        cctx.gridIO().addMessageListener(GridTopic.TOPIC_DATASTREAM, this);
     }
 
     /**
@@ -214,6 +218,8 @@ class SnapshotFutureTask extends AbstractSnapshotFutureTask<Set<GroupPartitionId
 
     /** {@inheritDoc} */
     @Override public boolean onDone(@Nullable Set<GroupPartitionId> res, @Nullable Throwable err) {
+        cctx.gridIO().removeMessageListener(this);
+
         for (PageStoreSerialWriter writer : partDeltaWriters.values())
             U.closeQuiet(writer);
 
@@ -567,6 +573,15 @@ class SnapshotFutureTask extends AbstractSnapshotFutureTask<Set<GroupPartitionId
     }
 
     /**
+     * Watches Datastreamer inconsistent-by-nature updates. If streamer is loading with 'allowOverwrite==false' data,
+     * we assume a bunch of streamer futures is kept.
+     */
+    @Override public void onMessage(UUID nodeId, Object msg, byte plc) {
+        if (!cctx.mvcc().dataStreamerFutures().isEmpty())
+            streamUpdates = true;
+    }
+
+    /**
      * @param grpId Cache group id.
      * @param parts Set of partitions to be processed.
      * @param dirName Directory name to init.
@@ -603,6 +618,13 @@ class SnapshotFutureTask extends AbstractSnapshotFutureTask<Set<GroupPartitionId
                 acceptException(t);
             }
         };
+    }
+
+    /**
+     * {@code True} if concurrent streamer updates detected during the operation. {@code False} otherwise.
+     */
+    boolean streamUpdates() {
+        return streamUpdates;
     }
 
     /**

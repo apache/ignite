@@ -560,8 +560,6 @@ public class GridCacheMvccManager extends GridCacheSharedManagerAdapter {
 
         boolean add = dataStreamerFuts.add(fut);
 
-        log.error("TEST | addDataStreamerFuture(). Count: " + dataStreamerFuts.size());
-
         assert add;
 
         return fut;

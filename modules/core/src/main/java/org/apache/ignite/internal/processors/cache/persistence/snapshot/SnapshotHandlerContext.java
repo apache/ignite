@@ -19,8 +19,6 @@ package org.apache.ignite.internal.processors.cache.persistence.snapshot;
 
 import java.io.File;
 import java.util.Collection;
-import java.util.Collections;
-import java.util.List;
 import org.apache.ignite.cluster.ClusterNode;
 import org.jetbrains.annotations.Nullable;
 
@@ -28,11 +26,11 @@ import org.jetbrains.annotations.Nullable;
  * Snapshot operation handler context.
  */
 public class SnapshotHandlerContext {
-    /** Snapshot metadata. {@code Null} for client on not-baseline node. */
-    private final @Nullable SnapshotMetadata metadata;
+    /** Snapshot metadata. */
+    private final SnapshotMetadata metadata;
 
-    /** The full path to the snapshot files. {@code Null} for client on not-baseline node. */
-    private final @Nullable File snpDir;
+    /** The full path to the snapshot files. */
+    private final File snpDir;
 
     /** The names of the cache groups on which the operation is performed. */
     private final Collection<String> grps;
@@ -41,13 +39,12 @@ public class SnapshotHandlerContext {
     private final ClusterNode locNode;
 
     /**
-     * @param metadata Snapshot metadata. {@code Null} for client on not-baseline node.
+     * @param metadata Snapshot metadata.
      * @param grps The names of the cache groups on which the operation is performed.
      * @param locNode Local node.
-     * @param snpDir The full path to the snapshot files. {@code Null} for client on not-baseline node.
+     * @param snpDir The full path to the snapshot files.
      */
-    public SnapshotHandlerContext(@Nullable SnapshotMetadata metadata, @Nullable Collection<String> grps,
-        ClusterNode locNode, @Nullable File snpDir) {
+    public SnapshotHandlerContext(SnapshotMetadata metadata, @Nullable Collection<String> grps, ClusterNode locNode, File snpDir) {
         this.metadata = metadata;
         this.grps = grps;
         this.locNode = locNode;

@@ -68,7 +68,6 @@ import java.util.function.Function;
 import java.util.function.Predicate;
 import java.util.stream.Collectors;
 import org.apache.ignite.IgniteCheckedException;
-import org.apache.ignite.IgniteDataStreamer;
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.IgniteInterruptedException;
 import org.apache.ignite.IgniteLogger;
@@ -140,7 +139,6 @@ import org.apache.ignite.internal.processors.cluster.IgniteChangeGlobalStateSupp
 import org.apache.ignite.internal.processors.configuration.distributed.DistributedConfigurationLifecycleListener;
 import org.apache.ignite.internal.processors.configuration.distributed.DistributedLongProperty;
 import org.apache.ignite.internal.processors.configuration.distributed.DistributedPropertyDispatcher;
-import org.apache.ignite.internal.processors.datastreamer.DataStreamerRequest;
 import org.apache.ignite.internal.processors.marshaller.MappedName;
 import org.apache.ignite.internal.processors.metastorage.persistence.DistributedMetaStorageImpl;
 import org.apache.ignite.internal.processors.metric.MetricRegistry;
@@ -806,10 +804,6 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
             clusterSnpReq = req;
         }
 
-        boolean streamedCaches = !cctx.mvcc().dataStreamerFutures().isEmpty();
-
-        log.error("TETS | creatingSnpTask. StreamFutsCnt: " + !cctx.mvcc().dataStreamerFutures().isEmpty());
-
         return task0.chain(fut -> {
             if (fut.error() != null)
                 throw F.wrap(fut.error());
@@ -828,6 +822,11 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
 
                 snpDir.mkdirs();
 
+                assert fut instanceof SnapshotFutureTask;
+
+                List<String> wrns = ((SnapshotFutureTask)fut).streamUpdates() ?
+                    Collections.singletonList(streamedCachesWrn()) : Collections.emptyList();
+
                 SnapshotMetadata meta = new SnapshotMetadata(req.requestId(),
                     req.snapshotName(),
                     cctx.localNode().consistentId().toString(),
@@ -836,7 +835,8 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
                     grpIds,
                     blts,
                     (Set<GroupPartitionId>)fut.result(),
-                    cctx.gridConfig().getEncryptionSpi().masterKeyDigest()
+                    cctx.gridConfig().getEncryptionSpi().masterKeyDigest(),
+                    wrns
                 );
 
                 try (OutputStream out = Files.newOutputStream(smf.toPath())) {
@@ -862,6 +862,16 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
                 throw F.wrap(e);
             }
         });
+    }
+
+    /**
+     * Creates warning text about concurent streamer updates that are inconsistent-by-nature.
+     */
+    private static String streamedCachesWrn() {
+        return "DataStreamer with property 'alowOverwrite' set to `false` was working during the snapshot creation. " +
+            "Such streaming updates are inconsistent by nature and should be successfully finished until data " +
+            "usage. Snapshot might not be entirely restored. However, you would be able to restore the caches which " +
+            "were not streamed into.";
     }
 
     /**
@@ -896,15 +906,6 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
             }
         }
 
-        Map<UUID, String> initStageWarnings = new HashMap<>();
-
-        res.entrySet().forEach(e -> {
-            e.getValue().handlerResults().values().forEach(hr -> {
-                if (hr.data() instanceof SnapshotHandlerWarning)
-                    initStageWarnings.put(e.getKey(), ((SnapshotHandlerWarning)hr.data()).get());
-            });
-        });
-
         if (isLocalNodeCoordinator(cctx.discovery())) {
             Set<UUID> missed = new HashSet<>(snpReq.nodes());
             missed.removeAll(res.keySet());
@@ -927,12 +928,6 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
                 .listen(f -> {
                         if (f.error() != null)
                             snpReq.error(f.error());
-                        else if (clusterSnpFut != null && !initStageWarnings.isEmpty()) {
-                            synchronized (snpOpMux) {
-                                if (clusterSnpFut != null)
-                                    clusterSnpFut.warnings.putAll(initStageWarnings);
-                            }
-                        }
 
                         endSnpProc.start(snpReq.requestId(), snpReq);
                     }
@@ -1327,7 +1322,7 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
 
         kctx0.task().execute(SnapshotMetadataCollectorTask.class, taskArg).listen(f0 -> {
             if (f0.error() == null) {
-                Map<ClusterNode, List<SnapshotMetadata>> metas1 = f0.result();
+                Map<ClusterNode, List<SnapshotMetadata>> metas = f0.result();
 
                 Map<Integer, String> grpIds = grps == null ? Collections.emptyMap() :
                     grps.stream().collect(Collectors.toMap(CU::cacheId, v -> v));
@@ -1800,19 +1795,6 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
     }
 
     /**
-     * Notifies snapshot process of inconsistent-by-nature updates by the streaming.
-     *
-     * @param cacheName Related cache name.
-     * @see IgniteDataStreamer
-     */
-    public void streamedCaches(String cacheName) {
-        SnapshotFutureTask task = currentSnapshotTask();
-
-        if (task != null)
-            task.streamedCaches.add(cacheName);
-    }
-
-    /**
      * @param consId Consistent node id.
      * @return Snapshot metadata file name.
      */
@@ -2224,7 +2206,7 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
     }
 
     /** Snapshot operation handlers. */
-    protected static class SnapshotHandlers {
+    protected class SnapshotHandlers {
         /** Snapshot operation handlers. */
         private final Map<SnapshotHandlerType, List<SnapshotHandler<Object>>> handlers = new EnumMap<>(SnapshotHandlerType.class);
 
@@ -2241,6 +2223,21 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
             // Register system default snapshot integrity check that is used before the restore operation.
             SnapshotHandler<?> sysCheck = new SnapshotPartitionsVerifyHandler(ctx.cache().context());
             handlers.put(sysCheck.type(), new ArrayList<>(F.asList((SnapshotHandler<Object>)sysCheck)));
+
+            // Register system default snapshot warning notification handler.
+            SnapshotHandler<?> wrnsCheck = new SnapshotWarningHandler(wrnsByNodes -> {
+                synchronized (snpOpMux) {
+                    if (clusterSnpFut == null)
+                        throw new IgniteException("Unable to set snapshot creation warnings. Snapshot is not being " +
+                            "created.");
+
+                    assert clusterSnpFut.warnings.isEmpty();
+                    assert wrnsByNodes != null && !wrnsByNodes.isEmpty();
+
+                    clusterSnpFut.warnings.putAll(wrnsByNodes);
+                }
+            });
+            handlers.put(wrnsCheck.type(), new ArrayList<>(F.asList((SnapshotHandler<Object>)wrnsCheck)));
 
             // Register custom handlers.
             SnapshotHandler<Object>[] extHnds = (SnapshotHandler<Object>[])ctx.plugins().extensions(SnapshotHandler.class);
@@ -3407,10 +3404,10 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
         volatile IgniteCheckedException interruptEx;
 
         /**
-         * Warnings which produces an error after snapshot completes if no other error occured. But doesn't
-         * stop or cancel snapshot operation.
+         * Warnings of snapshot operation. They do not interrupt the process, but produces an error at the end if no
+         * other errors occured. This makes the operation status 'not OK'.
          */
-        final Map<UUID, String> warnings = new ConcurrentHashMap<>();
+        final Map<UUID, List<String>> warnings = new ConcurrentHashMap<>();
 
         /**
          * Default constructor.
@@ -3456,7 +3453,8 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
 
                 sb.append("Snapshot task '").append(name).append("' completed with warnings:");
 
-                warnings.forEach((n, w) -> sb.append("\n\tNode '").append(n).append("': ").append(w));
+                warnings.forEach((n, wrns) -> sb.append("\n\tNode '").append(n).append("':\n\t\t")
+                    .append(String.join("\n\t\t", wrns)));
 
                 err = new IgniteException(sb.toString());
             }

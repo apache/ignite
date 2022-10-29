@@ -92,7 +92,6 @@ import org.apache.ignite.internal.processors.cache.distributed.dht.preloader.Gri
 import org.apache.ignite.internal.processors.cache.distributed.dht.topology.GridDhtInvalidPartitionException;
 import org.apache.ignite.internal.processors.cache.distributed.dht.topology.GridDhtLocalPartition;
 import org.apache.ignite.internal.processors.cache.distributed.dht.topology.GridDhtPartitionState;
-import org.apache.ignite.internal.processors.cache.persistence.snapshot.IgniteSnapshotManager;
 import org.apache.ignite.internal.processors.cache.version.GridCacheVersion;
 import org.apache.ignite.internal.processors.cacheobject.IgniteCacheObjectProcessor;
 import org.apache.ignite.internal.processors.dr.GridDrType;
@@ -2255,8 +2254,6 @@ public class DataStreamerImpl<K, V> implements IgniteDataStreamer<K, V>, Delayed
             Collection<Integer> reservedParts = new HashSet<>();
             Collection<Integer> ignoredParts = new HashSet<>();
 
-            wrnSnapshot(cctx);
-
             try {
                 for (Entry<KeyCacheObject, CacheObject> e : entries) {
                     cctx.shared().database().checkpointReadLock();
@@ -2366,18 +2363,6 @@ public class DataStreamerImpl<K, V> implements IgniteDataStreamer<K, V>, Delayed
                     throw new IgniteException("Failed to write preloaded entries into write-ahead log.", e);
                 }
             }
-        }
-
-        /**
-         * Notifies snapshot process of inconsistent-by-nature updates by the streaming.
-         *
-         * @param cctx Cache context.
-         */
-        private static void wrnSnapshot(GridCacheContext<?, ?> cctx) {
-            if (!cctx.group().persistenceEnabled())
-                return;
-
-            cctx.kernalContext().cache().context().snapshotMgr().streamedCaches(cctx.cache().name());
         }
     }
 
