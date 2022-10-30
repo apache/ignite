@@ -865,16 +865,6 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
     }
 
     /**
-     * Creates warning text about concurent streamer updates that are inconsistent-by-nature.
-     */
-    private static String streamedCachesWrn() {
-        return "DataStreamer with property 'alowOverwrite' set to `false` was working during the snapshot creation. " +
-            "Such streaming updates are inconsistent by nature and should be successfully finished until data " +
-            "usage. Snapshot might not be entirely restored. However, you would be able to restore the caches which " +
-            "were not streamed into.";
-    }
-
-    /**
      * @param id Request id.
      * @param res Results.
      * @param err Errors.
@@ -1323,6 +1313,8 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
         kctx0.task().execute(SnapshotMetadataCollectorTask.class, taskArg).listen(f0 -> {
             if (f0.error() == null) {
                 Map<ClusterNode, List<SnapshotMetadata>> metas = f0.result();
+//                Map<ClusterNode, List<String>> metaWarnings = metas.entrySet().stream()
+//                    .map(e->new AbstractMap.SimpleEntry<ClusterNode, List<String>>(e.getKey(), e.getValue().warnings()));
 
                 Map<Integer, String> grpIds = grps == null ? Collections.emptyMap() :
                     grps.stream().collect(Collectors.toMap(CU::cacheId, v -> v));
@@ -2203,6 +2195,16 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
     /** @return Snapshot handlers. */
     protected SnapshotHandlers handlers() {
         return handlers;
+    }
+
+    /**
+     * Creates warning text about concurent streamer updates that are inconsistent-by-nature.
+     */
+    private static String streamedCachesWrn() {
+        return "DataStreamer with property 'alowOverwrite' set to `false` was working during the snapshot creation. " +
+            "Such streaming updates are inconsistent by nature and should be successfully finished before data " +
+            "usage. Snapshot might not be entirely restored. However, you would be able to restore the caches which " +
+            "were not streamed into.";
     }
 
     /** Snapshot operation handlers. */

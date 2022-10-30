@@ -67,8 +67,8 @@ public class IgniteClusterShanpshotStreamerTest extends AbstractSnapshotSelfTest
     private static final TcpDiscoveryIpFinder IP_FINDER = new TcpDiscoveryVmIpFinder(true);
 
     /** */
-    private static final String ERR_MSG = "Such updates may break data consistency until finished. Snapshot might " +
-        "not be entirely restored";
+    private static final String ERR_MSG = "DataStreamer with property 'alowOverwrite' set to `false` was working " +
+        "during the snapshot creation. Such streaming updates are inconsistent by nature";
 
     /** */
     private IgniteSnapshotManager snpMgr;

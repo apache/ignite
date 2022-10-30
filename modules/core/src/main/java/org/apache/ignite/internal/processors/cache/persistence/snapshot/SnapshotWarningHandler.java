@@ -18,6 +18,7 @@
 package org.apache.ignite.internal.processors.cache.persistence.snapshot;
 
 import java.util.Collection;
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -47,14 +48,12 @@ public class SnapshotWarningHandler implements SnapshotHandler<List<String>> {
 
     /** {@inheritDoc} */
     @Override public List<String> invoke(SnapshotHandlerContext ctx) {
-        return ctx.metadata().warnings();
+        return ctx.metadata().warnings() == null ? Collections.emptyList() : ctx.metadata().warnings();
     }
 
     /** {@inheritDoc} */
     @Override public void complete(String name, Collection<SnapshotHandlerResult<List<String>>> results)
         throws Exception {
-        SnapshotHandler.super.complete(name, results);
-
         Map<UUID, List<String>> wrns = new HashMap<>();
 
         for (SnapshotHandlerResult<List<String>> res : results) {
