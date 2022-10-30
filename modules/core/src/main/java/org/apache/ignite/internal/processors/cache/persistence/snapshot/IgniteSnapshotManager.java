@@ -828,6 +828,12 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
 
                 snpDir.mkdirs();
 
+                assert fut instanceof SnapshotFutureTask;
+
+                SnapshotFutureTask snpFut = (SnapshotFutureTask)fut;
+
+                List<String> warnings = snpFut.streamUpdates() ? Collections.singletonList(CONCURRENT_STREAMER_MSG) : null;
+
                 SnapshotMetadata meta = new SnapshotMetadata(req.requestId(),
                     req.snapshotName(),
                     cctx.localNode().consistentId().toString(),
@@ -836,7 +842,8 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
                     grpIds,
                     blts,
                     (Set<GroupPartitionId>)fut.result(),
-                    cctx.gridConfig().getEncryptionSpi().masterKeyDigest()
+                    cctx.gridConfig().getEncryptionSpi().masterKeyDigest(),
+                    warnings
                 );
 
                 try (OutputStream out = Files.newOutputStream(smf.toPath())) {
@@ -853,12 +860,6 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
                 }
 
                 log.info("Snapshot metafile has been created: " + smf.getAbsolutePath());
-
-                assert fut instanceof SnapshotFutureTask;
-
-                SnapshotFutureTask snpFut = (SnapshotFutureTask)fut;
-
-                List<String> warnings = snpFut.streamUpdates() ? Collections.singletonList(CONCURRENT_STREAMER_MSG) : null;
 
                 SnapshotHandlerContext ctx = new SnapshotHandlerContext(meta, req.groups(), cctx.localNode(), snpDir);
 
