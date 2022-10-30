@@ -19,6 +19,7 @@ package org.apache.ignite.internal.processors.cache.persistence.snapshot;
 
 import java.nio.ByteBuffer;
 import java.nio.ByteOrder;
+import java.util.AbstractMap;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.Map;
@@ -40,14 +41,14 @@ import org.apache.ignite.internal.util.typedef.internal.U;
 import static org.apache.ignite.internal.pagemem.PageIdAllocator.INDEX_PARTITION;
 
 /**
- * Quick partitions verifier. Warns if partiton counters are different among the nodes. May be caused by concurrent
- * or canceled/failed DataStreamer.
+ * Quick partitions verifier. Warns if partiton counters or size are different among the nodes. May be caused by
+ * concurrent or canceled/failed DataStreamer.
  */
-public class SnapshotPartitionsCountersVerifyHandler extends AbstractSnapshotPartitionsVerifyHandler<Long> {
+public class SnapshotPartitionsFastVerifyHandler extends AbstractSnapshotPartitionsVerifyHandler<Map.Entry<Long, Long>> {
     /**
      * @param cctx Shared context.
      */
-    public SnapshotPartitionsCountersVerifyHandler(GridCacheSharedContext<?, ?> cctx) {
+    public SnapshotPartitionsFastVerifyHandler(GridCacheSharedContext<?, ?> cctx) {
         super(cctx);
     }
 
@@ -65,7 +66,7 @@ public class SnapshotPartitionsCountersVerifyHandler extends AbstractSnapshotPar
      * @param pageStore Store to read and check from.
      * @return Update counter for data partition. {@code Null} for other partitions.
      */
-    @Override protected Long validatePartition(
+    @Override protected Map.Entry<Long, Long> validatePartition(
         SnapshotHandlerContext hndCtx,
         GridKernalContext opCtx,
         PartitionKeyV2 partKey,
@@ -85,15 +86,16 @@ public class SnapshotPartitionsCountersVerifyHandler extends AbstractSnapshotPar
 
         PagePartitionMetaIO io = PageIO.getPageIO(pageBuff);
 
-        return io.getUpdateCounter(pageAddr);
+        return new AbstractMap.SimpleEntry<>(io.getSize(pageAddr), io.getUpdateCounter(pageAddr));
     }
 
     /** {@inheritDoc} */
     @Override public void complete(String name,
-        Collection<SnapshotHandlerResult<Map<PartitionKeyV2, Long>>> results) throws IgniteCheckedException {
+        Collection<SnapshotHandlerResult<Map<PartitionKeyV2, Map.Entry<Long, Long>>>> results)
+        throws IgniteCheckedException {
 
-        // Group id -> Part id -> Counters set without node id.
-        Map<Integer, Map<Integer, Long>> counters = new ConcurrentHashMap<>();
+        // Group id -> Part size, part counter -> Counters set without node id.
+        Map<Integer, Map<Integer, Map.Entry<Long, Long>>> counters = new ConcurrentHashMap<>();
 
         Set<Integer> wrnGroups = new GridConcurrentHashSet<>();
 
@@ -112,14 +114,14 @@ public class SnapshotPartitionsCountersVerifyHandler extends AbstractSnapshotPar
                             if (partIdMap == null)
                                 partIdMap = new ConcurrentHashMap<>();
 
-                            partIdMap.compute(partResult.getKey().partitionId(), (partId, savedCounter) -> {
-                                if (savedCounter == null)
+                            partIdMap.compute(partResult.getKey().partitionId(), (partId, savedSizeAndCnt) -> {
+                                if (savedSizeAndCnt == null)
                                     return partResult.getValue();
 
-                                if (!savedCounter.equals(partResult.getValue()))
+                                if (!savedSizeAndCnt.equals(partResult.getValue()))
                                     wrnGroups.add(partResult.getKey().groupId());
 
-                                return savedCounter;
+                                return savedSizeAndCnt;
                             });
 
                             return partIdMap;
@@ -140,9 +142,9 @@ public class SnapshotPartitionsCountersVerifyHandler extends AbstractSnapshotPar
     /** */
     private static String wrnMsg(Collection<Integer> cacheGrps) {
         return "Cache partitions differ for cache groups " + cacheGrps.stream().map(String::valueOf)
-            .collect(Collectors.joining(",")) + ". This may happen if DataStreamer with property 'allowOverwrite' " +
-            "set to `false` is loading during the snapshot or hadn't successfully finished earlier. However, you " +
-            "will be able restore rest the caches of the snapshot. For more details of snapshotted partitions states " +
-            "lauch the snapshot chack task.";
+            .collect(Collectors.joining(",")) + ". This may happen if DataStreamer with property " +
+            "'allowOverwrite' set to `false` is loading during the snapshot or hadn't successfully finished earlier. " +
+            "However, you will be able restore rest the caches of the snapshot. For more details of snapshotted " +
+            "partitions states lauch the snapshot chack task.";
     }
 }

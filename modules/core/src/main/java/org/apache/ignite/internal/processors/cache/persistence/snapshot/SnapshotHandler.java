@@ -62,7 +62,7 @@ public interface SnapshotHandler<T> extends Extension {
      * @param name Snapshot name.
      * @param results Results from all nodes.
      * @throws Exception If the snapshot operation needs to be aborted.
-     * @throws SnapshotHandlerWarningException If the snapshot operation has warnings.
+     * @throws SnapshotHandlerWarningException To produce a warning.
      * @see SnapshotHandlerResult
      */
     public default void complete(String name, Collection<SnapshotHandlerResult<T>> results)

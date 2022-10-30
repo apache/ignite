@@ -17,13 +17,11 @@
 
 package org.apache.ignite.internal.processors.cache.persistence.snapshot;
 
-import java.util.Collection;
 import org.apache.ignite.IgniteCheckedException;
 
 /**
- * A warning of {@link SnapshotHandler#complete(String, Collection)}. Warnings do not cancel current snapshot
- * operation, but produce an exception when operation completes if no other error uccured. As result, snapshot process
- * is done but doesn't return 'OK' status.
+ * Snapshot process. Warnings do not cancel current snapshot operation, but produce an exception when operation
+ * completes if no other error uccured. As result, snapshot process is done but doesn't return 'OK' status.
  */
 public class SnapshotHandlerWarningException extends IgniteCheckedException {
     /** Serial version uid. */

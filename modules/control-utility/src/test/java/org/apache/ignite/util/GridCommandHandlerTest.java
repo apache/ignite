@@ -44,6 +44,7 @@ import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicLong;
+import java.util.concurrent.atomic.AtomicReference;
 import java.util.concurrent.atomic.LongAdder;
 import java.util.function.BooleanSupplier;
 import java.util.function.Function;
@@ -98,13 +99,11 @@ import org.apache.ignite.internal.processors.cache.persistence.db.IgniteCacheGro
 import org.apache.ignite.internal.processors.cache.persistence.diagnostic.pagelocktracker.dumpprocessors.ToFileDumpProcessor;
 import org.apache.ignite.internal.processors.cache.persistence.file.FileIO;
 import org.apache.ignite.internal.processors.cache.persistence.file.FileIOFactory;
-import org.apache.ignite.internal.processors.cache.persistence.snapshot.IgniteClusterShanpshotStreamerTest;
 import org.apache.ignite.internal.processors.cache.persistence.snapshot.IgniteSnapshotManager;
 import org.apache.ignite.internal.processors.cache.persistence.snapshot.SnapshotHandler;
 import org.apache.ignite.internal.processors.cache.persistence.snapshot.SnapshotHandlerContext;
 import org.apache.ignite.internal.processors.cache.persistence.snapshot.SnapshotHandlerResult;
 import org.apache.ignite.internal.processors.cache.persistence.snapshot.SnapshotHandlerType;
-import org.apache.ignite.internal.processors.cache.persistence.snapshot.SnapshotHandlerWarningException;
 import org.apache.ignite.internal.processors.cache.transactions.IgniteInternalTx;
 import org.apache.ignite.internal.processors.cache.transactions.IgniteTxEntry;
 import org.apache.ignite.internal.processors.cache.transactions.TransactionProxyImpl;
@@ -3080,67 +3079,79 @@ public class GridCommandHandlerTest extends GridCommandHandlerClusterPerMethodAb
      */
     @Test
     public void testClusterCreateSnapshotWarning() throws Exception {
-        int keysCnt = 100;
-        String snpName = "snapshot_wrn";
-
-        IgniteConfiguration cfg = getConfiguration(getTestIgniteInstanceName(0))
-            .setPluginProviders(new AbstractTestPluginProvider() {
-                /** {@inheritDoc} */
-                @Override public void initExtensions(PluginContext ctx, ExtensionRegistry registry) {
-                    super.initExtensions(ctx, registry);
-
-                    // Simulates concurrent datastreamer check warning.
-                    registry.registerExtension(SnapshotHandler.class,
-                        new SnapshotHandler<Void>() {
-                            /** {@inheritDoc} */
-                            @Override public SnapshotHandlerType type() {
-                                return SnapshotHandlerType.CREATE;
-                            }
-
-                            /** {@inheritDoc} */
-                            @Nullable @Override public Void invoke(SnapshotHandlerContext ctx) {
-                                return null;
-                            }
-
-                            /** {@inheritDoc} */
-                            @Override public void complete(String name,
-                                Collection<SnapshotHandlerResult<Void>> results) throws SnapshotHandlerWarningException {
-                                throw new SnapshotHandlerWarningException(IgniteClusterShanpshotStreamerTest.ERR_MSG);
-                            }
-                        });
-                }
-
-                /** {@inheritDoc} */
-                @Override public String name() {
-                    return "SnapshotTestPlugin";
-                }
-            });
-
+        IgniteConfiguration cfg = getConfiguration(getTestIgniteInstanceName(0));
         cfg.getConnectorConfiguration().setHost("localhost");
+
+        String targetMsg = U.field(IgniteSnapshotManager.class, "CONCURRENT_STREAMER_MSG");
+
+        AtomicReference<Exception> simulationEx = new AtomicReference<>();
+
+        cfg.setPluginProviders(new AbstractTestPluginProvider() {
+            /** {@inheritDoc} */
+            @Override public void initExtensions(PluginContext ctx, ExtensionRegistry registry) {
+                super.initExtensions(ctx, registry);
+
+                // Simulates concurrent datastreamer check warning.
+                registry.registerExtension(SnapshotHandler.class,
+                    new SnapshotHandler<Void>() {
+                        /** {@inheritDoc} */
+                        @Override public SnapshotHandlerType type() {
+                            return SnapshotHandlerType.CREATE;
+                        }
+
+                        /** {@inheritDoc} */
+                        @Nullable @Override public Void invoke(SnapshotHandlerContext ctx) {
+                            return null;
+                        }
+
+                        /** {@inheritDoc} */
+                        @Override public void complete(String name, Collection<SnapshotHandlerResult<Void>> results) {
+                            try {
+                                IgniteSnapshotManager.ClusterSnapshotFuture snpFut =
+                                    U.field(snp(grid(0)), "clusterSnpFut");
+
+                                snpFut.acceptWarnings(grid(0).cluster().localNode().id(),
+                                    Collections.singletonList(targetMsg));
+                            }
+                            catch (Exception e) {
+                                simulationEx.set(e);
+                            }
+                        }
+                    });
+            }
+
+            /** {@inheritDoc} */
+            @Override public String name() {
+                return "SnapshotWarningSimulationPlugin";
+            }
+        });
 
         IgniteEx ig = startGrid(cfg);
         ig.cluster().state(ACTIVE);
-
-        createCacheAndPreload(ig, keysCnt);
-
-        Logger log = CommandHandler.initLogger("testSnpWarnResult");
+        createCacheAndPreload(ig, 100);
 
         AtomicBoolean wrnFound = new AtomicBoolean();
+
+        Logger log = CommandHandler.initLogger("testSnpWarnResult");
 
         log.addHandler(new StreamHandler() {
             /** {@inheritDoc} */
             @Override public synchronized void publish(LogRecord record) {
-                if (record.getMessage() != null && !wrnFound.get() &&
-                    record.getMessage().contains(IgniteClusterShanpshotStreamerTest.ERR_MSG))
+                if (record.getMessage() != null && !wrnFound.get() && record.getMessage().contains(targetMsg))
                     wrnFound.set(true);
             }
         });
 
         CommandHandler hnd = new CommandHandler(log);
 
-        List<String> args = new ArrayList<>(F.asList("--snapshot", "create", snpName, "--sync"));
+        List<String> args = new ArrayList<>(F.asList("--snapshot", "create", "testDsSnp", "--sync"));
 
-        assertEquals(EXIT_CODE_UNEXPECTED_ERROR, execute(hnd, args));
+        int code = execute(hnd, args);
+
+        if (simulationEx.get() != null)
+            throw simulationEx.get();
+
+        assertEquals(EXIT_CODE_UNEXPECTED_ERROR, code);
 
         assertTrue("Snapshot inconsistency warning not found.", wrnFound.get());
     }

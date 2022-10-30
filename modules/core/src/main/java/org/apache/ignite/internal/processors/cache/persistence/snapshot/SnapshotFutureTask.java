@@ -149,6 +149,9 @@ class SnapshotFutureTask extends AbstractSnapshotFutureTask<Set<GroupPartitionId
     /** Processed snapshot size in bytes. */
     private final AtomicLong processedSize = new AtomicLong();
 
+    /** Flag of concurrent inconsistent-by-nature updates. */
+    private volatile boolean streamUpdates;
+
     /**
      * @param cctx Shared context.
      * @param srcNodeId Node id which cause snapshot task creation.
@@ -599,6 +602,20 @@ class SnapshotFutureTask extends AbstractSnapshotFutureTask<Set<GroupPartitionId
                 acceptException(t);
             }
         };
+    }
+
+    /**
+     * {@code True} if concurrent streamer updates detected during the operation. {@code False} otherwise.
+     */
+    boolean streamUpdates() {
+        return streamUpdates;
+    }
+
+    /**
+     * Sets concurrent streamer updates detected during the operation.
+     */
+    boolean streamUpdates(boolean val) {
+        return streamUpdates = val;
     }
 
     /**

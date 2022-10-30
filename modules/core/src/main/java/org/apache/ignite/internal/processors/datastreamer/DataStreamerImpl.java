@@ -2255,6 +2255,8 @@ public class DataStreamerImpl<K, V> implements IgniteDataStreamer<K, V>, Delayed
             Collection<Integer> ignoredParts = new HashSet<>();
 
             try {
+                wrnSnapshot(cctx);
+
                 for (Entry<KeyCacheObject, CacheObject> e : entries) {
                     cctx.shared().database().checkpointReadLock();
 
@@ -2363,6 +2365,18 @@ public class DataStreamerImpl<K, V> implements IgniteDataStreamer<K, V>, Delayed
                     throw new IgniteException("Failed to write preloaded entries into write-ahead log.", e);
                 }
             }
+        }
+
+        /**
+         * Notifies snapshot process of inconsistent-by-nature updates by the streaming.
+         *
+         * @param cctx Cache context.
+         */
+        private static void wrnSnapshot(GridCacheContext<?, ?> cctx) {
+            if (!cctx.group().persistenceEnabled())
+                return;
+
+            cctx.kernalContext().cache().context().snapshotMgr().streamedUpdates();
         }
     }
 
