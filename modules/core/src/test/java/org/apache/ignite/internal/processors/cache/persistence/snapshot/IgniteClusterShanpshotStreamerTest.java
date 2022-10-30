@@ -140,6 +140,30 @@ public class IgniteClusterShanpshotStreamerTest extends AbstractSnapshotSelfTest
     }
 
     /**
+     * Tests snapshot consistency when streamer failed or canceled before snapshot. Default receiver.
+     */
+    @Test
+    public void testDsFailsLongAgoDflt() throws Exception {
+        for (Ignite ldr : testGrids()) {
+            prepareRunWithNewNode(ldr);
+
+            doTestDsFailsBeforeSnp(ldr, true, null);
+        }
+    }
+
+    /**
+     * Tests snapshot consistency when streamer failed or canceled before snapshot. Batched receiver.
+     */
+    @Test
+    public void testDsFailsLongAgoBatched() throws Exception {
+        for (Ignite ldr : testGrids()) {
+            prepareRunWithNewNode(ldr);
+
+            doTestDsFailsBeforeSnp(ldr, false, DataStreamerCacheUpdaters.batched());
+        }
+    }
+
+    /**
      * Tests snapshot consistecy when streamer starts before snapshot.
      *
      * @param ldrNode  Streaming node.
@@ -179,6 +203,28 @@ public class IgniteClusterShanpshotStreamerTest extends AbstractSnapshotSelfTest
     }
 
     /**
+     * Tests snapshot consistency when streamer failed or canceled before snapshot.
+     */
+    private void doTestDsFailsBeforeSnp(Ignite ldr, boolean mustFail,
+        @Nullable StreamReceiver<Integer, Object> receiver) throws Exception {
+        CountDownLatch preloadLatch = new CountDownLatch(10_000);
+        AtomicBoolean stopLoad = new AtomicBoolean();
+
+        IgniteInternalFuture<?> loadFut = runLoad(ldr, receiver, preloadLatch, stopLoad, true);
+
+        preloadLatch.await();
+        stopLoad.set(true);
+        loadFut.get();
+
+        if (mustFail)
+            assertThrows(null, () -> snpMgr.createSnapshot(SNAPSHOT_NAME).get(), IgniteException.class, ERR_MSG);
+        else
+            snpMgr.createSnapshot(SNAPSHOT_NAME).get();
+
+        checkSnp(mustFail);
+    }
+
+    /**
      * Pre-laods cache.
      */
     private void fillCache(int preLoadCnt, Ignite ldrNode) throws Exception {
@@ -189,6 +235,14 @@ public class IgniteClusterShanpshotStreamerTest extends AbstractSnapshotSelfTest
         preload.await();
         stopLoading.set(true);
         loadFut.get();
+    }
+
+    /** */
+    private void checkSnp(boolean mustFail) throws IgniteCheckedException {
+        IdleVerifyResultV2 checkRes = snpMgr.checkSnapshot(SNAPSHOT_NAME, null).get();
+
+        assertTrue(mustFail == checkRes.hasConflicts());
+        assertTrue(checkRes.exceptions().isEmpty());
     }
 
     /**

@@ -577,7 +577,7 @@ class SnapshotFutureTask extends AbstractSnapshotFutureTask<Set<GroupPartitionId
      * we assume a bunch of streamer futures is kept.
      */
     @Override public void onMessage(UUID nodeId, Object msg, byte plc) {
-        if (!cctx.mvcc().dataStreamerFutures().isEmpty())
+        if (!streamUpdates && !cctx.mvcc().dataStreamerFutures().isEmpty())
             streamUpdates = true;
     }
 

@@ -20,13 +20,11 @@ package org.apache.ignite.internal.processors.cache.persistence.snapshot;
 import org.apache.ignite.IgniteCheckedException;
 
 /**
- * Warning result of {@link SnapshotHandler}. The warning do not interrupt snapshot operation but raise an exception
+ * Warning result of {@link SnapshotHandler}. The warnings do not interrupt snapshot operation but raise exception
  * at the end to make the operation status 'not OK'.
  */
 public class SnapshotCreationWarning extends IgniteCheckedException {
-    /**
-     * @param wrnMsg The Warning message.
-     */
+    /** */
     public SnapshotCreationWarning(String wrnMsg) {
         super(wrnMsg);
     }

@@ -871,12 +871,12 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
             return;
 
         SnapshotOperationRequest snpReq = clusterSnpReq;
-        ClusterSnapshotFuture cnpFut;
+        ClusterSnapshotFuture snpFut;
 
         boolean cancelled = err.values().stream().anyMatch(e -> e instanceof IgniteFutureCancelledCheckedException);
 
         synchronized (snpOpMux) {
-            cnpFut = clusterSnpFut;
+            snpFut = clusterSnpFut;
 
             if (snpReq == null || !snpReq.requestId().equals(id)) {
                 if (clusterSnpFut != null && clusterSnpFut.rqId.equals(id)) {
@@ -916,7 +916,7 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
                     "Uncompleted snapshot will be deleted [err=" + err + ']'));
             }
 
-            completeHandlersAsyncIfNeeded(snpReq, cnpFut, res.values())
+            completeHandlersAsyncIfNeeded(snpReq, snpFut, res)
                 .listen(f -> {
                         if (f.error() != null)
                             snpReq.error(f.error());
@@ -1070,11 +1070,6 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
     /** @return Current create snapshot request. {@code Null} if there is no create snapshot operation in progress. */
     @Nullable public SnapshotOperationRequest currentCreateRequest() {
         return clusterSnpReq;
-    }
-
-    /** */
-    ClusterSnapshotFuture currentSnapshotFuture() {
-        return clusterSnpFut;
     }
 
     /**
@@ -1992,7 +1987,7 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
     }
 
     /** @return Current snapshot task. */
-    SnapshotFutureTask currentSnapshotTask() {
+    private SnapshotFutureTask currentSnapshotTask() {
         SnapshotOperationRequest req = clusterSnpReq;
 
         if (req == null)
@@ -2219,7 +2214,7 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
     }
 
     /** Snapshot operation handlers. */
-    protected class SnapshotHandlers {
+    protected static class SnapshotHandlers {
         /** Snapshot operation handlers. */
         private final Map<SnapshotHandlerType, List<SnapshotHandler<Object>>> handlers = new EnumMap<>(SnapshotHandlerType.class);
 
@@ -2240,6 +2235,10 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
             // Register system default snapshot warning notification handler.
             SnapshotHandler<?> wrnsCheck = new DataStreamerUpdatesHandler();
             handlers.put(wrnsCheck.type(), new ArrayList<>(F.asList((SnapshotHandler<Object>)wrnsCheck)));
+
+            // Register system default page counters check that is used at the creation operation.
+            SnapshotHandler<?> sysPrecheck = new SnapshotPartitionsFastVerifyHandler(ctx.cache().context());
+            handlers.put(sysPrecheck.type(), new ArrayList<>(F.asList((SnapshotHandler<Object>)sysPrecheck)));
 
             // Register custom handlers.
             SnapshotHandler<Object>[] extHnds = (SnapshotHandler<Object>[])ctx.plugins().extensions(SnapshotHandler.class);
@@ -3469,7 +3468,7 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
             return rqId;
         }
 
-        /** Saves {@code newWarnings} */
+        /** Stores snapshot operation warnings arrenged by nodes. */
         public void acceptWarnings(Map<UUID, List<String>> newWarnings) {
             newWarnings.forEach((nodeId, nodeWrns) -> {
                 warnings.compute(nodeId, (nodeKey, storedWrns) -> {
