@@ -848,9 +848,15 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
 
                 log.info("Snapshot metafile has been created: " + smf.getAbsolutePath());
 
+                assert fut instanceof SnapshotFutureTask;
+
+                SnapshotFutureTask snpFut = (SnapshotFutureTask)fut;
+
+                List<String> warnings = snpFut.streamUpdates() ? Collections.singletonList(streamedCachesWrn()) : null;
+
                 SnapshotHandlerContext ctx = new SnapshotHandlerContext(meta, req.groups(), cctx.localNode(), snpDir);
 
-                return new SnapshotOperationResponse(handlers.invokeAll(SnapshotHandlerType.CREATE, ctx));
+                return new SnapshotOperationResponse(handlers.invokeAll(SnapshotHandlerType.CREATE, ctx), warnings);
             }
             catch (IOException | IgniteCheckedException e) {
                 throw F.wrap(e);
@@ -868,11 +874,14 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
             return;
 
         SnapshotOperationRequest snpReq = clusterSnpReq;
+        ClusterSnapshotFuture snpFut;
 
         boolean cancelled = err.values().stream().anyMatch(e -> e instanceof IgniteFutureCancelledCheckedException);
 
-        if (snpReq == null || !snpReq.requestId().equals(id)) {
-            synchronized (snpOpMux) {
+        synchronized (snpOpMux) {
+            snpFut = clusterSnpFut;
+
+            if (snpReq == null || !snpReq.requestId().equals(id)) {
                 if (clusterSnpFut != null && clusterSnpFut.rqId.equals(id)) {
                     if (cancelled) {
                         clusterSnpFut.onDone(new IgniteFutureCancelledCheckedException("Execution of snapshot tasks " +
@@ -910,15 +919,12 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
                     "Uncompleted snapshot will be deleted [err=" + err + ']'));
             }
 
-            completeHandlersAsyncIfNeeded(snpReq, res.values())
+            completeHandlersAsyncIfNeeded(snpReq, snpFut, res)
                 .listen(f -> {
                         if (f.error() != null)
                             snpReq.error(f.error());
-                        else if (clusterSnpFut != null && !initStageWarnings.isEmpty()) {
-                            synchronized (snpOpMux) {
-                                if (clusterSnpFut != null)
-                                    clusterSnpFut.warnings.putAll(initStageWarnings);
-                            }
+                        else {
+
                         }
 
                         endSnpProc.start(snpReq.requestId(), snpReq);
@@ -931,23 +937,36 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
      * Execute the {@link SnapshotHandler#complete(String, Collection)} method of the snapshot handlers asynchronously.
      *
      * @param req Request on snapshot creation.
+     * @param snpFut Initial Snapshot creation future.
      * @param res Results.
      * @return Future that will be completed when the handlers are finished executing.
      */
     private IgniteInternalFuture<Void> completeHandlersAsyncIfNeeded(SnapshotOperationRequest req,
-        Collection<SnapshotOperationResponse> res) {
+        ClusterSnapshotFuture snpFut, Map<UUID, SnapshotOperationResponse> res) {
         if (req.error() != null)
             return new GridFinishedFuture<>();
 
         Map<String, List<SnapshotHandlerResult<?>>> clusterHndResults = new HashMap<>();
 
-        for (SnapshotOperationResponse response : res) {
-            if (response == null || response.handlerResults() == null)
-                continue;
+        res.forEach((nodeId, resp) -> {
+            if (resp != null) {
+                if (resp.warnings != null && !resp.warnings.isEmpty()) {
+                    snpFut.warnings.compute(nodeId, (nodeKey, storedWrns) -> {
+                        if (storedWrns == null)
+                            storedWrns = new ArrayList<>();
 
-            for (Map.Entry<String, SnapshotHandlerResult<Object>> entry : response.handlerResults().entrySet())
-                clusterHndResults.computeIfAbsent(entry.getKey(), v -> new ArrayList<>()).add(entry.getValue());
-        }
+                        storedWrns.addAll(resp.warnings);
+
+                        return storedWrns;
+                    });
+                }
+
+                if (resp.handlerResults() != null) {
+                    for (Map.Entry<String, SnapshotHandlerResult<Object>> entry : resp.handlerResults().entrySet())
+                        clusterHndResults.computeIfAbsent(entry.getKey(), v -> new ArrayList<>()).add(entry.getValue());
+                }
+            }
+        });
 
         if (clusterHndResults.isEmpty())
             return new GridFinishedFuture<>();
@@ -2197,6 +2216,16 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
         return handlers;
     }
 
+    /**
+     * Creates warning text about concurent streamer updates that are inconsistent-by-nature.
+     */
+    private static String streamedCachesWrn() {
+        return "DataStreamer with property 'alowOverwrite' set to `false` was working during the snapshot creation. " +
+            "Such streaming updates are inconsistent by nature and should be successfully finished before data " +
+            "usage. Snapshot might not be entirely restored. However, you would be able to restore the caches which " +
+            "were not streamed into.";
+    }
+
     /** Snapshot operation handlers. */
     protected static class SnapshotHandlers {
         /** Snapshot operation handlers. */
@@ -3314,19 +3343,28 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
         /** Results of single-node handlers execution. */
         private final Map<String, SnapshotHandlerResult<Object>> hndResults;
 
+        /** Operation warnings. {@code Null} if no warnings occured. */
+        private final List<String> warnings;
+
         /** Default constructor. */
         public SnapshotOperationResponse() {
-            this(null);
+            this(null, null);
         }
 
         /** @param hndResults Results of single-node handlers execution.  */
-        public SnapshotOperationResponse(Map<String, SnapshotHandlerResult<Object>> hndResults) {
+        public SnapshotOperationResponse(Map<String, SnapshotHandlerResult<Object>> hndResults, List<String> warnings) {
             this.hndResults = hndResults;
+            this.warnings = warnings;
         }
 
         /** @return Results of single-node handlers execution. */
         public @Nullable Map<String, SnapshotHandlerResult<Object>> handlerResults() {
             return hndResults;
+        }
+
+        /** @return Operation warnings. {@code Null} if no warnings occured. */
+        public @Nullable List<String> warnings() {
+            return warnings;
         }
     }
 
@@ -3381,10 +3419,10 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
         volatile IgniteCheckedException interruptEx;
 
         /**
-         * Warnings which produces an error after snapshot completes if no other error occured. But doesn't
-         * stop or cancel snapshot operation.
+         * Warnings of snapshot operation. They do not interrupt the process, but produces an error at the end if no
+         * other errors occured. This makes the operation status 'not OK'.
          */
-        final Map<UUID, String> warnings = new ConcurrentHashMap<>();
+        final Map<UUID, List<String>> warnings = new ConcurrentHashMap<>();
 
         /**
          * Default constructor.
@@ -3430,7 +3468,8 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
 
                 sb.append("Snapshot task '").append(name).append("' completed with warnings:");
 
-                warnings.forEach((n, w) -> sb.append("\n\tNode '").append(n).append("': ").append(w));
+                warnings.forEach((n, wrns) -> sb.append("\n\tNode '").append(n).append("':\n\t\t")
+                    .append(String.join("\n\t\t", wrns)));
 
                 err = new IgniteException(sb.toString());
             }

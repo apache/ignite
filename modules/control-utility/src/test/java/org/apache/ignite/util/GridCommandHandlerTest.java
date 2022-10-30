@@ -99,10 +99,6 @@ import org.apache.ignite.internal.processors.cache.persistence.diagnostic.pagelo
 import org.apache.ignite.internal.processors.cache.persistence.file.FileIO;
 import org.apache.ignite.internal.processors.cache.persistence.file.FileIOFactory;
 import org.apache.ignite.internal.processors.cache.persistence.snapshot.IgniteSnapshotManager;
-import org.apache.ignite.internal.processors.cache.persistence.snapshot.SnapshotDataStreamerVerifyHandler;
-import org.apache.ignite.internal.processors.cache.persistence.snapshot.SnapshotHandler;
-import org.apache.ignite.internal.processors.cache.persistence.snapshot.SnapshotHandlerContext;
-import org.apache.ignite.internal.processors.cache.persistence.snapshot.SnapshotHandlerWarning;
 import org.apache.ignite.internal.processors.cache.transactions.IgniteInternalTx;
 import org.apache.ignite.internal.processors.cache.transactions.IgniteTxEntry;
 import org.apache.ignite.internal.processors.cache.transactions.TransactionProxyImpl;
@@ -131,9 +127,6 @@ import org.apache.ignite.lang.IgniteFuture;
 import org.apache.ignite.lang.IgniteInClosure;
 import org.apache.ignite.lang.IgnitePredicate;
 import org.apache.ignite.lang.IgniteUuid;
-import org.apache.ignite.plugin.AbstractTestPluginProvider;
-import org.apache.ignite.plugin.ExtensionRegistry;
-import org.apache.ignite.plugin.PluginContext;
 import org.apache.ignite.plugin.extensions.communication.Message;
 import org.apache.ignite.spi.communication.tcp.TcpCommunicationSpi;
 import org.apache.ignite.spi.metric.LongMetric;
@@ -3078,37 +3071,20 @@ public class GridCommandHandlerTest extends GridCommandHandlerClusterPerMethodAb
      */
     @Test
     public void testClusterCreateSnapshotWarning() throws Exception {
-        int keysCnt = 100;
         String snpName = "snapshot_wrn";
 
-        IgniteConfiguration cfg = getConfiguration(getTestIgniteInstanceName(0))
-            .setPluginProviders(new AbstractTestPluginProvider() {
-                /** {@inheritDoc} */
-                @Override public void initExtensions(PluginContext ctx, ExtensionRegistry registry) {
-                    super.initExtensions(ctx, registry);
-
-                    // Simulates concurrent datastreamer check warning.
-                    registry.registerExtension(SnapshotHandler.class,
-                        new SnapshotDataStreamerVerifyHandler() {
-                            /** {@inheritDoc} */
-                            @Override public SnapshotHandlerWarning invoke(SnapshotHandlerContext c) {
-                                return createWarning(Collections.singletonList(DEFAULT_CACHE_NAME), c.localNode().id());
-                            }
-                        });
-                }
-
-                /** {@inheritDoc} */
-                @Override public String name() {
-                    return "SnapshotTestPlugin";
-                }
-            });
+        IgniteConfiguration cfg = getConfiguration(getTestIgniteInstanceName(0));
 
         cfg.getConnectorConfiguration().setHost("localhost");
 
         IgniteEx ig = startGrid(cfg);
         ig.cluster().state(ACTIVE);
 
-        createCacheAndPreload(ig, keysCnt);
+        IgniteEx lrd = startClientGrid(1);
+
+        createCacheAndPreload(ig, 0);
+
+        AtomicBoolean stop = new AtomicBoolean();
 
         Logger log = CommandHandler.initLogger("testSnpWarnResult");
 
@@ -3117,8 +3093,9 @@ public class GridCommandHandlerTest extends GridCommandHandlerClusterPerMethodAb
         log.addHandler(new StreamHandler() {
             /** {@inheritDoc} */
             @Override public synchronized void publish(LogRecord record) {
-                if (record.getMessage() != null && !wrnFound.get() && record.getMessage().contains("Such updates may " +
-                    "break data consistency until finished. Snapshot might not be entirely restored."))
+                if (record.getMessage() != null && !wrnFound.get() && record.getMessage().contains("streaming " +
+                    "updates are inconsistent by nature and should be successfully finished until data usage. " +
+                    "Snapshot might not be entirely restored"))
                     wrnFound.set(true);
             }
         });
@@ -3127,7 +3104,22 @@ public class GridCommandHandlerTest extends GridCommandHandlerClusterPerMethodAb
 
         List<String> args = new ArrayList<>(F.asList("--snapshot", "create", snpName, "--sync"));
 
+        IgniteInternalFuture<?> fut = runAsync(() -> {
+            try (IgniteDataStreamer<Object, Object> ds = lrd.dataStreamer(DEFAULT_CACHE_NAME)) {
+                long i = 0;
+
+                while (!stop.get())
+                    ds.addData(++i, i);
+            }
+        });
+
+        U.sleep(1000);
+
         assertEquals(EXIT_CODE_UNEXPECTED_ERROR, execute(hnd, args));
+
+        stop.set(true);
+
+        fut.get();
 
         assertTrue("Snapshot inconsistency warning not found.", wrnFound.get());
     }

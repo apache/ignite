@@ -1840,7 +1840,7 @@ public class DataStreamerImpl<K, V> implements IgniteDataStreamer<K, V>, Delayed
                         locFuts.add(callFut);
 
                         final GridFutureAdapter waitFut =
-                            lockTop ? cctx.mvcc().addDataStreamerFuture(cacheName, streamerFutTopVer) : null;
+                            lockTop ? cctx.mvcc().addDataStreamerFuture(streamerFutTopVer) : null;
 
                         callFut.listen(new IgniteInClosure<IgniteInternalFuture<Object>>() {
                             @Override public void apply(IgniteInternalFuture<Object> t) {

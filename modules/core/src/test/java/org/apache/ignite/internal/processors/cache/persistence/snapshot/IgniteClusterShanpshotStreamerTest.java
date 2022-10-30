@@ -33,7 +33,6 @@ import org.apache.ignite.cluster.BaselineNode;
 import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.configuration.WALMode;
-import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.managers.communication.GridIoMessage;
 import org.apache.ignite.internal.managers.discovery.CustomMessageWrapper;
@@ -44,7 +43,6 @@ import org.apache.ignite.internal.processors.datastreamer.DataStreamerRequest;
 import org.apache.ignite.internal.util.distributed.InitMessage;
 import org.apache.ignite.internal.util.typedef.G;
 import org.apache.ignite.internal.util.typedef.internal.U;
-import org.apache.ignite.lang.IgniteFuture;
 import org.apache.ignite.lang.IgniteInClosure;
 import org.apache.ignite.plugin.extensions.communication.Message;
 import org.apache.ignite.spi.IgniteSpiException;
@@ -69,20 +67,11 @@ public class IgniteClusterShanpshotStreamerTest extends AbstractSnapshotSelfTest
     private static final TcpDiscoveryIpFinder IP_FINDER = new TcpDiscoveryVmIpFinder(true);
 
     /** */
-    private static final String ERR_MSG = "Such updates may break data consistency until finished. Snapshot might " +
-        "not be entirely restored";
-
-    /** */
-    private TcpDiscoverySpi discoverySpi;
+    private static final String ERR_MSG = "DataStreamer with property 'alowOverwrite' set to `false` was working " +
+        "during the snapshot creation. Such streaming updates are inconsistent by nature";
 
     /** */
     private IgniteSnapshotManager snpMgr;
-
-    /** */
-    private volatile @Nullable CountDownLatch beginSecondStageLatch;
-
-    /** */
-    private volatile @Nullable CountDownLatch continueSecondStageLatch;
 
     /** {@inheritDoc} */
     @Override public void beforeTestSnapshot() throws Exception {
@@ -90,11 +79,7 @@ public class IgniteClusterShanpshotStreamerTest extends AbstractSnapshotSelfTest
 
         persistence = true;
 
-        discoverySpi = waitingAtSecondStageDiscoSpi();
-
         startGrid(0);
-
-        discoverySpi = null;
 
         // One more server node.
         startGrid(1);
@@ -125,9 +110,6 @@ public class IgniteClusterShanpshotStreamerTest extends AbstractSnapshotSelfTest
         cfg.getDataStorageConfiguration().setWalMode(WALMode.NONE);
         cfg.getDataStorageConfiguration().getDefaultDataRegionConfiguration().setMaxSize(128L * 1024L * 1024L);
 
-        if (discoverySpi != null)
-            cfg.setDiscoverySpi(discoverySpi);
-
         assert cfg.getDiscoverySpi() instanceof TcpDiscoverySpi;
 
         ((TcpDiscoverySpi)cfg.getDiscoverySpi()).setIpFinder(IP_FINDER);
@@ -138,58 +120,10 @@ public class IgniteClusterShanpshotStreamerTest extends AbstractSnapshotSelfTest
     }
 
     /**
-     * Test snapshot consistency when streamer starts right after init snapshot process request. Default receiver.
-     */
-    @Test
-    public void testDsBeginsAtStartStageDflt() throws Exception {
-        for (Ignite ldr : testGrids()) {
-            prepareRunWithNewNode(ldr);
-
-            doTestDsBeginsAtStartStage(null, (IgniteEx)ldr);
-        }
-    }
-
-    /**
-     * Test snapshot consistency when streamer starts right after init snapshot process request. Batched receiver.
-     */
-    @Test
-    public void testDsBeginsAtStartStageBatched() throws Exception {
-        for (Ignite ldr : testGrids()) {
-            prepareRunWithNewNode(ldr);
-
-            doTestDsBeginsAtStartStage(DataStreamerCacheUpdaters.batched(), (IgniteEx)ldr);
-        }
-    }
-
-    /**
-     * Test snapshot consistency when streamer starts when snapshot process is not finished yet. Default receiver.
-     */
-    @Test
-    public void testDsBeginsAtEndStageDflt() throws Exception {
-        for (Ignite ldr : testGrids()) {
-            prepareRunWithNewNode(ldr);
-
-            doTestDsBeginsAtEndStage(null, ldr);
-        }
-    }
-
-    /**
-     * Test snapshot consistency when streamer starts when snapshot process is not finished yet. Batched receiver.
-     */
-    @Test
-    public void testDsBeginsAtEndStageBatched() throws Exception {
-        for (Ignite ldr : testGrids()) {
-            prepareRunWithNewNode(ldr);
-
-            doTestDsBeginsAtEndStage(DataStreamerCacheUpdaters.batched(), ldr);
-        }
-    }
-
-    /**
      * Tests snapshot consistency wnen streamer starts before snapshot. Default receiver.
      */
     @Test
-    public void testDsBeginsBeforeSnpDflt() throws Exception {
+    public void testStreamerWhileSnpDefault() throws Exception {
         for (Ignite ldr : testGrids()) {
             prepareRunWithNewNode(ldr);
 
@@ -201,7 +135,7 @@ public class IgniteClusterShanpshotStreamerTest extends AbstractSnapshotSelfTest
      * Tests snapshot consistency wnen streamer starts before snapshot. Batched receiver.
      */
     @Test
-    public void testDsBeginsBeforeSnpBatched() throws Exception {
+    public void testStreamerWhileSnpBatched() throws Exception {
         for (Ignite ldr : testGrids()) {
             prepareRunWithNewNode(ldr);
 
@@ -242,99 +176,8 @@ public class IgniteClusterShanpshotStreamerTest extends AbstractSnapshotSelfTest
 
         IdleVerifyResultV2 checkRes = snpMgr.checkSnapshot(SNAPSHOT_NAME, null).get();
 
-        assertTrue(mustFail == checkRes.hasConflicts());
         assertTrue(checkRes.exceptions().isEmpty());
-    }
-
-    /**
-     * Test snapshot consistency when streamer starts right after init snapshot process request.
-     *
-     * @param rcvr Stream receiver.
-     * @param ldr Loader node.
-     */
-    private void doTestDsBeginsAtStartStage(StreamReceiver<Integer, Object> rcvr, IgniteEx ldr) throws Exception {
-        fillCache(5_000, ldr);
-
-        AtomicBoolean stopLoading = new AtomicBoolean();
-        AtomicBoolean doLoadAtSnp = new AtomicBoolean(true);
-        AtomicReference<IgniteInternalFuture<?>> loadDuringSnp = new AtomicReference<>();
-
-        ldr.context().discovery().setCustomEventListener(InitMessage.class, (topVer, sender, msg) -> {
-            SnapshotOperationRequest snpRq = extractSnpRequest(msg);
-
-            if (snpRq == null || !doLoadAtSnp.compareAndSet(true, false))
-                return;
-
-            CountDownLatch loadLatch = new CountDownLatch(2_000);
-
-            try {
-                loadDuringSnp.set(runLoad(ldr, rcvr, loadLatch, stopLoading, true));
-
-                loadLatch.await();
-            }
-            catch (InterruptedException ignored) {
-                // No-op.
-            }
-        });
-
-        try {
-            snpMgr.createSnapshot(SNAPSHOT_NAME).get();
-        }
-        finally {
-            stopLoading.set(true);
-            assert loadDuringSnp.get() != null;
-            loadDuringSnp.get().get();
-        }
-
-        IdleVerifyResultV2 checkRes = snpMgr.checkSnapshot(SNAPSHOT_NAME, null).get();
-
-        assertTrue(!checkRes.hasConflicts());
-        assertTrue(checkRes.exceptions().isEmpty());
-    }
-
-    /**
-     * Test snapshot consistency when streamer starts when snapshot process is not finished yet.
-     *
-     * @param receiver Stream receiver. {@code Null} for default.
-     * @param ldr Loader node.
-     */
-    private void doTestDsBeginsAtEndStage(@Nullable StreamReceiver<Integer, Object> receiver, Ignite ldr)
-        throws Exception {
-        int preLoadCnt = 5_000;
-
-        fillCache(preLoadCnt, ldr);
-
-        // Streamer won't be launched before snapshot process initialized.
-        beginSecondStageLatch = new CountDownLatch(1);
-        // Snapshot process won't continue before streamer set.
-        continueSecondStageLatch = new CountDownLatch(1);
-
-        IgniteFuture<?> snpFut = grid(0).snapshot().createSnapshot(SNAPSHOT_NAME);
-
-        // Wait for the snapshot initialization.
-        beginSecondStageLatch.await();
-
-        AtomicBoolean stopLoading = new AtomicBoolean();
-        CountDownLatch dataLoadCounter = new CountDownLatch(preLoadCnt);
-
-        IgniteInternalFuture<?> loadFut = runLoad(ldr, receiver, dataLoadCounter, stopLoading, true);
-
-        continueSecondStageLatch.await();
-        dataLoadCounter.await();
-
-        try {
-            snpFut.get();
-        }
-        finally {
-            stopLoading.set(true);
-
-            loadFut.get();
-        }
-
-        IdleVerifyResultV2 checkRes = snpMgr.checkSnapshot(SNAPSHOT_NAME, null).get();
-
-        assertTrue(checkRes.hashConflicts().isEmpty());
-        assertTrue(checkRes.exceptions().isEmpty());
+        assertEquals(mustFail, checkRes.hasConflicts());
     }
 
     /**
@@ -401,9 +244,6 @@ public class IgniteClusterShanpshotStreamerTest extends AbstractSnapshotSelfTest
                 while (!stop.get()) {
                     ds.addData(idx, idx);
 
-                    if (continueSecondStageLatch != null)
-                        continueSecondStageLatch.countDown();
-
                     idx++;
 
                     if (dataSendCounter.getCount() > 0) {
@@ -422,35 +262,6 @@ public class IgniteClusterShanpshotStreamerTest extends AbstractSnapshotSelfTest
                     cm.stopBlocking();
             }
         }, 1, "load-thread");
-    }
-
-    /**
-     * @return DiscoverySpi able to wait for data streamer start in the middle of snapshot process.
-     */
-    private TcpDiscoverySpi waitingAtSecondStageDiscoSpi() {
-        return new TcpDiscoverySpi() {
-            /** {@inheritDoc} */
-            @Override public void sendCustomEvent(DiscoverySpiCustomMessage msg) throws IgniteException {
-                SnapshotOperationRequest snpRq = extractSnpRequest(msg);
-
-                if (snpRq != null) {
-                    if (beginSecondStageLatch != null && snpRq.startStageEnded()) {
-                        assert continueSecondStageLatch != null;
-
-                        beginSecondStageLatch.countDown();
-
-                        try {
-                            continueSecondStageLatch.await();
-                        }
-                        catch (InterruptedException e) {
-                            throw new IgniteException("Unable to wait for streamer started.", e);
-                        }
-                    }
-                }
-
-                super.sendCustomEvent(msg);
-            }
-        };
     }
 
     /** */

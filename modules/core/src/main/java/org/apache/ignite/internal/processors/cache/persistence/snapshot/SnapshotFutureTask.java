@@ -47,11 +47,12 @@ import java.util.function.BiConsumer;
 import java.util.function.BooleanSupplier;
 import java.util.stream.Collectors;
 import org.apache.ignite.IgniteCheckedException;
-import org.apache.ignite.IgniteException;
 import org.apache.ignite.binary.BinaryType;
 import org.apache.ignite.configuration.CacheConfiguration;
+import org.apache.ignite.internal.GridTopic;
 import org.apache.ignite.internal.IgniteFutureCancelledCheckedException;
 import org.apache.ignite.internal.IgniteInternalFuture;
+import org.apache.ignite.internal.managers.communication.GridMessageListener;
 import org.apache.ignite.internal.pagemem.PageIdUtils;
 import org.apache.ignite.internal.pagemem.store.PageStore;
 import org.apache.ignite.internal.pagemem.store.PageWriteListener;
@@ -95,7 +96,8 @@ import static org.apache.ignite.internal.processors.cache.persistence.snapshot.I
  * If partitions for particular cache group are not provided that they will be collected and added
  * on checkpoint under the write-lock.
  */
-class SnapshotFutureTask extends AbstractSnapshotFutureTask<Set<GroupPartitionId>> implements CheckpointListener {
+class SnapshotFutureTask extends AbstractSnapshotFutureTask<Set<GroupPartitionId>> implements CheckpointListener,
+    GridMessageListener {
     /** File page store manager for accessing cache group associated files. */
     private final FilePageStoreManager pageStore;
 
@@ -150,6 +152,9 @@ class SnapshotFutureTask extends AbstractSnapshotFutureTask<Set<GroupPartitionId
     /** Processed snapshot size in bytes. */
     private final AtomicLong processedSize = new AtomicLong();
 
+    /** Flag of concurrent inconsistent-by-nature updates. */
+    private volatile boolean streamUpdates;
+
     /**
      * @param cctx Shared context.
      * @param srcNodeId Node id which cause snapshot task creation.
@@ -184,6 +189,8 @@ class SnapshotFutureTask extends AbstractSnapshotFutureTask<Set<GroupPartitionId
         this.withMetaStorage = withMetaStorage;
         this.pageStore = (FilePageStoreManager)cctx.pageStore();
         this.locBuff = locBuff;
+
+        cctx.gridIO().addMessageListener(GridTopic.TOPIC_DATASTREAM, this);
     }
 
     /**
@@ -211,6 +218,8 @@ class SnapshotFutureTask extends AbstractSnapshotFutureTask<Set<GroupPartitionId
 
     /** {@inheritDoc} */
     @Override public boolean onDone(@Nullable Set<GroupPartitionId> res, @Nullable Throwable err) {
+        cctx.gridIO().removeMessageListener(this);
+
         for (PageStoreSerialWriter writer : partDeltaWriters.values())
             U.closeQuiet(writer);
 
@@ -490,17 +499,8 @@ class SnapshotFutureTask extends AbstractSnapshotFutureTask<Set<GroupPartitionId
             snpSndr.executor()));
 
         // Send configuration files of all cache groups.
-        for (CacheConfigurationSender ccfgSndr : ccfgSndrs) {
-            if (cctx.mvcc().dataStreamerFutures().get(ccfgSndr.cacheName) != null && err.get() == null) {
-                acceptException(new IgniteException("Prohibited concurrent streaming update  occured to cache '" +
-                    ccfgSndr.cacheName + "'. Streaming should not work while snapshot creating with allowOverwrite' " +
-                    "set to false."));
-
-                return;
-            }
-
+        for (CacheConfigurationSender ccfgSndr : ccfgSndrs)
             futs.add(CompletableFuture.runAsync(wrapExceptionIfStarted(ccfgSndr::sendCacheConfig), snpSndr.executor()));
-        }
 
         try {
             for (Map.Entry<Integer, Set<Integer>> e : processed.entrySet()) {
@@ -573,6 +573,15 @@ class SnapshotFutureTask extends AbstractSnapshotFutureTask<Set<GroupPartitionId
     }
 
     /**
+     * Watches Datastreamer inconsistent-by-nature updates. If streamer is loading with 'allowOverwrite==false' data,
+     * we assume a bunch of streamer futures is kept.
+     */
+    @Override public void onMessage(UUID nodeId, Object msg, byte plc) {
+        if (!cctx.mvcc().dataStreamerFutures().isEmpty())
+            streamUpdates = true;
+    }
+
+    /**
      * @param grpId Cache group id.
      * @param parts Set of partitions to be processed.
      * @param dirName Directory name to init.
@@ -609,6 +618,13 @@ class SnapshotFutureTask extends AbstractSnapshotFutureTask<Set<GroupPartitionId
                 acceptException(t);
             }
         };
+    }
+
+    /**
+     * {@code True} if concurrent streamer updates detected during the operation. {@code False} otherwise.
+     */
+    boolean streamUpdates() {
+        return streamUpdates;
     }
 
     /**
