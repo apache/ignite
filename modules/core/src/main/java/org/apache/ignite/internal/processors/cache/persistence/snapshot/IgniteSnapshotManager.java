@@ -896,6 +896,8 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
             }
         }
 
+        snpReq.startStageEnded(true);
+
         if (isLocalNodeCoordinator(cctx.discovery())) {
             Set<UUID> missed = new HashSet<>(snpReq.nodes());
             missed.removeAll(res.keySet());
@@ -1313,8 +1315,6 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
         kctx0.task().execute(SnapshotMetadataCollectorTask.class, taskArg).listen(f0 -> {
             if (f0.error() == null) {
                 Map<ClusterNode, List<SnapshotMetadata>> metas = f0.result();
-//                Map<ClusterNode, List<String>> metaWarnings = metas.entrySet().stream()
-//                    .map(e->new AbstractMap.SimpleEntry<ClusterNode, List<String>>(e.getKey(), e.getValue().warnings()));
 
                 Map<Integer, String> grpIds = grps == null ? Collections.emptyMap() :
                     grps.stream().collect(Collectors.toMap(CU::cacheId, v -> v));
