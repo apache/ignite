@@ -67,10 +67,6 @@ public class IgniteClusterShanpshotStreamerTest extends AbstractSnapshotSelfTest
     private static final TcpDiscoveryIpFinder IP_FINDER = new TcpDiscoveryVmIpFinder(true);
 
     /** */
-    private static final String ERR_MSG = "DataStreamer with property 'alowOverwrite' set to `false` was working " +
-        "during the snapshot creation. Such streaming updates are inconsistent by nature";
-
-    /** */
     private IgniteSnapshotManager snpMgr;
 
     /** {@inheritDoc} */
@@ -153,6 +149,8 @@ public class IgniteClusterShanpshotStreamerTest extends AbstractSnapshotSelfTest
      */
     private void doTestDsBeginsBeforeSnp(Ignite ldrNode, boolean mustFail,
         @Nullable StreamReceiver<Integer, Object> receiver) throws Exception {
+        String errMsg = U.field(DataStreamerUpdatesHandler.class, "WRN_MSG");
+
         int preLoadCnt = 5_000;
 
         CountDownLatch preload = new CountDownLatch(preLoadCnt);
@@ -165,7 +163,7 @@ public class IgniteClusterShanpshotStreamerTest extends AbstractSnapshotSelfTest
         try {
             if (mustFail)
                 assertThrows(null, () -> grid(0).snapshot().createSnapshot(SNAPSHOT_NAME).get(),
-                    IgniteException.class, ERR_MSG);
+                    IgniteException.class, errMsg);
             else
                 grid(0).snapshot().createSnapshot(SNAPSHOT_NAME).get();
         }

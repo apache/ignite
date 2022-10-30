@@ -79,9 +79,6 @@ public class SnapshotMetadata implements Serializable {
     @GridToStringInclude
     @Nullable private final byte[] masterKeyDigest;
 
-    /** Snapshot operation warnings. */
-    private final List<String> warnings;
-
     /**
      * F@param snpName Snapshot name.
      * @param consId Consistent id of a node to which this metadata relates.
@@ -90,7 +87,6 @@ public class SnapshotMetadata implements Serializable {
      * @param grpIds The list of cache groups ids which were included into snapshot.
      * @param bltNodes The set of affected by snapshot baseline nodes.
      * @param masterKeyDigest Master key digest for encrypted caches.
-     * @param warnings Snapshot operation warnings.
      */
     public SnapshotMetadata(
         UUID rqId,
@@ -101,8 +97,7 @@ public class SnapshotMetadata implements Serializable {
         List<Integer> grpIds,
         Set<String> bltNodes,
         Set<GroupPartitionId> pairs,
-        @Nullable byte[] masterKeyDigest,
-        List<String> warnings
+        @Nullable byte[] masterKeyDigest
     ) {
         this.rqId = rqId;
         this.snpName = snpName;
@@ -112,7 +107,6 @@ public class SnapshotMetadata implements Serializable {
         this.grpIds = grpIds;
         this.bltNodes = bltNodes;
         this.masterKeyDigest = masterKeyDigest;
-        this.warnings = warnings;
 
         pairs.forEach(p ->
             locParts.computeIfAbsent(p.getGroupId(), k -> new HashSet<>())
@@ -245,13 +239,6 @@ public class SnapshotMetadata implements Serializable {
         return masterKeyDigest;
     }
 
-    /**
-     * @return Snapshot operation warnings.
-     */
-    public List<String> warnings() {
-        return warnings;
-    }
-
     /** {@inheritDoc} */
     @Override public boolean equals(Object o) {
         if (this == o)
@@ -267,8 +254,7 @@ public class SnapshotMetadata implements Serializable {
             consId.equals(meta.consId) &&
             Objects.equals(grpIds, meta.grpIds) &&
             Objects.equals(bltNodes, meta.bltNodes) &&
-            Arrays.equals(masterKeyDigest, meta.masterKeyDigest) &&
-            Objects.equals(warnings, meta.warnings);
+            Arrays.equals(masterKeyDigest, meta.masterKeyDigest);
     }
 
     /** {@inheritDoc} */

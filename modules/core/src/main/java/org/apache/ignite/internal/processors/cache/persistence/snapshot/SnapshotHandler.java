@@ -45,9 +45,10 @@ public interface SnapshotHandler<T> extends Extension {
      *
      * @param ctx Snapshot handler context.
      * @return Result of local processing. This result will be returned in {@link SnapshotHandlerResult#data()} method
-     *      passed into {@link #complete(String, Collection)} handler method.
+     * passed into {@link #complete(String, Collection)} handler method. Can return {@link SnapshotCreationWarning}
+     * to produce snapshot operation warning.
      * @throws Exception If invocation caused an exception. This exception will be returned in {@link
-     *      SnapshotHandlerResult#error()}} method passed into {@link #complete(String, Collection)} handler method.
+     *                   SnapshotHandlerResult#error()}} method passed into {@link #complete(String, Collection)} handler method.
      */
     public @Nullable T invoke(SnapshotHandlerContext ctx) throws Exception;
 

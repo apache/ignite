@@ -99,11 +99,12 @@ import org.apache.ignite.internal.processors.cache.persistence.db.IgniteCacheGro
 import org.apache.ignite.internal.processors.cache.persistence.diagnostic.pagelocktracker.dumpprocessors.ToFileDumpProcessor;
 import org.apache.ignite.internal.processors.cache.persistence.file.FileIO;
 import org.apache.ignite.internal.processors.cache.persistence.file.FileIOFactory;
+import org.apache.ignite.internal.processors.cache.persistence.snapshot.DataStreamerUpdatesHandler;
 import org.apache.ignite.internal.processors.cache.persistence.snapshot.IgniteSnapshotManager;
 import org.apache.ignite.internal.processors.cache.persistence.snapshot.SnapshotHandler;
 import org.apache.ignite.internal.processors.cache.persistence.snapshot.SnapshotHandlerContext;
-import org.apache.ignite.internal.processors.cache.persistence.snapshot.SnapshotHandlerResult;
 import org.apache.ignite.internal.processors.cache.persistence.snapshot.SnapshotHandlerType;
+import org.apache.ignite.internal.processors.cache.persistence.snapshot.SnapshotCreationWarning;
 import org.apache.ignite.internal.processors.cache.transactions.IgniteInternalTx;
 import org.apache.ignite.internal.processors.cache.transactions.IgniteTxEntry;
 import org.apache.ignite.internal.processors.cache.transactions.TransactionProxyImpl;
@@ -3082,7 +3083,7 @@ public class GridCommandHandlerTest extends GridCommandHandlerClusterPerMethodAb
         IgniteConfiguration cfg = getConfiguration(getTestIgniteInstanceName(0));
         cfg.getConnectorConfiguration().setHost("localhost");
 
-        String targetMsg = U.field(IgniteSnapshotManager.class, "CONCURRENT_STREAMER_MSG");
+        String targetMsg = U.field(DataStreamerUpdatesHandler.class, "WRN_MSG");
 
         AtomicReference<Exception> simulationEx = new AtomicReference<>();
 
@@ -3091,33 +3092,18 @@ public class GridCommandHandlerTest extends GridCommandHandlerClusterPerMethodAb
             @Override public void initExtensions(PluginContext ctx, ExtensionRegistry registry) {
                 super.initExtensions(ctx, registry);
 
-                // Simulates concurrent datastreamer check warning.
-                registry.registerExtension(SnapshotHandler.class,
-                    new SnapshotHandler<Void>() {
-                        /** {@inheritDoc} */
-                        @Override public SnapshotHandlerType type() {
-                            return SnapshotHandlerType.CREATE;
-                        }
+                // Simulates Datastreamer check warning.
+                registry.registerExtension(SnapshotHandler.class, new SnapshotHandler<SnapshotCreationWarning>() {
+                    /** {@inheritDoc} */
+                    @Override public SnapshotHandlerType type() {
+                        return SnapshotHandlerType.CREATE;
+                    }
 
-                        /** {@inheritDoc} */
-                        @Nullable @Override public Void invoke(SnapshotHandlerContext ctx) {
-                            return null;
-                        }
-
-                        /** {@inheritDoc} */
-                        @Override public void complete(String name, Collection<SnapshotHandlerResult<Void>> results) {
-                            try {
-                                IgniteSnapshotManager.ClusterSnapshotFuture snpFut =
-                                    U.field(snp(grid(0)), "clusterSnpFut");
-
-                                snpFut.acceptWarnings(grid(0).cluster().localNode().id(),
-                                    Collections.singletonList(targetMsg));
-                            }
-                            catch (Exception e) {
-                                simulationEx.set(e);
-                            }
-                        }
-                    });
+                    /** {@inheritDoc} */
+                    @Nullable @Override public SnapshotCreationWarning invoke(SnapshotHandlerContext ctx) {
+                        return new SnapshotCreationWarning(targetMsg);
+                    }
+                });
             }
 
             /** {@inheritDoc} */
