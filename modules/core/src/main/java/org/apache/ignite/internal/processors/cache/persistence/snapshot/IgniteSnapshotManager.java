@@ -290,6 +290,12 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
     /** Snapshot operation fail log message. */
     private static final String SNAPSHOT_FAILED_MSG = "Cluster-wide snapshot operation failed: ";
 
+    /** Snapshot operation fail log message. */
+    private static final String CONCURRENT_STREAMER_MSG = "DataStreamer with property 'alowOverwrite' set to `false` " +
+        "was working during the snapshot creation. Such streaming updates are inconsistent by nature and should be " +
+        "successfully finished before data usage. Snapshot might not be entirely restored. However, you would be " +
+        "able to restore the caches which were not streamed into.";
+
     /** Default snapshot topic to receive snapshots from remote node. */
     private static final Object DFLT_INITIAL_SNAPSHOT_TOPIC = GridTopic.TOPIC_SNAPSHOT.topic("rmt_snp");
 
@@ -852,7 +858,7 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
 
                 SnapshotFutureTask snpFut = (SnapshotFutureTask)fut;
 
-                List<String> warnings = snpFut.streamUpdates() ? Collections.singletonList(streamedCachesWrn()) : null;
+                List<String> warnings = snpFut.streamUpdates() ? Collections.singletonList(CONCURRENT_STREAMER_MSG) : null;
 
                 SnapshotHandlerContext ctx = new SnapshotHandlerContext(meta, req.groups(), cctx.localNode(), snpDir);
 
@@ -950,16 +956,8 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
 
         res.forEach((nodeId, resp) -> {
             if (resp != null) {
-                if (resp.warnings != null && !resp.warnings.isEmpty()) {
-                    snpFut.warnings.compute(nodeId, (nodeKey, storedWrns) -> {
-                        if (storedWrns == null)
-                            storedWrns = new ArrayList<>();
-
-                        storedWrns.addAll(resp.warnings);
-
-                        return storedWrns;
-                    });
-                }
+                if (resp.warnings != null && !resp.warnings.isEmpty())
+                    snpFut.acceptWarnings(nodeId, resp.warnings);
 
                 if (resp.handlerResults() != null) {
                     for (Map.Entry<String, SnapshotHandlerResult<Object>> entry : resp.handlerResults().entrySet())
@@ -2216,16 +2214,6 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
         return handlers;
     }
 
-    /**
-     * Creates warning text about concurent streamer updates that are inconsistent-by-nature.
-     */
-    private static String streamedCachesWrn() {
-        return "DataStreamer with property 'alowOverwrite' set to `false` was working during the snapshot creation. " +
-            "Such streaming updates are inconsistent by nature and should be successfully finished before data " +
-            "usage. Snapshot might not be entirely restored. However, you would be able to restore the caches which " +
-            "were not streamed into.";
-    }
-
     /** Snapshot operation handlers. */
     protected static class SnapshotHandlers {
         /** Snapshot operation handlers. */
@@ -3480,6 +3468,18 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
         /** @return Request ID. */
         public UUID requestId() {
             return rqId;
+        }
+
+        /** Saves snapshot operation {@code newWarnings}. */
+        public void acceptWarnings(UUID nodeId, List<String> newWarnings) {
+            warnings.compute(nodeId, (nodeKey, storedWrns) -> {
+                if (storedWrns == null)
+                    storedWrns = new ArrayList<>();
+
+                storedWrns.addAll(newWarnings);
+
+                return storedWrns;
+            });
         }
     }
 
