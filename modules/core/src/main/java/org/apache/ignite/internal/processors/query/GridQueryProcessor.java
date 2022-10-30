@@ -36,6 +36,7 @@ import java.util.concurrent.ConcurrentMap;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
+import java.util.stream.Collectors;
 import javax.cache.Cache;
 import javax.cache.CacheException;
 import org.apache.ignite.IgniteCheckedException;
@@ -94,6 +95,7 @@ import org.apache.ignite.internal.processors.cache.query.IgniteQueryErrorCode;
 import org.apache.ignite.internal.processors.cache.query.IndexQueryDesc;
 import org.apache.ignite.internal.processors.cache.query.SqlFieldsQueryEx;
 import org.apache.ignite.internal.processors.cacheobject.IgniteCacheObjectProcessor;
+import org.apache.ignite.internal.processors.odbc.jdbc.JdbcParameterMeta;
 import org.apache.ignite.internal.processors.platform.PlatformContext;
 import org.apache.ignite.internal.processors.platform.PlatformProcessor;
 import org.apache.ignite.internal.processors.query.aware.IndexBuildStatusStorage;
@@ -2888,6 +2890,18 @@ public class GridQueryProcessor extends GridProcessorAdapter {
     }
 
     /**
+     * @throws IgniteException If indexing is disabled.
+     */
+    private void checkxModuleEnabled() throws IgniteException {
+        if (!moduleEnabled()) {
+            throw new IgniteException("Failed to execute query because indexing is disabled and no query engine is " +
+                "configured (consider adding module " + INDEXING.module() + " to classpath or moving it " +
+                "from 'optional' to 'libs' folder or configuring any query engine with " +
+                "IgniteConfiguration.SqlConfiguration.QueryEnginesConfiguration property).");
+        }
+    }
+
+    /**
      * Execute update on DHT node (i.e. when it is possible to execute and update on all nodes independently).
      *
      * @param cctx Cache context.
@@ -3054,12 +3068,7 @@ public class GridQueryProcessor extends GridProcessorAdapter {
         GridCacheQueryType qryType,
         @Nullable final GridQueryCancel cancel
     ) {
-        if (!moduleEnabled()) {
-            throw new IgniteException("Failed to execute query because indexing is disabled and no query engine is " +
-                "configured (consider adding module " + INDEXING.module() + " to classpath or moving it " +
-                "from 'optional' to 'libs' folder or configuring any query engine with " +
-                "IgniteConfiguration.SqlConfiguration.QueryEnginesConfiguration property).");
-        }
+        checkxModuleEnabled();
 
         if (qry.isDistributedJoins() && qry.getPartitions() != null)
             throw new CacheException("Using both partitions and distributed JOINs is not supported for the same query");
@@ -3118,6 +3127,62 @@ public class GridQueryProcessor extends GridProcessorAdapter {
                 };
 
             return executeQuery(qryType, qry.getSql(), cctx, clo, true);
+        });
+    }
+
+    /** */
+    public List<JdbcParameterMeta> parameterMetaData(
+        final SqlFieldsQuery qry,
+        @Nullable final SqlClientContext cliCtx
+    ) {
+        checkxModuleEnabled();
+
+        return executeQuerySafe(null, () -> {
+            final String schemaName = qry.getSchema() == null ? QueryUtils.DFLT_SCHEMA : qry.getSchema();
+
+            QueryEngine qryEngine = engineForQuery(cliCtx, qry);
+
+            if (qryEngine != null) {
+                List<List<GridQueryFieldMetadata>> meta = qryEngine.parameterMetaData(
+                    QueryContext.of(qry, cliCtx),
+                    schemaName,
+                    qry.getSql());
+
+                return meta.stream()
+                    .flatMap(m -> m.stream().map(JdbcParameterMeta::new))
+                    .collect(Collectors.toList());
+            }
+            else
+                return idx.parameterMetaData(schemaName, qry);
+
+        });
+    }
+
+    /** */
+    public List<GridQueryFieldMetadata> resultSetMetaData(
+        final SqlFieldsQuery qry,
+        @Nullable final SqlClientContext cliCtx
+    ) {
+        checkxModuleEnabled();
+
+        return executeQuerySafe(null, () -> {
+            final String schemaName = qry.getSchema() == null ? QueryUtils.DFLT_SCHEMA : qry.getSchema();
+
+            QueryEngine qryEngine = engineForQuery(cliCtx, qry);
+
+            if (qryEngine != null) {
+                List<List<GridQueryFieldMetadata>> meta = qryEngine.resultSetMetaData(
+                    QueryContext.of(qry, cliCtx),
+                    schemaName,
+                    qry.getSql());
+
+                if (meta.size() == 1)
+                    return meta.get(0);
+
+                return null;
+            }
+            else
+                return idx.resultMetaData(schemaName, qry);
         });
     }
 
@@ -3955,6 +4020,16 @@ public class GridQueryProcessor extends GridProcessorAdapter {
             return;
 
         desc.validateKeyAndValue(key, val);
+    }
+
+    /**
+     * Performs necessary actions on disconnect of a stateful client (say, one associated with a transaction).
+     *
+     * @throws IgniteCheckedException If failed.
+     */
+    public void onClientDisconnect() throws IgniteCheckedException {
+        if (idx != null)
+            idx.onClientDisconnect();
     }
 
     /**
