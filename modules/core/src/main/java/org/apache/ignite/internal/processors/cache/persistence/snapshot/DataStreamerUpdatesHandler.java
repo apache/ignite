@@ -17,12 +17,17 @@
 
 package org.apache.ignite.internal.processors.cache.persistence.snapshot;
 
+import java.util.Collection;
+import java.util.List;
+import java.util.UUID;
+import java.util.stream.Collectors;
+
 import static org.apache.ignite.internal.processors.cache.persistence.snapshot.SnapshotHandlerType.CREATE;
 
 /**
  * Snapshot haldler that collects and registers snapshot operation warning.
  */
-public class DataStreamerUpdatesHandler implements SnapshotHandler<SnapshotCreationWarning> {
+public class DataStreamerUpdatesHandler implements SnapshotHandler<Boolean> {
     /** */
     private static final String WRN_MSG = "DataStreamer with property 'alowOverwrite' set to `false` was working " +
         "during the snapshot creation. Such streaming updates are inconsistent by nature and should be successfully " +
@@ -34,12 +39,21 @@ public class DataStreamerUpdatesHandler implements SnapshotHandler<SnapshotCreat
         return CREATE;
     }
 
-    /**
-     * {@inheritDoc}
-     */
-    @Override public SnapshotCreationWarning invoke(SnapshotHandlerContext ctx) {
+    /** {@inheritDoc} */
+    @Override public Boolean invoke(SnapshotHandlerContext ctx) {
         assert ctx.createSnpFut() != null;
 
-        return ctx.createSnpFut().streamUpdates() ? new SnapshotCreationWarning(WRN_MSG) : null;
+        return ctx.createSnpFut().streamUpdates();
+    }
+
+    /** {@inheritDoc} */
+    @Override public void complete(String name,
+        Collection<SnapshotHandlerResult<Boolean>> results) throws SnapshotHandlerWarningException, Exception {
+        List<UUID> nodes = results.stream().filter(SnapshotHandlerResult::data).map(r -> r.node().id())
+            .collect(Collectors.toList());
+
+        if (!nodes.isEmpty())
+            throw new SnapshotHandlerWarningException(WRN_MSG + " Streaming updates detected on nodes: " + nodes.stream()
+                .map(UUID::toString).collect(Collectors.joining(",")));
     }
 }

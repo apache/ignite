@@ -20,12 +20,15 @@ package org.apache.ignite.internal.processors.cache.persistence.snapshot;
 import org.apache.ignite.IgniteCheckedException;
 
 /**
- * Warning result of {@link SnapshotHandler}. The warnings do not interrupt snapshot operation but raise exception
- * at the end to make the operation status 'not OK'.
+ * Snapshot operation warning. Warnings do not interrupt snapshot process but raise exception at the end to make the
+ * operation status 'not OK' if no other errors occured.
  */
-public class SnapshotCreationWarning extends IgniteCheckedException {
+public class SnapshotHandlerWarningException extends IgniteCheckedException {
+    /** Serialization version. */
+    private static final long serialVersionUID = 0L;
+
     /** */
-    public SnapshotCreationWarning(String wrnMsg) {
+    public SnapshotHandlerWarningException(String wrnMsg) {
         super(wrnMsg);
     }
 }

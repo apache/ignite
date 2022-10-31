@@ -45,8 +45,7 @@ public interface SnapshotHandler<T> extends Extension {
      *
      * @param ctx Snapshot handler context.
      * @return Result of local processing. This result will be returned in {@link SnapshotHandlerResult#data()} method
-     * passed into {@link #complete(String, Collection)} handler method. Can return {@link SnapshotCreationWarning}
-     * to produce snapshot operation warning.
+     * passed into {@link #complete(String, Collection)} handler method.
      * @throws Exception If invocation caused an exception. This exception will be returned in {@link
      *                   SnapshotHandlerResult#error()}} method passed into {@link #complete(String, Collection)} handler method.
      */
@@ -62,10 +61,12 @@ public interface SnapshotHandler<T> extends Extension {
      *
      * @param name Snapshot name.
      * @param results Results from all nodes.
+     * @throws SnapshotHandlerWarningException If the snapshot operation warning occured.
      * @throws Exception If the snapshot operation needs to be aborted.
      * @see SnapshotHandlerResult
      */
-    public default void complete(String name, Collection<SnapshotHandlerResult<T>> results) throws Exception {
+    public default void complete(String name, Collection<SnapshotHandlerResult<T>> results)
+        throws SnapshotHandlerWarningException, Exception {
         for (SnapshotHandlerResult<T> res : results) {
             if (res.error() == null)
                 continue;

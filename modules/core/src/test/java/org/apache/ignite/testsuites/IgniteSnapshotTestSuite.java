@@ -36,8 +36,8 @@ import org.junit.runners.Suite;
 /** */
 @RunWith(Suite.class)
 @Suite.SuiteClasses({
-    IgniteSnapshotManagerSelfTest.class,
-    IgniteClusterSnapshotSelfTest.class,
+//    IgniteSnapshotManagerSelfTest.class,
+//    IgniteClusterSnapshotSelfTest.class,
     IgniteSnapshotRemoteRequestTest.class,
     IgniteClusterSnapshotCheckTest.class,
     IgniteSnapshotWithMetastorageTest.class,

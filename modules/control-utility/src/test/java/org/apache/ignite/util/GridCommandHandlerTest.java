@@ -104,7 +104,7 @@ import org.apache.ignite.internal.processors.cache.persistence.snapshot.IgniteSn
 import org.apache.ignite.internal.processors.cache.persistence.snapshot.SnapshotHandler;
 import org.apache.ignite.internal.processors.cache.persistence.snapshot.SnapshotHandlerContext;
 import org.apache.ignite.internal.processors.cache.persistence.snapshot.SnapshotHandlerType;
-import org.apache.ignite.internal.processors.cache.persistence.snapshot.SnapshotCreationWarning;
+import org.apache.ignite.internal.processors.cache.persistence.snapshot.SnapshotHandlerWarningException;
 import org.apache.ignite.internal.processors.cache.transactions.IgniteInternalTx;
 import org.apache.ignite.internal.processors.cache.transactions.IgniteTxEntry;
 import org.apache.ignite.internal.processors.cache.transactions.TransactionProxyImpl;
@@ -3093,15 +3093,15 @@ public class GridCommandHandlerTest extends GridCommandHandlerClusterPerMethodAb
                 super.initExtensions(ctx, registry);
 
                 // Simulates Datastreamer check warning.
-                registry.registerExtension(SnapshotHandler.class, new SnapshotHandler<SnapshotCreationWarning>() {
+                registry.registerExtension(SnapshotHandler.class, new SnapshotHandler<SnapshotHandlerWarningException>() {
                     /** {@inheritDoc} */
                     @Override public SnapshotHandlerType type() {
                         return SnapshotHandlerType.CREATE;
                     }
 
                     /** {@inheritDoc} */
-                    @Nullable @Override public SnapshotCreationWarning invoke(SnapshotHandlerContext ctx) {
-                        return new SnapshotCreationWarning(targetMsg);
+                    @Nullable @Override public SnapshotHandlerWarningException invoke(SnapshotHandlerContext ctx) {
+                        return new SnapshotHandlerWarningException(targetMsg);
                     }
                 });
             }
@@ -3139,7 +3139,7 @@ public class GridCommandHandlerTest extends GridCommandHandlerClusterPerMethodAb
 
         assertEquals(EXIT_CODE_UNEXPECTED_ERROR, code);
 
-        assertTrue("Snapshot inconsistency warning not found.", wrnFound.get());
+        assertTrue("Snapshot operation warning not found.", wrnFound.get());
     }
 
     /**
