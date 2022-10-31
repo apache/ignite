@@ -942,5 +942,10 @@ public class GridTransactionsSystemUserTimeMetricsTest extends GridCommonAbstrac
         @Override public void addConsoleAppender() {
             impl.addConsoleAppender();
         }
+
+        /** {@inheritDoc} */
+        @Override public void flush() {
+            impl.flush();
+        }
     }
 }

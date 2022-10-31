@@ -247,7 +247,12 @@ public class SensitiveInfoTestLoggerProxy implements IgniteLogger, LifecycleAwar
 
     /** {@inheritDoc} */
     @Override public void addConsoleAppender() {
-        throw new UnsupportedOperationException("Unsupported operation!");
+        impl.addConsoleAppender();
+    }
+
+    /** {@inheritDoc} */
+    @Override public void flush() {
+        impl.flush();
     }
 
     /** {@inheritDoc} */

@@ -170,6 +170,11 @@ public class PlatformLogger implements IgniteLogger {
         throw new UnsupportedOperationException("Unsupported operation!");
     }
 
+    /** {@inheritDoc} */
+    @Override public void flush() {
+        // No-op.
+    }
+
     /**
      * Sets the gateway.
      *

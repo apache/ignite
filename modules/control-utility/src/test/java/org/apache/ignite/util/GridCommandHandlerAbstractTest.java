@@ -26,10 +26,8 @@ import java.nio.file.DirectoryStream;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.Collection;
 import java.util.List;
-import java.util.logging.Handler;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 import java.util.stream.Collectors;
@@ -351,10 +349,7 @@ public abstract class GridCommandHandlerAbstractTest extends GridCommonAbstractT
         lastOperationResult = hnd.getLastOperationResult();
 
         // Flush all Logger handlers to make log data available to test.
-        IgniteLogger logger = U.field(hnd, "logger");
-
-        if (logger instanceof JavaLogger)
-            Arrays.stream(((JavaLogger)logger).implementation().getHandlers()).forEach(Handler::flush);
+        U.<IgniteLogger>field(hnd, "logger").flush();
 
         return exitCode;
     }

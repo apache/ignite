@@ -107,6 +107,11 @@ public class NullLogger implements IgniteLogger {
     }
 
     /** {@inheritDoc} */
+    @Override public void flush() {
+        // No-op.
+    }
+
+    /** {@inheritDoc} */
     @Override public String toString() {
         return S.toString(NullLogger.class, this);
     }

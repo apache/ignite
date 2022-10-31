@@ -225,8 +225,9 @@ public interface IgniteLogger {
      */
     String fileName();
 
-    /**
-     * Adds console appender to the logger.
-     */
+    /** Adds console appender to the logger. */
     void addConsoleAppender();
+
+    /** Flush any buffered output. */
+    void flush();
 }

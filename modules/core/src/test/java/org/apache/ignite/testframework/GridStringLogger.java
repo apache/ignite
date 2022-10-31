@@ -194,6 +194,11 @@ public class GridStringLogger implements IgniteLogger {
         // No-op.
     }
 
+    /** {@inheritDoc} */
+    @Override public void flush() {
+        // No-op.
+    }
+
     /**
      * Resets logger.
      */

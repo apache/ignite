@@ -32,7 +32,6 @@ import java.util.List;
 import java.util.Set;
 import java.util.concurrent.ThreadLocalRandom;
 import java.util.concurrent.atomic.AtomicLong;
-import java.util.logging.Handler;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 import java.util.stream.Collectors;
@@ -63,7 +62,6 @@ import org.apache.ignite.internal.util.lang.IgnitePair;
 import org.apache.ignite.internal.util.typedef.internal.A;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgniteBiTuple;
-import org.apache.ignite.logger.java.JavaLogger;
 import org.apache.ignite.util.GridCommandHandlerAbstractTest;
 import org.jetbrains.annotations.Nullable;
 import org.junit.Test;
@@ -724,7 +722,7 @@ public class IgniteIndexReaderTest extends GridCommandHandlerAbstractTest {
      * @param workDir Work directory.
      * @param cacheGrp Cache group name.
      * @param idxs Indexes to check.
-     * @param checkParts Whether to check cache data tree in partitions..
+     * @param checkParts Whether to check cache data tree in partitions.
      * @return Index reader output.
      * @throws IgniteCheckedException If failed.
      */
@@ -756,9 +754,7 @@ public class IgniteIndexReaderTest extends GridCommandHandlerAbstractTest {
             reader.readIndex();
         }
 
-        // Flush all Logger handlers to make log data available to test.
-        if (logger instanceof JavaLogger)
-            Arrays.stream(((JavaLogger)logger).implementation().getHandlers()).forEach(Handler::flush);
+        logger.flush();
 
         return testOut.toString();
     }

@@ -280,6 +280,11 @@ public class Log4J2Logger implements IgniteLogger, LoggerNodeIdAndApplicationAwa
         throw new UnsupportedOperationException("Unsupported operation!");
     }
 
+    /** {@inheritDoc} */
+    @Override public void flush() {
+        throw new UnsupportedOperationException("Unsupported operation!");
+    }
+
     /**
      * Normalizes given path for windows.
      * Log4j2 doesn't replace unix directory delimiters which used at 'fileName' to windows.

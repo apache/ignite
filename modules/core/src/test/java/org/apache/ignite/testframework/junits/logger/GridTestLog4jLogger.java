@@ -302,6 +302,11 @@ public class GridTestLog4jLogger implements IgniteLogger, LoggerNodeIdAndApplica
         throw new UnsupportedOperationException("Unsupported operation!");
     }
 
+    /** {@inheritDoc} */
+    @Override public void flush() {
+        throw new UnsupportedOperationException("Unsupported operation!");
+    }
+
     /**
      * Adds console appender when needed with some default logging settings.
      *

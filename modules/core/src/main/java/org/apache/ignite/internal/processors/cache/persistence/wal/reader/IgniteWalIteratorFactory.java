@@ -770,5 +770,10 @@ public class IgniteWalIteratorFactory {
         @Override public void addConsoleAppender() {
             // No-op.
         }
+
+        /** {@inheritDoc} */
+        @Override public void flush() {
+            // No-op.
+        }
     }
 }
