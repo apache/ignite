@@ -592,7 +592,8 @@ public class LogicalRelImplementor<Row> implements IgniteRelVisitor<Node<Row>> {
             rel.getRowType(),
             ImmutableBitSet.of(rel.keys()),
             filter,
-            searchRow
+            searchRow,
+            rel.allowNulls()
         );
 
         Node<Row> input = visit(rel.getInput());

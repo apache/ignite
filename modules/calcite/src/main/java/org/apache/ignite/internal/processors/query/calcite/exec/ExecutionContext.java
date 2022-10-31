@@ -53,6 +53,9 @@ public class ExecutionContext<Row> extends AbstractQueryContext implements DataC
     /** Placeholder for values, which expressions is not specified. */
     private static final Object UNSPECIFIED_VALUE = new Object();
 
+    /** Placeholder for NULL values in search bounds. */
+    private static final Object NULL_BOUND = new Object();
+
     /** */
     private final UUID qryId;
 
@@ -308,6 +311,11 @@ public class ExecutionContext<Row> extends AbstractQueryContext implements DataC
     /** */
     public Object unspecifiedValue() {
         return UNSPECIFIED_VALUE;
+    }
+
+    /** */
+    public Object nullBound() {
+        return NULL_BOUND;
     }
 
     /** {@inheritDoc} */
