@@ -103,6 +103,7 @@ import org.apache.ignite.internal.processors.cache.persistence.snapshot.DataStre
 import org.apache.ignite.internal.processors.cache.persistence.snapshot.IgniteSnapshotManager;
 import org.apache.ignite.internal.processors.cache.persistence.snapshot.SnapshotHandler;
 import org.apache.ignite.internal.processors.cache.persistence.snapshot.SnapshotHandlerContext;
+import org.apache.ignite.internal.processors.cache.persistence.snapshot.SnapshotHandlerResult;
 import org.apache.ignite.internal.processors.cache.persistence.snapshot.SnapshotHandlerType;
 import org.apache.ignite.internal.processors.cache.persistence.snapshot.SnapshotHandlerWarningException;
 import org.apache.ignite.internal.processors.cache.transactions.IgniteInternalTx;
@@ -3093,15 +3094,21 @@ public class GridCommandHandlerTest extends GridCommandHandlerClusterPerMethodAb
                 super.initExtensions(ctx, registry);
 
                 // Simulates Datastreamer check warning.
-                registry.registerExtension(SnapshotHandler.class, new SnapshotHandler<SnapshotHandlerWarningException>() {
+                registry.registerExtension(SnapshotHandler.class, new SnapshotHandler<Void>() {
                     /** {@inheritDoc} */
                     @Override public SnapshotHandlerType type() {
                         return SnapshotHandlerType.CREATE;
                     }
 
                     /** {@inheritDoc} */
-                    @Nullable @Override public SnapshotHandlerWarningException invoke(SnapshotHandlerContext ctx) {
-                        return new SnapshotHandlerWarningException(targetMsg);
+                    @Override public void complete(String name,
+                        Collection<SnapshotHandlerResult<Void>> results) throws SnapshotHandlerWarningException, Exception {
+                        throw new SnapshotHandlerWarningException(targetMsg);
+                    }
+
+                    /** {@inheritDoc} */
+                    @Nullable @Override public Void invoke(SnapshotHandlerContext ctx) {
+                        return null;
                     }
                 });
             }
