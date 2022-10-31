@@ -117,6 +117,8 @@ public class StdSqlOperatorsTest extends AbstractBasicIntegrationTest {
         assertExpression("1=1 IS NOT TRUE").returns(false).check();
         assertExpression("1=1 IS FALSE").returns(false).check();
         assertExpression("1=1 IS NOT FALSE").returns(true).check();
+        assertExpression("NULL IS DISTINCT FROM NULL").returns(false).check();
+        assertExpression("NULL IS NOT DISTINCT FROM NULL").returns(true).check();
     }
 
     /** */

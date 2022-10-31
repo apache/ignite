@@ -106,7 +106,6 @@ import org.apache.ignite.internal.processors.cache.persistence.IgniteCacheDataba
 import org.apache.ignite.internal.processors.odbc.ClientListenerProcessor;
 import org.apache.ignite.internal.processors.port.GridPortRecord;
 import org.apache.ignite.internal.util.GridBusyLock;
-import org.apache.ignite.internal.util.IgniteUtils;
 import org.apache.ignite.internal.util.future.GridFutureAdapter;
 import org.apache.ignite.internal.util.lang.GridAbsClosure;
 import org.apache.ignite.internal.util.lang.GridAbsPredicate;
@@ -1298,9 +1297,14 @@ public final class GridTestUtils {
         String igniteHome = U.getIgniteHome();
 
         if (F.isEmpty(igniteHome)) {
+            // We failed to automatically resolve IGNITE_HOME. This can happen if Ignite Test Framework is used as a
+            // library in some external project. Let's forcibly set IGNITE_HOME to the user's working directory.
+            // Setting the IGNITE_HOME system property is crucial because Ignite Test Logging system relies on it
+            // to resolve log file paths.
             igniteHome = new File(System.getProperty("user.dir"), "ignite").getAbsolutePath();
 
-            IgniteUtils.setIgniteHome(igniteHome);
+            U.nullifyHomeDirectory();
+            U.setIgniteHome(igniteHome);
 
             U.warn(null, '"' + IGNITE_HOME + "\" system property was automatically set to " + igniteHome);
         }
