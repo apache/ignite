@@ -165,6 +165,11 @@ public class PlatformLogger implements IgniteLogger {
         return null;
     }
 
+    /** {@inheritDoc} */
+    @Override public void addConsoleAppender() {
+        throw new UnsupportedOperationException("Unsupported operation!");
+    }
+
     /**
      * Sets the gateway.
      *

@@ -169,6 +169,11 @@ public class JclLogger implements IgniteLogger {
     }
 
     /** {@inheritDoc} */
+    @Override public void addConsoleAppender() {
+        throw new UnsupportedOperationException("Unsupported operation!");
+    }
+
+    /** {@inheritDoc} */
     @Override public String toString() {
         return "JclLogger [impl=" + impl + ']';
     }

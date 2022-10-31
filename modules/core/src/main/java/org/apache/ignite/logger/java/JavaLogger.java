@@ -24,9 +24,12 @@ import java.net.URL;
 import java.util.UUID;
 import java.util.logging.ConsoleHandler;
 import java.util.logging.FileHandler;
+import java.util.logging.Formatter;
 import java.util.logging.Handler;
 import java.util.logging.LogManager;
+import java.util.logging.LogRecord;
 import java.util.logging.Logger;
+import java.util.logging.StreamHandler;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.internal.logger.LoggerNodeIdAndApplicationAware;
@@ -360,6 +363,15 @@ public class JavaLogger implements IgniteLogger, LoggerNodeIdAndApplicationAware
         FileHandler fileHnd = findHandler(impl, FileHandler.class);
 
         return fileName(fileHnd);
+    }
+
+    /** {@inheritDoc} */
+    @Override public void addConsoleAppender() {
+        impl.addHandler(new StreamHandler(System.out, new Formatter() {
+            @Override public String format(LogRecord record) {
+                return record.getMessage() + "\n";
+            }
+        }));
     }
 
     /**

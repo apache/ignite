@@ -189,6 +189,11 @@ public class GridStringLogger implements IgniteLogger {
         return null;
     }
 
+    /** {@inheritDoc} */
+    @Override public void addConsoleAppender() {
+        // No-op.
+    }
+
     /**
      * Resets logger.
      */

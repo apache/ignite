@@ -297,6 +297,11 @@ public class GridTestLog4jLogger implements IgniteLogger, LoggerNodeIdAndApplica
         return fapp != null ? fapp.getFileName() : null;
     }
 
+    /** {@inheritDoc} */
+    @Override public void addConsoleAppender() {
+        throw new UnsupportedOperationException("Unsupported operation!");
+    }
+
     /**
      * Adds console appender when needed with some default logging settings.
      *

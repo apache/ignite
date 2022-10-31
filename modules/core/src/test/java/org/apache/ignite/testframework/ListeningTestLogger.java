@@ -209,6 +209,11 @@ public class ListeningTestLogger implements IgniteLogger {
         return null;
     }
 
+    /** {@inheritDoc} */
+    @Override public void addConsoleAppender() {
+        echo.addConsoleAppender();
+    }
+
     /**
      * Applies listeners whose pattern is found in the message.
      *

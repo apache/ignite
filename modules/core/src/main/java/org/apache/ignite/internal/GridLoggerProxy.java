@@ -113,6 +113,11 @@ public class GridLoggerProxy implements IgniteLogger, LifecycleAware, Externaliz
     }
 
     /** {@inheritDoc} */
+    @Override public void addConsoleAppender() {
+        impl.addConsoleAppender();
+    }
+
+    /** {@inheritDoc} */
     @Override public void trace(String msg) {
         impl.trace(enrich(msg));
     }
