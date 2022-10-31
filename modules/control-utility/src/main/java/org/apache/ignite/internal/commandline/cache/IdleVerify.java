@@ -57,6 +57,7 @@ import org.apache.ignite.internal.visor.verify.VisorIdleVerifyTaskArg;
 import org.apache.ignite.internal.visor.verify.VisorIdleVerifyTaskResult;
 import org.apache.ignite.internal.visor.verify.VisorIdleVerifyTaskV2;
 import org.apache.ignite.lang.IgniteProductVersion;
+import org.apache.ignite.logger.java.JavaLoggerFileHandler;
 
 import static java.lang.String.format;
 import static org.apache.ignite.internal.commandline.CommandLogger.optional;
@@ -341,7 +342,7 @@ public class IdleVerify extends AbstractCommand<IdleVerify.Arguments> {
             return;
 
         try {
-            File f = new File(U.resolveWorkDirectory(U.defaultWorkDirectory(), "", false),
+            File f = new File(JavaLoggerFileHandler.logDirectory(U.defaultWorkDirectory()),
                 IDLE_VERIFY_FILE_PREFIX + LocalDateTime.now().format(TIME_FORMATTER) + ".txt");
 
             try (PrintWriter pw = new PrintWriter(f)) {
