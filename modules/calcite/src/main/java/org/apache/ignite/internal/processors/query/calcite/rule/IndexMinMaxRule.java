@@ -58,7 +58,7 @@ public class IndexMinMaxRule extends RelRule<IndexMinMaxRule.Config> {
                 aggr.getAggCallList().stream().filter(a -> a.getAggregation().getKind() == SqlKind.MIN
                     || a.getAggregation().getKind() == SqlKind.MAX).count() != 1 ||
                 idx.collation().getFieldCollations().isEmpty() ||
-                idx.collation().getFieldCollations().get(0).getFieldIndex() != idxScan.requiredColumns().asList().get(0)
+                idx.collation().getFieldCollations().get(0).getFieldIndex() != idxScan.requiredColumns().nextSetBit(0)
         )
             return;
 

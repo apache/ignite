@@ -125,7 +125,7 @@ public class InlineIndexImpl extends AbstractIndex implements InlineIndex {
     }
 
     /**
-     * Takes only one not-null-valued first or last index record.
+     * Takes only one first or last index record.
      */
     public GridCursor<IndexRow> takeFirstOrLast(IndexQueryContext qryCtx, boolean first) throws IgniteCheckedException {
         lock.readLock().lock();
@@ -675,18 +675,17 @@ public class InlineIndexImpl extends AbstractIndex implements InlineIndex {
 
     /** First-only, single-value-only segmented cursor. */
     private static class FirstSegmentSingleValueIndexCursor extends SegmentedIndexCursor {
-        /**
-         * @param cursors
-         * @param idxDef
-         */
+        /** Ctor. */
         FirstSegmentSingleValueIndexCursor(
-            GridCursor<IndexRow>[] cursors, SortedIndexDefinition idxDef) throws IgniteCheckedException {
+            GridCursor<IndexRow>[] cursors,
+            SortedIndexDefinition idxDef
+        ) throws IgniteCheckedException {
             super(cursors, idxDef);
         }
 
         /** {@inheritDoc} */
-        @Override protected Queue<GridCursor<IndexRow>> cursorsQueue(
-            GridCursor<IndexRow>[] cursors) throws IgniteCheckedException {
+        @Override protected Queue<GridCursor<IndexRow>> cursorsQueue(GridCursor<IndexRow>[] cursors)
+            throws IgniteCheckedException {
             Queue<GridCursor<IndexRow>> srcQueue = super.cursorsQueue(cursors);
 
             if (!srcQueue.isEmpty()) {

@@ -37,7 +37,6 @@ import org.apache.calcite.rel.type.RelDataType;
 import org.apache.calcite.rex.RexBuilder;
 import org.apache.calcite.rex.RexLiteral;
 import org.apache.calcite.rex.RexNode;
-import org.apache.calcite.sql.fun.SqlStdOperatorTable;
 import org.apache.calcite.util.ImmutableBitSet;
 import org.apache.ignite.internal.processors.failure.FailureProcessor;
 import org.apache.ignite.internal.processors.query.calcite.exec.RowHandler.RowFactory;
@@ -441,8 +440,7 @@ public class LogicalRelImplementor<Row> implements IgniteRelVisitor<Node<Row>> {
             Iterable<Row> rowsIter = tbl.scan(
                 ctx,
                 grp,
-                expressionFactory.predicate(b.makeCall(SqlStdOperatorTable.IS_NOT_NULL,
-                    b.makeLocalRef(rowType.getFieldList().get(0).getType(), 0)), rowType),
+                r -> ctx.rowHandler().get(0, r) != null,
                 null,
                 idxBndRel.requiredColumns()
             );

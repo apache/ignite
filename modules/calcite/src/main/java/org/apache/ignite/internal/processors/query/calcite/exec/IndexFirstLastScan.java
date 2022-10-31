@@ -16,6 +16,7 @@
  */
 package org.apache.ignite.internal.processors.query.calcite.exec;
 
+import java.util.List;
 import org.apache.calcite.util.ImmutableBitSet;
 import org.apache.calcite.util.ImmutableIntList;
 import org.apache.ignite.IgniteCheckedException;
@@ -24,10 +25,15 @@ import org.apache.ignite.internal.cache.query.index.sorted.IndexKeyType;
 import org.apache.ignite.internal.cache.query.index.sorted.IndexRow;
 import org.apache.ignite.internal.cache.query.index.sorted.inline.IndexQueryContext;
 import org.apache.ignite.internal.cache.query.index.sorted.inline.InlineIndexImpl;
+import org.apache.ignite.internal.cache.query.index.sorted.inline.InlineIndexKeyType;
+import org.apache.ignite.internal.cache.query.index.sorted.inline.io.InlineIO;
+import org.apache.ignite.internal.cache.query.index.sorted.keys.IndexKey;
+import org.apache.ignite.internal.cache.query.index.sorted.keys.NullIndexKey;
 import org.apache.ignite.internal.processors.cache.persistence.tree.BPlusTree;
 import org.apache.ignite.internal.processors.cache.persistence.tree.io.BPlusIO;
 import org.apache.ignite.internal.processors.query.calcite.schema.CacheTableDescriptor;
 import org.apache.ignite.internal.util.lang.GridCursor;
+import org.apache.ignite.internal.util.typedef.F;
 import org.jetbrains.annotations.Nullable;
 
 /**
@@ -43,13 +49,15 @@ public class IndexFirstLastScan<Row> extends IndexScan<Row> {
      * @param parts Mapping from index keys to row fields.
      * @param requiredColumns Required columns.
      */
-    public IndexFirstLastScan(boolean first,
+    public IndexFirstLastScan(
+        boolean first,
         ExecutionContext<Row> ectx,
         CacheTableDescriptor desc,
         InlineIndexImpl idx,
         ImmutableIntList idxFieldMapping,
         int[] parts,
-        @Nullable ImmutableBitSet requiredColumns) {
+        @Nullable ImmutableBitSet requiredColumns
+    ) {
         super(ectx, desc, new FirstLastIndexWrapper(idx, first), idxFieldMapping, parts, null, null, null,
             requiredColumns);
     }
@@ -60,14 +68,23 @@ public class IndexFirstLastScan<Row> extends IndexScan<Row> {
 
         BPlusTree.TreeRowClosure<IndexRow, IndexRow> f = res.rowFilter();
 
+        List<InlineIndexKeyType> inlineKeyTypes = idx.segment(0).rowHandler().inlineIndexKeyTypes();
+
+        InlineIndexKeyType keyType = F.isEmpty(inlineKeyTypes) ? null : inlineKeyTypes.get(0);
+
         return new IndexQueryContext(res.cacheFilter(), new BPlusTree.TreeRowClosure<IndexRow, IndexRow>() {
-            /**
-             * {@inheritDoc}
-             */
+            /** {@inheritDoc} */
             @Override public boolean apply(BPlusTree<IndexRow, IndexRow> tree, BPlusIO<IndexRow> io, long pageAddr,
                 int idx) throws IgniteCheckedException {
                 if (f != null && !f.apply(tree, io, pageAddr, idx))
                     return false;
+
+                if (keyType != null && io instanceof InlineIO) {
+                    IndexKey key = keyType.get(pageAddr, io.offset(idx), ((InlineIO)io).inlineSize());
+
+                    if (key != null)
+                        return key != NullIndexKey.INSTANCE;
+                }
 
                 return io.getLookupRow(tree, pageAddr, idx).key(0).type() != IndexKeyType.NULL;
             }
@@ -89,8 +106,13 @@ public class IndexFirstLastScan<Row> extends IndexScan<Row> {
         }
 
         /** {@inheritDoc} */
-        @Override public GridCursor<IndexRow> find(IndexRow lower, IndexRow upper, boolean lowerInclude,
-            boolean upperInclude, IndexQueryContext qctx) {
+        @Override public GridCursor<IndexRow> find(
+            IndexRow lower,
+            IndexRow upper,
+            boolean lowerInclude,
+            boolean upperInclude,
+            IndexQueryContext qctx
+        ) {
             assert lower == null && upper == null;
             assert lowerInclude && upperInclude;
 

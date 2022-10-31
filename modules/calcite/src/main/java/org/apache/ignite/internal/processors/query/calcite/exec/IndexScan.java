@@ -86,7 +86,7 @@ public class IndexScan<Row> extends AbstractIndexScan<Row, IndexRow> {
     private final ImmutableBitSet requiredColumns;
 
     /** */
-    private final InlineIndex idx;
+    protected final InlineIndex idx;
 
     /** Mapping from index keys to row fields. */
     private final ImmutableIntList idxFieldMapping;
