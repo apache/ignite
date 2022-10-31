@@ -1197,6 +1197,7 @@ public abstract class DynamicIndexAbstractBasicSelfTest extends DynamicIndexAbst
      */
     @Test
     public void testNonSqlCache() throws Exception {
+        // Static index includes only '_KEY' column and does not contain primary key fields.
         extraIdxKeyFields = singletonList(F.t(KEY_FIELD_NAME, true));
 
         final QueryIndex idx = index(IDX_NAME_2, field(FIELD_NAME_1));
