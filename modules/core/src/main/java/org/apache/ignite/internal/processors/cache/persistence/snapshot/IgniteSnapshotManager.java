@@ -848,8 +848,6 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
 
                 log.info("Snapshot metafile has been created: " + smf.getAbsolutePath());
 
-                assert fut instanceof SnapshotFutureTask;
-
                 SnapshotHandlerContext ctx = new SnapshotHandlerContext(meta, req.groups(), (SnapshotFutureTask)fut,
                     cctx.localNode(), snpDir);
 
@@ -931,7 +929,7 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
      * Execute the {@link SnapshotHandler#complete(String, Collection)} method of the snapshot handlers asynchronously.
      *
      * @param req Request on snapshot creation.
-     * @param res Results.
+     * @param res Warnings if any occured.
      * @return Future that will be completed when the handlers are finished executing.
      */
     private IgniteInternalFuture<List<String>> completeHandlersAsyncIfNeeded(SnapshotOperationRequest req,
@@ -2229,7 +2227,7 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
             SnapshotHandler<?> dsCheck = new DataStreamerUpdatesHandler();
             handlers.computeIfAbsent(dsCheck.type(), v -> new ArrayList<>()).add((SnapshotHandler<Object>)dsCheck);
 
-            // Register system default page counters check that is used at the creation operation.
+            // Register system default page size and counters check that is used at the creation operation.
             SnapshotHandler<?> fastPartCheck = new SnapshotPartitionsFastVerifyHandler(ctx.cache().context());
             handlers.computeIfAbsent(dsCheck.type(), v -> new ArrayList<>()).add((SnapshotHandler<Object>)fastPartCheck);
 
@@ -2278,7 +2276,6 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
          * @param reqNodes Node IDs on which the handlers were executed.
          * @return Warnings list.
          * @throws Exception If failed.
-         * @see SnapshotHandlerWarningException
          */
         @SuppressWarnings({"rawtypes", "unchecked"})
         protected List<String> completeAll(

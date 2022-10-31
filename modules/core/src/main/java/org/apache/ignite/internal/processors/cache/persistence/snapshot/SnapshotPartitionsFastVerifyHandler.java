@@ -42,7 +42,7 @@ import static org.apache.ignite.internal.pagemem.PageIdAllocator.INDEX_PARTITION
 
 /**
  * Quick partitions verifier. Warns if partiton counters or size are different among the nodes. May be caused by
- * concurrent or canceled/failed DataStreamer.
+ * canceled/failed DataStreamer.
  */
 public class SnapshotPartitionsFastVerifyHandler extends AbstractSnapshotPartitionsVerifyHandler<Map.Entry<Long, Long>> {
     /** */

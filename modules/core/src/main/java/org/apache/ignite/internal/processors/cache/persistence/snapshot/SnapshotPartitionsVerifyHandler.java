@@ -51,9 +51,7 @@ import static org.apache.ignite.internal.processors.cache.verify.IdleVerifyUtili
  * Default snapshot restore handler for checking snapshot partitions consistency.
  */
 public class SnapshotPartitionsVerifyHandler extends AbstractSnapshotPartitionsVerifyHandler<PartitionHashRecordV2> {
-    /**
-     * @param cctx Shared context.
-     */
+    /**  @param cctx Shared context. */
     SnapshotPartitionsVerifyHandler(GridCacheSharedContext<?, ?> cctx) {
         super(cctx);
     }
@@ -98,8 +96,6 @@ public class SnapshotPartitionsVerifyHandler extends AbstractSnapshotPartitionsV
                 "state only: " + partState);
         }
 
-        // Snapshot partitions must always be in OWNING state.
-        // There is no `primary` partitions for snapshot.
         long updateCntr = io.getUpdateCounter(pageAddr);
         long size = io.getSize(pageAddr);
 
@@ -110,6 +106,8 @@ public class SnapshotPartitionsVerifyHandler extends AbstractSnapshotPartitionsV
                 + ", size=" + size + "]");
         }
 
+        // Snapshot partitions must always be in OWNING state.
+        // There is no `primary` partitions for snapshot.
         PartitionHashRecordV2 hash = calculatePartitionHash(partKey,
             updateCntr,
             hndCtx.metadata().consistentId(),

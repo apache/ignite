@@ -25,7 +25,7 @@ import java.util.stream.Collectors;
 import static org.apache.ignite.internal.processors.cache.persistence.snapshot.SnapshotHandlerType.CREATE;
 
 /**
- * Snapshot haldler that collects and registers snapshot operation warning.
+ * Snapshot haldler that monitor inconsistent-by-nature Datastreamer updates.
  */
 public class DataStreamerUpdatesHandler implements SnapshotHandler<Boolean> {
     /** */

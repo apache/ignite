@@ -149,7 +149,7 @@ class SnapshotFutureTask extends AbstractSnapshotFutureTask<Set<GroupPartitionId
     /** Processed snapshot size in bytes. */
     private final AtomicLong processedSize = new AtomicLong();
 
-    /** Flag of concurrent inconsistent-by-nature updates. */
+    /** Flag of concurrent inconsistent-by-nature Datastreamer updates. */
     private volatile boolean streamUpdates;
 
     /**
