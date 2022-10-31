@@ -321,6 +321,7 @@ The snapshot procedure has some limitations that you should be aware of before u
 * You can have only one snapshotting operation running at a time.
 * The snapshot operation is prohibited during a master key change and/or cache group key change.
 * The snapshot procedure is interrupted if a server node leaves the cluster.
+* Concurrent updates from link:../data-streaming.adoc#_limitations[DataStreamer] with default 'allowOverwrite' setting (false) can cause the caches under streaming load won't be restorable.
 
 If any of these limitations prevent you from using Apache Ignite, then select alternate snapshotting implementations for
 Ignite provided by enterprise vendors.

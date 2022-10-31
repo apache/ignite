@@ -31,6 +31,8 @@ import org.jetbrains.annotations.Nullable;
  * grantee data consistency between them.</li>
  * <li>Snapshot must be resorted manually on the switched off cluster by copying data
  * to the working directory on each cluster node.</li>
+ * <li>Concurrent updates from {@link IgniteDataStreamer} with default {@link IgniteDataStreamer#allowOverwrite()}
+ * setting (false) can cause the caches under streaming load won't be restorable.</li>
  * </ul>
  */
 public interface IgniteSnapshot {
