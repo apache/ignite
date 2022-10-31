@@ -32,7 +32,7 @@ public class DataStreamerUpdatesHandler implements SnapshotHandler<Boolean> {
     private static final String WRN_MSG = "DataStreamer with property 'alowOverwrite' set to `false` was working " +
         "during the snapshot creation. Such streaming updates are inconsistent by nature and should be successfully " +
         "finished before data usage. Snapshot might not be entirely restored. However, you would be able to restore " +
-        "the caches which were not streamed into.";
+        "the caches which were not streamed into. This snapshot should be validated.";
 
     /** {@inheritDoc} */
     @Override public SnapshotHandlerType type() {

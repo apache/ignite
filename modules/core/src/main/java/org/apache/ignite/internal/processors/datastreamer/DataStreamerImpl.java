@@ -2373,10 +2373,8 @@ public class DataStreamerImpl<K, V> implements IgniteDataStreamer<K, V>, Delayed
          * @param cctx Cache context.
          */
         private static void wrnSnapshot(GridCacheContext<?, ?> cctx) {
-            if (!cctx.group().persistenceEnabled())
-                return;
-
-            cctx.kernalContext().cache().context().snapshotMgr().streamedUpdates();
+            if (cctx.group().persistenceEnabled())
+                cctx.kernalContext().cache().context().snapshotMgr().streamedUpdates();
         }
     }
 
