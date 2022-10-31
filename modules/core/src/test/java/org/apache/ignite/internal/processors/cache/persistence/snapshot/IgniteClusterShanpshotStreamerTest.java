@@ -17,6 +17,7 @@
 
 package org.apache.ignite.internal.processors.cache.persistence.snapshot;
 
+import java.util.Collections;
 import java.util.List;
 import java.util.Set;
 import java.util.concurrent.CountDownLatch;
@@ -32,6 +33,7 @@ import org.apache.ignite.cache.CacheAtomicityMode;
 import org.apache.ignite.cache.CacheMode;
 import org.apache.ignite.cluster.BaselineNode;
 import org.apache.ignite.cluster.ClusterNode;
+import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.configuration.WALMode;
 import org.apache.ignite.internal.IgniteInternalFuture;
@@ -62,6 +64,12 @@ import static org.apache.ignite.testframework.GridTestUtils.assertThrows;
  * Tests snapshot is consistent or warned under streaming load.
  */
 public class IgniteClusterShanpshotStreamerTest extends AbstractSnapshotSelfTest {
+    /** */
+    private static final String CACHE2 = "cache2";
+
+    /** */
+    private static final int CACHE2_LOAD_CNT = 10_000;
+
     /** */
     private static final TcpDiscoveryIpFinder IP_FINDER = new TcpDiscoveryVmIpFinder(true);
 
@@ -185,7 +193,7 @@ public class IgniteClusterShanpshotStreamerTest extends AbstractSnapshotSelfTest
 
         try {
             if (mustFail) {
-                Throwable e = assertThrows(null, () -> grid(0).snapshot().createSnapshot(SNAPSHOT_NAME).get(),
+                Throwable e = assertThrows(null, () -> snpMgr.createSnapshot(SNAPSHOT_NAME).get(),
                     IgniteException.class, expectedWrn);
 
                 assertFalse(e.getMessage().contains(notExpectedWrn));
@@ -235,11 +243,24 @@ public class IgniteClusterShanpshotStreamerTest extends AbstractSnapshotSelfTest
     }
 
     /** */
-    private void checkSnp(boolean mustFail) throws IgniteCheckedException {
+    private void checkSnp(boolean mustFail) throws IgniteCheckedException, InterruptedException {
         IdleVerifyResultV2 checkRes = snpMgr.checkSnapshot(SNAPSHOT_NAME, null).get();
+        checkRes = snpMgr.checkSnapshot(SNAPSHOT_NAME, null).get();
 
         assertTrue(mustFail == checkRes.hasConflicts());
         assertTrue(checkRes.exceptions().isEmpty());
+
+        if (mustFail) {
+            grid(0).destroyCache(CACHE2);
+
+            awaitPartitionMapExchange();
+
+            // CHeck the second cache is successfully restored.
+            snpMgr.restoreSnapshot(SNAPSHOT_NAME, Collections.singletonList(CACHE2)).get();
+
+            for (int i = 0; i < 10000; ++i)
+                assertEquals(i, grid(0).cache(CACHE2).get(i));
+        }
     }
 
     /**
@@ -317,10 +338,21 @@ public class IgniteClusterShanpshotStreamerTest extends AbstractSnapshotSelfTest
         U.delete(snpMgr.snapshotLocalDir(SNAPSHOT_NAME));
 
         grid(0).destroyCache(dfltCacheCfg.getName());
+        grid(0).destroyCache(CACHE2);
 
         awaitPartitionMapExchange();
 
         grid(0).createCache(dfltCacheCfg);
+
+        // Fill second cache. It must be restorable.
+        CacheConfiguration<?, ?> c2cfg = new CacheConfiguration<>(dfltCacheCfg).setName(CACHE2);
+
+        grid(0).createCache(c2cfg);
+
+        try (IgniteDataStreamer<Integer, Integer> ds = grid(0).dataStreamer(CACHE2)) {
+            for (int i = 0; i < CACHE2_LOAD_CNT; ++i)
+                ds.addData(i, i);
+        }
 
         awaitPartitionMapExchange();
     }

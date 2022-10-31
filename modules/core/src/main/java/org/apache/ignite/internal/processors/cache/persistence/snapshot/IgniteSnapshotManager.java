@@ -374,7 +374,7 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
     private DiscoveryEventListener discoLsnr;
 
     /** Cluster snapshot operation requested by user. */
-    private ClusterSnapshotFuture clusterSnpFut;
+    private volatile ClusterSnapshotFuture clusterSnpFut;
 
     /** Current snapshot operation on local node. */
     private volatile SnapshotOperationRequest clusterSnpReq;
@@ -871,14 +871,12 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
             return;
 
         SnapshotOperationRequest snpReq = clusterSnpReq;
-        ClusterSnapshotFuture snpFut;
+        ClusterSnapshotFuture snpFut = clusterSnpFut;
 
         boolean cancelled = err.values().stream().anyMatch(e -> e instanceof IgniteFutureCancelledCheckedException);
 
-        synchronized (snpOpMux) {
-            snpFut = clusterSnpFut;
-
-            if (snpReq == null || !snpReq.requestId().equals(id)) {
+        if (snpReq == null || !snpReq.requestId().equals(id)) {
+            synchronized (snpOpMux) {
                 if (clusterSnpFut != null && clusterSnpFut.rqId.equals(id)) {
                     if (cancelled) {
                         clusterSnpFut.onDone(new IgniteFutureCancelledCheckedException("Execution of snapshot tasks " +
@@ -920,7 +918,7 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
                 .listen(f -> {
                         if (f.error() != null)
                             snpReq.error(f.error());
-                        else if (f.result() != null)
+                        else if (f.result() != null && snpFut != null)
                             snpFut.warnings.addAll(f.result());
 
                         endSnpProc.start(snpReq.requestId(), snpReq);
@@ -3455,15 +3453,9 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
         @Override protected boolean onDone(@Nullable Void res, @Nullable Throwable err, boolean cancel) {
             endTime = U.currentTimeMillis();
 
-            if (!warnings.isEmpty() && err == null) {
-                StringBuilder sb = new StringBuilder();
-
-                sb.append("Snapshot task '").append(name).append("' completed with warnings:\n\t");
-
-                sb.append(String.join("\n\t", warnings));
-
-                err = new IgniteException(sb.toString());
-            }
+            if (!warnings.isEmpty() && err == null)
+                err = new IgniteException("Snapshot task '" + name + "' completed with warnings:\n\t" +
+                    String.join("\n\t", warnings));
 
             return super.onDone(res, err, cancel);
         }

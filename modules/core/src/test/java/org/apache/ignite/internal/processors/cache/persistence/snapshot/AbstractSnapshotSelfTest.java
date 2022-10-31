@@ -153,7 +153,7 @@ public abstract class AbstractSnapshotSelfTest extends GridCommonAbstractTest {
     /** Parameters. */
     @Parameterized.Parameters(name = "Encryption={0}")
     public static Iterable<Boolean> encryptionParams() {
-        return Arrays.asList(false, true);
+        return Arrays.asList(false);
     }
 
     /** {@inheritDoc} */
