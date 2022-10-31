@@ -114,6 +114,19 @@ public abstract class AbstractSchemaSelfTest extends AbstractIndexingCommonTest 
     protected static final String FIELD_NAME_2_ESCAPED = "field2";
 
     /**
+     * Extra index key fields to override default extra index fields in
+     * {@link #indexFields(IgniteCache, String, IgniteBiTuple[])}.
+     */
+    protected static List<IgniteBiTuple<String, Boolean>> extraIdxKeyFields;
+
+    /** {@inheritDoc} */
+    @Override protected void beforeTest() throws Exception {
+        super.beforeTest();
+
+        extraIdxKeyFields = null;
+    }
+
+    /**
      * Create common node configuration.
      *
      * @param idx Index.
@@ -260,7 +273,7 @@ public abstract class AbstractSchemaSelfTest extends AbstractIndexingCommonTest 
 
             assertFalse("Index not found: " + idxName, res.isEmpty());
 
-            assertEquals(idxFields(cache, idxName, fields), res);
+            assertEquals(indexFields(cache, idxName, fields), res);
         }
         catch (SQLException e) {
             throw new AssertionError(e);
@@ -279,24 +292,28 @@ public abstract class AbstractSchemaSelfTest extends AbstractIndexingCommonTest 
      * @param idxName Index name.
      * @param fields Index fields specified in configuration or DDL.
      */
-    static Collection<IgniteBiTuple<String, Boolean>> idxFields(IgniteCache<?, ?> cache, String idxName,
+    static Collection<IgniteBiTuple<String, Boolean>> indexFields(IgniteCache<?, ?> cache, String idxName,
         IgniteBiTuple<String, Boolean>... fields) {
-        QueryEntity qryEntity = (QueryEntity)cache.getConfiguration(CacheConfiguration.class)
-            .getQueryEntities().iterator().next();
+        Collection<QueryEntity> qryEntities = cache.getConfiguration(CacheConfiguration.class).getQueryEntities();
 
-        boolean isStaticIdx = qryEntity.getIndexes().stream()
-            .map(QueryIndex::getName)
-            .anyMatch(name -> name.equals(idxName));
+        assertEquals(1, qryEntities.size());
 
-        // Indexes, created dynamically via DDL contains extra unwrapped primary key fields.
-        List<IgniteBiTuple<String, Boolean>> keyFields = isStaticIdx ? new ArrayList<>() :
-            qryEntity.getKeyFields()
+        QueryEntity qryEntity = qryEntities.iterator().next();
+
+        List<IgniteBiTuple<String, Boolean>> keyFields;
+
+        if (F.isEmpty(extraIdxKeyFields)) {
+            // Indexes, created dynamically via DDL contains extra unwrapped primary key fields.
+            keyFields = qryEntity.getKeyFields()
                 .stream()
                 .map(f -> F.t(f.toUpperCase(), true))
                 .collect(Collectors.toList());
 
-        // All indexes have system field '_KEY'.
-        keyFields.add(F.t(KEY_FIELD_NAME, true));
+            // All indexes have system field '_KEY'.
+            keyFields.add(F.t(KEY_FIELD_NAME, true));
+        }
+        else
+            keyFields = extraIdxKeyFields;
 
         // Index fields are followed by primary key fields and _KEY field.
         List<IgniteBiTuple<String, Boolean>> fieldsList = new ArrayList<>(Arrays.asList(fields));

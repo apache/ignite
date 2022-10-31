@@ -1090,7 +1090,7 @@ public class SchemaManager {
     /**
      * @return Collection of all present index descriptors.
      */
-    public Collection<IndexDescriptor> getAllIndexes() {
+    public Collection<IndexDescriptor> allIndexes() {
         return id2tbl.values().stream()
             .flatMap(t -> t.indexes().values().stream())
             .collect(Collectors.toList());
