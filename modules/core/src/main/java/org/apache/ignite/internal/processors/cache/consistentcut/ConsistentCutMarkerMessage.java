@@ -31,7 +31,7 @@ public class ConsistentCutMarkerMessage extends GridCacheIdMessage {
     private static final long serialVersionUID = 0L;
 
     /** */
-    public static final short TYPE_CODE = 202;
+    public static final short TYPE_CODE = 211;
 
     /** Original transaction message signed with {@link #marker}. */
     private GridDistributedBaseMessage payload;

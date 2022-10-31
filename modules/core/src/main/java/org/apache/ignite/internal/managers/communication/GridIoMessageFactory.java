@@ -400,7 +400,8 @@ public class GridIoMessageFactory implements MessageFactoryProvider {
 
         // [-3..119] [124..129] [-23..-28] [-36..-55] [183..188] - this
         // [120..123] - DR
-        // [200..203] - Consistent Cut
+        // [200..204] - Tests (GridCacheMessageSelfTest).
+        // [210..212] - Consistent Cut.
         // [-4..-22, -30..-35, -54..-57] - SQL
         // [2048..2053] - Snapshots
         // [-42..-37] - former hadoop.

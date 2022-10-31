@@ -409,7 +409,7 @@ public class GridNearPessimisticTxPrepareFuture extends GridNearTxPrepareFutureA
 
                 try {
                     GridCacheMessage cacheMsg = cctx.consistentCutMgr() != null
-                        ? cctx.consistentCutMgr().wrapTxMsgIfCutRunning(req, null)
+                        ? cctx.consistentCutMgr().wrapTxPrepareRequest(req)
                         : req;
 
                     cctx.io().send(primary, cacheMsg, tx.ioPolicy());

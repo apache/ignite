@@ -18,6 +18,7 @@
 package org.apache.ignite.internal.processors.cache.consistentcut;
 
 import java.nio.ByteBuffer;
+import java.util.Objects;
 import java.util.UUID;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.plugin.extensions.communication.Message;
@@ -32,7 +33,7 @@ public class ConsistentCutMarker implements Message {
     private static final long serialVersionUID = 0L;
 
     /** */
-    public static final short TYPE_CODE = 201;
+    public static final short TYPE_CODE = 210;
 
     /** Snapshot request ID. */
     private UUID id;
@@ -112,5 +113,18 @@ public class ConsistentCutMarker implements Message {
     /** {@inheritDoc} */
     @Override public void onAckReceived() {
         // No-op.
+    }
+
+    /** {@inheritDoc} */
+    @Override public boolean equals(Object o) {
+        if (!(o instanceof ConsistentCutMarker))
+            return false;
+
+        return Objects.equals(id, ((ConsistentCutMarker)o).id);
+    }
+
+    /** {@inheritDoc} */
+    @Override public int hashCode() {
+        return Objects.hash(id);
     }
 }

@@ -116,7 +116,7 @@ public class IgniteMessageFactoryImpl implements IgniteMessageFactory {
             cnt++;
         }
         else
-            throw new IgniteException("Message factory is already registered for direct type: " + directType);
+            throw new IgniteException("Message factory is already registered for direct type: " + directType + ". Handler: " + curr);
     }
 
     /**

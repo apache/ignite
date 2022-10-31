@@ -191,23 +191,53 @@ public class ConsistentCutManager extends GridCacheSharedManagerAdapter implemen
     }
 
     /**
-     * Wraps transaction message to marker messages if cut is running.
+     * Wraps transaction prepare response message with marker message if cut is running.
      *
      * @param txMsg Transaction message to wrap.
-     * @param txMarker {@code null} if message is not a finish message.
      */
-    public GridCacheMessage wrapTxMsgIfCutRunning(GridDistributedBaseMessage txMsg, @Nullable ConsistentCutMarker txMarker) {
-        GridCacheMessage msg = txMsg;
-
+    public GridCacheMessage wrapTxPrepareResponse(
+        GridDistributedBaseMessage txMsg,
+        boolean onePhase,
+        @Nullable ConsistentCutMarker txMarker
+    ) {
         ConsistentCutMarker marker = runningCutMarker();
 
         if (marker != null) {
-            msg = txMarker == null ?
-                new ConsistentCutMarkerMessage(txMsg, marker)
-                : new ConsistentCutMarkerTxFinishMessage(txMsg, marker, txMarker);
+            if (onePhase)
+                return new ConsistentCutMarkerTxFinishMessage(txMsg, marker, txMarker);
+
+            return new ConsistentCutMarkerMessage(txMsg, marker);
         }
 
-        return msg;
+        return txMsg;
+    }
+
+    /**
+     * Wraps transaction prepare request message with marker message if cut is running.
+     *
+     * @param txMsg Transaction message to wrap.
+     */
+    public GridCacheMessage wrapTxPrepareRequest(GridDistributedBaseMessage txMsg) {
+        ConsistentCutMarker marker = runningCutMarker();
+
+        if (marker != null)
+            return new ConsistentCutMarkerMessage(txMsg, marker);
+
+        return txMsg;
+    }
+
+    /**
+     * Wraps transaction finish request message with marker message if cut is running.
+     *
+     * @param txMsg Transaction message to wrap.
+     */
+    public GridCacheMessage wrapTxFinishRequest(GridDistributedBaseMessage txMsg, @Nullable ConsistentCutMarker txMarker) {
+        ConsistentCutMarker marker = runningCutMarker();
+
+        if (marker != null)
+            return new ConsistentCutMarkerTxFinishMessage(txMsg, marker, txMarker);
+
+        return txMsg;
     }
 
     /**

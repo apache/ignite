@@ -29,7 +29,7 @@ public class ConsistentCutMarkerTxFinishMessage extends ConsistentCutMarkerMessa
     private static final long serialVersionUID = 0L;
 
     /** */
-    public static final short TYPE_CODE = 203;
+    public static final short TYPE_CODE = 212;
 
     /** Marker of the latest Consistent Cut AFTER which this transaction committed. */
     private ConsistentCutMarker txMarker;

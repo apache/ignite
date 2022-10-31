@@ -52,6 +52,7 @@ import org.apache.ignite.internal.processors.cache.consistentcut.ConsistentCutMa
 import org.apache.ignite.internal.processors.cache.distributed.GridCacheTxRecoveryFuture;
 import org.apache.ignite.internal.processors.cache.distributed.GridCacheTxRecoveryRequest;
 import org.apache.ignite.internal.processors.cache.distributed.GridCacheTxRecoveryResponse;
+import org.apache.ignite.internal.processors.cache.distributed.GridDistributedBaseMessage;
 import org.apache.ignite.internal.processors.cache.distributed.GridDistributedTxRemoteAdapter;
 import org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtCacheAdapter;
 import org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtCacheEntry;
@@ -531,7 +532,7 @@ public class IgniteTxHandler {
 
                         try {
                             GridCacheMessage cacheMsg = ctx.consistentCutMgr() != null
-                                ? ctx.consistentCutMgr().wrapTxMsgIfCutRunning(res, null)
+                                ? ctx.consistentCutMgr().wrapTxPrepareResponse(res, req.onePhaseCommit(), tx == null ? null : tx.marker())
                                 : res;
 
                             ctx.io().send(nearNode, cacheMsg, req.policy());
@@ -1291,6 +1292,9 @@ public class IgniteTxHandler {
                         dhtTx.needReturnValue(req.needReturnValue());
 
                         finish(dhtTx, req);
+
+                        if (nearTx != null)
+                            nearTx.marker(dhtTx.marker());
                     }
 
                     if (nearTx != null) {
@@ -1360,21 +1364,11 @@ public class IgniteTxHandler {
                         }
                     });
                 }
-                else {
-                    GridCacheMessage cacheMsg = ctx.consistentCutMgr() != null
-                        ? ctx.consistentCutMgr().wrapTxMsgIfCutRunning(res, dhtTx.marker())
-                        : res;
-
-                    sendReply(nodeId, req, cacheMsg, dhtTx, nearTx);
-                }
+                else
+                    sendReply(nodeId, req, res, dhtTx, nearTx);
             }
-            else {
-                GridCacheMessage cacheMsg = ctx.consistentCutMgr() != null
-                    ? ctx.consistentCutMgr().wrapTxMsgIfCutRunning(res, null)
-                    : res;
-
-                sendReply(nodeId, req, cacheMsg, dhtTx, nearTx);
-            }
+            else
+                sendReply(nodeId, req, res, dhtTx, nearTx);
 
             assert req.txState() != null || res.error() != null || (dhtTx == null && nearTx == null) :
                 req + " tx=" + dhtTx + " nearTx=" + nearTx;
@@ -1615,12 +1609,20 @@ public class IgniteTxHandler {
      */
     private void sendReply(UUID nodeId,
         GridDhtTxPrepareRequest req,
-        GridCacheMessage res,
+        GridDistributedBaseMessage res,
         GridDhtTxRemote dhtTx,
         GridNearTxRemote nearTx) {
         try {
+            GridCacheMessage cacheMsg = res;
+
+            if (ctx.consistentCutMgr() != null) {
+                IgniteTxAdapter tx = dhtTx != null ? dhtTx : nearTx;
+
+                cacheMsg = ctx.consistentCutMgr().wrapTxPrepareResponse(res, req.onePhaseCommit(), tx == null ? null : tx.marker());
+            }
+
             // Reply back to sender.
-            ctx.io().send(nodeId, res, req.policy());
+            ctx.io().send(nodeId, cacheMsg, req.policy());
 
             if (txPrepareMsgLog.isDebugEnabled()) {
                 txPrepareMsgLog.debug("Sent dht prepare response [txId=" + req.nearXidVersion() +
