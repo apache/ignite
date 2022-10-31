@@ -29,12 +29,9 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
 import java.util.List;
-import java.util.logging.Formatter;
 import java.util.logging.Handler;
 import java.util.logging.Level;
-import java.util.logging.LogRecord;
 import java.util.logging.Logger;
-import java.util.logging.StreamHandler;
 import java.util.stream.Collectors;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteDataStreamer;
@@ -211,16 +208,11 @@ public abstract class GridCommandHandlerAbstractTest extends GridCommonAbstractT
      * @return Logger.
      */
     public static IgniteLogger createTestLogger() {
-        Logger log = initLogger(null);
+        JavaLogger logger = new JavaLogger(initLogger(null), false);
 
-        // Adding logging to console.
-        log.addHandler(new StreamHandler(System.out, new Formatter() {
-            @Override public String format(LogRecord record) {
-                return record.getMessage() + "\n";
-            }
-        }));
+        logger.addConsoleAppender();
 
-        return new JavaLogger(log, false);
+        return logger;
     }
 
     /**
