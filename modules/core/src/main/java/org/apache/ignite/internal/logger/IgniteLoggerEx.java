@@ -5,7 +5,7 @@ import org.apache.ignite.IgniteLogger;
 import org.jetbrains.annotations.Nullable;
 
 /**
- * Internal extension of {@link IgniteLogger}
+ * Internal extension of {@link IgniteLogger}.
  */
 public interface IgniteLoggerEx extends IgniteLogger {
     /** Adds console appender to the logger. */
