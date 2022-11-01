@@ -58,6 +58,7 @@ import org.apache.ignite.internal.util.typedef.G;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgnitePredicate;
 import org.apache.ignite.logger.java.JavaLogger;
+import org.apache.ignite.logger.java.JavaLoggerFileHandler;
 import org.apache.ignite.spi.encryption.keystore.KeystoreEncryptionSpi;
 import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.testframework.junits.WithSystemProperty;
@@ -167,8 +168,10 @@ public abstract class GridCommandHandlerAbstractTest extends GridCommonAbstractT
     @Override protected void afterTestsStopped() throws Exception {
         super.afterTestsStopped();
 
+        File logDir = JavaLoggerFileHandler.logDirectory(U.defaultWorkDirectory());
+
         // Clean idle_verify log files.
-        for (File f : new File(".").listFiles(n -> n.getName().startsWith(IdleVerify.IDLE_VERIFY_FILE_PREFIX)))
+        for (File f : logDir.listFiles(n -> n.getName().startsWith(IdleVerify.IDLE_VERIFY_FILE_PREFIX)))
             U.delete(f);
 
         GridClientFactory.stopAll(false);
