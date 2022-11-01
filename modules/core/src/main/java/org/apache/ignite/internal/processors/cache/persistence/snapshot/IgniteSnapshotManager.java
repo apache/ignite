@@ -146,6 +146,7 @@ import org.apache.ignite.internal.processors.task.GridInternal;
 import org.apache.ignite.internal.util.BasicRateLimiter;
 import org.apache.ignite.internal.util.GridBusyLock;
 import org.apache.ignite.internal.util.GridCloseableIteratorAdapter;
+import org.apache.ignite.internal.util.GridConcurrentHashSet;
 import org.apache.ignite.internal.util.distributed.DistributedProcess;
 import org.apache.ignite.internal.util.distributed.InitMessage;
 import org.apache.ignite.internal.util.future.GridCompoundFuture;
@@ -801,6 +802,8 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
                     .suspend(((SnapshotFutureTask)task0).started());
             }
 
+            System.err.println("TEST | new cluster request: " + req.requestId());
+
             clusterSnpReq = req;
         }
 
@@ -926,6 +929,8 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
             if (snpReq.warnings() != null)
                 snpReq.meta().warnings(snpReq.warnings());
 
+            System.err.println("TEST | wrn size: " + snpReq.warnings().size());
+
             try (OutputStream out = Files.newOutputStream(smf.toPath())) {
                 byte[] bytes = U.marshal(marsh, snpReq.meta());
                 int blockSize = SNAPSHOT_LIMITED_TRANSFER_BLOCK_SIZE_BYTES;
@@ -1002,8 +1007,11 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
     private IgniteInternalFuture<SnapshotOperationResponse> initLocalSnapshotEndStage(SnapshotOperationRequest req) {
         SnapshotOperationRequest snpReq = clusterSnpReq;
 
-        if (snpReq == null || !F.eq(req.requestId(), snpReq.requestId()))
+        if (snpReq == null || !F.eq(req.requestId(), snpReq.requestId())) {
+            System.err.println("TEST | wont store meta");
+
             return new GridFinishedFuture<>();
+        }
 
         if (req.error() == null)
             storeSnapshotMeta(snpReq);
@@ -1344,6 +1352,8 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
 
         SnapshotMetadataCollectorTaskArg taskArg = new SnapshotMetadataCollectorTaskArg(name, snpPath);
 
+        Set<String> warnings = new GridConcurrentHashSet<>();
+
         kctx0.task().execute(SnapshotMetadataCollectorTask.class, taskArg).listen(f0 -> {
             if (f0.error() == null) {
                 Map<ClusterNode, List<SnapshotMetadata>> metas = f0.result();
@@ -1377,6 +1387,9 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
                         }
 
                         grpIds.keySet().removeAll(meta.partitions().keySet());
+
+                        if (meta.warnings() != null)
+                            warnings.addAll(meta.warnings());
                     }
                 }
 

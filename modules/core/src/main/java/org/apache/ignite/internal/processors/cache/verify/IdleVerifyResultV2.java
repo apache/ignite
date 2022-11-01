@@ -60,6 +60,10 @@ public class IdleVerifyResultV2 extends VisorDataTransferObject {
     @GridToStringInclude
     private Map<ClusterNode, Exception> exceptions;
 
+    /** Exceptions. */
+    @GridToStringInclude
+    private List<String> warnings;
+
     /**
      * Default constructor for Externalizable.
      */
@@ -76,6 +80,7 @@ public class IdleVerifyResultV2 extends VisorDataTransferObject {
     /**
      * @param clusterHashes Map of cluster partition hashes.
      * @param exceptions Exceptions on each cluster node.
+     * @param exceptions Occurred warnings.
      */
     public IdleVerifyResultV2(
         Map<PartitionKeyV2, List<PartitionHashRecordV2>> clusterHashes,
