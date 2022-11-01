@@ -51,6 +51,7 @@ import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteCluster;
 import org.apache.ignite.IgniteDataStreamer;
 import org.apache.ignite.IgniteSystemProperties;
+import org.apache.ignite.cache.affinity.AffinityFunction;
 import org.apache.ignite.cache.affinity.rendezvous.RendezvousAffinityFunction;
 import org.apache.ignite.cache.query.SqlFieldsQuery;
 import org.apache.ignite.cluster.ClusterNode;
@@ -117,6 +118,7 @@ import static org.apache.ignite.internal.commandline.cache.CacheSubcommands.HELP
 import static org.apache.ignite.internal.commandline.consistency.ConsistencyCommand.CACHE;
 import static org.apache.ignite.internal.commandline.consistency.ConsistencyCommand.PARTITIONS;
 import static org.apache.ignite.internal.commandline.consistency.ConsistencyCommand.STRATEGY;
+import static org.apache.ignite.internal.util.IgniteUtils.nl;
 import static org.apache.ignite.testframework.GridTestUtils.assertContains;
 import static org.apache.ignite.testframework.GridTestUtils.assertNotContains;
 import static org.apache.ignite.testframework.GridTestUtils.readResource;
@@ -471,6 +473,10 @@ public class GridCommandHandlerClusterByClassTest extends GridCommandHandlerClus
         assertEquals(EXIT_CODE_OK, execute("--cache", "idle_verify"));
 
         assertContains(log, testOut.toString(), "conflict partitions");
+
+        String summaryStr = "Total:" + nl() + DEFAULT_CACHE_NAME + " (6)" + nl() + "1,2,3,4,5,6";
+
+        assertContains(log, testOut.toString(), summaryStr);
     }
 
     /** */
@@ -514,13 +520,19 @@ public class GridCommandHandlerClusterByClassTest extends GridCommandHandlerClus
 
         GridCacheContext<Object, Object> cacheCtx = ignite.cachex(DEFAULT_CACHE_NAME).context();
 
-        corruptDataEntry(cacheCtx, 1, true, false);
+        AffinityFunction aff = cacheCtx.config().getAffinity();
+        int key = 1 + aff.partitions() / 2;
 
-        corruptDataEntry(cacheCtx, 1 + cacheCtx.config().getAffinity().partitions() / 2, false, true);
+        corruptDataEntry(cacheCtx, 1, true, false);
+        corruptDataEntry(cacheCtx, key, false, true);
 
         assertEquals(EXIT_CODE_OK, execute("--cache", "idle_verify"));
 
         assertContains(log, testOut.toString(), "conflict partitions has been found: [counterConflicts=1, hashConflicts=2]");
+
+        String summaryStr = "Total:" + nl() + DEFAULT_CACHE_NAME + " (2)" + nl() + "1," + aff.partition(key);
+
+        assertContains(log, testOut.toString(), summaryStr);
     }
 
     /**
@@ -851,9 +863,11 @@ public class GridCommandHandlerClusterByClassTest extends GridCommandHandlerClus
 
         GridCacheContext<Object, Object> cacheCtx = ignite.cachex(DEFAULT_CACHE_NAME).context();
 
-        corruptDataEntry(cacheCtx, 0, true, false);
+        AffinityFunction aff = cacheCtx.config().getAffinity();
+        int key = aff.partitions() / 2;
 
-        corruptDataEntry(cacheCtx, cacheCtx.config().getAffinity().partitions() / 2, false, true);
+        corruptDataEntry(cacheCtx, 0, true, false);
+        corruptDataEntry(cacheCtx, key, false, true);
 
         String resReport = null;
 
@@ -877,6 +891,10 @@ public class GridCommandHandlerClusterByClassTest extends GridCommandHandlerClus
         }
 
         assertContains(log, resReport, "conflict partitions has been found: [counterConflicts=1, hashConflicts=2]");
+
+        String summaryStr = "Total:" + nl() + DEFAULT_CACHE_NAME + " (2)" + nl() + "0," + aff.partition(key);
+
+        assertContains(log, resReport, summaryStr);
     }
 
     /**
