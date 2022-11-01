@@ -900,9 +900,9 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
                         if (f.error() != null)
                             snpReq.error(f.error());
                         else if (f.result() != null) {
-                            snpReq.warnings = f.result();
+                            snpReq.warnings(f.result());
 
-                            if (snpReq != null)
+                            if (snpFut != null)
                                 snpFut.warnings.addAll(f.result());
                         }
 
@@ -914,16 +914,17 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
 
     /** **/
     private void storeSnapshotMeta(SnapshotOperationRequest snpReq) {
-        if (snpReq.error() != null)
-            return;
-
         try {
             File snpDir = snapshotLocalDir(snpReq.snapshotName(), snpReq.snapshotPath());
 
             File smf = new File(snpDir, snapshotMetaFileName(cctx.localNode().consistentId().toString()));
 
             if (smf.exists())
-                throw new GridClosureException(new IgniteException("Snapshot metafile must not exist: " + smf.getAbsolutePath()));
+                throw new IgniteException(new IgniteException("Snapshot metafile must not exist: " +
+                    smf.getAbsolutePath()));
+
+            if (snpReq.warnings() != null)
+                snpReq.meta().warnings(snpReq.warnings());
 
             try (OutputStream out = Files.newOutputStream(smf.toPath())) {
                 byte[] bytes = U.marshal(marsh, snpReq.meta());
@@ -1003,6 +1004,9 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
 
         if (snpReq == null || !F.eq(req.requestId(), snpReq.requestId()))
             return new GridFinishedFuture<>();
+
+        if (req.error() == null)
+            storeSnapshotMeta(snpReq);
 
         try {
             if (req.error() != null) {

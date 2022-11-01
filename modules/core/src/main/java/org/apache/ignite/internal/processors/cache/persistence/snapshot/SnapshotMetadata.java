@@ -81,7 +81,7 @@ public class SnapshotMetadata implements Serializable {
 
     /** Warnings occured at snapshot creation. */
     @GridToStringInclude
-    @Nullable List<String> warnings;
+    @Nullable private List<String> warnings;
 
     /**
      * F@param snpName Snapshot name.
@@ -115,6 +115,15 @@ public class SnapshotMetadata implements Serializable {
         pairs.forEach(p ->
             locParts.computeIfAbsent(p.getGroupId(), k -> new HashSet<>())
                 .add(p.getPartitionId()));
+    }
+
+    /**
+     * Stores snapshot process warnings.
+     *
+     * @param warnings Snapshot warnings.
+     */
+    public void warnings(List<String> warnings) {
+        this.warnings = warnings;
     }
 
     /**

@@ -18,7 +18,6 @@
 package org.apache.ignite.internal.processors.cache.persistence.snapshot;
 
 import java.io.Serializable;
-import java.util.ArrayList;
 import java.util.Collection;
 import java.util.List;
 import java.util.Set;
@@ -63,11 +62,11 @@ public class SnapshotOperationRequest implements Serializable {
     /** Flag indicating that the {@link DistributedProcessType#START_SNAPSHOT} phase has completed. */
     private transient volatile boolean startStageEnded;
 
-    /** Related metadata. */
+    /** Snapshot process metadata. */
     private transient SnapshotMetadata meta;
 
-    /** */
-    List<String> warnings;
+    /** Snapshot process warnings. */
+    private List<String> warnings;
 
     /** Operation start time. */
     private final long startTime;
@@ -173,10 +172,24 @@ public class SnapshotOperationRequest implements Serializable {
     }
 
     /**
-     * Stores snapshot metadata related to current snapshot operation.
+     * @return Snapshot metadata.
      */
     public SnapshotMetadata meta() {
         return meta;
+    }
+
+    /**
+     * @return Snapshot process warnings.
+     */
+    public @Nullable List<String> warnings() {
+        return warnings;
+    }
+
+    /**
+     * Stores snapshot warnings.
+     */
+    public void warnings(List<String> warnings) {
+        this.warnings = warnings;
     }
 
     /**
