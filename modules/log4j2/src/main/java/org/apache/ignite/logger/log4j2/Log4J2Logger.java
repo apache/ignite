@@ -24,7 +24,7 @@ import java.util.Map;
 import java.util.UUID;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteLogger;
-import org.apache.ignite.internal.logger.LoggerNodeIdAndApplicationAware;
+import org.apache.ignite.internal.logger.IgniteLoggerEx;
 import org.apache.ignite.internal.util.tostring.GridToStringExclude;
 import org.apache.ignite.internal.util.typedef.C1;
 import org.apache.ignite.internal.util.typedef.internal.S;
@@ -87,7 +87,7 @@ import static org.apache.logging.log4j.core.appender.ConsoleAppender.Target.SYST
  * logger in your task/job code. See {@link org.apache.ignite.resources.LoggerResource} annotation about logger
  * injection.
  */
-public class Log4J2Logger implements IgniteLogger, LoggerNodeIdAndApplicationAware {
+public class Log4J2Logger implements IgniteLoggerEx {
     /** */
     private static final String NODE_ID = "nodeId";
 

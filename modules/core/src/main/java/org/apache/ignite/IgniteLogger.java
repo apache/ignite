@@ -224,10 +224,4 @@ public interface IgniteLogger {
      * @return Name of the file being logged to if one is configured or {@code null} otherwise.
      */
     String fileName();
-
-    /** Adds console appender to the logger. */
-    void addConsoleAppender();
-
-    /** Flush any buffered output. */
-    void flush();
 }

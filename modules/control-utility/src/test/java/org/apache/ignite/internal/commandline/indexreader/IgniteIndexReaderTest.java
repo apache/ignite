@@ -49,6 +49,7 @@ import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.cluster.IgniteClusterEx;
 import org.apache.ignite.internal.commandline.ProgressPrinter;
+import org.apache.ignite.internal.logger.IgniteLoggerEx;
 import org.apache.ignite.internal.pagemem.PageIdAllocator;
 import org.apache.ignite.internal.processors.cache.persistence.IndexStorageImpl;
 import org.apache.ignite.internal.processors.cache.persistence.file.FilePageStore;
@@ -754,7 +755,8 @@ public class IgniteIndexReaderTest extends GridCommandHandlerAbstractTest {
             reader.readIndex();
         }
 
-        logger.flush();
+        if (logger instanceof IgniteLoggerEx)
+            ((IgniteLoggerEx)logger).flush();
 
         return testOut.toString();
     }

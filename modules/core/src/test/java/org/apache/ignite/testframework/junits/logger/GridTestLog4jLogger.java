@@ -23,8 +23,7 @@ import java.util.ArrayList;
 import java.util.Collection;
 import java.util.UUID;
 import org.apache.ignite.IgniteCheckedException;
-import org.apache.ignite.IgniteLogger;
-import org.apache.ignite.internal.logger.LoggerNodeIdAndApplicationAware;
+import org.apache.ignite.internal.logger.IgniteLoggerEx;
 import org.apache.ignite.internal.util.GridConcurrentHashSet;
 import org.apache.ignite.internal.util.tostring.GridToStringExclude;
 import org.apache.ignite.internal.util.typedef.C1;
@@ -92,7 +91,7 @@ import static org.apache.logging.log4j.core.appender.ConsoleAppender.Target.SYST
  * logger in your task/job code. See {@link org.apache.ignite.resources.LoggerResource} annotation about logger
  * injection.
  */
-public class GridTestLog4jLogger implements IgniteLogger, LoggerNodeIdAndApplicationAware {
+public class GridTestLog4jLogger implements IgniteLoggerEx {
     /** */
     public static final String FILE = "FILE";
 

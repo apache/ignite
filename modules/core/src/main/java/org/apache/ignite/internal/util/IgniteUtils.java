@@ -214,7 +214,7 @@ import org.apache.ignite.internal.cluster.ClusterTopologyCheckedException;
 import org.apache.ignite.internal.compute.ComputeTaskCancelledCheckedException;
 import org.apache.ignite.internal.compute.ComputeTaskTimeoutCheckedException;
 import org.apache.ignite.internal.events.DiscoveryCustomEvent;
-import org.apache.ignite.internal.logger.LoggerNodeIdAndApplicationAware;
+import org.apache.ignite.internal.logger.IgniteLoggerEx;
 import org.apache.ignite.internal.managers.communication.GridIoManager;
 import org.apache.ignite.internal.managers.communication.GridIoPolicy;
 import org.apache.ignite.internal.managers.deployment.GridDeployment;
@@ -4821,8 +4821,8 @@ public abstract class IgniteUtils {
                 ((JavaLogger)cfgLog).setWorkDirectory(workDir);
 
             // Set node IDs for all file appenders.
-            if (cfgLog instanceof LoggerNodeIdAndApplicationAware)
-                ((LoggerNodeIdAndApplicationAware)cfgLog).setApplicationAndNode(app, nodeId);
+            if (cfgLog instanceof IgniteLoggerEx)
+                ((IgniteLoggerEx)cfgLog).setApplicationAndNode(app, nodeId);
 
             if (log4jInitErr != null)
                 U.warn(cfgLog, "Failed to initialize Log4J2Logger (falling back to standard java logging): "

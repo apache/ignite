@@ -24,7 +24,7 @@ import java.util.UUID;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.configuration.IgniteConfiguration;
-import org.apache.ignite.internal.logger.LoggerNodeIdAndApplicationAware;
+import org.apache.ignite.internal.logger.IgniteLoggerEx;
 import org.apache.ignite.internal.util.typedef.G;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi;
@@ -70,7 +70,7 @@ public class Log4j2LoggerSelfTest {
         assertTrue(log.toString().contains("Log4J2Logger"));
         assertTrue(log.toString().contains(xml.getPath()));
 
-        ((LoggerNodeIdAndApplicationAware)log).setApplicationAndNode(null, UUID.randomUUID());
+        ((IgniteLoggerEx)log).setApplicationAndNode(null, UUID.randomUUID());
 
         checkLog(log);
     }
@@ -93,7 +93,7 @@ public class Log4j2LoggerSelfTest {
         assertTrue(log.toString().contains("Log4J2Logger"));
         assertTrue(log.toString().contains(url.getPath()));
 
-        ((LoggerNodeIdAndApplicationAware)log).setApplicationAndNode(null, UUID.randomUUID());
+        ((IgniteLoggerEx)log).setApplicationAndNode(null, UUID.randomUUID());
 
         checkLog(log);
     }
@@ -110,7 +110,7 @@ public class Log4j2LoggerSelfTest {
         assertTrue(log.toString().contains("Log4J2Logger"));
         assertTrue(log.toString().contains(LOG_PATH_TEST));
 
-        ((LoggerNodeIdAndApplicationAware)log).setApplicationAndNode(null, UUID.randomUUID());
+        ((IgniteLoggerEx)log).setApplicationAndNode(null, UUID.randomUUID());
 
         checkLog(log);
     }

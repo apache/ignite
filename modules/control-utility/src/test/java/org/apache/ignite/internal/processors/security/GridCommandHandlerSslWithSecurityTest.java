@@ -23,12 +23,12 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 import java.util.concurrent.atomic.AtomicInteger;
-import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.configuration.ConnectorConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.commandline.CommandHandler;
 import org.apache.ignite.internal.commandline.NoopConsole;
+import org.apache.ignite.internal.logger.IgniteLoggerEx;
 import org.apache.ignite.internal.processors.security.impl.TestSecurityPluginProvider;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
@@ -94,7 +94,7 @@ public class GridCommandHandlerSslWithSecurityTest extends GridCommonAbstractTes
      * @param hnd Command handler.
      */
     private void flushCommandOutput(CommandHandler hnd) {
-        U.<IgniteLogger>field(hnd, "logger").flush();
+        U.<IgniteLoggerEx>field(hnd, "logger").flush();
     }
 
     /** {@inheritDoc} */

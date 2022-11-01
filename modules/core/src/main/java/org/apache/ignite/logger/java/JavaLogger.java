@@ -32,7 +32,7 @@ import java.util.logging.Logger;
 import java.util.logging.StreamHandler;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteLogger;
-import org.apache.ignite.internal.logger.LoggerNodeIdAndApplicationAware;
+import org.apache.ignite.internal.logger.IgniteLoggerEx;
 import org.apache.ignite.internal.util.tostring.GridToStringExclude;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.internal.S;
@@ -97,7 +97,7 @@ import static org.apache.ignite.IgniteSystemProperties.IGNITE_QUIET;
  * logger in your task/job code. See {@link org.apache.ignite.resources.LoggerResource} annotation about logger
  * injection.
  */
-public class JavaLogger implements IgniteLogger, LoggerNodeIdAndApplicationAware {
+public class JavaLogger implements IgniteLoggerEx {
     /** */
     public static final String DFLT_CONFIG_PATH = "config/java.util.logging.properties";
 

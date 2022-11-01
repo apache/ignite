@@ -937,15 +937,5 @@ public class GridTransactionsSystemUserTimeMetricsTest extends GridCommonAbstrac
         @Override public String fileName() {
             return impl.fileName();
         }
-
-        /** {@inheritDoc} */
-        @Override public void addConsoleAppender() {
-            impl.addConsoleAppender();
-        }
-
-        /** {@inheritDoc} */
-        @Override public void flush() {
-            impl.flush();
-        }
     }
 }

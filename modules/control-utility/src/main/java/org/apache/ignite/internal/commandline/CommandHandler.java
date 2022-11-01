@@ -38,6 +38,7 @@ import org.apache.ignite.internal.client.GridClientHandshakeException;
 import org.apache.ignite.internal.client.GridServerUnreachableException;
 import org.apache.ignite.internal.client.impl.connection.GridClientConnectionResetException;
 import org.apache.ignite.internal.client.ssl.GridSslBasicContextFactory;
+import org.apache.ignite.internal.logger.IgniteLoggerEx;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.X;
 import org.apache.ignite.internal.util.typedef.internal.SB;
@@ -140,7 +141,8 @@ public class CommandHandler {
             IgniteLogger log =
                 U.initLogger(null, appName, null, U.defaultWorkDirectory()).getLogger(cls.getName() + "Log");
 
-            log.addConsoleAppender();
+            if (log instanceof IgniteLoggerEx)
+                ((IgniteLoggerEx)log).addConsoleAppender();
 
             return log;
         }
@@ -331,7 +333,8 @@ public class CommandHandler {
             logger.info("Control utility has completed execution at: " + endTime.format(formatter));
             logger.info("Execution time: " + diff.toMillis() + " ms");
 
-            logger.flush();
+            if (logger instanceof IgniteLoggerEx)
+                ((IgniteLoggerEx)logger).flush();
         }
     }
 

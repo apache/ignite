@@ -49,6 +49,7 @@ import org.apache.ignite.internal.TestRecordingCommunicationSpi;
 import org.apache.ignite.internal.client.GridClientFactory;
 import org.apache.ignite.internal.commandline.CommandHandler;
 import org.apache.ignite.internal.commandline.cache.IdleVerify;
+import org.apache.ignite.internal.logger.IgniteLoggerEx;
 import org.apache.ignite.internal.processors.cache.GridCacheFuture;
 import org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtTxPrepareFuture;
 import org.apache.ignite.internal.processors.cache.distributed.near.GridNearTxPrepareFutureAdapter;
@@ -352,7 +353,7 @@ public abstract class GridCommandHandlerAbstractTest extends GridCommonAbstractT
         lastOperationResult = hnd.getLastOperationResult();
 
         // Flush all Logger handlers to make log data available to test.
-        U.<IgniteLogger>field(hnd, "logger").flush();
+        U.<IgniteLoggerEx>field(hnd, "logger").flush();
 
         return exitCode;
     }

@@ -246,16 +246,6 @@ public class SensitiveInfoTestLoggerProxy implements IgniteLogger, LifecycleAwar
     }
 
     /** {@inheritDoc} */
-    @Override public void addConsoleAppender() {
-        impl.addConsoleAppender();
-    }
-
-    /** {@inheritDoc} */
-    @Override public void flush() {
-        impl.flush();
-    }
-
-    /** {@inheritDoc} */
     @Override public void trace(String msg) {
         if (testSensitiveEnabled()) {
             testSensitive(msg);
