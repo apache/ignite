@@ -263,7 +263,7 @@ public class IgniteClusterShanpshotStreamerTest extends AbstractSnapshotSelfTest
         String expectedWrn = U.field(SnapshotPartitionsFastVerifyHandler.class, "WRN_MSG_BASE");
         String notExpectedWrn = U.field(DataStreamerUpdatesHandler.class, "WRN_MSG");
 
-        CountDownLatch preloadLatch = new CountDownLatch(3_000);
+        CountDownLatch preloadLatch = new CountDownLatch(10_000);
         AtomicBoolean stopLoad = new AtomicBoolean();
 
         IgniteInternalFuture<?> loadFut = runLoad(client, allowOverwrite, preloadLatch, stopLoad, true);
