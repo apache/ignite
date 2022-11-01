@@ -33,7 +33,7 @@ public class ConsistentCutMarker implements Message {
     private static final long serialVersionUID = 0L;
 
     /** */
-    public static final short TYPE_CODE = 210;
+    public static final short TYPE_CODE = 400;
 
     /** Snapshot request ID. */
     private UUID id;
