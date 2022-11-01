@@ -42,8 +42,7 @@ public class SnapshotPartitionsFastVerifyHandler extends SnapshotPartitionsVerif
     /** */
     private static final String WRN_MSG_BASE = "This may happen if DataStreamer with property 'allowOverwrite' set " +
         "to `false` is loading during the snapshot or hadn't successfully finished earlier. However, you will be " +
-        "able restore rest the caches of the snapshot. For more details of snapshotted partitions states lauch the " +
-        "snapshot chack task.";
+        "able restore rest the caches of the snapshot.";
 
     /**
      * @param cctx Shared context.
