@@ -44,7 +44,8 @@ import org.jetbrains.annotations.Nullable;
  * <p>
  * Data streamer doesn’t guarantee:
  * <ul>
- *  <li>Data order. Data records may be load with different order that it was put into streamer;</li>
+ *  <li>Data order. Data records may be loaded into a cache in a different order compared to putting into the
+ *  streamer;</li>
  *  <li>Immediate data loading. Data can be kept for a while before loading;</li>
  *  <li>By default, data consistency until successfully finished;</li>
  *  <li>By default, working with external storages.</li>

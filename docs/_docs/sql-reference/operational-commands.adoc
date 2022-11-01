@@ -68,11 +68,9 @@ To stream data into your cluster, prepare a file with the `SET STREAMING ON` com
 
 [NOTE]
 ====
-Setting streaming on uses link:../data-streaming.adoc#_limitations[DataStreamer] which doesn't guarantie data consistency until successfully finished by default.
+Setting 'streaming on' uses link:../data-streaming.adoc#_limitations[DataStreamer] which doesn't guarantee  by default data consistency until successfully finished.
 ====
 
-
-Example:
 [source,sql]
 ----
 SET STREAMING ON;

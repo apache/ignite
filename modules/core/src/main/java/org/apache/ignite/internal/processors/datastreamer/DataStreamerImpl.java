@@ -286,7 +286,7 @@ public class DataStreamerImpl<K, V> implements IgniteDataStreamer<K, V>, Delayed
     /** */
     private final AtomicBoolean remapOwning = new AtomicBoolean();
 
-    /** Flag to warn into the log once if streamer is inconsistent until successfully finished. */
+    /** Flag to warn into the log only once if streamer is inconsistent until successfully finished. */
     private final AtomicBoolean inconsistencyWarned = new AtomicBoolean();
 
     /**
@@ -647,7 +647,7 @@ public class DataStreamerImpl<K, V> implements IgniteDataStreamer<K, V>, Delayed
 
         if (rcvr instanceof IsolatedUpdater && inconsistencyWarned.compareAndSet(false, true)) {
             log.warning("You are loading data the setting 'allowOverwrite' set to false (default). It doesn't " +
-                "guarantie data consistency until successfully finishes. Streamer cancelation or streamer node " +
+                "guarantee data consistency until successfully finishes. Streamer cancelation or streamer node " +
                 "failure can cause data inconsistency. Concurrently created snapshot may contain inconsistent data " +
                 "and might not be restored entirely.");
         }

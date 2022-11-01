@@ -19,7 +19,7 @@
 == Overview
 
 Ignite provides a Data Streaming API that can be used to inject large amounts of data into an Ignite cluster.
-The main goal of the streaming is efficient, quick data loading. The data that is added to the streamer is
+The main goal of streaming is efficient, quick data loading. The data that is added to the streamer is
 automatically organized and distributed between the nodes in partition-aware and parallel manner.
 
 image:images/data_streaming.png[Data Streaming]
@@ -53,16 +53,16 @@ include::code-snippets/dotnet/DataStreaming.cs[tag=dataStreamer1,indent=0]
 tab:C++[unsupported]
 --
 
-You can put data into streamer with multiple threads.
+You can put data into the streamer with multiple threads.
 
-Good use of streaming is data preloading.
+A good use of streaming is data preloading.
 
 == Limitations
 DataStreamer doesn't guarantee:
 []
 - By default, data consistency until successfully finished;
 - Immediate data loading. Data can be kept for a while before loading;
-- Data order. Data records may be load with different order that it was put into streamer;
+- Data order. Data records may be loaded into a cache in a different order compared to putting into the streamer;
 - By default, working with external storages.
 
 If <<overwritting, 'allowOverwrite'>> property is 'false' (default), consider:
@@ -71,7 +71,7 @@ If <<overwritting, 'allowOverwrite'>> property is 'false' (default), consider:
 - Streamer cancelation or streamer node failure can cause data inconsistency;
 - If loading into a persistent cache, concurrently created snapshot may contain inconsistent data and might not be restored entirely.
 
-Most important behaviour of Ignite Data Streamer is defined by <<receivers, stream receiver>> and
+Most important behavior of Ignite Data Streamer is defined by <<receivers, stream receiver>> and
 <<overwritting, 'allowOverwite' setting.>>
 
 == Streamer receivers. [[receivers]]
