@@ -46,7 +46,7 @@
         <Routing name="FILE">
             <Routes pattern="$${sys:appId}$${sys:nodeId}">
                 <Route>
-                    <RollingFile name="Rolling-${sys:nodeId}" fileName="${sys:IGNITE_HOME}/work/log/${sys:appId}${sys:nodeId}.log"
+                    <RollingFile name="Rolling-${sys:appId}${sys:nodeId}" fileName="${sys:IGNITE_HOME}/work/log/${sys:appId}${sys:nodeId}.log"
                                  filePattern="${sys:IGNITE_HOME}/work/log/${sys:appId}${sys:nodeId}-%i-%d{yyyy-MM-dd}.log.gz">
                         <PatternLayout pattern="[%d{ISO8601}][%-5p][%t][%c{1}]%notEmpty{[%markerSimpleName]} %m%n"/>
                         <Policies>
