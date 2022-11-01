@@ -53,7 +53,7 @@ include::code-snippets/dotnet/DataStreaming.cs[tag=dataStreamer1,indent=0]
 tab:C++[unsupported]
 --
 
-You can put data into the streamer with multiple threads.
+The streamer can accept data to load by multiple threads.
 
 A good use of streaming is data preloading.
 

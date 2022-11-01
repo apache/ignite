@@ -135,7 +135,7 @@ public class DataStreamerImplSelfTest extends GridCommonAbstractTest {
     }
 
     /**
-     * Test inconsistency log warning of the streamer. Default receiver goest first and set again after a consistent
+     * Test inconsistency log warning of the streamer. Default receiver goes first and set again after a consistent
      * receiver. The warning must appear only once.
      *
      * @throws Exception If failed.
