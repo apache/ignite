@@ -24,9 +24,9 @@ import java.util.LinkedHashMap;
 import java.util.Map;
 import java.util.Set;
 import java.util.UUID;
-import java.util.logging.Logger;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
+import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.internal.client.GridClient;
 import org.apache.ignite.internal.client.GridClientConfiguration;
 import org.apache.ignite.internal.commandline.AbstractCommand;
@@ -62,7 +62,7 @@ public class CacheScheduleIndexesRebuild extends AbstractCommand<CacheScheduleIn
     private Arguments args;
 
     /** {@inheritDoc} */
-    @Override public void printUsage(Logger logger) {
+    @Override public void printUsage(IgniteLogger logger) {
         String desc = "Schedules rebuild of the indexes for specified caches via the Maintenance Mode. Schedules rebuild of specified "
             + "caches and cache-groups";
 
@@ -91,7 +91,7 @@ public class CacheScheduleIndexesRebuild extends AbstractCommand<CacheScheduleIn
     }
 
     /** {@inheritDoc} */
-    @Override public Object execute(GridClientConfiguration clientCfg, Logger logger) throws Exception {
+    @Override public Object execute(GridClientConfiguration clientCfg, IgniteLogger logger) throws Exception {
         ScheduleIndexRebuildTaskRes taskRes;
 
         try (GridClient client = Command.startClient(clientCfg)) {
@@ -116,9 +116,9 @@ public class CacheScheduleIndexesRebuild extends AbstractCommand<CacheScheduleIn
 
     /**
      * @param taskRes Rebuild task result.
-     * @param logger Logger to print to.
+     * @param logger IgniteLogger to print to.
      */
-    private void printResult(ScheduleIndexRebuildTaskRes taskRes, Logger logger) {
+    private void printResult(ScheduleIndexRebuildTaskRes taskRes, IgniteLogger logger) {
         taskRes.results().forEach((nodeId, res) -> {
             printMissed(logger, "WARNING: These caches were not found:", res.notFoundCacheNames());
             printMissed(logger, "WARNING: These cache groups were not found:", res.notFoundGroupNames());
@@ -150,7 +150,7 @@ public class CacheScheduleIndexesRebuild extends AbstractCommand<CacheScheduleIn
      * @param message Message.
      * @param missed Missed caches or cache groups' names.
      */
-    private void printMissed(Logger logger, String message, Set<String> missed) {
+    private void printMissed(IgniteLogger logger, String message, Set<String> missed) {
         if (!F.isEmpty(missed)) {
             logger.info(message);
 
@@ -168,7 +168,7 @@ public class CacheScheduleIndexesRebuild extends AbstractCommand<CacheScheduleIn
      * @param cachesToIndexes Cache -> indexes map.
      * @param logger Logger.
      */
-    private static void printCachesAndIndexes(Map<String, Set<String>> cachesToIndexes, Logger logger) {
+    private static void printCachesAndIndexes(Map<String, Set<String>> cachesToIndexes, IgniteLogger logger) {
         cachesToIndexes.forEach((cacheName, indexes) -> {
             logger.info(INDENT + cacheName + ":");
             indexes.forEach(index -> logger.info(INDENT + INDENT + index));

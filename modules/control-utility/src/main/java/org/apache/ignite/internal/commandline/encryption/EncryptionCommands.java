@@ -17,7 +17,7 @@
 
 package org.apache.ignite.internal.commandline.encryption;
 
-import java.util.logging.Logger;
+import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.internal.client.GridClientConfiguration;
 import org.apache.ignite.internal.commandline.AbstractCommand;
 import org.apache.ignite.internal.commandline.CommandArgIterator;
@@ -33,7 +33,7 @@ public class EncryptionCommands extends AbstractCommand<EncryptionSubcommands> {
     private EncryptionSubcommands cmd;
 
     /** {@inheritDoc} */
-    @Override public Object execute(GridClientConfiguration clientCfg, Logger logger) throws Exception {
+    @Override public Object execute(GridClientConfiguration clientCfg, IgniteLogger logger) throws Exception {
         return cmd.subcommand().execute(clientCfg, logger);
     }
 
@@ -58,7 +58,7 @@ public class EncryptionCommands extends AbstractCommand<EncryptionSubcommands> {
     }
 
     /** {@inheritDoc} */
-    @Override public void printUsage(Logger logger) {
+    @Override public void printUsage(IgniteLogger logger) {
         for (EncryptionSubcommands cmd : EncryptionSubcommands.values())
             cmd.subcommand().printUsage(logger);
     }

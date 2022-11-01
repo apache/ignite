@@ -17,7 +17,7 @@
 
 package org.apache.ignite.internal.commandline.meta.subcommands;
 
-import java.util.logging.Logger;
+import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.internal.binary.BinaryMetadata;
 import org.apache.ignite.internal.commandline.CommandArgIterator;
 import org.apache.ignite.internal.commandline.meta.MetadataSubCommandsList;
@@ -38,7 +38,7 @@ public class MetadataListCommand
     }
 
     /** {@inheritDoc} */
-    @Override protected void printResult(MetadataListResult res, Logger log) {
+    @Override protected void printResult(MetadataListResult res, IgniteLogger log) {
         for (BinaryMetadata m : res.metadata()) {
             log.info("typeId=" + printInt(m.typeId()) +
                 ", typeName=" + m.typeName() +

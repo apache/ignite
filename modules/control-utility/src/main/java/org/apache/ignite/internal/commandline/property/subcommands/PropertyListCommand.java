@@ -17,7 +17,7 @@
 
 package org.apache.ignite.internal.commandline.property.subcommands;
 
-import java.util.logging.Logger;
+import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.internal.commandline.CommandArgIterator;
 import org.apache.ignite.internal.commandline.meta.subcommands.VoidDto;
 import org.apache.ignite.internal.commandline.property.PropertySubCommandsList;
@@ -37,7 +37,7 @@ public class PropertyListCommand extends PropertyAbstractSubCommand<VoidDto, Pro
     }
 
     /** {@inheritDoc} */
-    @Override protected void printResult(PropertiesListResult res, Logger log) {
+    @Override protected void printResult(PropertiesListResult res, IgniteLogger log) {
         for (String prop : res.properties())
             log.info(prop);
     }

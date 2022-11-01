@@ -22,7 +22,7 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.nio.file.Files;
 import java.nio.file.Path;
-import java.util.logging.Logger;
+import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.internal.binary.BinaryMetadata;
 import org.apache.ignite.internal.commandline.CommandArgIterator;
 import org.apache.ignite.internal.commandline.meta.MetadataSubCommandsList;
@@ -68,7 +68,7 @@ public class MetadataUpdateCommand
     }
 
     /** {@inheritDoc} */
-    @Override protected void printResult(MetadataMarshalled res, Logger log) {
+    @Override protected void printResult(MetadataMarshalled res, IgniteLogger log) {
         if (res.metadata() == null) {
             log.info("Type not found");
 

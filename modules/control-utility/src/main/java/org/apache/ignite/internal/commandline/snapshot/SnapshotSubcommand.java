@@ -18,7 +18,7 @@
 package org.apache.ignite.internal.commandline.snapshot;
 
 import java.util.Map;
-import java.util.logging.Logger;
+import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.internal.client.GridClient;
 import org.apache.ignite.internal.client.GridClientConfiguration;
 import org.apache.ignite.internal.commandline.AbstractCommand;
@@ -55,7 +55,7 @@ public abstract class SnapshotSubcommand extends AbstractCommand<Object> {
     }
 
     /** {@inheritDoc} */
-    @Override public Object execute(GridClientConfiguration clientCfg, Logger log) throws Exception {
+    @Override public Object execute(GridClientConfiguration clientCfg, IgniteLogger log) throws Exception {
         try (GridClient client = Command.startClient(clientCfg)) {
             VisorSnapshotTaskResult taskRes = executeTaskByNameOnNode(client, taskCls.getName(), arg(), null, clientCfg);
 
@@ -96,7 +96,7 @@ public abstract class SnapshotSubcommand extends AbstractCommand<Object> {
      * @param res Task result.
      * @param log Logger.
      */
-    protected void printResult(Object res, Logger log) {
+    protected void printResult(Object res, IgniteLogger log) {
         log.info(String.valueOf(res));
     }
 }
