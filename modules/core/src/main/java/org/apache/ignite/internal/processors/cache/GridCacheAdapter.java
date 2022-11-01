@@ -30,6 +30,7 @@ import java.util.Collections;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Iterator;
+import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.NoSuchElementException;
@@ -5167,7 +5168,7 @@ public abstract class GridCacheAdapter<K, V> implements IgniteInternalCache<K, V
         if (m == null || m.size() <= 1)
             return;
 
-        if (m instanceof SortedMap || m instanceof GridSerializableMap)
+        if (m instanceof SortedMap || m instanceof GridSerializableMap || m instanceof LinkedHashMap)
             return;
 
         Transaction tx = ctx.kernalContext().cache().transactions().tx();
@@ -5177,7 +5178,7 @@ public abstract class GridCacheAdapter<K, V> implements IgniteInternalCache<K, V
 
         LT.warn(log, "Unordered map " + m.getClass().getName() +
             " is used for " + op.title() + " operation on cache " + name() + ". " +
-            "This can lead to a distributed deadlock. Switch to a sorted map like TreeMap instead.");
+            "This can lead to a distributed deadlock. Switch to a sorted map like TreeMap or LinkedHashMap instead.");
     }
 
     /**
