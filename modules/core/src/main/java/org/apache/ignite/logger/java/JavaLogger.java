@@ -164,9 +164,6 @@ public class JavaLogger implements IgniteLogger, LoggerNodeIdAndApplicationAware
         catch (IOException e) {
             error("Failed to read logging configuration: " + cfgUrl, e);
         }
-        catch (Throwable e) {
-            e.printStackTrace();
-        }
 
         cfg = cfgUrl.getPath();
     }
