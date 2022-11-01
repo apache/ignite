@@ -169,12 +169,12 @@ public class Slf4jLogger implements IgniteLogger {
 
     /** {@inheritDoc} */
     @Override public void addConsoleAppender() {
-        throw new UnsupportedOperationException("Unsupported operation!");
+        // No-op.
     }
 
     /** {@inheritDoc} */
     @Override public void flush() {
-        throw new UnsupportedOperationException("Unsupported operation!");
+        // No-op.
     }
 
     /** {@inheritDoc} */

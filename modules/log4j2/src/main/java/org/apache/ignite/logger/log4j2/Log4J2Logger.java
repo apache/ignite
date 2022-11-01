@@ -277,12 +277,12 @@ public class Log4J2Logger implements IgniteLogger, LoggerNodeIdAndApplicationAwa
 
     /** {@inheritDoc} */
     @Override public void addConsoleAppender() {
-        throw new UnsupportedOperationException("Unsupported operation!");
+        // No-op.
     }
 
     /** {@inheritDoc} */
     @Override public void flush() {
-        throw new UnsupportedOperationException("Unsupported operation!");
+        // No-op.
     }
 
     /**

@@ -140,7 +140,6 @@ public class CommandHandler {
      */
     public static IgniteLogger setupJavaLogger(String appName, Class<?> cls) {
         try {
-            // TODO: Forcefully add console appender.
             IgniteLogger log =
                 U.initLogger(null, appName, null, U.defaultWorkDirectory()).getLogger(cls.getName() + "Log");
 

@@ -167,7 +167,7 @@ public class PlatformLogger implements IgniteLogger {
 
     /** {@inheritDoc} */
     @Override public void addConsoleAppender() {
-        throw new UnsupportedOperationException("Unsupported operation!");
+        // No-op.
     }
 
     /** {@inheritDoc} */
