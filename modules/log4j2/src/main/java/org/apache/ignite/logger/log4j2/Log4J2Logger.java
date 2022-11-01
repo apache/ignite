@@ -277,7 +277,8 @@ public class Log4J2Logger implements IgniteLogger, LoggerNodeIdAndApplicationAwa
 
     /** {@inheritDoc} */
     @Override public void addConsoleAppender() {
-        // No-op.
+        if (!isConsoleAppenderConfigured())
+            configureConsoleAppender();
     }
 
     /** {@inheritDoc} */
@@ -426,9 +427,7 @@ public class Log4J2Logger implements IgniteLogger, LoggerNodeIdAndApplicationAwa
     /** {@inheritDoc} */
     @Override public void setApplicationAndNode(@Nullable String application, @Nullable UUID nodeId) {
         // Set nodeId as system variable to be used at configuration.
-        if (nodeId != null)
-            System.setProperty(NODE_ID, U.id8(nodeId));
-
+        System.setProperty(NODE_ID, nodeId == null ? "" : ("-" + U.id8(nodeId)));
         System.setProperty(APP_ID, application != null
             ? application
             : System.getProperty(APP_ID, "ignite"));
