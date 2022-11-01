@@ -134,7 +134,7 @@ public class PartitionHashRecordV2 extends VisorDataTransferObject {
     }
 
     /**
-     * @return Partition hash.
+     * @return Partition versions hash.
      */
     public int partitionVersionsHash() {
         return partVerHash;
