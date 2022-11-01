@@ -100,11 +100,11 @@ public final class JavaLoggerFileHandler extends StreamHandler {
         String ptrn = manager.getProperty(clsName + ".pattern");
 
         if (ptrn == null)
-            ptrn = "%{app}-%{id8}%g.log";
+            ptrn = "%{app}%{id8}.%g.log";
 
         String fileName = ptrn
             .replace("%{app}", app != null ? app : "ignite")
-            .replace("%{id8}", nodeId != null ? (U.id8(nodeId) + ".") : "");
+            .replace("%{id8}", nodeId != null ? ("-" + U.id8(nodeId)) : "");
 
         ptrn = new File(logDirectory(workDir), fileName).getAbsolutePath();
 
