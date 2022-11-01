@@ -376,9 +376,8 @@ public class JavaLogger implements IgniteLogger, LoggerNodeIdAndApplicationAware
 
     /** {@inheritDoc} */
     @Override public void flush() {
-        for (Handler h : impl.getHandlers()) {
+        for (Handler h : impl.getHandlers())
             h.flush();
-        }
     }
 
     /**

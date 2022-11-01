@@ -25,8 +25,6 @@ import java.util.Collections;
 import java.util.List;
 import java.util.Scanner;
 import java.util.UUID;
-import java.util.logging.FileHandler;
-import java.util.logging.Handler;
 import java.util.stream.Collectors;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteException;
@@ -44,7 +42,6 @@ import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.X;
 import org.apache.ignite.internal.util.typedef.internal.SB;
 import org.apache.ignite.internal.util.typedef.internal.U;
-import org.apache.ignite.logger.java.JavaLogger;
 import org.apache.ignite.plugin.security.SecurityCredentials;
 import org.apache.ignite.plugin.security.SecurityCredentialsBasicProvider;
 import org.apache.ignite.plugin.security.SecurityCredentialsProvider;
@@ -334,11 +331,7 @@ public class CommandHandler {
             logger.info("Control utility has completed execution at: " + endTime.format(formatter));
             logger.info("Execution time: " + diff.toMillis() + " ms");
 
-            if (logger instanceof JavaLogger) {
-                Arrays.stream(((JavaLogger)logger).implementation().getHandlers())
-                    .filter(handler -> handler instanceof FileHandler)
-                    .forEach(Handler::close);
-            }
+            logger.flush();
         }
     }
 
