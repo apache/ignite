@@ -217,13 +217,6 @@ public class JavaLogger implements IgniteLogger, LoggerNodeIdAndApplicationAware
         quiet = quiet0;
     }
 
-    /**
-     * @return Underlying logger.
-     */
-    public Logger implementation() {
-        return impl;
-    }
-
     /** {@inheritDoc} */
     @Override public IgniteLogger getLogger(Object ctgr) {
         return new JavaLogger(ctgr == null
