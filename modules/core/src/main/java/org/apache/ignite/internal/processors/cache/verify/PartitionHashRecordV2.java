@@ -48,9 +48,13 @@ public class PartitionHashRecordV2 extends VisorDataTransferObject {
     @GridToStringInclude
     private Object consistentId;
 
-    /** Partition hash. */
+    /** Partition entries content hash. */
     @GridToStringExclude
     private int partHash;
+
+    /** Partition entries versions hash. */
+    @GridToStringExclude
+    private int partVerHash;
 
     /** Update counter's state. */
     @GridToStringInclude
@@ -67,7 +71,8 @@ public class PartitionHashRecordV2 extends VisorDataTransferObject {
      * @param partKey Partition key.
      * @param isPrimary Is primary.
      * @param consistentId Consistent id.
-     * @param partHash Partition hash.
+     * @param partHash Partition entries content hash.
+     * @param partVerHash Partition entries versions hash.
      * @param updateCntr Update counter.
      * @param size Size.
      * @param partitionState Partition state.
@@ -77,6 +82,7 @@ public class PartitionHashRecordV2 extends VisorDataTransferObject {
         boolean isPrimary,
         Object consistentId,
         int partHash,
+        int partVerHash,
         Object updateCntr,
         long size,
         PartitionState partitionState
@@ -85,6 +91,7 @@ public class PartitionHashRecordV2 extends VisorDataTransferObject {
         this.isPrimary = isPrimary;
         this.consistentId = consistentId;
         this.partHash = partHash;
+        this.partVerHash = partVerHash;
         this.updateCntr = updateCntr;
         this.size = size;
         this.partitionState = partitionState;
@@ -127,6 +134,13 @@ public class PartitionHashRecordV2 extends VisorDataTransferObject {
     }
 
     /**
+     * @return Partition hash.
+     */
+    public int partitionVersionsHash() {
+        return partVerHash;
+    }
+
+    /**
      * @return Update counter.
      */
     public Object updateCounter() {
@@ -153,6 +167,7 @@ public class PartitionHashRecordV2 extends VisorDataTransferObject {
         out.writeBoolean(isPrimary);
         out.writeObject(consistentId);
         out.writeInt(partHash);
+        out.writeInt(partVerHash);
         out.writeObject(updateCntr);
         out.writeLong(size);
         U.writeEnum(out, partitionState);
@@ -165,6 +180,7 @@ public class PartitionHashRecordV2 extends VisorDataTransferObject {
         isPrimary = in.readBoolean();
         consistentId = in.readObject();
         partHash = in.readInt();
+        partVerHash = in.readInt();
         updateCntr = in.readObject();
         size = in.readLong();
 
@@ -183,7 +199,7 @@ public class PartitionHashRecordV2 extends VisorDataTransferObject {
     @Override public String toString() {
         return size == MOVING_PARTITION_SIZE ?
             S.toString(PartitionHashRecordV2.class, this, "state", "MOVING") :
-            S.toString(PartitionHashRecordV2.class, this, "size", size, "partHash", partHash);
+            S.toString(PartitionHashRecordV2.class, this, "size", size, "partHash", partHash, "partVerHash", partVerHash);
     }
 
     /** {@inheritDoc} */
@@ -196,13 +212,14 @@ public class PartitionHashRecordV2 extends VisorDataTransferObject {
 
         PartitionHashRecordV2 v2 = (PartitionHashRecordV2)o;
 
-        return partHash == v2.partHash && updateCntr.equals(v2.updateCntr) && size == v2.size && partKey.equals(v2.partKey) &&
-            consistentId.equals(v2.consistentId) && partitionState == v2.partitionState;
+        return partHash == v2.partHash && partVerHash == v2.partVerHash && updateCntr.equals(v2.updateCntr) &&
+            size == v2.size && partKey.equals(v2.partKey) && consistentId.equals(v2.consistentId) &&
+            partitionState == v2.partitionState;
     }
 
     /** {@inheritDoc} */
     @Override public int hashCode() {
-        return Objects.hash(partKey, consistentId, partHash, updateCntr, size, partitionState);
+        return Objects.hash(partKey, consistentId, partHash, partVerHash, updateCntr, size, partitionState);
     }
 
     /** **/

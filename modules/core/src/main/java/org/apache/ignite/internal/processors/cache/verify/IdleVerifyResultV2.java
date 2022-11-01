@@ -83,6 +83,7 @@ public class IdleVerifyResultV2 extends VisorDataTransferObject {
     ) {
         for (Map.Entry<PartitionKeyV2, List<PartitionHashRecordV2>> e : clusterHashes.entrySet()) {
             Integer partHash = null;
+            Integer partVerHash = null;
             Object updateCntr = null;
 
             for (PartitionHashRecordV2 record : e.getValue()) {
@@ -102,6 +103,7 @@ public class IdleVerifyResultV2 extends VisorDataTransferObject {
 
                 if (partHash == null) {
                     partHash = record.partitionHash();
+                    partVerHash = record.partitionVersionsHash();
 
                     updateCntr = record.updateCounter();
                 }
@@ -109,7 +111,7 @@ public class IdleVerifyResultV2 extends VisorDataTransferObject {
                     if (!record.updateCounter().equals(updateCntr))
                         cntrConflicts.putIfAbsent(e.getKey(), e.getValue());
 
-                    if (record.partitionHash() != partHash)
+                    if (record.partitionHash() != partHash || record.partitionVersionsHash() != partVerHash)
                         hashConflicts.putIfAbsent(e.getKey(), e.getValue());
                 }
             }
