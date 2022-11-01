@@ -79,6 +79,10 @@ public class SnapshotMetadata implements Serializable {
     @GridToStringInclude
     @Nullable private final byte[] masterKeyDigest;
 
+    /** Warnings occured at snapshot creation. */
+    @GridToStringInclude
+    @Nullable List<String> warnings;
+
     /**
      * F@param snpName Snapshot name.
      * @param consId Consistent id of a node to which this metadata relates.
@@ -240,6 +244,11 @@ public class SnapshotMetadata implements Serializable {
     }
 
     /** {@inheritDoc} */
+    public List<String> warnings(){
+        return warnings;
+    }
+
+    /** {@inheritDoc} */
     @Override public boolean equals(Object o) {
         if (this == o)
             return true;
@@ -254,7 +263,8 @@ public class SnapshotMetadata implements Serializable {
             consId.equals(meta.consId) &&
             Objects.equals(grpIds, meta.grpIds) &&
             Objects.equals(bltNodes, meta.bltNodes) &&
-            Arrays.equals(masterKeyDigest, meta.masterKeyDigest);
+            Arrays.equals(masterKeyDigest, meta.masterKeyDigest) &&
+            Objects.equals(warnings, meta.warnings);
     }
 
     /** {@inheritDoc} */

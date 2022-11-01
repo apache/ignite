@@ -814,12 +814,6 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
                     .collect(Collectors.toSet());
 
                 File snpDir = snapshotLocalDir(req.snapshotName(), req.snapshotPath());
-
-                File smf = new File(snpDir, snapshotMetaFileName(cctx.localNode().consistentId().toString()));
-
-                if (smf.exists())
-                    throw new GridClosureException(new IgniteException("Snapshot metafile must not exist: " + smf.getAbsolutePath()));
-
                 snpDir.mkdirs();
 
                 SnapshotMetadata meta = new SnapshotMetadata(req.requestId(),
@@ -833,27 +827,16 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
                     cctx.gridConfig().getEncryptionSpi().masterKeyDigest()
                 );
 
-                try (OutputStream out = Files.newOutputStream(smf.toPath())) {
-                    byte[] bytes = U.marshal(marsh, meta);
-                    int blockSize = SNAPSHOT_LIMITED_TRANSFER_BLOCK_SIZE_BYTES;
-
-                    for (int off = 0; off < bytes.length; off += blockSize) {
-                        int len = Math.min(blockSize, bytes.length - off);
-
-                        transferRateLimiter.acquire(len);
-
-                        out.write(bytes, off, len);
-                    }
-                }
-
-                log.info("Snapshot metafile has been created: " + smf.getAbsolutePath());
-
                 SnapshotHandlerContext ctx = new SnapshotHandlerContext(meta, req.groups(), (SnapshotFutureTask)fut,
                     cctx.localNode(), snpDir);
 
-                return new SnapshotOperationResponse(handlers.invokeAll(SnapshotHandlerType.CREATE, ctx));
+                Map<String, SnapshotHandlerResult<Object>> res = handlers.invokeAll(SnapshotHandlerType.CREATE, ctx);
+
+                req.meta(meta);
+
+                return new SnapshotOperationResponse(res);
             }
-            catch (IOException | IgniteCheckedException e) {
+            catch (IgniteCheckedException e) {
                 throw F.wrap(e);
             }
         });
@@ -916,12 +899,50 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
                 .listen(f -> {
                         if (f.error() != null)
                             snpReq.error(f.error());
-                        else if (f.result() != null && snpFut != null)
-                            snpFut.warnings.addAll(f.result());
+                        else if (f.result() != null) {
+                            snpReq.warnings = f.result();
+
+                            if (snpReq != null)
+                                snpFut.warnings.addAll(f.result());
+                        }
 
                         endSnpProc.start(snpReq.requestId(), snpReq);
                     }
                 );
+        }
+    }
+
+    /** **/
+    private void storeSnapshotMeta(SnapshotOperationRequest snpReq) {
+        if (snpReq.error() != null)
+            return;
+
+        try {
+            File snpDir = snapshotLocalDir(snpReq.snapshotName(), snpReq.snapshotPath());
+
+            File smf = new File(snpDir, snapshotMetaFileName(cctx.localNode().consistentId().toString()));
+
+            if (smf.exists())
+                throw new GridClosureException(new IgniteException("Snapshot metafile must not exist: " + smf.getAbsolutePath()));
+
+            try (OutputStream out = Files.newOutputStream(smf.toPath())) {
+                byte[] bytes = U.marshal(marsh, snpReq.meta());
+                int blockSize = SNAPSHOT_LIMITED_TRANSFER_BLOCK_SIZE_BYTES;
+
+                for (int off = 0; off < bytes.length; off += blockSize) {
+                    int len = Math.min(blockSize, bytes.length - off);
+
+                    transferRateLimiter.acquire(len);
+
+                    out.write(bytes, off, len);
+                }
+            }
+
+            log.info("Snapshot metafile has been created: " + smf.getAbsolutePath());
+        }
+        catch (Exception e) {
+            snpReq.error(new IgniteCheckedException("Unable to store snapshot metadata. " +
+                "Uncompleted snapshot will be deleted [err=" + e + ']'));
         }
     }
 
