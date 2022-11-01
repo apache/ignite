@@ -72,23 +72,27 @@ public class IndexFirstLastScan<Row> extends IndexScan<Row> {
 
         InlineIndexKeyType keyType = F.isEmpty(inlineKeyTypes) ? null : inlineKeyTypes.get(0);
 
-        return new IndexQueryContext(res.cacheFilter(), new BPlusTree.TreeRowClosure<IndexRow, IndexRow>() {
-            /** {@inheritDoc} */
-            @Override public boolean apply(BPlusTree<IndexRow, IndexRow> tree, BPlusIO<IndexRow> io, long pageAddr,
-                int idx) throws IgniteCheckedException {
-                if (f != null && !f.apply(tree, io, pageAddr, idx))
-                    return false;
+        return new IndexQueryContext(
+            res.cacheFilter(),
+            new BPlusTree.TreeRowClosure<IndexRow, IndexRow>() {
+                /** {@inheritDoc} */
+                @Override public boolean apply(BPlusTree<IndexRow, IndexRow> tree, BPlusIO<IndexRow> io, long pageAddr,
+                    int idx) throws IgniteCheckedException {
+                    if (f != null && !f.apply(tree, io, pageAddr, idx))
+                        return false;
 
-                if (keyType != null && io instanceof InlineIO) {
-                    IndexKey key = keyType.get(pageAddr, io.offset(idx), ((InlineIO)io).inlineSize());
+                    if (keyType != null && io instanceof InlineIO) {
+                        IndexKey key = keyType.get(pageAddr, io.offset(idx), ((InlineIO)io).inlineSize());
 
-                    if (key != null)
-                        return key != NullIndexKey.INSTANCE;
+                        if (key != null)
+                            return key != NullIndexKey.INSTANCE;
+                    }
+
+                    return io.getLookupRow(tree, pageAddr, idx).key(0).type() != IndexKeyType.NULL;
                 }
-
-                return io.getLookupRow(tree, pageAddr, idx).key(0).type() != IndexKeyType.NULL;
-            }
-        }, res.mvccSnapshot());
+            },
+            res.mvccSnapshot()
+        );
     }
 
     /** */
@@ -117,7 +121,7 @@ public class IndexFirstLastScan<Row> extends IndexScan<Row> {
             assert lowerInclude && upperInclude;
 
             try {
-                return idx.takeFirstOrLast(qctx, first);
+                return idx.findFirstOrLast(qctx, first);
             }
             catch (IgniteCheckedException e) {
                 throw new IgniteException("Failed to take " + (first ? "first" : "last") + " not-null index value.", e);

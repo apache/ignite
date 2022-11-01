@@ -125,7 +125,7 @@ public class InlineIndexImpl extends AbstractIndex implements InlineIndex {
     }
 
     /** {@inheritDoc} */
-    @Override public GridCursor<IndexRow> takeFirstOrLast(IndexQueryContext qryCtx, boolean first)
+    @Override public GridCursor<IndexRow> findFirstOrLast(IndexQueryContext qryCtx, boolean first)
         throws IgniteCheckedException {
         lock.readLock().lock();
 

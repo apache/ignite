@@ -23,7 +23,6 @@ import com.google.common.collect.ImmutableList;
 import org.apache.calcite.plan.RelOptUtil;
 import org.apache.calcite.rel.RelCollation;
 import org.apache.calcite.rel.RelCollations;
-import org.apache.calcite.rel.RelFieldCollation;
 import org.apache.calcite.rel.type.RelDataTypeFactory;
 import org.apache.calcite.sql.fun.SqlAvgAggFunction;
 import org.apache.calcite.sql.fun.SqlCountAggFunction;
@@ -33,7 +32,6 @@ import org.apache.ignite.internal.processors.query.calcite.prepare.MappingQueryC
 import org.apache.ignite.internal.processors.query.calcite.rel.IgniteAggregate;
 import org.apache.ignite.internal.processors.query.calcite.rel.IgniteIndexBound;
 import org.apache.ignite.internal.processors.query.calcite.rel.IgniteIndexCount;
-import org.apache.ignite.internal.processors.query.calcite.rel.IgniteIndexScan;
 import org.apache.ignite.internal.processors.query.calcite.rel.IgniteRel;
 import org.apache.ignite.internal.processors.query.calcite.rel.agg.IgniteMapHashAggregate;
 import org.apache.ignite.internal.processors.query.calcite.rel.agg.IgniteReduceHashAggregate;
@@ -47,8 +45,7 @@ import org.hamcrest.core.IsInstanceOf;
 import org.junit.Assert;
 import org.junit.Test;
 
-import static org.apache.calcite.rel.RelFieldCollation.Direction.ASCENDING;
-import static org.apache.calcite.rel.RelFieldCollation.Direction.DESCENDING;
+import static org.apache.ignite.internal.processors.query.calcite.trait.TraitUtils.createFieldCollation;
 
 /**
  *
@@ -61,12 +58,12 @@ public class HashAggregatePlannerTest extends AbstractAggregatePlannerTest {
         IgniteSchema publicSchema = new IgniteSchema("PUBLIC");
 
         RelCollation[] collations = new RelCollation[] {
-            RelCollations.of(new RelFieldCollation(1, ASCENDING)),
-            RelCollations.of(new RelFieldCollation(1, DESCENDING)),
-            RelCollations.of(new RelFieldCollation(1, ASCENDING), new RelFieldCollation(2, ASCENDING)),
-            RelCollations.of(new RelFieldCollation(1, DESCENDING), new RelFieldCollation(2, DESCENDING)),
-            RelCollations.of(new RelFieldCollation(1, ASCENDING), new RelFieldCollation(2, DESCENDING)),
-            RelCollations.of(new RelFieldCollation(1, DESCENDING), new RelFieldCollation(2, ASCENDING))
+            RelCollations.of(createFieldCollation(1, true)),
+            RelCollations.of(createFieldCollation(1, false)),
+            RelCollations.of(createFieldCollation(1, true), createFieldCollation(2, true)),
+            RelCollations.of(createFieldCollation(1, false), createFieldCollation(2, false)),
+            RelCollations.of(createFieldCollation(1, true), createFieldCollation(2, false)),
+            RelCollations.of(createFieldCollation(1, false), createFieldCollation(2, true))
         };
 
         for (RelCollation cll : collations) {
@@ -101,6 +98,9 @@ public class HashAggregatePlannerTest extends AbstractAggregatePlannerTest {
                 assertNoIndexFirstOrLastRecord("SELECT VAL1, MIN(VAL0) FROM TEST GROUP BY VAL1", publicSchema);
                 assertNoIndexFirstOrLastRecord("SELECT VAL1, MAX(VAL0) FROM TEST GROUP BY VAL1", publicSchema);
 
+                assertNoIndexFirstOrLastRecord("SELECT MIN(VAL0 + 1) FROM TEST", publicSchema);
+                assertNoIndexFirstOrLastRecord("SELECT MAX(VAL0 + 1) FROM TEST", publicSchema);
+
                 publicSchema.removeTable("TEST");
             }
         }
@@ -115,7 +115,7 @@ public class HashAggregatePlannerTest extends AbstractAggregatePlannerTest {
 
     /** */
     private void assertNoIndexFirstOrLastRecord(String sql, IgniteSchema publicSchema) throws Exception {
-        assertPlan(sql, publicSchema, hasChildThat(isInstanceOf(IgniteIndexScan.class)).negate());
+        assertPlan(sql, publicSchema, hasChildThat(isInstanceOf(IgniteIndexBound.class)).negate());
     }
 
     /**

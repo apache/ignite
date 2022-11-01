@@ -69,12 +69,12 @@ public class AggregatesIntegrationTest extends AbstractBasicIntegrationTest {
         executeSql("insert into tbl values(-1, null, null, 'value_-1')");
         executeSql("insert into tbl values(1, 2, 20.0, 'value_1')");
         executeSql("insert into tbl values(2, 3, 10.0, 'value_2')");
-//        executeSql("insert into tbl values(3, null, 30.0, null)");
+        executeSql("insert into tbl values(3, null, 30.0, null)");
         executeSql("insert into tbl values(4, 4, 30.0, 'value_4')");
         executeSql("insert into tbl values(5, 5, 50.0, 'value_5')");
         executeSql("insert into tbl values(6, 1, null, 'value_6')");
-//        executeSql("insert into tbl values(7, null, 20.0, 'value_7')");
-//        executeSql("insert into tbl values(8, null, null, null)");
+        executeSql("insert into tbl values(7, null, 20.0, 'value_7')");
+        executeSql("insert into tbl values(8, null, null, null)");
     }
 
     /** */

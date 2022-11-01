@@ -91,7 +91,7 @@ public interface SortedSegmentedIndex extends Index {
      * @param qryCtx External index qyery context.
      * @param first {@code True} to take first index value. {@code False} to take last index value.
      */
-    public GridCursor<IndexRow> takeFirstOrLast(IndexQueryContext qryCtx, boolean first) throws IgniteCheckedException;
+    public GridCursor<IndexRow> findFirstOrLast(IndexQueryContext qryCtx, boolean first) throws IgniteCheckedException;
 
     /**
      * Counts index rows in specified tree segment.

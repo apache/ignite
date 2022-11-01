@@ -104,11 +104,11 @@ public class IndexRebuildPlannerTest extends AbstractPlannerTest {
 
         assertPlan("SELECT MIN(VAL) FROM TBL", publicSchema, isInstanceOf(IgniteAggregate.class)
             .and(a -> a.getAggCallList().stream().filter(agg -> agg.getAggregation().getKind() == MIN).count() == 1)
-            .and(nodeOrAnyChild(isInstanceOf(IgniteTableScan.class))));
+            .and(hasChildThat(isTableScan("TBL"))));
 
         assertPlan("SELECT MAX(VAL) FROM TBL", publicSchema, isInstanceOf(IgniteAggregate.class)
             .and(a -> a.getAggCallList().stream().filter(agg -> agg.getAggregation().getKind() == MAX).count() == 1)
-            .and(nodeOrAnyChild(isInstanceOf(IgniteTableScan.class))));
+            .and(hasChildThat(isTableScan("TBL"))));
 
         tbl.markIndexRebuildInProgress(false);
 
@@ -117,15 +117,15 @@ public class IndexRebuildPlannerTest extends AbstractPlannerTest {
 
     /** */
     private void checkMinMaxOptimized() throws Exception {
-        assertPlan("SELECT MIN(VAL) FROM TBL", publicSchema, nodeOrAnyChild(isInstanceOf(IgniteAggregate.class)
+        assertPlan("SELECT MIN(VAL) FROM TBL", publicSchema, isInstanceOf(IgniteAggregate.class)
             .and(a -> a.getAggCallList().stream().filter(agg -> agg.getAggregation().getKind() == MIN).count() == 1)
-            .and(nodeOrAnyChild(isInstanceOf(IgniteIndexBound.class)
-                .and(is -> "TBL_VAL_IDX".equals(is.indexName()))))));
+            .and(hasChildThat(isInstanceOf(IgniteIndexBound.class)
+                .and(is -> "TBL_VAL_IDX".equals(is.indexName())))));
 
-        assertPlan("SELECT MAX(VAL) FROM TBL", publicSchema, nodeOrAnyChild(isInstanceOf(IgniteAggregate.class)
+        assertPlan("SELECT MAX(VAL) FROM TBL", publicSchema, isInstanceOf(IgniteAggregate.class)
             .and(a -> a.getAggCallList().stream().filter(agg -> agg.getAggregation().getKind() == MAX).count() == 1)
-            .and(nodeOrAnyChild(isInstanceOf(IgniteIndexBound.class)
-                .and(is -> "TBL_VAL_IDX".equals(is.indexName()))))));
+            .and(hasChildThat(isInstanceOf(IgniteIndexBound.class)
+                .and(is -> "TBL_VAL_IDX".equals(is.indexName())))));
     }
 
     /** */
