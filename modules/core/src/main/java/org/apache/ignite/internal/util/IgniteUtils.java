@@ -379,7 +379,7 @@ public abstract class IgniteUtils {
     public static final Field[] EMPTY_FIELDS = new Field[0];
 
     /** System line separator. */
-    public static final String NL = System.getProperty("line.separator");
+    private static final String NL = System.getProperty("line.separator");
 
     /** Default user version. */
     public static final String DFLT_USER_VERSION = "0";

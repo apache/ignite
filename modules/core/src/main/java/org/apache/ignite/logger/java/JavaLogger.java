@@ -369,7 +369,7 @@ public class JavaLogger implements IgniteLogger, LoggerNodeIdAndApplicationAware
     @Override public void addConsoleAppender() {
         impl.addHandler(new StreamHandler(System.out, new Formatter() {
             @Override public String format(LogRecord record) {
-                return record.getMessage() + U.NL;
+                return record.getMessage() + U.nl();
             }
         }));
     }
