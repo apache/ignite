@@ -155,16 +155,6 @@ class GridCacheLogger implements IgniteLogger, Externalizable {
     }
 
     /** {@inheritDoc} */
-    @Override public void addConsoleAppender() {
-        log.addConsoleAppender();
-    }
-
-    /** {@inheritDoc} */
-    @Override public void flush() {
-        log.flush();
-    }
-
-    /** {@inheritDoc} */
     @Override public void writeExternal(ObjectOutput out) throws IOException {
         U.writeString(out, ctgr);
         out.writeObject(cctx);

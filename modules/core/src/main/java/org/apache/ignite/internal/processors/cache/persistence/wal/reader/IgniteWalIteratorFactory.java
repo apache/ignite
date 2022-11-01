@@ -765,15 +765,5 @@ public class IgniteWalIteratorFactory {
         @Override public String fileName() {
             return "SYSTEM.OUT";
         }
-
-        /** {@inheritDoc} */
-        @Override public void addConsoleAppender() {
-            // No-op.
-        }
-
-        /** {@inheritDoc} */
-        @Override public void flush() {
-            // No-op.
-        }
     }
 }

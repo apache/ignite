@@ -165,16 +165,6 @@ public class PlatformLogger implements IgniteLogger {
         return null;
     }
 
-    /** {@inheritDoc} */
-    @Override public void addConsoleAppender() {
-        // No-op.
-    }
-
-    /** {@inheritDoc} */
-    @Override public void flush() {
-        // No-op.
-    }
-
     /**
      * Sets the gateway.
      *
