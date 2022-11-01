@@ -92,6 +92,11 @@ public class ClientInlineIndex extends AbstractClientIndex implements InlineInde
     }
 
     /** {@inheritDoc} */
+    @Override public GridCursor<IndexRow> takeFirstOrLast(IndexQueryContext qryCtx, boolean first) {
+        throw unsupported();
+    }
+
+    /** {@inheritDoc} */
     @Override public long count(int segment) {
         throw unsupported();
     }

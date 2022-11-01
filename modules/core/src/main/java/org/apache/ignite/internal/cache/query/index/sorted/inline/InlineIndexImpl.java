@@ -124,10 +124,9 @@ public class InlineIndexImpl extends AbstractIndex implements InlineIndex {
         }
     }
 
-    /**
-     * Takes only one first or last index record.
-     */
-    public GridCursor<IndexRow> takeFirstOrLast(IndexQueryContext qryCtx, boolean first) throws IgniteCheckedException {
+    /** {@inheritDoc} */
+    @Override public GridCursor<IndexRow> takeFirstOrLast(IndexQueryContext qryCtx, boolean first)
+        throws IgniteCheckedException {
         lock.readLock().lock();
 
         try {
@@ -138,7 +137,7 @@ public class InlineIndexImpl extends AbstractIndex implements InlineIndex {
             for (int i = 0; i < segmentsCnt; i++)
                 segmentCursors[i] = first ? findFirst(i, qryCtx) : findLast(i, qryCtx);
 
-            return new FirstSegmentSingleValueIndexCursor(segmentCursors, def);
+            return new SingleValueSegmentedIndexCursor(segmentCursors, def);
         }
         finally {
             lock.readLock().unlock();
@@ -674,9 +673,9 @@ public class InlineIndexImpl extends AbstractIndex implements InlineIndex {
     }
 
     /** First-only, single-value-only segmented cursor. */
-    private static class FirstSegmentSingleValueIndexCursor extends SegmentedIndexCursor {
+    private static class SingleValueSegmentedIndexCursor extends SegmentedIndexCursor {
         /** Ctor. */
-        FirstSegmentSingleValueIndexCursor(
+        SingleValueSegmentedIndexCursor(
             GridCursor<IndexRow>[] cursors,
             SortedIndexDefinition idxDef
         ) throws IgniteCheckedException {

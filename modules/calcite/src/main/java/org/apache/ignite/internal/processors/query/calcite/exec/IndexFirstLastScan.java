@@ -117,7 +117,7 @@ public class IndexFirstLastScan<Row> extends IndexScan<Row> {
             assert lowerInclude && upperInclude;
 
             try {
-                return ((InlineIndexImpl)idx).takeFirstOrLast(qctx, first);
+                return idx.takeFirstOrLast(qctx, first);
             }
             catch (IgniteCheckedException e) {
                 throw new IgniteException("Failed to take " + (first ? "first" : "last") + " not-null index value.", e);

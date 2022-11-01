@@ -120,8 +120,12 @@ public class CacheIndexImpl implements IgniteIndex {
     }
 
     /** {@inheritDoc} */
-    @Override public <Row> Iterable<Row> firstOrLast(boolean first, ExecutionContext<Row> ectx, ColocationGroup grp,
-        @Nullable ImmutableBitSet requiredColumns) {
+    @Override public <Row> Iterable<Row> firstOrLast(
+        boolean first,
+        ExecutionContext<Row> ectx,
+        ColocationGroup grp,
+        @Nullable ImmutableBitSet requiredColumns
+    ) {
         UUID localNodeId = ectx.localNodeId();
 
         if (grp.nodeIds().contains(localNodeId) && idx != null) {

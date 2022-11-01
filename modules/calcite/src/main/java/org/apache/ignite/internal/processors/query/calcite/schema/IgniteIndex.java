@@ -104,6 +104,11 @@ public interface IgniteIndex {
      * @param requiredColumns  Required columns.
      * @return Index records for {@code grp}.
      */
-    public <Row> Iterable<Row> firstOrLast(boolean first, ExecutionContext<Row> ectx, ColocationGroup grp,
-        @Nullable ImmutableBitSet requiredColumns);
+    public <Row> Iterable<Row> firstOrLast(
+        boolean first,
+        ExecutionContext<Row> ectx,
+        ColocationGroup grp,
+        @Nullable ImmutableBitSet
+            requiredColumns
+    );
 }
