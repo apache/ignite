@@ -32,7 +32,7 @@ import org.jetbrains.annotations.Nullable;
  * <li>Snapshot must be resorted manually on the switched off cluster by copying data
  * to the working directory on each cluster node.</li>
  * <li>Concurrent updates from {@link IgniteDataStreamer} with default {@link IgniteDataStreamer#allowOverwrite()}
- * setting (false) can cause the caches under streaming load won't be restorable.</li>
+ * setting (false) into a persistent cache can cause that cache won't be restorable from snapshot.</li>
  * </ul>
  */
 public interface IgniteSnapshot {

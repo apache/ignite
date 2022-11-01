@@ -69,7 +69,7 @@ If <<overwritting, 'allowOverwrite'>> property is 'false' (default), consider:
 []
 - You should not have the same keys repeating in the data being streamed;
 - Streamer cancelation or streamer node failure can cause data inconsistency;
-- Concurrently created snapshot may contain inconsistent data and might not be restored entirely.
+- If loading into a persistent cache, concurrently created snapshot may contain inconsistent data and might not be restored entirely.
 
 Most important behaviour of Ignite Data Streamer is defined by <<receivers, stream receiver>> and
 <<overwritting, 'allowOverwite' setting.>>
