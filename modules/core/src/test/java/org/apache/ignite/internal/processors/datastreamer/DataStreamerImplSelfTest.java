@@ -135,30 +135,30 @@ public class DataStreamerImplSelfTest extends GridCommonAbstractTest {
     }
 
     /**
-     * Test inconsistency log warning of the streamer. Default receiver goes first and set again after a consistent
+     * Test inconsistency log warning of the streamer. Default receiver goes first and is set again after a consistent
      * receiver. The warning must appear only once.
      *
      * @throws Exception If failed.
      */
     @Test
-    public void testInconsistencyWarningDfltReceiverFirst() throws Exception {
+    public void testInconsistencyWarningDefaultReceiverFirst() throws Exception {
         doTestInconsistencyWarning(true, null, DataStreamerCacheUpdaters.batched(), null);
     }
 
     /**
-     * Test inconsistency log warning of the streamer when default receiver is set after a consistent receiver. The
+     * Test inconsistency log warning of the streamer when default receiver that is set after a consistent receiver. The
      * warning must appear only once.
      *
      * @throws Exception If failed.
      */
     @Test
-    public void testInconsistencyWarningDfltReceiverFollows() throws Exception {
+    public void testInconsistencyWarningDefaultReceiverFollows() throws Exception {
         doTestInconsistencyWarning(true, DataStreamerCacheUpdaters.batched(), null,
             DataStreamerCacheUpdaters.individual(), null);
     }
 
     /**
-     * Test inconsistency log warning of the streamer. Must not appear with the consistent receivers.
+     * Test inconsistency log warning of the streamer. Must not appear with consistent receivers.
      *
      * @throws Exception If failed.
      */
@@ -169,12 +169,11 @@ public class DataStreamerImplSelfTest extends GridCommonAbstractTest {
     }
 
     /**
-     * Test inconsistency log warning of the streamer. Must appear only once for one streamer instance or must not
-     * apper at all depending on thre receiver.
+     * Test inconsistency log warning of the streamer.
      *
-     * @param mustWarn  {@code True}, if just one warning expected. {@code False} if no warning expected.
-     * @param receivers Stream receivers to load with the same streamer instance. Must not be empty. Pass
-     *                  {@code null} entry for default receiver.
+     * @param mustWarn  {@code True}, if just one warning expected. {@code False} if no warning expected at all.
+     * @param receivers The streamer receivers to load with the same streamer instance. Must not be empty. {@code Null}
+     *        for the default receiver.
      * @throws Exception If failed.
      */
     private void doTestInconsistencyWarning(boolean mustWarn,
@@ -201,7 +200,7 @@ public class DataStreamerImplSelfTest extends GridCommonAbstractTest {
 
         try (IgniteDataStreamer<Integer, Integer> ds = ldr.dataStreamer(ccfg.getName())) {
             for (StreamReceiver<Integer, Integer> rcvr : receivers) {
-                // Actually, resets the default receiver.
+                // Resets default receiver.
                 if (rcvr == null)
                     ds.allowOverwrite(false);
                 else

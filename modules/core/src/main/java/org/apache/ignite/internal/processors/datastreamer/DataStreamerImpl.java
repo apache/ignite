@@ -129,6 +129,12 @@ import static org.apache.ignite.internal.GridTopic.TOPIC_DATASTREAM;
  */
 @SuppressWarnings("unchecked")
 public class DataStreamerImpl<K, V> implements IgniteDataStreamer<K, V>, Delayed {
+    /** */
+    private static final String WRN_INCONSISTENT_UPDATES = "The Data Streamer loads data with 'allowOverwrite' set " +
+        "to false. It doesn't guarantee data consistency until successfully finishes. Streamer cancelation or " +
+        "streamer node failure can cause data inconsistency. Concurrently created snapshot may contain inconsistent " +
+        "data and might not be restored entirely.";
+
     /** Per thread buffer size. */
     private int bufLdrSzPerThread = DFLT_PER_THREAD_BUFFER_SIZE;
 
@@ -645,12 +651,8 @@ public class DataStreamerImpl<K, V> implements IgniteDataStreamer<K, V>, Delayed
 
         lock(false);
 
-        if (rcvr instanceof IsolatedUpdater && inconsistencyWarned.compareAndSet(false, true)) {
-            log.warning("The Data Streamer loads data with 'allowOverwrite' set to false. It doesn't " +
-                "guarantee data consistency until successfully finishes. Streamer cancelation or streamer node " +
-                "failure can cause data inconsistency. Concurrently created snapshot may contain inconsistent data " +
-                "and might not be restored entirely.");
-        }
+        if (rcvr instanceof IsolatedUpdater && inconsistencyWarned.compareAndSet(false, true))
+            log.warning(WRN_INCONSISTENT_UPDATES);
 
         try {
             long threadId = Thread.currentThread().getId();

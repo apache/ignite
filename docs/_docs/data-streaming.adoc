@@ -62,7 +62,7 @@ DataStreamer doesn't guarantee:
 []
 - By default, data consistency until successfully finished;
 - Immediate data loading. Data can be kept for a while before loading;
-- Data order. Data records may be loaded into a cache in a different order compared to putting into the streamer;
+- Data order. Data records may be loaded into a cache in a different order compared to load into the streamer;
 - By default, working with external storages.
 
 If <<overwritting, 'allowOverwrite'>> property is 'false' (default), consider:
