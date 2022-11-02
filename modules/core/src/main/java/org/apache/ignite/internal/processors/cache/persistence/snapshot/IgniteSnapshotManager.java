@@ -2235,7 +2235,7 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
 
             // Register system default page size and counters check that is used at the creation operation.
             SnapshotHandler<?> fastPartCheck = new SnapshotPartitionsFastVerifyHandler(ctx.cache().context());
-            handlers.computeIfAbsent(dsCheck.type(), v -> new ArrayList<>()).add((SnapshotHandler<Object>)fastPartCheck);
+            handlers.computeIfAbsent(fastPartCheck.type(), v -> new ArrayList<>()).add((SnapshotHandler<Object>)fastPartCheck);
 
             // Register custom handlers.
             SnapshotHandler<Object>[] extHnds = (SnapshotHandler<Object>[])ctx.plugins().extensions(SnapshotHandler.class);
