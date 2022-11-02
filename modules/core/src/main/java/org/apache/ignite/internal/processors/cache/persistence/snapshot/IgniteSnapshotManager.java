@@ -953,7 +953,7 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
             handlers().execSvc.submit(() -> {
                 try {
                     handlers.completeAll(SnapshotHandlerType.CREATE, req.snapshotName(), clusterHndResults, req.nodes(),
-                        req);
+                        req::warnings);
 
                     resultFut.onDone();
                 }
@@ -2271,8 +2271,7 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
          * @param snpName Snapshot name.
          * @param res Results from all nodes and handlers with the specified type.
          * @param reqNodes Node IDs on which the handlers were executed.
-         * @param snpRq Request for current snapshot operation. {@code Null} if {@code type} is not
-         *              {@code SnapshotHandlerType.CREATE}. Handler warnings at restoration must not appear.
+         * @param warningConsumer Warnings consumer.
          * @throws Exception If failed.
          */
         @SuppressWarnings({"rawtypes", "unchecked"})
@@ -2281,12 +2280,10 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
             String snpName,
             Map<String, List<SnapshotHandlerResult<?>>> res,
             Collection<UUID> reqNodes,
-            SnapshotOperationRequest snpRq
+            Consumer<List<String>> warningConsumer
         ) throws Exception {
             if (res.isEmpty())
                 return;
-
-            assert snpRq == null || type == SnapshotHandlerType.CREATE;
 
             List<SnapshotHandler<Object>> hnds = handlers.get(type);
 
@@ -2322,7 +2319,7 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
             }
 
             if (!F.isEmpty(wrns))
-                snpRq.warnings(wrns);
+                warningConsumer.accept(wrns);
         }
 
         /**
