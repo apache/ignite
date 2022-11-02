@@ -15,19 +15,21 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.logger;
+package org.apache.ignite.internal.logger;
 
 import java.util.UUID;
+import org.apache.ignite.IgniteLogger;
 import org.jetbrains.annotations.Nullable;
 
 /**
- * Interface for Ignite file appenders to attach postfix to log file names.
+ * Internal extension of {@link IgniteLogger}.
  */
-public interface LoggerNodeIdAndApplicationAware extends LoggerNodeIdAware {
-    /** {@inheritDoc} */
-    @Override public default void setNodeId(UUID nodeId) {
-        setApplicationAndNode(null, nodeId);
-    }
+public interface IgniteLoggerEx extends IgniteLogger {
+    /** Adds console appender to the logger. */
+    public void addConsoleAppender();
+
+    /** Flush any buffered output. */
+    public void flush();
 
     /**
      * Sets application name and node ID.
@@ -35,5 +37,5 @@ public interface LoggerNodeIdAndApplicationAware extends LoggerNodeIdAware {
      * @param application Application.
      * @param nodeId Node ID.
      */
-    public void setApplicationAndNode(@Nullable String application, UUID nodeId);
+    public void setApplicationAndNode(@Nullable String application, @Nullable UUID nodeId);
 }

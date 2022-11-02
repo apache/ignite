@@ -80,6 +80,7 @@ import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.internal.visor.tx.VisorTxTaskResult;
 import org.apache.ignite.lang.IgniteInClosure;
+import org.apache.ignite.logger.java.JavaLogger;
 import org.apache.ignite.testframework.junits.GridAbstractTest;
 import org.apache.ignite.testframework.junits.WithSystemProperty;
 import org.apache.ignite.transactions.Transaction;
@@ -1750,7 +1751,7 @@ public class GridCommandHandlerClusterByClassTest extends GridCommandHandlerClus
     public void testErrUnexpectedWithWithoutVerbose() {
         injectTestSystemOut();
 
-        Logger log = CommandHandler.initLogger(null);
+        Logger log = GridCommandHandlerAbstractTest.initLogger(null);
         log.addHandler(new StreamHandler(System.out, new Formatter() {
             /** {@inheritDoc} */
             @Override public String format(LogRecord record) {
@@ -1764,7 +1765,7 @@ public class GridCommandHandlerClusterByClassTest extends GridCommandHandlerClus
         }));
 
         int resCode = EXIT_CODE_UNEXPECTED_ERROR;
-        CommandHandler cmd = new CommandHandler(log);
+        CommandHandler cmd = new CommandHandler(new JavaLogger(log, false));
 
         assertEquals(resCode, execute(cmd, BASELINE.text()));
         assertContains(GridAbstractTest.log, testOut.toString(), ERROR_STACK_TRACE_PREFIX);

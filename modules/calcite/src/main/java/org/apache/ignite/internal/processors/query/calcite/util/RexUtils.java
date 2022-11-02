@@ -68,6 +68,7 @@ import org.apache.ignite.internal.processors.query.calcite.prepare.bounds.ExactB
 import org.apache.ignite.internal.processors.query.calcite.prepare.bounds.MultiBounds;
 import org.apache.ignite.internal.processors.query.calcite.prepare.bounds.RangeBounds;
 import org.apache.ignite.internal.processors.query.calcite.prepare.bounds.SearchBounds;
+import org.apache.ignite.internal.processors.query.calcite.sql.fun.IgniteOwnSqlOperatorTable;
 import org.apache.ignite.internal.processors.query.calcite.trait.TraitUtils;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.internal.U;
@@ -78,10 +79,12 @@ import static org.apache.calcite.rex.RexUtil.sargRef;
 import static org.apache.calcite.sql.SqlKind.EQUALS;
 import static org.apache.calcite.sql.SqlKind.GREATER_THAN;
 import static org.apache.calcite.sql.SqlKind.GREATER_THAN_OR_EQUAL;
+import static org.apache.calcite.sql.SqlKind.IS_NOT_DISTINCT_FROM;
 import static org.apache.calcite.sql.SqlKind.IS_NOT_NULL;
 import static org.apache.calcite.sql.SqlKind.IS_NULL;
 import static org.apache.calcite.sql.SqlKind.LESS_THAN;
 import static org.apache.calcite.sql.SqlKind.LESS_THAN_OR_EQUAL;
+import static org.apache.calcite.sql.SqlKind.NOT;
 import static org.apache.calcite.sql.SqlKind.SEARCH;
 
 /** */
@@ -165,7 +168,7 @@ public class RexUtils {
 
     /** Binary comparison operations. */
     private static final Set<SqlKind> BINARY_COMPARISON =
-        EnumSet.of(EQUALS, LESS_THAN, GREATER_THAN, GREATER_THAN_OR_EQUAL, LESS_THAN_OR_EQUAL);
+        EnumSet.of(EQUALS, IS_NOT_DISTINCT_FROM, LESS_THAN, GREATER_THAN, GREATER_THAN_OR_EQUAL, LESS_THAN_OR_EQUAL);
 
     /** Supported index operations. */
     private static final Set<SqlKind> TREE_INDEX_COMPARISON =
@@ -174,6 +177,7 @@ public class RexUtils {
             IS_NULL,
             IS_NOT_NULL,
             EQUALS,
+            IS_NOT_DISTINCT_FROM,
             LESS_THAN, GREATER_THAN,
             GREATER_THAN_OR_EQUAL, LESS_THAN_OR_EQUAL);
 
@@ -290,7 +294,7 @@ public class RexUtils {
                 break;
 
             for (RexCall pred : collFldPreds) {
-                if (pred.getOperator().kind != SqlKind.EQUALS) {
+                if (pred.getOperator().kind != SqlKind.EQUALS && pred.getOperator().kind != IS_NOT_DISTINCT_FROM) {
                     if (ignoreNotEqualPreds)
                         continue;
                     else // Only EQUALS predicates allowed in condition.
@@ -303,7 +307,8 @@ public class RexUtils {
                 if (mapping != null)
                     fldIdx = mapping.getSourceOpt(fldIdx);
 
-                bounds.set(fldIdx, createBounds(null, Collections.singletonList(pred), cluster, types.get(fldIdx), 1));
+                bounds.set(fldIdx, new ExactBounds(pred,
+                    makeCast(builder(cluster), removeCast(pred.operands.get(1)), types.get(fldIdx))));
             }
         }
 
@@ -320,7 +325,7 @@ public class RexUtils {
     ) {
         RexBuilder builder = builder(cluster);
 
-        RexNode nullVal = builder.makeNullLiteral(fldType);
+        RexNode nullBound = builder.makeCall(IgniteOwnSqlOperatorTable.NULL_BOUND);
 
         RexNode upperCond = null;
         RexNode lowerCond = null;
@@ -345,8 +350,10 @@ public class RexUtils {
 
             if (op.kind == EQUALS)
                 return new ExactBounds(pred, val);
+            if (op.kind == IS_NOT_DISTINCT_FROM)
+                return new ExactBounds(pred, builder.makeCall(SqlStdOperatorTable.COALESCE, val, nullBound));
             else if (op.kind == IS_NULL)
-                return new ExactBounds(pred, nullVal);
+                return new ExactBounds(pred, nullBound);
             else if (op.kind == SEARCH) {
                 Sarg<?> sarg = ((RexLiteral)pred.operands.get(1)).getValueAs(Sarg.class);
 
@@ -361,8 +368,8 @@ public class RexUtils {
                         boolean ascDir = !fc.getDirection().isDescending();
                         RangeBounds rangeBounds = (RangeBounds)bounds.get(0);
                         if (rangeBounds.lowerBound() != null) {
-                            if (lowerBound != null && lowerBound != nullVal) {
-                                lowerBound = leastOrGreatest(builder, !ascDir, lowerBound, rangeBounds.lowerBound(), nullVal);
+                            if (lowerBound != null && lowerBound != nullBound) {
+                                lowerBound = leastOrGreatest(builder, !ascDir, lowerBound, rangeBounds.lowerBound());
                                 lowerInclude |= rangeBounds.lowerInclude();
                             }
                             else {
@@ -373,8 +380,8 @@ public class RexUtils {
                         }
 
                         if (rangeBounds.upperBound() != null) {
-                            if (upperBound != null && upperBound != nullVal) {
-                                upperBound = leastOrGreatest(builder, ascDir, upperBound, rangeBounds.upperBound(), nullVal);
+                            if (upperBound != null && upperBound != nullBound) {
+                                upperBound = leastOrGreatest(builder, ascDir, upperBound, rangeBounds.upperBound());
                                 upperInclude |= rangeBounds.upperInclude();
                             }
                             else {
@@ -408,25 +415,25 @@ public class RexUtils {
                 case GREATER_THAN:
                 case GREATER_THAN_OR_EQUAL:
                     if (lowerBoundBelow) {
-                        if (lowerBound == null || lowerBound == nullVal) {
+                        if (lowerBound == null || lowerBound == nullBound) {
                             lowerCond = pred;
                             lowerBound = val;
                             lowerInclude = includeBound;
                         }
                         else {
-                            lowerBound = leastOrGreatest(builder, lessCondition, lowerBound, val, nullVal);
+                            lowerBound = leastOrGreatest(builder, lessCondition, lowerBound, val);
                             lowerInclude |= includeBound;
                             lowerCond = lessOrGreater(builder, lessCondition, lowerInclude, ref, lowerBound);
                         }
                     }
                     else {
-                        if (upperBound == null || upperBound == nullVal) {
+                        if (upperBound == null || upperBound == nullBound) {
                             upperCond = pred;
                             upperBound = val;
                             upperInclude = includeBound;
                         }
                         else {
-                            upperBound = leastOrGreatest(builder, lessCondition, upperBound, val, nullVal);
+                            upperBound = leastOrGreatest(builder, lessCondition, upperBound, val);
                             upperInclude |= includeBound;
                             upperCond = lessOrGreater(builder, lessCondition, upperInclude, ref, upperBound);
                         }
@@ -436,12 +443,12 @@ public class RexUtils {
                 case IS_NOT_NULL:
                     if (fc.nullDirection == RelFieldCollation.NullDirection.FIRST && lowerBound == null) {
                         lowerCond = pred;
-                        lowerBound = nullVal;
+                        lowerBound = nullBound;
                         lowerInclude = false;
                     }
                     else if (fc.nullDirection == RelFieldCollation.NullDirection.LAST && upperBound == null) {
                         upperCond = pred;
-                        upperBound = nullVal;
+                        upperBound = nullBound;
                         upperInclude = false;
                     }
                     break;
@@ -501,24 +508,12 @@ public class RexUtils {
     }
 
     /** */
-    private static RexNode leastOrGreatest(RexBuilder builder, boolean least, RexNode arg0, RexNode arg1, RexNode nullVal) {
-        // There is no implementor for LEAST/GREATEST, so convert this calls directly to CASE operator.
-        List<RexNode> argList = new ArrayList<>();
-
-        // CASE
-        //  WHEN arg0 IS NULL OR arg1 IS NULL THEN NULL
-        //  WHEN arg0 < arg1 THEN arg0
-        //  ELSE arg1
-        // END
-        argList.add(builder.makeCall(SqlStdOperatorTable.OR,
-            builder.makeCall(SqlStdOperatorTable.IS_NULL, arg0),
-            builder.makeCall(SqlStdOperatorTable.IS_NULL, arg1)));
-        argList.add(nullVal);
-        argList.add(builder.makeCall(least ? SqlStdOperatorTable.LESS_THAN : SqlStdOperatorTable.GREATER_THAN, arg0, arg1));
-        argList.add(arg0);
-        argList.add(arg1);
-
-        return builder.makeCall(SqlStdOperatorTable.CASE, argList);
+    private static RexNode leastOrGreatest(RexBuilder builder, boolean least, RexNode arg0, RexNode arg1) {
+        return builder.makeCall(
+            least ? IgniteOwnSqlOperatorTable.LEAST2 : IgniteOwnSqlOperatorTable.GREATEST2,
+            arg0,
+            arg1
+        );
     }
 
     /** */
@@ -535,26 +530,6 @@ public class RexUtils {
             arg0, arg1);
     }
 
-    /**
-     * Builds index conditions.
-     */
-    public static List<RexNode> buildHashSearchRow(
-        RelOptCluster cluster,
-        RexNode condition,
-        RelDataType rowType
-    ) {
-        List<SearchBounds> searchBounds = buildHashSearchBounds(cluster, condition, rowType, null, false);
-
-        if (searchBounds == null)
-            return null;
-
-        return Commons.transform(searchBounds, b -> {
-            assert b == null || b instanceof ExactBounds : b;
-
-            return b == null ? null : ((ExactBounds)b).bound();
-        });
-    }
-
     /** */
     private static Map<Integer, List<RexCall>> mapPredicatesToFields(RexNode condition, RelOptCluster cluster) {
         List<RexNode> conjunctions = RelOptUtil.conjunctions(condition);
@@ -562,6 +537,8 @@ public class RexUtils {
         Map<Integer, List<RexCall>> res = new HashMap<>(conjunctions.size());
 
         for (RexNode rexNode : conjunctions) {
+            rexNode = expandBooleanFieldComparison(rexNode, builder(cluster));
+
             if (!isSupportedTreeComparison(rexNode))
                 continue;
 
@@ -576,7 +553,7 @@ public class RexUtils {
 
                 // Let RexLocalRef be on the left side.
                 if (refOnTheRight(predCall))
-                    predCall = (RexCall)RexUtil.invert(builder(cluster), predCall);
+                    predCall = (RexCall)invert(builder(cluster), predCall);
             }
             else {
                 ref = (RexSlot)extractRefFromOperand(predCall, cluster, 0);
@@ -590,6 +567,27 @@ public class RexUtils {
             fldPreds.add(predCall);
         }
         return res;
+    }
+
+    /** Extended version of RexUtil.invert with additional operators support. */
+    private static RexNode invert(RexBuilder rexBuilder, RexCall call) {
+        if (call.getOperator() == SqlStdOperatorTable.IS_NOT_DISTINCT_FROM)
+            return rexBuilder.makeCall(call.getOperator(), call.getOperands().get(1), call.getOperands().get(0));
+        else
+            return RexUtil.invert(rexBuilder, call);
+    }
+
+    /** */
+    private static RexNode expandBooleanFieldComparison(RexNode rexNode, RexBuilder builder) {
+        if (rexNode instanceof RexSlot)
+            return builder.makeCall(SqlStdOperatorTable.EQUALS, rexNode, builder.makeLiteral(true));
+        else if (rexNode instanceof RexCall && rexNode.getKind() == NOT &&
+            ((RexCall)rexNode).getOperands().get(0) instanceof RexSlot) {
+            return builder.makeCall(SqlStdOperatorTable.EQUALS, ((RexCall)rexNode).getOperands().get(0),
+                builder.makeLiteral(false));
+        }
+
+        return rexNode;
     }
 
     /** */
@@ -653,7 +651,8 @@ public class RexUtils {
     private static boolean idxOpSupports(RexNode op) {
         return op instanceof RexLiteral
             || op instanceof RexDynamicParam
-            || op instanceof RexFieldAccess;
+            || op instanceof RexFieldAccess
+            || !containsRef(op);
     }
 
     /** */
@@ -774,6 +773,28 @@ public class RexUtils {
         nodes.forEach(rex -> rex.accept(v));
 
         return cors;
+    }
+
+    /** */
+    private static Boolean containsRef(RexNode node) {
+        RexVisitor<Void> v = new RexVisitorImpl<Void>(true) {
+            @Override public Void visitInputRef(RexInputRef inputRef) {
+                throw Util.FoundOne.NULL;
+            }
+
+            @Override public Void visitLocalRef(RexLocalRef locRef) {
+                throw Util.FoundOne.NULL;
+            }
+        };
+
+        try {
+            node.accept(v);
+
+            return false;
+        }
+        catch (Util.FoundOne e) {
+            return true;
+        }
     }
 
     /** Visitor for replacing scan local refs to input refs. */

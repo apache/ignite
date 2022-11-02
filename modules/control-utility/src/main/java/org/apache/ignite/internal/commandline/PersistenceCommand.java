@@ -22,7 +22,7 @@ import java.util.List;
 import java.util.Optional;
 import java.util.Set;
 import java.util.UUID;
-import java.util.logging.Logger;
+import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.internal.client.GridClient;
 import org.apache.ignite.internal.client.GridClientConfiguration;
 import org.apache.ignite.internal.client.GridClientNode;
@@ -55,7 +55,7 @@ public class PersistenceCommand implements Command<PersistenceArguments> {
     private PersistenceArguments cleaningArgs;
 
     /** {@inheritDoc} */
-    @Override public Object execute(GridClientConfiguration clientCfg, Logger logger) throws Exception {
+    @Override public Object execute(GridClientConfiguration clientCfg, IgniteLogger logger) throws Exception {
         try (GridClient client = Command.startClient(clientCfg)) {
             Optional<GridClientNode> firstNodeOpt = client.compute().nodes().stream().findFirst();
 
@@ -75,8 +75,8 @@ public class PersistenceCommand implements Command<PersistenceArguments> {
                 logger.warning("No nodes found in topology, command won't be executed.");
         }
         catch (Throwable t) {
-            logger.severe("Failed to execute persistence command='" + cleaningArgs.subcommand().text() + "'");
-            logger.severe(CommandLogger.errorMessage(t));
+            logger.error("Failed to execute persistence command='" + cleaningArgs.subcommand().text() + "'");
+            logger.error(CommandLogger.errorMessage(t));
 
             throw t;
         }
@@ -88,9 +88,9 @@ public class PersistenceCommand implements Command<PersistenceArguments> {
      * Prints result of command execution: information about caches or result of clean/backup command.
      *
      * @param res {@link PersistenceTaskResult} object with results of command execution.
-     * @param logger {@link Logger} to print output to.
+     * @param logger {@link IgniteLogger} to print output to.
      */
-    private void printResult(PersistenceTaskResult res, Logger logger) {
+    private void printResult(PersistenceTaskResult res, IgniteLogger logger) {
         if (!res.inMaintenanceMode()) {
             logger.warning("Persistence command can be sent only to node in Maintenance Mode.");
 
@@ -181,7 +181,7 @@ public class PersistenceCommand implements Command<PersistenceArguments> {
     }
 
     /** {@inheritDoc} */
-    @Override public void printUsage(Logger logger) {
+    @Override public void printUsage(IgniteLogger logger) {
         final String cacheNames = "cache1,cache2,cache3";
 
         usage(logger, "Print information about potentially corrupted caches on local node:",

@@ -261,7 +261,7 @@ public class Checkpointer extends GridWorker {
 
                 if (skipCheckpointOnNodeStop && (isCancelled() || shutdownNow)) {
                     if (log.isInfoEnabled())
-                        log.warning("Skipping last checkpoint because node is stopping.");
+                        log.info("Skipping last checkpoint because node is stopping.");
 
                     return;
                 }
@@ -274,7 +274,7 @@ public class Checkpointer extends GridWorker {
                     this.enableChangeApplied = null;
                 }
 
-                if (checkpointsEnabled)
+                if (checkpointsEnabled && !shutdownNow)
                     doCheckpoint();
                 else {
                     synchronized (this) {
@@ -437,24 +437,23 @@ public class Checkpointer extends GridWorker {
                 if (log.isInfoEnabled()) {
                     long possibleJvmPauseDur = possibleLongJvmPauseDuration(tracker);
 
-                    if (log.isInfoEnabled())
-                        log.info(
-                            String.format(
-                                CHECKPOINT_STARTED_LOG_FORMAT,
-                                chp.cpEntry == null ? "" : chp.cpEntry.checkpointId(),
-                                chp.cpEntry == null ? "" : chp.cpEntry.checkpointMark(),
-                                tracker.beforeLockDuration(),
-                                tracker.lockWaitDuration(),
-                                tracker.listenersExecuteDuration(),
-                                tracker.lockHoldDuration(),
-                                tracker.walCpRecordFsyncDuration(),
-                                tracker.writeCheckpointEntryDuration(),
-                                tracker.splitAndSortCpPagesDuration(),
-                                possibleJvmPauseDur > 0 ? "possibleJvmPauseDuration=" + possibleJvmPauseDur + "ms, " : "",
-                                chp.pagesSize,
-                                chp.progress.reason()
-                            )
-                        );
+                    log.info(
+                        String.format(
+                            CHECKPOINT_STARTED_LOG_FORMAT,
+                            chp.cpEntry == null ? "" : chp.cpEntry.checkpointId(),
+                            chp.cpEntry == null ? "" : chp.cpEntry.checkpointMark(),
+                            tracker.beforeLockDuration(),
+                            tracker.lockWaitDuration(),
+                            tracker.listenersExecuteDuration(),
+                            tracker.lockHoldDuration(),
+                            tracker.walCpRecordFsyncDuration(),
+                            tracker.writeCheckpointEntryDuration(),
+                            tracker.splitAndSortCpPagesDuration(),
+                            possibleJvmPauseDur > 0 ? "possibleJvmPauseDuration=" + possibleJvmPauseDur + "ms, " : "",
+                            chp.pagesSize,
+                            chp.progress.reason()
+                        )
+                    );
                 }
 
                 if (!writePages(tracker, chp.cpPages, chp.progress, this, this::isShutdownNow))
