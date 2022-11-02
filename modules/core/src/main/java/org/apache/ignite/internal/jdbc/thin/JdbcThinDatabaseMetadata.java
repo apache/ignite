@@ -1095,7 +1095,13 @@ public class JdbcThinDatabaseMetadata implements DatabaseMetaData {
      * <p>
      * Ignite has the only unique indexes - primary key indexes.
      * <p>
-     * Parameters {@code unique}, {@code approximate} are ignored.
+     *
+     * @param catalog a catalog name.
+     * @param schema a schema name.
+     * @param tbl a table name.
+     * @param unique this parameter is ignored.
+     * @param approximate this parameter is ignored.
+     * @return <code>ResultSet</code> - each row is an index column description.
      */
     @Override public ResultSet getIndexInfo(String catalog, String schema, String tbl, boolean unique,
         boolean approximate) throws SQLException {

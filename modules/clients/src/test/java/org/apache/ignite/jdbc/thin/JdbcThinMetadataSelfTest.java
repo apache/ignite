@@ -50,6 +50,7 @@ import org.apache.ignite.configuration.SqlConfiguration;
 import org.apache.ignite.internal.IgniteVersionUtils;
 import org.apache.ignite.internal.processors.query.QueryEntityEx;
 import org.apache.ignite.internal.util.typedef.F;
+import org.apache.ignite.spi.systemview.view.sql.SqlIndexView;
 import org.apache.ignite.testframework.GridTestUtils;
 import org.junit.Assert;
 import org.junit.Test;
@@ -66,6 +67,7 @@ import static org.apache.ignite.internal.processors.query.QueryUtils.DFLT_SCHEMA
 import static org.apache.ignite.internal.processors.query.QueryUtils.KEY_FIELD_NAME;
 import static org.apache.ignite.internal.processors.query.QueryUtils.SCHEMA_SYS;
 import static org.apache.ignite.internal.processors.query.QueryUtils.VAL_FIELD_NAME;
+import static org.apache.ignite.internal.processors.query.schema.management.SchemaManager.SQL_IDXS_VIEW;
 import static org.apache.ignite.internal.util.lang.GridFunc.asMap;
 
 /**
@@ -1271,6 +1273,51 @@ public class JdbcThinMetadataSelfTest extends JdbcThinAbstractSelfTest {
             for (int i = 0; i < actualIdxs.size(); i++)
                 assertEquals("Unexpected index", expectedIdxs.get(i), actualIdxs.get(i));
         }
+    }
+
+    /**
+     *
+     */
+    @Test
+    public void testIndexMetadataMatchesSystemView() throws Exception {
+        Map<String, String> indexesFromMeta = new HashMap<>();
+
+        try (Connection connection = DriverManager.getConnection(URL);
+             ResultSet idxMeta = connection.getMetaData()
+                 .getIndexInfo(null, null, null, false, false)) {
+
+            while (idxMeta.next()) {
+                String idxName = String.join(".",
+                    idxMeta.getString("TABLE_SCHEM"),
+                    idxMeta.getString("TABLE_NAME"),
+                    idxMeta.getString("INDEX_NAME"));
+
+                String fieldInfo = '"' + idxMeta.getString("COLUMN_NAME") + "\" " +
+                    ("A".equals(idxMeta.getString("ASC_OR_DESC")) ? "ASC" : "DESC");
+
+                indexesFromMeta.compute(idxName, (k, v) -> v == null ? fieldInfo : v + ", " + fieldInfo);
+
+                // Check sorting by ordinal position
+                int fieldsCnt = indexesFromMeta.get(idxName).split(", ").length;
+                int ordinalPos = idxMeta.getInt("ORDINAL_POSITION");
+                assertEquals("Unexpected ordinal position", ordinalPos, fieldsCnt);
+            }
+        }
+
+        Map<String, String> indexesFromSysView = new HashMap<>();
+
+        for (Object o : grid(0).context().systemView().view(SQL_IDXS_VIEW)) {
+            SqlIndexView idxView = (SqlIndexView)o;
+
+            String idxName = String.join(".",
+                idxView.schemaName(),
+                idxView.tableName(),
+                idxView.indexName());
+
+            indexesFromSysView.put(idxName, idxView.columns());
+        }
+
+        assertEqualsMaps(indexesFromSysView, indexesFromMeta);
     }
 
     /**
