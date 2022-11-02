@@ -186,8 +186,8 @@ public class DataStreamerImplSelfTest extends GridCommonAbstractTest {
         IgniteConfiguration cfg = getConfiguration(getTestIgniteInstanceName(G.allGrids().size()));
         ListeningTestLogger log = new ListeningTestLogger(cfg.getGridLogger());
 
-        LogListener lsnr = LogListener.matches("You are loading data the setting 'allowOverwrite' set to " +
-                "false (default). It doesn't guarantie data consistency until successfully finishes")
+        LogListener lsnr = LogListener.matches("The Data Streamer loads data with 'allowOverwrite' set to " +
+                "false. It doesn't guarantee data consistency until successfully finishes.")
             .times(mustWarn ? 1 : 0).build();
 
         log.registerListener(lsnr);
