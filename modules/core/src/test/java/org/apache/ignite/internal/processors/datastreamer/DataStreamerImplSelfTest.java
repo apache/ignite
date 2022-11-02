@@ -180,13 +180,14 @@ public class DataStreamerImplSelfTest extends GridCommonAbstractTest {
         StreamReceiver<Integer, Integer>... receivers) throws Exception {
         assert receivers.length > 0;
 
+        String targetMsg = U.field(DataStreamerImpl.class, "WRN_INCONSISTENT_UPDATES");
+
         startGrids(2);
 
         IgniteConfiguration cfg = getConfiguration(getTestIgniteInstanceName(G.allGrids().size()));
         ListeningTestLogger log = new ListeningTestLogger(cfg.getGridLogger());
 
-        LogListener lsnr = LogListener.matches("The Data Streamer loads data with 'allowOverwrite' set to " +
-                "false. It doesn't guarantee data consistency until successfully finishes.")
+        LogListener lsnr = LogListener.matches(targetMsg)
             .times(mustWarn ? 1 : 0).build();
 
         log.registerListener(lsnr);
