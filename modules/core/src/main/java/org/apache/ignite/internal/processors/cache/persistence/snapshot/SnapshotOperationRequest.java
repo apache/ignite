@@ -64,7 +64,7 @@ public class SnapshotOperationRequest implements Serializable {
      * Warnings of snapshot operation. They do not interrupt the process, but produces an error at the end if no
      * other errors occured. This makes the operation status 'not OK'.
      */
-    private volatile List<String> warnings = new ArrayList<>();
+    private volatile List<String> warnings;
 
     /**
      * Concurrent streaming persistent updates flag.
