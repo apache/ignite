@@ -165,10 +165,10 @@ public class SnapshotOperationRequest implements Serializable {
     }
 
     /**
-     * Stores snapshot metadata related to current snapshot operation.
+     * @param startStageEnded Flag indicating that the {@link DistributedProcessType#START_SNAPSHOT} phase has completed.
      */
-    public void meta(SnapshotMetadata meta) {
-        this.meta = meta;
+    protected void startStageEnded(boolean startStageEnded) {
+        this.startStageEnded = startStageEnded;
     }
 
     /**
@@ -179,24 +179,24 @@ public class SnapshotOperationRequest implements Serializable {
     }
 
     /**
-     * @return Snapshot process warnings.
+     * Stores snapshot metadata.
      */
-    public @Nullable List<String> warnings() {
+    public void meta(SnapshotMetadata meta) {
+        this.meta = meta;
+    }
+
+    /**
+     * @return Warnings of snapshot operation.
+     */
+    public List<String> warnings() {
         return warnings;
     }
 
     /**
-     * Stores snapshot warnings.
+     * @param warnings Warnings of snapshot operation.
      */
     public void warnings(List<String> warnings) {
         this.warnings = warnings;
-    }
-
-    /**
-     * @param startStageEnded Flag indicating that the {@link DistributedProcessType#START_SNAPSHOT} phase has completed.
-     */
-    protected void startStageEnded(boolean startStageEnded) {
-        this.startStageEnded = startStageEnded;
     }
 
     /** {@inheritDoc} */

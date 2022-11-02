@@ -17,8 +17,6 @@
 
 package org.apache.ignite.internal.processors.cache.persistence.snapshot;
 
-import java.nio.ByteBuffer;
-import java.nio.ByteOrder;
 import java.util.AbstractMap;
 import java.util.Collection;
 import java.util.Collections;
@@ -27,24 +25,20 @@ import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.stream.Collectors;
 import org.apache.ignite.IgniteCheckedException;
-import org.apache.ignite.internal.GridKernalContext;
 import org.apache.ignite.internal.processors.cache.GridCacheSharedContext;
-import org.apache.ignite.internal.processors.cache.persistence.file.FilePageStore;
-import org.apache.ignite.internal.processors.cache.persistence.metastorage.MetaStorage;
-import org.apache.ignite.internal.processors.cache.persistence.tree.io.PageIO;
-import org.apache.ignite.internal.processors.cache.persistence.tree.io.PagePartitionMetaIO;
+import org.apache.ignite.internal.processors.cache.distributed.dht.topology.GridDhtPartitionState;
+import org.apache.ignite.internal.processors.cache.persistence.CacheDataRow;
+import org.apache.ignite.internal.processors.cache.verify.PartitionHashRecordV2;
 import org.apache.ignite.internal.processors.cache.verify.PartitionKeyV2;
 import org.apache.ignite.internal.util.GridConcurrentHashSet;
-import org.apache.ignite.internal.util.GridUnsafe;
+import org.apache.ignite.internal.util.lang.GridIterator;
 import org.apache.ignite.internal.util.typedef.internal.U;
-
-import static org.apache.ignite.internal.pagemem.PageIdAllocator.INDEX_PARTITION;
 
 /**
  * Quick partitions verifier. Warns if partiton counters or size are different among the nodes. May be caused by
  * canceled/failed DataStreamer.
  */
-public class SnapshotPartitionsFastVerifyHandler extends AbstractSnapshotPartitionsVerifyHandler<Map.Entry<Long, Long>> {
+public class SnapshotPartitionsFastVerifyHandler extends SnapshotPartitionsVerifyHandler {
     /** */
     private static final String WRN_MSG_BASE = "This may happen if DataStreamer with property 'allowOverwrite' set " +
         "to `false` is loading during the snapshot or hadn't successfully finished earlier. However, you will be " +
@@ -63,7 +57,7 @@ public class SnapshotPartitionsFastVerifyHandler extends AbstractSnapshotPartiti
     }
 
     /** {@inheritDoc} */
-    @Override public Map<PartitionKeyV2, Map.Entry<Long, Long>> invoke(SnapshotHandlerContext hndCtx)
+    @Override public Map<PartitionKeyV2, PartitionHashRecordV2> invoke(SnapshotHandlerContext hndCtx)
         throws IgniteCheckedException {
         if (hndCtx.createSnpFut().streamUpdates())
             return null;
@@ -71,42 +65,18 @@ public class SnapshotPartitionsFastVerifyHandler extends AbstractSnapshotPartiti
         return super.invoke(hndCtx);
     }
 
-    /**
-     * Validates certain partition. Including the meta and index.
-     *
-     * @param hndCtx Snapshot handler context.
-     * @param opCtx Snapshot operation context.
-     * @param partKey Partition key.
-     * @param pageStore Store to read and check from.
-     * @return Update counter for data partition. {@code Null} for other partitions.
-     */
-    @Override protected Map.Entry<Long, Long> validatePartition(
-        SnapshotHandlerContext hndCtx,
-        GridKernalContext opCtx,
-        PartitionKeyV2 partKey,
-        FilePageStore pageStore
-    ) throws IgniteCheckedException {
-        if (partKey.partitionId() == INDEX_PARTITION || partKey.groupId() == MetaStorage.METASTORAGE_CACHE_ID)
-            return null;
-
-        ThreadLocal<ByteBuffer> buff =
-            ThreadLocal.withInitial(() -> ByteBuffer.allocateDirect(hndCtx.metadata().pageSize()).
-                order(ByteOrder.nativeOrder()));
-        ByteBuffer pageBuff = buff.get();
-        pageBuff.clear();
-        pageStore.read(0, pageBuff, false);
-
-        long pageAddr = GridUnsafe.bufferAddress(pageBuff);
-
-        PagePartitionMetaIO io = PageIO.getPageIO(pageBuff);
-
-        return new AbstractMap.SimpleEntry<>(io.getSize(pageAddr), io.getUpdateCounter(pageAddr));
+    /** {@inheritDoc} */
+    @Override protected PartitionHashRecordV2 partHash(PartitionKeyV2 key, Object updCntr, Object consId,
+        GridDhtPartitionState state, boolean isPrimary, long partSize,
+        GridIterator<CacheDataRow> it) throws IgniteCheckedException {
+        return new PartitionHashRecordV2(key, isPrimary, null, 0, updCntr, partSize, null);
     }
 
     /** {@inheritDoc} */
-    @Override public void complete(String name,
-        Collection<SnapshotHandlerResult<Map<PartitionKeyV2, Map.Entry<Long, Long>>>> results)
-        throws IgniteCheckedException {
+    @Override public void complete(
+        String name,
+        Collection<SnapshotHandlerResult<Map<PartitionKeyV2, PartitionHashRecordV2>>> results
+    ) throws IgniteCheckedException {
         // Group id -> Part size, part counter -> Counters set without node id.
         Map<Integer, Map<Integer, Map.Entry<Long, Long>>> counters = new ConcurrentHashMap<>();
 
@@ -128,10 +98,13 @@ public class SnapshotPartitionsFastVerifyHandler extends AbstractSnapshotPartiti
                                 partIdMap = new ConcurrentHashMap<>();
 
                             partIdMap.compute(partResult.getKey().partitionId(), (partId, savedSizeAndCnt) -> {
-                                if (savedSizeAndCnt == null)
-                                    return partResult.getValue();
+                                Map.Entry<Long, Long> toCmp = new AbstractMap.SimpleEntry<>(partResult.getValue().size(),
+                                    (long)partResult.getValue().updateCounter());
 
-                                if (!savedSizeAndCnt.equals(partResult.getValue()))
+                                if (savedSizeAndCnt == null)
+                                    return toCmp;
+
+                                if (!savedSizeAndCnt.equals(toCmp))
                                     wrnGroups.add(partResult.getKey().groupId());
 
                                 return savedSizeAndCnt;

@@ -146,7 +146,6 @@ import org.apache.ignite.internal.processors.task.GridInternal;
 import org.apache.ignite.internal.util.BasicRateLimiter;
 import org.apache.ignite.internal.util.GridBusyLock;
 import org.apache.ignite.internal.util.GridCloseableIteratorAdapter;
-import org.apache.ignite.internal.util.GridConcurrentHashSet;
 import org.apache.ignite.internal.util.distributed.DistributedProcess;
 import org.apache.ignite.internal.util.distributed.InitMessage;
 import org.apache.ignite.internal.util.future.GridCompoundFuture;
@@ -802,8 +801,6 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
                     .suspend(((SnapshotFutureTask)task0).started());
             }
 
-            System.err.println("TEST | new cluster request: " + req.requestId());
-
             clusterSnpReq = req;
         }
 
@@ -855,7 +852,6 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
             return;
 
         SnapshotOperationRequest snpReq = clusterSnpReq;
-        ClusterSnapshotFuture snpFut = clusterSnpFut;
 
         boolean cancelled = err.values().stream().anyMatch(e -> e instanceof IgniteFutureCancelledCheckedException);
 
@@ -902,12 +898,8 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
                 .listen(f -> {
                         if (f.error() != null)
                             snpReq.error(f.error());
-                        else if (f.result() != null) {
-                            snpReq.warnings(f.result());
 
-                            if (snpFut != null)
-                                snpFut.warnings.addAll(f.result());
-                        }
+                        snpReq.warnings(f.result());
 
                         endSnpProc.start(snpReq.requestId(), snpReq);
                     }
@@ -1008,13 +1000,20 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
         SnapshotOperationRequest snpReq = clusterSnpReq;
 
         if (snpReq == null || !F.eq(req.requestId(), snpReq.requestId())) {
-            System.err.println("TEST | wont store meta");
+            System.err.println("TEST | wont store meta. CLient: " + cctx.kernalContext().clientNode());
 
             return new GridFinishedFuture<>();
         }
 
         if (req.error() == null)
             storeSnapshotMeta(snpReq);
+
+        if (req.warnings() != null) {
+            synchronized (snpOpMux) {
+                if (clusterSnpFut != null && clusterSnpFut.requestId().equals(snpReq.requestId()))
+                    clusterSnpFut.warnings.addAll(req.warnings());
+            }
+        }
 
         try {
             if (req.error() != null) {
@@ -1352,8 +1351,6 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
 
         SnapshotMetadataCollectorTaskArg taskArg = new SnapshotMetadataCollectorTaskArg(name, snpPath);
 
-        Set<String> warnings = new GridConcurrentHashSet<>();
-
         kctx0.task().execute(SnapshotMetadataCollectorTask.class, taskArg).listen(f0 -> {
             if (f0.error() == null) {
                 Map<ClusterNode, List<SnapshotMetadata>> metas = f0.result();
@@ -1387,9 +1384,6 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
                         }
 
                         grpIds.keySet().removeAll(meta.partitions().keySet());
-
-                        if (meta.warnings() != null)
-                            warnings.addAll(meta.warnings());
                     }
                 }
 
@@ -2258,16 +2252,13 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
             this.execSvc = execSvc;
 
             // Register system default snapshot integrity check that is used before the restore operation.
-            SnapshotHandler<?> sysCheck = new SnapshotPartitionsVerifyHandler(ctx.cache().context());
-            handlers.computeIfAbsent(sysCheck.type(), v -> new ArrayList<>()).add((SnapshotHandler<Object>)sysCheck);
+            registerHandler(new SnapshotPartitionsVerifyHandler(ctx.cache().context()));
 
-            // Register system default datastreamer updates checker.
-            SnapshotHandler<?> dsCheck = new DataStreamerUpdatesHandler();
-            handlers.computeIfAbsent(dsCheck.type(), v -> new ArrayList<>()).add((SnapshotHandler<Object>)dsCheck);
+            // Register system default Datastreamer updates checker.
+            registerHandler(new DataStreamerUpdatesHandler());
 
             // Register system default page size and counters check that is used at the creation operation.
-            SnapshotHandler<?> fastPartCheck = new SnapshotPartitionsFastVerifyHandler(ctx.cache().context());
-            handlers.computeIfAbsent(dsCheck.type(), v -> new ArrayList<>()).add((SnapshotHandler<Object>)fastPartCheck);
+            registerHandler(new SnapshotPartitionsFastVerifyHandler(ctx.cache().context()));
 
             // Register custom handlers.
             SnapshotHandler<Object>[] extHnds = (SnapshotHandler<Object>[])ctx.plugins().extensions(SnapshotHandler.class);
@@ -2276,7 +2267,7 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
                 return;
 
             for (SnapshotHandler<Object> extHnd : extHnds)
-                handlers.computeIfAbsent(extHnd.type(), v -> new ArrayList<>()).add(extHnd);
+                registerHandler(extHnd);
         }
 
         /**
@@ -2376,6 +2367,11 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
 
                 return new SnapshotHandlerResult<>(null, e, ctx.localNode());
             }
+        }
+
+        /** */
+        private void registerHandler(SnapshotHandler hnd) {
+            handlers.computeIfAbsent(hnd.type(), v -> new ArrayList<>()).add(hnd);
         }
     }
 
