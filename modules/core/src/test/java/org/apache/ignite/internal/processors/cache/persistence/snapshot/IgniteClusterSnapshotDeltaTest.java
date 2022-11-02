@@ -18,7 +18,10 @@
 package org.apache.ignite.internal.processors.cache.persistence.snapshot;
 
 import java.io.File;
+import java.io.IOException;
 import java.io.Serializable;
+import java.nio.ByteBuffer;
+import java.nio.file.OpenOption;
 import java.util.Arrays;
 import java.util.Collection;
 import java.util.concurrent.CountDownLatch;
@@ -29,6 +32,10 @@ import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.cache.affinity.rendezvous.RendezvousAffinityFunction;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.internal.IgniteEx;
+import org.apache.ignite.internal.processors.cache.persistence.file.FileIO;
+import org.apache.ignite.internal.processors.cache.persistence.file.FileIODecorator;
+import org.apache.ignite.internal.processors.cache.persistence.file.FileIOFactory;
+import org.apache.ignite.internal.processors.cache.persistence.file.FilePageStoreManager;
 import org.apache.ignite.internal.processors.cache.persistence.partstate.GroupPartitionId;
 import org.apache.ignite.internal.processors.configuration.distributed.DistributedChangeableProperty;
 import org.apache.ignite.internal.util.typedef.F;
@@ -66,6 +73,7 @@ public class IgniteClusterSnapshotDeltaTest extends AbstractSnapshotSelfTest {
         int keys = 1_000;
         byte[] payload = new byte[DFLT_PAGE_SIZE / 2];
         int partCnt = 2;
+        int batchSize = keys / 10;
 
         // 1. Start a cluster and fill cache.
         ThreadLocalRandom.current().nextBytes(payload);
@@ -79,8 +87,11 @@ public class IgniteClusterSnapshotDeltaTest extends AbstractSnapshotSelfTest {
 
         IgniteEx srv = startGridsWithCache(1, keys, (k) -> expPayload, ccfg);
 
-        if (sorted)
-            setDeltaSortBatchSize(keys / 2);
+        if (sorted) {
+            setDeltaSortBatchSize(batchSize);
+
+            injectSequentialWriteCheck(srv, batchSize);
+        }
 
         IgniteSnapshotManager mgr = snp(srv);
 
@@ -153,6 +164,46 @@ public class IgniteClusterSnapshotDeltaTest extends AbstractSnapshotSelfTest {
 
         for (int i = 0; i < keys; i++)
             assertArrayEquals(expPayload, cache.get(i));
+    }
+
+    /** Injects test IO that checks sequential write to a pagestore on a delta apply. */
+    private void injectSequentialWriteCheck(IgniteEx srv, int batchSize) {
+        FilePageStoreManager pageStore = (FilePageStoreManager)srv.context().cache().context().pageStore();
+
+        FileIOFactory old = pageStore.getPageStoreFileIoFactory();
+
+        FileIOFactory testFactory = new FileIOFactory() {
+            @Override public FileIO create(File file, OpenOption... modes) throws IOException {
+                FileIO fileIo = old.create(file, modes);
+
+                return new FileIODecorator(fileIo) {
+                    boolean isSequentialWrite = true;
+
+                    long lastPos;
+
+                    int idx;
+
+                    @Override public int write(ByteBuffer srcBuf, long pos) throws IOException {
+                        boolean batchRotation = idx++ % batchSize == 0;
+
+                        if (lastPos > pos && !batchRotation)
+                            isSequentialWrite = false;
+
+                        lastPos = pos;
+
+                        return super.write(srcBuf, pos);
+                    }
+
+                    @Override public void close() throws IOException {
+                        super.close();
+
+                        assertTrue(isSequentialWrite);
+                    }
+                };
+            }
+        };
+
+        pageStore.setPageStoreFileIOFactories(testFactory, testFactory);
     }
 
     /** @param val Snapshot delta sort batch size to set. */
