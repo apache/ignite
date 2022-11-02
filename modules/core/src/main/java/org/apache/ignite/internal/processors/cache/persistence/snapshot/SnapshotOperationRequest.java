@@ -18,7 +18,6 @@
 package org.apache.ignite.internal.processors.cache.persistence.snapshot;
 
 import java.io.Serializable;
-import java.util.ArrayList;
 import java.util.Collection;
 import java.util.List;
 import java.util.Set;
@@ -61,13 +60,13 @@ public class SnapshotOperationRequest implements Serializable {
     private volatile Throwable err;
 
     /**
-     * Warnings of snapshot operation. They do not interrupt the process, but produces an error at the end if no
-     * other errors occured. This makes the operation status 'not OK'.
+     * Snapshot operation warnings. Warnings do not interrupt snapshot process but raise exception at the end to make
+     * the operation status 'not OK' if no other error occured.
      */
     private volatile List<String> warnings;
 
     /**
-     * Concurrent streaming persistent updates flag.
+     * Warning flag of concurrent inconsistent-by-nature streamer updates.
      */
     private transient volatile boolean streamerWrn;
 
@@ -192,15 +191,14 @@ public class SnapshotOperationRequest implements Serializable {
     }
 
     /**
-     * {@code True} if concurrent inconsistent-by-nature streamer updates were detected during the operation.
-     * {@code False} otherwise.
+     * {@code True} If the streamer warning flag is set. {@code False} otherwise.
      */
     public boolean streamerWarning() {
         return streamerWrn;
     }
 
     /**
-     * Sets concurrent inconsistent-by-nature streamer updates detected during the operation.
+     * Sets the streamer warning flag.
      */
     public boolean streamerWarning(boolean val) {
         return streamerWrn = val;

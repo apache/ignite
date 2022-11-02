@@ -926,7 +926,7 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
      * Execute the {@link SnapshotHandler#complete(String, Collection)} method of the snapshot handlers asynchronously.
      *
      * @param req Request on snapshot creation.
-     * @param res Warnings if any occured.
+     * @param res Results.
      * @return Future that will be completed when the handlers are finished executing.
      */
     private IgniteInternalFuture<Void> completeHandlersAsyncIfNeeded(SnapshotOperationRequest req,
@@ -1017,9 +1017,10 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
         synchronized (snpOpMux) {
             if (clusterSnpFut != null) {
                 if (endFail.isEmpty() && snpReq.error() == null) {
-                    if (!F.isEmpty(snpReq.warnings()))
+                    if (!F.isEmpty(snpReq.warnings())) {
                         clusterSnpFut.onDone(new IgniteException("Snapshot task '" + snpReq.snapshotName() +
-                            "' completed with warnings:" + U.nl() + String.join(U.nl() + '\t', snpReq.warnings())));
+                            "' completed with warnings:" + U.nl() + '\t' + String.join(U.nl() + '\t', snpReq.warnings())));
+                    }
                     else
                         clusterSnpFut.onDone();
 
@@ -1052,7 +1053,7 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
     }
 
     /**
-     * Accepts notification of concurrent inconsistent-by-nature streaming updates.
+         * Sets the streamer warning flag to current snapshot process if it is active.
      */
     public void streamerWarning() {
         SnapshotOperationRequest snpTask = currentCreateRequest();
@@ -2225,7 +2226,7 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
             // Register system default snapshot integrity check that is used before the restore operation.
             registerHandler(new SnapshotPartitionsVerifyHandler(ctx.cache().context()));
 
-            // Register system default Datastreamer updates checker.
+            // Register system default DataStreamer updates check.
             registerHandler(new DataStreamerUpdatesHandler());
 
             // Register custom handlers.

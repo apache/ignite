@@ -26,7 +26,7 @@ import org.apache.ignite.internal.util.typedef.F;
 import static org.apache.ignite.internal.processors.cache.persistence.snapshot.SnapshotHandlerType.CREATE;
 
 /**
- * Snapshot haldler that monitor inconsistent-by-nature Datastreamer updates.
+ * A snapshot haldler that monitors and warns of concurrent DataStreamer updates.
  */
 public class DataStreamerUpdatesHandler implements SnapshotHandler<Boolean> {
     /** */
@@ -46,12 +46,12 @@ public class DataStreamerUpdatesHandler implements SnapshotHandler<Boolean> {
     }
 
     /** {@inheritDoc} */
-    @Override public void complete(String name,
-        Collection<SnapshotHandlerResult<Boolean>> results) throws SnapshotHandlerWarningException, Exception {
+    @Override public void complete(String name, Collection<SnapshotHandlerResult<Boolean>> results)
+        throws SnapshotHandlerWarningException {
         Collection<UUID> nodes = F.viewReadOnly(results, r -> r.node().id(), SnapshotHandlerResult::data);
 
         if (!nodes.isEmpty())
-            throw new SnapshotHandlerWarningException(WRN_MSG + " Streaming updates detected on nodes: " + nodes.stream()
-                .map(UUID::toString).collect(Collectors.joining(", ")));
+            throw new SnapshotHandlerWarningException(WRN_MSG + " Updates from DataStreamer detected on the nodes: " +
+                nodes.stream().map(UUID::toString).collect(Collectors.joining(", ")));
     }
 }

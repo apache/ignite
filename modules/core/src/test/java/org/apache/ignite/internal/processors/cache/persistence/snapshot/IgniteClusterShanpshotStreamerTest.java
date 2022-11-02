@@ -18,35 +18,20 @@
 package org.apache.ignite.internal.processors.cache.persistence.snapshot;
 
 import java.util.Collections;
-import java.util.Set;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.atomic.AtomicBoolean;
-import java.util.concurrent.atomic.AtomicInteger;
-import java.util.concurrent.atomic.AtomicReference;
-import java.util.stream.Collectors;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteDataStreamer;
 import org.apache.ignite.IgniteException;
-import org.apache.ignite.cluster.BaselineNode;
-import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.DataPageEvictionMode;
 import org.apache.ignite.configuration.DataRegionConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.IgniteInternalFuture;
-import org.apache.ignite.internal.managers.communication.GridIoMessage;
-import org.apache.ignite.internal.processors.cache.verify.IdleVerifyResultV2;
-import org.apache.ignite.internal.processors.datastreamer.DataStreamerCacheUpdaters;
-import org.apache.ignite.internal.processors.datastreamer.DataStreamerImpl;
-import org.apache.ignite.internal.processors.datastreamer.DataStreamerRequest;
 import org.apache.ignite.internal.util.typedef.G;
 import org.apache.ignite.internal.util.typedef.internal.U;
-import org.apache.ignite.lang.IgniteInClosure;
-import org.apache.ignite.plugin.extensions.communication.Message;
-import org.apache.ignite.spi.IgniteSpiException;
-import org.apache.ignite.spi.communication.tcp.TcpCommunicationSpi;
 import org.apache.ignite.testframework.GridTestUtils;
 import org.junit.Test;
 
@@ -54,7 +39,7 @@ import static org.apache.ignite.cluster.ClusterState.ACTIVE;
 import static org.apache.ignite.testframework.GridTestUtils.assertThrows;
 
 /**
- * Tests snapshot is consistent or warned under streaming load.
+ * Tests snapshot is consistent or snapshot process produces proper warning.
  */
 public class IgniteClusterShanpshotStreamerTest extends AbstractSnapshotSelfTest {
     /** */
@@ -96,8 +81,6 @@ public class IgniteClusterShanpshotStreamerTest extends AbstractSnapshotSelfTest
         inMemDr.setPageEvictionMode(DataPageEvictionMode.RANDOM_2_LRU);
         cfg.getDataStorageConfiguration().setDataRegionConfigurations(inMemDr);
 
-        cfg.setCommunicationSpi(new DataLoosingCommunicationSpi());
-
         return cfg;
     }
 
@@ -118,10 +101,10 @@ public class IgniteClusterShanpshotStreamerTest extends AbstractSnapshotSelfTest
     }
 
     /**
-     * Tests other cache is restorable from snapshot.
+     * Tests not affected by streamer cache is restorable from snapshot.
      */
     @Test
-    public void testOtherCacheRestores() throws InterruptedException, IgniteCheckedException {
+    public void testOtherCacheRestores() throws IgniteCheckedException {
         String cname = "cache2";
         String expectedWrn = U.field(DataStreamerUpdatesHandler.class, "WRN_MSG");
 
@@ -132,11 +115,9 @@ public class IgniteClusterShanpshotStreamerTest extends AbstractSnapshotSelfTest
                 ds.addData(i, i);
         }
 
-        CountDownLatch preloadLatch = new CountDownLatch(10_000);
         AtomicBoolean stopLoad = new AtomicBoolean();
 
-        IgniteInternalFuture<?> loadFut = runLoad(grid(0), false, preloadLatch, stopLoad, true);
-        preloadLatch.await();
+        IgniteInternalFuture<?> loadFut = runLoad(grid(0), false, stopLoad);
 
         try {
             assertThrows(null, () -> snpMgr.createSnapshot(SNAPSHOT_NAME).get(), IgniteException.class, expectedWrn);
@@ -145,8 +126,6 @@ public class IgniteClusterShanpshotStreamerTest extends AbstractSnapshotSelfTest
             stopLoad.set(true);
             loadFut.get();
         }
-
-        checkSnp(true);
 
         grid(0).destroyCache(cname);
         grid(0).destroyCache(dfltCacheCfg.getName());
@@ -161,7 +140,7 @@ public class IgniteClusterShanpshotStreamerTest extends AbstractSnapshotSelfTest
      * Tests streaming into in-memory cache doesn't affect snapshot.
      */
     @Test
-    public void testInMemDoesntAffectSnp() throws InterruptedException, IgniteCheckedException {
+    public void testInMemDoesntAffectSnp() throws IgniteCheckedException {
         String cache2Name = "cache2";
         int loadCnt = 1000;
 
@@ -178,11 +157,8 @@ public class IgniteClusterShanpshotStreamerTest extends AbstractSnapshotSelfTest
         grid(0).createCache(dfltCacheCfg);
 
         AtomicBoolean stop = new AtomicBoolean();
-        CountDownLatch preloadCnt = new CountDownLatch(loadCnt);
 
-        IgniteInternalFuture<?> loadFut = runLoad(grid(2), false, preloadCnt, stop, false);
-
-        preloadCnt.await();
+        IgniteInternalFuture<?> loadFut = runLoad(grid(2), false, stop);
 
         try {
             snpMgr.createSnapshot(SNAPSHOT_NAME).get();
@@ -201,21 +177,18 @@ public class IgniteClusterShanpshotStreamerTest extends AbstractSnapshotSelfTest
     }
 
     /**
-     * Tests snapshot consistecy when streamer starts before snapshot.
+     * Tests snapshot process throws warning if required.
      *
-     * @param mustFail If {@code true}, checks snapshot process warns of inconsistency and ensures snapshot validation
-     *                 finds errors. Otherwise, ensures snapshot validation is ok.
+     * @param mustFail If {@code true}, checks snapshot process produces the warning. Otherwise, checks snapshot
+     *                 process produces no warning.
      * @param allowOverwrite 'allowOverwrite' setting.
      */
     private void doTestDsWhileSnp(boolean mustFail, boolean allowOverwrite) throws Exception {
         String expectedWrn = U.field(DataStreamerUpdatesHandler.class, "WRN_MSG");
 
-        CountDownLatch preload = new CountDownLatch(10_000);
         AtomicBoolean stopLoading = new AtomicBoolean(false);
 
-        IgniteInternalFuture<?> loadFut = runLoad(client, allowOverwrite, preload, stopLoading, true);
-
-        preload.await();
+        IgniteInternalFuture<?> loadFut = runLoad(client, allowOverwrite, stopLoading);
 
         try {
             if (mustFail)
@@ -228,129 +201,34 @@ public class IgniteClusterShanpshotStreamerTest extends AbstractSnapshotSelfTest
             stopLoading.set(true);
             loadFut.get();
         }
-
-        checkSnp(mustFail);
-    }
-
-    /** */
-    private void checkSnp(boolean mustFail) throws IgniteCheckedException, InterruptedException {
-        IdleVerifyResultV2 checkRes = snpMgr.checkSnapshot(SNAPSHOT_NAME, null).get();
-
-        assertTrue(mustFail == checkRes.hasConflicts());
-        assertTrue(checkRes.exceptions().isEmpty());
     }
 
     /**
-     * Loads or pre-loads cache.
+     * Runs DataStreamer asynchronously. Waits while streamer pre-loads some amount of data.
      *
      * @param ldr Loader node.
      * @param allowOverwrite 'allowOverwrite' setting.
-     * @param dataSendCounter Data counter submitted to the streamer.
      * @param stop Stop load flag.
-     * @param affect If {@code true}, simulates inconsistent updates.
      */
-    private IgniteInternalFuture<?> runLoad(Ignite ldr, boolean allowOverwrite, CountDownLatch dataSendCounter,
-        AtomicBoolean stop, boolean affect) {
+    private IgniteInternalFuture<?> runLoad(Ignite ldr, boolean allowOverwrite, AtomicBoolean stop) {
+        CountDownLatch preload = new CountDownLatch(10_000);
 
-        return GridTestUtils.runMultiThreadedAsync(() -> {
-            DataLoosingCommunicationSpi cm = (DataLoosingCommunicationSpi)ldr.configuration().getCommunicationSpi();
-
-            boolean blockSet = false;
-
-            if (affect) {
-                Set<Object> bl = grid(0).cluster().currentBaselineTopology().stream().map(BaselineNode::consistentId)
-                    .collect(Collectors.toSet());
-
-                for (Ignite ig : G.allGrids()) {
-                    if (ig.cluster().localNode().isClient()
-                        || ig.cluster().localNode().id().equals(ldr.cluster().localNode().id())
-                        || !bl.contains(ig.cluster().localNode().consistentId()))
-                        continue;
-
-                    cm.block(ig.cluster().localNode());
-
-                    blockSet = true;
-
-                    break;
-                }
-
-                assert blockSet;
-            }
-
+        IgniteInternalFuture<?> res = GridTestUtils.runAsync(() -> {
             try (IgniteDataStreamer<Integer, Object> ds = ldr.dataStreamer(dfltCacheCfg.getName())) {
                 ds.allowOverwrite(allowOverwrite);
 
                 int idx = 0;
 
                 while (!stop.get()) {
-                    ds.addData(idx, idx);
+                    ds.addData(++idx, idx);
 
-                    idx++;
-
-                    if (dataSendCounter.getCount() > 0) {
-                        dataSendCounter.countDown();
-
-                        if (dataSendCounter.getCount() == 0)
-                            ds.flush();
-                    }
+                    preload.countDown();
                 }
             }
-            finally {
-                while (dataSendCounter.getCount() > 0)
-                    dataSendCounter.countDown();
+        }, "load-thread");
 
-                if (blockSet)
-                    cm.stopBlocking();
-            }
-        }, 1, "load-thread");
-    }
+        preload.countDown();
 
-    /**
-     * Drops streamer entries from the batches to certain node. Simulates inconsistent data contains separates backup
-     * and primary records. {@link DataStreamerImpl.IsolatedUpdater} does so. Doesn't affect consistency with normal
-     * cache loads with 'cache.put()' or 'cache.putAll()' witch are used with stream receivers like
-     * {@link DataStreamerCacheUpdaters#batched()}. Doesn't drop or block messages allowing the streamer to keep
-     * working because it awaits fore responses.
-     */
-    private static class DataLoosingCommunicationSpi extends TcpCommunicationSpi {
-        /** */
-        private final AtomicReference<ClusterNode> block = new AtomicReference<>();
-
-        /** */
-        private final AtomicBoolean blocked = new AtomicBoolean();
-
-        /** {@inheritDoc} */
-        @Override public void sendMessage(ClusterNode node, Message msg, IgniteInClosure<IgniteException> ackC)
-            throws IgniteSpiException {
-            if (msg instanceof GridIoMessage && (((GridIoMessage)msg).message() instanceof DataStreamerRequest)) {
-                ClusterNode toBlock = block.get();
-
-                if (toBlock != null && toBlock.id().equals(node.id())) {
-                    blocked.set(true);
-
-                    DataStreamerRequest dsrq = ((DataStreamerRequest)((GridIoMessage)msg).message());
-
-                    AtomicInteger cnt = new AtomicInteger(dsrq.entries().size());
-
-                    dsrq.entries().removeIf(e -> cnt.decrementAndGet() > 0);
-                }
-            }
-
-            super.sendMessage(node, msg, ackC);
-        }
-
-        /** */
-        public void block(ClusterNode n) {
-            block.set(n);
-
-            blocked.set(false);
-        }
-
-        /** */
-        public void stopBlocking() {
-            block.set(null);
-
-            assertTrue("No messages was blocked.", blocked.compareAndSet(true, false));
-        }
+        return res;
     }
 }

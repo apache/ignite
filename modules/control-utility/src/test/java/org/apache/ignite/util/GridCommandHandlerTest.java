@@ -49,10 +49,6 @@ import java.util.concurrent.atomic.LongAdder;
 import java.util.function.BooleanSupplier;
 import java.util.function.Function;
 import java.util.function.UnaryOperator;
-import java.util.logging.Formatter;
-import java.util.logging.LogRecord;
-import java.util.logging.Logger;
-import java.util.logging.StreamHandler;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 import java.util.stream.Collectors;
@@ -143,7 +139,6 @@ import org.apache.ignite.spi.communication.tcp.TcpCommunicationSpi;
 import org.apache.ignite.spi.metric.LongMetric;
 import org.apache.ignite.spi.metric.Metric;
 import org.apache.ignite.testframework.GridTestUtils;
-import org.apache.ignite.testframework.LogListener;
 import org.apache.ignite.testframework.junits.WithSystemProperty;
 import org.apache.ignite.transactions.Transaction;
 import org.apache.ignite.transactions.TransactionRollbackException;
@@ -3077,7 +3072,7 @@ public class GridCommandHandlerTest extends GridCommandHandlerClusterPerMethodAb
     }
 
     /**
-     * Test 'not OK' status of snapshot operation producing a warning.
+     * Test that 'not OK' status of snapshot operation is set if the operation produces a warning.
      *
      * @throws Exception If failed.
      */
@@ -3095,7 +3090,7 @@ public class GridCommandHandlerTest extends GridCommandHandlerClusterPerMethodAb
             @Override public void initExtensions(PluginContext ctx, ExtensionRegistry registry) {
                 super.initExtensions(ctx, registry);
 
-                // Simulates Datastreamer check warning.
+                // Simulates warning occurs at snapshot creation.
                 registry.registerExtension(SnapshotHandler.class, new SnapshotHandler<Void>() {
                     /** {@inheritDoc} */
                     @Override public SnapshotHandlerType type() {
@@ -3125,21 +3120,9 @@ public class GridCommandHandlerTest extends GridCommandHandlerClusterPerMethodAb
         ig.cluster().state(ACTIVE);
         createCacheAndPreload(ig, 100);
 
-        LogListener logChecker = LogListener.matches(targetMsg).times(1).build();
+        injectTestSystemOut();
 
-        Logger hndLog = CommandHandler.initLogger(null);
-        hndLog.addHandler(new StreamHandler(System.out, new Formatter() {
-            /** {@inheritDoc} */
-            @Override public String format(LogRecord record) {
-                String msg = record.getMessage();
-
-                logChecker.accept(msg);
-
-                return msg + "\n";
-            }
-        }));
-
-        CommandHandler hnd = new CommandHandler(hndLog);
+        CommandHandler hnd = new CommandHandler();
 
         List<String> args = new ArrayList<>(F.asList("--snapshot", "create", "testDsSnp", "--sync"));
 
@@ -3150,7 +3133,7 @@ public class GridCommandHandlerTest extends GridCommandHandlerClusterPerMethodAb
 
         assertEquals(EXIT_CODE_UNEXPECTED_ERROR, code);
 
-        logChecker.check();
+        assertContains(log, testOut.toString(), targetMsg);
     }
 
     /**
