@@ -38,6 +38,9 @@ public class SnapshotHandlerContext {
     /** Local node. */
     private final ClusterNode locNode;
 
+    /** Current snapshot creation future. {@code Null} if operation is not snapshot creation. */
+    @Nullable private SnapshotFutureTask createSnpFut;
+
     /**
      * @param metadata Snapshot metadata.
      * @param grps The names of the cache groups on which the operation is performed.
@@ -45,10 +48,23 @@ public class SnapshotHandlerContext {
      * @param snpDir The full path to the snapshot files.
      */
     public SnapshotHandlerContext(SnapshotMetadata metadata, @Nullable Collection<String> grps, ClusterNode locNode, File snpDir) {
+        this(metadata, grps, null, locNode, snpDir);
+    }
+
+    /**
+     * @param metadata Snapshot metadata.
+     * @param grps The names of the cache groups on which the operation is performed.
+     * @param createSnpFut Current snapshot creation future. {@code Null} if operation is not creation.
+     * @param locNode Local node.
+     * @param snpDir The full path to the snapshot files.
+     */
+    public SnapshotHandlerContext(SnapshotMetadata metadata, @Nullable Collection<String> grps,
+        @Nullable SnapshotFutureTask createSnpFut, ClusterNode locNode, File snpDir) {
         this.metadata = metadata;
         this.grps = grps;
         this.locNode = locNode;
         this.snpDir = snpDir;
+        this.createSnpFut = createSnpFut;
     }
 
     /**
@@ -78,5 +94,12 @@ public class SnapshotHandlerContext {
      */
     public ClusterNode localNode() {
         return locNode;
+    }
+
+    /**
+     * @return Current snapshot creation future. {@code Null} if operation is not creation.
+     */
+    public SnapshotFutureTask createSnpFut() {
+        return createSnpFut;
     }
 }
