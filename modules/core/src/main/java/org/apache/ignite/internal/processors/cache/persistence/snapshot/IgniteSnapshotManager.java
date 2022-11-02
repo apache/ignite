@@ -44,6 +44,7 @@ import java.util.Deque;
 import java.util.EnumMap;
 import java.util.HashMap;
 import java.util.HashSet;
+import java.util.Iterator;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
@@ -52,6 +53,7 @@ import java.util.Objects;
 import java.util.Optional;
 import java.util.Queue;
 import java.util.Set;
+import java.util.TreeMap;
 import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentLinkedDeque;
@@ -104,6 +106,7 @@ import org.apache.ignite.internal.managers.encryption.GroupKey;
 import org.apache.ignite.internal.managers.encryption.GroupKeyEncrypted;
 import org.apache.ignite.internal.managers.eventstorage.DiscoveryEventListener;
 import org.apache.ignite.internal.managers.systemview.walker.SnapshotViewWalker;
+import org.apache.ignite.internal.pagemem.PageIdUtils;
 import org.apache.ignite.internal.pagemem.store.PageStore;
 import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
 import org.apache.ignite.internal.processors.cache.CacheGroupDescriptor;
@@ -137,6 +140,7 @@ import org.apache.ignite.internal.processors.cache.verify.IdleVerifyResultV2;
 import org.apache.ignite.internal.processors.cluster.DiscoveryDataClusterState;
 import org.apache.ignite.internal.processors.cluster.IgniteChangeGlobalStateSupport;
 import org.apache.ignite.internal.processors.configuration.distributed.DistributedConfigurationLifecycleListener;
+import org.apache.ignite.internal.processors.configuration.distributed.DistributedIntegerProperty;
 import org.apache.ignite.internal.processors.configuration.distributed.DistributedLongProperty;
 import org.apache.ignite.internal.processors.configuration.distributed.DistributedPropertyDispatcher;
 import org.apache.ignite.internal.processors.marshaller.MappedName;
@@ -146,6 +150,7 @@ import org.apache.ignite.internal.processors.task.GridInternal;
 import org.apache.ignite.internal.util.BasicRateLimiter;
 import org.apache.ignite.internal.util.GridBusyLock;
 import org.apache.ignite.internal.util.GridCloseableIteratorAdapter;
+import org.apache.ignite.internal.util.GridIntIterator;
 import org.apache.ignite.internal.util.distributed.DistributedProcess;
 import org.apache.ignite.internal.util.distributed.InitMessage;
 import org.apache.ignite.internal.util.future.GridCompoundFuture;
@@ -214,6 +219,7 @@ import static org.apache.ignite.internal.processors.cache.persistence.tree.io.Pa
 import static org.apache.ignite.internal.processors.cache.persistence.tree.io.PageIO.getPageIO;
 import static org.apache.ignite.internal.processors.cache.persistence.tree.io.PageIO.getType;
 import static org.apache.ignite.internal.processors.cache.persistence.tree.io.PageIO.getVersion;
+import static org.apache.ignite.internal.processors.configuration.distributed.DistributedIntegerProperty.detachedIntegerProperty;
 import static org.apache.ignite.internal.processors.configuration.distributed.DistributedLongProperty.detachedLongProperty;
 import static org.apache.ignite.internal.processors.task.GridTaskThreadContextKey.TC_SKIP_AUTH;
 import static org.apache.ignite.internal.processors.task.GridTaskThreadContextKey.TC_SUBGRID;
@@ -270,6 +276,9 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
 
     /** Snapshot transfer rate distributed configuration key */
     public static final String SNAPSHOT_TRANSFER_RATE_DMS_KEY = "snapshotTransferRate";
+
+    /** Snapshot delta sort batch size key. */
+    public static final String SNAPSHOT_DELTA_SORT_BATCH_SIZE_KEY = "snapshotDeltaSortBatchSize";
 
     /** Snapshot transfer rate is unlimited by default. */
     public static final long DFLT_SNAPSHOT_TRANSFER_RATE_BYTES = 0L;
@@ -395,6 +404,13 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
     private final DistributedLongProperty snapshotTransferRate = detachedLongProperty(SNAPSHOT_TRANSFER_RATE_DMS_KEY);
 
     /**
+     * Snapshot delta sort batch size in pages count. If set then delta pages will be indexed by page index to almost
+     * sequential disk write on apply. This generates an extra delta read. If value is non-positive or not set then delta
+     * pages will be applied directly.
+     */
+    private final DistributedIntegerProperty deltaSortBatch = detachedIntegerProperty(SNAPSHOT_DELTA_SORT_BATCH_SIZE_KEY);
+
+    /**
      * @param ctx Kernal context.
      */
     public IgniteSnapshotManager(GridKernalContext ctx) {
@@ -482,6 +498,7 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
                     });
 
                     dispatcher.registerProperty(snapshotTransferRate);
+                    dispatcher.registerProperty(deltaSortBatch);
                 }
 
                 @Override public void onReadyToWrite() {
@@ -3254,9 +3271,62 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
 
                 assert totalBytes % pageSize == 0 : "Given file with delta pages has incorrect size: " + fileIo.size();
 
+                int pagesCnt = (int)(totalBytes / pageSize);
+
+                Integer batchSize = deltaSortBatch.get();
+
+                GridIntIterator iter;
+
+                if (batchSize == null || batchSize <= 0)
+                    iter = U.forRange(0, pagesCnt);
+                else {
+                    iter = new GridIntIterator() {
+                        private int idx = 0;
+
+                        private Iterator<Integer> sortedIter;
+
+                        @Override public boolean hasNext() {
+                            if (sortedIter == null || !sortedIter.hasNext()) {
+                                try {
+                                    advance();
+                                }
+                                catch (Exception e) {
+                                    throw new IgniteException(e);
+                                }
+                            }
+
+                            return sortedIter.hasNext();
+                        }
+
+                        @Override public int next() {
+                            return sortedIter.next();
+                        }
+
+                        private void advance() throws Exception {
+                            TreeMap<Integer, Integer> sorted = new TreeMap<>();
+
+                            while (idx < pagesCnt && sorted.size() < batchSize) {
+                                transferRateLimiter.acquire(pageSize);
+
+                                fileIo.readFully(pageBuf, (long)idx * pageSize);
+
+                                sorted.put(PageIdUtils.pageIndex(PageIO.getPageId(pageBuf)), idx);
+
+                                pageBuf.flip();
+
+                                idx++;
+                            }
+
+                            sortedIter = sorted.values().iterator();
+                        }
+                    };
+                }
+
                 pageStore.beginRecover();
 
-                for (long pos = 0; pos < totalBytes; pos += pageSize) {
+                while (iter.hasNext()) {
+                    long pos = (long)iter.next() * pageSize;
+
                     long read = fileIo.readFully(pageBuf, pos);
 
                     assert read == pageBuf.capacity();
@@ -3264,9 +3334,10 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
                     pageBuf.flip();
 
                     if (log.isDebugEnabled()) {
-                        log.debug("Read page given delta file [path=" + delta.getName() +
-                            ", pageId=" + PageIO.getPageId(pageBuf) + ", pos=" + pos + ", pages=" + (totalBytes / pageSize) +
-                            ", crcBuff=" + FastCrc.calcCrc(pageBuf, pageBuf.limit()) + ", crcPage=" + PageIO.getCrc(pageBuf) + ']');
+                        log.debug("Read page given delta file [path=" + delta.getName() + ", pageId=" +
+                            PageIO.getPageId(pageBuf) + ", index=" + PageIdUtils.pageIndex(PageIO.getPageId(pageBuf)) +
+                            ", pos=" + pos + ", pagesCnt=" + pagesCnt + ", crcBuff=" +
+                            FastCrc.calcCrc(pageBuf, pageBuf.limit()) + ", crcPage=" + PageIO.getCrc(pageBuf) + ']');
 
                         pageBuf.rewind();
                     }
