@@ -18,7 +18,9 @@
 package org.apache.ignite.internal.processors.cache.persistence.snapshot;
 
 import java.io.Serializable;
+import java.util.ArrayList;
 import java.util.Collection;
+import java.util.List;
 import java.util.Set;
 import java.util.UUID;
 import org.apache.ignite.internal.util.distributed.DistributedProcess;
@@ -57,6 +59,12 @@ public class SnapshotOperationRequest implements Serializable {
 
     /** Exception occurred during snapshot operation processing. */
     private volatile Throwable err;
+
+    /**
+     * Warnings of snapshot operation. They do not interrupt the process, but produces an error at the end if no
+     * other errors occured. This makes the operation status 'not OK'.
+     */
+    private volatile List<String> warnings = new ArrayList<>();
 
     /** Flag indicating that the {@link DistributedProcessType#START_SNAPSHOT} phase has completed. */
     private transient volatile boolean startStageEnded;
@@ -156,12 +164,25 @@ public class SnapshotOperationRequest implements Serializable {
     protected boolean startStageEnded() {
         return startStageEnded;
     }
-
     /**
      * @param startStageEnded Flag indicating that the {@link DistributedProcessType#START_SNAPSHOT} phase has completed.
      */
     protected void startStageEnded(boolean startStageEnded) {
         this.startStageEnded = startStageEnded;
+    }
+
+    /**
+     * @return Warnings of snapshot operation.
+     */
+    public List<String> warnings() {
+        return warnings;
+    }
+
+    /**
+     * @param warnings Warnings of snapshot operation.
+     */
+    public void warnings(List<String> warnings) {
+        this.warnings = warnings;
     }
 
     /** {@inheritDoc} */

@@ -869,7 +869,6 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
             return;
 
         SnapshotOperationRequest snpReq = clusterSnpReq;
-        ClusterSnapshotFuture snpFut = clusterSnpFut;
 
         boolean cancelled = err.values().stream().anyMatch(e -> e instanceof IgniteFutureCancelledCheckedException);
 
@@ -916,8 +915,8 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
                 .listen(f -> {
                         if (f.error() != null)
                             snpReq.error(f.error());
-                        else if (f.result() != null && snpFut != null)
-                            snpFut.warnings.addAll(f.result());
+
+                        snpReq.warnings(f.result());
 
                         endSnpProc.start(snpReq.requestId(), snpReq);
                     }
@@ -982,6 +981,13 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
 
         if (snpReq == null || !F.eq(req.requestId(), snpReq.requestId()))
             return new GridFinishedFuture<>();
+
+        if (req.warnings() != null) {
+            synchronized (snpOpMux) {
+                if (clusterSnpFut != null && clusterSnpFut.requestId().equals(snpReq.requestId()))
+                    clusterSnpFut.warnings.addAll(req.warnings());
+            }
+        }
 
         try {
             if (req.error() != null) {
