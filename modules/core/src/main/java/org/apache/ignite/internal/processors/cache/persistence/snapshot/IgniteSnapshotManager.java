@@ -982,13 +982,6 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
         if (snpReq == null || !F.eq(req.requestId(), snpReq.requestId()))
             return new GridFinishedFuture<>();
 
-        if (!F.isEmpty(req.warnings())) {
-            synchronized (snpOpMux) {
-                if (clusterSnpFut != null && clusterSnpFut.requestId().equals(snpReq.requestId()))
-                    clusterSnpFut.warnings.addAll(req.warnings());
-            }
-        }
-
         try {
             if (req.error() != null) {
                 snpReq.error(req.error());
@@ -1024,7 +1017,11 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
         synchronized (snpOpMux) {
             if (clusterSnpFut != null) {
                 if (endFail.isEmpty() && snpReq.error() == null) {
-                    clusterSnpFut.onDone();
+                    if (!F.isEmpty(snpReq.warnings()))
+                        clusterSnpFut.onDone(new IgniteException("Snapshot task '" + snpReq.snapshotName() +
+                            "' completed with warnings:" + U.nl() + String.join(U.nl() + '\t', snpReq.warnings())));
+                    else
+                        clusterSnpFut.onDone();
 
                     if (log.isInfoEnabled())
                         log.info(SNAPSHOT_FINISHED_MSG + snpReq);
@@ -3416,12 +3413,6 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
         volatile IgniteCheckedException interruptEx;
 
         /**
-         * Warnings of snapshot operation. They do not interrupt the process, but produces an error at the end if no
-         * other errors occured. This makes the operation status 'not OK'.
-         */
-        private final List<String> warnings = new ArrayList<>();
-
-        /**
          * Default constructor.
          */
         public ClusterSnapshotFuture() {
@@ -3459,10 +3450,6 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
         /** {@inheritDoc} */
         @Override protected boolean onDone(@Nullable Void res, @Nullable Throwable err, boolean cancel) {
             endTime = U.currentTimeMillis();
-
-            if (!warnings.isEmpty() && err == null)
-                err = new IgniteException("Snapshot task '" + name + "' completed with warnings:" + U.nl() +
-                    String.join("\n\t", warnings));
 
             return super.onDone(res, err, cancel);
         }
