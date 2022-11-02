@@ -49,6 +49,7 @@ import java.util.concurrent.atomic.LongAdder;
 import java.util.function.BooleanSupplier;
 import java.util.function.Function;
 import java.util.function.UnaryOperator;
+import java.util.logging.Formatter;
 import java.util.logging.LogRecord;
 import java.util.logging.Logger;
 import java.util.logging.StreamHandler;
@@ -142,6 +143,7 @@ import org.apache.ignite.spi.communication.tcp.TcpCommunicationSpi;
 import org.apache.ignite.spi.metric.LongMetric;
 import org.apache.ignite.spi.metric.Metric;
 import org.apache.ignite.testframework.GridTestUtils;
+import org.apache.ignite.testframework.LogListener;
 import org.apache.ignite.testframework.junits.WithSystemProperty;
 import org.apache.ignite.transactions.Transaction;
 import org.apache.ignite.transactions.TransactionRollbackException;
@@ -3123,19 +3125,21 @@ public class GridCommandHandlerTest extends GridCommandHandlerClusterPerMethodAb
         ig.cluster().state(ACTIVE);
         createCacheAndPreload(ig, 100);
 
-        AtomicBoolean wrnFound = new AtomicBoolean();
+        LogListener logChecker = LogListener.matches(targetMsg).times(1).build();
 
-        Logger log = CommandHandler.initLogger("testSnpWarnResult");
-
-        log.addHandler(new StreamHandler() {
+        Logger hndLog = CommandHandler.initLogger(null);
+        hndLog.addHandler(new StreamHandler(System.out, new Formatter() {
             /** {@inheritDoc} */
-            @Override public synchronized void publish(LogRecord record) {
-                if (record.getMessage() != null && !wrnFound.get() && record.getMessage().contains(targetMsg))
-                    wrnFound.set(true);
-            }
-        });
+            @Override public String format(LogRecord record) {
+                String msg = record.getMessage();
 
-        CommandHandler hnd = new CommandHandler(log);
+                logChecker.accept(msg);
+
+                return msg + "\n";
+            }
+        }));
+
+        CommandHandler hnd = new CommandHandler(hndLog);
 
         List<String> args = new ArrayList<>(F.asList("--snapshot", "create", "testDsSnp", "--sync"));
 
@@ -3146,7 +3150,7 @@ public class GridCommandHandlerTest extends GridCommandHandlerClusterPerMethodAb
 
         assertEquals(EXIT_CODE_UNEXPECTED_ERROR, code);
 
-        assertTrue("Snapshot operation warning not found.", wrnFound.get());
+        logChecker.check();
     }
 
     /**
