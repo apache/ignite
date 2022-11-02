@@ -46,7 +46,6 @@ import org.apache.ignite.internal.managers.encryption.GroupKeyEncrypted;
 import org.apache.ignite.internal.processors.cache.GridCacheSharedContext;
 import org.apache.ignite.internal.processors.cache.StoredCacheData;
 import org.apache.ignite.internal.processors.cache.distributed.dht.topology.GridDhtPartitionState;
-import org.apache.ignite.internal.processors.cache.persistence.CacheDataRow;
 import org.apache.ignite.internal.processors.cache.persistence.file.FilePageStore;
 import org.apache.ignite.internal.processors.cache.persistence.file.FilePageStoreManager;
 import org.apache.ignite.internal.processors.cache.persistence.metastorage.MetaStorage;
@@ -57,7 +56,6 @@ import org.apache.ignite.internal.processors.cache.verify.PartitionHashRecordV2;
 import org.apache.ignite.internal.processors.cache.verify.PartitionKeyV2;
 import org.apache.ignite.internal.util.GridStringBuilder;
 import org.apache.ignite.internal.util.GridUnsafe;
-import org.apache.ignite.internal.util.lang.GridIterator;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.internal.CU;
 import org.apache.ignite.internal.util.typedef.internal.U;
@@ -83,7 +81,7 @@ import static org.apache.ignite.internal.processors.cache.verify.IdleVerifyUtili
  */
 public class SnapshotPartitionsVerifyHandler implements SnapshotHandler<Map<PartitionKeyV2, PartitionHashRecordV2>> {
     /** Shared context. */
-    protected final GridCacheSharedContext<?, ?> cctx;
+    private final GridCacheSharedContext<?, ?> cctx;
 
     /** Logger. */
     private final IgniteLogger log;
@@ -215,13 +213,15 @@ public class SnapshotPartitionsVerifyHandler implements SnapshotHandler<Map<Part
                         // There is no `primary` partitions for snapshot.
                         PartitionKeyV2 key = new PartitionKeyV2(grpId, partId, grpName);
 
-                        PartitionHashRecordV2 hash = partHash(key,
+                        PartitionHashRecordV2 hash = calculatePartitionHash(key,
                             updateCntr,
                             meta.consistentId(),
                             GridDhtPartitionState.OWNING,
                             false,
                             size,
                             snpMgr.partitionRowIterator(snpCtx, grpName, partId, pageStore));
+
+                        assert hash != null : "OWNING must have hash: " + key;
 
                         res.put(key, hash);
                     }
@@ -244,29 +244,6 @@ public class SnapshotPartitionsVerifyHandler implements SnapshotHandler<Map<Part
         }
 
         return res;
-    }
-
-    /** */
-    protected PartitionHashRecordV2 partHash(
-        PartitionKeyV2 key,
-        Object updCntr,
-        Object consId,
-        GridDhtPartitionState state,
-        boolean isPrimary,
-        long partSize,
-        GridIterator<CacheDataRow> it
-    ) throws IgniteCheckedException {
-        PartitionHashRecordV2 hash = calculatePartitionHash(key,
-            updCntr,
-            consId,
-            state,
-            isPrimary,
-            partSize,
-            it);
-
-        assert hash != null : "OWNING must have hash: " + key;
-
-        return hash;
     }
 
     /** {@inheritDoc} */
