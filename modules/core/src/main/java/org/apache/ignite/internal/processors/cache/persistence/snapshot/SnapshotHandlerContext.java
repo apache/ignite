@@ -46,16 +46,6 @@ public class SnapshotHandlerContext {
     /**
      * @param metadata Snapshot metadata.
      * @param grps The names of the cache groups on which the operation is performed.
-     * @param locNode Local node.
-     * @param snpDir The full path to the snapshot files.
-     */
-    public SnapshotHandlerContext(SnapshotMetadata metadata, @Nullable Collection<String> grps, ClusterNode locNode, File snpDir) {
-        this(metadata, grps, false, locNode, snpDir);
-    }
-
-    /**
-     * @param metadata Snapshot metadata.
-     * @param grps The names of the cache groups on which the operation is performed.
      * @param streamUpdates {@code True} if concurrent streaming updates occured during snapshot operation.
      * {@code False} otherwise. Always {@code false} for snapshot restoration.
      * @param locNode Local node.
