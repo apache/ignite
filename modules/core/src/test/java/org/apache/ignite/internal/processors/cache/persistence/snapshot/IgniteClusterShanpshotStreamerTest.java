@@ -118,22 +118,6 @@ public class IgniteClusterShanpshotStreamerTest extends AbstractSnapshotSelfTest
     }
 
     /**
-     * Tests snapshot consistency when streamer failed or canceled before snapshot. Default receiver.
-     */
-    @Test
-    public void testDsFailsLongAgoDefault() throws Exception {
-        doTestDsFailsBeforeSnp(true, false);
-    }
-
-    /**
-     * Tests snapshot consistency when streamer failed or canceled before snapshot. Overwriting receiver.
-     */
-    @Test
-    public void testDsFailsLongAgoOverwriting() throws Exception {
-        doTestDsFailsBeforeSnp(false, true);
-    }
-
-    /**
      * Tests other cache is restorable from snapshot.
      */
     @Test
@@ -225,7 +209,6 @@ public class IgniteClusterShanpshotStreamerTest extends AbstractSnapshotSelfTest
      */
     private void doTestDsWhileSnp(boolean mustFail, boolean allowOverwrite) throws Exception {
         String expectedWrn = U.field(DataStreamerUpdatesHandler.class, "WRN_MSG");
-        String notExpectedWrn = U.field(SnapshotPartitionsFastVerifyHandler.class, "WRN_MSG_BASE");
 
         CountDownLatch preload = new CountDownLatch(10_000);
         AtomicBoolean stopLoading = new AtomicBoolean(false);
@@ -235,12 +218,9 @@ public class IgniteClusterShanpshotStreamerTest extends AbstractSnapshotSelfTest
         preload.await();
 
         try {
-            if (mustFail) {
-                Throwable e = assertThrows(null, () -> snpMgr.createSnapshot(SNAPSHOT_NAME).get(),
+            if (mustFail)
+                assertThrows(null, () -> snpMgr.createSnapshot(SNAPSHOT_NAME).get(),
                     IgniteException.class, expectedWrn);
-
-                assertFalse(e.getMessage().contains(notExpectedWrn));
-            }
             else
                 grid(0).snapshot().createSnapshot(SNAPSHOT_NAME).get();
         }
@@ -248,38 +228,6 @@ public class IgniteClusterShanpshotStreamerTest extends AbstractSnapshotSelfTest
             stopLoading.set(true);
             loadFut.get();
         }
-
-        checkSnp(mustFail);
-    }
-
-    /**
-     * Tests snapshot consistency when streamer failed or canceled before snapshot.
-     *
-     * @param mustFail If {@code true}, checks snapshot process warns of inconsistency and ensures snapshot validation
-     *                 finds errors. Otherwise, ensures snapshot validation is ok.
-     * @param allowOverwrite 'allowOverwrite' setting.
-     */
-    private void doTestDsFailsBeforeSnp(boolean mustFail, boolean allowOverwrite) throws Exception {
-        String expectedWrn = U.field(SnapshotPartitionsFastVerifyHandler.class, "WRN_MSG_BASE");
-        String notExpectedWrn = U.field(DataStreamerUpdatesHandler.class, "WRN_MSG");
-
-        CountDownLatch preloadLatch = new CountDownLatch(10_000);
-        AtomicBoolean stopLoad = new AtomicBoolean();
-
-        IgniteInternalFuture<?> loadFut = runLoad(client, allowOverwrite, preloadLatch, stopLoad, true);
-
-        preloadLatch.await();
-        stopLoad.set(true);
-        loadFut.get();
-
-        if (mustFail) {
-            Throwable e = assertThrows(null, () -> snpMgr.createSnapshot(SNAPSHOT_NAME).get(),
-                IgniteException.class, expectedWrn);
-
-            assertFalse(e.getMessage().contains(notExpectedWrn));
-        }
-        else
-            snpMgr.createSnapshot(SNAPSHOT_NAME).get();
 
         checkSnp(mustFail);
     }

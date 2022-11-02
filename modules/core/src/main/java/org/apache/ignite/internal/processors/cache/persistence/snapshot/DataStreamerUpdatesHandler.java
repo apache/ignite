@@ -41,9 +41,7 @@ public class DataStreamerUpdatesHandler implements SnapshotHandler<Boolean> {
 
     /** {@inheritDoc} */
     @Override public Boolean invoke(SnapshotHandlerContext ctx) {
-        assert ctx.createSnpFut() != null;
-
-        return ctx.createSnpFut().streamUpdates();
+        return ctx.streamUpdates();
     }
 
     /** {@inheritDoc} */

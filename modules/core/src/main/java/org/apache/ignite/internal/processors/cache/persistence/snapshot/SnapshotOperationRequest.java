@@ -66,6 +66,11 @@ public class SnapshotOperationRequest implements Serializable {
      */
     private volatile List<String> warnings = new ArrayList<>();
 
+    /**
+     * Concurrent streaming persistent updates flag.
+     */
+    private transient volatile boolean streamUpdates;
+
     /** Flag indicating that the {@link DistributedProcessType#START_SNAPSHOT} phase has completed. */
     private transient volatile boolean startStageEnded;
 
@@ -164,6 +169,7 @@ public class SnapshotOperationRequest implements Serializable {
     protected boolean startStageEnded() {
         return startStageEnded;
     }
+
     /**
      * @param startStageEnded Flag indicating that the {@link DistributedProcessType#START_SNAPSHOT} phase has completed.
      */
@@ -183,6 +189,21 @@ public class SnapshotOperationRequest implements Serializable {
      */
     public void warnings(List<String> warnings) {
         this.warnings = warnings;
+    }
+
+    /**
+     * {@code True} if concurrent inconsistent-by-nature streamer updates were detected during the operation.
+     * {@code False} otherwise.
+     */
+    public boolean streamUpdates() {
+        return streamUpdates;
+    }
+
+    /**
+     * Sets concurrent inconsistent-by-nature streamer updates detected during the operation.
+     */
+    public boolean streamUpdates(boolean val) {
+        return streamUpdates = val;
     }
 
     /** {@inheritDoc} */

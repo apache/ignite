@@ -374,7 +374,7 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
     private DiscoveryEventListener discoLsnr;
 
     /** Cluster snapshot operation requested by user. */
-    private volatile ClusterSnapshotFuture clusterSnpFut;
+    private ClusterSnapshotFuture clusterSnpFut;
 
     /** Current snapshot operation on local node. */
     private volatile SnapshotOperationRequest clusterSnpReq;
@@ -848,7 +848,7 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
 
                 log.info("Snapshot metafile has been created: " + smf.getAbsolutePath());
 
-                SnapshotHandlerContext ctx = new SnapshotHandlerContext(meta, req.groups(), (SnapshotFutureTask)fut,
+                SnapshotHandlerContext ctx = new SnapshotHandlerContext(meta, req.groups(), req.streamUpdates(),
                     cctx.localNode(), snpDir);
 
                 return new SnapshotOperationResponse(handlers.invokeAll(SnapshotHandlerType.CREATE, ctx));
@@ -982,7 +982,7 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
         if (snpReq == null || !F.eq(req.requestId(), snpReq.requestId()))
             return new GridFinishedFuture<>();
 
-        if (req.warnings() != null) {
+        if (!F.isEmpty(req.warnings())) {
             synchronized (snpOpMux) {
                 if (clusterSnpFut != null && clusterSnpFut.requestId().equals(snpReq.requestId()))
                     clusterSnpFut.warnings.addAll(req.warnings());
@@ -1058,7 +1058,7 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
      * Accepts notification of concurrent inconsistent-by-nature streaming updates.
      */
     public void streamedUpdates() {
-        SnapshotFutureTask snpTask = currentSnapshotTask();
+        SnapshotOperationRequest snpTask = currentCreateRequest();
 
         if (snpTask != null)
             snpTask.streamUpdates(true);
@@ -2230,9 +2230,6 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
 
             // Register system default Datastreamer updates checker.
             registerHandler(new DataStreamerUpdatesHandler());
-
-            // Register system default page size and counters check that is used at the creation operation.
-            registerHandler(new SnapshotPartitionsFastVerifyHandler(ctx.cache().context()));
 
             // Register custom handlers.
             SnapshotHandler<Object>[] extHnds = (SnapshotHandler<Object>[])ctx.plugins().extensions(SnapshotHandler.class);
@@ -3459,7 +3456,7 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
             endTime = U.currentTimeMillis();
 
             if (!warnings.isEmpty() && err == null)
-                err = new IgniteException("Snapshot task '" + name + "' completed with warnings:\n\t" +
+                err = new IgniteException("Snapshot task '" + name + "' completed with warnings:" + U.nl() +
                     String.join("\n\t", warnings));
 
             return super.onDone(res, err, cancel);
