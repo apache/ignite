@@ -1018,8 +1018,11 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
             if (clusterSnpFut != null) {
                 if (endFail.isEmpty() && snpReq.error() == null) {
                     if (!F.isEmpty(snpReq.warnings())) {
-                        clusterSnpFut.onDone(new IgniteException("Snapshot task '" + snpReq.snapshotName() +
-                            "' completed with warnings:" + U.nl() + '\t' + String.join(U.nl() + '\t', snpReq.warnings())));
+                        IgniteException wrn = new IgniteException("Snapshot task '" + snpReq.snapshotName() +
+                            "' completed with the warnings:" + U.nl() + '\t' + String.join(U.nl() + '\t',
+                            snpReq.warnings()));
+
+                        clusterSnpFut.onDone(wrn);
                     }
                     else
                         clusterSnpFut.onDone();
@@ -1053,7 +1056,7 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
     }
 
     /**
-         * Sets the streamer warning flag to current snapshot process if it is active.
+     * Sets the streamer warning flag to current snapshot process if it is active.
      */
     public void streamerWarning() {
         SnapshotOperationRequest snpTask = currentCreateRequest();
@@ -2272,7 +2275,7 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
          * @param snpName Snapshot name.
          * @param res Results from all nodes and handlers with the specified type.
          * @param reqNodes Node IDs on which the handlers were executed.
-         * @param warningConsumer Warnings consumer.
+         * @param wrnsHnd A handler of snapshot operation warnings.
          * @throws Exception If failed.
          */
         @SuppressWarnings({"rawtypes", "unchecked"})
@@ -2281,7 +2284,7 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
             String snpName,
             Map<String, List<SnapshotHandlerResult<?>>> res,
             Collection<UUID> reqNodes,
-            Consumer<List<String>> warningConsumer
+            Consumer<List<String>> wrnsHnd
         ) throws Exception {
             if (res.isEmpty())
                 return;
@@ -2320,7 +2323,7 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
             }
 
             if (!F.isEmpty(wrns))
-                warningConsumer.accept(wrns);
+                wrnsHnd.accept(wrns);
         }
 
         /**

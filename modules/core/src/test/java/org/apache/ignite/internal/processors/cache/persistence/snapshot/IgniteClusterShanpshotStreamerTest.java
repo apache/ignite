@@ -88,16 +88,16 @@ public class IgniteClusterShanpshotStreamerTest extends AbstractSnapshotSelfTest
      * Tests snapshot consistency wnen streamer starts before snapshot. Default receiver.
      */
     @Test
-    public void testStreamerWhileSnpDefault() throws Exception {
-        doTestDsWhileSnp(true, false);
+    public void testStreamerWhileSnapshotDefault() throws Exception {
+        doTestDataStreamerWhileSnapshot(true, false);
     }
 
     /**
      * Tests snapshot consistency wnen streamer starts before snapshot. Overwriting receiver.
      */
     @Test
-    public void testStreamerWhileSnpOverwriting() throws Exception {
-        doTestDsWhileSnp(false, true);
+    public void testStreamerWhileSnapshotOverwriting() throws Exception {
+        doTestDataStreamerWhileSnapshot(false, true);
     }
 
     /**
@@ -140,7 +140,7 @@ public class IgniteClusterShanpshotStreamerTest extends AbstractSnapshotSelfTest
      * Tests streaming into in-memory cache doesn't affect snapshot.
      */
     @Test
-    public void testInMemDoesntAffectSnp() throws IgniteCheckedException {
+    public void testStreamingIntoInMememoryDoesntAffectSnapshot() throws IgniteCheckedException {
         String cache2Name = "cache2";
         int loadCnt = 1000;
 
@@ -183,7 +183,7 @@ public class IgniteClusterShanpshotStreamerTest extends AbstractSnapshotSelfTest
      *                 process produces no warning.
      * @param allowOverwrite 'allowOverwrite' setting.
      */
-    private void doTestDsWhileSnp(boolean mustFail, boolean allowOverwrite) throws Exception {
+    private void doTestDataStreamerWhileSnapshot(boolean mustFail, boolean allowOverwrite) throws Exception {
         String expectedWrn = U.field(DataStreamerUpdatesHandler.class, "WRN_MSG");
 
         AtomicBoolean stopLoading = new AtomicBoolean(false);

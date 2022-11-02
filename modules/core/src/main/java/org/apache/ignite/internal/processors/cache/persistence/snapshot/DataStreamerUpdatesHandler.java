@@ -42,7 +42,7 @@ public class DataStreamerUpdatesHandler implements SnapshotHandler<Boolean> {
 
     /** {@inheritDoc} */
     @Override public Boolean invoke(SnapshotHandlerContext ctx) {
-        return ctx.streamUpdates();
+        return ctx.streamerWarning();
     }
 
     /** {@inheritDoc} */
