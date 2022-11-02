@@ -312,12 +312,10 @@ public class IdleVerifyResultV2 extends VisorDataTransferObject {
                     PartitionKeyV2::partitionId,
                     Collectors.toCollection(TreeSet::new))));
 
-        for (String groupName : conflictsSummary.keySet()) {
-            TreeSet<Integer> parts = conflictsSummary.get(groupName);
+        for (Map.Entry<String, TreeSet<Integer>> grpConflicts : conflictsSummary.entrySet()) {
+            printer.accept(String.format("%s (%d)%s", grpConflicts.getKey(), grpConflicts.getValue().size(), nl()));
 
-            printer.accept(String.format("%s (%d)%s", groupName, parts.size(), nl()));
-
-            String partsStr = parts.stream()
+            String partsStr = grpConflicts.getValue().stream()
                 .map(String::valueOf)
                 .collect(Collectors.joining(","));
 

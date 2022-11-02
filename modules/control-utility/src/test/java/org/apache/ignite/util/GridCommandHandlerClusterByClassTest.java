@@ -526,6 +526,7 @@ public class GridCommandHandlerClusterByClassTest extends GridCommandHandlerClus
         GridCacheContext<Object, Object> cacheCtx = ignite.cachex(DEFAULT_CACHE_NAME).context();
 
         AffinityFunction aff = cacheCtx.config().getAffinity();
+
         int key = 1 + aff.partitions() / 2;
 
         corruptDataEntry(cacheCtx, 1, true, false);
@@ -869,6 +870,7 @@ public class GridCommandHandlerClusterByClassTest extends GridCommandHandlerClus
         GridCacheContext<Object, Object> cacheCtx = ignite.cachex(DEFAULT_CACHE_NAME).context();
 
         AffinityFunction aff = cacheCtx.config().getAffinity();
+
         int key = aff.partitions() / 2;
 
         corruptDataEntry(cacheCtx, 0, true, false);
