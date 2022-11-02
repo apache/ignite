@@ -288,8 +288,8 @@ public class IgniteClusterShanpshotStreamerTest extends AbstractSnapshotSelfTest
     private void checkSnp(boolean mustFail) throws IgniteCheckedException, InterruptedException {
         IdleVerifyResultV2 checkRes = snpMgr.checkSnapshot(SNAPSHOT_NAME, null).get();
 
-        assertTrue(mustFail == checkRes.hasConflicts());
         assertTrue(checkRes.exceptions().isEmpty());
+        assertTrue(mustFail == checkRes.hasConflicts());
     }
 
     /**

@@ -921,7 +921,8 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
             if (snpReq.warnings() != null)
                 snpReq.meta().warnings(snpReq.warnings());
 
-            System.err.println("TEST | wrn size: " + snpReq.warnings().size());
+//            System.err.println("TEST | wrn size: " + snpReq.meta().warnings() == null ? 0 : snpReq.meta().warnings().size());
+//            System.err.println("TEST | storing meta: " + smf.getAbsolutePath());
 
             try (OutputStream out = Files.newOutputStream(smf.toPath())) {
                 byte[] bytes = U.marshal(marsh, snpReq.meta());
