@@ -459,6 +459,7 @@ public class GridCommandHandlerClusterByClassTest extends GridCommandHandlerClus
         IgniteEx ignite = crd;
 
         createCacheAndPreload(ignite, 100);
+        createCacheAndPreload(ignite, DEFAULT_CACHE_NAME + "other", 100, 32, null);
 
         injectTestSystemOut();
 
@@ -467,14 +468,18 @@ public class GridCommandHandlerClusterByClassTest extends GridCommandHandlerClus
         assertContains(log, testOut.toString(), "no conflicts have been found");
 
         HashSet<Integer> clearKeys = new HashSet<>(asList(1, 2, 3, 4, 5, 6));
+        HashSet<Integer> clearKeysOther = new HashSet<>(asList(7, 8, 9, 10, 11));
 
         ignite.context().cache().cache(DEFAULT_CACHE_NAME).clearLocallyAll(clearKeys, true, true, true);
+
+        ignite.context().cache().cache(DEFAULT_CACHE_NAME + "other").clearLocallyAll(clearKeysOther, true, true, true);
 
         assertEquals(EXIT_CODE_OK, execute("--cache", "idle_verify"));
 
         assertContains(log, testOut.toString(), "conflict partitions");
 
-        String summaryStr = "Total:" + nl() + DEFAULT_CACHE_NAME + " (6)" + nl() + "1,2,3,4,5,6";
+        String summaryStr = "Total:" + nl() + DEFAULT_CACHE_NAME + "other (5)" + nl() + "7,8,9,10,11" + nl() + nl() +
+            DEFAULT_CACHE_NAME + " (6)" + nl() + "1,2,3,4,5,6" + nl();
 
         assertContains(log, testOut.toString(), summaryStr);
     }
