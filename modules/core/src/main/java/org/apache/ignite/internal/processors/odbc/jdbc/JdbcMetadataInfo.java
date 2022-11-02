@@ -228,16 +228,6 @@ public class JdbcMetadataInfo {
 
     /**
      * See {@link DatabaseMetaData#getIndexInfo(String, String, String, boolean, boolean)} for details.
-     * There are some tips:
-     * <p>
-     * Extra sorting by TABLE_NAME column is performed for the cases when information about multiple tables is requested.
-     * Thus, sorting order is: TABLE_NAME -> NON_UNIQUE -> TYPE -> INDEX_NAME -> ORDINAL_POSITION.
-     * <p>
-     * Ignite has only one possible CATALOG_NAME, it is handled on the client (driver) side.
-     * <p>
-     * Ignite has the only unique indexes - primary key indexes.
-     * <p>
-     * Parameters {@code unique}, {@code approximate} are ignored.
      *
      * @return Sorted index metadata collection, filtered according to specified criterias.
      */

@@ -44,6 +44,7 @@ import org.apache.ignite.internal.processors.odbc.jdbc.JdbcMetaTablesRequest;
 import org.apache.ignite.internal.processors.odbc.jdbc.JdbcMetaTablesResult;
 import org.apache.ignite.internal.processors.odbc.jdbc.JdbcPrimaryKeyMeta;
 import org.apache.ignite.internal.processors.odbc.jdbc.JdbcTableMeta;
+import org.apache.ignite.internal.processors.query.schema.management.IndexDescriptor;
 
 import static java.sql.Connection.TRANSACTION_NONE;
 import static java.sql.Connection.TRANSACTION_REPEATABLE_READ;
@@ -1079,7 +1080,23 @@ public class JdbcThinDatabaseMetadata implements DatabaseMetaData {
         ));
     }
 
-    /** {@inheritDoc} */
+    /**
+     * See super method for details. There are some tips:
+     * <p>
+     * Extra sorting by TABLE_NAME column is performed for the cases when information about multiple tables is requested.
+     * Thus, explicit sorting order is: TABLE_NAME -> NON_UNIQUE -> INDEX_NAME.
+     * <p>
+     * Ignite has only one possible CATALOG_NAME, it is handled on the client (driver) side.
+     * <p>
+     * Sorting by TYPE is not necessary, because all indexes have the only type:
+     * {@link java.sql.DatabaseMetaData#tableIndexOther}.
+     * <p>
+     * Sorting by ORDINAL_POSITION is guaranteed by order of {@link IndexDescriptor#keyDefinitions()}.
+     * <p>
+     * Ignite has the only unique indexes - primary key indexes.
+     * <p>
+     * Parameters {@code unique}, {@code approximate} are ignored.
+     */
     @Override public ResultSet getIndexInfo(String catalog, String schema, String tbl, boolean unique,
         boolean approximate) throws SQLException {
         conn.ensureNotClosed();
