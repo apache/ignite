@@ -2226,16 +2226,13 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
             this.execSvc = execSvc;
 
             // Register system default snapshot integrity check that is used before the restore operation.
-            SnapshotHandler<?> sysCheck = new SnapshotPartitionsVerifyHandler(ctx.cache().context());
-            handlers.computeIfAbsent(sysCheck.type(), v -> new ArrayList<>()).add((SnapshotHandler<Object>)sysCheck);
+            registerHandler(new SnapshotPartitionsVerifyHandler(ctx.cache().context()));
 
-            // Register system default datastreamer updates checker.
-            SnapshotHandler<?> dsCheck = new DataStreamerUpdatesHandler();
-            handlers.computeIfAbsent(dsCheck.type(), v -> new ArrayList<>()).add((SnapshotHandler<Object>)dsCheck);
+            // Register system default Datastreamer updates checker.
+            registerHandler(new DataStreamerUpdatesHandler());
 
             // Register system default page size and counters check that is used at the creation operation.
-            SnapshotHandler<?> fastPartCheck = new SnapshotPartitionsFastVerifyHandler(ctx.cache().context());
-            handlers.computeIfAbsent(dsCheck.type(), v -> new ArrayList<>()).add((SnapshotHandler<Object>)fastPartCheck);
+            registerHandler(new SnapshotPartitionsFastVerifyHandler(ctx.cache().context()));
 
             // Register custom handlers.
             SnapshotHandler<Object>[] extHnds = (SnapshotHandler<Object>[])ctx.plugins().extensions(SnapshotHandler.class);
@@ -2244,7 +2241,7 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
                 return;
 
             for (SnapshotHandler<Object> extHnd : extHnds)
-                handlers.computeIfAbsent(extHnd.type(), v -> new ArrayList<>()).add(extHnd);
+                registerHandler(extHnd);
         }
 
         /**
@@ -2344,6 +2341,11 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
 
                 return new SnapshotHandlerResult<>(null, e, ctx.localNode());
             }
+        }
+
+        /** */
+        private void registerHandler(SnapshotHandler hnd) {
+            handlers.computeIfAbsent(hnd.type(), v -> new ArrayList<>()).add(hnd);
         }
     }
 
