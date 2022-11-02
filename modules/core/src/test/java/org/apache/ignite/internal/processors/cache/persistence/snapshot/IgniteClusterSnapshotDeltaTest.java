@@ -197,7 +197,8 @@ public class IgniteClusterSnapshotDeltaTest extends AbstractSnapshotSelfTest {
                     @Override public void close() throws IOException {
                         super.close();
 
-                        assertTrue(isSequentialWrite);
+                        if (!isSequentialWrite)
+                            throw new RuntimeException("Non sequential write.");
                     }
                 };
             }
