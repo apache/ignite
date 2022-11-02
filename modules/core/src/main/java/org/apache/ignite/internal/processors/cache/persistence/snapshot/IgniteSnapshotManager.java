@@ -2274,7 +2274,7 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
          * @param snpName Snapshot name.
          * @param res Results from all nodes and handlers with the specified type.
          * @param reqNodes Node IDs on which the handlers were executed.
-         * @param snpRq Request for current snapshot operation. {@code Null} if {@code type} is
+         * @param snpRq Request for current snapshot operation. {@code Null} if {@code type} is not
          *              {@code SnapshotHandlerType.CREATE}. Handler warnings at restoration must not appear.
          * @throws Exception If failed.
          */
