@@ -69,7 +69,7 @@ public class SnapshotOperationRequest implements Serializable {
     /**
      * Concurrent streaming persistent updates flag.
      */
-    private transient volatile boolean streamUpdates;
+    private transient volatile boolean streamerWrn;
 
     /** Flag indicating that the {@link DistributedProcessType#START_SNAPSHOT} phase has completed. */
     private transient volatile boolean startStageEnded;
@@ -195,15 +195,15 @@ public class SnapshotOperationRequest implements Serializable {
      * {@code True} if concurrent inconsistent-by-nature streamer updates were detected during the operation.
      * {@code False} otherwise.
      */
-    public boolean streamUpdates() {
-        return streamUpdates;
+    public boolean streamerWarning() {
+        return streamerWrn;
     }
 
     /**
      * Sets concurrent inconsistent-by-nature streamer updates detected during the operation.
      */
-    public boolean streamUpdates(boolean val) {
-        return streamUpdates = val;
+    public boolean streamerWarning(boolean val) {
+        return streamerWrn = val;
     }
 
     /** {@inheritDoc} */

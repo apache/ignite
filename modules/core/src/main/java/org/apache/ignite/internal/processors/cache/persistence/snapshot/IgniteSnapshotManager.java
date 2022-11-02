@@ -848,7 +848,7 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
 
                 log.info("Snapshot metafile has been created: " + smf.getAbsolutePath());
 
-                SnapshotHandlerContext ctx = new SnapshotHandlerContext(meta, req.groups(), req.streamUpdates(),
+                SnapshotHandlerContext ctx = new SnapshotHandlerContext(meta, req.groups(), req.streamerWarning(),
                     cctx.localNode(), snpDir);
 
                 return new SnapshotOperationResponse(handlers.invokeAll(SnapshotHandlerType.CREATE, ctx));
@@ -1054,11 +1054,11 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
     /**
      * Accepts notification of concurrent inconsistent-by-nature streaming updates.
      */
-    public void streamedUpdates() {
+    public void streamerWarning() {
         SnapshotOperationRequest snpTask = currentCreateRequest();
 
         if (snpTask != null)
-            snpTask.streamUpdates(true);
+            snpTask.streamerWarning(true);
     }
 
     /** @return Current create snapshot request. {@code Null} if there is no create snapshot operation in progress. */

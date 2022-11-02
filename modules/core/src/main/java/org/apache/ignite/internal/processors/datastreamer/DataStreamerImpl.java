@@ -2368,13 +2368,13 @@ public class DataStreamerImpl<K, V> implements IgniteDataStreamer<K, V>, Delayed
         }
 
         /**
-         * Notifies snapshot process of inconsistent-by-nature Datastreamer updates.
+         * Notifies snapshot process of inconsistent-by-nature DataStreamer updates.
          *
          * @param cctx Cache context.
          */
         private static void wrnSnapshot(GridCacheContext<?, ?> cctx) {
             if (cctx.group().persistenceEnabled())
-                cctx.kernalContext().cache().context().snapshotMgr().streamedUpdates();
+                cctx.kernalContext().cache().context().snapshotMgr().streamerWarning();
         }
     }
 
