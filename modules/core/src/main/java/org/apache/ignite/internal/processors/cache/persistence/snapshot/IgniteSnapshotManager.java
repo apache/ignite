@@ -848,8 +848,8 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
 
                 log.info("Snapshot metafile has been created: " + smf.getAbsolutePath());
 
-                SnapshotHandlerContext ctx = new SnapshotHandlerContext(meta, req.groups(), req.streamerWarning(),
-                    cctx.localNode(), snpDir);
+                SnapshotHandlerContext ctx = new SnapshotHandlerContext(meta, req.groups(), cctx.localNode(),
+                    snpDir, req.streamerWarning());
 
                 return new SnapshotOperationResponse(handlers.invokeAll(SnapshotHandlerType.CREATE, ctx));
             }

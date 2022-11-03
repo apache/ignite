@@ -3081,10 +3081,6 @@ public class GridCommandHandlerTest extends GridCommandHandlerClusterPerMethodAb
         IgniteConfiguration cfg = getConfiguration(getTestIgniteInstanceName(0));
         cfg.getConnectorConfiguration().setHost("localhost");
 
-        String targetMsg = U.field(DataStreamerUpdatesHandler.class, "WRN_MSG");
-
-        AtomicReference<Exception> simulationEx = new AtomicReference<>();
-
         cfg.setPluginProviders(new AbstractTestPluginProvider() {
             /** {@inheritDoc} */
             @Override public void initExtensions(PluginContext ctx, ExtensionRegistry registry) {
@@ -3100,7 +3096,7 @@ public class GridCommandHandlerTest extends GridCommandHandlerClusterPerMethodAb
                     /** {@inheritDoc} */
                     @Override public void complete(String name,
                         Collection<SnapshotHandlerResult<Void>> results) throws Exception {
-                        throw new SnapshotHandlerWarningException(targetMsg);
+                        throw new SnapshotHandlerWarningException(DataStreamerUpdatesHandler.WRN_MSG);
                     }
 
                     /** {@inheritDoc} */
@@ -3128,12 +3124,9 @@ public class GridCommandHandlerTest extends GridCommandHandlerClusterPerMethodAb
 
         int code = execute(hnd, args);
 
-        if (simulationEx.get() != null)
-            throw simulationEx.get();
-
         assertEquals(EXIT_CODE_UNEXPECTED_ERROR, code);
 
-        assertContains(log, testOut.toString(), targetMsg);
+        assertContains(log, testOut.toString(), DataStreamerUpdatesHandler.WRN_MSG);
     }
 
     /**

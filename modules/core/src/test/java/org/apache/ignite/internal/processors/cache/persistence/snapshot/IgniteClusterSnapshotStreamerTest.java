@@ -31,7 +31,6 @@ import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.util.typedef.G;
-import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.testframework.GridTestUtils;
 import org.junit.Test;
 
@@ -41,7 +40,7 @@ import static org.apache.ignite.testframework.GridTestUtils.assertThrows;
 /**
  * Tests snapshot is consistent or snapshot process produces proper warning.
  */
-public class IgniteClusterShanpshotStreamerTest extends AbstractSnapshotSelfTest {
+public class IgniteClusterSnapshotStreamerTest extends AbstractSnapshotSelfTest {
     /** */
     private static final String INMEM_DATA_REGION = "inMemDr";
 
@@ -106,7 +105,6 @@ public class IgniteClusterShanpshotStreamerTest extends AbstractSnapshotSelfTest
     @Test
     public void testOtherCacheRestores() throws IgniteCheckedException {
         String cname = "cache2";
-        String expectedWrn = U.field(DataStreamerUpdatesHandler.class, "WRN_MSG");
 
         grid(0).createCache(new CacheConfiguration<>(dfltCacheCfg).setName(cname));
 
@@ -120,7 +118,8 @@ public class IgniteClusterShanpshotStreamerTest extends AbstractSnapshotSelfTest
         IgniteInternalFuture<?> loadFut = runLoad(grid(0), false, stopLoad);
 
         try {
-            assertThrows(null, () -> snpMgr.createSnapshot(SNAPSHOT_NAME).get(), IgniteException.class, expectedWrn);
+            assertThrows(null, () -> snpMgr.createSnapshot(SNAPSHOT_NAME).get(), IgniteException.class,
+                DataStreamerUpdatesHandler.WRN_MSG);
         }
         finally {
             stopLoad.set(true);
@@ -184,8 +183,6 @@ public class IgniteClusterShanpshotStreamerTest extends AbstractSnapshotSelfTest
      * @param allowOverwrite 'allowOverwrite' setting.
      */
     private void doTestDataStreamerWhileSnapshot(boolean mustFail, boolean allowOverwrite) throws Exception {
-        String expectedWrn = U.field(DataStreamerUpdatesHandler.class, "WRN_MSG");
-
         AtomicBoolean stopLoading = new AtomicBoolean(false);
 
         IgniteInternalFuture<?> loadFut = runLoad(client, allowOverwrite, stopLoading);
@@ -193,7 +190,7 @@ public class IgniteClusterShanpshotStreamerTest extends AbstractSnapshotSelfTest
         try {
             if (mustFail)
                 assertThrows(null, () -> snpMgr.createSnapshot(SNAPSHOT_NAME).get(),
-                    IgniteException.class, expectedWrn);
+                    IgniteException.class, DataStreamerUpdatesHandler.WRN_MSG);
             else
                 grid(0).snapshot().createSnapshot(SNAPSHOT_NAME).get();
         }
