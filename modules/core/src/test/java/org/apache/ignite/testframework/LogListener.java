@@ -329,6 +329,8 @@ public abstract class LogListener implements Consumer<String> {
         private LogMessageListener(@NotNull Function<String, Integer> func, @NotNull ValueRange exp) {
             this.func = func;
             this.exp = exp;
+
+            matches.set(0);
         }
 
         /** {@inheritDoc} */
@@ -339,8 +341,11 @@ public abstract class LogListener implements Consumer<String> {
             try {
                 int cnt = func.apply(msg);
 
-                if (cnt > 0)
+                if (cnt > 0) {
                     matches.addAndGet(cnt);
+
+                    System.err.println("TEST | cnt: " + cnt + ", matchCnt: " + matches.get());
+                }
             }
             catch (Throwable t) {
                 err.compareAndSet(null, t);

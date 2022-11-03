@@ -34,6 +34,7 @@ import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCache;
 import org.apache.ignite.IgniteDataStreamer;
 import org.apache.ignite.IgniteException;
+import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.cache.CacheServerNotFoundException;
 import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.configuration.CacheConfiguration;
@@ -89,6 +90,10 @@ public class DataStreamerImplSelfTest extends GridCommonAbstractTest {
         super.afterTest();
 
         stopAllGrids();
+
+        // Unbinds the log listeners from single static log instance.
+        U.<AtomicReference<IgniteLogger>>field(DataStreamerImpl.class, "logRef").set(null);
+        GridTestUtils.setFieldValue(null, DataStreamerImpl.class, "log", null);
     }
 
     /** {@inheritDoc} */
@@ -180,18 +185,15 @@ public class DataStreamerImplSelfTest extends GridCommonAbstractTest {
         StreamReceiver<Integer, Integer>... receivers) throws Exception {
         assert receivers.length > 0;
 
-        String targetMsg = U.field(DataStreamerImpl.class, "WRN_INCONSISTENT_UPDATES");
+        LogListener lsnr = LogListener.matches(DataStreamerImpl.WRN_INCONSISTENT_UPDATES)
+            .times(mustWarn ? 1 : 0).build();
 
         startGrids(2);
 
         IgniteConfiguration cfg = getConfiguration(getTestIgniteInstanceName(G.allGrids().size()));
+
         ListeningTestLogger log = new ListeningTestLogger(cfg.getGridLogger());
-
-        LogListener lsnr = LogListener.matches(targetMsg)
-            .times(mustWarn ? 1 : 0).build();
-
         log.registerListener(lsnr);
-
         cfg.setGridLogger(log);
 
         IgniteEx ldr = startClientGrid(cfg);
@@ -208,7 +210,7 @@ public class DataStreamerImplSelfTest extends GridCommonAbstractTest {
                     ds.receiver(rcvr);
 
                 // Put some amount of data.
-                AtomicInteger loadCnt = new AtomicInteger(1000);
+                AtomicInteger loadCnt = new AtomicInteger(KEYS_COUNT);
 
                 GridTestUtils.runMultiThreaded(() -> {
                     int v;
