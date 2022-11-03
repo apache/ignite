@@ -60,7 +60,7 @@ matrix:
     - language: csharp
       name: ".NET 6.0"
       mono: none
-      dotnet: 6.0.401
+      dotnet: 6.0
       script:
         - dotnet build modules/platforms/dotnet/Apache.Ignite.DotNetCore.sln
 
