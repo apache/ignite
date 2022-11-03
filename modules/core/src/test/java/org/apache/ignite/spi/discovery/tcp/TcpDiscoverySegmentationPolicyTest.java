@@ -17,17 +17,20 @@
 
 package org.apache.ignite.spi.discovery.tcp;
 
-import java.util.Arrays;
-import java.util.Collection;
 import org.apache.ignite.Ignite;
-import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.failure.AbstractFailureHandler;
 import org.apache.ignite.failure.FailureContext;
+import org.apache.ignite.failure.StopNodeFailureHandler;
 import org.apache.ignite.internal.IgniteEx;
-import org.apache.ignite.internal.IgniteKernal;
+import org.apache.ignite.internal.util.typedef.G;
+import org.apache.ignite.plugin.segmentation.SegmentationPolicy;
+import org.apache.ignite.testframework.ListeningTestLogger;
+import org.apache.ignite.testframework.LogListener;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.junit.Test;
+
+import static org.apache.ignite.testframework.GridTestUtils.waitForCondition;
 
 /**
  * Tests for segmentation policy and failure handling in {@link TcpDiscoverySpi}.
@@ -39,17 +42,40 @@ public class TcpDiscoverySegmentationPolicyTest extends GridCommonAbstractTest {
     /** Default failure handler invoked. */
     private static volatile boolean dfltFailureHndInvoked;
 
+    /** Segmentation policy. */
+    private static SegmentationPolicy segPlc;
+
+    /** */
+    private LogListener lsnr;
+
     /** {@inheritDoc} */
     @Override protected IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {
         IgniteConfiguration cfg = super.getConfiguration(igniteInstanceName);
 
-        if (igniteInstanceName.endsWith("2"))
-            cfg.setFailureHandler(new TestFailureHandler());
+        if (segPlc != null)
+            cfg.setSegmentationPolicy(segPlc);
+
+        cfg.setFailureHandler(new TestFailureHandler());
 
         // Disable recovery
         ((TcpDiscoverySpi)cfg.getDiscoverySpi()).setConnectionRecoveryTimeout(0);
 
+        lsnr = LogListener.matches("Local node SEGMENTED").build();
+
+        ListeningTestLogger listeningLog = new ListeningTestLogger(log);
+        listeningLog.registerListener(lsnr);
+
+        cfg.setGridLogger(listeningLog);
+
         return cfg;
+    }
+
+    /** {@inheritDoc} */
+    @Override protected void beforeTest() throws Exception {
+        super.beforeTest();
+
+        dfltFailureHndInvoked = false;
+        segPlc = null;
     }
 
     /** {@inheritDoc} */
@@ -58,10 +84,27 @@ public class TcpDiscoverySegmentationPolicyTest extends GridCommonAbstractTest {
     }
 
     /**
-     * @throws Exception If failed.
+     * Test STOP segmentation policy.
      */
     @Test
     public void testStopOnSegmentation() throws Exception {
+        segPlc = SegmentationPolicy.STOP;
+
+        checkNodeStop(false);
+    }
+
+    /**
+     * Test that default segmentation policy invokes configured failure handler.
+     */
+    @Test
+    public void testDefaultPolicy() throws Exception {
+        checkNodeStop(true);
+    }
+
+    /**
+     * @param byFailureHnd By failure handler flag.
+     */
+    private void checkNodeStop(boolean byFailureHnd) throws Exception {
         startGrids(NODES_CNT);
 
         IgniteEx ignite1 = grid(1);
@@ -70,16 +113,12 @@ public class TcpDiscoverySegmentationPolicyTest extends GridCommonAbstractTest {
         ((TcpDiscoverySpi)ignite1.configuration().getDiscoverySpi()).brakeConnection();
         ((TcpDiscoverySpi)ignite2.configuration().getDiscoverySpi()).brakeConnection();
 
-        waitForTopology(2);
+        waitForCondition(() -> G.allGrids().size() < NODES_CNT, getTestTimeout() / 2);
 
-        assertFalse(dfltFailureHndInvoked);
+        assertTrue("Segmentation was not happened.",
+            waitForCondition(() -> lsnr.check(), getTestTimeout() / 2));
 
-        Collection<ClusterNode> nodes = ignite1.cluster().forServers().nodes();
-
-        assertEquals(2, nodes.size());
-        assertTrue(nodes.containsAll(Arrays.asList(((IgniteKernal)ignite(0)).localNode(), ((IgniteKernal)ignite(1)).localNode())));
-
-        System.out.println();
+        assertTrue(byFailureHnd == dfltFailureHndInvoked);
     }
 
     /**
@@ -89,6 +128,8 @@ public class TcpDiscoverySegmentationPolicyTest extends GridCommonAbstractTest {
         /** {@inheritDoc} */
         @Override protected boolean handle(Ignite ignite, FailureContext failureCtx) {
             dfltFailureHndInvoked = true;
+
+            ((IgniteEx)ignite).context().failure().process(failureCtx, new StopNodeFailureHandler());
 
             return true;
         }

@@ -71,6 +71,7 @@ import org.apache.ignite.lang.IgniteOutClosure;
 import org.apache.ignite.lang.IgnitePredicate;
 import org.apache.ignite.plugin.extensions.communication.Message;
 import org.apache.ignite.plugin.security.SecurityCredentials;
+import org.apache.ignite.plugin.segmentation.SegmentationPolicy;
 import org.apache.ignite.resources.IgniteInstanceResource;
 import org.apache.ignite.spi.communication.tcp.TcpCommunicationSpi;
 import org.apache.ignite.spi.discovery.DiscoverySpi;
@@ -235,6 +236,8 @@ class ZookeeperDiscoverySpiTestBase extends GridCommonAbstractTest {
         }
         finally {
             stopAllGrids();
+
+            GridTestUtils.stopThreads(log);
 
             reset();
         }
@@ -529,6 +532,9 @@ class ZookeeperDiscoverySpiTestBase extends GridCommonAbstractTest {
             cfg.setCommunicationFailureResolver(commFailureRslvr.apply());
 
         cfg.setIncludeEventTypes(EventType.EVTS_ALL);
+
+        // Will be used to handle segmentation.
+        cfg.setSegmentationPolicy(SegmentationPolicy.STOP);
 
         return cfg;
     }

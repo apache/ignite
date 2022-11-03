@@ -33,6 +33,7 @@ import org.apache.ignite.internal.client.GridClientConfiguration;
 import org.apache.ignite.internal.client.GridClientException;
 import org.apache.ignite.internal.client.GridClientFactory;
 import org.apache.ignite.internal.processors.cache.distributed.dht.preloader.GridDhtPartitionSupplyMessage;
+import org.apache.ignite.plugin.segmentation.SegmentationPolicy;
 import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi;
 import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
@@ -60,6 +61,7 @@ public class RestProtocolStartTest extends GridCommonAbstractTest {
             .setConsistentId(igniteInstanceName)
             .setSystemWorkerBlockedTimeout(10_000)
             .setFailureDetectionTimeout(FAILURE_DETECTION_TIMEOUT)
+            .setSegmentationPolicy(SegmentationPolicy.STOP) // Handle segmentation instead of NoOpFailureHandler.
             .setCacheConfiguration(new CacheConfiguration(DEFAULT_CACHE_NAME)
                 .setAffinity(new RendezvousAffinityFunction(false, 8)))
             .setCommunicationSpi(igniteInstanceName.equals(getTestIgniteInstanceName(0))
