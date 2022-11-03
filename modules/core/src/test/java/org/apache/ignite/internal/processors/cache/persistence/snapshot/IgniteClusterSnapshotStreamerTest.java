@@ -88,7 +88,7 @@ public class IgniteClusterSnapshotStreamerTest extends AbstractSnapshotSelfTest 
      */
     @Test
     public void testStreamerWhileSnapshotDefault() throws Exception {
-        doTestDataStreamerWhileSnapshot(true, false);
+        doTestDataStreamerWhileSnapshot( false);
     }
 
     /**
@@ -96,7 +96,7 @@ public class IgniteClusterSnapshotStreamerTest extends AbstractSnapshotSelfTest 
      */
     @Test
     public void testStreamerWhileSnapshotOverwriting() throws Exception {
-        doTestDataStreamerWhileSnapshot(false, true);
+        doTestDataStreamerWhileSnapshot( true);
     }
 
     /**
@@ -178,17 +178,15 @@ public class IgniteClusterSnapshotStreamerTest extends AbstractSnapshotSelfTest 
     /**
      * Tests snapshot process throws warning if required.
      *
-     * @param mustFail If {@code true}, checks snapshot process produces the warning. Otherwise, checks snapshot
-     *                 process produces no warning.
      * @param allowOverwrite 'allowOverwrite' setting.
      */
-    private void doTestDataStreamerWhileSnapshot(boolean mustFail, boolean allowOverwrite) throws Exception {
+    private void doTestDataStreamerWhileSnapshot(boolean allowOverwrite) throws Exception {
         AtomicBoolean stopLoading = new AtomicBoolean(false);
 
         IgniteInternalFuture<?> loadFut = runLoad(client, allowOverwrite, stopLoading);
 
         try {
-            if (mustFail) {
+            if (allowOverwrite) {
                 assertThrows(null, () -> snpMgr.createSnapshot(SNAPSHOT_NAME).get(),
                     IgniteException.class, DataStreamerUpdatesHandler.WRN_MSG);
             }
