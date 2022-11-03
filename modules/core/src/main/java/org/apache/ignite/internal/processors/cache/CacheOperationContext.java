@@ -19,15 +19,27 @@ package org.apache.ignite.internal.processors.cache;
 
 import java.io.Serializable;
 import javax.cache.expiry.ExpiryPolicy;
+import org.apache.ignite.IgniteSystemProperties;
 import org.apache.ignite.cache.ReadRepairStrategy;
 import org.apache.ignite.internal.util.tostring.GridToStringInclude;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.jetbrains.annotations.Nullable;
 
+import static org.apache.ignite.IgniteSystemProperties.IGNITE_ALLOW_ATOMIC_OPS_IN_TX;
+
 /**
  * Cache operation context.
  */
 public class CacheOperationContext implements Serializable {
+    /**
+     * Since 2.15.0 atomic operations inside transactions are not allowed
+     * thus DFLT_ALLOW_ATOMIC_OPS_IN_TX is changed to false.
+     * To return the old behaviour the default value of system property is to be set as true IGNITE_ALLOW_ATOMIC_OPS_IN_TX=true
+     * in CacheOperationContext.java and IgniteSystemProperties.java.
+     */
+    public static final boolean DFLT_ALLOW_ATOMIC_OPS_IN_TX =
+        IgniteSystemProperties.getBoolean(IGNITE_ALLOW_ATOMIC_OPS_IN_TX, false);
+
     /** */
     private static final long serialVersionUID = 0L;
 
@@ -68,7 +80,7 @@ public class CacheOperationContext implements Serializable {
         recovery = false;
         readRepairStrategy = null;
         dataCenterId = null;
-        allowAtomicOpsInTx = false;
+        allowAtomicOpsInTx = DFLT_ALLOW_ATOMIC_OPS_IN_TX;
     }
 
     /**
