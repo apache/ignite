@@ -65,7 +65,7 @@ namespace Apache.Ignite.Core.Tests.Process
         static IgniteProcess()
         {
             // 1. Locate executable file and related stuff.
-            DirectoryInfo dir = new FileInfo(new Uri(typeof(IgniteProcess).Assembly.CodeBase).LocalPath).Directory;
+            DirectoryInfo dir = new FileInfo(new Uri(typeof(IgniteProcess).Assembly.Location).LocalPath).Directory;
 
             // ReSharper disable once PossibleNullReferenceException
             ExeDir = dir.FullName;
