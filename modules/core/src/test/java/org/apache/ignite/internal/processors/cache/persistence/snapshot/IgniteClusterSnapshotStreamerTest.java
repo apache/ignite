@@ -186,12 +186,12 @@ public class IgniteClusterSnapshotStreamerTest extends AbstractSnapshotSelfTest 
         IgniteInternalFuture<?> loadFut = runLoad(client, allowOverwrite, stopLoading);
 
         try {
-            if (allowOverwrite) {
+            if (allowOverwrite)
+                grid(0).snapshot().createSnapshot(SNAPSHOT_NAME).get();
+            else {
                 assertThrows(null, () -> snpMgr.createSnapshot(SNAPSHOT_NAME).get(),
                     IgniteException.class, DataStreamerUpdatesHandler.WRN_MSG);
             }
-            else
-                grid(0).snapshot().createSnapshot(SNAPSHOT_NAME).get();
         }
         finally {
             stopLoading.set(true);
