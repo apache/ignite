@@ -246,29 +246,6 @@ public class SnapshotPartitionsVerifyHandler implements SnapshotHandler<Map<Part
         return res;
     }
 
-    /** */
-    protected PartitionHashRecordV2 partHash(
-        PartitionKeyV2 key,
-        Object updCntr,
-        Object consId,
-        GridDhtPartitionState state,
-        boolean isPrimary,
-        long partSize,
-        GridIterator<CacheDataRow> it
-    ) throws IgniteCheckedException {
-        PartitionHashRecordV2 hash = calculatePartitionHash(key,
-            updCntr,
-            consId,
-            state,
-            isPrimary,
-            partSize,
-            it);
-
-        assert hash != null : "OWNING must have hash: " + key;
-
-        return hash;
-    }
-
     /** {@inheritDoc} */
     @Override public void complete(String name,
         Collection<SnapshotHandlerResult<Map<PartitionKeyV2, PartitionHashRecordV2>>> results) throws IgniteCheckedException {
@@ -296,6 +273,29 @@ public class SnapshotPartitionsVerifyHandler implements SnapshotHandler<Map<Part
         verifyResult.print(buf::a, true);
 
         throw new IgniteCheckedException(buf.toString());
+    }
+
+    /** */
+    protected PartitionHashRecordV2 partHash(
+        PartitionKeyV2 key,
+        Object updCntr,
+        Object consId,
+        GridDhtPartitionState state,
+        boolean isPrimary,
+        long partSize,
+        GridIterator<CacheDataRow> it
+    ) throws IgniteCheckedException {
+        PartitionHashRecordV2 hash = calculatePartitionHash(key,
+            updCntr,
+            consId,
+            state,
+            isPrimary,
+            partSize,
+            it);
+
+        assert hash != null : "OWNING must have hash: " + key;
+
+        return hash;
     }
 
     /**

@@ -56,9 +56,9 @@ public class SnapshotPartitionsFastVerifyHandler extends SnapshotPartitionsVerif
     }
 
     /** {@inheritDoc} */
-    @Override public Map<PartitionKeyV2, PartitionHashRecordV2> invoke(SnapshotHandlerContext hndCtx)
-        throws IgniteCheckedException {
-        return super.invoke(hndCtx);
+    @Override public Map<PartitionKeyV2, PartitionHashRecordV2> invoke(
+        SnapshotHandlerContext opCtx) throws IgniteCheckedException {
+        return super.invoke(opCtx);
     }
 
     /** {@inheritDoc} */
@@ -96,7 +96,7 @@ public class SnapshotPartitionsFastVerifyHandler extends SnapshotPartitionsVerif
                                 if (storedResult == null)
                                     return newResult.getValue();
 
-                                if (storedResult.updateCounter() != newResult.getValue().updateCounter()
+                                if (!storedResult.updateCounter().equals(newResult.getValue().updateCounter())
                                     || storedResult.size() != newResult.getValue().size())
                                     wrnGroups.add(newResult.getKey().groupId());
 
