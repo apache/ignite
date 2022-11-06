@@ -18,7 +18,6 @@
 package org.apache.ignite.internal.processors.cache.persistence.snapshot;
 
 import java.io.Serializable;
-import java.util.ArrayList;
 import java.util.Collection;
 import java.util.List;
 import java.util.Set;
@@ -61,10 +60,15 @@ public class SnapshotOperationRequest implements Serializable {
     private volatile Throwable err;
 
     /**
-     * Warnings of snapshot operation. They do not interrupt the process, but produces an error at the end if no
-     * other errors occured. This makes the operation status 'not OK'.
+     * Snapshot operation warnings. Warnings do not interrupt snapshot process but raise exception at the end to make
+     * the operation status 'not OK' if no other error occured.
      */
-    private volatile List<String> warnings = new ArrayList<>();
+    private volatile List<String> warnings;
+
+    /**
+     * Warning flag of concurrent inconsistent-by-nature streamer updates.
+     */
+    private transient volatile boolean streamerWrn;
 
     /** Flag indicating that the {@link DistributedProcessType#START_SNAPSHOT} phase has completed. */
     private transient volatile boolean startStageEnded;
@@ -164,6 +168,7 @@ public class SnapshotOperationRequest implements Serializable {
     protected boolean startStageEnded() {
         return startStageEnded;
     }
+
     /**
      * @param startStageEnded Flag indicating that the {@link DistributedProcessType#START_SNAPSHOT} phase has completed.
      */
@@ -183,6 +188,20 @@ public class SnapshotOperationRequest implements Serializable {
      */
     public void warnings(List<String> warnings) {
         this.warnings = warnings;
+    }
+
+    /**
+     * {@code True} If the streamer warning flag is set. {@code False} otherwise.
+     */
+    public boolean streamerWarning() {
+        return streamerWrn;
+    }
+
+    /**
+     * Sets the streamer warning flag.
+     */
+    public boolean streamerWarning(boolean val) {
+        return streamerWrn = val;
     }
 
     /** {@inheritDoc} */

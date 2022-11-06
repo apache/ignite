@@ -18,18 +18,20 @@
 package org.apache.ignite.internal.processors.cache.persistence.snapshot;
 
 import java.util.Collection;
-import java.util.List;
 import java.util.UUID;
 import java.util.stream.Collectors;
+
+import org.apache.ignite.internal.util.typedef.F;
 
 import static org.apache.ignite.internal.processors.cache.persistence.snapshot.SnapshotHandlerType.CREATE;
 
 /**
- * Snapshot haldler that monitor inconsistent-by-nature Datastreamer updates.
+ * A snapshot haldler that monitors and warns of inconsistent by nature updates from DataStreamer which can issue
+ * data inconsistency in snapshot.
  */
 public class DataStreamerUpdatesHandler implements SnapshotHandler<Boolean> {
     /** */
-    private static final String WRN_MSG = "DataStreamer with property 'alowOverwrite' set to `false` was working " +
+    public static final String WRN_MSG = "DataStreamer with property 'allowOverwrite' set to `false` was working " +
         "during the snapshot creation. Such streaming updates are inconsistent by nature and should be successfully " +
         "finished before data usage. Snapshot might not be entirely restored. However, you would be able to restore " +
         "the caches which were not streamed into.";
@@ -41,19 +43,17 @@ public class DataStreamerUpdatesHandler implements SnapshotHandler<Boolean> {
 
     /** {@inheritDoc} */
     @Override public Boolean invoke(SnapshotHandlerContext ctx) {
-        assert ctx.createSnpFut() != null;
-
-        return ctx.createSnpFut().streamUpdates();
+        return ctx.streamerWarning();
     }
 
     /** {@inheritDoc} */
-    @Override public void complete(String name,
-        Collection<SnapshotHandlerResult<Boolean>> results) throws SnapshotHandlerWarningException, Exception {
-        List<UUID> nodes = results.stream().filter(SnapshotHandlerResult::data).map(r -> r.node().id())
-            .collect(Collectors.toList());
+    @Override public void complete(String name, Collection<SnapshotHandlerResult<Boolean>> results)
+        throws SnapshotHandlerWarningException {
+        Collection<UUID> nodes = F.viewReadOnly(results, r -> r.node().id(), SnapshotHandlerResult::data);
 
-        if (!nodes.isEmpty())
-            throw new SnapshotHandlerWarningException(WRN_MSG + " Streaming updates detected on nodes: " + nodes.stream()
-                .map(UUID::toString).collect(Collectors.joining(", ")));
+        if (!nodes.isEmpty()) {
+            throw new SnapshotHandlerWarningException(WRN_MSG + " Updates from DataStreamer detected on the nodes: " +
+                nodes.stream().map(UUID::toString).collect(Collectors.joining(", ")));
+        }
     }
 }

@@ -2255,7 +2255,7 @@ public class DataStreamerImpl<K, V> implements IgniteDataStreamer<K, V>, Delayed
             Collection<Integer> ignoredParts = new HashSet<>();
 
             try {
-                wrnSnapshot(cctx);
+                snapshotWarning(cctx);
 
                 for (Entry<KeyCacheObject, CacheObject> e : entries) {
                     cctx.shared().database().checkpointReadLock();
@@ -2368,13 +2368,13 @@ public class DataStreamerImpl<K, V> implements IgniteDataStreamer<K, V>, Delayed
         }
 
         /**
-         * Notifies snapshot process of inconsistent-by-nature Datastreamer updates.
+         * Sets the streamer warning flag to current snapshot process if it is active.
          *
          * @param cctx Cache context.
          */
-        private static void wrnSnapshot(GridCacheContext<?, ?> cctx) {
+        private static void snapshotWarning(GridCacheContext<?, ?> cctx) {
             if (cctx.group().persistenceEnabled())
-                cctx.kernalContext().cache().context().snapshotMgr().streamedUpdates();
+                cctx.kernalContext().cache().context().snapshotMgr().streamerWarning();
         }
     }
 

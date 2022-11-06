@@ -17,7 +17,6 @@
 
 package org.apache.ignite.internal.processors.cache.persistence.snapshot;
 
-import java.util.AbstractMap;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.Map;
@@ -35,14 +34,14 @@ import org.apache.ignite.internal.util.lang.GridIterator;
 import org.apache.ignite.internal.util.typedef.internal.U;
 
 /**
- * Quick partitions verifier. Warns if partiton counters or size are different among the nodes. May be caused by
+ * Quick partitions verifier. Warns if partiton counters or size are different among the nodes what can be caused by
  * canceled/failed DataStreamer.
  */
 public class SnapshotPartitionsFastVerifyHandler extends SnapshotPartitionsVerifyHandler {
     /** */
-    private static final String WRN_MSG_BASE = "This may happen if DataStreamer with property 'allowOverwrite' set " +
+    public static final String WRN_MSG_BASE = "This may happen if DataStreamer with property 'allowOverwrite' set " +
         "to `false` is loading during the snapshot or hadn't successfully finished earlier. However, you will be " +
-        "able restore rest the caches of the snapshot.";
+        "able restore rest the caches from this snapshot.";
 
     /**
      * @param cctx Shared context.
@@ -59,9 +58,6 @@ public class SnapshotPartitionsFastVerifyHandler extends SnapshotPartitionsVerif
     /** {@inheritDoc} */
     @Override public Map<PartitionKeyV2, PartitionHashRecordV2> invoke(SnapshotHandlerContext hndCtx)
         throws IgniteCheckedException {
-        if (hndCtx.createSnpFut().streamUpdates())
-            return null;
-
         return super.invoke(hndCtx);
     }
 
@@ -77,8 +73,7 @@ public class SnapshotPartitionsFastVerifyHandler extends SnapshotPartitionsVerif
         String name,
         Collection<SnapshotHandlerResult<Map<PartitionKeyV2, PartitionHashRecordV2>>> results
     ) throws IgniteCheckedException {
-        // Group id -> Part size, part counter -> Counters set without node id.
-        Map<Integer, Map<Integer, Map.Entry<Long, Long>>> counters = new ConcurrentHashMap<>();
+        Map<Integer, Map<Integer, PartitionHashRecordV2>> counters = new ConcurrentHashMap<>();
 
         Set<Integer> wrnGroups = new GridConcurrentHashSet<>();
 
@@ -89,25 +84,23 @@ public class SnapshotPartitionsFastVerifyHandler extends SnapshotPartitionsVerif
                 U.doInParallel(
                     cctx.snapshotMgr().snapshotExecutorService(),
                     nodeResult.data() == null ? Collections.emptySet() : nodeResult.data().entrySet(),
-                    partResult -> {
-                        if (wrnGroups.contains(partResult.getKey().groupId()))
+                    newResult -> {
+                        if (wrnGroups.contains(newResult.getKey().groupId()))
                             return null;
 
-                        counters.compute(partResult.getKey().groupId(), (p, partIdMap) -> {
+                        counters.compute(newResult.getKey().groupId(), (p, partIdMap) -> {
                             if (partIdMap == null)
                                 partIdMap = new ConcurrentHashMap<>();
 
-                            partIdMap.compute(partResult.getKey().partitionId(), (partId, savedSizeAndCnt) -> {
-                                Map.Entry<Long, Long> toCmp = new AbstractMap.SimpleEntry<>(partResult.getValue().size(),
-                                    (long)partResult.getValue().updateCounter());
+                            partIdMap.compute(newResult.getKey().partitionId(), (partId, storedResult) -> {
+                                if (storedResult == null)
+                                    return newResult.getValue();
 
-                                if (savedSizeAndCnt == null)
-                                    return toCmp;
+                                if (storedResult.updateCounter() != newResult.getValue().updateCounter()
+                                    || storedResult.size() != newResult.getValue().size())
+                                    wrnGroups.add(newResult.getKey().groupId());
 
-                                if (!savedSizeAndCnt.equals(toCmp))
-                                    wrnGroups.add(partResult.getKey().groupId());
-
-                                return savedSizeAndCnt;
+                                return storedResult;
                             });
 
                             return partIdMap;
@@ -123,6 +116,6 @@ public class SnapshotPartitionsFastVerifyHandler extends SnapshotPartitionsVerif
 
         if (!wrnGroups.isEmpty())
             throw new SnapshotHandlerWarningException("Cache partitions differ for cache groups " +
-                wrnGroups.stream().map(String::valueOf).collect(Collectors.joining(",")) + ". " + WRN_MSG_BASE);
+                wrnGroups.stream().map(String::valueOf).collect(Collectors.joining(", ")) + ". " + WRN_MSG_BASE);
     }
 }

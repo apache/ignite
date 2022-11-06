@@ -61,7 +61,7 @@ public interface SnapshotHandler<T> extends Extension {
      *
      * @param name Snapshot name.
      * @param results Results from all nodes.
-     * @throws SnapshotHandlerWarningException If the snapshot operation warning occured.
+     * @throws SnapshotHandlerWarningException If a warning of snapshot operation occured.
      * @throws Exception If the snapshot operation needs to be aborted.
      * @see SnapshotHandlerResult
      */
