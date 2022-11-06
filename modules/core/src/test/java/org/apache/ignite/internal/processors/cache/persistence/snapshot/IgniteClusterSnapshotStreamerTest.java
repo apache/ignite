@@ -21,7 +21,6 @@ import java.util.Collections;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.atomic.AtomicBoolean;
 import org.apache.ignite.Ignite;
-import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteDataStreamer;
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.configuration.CacheConfiguration;
@@ -103,7 +102,7 @@ public class IgniteClusterSnapshotStreamerTest extends AbstractSnapshotSelfTest 
      * Tests not affected by streamer cache is restorable from snapshot.
      */
     @Test
-    public void testOtherCacheRestores() throws IgniteCheckedException {
+    public void testOtherCacheRestores() throws Exception {
         String cname = "cache2";
 
         grid(0).createCache(new CacheConfiguration<>(dfltCacheCfg).setName(cname));
@@ -139,7 +138,7 @@ public class IgniteClusterSnapshotStreamerTest extends AbstractSnapshotSelfTest 
      * Tests streaming into in-memory cache doesn't affect snapshot.
      */
     @Test
-    public void testStreamingIntoInMememoryDoesntAffectSnapshot() throws IgniteCheckedException {
+    public void testStreamingIntoInMememoryDoesntAffectSnapshot() throws Exception {
         String cache2Name = "cache2";
         int loadCnt = 1000;
 
@@ -206,7 +205,8 @@ public class IgniteClusterSnapshotStreamerTest extends AbstractSnapshotSelfTest 
      * @param allowOverwrite 'allowOverwrite' setting.
      * @param stop Stop load flag.
      */
-    private IgniteInternalFuture<?> runLoad(Ignite ldr, boolean allowOverwrite, AtomicBoolean stop) {
+    private IgniteInternalFuture<?> runLoad(Ignite ldr, boolean allowOverwrite, AtomicBoolean stop)
+        throws InterruptedException {
         CountDownLatch preload = new CountDownLatch(10_000);
 
         IgniteInternalFuture<?> res = GridTestUtils.runAsync(() -> {
@@ -223,7 +223,7 @@ public class IgniteClusterSnapshotStreamerTest extends AbstractSnapshotSelfTest 
             }
         }, "load-thread");
 
-        preload.countDown();
+        preload.await();
 
         return res;
     }
