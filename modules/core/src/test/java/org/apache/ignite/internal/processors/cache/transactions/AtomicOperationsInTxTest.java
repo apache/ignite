@@ -29,6 +29,7 @@ import org.apache.ignite.IgniteCache;
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
+import org.apache.ignite.internal.processors.cache.CacheOperationContext;
 import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.apache.ignite.transactions.Transaction;
@@ -75,6 +76,26 @@ public class AtomicOperationsInTxTest extends GridCommonAbstractTest {
             IllegalStateException.class,
             "Enabling atomic operations during active transaction is not allowed."
         );
+    }
+
+    /**
+     * Test to check that CacheException is thrown if allowAtomicOpsInTx is true.
+     * @throws CacheException If succeeded.
+     */
+    @Test(expected = CacheException.class)
+    public void testCacheOperationContextIfAtomicOpsInTxTrueThrowsException() {
+        new CacheOperationContext(false, false, null, false, null,
+                false, null, true);
+    }
+
+    /**
+     * Test to check that CacheException is thrown if allowAtomicOpsInTx is false.
+     * @throws CacheException If succeeded.
+     */
+    @Test(expected = CacheException.class)
+    public void testCacheOperationContextIfAtomicOpsInTxFalseThrowsException() {
+        new CacheOperationContext(false, false, null, false, null,
+                false, null, false);
     }
 
     /**
