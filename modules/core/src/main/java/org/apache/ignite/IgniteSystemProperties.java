@@ -606,8 +606,11 @@ public final class IgniteSystemProperties {
     /**
      * Flag indicating whether atomic operations allowed to be used inside transactions.
      * Since 2.15.0 atomic operations inside transactions are not allowed.
-     * To return the old behaviour the default value of system property is to be set as true IGNITE_ALLOW_ATOMIC_OPS_IN_TX=true
-     * in CacheOperationContext.java and IgniteSystemProperties.java.
+     * To return the previous behaviour and to allow transactions in operations with atomic caches you can set system property
+     * {@link IgniteSystemProperties#IGNITE_ALLOW_ATOMIC_OPS_IN_TX IGNITE_ALLOW_ATOMIC_OPS_IN_TX} to {@code true}.
+     * <p>
+     *  If you want to use atomic operations inside transactions in case they are restricted by system property,
+     *  you should allow it before transaction start.
      */
     @SystemProperty(value = "Allows atomic operations inside transactions",
         defaults = "false")

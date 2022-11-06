@@ -18,6 +18,7 @@
 package org.apache.ignite.internal.processors.cache;
 
 import java.io.Serializable;
+import javax.cache.CacheException;
 import javax.cache.expiry.ExpiryPolicy;
 import org.apache.ignite.IgniteSystemProperties;
 import org.apache.ignite.cache.ReadRepairStrategy;
@@ -32,10 +33,12 @@ import static org.apache.ignite.IgniteSystemProperties.IGNITE_ALLOW_ATOMIC_OPS_I
  */
 public class CacheOperationContext implements Serializable {
     /**
-     * Since 2.15.0 atomic operations inside transactions are not allowed
-     * thus DFLT_ALLOW_ATOMIC_OPS_IN_TX is changed to false.
-     * To return the old behaviour the default value of system property is to be set as true IGNITE_ALLOW_ATOMIC_OPS_IN_TX=true
-     * in CacheOperationContext.java and IgniteSystemProperties.java.
+     * Since 2.15.0 atomic operations inside transactions are not allowed.
+     * To return the previous behaviour and to allow transactions in operations with atomic caches you can set system property
+     * {@link IgniteSystemProperties#IGNITE_ALLOW_ATOMIC_OPS_IN_TX IGNITE_ALLOW_ATOMIC_OPS_IN_TX} to {@code true}.
+     * <p>
+     * If you want to use atomic operations inside transactions in case they are restricted by system property,
+     * you should allow it before transaction start.
      */
     public static final boolean DFLT_ALLOW_ATOMIC_OPS_IN_TX =
         IgniteSystemProperties.getBoolean(IGNITE_ALLOW_ATOMIC_OPS_IN_TX, false);
@@ -72,7 +75,7 @@ public class CacheOperationContext implements Serializable {
     /**
      * Constructor with default values.
      */
-    public CacheOperationContext() {
+    public CacheOperationContext() throws CacheException {
         skipStore = false;
         keepBinary = false;
         expiryPlc = null;
@@ -81,6 +84,15 @@ public class CacheOperationContext implements Serializable {
         readRepairStrategy = null;
         dataCenterId = null;
         allowAtomicOpsInTx = DFLT_ALLOW_ATOMIC_OPS_IN_TX;
+
+        throw new CacheException("Since 2.15.0 atomic operations inside transactions are not allowed. " +
+                "To return the previous behaviour and to allow transactions in operations with atomic caches " +
+                "you can set system property {@link IgniteSystemProperties#IGNITE_ALLOW_ATOMIC_OPS_IN_TX " +
+                "IGNITE_ALLOW_ATOMIC_OPS_IN_TX} to {@code true}. " +
+                "" +
+                "If you want to use atomic operations inside transactions in case they are restricted " +
+                "by system property you should allow it before transaction start.");
+
     }
 
     /**
