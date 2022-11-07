@@ -19,6 +19,7 @@ package org.apache.ignite.internal.processors.cache.consistentcut;
 
 import java.util.List;
 import java.util.Map;
+import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
@@ -398,7 +399,7 @@ public abstract class AbstractConsistentCutBlockingTest extends AbstractConsiste
             boolean allNodeStartedCut = true;
 
             for (int i = 0; i < nodes(); i++)
-                allNodeStartedCut &= BlockingConsistentCutManager.cutMgr(grid(i)).runningCutMarker() != null;
+                allNodeStartedCut &= BlockingConsistentCutManager.cutMgr(grid(i)).cut() != null;
 
             return allNodeStartedCut;
         }, getTestTimeout(), 10);
@@ -410,7 +411,7 @@ public abstract class AbstractConsistentCutBlockingTest extends AbstractConsiste
             boolean allNodeFinishedCut = true;
 
             for (int i = 0; i < nodes(); i++)
-                allNodeFinishedCut &= BlockingConsistentCutManager.cutMgr(grid(i)).runningCutMarker() == null;
+                allNodeFinishedCut &= BlockingConsistentCutManager.cutMgr(grid(i)).cut() == null;
 
             return allNodeFinishedCut;
         }, getTestTimeout(), 10);
@@ -528,7 +529,7 @@ public abstract class AbstractConsistentCutBlockingTest extends AbstractConsiste
         }
 
         /** {@inheritDoc} */
-        @Override public void startLocalCut(ConsistentCutMarker marker) {
+        @Override public void startLocalCut(UUID id) {
             if (beforeUpdVer != null) {
                 blockedLatch.countDown();
                 blockedLatch = null;
@@ -538,12 +539,12 @@ public abstract class AbstractConsistentCutBlockingTest extends AbstractConsiste
                 beforeUpdVer = null;
             }
 
-            super.startLocalCut(marker);
+            super.startLocalCut(id);
         }
 
         /** {@inheritDoc} */
-        @Override protected ConsistentCut newConsistentCut(ConsistentCutMarker marker) {
-            return new BlockingConsistentCut(context(), marker);
+        @Override protected ConsistentCut newConsistentCut(UUID id) {
+            return new BlockingConsistentCut(context(), id);
         }
 
         /** */
@@ -579,8 +580,8 @@ public abstract class AbstractConsistentCutBlockingTest extends AbstractConsiste
         /** */
         private final class BlockingConsistentCut extends ConsistentCut {
             /** */
-            BlockingConsistentCut(GridCacheSharedContext<?, ?> cctx, ConsistentCutMarker marker) {
-                super(cctx, marker);
+            BlockingConsistentCut(GridCacheSharedContext<?, ?> cctx, UUID id) {
+                super(cctx, id);
             }
 
             /** Blocks before or after ConsistentCut preparation. */

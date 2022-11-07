@@ -20,6 +20,7 @@ package org.apache.ignite.internal.processors.cache.consistentcut;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Set;
+import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.stream.Collectors;
 import org.apache.ignite.IgniteCheckedException;
@@ -60,11 +61,11 @@ public class ConsistentCut extends GridFutureAdapter<WALPointer> {
     private final IgniteLogger log;
 
     /**
-     * Marker that inits this cut. Bind it with {@link ConsistentCut} by 2 reasons:
-     * a) To guarantee happens-before receiving marker and sending it after by the same node.
-     * b) To guarantee that every transaction committed after receiving marker isn't cleaned from {@link #committingTxs}.
+     * ID of {@link ConsistentCut}. Bind it with the instance by 2 reasons:
+     * a) To guarantee happens-before receiving ID and sending it after by the same node.
+     * b) To guarantee that every transaction committed after receiving ID isn't cleaned from {@link #committingTxs}.
      */
-    private final ConsistentCutMarker marker;
+    private final UUID id;
 
     /** Set of checked transactions belonging to the BEFORE side. */
     @GridToStringInclude
@@ -79,20 +80,20 @@ public class ConsistentCut extends GridFutureAdapter<WALPointer> {
      * due to concurrency between threads that remove transactions from the collection and a thread that parses it in
      * {@link #init()}.
      */
-    private final Set<IgniteInternalFuture<IgniteInternalTx>> committingTxs = ConcurrentHashMap.newKeySet();
+    private volatile Set<IgniteInternalFuture<IgniteInternalTx>> committingTxs = ConcurrentHashMap.newKeySet();
 
     /** */
-    ConsistentCut(GridCacheSharedContext<?, ?> cctx, ConsistentCutMarker marker) {
+    ConsistentCut(GridCacheSharedContext<?, ?> cctx, UUID id) {
         this.cctx = cctx;
 
         log = cctx.logger(ConsistentCut.class);
 
-        this.marker = marker;
+        this.id = id;
     }
 
     /** */
-    public ConsistentCutMarker marker() {
-        return marker;
+    public UUID id() {
+        return id;
     }
 
     /**
@@ -114,16 +115,18 @@ public class ConsistentCut extends GridFutureAdapter<WALPointer> {
         // 2. we need a guarantee to handle `committingTxs` after `activeTxs` to avoid missed transactions.
         checkTransactions(finFutIt, checkFut);
 
-        walLog(new ConsistentCutStartRecord(marker), false);
+        walLog(new ConsistentCutStartRecord(id), false);
 
         checkTransactions(committingTxs.iterator(), checkFut);
 
         checkFut.markInitialized();
 
         checkFut.listen(finish -> {
+            committingTxs = null;
+
             if (Boolean.FALSE.equals(finish.result()) || isDone()) {
                 if (log.isDebugEnabled())
-                    log.debug("Cut might be inconsistent for marker " + marker + ". Skip writing FinishRecord.");
+                    log.debug("Cut might be inconsistent for id " + id + ". Skip writing FinishRecord.");
 
                 onDone(null, new IgniteCheckedException("Cut is inconsistent."));
 
@@ -131,12 +134,12 @@ public class ConsistentCut extends GridFutureAdapter<WALPointer> {
             }
 
             try {
-                WALPointer ptr = walLog(new ConsistentCutFinishRecord(beforeCut, afterCut), true);
+                WALPointer ptr = walLog(new ConsistentCutFinishRecord(id, beforeCut, afterCut), true);
 
                 onDone(ptr);
             }
             catch (IgniteCheckedException e) {
-                U.error(log, "Failed to write ConsistentCutFinishRecord to WAL for marker " + marker, e);
+                U.error(log, "Failed to write ConsistentCutFinishRecord to WAL for id " + id, e);
 
                 onDone(e);
             }
@@ -149,8 +152,10 @@ public class ConsistentCut extends GridFutureAdapter<WALPointer> {
      * @param txFinFut Transaction finish future.
      */
     public void addCommittingTransaction(IgniteInternalFuture<IgniteInternalTx> txFinFut) {
-        if (!isDone())
-            committingTxs.add(txFinFut);
+        Set<IgniteInternalFuture<IgniteInternalTx>> txs = committingTxs;
+
+        if (txs != null)
+            txs.add(txFinFut);
     }
 
     /**
@@ -197,25 +202,16 @@ public class ConsistentCut extends GridFutureAdapter<WALPointer> {
                     return false;
                 }
 
-                if (beforeCut(tx.marker()))
-                    beforeCut.add(tx.nearXidVersion());
-                else
+                if (id.equals(tx.cutId()))
                     afterCut.add(tx.nearXidVersion());
+                else
+                    beforeCut.add(tx.nearXidVersion());
 
                 return true;
             });
 
             checkFut.add(txCheckFut);
         }
-    }
-
-    /**
-     * Transaction is BEFORE if it wasn't signed yet (started committing before cut), or signed with the obsolete marker.
-     *
-     * @return {@code true} if transaction is BEFORE current cut.
-     */
-    boolean beforeCut(ConsistentCutMarker txMarker) {
-        return txMarker == null || !txMarker.id().equals(marker.id());
     }
 
     /**

@@ -21,6 +21,7 @@ import java.io.IOException;
 import java.nio.ByteBuffer;
 import java.util.HashSet;
 import java.util.Set;
+import java.util.UUID;
 import org.apache.ignite.internal.pagemem.wal.record.ConsistentCutFinishRecord;
 import org.apache.ignite.internal.processors.cache.persistence.tree.io.CacheVersionIO;
 import org.apache.ignite.internal.processors.cache.persistence.wal.ByteBufferBackedDataInput;
@@ -38,6 +39,9 @@ public class ConsistentCutFinishRecordSerializer {
      * @param buf Byte buffer.
      */
     public void write(ConsistentCutFinishRecord rec, ByteBuffer buf) {
+        buf.putLong(rec.cutId().getMostSignificantBits());
+        buf.putLong(rec.cutId().getLeastSignificantBits());
+
         buf.putInt(rec.before().size());
 
         for (GridCacheVersion v: rec.before())
@@ -57,10 +61,13 @@ public class ConsistentCutFinishRecordSerializer {
      * @throws IOException In case of fail.
      */
     public ConsistentCutFinishRecord read(ByteBufferBackedDataInput in) throws IOException {
+        long mstSignBits = in.readLong();
+        long lstSignBits = in.readLong();
+
         Set<GridCacheVersion> before = readSetTxs(in);
         Set<GridCacheVersion> after = readSetTxs(in);
 
-        return new ConsistentCutFinishRecord(before, after);
+        return new ConsistentCutFinishRecord(new UUID(mstSignBits, lstSignBits), before, after);
     }
 
     /** */
@@ -85,7 +92,7 @@ public class ConsistentCutFinishRecordSerializer {
      * @return Size of ConsistentCutFinishRecord in bytes.
      */
     public int size(ConsistentCutFinishRecord rec) {
-        int size = 4 + 4;  // Before and after tx count.
+        int size = 8 + 8 + 4 + 4;  // ID, before and after tx count.
 
         for (GridCacheVersion v: rec.before())
             size += CacheVersionIO.size(v, false);

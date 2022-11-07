@@ -18,6 +18,7 @@
 package org.apache.ignite.internal.processors.cache.consistentcut;
 
 import java.util.Random;
+import java.util.UUID;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCache;
 import org.apache.ignite.IgniteException;
@@ -59,7 +60,7 @@ public class ConsistentCutTxRecoveryTest extends AbstractConsistentCutBlockingTe
 
             waitForCutIsStartedOnAllNodes();
 
-            ConsistentCutMarker blkCutMarker = BlockingConsistentCutManager.cutMgr(grid(0)).runningCutMarker();
+            UUID blkCutId = BlockingConsistentCutManager.cutMgr(grid(0)).cut().id();
 
             // Stop client node.
             stopGrid(nodes());
@@ -76,7 +77,7 @@ public class ConsistentCutTxRecoveryTest extends AbstractConsistentCutBlockingTe
             stopCluster();
 
             for (int i = 0; i < nodes(); i++)
-                assertWalConsistentRecords(i, blkCutMarker, 2);
+                assertWalConsistentRecords(i, blkCutId, 2);
         }
         finally {
             if (loadFut != null)
@@ -85,7 +86,7 @@ public class ConsistentCutTxRecoveryTest extends AbstractConsistentCutBlockingTe
     }
 
     /** */
-    private void assertWalConsistentRecords(int nodeIdx, ConsistentCutMarker blkMarker, int incSnpCnt) throws Exception {
+    private void assertWalConsistentRecords(int nodeIdx, UUID blkCutId, int incSnpCnt) throws Exception {
         WALIterator iter = walIter(nodeIdx);
 
         boolean expFinRec = false;
@@ -99,13 +100,13 @@ public class ConsistentCutTxRecoveryTest extends AbstractConsistentCutBlockingTe
             if (rec.type() == WALRecord.RecordType.CONSISTENT_CUT_START_RECORD) {
                 ConsistentCutStartRecord startRec = (ConsistentCutStartRecord)rec;
 
-                expFinRec = !startRec.marker().id().equals(blkMarker.id());
+                expFinRec = !startRec.cutId().equals(blkCutId);
 
                 if (!expFinRec)
                     reachInconsistent = true;
             }
             else if (rec.type() == WALRecord.RecordType.CONSISTENT_CUT_FINISH_RECORD) {
-                assertTrue("Unexpect Finish Record. " + blkMarker, expFinRec);
+                assertTrue("Unexpect Finish Record. " + blkCutId, expFinRec);
 
                 expFinRec = false;
 
@@ -114,7 +115,7 @@ public class ConsistentCutTxRecoveryTest extends AbstractConsistentCutBlockingTe
         }
 
         assertTrue("Should reach StartRecord for bad snapshot", reachInconsistent);
-        assertEquals("Should reach marker after " + blkMarker, incSnpCnt, actIncSnpCnt);
+        assertEquals("Should reach blkCutId after " + blkCutId, incSnpCnt, actIncSnpCnt);
     }
 
     /** */

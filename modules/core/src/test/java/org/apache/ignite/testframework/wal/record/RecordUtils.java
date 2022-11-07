@@ -86,7 +86,6 @@ import org.apache.ignite.internal.pagemem.wal.record.delta.RotatedIdPartRecord;
 import org.apache.ignite.internal.pagemem.wal.record.delta.SplitExistingPageRecord;
 import org.apache.ignite.internal.pagemem.wal.record.delta.TrackingPageDeltaRecord;
 import org.apache.ignite.internal.pagemem.wal.record.delta.TrackingPageRepairDeltaRecord;
-import org.apache.ignite.internal.processors.cache.consistentcut.ConsistentCutMarker;
 import org.apache.ignite.internal.processors.cache.distributed.dht.topology.GridDhtPartitionState;
 import org.apache.ignite.internal.processors.cache.mvcc.MvccVersionImpl;
 import org.apache.ignite.internal.processors.cache.persistence.wal.WALPointer;
@@ -640,12 +639,12 @@ public class RecordUtils {
 
     /** **/
     public static ConsistentCutStartRecord buildConsistentCutStartRecord() {
-        return new ConsistentCutStartRecord(new ConsistentCutMarker(UUID.randomUUID()));
+        return new ConsistentCutStartRecord(UUID.randomUUID());
     }
 
     /** **/
     public static ConsistentCutFinishRecord buildConsistentCutFinishRecord() {
         return new ConsistentCutFinishRecord(
-            F.asSet(new GridCacheVersion()), F.asSet(new GridCacheVersion()));
+            UUID.randomUUID(), F.asSet(new GridCacheVersion()), F.asSet(new GridCacheVersion()));
     }
 }

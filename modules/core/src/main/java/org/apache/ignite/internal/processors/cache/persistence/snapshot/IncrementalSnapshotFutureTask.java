@@ -91,7 +91,7 @@ class IncrementalSnapshotFutureTask
 
     /** {@inheritDoc} */
     @Override public boolean start() {
-        ConsistentCut cut = cctx.consistentCutMgr().runningCut();
+        ConsistentCut cut = cctx.consistentCutMgr().cut();
 
         if (cut == null) {
             onDone(new IgniteCheckedException(

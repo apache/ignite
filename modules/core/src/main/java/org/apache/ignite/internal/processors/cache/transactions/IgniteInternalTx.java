@@ -31,7 +31,6 @@ import org.apache.ignite.internal.processors.cache.GridCacheFilterFailedExceptio
 import org.apache.ignite.internal.processors.cache.GridCacheMvccCandidate;
 import org.apache.ignite.internal.processors.cache.KeyCacheObject;
 import org.apache.ignite.internal.processors.cache.consistentcut.ConsistentCut;
-import org.apache.ignite.internal.processors.cache.consistentcut.ConsistentCutMarker;
 import org.apache.ignite.internal.processors.cache.mvcc.MvccSnapshot;
 import org.apache.ignite.internal.processors.cache.version.GridCacheVersion;
 import org.apache.ignite.internal.transactions.IgniteTxTimeoutCheckedException;
@@ -668,14 +667,14 @@ public interface IgniteInternalTx {
     public MvccSnapshot mvccSnapshot();
 
     /**
-     * @return {@link ConsistentCutMarker} or {@code null} if the marker wasn't set.
+     * @return {@link ConsistentCut} ID or {@code null} if the id wasn't set.
      */
-    public @Nullable ConsistentCutMarker marker();
+    public @Nullable UUID cutId();
 
     /**
-     * @param marker Marker of {@link ConsistentCut} AFTER which this transaction was committed.
+     * @param id ID of {@link ConsistentCut} AFTER which this transaction was committed.
      */
-    public void marker(@Nullable ConsistentCutMarker marker);
+    public void cutId(@Nullable UUID id);
 
     /**
      * @return Transaction counters.

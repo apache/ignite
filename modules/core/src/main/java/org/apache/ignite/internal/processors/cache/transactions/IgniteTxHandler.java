@@ -47,8 +47,8 @@ import org.apache.ignite.internal.processors.cache.GridCacheReturnCompletableWra
 import org.apache.ignite.internal.processors.cache.GridCacheSharedContext;
 import org.apache.ignite.internal.processors.cache.GridCacheUpdateTxResult;
 import org.apache.ignite.internal.processors.cache.KeyCacheObject;
-import org.apache.ignite.internal.processors.cache.consistentcut.ConsistentCutMarkerMessage;
-import org.apache.ignite.internal.processors.cache.consistentcut.ConsistentCutMarkerTxFinishMessage;
+import org.apache.ignite.internal.processors.cache.consistentcut.ConsistentCutAwareMessage;
+import org.apache.ignite.internal.processors.cache.consistentcut.ConsistentCutAwareTxFinishMessage;
 import org.apache.ignite.internal.processors.cache.distributed.GridCacheTxRecoveryFuture;
 import org.apache.ignite.internal.processors.cache.distributed.GridCacheTxRecoveryRequest;
 import org.apache.ignite.internal.processors.cache.distributed.GridCacheTxRecoveryResponse;
@@ -292,24 +292,24 @@ public class IgniteTxHandler {
                 }
             });
 
-        ctx.io().addCacheHandler(TX_MSG_HND_ID, ConsistentCutMarkerMessage.class,
-            new CI2<UUID, ConsistentCutMarkerMessage>() {
-                @Override public void apply(UUID nodeId, ConsistentCutMarkerMessage msg) {
+        ctx.io().addCacheHandler(TX_MSG_HND_ID, ConsistentCutAwareMessage.class,
+            new CI2<UUID, ConsistentCutAwareMessage>() {
+                @Override public void apply(UUID nodeId, ConsistentCutAwareMessage msg) {
                     processConsistentCutMarkerMessage(nodeId, msg);
                 }
             });
 
-        ctx.io().addCacheHandler(TX_MSG_HND_ID, ConsistentCutMarkerTxFinishMessage.class,
-            new CI2<UUID, ConsistentCutMarkerTxFinishMessage>() {
-                @Override public void apply(UUID nodeId, ConsistentCutMarkerTxFinishMessage msg) {
+        ctx.io().addCacheHandler(TX_MSG_HND_ID, ConsistentCutAwareTxFinishMessage.class,
+            new CI2<UUID, ConsistentCutAwareTxFinishMessage>() {
+                @Override public void apply(UUID nodeId, ConsistentCutAwareTxFinishMessage msg) {
                     processConsistentCutMarkerFinishTxMessage(nodeId, msg);
                 }
             });
     }
 
     /** */
-    private void processConsistentCutMarkerFinishTxMessage(UUID nodeId, ConsistentCutMarkerTxFinishMessage msg) {
-        ctx.consistentCutMgr().handleConsistentCutMarker(msg.marker());
+    private void processConsistentCutMarkerFinishTxMessage(UUID nodeId, ConsistentCutAwareTxFinishMessage msg) {
+        ctx.consistentCutMgr().handleConsistentCutId(msg.cutId());
 
         ctx.consistentCutMgr().registerCommitting(msg);
 
@@ -321,8 +321,8 @@ public class IgniteTxHandler {
     }
 
     /** */
-    private void processConsistentCutMarkerMessage(UUID nodeId, ConsistentCutMarkerMessage msg) {
-        ctx.consistentCutMgr().handleConsistentCutMarker(msg.marker());
+    private void processConsistentCutMarkerMessage(UUID nodeId, ConsistentCutAwareMessage msg) {
+        ctx.consistentCutMgr().handleConsistentCutId(msg.cutId());
 
         GridCacheMessage cacheMsg = msg.payload();
 
@@ -532,7 +532,7 @@ public class IgniteTxHandler {
 
                         try {
                             GridCacheMessage cacheMsg = ctx.consistentCutMgr() != null
-                                ? ctx.consistentCutMgr().wrapTxPrepareResponse(res, req.onePhaseCommit(), tx == null ? null : tx.marker())
+                                ? ctx.consistentCutMgr().wrapTxPrepareResponse(res, req.onePhaseCommit(), tx == null ? null : tx.cutId())
                                 : res;
 
                             ctx.io().send(nearNode, cacheMsg, req.policy());
@@ -1123,7 +1123,7 @@ public class IgniteTxHandler {
             tx.storeEnabled(req.storeEnabled());
 
             if (locTx != null)
-                tx.marker(locTx.marker());
+                tx.cutId(locTx.cutId());
 
             if (!tx.markFinalizing(USER_FINISH)) {
                 if (log.isDebugEnabled())
@@ -1294,7 +1294,7 @@ public class IgniteTxHandler {
                         finish(dhtTx, req);
 
                         if (nearTx != null)
-                            nearTx.marker(dhtTx.marker());
+                            nearTx.cutId(dhtTx.cutId());
                     }
 
                     if (nearTx != null) {
@@ -1618,7 +1618,7 @@ public class IgniteTxHandler {
             if (ctx.consistentCutMgr() != null) {
                 IgniteTxAdapter tx = dhtTx != null ? dhtTx : nearTx;
 
-                cacheMsg = ctx.consistentCutMgr().wrapTxPrepareResponse(res, req.onePhaseCommit(), tx == null ? null : tx.marker());
+                cacheMsg = ctx.consistentCutMgr().wrapTxPrepareResponse(res, req.onePhaseCommit(), tx == null ? null : tx.cutId());
             }
 
             // Reply back to sender.

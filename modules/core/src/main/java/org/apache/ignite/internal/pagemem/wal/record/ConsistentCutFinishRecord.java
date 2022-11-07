@@ -20,6 +20,7 @@ package org.apache.ignite.internal.pagemem.wal.record;
 import java.util.Collections;
 import java.util.List;
 import java.util.Set;
+import java.util.UUID;
 import java.util.stream.Collectors;
 import org.apache.ignite.internal.processors.cache.consistentcut.ConsistentCut;
 import org.apache.ignite.internal.processors.cache.consistentcut.ConsistentCutManager;
@@ -47,6 +48,9 @@ import org.apache.ignite.lang.IgniteUuid;
  * @see ConsistentCutManager
  */
 public class ConsistentCutFinishRecord extends WALRecord {
+    /** ID of {@link ConsistentCut}. */
+    private final UUID cutId;
+
     /**
      * Set of transactions committed between {@link ConsistentCutStartRecord} and {@link ConsistentCutFinishRecord}
      * to include to the BEFORE side of Consistent Cut.
@@ -59,7 +63,8 @@ public class ConsistentCutFinishRecord extends WALRecord {
     private final Set<GridCacheVersion> after;
 
     /** */
-    public ConsistentCutFinishRecord(Set<GridCacheVersion> before, Set<GridCacheVersion> after) {
+    public ConsistentCutFinishRecord(UUID cutId, Set<GridCacheVersion> before, Set<GridCacheVersion> after) {
+        this.cutId = cutId;
         this.before = Collections.unmodifiableSet(before);
         this.after = Collections.unmodifiableSet(after);
     }
@@ -72,6 +77,11 @@ public class ConsistentCutFinishRecord extends WALRecord {
     /** */
     public Set<GridCacheVersion> after() {
         return after;
+    }
+
+    /** */
+    public UUID cutId() {
+        return cutId;
     }
 
     /** {@inheritDoc} */

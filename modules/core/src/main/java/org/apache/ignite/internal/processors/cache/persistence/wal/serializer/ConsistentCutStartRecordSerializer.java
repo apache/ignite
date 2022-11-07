@@ -21,7 +21,6 @@ import java.io.IOException;
 import java.nio.ByteBuffer;
 import java.util.UUID;
 import org.apache.ignite.internal.pagemem.wal.record.ConsistentCutStartRecord;
-import org.apache.ignite.internal.processors.cache.consistentcut.ConsistentCutMarker;
 import org.apache.ignite.internal.processors.cache.persistence.wal.ByteBufferBackedDataInput;
 
 /** */
@@ -33,8 +32,8 @@ public class ConsistentCutStartRecordSerializer {
      * @param buf Byte buffer.
      */
     public void write(ConsistentCutStartRecord rec, ByteBuffer buf) {
-        buf.putLong(rec.marker().id().getMostSignificantBits());
-        buf.putLong(rec.marker().id().getLeastSignificantBits());
+        buf.putLong(rec.cutId().getMostSignificantBits());
+        buf.putLong(rec.cutId().getLeastSignificantBits());
     }
 
     /**
@@ -48,7 +47,7 @@ public class ConsistentCutStartRecordSerializer {
         long mst = in.readLong();
         long lst = in.readLong();
 
-        return new ConsistentCutStartRecord(new ConsistentCutMarker(new UUID(mst, lst)));
+        return new ConsistentCutStartRecord(new UUID(mst, lst));
     }
 
     /**

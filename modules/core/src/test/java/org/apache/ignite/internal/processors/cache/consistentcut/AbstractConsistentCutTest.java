@@ -369,27 +369,27 @@ public abstract class AbstractConsistentCutTest extends GridCommonAbstractTest {
                 .append("from ").append(compactFrom).append(" to ").append(compactTo).append(" ");
 
             Message txMsg = msg;
-            ConsistentCutMarker marker = null;
-            ConsistentCutMarker txMarker = null;
+            UUID cutId = null;
+            UUID txCutId = null;
 
-            if (msg instanceof ConsistentCutMarkerTxFinishMessage) {
-                ConsistentCutMarkerTxFinishMessage m = (ConsistentCutMarkerTxFinishMessage)msg;
+            if (msg instanceof ConsistentCutAwareTxFinishMessage) {
+                ConsistentCutAwareTxFinishMessage m = (ConsistentCutAwareTxFinishMessage)msg;
 
                 txMsg = m.payload();
-                marker = m.marker();
-                txMarker = m.txMarker();
+                cutId = m.cutId();
+                txCutId = m.txCutId();
             }
-            else if (msg instanceof ConsistentCutMarkerMessage) {
-                ConsistentCutMarkerMessage m = (ConsistentCutMarkerMessage)msg;
+            else if (msg instanceof ConsistentCutAwareMessage) {
+                ConsistentCutAwareMessage m = (ConsistentCutAwareMessage)msg;
 
                 txMsg = m.payload();
-                marker = m.marker();
+                cutId = m.cutId();
             }
 
             bld
                 .append(txMsg.getClass().getSimpleName())
-                .append("; marker=").append(marker)
-                .append("; txMarker=").append(txMarker);
+                .append("; cutId=").append(cutId)
+                .append("; txCutId=").append(txCutId);
 
             if (txMsg instanceof GridDistributedTxFinishResponse) {
                 GridDistributedTxFinishResponse m = (GridDistributedTxFinishResponse)txMsg;
@@ -452,8 +452,8 @@ public abstract class AbstractConsistentCutTest extends GridCommonAbstractTest {
                 msg = ((GridIoMessage)msg).message();
 
                 return msg.getClass().getSimpleName().contains("Tx")
-                    || msg.getClass() == ConsistentCutMarkerMessage.class
-                    || msg.getClass() == ConsistentCutMarkerTxFinishMessage.class;
+                    || msg.getClass() == ConsistentCutAwareMessage.class
+                    || msg.getClass() == ConsistentCutAwareTxFinishMessage.class;
             }
 
             return false;

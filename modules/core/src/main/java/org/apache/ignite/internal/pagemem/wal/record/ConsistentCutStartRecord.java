@@ -17,9 +17,9 @@
 
 package org.apache.ignite.internal.pagemem.wal.record;
 
+import java.util.UUID;
 import org.apache.ignite.internal.processors.cache.consistentcut.ConsistentCut;
 import org.apache.ignite.internal.processors.cache.consistentcut.ConsistentCutManager;
-import org.apache.ignite.internal.processors.cache.consistentcut.ConsistentCutMarker;
 import org.apache.ignite.internal.util.tostring.GridToStringInclude;
 import org.apache.ignite.internal.util.typedef.internal.S;
 
@@ -36,20 +36,18 @@ import org.apache.ignite.internal.util.typedef.internal.S;
  * @see ConsistentCutManager
  */
 public class ConsistentCutStartRecord extends WALRecord {
-    /**
-     * Consistent Cut Marker.
-     */
+    /** Consistent Cut ID. */
     @GridToStringInclude
-    private final ConsistentCutMarker marker;
+    private final UUID cutId;
 
     /** */
-    public ConsistentCutStartRecord(ConsistentCutMarker marker) {
-        this.marker = marker;
+    public ConsistentCutStartRecord(UUID cutId) {
+        this.cutId = cutId;
     }
 
     /** */
-    public ConsistentCutMarker marker() {
-        return marker;
+    public UUID cutId() {
+        return cutId;
     }
 
     /** {@inheritDoc} */

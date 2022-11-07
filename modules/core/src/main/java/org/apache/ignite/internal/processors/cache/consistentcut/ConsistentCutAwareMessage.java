@@ -17,46 +17,60 @@
 
 package org.apache.ignite.internal.processors.cache.consistentcut;
 
-import java.io.Externalizable;
 import java.nio.ByteBuffer;
+import java.util.UUID;
+import org.apache.ignite.IgniteCheckedException;
+import org.apache.ignite.internal.processors.cache.GridCacheIdMessage;
+import org.apache.ignite.internal.processors.cache.GridCacheSharedContext;
 import org.apache.ignite.internal.processors.cache.distributed.GridDistributedBaseMessage;
 import org.apache.ignite.plugin.extensions.communication.MessageReader;
 import org.apache.ignite.plugin.extensions.communication.MessageWriter;
 
-/** Message that holds a transaction finish message and {@link ConsistentCutMarker}. */
-public class ConsistentCutMarkerTxFinishMessage extends ConsistentCutMarkerMessage {
+/** Message that holds a transaction message and ID of {@link ConsistentCut}. */
+public class ConsistentCutAwareMessage extends GridCacheIdMessage {
     /** */
     private static final long serialVersionUID = 0L;
 
     /** */
-    public static final short TYPE_CODE = 402;
+    public static final short TYPE_CODE = 400;
 
-    /** Marker of the latest Consistent Cut AFTER which this transaction committed. */
-    private ConsistentCutMarker txMarker;
+    /** Original transaction message. */
+    private GridDistributedBaseMessage payload;
 
-    /** Empty constructor required for {@link Externalizable}. */
-    public ConsistentCutMarkerTxFinishMessage() {
+    /** */
+    private UUID cutId;
+
+    /** */
+    public ConsistentCutAwareMessage() {
     }
 
     /** */
-    public ConsistentCutMarkerTxFinishMessage(
+    public ConsistentCutAwareMessage(
         GridDistributedBaseMessage payload,
-        ConsistentCutMarker marker,
-        ConsistentCutMarker txMarker
+        UUID cutId
     ) {
-        super(payload, marker);
-
-        this.txMarker = txMarker;
+        this.payload = payload;
+        this.cutId = cutId;
     }
 
     /** */
-    public ConsistentCutMarker txMarker() {
-        return txMarker;
+    public UUID cutId() {
+        return cutId;
+    }
+
+    /** */
+    public GridDistributedBaseMessage payload() {
+        return payload;
     }
 
     /** {@inheritDoc} */
-    @Override public short directType() {
-        return TYPE_CODE;
+    @Override public void prepareMarshal(GridCacheSharedContext ctx) throws IgniteCheckedException {
+        payload.prepareMarshal(ctx);
+    }
+
+    /** {@inheritDoc} */
+    @Override public void finishUnmarshal(GridCacheSharedContext ctx, ClassLoader ldr) throws IgniteCheckedException {
+        payload.finishUnmarshal(ctx, ldr);
     }
 
     /** {@inheritDoc} */
@@ -74,8 +88,14 @@ public class ConsistentCutMarkerTxFinishMessage extends ConsistentCutMarkerMessa
         }
 
         switch (writer.state()) {
-            case 6:
-                if (!writer.writeMessage("txMarker", txMarker))
+            case 4:
+                if (!writer.writeUuid("cutId", cutId))
+                    return false;
+
+                writer.incrementState();
+
+            case 5:
+                if (!writer.writeMessage("payload", payload))
                     return false;
 
                 writer.incrementState();
@@ -96,8 +116,16 @@ public class ConsistentCutMarkerTxFinishMessage extends ConsistentCutMarkerMessa
             return false;
 
         switch (reader.state()) {
-            case 6:
-                txMarker = reader.readMessage("txMarker");
+            case 4:
+                cutId = reader.readUuid("cutId");
+
+                if (!reader.isLastRead())
+                    return false;
+
+                reader.incrementState();
+
+            case 5:
+                payload = reader.readMessage("payload");
 
                 if (!reader.isLastRead())
                     return false;
@@ -106,11 +134,21 @@ public class ConsistentCutMarkerTxFinishMessage extends ConsistentCutMarkerMessa
 
         }
 
-        return reader.afterMessageRead(ConsistentCutMarkerTxFinishMessage.class);
+        return reader.afterMessageRead(ConsistentCutAwareMessage.class);
+    }
+
+    /** {@inheritDoc} */
+    @Override public short directType() {
+        return TYPE_CODE;
     }
 
     /** {@inheritDoc} */
     @Override public byte fieldsCount() {
-        return 7;
+        return 6;
+    }
+
+    /** {@inheritDoc} */
+    @Override public boolean addDeploymentInfo() {
+        return false;
     }
 }

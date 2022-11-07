@@ -35,7 +35,6 @@ import org.apache.ignite.internal.processors.cache.GridCacheCompoundIdentityFutu
 import org.apache.ignite.internal.processors.cache.GridCacheFuture;
 import org.apache.ignite.internal.processors.cache.GridCacheMessage;
 import org.apache.ignite.internal.processors.cache.GridCacheSharedContext;
-import org.apache.ignite.internal.processors.cache.consistentcut.ConsistentCutMarker;
 import org.apache.ignite.internal.processors.cache.distributed.GridDistributedTxMapping;
 import org.apache.ignite.internal.processors.cache.distributed.near.GridNearTxPrepareFutureAdapter;
 import org.apache.ignite.internal.processors.cache.mvcc.MvccFuture;
@@ -243,14 +242,14 @@ public final class GridDhtTxFinishFuture<K, V> extends GridCacheCompoundIdentity
                         boolean nodeStopping = X.hasCause(err, NodeStoppingException.class);
 
                         if (cctx.consistentCutMgr() != null && this.tx.currentPrepareFuture() != null) {
-                            ConsistentCutMarker txMarker;
+                            UUID txCutId;
 
                             if (this.tx.near())
-                                txMarker = ((GridNearTxPrepareFutureAdapter)this.tx.currentPrepareFuture()).tx().marker();
+                                txCutId = ((GridNearTxPrepareFutureAdapter)this.tx.currentPrepareFuture()).tx().cutId();
                             else
-                                txMarker = ((GridDhtTxPrepareFuture)this.tx.currentPrepareFuture()).tx().marker();
+                                txCutId = ((GridDhtTxPrepareFuture)this.tx.currentPrepareFuture()).tx().cutId();
 
-                            this.tx.marker(txMarker);
+                            this.tx.cutId(txCutId);
                         }
 
                         this.tx.tmFinish(
@@ -527,7 +526,7 @@ public final class GridDhtTxFinishFuture<K, V> extends GridCacheCompoundIdentity
                 }
                 else {
                     GridCacheMessage cacheMsg = cctx.consistentCutMgr() != null
-                        ? cctx.consistentCutMgr().wrapTxFinishRequest(req, tx.marker())
+                        ? cctx.consistentCutMgr().wrapTxFinishRequest(req, tx.cutId())
                         : req;
 
                     cctx.io().send(n, cacheMsg, tx.ioPolicy());
@@ -602,7 +601,7 @@ public final class GridDhtTxFinishFuture<K, V> extends GridCacheCompoundIdentity
 
                 try {
                     GridCacheMessage cacheMsg = cctx.consistentCutMgr() != null
-                        ? cctx.consistentCutMgr().wrapTxFinishRequest(req, tx.marker())
+                        ? cctx.consistentCutMgr().wrapTxFinishRequest(req, tx.cutId())
                         : req;
 
                     cctx.io().send(nearMapping.primary(), cacheMsg, tx.ioPolicy());

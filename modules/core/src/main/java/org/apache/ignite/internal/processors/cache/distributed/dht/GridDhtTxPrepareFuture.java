@@ -790,7 +790,7 @@ public final class GridDhtTxPrepareFuture extends GridCacheCompoundFuture<Ignite
                                         msg = cctx.consistentCutMgr().wrapTxPrepareResponse(
                                             res,
                                             res.onePhaseCommit(),
-                                            fut.result().marker());
+                                            fut.result().cutId());
                                     }
 
                                     sendPrepareResponse(msg);
@@ -847,7 +847,7 @@ public final class GridDhtTxPrepareFuture extends GridCacheCompoundFuture<Ignite
                     onComplete(res);
 
                     GridCacheMessage msg = cctx.consistentCutMgr() != null
-                        ? cctx.consistentCutMgr().wrapTxPrepareResponse(res, res.onePhaseCommit(), tx.marker())
+                        ? cctx.consistentCutMgr().wrapTxPrepareResponse(res, res.onePhaseCommit(), tx.cutId())
                         : res;
 
                     sendPrepareResponse(msg);

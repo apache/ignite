@@ -204,10 +204,8 @@ public class MessageCodeGenerator {
 //        gen.generateAndWrite(GridDhtTxFinishRequest.class);
 //        gen.generateAndWrite(GridDhtTxFinishResponse.class);
 
-//        gen.generateAndWrite(ConsistentCutMarker.class);
-//        gen.generateAndWrite(ConsistentCutMarkerMessage.class);
-//        gen.generateAndWrite(ConsistentCutMarkerTxFinishMessage.class);
-//        gen.generateAndWrite(ConsistentCutStartRequest.class);
+//        gen.generateAndWrite(ConsistentCutAwareMessage.class);
+//        gen.generateAndWrite(ConsistentCutAwareTxFinishMessage.class);
 
 //        gen.generateAndWrite(GridCacheTxRecoveryRequest.class);
 //        gen.generateAndWrite(GridCacheTxRecoveryResponse.class);

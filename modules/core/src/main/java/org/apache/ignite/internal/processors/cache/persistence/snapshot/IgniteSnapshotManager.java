@@ -120,7 +120,6 @@ import org.apache.ignite.internal.processors.cache.GridCacheSharedContext;
 import org.apache.ignite.internal.processors.cache.GridCacheSharedManagerAdapter;
 import org.apache.ignite.internal.processors.cache.GridLocalConfigManager;
 import org.apache.ignite.internal.processors.cache.StoredCacheData;
-import org.apache.ignite.internal.processors.cache.consistentcut.ConsistentCutMarker;
 import org.apache.ignite.internal.processors.cache.distributed.dht.preloader.GridDhtPartitionsExchangeFuture;
 import org.apache.ignite.internal.processors.cache.distributed.dht.preloader.PartitionsExchangeAware;
 import org.apache.ignite.internal.processors.cache.persistence.CacheDataRow;
@@ -839,7 +838,7 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
      */
     private IgniteInternalFuture<SnapshotOperationResponse> initLocalIncrementalSnapshotStartStage(SnapshotOperationRequest req) {
         // Start ConsistentCut in background immediately on every node (cluster-wide operation).
-        cctx.consistentCutMgr().startLocalCut(new ConsistentCutMarker(req.requestId()));
+        cctx.consistentCutMgr().startLocalCut(req.requestId());
 
         if (clusterSnpReq != null) {
             return new GridFinishedFuture<>(new IgniteCheckedException("Snapshot operation has been rejected. " +
@@ -1083,7 +1082,7 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
         SnapshotOperationRequest snpReq = clusterSnpReq;
 
         if (snpReq != null && snpReq.incremental())
-            cctx.consistentCutMgr().finishLocalCut();
+            cctx.consistentCutMgr().cleanLocalCut();
 
         if (cctx.kernalContext().clientNode())
             return;

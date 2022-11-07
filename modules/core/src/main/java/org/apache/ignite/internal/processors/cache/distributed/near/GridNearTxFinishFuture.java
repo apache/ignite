@@ -39,7 +39,6 @@ import org.apache.ignite.internal.processors.cache.GridCacheReturn;
 import org.apache.ignite.internal.processors.cache.GridCacheReturnCompletableWrapper;
 import org.apache.ignite.internal.processors.cache.GridCacheSharedContext;
 import org.apache.ignite.internal.processors.cache.GridCacheVersionedFuture;
-import org.apache.ignite.internal.processors.cache.consistentcut.ConsistentCutMarker;
 import org.apache.ignite.internal.processors.cache.distributed.GridDistributedTxMapping;
 import org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtTxFinishRequest;
 import org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtTxFinishResponse;
@@ -362,9 +361,9 @@ public final class GridNearTxFinishFuture<K, V> extends GridCacheCompoundIdentit
 
                         try {
                             if (tx.currentPrepareFuture() != null) {
-                                ConsistentCutMarker txMarker = ((GridNearTxPrepareFutureAdapter)tx.currentPrepareFuture()).tx().marker();
+                                UUID txCutId = ((GridNearTxPrepareFutureAdapter)tx.currentPrepareFuture()).tx().cutId();
 
-                                tx.marker(txMarker);
+                                tx.cutId(txCutId);
                             }
 
                             tx.tmFinish(commit, nodeStop, true);
@@ -659,7 +658,7 @@ public final class GridNearTxFinishFuture<K, V> extends GridCacheCompoundIdentit
 
                         try {
                             GridCacheMessage cacheMsg = cctx.consistentCutMgr() != null
-                                ? cctx.consistentCutMgr().wrapTxFinishRequest(finishReq, tx.marker())
+                                ? cctx.consistentCutMgr().wrapTxFinishRequest(finishReq, tx.cutId())
                                 : finishReq;
 
                             cctx.io().send(backup, cacheMsg, tx.ioPolicy());
@@ -818,7 +817,7 @@ public final class GridNearTxFinishFuture<K, V> extends GridCacheCompoundIdentit
 
             try {
                 GridCacheMessage cacheMsg = cctx.consistentCutMgr() != null
-                    ? cctx.consistentCutMgr().wrapTxFinishRequest(req, tx.marker())
+                    ? cctx.consistentCutMgr().wrapTxFinishRequest(req, tx.cutId())
                     : req;
 
                 cctx.io().send(n, cacheMsg, tx.ioPolicy());

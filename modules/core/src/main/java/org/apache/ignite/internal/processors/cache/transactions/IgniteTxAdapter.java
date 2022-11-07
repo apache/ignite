@@ -56,7 +56,6 @@ import org.apache.ignite.internal.processors.cache.GridCacheOperation;
 import org.apache.ignite.internal.processors.cache.GridCacheReturn;
 import org.apache.ignite.internal.processors.cache.GridCacheSharedContext;
 import org.apache.ignite.internal.processors.cache.KeyCacheObject;
-import org.apache.ignite.internal.processors.cache.consistentcut.ConsistentCutMarker;
 import org.apache.ignite.internal.processors.cache.distributed.dht.topology.GridDhtInvalidPartitionException;
 import org.apache.ignite.internal.processors.cache.distributed.dht.topology.GridDhtLocalPartition;
 import org.apache.ignite.internal.processors.cache.distributed.dht.topology.GridDhtPartitionState;
@@ -269,16 +268,16 @@ public abstract class IgniteTxAdapter extends GridMetadataAwareAdapter implement
     protected volatile MvccSnapshot mvccSnapshot;
 
     /** */
-    private @Nullable ConsistentCutMarker marker;
+    private @Nullable UUID cutId;
 
     /** {@inheritDoc} */
-    @Override public ConsistentCutMarker marker() {
-        return marker;
+    @Override public UUID cutId() {
+        return cutId;
     }
 
     /** {@inheritDoc} */
-    @Override public void marker(ConsistentCutMarker marker) {
-        this.marker = marker;
+    @Override public void cutId(UUID cutId) {
+        this.cutId = cutId;
     }
 
     /** {@code True} if tx should skip adding itself to completed version map on finish. */
@@ -2099,12 +2098,12 @@ public abstract class IgniteTxAdapter extends GridMetadataAwareAdapter implement
         }
 
         /** {@inheritDoc} */
-        @Override public ConsistentCutMarker marker() {
+        @Override public UUID cutId() {
             return null;
         }
 
         /** {@inheritDoc} */
-        @Override public void marker(ConsistentCutMarker marker) {
+        @Override public void cutId(UUID cutId) {
             throw new IllegalStateException("Deserialized transaction can only be used as read-only.");
         }
 
