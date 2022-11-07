@@ -19,7 +19,7 @@ package org.apache.ignite.internal.commandline;
 
 import java.util.Comparator;
 import java.util.UUID;
-import java.util.logging.Logger;
+import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.ShutdownPolicy;
 import org.apache.ignite.internal.client.GridClient;
 import org.apache.ignite.internal.client.GridClientConfiguration;
@@ -39,7 +39,7 @@ public class ShutdownPolicyCommand extends AbstractCommand<ShutdownPolicyArgumen
     private ShutdownPolicyArgument shutdownPolicyArgument;
 
     /** {@inheritDoc} */
-    @Override public Object execute(GridClientConfiguration clientCfg, Logger logger) throws Exception {
+    @Override public Object execute(GridClientConfiguration clientCfg, IgniteLogger logger) throws Exception {
         try (GridClient client = Command.startClient(clientCfg)) {
             UUID coordinatorId = client.compute()
                 //Only non client node can be coordinator.
@@ -79,7 +79,7 @@ public class ShutdownPolicyCommand extends AbstractCommand<ShutdownPolicyArgumen
     }
 
     /** {@inheritDoc} */
-    @Override public void printUsage(Logger logger) {
+    @Override public void printUsage(IgniteLogger logger) {
         usage(logger, "Set or display shutdown policy:", SHUTDOWN_POLICY,
             CommandLogger.optional(CommandLogger.join("|", ShutdownPolicy.values())));
     }

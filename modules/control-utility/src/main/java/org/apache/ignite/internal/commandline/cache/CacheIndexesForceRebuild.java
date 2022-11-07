@@ -22,7 +22,7 @@ import java.util.Collections;
 import java.util.Map;
 import java.util.Set;
 import java.util.UUID;
-import java.util.logging.Logger;
+import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.internal.client.GridClient;
 import org.apache.ignite.internal.client.GridClientConfiguration;
 import org.apache.ignite.internal.commandline.AbstractCommand;
@@ -53,7 +53,7 @@ public class CacheIndexesForceRebuild extends AbstractCommand<CacheIndexesForceR
     private Arguments args;
 
     /** {@inheritDoc} */
-    @Override public void printUsage(Logger logger) {
+    @Override public void printUsage(IgniteLogger logger) {
         String desc = "Triggers rebuild of all indexes for specified caches or cache groups.";
 
         Map<String, String> map = U.newLinkedHashMap(16);
@@ -73,7 +73,7 @@ public class CacheIndexesForceRebuild extends AbstractCommand<CacheIndexesForceR
     }
 
     /** {@inheritDoc} */
-    @Override public Object execute(GridClientConfiguration clientCfg, Logger logger) throws Exception {
+    @Override public Object execute(GridClientConfiguration clientCfg, IgniteLogger logger) throws Exception {
         IndexForceRebuildTaskRes taskRes;
 
         IndexForceRebuildTaskArg taskArg = new IndexForceRebuildTaskArg(args.cacheGrps, args.cacheNames);
@@ -97,9 +97,9 @@ public class CacheIndexesForceRebuild extends AbstractCommand<CacheIndexesForceR
 
     /**
      * @param res Rebuild task result.
-     * @param logger Logger to print to.
+     * @param logger IgniteLogger to print to.
      */
-    private void printResult(IndexForceRebuildTaskRes res, Logger logger) {
+    private void printResult(IndexForceRebuildTaskRes res, IgniteLogger logger) {
         if (!F.isEmpty(res.notFoundCacheNames())) {
             String warning = args.cacheGrps == null ?
                 "WARNING: These caches were not found:" : "WARNING: These cache groups were not found:";
@@ -134,7 +134,7 @@ public class CacheIndexesForceRebuild extends AbstractCommand<CacheIndexesForceR
     }
 
     /** */
-    private void printInfos(Collection<IndexRebuildStatusInfoContainer> infos, Logger logger) {
+    private void printInfos(Collection<IndexRebuildStatusInfoContainer> infos, IgniteLogger logger) {
         infos.stream()
             .sorted(IndexRebuildStatusInfoContainer.comparator())
             .forEach(rebuildStatusInfo -> logger.info(INDENT + rebuildStatusInfo.toString()));

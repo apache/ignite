@@ -2229,11 +2229,11 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
             // Register system default snapshot integrity check that is used before the restore operation.
             registerHandler(new SnapshotPartitionsVerifyHandler(ctx.cache().context()));
 
-            // Register system default page size and counters check that is used at the creation operation.
-            registerHandler(new SnapshotPartitionsFastVerifyHandler(ctx.cache().context()));
-
             // Register system default DataStreamer updates check.
             registerHandler(new DataStreamerUpdatesHandler());
+
+            // Register system default page size and counters check that is used at the creation operation.
+            registerHandler(new SnapshotPartitionsFastVerifyHandler(ctx.cache().context()));
 
             // Register custom handlers.
             SnapshotHandler<Object>[] extHnds = (SnapshotHandler<Object>[])ctx.plugins().extensions(SnapshotHandler.class);

@@ -21,7 +21,7 @@ import java.util.Arrays;
 import java.util.LinkedHashMap;
 import java.util.Map;
 import java.util.UUID;
-import java.util.logging.Logger;
+import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.internal.client.GridClientConfiguration;
 import org.apache.ignite.internal.commandline.CommandArgIterator;
 import org.apache.ignite.internal.util.typedef.F;
@@ -43,7 +43,7 @@ public class SnapshotCancelCommand extends SnapshotSubcommand {
     }
 
     /** {@inheritDoc} */
-    @Override public Object execute(GridClientConfiguration clientCfg, Logger log) throws Exception {
+    @Override public Object execute(GridClientConfiguration clientCfg, IgniteLogger log) throws Exception {
         if (!F.isEmpty(((VisorSnapshotCancelTaskArg)cmdArg).snapshotName()))
             log.warning("'" + NAME.arg() + "' option is deprecated, please use operation request ID to cancel operation.");
 
@@ -72,7 +72,7 @@ public class SnapshotCancelCommand extends SnapshotSubcommand {
     }
 
     /** {@inheritDoc} */
-    @Override public void printUsage(Logger log) {
+    @Override public void printUsage(IgniteLogger log) {
         Map<String, String> params = new LinkedHashMap<>();
 
         params.put(ID.argName() + " " + ID.arg(), ID.description());

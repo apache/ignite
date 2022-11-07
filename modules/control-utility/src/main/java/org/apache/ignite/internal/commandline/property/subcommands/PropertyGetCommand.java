@@ -17,7 +17,7 @@
 
 package org.apache.ignite.internal.commandline.property.subcommands;
 
-import java.util.logging.Logger;
+import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.internal.commandline.CommandArgIterator;
 import org.apache.ignite.internal.commandline.property.PropertyArgs;
 import org.apache.ignite.internal.commandline.property.PropertySubCommandsList;
@@ -51,7 +51,7 @@ public class PropertyGetCommand extends PropertyAbstractSubCommand<PropertyArgs,
     }
 
     /** {@inheritDoc} */
-    @Override protected void printResult(PropertyOperationResult res, Logger log) {
+    @Override protected void printResult(PropertyOperationResult res, IgniteLogger log) {
         log.info(arg().name() + " = " + res.value());
     }
 

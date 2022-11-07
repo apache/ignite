@@ -24,8 +24,8 @@ import java.util.Map;
 import java.util.Set;
 import java.util.UUID;
 import java.util.function.Predicate;
-import java.util.logging.Logger;
 import java.util.stream.Collectors;
+import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.IgniteSystemProperties;
 import org.apache.ignite.internal.client.GridClient;
 import org.apache.ignite.internal.client.GridClientConfiguration;
@@ -53,7 +53,7 @@ public class CheckIndexInlineSizes extends AbstractCommand<Void> {
     private static final Predicate<GridClientNode> SRV_NODES = node -> !node.isClient() && !node.isDaemon();
 
     /** {@inheritDoc} */
-    @Override public Object execute(GridClientConfiguration clientCfg, Logger log) throws Exception {
+    @Override public Object execute(GridClientConfiguration clientCfg, IgniteLogger log) throws Exception {
         try (GridClient client = Command.startClient(clientCfg)) {
             Set<GridClientNode> serverNodes = client.compute().nodes().stream()
                 .filter(SRV_NODES)
@@ -79,7 +79,7 @@ public class CheckIndexInlineSizes extends AbstractCommand<Void> {
      * @param res Indexes inline size.
      */
     private void analyzeResults(
-        Logger log,
+        IgniteLogger log,
         CheckIndexInlineSizesResult res
     ) {
         Map<String, Map<Integer, Set<UUID>>> indexToSizeNode = new HashMap<>();
@@ -105,7 +105,7 @@ public class CheckIndexInlineSizes extends AbstractCommand<Void> {
     }
 
     /** */
-    private void printProblemsAndShowRecommendations(Map<String, Map<Integer, Set<UUID>>> problems, Logger log) {
+    private void printProblemsAndShowRecommendations(Map<String, Map<Integer, Set<UUID>>> problems, IgniteLogger log) {
         log.info(problems.size() +
             " index(es) have different effective inline size on nodes. It can lead to performance degradation in SQL queries.");
         log.info("Index(es):");
@@ -138,7 +138,7 @@ public class CheckIndexInlineSizes extends AbstractCommand<Void> {
     }
 
     /** {@inheritDoc} */
-    @Override public void printUsage(Logger logger) {
+    @Override public void printUsage(IgniteLogger logger) {
         usageCache(
             logger,
             CacheSubcommands.CHECK_INDEX_INLINE_SIZES,

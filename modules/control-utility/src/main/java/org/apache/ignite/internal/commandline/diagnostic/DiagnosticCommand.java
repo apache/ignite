@@ -18,7 +18,7 @@
 package org.apache.ignite.internal.commandline.diagnostic;
 
 import java.util.Arrays;
-import java.util.logging.Logger;
+import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.internal.client.GridClientConfiguration;
 import org.apache.ignite.internal.commandline.AbstractCommand;
 import org.apache.ignite.internal.commandline.Command;
@@ -40,7 +40,7 @@ public class DiagnosticCommand extends AbstractCommand<DiagnosticSubCommand> {
     private DiagnosticSubCommand subcommand;
 
     /** {@inheritDoc} */
-    @Override public Object execute(GridClientConfiguration clientCfg, Logger logger) throws Exception {
+    @Override public Object execute(GridClientConfiguration clientCfg, IgniteLogger logger) throws Exception {
         if (subcommand == HELP) {
             printDiagnosticHelp(logger);
 
@@ -101,14 +101,14 @@ public class DiagnosticCommand extends AbstractCommand<DiagnosticSubCommand> {
     }
 
     /** {@inheritDoc} */
-    @Override public void printUsage(Logger logger) {
+    @Override public void printUsage(IgniteLogger logger) {
         usage(logger, "View diagnostic information in a cluster. For more details type:", DIAGNOSTIC);
     }
 
     /**
      * Print diagnostic command help.
      */
-    private void printDiagnosticHelp(Logger logger) {
+    private void printDiagnosticHelp(IgniteLogger logger) {
         logger.info(INDENT + join(" ", UTILITY_NAME, DIAGNOSTIC, PAGE_LOCKS + " - dump page locks info."));
         logger.info(INDENT + join(" ", UTILITY_NAME, DIAGNOSTIC, CONNECTIVITY + " - show connectivity state."));
 

@@ -23,7 +23,7 @@ import java.util.HashSet;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Set;
-import java.util.logging.Logger;
+import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.IgniteSystemProperties;
 import org.apache.ignite.ssl.SslContextFactory;
 
@@ -42,7 +42,7 @@ import static org.apache.ignite.ssl.SslContextFactory.DFLT_SSL_PROTOCOL;
  */
 public class CommonArgParser {
     /** */
-    private final Logger logger;
+    private final IgniteLogger logger;
 
     /** */
     static final String CMD_HOST = "--host";
@@ -147,7 +147,7 @@ public class CommonArgParser {
     /**
      * @param logger Logger.
      */
-    public CommonArgParser(Logger logger) {
+    public CommonArgParser(IgniteLogger logger) {
         this.logger = logger;
     }
 

@@ -25,8 +25,8 @@ import java.util.List;
 import java.util.ListIterator;
 import java.util.Map;
 import java.util.UUID;
-import java.util.logging.Logger;
 import java.util.stream.Collectors;
+import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.internal.client.GridClient;
 import org.apache.ignite.internal.client.GridClientConfiguration;
 import org.apache.ignite.internal.commandline.AbstractCommand;
@@ -64,7 +64,7 @@ public class SystemViewCommand extends AbstractCommand<VisorSystemViewTaskArg> {
     private UUID nodeId;
 
     /** {@inheritDoc} */
-    @Override public Object execute(GridClientConfiguration clientCfg, Logger log) throws Exception {
+    @Override public Object execute(GridClientConfiguration clientCfg, IgniteLogger log) throws Exception {
         try {
             VisorSystemViewTaskResult res;
 
@@ -86,8 +86,8 @@ public class SystemViewCommand extends AbstractCommand<VisorSystemViewTaskArg> {
             return res;
         }
         catch (Throwable e) {
-            log.severe("Failed to perform operation.");
-            log.severe(CommandLogger.errorMessage(e));
+            log.error("Failed to perform operation.");
+            log.error(CommandLogger.errorMessage(e));
 
             throw e;
         }
@@ -101,7 +101,7 @@ public class SystemViewCommand extends AbstractCommand<VisorSystemViewTaskArg> {
      * @param data Table data rows.
      * @param log Logger.
      */
-    public static void printTable(List<String> titles, List<SimpleType> types, List<List<?>> data, Logger log) {
+    public static void printTable(List<String> titles, List<SimpleType> types, List<List<?>> data, IgniteLogger log) {
         List<Integer> colSzs;
 
         if (titles != null)
@@ -141,7 +141,7 @@ public class SystemViewCommand extends AbstractCommand<VisorSystemViewTaskArg> {
         Collection<String> row,
         Collection<SimpleType> types,
         Collection<Integer> colSzs,
-        Logger log
+        IgniteLogger log
     ) {
         Iterator<SimpleType> typeIter = types.iterator();
         Iterator<Integer> colSzsIter = colSzs.iterator();
@@ -205,7 +205,7 @@ public class SystemViewCommand extends AbstractCommand<VisorSystemViewTaskArg> {
     }
 
     /** {@inheritDoc} */
-    @Override public void printUsage(Logger log) {
+    @Override public void printUsage(IgniteLogger log) {
         Map<String, String> params = new HashMap<>();
 
         params.put("node_id", "ID of the node to get the system view from. If not set, random node will be chosen.");
