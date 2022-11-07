@@ -65,7 +65,7 @@ public class SnapshotPartitionsFastVerifyHandler extends SnapshotPartitionsVerif
     @Override protected PartitionHashRecordV2 partHash(PartitionKeyV2 key, Object updCntr, Object consId,
         GridDhtPartitionState state, boolean isPrimary, long partSize,
         GridIterator<CacheDataRow> it) throws IgniteCheckedException {
-        return new PartitionHashRecordV2(key, isPrimary, null, 0, updCntr, partSize, null);
+        return new PartitionHashRecordV2(key, isPrimary, null, 0, 0, updCntr, partSize, null);
     }
 
     /** {@inheritDoc} */
