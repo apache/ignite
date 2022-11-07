@@ -31,6 +31,7 @@ import org.apache.ignite.internal.processors.cache.verify.PartitionHashRecordV2;
 import org.apache.ignite.internal.processors.cache.verify.PartitionKeyV2;
 import org.apache.ignite.internal.util.GridConcurrentHashSet;
 import org.apache.ignite.internal.util.lang.GridIterator;
+import org.apache.ignite.internal.util.lang.GridIteratorAdapter;
 import org.apache.ignite.internal.util.typedef.internal.U;
 
 /**
@@ -63,9 +64,31 @@ public class SnapshotPartitionsFastVerifyHandler extends SnapshotPartitionsVerif
 
     /** {@inheritDoc} */
     @Override protected PartitionHashRecordV2 partHash(PartitionKeyV2 key, Object updCntr, Object consId,
-        GridDhtPartitionState state, boolean isPrimary, long partSize,
-        GridIterator<CacheDataRow> it) throws IgniteCheckedException {
-        return new PartitionHashRecordV2(key, isPrimary, null, 0, 0, updCntr, partSize, null);
+        GridDhtPartitionState state, boolean isPrimary, long partSize, GridIterator<CacheDataRow> it)
+        throws IgniteCheckedException {
+        return super.partHash(
+            key,
+            updCntr,
+            consId,
+            state,
+            isPrimary,
+            partSize,
+            new GridIteratorAdapter<CacheDataRow>() {
+                /** {@inheritDoc} */
+                @Override public boolean hasNextX() {
+                    return false;
+                }
+
+                /** {@inheritDoc} */
+                @Override public CacheDataRow nextX() {
+                    return null;
+                }
+
+                /** {@inheritDoc} */
+                @Override public void removeX() {
+                    // No-op;
+                }
+            });
     }
 
     /** {@inheritDoc} */
@@ -96,8 +119,8 @@ public class SnapshotPartitionsFastVerifyHandler extends SnapshotPartitionsVerif
                                 if (storedResult == null)
                                     return newResult.getValue();
 
-                                if (!storedResult.updateCounter().equals(newResult.getValue().updateCounter())
-                                    || storedResult.size() != newResult.getValue().size())
+                                if (!storedResult.updateCounter().equals(newResult.getValue().updateCounter()) ||
+                                    storedResult.size() != newResult.getValue().size())
                                     wrnGroups.add(newResult.getKey().groupId());
 
                                 return storedResult;
