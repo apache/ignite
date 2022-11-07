@@ -1,4 +1,7 @@
 statement ok
+PRAGMA null=null
+
+statement ok
 CREATE TABLE tab0(col0 INTEGER, col1 INTEGER, col2 INTEGER)
 
 statement ok
@@ -8709,6 +8712,11 @@ SELECT DISTINCT - col0 * + 31 AS col2, - col1 * + col0 AS col1 FROM tab2
 -5025
 
 query I rowsort
+SELECT 41 FROM ( tab0 cor0 CROSS JOIN tab2 AS cor1 )
+----
+9 values hashing to 5b18986bb294412b3d9f07b7e6fc821e
+
+query I rowsort
 SELECT col2 * - - col1 AS col2 FROM tab1 AS cor0
 ----
 1344
@@ -10410,6 +10418,11 @@ SELECT ALL - col1 * + col1 + + col0 FROM tab1 cor0
 -145
 -2118
 60
+
+query I rowsort
+SELECT + 60 AS col1 FROM ( tab0 AS cor0 CROSS JOIN tab1 AS cor1 )
+----
+9 values hashing to a97561e17ecaa618227c75a57b268f33
 
 query III rowsort
 SELECT DISTINCT * FROM tab2 WHERE NOT + - col2 IN ( - col1 )
@@ -16473,6 +16486,11 @@ SELECT DISTINCT - - col1, col1 * 18 - ( - + col2 ) AS col1 FROM tab0 WHERE NOT (
 1505
 
 query I rowsort
+SELECT ALL 62 FROM ( tab2 cor0 CROSS JOIN tab2 AS cor1 )
+----
+9 values hashing to 51dd2771d516ceb935483eded78a5fa0
+
+query I rowsort
 SELECT + - 42 + + 7 AS col2 FROM tab1 AS cor0
 ----
 -35
@@ -16862,6 +16880,11 @@ SELECT - 73 * + + col2 * 77 FROM tab2 cor0
 query I rowsort
 SELECT ALL 94 FROM tab0 AS cor0 CROSS JOIN tab0 AS cor1 WHERE NOT NULL IS NULL
 ----
+
+query I rowsort
+SELECT - + 94 AS col1 FROM ( tab1 AS cor0 CROSS JOIN tab0 cor1 )
+----
+9 values hashing to a95bfa539191d3f72f6548147d7efb9e
 
 query I rowsort
 SELECT DISTINCT + 76 * - col1 FROM tab1 AS cor0
@@ -17722,6 +17745,11 @@ query I rowsort
 SELECT DISTINCT 98 - - - 99 * - + 15 FROM tab1
 ----
 1583
+
+query I rowsort
+SELECT DISTINCT + - 12 FROM ( tab1 AS cor0 CROSS JOIN tab2 AS cor1 )
+----
+-12
 
 query III rowsort
 SELECT * FROM tab0 WHERE NOT + col0 < 84
@@ -26858,6 +26886,11 @@ SELECT col1, + 21 FROM tab1 AS cor0
 5
 21
 
+query I rowsort
+SELECT + 62 AS col2 FROM ( tab1 AS cor0 CROSS JOIN tab0 cor1 )
+----
+9 values hashing to 51dd2771d516ceb935483eded78a5fa0
+
 query III rowsort
 SELECT DISTINCT * FROM tab0 AS cor0 WHERE 79 IS NOT NULL
 ----
@@ -28868,6 +28901,11 @@ SELECT 86 * 11 FROM tab0 AS cor0 WHERE NOT ( col2 ) IN ( + col1 * 48 )
 946
 946
 946
+
+query I rowsort
+SELECT + ( ( 48 ) ) * + ( + ( ( 23 ) ) * 93 ) FROM ( tab2 AS cor0 CROSS JOIN tab0 )
+----
+9 values hashing to b9ed150ba39217b554f95a348e5f5b70
 
 query III rowsort
 SELECT * FROM tab0 WHERE col0 = - col0
@@ -31858,6 +31896,10 @@ query III rowsort
 SELECT * FROM tab0 WHERE NOT NULL > ( - col0 * + col0 )
 ----
 
+query IIIIII rowsort
+SELECT DISTINCT * FROM ( tab0 AS cor0 CROSS JOIN tab2 AS cor1 ) WHERE NULL IS NOT NULL
+----
+
 query I rowsort
 SELECT DISTINCT + col0 * - 34 FROM tab1 AS cor0
 ----
@@ -33801,6 +33843,11 @@ query III rowsort
 SELECT * FROM tab2 WHERE NOT - 26 IS NULL
 ----
 9 values hashing to 75c998aa53ac83218cbf2feb962d0a49
+
+query I rowsort
+SELECT 19 FROM ( tab1 AS cor0 CROSS JOIN tab0 AS cor1 ) WHERE NOT NULL IS NOT NULL
+----
+9 values hashing to 3dac30dc82c9e5acbbd3a5c5d1aeee11
 
 query II rowsort
 SELECT DISTINCT - 3 + + + col2 AS col1, - col2 * - 35 FROM tab2 AS cor0

@@ -18,7 +18,7 @@
 package org.apache.ignite.internal.commandline;
 
 import java.util.UUID;
-import java.util.logging.Logger;
+import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.cluster.ClusterState;
 import org.apache.ignite.internal.client.GridClient;
 import org.apache.ignite.internal.client.GridClientClusterState;
@@ -31,7 +31,7 @@ import static org.apache.ignite.internal.commandline.CommandList.STATE;
  */
 public class StateCommand extends AbstractCommand<Void> {
     /** {@inheritDoc} */
-    @Override public void printUsage(Logger logger) {
+    @Override public void printUsage(IgniteLogger logger) {
         usage(logger, "Print current cluster state:", STATE);
     }
 
@@ -41,7 +41,7 @@ public class StateCommand extends AbstractCommand<Void> {
      * @param clientCfg Client configuration.
      * @throws Exception If failed to print state.
      */
-    @Override public Object execute(GridClientConfiguration clientCfg, Logger log) throws Exception {
+    @Override public Object execute(GridClientConfiguration clientCfg, IgniteLogger log) throws Exception {
         try (GridClient client = Command.startClient(clientCfg)) {
             GridClientClusterState state = client.state();
 
@@ -77,7 +77,7 @@ public class StateCommand extends AbstractCommand<Void> {
         }
         catch (Throwable e) {
             if (!CommandHandler.isAuthError(e))
-                log.severe("Failed to get cluster state.");
+                log.error("Failed to get cluster state.");
 
             throw e;
         }

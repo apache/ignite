@@ -15,25 +15,42 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.logger;
+package org.apache.ignite.internal.processors.query.calcite.prepare.bounds;
 
-import java.util.UUID;
+import org.apache.calcite.rex.RexNode;
 import org.jetbrains.annotations.Nullable;
 
 /**
- * Interface for Ignite file appenders to attach postfix to log file names.
+ * Bounds holder for search row.
+ *
+ * This class is describing bounds on per-column basis, and such choice was made to optimize serialization of a plan.
  */
-public interface LoggerNodeIdAndApplicationAware extends LoggerNodeIdAware {
-    /** {@inheritDoc} */
-    @Override public default void setNodeId(UUID nodeId) {
-        setApplicationAndNode(null, nodeId);
+public abstract class SearchBounds {
+    /** Condition required only for cost calculation, no serialization needed. */
+    private final RexNode condition;
+
+    /** */
+    protected SearchBounds(@Nullable RexNode condition) {
+        this.condition = condition;
     }
 
-    /**
-     * Sets application name and node ID.
-     *
-     * @param application Application.
-     * @param nodeId Node ID.
-     */
-    public void setApplicationAndNode(@Nullable String application, UUID nodeId);
+    /** */
+    public RexNode condition() {
+        return condition;
+    }
+
+    /** */
+    public abstract Type type();
+
+    /** */
+    public enum Type {
+        /** Exact search value. */
+        EXACT,
+
+        /** Range of values. */
+        RANGE,
+
+        /** Multiple values or multiple ranges. */
+        MULTI
+    }
 }

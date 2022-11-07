@@ -23,6 +23,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Random;
 import java.util.concurrent.CyclicBarrier;
+import java.util.concurrent.ExecutionException;
 import java.util.concurrent.Executors;
 import java.util.concurrent.Future;
 import java.util.concurrent.TimeUnit;
@@ -221,6 +222,38 @@ public class ReliabilityTest extends AbstractThinClientTest {
 
             // Reuse second address without fail.
             cache.get(0);
+        }
+    }
+
+    /**
+     * Tests retry policy exception handling.
+     */
+    @Test
+    public void testExceptionInRetryPolicyPropagatesToCaller() {
+        if (isPartitionAware())
+            return;
+
+        try (LocalIgniteCluster cluster = LocalIgniteCluster.start(1);
+             IgniteClient client = Ignition.startClient(getClientConfiguration()
+                 .setRetryPolicy(new ExceptionRetryPolicy())
+                 .setAddresses(
+                     cluster.clientAddresses().iterator().next(),
+                     cluster.clientAddresses().iterator().next()))
+        ) {
+            ClientCache<Integer, Integer> cache = client.createCache("cache");
+            dropAllThinClientConnections(Ignition.allGrids().get(0));
+
+            Throwable asyncEx = GridTestUtils.assertThrows(null, () -> cache.getAsync(0).get(),
+                    ExecutionException.class, "Channel is closed");
+
+            dropAllThinClientConnections(Ignition.allGrids().get(0));
+
+            Throwable syncEx = GridTestUtils.assertThrows(null, () -> cache.get(0),
+                    ClientConnectionException.class, "Channel is closed");
+
+            for (Throwable t : new Throwable[] {asyncEx.getCause(), syncEx}) {
+                assertEquals("Error in policy.", t.getSuppressed()[0].getMessage());
+            }
         }
     }
 

@@ -856,6 +856,35 @@ namespace Apache.Ignite.Core.Tests.Client
         }
 
         /// <summary>
+        /// Test retry policy exception handling.
+        /// </summary>
+        [Test]
+        public void TestExceptionInRetryPolicyPropagatesToCaller([Values(true, false)] bool async)
+        {
+            Ignition.Start(TestUtils.GetTestConfiguration());
+
+            var cfg = new IgniteClientConfiguration
+            {
+                Endpoints = new[] { "127.0.0.1" },
+                RetryPolicy = new TestRetryPolicy { ShouldThrow = true },
+                RetryLimit = 2
+            };
+
+            using (var client = Ignition.StartClient(cfg))
+            {
+                var cache = client.GetOrCreateCache<int, int>("c");
+
+                Ignition.StopAll(true);
+
+                var ex = async
+                    ? Assert.CatchAsync(() => cache.GetAsync(0))
+                    : Assert.Catch(() => cache.Get(0));
+
+                Assert.AreEqual("Error in policy.", ex.Message);
+            }
+        }
+
+        /// <summary>
         /// Tests that client stops it's receiver thread upon disposal.
         /// </summary>
         [Test]

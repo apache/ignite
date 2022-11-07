@@ -82,7 +82,7 @@ public class DoubleIndexKey extends NumericIndexKey {
 
     /** {@inheritDoc} */
     @Override public int compare(IndexKey o) {
-        return o.type() == type() ? Double.compare(key, ((DoubleIndexKey)o).key) : -((NumericIndexKey)o).compareTo(key);
+        return -((NumericIndexKey)o).compareTo(key);
     }
 
     /** {@inheritDoc} */

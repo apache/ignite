@@ -78,6 +78,7 @@ import org.apache.ignite.lang.IgniteBiTuple;
 import org.apache.ignite.lang.IgnitePredicate;
 import org.apache.ignite.lang.IgniteProductVersion;
 import org.apache.ignite.spi.discovery.tcp.internal.TcpDiscoveryNode;
+import org.apache.ignite.testframework.GridTestClassLoader;
 import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.testframework.http.GridEmbeddedHttpServer;
 import org.apache.ignite.testframework.junits.WithSystemProperty;
@@ -1509,6 +1510,71 @@ public class IgniteUtilsSelfTest extends GridCommonAbstractTest {
     @WithSystemProperty(key = IgniteSystemProperties.IGNITE_IGNORE_LOCAL_HOST_NAME, value = "false")
     public void testResolveLocalAddressesWithHostNameDefinedAndLocalHostNameNotIgnored() throws Exception {
         testAddressResolveWithLocalHostDefined();
+    }
+
+    /**
+     * Tests {@link IgniteUtils#isLambda(Class)} on lambdas.
+     */
+    @Test
+    public void testIsLambdaOnLambdas() {
+        Runnable someLambda = () -> {};
+
+        int localVar = 0;
+        Runnable capturingLocalLambda = () -> {
+            System.out.println(localVar);
+        };
+
+        Runnable capturingOuterClassLambda = () -> {
+            System.out.println(repeatRule);
+        };
+
+        Runnable methodReference = this::testIsLambdaOnLambdas;
+
+        assertTrue(IgniteUtils.isLambda(someLambda.getClass()));
+        assertTrue(IgniteUtils.isLambda(capturingLocalLambda.getClass()));
+        assertTrue(IgniteUtils.isLambda(capturingOuterClassLambda.getClass()));
+        assertTrue(IgniteUtils.isLambda(methodReference.getClass()));
+    }
+
+    /** Test nested class. */
+    private static class TestNestedClass {
+    }
+
+    /** Test inner class. */
+    private class TestInnerClass {
+    }
+
+    /**
+     * Tests {@link IgniteUtils#isLambda(Class)} on non-lambda classes.
+     */
+    @Test
+    public void testIsLambdaOnOrdinaryClasses() throws Exception {
+        assertFalse(IgniteUtils.isLambda(Object.class));
+
+        Runnable anonCls = new Runnable() {
+            /** {@inheritDoc} */
+            @Override public void run() {
+                // No-op.
+            }
+        };
+
+        assertFalse(IgniteUtils.isLambda(anonCls.getClass()));
+        assertFalse(IgniteUtils.isLambda(TestEnum.class));
+
+        // Loading only inner class with test classloader, while outer class
+        // will be loaded with the default classloader. Thus, if we execute method like isAnonymousClass
+        // on the loaded class, it will fail with the IncompatibleClassChangeError. That's why order in
+        // IgniteUtils isLambda is important.
+        GridTestClassLoader clsLdr = new GridTestClassLoader(
+            TestNestedClass.class.getName(),
+            TestInnerClass.class.getName()
+        );
+
+        Class<?> nestedCls = clsLdr.loadClass(TestNestedClass.class.getName());
+        assertFalse(IgniteUtils.isLambda(nestedCls));
+
+        Class<?> innerCls = clsLdr.loadClass(TestInnerClass.class.getName());
+        assertFalse(IgniteUtils.isLambda(innerCls));
     }
 
     /**

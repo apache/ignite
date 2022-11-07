@@ -24,13 +24,12 @@ import java.util.Map;
 import java.util.UUID;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteLogger;
+import org.apache.ignite.internal.logger.IgniteLoggerEx;
 import org.apache.ignite.internal.util.tostring.GridToStringExclude;
 import org.apache.ignite.internal.util.typedef.C1;
-import org.apache.ignite.internal.util.typedef.internal.A;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgniteClosure;
-import org.apache.ignite.logger.LoggerNodeIdAndApplicationAware;
 import org.apache.logging.log4j.Level;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
@@ -88,7 +87,7 @@ import static org.apache.logging.log4j.core.appender.ConsoleAppender.Target.SYST
  * logger in your task/job code. See {@link org.apache.ignite.resources.LoggerResource} annotation about logger
  * injection.
  */
-public class Log4J2Logger implements IgniteLogger, LoggerNodeIdAndApplicationAware {
+public class Log4J2Logger implements IgniteLoggerEx {
     /** */
     private static final String NODE_ID = "nodeId";
 
@@ -118,10 +117,6 @@ public class Log4J2Logger implements IgniteLogger, LoggerNodeIdAndApplicationAwa
 
     /** Quiet flag. */
     private final boolean quiet;
-
-    /** Node ID. */
-    @GridToStringExclude
-    private volatile UUID nodeId;
 
     /**
      * Creates new logger and automatically detects if root logger already
@@ -238,6 +233,8 @@ public class Log4J2Logger implements IgniteLogger, LoggerNodeIdAndApplicationAwa
      */
     static void cleanup() {
         synchronized (mux) {
+            System.clearProperty(APP_ID);
+
             if (inited)
                 LogManager.shutdown();
 
@@ -276,6 +273,17 @@ public class Log4J2Logger implements IgniteLogger, LoggerNodeIdAndApplicationAwa
         }
 
         return null;
+    }
+
+    /** {@inheritDoc} */
+    @Override public void addConsoleAppender() {
+        if (!isConsoleAppenderConfigured())
+            configureConsoleAppender();
+    }
+
+    /** {@inheritDoc} */
+    @Override public void flush() {
+        // No-op.
     }
 
     /**
@@ -417,14 +425,12 @@ public class Log4J2Logger implements IgniteLogger, LoggerNodeIdAndApplicationAwa
     }
 
     /** {@inheritDoc} */
-    @Override public void setApplicationAndNode(@Nullable String application, UUID nodeId) {
-        A.notNull(nodeId, "nodeId");
-
-        this.nodeId = nodeId;
-
+    @Override public void setApplicationAndNode(@Nullable String application, @Nullable UUID nodeId) {
         // Set nodeId as system variable to be used at configuration.
-        System.setProperty(NODE_ID, U.id8(nodeId));
-        System.setProperty(APP_ID, application != null ? application : "ignite");
+        System.setProperty(NODE_ID, nodeId == null ? "" : ("-" + U.id8(nodeId)));
+        System.setProperty(APP_ID, application != null
+            ? application
+            : System.getProperty(APP_ID, "ignite"));
 
         if (inited) {
             synchronized (mux) {
@@ -440,11 +446,6 @@ public class Log4J2Logger implements IgniteLogger, LoggerNodeIdAndApplicationAwa
                 }
             });
         }
-    }
-
-    /** {@inheritDoc} */
-    @Override public UUID getNodeId() {
-        return nodeId;
     }
 
     /**

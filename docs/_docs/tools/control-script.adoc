@@ -544,12 +544,12 @@ By default, found inconsistent entries will be listed as is but may be masked by
 tab:Unix[]
 [source,shell]
 ----
-control.sh --enable-experimental --consistency repair --cache cache-name --partition partition --strategy strategy
+control.sh --enable-experimental --consistency repair --cache cache-name --partitions partitions --strategy strategy
 ----
 tab:Window[]
 [source,shell]
 ----
-control.bat --enable-experimental --consistency repair --cache cache-name --partition partition --strategy strategy
+control.bat --enable-experimental --consistency repair --cache cache-name --partitions partitions --strategy strategy
 ----
 --
 Parameters:
@@ -558,7 +558,7 @@ Parameters:
 |===
 | Parameter | Description
 | `cache-name`| Cache (or cache group) name to be checked/repaired.
-| `partition`| Cache's partition to be checked/repaired.
+| `partitions`| Comma separated list of cache's partitions to be checked/repaired.
 | `strategy`| See link:key-value-api/read-repair#strategies[Repair Strategies].
 |===
 

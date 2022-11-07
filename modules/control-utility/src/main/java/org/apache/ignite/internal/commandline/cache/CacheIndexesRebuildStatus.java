@@ -20,7 +20,7 @@ package org.apache.ignite.internal.commandline.cache;
 import java.util.Map;
 import java.util.Set;
 import java.util.UUID;
-import java.util.logging.Logger;
+import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.internal.client.GridClient;
 import org.apache.ignite.internal.client.GridClientConfiguration;
 import org.apache.ignite.internal.commandline.AbstractCommand;
@@ -46,7 +46,7 @@ public class CacheIndexesRebuildStatus extends AbstractCommand<CacheIndexesRebui
     private Arguments args;
 
     /** {@inheritDoc} */
-    @Override public void printUsage(Logger logger) {
+    @Override public void printUsage(IgniteLogger logger) {
         String desc = "List all indexes that have index rebuild in progress.";
 
         Map<String, String> map = U.newLinkedHashMap(8);
@@ -64,7 +64,7 @@ public class CacheIndexesRebuildStatus extends AbstractCommand<CacheIndexesRebui
     }
 
     /** {@inheritDoc} */
-    @Override public Object execute(GridClientConfiguration clientCfg, Logger logger) throws Exception {
+    @Override public Object execute(GridClientConfiguration clientCfg, IgniteLogger logger) throws Exception {
         Map<UUID, Set<IndexRebuildStatusInfoContainer>> taskRes;
 
         final UUID nodeId = args.nodeId;
@@ -117,9 +117,9 @@ public class CacheIndexesRebuildStatus extends AbstractCommand<CacheIndexesRebui
      * Prints caches infos grouped by node id.
      *
      * @param res Task result.
-     * @param logger Logger to use.
+     * @param logger IgniteLogger to use.
      */
-    private void printStatus(Map<UUID, Set<IndexRebuildStatusInfoContainer>> res, Logger logger) {
+    private void printStatus(Map<UUID, Set<IndexRebuildStatusInfoContainer>> res, IgniteLogger logger) {
         if (!res.isEmpty())
             logger.info("Caches that have index rebuilding in progress:");
         else {

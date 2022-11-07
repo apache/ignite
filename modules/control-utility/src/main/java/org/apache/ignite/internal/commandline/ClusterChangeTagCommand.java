@@ -19,7 +19,7 @@ package org.apache.ignite.internal.commandline;
 
 import java.util.Comparator;
 import java.util.UUID;
-import java.util.logging.Logger;
+import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.internal.client.GridClient;
 import org.apache.ignite.internal.client.GridClientConfiguration;
 import org.apache.ignite.internal.client.GridClientNode;
@@ -46,7 +46,7 @@ public class ClusterChangeTagCommand extends AbstractCommand<String> {
     private String newTagArg;
 
     /** {@inheritDoc} */
-    @Override public Object execute(GridClientConfiguration clientCfg, Logger logger) throws Exception {
+    @Override public Object execute(GridClientConfiguration clientCfg, IgniteLogger logger) throws Exception {
         try (GridClient client = Command.startClient(clientCfg)) {
             UUID coordinatorId = client.compute().nodes().stream()
                 .min(Comparator.comparingLong(GridClientNode::order))
@@ -67,8 +67,8 @@ public class ClusterChangeTagCommand extends AbstractCommand<String> {
                 logger.warning("Error has occurred during tag update: " + res.errorMessage());
         }
         catch (Throwable e) {
-            logger.severe("Failed to execute Cluster ID and tag command: ");
-            logger.severe(CommandLogger.errorMessage(e));
+            logger.error("Failed to execute Cluster ID and tag command: ");
+            logger.error(CommandLogger.errorMessage(e));
 
             throw e;
         }
@@ -82,7 +82,7 @@ public class ClusterChangeTagCommand extends AbstractCommand<String> {
     }
 
     /** {@inheritDoc} */
-    @Override public void printUsage(Logger logger) {
+    @Override public void printUsage(IgniteLogger logger) {
         usage(logger, "Change cluster tag to new value:", CLUSTER_CHANGE_TAG,
             "newTagValue", optional(CMD_AUTO_CONFIRMATION));
     }

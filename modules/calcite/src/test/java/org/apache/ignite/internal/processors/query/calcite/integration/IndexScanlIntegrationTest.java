@@ -20,14 +20,15 @@ package org.apache.ignite.internal.processors.query.calcite.integration;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.function.Function;
 import java.util.function.Predicate;
-import java.util.function.Supplier;
 import org.apache.calcite.util.ImmutableBitSet;
 import org.apache.ignite.IgniteCache;
 import org.apache.ignite.cache.QueryEntity;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.internal.processors.query.calcite.QueryChecker;
 import org.apache.ignite.internal.processors.query.calcite.exec.ExecutionContext;
+import org.apache.ignite.internal.processors.query.calcite.exec.exp.RangeIterable;
 import org.apache.ignite.internal.processors.query.calcite.metadata.ColocationGroup;
+import org.apache.ignite.internal.processors.query.calcite.schema.IgniteIndex;
 import org.apache.ignite.internal.processors.query.calcite.schema.IgniteTable;
 import org.apache.ignite.internal.util.typedef.F;
 import org.jetbrains.annotations.Nullable;
@@ -44,36 +45,16 @@ public class IndexScanlIntegrationTest extends AbstractBasicIntegrationTest {
 
     /** */
     @Test
-    public void testNullsInSearchRow() {
+    public void testNullsInCNLJSearchRow() {
         executeSql("CREATE TABLE t(i1 INTEGER, i2 INTEGER) WITH TEMPLATE=REPLICATED ");
-        executeSql("INSERT INTO t VALUES (0, null), (1, null), (2, 2), (3, null), (4, null)");
+        executeSql("INSERT INTO t VALUES (0, null), (1, null), (2, 2), (3, null), (4, null), (null, 5)");
         executeSql("CREATE INDEX t_idx ON t(i1)");
 
         IgniteTable tbl = (IgniteTable)queryProcessor(grid(0)).schemaHolder().schema("PUBLIC").getTable("T");
 
-        AtomicInteger filteredRows = new AtomicInteger();
-        tbl.addIndex(new DelegatingIgniteIndex(tbl.getIndex("T_IDX")) {
-            @Override public <Row> Iterable<Row> scan(
-                ExecutionContext<Row> execCtx,
-                ColocationGroup grp,
-                Predicate<Row> filters,
-                Supplier<Row> lowerIdxConditions,
-                Supplier<Row> upperIdxConditions,
-                Function<Row, Row> rowTransformer,
-                @Nullable ImmutableBitSet requiredColumns
-            ) {
-                Predicate<Row> filter = row -> {
-                    filteredRows.incrementAndGet();
+        RowCountingIndex idx = new RowCountingIndex(tbl.getIndex("T_IDX"));
 
-                    return true;
-                };
-
-                filters = filter.and(filters);
-
-                return delegate.scan(execCtx, grp, filters, lowerIdxConditions, upperIdxConditions, rowTransformer,
-                    requiredColumns);
-            }
-        });
+        tbl.addIndex(idx);
 
         String sql = "SELECT /*+ DISABLE_RULE('NestedLoopJoinConverter', 'MergeJoinConverter') */ t1.i1, t2.i1 " +
             "FROM t t1 " +
@@ -87,11 +68,53 @@ public class IndexScanlIntegrationTest extends AbstractBasicIntegrationTest {
             .returns(2, 2)
             .returns(3, null)
             .returns(4, null)
+            .returns(null, null)
             .check();
 
         // There shouldn't be full index scan in case of null values in search row, only one value must be found by
         // range scan and passed to predicate.
-        assertEquals(1, filteredRows.get());
+        assertEquals(1, idx.rowsProcessed());
+    }
+
+    /** */
+    @Test
+    public void testNullsInSearchRow() {
+        executeSql("CREATE TABLE t(i1 INTEGER, i2 INTEGER) WITH TEMPLATE=REPLICATED ");
+        executeSql("INSERT INTO t VALUES (null, 0), (1, null), (2, 2), (3, null)");
+        executeSql("CREATE INDEX t_idx ON t(i1, i2)");
+
+        IgniteTable tbl = (IgniteTable)queryProcessor(grid(0)).schemaHolder().schema("PUBLIC").getTable("T");
+
+        RowCountingIndex idx = new RowCountingIndex(tbl.getIndex("T_IDX"));
+
+        tbl.addIndex(idx);
+
+        assertQuery("SELECT * FROM t WHERE i1 = ?")
+            .withParams(new Object[] { null })
+            .matches(QueryChecker.containsIndexScan("PUBLIC", "T", "T_IDX"))
+            .check();
+
+        assertEquals(0, idx.rowsProcessed());
+
+        assertQuery("SELECT * FROM t WHERE i1 = 1 AND i2 = ?")
+            .withParams(new Object[] { null })
+            .matches(QueryChecker.containsIndexScan("PUBLIC", "T", "T_IDX"))
+            .check();
+
+        // Multi ranges.
+        assertQuery("SELECT * FROM t WHERE i1 IN (1, 2, 3) AND i2 = ?")
+            .withParams(new Object[] { null })
+            .matches(QueryChecker.containsIndexScan("PUBLIC", "T", "T_IDX"))
+            .check();
+
+        assertEquals(0, idx.rowsProcessed());
+
+        assertQuery("SELECT * FROM t WHERE i1 IN (1, 2) AND i2 IS NULL")
+            .matches(QueryChecker.containsIndexScan("PUBLIC", "T", "T_IDX"))
+            .returns(1, null)
+            .check();
+
+        assertEquals(1, idx.rowsProcessed());
     }
 
     /** */
@@ -130,5 +153,126 @@ public class IndexScanlIntegrationTest extends AbstractBasicIntegrationTest {
             .returns("emp61")
             .returns("emp60")
             .check();
+    }
+
+    /** */
+    @Test
+    public void testScanBooleanField() {
+        executeSql("CREATE TABLE t(i INTEGER, b BOOLEAN)");
+        executeSql("INSERT INTO t VALUES (0, TRUE), (1, TRUE), (2, FALSE), (3, FALSE), (4, null)");
+        executeSql("CREATE INDEX t_idx ON t(b)");
+
+        assertQuery("SELECT i FROM t WHERE b = TRUE")
+            .matches(QueryChecker.containsIndexScan("PUBLIC", "T", "T_IDX"))
+            .returns(0)
+            .returns(1)
+            .check();
+
+        assertQuery("SELECT i FROM t WHERE b = FALSE")
+            .matches(QueryChecker.containsIndexScan("PUBLIC", "T", "T_IDX"))
+            .returns(2)
+            .returns(3)
+            .check();
+
+        assertQuery("SELECT i FROM t WHERE b IS TRUE")
+            .matches(QueryChecker.containsIndexScan("PUBLIC", "T", "T_IDX"))
+            .returns(0)
+            .returns(1)
+            .check();
+
+        assertQuery("SELECT i FROM t WHERE b IS FALSE")
+            .matches(QueryChecker.containsIndexScan("PUBLIC", "T", "T_IDX"))
+            .returns(2)
+            .returns(3)
+            .check();
+
+        // Support index scans for IS TRUE, IS FALSE but not for IS NOT TRUE, IS NOT FALSE, since it requeres multi
+        // bounds scan and may not be effective.
+        assertQuery("SELECT i FROM t WHERE b IS NOT TRUE")
+            .matches(QueryChecker.containsTableScan("PUBLIC", "T"))
+            .returns(2)
+            .returns(3)
+            .returns(4)
+            .check();
+
+        assertQuery("SELECT i FROM t WHERE b IS NOT FALSE")
+            .matches(QueryChecker.containsTableScan("PUBLIC", "T"))
+            .returns(0)
+            .returns(1)
+            .returns(4)
+            .check();
+
+        assertQuery("SELECT i FROM t WHERE b IS NULL")
+            .matches(QueryChecker.containsIndexScan("PUBLIC", "T", "T_IDX"))
+            .returns(4)
+            .check();
+    }
+
+    /** */
+    @Test
+    public void testIsNotDistinctFrom() {
+        executeSql("CREATE TABLE t1(i1 INTEGER) WITH TEMPLATE=REPLICATED");
+        executeSql("INSERT INTO t1 VALUES (1), (2), (null), (3)");
+
+        executeSql("CREATE TABLE t2(i2 INTEGER, i3 INTEGER) WITH TEMPLATE=REPLICATED");
+        executeSql("INSERT INTO t2 VALUES (1, 1), (2, 2), (null, 3), (4, null)");
+        executeSql("CREATE INDEX t2_idx ON t2(i2)");
+
+        String sql = "SELECT /*+ DISABLE_RULE('NestedLoopJoinConverter', 'MergeJoinConverter') */ i1, i3 " +
+            "FROM t1 JOIN t2 ON i1 IS NOT DISTINCT FROM i2";
+
+        assertQuery(sql)
+            .matches(QueryChecker.containsIndexScan("PUBLIC", "T2", "T2_IDX"))
+            .returns(1, 1)
+            .returns(2, 2)
+            .returns(null, 3)
+            .check();
+
+        // Collapse expanded IS_NOT_DISTINCT_FROM.
+        sql = "SELECT /*+ DISABLE_RULE('NestedLoopJoinConverter', 'MergeJoinConverter') */ i1, i3 " +
+            "FROM t1 JOIN t2 ON i1 = i2 OR (i1 IS NULL AND i2 IS NULL)";
+
+        assertQuery(sql)
+            .matches(QueryChecker.containsIndexScan("PUBLIC", "T2", "T2_IDX"))
+            .returns(1, 1)
+            .returns(2, 2)
+            .returns(null, 3)
+            .check();
+    }
+
+    /** */
+    private static class RowCountingIndex extends DelegatingIgniteIndex {
+        /** */
+        private final AtomicInteger filteredRows = new AtomicInteger();
+
+        /** */
+        public RowCountingIndex(IgniteIndex delegate) {
+            super(delegate);
+        }
+
+        /** {@inheritDoc} */
+        @Override public <Row> Iterable<Row> scan(
+            ExecutionContext<Row> execCtx,
+            ColocationGroup grp,
+            Predicate<Row> filters,
+            RangeIterable<Row> ranges,
+            Function<Row, Row> rowTransformer,
+            @Nullable ImmutableBitSet requiredColumns
+        ) {
+            Predicate<Row> filter = row -> {
+                filteredRows.incrementAndGet();
+
+                return true;
+            };
+
+            filters = filter.and(filters);
+
+            return delegate.scan(execCtx, grp, filters, ranges, rowTransformer, requiredColumns);
+        }
+
+        /** */
+        public int rowsProcessed() {
+            return filteredRows.getAndSet(0);
+        }
     }
 }

@@ -18,6 +18,7 @@
 package org.apache.ignite.internal.processors.query.calcite.exec;
 
 import java.util.Collections;
+import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
@@ -27,7 +28,6 @@ import java.util.stream.Collectors;
 import org.apache.calcite.plan.Context;
 import org.apache.calcite.plan.Contexts;
 import org.apache.calcite.plan.RelOptUtil;
-import org.apache.calcite.rel.type.RelDataType;
 import org.apache.calcite.sql.SqlInsert;
 import org.apache.calcite.sql.SqlKind;
 import org.apache.calcite.tools.Frameworks;
@@ -39,11 +39,14 @@ import org.apache.ignite.internal.GridKernalContext;
 import org.apache.ignite.internal.managers.eventstorage.DiscoveryEventListener;
 import org.apache.ignite.internal.managers.eventstorage.GridEventStorageManager;
 import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
+import org.apache.ignite.internal.processors.cache.CacheObjectUtils;
+import org.apache.ignite.internal.processors.cache.CacheObjectValueContext;
 import org.apache.ignite.internal.processors.cache.GridCachePartitionExchangeManager;
 import org.apache.ignite.internal.processors.cache.QueryCursorImpl;
 import org.apache.ignite.internal.processors.cache.query.IgniteQueryErrorCode;
 import org.apache.ignite.internal.processors.failure.FailureProcessor;
 import org.apache.ignite.internal.processors.query.IgniteSQLException;
+import org.apache.ignite.internal.processors.query.QueryProperties;
 import org.apache.ignite.internal.processors.query.QueryState;
 import org.apache.ignite.internal.processors.query.RunningQuery;
 import org.apache.ignite.internal.processors.query.calcite.CalciteQueryProcessor;
@@ -69,13 +72,11 @@ import org.apache.ignite.internal.processors.query.calcite.prepare.BaseQueryCont
 import org.apache.ignite.internal.processors.query.calcite.prepare.CacheKey;
 import org.apache.ignite.internal.processors.query.calcite.prepare.DdlPlan;
 import org.apache.ignite.internal.processors.query.calcite.prepare.ExplainPlan;
-import org.apache.ignite.internal.processors.query.calcite.prepare.FieldsMetadata;
 import org.apache.ignite.internal.processors.query.calcite.prepare.FieldsMetadataImpl;
 import org.apache.ignite.internal.processors.query.calcite.prepare.Fragment;
 import org.apache.ignite.internal.processors.query.calcite.prepare.FragmentPlan;
 import org.apache.ignite.internal.processors.query.calcite.prepare.MappingQueryContext;
 import org.apache.ignite.internal.processors.query.calcite.prepare.MultiStepPlan;
-import org.apache.ignite.internal.processors.query.calcite.prepare.PlanningContext;
 import org.apache.ignite.internal.processors.query.calcite.prepare.PrepareServiceImpl;
 import org.apache.ignite.internal.processors.query.calcite.prepare.QueryPlan;
 import org.apache.ignite.internal.processors.query.calcite.prepare.QueryPlanCache;
@@ -84,8 +85,8 @@ import org.apache.ignite.internal.processors.query.calcite.schema.SchemaHolder;
 import org.apache.ignite.internal.processors.query.calcite.type.IgniteTypeFactory;
 import org.apache.ignite.internal.processors.query.calcite.util.AbstractService;
 import org.apache.ignite.internal.processors.query.calcite.util.Commons;
+import org.apache.ignite.internal.processors.query.calcite.util.ConvertingClosableIterator;
 import org.apache.ignite.internal.processors.query.calcite.util.ListFieldsQueryCursor;
-import org.apache.ignite.internal.processors.query.calcite.util.TypeUtils;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.X;
 import org.apache.ignite.internal.util.typedef.internal.U;
@@ -111,6 +112,9 @@ public class ExecutionServiceImpl<Row> extends AbstractService implements Execut
 
     /** */
     private GridCachePartitionExchangeManager<?, ?> exchangeMgr;
+
+    /** */
+    private CacheObjectValueContext objValCtx;
 
     /** */
     private QueryPlanCache qryPlanCache;
@@ -333,6 +337,13 @@ public class ExecutionServiceImpl<Row> extends AbstractService implements Execut
     }
 
     /**
+     * @param objValCtx Cache object value context.
+     */
+    public void cacheObjectValueContext(CacheObjectValueContext objValCtx) {
+        this.objValCtx = objValCtx;
+    }
+
+    /**
      * @return Exchange manager.
      */
     public GridCachePartitionExchangeManager<?, ?> exchangeManager() {
@@ -362,6 +373,7 @@ public class ExecutionServiceImpl<Row> extends AbstractService implements Execut
     @Override public void onStart(GridKernalContext ctx) {
         localNodeId(ctx.localNodeId());
         exchangeManager(ctx.cache().context().exchange());
+        cacheObjectValueContext(ctx.query().objectContext());
         eventManager(ctx.event());
         iteratorsHolder(new ClosableIteratorsHolder(log));
 
@@ -592,7 +604,15 @@ public class ExecutionServiceImpl<Row> extends AbstractService implements Execut
             }
         }
 
-        return new ListFieldsQueryCursor<>(plan, iteratorsHolder().iterator(qry.iterator()), ectx);
+        QueryProperties qryProps = qry.context().unwrap(QueryProperties.class);
+
+        Function<Object, Object> fieldConverter = (qryProps == null || qryProps.keepBinary()) ? null :
+            o -> CacheObjectUtils.unwrapBinaryIfNeeded(objValCtx, o, false, true, null);
+
+        Iterator<List<?>> it = new ConvertingClosableIterator<>(iteratorsHolder().iterator(qry.iterator()), ectx,
+            fieldConverter);
+
+        return new ListFieldsQueryCursor<>(plan, it, ectx);
     }
 
     /** */
@@ -632,14 +652,6 @@ public class ExecutionServiceImpl<Row> extends AbstractService implements Execut
                 throw wrpEx;
             }
         }
-    }
-
-    /** */
-    private FieldsMetadata queryFieldsMetadata(PlanningContext ctx, RelDataType sqlType,
-        @Nullable List<List<String>> origins) {
-        RelDataType resultType = TypeUtils.getResultType(
-            ctx.typeFactory(), ctx.catalogReader(), sqlType, origins);
-        return new FieldsMetadataImpl(resultType, origins);
     }
 
     /** */

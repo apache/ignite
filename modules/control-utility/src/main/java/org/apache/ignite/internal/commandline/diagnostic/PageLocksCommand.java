@@ -22,7 +22,7 @@ import java.util.Arrays;
 import java.util.HashSet;
 import java.util.Map;
 import java.util.Set;
-import java.util.logging.Logger;
+import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.internal.client.GridClient;
 import org.apache.ignite.internal.client.GridClientConfiguration;
@@ -58,11 +58,11 @@ public class PageLocksCommand extends AbstractCommand<PageLocksCommand.Arguments
     private Arguments arguments;
 
     /** */
-    private Logger logger;
+    private IgniteLogger logger;
 
 
     /** {@inheritDoc} */
-    @Override public Object execute(GridClientConfiguration clientCfg, Logger logger) throws Exception {
+    @Override public Object execute(GridClientConfiguration clientCfg, IgniteLogger logger) throws Exception {
         this.logger = logger;
 
         Set<String> nodeIds = arguments.nodeIds;
@@ -145,7 +145,7 @@ public class PageLocksCommand extends AbstractCommand<PageLocksCommand.Arguments
     }
 
     /** {@inheritDoc} */
-    @Override public void printUsage(Logger logger) {
+    @Override public void printUsage(IgniteLogger logger) {
         logger.info("View pages locks state information on the node or nodes.");
         logger.info(join(" ",
             UTILITY_NAME, DIAGNOSTIC, PAGE_LOCKS, DUMP,

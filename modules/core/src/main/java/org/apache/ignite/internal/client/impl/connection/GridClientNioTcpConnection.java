@@ -241,10 +241,12 @@ public class GridClientNioTcpConnection extends GridClientConnection {
                 meta.put(GridNioSslFilter.HANDSHAKE_FUT_META_KEY, sslHandshakeFut);
             }
 
-            ses = (GridNioSession)srv.createSession(ch, meta, false, null).get();
+            GridNioFuture<GridNioSession> sesFut = srv.createSession(ch, meta, false, null);
 
             if (sslHandshakeFut != null)
                 sslHandshakeFut.get();
+
+            ses = sesFut.get();
 
             GridClientHandshakeRequest req = new GridClientHandshakeRequest();
 

@@ -36,14 +36,6 @@ public abstract class NumericInlineIndexKeyType<T extends IndexKey> extends Null
     }
 
     /** {@inheritDoc} */
-    @Override public int compare0(long pageAddr, int off, IndexKey key) {
-        return -Integer.signum(compareNumeric((NumericIndexKey)key, pageAddr, off));
-    }
-
-    /** Compare numeric index key with inlined value. */
-    public abstract int compareNumeric(NumericIndexKey key, long pageAddr, int off);
-
-    /** {@inheritDoc} */
     @Override protected int inlineSize0(T key) {
         return keySize + 1;
     }

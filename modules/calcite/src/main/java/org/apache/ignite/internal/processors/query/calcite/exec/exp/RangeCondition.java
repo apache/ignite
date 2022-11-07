@@ -2,11 +2,11 @@
  * Licensed to the Apache Software Foundation (ASF) under one or more
  * contributor license agreements.  See the NOTICE file distributed with
  * this work for additional information regarding copyright ownership.
- * The ASF licenses this file to You under the Apache License, Version 2.0
+ * The ASF licenses this file to you under the Apache License, Version 2.0
  * (the "License"); you may not use this file except in compliance with
  * the License.  You may obtain a copy of the License at
  *
- *      http://www.apache.org/licenses/LICENSE-2.0
+ *     http://www.apache.org/licenses/LICENSE-2.0
  *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
@@ -15,28 +15,23 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.logger;
-
-import java.util.UUID;
+package org.apache.ignite.internal.processors.query.calcite.exec.exp;
 
 /**
- * Interface for Ignite file appenders to attach node ID to log file names.
+ * A range condition is a search condition which represents a comparison predicate or a BETWEEN predicate.
  *
- * @deprecated Use {@link LoggerNodeIdAndApplicationAware} instead.
+ * <p>Used to define bounds of a range scan.
  */
-@Deprecated
-public interface LoggerNodeIdAware {
-    /**
-     * Sets node ID.
-     *
-     * @param nodeId Node ID.
-     */
-    public void setNodeId(UUID nodeId);
+public interface RangeCondition<Row> {
+    /** Lower search row. */
+    public Row lower();
 
-    /**
-     * Gets node ID.
-     *
-     * @return Node ID.
-     */
-    public UUID getNodeId();
+    /** Upper search row. */
+    public Row upper();
+
+    /** Inlusive search by lower row. */
+    public boolean lowerInclude();
+
+    /** Inlusive search by upper row. */
+    public boolean upperInclude();
 }

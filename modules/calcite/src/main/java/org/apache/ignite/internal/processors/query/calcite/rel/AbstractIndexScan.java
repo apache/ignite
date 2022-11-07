@@ -18,7 +18,6 @@
 package org.apache.ignite.internal.processors.query.calcite.rel;
 
 import java.util.List;
-
 import org.apache.calcite.plan.RelOptCluster;
 import org.apache.calcite.plan.RelOptCost;
 import org.apache.calcite.plan.RelOptPlanner;
@@ -32,8 +31,10 @@ import org.apache.calcite.rex.RexBuilder;
 import org.apache.calcite.rex.RexNode;
 import org.apache.calcite.rex.RexUtil;
 import org.apache.calcite.util.ImmutableBitSet;
+import org.apache.ignite.internal.processors.query.calcite.externalize.RelInputEx;
 import org.apache.ignite.internal.processors.query.calcite.metadata.cost.IgniteCost;
-import org.apache.ignite.internal.processors.query.calcite.util.IndexConditions;
+import org.apache.ignite.internal.processors.query.calcite.prepare.bounds.SearchBounds;
+import org.apache.ignite.internal.processors.query.calcite.util.Commons;
 import org.jetbrains.annotations.Nullable;
 
 /**
@@ -44,7 +45,7 @@ public abstract class AbstractIndexScan extends ProjectableFilterableTableScan {
     protected final String idxName;
 
     /** */
-    protected final IndexConditions idxCond;
+    protected final List<SearchBounds> searchBounds;
 
     /**
      * Constructor used for deserialization.
@@ -54,7 +55,7 @@ public abstract class AbstractIndexScan extends ProjectableFilterableTableScan {
     protected AbstractIndexScan(RelInput input) {
         super(input);
         idxName = input.getString("index");
-        idxCond = new IndexConditions(input);
+        searchBounds = ((RelInputEx)input).getSearchBounds("searchBounds");
     }
 
     /** */
@@ -66,21 +67,22 @@ public abstract class AbstractIndexScan extends ProjectableFilterableTableScan {
         String idxName,
         @Nullable List<RexNode> proj,
         @Nullable RexNode cond,
-        @Nullable IndexConditions idxCond,
+        @Nullable List<SearchBounds> searchBounds,
         @Nullable ImmutableBitSet reqColumns
     ) {
         super(cluster, traitSet, hints, table, proj, cond, reqColumns);
 
         this.idxName = idxName;
-        this.idxCond = idxCond;
+        this.searchBounds = searchBounds;
     }
 
     /** {@inheritDoc} */
     @Override protected RelWriter explainTerms0(RelWriter pw) {
         pw = pw.item("index", idxName);
         pw = super.explainTerms0(pw);
+        pw = pw.itemIf("searchBounds", searchBounds, searchBounds != null);
 
-        return idxCond.explainTerms(pw);
+        return pw;
     }
 
     /**
@@ -88,34 +90,6 @@ public abstract class AbstractIndexScan extends ProjectableFilterableTableScan {
      */
     public String indexName() {
         return idxName;
-    }
-
-    /**
-     * @return Lower index condition.
-     */
-    public List<RexNode> lowerCondition() {
-        return idxCond == null ? null : idxCond.lowerCondition();
-    }
-
-    /**
-     * @return Lower index condition.
-     */
-    public List<RexNode> lowerBound() {
-        return idxCond == null ? null : idxCond.lowerBound();
-    }
-
-    /**
-     * @return Upper index condition.
-     */
-    public List<RexNode> upperCondition() {
-        return idxCond == null ? null : idxCond.upperCondition();
-    }
-
-    /**
-     * @return Upper index condition.
-     */
-    public List<RexNode> upperBound() {
-        return idxCond == null ? null : idxCond.upperBound();
     }
 
     /** {@inheritDoc} */
@@ -133,18 +107,11 @@ public abstract class AbstractIndexScan extends ProjectableFilterableTableScan {
 
             cost = 0;
 
-            if (lowerCondition() != null) {
-                double selectivity0 = mq.getSelectivity(this, RexUtil.composeConjunction(builder, lowerCondition()));
+            if (searchBounds != null) {
+                selectivity = mq.getSelectivity(this, RexUtil.composeConjunction(builder,
+                        Commons.transform(searchBounds, b -> b == null ? null : b.condition())));
 
-                selectivity -= 1 - selectivity0;
-
-                cost += Math.log(rows) * IgniteCost.ROW_COMPARISON_COST;
-            }
-
-            if (upperCondition() != null && (lowerCondition() == null || !lowerCondition().equals(upperCondition()))) {
-                double selectivity0 = mq.getSelectivity(this, RexUtil.composeConjunction(builder, upperCondition()));
-
-                selectivity -= 1 - selectivity0;
+                cost = Math.log(rows) * IgniteCost.ROW_COMPARISON_COST;
             }
 
             rows *= selectivity;
@@ -160,7 +127,7 @@ public abstract class AbstractIndexScan extends ProjectableFilterableTableScan {
     }
 
     /** */
-    public IndexConditions indexConditions() {
-        return idxCond;
+    public List<SearchBounds> searchBounds() {
+        return searchBounds;
     }
 }
