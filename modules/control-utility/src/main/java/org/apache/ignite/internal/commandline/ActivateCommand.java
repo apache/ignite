@@ -17,7 +17,7 @@
 
 package org.apache.ignite.internal.commandline;
 
-import java.util.logging.Logger;
+import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.internal.client.GridClient;
 import org.apache.ignite.internal.client.GridClientClusterState;
 import org.apache.ignite.internal.client.GridClientConfiguration;
@@ -34,7 +34,7 @@ import static org.apache.ignite.internal.commandline.CommandList.SET_STATE;
 @Deprecated
 public class ActivateCommand extends AbstractCommand<Void> {
     /** {@inheritDoc} */
-    @Override public void printUsage(Logger logger) {
+    @Override public void printUsage(IgniteLogger logger) {
         usage(logger, "Activate cluster (deprecated. Use " + SET_STATE.toString() + " instead):", ACTIVATE);
     }
 
@@ -44,7 +44,7 @@ public class ActivateCommand extends AbstractCommand<Void> {
      * @param cfg Client configuration.
      * @throws GridClientException If failed to activate.
      */
-    @Override public Object execute(GridClientConfiguration cfg, Logger logger) throws Exception {
+    @Override public Object execute(GridClientConfiguration cfg, IgniteLogger logger) throws Exception {
         logger.warning("Command deprecated. Use " + SET_STATE.toString() + " instead.");
 
         try (GridClient client = Command.startClient(cfg)) {
@@ -55,7 +55,7 @@ public class ActivateCommand extends AbstractCommand<Void> {
             logger.info("Cluster activated");
         }
         catch (Throwable e) {
-            logger.severe("Failed to activate cluster.");
+            logger.error("Failed to activate cluster.");
 
             throw e;
         }

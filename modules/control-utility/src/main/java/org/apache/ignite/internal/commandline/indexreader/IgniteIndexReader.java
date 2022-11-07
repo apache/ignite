@@ -37,14 +37,13 @@ import java.util.Set;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.function.Predicate;
 import java.util.function.Supplier;
-import java.util.logging.Level;
-import java.util.logging.Logger;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 import java.util.stream.IntStream;
 import java.util.stream.LongStream;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteException;
+import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.cache.QueryEntity;
 import org.apache.ignite.cache.QueryIndex;
 import org.apache.ignite.internal.cache.query.index.IndexProcessor;
@@ -104,7 +103,6 @@ import static java.lang.String.format;
 import static java.util.Arrays.asList;
 import static java.util.Objects.isNull;
 import static java.util.Objects.nonNull;
-import static java.util.logging.Level.WARNING;
 import static java.util.stream.Collectors.joining;
 import static java.util.stream.Collectors.toList;
 import static org.apache.ignite.configuration.DataStorageConfiguration.DFLT_PAGE_SIZE;
@@ -202,7 +200,7 @@ public class IgniteIndexReader implements AutoCloseable {
     @Nullable private final Predicate<String> idxFilter;
 
     /** Logger. */
-    private final Logger log;
+    private final IgniteLogger log;
 
     /** Page store of {@link FilePageStoreManager#INDEX_FILE_NAME}. */
     private final FilePageStore idxStore;
@@ -253,7 +251,7 @@ public class IgniteIndexReader implements AutoCloseable {
         File root,
         @Nullable Predicate<String> idxFilter,
         boolean checkParts,
-        Logger log
+        IgniteLogger log
     ) throws IgniteCheckedException {
         this.pageSize = pageSize;
         this.partCnt = partCnt;
@@ -292,7 +290,7 @@ public class IgniteIndexReader implements AutoCloseable {
                 storedCacheData.put(CU.cacheId(data.config().getName()), data);
             }
             catch (ClassNotFoundException | IOException e) {
-                log.log(WARNING, "Can't read stored cache data. Inline for this cache will not be analyzed [f=" + f.getName() + ']', e);
+                log.warning("Can't read stored cache data. Inline for this cache will not be analyzed [f=" + f.getName() + ']', e);
             }
         });
     }
@@ -652,7 +650,7 @@ public class IgniteIndexReader implements AutoCloseable {
                             long pageId = pageId(cacheAwareLink.link);
 
                             errCnt.getAndIncrement();
-                            log.severe(ERROR_PREFIX + "Entry is missing in index[name=" + e.getKey() +
+                            log.error(ERROR_PREFIX + "Entry is missing in index[name=" + e.getKey() +
                                 "cacheId=" + cacheAwareLink.cacheId +
                                 ", partId=" + partId(pageId) +
                                 ", pageIndex=" + pageIndex(pageId) +
@@ -661,7 +659,7 @@ public class IgniteIndexReader implements AutoCloseable {
                         }
 
                         if (errCnt.get() >= MAX_ERRORS_CNT) {
-                            log.severe(ERROR_PREFIX + "Too many errors (" + MAX_ERRORS_CNT +
+                            log.error(ERROR_PREFIX + "Too many errors (" + MAX_ERRORS_CNT +
                                 ") found for partId=" + partId + ", stopping analysis for this partition.");
 
                             break;
@@ -672,7 +670,7 @@ public class IgniteIndexReader implements AutoCloseable {
                 });
             }
             catch (IgniteCheckedException e) {
-                log.severe(ERROR_PREFIX + "Partition check failed [partId=" + partId + ']');
+                log.error(ERROR_PREFIX + "Partition check failed [partId=" + partId + ']');
             }
 
             if (errCnt.get() != 0) {
@@ -925,7 +923,7 @@ public class IgniteIndexReader implements AutoCloseable {
 
             if (hctx == null) {
                 errCnt.incrementAndGet();
-                log.severe("Tree was detected in " + RECURSIVE_TRAVERSE_NAME + " but absent in  "
+                log.error("Tree was detected in " + RECURSIVE_TRAVERSE_NAME + " but absent in  "
                     + HORIZONTAL_SCAN_NAME + ": " + name);
 
                 return;
@@ -933,7 +931,7 @@ public class IgniteIndexReader implements AutoCloseable {
 
             if (rctx.items.size() != hctx.items.size()) {
                 errCnt.incrementAndGet();
-                log.severe(compareError("items", name, rctx.items.size(), hctx.items.size(), null));
+                log.error(compareError("items", name, rctx.items.size(), hctx.items.size(), null));
             }
 
             rctx.stats.forEach((cls, stat) -> {
@@ -941,14 +939,14 @@ public class IgniteIndexReader implements AutoCloseable {
 
                 if (scanCnt != stat.cnt) {
                     errCnt.incrementAndGet();
-                    log.severe(compareError("pages", name, stat.cnt, scanCnt, cls));
+                    log.error(compareError("pages", name, stat.cnt, scanCnt, cls));
                 }
             });
 
             hctx.stats.forEach((cls, stat) -> {
                 if (!rctx.stats.containsKey(cls)) {
                     errCnt.incrementAndGet();
-                    log.severe(compareError("pages", name, 0, stat.cnt, cls));
+                    log.error(compareError("pages", name, 0, stat.cnt, cls));
                 }
             });
         });
@@ -956,7 +954,7 @@ public class IgniteIndexReader implements AutoCloseable {
         horizontalScans.forEach((name, hctx) -> {
             if (!recursiveScans.containsKey(name)) {
                 errCnt.incrementAndGet();
-                log.severe("Tree was detected in " + HORIZONTAL_SCAN_NAME + " but absent in  "
+                log.error("Tree was detected in " + HORIZONTAL_SCAN_NAME + " but absent in  "
                         + RECURSIVE_TRAVERSE_NAME + ": " + name);
             }
         });
@@ -1061,9 +1059,9 @@ public class IgniteIndexReader implements AutoCloseable {
 
                 totalErr++;
 
-                log.severe("Index size inconsistency: cacheId=" + cacheTypeId.get1() + ", typeId=" + cacheTypeId.get2());
+                log.error("Index size inconsistency: cacheId=" + cacheTypeId.get1() + ", typeId=" + cacheTypeId.get2());
 
-                idxSizes.forEach((name, size) -> log.severe("     Index name: " + name + ", size=" + size));
+                idxSizes.forEach((name, size) -> log.error("     Index name: " + name + ", size=" + size));
             }
         }
 
@@ -1094,7 +1092,7 @@ public class IgniteIndexReader implements AutoCloseable {
      */
     private void printPagesListsInfo(long reuseListRoot) throws IgniteCheckedException {
         if (reuseListRoot == 0) {
-            log.severe("No page lists meta info found.");
+            log.error("No page lists meta info found.");
 
             return;
         }
@@ -1379,7 +1377,8 @@ public class IgniteIndexReader implements AutoCloseable {
                         idxKeyType = IndexKeyType.forCode(type0);
                     }
                     catch (Exception | AssertionError t) {
-                        log.log(Level.FINEST, "Unknown index key type [type=" + type0 + ']');
+                        if (log.isDebugEnabled())
+                            log.debug("Unknown index key type [type=" + type0 + ']');
 
                         break;
                     }
@@ -1393,7 +1392,8 @@ public class IgniteIndexReader implements AutoCloseable {
                     InlineIndexKeyType type = InlineIndexKeyTypeRegistry.get(idxKeyType, settings);
 
                     if (type == null) {
-                        log.log(Level.FINEST, "Unknown inline type [type=" + type0 + ']');
+                        if (log.isDebugEnabled())
+                            log.debug("Unknown inline type [type=" + type0 + ']');
 
                         break;
                     }

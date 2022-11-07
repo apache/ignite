@@ -18,7 +18,7 @@
 package org.apache.ignite.internal.commandline.cache;
 
 import java.util.Arrays;
-import java.util.logging.Logger;
+import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.internal.client.GridClientConfiguration;
 import org.apache.ignite.internal.commandline.AbstractCommand;
 import org.apache.ignite.internal.commandline.Command;
@@ -54,14 +54,14 @@ public class CacheCommands extends AbstractCommand<CacheSubcommands> {
     private CacheSubcommands subcommand;
 
     /** {@inheritDoc} */
-    @Override public void printUsage(Logger logger) {
+    @Override public void printUsage(IgniteLogger logger) {
         logger.info("");
         logger.info(INDENT + "View caches information in a cluster. For more details type:");
         logger.info(DOUBLE_INDENT + CommandLogger.join(" ", UTILITY_NAME, CACHE, HELP));
     }
 
     /** {@inheritDoc} */
-    @Override public Object execute(GridClientConfiguration clientCfg, Logger logger) throws Exception {
+    @Override public Object execute(GridClientConfiguration clientCfg, IgniteLogger logger) throws Exception {
         if (subcommand == CacheSubcommands.HELP) {
             printCacheHelp(logger);
 
@@ -100,7 +100,7 @@ public class CacheCommands extends AbstractCommand<CacheSubcommands> {
     }
 
     /** */
-    private void printCacheHelp(Logger logger) {
+    private void printCacheHelp(IgniteLogger logger) {
         logger.info(INDENT + "The '" + CACHE + " subcommand' is used to get information about and perform actions" +
             " with caches. The command has the following syntax:");
         logger.info("");

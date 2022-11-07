@@ -20,8 +20,7 @@ package org.apache.ignite.internal.commandline.indexreader;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.logging.Logger;
-
+import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.internal.commandline.ProgressPrinter;
 import org.apache.ignite.internal.processors.cache.persistence.file.FilePageStore;
 import org.apache.ignite.internal.processors.cache.persistence.tree.io.PageIO;
@@ -61,7 +60,7 @@ class ScanContext {
     int[] inline;
 
     /** */
-    private final Logger log;
+    private final IgniteLogger log;
 
     /** */
     private final String prefix;
@@ -76,7 +75,7 @@ class ScanContext {
         int inlineFldCnt,
         FilePageStore store,
         ItemStorage items,
-        Logger log,
+        IgniteLogger log,
         String prefix,
         ProgressPrinter printer
     ) {
@@ -141,7 +140,7 @@ class ScanContext {
     }
 
     /** */
-    public static void onError(Logger log, String prefix, long pageId, String message) {
+    public static void onError(IgniteLogger log, String prefix, long pageId, String message) {
         log.warning(prefix + ERROR_PREFIX + "Page id: " + pageId + ", exceptions: " + message);
     }
 

@@ -20,7 +20,7 @@ package org.apache.ignite.internal.commandline.snapshot;
 import java.util.LinkedHashMap;
 import java.util.Map;
 import java.util.Set;
-import java.util.logging.Logger;
+import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.internal.client.GridClientConfiguration;
 import org.apache.ignite.internal.commandline.CommandArgIterator;
 import org.apache.ignite.internal.commandline.argument.CommandArgUtils;
@@ -47,7 +47,7 @@ public class SnapshotRestoreCommand extends SnapshotSubcommand {
     }
 
     /** {@inheritDoc} */
-    @Override public Object execute(GridClientConfiguration clientCfg, Logger log) throws Exception {
+    @Override public Object execute(GridClientConfiguration clientCfg, IgniteLogger log) throws Exception {
         explainDeprecatedOptions(cmdArg, log);
 
         return super.execute(clientCfg, log);
@@ -57,7 +57,7 @@ public class SnapshotRestoreCommand extends SnapshotSubcommand {
      * @param cmdArg Command argument.
      * @param log Logger.
      */
-    private void explainDeprecatedOptions(Object cmdArg, Logger log) {
+    private void explainDeprecatedOptions(Object cmdArg, IgniteLogger log) {
         VisorSnapshotRestoreTaskAction action = ((VisorSnapshotRestoreTaskArg)cmdArg).jobAction();
 
         if (action == null)
@@ -140,7 +140,7 @@ public class SnapshotRestoreCommand extends SnapshotSubcommand {
     }
 
     /** {@inheritDoc} */
-    @Override public void printUsage(Logger log) {
+    @Override public void printUsage(IgniteLogger log) {
         Map<String, String> params = generalUsageOptions();
         Map<String, String> startParams = new LinkedHashMap<>(params);
 

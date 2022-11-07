@@ -253,7 +253,8 @@ public class SnapshotMetadata implements Serializable {
             snpName.equals(meta.snpName) &&
             consId.equals(meta.consId) &&
             Objects.equals(grpIds, meta.grpIds) &&
-            Objects.equals(bltNodes, meta.bltNodes);
+            Objects.equals(bltNodes, meta.bltNodes) &&
+            Arrays.equals(masterKeyDigest, meta.masterKeyDigest);
     }
 
     /** {@inheritDoc} */

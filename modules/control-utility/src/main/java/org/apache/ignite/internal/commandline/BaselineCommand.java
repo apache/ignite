@@ -26,9 +26,9 @@ import java.util.Optional;
 import java.util.Set;
 import java.util.UUID;
 import java.util.function.Function;
-import java.util.logging.Logger;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
+import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.internal.client.GridClient;
 import org.apache.ignite.internal.client.GridClientConfiguration;
 import org.apache.ignite.internal.client.GridClientNode;
@@ -62,7 +62,7 @@ public class BaselineCommand extends AbstractCommand<BaselineArguments> {
     private BaselineArguments baselineArgs;
 
     /** {@inheritDoc} */
-    @Override public void printUsage(Logger logger) {
+    @Override public void printUsage(IgniteLogger logger) {
         final String constistIds = "consistentId1[,consistentId2,....,consistentIdN]";
 
         usage(logger, "Print cluster baseline topology:", BASELINE,
@@ -93,7 +93,7 @@ public class BaselineCommand extends AbstractCommand<BaselineArguments> {
      * @param clientCfg Client configuration.
      * @throws Exception If failed to execute baseline action.
      */
-    @Override public Object execute(GridClientConfiguration clientCfg, Logger logger) throws Exception {
+    @Override public Object execute(GridClientConfiguration clientCfg, IgniteLogger logger) throws Exception {
         try (GridClient client = Command.startClient(clientCfg)) {
             UUID coordinatorId = client.compute()
                 //Only non client node can be coordinator.
@@ -114,8 +114,8 @@ public class BaselineCommand extends AbstractCommand<BaselineArguments> {
             baselinePrint0(res, logger);
         }
         catch (Throwable e) {
-            logger.severe("Failed to execute baseline command='" + baselineArgs.getCmd().text() + "'");
-            logger.severe(CommandLogger.errorMessage(e));
+            logger.error("Failed to execute baseline command='" + baselineArgs.getCmd().text() + "'");
+            logger.error(CommandLogger.errorMessage(e));
 
             throw e;
         }
@@ -147,7 +147,7 @@ public class BaselineCommand extends AbstractCommand<BaselineArguments> {
      *
      * @param res Task result with baseline topology.
      */
-    private void baselinePrint0(VisorBaselineTaskResult res, Logger logger) {
+    private void baselinePrint0(VisorBaselineTaskResult res, IgniteLogger logger) {
         logger.info("Cluster state: " + (res.isActive() ? "active" : "inactive"));
         logger.info("Current topology version: " + res.getTopologyVersion());
         VisorBaselineAutoAdjustSettings autoAdjustSettings = res.getAutoAdjustSettings();
