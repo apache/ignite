@@ -22,6 +22,7 @@ import java.util.UUID;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.atomic.AtomicBoolean;
 import org.apache.ignite.Ignite;
+import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteDataStreamer;
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.configuration.CacheConfiguration;
@@ -33,16 +34,18 @@ import org.apache.ignite.events.EventType;
 import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.TestRecordingCommunicationSpi;
+import org.apache.ignite.internal.processors.cache.verify.IdleVerifyResultV2;
 import org.apache.ignite.internal.processors.datastreamer.DataStreamerRequest;
 import org.apache.ignite.internal.util.typedef.G;
 import org.junit.Test;
 
+import static org.apache.ignite.IgniteDataStreamer.DFLT_PARALLEL_OPS_MULTIPLIER;
 import static org.apache.ignite.cluster.ClusterState.ACTIVE;
 import static org.apache.ignite.testframework.GridTestUtils.assertThrows;
 import static org.apache.ignite.testframework.GridTestUtils.runAsync;
 
 /**
- * Tests snapshot is consistent or snapshot process produces proper warning.
+ * Tests snapshot is consistent or snapshot process produces proper warning with concurrent streaming.
  */
 public class IgniteClusterSnapshotStreamerTest extends AbstractSnapshotSelfTest {
     /** */
@@ -88,35 +91,35 @@ public class IgniteClusterSnapshotStreamerTest extends AbstractSnapshotSelfTest 
     }
 
     /**
-     * Tests snapshot consistency wnen streamer starts before snapshot. Default receiver.
+     * Tests snapshot warning wnen streamer is working during snapshot creation. Default receiver.
      */
     @Test
     public void testStreamerWhileSnapshotDefault() throws Exception {
-        doTestDataStreamerWhileSnapshot( false);
+        doTestStreamerWhileSnapshot( false);
     }
 
     /**
-     * Tests snapshot consistency wnen streamer starts before snapshot. Overwriting receiver.
+     * Tests snapshot warning wnen streamer is working during snapshot creation. Overwriting receiver.
      */
     @Test
     public void testStreamerWhileSnapshotOverwriting() throws Exception {
-        doTestDataStreamerWhileSnapshot( true);
+        doTestStreamerWhileSnapshot( true);
     }
 
     /**
-     * Tests snapshot consistency when streamer failed or canceled before snapshot. Default receiver.
+     * Tests snapshot warning when streamer failed or canceled before snapshot. Default receiver.
      */
     @Test
-    public void testDsFailsLongAgoDefault() throws Exception {
-        doTestDsFailsBeforeSnp(false);
+    public void testStreamerFailsLongAgoDefault() throws Exception {
+        doTestStreamerFailsBeforeSnp(false);
     }
 
     /**
-     * Tests snapshot consistency when streamer failed or canceled before snapshot. Overwriting receiver.
+     * Tests snapshot warning when streamer failed or canceled before snapshot. Overwriting receiver.
      */
     @Test
-    public void testDsFailsLongAgoOverwriting() throws Exception {
-        doTestDsFailsBeforeSnp( true);
+    public void testStreamerFailsLongAgoOverwriting() throws Exception {
+        doTestStreamerFailsBeforeSnp( true);
     }
 
     /**
@@ -196,35 +199,42 @@ public class IgniteClusterSnapshotStreamerTest extends AbstractSnapshotSelfTest 
     }
 
     /**
-     * Tests snapshot process throws warning if required.
+     * Tests snapshot warning wnen streamer is working during snapshot creation.
      *
      * @param allowOverwrite 'allowOverwrite' setting.
      */
-    private void doTestDataStreamerWhileSnapshot(boolean allowOverwrite) throws Exception {
-        AtomicBoolean stopLoading = new AtomicBoolean(false);
+    private void doTestStreamerWhileSnapshot(boolean allowOverwrite) throws Exception {
+        AtomicBoolean stopLoading = new AtomicBoolean();
+
+        TestRecordingCommunicationSpi cm = (TestRecordingCommunicationSpi)client.configuration().getCommunicationSpi();
 
         IgniteInternalFuture<?> loadFut = runLoad(client, allowOverwrite, stopLoading);
 
+        cm.blockMessages(DataStreamerRequest.class, grid(0).name());
+
+        cm.waitForBlocked(DFLT_PARALLEL_OPS_MULTIPLIER * Runtime.getRuntime().availableProcessors());
+
         try {
             if (allowOverwrite)
-                grid(0).snapshot().createSnapshot(SNAPSHOT_NAME).get();
+                createAndCheckSnapshot(null, null);
             else {
-                assertThrows(null, () -> snpMgr.createSnapshot(SNAPSHOT_NAME).get(),
-                    IgniteException.class, DataStreamerUpdatesHandler.WRN_MSG);
+                createAndCheckSnapshot(DataStreamerUpdatesHandler.WRN_MSG,
+                    SnapshotPartitionsFastVerifyHandler.WRN_MSG_BASE);
             }
         }
         finally {
+            cm.stopBlock();
             stopLoading.set(true);
             loadFut.get();
         }
     }
 
     /**
-     * Tests snapshot consistency when streamer failed or canceled before snapshot.
+     * Tests snapshot warning when streamer failed or canceled before snapshot.
      *
      * @param allowOverwrite 'allowOverwrite' setting.
      */
-    private void doTestDsFailsBeforeSnp(boolean allowOverwrite) throws Exception {
+    private void doTestStreamerFailsBeforeSnp(boolean allowOverwrite) throws Exception {
         TestRecordingCommunicationSpi cm = (TestRecordingCommunicationSpi)client.configuration().getCommunicationSpi();
 
         UUID clientId = client.localNode().id();
@@ -246,30 +256,46 @@ public class IgniteClusterSnapshotStreamerTest extends AbstractSnapshotSelfTest 
 
         cm.blockMessages(DataStreamerRequest.class, grid(0).name());
 
-        // This DataStreamer is only to get not hard-coded number of per node batches.
-        try (IgniteDataStreamer<?, ?> ds = client.dataStreamer(DEFAULT_CACHE_NAME)) {
-            cm.waitForBlocked(ds.perNodeParallelOperations());
-        }
+        cm.waitForBlocked(DFLT_PARALLEL_OPS_MULTIPLIER * Runtime.getRuntime().availableProcessors());
 
         runAsync(() -> stopGrid(client.name(), true));
 
         nodeGoneLatch.await();
 
+        cm.stopBlock();
         stopLoading.set(true);
-
-        try {
-            loadFut.get();
-        }
-        catch (Exception ignored) {
-            // No-op;
-        }
+        loadFut.cancel();
 
         if (allowOverwrite)
-            grid(0).snapshot().createSnapshot(SNAPSHOT_NAME).get();
+            createAndCheckSnapshot(null, null);
         else {
-            assertThrows(null, () -> snpMgr.createSnapshot(SNAPSHOT_NAME).get(),
-                IgniteException.class, SnapshotPartitionsFastVerifyHandler.WRN_MSG_BASE);
+            createAndCheckSnapshot(SnapshotPartitionsFastVerifyHandler.WRN_MSG_BASE,
+                DataStreamerUpdatesHandler.WRN_MSG);
         }
+    }
+
+    /** */
+    private void createAndCheckSnapshot(String expectedWrn, String notExpectedWrn) throws IgniteCheckedException {
+        assert notExpectedWrn == null || expectedWrn != null;
+
+        if (expectedWrn == null)
+            snpMgr.createSnapshot(SNAPSHOT_NAME, null).get();
+        else {
+            Throwable snpWrn = assertThrows(
+                null,
+                () -> snpMgr.createSnapshot(SNAPSHOT_NAME, null).get(),
+                IgniteException.class,
+                expectedWrn
+            );
+
+            if (notExpectedWrn != null)
+                assertTrue(!snpWrn.getMessage().contains(notExpectedWrn));
+        }
+
+        IdleVerifyResultV2 checkRes = snpMgr.checkSnapshot(SNAPSHOT_NAME, null).get();
+
+        assertTrue(checkRes.exceptions().isEmpty());
+        assertTrue((expectedWrn != null) == checkRes.hasConflicts());
     }
 
     /**

@@ -58,7 +58,7 @@ public class SnapshotPartitionsFastVerifyHandler extends SnapshotPartitionsVerif
     /** {@inheritDoc} */
     @Override public Map<PartitionKeyV2, PartitionHashRecordV2> invoke(
         SnapshotHandlerContext opCtx) throws IgniteCheckedException {
-        return super.invoke(opCtx);
+        return opCtx.streamerWarning() ? Collections.emptyMap() : super.invoke(opCtx);
     }
 
     /** {@inheritDoc} */
