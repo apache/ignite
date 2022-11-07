@@ -95,7 +95,13 @@ import org.apache.ignite.internal.processors.cache.persistence.db.IgniteCacheGro
 import org.apache.ignite.internal.processors.cache.persistence.diagnostic.pagelocktracker.dumpprocessors.ToFileDumpProcessor;
 import org.apache.ignite.internal.processors.cache.persistence.file.FileIO;
 import org.apache.ignite.internal.processors.cache.persistence.file.FileIOFactory;
+import org.apache.ignite.internal.processors.cache.persistence.snapshot.DataStreamerUpdatesHandler;
 import org.apache.ignite.internal.processors.cache.persistence.snapshot.IgniteSnapshotManager;
+import org.apache.ignite.internal.processors.cache.persistence.snapshot.SnapshotHandler;
+import org.apache.ignite.internal.processors.cache.persistence.snapshot.SnapshotHandlerContext;
+import org.apache.ignite.internal.processors.cache.persistence.snapshot.SnapshotHandlerResult;
+import org.apache.ignite.internal.processors.cache.persistence.snapshot.SnapshotHandlerType;
+import org.apache.ignite.internal.processors.cache.persistence.snapshot.SnapshotHandlerWarningException;
 import org.apache.ignite.internal.processors.cache.transactions.IgniteInternalTx;
 import org.apache.ignite.internal.processors.cache.transactions.IgniteTxEntry;
 import org.apache.ignite.internal.processors.cache.transactions.TransactionProxyImpl;
@@ -123,6 +129,9 @@ import org.apache.ignite.lang.IgniteFuture;
 import org.apache.ignite.lang.IgniteInClosure;
 import org.apache.ignite.lang.IgnitePredicate;
 import org.apache.ignite.lang.IgniteUuid;
+import org.apache.ignite.plugin.AbstractTestPluginProvider;
+import org.apache.ignite.plugin.ExtensionRegistry;
+import org.apache.ignite.plugin.PluginContext;
 import org.apache.ignite.plugin.extensions.communication.Message;
 import org.apache.ignite.spi.communication.tcp.TcpCommunicationSpi;
 import org.apache.ignite.spi.metric.LongMetric;
@@ -3055,6 +3064,64 @@ public class GridCommandHandlerTest extends GridCommandHandlerClusterPerMethodAb
     @Test
     public void testClusterSnapshotCreateSynchronously() throws Exception {
         doClusterSnapshotCreate(true);
+    }
+
+    /**
+     * Test that 'not OK' status of snapshot operation is set if the operation produces a warning.
+     *
+     * @throws Exception If failed.
+     */
+    @Test
+    public void testClusterCreateSnapshotWarning() throws Exception {
+        IgniteConfiguration cfg = getConfiguration(getTestIgniteInstanceName(0));
+        cfg.getConnectorConfiguration().setHost("localhost");
+
+        cfg.setPluginProviders(new AbstractTestPluginProvider() {
+            /** {@inheritDoc} */
+            @Override public void initExtensions(PluginContext ctx, ExtensionRegistry registry) {
+                super.initExtensions(ctx, registry);
+
+                // Simulates warning occurs at snapshot creation.
+                registry.registerExtension(SnapshotHandler.class, new SnapshotHandler<Void>() {
+                    /** {@inheritDoc} */
+                    @Override public SnapshotHandlerType type() {
+                        return SnapshotHandlerType.CREATE;
+                    }
+
+                    /** {@inheritDoc} */
+                    @Override public void complete(String name,
+                        Collection<SnapshotHandlerResult<Void>> results) throws Exception {
+                        throw new SnapshotHandlerWarningException(DataStreamerUpdatesHandler.WRN_MSG);
+                    }
+
+                    /** {@inheritDoc} */
+                    @Nullable @Override public Void invoke(SnapshotHandlerContext ctx) {
+                        return null;
+                    }
+                });
+            }
+
+            /** {@inheritDoc} */
+            @Override public String name() {
+                return "SnapshotWarningSimulationPlugin";
+            }
+        });
+
+        IgniteEx ig = startGrid(cfg);
+        ig.cluster().state(ACTIVE);
+        createCacheAndPreload(ig, 100);
+
+        injectTestSystemOut();
+
+        CommandHandler hnd = new CommandHandler();
+
+        List<String> args = new ArrayList<>(F.asList("--snapshot", "create", "testDsSnp", "--sync"));
+
+        int code = execute(hnd, args);
+
+        assertEquals(EXIT_CODE_UNEXPECTED_ERROR, code);
+
+        assertContains(log, testOut.toString(), DataStreamerUpdatesHandler.WRN_MSG);
     }
 
     /**
