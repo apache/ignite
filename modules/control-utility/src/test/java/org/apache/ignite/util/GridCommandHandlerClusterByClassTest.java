@@ -476,12 +476,18 @@ public class GridCommandHandlerClusterByClassTest extends GridCommandHandlerClus
 
         assertEquals(EXIT_CODE_OK, execute("--cache", "idle_verify"));
 
-        assertContains(log, testOut.toString(), "conflict partitions");
+        String out = testOut.toString();
 
         String summaryStr = "Total:" + nl() + DEFAULT_CACHE_NAME + "other (5)" + nl() + "7,8,9,10,11" + nl() + nl() +
             DEFAULT_CACHE_NAME + " (6)" + nl() + "1,2,3,4,5,6" + nl();
 
-        assertContains(log, testOut.toString(), summaryStr);
+        assertContains(log, out, "conflict partitions");
+        assertContains(log, out, summaryStr);
+
+        assertTrue(
+            "Must contain partHash and partVerHash",
+            Pattern.compile("partHash=-?[0-9]+, partVerHash=-?[0-9]+").matcher(out).find()
+        );
     }
 
     /** */
