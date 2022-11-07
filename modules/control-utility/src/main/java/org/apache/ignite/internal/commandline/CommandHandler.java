@@ -142,7 +142,7 @@ public class CommandHandler {
                 U.initLogger(null, appName, null, U.defaultWorkDirectory()).getLogger(cls.getName() + "Log");
 
             if (log instanceof IgniteLoggerEx)
-                ((IgniteLoggerEx)log).addConsoleAppender();
+                ((IgniteLoggerEx)log).addConsoleAppender(true);
 
             return log;
         }
