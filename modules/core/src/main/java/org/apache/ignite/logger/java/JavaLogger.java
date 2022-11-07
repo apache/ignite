@@ -356,7 +356,7 @@ public class JavaLogger implements IgniteLoggerEx {
     }
 
     /** {@inheritDoc} */
-    @Override public void addConsoleAppender() {
+    @Override public void addConsoleAppender(boolean clearOutput) {
         impl.addHandler(new StreamHandler(System.out, new Formatter() {
             @Override public String format(LogRecord record) {
                 return record.getMessage() + U.nl();

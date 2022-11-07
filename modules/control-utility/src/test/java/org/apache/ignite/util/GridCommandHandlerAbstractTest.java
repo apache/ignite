@@ -212,7 +212,7 @@ public abstract class GridCommandHandlerAbstractTest extends GridCommonAbstractT
     public static IgniteLogger createTestLogger() {
         JavaLogger logger = new JavaLogger(initLogger(null), false);
 
-        logger.addConsoleAppender();
+        logger.addConsoleAppender(true);
 
         return logger;
     }
