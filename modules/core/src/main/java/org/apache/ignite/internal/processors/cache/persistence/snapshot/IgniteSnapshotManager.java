@@ -1061,7 +1061,7 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
     public void streamerWarning() {
         SnapshotOperationRequest snpTask = currentCreateRequest();
 
-        if (snpTask != null)
+        if (snpTask != null && !snpTask.streamerWarning())
             snpTask.streamerWarning(true);
     }
 

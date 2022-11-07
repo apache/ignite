@@ -91,27 +91,27 @@ public class IgniteClusterSnapshotStreamerTest extends AbstractSnapshotSelfTest 
     }
 
     /**
-     * Tests snapshot warning wnen streamer is working during snapshot creation. Default receiver.
+     * Tests snapshot warning when streamer is working during snapshot creation. Default receiver.
      */
     @Test
     public void testStreamerWhileSnapshotDefault() throws Exception {
-        doTestStreamerWhileSnapshot( false);
+        doTestDataStreamerWhileSnapshot(false);
     }
 
     /**
-     * Tests snapshot warning wnen streamer is working during snapshot creation. Overwriting receiver.
+     * Tests snapshot warning when streamer is working during snapshot creation. Overwriting receiver.
      */
     @Test
     public void testStreamerWhileSnapshotOverwriting() throws Exception {
-        doTestStreamerWhileSnapshot( true);
+        doTestDataStreamerWhileSnapshot(true);
     }
 
     /**
      * Tests snapshot warning when streamer failed or canceled before snapshot. Default receiver.
      */
     @Test
-    public void testStreamerFailsLongAgoDefault() throws Exception {
-        doTestStreamerFailsBeforeSnp(false);
+    public void testStreamerFailedLongAgoDefault() throws Exception {
+        doTestDataStreamerFailedBeforeSnp(false);
     }
 
     /**
@@ -119,7 +119,7 @@ public class IgniteClusterSnapshotStreamerTest extends AbstractSnapshotSelfTest 
      */
     @Test
     public void testStreamerFailsLongAgoOverwriting() throws Exception {
-        doTestStreamerFailsBeforeSnp( true);
+        doTestDataStreamerFailedBeforeSnp(true);
     }
 
     /**
@@ -199,11 +199,11 @@ public class IgniteClusterSnapshotStreamerTest extends AbstractSnapshotSelfTest 
     }
 
     /**
-     * Tests snapshot warning wnen streamer is working during snapshot creation.
+     * Tests snapshot warning when streamer is working during snapshot creation.
      *
      * @param allowOverwrite 'allowOverwrite' setting.
      */
-    private void doTestStreamerWhileSnapshot(boolean allowOverwrite) throws Exception {
+    private void doTestDataStreamerWhileSnapshot(boolean allowOverwrite) throws Exception {
         AtomicBoolean stopLoading = new AtomicBoolean();
 
         TestRecordingCommunicationSpi cm = (TestRecordingCommunicationSpi)client.configuration().getCommunicationSpi();
@@ -234,7 +234,7 @@ public class IgniteClusterSnapshotStreamerTest extends AbstractSnapshotSelfTest 
      *
      * @param allowOverwrite 'allowOverwrite' setting.
      */
-    private void doTestStreamerFailsBeforeSnp(boolean allowOverwrite) throws Exception {
+    private void doTestDataStreamerFailedBeforeSnp(boolean allowOverwrite) throws Exception {
         TestRecordingCommunicationSpi cm = (TestRecordingCommunicationSpi)client.configuration().getCommunicationSpi();
 
         UUID clientId = client.localNode().id();
