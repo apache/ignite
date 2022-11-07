@@ -18,6 +18,7 @@
 package org.apache.ignite.internal.processors.cache.persistence.snapshot;
 
 import org.apache.ignite.IgniteCheckedException;
+import org.jetbrains.annotations.Nullable;
 
 /**
  * Snapshot operation warning. Warnings do not interrupt snapshot process but raise exception at the end to make the
@@ -27,8 +28,33 @@ public class SnapshotHandlerWarningException extends IgniteCheckedException {
     /** Serialization version. */
     private static final long serialVersionUID = 0L;
 
-    /** */
-    public SnapshotHandlerWarningException(String wrnMsg) {
+    /** Warning exclusion type. */
+    private final Class<? extends SnapshotHandler<?>> exclusionHndType;
+
+    /** Warning producer type. */
+    private final Class<? extends SnapshotHandler<?>> hndType;
+
+    /**
+     * @param wrnMsg Warning message.
+     * @param hndType Warning handler type.
+     * @param exclHndType Exclusion handler type. Tells to exclude this warning if another warning of snapshot
+     *                    handler type @{code exclHndType} is registered.
+     */
+    public SnapshotHandlerWarningException(String wrnMsg, Class<? extends SnapshotHandler<?>> hndType,
+        @Nullable Class<? extends SnapshotHandler<?>> exclHndType) {
         super(wrnMsg);
+
+        this.hndType = hndType;
+        this.exclusionHndType = exclHndType;
+    }
+
+    /** */
+    public Class<? extends SnapshotHandler<?>> exclusionHandlerType() {
+        return exclusionHndType;
+    }
+
+    /** */
+    public Class<? extends SnapshotHandler<?>> handlerType() {
+        return hndType;
     }
 }

@@ -1018,11 +1018,18 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
             if (clusterSnpFut != null) {
                 if (endFail.isEmpty() && snpReq.error() == null) {
                     if (!F.isEmpty(snpReq.warnings())) {
-                        IgniteException wrn = new IgniteException("Snapshot task '" + snpReq.snapshotName() +
-                            "' completed with the warnings:" + U.nl() + '\t' + String.join(U.nl() + '\t',
-                            snpReq.warnings()));
+                        Set<Class<? extends SnapshotHandler<?>>> wrnsTypes = snpReq.warnings().stream()
+                            .map(SnapshotHandlerWarningException::handlerType).collect(Collectors.toSet());
 
-                        clusterSnpFut.onDone(wrn);
+                        List<String> resWrns = snpReq.warnings().stream()
+                            .filter(wrn -> !wrnsTypes.contains(wrn.exclusionHandlerType()))
+                            .map(Throwable::getMessage).collect(Collectors.toList());
+
+                        IgniteException procWrnEx = new IgniteException("Snapshot task '" + snpReq.snapshotName() +
+                            "' completed with the warnings:" + U.nl() + '\t' + String.join(U.nl() + '\t',
+                            resWrns));
+
+                        clusterSnpFut.onDone(procWrnEx);
                     }
                     else
                         clusterSnpFut.onDone();
@@ -2287,7 +2294,7 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
             String snpName,
             Map<String, List<SnapshotHandlerResult<?>>> res,
             Collection<UUID> reqNodes,
-            Consumer<List<String>> wrnsHnd
+            Consumer<List<SnapshotHandlerWarningException>> wrnsHnd
         ) throws Exception {
             if (res.isEmpty())
                 return;
@@ -2301,7 +2308,7 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
                     ", rmtHnds=" + res.keySet() + "].");
             }
 
-            List<String> wrns = new ArrayList<>();
+            List<SnapshotHandlerWarningException> wrns = new ArrayList<>();
 
             for (SnapshotHandler hnd : hnds) {
                 List<SnapshotHandlerResult<?>> nodesRes = res.get(hnd.getClass().getName());
@@ -2321,7 +2328,7 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
                     hnd.complete(snpName, nodesRes);
                 }
                 catch (SnapshotHandlerWarningException e) {
-                    wrns.add(e.getMessage());
+                    wrns.add(e);
                 }
             }
 

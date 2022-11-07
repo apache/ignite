@@ -57,15 +57,10 @@ public class SnapshotPartitionsFastVerifyHandler extends SnapshotPartitionsVerif
     }
 
     /** {@inheritDoc} */
-    @Override public Map<PartitionKeyV2, PartitionHashRecordV2> invoke(
-        SnapshotHandlerContext opCtx) throws IgniteCheckedException {
-        return opCtx.streamerWarning() ? Collections.emptyMap() : super.invoke(opCtx);
-    }
-
-    /** {@inheritDoc} */
     @Override protected PartitionHashRecordV2 partHash(PartitionKeyV2 key, Object updCntr, Object consId,
         GridDhtPartitionState state, boolean isPrimary, long partSize, GridIterator<CacheDataRow> it)
         throws IgniteCheckedException {
+        // Skips hash calculation.
         return super.partHash(
             key,
             updCntr,
@@ -137,8 +132,17 @@ public class SnapshotPartitionsFastVerifyHandler extends SnapshotPartitionsVerif
             }
         );
 
-        if (!wrnGroups.isEmpty())
-            throw new SnapshotHandlerWarningException("Cache partitions differ for cache groups " +
-                wrnGroups.stream().map(String::valueOf).collect(Collectors.joining(", ")) + ". " + WRN_MSG_BASE);
+        if (!wrnGroups.isEmpty()) {
+            throw new SnapshotHandlerWarningException(warningMessage(wrnGroups), getClass(),
+                DataStreamerUpdatesHandler.class);
+        }
+    }
+
+    /**
+     * @return The snapshot quick verification warning message for {@code cacheGrps}.
+     */
+    private static String warningMessage(Collection<Integer> cacheGrps) {
+        return "Cache partitions differ for cache groups " + cacheGrps.stream().map(String::valueOf)
+            .collect(Collectors.joining(", ")) + ". " + WRN_MSG_BASE;
     }
 }

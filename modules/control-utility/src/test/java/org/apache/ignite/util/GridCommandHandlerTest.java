@@ -3095,7 +3095,7 @@ public class GridCommandHandlerTest extends GridCommandHandlerClusterPerMethodAb
                     /** {@inheritDoc} */
                     @Override public void complete(String name,
                         Collection<SnapshotHandlerResult<Void>> results) throws Exception {
-                        throw new SnapshotHandlerWarningException(DataStreamerUpdatesHandler.WRN_MSG);
+                        throw new SnapshotHandlerWarningException(DataStreamerUpdatesHandler.WRN_MSG, null);
                     }
 
                     /** {@inheritDoc} */
