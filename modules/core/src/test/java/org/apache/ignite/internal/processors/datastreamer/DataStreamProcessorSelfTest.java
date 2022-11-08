@@ -68,6 +68,7 @@ import org.apache.ignite.testframework.MvccFeatureChecker;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.jetbrains.annotations.Nullable;
 import org.junit.Test;
+
 import static java.util.concurrent.TimeUnit.MILLISECONDS;
 import static org.apache.ignite.cache.CacheAtomicityMode.TRANSACTIONAL;
 import static org.apache.ignite.cache.CacheMode.PARTITIONED;
@@ -758,14 +759,14 @@ public class DataStreamProcessorSelfTest extends GridCommonAbstractTest {
 
             final IgniteCache<Integer, Integer> c = g.cache(DEFAULT_CACHE_NAME);
 
-            final IgniteDataStreamer<Integer, Object> ldr = g.dataStreamer(DEFAULT_CACHE_NAME);
+            final IgniteDataStreamer<Integer, Integer> ldr = g.dataStreamer(DEFAULT_CACHE_NAME);
 
             ldr.receiver(DataStreamerCacheUpdaters.batchedSorted());
 
             ldr.perNodeBufferSize(10);
 
             for (int i = 0; i < 9; i++)
-                ldr.addData(i, new TestObject(i));
+                ldr.addData(i, i);
 
             assertTrue(c.localSize() == 0);
 
