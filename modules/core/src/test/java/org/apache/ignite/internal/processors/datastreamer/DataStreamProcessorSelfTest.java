@@ -761,8 +761,6 @@ public class DataStreamProcessorSelfTest extends GridCommonAbstractTest {
 
             final IgniteDataStreamer<Integer, Integer> ldr = g.dataStreamer(DEFAULT_CACHE_NAME);
 
-            ldr.receiver(DataStreamerCacheUpdaters.batchedSorted());
-
             ldr.perNodeBufferSize(10);
 
             for (int i = 0; i < 9; i++)
