@@ -129,6 +129,12 @@ import static org.apache.ignite.internal.GridTopic.TOPIC_DATASTREAM;
  */
 @SuppressWarnings("unchecked")
 public class DataStreamerImpl<K, V> implements IgniteDataStreamer<K, V>, Delayed {
+    /** */
+    public static final String WRN_INCONSISTENT_UPDATES = "The Data Streamer loads data with 'allowOverwrite' set " +
+        "to false. It doesn't guarantee data consistency until successfully finishes. Streamer cancelation or " +
+        "streamer node failure can cause data inconsistency. Concurrently created snapshot may contain inconsistent " +
+        "data and might not be restored entirely.";
+
     /** Per thread buffer size. */
     private int bufLdrSzPerThread = DFLT_PER_THREAD_BUFFER_SIZE;
 
@@ -285,6 +291,9 @@ public class DataStreamerImpl<K, V> implements IgniteDataStreamer<K, V>, Delayed
 
     /** */
     private final AtomicBoolean remapOwning = new AtomicBoolean();
+
+    /** Flag to warn into the log only once if streamer is inconsistent until successfully finished. */
+    private final AtomicBoolean inconsistencyWarned = new AtomicBoolean();
 
     /**
      * @param ctx Grid kernal context.
@@ -641,6 +650,9 @@ public class DataStreamerImpl<K, V> implements IgniteDataStreamer<K, V>, Delayed
         Collection entriesList;
 
         lock(false);
+
+        if (rcvr instanceof IsolatedUpdater && inconsistencyWarned.compareAndSet(false, true))
+            log.warning(WRN_INCONSISTENT_UPDATES);
 
         try {
             long threadId = Thread.currentThread().getId();
@@ -2255,7 +2267,7 @@ public class DataStreamerImpl<K, V> implements IgniteDataStreamer<K, V>, Delayed
             Collection<Integer> ignoredParts = new HashSet<>();
 
             try {
-                wrnSnapshot(cctx);
+                snapshotWarning(cctx);
 
                 for (Entry<KeyCacheObject, CacheObject> e : entries) {
                     cctx.shared().database().checkpointReadLock();
@@ -2368,13 +2380,13 @@ public class DataStreamerImpl<K, V> implements IgniteDataStreamer<K, V>, Delayed
         }
 
         /**
-         * Notifies snapshot process of inconsistent-by-nature Datastreamer updates.
+         * Sets the streamer warning flag to current snapshot process if it is active.
          *
          * @param cctx Cache context.
          */
-        private static void wrnSnapshot(GridCacheContext<?, ?> cctx) {
+        private static void snapshotWarning(GridCacheContext<?, ?> cctx) {
             if (cctx.group().persistenceEnabled())
-                cctx.kernalContext().cache().context().snapshotMgr().streamedUpdates();
+                cctx.kernalContext().cache().context().snapshotMgr().streamerWarning();
         }
     }
 

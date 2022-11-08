@@ -59,14 +59,22 @@ public class SnapshotOperationRequest implements Serializable {
     /** Exception occurred during snapshot operation processing. */
     private volatile Throwable err;
 
+    /**
+     * Snapshot operation warnings. Warnings do not interrupt snapshot process but raise exception at the end to make
+     * the operation status 'not OK' if no other error occured.
+     */
+    private volatile List<String> warnings;
+
+    /**
+     * Warning flag of concurrent inconsistent-by-nature streamer updates.
+     */
+    private transient volatile boolean streamerWrn;
+
     /** Flag indicating that the {@link DistributedProcessType#START_SNAPSHOT} phase has completed. */
     private transient volatile boolean startStageEnded;
 
     /** Snapshot process metadata. */
     private transient SnapshotMetadata meta;
-
-    /** Snapshot process warnings. */
-    private List<String> warnings;
 
     /** Operation start time. */
     private final long startTime;
@@ -172,20 +180,6 @@ public class SnapshotOperationRequest implements Serializable {
     }
 
     /**
-     * @return Snapshot metadata.
-     */
-    public SnapshotMetadata meta() {
-        return meta;
-    }
-
-    /**
-     * Stores snapshot metadata.
-     */
-    public void meta(SnapshotMetadata meta) {
-        this.meta = meta;
-    }
-
-    /**
      * @return Warnings of snapshot operation.
      */
     public List<String> warnings() {
@@ -197,6 +191,34 @@ public class SnapshotOperationRequest implements Serializable {
      */
     public void warnings(List<String> warnings) {
         this.warnings = warnings;
+    }
+
+    /**
+     * {@code True} If the streamer warning flag is set. {@code False} otherwise.
+     */
+    public boolean streamerWarning() {
+        return streamerWrn;
+    }
+
+    /**
+     * Sets the streamer warning flag.
+     */
+    public boolean streamerWarning(boolean val) {
+        return streamerWrn = val;
+    }
+
+    /**
+     * @return Snapshot metadata.
+     */
+    public SnapshotMetadata meta() {
+        return meta;
+    }
+
+    /**
+     * Stores snapshot metadata.
+     */
+    public void meta(SnapshotMetadata meta) {
+        this.meta = meta;
     }
 
     /** {@inheritDoc} */

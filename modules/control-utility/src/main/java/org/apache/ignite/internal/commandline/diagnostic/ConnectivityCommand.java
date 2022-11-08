@@ -24,8 +24,8 @@ import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
 import java.util.UUID;
-import java.util.logging.Logger;
 import java.util.stream.Collectors;
+import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.internal.client.GridClient;
 import org.apache.ignite.internal.client.GridClientConfiguration;
@@ -70,10 +70,10 @@ public class ConnectivityCommand implements Command<Void> {
     /**
      * Logger
      */
-    private Logger logger;
+    private IgniteLogger logger;
 
     /** {@inheritDoc} */
-    @Override public Object execute(GridClientConfiguration clientCfg, Logger logger) throws Exception {
+    @Override public Object execute(GridClientConfiguration clientCfg, IgniteLogger logger) throws Exception {
         this.logger = logger;
 
         Map<ClusterNode, VisorConnectivityResult> result;
@@ -179,7 +179,7 @@ public class ConnectivityCommand implements Command<Void> {
     }
 
     /** {@inheritDoc} */
-    @Override public void printUsage(Logger logger) {
+    @Override public void printUsage(IgniteLogger logger) {
         logger.info("View connectvity state of all nodes in cluster");
         logger.info(join(" ",
             UTILITY_NAME, DIAGNOSTIC, CONNECTIVITY,

@@ -17,7 +17,6 @@
 
 package org.apache.ignite.internal.commandline;
 
-import java.io.File;
 import java.time.Duration;
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
@@ -26,15 +25,10 @@ import java.util.Collections;
 import java.util.List;
 import java.util.Scanner;
 import java.util.UUID;
-import java.util.logging.FileHandler;
-import java.util.logging.Formatter;
-import java.util.logging.Handler;
-import java.util.logging.Level;
-import java.util.logging.LogRecord;
-import java.util.logging.Logger;
-import java.util.logging.StreamHandler;
 import java.util.stream.Collectors;
 import org.apache.ignite.IgniteCheckedException;
+import org.apache.ignite.IgniteException;
+import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.IgniteSystemProperties;
 import org.apache.ignite.internal.client.GridClientAuthenticationException;
 import org.apache.ignite.internal.client.GridClientClosedException;
@@ -44,18 +38,16 @@ import org.apache.ignite.internal.client.GridClientHandshakeException;
 import org.apache.ignite.internal.client.GridServerUnreachableException;
 import org.apache.ignite.internal.client.impl.connection.GridClientConnectionResetException;
 import org.apache.ignite.internal.client.ssl.GridSslBasicContextFactory;
+import org.apache.ignite.internal.logger.IgniteLoggerEx;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.X;
 import org.apache.ignite.internal.util.typedef.internal.SB;
 import org.apache.ignite.internal.util.typedef.internal.U;
-import org.apache.ignite.logger.java.JavaLoggerFileHandler;
-import org.apache.ignite.logger.java.JavaLoggerFormatter;
 import org.apache.ignite.plugin.security.SecurityCredentials;
 import org.apache.ignite.plugin.security.SecurityCredentialsBasicProvider;
 import org.apache.ignite.plugin.security.SecurityCredentialsProvider;
 import org.apache.ignite.ssl.SslContextFactory;
 import org.jetbrains.annotations.NotNull;
-import org.jetbrains.annotations.Nullable;
 
 import static java.lang.System.lineSeparator;
 import static java.util.Objects.nonNull;
@@ -118,7 +110,7 @@ public class CommandHandler {
     public static final String NULL = "null";
 
     /** JULs logger. */
-    private final Logger logger;
+    private final IgniteLogger logger;
 
     /** Session. */
     protected final String ses = U.id8(UUID.randomUUID());
@@ -144,58 +136,19 @@ public class CommandHandler {
     /**
      * @return prepared JULs logger.
      */
-    public static Logger setupJavaLogger(String appName, Class<?> cls) {
-        Logger result = initLogger(cls.getName() + "Log");
-
-        // Adding logging to file.
+    public static IgniteLogger setupJavaLogger(String appName, Class<?> cls) {
         try {
-            String absPathPattern =
-                new File(JavaLoggerFileHandler.logDirectory(U.defaultWorkDirectory()), appName + "-%g.log").getAbsolutePath();
+            IgniteLogger log =
+                U.initLogger(null, appName, null, U.defaultWorkDirectory()).getLogger(cls.getName() + "Log");
 
-            FileHandler fileHandler = new FileHandler(absPathPattern, 5 * 1024 * 1024, 5);
+            if (log instanceof IgniteLoggerEx)
+                ((IgniteLoggerEx)log).addConsoleAppender(true);
 
-            fileHandler.setFormatter(new JavaLoggerFormatter());
-
-            result.addHandler(fileHandler);
+            return log;
         }
-        catch (Exception e) {
-            System.out.println("Failed to configure logging to file");
+        catch (IgniteCheckedException e) {
+            throw new IgniteException(e);
         }
-
-        // Adding logging to console.
-        result.addHandler(setupStreamHandler());
-
-        return result;
-    }
-
-    /**
-     * @return StreamHandler with empty formatting
-     */
-    public static StreamHandler setupStreamHandler() {
-        return new StreamHandler(System.out, new Formatter() {
-            @Override public String format(LogRecord record) {
-                return record.getMessage() + "\n";
-            }
-        });
-    }
-
-    /**
-     * Initialises JULs logger with basic settings
-     * @param loggerName logger name. If {@code null} anonymous logger is returned.
-     * @return logger
-     */
-    public static Logger initLogger(@Nullable String loggerName) {
-        Logger result;
-
-        if (loggerName == null)
-            result = Logger.getAnonymousLogger();
-        else
-            result = Logger.getLogger(loggerName);
-
-        result.setLevel(Level.INFO);
-        result.setUseParentHandlers(false);
-
-        return result;
     }
 
     /**
@@ -208,7 +161,7 @@ public class CommandHandler {
     /**
      * @param logger Logger to use.
      */
-    public CommandHandler(Logger logger) {
+    public CommandHandler(IgniteLogger logger) {
         this.logger = logger;
     }
 
@@ -309,7 +262,7 @@ public class CommandHandler {
             return EXIT_CODE_OK;
         }
         catch (IllegalArgumentException e) {
-            logger.severe("Check arguments. " + errorMessage(e));
+            logger.error("Check arguments. " + errorMessage(e));
             logger.info("Command [" + commandName + "] finished with code: " + EXIT_CODE_INVALID_ARGUMENTS);
 
             if (verbose)
@@ -319,7 +272,7 @@ public class CommandHandler {
         }
         catch (Throwable e) {
             if (isAuthError(e)) {
-                logger.severe("Authentication error. " + errorMessage(e));
+                logger.error("Authentication error. " + errorMessage(e));
                 logger.info("Command [" + commandName + "] finished with code: " + ERR_AUTHENTICATION_FAILED);
 
                 if (verbose)
@@ -332,13 +285,13 @@ public class CommandHandler {
                 IgniteCheckedException cause = X.cause(e, IgniteCheckedException.class);
 
                 if (isConnectionClosedSilentlyException(e))
-                    logger.severe("Connection to cluster failed. Please check firewall settings and " +
+                    logger.error("Connection to cluster failed. Please check firewall settings and " +
                         "client and server are using the same SSL configuration.");
                 else {
                     if (isSSLMisconfigurationError(cause))
                         e = cause;
 
-                    logger.severe("Connection to cluster failed. " + errorMessage(e));
+                    logger.error("Connection to cluster failed. " + errorMessage(e));
 
                 }
 
@@ -353,7 +306,7 @@ public class CommandHandler {
             if (X.hasCause(e, IllegalArgumentException.class)) {
                 IllegalArgumentException iae = X.cause(e, IllegalArgumentException.class);
 
-                logger.severe("Check arguments. " + errorMessage(iae));
+                logger.error("Check arguments. " + errorMessage(iae));
                 logger.info("Command [" + commandName + "] finished with code: " + EXIT_CODE_INVALID_ARGUMENTS);
 
                 if (verbose)
@@ -362,7 +315,7 @@ public class CommandHandler {
                 return EXIT_CODE_INVALID_ARGUMENTS;
             }
 
-            logger.severe(errorMessage(e));
+            logger.error(errorMessage(e));
             logger.info("Command [" + commandName + "] finished with code: " + EXIT_CODE_UNEXPECTED_ERROR);
 
             err = e;
@@ -380,9 +333,8 @@ public class CommandHandler {
             logger.info("Control utility has completed execution at: " + endTime.format(formatter));
             logger.info("Execution time: " + diff.toMillis() + " ms");
 
-            Arrays.stream(logger.getHandlers())
-                  .filter(handler -> handler instanceof FileHandler)
-                  .forEach(Handler::close);
+            if (logger instanceof IgniteLoggerEx)
+                ((IgniteLoggerEx)logger).flush();
         }
     }
 

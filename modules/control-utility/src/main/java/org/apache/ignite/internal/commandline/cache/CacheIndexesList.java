@@ -22,9 +22,9 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.UUID;
-import java.util.logging.Logger;
 import java.util.regex.Pattern;
 import java.util.regex.PatternSyntaxException;
+import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.internal.client.GridClient;
 import org.apache.ignite.internal.client.GridClientConfiguration;
 import org.apache.ignite.internal.commandline.AbstractCommand;
@@ -53,7 +53,7 @@ public class CacheIndexesList extends AbstractCommand<CacheIndexesList.Arguments
     private Arguments args;
 
     /** {@inheritDoc} */
-    @Override public void printUsage(Logger logger) {
+    @Override public void printUsage(IgniteLogger logger) {
         String desc = "List all indexes that match specified filters.";
 
         Map<String, String> map = U.newLinkedHashMap(16);
@@ -80,7 +80,7 @@ public class CacheIndexesList extends AbstractCommand<CacheIndexesList.Arguments
     }
 
     /** {@inheritDoc} */
-    @Override public Object execute(GridClientConfiguration clientCfg, Logger logger) throws Exception {
+    @Override public Object execute(GridClientConfiguration clientCfg, IgniteLogger logger) throws Exception {
         Set<IndexListInfoContainer> taskRes;
 
         final UUID nodeId = args.nodeId;
@@ -225,9 +225,9 @@ public class CacheIndexesList extends AbstractCommand<CacheIndexesList.Arguments
      * Prints indexes info.
      *
      * @param res Set of indexes info to print.
-     * @param logger Logger to use.
+     * @param logger IgniteLogger to use.
      */
-    private void printIndexes(Set<IndexListInfoContainer> res, Logger logger) {
+    private void printIndexes(Set<IndexListInfoContainer> res, IgniteLogger logger) {
         List<IndexListInfoContainer> sorted = new ArrayList<>(res);
 
         sorted.sort(IndexListInfoContainer.comparator());

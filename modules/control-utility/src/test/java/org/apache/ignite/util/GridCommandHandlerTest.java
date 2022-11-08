@@ -44,14 +44,10 @@ import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicLong;
-import java.util.concurrent.atomic.AtomicReference;
 import java.util.concurrent.atomic.LongAdder;
 import java.util.function.BooleanSupplier;
 import java.util.function.Function;
 import java.util.function.UnaryOperator;
-import java.util.logging.LogRecord;
-import java.util.logging.Logger;
-import java.util.logging.StreamHandler;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 import java.util.stream.Collectors;
@@ -134,9 +130,6 @@ import org.apache.ignite.lang.IgniteFuture;
 import org.apache.ignite.lang.IgniteInClosure;
 import org.apache.ignite.lang.IgnitePredicate;
 import org.apache.ignite.lang.IgniteUuid;
-import org.apache.ignite.plugin.AbstractTestPluginProvider;
-import org.apache.ignite.plugin.ExtensionRegistry;
-import org.apache.ignite.plugin.PluginContext;
 import org.apache.ignite.plugin.extensions.communication.Message;
 import org.apache.ignite.spi.communication.tcp.TcpCommunicationSpi;
 import org.apache.ignite.spi.metric.LongMetric;
@@ -3075,7 +3068,7 @@ public class GridCommandHandlerTest extends GridCommandHandlerClusterPerMethodAb
     }
 
     /**
-     * Test 'not OK' status of snapshot operation producing a warning.
+     * Test that 'not OK' status of snapshot operation is set if the operation produces a warning.
      *
      * @throws Exception If failed.
      */
@@ -3084,16 +3077,12 @@ public class GridCommandHandlerTest extends GridCommandHandlerClusterPerMethodAb
         IgniteConfiguration cfg = getConfiguration(getTestIgniteInstanceName(0));
         cfg.getConnectorConfiguration().setHost("localhost");
 
-        String targetMsg = U.field(DataStreamerUpdatesHandler.class, "WRN_MSG");
-
-        AtomicReference<Exception> simulationEx = new AtomicReference<>();
-
         cfg.setPluginProviders(new AbstractTestPluginProvider() {
             /** {@inheritDoc} */
             @Override public void initExtensions(PluginContext ctx, ExtensionRegistry registry) {
                 super.initExtensions(ctx, registry);
 
-                // Simulates Datastreamer check warning.
+                // Simulates warning occurs at snapshot creation.
                 registry.registerExtension(SnapshotHandler.class, new SnapshotHandler<Void>() {
                     /** {@inheritDoc} */
                     @Override public SnapshotHandlerType type() {
@@ -3102,8 +3091,8 @@ public class GridCommandHandlerTest extends GridCommandHandlerClusterPerMethodAb
 
                     /** {@inheritDoc} */
                     @Override public void complete(String name,
-                        Collection<SnapshotHandlerResult<Void>> results) throws SnapshotHandlerWarningException, Exception {
-                        throw new SnapshotHandlerWarningException(targetMsg);
+                        Collection<SnapshotHandlerResult<Void>> results) throws Exception {
+                        throw new SnapshotHandlerWarningException(DataStreamerUpdatesHandler.WRN_MSG);
                     }
 
                     /** {@inheritDoc} */
@@ -3123,30 +3112,17 @@ public class GridCommandHandlerTest extends GridCommandHandlerClusterPerMethodAb
         ig.cluster().state(ACTIVE);
         createCacheAndPreload(ig, 100);
 
-        AtomicBoolean wrnFound = new AtomicBoolean();
+        injectTestSystemOut();
 
-        Logger log = CommandHandler.initLogger("testSnpWarnResult");
-
-        log.addHandler(new StreamHandler() {
-            /** {@inheritDoc} */
-            @Override public synchronized void publish(LogRecord record) {
-                if (record.getMessage() != null && !wrnFound.get() && record.getMessage().contains(targetMsg))
-                    wrnFound.set(true);
-            }
-        });
-
-        CommandHandler hnd = new CommandHandler(log);
+        CommandHandler hnd = new CommandHandler();
 
         List<String> args = new ArrayList<>(F.asList("--snapshot", "create", "testDsSnp", "--sync"));
 
         int code = execute(hnd, args);
 
-        if (simulationEx.get() != null)
-            throw simulationEx.get();
-
         assertEquals(EXIT_CODE_UNEXPECTED_ERROR, code);
 
-        assertTrue("Snapshot operation warning not found.", wrnFound.get());
+        assertContains(log, testOut.toString(), DataStreamerUpdatesHandler.WRN_MSG);
     }
 
     /**

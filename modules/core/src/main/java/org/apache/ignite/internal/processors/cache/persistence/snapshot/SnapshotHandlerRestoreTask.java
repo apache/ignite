@@ -85,7 +85,7 @@ public class SnapshotHandlerRestoreTask extends AbstractSnapshotVerificationTask
 
         try {
             ignite.context().cache().context().snapshotMgr().handlers().completeAll(
-                SnapshotHandlerType.RESTORE, snapshotName, clusterResults, execNodes);
+                SnapshotHandlerType.RESTORE, snapshotName, clusterResults, execNodes, wrns -> {});
         }
         catch (Exception e) {
             log.warning("The snapshot operation will be aborted due to a handler error [snapshot=" + snapshotName + "].", e);
@@ -142,7 +142,7 @@ public class SnapshotHandlerRestoreTask extends AbstractSnapshotVerificationTask
                 SnapshotMetadata meta = snpMgr.readSnapshotMetadata(snpDir, consistentId);
 
                 return snpMgr.handlers().invokeAll(SnapshotHandlerType.RESTORE,
-                    new SnapshotHandlerContext(meta, grps, ignite.localNode(), snpDir));
+                    new SnapshotHandlerContext(meta, grps, ignite.localNode(), snpDir, false));
             }
             catch (IgniteCheckedException e) {
                 throw new IgniteException(e);

@@ -19,7 +19,7 @@ package org.apache.ignite.internal.commandline.snapshot;
 
 import java.util.LinkedHashMap;
 import java.util.Map;
-import java.util.logging.Logger;
+import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.internal.commandline.CommandArgIterator;
 import org.apache.ignite.internal.commandline.argument.CommandArgUtils;
 import org.apache.ignite.internal.processors.cache.verify.IdleVerifyResultV2;
@@ -71,7 +71,7 @@ public class SnapshotCheckCommand extends SnapshotSubcommand {
     }
 
     /** {@inheritDoc} */
-    @Override public void printUsage(Logger log) {
+    @Override public void printUsage(IgniteLogger log) {
         Map<String, String> params = new LinkedHashMap<>(generalUsageOptions());
 
         params.put(SOURCE.argName() + " " + SOURCE.arg(), SOURCE.description());
@@ -81,7 +81,7 @@ public class SnapshotCheckCommand extends SnapshotSubcommand {
     }
 
     /** {@inheritDoc} */
-    @Override protected void printResult(Object res, Logger log) {
+    @Override protected void printResult(Object res, IgniteLogger log) {
         ((IdleVerifyResultV2)res).print(log::info, true);
     }
 }
