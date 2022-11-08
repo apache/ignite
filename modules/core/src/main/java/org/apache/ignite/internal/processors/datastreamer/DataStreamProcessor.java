@@ -18,7 +18,6 @@
 package org.apache.ignite.internal.processors.datastreamer;
 
 import java.util.Collection;
-import java.util.HashSet;
 import java.util.UUID;
 import java.util.concurrent.DelayQueue;
 import org.apache.ignite.IgniteCheckedException;
