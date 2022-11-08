@@ -835,8 +835,8 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
 
                 req.meta(meta);
 
-                SnapshotHandlerContext ctx = new SnapshotHandlerContext(meta, req.groups(), (SnapshotFutureTask)fut,
-                    cctx.localNode(), snpDir);
+                SnapshotHandlerContext ctx = new SnapshotHandlerContext(meta, req.groups(), cctx.localNode(), snpDir,
+                    req.streamerWarning());
 
                 return new SnapshotOperationResponse(handlers.invokeAll(SnapshotHandlerType.CREATE, ctx));
             }
@@ -914,6 +914,8 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
         try {
             File snpDir = snapshotLocalDir(snpReq.snapshotName(), snpReq.snapshotPath());
 
+            snpDir.mkdirs();
+
             File smf = new File(snpDir, snapshotMetaFileName(cctx.localNode().consistentId().toString()));
 
             if (smf.exists())
@@ -922,9 +924,6 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
 
             if (snpReq.warnings() != null)
                 snpReq.meta().warnings(snpReq.warnings());
-
-//            System.err.println("TEST | wrn size: " + snpReq.meta().warnings() == null ? 0 : snpReq.meta().warnings().size());
-//            System.err.println("TEST | storing meta: " + smf.getAbsolutePath());
 
             try (OutputStream out = Files.newOutputStream(smf.toPath())) {
                 byte[] bytes = U.marshal(marsh, snpReq.meta());

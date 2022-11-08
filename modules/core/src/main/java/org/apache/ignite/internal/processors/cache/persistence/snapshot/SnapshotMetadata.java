@@ -118,15 +118,6 @@ public class SnapshotMetadata implements Serializable {
     }
 
     /**
-     * Stores snapshot process warnings.
-     *
-     * @param warnings Snapshot warnings.
-     */
-    public void warnings(List<String> warnings) {
-        this.warnings = warnings;
-    }
-
-    /**
      * @return Unique snapshot request id.
      */
     public UUID requestId() {
@@ -252,8 +243,19 @@ public class SnapshotMetadata implements Serializable {
         return masterKeyDigest;
     }
 
-    /** {@inheritDoc} */
-    public List<String> warnings(){
+    /**
+     * Stores snapshot process warnings.
+     *
+     * @param warnings Snapshot creation warnings.
+     */
+    public void warnings(List<String> warnings) {
+        this.warnings = warnings;
+    }
+
+    /**
+     * @return Snapshot warnings or {@code null} if no warnings occured.
+     */
+    public List<String> warnings() {
         return warnings;
     }
 

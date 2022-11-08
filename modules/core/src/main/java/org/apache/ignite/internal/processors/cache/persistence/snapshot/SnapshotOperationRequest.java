@@ -73,7 +73,7 @@ public class SnapshotOperationRequest implements Serializable {
     /** Flag indicating that the {@link DistributedProcessType#START_SNAPSHOT} phase has completed. */
     private transient volatile boolean startStageEnded;
 
-    /** Snapshot process metadata. */
+    /** Snapshot metadata. */
     private transient SnapshotMetadata meta;
 
     /** Operation start time. */
