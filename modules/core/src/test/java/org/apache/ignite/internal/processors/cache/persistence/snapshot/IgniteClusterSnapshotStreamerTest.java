@@ -21,6 +21,7 @@ import java.util.Collections;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.atomic.AtomicBoolean;
 import org.apache.ignite.Ignite;
+import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteDataStreamer;
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.configuration.CacheConfiguration;
@@ -29,12 +30,15 @@ import org.apache.ignite.configuration.DataRegionConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.IgniteInternalFuture;
+import org.apache.ignite.internal.TestRecordingCommunicationSpi;
+import org.apache.ignite.internal.processors.datastreamer.DataStreamerRequest;
 import org.apache.ignite.internal.util.typedef.G;
-import org.apache.ignite.testframework.GridTestUtils;
 import org.junit.Test;
 
 import static org.apache.ignite.cluster.ClusterState.ACTIVE;
+import static org.apache.ignite.internal.IgniteNodeAttributes.ATTR_DATA_STREAMER_POOL_SIZE;
 import static org.apache.ignite.testframework.GridTestUtils.assertThrows;
+import static org.apache.ignite.testframework.GridTestUtils.runAsync;
 
 /**
  * Tests snapshot is consistent or snapshot process produces proper warning.
@@ -156,7 +160,7 @@ public class IgniteClusterSnapshotStreamerTest extends AbstractSnapshotSelfTest 
 
         AtomicBoolean stop = new AtomicBoolean();
 
-        IgniteInternalFuture<?> loadFut = runLoad(grid(2), false, stop);
+        IgniteInternalFuture<?> loadFut = runLoad(client, false, stop);
 
         try {
             snpMgr.createSnapshot(SNAPSHOT_NAME).get();
@@ -175,24 +179,29 @@ public class IgniteClusterSnapshotStreamerTest extends AbstractSnapshotSelfTest 
     }
 
     /**
-     * Tests snapshot process throws warning if required.
+     * Tests snapshot warning when streamer is working during snapshot creation.
      *
      * @param allowOverwrite 'allowOverwrite' setting.
      */
     private void doTestDataStreamerWhileSnapshot(boolean allowOverwrite) throws Exception {
-        AtomicBoolean stopLoading = new AtomicBoolean(false);
+        AtomicBoolean stopLoading = new AtomicBoolean();
+
+        TestRecordingCommunicationSpi cm = (TestRecordingCommunicationSpi)client.configuration().getCommunicationSpi();
 
         IgniteInternalFuture<?> loadFut = runLoad(client, allowOverwrite, stopLoading);
 
+        cm.blockMessages(DataStreamerRequest.class, grid(0).name());
+
+        cm.waitForBlocked(maxBatchesPerNode(grid(0)));
+
         try {
             if (allowOverwrite)
-                grid(0).snapshot().createSnapshot(SNAPSHOT_NAME).get();
-            else {
-                assertThrows(null, () -> snpMgr.createSnapshot(SNAPSHOT_NAME).get(),
-                    IgniteException.class, DataStreamerUpdatesHandler.WRN_MSG);
-            }
+                createAndCheckSnapshot(null, null);
+            else
+                createAndCheckSnapshot(DataStreamerUpdatesHandler.WRN_MSG, null);
         }
         finally {
+            cm.stopBlock();
             stopLoading.set(true);
             loadFut.get();
         }
@@ -209,7 +218,7 @@ public class IgniteClusterSnapshotStreamerTest extends AbstractSnapshotSelfTest 
         throws InterruptedException {
         CountDownLatch preload = new CountDownLatch(10_000);
 
-        IgniteInternalFuture<?> res = GridTestUtils.runAsync(() -> {
+        IgniteInternalFuture<?> res = runAsync(() -> {
             try (IgniteDataStreamer<Integer, Object> ds = ldr.dataStreamer(dfltCacheCfg.getName())) {
                 ds.allowOverwrite(allowOverwrite);
 
@@ -226,5 +235,50 @@ public class IgniteClusterSnapshotStreamerTest extends AbstractSnapshotSelfTest 
         preload.await();
 
         return res;
+    }
+
+    /** */
+    private void createAndCheckSnapshot(String expectedWrn, String notExpectedWrn) throws IgniteCheckedException {
+        assert notExpectedWrn == null || expectedWrn != null;
+
+        if (expectedWrn == null)
+            snpMgr.createSnapshot(SNAPSHOT_NAME, null).get();
+        else {
+            Throwable snpWrn = assertThrows(
+                null,
+                () -> snpMgr.createSnapshot(SNAPSHOT_NAME, null).get(),
+                IgniteException.class,
+                expectedWrn
+            );
+
+            if (notExpectedWrn != null)
+                assertTrue(!snpWrn.getMessage().contains(notExpectedWrn));
+        }
+
+        SnapshotPartitionsVerifyTaskResult checkRes = snpMgr.checkSnapshot(SNAPSHOT_NAME, null).get();
+
+        assertTrue(checkRes.exceptions().isEmpty());
+        assertTrue((expectedWrn != null) == checkRes.idleVerifyResult().hasConflicts());
+
+        if (expectedWrn != null) {
+            StringBuilder sb = new StringBuilder();
+
+            checkRes.print(sb::append);
+
+            String out = sb.toString();
+
+            assertTrue(out.contains(expectedWrn));
+
+            if (notExpectedWrn != null)
+                assertFalse(out.contains(notExpectedWrn));
+        }
+    }
+
+    /** */
+    private int maxBatchesPerNode(IgniteEx grid) {
+        Integer attrStreamerPoolSize = grid.localNode().attribute(ATTR_DATA_STREAMER_POOL_SIZE);
+
+        return IgniteDataStreamer.DFLT_PARALLEL_OPS_MULTIPLIER * (attrStreamerPoolSize != null ? attrStreamerPoolSize :
+            grid.localNode().metrics().getTotalCpus());
     }
 }

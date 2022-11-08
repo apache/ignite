@@ -22,7 +22,7 @@ import java.util.Map;
 import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.internal.commandline.CommandArgIterator;
 import org.apache.ignite.internal.commandline.argument.CommandArgUtils;
-import org.apache.ignite.internal.processors.cache.verify.IdleVerifyResultV2;
+import org.apache.ignite.internal.processors.cache.persistence.snapshot.SnapshotPartitionsVerifyTaskResult;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.visor.snapshot.VisorSnapshotCheckTask;
 import org.apache.ignite.internal.visor.snapshot.VisorSnapshotCheckTaskArg;
@@ -82,6 +82,6 @@ public class SnapshotCheckCommand extends SnapshotSubcommand {
 
     /** {@inheritDoc} */
     @Override protected void printResult(Object res, IgniteLogger log) {
-        ((IdleVerifyResultV2)res).print(log::info, true);
+        ((SnapshotPartitionsVerifyTaskResult)res).print(log::info);
     }
 }

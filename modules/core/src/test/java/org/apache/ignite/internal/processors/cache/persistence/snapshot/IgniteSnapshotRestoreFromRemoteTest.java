@@ -195,8 +195,8 @@ public class IgniteSnapshotRestoreFromRemoteTest extends IgniteClusterSnapshotRe
         awaitPartitionMapExchange();
 
         // Ensure that the snapshot check command succeeds.
-        IdleVerifyResultV2 res =
-            emptyNode.context().cache().context().snapshotMgr().checkSnapshot(SNAPSHOT_NAME, null).get(TIMEOUT);
+        IdleVerifyResultV2 res = emptyNode.context().cache().context().snapshotMgr()
+            .checkSnapshot(SNAPSHOT_NAME, null).get(TIMEOUT).idleVerifyResult();
 
         StringBuilder buf = new StringBuilder();
         res.print(buf::append, true);

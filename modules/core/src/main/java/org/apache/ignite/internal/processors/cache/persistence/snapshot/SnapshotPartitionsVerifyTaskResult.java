@@ -21,11 +21,17 @@ import java.io.IOException;
 import java.io.ObjectInput;
 import java.io.ObjectOutput;
 import java.util.Collections;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
+import java.util.Set;
+import java.util.function.Consumer;
+import java.util.stream.Collectors;
 import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.internal.dto.IgniteDataTransferObject;
 import org.apache.ignite.internal.processors.cache.verify.IdleVerifyResultV2;
+import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.internal.U;
 
 /**
@@ -64,6 +70,29 @@ public class SnapshotPartitionsVerifyTaskResult extends IgniteDataTransferObject
      */
     public Map<ClusterNode, List<SnapshotMetadata>> metas() {
         return metas;
+    }
+
+    /**
+     * Print formatted result to the given printer. Adds the snapshot warnings if snapshot has conflicts.
+     *
+     * @param printer Consumer for handle formatted result.
+     */
+    public void print(Consumer<String> printer) {
+        if (idleRes.hasConflicts()) {
+            Set<String> wrns = metas.values().stream().flatMap(List::stream).map(SnapshotMetadata::warnings)
+                .filter(Objects::nonNull).collect(HashSet::new, HashSet::addAll, HashSet::addAll);
+
+            if (!F.isEmpty(wrns)) {
+                printer.accept("Snapshot was created with the warnings:" + U.nl() + "\t- ");
+
+                printer.accept(wrns.stream().collect(Collectors.joining(U.nl() + "\t- ")));
+
+                printer.accept(U.nl());
+                printer.accept(U.nl());
+            }
+        }
+
+        idleRes.print(printer, true);
     }
 
     /**

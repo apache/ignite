@@ -1046,7 +1046,7 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
                 if (endFail.isEmpty() && snpReq.error() == null) {
                     if (!F.isEmpty(snpReq.warnings())) {
                         IgniteException wrn = new IgniteException("Snapshot task '" + snpReq.snapshotName() +
-                            "' completed with the warnings:" + U.nl() + '\t' + String.join(U.nl() + '\t',
+                            "' completed with the warnings:" + U.nl() + "\t- " + String.join(U.nl() + "\t- ",
                             snpReq.warnings()));
 
                         clusterSnpFut.onDone(wrn);
@@ -1299,9 +1299,10 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
      * @param name Snapshot name.
      * @param snpPath Snapshot directory path.
      * @return Future with the result of execution snapshot partitions verify task, which besides calculating partition
-     *         hashes of {@link IdleVerifyResultV2} also contains the snapshot metadata distribution across the cluster.
+     *         hashes of {@link IdleVerifyResultV2} also contains the snapshot metadata distribution across the
+     *         cluster and possible snapshot process warnings.
      */
-    public IgniteInternalFuture<IdleVerifyResultV2> checkSnapshot(String name, @Nullable String snpPath) {
+    public IgniteInternalFuture<SnapshotPartitionsVerifyTaskResult> checkSnapshot(String name, @Nullable String snpPath) {
         A.notNullOrEmpty(name, "Snapshot name cannot be null or empty.");
         A.ensure(U.alphanumericUnderscore(name), "Snapshot name must satisfy the following name pattern: a-zA-Z0-9_");
 
@@ -1309,7 +1310,7 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
 
         return checkSnapshot(name, snpPath, null, false).chain(f -> {
             try {
-                return f.get().idleVerifyResult();
+                return f.get();
             }
             catch (Throwable t) {
                 throw new GridClosureException(t);
