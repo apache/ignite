@@ -25,8 +25,12 @@ import org.jetbrains.annotations.Nullable;
  * Internal extension of {@link IgniteLogger}.
  */
 public interface IgniteLoggerEx extends IgniteLogger {
-    /** Adds console appender to the logger. */
-    public void addConsoleAppender();
+    /**
+     * Adds console appender to the logger.
+     * @param clearOutput If {@code true} then console output must be configured without any additional info
+     *                    like time, message level, thread info, etc.
+     */
+    public void addConsoleAppender(boolean clearOutput);
 
     /** Flush any buffered output. */
     public void flush();
