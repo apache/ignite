@@ -39,8 +39,8 @@ import org.apache.ignite.internal.processors.datastreamer.DataStreamerRequest;
 import org.apache.ignite.internal.util.typedef.G;
 import org.junit.Test;
 
-import static org.apache.ignite.IgniteDataStreamer.DFLT_PARALLEL_OPS_MULTIPLIER;
 import static org.apache.ignite.cluster.ClusterState.ACTIVE;
+import static org.apache.ignite.internal.IgniteNodeAttributes.ATTR_DATA_STREAMER_POOL_SIZE;
 import static org.apache.ignite.testframework.GridTestUtils.assertThrows;
 import static org.apache.ignite.testframework.GridTestUtils.runAsync;
 
@@ -212,14 +212,14 @@ public class IgniteClusterSnapshotStreamerTest extends AbstractSnapshotSelfTest 
 
         cm.blockMessages(DataStreamerRequest.class, grid(0).name());
 
-        cm.waitForBlocked(DFLT_PARALLEL_OPS_MULTIPLIER * Runtime.getRuntime().availableProcessors());
+        cm.waitForBlocked(maxBatchesPerNode(grid(0)));
 
         try {
             if (allowOverwrite)
                 createAndCheckSnapshot(null, null);
             else {
                 createAndCheckSnapshot(DataStreamerUpdatesHandler.WRN_MSG,
-                    SnapshotPartitionsFastVerifyHandler.WRN_MSG_BASE);
+                    SnapshotPartitionsQuickVerifyHandler.WRN_MSG_BASE);
             }
         }
         finally {
@@ -256,7 +256,7 @@ public class IgniteClusterSnapshotStreamerTest extends AbstractSnapshotSelfTest 
 
         cm.blockMessages(DataStreamerRequest.class, grid(0).name());
 
-        cm.waitForBlocked(DFLT_PARALLEL_OPS_MULTIPLIER * Runtime.getRuntime().availableProcessors());
+        cm.waitForBlocked(maxBatchesPerNode(grid(0)));
 
         runAsync(() -> stopGrid(client.name(), true));
 
@@ -269,33 +269,9 @@ public class IgniteClusterSnapshotStreamerTest extends AbstractSnapshotSelfTest 
         if (allowOverwrite)
             createAndCheckSnapshot(null, null);
         else {
-            createAndCheckSnapshot(SnapshotPartitionsFastVerifyHandler.WRN_MSG_BASE,
+            createAndCheckSnapshot(SnapshotPartitionsQuickVerifyHandler.WRN_MSG_BASE,
                 DataStreamerUpdatesHandler.WRN_MSG);
         }
-    }
-
-    /** */
-    private void createAndCheckSnapshot(String expectedWrn, String notExpectedWrn) throws IgniteCheckedException {
-        assert notExpectedWrn == null || expectedWrn != null;
-
-        if (expectedWrn == null)
-            snpMgr.createSnapshot(SNAPSHOT_NAME, null).get();
-        else {
-            Throwable snpWrn = assertThrows(
-                null,
-                () -> snpMgr.createSnapshot(SNAPSHOT_NAME, null).get(),
-                IgniteException.class,
-                expectedWrn
-            );
-
-            if (notExpectedWrn != null)
-                assertTrue(!snpWrn.getMessage().contains(notExpectedWrn));
-        }
-
-        IdleVerifyResultV2 checkRes = snpMgr.checkSnapshot(SNAPSHOT_NAME, null).get();
-
-        assertTrue(checkRes.exceptions().isEmpty());
-        assertTrue((expectedWrn != null) == checkRes.hasConflicts());
     }
 
     /**
@@ -326,5 +302,37 @@ public class IgniteClusterSnapshotStreamerTest extends AbstractSnapshotSelfTest 
         preload.await();
 
         return res;
+    }
+
+    /** */
+    private void createAndCheckSnapshot(String expectedWrn, String notExpectedWrn) throws IgniteCheckedException {
+        assert notExpectedWrn == null || expectedWrn != null;
+
+        if (expectedWrn == null)
+            snpMgr.createSnapshot(SNAPSHOT_NAME, null).get();
+        else {
+            Throwable snpWrn = assertThrows(
+                null,
+                () -> snpMgr.createSnapshot(SNAPSHOT_NAME, null).get(),
+                IgniteException.class,
+                expectedWrn
+            );
+
+            if (notExpectedWrn != null)
+                assertTrue(!snpWrn.getMessage().contains(notExpectedWrn));
+        }
+
+        IdleVerifyResultV2 checkRes = snpMgr.checkSnapshot(SNAPSHOT_NAME, null).get();
+
+        assertTrue(checkRes.exceptions().isEmpty());
+        assertTrue((expectedWrn != null) == checkRes.hasConflicts());
+    }
+
+    /** */
+    private int maxBatchesPerNode(IgniteEx grid) {
+        Integer attrStreamerPoolSize = grid.localNode().attribute(ATTR_DATA_STREAMER_POOL_SIZE);
+
+        return IgniteDataStreamer.DFLT_PARALLEL_OPS_MULTIPLIER * (attrStreamerPoolSize != null ? attrStreamerPoolSize :
+            grid.localNode().metrics().getTotalCpus());
     }
 }

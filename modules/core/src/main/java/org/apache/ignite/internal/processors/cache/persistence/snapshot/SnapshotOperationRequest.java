@@ -63,7 +63,7 @@ public class SnapshotOperationRequest implements Serializable {
      * Snapshot operation warnings. Warnings do not interrupt snapshot process but raise exception at the end to make
      * the operation status 'not OK' if no other error occured.
      */
-    private volatile List<SnapshotHandlerWarningException> warnings;
+    private volatile List<String> warnings;
 
     /**
      * Warning flag of concurrent inconsistent-by-nature streamer updates.
@@ -179,14 +179,14 @@ public class SnapshotOperationRequest implements Serializable {
     /**
      * @return Warnings of snapshot operation.
      */
-    public List<SnapshotHandlerWarningException> warnings() {
+    public List<String> warnings() {
         return warnings;
     }
 
     /**
      * @param warnings Warnings of snapshot operation.
      */
-    public void warnings(List<SnapshotHandlerWarningException> warnings) {
+    public void warnings(List<String> warnings) {
         this.warnings = warnings;
     }
 

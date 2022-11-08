@@ -36,9 +36,9 @@ import org.apache.ignite.internal.util.typedef.internal.U;
 
 /**
  * Quick partitions verifier. Warns if partiton counters or size are different among the nodes what can be caused by
- * canceled/failed DataStreamer.
+ * canceled/failed DataStreamer. Skips checking if the DataStreamer warning is detected.
  */
-public class SnapshotPartitionsFastVerifyHandler extends SnapshotPartitionsVerifyHandler {
+public class SnapshotPartitionsQuickVerifyHandler extends SnapshotPartitionsVerifyHandler {
     /** */
     public static final String WRN_MSG_BASE = "This may happen if DataStreamer with property 'allowOverwrite' set " +
         "to `false` is loading during the snapshot or hadn't successfully finished earlier. However, you will be " +
@@ -47,7 +47,7 @@ public class SnapshotPartitionsFastVerifyHandler extends SnapshotPartitionsVerif
     /**
      * @param cctx Shared context.
      */
-    public SnapshotPartitionsFastVerifyHandler(GridCacheSharedContext<?, ?> cctx) {
+    public SnapshotPartitionsQuickVerifyHandler(GridCacheSharedContext<?, ?> cctx) {
         super(cctx);
     }
 
@@ -57,33 +57,17 @@ public class SnapshotPartitionsFastVerifyHandler extends SnapshotPartitionsVerif
     }
 
     /** {@inheritDoc} */
-    @Override protected PartitionHashRecordV2 partHash(PartitionKeyV2 key, Object updCntr, Object consId,
-        GridDhtPartitionState state, boolean isPrimary, long partSize, GridIterator<CacheDataRow> it)
+    @Override public Map<PartitionKeyV2, PartitionHashRecordV2> invoke(SnapshotHandlerContext opCtx)
         throws IgniteCheckedException {
-        // Skips hash calculation.
-        return super.partHash(
-            key,
-            updCntr,
-            consId,
-            state,
-            isPrimary,
-            partSize,
-            new GridIteratorAdapter<CacheDataRow>() {
-                /** {@inheritDoc} */
-                @Override public boolean hasNextX() {
-                    return false;
-                }
+        // Return null not to check partitions at all if the streamer warning is detected.
+        if (opCtx.streamerWarning())
+            return null;
 
-                /** {@inheritDoc} */
-                @Override public CacheDataRow nextX() {
-                    return null;
-                }
+        Map<PartitionKeyV2, PartitionHashRecordV2> res = super.invoke(opCtx);
 
-                /** {@inheritDoc} */
-                @Override public void removeX() {
-                    // No-op;
-                }
-            });
+        assert res != null;
+
+        return res;
     }
 
     /** {@inheritDoc} */
@@ -91,6 +75,9 @@ public class SnapshotPartitionsFastVerifyHandler extends SnapshotPartitionsVerif
         String name,
         Collection<SnapshotHandlerResult<Map<PartitionKeyV2, PartitionHashRecordV2>>> results
     ) throws IgniteCheckedException {
+        if (results.stream().anyMatch(r -> r.data() == null))
+            return;
+
         Map<Integer, Map<Integer, PartitionHashRecordV2>> counters = new ConcurrentHashMap<>();
 
         Set<Integer> wrnGroups = new GridConcurrentHashSet<>();
@@ -132,10 +119,38 @@ public class SnapshotPartitionsFastVerifyHandler extends SnapshotPartitionsVerif
             }
         );
 
-        if (!wrnGroups.isEmpty()) {
-            throw new SnapshotHandlerWarningException(warningMessage(wrnGroups), getClass(),
-                DataStreamerUpdatesHandler.class);
-        }
+        if (!wrnGroups.isEmpty())
+            throw new SnapshotHandlerWarningException(warningMessage(wrnGroups));
+    }
+
+    /** {@inheritDoc} */
+    @Override protected PartitionHashRecordV2 partHash(PartitionKeyV2 key, Object updCntr, Object consId,
+        GridDhtPartitionState state, boolean isPrimary, long partSize, GridIterator<CacheDataRow> it)
+        throws IgniteCheckedException {
+        // Skip hash calculation.
+        return super.partHash(
+            key,
+            updCntr,
+            consId,
+            state,
+            isPrimary,
+            partSize,
+            new GridIteratorAdapter<CacheDataRow>() {
+                /** {@inheritDoc} */
+                @Override public boolean hasNextX() {
+                    return false;
+                }
+
+                /** {@inheritDoc} */
+                @Override public CacheDataRow nextX() {
+                    return null;
+                }
+
+                /** {@inheritDoc} */
+                @Override public void removeX() {
+                    // No-op;
+                }
+            });
     }
 
     /**

@@ -1018,18 +1018,11 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
             if (clusterSnpFut != null) {
                 if (endFail.isEmpty() && snpReq.error() == null) {
                     if (!F.isEmpty(snpReq.warnings())) {
-                        Set<Class<? extends SnapshotHandler<?>>> wrnsTypes = snpReq.warnings().stream()
-                            .map(SnapshotHandlerWarningException::handlerType).collect(Collectors.toSet());
-
-                        List<String> resWrns = snpReq.warnings().stream()
-                            .filter(wrn -> !wrnsTypes.contains(wrn.exclusionHandlerType()))
-                            .map(Throwable::getMessage).collect(Collectors.toList());
-
-                        IgniteException procWrnEx = new IgniteException("Snapshot task '" + snpReq.snapshotName() +
+                        IgniteException wrn = new IgniteException("Snapshot task '" + snpReq.snapshotName() +
                             "' completed with the warnings:" + U.nl() + '\t' + String.join(U.nl() + '\t',
-                            resWrns));
+                            snpReq.warnings()));
 
-                        clusterSnpFut.onDone(procWrnEx);
+                        clusterSnpFut.onDone(wrn);
                     }
                     else
                         clusterSnpFut.onDone();
@@ -2240,7 +2233,7 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
             registerHandler(new DataStreamerUpdatesHandler());
 
             // Register system default page size and counters check that is used at the creation operation.
-            registerHandler(new SnapshotPartitionsFastVerifyHandler(ctx.cache().context()));
+            registerHandler(new SnapshotPartitionsQuickVerifyHandler(ctx.cache().context()));
 
             // Register custom handlers.
             SnapshotHandler<Object>[] extHnds = (SnapshotHandler<Object>[])ctx.plugins().extensions(SnapshotHandler.class);
@@ -2294,7 +2287,7 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
             String snpName,
             Map<String, List<SnapshotHandlerResult<?>>> res,
             Collection<UUID> reqNodes,
-            Consumer<List<SnapshotHandlerWarningException>> wrnsHnd
+            Consumer<List<String>> wrnsHnd
         ) throws Exception {
             if (res.isEmpty())
                 return;
@@ -2308,7 +2301,7 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
                     ", rmtHnds=" + res.keySet() + "].");
             }
 
-            List<SnapshotHandlerWarningException> wrns = new ArrayList<>();
+            List<String> wrns = new ArrayList<>();
 
             for (SnapshotHandler hnd : hnds) {
                 List<SnapshotHandlerResult<?>> nodesRes = res.get(hnd.getClass().getName());
@@ -2328,7 +2321,7 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
                     hnd.complete(snpName, nodesRes);
                 }
                 catch (SnapshotHandlerWarningException e) {
-                    wrns.add(e);
+                    wrns.add(e.getMessage());
                 }
             }
 
