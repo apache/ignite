@@ -102,6 +102,7 @@ import org.apache.ignite.internal.processors.cache.persistence.snapshot.Snapshot
 import org.apache.ignite.internal.processors.cache.persistence.snapshot.SnapshotHandlerResult;
 import org.apache.ignite.internal.processors.cache.persistence.snapshot.SnapshotHandlerType;
 import org.apache.ignite.internal.processors.cache.persistence.snapshot.SnapshotHandlerWarningException;
+import org.apache.ignite.internal.processors.cache.persistence.snapshot.SnapshotPartitionsVerifyTaskResult;
 import org.apache.ignite.internal.processors.cache.transactions.IgniteInternalTx;
 import org.apache.ignite.internal.processors.cache.transactions.IgniteTxEntry;
 import org.apache.ignite.internal.processors.cache.transactions.TransactionProxyImpl;
@@ -3253,7 +3254,7 @@ public class GridCommandHandlerTest extends GridCommandHandlerClusterPerMethodAb
 
         StringBuilder sb = new StringBuilder();
 
-        ((IdleVerifyResultV2)h.getLastOperationResult()).print(sb::append, true);
+        ((SnapshotPartitionsVerifyTaskResult)h.getLastOperationResult()).print(sb::append);
 
         assertContains(log, sb.toString(), "The check procedure has finished, no conflicts have been found");
     }
