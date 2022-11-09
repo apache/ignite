@@ -81,7 +81,7 @@ public class SnapshotMetadata implements Serializable {
     @GridToStringInclude
     @Nullable private final byte[] masterKeyDigest;
 
-    /** Warnings occured at snapshot creation. */
+    /** Warnings occured at snapshot creation. {@code Null} only at restoration if snapshot is of a previous version. */
     @GridToStringInclude
     @Nullable private final Set<String> warnings = new GridConcurrentHashSet<>();
 

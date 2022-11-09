@@ -855,7 +855,7 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
 
                 return new SnapshotOperationResponse(hndRes);
             }
-            catch (IgniteCheckedException | IOException e) {
+            catch (IOException | IgniteCheckedException e) {
                 throw F.wrap(e);
             }
         });
