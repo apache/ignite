@@ -78,18 +78,15 @@ public class SnapshotPartitionsVerifyTaskResult extends IgniteDataTransferObject
      * @param printer Consumer for handle formatted result.
      */
     public void print(Consumer<String> printer) {
-        if (idleRes.hasConflicts()) {
-            Set<String> wrns = metas.values().stream().flatMap(List::stream).map(SnapshotMetadata::warnings)
-                .filter(Objects::nonNull).collect(HashSet::new, HashSet::addAll, HashSet::addAll);
+        Set<String> wrns = metas.values().stream().flatMap(List::stream).map(SnapshotMetadata::warnings)
+            .filter(Objects::nonNull).collect(HashSet::new, HashSet::addAll, HashSet::addAll);
 
-            if (!F.isEmpty(wrns)) {
-                printer.accept("Snapshot was created with the warnings:" + U.nl() + "\t- ");
+        if (!F.isEmpty(wrns)) {
+            StringBuilder sb = new StringBuilder("Snapshot was created with the warnings:" + U.nl() + "\t- ")
+                .append(wrns.stream().collect(Collectors.joining(U.nl() + "\t- ")))
+                .append(U.nl());
 
-                printer.accept(wrns.stream().collect(Collectors.joining(U.nl() + "\t- ")));
-
-                printer.accept(U.nl());
-                printer.accept(U.nl());
-            }
+            printer.accept(sb.toString());
         }
 
         idleRes.print(printer, true);

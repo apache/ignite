@@ -106,12 +106,12 @@ import org.apache.ignite.internal.processors.cache.persistence.snapshot.Snapshot
 import org.apache.ignite.internal.processors.cache.transactions.IgniteInternalTx;
 import org.apache.ignite.internal.processors.cache.transactions.IgniteTxEntry;
 import org.apache.ignite.internal.processors.cache.transactions.TransactionProxyImpl;
-import org.apache.ignite.internal.processors.cache.verify.IdleVerifyResultV2;
 import org.apache.ignite.internal.processors.cache.warmup.BlockedWarmUpConfiguration;
 import org.apache.ignite.internal.processors.cache.warmup.BlockedWarmUpStrategy;
 import org.apache.ignite.internal.processors.cache.warmup.WarmUpTestPluginProvider;
 import org.apache.ignite.internal.processors.cluster.ChangeGlobalStateFinishMessage;
 import org.apache.ignite.internal.processors.cluster.GridClusterStateProcessor;
+import org.apache.ignite.internal.processors.datastreamer.DataStreamerRequest;
 import org.apache.ignite.internal.processors.metric.MetricRegistry;
 import org.apache.ignite.internal.util.BasicRateLimiter;
 import org.apache.ignite.internal.util.distributed.SingleNodeMessage;
@@ -131,14 +131,12 @@ import org.apache.ignite.lang.IgniteFuture;
 import org.apache.ignite.lang.IgniteInClosure;
 import org.apache.ignite.lang.IgnitePredicate;
 import org.apache.ignite.lang.IgniteUuid;
-import org.apache.ignite.plugin.AbstractTestPluginProvider;
-import org.apache.ignite.plugin.ExtensionRegistry;
-import org.apache.ignite.plugin.PluginContext;
 import org.apache.ignite.plugin.extensions.communication.Message;
 import org.apache.ignite.spi.communication.tcp.TcpCommunicationSpi;
 import org.apache.ignite.spi.metric.LongMetric;
 import org.apache.ignite.spi.metric.Metric;
 import org.apache.ignite.testframework.GridTestUtils;
+import org.apache.ignite.testframework.LogListener;
 import org.apache.ignite.testframework.junits.WithSystemProperty;
 import org.apache.ignite.transactions.Transaction;
 import org.apache.ignite.transactions.TransactionRollbackException;
@@ -3081,52 +3079,65 @@ public class GridCommandHandlerTest extends GridCommandHandlerClusterPerMethodAb
         IgniteConfiguration cfg = getConfiguration(getTestIgniteInstanceName(0));
         cfg.getConnectorConfiguration().setHost("localhost");
 
-        cfg.setPluginProviders(new AbstractTestPluginProvider() {
-            /** {@inheritDoc} */
-            @Override public void initExtensions(PluginContext ctx, ExtensionRegistry registry) {
-                super.initExtensions(ctx, registry);
-
-                // Simulates warning occurs at snapshot creation.
-                registry.registerExtension(SnapshotHandler.class, new SnapshotHandler<Void>() {
-                    /** {@inheritDoc} */
-                    @Override public SnapshotHandlerType type() {
-                        return SnapshotHandlerType.CREATE;
-                    }
-
-                    /** {@inheritDoc} */
-                    @Override public void complete(String name,
-                        Collection<SnapshotHandlerResult<Void>> results) throws Exception {
-                        throw new SnapshotHandlerWarningException(DataStreamerUpdatesHandler.WRN_MSG);
-                    }
-
-                    /** {@inheritDoc} */
-                    @Nullable @Override public Void invoke(SnapshotHandlerContext ctx) {
-                        return null;
-                    }
-                });
-            }
-
-            /** {@inheritDoc} */
-            @Override public String name() {
-                return "SnapshotWarningSimulationPlugin";
-            }
-        });
-
         IgniteEx ig = startGrid(cfg);
+
+        cfg = getConfiguration(getTestIgniteInstanceName(1));
+        cfg.getConnectorConfiguration().setHost("localhost");
+
+        startGrid(cfg);
+
         ig.cluster().state(ACTIVE);
         createCacheAndPreload(ig, 100);
 
-        injectTestSystemOut();
+        TestRecordingCommunicationSpi cm = (TestRecordingCommunicationSpi)grid(0).configuration().getCommunicationSpi();
 
-        CommandHandler hnd = new CommandHandler();
+        cm.blockMessages(DataStreamerRequest.class, grid(1).name());
 
-        List<String> args = new ArrayList<>(F.asList("--snapshot", "create", "testDsSnp", "--sync"));
+        AtomicBoolean stopLoading = new AtomicBoolean();
 
-        int code = execute(hnd, args);
+        IgniteInternalFuture<?> loadFut = runAsync(() -> {
+            try (IgniteDataStreamer<Integer, Integer> ds = ig.dataStreamer(DEFAULT_CACHE_NAME)) {
+                for (int i = 100; i < 100_000 && !stopLoading.get(); ++i)
+                    ds.addData(i, i);
+            }
+        });
 
-        assertEquals(EXIT_CODE_UNEXPECTED_ERROR, code);
+        cm.waitForBlocked(IgniteDataStreamer.DFLT_PARALLEL_OPS_MULTIPLIER);
 
-        assertContains(log, testOut.toString(), DataStreamerUpdatesHandler.WRN_MSG);
+        try {
+            injectTestSystemOut();
+
+            CommandHandler hnd = new CommandHandler();
+
+            List<String> args = new ArrayList<>(F.asList("--snapshot", "create", "testDsSnp", "--sync"));
+
+            int code = execute(hnd, args);
+
+            assertEquals(EXIT_CODE_UNEXPECTED_ERROR, code);
+
+            assertContains(log, testOut.toString(), DataStreamerUpdatesHandler.WRN_MSG);
+
+            args = new ArrayList<>(F.asList("--snapshot", "check", "testDsSnp"));
+
+            code = execute(hnd, args);
+
+            assertEquals(EXIT_CODE_OK, code);
+
+            String out = testOut.toString();
+
+            LogListener logLsnr = LogListener.matches(DataStreamerUpdatesHandler.WRN_MSG).times(1).build();
+
+            logLsnr.accept(out);
+
+            logLsnr.check();
+
+            assertContains(log, out, "The check procedure has failed, conflict partitions has been found");
+        }
+        finally {
+            stopLoading.set(true);
+            cm.stopBlock();
+            loadFut.get();
+        }
     }
 
     /**
@@ -3242,6 +3253,8 @@ public class GridCommandHandlerTest extends GridCommandHandlerClusterPerMethodAb
 
         IgniteEx ig = startGrid(0);
         ig.cluster().state(ACTIVE);
+
+        ig.destroyCache(DEFAULT_CACHE_NAME);
 
         createCacheAndPreload(ig, 1000);
 
@@ -3824,6 +3837,24 @@ public class GridCommandHandlerTest extends GridCommandHandlerClusterPerMethodAb
 
                 throw new RuntimeException(e);
             }
+        }
+    }
+
+    /** */
+    private static class SnapshotWarningSimulationHandler implements SnapshotHandler<Void> {
+        /** {@inheritDoc} */
+        @Override public SnapshotHandlerType type() {
+            return SnapshotHandlerType.CREATE;
+        }
+
+        /** {@inheritDoc} */
+        @Override public void complete(String name, Collection<SnapshotHandlerResult<Void>> results) throws Exception {
+            throw new SnapshotHandlerWarningException(DataStreamerUpdatesHandler.WRN_MSG);
+        }
+
+        /** {@inheritDoc} */
+        @Nullable @Override public Void invoke(SnapshotHandlerContext ctx) {
+            return null;
         }
     }
 }
