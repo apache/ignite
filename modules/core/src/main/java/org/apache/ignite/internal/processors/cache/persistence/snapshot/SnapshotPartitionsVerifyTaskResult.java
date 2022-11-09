@@ -78,18 +78,23 @@ public class SnapshotPartitionsVerifyTaskResult extends IgniteDataTransferObject
      * @param printer Consumer for handle formatted result.
      */
     public void print(Consumer<String> printer) {
-        Set<String> wrns = metas.values().stream().flatMap(List::stream).map(SnapshotMetadata::warnings)
-            .filter(Objects::nonNull).collect(HashSet::new, HashSet::addAll, HashSet::addAll);
-
-        if (!F.isEmpty(wrns)) {
-            StringBuilder sb = new StringBuilder("Snapshot was created with the warnings:" + U.nl() + "\t- ")
-                .append(wrns.stream().collect(Collectors.joining(U.nl() + "\t- ")))
-                .append(U.nl());
-
-            printer.accept(sb.toString());
-        }
-
         idleRes.print(printer, true);
+
+        if (idleVerifyResult().exceptions().isEmpty()) {
+            Set<SnapshotMetadata> mset = metas.values().stream().flatMap(List::stream)
+                .collect(HashSet::new, HashSet::add, HashSet::addAll);
+
+            Set<String> wrns = mset.stream().map(SnapshotMetadata::warnings).filter(Objects::nonNull)
+                .collect(HashSet::new, HashSet::addAll, HashSet::addAll);
+
+            if (!F.isEmpty(wrns)) {
+                StringBuilder sb = new StringBuilder("This snapshot was created with the warnings:" + U.nl() + "\t- ")
+                    .append(wrns.stream().collect(Collectors.joining(U.nl() + "\t- ")))
+                    .append(U.nl());
+
+                printer.accept(sb.toString());
+            }
+        }
     }
 
     /**

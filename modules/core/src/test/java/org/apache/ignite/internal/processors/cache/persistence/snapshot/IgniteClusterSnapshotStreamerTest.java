@@ -21,7 +21,6 @@ import java.util.Collections;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.atomic.AtomicBoolean;
 import org.apache.ignite.Ignite;
-import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteDataStreamer;
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.configuration.CacheConfiguration;
@@ -33,6 +32,8 @@ import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.TestRecordingCommunicationSpi;
 import org.apache.ignite.internal.processors.datastreamer.DataStreamerRequest;
 import org.apache.ignite.internal.util.typedef.G;
+import org.apache.ignite.testframework.ListeningTestLogger;
+import org.apache.ignite.testframework.LogListener;
 import org.junit.Test;
 
 import static org.apache.ignite.cluster.ClusterState.ACTIVE;
@@ -195,16 +196,19 @@ public class IgniteClusterSnapshotStreamerTest extends AbstractSnapshotSelfTest 
         cm.waitForBlocked(maxBatchesPerNode(grid(0)));
 
         try {
-            if (allowOverwrite)
-                createAndCheckSnapshot(null, null);
-            else
-                createAndCheckSnapshot(DataStreamerUpdatesHandler.WRN_MSG, null);
+            createAndCheckSnapshot(true, allowOverwrite ? null : DataStreamerUpdatesHandler.WRN_MSG);
         }
         finally {
             cm.stopBlock();
             stopLoading.set(true);
             loadFut.get();
         }
+
+        stopGrid(0);
+
+        snpMgr = snp(grid(1));
+
+        createAndCheckSnapshot(false, allowOverwrite ? null : DataStreamerUpdatesHandler.WRN_MSG);
     }
 
     /**
@@ -238,21 +242,26 @@ public class IgniteClusterSnapshotStreamerTest extends AbstractSnapshotSelfTest 
     }
 
     /** */
-    private void createAndCheckSnapshot(String expectedWrn, String notExpectedWrn) throws IgniteCheckedException {
-        assert notExpectedWrn == null || expectedWrn != null;
+    private void createAndCheckSnapshot(boolean create, String expectedWrn) throws Exception {
+        if (create) {
+            if (expectedWrn == null)
+                snpMgr.createSnapshot(SNAPSHOT_NAME, null).get();
+            else {
+                ListeningTestLogger testLog = new ListeningTestLogger();
 
-        if (expectedWrn == null)
-            snpMgr.createSnapshot(SNAPSHOT_NAME, null).get();
-        else {
-            Throwable snpWrn = assertThrows(
-                null,
-                () -> snpMgr.createSnapshot(SNAPSHOT_NAME, null).get(),
-                IgniteException.class,
-                expectedWrn
-            );
+                LogListener logListener = LogListener.matches(expectedWrn).times(1).build();
+                testLog.registerListener(logListener);
 
-            if (notExpectedWrn != null)
-                assertTrue(!snpWrn.getMessage().contains(notExpectedWrn));
+                assertThrows(
+                    testLog,
+                    () -> snpMgr.createSnapshot(SNAPSHOT_NAME, null).get(),
+                    IgniteException.class,
+                    expectedWrn
+                );
+
+                // Ensure the warning message appears once.
+                logListener.check();
+            }
         }
 
         SnapshotPartitionsVerifyTaskResult checkRes = snpMgr.checkSnapshot(SNAPSHOT_NAME, null).get();
@@ -261,16 +270,15 @@ public class IgniteClusterSnapshotStreamerTest extends AbstractSnapshotSelfTest 
         assertTrue((expectedWrn != null) == checkRes.idleVerifyResult().hasConflicts());
 
         if (expectedWrn != null) {
-            StringBuilder sb = new StringBuilder();
+            ListeningTestLogger testLog = new ListeningTestLogger();
 
-            checkRes.print(sb::append);
+            LogListener lsnr = LogListener.matches(expectedWrn).times(1).build();
 
-            String out = sb.toString();
+            testLog.registerListener(lsnr);
 
-            assertTrue(out.contains(expectedWrn));
+            checkRes.print(testLog::info);
 
-            if (notExpectedWrn != null)
-                assertFalse(out.contains(notExpectedWrn));
+            lsnr.check();
         }
     }
 

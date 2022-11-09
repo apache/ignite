@@ -922,8 +922,10 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
                 throw new IgniteException(new IgniteException("Snapshot metafile must not exist: " +
                     smf.getAbsolutePath()));
 
-            if (snpReq.warnings() != null)
-                snpReq.meta().warnings(snpReq.warnings());
+            if (!F.isEmpty(snpReq.warnings()))
+                snpReq.meta().warnings(new ArrayList<>(snpReq.warnings()));
+            else
+                System.err.println("TEST | storing meta with NO warnings.");
 
             try (OutputStream out = Files.newOutputStream(smf.toPath())) {
                 byte[] bytes = U.marshal(marsh, snpReq.meta());
@@ -1005,6 +1007,9 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
 
         if (snpReq == null || !F.eq(req.requestId(), snpReq.requestId()))
             return new GridFinishedFuture<>();
+
+        if (!req.operationalNodeId().equals(cctx.localNodeId()) && !F.isEmpty(req.warnings()))
+            snpReq.warnings(req.warnings());
 
         if (req.error() == null)
             storeSnapshotMeta(snpReq);

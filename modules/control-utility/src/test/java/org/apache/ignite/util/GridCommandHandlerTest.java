@@ -3097,8 +3097,13 @@ public class GridCommandHandlerTest extends GridCommandHandlerClusterPerMethodAb
 
         IgniteInternalFuture<?> loadFut = runAsync(() -> {
             try (IgniteDataStreamer<Integer, Integer> ds = ig.dataStreamer(DEFAULT_CACHE_NAME)) {
-                for (int i = 100; i < 100_000 && !stopLoading.get(); ++i)
+                int i = 100;
+
+                while (!stopLoading.get()) {
                     ds.addData(i, i);
+
+                    i++;
+                }
             }
         });
 
