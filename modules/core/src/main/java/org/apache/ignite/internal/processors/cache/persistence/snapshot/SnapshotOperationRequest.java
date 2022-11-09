@@ -20,6 +20,7 @@ package org.apache.ignite.internal.processors.cache.persistence.snapshot;
 import java.io.Serializable;
 import java.util.Collection;
 import java.util.HashSet;
+import java.util.List;
 import java.util.Set;
 import java.util.UUID;
 import org.apache.ignite.internal.util.distributed.DistributedProcess;
@@ -63,7 +64,7 @@ public class SnapshotOperationRequest implements Serializable {
      * Snapshot operation warnings. Warnings do not interrupt snapshot process but raise exception at the end to make
      * the operation status 'not OK' if no other error occured.
      */
-    private volatile Set<String> warnings;
+    private volatile List<String> warnings;
 
     /**
      * Warning flag of concurrent inconsistent-by-nature streamer updates.
@@ -182,18 +183,15 @@ public class SnapshotOperationRequest implements Serializable {
     /**
      * @return Warnings of snapshot operation.
      */
-    public Set<String> warnings() {
+    public List<String> warnings() {
         return warnings;
     }
 
     /**
      * @param warnings Warnings of snapshot operation.
      */
-    public void warnings(Collection<String> warnings) {
-        if (this.warnings == null)
-            this.warnings = new HashSet<>();
-
-        this.warnings.addAll(warnings);
+    public void warnings(List<String> warnings) {
+        this.warnings = warnings;
     }
 
     /**
