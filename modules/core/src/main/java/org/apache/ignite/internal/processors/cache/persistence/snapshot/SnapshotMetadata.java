@@ -21,6 +21,7 @@ import java.io.IOException;
 import java.io.InvalidObjectException;
 import java.io.Serializable;
 import java.util.Arrays;
+import java.util.Collection;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.HashSet;
@@ -30,6 +31,7 @@ import java.util.Objects;
 import java.util.Set;
 import java.util.UUID;
 import org.apache.ignite.internal.processors.cache.persistence.partstate.GroupPartitionId;
+import org.apache.ignite.internal.util.GridConcurrentHashSet;
 import org.apache.ignite.internal.util.tostring.GridToStringInclude;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.internal.util.typedef.internal.U;
@@ -81,7 +83,7 @@ public class SnapshotMetadata implements Serializable {
 
     /** Warnings occured at snapshot creation. */
     @GridToStringInclude
-    @Nullable private List<String> warnings;
+    @Nullable private final Set<String> warnings = new GridConcurrentHashSet<>();
 
     /**
      * F@param snpName Snapshot name.
@@ -248,14 +250,14 @@ public class SnapshotMetadata implements Serializable {
      *
      * @param warnings Snapshot creation warnings.
      */
-    public void warnings(List<String> warnings) {
-        this.warnings = warnings;
+    public void warnings(Collection<String> warnings) {
+        this.warnings.addAll(warnings);
     }
 
     /**
      * @return Snapshot warnings or {@code null} if no warnings occured.
      */
-    public List<String> warnings() {
+    public Collection<String> warnings() {
         return warnings;
     }
 

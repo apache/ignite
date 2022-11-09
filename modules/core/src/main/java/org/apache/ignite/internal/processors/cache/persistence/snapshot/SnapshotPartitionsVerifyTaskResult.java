@@ -21,11 +21,13 @@ import java.io.IOException;
 import java.io.ObjectInput;
 import java.io.ObjectOutput;
 import java.util.Collections;
+import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
+import java.util.UUID;
 import java.util.function.Consumer;
 import java.util.stream.Collectors;
 import org.apache.ignite.cluster.ClusterNode;
@@ -83,6 +85,10 @@ public class SnapshotPartitionsVerifyTaskResult extends IgniteDataTransferObject
         if (idleVerifyResult().exceptions().isEmpty()) {
             Set<SnapshotMetadata> mset = metas.values().stream().flatMap(List::stream)
                 .collect(HashSet::new, HashSet::add, HashSet::addAll);
+
+            Map<String, UUID> nodeWrns = new HashMap<>();
+
+            mset.
 
             Set<String> wrns = mset.stream().map(SnapshotMetadata::warnings).filter(Objects::nonNull)
                 .collect(HashSet::new, HashSet::addAll, HashSet::addAll);

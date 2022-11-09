@@ -73,9 +73,6 @@ public class SnapshotOperationRequest implements Serializable {
     /** Flag indicating that the {@link DistributedProcessType#START_SNAPSHOT} phase has completed. */
     private transient volatile boolean startStageEnded;
 
-    /** Snapshot metadata. */
-    private transient SnapshotMetadata meta;
-
     /** Operation start time. */
     private final long startTime;
 
@@ -205,20 +202,6 @@ public class SnapshotOperationRequest implements Serializable {
      */
     public boolean streamerWarning(boolean val) {
         return streamerWrn = val;
-    }
-
-    /**
-     * @return Snapshot metadata.
-     */
-    public SnapshotMetadata meta() {
-        return meta;
-    }
-
-    /**
-     * Stores snapshot metadata.
-     */
-    public void meta(SnapshotMetadata meta) {
-        this.meta = meta;
     }
 
     /** {@inheritDoc} */

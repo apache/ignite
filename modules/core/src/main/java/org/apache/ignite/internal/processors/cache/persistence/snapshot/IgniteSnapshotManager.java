@@ -833,14 +833,29 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
                     cctx.gridConfig().getEncryptionSpi().masterKeyDigest()
                 );
 
-                req.meta(meta);
-
                 SnapshotHandlerContext ctx = new SnapshotHandlerContext(meta, req.groups(), cctx.localNode(), snpDir,
                     req.streamerWarning());
 
-                return new SnapshotOperationResponse(handlers.invokeAll(SnapshotHandlerType.CREATE, ctx));
+                Map<String, SnapshotHandlerResult<Object>> hndRes = handlers.invokeAll(SnapshotHandlerType.CREATE, ctx);
+
+                try (OutputStream out = Files.newOutputStream(smf.toPath())) {
+                    byte[] bytes = U.marshal(marsh, meta);
+                    int blockSize = SNAPSHOT_LIMITED_TRANSFER_BLOCK_SIZE_BYTES;
+
+                    for (int off = 0; off < bytes.length; off += blockSize) {
+                        int len = Math.min(blockSize, bytes.length - off);
+
+                        transferRateLimiter.acquire(len);
+
+                        out.write(bytes, off, len);
+                    }
+                }
+
+                log.info("Snapshot metafile has been created: " + smf.getAbsolutePath());
+
+                return new SnapshotOperationResponse(hndRes);
             }
-            catch (IgniteCheckedException e) {
+            catch (IgniteCheckedException | IOException e) {
                 throw F.wrap(e);
             }
         });
@@ -909,45 +924,6 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
         }
     }
 
-    /** **/
-    private void storeSnapshotMeta(SnapshotOperationRequest snpReq) {
-        try {
-            File snpDir = snapshotLocalDir(snpReq.snapshotName(), snpReq.snapshotPath());
-
-            snpDir.mkdirs();
-
-            File smf = new File(snpDir, snapshotMetaFileName(cctx.localNode().consistentId().toString()));
-
-            if (smf.exists())
-                throw new IgniteException(new IgniteException("Snapshot metafile must not exist: " +
-                    smf.getAbsolutePath()));
-
-            if (!F.isEmpty(snpReq.warnings()))
-                snpReq.meta().warnings(new ArrayList<>(snpReq.warnings()));
-            else
-                System.err.println("TEST | storing meta with NO warnings.");
-
-            try (OutputStream out = Files.newOutputStream(smf.toPath())) {
-                byte[] bytes = U.marshal(marsh, snpReq.meta());
-                int blockSize = SNAPSHOT_LIMITED_TRANSFER_BLOCK_SIZE_BYTES;
-
-                for (int off = 0; off < bytes.length; off += blockSize) {
-                    int len = Math.min(blockSize, bytes.length - off);
-
-                    transferRateLimiter.acquire(len);
-
-                    out.write(bytes, off, len);
-                }
-            }
-
-            log.info("Snapshot metafile has been created: " + smf.getAbsolutePath());
-        }
-        catch (Exception e) {
-            snpReq.error(new IgniteCheckedException("Unable to store snapshot metadata. " +
-                "Uncompleted snapshot will be deleted [err=" + e + ']'));
-        }
-    }
-
     /**
      * Execute the {@link SnapshotHandler#complete(String, Collection)} method of the snapshot handlers asynchronously.
      *
@@ -1007,12 +983,6 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
 
         if (snpReq == null || !F.eq(req.requestId(), snpReq.requestId()))
             return new GridFinishedFuture<>();
-
-        if (!req.operationalNodeId().equals(cctx.localNodeId()) && !F.isEmpty(req.warnings()))
-            snpReq.warnings(req.warnings());
-
-        if (req.error() == null)
-            storeSnapshotMeta(snpReq);
 
         try {
             if (req.error() != null) {
@@ -1093,7 +1063,7 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
     public void streamerWarning() {
         SnapshotOperationRequest snpTask = currentCreateRequest();
 
-        if (snpTask != null)
+        if (snpTask != null && !snpTask.streamerWarning())
             snpTask.streamerWarning(true);
     }
 

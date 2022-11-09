@@ -18,6 +18,7 @@
 package org.apache.ignite.internal.processors.cache.persistence.snapshot;
 
 import java.util.Collection;
+import java.util.Collections;
 import java.util.UUID;
 import java.util.stream.Collectors;
 
@@ -43,7 +44,12 @@ public class DataStreamerUpdatesHandler implements SnapshotHandler<Boolean> {
 
     /** {@inheritDoc} */
     @Override public Boolean invoke(SnapshotHandlerContext ctx) {
-        return ctx.streamerWarning();
+        boolean streamerDetected = ctx.streamerWarning();
+
+        if (streamerDetected)
+            ctx.metadata().warnings(Collections.singletonList(WRN_MSG));
+
+        return streamerDetected;
     }
 
     /** {@inheritDoc} */
@@ -51,7 +57,7 @@ public class DataStreamerUpdatesHandler implements SnapshotHandler<Boolean> {
         throws SnapshotHandlerWarningException {
         Collection<UUID> nodes = F.viewReadOnly(results, r -> r.node().id(), SnapshotHandlerResult::data);
 
-        if (!nodes.isEmpty()) {
+        if (!F.isEmpty(nodes)) {
             throw new SnapshotHandlerWarningException(WRN_MSG + " Updates from DataStreamer detected on the nodes: " +
                 nodes.stream().map(UUID::toString).collect(Collectors.joining(", ")));
         }
