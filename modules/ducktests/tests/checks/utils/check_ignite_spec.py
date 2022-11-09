@@ -33,6 +33,7 @@ def service():
     service.log_dir = ''
     service.persistent_root = ''
     service.context.globals = {"cluster_size": 1}
+    service.log_config_file = ''
 
     return service
 
