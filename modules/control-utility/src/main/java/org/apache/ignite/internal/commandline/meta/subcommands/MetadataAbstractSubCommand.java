@@ -20,7 +20,7 @@ package org.apache.ignite.internal.commandline.meta.subcommands;
 import java.nio.file.FileSystem;
 import java.nio.file.FileSystems;
 import java.util.Collection;
-import java.util.logging.Logger;
+import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.internal.client.GridClient;
 import org.apache.ignite.internal.client.GridClientCompute;
 import org.apache.ignite.internal.client.GridClientConfiguration;
@@ -51,7 +51,7 @@ public abstract class MetadataAbstractSubCommand<
     }
 
     /** {@inheritDoc} */
-    @Override public final void printUsage(Logger log) {
+    @Override public final void printUsage(IgniteLogger log) {
         throw new UnsupportedOperationException("printUsage");
     }
 
@@ -61,7 +61,7 @@ public abstract class MetadataAbstractSubCommand<
     }
 
     /** {@inheritDoc} */
-    @Override public final Object execute(GridClientConfiguration clientCfg, Logger log) throws Exception {
+    @Override public final Object execute(GridClientConfiguration clientCfg, IgniteLogger log) throws Exception {
         try (GridClient client = Command.startClient(clientCfg)) {
             GridClientCompute compute = client.compute();
 
@@ -89,8 +89,8 @@ public abstract class MetadataAbstractSubCommand<
             printResult(res, log);
         }
         catch (Throwable e) {
-            log.severe("Failed to execute metadata command='" + name() + "'");
-            log.severe(CommandLogger.errorMessage(e));
+            log.error("Failed to execute metadata command='" + name() + "'");
+            log.error(CommandLogger.errorMessage(e));
 
             throw e;
         }
@@ -112,7 +112,7 @@ public abstract class MetadataAbstractSubCommand<
     }
 
     /** */
-    protected abstract void printResult(MetadataResultDto res, Logger log);
+    protected abstract void printResult(MetadataResultDto res, IgniteLogger log);
 
     /**
      * @param val Integer value.

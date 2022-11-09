@@ -252,6 +252,7 @@ public class IdleVerifyUtility {
                 isPrimary,
                 consId,
                 0,
+                0,
                 updCntr,
                 state == GridDhtPartitionState.MOVING ?
                     PartitionHashRecordV2.MOVING_PARTITION_SIZE : 0,
@@ -263,18 +264,19 @@ public class IdleVerifyUtility {
             return null;
 
         int partHash = 0;
+        int partVerHash = 0;
 
         while (it.hasNextX()) {
             CacheDataRow row = it.nextX();
 
             partHash += row.key().hashCode();
-            partHash += row.version().hashCode(); // Detects ABA problem.
+            partVerHash += row.version().hashCode(); // Detects ABA problem.
 
             // Object context is not required since the valueBytes have been read directly from page.
             partHash += Arrays.hashCode(row.value().valueBytes(null));
         }
 
-        return new PartitionHashRecordV2(partKey, isPrimary, consId, partHash, updCntr,
+        return new PartitionHashRecordV2(partKey, isPrimary, consId, partHash, partVerHash, updCntr,
             partSize, PartitionHashRecordV2.PartitionState.OWNING);
     }
 

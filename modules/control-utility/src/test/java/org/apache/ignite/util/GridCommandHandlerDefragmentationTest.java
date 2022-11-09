@@ -39,6 +39,7 @@ import org.apache.ignite.internal.commandline.CommandHandler;
 import org.apache.ignite.internal.processors.cache.persistence.GridCacheDatabaseSharedManager;
 import org.apache.ignite.internal.processors.cache.persistence.defragmentation.maintenance.DefragmentationParameters;
 import org.apache.ignite.internal.processors.cache.persistence.file.FileIOFactory;
+import org.apache.ignite.logger.java.JavaLogger;
 import org.apache.ignite.maintenance.MaintenanceTask;
 import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.testframework.ListeningTestLogger;
@@ -452,7 +453,7 @@ public class GridCommandHandlerDefragmentationTest extends GridCommandHandlerClu
 
     /** */
     private CommandHandler createCommandHandler(ListeningTestLogger testLog) {
-        Logger log = CommandHandler.initLogger(null);
+        Logger log = GridCommandHandlerAbstractTest.initLogger(null);
 
         log.addHandler(new StreamHandler(System.out, new Formatter() {
             /** {@inheritDoc} */
@@ -465,6 +466,6 @@ public class GridCommandHandlerDefragmentationTest extends GridCommandHandlerClu
             }
         }));
 
-        return new CommandHandler(log);
+        return new CommandHandler(new JavaLogger(log, false));
     }
 }
