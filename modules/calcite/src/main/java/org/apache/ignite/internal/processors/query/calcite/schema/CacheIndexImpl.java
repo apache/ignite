@@ -129,8 +129,15 @@ public class CacheIndexImpl implements IgniteIndex {
         UUID localNodeId = ectx.localNodeId();
 
         if (grp.nodeIds().contains(localNodeId) && idx != null) {
-            return new IndexFirstLastScan<>(first, ectx, tbl.descriptor(), idx.unwrap(InlineIndexImpl.class),
-                collation.getKeys(), grp.partitions(localNodeId), requiredColumns);
+            return new IndexFirstLastScan<>(
+                first,
+                ectx,
+                tbl.descriptor(),
+                idx.unwrap(InlineIndexImpl.class),
+                collation.getKeys(),
+                grp.partitions(localNodeId),
+                requiredColumns
+            );
         }
 
         return Collections.emptyList();

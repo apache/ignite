@@ -149,7 +149,7 @@ public class LogicalRelImplementorTest extends GridCommonAbstractTest {
     }
 
     /**
-     * Tests Index take-first execution plan is changed to Sort-limit/Scan when index is unavailable.
+     * Tests Index take-first execution plan is changed to Sort-Limit/Scan when index is unavailable.
      */
     @Test
     public void testIndexFirstRewriter() {
@@ -157,7 +157,7 @@ public class LogicalRelImplementorTest extends GridCommonAbstractTest {
     }
 
     /**
-     * Tests Index take-last execution plan is changed to Sort-limit/Scan when index is unavailable.
+     * Tests Index take-last execution plan is changed to Sort-Limit/Scan when index is unavailable.
      */
     @Test
     public void testIndexLastRewriter() {
