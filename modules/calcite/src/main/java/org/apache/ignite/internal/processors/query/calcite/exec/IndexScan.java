@@ -98,7 +98,7 @@ public class IndexScan<Row> extends AbstractIndexScan<Row, IndexRow> {
      * @param ectx Execution context.
      * @param desc Table descriptor.
      * @param idxFieldMapping Mapping from index keys to row fields.
-     * @param idx Phisycal index.
+     * @param idx Physical index.
      * @param filters Additional filters.
      * @param ranges Index scan bounds.
      */
@@ -121,7 +121,7 @@ public class IndexScan<Row> extends AbstractIndexScan<Row, IndexRow> {
      * @param ectx Execution context.
      * @param desc Table descriptor.
      * @param idxFieldMapping Mapping from index keys to row fields.
-     * @param treeIdx Phisycal index wrapper.
+     * @param treeIdx Physical index wrapper.
      * @param filters Additional filters.
      * @param ranges Index scan bounds.
      */

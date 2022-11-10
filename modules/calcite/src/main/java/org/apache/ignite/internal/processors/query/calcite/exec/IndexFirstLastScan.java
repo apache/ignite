@@ -44,7 +44,7 @@ public class IndexFirstLastScan<Row> extends IndexScan<Row> {
      * @param first {@code True} to take first index value. {@code False} to take last value.
      * @param ectx Execution context.
      * @param desc Table descriptor.
-     * @param idx Phisycal index.
+     * @param idx Physical index.
      * @param idxFieldMapping Mapping from index keys to row fields.
      * @param parts Mapping from index keys to row fields.
      * @param requiredColumns Required columns.
