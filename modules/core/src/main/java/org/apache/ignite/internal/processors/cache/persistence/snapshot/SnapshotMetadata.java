@@ -244,16 +244,16 @@ public class SnapshotMetadata implements Serializable {
     }
 
     /**
-     * Stores snapshot creation warnings.
-     *
      * @param warnings Snapshot creation warnings.
      */
     public void warnings(List<String> warnings) {
+        assert this.warnings == null;
+
         this.warnings = warnings;
     }
 
     /**
-     * @return Snapshot warnings.
+     * @return Snapshot creation warnings.
      */
     public List<String> warnings() {
         return warnings;

@@ -221,7 +221,7 @@ public class IgniteClusterSnapshotStreamerTest extends AbstractSnapshotSelfTest 
             loadFut.get();
         }
 
-        // Check snapshot by only had-no-warnings node.
+        // Check snapshot by only one node.
         stopGrid(1);
         stopGrid(2);
 

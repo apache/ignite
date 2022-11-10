@@ -1006,7 +1006,7 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
         if (snpReq == null || !F.eq(req.requestId(), snpReq.requestId()))
             return new GridFinishedFuture<>();
 
-        if (!req.operationalNodeId().equals(cctx.localNodeId()) && !F.isEmpty(req.warnings()))
+        if (!req.operationalNodeId().equals(cctx.localNodeId()))
             snpReq.warnings(req.warnings());
 
         if (req.error() == null)

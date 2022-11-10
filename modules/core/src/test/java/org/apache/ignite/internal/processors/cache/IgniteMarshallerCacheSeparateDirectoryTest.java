@@ -61,6 +61,8 @@ public class IgniteMarshallerCacheSeparateDirectoryTest extends GridCommonAbstra
 
         ((TcpCommunicationSpi)cfg.getCommunicationSpi()).setSharedMemoryPort(-1);
 
+        cfg.setWorkDirectory(workDir(igniteInstanceName).getAbsolutePath());
+
         if (igniteInstanceName.equals(SERVER) && ccfgOnServer ||
                 igniteInstanceName.equals(CLIENT) && ccfgOnClient) {
             CacheConfiguration ccfg = new CacheConfiguration(DEFAULT_CACHE_NAME);

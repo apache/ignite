@@ -3115,7 +3115,9 @@ public class GridCommandHandlerTest extends GridCommandHandlerClusterPerMethodAb
 
             assertEquals(EXIT_CODE_UNEXPECTED_ERROR, code);
 
-            assertContains(log, testOut.toString(), DataStreamerUpdatesHandler.WRN_MSG);
+            LogListener logLsnr = LogListener.matches(DataStreamerUpdatesHandler.WRN_MSG).times(1).build();
+            logLsnr.accept(testOut.toString());
+            logLsnr.check();
 
             args = new ArrayList<>(F.asList("--snapshot", "check", "testDsSnp"));
 
@@ -3125,10 +3127,8 @@ public class GridCommandHandlerTest extends GridCommandHandlerClusterPerMethodAb
 
             String out = testOut.toString();
 
-            LogListener logLsnr = LogListener.matches(DataStreamerUpdatesHandler.WRN_MSG).times(1).build();
-
+            logLsnr = LogListener.matches(DataStreamerUpdatesHandler.WRN_MSG).times(1).build();
             logLsnr.accept(out);
-
             logLsnr.check();
 
             assertContains(log, out, "The check procedure has failed, conflict partitions has been found");
