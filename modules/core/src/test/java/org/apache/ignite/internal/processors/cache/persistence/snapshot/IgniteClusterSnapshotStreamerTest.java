@@ -18,8 +18,12 @@
 package org.apache.ignite.internal.processors.cache.persistence.snapshot;
 
 import java.util.Collections;
+import java.util.List;
+import java.util.Map;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.function.Function;
+import java.util.stream.Collectors;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteDataStreamer;
 import org.apache.ignite.IgniteException;
@@ -31,6 +35,7 @@ import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.TestRecordingCommunicationSpi;
 import org.apache.ignite.internal.processors.datastreamer.DataStreamerRequest;
+import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.G;
 import org.apache.ignite.testframework.ListeningTestLogger;
 import org.apache.ignite.testframework.LogListener;
@@ -180,7 +185,7 @@ public class IgniteClusterSnapshotStreamerTest extends AbstractSnapshotSelfTest 
     }
 
     /**
-     * Tests snapshot warning when streamer is working during snapshot creation.
+     * Tests snapshot process throws warning if required.
      *
      * @param allowOverwrite 'allowOverwrite' setting.
      */
@@ -195,8 +200,20 @@ public class IgniteClusterSnapshotStreamerTest extends AbstractSnapshotSelfTest 
 
         cm.waitForBlocked(maxBatchesPerNode(grid(0)));
 
+        String expectedWrn = allowOverwrite ? null : DataStreamerUpdatesHandler.WRN_MSG;
+
         try {
-            createAndCheckSnapshot(true, allowOverwrite ? null : DataStreamerUpdatesHandler.WRN_MSG);
+            SnapshotPartitionsVerifyTaskResult checkRes = createAndCheckSnapshot(true, expectedWrn);
+
+            if (expectedWrn != null) {
+                Map<String, SnapshotMetadata> metaByNodes = checkRes.metas().values().stream().flatMap(List::stream)
+                    .distinct().collect(Collectors.toMap(SnapshotMetadata::consistentId, Function.identity()));
+
+                for (SnapshotMetadata m : metaByNodes.values()) {
+                    assertTrue(!F.isEmpty(m.warnings()) && m.warnings().size() == 1 &&
+                        m.warnings().get(0).contains(expectedWrn));
+                }
+            }
         }
         finally {
             cm.stopBlock();
@@ -204,9 +221,9 @@ public class IgniteClusterSnapshotStreamerTest extends AbstractSnapshotSelfTest 
             loadFut.get();
         }
 
-        stopGrid(0);
-
-        snpMgr = snp(grid(1));
+        // Check snapshot by only had-no-warnings node.
+        stopGrid(1);
+        stopGrid(2);
 
         createAndCheckSnapshot(false, allowOverwrite ? null : DataStreamerUpdatesHandler.WRN_MSG);
     }
@@ -242,7 +259,8 @@ public class IgniteClusterSnapshotStreamerTest extends AbstractSnapshotSelfTest 
     }
 
     /** */
-    private void createAndCheckSnapshot(boolean create, String expectedWrn) throws Exception {
+    private SnapshotPartitionsVerifyTaskResult createAndCheckSnapshot(boolean create, String expectedWrn)
+        throws Exception {
         if (create) {
             if (expectedWrn == null)
                 snpMgr.createSnapshot(SNAPSHOT_NAME, null).get();
@@ -280,6 +298,8 @@ public class IgniteClusterSnapshotStreamerTest extends AbstractSnapshotSelfTest 
 
             lsnr.check();
         }
+
+        return checkRes;
     }
 
     /** */

@@ -51,7 +51,7 @@ public class DataStreamerUpdatesHandler implements SnapshotHandler<Boolean> {
         throws SnapshotHandlerWarningException {
         Collection<UUID> nodes = F.viewReadOnly(results, r -> r.node().id(), SnapshotHandlerResult::data);
 
-        if (!nodes.isEmpty()) {
+        if (!F.isEmpty(nodes)) {
             throw new SnapshotHandlerWarningException(WRN_MSG + " Updates from DataStreamer detected on the nodes: " +
                 nodes.stream().map(UUID::toString).collect(Collectors.joining(", ")));
         }

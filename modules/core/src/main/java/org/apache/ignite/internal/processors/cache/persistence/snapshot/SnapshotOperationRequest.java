@@ -65,6 +65,9 @@ public class SnapshotOperationRequest implements Serializable {
      */
     private volatile List<String> warnings;
 
+    /** Snapshot metadata. */
+    private transient SnapshotMetadata meta;
+
     /**
      * Warning flag of concurrent inconsistent-by-nature streamer updates.
      */
@@ -72,9 +75,6 @@ public class SnapshotOperationRequest implements Serializable {
 
     /** Flag indicating that the {@link DistributedProcessType#START_SNAPSHOT} phase has completed. */
     private transient volatile boolean startStageEnded;
-
-    /** Snapshot metadata. */
-    private transient SnapshotMetadata meta;
 
     /** Operation start time. */
     private final long startTime;

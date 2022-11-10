@@ -1091,7 +1091,7 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
     public void streamerWarning() {
         SnapshotOperationRequest snpTask = currentCreateRequest();
 
-        if (snpTask != null)
+        if (snpTask != null && !snpTask.streamerWarning())
             snpTask.streamerWarning(true);
     }
 
@@ -1302,8 +1302,7 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
      * @param name Snapshot name.
      * @param snpPath Snapshot directory path.
      * @return Future with the result of execution snapshot partitions verify task, which besides calculating partition
-     *         hashes of {@link IdleVerifyResultV2} also contains the snapshot metadata distribution across the
-     *         cluster and possible snapshot process warnings.
+     *         hashes of {@link IdleVerifyResultV2} also contains the snapshot metadata distribution across the cluster.
      */
     public IgniteInternalFuture<SnapshotPartitionsVerifyTaskResult> checkSnapshot(String name, @Nullable String snpPath) {
         A.notNullOrEmpty(name, "Snapshot name cannot be null or empty.");

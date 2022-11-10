@@ -244,7 +244,7 @@ public class SnapshotMetadata implements Serializable {
     }
 
     /**
-     * Stores snapshot process warnings.
+     * Stores snapshot creation warnings.
      *
      * @param warnings Snapshot creation warnings.
      */
@@ -253,7 +253,7 @@ public class SnapshotMetadata implements Serializable {
     }
 
     /**
-     * @return Snapshot warnings or {@code null} if no warnings occured.
+     * @return Snapshot warnings.
      */
     public List<String> warnings() {
         return warnings;
