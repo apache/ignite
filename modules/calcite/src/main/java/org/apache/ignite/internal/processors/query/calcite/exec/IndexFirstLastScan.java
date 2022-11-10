@@ -75,9 +75,13 @@ public class IndexFirstLastScan<Row> extends IndexScan<Row> {
         return new IndexQueryContext(
             res.cacheFilter(),
             new BPlusTree.TreeRowClosure<IndexRow, IndexRow>() {
-                /** {@inheritDoc} */
-                @Override public boolean apply(BPlusTree<IndexRow, IndexRow> tree, BPlusIO<IndexRow> io, long pageAddr,
-                    int idx) throws IgniteCheckedException {
+                /** checkstyle fix{@inheritDoc} */
+                @Override public boolean apply(
+                    BPlusTree<IndexRow, IndexRow> tree,
+                    BPlusIO<IndexRow> io,
+                    long pageAddr,
+                    int idx
+                ) throws IgniteCheckedException {
                     if (f != null && !f.apply(tree, io, pageAddr, idx))
                         return false;
 

@@ -108,7 +108,6 @@ public interface IgniteIndex {
         boolean first,
         ExecutionContext<Row> ectx,
         ColocationGroup grp,
-        @Nullable ImmutableBitSet
-            requiredColumns
+        @Nullable ImmutableBitSet requiredColumns
     );
 }

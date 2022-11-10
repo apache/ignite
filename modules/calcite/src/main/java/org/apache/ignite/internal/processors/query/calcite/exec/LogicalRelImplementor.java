@@ -34,7 +34,6 @@ import org.apache.calcite.rel.core.JoinRelType;
 import org.apache.calcite.rel.core.Minus;
 import org.apache.calcite.rel.core.Spool;
 import org.apache.calcite.rel.type.RelDataType;
-import org.apache.calcite.rex.RexBuilder;
 import org.apache.calcite.rex.RexLiteral;
 import org.apache.calcite.rex.RexNode;
 import org.apache.calcite.util.ImmutableBitSet;
@@ -433,9 +432,7 @@ public class LogicalRelImplementor<Row> implements IgniteRelVisitor<Node<Row>> {
         if (idx != null && !tbl.isIndexRebuildInProgress())
             return new ScanNode<>(ctx, rowType, idx.firstOrLast(idxBndRel.first(), ctx, grp, requiredColumns));
         else {
-            assert requiredColumns.asList().size() == 1;
-
-            RexBuilder b = new RexBuilder(typeFactory);
+            assert requiredColumns.cardinality() == 1;
 
             Iterable<Row> rowsIter = tbl.scan(
                 ctx,
