@@ -270,6 +270,10 @@ public abstract class AbstractConsistentCutBlockingTest extends AbstractConsiste
         List<Integer> nears = F.asList(0, nodes() - 1, nodes());
 
         for (int near: nears) {
+            // Client nodes doesn't prepare anything after version update.
+            if (near == nodes() && cutBlkNodeType == NEAR && cutBlkType == AFTER_VERSION_UPDATE)
+                continue;
+
             for (int c = 0; c < cases.size(); c++) {
                 if (walOrMsg) {
                     runWalBlkCase(cases.get(c), near, TransactionConcurrency.PESSIMISTIC);
@@ -529,17 +533,20 @@ public abstract class AbstractConsistentCutBlockingTest extends AbstractConsiste
         }
 
         /** {@inheritDoc} */
-        @Override public void startLocalCut(UUID id) {
-            if (beforeUpdVer != null) {
-                blockedLatch.countDown();
-                blockedLatch = null;
+        @Override public void handleConsistentCutId(UUID id) {
+            // Do not block transaction threads.
+            if (Thread.currentThread().getName().contains("disco")) {
+                if (beforeUpdVer != null) {
+                    blockedLatch.countDown();
+                    blockedLatch = null;
 
-                U.awaitQuiet(beforeUpdVer);
+                    U.awaitQuiet(beforeUpdVer);
 
-                beforeUpdVer = null;
+                    beforeUpdVer = null;
+                }
             }
 
-            super.startLocalCut(id);
+            super.handleConsistentCutId(id);
         }
 
         /** {@inheritDoc} */

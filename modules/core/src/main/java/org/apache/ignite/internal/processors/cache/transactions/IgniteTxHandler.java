@@ -48,7 +48,6 @@ import org.apache.ignite.internal.processors.cache.GridCacheSharedContext;
 import org.apache.ignite.internal.processors.cache.GridCacheUpdateTxResult;
 import org.apache.ignite.internal.processors.cache.KeyCacheObject;
 import org.apache.ignite.internal.processors.cache.consistentcut.ConsistentCutAwareMessage;
-import org.apache.ignite.internal.processors.cache.consistentcut.ConsistentCutAwareTxFinishMessage;
 import org.apache.ignite.internal.processors.cache.distributed.GridCacheTxRecoveryFuture;
 import org.apache.ignite.internal.processors.cache.distributed.GridCacheTxRecoveryRequest;
 import org.apache.ignite.internal.processors.cache.distributed.GridCacheTxRecoveryResponse;
@@ -295,23 +294,16 @@ public class IgniteTxHandler {
         ctx.io().addCacheHandler(TX_MSG_HND_ID, ConsistentCutAwareMessage.class,
             new CI2<UUID, ConsistentCutAwareMessage>() {
                 @Override public void apply(UUID nodeId, ConsistentCutAwareMessage msg) {
-                    processConsistentCutMarkerMessage(nodeId, msg);
-                }
-            });
-
-        ctx.io().addCacheHandler(TX_MSG_HND_ID, ConsistentCutAwareTxFinishMessage.class,
-            new CI2<UUID, ConsistentCutAwareTxFinishMessage>() {
-                @Override public void apply(UUID nodeId, ConsistentCutAwareTxFinishMessage msg) {
-                    processConsistentCutMarkerFinishTxMessage(nodeId, msg);
+                    processConsistentCutAwareMessage(nodeId, msg);
                 }
             });
     }
 
     /** */
-    private void processConsistentCutMarkerFinishTxMessage(UUID nodeId, ConsistentCutAwareTxFinishMessage msg) {
+    private void processConsistentCutAwareMessage(UUID nodeId, ConsistentCutAwareMessage msg) {
         ctx.consistentCutMgr().handleConsistentCutId(msg.cutId());
 
-        ctx.consistentCutMgr().registerCommitting(msg);
+        setTransactionCutIdIfNeeded(msg);
 
         GridCacheMessage cacheMsg = msg.payload();
 
@@ -320,15 +312,62 @@ public class IgniteTxHandler {
             .apply(nodeId, cacheMsg);
     }
 
-    /** */
-    private void processConsistentCutMarkerMessage(UUID nodeId, ConsistentCutAwareMessage msg) {
-        ctx.consistentCutMgr().handleConsistentCutId(msg.cutId());
+    /**
+     * Set received Consistent Cut ID to transaction if specified.
+     *
+     * @param msg Finish message signed with Consistent Cut ID.
+     */
+    private void setTransactionCutIdIfNeeded(ConsistentCutAwareMessage msg) {
+        IgniteInternalTx tx = null;
 
-        GridCacheMessage cacheMsg = msg.payload();
+        if (msg.txCutId() != null) {
+            tx = findTransactionByMessage(msg.payload());
 
-        ctx.io()
-            .cacheHandler(TX_MSG_HND_ID, cacheMsg.getClass())
-            .apply(nodeId, cacheMsg);
+            if (tx != null)
+                tx.cutId(msg.txCutId());
+        }
+
+        if (log.isDebugEnabled())
+            log.debug("`setTransactionCutIdIfNeeded` for message " + msg + ", tx = " + tx);
+    }
+
+    /**
+     * Finds transaction related to the specified message.
+     *
+     * @param msg Transaction message.
+     * @return Transaction, or {@code null} if not found.
+     */
+    private @Nullable IgniteInternalTx findTransactionByMessage(GridCacheMessage msg) {
+        if (msg instanceof GridNearTxFinishRequest) {
+            GridNearTxFinishRequest req = (GridNearTxFinishRequest)msg;
+
+            GridCacheVersion dhtVer = ctx.tm().mappedVersion(req.version());
+
+            return ctx.tm().tx(dhtVer);
+        }
+        else if (msg instanceof GridDhtTxFinishRequest) {
+            GridDhtTxFinishRequest req = (GridDhtTxFinishRequest)msg;
+
+            return ctx.tm().tx(req.version());
+        }
+        else if (msg instanceof GridDhtTxPrepareResponse) {
+            GridDhtTxPrepareResponse res = (GridDhtTxPrepareResponse)msg;
+
+            GridDhtTxPrepareFuture fut =
+                (GridDhtTxPrepareFuture)ctx.mvcc().versionedFuture(res.version(), res.futureId());
+
+            return fut.tx();
+        }
+        else if (msg instanceof GridNearTxPrepareResponse) {
+            GridNearTxPrepareResponse res = (GridNearTxPrepareResponse)msg;
+
+            GridNearTxPrepareFutureAdapter fut =
+                (GridNearTxPrepareFutureAdapter)ctx.mvcc().versionedFuture(res.version(), res.futureId());
+
+            return fut.tx();
+        }
+
+        return null;
     }
 
     /**
@@ -532,7 +571,7 @@ public class IgniteTxHandler {
 
                         try {
                             GridCacheMessage cacheMsg = ctx.consistentCutMgr() != null
-                                ? ctx.consistentCutMgr().wrapTxPrepareResponse(res, req.onePhaseCommit(), tx == null ? null : tx.cutId())
+                                ? ctx.consistentCutMgr().wrapMessage(res, tx == null ? null : tx.cutId())
                                 : res;
 
                             ctx.io().send(nearNode, cacheMsg, req.policy());
@@ -1618,7 +1657,7 @@ public class IgniteTxHandler {
             if (ctx.consistentCutMgr() != null) {
                 IgniteTxAdapter tx = dhtTx != null ? dhtTx : nearTx;
 
-                cacheMsg = ctx.consistentCutMgr().wrapTxPrepareResponse(res, req.onePhaseCommit(), tx == null ? null : tx.cutId());
+                cacheMsg = ctx.consistentCutMgr().wrapMessage(res, tx == null ? null : tx.cutId());
             }
 
             // Reply back to sender.

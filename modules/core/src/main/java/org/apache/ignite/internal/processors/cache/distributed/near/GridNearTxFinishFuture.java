@@ -658,7 +658,7 @@ public final class GridNearTxFinishFuture<K, V> extends GridCacheCompoundIdentit
 
                         try {
                             GridCacheMessage cacheMsg = cctx.consistentCutMgr() != null
-                                ? cctx.consistentCutMgr().wrapTxFinishRequest(finishReq, tx.cutId())
+                                ? cctx.consistentCutMgr().wrapMessage(finishReq, tx.cutId())
                                 : finishReq;
 
                             cctx.io().send(backup, cacheMsg, tx.ioPolicy());
@@ -817,7 +817,7 @@ public final class GridNearTxFinishFuture<K, V> extends GridCacheCompoundIdentit
 
             try {
                 GridCacheMessage cacheMsg = cctx.consistentCutMgr() != null
-                    ? cctx.consistentCutMgr().wrapTxFinishRequest(req, tx.cutId())
+                    ? cctx.consistentCutMgr().wrapMessage(req, tx.cutId())
                     : req;
 
                 cctx.io().send(n, cacheMsg, tx.ioPolicy());

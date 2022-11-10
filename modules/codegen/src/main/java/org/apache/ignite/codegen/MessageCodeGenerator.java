@@ -205,7 +205,6 @@ public class MessageCodeGenerator {
 //        gen.generateAndWrite(GridDhtTxFinishResponse.class);
 
 //        gen.generateAndWrite(ConsistentCutAwareMessage.class);
-//        gen.generateAndWrite(ConsistentCutAwareTxFinishMessage.class);
 
 //        gen.generateAndWrite(GridCacheTxRecoveryRequest.class);
 //        gen.generateAndWrite(GridCacheTxRecoveryResponse.class);

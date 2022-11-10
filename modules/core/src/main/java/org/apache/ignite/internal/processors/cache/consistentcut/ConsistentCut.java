@@ -60,11 +60,7 @@ public class ConsistentCut extends GridFutureAdapter<WALPointer> {
     /** */
     private final IgniteLogger log;
 
-    /**
-     * ID of {@link ConsistentCut}. Bind it with the instance by 2 reasons:
-     * a) To guarantee happens-before receiving ID and sending it after by the same node.
-     * b) To guarantee that every transaction committed after receiving ID isn't cleaned from {@link #committingTxs}.
-     */
+    /** ID of Consistent Cut. */
     private final UUID id;
 
     /** Set of checked transactions belonging to the BEFORE side. */
@@ -75,20 +71,15 @@ public class ConsistentCut extends GridFutureAdapter<WALPointer> {
     @GridToStringInclude
     private Set<GridCacheVersion> afterCut;
 
-    /**
-     * Collection of committing and committed transactions. Track them additionally to {@link IgniteTxManager#activeTransactions()}
-     * due to concurrency between threads that remove transactions from the collection and a thread that parses it in
-     * {@link #init()}.
-     */
-    private volatile Set<IgniteInternalFuture<IgniteInternalTx>> committingTxs = ConcurrentHashMap.newKeySet();
+    /** Collection of transactions removed from {@link IgniteTxManager#activeTransactions()}. */
+    private volatile Set<IgniteInternalFuture<IgniteInternalTx>> removedActive = ConcurrentHashMap.newKeySet();
 
     /** */
     ConsistentCut(GridCacheSharedContext<?, ?> cctx, UUID id) {
         this.cctx = cctx;
+        this.id = id;
 
         log = cctx.logger(ConsistentCut.class);
-
-        this.id = id;
     }
 
     /** */
@@ -100,6 +91,8 @@ public class ConsistentCut extends GridFutureAdapter<WALPointer> {
      * Inits local Consistent Cut: prepares list of active transactions to check which side of Consistent Cut they belong to.
      */
     protected void init() throws IgniteCheckedException {
+        walLog(new ConsistentCutStartRecord(id), false);
+
         beforeCut = ConcurrentHashMap.newKeySet();
         afterCut = ConcurrentHashMap.newKeySet();
 
@@ -112,23 +105,20 @@ public class ConsistentCut extends GridFutureAdapter<WALPointer> {
 
         // Invoke sequentially over two iterators:
         // 1. iterators are weakly consistent.
-        // 2. we need a guarantee to handle `committingTxs` after `activeTxs` to avoid missed transactions.
+        // 2. we need a guarantee to handle `removedActive` after `activeTxs` to avoid missed transactions.
         checkTransactions(finFutIt, checkFut);
+        checkTransactions(removedActive.iterator(), checkFut);
 
-        walLog(new ConsistentCutStartRecord(id), false);
-
-        checkTransactions(committingTxs.iterator(), checkFut);
+        removedActive = null;
 
         checkFut.markInitialized();
 
         checkFut.listen(finish -> {
-            committingTxs = null;
-
             if (Boolean.FALSE.equals(finish.result()) || isDone()) {
                 if (log.isDebugEnabled())
                     log.debug("Cut might be inconsistent for id " + id + ". Skip writing FinishRecord.");
 
-                onDone(null, new IgniteCheckedException("Cut is inconsistent."));
+                onDone(new IgniteCheckedException("Cut is inconsistent."));
 
                 return;
             }
@@ -147,12 +137,12 @@ public class ConsistentCut extends GridFutureAdapter<WALPointer> {
     }
 
     /**
-     * Registers transaction before commit it. Invokes before a committing transaction leaves {@link IgniteTxManager#activeTransactions()}.
+     * Registers transaction before it is removed from {@link IgniteTxManager#activeTransactions()}.
      *
      * @param txFinFut Transaction finish future.
      */
-    public void addCommittingTransaction(IgniteInternalFuture<IgniteInternalTx> txFinFut) {
-        Set<IgniteInternalFuture<IgniteInternalTx>> txs = committingTxs;
+    public void addActiveTransaction(IgniteInternalFuture<IgniteInternalTx> txFinFut) {
+        Set<IgniteInternalFuture<IgniteInternalTx>> txs = removedActive;
 
         if (txs != null)
             txs.add(txFinFut);
@@ -194,10 +184,7 @@ public class ConsistentCut extends GridFutureAdapter<WALPointer> {
                     return true;
 
                 if (tx.finalizationStatus() == RECOVERY_FINISH) {
-                    if (log.isInfoEnabled()) {
-                        log.info("Transaction committed after recovery process. " +
-                            "Cut might be inconsistent. Transaction: " + tx);
-                    }
+                    U.warn(log, "Transaction committed after recovery process. Cut might be inconsistent. Transaction: " + tx);
 
                     return false;
                 }
@@ -212,6 +199,13 @@ public class ConsistentCut extends GridFutureAdapter<WALPointer> {
 
             checkFut.add(txCheckFut);
         }
+    }
+
+    /** {@inheritDoc} */
+    @Override protected boolean onDone(@Nullable WALPointer res, @Nullable Throwable err, boolean cancel) {
+        removedActive = null;
+
+        return super.onDone(res, err, cancel);
     }
 
     /**

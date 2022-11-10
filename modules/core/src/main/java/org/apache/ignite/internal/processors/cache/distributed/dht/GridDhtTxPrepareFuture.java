@@ -786,12 +786,8 @@ public final class GridDhtTxPrepareFuture extends GridCacheCompoundFuture<Ignite
                                 if (REPLIED_UPD.compareAndSet(GridDhtTxPrepareFuture.this, 0, 1)) {
                                     GridCacheMessage msg = res;
 
-                                    if (res.onePhaseCommit() && fut.result() != null && cctx.consistentCutMgr() != null) {
-                                        msg = cctx.consistentCutMgr().wrapTxPrepareResponse(
-                                            res,
-                                            res.onePhaseCommit(),
-                                            fut.result().cutId());
-                                    }
+                                    if (res.onePhaseCommit() && fut.result() != null && cctx.consistentCutMgr() != null)
+                                        msg = cctx.consistentCutMgr().wrapMessage(res, fut.result().cutId());
 
                                     sendPrepareResponse(msg);
                                 }
@@ -847,7 +843,7 @@ public final class GridDhtTxPrepareFuture extends GridCacheCompoundFuture<Ignite
                     onComplete(res);
 
                     GridCacheMessage msg = cctx.consistentCutMgr() != null
-                        ? cctx.consistentCutMgr().wrapTxPrepareResponse(res, res.onePhaseCommit(), tx.cutId())
+                        ? cctx.consistentCutMgr().wrapMessage(res, tx.cutId())
                         : res;
 
                     sendPrepareResponse(msg);
@@ -1530,7 +1526,7 @@ public final class GridDhtTxPrepareFuture extends GridCacheCompoundFuture<Ignite
 
             try {
                 GridCacheMessage cacheMsg = cctx.consistentCutMgr() != null
-                    ? cctx.consistentCutMgr().wrapTxPrepareRequest(req)
+                    ? cctx.consistentCutMgr().wrapMessage(req, null)
                     : req;
 
                 cctx.io().send(n, cacheMsg, tx.ioPolicy());
@@ -1614,7 +1610,7 @@ public final class GridDhtTxPrepareFuture extends GridCacheCompoundFuture<Ignite
 
                 try {
                     GridCacheMessage cacheMsg = cctx.consistentCutMgr() != null
-                        ? cctx.consistentCutMgr().wrapTxPrepareRequest(req)
+                        ? cctx.consistentCutMgr().wrapMessage(req, null)
                         : req;
 
                     cctx.io().send(nearMapping.primary(), cacheMsg, tx.ioPolicy());

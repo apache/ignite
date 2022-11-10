@@ -486,7 +486,7 @@ public class GridNearOptimisticSerializableTxPrepareFuture extends GridNearOptim
                     m.writes());
 
                 GridCacheMessage cacheMsg = cctx.consistentCutMgr() != null
-                    ? cctx.consistentCutMgr().wrapTxPrepareRequest(req)
+                    ? cctx.consistentCutMgr().wrapMessage(req, null)
                     : req;
 
                 cctx.io().send(primary, cacheMsg, tx.ioPolicy());

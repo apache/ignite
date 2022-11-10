@@ -54,7 +54,6 @@ import org.apache.ignite.internal.processors.cache.WalStateAckMessage;
 import org.apache.ignite.internal.processors.cache.binary.MetadataRequestMessage;
 import org.apache.ignite.internal.processors.cache.binary.MetadataResponseMessage;
 import org.apache.ignite.internal.processors.cache.consistentcut.ConsistentCutAwareMessage;
-import org.apache.ignite.internal.processors.cache.consistentcut.ConsistentCutAwareTxFinishMessage;
 import org.apache.ignite.internal.processors.cache.distributed.GridCacheTtlUpdateRequest;
 import org.apache.ignite.internal.processors.cache.distributed.GridCacheTxRecoveryRequest;
 import org.apache.ignite.internal.processors.cache.distributed.GridCacheTxRecoveryResponse;
@@ -386,7 +385,6 @@ public class GridIoMessageFactory implements MessageFactoryProvider {
 
         // Consistent Cut.
         factory.register(ConsistentCutAwareMessage.TYPE_CODE, ConsistentCutAwareMessage::new);
-        factory.register(ConsistentCutAwareTxFinishMessage.TYPE_CODE, ConsistentCutAwareTxFinishMessage::new);
 
         // Index statistics.
         factory.register(StatisticsKeyMessage.TYPE_CODE, StatisticsKeyMessage::new);
@@ -400,7 +398,7 @@ public class GridIoMessageFactory implements MessageFactoryProvider {
         // [120..123] - DR
         // [-44, 0..2, 42, 200..204, 210, 302] - Use in tests.
         // [300..307, 350..352] - CalciteMessageFactory.
-        // [400..401] - Consistent Cut.
+        // [400] - Consistent Cut.
         // [-4..-22, -30..-35, -54..-57] - SQL
         // [2048..2053] - Snapshots
         // [-42..-37] - former hadoop.

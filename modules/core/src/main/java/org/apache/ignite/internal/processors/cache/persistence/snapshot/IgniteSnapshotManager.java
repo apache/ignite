@@ -838,7 +838,7 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
      */
     private IgniteInternalFuture<SnapshotOperationResponse> initLocalIncrementalSnapshotStartStage(SnapshotOperationRequest req) {
         // Start ConsistentCut in background immediately on every node (cluster-wide operation).
-        cctx.consistentCutMgr().startLocalCut(req.requestId());
+        cctx.consistentCutMgr().handleConsistentCutId(req.requestId());
 
         if (clusterSnpReq != null) {
             return new GridFinishedFuture<>(new IgniteCheckedException("Snapshot operation has been rejected. " +
@@ -1282,12 +1282,13 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
         clusterSnpReq = null;
 
         if (snpReq.incremental()) {
-            if (!endFail.isEmpty() || snpReq.error() != null)
-                U.delete(incrementalSnapshotLocalDir(snpReq.snapshotName(), snpReq.snapshotPath(), snpReq.incrementIndex()));
-
             try {
-                if (!cctx.localNode().isClient())
+                if (!cctx.localNode().isClient()) {
+                    if (!endFail.isEmpty() || snpReq.error() != null)
+                        U.delete(incrementalSnapshotLocalDir(snpReq.snapshotName(), snpReq.snapshotPath(), snpReq.incrementIndex()));
+
                     removeLastMetaStorageKey();
+                }
             }
             catch (IgniteCheckedException e) {
                 U.error(log, "Failed to clear snapshot meta information from MetaStorage.", e);

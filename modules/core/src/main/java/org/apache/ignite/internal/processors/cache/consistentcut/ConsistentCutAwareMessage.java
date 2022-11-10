@@ -21,12 +21,15 @@ import java.nio.ByteBuffer;
 import java.util.UUID;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.internal.processors.cache.GridCacheIdMessage;
+import org.apache.ignite.internal.processors.cache.GridCacheMessage;
 import org.apache.ignite.internal.processors.cache.GridCacheSharedContext;
-import org.apache.ignite.internal.processors.cache.distributed.GridDistributedBaseMessage;
 import org.apache.ignite.plugin.extensions.communication.MessageReader;
 import org.apache.ignite.plugin.extensions.communication.MessageWriter;
+import org.jetbrains.annotations.Nullable;
 
-/** Message that holds a transaction message and ID of {@link ConsistentCut}. */
+/**
+ * Message that holds a transaction message and Consistent Cut info.
+ */
 public class ConsistentCutAwareMessage extends GridCacheIdMessage {
     /** */
     private static final long serialVersionUID = 0L;
@@ -35,10 +38,16 @@ public class ConsistentCutAwareMessage extends GridCacheIdMessage {
     public static final short TYPE_CODE = 400;
 
     /** Original transaction message. */
-    private GridDistributedBaseMessage payload;
+    private GridCacheMessage payload;
 
     /** */
     private UUID cutId;
+
+    /**
+     * ID of the latest {@link ConsistentCut} AFTER which this transaction committed. {@code null} if transaction
+     * committed BEFORE.
+     */
+    private @Nullable UUID txCutId;
 
     /** */
     public ConsistentCutAwareMessage() {
@@ -46,11 +55,13 @@ public class ConsistentCutAwareMessage extends GridCacheIdMessage {
 
     /** */
     public ConsistentCutAwareMessage(
-        GridDistributedBaseMessage payload,
-        UUID cutId
+        GridCacheMessage payload,
+        UUID cutId,
+        @Nullable UUID txCutId
     ) {
         this.payload = payload;
         this.cutId = cutId;
+        this.txCutId = txCutId;
     }
 
     /** */
@@ -59,7 +70,12 @@ public class ConsistentCutAwareMessage extends GridCacheIdMessage {
     }
 
     /** */
-    public GridDistributedBaseMessage payload() {
+    public UUID txCutId() {
+        return txCutId;
+    }
+
+    /** */
+    public GridCacheMessage payload() {
         return payload;
     }
 
@@ -100,6 +116,12 @@ public class ConsistentCutAwareMessage extends GridCacheIdMessage {
 
                 writer.incrementState();
 
+            case 6:
+                if (!writer.writeUuid("txCutId", txCutId))
+                    return false;
+
+                writer.incrementState();
+
         }
 
         return true;
@@ -132,6 +154,14 @@ public class ConsistentCutAwareMessage extends GridCacheIdMessage {
 
                 reader.incrementState();
 
+            case 6:
+                txCutId = reader.readUuid("txCutId");
+
+                if (!reader.isLastRead())
+                    return false;
+
+                reader.incrementState();
+
         }
 
         return reader.afterMessageRead(ConsistentCutAwareMessage.class);
@@ -144,7 +174,7 @@ public class ConsistentCutAwareMessage extends GridCacheIdMessage {
 
     /** {@inheritDoc} */
     @Override public byte fieldsCount() {
-        return 6;
+        return 7;
     }
 
     /** {@inheritDoc} */

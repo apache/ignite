@@ -372,18 +372,12 @@ public abstract class AbstractConsistentCutTest extends GridCommonAbstractTest {
             UUID cutId = null;
             UUID txCutId = null;
 
-            if (msg instanceof ConsistentCutAwareTxFinishMessage) {
-                ConsistentCutAwareTxFinishMessage m = (ConsistentCutAwareTxFinishMessage)msg;
-
-                txMsg = m.payload();
-                cutId = m.cutId();
-                txCutId = m.txCutId();
-            }
-            else if (msg instanceof ConsistentCutAwareMessage) {
+            if (msg instanceof ConsistentCutAwareMessage) {
                 ConsistentCutAwareMessage m = (ConsistentCutAwareMessage)msg;
 
                 txMsg = m.payload();
                 cutId = m.cutId();
+                txCutId = m.txCutId();
             }
 
             bld
@@ -452,8 +446,7 @@ public abstract class AbstractConsistentCutTest extends GridCommonAbstractTest {
                 msg = ((GridIoMessage)msg).message();
 
                 return msg.getClass().getSimpleName().contains("Tx")
-                    || msg.getClass() == ConsistentCutAwareMessage.class
-                    || msg.getClass() == ConsistentCutAwareTxFinishMessage.class;
+                    || msg.getClass() == ConsistentCutAwareMessage.class;
             }
 
             return false;
