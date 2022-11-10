@@ -3338,6 +3338,9 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
                         }
 
                         @Override public int next() {
+                            if (!hasNext())
+                                throw new NoSuchElementException();
+
                             return sortedIter.next();
                         }
 
