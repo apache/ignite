@@ -48,7 +48,7 @@ import org.junit.runners.Parameterized;
 
 import static org.apache.ignite.configuration.DataStorageConfiguration.DFLT_PAGE_SIZE;
 import static org.apache.ignite.internal.processors.cache.persistence.file.FilePageStoreManager.CACHE_DIR_PREFIX;
-import static org.apache.ignite.internal.processors.cache.persistence.snapshot.IgniteSnapshotManager.SNAPSHOT_DELTA_SORT_BATCH_SIZE_KEY;
+import static org.apache.ignite.internal.processors.cache.persistence.snapshot.IgniteSnapshotManager.SNAPSHOT_SEQUENTIAL_WRITE_KEY;
 import static org.apache.ignite.testframework.GridTestUtils.cartesianProduct;
 import static org.junit.Assert.assertArrayEquals;
 
@@ -59,10 +59,10 @@ import static org.junit.Assert.assertArrayEquals;
 public class IgniteClusterSnapshotDeltaTest extends AbstractSnapshotSelfTest {
     /** */
     @Parameterized.Parameter(1)
-    public boolean sorted;
+    public boolean sequentialWrite;
 
     /** Parameters. */
-    @Parameterized.Parameters(name = "encryption={0}, sorted={1}")
+    @Parameterized.Parameters(name = "encryption={0}, sequentialWrite={1}")
     public static Collection<Object[]> parameters() {
         return cartesianProduct(encryptionParams(), F.asList(false, true));
     }
@@ -87,8 +87,8 @@ public class IgniteClusterSnapshotDeltaTest extends AbstractSnapshotSelfTest {
 
         IgniteEx srv = startGridsWithCache(1, keys, (k) -> expPayload, ccfg);
 
-        if (sorted) {
-            setDeltaSortBatchSize(batchSize);
+        if (sequentialWrite) {
+            setSequentialWrite(sequentialWrite);
 
             injectSequentialWriteCheck(srv, batchSize);
         }
@@ -207,10 +207,10 @@ public class IgniteClusterSnapshotDeltaTest extends AbstractSnapshotSelfTest {
         pageStore.setPageStoreFileIOFactories(testFactory, testFactory);
     }
 
-    /** @param val Snapshot delta sort batch size to set. */
-    private void setDeltaSortBatchSize(Integer val) throws IgniteCheckedException {
+    /** @param val Snapshot sequential write flag to set. */
+    private void setSequentialWrite(boolean val) throws IgniteCheckedException {
         DistributedChangeableProperty<Serializable> rateProp =
-            grid(0).context().distributedConfiguration().property(SNAPSHOT_DELTA_SORT_BATCH_SIZE_KEY);
+            grid(0).context().distributedConfiguration().property(SNAPSHOT_SEQUENTIAL_WRITE_KEY);
 
         rateProp.propagate(val);
     }

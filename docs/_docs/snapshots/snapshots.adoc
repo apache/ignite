@@ -102,9 +102,8 @@ The distributed properties listed in the table below allow you to configure snap
 [cols="1,3,1",opts="header"]
 |===
 |Parameter | Description | Default Value
-|`snapshotDeltaSortBatchSize`| Snapshot delta sort batch size in pages count. If set then delta pages will be indexed
-by page index to almost sequential disk write on apply. This generates an extra delta read. If value is non-positive or
-not set then delta pages will be applied directly. | 0
+|`snapshotSequentialWrite`| Flag to indicate that disk writes should be in a sequential manner when possible. This
+generates extra disk reads. | false
 |`snapshotTransferRate`| Snapshot transfer rate limit in bytes/sec. | 0
 |===
 

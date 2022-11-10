@@ -139,8 +139,8 @@ import org.apache.ignite.internal.processors.cache.tree.DataRow;
 import org.apache.ignite.internal.processors.cache.verify.IdleVerifyResultV2;
 import org.apache.ignite.internal.processors.cluster.DiscoveryDataClusterState;
 import org.apache.ignite.internal.processors.cluster.IgniteChangeGlobalStateSupport;
+import org.apache.ignite.internal.processors.configuration.distributed.DistributedBooleanProperty;
 import org.apache.ignite.internal.processors.configuration.distributed.DistributedConfigurationLifecycleListener;
-import org.apache.ignite.internal.processors.configuration.distributed.DistributedIntegerProperty;
 import org.apache.ignite.internal.processors.configuration.distributed.DistributedLongProperty;
 import org.apache.ignite.internal.processors.configuration.distributed.DistributedPropertyDispatcher;
 import org.apache.ignite.internal.processors.marshaller.MappedName;
@@ -219,7 +219,7 @@ import static org.apache.ignite.internal.processors.cache.persistence.tree.io.Pa
 import static org.apache.ignite.internal.processors.cache.persistence.tree.io.PageIO.getPageIO;
 import static org.apache.ignite.internal.processors.cache.persistence.tree.io.PageIO.getType;
 import static org.apache.ignite.internal.processors.cache.persistence.tree.io.PageIO.getVersion;
-import static org.apache.ignite.internal.processors.configuration.distributed.DistributedIntegerProperty.detachedIntegerProperty;
+import static org.apache.ignite.internal.processors.configuration.distributed.DistributedBooleanProperty.detachedBooleanProperty;
 import static org.apache.ignite.internal.processors.configuration.distributed.DistributedLongProperty.detachedLongProperty;
 import static org.apache.ignite.internal.processors.task.GridTaskThreadContextKey.TC_SKIP_AUTH;
 import static org.apache.ignite.internal.processors.task.GridTaskThreadContextKey.TC_SUBGRID;
@@ -277,11 +277,14 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
     /** Snapshot transfer rate distributed configuration key */
     public static final String SNAPSHOT_TRANSFER_RATE_DMS_KEY = "snapshotTransferRate";
 
-    /** Snapshot delta sort batch size key. */
-    public static final String SNAPSHOT_DELTA_SORT_BATCH_SIZE_KEY = "snapshotDeltaSortBatchSize";
-
     /** Snapshot transfer rate is unlimited by default. */
     public static final long DFLT_SNAPSHOT_TRANSFER_RATE_BYTES = 0L;
+
+    /** Snapshot sequential write key. */
+    public static final String SNAPSHOT_SEQUENTIAL_WRITE_KEY = "snapshotSequentialWrite";
+
+    /** Snapshot delta sort batch size in pages count. */
+    public static final int DELTA_SORT_BATCH_SIZE = 1_000_000;
 
     /** Maximum block size for limited snapshot transfer (64KB by default). */
     public static final int SNAPSHOT_LIMITED_TRANSFER_BLOCK_SIZE_BYTES = 64 * 1024;
@@ -404,11 +407,11 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
     private final DistributedLongProperty snapshotTransferRate = detachedLongProperty(SNAPSHOT_TRANSFER_RATE_DMS_KEY);
 
     /**
-     * Snapshot delta sort batch size in pages count. If set then delta pages will be indexed by page index to almost
-     * sequential disk write on apply. This generates an extra delta read. If value is non-positive or not set then delta
-     * pages will be applied directly.
+     * Flag to indicate that disk writes should be in a sequential manner when possible.
+     * If set then delta pages will be indexed by page index to almost sequential disk write on apply. This generates
+     * an extra delta read. If {@code false} or not set then delta pages will be applied directly.
      */
-    private final DistributedIntegerProperty deltaSortBatch = detachedIntegerProperty(SNAPSHOT_DELTA_SORT_BATCH_SIZE_KEY);
+    private final DistributedBooleanProperty sequentialWrite = detachedBooleanProperty(SNAPSHOT_SEQUENTIAL_WRITE_KEY);
 
     /**
      * @param ctx Kernal context.
@@ -498,7 +501,7 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
                     });
 
                     dispatcher.registerProperty(snapshotTransferRate);
-                    dispatcher.registerProperty(deltaSortBatch);
+                    dispatcher.registerProperty(sequentialWrite);
                 }
 
                 @Override public void onReadyToWrite() {
@@ -3312,11 +3315,11 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
 
                 int pagesCnt = (int)(totalBytes / pageSize);
 
-                Integer batchSize = deltaSortBatch.get();
+                Boolean sequential = sequentialWrite.get();
 
                 GridIntIterator iter;
 
-                if (batchSize == null || batchSize <= 0)
+                if (sequential == null || !sequential)
                     iter = U.forRange(0, pagesCnt);
                 else {
                     iter = new GridIntIterator() {
@@ -3347,7 +3350,7 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
                         private void advance() throws Exception {
                             TreeMap<Integer, Integer> sorted = new TreeMap<>();
 
-                            while (idx < pagesCnt && sorted.size() < batchSize) {
+                            while (idx < pagesCnt && sorted.size() < DELTA_SORT_BATCH_SIZE) {
                                 transferRateLimiter.acquire(pageSize);
 
                                 fileIo.readFully(pageBuf, (long)idx * pageSize);
