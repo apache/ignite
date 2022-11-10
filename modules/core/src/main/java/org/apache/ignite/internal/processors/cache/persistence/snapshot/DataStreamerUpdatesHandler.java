@@ -18,7 +18,6 @@
 package org.apache.ignite.internal.processors.cache.persistence.snapshot;
 
 import java.util.Collection;
-import java.util.Collections;
 import java.util.UUID;
 import java.util.stream.Collectors;
 
@@ -47,7 +46,7 @@ public class DataStreamerUpdatesHandler implements SnapshotHandler<Boolean> {
         boolean streamerDetected = ctx.streamerWarning();
 
         if (streamerDetected)
-            ctx.metadata().warnings(Collections.singletonList(WRN_MSG));
+            ctx.warning(WRN_MSG);
 
         return streamerDetected;
     }

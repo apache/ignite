@@ -19,6 +19,8 @@ package org.apache.ignite.internal.processors.cache.persistence.snapshot;
 
 import java.io.File;
 import java.util.Collection;
+import java.util.List;
+import java.util.concurrent.CopyOnWriteArrayList;
 import org.apache.ignite.cluster.ClusterNode;
 import org.jetbrains.annotations.Nullable;
 
@@ -40,6 +42,9 @@ public class SnapshotHandlerContext {
 
     /** Warning flag of concurrent inconsistent-by-nature streamer updates. */
     private final boolean streamerWrn;
+
+    /** Warnings to store in meta. */
+    private final List<String> warnings = new CopyOnWriteArrayList<>();
 
     /**
      * @param metadata Snapshot metadata.
@@ -92,5 +97,19 @@ public class SnapshotHandlerContext {
      */
     public boolean streamerWarning() {
         return streamerWrn;
+    }
+
+    /**
+     * Stores snapshot process warning.
+     */
+    public void warning(String wrn) {
+        warnings.add(wrn);
+    }
+
+    /**
+     * @return Snapshot warnings.
+     */
+    public List<String> warnings() {
+        return warnings;
     }
 }

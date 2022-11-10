@@ -97,11 +97,6 @@ import org.apache.ignite.internal.processors.cache.persistence.file.FileIO;
 import org.apache.ignite.internal.processors.cache.persistence.file.FileIOFactory;
 import org.apache.ignite.internal.processors.cache.persistence.snapshot.DataStreamerUpdatesHandler;
 import org.apache.ignite.internal.processors.cache.persistence.snapshot.IgniteSnapshotManager;
-import org.apache.ignite.internal.processors.cache.persistence.snapshot.SnapshotHandler;
-import org.apache.ignite.internal.processors.cache.persistence.snapshot.SnapshotHandlerContext;
-import org.apache.ignite.internal.processors.cache.persistence.snapshot.SnapshotHandlerResult;
-import org.apache.ignite.internal.processors.cache.persistence.snapshot.SnapshotHandlerType;
-import org.apache.ignite.internal.processors.cache.persistence.snapshot.SnapshotHandlerWarningException;
 import org.apache.ignite.internal.processors.cache.persistence.snapshot.SnapshotPartitionsVerifyTaskResult;
 import org.apache.ignite.internal.processors.cache.transactions.IgniteInternalTx;
 import org.apache.ignite.internal.processors.cache.transactions.IgniteTxEntry;
@@ -3259,8 +3254,6 @@ public class GridCommandHandlerTest extends GridCommandHandlerClusterPerMethodAb
         IgniteEx ig = startGrid(0);
         ig.cluster().state(ACTIVE);
 
-        ig.destroyCache(DEFAULT_CACHE_NAME);
-
         createCacheAndPreload(ig, 1000);
 
         snp(ig).createSnapshot(snpName)
@@ -3842,24 +3835,6 @@ public class GridCommandHandlerTest extends GridCommandHandlerClusterPerMethodAb
 
                 throw new RuntimeException(e);
             }
-        }
-    }
-
-    /** */
-    private static class SnapshotWarningSimulationHandler implements SnapshotHandler<Void> {
-        /** {@inheritDoc} */
-        @Override public SnapshotHandlerType type() {
-            return SnapshotHandlerType.CREATE;
-        }
-
-        /** {@inheritDoc} */
-        @Override public void complete(String name, Collection<SnapshotHandlerResult<Void>> results) throws Exception {
-            throw new SnapshotHandlerWarningException(DataStreamerUpdatesHandler.WRN_MSG);
-        }
-
-        /** {@inheritDoc} */
-        @Nullable @Override public Void invoke(SnapshotHandlerContext ctx) {
-            return null;
         }
     }
 }

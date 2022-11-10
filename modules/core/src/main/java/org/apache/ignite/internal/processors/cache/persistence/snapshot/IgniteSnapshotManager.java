@@ -838,6 +838,8 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
 
                 Map<String, SnapshotHandlerResult<Object>> hndRes = handlers.invokeAll(SnapshotHandlerType.CREATE, ctx);
 
+                meta.warnings(new ArrayList<>(ctx.warnings()));
+
                 try (OutputStream out = Files.newOutputStream(smf.toPath())) {
                     byte[] bytes = U.marshal(marsh, meta);
                     int blockSize = SNAPSHOT_LIMITED_TRANSFER_BLOCK_SIZE_BYTES;
@@ -1274,8 +1276,7 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
      * @param name Snapshot name.
      * @param snpPath Snapshot directory path.
      * @return Future with the result of execution snapshot partitions verify task, which besides calculating partition
-     *         hashes of {@link IdleVerifyResultV2} also contains the snapshot metadata distribution across the
-     *         cluster and possible snapshot process warnings.
+     *         hashes of {@link IdleVerifyResultV2} also contains the snapshot metadata distribution across the cluster.
      */
     public IgniteInternalFuture<SnapshotPartitionsVerifyTaskResult> checkSnapshot(String name, @Nullable String snpPath) {
         A.notNullOrEmpty(name, "Snapshot name cannot be null or empty.");
