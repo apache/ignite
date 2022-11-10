@@ -75,7 +75,7 @@ public class IndexFirstLastScan<Row> extends IndexScan<Row> {
         return new IndexQueryContext(
             res.cacheFilter(),
             new BPlusTree.TreeRowClosure<IndexRow, IndexRow>() {
-                /** checkstyle fix{@inheritDoc} */
+                /** {@inheritDoc} */
                 @Override public boolean apply(
                     BPlusTree<IndexRow, IndexRow> tree,
                     BPlusIO<IndexRow> io,
