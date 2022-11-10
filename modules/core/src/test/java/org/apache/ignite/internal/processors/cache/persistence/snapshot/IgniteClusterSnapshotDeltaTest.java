@@ -48,6 +48,7 @@ import org.junit.runners.Parameterized;
 
 import static org.apache.ignite.configuration.DataStorageConfiguration.DFLT_PAGE_SIZE;
 import static org.apache.ignite.internal.processors.cache.persistence.file.FilePageStoreManager.CACHE_DIR_PREFIX;
+import static org.apache.ignite.internal.processors.cache.persistence.snapshot.IgniteSnapshotManager.DELTA_SORT_BATCH_SIZE;
 import static org.apache.ignite.internal.processors.cache.persistence.snapshot.IgniteSnapshotManager.SNAPSHOT_SEQUENTIAL_WRITE_KEY;
 import static org.apache.ignite.testframework.GridTestUtils.cartesianProduct;
 import static org.junit.Assert.assertArrayEquals;
@@ -73,7 +74,6 @@ public class IgniteClusterSnapshotDeltaTest extends AbstractSnapshotSelfTest {
         int keys = 1_000;
         byte[] payload = new byte[DFLT_PAGE_SIZE / 2];
         int partCnt = 2;
-        int batchSize = keys / 10;
 
         // 1. Start a cluster and fill cache.
         ThreadLocalRandom.current().nextBytes(payload);
@@ -90,7 +90,7 @@ public class IgniteClusterSnapshotDeltaTest extends AbstractSnapshotSelfTest {
         if (sequentialWrite) {
             setSequentialWrite(sequentialWrite);
 
-            injectSequentialWriteCheck(srv, batchSize);
+            injectSequentialWriteCheck(srv);
         }
 
         IgniteSnapshotManager mgr = snp(srv);
@@ -167,7 +167,7 @@ public class IgniteClusterSnapshotDeltaTest extends AbstractSnapshotSelfTest {
     }
 
     /** Injects test IO that checks sequential write to a pagestore on a delta apply. */
-    private void injectSequentialWriteCheck(IgniteEx srv, int batchSize) {
+    private void injectSequentialWriteCheck(IgniteEx srv) {
         FilePageStoreManager pageStore = (FilePageStoreManager)srv.context().cache().context().pageStore();
 
         FileIOFactory old = pageStore.getPageStoreFileIoFactory();
@@ -184,7 +184,7 @@ public class IgniteClusterSnapshotDeltaTest extends AbstractSnapshotSelfTest {
                     int idx;
 
                     @Override public int write(ByteBuffer srcBuf, long pos) throws IOException {
-                        boolean batchRotation = idx++ % batchSize == 0;
+                        boolean batchRotation = idx++ % DELTA_SORT_BATCH_SIZE == 0;
 
                         if (lastPos > pos && !batchRotation)
                             isSequentialWrite = false;
