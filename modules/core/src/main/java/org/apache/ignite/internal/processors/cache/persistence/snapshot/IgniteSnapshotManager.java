@@ -815,11 +815,6 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
 
                 File snpDir = snapshotLocalDir(req.snapshotName(), req.snapshotPath());
 
-                File smf = new File(snpDir, snapshotMetaFileName(cctx.localNode().consistentId().toString()));
-
-                if (smf.exists())
-                    throw new GridClosureException(new IgniteException("Snapshot metafile must not exist: " + smf.getAbsolutePath()));
-
                 snpDir.mkdirs();
 
                 SnapshotMetadata meta = new SnapshotMetadata(req.requestId(),
