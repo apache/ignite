@@ -276,9 +276,9 @@ public class Log4J2Logger implements IgniteLoggerEx {
     }
 
     /** {@inheritDoc} */
-    @Override public void addConsoleAppender() {
+    @Override public void addConsoleAppender(boolean clearOutput) {
         if (!isConsoleAppenderConfigured())
-            configureConsoleAppender();
+            configureConsoleAppender(clearOutput);
     }
 
     /** {@inheritDoc} */
@@ -334,7 +334,7 @@ public class Log4J2Logger implements IgniteLoggerEx {
             if (!consoleAppenderFound && !quiet && Boolean.parseBoolean(System.getProperty(IGNITE_CONSOLE_APPENDER, "true"))) {
                 // User launched ignite in verbose mode and did not add console appender with INFO level
                 // to configuration and did not set IGNITE_CONSOLE_APPENDER to false.
-                configureConsoleAppender();
+                configureConsoleAppender(false);
             }
 
             quiet0 = quiet;
@@ -366,9 +366,11 @@ public class Log4J2Logger implements IgniteLoggerEx {
     /**
      * Creates console appender with some reasonable default logging settings.
      *
+     * @param clearOutput If {@code true} then console output must be configured without any additional info
+     *                    like time, message level, thread info, etc.
      * @return Logger with auto configured console appender.
      */
-    public Logger configureConsoleAppender() {
+    public Logger configureConsoleAppender(boolean clearOutput) {
         // from http://logging.apache.org/log4j/2.x/manual/customconfig.html
         LoggerContext ctx = LoggerContext.getContext(false);
 
@@ -381,12 +383,12 @@ public class Log4J2Logger implements IgniteLoggerEx {
 
             cfg = cfgBuilder.add(rootLog).build();
 
-            addConsoleAppender(cfg);
+            addConsoleAppender(cfg, clearOutput);
 
             ctx.reconfigure(cfg);
         }
         else {
-            addConsoleAppender(cfg);
+            addConsoleAppender(cfg, clearOutput);
 
             ctx.updateLoggers();
         }
@@ -395,9 +397,9 @@ public class Log4J2Logger implements IgniteLoggerEx {
     }
 
     /** */
-    private void addConsoleAppender(Configuration logCfg) {
+    private void addConsoleAppender(Configuration logCfg, boolean clearOutput) {
         PatternLayout layout = PatternLayout.newBuilder()
-            .withPattern("%d{ISO8601}][%-5p][%t][%c{1}] %m%n")
+            .withPattern(clearOutput ? "%m%n" : "%d{ISO8601}][%-5p][%t][%c{1}] %m%n")
             .withCharset(Charset.defaultCharset())
             .withAlwaysWriteExceptions(false)
             .withNoConsoleNoAnsi(false)

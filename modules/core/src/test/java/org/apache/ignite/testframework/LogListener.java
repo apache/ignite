@@ -329,6 +329,8 @@ public abstract class LogListener implements Consumer<String> {
         private LogMessageListener(@NotNull Function<String, Integer> func, @NotNull ValueRange exp) {
             this.func = func;
             this.exp = exp;
+
+            matches.set(0);
         }
 
         /** {@inheritDoc} */

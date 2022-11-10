@@ -36,6 +36,7 @@ import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.locks.ReentrantReadWriteLock;
+import java.util.stream.Collectors;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.IgniteSystemProperties;
@@ -1084,6 +1085,15 @@ public class SchemaManager {
         finally {
             lock.readLock().unlock();
         }
+    }
+
+    /**
+     * @return Collection of all present index descriptors.
+     */
+    public Collection<IndexDescriptor> allIndexes() {
+        return id2tbl.values().stream()
+            .flatMap(t -> t.indexes().values().stream())
+            .collect(Collectors.toList());
     }
 
     /**

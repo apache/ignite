@@ -297,7 +297,7 @@ public class GridTestLog4jLogger implements IgniteLoggerEx {
     }
 
     /** {@inheritDoc} */
-    @Override public void addConsoleAppender() {
+    @Override public void addConsoleAppender(boolean clearOutput) {
         // No-op.
     }
 
