@@ -51,6 +51,7 @@ import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteCluster;
 import org.apache.ignite.IgniteDataStreamer;
 import org.apache.ignite.IgniteSystemProperties;
+import org.apache.ignite.cache.affinity.AffinityFunction;
 import org.apache.ignite.cache.affinity.rendezvous.RendezvousAffinityFunction;
 import org.apache.ignite.cache.query.SqlFieldsQuery;
 import org.apache.ignite.cluster.ClusterNode;
@@ -80,6 +81,7 @@ import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.internal.visor.tx.VisorTxTaskResult;
 import org.apache.ignite.lang.IgniteInClosure;
+import org.apache.ignite.logger.java.JavaLogger;
 import org.apache.ignite.testframework.junits.GridAbstractTest;
 import org.apache.ignite.testframework.junits.WithSystemProperty;
 import org.apache.ignite.transactions.Transaction;
@@ -116,6 +118,7 @@ import static org.apache.ignite.internal.commandline.cache.CacheSubcommands.HELP
 import static org.apache.ignite.internal.commandline.consistency.ConsistencyCommand.CACHE;
 import static org.apache.ignite.internal.commandline.consistency.ConsistencyCommand.PARTITIONS;
 import static org.apache.ignite.internal.commandline.consistency.ConsistencyCommand.STRATEGY;
+import static org.apache.ignite.internal.util.IgniteUtils.nl;
 import static org.apache.ignite.testframework.GridTestUtils.assertContains;
 import static org.apache.ignite.testframework.GridTestUtils.assertNotContains;
 import static org.apache.ignite.testframework.GridTestUtils.readResource;
@@ -456,6 +459,7 @@ public class GridCommandHandlerClusterByClassTest extends GridCommandHandlerClus
         IgniteEx ignite = crd;
 
         createCacheAndPreload(ignite, 100);
+        createCacheAndPreload(ignite, DEFAULT_CACHE_NAME + "other", 100, 32, null);
 
         injectTestSystemOut();
 
@@ -464,12 +468,26 @@ public class GridCommandHandlerClusterByClassTest extends GridCommandHandlerClus
         assertContains(log, testOut.toString(), "no conflicts have been found");
 
         HashSet<Integer> clearKeys = new HashSet<>(asList(1, 2, 3, 4, 5, 6));
+        HashSet<Integer> clearKeysOther = new HashSet<>(asList(7, 8, 9, 10, 11));
 
         ignite.context().cache().cache(DEFAULT_CACHE_NAME).clearLocallyAll(clearKeys, true, true, true);
 
+        ignite.context().cache().cache(DEFAULT_CACHE_NAME + "other").clearLocallyAll(clearKeysOther, true, true, true);
+
         assertEquals(EXIT_CODE_OK, execute("--cache", "idle_verify"));
 
-        assertContains(log, testOut.toString(), "conflict partitions");
+        String out = testOut.toString();
+
+        String summaryStr = "Total:" + nl() + DEFAULT_CACHE_NAME + "other (5)" + nl() + "7,8,9,10,11" + nl() + nl() +
+            DEFAULT_CACHE_NAME + " (6)" + nl() + "1,2,3,4,5,6" + nl();
+
+        assertContains(log, out, "conflict partitions");
+        assertContains(log, out, summaryStr);
+
+        assertTrue(
+            "Must contain partHash and partVerHash",
+            Pattern.compile("partHash=-?[0-9]+, partVerHash=-?[0-9]+").matcher(out).find()
+        );
     }
 
     /** */
@@ -513,13 +531,20 @@ public class GridCommandHandlerClusterByClassTest extends GridCommandHandlerClus
 
         GridCacheContext<Object, Object> cacheCtx = ignite.cachex(DEFAULT_CACHE_NAME).context();
 
-        corruptDataEntry(cacheCtx, 1, true, false);
+        AffinityFunction aff = cacheCtx.config().getAffinity();
 
-        corruptDataEntry(cacheCtx, 1 + cacheCtx.config().getAffinity().partitions() / 2, false, true);
+        int key = 1 + aff.partitions() / 2;
+
+        corruptDataEntry(cacheCtx, 1, true, false);
+        corruptDataEntry(cacheCtx, key, false, true);
 
         assertEquals(EXIT_CODE_OK, execute("--cache", "idle_verify"));
 
         assertContains(log, testOut.toString(), "conflict partitions has been found: [counterConflicts=1, hashConflicts=2]");
+
+        String summaryStr = "Total:" + nl() + DEFAULT_CACHE_NAME + " (2)" + nl() + "1," + aff.partition(key);
+
+        assertContains(log, testOut.toString(), summaryStr);
     }
 
     /**
@@ -850,9 +875,12 @@ public class GridCommandHandlerClusterByClassTest extends GridCommandHandlerClus
 
         GridCacheContext<Object, Object> cacheCtx = ignite.cachex(DEFAULT_CACHE_NAME).context();
 
-        corruptDataEntry(cacheCtx, 0, true, false);
+        AffinityFunction aff = cacheCtx.config().getAffinity();
 
-        corruptDataEntry(cacheCtx, cacheCtx.config().getAffinity().partitions() / 2, false, true);
+        int key = aff.partitions() / 2;
+
+        corruptDataEntry(cacheCtx, 0, true, false);
+        corruptDataEntry(cacheCtx, key, false, true);
 
         String resReport = null;
 
@@ -876,6 +904,10 @@ public class GridCommandHandlerClusterByClassTest extends GridCommandHandlerClus
         }
 
         assertContains(log, resReport, "conflict partitions has been found: [counterConflicts=1, hashConflicts=2]");
+
+        String summaryStr = "Total:" + nl() + DEFAULT_CACHE_NAME + " (2)" + nl() + "0," + aff.partition(key);
+
+        assertContains(log, resReport, summaryStr);
     }
 
     /**
@@ -1750,7 +1782,7 @@ public class GridCommandHandlerClusterByClassTest extends GridCommandHandlerClus
     public void testErrUnexpectedWithWithoutVerbose() {
         injectTestSystemOut();
 
-        Logger log = CommandHandler.initLogger(null);
+        Logger log = GridCommandHandlerAbstractTest.initLogger(null);
         log.addHandler(new StreamHandler(System.out, new Formatter() {
             /** {@inheritDoc} */
             @Override public String format(LogRecord record) {
@@ -1764,7 +1796,7 @@ public class GridCommandHandlerClusterByClassTest extends GridCommandHandlerClus
         }));
 
         int resCode = EXIT_CODE_UNEXPECTED_ERROR;
-        CommandHandler cmd = new CommandHandler(log);
+        CommandHandler cmd = new CommandHandler(new JavaLogger(log, false));
 
         assertEquals(resCode, execute(cmd, BASELINE.text()));
         assertContains(GridAbstractTest.log, testOut.toString(), ERROR_STACK_TRACE_PREFIX);

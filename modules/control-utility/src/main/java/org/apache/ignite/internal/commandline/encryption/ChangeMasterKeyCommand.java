@@ -17,7 +17,7 @@
 
 package org.apache.ignite.internal.commandline.encryption;
 
-import java.util.logging.Logger;
+import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.internal.client.GridClient;
 import org.apache.ignite.internal.client.GridClientConfiguration;
 import org.apache.ignite.internal.commandline.AbstractCommand;
@@ -38,7 +38,7 @@ public class ChangeMasterKeyCommand extends AbstractCommand<String> {
     private String argMasterKeyName;
 
     /** {@inheritDoc} */
-    @Override public Object execute(GridClientConfiguration clientCfg, Logger log) throws Exception {
+    @Override public Object execute(GridClientConfiguration clientCfg, IgniteLogger log) throws Exception {
         try (GridClient client = Command.startClient(clientCfg)) {
             String resMsg = executeTaskByNameOnNode(
                 client,
@@ -53,8 +53,8 @@ public class ChangeMasterKeyCommand extends AbstractCommand<String> {
             return resMsg;
         }
         catch (Throwable e) {
-            log.severe("Failed to perform operation.");
-            log.severe(CommandLogger.errorMessage(e));
+            log.error("Failed to perform operation.");
+            log.error(CommandLogger.errorMessage(e));
 
             throw e;
         }
@@ -77,7 +77,7 @@ public class ChangeMasterKeyCommand extends AbstractCommand<String> {
     }
 
     /** {@inheritDoc} */
-    @Override public void printUsage(Logger log) {
+    @Override public void printUsage(IgniteLogger log) {
         usage(log, "Change the master key:", ENCRYPTION, CHANGE_MASTER_KEY.toString(), "newMasterKeyName");
     }
 

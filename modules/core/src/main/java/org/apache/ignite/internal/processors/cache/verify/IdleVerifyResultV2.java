@@ -22,16 +22,22 @@ import java.io.ObjectOutput;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
+import java.util.Set;
+import java.util.TreeSet;
 import java.util.function.Consumer;
+import java.util.stream.Collectors;
 import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.internal.util.tostring.GridToStringInclude;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.internal.visor.VisorDataTransferObject;
+
+import static org.apache.ignite.internal.util.IgniteUtils.nl;
 
 /**
  * Encapsulates result of {@link VerifyBackupPartitionsTaskV2}.
@@ -83,6 +89,7 @@ public class IdleVerifyResultV2 extends VisorDataTransferObject {
     ) {
         for (Map.Entry<PartitionKeyV2, List<PartitionHashRecordV2>> e : clusterHashes.entrySet()) {
             Integer partHash = null;
+            Integer partVerHash = null;
             Object updateCntr = null;
 
             for (PartitionHashRecordV2 record : e.getValue()) {
@@ -102,6 +109,7 @@ public class IdleVerifyResultV2 extends VisorDataTransferObject {
 
                 if (partHash == null) {
                     partHash = record.partitionHash();
+                    partVerHash = record.partitionVersionsHash();
 
                     updateCntr = record.updateCounter();
                 }
@@ -109,7 +117,7 @@ public class IdleVerifyResultV2 extends VisorDataTransferObject {
                     if (!record.updateCounter().equals(updateCntr))
                         cntrConflicts.putIfAbsent(e.getKey(), e.getValue());
 
-                    if (record.partitionHash() != partHash)
+                    if (record.partitionHash() != partHash || record.partitionVersionsHash() != partVerHash)
                         hashConflicts.putIfAbsent(e.getKey(), e.getValue());
                 }
             }
@@ -204,7 +212,7 @@ public class IdleVerifyResultV2 extends VisorDataTransferObject {
             Map<PartitionKeyV2, List<PartitionHashRecordV2>> moving = movingPartitions();
 
             if (!moving.isEmpty())
-                printer.accept("Possible results are not full due to rebalance still in progress." + U.nl());
+                printer.accept("Possible results are not full due to rebalance still in progress." + nl());
 
             printSkippedPartitions(printer, moving, "MOVING");
             printSkippedPartitions(printer, lostPartitions(), "LOST");
@@ -266,31 +274,57 @@ public class IdleVerifyResultV2 extends VisorDataTransferObject {
         int hashConflictsSize = hashConflicts().size();
 
         printer.accept("The check procedure has failed, conflict partitions has been found: " +
-            "[counterConflicts=" + cntrConflictsSize + ", hashConflicts=" + hashConflictsSize + "]\n");
+            "[counterConflicts=" + cntrConflictsSize + ", hashConflicts=" + hashConflictsSize + "]" + nl());
+
+        Set<PartitionKeyV2> allConflicts = new HashSet<>();
 
         if (!F.isEmpty(counterConflicts())) {
-            printer.accept("Update counter conflicts:\n");
+            allConflicts.addAll(counterConflicts().keySet());
+
+            printer.accept("Update counter conflicts:" + nl());
 
             for (Map.Entry<PartitionKeyV2, List<PartitionHashRecordV2>> entry : counterConflicts().entrySet()) {
-                printer.accept("Conflict partition: " + entry.getKey() + "\n");
+                printer.accept("Conflict partition: " + entry.getKey() + nl());
 
-                printer.accept("Partition instances: " + entry.getValue() + "\n");
+                printer.accept("Partition instances: " + entry.getValue() + nl());
             }
 
-            printer.accept("\n");
+            printer.accept(nl());
         }
 
         if (!F.isEmpty(hashConflicts())) {
-            printer.accept("Hash conflicts:\n");
+            allConflicts.addAll(hashConflicts().keySet());
+
+            printer.accept("Hash conflicts:" + nl());
 
             for (Map.Entry<PartitionKeyV2, List<PartitionHashRecordV2>> entry : hashConflicts().entrySet()) {
-                printer.accept("Conflict partition: " + entry.getKey() + "\n");
+                printer.accept("Conflict partition: " + entry.getKey() + nl());
 
-                printer.accept("Partition instances: " + entry.getValue() + "\n");
+                printer.accept("Partition instances: " + entry.getValue() + nl());
             }
         }
 
-        printer.accept("\n");
+        printer.accept(nl());
+        printer.accept("Total:" + nl());
+
+        Map<String, TreeSet<Integer>> conflictsSummary = allConflicts.stream()
+            .collect(Collectors.groupingBy(
+                PartitionKeyV2::groupName,
+                Collectors.mapping(
+                    PartitionKeyV2::partitionId,
+                    Collectors.toCollection(TreeSet::new))));
+
+        for (Map.Entry<String, TreeSet<Integer>> grpConflicts : conflictsSummary.entrySet()) {
+            printer.accept(String.format("%s (%d)%s", grpConflicts.getKey(), grpConflicts.getValue().size(), nl()));
+
+            String partsStr = grpConflicts.getValue().stream()
+                .map(String::valueOf)
+                .collect(Collectors.joining(","));
+
+            printer.accept(partsStr + nl());
+
+            printer.accept(nl());
+        }
     }
 
     /** {@inheritDoc} */

@@ -18,7 +18,7 @@
 package org.apache.ignite.internal.commandline.cache;
 
 import java.util.UUID;
-import java.util.logging.Logger;
+import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.internal.client.GridClient;
 import org.apache.ignite.internal.client.GridClientConfiguration;
 import org.apache.ignite.internal.commandline.AbstractCommand;
@@ -41,7 +41,7 @@ import static org.apache.ignite.internal.commandline.cache.CacheSubcommands.CONT
  */
 public class CacheContention extends AbstractCommand<CacheContention.Arguments> {
     /** {@inheritDoc} */
-    @Override public void printUsage(Logger logger) {
+    @Override public void printUsage(IgniteLogger logger) {
         String description = "Show the keys that are point of contention for multiple transactions.";
 
         usageCache(logger, CONTENTION, description, null, "minQueueSize",
@@ -103,7 +103,7 @@ public class CacheContention extends AbstractCommand<CacheContention.Arguments> 
     }
 
     /** {@inheritDoc} */
-    @Override public Object execute(GridClientConfiguration clientCfg, Logger logger) throws Exception {
+    @Override public Object execute(GridClientConfiguration clientCfg, IgniteLogger logger) throws Exception {
         VisorContentionTaskArg taskArg = new VisorContentionTaskArg(args.minQueueSize(), args.maxPrint());
 
         UUID nodeId = args.nodeId() == null ? BROADCAST_UUID : args.nodeId();
