@@ -74,6 +74,12 @@ public interface IgniteRelVisitor<T> {
      */
     T visit(IgniteIndexCount rel);
 
+
+    /**
+     * See {@link IgniteRelVisitor#visit(IgniteRel)}
+     */
+    T visit(IgniteIndexBound rel);
+
     /**
      * See {@link IgniteRelVisitor#visit(IgniteRel)}
      */

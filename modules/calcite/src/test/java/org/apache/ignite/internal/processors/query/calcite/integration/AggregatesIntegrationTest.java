@@ -21,7 +21,11 @@ import java.util.List;
 import org.apache.ignite.IgniteCache;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.cache.CacheMode;
+import org.apache.ignite.cache.QueryEntity;
+import org.apache.ignite.cache.query.annotations.QuerySqlField;
+import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.internal.processors.query.calcite.QueryChecker;
+import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.testframework.GridTestUtils;
 import org.junit.Test;
 
@@ -31,18 +35,77 @@ import org.junit.Test;
 public class AggregatesIntegrationTest extends AbstractBasicIntegrationTest {
     /** */
     @Test
+    public void testMinMaxWithTable() {
+        String[] indexes = new String[] {
+            "val0",
+            "val0 desc",
+            "val0, val1",
+            "val0 desc, val1 desc",
+            "val0 asc, val1 desc",
+            "val0 desc, val1 asc"
+        };
+
+        for (String idx : indexes) {
+            for (int backups = -1; backups < 3; ++backups) {
+                executeSql("create table tbl(id integer primary key, val0 integer, val1 float, val2 varchar) " +
+                    "with template=" + (backups < 0 ? "replicated" : "partitioned,backups=" + backups));
+
+                executeSql("create index test_idx on tbl(" + idx + ")");
+
+                fillTestTbl();
+
+                assertQuery("select min(val0) from tbl").returns(1).check();
+                assertQuery("select min(val1) from tbl").returns(10.0f).check();
+                assertQuery("select max(val0) from tbl").returns(5).check();
+                assertQuery("select max(val1) from tbl").returns(50.0f).check();
+
+                executeSql("drop table tbl");
+            }
+        }
+    }
+
+    /** */
+    private void fillTestTbl() {
+        executeSql("insert into tbl values(-1, null, null, 'value_-1')");
+        executeSql("insert into tbl values(1, 2, 20.0, 'value_1')");
+        executeSql("insert into tbl values(2, 3, 10.0, 'value_2')");
+        executeSql("insert into tbl values(3, null, 30.0, null)");
+        executeSql("insert into tbl values(4, 4, 30.0, 'value_4')");
+        executeSql("insert into tbl values(5, 5, 50.0, 'value_5')");
+        executeSql("insert into tbl values(6, 1, null, 'value_6')");
+        executeSql("insert into tbl values(7, null, 20.0, 'value_7')");
+        executeSql("insert into tbl values(8, null, null, null)");
+    }
+
+    /** */
+    @Test
+    public void testMinMaxWithEntity() {
+        for (int b = -1; b < 3; ++b) {
+            createAndPopulateIndexedTable(b, b < 0 ? CacheMode.REPLICATED : CacheMode.PARTITIONED);
+
+            assertQuery("select min(salary) from person").returns(1.0).check();
+            assertQuery("select min(descVal) from person").returns(1.0).check();
+            assertQuery("select max(salary) from person").returns(15.0).check();
+            assertQuery("select max(descVal) from person").returns(15.0).check();
+
+            client.destroyCache(TABLE_NAME);
+        }
+    }
+
+    /** */
+    @Test
     public void testCountWithBackupsAndCacheModes() {
         for (int b = 0; b < 2; ++b) {
-            createAndPopulateTable(b, CacheMode.PARTITIONED);
+            createAndPopulateIndexedTable(b, CacheMode.PARTITIONED);
 
-            assertQuery("select count(*) from person").returns(5L).check();
+            assertQuery("select count(*) from person").returns(7L).check();
 
             client.destroyCache(TABLE_NAME);
         }
 
-        createAndPopulateTable(0, CacheMode.REPLICATED);
+        createAndPopulateIndexedTable(0, CacheMode.REPLICATED);
 
-        assertQuery("select count(*) from person").returns(5L).check();
+        assertQuery("select count(*) from person").returns(7L).check();
     }
 
     /** */
@@ -213,5 +276,48 @@ public class AggregatesIntegrationTest extends AbstractBasicIntegrationTest {
             .returns("val0", 50L)
             .returns("val1", 50L)
             .check();
+    }
+
+    /** */
+    protected void createAndPopulateIndexedTable(int backups, CacheMode cacheMode) {
+        IgniteCache<Integer, IndexedEmployer> person = client.getOrCreateCache(new CacheConfiguration<Integer, IndexedEmployer>()
+            .setName(TABLE_NAME)
+            .setSqlSchema("PUBLIC")
+            .setQueryEntities(F.asList(new QueryEntity(Integer.class, IndexedEmployer.class).setTableName(TABLE_NAME)))
+            .setCacheMode(cacheMode)
+            .setBackups(backups)
+        );
+
+        int idx = 0;
+
+        person.put(idx++, new IndexedEmployer("Igor", 5d, 7d));
+        person.put(idx++, new IndexedEmployer(null, 3d, null));
+        person.put(idx++, new IndexedEmployer("Ilya", 1d, 1d));
+        person.put(idx++, new IndexedEmployer("Roma", null, 9d));
+        person.put(idx++, new IndexedEmployer(null, null, null));
+        person.put(idx++, new IndexedEmployer("Oleg", 15d, 15d));
+        person.put(idx++, new IndexedEmployer("Maya", null, null));
+    }
+
+    /** */
+    public static class IndexedEmployer {
+        /** */
+        @QuerySqlField
+        public String name;
+
+        /** */
+        @QuerySqlField(index = true)
+        public Double salary;
+
+        /** */
+        @QuerySqlField(index = true, descending = true)
+        public Double descVal;
+
+        /** */
+        public IndexedEmployer(String name, Double salary, Double descVal) {
+            this.name = name;
+            this.salary = salary;
+            this.descVal = salary;
+        }
     }
 }
