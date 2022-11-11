@@ -137,11 +137,11 @@ public class ConsistentCut extends GridFutureAdapter<WALPointer> {
     }
 
     /**
-     * Registers transaction before it is removed from {@link IgniteTxManager#activeTransactions()}.
+     * Collects a transaction before it is removed from {@link IgniteTxManager#activeTransactions()}.
      *
      * @param txFinFut Transaction finish future.
      */
-    public void addActiveTransaction(IgniteInternalFuture<IgniteInternalTx> txFinFut) {
+    public void onRemoveActiveTransaction(IgniteInternalFuture<IgniteInternalTx> txFinFut) {
         Set<IgniteInternalFuture<IgniteInternalTx>> txs = removedActive;
 
         if (txs != null)

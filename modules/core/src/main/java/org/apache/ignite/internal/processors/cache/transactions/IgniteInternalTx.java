@@ -667,12 +667,14 @@ public interface IgniteInternalTx {
     public MvccSnapshot mvccSnapshot();
 
     /**
-     * @return {@link ConsistentCut} ID or {@code null} if the id wasn't set.
+     * @return ID of {@link ConsistentCut} AFTER which this transaction was committed, {@code null} if transaction
+     *         committed BEFORE.
      */
     public @Nullable UUID cutId();
 
     /**
-     * @param id ID of {@link ConsistentCut} AFTER which this transaction was committed.
+     * @param id ID of {@link ConsistentCut} AFTER which this transaction was committed, {@code null} if transaction
+     *           committed BEFORE.
      */
     public void cutId(@Nullable UUID id);
 

@@ -24,17 +24,10 @@ import org.apache.ignite.internal.pagemem.wal.record.ConsistentCutFinishRecord;
 import org.apache.ignite.internal.pagemem.wal.record.ConsistentCutStartRecord;
 import org.apache.ignite.internal.processors.cache.GridCacheMessage;
 import org.apache.ignite.internal.processors.cache.GridCacheSharedManagerAdapter;
-import org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtTxFinishRequest;
-import org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtTxPrepareFuture;
-import org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtTxPrepareResponse;
 import org.apache.ignite.internal.processors.cache.distributed.dht.preloader.GridDhtPartitionsExchangeFuture;
 import org.apache.ignite.internal.processors.cache.distributed.dht.preloader.PartitionsExchangeAware;
-import org.apache.ignite.internal.processors.cache.distributed.near.GridNearTxFinishRequest;
-import org.apache.ignite.internal.processors.cache.distributed.near.GridNearTxPrepareFutureAdapter;
-import org.apache.ignite.internal.processors.cache.distributed.near.GridNearTxPrepareResponse;
 import org.apache.ignite.internal.processors.cache.transactions.IgniteInternalTx;
 import org.apache.ignite.internal.processors.cache.transactions.IgniteTxAdapter;
-import org.apache.ignite.internal.processors.cache.version.GridCacheVersion;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.jetbrains.annotations.Nullable;
 
@@ -109,7 +102,7 @@ public class ConsistentCutManager extends GridCacheSharedManagerAdapter implemen
             if (firstCommit)
                 tx.cutId(cut.id());
 
-            cut.addActiveTransaction(tx.finishFuture());
+            cut.onRemoveActiveTransaction(tx.finishFuture());
         }
 
         if (log.isDebugEnabled()) {

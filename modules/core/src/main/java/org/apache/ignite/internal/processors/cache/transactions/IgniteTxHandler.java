@@ -318,6 +318,9 @@ public class IgniteTxHandler {
      * @param msg Finish message signed with Consistent Cut ID.
      */
     private void setTransactionCutIdIfNeeded(ConsistentCutAwareMessage msg) {
+        if (ctx.localNode().isClient())
+            return;
+
         IgniteInternalTx tx = null;
 
         if (msg.txCutId() != null) {
