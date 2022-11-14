@@ -140,7 +140,7 @@
         <snappy.version>1.1.7.2</snappy.version>
         <spring.version>5.2.22.RELEASE</spring.version>
         <storm.version>1.1.1</storm.version>
-        <surefire.version>3.0.0-M4</surefire.version>
+        <surefire.version>3.0.0-M7</surefire.version>
         <tomcat.version>9.0.63</tomcat.version>
         <twitter.hbc.version>2.2.0</twitter.hbc.version>
         <yammer.metrics.annotation.version>2.2.0</yammer.metrics.annotation.version>

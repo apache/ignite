@@ -18,7 +18,7 @@ package org.apache.ignite.internal.processors.query.calcite.integration;
 
 import java.util.List;
 import java.util.function.Predicate;
-import com.google.inject.internal.util.Lists;
+import com.google.common.collect.Lists;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.internal.IgniteEx;
