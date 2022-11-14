@@ -26,6 +26,7 @@ import org.apache.calcite.rel.RelCollations;
 import org.apache.calcite.rel.type.RelDataType;
 import org.apache.calcite.rex.RexNode;
 import org.apache.calcite.util.ImmutableBitSet;
+import org.apache.ignite.IgniteException;
 import org.apache.ignite.internal.processors.query.calcite.exec.ExecutionContext;
 import org.apache.ignite.internal.processors.query.calcite.exec.SystemViewScan;
 import org.apache.ignite.internal.processors.query.calcite.exec.exp.RangeIterable;
@@ -99,6 +100,16 @@ public class SystemViewIndexImpl implements IgniteIndex {
     /** {@inheritDoc} */
     @Override public long count(ExecutionContext<?> ectx, ColocationGroup grp) {
         return tbl.descriptor().systemView().size();
+    }
+
+    /** {@inheritDoc} */
+    @Override public <Row> Iterable<Row> firstOrLast(
+        boolean first,
+        ExecutionContext<Row> ectx,
+        ColocationGroup grp,
+        @Nullable ImmutableBitSet requiredColumns
+    ) {
+        throw new IgniteException("Taking first or last value is not implemented for system view index.");
     }
 
     /** {@inheritDoc} */

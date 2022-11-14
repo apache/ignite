@@ -94,4 +94,20 @@ public interface IgniteIndex {
      * @return Index records number for {@code group}.
      */
     public long count(ExecutionContext<?> ectx, ColocationGroup grp);
+
+    /**
+     * Takes only first or last not-null index value.
+     *
+     * @param first {@code True} to take first index not-null value. {@code False} for last.
+     * @param ectx Execution context.
+     * @param grp Colocation group.
+     * @param requiredColumns  Required columns.
+     * @return Index records for {@code grp}.
+     */
+    public <Row> Iterable<Row> firstOrLast(
+        boolean first,
+        ExecutionContext<Row> ectx,
+        ColocationGroup grp,
+        @Nullable ImmutableBitSet requiredColumns
+    );
 }
