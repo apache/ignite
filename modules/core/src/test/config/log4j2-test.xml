@@ -68,9 +68,9 @@
         <!--
             Uncomment to enable debugging of partition counters.
         -->
-        <!--
-            <Logger name="org.apache.ignite.internal.processors.cache.PartitionUpdateCounterDebugWrapper" level="DEBUG"/>
-        -->
+
+        <Logger name="org.apache.ignite.internal.processors.cache.PartitionUpdateCounterDebugWrapper" level="DEBUG"/>
+
 
         <!--
             Uncomment to enable transactions debugging.

@@ -65,6 +65,7 @@ import org.apache.ignite.internal.processors.cache.persistence.CacheDataRow;
 import org.apache.ignite.internal.processors.cache.persistence.CacheDataRowAdapter;
 import org.apache.ignite.internal.processors.cache.persistence.CacheSearchRow;
 import org.apache.ignite.internal.processors.cache.persistence.DataRowCacheAware;
+import org.apache.ignite.internal.processors.cache.persistence.GridCacheOffheapManager;
 import org.apache.ignite.internal.processors.cache.persistence.RootPage;
 import org.apache.ignite.internal.processors.cache.persistence.RowStore;
 import org.apache.ignite.internal.processors.cache.persistence.freelist.SimpleDataRow;
@@ -1180,6 +1181,8 @@ public class IgniteCacheOffheapManagerImpl implements IgniteCacheOffheapManager 
             iterators.put(p, partIter);
         }
 
+        log.info("TEST | historicalIterator on " + ctx.kernalContext().cluster().get().localNode().order());
+
         IgniteHistoricalIterator historicalIterator = historicalIterator(parts.historicalMap(), missing);
 
         IgniteRebalanceIterator iter = new IgniteRebalanceIteratorImpl(iterators, historicalIterator);
@@ -1460,9 +1463,8 @@ public class IgniteCacheOffheapManagerImpl implements IgniteCacheOffheapManager 
             this.log = log;
 
             PartitionUpdateCounter delegate = grp.mvccEnabled() ? new PartitionUpdateCounterMvccImpl(grp) :
-                !grp.persistenceEnabled() || grp.hasAtomicCaches() ? new PartitionUpdateCounterVolatileImpl(grp) :
-                    new PartitionUpdateCounterTrackingImpl(grp);
-
+                (!grp.persistenceEnabled() || grp.hasAtomicCaches() ? new PartitionUpdateCounterVolatileImpl(grp) :
+                    new PartitionUpdateCounterTrackingImpl(grp));
             pCntr = grp.shared().logger(PartitionUpdateCounterDebugWrapper.class).isDebugEnabled() ?
                 new PartitionUpdateCounterDebugWrapper(partId, delegate) : new PartitionUpdateCounterErrorWrapper(partId, delegate);
 
@@ -3031,6 +3033,8 @@ public class IgniteCacheOffheapManagerImpl implements IgniteCacheOffheapManager 
          * @param cntrUpdData Counter updates.
          */
         public void restoreState(long size, long updCntr, @Nullable Map<Integer, Long> cacheSizes, byte[] cntrUpdData) {
+//            log.info("TEST | restoreState, update counter at node " + this.grp);
+
             pCntr.init(updCntr, cntrUpdData);
 
             storageSize.reset();
