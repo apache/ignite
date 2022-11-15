@@ -1,0 +1,98 @@
+# Licensed to the Apache Software Foundation (ASF) under one or more
+# contributor license agreements.  See the NOTICE file distributed with
+# this work for additional information regarding copyright ownership.
+# The ASF licenses this file to You under the Apache License, Version 2.0
+# (the "License"); you may not use this file except in compliance with
+# the License.  You may obtain a copy of the License at
+#
+#      http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+
+name: Check code style and abandoned tests.
+on:
+  pull_request:
+  push:
+    branches:
+      - master
+      - 'ignite-[0-9].[0-9]+.[0-9]+*'
+
+jobs:
+  check-java:
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        java: [ '8', '11' ]
+    name: Check java code on JDK ${{ matrix.java }}
+    steps:
+      - uses: actions/checkout@v3
+      - name: Setup java
+        uses: actions/setup-java@v3
+        with:
+          distribution: 'temurin'
+          java-version: ${{ matrix.java }}
+
+      - name: Install prerequisites
+        run: |
+          sudo apt-get update && sudo apt-get install libnuma-dev
+      - name: Set MAVEN_OPTS
+        if: ${{ matrix.java == '11' }}
+        run: |
+          echo MAVEN_OPTS='--illegal-access=permit --add-exports=java.base/jdk.internal.misc=ALL-UNNAMED
+          --add-exports=java.base/sun.nio.ch=ALL-UNNAMED
+          --add-exports=java.management/com.sun.jmx.mbeanserver=ALL-UNNAMED
+          --add-exports=jdk.internal.jvmstat/sun.jvmstat.monitor=ALL-UNNAMED
+          --add-exports=java.base/sun.reflect.generics.reflectiveObjects=ALL-UNNAMED
+          -Djdk.tls.client.protocols=TLSv1.2' >> $GITHUB_ENV
+      - name: Run codestyle and licenses checks
+        run: |
+          mvn test-compile -Pall-java,licenses,lgpl,checkstyle,examples,all-scala,scala,check-licenses -B -V
+
+      - name: Run abandoned tests checks.
+        if: ${{ matrix.java == '8' }}
+        run : |
+          mvn test -Pcheck-test-suites,all-java,all-scala,scala -B -V
+
+  check-dotnet:
+    name: Сheck .NET code
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v3
+      - name: Setup .NET SDK
+        uses: actions/setup-dotnet@v3
+        with:
+          dotnet-version: '6.0.x'
+      - name: Run checks
+        run: |
+          dotnet build modules/platforms/dotnet/Apache.Ignite.DotNetCore.sln
+
+  check-ducktape:
+    name: Check ducktape on ${{ matrix.cfg.toxenv }}
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        cfg:
+          - { python: "3.7", toxenv: "py37" }
+          - { python: "3.8", toxenv: "py38" }
+          - { python: "3.8", toxenv: "codestyle" }
+    steps:
+      - uses: actions/checkout@v3
+      - name: Set up Python ${{ matrix.python-version }}
+        uses: actions/setup-python@v4
+        with:
+          python-version: ${{ matrix.cfg.python}}
+
+      - name: Install tox
+        run: |
+          pip install tox
+
+      - name: Run tests
+        run: |
+          cd modules/ducktests/tests
+          tox -e ${{ matrix.cfg.toxenv }}
