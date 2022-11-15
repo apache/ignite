@@ -1159,9 +1159,8 @@ public class GridCacheOffheapManager extends IgniteCacheOffheapManagerImpl imple
         for (int i = 0; i < partCntrs.size(); i++) {
             int p = partCntrs.partitionAt(i);
             long initCntr = partCntrs.initialUpdateCounterAt(i);
-            long hwm = partCntrs.updateCounterAt(i);
 
-            partsCounters.put(p, hwm);
+            partsCounters.put(p, initCntr);
         }
 
         try {
