@@ -79,26 +79,6 @@ public class AtomicOperationsInTxTest extends GridCommonAbstractTest {
     }
 
     /**
-     * Test to check that CacheException is thrown if allowAtomicOpsInTx is true.
-     * @throws CacheException If succeeded.
-     */
-    @Test(expected = CacheException.class)
-    public void testCacheOperationContextIfAtomicOpsInTxTrueThrowsException() {
-        new CacheOperationContext(false, false, null, false, null,
-                false, null, true);
-    }
-
-    /**
-     * Test to check that CacheException is thrown if allowAtomicOpsInTx is false.
-     * @throws CacheException If succeeded.
-     */
-    @Test(expected = CacheException.class)
-    public void testCacheOperationContextIfAtomicOpsInTxFalseThrowsException() {
-        new CacheOperationContext(false, false, null, false, null,
-                false, null, false);
-    }
-
-    /**
      * @throws Exception If failed.
      */
     @Test
