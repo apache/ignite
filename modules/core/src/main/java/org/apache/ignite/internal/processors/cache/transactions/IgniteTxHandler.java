@@ -2312,7 +2312,7 @@ public class IgniteTxHandler {
                                     long start = counter.initialCounter(i);
                                     long delta = counter.updatesCount(i);
 
-                                    log.info("TEST | update counter at node " + this.ctx.localNode().order());
+                                    //log.info("TEST | update counter at node " + this.ctx.localNode().order());
 
                                     boolean updated = part.updateCounter(start, delta);
 

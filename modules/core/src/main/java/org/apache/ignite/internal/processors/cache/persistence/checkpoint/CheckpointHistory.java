@@ -637,7 +637,7 @@ public class CheckpointHistory {
                 return walPntr;
             }
 
-            partCntsForUpdate.put(part, Math.max(foundCntr, partContr - margin));
+            partCntsForUpdate.put(part, partContr - margin);
 
             return cpEntry.checkpointMark();
         }
