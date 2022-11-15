@@ -86,7 +86,7 @@ public class IndexScan<Row> extends AbstractIndexScan<Row, IndexRow> {
     private final ImmutableBitSet requiredColumns;
 
     /** */
-    private final InlineIndex idx;
+    protected final InlineIndex idx;
 
     /** Mapping from index keys to row fields. */
     private final ImmutableIntList idxFieldMapping;
@@ -98,7 +98,7 @@ public class IndexScan<Row> extends AbstractIndexScan<Row, IndexRow> {
      * @param ectx Execution context.
      * @param desc Table descriptor.
      * @param idxFieldMapping Mapping from index keys to row fields.
-     * @param idx Phisycal index.
+     * @param idx Physical index.
      * @param filters Additional filters.
      * @param ranges Index scan bounds.
      */
@@ -113,17 +113,40 @@ public class IndexScan<Row> extends AbstractIndexScan<Row, IndexRow> {
         Function<Row, Row> rowTransformer,
         @Nullable ImmutableBitSet requiredColumns
     ) {
+        this(ectx, desc, new TreeIndexWrapper(idx), idxFieldMapping, parts, filters, ranges, rowTransformer,
+            requiredColumns);
+    }
+
+    /**
+     * @param ectx Execution context.
+     * @param desc Table descriptor.
+     * @param idxFieldMapping Mapping from index keys to row fields.
+     * @param treeIdx Physical index wrapper.
+     * @param filters Additional filters.
+     * @param ranges Index scan bounds.
+     */
+    protected IndexScan(
+        ExecutionContext<Row> ectx,
+        CacheTableDescriptor desc,
+        TreeIndexWrapper treeIdx,
+        ImmutableIntList idxFieldMapping,
+        int[] parts,
+        Predicate<Row> filters,
+        RangeIterable<Row> ranges,
+        Function<Row, Row> rowTransformer,
+        @Nullable ImmutableBitSet requiredColumns
+    ) {
         super(
             ectx,
             desc.rowType(ectx.getTypeFactory(), requiredColumns),
-            new TreeIndexWrapper(idx),
+            treeIdx,
             filters,
             ranges,
             rowTransformer
         );
 
         this.desc = desc;
-        this.idx = idx;
+        this.idx = treeIdx.idx;
         cctx = desc.cacheContext();
         kctx = cctx.kernalContext();
 
@@ -283,12 +306,12 @@ public class IndexScan<Row> extends AbstractIndexScan<Row, IndexRow> {
     }
 
     /** */
-    private static class TreeIndexWrapper implements TreeIndex<IndexRow> {
+    protected static class TreeIndexWrapper implements TreeIndex<IndexRow> {
         /** Underlying index. */
-        private final InlineIndex idx;
+        protected final InlineIndex idx;
 
         /** */
-        private TreeIndexWrapper(InlineIndex idx) {
+        protected TreeIndexWrapper(InlineIndex idx) {
             this.idx = idx;
         }
 

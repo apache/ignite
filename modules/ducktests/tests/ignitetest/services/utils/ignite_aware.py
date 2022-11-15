@@ -226,7 +226,9 @@ class IgniteAwareService(BackgroundThreadService, IgnitePathAware, metaclass=ABC
         :param node: Ignite service node.
         :return: List of service's pids.
         """
-        return node.account.java_pids(self.main_java_class)
+        cmd = "pgrep -ax java | awk '/%s/ {print $1}'" % self.main_java_class
+
+        return [int(pid) for pid in node.account.ssh_capture(cmd, allow_fail=True)]
 
     def worker(self, idx, node, **kwargs):
         cmd = self.spec.command(node)
