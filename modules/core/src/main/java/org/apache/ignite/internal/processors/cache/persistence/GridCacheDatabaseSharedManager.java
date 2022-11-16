@@ -1185,14 +1185,22 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
     }
 
     /** */
-    private long[] calculateFragmentSizes(int concLvl, long cacheSize, long chpBufSize) {
+    private long[] calculateFragmentSizes(String regionName, int concLvl, long cacheSize, long chpBufSize) {
         if (concLvl < 2)
             concLvl = Runtime.getRuntime().availableProcessors();
 
         long fragmentSize = cacheSize / concLvl;
 
-        if (fragmentSize < 1024 * 1024)
-            fragmentSize = 1024 * 1024;
+        if (fragmentSize < U.MB) {
+            // Chunk lesser than 1MiB doesn't make much sense.
+            fragmentSize = U.MB;
+
+            String curSize = U.readableSize(cacheSize, true);
+            String increasedSize = U.readableSize(U.MB * concLvl, true);
+
+            U.warn(log, "Region [" + regionName + "] size " + curSize + " is too small for concurrency level=" +
+                concLvl + ". " + "Automatically increasing it to " + increasedSize);
+        }
 
         long[] sizes = new long[concLvl + 1];
 
@@ -1250,6 +1258,7 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
         PageMemoryImpl pageMem = new PageMemoryImpl(
             wrapMetricsPersistentMemoryProvider(memProvider, memMetrics),
             calculateFragmentSizes(
+                plcCfg.getName(),
                 memCfg.getConcurrencyLevel(),
                 cacheSize,
                 chpBufSize
