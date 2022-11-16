@@ -19,7 +19,6 @@ package org.apache.ignite.internal.processors.cache.persistence.snapshot;
 
 import java.io.File;
 import java.io.IOException;
-import java.io.Serializable;
 import java.nio.ByteBuffer;
 import java.nio.file.OpenOption;
 import java.util.Arrays;
@@ -28,7 +27,6 @@ import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.ThreadLocalRandom;
 import java.util.function.BiFunction;
 import org.apache.ignite.IgniteCache;
-import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.cache.affinity.rendezvous.RendezvousAffinityFunction;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.internal.IgniteEx;
@@ -37,7 +35,6 @@ import org.apache.ignite.internal.processors.cache.persistence.file.FileIODecora
 import org.apache.ignite.internal.processors.cache.persistence.file.FileIOFactory;
 import org.apache.ignite.internal.processors.cache.persistence.file.FilePageStoreManager;
 import org.apache.ignite.internal.processors.cache.persistence.partstate.GroupPartitionId;
-import org.apache.ignite.internal.processors.configuration.distributed.DistributedChangeableProperty;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgniteFuture;
@@ -49,7 +46,7 @@ import org.junit.runners.Parameterized;
 import static org.apache.ignite.configuration.DataStorageConfiguration.DFLT_PAGE_SIZE;
 import static org.apache.ignite.internal.processors.cache.persistence.file.FilePageStoreManager.CACHE_DIR_PREFIX;
 import static org.apache.ignite.internal.processors.cache.persistence.snapshot.IgniteSnapshotManager.DELTA_SORT_BATCH_SIZE;
-import static org.apache.ignite.internal.processors.cache.persistence.snapshot.IgniteSnapshotManager.SNAPSHOT_SEQUENTIAL_WRITE_KEY;
+import static org.apache.ignite.internal.processors.cache.persistence.snapshot.IgniteSnapshotManager.partDeltaIndexFile;
 import static org.apache.ignite.testframework.GridTestUtils.cartesianProduct;
 import static org.junit.Assert.assertArrayEquals;
 
@@ -71,7 +68,7 @@ public class IgniteClusterSnapshotDeltaTest extends AbstractSnapshotSelfTest {
     /** @throws Exception If failed. */
     @Test
     public void testSendDelta() throws Exception {
-        int keys = 1_000;
+        int keys = 10_000;
         byte[] payload = new byte[DFLT_PAGE_SIZE / 2];
         int partCnt = 2;
 
@@ -87,11 +84,8 @@ public class IgniteClusterSnapshotDeltaTest extends AbstractSnapshotSelfTest {
 
         IgniteEx srv = startGridsWithCache(1, keys, (k) -> expPayload, ccfg);
 
-        if (sequentialWrite) {
-            setSequentialWrite(sequentialWrite);
-
+        if (sequentialWrite)
             injectSequentialWriteCheck(srv);
-        }
 
         IgniteSnapshotManager mgr = snp(srv);
 
@@ -119,6 +113,9 @@ public class IgniteClusterSnapshotDeltaTest extends AbstractSnapshotSelfTest {
             @Override public void sendDelta0(File delta, String cacheDirName, GroupPartitionId pair) {
                 if (cacheDir.equals(cacheDirName))
                     assertTrue(delta.length() > 0);
+
+                if (!sequentialWrite)
+                    U.delete(partDeltaIndexFile(delta));
 
                 long start = System.nanoTime();
 
@@ -153,7 +150,7 @@ public class IgniteClusterSnapshotDeltaTest extends AbstractSnapshotSelfTest {
 
         fut.get();
 
-        // 5. Destroy cache, restart the cluster and check data (delta was successfully applied).
+        // 5. Destroy cache, restart the cЫluster and check data (delta was successfully applied).
         srv.destroyCache(DEFAULT_CACHE_NAME);
 
         stopAllGrids();
@@ -205,13 +202,5 @@ public class IgniteClusterSnapshotDeltaTest extends AbstractSnapshotSelfTest {
         };
 
         pageStore.setPageStoreFileIOFactories(testFactory, testFactory);
-    }
-
-    /** @param val Snapshot sequential write flag to set. */
-    private void setSequentialWrite(boolean val) throws IgniteCheckedException {
-        DistributedChangeableProperty<Serializable> rateProp =
-            grid(0).context().distributedConfiguration().property(SNAPSHOT_SEQUENTIAL_WRITE_KEY);
-
-        rateProp.propagate(val);
     }
 }

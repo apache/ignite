@@ -139,7 +139,6 @@ import org.apache.ignite.internal.processors.cache.tree.DataRow;
 import org.apache.ignite.internal.processors.cache.verify.IdleVerifyResultV2;
 import org.apache.ignite.internal.processors.cluster.DiscoveryDataClusterState;
 import org.apache.ignite.internal.processors.cluster.IgniteChangeGlobalStateSupport;
-import org.apache.ignite.internal.processors.configuration.distributed.DistributedBooleanProperty;
 import org.apache.ignite.internal.processors.configuration.distributed.DistributedConfigurationLifecycleListener;
 import org.apache.ignite.internal.processors.configuration.distributed.DistributedLongProperty;
 import org.apache.ignite.internal.processors.configuration.distributed.DistributedPropertyDispatcher;
@@ -219,7 +218,6 @@ import static org.apache.ignite.internal.processors.cache.persistence.tree.io.Pa
 import static org.apache.ignite.internal.processors.cache.persistence.tree.io.PageIO.getPageIO;
 import static org.apache.ignite.internal.processors.cache.persistence.tree.io.PageIO.getType;
 import static org.apache.ignite.internal.processors.cache.persistence.tree.io.PageIO.getVersion;
-import static org.apache.ignite.internal.processors.configuration.distributed.DistributedBooleanProperty.detachedBooleanProperty;
 import static org.apache.ignite.internal.processors.configuration.distributed.DistributedLongProperty.detachedLongProperty;
 import static org.apache.ignite.internal.processors.task.GridTaskThreadContextKey.TC_SKIP_AUTH;
 import static org.apache.ignite.internal.processors.task.GridTaskThreadContextKey.TC_SUBGRID;
@@ -243,6 +241,9 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
     implements IgniteSnapshot, PartitionsExchangeAware, MetastorageLifecycleListener, IgniteChangeGlobalStateSupport {
     /** File with delta pages suffix. */
     public static final String DELTA_SUFFIX = ".delta";
+
+    /** File with delta pages index suffix. */
+    public static final String DELTA_IDX_SUFFIX = ".idx";
 
     /** File name template consists of delta pages. */
     public static final String PART_DELTA_TEMPLATE = PART_FILE_TEMPLATE + DELTA_SUFFIX;
@@ -280,12 +281,6 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
     /** Snapshot transfer rate is unlimited by default. */
     public static final long DFLT_SNAPSHOT_TRANSFER_RATE_BYTES = 0L;
 
-    /** Snapshot sequential write key. */
-    public static final String SNAPSHOT_SEQUENTIAL_WRITE_KEY = "snapshotSequentialWrite";
-
-    /** Snapshot delta sort batch size in pages count. */
-    public static final int DELTA_SORT_BATCH_SIZE = 1_000_000;
-
     /** Maximum block size for limited snapshot transfer (64KB by default). */
     public static final int SNAPSHOT_LIMITED_TRANSFER_BLOCK_SIZE_BYTES = 64 * 1024;
 
@@ -319,6 +314,9 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
 
     /** Total snapshot files count which receiver should expect to receive. */
     private static final String SNP_PARTITIONS_CNT = "partsCnt";
+
+    /** Snapshot delta sort batch size in pages count. */
+    public static final int DELTA_SORT_BATCH_SIZE = 500_000;
 
     /**
      * Local buffer to perform copy-on-write operations with pages for {@code SnapshotFutureTask.PageStoreSerialWriter}s.
@@ -407,13 +405,6 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
     private final DistributedLongProperty snapshotTransferRate = detachedLongProperty(SNAPSHOT_TRANSFER_RATE_DMS_KEY);
 
     /**
-     * Flag to indicate that disk writes should be in a sequential manner when possible.
-     * If set then delta pages will be indexed by page index to almost sequential disk write on apply. This generates
-     * an extra delta read. If {@code false} or not set then delta pages will be applied directly.
-     */
-    private final DistributedBooleanProperty sequentialWrite = detachedBooleanProperty(SNAPSHOT_SEQUENTIAL_WRITE_KEY);
-
-    /**
      * @param ctx Kernal context.
      */
     public IgniteSnapshotManager(GridKernalContext ctx) {
@@ -442,6 +433,16 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
      */
     public static File partDeltaFile(File snapshotCacheDir, int partId) {
         return new File(snapshotCacheDir, partDeltaFileName(partId));
+    }
+
+    /**
+     * Partition delta index file. Represents a sequence of page indexes that written to a delta.
+     *
+     * @param delta File with delta pages.
+     * @return File with delta pages index.
+     */
+    public static File partDeltaIndexFile(File delta) {
+        return new File(delta.getParent(), delta.getName() + DELTA_IDX_SUFFIX);
     }
 
     /**
@@ -501,7 +502,6 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
                     });
 
                     dispatcher.registerProperty(snapshotTransferRate);
-                    dispatcher.registerProperty(sequentialWrite);
                 }
 
                 @Override public void onReadyToWrite() {
@@ -3302,7 +3302,10 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
                 .encryptedFileIoFactory(IgniteSnapshotManager.this.ioFactory, pair.getGroupId()) :
                 IgniteSnapshotManager.this.ioFactory;
 
+            File deltaIdx = partDeltaIndexFile(delta);
+
             try (FileIO fileIo = ioFactory.create(delta, READ);
+                 FileIO idxIo = deltaIdx.exists() ? IgniteSnapshotManager.this.ioFactory.create(deltaIdx, READ) : null;
                  FilePageStore pageStore = (FilePageStore)storeMgr.getPageStoreFactory(pair.getGroupId(), encrypted)
                      .createPageStore(getTypeByPartId(pair.getPartitionId()), snpPart::toPath, v -> {})
             ) {
@@ -3315,13 +3318,14 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
 
                 int pagesCnt = (int)(totalBytes / pageSize);
 
-                Boolean sequential = sequentialWrite.get();
-
                 GridIntIterator iter;
 
-                if (sequential == null || !sequential)
+                if (!deltaIdx.exists())
                     iter = U.forRange(0, pagesCnt);
                 else {
+                    assert deltaIdx.length() % 4 /* pageIdx */ == 0 : "Wrong delta index size: " + deltaIdx.length();
+                    assert deltaIdx.length() / 4 == pagesCnt : "Wrong delta index pages count: " + deltaIdx.length();
+
                     iter = new GridIntIterator() {
                         private int idx = 0;
 
@@ -3351,13 +3355,14 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
                             TreeMap<Integer, Integer> sorted = new TreeMap<>();
 
                             while (idx < pagesCnt && sorted.size() < DELTA_SORT_BATCH_SIZE) {
-                                transferRateLimiter.acquire(pageSize);
-
-                                fileIo.readFully(pageBuf, (long)idx * pageSize);
-
-                                sorted.put(PageIdUtils.pageIndex(PageIO.getPageId(pageBuf)), idx);
+                                idxIo.readFully(pageBuf);
 
                                 pageBuf.flip();
+
+                                while (pageBuf.hasRemaining())
+                                    sorted.put(pageBuf.getInt(), sorted.size());
+
+                                pageBuf.clear();
 
                                 idx++;
                             }

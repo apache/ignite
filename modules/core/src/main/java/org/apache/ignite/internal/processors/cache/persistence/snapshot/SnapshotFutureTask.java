@@ -85,6 +85,7 @@ import static org.apache.ignite.internal.processors.cache.persistence.file.FileP
 import static org.apache.ignite.internal.processors.cache.persistence.snapshot.IgniteSnapshotManager.copy;
 import static org.apache.ignite.internal.processors.cache.persistence.snapshot.IgniteSnapshotManager.databaseRelativePath;
 import static org.apache.ignite.internal.processors.cache.persistence.snapshot.IgniteSnapshotManager.partDeltaFile;
+import static org.apache.ignite.internal.processors.cache.persistence.snapshot.IgniteSnapshotManager.partDeltaIndexFile;
 
 /**
  * The requested map of cache groups and its partitions to include into snapshot represented as <tt>Map<Integer, Set<Integer>></tt>.
@@ -513,10 +514,14 @@ class SnapshotFutureTask extends AbstractSnapshotFutureTask<Set<GroupPartitionId
                                 pair,
                                 partLen);
 
-                            // Stop partition writer.
-                            partDeltaWriters.get(pair).markPartitionProcessed();
-
                             processedSize.addAndGet(partLen);
+
+                            // Stop partition writer.
+                            PageStoreSerialWriter writer = partDeltaWriters.get(pair);
+
+                            writer.markPartitionProcessed();
+
+                            writer.close();
                         }),
                         snpSndr.executor())
                         // Wait for the completion of both futures - checkpoint end, copy partition.
@@ -540,6 +545,14 @@ class SnapshotFutureTask extends AbstractSnapshotFutureTask<Set<GroupPartitionId
                                 boolean deleted = delta.delete();
 
                                 assert deleted;
+
+                                File deltaIdx = partDeltaIndexFile(delta);
+
+                                if (deltaIdx.exists()) {
+                                    deleted = deltaIdx.delete();
+
+                                    assert deleted;
+                                }
                             }),
                             snpSndr.executor());
 
@@ -827,8 +840,15 @@ class SnapshotFutureTask extends AbstractSnapshotFutureTask<Set<GroupPartitionId
         @GridToStringExclude
         private volatile FileIO deltaFileIo;
 
+        /** */
+        @GridToStringExclude
+        private volatile FileIO deltaIdxFileIo;
+
         /** {@code true} if partition file has been copied to external resource. */
         private volatile boolean partProcessed;
+
+        /** Buffer of page indexes written to the delta. */
+        private volatile ByteBuffer pageIdxs;
 
         /**
          * @param store Partition page store.
@@ -886,6 +906,12 @@ class SnapshotFutureTask extends AbstractSnapshotFutureTask<Set<GroupPartitionId
                     if (deltaFileIo == null) {
                         deltaFileIo = (encryptedGrpId == null ? ioFactory :
                             pageStore.encryptedFileIoFactory(ioFactory, encryptedGrpId)).create(deltaFile);
+
+                        deltaIdxFileIo = ioFactory.create(partDeltaIndexFile(deltaFile));
+
+                        pageIdxs = ByteBuffer.allocate(store.getPageSize()).order(ByteOrder.nativeOrder());
+
+                        assert pageIdxs.capacity() % 4 == 0;
                     }
                 }
                 catch (IOException e) {
@@ -968,6 +994,20 @@ class SnapshotFutureTask extends AbstractSnapshotFutureTask<Set<GroupPartitionId
             int len = deltaFileIo.writeFully(pageBuf);
 
             totalSize.addAndGet(len);
+
+            pageIdxs.putInt(PageIdUtils.pageIndex(pageId));
+
+            if (!pageIdxs.hasRemaining())
+                writePageIndexes();
+        }
+
+        /** */
+        private void writePageIndexes() throws IOException {
+            pageIdxs.flip();
+
+            deltaIdxFileIo.writeFully(pageIdxs);
+
+            pageIdxs.clear();
         }
 
         /** {@inheritDoc} */
@@ -975,9 +1015,20 @@ class SnapshotFutureTask extends AbstractSnapshotFutureTask<Set<GroupPartitionId
             lock.writeLock().lock();
 
             try {
+                try {
+                    if (deltaIdxFileIo != null)
+                        writePageIndexes();
+                }
+                catch (IOException e) {
+                    acceptException(new IgniteCheckedException("Error during writing page indexes to delta " +
+                        "partition index file [writer=" + this + ']', e));
+                }
+
                 U.closeQuiet(deltaFileIo);
+                U.closeQuiet(deltaIdxFileIo);
 
                 deltaFileIo = null;
+                deltaIdxFileIo = null;
 
                 store.removeWriteListener(this);
             }
