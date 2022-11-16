@@ -974,7 +974,7 @@ class SnapshotFutureTask extends AbstractSnapshotFutureTask<Set<GroupPartitionId
          * @param pageBuf Page buffer to write.
          * @throws IOException If page writing failed (IO error occurred).
          */
-        private void writePage0(long pageId, ByteBuffer pageBuf) throws IOException {
+        private synchronized void writePage0(long pageId, ByteBuffer pageBuf) throws IOException {
             assert deltaFileIo != null : "Delta pages storage is not inited: " + this;
             assert pageBuf.position() == 0;
             assert pageBuf.order() == ByteOrder.nativeOrder() : "Page buffer order " + pageBuf.order()

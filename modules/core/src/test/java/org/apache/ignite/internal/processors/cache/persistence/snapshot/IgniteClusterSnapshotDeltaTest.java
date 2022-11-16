@@ -150,7 +150,7 @@ public class IgniteClusterSnapshotDeltaTest extends AbstractSnapshotSelfTest {
 
         fut.get();
 
-        // 5. Destroy cache, restart the cЫluster and check data (delta was successfully applied).
+        // 5. Destroy cache, restart the cluster and check data (delta was successfully applied).
         srv.destroyCache(DEFAULT_CACHE_NAME);
 
         stopAllGrids();
