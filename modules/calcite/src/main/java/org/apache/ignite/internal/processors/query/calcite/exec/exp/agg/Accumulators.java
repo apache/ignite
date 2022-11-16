@@ -973,7 +973,7 @@ public class Accumulators {
         private final boolean min;
 
         /** */
-        private final Function<IgniteTypeFactory, RelDataType> typeSupplier;
+        private final transient Function<IgniteTypeFactory, RelDataType> typeSupplier;
 
         /** */
         private T val;
