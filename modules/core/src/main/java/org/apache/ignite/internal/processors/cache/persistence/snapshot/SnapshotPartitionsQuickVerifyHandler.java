@@ -25,13 +25,9 @@ import java.util.concurrent.ConcurrentHashMap;
 import java.util.stream.Collectors;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.internal.processors.cache.GridCacheSharedContext;
-import org.apache.ignite.internal.processors.cache.distributed.dht.topology.GridDhtPartitionState;
-import org.apache.ignite.internal.processors.cache.persistence.CacheDataRow;
 import org.apache.ignite.internal.processors.cache.verify.PartitionHashRecordV2;
 import org.apache.ignite.internal.processors.cache.verify.PartitionKeyV2;
 import org.apache.ignite.internal.util.GridConcurrentHashSet;
-import org.apache.ignite.internal.util.lang.GridIterator;
-import org.apache.ignite.internal.util.lang.GridIteratorAdapter;
 import org.apache.ignite.internal.util.typedef.internal.U;
 
 /**
@@ -124,33 +120,8 @@ public class SnapshotPartitionsQuickVerifyHandler extends SnapshotPartitionsVeri
     }
 
     /** {@inheritDoc} */
-    @Override protected PartitionHashRecordV2 partHash(PartitionKeyV2 key, Object updCntr, Object consId,
-        GridDhtPartitionState state, boolean isPrimary, long partSize, GridIterator<CacheDataRow> it)
-        throws IgniteCheckedException {
-        // Skip hash calculation.
-        return super.partHash(
-            key,
-            updCntr,
-            consId,
-            state,
-            isPrimary,
-            partSize,
-            new GridIteratorAdapter<CacheDataRow>() {
-                /** {@inheritDoc} */
-                @Override public boolean hasNextX() {
-                    return false;
-                }
-
-                /** {@inheritDoc} */
-                @Override public CacheDataRow nextX() {
-                    return null;
-                }
-
-                /** {@inheritDoc} */
-                @Override public void removeX() {
-                    // No-op;
-                }
-            });
+    @Override protected boolean skipHash() {
+        return true;
     }
 
     /**

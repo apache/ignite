@@ -111,7 +111,7 @@ public class IgniteClusterSnapshotStreamerTest extends AbstractSnapshotSelfTest 
      */
     @Test
     public void testStreamerFailedLongAgoDefault() throws Exception {
-        doTestDataStreamerFailedBeforeSnp(false);
+        doTestDataStreamerFailedBeforeSnapshot(false);
     }
 
     /**
@@ -119,7 +119,7 @@ public class IgniteClusterSnapshotStreamerTest extends AbstractSnapshotSelfTest 
      */
     @Test
     public void testStreamerFailsLongAgoOverwriting() throws Exception {
-        doTestDataStreamerFailedBeforeSnp(true);
+        doTestDataStreamerFailedBeforeSnapshot(true);
     }
 
     /**
@@ -234,7 +234,7 @@ public class IgniteClusterSnapshotStreamerTest extends AbstractSnapshotSelfTest 
      *
      * @param allowOverwrite 'allowOverwrite' setting.
      */
-    private void doTestDataStreamerFailedBeforeSnp(boolean allowOverwrite) throws Exception {
+    private void doTestDataStreamerFailedBeforeSnapshot(boolean allowOverwrite) throws Exception {
         TestRecordingCommunicationSpi cm = (TestRecordingCommunicationSpi)client.configuration().getCommunicationSpi();
 
         UUID clientId = client.localNode().id();
@@ -262,7 +262,6 @@ public class IgniteClusterSnapshotStreamerTest extends AbstractSnapshotSelfTest 
 
         nodeGoneLatch.await();
 
-        cm.stopBlock();
         stopLoading.set(true);
         loadFut.cancel();
 
