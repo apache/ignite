@@ -400,6 +400,7 @@ public class CheckpointWorkflow {
                         part.id(),
                         part.dataStore().fullSize(),
                         part.updateCounter(),
+                        part.reservedCounter(),
                         (byte)partState.ordinal()
                     );
                 }

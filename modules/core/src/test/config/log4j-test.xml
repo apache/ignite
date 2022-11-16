@@ -100,10 +100,11 @@
     <!--
         Uncomment to enable debugging of partition counters.
     -->
-    <category name="org.apache.ignite.internal.processors.cache.PartitionUpdateCounterDebugWrapper">
+    <!--
+        <category name="org.apache.ignite.internal.processors.cache.PartitionUpdateCounterDebugWrapper">
             <level value="DEBUG"/>
         </category>
-
+    -->
 
     <!--
         Uncomment to enable transactions debugging.

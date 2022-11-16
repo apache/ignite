@@ -1708,7 +1708,7 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
                 }
 
                 try {
-                    Long updCntr = cpEntry.partitionCounter(cctx.wal(), grpId, partId);
+                    Long updCntr = cpEntry.partitionCounter(cctx.wal(), grpId, partId, false);
 
                     if (updCntr != null)
                         grpPartsWithCnts.computeIfAbsent(grpId, k -> new HashMap<>()).put(partId, updCntr);

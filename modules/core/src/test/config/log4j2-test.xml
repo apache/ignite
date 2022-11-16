@@ -69,7 +69,7 @@
             Uncomment to enable debugging of partition counters.
         -->
 
-        <Logger name="org.apache.ignite.internal.processors.cache.PartitionUpdateCounterDebugWrapper" level="DEBUG"/>
+<!--        <Logger name="org.apache.ignite.internal.processors.cache.PartitionUpdateCounterDebugWrapper" level="DEBUG"/>-->
 
 
         <!--
@@ -94,9 +94,9 @@
             <!--
                 Uncomment to enable log output to file.
             -->
-            <!--
+
                 <AppenderRef ref="FILE" level="DEBUG"/>
-            -->
+
             <AppenderRef ref="CONSOLE" level="DEBUG"/>
             <AppenderRef ref="CONSOLE_ERR" level="WARN"/>
         </Root>

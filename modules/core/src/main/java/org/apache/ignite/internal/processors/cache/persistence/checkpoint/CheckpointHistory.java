@@ -485,6 +485,8 @@ public class CheckpointHistory {
         LinkedList<WalPointerCandidate> historyPointerCandidate = new LinkedList<>();
 
         for (Long cpTs : checkpoints(true)) {
+            //log.error("TEST | checkpoint: " + cpTs);
+
             CheckpointEntry cpEntry = entry(cpTs);
 
             minPtr = getMinimalPointer(partsCounter, margin, minPtr, historyPointerCandidate, cpEntry);
@@ -502,10 +504,13 @@ public class CheckpointHistory {
             while (iter.hasNext()) {
                 Map.Entry<Integer, Long> entry = iter.next();
 
-                Long foundCntr = cpEntry.partitionCounter(wal, grpId, entry.getKey());
+                Long foundCntr = cpEntry.partitionCounter(wal, grpId, entry.getKey(), true);
+                //Long pendingCntr = cpEntry.partitionCounter(wal, grpId, entry.getKey(), true);
 
                 if (foundCntr != null && foundCntr <= entry.getValue()) {
                     iter.remove();
+
+                    log.error("TEST | foundCntr: " + foundCntr + ", pendingCntr: " + foundCntr + " at cp " + cpTs);
 
                     if (ptr == null) {
                         throw new IgniteCheckedException("Could not find start pointer for partition [part="
@@ -623,7 +628,7 @@ public class CheckpointHistory {
             Long foundCntr = null;
 
             try {
-                foundCntr = cpEntry == null ? null : cpEntry.partitionCounter(wal, grpId, part);
+                foundCntr = cpEntry == null ? null : cpEntry.partitionCounter(wal, grpId, part, false);
             }
             catch (IgniteCheckedException e) {
                 log.warning("Checkpoint cannot be chosen because counter is unavailable [grpId=" + grpId
@@ -668,7 +673,7 @@ public class CheckpointHistory {
                 while (iter.hasNext()) {
                     Map.Entry<T2<Integer, Integer>, Long> entry = iter.next();
 
-                    Long foundCntr = cpEntry.partitionCounter(wal, entry.getKey().get1(), entry.getKey().get2());
+                    Long foundCntr = cpEntry.partitionCounter(wal, entry.getKey().get1(), entry.getKey().get2(), false);
 
                     if (foundCntr != null && foundCntr <= entry.getValue()) {
                         iter.remove();
@@ -792,6 +797,7 @@ public class CheckpointHistory {
                         groupStates.put(k, new GroupStateSnapshot(
                             v.partitionIds(),
                             v.partitionCounters(),
+                            v.partitionPendingCounters(),
                             v.size()
                         ))
                     );

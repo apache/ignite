@@ -507,8 +507,6 @@ public abstract class IgniteTxLocalAdapter extends IgniteTxAdapter implements Ig
                                 ", part=" + (part == null ? "NULL" : part.toString()) + ']');
                         }
 
-                        log.info("TEST | calculatePartitionUpdateCounters(), init counter at node " + this.cctx.localNode().order());
-
                         msg.add(p, part.getAndIncrementUpdateCounter(cntr), cntr);
                     }
                 }
