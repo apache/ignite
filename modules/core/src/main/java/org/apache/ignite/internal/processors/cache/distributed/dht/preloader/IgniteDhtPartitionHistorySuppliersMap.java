@@ -40,7 +40,7 @@ public class IgniteDhtPartitionHistorySuppliersMap implements Serializable {
     private static final IgniteDhtPartitionHistorySuppliersMap EMPTY = new IgniteDhtPartitionHistorySuppliersMap();
 
     /** */
-    private Map<UUID, Map<T2<Integer, Integer>, Long>> map;
+    private Map<UUID, Map<T2<Integer, Integer>, T2<Long, Long>>> map;
 
     /**
      * @return Empty map.
@@ -61,12 +61,12 @@ public class IgniteDhtPartitionHistorySuppliersMap implements Serializable {
 
         List<UUID> suppliers = new ArrayList<>();
 
-        for (Map.Entry<UUID, Map<T2<Integer, Integer>, Long>> e : map.entrySet()) {
+        for (Map.Entry<UUID, Map<T2<Integer, Integer>, T2<Long, Long>>> e : map.entrySet()) {
             UUID supplierNode = e.getKey();
 
-            Long historyCounter = e.getValue().get(new T2<>(grpId, partId));
+            T2<Long, Long> historyCounter = e.getValue().get(new T2<>(grpId, partId));
 
-            if (historyCounter != null && historyCounter <= cntrSince)
+            if (historyCounter != null && historyCounter.get1() <= cntrSince)
                 suppliers.add(supplierNode);
         }
 
@@ -77,7 +77,7 @@ public class IgniteDhtPartitionHistorySuppliersMap implements Serializable {
      * @param nodeId Node ID to check.
      * @return Reservations for the given node.
      */
-    @Nullable public synchronized Map<T2<Integer, Integer>, Long> getReservations(UUID nodeId) {
+    @Nullable public synchronized Map<T2<Integer, Integer>, T2<Long, Long>> getReservations(UUID nodeId) {
         if (map == null)
             return null;
 
@@ -89,12 +89,13 @@ public class IgniteDhtPartitionHistorySuppliersMap implements Serializable {
      * @param grpId Cache group ID.
      * @param partId Partition ID.
      * @param cntr Partition counter.
+     * @param pendingCntr Partition pending counter.
      */
-    public synchronized void put(UUID nodeId, int grpId, int partId, long cntr) {
+    public synchronized void put(UUID nodeId, int grpId, int partId, long cntr, long pendingCntr) {
         if (map == null)
             map = new HashMap<>();
 
-        Map<T2<Integer, Integer>, Long> nodeMap = map.get(nodeId);
+        Map<T2<Integer, Integer>, T2<Long, Long>> nodeMap = map.get(nodeId);
 
         if (nodeMap == null) {
             nodeMap = new HashMap<>();
@@ -102,7 +103,7 @@ public class IgniteDhtPartitionHistorySuppliersMap implements Serializable {
             map.put(nodeId, nodeMap);
         }
 
-        nodeMap.put(new T2<>(grpId, partId), cntr);
+        nodeMap.put(new T2<>(grpId, partId), new T2<>(cntr, pendingCntr));
     }
 
     /**

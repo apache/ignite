@@ -1708,10 +1708,10 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
                 }
 
                 try {
-                    Long updCntr = cpEntry.partitionCounter(cctx.wal(), grpId, partId, false);
+                    T2<Long, Long> updCntr = cpEntry.partitionCounter(cctx.wal(), grpId, partId);
 
                     if (updCntr != null)
-                        grpPartsWithCnts.computeIfAbsent(grpId, k -> new HashMap<>()).put(partId, updCntr);
+                        grpPartsWithCnts.computeIfAbsent(grpId, k -> new HashMap<>()).put(partId, updCntr.get1());
                 }
                 catch (IgniteCheckedException ex) {
                     log.warning("Reservation failed because counters are not available [grpId=" + grpId
@@ -1806,7 +1806,7 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
     }
 
     /** {@inheritDoc} */
-    @Override public boolean reserveHistoryForPreloading(Map<T2<Integer, Integer>, Long> reservationMap) {
+    @Override public boolean reserveHistoryForPreloading(Map<T2<Integer, Integer>, T2<Long, Long>> reservationMap) {
         Map<GroupPartitionId, CheckpointEntry> entries = checkpointHistory().searchCheckpointEntry(reservationMap);
 
         if (F.isEmpty(entries))

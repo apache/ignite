@@ -2525,16 +2525,21 @@ public class GridDhtPartitionsExchangeFuture extends GridDhtTopologyFutureAdapte
             // Create and destroy caches and cache proxies.
             cctx.cache().onExchangeDone(initialVersion(), exchActions, err);
 
-            Map<T2<Integer, Integer>, Long> localReserved = partHistSuppliers.getReservations(cctx.localNodeId());
+            Map<T2<Integer, Integer>, T2<Long, Long>> localReserved = partHistSuppliers.getReservations(cctx.localNodeId());
 
             if (localReserved != null) {
+                localReserved = partHistSuppliers.getReservations(cctx.localNodeId());
+
+                System.err.println("TEST | no reserving . localReserved map is null");
+
                 boolean success = cctx.database().reserveHistoryForPreloading(localReserved);
 
                 if (!success) {
                     log.warning("Could not reserve history for historical rebalance " +
                         "(possible it happened because WAL space is exhausted).");
                 }
-            }
+            } else
+                System.err.println("TEST | no reserveHistoryForPreloading. localReserved map is null");
 
             cctx.database().releaseHistoryForExchange();
 
@@ -3622,7 +3627,7 @@ public class GridDhtPartitionsExchangeFuture extends GridDhtTopologyFutureAdapte
                 break;
 
             if (preferWalRebalance || maxOwnerCntr - ceilingMinReserved < ownerSize) {
-                partHistSuppliers.put(ownerId, grpId, p, ceilingMinReserved);
+                partHistSuppliers.put(ownerId, grpId, p, ceilingMinReserved, maxOwnerCntr);
 
                 haveHistory.add(p);
 

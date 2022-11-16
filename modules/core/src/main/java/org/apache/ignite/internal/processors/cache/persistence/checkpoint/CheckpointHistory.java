@@ -504,10 +504,9 @@ public class CheckpointHistory {
             while (iter.hasNext()) {
                 Map.Entry<Integer, Long> entry = iter.next();
 
-                Long foundCntr = cpEntry.partitionCounter(wal, grpId, entry.getKey(), true);
-                //Long pendingCntr = cpEntry.partitionCounter(wal, grpId, entry.getKey(), true);
+                T2<Long, Long> foundCntr = cpEntry.partitionCounter(wal, grpId, entry.getKey());
 
-                if (foundCntr != null && foundCntr <= entry.getValue()) {
+                if (foundCntr != null && foundCntr.get1() <= entry.getValue()) {
                     iter.remove();
 
                     log.error("TEST | foundCntr: " + foundCntr + ", pendingCntr: " + foundCntr + " at cp " + cpTs);
@@ -517,9 +516,9 @@ public class CheckpointHistory {
                             + entry.getKey() + ", partCntrSince=" + entry.getValue() + "]");
                     }
 
-                    if (foundCntr + margin > entry.getValue()) {
+                    if (foundCntr.get1() + margin > entry.getValue()) {
                         historyPointerCandidate.add(new WalPointerCandidate(grpId, entry.getKey(), entry.getValue(), ptr,
-                            foundCntr));
+                            foundCntr.get1()));
 
                         continue;
                     }
@@ -625,10 +624,10 @@ public class CheckpointHistory {
             long margin,
             Map<Integer, Long> partCntsForUpdate
         ) {
-            Long foundCntr = null;
+            T2<Long, Long> foundCntr = null;
 
             try {
-                foundCntr = cpEntry == null ? null : cpEntry.partitionCounter(wal, grpId, part, false);
+                foundCntr = cpEntry == null ? null : cpEntry.partitionCounter(wal, grpId, part);
             }
             catch (IgniteCheckedException e) {
                 log.warning("Checkpoint cannot be chosen because counter is unavailable [grpId=" + grpId
@@ -636,13 +635,13 @@ public class CheckpointHistory {
                     + ", cp=(" + cpEntry.checkpointId() + ", " + U.format(cpEntry.timestamp()) + ")]", e);
             }
 
-            if (foundCntr == null || foundCntr == walPntrCntr) {
+            if (foundCntr == null || foundCntr.get1() == walPntrCntr) {
                 partCntsForUpdate.put(part, walPntrCntr);
 
                 return walPntr;
             }
 
-            partCntsForUpdate.put(part, Math.max(foundCntr, partContr - margin));
+            partCntsForUpdate.put(part, Math.max(foundCntr.get1(), partContr - margin));
 
             return cpEntry.checkpointMark();
         }
@@ -655,12 +654,12 @@ public class CheckpointHistory {
      * @return Map of group-partition on checkpoint entry or empty map if nothing found.
      */
     public Map<GroupPartitionId, CheckpointEntry> searchCheckpointEntry(
-        Map<T2<Integer, Integer>, Long> searchCntrMap
+        Map<T2<Integer, Integer>, T2<Long, Long>> searchCntrMap
     ) {
         if (F.isEmpty(searchCntrMap))
             return Collections.emptyMap();
 
-        Map<T2<Integer, Integer>, Long> modifiedSearchMap = new HashMap<>(searchCntrMap);
+        Map<T2<Integer, Integer>, T2<Long, Long>> modifiedSearchMap = new HashMap<>(searchCntrMap);
 
         Map<GroupPartitionId, CheckpointEntry> res = new HashMap<>();
 
@@ -668,14 +667,14 @@ public class CheckpointHistory {
             try {
                 CheckpointEntry cpEntry = entry(cpTs);
 
-                Iterator<Map.Entry<T2<Integer, Integer>, Long>> iter = modifiedSearchMap.entrySet().iterator();
+                Iterator<Map.Entry<T2<Integer, Integer>, T2<Long, Long>>> iter = modifiedSearchMap.entrySet().iterator();
 
                 while (iter.hasNext()) {
-                    Map.Entry<T2<Integer, Integer>, Long> entry = iter.next();
+                    Map.Entry<T2<Integer, Integer>, T2<Long, Long>> entry = iter.next();
 
-                    Long foundCntr = cpEntry.partitionCounter(wal, entry.getKey().get1(), entry.getKey().get2(), false);
+                    T2<Long, Long> foundCntr = cpEntry.partitionCounter(wal, entry.getKey().get1(), entry.getKey().get2());
 
-                    if (foundCntr != null && foundCntr <= entry.getValue()) {
+                    if (foundCntr != null && foundCntr.get1() <= entry.getValue().get1() && foundCntr.get2() <= entry.getValue().get2()) {
                         iter.remove();
 
                         res.put(new GroupPartitionId(entry.getKey().get1(), entry.getKey().get2()), cpEntry);

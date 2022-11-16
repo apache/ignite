@@ -463,20 +463,23 @@ public class RecordDataV2Serializer extends RecordDataV1Serializer {
 
             CacheState state = new CacheState(parts);
 
-            for (int p = 0; p < parts; p++) {
-                int partId = buf.readShort() & 0xFFFF;
-                long size = buf.readLong();
-                long partCntr = buf.readLong();
-                long partPendingCntr = buf.readLong();
-                byte partState = buf.readByte();
-
-                state.addPartitionState(partId, size, partCntr, partPendingCntr, partState);
-            }
+            for (int p = 0; p < parts; p++)
+                readPartitionState(buf, state);
 
             states.put(cacheId, state);
         }
 
         return states;
+    }
+
+    /** */
+    protected void readPartitionState(DataInput buf, CacheState state) throws IOException {
+        int partId = buf.readShort() & 0xFFFF;
+        long size = buf.readLong();
+        long partCntr = buf.readLong();
+        byte partState = buf.readByte();
+
+        state.addPartitionState(partId, size, partCntr, -1, partState);
     }
 
     /**
@@ -525,7 +528,7 @@ public class RecordDataV2Serializer extends RecordDataV1Serializer {
 
             CacheState state = entry.getValue();
 
-            // 2 bytes partition ID, size and counter per partition, part state.
+            // 2 bytes partition ID, size and counter per partition, pending partition counter, part state.
             size += 27 * state.size();
         }
 

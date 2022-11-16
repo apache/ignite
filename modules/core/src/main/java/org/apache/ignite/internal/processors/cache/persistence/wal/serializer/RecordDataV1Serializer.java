@@ -2221,9 +2221,8 @@ public class RecordDataV1Serializer implements RecordDataSerializer {
                 int partId = buf.readShort() & 0xFFFF;
                 long size = buf.readLong();
                 long partCntr = buf.readLong();
-                long partPendingCntr = buf.readLong();
 
-                state.addPartitionState(partId, size, partCntr, partPendingCntr);
+                state.addPartitionState(partId, size, partCntr);
             }
 
             states.put(cacheId, state);

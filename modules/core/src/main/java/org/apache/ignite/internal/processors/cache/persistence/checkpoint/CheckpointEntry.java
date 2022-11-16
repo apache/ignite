@@ -33,6 +33,7 @@ import org.apache.ignite.internal.pagemem.wal.record.CheckpointRecord;
 import org.apache.ignite.internal.pagemem.wal.record.WALRecord;
 import org.apache.ignite.internal.processors.cache.distributed.dht.topology.GridDhtPartitionState;
 import org.apache.ignite.internal.processors.cache.persistence.wal.WALPointer;
+import org.apache.ignite.internal.util.typedef.T2;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgniteBiTuple;
 import org.jetbrains.annotations.NotNull;
@@ -155,15 +156,14 @@ public class CheckpointEntry {
      * @param wal Write ahead log manager.
      * @param grpId Cache group ID.
      * @param part Partition ID.
-     * @param pending Partition ID.
      * @return Partition counter or partition pending counter. {@code Null} if not found.
      * @throws IgniteCheckedException If something is wrong when loading the counter from WAL history.
      */
-    public Long partitionCounter(IgniteWriteAheadLogManager wal, int grpId, int part, boolean pending)
+    public @Nullable T2<Long, Long> partitionCounter(IgniteWriteAheadLogManager wal, int grpId, int part)
         throws IgniteCheckedException {
         GroupStateLazyStore store = initIfNeeded(wal);
 
-        return store.partitionCounter(grpId, part, pending);
+        return store.partitionCounter(grpId, part);
     }
 
     /** {@inheritDoc} */
@@ -261,13 +261,13 @@ public class CheckpointEntry {
          * Gets partition counter by partition ID.
          *
          * @param partId Partition ID.
-         * @param pending Partition counter flag.
          * @return Partition update counter (will return {@code -1} if partition is not present in the record).
+         * {@code Null} if record not found.
          */
-        public long counterByPartition(int partId, boolean pending) {
+        public @Nullable T2<Long, Long> counterByPartition(int partId) {
             int idx = indexByPartition(partId);
 
-            return idx >= 0 ? (pending ? pendingCnts[idx] : cnts[idx]) : -1;
+            return idx >= 0 ? new T2<>(cnts[idx], pendingCnts[idx]) : null;
         }
 
         /**
@@ -404,10 +404,9 @@ public class CheckpointEntry {
         /**
          * @param grpId Group id.
          * @param part Partition id.
-         * @param pending Pending counter flag.
-         * @return Partition counter or partition pending counter.
+         * @return Partition counter or partition pending counter. {@code Null} if node found.
          */
-        private Long partitionCounter(int grpId, int part, boolean pending) {
+        private @Nullable T2<Long, Long> partitionCounter(int grpId, int part) {
             assert initGuard != 0 : initGuard;
 
             if (initEx != null || grpStates == null)
@@ -416,9 +415,9 @@ public class CheckpointEntry {
             GroupState state = grpStates.get(grpId);
 
             if (state != null) {
-                long cntr = state.counterByPartition(part, pending);
+                T2<Long, Long> cntr = state.counterByPartition(part);
 
-                return cntr < 0 ? null : cntr;
+                return cntr.get1() < 0 ? null : cntr;
             }
 
             return null;

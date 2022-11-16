@@ -51,10 +51,9 @@ public class CacheState {
      * @param partId Partition ID to add.
      * @param size Partition size.
      * @param cntr Partition counter.
-     * @param pendingCntr Partition pending counter.
      */
-    public void addPartitionState(int partId, long size, long cntr, long pendingCntr) {
-        addPartitionState(partId, size, cntr, pendingCntr, (byte)-1);
+    public void addPartitionState(int partId, long size, long cntr) {
+        addPartitionState(partId, size, cntr, -1L, (byte)-1);
     }
 
     /**
