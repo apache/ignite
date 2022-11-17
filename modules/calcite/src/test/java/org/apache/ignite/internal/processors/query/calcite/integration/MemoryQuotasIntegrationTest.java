@@ -316,13 +316,22 @@ public class MemoryQuotasIntegrationTest extends AbstractBasicIntegrationTest {
         assertThrows("SELECT ANY_VALUE(b) FROM tbl GROUP BY id",
             IgniteException.class, "Query quota exceeded");
 
-        //  Colocated AggAccumulator.
+        // Colocated AggAccumulator.
         assertQuery("SELECT ARRAY_AGG(b) FROM tbl WHERE id < 800")
             .matches(QueryChecker.containsSubPlan("IgniteColocatedHashAggregate"))
             .resultSize(1)
             .check();
 
         assertThrows("SELECT ARRAY_AGG(b) FROM tbl",
+            IgniteException.class, "Query quota exceeded");
+
+        // Colocated AggAccumulator with ordering.
+        assertQuery("SELECT ARRAY_AGG(b ORDER BY id) FROM tbl WHERE id < 800")
+            .matches(QueryChecker.containsSubPlan("IgniteColocatedHashAggregate"))
+            .resultSize(1)
+            .check();
+
+        assertThrows("SELECT ARRAY_AGG(b ORDER BY id) FROM tbl",
             IgniteException.class, "Query quota exceeded");
 
         // Map-reduce.
