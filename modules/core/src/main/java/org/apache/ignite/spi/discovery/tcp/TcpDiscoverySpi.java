@@ -621,7 +621,7 @@ public class TcpDiscoverySpi extends IgniteSpiAdapter implements IgniteDiscovery
     }
 
     /**
-     * Inject resources
+     * Inject resources`
      *
      * @param ignite Ignite.
      */
