@@ -47,6 +47,7 @@ import java.util.function.BiConsumer;
 import java.util.function.BooleanSupplier;
 import java.util.stream.Collectors;
 import org.apache.ignite.IgniteCheckedException;
+import org.apache.ignite.IgniteSystemProperties;
 import org.apache.ignite.binary.BinaryType;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.internal.IgniteFutureCancelledCheckedException;
@@ -79,9 +80,11 @@ import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.jetbrains.annotations.Nullable;
 
+import static org.apache.ignite.IgniteSystemProperties.IGNITE_SNAPSHOT_SEQUENTIAL_WRITE;
 import static org.apache.ignite.internal.pagemem.PageIdAllocator.INDEX_PARTITION;
 import static org.apache.ignite.internal.processors.cache.persistence.file.FilePageStoreManager.cacheWorkDir;
 import static org.apache.ignite.internal.processors.cache.persistence.file.FilePageStoreManager.getPartitionFile;
+import static org.apache.ignite.internal.processors.cache.persistence.snapshot.IgniteSnapshotManager.DFLT_IGNITE_SNAPSHOT_SEQUENTIAL_WRITE;
 import static org.apache.ignite.internal.processors.cache.persistence.snapshot.IgniteSnapshotManager.copy;
 import static org.apache.ignite.internal.processors.cache.persistence.snapshot.IgniteSnapshotManager.databaseRelativePath;
 import static org.apache.ignite.internal.processors.cache.persistence.snapshot.IgniteSnapshotManager.partDeltaFile;
@@ -149,6 +152,10 @@ class SnapshotFutureTask extends AbstractSnapshotFutureTask<Set<GroupPartitionId
 
     /** Processed snapshot size in bytes. */
     private final AtomicLong processedSize = new AtomicLong();
+
+    /** Value of {@link IgniteSystemProperties#IGNITE_SNAPSHOT_SEQUENTIAL_WRITE}. */
+    public final boolean sequentialWrite =
+        IgniteSystemProperties.getBoolean(IGNITE_SNAPSHOT_SEQUENTIAL_WRITE, DFLT_IGNITE_SNAPSHOT_SEQUENTIAL_WRITE);
 
     /**
      * @param cctx Shared context.
@@ -907,11 +914,13 @@ class SnapshotFutureTask extends AbstractSnapshotFutureTask<Set<GroupPartitionId
                         deltaFileIo = (encryptedGrpId == null ? ioFactory :
                             pageStore.encryptedFileIoFactory(ioFactory, encryptedGrpId)).create(deltaFile);
 
-                        deltaIdxFileIo = ioFactory.create(partDeltaIndexFile(deltaFile));
+                        if (sequentialWrite) {
+                            deltaIdxFileIo = ioFactory.create(partDeltaIndexFile(deltaFile));
 
-                        pageIdxs = ByteBuffer.allocate(store.getPageSize()).order(ByteOrder.nativeOrder());
+                            pageIdxs = ByteBuffer.allocate(store.getPageSize()).order(ByteOrder.nativeOrder());
 
-                        assert pageIdxs.capacity() % 4 == 0;
+                            assert pageIdxs.capacity() % 4 == 0;
+                        }
                     }
                 }
                 catch (IOException e) {
@@ -995,10 +1004,12 @@ class SnapshotFutureTask extends AbstractSnapshotFutureTask<Set<GroupPartitionId
 
             totalSize.addAndGet(len);
 
-            pageIdxs.putInt(PageIdUtils.pageIndex(pageId));
+            if (sequentialWrite) {
+                pageIdxs.putInt(PageIdUtils.pageIndex(pageId));
 
-            if (!pageIdxs.hasRemaining())
-                writePageIndexes();
+                if (!pageIdxs.hasRemaining())
+                    writePageIndexes();
+            }
         }
 
         /** */

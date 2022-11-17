@@ -43,6 +43,7 @@ import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.junit.runners.Parameterized;
 
+import static org.apache.ignite.IgniteSystemProperties.IGNITE_SNAPSHOT_SEQUENTIAL_WRITE;
 import static org.apache.ignite.configuration.DataStorageConfiguration.DFLT_PAGE_SIZE;
 import static org.apache.ignite.internal.processors.cache.persistence.file.FilePageStoreManager.CACHE_DIR_PREFIX;
 import static org.apache.ignite.internal.processors.cache.persistence.snapshot.IgniteSnapshotManager.DELTA_SORT_BATCH_SIZE;
@@ -65,12 +66,21 @@ public class IgniteClusterSnapshotDeltaTest extends AbstractSnapshotSelfTest {
         return cartesianProduct(encryptionParams(), F.asList(false, true));
     }
 
+    /** {@inheritDoc} */
+    @Override protected void afterTest() throws Exception {
+        super.afterTest();
+
+        System.clearProperty(IGNITE_SNAPSHOT_SEQUENTIAL_WRITE);
+    }
+
     /** @throws Exception If failed. */
     @Test
     public void testSendDelta() throws Exception {
-        int keys = 500_000;
+        int keys = 10_000;
         byte[] payload = new byte[DFLT_PAGE_SIZE / 2];
         int partCnt = 2;
+
+        System.setProperty(IGNITE_SNAPSHOT_SEQUENTIAL_WRITE, String.valueOf(sequentialWrite));
 
         // 1. Start a cluster and fill cache.
         ThreadLocalRandom.current().nextBytes(payload);
