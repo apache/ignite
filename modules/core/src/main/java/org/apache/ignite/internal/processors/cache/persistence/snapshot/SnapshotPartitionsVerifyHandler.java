@@ -276,7 +276,11 @@ public class SnapshotPartitionsVerifyHandler implements SnapshotHandler<Map<Part
         throw new IgniteCheckedException(buf.toString());
     }
 
-    /** */
+    /**
+     * Provides flag of full hash calculation.
+     *
+     * @return {@code True} if full partition hash calculation is required. {@code False} otherwise.
+     */
     protected boolean skipHash() {
         return false;
     }

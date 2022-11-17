@@ -206,24 +206,25 @@ public class IgniteClusterSnapshotStreamerTest extends AbstractSnapshotSelfTest 
     private void doTestDataStreamerWhileSnapshot(boolean allowOverwrite) throws Exception {
         AtomicBoolean stopLoading = new AtomicBoolean();
 
-        TestRecordingCommunicationSpi cm = (TestRecordingCommunicationSpi)client.configuration().getCommunicationSpi();
+        TestRecordingCommunicationSpi clientCm =
+            (TestRecordingCommunicationSpi)client.configuration().getCommunicationSpi();
 
         IgniteInternalFuture<?> loadFut = runLoad(client, allowOverwrite, stopLoading);
 
-        cm.blockMessages(DataStreamerRequest.class, grid(0).name());
+        clientCm.blockMessages(DataStreamerRequest.class, grid(0).name());
 
-        cm.waitForBlocked(maxBatchesPerNode(grid(0)));
+        clientCm.waitForBlocked(maxBatchesPerNode(grid(0)));
 
         try {
             if (allowOverwrite)
                 createAndCheckSnapshot(null, null);
             else {
                 createAndCheckSnapshot(DataStreamerUpdatesHandler.WRN_MSG,
-                    SnapshotPartitionsQuickVerifyHandler.WRN_MSG_BASE);
+                    SnapshotPartitionsQuickVerifyHandler.WRN_MSG);
             }
         }
         finally {
-            cm.stopBlock();
+            clientCm.stopBlock();
             stopLoading.set(true);
             loadFut.get();
         }
@@ -235,7 +236,8 @@ public class IgniteClusterSnapshotStreamerTest extends AbstractSnapshotSelfTest 
      * @param allowOverwrite 'allowOverwrite' setting.
      */
     private void doTestDataStreamerFailedBeforeSnapshot(boolean allowOverwrite) throws Exception {
-        TestRecordingCommunicationSpi cm = (TestRecordingCommunicationSpi)client.configuration().getCommunicationSpi();
+        TestRecordingCommunicationSpi clientCm =
+            (TestRecordingCommunicationSpi)client.configuration().getCommunicationSpi();
 
         UUID clientId = client.localNode().id();
 
@@ -254,9 +256,9 @@ public class IgniteClusterSnapshotStreamerTest extends AbstractSnapshotSelfTest 
 
         IgniteInternalFuture<?> loadFut = runLoad(client, allowOverwrite, stopLoading);
 
-        cm.blockMessages(DataStreamerRequest.class, grid(0).name());
+        clientCm.blockMessages(DataStreamerRequest.class, grid(0).name());
 
-        cm.waitForBlocked(maxBatchesPerNode(grid(0)));
+        clientCm.waitForBlocked(maxBatchesPerNode(grid(0)));
 
         runAsync(() -> stopGrid(client.name(), true));
 
@@ -268,7 +270,7 @@ public class IgniteClusterSnapshotStreamerTest extends AbstractSnapshotSelfTest 
         if (allowOverwrite)
             createAndCheckSnapshot(null, null);
         else {
-            createAndCheckSnapshot(SnapshotPartitionsQuickVerifyHandler.WRN_MSG_BASE,
+            createAndCheckSnapshot(SnapshotPartitionsQuickVerifyHandler.WRN_MSG,
                 DataStreamerUpdatesHandler.WRN_MSG);
         }
     }
@@ -304,27 +306,27 @@ public class IgniteClusterSnapshotStreamerTest extends AbstractSnapshotSelfTest 
     }
 
     /** */
-    private void createAndCheckSnapshot(String expectedWrn, String notExpectedWrn) throws IgniteCheckedException {
-        assert notExpectedWrn == null || expectedWrn != null;
+    private void createAndCheckSnapshot(String expWrn, String notexpWrn) throws IgniteCheckedException {
+        assert notexpWrn == null || expWrn != null;
 
-        if (expectedWrn == null)
+        if (expWrn == null)
             snpMgr.createSnapshot(SNAPSHOT_NAME, null).get();
         else {
             Throwable snpWrn = assertThrows(
                 null,
                 () -> snpMgr.createSnapshot(SNAPSHOT_NAME, null).get(),
                 IgniteException.class,
-                expectedWrn
+                expWrn
             );
 
-            if (notExpectedWrn != null)
-                assertTrue(!snpWrn.getMessage().contains(notExpectedWrn));
+            if (notexpWrn != null)
+                assertTrue(!snpWrn.getMessage().contains(notexpWrn));
         }
 
         IdleVerifyResultV2 checkRes = snpMgr.checkSnapshot(SNAPSHOT_NAME, null).get();
 
         assertTrue(checkRes.exceptions().isEmpty());
-        assertTrue((expectedWrn != null) == checkRes.hasConflicts());
+        assertTrue((expWrn != null) == checkRes.hasConflicts());
     }
 
     /** */

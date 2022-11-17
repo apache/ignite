@@ -19,13 +19,13 @@ package org.apache.ignite.internal.processors.cache.persistence.snapshot;
 
 import java.util.Collection;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.Map;
 import java.util.Set;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.internal.processors.cache.GridCacheSharedContext;
 import org.apache.ignite.internal.processors.cache.verify.PartitionHashRecordV2;
 import org.apache.ignite.internal.processors.cache.verify.PartitionKeyV2;
-import org.apache.ignite.internal.util.GridConcurrentHashSet;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.internal.S;
 
@@ -35,7 +35,7 @@ import org.apache.ignite.internal.util.typedef.internal.S;
  */
 public class SnapshotPartitionsQuickVerifyHandler extends SnapshotPartitionsVerifyHandler {
     /** */
-    public static final String WRN_MSG_BASE = "This may happen if DataStreamer with property 'allowOverwrite' set " +
+    public static final String WRN_MSG = "This may happen if DataStreamer with property 'allowOverwrite' set " +
         "to `false` is loading during the snapshot or hadn't successfully finished earlier. However, you will be " +
         "able restore rest the caches from this snapshot.";
 
@@ -73,7 +73,7 @@ public class SnapshotPartitionsQuickVerifyHandler extends SnapshotPartitionsVeri
         if (results.stream().anyMatch(r -> r.data() == null))
             return;
 
-        Set<Integer> wrnGrps = new GridConcurrentHashSet<>();
+        Set<Integer> wrnGrps = new HashSet<>();
 
         Map<PartitionKeyV2, PartitionHashRecordV2> total = new HashMap<>();
 
@@ -83,13 +83,13 @@ public class SnapshotPartitionsQuickVerifyHandler extends SnapshotPartitionsVeri
             if (other == null)
                 return;
 
-            if (!F.eq(val, other))
+            if (val.size() != other.size() || !val.updateCounter().equals(other.updateCounter()))
                 wrnGrps.add(part.groupId());
         }));
 
         if (!wrnGrps.isEmpty()) {
             throw new SnapshotHandlerWarningException("Cache partitions differ for cache groups " + S.compact(wrnGrps)
-                + ". " + WRN_MSG_BASE);
+                + ". " + WRN_MSG);
         }
     }
 
