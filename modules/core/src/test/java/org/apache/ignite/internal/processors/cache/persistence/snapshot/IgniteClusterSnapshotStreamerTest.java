@@ -213,7 +213,7 @@ public class IgniteClusterSnapshotStreamerTest extends AbstractSnapshotSelfTest 
 
         clientCm.blockMessages(DataStreamerRequest.class, grid(0).name());
 
-        clientCm.waitForBlocked(maxBatchesPerNode(grid(0)));
+        clientCm.waitForBlocked(batchesPerNode(grid(0)));
 
         try {
             if (allowOverwrite)
@@ -258,7 +258,7 @@ public class IgniteClusterSnapshotStreamerTest extends AbstractSnapshotSelfTest 
 
         clientCm.blockMessages(DataStreamerRequest.class, grid(0).name());
 
-        clientCm.waitForBlocked(maxBatchesPerNode(grid(0)));
+        clientCm.waitForBlocked(batchesPerNode(grid(0)));
 
         runAsync(() -> stopGrid(client.name(), true));
 
@@ -330,10 +330,10 @@ public class IgniteClusterSnapshotStreamerTest extends AbstractSnapshotSelfTest 
     }
 
     /** */
-    private int maxBatchesPerNode(IgniteEx grid) {
-        Integer attrStreamerPoolSize = grid.localNode().attribute(ATTR_DATA_STREAMER_POOL_SIZE);
+    private int batchesPerNode(IgniteEx grid) {
+        Integer poolSize = grid.localNode().attribute(ATTR_DATA_STREAMER_POOL_SIZE);
 
-        return IgniteDataStreamer.DFLT_PARALLEL_OPS_MULTIPLIER * (attrStreamerPoolSize != null ? attrStreamerPoolSize :
+        return IgniteDataStreamer.DFLT_PARALLEL_OPS_MULTIPLIER * (poolSize != null ? poolSize :
             grid.localNode().metrics().getTotalCpus());
     }
 }
