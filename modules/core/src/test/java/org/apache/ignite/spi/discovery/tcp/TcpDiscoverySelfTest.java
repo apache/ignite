@@ -1429,6 +1429,12 @@ public class TcpDiscoverySelfTest extends GridCommonAbstractTest {
     @Test
     public void testTest() throws Exception {
         startGrid(0);
+
+        U.sleep(2000);
+
+        startGrid(1);
+
+        U.sleep(5000);
     }
 
     @Override protected boolean isMultiJvm() {
