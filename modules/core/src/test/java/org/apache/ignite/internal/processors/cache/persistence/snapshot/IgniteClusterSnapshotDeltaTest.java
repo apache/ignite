@@ -195,7 +195,7 @@ public class IgniteClusterSnapshotDeltaTest extends AbstractSnapshotSelfTest {
                     int idx;
 
                     @Override public int write(ByteBuffer srcBuf, long pos) throws IOException {
-                        boolean batchRotation = idx++ % idxsPerBatch  == 0;
+                        boolean batchRotation = idx++ % idxsPerBatch == 0;
 
                         if (lastPos > pos && !batchRotation)
                             isSequentialWrite = false;
