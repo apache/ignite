@@ -68,7 +68,7 @@ public class IgniteClusterSnapshotDeltaTest extends AbstractSnapshotSelfTest {
     /** @throws Exception If failed. */
     @Test
     public void testSendDelta() throws Exception {
-        int keys = 10_000;
+        int keys = 500_000;
         byte[] payload = new byte[DFLT_PAGE_SIZE / 2];
         int partCnt = 2;
 
@@ -169,6 +169,10 @@ public class IgniteClusterSnapshotDeltaTest extends AbstractSnapshotSelfTest {
 
         FileIOFactory old = pageStore.getPageStoreFileIoFactory();
 
+        int idxsPerPage = pageStore.pageSize() / 4;
+
+        int idxsPerBatch = (DELTA_SORT_BATCH_SIZE / idxsPerPage) * idxsPerPage + idxsPerPage;
+
         FileIOFactory testFactory = new FileIOFactory() {
             @Override public FileIO create(File file, OpenOption... modes) throws IOException {
                 FileIO fileIo = old.create(file, modes);
@@ -181,7 +185,7 @@ public class IgniteClusterSnapshotDeltaTest extends AbstractSnapshotSelfTest {
                     int idx;
 
                     @Override public int write(ByteBuffer srcBuf, long pos) throws IOException {
-                        boolean batchRotation = idx++ % DELTA_SORT_BATCH_SIZE == 0;
+                        boolean batchRotation = idx++ % idxsPerBatch  == 0;
 
                         if (lastPos > pos && !batchRotation)
                             isSequentialWrite = false;

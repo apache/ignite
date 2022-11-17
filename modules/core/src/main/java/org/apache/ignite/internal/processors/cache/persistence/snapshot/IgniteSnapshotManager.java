@@ -3360,11 +3360,9 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
                                 pageBuf.flip();
 
                                 while (pageBuf.hasRemaining())
-                                    sorted.put(pageBuf.getInt(), sorted.size());
+                                    sorted.put(pageBuf.getInt(), idx++);
 
                                 pageBuf.clear();
-
-                                idx++;
                             }
 
                             sortedIter = sorted.values().iterator();
