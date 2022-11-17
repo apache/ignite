@@ -521,20 +521,20 @@ class SnapshotFutureTask extends AbstractSnapshotFutureTask<Set<GroupPartitionId
                                 pair,
                                 partLen);
 
-                            processedSize.addAndGet(partLen);
-
                             // Stop partition writer.
-                            PageStoreSerialWriter writer = partDeltaWriters.get(pair);
+                            partDeltaWriters.get(pair).markPartitionProcessed();
 
-                            writer.markPartitionProcessed();
-
-                            writer.close();
+                            processedSize.addAndGet(partLen);
                         }),
                         snpSndr.executor())
                         // Wait for the completion of both futures - checkpoint end, copy partition.
                         .runAfterBothAsync(cpEndFut,
                             wrapExceptionIfStarted(() -> {
-                                File delta = partDeltaWriters.get(pair).deltaFile;
+                                PageStoreSerialWriter writer = partDeltaWriters.get(pair);
+
+                                writer.close();
+
+                                File delta = writer.deltaFile;
 
                                 try {
                                     // Atomically creates a new, empty delta file if and only if
