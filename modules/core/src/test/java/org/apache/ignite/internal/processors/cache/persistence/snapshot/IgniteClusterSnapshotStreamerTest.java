@@ -110,7 +110,7 @@ public class IgniteClusterSnapshotStreamerTest extends AbstractSnapshotSelfTest 
      * Tests snapshot warning when streamer failed or canceled before snapshot. Default receiver.
      */
     @Test
-    public void testStreamerFailedLongAgoDefault() throws Exception {
+    public void testStreamerFailsLongAgoDefault() throws Exception {
         doTestDataStreamerFailedBeforeSnapshot(false);
     }
 

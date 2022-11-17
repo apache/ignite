@@ -18,17 +18,16 @@
 package org.apache.ignite.internal.processors.cache.persistence.snapshot;
 
 import java.util.Collection;
-import java.util.Collections;
+import java.util.HashMap;
 import java.util.Map;
 import java.util.Set;
-import java.util.concurrent.ConcurrentHashMap;
-import java.util.stream.Collectors;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.internal.processors.cache.GridCacheSharedContext;
 import org.apache.ignite.internal.processors.cache.verify.PartitionHashRecordV2;
 import org.apache.ignite.internal.processors.cache.verify.PartitionKeyV2;
 import org.apache.ignite.internal.util.GridConcurrentHashSet;
-import org.apache.ignite.internal.util.typedef.internal.U;
+import org.apache.ignite.internal.util.typedef.F;
+import org.apache.ignite.internal.util.typedef.internal.S;
 
 /**
  * Quick partitions verifier. Warns if partiton counters or size are different among the nodes what can be caused by
@@ -74,61 +73,28 @@ public class SnapshotPartitionsQuickVerifyHandler extends SnapshotPartitionsVeri
         if (results.stream().anyMatch(r -> r.data() == null))
             return;
 
-        Map<Integer, Map<Integer, PartitionHashRecordV2>> counters = new ConcurrentHashMap<>();
+        Set<Integer> wrnGrps = new GridConcurrentHashSet<>();
 
-        Set<Integer> wrnGroups = new GridConcurrentHashSet<>();
+        Map<PartitionKeyV2, PartitionHashRecordV2> total = new HashMap<>();
 
-        U.doInParallel(
-            cctx.snapshotMgr().snapshotExecutorService(),
-            results,
-            nodeResult -> {
-                U.doInParallel(
-                    cctx.snapshotMgr().snapshotExecutorService(),
-                    nodeResult.data() == null ? Collections.emptySet() : nodeResult.data().entrySet(),
-                    newResult -> {
-                        if (wrnGroups.contains(newResult.getKey().groupId()))
-                            return null;
+        F.viewReadOnly(results, SnapshotHandlerResult::data).forEach(m -> m.forEach((part, val) -> {
+            PartitionHashRecordV2 other = total.putIfAbsent(part, val);
 
-                        counters.compute(newResult.getKey().groupId(), (p, partIdMap) -> {
-                            if (partIdMap == null)
-                                partIdMap = new ConcurrentHashMap<>();
+            if (other == null)
+                return;
 
-                            partIdMap.compute(newResult.getKey().partitionId(), (partId, storedResult) -> {
-                                if (storedResult == null)
-                                    return newResult.getValue();
+            if (!F.eq(val, other))
+                wrnGrps.add(part.groupId());
+        }));
 
-                                if (!storedResult.updateCounter().equals(newResult.getValue().updateCounter()) ||
-                                    storedResult.size() != newResult.getValue().size())
-                                    wrnGroups.add(newResult.getKey().groupId());
-
-                                return storedResult;
-                            });
-
-                            return partIdMap;
-                        });
-
-                        return null;
-                    }
-                );
-
-                return null;
-            }
-        );
-
-        if (!wrnGroups.isEmpty())
-            throw new SnapshotHandlerWarningException(warningMessage(wrnGroups));
+        if (!wrnGrps.isEmpty()) {
+            throw new SnapshotHandlerWarningException("Cache partitions differ for cache groups " + S.compact(wrnGrps)
+                + ". " + WRN_MSG_BASE);
+        }
     }
 
     /** {@inheritDoc} */
     @Override protected boolean skipHash() {
         return true;
-    }
-
-    /**
-     * @return The snapshot quick verification warning message for {@code cacheGrps}.
-     */
-    private static String warningMessage(Collection<Integer> cacheGrps) {
-        return "Cache partitions differ for cache groups " + cacheGrps.stream().map(String::valueOf)
-            .collect(Collectors.joining(", ")) + ". " + WRN_MSG_BASE;
     }
 }
