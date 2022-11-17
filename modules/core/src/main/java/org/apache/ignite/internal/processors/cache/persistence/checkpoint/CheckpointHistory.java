@@ -506,7 +506,7 @@ public class CheckpointHistory {
 
                 T2<Long, Long> foundCntr = cpEntry.partitionCounter(wal, grpId, entry.getKey());
 
-                if (foundCntr != null && foundCntr.get1() <= entry.getValue()) {
+                if (foundCntr != null && foundCntr.get2() <= entry.getValue()) {
                     iter.remove();
 
                     log.error("TEST | foundCntr: " + foundCntr + ", pendingCntr: " + foundCntr + " at cp " + cpTs);
@@ -516,9 +516,9 @@ public class CheckpointHistory {
                             + entry.getKey() + ", partCntrSince=" + entry.getValue() + "]");
                     }
 
-                    if (foundCntr.get1() + margin > entry.getValue()) {
+                    if (foundCntr.get2() + margin > entry.getValue()) {
                         historyPointerCandidate.add(new WalPointerCandidate(grpId, entry.getKey(), entry.getValue(), ptr,
-                            foundCntr.get1()));
+                            foundCntr.get2()));
 
                         continue;
                     }

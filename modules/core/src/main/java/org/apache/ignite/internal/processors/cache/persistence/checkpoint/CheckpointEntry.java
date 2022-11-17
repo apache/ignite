@@ -417,7 +417,7 @@ public class CheckpointEntry {
             if (state != null) {
                 T2<Long, Long> cntr = state.counterByPartition(part);
 
-                return cntr.get1() < 0 ? null : cntr;
+                return cntr == null ? null : cntr;
             }
 
             return null;
