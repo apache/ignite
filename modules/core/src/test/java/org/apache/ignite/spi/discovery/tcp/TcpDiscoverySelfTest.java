@@ -1437,10 +1437,6 @@ public class TcpDiscoverySelfTest extends GridCommonAbstractTest {
         U.sleep(5000);
     }
 
-    @Override protected boolean isMultiJvm() {
-        return true;
-    }
-
     /**
      * @throws Exception If failed
      */
