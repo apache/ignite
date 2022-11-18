@@ -42,17 +42,6 @@ namespace Apache.Ignite.Core.Impl.Unmanaged.Jni
         // ReSharper disable once InconsistentNaming
         private const int JNI_VERSION_9 = 0x00090000;
 
-        /** Options to enable startup on Java 9. */
-        public static readonly string[] Java9Options =
-        {
-            "--add-exports=java.base/jdk.internal.misc=ALL-UNNAMED",
-            "--add-exports=java.base/sun.nio.ch=ALL-UNNAMED",
-            "--add-exports=java.management/com.sun.jmx.mbeanserver=ALL-UNNAMED",
-            "--add-exports=jdk.internal.jvmstat/sun.jvmstat.monitor=ALL-UNNAMED",
-            "--add-opens=jdk.management/com.sun.management.internal=ALL-UNNAMED",
-            "--illegal-access=permit"
-        };
-
         /** Options to enable startup on Java 15. */
         public static readonly string[] Java15Options =
         {
@@ -73,6 +62,17 @@ namespace Apache.Ignite.Core.Impl.Unmanaged.Jni
             "--add-opens=java.base/java.math=ALL-UNNAMED",
             "--add-opens=java.sql/java.sql=ALL-UNNAMED"
         };
+
+        /** Options to enable startup on Java 9. */
+        public static readonly string[] Java9Options = Java15Options;
+        /*{
+            "--add-exports=java.base/jdk.internal.misc=ALL-UNNAMED",
+            "--add-exports=java.base/sun.nio.ch=ALL-UNNAMED",
+            "--add-exports=java.management/com.sun.jmx.mbeanserver=ALL-UNNAMED",
+            "--add-exports=jdk.internal.jvmstat/sun.jvmstat.monitor=ALL-UNNAMED",
+            "--add-opens=jdk.management/com.sun.management.internal=ALL-UNNAMED",
+            "--illegal-access=permit"
+        };*/
 
         /** */
         private readonly IntPtr _jvmPtr;
