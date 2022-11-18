@@ -373,8 +373,9 @@ public class FilePageStoreManager extends GridCacheSharedManagerAdapter implemen
                             cacheCfgs.stream()
                                 .map(ccfg -> cacheWorkDir(ccfg).getName())
                                 .collect(Collectors.joining(File.separator)))
-                    );
-            } catch (IgniteCheckedException e) {
+                );
+            }
+            catch (IgniteCheckedException e) {
                 log.warning("Failed to register maintenance record for corrupted partition files.", e);
             }
 
@@ -408,8 +409,7 @@ public class FilePageStoreManager extends GridCacheSharedManagerAdapter implemen
                     File dir = cacheWorkDir(desc.config());
 
                     if (Arrays.stream(
-                        dir.listFiles()).anyMatch(f -> !f.getName().equals(CACHE_DATA_FILENAME)))
-                    {
+                        dir.listFiles()).anyMatch(f -> !f.getName().equals(CACHE_DATA_FILENAME))) {
                         corruptedCacheGroups.add(desc.config());
                     }
                 }
