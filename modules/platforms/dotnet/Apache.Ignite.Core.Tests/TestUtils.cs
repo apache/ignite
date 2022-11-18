@@ -625,7 +625,7 @@ namespace Apache.Ignite.Core.Tests
                 Logger = noLogger ? null : new TestContextLogger(),
 
                 // TODO: Revert me
-                // JvmDllPath = "/usr/lib/jvm/java-11-openjdk-amd64/lib/server/libjvm.so"
+                JvmDllPath = "/usr/lib/jvm/java-11-openjdk-amd64/lib/server/libjvm.so"
             };
         }
 

@@ -43,6 +43,8 @@ namespace Apache.Ignite.Core.Impl.Unmanaged.Jni
         private const int JNI_VERSION_9 = 0x00090000;
 
         /** Options to enable startup on Java 15. */
+        // TODO: Add "--illegal-access=permit" here just in case for Java 11?
+        // TODO: Check if any warnings are issued by the JVM.
         public static readonly string[] Java15Options =
         {
             "--add-opens=java.base/jdk.internal.misc=ALL-UNNAMED",
