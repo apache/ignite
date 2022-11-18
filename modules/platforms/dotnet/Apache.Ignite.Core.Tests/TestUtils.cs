@@ -622,10 +622,7 @@ namespace Apache.Ignite.Core.Tests
                 },
                 FailureHandler = new NoOpFailureHandler(),
                 WorkDirectory = WorkDir,
-                Logger = noLogger ? null : new TestContextLogger(),
-
-                // TODO: Revert me
-                JvmDllPath = "/usr/lib/jvm/java-11-openjdk-amd64/lib/server/libjvm.so"
+                Logger = noLogger ? null : new TestContextLogger()
             };
         }
 
