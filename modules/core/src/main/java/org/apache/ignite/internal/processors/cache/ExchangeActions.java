@@ -65,6 +65,9 @@ public class ExchangeActions {
     /** */
     private StateChangeRequest stateChangeReq;
 
+    /** */
+    private boolean isOpsOnStaleTopVerRestricted;
+
     /**
      * @param grpId Group ID.
      * @return Always {@code true}, fails with assert error if inconsistent.
@@ -412,7 +415,8 @@ public class ExchangeActions {
             F.isEmpty(cachesToResetLostParts) &&
             finalizePartitionCountersReq == null &&
             stateChangeReq == null &&
-            locJoinCtx == null;
+            locJoinCtx == null &&
+            !isOpsOnStaleTopVerRestricted;
     }
 
     /**
@@ -427,6 +431,19 @@ public class ExchangeActions {
      */
     public LocalJoinCachesContext localJoinContext() {
         return locJoinCtx;
+    }
+
+    /** */
+    public void restrictOperationsOnStaleTopologyVersions() {
+        isOpsOnStaleTopVerRestricted = true;
+    }
+
+    /**
+     * @return Whether operations that were mapped to an outdated topology version should be forced to be remapped to
+     * the up-to-date one.
+     */
+    public boolean isOperationsOnStaleTopologyVersionRestricted() {
+        return isOpsOnStaleTopVerRestricted;
     }
 
     /**
