@@ -17,7 +17,7 @@
 
 package org.apache.ignite.internal.commandline.meta;
 
-import java.util.logging.Logger;
+import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.internal.client.GridClientConfiguration;
 import org.apache.ignite.internal.commandline.AbstractCommand;
 import org.apache.ignite.internal.commandline.Command;
@@ -44,7 +44,7 @@ public class MetadataCommand extends AbstractCommand<Object> {
     private Command<?> delegate;
 
     /** {@inheritDoc} */
-    @Override public void printUsage(Logger log) {
+    @Override public void printUsage(IgniteLogger log) {
         usage(log, "Print metadata command help:",
             METADATA,
             HELP.toString()
@@ -109,7 +109,7 @@ public class MetadataCommand extends AbstractCommand<Object> {
     }
 
     /** {@inheritDoc} */
-    @Override public Object execute(GridClientConfiguration clientCfg, Logger log) throws Exception {
+    @Override public Object execute(GridClientConfiguration clientCfg, IgniteLogger log) throws Exception {
         return delegate.execute(clientCfg, log);
     }
 

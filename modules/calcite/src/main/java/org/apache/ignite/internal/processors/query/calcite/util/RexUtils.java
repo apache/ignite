@@ -79,6 +79,7 @@ import static org.apache.calcite.rex.RexUtil.sargRef;
 import static org.apache.calcite.sql.SqlKind.EQUALS;
 import static org.apache.calcite.sql.SqlKind.GREATER_THAN;
 import static org.apache.calcite.sql.SqlKind.GREATER_THAN_OR_EQUAL;
+import static org.apache.calcite.sql.SqlKind.IS_NOT_DISTINCT_FROM;
 import static org.apache.calcite.sql.SqlKind.IS_NOT_NULL;
 import static org.apache.calcite.sql.SqlKind.IS_NULL;
 import static org.apache.calcite.sql.SqlKind.LESS_THAN;
@@ -167,7 +168,7 @@ public class RexUtils {
 
     /** Binary comparison operations. */
     private static final Set<SqlKind> BINARY_COMPARISON =
-        EnumSet.of(EQUALS, LESS_THAN, GREATER_THAN, GREATER_THAN_OR_EQUAL, LESS_THAN_OR_EQUAL);
+        EnumSet.of(EQUALS, IS_NOT_DISTINCT_FROM, LESS_THAN, GREATER_THAN, GREATER_THAN_OR_EQUAL, LESS_THAN_OR_EQUAL);
 
     /** Supported index operations. */
     private static final Set<SqlKind> TREE_INDEX_COMPARISON =
@@ -176,6 +177,7 @@ public class RexUtils {
             IS_NULL,
             IS_NOT_NULL,
             EQUALS,
+            IS_NOT_DISTINCT_FROM,
             LESS_THAN, GREATER_THAN,
             GREATER_THAN_OR_EQUAL, LESS_THAN_OR_EQUAL);
 
@@ -292,7 +294,7 @@ public class RexUtils {
                 break;
 
             for (RexCall pred : collFldPreds) {
-                if (pred.getOperator().kind != SqlKind.EQUALS) {
+                if (pred.getOperator().kind != SqlKind.EQUALS && pred.getOperator().kind != IS_NOT_DISTINCT_FROM) {
                     if (ignoreNotEqualPreds)
                         continue;
                     else // Only EQUALS predicates allowed in condition.
@@ -305,7 +307,8 @@ public class RexUtils {
                 if (mapping != null)
                     fldIdx = mapping.getSourceOpt(fldIdx);
 
-                bounds.set(fldIdx, createBounds(null, Collections.singletonList(pred), cluster, types.get(fldIdx), 1));
+                bounds.set(fldIdx, new ExactBounds(pred,
+                    makeCast(builder(cluster), removeCast(pred.operands.get(1)), types.get(fldIdx))));
             }
         }
 
@@ -347,6 +350,8 @@ public class RexUtils {
 
             if (op.kind == EQUALS)
                 return new ExactBounds(pred, val);
+            if (op.kind == IS_NOT_DISTINCT_FROM)
+                return new ExactBounds(pred, builder.makeCall(SqlStdOperatorTable.COALESCE, val, nullBound));
             else if (op.kind == IS_NULL)
                 return new ExactBounds(pred, nullBound);
             else if (op.kind == SEARCH) {
@@ -525,26 +530,6 @@ public class RexUtils {
             arg0, arg1);
     }
 
-    /**
-     * Builds index conditions.
-     */
-    public static List<RexNode> buildHashSearchRow(
-        RelOptCluster cluster,
-        RexNode condition,
-        RelDataType rowType
-    ) {
-        List<SearchBounds> searchBounds = buildHashSearchBounds(cluster, condition, rowType, null, false);
-
-        if (searchBounds == null)
-            return null;
-
-        return Commons.transform(searchBounds, b -> {
-            assert b == null || b instanceof ExactBounds : b;
-
-            return b == null ? null : ((ExactBounds)b).bound();
-        });
-    }
-
     /** */
     private static Map<Integer, List<RexCall>> mapPredicatesToFields(RexNode condition, RelOptCluster cluster) {
         List<RexNode> conjunctions = RelOptUtil.conjunctions(condition);
@@ -568,7 +553,7 @@ public class RexUtils {
 
                 // Let RexLocalRef be on the left side.
                 if (refOnTheRight(predCall))
-                    predCall = (RexCall)RexUtil.invert(builder(cluster), predCall);
+                    predCall = (RexCall)invert(builder(cluster), predCall);
             }
             else {
                 ref = (RexSlot)extractRefFromOperand(predCall, cluster, 0);
@@ -582,6 +567,14 @@ public class RexUtils {
             fldPreds.add(predCall);
         }
         return res;
+    }
+
+    /** Extended version of RexUtil.invert with additional operators support. */
+    private static RexNode invert(RexBuilder rexBuilder, RexCall call) {
+        if (call.getOperator() == SqlStdOperatorTable.IS_NOT_DISTINCT_FROM)
+            return rexBuilder.makeCall(call.getOperator(), call.getOperands().get(1), call.getOperands().get(0));
+        else
+            return RexUtil.invert(rexBuilder, call);
     }
 
     /** */

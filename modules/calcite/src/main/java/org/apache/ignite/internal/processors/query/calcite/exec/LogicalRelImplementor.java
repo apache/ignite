@@ -72,6 +72,7 @@ import org.apache.ignite.internal.processors.query.calcite.rel.IgniteCorrelatedN
 import org.apache.ignite.internal.processors.query.calcite.rel.IgniteExchange;
 import org.apache.ignite.internal.processors.query.calcite.rel.IgniteFilter;
 import org.apache.ignite.internal.processors.query.calcite.rel.IgniteHashIndexSpool;
+import org.apache.ignite.internal.processors.query.calcite.rel.IgniteIndexBound;
 import org.apache.ignite.internal.processors.query.calcite.rel.IgniteIndexCount;
 import org.apache.ignite.internal.processors.query.calcite.rel.IgniteIndexScan;
 import org.apache.ignite.internal.processors.query.calcite.rel.IgniteLimit;
@@ -420,6 +421,54 @@ public class LogicalRelImplementor<Row> implements IgniteRelVisitor<Node<Row>> {
     }
 
     /** {@inheritDoc} */
+    @Override public Node<Row> visit(IgniteIndexBound idxBndRel) {
+        IgniteTable tbl = idxBndRel.getTable().unwrap(IgniteTable.class);
+        IgniteIndex idx = tbl.getIndex(idxBndRel.indexName());
+        IgniteTypeFactory typeFactory = ctx.getTypeFactory();
+        ColocationGroup grp = ctx.group(idxBndRel.sourceId());
+        ImmutableBitSet requiredColumns = idxBndRel.requiredColumns();
+        RelDataType rowType = tbl.getRowType(typeFactory, requiredColumns);
+
+        if (idx != null && !tbl.isIndexRebuildInProgress())
+            return new ScanNode<>(ctx, rowType, idx.firstOrLast(idxBndRel.first(), ctx, grp, requiredColumns));
+        else {
+            assert requiredColumns.cardinality() == 1;
+
+            Iterable<Row> rowsIter = tbl.scan(
+                ctx,
+                grp,
+                r -> ctx.rowHandler().get(0, r) != null,
+                null,
+                idxBndRel.requiredColumns()
+            );
+
+            Node<Row> scanNode = new ScanNode<>(ctx, rowType, rowsIter);
+
+            RelCollation collation = idx.collation().apply(LogicalScanConverterRule.createMapping(
+                null,
+                requiredColumns,
+                tbl.getRowType(typeFactory).getFieldCount()
+            ));
+
+            Comparator<Row> cmp = expressionFactory.comparator(collation);
+
+            assert cmp != null;
+
+            SortNode<Row> sortNode = new SortNode<>(
+                ctx,
+                rowType,
+                idxBndRel.first() ? cmp : cmp.reversed(),
+                null,
+                () -> 1
+            );
+
+            sortNode.register(scanNode);
+
+            return sortNode;
+        }
+    }
+
+    /** {@inheritDoc} */
     @Override public Node<Row> visit(IgniteTableScan rel) {
         RexNode condition = rel.condition();
         List<RexNode> projects = rel.projects();
@@ -538,7 +587,8 @@ public class LogicalRelImplementor<Row> implements IgniteRelVisitor<Node<Row>> {
             rel.getRowType(),
             ImmutableBitSet.of(rel.keys()),
             filter,
-            searchRow
+            searchRow,
+            rel.allowNulls()
         );
 
         Node<Row> input = visit(rel.getInput());

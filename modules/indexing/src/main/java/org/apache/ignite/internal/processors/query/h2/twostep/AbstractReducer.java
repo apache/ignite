@@ -17,6 +17,7 @@
 
 package org.apache.ignite.internal.processors.query.h2.twostep;
 
+import java.util.BitSet;
 import java.util.HashSet;
 import java.util.Iterator;
 import java.util.List;
@@ -111,7 +112,7 @@ public abstract class AbstractReducer implements Reducer {
     }
 
     /** {@inheritDoc} */
-    @Override public void setSources(Map<ClusterNode, Integer> nodesToSegmentsCnt) {
+    @Override public void setSources(Map<ClusterNode, BitSet> nodesToSegmentsCnt) {
         assert srcNodes == null;
 
         srcNodes = new HashSet<>(nodesToSegmentsCnt.size());

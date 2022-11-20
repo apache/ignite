@@ -27,11 +27,15 @@ import org.apache.calcite.rel.RelNode;
 import org.apache.calcite.rel.core.Filter;
 import org.apache.calcite.rel.core.Spool;
 import org.apache.calcite.rex.RexNode;
+import org.apache.calcite.sql.SqlKind;
+import org.apache.ignite.internal.processors.query.calcite.prepare.bounds.ExactBounds;
+import org.apache.ignite.internal.processors.query.calcite.prepare.bounds.SearchBounds;
 import org.apache.ignite.internal.processors.query.calcite.rel.IgniteFilter;
 import org.apache.ignite.internal.processors.query.calcite.rel.IgniteHashIndexSpool;
 import org.apache.ignite.internal.processors.query.calcite.rel.IgniteTableSpool;
 import org.apache.ignite.internal.processors.query.calcite.trait.CorrelationTrait;
 import org.apache.ignite.internal.processors.query.calcite.trait.TraitUtils;
+import org.apache.ignite.internal.processors.query.calcite.util.Commons;
 import org.apache.ignite.internal.processors.query.calcite.util.RexUtils;
 import org.apache.ignite.internal.util.typedef.F;
 import org.immutables.value.Value;
@@ -64,17 +68,25 @@ public class FilterSpoolMergeToHashIndexSpoolRule extends RelRule<FilterSpoolMer
 
         RelNode input = spool.getInput();
 
-        List<RexNode> searchRow = RexUtils.buildHashSearchRow(cluster, filter.getCondition(), spool.getRowType());
+        List<SearchBounds> searchBounds = RexUtils.buildHashSearchBounds(cluster, filter.getCondition(),
+            spool.getRowType(), null, false);
 
-        if (F.isEmpty(searchRow))
+        if (F.isEmpty(searchBounds))
             return;
+
+        List<RexNode> searchRow = Commons.transform(searchBounds, b -> {
+            assert b == null || b instanceof ExactBounds : b;
+
+            return b == null ? null : ((ExactBounds)b).bound();
+        });
 
         RelNode res = new IgniteHashIndexSpool(
             cluster,
             trait.replace(RelCollations.EMPTY),
             input,
             searchRow,
-            filter.getCondition()
+            filter.getCondition(),
+            searchBounds.stream().anyMatch(b -> b != null && b.condition().getKind() == SqlKind.IS_NOT_DISTINCT_FROM)
         );
 
         call.transformTo(res);

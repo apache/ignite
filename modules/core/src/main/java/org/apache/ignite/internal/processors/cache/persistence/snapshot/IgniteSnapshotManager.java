@@ -1028,7 +1028,8 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
                     meta
                 );
 
-                SnapshotHandlerContext ctx = new SnapshotHandlerContext(meta, req.groups(), cctx.localNode(), snpDir);
+                SnapshotHandlerContext ctx = new SnapshotHandlerContext(meta, req.groups(), cctx.localNode(),
+                    snpDir, req.streamerWarning());
 
                 return new SnapshotOperationResponse(handlers.invokeAll(SnapshotHandlerType.CREATE, ctx));
             }
@@ -1158,7 +1159,8 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
 
             handlers().execSvc.submit(() -> {
                 try {
-                    handlers.completeAll(SnapshotHandlerType.CREATE, req.snapshotName(), clusterHndResults, req.nodes());
+                    handlers.completeAll(SnapshotHandlerType.CREATE, req.snapshotName(), clusterHndResults, req.nodes(),
+                        req::warnings);
 
                     resultFut.onDone();
                 }
@@ -1225,7 +1227,15 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
         synchronized (snpOpMux) {
             if (clusterSnpFut != null) {
                 if (endFail.isEmpty() && snpReq.error() == null) {
-                    clusterSnpFut.onDone();
+                    if (!F.isEmpty(snpReq.warnings())) {
+                        IgniteException wrn = new IgniteException("Snapshot task '" + snpReq.snapshotName() +
+                            "' completed with the warnings:" + U.nl() + '\t' + String.join(U.nl() + '\t',
+                            snpReq.warnings()));
+
+                        clusterSnpFut.onDone(wrn);
+                    }
+                    else
+                        clusterSnpFut.onDone();
 
                     if (log.isInfoEnabled())
                         log.info(SNAPSHOT_FINISHED_MSG + snpReq);
@@ -1253,6 +1263,16 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
         synchronized (snpOpMux) {
             return clusterSnpReq != null || clusterSnpFut != null;
         }
+    }
+
+    /**
+     * Sets the streamer warning flag to current snapshot process if it is active.
+     */
+    public void streamerWarning() {
+        SnapshotOperationRequest snpTask = currentCreateRequest();
+
+        if (snpTask != null && !snpTask.streamerWarning())
+            snpTask.streamerWarning(true);
     }
 
     /** @return Current create snapshot request. {@code Null} if there is no create snapshot operation in progress. */
@@ -2638,8 +2658,13 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
             this.execSvc = execSvc;
 
             // Register system default snapshot integrity check that is used before the restore operation.
-            SnapshotHandler<?> sysCheck = new SnapshotPartitionsVerifyHandler(ctx.cache().context());
-            handlers.put(sysCheck.type(), new ArrayList<>(F.asList((SnapshotHandler<Object>)sysCheck)));
+            registerHandler(new SnapshotPartitionsVerifyHandler(ctx.cache().context()));
+
+            // Register system default DataStreamer updates check.
+            registerHandler(new DataStreamerUpdatesHandler());
+
+            // Register system default page size and counters check that is used at the creation operation.
+            registerHandler(new SnapshotPartitionsQuickVerifyHandler(ctx.cache().context()));
 
             // Register custom handlers.
             SnapshotHandler<Object>[] extHnds = (SnapshotHandler<Object>[])ctx.plugins().extensions(SnapshotHandler.class);
@@ -2648,7 +2673,7 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
                 return;
 
             for (SnapshotHandler<Object> extHnd : extHnds)
-                handlers.computeIfAbsent(extHnd.type(), v -> new ArrayList<>()).add(extHnd);
+                registerHandler(extHnd);
         }
 
         /**
@@ -2684,6 +2709,7 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
          * @param snpName Snapshot name.
          * @param res Results from all nodes and handlers with the specified type.
          * @param reqNodes Node IDs on which the handlers were executed.
+         * @param wrnsHnd A handler of snapshot operation warnings.
          * @throws Exception If failed.
          */
         @SuppressWarnings({"rawtypes", "unchecked"})
@@ -2691,7 +2717,8 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
             SnapshotHandlerType type,
             String snpName,
             Map<String, List<SnapshotHandlerResult<?>>> res,
-            Collection<UUID> reqNodes
+            Collection<UUID> reqNodes,
+            Consumer<List<String>> wrnsHnd
         ) throws Exception {
             if (res.isEmpty())
                 return;
@@ -2704,6 +2731,8 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
                     "[locHnds=" + (hnds == null ? "" : F.viewReadOnly(hnds, h -> h.getClass().getName()).toString()) +
                     ", rmtHnds=" + res.keySet() + "].");
             }
+
+            List<String> wrns = new ArrayList<>();
 
             for (SnapshotHandler hnd : hnds) {
                 List<SnapshotHandlerResult<?>> nodesRes = res.get(hnd.getClass().getName());
@@ -2719,8 +2748,16 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
                         "The current operation will be aborted [missing=" + missing + "].");
                 }
 
-                hnd.complete(snpName, nodesRes);
+                try {
+                    hnd.complete(snpName, nodesRes);
+                }
+                catch (SnapshotHandlerWarningException e) {
+                    wrns.add(e.getMessage());
+                }
             }
+
+            if (!F.isEmpty(wrns))
+                wrnsHnd.accept(wrns);
         }
 
         /**
@@ -2738,6 +2775,11 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
 
                 return new SnapshotHandlerResult<>(null, e, ctx.localNode());
             }
+        }
+
+        /** */
+        private void registerHandler(SnapshotHandler hnd) {
+            handlers.computeIfAbsent(hnd.type(), v -> new ArrayList<>()).add(hnd);
         }
     }
 

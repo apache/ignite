@@ -28,9 +28,10 @@ import java.util.Map.Entry;
 import java.util.Set;
 import java.util.UUID;
 import java.util.function.Predicate;
-import java.util.logging.Level;
-import java.util.logging.Logger;
 import java.util.stream.Collectors;
+import org.apache.ignite.IgniteCheckedException;
+import org.apache.ignite.IgniteException;
+import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.ShutdownPolicy;
 import org.apache.ignite.cluster.ClusterState;
 import org.apache.ignite.internal.commandline.baseline.BaselineArguments;
@@ -42,6 +43,7 @@ import org.apache.ignite.internal.commandline.cache.CacheValidateIndexes;
 import org.apache.ignite.internal.commandline.cache.FindAndDeleteGarbage;
 import org.apache.ignite.internal.commandline.cache.argument.FindAndDeleteGarbageArg;
 import org.apache.ignite.internal.util.typedef.T2;
+import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.internal.visor.tx.VisorTxOperation;
 import org.apache.ignite.internal.visor.tx.VisorTxProjection;
 import org.apache.ignite.internal.visor.tx.VisorTxSortOrder;
@@ -1180,16 +1182,13 @@ public class CommandHandlerParsingTest {
     /**
      * @return logger for tests.
      */
-    private Logger setupTestLogger() {
-        Logger result;
-
-        result = Logger.getLogger(getClass().getName());
-        result.setLevel(Level.INFO);
-        result.setUseParentHandlers(false);
-
-        result.addHandler(CommandHandler.setupStreamHandler());
-
-        return result;
+    private IgniteLogger setupTestLogger() {
+        try {
+            return U.initLogger(null, getClass().getName(), null, U.defaultWorkDirectory());
+        }
+        catch (IgniteCheckedException e) {
+            throw new IgniteException(e);
+        }
     }
 
     /**

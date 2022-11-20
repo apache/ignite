@@ -21,7 +21,7 @@ import java.util.Collections;
 import java.util.Map;
 import java.util.Set;
 import java.util.UUID;
-import java.util.logging.Logger;
+import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.internal.client.GridClient;
 import org.apache.ignite.internal.client.GridClientConfiguration;
 import org.apache.ignite.internal.commandline.AbstractCommand;
@@ -46,7 +46,7 @@ import static org.apache.ignite.internal.commandline.cache.CacheSubcommands.FIND
  */
 public class FindAndDeleteGarbage extends AbstractCommand<FindAndDeleteGarbage.Arguments> {
     /** {@inheritDoc} */
-    @Override public void printUsage(Logger logger) {
+    @Override public void printUsage(IgniteLogger logger) {
         String GROUPS = "groupName1,...,groupNameN";
         String description = "Find and optionally delete garbage from shared cache groups which could be left " +
             "after cache destroy.";
@@ -108,7 +108,7 @@ public class FindAndDeleteGarbage extends AbstractCommand<FindAndDeleteGarbage.A
     }
 
     /** {@inheritDoc} */
-    @Override public Object execute(GridClientConfiguration clientCfg, Logger logger) throws Exception {
+    @Override public Object execute(GridClientConfiguration clientCfg, IgniteLogger logger) throws Exception {
         VisorFindAndDeleteGarbageInPersistenceTaskArg taskArg = new VisorFindAndDeleteGarbageInPersistenceTaskArg(
             args.groups(),
             args.delete(),
