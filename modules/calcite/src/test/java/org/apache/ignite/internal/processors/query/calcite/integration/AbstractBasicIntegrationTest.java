@@ -247,8 +247,8 @@ public class AbstractBasicIntegrationTest extends GridCommonAbstractTest {
         }
 
         /** {@inheritDoc} */
-        @Override public long count(ExecutionContext<?> ectx, ColocationGroup grp) {
-            return delegate.count(ectx, grp);
+        @Override public long count(ExecutionContext<?> ectx, ColocationGroup grp, boolean notNull) {
+            return delegate.count(ectx, grp, notNull);
         }
 
         /** {@inheritDoc} */

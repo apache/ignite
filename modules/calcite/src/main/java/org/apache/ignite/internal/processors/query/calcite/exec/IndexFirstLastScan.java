@@ -66,35 +66,9 @@ public class IndexFirstLastScan<Row> extends IndexScan<Row> {
     @Override protected IndexQueryContext indexQueryContext() {
         IndexQueryContext res = super.indexQueryContext();
 
-        BPlusTree.TreeRowClosure<IndexRow, IndexRow> f = res.rowFilter();
-
-        List<InlineIndexKeyType> inlineKeyTypes = idx.segment(0).rowHandler().inlineIndexKeyTypes();
-
-        InlineIndexKeyType keyType = F.isEmpty(inlineKeyTypes) ? null : inlineKeyTypes.get(0);
-
         return new IndexQueryContext(
             res.cacheFilter(),
-            new BPlusTree.TreeRowClosure<IndexRow, IndexRow>() {
-                /** {@inheritDoc} */
-                @Override public boolean apply(
-                    BPlusTree<IndexRow, IndexRow> tree,
-                    BPlusIO<IndexRow> io,
-                    long pageAddr,
-                    int idx
-                ) throws IgniteCheckedException {
-                    if (f != null && !f.apply(tree, io, pageAddr, idx))
-                        return false;
-
-                    if (keyType != null && io instanceof InlineIO) {
-                        IndexKey key = keyType.get(pageAddr, io.offset(idx), ((InlineIO)io).inlineSize());
-
-                        if (key != null)
-                            return key != NullIndexKey.INSTANCE;
-                    }
-
-                    return io.getLookupRow(tree, pageAddr, idx).key(0).type() != IndexKeyType.NULL;
-                }
-            },
+            createNotNullRowFilter(idx),
             res.mvccSnapshot()
         );
     }

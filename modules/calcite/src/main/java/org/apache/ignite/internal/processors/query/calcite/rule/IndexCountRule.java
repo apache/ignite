@@ -18,11 +18,14 @@
 package org.apache.ignite.internal.processors.query.calcite.rule;
 
 import java.util.Collections;
+import java.util.List;
 import org.apache.calcite.linq4j.Ord;
 import org.apache.calcite.plan.RelOptRuleCall;
 import org.apache.calcite.plan.RelRule;
 import org.apache.calcite.plan.RelTraitSet;
 import org.apache.calcite.rel.RelDistribution;
+import org.apache.calcite.rel.RelFieldCollation;
+import org.apache.calcite.rel.core.AggregateCall;
 import org.apache.calcite.rel.logical.LogicalAggregate;
 import org.apache.calcite.sql.SqlKind;
 import org.apache.calcite.sql.fun.SqlStdOperatorTable;
@@ -54,16 +57,48 @@ public class IndexCountRule extends RelRule<IndexCountRule.Config> {
         LogicalAggregate aggr = call.rel(0);
         IgniteLogicalTableScan scan = call.rel(1);
         IgniteTable table = scan.getTable().unwrap(IgniteTable.class);
-        IgniteIndex idx = table.getIndex(QueryUtils.PRIMARY_KEY_INDEX);
 
         if (
-            idx == null ||
-                table.isIndexRebuildInProgress() ||
-                scan.condition() != null ||
-                aggr.getGroupCount() > 0 ||
-                aggr.getAggCallList().stream().anyMatch(a -> a.getAggregation().getKind() != SqlKind.COUNT ||
-                    !a.getArgList().isEmpty() || a.hasFilter())
+            table.isIndexRebuildInProgress() ||
+            scan.condition() != null ||
+            aggr.getGroupCount() > 0 ||
+            aggr.getAggCallList().size() != 1
         )
+            return;
+
+        AggregateCall agg = aggr.getAggCallList().get(0);
+
+        if (agg.getAggregation().getKind() != SqlKind.COUNT || agg.hasFilter() || agg.isDistinct())
+            return;
+
+        List<Integer> argList = agg.getArgList();
+
+        IgniteIndex idx = null;
+        boolean notNull = false;
+
+        if (argList.isEmpty())
+            idx = table.getIndex(QueryUtils.PRIMARY_KEY_INDEX);
+        else {
+            if (scan.projects() != null || argList.size() > 1)
+                return;
+
+            notNull = true;
+            int fieldIdx = argList.get(0);
+
+            if (!scan.requiredColumns().isEmpty())
+                fieldIdx = scan.requiredColumns().nth(fieldIdx);
+
+            for (IgniteIndex idx0 : table.indexes().values()) {
+                List<RelFieldCollation> fieldCollations = idx0.collation().getFieldCollations();
+
+                if (!fieldCollations.isEmpty() && fieldCollations.get(0).getFieldIndex() == fieldIdx) {
+                    idx = idx0;
+                    break;
+                }
+            }
+        }
+
+        if (idx == null)
             return;
 
         RelTraitSet idxTraits = aggr.getTraitSet()
@@ -76,7 +111,8 @@ public class IndexCountRule extends RelRule<IndexCountRule.Config> {
             scan.getCluster(),
             idxTraits,
             scan.getTable(),
-            idx.name()
+            idx.name(),
+            notNull
         );
 
         RelBuilder b = call.builder();

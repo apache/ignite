@@ -98,7 +98,9 @@ public class SystemViewIndexImpl implements IgniteIndex {
     }
 
     /** {@inheritDoc} */
-    @Override public long count(ExecutionContext<?> ectx, ColocationGroup grp) {
+    @Override public long count(ExecutionContext<?> ectx, ColocationGroup grp, boolean notNull) {
+        assert !notNull; // Collation is empty, cannot come here with "notNull" flag.
+
         return tbl.descriptor().systemView().size();
     }
 
