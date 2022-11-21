@@ -418,9 +418,7 @@ public class GridCacheAffinityManager extends GridCacheManagerAdapter {
         if (curVer.isBetween(lastAffChangedTopVer, rmtVer))
             return true;
 
-        ExchangeActions exchActs = cctx.shared().exchange().lastFinishedFuture().exchangeActions();
-
-        if (exchActs != null && exchActs.isOperationsOnStaleTopologyVersionRestricted())
+        if (cctx.shared().exchange().lastFinishedFuture().context().remapStaleCacheRequests())
             return false;
 
         Collection<ClusterNode> cacheNodes0 = cctx.discovery().cacheGroupAffinityNodes(cctx.groupId(), rmtVer);

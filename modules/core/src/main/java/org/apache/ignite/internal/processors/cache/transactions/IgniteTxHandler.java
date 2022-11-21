@@ -708,15 +708,15 @@ public class IgniteTxHandler {
     }
 
     /**
-     * @param expVer Expected topology version.
+     * @param rmtVer Topology version that the cache request was mapped to by the remote node.
      * @param req Request.
      * @return {@code True} if cache affinity changed and request should be remapped.
      */
-    private boolean needRemap(AffinityTopologyVersion expVer, GridNearTxPrepareRequest req) {
+    private boolean needRemap(AffinityTopologyVersion rmtVer, GridNearTxPrepareRequest req) {
         // TODO IGNITE-6754 check mvcc crd for mvcc enabled txs.
 
         for (IgniteTxEntry e : F.concat(false, req.reads(), req.writes())) {
-            if (!e.context().affinity().isCompatibleWithCurrentTopologyVersion(expVer))
+            if (!e.context().affinity().isCompatibleWithCurrentTopologyVersion(rmtVer))
                 return true;
         }
 

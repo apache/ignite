@@ -1203,12 +1203,12 @@ public abstract class GridDhtCacheAdapter<K, V> extends GridDistributedCacheAdap
     }
 
     /**
-     * @param mapVer Mapped topology version.
+     * @param rmtVer Topology version that the cache request was mapped to by the remote node.
      * @return {@code True} if cache affinity changed and operation should be remapped.
      */
-    protected final boolean needRemap(AffinityTopologyVersion mapVer) {
+    protected final boolean needRemap(AffinityTopologyVersion rmtVer) {
         // TODO IGNITE-7164 check mvcc crd for mvcc enabled txs.
-        return !ctx.affinity().isCompatibleWithCurrentTopologyVersion(mapVer);
+        return !ctx.affinity().isCompatibleWithCurrentTopologyVersion(rmtVer);
     }
 
     /**
