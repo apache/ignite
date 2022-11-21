@@ -228,6 +228,6 @@ public class ConsistentCutFuture extends GridFutureAdapter<WALPointer> {
                 .collect(Collectors.toList());
         }
 
-        return "ConsistentCut [before=" + before + ", after=" + after + "]";
+        return "ConsistentCut [id=" + id + ", before=" + before + ", after=" + after + ']';
     }
 }

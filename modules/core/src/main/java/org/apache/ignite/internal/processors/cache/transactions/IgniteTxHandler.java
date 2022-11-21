@@ -152,7 +152,7 @@ public class IgniteTxHandler {
     private final IgniteLogger txRecoveryMsgLog;
 
     /** Shared cache context. */
-    private final GridCacheSharedContext<?, ?> ctx;
+    private GridCacheSharedContext<?, ?> ctx;
 
     /**
      * @param nearNodeId Sender node ID.
@@ -904,7 +904,6 @@ public class IgniteTxHandler {
     private void processDhtTxPrepareResponse(UUID nodeId, GridDhtTxPrepareResponse res) {
         try (TraceSurroundings ignored =
                  MTC.support(ctx.kernalContext().tracing().create(TX_PROCESS_DHT_PREPARE_RESP, MTC.span()))) {
-
             GridDhtTxPrepareFuture fut =
                 (GridDhtTxPrepareFuture)ctx.mvcc().versionedFuture(res.version(), res.futureId());
 

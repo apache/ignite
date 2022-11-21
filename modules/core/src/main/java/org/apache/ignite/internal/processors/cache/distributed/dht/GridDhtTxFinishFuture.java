@@ -254,10 +254,7 @@ public final class GridDhtTxFinishFuture<K, V> extends GridCacheCompoundIdentity
                             this.tx.cutId(txCutId);
                         }
 
-                        this.tx.tmFinish(
-                            err == null,
-                            nodeStopping || cctx.kernalContext().failure().nodeStopping(),
-                            false);
+                        this.tx.tmFinish(err == null, nodeStopping || cctx.kernalContext().failure().nodeStopping(), false);
                     }
                     catch (IgniteCheckedException finishErr) {
                         U.error(log, "Failed to finish tx: " + tx, e);

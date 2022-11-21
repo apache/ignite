@@ -729,7 +729,7 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
      * @param incIdx Increment index.
      * @return Local snapshot directory where snapshot files are located.
      */
-    public File incrementalSnapshotLocalDir(String snpName, @Nullable String snpPath, long incIdx) {
+    public File incrementalSnapshotLocalDir(String snpName, @Nullable String snpPath, int incIdx) {
         return Paths.get(
             incrementalSnapshotsLocalRootDir(snpName, snpPath).getAbsolutePath(),
             U.fixedLengthNumberName(incIdx, null)
@@ -854,14 +854,14 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
         try {
             SnapshotMetadata meta = readSnapshotMetadata(req);
 
-            checkIncrementCanBeCreated(req.snapshotName(), req.snapshotPath(), meta);
+            checkIncrementalCanBeCreated(req.snapshotName(), req.snapshotPath(), meta);
 
             AbstractSnapshotFutureTask<?> task0 = registerTask(req.snapshotName(), new IncrementalSnapshotFutureTask(
                 cctx,
                 req.operationalNodeId(),
                 req.requestId(),
-                req.incrementIndex(),
                 meta,
+                req.incrementIndex(),
                 tmpWorkDir,
                 ioFactory
             ));
@@ -951,7 +951,7 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
         if (req.incrementIndex() == 1)
             return meta.snapshotRecordPointer();
         else {
-            long prevIdx = req.incrementIndex() - 1;
+            int prevIdx = req.incrementIndex() - 1;
 
             IncrementalSnapshotMetadata prevIncSnpMeta = readFromFile(new File(
                 incrementalSnapshotLocalDir(req.snapshotName(), req.snapshotPath(), prevIdx),
@@ -1952,6 +1952,7 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
             }
 
             ClusterSnapshotFuture snpFut0;
+            int incIdx = -1;
 
             synchronized (snpOpMux) {
                 if (clusterSnpFut != null && !clusterSnpFut.isDone()) {
@@ -1980,6 +1981,8 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
                         throw new IgniteException("Create incremental snapshot request has been rejected. " +
                                 "Base snapshot with given name doesn't exist on local node.");
                     }
+
+                    incIdx = maxLocalIncrementSnapshot(name, snpPath) + 1;
                 }
 
                 if (isRestoring()) {
@@ -2012,8 +2015,6 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
 
             Set<UUID> bltNodeIds =
                 new HashSet<>(F.viewReadOnly(srvNodes, F.node2id(), (node) -> CU.baselineNode(node, clusterState)));
-
-            int incIdx = incremental ? maxLocalIncrementSnapshot(name, snpPath) + 1 : -1;
 
             startSnpProc.start(snpFut0.rqId, new SnapshotOperationRequest(
                 snpFut0.rqId,
@@ -2231,7 +2232,7 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
      * @param incIdx Increment index.
      * @return Snapshot metadata file name.
      */
-    public static String incrementalSnapshotMetaFileName(long incIdx) {
+    public static String incrementalSnapshotMetaFileName(int incIdx) {
         return U.fixedLengthNumberName(incIdx, SNAPSHOT_METAFILE_EXT);
     }
 
@@ -2650,7 +2651,7 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
      * @param snpPath Snapshot path.
      * @param meta Full snapshot metadata.
      */
-    private void checkIncrementCanBeCreated(
+    private void checkIncrementalCanBeCreated(
         String name,
         @Nullable String snpPath,
         SnapshotMetadata meta

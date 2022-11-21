@@ -1024,11 +1024,7 @@ public abstract class IgniteTxLocalAdapter extends IgniteTxAdapter implements Ig
      * @param nodeStop If {@code true} tx is cancelled on node stop.
      * @throws IgniteCheckedException If failed.
      */
-    public void tmFinish(
-        boolean commit,
-        boolean nodeStop,
-        boolean clearThreadMap
-    ) throws IgniteCheckedException {
+    public void tmFinish(boolean commit, boolean nodeStop, boolean clearThreadMap) throws IgniteCheckedException {
         assert onePhaseCommit();
 
         if (DONE_FLAG_UPD.compareAndSet(this, 0, 1)) {

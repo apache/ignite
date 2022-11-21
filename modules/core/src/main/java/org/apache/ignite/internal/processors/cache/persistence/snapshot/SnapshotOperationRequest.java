@@ -174,7 +174,7 @@ public class SnapshotOperationRequest implements Serializable {
         return incremental;
     }
 
-    /** @return Incremental snapshot index. */
+    /** @return Incremental index. */
     public int incrementIndex() {
         return incIdx;
     }

@@ -402,7 +402,8 @@ public class GridDistributedTxPrepareRequest extends GridDistributedBaseMessage 
         this.txState = txState;
     }
 
-    /** {@inheritDoc} */
+    /** {@inheritDoc}
+     * @param ctx*/
     @Override public void prepareMarshal(GridCacheSharedContext ctx) throws IgniteCheckedException {
         super.prepareMarshal(ctx);
 

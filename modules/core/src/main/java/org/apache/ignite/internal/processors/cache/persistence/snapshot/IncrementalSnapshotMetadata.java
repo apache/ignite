@@ -36,7 +36,7 @@ public class IncrementalSnapshotMetadata implements Serializable {
 
     /** Snapshot name. */
     private final String snpName;
-
+    
     /** Increment index. */
     private final int incIdx;
 

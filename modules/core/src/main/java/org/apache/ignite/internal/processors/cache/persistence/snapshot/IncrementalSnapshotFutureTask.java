@@ -37,7 +37,7 @@ class IncrementalSnapshotFutureTask
     extends AbstractSnapshotFutureTask<IncrementalSnapshotFutureTaskResult>
     implements BiConsumer<String, File> {
     /** Index of incremental snapshot. */
-    private final long incIdx;
+    private final int incIdx;
 
     /** Metadata of the full snapshot. */
     private final Set<Integer> affectedCacheGrps;
@@ -47,8 +47,8 @@ class IncrementalSnapshotFutureTask
         GridCacheSharedContext<?, ?> cctx,
         UUID srcNodeId,
         UUID reqNodeId,
-        long incIdx,
         SnapshotMetadata meta,
+        int incIdx,
         File tmpWorkDir,
         FileIOFactory ioFactory
     ) {
