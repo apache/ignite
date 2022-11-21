@@ -256,8 +256,6 @@ namespace Apache.Ignite.Core.Impl.Unmanaged.Jni
                 return jvm;
             }
 
-            // TODO: Create JVM assuming v11, get the actual version, kill and create again if necessary.
-            // https://stackoverflow.com/questions/72614118/determine-jni-jvm-version-before-launching-jvm
             return CreateJvm(options);
         }
 
