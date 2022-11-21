@@ -42,17 +42,21 @@ namespace Apache.Ignite.Core.Impl.Unmanaged.Jni
         // ReSharper disable once InconsistentNaming
         private const int JNI_VERSION_9 = 0x00090000;
 
-        /** Options to enable startup on Java 15. */
-        // TODO: Add "--illegal-access=permit" here just in case for Java 11? Or combine all options to be sure?
-        // TODO: Check if any warnings are issued by the JVM.
-        public static readonly string[] Java15Options =
+        /** Options to enable startup on Java 9+. */
+        public static readonly string[] Java9Options =
         {
+            "--add-exports=java.base/jdk.internal.misc=ALL-UNNAMED",
+            "--add-exports=java.base/sun.nio.ch=ALL-UNNAMED",
+            "--add-exports=java.management/com.sun.jmx.mbeanserver=ALL-UNNAMED",
+            "--add-exports=jdk.internal.jvmstat/sun.jvmstat.monitor=ALL-UNNAMED",
+            "--add-opens=jdk.management/com.sun.management.internal=ALL-UNNAMED",
+            "--illegal-access=permit",
+
             "--add-opens=java.base/jdk.internal.misc=ALL-UNNAMED",
             "--add-opens=java.base/sun.nio.ch=ALL-UNNAMED",
             "--add-opens=java.management/com.sun.jmx.mbeanserver=ALL-UNNAMED",
             "--add-opens=jdk.internal.jvmstat/sun.jvmstat.monitor=ALL-UNNAMED",
             "--add-opens=java.base/sun.reflect.generics.reflectiveObjects=ALL-UNNAMED",
-            "--add-opens=jdk.management/com.sun.management.internal=ALL-UNNAMED",
             "--add-opens=java.base/java.io=ALL-UNNAMED",
             "--add-opens=java.base/java.nio=ALL-UNNAMED",
             "--add-opens=java.base/java.util=ALL-UNNAMED",
@@ -64,17 +68,6 @@ namespace Apache.Ignite.Core.Impl.Unmanaged.Jni
             "--add-opens=java.base/java.math=ALL-UNNAMED",
             "--add-opens=java.sql/java.sql=ALL-UNNAMED"
         };
-
-        /** Options to enable startup on Java 9. */
-        public static readonly string[] Java9Options = Java15Options;
-        /*{
-            "--add-exports=java.base/jdk.internal.misc=ALL-UNNAMED",
-            "--add-exports=java.base/sun.nio.ch=ALL-UNNAMED",
-            "--add-exports=java.management/com.sun.jmx.mbeanserver=ALL-UNNAMED",
-            "--add-exports=jdk.internal.jvmstat/sun.jvmstat.monitor=ALL-UNNAMED",
-            "--add-opens=jdk.management/com.sun.management.internal=ALL-UNNAMED",
-            "--illegal-access=permit"
-        };*/
 
         /** */
         private readonly IntPtr _jvmPtr;
