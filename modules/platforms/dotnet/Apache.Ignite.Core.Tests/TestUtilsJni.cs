@@ -125,7 +125,7 @@ namespace Apache.Ignite.Core.Tests
 
         public static int GetJavaMajorVersion()
         {
-            return CallIntMethod(ClassPlatformTestUtils, "majorJavaVersion", "(V)I");
+            return CallIntMethod(ClassPlatformTestUtils, "majorJavaVersion", "()I");
         }
 
         /** */
