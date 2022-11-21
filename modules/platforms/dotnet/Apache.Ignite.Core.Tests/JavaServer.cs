@@ -62,6 +62,9 @@ namespace Apache.Ignite.Core.Tests
         {
             IgniteArgumentCheck.NotNullOrEmpty(version, "version");
 
+            Console.WriteLine("Using maven at: " + MavenPath);
+            Console.WriteLine("JAVA_HOME: " + Environment.GetEnvironmentVariable("JAVA_HOME"));
+
             var pomWrapper =
                 ReplaceIgniteVersionInPomFile(groupId, version, Path.Combine(JavaServerSourcePath, "pom.xml"));
 
