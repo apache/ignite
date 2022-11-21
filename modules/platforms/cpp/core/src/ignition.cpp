@@ -152,6 +152,7 @@ namespace ignite
 
                 // Those are only needed for Java 15+, but Java 15 can not be detected easily using JNI,
                 // so just putting it here in case we are running on 15+. It is OK to have them on Java 9-14 too.
+                // See https://docs.oracle.com/en/java/javase/17/docs/specs/jni/functions.html#getversion
                 opts.push_back(CopyChars("--add-opens=java.base/jdk.internal.misc=ALL-UNNAMED"));
                 opts.push_back(CopyChars("--add-opens=java.base/sun.nio.ch=ALL-UNNAMED"));
                 opts.push_back(CopyChars("--add-opens=java.management/com.sun.jmx.mbeanserver=ALL-UNNAMED"));
