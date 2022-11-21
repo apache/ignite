@@ -1242,7 +1242,7 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
                 SnapshotMetadata meta = readSnapshotMetadata(req);
 
                 WALPointer lowPtr = lowIncrementalSnapshotPointer(req, meta);
-                WALPointer highPtr = (incTask.result()).snapshotPointer();
+                WALPointer highPtr = (incTask.result()).consistentCutFinishRecordPointer();
 
                 storeSnapshotMetafile(req, meta, incSnpDir, highPtr);
 
@@ -1476,7 +1476,7 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
      * @param snpPath Snapshot path.
      * @return Maximum existing incremental snapshot index.
      */
-    private long maxLocalIncrementSnapshot(String snpName, @Nullable String snpPath) {
+    private int maxLocalIncrementSnapshot(String snpName, @Nullable String snpPath) {
         if (cctx.kernalContext().clientNode())
             throw new UnsupportedOperationException("Client and daemon nodes can not perform this operation.");
 
@@ -1489,7 +1489,7 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
             return Arrays.stream(incDirs)
                 .map(File::getName)
                 .filter(name -> INC_SNP_NAME_PATTERN.matcher(name).matches())
-                .mapToLong(Long::parseLong)
+                .mapToInt(Integer::parseInt)
                 .max()
                 .orElse(0);
         }
@@ -2013,7 +2013,7 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
             Set<UUID> bltNodeIds =
                 new HashSet<>(F.viewReadOnly(srvNodes, F.node2id(), (node) -> CU.baselineNode(node, clusterState)));
 
-            long incIdx = incremental ? maxLocalIncrementSnapshot(name, snpPath) + 1 : -1;
+            int incIdx = incremental ? maxLocalIncrementSnapshot(name, snpPath) + 1 : -1;
 
             startSnpProc.start(snpFut0.rqId, new SnapshotOperationRequest(
                 snpFut0.rqId,

@@ -24,9 +24,11 @@ import java.nio.ByteBuffer;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
+import java.util.Set;
 import java.util.UUID;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteLogger;
@@ -160,12 +162,6 @@ public class RecordDataV1Serializer implements RecordDataSerializer {
     /** Serializer of {@link TxRecord} records. */
     private TxRecordSerializer txRecordSerializer;
 
-    /** */
-    private ConsistentCutStartRecordSerializer cutStartRecordSerializer;
-
-    /** */
-    private ConsistentCutFinishRecordSerializer cutFinishRecordSerializer;
-
     /** Encryption SPI instance. */
     private final EncryptionSpi encSpi;
 
@@ -187,8 +183,6 @@ public class RecordDataV1Serializer implements RecordDataSerializer {
     public RecordDataV1Serializer(GridCacheSharedContext cctx) {
         this.cctx = cctx;
         this.txRecordSerializer = new TxRecordSerializer();
-        this.cutStartRecordSerializer = new ConsistentCutStartRecordSerializer();
-        this.cutFinishRecordSerializer = new ConsistentCutFinishRecordSerializer();
         this.co = cctx.kernalContext().cacheObjects();
         this.pageSize = cctx.database().pageSize();
         this.encSpi = cctx.gridConfig().getEncryptionSpi();
@@ -567,10 +561,10 @@ public class RecordDataV1Serializer implements RecordDataSerializer {
                 return 4 + ((ClusterSnapshotRecord)record).clusterSnapshotName().getBytes().length;
 
             case CONSISTENT_CUT_START_RECORD:
-                return cutStartRecordSerializer.size((ConsistentCutStartRecord)record);
+                return 8 + 8;
 
             case CONSISTENT_CUT_FINISH_RECORD:
-                return cutFinishRecordSerializer.size((ConsistentCutFinishRecord)record);
+                return ((ConsistentCutFinishRecord)record).dataSize();
 
             default:
                 throw new UnsupportedOperationException("Type: " + record.type());
@@ -1310,12 +1304,21 @@ public class RecordDataV1Serializer implements RecordDataSerializer {
                 break;
 
             case CONSISTENT_CUT_START_RECORD:
-                res = cutStartRecordSerializer.read(in);
+                long mst = in.readLong();
+                long lst = in.readLong();
+
+                res = new ConsistentCutStartRecord(new UUID(mst, lst));
 
                 break;
 
             case CONSISTENT_CUT_FINISH_RECORD:
-                res = cutFinishRecordSerializer.read(in);
+                long mstSignBits = in.readLong();
+                long lstSignBits = in.readLong();
+
+                Set<GridCacheVersion> before = readVersions(in);
+                Set<GridCacheVersion> after = readVersions(in);
+
+                res = new ConsistentCutFinishRecord(new UUID(mstSignBits, lstSignBits), before, after);
 
                 break;
 
@@ -1965,12 +1968,28 @@ public class RecordDataV1Serializer implements RecordDataSerializer {
                 break;
 
             case CONSISTENT_CUT_START_RECORD:
-                cutStartRecordSerializer.write((ConsistentCutStartRecord)rec, buf);
+                ConsistentCutStartRecord startRec = (ConsistentCutStartRecord)rec;
+
+                buf.putLong(startRec.cutId().getMostSignificantBits());
+                buf.putLong(startRec.cutId().getLeastSignificantBits());
 
                 break;
 
             case CONSISTENT_CUT_FINISH_RECORD:
-                cutFinishRecordSerializer.write((ConsistentCutFinishRecord)rec, buf);
+                ConsistentCutFinishRecord cutFinRec = (ConsistentCutFinishRecord)rec;
+
+                buf.putLong(cutFinRec.cutId().getMostSignificantBits());
+                buf.putLong(cutFinRec.cutId().getLeastSignificantBits());
+
+                buf.putInt(cutFinRec.before().size());
+
+                for (GridCacheVersion v: cutFinRec.before())
+                    putVersion(buf, v, false);
+
+                buf.putInt(cutFinRec.after().size());
+
+                for (GridCacheVersion v: cutFinRec.after())
+                    putVersion(buf, v, false);
 
                 break;
 
@@ -2288,6 +2307,26 @@ public class RecordDataV1Serializer implements RecordDataSerializer {
         catch (IgniteCheckedException e) {
             throw new IOException(e);
         }
+    }
+
+    /**
+     * Read set of versions.
+     *
+     * @param in Data input to read from.
+     * @return Read set of cache versions.
+     */
+    private Set<GridCacheVersion> readVersions(ByteBufferBackedDataInput in) throws IOException {
+        int txsSize = in.readInt();
+
+        Set<GridCacheVersion> txs = new HashSet<>();
+
+        for (int i = 0; i < txsSize; i++) {
+            GridCacheVersion v = readVersion(in, false);
+
+            txs.add(v);
+        }
+
+        return txs;
     }
 
     /**

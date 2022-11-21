@@ -3239,11 +3239,8 @@ public class IgniteTxManager extends GridCacheSharedManagerAdapter {
      * @return Whether this transaction instance is first in the commit order.
      */
     private boolean firstCommit(IgniteInternalTx tx) {
-        if (log.isDebugEnabled()) {
-            log.debug("`firstCommit` " + tx.nearXidVersion().asIgniteUuid() + " " + getClass().getSimpleName()
-                + " 1pc=" + tx.onePhaseCommit() + " node=" + tx.nodeId() + " nodes=" + tx.transactionNodes() + " " + "client="
-                + cctx.kernalContext().clientNode() + " near=" + tx.near() + " local=" + tx.local() + " dht=" + tx.dht());
-        }
+        if (log.isDebugEnabled())
+            log.debug("Check transaction for first commit: " + tx);
 
         if (tx.onePhaseCommit()) {
             if (tx.near() && cctx.kernalContext().clientNode())

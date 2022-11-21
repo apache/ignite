@@ -417,7 +417,6 @@ public class GridNearTxPrepareResponse extends GridDistributedTxPrepareResponse 
                     return false;
 
                 writer.incrementState();
-
         }
 
         return true;
@@ -513,7 +512,6 @@ public class GridNearTxPrepareResponse extends GridDistributedTxPrepareResponse 
                     return false;
 
                 reader.incrementState();
-
         }
 
         return reader.afterMessageRead(GridNearTxPrepareResponse.class);

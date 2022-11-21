@@ -80,7 +80,7 @@ public class SnapshotOperationRequest implements Serializable {
     private final boolean incremental;
 
     /** Index of incremental snapshot. */
-    private final long incIdx;
+    private final int incIdx;
 
     /**
      * @param reqId Request ID.
@@ -100,7 +100,7 @@ public class SnapshotOperationRequest implements Serializable {
         @Nullable Collection<String> grps,
         Set<UUID> nodes,
         boolean incremental,
-        long incIdx
+        int incIdx
     ) {
         this.reqId = reqId;
         this.opNodeId = opNodeId;
@@ -175,7 +175,7 @@ public class SnapshotOperationRequest implements Serializable {
     }
 
     /** @return Incremental snapshot index. */
-    public long incrementIndex() {
+    public int incrementIndex() {
         return incIdx;
     }
 

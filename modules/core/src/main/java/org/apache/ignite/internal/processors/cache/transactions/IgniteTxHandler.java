@@ -140,7 +140,7 @@ public class IgniteTxHandler {
     private static final int TX_MSG_HND_ID = 0;
 
     /** Logger. */
-    private final IgniteLogger log;
+    private IgniteLogger log;
 
     /** */
     private final IgniteLogger txPrepareMsgLog;

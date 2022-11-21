@@ -22,6 +22,7 @@ import java.util.Set;
 import java.util.UUID;
 import java.util.stream.Collectors;
 import org.apache.ignite.internal.processors.cache.consistentcut.ConsistentCutFuture;
+import org.apache.ignite.internal.processors.cache.persistence.tree.io.CacheVersionIO;
 import org.apache.ignite.internal.processors.cache.version.GridCacheVersion;
 import org.apache.ignite.lang.IgniteUuid;
 
@@ -79,6 +80,23 @@ public class ConsistentCutFinishRecord extends WALRecord {
     /** {@inheritDoc} */
     @Override public RecordType type() {
         return RecordType.CONSISTENT_CUT_FINISH_RECORD;
+    }
+
+    /**
+     * Calculating the size of the record.
+     *
+     * @return Size in bytes.
+     */
+    public int dataSize() {
+        int size = 8 + 8 + 4 + 4;  // ID, before and after tx count.
+
+        for (GridCacheVersion v: before)
+            size += CacheVersionIO.size(v, false);
+
+        for (GridCacheVersion v: after)
+            size += CacheVersionIO.size(v, false);
+
+        return size;
     }
 
     /** {@inheritDoc} */

@@ -23,15 +23,15 @@ import org.apache.ignite.internal.processors.cache.persistence.wal.WALPointer;
 /** Result of active phase of incremental snapshot task. */
 class IncrementalSnapshotFutureTaskResult {
     /** Pointer to {@link ConsistentCutFinishRecord}. */
-    private final WALPointer incSnpPtr;
+    private final WALPointer consCutFinRecPtr;
 
     /** */
-    IncrementalSnapshotFutureTaskResult(WALPointer incSnpPtr) {
-        this.incSnpPtr = incSnpPtr;
+    IncrementalSnapshotFutureTaskResult(WALPointer consCutFinRecPtr) {
+        this.consCutFinRecPtr = consCutFinRecPtr;
     }
 
     /** */
-    public WALPointer snapshotPointer() {
-        return incSnpPtr;
+    public WALPointer consistentCutFinishRecordPointer() {
+        return consCutFinRecPtr;
     }
 }
