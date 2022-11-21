@@ -38,8 +38,6 @@ import org.apache.ignite.failure.FailureContext;
 import org.apache.ignite.failure.FailureType;
 import org.apache.ignite.internal.GridKernalContext;
 import org.apache.ignite.internal.IgniteComponentType;
-import org.apache.ignite.internal.StripedExecutorMXBeanAdapter;
-import org.apache.ignite.internal.managers.IgniteMBeansManager;
 import org.apache.ignite.internal.managers.communication.GridIoPolicy;
 import org.apache.ignite.internal.managers.systemview.walker.StripedExecutorTaskViewWalker;
 import org.apache.ignite.internal.processors.GridProcessorAdapter;
@@ -58,7 +56,6 @@ import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.internal.util.worker.GridWorkerListener;
 import org.apache.ignite.internal.worker.WorkersRegistry;
 import org.apache.ignite.lang.IgniteInClosure;
-import org.apache.ignite.mxbean.StripedExecutorMXBean;
 import org.apache.ignite.plugin.extensions.communication.IoPool;
 import org.apache.ignite.spi.systemview.view.StripedExecutorTaskView;
 import org.apache.ignite.thread.IgniteStripedThreadPoolExecutor;
@@ -939,17 +936,6 @@ public class PoolProcessor extends GridProcessorAdapter {
         }
 
         ((MetricsAwareExecutorService)execSvc).registerMetrics(ctx.metric().registry(metricName(THREAD_POOLS, name)));
-    }
-
-    /**
-     * Registers a {@link StripedExecutorMXBean} for an striped executor.
-     *
-     * @param name Mame of the bean to register.
-     * @param exec Executor to register a bean for.
-     * @throws IgniteCheckedException if registration fails.
-     */
-    private void registerStripedExecutorMBean(IgniteMBeansManager mgr, String name, StripedExecutor exec) throws IgniteCheckedException {
-        mgr.registerMBean("Thread Pools", name, new StripedExecutorMXBeanAdapter(exec), StripedExecutorMXBean.class);
     }
 
     /**
