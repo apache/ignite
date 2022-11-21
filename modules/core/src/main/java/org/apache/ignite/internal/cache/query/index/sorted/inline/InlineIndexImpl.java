@@ -17,8 +17,11 @@
 
 package org.apache.ignite.internal.cache.query.index.sorted.inline;
 
+import java.util.ArrayDeque;
+import java.util.Collections;
 import java.util.Comparator;
 import java.util.PriorityQueue;
+import java.util.Queue;
 import java.util.UUID;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.locks.ReadWriteLock;
@@ -115,6 +118,26 @@ public class InlineIndexImpl extends AbstractIndex implements InlineIndex {
             }
 
             return segments[segment].find(lower, upper, lowIncl, upIncl, closure, null);
+        }
+        finally {
+            lock.readLock().unlock();
+        }
+    }
+
+    /** {@inheritDoc} */
+    @Override public GridCursor<IndexRow> findFirstOrLast(IndexQueryContext qryCtx, boolean first)
+        throws IgniteCheckedException {
+        lock.readLock().lock();
+
+        try {
+            int segmentsCnt = segmentsCount();
+
+            final GridCursor<IndexRow>[] segmentCursors = new GridCursor[segmentsCnt];
+
+            for (int i = 0; i < segmentsCnt; i++)
+                segmentCursors[i] = first ? findFirst(i, qryCtx) : findLast(i, qryCtx);
+
+            return new SingleValueSegmentedIndexCursor(segmentCursors, def);
         }
         finally {
             lock.readLock().unlock();
@@ -452,7 +475,7 @@ public class InlineIndexImpl extends AbstractIndex implements InlineIndex {
 
         assert !cctx.mvccEnabled() || v != null;
 
-        if (cacheFilter == null && v == null)
+        if (cacheFilter == null && v == null && qryCtx.rowFilter() == null)
             return null;
 
         return new InlineTreeFilterClosure(
@@ -574,7 +597,7 @@ public class InlineIndexImpl extends AbstractIndex implements InlineIndex {
     /** Single cursor over multiple segments. The next value is chosen with the index row comparator. */
     private static class SegmentedIndexCursor implements GridCursor<IndexRow> {
         /** Cursors over segments. */
-        private final PriorityQueue<GridCursor<IndexRow>> cursors;
+        private final Queue<GridCursor<IndexRow>> cursors;
 
         /** Comparator to compare index rows. */
         private final Comparator<GridCursor<IndexRow>> cursorComp;
@@ -612,12 +635,7 @@ public class InlineIndexImpl extends AbstractIndex implements InlineIndex {
                 }
             };
 
-            this.cursors = new PriorityQueue<>(cursors.length, cursorComp);
-
-            for (GridCursor<IndexRow> c: cursors) {
-                if (c.next())
-                    this.cursors.add(c);
-            }
+            this.cursors = cursorsQueue(cursors);
         }
 
         /** {@inheritDoc} */
@@ -638,6 +656,48 @@ public class InlineIndexImpl extends AbstractIndex implements InlineIndex {
         /** {@inheritDoc} */
         @Override public IndexRow get() throws IgniteCheckedException {
             return head;
+        }
+
+        /** */
+        protected Queue<GridCursor<IndexRow>> cursorsQueue(GridCursor<IndexRow>[] cursors)
+            throws IgniteCheckedException {
+            PriorityQueue<GridCursor<IndexRow>> q = new PriorityQueue<>(cursors.length, cursorComp);
+
+            for (GridCursor<IndexRow> c: cursors) {
+                if (c.next())
+                    q.add(c);
+            }
+
+            return q;
+        }
+    }
+
+    /** First-only, single-value-only segmented cursor. */
+    private static class SingleValueSegmentedIndexCursor extends SegmentedIndexCursor {
+        /** Ctor. */
+        SingleValueSegmentedIndexCursor(
+            GridCursor<IndexRow>[] cursors,
+            SortedIndexDefinition idxDef
+        ) throws IgniteCheckedException {
+            super(cursors, idxDef);
+        }
+
+        /** {@inheritDoc} */
+        @Override protected Queue<GridCursor<IndexRow>> cursorsQueue(GridCursor<IndexRow>[] cursors)
+            throws IgniteCheckedException {
+            Queue<GridCursor<IndexRow>> srcQueue = super.cursorsQueue(cursors);
+
+            if (!srcQueue.isEmpty()) {
+                GridCursor<IndexRow> cur = srcQueue.poll();
+
+                IndexRow row = cur.get();
+
+                assert !cur.next();
+
+                return new ArrayDeque<>(Collections.singleton(new SingleCursor<>(row)));
+            }
+
+            return srcQueue;
         }
     }
 }

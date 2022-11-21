@@ -26,6 +26,7 @@ from typing import NamedTuple
 from ducktape.cluster.remoteaccount import RemoteCommandError
 
 from ignitetest.services.utils.auth import get_credentials, is_auth_enabled
+from ignitetest.services.utils.ignite_spec import envs_to_exports
 from ignitetest.services.utils.ssl.ssl_params import get_ssl_params, is_ssl_enabled, IGNITE_ADMIN_ALIAS
 from ignitetest.services.utils.jmx_utils import JmxClient
 from ignitetest.utils.version import V_2_11_0
@@ -370,7 +371,19 @@ class ControlUtility:
         auth = ""
         if hasattr(self, "username"):
             auth = f" --user {self.username} --password {self.password} "
-        return self._cluster.script(f"{self.BASE_COMMAND} --host {node_ip} {cmd} {ssl} {auth}")
+
+        return "%s %s" % \
+               (envs_to_exports(self.__envs()),
+                self._cluster.script(f"{self.BASE_COMMAND} --host {node_ip} {cmd} {ssl} {auth}"))
+
+    def __envs(self):
+        """
+        :return: environment set.
+        """
+        return {
+            'EXCLUDE_TEST_CLASSES': 'true',
+            'CONTROL_JVM_OPTS': '-Dlog4j.configurationFile=file:' + self._cluster.log_config_file
+        }
 
     @staticmethod
     def __parse_output(raw_output):

@@ -23,7 +23,7 @@ import java.util.Map;
 import java.util.Map.Entry;
 import java.util.Set;
 import java.util.UUID;
-import java.util.logging.Logger;
+import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.internal.client.GridClient;
 import org.apache.ignite.internal.client.GridClientConfiguration;
 import org.apache.ignite.internal.commandline.AbstractCommand;
@@ -61,7 +61,7 @@ import static org.apache.ignite.internal.commandline.cache.argument.ValidateInde
  */
 public class CacheValidateIndexes extends AbstractCommand<CacheValidateIndexes.Arguments> {
     /** {@inheritDoc} */
-    @Override public void printUsage(Logger logger) {
+    @Override public void printUsage(IgniteLogger logger) {
         String CACHES = "cacheName1,...,cacheNameN";
         String description = "Validates indexes for the specified caches/cache groups on an idle cluster " +
             "on all or specified cluster nodes. " + VALIDATE_INDEXES + " checks consistence between primary/secondary " +
@@ -188,7 +188,7 @@ public class CacheValidateIndexes extends AbstractCommand<CacheValidateIndexes.A
     }
 
     /** {@inheritDoc} */
-    @Override public Object execute(GridClientConfiguration clientCfg, Logger logger) throws Exception {
+    @Override public Object execute(GridClientConfiguration clientCfg, IgniteLogger logger) throws Exception {
         VisorValidateIndexesTaskArg taskArg = new VisorValidateIndexesTaskArg(
             args.caches(),
             args.nodeId() != null ? Collections.singleton(args.nodeId()) : null,
@@ -256,7 +256,7 @@ public class CacheValidateIndexes extends AbstractCommand<CacheValidateIndexes.A
             if (!errors)
                 logger.info("no issues found.");
             else
-                logger.severe("issues found (listed above).");
+                logger.error("issues found (listed above).");
 
             logger.info("");
 

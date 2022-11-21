@@ -152,7 +152,7 @@ public class IoomFailureHandlerTest extends AbstractFailureHandlerTest {
 
             try (Transaction tx = ignite0.transactions().txStart()) {
                 for (Integer i : primaryKeys(cache1, ENTRIES))
-                    cache0.put(i, new byte[PAGE_SIZE / 3 * 2]);
+                    cache0.put(i, new byte[PAGE_SIZE * 2]);
 
                 tx.commit();
             }

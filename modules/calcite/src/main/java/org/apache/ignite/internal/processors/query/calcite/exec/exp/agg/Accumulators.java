@@ -77,8 +77,10 @@ public class Accumulators {
             case "$SUM0":
                 return sumEmptyIsZeroFactory(call, hnd);
             case "MIN":
+            case "EVERY":
                 return minFactory(call, hnd);
             case "MAX":
+            case "SOME":
                 return maxFactory(call, hnd);
             case "SINGLE_VALUE":
                 return () -> new SingleVal<>(call, hnd);
@@ -973,7 +975,7 @@ public class Accumulators {
         private final boolean min;
 
         /** */
-        private final Function<IgniteTypeFactory, RelDataType> typeSupplier;
+        private final transient Function<IgniteTypeFactory, RelDataType> typeSupplier;
 
         /** */
         private T val;

@@ -19,7 +19,7 @@ package org.apache.ignite.internal.commandline;
 
 import java.util.LinkedHashMap;
 import java.util.Map;
-import java.util.logging.Logger;
+import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.cluster.ClusterState;
 import org.apache.ignite.internal.client.GridClient;
 import org.apache.ignite.internal.client.GridClientConfiguration;
@@ -49,7 +49,7 @@ public class ClusterStateChangeCommand extends AbstractCommand<ClusterState> {
     private boolean forceDeactivation;
 
     /** {@inheritDoc} */
-    @Override public void printUsage(Logger log) {
+    @Override public void printUsage(IgniteLogger log) {
         Map<String, String> params = new LinkedHashMap<>();
 
         params.put(ACTIVE.toString(), "Activate cluster. Cache updates are allowed.");
@@ -73,7 +73,7 @@ public class ClusterStateChangeCommand extends AbstractCommand<ClusterState> {
     }
 
     /** {@inheritDoc} */
-    @Override public Object execute(GridClientConfiguration clientCfg, Logger log) throws Exception {
+    @Override public Object execute(GridClientConfiguration clientCfg, IgniteLogger log) throws Exception {
         try (GridClient client = Command.startClient(clientCfg)) {
             client.state().state(state, forceDeactivation);
 

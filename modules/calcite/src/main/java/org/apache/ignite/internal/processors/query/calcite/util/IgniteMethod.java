@@ -19,6 +19,7 @@ package org.apache.ignite.internal.processors.query.calcite.util;
 
 import java.lang.reflect.Method;
 import java.lang.reflect.Type;
+import java.util.Objects;
 import org.apache.calcite.avatica.util.ByteString;
 import org.apache.calcite.linq4j.tree.Types;
 import org.apache.calcite.sql.SqlIntervalQualifier;
@@ -91,7 +92,10 @@ public enum IgniteMethod {
     LEAST2(IgniteSqlFunctions.class, "least2", Object.class, Object.class),
 
     /** See {@link IgniteSqlFunctions#greatest2(Object, Object)} */
-    GREATEST2(IgniteSqlFunctions.class, "greatest2", Object.class, Object.class);
+    GREATEST2(IgniteSqlFunctions.class, "greatest2", Object.class, Object.class),
+
+    /** See {@link Objects#equals(Object, Object)} */
+    IS_NOT_DISTINCT_FROM(Objects.class, "equals", Object.class, Object.class);
 
     /** */
     private final Method method;

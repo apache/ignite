@@ -17,7 +17,7 @@
 
 package org.apache.ignite.internal.commandline.snapshot;
 
-import java.util.logging.Logger;
+import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.internal.client.GridClientConfiguration;
 import org.apache.ignite.internal.commandline.AbstractCommand;
 import org.apache.ignite.internal.commandline.CommandArgIterator;
@@ -37,7 +37,7 @@ public class SnapshotCommand extends AbstractCommand<Object> {
     private SnapshotSubcommand cmd;
 
     /** {@inheritDoc} */
-    @Override public Object execute(GridClientConfiguration clientCfg, Logger log) throws Exception {
+    @Override public Object execute(GridClientConfiguration clientCfg, IgniteLogger log) throws Exception {
         return cmd.execute(clientCfg, log);
     }
 
@@ -54,7 +54,7 @@ public class SnapshotCommand extends AbstractCommand<Object> {
     }
 
     /** {@inheritDoc} */
-    @Override public void printUsage(Logger log) {
+    @Override public void printUsage(IgniteLogger log) {
         for (SnapshotSubcommands cmd : SnapshotSubcommands.values())
             cmd.subCommand().printUsage(log);
     }
