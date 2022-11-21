@@ -37,7 +37,8 @@ namespace Apache.Ignite.Core.Impl.Unmanaged.Jni
             "WARNING: Illegal reflective access by org.apache.ignite.internal.util.GridUnsafe$2",
             "WARNING: Please consider reporting this to the maintainers of",
             "WARNING: Use --illegal-access=warn to enable warnings of further illegal reflective access operations",
-            "WARNING: All illegal access operations will be denied in a future release"
+            "WARNING: All illegal access operations will be denied in a future release",
+            "OpenJDK 64-Bit Server VM warning: Ignoring option --illegal-access=permit"
         };
 
         /** Flag: whether to suppress stderr warnings from Java 11. */
