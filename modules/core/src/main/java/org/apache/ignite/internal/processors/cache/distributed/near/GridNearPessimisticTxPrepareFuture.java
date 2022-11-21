@@ -34,6 +34,7 @@ import org.apache.ignite.internal.processors.cache.GridCacheEntryEx;
 import org.apache.ignite.internal.processors.cache.GridCacheMessage;
 import org.apache.ignite.internal.processors.cache.GridCacheMvccCandidate;
 import org.apache.ignite.internal.processors.cache.GridCacheSharedContext;
+import org.apache.ignite.internal.processors.cache.consistentcut.ConsistentCutManager;
 import org.apache.ignite.internal.processors.cache.distributed.GridDistributedTxMapping;
 import org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtTxMapping;
 import org.apache.ignite.internal.processors.cache.distributed.dht.topology.GridDhtPartitionTopology;
@@ -408,9 +409,7 @@ public class GridNearPessimisticTxPrepareFuture extends GridNearTxPrepareFutureA
                 add((IgniteInternalFuture)fut);
 
                 try {
-                    GridCacheMessage cacheMsg = cctx.consistentCutMgr() != null
-                        ? cctx.consistentCutMgr().wrapMessage(req, null)
-                        : req;
+                    GridCacheMessage cacheMsg = ConsistentCutManager.wrapMessage(cctx, req, null);
 
                     cctx.io().send(primary, cacheMsg, tx.ioPolicy());
 

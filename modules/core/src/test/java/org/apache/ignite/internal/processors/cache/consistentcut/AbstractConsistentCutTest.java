@@ -328,11 +328,6 @@ public abstract class AbstractConsistentCutTest extends GridCommonAbstractTest {
         static TestConsistentCutManager cutMgr(IgniteEx ign) {
             return (TestConsistentCutManager)ign.context().cache().context().consistentCutMgr();
         }
-
-        /** */
-        boolean consistentCutFinished(long ver) {
-            return CONSISTENT_CUT.get(this) == null;
-        }
     }
 
     /** Logs TX messages between nodes. */

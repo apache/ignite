@@ -48,6 +48,7 @@ import org.apache.ignite.internal.processors.cache.GridCacheSharedContext;
 import org.apache.ignite.internal.processors.cache.GridCacheUpdateTxResult;
 import org.apache.ignite.internal.processors.cache.KeyCacheObject;
 import org.apache.ignite.internal.processors.cache.consistentcut.ConsistentCutAwareMessage;
+import org.apache.ignite.internal.processors.cache.consistentcut.ConsistentCutManager;
 import org.apache.ignite.internal.processors.cache.distributed.GridCacheTxRecoveryFuture;
 import org.apache.ignite.internal.processors.cache.distributed.GridCacheTxRecoveryRequest;
 import org.apache.ignite.internal.processors.cache.distributed.GridCacheTxRecoveryResponse;
@@ -573,9 +574,7 @@ public class IgniteTxHandler {
                             req.deployInfo() != null);
 
                         try {
-                            GridCacheMessage cacheMsg = ctx.consistentCutMgr() != null
-                                ? ctx.consistentCutMgr().wrapMessage(res, tx == null ? null : tx.cutId())
-                                : res;
+                            GridCacheMessage cacheMsg = ConsistentCutManager.wrapMessage(ctx, res, tx == null ? null : tx.cutId());
 
                             ctx.io().send(nearNode, cacheMsg, req.policy());
 
@@ -1655,13 +1654,9 @@ public class IgniteTxHandler {
         GridDhtTxRemote dhtTx,
         GridNearTxRemote nearTx) {
         try {
-            GridCacheMessage cacheMsg = res;
+            IgniteTxAdapter tx = dhtTx != null ? dhtTx : nearTx;
 
-            if (ctx.consistentCutMgr() != null) {
-                IgniteTxAdapter tx = dhtTx != null ? dhtTx : nearTx;
-
-                cacheMsg = ctx.consistentCutMgr().wrapMessage(res, tx == null ? null : tx.cutId());
-            }
+            GridCacheMessage cacheMsg = ConsistentCutManager.wrapMessage(ctx, res, tx == null ? null : tx.cutId());
 
             // Reply back to sender.
             ctx.io().send(nodeId, cacheMsg, req.policy());

@@ -44,7 +44,7 @@ public class ConsistentCutAwareMessage extends GridCacheIdMessage {
     private UUID cutId;
 
     /**
-     * ID of the latest {@link ConsistentCut} AFTER which this transaction committed. {@code null} if transaction
+     * ID of the latest Consistent Cut AFTER which this transaction committed. {@code null} if transaction
      * committed BEFORE.
      */
     private @Nullable UUID txCutId;

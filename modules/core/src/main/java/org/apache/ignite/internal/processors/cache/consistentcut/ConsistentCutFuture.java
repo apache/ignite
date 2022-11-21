@@ -29,7 +29,6 @@ import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.pagemem.wal.record.ConsistentCutFinishRecord;
 import org.apache.ignite.internal.pagemem.wal.record.ConsistentCutStartRecord;
 import org.apache.ignite.internal.pagemem.wal.record.RolloverType;
-import org.apache.ignite.internal.pagemem.wal.record.WALRecord;
 import org.apache.ignite.internal.processors.cache.GridCacheSharedContext;
 import org.apache.ignite.internal.processors.cache.persistence.wal.WALPointer;
 import org.apache.ignite.internal.processors.cache.transactions.IgniteInternalTx;
@@ -53,7 +52,7 @@ import static org.apache.ignite.transactions.TransactionState.UNKNOWN;
 /**
  * Describes current Consistent Cut.
  */
-public class ConsistentCut extends GridFutureAdapter<WALPointer> {
+public class ConsistentCutFuture extends GridFutureAdapter<WALPointer> {
     /** */
     private final GridCacheSharedContext<?, ?> cctx;
 
@@ -65,21 +64,21 @@ public class ConsistentCut extends GridFutureAdapter<WALPointer> {
 
     /** Set of checked transactions belonging to the BEFORE side. */
     @GridToStringInclude
-    private Set<GridCacheVersion> beforeCut;
+    private Set<GridCacheVersion> before;
 
     /** Set of checked transactions belonging to the AFTER side. */
     @GridToStringInclude
-    private Set<GridCacheVersion> afterCut;
+    private Set<GridCacheVersion> after;
 
     /** Collection of transactions removed from {@link IgniteTxManager#activeTransactions()}. */
-    private volatile Set<IgniteInternalFuture<IgniteInternalTx>> removedActive = ConcurrentHashMap.newKeySet();
+    private volatile Set<IgniteInternalFuture<IgniteInternalTx>> removedFromActive = ConcurrentHashMap.newKeySet();
 
     /** */
-    ConsistentCut(GridCacheSharedContext<?, ?> cctx, UUID id) {
+    ConsistentCutFuture(GridCacheSharedContext<?, ?> cctx, UUID id) {
         this.cctx = cctx;
         this.id = id;
 
-        log = cctx.logger(ConsistentCut.class);
+        log = cctx.logger(ConsistentCutFuture.class);
     }
 
     /** */
@@ -91,10 +90,10 @@ public class ConsistentCut extends GridFutureAdapter<WALPointer> {
      * Inits local Consistent Cut: prepares list of active transactions to check which side of Consistent Cut they belong to.
      */
     protected void init() throws IgniteCheckedException {
-        walLog(new ConsistentCutStartRecord(id), false);
+        cctx.wal().log(new ConsistentCutStartRecord(id));
 
-        beforeCut = ConcurrentHashMap.newKeySet();
-        afterCut = ConcurrentHashMap.newKeySet();
+        before = ConcurrentHashMap.newKeySet();
+        after = ConcurrentHashMap.newKeySet();
 
         GridCompoundFuture<Boolean, Boolean> checkFut = new GridCompoundFuture<>(CU.boolReducer());
 
@@ -105,33 +104,37 @@ public class ConsistentCut extends GridFutureAdapter<WALPointer> {
 
         // Invoke sequentially over two iterators:
         // 1. iterators are weakly consistent.
-        // 2. we need a guarantee to handle `removedActive` after `activeTxs` to avoid missed transactions.
+        // 2. we need a guarantee to handle `removedFromActive` after `activeTxs` to avoid missed transactions.
         checkTransactions(finFutIt, checkFut);
-        checkTransactions(removedActive.iterator(), checkFut);
 
-        removedActive = null;
+        Iterator<IgniteInternalFuture<IgniteInternalTx>> removedFromActiveIter = removedFromActive.iterator();
+        removedFromActive = null;
+
+        checkTransactions(removedFromActiveIter, checkFut);
 
         checkFut.markInitialized();
 
         checkFut.listen(finish -> {
             if (Boolean.FALSE.equals(finish.result()) || isDone()) {
-                if (log.isDebugEnabled())
-                    log.debug("Cut might be inconsistent for id " + id + ". Skip writing FinishRecord.");
-
                 onDone(new IgniteCheckedException("Cut is inconsistent."));
 
                 return;
             }
 
+            cctx.database().checkpointReadLock();
+
             try {
-                WALPointer ptr = walLog(new ConsistentCutFinishRecord(id, beforeCut, afterCut), true);
+                WALPointer ptr = cctx.wal().log(new ConsistentCutFinishRecord(id, before, after), RolloverType.CURRENT_SEGMENT);
 
                 onDone(ptr);
             }
             catch (IgniteCheckedException e) {
-                U.error(log, "Failed to write ConsistentCutFinishRecord to WAL for id " + id, e);
+                U.error(log, "Failed to write ConsistentCutFinishRecord to WAL for [id= " + id + ']', e);
 
                 onDone(e);
+            }
+            finally {
+                cctx.database().checkpointReadUnlock();
             }
         });
     }
@@ -142,10 +145,10 @@ public class ConsistentCut extends GridFutureAdapter<WALPointer> {
      * @param txFinFut Transaction finish future.
      */
     public void onRemoveActiveTransaction(IgniteInternalFuture<IgniteInternalTx> txFinFut) {
-        Set<IgniteInternalFuture<IgniteInternalTx>> txs = removedActive;
+        Set<IgniteInternalFuture<IgniteInternalTx>> removedFromActive0 = removedFromActive;
 
-        if (txs != null)
-            txs.add(txFinFut);
+        if (removedFromActive0 != null)
+            removedFromActive0.add(txFinFut);
     }
 
     /**
@@ -167,14 +170,13 @@ public class ConsistentCut extends GridFutureAdapter<WALPointer> {
                     || tx.state() == MARKED_ROLLBACK
                     || tx.state() == ROLLED_BACK
                     || tx.state() == COMMITTED)) {
-                    U.warn(log, "Transaction is in unexepcted state: " + tx.state() +
-                        ". Cut might be inconsistent. Transaction: " + tx);
+                    U.warn(log, "Cut is inconsistent due to transaction is in unexepcted state: " + tx);
 
                     return false;
                 }
 
                 if (tx.state() == UNKNOWN) {
-                    U.warn(log, "Transaction is in UNKNOWN state. Cut might be inconsistent. Transaction: " + tx);
+                    U.warn(log, "Cut is inconsistent due to transaction is in unexepcted state: " + tx);
 
                     return false;
                 }
@@ -184,15 +186,15 @@ public class ConsistentCut extends GridFutureAdapter<WALPointer> {
                     return true;
 
                 if (tx.finalizationStatus() == RECOVERY_FINISH) {
-                    U.warn(log, "Transaction committed after recovery process. Cut might be inconsistent. Transaction: " + tx);
+                    U.warn(log, "Cut is inconsistent due to transaction committed after recovery process: " + tx);
 
                     return false;
                 }
 
                 if (id.equals(tx.cutId()))
-                    afterCut.add(tx.nearXidVersion());
+                    after.add(tx.nearXidVersion());
                 else
-                    beforeCut.add(tx.nearXidVersion());
+                    before.add(tx.nearXidVersion());
 
                 return true;
             });
@@ -203,38 +205,9 @@ public class ConsistentCut extends GridFutureAdapter<WALPointer> {
 
     /** {@inheritDoc} */
     @Override protected boolean onDone(@Nullable WALPointer res, @Nullable Throwable err, boolean cancel) {
-        removedActive = null;
+        removedFromActive = null;
 
         return super.onDone(res, err, cancel);
-    }
-
-    /**
-     * Logs Consistent Cut Record to WAL.
-     *
-     * @param record Record to write to WAL.
-     * @param finalRec {@code false} for {@link ConsistentCutStartRecord}, {@code true} for {@link ConsistentCutFinishRecord}.
-     * @return Pointer to the record in WAL, or {@code null} if WAL is disabled.
-     */
-    private @Nullable WALPointer walLog(WALRecord record, boolean finalRec) throws IgniteCheckedException {
-        if (cctx.wal() != null) {
-            if (log.isDebugEnabled())
-                log.debug("Writing Consistent Cut WAL record: " + record);
-
-            if (finalRec) {
-                cctx.database().checkpointReadLock();
-
-                try {
-                    return cctx.wal().log(record, RolloverType.CURRENT_SEGMENT);
-                }
-                finally {
-                    cctx.database().checkpointReadUnlock();
-                }
-            }
-            else
-                return cctx.wal().log(record);
-        }
-
-        return null;
     }
 
     /** {@inheritDoc} */
@@ -243,14 +216,14 @@ public class ConsistentCut extends GridFutureAdapter<WALPointer> {
         List<IgniteUuid> after = null;
 
         // Write IgniteUuid because it's more convenient for debug purposes than GridCacheVersion.
-        if (beforeCut != null) {
-            before = beforeCut.stream()
+        if (this.before != null) {
+            before = this.before.stream()
                 .map(GridCacheVersion::asIgniteUuid)
                 .collect(Collectors.toList());
         }
 
-        if (afterCut != null) {
-            after = afterCut.stream()
+        if (this.after != null) {
+            after = this.after.stream()
                 .map(GridCacheVersion::asIgniteUuid)
                 .collect(Collectors.toList());
         }

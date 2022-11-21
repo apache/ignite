@@ -149,7 +149,7 @@ public class GridCacheSharedContext<K, V> {
     private DeadlockDetectionManager deadlockDetectionMgr;
 
     /** Consistent cut manager. */
-    private ConsistentCutManager consistentCutMgr;
+    private @Nullable ConsistentCutManager consistentCutMgr;
 
     /** Cache contexts map. */
     private final ConcurrentHashMap<Integer, GridCacheContext<K, V>> ctxMap;

@@ -39,6 +39,7 @@ import org.apache.ignite.internal.processors.cache.GridCacheReturn;
 import org.apache.ignite.internal.processors.cache.GridCacheReturnCompletableWrapper;
 import org.apache.ignite.internal.processors.cache.GridCacheSharedContext;
 import org.apache.ignite.internal.processors.cache.GridCacheVersionedFuture;
+import org.apache.ignite.internal.processors.cache.consistentcut.ConsistentCutManager;
 import org.apache.ignite.internal.processors.cache.distributed.GridDistributedTxMapping;
 import org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtTxFinishRequest;
 import org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtTxFinishResponse;
@@ -657,9 +658,7 @@ public final class GridNearTxFinishFuture<K, V> extends GridCacheCompoundIdentit
                         GridDhtTxFinishRequest finishReq = checkCommittedRequest(mini.futureId(), false);
 
                         try {
-                            GridCacheMessage cacheMsg = cctx.consistentCutMgr() != null
-                                ? cctx.consistentCutMgr().wrapMessage(finishReq, tx.cutId())
-                                : finishReq;
+                            GridCacheMessage cacheMsg = ConsistentCutManager.wrapMessage(cctx, finishReq, tx.cutId());
 
                             cctx.io().send(backup, cacheMsg, tx.ioPolicy());
 
@@ -816,9 +815,7 @@ public final class GridNearTxFinishFuture<K, V> extends GridCacheCompoundIdentit
             add(fut); // Append new future.
 
             try {
-                GridCacheMessage cacheMsg = cctx.consistentCutMgr() != null
-                    ? cctx.consistentCutMgr().wrapMessage(req, tx.cutId())
-                    : req;
+                GridCacheMessage cacheMsg = ConsistentCutManager.wrapMessage(cctx, req, tx.cutId());
 
                 cctx.io().send(n, cacheMsg, tx.ioPolicy());
 

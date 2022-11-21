@@ -18,22 +18,11 @@
 package org.apache.ignite.internal.pagemem.wal.record;
 
 import java.util.UUID;
-import org.apache.ignite.internal.processors.cache.consistentcut.ConsistentCut;
-import org.apache.ignite.internal.processors.cache.consistentcut.ConsistentCutManager;
 import org.apache.ignite.internal.util.tostring.GridToStringInclude;
 import org.apache.ignite.internal.util.typedef.internal.S;
 
 /**
- * {@link ConsistentCut} splits timeline on 2 global areas - BEFORE and AFTER. It guarantees that every transaction committed
- * BEFORE also will be committed BEFORE on every other node. It means that an Ignite node can safely recover itself to this
- * point without any coordination with other nodes.
- * <p>
- * This record is written to WAL in moment when {@link ConsistentCut} starts on a local node.
- * <p>
- * Note, there is no strict guarantee for all transactions belonged to the BEFORE side to be physically committed before
- * {@link ConsistentCutStartRecord}, and vice versa. This is the reason for having {@link ConsistentCutFinishRecord}.
- * <p>
- * @see ConsistentCutManager
+ * This record is written to WAL in moment when Consistent Cut starts on a local node.
  */
 public class ConsistentCutStartRecord extends WALRecord {
     /** Consistent Cut ID. */

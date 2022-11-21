@@ -26,7 +26,7 @@ import java.util.function.BiConsumer;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.internal.processors.cache.GridCacheSharedContext;
-import org.apache.ignite.internal.processors.cache.consistentcut.ConsistentCut;
+import org.apache.ignite.internal.processors.cache.consistentcut.ConsistentCutFuture;
 import org.apache.ignite.internal.processors.cache.persistence.file.FileIOFactory;
 import org.apache.ignite.internal.processors.cache.persistence.partstate.GroupPartitionId;
 import org.apache.ignite.internal.util.typedef.internal.CU;
@@ -91,7 +91,7 @@ class IncrementalSnapshotFutureTask
 
     /** {@inheritDoc} */
     @Override public boolean start() {
-        ConsistentCut cut = cctx.consistentCutMgr().cut();
+        ConsistentCutFuture cut = cctx.consistentCutMgr().cutFuture();
 
         if (cut == null) {
             onDone(new IgniteCheckedException(

@@ -403,7 +403,7 @@ public abstract class AbstractConsistentCutBlockingTest extends AbstractConsiste
             boolean allNodeStartedCut = true;
 
             for (int i = 0; i < nodes(); i++)
-                allNodeStartedCut &= BlockingConsistentCutManager.cutMgr(grid(i)).cut() != null;
+                allNodeStartedCut &= BlockingConsistentCutManager.cutMgr(grid(i)).cutFuture() != null;
 
             return allNodeStartedCut;
         }, getTestTimeout(), 10);
@@ -415,7 +415,7 @@ public abstract class AbstractConsistentCutBlockingTest extends AbstractConsiste
             boolean allNodeFinishedCut = true;
 
             for (int i = 0; i < nodes(); i++)
-                allNodeFinishedCut &= BlockingConsistentCutManager.cutMgr(grid(i)).cut() == null;
+                allNodeFinishedCut &= BlockingConsistentCutManager.cutMgr(grid(i)).cutFuture() == null;
 
             return allNodeFinishedCut;
         }, getTestTimeout(), 10);
@@ -550,8 +550,8 @@ public abstract class AbstractConsistentCutBlockingTest extends AbstractConsiste
         }
 
         /** {@inheritDoc} */
-        @Override protected ConsistentCut newConsistentCut(UUID id) {
-            return new BlockingConsistentCut(context(), id);
+        @Override protected ConsistentCutFuture newConsistentCut(UUID id) {
+            return new BlockingConsistentCutFuture(context(), id);
         }
 
         /** */
@@ -585,9 +585,9 @@ public abstract class AbstractConsistentCutBlockingTest extends AbstractConsiste
         }
 
         /** */
-        private final class BlockingConsistentCut extends ConsistentCut {
+        private final class BlockingConsistentCutFuture extends ConsistentCutFuture {
             /** */
-            BlockingConsistentCut(GridCacheSharedContext<?, ?> cctx, UUID id) {
+            BlockingConsistentCutFuture(GridCacheSharedContext<?, ?> cctx, UUID id) {
                 super(cctx, id);
             }
 

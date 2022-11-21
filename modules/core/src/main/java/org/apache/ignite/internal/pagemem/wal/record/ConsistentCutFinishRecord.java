@@ -17,23 +17,17 @@
 
 package org.apache.ignite.internal.pagemem.wal.record;
 
-import java.util.Collections;
 import java.util.List;
 import java.util.Set;
 import java.util.UUID;
 import java.util.stream.Collectors;
-import org.apache.ignite.internal.processors.cache.consistentcut.ConsistentCut;
-import org.apache.ignite.internal.processors.cache.consistentcut.ConsistentCutManager;
+import org.apache.ignite.internal.processors.cache.consistentcut.ConsistentCutFuture;
 import org.apache.ignite.internal.processors.cache.version.GridCacheVersion;
 import org.apache.ignite.lang.IgniteUuid;
 
 /**
- * {@link ConsistentCut} splits timeline on 2 global areas - BEFORE and AFTER. It guarantees that every transaction committed
- * BEFORE also will be committed BEFORE on every other node. It means that an Ignite node can safely recover itself to this
- * point without any coordination with other nodes.
- * <p>
- * This record is written to WAL after Consistent Cut stopped analyzing transactions from {@link ConsistentCut} and
- * storing them in a particular collection - {@link #before()} or {@link #after()}.
+ * This record is written to WAL after it's finished to check transactions in {@link ConsistentCutFuture} and store them
+ * in a particular collection - {@link #before()} or {@link #after()}.
  * <p>
  * It guarantees that the BEFORE side consists of:
  * 1. transactions physically committed before {@link ConsistentCutStartRecord} and weren't included into {@link #after()};
@@ -44,11 +38,9 @@ import org.apache.ignite.lang.IgniteUuid;
  * 1. transactions physically committed before {@link ConsistentCutStartRecord} and were included into {@link #after()};
  * 2. transactions physically committed between {@link ConsistentCutStartRecord} and {@link ConsistentCutFinishRecord}
  *    and weren't included into {@link #before()}.
- * <p>
- * @see ConsistentCutManager
  */
 public class ConsistentCutFinishRecord extends WALRecord {
-    /** ID of {@link ConsistentCut}. */
+    /** ID of Consistent Cut. */
     private final UUID cutId;
 
     /**
@@ -65,8 +57,8 @@ public class ConsistentCutFinishRecord extends WALRecord {
     /** */
     public ConsistentCutFinishRecord(UUID cutId, Set<GridCacheVersion> before, Set<GridCacheVersion> after) {
         this.cutId = cutId;
-        this.before = Collections.unmodifiableSet(before);
-        this.after = Collections.unmodifiableSet(after);
+        this.before = before;
+        this.after = after;
     }
 
     /** */

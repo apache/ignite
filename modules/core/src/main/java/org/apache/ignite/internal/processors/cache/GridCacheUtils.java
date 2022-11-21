@@ -2047,6 +2047,13 @@ public class GridCacheUtils {
     }
 
     /**
+     * @return {@code true} if incremental snapshots are enabled.
+     */
+    public static boolean isIncrementalSnapshotsEnabled(GridCacheSharedContext<?, ?> cctx) {
+        return cctx.consistentCutMgr() != null;
+    }
+
+    /**
      * @return {@code true} if persistence is enabled for at least one data region, {@code false} if not.
      */
     public static boolean isPersistenceEnabled(DataStorageConfiguration cfg) {

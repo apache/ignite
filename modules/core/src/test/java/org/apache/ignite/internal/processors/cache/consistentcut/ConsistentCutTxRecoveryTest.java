@@ -60,7 +60,7 @@ public class ConsistentCutTxRecoveryTest extends AbstractConsistentCutBlockingTe
 
             waitForCutIsStartedOnAllNodes();
 
-            UUID blkCutId = BlockingConsistentCutManager.cutMgr(grid(0)).cut().id();
+            UUID blkCutId = BlockingConsistentCutManager.cutMgr(grid(0)).cutFuture().id();
 
             // Stop client node.
             stopGrid(nodes());
