@@ -30,7 +30,7 @@ import org.jetbrains.annotations.Nullable;
 /**
  * Sort node.
  */
-public class SortNode<Row> extends AbstractNode<Row> implements SingleNode<Row>, Downstream<Row> {
+public class SortNode<Row> extends MemoryTrackingNode<Row> implements SingleNode<Row>, Downstream<Row> {
     /** How many rows are requested by downstream. */
     private int requested;
 
@@ -91,6 +91,8 @@ public class SortNode<Row> extends AbstractNode<Row> implements SingleNode<Row>,
         rows.clear();
         if (reversed != null)
             reversed.clear();
+
+        nodeMemoryTracker.reset();
     }
 
     /** {@inheritDoc} */
@@ -127,7 +129,15 @@ public class SortNode<Row> extends AbstractNode<Row> implements SingleNode<Row>,
 
         waiting--;
 
-        rows.add(row);
+        int size = rows.size();
+        Row top = rows.peek();
+
+        if (rows.add(row)) {
+            nodeMemoryTracker.onRowAdded(row);
+
+            if (size == rows.size()) // Row added, but size is not changed means another (top) row is evicted.
+                nodeMemoryTracker.onRowRemoved(top);
+        }
 
         if (waiting == 0)
             source().request(waiting = IN_BUFFER_SIZE);
@@ -180,7 +190,11 @@ public class SortNode<Row> extends AbstractNode<Row> implements SingleNode<Row>,
 
                 requested--;
 
-                downstream().push(reversed == null ? rows.poll() : reversed.remove(reversed.size() - 1));
+                Row row = reversed == null ? rows.poll() : reversed.remove(reversed.size() - 1);
+
+                nodeMemoryTracker.onRowRemoved(row);
+
+                downstream().push(row);
 
                 if (++processed >= IN_BUFFER_SIZE && requested > 0) {
                     // allow others to do their job
