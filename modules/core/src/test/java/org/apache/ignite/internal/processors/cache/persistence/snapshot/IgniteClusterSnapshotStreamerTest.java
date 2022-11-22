@@ -76,7 +76,7 @@ public class IgniteClusterSnapshotStreamerTest extends AbstractSnapshotSelfTest 
 
         client = startClientGrid(G.allGrids().size());
 
-        snpMgr = snp(grid(0));
+        snpMgr = snp(grid(1));
     }
 
     /** {@inheritDoc} */
