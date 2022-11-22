@@ -1354,6 +1354,16 @@ public abstract class GridUnsafe {
     }
 
     /**
+     * Returns the scale factor for addressing elements in the storage allocation of a given array class.
+     *
+     * @param cls Class.
+     * @return the scale factor for addressing elements in the storage allocation of a given array class.
+     */
+    public static int arrayIndexScale(Class<?> cls) {
+        return UNSAFE.arrayIndexScale(cls);
+    }
+
+    /**
      * Allocates instance of given class.
      *
      * @param cls Class.

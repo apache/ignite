@@ -34,7 +34,7 @@ import org.apache.ignite.internal.util.typedef.F;
 /**
  * Abstract execution node for set operators (EXCEPT, INTERSECT).
  */
-public abstract class AbstractSetOpNode<Row> extends AbstractNode<Row> {
+public abstract class AbstractSetOpNode<Row> extends MemoryTrackingNode<Row> {
     /** */
     private final AggregateType type;
 
@@ -56,7 +56,7 @@ public abstract class AbstractSetOpNode<Row> extends AbstractNode<Row> {
     /** */
     protected AbstractSetOpNode(ExecutionContext<Row> ctx, RelDataType rowType, AggregateType type, boolean all,
         RowFactory<Row> rowFactory, Grouping<Row> grouping) {
-        super(ctx, rowType);
+        super(ctx, rowType, HASH_MAP_ROW_OVERHEAD + grouping.countersSize() * Integer.BYTES);
 
         this.type = type;
         this.grouping = grouping;
@@ -87,7 +87,14 @@ public abstract class AbstractSetOpNode<Row> extends AbstractNode<Row> {
 
         waiting--;
 
+        int size = grouping.size();
+
         grouping.add(row, idx);
+
+        if (grouping.size() > size)
+            nodeMemoryTracker.onRowAdded(row);
+        else if (grouping.size() < size)
+            nodeMemoryTracker.onRowRemoved(row);
 
         if (waiting == 0)
             sources().get(curSrcIdx).request(waiting = IN_BUFFER_SIZE);
@@ -123,6 +130,7 @@ public abstract class AbstractSetOpNode<Row> extends AbstractNode<Row> {
         waiting = 0;
         curSrcIdx = 0;
         grouping.groups.clear();
+        nodeMemoryTracker.reset();
     }
 
     /** {@inheritDoc} */
@@ -159,10 +167,19 @@ public abstract class AbstractSetOpNode<Row> extends AbstractNode<Row> {
             if (requested > 0 && !grouping.isEmpty()) {
                 int toSnd = Math.min(requested, IN_BUFFER_SIZE - processed);
 
-                for (Row row : grouping.getRows(toSnd)) {
+                int size = grouping.size();
+
+                List<Row> rows = grouping.getRows(toSnd);
+
+                int removed = size - grouping.size();
+
+                for (Row row : rows) {
                     requested--;
 
                     downstream().push(row);
+
+                    if (processed < removed)
+                        nodeMemoryTracker.onRowRemoved(row);
 
                     processed++;
                 }
@@ -313,12 +330,7 @@ public abstract class AbstractSetOpNode<Row> extends AbstractNode<Row> {
 
                 GroupKey key = entry.getKey();
 
-                Object[] fields = new Object[key.fieldsCount()];
-
-                for (int i = 0; i < fields.length; i++)
-                    fields[i] = key.field(i);
-
-                Row row = rowFactory.create(fields);
+                Row row = rowFactory.create(key.fields());
 
                 int[] cntrs = entry.getValue();
 
@@ -362,5 +374,13 @@ public abstract class AbstractSetOpNode<Row> extends AbstractNode<Row> {
         private boolean isEmpty() {
             return groups.isEmpty();
         }
+
+        /** */
+        private int size() {
+            return groups.size();
+        }
+
+        /** */
+        protected abstract int countersSize();
     }
 }

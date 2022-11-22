@@ -1203,36 +1203,12 @@ public abstract class GridDhtCacheAdapter<K, V> extends GridDistributedCacheAdap
     }
 
     /**
-     * @param mapVer Mapped topology version.
-     * @param curVer Current topology version.
+     * @param rmtVer Topology version that the cache request was mapped to by the remote node.
      * @return {@code True} if cache affinity changed and operation should be remapped.
      */
-    protected final boolean needRemap(AffinityTopologyVersion mapVer, AffinityTopologyVersion curVer) {
-        if (curVer.equals(mapVer))
-            return false;
-
-        AffinityTopologyVersion lastAffChangedTopVer = ctx.shared().exchange().lastAffinityChangedTopologyVersion(mapVer);
-
-        if (curVer.isBetween(lastAffChangedTopVer, mapVer))
-            return false;
-
+    protected final boolean needRemap(AffinityTopologyVersion rmtVer) {
         // TODO IGNITE-7164 check mvcc crd for mvcc enabled txs.
-
-        Collection<ClusterNode> cacheNodes0 = ctx.discovery().cacheGroupAffinityNodes(ctx.groupId(), mapVer);
-        Collection<ClusterNode> cacheNodes1 = ctx.discovery().cacheGroupAffinityNodes(ctx.groupId(), curVer);
-
-        if (!cacheNodes0.equals(cacheNodes1) || ctx.affinity().affinityTopologyVersion().before(curVer))
-            return true;
-
-        try {
-            List<List<ClusterNode>> aff1 = ctx.affinity().assignments(mapVer);
-            List<List<ClusterNode>> aff2 = ctx.affinity().assignments(curVer);
-
-            return !aff1.equals(aff2);
-        }
-        catch (IllegalStateException ignored) {
-            return true;
-        }
+        return !ctx.affinity().isCompatibleWithCurrentTopologyVersion(rmtVer);
     }
 
     /**

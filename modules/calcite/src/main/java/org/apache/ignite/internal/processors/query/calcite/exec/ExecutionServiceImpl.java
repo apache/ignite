@@ -34,6 +34,7 @@ import org.apache.calcite.tools.Frameworks;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.cache.query.FieldsQueryCursor;
+import org.apache.ignite.calcite.CalciteQueryEngineConfiguration;
 import org.apache.ignite.events.EventType;
 import org.apache.ignite.internal.GridKernalContext;
 import org.apache.ignite.internal.managers.eventstorage.DiscoveryEventListener;
@@ -58,6 +59,9 @@ import org.apache.ignite.internal.processors.query.calcite.exec.ddl.DdlCommandHa
 import org.apache.ignite.internal.processors.query.calcite.exec.rel.Inbox;
 import org.apache.ignite.internal.processors.query.calcite.exec.rel.Node;
 import org.apache.ignite.internal.processors.query.calcite.exec.rel.Outbox;
+import org.apache.ignite.internal.processors.query.calcite.exec.tracker.GlobalMemoryTracker;
+import org.apache.ignite.internal.processors.query.calcite.exec.tracker.MemoryTracker;
+import org.apache.ignite.internal.processors.query.calcite.exec.tracker.NoOpMemoryTracker;
 import org.apache.ignite.internal.processors.query.calcite.message.ErrorMessage;
 import org.apache.ignite.internal.processors.query.calcite.message.MessageService;
 import org.apache.ignite.internal.processors.query.calcite.message.MessageType;
@@ -157,6 +161,12 @@ public class ExecutionServiceImpl<Row> extends AbstractService implements Execut
 
     /** */
     private DdlCommandHandler ddlCmdHnd;
+
+    /** */
+    private CalciteQueryEngineConfiguration cfg;
+
+    /** */
+    private MemoryTracker memoryTracker;
 
     /**
      * @param ctx Kernal.
@@ -369,6 +379,11 @@ public class ExecutionServiceImpl<Row> extends AbstractService implements Execut
         this.qryReg = qryReg;
     }
 
+    /** */
+    public MemoryTracker memoryTracker() {
+        return memoryTracker;
+    }
+
     /** {@inheritDoc} */
     @Override public void onStart(GridKernalContext ctx) {
         localNodeId(ctx.localNodeId());
@@ -393,6 +408,11 @@ public class ExecutionServiceImpl<Row> extends AbstractService implements Execut
         prepareService(proc.prepareService());
 
         ddlCmdHnd = new DdlCommandHandler(ctx.query(), ctx.cache(), ctx.security(), () -> schemaHolder().schema(null));
+
+        cfg = proc.config();
+
+        memoryTracker = cfg.getGlobalMemoryQuota() > 0 ? new GlobalMemoryTracker(cfg.getGlobalMemoryQuota()) :
+            NoOpMemoryTracker.INSTANCE;
 
         init();
     }
@@ -551,6 +571,7 @@ public class ExecutionServiceImpl<Row> extends AbstractService implements Execut
             mapCtx.topologyVersion(),
             fragmentDesc,
             handler,
+            qry.createMemoryTracker(memoryTracker, cfg.getQueryMemoryQuota()),
             Commons.parametersMap(qry.parameters()));
 
         Node<Row> node = new LogicalRelImplementor<>(ectx, partitionService(), mailboxRegistry(),
@@ -689,6 +710,7 @@ public class ExecutionServiceImpl<Row> extends AbstractService implements Execut
                 msg.topologyVersion(),
                 msg.fragmentDescription(),
                 handler,
+                qry.createMemoryTracker(memoryTracker, cfg.getQueryMemoryQuota()),
                 Commons.parametersMap(msg.parameters())
             );
 

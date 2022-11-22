@@ -178,8 +178,17 @@ public class SqlScriptRunner {
             return ByteString.toString((byte[])res, 16);
         else if (res instanceof Map)
             return mapToString((Map<?, ?>)res);
+        else if (res instanceof List)
+            return listToString((List<?>)res);
+        else if (res instanceof Object[])
+            return Arrays.toString((Object[])res);
         else
             return String.valueOf(res);
+    }
+
+    /** */
+    private String listToString(List<?> list) {
+        return "[" + list.stream().map(this::toString).collect(Collectors.joining(", ")) + "]";
     }
 
     /** */
