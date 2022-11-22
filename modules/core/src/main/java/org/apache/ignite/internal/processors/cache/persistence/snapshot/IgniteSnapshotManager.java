@@ -1061,7 +1061,7 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
     public void streamerWarning() {
         SnapshotOperationRequest snpTask = currentCreateRequest();
 
-        if (snpTask != null)
+        if (snpTask != null && !snpTask.streamerWarning())
             snpTask.streamerWarning(true);
     }
 
@@ -2231,6 +2231,9 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
 
             // Register system default DataStreamer updates check.
             registerHandler(new DataStreamerUpdatesHandler());
+
+            // Register system default page size and counters check that is used at the creation operation.
+            registerHandler(new SnapshotPartitionsQuickVerifyHandler(ctx.cache().context()));
 
             // Register custom handlers.
             SnapshotHandler<Object>[] extHnds = (SnapshotHandler<Object>[])ctx.plugins().extensions(SnapshotHandler.class);
