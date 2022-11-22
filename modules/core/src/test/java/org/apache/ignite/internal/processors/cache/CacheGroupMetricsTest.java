@@ -197,11 +197,11 @@ public class CacheGroupMetricsTest extends GridCommonAbstractTest implements Ser
     }
 
     /**
-     * Gets CacheGroupMetricsMXBean for given node and group name.
+     * Gets cache group metrics for given node and group name.
      *
      * @param nodeIdx Node index.
      * @param cacheOrGrpName Cache group name.
-     * @return MBean instance and MetricRegistry for the specified group.
+     * @return MetricRegistry for the specified group.
      */
     protected MetricRegistry cacheGroupMetrics(int nodeIdx, String cacheOrGrpName) {
         return grid(nodeIdx).context().metric().registry(metricName(CACHE_GROUP_METRICS_PREFIX, cacheOrGrpName));
