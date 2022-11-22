@@ -459,7 +459,7 @@ public class IgniteTxHandler {
                         }
                     }
 
-                    if (!retry && needRemap(req.topologyVersion(), top.readyTopologyVersion(), req)) {
+                    if (!retry && needRemap(req.topologyVersion(), req)) {
                         retry = true;
 
                         if (txPrepareMsgLog.isDebugEnabled()) {
@@ -708,43 +708,16 @@ public class IgniteTxHandler {
     }
 
     /**
-     * @param expVer Expected topology version.
-     * @param curVer Current topology version.
+     * @param rmtVer Topology version that the cache request was mapped to by the remote node.
      * @param req Request.
      * @return {@code True} if cache affinity changed and request should be remapped.
      */
-    private boolean needRemap(AffinityTopologyVersion expVer,
-        AffinityTopologyVersion curVer,
-        GridNearTxPrepareRequest req) {
-        if (curVer.equals(expVer))
-            return false;
-
-        AffinityTopologyVersion lastAffChangedTopVer = ctx.exchange().lastAffinityChangedTopologyVersion(expVer);
-
-        if (curVer.compareTo(expVer) <= 0 && curVer.compareTo(lastAffChangedTopVer) >= 0)
-            return false;
-
+    private boolean needRemap(AffinityTopologyVersion rmtVer, GridNearTxPrepareRequest req) {
         // TODO IGNITE-6754 check mvcc crd for mvcc enabled txs.
 
         for (IgniteTxEntry e : F.concat(false, req.reads(), req.writes())) {
-            GridCacheContext ctx = e.context();
-
-            Collection<ClusterNode> cacheNodes0 = ctx.discovery().cacheGroupAffinityNodes(ctx.groupId(), expVer);
-            Collection<ClusterNode> cacheNodes1 = ctx.discovery().cacheGroupAffinityNodes(ctx.groupId(), curVer);
-
-            if (!cacheNodes0.equals(cacheNodes1) || ctx.affinity().affinityTopologyVersion().compareTo(curVer) < 0)
+            if (!e.context().affinity().isCompatibleWithCurrentTopologyVersion(rmtVer))
                 return true;
-
-            try {
-                List<List<ClusterNode>> aff1 = ctx.affinity().assignments(expVer);
-                List<List<ClusterNode>> aff2 = ctx.affinity().assignments(curVer);
-
-                if (!aff1.equals(aff2))
-                    return true;
-            }
-            catch (IllegalStateException ignored) {
-                return true;
-            }
         }
 
         return false;

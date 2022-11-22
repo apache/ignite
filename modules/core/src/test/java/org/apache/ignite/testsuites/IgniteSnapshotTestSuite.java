@@ -24,6 +24,7 @@ import org.apache.ignite.internal.processors.cache.persistence.snapshot.IgniteCl
 import org.apache.ignite.internal.processors.cache.persistence.snapshot.IgniteClusterSnapshotSelfTest;
 import org.apache.ignite.internal.processors.cache.persistence.snapshot.IgniteClusterSnapshotStreamerTest;
 import org.apache.ignite.internal.processors.cache.persistence.snapshot.IgniteClusterSnapshotWalRecordTest;
+import org.apache.ignite.internal.processors.cache.persistence.snapshot.IgniteSnapshotConsistencyTest;
 import org.apache.ignite.internal.processors.cache.persistence.snapshot.IgniteSnapshotMXBeanTest;
 import org.apache.ignite.internal.processors.cache.persistence.snapshot.IgniteSnapshotManagerSelfTest;
 import org.apache.ignite.internal.processors.cache.persistence.snapshot.IgniteSnapshotRemoteRequestTest;
@@ -48,7 +49,8 @@ import org.junit.runners.Suite;
     PlainSnapshotTest.class,
     EncryptedSnapshotTest.class,
     IgniteClusterSnapshotWalRecordTest.class,
-    IgniteClusterSnapshotStreamerTest.class
+    IgniteClusterSnapshotStreamerTest.class,
+    IgniteSnapshotConsistencyTest.class
 })
 public class IgniteSnapshotTestSuite {
 }
