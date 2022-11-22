@@ -19,9 +19,10 @@ package org.apache.ignite.internal.processors.query.calcite.planner;
 
 import java.util.Arrays;
 import java.util.List;
-
 import com.google.common.collect.ImmutableList;
 import org.apache.calcite.plan.RelOptUtil;
+import org.apache.calcite.rel.RelCollation;
+import org.apache.calcite.rel.RelCollations;
 import org.apache.calcite.rel.type.RelDataTypeFactory;
 import org.apache.calcite.sql.fun.SqlAvgAggFunction;
 import org.apache.calcite.sql.fun.SqlCountAggFunction;
@@ -29,6 +30,7 @@ import org.apache.ignite.internal.processors.query.QueryUtils;
 import org.apache.ignite.internal.processors.query.calcite.metadata.ColocationGroup;
 import org.apache.ignite.internal.processors.query.calcite.prepare.MappingQueryContext;
 import org.apache.ignite.internal.processors.query.calcite.rel.IgniteAggregate;
+import org.apache.ignite.internal.processors.query.calcite.rel.IgniteIndexBound;
 import org.apache.ignite.internal.processors.query.calcite.rel.IgniteIndexCount;
 import org.apache.ignite.internal.processors.query.calcite.rel.IgniteRel;
 import org.apache.ignite.internal.processors.query.calcite.rel.agg.IgniteMapHashAggregate;
@@ -43,11 +45,79 @@ import org.hamcrest.core.IsInstanceOf;
 import org.junit.Assert;
 import org.junit.Test;
 
+import static org.apache.ignite.internal.processors.query.calcite.trait.TraitUtils.createFieldCollation;
+
 /**
  *
  */
 @SuppressWarnings({"TooBroadScope", "FieldCanBeLocal", "TypeMayBeWeakened"})
 public class HashAggregatePlannerTest extends AbstractAggregatePlannerTest {
+    /** */
+    @Test
+    public void indexMinMax() throws Exception {
+        IgniteSchema publicSchema = new IgniteSchema("PUBLIC");
+
+        RelCollation[] collations = new RelCollation[] {
+            RelCollations.of(createFieldCollation(1, true)),
+            RelCollations.of(createFieldCollation(1, false)),
+            RelCollations.of(createFieldCollation(1, true), createFieldCollation(2, true)),
+            RelCollations.of(createFieldCollation(1, false), createFieldCollation(2, false)),
+            RelCollations.of(createFieldCollation(1, true), createFieldCollation(2, false)),
+            RelCollations.of(createFieldCollation(1, false), createFieldCollation(2, true))
+        };
+
+        for (RelCollation cll : collations) {
+            for (IgniteDistribution distr : distributions()) {
+                TestTable tbl = createTable(distr);
+                publicSchema.addTable("TEST", tbl);
+
+                assertNoIndexFirstOrLastRecord("SELECT MIN(VAL0) FROM TEST", publicSchema);
+                assertNoIndexFirstOrLastRecord("SELECT MIN(VAL0) FROM TEST", publicSchema);
+
+                tbl.addIndex(cll, "TEST_IDX");
+
+                boolean targetFldIdxAcc = !cll.getFieldCollations().get(0).direction.isDescending();
+
+                assertIndexFirstOrLastRecord("SELECT MIN(VAL0) FROM TEST", targetFldIdxAcc, publicSchema);
+                assertIndexFirstOrLastRecord("SELECT MAX(VAL0) FROM TEST", !targetFldIdxAcc, publicSchema);
+                assertIndexFirstOrLastRecord("SELECT MIN(V) FROM (SELECT MIN(VAL0) AS V FROM TEST)",
+                    targetFldIdxAcc, publicSchema);
+                assertIndexFirstOrLastRecord("SELECT MAX(V) FROM (SELECT MAX(VAL0) AS V FROM TEST)",
+                    !targetFldIdxAcc, publicSchema);
+                assertIndexFirstOrLastRecord("SELECT MAX(VAL0) FROM TEST", !targetFldIdxAcc, publicSchema);
+
+                assertNoIndexFirstOrLastRecord("SELECT MIN(VAL0) FROM TEST GROUP BY GRP0", publicSchema);
+                assertNoIndexFirstOrLastRecord("SELECT MIN(VAL0) FROM TEST GROUP BY GRP0, GRP1 ORDER BY GRP1 DESC",
+                    publicSchema);
+
+                assertNoIndexFirstOrLastRecord("SELECT MIN(VAL1) FROM TEST", publicSchema);
+                assertNoIndexFirstOrLastRecord("SELECT MAX(VAL1) FROM TEST", publicSchema);
+
+                assertNoIndexFirstOrLastRecord("SELECT MIN(VAL0) FROM TEST WHERE VAL1 > 1", publicSchema);
+                assertNoIndexFirstOrLastRecord("SELECT MAX(VAL0) FROM TEST WHERE VAL1 > 1", publicSchema);
+                assertNoIndexFirstOrLastRecord("SELECT VAL1, MIN(VAL0) FROM TEST GROUP BY VAL1", publicSchema);
+                assertNoIndexFirstOrLastRecord("SELECT VAL1, MAX(VAL0) FROM TEST GROUP BY VAL1", publicSchema);
+
+                assertNoIndexFirstOrLastRecord("SELECT MIN(VAL0 + 1) FROM TEST", publicSchema);
+                assertNoIndexFirstOrLastRecord("SELECT MAX(VAL0 + 1) FROM TEST", publicSchema);
+
+                publicSchema.removeTable("TEST");
+            }
+        }
+    }
+
+    /** */
+    private void assertIndexFirstOrLastRecord(String sql, boolean first, IgniteSchema schema) throws Exception {
+        assertPlan(sql, schema, nodeOrAnyChild(isInstanceOf(IgniteAggregate.class)
+            .and(nodeOrAnyChild(isInstanceOf(IgniteIndexBound.class)
+                .and(s -> first && s.first() || !first && !s.first())))));
+    }
+
+    /** */
+    private void assertNoIndexFirstOrLastRecord(String sql, IgniteSchema publicSchema) throws Exception {
+        assertPlan(sql, publicSchema, hasChildThat(isInstanceOf(IgniteIndexBound.class)).negate());
+    }
+
     /**
      * Tests COUNT(...) plan with and without IndexCount optimization.
      */
@@ -55,13 +125,7 @@ public class HashAggregatePlannerTest extends AbstractAggregatePlannerTest {
     public void indexCount() throws Exception {
         IgniteSchema publicSchema = new IgniteSchema("PUBLIC");
 
-        List<IgniteDistribution> lst = ImmutableList.of(
-            IgniteDistributions.single(),
-            IgniteDistributions.random(),
-            IgniteDistributions.broadcast(),
-            IgniteDistributions.hash(ImmutableList.of(0, 1, 2, 3)));
-
-        for (IgniteDistribution distr : lst) {
+        for (IgniteDistribution distr : distributions()) {
             TestTable tbl = createTable(distr);
             publicSchema.addTable("TEST", tbl);
 
@@ -106,6 +170,15 @@ public class HashAggregatePlannerTest extends AbstractAggregatePlannerTest {
 
             publicSchema.removeTable("TEST");
         }
+    }
+
+    /** */
+    private static List<IgniteDistribution> distributions() {
+        return ImmutableList.of(
+            IgniteDistributions.single(),
+            IgniteDistributions.random(),
+            IgniteDistributions.broadcast(),
+            IgniteDistributions.hash(ImmutableList.of(0, 1, 2, 3)));
     }
 
     /** */
