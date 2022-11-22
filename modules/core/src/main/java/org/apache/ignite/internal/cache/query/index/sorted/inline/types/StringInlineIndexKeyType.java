@@ -67,7 +67,7 @@ public class StringInlineIndexKeyType extends NullableInlineIndexKeyType<StringI
     }
 
     /** {@inheritDoc} */
-    @Override protected @Nullable StringIndexKey get0(long pageAddr, int off) {
+    @Override protected StringIndexKey get0(long pageAddr, int off) {
         String s = new String(readBytes(pageAddr, off), CHARSET);
 
         return new StringIndexKey(s);

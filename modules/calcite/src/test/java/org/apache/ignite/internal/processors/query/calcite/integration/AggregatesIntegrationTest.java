@@ -110,6 +110,26 @@ public class AggregatesIntegrationTest extends AbstractBasicIntegrationTest {
 
     /** */
     @Test
+    public void testCountIndexedField() {
+        createAndPopulateIndexedTable(1, CacheMode.PARTITIONED);
+        assertQuery("select count(distinct descVal) from person").returns(3L).check();
+
+        assertQuery("select count(salary) from person").returns(4L).check();
+        assertQuery("select count(descVal) from person").returns(4L).check();
+        assertQuery("select count(salary + 1) from person").returns(4L).check();
+        assertQuery("select count(distinct descVal) from person").returns(3L).check();
+        assertQuery("select count(salary) from person where salary >= 5").returns(2L).check();
+        assertQuery("select count(salary) filter (where salary >= 5) from person").returns(2L).check();
+        assertQuery("select count(salary), descVal from person group by descVal")
+            .returns(1L, 1d)
+            .returns(1L, 9d)
+            .returns(1L, 15d)
+            .returns(1L, null)
+            .check();
+    }
+
+    /** */
+    @Test
     public void testCountOfNonNumericField() {
         createAndPopulateTable();
 
@@ -308,7 +328,7 @@ public class AggregatesIntegrationTest extends AbstractBasicIntegrationTest {
 
         int idx = 0;
 
-        person.put(idx++, new IndexedEmployer("Igor", 5d, 7d));
+        person.put(idx++, new IndexedEmployer("Igor", 5d, 9d));
         person.put(idx++, new IndexedEmployer(null, 3d, null));
         person.put(idx++, new IndexedEmployer("Ilya", 1d, 1d));
         person.put(idx++, new IndexedEmployer("Roma", null, 9d));
@@ -335,7 +355,7 @@ public class AggregatesIntegrationTest extends AbstractBasicIntegrationTest {
         public IndexedEmployer(String name, Double salary, Double descVal) {
             this.name = name;
             this.salary = salary;
-            this.descVal = salary;
+            this.descVal = descVal;
         }
     }
 }

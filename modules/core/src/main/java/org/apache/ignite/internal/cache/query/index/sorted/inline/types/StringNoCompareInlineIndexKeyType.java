@@ -40,7 +40,7 @@ public class StringNoCompareInlineIndexKeyType extends NullableInlineIndexKeyTyp
     }
 
     /** {@inheritDoc} */
-    @Override protected @Nullable StringIndexKey get0(long pageAddr, int off) {
+    @Override protected StringIndexKey get0(long pageAddr, int off) {
         return delegate.get0(pageAddr, off);
     }
 

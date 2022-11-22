@@ -329,10 +329,10 @@ public class IndexScan<Row> extends AbstractIndexScan<Row, IndexRow> {
                 int idx
             ) throws IgniteCheckedException {
                 if (keyType != null && io instanceof InlineIO) {
-                    IndexKey key = keyType.get(pageAddr, io.offset(idx), ((InlineIO)io).inlineSize());
+                    Boolean keyIsNull = keyType.isNull(pageAddr, io.offset(idx), ((InlineIO)io).inlineSize());
 
-                    if (key != null)
-                        return key != NullIndexKey.INSTANCE;
+                    if (keyIsNull != null)
+                        return !keyIsNull;
                 }
 
                 return io.getLookupRow(tree, pageAddr, idx).key(0).type() != IndexKeyType.NULL;

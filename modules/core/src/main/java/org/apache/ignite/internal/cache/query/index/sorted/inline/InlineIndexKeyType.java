@@ -80,6 +80,17 @@ public interface InlineIndexKeyType {
     @Nullable public IndexKey get(long pageAddr, int off, int maxSize);
 
     /**
+     * Check if inlined index key is null.
+     *
+     * @param pageAddr Page address.
+     * @param off Offset.
+     * @param maxSize Max size.
+     * @return {@code Boolean.TRUE} if index key is null, {@code Boolean.FALSE} if index key is not null,
+     *      {@code null} if can't say for sure.
+     */
+    @Nullable public Boolean isNull(long pageAddr, int off, int maxSize);
+
+    /**
      * Compares inlined and given value.
      *
      * @param pageAddr Page address.

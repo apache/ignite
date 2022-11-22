@@ -114,12 +114,20 @@ public abstract class NullableInlineIndexKeyType<T extends IndexKey> implements 
 
         ensureKeyType(typeCode);
 
-        IndexKey o = get0(pageAddr, off);
+        return get0(pageAddr, off);
+    }
 
-        if (o == null)
-            return NullIndexKey.INSTANCE;
+    /** {@inheritDoc} */
+    @Override public Boolean isNull(long pageAddr, int off, int maxSize) {
+        if (maxSize < 1)
+            return null;
 
-        return o;
+        int typeCode = PageUtils.getByte(pageAddr, off);
+
+        if (typeCode == IndexKeyType.UNKNOWN.code())
+            return null;
+
+        return typeCode == IndexKeyType.NULL.code();
     }
 
     /** {@inheritDoc} */
@@ -167,9 +175,9 @@ public abstract class NullableInlineIndexKeyType<T extends IndexKey> implements 
      * @param pageAddr Page address.
      * @param off Offset.
      *
-     * @return Inline value or {@code null} if value can't be restored.
+     * @return Inline value.
      */
-    protected abstract @Nullable T get0(long pageAddr, int off);
+    protected abstract T get0(long pageAddr, int off);
 
     /** Read variable length bytearray */
     public static byte[] readBytes(long pageAddr, int off) {
