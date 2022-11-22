@@ -24,7 +24,6 @@ import org.apache.ignite.internal.cache.query.index.sorted.keys.IndexKey;
 import org.apache.ignite.internal.cache.query.index.sorted.keys.StringIndexKey;
 import org.apache.ignite.internal.pagemem.PageUtils;
 import org.apache.ignite.internal.util.GridUnsafe;
-import org.jetbrains.annotations.Nullable;
 
 /**
  * Inline index key implementation for inlining {@link String} values.

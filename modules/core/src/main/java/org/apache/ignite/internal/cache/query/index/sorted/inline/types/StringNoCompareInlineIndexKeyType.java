@@ -20,7 +20,6 @@ package org.apache.ignite.internal.cache.query.index.sorted.inline.types;
 import org.apache.ignite.internal.cache.query.index.sorted.IndexKeyType;
 import org.apache.ignite.internal.cache.query.index.sorted.keys.IndexKey;
 import org.apache.ignite.internal.cache.query.index.sorted.keys.StringIndexKey;
-import org.jetbrains.annotations.Nullable;
 
 /**
  * Skip optimized String comparison implemented in {@link StringInlineIndexKeyType}.

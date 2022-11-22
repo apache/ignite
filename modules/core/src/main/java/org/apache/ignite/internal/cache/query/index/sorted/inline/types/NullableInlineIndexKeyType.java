@@ -22,7 +22,6 @@ import org.apache.ignite.internal.cache.query.index.sorted.inline.InlineIndexKey
 import org.apache.ignite.internal.cache.query.index.sorted.keys.IndexKey;
 import org.apache.ignite.internal.cache.query.index.sorted.keys.NullIndexKey;
 import org.apache.ignite.internal.pagemem.PageUtils;
-import org.jetbrains.annotations.Nullable;
 
 /**
  * Abstract inline key. Store base logic for work with inlined keys. Handle NULL values.
