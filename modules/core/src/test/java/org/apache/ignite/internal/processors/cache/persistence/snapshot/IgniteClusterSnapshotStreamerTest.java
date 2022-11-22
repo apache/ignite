@@ -209,10 +209,15 @@ public class IgniteClusterSnapshotStreamerTest extends AbstractSnapshotSelfTest 
                 Map<String, SnapshotMetadata> metaByNodes = checkRes.metas().values().stream().flatMap(List::stream)
                     .distinct().collect(Collectors.toMap(SnapshotMetadata::consistentId, Function.identity()));
 
-                for (SnapshotMetadata m : metaByNodes.values()) {
-                    assertTrue(!F.isEmpty(m.warnings()) && m.warnings().size() == 1 &&
-                        m.warnings().get(0).contains(expectedWrn));
-                }
+                metaByNodes.forEach((n, m) -> {
+                    // We take snapshot from grid(1)
+                    if (n.equals(grid(1).cluster().localNode().id().toString())) {
+                        assertTrue(!F.isEmpty(m.warnings()) && m.warnings().size() == 1 &&
+                            m.warnings().get(0).contains(expectedWrn));
+                    }
+                    else
+                        assertTrue(F.isEmpty(m.warnings()));
+                });
             }
         }
         finally {
