@@ -39,15 +39,11 @@ public class GlobalMemoryTracker implements MemoryTracker {
 
     /** {@inheritDoc} */
     @Override public void onMemoryAllocated(long size) {
-        long wasAllocated;
+        if (allocated.addAndGet(size) > quota) {
+            allocated.addAndGet(-size);
 
-        do {
-            wasAllocated = allocated.get();
-
-            if (wasAllocated + size > quota)
-                throw new IgniteException("Global memory quota for SQL queries exceeded [quota=" + quota + ']');
+            throw new IgniteException("Global memory quota for SQL queries exceeded [quota=" + quota + ']');
         }
-        while (!allocated.compareAndSet(wasAllocated, wasAllocated + size));
     }
 
     /** {@inheritDoc} */
