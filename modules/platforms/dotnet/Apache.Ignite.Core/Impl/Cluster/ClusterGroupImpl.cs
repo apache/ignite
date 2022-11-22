@@ -704,8 +704,6 @@ namespace Apache.Ignite.Core.Impl.Cluster
             return DoOutInOp(OpIsActive) == True;
         }
 
-#pragma warning restore 618
-
         /// <summary>
         /// Clears cached node data.
         /// </summary>
