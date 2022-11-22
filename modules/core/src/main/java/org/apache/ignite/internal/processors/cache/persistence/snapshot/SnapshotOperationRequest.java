@@ -60,8 +60,8 @@ public class SnapshotOperationRequest implements Serializable {
     private volatile Throwable err;
 
     /**
-     * Shared warnings of snapshot creation. Warnings do not interrupt snapshot process but raise exception at the end
-     * to make the operation status 'not OK' if no other error occured.
+     * Snapshot operation warnings. Warnings do not interrupt snapshot process but raise exception at the end to make
+     * the operation status 'not OK' if no other error occured.
      */
     private volatile List<String> warnings;
 
@@ -180,14 +180,14 @@ public class SnapshotOperationRequest implements Serializable {
     }
 
     /**
-     * @return Shared warnings of snapshot operation.
+     * @return Warnings of snapshot operation.
      */
     public List<String> warnings() {
         return warnings;
     }
 
     /**
-     * @param warnings Shared warnings of snapshot operation.
+     * @param warnings Warnings of snapshot operation.
      */
     public void warnings(List<String> warnings) {
         assert this.warnings == null;
