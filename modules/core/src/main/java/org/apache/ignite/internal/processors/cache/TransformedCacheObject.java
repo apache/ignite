@@ -24,6 +24,7 @@ import org.apache.ignite.binary.BinaryObject;
 import org.apache.ignite.binary.BinaryObjectBuilder;
 import org.apache.ignite.binary.BinaryObjectException;
 import org.apache.ignite.binary.BinaryType;
+import org.apache.ignite.configuration.CacheObjectsTransformer;
 import org.apache.ignite.events.CacheObjectTransformedEvent;
 import org.apache.ignite.internal.GridDirectTransient;
 import org.apache.ignite.internal.GridKernalContext;
@@ -235,7 +236,10 @@ public class TransformedCacheObject extends CacheObjectAdapter implements Binary
      */
     public byte[] transform(byte[] bytes, CacheObjectValueContext ctx) throws IgniteCheckedException {
         try {
-            byte[] res = ctx.cacheObjectsTransformationConfiguration().getActiveTransformer().transform(bytes);
+            CacheObjectsTransformer trans =
+                ctx.cacheConfiguration().getCacheObjectsTransformationConfiguration().getActiveTransformer();
+
+            byte[] res = trans.transform(bytes);
 
             if (ctx.kernalContext().event().isRecordable(EVT_CACHE_OBJECT_TRANSFORMED)) {
                 ctx.kernalContext().event().record(
@@ -272,7 +276,10 @@ public class TransformedCacheObject extends CacheObjectAdapter implements Binary
      *
      */
     public byte[] restore(CacheObjectValueContext ctx) throws IgniteCheckedException {
-        byte[] res = ctx.cacheObjectsTransformationConfiguration().getActiveTransformer().restore(valBytes);
+        CacheObjectsTransformer trans =
+            ctx.cacheConfiguration().getCacheObjectsTransformationConfiguration().getActiveTransformer();
+
+        byte[] res = trans.restore(valBytes);
 
         if (ctx.kernalContext().event().isRecordable(EVT_CACHE_OBJECT_TRANSFORMED)) {
             ctx.kernalContext().event().record(

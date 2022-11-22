@@ -1225,7 +1225,7 @@ public class CacheObjectBinaryProcessorImpl extends GridProcessorAdapter impleme
         return new CacheObjectContext(ctx,
             ccfg.getName(),
             dfltAffMapper,
-            ccfg.getCacheObjectsTransformationConfiguration(),
+            ccfg,
             QueryUtils.isCustomAffinityMapper(ccfg.getAffinityMapper()),
             ccfg.isCopyOnRead(),
             storeVal,
