@@ -234,8 +234,8 @@ public class ObjectSizeCalculator<Row> {
             return 0L;
 
         if (cls.isArray()) {
-            int base = GridUnsafe.arrayBaseOffset(cls);
-            int scale = GridUnsafe.arrayIndexScale(cls);
+            long base = GridUnsafe.arrayBaseOffset(cls);
+            long scale = GridUnsafe.arrayIndexScale(cls);
             long size = align(base + (scale * Array.getLength(obj)));
 
             if (!cls.getComponentType().isPrimitive()) {
