@@ -93,7 +93,7 @@ public class IgniteClusterSnapshotStreamerTest extends AbstractSnapshotSelfTest 
     }
 
     /**
-     * Tests snapshot consistency wnen streamer starts before snapshot. Default receiver.
+     * Tests snapshot consistency when streamer starts before snapshot. Default receiver.
      */
     @Test
     public void testStreamerWhileSnapshotDefault() throws Exception {
@@ -101,7 +101,7 @@ public class IgniteClusterSnapshotStreamerTest extends AbstractSnapshotSelfTest 
     }
 
     /**
-     * Tests snapshot consistency wnen streamer starts before snapshot. Overwriting receiver.
+     * Tests snapshot consistency when streamer starts before snapshot. Overwriting receiver.
      */
     @Test
     public void testStreamerWhileSnapshotOverwriting() throws Exception {
@@ -209,15 +209,15 @@ public class IgniteClusterSnapshotStreamerTest extends AbstractSnapshotSelfTest 
                 Map<String, SnapshotMetadata> metaByNodes = checkRes.metas().values().stream().flatMap(List::stream)
                     .distinct().collect(Collectors.toMap(SnapshotMetadata::consistentId, Function.identity()));
 
-                metaByNodes.forEach((n, m) -> {
-                    // We take snapshot from grid(1)
-                    if (n.equals(grid(1).cluster().localNode().id().toString())) {
+                for(SnapshotMetadata m : metaByNodes.values()){
+                    // We take snapshot from grid(0)
+                    if (m.consistentId().equals(grid(0).cluster().localNode().consistentId().toString())) {
                         assertTrue(!F.isEmpty(m.warnings()) && m.warnings().size() == 1 &&
                             m.warnings().get(0).contains(expectedWrn));
                     }
                     else
                         assertTrue(F.isEmpty(m.warnings()));
-                });
+                }
             }
         }
         finally {
