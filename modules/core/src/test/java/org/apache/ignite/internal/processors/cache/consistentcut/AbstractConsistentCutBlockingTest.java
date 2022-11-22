@@ -550,8 +550,8 @@ public abstract class AbstractConsistentCutBlockingTest extends AbstractConsiste
         }
 
         /** {@inheritDoc} */
-        @Override protected ConsistentCutFuture newConsistentCut(UUID id) {
-            return new BlockingConsistentCutFuture(context(), id);
+        @Override protected BaselineConsistentCutFuture newBaselineConsistentCut(UUID id) {
+            return new BlockingConsistentCutFutureFuture(context(), id);
         }
 
         /** */
@@ -585,9 +585,9 @@ public abstract class AbstractConsistentCutBlockingTest extends AbstractConsiste
         }
 
         /** */
-        private final class BlockingConsistentCutFuture extends ConsistentCutFuture {
+        private final class BlockingConsistentCutFutureFuture extends BaselineConsistentCutFuture {
             /** */
-            BlockingConsistentCutFuture(GridCacheSharedContext<?, ?> cctx, UUID id) {
+            BlockingConsistentCutFutureFuture(GridCacheSharedContext<?, ?> cctx, UUID id) {
                 super(cctx, id);
             }
 

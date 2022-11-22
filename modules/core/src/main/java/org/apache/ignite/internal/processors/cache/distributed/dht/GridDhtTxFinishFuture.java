@@ -33,7 +33,6 @@ import org.apache.ignite.internal.NodeStoppingException;
 import org.apache.ignite.internal.cluster.ClusterTopologyCheckedException;
 import org.apache.ignite.internal.processors.cache.GridCacheCompoundIdentityFuture;
 import org.apache.ignite.internal.processors.cache.GridCacheFuture;
-import org.apache.ignite.internal.processors.cache.GridCacheMessage;
 import org.apache.ignite.internal.processors.cache.GridCacheSharedContext;
 import org.apache.ignite.internal.processors.cache.consistentcut.ConsistentCutManager;
 import org.apache.ignite.internal.processors.cache.distributed.GridDistributedTxMapping;
@@ -524,9 +523,7 @@ public final class GridDhtTxFinishFuture<K, V> extends GridCacheCompoundIdentity
                         + n.id()));
                 }
                 else {
-                    GridCacheMessage cacheMsg = ConsistentCutManager.wrapMessage(cctx, req, tx.cutId());
-
-                    cctx.io().send(n, cacheMsg, tx.ioPolicy());
+                    cctx.io().send(n, ConsistentCutManager.wrapMessage(cctx, req, tx.cutId()), tx.ioPolicy());
 
                     if (msgLog.isDebugEnabled()) {
                         msgLog.debug("DHT finish fut, sent request dht [txId=" + tx.nearXidVersion() +
@@ -597,9 +594,7 @@ public final class GridDhtTxFinishFuture<K, V> extends GridCacheCompoundIdentity
                 req.writeVersion(tx.writeVersion());
 
                 try {
-                    GridCacheMessage cacheMsg = ConsistentCutManager.wrapMessage(cctx, req, tx.cutId());
-
-                    cctx.io().send(nearMapping.primary(), cacheMsg, tx.ioPolicy());
+                    cctx.io().send(nearMapping.primary(), ConsistentCutManager.wrapMessage(cctx, req, tx.cutId()), tx.ioPolicy());
 
                     if (msgLog.isDebugEnabled()) {
                         msgLog.debug("DHT finish fut, sent request near [txId=" + tx.nearXidVersion() +

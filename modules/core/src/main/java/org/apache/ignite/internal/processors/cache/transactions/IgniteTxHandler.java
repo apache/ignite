@@ -347,7 +347,8 @@ public class IgniteTxHandler {
 
             GridCacheVersion dhtVer = ctx.tm().mappedVersion(req.version());
 
-            return ctx.tm().tx(dhtVer);
+            if (dhtVer != null)
+                return ctx.tm().tx(dhtVer);
         }
         else if (msg instanceof GridDhtTxFinishRequest) {
             GridDhtTxFinishRequest req = (GridDhtTxFinishRequest)msg;
@@ -360,7 +361,8 @@ public class IgniteTxHandler {
             GridDhtTxPrepareFuture fut =
                 (GridDhtTxPrepareFuture)ctx.mvcc().versionedFuture(res.version(), res.futureId());
 
-            return fut.tx();
+            if (fut != null)
+                return fut.tx();
         }
         else if (msg instanceof GridNearTxPrepareResponse) {
             GridNearTxPrepareResponse res = (GridNearTxPrepareResponse)msg;
@@ -368,7 +370,8 @@ public class IgniteTxHandler {
             GridNearTxPrepareFutureAdapter fut =
                 (GridNearTxPrepareFutureAdapter)ctx.mvcc().versionedFuture(res.version(), res.futureId());
 
-            return fut.tx();
+            if (fut != null)
+                return fut.tx();
         }
 
         return null;
@@ -574,9 +577,8 @@ public class IgniteTxHandler {
                             req.deployInfo() != null);
 
                         try {
-                            GridCacheMessage cacheMsg = ConsistentCutManager.wrapMessage(ctx, res, tx == null ? null : tx.cutId());
-
-                            ctx.io().send(nearNode, cacheMsg, req.policy());
+                            ctx.io().send(nearNode, ConsistentCutManager.wrapMessage(
+                                ctx, res, tx == null ? null : tx.cutId()), req.policy());
 
                             if (txPrepareMsgLog.isDebugEnabled()) {
                                 txPrepareMsgLog.debug("Sent remap response for near prepare [txId=" + req.version() +
@@ -1655,10 +1657,8 @@ public class IgniteTxHandler {
         try {
             IgniteTxAdapter tx = dhtTx != null ? dhtTx : nearTx;
 
-            GridCacheMessage cacheMsg = ConsistentCutManager.wrapMessage(ctx, res, tx == null ? null : tx.cutId());
-
             // Reply back to sender.
-            ctx.io().send(nodeId, cacheMsg, req.policy());
+            ctx.io().send(nodeId, ConsistentCutManager.wrapMessage(ctx, res, tx == null ? null : tx.cutId()), req.policy());
 
             if (txPrepareMsgLog.isDebugEnabled()) {
                 txPrepareMsgLog.debug("Sent dht prepare response [txId=" + req.nearXidVersion() +

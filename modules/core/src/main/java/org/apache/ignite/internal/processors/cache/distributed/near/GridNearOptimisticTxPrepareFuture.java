@@ -39,7 +39,6 @@ import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
 import org.apache.ignite.internal.processors.cache.GridCacheContext;
 import org.apache.ignite.internal.processors.cache.GridCacheEntryEx;
 import org.apache.ignite.internal.processors.cache.GridCacheEntryRemovedException;
-import org.apache.ignite.internal.processors.cache.GridCacheMessage;
 import org.apache.ignite.internal.processors.cache.GridCacheMvccCandidate;
 import org.apache.ignite.internal.processors.cache.GridCacheSharedContext;
 import org.apache.ignite.internal.processors.cache.consistentcut.ConsistentCutManager;
@@ -579,9 +578,7 @@ public class GridNearOptimisticTxPrepareFuture extends GridNearOptimisticTxPrepa
                 }
                 else {
                     try {
-                        GridCacheMessage cacheMsg = ConsistentCutManager.wrapMessage(cctx, req, null);
-
-                        cctx.io().send(n, cacheMsg, tx.ioPolicy());
+                        cctx.io().send(n, ConsistentCutManager.wrapMessage(cctx, req, null), tx.ioPolicy());
 
                         if (msgLog.isDebugEnabled()) {
                             msgLog.debug("Near optimistic prepare fut, sent request [txId=" + tx.nearXidVersion() +

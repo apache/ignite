@@ -34,7 +34,6 @@ import org.apache.ignite.internal.cluster.ClusterTopologyCheckedException;
 import org.apache.ignite.internal.processors.cache.CacheInvalidStateException;
 import org.apache.ignite.internal.processors.cache.GridCacheCompoundIdentityFuture;
 import org.apache.ignite.internal.processors.cache.GridCacheFuture;
-import org.apache.ignite.internal.processors.cache.GridCacheMessage;
 import org.apache.ignite.internal.processors.cache.GridCacheReturn;
 import org.apache.ignite.internal.processors.cache.GridCacheReturnCompletableWrapper;
 import org.apache.ignite.internal.processors.cache.GridCacheSharedContext;
@@ -658,9 +657,7 @@ public final class GridNearTxFinishFuture<K, V> extends GridCacheCompoundIdentit
                         GridDhtTxFinishRequest finishReq = checkCommittedRequest(mini.futureId(), false);
 
                         try {
-                            GridCacheMessage cacheMsg = ConsistentCutManager.wrapMessage(cctx, finishReq, tx.cutId());
-
-                            cctx.io().send(backup, cacheMsg, tx.ioPolicy());
+                            cctx.io().send(backup, ConsistentCutManager.wrapMessage(cctx, finishReq, tx.cutId()), tx.ioPolicy());
 
                             if (msgLog.isDebugEnabled()) {
                                 msgLog.debug("Near finish fut, sent check committed request [" +
@@ -817,9 +814,7 @@ public final class GridNearTxFinishFuture<K, V> extends GridCacheCompoundIdentit
             add(fut); // Append new future.
 
             try {
-                GridCacheMessage cacheMsg = ConsistentCutManager.wrapMessage(cctx, req, tx.cutId());
-
-                cctx.io().send(n, cacheMsg, tx.ioPolicy());
+                cctx.io().send(n, ConsistentCutManager.wrapMessage(cctx, req, tx.cutId()), tx.ioPolicy());
 
                 if (msgLog.isDebugEnabled()) {
                     msgLog.debug("Near finish fut, sent request [" +

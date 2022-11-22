@@ -17,17 +17,16 @@
 
 package org.apache.ignite.internal.pagemem.wal.record;
 
-import java.util.List;
 import java.util.Set;
 import java.util.UUID;
-import java.util.stream.Collectors;
-import org.apache.ignite.internal.processors.cache.consistentcut.ConsistentCutFuture;
+import org.apache.ignite.internal.processors.cache.consistentcut.BaselineConsistentCutFuture;
 import org.apache.ignite.internal.processors.cache.persistence.tree.io.CacheVersionIO;
 import org.apache.ignite.internal.processors.cache.version.GridCacheVersion;
-import org.apache.ignite.lang.IgniteUuid;
+import org.apache.ignite.internal.util.tostring.GridToStringInclude;
+import org.apache.ignite.internal.util.typedef.internal.S;
 
 /**
- * This record is written to WAL after it's finished to check transactions in {@link ConsistentCutFuture} and store them
+ * This record is written to WAL after it's finished to check transactions in {@link BaselineConsistentCutFuture} and store them
  * in a particular collection - {@link #before()} or {@link #after()}.
  * <p>
  * It guarantees that the BEFORE side consists of:
@@ -42,17 +41,20 @@ import org.apache.ignite.lang.IgniteUuid;
  */
 public class ConsistentCutFinishRecord extends WALRecord {
     /** ID of Consistent Cut. */
+    @GridToStringInclude
     private final UUID cutId;
 
     /**
      * Set of transactions committed between {@link ConsistentCutStartRecord} and {@link ConsistentCutFinishRecord}
      * to include to the BEFORE side of Consistent Cut.
      */
+    @GridToStringInclude
     private final Set<GridCacheVersion> before;
 
     /**
      * Set of transactions committed before {@link ConsistentCutStartRecord} to include to the AFTER side of Consistent Cut.
      */
+    @GridToStringInclude
     private final Set<GridCacheVersion> after;
 
     /** */
@@ -101,15 +103,6 @@ public class ConsistentCutFinishRecord extends WALRecord {
 
     /** {@inheritDoc} */
     @Override public String toString() {
-        // Dump IgniteUuid as it more convenient for debug purposes than GridCacheVersion.
-        List<IgniteUuid> txBefore = before.stream()
-            .map(GridCacheVersion::asIgniteUuid)
-            .collect(Collectors.toList());
-
-        List<IgniteUuid> txAfter = after.stream()
-            .map(GridCacheVersion::asIgniteUuid)
-            .collect(Collectors.toList());
-
-        return "ConsistentCutFinishRecord [id=" + cutId + ", before=" + txBefore + ", after=" + txAfter + ']';
+        return S.toString(ConsistentCutFinishRecord.class, this);
     }
 }

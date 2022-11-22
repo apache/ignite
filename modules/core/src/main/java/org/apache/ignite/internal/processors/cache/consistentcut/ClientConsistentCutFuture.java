@@ -18,14 +18,23 @@
 package org.apache.ignite.internal.processors.cache.consistentcut;
 
 import java.util.UUID;
-import org.apache.ignite.internal.IgniteInternalFuture;
-import org.apache.ignite.internal.pagemem.wal.record.ConsistentCutFinishRecord;
 import org.apache.ignite.internal.processors.cache.persistence.wal.WALPointer;
+import org.apache.ignite.internal.util.future.GridFinishedFuture;
 
 /**
- * Future that completes after Consistent Cut finished and return pointer to {@link ConsistentCutFinishRecord}.
+ * Describes Consistent Cut running on client nodes.
  */
-public interface ConsistentCutFuture extends IgniteInternalFuture<WALPointer> {
-    /** Consistent Cut ID. */
-    public UUID id();
+public class ClientConsistentCutFuture extends GridFinishedFuture<WALPointer> implements ConsistentCutFuture {
+    /** */
+    private final UUID id;
+
+    /** */
+    public ClientConsistentCutFuture(UUID id) {
+        this.id = id;
+    }
+
+    /** {@inheritDoc} */
+    @Override public UUID id() {
+        return id;
+    }
 }

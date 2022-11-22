@@ -51,7 +51,7 @@ import static org.apache.ignite.internal.processors.cache.GridCacheUtils.baselin
  * 2. It starts wrapping all transaction messages to {@link ConsistentCutAwareMessage}.
  * 3. Every transaction holds {@link IgniteTxAdapter#cutId()} AFTER which it committed. Value of this field is defined
  *    at node that commits first in distributed transaction.
- * 4. On baseline nodes:
+ * 4. On baseline nodes in {@link BaselineConsistentCutFuture}:
  *    - it writes {@link ConsistentCutStartRecord} to limit amount of transactions on the AFTER side of Consistent Cut.
  *      After writing this record it's safe to miss transactions on the AFTER side.
  *    - it collects active transactions to check which side of Consistent Cut they belong to. This collection contains all
@@ -101,7 +101,8 @@ public class ConsistentCutManager extends GridCacheSharedManagerAdapter implemen
             if (firstCommit)
                 tx.cutId(cut.id());
 
-            cut.onRemoveActiveTransaction(tx.finishFuture());
+            if (!clientNode())
+                ((BaselineConsistentCutFuture)cut).onRemoveActiveTransaction(tx.finishFuture());
         }
 
         if (log.isDebugEnabled()) {
@@ -139,42 +140,39 @@ public class ConsistentCutManager extends GridCacheSharedManagerAdapter implemen
      * @param id ID of {@link ConsistentCutFuture}.
      */
     public void handleConsistentCutId(UUID id) {
-        ConsistentCutFuture cut = cutFutRef.get();
+        ConsistentCutFuture cutFut = cutFutRef.get();
 
-        if (cut != null || Objects.equals(id, lastFinishedCutId))
+        if (cutFut != null || Objects.equals(id, lastFinishedCutId))
             return;
 
-        ConsistentCutFuture newCut = newConsistentCut(id);
+        ConsistentCutFuture newCutFut = clientNode() ? new ClientConsistentCutFuture(id) : newBaselineConsistentCut(id);
 
-        if (!cutFutRef.compareAndSet(cut, newCut))
+        if (!cutFutRef.compareAndSet(cutFut, newCutFut))
             return;
 
-        if (cctx.kernalContext().clientNode() ||
-            !baselineNode(cctx.localNode(), cctx.kernalContext().state().clusterState())
-        ) {
-            newCut.onDone();
-
+        if (newCutFut.isDone())
             return;
-        }
 
         cctx.kernalContext().pools().getSnapshotExecutorService().submit(() -> {
+            BaselineConsistentCutFuture cut = (BaselineConsistentCutFuture)newCutFut;
+
             try {
-                newCut.init();
+                cut.init();
 
                 if (log.isDebugEnabled())
-                    log.debug("Prepared Consistent Cut: " + newCut);
+                    log.debug("Prepared Consistent Cut: " + id);
             }
             catch (IgniteCheckedException e) {
-                U.error(log, "Failed to handle Consistent Cut: " + newCut, e);
+                U.error(log, "Failed to handle Consistent Cut: " + id, e);
 
-                newCut.onDone(e);
+                cut.onDone(e);
             }
         });
     }
 
-    /** Creates new Consistent Cut instance. */
-    protected ConsistentCutFuture newConsistentCut(UUID id) {
-        return new ConsistentCutFuture(cctx, id);
+    /** Creates new Consistent Cut future for baseline nodes. */
+    protected BaselineConsistentCutFuture newBaselineConsistentCut(UUID id) {
+        return new BaselineConsistentCutFuture(cctx, id);
     }
 
     /**
@@ -186,7 +184,7 @@ public class ConsistentCutManager extends GridCacheSharedManagerAdapter implemen
         ConsistentCutFuture cut = cutFutRef.get();
 
         if (cut != null && !cut.isDone())
-            cut.onDone(err);
+            ((BaselineConsistentCutFuture)cut).onDone(err);
 
         cleanLocalCut();
     }
@@ -213,5 +211,10 @@ public class ConsistentCutManager extends GridCacheSharedManagerAdapter implemen
         lastFinishedCutId = cut.id();
 
         cutFutRef.set(null);
+    }
+
+    /** */
+    private boolean clientNode() {
+        return cctx.kernalContext().clientNode() || !baselineNode(cctx.localNode(), cctx.kernalContext().state().clusterState());
     }
 }

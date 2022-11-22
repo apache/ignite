@@ -784,14 +784,9 @@ public final class GridDhtTxPrepareFuture extends GridCacheCompoundFuture<Ignite
                                 if (res.error() == null && fut.error() != null)
                                     res.error(fut.error());
 
-                                if (REPLIED_UPD.compareAndSet(GridDhtTxPrepareFuture.this, 0, 1)) {
-                                    GridCacheMessage msg = res;
-
-                                    if (res.onePhaseCommit() && fut.result() != null)
-                                        msg = ConsistentCutManager.wrapMessage(cctx, res, fut.result().cutId());
-
-                                    sendPrepareResponse(msg);
-                                }
+                                if (REPLIED_UPD.compareAndSet(GridDhtTxPrepareFuture.this, 0, 1))
+                                    sendPrepareResponse(ConsistentCutManager.wrapMessage(
+                                        cctx, res, fut.result() == null ? null : fut.result().cutId()));
                             }
                         };
 
@@ -843,9 +838,7 @@ public final class GridDhtTxPrepareFuture extends GridCacheCompoundFuture<Ignite
                     // Will call super.onDone().
                     onComplete(res);
 
-                    GridCacheMessage msg = ConsistentCutManager.wrapMessage(cctx, res, tx.cutId());
-
-                    sendPrepareResponse(msg);
+                    sendPrepareResponse(ConsistentCutManager.wrapMessage(cctx, res, tx.cutId()));
 
                     return true;
                 }
@@ -1524,9 +1517,7 @@ public final class GridDhtTxPrepareFuture extends GridCacheCompoundFuture<Ignite
             assert req.transactionNodes() != null;
 
             try {
-                GridCacheMessage cacheMsg = ConsistentCutManager.wrapMessage(cctx, req, null);
-
-                cctx.io().send(n, cacheMsg, tx.ioPolicy());
+                cctx.io().send(n, ConsistentCutManager.wrapMessage(cctx, req, null), tx.ioPolicy());
 
                 if (msgLog.isDebugEnabled()) {
                     msgLog.debug("DHT prepare fut, sent request dht [txId=" + tx.nearXidVersion() +
@@ -1606,9 +1597,7 @@ public final class GridDhtTxPrepareFuture extends GridCacheCompoundFuture<Ignite
                 assert req.transactionNodes() != null;
 
                 try {
-                    GridCacheMessage cacheMsg = ConsistentCutManager.wrapMessage(cctx, req, null);
-
-                    cctx.io().send(nearMapping.primary(), cacheMsg, tx.ioPolicy());
+                    cctx.io().send(nearMapping.primary(), ConsistentCutManager.wrapMessage(cctx, req, null), tx.ioPolicy());
 
                     if (msgLog.isDebugEnabled()) {
                         msgLog.debug("DHT prepare fut, sent request near [txId=" + tx.nearXidVersion() +
