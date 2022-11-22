@@ -43,15 +43,14 @@ public class CacheObjectTransformedEvent extends EventAdapter {
      * @param type        Type.
      * @param original    Original cache object bytes.
      * @param transformed Transformed cache object bytes.
-     * @param restore
+     * @param restore     Restore operation flag.
      */
     public CacheObjectTransformedEvent(
         ClusterNode node,
         String msg,
         int type,
         byte[] original,
-        byte[] transformed, boolean restore)
-    {
+        byte[] transformed, boolean restore) {
         super(node, msg, type);
         this.original = original.clone();
         this.transformed = transformed == null ? null : transformed.clone();
@@ -59,21 +58,21 @@ public class CacheObjectTransformedEvent extends EventAdapter {
     }
 
     /**
-     *
+     * @return Original bytes.
      */
     public byte[] getOriginal() {
         return original;
     }
 
     /**
-     *
+     * @return Transformed bytes.
      */
     public byte[] getTransformed() {
         return transformed;
     }
 
     /**
-     *
+     * @return True at restore operation.
      */
     public boolean isRestore() {
         return restore;

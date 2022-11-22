@@ -27,12 +27,14 @@ import org.apache.ignite.lang.IgniteExperimental;
 @IgniteExperimental
 public interface CacheObjectsTransformer extends Serializable {
     /**
-     * @param bytes Bytes.
+     * @param bytes Original bytes.
+     * @return Transformed bytes.
      */
     public byte[] transform(byte[] bytes) throws IgniteCheckedException;
 
     /**
-     * @param bytes Bytes.
+     * @param bytes Transformed bytes.
+     * @return Original bytes.
      */
     public byte[] restore(byte[] bytes);
 }

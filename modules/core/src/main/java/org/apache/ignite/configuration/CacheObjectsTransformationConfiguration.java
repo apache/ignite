@@ -29,14 +29,18 @@ public class CacheObjectsTransformationConfiguration implements Serializable {
     /** Serial version uid. */
     private static final long serialVersionUID = 0L;
 
-    /** Transformers. */
+    /** Transformers history. */
     private Map<Byte, CacheObjectsTransformer> transformers;
 
     /** Active transformer. */
     private CacheObjectsTransformer activeTransformer;
 
+    /** Active transformer's code. */
+    private byte activeTransformerCode;
+
     /**
-     * Gets transformers.
+     * Gets transformers history.
+     * @return Transformers with codes map.
      */
     public Map<Byte, CacheObjectsTransformer> getTransformers() {
         return transformers;
@@ -45,6 +49,7 @@ public class CacheObjectsTransformationConfiguration implements Serializable {
     /**
      * Sets transformers.
      * @param transformers Transformers.
+     * @return Cache objects transformation configuration.
      */
     public CacheObjectsTransformationConfiguration setTransformers(Map<Byte, CacheObjectsTransformer> transformers) {
         this.transformers = transformers;
@@ -54,6 +59,7 @@ public class CacheObjectsTransformationConfiguration implements Serializable {
 
     /**
      * Gets active transformer.
+     * @return Active transformer.
      */
     public CacheObjectsTransformer getActiveTransformer() {
         return activeTransformer;
@@ -62,10 +68,26 @@ public class CacheObjectsTransformationConfiguration implements Serializable {
     /**
      * Sets active transformer.
      * @param activeTransformer Active transformer.
+     * @return Cache objects transformation configuration.
      */
     public CacheObjectsTransformationConfiguration setActiveTransformer(CacheObjectsTransformer activeTransformer) {
         this.activeTransformer = activeTransformer;
 
         return this;
+    }
+
+    /**
+     * Gets active transformer code.
+     */
+    public byte getActiveTransformerCode() {
+        return activeTransformerCode;
+    }
+
+    /**
+     * Sets active transformer code.
+     * @param activeTransformerCode Active transformer code.
+     */
+    public void setActiveTransformerCode(byte activeTransformerCode) {
+        this.activeTransformerCode = activeTransformerCode;
     }
 }
