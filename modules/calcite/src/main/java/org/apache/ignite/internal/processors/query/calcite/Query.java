@@ -150,6 +150,8 @@ public class Query<RowT> implements RunningQuery {
             if (state == QueryState.INITED) {
                 state = QueryState.CLOSING;
 
+                assert memoryTracker == null;
+
                 try {
                     exch.closeQuery(initNodeId, id);
 

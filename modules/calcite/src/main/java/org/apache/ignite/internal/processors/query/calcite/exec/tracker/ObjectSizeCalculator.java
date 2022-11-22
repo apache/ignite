@@ -30,8 +30,10 @@ import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.time.LocalTime;
 import java.time.Period;
+import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.IdentityHashMap;
+import java.util.List;
 import java.util.Map;
 import java.util.UUID;
 import java.util.function.ToLongBiFunction;
@@ -65,17 +67,12 @@ public class ObjectSizeCalculator<Row> {
     /** Objects allignment. */
     private static final long OBJ_ALIGN = calcAlign();
 
-    /** Whether outer class fields can be put in gaps of the inner class. */
-    private static final boolean SUPERCLASS_PADDING_REUSE =
-        GridUnsafe.objectFieldOffset(U.findField(DummyOuter.class, "fieldByte")) <
-            GridUnsafe.objectFieldOffset(U.findField(DummyInner.class, "fieldLong"));
-
     /** HashMap entry size. */
     public static final long HASH_MAP_ENTRY_SIZE =
-        shallowSize(new HashMap<>(F.asMap(0, 0)).entrySet().iterator().next().getClass());
+        classInfo(new HashMap<>(F.asMap(0, 0)).entrySet().iterator().next().getClass()).shallowSize;
 
     /** Cache for shallow size of classes. */
-    private final Map<Class<?>, Long> clsShallowSize = new IdentityHashMap<>();
+    private final Map<Class<?>, ClassInfo> clsInfoCache = new IdentityHashMap<>();
 
     /** */
     private static long calcAlign() {
@@ -93,9 +90,9 @@ public class ObjectSizeCalculator<Row> {
         addSysClsSize(Float.class, null);
         addSysClsSize(Long.class, null);
         addSysClsSize(Double.class, null);
-        int charArrOffset = GridUnsafe.arrayBaseOffset(char[].class);
-        addSysClsSize(String.class, (c, s) -> align(charArrOffset + s.length() * 2));
-        int byteArrOffset = GridUnsafe.arrayBaseOffset(byte[].class);
+        long charArrOffset = GridUnsafe.arrayBaseOffset(char[].class);
+        addSysClsSize(String.class, (c, s) -> align(charArrOffset + s.length() * Character.BYTES));
+        long byteArrOffset = GridUnsafe.arrayBaseOffset(byte[].class);
         addSysClsSize(ByteString.class, (c, s) -> align(byteArrOffset + s.length()));
 
         // Date/time.
@@ -107,7 +104,7 @@ public class ObjectSizeCalculator<Row> {
 
         addSysClsSize(LocalDate.class, null);
         addSysClsSize(LocalTime.class, null);
-        long locDateTimeExtraSize = shallowSize(LocalDate.class) + shallowSize(LocalTime.class);
+        long locDateTimeExtraSize = classInfo(LocalDate.class).shallowSize + classInfo(LocalTime.class).shallowSize;
         addSysClsSize(LocalDateTime.class, (c, dt) -> locDateTimeExtraSize);
 
         addSysClsSize(Period.class, null);
@@ -125,7 +122,7 @@ public class ObjectSizeCalculator<Row> {
         addSysClsSize(GroupKey.class, (c, k) -> c.sizeOf0(k.fields(), true));
         addSysClsSize(UUID.class, null);
         addSysClsSize(BigDecimal.class, (c, bd) -> c.sizeOf0(bd.unscaledValue(), true));
-        int intArrOffset = GridUnsafe.arrayBaseOffset(int[].class);
+        long intArrOffset = GridUnsafe.arrayBaseOffset(int[].class);
         addSysClsSize(BigInteger.class, (c, bi) -> align( intArrOffset + ((bi.bitLength() + 31) >> 5) << 2));
         SYS_CLS_SIZE.put(Class.class, (c, v) -> 0);
     }
@@ -139,26 +136,29 @@ public class ObjectSizeCalculator<Row> {
     private final Map<Object, Object> processedObjs = new IdentityHashMap<>();
 
     /** */
-    private static long shallowSize(Class<?> cls) {
+    private static ClassInfo classInfo(Class<?> cls) {
         long size = 0;
+
+        List<Field> refFields = new ArrayList<>();
 
         for (; cls != null && cls != Object.class; cls = cls.getSuperclass()) {
             for (Field f : cls.getDeclaredFields()) {
-                if (!Modifier.isStatic(f.getModifiers()))
-                    size = Math.max(size, GridUnsafe.objectFieldOffset(f) + fieldHolderSize(f));
-            }
-
-            if (size > 0) {
-                // OpenJDK 15+ can put class fields in padding gaps of superclass instance, so it's require to
-                // pass through the whole class hierarchy to calculate right size.
-                if (SUPERCLASS_PADDING_REUSE)
+                if (Modifier.isStatic(f.getModifiers()))
                     continue;
 
-                return align(size);
+                size = Math.max(size, GridUnsafe.objectFieldOffset(f) + fieldHolderSize(f));
+
+                if (f.getDeclaringClass().isPrimitive())
+                    continue;
+
+                if (!f.isAccessible())
+                    f.setAccessible(true);
+
+                refFields.add(f);
             }
         }
 
-        return align(Math.max(size, OBJ_HEADER_SIZE));
+        return new ClassInfo(align(Math.max(size, OBJ_HEADER_SIZE)), refFields);
     }
 
     /** Field holder size. */
@@ -185,18 +185,16 @@ public class ObjectSizeCalculator<Row> {
     }
 
     /** */
-    private long cachedShallowSize(Class<?> cls) {
-        Long cachedShallowSize = clsShallowSize.get(cls);
+    private ClassInfo cachedClassInfo(Class<?> cls) {
+        ClassInfo clsInfo = clsInfoCache.get(cls);
 
-        if (cachedShallowSize == null) {
-            long size = shallowSize(cls);
+        if (clsInfo == null) {
+            clsInfo = classInfo(cls);
 
-            clsShallowSize.put(cls, size);
-
-            return size;
+            clsInfoCache.put(cls, clsInfo);
         }
-        else
-            return cachedShallowSize;
+
+        return clsInfo;
     }
 
     /**
@@ -252,7 +250,7 @@ public class ObjectSizeCalculator<Row> {
 
         // Short-circuit for accumulators containing rows.
         if (IterableAccumulator.class.isAssignableFrom(cls)) {
-            long size = cachedShallowSize(cls);
+            long size = cachedClassInfo(cls).shallowSize;
             IterableAccumulator<Row> it = (IterableAccumulator<Row>)obj;
 
             for (Row row : it)
@@ -268,22 +266,16 @@ public class ObjectSizeCalculator<Row> {
     private long reflectiveObjectSize(Object obj) {
         Class<?> cls = obj.getClass();
 
-        long size = cachedShallowSize(cls);
+        ClassInfo clsInfo = cachedClassInfo(cls);
 
-        for (Class<?> c = cls; c != null && c != Object.class; c = c.getSuperclass()) {
-            for (Field f : c.getDeclaredFields()) {
-                if (Modifier.isStatic(f.getModifiers()) || f.getDeclaringClass().isPrimitive())
-                    continue;
+        long size = 0;
 
-                if (!f.isAccessible())
-                    f.setAccessible(true);
-
-                try {
-                    size += sizeOf0(f.get(obj), false);
-                }
-                catch (IllegalAccessException ignore) {
-                    // Cannot calculate, ignore.
-                }
+        for (Field f : clsInfo.refFields()) {
+            try {
+                size += sizeOf0(f.get(obj), false);
+            }
+            catch (IllegalAccessException ignore) {
+                // Cannot calculate, ignore.
             }
         }
 
@@ -291,21 +283,10 @@ public class ObjectSizeCalculator<Row> {
     }
 
     /** Dummy class to calculate Object header size. */
+    @SuppressWarnings("unused")
     private static class Dummy {
         /** */
         private byte field;
-    }
-
-    /** Dummy inner class to check if outer class fields can be put in gaps of the inner class. */
-    private static class DummyInner extends Dummy {
-        /** */
-        private long fieldLong;
-    }
-
-    /** Dummy outer class to check if outer class fields can be put in gaps of the inner class. */
-    private static class DummyOuter extends DummyInner {
-        /** */
-        private byte fieldByte;
     }
 
     /** */
@@ -324,13 +305,34 @@ public class ObjectSizeCalculator<Row> {
 
         /** */
         private SizeCalculatorImpl(Class<T> cls, @Nullable ToLongBiFunction<ObjectSizeCalculator<?>, T> extraSizeCalc) {
-            shallowSize = shallowSize(cls);
+            shallowSize = classInfo(cls).shallowSize;
             this.extraSizeCalc = extraSizeCalc;
         }
 
         /** {@inheritDoc} */
         @Override public long calcSize(ObjectSizeCalculator<?> calculator, T val) {
             return extraSizeCalc == null ? shallowSize : shallowSize + extraSizeCalc.applyAsLong(calculator, val);
+        }
+    }
+
+    /** */
+    @SuppressWarnings("AssignmentOrReturnOfFieldWithMutableType")
+    private static class ClassInfo {
+        /** */
+        private final long shallowSize;
+
+        /** */
+        private final List<Field> refFields;
+
+        /** */
+        private ClassInfo(long shallowSize, List<Field> refFields) {
+            this.shallowSize = shallowSize;
+            this.refFields = refFields;
+        }
+
+        /** */
+        public List<Field> refFields() {
+            return refFields;
         }
     }
 }

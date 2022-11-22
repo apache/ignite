@@ -57,7 +57,7 @@ public abstract class MemoryTrackingNode<Row> extends AbstractNode<Row> {
 
     /** {@inheritDoc} */
     @Override protected void closeInternal() {
-        nodeMemoryTracker.reset();;
+        nodeMemoryTracker.reset();
 
         super.closeInternal();
     }
