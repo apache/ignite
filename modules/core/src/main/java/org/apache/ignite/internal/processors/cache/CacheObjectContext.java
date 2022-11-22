@@ -18,6 +18,7 @@
 package org.apache.ignite.internal.processors.cache;
 
 import org.apache.ignite.cache.affinity.AffinityKeyMapper;
+import org.apache.ignite.configuration.CacheObjectsTransformationConfiguration;
 import org.apache.ignite.internal.GridKernalContext;
 import org.jetbrains.annotations.Nullable;
 
@@ -27,6 +28,9 @@ import org.jetbrains.annotations.Nullable;
 public class CacheObjectContext implements CacheObjectValueContext {
     /** */
     private final GridKernalContext kernalCtx;
+
+    /** */
+    private final CacheObjectsTransformationConfiguration cotCfg;
 
     /** */
     private final String cacheName;
@@ -53,6 +57,7 @@ public class CacheObjectContext implements CacheObjectValueContext {
     /**
      * @param kernalCtx Kernal context.
      * @param dfltAffMapper Default affinity mapper.
+     * @param cotCfg Cache objects transformation configuration.
      * @param cpyOnGet Copy on get flag.
      * @param storeVal {@code True} if should store unmarshalled value in cache.
      * @param addDepInfo {@code true} if deployment info should be associated with the objects of this cache.
@@ -62,12 +67,14 @@ public class CacheObjectContext implements CacheObjectValueContext {
     public CacheObjectContext(GridKernalContext kernalCtx,
         String cacheName,
         AffinityKeyMapper dfltAffMapper,
+        CacheObjectsTransformationConfiguration cotCfg,
         boolean customAffMapper,
         boolean cpyOnGet,
         boolean storeVal,
         boolean addDepInfo,
         boolean binaryEnabled) {
         this.kernalCtx = kernalCtx;
+        this.cotCfg = cotCfg;
         this.cacheName = cacheName;
         this.dfltAffMapper = dfltAffMapper;
         this.customAffMapper = customAffMapper;
@@ -117,6 +124,11 @@ public class CacheObjectContext implements CacheObjectValueContext {
     /** {@inheritDoc} */
     @Override public GridKernalContext kernalContext() {
         return kernalCtx;
+    }
+
+    /** {@inheritDoc} */
+    @Override public CacheObjectsTransformationConfiguration cacheObjectsTransformationConfiguration() {
+        return cotCfg;
     }
 
     /** {@inheritDoc} */

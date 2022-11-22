@@ -17,6 +17,7 @@
 
 package org.apache.ignite.internal.processors.query;
 
+import org.apache.ignite.configuration.CacheObjectsTransformationConfiguration;
 import org.apache.ignite.internal.GridKernalContext;
 import org.apache.ignite.internal.binary.BinaryMarshaller;
 import org.apache.ignite.internal.processors.cache.CacheObjectValueContext;
@@ -40,6 +41,11 @@ public class CacheQueryObjectValueContext implements CacheObjectValueContext {
     /** {@inheritDoc} */
     @Override public GridKernalContext kernalContext() {
         return ctx;
+    }
+
+    /** {@inheritDoc} */
+    @Override public CacheObjectsTransformationConfiguration cacheObjectsTransformationConfiguration() {
+        return null;
     }
 
     /** {@inheritDoc} */

@@ -50,6 +50,7 @@ import org.apache.ignite.internal.processors.cache.GridCacheMvccEntryInfo;
 import org.apache.ignite.internal.processors.cache.GridCacheReturn;
 import org.apache.ignite.internal.processors.cache.GridChangeGlobalStateMessageResponse;
 import org.apache.ignite.internal.processors.cache.KeyCacheObjectImpl;
+import org.apache.ignite.internal.processors.cache.TransformedCacheObject;
 import org.apache.ignite.internal.processors.cache.WalStateAckMessage;
 import org.apache.ignite.internal.processors.cache.binary.MetadataRequestMessage;
 import org.apache.ignite.internal.processors.cache.binary.MetadataResponseMessage;
@@ -326,6 +327,7 @@ public class GridIoMessageFactory implements MessageFactoryProvider {
         factory.register((short)117, GridNearSingleGetResponse::new);
         factory.register((short)118, CacheContinuousQueryBatchAck::new);
         factory.register((short)119, BinaryEnumObjectImpl::new);
+        factory.register((short)120, TransformedCacheObject::new);
 
         // [120..123] - DR
         factory.register((short)124, GridMessageCollection::new);

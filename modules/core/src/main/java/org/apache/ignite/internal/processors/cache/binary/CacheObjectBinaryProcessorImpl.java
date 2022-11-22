@@ -92,6 +92,7 @@ import org.apache.ignite.internal.processors.cache.GridCacheUtils;
 import org.apache.ignite.internal.processors.cache.IncompleteCacheObject;
 import org.apache.ignite.internal.processors.cache.KeyCacheObject;
 import org.apache.ignite.internal.processors.cache.KeyCacheObjectImpl;
+import org.apache.ignite.internal.processors.cache.TransformedCacheObject;
 import org.apache.ignite.internal.processors.cache.transactions.IgniteInternalTx;
 import org.apache.ignite.internal.processors.cacheobject.IgniteCacheObjectProcessor;
 import org.apache.ignite.internal.processors.cacheobject.UserCacheObjectByteArrayImpl;
@@ -1224,6 +1225,7 @@ public class CacheObjectBinaryProcessorImpl extends GridProcessorAdapter impleme
         return new CacheObjectContext(ctx,
             ccfg.getName(),
             dfltAffMapper,
+            ccfg.getCacheObjectsTransformationConfiguration(),
             QueryUtils.isCustomAffinityMapper(ccfg.getAffinityMapper()),
             ccfg.isCopyOnRead(),
             storeVal,
@@ -1316,22 +1318,28 @@ public class CacheObjectBinaryProcessorImpl extends GridProcessorAdapter impleme
     /** {@inheritDoc} */
     @Nullable @Override public CacheObject toCacheObject(CacheObjectContext ctx, @Nullable Object obj,
         boolean userObj, boolean failIfUnregistered) {
+        CacheObject res;
+
         if (!ctx.binaryEnabled()) {
             if (obj == null || obj instanceof CacheObject)
                 return (CacheObject)obj;
 
-            return toCacheObject0(obj, userObj);
+            res = toCacheObject0(obj, userObj);
+        }
+        else if (obj == null || obj instanceof CacheObject)
+            res = (CacheObject)obj;
+        else {
+            obj = toBinary(obj, failIfUnregistered);
+
+            if (obj instanceof CacheObject)
+                res = (CacheObject)obj;
+            else
+                res = toCacheObject0(obj, userObj);
         }
 
-        if (obj == null || obj instanceof CacheObject)
-            return (CacheObject)obj;
+        assert !(res instanceof TransformedCacheObject);
 
-        obj = toBinary(obj, failIfUnregistered);
-
-        if (obj instanceof CacheObject)
-            return (CacheObject)obj;
-
-        return toCacheObject0(obj, userObj);
+        return new TransformedCacheObject(res, null);
     }
 
     /**
@@ -1389,6 +1397,9 @@ public class CacheObjectBinaryProcessorImpl extends GridProcessorAdapter impleme
 
             case CacheObject.TYPE_REGULAR:
                 return new CacheObjectImpl(null, bytes);
+
+            case CacheObject.TYPE_TRANSFORMER:
+                return new TransformedCacheObject(null, bytes);
         }
 
         throw new IllegalArgumentException("Invalid object type: " + type);
