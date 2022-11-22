@@ -974,8 +974,6 @@ namespace Apache.Ignite.Core.Impl
             DoOutInOp((int) Op.SetBaselineAutoAdjustTimeout, baselineAutoAdjustTimeout);
         }
 
-#pragma warning restore 618
-
         /** <inheritdoc /> */
         public ICollection<IDataRegionMetrics> GetDataRegionMetrics()
         {
