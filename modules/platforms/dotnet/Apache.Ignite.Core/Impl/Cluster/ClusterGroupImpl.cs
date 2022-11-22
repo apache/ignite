@@ -35,10 +35,8 @@ namespace Apache.Ignite.Core.Impl.Cluster
     using Apache.Ignite.Core.Impl.Compute;
     using Apache.Ignite.Core.Impl.Events;
     using Apache.Ignite.Core.Impl.Messaging;
-    using Apache.Ignite.Core.Impl.PersistentStore;
     using Apache.Ignite.Core.Impl.Services;
     using Apache.Ignite.Core.Messaging;
-    using Apache.Ignite.Core.PersistentStore;
     using Apache.Ignite.Core.Services;
 
     /// <summary>
@@ -129,9 +127,6 @@ namespace Apache.Ignite.Core.Impl.Cluster
 
         /** */
         private const int OpIsActive = 29;
-
-        /** */
-        private const int OpGetPersistentStoreMetrics = 30;
 
         /** */
         private const int OpGetCompute = 31;
