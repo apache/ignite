@@ -402,4 +402,39 @@ public class GridCacheAffinityManager extends GridCacheManagerAdapter {
 
         return aff0.primaryChanged(part, startVer, endVer);
     }
+
+    /**
+     * @param rmtVer Topology version to check.
+     * @return Whether the specified topology version can be considered identical to the current topology version.
+     */
+    public boolean isCompatibleWithCurrentTopologyVersion(AffinityTopologyVersion rmtVer) {
+        AffinityTopologyVersion curVer = cctx.topology().readyTopologyVersion();
+
+        if (curVer.equals(rmtVer))
+            return true;
+
+        AffinityTopologyVersion lastAffChangedTopVer = cctx.shared().exchange().lastAffinityChangedTopologyVersion(rmtVer);
+
+        if (curVer.isBetween(lastAffChangedTopVer, rmtVer))
+            return true;
+
+        if (cctx.shared().exchange().lastFinishedFuture().context().remapStaleCacheRequests())
+            return false;
+
+        Collection<ClusterNode> cacheNodes0 = cctx.discovery().cacheGroupAffinityNodes(cctx.groupId(), rmtVer);
+        Collection<ClusterNode> cacheNodes1 = cctx.discovery().cacheGroupAffinityNodes(cctx.groupId(), curVer);
+
+        if (!cacheNodes0.equals(cacheNodes1) || affinityTopologyVersion().before(curVer))
+            return false;
+
+        try {
+            List<List<ClusterNode>> aff1 = assignments(rmtVer);
+            List<List<ClusterNode>> aff2 = assignments(curVer);
+
+            return aff1.equals(aff2);
+        }
+        catch (IllegalStateException ignored) {
+            return false;
+        }
+    }
 }

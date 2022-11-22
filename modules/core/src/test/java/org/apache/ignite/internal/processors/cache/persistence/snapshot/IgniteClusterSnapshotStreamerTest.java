@@ -18,27 +18,25 @@
 package org.apache.ignite.internal.processors.cache.persistence.snapshot;
 
 import java.util.Collections;
-import java.util.List;
-import java.util.Map;
+import java.util.UUID;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.atomic.AtomicBoolean;
-import java.util.function.Function;
-import java.util.stream.Collectors;
 import org.apache.ignite.Ignite;
+import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteDataStreamer;
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.DataPageEvictionMode;
 import org.apache.ignite.configuration.DataRegionConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
+import org.apache.ignite.events.DiscoveryEvent;
+import org.apache.ignite.events.EventType;
 import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.TestRecordingCommunicationSpi;
+import org.apache.ignite.internal.processors.cache.verify.IdleVerifyResultV2;
 import org.apache.ignite.internal.processors.datastreamer.DataStreamerRequest;
-import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.G;
-import org.apache.ignite.testframework.ListeningTestLogger;
-import org.apache.ignite.testframework.LogListener;
 import org.junit.Test;
 
 import static org.apache.ignite.cluster.ClusterState.ACTIVE;
@@ -47,7 +45,7 @@ import static org.apache.ignite.testframework.GridTestUtils.assertThrows;
 import static org.apache.ignite.testframework.GridTestUtils.runAsync;
 
 /**
- * Tests snapshot is consistent or snapshot process produces proper warning.
+ * Tests snapshot is consistent or snapshot process produces proper warning with concurrent streaming.
  */
 public class IgniteClusterSnapshotStreamerTest extends AbstractSnapshotSelfTest {
     /** */
@@ -93,19 +91,35 @@ public class IgniteClusterSnapshotStreamerTest extends AbstractSnapshotSelfTest 
     }
 
     /**
-     * Tests snapshot consistency when streamer starts before snapshot. Default receiver.
+     * Tests snapshot warning when streamer is working during snapshot creation. Default receiver.
      */
     @Test
     public void testStreamerWhileSnapshotDefault() throws Exception {
-        doTestDataStreamerWhileSnapshot( false);
+        doTestDataStreamerWhileSnapshot(false);
     }
 
     /**
-     * Tests snapshot consistency when streamer starts before snapshot. Overwriting receiver.
+     * Tests snapshot warning when streamer is working during snapshot creation. Overwriting receiver.
      */
     @Test
     public void testStreamerWhileSnapshotOverwriting() throws Exception {
-        doTestDataStreamerWhileSnapshot( true);
+        doTestDataStreamerWhileSnapshot(true);
+    }
+
+    /**
+     * Tests snapshot warning when streamer failed or canceled before snapshot. Default receiver.
+     */
+    @Test
+    public void testStreamerFailsLongAgoDefault() throws Exception {
+        doTestDataStreamerFailedBeforeSnapshot(false);
+    }
+
+    /**
+     * Tests snapshot warning when streamer failed or canceled before snapshot. Overwriting receiver.
+     */
+    @Test
+    public void testStreamerFailsLongAgoOverwriting() throws Exception {
+        doTestDataStreamerFailedBeforeSnapshot(true);
     }
 
     /**
@@ -185,7 +199,7 @@ public class IgniteClusterSnapshotStreamerTest extends AbstractSnapshotSelfTest 
     }
 
     /**
-     * Tests snapshot process throws warning if required.
+     * Tests snapshot warning when streamer is working during snapshot creation.
      *
      * @param allowOverwrite 'allowOverwrite' setting.
      */
@@ -221,7 +235,6 @@ public class IgniteClusterSnapshotStreamerTest extends AbstractSnapshotSelfTest 
             }
         }
         finally {
-            cm.stopBlock();
             stopLoading.set(true);
             loadFut.get();
         }
@@ -231,6 +244,51 @@ public class IgniteClusterSnapshotStreamerTest extends AbstractSnapshotSelfTest 
         stopGrid(2);
 
         createAndCheckSnapshot(false, allowOverwrite ? null : DataStreamerUpdatesHandler.WRN_MSG);
+    }
+
+    /**
+     * Tests snapshot warning when streamer failed or canceled before snapshot.
+     *
+     * @param allowOverwrite 'allowOverwrite' setting.
+     */
+    private void doTestDataStreamerFailedBeforeSnapshot(boolean allowOverwrite) throws Exception {
+        TestRecordingCommunicationSpi clientCm =
+            (TestRecordingCommunicationSpi)client.configuration().getCommunicationSpi();
+
+        UUID clientId = client.localNode().id();
+
+        CountDownLatch nodeGoneLatch = new CountDownLatch(1);
+
+        grid(0).events().localListen(e -> {
+            assert e instanceof DiscoveryEvent;
+
+            if (((DiscoveryEvent)e).eventNode().id().equals(clientId))
+                nodeGoneLatch.countDown();
+
+            return false;
+        }, EventType.EVT_NODE_FAILED, EventType.EVT_NODE_LEFT);
+
+        AtomicBoolean stopLoading = new AtomicBoolean();
+
+        IgniteInternalFuture<?> loadFut = runLoad(client, allowOverwrite, stopLoading);
+
+        clientCm.blockMessages(DataStreamerRequest.class, grid(0).name());
+
+        clientCm.waitForBlocked(batchesPerNode(grid(0)));
+
+        runAsync(() -> stopGrid(client.name(), true));
+
+        nodeGoneLatch.await();
+
+        stopLoading.set(true);
+        loadFut.cancel();
+
+        if (allowOverwrite)
+            createAndCheckSnapshot(null, null);
+        else {
+            createAndCheckSnapshot(SnapshotPartitionsQuickVerifyHandler.WRN_MSG,
+                DataStreamerUpdatesHandler.WRN_MSG);
+        }
     }
 
     /**

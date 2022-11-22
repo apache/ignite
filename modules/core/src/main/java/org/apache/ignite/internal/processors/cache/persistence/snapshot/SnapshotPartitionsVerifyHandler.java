@@ -81,7 +81,7 @@ import static org.apache.ignite.internal.processors.cache.verify.IdleVerifyUtili
  */
 public class SnapshotPartitionsVerifyHandler implements SnapshotHandler<Map<PartitionKeyV2, PartitionHashRecordV2>> {
     /** Shared context. */
-    private final GridCacheSharedContext<?, ?> cctx;
+    protected final GridCacheSharedContext<?, ?> cctx;
 
     /** Logger. */
     private final IgniteLogger log;
@@ -219,7 +219,8 @@ public class SnapshotPartitionsVerifyHandler implements SnapshotHandler<Map<Part
                             GridDhtPartitionState.OWNING,
                             false,
                             size,
-                            snpMgr.partitionRowIterator(snpCtx, grpName, partId, pageStore));
+                            skipHash() ? F.emptyIterator()
+                                : snpMgr.partitionRowIterator(snpCtx, grpName, partId, pageStore));
 
                         assert hash != null : "OWNING must have hash: " + key;
 
@@ -273,6 +274,15 @@ public class SnapshotPartitionsVerifyHandler implements SnapshotHandler<Map<Part
         verifyResult.print(buf::a, true);
 
         throw new IgniteCheckedException(buf.toString());
+    }
+
+    /**
+     * Provides flag of full hash calculation.
+     *
+     * @return {@code True} if full partition hash calculation is required. {@code False} otherwise.
+     */
+    protected boolean skipHash() {
+        return false;
     }
 
     /**

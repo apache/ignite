@@ -152,6 +152,10 @@ import static org.apache.ignite.internal.util.IgniteUtils.doInParallelUninterrup
 
 /**
  * Future for exchanging partition maps.
+ * <p>
+ * Note, that by default cache requests mapped to a stale topology version can be executed even if PME is in still in
+ * progress on back-up nodes but is finished on primary node. If this behaviour is unacceptable see
+ * {@link ExchangeContext#remapStaleCacheRequests()} flag for more details.
  */
 @SuppressWarnings({"TypeMayBeWeakened", "unchecked"})
 public class GridDhtPartitionsExchangeFuture extends GridDhtTopologyFutureAdapter

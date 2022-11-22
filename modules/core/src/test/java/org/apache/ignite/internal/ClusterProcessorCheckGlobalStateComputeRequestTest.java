@@ -21,8 +21,11 @@ import javax.management.ObjectName;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.util.IgniteUtils;
+import org.apache.ignite.spi.metric.jmx.JmxMetricExporterSpi;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.junit.Test;
+
+import static org.apache.ignite.internal.processors.pool.PoolProcessor.THREAD_POOLS;
 
 /**
  * Tests that the GridInternal annotation for GridClusterStateProcessor.CheckGlobalStateComputeRequest works correctly.
@@ -31,6 +34,9 @@ public class ClusterProcessorCheckGlobalStateComputeRequestTest extends GridComm
     /** {@inheritDoc} */
     @Override protected IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {
         IgniteConfiguration cfg = super.getConfiguration(igniteInstanceName);
+
+        cfg.setMetricExporterSpi(new JmxMetricExporterSpi());
+
         if (igniteInstanceName.equalsIgnoreCase("daemon"))
             cfg.setDaemon(true);
 
@@ -49,12 +55,12 @@ public class ClusterProcessorCheckGlobalStateComputeRequestTest extends GridComm
         for (int i = 0; i < 100; i++)
             daemon.cluster().active();
 
-        checkBeanAttribute(daemon, "Thread Pools", "GridManagementExecutor", "TaskCount", 100L);
+        checkBeanAttribute(daemon, THREAD_POOLS, "GridManagementExecutor", "TaskCount", 100L);
 
         for (int i = 0; i < 100; i++)
             grid(0).cluster().active();
 
-        checkBeanAttribute(grid(0), "Thread Pools", "GridManagementExecutor", "TaskCount", 100L);
+        checkBeanAttribute(grid(0), THREAD_POOLS, "GridManagementExecutor", "TaskCount", 100L);
     }
 
     /**
