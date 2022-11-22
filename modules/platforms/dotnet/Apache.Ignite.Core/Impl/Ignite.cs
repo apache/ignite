@@ -974,12 +974,6 @@ namespace Apache.Ignite.Core.Impl
             DoOutInOp((int) Op.SetBaselineAutoAdjustTimeout, baselineAutoAdjustTimeout);
         }
 
-        /** <inheritdoc /> */
-#pragma warning disable 618
-        public IPersistentStoreMetrics GetPersistentStoreMetrics()
-        {
-            return _prj.GetPersistentStoreMetrics();
-        }
 #pragma warning restore 618
 
         /** <inheritdoc /> */
