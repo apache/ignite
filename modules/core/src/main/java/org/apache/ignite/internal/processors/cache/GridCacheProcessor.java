@@ -267,9 +267,6 @@ public class GridCacheProcessor extends GridProcessorAdapter {
     private final boolean keepStaticCacheConfiguration = IgniteSystemProperties.getBoolean(
         IgniteSystemProperties.IGNITE_KEEP_STATIC_CACHE_CONFIGURATION);
 
-    /** MBean group for cache group metrics */
-    private static final String CACHE_GRP_METRICS_MBEAN_GRP = "Cache groups";
-
     /**
      * Initial timeout (in milliseconds) for output the progress of restoring partitions status.
      * After the first output, the next ones will be output after value/5.
