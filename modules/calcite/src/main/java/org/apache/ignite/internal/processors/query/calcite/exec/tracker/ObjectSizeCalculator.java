@@ -91,7 +91,7 @@ public class ObjectSizeCalculator<Row> {
         addSysClsSize(Long.class, null);
         addSysClsSize(Double.class, null);
         long charArrOffset = GridUnsafe.arrayBaseOffset(char[].class);
-        addSysClsSize(String.class, (c, s) -> align(charArrOffset + s.length() * Character.BYTES));
+        addSysClsSize(String.class, (c, s) -> align(charArrOffset + ((long)s.length()) * Character.BYTES));
         long byteArrOffset = GridUnsafe.arrayBaseOffset(byte[].class);
         addSysClsSize(ByteString.class, (c, s) -> align(byteArrOffset + s.length()));
 
@@ -268,9 +268,9 @@ public class ObjectSizeCalculator<Row> {
 
         ClassInfo clsInfo = cachedClassInfo(cls);
 
-        long size = 0;
+        long size = clsInfo.shallowSize;
 
-        for (Field f : clsInfo.refFields()) {
+        for (Field f : clsInfo.refFields) {
             try {
                 size += sizeOf0(f.get(obj), false);
             }
@@ -316,7 +316,6 @@ public class ObjectSizeCalculator<Row> {
     }
 
     /** */
-    @SuppressWarnings("AssignmentOrReturnOfFieldWithMutableType")
     private static class ClassInfo {
         /** */
         private final long shallowSize;
@@ -328,11 +327,6 @@ public class ObjectSizeCalculator<Row> {
         private ClassInfo(long shallowSize, List<Field> refFields) {
             this.shallowSize = shallowSize;
             this.refFields = refFields;
-        }
-
-        /** */
-        public List<Field> refFields() {
-            return refFields;
         }
     }
 }
