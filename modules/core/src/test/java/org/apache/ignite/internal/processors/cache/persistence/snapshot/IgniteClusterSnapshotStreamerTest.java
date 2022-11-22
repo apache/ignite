@@ -17,6 +17,7 @@
 
 package org.apache.ignite.internal.processors.cache.persistence.snapshot;
 
+import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
 import java.util.Map;
@@ -40,11 +41,13 @@ import org.apache.ignite.internal.TestRecordingCommunicationSpi;
 import org.apache.ignite.internal.processors.datastreamer.DataStreamerRequest;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.G;
+import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.testframework.ListeningTestLogger;
 import org.apache.ignite.testframework.LogListener;
 import org.junit.Test;
 
 import static org.apache.ignite.cluster.ClusterState.ACTIVE;
+import static org.apache.ignite.cluster.ClusterState.fromOrdinal;
 import static org.apache.ignite.internal.IgniteNodeAttributes.ATTR_DATA_STREAMER_POOL_SIZE;
 import static org.apache.ignite.testframework.GridTestUtils.assertThrows;
 import static org.apache.ignite.testframework.GridTestUtils.runAsync;
@@ -57,9 +60,6 @@ public class IgniteClusterSnapshotStreamerTest extends AbstractSnapshotSelfTest 
     private static final String INMEM_DATA_REGION = "inMemDr";
 
     /** */
-    private IgniteSnapshotManager snpMgr;
-
-    /** */
     private IgniteEx client;
 
     /** {@inheritDoc} */
@@ -68,15 +68,19 @@ public class IgniteClusterSnapshotStreamerTest extends AbstractSnapshotSelfTest 
 
         persistence = true;
 
-        dfltCacheCfg.setBackups(2);
+        dfltCacheCfg.setBackups(1);
 
-        startGrids(3);
+        startGrids(2);
 
         grid(0).cluster().state(ACTIVE);
 
-        client = startClientGrid(G.allGrids().size());
+        grid(0).cluster().baselineAutoAdjustEnabled(false);
 
-        snpMgr = snp(grid(1));
+        grid(0).cluster().setBaselineTopology(grid(0).cluster().topologyVersion());
+
+        startGrid(G.allGrids().size());
+
+        client = startClientGrid(G.allGrids().size());
     }
 
     /** {@inheritDoc} */
@@ -86,7 +90,7 @@ public class IgniteClusterSnapshotStreamerTest extends AbstractSnapshotSelfTest 
         // In-memory data region.
         DataRegionConfiguration inMemDr = new DataRegionConfiguration();
         inMemDr.setPersistenceEnabled(false);
-        inMemDr.setMaxSize(100L * 1024L * 1024L);
+        inMemDr.setMaxSize(500L * 1024L * 1024L);
         inMemDr.setInitialSize(inMemDr.getMaxSize());
         inMemDr.setName(INMEM_DATA_REGION);
         inMemDr.setPageEvictionMode(DataPageEvictionMode.RANDOM_2_LRU);
@@ -100,7 +104,8 @@ public class IgniteClusterSnapshotStreamerTest extends AbstractSnapshotSelfTest 
      */
     @Test
     public void testStreamerWhileSnapshotDefault() throws Exception {
-        doTestDataStreamerWhileSnapshot(false);
+        for (IgniteEx snpHnd : Arrays.asList(grid(0), grid(1), client))
+            doTestDataStreamerWhileSnapshot(snpHnd, false);
     }
 
     /**
@@ -108,7 +113,8 @@ public class IgniteClusterSnapshotStreamerTest extends AbstractSnapshotSelfTest 
      */
     @Test
     public void testStreamerWhileSnapshotOverwriting() throws Exception {
-        doTestDataStreamerWhileSnapshot(true);
+        for (IgniteEx snpHnd : Arrays.asList(grid(0), grid(1), client))
+            doTestDataStreamerWhileSnapshot(snpHnd, true);
     }
 
     /**
@@ -116,7 +122,8 @@ public class IgniteClusterSnapshotStreamerTest extends AbstractSnapshotSelfTest 
      */
     @Test
     public void testStreamerFailsLongAgoDefault() throws Exception {
-        doTestDataStreamerFailedBeforeSnapshot(false);
+        for (IgniteEx snpHnd : Arrays.asList(grid(0), grid(1), client))
+            doTestDataStreamerFailedBeforeSnapshot(snpHnd, false);
     }
 
     /**
@@ -124,7 +131,8 @@ public class IgniteClusterSnapshotStreamerTest extends AbstractSnapshotSelfTest 
      */
     @Test
     public void testStreamerFailsLongAgoOverwriting() throws Exception {
-        doTestDataStreamerFailedBeforeSnapshot(true);
+        for (IgniteEx snpHnd : Arrays.asList(grid(0), grid(1), client))
+            doTestDataStreamerFailedBeforeSnapshot(snpHnd, true);
     }
 
     /**
@@ -132,35 +140,46 @@ public class IgniteClusterSnapshotStreamerTest extends AbstractSnapshotSelfTest 
      */
     @Test
     public void testOtherCacheRestores() throws Exception {
-        String cname = "cache2";
+        for (IgniteEx snpHnd : Arrays.asList(grid(0), grid(1), client)) {
+            String cname = "cache2";
 
-        grid(0).createCache(new CacheConfiguration<>(dfltCacheCfg).setName(cname));
+            grid(0).createCache(new CacheConfiguration<>(dfltCacheCfg).setName(cname));
 
-        try (IgniteDataStreamer<Integer, Integer> ds = grid(0).dataStreamer(cname)) {
+            try (IgniteDataStreamer<Integer, Integer> ds = grid(0).dataStreamer(cname)) {
+                for (int i = 0; i < 100; ++i)
+                    ds.addData(i, i);
+            }
+
+            AtomicBoolean stopLoad = new AtomicBoolean();
+
+            IgniteInternalFuture<?> loadFut = runLoad(grid(0), false, stopLoad);
+
+            try {
+                assertThrows(null, () -> snp(snpHnd).createSnapshot(SNAPSHOT_NAME).get(), IgniteException.class,
+                    DataStreamerUpdatesHandler.WRN_MSG);
+            }
+            finally {
+                stopLoad.set(true);
+                loadFut.get();
+            }
+
+            grid(0).destroyCache(cname);
+            grid(0).destroyCache(dfltCacheCfg.getName());
+
+            snp(snpHnd.cluster().localNode().isClient() ? grid(1) : snpHnd).restoreSnapshot(SNAPSHOT_NAME,
+                Collections.singletonList(cname)).get();
+
             for (int i = 0; i < 100; ++i)
-                ds.addData(i, i);
+                assertEquals(i, grid(0).cache(cname).get(i));
+
+            grid(0).destroyCache(cname);
+            grid(0).destroyCache(dfltCacheCfg.getName());
+            grid(0).createCache(dfltCacheCfg);
+
+            awaitPartitionMapExchange();
+
+            U.delete(snp(grid(0)).snapshotLocalDir(SNAPSHOT_NAME));
         }
-
-        AtomicBoolean stopLoad = new AtomicBoolean();
-
-        IgniteInternalFuture<?> loadFut = runLoad(grid(0), false, stopLoad);
-
-        try {
-            assertThrows(null, () -> snpMgr.createSnapshot(SNAPSHOT_NAME).get(), IgniteException.class,
-                DataStreamerUpdatesHandler.WRN_MSG);
-        }
-        finally {
-            stopLoad.set(true);
-            loadFut.get();
-        }
-
-        grid(0).destroyCache(cname);
-        grid(0).destroyCache(dfltCacheCfg.getName());
-
-        snpMgr.restoreSnapshot(SNAPSHOT_NAME, Collections.singletonList(cname)).get();
-
-        for (int i = 0; i < 100; ++i)
-            assertEquals(i, grid(0).cache(cname).get(i));
     }
 
     /**
@@ -168,39 +187,41 @@ public class IgniteClusterSnapshotStreamerTest extends AbstractSnapshotSelfTest 
      */
     @Test
     public void testStreamingIntoInMememoryDoesntAffectSnapshot() throws Exception {
-        String cache2Name = "cache2";
-        int loadCnt = 1000;
+        for (IgniteEx snpHnd : Arrays.asList(grid(0), grid(1), client)) {
+            String cache2Name = "cache2";
+            int loadCnt = 1000;
 
-        grid(0).createCache(new CacheConfiguration<>(dfltCacheCfg).setName(cache2Name));
+            grid(0).createCache(new CacheConfiguration<>(dfltCacheCfg).setName(cache2Name));
 
-        try (IgniteDataStreamer<Object, Object> ds = grid(0).dataStreamer(cache2Name)) {
+            try (IgniteDataStreamer<Object, Object> ds = grid(0).dataStreamer(cache2Name)) {
+                for (int i = 0; i < loadCnt; ++i)
+                    ds.addData(i, i);
+            }
+
+            grid(0).destroyCache(dfltCacheCfg.getName());
+            dfltCacheCfg.setDataRegionName(INMEM_DATA_REGION);
+            dfltCacheCfg.setEncryptionEnabled(false);
+            grid(0).createCache(dfltCacheCfg);
+
+            AtomicBoolean stop = new AtomicBoolean();
+
+            IgniteInternalFuture<?> loadFut = runLoad(client, false, stop);
+
+            try {
+                snp(snpHnd).createSnapshot(SNAPSHOT_NAME).get();
+            }
+            finally {
+                stop.set(true);
+                loadFut.get();
+            }
+
+            grid(0).destroyCache(cache2Name);
+
+            snp(snpHnd).restoreSnapshot(SNAPSHOT_NAME, null).get();
+
             for (int i = 0; i < loadCnt; ++i)
-                ds.addData(i, i);
+                assertEquals(i, grid(0).cache(cache2Name).get(i));
         }
-
-        grid(0).destroyCache(dfltCacheCfg.getName());
-        dfltCacheCfg.setDataRegionName(INMEM_DATA_REGION);
-        dfltCacheCfg.setEncryptionEnabled(false);
-        grid(0).createCache(dfltCacheCfg);
-
-        AtomicBoolean stop = new AtomicBoolean();
-
-        IgniteInternalFuture<?> loadFut = runLoad(client, false, stop);
-
-        try {
-            snpMgr.createSnapshot(SNAPSHOT_NAME).get();
-        }
-        finally {
-            stop.set(true);
-            loadFut.get();
-        }
-
-        grid(0).destroyCache(cache2Name);
-
-        snpMgr.restoreSnapshot(SNAPSHOT_NAME, null).get();
-
-        for (int i = 0; i < loadCnt; ++i)
-            assertEquals(i, grid(0).cache(cache2Name).get(i));
     }
 
     /**
@@ -208,7 +229,7 @@ public class IgniteClusterSnapshotStreamerTest extends AbstractSnapshotSelfTest 
      *
      * @param allowOverwrite 'allowOverwrite' setting.
      */
-    private void doTestDataStreamerWhileSnapshot(boolean allowOverwrite) throws Exception {
+    private void doTestDataStreamerWhileSnapshot(IgniteEx snpHnd, boolean allowOverwrite) throws Exception {
         AtomicBoolean stopLoading = new AtomicBoolean();
 
         TestRecordingCommunicationSpi cm = (TestRecordingCommunicationSpi)client.configuration().getCommunicationSpi();
@@ -222,7 +243,7 @@ public class IgniteClusterSnapshotStreamerTest extends AbstractSnapshotSelfTest 
         String expectedWrn = allowOverwrite ? null : DataStreamerUpdatesHandler.WRN_MSG;
 
         try {
-            SnapshotPartitionsVerifyTaskResult checkRes = createAndCheckSnapshot(true, expectedWrn);
+            SnapshotPartitionsVerifyTaskResult checkRes = createAndCheckSnapshot(snpHnd, true, expectedWrn);
 
             if (expectedWrn != null) {
                 Map<String, SnapshotMetadata> metaByNodes = checkRes.metas().values().stream().flatMap(List::stream)
@@ -249,15 +270,16 @@ public class IgniteClusterSnapshotStreamerTest extends AbstractSnapshotSelfTest 
         stopGrid(1);
         stopGrid(2);
 
-        createAndCheckSnapshot(false, allowOverwrite ? null : DataStreamerUpdatesHandler.WRN_MSG);
+        createAndCheckSnapshot(snpHnd, false, allowOverwrite ? null : DataStreamerUpdatesHandler.WRN_MSG);
     }
 
     /**
      * Tests snapshot warning when streamer failed or canceled before snapshot.
      *
+     * @param snpHnd Snapshot handler node.
      * @param allowOverwrite 'allowOverwrite' setting.
      */
-    private void doTestDataStreamerFailedBeforeSnapshot(boolean allowOverwrite) throws Exception {
+    private void doTestDataStreamerFailedBeforeSnapshot(IgniteEx snpHnd, boolean allowOverwrite) throws Exception {
         TestRecordingCommunicationSpi clientCm =
             (TestRecordingCommunicationSpi)client.configuration().getCommunicationSpi();
 
@@ -290,9 +312,9 @@ public class IgniteClusterSnapshotStreamerTest extends AbstractSnapshotSelfTest 
         loadFut.cancel();
 
         if (allowOverwrite)
-            createAndCheckSnapshot(true, null);
+            createAndCheckSnapshot(snpHnd, true, null);
         else
-            createAndCheckSnapshot(true, SnapshotPartitionsQuickVerifyHandler.WRN_MSG);
+            createAndCheckSnapshot(snpHnd, true, SnapshotPartitionsQuickVerifyHandler.WRN_MSG);
     }
 
     /**
@@ -326,11 +348,11 @@ public class IgniteClusterSnapshotStreamerTest extends AbstractSnapshotSelfTest 
     }
 
     /** */
-    private SnapshotPartitionsVerifyTaskResult createAndCheckSnapshot(boolean create, String expectedWrn)
+    private SnapshotPartitionsVerifyTaskResult createAndCheckSnapshot(IgniteEx snpHnd, boolean create, String expectedWrn)
         throws Exception {
         if (create) {
             if (expectedWrn == null)
-                snpMgr.createSnapshot(SNAPSHOT_NAME, null).get();
+                snp(snpHnd).createSnapshot(SNAPSHOT_NAME, null).get();
             else {
                 ListeningTestLogger testLog = new ListeningTestLogger();
 
@@ -339,7 +361,7 @@ public class IgniteClusterSnapshotStreamerTest extends AbstractSnapshotSelfTest 
 
                 assertThrows(
                     testLog,
-                    () -> snpMgr.createSnapshot(SNAPSHOT_NAME, null).get(),
+                    () -> snp(snpHnd).createSnapshot(SNAPSHOT_NAME, null).get(),
                     IgniteException.class,
                     expectedWrn
                 );
@@ -349,7 +371,7 @@ public class IgniteClusterSnapshotStreamerTest extends AbstractSnapshotSelfTest 
             }
         }
 
-        SnapshotPartitionsVerifyTaskResult checkRes = snpMgr.checkSnapshot(SNAPSHOT_NAME, null).get();
+        SnapshotPartitionsVerifyTaskResult checkRes = snp(snpHnd).checkSnapshot(SNAPSHOT_NAME, null).get();
 
         assertTrue(checkRes.exceptions().isEmpty());
         assertTrue((expectedWrn != null) == checkRes.idleVerifyResult().hasConflicts());

@@ -160,6 +160,7 @@ import org.apache.ignite.internal.util.lang.IgniteThrowableFunction;
 import org.apache.ignite.internal.util.tostring.GridToStringExclude;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.T2;
+import org.apache.ignite.internal.util.typedef.X;
 import org.apache.ignite.internal.util.typedef.internal.A;
 import org.apache.ignite.internal.util.typedef.internal.CU;
 import org.apache.ignite.internal.util.typedef.internal.S;
@@ -1022,6 +1023,9 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
             return new GridFinishedFuture<>(e);
         }
 
+        if (!F.isEmpty(req.warnings()) && !isLocalNodeCoordinator(cctx.discovery()))
+            snpReq.warnings(req.warnings());
+
         return new GridFinishedFuture<>(new SnapshotOperationResponse());
     }
 
@@ -1045,7 +1049,7 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
             if (clusterSnpFut != null) {
                 if (endFail.isEmpty() && snpReq.error() == null) {
                     if (!F.isEmpty(snpReq.warnings())) {
-                        IgniteException wrn = new IgniteException("Snapshot task '" + snpReq.snapshotName() +
+                        SnapshotHandlerWarningException wrn = new SnapshotHandlerWarningException("Snapshot task '" + snpReq.snapshotName() +
                             "' completed with the warnings:" + U.nl() + "\t- " + String.join(U.nl() + "\t- ",
                             snpReq.warnings()));
 
@@ -3569,8 +3573,14 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
         @Override protected IgniteException convertException(IgniteCheckedException e) {
             if (e instanceof IgniteClientDisconnectedCheckedException)
                 return new IgniteException("Client disconnected. Snapshot result is unknown", U.convertException(e));
-            else
+            else {
+                SnapshotHandlerWarningException wrn = X.cause(e, SnapshotHandlerWarningException.class);
+
+                if (wrn != null)
+                    return new IgniteException(wrn.getMessage());
+
                 return new IgniteException("Snapshot has not been created", U.convertException(e));
+            }
         }
     }
 }
