@@ -18,11 +18,14 @@
 package org.apache.ignite.internal.processors.cache.persistence.snapshot;
 
 import java.util.Collections;
+import java.util.List;
+import java.util.Map;
 import java.util.UUID;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.function.Function;
+import java.util.stream.Collectors;
 import org.apache.ignite.Ignite;
-import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteDataStreamer;
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.configuration.CacheConfiguration;
@@ -34,9 +37,11 @@ import org.apache.ignite.events.EventType;
 import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.TestRecordingCommunicationSpi;
-import org.apache.ignite.internal.processors.cache.verify.IdleVerifyResultV2;
 import org.apache.ignite.internal.processors.datastreamer.DataStreamerRequest;
+import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.G;
+import org.apache.ignite.testframework.ListeningTestLogger;
+import org.apache.ignite.testframework.LogListener;
 import org.junit.Test;
 
 import static org.apache.ignite.cluster.ClusterState.ACTIVE;
@@ -212,7 +217,7 @@ public class IgniteClusterSnapshotStreamerTest extends AbstractSnapshotSelfTest 
 
         cm.blockMessages(DataStreamerRequest.class, grid(0).name());
 
-        cm.waitForBlocked(maxBatchesPerNode(grid(0)));
+        cm.waitForBlocked(batchesPerNode(grid(0)));
 
         String expectedWrn = allowOverwrite ? null : DataStreamerUpdatesHandler.WRN_MSG;
 
@@ -223,8 +228,8 @@ public class IgniteClusterSnapshotStreamerTest extends AbstractSnapshotSelfTest 
                 Map<String, SnapshotMetadata> metaByNodes = checkRes.metas().values().stream().flatMap(List::stream)
                     .distinct().collect(Collectors.toMap(SnapshotMetadata::consistentId, Function.identity()));
 
-                for(SnapshotMetadata m : metaByNodes.values()){
-                    // We take snapshot from grid(0)
+                for (SnapshotMetadata m : metaByNodes.values()) {
+                    // Check warnings are stored on coordinator only.
                     if (m.consistentId().equals(grid(0).cluster().localNode().consistentId().toString())) {
                         assertTrue(!F.isEmpty(m.warnings()) && m.warnings().size() == 1 &&
                             m.warnings().get(0).contains(expectedWrn));
@@ -235,6 +240,7 @@ public class IgniteClusterSnapshotStreamerTest extends AbstractSnapshotSelfTest 
             }
         }
         finally {
+            cm.stopBlock();
             stopLoading.set(true);
             loadFut.get();
         }
@@ -284,11 +290,9 @@ public class IgniteClusterSnapshotStreamerTest extends AbstractSnapshotSelfTest 
         loadFut.cancel();
 
         if (allowOverwrite)
-            createAndCheckSnapshot(null, null);
-        else {
-            createAndCheckSnapshot(SnapshotPartitionsQuickVerifyHandler.WRN_MSG,
-                DataStreamerUpdatesHandler.WRN_MSG);
-        }
+            createAndCheckSnapshot(true, null);
+        else
+            createAndCheckSnapshot(true, SnapshotPartitionsQuickVerifyHandler.WRN_MSG);
     }
 
     /**
@@ -366,10 +370,10 @@ public class IgniteClusterSnapshotStreamerTest extends AbstractSnapshotSelfTest 
     }
 
     /** */
-    private int maxBatchesPerNode(IgniteEx grid) {
-        Integer attrStreamerPoolSize = grid.localNode().attribute(ATTR_DATA_STREAMER_POOL_SIZE);
+    private int batchesPerNode(IgniteEx grid) {
+        Integer poolSize = grid.localNode().attribute(ATTR_DATA_STREAMER_POOL_SIZE);
 
-        return IgniteDataStreamer.DFLT_PARALLEL_OPS_MULTIPLIER * (attrStreamerPoolSize != null ? attrStreamerPoolSize :
+        return IgniteDataStreamer.DFLT_PARALLEL_OPS_MULTIPLIER * (poolSize != null ? poolSize :
             grid.localNode().metrics().getTotalCpus());
     }
 }

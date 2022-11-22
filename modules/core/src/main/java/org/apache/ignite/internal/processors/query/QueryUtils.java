@@ -1420,7 +1420,7 @@ public class QueryUtils {
      * @return Value type name.
      */
     public static String createTableValueTypeName(String schemaName, String tblName) {
-        return createTableCacheName(schemaName, tblName);// + "_" + UUID.randomUUID().toString().replace("-", "_");
+        return createTableCacheName(schemaName, tblName) + "_" + UUID.randomUUID().toString().replace("-", "_");
     }
 
     /**

@@ -909,7 +909,7 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
     }
 
     /**
-     * Stores snapshot metadata.
+     * Stores snapshot metadata and saves that warnings from {@code snpReq}.
      *
      * @param snpReq Snapshot operation request.
      */
