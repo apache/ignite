@@ -30,8 +30,9 @@ import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.cluster.ClusterTopologyException;
 import org.apache.ignite.internal.GridKernalContext;
+import org.apache.ignite.internal.cache.query.index.sorted.IndexKeyType;
+import org.apache.ignite.internal.cache.query.index.sorted.IndexPlainRowImpl;
 import org.apache.ignite.internal.cache.query.index.sorted.IndexRow;
-import org.apache.ignite.internal.cache.query.index.sorted.IndexSearchRowImpl;
 import org.apache.ignite.internal.cache.query.index.sorted.InlineIndexRowHandler;
 import org.apache.ignite.internal.cache.query.index.sorted.inline.IndexQueryContext;
 import org.apache.ignite.internal.cache.query.index.sorted.inline.InlineIndex;
@@ -97,12 +98,6 @@ public class IndexScan<Row> extends AbstractIndexScan<Row, IndexRow> {
 
     /** Mapping from row fields to index keys. */
     private final int[] fieldIdxMapping;
-
-    /** */
-    private final ImmutableBitSet requiredInlineKeys;
-
-    /** */
-    private final InlineIndexKeyType[] inlineKeyTypes;
 
     /** Types of key fields stored in index. */
     private final Type[] fieldsStoreTypes;
@@ -177,48 +172,49 @@ public class IndexScan<Row> extends AbstractIndexScan<Row, IndexRow> {
         for (int i = 0; i < srcRowType.getFieldCount(); i++)
             fieldsStoreTypes[i] = typeFactory.getResultClass(srcRowType.getFieldList().get(i).getType());
 
-        // Check if we can use inlined index keys instead of cache row iteration.
+        fieldIdxMapping = fieldToInlinedKeysMapping(srcRowType.getFieldCount());
+    }
+
+    /**
+     * Checks if we can use inlined index keys instead of cache row iteration and returns fields to keys mapping.
+     *
+     * @return Mapping from target row fields to inlined index keys, or {@code null} if inlined index keys
+     * should not be used.
+     */
+    private int[] fieldToInlinedKeysMapping(int srcFieldsCnt) {
         List<InlineIndexKeyType> inlinedKeys = idx.segment(0).rowHandler().inlineIndexKeyTypes();
 
-        if (inlinedKeys.size() < (requiredColumns == null ? srcRowType.getFieldCount() : requiredColumns.cardinality())) {
-            fieldIdxMapping = null;
-            requiredInlineKeys = null;
-            inlineKeyTypes = null;
+        // Even if we need some subset of inlined keys we are required to the read full inlined row, since this row
+        // is also participated in comparison with other rows when cursor processing the next index page.
+        if (inlinedKeys.size() < idx.segment(0).rowHandler().indexKeyDefinitions().size() ||
+            inlinedKeys.size() < (requiredColumns == null ? srcFieldsCnt : requiredColumns.cardinality()))
+            return null;
 
-            return;
+        for (InlineIndexKeyType keyType : inlinedKeys) {
+            // Variable length types can be not fully inlined, so it's probably better to directly read full cache row
+            // instead of trying to read inlined value and than falllback to cache row reading.
+            // Inlined JAVA_OBJECT can't be compared with fill cache row in case of hash collision, this can lead to
+            // issues when processing the next index page in cursor if current page was concurrently splitted.
+            if (keyType.keySize() < 0 || keyType.type() == IndexKeyType.JAVA_OBJECT)
+                return null;
         }
 
-        ImmutableBitSet reqCols = requiredColumns == null ? ImmutableBitSet.range(0, srcRowType.getFieldCount()) :
+        ImmutableBitSet reqCols = requiredColumns == null ? ImmutableBitSet.range(0, srcFieldsCnt) :
             requiredColumns;
 
-        int maxInlinedKey = -1;
-
-        ImmutableBitSet.Builder requiredInlineKeysBuilder = ImmutableBitSet.builder();
-        int [] locFieldIdxMapping = new int[rowType.getFieldCount()];
+        int[] fieldIdxMapping = new int[rowType.getFieldCount()];
 
         for (int i = 0, j = reqCols.nextSetBit(0); j != -1; j = reqCols.nextSetBit(j + 1), i++) {
             // j = source field index, i = target field index.
             int keyIdx = idxFieldMapping.indexOf(j);
 
-            if (keyIdx >= 0 && keyIdx < inlinedKeys.size()) {
-                if (keyIdx > maxInlinedKey)
-                    maxInlinedKey = keyIdx;
-
-                requiredInlineKeysBuilder.set(keyIdx);
-                locFieldIdxMapping[i] = keyIdx;
-            }
-            else {
-                fieldIdxMapping = null;
-                requiredInlineKeys = null;
-                inlineKeyTypes = null;
-
-                return;
-            }
+            if (keyIdx >= 0 && keyIdx < inlinedKeys.size())
+                fieldIdxMapping[i] = keyIdx;
+            else
+                return null;
         }
 
-        fieldIdxMapping = locFieldIdxMapping;
-        requiredInlineKeys = requiredInlineKeysBuilder.build();
-        inlineKeyTypes = inlinedKeys.subList(0, maxInlinedKey + 1).toArray(new InlineIndexKeyType[maxInlinedKey + 1]);
+        return fieldIdxMapping;
     }
 
     /** {@inheritDoc} */
@@ -264,12 +260,12 @@ public class IndexScan<Row> extends AbstractIndexScan<Row, IndexRow> {
             }
         }
 
-        return nullSearchRow ? null : new IndexSearchRowImpl(keys, idxRowHnd);
+        return nullSearchRow ? null : new IndexPlainRowImpl(keys, idxRowHnd);
     }
 
     /** {@inheritDoc} */
     @Override protected Row indexRow2Row(IndexRow row) throws IgniteCheckedException {
-        if (row.indexSearchRow())
+        if (row.indexPlainRow())
             return inlineIndexRow2Row(row);
         else
             return desc.toRow(ectx, row.cacheDataRow(), factory, requiredColumns);
@@ -284,7 +280,6 @@ public class IndexScan<Row> extends AbstractIndexScan<Row, IndexRow> {
         for (int i = 0; i < fieldIdxMapping.length; i++)
             hnd.set(i, res, TypeUtils.toInternal(ectx, row.key(fieldIdxMapping[i]).key()));
 
-        System.out.println(hnd.get(0, res));
         return res;
     }
 
@@ -375,10 +370,17 @@ public class IndexScan<Row> extends AbstractIndexScan<Row, IndexRow> {
     @Override protected IndexQueryContext indexQueryContext() {
         IndexingQueryFilter filter = new IndexingQueryFilterImpl(kctx, topVer, parts);
 
-        InlineIndexRowFactory rowFactory = inlineKeyTypes == null || requiredInlineKeys == null ? null :
-            new InlineIndexRowFactory(inlineKeyTypes, idx.segment(0).rowHandler(), requiredInlineKeys);
+        InlineIndexRowHandler rowHnd = idx.segment(0).rowHandler();
+
+        InlineIndexRowFactory rowFactory = isInlineScan() ?
+            new InlineIndexRowFactory(rowHnd.inlineIndexKeyTypes().toArray(new InlineIndexKeyType[0]), rowHnd) : null;
 
         return new IndexQueryContext(filter, null, rowFactory, mvccSnapshot);
+    }
+
+    /** */
+    public boolean isInlineScan() {
+        return fieldIdxMapping != null;
     }
 
     /** */
@@ -389,18 +391,16 @@ public class IndexScan<Row> extends AbstractIndexScan<Row, IndexRow> {
         /** */
         private final InlineIndexRowHandler idxRowHnd;
 
-        /** */
-        private final ImmutableBitSet requiredKeys;
+        /** Read full cache index row instead of inlined values. */
+        private boolean useCacheRow;
 
         /** */
         private InlineIndexRowFactory(
             InlineIndexKeyType[] keyTypes,
-            InlineIndexRowHandler idxRowHnd,
-            ImmutableBitSet requiredKeys
+            InlineIndexRowHandler idxRowHnd
         ) {
             this.keyTypes = keyTypes;
             this.idxRowHnd = idxRowHnd;
-            this.requiredKeys = requiredKeys;
         }
 
         /** {@inheritDoc} */
@@ -410,34 +410,33 @@ public class IndexScan<Row> extends AbstractIndexScan<Row, IndexRow> {
             long pageAddr,
             int idx
         ) throws IgniteCheckedException {
+            if (useCacheRow)
+                return io.getLookupRow(tree, pageAddr, idx);
+
             int inlineSize = ((InlineIO)io).inlineSize();
             int rowOffset = io.offset(idx);
             int keyOffset = 0;
+
+            IndexKey[] keys = new IndexKey[keyTypes.length];
 
             // Check if all required keys is inlined before creating index row.
             for (int keyIdx = 0; keyIdx < keyTypes.length; keyIdx++) {
                 InlineIndexKeyType keyType = keyTypes[keyIdx];
 
-                if (!keyType.inlinedFullValue(pageAddr, rowOffset + keyOffset, inlineSize - keyOffset))
+                if (!keyType.inlinedFullValue(pageAddr, rowOffset + keyOffset, inlineSize - keyOffset)) {
+                    // Since we are checking only fixed-length keys, this condition means that for all rows current
+                    // key type is not fully inlined, so fallback to cache index row.
+                    useCacheRow = true;
+
                     return io.getLookupRow(tree, pageAddr, idx);
+                }
+
+                keys[keyIdx] = keyType.get(pageAddr, rowOffset + keyOffset, inlineSize - keyOffset);
 
                 keyOffset += keyType.inlineSize(pageAddr, rowOffset + keyOffset);
             }
 
-            // Second loop to create index row.
-            IndexKey[] keys = new IndexKey[keyTypes.length];
-            keyOffset = 0;
-
-            for (int keyIdx = 0; keyIdx < keyTypes.length; keyIdx++) {
-                InlineIndexKeyType keyType = keyTypes[keyIdx];
-
-                if (requiredKeys.get(keyIdx))
-                    keys[keyIdx] = keyType.get(pageAddr, rowOffset + keyOffset, inlineSize - keyOffset);
-
-                keyOffset += keyType.inlineSize(pageAddr, rowOffset + keyOffset);
-            }
-
-            return new IndexSearchRowImpl(keys, idxRowHnd);
+            return new IndexPlainRowImpl(keys, idxRowHnd);
         }
     }
 

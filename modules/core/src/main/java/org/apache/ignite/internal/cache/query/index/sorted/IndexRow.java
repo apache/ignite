@@ -82,5 +82,5 @@ public interface IndexRow extends MvccVersionAware {
     /**
      * @return {@code True} for rows used for index search (as opposed to rows stored in {@link InlineIndexTree}.
      */
-    public boolean indexSearchRow();
+    public boolean indexPlainRow();
 }

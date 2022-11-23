@@ -162,7 +162,7 @@ public class IndexRowImpl implements IndexRow {
     }
 
     /** {@inheritDoc} */
-    @Override public boolean indexSearchRow() {
+    @Override public boolean indexPlainRow() {
         return false;
     }
 }

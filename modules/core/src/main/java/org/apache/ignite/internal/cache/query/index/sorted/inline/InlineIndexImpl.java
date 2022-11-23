@@ -589,10 +589,8 @@ public class InlineIndexImpl extends AbstractIndex implements InlineIndex {
             cctx, def.idxName().cacheName(), def.idxName().tableName(), row.key(), row.value());
     }
 
-    /**
-     * @return Index definition.
-     */
-    public SortedIndexDefinition indexDefinition() {
+    /** {@inheritDoc} */
+    @Override public SortedIndexDefinition indexDefinition() {
         return def;
     }
 
