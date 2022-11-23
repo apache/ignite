@@ -31,7 +31,6 @@ import java.util.function.UnaryOperator;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 import org.apache.ignite.DataRegionMetrics;
-import org.apache.ignite.DataStorageMetrics;
 import org.apache.ignite.IgniteCache;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteException;
@@ -235,12 +234,12 @@ public class IgniteDataStorageMetricsSelfTest extends GridCommonAbstractTest {
 
             assertTrue(waitForCondition(new PAX() {
                 @Override public boolean applyx() {
-                    DataStorageMetrics pMetrics = ig.dataStorageMetrics();
+                    MetricRegistry pMetrics = ig.context().metric().registry(DATASTORAGE_METRIC_PREFIX);
 
                     assertNotNull(pMetrics);
 
-                    return pMetrics.getLastCheckpointTotalPagesNumber() != 0 &&
-                        pMetrics.getLastCheckpointDataPagesNumber() != 0;
+                    return pMetrics.<LongMetric>findMetric("LastCheckpointTotalPagesNumber").value() != 0 &&
+                        pMetrics.<LongMetric>findMetric("LastCheckpointDataPagesNumber").value() != 0;
                 }
             }, 10_000));
 
