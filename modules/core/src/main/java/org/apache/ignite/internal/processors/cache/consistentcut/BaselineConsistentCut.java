@@ -38,7 +38,6 @@ import org.apache.ignite.internal.util.tostring.GridToStringInclude;
 import org.apache.ignite.internal.util.typedef.internal.CU;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.internal.util.typedef.internal.U;
-import org.jetbrains.annotations.Nullable;
 
 import static org.apache.ignite.internal.processors.cache.transactions.IgniteInternalTx.FinalizationStatus.RECOVERY_FINISH;
 import static org.apache.ignite.transactions.TransactionState.ACTIVE;
@@ -50,99 +49,107 @@ import static org.apache.ignite.transactions.TransactionState.UNKNOWN;
 /**
  * Describes Consistent Cut running on baseline nodes.
  */
-public class BaselineConsistentCutFuture extends GridFutureAdapter<WALPointer> implements ConsistentCutFuture {
+public class BaselineConsistentCut implements ConsistentCut {
     /** */
     private final GridCacheSharedContext<?, ?> cctx;
 
     /** */
     private final IgniteLogger log;
 
-    /** ID of Consistent Cut. */
+    /** Consistent Cut ID. */
+    @GridToStringInclude
     private final UUID id;
 
-    /** Set of checked transactions belonging to the BEFORE side. */
+    /** Set of checked transactions belong to the BEFORE set. */
     @GridToStringInclude
     private Set<GridCacheVersion> before;
 
-    /** Set of checked transactions belonging to the AFTER side. */
+    /** Set of checked transactions belong to the AFTER set. */
     @GridToStringInclude
     private Set<GridCacheVersion> after;
 
     /** Collection of transactions removed from {@link IgniteTxManager#activeTransactions()}. */
     private volatile Set<IgniteInternalFuture<IgniteInternalTx>> removedFromActive = ConcurrentHashMap.newKeySet();
 
+    /** Consistent Cut future, completes with pointer to {@link ConsistentCutFinishRecord}. */
+    private final GridFutureAdapter<WALPointer> fut = new GridFutureAdapter<>();
+
     /** */
-    BaselineConsistentCutFuture(GridCacheSharedContext<?, ?> cctx, UUID id) {
+    BaselineConsistentCut(GridCacheSharedContext<?, ?> cctx, UUID id) {
         this.cctx = cctx;
         this.id = id;
 
-        log = cctx.logger(BaselineConsistentCutFuture.class);
-    }
+        log = cctx.logger(BaselineConsistentCut.class);
 
-    /** {@inheritDoc} */
-    @Override public UUID id() {
-        return id;
+        fut.listen(r -> removedFromActive = null);
     }
 
     /**
      * Inits local Consistent Cut: prepares list of active transactions to check which side of Consistent Cut they belong to.
      */
-    protected void init() throws IgniteCheckedException {
-        cctx.wal().log(new ConsistentCutStartRecord(id));
+    protected void init() {
+        try {
+            cctx.wal().log(new ConsistentCutStartRecord(id));
 
-        before = ConcurrentHashMap.newKeySet();
-        after = ConcurrentHashMap.newKeySet();
+            before = ConcurrentHashMap.newKeySet();
+            after = ConcurrentHashMap.newKeySet();
 
-        GridCompoundFuture<Boolean, Boolean> checkFut = new GridCompoundFuture<>(CU.boolReducer());
+            GridCompoundFuture<Boolean, Boolean> checkFut = new GridCompoundFuture<>(CU.boolReducer());
 
-        Iterator<IgniteInternalFuture<IgniteInternalTx>> finFutIt = cctx.tm().activeTransactions().stream()
-            .filter(tx -> tx.state() != ACTIVE)
-            .map(IgniteInternalTx::finishFuture)
-            .iterator();
+            Iterator<IgniteInternalFuture<IgniteInternalTx>> finFutIt = cctx.tm().activeTransactions().stream()
+                .filter(tx -> tx.state() != ACTIVE)
+                .map(IgniteInternalTx::finishFuture)
+                .iterator();
 
-        // Invoke sequentially over two iterators:
-        // 1. iterators are weakly consistent.
-        // 2. we need a guarantee to handle `removedFromActive` after `activeTxs` to avoid missed transactions.
-        checkTransactions(finFutIt, checkFut);
+            // Invoke sequentially over two iterators:
+            // 1. iterators are weakly consistent.
+            // 2. we need a guarantee to handle `removedFromActive` after `activeTxs` to avoid missed transactions.
+            checkTransactions(finFutIt, checkFut);
 
-        Iterator<IgniteInternalFuture<IgniteInternalTx>> removedFromActiveIter = removedFromActive.iterator();
-        removedFromActive = null;
+            Iterator<IgniteInternalFuture<IgniteInternalTx>> removedFromActiveIter = removedFromActive.iterator();
+            removedFromActive = null;
 
-        checkTransactions(removedFromActiveIter, checkFut);
+            checkTransactions(removedFromActiveIter, checkFut);
 
-        checkFut.markInitialized();
+            checkFut.markInitialized();
 
-        checkFut.listen(finish -> {
-            if (Boolean.FALSE.equals(finish.result()) || isDone()) {
-                onDone(new IgniteCheckedException("Cut is inconsistent."));
+            checkFut.listen(finish -> {
+                if (Boolean.FALSE.equals(finish.result())) {
+                    fut.onDone(new IgniteCheckedException("Cut is inconsistent."));
 
-                return;
-            }
+                    return;
+                }
 
-            cctx.database().checkpointReadLock();
+                cctx.database().checkpointReadLock();
 
-            try {
-                WALPointer ptr = cctx.wal().log(new ConsistentCutFinishRecord(id, before, after), RolloverType.CURRENT_SEGMENT);
+                try {
+                    WALPointer ptr = cctx.wal().log(new ConsistentCutFinishRecord(id, before, after), RolloverType.CURRENT_SEGMENT);
 
-                onDone(ptr);
-            }
-            catch (IgniteCheckedException e) {
-                U.error(log, "Failed to write ConsistentCutFinishRecord to WAL for [id= " + id + ']', e);
+                    fut.onDone(ptr);
+                }
+                catch (IgniteCheckedException e) {
+                    U.error(log, "Failed to write ConsistentCutFinishRecord to WAL for [id= " + id + ']', e);
 
-                onDone(e);
-            }
-            finally {
-                cctx.database().checkpointReadUnlock();
-            }
-        });
+                    fut.onDone(e);
+                }
+                finally {
+                    cctx.database().checkpointReadUnlock();
+                }
+            });
+        }
+        catch (IgniteCheckedException e) {
+            fut.onDone(e);
+
+            U.error(log, "Failed to handle Consistent Cut: " + id, e);
+        }
     }
 
     /**
-     * Collects a transaction before it is removed from {@link IgniteTxManager#activeTransactions()}.
+     * Collects a transaction before it is committed and removed from {@link IgniteTxManager#activeTransactions()}.
      *
      * @param txFinFut Transaction finish future.
      */
-    public void onRemoveActiveTransaction(IgniteInternalFuture<IgniteInternalTx> txFinFut) {
+    public void onCommit(IgniteInternalFuture<IgniteInternalTx> txFinFut) {
         Set<IgniteInternalFuture<IgniteInternalTx>> removedFromActive0 = removedFromActive;
 
         if (removedFromActive0 != null)
@@ -202,14 +209,27 @@ public class BaselineConsistentCutFuture extends GridFutureAdapter<WALPointer> i
     }
 
     /** {@inheritDoc} */
-    @Override protected boolean onDone(@Nullable WALPointer res, @Nullable Throwable err, boolean cancel) {
-        removedFromActive = null;
+    @Override public UUID id() {
+        return id;
+    }
 
-        return super.onDone(res, err, cancel);
+    /** {@inheritDoc} */
+    @Override public IgniteInternalFuture<WALPointer> consistentCutFuture() {
+        return fut;
+    }
+
+    /** {@inheritDoc} */
+    @Override public void cancel(Throwable err) {
+        fut.onDone(err);
+    }
+
+    /** {@inheritDoc} */
+    @Override public boolean baseline() {
+        return true;
     }
 
     /** {@inheritDoc} */
     @Override public String toString() {
-        return S.toString(BaselineConsistentCutFuture.class, this);
+        return S.toString(BaselineConsistentCut.class, this);
     }
 }

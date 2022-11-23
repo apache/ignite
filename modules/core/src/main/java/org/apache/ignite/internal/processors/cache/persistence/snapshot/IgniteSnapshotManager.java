@@ -1083,7 +1083,7 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
         SnapshotOperationRequest snpReq = clusterSnpReq;
 
         if (snpReq != null && snpReq.incremental())
-            cctx.consistentCutMgr().cleanLocalCut();
+            cctx.consistentCutMgr().cleanConsistentCut();
 
         if (cctx.kernalContext().clientNode())
             return;

@@ -32,9 +32,9 @@ import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.TestRecordingCommunicationSpi;
 import org.apache.ignite.internal.pagemem.wal.IgniteWriteAheadLogManager;
+import org.apache.ignite.internal.pagemem.wal.record.ConsistentCutStartRecord;
 import org.apache.ignite.internal.pagemem.wal.record.TxRecord;
 import org.apache.ignite.internal.pagemem.wal.record.WALRecord;
-import org.apache.ignite.internal.processors.cache.GridCacheSharedContext;
 import org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtTxFinishRequest;
 import org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtTxPrepareRequest;
 import org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtTxPrepareResponse;
@@ -140,7 +140,7 @@ public abstract class AbstractConsistentCutBlockingTest extends AbstractConsiste
             return;
 
         if (txBlkNodeId >= 0)
-            BlockingWALManager.walMgr(grid(txBlkNodeId)).block();
+            BlockingWALManager.walMgr(grid(txBlkNodeId)).blockTx();
 
         log.info("START CASE " + (++caseNum) + ". Data=" + testCase + ", nearNodeId=" + nearNodeId);
 
@@ -341,7 +341,7 @@ public abstract class AbstractConsistentCutBlockingTest extends AbstractConsiste
     /** */
     private void awaitTxBlocked(IgniteEx blkNode) throws Exception {
         if (txBlkState != null)
-            BlockingWALManager.walMgr(blkNode).awaitBlocked();
+            BlockingWALManager.walMgr(blkNode).awaitTxBlocked();
         else
             // In some cases blocking node doesn't send required message. Just hangs a little for such cases.
             TestRecordingCommunicationSpi.spi(blkNode).waitForBlocked(1, 100);
@@ -350,7 +350,7 @@ public abstract class AbstractConsistentCutBlockingTest extends AbstractConsiste
     /** */
     private void unblockTx(IgniteEx blkNode) {
         if (txBlkState != null)
-            BlockingWALManager.walMgr(blkNode).unblock();
+            BlockingWALManager.walMgr(blkNode).unblockTx();
         else
             TestRecordingCommunicationSpi.spi(blkNode).stopBlock();
     }
@@ -403,7 +403,7 @@ public abstract class AbstractConsistentCutBlockingTest extends AbstractConsiste
             boolean allNodeStartedCut = true;
 
             for (int i = 0; i < nodes(); i++)
-                allNodeStartedCut &= BlockingConsistentCutManager.cutMgr(grid(i)).cutFuture() != null;
+                allNodeStartedCut &= BlockingConsistentCutManager.cutMgr(grid(i)).consistentCut() != null;
 
             return allNodeStartedCut;
         }, getTestTimeout(), 10);
@@ -415,7 +415,7 @@ public abstract class AbstractConsistentCutBlockingTest extends AbstractConsiste
             boolean allNodeFinishedCut = true;
 
             for (int i = 0; i < nodes(); i++)
-                allNodeFinishedCut &= BlockingConsistentCutManager.cutMgr(grid(i)).cutFuture() == null;
+                allNodeFinishedCut &= BlockingConsistentCutManager.cutMgr(grid(i)).consistentCut() == null;
 
             return allNodeFinishedCut;
         }, getTestTimeout(), 10);
@@ -440,10 +440,16 @@ public abstract class AbstractConsistentCutBlockingTest extends AbstractConsiste
     /** Blocks writing to WAL specific tx record, and awaits for Consistent Cut procedure starts on every node. */
     private static class BlockingWALManager extends FileWriteAheadLogManager {
         /** */
-        private volatile CountDownLatch latch;
+        private volatile CountDownLatch blkTxLatch;
 
         /** */
-        private volatile boolean blocked;
+        private volatile CountDownLatch blkCutLatch;
+
+        /** */
+        private volatile CountDownLatch txBlocked;
+
+        /** */
+        private volatile CountDownLatch cutBlocked;
 
         /**
          * Constructor.
@@ -460,43 +466,74 @@ public abstract class AbstractConsistentCutBlockingTest extends AbstractConsiste
         }
 
         /** */
-        public void block() {
-            latch = new CountDownLatch(1);
+        public void blockTx() {
+            blkTxLatch = new CountDownLatch(1);
+            txBlocked = new CountDownLatch(1);
         }
 
         /** */
-        public void unblock() {
-            latch.countDown();
+        public void unblockTx() {
+            blkTxLatch.countDown();
         }
 
         /** */
-        public void awaitBlocked() throws Exception {
-            GridTestUtils.waitForCondition(() -> blocked, 60_000, 10);
+        public void awaitTxBlocked() {
+            U.awaitQuiet(txBlocked);
+        }
+
+        /** */
+        public void blockCut() {
+            blkCutLatch = new CountDownLatch(1);
+            cutBlocked = new CountDownLatch(1);
+        }
+
+        /** */
+        public void unblockCut() {
+            blkCutLatch.countDown();
+        }
+
+        /** */
+        public void awaitCutBlocked() {
+            U.awaitQuiet(cutBlocked);
         }
 
         /** */
         public void clear() {
-            blocked = false;
-            latch = null;
+            blkTxLatch = null;
+            blkCutLatch = null;
+            txBlocked = null;
+            cutBlocked = null;
         }
 
         /** {@inheritDoc} */
         @Override public WALPointer log(WALRecord record) throws IgniteCheckedException, StorageException {
-            if (blkRecord(record)) {
-                blocked = true;
+            if (blkTxRecord(record)) {
+                txBlocked.countDown();
 
-                U.awaitQuiet(latch);
+                U.awaitQuiet(blkTxLatch);
+            }
+            else if (blkCutRecord(record)) {
+                cutBlocked.countDown();
+
+                U.awaitQuiet(blkCutLatch);
             }
 
             return super.log(record);
         }
 
         /** */
-        private boolean blkRecord(WALRecord record) {
-            return latch != null
-                && latch.getCount() > 0
+        private boolean blkTxRecord(WALRecord record) {
+            return blkTxLatch != null
+                && blkTxLatch.getCount() > 0
                 && record instanceof TxRecord
                 && ((TxRecord)record).state() == txBlkState;
+        }
+
+        /** */
+        private boolean blkCutRecord(WALRecord record) {
+            return blkCutLatch != null
+                && blkCutLatch.getCount() > 0
+                && record instanceof ConsistentCutStartRecord;
         }
     }
 
@@ -520,9 +557,6 @@ public abstract class AbstractConsistentCutBlockingTest extends AbstractConsiste
     static class BlockingConsistentCutManager extends TestConsistentCutManager {
         /** Latch that blocks before Consistent Cut Version updated. */
         private volatile CountDownLatch beforeUpdVer;
-
-        /** Latch that blocks after Consistent Cut Version updated. */
-        private volatile CountDownLatch afterUpdVer;
 
         /** */
         private volatile CountDownLatch blockedLatch;
@@ -549,19 +583,17 @@ public abstract class AbstractConsistentCutBlockingTest extends AbstractConsiste
             super.handleConsistentCutId(id);
         }
 
-        /** {@inheritDoc} */
-        @Override protected BaselineConsistentCutFuture newBaselineConsistentCut(UUID id) {
-            return new BlockingConsistentCutFutureFuture(context(), id);
-        }
-
         /** */
         public void block(BlkCutType type) {
             blockedLatch = new CountDownLatch(1);
 
             if (type == BEFORE_VERSION_UPDATE)
                 beforeUpdVer = new CountDownLatch(1);
-            else if (type == AFTER_VERSION_UPDATE)
-                afterUpdVer = new CountDownLatch(1);
+            else if (type == AFTER_VERSION_UPDATE) {
+                BlockingWALManager blkWalMgr = (BlockingWALManager)cctx.wal();
+
+                blkWalMgr.blockCut();
+            }
         }
 
         /** */
@@ -573,36 +605,25 @@ public abstract class AbstractConsistentCutBlockingTest extends AbstractConsiste
 
             cutFut.listen((f) -> latch.countDown());
 
-            U.awaitQuiet(latch);
+            if (beforeUpdVer != null)
+                U.awaitQuiet(latch);
+            else {
+                latch.countDown();
+
+                BlockingWALManager blkWalMgr = (BlockingWALManager)cctx.wal();
+
+                blkWalMgr.awaitCutBlocked();
+            }
         }
 
         /** */
         public void unblock(BlkCutType type) {
             if (type == BEFORE_VERSION_UPDATE && beforeUpdVer != null)
                 beforeUpdVer.countDown();
-            else if (type == AFTER_VERSION_UPDATE && afterUpdVer != null)
-                afterUpdVer.countDown();
-        }
+            else if (type == AFTER_VERSION_UPDATE) {
+                BlockingWALManager blkWalMgr = (BlockingWALManager)cctx.wal();
 
-        /** */
-        private final class BlockingConsistentCutFutureFuture extends BaselineConsistentCutFuture {
-            /** */
-            BlockingConsistentCutFutureFuture(GridCacheSharedContext<?, ?> cctx, UUID id) {
-                super(cctx, id);
-            }
-
-            /** Blocks before or after ConsistentCut preparation. */
-            @Override protected void init() throws IgniteCheckedException {
-                if (afterUpdVer != null) {
-                    blockedLatch.countDown();
-                    blockedLatch = null;
-
-                    U.awaitQuiet(afterUpdVer);
-
-                    afterUpdVer = null;
-                }
-
-                super.init();
+                blkWalMgr.unblockCut();
             }
         }
     }

@@ -22,7 +22,6 @@ import java.util.UUID;
 import java.util.concurrent.atomic.AtomicReference;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.internal.pagemem.wal.record.ConsistentCutFinishRecord;
-import org.apache.ignite.internal.pagemem.wal.record.ConsistentCutStartRecord;
 import org.apache.ignite.internal.processors.cache.GridCacheMessage;
 import org.apache.ignite.internal.processors.cache.GridCacheSharedContext;
 import org.apache.ignite.internal.processors.cache.GridCacheSharedManagerAdapter;
@@ -31,7 +30,7 @@ import org.apache.ignite.internal.processors.cache.distributed.dht.preloader.Par
 import org.apache.ignite.internal.processors.cache.transactions.IgniteInternalTx;
 import org.apache.ignite.internal.processors.cache.transactions.IgniteTxAdapter;
 import org.apache.ignite.internal.processors.cache.transactions.IgniteTxManager;
-import org.apache.ignite.internal.util.typedef.internal.U;
+import org.apache.ignite.internal.util.tostring.GridToStringInclude;
 import org.jetbrains.annotations.Nullable;
 
 import static org.apache.ignite.internal.processors.cache.GridCacheUtils.baselineNode;
@@ -39,33 +38,30 @@ import static org.apache.ignite.internal.processors.cache.GridCacheUtils.baselin
 /**
  * Processes all stuff related to Consistent Cut.
  * <p>
- * Consistent Cut is a distributed algorithm that defines two set of transactions - BEFORE and AFTER cut. It guarantees that every
- * transaction committed BEFORE also will be committed BEFORE on every other node participated in the transaction.
- * It means that an Ignite nodes can safely recover themselves to the consistent BEFORE state without any coordination with each other.
+ * Consistent Cut is a distributed algorithm that defines two set of transactions - BEFORE and AFTER cut - on baseline nodes.
+ * It guarantees that every transaction was included into BEFORE on one node also included into the BEFORE on every other node
+ * participated in the transaction. It means that Ignite nodes can safely recover themselves to the consistent BEFORE
+ * state without any coordination with each other.
  * <p>
  * The algorithm starts on Ignite node by snapshot creation command. Other nodes are notified with discovery message of snapshot
  * distributed process or by transaction messages {@link ConsistentCutAwareMessage}.
  * <p>
  * The algorithm consist of steps:
- * 1. On receiving new Consistent Cut ID it immediately creates new {@link ConsistentCutFuture} before processing the message.
+ * 1. On receiving new Consistent Cut ID it immediately creates new {@link ConsistentCut} before processing the message.
  * 2. It starts wrapping all transaction messages to {@link ConsistentCutAwareMessage}.
- * 3. Every transaction holds {@link IgniteTxAdapter#cutId()} AFTER which it committed. Value of this field is defined
- *    at node that commits first in distributed transaction.
- * 4. On baseline nodes in {@link BaselineConsistentCutFuture}:
- *    - it writes {@link ConsistentCutStartRecord} to limit amount of transactions on the AFTER side of Consistent Cut.
- *      After writing this record it's safe to miss transactions on the AFTER side.
- *    - it collects active transactions to check which side of Consistent Cut they belong to. This collection contains all
- *      not-committed yet transactions that are on the BEFORE side.
- *    - it awaits every transaction in this collection to be committed to decide which side of Consistent Cut they belong to.
- *    - after the all active transactions finished it finishes Consistent Cut with writing {@link ConsistentCutFinishRecord} that contains
- *      collection of transactions on the BEFORE and AFTER sides.
- * 5. After Consistent Cut finished globally, it clears {@link ConsistentCutFuture} variable and stops wrapping messages.
+ * 3. Every transaction holds {@link IgniteTxAdapter#cutId()} after which it committed. The value is initially set on
+ *    originated node for two-phase-commit, and backup node for one-phase-commit. Then it is propagated to other nodes with
+ *    {@link ConsistentCutAwareMessage}.
+ * 4. On baseline nodes it awaits {@link BaselineConsistentCut}, that completes with pointer to {@link ConsistentCutFinishRecord}.
+ * 5. After Consistent Cut finished on all nodes, it clears {@link ConsistentCut} and stops wrapping messages.
  */
 public class ConsistentCutManager extends GridCacheSharedManagerAdapter implements PartitionsExchangeAware {
     /** Current Consistent Cut, {@code null} if not running. */
-    private final AtomicReference<ConsistentCutFuture> cutFutRef = new AtomicReference<>();
+    @GridToStringInclude
+    private final AtomicReference<ConsistentCut> consistentCutRef = new AtomicReference<>();
 
-    /** ID of the last finished {@link ConsistentCutFuture}. Required to avoid re-run {@link ConsistentCutFuture} with the same id. */
+    /** ID of the last finished Consistent Cut. Required to avoid re-run Consistent Cut with the same id. */
+    @GridToStringInclude
     protected volatile UUID lastFinishedCutId;
 
     /** {@inheritDoc} */
@@ -77,7 +73,7 @@ public class ConsistentCutManager extends GridCacheSharedManagerAdapter implemen
 
     /** {@inheritDoc} */
     @Override public void stop0(boolean cancel) {
-        cancelCut(new IgniteCheckedException("Ignite node is stopping."));
+        cancelConsistentCut(new IgniteCheckedException("Ignite node is stopping."));
     }
 
     /**
@@ -85,34 +81,19 @@ public class ConsistentCutManager extends GridCacheSharedManagerAdapter implemen
      */
     @Override public void onInitBeforeTopologyLock(GridDhtPartitionsExchangeFuture fut) {
         if (fut.changedBaseline() || fut.isBaselineNodeFailed())
-            cancelCut(new IgniteCheckedException("Ignite topology changed, can't finish Consistent Cut."));
+            cancelConsistentCut(new IgniteCheckedException("Ignite topology changed, can't finish Consistent Cut."));
     }
 
     /**
-     * Registers transaction before it is removed from {@link IgniteTxManager#activeTransactions()}.
+     * Registers transaction before it is committed and removed from {@link IgniteTxManager#activeTransactions()}.
      *
      * @param tx Transaction.
      */
-    public void onRemoveActiveTransaction(IgniteInternalTx tx) {
-        if (clientNode())
-            return;
+    public void onCommit(IgniteInternalTx tx) {
+        ConsistentCut cut = consistentCut();
 
-        ConsistentCutFuture cut = cutFutRef.get();
-
-        if (cut != null)
-            ((BaselineConsistentCutFuture)cut).onRemoveActiveTransaction(tx.finishFuture());
-    }
-
-    /**
-     * Set transaction Consistent Cut ID.
-     *
-     * @param tx Transaction.
-     */
-    public void setTransactionCutId(IgniteInternalTx tx) {
-        ConsistentCutFuture cut = cutFutRef.get();
-
-        if (cut != null)
-            tx.cutId(cut.id());
+        if (cut != null && cut.baseline())
+            ((BaselineConsistentCut)cut).onCommit(tx.finishFuture());
     }
 
     /**
@@ -129,7 +110,7 @@ public class ConsistentCutManager extends GridCacheSharedManagerAdapter implemen
         if (cctx.consistentCutMgr() == null)
             return txMsg;
 
-        ConsistentCutFuture cut = cctx.consistentCutMgr().cutFuture();
+        ConsistentCut cut = cctx.consistentCutMgr().consistentCut();
 
         if (cut != null)
             return new ConsistentCutAwareMessage(txMsg, cut.id(), txCutId);
@@ -141,42 +122,27 @@ public class ConsistentCutManager extends GridCacheSharedManagerAdapter implemen
      * Handles received Consistent Cut ID from remote node. It compares it with the latest ID that local node is aware of.
      * Init local Consistent Cut procedure if received ID is a new one.
      *
-     * @param id ID of {@link ConsistentCutFuture}.
+     * @param id Consistent Cut ID.
      */
     public void handleConsistentCutId(UUID id) {
-        ConsistentCutFuture cutFut = cutFutRef.get();
+        ConsistentCut cut = consistentCutRef.get();
 
-        if (cutFut != null || Objects.equals(id, lastFinishedCutId))
+        if (cut != null || Objects.equals(id, lastFinishedCutId))
             return;
 
-        ConsistentCutFuture newCutFut = clientNode() ? new ClientConsistentCutFuture(id) : newBaselineConsistentCut(id);
+        boolean clientNode = cctx.kernalContext().clientNode()
+            || !baselineNode(cctx.localNode(), cctx.kernalContext().state().clusterState());
 
-        if (!cutFutRef.compareAndSet(cutFut, newCutFut))
+        ConsistentCut newCut = clientNode ? new ClientConsistentCut(id) : new BaselineConsistentCut(cctx, id);
+
+        if (!consistentCutRef.compareAndSet(null, newCut))
             return;
 
-        if (newCutFut.isDone())
-            return;
-
-        cctx.kernalContext().pools().getSnapshotExecutorService().submit(() -> {
-            BaselineConsistentCutFuture cut = (BaselineConsistentCutFuture)newCutFut;
-
-            try {
-                cut.init();
-
-                if (log.isDebugEnabled())
-                    log.debug("Prepared Consistent Cut: " + id);
-            }
-            catch (IgniteCheckedException e) {
-                U.error(log, "Failed to handle Consistent Cut: " + id, e);
-
-                cut.onDone(e);
-            }
-        });
-    }
-
-    /** Creates new Consistent Cut future for baseline nodes. */
-    protected BaselineConsistentCutFuture newBaselineConsistentCut(UUID id) {
-        return new BaselineConsistentCutFuture(cctx, id);
+        if (newCut.baseline()) {
+            cctx.kernalContext().pools().getSnapshotExecutorService().submit(() ->
+                ((BaselineConsistentCut)newCut).init()
+            );
+        }
     }
 
     /**
@@ -184,41 +150,45 @@ public class ConsistentCutManager extends GridCacheSharedManagerAdapter implemen
      *
      * @param err Error.
      */
-    public void cancelCut(Throwable err) {
-        ConsistentCutFuture cut = cutFutRef.get();
+    public void cancelConsistentCut(Throwable err) {
+        ConsistentCut cut = consistentCutRef.get();
 
-        if (cut != null && !cut.isDone())
-            ((BaselineConsistentCutFuture)cut).onDone(err);
+        if (cut != null)
+            cut.cancel(err);
 
-        cleanLocalCut();
+        cleanConsistentCut();
     }
 
     /**
-     * @return Current running Consistent Cut future, if cut isn't running then {@code null}.
+     * @return Current running Consistent Cut, if cut isn't running then {@code null}.
      */
-    public @Nullable ConsistentCutFuture cutFuture() {
-        return cutFutRef.get();
+    public @Nullable ConsistentCut consistentCut() {
+        return consistentCutRef.get();
     }
 
     /**
-     * Cleans local Consistent Cut, stop signing outgoing messages.
+     * @return Current running Consistent Cut ID, if cut isn't running then {@code null}.
      */
-    public void cleanLocalCut() {
-        ConsistentCutFuture cut = cutFutRef.get();
+    public @Nullable UUID consistentCutId() {
+        ConsistentCut cut = consistentCutRef.get();
 
-        if (log.isDebugEnabled())
-            log.debug("Clean local cut: " + cut);
+        return cut == null ? null : cut.id();
+    }
+
+    /**
+     * Cleans local Consistent Cut.
+     */
+    public void cleanConsistentCut() {
+        ConsistentCut cut = consistentCutRef.get();
 
         if (cut == null)
             return;
 
+        if (log.isDebugEnabled())
+            log.debug("Clean local cut: " + cut);
+
         lastFinishedCutId = cut.id();
 
-        cutFutRef.set(null);
-    }
-
-    /** */
-    private boolean clientNode() {
-        return cctx.kernalContext().clientNode() || !baselineNode(cctx.localNode(), cctx.kernalContext().state().clusterState());
+        consistentCutRef.set(null);
     }
 }

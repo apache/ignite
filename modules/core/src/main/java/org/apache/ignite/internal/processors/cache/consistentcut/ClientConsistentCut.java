@@ -18,23 +18,48 @@
 package org.apache.ignite.internal.processors.cache.consistentcut;
 
 import java.util.UUID;
+import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.processors.cache.persistence.wal.WALPointer;
 import org.apache.ignite.internal.util.future.GridFinishedFuture;
+import org.apache.ignite.internal.util.tostring.GridToStringInclude;
+import org.apache.ignite.internal.util.typedef.internal.S;
 
-/**
- * Describes Consistent Cut running on client nodes.
- */
-public class ClientConsistentCutFuture extends GridFinishedFuture<WALPointer> implements ConsistentCutFuture {
-    /** */
+/** Describes Consistent Cut running on client nodes. */
+class ClientConsistentCut implements ConsistentCut {
+    /** Consistent Cut ID. */
+    @GridToStringInclude
     private final UUID id;
 
+    /** Client nodes don't write to WAL, then complere Consistent Cut future at creation time. */
+    private final IgniteInternalFuture<WALPointer> fut = new GridFinishedFuture<>();
+
     /** */
-    public ClientConsistentCutFuture(UUID id) {
+    ClientConsistentCut(UUID id) {
         this.id = id;
     }
 
     /** {@inheritDoc} */
     @Override public UUID id() {
         return id;
+    }
+
+    /** {@inheritDoc} */
+    @Override public IgniteInternalFuture<WALPointer> consistentCutFuture() {
+        return fut;
+    }
+
+    /** {@inheritDoc} */
+    @Override public void cancel(Throwable err) {
+        // No-op.
+    }
+
+    /** {@inheritDoc} */
+    @Override public boolean baseline() {
+        return false;
+    }
+
+    /** {@inheritDoc} */
+    @Override public String toString() {
+        return S.toString(ClientConsistentCut.class, this);
     }
 }

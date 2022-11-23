@@ -19,13 +19,19 @@ package org.apache.ignite.internal.processors.cache.consistentcut;
 
 import java.util.UUID;
 import org.apache.ignite.internal.IgniteInternalFuture;
-import org.apache.ignite.internal.pagemem.wal.record.ConsistentCutFinishRecord;
 import org.apache.ignite.internal.processors.cache.persistence.wal.WALPointer;
 
-/**
- * Future that completes after Consistent Cut finished and return pointer to {@link ConsistentCutFinishRecord}.
- */
-public interface ConsistentCutFuture extends IgniteInternalFuture<WALPointer> {
+/** Basic interface for Consistent Cut implementations. */
+public interface ConsistentCut {
     /** Consistent Cut ID. */
     public UUID id();
+
+    /** Consistent Cut future. */
+    public IgniteInternalFuture<WALPointer> consistentCutFuture();
+
+    /** Cancels this Consistent Cut. */
+    public void cancel(Throwable err);
+
+    /** @return {@code true} if instance is created for baseline node, otherwise {@code false}. */
+    public boolean baseline();
 }

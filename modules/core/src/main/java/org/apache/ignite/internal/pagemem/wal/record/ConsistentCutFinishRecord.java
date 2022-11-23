@@ -19,24 +19,24 @@ package org.apache.ignite.internal.pagemem.wal.record;
 
 import java.util.Set;
 import java.util.UUID;
-import org.apache.ignite.internal.processors.cache.consistentcut.BaselineConsistentCutFuture;
+import org.apache.ignite.internal.processors.cache.consistentcut.BaselineConsistentCut;
 import org.apache.ignite.internal.processors.cache.persistence.tree.io.CacheVersionIO;
 import org.apache.ignite.internal.processors.cache.version.GridCacheVersion;
 import org.apache.ignite.internal.util.tostring.GridToStringInclude;
 import org.apache.ignite.internal.util.typedef.internal.S;
 
 /**
- * This record is written to WAL after it's finished to check transactions in {@link BaselineConsistentCutFuture} and store them
+ * This record is written to WAL after it's finished to check transactions in {@link BaselineConsistentCut} and store them
  * in a particular collection - {@link #before()} or {@link #after()}.
  * <p>
  * It guarantees that the BEFORE side consists of:
- * 1. transactions physically committed before {@link ConsistentCutStartRecord} and weren't included into {@link #after()};
- * 2. transactions physically committed between {@link ConsistentCutStartRecord} and {@link ConsistentCutFinishRecord}
+ * 1. Transactions committed before {@link ConsistentCutStartRecord} and weren't included into {@link #after()}.
+ * 2. Transactions committed between {@link ConsistentCutStartRecord} and {@link ConsistentCutFinishRecord}
  *    and were included into {@link #before()}.
  * <p>
  * It guarantees that the AFTER side consists of:
- * 1. transactions physically committed before {@link ConsistentCutStartRecord} and were included into {@link #after()};
- * 2. transactions physically committed between {@link ConsistentCutStartRecord} and {@link ConsistentCutFinishRecord}
+ * 1. Transactions committed before {@link ConsistentCutStartRecord} and were included into {@link #after()}.
+ * 2. Transactions committed between {@link ConsistentCutStartRecord} and {@link ConsistentCutFinishRecord}
  *    and weren't included into {@link #before()}.
  */
 public class ConsistentCutFinishRecord extends WALRecord {

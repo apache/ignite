@@ -26,7 +26,7 @@ import java.util.function.BiConsumer;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.internal.processors.cache.GridCacheSharedContext;
-import org.apache.ignite.internal.processors.cache.consistentcut.ConsistentCutFuture;
+import org.apache.ignite.internal.processors.cache.consistentcut.ConsistentCut;
 import org.apache.ignite.internal.processors.cache.persistence.file.FileIOFactory;
 import org.apache.ignite.internal.processors.cache.persistence.partstate.GroupPartitionId;
 import org.apache.ignite.internal.util.typedef.internal.CU;
@@ -91,7 +91,7 @@ class IncrementalSnapshotFutureTask
 
     /** {@inheritDoc} */
     @Override public boolean start() {
-        ConsistentCutFuture cut = cctx.consistentCutMgr().cutFuture();
+        ConsistentCut cut = cctx.consistentCutMgr().consistentCut();
 
         if (cut == null) {
             onDone(new IgniteCheckedException(
@@ -100,7 +100,7 @@ class IncrementalSnapshotFutureTask
             return false;
         }
 
-        cut.listen(snpPtrFut -> {
+        cut.consistentCutFuture().listen(snpPtrFut -> {
             if (snpPtrFut.error() != null)
                 onDone(snpPtrFut.error());
             else
@@ -120,7 +120,7 @@ class IncrementalSnapshotFutureTask
     /** {@inheritDoc} */
     @Override public void acceptException(Throwable th) {
         if (onDone(th))
-            cctx.consistentCutMgr().cancelCut(th);
+            cctx.consistentCutMgr().cancelConsistentCut(th);
     }
 
     /** {@inheritDoc} */
@@ -128,6 +128,6 @@ class IncrementalSnapshotFutureTask
         Throwable th = new IgniteException(IgniteSnapshotManager.cacheChangedException(CU.cacheId(name), name));
 
         if (onDone(th))
-            cctx.consistentCutMgr().cancelCut(th);
+            cctx.consistentCutMgr().cancelConsistentCut(th);
     }
 }

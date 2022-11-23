@@ -1329,7 +1329,7 @@ public class IgniteTxHandler {
                         dhtTx.needReturnValue(req.needReturnValue());
 
                         if (CU.isIncrementalSnapshotsEnabled(ctx))
-                            ctx.consistentCutMgr().setTransactionCutId(dhtTx);
+                            dhtTx.cutId(ctx.consistentCutMgr().consistentCutId());
 
                         finish(dhtTx, req);
 
