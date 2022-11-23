@@ -118,7 +118,8 @@ public class CacheObjectsCompressionTest extends GridCommonAbstractTest {
 
         awaitPartitionMapExchange();
 
-        ignite.events().remoteListen((uuid, evt) -> {
+        ignite.events().remoteListen(
+            (uuid, evt) -> {
                 assertTrue(evt instanceof CacheObjectTransformedEvent);
 
                 evtQueue.add((CacheObjectTransformedEvent)evt);
@@ -387,6 +388,7 @@ public class CacheObjectsCompressionTest extends GridCommonAbstractTest {
      *
      */
     private static final class ShortData {
+        /** I. */
         private final Integer i;
 
         /**
