@@ -179,12 +179,11 @@ public class GatewayProtectedCacheProxy<K, V> extends AsyncSupportAdapter<Ignite
 
     /** {@inheritDoc} */
     @Override public IgniteCache<K, V> withAllowAtomicOpsInTx() {
+        CacheOperationGate opGate = onEnter();
         if (context().atomic() && !opCtx.allowedAtomicOpsInTx() && context().tm().tx() != null) {
             throw new IllegalStateException("Enabling atomic operations during active transaction is not allowed. " +
                 "Enable atomic operations before transaction start.");
         }
-
-        CacheOperationGate opGate = onEnter();
 
         try {
             boolean allowed = opCtx.allowedAtomicOpsInTx();
