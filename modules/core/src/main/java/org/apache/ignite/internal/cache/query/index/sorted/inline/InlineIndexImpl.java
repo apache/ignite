@@ -46,6 +46,7 @@ import org.apache.ignite.internal.metric.IoStatisticsHolderIndex;
 import org.apache.ignite.internal.processors.cache.GridCacheContext;
 import org.apache.ignite.internal.processors.cache.mvcc.MvccSnapshot;
 import org.apache.ignite.internal.processors.cache.persistence.CacheDataRow;
+import org.apache.ignite.internal.processors.cache.persistence.tree.BPlusTree;
 import org.apache.ignite.internal.util.lang.GridCursor;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.spi.indexing.IndexingQueryCacheFilter;
@@ -103,6 +104,7 @@ public class InlineIndexImpl extends AbstractIndex implements InlineIndex {
         IndexQueryContext qryCtx
     ) throws IgniteCheckedException {
         InlineTreeFilterClosure closure = filterClosure(qryCtx);
+        BPlusTree.TreeRowFactory<IndexRow, IndexRow> rowFactory = qryCtx == null ? null : qryCtx.rowFactory();
 
         lock.readLock().lock();
 
@@ -117,7 +119,7 @@ public class InlineIndexImpl extends AbstractIndex implements InlineIndex {
                 return new SingleCursor<>(row);
             }
 
-            return segments[segment].find(lower, upper, lowIncl, upIncl, closure, null);
+            return segments[segment].find(lower, upper, lowIncl, upIncl, closure, rowFactory, null);
         }
         finally {
             lock.readLock().unlock();
@@ -615,7 +617,7 @@ public class InlineIndexImpl extends AbstractIndex implements InlineIndex {
 
                 @Override public int compare(GridCursor<IndexRow> o1, GridCursor<IndexRow> o2) {
                     try {
-                        int keysLen = o1.get().keys().length;
+                        int keysLen = o1.get().keysCount();
 
                         for (int i = 0; i < keysLen; i++) {
                             int cmp = rowComparator.compareRow(o1.get(), o2.get(), i);

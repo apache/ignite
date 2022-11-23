@@ -43,8 +43,8 @@ public class IndexSearchRowImpl implements IndexRow {
     }
 
     /** {@inheritDoc} */
-    @Override public IndexKey[] keys() {
-        return keys;
+    @Override public int keysCount() {
+        return keys.length;
     }
 
     /** {@inheritDoc} */

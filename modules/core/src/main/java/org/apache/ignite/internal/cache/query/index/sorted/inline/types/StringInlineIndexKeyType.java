@@ -230,7 +230,7 @@ public class StringInlineIndexKeyType extends NullableInlineIndexKeyType<StringI
 
         int res = cntr1 == len1 && cntr2 == len2 ? 0 : cntr1 == len1 ? -1 : 1;
 
-        if (inlinedFullValue(pageAddr, off))
+        if (inlinedFullValue(pageAddr, off, VARTYPE_HEADER_SIZE + 1))
             return res;
 
         if (res >= 0)
@@ -262,11 +262,6 @@ public class StringInlineIndexKeyType extends NullableInlineIndexKeyType<StringI
         }
 
         return null;
-    }
-
-    /** {@inheritDoc} */
-    @Override public boolean inlinedFullValue(long pageAddr, int off) {
-        return (PageUtils.getShort(pageAddr, off + 1) & 0x8000) == 0;
     }
 
     /** {@inheritDoc} */
