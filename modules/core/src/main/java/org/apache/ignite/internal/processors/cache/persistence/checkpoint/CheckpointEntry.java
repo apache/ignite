@@ -246,7 +246,7 @@ public class CheckpointEntry {
                         ", cur=" + partId + ']');
             }
 
-            assert pendingCntr >= cntr;
+            assert pendingCntr == 0 || pendingCntr >= cntr;
 
             parts[idx] = partId;
 

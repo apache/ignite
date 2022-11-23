@@ -504,6 +504,8 @@ public class CheckpointHistory {
 
                 T2<Long, Long> foundCntr = cpEntry.partitionCounter(wal, grpId, entry.getKey());
 
+                assert foundCntr.get2() >= foundCntr.get1();
+
                 if (foundCntr != null && foundCntr.get2() <= entry.getValue()) {
                     iter.remove();
 
@@ -669,6 +671,8 @@ public class CheckpointHistory {
                     Map.Entry<T2<Integer, Integer>, Long> entry = iter.next();
 
                     T2<Long, Long> foundCntr = cpEntry.partitionCounter(wal, entry.getKey().get1(), entry.getKey().get2());
+
+                    assert foundCntr.get2() >= foundCntr.get1();
 
                     if (foundCntr != null && foundCntr.get2() <= entry.getValue()) {
                         iter.remove();
