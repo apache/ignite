@@ -38,6 +38,7 @@ import org.apache.ignite.internal.processors.query.QueryEngine;
 import org.apache.ignite.internal.processors.query.calcite.CalciteQueryProcessor;
 import org.apache.ignite.internal.processors.query.calcite.QueryChecker;
 import org.apache.ignite.internal.processors.query.calcite.exec.ExecutionContext;
+import org.apache.ignite.internal.processors.query.calcite.exec.ExecutionServiceImpl;
 import org.apache.ignite.internal.processors.query.calcite.exec.exp.RangeIterable;
 import org.apache.ignite.internal.processors.query.calcite.metadata.ColocationGroup;
 import org.apache.ignite.internal.processors.query.calcite.prepare.bounds.SearchBounds;
@@ -84,8 +85,14 @@ public class AbstractBasicIntegrationTest extends GridCommonAbstractTest {
             for (String cacheName : ign.cacheNames())
                 ign.destroyCache(cacheName);
 
+            CalciteQueryProcessor qryProc = queryProcessor(((IgniteEx)ign));
+
             assertEquals("Not finished queries found [ignite=" + ign.name() + ']',
-                0, queryProcessor((IgniteEx)ign).queryRegistry().runningQueries().size());
+                0, qryProc.queryRegistry().runningQueries().size());
+
+            ExecutionServiceImpl<Object[]> execSvc = (ExecutionServiceImpl<Object[]>)qryProc.executionService();
+            assertEquals("Tracked memory must be 0 after test [ignite=" + ign.name() + ']',
+                0, execSvc.memoryTracker().allocated());
         }
 
         awaitPartitionMapExchange();
