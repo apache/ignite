@@ -18,6 +18,7 @@
 package org.apache.ignite.internal.processors.query.calcite;
 
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.List;
@@ -45,6 +46,8 @@ import org.apache.calcite.tools.FrameworkConfig;
 import org.apache.calcite.tools.Frameworks;
 import org.apache.ignite.SystemProperty;
 import org.apache.ignite.cache.query.FieldsQueryCursor;
+import org.apache.ignite.calcite.CalciteQueryEngineConfiguration;
+import org.apache.ignite.configuration.QueryEngineConfiguration;
 import org.apache.ignite.internal.GridKernalContext;
 import org.apache.ignite.internal.processors.GridProcessorAdapter;
 import org.apache.ignite.internal.processors.cache.query.IgniteQueryErrorCode;
@@ -95,6 +98,7 @@ import org.apache.ignite.internal.processors.query.calcite.type.IgniteTypeSystem
 import org.apache.ignite.internal.processors.query.calcite.util.Commons;
 import org.apache.ignite.internal.processors.query.calcite.util.LifecycleAware;
 import org.apache.ignite.internal.processors.query.calcite.util.Service;
+import org.apache.ignite.internal.util.typedef.F;
 import org.jetbrains.annotations.Nullable;
 
 import static org.apache.ignite.IgniteSystemProperties.getLong;
@@ -201,6 +205,9 @@ public class CalciteQueryProcessor extends GridProcessorAdapter implements Query
     private final QueryRegistry qryReg;
 
     /** */
+    private final CalciteQueryEngineConfiguration cfg;
+
+    /** */
     private volatile boolean started;
 
     /**
@@ -221,6 +228,17 @@ public class CalciteQueryProcessor extends GridProcessorAdapter implements Query
         exchangeSvc = new ExchangeServiceImpl(ctx);
         prepareSvc = new PrepareServiceImpl(ctx);
         qryReg = new QueryRegistryImpl(ctx);
+
+        QueryEngineConfiguration[] qryEnginesCfg = ctx.config().getSqlConfiguration().getQueryEnginesConfiguration();
+
+        if (F.isEmpty(qryEnginesCfg))
+            cfg = new CalciteQueryEngineConfiguration();
+        else {
+            cfg = (CalciteQueryEngineConfiguration)Arrays.stream(qryEnginesCfg)
+                .filter(c -> c instanceof CalciteQueryEngineConfiguration)
+                .findAny()
+                .orElse(new CalciteQueryEngineConfiguration());
+        }
     }
 
     /**
@@ -289,6 +307,11 @@ public class CalciteQueryProcessor extends GridProcessorAdapter implements Query
     /** */
     public PrepareServiceImpl prepareService() {
         return prepareSvc;
+    }
+
+    /** */
+    public ExecutionService<Object[]> executionService() {
+        return executionSvc;
     }
 
     /** {@inheritDoc} */
@@ -568,5 +591,10 @@ public class CalciteQueryProcessor extends GridProcessorAdapter implements Query
     /** */
     public QueryRegistry queryRegistry() {
         return qryReg;
+    }
+
+    /** */
+    public CalciteQueryEngineConfiguration config() {
+        return cfg;
     }
 }

@@ -279,6 +279,24 @@ public class AggregatesIntegrationTest extends AbstractBasicIntegrationTest {
     }
 
     /** */
+    @Test
+    public void testEverySomeAggregate() throws Exception {
+        executeSql("CREATE TABLE t(c1 INT, c2 INT)");
+        executeSql("INSERT INTO t VALUES (null, 0)");
+        executeSql("INSERT INTO t VALUES (0, null)");
+        executeSql("INSERT INTO t VALUES (null, null)");
+        executeSql("INSERT INTO t VALUES (0, 1)");
+        executeSql("INSERT INTO t VALUES (1, 1)");
+        executeSql("INSERT INTO t VALUES (1, 2)");
+        executeSql("INSERT INTO t VALUES (2, 2)");
+
+        assertQuery("SELECT EVERY(c1 < c2) FROM t").returns(false).check();
+        assertQuery("SELECT SOME(c1 < c2) FROM t").returns(true).check();
+        assertQuery("SELECT EVERY(c1 <= c2) FROM t").returns(true).check();
+        assertQuery("SELECT SOME(c1 > c2) FROM t").returns(false).check();
+    }
+
+    /** */
     protected void createAndPopulateIndexedTable(int backups, CacheMode cacheMode) {
         IgniteCache<Integer, IndexedEmployer> person = client.getOrCreateCache(new CacheConfiguration<Integer, IndexedEmployer>()
             .setName(TABLE_NAME)

@@ -48,6 +48,7 @@ import org.apache.ignite.internal.processors.query.calcite.exec.MailboxRegistry;
 import org.apache.ignite.internal.processors.query.calcite.exec.MailboxRegistryImpl;
 import org.apache.ignite.internal.processors.query.calcite.exec.QueryTaskExecutor;
 import org.apache.ignite.internal.processors.query.calcite.exec.QueryTaskExecutorImpl;
+import org.apache.ignite.internal.processors.query.calcite.exec.tracker.NoOpMemoryTracker;
 import org.apache.ignite.internal.processors.query.calcite.message.CalciteMessage;
 import org.apache.ignite.internal.processors.query.calcite.message.MessageServiceImpl;
 import org.apache.ignite.internal.processors.query.calcite.message.TestIoManager;
@@ -293,6 +294,7 @@ public class AbstractExecutionTest extends GridCommonAbstractTest {
             AffinityTopologyVersion.NONE,
             fragmentDesc,
             ArrayRowHandler.INSTANCE,
+            NoOpMemoryTracker.INSTANCE,
             ImmutableMap.of()
         );
     }

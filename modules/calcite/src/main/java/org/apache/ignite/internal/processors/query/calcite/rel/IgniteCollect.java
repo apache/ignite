@@ -21,12 +21,17 @@ import com.google.common.collect.ImmutableList;
 import org.apache.calcite.plan.RelOptCluster;
 import org.apache.calcite.plan.RelTraitSet;
 import org.apache.calcite.rel.RelCollations;
+import org.apache.calcite.rel.RelInput;
 import org.apache.calcite.rel.RelNode;
+import org.apache.calcite.rel.RelWriter;
 import org.apache.calcite.rel.core.Collect;
 import org.apache.calcite.rel.type.RelDataType;
+import org.apache.calcite.sql.type.SqlTypeName;
 import org.apache.calcite.util.Pair;
 import org.apache.ignite.internal.processors.query.calcite.trait.IgniteDistributions;
 import org.apache.ignite.internal.processors.query.calcite.trait.TraitUtils;
+
+import static java.util.Objects.requireNonNull;
 
 /** */
 public class IgniteCollect extends Collect implements IgniteRel {
@@ -47,6 +52,17 @@ public class IgniteCollect extends Collect implements IgniteRel {
         super(cluster, traits, input, rowType);
     }
 
+    /**
+     * Constructor used for deserialization.
+     *
+     * @param input Serialized representation.
+     */
+    public IgniteCollect(RelInput input) {
+        super(input.getCluster(), input.getTraitSet().replace(IgniteConvention.INSTANCE), input.getInput(),
+            deriveRowType(input.getCluster().getTypeFactory(), input.getEnum("collectionType", SqlTypeName.class),
+                requireNonNull(input.getString("field"), "field"), input.getInput().getRowType()));
+    }
+
     /** {@inheritDoc} */
     @Override public <T> T accept(IgniteRelVisitor<T> visitor) {
         return visitor.visit(this);
@@ -60,6 +76,11 @@ public class IgniteCollect extends Collect implements IgniteRel {
     /** {@inheritDoc} */
     @Override public RelNode copy(RelTraitSet traitSet, RelNode input) {
         return new IgniteCollect(getCluster(), traitSet, input, rowType());
+    }
+
+    /** {@inheritDoc} */
+    @Override public RelWriter explainTerms(RelWriter pw) {
+        return super.explainTerms(pw).item("collectionType", getCollectionType());
     }
 
     /** {@inheritDoc} */

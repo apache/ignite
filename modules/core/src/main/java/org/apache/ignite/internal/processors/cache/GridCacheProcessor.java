@@ -182,7 +182,6 @@ import org.apache.ignite.lang.IgniteUuid;
 import org.apache.ignite.lifecycle.LifecycleAware;
 import org.apache.ignite.marshaller.Marshaller;
 import org.apache.ignite.marshaller.MarshallerUtils;
-import org.apache.ignite.mxbean.CacheGroupMetricsMXBean;
 import org.apache.ignite.mxbean.IgniteMBeanAware;
 import org.apache.ignite.plugin.security.SecurityException;
 import org.apache.ignite.plugin.security.SecurityPermission;
@@ -267,9 +266,6 @@ public class GridCacheProcessor extends GridProcessorAdapter {
     /** */
     private final boolean keepStaticCacheConfiguration = IgniteSystemProperties.getBoolean(
         IgniteSystemProperties.IGNITE_KEEP_STATIC_CACHE_CONFIGURATION);
-
-    /** MBean group for cache group metrics */
-    private static final String CACHE_GRP_METRICS_MBEAN_GRP = "Cache groups";
 
     /**
      * Initial timeout (in milliseconds) for output the progress of restoring partitions status.
@@ -558,16 +554,6 @@ public class GridCacheProcessor extends GridProcessorAdapter {
 
         for (Object obj : grp.configuredUserObjects())
             cleanup(cfg, obj, false);
-
-        if (!grp.systemCache() && !U.IGNITE_MBEANS_DISABLED) {
-            try {
-                ctx.config().getMBeanServer().unregisterMBean(U.makeMBeanName(ctx.igniteInstanceName(),
-                    CACHE_GRP_METRICS_MBEAN_GRP, grp.cacheOrGroupName()));
-            }
-            catch (Throwable e) {
-                U.error(log, "Failed to unregister MBean for cache group: " + grp.name(), e);
-            }
-        }
 
         grp.metrics().remove(destroy);
 
@@ -2521,16 +2507,6 @@ public class GridCacheProcessor extends GridProcessorAdapter {
         grp.start();
 
         CacheGroupContext old = cacheGrps.put(desc.groupId(), grp);
-
-        if (!grp.systemCache() && !U.IGNITE_MBEANS_DISABLED) {
-            try {
-                U.registerMBean(ctx.config().getMBeanServer(), ctx.igniteInstanceName(), CACHE_GRP_METRICS_MBEAN_GRP,
-                    grp.cacheOrGroupName(), new CacheGroupMetricsMXBeanImpl(grp), CacheGroupMetricsMXBean.class);
-            }
-            catch (Throwable e) {
-                U.error(log, "Failed to register MBean for cache group: " + grp.name(), e);
-            }
-        }
 
         assert old == null : old.name();
 
