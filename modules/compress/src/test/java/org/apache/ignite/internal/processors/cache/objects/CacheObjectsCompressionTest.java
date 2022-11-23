@@ -21,60 +21,32 @@ import java.nio.ByteBuffer;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Objects;
-import java.util.concurrent.ConcurrentLinkedDeque;
 import com.github.luben.zstd.Zstd;
 import com.github.luben.zstd.ZstdException;
 import org.apache.ignite.DataRegionMetrics;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCache;
 import org.apache.ignite.IgniteCheckedException;
-import org.apache.ignite.IgniteDataStreamer;
-import org.apache.ignite.binary.BinaryObject;
 import org.apache.ignite.binary.BinaryObjectBuilder;
 import org.apache.ignite.configuration.CacheConfiguration;
-import org.apache.ignite.configuration.CacheObjectsTransformationConfiguration;
 import org.apache.ignite.configuration.CacheObjectsTransformer;
 import org.apache.ignite.configuration.DataRegionConfiguration;
 import org.apache.ignite.configuration.DataStorageConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.events.CacheObjectTransformedEvent;
 import org.apache.ignite.events.EventType;
-import org.apache.ignite.internal.processors.cache.TransformedCacheObject;
-import org.apache.ignite.internal.util.typedef.G;
-import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
+import org.apache.ignite.internal.processors.cache.transform.CacheObjectsTransformationTest;
+import org.junit.Test;
 
-import static org.apache.ignite.cache.CacheWriteSynchronizationMode.FULL_SYNC;
 import static org.apache.ignite.internal.util.GridUnsafe.NATIVE_BYTE_ORDER;
 
 /**
  * Leak test.
  */
-public class CacheObjectsCompressionTest extends GridCommonAbstractTest {
-    /** Cache name. */
-    private static final String CACHE_NAME = "data";
-
-    /** Nodes count. */
-    private static final int NODES = 3;
-
-    /** Key. */
-    private static int key;
-
-    /** Event queue. */
-    private final ConcurrentLinkedDeque<CacheObjectTransformedEvent> evtQueue = new ConcurrentLinkedDeque<>();
-
-    /** {@inheritDoc} */
-    @Override protected void afterTest() throws Exception {
-        super.afterTest();
-
-        stopAllGrids();
-    }
-
+public class CacheObjectsCompressionTest extends CacheObjectsTransformationTest {
     /** {@inheritDoc} */
     @Override protected IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {
         IgniteConfiguration cfg = super.getConfiguration(igniteInstanceName);
-
-        cfg.setCacheConfiguration(cacheConfiguration());
-        cfg.setIncludeEventTypes(EventType.EVT_CACHE_OBJECT_TRANSFORMED);
 
         cfg.setDataStorageConfiguration(
             new DataStorageConfiguration()
@@ -89,22 +61,13 @@ public class CacheObjectsCompressionTest extends GridCommonAbstractTest {
         return cfg;
     }
 
-    /**
-     * Gets cache configuration.
-     *
-     * @return Data cache configuration.
-     */
-    protected CacheConfiguration cacheConfiguration() {
-        CacheConfiguration cfg = defaultCacheConfiguration();
 
-        cfg.setName(CACHE_NAME);
-        cfg.setBackups(NODES);
-        cfg.setReadFromBackup(true);
-        cfg.setWriteSynchronizationMode(FULL_SYNC);
-        cfg.setCacheObjectsTransformationConfiguration(
-            new CacheObjectsTransformationConfiguration().setActiveTransformer(new TestCacheObjectsTransformer()));
+    /** {@inheritDoc} */
+    @Override protected CacheConfiguration cacheConfiguration() {
+        CacheConfiguration cfg = super.cacheConfiguration();
 
-        // TODO atomic caches
+        cfg.getCacheObjectsTransformationConfiguration()
+            .setActiveTransformer(new ZstdCompressionTransformer());
 
         return cfg;
     }
@@ -112,8 +75,8 @@ public class CacheObjectsCompressionTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
-    @org.junit.Test
-    public void test() throws Exception {
+    @Test
+    @Override public void test() throws Exception {
         Ignite ignite = startGrids(NODES);
 
         awaitPartitionMapExchange();
@@ -146,25 +109,25 @@ public class CacheObjectsCompressionTest extends GridCommonAbstractTest {
 
         Map<Integer, Object> map = new HashMap<>();
 
-        map.put(1, new Data(str, null, 42));
-        map.put(2, new Data(str, null, 42));
-        map.put(42, new Data(str, null, 42));
+        map.put(1, new BinarizableData(str, null, 42));
+        map.put(2, new BinarizableData(str, null, 42));
+        map.put(42, new BinarizableData(str, null, 42));
 
-        Data data = new Data(str, map, 42);
+        BinarizableData data = new BinarizableData(str, map, 42);
 
         putAndCheck(data, true, true);
 
         Map<Integer, Object> map2 = new HashMap<>();
 
-        map2.put(1, new Data(str2, null, 47));
-        map2.put(2, new Data(str2, null, 47));
-        map2.put(42, new Data(str2, null, 47));
+        map2.put(1, new BinarizableData(str2, null, 47));
+        map2.put(2, new BinarizableData(str2, null, 47));
+        map2.put(42, new BinarizableData(str2, null, 47));
 
-        Data data2 = new Data(str, map2, 47);
+        BinarizableData data2 = new BinarizableData(str, map2, 47);
 
         putAndCheck(data2, true, true);
 
-        BinaryObjectBuilder builder = ignite.binary().builder(Data.class.getName());
+        BinaryObjectBuilder builder = ignite.binary().builder(BinarizableData.class.getName());
 
         builder.setField("str", str2);
         builder.setField("map", map);
@@ -212,181 +175,6 @@ public class CacheObjectsCompressionTest extends GridCommonAbstractTest {
     /**
      *
      */
-    private void putAndCheck(Object obj, boolean binarizable, boolean transformable) {
-        if (obj instanceof BinaryObject)
-            assertFalse(obj instanceof TransformedCacheObject);
-
-        Ignite node = grid(0);
-
-        IgniteCache<Integer, Object> cache = node.getOrCreateCache(CACHE_NAME);
-
-        cache.put(++key, obj); // TODO keys
-
-        checkPut(transformable);
-        checkEventsAbsent();
-        checkGet(obj, binarizable, transformable);
-
-        try (IgniteDataStreamer<Integer, Object> stmr = node.dataStreamer(CACHE_NAME)) {
-            stmr.addData(++key, obj);
-
-            stmr.flush();
-        }
-
-        while (!evtQueue.isEmpty())
-            checkPut(transformable);
-
-        checkGet(obj, binarizable, transformable);
-    }
-
-    /**
-     *
-     */
-    private void checkPut(boolean transformable) {
-        CacheObjectTransformedEvent evt = event();
-
-        assertFalse(evt.isRestore());
-
-        if (transformable)
-            assertTrue(evt.toString(), evt.getTransformed().length < evt.getOriginal().length);
-        else
-            assertNull(evt.toString(), evt.getTransformed());
-    }
-
-    /**
-     *
-     */
-    private void checkGet(
-        Object obj,
-        boolean binarizable,
-        boolean transformable) {
-        if (obj instanceof BinaryObject) {
-            assertTrue(binarizable);
-
-            obj = ((BinaryObject)obj).deserialize();
-        }
-
-        for (Ignite node : G.allGrids()) {
-            getWithCheck(node, obj, binarizable, transformable, false);
-            getWithCheck(node, obj, binarizable, transformable, true);
-        }
-
-        checkEventsAbsent();
-    }
-
-    /**
-     *
-     */
-    private void getWithCheck(
-        Ignite node,
-        Object expected,
-        boolean binarizable,
-        boolean transformable,
-        boolean keepBinary) {
-        IgniteCache<Integer, Object> cache = node.getOrCreateCache(CACHE_NAME);
-
-        if (keepBinary)
-            cache = cache.withKeepBinary();
-
-        Object obj = cache.get(key);
-
-        if (keepBinary && binarizable) {
-            assertFalse(obj.getClass().getName(), obj instanceof TransformedCacheObject);
-
-            obj = ((BinaryObject)obj).deserialize();
-        }
-
-        if (transformable) {
-            CacheObjectTransformedEvent evt = event();
-
-            assertTrue(evt.toString(), evt.isRestore());
-        }
-
-        assertEquals(expected, obj);
-    }
-
-    /**
-     *
-     */
-    private void checkEventsAbsent() {
-        assertTrue(evtQueue.size() + " unhandled events", evtQueue.isEmpty());
-    }
-
-    /**
-     *
-     */
-    private CacheObjectTransformedEvent event() {
-        CacheObjectTransformedEvent evt = null;
-
-        while (evt == null)
-            evt = evtQueue.poll();
-
-        return evt;
-    }
-
-    /**
-     *
-     */
-    private static final class Data {
-        /** String. */
-        String str;
-
-        /** Map. */
-        Map<Integer, Object> map;
-
-        /** I. */
-        Integer i;
-
-        /**
-         * @param str String.
-         * @param map Map.
-         * @param i I.
-         */
-        public Data(String str, Map<Integer, Object> map, Integer i) {
-            this.str = str;
-            this.map = map;
-            this.i = i;
-        }
-
-        /**
-         * @return String.
-         */
-        public String string() {
-            return str;
-        }
-
-        /**
-         * @param str New string.
-         */
-        public void string(String str) {
-            this.str = str;
-        }
-
-        /**
-         * @return Map.
-         */
-        public Map<Integer, Object> map() {
-            return map;
-        }
-
-        /** {@inheritDoc} */
-        @Override public boolean equals(Object o) {
-            if (this == o)
-                return true;
-            if (o == null || getClass() != o.getClass())
-                return false;
-            Data data = (Data)o;
-            return Objects.equals(str, data.str) && Objects.equals(map, data.map) && Objects.equals(i, data.i);
-        }
-
-        /** {@inheritDoc} */
-        @Override public int hashCode() {
-            return Objects.hash(str, map, i);
-        }
-    }
-
-    /**
-     *
-     */
     private static final class ShortData {
         /** I. */
         private final Integer i;
@@ -417,7 +205,7 @@ public class CacheObjectsCompressionTest extends GridCommonAbstractTest {
     /**
      *
      */
-    private static final class TestCacheObjectsTransformer implements CacheObjectsTransformer {
+    private static final class ZstdCompressionTransformer implements CacheObjectsTransformer {
         /** A bit more than max page size. */
         private static final ThreadLocalByteBuffer buf = new ThreadLocalByteBuffer( 1 << 10);
 

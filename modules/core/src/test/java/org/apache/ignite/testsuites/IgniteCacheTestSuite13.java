@@ -42,6 +42,7 @@ import org.apache.ignite.internal.processors.cache.distributed.FailBackupOnAtomi
 import org.apache.ignite.internal.processors.cache.distributed.rebalancing.RebalanceStatisticsTest;
 import org.apache.ignite.internal.processors.cache.transactions.TxAsyncOpsSemaphorePermitsExceededTest;
 import org.apache.ignite.internal.processors.cache.transactions.TxRecoveryOnCoordniatorFailTest;
+import org.apache.ignite.internal.processors.cache.transform.CacheObjectsTransformationTest;
 import org.apache.ignite.internal.processors.cluster.ClusterNameBeforeActivation;
 import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.testframework.junits.DynamicSuite;
@@ -100,6 +101,8 @@ public class IgniteCacheTestSuite13 {
         GridTestUtils.addTestIfNeeded(suite, CacheClearAsyncDeadlockTest.class, ignoredTests);
 
         GridTestUtils.addTestIfNeeded(suite, TxAsyncOpsSemaphorePermitsExceededTest.class, ignoredTests);
+
+        GridTestUtils.addTestIfNeeded(suite, CacheObjectsTransformationTest.class, ignoredTests);
 
         return suite;
     }
