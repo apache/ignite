@@ -87,15 +87,6 @@ public class RecordSerializerFactoryImpl implements RecordSerializerFactory {
                     recordDeserializeFilter
                 );
 
-            case 3:
-                return new RecordV3Serializer(
-                    new RecordDataV3Serializer(cctx),
-                    needWritePointer,
-                    marshalledMode,
-                    skipPositionCheck,
-                    recordDeserializeFilter
-                );
-
             default:
                 throw new IgniteCheckedException("Failed to create a serializer with the given version " +
                     "(forward compatibility is not supported): " + ver);

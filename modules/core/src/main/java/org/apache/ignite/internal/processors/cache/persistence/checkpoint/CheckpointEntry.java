@@ -156,11 +156,10 @@ public class CheckpointEntry {
      * @param wal Write ahead log manager.
      * @param grpId Cache group ID.
      * @param part Partition ID.
-     * @return Partition counter and partition pending counter pair. {@code Null} if not found.
+     * @return Partition counter or {@code null} if not found.
      * @throws IgniteCheckedException If something is wrong when loading the counter from WAL history.
      */
-    public @Nullable T2<Long, Long> partitionCounter(IgniteWriteAheadLogManager wal, int grpId, int part)
-        throws IgniteCheckedException {
+    public Long partitionCounter(IgniteWriteAheadLogManager wal, int grpId, int part) throws IgniteCheckedException {
         GroupStateLazyStore store = initIfNeeded(wal);
 
         return store.partitionCounter(grpId, part);
@@ -181,9 +180,6 @@ public class CheckpointEntry {
         /** Partition counters which corresponds to partition ids. */
         private final long[] cnts;
 
-        /** Pending updates partition counters which corresponds to partition ids. */
-        private final long[] pendingCnts;
-
         /** Next index to insert to parts and cnts. */
         private int idx;
 
@@ -193,19 +189,16 @@ public class CheckpointEntry {
         private GroupState(int partsCnt) {
             parts = new int[partsCnt];
             cnts = new long[partsCnt];
-            pendingCnts = new long[partsCnt];
         }
 
         /**
          * @param parts Partitions' ids.
          * @param cnts Partitions' counters.
-         * @param pendingCnts Pending updates partitions' counters.
          * @param size Partitions count.
          */
-        GroupState(int parts[], long[] cnts, long[] pendingCnts, int size) {
+        GroupState(int parts[], long[] cnts, int size) {
             this.parts = parts;
             this.cnts = cnts;
-            this.pendingCnts = pendingCnts;
             this.idx = size;
         }
 
@@ -224,18 +217,10 @@ public class CheckpointEntry {
         }
 
         /**
-         * @return Partitions' pending counters.
-         */
-        long[] partitionPendingCounters() {
-            return pendingCnts;
-        }
-
-        /**
          * @param partId Partition ID to add.
          * @param cntr Partition counter.
-         * @param pendingCntr Pending updates partition counter.
          */
-        public void addPartitionCounter(int partId, long cntr, long pendingCntr) {
+        public void addPartitionCounter(int partId, long cntr) {
             if (idx == parts.length)
                 throw new IllegalStateException("Failed to add new partition to the partitions state " +
                     "(no enough space reserved) [partId=" + partId + ", reserved=" + parts.length + ']');
@@ -246,13 +231,9 @@ public class CheckpointEntry {
                         ", cur=" + partId + ']');
             }
 
-            assert pendingCntr >= cntr;
-
             parts[idx] = partId;
 
             cnts[idx] = cntr;
-
-            pendingCnts[idx] = pendingCntr;
 
             idx++;
         }
@@ -261,25 +242,12 @@ public class CheckpointEntry {
          * Gets partition counter by partition ID.
          *
          * @param partId Partition ID.
-         * @return Partition update counter and pending update counter pair. {@code Null} if partition is not present
-         * in the record.
-         */
-        public @Nullable T2<Long, Long> counterByPartition(int partId) {
-            int idx = indexByPartition(partId);
-
-            return idx >= 0 ? new T2<>(cnts[idx], pendingCnts[idx]) : null;
-        }
-
-        /**
-         * Gets partition pending counter by partition ID.
-         *
-         * @param partId Partition ID.
          * @return Partition update counter (will return {@code -1} if partition is not present in the record).
          */
-        public long pendingCounterByPartition(int partId) {
+        public long counterByPartition(int partId) {
             int idx = indexByPartition(partId);
 
-            return idx >= 0 ? pendingCnts[idx] : -1;
+            return idx >= 0 ? cnts[idx] : -1;
         }
 
         /**
@@ -383,8 +351,7 @@ public class CheckpointEntry {
 
                     grpState.addPartitionCounter(
                         recState.partitionByIndex(i),
-                        recState.partitionCounterByIndex(i),
-                        recState.partitionPendingCounterByIndex(i)
+                        recState.partitionCounterByIndex(i)
                     );
                 }
 
@@ -404,9 +371,9 @@ public class CheckpointEntry {
         /**
          * @param grpId Group id.
          * @param part Partition id.
-         * @return Partition counter and partition pending counter pair. {@code Null} if node found.
+         * @return Partition counter.
          */
-        private @Nullable T2<Long, Long> partitionCounter(int grpId, int part) {
+        private Long partitionCounter(int grpId, int part) {
             assert initGuard != 0 : initGuard;
 
             if (initEx != null || grpStates == null)
@@ -415,9 +382,9 @@ public class CheckpointEntry {
             GroupState state = grpStates.get(grpId);
 
             if (state != null) {
-                T2<Long, Long> cntr = state.counterByPartition(part);
+                long cntr = state.counterByPartition(part);
 
-                return cntr == null ? null : cntr;
+                return cntr < 0 ? null : cntr;
             }
 
             return null;

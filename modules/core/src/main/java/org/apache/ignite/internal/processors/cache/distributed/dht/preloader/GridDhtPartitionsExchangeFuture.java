@@ -3625,7 +3625,6 @@ public class GridDhtPartitionsExchangeFuture extends GridDhtTopologyFutureAdapte
             if (ceilingMinReserved == null)
                 break;
 
-            // TODO: here
             if (preferWalRebalance || maxOwnerCntr - ceilingMinReserved < ownerSize) {
                 partHistSuppliers.put(ownerId, grpId, p, ceilingMinReserved);
 

@@ -24,9 +24,6 @@ import java.util.Arrays;
  */
 public class CacheState {
     /** */
-    private static final int RECORD_LEN = 3;
-
-    /** */
     private int[] parts;
 
     /** */
@@ -43,7 +40,7 @@ public class CacheState {
      */
     public CacheState(int partsCnt) {
         parts = new int[partsCnt];
-        vals = new long[partsCnt * RECORD_LEN];
+        vals = new long[partsCnt * 2];
         states = new byte[partsCnt];
     }
 
@@ -53,17 +50,16 @@ public class CacheState {
      * @param cntr Partition counter.
      */
     public void addPartitionState(int partId, long size, long cntr) {
-        addPartitionState(partId, size, cntr, cntr, (byte)-1);
+        addPartitionState(partId, size, cntr, (byte)-1);
     }
 
     /**
      * @param partId Partition ID to add.
      * @param size Partition size.
      * @param cntr Partition counter.
-     * @param pendingCntr Pending partition counter.
      * @param state Partition state.
      */
-    public void addPartitionState(int partId, long size, long cntr, long pendingCntr, byte state) {
+    public void addPartitionState(int partId, long size, long cntr, byte state) {
         if (idx == parts.length)
             throw new IllegalStateException("Failed to add new partition to the partitions state " +
                 "(no enough space reserved) [partId=" + partId + ", reserved=" + parts.length + ']');
@@ -77,9 +73,8 @@ public class CacheState {
         parts[idx] = partId;
         states[idx] = state;
 
-        vals[RECORD_LEN * idx] = size;
-        vals[RECORD_LEN * idx + 1] = cntr;
-        vals[RECORD_LEN * idx + 2] = pendingCntr;
+        vals[2 * idx] = size;
+        vals[2 * idx + 1] = cntr;
 
         idx++;
     }
@@ -93,7 +88,7 @@ public class CacheState {
     public long sizeByPartition(int partId) {
         int idx = indexByPartition(partId);
 
-        return idx >= 0 ? vals[RECORD_LEN * idx] : -1;
+        return idx >= 0 ? vals[2 * idx] : -1;
     }
 
     /**
@@ -105,7 +100,7 @@ public class CacheState {
     public long counterByPartition(int partId) {
         int idx = indexByPartition(partId);
 
-        return idx >= 0 ? vals[RECORD_LEN * idx + 1] : 0;
+        return idx >= 0 ? vals[2 * idx + 1] : 0;
     }
 
     /**
@@ -129,23 +124,15 @@ public class CacheState {
      * @return Partition size by index.
      */
     public long partitionSizeByIndex(int idx) {
-        return vals[idx * RECORD_LEN];
+        return vals[idx * 2];
     }
 
     /**
      * @param idx Index to get.
-     * @return Partition counter by index.
+     * @return Partition size by index.
      */
     public long partitionCounterByIndex(int idx) {
-        return vals[idx * RECORD_LEN + 1];
-    }
-
-    /**
-     * @param idx Index to get.
-     * @return Partition pending counter by index.
-     */
-    public long partitionPendingCounterByIndex(int idx) {
-        return vals[idx * RECORD_LEN + 2];
+        return vals[idx * 2 + 1];
     }
 
     /**

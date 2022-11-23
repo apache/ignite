@@ -1717,10 +1717,10 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
                 }
 
                 try {
-                    T2<Long, Long> updCntr = cpEntry.partitionCounter(cctx.wal(), grpId, partId);
+                    Long updCntr = cpEntry.partitionCounter(cctx.wal(), grpId, partId);
 
                     if (updCntr != null)
-                        grpPartsWithCnts.computeIfAbsent(grpId, k -> new HashMap<>()).put(partId, updCntr.get1());
+                        grpPartsWithCnts.computeIfAbsent(grpId, k -> new HashMap<>()).put(partId, updCntr);
                 }
                 catch (IgniteCheckedException ex) {
                     log.warning("Reservation failed because counters are not available [grpId=" + grpId

@@ -502,9 +502,9 @@ public class CheckpointHistory {
             while (iter.hasNext()) {
                 Map.Entry<Integer, Long> entry = iter.next();
 
-                T2<Long, Long> foundCntr = cpEntry.partitionCounter(wal, grpId, entry.getKey());
+                Long foundCntr = cpEntry.partitionCounter(wal, grpId, entry.getKey());
 
-                if (foundCntr != null && foundCntr.get2() <= entry.getValue()) {
+                if (foundCntr != null && foundCntr <= entry.getValue()) {
                     iter.remove();
 
                     if (ptr == null) {
@@ -512,9 +512,9 @@ public class CheckpointHistory {
                             + entry.getKey() + ", partCntrSince=" + entry.getValue() + "]");
                     }
 
-                    if (foundCntr.get2() + margin > entry.getValue()) {
-                        historyPointerCandidate.add(new WalPointerCandidate(grpId, entry.getKey(),
-                            entry.getValue(), ptr, foundCntr.get2()));
+                    if (foundCntr + margin > entry.getValue()) {
+                        historyPointerCandidate.add(new WalPointerCandidate(grpId, entry.getKey(), entry.getValue(), ptr,
+                            foundCntr));
 
                         continue;
                     }
@@ -620,7 +620,7 @@ public class CheckpointHistory {
             long margin,
             Map<Integer, Long> partCntsForUpdate
         ) {
-            T2<Long, Long> foundCntr = null;
+            Long foundCntr = null;
 
             try {
                 foundCntr = cpEntry == null ? null : cpEntry.partitionCounter(wal, grpId, part);
@@ -631,13 +631,13 @@ public class CheckpointHistory {
                     + ", cp=(" + cpEntry.checkpointId() + ", " + U.format(cpEntry.timestamp()) + ")]", e);
             }
 
-            if (foundCntr == null || foundCntr.get1() == walPntrCntr) {
+            if (foundCntr == null || foundCntr == walPntrCntr) {
                 partCntsForUpdate.put(part, walPntrCntr);
 
                 return walPntr;
             }
 
-            partCntsForUpdate.put(part, Math.max(foundCntr.get1(), partContr - margin));
+            partCntsForUpdate.put(part, Math.max(foundCntr, partContr - margin));
 
             return cpEntry.checkpointMark();
         }
@@ -668,9 +668,9 @@ public class CheckpointHistory {
                 while (iter.hasNext()) {
                     Map.Entry<T2<Integer, Integer>, Long> entry = iter.next();
 
-                    T2<Long, Long> foundCntr = cpEntry.partitionCounter(wal, entry.getKey().get1(), entry.getKey().get2());
+                    Long foundCntr = cpEntry.partitionCounter(wal, entry.getKey().get1(), entry.getKey().get2());
 
-                    if (foundCntr != null && foundCntr.get2() <= entry.getValue()) {
+                    if (foundCntr != null && foundCntr <= entry.getValue()) {
                         iter.remove();
 
                         res.put(new GroupPartitionId(entry.getKey().get1(), entry.getKey().get2()), cpEntry);
@@ -792,7 +792,6 @@ public class CheckpointHistory {
                         groupStates.put(k, new GroupStateSnapshot(
                             v.partitionIds(),
                             v.partitionCounters(),
-                            v.partitionPendingCounters(),
                             v.size()
                         ))
                     );

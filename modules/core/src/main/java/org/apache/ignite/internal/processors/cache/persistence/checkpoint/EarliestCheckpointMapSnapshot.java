@@ -78,7 +78,6 @@ public class EarliestCheckpointMapSnapshot extends IgniteDataTransferObject {
                 groupStateMap.put(k, new CheckpointEntry.GroupState(
                     v.partitionIds(),
                     v.partitionCounters(),
-                    v.partitionPendingCounters(),
                     v.size()
                 ));
             }
@@ -120,22 +119,17 @@ public class EarliestCheckpointMapSnapshot extends IgniteDataTransferObject {
         /** Partition counters which corresponds to partition ids. */
         private long[] cnts;
 
-        /** Partition pending counters which corresponds to partition ids. */
-        private long[] pendingCnts;
-
         /** Partitions count. */
         private int size;
 
         /**
          * @param parts Partitions' ids.
          * @param cnts Partitions' counters.
-         * @param pendingCnts Partitions' pending counters.
          * @param size Partitions count.
          */
-        GroupStateSnapshot(int[] parts, long[] cnts, long[] pendingCnts, int size) {
+        GroupStateSnapshot(int[] parts, long[] cnts, int size) {
             this.parts = parts;
             this.cnts = cnts;
-            this.pendingCnts = pendingCnts;
             this.size = size;
         }
 
@@ -157,13 +151,6 @@ public class EarliestCheckpointMapSnapshot extends IgniteDataTransferObject {
          */
         long[] partitionCounters() {
             return cnts;
-        }
-
-        /**
-         * @return Partitions' pending counters.
-         */
-        long[] partitionPendingCounters() {
-            return pendingCnts;
         }
 
         /**
