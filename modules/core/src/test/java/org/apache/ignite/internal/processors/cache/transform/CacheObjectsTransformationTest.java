@@ -172,7 +172,7 @@ public class CacheObjectsTransformationTest extends GridCommonAbstractTest {
 
         assertFalse(evt.isRestore());
 
-        if (transformable){
+        if (transformable) {
             assertFalse(evt.toString(), Arrays.equals(evt.getOriginal(), evt.getTransformed()));
             assertNotNull(evt.toString(), evt.getTransformed());
         }
