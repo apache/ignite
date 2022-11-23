@@ -156,7 +156,7 @@ public class CheckpointEntry {
      * @param wal Write ahead log manager.
      * @param grpId Cache group ID.
      * @param part Partition ID.
-     * @return Partition counter or partition pending counter. {@code Null} if not found.
+     * @return Partition counter and partition pending counter pair. {@code Null} if not found.
      * @throws IgniteCheckedException If something is wrong when loading the counter from WAL history.
      */
     public @Nullable T2<Long, Long> partitionCounter(IgniteWriteAheadLogManager wal, int grpId, int part)
@@ -261,8 +261,8 @@ public class CheckpointEntry {
          * Gets partition counter by partition ID.
          *
          * @param partId Partition ID.
-         * @return Partition update counter (will return {@code -1} if partition is not present in the record).
-         * {@code Null} if record not found.
+         * @return Partition update counter and pending update counter pair. {@code Null} if partition is not present
+         * in the record.
          */
         public @Nullable T2<Long, Long> counterByPartition(int partId) {
             int idx = indexByPartition(partId);
@@ -404,7 +404,7 @@ public class CheckpointEntry {
         /**
          * @param grpId Group id.
          * @param part Partition id.
-         * @return Partition counter or partition pending counter. {@code Null} if node found.
+         * @return Partition counter and partition pending counter pair. {@code Null} if node found.
          */
         private @Nullable T2<Long, Long> partitionCounter(int grpId, int part) {
             assert initGuard != 0 : initGuard;

@@ -485,8 +485,6 @@ public class CheckpointHistory {
         LinkedList<WalPointerCandidate> historyPointerCandidate = new LinkedList<>();
 
         for (Long cpTs : checkpoints(true)) {
-            //log.error("TEST | checkpoint: " + cpTs);
-
             CheckpointEntry cpEntry = entry(cpTs);
 
             minPtr = getMinimalPointer(partsCounter, margin, minPtr, historyPointerCandidate, cpEntry);
@@ -509,16 +507,14 @@ public class CheckpointHistory {
                 if (foundCntr != null && foundCntr.get2() <= entry.getValue()) {
                     iter.remove();
 
-                    log.error("TEST | foundCntr: " + foundCntr + ", pendingCntr: " + foundCntr + " at cp " + cpTs);
-
                     if (ptr == null) {
                         throw new IgniteCheckedException("Could not find start pointer for partition [part="
                             + entry.getKey() + ", partCntrSince=" + entry.getValue() + "]");
                     }
 
                     if (foundCntr.get2() + margin > entry.getValue()) {
-                        historyPointerCandidate.add(new WalPointerCandidate(grpId, entry.getKey(), entry.getValue(), ptr,
-                            foundCntr.get2()));
+                        historyPointerCandidate.add(new WalPointerCandidate(grpId, entry.getKey(),
+                            entry.getValue(), ptr, foundCntr.get2()));
 
                         continue;
                     }
@@ -654,12 +650,12 @@ public class CheckpointHistory {
      * @return Map of group-partition on checkpoint entry or empty map if nothing found.
      */
     public Map<GroupPartitionId, CheckpointEntry> searchCheckpointEntry(
-        Map<T2<Integer, Integer>, T2<Long, Long>> searchCntrMap
+        Map<T2<Integer, Integer>, Long> searchCntrMap
     ) {
         if (F.isEmpty(searchCntrMap))
             return Collections.emptyMap();
 
-        Map<T2<Integer, Integer>, T2<Long, Long>> modifiedSearchMap = new HashMap<>(searchCntrMap);
+        Map<T2<Integer, Integer>, Long> modifiedSearchMap = new HashMap<>(searchCntrMap);
 
         Map<GroupPartitionId, CheckpointEntry> res = new HashMap<>();
 
@@ -667,14 +663,14 @@ public class CheckpointHistory {
             try {
                 CheckpointEntry cpEntry = entry(cpTs);
 
-                Iterator<Map.Entry<T2<Integer, Integer>, T2<Long, Long>>> iter = modifiedSearchMap.entrySet().iterator();
+                Iterator<Map.Entry<T2<Integer, Integer>, Long>> iter = modifiedSearchMap.entrySet().iterator();
 
                 while (iter.hasNext()) {
-                    Map.Entry<T2<Integer, Integer>, T2<Long, Long>> entry = iter.next();
+                    Map.Entry<T2<Integer, Integer>, Long> entry = iter.next();
 
                     T2<Long, Long> foundCntr = cpEntry.partitionCounter(wal, entry.getKey().get1(), entry.getKey().get2());
 
-                    if (foundCntr != null && foundCntr.get1() <= entry.getValue().get1() && foundCntr.get2() <= entry.getValue().get2()) {
+                    if (foundCntr != null && foundCntr.get2() <= entry.getValue()) {
                         iter.remove();
 
                         res.put(new GroupPartitionId(entry.getKey().get1(), entry.getKey().get2()), cpEntry);

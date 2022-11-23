@@ -53,7 +53,7 @@ public class CacheState {
      * @param cntr Partition counter.
      */
     public void addPartitionState(int partId, long size, long cntr) {
-        addPartitionState(partId, size, cntr, -1L, (byte)-1);
+        addPartitionState(partId, size, cntr, cntr, (byte)-1);
     }
 
     /**

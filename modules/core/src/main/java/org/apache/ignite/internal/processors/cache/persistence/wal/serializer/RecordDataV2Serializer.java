@@ -497,8 +497,6 @@ public class RecordDataV2Serializer extends RecordDataV1Serializer {
             buf.putShort((short)state.size());
 
             for (int i = 0; i < state.size(); i++) {
-//                System.err.println("TEST | put cache state " + i);
-
                 short partIdx = (short)state.partitionByIndex(i);
 
                 buf.putShort(partIdx);

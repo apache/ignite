@@ -1180,8 +1180,6 @@ public class IgniteCacheOffheapManagerImpl implements IgniteCacheOffheapManager 
             iterators.put(p, partIter);
         }
 
-//        log.info("TEST | historicalIterator on " + ctx.kernalContext().cluster().get().localNode().order());
-
         IgniteHistoricalIterator historicalIterator = historicalIterator(parts.historicalMap(), missing);
 
         IgniteRebalanceIterator iter = new IgniteRebalanceIteratorImpl(iterators, historicalIterator);
@@ -3033,8 +3031,6 @@ public class IgniteCacheOffheapManagerImpl implements IgniteCacheOffheapManager 
          * @param cntrUpdData Counter updates.
          */
         public void restoreState(long size, long updCntr, @Nullable Map<Integer, Long> cacheSizes, byte[] cntrUpdData) {
-//            log.info("TEST | restoreState, update counter at node " + this.grp);
-
             pCntr.init(updCntr, cntrUpdData);
 
             storageSize.reset();

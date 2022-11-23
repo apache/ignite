@@ -113,8 +113,6 @@ public class HistoricalRebalanceCheckpointTest extends GridCommandHandlerCluster
         stopAllGrids();
         startGrids(nodes);
 
-        log.error("TEST | preloaded.");
-
         Ignite prim = primaryNode(0L, DEFAULT_CACHE_NAME);
         List<Ignite> backups = backupNodes(0L, DEFAULT_CACHE_NAME);
 
@@ -158,8 +156,6 @@ public class HistoricalRebalanceCheckpointTest extends GridCommandHandlerCluster
             prepareBlock.set(false);
         }
 
-        log.error("TEST | loaded with prepare lock.");
-
         try { // Blocked at backups only.
             finishBlock.set(true);
 
@@ -174,16 +170,12 @@ public class HistoricalRebalanceCheckpointTest extends GridCommandHandlerCluster
             finishBlock.set(false);
         }
 
-        log.error("TEST | loaded with finish lock.");
-
         // Making checkpoint, state:
         // - [lwm=2000, missed=[2001 - 2020], hwm=2050] at primary,
         // - [lwm=2000, missed=[], hwm=2000] at backups.
         // Checkpoint will have counter = 2000, but updates [2021 - 2050] will be located before it (after the another "2000 checkpoint").
         // So, [2021 - 2050] will be skipped on rebalancing :(
-        forceCheckpoint(); // TODO: Remove this to make test successful :)
-
-        log.error("TEST | forced checkpoint.");
+        forceCheckpoint();
 
         // Emulating power off, OOM or disk overflow. Keeping data as is, with missed counters updates.
         backups.forEach(
@@ -193,22 +185,23 @@ public class HistoricalRebalanceCheckpointTest extends GridCommandHandlerCluster
 
         backups.forEach(Ignite::close);
 
-        log.error("TEST | restoring backup.");
-
         startGrid(backNames.get(1)); // Restoring any backup.
 
         // Expected: [2001 - 2050] rebalanced.
         // Actual:
         // - [2001 - 2020] rebalanced.
-        // - "Some partition entries were missed during historical rebalance [grp=CacheGroupContext [grp=default], part=0, missed=30]" at logs
+        // - "Some partition entries were missed during historical rebalance
+        //    [grp=CacheGroupContext [grp=default], part=0, missed=30]" at logs
         awaitPartitionMapExchange();
 
         injectTestSystemOut();
 
         assertEquals(EXIT_CODE_OK, execute("--cache", "idle_verify"));
 
-        // PartitionHashRecordV2 [isPrimary=true, updateCntr=[lwm=2050, missed=[], hwm=2050], partitionState=OWNING, size=2050, partHash=-957578563],
-        // PartitionHashRecordV2 [isPrimary=false, updateCntr=[lwm=2050, missed=[], hwm=2050], partitionState=OWNING, size=2020, partHash=868500926]]
+        // PartitionHashRecordV2 [isPrimary=true, updateCntr=[lwm=2050, missed=[], hwm=2050], partitionState=OWNING,
+        // size=2050, partHash=-957578563],
+        // PartitionHashRecordV2 [isPrimary=false, updateCntr=[lwm=2050, missed=[], hwm=2050], partitionState=OWNING,
+        // size=2020, partHash=868500926]]
         assertConflicts(false, false); // Hash and size are different :(
     }
 
@@ -219,16 +212,15 @@ public class HistoricalRebalanceCheckpointTest extends GridCommandHandlerCluster
      * @param hash    Hash conflicts.
      */
     private void assertConflicts(boolean counter, boolean hash) {
-        if (counter || hash)
+        if (counter || hash) {
             assertContains(log, testOut.toString(), "conflict partitions has been found: " +
                 "[counterConflicts=" + (counter ? 1 : 0) + ", hashConflicts=" + (hash ? 1 : 0) + "]");
+        }
         else
             assertContains(log, testOut.toString(), "no conflicts have been found");
     }
 
-    /**
-     *
-     */
+    /** */
     private static class BlockableFileIOFactory implements FileIOFactory {
         /** IO Factory. */
         private final FileIOFactory factory;
