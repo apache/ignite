@@ -20,6 +20,7 @@ package org.apache.ignite.internal.processors.cache.persistence.checkpoint;
 import java.io.IOException;
 import java.io.ObjectInput;
 import java.io.ObjectOutput;
+import java.util.Arrays;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Map;
@@ -177,6 +178,7 @@ public class EarliestCheckpointMapSnapshot extends IgniteDataTransferObject {
         @Override protected void writeExternalData(ObjectOutput out) throws IOException {
             U.writeIntArray(out, parts);
             U.writeLongArray(out, cnts);
+            U.writeLongArray(out, pendingCnts);
             out.writeInt(size);
         }
 
@@ -184,7 +186,16 @@ public class EarliestCheckpointMapSnapshot extends IgniteDataTransferObject {
         @Override protected void readExternalData(byte protoVer, ObjectInput in) throws IOException, ClassNotFoundException {
             parts = U.readIntArray(in);
             cnts = U.readLongArray(in);
+            if (protoVer > V1)
+                pendingCnts = U.readLongArray(in);
+            else
+                pendingCnts = Arrays.copyOf(cnts, cnts.length);
             size = in.readInt();
+        }
+
+        /** {@inheritDoc} */
+        @Override public byte getProtocolVersion() {
+            return V2;
         }
     }
 }

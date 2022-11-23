@@ -94,6 +94,34 @@ public class HistoricalRebalanceCheckpointTest extends GridCommonAbstractTest {
      *
      */
     @Test
+    public void test0() throws Exception {
+        int nodes = 3;
+        int backupNodes = nodes - 1;
+
+        IgniteEx ignite = startGrids(nodes);
+
+        ignite.cluster().state(ClusterState.ACTIVE);
+
+        IgniteCache<Object, Object> cache = ignite.createCache(new CacheConfiguration<>()
+            .setAffinity(new RendezvousAffinityFunction(false, 1))
+            .setBackups(backupNodes)
+            .setName(DEFAULT_CACHE_NAME)
+            .setAtomicityMode(TRANSACTIONAL)
+            .setWriteSynchronizationMode(FULL_SYNC) // Allows to be sure that all messages are sent when put succeed.
+            .setReadFromBackup(true)); // Allows to check values on backups.
+
+//        grid(0).cache(DEFAULT_CACHE_NAME).put(1, 1);
+
+        for (int i = 0; i < 1000; ++i)
+            grid(0).cache(DEFAULT_CACHE_NAME).put(i, i);
+
+        forceCheckpoint(grid(0));
+    }
+
+    /**
+     *
+     */
+    @Test
     public void testCountersOnCrachRecovery() throws Exception {
         int nodes = 3;
         int backupNodes = nodes - 1;
