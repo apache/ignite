@@ -313,7 +313,7 @@ public class CacheObjectsCompressionTest extends GridCommonAbstractTest {
     /**
      *
      */
-    private CacheObjectTransformedEvent event(){
+    private CacheObjectTransformedEvent event() {
         CacheObjectTransformedEvent evt = null;
 
         while (evt == null)
@@ -322,13 +322,24 @@ public class CacheObjectsCompressionTest extends GridCommonAbstractTest {
         return evt;
     }
 
+    /**
+     *
+     */
     private static final class Data {
+        /** String. */
         String str;
 
+        /** Map. */
         Map<Integer, Object> map;
 
+        /** I. */
         Integer i;
 
+        /**
+         * @param str String.
+         * @param map Map.
+         * @param i I.
+         */
         public Data(String str, Map<Integer, Object> map, Integer i) {
             this.str = str;
             this.map = map;
@@ -372,6 +383,9 @@ public class CacheObjectsCompressionTest extends GridCommonAbstractTest {
         }
     }
 
+    /**
+     *
+     */
     private static final class ShortData {
         private final Integer i;
 
