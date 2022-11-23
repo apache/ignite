@@ -18,6 +18,7 @@
 package org.apache.ignite.internal.processors.cache.transform;
 
 import java.util.Arrays;
+import java.util.Collections;
 import java.util.Map;
 import java.util.Objects;
 import java.util.concurrent.ConcurrentLinkedDeque;
@@ -26,6 +27,7 @@ import org.apache.ignite.IgniteCache;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteDataStreamer;
 import org.apache.ignite.binary.BinaryObject;
+import org.apache.ignite.binary.BinaryObjectBuilder;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.CacheObjectsTransformationConfiguration;
 import org.apache.ignite.configuration.CacheObjectsTransformer;
@@ -114,8 +116,21 @@ public class CacheObjectsTransformationTest extends GridCommonAbstractTest {
             EventType.EVT_CACHE_OBJECT_TRANSFORMED);
 
         String str = "test";
+        String[] strs = new String[] {str, str, str};
+        BinarizableData data = new BinarizableData(str, Collections.singletonMap(1, 42), 42);
+
+        BinaryObjectBuilder builder = ignite.binary().builder(BinarizableData.class.getName());
+
+        builder.setField("str", str);
+        builder.setField("map", Collections.singletonMap(1, 42));
+        builder.setField("i", 42);
+
+        BinaryObject bo = builder.build();
 
         putAndCheck(str, false);
+        putAndCheck(strs, false);
+        putAndCheck(data, true);
+        putAndCheck(bo, true);
     }
 
     /**
@@ -229,7 +244,7 @@ public class CacheObjectsTransformationTest extends GridCommonAbstractTest {
             assertTrue(evt.toString(), evt.isRestore());
         }
 
-        assertEquals(expected, obj);
+        assertEqualsArraysAware(expected, obj);
     }
 
     /**
