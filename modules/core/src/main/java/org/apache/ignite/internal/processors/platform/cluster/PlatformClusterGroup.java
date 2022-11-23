@@ -25,7 +25,6 @@ import org.apache.ignite.IgniteCache;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteCluster;
 import org.apache.ignite.MemoryMetrics;
-import org.apache.ignite.PersistenceMetrics;
 import org.apache.ignite.binary.BinaryRawWriter;
 import org.apache.ignite.cluster.ClusterMetrics;
 import org.apache.ignite.cluster.ClusterNode;
@@ -127,9 +126,6 @@ public class PlatformClusterGroup extends PlatformAbstractTarget {
     private static final int OP_IS_ACTIVE = 29;
 
     /** */
-    private static final int OP_PERSISTENT_STORE_METRICS = 30;
-
-    /** */
     private static final int OP_GET_COMPUTE = 31;
 
     /** */
@@ -188,14 +184,6 @@ public class PlatformClusterGroup extends PlatformAbstractTarget {
                 for (MemoryMetrics m : metrics) {
                     writeMemoryMetrics(writer, m);
                 }
-
-                break;
-            }
-
-            case OP_PERSISTENT_STORE_METRICS: {
-                PersistenceMetrics metrics = prj.ignite().persistentStoreMetrics();
-
-                writePersistentStoreMetrics(writer, metrics);
 
                 break;
             }
@@ -586,31 +574,6 @@ public class PlatformClusterGroup extends PlatformAbstractTarget {
         writer.writeLong(metrics.getPagesReplaced());
         writer.writeLong(metrics.getOffHeapSize());
         writer.writeLong(metrics.getOffheapUsedSize());
-    }
-
-    /**
-     * Writes persistent store metrics.
-     *
-     * @param writer Writer.
-     * @param metrics Metrics
-     */
-    @SuppressWarnings("deprecation")
-    private void writePersistentStoreMetrics(BinaryRawWriter writer, PersistenceMetrics metrics) {
-        assert writer != null;
-        assert metrics != null;
-
-        writer.writeFloat(metrics.getWalLoggingRate());
-        writer.writeFloat(metrics.getWalWritingRate());
-        writer.writeInt(metrics.getWalArchiveSegments());
-        writer.writeFloat(metrics.getWalFsyncTimeAverage());
-        writer.writeLong(metrics.getLastCheckpointingDuration());
-        writer.writeLong(metrics.getLastCheckpointLockWaitDuration());
-        writer.writeLong(metrics.getLastCheckpointMarkDuration());
-        writer.writeLong(metrics.getLastCheckpointPagesWriteDuration());
-        writer.writeLong(metrics.getLastCheckpointFsyncDuration());
-        writer.writeLong(metrics.getLastCheckpointTotalPagesNumber());
-        writer.writeLong(metrics.getLastCheckpointDataPagesNumber());
-        writer.writeLong(metrics.getLastCheckpointCopiedOnWritePagesNumber());
     }
 
     /**
