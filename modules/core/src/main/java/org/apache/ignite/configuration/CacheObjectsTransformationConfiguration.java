@@ -78,6 +78,7 @@ public class CacheObjectsTransformationConfiguration implements Serializable {
 
     /**
      * Gets active transformer code.
+     * @return Active transformer code.
      */
     public byte getActiveTransformerCode() {
         return activeTransformerCode;
