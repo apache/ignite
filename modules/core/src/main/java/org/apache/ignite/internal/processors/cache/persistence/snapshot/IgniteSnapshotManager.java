@@ -1049,7 +1049,7 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
             if (clusterSnpFut != null) {
                 if (endFail.isEmpty() && snpReq.error() == null) {
                     if (!F.isEmpty(snpReq.warnings())) {
-                        SnapshotHandlerWarningException wrn = new SnapshotHandlerWarningException("Snapshot task '" + snpReq.snapshotName() +
+                        SnapshotWarningException wrn = new SnapshotWarningException("Snapshot task '" + snpReq.snapshotName() +
                             "' completed with the warnings:" + U.nl() + "\t- " + String.join(U.nl() + "\t- ",
                             snpReq.warnings()));
 
@@ -2352,7 +2352,7 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
                 try {
                     hnd.complete(snpName, nodesRes);
                 }
-                catch (SnapshotHandlerWarningException e) {
+                catch (SnapshotWarningException e) {
                     wrns.add(e.getMessage());
                 }
             }
@@ -3574,7 +3574,7 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
             if (e instanceof IgniteClientDisconnectedCheckedException)
                 return new IgniteException("Client disconnected. Snapshot result is unknown", U.convertException(e));
             else {
-                SnapshotHandlerWarningException wrn = X.cause(e, SnapshotHandlerWarningException.class);
+                SnapshotWarningException wrn = X.cause(e, SnapshotWarningException.class);
 
                 if (wrn != null)
                     return new IgniteException(wrn.getMessage());

@@ -23,12 +23,12 @@ import org.apache.ignite.IgniteCheckedException;
  * Snapshot operation warning. Warnings do not interrupt snapshot process but raise exception at the end to make the
  * operation status 'not OK' if no other error occured.
  */
-public class SnapshotHandlerWarningException extends IgniteCheckedException {
+public class SnapshotWarningException extends IgniteCheckedException {
     /** Serialization version. */
     private static final long serialVersionUID = 0L;
 
     /** */
-    public SnapshotHandlerWarningException(String wrnMsg) {
+    public SnapshotWarningException(String wrnMsg) {
         super(wrnMsg);
     }
 }

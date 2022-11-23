@@ -88,7 +88,7 @@ public class SnapshotPartitionsQuickVerifyHandler extends SnapshotPartitionsVeri
         }));
 
         if (!wrnGrps.isEmpty()) {
-            throw new SnapshotHandlerWarningException("Cache partitions differ for cache groups " + S.compact(wrnGrps)
+            throw new SnapshotWarningException("Cache partitions differ for cache groups " + S.compact(wrnGrps)
                 + ". " + WRN_MSG);
         }
     }
