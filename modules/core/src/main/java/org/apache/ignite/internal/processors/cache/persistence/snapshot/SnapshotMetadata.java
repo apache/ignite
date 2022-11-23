@@ -79,7 +79,7 @@ public class SnapshotMetadata implements Serializable {
     @GridToStringInclude
     @Nullable private final byte[] masterKeyDigest;
 
-    /** Warnings occured at snapshot creation. */
+    /** Warnings occurred at snapshot creation. */
     @GridToStringInclude
     @Nullable private List<String> warnings;
 

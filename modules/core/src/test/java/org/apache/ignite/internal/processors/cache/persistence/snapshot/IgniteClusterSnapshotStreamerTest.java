@@ -82,7 +82,7 @@ public class IgniteClusterSnapshotStreamerTest extends AbstractSnapshotSelfTest 
         // In-memory data region.
         DataRegionConfiguration inMemDr = new DataRegionConfiguration();
         inMemDr.setPersistenceEnabled(false);
-        inMemDr.setMaxSize(200L * 1024L * 1024L);
+        inMemDr.setMaxSize(100L * 1024L * 1024L);
         inMemDr.setInitialSize(inMemDr.getMaxSize());
         inMemDr.setName(INMEM_DATA_REGION);
         inMemDr.setPageEvictionMode(DataPageEvictionMode.RANDOM_2_LRU);

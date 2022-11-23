@@ -61,7 +61,7 @@ public class SnapshotOperationRequest implements Serializable {
 
     /**
      * Snapshot operation warnings. Warnings do not interrupt snapshot process but raise exception at the end to make
-     * the operation status 'not OK' if no other error occured.
+     * the operation status 'not OK' if no other error occurred.
      */
     private volatile List<String> warnings;
 

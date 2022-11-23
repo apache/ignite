@@ -910,7 +910,8 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
     }
 
     /**
-     * Stores snapshot metadata and saves that warnings from {@code snpReq}.
+     * Stores snapshot metadata and saves that warnings from {@code snpReq}. Saves storing error into {@code snpReq}
+     * if occured.
      *
      * @param snpReq Snapshot operation request.
      */
@@ -1049,9 +1050,9 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
             if (clusterSnpFut != null) {
                 if (endFail.isEmpty() && snpReq.error() == null) {
                     if (!F.isEmpty(snpReq.warnings())) {
-                        SnapshotWarningException wrn = new SnapshotWarningException("Snapshot task '" + snpReq.snapshotName() +
-                            "' completed with the warnings:" + U.nl() + "\t- " + String.join(U.nl() + "\t- ",
-                            snpReq.warnings()));
+                        SnapshotWarningException wrn = new SnapshotWarningException("Snapshot task '" +
+                            snpReq.snapshotName() + "' completed with the warnings:" + U.nl() + "\t- " +
+                            String.join(U.nl() + "\t- ", snpReq.warnings()));
 
                         clusterSnpFut.onDone(wrn);
                     }
