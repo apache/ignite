@@ -18,6 +18,7 @@ package org.apache.ignite.internal.processors.cache.persistence;
 
 import java.util.Collection;
 import org.apache.ignite.DataRegionMetrics;
+import org.apache.ignite.DataStorageMetrics;
 import org.apache.ignite.internal.pagemem.wal.IgniteWriteAheadLogManager;
 import org.apache.ignite.internal.pagemem.wal.record.CheckpointRecord;
 import org.apache.ignite.internal.processors.metric.GridMetricManager;
@@ -29,13 +30,12 @@ import org.apache.ignite.internal.processors.metric.impl.LongAdderMetric;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgniteOutClosure;
-import org.apache.ignite.mxbean.DataStorageMetricsMXBean;
 import org.jetbrains.annotations.Nullable;
 
 /**
  *
  */
-public class DataStorageMetricsImpl implements DataStorageMetricsMXBean {
+public class DataStorageMetricsImpl implements DataStorageMetrics {
     /** Prefix for all data storage metrics. */
     public static final String DATASTORAGE_METRIC_PREFIX = "io.datastorage";
 
@@ -446,30 +446,6 @@ public class DataStorageMetricsImpl implements DataStorageMetricsMXBean {
             return 0;
 
         return lastCpCowPages.value();
-    }
-
-    /** {@inheritDoc} */
-    @Override public void enableMetrics() {
-        metricsEnabled = true;
-    }
-
-    /** {@inheritDoc} */
-    @Override public void disableMetrics() {
-        metricsEnabled = false;
-    }
-
-    /** {@inheritDoc} */
-    @Override public void rateTimeInterval(long rateTimeInterval) {
-        this.rateTimeInterval = rateTimeInterval;
-
-        resetRates();
-    }
-
-    /** {@inheritDoc} */
-    @Override public void subIntervals(int subInts) {
-        this.subInts = subInts;
-
-        resetRates();
     }
 
     /** {@inheritDoc} */
