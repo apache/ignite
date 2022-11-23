@@ -94,7 +94,7 @@ public class HistoricalRebalanceCheckpointTest extends GridCommonAbstractTest {
      *
      */
     @Test
-    public void testCountersOnCrachRecovery() throws Exception {
+    public void testCountersOnCrashRecovery() throws Exception {
         int nodes = 3;
         int backupNodes = nodes - 1;
 

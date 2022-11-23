@@ -74,8 +74,6 @@ public class CacheState {
                     ", cur=" + partId + ']');
         }
 
-        assert pendingCntr >= cntr;
-
         parts[idx] = partId;
         states[idx] = state;
 
