@@ -1040,7 +1040,7 @@ public class Accumulators {
     }
 
     /** */
-    private static class SortingAccumulator<Row> implements Accumulator<Row> {
+    private static class SortingAccumulator<Row> implements IterableAccumulator<Row> {
         /** */
         private final transient Comparator<Row> cmp;
 
@@ -1092,10 +1092,15 @@ public class Accumulators {
         @Override public RelDataType returnType(IgniteTypeFactory typeFactory) {
             return acc.returnType(typeFactory);
         }
+
+        /** {@inheritDoc} */
+        @Override public Iterator<Row> iterator() {
+            return list.iterator();
+        }
     }
 
     /** */
-    private abstract static class AggAccumulator<Row> extends AbstractAccumulator<Row> implements Iterable<Row> {
+    private abstract static class AggAccumulator<Row> extends AbstractAccumulator<Row> implements IterableAccumulator<Row> {
         /** */
         private final List<Row> buf;
 

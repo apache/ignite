@@ -15,18 +15,11 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.internal.processors.query.calcite.exec;
-
-import java.util.List;
-import org.apache.ignite.cache.query.FieldsQueryCursor;
-import org.apache.ignite.internal.processors.query.calcite.RootQuery;
-import org.apache.ignite.internal.processors.query.calcite.prepare.QueryPlan;
-import org.apache.ignite.internal.processors.query.calcite.util.Service;
+package org.apache.ignite.internal.processors.query.calcite.exec.exp.agg;
 
 /**
- *
+ * Interface for row storing accumulator.
  */
-public interface ExecutionService<Row> extends Service {
-    /** */
-    FieldsQueryCursor<List<?>> executePlan(RootQuery<Row> qry, QueryPlan plan);
+public interface IterableAccumulator<Row> extends Accumulator<Row>, Iterable<Row> {
+    // No-op.
 }
