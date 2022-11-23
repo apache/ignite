@@ -1609,7 +1609,7 @@ public class IgniteTxManager extends GridCacheSharedManagerAdapter {
         }
 
         if (CU.isIncrementalSnapshotsEnabled(cctx))
-            cctx.consistentCutMgr().onRemoveActiveTransaction(tx, firstCommit(tx));
+            cctx.consistentCutMgr().onRemoveActiveTransaction(tx);
 
         ConcurrentMap<GridCacheVersion, IgniteInternalTx> txIdMap = transactionMap(tx);
 
@@ -3229,38 +3229,6 @@ public class IgniteTxManager extends GridCacheSharedManagerAdapter {
             tx.startTime(),
             System.nanoTime() - tx.startTimeNanos(),
             commited);
-    }
-
-    /**
-     * Finds whether this local transaction instance commits first:
-     * - For 2PC transactions the commit order is direct order (from originated to primary and backup nodes).
-     * - For 1PC transactions the commit order is reverse order (from backup to primary and near nodes).
-     *
-     * @return Whether this transaction instance is first in the commit order.
-     */
-    private boolean firstCommit(IgniteInternalTx tx) {
-        if (log.isDebugEnabled())
-            log.debug("Check transaction for first commit: " + tx);
-
-        if (tx.onePhaseCommit()) {
-            if (tx.near() && cctx.kernalContext().clientNode())
-                return false;
-
-            Collection<UUID> backups = tx.transactionNodes().get(tx.nodeId());
-
-            // We are on backup node. It's by default set the version.
-            if (tx.dht() && backups == null)
-                return true;
-
-            // Near can set version iff it's colocated and there is no backups.
-            if (tx.near())
-                return F.isEmpty(backups) && ((GridNearTxLocal)tx).colocatedLocallyMapped();
-
-            // This is a backup or primary node. Primary node sets the version iff cache doesn't have backups.
-            return (tx.dht() && !tx.local()) || backups.isEmpty();
-        }
-        else
-            return tx.near();
     }
 
     /**

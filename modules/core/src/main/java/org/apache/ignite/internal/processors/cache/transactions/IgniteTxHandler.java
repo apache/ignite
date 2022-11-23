@@ -322,17 +322,12 @@ public class IgniteTxHandler {
         if (ctx.localNode().isClient())
             return;
 
-        IgniteInternalTx tx = null;
-
         if (msg.txCutId() != null) {
-            tx = findTransactionByMessage(msg.payload());
+            IgniteInternalTx tx = findTransactionByMessage(msg.payload());
 
             if (tx != null)
                 tx.cutId(msg.txCutId());
         }
-
-        if (log.isDebugEnabled())
-            log.debug("`setTransactionCutIdIfNeeded` for message " + msg + ", tx = " + tx);
     }
 
     /**
@@ -1332,6 +1327,9 @@ public class IgniteTxHandler {
                     if (dhtTx != null) {
                         dhtTx.onePhaseCommit(true);
                         dhtTx.needReturnValue(req.needReturnValue());
+
+                        if (CU.isIncrementalSnapshotsEnabled(ctx))
+                            ctx.consistentCutMgr().setTransactionCutId(dhtTx);
 
                         finish(dhtTx, req);
 

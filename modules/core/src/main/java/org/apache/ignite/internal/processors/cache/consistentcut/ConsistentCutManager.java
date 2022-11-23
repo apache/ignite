@@ -92,23 +92,27 @@ public class ConsistentCutManager extends GridCacheSharedManagerAdapter implemen
      * Registers transaction before it is removed from {@link IgniteTxManager#activeTransactions()}.
      *
      * @param tx Transaction.
-     * @param firstCommit If {@code true} then it is first commit for distributed transaction.
      */
-    public void onRemoveActiveTransaction(IgniteInternalTx tx, boolean firstCommit) {
+    public void onRemoveActiveTransaction(IgniteInternalTx tx) {
+        if (clientNode())
+            return;
+
         ConsistentCutFuture cut = cutFutRef.get();
 
-        if (cut != null) {
-            if (firstCommit)
-                tx.cutId(cut.id());
+        if (cut != null)
+            ((BaselineConsistentCutFuture)cut).onRemoveActiveTransaction(tx.finishFuture());
+    }
 
-            if (!clientNode())
-                ((BaselineConsistentCutFuture)cut).onRemoveActiveTransaction(tx.finishFuture());
-        }
+    /**
+     * Set transaction Consistent Cut ID.
+     *
+     * @param tx Transaction.
+     */
+    public void setTransactionCutId(IgniteInternalTx tx) {
+        ConsistentCutFuture cut = cutFutRef.get();
 
-        if (log.isDebugEnabled()) {
-            log.debug("Register transaction [nearXid=" + tx.nearXidVersion().asIgniteUuid()
-                + ", xid=" + tx.xid() + ", txCutId=" + tx.cutId() + ", cutId=" + (cut == null ? null : cut.id()) + ']');
-        }
+        if (cut != null)
+            tx.cutId(cut.id());
     }
 
     /**
