@@ -91,6 +91,7 @@ public class HistoricalRebalanceCheckpointTest extends GridCommonAbstractTest {
     }
 
     /**
+     *
      */
     @Test
     public void testCountersOnCrachRecovery() throws Exception {
