@@ -17,6 +17,7 @@
 
 package org.apache.ignite.internal.processors.cache.persistence.snapshot;
 
+import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
 import java.util.Map;
@@ -66,9 +67,9 @@ public class IgniteClusterSnapshotStreamerTest extends AbstractSnapshotSelfTest 
 
         persistence = true;
 
-        dfltCacheCfg.setBackups(1);
+        dfltCacheCfg.setBackups(2);
 
-        startGrids(2);
+        startGrids(3);
 
         grid(0).cluster().state(ACTIVE);
 
@@ -149,7 +150,8 @@ public class IgniteClusterSnapshotStreamerTest extends AbstractSnapshotSelfTest 
         // Check snapshot by only one node.
         stopGrid(0);
 
-        createAndCheckSnapshot(client, false, DataStreamerUpdatesHandler.WRN_MSG);
+        createAndCheckSnapshot(client, false, DataStreamerUpdatesHandler.WRN_MSG,
+            SnapshotPartitionsQuickVerifyHandler.WRN_MSG);
     }
 
     /**
@@ -183,8 +185,7 @@ public class IgniteClusterSnapshotStreamerTest extends AbstractSnapshotSelfTest 
             grid(0).destroyCache(cname);
             grid(0).destroyCache(dfltCacheCfg.getName());
 
-            snp(snpHnd.cluster().localNode().isClient() ? grid(1) : snpHnd).restoreSnapshot(SNAPSHOT_NAME,
-                Collections.singletonList(cname)).get();
+            snp(grid(1)).restoreSnapshot(SNAPSHOT_NAME, Collections.singletonList(cname)).get();
 
             for (int i = 0; i < 100; ++i)
                 assertEquals(i, grid(0).cache(cname).get(i));
@@ -232,7 +233,7 @@ public class IgniteClusterSnapshotStreamerTest extends AbstractSnapshotSelfTest 
 
             grid(0).destroyCache(cache2Name);
 
-            snp(snpHnd.localNode().isClient() ? grid(1) : snpHnd).restoreSnapshot(SNAPSHOT_NAME, null).get();
+            snp(grid(1)).restoreSnapshot(SNAPSHOT_NAME, null).get();
 
             for (int i = 0; i < loadCnt; ++i)
                 assertEquals(i, grid(0).cache(cache2Name).get(i));
@@ -249,6 +250,8 @@ public class IgniteClusterSnapshotStreamerTest extends AbstractSnapshotSelfTest 
      * @param allowOverwrite 'allowOverwrite' setting.
      */
     private void doTestDataStreamerWhileSnapshot(IgniteEx snpHnd, boolean allowOverwrite) throws Exception {
+        log.info("Running with snapshot creator order " + snpHnd.localNode().order());
+
         AtomicBoolean stopLoading = new AtomicBoolean();
 
         TestRecordingCommunicationSpi cm = (TestRecordingCommunicationSpi)client.configuration().getCommunicationSpi();
@@ -260,9 +263,11 @@ public class IgniteClusterSnapshotStreamerTest extends AbstractSnapshotSelfTest 
         cm.waitForBlocked(batchesPerNode(grid(0)));
 
         String expectedWrn = allowOverwrite ? null : DataStreamerUpdatesHandler.WRN_MSG;
+        String notExpWrn = allowOverwrite ? null : SnapshotPartitionsQuickVerifyHandler.WRN_MSG;
 
         try {
-            SnapshotPartitionsVerifyTaskResult checkRes = createAndCheckSnapshot(snpHnd, true, expectedWrn);
+            SnapshotPartitionsVerifyTaskResult checkRes = createAndCheckSnapshot(snpHnd, true, expectedWrn,
+                notExpWrn);
 
             if (expectedWrn != null) {
                 Map<String, SnapshotMetadata> metaByNodes = checkRes.metas().values().stream().flatMap(List::stream)
@@ -326,9 +331,11 @@ public class IgniteClusterSnapshotStreamerTest extends AbstractSnapshotSelfTest 
         loadFut.cancel();
 
         if (allowOverwrite)
-            createAndCheckSnapshot(snpHnd, true, null);
-        else
-            createAndCheckSnapshot(snpHnd, true, SnapshotPartitionsQuickVerifyHandler.WRN_MSG);
+            createAndCheckSnapshot(snpHnd, true, null, null);
+        else {
+            createAndCheckSnapshot(snpHnd, true, SnapshotPartitionsQuickVerifyHandler.WRN_MSG,
+                DataStreamerUpdatesHandler.WRN_MSG);
+        }
     }
 
     /**
@@ -362,44 +369,53 @@ public class IgniteClusterSnapshotStreamerTest extends AbstractSnapshotSelfTest 
     }
 
     /** */
-    private SnapshotPartitionsVerifyTaskResult createAndCheckSnapshot(IgniteEx snpHnd, boolean create, String expectedWrn)
-        throws Exception {
+    private SnapshotPartitionsVerifyTaskResult createAndCheckSnapshot(IgniteEx snpHnd, boolean create,
+        String expWrn, String notExpWrn) throws Exception {
+        assert notExpWrn == null || expWrn != null;
+
         if (create) {
-            if (expectedWrn == null)
+            if (expWrn == null)
                 snp(snpHnd).createSnapshot(SNAPSHOT_NAME, null).get();
             else {
-                ListeningTestLogger testLog = new ListeningTestLogger();
-
-                LogListener logListener = LogListener.matches(expectedWrn).times(1).build();
-                testLog.registerListener(logListener);
-
-                assertThrows(
-                    testLog,
+                Throwable snpWrn = assertThrows(
+                    null,
                     () -> snp(snpHnd).createSnapshot(SNAPSHOT_NAME, null).get(),
                     IgniteException.class,
-                    expectedWrn
+                    expWrn
                 );
 
-                // Ensure the warning message appears once.
-                logListener.check();
+                if (notExpWrn != null)
+                    assertTrue(!snpWrn.getMessage().contains(notExpWrn));
             }
         }
 
         SnapshotPartitionsVerifyTaskResult checkRes = snp(snpHnd).checkSnapshot(SNAPSHOT_NAME, null).get();
 
         assertTrue(checkRes.exceptions().isEmpty());
-        assertTrue((expectedWrn != null) == checkRes.idleVerifyResult().hasConflicts());
+        assertTrue((expWrn != null) == checkRes.idleVerifyResult().hasConflicts());
 
-        if (expectedWrn != null) {
+        if (expWrn != null) {
             ListeningTestLogger testLog = new ListeningTestLogger();
 
-            LogListener lsnr = LogListener.matches(expectedWrn).times(1).build();
+            LogListener lsnr = LogListener.matches(expWrn).times(1).build();
 
             testLog.registerListener(lsnr);
 
             checkRes.print(testLog::info);
 
             lsnr.check();
+
+            if (notExpWrn != null) {
+                testLog = new ListeningTestLogger();
+
+                lsnr = LogListener.matches(notExpWrn).times(0).build();
+
+                testLog.registerListener(lsnr);
+
+                checkRes.print(testLog::info);
+
+                lsnr.check();
+            }
         }
 
         return checkRes;
@@ -415,7 +431,7 @@ public class IgniteClusterSnapshotStreamerTest extends AbstractSnapshotSelfTest 
 
     /** */
     private List<IgniteEx> snapshotCreators() {
-        return G.allGrids().stream().map(g -> (IgniteEx)g).collect(Collectors.toList());
+        return Arrays.asList(grid(0), grid(1), client);
     }
 
     /**
