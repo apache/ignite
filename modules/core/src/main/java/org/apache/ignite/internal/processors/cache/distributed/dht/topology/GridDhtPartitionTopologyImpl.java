@@ -65,6 +65,7 @@ import org.apache.ignite.internal.util.tostring.GridToStringExclude;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.X;
 import org.apache.ignite.internal.util.typedef.internal.CU;
+import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.internal.util.typedef.internal.SB;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.jetbrains.annotations.NotNull;
@@ -2277,7 +2278,7 @@ public class GridDhtPartitionTopologyImpl implements GridDhtPartitionTopology {
                 if (recentlyLost != null) {
                     U.warn(log, "Detected lost partitions" + (!safe ? " (will ignore)" : "")
                         + " [grp=" + grp.cacheOrGroupName()
-                        + ", parts=" + F.toStringSortedDistinct(recentlyLost)
+                        + ", parts=" + S.toStringSortedDistinct(recentlyLost)
                         + ", topVer=" + resTopVer + "]");
                 }
 
@@ -2441,8 +2442,8 @@ public class GridDhtPartitionTopologyImpl implements GridDhtPartitionTopology {
                             + ", readyTopVer=" + readyTopVer
                             + ", topVer=" + exchFut.initialVersion()
                             + ", nodeId=" + nodeId
-                            + ", partsFull=" + F.toStringSortedDistinct(rebalancedParts)
-                            + ", partsHistorical=" + F.toStringSortedDistinct(historical) + "]");
+                            + ", partsFull=" + S.toStringSortedDistinct(rebalancedParts)
+                            + ", partsHistorical=" + S.toStringSortedDistinct(historical) + "]");
                     }
                 }
 

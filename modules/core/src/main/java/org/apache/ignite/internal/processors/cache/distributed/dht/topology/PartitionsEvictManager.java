@@ -43,8 +43,8 @@ import org.apache.ignite.internal.processors.cache.GridCacheContext;
 import org.apache.ignite.internal.processors.cache.GridCacheSharedManagerAdapter;
 import org.apache.ignite.internal.util.future.GridFinishedFuture;
 import org.apache.ignite.internal.util.future.GridFutureAdapter;
-import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.internal.LT;
+import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.thread.IgniteThreadPoolExecutor;
 
@@ -251,7 +251,7 @@ public class PartitionsEvictManager extends GridCacheSharedManagerAdapter {
 
         StringJoiner joiner = new StringJoiner(", ");
 
-        partByReason.forEach((reason, partIds) -> joiner.add(reason.toString() + '=' + F.toStringSortedDistinct(partIds)));
+        partByReason.forEach((reason, partIds) -> joiner.add(reason.toString() + '=' + S.toStringSortedDistinct(partIds)));
 
         return joiner.toString();
     }
