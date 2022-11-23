@@ -96,7 +96,7 @@ public class IgniteClusterSnapshotStreamerTest extends AbstractSnapshotSelfTest 
      */
     @Test
     public void testStreamerWhileSnapshotDefault() throws Exception {
-        for (IgniteEx snpHnd : testGrids()) {
+        for (IgniteEx snpHnd : snapshotCreators()) {
             doTestDataStreamerWhileSnapshot(snpHnd, false);
 
             cleanRun();
@@ -108,7 +108,7 @@ public class IgniteClusterSnapshotStreamerTest extends AbstractSnapshotSelfTest 
      */
     @Test
     public void testStreamerWhileSnapshotOverwriting() throws Exception {
-        for (IgniteEx snpHnd : testGrids()) {
+        for (IgniteEx snpHnd : snapshotCreators()) {
             doTestDataStreamerWhileSnapshot(snpHnd, true);
 
             cleanRun();
@@ -120,7 +120,7 @@ public class IgniteClusterSnapshotStreamerTest extends AbstractSnapshotSelfTest 
      */
     @Test
     public void testStreamerFailsLongAgoDefault() throws Exception {
-        for (IgniteEx snpHnd : testGrids()) {
+        for (IgniteEx snpHnd : snapshotCreators()) {
             doTestDataStreamerFailedBeforeSnapshot(snpHnd, false);
 
             cleanRun();
@@ -132,7 +132,7 @@ public class IgniteClusterSnapshotStreamerTest extends AbstractSnapshotSelfTest 
      */
     @Test
     public void testStreamerFailsLongAgoOverwriting() throws Exception {
-        for (IgniteEx snpHnd : testGrids()) {
+        for (IgniteEx snpHnd : snapshotCreators()) {
             doTestDataStreamerFailedBeforeSnapshot(snpHnd, true);
 
             cleanRun();
@@ -157,7 +157,7 @@ public class IgniteClusterSnapshotStreamerTest extends AbstractSnapshotSelfTest 
      */
     @Test
     public void testOtherCacheRestores() throws Exception {
-        for (IgniteEx snpHnd : testGrids()) {
+        for (IgniteEx snpHnd : snapshotCreators()) {
             String cname = "cache2";
 
             grid(0).createCache(new CacheConfiguration<>(dfltCacheCfg).setName(cname));
@@ -200,7 +200,7 @@ public class IgniteClusterSnapshotStreamerTest extends AbstractSnapshotSelfTest 
      */
     @Test
     public void testStreamingIntoInMemoryDoesntAffectSnapshot() throws Exception {
-        for (IgniteEx snpHnd : testGrids()) {
+        for (IgniteEx snpHnd : snapshotCreators()) {
             String cache2Name = "cache2";
             int loadCnt = 1000;
 
@@ -414,7 +414,7 @@ public class IgniteClusterSnapshotStreamerTest extends AbstractSnapshotSelfTest 
     }
 
     /** */
-    private static List<IgniteEx> testGrids() {
+    private List<IgniteEx> snapshotCreators() {
         return G.allGrids().stream().map(g -> (IgniteEx)g).collect(Collectors.toList());
     }
 
