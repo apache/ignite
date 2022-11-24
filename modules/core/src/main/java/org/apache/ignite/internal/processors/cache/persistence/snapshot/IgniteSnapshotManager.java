@@ -732,8 +732,7 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
      * @return Future which will be completed when a snapshot has been started.
      */
     private IgniteInternalFuture<SnapshotOperationResponse> initLocalSnapshotStartStage(SnapshotOperationRequest req) {
-        if (cctx.kernalContext().clientNode() ||
-            !CU.baselineNode(cctx.localNode(), cctx.kernalContext().state().clusterState()))
+        if (cctx.kernalContext().clientNode())
             return new GridFinishedFuture<>();
 
         // Executed inside discovery notifier thread, prior to firing discovery custom event,
@@ -752,6 +751,12 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
                 "prior to snapshot operation start: " + leftNodes));
         }
 
+        if (CU.baselineNode(cctx.localNode(), cctx.kernalContext().state().clusterState())) {
+            clusterSnpReq = req;
+
+            return new GridFinishedFuture<>();
+        }
+
         if (!cctx.localNode().isClient() && cctx.kernalContext().encryption().isMasterKeyChangeInProgress()) {
             return new GridFinishedFuture<>(new IgniteCheckedException("Snapshot operation has been rejected. Master " +
                 "key changing process is not finished yet."));
@@ -766,7 +771,6 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
 
         Set<Integer> leftGrps = new HashSet<>(grpIds);
         leftGrps.removeAll(cctx.cache().cacheGroupDescriptors().keySet());
-        boolean withMetaStorage = leftGrps.remove(METASTORAGE_CACHE_ID);
 
         if (!leftGrps.isEmpty()) {
             return new GridFinishedFuture<>(new IgniteCheckedException("Some of requested cache groups doesn't exist " +
@@ -785,6 +789,8 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
         }
 
         IgniteInternalFuture<?> task0;
+
+        boolean withMetaStorage = leftGrps.remove(METASTORAGE_CACHE_ID);
 
         if (parts.isEmpty() && !withMetaStorage)
             task0 = new GridFinishedFuture<>(Collections.emptySet());
@@ -865,7 +871,8 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
      * @param err Errors.
      */
     private void processLocalSnapshotStartStageResult(UUID id, Map<UUID, SnapshotOperationResponse> res, Map<UUID, Exception> err) {
-        if (cctx.kernalContext().clientNode())
+        if (cctx.kernalContext().clientNode() ||
+            !CU.baselineNode(cctx.localNode(), cctx.kernalContext().state().clusterState()))
             return;
 
         SnapshotOperationRequest snpReq = clusterSnpReq;
