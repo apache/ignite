@@ -130,10 +130,9 @@ public class ConsistentCutManager extends GridCacheSharedManagerAdapter implemen
         if (cut != null || Objects.equals(id, lastFinishedCutId))
             return;
 
-        boolean clientNode = cctx.kernalContext().clientNode()
-            || !baselineNode(cctx.localNode(), cctx.kernalContext().state().clusterState());
+        boolean baselineNode = baselineNode(cctx.localNode(), cctx.kernalContext().state().clusterState());
 
-        ConsistentCut newCut = clientNode ? new ClientConsistentCut(id) : new BaselineConsistentCut(cctx, id);
+        ConsistentCut newCut = baselineNode ? new BaselineConsistentCut(cctx, id) : new NonBaselineConsistentCut(id);
 
         if (!consistentCutRef.compareAndSet(null, newCut))
             return;

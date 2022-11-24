@@ -24,8 +24,8 @@ import org.apache.ignite.internal.util.future.GridFinishedFuture;
 import org.apache.ignite.internal.util.tostring.GridToStringInclude;
 import org.apache.ignite.internal.util.typedef.internal.S;
 
-/** Describes Consistent Cut running on client nodes. */
-class ClientConsistentCut implements ConsistentCut {
+/** Describes Consistent Cut running on non-baseline nodes. */
+class NonBaselineConsistentCut implements ConsistentCut {
     /** Consistent Cut ID. */
     @GridToStringInclude
     private final UUID id;
@@ -34,7 +34,7 @@ class ClientConsistentCut implements ConsistentCut {
     private final IgniteInternalFuture<WALPointer> fut = new GridFinishedFuture<>();
 
     /** */
-    ClientConsistentCut(UUID id) {
+    NonBaselineConsistentCut(UUID id) {
         this.id = id;
     }
 
@@ -60,6 +60,6 @@ class ClientConsistentCut implements ConsistentCut {
 
     /** {@inheritDoc} */
     @Override public String toString() {
-        return S.toString(ClientConsistentCut.class, this);
+        return S.toString(NonBaselineConsistentCut.class, this);
     }
 }
