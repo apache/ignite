@@ -1137,7 +1137,7 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
     }
 
     /** @return {@code True} if disk writes during snapshot process should be in a sequential manner when possible. */
-    public boolean isSequentialWrite() {
+    public boolean sequentialWrite() {
         return sequentialWrite;
     }
 
@@ -3313,7 +3313,7 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
                 IgniteSnapshotManager.this.ioFactory;
 
             try (DeltaReader deltaReader =
-                     isSequentialWrite() ? new IndexedDeltaReader(delta, ioFactory) : new DeltaReader(delta, ioFactory);
+                     sequentialWrite() ? new IndexedDeltaReader(delta, ioFactory) : new DeltaReader(delta, ioFactory);
                  FilePageStore pageStore = (FilePageStore)storeMgr.getPageStoreFactory(pair.getGroupId(), encrypted)
                      .createPageStore(getTypeByPartId(pair.getPartitionId()), snpPart::toPath, v -> {})
             ) {

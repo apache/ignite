@@ -590,7 +590,7 @@ class SnapshotFutureTask extends AbstractSnapshotFutureTask<Set<GroupPartitionId
             PageStore store = pageStore.getStore(grpId, partId);
             File delta = partDeltaFile(cacheWorkDir(tmpConsIdDir, dirName), partId);
 
-            PageStoreSerialWriter writer = cctx.snapshotMgr().isSequentialWrite() ?
+            PageStoreSerialWriter writer = cctx.snapshotMgr().sequentialWrite() ?
                 new IndexedPageStoreSerialWriter(store, delta, encGrpId) :
                 new PageStoreSerialWriter(store, delta, encGrpId);
 
