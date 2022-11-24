@@ -1339,7 +1339,10 @@ public class CacheObjectBinaryProcessorImpl extends GridProcessorAdapter impleme
 
         assert !(res instanceof TransformedCacheObject);
 
-        return new TransformedCacheObject(res, null);
+        if (ctx.cacheConfiguration().getCacheObjectsTransformationConfiguration() != null)
+            return new TransformedCacheObject(res, null);
+        else
+            return res;
     }
 
     /**
