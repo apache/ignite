@@ -73,6 +73,7 @@ import org.apache.ignite.internal.processors.metastorage.persistence.Distributed
 import org.apache.ignite.internal.util.future.GridFutureAdapter;
 import org.apache.ignite.internal.util.lang.IgniteThrowableRunner;
 import org.apache.ignite.internal.util.tostring.GridToStringExclude;
+import org.apache.ignite.internal.util.typedef.C3;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.internal.CU;
 import org.apache.ignite.internal.util.typedef.internal.S;
@@ -149,6 +150,10 @@ class SnapshotFutureTask extends AbstractSnapshotFutureTask<Set<GroupPartitionId
 
     /** Processed snapshot size in bytes. */
     private final AtomicLong processedSize = new AtomicLong();
+
+    /** Delta writer factory. */
+    private final C3<PageStore, File, Integer, PageStoreSerialWriter> deltaWriterFactory =
+        cctx.snapshotMgr().sequentialWrite() ? IndexedPageStoreSerialWriter::new : PageStoreSerialWriter::new;
 
     /**
      * @param cctx Shared context.
@@ -590,11 +595,7 @@ class SnapshotFutureTask extends AbstractSnapshotFutureTask<Set<GroupPartitionId
             PageStore store = pageStore.getStore(grpId, partId);
             File delta = partDeltaFile(cacheWorkDir(tmpConsIdDir, dirName), partId);
 
-            PageStoreSerialWriter writer = cctx.snapshotMgr().sequentialWrite() ?
-                new IndexedPageStoreSerialWriter(store, delta, encGrpId) :
-                new PageStoreSerialWriter(store, delta, encGrpId);
-
-            partDeltaWriters.put(pair, writer);
+            partDeltaWriters.put(pair, deltaWriterFactory.apply(store, delta, encGrpId));
 
             partFileLengths.put(pair, store.size());
         }

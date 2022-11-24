@@ -3184,6 +3184,10 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
         /** Size of page. */
         private final int pageSize;
 
+        /** Delta reader factory. */
+        private final Factory<File, FileIOFactory, DeltaReader> deltaReaderFactory =
+            sequentialWrite() ? IndexedDeltaReader::new : DeltaReader::new;
+
         /**
          * @param snpName Snapshot name.
          * @param snpPath Snapshot directory path.
@@ -3312,8 +3316,7 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
                 .encryptedFileIoFactory(IgniteSnapshotManager.this.ioFactory, pair.getGroupId()) :
                 IgniteSnapshotManager.this.ioFactory;
 
-            try (DeltaReader deltaReader =
-                     sequentialWrite() ? new IndexedDeltaReader(delta, ioFactory) : new DeltaReader(delta, ioFactory);
+            try (DeltaReader deltaReader = deltaReaderFactory.create(delta, ioFactory);
                  FilePageStore pageStore = (FilePageStore)storeMgr.getPageStoreFactory(pair.getGroupId(), encrypted)
                      .createPageStore(getTypeByPartId(pair.getPartitionId()), snpPart::toPath, v -> {})
             ) {
@@ -3681,5 +3684,12 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
             else
                 return new IgniteException("Snapshot has not been created", U.convertException(e));
         }
+    }
+
+    /** Factory. */
+    @FunctionalInterface
+    private interface Factory<E1, E2, R> {
+        /** @return An instance of {@link R}. */
+        R create(E1 e1, E2 e2) throws IOException;
     }
 }
