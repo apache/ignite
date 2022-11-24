@@ -396,12 +396,10 @@ public class CheckpointWorkflow {
                     if (partState == LOST)
                         partState = OWNING;
 
-                    assert part.reservedCounter() >= part.updateCounter();
-
                     state.addPartitionState(
                         part.id(),
                         part.dataStore().fullSize(),
-                        part.reservedCounter(),
+                        Math.max(part.reservedCounter(), part.updateCounter()),
                         (byte)partState.ordinal()
                     );
                 }
