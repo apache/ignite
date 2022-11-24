@@ -3428,10 +3428,8 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
 
     /**
      * Indexed delta file reader. Reads delta pages sorted by page index to almost sequential disk writes on apply.
-     *
-     * @see SnapshotFutureTask.IndexedPageStoreSerialWriter
      */
-    class IndexedDeltaReader extends DeltaReader {
+    private class IndexedDeltaReader extends DeltaReader {
         /** Snapshot delta sort batch size in pages count. */
         public static final int DELTA_SORT_BATCH_SIZE = 500_000;
 
