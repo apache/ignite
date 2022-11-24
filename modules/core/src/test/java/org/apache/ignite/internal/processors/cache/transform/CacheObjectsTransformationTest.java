@@ -119,7 +119,7 @@ public class CacheObjectsTransformationTest extends GridCommonAbstractTest {
             null,
             EventType.EVT_CACHE_OBJECT_TRANSFORMED);
 
-        int i = 42;
+        int i = -42; // Avoiding intersection with an incremental key.
         int[] is = new int[] {i, i, i};
         Set<Integer> iSet = Sets.newHashSet(i, i, i);
 
@@ -190,15 +190,24 @@ public class CacheObjectsTransformationTest extends GridCommonAbstractTest {
 
         Ignite node = grid(0);
 
-        IgniteCache<Integer, Object> cache = node.getOrCreateCache(CACHE_NAME);
+        IgniteCache<Object, Object> cache = node.getOrCreateCache(CACHE_NAME);
 
-        cache.put(++key, obj); // TODO putAll
+        // PUT
+        cache.put(++key, obj);
 
         checkPut(transformable);
         checkEventsAbsent();
-        checkGet(obj, binary, binarizable, transformable);
+        checkGet(key, obj, binary, binarizable, transformable);
 
-        try (IgniteDataStreamer<Integer, Object> stmr = node.dataStreamer(CACHE_NAME)) {
+        // REVERSED
+        cache.put(obj, ++key);
+
+        checkPut(transformable);
+        checkEventsAbsent();
+        checkGet(obj, key, false, false, transformable);
+
+        // DATASTREAMER
+        try (IgniteDataStreamer<Object, Object> stmr = node.dataStreamer(CACHE_NAME)) {
             stmr.addData(++key, obj);
 
             stmr.flush();
@@ -207,7 +216,7 @@ public class CacheObjectsTransformationTest extends GridCommonAbstractTest {
         while (!evtQueue.isEmpty())
             checkPut(transformable);
 
-        checkGet(obj, binary, binarizable, transformable);
+        checkGet(key, obj, binary, binarizable, transformable);
     }
 
     /**
@@ -229,10 +238,10 @@ public class CacheObjectsTransformationTest extends GridCommonAbstractTest {
     /**
      *
      */
-    private void checkGet(Object expected, boolean binary, boolean binarizable, boolean transformable) {
+    private void checkGet(Object key, Object expected, boolean binary, boolean binarizable, boolean transformable) {
         for (Ignite node : G.allGrids()) {
-            getWithCheck(node, expected, binary, binarizable, transformable, false);
-            getWithCheck(node, expected, binary, binarizable, transformable, true);
+            getWithCheck(node, key, expected, binary, binarizable, transformable, false);
+            getWithCheck(node, key, expected, binary, binarizable, transformable, true);
         }
 
         checkEventsAbsent();
@@ -243,12 +252,13 @@ public class CacheObjectsTransformationTest extends GridCommonAbstractTest {
      */
     private void getWithCheck(
         Ignite node,
+        Object key,
         Object expected,
         boolean binary,
         boolean binarizable,
         boolean transformable,
         boolean keepBinary) {
-        IgniteCache<Integer, Object> cache = node.getOrCreateCache(CACHE_NAME);
+        IgniteCache<Object, Object> cache = node.getOrCreateCache(CACHE_NAME);
 
         if (keepBinary)
             cache = cache.withKeepBinary();
