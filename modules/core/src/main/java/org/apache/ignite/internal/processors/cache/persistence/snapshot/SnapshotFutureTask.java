@@ -991,7 +991,6 @@ class SnapshotFutureTask extends AbstractSnapshotFutureTask<Set<GroupPartitionId
             totalSize.addAndGet(len);
         }
 
-
         /** {@inheritDoc} */
         @Override public void close() {
             lock.writeLock().lock();
