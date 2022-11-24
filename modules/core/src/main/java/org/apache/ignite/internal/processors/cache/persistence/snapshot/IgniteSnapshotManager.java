@@ -18,6 +18,7 @@
 package org.apache.ignite.internal.processors.cache.persistence.snapshot;
 
 import java.io.BufferedInputStream;
+import java.io.Closeable;
 import java.io.File;
 import java.io.FileInputStream;
 import java.io.FileOutputStream;
@@ -44,7 +45,6 @@ import java.util.Deque;
 import java.util.EnumMap;
 import java.util.HashMap;
 import java.util.HashSet;
-import java.util.Iterator;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
@@ -150,7 +150,6 @@ import org.apache.ignite.internal.processors.task.GridInternal;
 import org.apache.ignite.internal.util.BasicRateLimiter;
 import org.apache.ignite.internal.util.GridBusyLock;
 import org.apache.ignite.internal.util.GridCloseableIteratorAdapter;
-import org.apache.ignite.internal.util.GridIntIterator;
 import org.apache.ignite.internal.util.distributed.DistributedProcess;
 import org.apache.ignite.internal.util.distributed.InitMessage;
 import org.apache.ignite.internal.util.future.GridCompoundFuture;
@@ -180,6 +179,7 @@ import org.apache.ignite.spi.systemview.view.SnapshotView;
 import org.jetbrains.annotations.Nullable;
 
 import static java.nio.file.StandardOpenOption.READ;
+import static org.apache.ignite.IgniteSystemProperties.IGNITE_SNAPSHOT_SEQUENTIAL_WRITE;
 import static org.apache.ignite.configuration.DataStorageConfiguration.DFLT_BINARY_METADATA_PATH;
 import static org.apache.ignite.configuration.DataStorageConfiguration.DFLT_MARSHALLER_PATH;
 import static org.apache.ignite.events.EventType.EVT_CLUSTER_SNAPSHOT_FAILED;
@@ -285,14 +285,11 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
     /** Maximum block size for limited snapshot transfer (64KB by default). */
     public static final int SNAPSHOT_LIMITED_TRANSFER_BLOCK_SIZE_BYTES = 64 * 1024;
 
-    /** Default value of {@link IgniteSystemProperties#IGNITE_SNAPSHOT_SEQUENTIAL_WRITE}. */
-    public static final boolean DFLT_IGNITE_SNAPSHOT_SEQUENTIAL_WRITE = true;
-
-    /** Snapshot delta sort batch size in pages count. */
-    public static final int DELTA_SORT_BATCH_SIZE = 500_000;
-
     /** Metastorage key to save currently running snapshot directory path. */
     private static final String SNP_RUNNING_DIR_KEY = "snapshot-running-dir";
+
+    /** Default value of {@link IgniteSystemProperties#IGNITE_SNAPSHOT_SEQUENTIAL_WRITE}. */
+    public static final boolean DFLT_IGNITE_SNAPSHOT_SEQUENTIAL_WRITE = true;
 
     /** @deprecated Use #SNP_RUNNING_DIR_KEY instead. */
     @Deprecated
@@ -407,6 +404,10 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
 
     /** Snapshot transfer rate limit in bytes/sec. */
     private final DistributedLongProperty snapshotTransferRate = detachedLongProperty(SNAPSHOT_TRANSFER_RATE_DMS_KEY);
+
+    /** Value of {@link IgniteSystemProperties#IGNITE_SNAPSHOT_SEQUENTIAL_WRITE}. */
+    private final boolean sequentialWrite =
+        IgniteSystemProperties.getBoolean(IGNITE_SNAPSHOT_SEQUENTIAL_WRITE, DFLT_IGNITE_SNAPSHOT_SEQUENTIAL_WRITE);
 
     /**
      * @param ctx Kernal context.
@@ -1133,6 +1134,11 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
      */
     public IgniteFuture<Boolean> restoreStatus(String snpName) {
         return executeRestoreManagementTask(SnapshotRestoreStatusTask.class, snpName);
+    }
+
+    /** @return {@code True} if disk writes during snapshot process should be in a sequential manner when possible. */
+    public boolean isSequentialWrite() {
+        return sequentialWrite;
     }
 
     /**
@@ -3306,100 +3312,23 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
                 .encryptedFileIoFactory(IgniteSnapshotManager.this.ioFactory, pair.getGroupId()) :
                 IgniteSnapshotManager.this.ioFactory;
 
-            File deltaIdx = partDeltaIndexFile(delta);
-
-            try (FileIO fileIo = ioFactory.create(delta, READ);
-                 FileIO idxIo = deltaIdx.exists() ? IgniteSnapshotManager.this.ioFactory.create(deltaIdx, READ) : null;
+            try (DeltaReader deltaReader =
+                     isSequentialWrite() ? new IndexedDeltaReader(delta, ioFactory) : new DeltaReader(delta, ioFactory);
                  FilePageStore pageStore = (FilePageStore)storeMgr.getPageStoreFactory(pair.getGroupId(), encrypted)
                      .createPageStore(getTypeByPartId(pair.getPartitionId()), snpPart::toPath, v -> {})
             ) {
-                ByteBuffer pageBuf = ByteBuffer.allocate(pageSize)
-                    .order(ByteOrder.nativeOrder());
-
-                long totalBytes = fileIo.size();
-
-                assert totalBytes % pageSize == 0 : "Given file with delta pages has incorrect size: " + fileIo.size();
-
-                int pagesCnt = (int)(totalBytes / pageSize);
-
-                GridIntIterator iter;
-
-                if (!deltaIdx.exists())
-                    iter = U.forRange(0, pagesCnt);
-                else {
-                    assert deltaIdx.length() % 4 /* pageIdx */ == 0 : "Wrong delta index size: " + deltaIdx.length();
-                    assert deltaIdx.length() / 4 == pagesCnt : "Wrong delta index pages count: " + deltaIdx.length();
-
-                    iter = new GridIntIterator() {
-                        private int idx = 0;
-
-                        private Iterator<Integer> sortedIter;
-
-                        @Override public boolean hasNext() {
-                            if (sortedIter == null || !sortedIter.hasNext()) {
-                                try {
-                                    advance();
-                                }
-                                catch (Exception e) {
-                                    throw new IgniteException(e);
-                                }
-                            }
-
-                            return sortedIter.hasNext();
-                        }
-
-                        @Override public int next() {
-                            if (!hasNext())
-                                throw new NoSuchElementException();
-
-                            return sortedIter.next();
-                        }
-
-                        private void advance() throws Exception {
-                            TreeMap<Integer, Integer> sorted = new TreeMap<>();
-
-                            while (idx < pagesCnt && sorted.size() < DELTA_SORT_BATCH_SIZE) {
-                                idxIo.readFully(pageBuf);
-
-                                pageBuf.flip();
-
-                                while (pageBuf.hasRemaining())
-                                    sorted.put(pageBuf.getInt(), idx++);
-
-                                pageBuf.clear();
-                            }
-
-                            sortedIter = sorted.values().iterator();
-                        }
-                    };
-                }
-
                 pageStore.beginRecover();
 
-                while (iter.hasNext()) {
-                    long pos = (long)iter.next() * pageSize;
+                deltaReader.read((pageBuf) -> {
+                    try {
+                        transferRateLimiter.acquire(pageSize);
 
-                    long read = fileIo.readFully(pageBuf, pos);
-
-                    assert read == pageBuf.capacity();
-
-                    pageBuf.flip();
-
-                    if (log.isDebugEnabled()) {
-                        log.debug("Read page given delta file [path=" + delta.getName() + ", pageId=" +
-                            PageIO.getPageId(pageBuf) + ", index=" + PageIdUtils.pageIndex(PageIO.getPageId(pageBuf)) +
-                            ", pos=" + pos + ", pagesCnt=" + pagesCnt + ", crcBuff=" +
-                            FastCrc.calcCrc(pageBuf, pageBuf.limit()) + ", crcPage=" + PageIO.getCrc(pageBuf) + ']');
-
-                        pageBuf.rewind();
+                        pageStore.write(PageIO.getPageId(pageBuf), pageBuf, 0, false);
                     }
-
-                    transferRateLimiter.acquire(pageSize);
-
-                    pageStore.write(PageIO.getPageId(pageBuf), pageBuf, 0, false);
-
-                    pageBuf.flip();
-                }
+                    catch (IgniteCheckedException e) {
+                        throw new IgniteException(e);
+                    }
+                });
 
                 pageStore.finishRecover();
             }
@@ -3420,6 +3349,133 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
                 if (log.isDebugEnabled())
                     log.debug("Local snapshot sender closed due to an error occurred: " + th.getMessage());
             }
+        }
+    }
+
+    /** Delta file reader. */
+    private class DeltaReader implements Closeable {
+        /** Delta file. */
+        private final File delta;
+
+        /** Delta file IO. */
+        private final FileIO fileIo;
+
+        /** Delta file length. */
+        protected final long totalBytes;
+
+        /** */
+        protected final int pageSize;
+
+        /** Pages count written to a delta file. */
+        protected final int pagesCnt;
+
+        /** */
+        protected final ByteBuffer buf;
+
+        /** */
+        DeltaReader(File delta, FileIOFactory ioFactory) throws IOException {
+            pageSize = cctx.kernalContext().config().getDataStorageConfiguration().getPageSize();
+
+            this.delta = delta;
+
+            fileIo = ioFactory.create(delta, READ);
+
+            totalBytes = fileIo.size();
+
+            assert totalBytes % pageSize == 0 : "Given file with delta pages has incorrect size: " + totalBytes;
+
+            pagesCnt = (int)(totalBytes / pageSize);
+
+            buf = ByteBuffer.allocate(pageSize).order(ByteOrder.nativeOrder());
+        }
+
+        /** Reads all pages from the delta file. */
+        void read(Consumer<ByteBuffer> action) throws IOException {
+            for (long pos = 0; pos < totalBytes; pos += pageSize)
+                readPage(pos, action);
+        }
+
+        /** Reads a page from the delta file from the given position. */
+        protected void readPage(long pos, Consumer<ByteBuffer> action) throws IOException {
+            long read = fileIo.readFully(buf, pos);
+
+            assert read == buf.capacity();
+
+            buf.flip();
+
+            if (log.isDebugEnabled()) {
+                log.debug("Read page given delta file [path=" + delta.getName() + ", pageId=" +
+                    PageIO.getPageId(buf) + ", index=" + PageIdUtils.pageIndex(PageIO.getPageId(buf)) +
+                    ", pos=" + pos + ", pagesCnt=" + pagesCnt + ", crcBuff=" +
+                    FastCrc.calcCrc(buf, buf.limit()) + ", crcPage=" + PageIO.getCrc(buf) + ']');
+
+                buf.rewind();
+            }
+
+            action.accept(buf);
+
+            buf.flip();
+        }
+
+        /** {@inheritDoc} */
+        @Override public void close() throws IOException {
+            fileIo.close();
+        }
+    }
+
+    /**
+     * Indexed delta file reader. Reads delta pages sorted by page index to almost sequential disk writes on apply.
+     *
+     * @see SnapshotFutureTask.IndexedPageStoreSerialWriter
+     */
+    class IndexedDeltaReader extends DeltaReader {
+        /** Snapshot delta sort batch size in pages count. */
+        public static final int DELTA_SORT_BATCH_SIZE = 500_000;
+
+        /** Delta index file IO. */
+        private final FileIO idxIo;
+
+        /** */
+        IndexedDeltaReader(File delta, FileIOFactory ioFactory) throws IOException {
+            super(delta, ioFactory);
+
+            File deltaIdx = partDeltaIndexFile(delta);
+
+            idxIo = pagesCnt > 0 ? IgniteSnapshotManager.this.ioFactory.create(deltaIdx, READ) : null;
+
+            assert deltaIdx.length() % 4 /* pageIdx */ == 0 : "Wrong delta index size: " + deltaIdx.length();
+            assert deltaIdx.length() / 4 == pagesCnt : "Wrong delta index pages count: " + deltaIdx.length();
+        }
+
+        /** {@inheritDoc} */
+        @Override void read(Consumer<ByteBuffer> action) throws IOException {
+            int id = 0;
+
+            while (id < pagesCnt) {
+                TreeMap<Integer, Integer> sorted = new TreeMap<>();
+
+                while (sorted.size() < DELTA_SORT_BATCH_SIZE) {
+                    if (idxIo.readFully(buf) < 0)
+                        break;
+
+                    buf.flip();
+
+                    while (buf.hasRemaining())
+                        sorted.put(buf.getInt(), id++);
+
+                    buf.clear();
+                }
+
+                for (Integer id0 : sorted.values())
+                    readPage((long)id0 * pageSize, action);
+            }
+        }
+
+        /** {@inheritDoc} */
+        @Override public void close() throws IOException {
+            super.close();
+
+            U.closeQuiet(idxIo);
         }
     }
 

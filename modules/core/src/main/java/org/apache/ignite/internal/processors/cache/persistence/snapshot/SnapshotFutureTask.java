@@ -47,7 +47,6 @@ import java.util.function.BiConsumer;
 import java.util.function.BooleanSupplier;
 import java.util.stream.Collectors;
 import org.apache.ignite.IgniteCheckedException;
-import org.apache.ignite.IgniteSystemProperties;
 import org.apache.ignite.binary.BinaryType;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.internal.IgniteFutureCancelledCheckedException;
@@ -80,11 +79,9 @@ import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.jetbrains.annotations.Nullable;
 
-import static org.apache.ignite.IgniteSystemProperties.IGNITE_SNAPSHOT_SEQUENTIAL_WRITE;
 import static org.apache.ignite.internal.pagemem.PageIdAllocator.INDEX_PARTITION;
 import static org.apache.ignite.internal.processors.cache.persistence.file.FilePageStoreManager.cacheWorkDir;
 import static org.apache.ignite.internal.processors.cache.persistence.file.FilePageStoreManager.getPartitionFile;
-import static org.apache.ignite.internal.processors.cache.persistence.snapshot.IgniteSnapshotManager.DFLT_IGNITE_SNAPSHOT_SEQUENTIAL_WRITE;
 import static org.apache.ignite.internal.processors.cache.persistence.snapshot.IgniteSnapshotManager.copy;
 import static org.apache.ignite.internal.processors.cache.persistence.snapshot.IgniteSnapshotManager.databaseRelativePath;
 import static org.apache.ignite.internal.processors.cache.persistence.snapshot.IgniteSnapshotManager.partDeltaFile;
@@ -152,10 +149,6 @@ class SnapshotFutureTask extends AbstractSnapshotFutureTask<Set<GroupPartitionId
 
     /** Processed snapshot size in bytes. */
     private final AtomicLong processedSize = new AtomicLong();
-
-    /** Value of {@link IgniteSystemProperties#IGNITE_SNAPSHOT_SEQUENTIAL_WRITE}. */
-    public final boolean sequentialWrite =
-        IgniteSystemProperties.getBoolean(IGNITE_SNAPSHOT_SEQUENTIAL_WRITE, DFLT_IGNITE_SNAPSHOT_SEQUENTIAL_WRITE);
 
     /**
      * @param cctx Shared context.
@@ -595,9 +588,13 @@ class SnapshotFutureTask extends AbstractSnapshotFutureTask<Set<GroupPartitionId
             GroupPartitionId pair = new GroupPartitionId(grpId, partId);
 
             PageStore store = pageStore.getStore(grpId, partId);
+            File delta = partDeltaFile(cacheWorkDir(tmpConsIdDir, dirName), partId);
 
-            partDeltaWriters.put(pair,
-                new PageStoreSerialWriter(store, partDeltaFile(cacheWorkDir(tmpConsIdDir, dirName), partId), encGrpId));
+            PageStoreSerialWriter writer = cctx.snapshotMgr().isSequentialWrite() ?
+                new IndexedPageStoreSerialWriter(store, delta, encGrpId) :
+                new PageStoreSerialWriter(store, delta, encGrpId);
+
+            partDeltaWriters.put(pair, writer);
 
             partFileLengths.put(pair, store.size());
         }
@@ -821,10 +818,10 @@ class SnapshotFutureTask extends AbstractSnapshotFutureTask<Set<GroupPartitionId
     private class PageStoreSerialWriter implements PageWriteListener, Closeable {
         /** Page store to which current writer is related to. */
         @GridToStringExclude
-        private final PageStore store;
+        protected final PageStore store;
 
         /** Partition delta file to store delta pages into. */
-        private final File deltaFile;
+        protected final File deltaFile;
 
         /** Id of encrypted cache group. If {@code null}, no encrypted IO is used. */
         private final Integer encryptedGrpId;
@@ -847,15 +844,8 @@ class SnapshotFutureTask extends AbstractSnapshotFutureTask<Set<GroupPartitionId
         @GridToStringExclude
         private volatile FileIO deltaFileIo;
 
-        /** */
-        @GridToStringExclude
-        private volatile FileIO deltaIdxFileIo;
-
         /** {@code true} if partition file has been copied to external resource. */
         private volatile boolean partProcessed;
-
-        /** Buffer of page indexes written to the delta. */
-        private volatile ByteBuffer pageIdxs;
 
         /**
          * @param store Partition page store.
@@ -898,6 +888,12 @@ class SnapshotFutureTask extends AbstractSnapshotFutureTask<Set<GroupPartitionId
             }
         }
 
+        /** */
+        protected void init() throws IOException {
+            deltaFileIo = (encryptedGrpId == null ? ioFactory :
+                pageStore.encryptedFileIoFactory(ioFactory, encryptedGrpId)).create(deltaFile);
+        }
+
         /** {@inheritDoc} */
         @Override public void accept(long pageId, ByteBuffer buf) {
             assert buf.position() == 0 : buf.position();
@@ -910,18 +906,8 @@ class SnapshotFutureTask extends AbstractSnapshotFutureTask<Set<GroupPartitionId
                     if (stopped())
                         return;
 
-                    if (deltaFileIo == null) {
-                        deltaFileIo = (encryptedGrpId == null ? ioFactory :
-                            pageStore.encryptedFileIoFactory(ioFactory, encryptedGrpId)).create(deltaFile);
-
-                        if (sequentialWrite) {
-                            deltaIdxFileIo = ioFactory.create(partDeltaIndexFile(deltaFile));
-
-                            pageIdxs = ByteBuffer.allocate(store.getPageSize()).order(ByteOrder.nativeOrder());
-
-                            assert pageIdxs.capacity() % 4 == 0;
-                        }
-                    }
+                    if (deltaFileIo == null)
+                        init();
                 }
                 catch (IOException e) {
                     acceptException(e);
@@ -983,7 +969,7 @@ class SnapshotFutureTask extends AbstractSnapshotFutureTask<Set<GroupPartitionId
          * @param pageBuf Page buffer to write.
          * @throws IOException If page writing failed (IO error occurred).
          */
-        private synchronized void writePage0(long pageId, ByteBuffer pageBuf) throws IOException {
+        protected synchronized void writePage0(long pageId, ByteBuffer pageBuf) throws IOException {
             assert deltaFileIo != null : "Delta pages storage is not inited: " + this;
             assert pageBuf.position() == 0;
             assert pageBuf.order() == ByteOrder.nativeOrder() : "Page buffer order " + pageBuf.order()
@@ -1003,43 +989,17 @@ class SnapshotFutureTask extends AbstractSnapshotFutureTask<Set<GroupPartitionId
             int len = deltaFileIo.writeFully(pageBuf);
 
             totalSize.addAndGet(len);
-
-            if (sequentialWrite) {
-                pageIdxs.putInt(PageIdUtils.pageIndex(pageId));
-
-                if (!pageIdxs.hasRemaining())
-                    writePageIndexes();
-            }
         }
 
-        /** */
-        private void writePageIndexes() throws IOException {
-            pageIdxs.flip();
-
-            deltaIdxFileIo.writeFully(pageIdxs);
-
-            pageIdxs.clear();
-        }
 
         /** {@inheritDoc} */
         @Override public void close() {
             lock.writeLock().lock();
 
             try {
-                try {
-                    if (deltaIdxFileIo != null)
-                        writePageIndexes();
-                }
-                catch (IOException e) {
-                    acceptException(new IgniteCheckedException("Error during writing page indexes to delta " +
-                        "partition index file [writer=" + this + ']', e));
-                }
-
                 U.closeQuiet(deltaFileIo);
-                U.closeQuiet(deltaIdxFileIo);
 
                 deltaFileIo = null;
-                deltaIdxFileIo = null;
 
                 store.removeWriteListener(this);
             }
@@ -1051,6 +1011,69 @@ class SnapshotFutureTask extends AbstractSnapshotFutureTask<Set<GroupPartitionId
         /** {@inheritDoc} */
         @Override public String toString() {
             return S.toString(PageStoreSerialWriter.class, this);
+        }
+    }
+
+    /** @see IgniteSnapshotManager.IndexedDeltaReader */
+    class IndexedPageStoreSerialWriter extends PageStoreSerialWriter {
+        /** Delta index file IO. */
+        @GridToStringExclude
+        private volatile FileIO idxIo;
+
+        /** Buffer of page indexes written to the delta. */
+        private volatile ByteBuffer pageIdxs;
+
+        /** */
+        public IndexedPageStoreSerialWriter(PageStore store, File deltaFile, @Nullable Integer encryptedGrpId) {
+            super(store, deltaFile, encryptedGrpId);
+        }
+
+        /** {@inheritDoc} */
+        @Override protected void init() throws IOException {
+            super.init();
+
+            idxIo = ioFactory.create(partDeltaIndexFile(deltaFile));
+
+            pageIdxs = ByteBuffer.allocate(store.getPageSize()).order(ByteOrder.nativeOrder());
+
+            assert pageIdxs.capacity() % 4 == 0;
+        }
+
+        /** {@inheritDoc} */
+        @Override protected synchronized void writePage0(long pageId, ByteBuffer pageBuf) throws IOException {
+            super.writePage0(pageId, pageBuf);
+
+            pageIdxs.putInt(PageIdUtils.pageIndex(pageId));
+
+            if (!pageIdxs.hasRemaining())
+                flush();
+        }
+
+        /** Flush buffer with page indexes to the file. */
+        private void flush() throws IOException {
+            pageIdxs.flip();
+
+            idxIo.writeFully(pageIdxs);
+
+            pageIdxs.clear();
+        }
+
+        /** {@inheritDoc} */
+        @Override public void close() {
+            super.close();
+
+            try {
+                if (idxIo != null)
+                    flush();
+            }
+            catch (IOException e) {
+                acceptException(new IgniteCheckedException("Error during writing page indexes to delta " +
+                    "partition index file [writer=" + this + ']', e));
+            }
+
+            U.closeQuiet(idxIo);
+
+            idxIo = null;
         }
     }
 
