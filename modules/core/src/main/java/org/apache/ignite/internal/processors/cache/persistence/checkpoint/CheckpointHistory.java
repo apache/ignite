@@ -504,7 +504,7 @@ public class CheckpointHistory {
 
                 T2<Long, Long> foundCntr = cpEntry.partitionCounter(wal, grpId, entry.getKey());
 
-                Long cnt = foundCntr == null ? -1 : foundCntr.get2() == 0 ? foundCntr.get1() : foundCntr.get2();
+                Long cnt = foundCntr == null ? null : foundCntr.get2() == 0 ? foundCntr.get1() : foundCntr.get2();
 
                 if (cnt != null && cnt <= entry.getValue()) {
                     iter.remove();
