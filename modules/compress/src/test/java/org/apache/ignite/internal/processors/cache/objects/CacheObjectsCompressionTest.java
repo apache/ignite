@@ -94,7 +94,7 @@ public class CacheObjectsCompressionTest extends CacheObjectsTransformationTest 
 
         String str = "Ololo";
 
-        putAndCheck(str, false, false);
+        putAndCheck(str, false, false, false);
 
         StringBuilder sb = new StringBuilder();
 
@@ -103,9 +103,9 @@ public class CacheObjectsCompressionTest extends CacheObjectsTransformationTest 
 
         String str2 = sb.toString();
 
-        putAndCheck(str2, false, true);
+        putAndCheck(str2, false, true, false);
 
-        putAndCheck(new ShortData(0), true, false);
+        putAndCheck(new ShortData(0), true, false, false);
 
         Map<Integer, Object> map = new HashMap<>();
 
@@ -115,7 +115,7 @@ public class CacheObjectsCompressionTest extends CacheObjectsTransformationTest 
 
         BinarizableData data = new BinarizableData(str, map, 42);
 
-        putAndCheck(data, true, true);
+        putAndCheck(data, true, true, false);
 
         Map<Integer, Object> map2 = new HashMap<>();
 
@@ -125,7 +125,7 @@ public class CacheObjectsCompressionTest extends CacheObjectsTransformationTest 
 
         BinarizableData data2 = new BinarizableData(str, map2, 47);
 
-        putAndCheck(data2, true, true);
+        putAndCheck(data2, true, true, false);
 
         BinaryObjectBuilder builder = ignite.binary().builder(BinarizableData.class.getName());
 
@@ -133,11 +133,11 @@ public class CacheObjectsCompressionTest extends CacheObjectsTransformationTest 
         builder.setField("map", map);
         builder.setField("i", 42);
 
-        putAndCheck(builder.build(), true, true);
+        putAndCheck(builder.build(), true, true, false);
 
         builder.setField("str", str);
 
-        putAndCheck(builder.build(), true, true);
+        putAndCheck(builder.build(), true, true, false);
     }
 
     /**

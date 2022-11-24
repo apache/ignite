@@ -24,6 +24,7 @@ import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
 import java.util.concurrent.ConcurrentLinkedDeque;
+import java.util.function.Supplier;
 import java.util.stream.Collectors;
 import com.google.common.collect.Sets;
 import org.apache.ignite.Ignite;
@@ -163,12 +164,14 @@ public class CacheObjectsTransformationTest extends GridCommonAbstractTest {
      * @param binarizable Binarizable.
      */
     private void putAndCheck(Object obj, boolean binarizable) {
-        putAndCheck(obj, binarizable, true);
+        putAndCheck(obj, binarizable, true, true);
+        putAndCheck(obj, binarizable, true, false);
 
         try {
             ControllableCacheObjectsTransformer.fail = true;
 
-            putAndCheck(obj, binarizable, false);
+            putAndCheck(obj, binarizable, false, true);
+            putAndCheck(obj, binarizable, false, false);
         }
         finally {
             ControllableCacheObjectsTransformer.fail = false;
@@ -178,7 +181,7 @@ public class CacheObjectsTransformationTest extends GridCommonAbstractTest {
     /**
      *
      */
-    protected void putAndCheck(Object obj, boolean binarizable, boolean transformable) {
+    protected void putAndCheck(Object obj, boolean binarizable, boolean transformable, boolean reversed) {
         assertFalse(obj instanceof TransformedCacheObject);
 
         boolean binary = obj instanceof BinaryObject
@@ -192,31 +195,43 @@ public class CacheObjectsTransformationTest extends GridCommonAbstractTest {
 
         IgniteCache<Object, Object> cache = node.getOrCreateCache(CACHE_NAME);
 
+        Supplier<?> kSup = () -> reversed ? obj : ++key;
+        Supplier<?> vSup = () -> reversed ? ++key : obj;
+
         // PUT
-        cache.put(++key, obj);
+        Object k = kSup.get();
+        Object v = vSup.get();
+
+        cache.put(k, v);
 
         checkPut(transformable);
         checkEventsAbsent();
-        checkGet(key, obj, binary, binarizable, transformable);
-
-        // REVERSED
-        cache.put(obj, ++key);
-
-        checkPut(transformable);
-        checkEventsAbsent();
-        checkGet(obj, key, false, false, transformable);
+        checkGet(k, v, !reversed && binary, !reversed && binarizable, transformable);
 
         // DATASTREAMER
+        k = kSup.get();
+        v = vSup.get();
+
+        if (reversed)
+            cache.remove(obj); // Removing since the key is the same.
+
         try (IgniteDataStreamer<Object, Object> stmr = node.dataStreamer(CACHE_NAME)) {
-            stmr.addData(++key, obj);
+            stmr.addData(k, v);
 
             stmr.flush();
         }
 
-        while (!evtQueue.isEmpty())
-            checkPut(transformable);
+        boolean checked = false;
 
-        checkGet(key, obj, binary, binarizable, transformable);
+        while (!evtQueue.isEmpty()) {
+            checked = true;
+
+            checkPut(transformable);
+        }
+
+        assertTrue(checked);
+
+        checkGet(k, v, !reversed && binary, !reversed && binarizable, transformable);
     }
 
     /**
@@ -228,8 +243,8 @@ public class CacheObjectsTransformationTest extends GridCommonAbstractTest {
         assertFalse(evt.isRestore());
 
         if (transformable) {
-            assertFalse(evt.toString(), Arrays.equals(evt.getOriginal(), evt.getTransformed()));
             assertNotNull(evt.toString(), evt.getTransformed());
+            assertFalse(evt.toString(), Arrays.equals(evt.getOriginal(), evt.getTransformed()));
         }
         else
             assertNull(evt.toString(), evt.getTransformed());
