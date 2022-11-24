@@ -94,7 +94,7 @@ public class IgniteWalSerializerVersionTest extends GridCommonAbstractTest {
 
         stopGrid();
 
-        System.setProperty(IGNITE_WAL_SERIALIZER_VERSION, "3");
+        System.setProperty(IGNITE_WAL_SERIALIZER_VERSION, "4");
 
         GridTestUtils.assertThrowsAnyCause(log, new GPC<Void>() {
             @Override public Void call() throws Exception {
