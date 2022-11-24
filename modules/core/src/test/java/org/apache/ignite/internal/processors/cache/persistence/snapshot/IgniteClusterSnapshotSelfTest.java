@@ -73,6 +73,7 @@ import org.apache.ignite.internal.processors.metric.MetricRegistry;
 import org.apache.ignite.internal.processors.metric.impl.ObjectGauge;
 import org.apache.ignite.internal.util.distributed.DistributedProcess;
 import org.apache.ignite.internal.util.distributed.FullMessage;
+import org.apache.ignite.internal.util.distributed.InitMessage;
 import org.apache.ignite.internal.util.distributed.SingleNodeMessage;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.G;
@@ -537,6 +538,32 @@ public class IgniteClusterSnapshotSelfTest extends AbstractSnapshotSelfTest {
         spi.waitBlocked(10_000L);
 
         ignite.close();
+
+        assertThrowsAnyCause(log,
+            fut::get,
+            NodeStoppingException.class,
+            SNP_NODE_STOPPING_ERR_MSG);
+    }
+
+    /** @throws Exception If fails. */
+    @Test
+    public void testClusterSnapshotExOnNonBaselineInitiatorLeft() throws Exception {
+        startGridsWithCache(2, dfltCacheCfg, CACHE_KEYS_RANGE);
+
+        grid(0).cluster().baselineAutoAdjustEnabled(false);
+
+        grid(0).cluster().setBaselineTopology(grid(0).cluster().topologyVersion());
+
+        IgniteEx nonBaseLineNode = startGrid(G.allGrids().size());
+
+        BlockingCustomMessageDiscoverySpi spi = discoSpi(nonBaseLineNode);
+        spi.block((msg) -> msg instanceof InitMessage);
+
+        IgniteFuture<Void> fut = nonBaseLineNode.snapshot().createSnapshot(SNAPSHOT_NAME);
+
+        spi.waitBlocked(10_000L);
+
+        nonBaseLineNode.close();
 
         assertThrowsAnyCause(log,
             fut::get,
@@ -1125,8 +1152,6 @@ public class IgniteClusterSnapshotSelfTest extends AbstractSnapshotSelfTest {
         IgniteEx nonBaseLineNode = startGrid(G.allGrids().size());
 
         snp(nonBaseLineNode).createSnapshot(SNAPSHOT_NAME).get();
-
-        waitForEvents(EVT_CLUSTER_SNAPSHOT_STARTED, EVT_CLUSTER_SNAPSHOT_FINISHED);
 
         stopAllGrids();
 

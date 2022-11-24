@@ -751,7 +751,7 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
                 "prior to snapshot operation start: " + leftNodes));
         }
 
-        if (CU.baselineNode(cctx.localNode(), cctx.kernalContext().state().clusterState())) {
+        if (!CU.baselineNode(cctx.localNode(), cctx.kernalContext().state().clusterState())) {
             clusterSnpReq = req;
 
             return new GridFinishedFuture<>();
@@ -770,6 +770,8 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
         List<Integer> grpIds = new ArrayList<>(F.viewReadOnly(req.groups(), CU::cacheId));
 
         Set<Integer> leftGrps = new HashSet<>(grpIds);
+        boolean withMetaStorage = leftGrps.remove(METASTORAGE_CACHE_ID);
+
         leftGrps.removeAll(cctx.cache().cacheGroupDescriptors().keySet());
 
         if (!leftGrps.isEmpty()) {
@@ -789,8 +791,6 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
         }
 
         IgniteInternalFuture<?> task0;
-
-        boolean withMetaStorage = leftGrps.remove(METASTORAGE_CACHE_ID);
 
         if (parts.isEmpty() && !withMetaStorage)
             task0 = new GridFinishedFuture<>(Collections.emptySet());
@@ -871,8 +871,7 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
      * @param err Errors.
      */
     private void processLocalSnapshotStartStageResult(UUID id, Map<UUID, SnapshotOperationResponse> res, Map<UUID, Exception> err) {
-        if (cctx.kernalContext().clientNode() ||
-            !CU.baselineNode(cctx.localNode(), cctx.kernalContext().state().clusterState()))
+        if (cctx.kernalContext().clientNode())
             return;
 
         SnapshotOperationRequest snpReq = clusterSnpReq;
