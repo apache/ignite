@@ -123,52 +123,52 @@ public class CacheObjectsTransformationTest extends GridCommonAbstractTest {
         int[] is = new int[] {i, i, i};
         Set<Integer> iSet = Sets.newHashSet(i, i, i);
 
-        putAndCheck(i, false, false);
-        putAndCheck(is, false, false);
-        putAndCheck(iSet, false, false);
+        putAndCheck(i, false);
+        putAndCheck(is, false);
+        putAndCheck(iSet, false);
 
         String str = "test";
         String[] strs = new String[] {str, str, str};
         Set<String> strSet = Sets.newHashSet(str, str, str);
 
-        putAndCheck(str, false, false);
-        putAndCheck(strs, false, false);
-        putAndCheck(strSet, false, false);
+        putAndCheck(str, false);
+        putAndCheck(strs, false);
+        putAndCheck(strSet, false);
 
-        BinarizableData data = new BinarizableData(str, Collections.singletonMap(42, 42), 42);
+        BinarizableData data = new BinarizableData(str, Collections.singletonMap(i, i), i);
         BinarizableData[] datas = new BinarizableData[] {data, data, data};
         Set<BinarizableData> dataSet = Sets.newHashSet(data, data, data);
 
-        putAndCheck(data, false, true);
-        putAndCheck(datas, false, true);
-        putAndCheck(dataSet, false, true);
+        putAndCheck(data, true);
+        putAndCheck(datas, true);
+        putAndCheck(dataSet, true);
 
         BinaryObjectBuilder builder = ignite.binary().builder(BinarizableData.class.getName());
 
         builder.setField("str", str);
-        builder.setField("map", Collections.singletonMap(42, 42));
-        builder.setField("i", 42);
+        builder.setField("map", Collections.singletonMap(i, i));
+        builder.setField("i", i);
 
         BinaryObject bo = builder.build();
         BinaryObject[] bos = new BinaryObject[] {bo, bo, bo};
         Set<BinaryObject> boSet = Sets.newHashSet(bo, bo, bo);
 
-        putAndCheck(bo, true, true);
-        putAndCheck(bos, true, true);
-        putAndCheck(boSet, true, true);
+        putAndCheck(bo, true);
+        putAndCheck(bos, true);
+        putAndCheck(boSet, true);
     }
 
     /**
      * @param obj Object.
      * @param binarizable Binarizable.
      */
-    private void putAndCheck(Object obj, boolean binary, boolean binarizable) {
-        putAndCheck(obj, binary, binarizable, true);
+    private void putAndCheck(Object obj, boolean binarizable) {
+        putAndCheck(obj, binarizable, true);
 
         try {
             ControllableCacheObjectsTransformer.fail = true;
 
-            putAndCheck(obj, binary, binarizable, false);
+            putAndCheck(obj, binarizable, false);
         }
         finally {
             ControllableCacheObjectsTransformer.fail = false;
@@ -178,9 +178,15 @@ public class CacheObjectsTransformationTest extends GridCommonAbstractTest {
     /**
      *
      */
-    protected void putAndCheck(Object obj, boolean binary, boolean binarizable, boolean transformable) {
-        if (obj instanceof BinaryObject)
-            assertFalse(obj instanceof TransformedCacheObject);
+    protected void putAndCheck(Object obj, boolean binarizable, boolean transformable) {
+        assertFalse(obj instanceof TransformedCacheObject);
+
+        boolean binary = obj instanceof BinaryObject
+            || obj instanceof BinaryObject[]
+            || (obj instanceof Collection && ((Iterable<?>)obj).iterator().next() instanceof BinaryObject);
+
+        if (binary)
+            assertTrue(binarizable);
 
         Ignite node = grid(0);
 
@@ -224,21 +230,9 @@ public class CacheObjectsTransformationTest extends GridCommonAbstractTest {
      *
      */
     private void checkGet(Object expected, boolean binary, boolean binarizable, boolean transformable) {
-        if (binary) {
-            if (expected instanceof BinaryObject) {
-                assertTrue(binarizable);
-
-                expected = ((BinaryObject)expected).deserialize();
-            }
-            else if (expected instanceof Object[])
-                expected = deserializeBinaryArray((Object[])expected);
-            else if (expected instanceof Collection)
-                expected = deserializeBinaryCollection((Collection<Object>)expected);
-        }
-
         for (Ignite node : G.allGrids()) {
-            getWithCheck(node, expected, binarizable, transformable, false);
-            getWithCheck(node, expected, binarizable, transformable, true);
+            getWithCheck(node, expected, binary, binarizable, transformable, false);
+            getWithCheck(node, expected, binary, binarizable, transformable, true);
         }
 
         checkEventsAbsent();
@@ -250,6 +244,7 @@ public class CacheObjectsTransformationTest extends GridCommonAbstractTest {
     private void getWithCheck(
         Ignite node,
         Object expected,
+        boolean binary,
         boolean binarizable,
         boolean transformable,
         boolean keepBinary) {
@@ -260,16 +255,13 @@ public class CacheObjectsTransformationTest extends GridCommonAbstractTest {
 
         Object obj = cache.get(key);
 
-        if (keepBinary && binarizable) {
-            assertFalse(obj.getClass().getName(), obj instanceof TransformedCacheObject);
+        assertFalse(obj.getClass().getName(), obj instanceof TransformedCacheObject);
 
-            if (obj instanceof Object[])
-                obj = deserializeBinaryArray((Object[])obj);
-            else if (obj instanceof Collection)
-                obj = deserializeBinaryCollection((Collection<Object>)obj);
-            else
-                obj = ((BinaryObject)obj).deserialize();
-        }
+        if (!keepBinary && binary) // Need to deserialize the expectation to compare with the deserialized get result.
+            expected = deserializeBinary(expected);
+
+        if (keepBinary && binarizable && !binary) // Deserializing the get result to compare with the non-binary expectation.
+            obj = deserializeBinary(obj);
 
         if (transformable) {
             CacheObjectTransformedEvent evt = event();
@@ -297,6 +289,22 @@ public class CacheObjectsTransformationTest extends GridCommonAbstractTest {
             evt = evtQueue.poll();
 
         return evt;
+    }
+
+    /**
+     *
+     */
+    private Object deserializeBinary(Object obj) {
+        Object res;
+
+        if (obj instanceof Object[])
+            res = deserializeBinaryArray((Object[])obj);
+        else if (obj instanceof Collection)
+            res = deserializeBinaryCollection((Collection<Object>)obj);
+        else
+            res = ((BinaryObject)obj).deserialize();
+
+        return res;
     }
 
     /**
