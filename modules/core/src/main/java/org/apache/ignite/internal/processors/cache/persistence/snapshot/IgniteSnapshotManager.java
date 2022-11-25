@@ -18,6 +18,7 @@
 package org.apache.ignite.internal.processors.cache.persistence.snapshot;
 
 import java.io.BufferedInputStream;
+import java.io.Closeable;
 import java.io.File;
 import java.io.FileInputStream;
 import java.io.FileOutputStream;
@@ -3184,9 +3185,9 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
         /** Size of page. */
         private final int pageSize;
 
-        /** Delta reader factory. */
-        private final Factory<File, FileIOFactory, DeltaReader> deltaReaderFactory =
-            sequentialWrite() ? IndexedDeltaReader::new : DeltaReader::new;
+        /** Delta iterator factory. */
+        private final Factory<File, FileIOFactory, DeltaIterator> deltaIterFactory =
+            sequentialWrite() ? IndexedDeltaIterator::new : DeltaIterator::new;
 
         /**
          * @param snpName Snapshot name.
@@ -3316,14 +3317,16 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
                 .encryptedFileIoFactory(IgniteSnapshotManager.this.ioFactory, pair.getGroupId()) :
                 IgniteSnapshotManager.this.ioFactory;
 
-            try (DeltaReader deltaReader = deltaReaderFactory.create(delta, ioFactory);
+            try (DeltaIterator deltaIter = deltaIterFactory.create(delta, ioFactory);
                  FilePageStore pageStore = (FilePageStore)storeMgr.getPageStoreFactory(pair.getGroupId(), encrypted)
                      .createPageStore(getTypeByPartId(pair.getPartitionId()), snpPart::toPath, v -> {})
             ) {
                 pageStore.beginRecover();
 
-                for (ByteBuffer page : deltaReader) {
+                while (deltaIter.hasNext()) {
                     transferRateLimiter.acquire(pageSize);
+
+                    ByteBuffer page = deltaIter.next();
 
                     pageStore.write(PageIO.getPageId(page), page, 0, false);
                 }
@@ -3350,8 +3353,8 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
         }
     }
 
-    /** Delta file reader. */
-    private class DeltaReader extends GridCloseableIteratorAdapter<ByteBuffer> {
+    /** Delta file iterator. */
+    private class DeltaIterator implements Iterator<ByteBuffer>, Closeable {
         /** Delta file. */
         protected final File delta;
 
@@ -3374,7 +3377,7 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
         private long pos;
 
         /** */
-        DeltaReader(File delta, FileIOFactory ioFactory) throws IOException {
+        DeltaIterator(File delta, FileIOFactory ioFactory) throws IOException {
             pageSize = cctx.kernalContext().config().getDataStorageConfiguration().getPageSize();
 
             this.delta = delta;
@@ -3391,12 +3394,15 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
         }
 
         /** {@inheritDoc} */
-        @Override protected boolean onHasNext() throws IgniteCheckedException {
+        @Override public boolean hasNext() {
             return pos < totalBytes;
         }
 
         /** {@inheritDoc} */
-        @Override protected ByteBuffer onNext() throws IgniteCheckedException {
+        @Override public ByteBuffer next() {
+            if (!hasNext())
+                throw new NoSuchElementException();
+
             readPage(pos);
 
             pos += pageSize;
@@ -3430,15 +3436,15 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
         }
 
         /** {@inheritDoc} */
-        @Override protected void onClose() throws IgniteCheckedException {
-            U.closeQuiet(fileIo);
+        @Override public void close() throws IOException {
+            fileIo.close();
         }
     }
 
     /**
-     * Indexed delta file reader. Reads delta pages sorted by page index to almost sequential disk writes on apply.
+     * Indexed delta file iterator. Reads delta pages sorted by page index to almost sequential disk writes on apply.
      */
-    class IndexedDeltaReader extends DeltaReader {
+    class IndexedDeltaIterator extends DeltaIterator {
         /** Snapshot delta sort batch size in pages count. */
         public static final int DELTA_SORT_BATCH_SIZE = 500_000;
 
@@ -3452,7 +3458,7 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
         private Iterator<Integer> sortedIter;
 
         /** */
-        IndexedDeltaReader(File delta, FileIOFactory ioFactory) throws IOException {
+        IndexedDeltaIterator(File delta, FileIOFactory ioFactory) throws IOException {
             super(delta, ioFactory);
 
             File deltaIdx = partDeltaIndexFile(delta);
@@ -3464,7 +3470,7 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
         }
 
         /** {@inheritDoc} */
-        @Override protected boolean onHasNext() throws IgniteCheckedException {
+        @Override public boolean hasNext() {
             if (sortedIter == null || !sortedIter.hasNext())
                 advance();
 
@@ -3472,7 +3478,7 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
         }
 
         /** {@inheritDoc} */
-        @Override protected ByteBuffer onNext() throws IgniteCheckedException {
+        @Override public ByteBuffer next() {
             readPage((long)sortedIter.next() * pageSize);
 
             return pageBuf;
@@ -3502,10 +3508,10 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
         }
 
         /** {@inheritDoc} */
-        @Override protected void onClose() throws IgniteCheckedException {
-            super.onClose();
+        @Override public void close() throws IOException {
+            super.close();
 
-            U.closeQuiet(idxIo);
+            idxIo.close();
         }
     }
 

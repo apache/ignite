@@ -1014,7 +1014,7 @@ class SnapshotFutureTask extends AbstractSnapshotFutureTask<Set<GroupPartitionId
         }
     }
 
-    /** @see IgniteSnapshotManager.IndexedDeltaReader */
+    /** @see IgniteSnapshotManager.IndexedDeltaIterator */
     private class IndexedPageStoreSerialWriter extends PageStoreSerialWriter {
         /** Delta index file IO. */
         @GridToStringExclude
