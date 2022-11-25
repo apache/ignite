@@ -19,7 +19,9 @@ package org.apache.ignite.internal.processors.cache.transactions;
 
 import java.util.HashMap;
 import java.util.concurrent.Callable;
+import java.util.concurrent.locks.Lock;
 import java.util.function.Consumer;
+import javax.cache.CacheException;
 import javax.cache.processor.EntryProcessor;
 import javax.cache.processor.EntryProcessorException;
 import javax.cache.processor.MutableEntry;
@@ -36,6 +38,7 @@ import org.junit.Test;
 
 import static org.apache.ignite.IgniteSystemProperties.IGNITE_ALLOW_ATOMIC_OPS_IN_TX;
 import static org.apache.ignite.cache.CacheAtomicityMode.ATOMIC;
+import static org.apache.ignite.cache.CachePeekMode.ALL;
 
 /**
  * Checks how atomic cache operations work within a transaction.
@@ -84,9 +87,9 @@ public class AtomicOperationsInTxTest extends GridCommonAbstractTest {
                 return grid(0).cache(DEFAULT_CACHE_NAME).withAllowAtomicOpsInTx();
             }
         },
-            IgniteException.class,
-            "Transaction spans operations on atomic cache (don't use atomic cache inside transaction or set up" +
-            " flag by cache.allowedAtomicOpsInTx())."
+            IllegalStateException.class,
+            "Enabling atomic operations during active transaction is not allowed. Enable atomic operations before " +
+                    "transaction start."
         );
     }
 
@@ -111,13 +114,7 @@ public class AtomicOperationsInTxTest extends GridCommonAbstractTest {
     @Test
     @WithSystemProperty(key = IGNITE_ALLOW_ATOMIC_OPS_IN_TX, value = "false")
     public void testSetOfNonAtomicOperationsWithinTransactions() throws Exception {
-        GridTestUtils.assertThrows(
-            log,
-            () -> checkOperations(),
-            IgniteException.class,
-            "Transaction spans operations on atomic cache (don't use atomic cache inside transaction or set up" +
-            " flag by cache.allowedAtomicOpsInTx())."
-        );
+        checkOperations(true);
     }
 
     /**
@@ -129,89 +126,140 @@ public class AtomicOperationsInTxTest extends GridCommonAbstractTest {
     @Test
     @WithSystemProperty(key = IGNITE_ALLOW_ATOMIC_OPS_IN_TX, value = "true")
     public void testSetOfAtomicOperationsWithinTransactions() throws Exception {
-        checkOperations();
+        checkOperations(true);
     }
 
     /**
      * @throws IgniteException If failed.
      */
-    private void checkOperations() throws IgniteException {
+    private void checkOperations(boolean isAtomicCacheAllowedInTx) {
         HashMap<Integer, Integer> map = new HashMap<>();
 
         map.put(1, 1);
         map.put(2, 1);
 
-        checkOperation(cache -> cache.put(1, 1));
+        checkOperation(isAtomicCacheAllowedInTx, cache -> cache.put(1, 1));
 
-        checkOperation(cache -> cache.putAsync(1, 1).get());
+        checkOperation(isAtomicCacheAllowedInTx, cache -> cache.putAsync(1, 1).get());
 
-        checkOperation(cache -> cache.putAll(map));
+        checkOperation(isAtomicCacheAllowedInTx, cache -> cache.putAll(map));
 
-        checkOperation(cache -> cache.putAllAsync(map).get());
+        checkOperation(isAtomicCacheAllowedInTx, cache -> cache.putAllAsync(map).get());
 
-        checkOperation(cache -> cache.putIfAbsent(1, 1));
+        checkOperation(isAtomicCacheAllowedInTx, cache -> cache.putIfAbsent(1, 1));
 
-        checkOperation(cache -> cache.putIfAbsentAsync(1, 1).get());
+        checkOperation(isAtomicCacheAllowedInTx, cache -> cache.putIfAbsentAsync(1, 1).get());
 
-        checkOperation(cache -> cache.get(1));
+        checkOperation(isAtomicCacheAllowedInTx, cache -> cache.get(1));
 
-        checkOperation(cache -> cache.getAll(map.keySet()));
+        checkOperation(isAtomicCacheAllowedInTx, cache -> cache.getAll(map.keySet()));
 
-        checkOperation(cache -> cache.getAllAsync(map.keySet()).get());
+        checkOperation(isAtomicCacheAllowedInTx, cache -> cache.getAllAsync(map.keySet()).get());
 
-        checkOperation(cache -> cache.getAndPut(1, 2));
+        checkOperation(isAtomicCacheAllowedInTx, cache -> cache.getAndPut(1, 2));
 
-        checkOperation(cache -> cache.getAndPutAsync(1, 2).get());
+        checkOperation(isAtomicCacheAllowedInTx, cache -> cache.getAndPutAsync(1, 2).get());
 
-        checkOperation(cache -> cache.getAndPutIfAbsent(1, 2));
+        checkOperation(isAtomicCacheAllowedInTx, cache -> cache.getAndPutIfAbsent(1, 2));
 
-        checkOperation(cache -> cache.getAndPutIfAbsentAsync(1, 2).get());
+        checkOperation(isAtomicCacheAllowedInTx, cache -> cache.getAndPutIfAbsentAsync(1, 2).get());
 
-        checkOperation(cache -> cache.getAndRemove(1));
+        checkOperation(isAtomicCacheAllowedInTx, cache -> cache.getAndRemove(1));
 
-        checkOperation(cache -> cache.getAndRemoveAsync(1));
+        checkOperation(isAtomicCacheAllowedInTx, cache -> cache.getAndRemoveAsync(1));
 
-        checkOperation(cache -> cache.getAndReplace(1, 2));
+        checkOperation(isAtomicCacheAllowedInTx, cache -> cache.getAndReplace(1, 2));
 
-        checkOperation(cache -> cache.getAndReplaceAsync(1, 2).get());
+        checkOperation(isAtomicCacheAllowedInTx, cache -> cache.getAndReplaceAsync(1, 2).get());
 
-        checkOperation(cache -> cache.remove(1, 1));
+        checkOperation(isAtomicCacheAllowedInTx, cache -> cache.remove(1, 1));
 
-        checkOperation(cache -> cache.removeAsync(1, 1).get());
+        checkOperation(isAtomicCacheAllowedInTx, cache -> cache.removeAsync(1, 1).get());
 
-        checkOperation(cache -> cache.removeAll(map.keySet()));
+        checkOperation(isAtomicCacheAllowedInTx, cache -> cache.removeAll(map.keySet()));
 
-        checkOperation(cache -> cache.removeAllAsync(map.keySet()).get());
+        checkOperation(isAtomicCacheAllowedInTx, cache -> cache.removeAllAsync(map.keySet()).get());
 
-        checkOperation(cache -> cache.containsKey(1));
+        checkOperation(isAtomicCacheAllowedInTx, cache -> cache.containsKey(1));
 
-        checkOperation(cache -> cache.containsKeyAsync(1).get());
+        checkOperation(isAtomicCacheAllowedInTx, cache -> cache.containsKeyAsync(1).get());
 
-        checkOperation(cache -> cache.containsKeys(map.keySet()));
+        checkOperation(isAtomicCacheAllowedInTx, cache -> cache.containsKeys(map.keySet()));
 
-        checkOperation(cache -> cache.containsKeysAsync(map.keySet()).get());
+        checkOperation(isAtomicCacheAllowedInTx, cache -> cache.containsKeysAsync(map.keySet()).get());
 
-        checkOperation(cache -> cache.invoke(1, new SetEntryProcessor()));
+        checkOperation(isAtomicCacheAllowedInTx, cache -> cache.invoke(1, new SetEntryProcessor()));
 
-        checkOperation(cache -> cache.invokeAsync(1, new SetEntryProcessor()).get());
+        checkOperation(isAtomicCacheAllowedInTx, cache -> cache.invokeAsync(1, new SetEntryProcessor()).get());
 
-        checkOperation(cache -> cache.invokeAll(map.keySet(), new SetEntryProcessor()));
+        checkOperation(isAtomicCacheAllowedInTx, cache -> cache.invokeAll(map.keySet(), new SetEntryProcessor()));
 
-        checkOperation(cache -> cache.invokeAllAsync(map.keySet(),
+        checkOperation(isAtomicCacheAllowedInTx, cache -> cache.invokeAllAsync(map.keySet(),
             new SetEntryProcessor()).get());
+
+        checkLock(isAtomicCacheAllowedInTx);
     }
 
     /**
+     * @param isAtomicCacheAllowedInTx If true - atomic operation allowed.
+     * Otherwise - it should throw exception.
      * @param op Operation.
-     * @throws IgniteException If failed.
      */
-    private void checkOperation(Consumer<IgniteCache<Integer, Integer>> op) throws IgniteException {
+    private void checkOperation(boolean isAtomicCacheAllowedInTx, Consumer<IgniteCache<Integer, Integer>> op) {
         IgniteCache<Integer, Integer> cache = grid(0).cache(DEFAULT_CACHE_NAME);
 
+        if (isAtomicCacheAllowedInTx)
+            cache = cache.withAllowAtomicOpsInTx();
+
+        cache.clear();
+
+        assertEquals(0, cache.size(ALL));
+
+        IgniteException err = null;
+
         try (Transaction tx = grid(0).transactions().txStart()) {
-            grid(0).cache(DEFAULT_CACHE_NAME).withAllowAtomicOpsInTx();
             op.accept(cache);
         }
+        catch (IgniteException e) {
+            err = e;
+        }
+
+        if (isAtomicCacheAllowedInTx)
+            assertNull(err);
+        else
+            assertTrue(err != null && err.getMessage()
+                .startsWith("Transaction spans operations on atomic cache"));
+    }
+
+    /**
+     * @param isAtomicCacheAllowedInTx If true - atomic operation allowed.
+     * Otherwise - it should throw exception.
+     */
+    private void checkLock(boolean isAtomicCacheAllowedInTx) {
+        IgniteCache<Integer, Integer> cache;
+        Class<? extends Throwable> eCls;
+        String eMsg;
+
+        if (isAtomicCacheAllowedInTx) {
+            cache = grid(0).cache(DEFAULT_CACHE_NAME).withAllowAtomicOpsInTx();
+            eCls = CacheException.class;
+            eMsg = "Explicit lock can't be acquired within a transaction.";
+        }
+        else {
+            cache = grid(0).cache(DEFAULT_CACHE_NAME);
+            eCls = IgniteException.class;
+            eMsg = "Transaction spans operations on atomic cache";
+        }
+
+        Lock lock = cache.lock(1);
+
+        GridTestUtils.assertThrows(log, (Callable<Void>)() -> {
+            try (Transaction tx = grid(0).transactions().txStart()) {
+                lock.lock();
+            }
+
+            return null;
+        }, eCls, eMsg);
     }
 
     /** */
