@@ -37,6 +37,7 @@ import org.apache.ignite.configuration.DataRegionConfiguration;
 import org.apache.ignite.configuration.DataStorageConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.configuration.WALMode;
+import org.apache.ignite.events.EventType;
 import org.apache.ignite.failure.StopNodeFailureHandler;
 import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.TestRecordingCommunicationSpi;
@@ -86,6 +87,8 @@ public class HistoricalRebalanceCheckpointTest extends GridCommonAbstractTest {
         cfg.getDataStorageConfiguration().setWalMode(WALMode.FSYNC); // Allows to use special IO at WAL as well.
 
         cfg.setFailureHandler(new StopNodeFailureHandler()); // Helps to kill nodes on stop with disabled IO.
+
+        cfg.setIncludeEventTypes(EventType.EVT_CACHE_REBALANCE_STOPPED);
 
         return cfg;
     }
@@ -186,11 +189,26 @@ public class HistoricalRebalanceCheckpointTest extends GridCommonAbstractTest {
 
         List<String> backNames = backups.stream().map(Ignite::name).collect(Collectors.toList());
 
+        CountDownLatch rebalanceFinished = new CountDownLatch(1);
+
         backups.forEach(Ignite::close);
 
-        startGrid(backNames.get(1)); // Restoring any backup.
+        TestRecordingCommunicationSpi.spi(prim).blockMessages(GridDhtPartitionSupplyMessage.class, backNames.get(1));
 
-        awaitPartitionMapExchange();
+        // Restore just any backup.
+        IgniteEx backup = startGrid(backNames.get(1));
+
+        TestRecordingCommunicationSpi.spi(prim).waitForBlocked();
+
+        backup.events().localListen(evt -> {
+            rebalanceFinished.countDown();
+
+            return true;
+        }, EventType.EVT_CACHE_REBALANCE_STOPPED);
+
+        TestRecordingCommunicationSpi.spi(prim).stopBlock();
+
+        rebalanceFinished.await();
 
         IdleVerifyResultV2 checkRes = idleVerify(prim, DEFAULT_CACHE_NAME);
 
