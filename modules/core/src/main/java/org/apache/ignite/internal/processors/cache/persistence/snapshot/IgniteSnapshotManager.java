@@ -18,7 +18,6 @@
 package org.apache.ignite.internal.processors.cache.persistence.snapshot;
 
 import java.io.BufferedInputStream;
-import java.io.Closeable;
 import java.io.File;
 import java.io.FileInputStream;
 import java.io.FileOutputStream;
@@ -45,6 +44,7 @@ import java.util.Deque;
 import java.util.EnumMap;
 import java.util.HashMap;
 import java.util.HashSet;
+import java.util.Iterator;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
@@ -3322,16 +3322,11 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
             ) {
                 pageStore.beginRecover();
 
-                deltaReader.read((pageBuf) -> {
-                    try {
-                        transferRateLimiter.acquire(pageSize);
+                for (ByteBuffer page : deltaReader) {
+                    transferRateLimiter.acquire(pageSize);
 
-                        pageStore.write(PageIO.getPageId(pageBuf), pageBuf, 0, false);
-                    }
-                    catch (IgniteCheckedException e) {
-                        throw new IgniteException(e);
-                    }
-                });
+                    pageStore.write(PageIO.getPageId(page), page, 0, false);
+                }
 
                 pageStore.finishRecover();
             }
@@ -3356,9 +3351,9 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
     }
 
     /** Delta file reader. */
-    private class DeltaReader implements Closeable {
+    private class DeltaReader extends GridCloseableIteratorAdapter<ByteBuffer> {
         /** Delta file. */
-        private final File delta;
+        protected final File delta;
 
         /** Delta file IO. */
         private final FileIO fileIo;
@@ -3373,7 +3368,10 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
         protected final int pagesCnt;
 
         /** */
-        protected final ByteBuffer buf;
+        protected final ByteBuffer pageBuf;
+
+        /** */
+        private long pos;
 
         /** */
         DeltaReader(File delta, FileIOFactory ioFactory) throws IOException {
@@ -3389,52 +3387,69 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
 
             pagesCnt = (int)(totalBytes / pageSize);
 
-            buf = ByteBuffer.allocate(pageSize).order(ByteOrder.nativeOrder());
-        }
-
-        /** Reads all pages from the delta file. */
-        void read(Consumer<ByteBuffer> action) throws IOException {
-            for (long pos = 0; pos < totalBytes; pos += pageSize)
-                readPage(pos, action);
-        }
-
-        /** Reads a page from the delta file from the given position. */
-        protected void readPage(long pos, Consumer<ByteBuffer> action) throws IOException {
-            long read = fileIo.readFully(buf, pos);
-
-            assert read == buf.capacity();
-
-            buf.flip();
-
-            if (log.isDebugEnabled()) {
-                log.debug("Read page given delta file [path=" + delta.getName() + ", pageId=" +
-                    PageIO.getPageId(buf) + ", index=" + PageIdUtils.pageIndex(PageIO.getPageId(buf)) +
-                    ", pos=" + pos + ", pagesCnt=" + pagesCnt + ", crcBuff=" +
-                    FastCrc.calcCrc(buf, buf.limit()) + ", crcPage=" + PageIO.getCrc(buf) + ']');
-
-                buf.rewind();
-            }
-
-            action.accept(buf);
-
-            buf.flip();
+            pageBuf = ByteBuffer.allocate(pageSize).order(ByteOrder.nativeOrder());
         }
 
         /** {@inheritDoc} */
-        @Override public void close() throws IOException {
-            fileIo.close();
+        @Override protected boolean onHasNext() throws IgniteCheckedException {
+            return pos < totalBytes;
+        }
+
+        /** {@inheritDoc} */
+        @Override protected ByteBuffer onNext() throws IgniteCheckedException {
+            readPage(pos);
+
+            pos += pageSize;
+
+            return pageBuf;
+        }
+
+        /** Reads a page from the delta file from the given position. */
+        protected void readPage(long pos) {
+            pageBuf.clear();
+
+            try {
+                long read = fileIo.readFully(pageBuf, pos);
+
+                assert read == pageBuf.capacity();
+            }
+            catch (IOException e) {
+                throw new IgniteException(e);
+            }
+
+            pageBuf.flip();
+
+            if (log.isDebugEnabled()) {
+                log.debug("Read page given delta file [path=" + delta.getName() + ", pageId=" +
+                    PageIO.getPageId(pageBuf) + ", index=" + PageIdUtils.pageIndex(PageIO.getPageId(pageBuf)) +
+                    ", pos=" + pos + ", pagesCnt=" + pagesCnt + ", crcBuff=" +
+                    FastCrc.calcCrc(pageBuf, pageBuf.limit()) + ", crcPage=" + PageIO.getCrc(pageBuf) + ']');
+
+                pageBuf.rewind();
+            }
+        }
+
+        /** {@inheritDoc} */
+        @Override protected void onClose() throws IgniteCheckedException {
+            U.closeQuiet(fileIo);
         }
     }
 
     /**
      * Indexed delta file reader. Reads delta pages sorted by page index to almost sequential disk writes on apply.
      */
-    private class IndexedDeltaReader extends DeltaReader {
+    class IndexedDeltaReader extends DeltaReader {
         /** Snapshot delta sort batch size in pages count. */
         public static final int DELTA_SORT_BATCH_SIZE = 500_000;
 
         /** Delta index file IO. */
         private final FileIO idxIo;
+
+        /** */
+        private int id;
+
+        /** */
+        private Iterator<Integer> sortedIter;
 
         /** */
         IndexedDeltaReader(File delta, FileIOFactory ioFactory) throws IOException {
@@ -3449,32 +3464,46 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
         }
 
         /** {@inheritDoc} */
-        @Override void read(Consumer<ByteBuffer> action) throws IOException {
-            int id = 0;
+        @Override protected boolean onHasNext() throws IgniteCheckedException {
+            if (sortedIter == null || !sortedIter.hasNext())
+                advance();
 
-            while (id < pagesCnt) {
-                TreeMap<Integer, Integer> sorted = new TreeMap<>();
-
-                while (sorted.size() < DELTA_SORT_BATCH_SIZE) {
-                    if (idxIo.readFully(buf) < 0)
-                        break;
-
-                    buf.flip();
-
-                    while (buf.hasRemaining())
-                        sorted.put(buf.getInt(), id++);
-
-                    buf.clear();
-                }
-
-                for (Integer id0 : sorted.values())
-                    readPage((long)id0 * pageSize, action);
-            }
+            return sortedIter.hasNext();
         }
 
         /** {@inheritDoc} */
-        @Override public void close() throws IOException {
-            super.close();
+        @Override protected ByteBuffer onNext() throws IgniteCheckedException {
+            readPage((long)sortedIter.next() * pageSize);
+
+            return pageBuf;
+        }
+
+        /** */
+        private void advance() {
+            TreeMap<Integer, Integer> sorted = new TreeMap<>();
+
+            while (id < pagesCnt && sorted.size() < DELTA_SORT_BATCH_SIZE) {
+                pageBuf.clear();
+
+                try {
+                    idxIo.readFully(pageBuf);
+                }
+                catch (IOException e) {
+                    throw new IgniteException(e);
+                }
+
+                pageBuf.flip();
+
+                while (pageBuf.hasRemaining())
+                    sorted.put(pageBuf.getInt(), id++);
+            }
+
+            sortedIter = sorted.values().iterator();
+        }
+
+        /** {@inheritDoc} */
+        @Override protected void onClose() throws IgniteCheckedException {
+            super.onClose();
 
             U.closeQuiet(idxIo);
         }
