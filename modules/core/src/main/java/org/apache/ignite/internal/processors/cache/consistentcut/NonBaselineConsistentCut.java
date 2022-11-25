@@ -30,7 +30,7 @@ class NonBaselineConsistentCut implements ConsistentCut {
     @GridToStringInclude
     private final UUID id;
 
-    /** Client nodes don't write to WAL, then complere Consistent Cut future at creation time. */
+    /** Non baseline nodes don't store data, then complete Consistent Cut future at creation time. */
     private final IgniteInternalFuture<WALPointer> fut = new GridFinishedFuture<>();
 
     /** */

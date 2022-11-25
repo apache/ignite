@@ -27,7 +27,7 @@ import org.apache.ignite.internal.util.typedef.internal.S;
 
 /**
  * This record is written to WAL after it's finished to check transactions in {@link BaselineConsistentCut} and store them
- * in a particular collection - {@link #before()} or {@link #after()}.
+ * in a particular set - {@link #before()} or {@link #after()}.
  * <p>
  * It guarantees that the BEFORE side consists of:
  * 1. Transactions committed before {@link ConsistentCutStartRecord} and weren't included into {@link #after()}.

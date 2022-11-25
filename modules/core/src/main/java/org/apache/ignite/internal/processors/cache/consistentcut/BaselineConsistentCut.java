@@ -44,7 +44,6 @@ import static org.apache.ignite.transactions.TransactionState.ACTIVE;
 import static org.apache.ignite.transactions.TransactionState.COMMITTED;
 import static org.apache.ignite.transactions.TransactionState.MARKED_ROLLBACK;
 import static org.apache.ignite.transactions.TransactionState.ROLLED_BACK;
-import static org.apache.ignite.transactions.TransactionState.UNKNOWN;
 
 /**
  * Describes Consistent Cut running on baseline nodes.
@@ -102,8 +101,8 @@ public class BaselineConsistentCut implements ConsistentCut {
                 .iterator();
 
             // Invoke sequentially over two iterators:
-            // 1. iterators are weakly consistent.
-            // 2. we need a guarantee to handle `removedFromActive` after `activeTxs` to avoid missed transactions.
+            // 1. Iterators are weakly consistent.
+            // 2. We need a guarantee to handle `removedFromActive` after `activeTxs` to avoid missed transactions.
             checkTransactions(finFutIt, checkFut);
 
             Iterator<IgniteInternalFuture<IgniteInternalTx>> removedFromActiveIter = removedFromActive.iterator();
@@ -168,19 +167,12 @@ public class BaselineConsistentCut implements ConsistentCut {
     ) {
         while (activeTxFinFuts.hasNext()) {
             IgniteInternalFuture<Boolean> txCheckFut = activeTxFinFuts.next().chain(txFut -> {
-                // txFut never fails and always returns IgniteInternalTx.
+                // The `txFut` never fails and always returns IgniteInternalTx.
                 IgniteInternalTx tx = txFut.result();
 
-                if (!(tx.state() == UNKNOWN
-                    || tx.state() == MARKED_ROLLBACK
+                if (!(tx.state() == MARKED_ROLLBACK
                     || tx.state() == ROLLED_BACK
                     || tx.state() == COMMITTED)) {
-                    U.warn(log, "Cut is inconsistent due to transaction is in unexepcted state: " + tx);
-
-                    return false;
-                }
-
-                if (tx.state() == UNKNOWN) {
                     U.warn(log, "Cut is inconsistent due to transaction is in unexepcted state: " + tx);
 
                     return false;
