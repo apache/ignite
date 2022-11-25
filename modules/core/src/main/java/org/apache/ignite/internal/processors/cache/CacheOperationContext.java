@@ -40,8 +40,9 @@ public class CacheOperationContext implements Serializable {
      * If you want to use atomic operations inside transactions in case they are restricted by system property,
      * you should allow it before transaction start.
      */
-    public static final boolean DFLT_ALLOW_ATOMIC_OPS_IN_TX =
-        IgniteSystemProperties.getBoolean(IGNITE_ALLOW_ATOMIC_OPS_IN_TX, false);
+    public static final boolean defaultAllowAtomicOpsInTx() {
+        return IgniteSystemProperties.getBoolean(IGNITE_ALLOW_ATOMIC_OPS_IN_TX, false);
+    }
 
     /** */
     private static final long serialVersionUID = 0L;
@@ -83,7 +84,7 @@ public class CacheOperationContext implements Serializable {
         recovery = false;
         readRepairStrategy = null;
         dataCenterId = null;
-        allowAtomicOpsInTx = DFLT_ALLOW_ATOMIC_OPS_IN_TX;
+        allowAtomicOpsInTx = defaultAllowAtomicOpsInTx();
     }
 
     /**
