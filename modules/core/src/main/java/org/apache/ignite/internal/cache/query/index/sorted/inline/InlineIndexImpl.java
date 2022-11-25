@@ -42,10 +42,16 @@ import org.apache.ignite.internal.cache.query.index.sorted.IndexValueCursor;
 import org.apache.ignite.internal.cache.query.index.sorted.InlineIndexRowHandler;
 import org.apache.ignite.internal.cache.query.index.sorted.SortedIndexDefinition;
 import org.apache.ignite.internal.cache.query.index.sorted.ThreadLocalRowHandlerHolder;
+import org.apache.ignite.internal.cache.query.index.sorted.inline.io.InlineIO;
 import org.apache.ignite.internal.metric.IoStatisticsHolderIndex;
+import org.apache.ignite.internal.pagemem.PageIdUtils;
+import org.apache.ignite.internal.pagemem.PageUtils;
 import org.apache.ignite.internal.processors.cache.GridCacheContext;
+import org.apache.ignite.internal.processors.cache.distributed.dht.topology.EvictionContext;
 import org.apache.ignite.internal.processors.cache.mvcc.MvccSnapshot;
 import org.apache.ignite.internal.processors.cache.persistence.CacheDataRow;
+import org.apache.ignite.internal.processors.cache.persistence.tree.BPlusTree;
+import org.apache.ignite.internal.processors.cache.persistence.tree.io.BPlusIO;
 import org.apache.ignite.internal.util.lang.GridCursor;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.spi.indexing.IndexingQueryCacheFilter;
@@ -592,6 +598,30 @@ public class InlineIndexImpl extends AbstractIndex implements InlineIndex {
      */
     public SortedIndexDefinition indexDefinition() {
         return def;
+    }
+
+    /** {@inheritDoc} */
+    @Override public boolean supportBatchRemove() {
+        return true;
+    }
+
+    /** {@inheritDoc} */
+    @Override public boolean remove(int part, EvictionContext evictionCtx) throws IgniteCheckedException {
+        segments[calculateSegment(segmentsCount(), part)].remove(new BPlusTree.TreeRowClosure<IndexRow, IndexRow>() {
+            int stopCntr;
+
+            @Override public boolean apply(BPlusTree<IndexRow, IndexRow> tree, BPlusIO<IndexRow> io, long pageAddr, int idx) {
+                long link = PageUtils.getLong(pageAddr, io.offset(idx) + ((InlineIO)io).inlineSize());
+
+                return part == PageIdUtils.partId(PageIdUtils.pageId(link));
+            }
+
+            @Override public boolean stop() {
+                return (stopCntr = (stopCntr + 1) & 1023) == 0 && evictionCtx.shouldStop();
+            }
+        });
+
+        return evictionCtx.shouldStop();
     }
 
     /** Single cursor over multiple segments. The next value is chosen with the index row comparator. */

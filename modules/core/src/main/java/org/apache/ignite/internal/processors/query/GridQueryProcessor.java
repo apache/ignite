@@ -66,6 +66,7 @@ import org.apache.ignite.internal.GridKernalContext;
 import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.NodeStoppingException;
 import org.apache.ignite.internal.binary.BinaryMetadata;
+import org.apache.ignite.internal.cache.query.index.Index;
 import org.apache.ignite.internal.cache.query.index.IndexProcessor;
 import org.apache.ignite.internal.cache.query.index.IndexQueryProcessor;
 import org.apache.ignite.internal.cache.query.index.IndexQueryResult;
@@ -87,6 +88,7 @@ import org.apache.ignite.internal.processors.cache.KeyCacheObject;
 import org.apache.ignite.internal.processors.cache.QueryCursorImpl;
 import org.apache.ignite.internal.processors.cache.binary.CacheObjectBinaryProcessorImpl;
 import org.apache.ignite.internal.processors.cache.distributed.dht.preloader.GridDhtPartitionsExchangeFuture;
+import org.apache.ignite.internal.processors.cache.distributed.dht.topology.EvictionContext;
 import org.apache.ignite.internal.processors.cache.mvcc.MvccSnapshot;
 import org.apache.ignite.internal.processors.cache.persistence.CacheDataRow;
 import org.apache.ignite.internal.processors.cache.query.CacheQueryFuture;
@@ -3657,6 +3659,16 @@ public class GridQueryProcessor extends GridProcessorAdapter {
 
         if (indexingEnabled())
             idx.remove(cctx, desc, row);
+    }
+
+    /**
+     * @param cctx Cache context.
+     * @param part Partition id.
+     * @param evictionCtx Group eviction context.
+     * @return Set of cleared indexes.
+     */
+    public Set<Index> removeAllForPartition(GridCacheContext cctx, int part, EvictionContext evictionCtx) {
+        return idxProc.removeAllForPartition(cctx.name(), part, evictionCtx);
     }
 
     /**

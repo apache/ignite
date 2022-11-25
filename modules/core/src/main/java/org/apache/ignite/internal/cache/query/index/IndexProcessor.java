@@ -21,8 +21,10 @@ import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.locks.ReentrantReadWriteLock;
@@ -51,6 +53,8 @@ import org.apache.ignite.internal.processors.GridProcessorAdapter;
 import org.apache.ignite.internal.processors.cache.CacheGroupContext;
 import org.apache.ignite.internal.processors.cache.GridCacheContext;
 import org.apache.ignite.internal.processors.cache.GridCacheContextInfo;
+import org.apache.ignite.internal.processors.cache.distributed.dht.topology.EvictionContext;
+import org.apache.ignite.internal.processors.cache.distributed.dht.topology.PartitionsEvictManager;
 import org.apache.ignite.internal.processors.cache.persistence.CacheDataRow;
 import org.apache.ignite.internal.processors.cache.persistence.IgniteCacheDatabaseSharedManager;
 import org.apache.ignite.internal.processors.cache.persistence.RootPage;
@@ -207,6 +211,53 @@ public class IndexProcessor extends GridProcessorAdapter {
     }
 
     /**
+     * @param cacheName Cache name.
+     * @param part Partition.
+     * @param evictionCtx Group eviction context.
+     * @return Set of cleared indexes.
+     */
+    public Set<Index> removeAllForPartition(String cacheName, int part, EvictionContext evictionCtx) {
+        ddlLock.readLock().lock();
+
+        try {
+            Map<String, Index> indexes = cacheToIdx.get(cacheName);
+
+            if (F.isEmpty(indexes))
+                return Collections.emptySet();
+
+            Set<Index> res = new HashSet<>();
+
+            for (Index idx: indexes.values()) {
+                if (evictionCtx.shouldStop())
+                    break;
+
+                if (!idx.supportBatchRemove()) {
+                    if (log.isDebugEnabled()) {
+                        log.debug("Batch remove of partition data not supported for index" +
+                            "[idx=" + idx.name() + ", cls=" + idx.getClass().getName() + ']');
+                    }
+
+                    continue;
+                }
+
+                if (log.isDebugEnabled())
+                    log.debug("Removing partition data from index[idx=" + idx.name() + ", part=" + part + ']');
+
+                if (idx.remove(part, evictionCtx))
+                    res.add(idx);
+            }
+
+            return res;
+        }
+        catch (IgniteCheckedException e) {
+            throw new IgniteSpiException(e);
+        }
+        finally {
+            ddlLock.readLock().unlock();
+        }
+    }
+
+    /**
      * Creates a new index.
      *
      * @param cctx Cache context.
@@ -304,8 +355,14 @@ public class IndexProcessor extends GridProcessorAdapter {
             if (F.isEmpty(indexes))
                 return;
 
-            for (Index idx: indexes.values())
+            Set<Index> alreadyCleared = PartitionsEvictManager.ALREADY_CLEARED.get();
+
+            for (Index idx: indexes.values()) {
+                if (alreadyCleared.contains(idx))
+                    continue;
+
                 err = updateIndex(idx, newRow, prevRow, prevRowAvailable, err);
+            }
 
         }
         finally {

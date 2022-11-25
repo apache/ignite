@@ -19,6 +19,7 @@ package org.apache.ignite.internal.cache.query.index;
 
 import java.util.UUID;
 import org.apache.ignite.IgniteCheckedException;
+import org.apache.ignite.internal.processors.cache.distributed.dht.topology.EvictionContext;
 import org.apache.ignite.internal.processors.cache.persistence.CacheDataRow;
 import org.jetbrains.annotations.Nullable;
 
@@ -40,9 +41,29 @@ public interface Index {
      * Checks whether index handles specified cache row.
      *
      * @param row Cache row.
-     * @return Whether index handles specified cache row
+     * @return Whether index handles specified cache row.
      */
     public boolean canHandle(CacheDataRow row) throws IgniteCheckedException;
+
+    /**
+     * @return {@code True} if batch remove supported.
+     * @see #remove(int, EvictionContext)
+     */
+    public default boolean supportBatchRemove() {
+        return false;
+    }
+
+    /**
+     * Removes all index rows that belongs to the specific partition.
+     *
+     * @see #supportBatchRemove()
+     * @param part Partition id.
+     * @param grpEvictionCtx Group eviction context.
+     * @return {@code True} if remove finished, {@code false} otherwise.
+     */
+    public default boolean remove(int part, EvictionContext grpEvictionCtx) throws IgniteCheckedException {
+        throw new UnsupportedOperationException();
+    }
 
     /**
      * Callback that runs when the underlying cache is updated.

@@ -311,6 +311,38 @@ public class BPlusTreeSelfTest extends GridCommonAbstractTest {
      * @throws IgniteCheckedException If failed.
      */
     @Test
+    public void testRemoveWithClosure() throws IgniteCheckedException {
+        TestTree tree = createTestTree(true);
+        TreeMap<Long, Long> map = new TreeMap<>();
+
+        long size = CNT * CNT;
+
+        for (long i = 0; i <= size; i++) {
+            tree.put(i);
+            map.put(i, i);
+        }
+
+        TestTreeFindFilteredClosure alwaysFalse = new TestTreeFindFilteredClosure(Collections.emptySet());
+        TestTreeFindFilteredClosure alwaysTrue = new TestTreeFindFilteredClosure(map.keySet());
+
+        checkCursor(tree.find(null, null, alwaysFalse, null), Collections.emptyIterator());
+        checkCursor(tree.find(null, null, alwaysTrue, null), map.values().iterator());
+
+        // This must remove nothing.
+        tree.remove(alwaysFalse);
+
+        checkCursor(tree.find(null, null, alwaysTrue, null), map.values().iterator());
+
+        // This must remove all.
+        tree.remove(alwaysTrue);
+
+        checkCursor(tree.find(null, null, alwaysTrue, null), Collections.emptyIterator());
+    }
+
+    /**
+     * @throws IgniteCheckedException If failed.
+     */
+    @Test
     public void testFindWithClosure() throws IgniteCheckedException {
         TestTree tree = createTestTree(true);
         TreeMap<Long, Long> map = new TreeMap<>();
@@ -322,7 +354,7 @@ public class BPlusTreeSelfTest extends GridCommonAbstractTest {
             map.put(i, i);
         }
 
-        checkCursor(tree.find(null, null, new TestTreeFindFilteredClosure(Collections.<Long>emptySet()), null),
+        checkCursor(tree.find(null, null, new TestTreeFindFilteredClosure(Collections.emptySet()), null),
             Collections.<Long>emptyList().iterator());
 
         checkCursor(tree.find(null, null, new TestTreeFindFilteredClosure(map.keySet()), null),
@@ -363,7 +395,6 @@ public class BPlusTreeSelfTest extends GridCommonAbstractTest {
     private void checkCursor(GridCursor<Long> cursor, Iterator<Long> iterator) throws IgniteCheckedException {
         while (cursor.next()) {
             assertTrue(iterator.hasNext());
-
             assertEquals(iterator.next(), cursor.get());
         }
 
@@ -3402,7 +3433,7 @@ public class BPlusTreeSelfTest extends GridCommonAbstractTest {
     /**
      * Long leaf.
      */
-    private static final class LongLeafIO extends BPlusLeafIO<Long> {
+    public static final class LongLeafIO extends BPlusLeafIO<Long> {
         /**
          */
         LongLeafIO() {
@@ -3497,11 +3528,13 @@ public class BPlusTreeSelfTest extends GridCommonAbstractTest {
         }
 
         /** {@inheritDoc} */
-        @Override public boolean apply(BPlusTree<Long, Long> tree, BPlusIO<Long> io, long pageAddr, int idx)
-            throws IgniteCheckedException {
-            Long val = io.getLookupRow(tree, pageAddr, idx);
-
-            return vals.contains(val);
+        @Override public boolean apply(
+            BPlusTree<Long, Long> tree,
+            BPlusIO<Long> io,
+            long pageAddr,
+            int idx
+        ) throws IgniteCheckedException {
+            return vals.contains(io.getLookupRow(tree, pageAddr, idx));
         }
     }
 

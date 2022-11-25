@@ -18,9 +18,12 @@
 package org.apache.ignite.internal.processors.cache.distributed.dht.topology;
 
 import java.util.Collection;
+import java.util.Collections;
+import java.util.HashSet;
 import java.util.Iterator;
 import java.util.List;
 import java.util.NavigableSet;
+import java.util.Set;
 import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentLinkedDeque;
@@ -39,6 +42,7 @@ import org.apache.ignite.failure.FailureContext;
 import org.apache.ignite.failure.FailureType;
 import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.NodeStoppingException;
+import org.apache.ignite.internal.cache.query.index.Index;
 import org.apache.ignite.internal.pagemem.wal.record.PartitionClearingStartRecord;
 import org.apache.ignite.internal.pagemem.wal.record.delta.PartitionMetaStateRecord;
 import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
@@ -59,6 +63,7 @@ import org.apache.ignite.internal.processors.cache.persistence.CacheDataRow;
 import org.apache.ignite.internal.processors.cache.transactions.IgniteInternalTx;
 import org.apache.ignite.internal.processors.cache.transactions.TxCounters;
 import org.apache.ignite.internal.processors.cache.version.GridCacheVersion;
+import org.apache.ignite.internal.processors.query.QueryUtils;
 import org.apache.ignite.internal.util.GridLongList;
 import org.apache.ignite.internal.util.collection.IntMap;
 import org.apache.ignite.internal.util.collection.IntRWHashMap;
@@ -1102,6 +1107,24 @@ public class GridDhtLocalPartition extends GridCacheConcurrentMapImpl implements
         }
 
         return cleared;
+    }
+
+    /**
+     * Clears all data for this partition from indexes.
+     * @return Set of cleared indexes.
+     */
+    public Set<Index> removeAllFromIndexes(EvictionContext grpEvictionCtx) {
+        if (!QueryUtils.isEnabled(grp.config()))
+            return Collections.emptySet();
+
+        GridCacheContext<?, ?> gctx = ctx.cacheContext(grp.groupId());
+
+        Set<Index> res = new HashSet<>();
+
+        for (GridCacheContext<?, ?> cctx : gctx.group().caches())
+            res.addAll(ctx.kernalContext().query().removeAllForPartition(cctx, id, grpEvictionCtx));
+
+        return res;
     }
 
     /**

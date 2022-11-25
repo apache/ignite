@@ -61,6 +61,7 @@ import org.apache.ignite.internal.pagemem.wal.record.delta.DataPageMvccUpdateTxS
 import org.apache.ignite.internal.pagemem.wal.record.delta.DataPageRemoveRecord;
 import org.apache.ignite.internal.pagemem.wal.record.delta.DataPageSetFreeListPageRecord;
 import org.apache.ignite.internal.pagemem.wal.record.delta.DataPageUpdateRecord;
+import org.apache.ignite.internal.pagemem.wal.record.delta.FilterRemoveRecord;
 import org.apache.ignite.internal.pagemem.wal.record.delta.FixCountRecord;
 import org.apache.ignite.internal.pagemem.wal.record.delta.FixLeftmostChildRecord;
 import org.apache.ignite.internal.pagemem.wal.record.delta.FixRemoveId;
@@ -555,6 +556,11 @@ public class RecordDataV1Serializer implements RecordDataSerializer {
 
             case CLUSTER_SNAPSHOT:
                 return 4 + ((ClusterSnapshotRecord)record).clusterSnapshotName().getBytes().length;
+
+            case BTREE_FILTER_REMOVE:
+                FilterRemoveRecord rmvRec = (FilterRemoveRecord)record;
+
+                return /*cacheId*/ 4 + /*pageId*/ 8 + /*itemsCnt*/ 2 + /*cnt*/ 2 + /*idxs*/ 2 * rmvRec.itemsCount();
 
             default:
                 throw new UnsupportedOperationException("Type: " + record.type());
@@ -1293,6 +1299,23 @@ public class RecordDataV1Serializer implements RecordDataSerializer {
 
                 break;
 
+            case BTREE_FILTER_REMOVE:
+                cacheId = in.readInt();
+                pageId = in.readLong();
+
+                int itemsCnt = in.readUnsignedShort();
+
+                int[] items = new int[itemsCnt];
+
+                for (int i = 0; i < itemsCnt; i++)
+                    items[i] = in.readUnsignedShort();
+
+                cnt = in.readUnsignedShort();
+
+                res = new FilterRemoveRecord(cacheId, pageId, items, itemsCnt, cnt);
+
+                break;
+
             default:
                 throw new UnsupportedOperationException("Type: " + type);
         }
@@ -1943,6 +1966,21 @@ public class RecordDataV1Serializer implements RecordDataSerializer {
 
                 buf.putInt(snpName.length);
                 buf.put(snpName);
+
+                break;
+
+            case BTREE_FILTER_REMOVE:
+                FilterRemoveRecord rvmRec = (FilterRemoveRecord)rec;
+
+                buf.putInt(rvmRec.groupId());
+                buf.putLong(rvmRec.pageId());
+
+                buf.putShort((short)rvmRec.itemsCount());
+
+                for (int i = 0; i < rvmRec.itemsCount(); i++)
+                    buf.putShort((short)rvmRec.items()[i]);
+
+                buf.putShort((short)rvmRec.count());
 
                 break;
 

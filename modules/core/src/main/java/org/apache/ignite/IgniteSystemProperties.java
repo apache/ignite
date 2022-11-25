@@ -36,6 +36,7 @@ import org.apache.ignite.internal.binary.BinaryArray;
 import org.apache.ignite.internal.cache.query.index.sorted.inline.InlineRecommender;
 import org.apache.ignite.internal.client.GridClient;
 import org.apache.ignite.internal.marshaller.optimized.OptimizedMarshaller;
+import org.apache.ignite.internal.processors.cache.distributed.dht.topology.PartitionsEvictManager;
 import org.apache.ignite.internal.processors.cache.persistence.checkpoint.CheckpointEntry;
 import org.apache.ignite.internal.processors.cache.persistence.checkpoint.CheckpointMarkersStorage;
 import org.apache.ignite.internal.processors.metastorage.DistributedMetaStorage;
@@ -89,6 +90,7 @@ import static org.apache.ignite.internal.processors.cache.distributed.dht.preloa
 import static org.apache.ignite.internal.processors.cache.distributed.dht.preloader.GridDhtPreloader.DFLT_PRELOAD_RESEND_TIMEOUT;
 import static org.apache.ignite.internal.processors.cache.distributed.dht.topology.GridDhtLocalPartition.DFLT_ATOMIC_CACHE_DELETE_HISTORY_SIZE;
 import static org.apache.ignite.internal.processors.cache.distributed.dht.topology.GridDhtLocalPartition.DFLT_CACHE_REMOVE_ENTRIES_TTL;
+import static org.apache.ignite.internal.processors.cache.distributed.dht.topology.PartitionsEvictManager.DFLT_IGNITE_ENABLE_BATCH_INDEX_REMOVE;
 import static org.apache.ignite.internal.processors.cache.mvcc.MvccCachingManager.DFLT_MVCC_TX_SIZE_CACHING_THRESHOLD;
 import static org.apache.ignite.internal.processors.cache.persistence.GridCacheDatabaseSharedManager.DFLT_DEFRAGMENTATION_REGION_SIZE_PERCENTAGE;
 import static org.apache.ignite.internal.processors.cache.persistence.GridCacheDatabaseSharedManager.DFLT_PDS_WAL_REBALANCE_THRESHOLD;
@@ -2094,6 +2096,14 @@ public final class IgniteSystemProperties {
     @SystemProperty(value = "Flag to enable store of array in binary format and keep component type",
         defaults = "" + DFLT_IGNITE_USE_BINARY_ARRAYS)
     public static final String IGNITE_USE_BINARY_ARRAYS = "IGNITE_USE_BINARY_ARRAYS";
+
+    /**
+     * Enables batch remove from indexes during partition eviction.
+     * The default value is {@link PartitionsEvictManager#DFLT_IGNITE_ENABLE_BATCH_INDEX_REMOVE}.
+     */
+    @SystemProperty(value = "Enables batch remove from indexes during partition eviction",
+        defaults = "" + DFLT_IGNITE_ENABLE_BATCH_INDEX_REMOVE)
+    public static final String IGNITE_ENABLE_BATCH_INDEX_REMOVE = "IGNITE_ENABLE_BATCH_INDEX_REMOVE";
 
     /**
      * Enforces singleton.

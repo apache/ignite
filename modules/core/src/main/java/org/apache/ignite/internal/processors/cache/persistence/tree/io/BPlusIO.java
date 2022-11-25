@@ -379,6 +379,51 @@ public abstract class BPlusIO<L> extends PageIO implements CompactablePageIO {
     }
 
     /**
+     * Removal of multiple items (designated by their 0-based indexes) from the page.
+     * It is assumed that {@code idxs} array is sorted (ascending, unique).
+     *
+     * @param idxs Indexes of items to remove from the page.
+     * @param idxsCnt Number of used elements in {@code items} array.
+     * @throws IgniteCheckedException If failed.
+     */
+    public void remove(long pageAddr, int[] idxs, int idxsCnt) throws IgniteCheckedException {
+        assert idxsCnt > 0;
+        assert idxsCnt <= idxs.length;
+
+        int cnt = getCount(pageAddr);
+
+        int dst = idxs[0];
+        int src = dst;
+
+        // Find start of deleted indices range : dst;
+        // Find end of successive run of deleted indices range : src;
+        // Find start of next deleted range or the end of array : idx/cnt;
+        // Move (idx - src - 1) items from (src + 1) to dst.
+
+        for (int i = 1; i < idxsCnt; i++) {
+            int idx = idxs[i];
+
+            assert idx > dst;
+
+            if (idx - src > 1) {
+                int gap = idx - src - 1;
+
+                copyItems(pageAddr, pageAddr, src + 1, dst, gap, false);
+
+                dst += gap;
+                src = idx;
+            }
+            else
+                src = idx;
+        }
+
+        if (cnt - src > 1)
+            copyItems(pageAddr, pageAddr, src + 1, dst, cnt - src - 1, false);
+
+        setCount(pageAddr, cnt - idxsCnt);
+    }
+
+    /**
      * @param prntIo Parent IO.
      * @param prntPageAddr Parent page address.
      * @param prntIdx Split key index in parent.

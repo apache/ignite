@@ -41,6 +41,7 @@ import org.apache.ignite.internal.metric.IoStatisticsHolderNoOp;
 import org.apache.ignite.internal.pagemem.PageIdUtils;
 import org.apache.ignite.internal.pagemem.PageMemory;
 import org.apache.ignite.internal.pagemem.wal.IgniteWriteAheadLogManager;
+import org.apache.ignite.internal.pagemem.wal.record.delta.FilterRemoveRecord;
 import org.apache.ignite.internal.pagemem.wal.record.delta.FixCountRecord;
 import org.apache.ignite.internal.pagemem.wal.record.delta.FixLeftmostChildRecord;
 import org.apache.ignite.internal.pagemem.wal.record.delta.FixRemoveId;
@@ -1190,6 +1191,21 @@ public abstract class BPlusTree<L, T extends L> extends DataStructure implements
     }
 
     /**
+     * @return Leftmost leaf page id.
+     * @throws IgniteCheckedException If failed.
+     */
+    private long getFirstLeafPageId() throws IgniteCheckedException {
+        long metaPage = acquirePage(metaPageId);
+
+        try {
+            return getFirstPageId(metaPageId, metaPage, 0); // Level 0 is always at the bottom.
+        }
+        finally {
+            releasePage(metaPageId, metaPage);
+        }
+    }
+
+    /**
      * @param metaId Meta page ID.
      * @param metaPage Meta page pointer.
      * @param lvl Level, if {@code 0} then it is a bottom level, if negative then root.
@@ -1430,15 +1446,7 @@ public abstract class BPlusTree<L, T extends L> extends DataStructure implements
 
         try {
             for (;;) {
-
-                long metaPage = acquirePage(metaPageId);
-
-                try {
-                    curPageId = getFirstPageId(metaPageId, metaPage, 0); // Level 0 is always at the bottom.
-                }
-                finally {
-                    releasePage(metaPageId, metaPage);
-                }
+                curPageId = getFirstLeafPageId();
 
                 long curPage = acquirePage(curPageId);
                 try {
@@ -2135,6 +2143,15 @@ public abstract class BPlusTree<L, T extends L> extends DataStructure implements
     }
 
     /**
+     * @param filter Row filter.
+     */
+    public final void remove(TreeRowClosure<L, T> filter) throws IgniteCheckedException {
+        checkDestroyed();
+
+        new RemoveWithFilter(filter).remove();
+    }
+
+    /**
      * @param lower Lower bound (inclusive).
      * @param upper Upper bound (inclusive).
      * @param limit Limit of processed entries by single call, {@code 0} for no limit.
@@ -2553,16 +2570,7 @@ public abstract class BPlusTree<L, T extends L> extends DataStructure implements
         checkDestroyed();
 
         for (;;) {
-            long curPageId;
-
-            long metaPage = acquirePage(metaPageId);
-
-            try {
-                curPageId = getFirstPageId(metaPageId, metaPage, 0); // Level 0 is always at the bottom.
-            }
-            finally {
-                releasePage(metaPageId, metaPage);
-            }
+            long curPageId = getFirstLeafPageId();
 
             long cnt = 0;
 
@@ -3462,7 +3470,8 @@ public abstract class BPlusTree<L, T extends L> extends DataStructure implements
             if (lvl != 0)
                 return false;
 
-            cursor.init(pageAddr, io, idx);
+            if (cursor != null)
+                cursor.init(pageAddr, io, idx);
 
             return true;
         }
@@ -5759,6 +5768,152 @@ public abstract class BPlusTree<L, T extends L> extends DataStructure implements
     public abstract T getRow(BPlusIO<L> io, long pageAddr, int idx, Object x) throws IgniteCheckedException;
 
     /**
+     * This class iterates all leaf pages and removes filtered rows.
+     */
+    private final class RemoveWithFilter {
+        /** Last row to get back to if current page turns out removed. */
+        private L lastRow;
+
+        /** */
+        private long nextPageId;
+
+        /** */
+        private final TreeRowClosure<L, T> p;
+
+        /** Accumulates indexes of rows for the delta wal record. */
+        private int[] idxs;
+
+        /** Row identified to be removed from "root". */
+        private L removeRow;
+
+        /**
+         * @param p Predicate to filter rows.
+         */
+        RemoveWithFilter(TreeRowClosure<L, T> p) {
+            this.p = p;
+        }
+
+        /** */
+        void remove() throws IgniteCheckedException {
+            if (remove(getFirstLeafPageId()) != FOUND)
+                return;
+
+            while (nextPageId != 0) {
+                Result res = remove(nextPageId);
+
+                if (res == RETRY) {
+                    GetCursor g = new GetCursor(lastRow, 1, null);
+
+                    doFind(g);
+
+                    remove(g.pageId);
+                }
+            }
+        }
+
+        /** */
+        private Result remove(long pageId) throws IgniteCheckedException {
+            long page = acquirePage(pageId);
+            boolean stop = false;
+
+            try {
+                long pageAddr = writeLock(pageId, page);
+
+                if (pageAddr == 0)
+                    return RETRY;
+
+                try {
+                    BPlusIO<L> io = io(pageAddr);
+
+                    assert io.isLeaf() : io;
+
+                    checkDestroyed();
+
+                    nextPageId = 0;
+
+                    int cnt = io.getCount(pageAddr);
+
+                    if (cnt != 0) {
+                        nextPageId = io.getForward(pageAddr);
+
+                        stop = removeByFilter(pageId, pageAddr, page, io, cnt);
+                    }
+                }
+                finally {
+                    writeUnlock(pageId, page, pageAddr, true);
+                }
+            }
+            finally {
+                releasePage(pageId, page);
+            }
+
+            if (removeRow != null) {
+                BPlusTree.this.remove(removeRow);
+
+                removeRow = null;
+            }
+
+            if (stop)
+                nextPageId = 0;
+
+            return FOUND;
+        }
+
+        /**
+         * @param pageId Page ID.
+         * @param pageAddr Page address.
+         * @param page Page pointer.
+         * @param io IO.
+         * @param cnt Count of items on the page.
+         * @throws IgniteCheckedException If failed.
+         */
+        private boolean removeByFilter(
+            long pageId,
+            long pageAddr,
+            long page,
+            BPlusIO<L> io,
+            int cnt
+        ) throws IgniteCheckedException {
+            assert io.isLeaf();
+
+            if (idxs == null || idxs.length < cnt)
+                idxs = new int[cnt];
+
+            int idxsCnt = 0;
+
+            boolean stop = false;
+
+            for (int idx = 0; idx < cnt - 1; idx++) {
+                if (p.apply(BPlusTree.this, io, pageAddr, idx))
+                    idxs[idxsCnt++] = idx;
+
+                stop = p.stop();
+
+                if (stop)
+                    break;
+            }
+
+            if (!stop) {
+                stop = p.stop();
+
+                lastRow = io.getLookupRow(BPlusTree.this, pageAddr, cnt - 1);
+
+                if (p.apply(BPlusTree.this, io, pageAddr, cnt - 1))
+                    removeRow = lastRow;
+            }
+
+            if (idxsCnt > 0) {
+                io.remove(pageAddr, idxs, idxsCnt);
+
+                if (needWalDeltaRecord(pageId, page, null))
+                    wal.log(new FilterRemoveRecord(grpId, pageId, idxs, idxsCnt, cnt - idxsCnt));
+            }
+
+            return stop;
+        }
+    }
+
+    /**
      *
      */
     private abstract class AbstractForwardCursor {
@@ -5995,11 +6150,56 @@ public abstract class BPlusTree<L, T extends L> extends DataStructure implements
         /**
          * @param lower New exact lower bound.
          */
-        private void updateLowerBound(L lower) {
+        protected void updateLowerBound(L lower) {
             if (lower != null) {
                 lowerShift = 1; // Now we have the full row an need to avoid duplicates.
                 lowerBound = lower; // Move the lower bound forward for further concurrent merge retries.
             }
+        }
+    }
+
+    /**
+     * Visitor of the leaf pages of the tree.
+     * Accepts a row filter and writing page handler.
+     */
+    private final class RemoveByFilter extends PageHandler<T, L> {
+        /** Last row to get back to if current page turns out removed. */
+        private L lastRow;
+
+        /** */
+        private long pageId;
+
+        /** */
+        RemoveByFilter() {
+        }
+
+        /**
+         * Iterates the pages, applies row filter and calls page handler to do modifications on the filtered page.
+         *
+         * @throws IgniteCheckedException If failed.
+         */
+        private void remove() throws IgniteCheckedException {
+            pageId = getFirstLeafPageId();
+        }
+
+        /**
+         * Calls page handler to do modifications on the filtered page.
+         *
+         * @throws IgniteCheckedException If failed.
+         */
+        private void doVisit() throws IgniteCheckedException {
+            checkDestroyed();
+
+            L lastRow0 = write(pageId, this, null, 0, lastRow, statisticsHolder());
+
+            if (lastRow0 != null)
+                lastRow = lastRow0;
+        }
+
+        /** {@inheritDoc} */
+        @Override public L run(int cacheId, long pageId, long page, long pageAddr, PageIO io, Boolean walPlc, T arg, int intArg,
+            IoStatisticsHolder statHolder) throws IgniteCheckedException {
+            return null;
         }
     }
 
@@ -6370,6 +6570,13 @@ public abstract class BPlusTree<L, T extends L> extends DataStructure implements
          */
         public boolean apply(BPlusTree<L, T> tree, BPlusIO<L> io, long pageAddr, int idx)
             throws IgniteCheckedException;
+
+        /**
+         * @return {@code True} if iteration should be stopped.
+         */
+        public default boolean stop() {
+            return false;
+        }
     }
 
     /**
@@ -6378,8 +6585,10 @@ public abstract class BPlusTree<L, T extends L> extends DataStructure implements
     public interface TreeVisitorClosure<L, T extends L> {
         /** */
         int STOP = 0x01;
+
         /** */
         int CAN_WRITE = STOP << 1;
+
         /** */
         int DIRTY = CAN_WRITE << 1;
 

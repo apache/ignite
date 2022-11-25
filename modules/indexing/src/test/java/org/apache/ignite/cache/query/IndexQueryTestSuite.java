@@ -17,6 +17,7 @@
 
 package org.apache.ignite.cache.query;
 
+import org.apache.ignite.cache.IndexClearOnEvictionTest;
 import org.junit.runner.RunWith;
 import org.junit.runners.Suite;
 
@@ -45,7 +46,8 @@ import org.junit.runners.Suite;
     ThinClientIndexQueryTest.class,
     RepeatedFieldIndexQueryTest.class,
     IndexQueryInCriterionTest.class,
-    IndexQueryInCriterionDescTest.class
+    IndexQueryInCriterionDescTest.class,
+    IndexClearOnEvictionTest.class
 })
 public class IndexQueryTestSuite {
 }
