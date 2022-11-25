@@ -11,7 +11,7 @@ Partition Awareness,{yes},{yes},{yes},{yes},{yes},No
 Transactions,{yes},{yes},{yes},No,No,No
 Cluster API,{yes},{yes},No,No,No,No
 Compute API,{yes},{yes},{yes},No,No,No
-Continuous queries,{yes},{yes},No,No,No,No
+Continuous queries,{yes},{yes},{yes},No,No,No
 Service invocation,{yes},{yes},No,No,No,No
 Server Discovery,No,{yes},No,No,No,No
 Server Discovery in Kubernetes,{yes},No,No,No,No,No
