@@ -259,8 +259,13 @@ public class GridCommandHandlerMetadataTest extends GridCommandHandlerClusterByC
      * - checks error code and command output.
      */
     @Test
-    public void testInvalidArguments() {
+    public void testInvalidArguments() throws Exception {
         String out;
+
+        String inDirName = Files.createTempDirectory(getClass().getSimpleName()
+            + " _inDir_" + UUID.randomUUID()).toFile().getAbsolutePath();
+        String outDirName = Files.createTempDirectory(getClass().getSimpleName()
+            + " _outDir_" + UUID.randomUUID()).toFile().getAbsolutePath();
 
         assertEquals(EXIT_CODE_INVALID_ARGUMENTS, execute("--meta", "remove"));
         out = testOut.toString();
@@ -268,15 +273,15 @@ public class GridCommandHandlerMetadataTest extends GridCommandHandlerClusterByC
         assertContains(log, out, "Type to remove is not specified");
         assertContains(log, out, "Please add one of the options: --typeName <type_name> or --typeId <type_id>");
 
-        assertEquals(EXIT_CODE_INVALID_ARGUMENTS, execute("--meta", "remove", "--typeId", "0", "--out", "target"));
+        assertEquals(EXIT_CODE_INVALID_ARGUMENTS, execute("--meta", "remove", "--typeId", "0", "--out", outDirName));
         out = testOut.toString();
         assertContains(log, out, "Check arguments.");
-        assertContains(log, out, "Cannot write to output file target.");
+        assertContains(log, out, "Cannot write to output file " + outDirName);
 
-        assertEquals(EXIT_CODE_INVALID_ARGUMENTS, execute("--meta", "update", "--in", "target"));
+        assertEquals(EXIT_CODE_INVALID_ARGUMENTS, execute("--meta", "update", "--in", inDirName));
         out = testOut.toString();
         assertContains(log, out, "Check arguments.");
-        assertContains(log, out, "Cannot read metadata from target");
+        assertContains(log, out, "Cannot read metadata from " + inDirName);
     }
 
     /**

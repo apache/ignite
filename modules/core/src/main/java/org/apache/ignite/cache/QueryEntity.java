@@ -102,7 +102,7 @@ public class QueryEntity implements Serializable {
 
     /** Scale for fields. */
     private Map<String, Integer> fieldsScale = new HashMap<>();
-    
+
     /**
      * Creates an empty query entity.
      */

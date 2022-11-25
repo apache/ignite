@@ -113,7 +113,7 @@ import static org.apache.ignite.testframework.GridTestUtils.waitForCondition;
 @RunWith(Parameterized.class)
 public abstract class AbstractSnapshotSelfTest extends GridCommonAbstractTest {
     /** Default snapshot name. */
-    protected static final String SNAPSHOT_NAME = "testSnapshot";
+    public static final String SNAPSHOT_NAME = "testSnapshot";
 
     /** Number of cache keys to pre-create at node start. */
     protected static final int CACHE_KEYS_RANGE = 1024;
