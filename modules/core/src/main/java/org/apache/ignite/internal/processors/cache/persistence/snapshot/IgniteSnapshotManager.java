@@ -770,9 +770,8 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
         List<Integer> grpIds = new ArrayList<>(F.viewReadOnly(req.groups(), CU::cacheId));
 
         Set<Integer> leftGrps = new HashSet<>(grpIds);
-        boolean withMetaStorage = leftGrps.remove(METASTORAGE_CACHE_ID);
-
         leftGrps.removeAll(cctx.cache().cacheGroupDescriptors().keySet());
+        boolean withMetaStorage = leftGrps.remove(METASTORAGE_CACHE_ID);
 
         if (!leftGrps.isEmpty()) {
             return new GridFinishedFuture<>(new IgniteCheckedException("Some of requested cache groups doesn't exist " +
