@@ -46,7 +46,7 @@ import org.junit.runners.Parameterized;
 import static org.apache.ignite.IgniteSystemProperties.IGNITE_SNAPSHOT_SEQUENTIAL_WRITE;
 import static org.apache.ignite.configuration.DataStorageConfiguration.DFLT_PAGE_SIZE;
 import static org.apache.ignite.internal.processors.cache.persistence.file.FilePageStoreManager.CACHE_DIR_PREFIX;
-import static org.apache.ignite.internal.processors.cache.persistence.snapshot.IgniteSnapshotManager.IndexedDeltaIterator.DELTA_SORT_BATCH_SIZE;
+import static org.apache.ignite.internal.processors.cache.persistence.snapshot.IgniteSnapshotManager.DeltaSortedIterator.DELTA_SORT_BATCH_SIZE;
 import static org.apache.ignite.internal.processors.cache.persistence.snapshot.IgniteSnapshotManager.partDeltaIndexFile;
 import static org.apache.ignite.testframework.GridTestUtils.cartesianProduct;
 import static org.junit.Assert.assertArrayEquals;

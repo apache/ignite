@@ -3190,7 +3190,7 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
 
         /** Delta iterator factory. */
         private final Factory<File, FileIOFactory, DeltaIterator> deltaIterFactory =
-            sequentialWrite() ? IndexedDeltaIterator::new : DeltaIterator::new;
+            sequentialWrite() ? DeltaSortedIterator::new : DeltaIterator::new;
 
         /**
          * @param snpName Snapshot name.
@@ -3445,9 +3445,9 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
     }
 
     /**
-     * Indexed delta file iterator. Reads delta pages sorted by page index to almost sequential disk writes on apply.
+     * Delta file iterator sorted by page indexes to almost sequential disk writes on apply to a page store.
      */
-    class IndexedDeltaIterator extends DeltaIterator {
+    class DeltaSortedIterator extends DeltaIterator {
         /** Snapshot delta sort batch size in pages count. */
         public static final int DELTA_SORT_BATCH_SIZE = 500_000;
 
@@ -3461,7 +3461,7 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
         private Iterator<Integer> sortedIter;
 
         /** */
-        IndexedDeltaIterator(File delta, FileIOFactory ioFactory) throws IOException {
+        DeltaSortedIterator(File delta, FileIOFactory ioFactory) throws IOException {
             super(delta, ioFactory);
 
             File deltaIdx = partDeltaIndexFile(delta);
