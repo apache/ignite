@@ -1124,6 +1124,9 @@ public class IgniteClusterSnapshotSelfTest extends AbstractSnapshotSelfTest {
 
         IgniteEx nonBaseLineNode = startGrid(G.allGrids().size());
 
+        // Yet another non-baseline.
+        startGrid(G.allGrids().size());
+
         snp(nonBaseLineNode).createSnapshot(SNAPSHOT_NAME).get();
 
         stopAllGrids();

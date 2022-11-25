@@ -30,6 +30,7 @@ import org.apache.ignite.internal.encryption.AbstractEncryptionTest;
 import org.apache.ignite.internal.processors.cache.verify.IdleVerifyResultV2;
 import org.apache.ignite.internal.util.distributed.FullMessage;
 import org.apache.ignite.internal.util.typedef.F;
+import org.apache.ignite.internal.util.typedef.G;
 import org.apache.ignite.internal.util.typedef.internal.CU;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgniteFuture;
@@ -406,6 +407,13 @@ public class EncryptedSnapshotTest extends AbstractSnapshotSelfTest {
         String expectedError) throws Exception {
         startGridsWithCache(3, CACHE_KEYS_RANGE, valueBuilder(), dfltCacheCfg,
             new CacheConfiguration<>(dfltCacheCfg).setName(CACHE2));
+
+        // + non-baseline node.
+        grid(0).cluster().baselineAutoAdjustEnabled(false);
+
+        grid(0).cluster().setBaselineTopology(grid(0).cluster().topologyVersion());
+
+        startGrid(G.allGrids().size());
 
         grid(1).snapshot().createSnapshot(SNAPSHOT_NAME).get(TIMEOUT);
 
