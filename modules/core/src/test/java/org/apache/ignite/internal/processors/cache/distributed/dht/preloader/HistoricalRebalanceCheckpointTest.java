@@ -93,7 +93,7 @@ public class HistoricalRebalanceCheckpointTest extends GridCommonAbstractTest {
     /**
      */
     @Test
-    public void testCountersOnCrachRecovery() throws Exception {
+    public void testCountersOnCrashRecovery() throws Exception {
         int nodes = 3;
         int backupNodes = nodes - 1;
 
@@ -200,7 +200,7 @@ public class HistoricalRebalanceCheckpointTest extends GridCommonAbstractTest {
         //    [grp=CacheGroupContext [grp=default], part=0, missed=30]" at logs
         awaitPartitionMapExchange();
 
-        IdleVerifyResultV2 checkRes = idleVerify(grid(0), DEFAULT_CACHE_NAME);
+        IdleVerifyResultV2 checkRes = idleVerify(prim, DEFAULT_CACHE_NAME);
 
         // PartitionHashRecordV2 [isPrimary=true, updateCntr=[lwm=2050, missed=[], hwm=2050], partitionState=OWNING,
         // size=2050, partHash=-957578563],
@@ -229,7 +229,7 @@ public class HistoricalRebalanceCheckpointTest extends GridCommonAbstractTest {
             return new FileIODecorator(factory.create(file, modes)) {
                 @Override public int write(ByteBuffer srcBuf) throws IOException {
                     if (blocked)
-                        throw new IOException();
+                        throw new IOException("Simulated IO failure.");
 
                     return super.write(srcBuf);
                 }
