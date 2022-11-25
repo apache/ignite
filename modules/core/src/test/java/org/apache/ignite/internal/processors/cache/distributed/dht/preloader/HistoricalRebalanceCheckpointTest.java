@@ -91,6 +91,7 @@ public class HistoricalRebalanceCheckpointTest extends GridCommonAbstractTest {
     }
 
     /**
+     *
      */
     @Test
     public void testCountersOnCrashRecovery() throws Exception {
@@ -107,12 +108,12 @@ public class HistoricalRebalanceCheckpointTest extends GridCommonAbstractTest {
             .setName(DEFAULT_CACHE_NAME)
             .setAtomicityMode(TRANSACTIONAL)
             .setWriteSynchronizationMode(FULL_SYNC) // Allows to be sure that all messages are sent when put succeed.
-            .setReadFromBackup(true)); // Allows to check values on backups.
+            .setReadFromBackup(true)); // Allows checking values on backups.
 
         int updateCnt = 0;
 
-        // Initial preloading.
-        for (int i = 0; i < 2_000; i++)  // Enough to have historical rebalance when needed.
+        // Initial preloading enough to have historical rebalance.
+        for (int i = 0; i < 2_000; i++)  //
             cache.put(++updateCnt, updateCnt);
 
         // Trick to have historical rebalance on cluster recovery (decreases percent of updates in comparison to cache size).
@@ -137,7 +138,7 @@ public class HistoricalRebalanceCheckpointTest extends GridCommonAbstractTest {
 
                     latch.countDown();
 
-                    return true; // Generating counter misses.
+                    return true;
                 }
                 else
                     return false;
@@ -176,11 +177,7 @@ public class HistoricalRebalanceCheckpointTest extends GridCommonAbstractTest {
             finishBlock.set(false);
         }
 
-        // Making checkpoint, state:
-        // - [lwm=2000, missed=[2001 - 2020], hwm=2050] at primary,
-        // - [lwm=2000, missed=[], hwm=2000] at backups.
-        // Checkpoint will have counter = 2000, but updates [2021 - 2050] will be located before it (after the another "2000 checkpoint").
-        // So, [2021 - 2050] will be skipped on rebalancing :(
+        // Storing counters on primary.
         forceCheckpoint();
 
         // Emulating power off, OOM or disk overflow. Keeping data as is, with missed counters updates.
@@ -193,19 +190,10 @@ public class HistoricalRebalanceCheckpointTest extends GridCommonAbstractTest {
 
         startGrid(backNames.get(1)); // Restoring any backup.
 
-        // Expected: [2001 - 2050] rebalanced.
-        // Actual:
-        // - [2001 - 2020] rebalanced.
-        // - "Some partition entries were missed during historical rebalance
-        //    [grp=CacheGroupContext [grp=default], part=0, missed=30]" at logs
         awaitPartitionMapExchange();
 
         IdleVerifyResultV2 checkRes = idleVerify(prim, DEFAULT_CACHE_NAME);
 
-        // PartitionHashRecordV2 [isPrimary=true, updateCntr=[lwm=2050, missed=[], hwm=2050], partitionState=OWNING,
-        // size=2050, partHash=-957578563],
-        // PartitionHashRecordV2 [isPrimary=false, updateCntr=[lwm=2050, missed=[], hwm=2050], partitionState=OWNING,
-        // size=2020, partHash=868500926]]
         assertFalse(checkRes.hasConflicts());
     }
 
