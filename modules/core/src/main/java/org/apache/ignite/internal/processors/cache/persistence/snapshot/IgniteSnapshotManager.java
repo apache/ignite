@@ -3514,7 +3514,7 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
         @Override public void close() throws IOException {
             super.close();
 
-            idxIo.close();
+            U.closeQuiet(idxIo);
         }
     }
 
