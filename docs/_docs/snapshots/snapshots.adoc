@@ -109,10 +109,10 @@ The distributed properties listed in the table below allow you to configure snap
 
 The system properties listed in the table below allow you to configure snapshots:
 
-[cols="1,3,1",opts="header"]
+[cols="1,1,3,1",opts="header"]
 |===
-|Property | Description | Default Value
-|`IGNITE_SNAPSHOT_SEQUENTIAL_WRITE`| Flag to indicate that disk writes during snapshot process should be in a
+|Property | Type | Description | Default Value
+|`IGNITE_SNAPSHOT_SEQUENTIAL_WRITE`| Boolean | Flag to indicate that disk writes during snapshot process should be in a
 sequential manner when possible. This generates extra disk space usage. | True
 |===
 
