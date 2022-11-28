@@ -20,17 +20,16 @@ package org.apache.ignite.internal.processors.cache.persistence.snapshot;
 import java.io.IOException;
 import java.io.ObjectInput;
 import java.io.ObjectOutput;
+import java.util.Collection;
 import java.util.Collections;
-import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
-import java.util.Objects;
-import java.util.Set;
 import java.util.function.Consumer;
 import java.util.stream.Collectors;
 import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.internal.dto.IgniteDataTransferObject;
 import org.apache.ignite.internal.processors.cache.verify.IdleVerifyResultV2;
+import org.apache.ignite.internal.util.GridStringBuilder;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.internal.U;
 
@@ -80,20 +79,21 @@ public class SnapshotPartitionsVerifyTaskResult extends IgniteDataTransferObject
     public void print(Consumer<String> printer) {
         idleRes.print(printer, true);
 
-        if (idleVerifyResult().exceptions().isEmpty()) {
-            Set<SnapshotMetadata> mset = metas.values().stream().flatMap(List::stream)
-                .collect(HashSet::new, HashSet::add, HashSet::addAll);
+        if (!F.isEmpty(idleVerifyResult().exceptions()))
+            return;
 
-            Set<String> wrns = mset.stream().map(SnapshotMetadata::warnings).filter(Objects::nonNull)
-                .collect(HashSet::new, HashSet::addAll, HashSet::addAll);
+        Collection<String> wrns = F.flatCollections(F.viewReadOnly(
+            F.flatCollections(metas.values()).stream().distinct().collect(Collectors.toList()),
+            SnapshotMetadata::warnings,
+            meta -> meta != null && !F.isEmpty(meta.warnings()))
+        );
 
-            if (!F.isEmpty(wrns)) {
-                StringBuilder sb = new StringBuilder("This snapshot was created with the warnings:" + U.nl() + "\t- ")
-                    .append(wrns.stream().collect(Collectors.joining(U.nl() + "\t- ")))
-                    .append(U.nl());
+        if (!F.isEmpty(wrns)) {
+            GridStringBuilder sb = new GridStringBuilder("This snapshot was created with the warnings:")
+                .a(wrns.stream().collect(Collectors.joining("", U.nl() + "\t- ", "")))
+                .nl();
 
-                printer.accept(sb.toString());
-            }
+            printer.accept(sb.toString());
         }
     }
 
