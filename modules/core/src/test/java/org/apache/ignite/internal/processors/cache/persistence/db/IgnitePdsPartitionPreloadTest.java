@@ -100,8 +100,7 @@ public class IgnitePdsPartitionPreloadTest extends GridCommonAbstractTest {
                     setName(DEFAULT_REGION))
             .setWalMode(WALMode.LOG_ONLY)
             .setWalSegmentSize(16 * MB)
-            .setPageSize(1024)
-            .setMetricsEnabled(true);
+            .setPageSize(1024);
 
         cfg.setDataStorageConfiguration(memCfg);
 

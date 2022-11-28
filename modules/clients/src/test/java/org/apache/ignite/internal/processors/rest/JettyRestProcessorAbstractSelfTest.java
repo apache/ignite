@@ -2421,38 +2421,6 @@ public abstract class JettyRestProcessorAbstractSelfTest extends JettyRestProces
     }
 
     /**
-     * @throws Exception If failed.
-     */
-    @Test
-    public void testDataStorageMetricsDisabled() throws Exception {
-        String ret = content(F.asMap("cmd", GridRestCommand.DATA_STORAGE_METRICS.key()));
-
-        JsonNode res = validateJsonResponse(ret);
-
-        assertTrue(res.asText().equalsIgnoreCase("Storage metrics are not enabled"));
-
-        info(GridRestCommand.DATA_STORAGE_METRICS.key().toUpperCase() + " command result: " + ret);
-    }
-
-    /**
-     * @throws Exception If failed.
-     */
-    @Test
-    public void testDataStorageMetricsEnabled() throws Exception {
-        if (!memoryMetricsEnabled) {
-            restartGrid();
-
-            memoryMetricsEnabled = true;
-        }
-
-        String ret = content(F.asMap("cmd", GridRestCommand.DATA_STORAGE_METRICS.key()));
-
-        assertNotNull(validateJsonResponse(ret));
-
-        info(GridRestCommand.DATA_STORAGE_METRICS.key().toUpperCase() + " command result: " + ret);
-    }
-
-    /**
      * Restart grid.
      *
      * @throws Exception If failed.
@@ -4118,7 +4086,7 @@ public abstract class JettyRestProcessorAbstractSelfTest extends JettyRestProces
         dsCfg.setDefaultDataRegionConfiguration(drCfg);
 
         if (memoryMetricsEnabled)
-            dsCfg.setMetricsEnabled(true).setWalMode(NONE);
+            dsCfg.setWalMode(NONE);
 
         cfg.setDataStorageConfiguration(dsCfg);
 

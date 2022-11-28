@@ -2746,7 +2746,6 @@ public class IgnitionEx {
             dsCfg.setWalSegmentSize(psCfg.getWalSegmentSize());
             dsCfg.setWalPath(psCfg.getWalStorePath());
             dsCfg.setAlwaysWriteFullPages(psCfg.isAlwaysWriteFullPages());
-            dsCfg.setMetricsEnabled(psCfg.isMetricsEnabled());
             dsCfg.setWriteThrottlingEnabled(psCfg.isWriteThrottlingEnabled());
         }
 

@@ -435,7 +435,6 @@ namespace Apache.Ignite.Core
         /// Gets a collection of memory metrics, one for each
         /// <see cref="DataStorageConfiguration.DataRegionConfigurations"/>.
         /// <para />
-        /// Metrics should be enabled with <see cref="DataStorageConfiguration.MetricsEnabled"/>.
         /// </summary>
         ICollection<IDataRegionMetrics> GetDataRegionMetrics();
 

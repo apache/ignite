@@ -136,8 +136,7 @@ public class IgniteDataStorageMetricsSelfTest extends GridCommonAbstractTest {
                     .setPersistenceEnabled(false)
                     .setMetricsEnabled(true)
                     .setName(NO_PERSISTENCE))
-            .setWalMode(WALMode.LOG_ONLY)
-            .setMetricsEnabled(true);
+            .setWalMode(WALMode.LOG_ONLY);
 
         cfg.setDataStorageConfiguration(memCfg);
 

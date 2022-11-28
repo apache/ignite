@@ -78,7 +78,6 @@ namespace Apache.Ignite.Core.Tests.Cache
                     StoragePath = Path.Combine(_tempDir, "Store"),
                     WalPath = Path.Combine(_tempDir, "WalStore"),
                     WalArchivePath = Path.Combine(_tempDir, "WalArchive"),
-                    MetricsEnabled = true,
                     DefaultDataRegionConfiguration = new DataRegionConfiguration
                     {
                         PageEvictionMode = DataPageEvictionMode.Disabled,

@@ -57,7 +57,6 @@ public class CheckpointTest extends AbstractPerformanceStatisticsTest {
 
         cfg.setCacheConfiguration(defaultCacheConfiguration());
         cfg.setDataStorageConfiguration(new DataStorageConfiguration()
-            .setMetricsEnabled(true)
             .setDefaultDataRegionConfiguration(new DataRegionConfiguration()
                 .setMaxSize(10 * 1024 * 1024)
                 .setCheckpointPageBufferSize(1024 * 1024)

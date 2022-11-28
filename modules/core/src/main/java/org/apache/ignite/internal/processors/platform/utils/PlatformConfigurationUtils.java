@@ -2064,7 +2064,6 @@ public class PlatformConfigurationUtils {
                 .setWalFsyncDelayNanos(in.readLong())
                 .setWalRecordIteratorBufferSize(in.readInt())
                 .setAlwaysWriteFullPages(in.readBoolean())
-                .setMetricsEnabled(in.readBoolean())
                 .setMetricsSubIntervalCount(in.readInt())
                 .setMetricsRateTimeInterval(in.readLong())
                 .setCheckpointWriteOrder(CheckpointWriteOrder.fromOrdinal(in.readInt()))
@@ -2203,7 +2202,6 @@ public class PlatformConfigurationUtils {
             w.writeLong(cfg.getWalFsyncDelayNanos());
             w.writeInt(cfg.getWalRecordIteratorBufferSize());
             w.writeBoolean(cfg.isAlwaysWriteFullPages());
-            w.writeBoolean(cfg.isMetricsEnabled());
             w.writeInt(cfg.getMetricsSubIntervalCount());
             w.writeLong(cfg.getMetricsRateTimeInterval());
             w.writeInt(cfg.getCheckpointWriteOrder().ordinal());

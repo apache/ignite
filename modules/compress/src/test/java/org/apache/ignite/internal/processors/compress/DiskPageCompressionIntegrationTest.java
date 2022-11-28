@@ -68,7 +68,6 @@ public class DiskPageCompressionIntegrationTest extends AbstractPageCompressionI
         factory = getFileIOFactory();
 
         DataStorageConfiguration dsCfg = new DataStorageConfiguration()
-            .setMetricsEnabled(true)
             .setPageSize(MAX_PAGE_SIZE)
             .setDefaultDataRegionConfiguration(drCfg)
             .setFileIOFactory(U.isLinux() ? factory : new PunchFileIOFactory(factory));
