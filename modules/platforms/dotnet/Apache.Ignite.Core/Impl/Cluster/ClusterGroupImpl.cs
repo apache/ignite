@@ -677,15 +677,6 @@ namespace Apache.Ignite.Core.Impl.Cluster
         }
 
         /// <summary>
-        /// Gets the data storage metrics.
-        /// </summary>
-        public IDataStorageMetrics GetDataStorageMetrics()
-        {
-            return DoInOp(OpDataStorageMetrics, stream =>
-                new DataStorageMetrics(Marshaller.StartUnmarshal(stream, false)));
-        }
-
-        /// <summary>
         /// Changes Ignite grid state to active or inactive.
         /// </summary>
         public void SetActive(bool isActive)

@@ -48,7 +48,6 @@ import java.util.regex.Pattern;
 import java.util.stream.Collectors;
 import org.apache.ignite.DataRegionMetrics;
 import org.apache.ignite.DataRegionMetricsProvider;
-import org.apache.ignite.DataStorageMetrics;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.IgniteInterruptedException;
@@ -3170,11 +3169,6 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
                 "[nodeId=" + ctx.localNodeId() + ", holder=" + lockInfo +
                 ", path=" + lockPath() + ']';
         }
-    }
-
-    /** {@inheritDoc} */
-    @Override public DataStorageMetrics persistentStoreMetrics() {
-        return new DataStorageMetricsSnapshot(dsMetrics);
     }
 
     /** {@inheritDoc} */

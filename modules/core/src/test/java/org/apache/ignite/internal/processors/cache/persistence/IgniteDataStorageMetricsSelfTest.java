@@ -389,7 +389,6 @@ public class IgniteDataStorageMetricsSelfTest extends GridCommonAbstractTest {
 
         long exp = walMgr(n).lastWritePointer().fileOffset() - HEADER_RECORD_SIZE;
 
-        assertEquals(exp, dbMgr(n).persistentStoreMetrics().getWalWrittenBytes());
         assertEquals(exp, dsMetricRegistry(n).<LongAdderMetric>findMetric("WalWrittenBytes").value());
     }
 
@@ -537,7 +536,6 @@ public class IgniteDataStorageMetricsSelfTest extends GridCommonAbstractTest {
         if (router.hasArchive())
             totalSize += walMgr.totalSize(walFiles(router.getWalArchiveDir()));
 
-        assertEquals(totalSize, dbMgr(igniteEx).persistentStoreMetrics().getWalTotalSize());
         assertEquals(totalSize, dsMetricRegistry(igniteEx).<LongGauge>findMetric("WalTotalSize").value());
     }
 
@@ -624,7 +622,6 @@ public class IgniteDataStorageMetricsSelfTest extends GridCommonAbstractTest {
         long exp = Arrays.stream(walMgr(n).walArchiveFiles()).filter(FileDescriptor::isCompressed)
             .mapToLong(fd -> fd.file().length()).sum();
 
-        assertEquals(exp, dbMgr(n).persistentStoreMetrics().getWalCompressedBytes());
         assertEquals(exp, dsMetricRegistry(n).<LongAdderMetric>findMetric("WalCompressedBytes").value());
     }
 }

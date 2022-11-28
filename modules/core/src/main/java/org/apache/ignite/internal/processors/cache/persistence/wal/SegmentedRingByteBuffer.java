@@ -339,7 +339,7 @@ public class SegmentedRingByteBuffer {
             spins++;
         }
 
-        if (metrics != null && metrics.metricsEnabled())
+        if (metrics != null)
             metrics.onBuffPollSpin(spins);
 
         long head = this.head;
