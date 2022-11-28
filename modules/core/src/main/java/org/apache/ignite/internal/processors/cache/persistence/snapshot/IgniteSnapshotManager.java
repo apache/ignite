@@ -903,11 +903,13 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
                         if (f.error() != null)
                             snpReq.error(f.error());
                         else {
-                            try {
-                                storeSnapshotMeta(snpReq);
-                            }
-                            catch (Exception e) {
-                                snpReq.error(new IgniteException("Unable to store snapshot metadata.", e));
+                            if (CU.baselineNode(cctx.localNode(), cctx.kernalContext().state().clusterState())) {
+                                try {
+                                    storeSnapshotMeta(snpReq);
+                                }
+                                catch (Exception e) {
+                                    snpReq.error(new IgniteException("Unable to store snapshot metadata.", e));
+                                }
                             }
                         }
 
