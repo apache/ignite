@@ -229,8 +229,10 @@ public class PartitionUpdateCounterTrackingImpl implements PartitionUpdateCounte
 
         initCntr = get();
 
-        if (reservedCntr.get() < initCntr)
-            reservedCntr.set(initCntr);
+        long highestAppliedCounter = highestAppliedCounter();
+
+        if (reservedCntr.get() < highestAppliedCounter)
+            reservedCntr.set(highestAppliedCounter);
     }
 
     /** {@inheritDoc} */
