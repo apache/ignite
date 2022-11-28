@@ -51,7 +51,7 @@ import org.apache.ignite.transactions.TransactionConcurrency;
 import org.apache.ignite.transactions.TransactionIsolation;
 import org.jetbrains.annotations.Nullable;
 
-import static org.apache.ignite.internal.processors.cache.CacheOperationContext.DFLT_ALLOW_ATOMIC_OPS_IN_TX;
+import static org.apache.ignite.internal.processors.cache.CacheOperationContext.defaultAllowAtomicOpsInTx;
 
 /**
  * Cache proxy.
@@ -295,7 +295,7 @@ public class GridCacheProxyImpl<K, V> implements IgniteInternalCache<K, V>, Exte
                         null,
                         false,
                         null,
-                        DFLT_ALLOW_ATOMIC_OPS_IN_TX));
+                        defaultAllowAtomicOpsInTx()));
         }
         finally {
             gate.leave(prev);
@@ -317,7 +317,7 @@ public class GridCacheProxyImpl<K, V> implements IgniteInternalCache<K, V>, Exte
                     null,
                     false,
                     null,
-                    DFLT_ALLOW_ATOMIC_OPS_IN_TX));
+                    defaultAllowAtomicOpsInTx()));
     }
 
     /** {@inheritDoc} */
@@ -1567,7 +1567,7 @@ public class GridCacheProxyImpl<K, V> implements IgniteInternalCache<K, V>, Exte
                         null,
                         false,
                         null,
-                        DFLT_ALLOW_ATOMIC_OPS_IN_TX));
+                        defaultAllowAtomicOpsInTx()));
         }
         finally {
             gate.leave(prev);
@@ -1588,7 +1588,7 @@ public class GridCacheProxyImpl<K, V> implements IgniteInternalCache<K, V>, Exte
                     null,
                     false,
                     null,
-                    DFLT_ALLOW_ATOMIC_OPS_IN_TX));
+                    defaultAllowAtomicOpsInTx()));
         }
         finally {
             gate.leave(prev);

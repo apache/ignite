@@ -18,7 +18,6 @@
 package org.apache.ignite.internal.processors.cache;
 
 import java.io.Serializable;
-import javax.cache.CacheException;
 import javax.cache.expiry.ExpiryPolicy;
 import org.apache.ignite.IgniteSystemProperties;
 import org.apache.ignite.cache.ReadRepairStrategy;
@@ -32,16 +31,13 @@ import static org.apache.ignite.IgniteSystemProperties.IGNITE_ALLOW_ATOMIC_OPS_I
  * Cache operation context.
  */
 public class CacheOperationContext implements Serializable {
-    /**
-     * Since 2.15.0 atomic operations inside transactions are not allowed.
-     * To return the previous behaviour and to allow transactions in operations with atomic caches you can set system property
-     * {@link IgniteSystemProperties#IGNITE_ALLOW_ATOMIC_OPS_IN_TX IGNITE_ALLOW_ATOMIC_OPS_IN_TX} to {@code true}.
-     * <p>
-     * If you want to use atomic operations inside transactions in case they are restricted by system property,
-     * you should allow it before transaction start.
-     */
-    public static final boolean DFLT_ALLOW_ATOMIC_OPS_IN_TX =
-        IgniteSystemProperties.getBoolean(IGNITE_ALLOW_ATOMIC_OPS_IN_TX, false);
+    /** */
+    public static final boolean DFLT_ALLOW_ATOMIC_OPS_IN_TX = false;
+
+    /** */
+    public static final boolean defaultAllowAtomicOpsInTx() {
+        return IgniteSystemProperties.getBoolean(IGNITE_ALLOW_ATOMIC_OPS_IN_TX, DFLT_ALLOW_ATOMIC_OPS_IN_TX);
+    }
 
     /** */
     private static final long serialVersionUID = 0L;
@@ -75,7 +71,7 @@ public class CacheOperationContext implements Serializable {
     /**
      * Constructor with default values.
      */
-    public CacheOperationContext() throws CacheException {
+    public CacheOperationContext() {
         skipStore = false;
         keepBinary = false;
         expiryPlc = null;
@@ -83,7 +79,7 @@ public class CacheOperationContext implements Serializable {
         recovery = false;
         readRepairStrategy = null;
         dataCenterId = null;
-        allowAtomicOpsInTx = DFLT_ALLOW_ATOMIC_OPS_IN_TX;
+        allowAtomicOpsInTx = defaultAllowAtomicOpsInTx();
     }
 
     /**

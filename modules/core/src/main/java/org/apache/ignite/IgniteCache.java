@@ -244,9 +244,9 @@ public interface IgniteCache<K, V> extends javax.cache.Cache<K, V>, IgniteAsyncS
     public <K1, V1> IgniteCache<K1, V1> withKeepBinary();
 
     /**
-     * Since 2.15.0 by default atomic operations inside transactions are not allowed.
-     * To return the previous behaviour and to allow transactions in operations with atomic caches you can set system property
-     * {@link IgniteSystemProperties#IGNITE_ALLOW_ATOMIC_OPS_IN_TX IGNITE_ALLOW_ATOMIC_OPS_IN_TX} to {@code true}.
+     * Since 2.15.0 atomic operations inside transactions are not allowed by default.
+     * To return the previous behaviour and to allow operations with atomic caches in transactions you can set system
+     * property {@link IgniteSystemProperties#IGNITE_ALLOW_ATOMIC_OPS_IN_TX IGNITE_ALLOW_ATOMIC_OPS_IN_TX} to {@code true}.
      * <p>
      * If you want to use atomic operations inside transactions in case they are restricted by system property,
      * you should allow it before transaction start.

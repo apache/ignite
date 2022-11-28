@@ -77,6 +77,7 @@ public class AtomicOperationsInTxTest extends GridCommonAbstractTest {
 
     /**
      * Tests whether enabling atomic cache operations within transactions is allowed.
+     * Since 2.15.0 the default behaviour is set to {@code false}.
      * @throws Exception If failed.
      */
     @Test
@@ -95,6 +96,7 @@ public class AtomicOperationsInTxTest extends GridCommonAbstractTest {
 
     /**
      * Tests whether allowing atomic cache operations before transaction starts does not cause exceptions.
+     * Since 2.15.0 the default behaviour is set to {@code false}.
      * @throws Exception If failed.
      */
     @Test
@@ -106,9 +108,11 @@ public class AtomicOperationsInTxTest extends GridCommonAbstractTest {
     }
 
     /**
-     * Tests that operations with atomic cache within transactions are not allowed if the system property
+     * Tests that operations with atomic cache within transactions are allowed if the system property
      * {@link IgniteSystemProperties#IGNITE_ALLOW_ATOMIC_OPS_IN_TX IGNITE_ALLOW_ATOMIC_OPS_IN_TX} is not changed from
-     * the default {@code false} before transaction start. It is the default behaviour since 2.15.0.
+     * the default {@code false} and the user explicitly allows atomic operations in
+     * transactions via {@link IgniteCache#withAllowAtomicOpsInTx() withAllowAtomicOpsInTx()} before transactions start.
+     * Since 2.15.0 the default behaviour is set to {@code false}.
      * @throws Exception If failed.
      */
     @Test
@@ -121,7 +125,7 @@ public class AtomicOperationsInTxTest extends GridCommonAbstractTest {
      * Tests that operations with atomic cache within transactions are allowed if the system property
      * {@link IgniteSystemProperties#IGNITE_ALLOW_ATOMIC_OPS_IN_TX IGNITE_ALLOW_ATOMIC_OPS_IN_TX} is changed to
      * {@code true} before transaction start and the user explicitly allows atomic operations in transactions via
-     * {@link IgniteCache#withAllowAtomicOpsInTx() withAllowAtomicOpsInTx()}.
+     * {@link IgniteCache#withAllowAtomicOpsInTx() withAllowAtomicOpsInTx()} before transactions start.
      * Since 2.15.0 the default behaviour is set to {@code false}.
      * @throws Exception If failed.
      */
@@ -135,7 +139,7 @@ public class AtomicOperationsInTxTest extends GridCommonAbstractTest {
      * Tests that atomic cache operations within transactions are forbidden if system property
      * {@link IgniteSystemProperties#IGNITE_ALLOW_ATOMIC_OPS_IN_TX IGNITE_ALLOW_ATOMIC_OPS_IN_TX}
      * is changed to {@code true} and the user does not explicitly allow atomic operations in transactions via
-     * {@link IgniteCache#withAllowAtomicOpsInTx() withAllowAtomicOpsInTx()}.
+     * {@link IgniteCache#withAllowAtomicOpsInTx() withAllowAtomicOpsInTx()} before transactions start.
      * Since 2.15.0 the default behaviour is set to {@code false}.
      * @throws Exception If failed.
      */
@@ -149,7 +153,7 @@ public class AtomicOperationsInTxTest extends GridCommonAbstractTest {
      * Tests that atomic cache operations within transactions are forbidden if system property
      * {@link IgniteSystemProperties#IGNITE_ALLOW_ATOMIC_OPS_IN_TX IGNITE_ALLOW_ATOMIC_OPS_IN_TX}
      * is changed to {@code true} and the user does not explicitly allow atomic operations in transactions via
-     * {@link IgniteCache#withAllowAtomicOpsInTx() withAllowAtomicOpsInTx()}.
+     * {@link IgniteCache#withAllowAtomicOpsInTx() withAllowAtomicOpsInTx()} before transactions start.
      * Since 2.15.0 the default behaviour is set to {@code false}.
      * @throws Exception If failed.
      */
