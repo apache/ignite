@@ -935,7 +935,6 @@ public class GridRestProcessor extends GridProcessorAdapter implements IgniteRes
                 break;
 
             case DATA_REGION_METRICS:
-            case DATA_STORAGE_METRICS:
             case CACHE_METRICS:
             case CACHE_SIZE:
             case CACHE_METADATA:
