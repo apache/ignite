@@ -237,8 +237,6 @@ class ZookeeperDiscoverySpiTestBase extends GridCommonAbstractTest {
         finally {
             stopAllGrids();
 
-            GridTestUtils.stopThreads(log);
-
             reset();
         }
     }

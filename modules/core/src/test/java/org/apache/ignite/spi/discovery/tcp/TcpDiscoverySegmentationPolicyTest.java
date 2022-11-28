@@ -17,7 +17,10 @@
 
 package org.apache.ignite.spi.discovery.tcp;
 
+import java.util.concurrent.atomic.AtomicBoolean;
 import org.apache.ignite.Ignite;
+import org.apache.ignite.IgniteState;
+import org.apache.ignite.IgnitionListener;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.failure.AbstractFailureHandler;
 import org.apache.ignite.failure.FailureContext;
@@ -25,9 +28,8 @@ import org.apache.ignite.failure.StopNodeFailureHandler;
 import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.util.typedef.G;
 import org.apache.ignite.plugin.segmentation.SegmentationPolicy;
-import org.apache.ignite.testframework.ListeningTestLogger;
-import org.apache.ignite.testframework.LogListener;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
+import org.jetbrains.annotations.Nullable;
 import org.junit.Test;
 
 import static org.apache.ignite.testframework.GridTestUtils.waitForCondition;
@@ -45,9 +47,6 @@ public class TcpDiscoverySegmentationPolicyTest extends GridCommonAbstractTest {
     /** Segmentation policy. */
     private static SegmentationPolicy segPlc;
 
-    /** */
-    private LogListener lsnr;
-
     /** {@inheritDoc} */
     @Override protected IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {
         IgniteConfiguration cfg = super.getConfiguration(igniteInstanceName);
@@ -59,13 +58,6 @@ public class TcpDiscoverySegmentationPolicyTest extends GridCommonAbstractTest {
 
         // Disable recovery
         ((TcpDiscoverySpi)cfg.getDiscoverySpi()).setConnectionRecoveryTimeout(0);
-
-        lsnr = LogListener.matches("Local node SEGMENTED").build();
-
-        ListeningTestLogger listeningLog = new ListeningTestLogger(log);
-        listeningLog.registerListener(lsnr);
-
-        cfg.setGridLogger(listeningLog);
 
         return cfg;
     }
@@ -105,18 +97,28 @@ public class TcpDiscoverySegmentationPolicyTest extends GridCommonAbstractTest {
      * @param byFailureHnd By failure handler flag.
      */
     private void checkNodeStop(boolean byFailureHnd) throws Exception {
+        AtomicBoolean segmented = new AtomicBoolean();
+
+        G.addListener(new IgnitionListener() {
+            @Override public void onStateChange(@Nullable String name, IgniteState state) {
+                if (state == IgniteState.STOPPED_ON_SEGMENTATION)
+                    segmented.set(true);
+            }
+        });
+
         startGrids(NODES_CNT);
 
         IgniteEx ignite1 = grid(1);
         IgniteEx ignite2 = grid(2);
 
+        assertFalse("Unexpected segmentation.", segmented.get());
+
         ((TcpDiscoverySpi)ignite1.configuration().getDiscoverySpi()).brakeConnection();
         ((TcpDiscoverySpi)ignite2.configuration().getDiscoverySpi()).brakeConnection();
 
-        waitForCondition(() -> G.allGrids().size() < NODES_CNT, getTestTimeout() / 2);
+        waitForCondition(() -> G.allGrids().size() < NODES_CNT, getTestTimeout());
 
-        assertTrue("Segmentation was not happened.",
-            waitForCondition(() -> lsnr.check(), getTestTimeout() / 2));
+        assertTrue("Segmentation was not happened.", segmented.get());
 
         assertTrue(byFailureHnd == dfltFailureHndInvoked);
     }
