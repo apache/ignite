@@ -842,7 +842,7 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
             catch (IOException | IgniteCheckedException e) {
                 throw F.wrap(e);
             }
-        });
+        }, snapshotExecutorService());
     }
 
     /**
