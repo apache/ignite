@@ -85,15 +85,17 @@ import static org.apache.ignite.testframework.LogListener.matches;
 @RunWith(Parameterized.class)
 public class GridCommandHandlerConsistencyCountersTest extends GridCommandHandlerClusterPerMethodAbstractTest {
     /** */
-    @Parameterized.Parameters(name = "strategy={0}, reuse={1}, historical={2}, atomicity={3}")
+    @Parameterized.Parameters(name = "strategy={0}, reuse={1}, historical={2}, atomicity={3}, walRestore={4}")
     public static Iterable<Object[]> data() {
         List<Object[]> res = new ArrayList<>();
 
         for (ReadRepairStrategy strategy : ReadRepairStrategy.values()) {
             for (boolean reuse : new boolean[] {false, true}) {
                 for (boolean historical : new boolean[] {false, true}) {
-                    for (CacheAtomicityMode atomicityMode : new CacheAtomicityMode[] {ATOMIC, TRANSACTIONAL})
-                        res.add(new Object[] {strategy, reuse, historical, atomicityMode});
+                    for (CacheAtomicityMode atomicityMode : new CacheAtomicityMode[] {ATOMIC, TRANSACTIONAL}) {
+                        for (boolean walRestore: new boolean[] {false, true})
+                            res.add(new Object[] {strategy, reuse, historical, atomicityMode, walRestore});
+                    }
                 }
             }
         }
@@ -124,6 +126,12 @@ public class GridCommandHandlerConsistencyCountersTest extends GridCommandHandle
      */
     @Parameterized.Parameter(3)
     public CacheAtomicityMode atomicityMode;
+
+    /**
+     * Ignite nodes use WAL for restoring logical updates at restart after the crash.
+     */
+    @Parameterized.Parameter(4)
+    public boolean walRestore;
 
     /** Listening logger. */
     protected final ListeningTestLogger listeningLog = new ListeningTestLogger(log);
@@ -390,18 +398,28 @@ public class GridCommandHandlerConsistencyCountersTest extends GridCommandHandle
 
         injectTestSystemOut();
 
-        assertEquals(EXIT_CODE_OK, execute("--cache", "idle_verify"));
+        if (!walRestore) {
+            // Idle verify triggers checkpoint and then no WAL restore is performed after cluster restart.
+            assertEquals(EXIT_CODE_OK, execute("--cache", "idle_verify"));
 
-        assertConflicts(true, true);
+            assertConflicts(true, true);
 
-        if (atomicityMode == TRANSACTIONAL) {
-            assertTxCounters(primaryLwm, primaryMissed, updateCnt); // Primary
-            assertTxCounters(preloadCnt, backupMissed, backupHwm); // Backups
+            if (atomicityMode == TRANSACTIONAL) {
+                assertTxCounters(primaryLwm, primaryMissed, updateCnt); // Primary
+                assertTxCounters(preloadCnt, backupMissed, backupHwm); // Backups
+            }
+            else {
+                assertAtomicCounters(updateCnt); // Primary
+                assertAtomicCounters(backupHwm); // Backups
+            }
         }
-        else {
-            assertAtomicCounters(updateCnt); // Primary
-            assertAtomicCounters(backupHwm); // Backups
-        }
+
+        // On node start up it applies WAL changes twice: metastore updates, logical updates.
+        // In this test metastore updates equal to 0, logical updates are greater than 0 for walRestore=true only.
+        LogListener lsnrWalRestoreUpdates = matches(Pattern.compile(
+                "Finished applying WAL changes \\[updatesApplied=" + (walRestore ? "[1-9][0-9]+" : 0) + ','))
+            .times(walRestore ? nodes : nodes * 2)
+            .build();
 
         LogListener lsnrRebalanceType = matches("fullPartitions=[" + (historical ? "" : 0) + "], " +
             "histPartitions=[" + (historical ? 0 : "") + "]").times(backupNodes).build();
@@ -421,6 +439,7 @@ public class GridCommandHandlerConsistencyCountersTest extends GridCommandHandle
 
         listeningLog.registerListener(lsnrRebalanceType);
         listeningLog.registerListener(lsnrRebalanceAmount);
+        listeningLog.registerListener(lsnrWalRestoreUpdates);
 
         ioBlocked = true; // Emulating power off, OOM or disk overflow. Keeping data as is, with missed counters updates.
 
@@ -435,6 +454,7 @@ public class GridCommandHandlerConsistencyCountersTest extends GridCommandHandle
         awaitPartitionMapExchange();
 
         assertTrue(lsnrRebalanceType.check());
+        assertTrue(lsnrWalRestoreUpdates.check());
 
         assertEquals(EXIT_CODE_OK, execute("--cache", "idle_verify"));
 
