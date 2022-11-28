@@ -42,6 +42,7 @@ import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.G;
 import org.apache.ignite.testframework.ListeningTestLogger;
 import org.apache.ignite.testframework.LogListener;
+import org.junit.Ignore;
 import org.junit.Test;
 
 import static org.apache.ignite.cluster.ClusterState.ACTIVE;
@@ -59,6 +60,9 @@ public class IgniteClusterSnapshotStreamerTest extends AbstractSnapshotSelfTest 
     /** */
     private IgniteEx client;
 
+    /** Non-baseline.*/
+    private IgniteEx nonBaseline;
+
     /** {@inheritDoc} */
     @Override public void beforeTestSnapshot() throws Exception {
         super.beforeTestSnapshot();
@@ -70,6 +74,12 @@ public class IgniteClusterSnapshotStreamerTest extends AbstractSnapshotSelfTest 
         startGrids(3);
 
         grid(0).cluster().state(ACTIVE);
+
+        grid(0).cluster().baselineAutoAdjustEnabled(false);
+
+        grid(0).cluster().setBaselineTopology(grid(0).cluster().topologyVersion());
+
+        nonBaseline = startGrid(G.allGrids().size());
 
         client = startClientGrid(G.allGrids().size());
     }
@@ -105,6 +115,16 @@ public class IgniteClusterSnapshotStreamerTest extends AbstractSnapshotSelfTest 
     @Test
     public void testStreamerWhileSnapshotDefaultNotCoordinator() throws Exception {
         doTestDataStreamerWhileSnapshot(grid(1), false);
+    }
+
+    /**
+     * Tests snapshot warning when streamer is working during snapshot creation. Default receiver. Handling from
+     * non-baseline node.
+     */
+    @Test
+    @Ignore("https://issues.apache.org/jira/browse/IGNITE-18259")
+    public void testStreamerWhileSnapshotDefaultNotBaseline() throws Exception {
+        doTestDataStreamerWhileSnapshot(nonBaseline, false);
     }
 
     /**
