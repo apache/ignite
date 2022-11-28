@@ -394,7 +394,9 @@ class FileWriteHandleImpl extends AbstractFileHandle implements FileWriteHandle 
                 // Fsync position must be behind.
                 assert lastFsyncPos0 < written0 : "lastFsyncPos=" + lastFsyncPos0 + ", written=" + written0;
 
-                long start = System.nanoTime();
+                boolean metricsEnabled = metrics.metricsEnabled();
+
+                long start = metricsEnabled ? System.nanoTime() : 0;
 
                 if (mmap) {
                     long pos = ptr == null ? -1 : ptr.fileOffset();
@@ -422,7 +424,10 @@ class FileWriteHandleImpl extends AbstractFileHandle implements FileWriteHandle 
                 if (fsyncDelay > 0)
                     fsync.signalAll();
 
-                metrics.onFsync(System.nanoTime() - start);
+                long end = metricsEnabled ? System.nanoTime() : 0;
+
+                if (metricsEnabled)
+                    metrics.onFsync(end - start);
             }
         }
         finally {

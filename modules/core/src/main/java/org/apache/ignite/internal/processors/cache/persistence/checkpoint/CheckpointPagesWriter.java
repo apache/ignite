@@ -177,6 +177,8 @@ public class CheckpointPagesWriter implements Runnable {
     ) throws IgniteCheckedException {
         Map<PageMemoryEx, List<FullPageId>> pagesToRetry = new HashMap<>();
 
+        CheckpointMetricsTracker tracker = persStoreMetrics.metricsEnabled() ? this.tracker : null;
+
         Map<PageMemoryEx, PageStoreWriter> pageStoreWriters = new HashMap<>();
 
         ByteBuffer tmpWriteBuf = threadBuf.get();
@@ -252,10 +254,12 @@ public class CheckpointPagesWriter implements Runnable {
                 assert getType(buf) != 0 : "Invalid state. Type is 0! pageId = " + hexLong(pageId);
                 assert getVersion(buf) != 0 : "Invalid state. Version is 0! pageId = " + hexLong(pageId);
 
-                int pageType = getType(buf);
+                if (persStoreMetrics.metricsEnabled()) {
+                    int pageType = getType(buf);
 
-                if (PageIO.isDataPageType(pageType))
-                    tracker.onDataPageWritten();
+                    if (PageIO.isDataPageType(pageType))
+                        tracker.onDataPageWritten();
+                }
 
                 curCpProgress.updateWrittenPages(1);
 

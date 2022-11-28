@@ -4086,7 +4086,7 @@ public abstract class JettyRestProcessorAbstractSelfTest extends JettyRestProces
         dsCfg.setDefaultDataRegionConfiguration(drCfg);
 
         if (memoryMetricsEnabled)
-            dsCfg.setWalMode(NONE);
+            dsCfg.setMetricsEnabled(true).setWalMode(NONE);
 
         cfg.setDataStorageConfiguration(dsCfg);
 

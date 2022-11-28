@@ -175,7 +175,7 @@ public class CacheGroupMetricsTest extends GridCommonAbstractTest implements Ser
                     .setPersistenceEnabled(true)
                     .setMaxSize(DataStorageConfiguration.DFLT_DATA_REGION_INITIAL_SIZE)
                     .setMetricsEnabled(true)
-                )
+                ).setMetricsEnabled(true)
             );
         }
 

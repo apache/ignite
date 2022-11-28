@@ -621,27 +621,29 @@ public class Checkpointer extends GridWorker {
                 tracker.cowPagesWritten());
         }
 
-        GridCacheDatabaseSharedManager dbMgr = (GridCacheDatabaseSharedManager)cacheProcessor.context().database();
+        if (persStoreMetrics.metricsEnabled()) {
+            GridCacheDatabaseSharedManager dbMgr = (GridCacheDatabaseSharedManager)cacheProcessor.context().database();
 
-        persStoreMetrics.onCheckpoint(
-            tracker.beforeLockDuration(),
-            tracker.lockWaitDuration(),
-            tracker.listenersExecuteDuration(),
-            tracker.markDuration(),
-            tracker.lockHoldDuration(),
-            tracker.pagesWriteDuration(),
-            tracker.fsyncDuration(),
-            tracker.walCpRecordFsyncDuration(),
-            tracker.writeCheckpointEntryDuration(),
-            tracker.splitAndSortCpPagesDuration(),
-            tracker.totalDuration(),
-            tracker.checkpointStartTime(),
-            chp.pagesSize,
-            tracker.dataPagesWritten(),
-            tracker.cowPagesWritten(),
-            dbMgr.forAllPageStores(PageStore::size),
-            dbMgr.forAllPageStores(PageStore::getSparseSize)
-        );
+            persStoreMetrics.onCheckpoint(
+                tracker.beforeLockDuration(),
+                tracker.lockWaitDuration(),
+                tracker.listenersExecuteDuration(),
+                tracker.markDuration(),
+                tracker.lockHoldDuration(),
+                tracker.pagesWriteDuration(),
+                tracker.fsyncDuration(),
+                tracker.walCpRecordFsyncDuration(),
+                tracker.writeCheckpointEntryDuration(),
+                tracker.splitAndSortCpPagesDuration(),
+                tracker.totalDuration(),
+                tracker.checkpointStartTime(),
+                chp.pagesSize,
+                tracker.dataPagesWritten(),
+                tracker.cowPagesWritten(),
+                dbMgr.forAllPageStores(PageStore::size),
+                dbMgr.forAllPageStores(PageStore::getSparseSize)
+            );
+        }
     }
 
     /**

@@ -150,6 +150,7 @@ namespace Apache.Ignite.Core.Tests.Cache
                     WalMode = WalMode.Fsync,
                     WalSegmentSize = 16 * 1 << 20, // 16 MB.
                     PageSize = 1 << 10, // 1 KB.
+                    MetricsEnabled = true,
                     CheckpointFrequency = CheckpointFrequency,
                     DefaultDataRegionConfiguration = new DataRegionConfiguration
                     {

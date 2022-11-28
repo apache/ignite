@@ -229,6 +229,7 @@ namespace Apache.Ignite.Core.Configuration
             WalFsyncDelayNanos = reader.ReadLong();
             WalRecordIteratorBufferSize = reader.ReadInt();
             AlwaysWriteFullPages = reader.ReadBoolean();
+            MetricsEnabled = reader.ReadBoolean();
             MetricsSubIntervalCount = reader.ReadInt();
             MetricsRateTimeInterval = reader.ReadLongAsTimespan();
             CheckpointWriteOrder = (CheckpointWriteOrder)reader.ReadInt();
@@ -291,6 +292,7 @@ namespace Apache.Ignite.Core.Configuration
             writer.WriteLong(WalFsyncDelayNanos);
             writer.WriteInt(WalRecordIteratorBufferSize);
             writer.WriteBoolean(AlwaysWriteFullPages);
+            writer.WriteBoolean(MetricsEnabled);
             writer.WriteInt(MetricsSubIntervalCount);
             writer.WriteTimeSpanAsLong(MetricsRateTimeInterval);
             writer.WriteInt((int)CheckpointWriteOrder);
@@ -442,6 +444,12 @@ namespace Apache.Ignite.Core.Configuration
         /// Gets or sets a value indicating whether full pages should always be written.
         /// </summary>
         public bool AlwaysWriteFullPages { get; set; }
+
+        /// <summary>
+        /// Gets or sets a value indicating whether to enable data storage metrics.
+        /// See <see cref="IIgnite.GetDataStorageMetrics"/>.
+        /// </summary>
+        public bool MetricsEnabled { get; set; }
 
         /// <summary>
         /// Gets or sets the length of the time interval for rate-based metrics.

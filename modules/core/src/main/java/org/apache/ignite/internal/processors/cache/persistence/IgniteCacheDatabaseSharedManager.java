@@ -101,6 +101,7 @@ import static org.apache.ignite.IgniteSystemProperties.IGNITE_REUSE_MEMORY_ON_DE
 import static org.apache.ignite.IgniteSystemProperties.IGNITE_THRESHOLD_WAL_ARCHIVE_SIZE_PERCENTAGE;
 import static org.apache.ignite.IgniteSystemProperties.getDouble;
 import static org.apache.ignite.configuration.DataStorageConfiguration.DFLT_DATA_REG_DEFAULT_NAME;
+import static org.apache.ignite.configuration.DataStorageConfiguration.DFLT_METRICS_ENABLED;
 import static org.apache.ignite.configuration.DataStorageConfiguration.DFLT_PAGE_SIZE;
 import static org.apache.ignite.configuration.DataStorageConfiguration.DFLT_RATE_TIME_INTERVAL_MILLIS;
 import static org.apache.ignite.configuration.DataStorageConfiguration.DFLT_SUB_INTERVALS;
@@ -191,6 +192,7 @@ public class IgniteCacheDatabaseSharedManager extends GridCacheSharedManagerAdap
         if (dsCfg != null) {
             dsMetrics = new DataStorageMetricsImpl(
                 ctx.metric(),
+                dsCfg.isMetricsEnabled(),
                 dsCfg.getMetricsRateTimeInterval(),
                 dsCfg.getMetricsSubIntervalCount()
             );
@@ -198,6 +200,7 @@ public class IgniteCacheDatabaseSharedManager extends GridCacheSharedManagerAdap
         else {
             dsMetrics = new DataStorageMetricsImpl(
                 ctx.metric(),
+                DFLT_METRICS_ENABLED,
                 DFLT_RATE_TIME_INTERVAL_MILLIS,
                 DFLT_SUB_INTERVALS
             );
