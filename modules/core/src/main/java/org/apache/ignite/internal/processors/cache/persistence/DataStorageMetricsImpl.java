@@ -104,8 +104,10 @@ public class DataStorageMetricsImpl {
     /** */
     private final int subInts;
 
-    /** */
-    private volatile boolean metricsEnabled;
+    /**
+     * @deprecated Will be removed in upcoming releases.
+     */
+    private final boolean metricsEnabled;
 
     /** WAL manager. */
     @Nullable private volatile IgniteWriteAheadLogManager wal;
@@ -381,9 +383,6 @@ public class DataStorageMetricsImpl {
      * @return  Total dirty pages for the next checkpoint.
      */
     private long dirtyPages() {
-        if (!metricsEnabled)
-            return 0;
-
         Collection<DataRegionMetrics> regionMetrics0 = regionMetrics;
 
         if (F.isEmpty(regionMetrics0))
@@ -598,6 +597,7 @@ public class DataStorageMetricsImpl {
 
     /**
      * @return Metrics enabled flag.
+     * @deprecated Will be removed in upcoming releases.
      */
     public boolean metricsEnabled() {
         return metricsEnabled;
@@ -641,39 +641,40 @@ public class DataStorageMetricsImpl {
         long storageSize,
         long sparseStorageSize
     ) {
-        if (metricsEnabled) {
-            lastCpBeforeLockDuration.value(beforeLockDuration);
-            lastCpLockWaitDuration.value(lockWaitDuration);
-            lastCpListenersExecuteDuration.value(listenersExecuteDuration);
-            lastCpMarkDuration.value(markDuration);
-            lastCpLockHoldDuration.value(lockHoldDuration);
-            lastCpPagesWriteDuration.value(pagesWriteDuration);
-            lastCpFsyncDuration.value(fsyncDuration);
-            lastCpWalRecordFsyncDuration.value(walRecordFsyncDuration);
-            lastCpWriteEntryDuration.value(writeEntryDuration);
-            lastCpSplitAndSortPagesDuration.value(splitAndSortPagesDuration);
-            lastCpDuration.value(duration);
-            lastCpStart.value(start);
-            lastCpTotalPages.value(totalPages);
-            lastCpDataPages.value(dataPages);
-            lastCpCowPages.value(cowPages);
-            this.storageSize.value(storageSize);
-            this.sparseStorageSize.value(sparseStorageSize);
+        if (!metricsEnabled)
+            return;
 
-            totalCheckpointTime.add(duration);
+        lastCpBeforeLockDuration.value(beforeLockDuration);
+        lastCpLockWaitDuration.value(lockWaitDuration);
+        lastCpListenersExecuteDuration.value(listenersExecuteDuration);
+        lastCpMarkDuration.value(markDuration);
+        lastCpLockHoldDuration.value(lockHoldDuration);
+        lastCpPagesWriteDuration.value(pagesWriteDuration);
+        lastCpFsyncDuration.value(fsyncDuration);
+        lastCpWalRecordFsyncDuration.value(walRecordFsyncDuration);
+        lastCpWriteEntryDuration.value(writeEntryDuration);
+        lastCpSplitAndSortPagesDuration.value(splitAndSortPagesDuration);
+        lastCpDuration.value(duration);
+        lastCpStart.value(start);
+        lastCpTotalPages.value(totalPages);
+        lastCpDataPages.value(dataPages);
+        lastCpCowPages.value(cowPages);
+        this.storageSize.value(storageSize);
+        this.sparseStorageSize.value(sparseStorageSize);
 
-            cpBeforeLockHistogram.value(beforeLockDuration);
-            cpLockWaitHistogram.value(lockWaitDuration);
-            cpListenersExecuteHistogram.value(listenersExecuteDuration);
-            cpMarkHistogram.value(markDuration);
-            cpLockHoldHistogram.value(lockHoldDuration);
-            cpPagesWriteHistogram.value(pagesWriteDuration);
-            cpFsyncHistogram.value(fsyncDuration);
-            cpWalRecordFsyncHistogram.value(walRecordFsyncDuration);
-            cpWriteEntryHistogram.value(writeEntryDuration);
-            cpSplitAndSortPagesHistogram.value(splitAndSortPagesDuration);
-            cpHistogram.value(duration);
-        }
+        totalCheckpointTime.add(duration);
+
+        cpBeforeLockHistogram.value(beforeLockDuration);
+        cpLockWaitHistogram.value(lockWaitDuration);
+        cpListenersExecuteHistogram.value(listenersExecuteDuration);
+        cpMarkHistogram.value(markDuration);
+        cpLockHoldHistogram.value(lockHoldDuration);
+        cpPagesWriteHistogram.value(pagesWriteDuration);
+        cpFsyncHistogram.value(fsyncDuration);
+        cpWalRecordFsyncHistogram.value(walRecordFsyncDuration);
+        cpWriteEntryHistogram.value(writeEntryDuration);
+        cpSplitAndSortPagesHistogram.value(splitAndSortPagesDuration);
+        cpHistogram.value(duration);
     }
 
     /**

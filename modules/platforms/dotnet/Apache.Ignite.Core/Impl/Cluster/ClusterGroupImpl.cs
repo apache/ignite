@@ -147,9 +147,6 @@ namespace Apache.Ignite.Core.Impl.Cluster
         private const int OpDataRegionMetricsByName = 36;
 
         /** */
-        private const int OpDataStorageMetrics = 37;
-
-        /** */
         private const int OpEnableStatistics = 38;
 
         /** */
