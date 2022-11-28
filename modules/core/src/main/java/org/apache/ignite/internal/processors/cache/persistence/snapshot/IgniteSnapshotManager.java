@@ -802,8 +802,7 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
                     .suspend(((SnapshotFutureTask)task0).started());
             }
 
-            clusterSnpReq = new SnapshotOperationRequest(req.requestId(), req.operationalNodeId(), req.snapshotName(),
-                req.snapshotPath(), req.groups(), req.nodes());
+            clusterSnpReq = req;
         }
 
         return task0.chain(fut -> {
@@ -811,16 +810,16 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
                 throw F.wrap(fut.error());
 
             try {
-                Set<String> blts = clusterSnpReq.nodes().stream()
+                Set<String> blts = req.nodes().stream()
                     .map(n -> cctx.discovery().node(n).consistentId().toString())
                     .collect(Collectors.toSet());
 
-                File snpDir = snapshotLocalDir(clusterSnpReq.snapshotName(), clusterSnpReq.snapshotPath());
+                File snpDir = snapshotLocalDir(req.snapshotName(), req.snapshotPath());
 
                 snpDir.mkdirs();
 
-                SnapshotMetadata meta = new SnapshotMetadata(clusterSnpReq.requestId(),
-                    clusterSnpReq.snapshotName(),
+                SnapshotMetadata meta = new SnapshotMetadata(req.requestId(),
+                    req.snapshotName(),
                     cctx.localNode().consistentId().toString(),
                     pdsSettings.folderName(),
                     cctx.gridConfig().getDataStorageConfiguration().getPageSize(),
@@ -830,13 +829,13 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
                     cctx.gridConfig().getEncryptionSpi().masterKeyDigest()
                 );
 
-                SnapshotHandlerContext ctx = new SnapshotHandlerContext(meta, clusterSnpReq.groups(), cctx.localNode(),
-                    snpDir, clusterSnpReq.streamerWarning());
+                SnapshotHandlerContext ctx = new SnapshotHandlerContext(meta, req.groups(), cctx.localNode(), snpDir,
+                    req.streamerWarning());
 
-                clusterSnpReq.meta(meta);
+                req.meta(meta);
 
                 if (!isLocalNodeCoordinator(cctx.discovery()))
-                    storeSnapshotMeta(clusterSnpReq);
+                    storeSnapshotMeta(req);
 
                 return new SnapshotOperationResponse(handlers.invokeAll(SnapshotHandlerType.CREATE, ctx));
             }
@@ -1092,15 +1091,13 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
     }
 
     /**
-     * Sets the streamer warning to current snapshot process if it is active.
-     *
-     * @param cacheId Cache id.
+     * Sets the streamer warning flag to current snapshot process if it is active.
      */
-    public void streamerWarning(int cacheId) {
+    public void streamerWarning() {
         SnapshotOperationRequest snpTask = currentCreateRequest();
 
-        if (snpTask != null)
-            snpTask.streamerWarning(cacheId);
+        if (snpTask != null && !snpTask.streamerWarning())
+            snpTask.streamerWarning(true);
     }
 
     /** @return Current create snapshot request. {@code Null} if there is no create snapshot operation in progress. */

@@ -38,8 +38,8 @@ public class SnapshotHandlerContext {
     /** Local node. */
     private final ClusterNode locNode;
 
-    /** Caches under concurrent inconsistent-by-nature streamer updates. */
-    private final Collection<Integer> streamedCaches;
+    /** Warning flag of concurrent inconsistent-by-nature streamer updates. */
+    private final boolean streamerWrn;
 
     /**
      * @param metadata Snapshot metadata.
@@ -47,15 +47,15 @@ public class SnapshotHandlerContext {
      * {@code False} otherwise. Always {@code false} for snapshot restoration.
      * @param locNode Local node.
      * @param snpDir The full path to the snapshot files.
-     * @param streamedCaches Caches under concurrent inconsistent-by-nature streamer updates.
+     * @param streamerWrn {@code True} if concurrent streaming updates occurred during snapshot operation.
      */
     public SnapshotHandlerContext(SnapshotMetadata metadata, @Nullable Collection<String> grps, ClusterNode locNode,
-        File snpDir, @Nullable Collection<Integer> streamedCaches) {
+        File snpDir, boolean streamerWrn) {
         this.metadata = metadata;
         this.grps = grps;
         this.locNode = locNode;
         this.snpDir = snpDir;
-        this.streamedCaches = streamedCaches;
+        this.streamerWrn = streamerWrn;
     }
 
     /**
@@ -88,9 +88,9 @@ public class SnapshotHandlerContext {
     }
 
     /**
-     * @return Caches under concurrent inconsistent-by-nature streamer updates.
+     * @return {@code True} if concurrent streaming updates occurred during snapshot operation. {@code False} otherwise.
      */
-    public @Nullable Collection<Integer> streamerWarning() {
-        return streamedCaches;
+    public boolean streamerWarning() {
+        return streamerWrn;
     }
 }

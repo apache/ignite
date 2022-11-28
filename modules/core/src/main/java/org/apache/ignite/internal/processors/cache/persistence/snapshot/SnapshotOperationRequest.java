@@ -22,7 +22,6 @@ import java.util.Collection;
 import java.util.List;
 import java.util.Set;
 import java.util.UUID;
-import org.apache.ignite.internal.util.GridConcurrentHashSet;
 import org.apache.ignite.internal.util.distributed.DistributedProcess;
 import org.apache.ignite.internal.util.distributed.DistributedProcess.DistributedProcessType;
 import org.apache.ignite.internal.util.tostring.GridToStringInclude;
@@ -70,9 +69,9 @@ public class SnapshotOperationRequest implements Serializable {
     private transient SnapshotMetadata meta;
 
     /**
-     * Caches under concurrent inconsistent-by-nature streamer updates.
+     * Warning flag of concurrent inconsistent-by-nature streamer updates.
      */
-    private final transient Set<Integer> streamedCaches = new GridConcurrentHashSet<>();
+    private transient volatile boolean streamerWrn;
 
     /** Flag indicating that the {@link DistributedProcessType#START_SNAPSHOT} phase has completed. */
     private transient volatile boolean startStageEnded;
@@ -197,17 +196,17 @@ public class SnapshotOperationRequest implements Serializable {
     }
 
     /**
-     * @return Caches under concurrent inconsistent-by-nature streamer updates.
+     * {@code True} If the streamer warning flag is set. {@code False} otherwise.
      */
-    public @Nullable Set<Integer> streamerWarning() {
-        return streamedCaches;
+    public boolean streamerWarning() {
+        return streamerWrn;
     }
 
     /**
-     * Stores id of a cache under concurrent inconsistent-by-nature streamer updates.
+     * Sets the streamer warning flag.
      */
-    public boolean streamerWarning(int cacheId) {
-        return streamedCaches.add(cacheId);
+    public boolean streamerWarning(boolean val) {
+        return streamerWrn = val;
     }
 
     /**

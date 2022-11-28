@@ -55,7 +55,7 @@ public class SnapshotPartitionsQuickVerifyHandler extends SnapshotPartitionsVeri
     @Override public Map<PartitionKeyV2, PartitionHashRecordV2> invoke(SnapshotHandlerContext opCtx)
         throws IgniteCheckedException {
         // Return null not to check partitions at all if the streamer warning is detected.
-        if (!F.isEmpty(opCtx.streamerWarning()))
+        if (opCtx.streamerWarning())
             return null;
 
         Map<PartitionKeyV2, PartitionHashRecordV2> res = super.invoke(opCtx);
