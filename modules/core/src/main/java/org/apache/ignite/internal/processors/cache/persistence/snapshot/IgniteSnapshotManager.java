@@ -18,6 +18,7 @@
 package org.apache.ignite.internal.processors.cache.persistence.snapshot;
 
 import java.io.BufferedInputStream;
+import java.io.Closeable;
 import java.io.File;
 import java.io.FileInputStream;
 import java.io.FileOutputStream;
@@ -44,6 +45,7 @@ import java.util.Deque;
 import java.util.EnumMap;
 import java.util.HashMap;
 import java.util.HashSet;
+import java.util.Iterator;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
@@ -52,6 +54,7 @@ import java.util.Objects;
 import java.util.Optional;
 import java.util.Queue;
 import java.util.Set;
+import java.util.TreeMap;
 import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentLinkedDeque;
@@ -72,6 +75,7 @@ import org.apache.ignite.IgniteException;
 import org.apache.ignite.IgniteInterruptedException;
 import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.IgniteSnapshot;
+import org.apache.ignite.IgniteSystemProperties;
 import org.apache.ignite.binary.BinaryType;
 import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.compute.ComputeTask;
@@ -104,6 +108,7 @@ import org.apache.ignite.internal.managers.encryption.GroupKey;
 import org.apache.ignite.internal.managers.encryption.GroupKeyEncrypted;
 import org.apache.ignite.internal.managers.eventstorage.DiscoveryEventListener;
 import org.apache.ignite.internal.managers.systemview.walker.SnapshotViewWalker;
+import org.apache.ignite.internal.pagemem.PageIdUtils;
 import org.apache.ignite.internal.pagemem.store.PageStore;
 import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
 import org.apache.ignite.internal.processors.cache.CacheGroupDescriptor;
@@ -175,6 +180,7 @@ import org.apache.ignite.spi.systemview.view.SnapshotView;
 import org.jetbrains.annotations.Nullable;
 
 import static java.nio.file.StandardOpenOption.READ;
+import static org.apache.ignite.IgniteSystemProperties.IGNITE_SNAPSHOT_SEQUENTIAL_WRITE;
 import static org.apache.ignite.configuration.DataStorageConfiguration.DFLT_BINARY_METADATA_PATH;
 import static org.apache.ignite.configuration.DataStorageConfiguration.DFLT_MARSHALLER_PATH;
 import static org.apache.ignite.events.EventType.EVT_CLUSTER_SNAPSHOT_FAILED;
@@ -238,6 +244,9 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
     /** File with delta pages suffix. */
     public static final String DELTA_SUFFIX = ".delta";
 
+    /** File with delta pages index suffix. */
+    public static final String DELTA_IDX_SUFFIX = ".idx";
+
     /** File name template consists of delta pages. */
     public static final String PART_DELTA_TEMPLATE = PART_FILE_TEMPLATE + DELTA_SUFFIX;
 
@@ -279,6 +288,9 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
 
     /** Metastorage key to save currently running snapshot directory path. */
     private static final String SNP_RUNNING_DIR_KEY = "snapshot-running-dir";
+
+    /** Default value of {@link IgniteSystemProperties#IGNITE_SNAPSHOT_SEQUENTIAL_WRITE}. */
+    public static final boolean DFLT_IGNITE_SNAPSHOT_SEQUENTIAL_WRITE = true;
 
     /** @deprecated Use #SNP_RUNNING_DIR_KEY instead. */
     @Deprecated
@@ -394,6 +406,10 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
     /** Snapshot transfer rate limit in bytes/sec. */
     private final DistributedLongProperty snapshotTransferRate = detachedLongProperty(SNAPSHOT_TRANSFER_RATE_DMS_KEY);
 
+    /** Value of {@link IgniteSystemProperties#IGNITE_SNAPSHOT_SEQUENTIAL_WRITE}. */
+    private final boolean sequentialWrite =
+        IgniteSystemProperties.getBoolean(IGNITE_SNAPSHOT_SEQUENTIAL_WRITE, DFLT_IGNITE_SNAPSHOT_SEQUENTIAL_WRITE);
+
     /**
      * @param ctx Kernal context.
      */
@@ -423,6 +439,16 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
      */
     public static File partDeltaFile(File snapshotCacheDir, int partId) {
         return new File(snapshotCacheDir, partDeltaFileName(partId));
+    }
+
+    /**
+     * Partition delta index file. Represents a sequence of page indexes that written to a delta.
+     *
+     * @param delta File with delta pages.
+     * @return File with delta pages index.
+     */
+    public static File partDeltaIndexFile(File delta) {
+        return new File(delta.getParent(), delta.getName() + DELTA_IDX_SUFFIX);
     }
 
     /**
@@ -1109,6 +1135,11 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
      */
     public IgniteFuture<Boolean> restoreStatus(String snpName) {
         return executeRestoreManagementTask(SnapshotRestoreStatusTask.class, snpName);
+    }
+
+    /** @return {@code True} if disk writes during snapshot process should be in a sequential manner when possible. */
+    public boolean sequentialWrite() {
+        return sequentialWrite;
     }
 
     /**
@@ -3157,6 +3188,10 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
         /** Size of page. */
         private final int pageSize;
 
+        /** Delta iterator factory. */
+        private final Factory<File, FileIOFactory, DeltaIterator> deltaIterFactory =
+            sequentialWrite() ? DeltaSortedIterator::new : DeltaIterator::new;
+
         /**
          * @param snpName Snapshot name.
          * @param snpPath Snapshot directory path.
@@ -3285,39 +3320,18 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
                 .encryptedFileIoFactory(IgniteSnapshotManager.this.ioFactory, pair.getGroupId()) :
                 IgniteSnapshotManager.this.ioFactory;
 
-            try (FileIO fileIo = ioFactory.create(delta, READ);
+            try (DeltaIterator deltaIter = deltaIterFactory.create(delta, ioFactory);
                  FilePageStore pageStore = (FilePageStore)storeMgr.getPageStoreFactory(pair.getGroupId(), encrypted)
                      .createPageStore(getTypeByPartId(pair.getPartitionId()), snpPart::toPath, v -> {})
             ) {
-                ByteBuffer pageBuf = ByteBuffer.allocate(pageSize)
-                    .order(ByteOrder.nativeOrder());
-
-                long totalBytes = fileIo.size();
-
-                assert totalBytes % pageSize == 0 : "Given file with delta pages has incorrect size: " + fileIo.size();
-
                 pageStore.beginRecover();
 
-                for (long pos = 0; pos < totalBytes; pos += pageSize) {
-                    long read = fileIo.readFully(pageBuf, pos);
-
-                    assert read == pageBuf.capacity();
-
-                    pageBuf.flip();
-
-                    if (log.isDebugEnabled()) {
-                        log.debug("Read page given delta file [path=" + delta.getName() +
-                            ", pageId=" + PageIO.getPageId(pageBuf) + ", pos=" + pos + ", pages=" + (totalBytes / pageSize) +
-                            ", crcBuff=" + FastCrc.calcCrc(pageBuf, pageBuf.limit()) + ", crcPage=" + PageIO.getCrc(pageBuf) + ']');
-
-                        pageBuf.rewind();
-                    }
-
+                while (deltaIter.hasNext()) {
                     transferRateLimiter.acquire(pageSize);
 
-                    pageStore.write(PageIO.getPageId(pageBuf), pageBuf, 0, false);
+                    ByteBuffer page = deltaIter.next();
 
-                    pageBuf.flip();
+                    pageStore.write(PageIO.getPageId(page), page, 0, false);
                 }
 
                 pageStore.finishRecover();
@@ -3339,6 +3353,168 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
                 if (log.isDebugEnabled())
                     log.debug("Local snapshot sender closed due to an error occurred: " + th.getMessage());
             }
+        }
+    }
+
+    /** Delta file iterator. */
+    private class DeltaIterator implements Iterator<ByteBuffer>, Closeable {
+        /** Delta file. */
+        protected final File delta;
+
+        /** Delta file IO. */
+        private final FileIO fileIo;
+
+        /** Delta file length. */
+        protected final long totalBytes;
+
+        /** */
+        protected final int pageSize;
+
+        /** Pages count written to a delta file. */
+        protected final int pagesCnt;
+
+        /** */
+        protected final ByteBuffer pageBuf;
+
+        /** */
+        private long pos;
+
+        /** */
+        DeltaIterator(File delta, FileIOFactory ioFactory) throws IOException {
+            pageSize = cctx.kernalContext().config().getDataStorageConfiguration().getPageSize();
+
+            this.delta = delta;
+
+            fileIo = ioFactory.create(delta, READ);
+
+            totalBytes = fileIo.size();
+
+            assert totalBytes % pageSize == 0 : "Given file with delta pages has incorrect size: " + totalBytes;
+
+            pagesCnt = (int)(totalBytes / pageSize);
+
+            pageBuf = ByteBuffer.allocate(pageSize).order(ByteOrder.nativeOrder());
+        }
+
+        /** {@inheritDoc} */
+        @Override public boolean hasNext() {
+            return pos < totalBytes;
+        }
+
+        /** {@inheritDoc} */
+        @Override public ByteBuffer next() {
+            if (!hasNext())
+                throw new NoSuchElementException();
+
+            readPage(pos);
+
+            pos += pageSize;
+
+            return pageBuf;
+        }
+
+        /** Reads a page from the delta file from the given position. */
+        protected void readPage(long pos) {
+            pageBuf.clear();
+
+            try {
+                long read = fileIo.readFully(pageBuf, pos);
+
+                assert read == pageBuf.capacity();
+            }
+            catch (IOException e) {
+                throw new IgniteException(e);
+            }
+
+            pageBuf.flip();
+
+            if (log.isDebugEnabled()) {
+                log.debug("Read page given delta file [path=" + delta.getName() + ", pageId=" +
+                    PageIO.getPageId(pageBuf) + ", index=" + PageIdUtils.pageIndex(PageIO.getPageId(pageBuf)) +
+                    ", pos=" + pos + ", pagesCnt=" + pagesCnt + ", crcBuff=" +
+                    FastCrc.calcCrc(pageBuf, pageBuf.limit()) + ", crcPage=" + PageIO.getCrc(pageBuf) + ']');
+
+                pageBuf.rewind();
+            }
+        }
+
+        /** {@inheritDoc} */
+        @Override public void close() throws IOException {
+            fileIo.close();
+        }
+    }
+
+    /**
+     * Delta file iterator sorted by page indexes to almost sequential disk writes on apply to a page store.
+     */
+    class DeltaSortedIterator extends DeltaIterator {
+        /** Snapshot delta sort batch size in pages count. */
+        public static final int DELTA_SORT_BATCH_SIZE = 500_000;
+
+        /** Delta index file IO. */
+        private final FileIO idxIo;
+
+        /** */
+        private int id;
+
+        /** */
+        private Iterator<Integer> sortedIter;
+
+        /** */
+        DeltaSortedIterator(File delta, FileIOFactory ioFactory) throws IOException {
+            super(delta, ioFactory);
+
+            File deltaIdx = partDeltaIndexFile(delta);
+
+            idxIo = pagesCnt > 0 ? IgniteSnapshotManager.this.ioFactory.create(deltaIdx, READ) : null;
+
+            assert deltaIdx.length() % 4 /* pageIdx */ == 0 : "Wrong delta index size: " + deltaIdx.length();
+            assert deltaIdx.length() / 4 == pagesCnt : "Wrong delta index pages count: " + deltaIdx.length();
+        }
+
+        /** {@inheritDoc} */
+        @Override public boolean hasNext() {
+            if (sortedIter == null || !sortedIter.hasNext())
+                advance();
+
+            return sortedIter.hasNext();
+        }
+
+        /** {@inheritDoc} */
+        @Override public ByteBuffer next() {
+            readPage((long)sortedIter.next() * pageSize);
+
+            return pageBuf;
+        }
+
+        /** */
+        private void advance() {
+            TreeMap<Integer, Integer> sorted = new TreeMap<>();
+
+            while (id < pagesCnt && sorted.size() < DELTA_SORT_BATCH_SIZE) {
+                pageBuf.clear();
+
+                try {
+                    idxIo.readFully(pageBuf);
+                }
+                catch (IOException e) {
+                    throw new IgniteException(e);
+                }
+
+                pageBuf.flip();
+
+                while (pageBuf.hasRemaining())
+                    sorted.put(pageBuf.getInt(), id++);
+            }
+
+            sortedIter = sorted.values().iterator();
+        }
+
+        /** {@inheritDoc} */
+        @Override public void close() throws IOException {
+            super.close();
+
+            U.closeQuiet(idxIo);
         }
     }
 
@@ -3544,5 +3720,12 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
             else
                 return new IgniteException("Snapshot has not been created", U.convertException(e));
         }
+    }
+
+    /** Factory. */
+    @FunctionalInterface
+    private interface Factory<E1, E2, R> {
+        /** @return An instance of {@link R}. */
+        R create(E1 e1, E2 e2) throws IOException;
     }
 }
