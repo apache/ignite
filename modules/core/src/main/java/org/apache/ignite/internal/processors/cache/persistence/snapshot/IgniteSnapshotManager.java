@@ -765,10 +765,11 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
                 "Another snapshot operation in progress [req=" + req + ", curr=" + clusterSnpReq + ']'));
         }
 
-        clusterSnpReq = req;
+        if (!CU.baselineNode(cctx.localNode(), cctx.kernalContext().state().clusterState())) {
+            clusterSnpReq = req;
 
-        if (!CU.baselineNode(cctx.localNode(), cctx.kernalContext().state().clusterState()))
             return new GridFinishedFuture<>();
+        }
 
         Set<UUID> leftNodes = new HashSet<>(req.nodes());
         leftNodes.removeAll(F.viewReadOnly(cctx.discovery().serverNodes(AffinityTopologyVersion.NONE),
