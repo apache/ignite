@@ -46,10 +46,10 @@ public class DataStorageMetricsImpl implements DataStorageMetricsMXBean {
     private final HitRateMetric walWritingRate;
 
     /** */
-    private final HitRateMetric walFsyncTimeDuration;
+    private final HitRateMetric walFsyncDuration;
 
     /** */
-    private final HitRateMetric walFsyncTimeNum;
+    private final HitRateMetric walFsyncNum;
 
     /** */
     private final HitRateMetric walBuffPollSpinsNum;
@@ -187,25 +187,28 @@ public class DataStorageMetricsImpl implements DataStorageMetricsMXBean {
         MetricRegistry mreg = mmgr.registry(DATASTORAGE_METRIC_PREFIX);
 
         walLoggingRate = mreg.hitRateMetric("WalLoggingRate",
-            "Average number of WAL records per second written during the last time interval.",
+            "Average number of WAL records written per second. " +
+                "The rate is calculated over the configured time interval.",
             rateTimeInterval,
             subInts);
 
         walWritingRate = mreg.hitRateMetric(
             "WalWritingRate",
-            "Average number of bytes per second written during the last time interval.",
+            "Average number of bytes written to WAL per second. " +
+                "The rate is calculated over the configured time interval.",
             rateTimeInterval,
             subInts);
 
-        walFsyncTimeDuration = mreg.hitRateMetric(
-            "WalFsyncTimeDuration",
-            "Total duration of fsync",
+        walFsyncDuration = mreg.hitRateMetric(
+            "WalFsyncDuration",
+            "Total time operations spent in the fsync phase writing WAL records to the disk " +
+                "since the start of the node in milliseconds.",
             rateTimeInterval,
             subInts);
 
-        walFsyncTimeNum = mreg.hitRateMetric(
-            "WalFsyncTimeNum",
-            "Total count of fsync",
+        walFsyncNum = mreg.hitRateMetric(
+            "WalFsyncNum",
+            "Total number of fsync invocations for writing WAL records to the disk since the start of the node.",
             rateTimeInterval,
             subInts);
 
@@ -216,31 +219,31 @@ public class DataStorageMetricsImpl implements DataStorageMetricsMXBean {
             subInts);
 
         lastCpBeforeLockDuration = mreg.longMetric("LastCheckpointBeforeLockDuration",
-            "Duration of the checkpoint action before taken write lock in milliseconds.");
+            "Time the last checkpoint spent before taking the write lock in milliseconds.");
 
         lastCpLockWaitDuration = mreg.longMetric("LastCheckpointLockWaitDuration",
-            "Duration of the checkpoint lock wait in milliseconds.");
+            "Duration of the checkpoint lock wait phase of the last completed checkpoint in milliseconds.");
 
         lastCpListenersExecuteDuration = mreg.longMetric("LastCheckpointListenersExecuteDuration",
             "Duration of the checkpoint execution listeners under write lock in milliseconds.");
 
         lastCpMarkDuration = mreg.longMetric("LastCheckpointMarkDuration",
-            "Duration of the checkpoint mark in milliseconds.");
+            "Duration of the mark phase of the last completed checkpoint in milliseconds.");
 
         lastCpLockHoldDuration = mreg.longMetric("LastCheckpointLockHoldDuration",
-            "Duration of the checkpoint lock hold in milliseconds.");
+            "Time the checkpoint lock was held during last completed checkpoint in milliseconds.");
 
         lastCpPagesWriteDuration = mreg.longMetric("LastCheckpointPagesWriteDuration",
-            "Duration of the checkpoint pages write in milliseconds.");
+            "Duration of the checkpoint pages write phase of the last completed checkpoint in milliseconds.");
 
         lastCpDuration = mreg.longMetric("LastCheckpointDuration",
-            "Duration of the last checkpoint in milliseconds.");
+            "Duration of the last completed checkpoint in milliseconds.");
 
         lastCpStart = mreg.longMetric("LastCheckpointStart",
-            "Start timestamp of the last checkpoint.");
+            "Start timestamp of the last completed checkpoint.");
 
         lastCpFsyncDuration = mreg.longMetric("LastCheckpointFsyncDuration",
-            "Duration of the sync phase of the last checkpoint in milliseconds.");
+            "Duration of the fsync phase of the last completed checkpoint in milliseconds.");
 
         lastCpWalRecordFsyncDuration = mreg.longMetric("LastCheckpointWalRecordFsyncDuration",
             "Duration of the WAL fsync after logging CheckpointRecord on the start of the last checkpoint " +
@@ -253,25 +256,25 @@ public class DataStorageMetricsImpl implements DataStorageMetricsMXBean {
             "Duration of splitting and sorting checkpoint pages of the last checkpoint in milliseconds.");
 
         lastCpTotalPages = mreg.longMetric("LastCheckpointTotalPagesNumber",
-            "Total number of pages written during the last checkpoint.");
+            "Total number of pages written during the last completed checkpoint.");
 
         lastCpDataPages = mreg.longMetric("LastCheckpointDataPagesNumber",
-            "Total number of data pages written during the last checkpoint.");
+            "Total number of data pages written during the last completed checkpoint.");
 
         lastCpCowPages = mreg.longMetric("LastCheckpointCopiedOnWritePagesNumber",
-            "Number of pages copied to a temporary checkpoint buffer during the last checkpoint.");
+            "Number of pages copied to a temporary checkpoint buffer during the last completed checkpoint.");
 
         lastWalSegmentRollOverTime = mreg.longMetric("WalLastRollOverTime",
-            "Time of the last WAL segment rollover.");
+            "Time of the last WAL segment rollover in milliseconds.");
 
         totalCheckpointTime = mreg.longMetric("CheckpointTotalTime",
-            "Total duration of checkpoint");
+            "Total duration of checkpoints since the start of the node in milliseconds.");
 
         storageSize = mreg.longMetric("StorageSize",
-            "Storage space allocated, in bytes.");
+            "Amount of space occupied by cache data on disk in bytes.");
 
         sparseStorageSize = mreg.longMetric("SparseStorageSize",
-            "Storage space allocated adjusted for possible sparsity, in bytes.");
+            "Amount of space occupied by cache data on disk adjusted for possible sparsity in bytes.");
 
         mreg.register("WalArchiveSegments",
             this::getWalArchiveSegments,
@@ -279,7 +282,7 @@ public class DataStorageMetricsImpl implements DataStorageMetricsMXBean {
 
         mreg.register("WalTotalSize",
             this::getWalTotalSize,
-            "Total size in bytes for storage wal files.");
+            "Total size of WAL files in bytes.");
 
         long[] cpBounds = new long[] {100, 500, 1000, 5000, 30000};
 
@@ -359,12 +362,12 @@ public class DataStorageMetricsImpl implements DataStorageMetricsMXBean {
         if (!metricsEnabled)
             return 0;
 
-        long numRate = walFsyncTimeNum.value();
+        long numRate = walFsyncNum.value();
 
         if (numRate == 0)
             return 0;
 
-        return (float)walFsyncTimeDuration.value() / numRate;
+        return (float) walFsyncDuration.value() / numRate;
     }
 
     /** {@inheritDoc} */
@@ -820,8 +823,8 @@ public class DataStorageMetricsImpl implements DataStorageMetricsMXBean {
     public void onFsync(long nanoTime) {
         long microseconds = nanoTime / 1_000;
 
-        walFsyncTimeDuration.add(microseconds);
-        walFsyncTimeNum.increment();
+        walFsyncDuration.add(microseconds);
+        walFsyncNum.increment();
     }
 
     /**
@@ -839,8 +842,8 @@ public class DataStorageMetricsImpl implements DataStorageMetricsMXBean {
         walWritingRate.reset(rateTimeInterval, subInts);
         walBuffPollSpinsNum.reset(rateTimeInterval, subInts);
 
-        walFsyncTimeDuration.reset(rateTimeInterval, subInts);
-        walFsyncTimeNum.reset(rateTimeInterval, subInts);
+        walFsyncDuration.reset(rateTimeInterval, subInts);
+        walFsyncNum.reset(rateTimeInterval, subInts);
     }
 
     /** {@inheritDoc} */

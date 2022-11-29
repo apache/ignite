@@ -406,34 +406,34 @@ Register name: `io.datastorage`
 |CheckpointMarkHistogram| histogram |   Histogram of checkpoint mark duration in milliseconds.
 |CheckpointPagesWriteHistogram| histogram |   Histogram of checkpoint pages write duration in milliseconds.
 |CheckpointSplitAndSortPagesHistogram| histogram |   Histogram of splitting and sorting checkpoint pages duration in milliseconds.
-|CheckpointTotalTime| long |   Total duration of checkpoint
+|CheckpointTotalTime| long | Total duration of checkpoints since the start of the node in milliseconds.
 |CheckpointWalRecordFsyncHistogram| histogram |   Histogram of the WAL fsync after logging ChTotalNodeseckpointRecord on begin of checkpoint duration in milliseconds.
 |CheckpointWriteEntryHistogram| histogram |   Histogram of entry buffer writing to file duration in milliseconds.
-|LastCheckpointBeforeLockDuration|  long |   Duration of the checkpoint action before taken write lock in milliseconds.
-|LastCheckpointCopiedOnWritePagesNumber|  long |   Number of pages copied to a temporary checkpoint buffer during the last checkpoint.
-|LastCheckpointDataPagesNumber|   long  |  Total number of data pages written during the last checkpoint.
-|LastCheckpointDuration | long  |  Duration of the last checkpoint in milliseconds.
-|LastCheckpointFsyncDuration| long  |  Duration of the sync phase of the last checkpoint in milliseconds.
+|LastCheckpointBeforeLockDuration|  long | Time the last checkpoint spent before taking the write lock in milliseconds.
+|LastCheckpointCopiedOnWritePagesNumber|  long | Number of pages copied to a temporary checkpoint buffer during the last completed checkpoint.
+|LastCheckpointDataPagesNumber|   long  | Total number of data pages written during the last completed checkpoint.
+|LastCheckpointDuration | long  | Duration of the last completed checkpoint in milliseconds.
+|LastCheckpointFsyncDuration| long  | Duration of the fsync phase of the last completed checkpoint in milliseconds.
 |LastCheckpointListenersExecuteDuration|  long|    Duration of the checkpoint execution listeners under write lock in milliseconds.
-|LastCheckpointLockHoldDuration|  long|    Duration of the checkpoint lock hold in milliseconds.
-|LastCheckpointLockWaitDuration|  long|    Duration of the checkpoint lock wait in milliseconds.
-|LastCheckpointMarkDuration | long  |  Duration of the checkpoint mark in milliseconds.
-|LastCheckpointPagesWriteDuration|    long|    Duration of the checkpoint pages write in milliseconds.
-|LastCheckpointTotalPagesNumber|  long|    Total number of pages written during the last checkpoint.
+|LastCheckpointLockHoldDuration|  long| Time the checkpoint lock was held during last completed checkpoint in milliseconds.
+|LastCheckpointLockWaitDuration|  long| Duration of the checkpoint lock wait phase of the last completed checkpoint in milliseconds.
+|LastCheckpointMarkDuration | long  | Duration of the mark phase of the last completed checkpoint in milliseconds.
+|LastCheckpointPagesWriteDuration|    long| Duration of the checkpoint pages write phase of the last completed checkpoint in milliseconds.
+|LastCheckpointTotalPagesNumber|  long| Total number of pages written during the last completed checkpoint.
 |LastCheckpointSplitAndSortPagesDuration|  long|    Duration of splitting and sorting checkpoint pages of the last checkpoint in milliseconds.
-|LastCheckpointStart|  long|    Start timestamp of the last checkpoint.
+|LastCheckpointStart|  long| Start timestamp of the last completed checkpoint.
 |LastCheckpointWalRecordFsyncDuration|  long|    Duration of the WAL fsync after logging CheckpointRecord on the start of the last checkpoint in milliseconds.
 |LastCheckpointWriteEntryDuration|  long|    Duration of entry buffer writing to file of the last checkpoint in milliseconds.
-|SparseStorageSize  | long|    Storage space allocated adjusted for possible sparsity, in bytes.
-|StorageSize | long|    Storage space allocated, in bytes.
+|SparseStorageSize  | long| Amount of space occupied by cache data on disk adjusted for possible sparsity in bytes.
+|StorageSize | long| Amount of space occupied by cache data on disk in bytes.
 |WalArchiveSegments | integer| Current number of WAL segments in the WAL archive.
 |WalBuffPollSpinsRate|    long  |  WAL buffer poll spins number over the last time interval.
-|WalFsyncTimeDuration |   long |   Total duration of fsync
-|WalFsyncTimeNum |long  |  Total count of fsync
-|WalLastRollOverTime |long |   Time of the last WAL segment rollover.
-|WalLoggingRate | long|    Average number of WAL records per second written during the last time interval.
-|WalTotalSize|    long  |  Total size in bytes for storage wal files.
-|WalWritingRate|  long  |  Average number of bytes per second written during the last time interval.
+|WalFsyncDuration |   long | Total time operations spent in the fsync phase writing WAL records to the disk since the start of the node in milliseconds.
+|WalFsyncNum |long  | Total number of fsync invocations for writing WAL records to the disk since the start of the node.
+|WalLastRollOverTime |long | Time of the last WAL segment rollover in milliseconds.
+|WalLoggingRate | long| Average number of WAL records written per second. The rate is calculated over the configured time interval.
+|WalTotalSize|    long  | Total size of WAL files in bytes.
+|WalWritingRate|  long  | Average number of bytes written to WAL per second. The rate is calculated over the configured time interval.
 |===
 
 
