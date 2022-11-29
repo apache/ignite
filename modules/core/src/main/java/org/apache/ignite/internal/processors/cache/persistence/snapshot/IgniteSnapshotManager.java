@@ -1042,7 +1042,7 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
 
                 snpReq.meta().warnings(Collections.unmodifiableList(req.warnings()));
 
-                storeWarnings(req);
+                storeWarnings(snpReq);
             }
 
             removeLastMetaStorageKey();
