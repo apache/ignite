@@ -120,7 +120,7 @@ public class PartitionUpdateCounterTrackingImpl implements PartitionUpdateCounte
     }
 
     /** */
-    protected synchronized long highestAppliedCounter() {
+    @Override public synchronized long highestAppliedCounter() {
         return queue.isEmpty() ? lwm.get() : queue.lastEntry().getValue().absolute();
     }
 
