@@ -558,7 +558,7 @@ public class GridDhtPartitionDemander {
 
                 U.error(log, "Rebalancing routine has failed, some partitions could be unavailable for reading" +
                     " [" + demandRoutineInfo(nodeId, supplyMsg) +
-                    ", unavailablePartitions=" + S.compact(unstableParts) + ']', msgExc);
+                    ", unavailablePartitions=" + S.toStringSortedDistinct(unstableParts) + ']', msgExc);
 
                 fut.error(nodeId);
 
@@ -1431,8 +1431,8 @@ public class GridDhtPartitionDemander {
                     log.info("Starting rebalance routine [" + grp.cacheOrGroupName() +
                         ", topVer=" + topVer +
                         ", supplier=" + supplierNode.id() +
-                        ", fullPartitions=" + S.compact(parts.fullSet()) +
-                        ", histPartitions=" + S.compact(parts.historicalSet()) +
+                        ", fullPartitions=" + S.toStringSortedDistinct(parts.fullSet()) +
+                        ", histPartitions=" + S.toStringSortedDistinct(parts.historicalSet()) +
                         ", rebalanceId=" + rebalanceId + ']');
 
                 ctx.io().sendOrderedMessage(supplierNode, msg.topic(),

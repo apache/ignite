@@ -19,6 +19,7 @@ package org.apache.ignite.testsuites;
 
 import org.apache.ignite.internal.processors.cache.persistence.snapshot.EncryptedSnapshotTest;
 import org.apache.ignite.internal.processors.cache.persistence.snapshot.IgniteClusterSnapshotCheckTest;
+import org.apache.ignite.internal.processors.cache.persistence.snapshot.IgniteClusterSnapshotDeltaTest;
 import org.apache.ignite.internal.processors.cache.persistence.snapshot.IgniteClusterSnapshotHandlerTest;
 import org.apache.ignite.internal.processors.cache.persistence.snapshot.IgniteClusterSnapshotRestoreSelfTest;
 import org.apache.ignite.internal.processors.cache.persistence.snapshot.IgniteClusterSnapshotSelfTest;
@@ -50,7 +51,8 @@ import org.junit.runners.Suite;
     EncryptedSnapshotTest.class,
     IgniteClusterSnapshotWalRecordTest.class,
     IgniteClusterSnapshotStreamerTest.class,
-    IgniteSnapshotConsistencyTest.class
+    IgniteSnapshotConsistencyTest.class,
+    IgniteClusterSnapshotDeltaTest.class
 })
 public class IgniteSnapshotTestSuite {
 }

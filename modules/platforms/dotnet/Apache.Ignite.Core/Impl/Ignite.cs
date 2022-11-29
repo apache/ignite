@@ -975,14 +975,6 @@ namespace Apache.Ignite.Core.Impl
         }
 
         /** <inheritdoc /> */
-#pragma warning disable 618
-        public IPersistentStoreMetrics GetPersistentStoreMetrics()
-        {
-            return _prj.GetPersistentStoreMetrics();
-        }
-#pragma warning restore 618
-
-        /** <inheritdoc /> */
         public ICollection<IDataRegionMetrics> GetDataRegionMetrics()
         {
             return _prj.GetDataRegionMetrics();
