@@ -98,12 +98,6 @@ public class DataStorageMetricsImpl {
     /** */
     private final AtomicLongMetric lastCpCowPages;
 
-    /** */
-    private final long rateTimeInterval;
-
-    /** */
-    private final int subInts;
-
     /**
      * @deprecated Will be removed in upcoming releases.
      */
@@ -183,8 +177,6 @@ public class DataStorageMetricsImpl {
         int subInts
     ) {
         this.metricsEnabled = metricsEnabled;
-        this.rateTimeInterval = rateTimeInterval;
-        this.subInts = subInts;
 
         MetricRegistry mreg = mmgr.registry(DATASTORAGE_METRIC_PREFIX);
 
@@ -275,18 +267,12 @@ public class DataStorageMetricsImpl {
         sparseStorageSize = mreg.longMetric("SparseStorageSize",
             "Storage space allocated adjusted for possible sparsity, in bytes.");
 
-        mreg.register("WalArchiveSegments", () -> {
-            IgniteWriteAheadLogManager walMgr = wal;
-
-            return walMgr == null ? 0 : walMgr.walArchiveSegments();
-        }, "Current number of WAL segments in the WAL archive.");
+        mreg.register("WalArchiveSegments",
+            this::walArchiveSegments,
+            "Current number of WAL segments in the WAL archive.");
 
         mreg.register("WalTotalSize",
-            () -> {
-                IgniteOutClosure<Long> walSize = walSizeProvider;
-
-                return walSize != null ? walSize.apply() : 0;
-            },
+            this::walTotalSize,
             "Total size in bytes for storage wal files.");
 
         long[] cpBounds = new long[] {100, 500, 1000, 5000, 30000};
@@ -366,10 +352,23 @@ public class DataStorageMetricsImpl {
         mreg.register("CheckpointBufferSize", this::checkpointBufferSize, "Checkpoint buffer size in bytes.");
     }
 
+    /** @return Current number of WAL segments in the WAL archive. */
+    private int walArchiveSegments() {
+        if (!metricsEnabled)
+            return 0;
+
+        IgniteWriteAheadLogManager walMgr = this.wal;
+
+        return walMgr == null ? 0 : walMgr.walArchiveSegments();
+    }
+
     /**
      * @return The average WAL fsync duration in microseconds over the last time interval.
      */
     private float walFsyncTimeAverage() {
+        if (!metricsEnabled)
+            return 0;
+
         long numRate = walFsyncTimeNum.value();
 
         if (numRate == 0)
@@ -378,12 +377,25 @@ public class DataStorageMetricsImpl {
         return (float)walFsyncTimeDuration.value() / numRate;
     }
 
+    /** @return Total size in bytes for storage wal files. */
+    private long walTotalSize() {
+        if (!metricsEnabled)
+            return 0;
+
+        IgniteOutClosure<Long> walSize = this.walSizeProvider;
+
+        return walSize != null ? walSize.apply() : 0;
+    }
+
     /**
      * Total dirty pages for the next checkpoint.
      *
      * @return  Total dirty pages for the next checkpoint.
      */
     private long dirtyPages() {
+        if (!metricsEnabled)
+            return 0;
+
         Collection<DataRegionMetrics> regionMetrics0 = regionMetrics;
 
         if (F.isEmpty(regionMetrics0))
@@ -403,6 +415,9 @@ public class DataStorageMetricsImpl {
      * @return The number of read pages from last restart.
      */
     private long pagesRead() {
+        if (!metricsEnabled)
+            return 0;
+
         Collection<DataRegionMetrics> regionMetrics0 = regionMetrics;
 
         if (F.isEmpty(regionMetrics0))
@@ -422,6 +437,9 @@ public class DataStorageMetricsImpl {
      * @return The number of written pages from last restart.
      */
     private long pagesWritten() {
+        if (!metricsEnabled)
+            return 0;
+
         Collection<DataRegionMetrics> regionMetrics0 = regionMetrics;
 
         if (F.isEmpty(regionMetrics0))
@@ -441,6 +459,9 @@ public class DataStorageMetricsImpl {
      * @return The number of replaced pages from last restart.
      */
     private long pagesReplaced() {
+        if (!metricsEnabled)
+            return 0;
+
         Collection<DataRegionMetrics> regionMetrics0 = regionMetrics;
 
         if (F.isEmpty(regionMetrics0))
@@ -460,6 +481,9 @@ public class DataStorageMetricsImpl {
      * @return Total offheap size in bytes.
      */
     private long offHeapSize() {
+        if (!metricsEnabled)
+            return 0;
+
         Collection<DataRegionMetrics> regionMetrics0 = regionMetrics;
 
         if (F.isEmpty(regionMetrics0))
@@ -479,6 +503,9 @@ public class DataStorageMetricsImpl {
      * @return Total used offheap size in bytes.
      */
     private long offheapUsedSize() {
+        if (!metricsEnabled)
+            return 0;
+
         Collection<DataRegionMetrics> regionMetrics0 = regionMetrics;
 
         if (F.isEmpty(regionMetrics0))
@@ -498,6 +525,9 @@ public class DataStorageMetricsImpl {
      * @return Total size of memory allocated in bytes.
      */
     private long totalAllocatedSize() {
+        if (!metricsEnabled)
+            return 0;
+
         Collection<DataRegionMetrics> regionMetrics0 = regionMetrics;
 
         if (F.isEmpty(regionMetrics0))
@@ -517,6 +547,9 @@ public class DataStorageMetricsImpl {
      * @return Checkpoint buffer size in pages.
      */
     private long usedCheckpointBufferPages() {
+        if (!metricsEnabled)
+            return 0;
+
         Collection<DataRegionMetrics> regionMetrics0 = regionMetrics;
 
         if (F.isEmpty(regionMetrics0))
@@ -536,6 +569,9 @@ public class DataStorageMetricsImpl {
      * @return Checkpoint buffer size in bytes.
      */
     private long usedCheckpointBufferSize() {
+        if (!metricsEnabled)
+            return 0;
+
         Collection<DataRegionMetrics> regionMetrics0 = regionMetrics;
 
         if (F.isEmpty(regionMetrics0))
@@ -555,6 +591,9 @@ public class DataStorageMetricsImpl {
      * @return Checkpoint buffer size in bytes.
      */
     private long checkpointBufferSize() {
+        if (!metricsEnabled)
+            return 0;
+
         Collection<DataRegionMetrics> regionMetrics0 = regionMetrics;
 
         if (F.isEmpty(regionMetrics0))
@@ -586,6 +625,9 @@ public class DataStorageMetricsImpl {
      *
      */
     public void onWallRollOver() {
+        if (!metricsEnabled)
+            return;
+
         lastWalSegmentRollOverTime.value(U.currentTimeMillis());
     }
 
@@ -685,6 +727,9 @@ public class DataStorageMetricsImpl {
      * @param size Record size in bytes.
      */
     public void onWalRecordLogged(long size) {
+        if (!metricsEnabled)
+            return;
+
         walLoggingRate.increment();
 
         walWrittenBytes.add(size);
@@ -694,6 +739,9 @@ public class DataStorageMetricsImpl {
      * @param size Size written.
      */
     public void onWalBytesWritten(int size) {
+        if (!metricsEnabled)
+            return;
+
         walWritingRate.add(size);
     }
 
@@ -701,6 +749,9 @@ public class DataStorageMetricsImpl {
      * @param nanoTime Fsync nano time.
      */
     public void onFsync(long nanoTime) {
+        if (!metricsEnabled)
+            return;
+
         long microseconds = nanoTime / 1_000;
 
         walFsyncTimeDuration.add(microseconds);
@@ -711,17 +762,10 @@ public class DataStorageMetricsImpl {
      * @param num Number.
      */
     public void onBuffPollSpin(int num) {
+        if (!metricsEnabled)
+            return;
+
         walBuffPollSpinsNum.add(num);
-    }
-
-    /** */
-    private void resetRates() {
-        walLoggingRate.reset(rateTimeInterval, subInts);
-        walWritingRate.reset(rateTimeInterval, subInts);
-        walBuffPollSpinsNum.reset(rateTimeInterval, subInts);
-
-        walFsyncTimeDuration.reset(rateTimeInterval, subInts);
-        walFsyncTimeNum.reset(rateTimeInterval, subInts);
     }
 
     /**
@@ -730,6 +774,9 @@ public class DataStorageMetricsImpl {
      * @param size Size of the compressed segment in bytes.
      */
     public void onWalSegmentCompressed(long size) {
+        if (!metricsEnabled)
+            return;
+
         walCompressedBytes.add(size);
     }
 }
