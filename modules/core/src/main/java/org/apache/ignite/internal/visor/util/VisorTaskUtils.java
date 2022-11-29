@@ -35,6 +35,8 @@ import java.nio.file.Files;
 import java.nio.file.LinkOption;
 import java.nio.file.Path;
 import java.nio.file.Paths;
+import java.text.DecimalFormat;
+import java.text.DecimalFormatSymbols;
 import java.time.Instant;
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -43,10 +45,13 @@ import java.util.Collections;
 import java.util.Comparator;
 import java.util.HashMap;
 import java.util.List;
+import java.util.Locale;
 import java.util.Map;
+import java.util.Objects;
 import java.util.SortedMap;
 import java.util.concurrent.ConcurrentMap;
 import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.stream.Collectors;
 import java.util.zip.ZipEntry;
 import java.util.zip.ZipOutputStream;
 import javax.cache.configuration.Factory;
@@ -68,6 +73,7 @@ import org.apache.ignite.internal.visor.event.VisorGridEvent;
 import org.apache.ignite.internal.visor.event.VisorGridEventsLost;
 import org.apache.ignite.internal.visor.file.VisorFileBlock;
 import org.apache.ignite.internal.visor.log.VisorLogFile;
+import org.apache.ignite.internal.visor.node.VisorSpiDescription;
 import org.apache.ignite.lang.IgniteClosure;
 import org.apache.ignite.lang.IgnitePredicate;
 import org.apache.ignite.spi.eventstorage.NoopEventStorageSpi;
@@ -89,13 +95,23 @@ import static org.apache.ignite.events.EventType.EVT_TASK_FAILED;
 import static org.apache.ignite.events.EventType.EVT_TASK_FINISHED;
 import static org.apache.ignite.events.EventType.EVT_TASK_STARTED;
 import static org.apache.ignite.events.EventType.EVT_TASK_TIMEDOUT;
+import static org.apache.ignite.internal.visor.util.VisorTaskUtils.VisorMemoryUnit.GIGABYTES;
+import static org.apache.ignite.internal.visor.util.VisorTaskUtils.VisorMemoryUnit.KILOBYTES;
+import static org.apache.ignite.internal.visor.util.VisorTaskUtils.VisorMemoryUnit.MEGABYTES;
+import static org.apache.ignite.internal.visor.util.VisorTaskUtils.VisorMemoryUnit.TERABYTES;
 
 /**
  * Contains utility methods for Visor tasks and jobs.
  */
 public class VisorTaskUtils {
+    /** Display value for `null`. */
+    public static final String NA = "<n/a>";
+
     /** Default substitute for {@code null} names. */
     private static final String DFLT_EMPTY_NAME = "<default>";
+
+    /** KB format. */
+    private static final DecimalFormat KB_FMT = new DecimalFormat("###,###,###,###,###", new DecimalFormatSymbols(Locale.US));
 
     /** Throttle count for lost events. */
     private static final int EVENTS_LOST_THROTTLE = 10;
@@ -1261,4 +1277,152 @@ public class VisorTaskUtils {
 
         return proxy instanceof IgniteCacheProxyImpl && ((IgniteCacheProxyImpl)proxy).isRestarting();
     }
+
+    /** */
+    public static String bool2Str(boolean bool) {
+        if (bool)
+            return "on";
+        else
+            return "off";
+    }
+
+    /** */
+    public static String spiClass(VisorSpiDescription spi) {
+        if (spi != null)
+            return (String)spi.getFieldDescriptions().getOrDefault("Class Name", NA);
+        else
+            return NA;
+    }
+
+    /** */
+    public static String spisClass(VisorSpiDescription[] spis) {
+        return Arrays.stream(spis).map(VisorTaskUtils::spiClass).collect(Collectors.joining(", ", "[", "]"));
+    }
+
+    /**
+     * Gets a non-`null` value for given parameter.
+     *
+     * @param obj Parameter.
+     */
+    public static String safe(Object obj) {
+        return U.toStringSafe(obj, NA);
+    }
+
+    /**
+     * Gets a non-`null` value for given parameter.
+     *
+     * @param obj  Parameter.
+     * @param dflt Value to return if `a` is `null`.
+     */
+    public static String safe(Object obj, Object dflt) {
+        return U.toStringSafe(obj, U.toStringSafe(dflt));
+    }
+
+    /**
+     * Splits a string by path separator if it's longer than 100 characters.
+     *
+     * @param value String.
+     * @return List of strings.
+     */
+    public static List<String> compactProperty(String name, String value) {
+        String ps = System.getProperty("path.separator");
+
+        // Split all values having path separator into multiple lines (with few exceptions...).
+        List<String> lst;
+
+        if (!Objects.equals(name, "path.separator") && value.contains(ps) && !value.contains("http:") && value.length() > 80)
+            lst = Arrays.asList(value.split(ps));
+        else
+            lst = Collections.singletonList(value);
+
+        // Replace whitespaces
+        return lst.stream()
+            .map(v -> v.replaceAll("\n", "<NL>").replaceAll("\r", "<CR>").replaceAll("\t", "<TAB>"))
+            .collect(Collectors.toList());
+    }
+
+    /**
+     * Detect memory measure units: from BYTES to TERABYTES.
+     *
+     * @param m Memory in bytes.
+     * @return Memory measure units.
+     */
+    private static VisorMemoryUnit memoryUnit(long m) {
+        if (TERABYTES.has(m))
+            return TERABYTES;
+        else if (GIGABYTES.has(m))
+            return GIGABYTES;
+        else if (MEGABYTES.has(m))
+            return MEGABYTES;
+        else if (KILOBYTES.has(m))
+            return KILOBYTES;
+        else
+            return VisorMemoryUnit.BYTES;
+    }
+
+    /**
+     * Returns string representation of the memory.
+     *
+     * @param n Memory size.
+     */
+    public static String formatMemory(long n) {
+        if (n > 0) {
+            VisorMemoryUnit u = memoryUnit(n);
+
+            return KB_FMT.format(u.toUnits(n)) + u.name;
+        }
+        else
+            return "0";
+    }
+
+    /** */
+    enum VisorMemoryUnit {
+        /** */
+        BYTES("b", 1),
+
+        /** */
+        KILOBYTES("kb", U.KB),
+
+        /** */
+        MEGABYTES("mb", U.MB),
+
+        /** */
+        GIGABYTES("gb", U.GB),
+
+        /** */
+        TERABYTES("tb", U.TB);
+
+        /** */
+        VisorMemoryUnit(String name, long base) {
+            this.name = name;
+            this.base = base;
+        }
+
+        /** */
+        private final String name;
+
+        /** */
+        private final long base;
+
+        /**
+         * Convert memory in bytes to memory in units.
+         *
+         * @param m Memory in bytes.
+         * @return Memory in units.
+         */
+        public double toUnits(long m) {
+            return ((double)m) / base;
+        }
+
+        /**
+         * Check if memory fits measure units.
+         *
+         * @param m Memory in bytes.
+         * @return `True` if memory is more than `1` after converting bytes to units.
+         */
+        public boolean has(Long m) {
+            return toUnits(m) >= 1;
+        }
+    }
+
 }

@@ -27,6 +27,7 @@ import org.apache.ignite.events.EventType._
 import org.apache.ignite.events.{DiscoveryEvent, Event}
 import org.apache.ignite.internal.util.scala.impl
 import org.apache.ignite.internal.util.{IgniteUtils => U}
+import org.apache.ignite.internal.visor.util.VisorTaskUtils.NA
 import org.apache.ignite.lang.IgnitePredicate
 import org.apache.ignite.visor.VisorTag
 import org.apache.ignite.visor.commands.alert.VisorAlertCommand._

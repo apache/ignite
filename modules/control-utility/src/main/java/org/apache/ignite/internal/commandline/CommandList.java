@@ -18,6 +18,7 @@
 package org.apache.ignite.internal.commandline;
 
 import org.apache.ignite.internal.commandline.cache.CacheCommands;
+import org.apache.ignite.internal.commandline.config.NodeConfigCommand;
 import org.apache.ignite.internal.commandline.consistency.ConsistencyCommand;
 import org.apache.ignite.internal.commandline.diagnostic.DiagnosticCommand;
 import org.apache.ignite.internal.commandline.encryption.EncryptionCommands;
@@ -103,7 +104,10 @@ public enum CommandList {
     PERFORMANCE_STATISTICS("--performance-statistics", new PerformanceStatisticsCommand()),
 
     /** Command to check/repair consistency. */
-    CONSISTENCY("--consistency", new ConsistencyCommand());
+    CONSISTENCY("--consistency", new ConsistencyCommand()),
+
+    /** Command to print node config. */
+    CONFIG("--config", new NodeConfigCommand());
 
     /** Private values copy so there's no need in cloning it every time. */
     private static final CommandList[] VALUES = CommandList.values();

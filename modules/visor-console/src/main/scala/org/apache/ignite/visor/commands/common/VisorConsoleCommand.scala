@@ -17,7 +17,7 @@
 
 package org.apache.ignite.visor.commands.common
 
-import org.apache.ignite.visor.visor.NA
+import org.apache.ignite.internal.visor.util.VisorTaskUtils.NA
 import org.apache.ignite.visor.visor
 
 import scala.collection.JavaConversions._

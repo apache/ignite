@@ -210,14 +210,6 @@ class VisorConfigurationCommand extends VisorConsoleCommand {
 
         val spisT = VisorTextTable()
 
-        def spiClass(spi: VisorSpiDescription) = {
-            if (spi != null) spi.getFieldDescriptions.getOrElse("Class Name", NA) else NA
-        }
-
-        def spisClass(spis: Array[VisorSpiDescription]) = {
-            spis.map(spiClass).mkString("[", ", ", "]")
-        }
-
         val spisCfg = cfg.getSpis
 
         spisT += ("Discovery", spiClass(spisCfg.getDiscoverySpi))
@@ -381,29 +373,6 @@ class VisorConfigurationCommand extends VisorConsoleCommand {
             spT.render()
         } else
             println("\nNo system properties defined.")
-    }
-
-    /**
-     * Splits a string by path separator if it's longer than 100 characters.
-     *
-     * @param value String.
-     * @return List of strings.
-     */
-    private[this] def compactProperty(name: String, value: String): List[String] = {
-        val ps = System.getProperty("path.separator")
-
-        // Split all values having path separator into multiple lines (with few exceptions...).
-        val lst =
-            if (name != "path.separator" && value.indexOf(ps) != -1 && value.indexOf("http:") == -1 &&
-                value.length() > 80)
-                value.split(ps).toList
-            else
-                List(value)
-
-        // Replace whitespaces
-        lst.collect {
-            case v => v.replaceAll("\n", "<NL>").replaceAll("\r", "<CR>").replaceAll("\t", "<TAB>")
-        }
     }
 }
 

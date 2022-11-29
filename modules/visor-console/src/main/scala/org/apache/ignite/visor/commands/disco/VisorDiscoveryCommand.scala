@@ -22,6 +22,7 @@ import org.apache.ignite.events.EventType._
 import org.apache.ignite.internal.util.lang.{GridFunc => F}
 import org.apache.ignite.internal.util.scala.impl
 import org.apache.ignite.internal.util.{IgniteUtils => U}
+import org.apache.ignite.internal.visor.util.VisorTaskUtils.NA
 import org.apache.ignite.visor.VisorTag
 import org.apache.ignite.visor.commands.common.{VisorConsoleCommand, VisorTextTable}
 import org.apache.ignite.visor.visor._

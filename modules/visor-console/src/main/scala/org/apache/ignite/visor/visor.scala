@@ -167,9 +167,6 @@ object visor extends VisorTag {
     /** System line separator. */
     final val NL = System getProperty "line.separator"
 
-    /** Display value for `null`. */
-    final val NA = "<n/a>"
-
     /** */
     private var cmdLst: Seq[VisorCommandHolder] = Nil
 
@@ -1038,18 +1035,6 @@ object visor extends VisorTag {
     }
 
     /**
-     * Gets a non-`null` value for given parameter.
-     *
-     * @param a Parameter.
-     * @param dflt Value to return if `a` is `null`.
-     */
-    def safe(@Nullable a: Any, dflt: Any = NA): String = {
-        assert(dflt != null)
-
-        if (a != null) a.toString else dflt.toString
-    }
-
-    /**
      * Joins array elements to string.
      *
      * @param arr Array.
@@ -1058,14 +1043,6 @@ object visor extends VisorTag {
      */
     def arr2Str[T](arr: Array[T], dflt: Any = NA): String =
         if (arr != null && arr.length > 0) U.compact(arr.mkString(", ")) else dflt.toString
-
-    /**
-     * Converts `Boolean` to 'on'/'off' string.
-     *
-     * @param bool Boolean value.
-     * @return String.
-     */
-    def bool2Str(bool: Boolean): String = if (bool) "on" else "off"
 
     /**
      * Converts `java.lang.Boolean` to 'on'/'off' string.
@@ -1210,71 +1187,6 @@ object visor extends VisorTag {
      */
     def formatDate(date: Date): String =
         dateFmt.format(date)
-
-    /**
-     * Base class for memory units.
-     *
-     * @param name Unit name to display on screen.
-     * @param base Unit base to convert from bytes.
-     */
-    private[this] sealed abstract class VisorMemoryUnit(name: String, val base: Long) {
-        /**
-         * Convert memory in bytes to memory in units.
-         *
-         * @param m Memory in bytes.
-         * @return Memory in units.
-         */
-        def toUnits(m: Long): Double = m.toDouble / base
-
-        /**
-         * Check if memory fits measure units.
-         *
-         * @param m Memory in bytes.
-         * @return `True` if memory is more than `1` after converting bytes to units.
-         */
-        def has(m: Long): Boolean = toUnits(m) >= 1
-
-        override def toString: String = name
-    }
-
-    private[this] case object BYTES extends VisorMemoryUnit("b", 1)
-    private[this] case object KILOBYTES extends VisorMemoryUnit("kb", 1024L)
-    private[this] case object MEGABYTES extends VisorMemoryUnit("mb", 1024L * 1024L)
-    private[this] case object GIGABYTES extends VisorMemoryUnit("gb", 1024L * 1024L * 1024L)
-    private[this] case object TERABYTES extends VisorMemoryUnit("tb", 1024L * 1024L * 1024L * 1024L)
-
-    /**
-     * Detect memory measure units: from BYTES to TERABYTES.
-     *
-     * @param m Memory in bytes.
-     * @return Memory measure units.
-     */
-    private[this] def memoryUnit(m: Long): VisorMemoryUnit =
-        if (TERABYTES.has(m))
-            TERABYTES
-        else if (GIGABYTES.has(m))
-            GIGABYTES
-        else if (MEGABYTES.has(m))
-            MEGABYTES
-        else if (KILOBYTES.has(m))
-            KILOBYTES
-        else
-            BYTES
-
-    /**
-     * Returns string representation of the memory.
-     *
-     * @param n Memory size.
-     */
-    def formatMemory(n: Long): String = {
-        if (n > 0) {
-            val u = memoryUnit(n)
-
-            kbFmt.format(u.toUnits(n)) + u.toString
-        }
-        else
-            "0"
-    }
 
     /**
      * Returns string representation of the memory limit.
