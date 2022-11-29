@@ -40,9 +40,9 @@ import org.apache.ignite.internal.TestRecordingCommunicationSpi;
 import org.apache.ignite.internal.processors.datastreamer.DataStreamerRequest;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.G;
+import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.testframework.ListeningTestLogger;
 import org.apache.ignite.testframework.LogListener;
-import org.junit.Ignore;
 import org.junit.Test;
 
 import static org.apache.ignite.cluster.ClusterState.ACTIVE;
@@ -82,6 +82,8 @@ public class IgniteClusterSnapshotStreamerTest extends AbstractSnapshotSelfTest 
         nonBaseline = startGrid(G.allGrids().size());
 
         client = startClientGrid(G.allGrids().size());
+
+        grid(0).createCache(dfltCacheCfg);
     }
 
     /** {@inheritDoc} */
@@ -96,6 +98,8 @@ public class IgniteClusterSnapshotStreamerTest extends AbstractSnapshotSelfTest 
         inMemDr.setName(INMEM_DATA_REGION);
         inMemDr.setPageEvictionMode(DataPageEvictionMode.RANDOM_2_LRU);
         cfg.getDataStorageConfiguration().setDataRegionConfigurations(inMemDr);
+
+        cfg.setCacheConfiguration(null);
 
         return cfg;
     }
@@ -119,10 +123,34 @@ public class IgniteClusterSnapshotStreamerTest extends AbstractSnapshotSelfTest 
 
     /**
      * Tests snapshot warning when streamer is working during snapshot creation. Default receiver. Handling from
+     * non-baseline coordinator node.
+     */
+    @Test
+    //@Ignore("https://issues.apache.org/jira/browse/IGNITE-18259")
+    public void testStreamerWhileSnapshotDefaultNotBaselineCoordinator() throws Exception {
+        grid(0).destroyCache(dfltCacheCfg.getName());
+
+        stopGrid(0);
+        stopGrid(1);
+        stopGrid(2);
+
+        Ignite g = startGrid(getTestIgniteInstanceName(0));
+        startGrid(getTestIgniteInstanceName(1));
+        startGrid(getTestIgniteInstanceName(2));
+
+        g.createCache(dfltCacheCfg);
+
+        assert U.isLocalNodeCoordinator(nonBaseline.context().discovery());
+
+        doTestDataStreamerWhileSnapshot(nonBaseline, false);
+    }
+
+    /**
+     * Tests snapshot warning when streamer is working during snapshot creation. Default receiver. Handling from
      * non-baseline node.
      */
     @Test
-    @Ignore("https://issues.apache.org/jira/browse/IGNITE-18259")
+    //@Ignore("https://issues.apache.org/jira/browse/IGNITE-18259")
     public void testStreamerWhileSnapshotDefaultNotBaseline() throws Exception {
         doTestDataStreamerWhileSnapshot(nonBaseline, false);
     }

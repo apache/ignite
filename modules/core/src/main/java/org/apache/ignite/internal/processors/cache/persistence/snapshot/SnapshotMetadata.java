@@ -247,7 +247,7 @@ public class SnapshotMetadata implements Serializable {
      * @param warnings Snapshot creation warnings.
      */
     public void warnings(List<String> warnings) {
-        assert this.warnings == null;
+        assert this.warnings == null : "Snapshot warnings are already set. No rewriting is supposed.";
 
         this.warnings = warnings;
     }

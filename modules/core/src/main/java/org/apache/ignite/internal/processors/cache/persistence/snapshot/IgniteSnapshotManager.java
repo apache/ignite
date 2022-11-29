@@ -34,6 +34,7 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.nio.file.SimpleFileVisitor;
+import java.nio.file.StandardCopyOption;
 import java.nio.file.attribute.BasicFileAttributes;
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -265,6 +266,9 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
 
     /** Snapshot metafile extension. */
     public static final String SNAPSHOT_METAFILE_EXT = ".smf";
+
+    /** Snapshot temporary metafile extension. */
+    public static final String SNAPSHOT_TMP_METAFILE_EXT = SNAPSHOT_METAFILE_EXT + ".tmp";
 
     /** Prefix for snapshot threads. */
     public static final String SNAPSHOT_RUNNER_THREAD_PREFIX = "snapshot-runner";
@@ -733,8 +737,7 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
      * @return Future which will be completed when a snapshot has been started.
      */
     private IgniteInternalFuture<SnapshotOperationResponse> initLocalSnapshotStartStage(SnapshotOperationRequest req) {
-        if (cctx.kernalContext().clientNode() ||
-            !CU.baselineNode(cctx.localNode(), cctx.kernalContext().state().clusterState()))
+        if (cctx.kernalContext().clientNode())
             return new GridFinishedFuture<>();
 
         // Executed inside discovery notifier thread, prior to firing discovery custom event,
@@ -742,6 +745,12 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
         if (clusterSnpReq != null) {
             return new GridFinishedFuture<>(new IgniteCheckedException("Snapshot operation has been rejected. " +
                 "Another snapshot operation in progress [req=" + req + ", curr=" + clusterSnpReq + ']'));
+        }
+
+        if (!CU.baselineNode(cctx.localNode(), cctx.kernalContext().state().clusterState())) {
+            clusterSnpReq = req;
+
+            return new GridFinishedFuture<>();
         }
 
         Set<UUID> leftNodes = new HashSet<>(req.nodes());
@@ -835,7 +844,7 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
                 req.meta(meta);
 
                 if (!isLocalNodeCoordinator(cctx.discovery()))
-                    storeSnapshotMeta(req);
+                    storeSnapshotMeta(req, false);
 
                 return new SnapshotOperationResponse(handlers.invokeAll(SnapshotHandlerType.CREATE, ctx));
             }
@@ -904,7 +913,7 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
                         else {
                             if (CU.baselineNode(cctx.localNode(), cctx.kernalContext().state().clusterState())) {
                                 try {
-                                    storeSnapshotMeta(snpReq);
+                                    storeSnapshotMeta(snpReq, false);
                                 }
                                 catch (Exception e) {
                                     snpReq.error(new IgniteException("Unable to store snapshot metadata.", e));
@@ -922,36 +931,54 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
      * Stores snapshot metadata and saves that warnings from {@code snpReq}.
      *
      * @param snpReq Snapshot operation request containing snapshot meta.
+     * @param rewrite If {@code true}, rewrites current meta using atomic move and new temporary meta.
      */
-    private void storeSnapshotMeta(SnapshotOperationRequest snpReq) throws IgniteCheckedException, IOException {
+    private void storeSnapshotMeta(SnapshotOperationRequest snpReq, boolean rewrite)
+        throws IgniteCheckedException, IOException {
         File snpDir = snapshotLocalDir(snpReq.snapshotName(), snpReq.snapshotPath());
 
         snpDir.mkdirs();
 
-        File smf = new File(snpDir, snapshotMetaFileName(cctx.localNode().consistentId().toString()));
+        File smf = new File(snpDir, snapshotMetaFileName(cctx.localNode().consistentId().toString(), rewrite));
 
         if (smf.exists()) {
-            throw new IgniteException(new IgniteException("Snapshot metafile must not exist: " +
-                smf.getAbsolutePath()));
+            throw new IgniteException(new IgniteException("Snapshot " + (rewrite ? "temporary " : "") +
+                "metafile must not exist: " + smf.getAbsolutePath()));
         }
 
         if (!F.isEmpty(snpReq.warnings()))
             snpReq.meta().warnings(Collections.unmodifiableList(snpReq.warnings()));
 
-        try (OutputStream out = Files.newOutputStream(smf.toPath())) {
-            byte[] bytes = U.marshal(marsh, snpReq.meta());
-            int blockSize = SNAPSHOT_LIMITED_TRANSFER_BLOCK_SIZE_BYTES;
+        try {
+            try (OutputStream out = Files.newOutputStream(smf.toPath())) {
+                byte[] bytes = U.marshal(marsh, snpReq.meta());
+                int blockSize = SNAPSHOT_LIMITED_TRANSFER_BLOCK_SIZE_BYTES;
 
-            for (int off = 0; off < bytes.length; off += blockSize) {
-                int len = Math.min(blockSize, bytes.length - off);
+                for (int off = 0; off < bytes.length; off += blockSize) {
+                    int len = Math.min(blockSize, bytes.length - off);
 
-                transferRateLimiter.acquire(len);
+                    transferRateLimiter.acquire(len);
 
-                out.write(bytes, off, len);
+                    out.write(bytes, off, len);
+                }
+            }
+
+            if (rewrite) {
+                File smfTo = new File(snpDir, snapshotMetaFileName(cctx.localNode().consistentId().toString(), false));
+
+                Files.move(smf.toPath(), smfTo.toPath(), StandardCopyOption.ATOMIC_MOVE,
+                    StandardCopyOption.REPLACE_EXISTING);
             }
         }
+        catch (IOException | IgniteCheckedException e) {
+            if (rewrite)
+                U.delete(smf);
 
-        log.info("Snapshot metafile has been created: " + smf.getAbsolutePath());
+            throw e;
+        }
+
+        if (!rewrite)
+            log.info("Snapshot metafile has been created: " + smf.getAbsolutePath());
     }
 
     /**
@@ -1020,6 +1047,11 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
 
                 deleteSnapshot(snapshotLocalDir(req.snapshotName(), req.snapshotPath()), pdsSettings.folderName());
             }
+            else if (!isLocalNodeCoordinator(cctx.discovery()) && !F.isEmpty(req.warnings())) {
+                snpReq.warnings(req.warnings());
+
+                storeWarningsIfRequired(snpReq);
+            }
 
             removeLastMetaStorageKey();
         }
@@ -1027,10 +1059,34 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
             return new GridFinishedFuture<>(e);
         }
 
-        if (!F.isEmpty(req.warnings()) && !isLocalNodeCoordinator(cctx.discovery()))
-            snpReq.warnings(req.warnings());
-
         return new GridFinishedFuture<>(new SnapshotOperationResponse());
+    }
+
+    /**
+     * Stores snapshot creation warnings in the case when coordinator is not a baseline node doesn't store any
+     * snapshot data including the metas.
+     */
+    private void storeWarningsIfRequired(SnapshotOperationRequest snpReq) {
+        assert !F.isEmpty(snpReq.warnings());
+
+        ClusterNode crd = U.oldest(cctx.kernalContext().cluster().get().nodes(), null);
+
+        ClusterNode nextBl = U.oldest(cctx.kernalContext().cluster().get().nodes(),
+            n -> !n.id().equals(crd.id()) && CU.baselineNode(n, cctx.kernalContext().state().clusterState()));
+
+        assert nextBl != null;
+
+        if (CU.baselineNode(crd, cctx.kernalContext().state().clusterState()) || !nextBl.equals(cctx.localNode()))
+            return;
+
+        try {
+            storeSnapshotMeta(snpReq, true);
+        }
+        catch (Exception e) {
+            log.error("Failed to store warnings of snapshot '" + snpReq.snapshotName() +
+                "' to the snapshot metafile instead of non-baseline coordinator [" + crd.id() + "]. Snapshot won't " +
+                "contain them. The warnins: [" + String.join(",", snpReq.warnings()) + "].", e);
+        }
     }
 
     /**
@@ -1466,7 +1522,7 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
      * @return Snapshot metadata instance.
      */
     public SnapshotMetadata readSnapshotMetadata(File snpDir, String consId) {
-        return readSnapshotMetadata(new File(snpDir, snapshotMetaFileName(consId)));
+        return readSnapshotMetadata(new File(snpDir, snapshotMetaFileName(consId, false)));
     }
 
     /**
@@ -1838,10 +1894,11 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
 
     /**
      * @param consId Consistent node id.
+     * @param tmp If {@code true}, uses temporary file name.
      * @return Snapshot metadata file name.
      */
-    private static String snapshotMetaFileName(String consId) {
-        return U.maskForFileName(consId) + SNAPSHOT_METAFILE_EXT;
+    private static String snapshotMetaFileName(String consId, boolean tmp) {
+        return U.maskForFileName(consId) + (tmp ? SNAPSHOT_TMP_METAFILE_EXT : SNAPSHOT_METAFILE_EXT);
     }
 
     /**
