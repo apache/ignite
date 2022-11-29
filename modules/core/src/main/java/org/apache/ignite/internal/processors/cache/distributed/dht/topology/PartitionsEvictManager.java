@@ -251,7 +251,7 @@ public class PartitionsEvictManager extends GridCacheSharedManagerAdapter {
 
         StringJoiner joiner = new StringJoiner(", ");
 
-        partByReason.forEach((reason, partIds) -> joiner.add(reason.toString() + '=' + S.compact(partIds)));
+        partByReason.forEach((reason, partIds) -> joiner.add(reason.toString() + '=' + S.toStringSortedDistinct(partIds)));
 
         return joiner.toString();
     }
