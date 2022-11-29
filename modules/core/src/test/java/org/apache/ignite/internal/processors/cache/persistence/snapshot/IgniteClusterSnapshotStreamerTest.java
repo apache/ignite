@@ -123,12 +123,23 @@ public class IgniteClusterSnapshotStreamerTest extends AbstractSnapshotSelfTest 
 
     /**
      * Tests snapshot warning when streamer is working during snapshot creation. Default receiver. Handling from
+     * coordinator node.
+     */
+    @Test
+    public void testStreamerWhileSnapshotDefaultCoordinator() throws Exception {
+        doTestDataStreamerWhileSnapshot(grid(0), false);
+    }
+
+    /**
+     * Tests snapshot warning when streamer is working during snapshot creation. Default receiver. Handling from
      * non-baseline coordinator node.
      */
     @Test
     //@Ignore("https://issues.apache.org/jira/browse/IGNITE-18259")
     public void testStreamerWhileSnapshotDefaultNotBaselineCoordinator() throws Exception {
         grid(0).destroyCache(dfltCacheCfg.getName());
+
+        awaitPartitionMapExchange();
 
         stopGrid(0);
         stopGrid(1);

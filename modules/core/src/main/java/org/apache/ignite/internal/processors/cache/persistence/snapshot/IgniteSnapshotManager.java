@@ -843,8 +843,7 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
 
                 req.meta(meta);
 
-                if (!isLocalNodeCoordinator(cctx.discovery()))
-                    storeSnapshotMeta(req, false);
+                storeSnapshotMeta(req, false);
 
                 return new SnapshotOperationResponse(handlers.invokeAll(SnapshotHandlerType.CREATE, ctx));
             }
@@ -910,16 +909,6 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
                 .listen(f -> {
                         if (f.error() != null)
                             snpReq.error(f.error());
-                        else {
-                            if (CU.baselineNode(cctx.localNode(), cctx.kernalContext().state().clusterState())) {
-                                try {
-                                    storeSnapshotMeta(snpReq, false);
-                                }
-                                catch (Exception e) {
-                                    snpReq.error(new IgniteException("Unable to store snapshot metadata.", e));
-                                }
-                            }
-                        }
 
                         endSnpProc.start(snpReq.requestId(), snpReq);
                     }
@@ -1047,10 +1036,12 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
 
                 deleteSnapshot(snapshotLocalDir(req.snapshotName(), req.snapshotPath()), pdsSettings.folderName());
             }
-            else if (!isLocalNodeCoordinator(cctx.discovery()) && !F.isEmpty(req.warnings())) {
-                snpReq.warnings(req.warnings());
+            else if (!F.isEmpty(req.warnings())) {
+                // Pass the warnings further to the next stage.
+                if (!isLocalNodeCoordinator(cctx.discovery()))
+                    snpReq.warnings(req.warnings());
 
-                storeWarningsIfRequired(snpReq);
+                storeWarnings(snpReq);
             }
 
             removeLastMetaStorageKey();
@@ -1063,29 +1054,32 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
     }
 
     /**
-     * Stores snapshot creation warnings in the case when coordinator is not a baseline node doesn't store any
-     * snapshot data including the metas.
+     * Stores snapshot creation warnings. The warnings are rare. Also, coordinator might not be a baseline node. Thus,
+     * storing meta with warnings once is to be done at second stage initialiation on any other node. Which leads to
+     * process possible snapshot errors, deleting snapshot at second stage end. Doesn't worth. If an error occurs on
+     * warnings writing, it is logged only.
      */
-    private void storeWarningsIfRequired(SnapshotOperationRequest snpReq) {
+    private void storeWarnings(SnapshotOperationRequest snpReq) {
         assert !F.isEmpty(snpReq.warnings());
 
         ClusterNode crd = U.oldest(cctx.kernalContext().cluster().get().nodes(), null);
+
+        boolean crdBaseline = CU.baselineNode(crd, cctx.kernalContext().state().clusterState());
 
         ClusterNode nextBl = U.oldest(cctx.kernalContext().cluster().get().nodes(),
             n -> !n.id().equals(crd.id()) && CU.baselineNode(n, cctx.kernalContext().state().clusterState()));
 
         assert nextBl != null;
 
-        if (CU.baselineNode(crd, cctx.kernalContext().state().clusterState()) || !nextBl.equals(cctx.localNode()))
-            return;
-
-        try {
-            storeSnapshotMeta(snpReq, true);
-        }
-        catch (Exception e) {
-            log.error("Failed to store warnings of snapshot '" + snpReq.snapshotName() +
-                "' to the snapshot metafile instead of non-baseline coordinator " + crd.id() + ". Snapshot won't " +
-                "contain them. The warnins: [" + String.join(",", snpReq.warnings()) + "].", e);
+        if (crdBaseline && crd.equals(cctx.localNode()) || (!crdBaseline && nextBl.equals(cctx.localNode()))) {
+            try {
+                storeSnapshotMeta(snpReq, true);
+            }
+            catch (Exception e) {
+                log.error("Failed to store warnings of snapshot '" + snpReq.snapshotName() +
+                    "' to the snapshot metafile. Snapshot won't contain them. The warnins: [" +
+                    String.join(",", snpReq.warnings()) + "].", e);
+            }
         }
     }
 
