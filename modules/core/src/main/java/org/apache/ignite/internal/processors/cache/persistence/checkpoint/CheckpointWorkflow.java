@@ -396,10 +396,13 @@ public class CheckpointWorkflow {
                     if (partState == LOST)
                         partState = OWNING;
 
+                    assert part.reservedCounter() >= part.updateCounter() :
+                        "Reserved partition counter is supposed to be >= update counter.";
+
                     state.addPartitionState(
                         part.id(),
                         part.dataStore().fullSize(),
-                        Math.max(part.reservedCounter(), part.updateCounter()),
+                        part.reservedCounter(),
                         (byte)partState.ordinal()
                     );
                 }

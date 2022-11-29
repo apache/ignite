@@ -119,7 +119,7 @@ public class HistoricalRebalanceCheckpointTest extends GridCommonAbstractTest {
         for (int i = 0; i < 2_000; i++)  //
             cache.put(++updateCnt, updateCnt);
 
-        // Trick to have historical rebalance on cluster recovery (decreases percent of updates in comparison to cache size).
+        // To have historical rebalance on cluster recovery. Decreases percent of updates in comparison to cache size.
         stopAllGrids();
         startGrids(nodes);
 
@@ -193,10 +193,10 @@ public class HistoricalRebalanceCheckpointTest extends GridCommonAbstractTest {
 
         backups.forEach(Ignite::close);
 
-        TestRecordingCommunicationSpi.spi(prim).blockMessages(GridDhtPartitionSupplyMessage.class, backNames.get(1));
+        TestRecordingCommunicationSpi.spi(prim).blockMessages(GridDhtPartitionSupplyMessage.class, backNames.get(0));
 
         // Restore just any backup.
-        IgniteEx backup = startGrid(backNames.get(1));
+        IgniteEx backup = startGrid(backNames.get(0));
 
         TestRecordingCommunicationSpi.spi(prim).waitForBlocked();
 
