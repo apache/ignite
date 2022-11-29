@@ -59,30 +59,21 @@ public class AtomicOperationsInTxTest extends GridCommonAbstractTest {
     }
 
     /** {@inheritDoc} */
-    @Override protected void beforeTestsStarted() throws Exception {
-        super.beforeTestsStarted();
-    }
-
-    /** {@inheritDoc} */
     @Override protected void beforeTest() throws Exception {
-        super.beforeTest();
         startGrid(0);
     }
 
     /** {@inheritDoc} */
     @Override protected void afterTest() throws Exception {
-        super.afterTest();
         stopGrid(0);
     }
 
     /**
      * Tests whether enabling atomic cache operations within transactions is allowed.
-     * Since 2.15.0 the default behaviour is set to {@code false}.
-     * @throws Exception If failed.
      */
     @Test
     @WithSystemProperty(key = IGNITE_ALLOW_ATOMIC_OPS_IN_TX, value = "false")
-    public void testEnablingAtomicOperationDuringTransaction() throws Exception {
+    public void testEnablingAtomicOperationDuringTransaction() {
         GridTestUtils.assertThrows(log, (Callable<IgniteCache>)() -> {
             try (Transaction tx = grid(0).transactions().txStart()) {
                 return grid(0).cache(DEFAULT_CACHE_NAME).withAllowAtomicOpsInTx();
@@ -96,29 +87,26 @@ public class AtomicOperationsInTxTest extends GridCommonAbstractTest {
 
     /**
      * Tests whether allowing atomic cache operations before transaction starts does not cause exceptions.
-     * Since 2.15.0 the default behaviour is set to {@code false}.
-     * @throws Exception If failed.
      */
     @Test
     @WithSystemProperty(key = IGNITE_ALLOW_ATOMIC_OPS_IN_TX, value = "true")
-    public void testAllowAtomicOperationsBeforeTransactionStarts() throws Exception {
+    public void testAllowAtomicOperationsBeforeTransactionStarts() {
         try (Transaction tx = grid(0).transactions().txStart()) {
             grid(0).cache(DEFAULT_CACHE_NAME).withAllowAtomicOpsInTx();
         }
     }
 
     /**
-     * Tests that operations with atomic cache within transactions are allowed if the system property
+     * Tests that atomic cache operations within transactions are allowed if the system property
      * {@link IgniteSystemProperties#IGNITE_ALLOW_ATOMIC_OPS_IN_TX IGNITE_ALLOW_ATOMIC_OPS_IN_TX} is not changed from
      * the default {@code false} and the user explicitly allows atomic operations in
      * transactions via {@link IgniteCache#withAllowAtomicOpsInTx() withAllowAtomicOpsInTx()} before transactions start.
-     * Since 2.15.0 the default behaviour is set to {@code false}.
-     * @throws Exception If failed.
      */
     @Test
     @WithSystemProperty(key = IGNITE_ALLOW_ATOMIC_OPS_IN_TX, value = "false")
-    public void testSetOfNonAtomicOperationsWithinTransactions() throws Exception {
-        checkOperations(true);
+    public void testSetOfAtomicOperationsWithinTransactionsCheckFalseSystemPropertyFalse() {
+        checkOperations(false, false);
+        checkOperations(true, false);
     }
 
     /**
@@ -126,118 +114,94 @@ public class AtomicOperationsInTxTest extends GridCommonAbstractTest {
      * {@link IgniteSystemProperties#IGNITE_ALLOW_ATOMIC_OPS_IN_TX IGNITE_ALLOW_ATOMIC_OPS_IN_TX} is changed to
      * {@code true} before transaction start and the user explicitly allows atomic operations in transactions via
      * {@link IgniteCache#withAllowAtomicOpsInTx() withAllowAtomicOpsInTx()} before transactions start.
-     * Since 2.15.0 the default behaviour is set to {@code false}.
-     * @throws Exception If failed.
      */
     @Test
     @WithSystemProperty(key = IGNITE_ALLOW_ATOMIC_OPS_IN_TX, value = "true")
-    public void testSetOfAtomicOperationsWithinTransactions() throws Exception {
-        checkOperations(true);
+    public void testSetOfAtomicOperationsWithinTransactionsCheckFalseSystemPropertyTrue() {
+        checkOperations(false, true);
+        checkOperations(true, true);
     }
 
     /**
-     * Tests that atomic cache operations within transactions are forbidden if system property
-     * {@link IgniteSystemProperties#IGNITE_ALLOW_ATOMIC_OPS_IN_TX IGNITE_ALLOW_ATOMIC_OPS_IN_TX}
-     * is changed to {@code true} and the user does not explicitly allow atomic operations in transactions via
-     * {@link IgniteCache#withAllowAtomicOpsInTx() withAllowAtomicOpsInTx()} before transactions start.
-     * Since 2.15.0 the default behaviour is set to {@code false}.
-     * @throws Exception If failed.
-     */
-    @Test
-    @WithSystemProperty(key = IGNITE_ALLOW_ATOMIC_OPS_IN_TX, value = "false")
-    public void testSetOfAtomicOperationsWithinTransactionsCheckFalseSystemPropertyFalse() throws Exception {
-        checkOperations(false);
-    }
-
-    /**
-     * Tests that atomic cache operations within transactions are forbidden if system property
-     * {@link IgniteSystemProperties#IGNITE_ALLOW_ATOMIC_OPS_IN_TX IGNITE_ALLOW_ATOMIC_OPS_IN_TX}
-     * is changed to {@code true} and the user does not explicitly allow atomic operations in transactions via
-     * {@link IgniteCache#withAllowAtomicOpsInTx() withAllowAtomicOpsInTx()} before transactions start.
-     * Since 2.15.0 the default behaviour is set to {@code false}.
-     * @throws Exception If failed.
-     */
-    @Test
-    @WithSystemProperty(key = IGNITE_ALLOW_ATOMIC_OPS_IN_TX, value = "true")
-    public void testSetOfAtomicOperationsWithinTransactionsCheckFalseSystemPropertyTrue() throws Exception {
-        checkOperations(false);
-    }
-
-    /**
+     * @param withAllowAtomicOpsInTx If true - atomic cache operations within transactions are explicitly allowed by the user.
+     * @param allowbyProperty If true - atomic cache operations within transactions are allowed by the system property.
      * @throws IgniteException If failed.
      */
-    private void checkOperations(boolean withAllowAtomicOpsInTx) {
+    private void checkOperations(boolean withAllowAtomicOpsInTx, boolean allowbyProperty) {
         HashMap<Integer, Integer> map = new HashMap<>();
 
         map.put(1, 1);
         map.put(2, 1);
 
-        checkOperation(withAllowAtomicOpsInTx, cache -> cache.put(1, 1));
+        checkOperation(withAllowAtomicOpsInTx, allowbyProperty, cache -> cache.put(1, 1));
 
-        checkOperation(withAllowAtomicOpsInTx, cache -> cache.putAsync(1, 1).get());
+        checkOperation(withAllowAtomicOpsInTx, allowbyProperty, cache -> cache.putAsync(1, 1).get());
 
-        checkOperation(withAllowAtomicOpsInTx, cache -> cache.putAll(map));
+        checkOperation(withAllowAtomicOpsInTx, allowbyProperty, cache -> cache.putAll(map));
 
-        checkOperation(withAllowAtomicOpsInTx, cache -> cache.putAllAsync(map).get());
+        checkOperation(withAllowAtomicOpsInTx, allowbyProperty, cache -> cache.putAllAsync(map).get());
 
-        checkOperation(withAllowAtomicOpsInTx, cache -> cache.putIfAbsent(1, 1));
+        checkOperation(withAllowAtomicOpsInTx, allowbyProperty, cache -> cache.putIfAbsent(1, 1));
 
-        checkOperation(withAllowAtomicOpsInTx, cache -> cache.putIfAbsentAsync(1, 1).get());
+        checkOperation(withAllowAtomicOpsInTx, allowbyProperty, cache -> cache.putIfAbsentAsync(1, 1).get());
 
-        checkOperation(withAllowAtomicOpsInTx, cache -> cache.get(1));
+        checkOperation(withAllowAtomicOpsInTx, allowbyProperty, cache -> cache.get(1));
 
-        checkOperation(withAllowAtomicOpsInTx, cache -> cache.getAll(map.keySet()));
+        checkOperation(withAllowAtomicOpsInTx, allowbyProperty, cache -> cache.getAll(map.keySet()));
 
-        checkOperation(withAllowAtomicOpsInTx, cache -> cache.getAllAsync(map.keySet()).get());
+        checkOperation(withAllowAtomicOpsInTx, allowbyProperty, cache -> cache.getAllAsync(map.keySet()).get());
 
-        checkOperation(withAllowAtomicOpsInTx, cache -> cache.getAndPut(1, 2));
+        checkOperation(withAllowAtomicOpsInTx, allowbyProperty, cache -> cache.getAndPut(1, 2));
 
-        checkOperation(withAllowAtomicOpsInTx, cache -> cache.getAndPutAsync(1, 2).get());
+        checkOperation(withAllowAtomicOpsInTx, allowbyProperty, cache -> cache.getAndPutAsync(1, 2).get());
 
-        checkOperation(withAllowAtomicOpsInTx, cache -> cache.getAndPutIfAbsent(1, 2));
+        checkOperation(withAllowAtomicOpsInTx, allowbyProperty, cache -> cache.getAndPutIfAbsent(1, 2));
 
-        checkOperation(withAllowAtomicOpsInTx, cache -> cache.getAndPutIfAbsentAsync(1, 2).get());
+        checkOperation(withAllowAtomicOpsInTx, allowbyProperty, cache -> cache.getAndPutIfAbsentAsync(1, 2).get());
 
-        checkOperation(withAllowAtomicOpsInTx, cache -> cache.getAndRemove(1));
+        checkOperation(withAllowAtomicOpsInTx, allowbyProperty, cache -> cache.getAndRemove(1));
 
-        checkOperation(withAllowAtomicOpsInTx, cache -> cache.getAndRemoveAsync(1));
+        checkOperation(withAllowAtomicOpsInTx, allowbyProperty, cache -> cache.getAndRemoveAsync(1));
 
-        checkOperation(withAllowAtomicOpsInTx, cache -> cache.getAndReplace(1, 2));
+        checkOperation(withAllowAtomicOpsInTx, allowbyProperty, cache -> cache.getAndReplace(1, 2));
 
-        checkOperation(withAllowAtomicOpsInTx, cache -> cache.getAndReplaceAsync(1, 2).get());
+        checkOperation(withAllowAtomicOpsInTx, allowbyProperty, cache -> cache.getAndReplaceAsync(1, 2).get());
 
-        checkOperation(withAllowAtomicOpsInTx, cache -> cache.remove(1, 1));
+        checkOperation(withAllowAtomicOpsInTx, allowbyProperty, cache -> cache.remove(1, 1));
 
-        checkOperation(withAllowAtomicOpsInTx, cache -> cache.removeAsync(1, 1).get());
+        checkOperation(withAllowAtomicOpsInTx, allowbyProperty, cache -> cache.removeAsync(1, 1).get());
 
-        checkOperation(withAllowAtomicOpsInTx, cache -> cache.removeAll(map.keySet()));
+        checkOperation(withAllowAtomicOpsInTx, allowbyProperty, cache -> cache.removeAll(map.keySet()));
 
-        checkOperation(withAllowAtomicOpsInTx, cache -> cache.removeAllAsync(map.keySet()).get());
+        checkOperation(withAllowAtomicOpsInTx, allowbyProperty, cache -> cache.removeAllAsync(map.keySet()).get());
 
-        checkOperation(withAllowAtomicOpsInTx, cache -> cache.containsKey(1));
+        checkOperation(withAllowAtomicOpsInTx, allowbyProperty, cache -> cache.containsKey(1));
 
-        checkOperation(withAllowAtomicOpsInTx, cache -> cache.containsKeyAsync(1).get());
+        checkOperation(withAllowAtomicOpsInTx, allowbyProperty, cache -> cache.containsKeyAsync(1).get());
 
-        checkOperation(withAllowAtomicOpsInTx, cache -> cache.containsKeys(map.keySet()));
+        checkOperation(withAllowAtomicOpsInTx, allowbyProperty, cache -> cache.containsKeys(map.keySet()));
 
-        checkOperation(withAllowAtomicOpsInTx, cache -> cache.containsKeysAsync(map.keySet()).get());
+        checkOperation(withAllowAtomicOpsInTx, allowbyProperty, cache -> cache.containsKeysAsync(map.keySet()).get());
 
-        checkOperation(withAllowAtomicOpsInTx, cache -> cache.invoke(1, new SetEntryProcessor()));
+        checkOperation(withAllowAtomicOpsInTx, allowbyProperty, cache -> cache.invoke(1, new SetEntryProcessor()));
 
-        checkOperation(withAllowAtomicOpsInTx, cache -> cache.invokeAsync(1, new SetEntryProcessor()).get());
+        checkOperation(withAllowAtomicOpsInTx, allowbyProperty, cache -> cache.invokeAsync(1, new SetEntryProcessor()).get());
 
-        checkOperation(withAllowAtomicOpsInTx, cache -> cache.invokeAll(map.keySet(), new SetEntryProcessor()));
+        checkOperation(withAllowAtomicOpsInTx, allowbyProperty, cache -> cache.invokeAll(map.keySet(), new SetEntryProcessor()));
 
-        checkOperation(withAllowAtomicOpsInTx, cache -> cache.invokeAllAsync(map.keySet(),
+        checkOperation(withAllowAtomicOpsInTx, allowbyProperty, cache -> cache.invokeAllAsync(map.keySet(),
             new SetEntryProcessor()).get());
+
+        checkLock(withAllowAtomicOpsInTx, allowbyProperty);
     }
 
     /**
-     * @param withAllowAtomicOpsInTx If true - atomic operation allowed.
+     * @param withAllowAtomicOpsInTx If true - atomic cache operations within transactions are explicitly allowed by the user.
+     * @param allowbyProperty If true - atomic cache operations within transactions are allowed by the system property.
      * Otherwise - it should throw exception.
      * @param op Operation.
      */
-    private void checkOperation(boolean withAllowAtomicOpsInTx, Consumer<IgniteCache<Integer, Integer>> op) {
+    private void checkOperation(boolean withAllowAtomicOpsInTx, boolean allowbyProperty, Consumer<IgniteCache<Integer, Integer>> op) {
         IgniteCache<Integer, Integer> cache = grid(0).cache(DEFAULT_CACHE_NAME);
 
         if (withAllowAtomicOpsInTx)
@@ -258,31 +222,26 @@ public class AtomicOperationsInTxTest extends GridCommonAbstractTest {
 
         if (withAllowAtomicOpsInTx)
             assertNull(err);
-        else if (!withAllowAtomicOpsInTx && err == null)
-            assertNull(err);
-        else
-            assertTrue(err != null && err.getMessage()
-                .startsWith("Transaction spans operations on atomic cache"));
-
-        checkLock(withAllowAtomicOpsInTx, err);
+        else {
+            if (allowbyProperty)
+                assertNull(err);
+            else
+                assertTrue(err != null && err.getMessage().startsWith("Transaction spans operations on atomic cache"));
+        }
     }
 
     /**
-     * @param withAllowAtomicOpsInTx If true - atomic operation are explicitly allowed.
-     * @param err If exception is thrown.
+     * @param withAllowAtomicOpsInTx If true - atomic cache operations within transactions are explicitly allowed by the user.
+     * @param allowByProperty If true - atomic cache operations within transactions are allowed by the system property
+     * {@link IgniteSystemProperties#IGNITE_ALLOW_ATOMIC_OPS_IN_TX IGNITE_ALLOW_ATOMIC_OPS_IN_TX}.
      */
-    private void checkLock(boolean withAllowAtomicOpsInTx, Exception err) {
+    private void checkLock(boolean withAllowAtomicOpsInTx, boolean allowByProperty) {
         IgniteCache<Integer, Integer> cache;
         Class<? extends Throwable> eCls;
         String eMsg;
 
-        if (withAllowAtomicOpsInTx) {
+        if (withAllowAtomicOpsInTx || allowByProperty) {
             cache = grid(0).cache(DEFAULT_CACHE_NAME).withAllowAtomicOpsInTx();
-            eCls = CacheException.class;
-            eMsg = "Explicit lock can't be acquired within a transaction.";
-        }
-        else if (!withAllowAtomicOpsInTx && err == null) {
-            cache = grid(0).cache(DEFAULT_CACHE_NAME);
             eCls = CacheException.class;
             eMsg = "Explicit lock can't be acquired within a transaction.";
         }

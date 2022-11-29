@@ -35,7 +35,7 @@ public class CacheOperationContext implements Serializable {
     public static final boolean DFLT_ALLOW_ATOMIC_OPS_IN_TX = false;
 
     /** */
-    public static final boolean defaultAllowAtomicOpsInTx() {
+    public static final boolean allowAtomicOpsInTx() {
         return IgniteSystemProperties.getBoolean(IGNITE_ALLOW_ATOMIC_OPS_IN_TX, DFLT_ALLOW_ATOMIC_OPS_IN_TX);
     }
 
@@ -79,7 +79,7 @@ public class CacheOperationContext implements Serializable {
         recovery = false;
         readRepairStrategy = null;
         dataCenterId = null;
-        allowAtomicOpsInTx = defaultAllowAtomicOpsInTx();
+        allowAtomicOpsInTx = allowAtomicOpsInTx();
     }
 
     /**
