@@ -741,8 +741,7 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
 
         clusterSnpReq = req;
 
-        if (cctx.kernalContext().clientNode() ||
-            !CU.baselineNode(cctx.localNode(), cctx.kernalContext().state().clusterState()))
+        if (!CU.baselineNode(cctx.localNode(), cctx.kernalContext().state().clusterState()))
             return new GridFinishedFuture<>();
 
         Set<UUID> leftNodes = new HashSet<>(req.nodes());
