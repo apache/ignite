@@ -22,8 +22,12 @@ import java.net.InetSocketAddress;
 import java.sql.Connection;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Collection;
+import java.util.Collections;
+import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
+import java.util.Map;
 import java.util.Objects;
 import java.util.Properties;
 import java.util.Set;
@@ -32,6 +36,8 @@ import java.util.UUID;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.function.Consumer;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 import java.util.stream.Collectors;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCache;
@@ -66,6 +72,7 @@ import org.apache.ignite.internal.processors.cache.persistence.IgniteCacheDataba
 import org.apache.ignite.internal.processors.metastorage.DistributedMetaStorage;
 import org.apache.ignite.internal.processors.service.DummyService;
 import org.apache.ignite.internal.util.StripedExecutor;
+import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.internal.visor.systemview.VisorSystemViewTask;
 import org.apache.ignite.services.ServiceConfiguration;
@@ -86,6 +93,8 @@ import static org.apache.ignite.internal.commandline.CommandHandler.EXIT_CODE_OK
 import static org.apache.ignite.internal.commandline.CommandList.SYSTEM_VIEW;
 import static org.apache.ignite.internal.commandline.systemview.SystemViewCommand.COLUMN_SEPARATOR;
 import static org.apache.ignite.internal.commandline.systemview.SystemViewCommandArg.NODE_ID;
+import static org.apache.ignite.internal.commandline.systemview.SystemViewCommandArg.NODE_IDS;
+import static org.apache.ignite.internal.managers.discovery.GridDiscoveryManager.NODES_SYS_VIEW;
 import static org.apache.ignite.internal.managers.systemview.ScanQuerySystemView.SCAN_QRY_SYS_VIEW;
 import static org.apache.ignite.internal.metric.SystemViewSelfTest.TEST_PREDICATE;
 import static org.apache.ignite.internal.metric.SystemViewSelfTest.TEST_TRANSFORMER;
@@ -1125,6 +1134,34 @@ public class SystemViewCommandTest extends GridCommandHandlerClusterByClassAbstr
         assertEquals(srvCnt, systemView(ignite0, SNAPSHOT_SYS_VIEW).size());
     }
 
+    /** */
+    @Test
+    public void testMultipleNodes() {
+        checkNodesResult(Collections.singleton(ignite0));
+        checkNodesResult(Collections.singleton(client));
+
+        checkNodesResult(F.asList(ignite0, ignite1));
+        checkNodesResult(F.asList(ignite0, ignite1, client));
+    }
+
+    /** */
+    private void checkNodesResult(Collection<IgniteEx> nodes) {
+        Map<UUID, List<List<String>>> map = systemView(nodes, NODES_SYS_VIEW, true);
+
+        assertEquals(nodes.size(), map.size());
+
+        map.forEach((nodeId, rows) -> {
+            assertEquals(ignite0.cluster().nodes().size(), rows.size());
+
+            for (List<String> row : rows) {
+                UUID rowNodeId = UUID.fromString(row.get(0));
+                boolean isLocal = Boolean.parseBoolean(row.get(8));
+
+                assertEquals(nodeId.equals(rowNodeId), isLocal);
+            }
+        });
+    }
+
     /**
      * Execute query on given node.
      *
@@ -1148,9 +1185,28 @@ public class SystemViewCommandTest extends GridCommandHandlerClusterByClassAbstr
      * @return Content of the requested system view.
      */
     private List<List<String>> systemView(IgniteEx node, String sysViewName) {
+        Map<UUID, List<List<String>>> map = systemView(Collections.singleton(node), sysViewName, false);
+
+        assertEquals(1, map.size());
+
+        return map.get(node.localNode().id());
+    }
+
+    /**
+     * Gets system view content via control utility from specified nodes. Here we also check if attributes names
+     * returned by the command match the real ones. And that both "SQL" and "Java" command names styles are supported.
+     *
+     * @param nodes Nodes to obtain system view from.
+     * @param sysViewName Name of the system view which content is required.
+     * @param multipleIds {@code True} if use {@link SystemViewCommandArg#NODE_IDS} command.
+     * @return Content of the requested system view.
+     */
+    private Map<UUID, List<List<String>>> systemView(Collection<IgniteEx> nodes, String sysViewName, boolean multipleIds) {
+        String arg = multipleIds ? NODE_IDS.argName() : NODE_ID.argName();
+
         List<String> attrNames = new ArrayList<>();
 
-        SystemView<?> sysView = node.context().systemView().view(sysViewName);
+        SystemView<?> sysView = nodes.iterator().next().context().systemView().view(sysViewName);
 
         sysView.walker().visitAll(new AttributeVisitor() {
             @Override public <T> void accept(int idx, String name, Class<T> clazz) {
@@ -1158,28 +1214,28 @@ public class SystemViewCommandTest extends GridCommandHandlerClusterByClassAbstr
             }
         });
 
-        String nodeId = node.context().discovery().localNode().id().toString();
+        String nodeIds = String.join(",", F.viewReadOnly(nodes, n -> n.localNode().id().toString()));
 
-        List<List<String>> rows = parseSystemViewCommandOutput(
-            executeCommand(EXIT_CODE_OK, CMD_SYS_VIEW, toSqlName(sysViewName), NODE_ID.argName(), nodeId));
+        Map<UUID, List<List<String>>> map = parseSystemViewCommandOutput(
+            executeCommand(EXIT_CODE_OK, CMD_SYS_VIEW, toSqlName(sysViewName), arg, nodeIds));
 
-        assertEquals(attrNames, rows.get(0));
+        map.values().forEach(rows -> assertEquals(attrNames, rows.get(0)));
 
-        rows = parseSystemViewCommandOutput(
-            executeCommand(EXIT_CODE_OK, CMD_SYS_VIEW, toSqlName(sysViewName).toLowerCase(), NODE_ID.argName(), nodeId));
+        map = parseSystemViewCommandOutput(
+            executeCommand(EXIT_CODE_OK, CMD_SYS_VIEW, toSqlName(sysViewName).toLowerCase(), arg, nodeIds));
 
-        assertEquals(attrNames, rows.get(0));
+        map.values().forEach(rows -> assertEquals(attrNames, rows.get(0)));
 
-        rows = parseSystemViewCommandOutput(
-            executeCommand(EXIT_CODE_OK, CMD_SYS_VIEW, sysViewName, NODE_ID.argName(), nodeId));
+        map = parseSystemViewCommandOutput(
+            executeCommand(EXIT_CODE_OK, CMD_SYS_VIEW, sysViewName, arg, nodeIds));
 
-        assertEquals(attrNames, rows.remove(0));
+        map.values().forEach(rows -> assertEquals(attrNames, rows.remove(0)));
 
         int attrsCnt = sysView.walker().count();
 
-        rows.forEach(row -> assertEquals(attrsCnt, row.size()));
+        map.values().forEach(rows -> rows.forEach(row -> assertEquals(attrsCnt, row.size())));
 
-        return rows;
+        return map;
     }
 
     /**
@@ -1188,22 +1244,42 @@ public class SystemViewCommandTest extends GridCommandHandlerClusterByClassAbstr
      * @param out Command output to parse.
      * @return System view values.
      */
-    private List<List<String>> parseSystemViewCommandOutput(String out) {
+    private Map<UUID, List<List<String>>> parseSystemViewCommandOutput(String out) {
         String outStart = "--------------------------------------------------------------------------------";
 
         String outEnd = "Command [" + SYSTEM_VIEW.toCommandName() + "] finished with code: " + EXIT_CODE_OK;
 
-        List<String> rows = Arrays.asList(out.substring(
+        String[] rows = out.substring(
             out.indexOf(outStart) + outStart.length() + 1,
             out.indexOf(outEnd) - 1
-        ).split(U.nl()));
+        ).split(U.nl());
 
-        return rows.stream().map(row ->
-            Arrays.stream(row.split(quote(COLUMN_SEPARATOR)))
+        Pattern nodePtrn = Pattern.compile("Results on node with ID: (.*)");
+
+        Map<UUID, List<List<String>>> res = new HashMap<>();
+
+        UUID currNodeId = null;
+
+        for (String rowStr : rows) {
+            Matcher nodeMatcher = nodePtrn.matcher(rowStr);
+
+            if (nodeMatcher.matches()) {
+                currNodeId = UUID.fromString(nodeMatcher.group(1));
+
+                continue;
+            }
+
+            assertNotNull("Expected node ID: " + out, currNodeId);
+
+            List<String> row = Arrays.stream(rowStr.split(quote(COLUMN_SEPARATOR)))
                 .map(String::trim)
                 .filter(str -> !str.isEmpty())
-                .collect(Collectors.toList()))
-            .collect(Collectors.toList());
+                .collect(Collectors.toList());
+
+            res.computeIfAbsent(currNodeId, id -> new ArrayList<>()).add(row);
+        }
+
+        return res;
     }
 
     /**

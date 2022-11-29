@@ -25,15 +25,20 @@ import java.util.List;
 import java.util.ListIterator;
 import java.util.Map;
 import java.util.UUID;
+import java.util.function.Function;
 import java.util.stream.Collectors;
 import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.internal.client.GridClient;
+import org.apache.ignite.internal.client.GridClientCompute;
 import org.apache.ignite.internal.client.GridClientConfiguration;
+import org.apache.ignite.internal.client.GridClientNode;
 import org.apache.ignite.internal.commandline.AbstractCommand;
 import org.apache.ignite.internal.commandline.Command;
 import org.apache.ignite.internal.commandline.CommandArgIterator;
 import org.apache.ignite.internal.commandline.CommandLogger;
 import org.apache.ignite.internal.commandline.argument.CommandArgUtils;
+import org.apache.ignite.internal.util.typedef.F;
+import org.apache.ignite.internal.visor.VisorTaskArgument;
 import org.apache.ignite.internal.visor.systemview.VisorSystemViewTask;
 import org.apache.ignite.internal.visor.systemview.VisorSystemViewTask.SimpleType;
 import org.apache.ignite.internal.visor.systemview.VisorSystemViewTaskArg;
@@ -41,10 +46,13 @@ import org.apache.ignite.internal.visor.systemview.VisorSystemViewTaskResult;
 import org.apache.ignite.spi.systemview.view.SystemView;
 
 import static java.util.Collections.nCopies;
+import static java.util.Collections.singleton;
 import static org.apache.ignite.internal.commandline.CommandList.SYSTEM_VIEW;
 import static org.apache.ignite.internal.commandline.CommandLogger.optional;
-import static org.apache.ignite.internal.commandline.TaskExecutor.executeTaskByNameOnNode;
+import static org.apache.ignite.internal.commandline.CommandLogger.or;
+import static org.apache.ignite.internal.commandline.TaskExecutor.SRV_NODES;
 import static org.apache.ignite.internal.commandline.systemview.SystemViewCommandArg.NODE_ID;
+import static org.apache.ignite.internal.commandline.systemview.SystemViewCommandArg.NODE_IDS;
 import static org.apache.ignite.internal.visor.systemview.VisorSystemViewTask.SimpleType.DATE;
 import static org.apache.ignite.internal.visor.systemview.VisorSystemViewTask.SimpleType.NUMBER;
 import static org.apache.ignite.internal.visor.systemview.VisorSystemViewTask.SimpleType.STRING;
@@ -60,8 +68,8 @@ public class SystemViewCommand extends AbstractCommand<VisorSystemViewTaskArg> {
      */
     private VisorSystemViewTaskArg taskArg;
 
-    /** ID of the node to get the system view content from. */
-    private UUID nodeId;
+    /** ID of the nodes to get the system view content from. */
+    private Collection<UUID> nodeIds;
 
     /** {@inheritDoc} */
     @Override public Object execute(GridClientConfiguration clientCfg, IgniteLogger log) throws Exception {
@@ -69,17 +77,37 @@ public class SystemViewCommand extends AbstractCommand<VisorSystemViewTaskArg> {
             VisorSystemViewTaskResult res;
 
             try (GridClient client = Command.startClient(clientCfg)) {
-                res = executeTaskByNameOnNode(
-                    client,
-                    VisorSystemViewTask.class.getName(),
-                    taskArg,
-                    nodeId,
-                    clientCfg
-                );
+                GridClientCompute compute = client.compute();
+
+                Collection<GridClientNode> clusterNodes = compute.nodes();
+                Function<UUID, GridClientNode> idToNode = id -> F.find(clusterNodes, null, n -> id.equals(n.nodeId()));
+
+                if (F.isEmpty(nodeIds)) {
+                    nodeIds = singleton(F.rand(clusterNodes.stream()
+                        .filter(SRV_NODES).map(GridClientNode::nodeId).collect(Collectors.toSet())));
+                }
+
+                for (UUID id : nodeIds) {
+                    if (idToNode.apply(id) == null)
+                        throw new IllegalArgumentException("Node with id=" + id + " not found.");
+                }
+
+                boolean hasConnectable = F.find(nodeIds, null, uuid -> idToNode.apply(uuid).connectable()) != null;
+
+                if (hasConnectable)
+                    compute = compute.projection(F.viewReadOnly(nodeIds, idToNode::apply));
+
+                res = compute.execute(VisorSystemViewTask.class.getName(),
+                    new VisorTaskArgument<>(nodeIds, taskArg, false));
             }
 
-            if (res != null)
-                printTable(res.attributes(), res.types(), res.rows(), log);
+            if (res != null) {
+                res.rows().forEach((nodeId, rows) -> {
+                    log.info("Results on node with ID: " + nodeId);
+
+                    printTable(res.attributes(), res.types(), rows, log);
+                });
+            }
             else
                 log.info("No system view with specified name was found [name=" + taskArg.systemViewName() + "]");
 
@@ -161,7 +189,7 @@ public class SystemViewCommand extends AbstractCommand<VisorSystemViewTaskArg> {
 
     /** {@inheritDoc} */
     @Override public void parseArguments(CommandArgIterator argIter) {
-        nodeId = null;
+        nodeIds = null;
 
         String sysViewName = null;
 
@@ -170,16 +198,20 @@ public class SystemViewCommand extends AbstractCommand<VisorSystemViewTaskArg> {
 
             SystemViewCommandArg cmdArg = CommandArgUtils.of(arg, SystemViewCommandArg.class);
 
-            if (cmdArg == NODE_ID) {
-                String nodeIdArg = argIter.nextArg(
-                    "ID of the node from which system view content should be obtained is expected.");
+            if (cmdArg == NODE_ID || cmdArg == NODE_IDS) {
+                if (nodeIds != null)
+                    throw new IllegalArgumentException("Only one of " + NODE_ID + ", " + NODE_IDS + " commands is expected.");
+
+                String idsArg = argIter.nextArg(
+                    cmdArg == NODE_ID ? "ID of the node from which system view content should be obtained is expected." :
+                        "Comma-separated list of node IDs from which system view content should be obtained is expected.");
 
                 try {
-                    nodeId = UUID.fromString(nodeIdArg);
+                    nodeIds = F.viewReadOnly(argIter.parseStringSet(idsArg), UUID::fromString);
                 }
                 catch (IllegalArgumentException e) {
-                    throw new IllegalArgumentException("Failed to parse " + NODE_ID + " command argument." +
-                        " String representation of \"java.util.UUID\" is exepected. For example:" +
+                    throw new IllegalArgumentException("Failed to parse " + (cmdArg == NODE_ID ? NODE_ID : NODE_IDS) +
+                        " command argument. String representation of \"java.util.UUID\" is exepected. For example:" +
                         " 123e4567-e89b-42d3-a456-556642440000", e);
                 }
             }
@@ -208,12 +240,16 @@ public class SystemViewCommand extends AbstractCommand<VisorSystemViewTaskArg> {
     @Override public void printUsage(IgniteLogger log) {
         Map<String, String> params = new HashMap<>();
 
-        params.put("node_id", "ID of the node to get the system view from. If not set, random node will be chosen.");
+        params.put("node_id", "ID of the node to get the system view from (deprecated. Use " + NODE_IDS + " instead). " +
+            "If not set, random node will be chosen.");
+        params.put("node_ids",
+            "Comma-separated list of nodes IDs to get the system view from. If not set, random node will be chosen.");
         params.put("system_view_name", "Name of the system view which content should be printed." +
             " Both \"SQL\" and \"Java\" styles of system view name are supported" +
             " (e.g. SQL_TABLES and sql.tables will be handled similarly).");
 
-        usage(log, "Print system view content:", SYSTEM_VIEW, params, optional(NODE_ID, "node_id"),
+        usage(log, "Print system view content:", SYSTEM_VIEW, params,
+            or(optional(NODE_ID, "node_id"), optional(NODE_IDS, "nodeId1,nodeId2,..")),
             "system_view_name");
     }
 

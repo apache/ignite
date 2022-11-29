@@ -21,20 +21,24 @@ import java.io.Serializable;
 import java.util.ArrayList;
 import java.util.Date;
 import java.util.List;
+import java.util.Map;
+import java.util.TreeMap;
 import java.util.UUID;
 import org.apache.ignite.IgniteException;
+import org.apache.ignite.compute.ComputeJobResult;
 import org.apache.ignite.internal.managers.systemview.GridSystemViewManager;
 import org.apache.ignite.internal.processors.task.GridInternal;
 import org.apache.ignite.internal.processors.task.GridVisorManagementTask;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.internal.visor.VisorJob;
-import org.apache.ignite.internal.visor.VisorOneNodeTask;
+import org.apache.ignite.internal.visor.VisorMultiNodeTask;
 import org.apache.ignite.lang.IgniteUuid;
 import org.apache.ignite.spi.systemview.view.SystemView;
 import org.apache.ignite.spi.systemview.view.SystemViewRowAttributeWalker;
 import org.apache.ignite.spi.systemview.view.SystemViewRowAttributeWalker.AttributeWithValueVisitor;
 import org.jetbrains.annotations.Nullable;
 
+import static java.util.Collections.singletonMap;
 import static org.apache.ignite.internal.processors.metric.impl.MetricUtils.toSqlName;
 import static org.apache.ignite.internal.visor.systemview.VisorSystemViewTask.SimpleType.DATE;
 import static org.apache.ignite.internal.visor.systemview.VisorSystemViewTask.SimpleType.NUMBER;
@@ -43,13 +47,36 @@ import static org.apache.ignite.internal.visor.systemview.VisorSystemViewTask.Si
 /** Reperesents visor task for obtaining system view content. */
 @GridInternal
 @GridVisorManagementTask
-public class VisorSystemViewTask extends VisorOneNodeTask<VisorSystemViewTaskArg, VisorSystemViewTaskResult> {
+public class VisorSystemViewTask extends VisorMultiNodeTask<VisorSystemViewTaskArg, VisorSystemViewTaskResult,
+    VisorSystemViewTaskResult> {
     /** */
     private static final long serialVersionUID = 0L;
 
     /** {@inheritDoc} */
     @Override protected VisorJob<VisorSystemViewTaskArg, VisorSystemViewTaskResult> job(VisorSystemViewTaskArg arg) {
         return new VisorSystemViewJob(arg, false);
+    }
+
+    /** {@inheritDoc} */
+    @Override protected @Nullable VisorSystemViewTaskResult reduce0(List<ComputeJobResult> results)
+        throws IgniteException {
+        VisorSystemViewTaskResult res = null;
+
+        Map<UUID, List<List<?>>> clusterRows = new TreeMap<>();
+
+        for (ComputeJobResult r : results) {
+            if (r.getException() != null)
+                throw new IgniteException("Failed to execute job [nodeId=" + r.getNode().id() + ']', r.getException());
+
+            res = r.getData();
+
+            if (res == null)
+                return null;
+
+            clusterRows.putAll(res.rows());
+        }
+
+        return new VisorSystemViewTaskResult(res.attributes(), res.types(), clusterRows);
     }
 
     /** */
@@ -149,7 +176,7 @@ public class VisorSystemViewTask extends VisorOneNodeTask<VisorSystemViewTaskArg
                 rows.add(attrVals);
             }
 
-            return new VisorSystemViewTaskResult(attrNames, attrTypes, rows);
+            return new VisorSystemViewTaskResult(attrNames, attrTypes, singletonMap(ignite.localNode().id(), rows));
         }
 
         /**

@@ -23,7 +23,6 @@ import java.util.LinkedHashMap;
 import java.util.Map;
 import java.util.Set;
 import java.util.UUID;
-import java.util.function.Predicate;
 import java.util.stream.Collectors;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteLogger;
@@ -42,6 +41,7 @@ import org.apache.ignite.internal.visor.consistency.VisorConsistencyTaskResult;
 import static java.util.stream.Collectors.toSet;
 import static org.apache.ignite.internal.commandline.CommandList.CONSISTENCY;
 import static org.apache.ignite.internal.commandline.TaskExecutor.BROADCAST_UUID;
+import static org.apache.ignite.internal.commandline.TaskExecutor.SRV_NODES;
 import static org.apache.ignite.internal.commandline.TaskExecutor.executeTaskByNameOnNode;
 import static org.apache.ignite.internal.commandline.consistency.ConsistencySubCommand.FINALIZE_COUNTERS;
 import static org.apache.ignite.internal.commandline.consistency.ConsistencySubCommand.REPAIR;
@@ -72,9 +72,6 @@ public class ConsistencyCommand extends AbstractCommand<Object> {
 
     /** Parallel check.*/
     private boolean parallel;
-
-    /** Predicate to filter server nodes. */
-    private static final Predicate<GridClientNode> SRV_NODES = node -> !node.isClient() && !node.isDaemon();
 
     /** {@inheritDoc} */
     @Override public Object execute(GridClientConfiguration clientCfg, IgniteLogger log) throws Exception {
