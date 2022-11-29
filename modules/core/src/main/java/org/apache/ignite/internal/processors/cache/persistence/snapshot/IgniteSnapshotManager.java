@@ -765,11 +765,10 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
                 "Another snapshot operation in progress [req=" + req + ", curr=" + clusterSnpReq + ']'));
         }
 
-        if (!CU.baselineNode(cctx.localNode(), cctx.kernalContext().state().clusterState())) {
-            clusterSnpReq = req;
+        clusterSnpReq = req;
 
+        if (!CU.baselineNode(cctx.localNode(), cctx.kernalContext().state().clusterState()))
             return new GridFinishedFuture<>();
-        }
 
         Set<UUID> leftNodes = new HashSet<>(req.nodes());
         leftNodes.removeAll(F.viewReadOnly(cctx.discovery().serverNodes(AffinityTopologyVersion.NONE),
@@ -828,8 +827,6 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
                 ((DistributedMetaStorageImpl)cctx.kernalContext().distributedMetastorage())
                     .suspend(((SnapshotFutureTask)task0).started());
             }
-
-            clusterSnpReq = req;
         }
 
         return task0.chain(fut -> {
