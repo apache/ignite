@@ -732,9 +732,6 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
      * @return Future which will be completed when a snapshot has been started.
      */
     private IgniteInternalFuture<SnapshotOperationResponse> initLocalSnapshotStartStage(SnapshotOperationRequest req) {
-        if (cctx.kernalContext().clientNode())
-            return new GridFinishedFuture<>();
-
         // Executed inside discovery notifier thread, prior to firing discovery custom event,
         // so it is safe to set new snapshot task inside this method without synchronization.
         if (clusterSnpReq != null) {
@@ -742,11 +739,11 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
                 "Another snapshot operation in progress [req=" + req + ", curr=" + clusterSnpReq + ']'));
         }
 
-        if (!CU.baselineNode(cctx.localNode(), cctx.kernalContext().state().clusterState())) {
-            clusterSnpReq = req;
+        clusterSnpReq = req;
 
+        if (cctx.kernalContext().clientNode() ||
+            !CU.baselineNode(cctx.localNode(), cctx.kernalContext().state().clusterState()))
             return new GridFinishedFuture<>();
-        }
 
         Set<UUID> leftNodes = new HashSet<>(req.nodes());
         leftNodes.removeAll(F.viewReadOnly(cctx.discovery().serverNodes(AffinityTopologyVersion.NONE),
