@@ -28,7 +28,6 @@ import java.time.LocalTime;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
-import java.util.Collections;
 import java.util.Date;
 import java.util.HashMap;
 import java.util.HashSet;
@@ -39,7 +38,6 @@ import java.util.Map;
 import java.util.Set;
 import java.util.UUID;
 import java.util.concurrent.TimeUnit;
-
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.IgniteSystemProperties;
@@ -1754,7 +1752,16 @@ public class QueryUtils {
         if (val == null)
             return true;
 
-        return TemporalTypes.getKind(expCls).isConvertibleFrom(val);
+        if (expCls == java.sql.Date.class || expCls == java.time.LocalDate.class)
+            return val instanceof java.sql.Date || val instanceof java.time.LocalDate;
+
+        if (expCls == java.sql.Time.class || expCls == java.time.LocalTime.class)
+            return val instanceof java.sql.Time || val instanceof java.time.LocalTime;
+
+        if (expCls == java.sql.Timestamp.class || expCls == java.util.Date.class || expCls == java.time.LocalDateTime.class)
+            return val instanceof java.time.LocalDateTime || val instanceof java.util.Date;
+
+        return false;
     }
 
     /**
@@ -1830,66 +1837,6 @@ public class QueryUtils {
         /** {@inheritDoc} */
         @Override public int scale() {
             return -1;
-        }
-    }
-
-    /** */
-    private enum TemporalTypes {
-        /** Corresponds to SQL DATE. */
-        DATE(java.sql.Date.class, java.time.LocalDate.class),
-
-        /** Corresponds to SQL TIME. */
-        TIME(java.sql.Time.class, java.time.LocalTime.class),
-
-        /** Corresponds to SQL TIMESTAMP. */
-        TIMESTAMP(java.sql.Timestamp.class, java.util.Date.class, java.time.LocalDateTime.class),
-
-        /** Corresponds to non-temporal types. */
-        NONE();
-
-        /** */
-        private final Set<Class<?>> clsSet = new HashSet<>();
-
-        /** */
-        TemporalTypes(Class<?>... types) {
-            if (types == null)
-                return;
-
-            Collections.addAll(clsSet, types);
-        }
-
-        /** */
-        public static TemporalTypes getKind(Class<?> type) {
-            if (DATE.contains(type))
-                return DATE;
-
-            if (TIME.contains(type))
-                return TIME;
-
-            if (TIMESTAMP.contains(type))
-                return TIMESTAMP;
-
-            return NONE;
-        }
-
-        /** */
-        public boolean isConvertibleFrom(Object val) {
-            if (this == NONE)
-                return false;
-
-            if (val == null)
-                return true;
-
-            Class<?> valCls = val.getClass();
-            if (this == TIMESTAMP)
-                return contains(valCls) || valCls.isAssignableFrom(java.sql.Date.class);
-
-            return contains(valCls);
-        }
-
-        /** */
-        private boolean contains(Class<?> type) {
-            return clsSet.contains(type);
         }
     }
 }

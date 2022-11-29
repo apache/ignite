@@ -204,7 +204,7 @@ public class LocalDateTimeSupportTest extends AbstractBasicIntegrationTest {
 
         Object sqlObj = sqlTypeConverter.apply(testObj);
 
-        selectData.get(0).forEach(d -> assertEquals(sqlObj, d));
+        selectData.forEach(d -> assertEquals(sqlObj, d.get(0)));
     }
 
     /** */

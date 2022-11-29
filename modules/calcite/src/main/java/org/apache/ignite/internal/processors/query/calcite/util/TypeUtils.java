@@ -371,7 +371,7 @@ public class TypeUtils {
      */
     private static long toLong(DataContext ctx, Object val) {
         if (val instanceof LocalDateTime)
-            return SqlFunctions.toLong(Timestamp.valueOf((LocalDateTime)val), DataContext.Variable.TIME_ZONE.get(ctx));
+            return SqlFunctions.toLong(DateValueUtils.convertToTimestamp((LocalDateTime)val), DataContext.Variable.TIME_ZONE.get(ctx));
 
         if (val instanceof LocalDate)
             return SqlFunctions.toLong(DateValueUtils.convertToSqlDate((LocalDate)val), DataContext.Variable.TIME_ZONE.get(ctx));
@@ -389,7 +389,7 @@ public class TypeUtils {
         else if (storageType == java.sql.Date.class && val instanceof Integer)
             return new java.sql.Date(fromLocalTs(ctx, (Integer)val * DateTimeUtils.MILLIS_PER_DAY));
         else if (storageType == LocalDate.class && val instanceof Integer)
-            return Instant.ofEpochMilli((Integer)val * DateTimeUtils.MILLIS_PER_DAY).atZone(ZoneOffset.UTC).toLocalDate();
+            return new java.sql.Date(fromLocalTs(ctx, (Integer)val * DateTimeUtils.MILLIS_PER_DAY)).toLocalDate();
         else if (storageType == java.sql.Time.class && val instanceof Integer)
             return new java.sql.Time(fromLocalTs(ctx, (Integer)val));
         else if (storageType == LocalTime.class && val instanceof Integer)
@@ -397,7 +397,7 @@ public class TypeUtils {
         else if (storageType == Timestamp.class && val instanceof Long)
             return new Timestamp(fromLocalTs(ctx, (Long)val));
         else if (storageType == LocalDateTime.class && val instanceof Long)
-            return LocalDateTime.ofInstant(Instant.ofEpochMilli((Long)val), ZoneOffset.UTC);
+            return new Timestamp(fromLocalTs(ctx, (Long)val)).toLocalDateTime();
         else if (storageType == java.util.Date.class && val instanceof Long)
             return new java.util.Date(fromLocalTs(ctx, (Long)val));
         else if (storageType == Duration.class && val instanceof Long)
