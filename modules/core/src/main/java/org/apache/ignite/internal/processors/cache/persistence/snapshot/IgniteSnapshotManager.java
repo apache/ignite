@@ -917,7 +917,7 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
     }
 
     /**
-     * Stores snapshot metadata and saves that warnings from {@code snpReq}.
+     * Stores snapshot metadata.
      *
      * @param snpReq Snapshot operation request containing snapshot meta.
      * @param rewrite If {@code true}, rewrites current meta using atomic move and new temporary meta.
@@ -934,9 +934,6 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
             throw new IgniteException(new IgniteException("Snapshot " + (rewrite ? "temporary " : "") +
                 "metafile must not exist: " + smf.getAbsolutePath()));
         }
-
-        if (!F.isEmpty(snpReq.warnings()))
-            snpReq.meta().warnings(Collections.unmodifiableList(snpReq.warnings()));
 
         try {
             try (OutputStream out = Files.newOutputStream(smf.toPath())) {
@@ -959,11 +956,9 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
                     StandardCopyOption.REPLACE_EXISTING);
             }
         }
-        catch (IOException | IgniteCheckedException e) {
+        finally {
             if (rewrite)
                 U.delete(smf);
-
-            throw e;
         }
 
         if (!rewrite)
@@ -1041,6 +1036,8 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
                 if (!isLocalNodeCoordinator(cctx.discovery()))
                     snpReq.warnings(req.warnings());
 
+                snpReq.meta().warnings(Collections.unmodifiableList(snpReq.warnings()));
+
                 storeWarnings(snpReq);
             }
 
@@ -1062,16 +1059,12 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
     private void storeWarnings(SnapshotOperationRequest snpReq) {
         assert !F.isEmpty(snpReq.warnings());
 
-        ClusterNode crd = U.oldest(cctx.kernalContext().cluster().get().nodes(), null);
+        ClusterNode oldestBaseline = U.oldest(cctx.kernalContext().cluster().get().nodes(),
+            n -> CU.baselineNode(n, cctx.kernalContext().state().clusterState()));
 
-        boolean crdBaseline = CU.baselineNode(crd, cctx.kernalContext().state().clusterState());
+        assert oldestBaseline != null;
 
-        ClusterNode nextBl = U.oldest(cctx.kernalContext().cluster().get().nodes(),
-            n -> !n.id().equals(crd.id()) && CU.baselineNode(n, cctx.kernalContext().state().clusterState()));
-
-        assert nextBl != null;
-
-        if (crdBaseline && crd.equals(cctx.localNode()) || (!crdBaseline && nextBl.equals(cctx.localNode()))) {
+        if (oldestBaseline.equals(cctx.localNode())) {
             try {
                 storeSnapshotMeta(snpReq, true);
             }
