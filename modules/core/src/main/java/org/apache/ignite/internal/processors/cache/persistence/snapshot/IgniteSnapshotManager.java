@@ -926,13 +926,11 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
         throws IgniteCheckedException, IOException {
         File snpDir = snapshotLocalDir(snpReq.snapshotName(), snpReq.snapshotPath());
 
-        snpDir.mkdirs();
-
         File smf = new File(snpDir, snapshotMetaFileName(cctx.localNode().consistentId().toString(), rewrite));
 
         if (smf.exists()) {
-            throw new IgniteException(new IgniteException("Snapshot " + (rewrite ? "temporary " : "") +
-                "metafile must not exist: " + smf.getAbsolutePath()));
+            throw new IgniteException("Snapshot " + (rewrite ? "temporary " : "") +
+                "metafile must not exist: " + smf.getAbsolutePath());
         }
 
         try {
@@ -955,14 +953,14 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
                 Files.move(smf.toPath(), smfTo.toPath(), StandardCopyOption.ATOMIC_MOVE,
                     StandardCopyOption.REPLACE_EXISTING);
             }
+            else
+                log.info("Snapshot metafile has been created: " + smf.getAbsolutePath());
+
         }
         finally {
             if (rewrite)
                 U.delete(smf);
         }
-
-        if (!rewrite)
-            log.info("Snapshot metafile has been created: " + smf.getAbsolutePath());
     }
 
     /**
@@ -1032,13 +1030,13 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
                 deleteSnapshot(snapshotLocalDir(req.snapshotName(), req.snapshotPath()), pdsSettings.folderName());
             }
             else if (!F.isEmpty(req.warnings())) {
-                // Pass the warnings further to the next stage.
+                // Pass the warnings further to the next stage for the case when snapshot started from not coordinator.
                 if (!isLocalNodeCoordinator(cctx.discovery()))
                     snpReq.warnings(req.warnings());
 
-                snpReq.meta().warnings(Collections.unmodifiableList(snpReq.warnings()));
+                snpReq.meta().warnings(Collections.unmodifiableList(req.warnings()));
 
-                storeWarnings(snpReq);
+                storeWarnings(req);
             }
 
             removeLastMetaStorageKey();
@@ -1070,7 +1068,7 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
             }
             catch (Exception e) {
                 log.error("Failed to store warnings of snapshot '" + snpReq.snapshotName() +
-                    "' to the snapshot metafile. Snapshot won't contain them. The warnins: [" +
+                    "' to the snapshot metafile. Snapshot won't contain them. The warnings: [" +
                     String.join(",", snpReq.warnings()) + "].", e);
             }
         }
