@@ -107,6 +107,7 @@ public class DataStorageMetricsImpl {
     /**
      * @deprecated Will be removed in upcoming releases.
      */
+    @Deprecated
     private final boolean metricsEnabled;
 
     /** WAL manager. */
@@ -599,6 +600,7 @@ public class DataStorageMetricsImpl {
      * @return Metrics enabled flag.
      * @deprecated Will be removed in upcoming releases.
      */
+    @Deprecated
     public boolean metricsEnabled() {
         return metricsEnabled;
     }

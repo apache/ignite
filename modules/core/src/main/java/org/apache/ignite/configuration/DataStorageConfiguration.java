@@ -107,6 +107,7 @@ public class DataStorageConfiguration implements Serializable {
     public static final int DFLT_LOCK_WAIT_TIME = 10 * 1000;
 
     /** @deprecated Will be removed in upcoming releases. */
+    @Deprecated
     public static final boolean DFLT_METRICS_ENABLED = false;
 
     /** Default amount of sub intervals to calculate rate-based metric. */
@@ -248,6 +249,7 @@ public class DataStorageConfiguration implements Serializable {
      * Metrics enabled flag.
      * @deprecated Will be removed in upcoming releases.
      */
+    @Deprecated
     private boolean metricsEnabled = DFLT_METRICS_ENABLED;
 
     /** Wal mode. */
@@ -806,6 +808,7 @@ public class DataStorageConfiguration implements Serializable {
      * @return Metrics enabled flag.
      * @deprecated Will be removed in upcoming releases.
      */
+    @Deprecated
     public boolean isMetricsEnabled() {
         return metricsEnabled;
     }
@@ -817,6 +820,7 @@ public class DataStorageConfiguration implements Serializable {
      * @return {@code this} for chaining.
      * @deprecated Will be removed in upcoming releases.
      */
+    @Deprecated
     public DataStorageConfiguration setMetricsEnabled(boolean metricsEnabled) {
         this.metricsEnabled = metricsEnabled;
 
