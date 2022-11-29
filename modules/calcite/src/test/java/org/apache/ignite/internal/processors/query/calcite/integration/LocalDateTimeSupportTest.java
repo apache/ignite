@@ -22,6 +22,7 @@ import java.time.Instant;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.time.LocalTime;
+import java.time.Month;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
@@ -65,96 +66,109 @@ public class LocalDateTimeSupportTest extends AbstractBasicIntegrationTest {
     public Function<Object, Object> sqlTypeConverter;
 
     /** */
-    @Parameterized.Parameters(name = "isValidationEnabled={0}, sqlType={1}, columnCls={2}, testObjCls={3}")
+    @Parameterized.Parameter(5)
+    public boolean isOldDate;
+
+    /** */
+    @Parameterized.Parameters(name = "isValidationEnabled={0}, sqlType={1}, columnCls={2}, testObjCls={3}, beforeGregorian={5}")
     public static Collection<Object[]> parameters() {
         Collection<Object[]> params = new ArrayList<>();
 
-        for (boolean isV : Arrays.asList(true, false)) {
-            params.add(new Object[] {
-                isV, "TIMESTAMP", null, LocalDateTime.class, f(ts -> convertToTimestamp((LocalDateTime)ts))
-            });
-            params.add(new Object[] {
-                isV, "TIMESTAMP", null, Date.class, f(ts -> new Timestamp(((Date)ts).getTime()))
-            });
-            params.add(new Object[] {
-                isV, "TIMESTAMP", null, java.sql.Date.class, f(ts -> new Timestamp(((Date)ts).getTime()))
-            });
-
-            for (Class<?> testObjCls : Arrays.asList(Timestamp.class, LocalDateTime.class, Date.class, java.sql.Date.class)) {
+        for (boolean isOldDate: Arrays.asList(true, false)) {
+            for (boolean isV : Arrays.asList(true, false)) {
                 params.add(new Object[] {
-                    isV, null, Timestamp.class, testObjCls, f(ts -> {
-                        if (ts instanceof LocalDateTime)
-                            return convertToTimestamp((LocalDateTime)ts);
-                        return ts;
-                    })
+                    isV, "TIMESTAMP", null, LocalDateTime.class, f(ts -> convertToTimestamp((LocalDateTime)ts)), isOldDate
+                });
+                params.add(new Object[] {
+                    isV, "TIMESTAMP", null, Date.class, f(ts -> new Timestamp(((Date)ts).getTime())), isOldDate
+                });
+                params.add(new Object[] {
+                    isV, "TIMESTAMP", null, java.sql.Date.class, f(ts -> new Timestamp(((Date)ts).getTime())), isOldDate
                 });
 
-                params.add(new Object[] {
-                    isV, null, Date.class, testObjCls, f(ts -> {
-                        if (testObjCls == LocalDateTime.class)
-                            return new Date(convertToTimestamp((LocalDateTime)ts).getTime());
-                        else if (testObjCls == Timestamp.class)
-                            return new Date(((Timestamp)ts).getTime());
-                        return ts;
-                    })
-                });
-
-                params.add(new Object[] {
-                    isV, null, LocalDateTime.class, testObjCls, f(ts -> {
-                        if (testObjCls == Timestamp.class)
-                            return ((Timestamp)ts).toLocalDateTime();
-                        else if (testObjCls == java.util.Date.class)
-                            return new Timestamp(((Date)ts).getTime()).toLocalDateTime();
-                        else if (testObjCls == java.sql.Date.class)
-                            return ((java.sql.Date)ts).toLocalDate().atStartOfDay();
-                        else
+                for (Class<?> testObjCls : Arrays.asList(Timestamp.class, LocalDateTime.class, Date.class, java.sql.Date.class)) {
+                    params.add(new Object[] {
+                        isV, null, Timestamp.class, testObjCls, f(ts -> {
+                            if (ts instanceof LocalDateTime)
+                                return convertToTimestamp((LocalDateTime)ts);
                             return ts;
-                    })
-                });
-            }
+                        }),
+                        isOldDate
+                    });
 
-            params.add(new Object[] {
-                isV, "DATE", null, LocalDate.class, f(d -> convertToSqlDate((LocalDate)d))
-            });
+                    params.add(new Object[] {
+                        isV, null, Date.class, testObjCls, f(ts -> {
+                            if (testObjCls == LocalDateTime.class)
+                                return new Date(convertToTimestamp((LocalDateTime)ts).getTime());
+                            else if (testObjCls == Timestamp.class)
+                                return new Date(((Timestamp)ts).getTime());
+                            return ts;
+                        }),
+                        isOldDate
+                    });
 
-            for (Class<?> testObjCls : Arrays.asList(LocalDate.class, java.sql.Date.class)) {
-                params.add(new Object[] {
-                    isV, null, java.sql.Date.class, testObjCls, f(ts -> {
-                        if (testObjCls == LocalDate.class)
-                            return convertToSqlDate((LocalDate)ts);
-                        return ts;
-                    })
-                });
-
-                params.add(new Object[] {
-                    isV, null, LocalDate.class, testObjCls, f(ts -> {
-                        if (testObjCls == java.sql.Date.class)
-                            return ((java.sql.Date)ts).toLocalDate();
-                        return ts;
-                    })
-                });
-            }
-
-            params.add(new Object[] {
-                isV, "TIME", null, LocalTime.class, f(t -> convertToSqlTime((LocalTime)t))
-            });
-
-            for (Class<?> testObjCls : Arrays.asList(LocalTime.class, java.sql.Time.class)) {
-                params.add(new Object[] {
-                    isV, null, java.sql.Time.class, testObjCls, f(ts -> {
-                        if (testObjCls == LocalTime.class)
-                            return convertToSqlTime((LocalTime)ts);
-                        return ts;
-                    })
-                });
+                    params.add(new Object[] {
+                        isV, null, LocalDateTime.class, testObjCls, f(ts -> {
+                            if (testObjCls == Timestamp.class)
+                                return ((Timestamp)ts).toLocalDateTime();
+                            else if (testObjCls == java.util.Date.class)
+                                return new Timestamp(((Date)ts).getTime()).toLocalDateTime();
+                            else if (testObjCls == java.sql.Date.class)
+                                return ((java.sql.Date)ts).toLocalDate().atStartOfDay();
+                            else
+                                return ts;
+                        }),
+                        isOldDate
+                    });
+                }
 
                 params.add(new Object[] {
-                    isV, null, LocalTime.class, testObjCls, f(ts -> {
-                        if (testObjCls == java.sql.Time.class)
-                            return ((java.sql.Time)ts).toLocalTime();
-                        return ts;
-                    })
+                    isV, "DATE", null, LocalDate.class, f(d -> convertToSqlDate((LocalDate)d)), isOldDate
                 });
+
+                for (Class<?> testObjCls : Arrays.asList(LocalDate.class, java.sql.Date.class)) {
+                    params.add(new Object[] {
+                        isV, null, java.sql.Date.class, testObjCls, f(ts -> {
+                            if (testObjCls == LocalDate.class)
+                                return convertToSqlDate((LocalDate)ts);
+                            return ts;
+                        }),
+                        isOldDate
+                    });
+
+                    params.add(new Object[] {
+                        isV, null, LocalDate.class, testObjCls, f(ts -> {
+                            if (testObjCls == java.sql.Date.class)
+                                return ((java.sql.Date)ts).toLocalDate();
+                            return ts;
+                        }),
+                        isOldDate
+                    });
+                }
+
+                params.add(new Object[] {
+                    isV, "TIME", null, LocalTime.class, f(t -> convertToSqlTime((LocalTime)t)), isOldDate
+                });
+
+                for (Class<?> testObjCls : Arrays.asList(LocalTime.class, java.sql.Time.class)) {
+                    params.add(new Object[] {
+                        isV, null, java.sql.Time.class, testObjCls, f(ts -> {
+                            if (testObjCls == LocalTime.class)
+                                return convertToSqlTime((LocalTime)ts);
+                            return ts;
+                        }),
+                        isOldDate
+                    });
+
+                    params.add(new Object[] {
+                        isV, null, LocalTime.class, testObjCls, f(ts -> {
+                            if (testObjCls == java.sql.Time.class)
+                                return ((java.sql.Time)ts).toLocalTime();
+                            return ts;
+                        }),
+                        isOldDate
+                    });
+                }
             }
         }
 
@@ -192,7 +206,7 @@ public class LocalDateTimeSupportTest extends AbstractBasicIntegrationTest {
 
         executeSql("CREATE INDEX DATA_IDX ON DATA(data DESC);");
 
-        Object testObj = generateTestObject(objType);
+        Object testObj = generateTestObject(objType, isOldDate);
 
         executeSql("INSERT INTO DATA(_key, id, data) values(?, ?, ?)", 0, 0, testObj);
 
@@ -231,21 +245,23 @@ public class LocalDateTimeSupportTest extends AbstractBasicIntegrationTest {
     }
 
     /** */
-    private static Object generateTestObject(Class<?> cls) {
+    private static Object generateTestObject(Class<?> cls, boolean isOldDate) {
+        LocalDateTime oldDateTime = LocalDateTime.of(1042, Month.APRIL, 1, 12, 45, 0);
+        LocalDate oldDate = LocalDate.of(1042, Month.APRIL, 1);
         if (cls == LocalDateTime.class)
-            return LocalDateTime.now();
+            return isOldDate ? oldDateTime : LocalDateTime.now();
         else if (cls == LocalTime.class)
             return LocalTime.now();
         else if (cls == LocalDate.class)
-            return LocalDate.now();
+            return isOldDate ? oldDate : LocalDate.now();
         else if (cls == Date.class)
-            return Date.from(Instant.now());
+            return isOldDate ? new Date(convertToTimestamp(oldDateTime).getTime()) : Date.from(Instant.now());
         else if (cls == java.sql.Date.class)
-            return java.sql.Date.valueOf(LocalDate.now());
+            return isOldDate ? java.sql.Date.valueOf(oldDate) : java.sql.Date.valueOf(LocalDate.now());
         else if (cls == java.sql.Time.class)
             return java.sql.Time.valueOf(LocalTime.now());
         else if (cls == java.sql.Timestamp.class)
-            return java.sql.Timestamp.valueOf(LocalDateTime.now());
+            return isOldDate ? convertToTimestamp(oldDateTime) : java.sql.Timestamp.valueOf(LocalDateTime.now());
         else
             throw new IllegalStateException();
     }
