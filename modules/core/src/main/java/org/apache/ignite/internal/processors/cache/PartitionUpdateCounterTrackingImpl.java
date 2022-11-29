@@ -440,7 +440,7 @@ public class PartitionUpdateCounterTrackingImpl implements PartitionUpdateCounte
 
     /** {@inheritDoc} */
     @Override public long reserved() {
-        return reservedCntr.get();
+        return highestAppliedCounter();
     }
 
     /** {@inheritDoc} */
