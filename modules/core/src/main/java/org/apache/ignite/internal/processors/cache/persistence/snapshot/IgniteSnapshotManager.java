@@ -268,7 +268,7 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
     public static final String SNAPSHOT_METAFILE_EXT = ".smf";
 
     /** Snapshot temporary metafile extension. */
-    public static final String SNAPSHOT_TMP_METAFILE_EXT = SNAPSHOT_METAFILE_EXT + ".tmp";
+    public static final String SNAPSHOT_METAFILE_TMP_EXT = ".tmp";
 
     /** Prefix for snapshot threads. */
     public static final String SNAPSHOT_RUNNER_THREAD_PREFIX = "snapshot-runner";
@@ -843,7 +843,9 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
 
                 req.meta(meta);
 
-                storeSnapshotMeta(req, false);
+                File tempSmf = new File(snpDir, snapshotMetaFileName(cctx.localNode().consistentId().toString()));
+
+                storeSnapshotMeta(req, tempSmf);
 
                 return new SnapshotOperationResponse(handlers.invokeAll(SnapshotHandlerType.CREATE, ctx));
             }
@@ -920,46 +922,24 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
      * Stores snapshot metadata.
      *
      * @param snpReq Snapshot operation request containing snapshot meta.
-     * @param rewrite If {@code true}, rewrites current meta using atomic move and new temporary meta.
+     * @param smf File to store.
      */
-    private void storeSnapshotMeta(SnapshotOperationRequest snpReq, boolean rewrite)
+    private void storeSnapshotMeta(SnapshotOperationRequest snpReq, File smf)
         throws IgniteCheckedException, IOException {
-        File snpDir = snapshotLocalDir(snpReq.snapshotName(), snpReq.snapshotPath());
+        if (smf.exists())
+            throw new IgniteException("Snapshot metafile must not exist: " + smf.getAbsolutePath());
 
-        File smf = new File(snpDir, snapshotMetaFileName(cctx.localNode().consistentId().toString(), rewrite));
+        try (OutputStream out = Files.newOutputStream(smf.toPath())) {
+            byte[] bytes = U.marshal(marsh, snpReq.meta());
+            int blockSize = SNAPSHOT_LIMITED_TRANSFER_BLOCK_SIZE_BYTES;
 
-        if (smf.exists()) {
-            throw new IgniteException("Snapshot " + (rewrite ? "temporary " : "") +
-                "metafile must not exist: " + smf.getAbsolutePath());
-        }
+            for (int off = 0; off < bytes.length; off += blockSize) {
+                int len = Math.min(blockSize, bytes.length - off);
 
-        try {
-            try (OutputStream out = Files.newOutputStream(smf.toPath())) {
-                byte[] bytes = U.marshal(marsh, snpReq.meta());
-                int blockSize = SNAPSHOT_LIMITED_TRANSFER_BLOCK_SIZE_BYTES;
+                transferRateLimiter.acquire(len);
 
-                for (int off = 0; off < bytes.length; off += blockSize) {
-                    int len = Math.min(blockSize, bytes.length - off);
-
-                    transferRateLimiter.acquire(len);
-
-                    out.write(bytes, off, len);
-                }
+                out.write(bytes, off, len);
             }
-
-            if (rewrite) {
-                File smfTo = new File(snpDir, snapshotMetaFileName(cctx.localNode().consistentId().toString(), false));
-
-                Files.move(smf.toPath(), smfTo.toPath(), StandardCopyOption.ATOMIC_MOVE,
-                    StandardCopyOption.REPLACE_EXISTING);
-            }
-            else
-                log.info("Snapshot metafile has been created: " + smf.getAbsolutePath());
-
-        }
-        finally {
-            if (rewrite)
-                U.delete(smf);
         }
     }
 
@@ -1057,20 +1037,33 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
     private void storeWarnings(SnapshotOperationRequest snpReq) {
         assert !F.isEmpty(snpReq.warnings());
 
-        ClusterNode oldestBaseline = U.oldest(cctx.kernalContext().cluster().get().nodes(),
-            n -> CU.baselineNode(n, cctx.kernalContext().state().clusterState()));
+        List<ClusterNode> snpNodes = cctx.kernalContext().cluster().get().nodes().stream()
+            .filter(n -> snpReq.nodes().contains(n.id())).collect(Collectors.toList());
 
-        assert oldestBaseline != null;
+        boolean oldestBaseline = U.oldest(snpNodes,
+            n -> CU.baselineNode(n, cctx.kernalContext().state().clusterState())).equals(cctx.localNode());
 
-        if (oldestBaseline.equals(cctx.localNode())) {
-            try {
-                storeSnapshotMeta(snpReq, true);
-            }
-            catch (Exception e) {
-                log.error("Failed to store warnings of snapshot '" + snpReq.snapshotName() +
-                    "' to the snapshot metafile. Snapshot won't contain them. The warnings: [" +
-                    String.join(",", snpReq.warnings()) + "].", e);
-            }
+        if (!oldestBaseline)
+            return;
+
+        File snpDir = snapshotLocalDir(snpReq.snapshotName(), snpReq.snapshotPath());
+        File tempSmf = new File(snpDir, snapshotMetaFileName(cctx.localNode().consistentId().toString()) +
+            SNAPSHOT_METAFILE_TMP_EXT);
+        File smf = new File(snpDir, snapshotMetaFileName(cctx.localNode().consistentId().toString()));
+
+        try {
+            storeSnapshotMeta(snpReq, tempSmf);
+
+            Files.move(tempSmf.toPath(), smf.toPath(), StandardCopyOption.ATOMIC_MOVE,
+                StandardCopyOption.REPLACE_EXISTING);
+        }
+        catch (Exception e) {
+            log.error("Failed to store warnings of snapshot '" + snpReq.snapshotName() +
+                "' to the snapshot metafile. Snapshot won't contain them. The warnings: [" +
+                String.join(",", snpReq.warnings()) + "].", e);
+        }
+        finally {
+            U.delete(tempSmf);
         }
     }
 
@@ -1507,7 +1500,7 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
      * @return Snapshot metadata instance.
      */
     public SnapshotMetadata readSnapshotMetadata(File snpDir, String consId) {
-        return readSnapshotMetadata(new File(snpDir, snapshotMetaFileName(consId, false)));
+        return readSnapshotMetadata(new File(snpDir, snapshotMetaFileName(consId)));
     }
 
     /**
@@ -1879,11 +1872,10 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
 
     /**
      * @param consId Consistent node id.
-     * @param tmp If {@code true}, uses temporary file name.
      * @return Snapshot metadata file name.
      */
-    private static String snapshotMetaFileName(String consId, boolean tmp) {
-        return U.maskForFileName(consId) + (tmp ? SNAPSHOT_TMP_METAFILE_EXT : SNAPSHOT_METAFILE_EXT);
+    private static String snapshotMetaFileName(String consId) {
+        return U.maskForFileName(consId) + SNAPSHOT_METAFILE_EXT;
     }
 
     /**
