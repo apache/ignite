@@ -1085,7 +1085,8 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
             Files.move(tempSmf.toPath(), smf.toPath(), StandardCopyOption.ATOMIC_MOVE,
                 StandardCopyOption.REPLACE_EXISTING);
 
-            log.info("Snapshot metafile has been rewrited with the warnings: " + smf.getAbsolutePath());
+            if (log.isDebugEnabled())
+                log.debug("Snapshot metafile has been rewrited with the warnings: " + smf.getAbsolutePath());
         }
         catch (Exception e) {
             log.error("Failed to store warnings of snapshot '" + snpReq.snapshotName() +
