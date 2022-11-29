@@ -75,16 +75,16 @@ public interface PartitionUpdateCounter extends Iterable<long[]> {
     public long reserve(long delta);
 
     /**
-     * Returns pending updates counter.
+     * Returns reserved updates counter.
      *
-     * @return Current pending updates counter.
+     * @return Reserved updates counter.
      */
     public long reserved();
 
     /**
      * Returns HWM.
      *
-     * @return Current HWM.
+     * @return Highest applied update counter (HWM).
      */
     public long highestAppliedCounter();
 

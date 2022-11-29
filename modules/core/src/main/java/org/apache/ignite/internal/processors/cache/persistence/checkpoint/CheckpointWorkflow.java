@@ -396,18 +396,13 @@ public class CheckpointWorkflow {
                     if (partState == LOST)
                         partState = OWNING;
 
-//                    assert part.reservedCounter() >= part.updateCounter() :
-//                        "Reserved partition counter is supposed to be >= update counter.";
-
-                    if (part.reservedCounter() > 2000) {
-                        log.error("TEST | fillCacheGroupState() on " + this.igniteInstanceName +
-                            " with reserved part counter " + part.reservedCounter());
-                    }
+                    assert part.highestAppliedCounter() >= part.updateCounter() :
+                        "Highest applied partition counter is supposed to be >= update counter.";
 
                     state.addPartitionState(
                         part.id(),
                         part.dataStore().fullSize(),
-                        part.reservedCounter(),
+                        part.highestAppliedCounter(),
                         (byte)partState.ordinal()
                     );
                 }

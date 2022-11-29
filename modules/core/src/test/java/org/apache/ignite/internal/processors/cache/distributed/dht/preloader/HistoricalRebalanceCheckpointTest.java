@@ -48,7 +48,6 @@ import org.apache.ignite.internal.processors.cache.persistence.file.FileIO;
 import org.apache.ignite.internal.processors.cache.persistence.file.FileIODecorator;
 import org.apache.ignite.internal.processors.cache.persistence.file.FileIOFactory;
 import org.apache.ignite.internal.processors.cache.verify.IdleVerifyResultV2;
-import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgniteBiPredicate;
 import org.apache.ignite.plugin.extensions.communication.Message;
 import org.apache.ignite.testframework.GridTestUtils;
@@ -103,41 +102,42 @@ public class HistoricalRebalanceCheckpointTest extends GridCommonAbstractTest {
     }
 
     /**
-     * Test with two-phase commit without puts after gaps.
+     * Test two-phase commit.
      */
     @Test
     public void testCountersOnCrashRecovery2Backups() throws Exception {
-        doTest(2, false);
+        doTestTwoOnOnePhaseCommit(2, false);
     }
 
     /**
-     * Test with two-phase commit with puts after gaps.
+     * Test two-phase commit with puts after gaps.
      */
     @Test
     public void testCountersOnCrashRecovery2BackupsMorePuts() throws Exception {
-        doTest(2, false);
+        doTestTwoOnOnePhaseCommit(2, false);
     }
 
     /**
-     * Test with one-phase commit without puts after gaps.
+     * Test one-phase commit.
      */
     @Test
     public void testCountersOnCrashRecovery1Backup() throws Exception {
-        doTest(1, false);
+        doTestTwoOnOnePhaseCommit(1, false);
     }
 
     /**
-     * Test with one-phase commit with puts after gaps.
+     * Test one-phase commit with puts after gaps.
      */
     @Test
     public void testCountersOnCrashRecovery1BackupMorePuts() throws Exception {
-        doTest(1, true);
+        doTestTwoOnOnePhaseCommit(1, true);
     }
 
     /**
+     * Test one-phase commit with lost backup responses.
      */
     @Test
-    public void test0() throws Exception {
+    public void test() throws Exception {
         int backupNodes = 1;
         int nodes = backupNodes + 1;
 
@@ -164,8 +164,6 @@ public class HistoricalRebalanceCheckpointTest extends GridCommonAbstractTest {
         startGrids(nodes);
 
         Ignite prim = primaryNode(0L, DEFAULT_CACHE_NAME);
-
-        log.error("TEST | primary node order: " + prim.cluster().localNode().order());
 
         Ignite backup = backupNodes(0L, DEFAULT_CACHE_NAME).get(0);
 
@@ -208,17 +206,8 @@ public class HistoricalRebalanceCheckpointTest extends GridCommonAbstractTest {
             prepareBlock.set(false);
         }
 
-//        if (putAfterGaps) {
-//            for (int i = 0; i < 50; i++)
-//                prim.cache(DEFAULT_CACHE_NAME).put(++updateCnt, updateCnt);
-//        }
-
-        log.error("TEST | before forceCheckpoint() 2");
-
         // Storing counters on primary.
         forceCheckpoint();
-
-        log.error("TEST | after forceCheckpoint() 2");
 
         // Emulating power off, OOM or disk overflow. Keeping data as is, with missed counters updates.
         ((BlockableFileIOFactory)backup.configuration().getDataStorageConfiguration()
@@ -226,39 +215,18 @@ public class HistoricalRebalanceCheckpointTest extends GridCommonAbstractTest {
 
         String backName = backup.name();
 
-        CountDownLatch rebalanceFinished = new CountDownLatch(1);
-
         backup.close();
 
-        TestRecordingCommunicationSpi.spi(prim).blockMessages(GridDhtPartitionSupplyMessage.class, backName);
-
         // Restore just any backup.
-        backup = startGrid(backName);
-
-        U.sleep(10000);
-
-//        TestRecordingCommunicationSpi.spi(prim).waitForBlocked();
-//
-//        backup.events().localListen(evt -> {
-//            rebalanceFinished.countDown();
-//
-//            return true;
-//        }, EventType.EVT_CACHE_REBALANCE_STOPPED);
-//
-//        TestRecordingCommunicationSpi.spi(prim).stopBlock();
-//
-//        rebalanceFinished.await();
-
-        log.error("TEST | after rebalanceFinished.await()");
+        startGrid(backName);
 
         IdleVerifyResultV2 checkRes = idleVerify(prim, DEFAULT_CACHE_NAME);
 
         assertFalse(checkRes.hasConflicts());
     }
 
-
     /** */
-    private void doTest(int backupNodes, boolean putAfterGaps) throws Exception {
+    private void doTestTwoOnOnePhaseCommit(int backupNodes, boolean putAfterGaps) throws Exception {
         assert backupNodes > 0;
 
         int nodes = backupNodes + 1;
@@ -286,8 +254,6 @@ public class HistoricalRebalanceCheckpointTest extends GridCommonAbstractTest {
         startGrids(nodes);
 
         Ignite prim = primaryNode(0L, DEFAULT_CACHE_NAME);
-
-        log.error("TEST | primary node order: " + prim.cluster().localNode().order());
 
         List<Ignite> backups = backupNodes(0L, DEFAULT_CACHE_NAME);
 
@@ -354,12 +320,8 @@ public class HistoricalRebalanceCheckpointTest extends GridCommonAbstractTest {
                 prim.cache(DEFAULT_CACHE_NAME).put(++updateCnt, updateCnt);
         }
 
-        log.error("TEST | before forceCheckpoint() 2");
-
         // Storing counters on primary.
         forceCheckpoint();
-
-        log.error("TEST | after forceCheckpoint() 2");
 
         // Emulating power off, OOM or disk overflow. Keeping data as is, with missed counters updates.
         backups.forEach(node -> ((BlockableFileIOFactory)node.configuration().getDataStorageConfiguration()
@@ -387,8 +349,6 @@ public class HistoricalRebalanceCheckpointTest extends GridCommonAbstractTest {
         TestRecordingCommunicationSpi.spi(prim).stopBlock();
 
         rebalanceFinished.await();
-
-        log.error("TEST | after rebalanceFinished.await()");
 
         IdleVerifyResultV2 checkRes = idleVerify(prim, DEFAULT_CACHE_NAME);
 

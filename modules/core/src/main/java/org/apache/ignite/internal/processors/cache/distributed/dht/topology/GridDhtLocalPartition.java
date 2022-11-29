@@ -912,14 +912,14 @@ public class GridDhtLocalPartition extends GridCacheConcurrentMapImpl implements
     }
 
     /**
-     * @return Current reserved counter (HWM).
+     * @return Highest applied update counter (HWM).
      */
     public long highestAppliedCounter() {
         return store.highestAppliedCounter();
     }
 
     /**
-     * @return Current pending updates counter.
+     * @return Current reserved counter.
      */
     public long reservedCounter() {
         return store.reservedCounter();
