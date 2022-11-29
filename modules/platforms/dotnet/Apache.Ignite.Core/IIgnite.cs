@@ -432,15 +432,6 @@ namespace Apache.Ignite.Core
         bool IsActive();
 
         /// <summary>
-        /// Gets the persistent store metrics.
-        /// <para />
-        /// To enable metrics set <see cref="PersistentStoreConfiguration.MetricsEnabled"/> property
-        /// in <see cref="IgniteConfiguration.PersistentStoreConfiguration"/>.
-        /// </summary>
-        [Obsolete("Use GetDataStorageMetrics.")]
-        IPersistentStoreMetrics GetPersistentStoreMetrics();
-
-        /// <summary>
         /// Gets a collection of memory metrics, one for each
         /// <see cref="DataStorageConfiguration.DataRegionConfigurations"/>.
         /// <para />

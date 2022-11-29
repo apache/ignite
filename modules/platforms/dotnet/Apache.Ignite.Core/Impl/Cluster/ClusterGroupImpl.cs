@@ -35,10 +35,8 @@ namespace Apache.Ignite.Core.Impl.Cluster
     using Apache.Ignite.Core.Impl.Compute;
     using Apache.Ignite.Core.Impl.Events;
     using Apache.Ignite.Core.Impl.Messaging;
-    using Apache.Ignite.Core.Impl.PersistentStore;
     using Apache.Ignite.Core.Impl.Services;
     using Apache.Ignite.Core.Messaging;
-    using Apache.Ignite.Core.PersistentStore;
     using Apache.Ignite.Core.Services;
 
     /// <summary>
@@ -129,9 +127,6 @@ namespace Apache.Ignite.Core.Impl.Cluster
 
         /** */
         private const int OpIsActive = 29;
-
-        /** */
-        private const int OpGetPersistentStoreMetrics = 30;
 
         /** */
         private const int OpGetCompute = 31;
@@ -708,17 +703,6 @@ namespace Apache.Ignite.Core.Impl.Cluster
         {
             return DoOutInOp(OpIsActive) == True;
         }
-
-        /// <summary>
-        /// Gets the persistent store metrics.
-        /// </summary>
-#pragma warning disable 618
-        public IPersistentStoreMetrics GetPersistentStoreMetrics()
-        {
-            return DoInOp(OpGetPersistentStoreMetrics, stream =>
-                new PersistentStoreMetrics(Marshaller.StartUnmarshal(stream, false)));
-        }
-#pragma warning restore 618
 
         /// <summary>
         /// Clears cached node data.
