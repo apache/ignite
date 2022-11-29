@@ -1084,7 +1084,7 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
         }
         catch (Exception e) {
             log.error("Failed to store warnings of snapshot '" + snpReq.snapshotName() +
-                "' to the snapshot metafile instead of non-baseline coordinator [" + crd.id() + "]. Snapshot won't " +
+                "' to the snapshot metafile instead of non-baseline coordinator " + crd.id() + ". Snapshot won't " +
                 "contain them. The warnins: [" + String.join(",", snpReq.warnings()) + "].", e);
         }
     }

@@ -53,7 +53,7 @@ public class DataStreamerUpdatesHandler implements SnapshotHandler<Boolean> {
 
         if (!F.isEmpty(nodes)) {
             throw new SnapshotWarningException(WRN_MSG + " Updates from DataStreamer detected on the nodes: " +
-                nodes.stream().map(UUID::toString).collect(Collectors.joining(", ")));
+                nodes.stream().map(UUID::toString).collect(Collectors.joining(", ")) + '.');
         }
     }
 }

@@ -134,11 +134,11 @@ public class IgniteClusterSnapshotStreamerTest extends AbstractSnapshotSelfTest 
         stopGrid(1);
         stopGrid(2);
 
-        Ignite g = startGrid(getTestIgniteInstanceName(0));
+        startGrid(getTestIgniteInstanceName(0));
         startGrid(getTestIgniteInstanceName(1));
         startGrid(getTestIgniteInstanceName(2));
 
-        g.createCache(dfltCacheCfg);
+        nonBaseline.createCache(dfltCacheCfg);
 
         assert U.isLocalNodeCoordinator(nonBaseline.context().discovery());
 
