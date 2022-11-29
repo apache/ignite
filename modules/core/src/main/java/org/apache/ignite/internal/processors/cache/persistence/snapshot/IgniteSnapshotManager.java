@@ -869,9 +869,11 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
 
                 req.meta(meta);
 
-                File tempSmf = new File(snpDir, snapshotMetaFileName(cctx.localNode().consistentId().toString()));
+                File smf = new File(snpDir, snapshotMetaFileName(cctx.localNode().consistentId().toString()));
 
-                storeSnapshotMeta(req, tempSmf);
+                storeSnapshotMeta(req, smf);
+
+                log.info("Snapshot metafile has been created: " + smf.getAbsolutePath());
 
                 return new SnapshotOperationResponse(handlers.invokeAll(SnapshotHandlerType.CREATE, ctx));
             }
@@ -1082,6 +1084,8 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
 
             Files.move(tempSmf.toPath(), smf.toPath(), StandardCopyOption.ATOMIC_MOVE,
                 StandardCopyOption.REPLACE_EXISTING);
+
+            log.info("Snapshot metafile has been rewrited with the warnings: " + smf.getAbsolutePath());
         }
         catch (Exception e) {
             log.error("Failed to store warnings of snapshot '" + snpReq.snapshotName() +
