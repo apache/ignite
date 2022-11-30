@@ -1236,7 +1236,6 @@ public class SystemViewCommandTest extends GridCommandHandlerClusterByClassAbstr
         Map<UUID, List<List<String>>> map = null;
 
         for (String nameArg : F.asList(toSqlName(sysViewName), toSqlName(sysViewName).toLowerCase(), sysViewName)) {
-
             String[] args;
 
             if (ALL_NODES.argName().equals(nodesArg))
