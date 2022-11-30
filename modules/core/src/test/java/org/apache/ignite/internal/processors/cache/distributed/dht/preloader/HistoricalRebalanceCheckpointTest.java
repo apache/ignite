@@ -191,34 +191,46 @@ public class HistoricalRebalanceCheckpointTest extends GridCommonAbstractTest {
 
         Consumer<Integer> cachePutAsync = (key) -> GridTestUtils.runAsync(() -> primCache.put(key, key));
 
-        try {
-            // Blocked at primary and backups.
-            prepareBlock.set(true);
+        // Blocked at primary and backups.
+        prepareBlock.set(true);
 
-            blockLatch.set(new CountDownLatch(backupNodes * 20));
+        blockLatch.set(new CountDownLatch(backupNodes * 20));
 
-            for (int i = 0; i < 20; i++)
-                cachePutAsync.accept(++updateCnt);
+        for (int i = 0; i < 20; i++)
+            cachePutAsync.accept(++updateCnt);
 
-            blockLatch.get().await();
-        }
-        finally {
-            prepareBlock.set(false);
-        }
+        blockLatch.get().await();
 
         // Storing counters on primary.
         forceCheckpoint();
 
         // Emulating power off, OOM or disk overflow. Keeping data as is, with missed counters updates.
-        ((BlockableFileIOFactory)backup.configuration().getDataStorageConfiguration()
-            .getFileIOFactory()).blocked = true;
+//        ((BlockableFileIOFactory)backup.configuration().getDataStorageConfiguration()
+//            .getFileIOFactory()).blocked = true;
 
         String backName = backup.name();
 
         backup.close();
 
-        // Restore just any backup.
+        prepareBlock.set(false);
+
+//        TestRecordingCommunicationSpi.spi(prim).blockMessages(GridDhtPartitionDemandMessage.class, backName);
+//
+//        CountDownLatch rebalanceFinished = new CountDownLatch(1);
+//
+//        prim.events().localListen(evt -> {
+//            rebalanceFinished.countDown();
+//
+//            return true;
+//        }, EventType.EVT_CACHE_REBALANCE_STOPPED);
+//
         startGrid(backName);
+//
+//        TestRecordingCommunicationSpi.spi(prim).waitForBlocked();
+//
+//        TestRecordingCommunicationSpi.spi(prim).stopBlock();
+//
+//        rebalanceFinished.await();
 
         IdleVerifyResultV2 checkRes = idleVerify(prim, DEFAULT_CACHE_NAME);
 
