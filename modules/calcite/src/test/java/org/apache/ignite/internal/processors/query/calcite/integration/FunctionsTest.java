@@ -289,4 +289,29 @@ public class FunctionsTest extends AbstractBasicIntegrationTest {
         assertQuery("SELECT ?").withParams("asd").returns("asd").check();
         assertQuery("SELECT coalesce(?, ?)").withParams("a", 10).returns("a").check();
     }
+
+    /** */
+    @Test
+    public void testCastToBoolean() {
+        assertQuery("SELECT CAST(CAST(null AS DOUBLE) AS BOOLEAN)").returns(NULL_RESULT).check();
+        assertQuery("SELECT CAST(CAST('1' AS DOUBLE) AS BOOLEAN)").returns(true).check();
+        assertQuery("SELECT CAST(1.0 AS BOOLEAN)").returns(true).check();
+        assertQuery("SELECT CAST(0.1 AS BOOLEAN)").returns(true).check();
+        assertQuery("SELECT CAST(1 AS BOOLEAN)").returns(true).check();
+        assertQuery("SELECT CAST(CAST('0' AS DOUBLE) AS BOOLEAN)").returns(false).check();
+        assertQuery("SELECT CAST(0.0 AS BOOLEAN)").returns(false).check();
+        assertQuery("SELECT CAST(0 AS BOOLEAN)").returns(false).check();
+        assertQuery("SELECT CAST(CAST(? AS INT) AS BOOLEAN)").withParams(0).returns(false).check();
+        assertQuery("SELECT CAST(CAST(? AS INT) AS BOOLEAN)").withParams(1).returns(true).check();
+        assertQuery("SELECT CAST(CAST(? AS INT) AS BOOLEAN)").withParams(NULL_RESULT).returns(NULL_RESULT).check();
+        assertQuery("SELECT CAST(CAST(? AS DOUBLE) AS BOOLEAN)").withParams(0.0d).returns(false).check();
+        assertQuery("SELECT CAST(CAST(? AS DOUBLE) AS BOOLEAN)").withParams(1.0d).returns(true).check();
+        assertQuery("SELECT CAST(CAST(? AS DOUBLE) AS BOOLEAN)").withParams(NULL_RESULT).returns(NULL_RESULT).check();
+        assertQuery("SELECT CAST(CAST(? AS DECIMAL(2, 1)) AS BOOLEAN)")
+            .withParams(BigDecimal.valueOf(0, 1)).returns(false).check();
+        assertQuery("SELECT CAST(CAST(? AS DECIMAL(2, 1)) AS BOOLEAN)")
+            .withParams(BigDecimal.valueOf(10, 1)).returns(true).check();
+        assertQuery("SELECT CAST(CAST(? AS DECIMAL(2, 1)) AS BOOLEAN)")
+            .withParams(NULL_RESULT).returns(NULL_RESULT).check();
+    }
 }
