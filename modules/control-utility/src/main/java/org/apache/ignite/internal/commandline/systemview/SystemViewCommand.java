@@ -25,7 +25,6 @@ import java.util.List;
 import java.util.ListIterator;
 import java.util.Map;
 import java.util.UUID;
-import java.util.function.Function;
 import java.util.stream.Collectors;
 import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.internal.client.GridClient;
@@ -83,22 +82,22 @@ public class SystemViewCommand extends AbstractCommand<VisorSystemViewTaskArg> {
             try (GridClient client = Command.startClient(clientCfg)) {
                 GridClientCompute compute = client.compute();
 
-                Collection<GridClientNode> clusterNodes = compute.nodes();
-                Function<UUID, GridClientNode> idToNode = id -> F.find(clusterNodes, null, n -> id.equals(n.nodeId()));
+                Map<UUID, GridClientNode> clusterNodes = compute.nodes().stream()
+                    .collect(Collectors.toMap(GridClientNode::nodeId, n -> n));
 
                 if (allNodes)
-                    nodeIds = F.viewReadOnly(clusterNodes, GridClientNode::nodeId);
+                    nodeIds = clusterNodes.keySet();
                 else if (F.isEmpty(nodeIds))
                     nodeIds = singleton(getBalancedNode(compute).nodeId());
                 else {
                     for (UUID id : nodeIds) {
-                        if (idToNode.apply(id) == null)
+                        if (!clusterNodes.containsKey(id))
                             throw new IllegalArgumentException("Node with id=" + id + " not found.");
                     }
                 }
 
-                Collection<GridClientNode> connectable = F.viewReadOnly(nodeIds, idToNode::apply,
-                    id -> idToNode.apply(id).connectable());
+                Collection<GridClientNode> connectable = F.viewReadOnly(nodeIds, clusterNodes::get,
+                    id -> clusterNodes.get(id).connectable());
 
                 if (!F.isEmpty(connectable))
                     compute = compute.projection(connectable);
