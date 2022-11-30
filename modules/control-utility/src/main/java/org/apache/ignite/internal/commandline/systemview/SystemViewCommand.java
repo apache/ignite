@@ -37,6 +37,7 @@ import org.apache.ignite.internal.commandline.CommandArgIterator;
 import org.apache.ignite.internal.commandline.CommandLogger;
 import org.apache.ignite.internal.commandline.argument.CommandArgUtils;
 import org.apache.ignite.internal.util.typedef.F;
+import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.internal.visor.VisorTaskArgument;
 import org.apache.ignite.internal.visor.systemview.VisorSystemViewTask;
 import org.apache.ignite.internal.visor.systemview.VisorSystemViewTask.SimpleType;
@@ -108,9 +109,12 @@ public class SystemViewCommand extends AbstractCommand<VisorSystemViewTaskArg> {
 
             if (res != null) {
                 res.rows().forEach((nodeId, rows) -> {
-                    log.info("Results on node with ID: " + nodeId);
+                    log.info("Results from node with ID: " + nodeId);
+                    log.info("---");
 
                     printTable(res.attributes(), res.types(), rows, log);
+
+                    log.info("---" + U.nl());
                 });
             }
             else

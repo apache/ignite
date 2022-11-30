@@ -1272,7 +1272,8 @@ public class SystemViewCommandTest extends GridCommandHandlerClusterByClassAbstr
             out.indexOf(outEnd) - 1
         ).split(U.nl());
 
-        Pattern nodePtrn = Pattern.compile("Results on node with ID: (.*)");
+        Pattern nodePtrn = Pattern.compile("Results from node with ID: (.*)");
+        String tableDelim = "---";
 
         Map<UUID, List<List<String>>> res = new HashMap<>();
 
@@ -1286,6 +1287,9 @@ public class SystemViewCommandTest extends GridCommandHandlerClusterByClassAbstr
 
                 continue;
             }
+
+            if (tableDelim.equals(rowStr) || rowStr.isEmpty())
+                continue;
 
             assertNotNull("Expected node ID: " + out, currNodeId);
 
