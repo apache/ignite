@@ -73,6 +73,7 @@ import org.apache.ignite.internal.processors.metastorage.DistributedMetaStorage;
 import org.apache.ignite.internal.processors.service.DummyService;
 import org.apache.ignite.internal.util.StripedExecutor;
 import org.apache.ignite.internal.util.typedef.F;
+import org.apache.ignite.internal.util.typedef.G;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.internal.visor.systemview.VisorSystemViewTask;
 import org.apache.ignite.services.ServiceConfiguration;
@@ -92,6 +93,7 @@ import static org.apache.ignite.internal.commandline.CommandHandler.EXIT_CODE_IN
 import static org.apache.ignite.internal.commandline.CommandHandler.EXIT_CODE_OK;
 import static org.apache.ignite.internal.commandline.CommandList.SYSTEM_VIEW;
 import static org.apache.ignite.internal.commandline.systemview.SystemViewCommand.COLUMN_SEPARATOR;
+import static org.apache.ignite.internal.commandline.systemview.SystemViewCommandArg.ALL_NODES;
 import static org.apache.ignite.internal.commandline.systemview.SystemViewCommandArg.NODE_ID;
 import static org.apache.ignite.internal.commandline.systemview.SystemViewCommandArg.NODE_IDS;
 import static org.apache.ignite.internal.managers.discovery.GridDiscoveryManager.NODES_SYS_VIEW;
@@ -210,6 +212,21 @@ public class SystemViewCommandTest extends GridCommandHandlerClusterByClassAbstr
         assertContains(log,
             executeCommand(EXIT_CODE_INVALID_ARGUMENTS, CMD_SYS_VIEW, SVCS_VIEW, CACHE_GRP_PAGE_LIST_VIEW),
             "Multiple system view names are not supported.");
+    }
+
+    /**
+     * Tests command error output in case {@link SystemViewCommandArg#ALL_NODES} and
+     * {@link SystemViewCommandArg#NODE_IDS} are both specified.
+     */
+    @Test
+    public void testAllNodesAndNodeIds() {
+        assertContains(log, executeCommand(EXIT_CODE_INVALID_ARGUMENTS,
+                CMD_SYS_VIEW, SVCS_VIEW, ALL_NODES.argName(), NODE_IDS.argName(), ignite0.localNode().id().toString()),
+            "The " + ALL_NODES.argName() + " parameter cannot be used with specified node IDs.");
+
+        assertContains(log, executeCommand(EXIT_CODE_INVALID_ARGUMENTS,
+                CMD_SYS_VIEW, SVCS_VIEW, ALL_NODES.argName(), NODE_ID.argName(), ignite0.localNode().id().toString()),
+            "The " + ALL_NODES.argName() + " parameter cannot be used with specified node IDs.");
     }
 
     /**
@@ -1137,16 +1154,18 @@ public class SystemViewCommandTest extends GridCommandHandlerClusterByClassAbstr
     /** */
     @Test
     public void testMultipleNodes() {
-        checkNodesResult(Collections.singleton(ignite0));
-        checkNodesResult(Collections.singleton(client));
+        checkNodesResult(Collections.singleton(ignite0), NODE_IDS.argName());
+        checkNodesResult(Collections.singleton(client), NODE_IDS.argName());
 
-        checkNodesResult(F.asList(ignite0, ignite1));
-        checkNodesResult(F.asList(ignite0, ignite1, client));
+        checkNodesResult(F.asList(ignite0, ignite1), NODE_IDS.argName());
+        checkNodesResult(F.asList(ignite0, ignite1, client), NODE_IDS.argName());
+
+        checkNodesResult(F.viewReadOnly(G.allGrids(), node -> (IgniteEx)node), ALL_NODES.argName());
     }
 
     /** */
-    private void checkNodesResult(Collection<IgniteEx> nodes) {
-        Map<UUID, List<List<String>>> map = systemView(nodes, NODES_SYS_VIEW, true);
+    private void checkNodesResult(Collection<IgniteEx> nodes, String nodesArg) {
+        Map<UUID, List<List<String>>> map = systemView(nodes, NODES_SYS_VIEW, nodesArg);
 
         assertEquals(nodes.size(), map.size());
 
@@ -1185,7 +1204,7 @@ public class SystemViewCommandTest extends GridCommandHandlerClusterByClassAbstr
      * @return Content of the requested system view.
      */
     private List<List<String>> systemView(IgniteEx node, String sysViewName) {
-        Map<UUID, List<List<String>>> map = systemView(Collections.singleton(node), sysViewName, false);
+        Map<UUID, List<List<String>>> map = systemView(Collections.singleton(node), sysViewName, NODE_ID.argName());
 
         assertEquals(1, map.size());
 
@@ -1198,12 +1217,10 @@ public class SystemViewCommandTest extends GridCommandHandlerClusterByClassAbstr
      *
      * @param nodes Nodes to obtain system view from.
      * @param sysViewName Name of the system view which content is required.
-     * @param multipleIds {@code True} if use {@link SystemViewCommandArg#NODE_IDS} command.
+     * @param nodesArg Argument to specify nodes.
      * @return Content of the requested system view.
      */
-    private Map<UUID, List<List<String>>> systemView(Collection<IgniteEx> nodes, String sysViewName, boolean multipleIds) {
-        String arg = multipleIds ? NODE_IDS.argName() : NODE_ID.argName();
-
+    private Map<UUID, List<List<String>>> systemView(Collection<IgniteEx> nodes, String sysViewName, String nodesArg) {
         List<String> attrNames = new ArrayList<>();
 
         SystemView<?> sysView = nodes.iterator().next().context().systemView().view(sysViewName);
@@ -1214,26 +1231,28 @@ public class SystemViewCommandTest extends GridCommandHandlerClusterByClassAbstr
             }
         });
 
-        String nodeIds = String.join(",", F.viewReadOnly(nodes, n -> n.localNode().id().toString()));
-
-        Map<UUID, List<List<String>>> map = parseSystemViewCommandOutput(
-            executeCommand(EXIT_CODE_OK, CMD_SYS_VIEW, toSqlName(sysViewName), arg, nodeIds));
-
-        map.values().forEach(rows -> assertEquals(attrNames, rows.get(0)));
-
-        map = parseSystemViewCommandOutput(
-            executeCommand(EXIT_CODE_OK, CMD_SYS_VIEW, toSqlName(sysViewName).toLowerCase(), arg, nodeIds));
-
-        map.values().forEach(rows -> assertEquals(attrNames, rows.get(0)));
-
-        map = parseSystemViewCommandOutput(
-            executeCommand(EXIT_CODE_OK, CMD_SYS_VIEW, sysViewName, arg, nodeIds));
-
-        map.values().forEach(rows -> assertEquals(attrNames, rows.remove(0)));
-
         int attrsCnt = sysView.walker().count();
 
-        map.values().forEach(rows -> rows.forEach(row -> assertEquals(attrsCnt, row.size())));
+        Map<UUID, List<List<String>>> map = null;
+
+        for (String nameArg : F.asList(toSqlName(sysViewName), toSqlName(sysViewName).toLowerCase(), sysViewName)) {
+
+            String[] args;
+
+            if (ALL_NODES.argName().equals(nodesArg))
+                args = new String[] {CMD_SYS_VIEW, nameArg, ALL_NODES.argName()};
+            else {
+                String nodeIds = String.join(",", F.viewReadOnly(nodes, n -> n.localNode().id().toString()));
+
+                args = new String[] {CMD_SYS_VIEW, nameArg, nodesArg, nodeIds};
+            }
+
+            map = parseSystemViewCommandOutput(executeCommand(EXIT_CODE_OK, args));
+
+            map.values().forEach(rows -> rows.forEach(row -> assertEquals(attrsCnt, row.size())));
+
+            map.values().forEach(rows -> assertEquals(attrNames, rows.remove(0)));
+        }
 
         return map;
     }

@@ -62,7 +62,7 @@ public class VisorSystemViewTask extends VisorMultiNodeTask<VisorSystemViewTaskA
         throws IgniteException {
         VisorSystemViewTaskResult res = null;
 
-        Map<UUID, List<List<?>>> clusterRows = new TreeMap<>();
+        Map<UUID, List<List<?>>> merged = new TreeMap<>();
 
         for (ComputeJobResult r : results) {
             if (r.getException() != null)
@@ -73,10 +73,10 @@ public class VisorSystemViewTask extends VisorMultiNodeTask<VisorSystemViewTaskA
             if (res == null)
                 return null;
 
-            clusterRows.putAll(res.rows());
+            merged.putAll(res.rows());
         }
 
-        return new VisorSystemViewTaskResult(res.attributes(), res.types(), clusterRows);
+        return new VisorSystemViewTaskResult(res.attributes(), res.types(), merged);
     }
 
     /** */

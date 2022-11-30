@@ -252,12 +252,13 @@ If the file name isn't specified the output file name is: '<typeId>.bin'
     control.(sh|bat) --property set --name <property_name> --val <property_value>
 
   Print system view content:
-    control.(sh|bat) --system-view [--node-id node_id]|[--node-ids nodeId1,nodeId2,..] system_view_name
+    control.(sh|bat) --system-view system_view_name [--node-id node_id]|[--node-ids nodeId1,nodeId2,..]|[--all-nodes]
 
     Parameters:
-      system_view_name  - Name of the system view which content should be printed. Both "SQL" and "Java" styles of system view name are supported (e.g. SQL_TABLES and sql.tables will be handled similarly).
-      node_ids          - Comma-separated list of nodes IDs to get the system view from. If not set, random node will be chosen.
-      node_id           - ID of the node to get the system view from (deprecated. Use --node-ids instead). If not set, random node will be chosen.
+      system_view_name               - Name of the system view which content should be printed. Both "SQL" and "Java" styles of system view name are supported (e.g. SQL_TABLES and sql.tables will be handled similarly).
+      --node-id node_id              - ID of the node to get the system view from (deprecated. Use --node-ids instead). If not set, random node will be chosen.
+      --node-ids nodeId1,nodeId2,..  - Comma-separated list of nodes IDs to get the system view from. If not set, random node will be chosen.
+      --all-nodes                    - Get the system view from all nodes. If not set, random node will be chosen.
 
   Print metric value:
     control.(sh|bat) --metric [--node-id node_id] name

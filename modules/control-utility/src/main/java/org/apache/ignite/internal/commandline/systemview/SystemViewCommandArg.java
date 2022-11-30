@@ -30,7 +30,10 @@ public enum SystemViewCommandArg implements CommandArg {
     NODE_ID("--node-id"),
 
     /** Node IDs to get the system view from. */
-    NODE_IDS("--node-ids");
+    NODE_IDS("--node-ids"),
+
+    /** Get the system view from all nodes. */
+    ALL_NODES("--all-nodes");
 
     /** Name of the argument. */
     private final String name;

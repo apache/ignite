@@ -191,7 +191,7 @@ public class TaskExecutor {
      * @param compute instance
      * @return balanced node
      */
-    private static GridClientNode getBalancedNode(GridClientCompute compute) throws GridClientException {
+    public static GridClientNode getBalancedNode(GridClientCompute compute) throws GridClientException {
         Collection<GridClientNode> nodes = compute.nodes(GridClientNode::connectable);
 
         if (F.isEmpty(nodes))

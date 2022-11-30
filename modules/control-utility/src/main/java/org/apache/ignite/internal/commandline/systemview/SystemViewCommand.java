@@ -19,8 +19,8 @@ package org.apache.ignite.internal.commandline.systemview;
 
 import java.util.ArrayList;
 import java.util.Collection;
-import java.util.HashMap;
 import java.util.Iterator;
+import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.ListIterator;
 import java.util.Map;
@@ -50,7 +50,8 @@ import static java.util.Collections.singleton;
 import static org.apache.ignite.internal.commandline.CommandList.SYSTEM_VIEW;
 import static org.apache.ignite.internal.commandline.CommandLogger.optional;
 import static org.apache.ignite.internal.commandline.CommandLogger.or;
-import static org.apache.ignite.internal.commandline.TaskExecutor.SRV_NODES;
+import static org.apache.ignite.internal.commandline.TaskExecutor.getBalancedNode;
+import static org.apache.ignite.internal.commandline.systemview.SystemViewCommandArg.ALL_NODES;
 import static org.apache.ignite.internal.commandline.systemview.SystemViewCommandArg.NODE_ID;
 import static org.apache.ignite.internal.commandline.systemview.SystemViewCommandArg.NODE_IDS;
 import static org.apache.ignite.internal.visor.systemview.VisorSystemViewTask.SimpleType.DATE;
@@ -71,6 +72,9 @@ public class SystemViewCommand extends AbstractCommand<VisorSystemViewTaskArg> {
     /** ID of the nodes to get the system view content from. */
     private Collection<UUID> nodeIds;
 
+    /** Flag to get the system view from all nodes. */
+    private boolean allNodes;
+
     /** {@inheritDoc} */
     @Override public Object execute(GridClientConfiguration clientCfg, IgniteLogger log) throws Exception {
         try {
@@ -82,20 +86,22 @@ public class SystemViewCommand extends AbstractCommand<VisorSystemViewTaskArg> {
                 Collection<GridClientNode> clusterNodes = compute.nodes();
                 Function<UUID, GridClientNode> idToNode = id -> F.find(clusterNodes, null, n -> id.equals(n.nodeId()));
 
-                if (F.isEmpty(nodeIds)) {
-                    nodeIds = singleton(F.rand(clusterNodes.stream()
-                        .filter(SRV_NODES).map(GridClientNode::nodeId).collect(Collectors.toSet())));
+                if (allNodes)
+                    nodeIds = F.viewReadOnly(clusterNodes, GridClientNode::nodeId);
+                else if (F.isEmpty(nodeIds))
+                    nodeIds = singleton(getBalancedNode(compute).nodeId());
+                else {
+                    for (UUID id : nodeIds) {
+                        if (idToNode.apply(id) == null)
+                            throw new IllegalArgumentException("Node with id=" + id + " not found.");
+                    }
                 }
 
-                for (UUID id : nodeIds) {
-                    if (idToNode.apply(id) == null)
-                        throw new IllegalArgumentException("Node with id=" + id + " not found.");
-                }
+                Collection<GridClientNode> connectable = F.viewReadOnly(nodeIds, idToNode::apply,
+                    id -> idToNode.apply(id).connectable());
 
-                boolean hasConnectable = F.find(nodeIds, null, uuid -> idToNode.apply(uuid).connectable()) != null;
-
-                if (hasConnectable)
-                    compute = compute.projection(F.viewReadOnly(nodeIds, idToNode::apply));
+                if (!F.isEmpty(connectable))
+                    compute = compute.projection(connectable);
 
                 res = compute.execute(VisorSystemViewTask.class.getName(),
                     new VisorTaskArgument<>(nodeIds, taskArg, false));
@@ -190,6 +196,7 @@ public class SystemViewCommand extends AbstractCommand<VisorSystemViewTaskArg> {
     /** {@inheritDoc} */
     @Override public void parseArguments(CommandArgIterator argIter) {
         nodeIds = null;
+        allNodes = false;
 
         String sysViewName = null;
 
@@ -215,6 +222,8 @@ public class SystemViewCommand extends AbstractCommand<VisorSystemViewTaskArg> {
                         " 123e4567-e89b-42d3-a456-556642440000", e);
                 }
             }
+            else if (cmdArg == ALL_NODES)
+                allNodes = true;
             else {
                 if (sysViewName != null)
                     throw new IllegalArgumentException("Multiple system view names are not supported.");
@@ -222,6 +231,9 @@ public class SystemViewCommand extends AbstractCommand<VisorSystemViewTaskArg> {
                 sysViewName = arg;
             }
         }
+
+        if (allNodes && !F.isEmpty(nodeIds))
+            throw new IllegalArgumentException("The " + ALL_NODES + " parameter cannot be used with specified node IDs.");
 
         if (sysViewName == null) {
             throw new IllegalArgumentException(
@@ -238,19 +250,20 @@ public class SystemViewCommand extends AbstractCommand<VisorSystemViewTaskArg> {
 
     /** {@inheritDoc} */
     @Override public void printUsage(IgniteLogger log) {
-        Map<String, String> params = new HashMap<>();
+        Map<String, String> params = new LinkedHashMap<>();
 
-        params.put("node_id", "ID of the node to get the system view from (deprecated. Use " + NODE_IDS + " instead). " +
-            "If not set, random node will be chosen.");
-        params.put("node_ids",
-            "Comma-separated list of nodes IDs to get the system view from. If not set, random node will be chosen.");
         params.put("system_view_name", "Name of the system view which content should be printed." +
             " Both \"SQL\" and \"Java\" styles of system view name are supported" +
             " (e.g. SQL_TABLES and sql.tables will be handled similarly).");
+        params.put(NODE_ID + " node_id", "ID of the node to get the system view from (deprecated. Use " + NODE_IDS + " instead). " +
+            "If not set, random node will be chosen.");
+        params.put(NODE_IDS + " nodeId1,nodeId2,..",
+            "Comma-separated list of nodes IDs to get the system view from. If not set, random node will be chosen.");
+        params.put(ALL_NODES.argName(),
+            "Get the system view from all nodes. If not set, random node will be chosen.");
 
-        usage(log, "Print system view content:", SYSTEM_VIEW, params,
-            or(optional(NODE_ID, "node_id"), optional(NODE_IDS, "nodeId1,nodeId2,..")),
-            "system_view_name");
+        usage(log, "Print system view content:", SYSTEM_VIEW, params, "system_view_name",
+            or(optional(NODE_ID, "node_id"), optional(NODE_IDS, "nodeId1,nodeId2,.."), optional(ALL_NODES)));
     }
 
     /** {@inheritDoc} */
