@@ -107,7 +107,7 @@ public enum CommandList {
     CONSISTENCY("--consistency", new ConsistencyCommand()),
 
     /** Command to print node config. */
-    CONFIG("--config", new NodeConfigCommand());
+    NODE_CONFIG("--node-config", new NodeConfigCommand());
 
     /** Private values copy so there's no need in cloning it every time. */
     private static final CommandList[] VALUES = CommandList.values();

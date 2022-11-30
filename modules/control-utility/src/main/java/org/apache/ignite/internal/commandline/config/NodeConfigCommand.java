@@ -48,7 +48,7 @@ import org.apache.ignite.internal.visor.node.VisorSegmentationConfiguration;
 import org.apache.ignite.internal.visor.node.VisorSpisConfiguration;
 import org.apache.ignite.internal.visor.node.VisorTransactionConfiguration;
 
-import static org.apache.ignite.internal.commandline.CommandList.CONFIG;
+import static org.apache.ignite.internal.commandline.CommandList.NODE_CONFIG;
 import static org.apache.ignite.internal.commandline.TaskExecutor.executeTaskByNameOnNode;
 import static org.apache.ignite.internal.commandline.config.NodeConfigCommandArg.NODE_ID;
 import static org.apache.ignite.internal.visor.systemview.VisorSystemViewTask.SimpleType.STRING;
@@ -434,11 +434,11 @@ public class NodeConfigCommand extends AbstractCommand<Void> {
 
         params.put("node_id", "ID of the node to get config from.");
 
-        usage(log, "Print node configuration:", CONFIG, params, "node_id");
+        usage(log, "Print node configuration:", NODE_CONFIG, params, "node_id");
     }
 
     /** {@inheritDoc} */
     @Override public String name() {
-        return CONFIG.toCommandName();
+        return NODE_CONFIG.toCommandName();
     }
 }
