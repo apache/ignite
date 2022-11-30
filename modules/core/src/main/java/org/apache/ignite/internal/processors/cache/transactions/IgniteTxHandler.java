@@ -2285,6 +2285,9 @@ public class IgniteTxHandler {
                                     long start = counter.initialCounter(i);
                                     long delta = counter.updatesCount(i);
 
+                                    if(start == 2019 && delta == 1)
+                                        log.error("TEST | part.updateCounter(start, delta) " + start);
+
                                     boolean updated = part.updateCounter(start, delta);
 
                                     // Need to log rolled back range for logical recovery.

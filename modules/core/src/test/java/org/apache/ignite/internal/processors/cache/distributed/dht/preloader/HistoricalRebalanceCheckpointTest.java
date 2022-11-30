@@ -48,6 +48,7 @@ import org.apache.ignite.internal.processors.cache.persistence.file.FileIO;
 import org.apache.ignite.internal.processors.cache.persistence.file.FileIODecorator;
 import org.apache.ignite.internal.processors.cache.persistence.file.FileIOFactory;
 import org.apache.ignite.internal.processors.cache.verify.IdleVerifyResultV2;
+import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgniteBiPredicate;
 import org.apache.ignite.plugin.extensions.communication.Message;
 import org.apache.ignite.testframework.GridTestUtils;
@@ -144,6 +145,8 @@ public class HistoricalRebalanceCheckpointTest extends GridCommonAbstractTest {
 
         Ignite prim = primaryNode(0L, DEFAULT_CACHE_NAME);
 
+        log.error("TEST | after prepareCluster, prim: " + prim.configuration().getIgniteInstanceName() + ", order: " + prim.cluster().localNode().order());
+
         Ignite backup = backupNodes(0L, DEFAULT_CACHE_NAME).get(0);
 
         AtomicBoolean prepareBlock = new AtomicBoolean();
@@ -184,9 +187,19 @@ public class HistoricalRebalanceCheckpointTest extends GridCommonAbstractTest {
 
         String backName = backup.name();
 
+        log.error("TEST | backup.close()");
+
         backup.close();
 
+        forceCheckpoint();
+
+        System.err.println("TEST | cache size 1: " + prim.cache(DEFAULT_CACHE_NAME).size());
+
+        log.error("TEST | startGrid(backName)");
+
         startGrid(backName);
+
+        System.err.println("TEST | cache size 2: " + prim.cache(DEFAULT_CACHE_NAME).size());
 
         IdleVerifyResultV2 checkRes = idleVerify(prim, DEFAULT_CACHE_NAME);
 
