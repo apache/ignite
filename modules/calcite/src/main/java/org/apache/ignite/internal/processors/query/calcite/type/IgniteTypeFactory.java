@@ -23,6 +23,7 @@ import java.nio.charset.Charset;
 import java.nio.charset.StandardCharsets;
 import java.sql.Timestamp;
 import java.time.Duration;
+import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.time.LocalTime;
 import java.time.Period;
@@ -40,6 +41,7 @@ import org.apache.calcite.sql.SqlUtil;
 import org.apache.calcite.sql.parser.SqlParserPos;
 import org.apache.calcite.sql.type.BasicSqlType;
 import org.apache.calcite.sql.type.IntervalSqlType;
+import org.apache.calcite.sql.type.SqlTypeName;
 import org.apache.ignite.internal.util.typedef.F;
 
 /**
@@ -265,6 +267,12 @@ public class IgniteTypeFactory extends JavaTypeFactoryImpl {
                 return createTypeWithNullability(createSqlIntervalType(INTERVAL_QUALIFIER_DAY_TIME), true);
             else if (clazz == Period.class)
                 return createTypeWithNullability(createSqlIntervalType(INTERVAL_QUALIFIER_YEAR_MONTH), true);
+            else if (clazz == LocalDateTime.class)
+                return createTypeWithNullability(createSqlType(SqlTypeName.TIMESTAMP), true);
+            else if (clazz == LocalDate.class)
+                return createTypeWithNullability(createSqlType(SqlTypeName.DATE), true);
+            else if (clazz == LocalTime.class)
+                return createTypeWithNullability(createSqlType(SqlTypeName.TIME), true);
             else {
                 RelDataType relType = createCustomType(clazz);
 
@@ -301,7 +309,8 @@ public class IgniteTypeFactory extends JavaTypeFactoryImpl {
 
     /** {@inheritDoc} */
     @Override public RelDataType createType(Type type) {
-        if (type == Duration.class || type == Period.class)
+        if (type == Duration.class || type == Period.class || type == LocalDateTime.class || type == LocalTime.class
+            || type == LocalDate.class)
             return createJavaType((Class<?>)type);
 
         RelDataType customType = createCustomType(type, false);

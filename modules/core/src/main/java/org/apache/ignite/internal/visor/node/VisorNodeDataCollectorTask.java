@@ -121,12 +121,6 @@ public class VisorNodeDataCollectorTask extends VisorMultiNodeTask<VisorNodeData
         if (jobRes.getIgfssEx() != null)
             taskRes.getIgfssEx().put(nid, jobRes.getIgfssEx());
 
-        if (jobRes.getPersistenceMetrics() != null)
-            taskRes.getPersistenceMetrics().put(nid, jobRes.getPersistenceMetrics());
-
-        if (jobRes.getPersistenceMetricsEx() != null)
-            taskRes.getPersistenceMetricsEx().put(nid, jobRes.getPersistenceMetricsEx());
-
         taskRes.getReadyAffinityVersions().put(nid, jobRes.getReadyAffinityVersion());
 
         taskRes.getPendingExchanges().put(nid, jobRes.isHasPendingExchange());
