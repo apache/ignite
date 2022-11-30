@@ -213,14 +213,16 @@ public class SystemViewCommand extends AbstractCommand<VisorSystemViewTaskArg> {
                     cmdArg == NODE_ID ? "ID of the node from which system view content should be obtained is expected." :
                         "Comma-separated list of node IDs from which system view content should be obtained is expected.");
 
-                try {
-                    nodeIds = F.viewReadOnly(argIter.parseStringSet(idsArg), UUID::fromString);
-                }
-                catch (IllegalArgumentException e) {
-                    throw new IllegalArgumentException("Failed to parse " + (cmdArg == NODE_ID ? NODE_ID : NODE_IDS) +
-                        " command argument. String representation of \"java.util.UUID\" is exepected. For example:" +
-                        " 123e4567-e89b-42d3-a456-556642440000", e);
-                }
+                nodeIds = F.viewReadOnly(argIter.parseStringSet(idsArg), name -> {
+                    try {
+                        return UUID.fromString(name);
+                    }
+                    catch (IllegalArgumentException e) {
+                        throw new IllegalArgumentException("Failed to parse " + (cmdArg == NODE_ID ? NODE_ID : NODE_IDS) +
+                            " command argument. String representation of \"java.util.UUID\" is exepected. For example:" +
+                            " 123e4567-e89b-42d3-a456-556642440000", e);
+                    }
+                });
             }
             else if (cmdArg == ALL_NODES)
                 allNodes = true;
