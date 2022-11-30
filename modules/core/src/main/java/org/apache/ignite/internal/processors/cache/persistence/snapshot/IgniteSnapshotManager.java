@@ -763,10 +763,6 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
      * @return Future which will be completed when a snapshot has been started.
      */
     private IgniteInternalFuture<SnapshotOperationResponse> initLocalSnapshotStartStage(SnapshotOperationRequest req) {
-        if (cctx.kernalContext().clientNode() ||
-            !CU.baselineNode(cctx.localNode(), cctx.kernalContext().state().clusterState()))
-            return new GridFinishedFuture<>();
-
         // Executed inside discovery notifier thread, prior to firing discovery custom event,
         // so it is safe to set new snapshot task inside this method without synchronization.
         if (clusterSnpReq != null) {
@@ -1378,7 +1374,7 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
      * @param name Snapshot name.
      * @param snpPath Snapshot directory path.
      * @return Future with the result of execution snapshot partitions verify task, which besides calculating partition
-     * hashes of {@link IdleVerifyResultV2} also contains the snapshot metadata distribution across the cluster.
+     *         hashes of {@link IdleVerifyResultV2} also contains the snapshot metadata distribution across the cluster.
      */
     public IgniteInternalFuture<SnapshotPartitionsVerifyTaskResult> checkSnapshot(String name,
         @Nullable String snpPath) {
@@ -1408,7 +1404,7 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
      * @param includeCustomHandlers {@code True} to invoke all user-defined {@link SnapshotHandlerType#RESTORE}
      *                              handlers, otherwise only system consistency check will be performed.
      * @return Future with the result of execution snapshot partitions verify task, which besides calculating partition
-     * hashes of {@link IdleVerifyResultV2} also contains the snapshot metadata distribution across the cluster.
+     *         hashes of {@link IdleVerifyResultV2} also contains the snapshot metadata distribution across the cluster.
      */
     public IgniteInternalFuture<SnapshotPartitionsVerifyTaskResult> checkSnapshot(
         String name,

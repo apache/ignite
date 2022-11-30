@@ -135,7 +135,6 @@ public class IgniteClusterSnapshotStreamerTest extends AbstractSnapshotSelfTest 
      * non-baseline coordinator node.
      */
     @Test
-    //@Ignore("https://issues.apache.org/jira/browse/IGNITE-18259")
     public void testStreamerWhileSnapshotDefaultNotBaselineCoordinator() throws Exception {
         grid(0).destroyCache(dfltCacheCfg.getName());
 
@@ -161,7 +160,6 @@ public class IgniteClusterSnapshotStreamerTest extends AbstractSnapshotSelfTest 
      * non-baseline node.
      */
     @Test
-    //@Ignore("https://issues.apache.org/jira/browse/IGNITE-18259")
     public void testStreamerWhileSnapshotDefaultNotBaseline() throws Exception {
         doTestDataStreamerWhileSnapshot(nonBaseline, false);
     }
