@@ -22,7 +22,6 @@ import java.net.InetAddress;
 import java.util.Collection;
 import java.util.List;
 import java.util.UUID;
-import java.util.function.Predicate;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 import org.apache.ignite.compute.ComputeTask;
@@ -49,9 +48,6 @@ public class TaskExecutor {
 
     /** Broadcast uuid. */
     public static final UUID BROADCAST_UUID = UUID.randomUUID();
-
-    /** Predicate to filter server nodes. */
-    public static final Predicate<GridClientNode> SRV_NODES = node -> !node.isClient() && !node.isDaemon();
 
     /**
      * @param client Client

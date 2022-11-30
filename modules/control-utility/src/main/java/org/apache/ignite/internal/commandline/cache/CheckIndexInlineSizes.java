@@ -23,6 +23,7 @@ import java.util.HashSet;
 import java.util.Map;
 import java.util.Set;
 import java.util.UUID;
+import java.util.function.Predicate;
 import java.util.stream.Collectors;
 import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.IgniteSystemProperties;
@@ -39,7 +40,6 @@ import org.apache.ignite.internal.visor.VisorTaskArgument;
 
 import static java.util.stream.Collectors.toSet;
 import static org.apache.ignite.internal.commandline.CommandLogger.INDENT;
-import static org.apache.ignite.internal.commandline.TaskExecutor.SRV_NODES;
 
 /**
  * Command for check secondary indexes inline size on the different nodes.
@@ -48,6 +48,9 @@ public class CheckIndexInlineSizes extends AbstractCommand<Void> {
     /** Success message. */
     public static final String INDEXES_INLINE_SIZE_ARE_THE_SAME =
         "All secondary indexes have the same effective inline size on all cluster nodes.";
+
+    /** Predicate to filter server nodes. */
+    private static final Predicate<GridClientNode> SRV_NODES = node -> !node.isClient() && !node.isDaemon();
 
     /** {@inheritDoc} */
     @Override public Object execute(GridClientConfiguration clientCfg, IgniteLogger log) throws Exception {
