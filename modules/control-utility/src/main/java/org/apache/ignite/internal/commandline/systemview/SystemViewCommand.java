@@ -214,7 +214,11 @@ public class SystemViewCommand extends AbstractCommand<VisorSystemViewTaskArg> {
                 "%-" + colSz + "s";
 
             return String.format(format, colVal);
-        }).collect(Collectors.joining(prettyPrint ? " | " : COLUMN_SEPARATOR, "| ", " |")));
+        }).collect(Collectors.joining(
+            prettyPrint ? " | " : COLUMN_SEPARATOR,
+            prettyPrint ? "| " : "",
+            prettyPrint ? " |" : ""
+        )));
 
         if (prettyPrint && titles)
             printFooter(colSzs, '=', false, log);
