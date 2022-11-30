@@ -62,6 +62,8 @@ import static org.apache.ignite.internal.visor.util.VisorTaskUtils.spisClass;
 
 /** Represents command for node configuration printing. */
 public class NodeConfigCommand extends AbstractCommand<Void> {
+    /** */
+    public static final boolean PRETTY_PRINT = true;
 
     /** ID of the node to get configuration from. */
     private UUID nodeId;
@@ -126,6 +128,7 @@ public class NodeConfigCommand extends AbstractCommand<Void> {
                     Arrays.asList("Transaction Manager Factory", trn.getTxManagerFactory()),
                     Arrays.asList("Transaction Use JTA", bool2Str(trn.isUseJtaSync()))
                 ),
+                PRETTY_PRINT,
                 log
             );
 
@@ -144,6 +147,7 @@ public class NodeConfigCommand extends AbstractCommand<Void> {
                     Arrays.asList("Metrics history size", metricsCfg.getHistorySize()),
                     Arrays.asList("Metrics log frequency", metricsCfg.getLoggerFrequency())
                 ),
+                PRETTY_PRINT,
                 log
             );
 
@@ -166,6 +170,7 @@ public class NodeConfigCommand extends AbstractCommand<Void> {
                     Arrays.asList("Load balancings", spisClass(spisCfg.getLoadBalancingSpis())),
                     Arrays.asList("Indexing", spisClass(spisCfg.getIndexingSpis()))
                 ),
+                PRETTY_PRINT,
                 log
             );
 
@@ -196,6 +201,7 @@ public class NodeConfigCommand extends AbstractCommand<Void> {
                         Arrays.asList("Use Ignite SSL Context Factory", bool2Str(cliConnCfg.isUseIgniteSslContextFactory())),
                         Arrays.asList("SSL Context Factory", safe(cliConnCfg.getSslContextFactory()))
                     ),
+                    PRETTY_PRINT,
                     log
                 );
             }
@@ -215,6 +221,7 @@ public class NodeConfigCommand extends AbstractCommand<Void> {
                     Arrays.asList("Missed resources cache size", p2pCfg.getPeerClassLoadingMissedResourcesCacheSize()),
                     Arrays.asList("Peer-to-Peer loaded packages", safe(p2pCfg.getPeerClassLoadingLocalClassPathExclude()))
                 ),
+                PRETTY_PRINT,
                 log
             );
 
@@ -227,6 +234,7 @@ public class NodeConfigCommand extends AbstractCommand<Void> {
                 Collections.singletonList(
                     Arrays.asList("Beans", safe(res.getLifecycle().getBeans()))
                 ),
+                PRETTY_PRINT,
                 log
             );
 
@@ -247,6 +255,7 @@ public class NodeConfigCommand extends AbstractCommand<Void> {
                     Arrays.asList("REST thread pool size", safe(execCfg.getRestThreadPoolSize())),
                     Arrays.asList("Client connector thread pool size", safe(execCfg.getClientConnectorConfigurationThreadPoolSize()))
                 ),
+                PRETTY_PRINT,
                 log
             );
 
@@ -265,6 +274,7 @@ public class NodeConfigCommand extends AbstractCommand<Void> {
                     Arrays.asList("Wait for segmentation on start", bool2Str(segmentationCfg.isWaitOnStart())),
                     Arrays.asList("All resolvers pass required", bool2Str(segmentationCfg.isAllSegmentationResolversPassRequired()))
                 ),
+                PRETTY_PRINT,
                 log
             );
 
@@ -287,6 +297,7 @@ public class NodeConfigCommand extends AbstractCommand<Void> {
                 Collections.singletonList(
                     Arrays.asList("Included event types", inclEvtTypes)
                 ),
+                PRETTY_PRINT,
                 log
             );
 
@@ -308,6 +319,7 @@ public class NodeConfigCommand extends AbstractCommand<Void> {
                     Arrays.asList("Tcp host", safe(restCfg.getTcpHost())),
                     Arrays.asList("Tcp port", safe(restCfg.getTcpPort()))
                 ),
+                PRETTY_PRINT,
                 log
             );
 
@@ -324,6 +336,7 @@ public class NodeConfigCommand extends AbstractCommand<Void> {
                     Arrays.asList("Name", "Value"),
                     Arrays.asList(STRING, STRING),
                     data,
+                    PRETTY_PRINT,
                     log
                 );
             }
@@ -345,6 +358,7 @@ public class NodeConfigCommand extends AbstractCommand<Void> {
                     Arrays.asList("Name", "Value"),
                     Arrays.asList(STRING, STRING),
                     data,
+                    PRETTY_PRINT,
                     log
                 );
             }
@@ -366,6 +380,7 @@ public class NodeConfigCommand extends AbstractCommand<Void> {
                     Arrays.asList("Name", "Value"),
                     Arrays.asList(STRING, STRING),
                     data,
+                    PRETTY_PRINT,
                     log
                 );
             }

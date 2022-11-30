@@ -102,6 +102,25 @@ public class SystemViewCommand extends AbstractCommand<VisorSystemViewTaskArg> {
      * @param log Logger.
      */
     public static void printTable(List<String> titles, List<SimpleType> types, List<List<?>> data, IgniteLogger log) {
+        printTable(titles, types, data, false, log);
+    }
+
+    /**
+     * Prints specified data rows as table.
+     *
+     * @param titles Titles of the table columns.
+     * @param types  Types of the table columns.
+     * @param data Table data rows.
+     * @param prettyPrint Print table borders flag.
+     * @param log Logger.
+     */
+    public static void printTable(
+        List<String> titles,
+        List<SimpleType> types,
+        List<List<?>> data,
+        boolean prettyPrint,
+        IgniteLogger log
+    ) {
         List<Integer> colSzs;
 
         if (titles != null)
@@ -124,9 +143,41 @@ public class SystemViewCommand extends AbstractCommand<VisorSystemViewTaskArg> {
         });
 
         if (titles != null)
-            printRow(titles, nCopies(titles.size(), STRING), colSzs, log);
+            printRow(titles, nCopies(titles.size(), STRING), colSzs, true, prettyPrint, log);
+        else if (prettyPrint)
+            printFooter(colSzs, '-', false, log);
 
-        rows.forEach(row -> printRow(row, types, colSzs, log));
+        rows.forEach(row -> printRow(row, types, colSzs, false, prettyPrint, log));
+
+        if (prettyPrint)
+            printFooter(colSzs, '-', false, log);
+    }
+
+    /** */
+    private static void printFooter(Collection<Integer> colSzs, char ch, boolean colDelim, IgniteLogger log) {
+        StringBuilder frameRow = new StringBuilder();
+
+        final boolean[] first = {true};
+
+        colSzs.forEach(colSz -> {
+            if (first[0] || colDelim)
+                frameRow.append('+');
+            else
+                frameRow.append(ch);
+
+            first[0] = false;
+
+            frameRow.append(ch);
+
+            for (int i = 0; i < colSz; i++)
+                frameRow.append(ch);
+
+            frameRow.append(ch);
+        });
+
+        frameRow.append('+');
+
+        log.info(frameRow.toString());
     }
 
     /**
@@ -135,14 +186,21 @@ public class SystemViewCommand extends AbstractCommand<VisorSystemViewTaskArg> {
      * @param row Row which content should be printed.
      * @param types Column types in sequential order for decent row formatting.
      * @param colSzs Column sizes in sequential order for decent row formatting.
+     * @param titles If {@code true} then titles printed.
+     * @param prettyPrint Print table borders flag.
      * @param log Logger.
      */
     private static void printRow(
         Collection<String> row,
         Collection<SimpleType> types,
         Collection<Integer> colSzs,
+        boolean titles,
+        boolean prettyPrint,
         IgniteLogger log
     ) {
+        if (prettyPrint && titles)
+            printFooter(colSzs, '=', false, log);
+
         Iterator<SimpleType> typeIter = types.iterator();
         Iterator<Integer> colSzsIter = colSzs.iterator();
 
@@ -156,7 +214,10 @@ public class SystemViewCommand extends AbstractCommand<VisorSystemViewTaskArg> {
                 "%-" + colSz + "s";
 
             return String.format(format, colVal);
-        }).collect(Collectors.joining(COLUMN_SEPARATOR)));
+        }).collect(Collectors.joining(prettyPrint ? " | " : COLUMN_SEPARATOR, "| ", " |")));
+
+        if (prettyPrint && titles)
+            printFooter(colSzs, '=', false, log);
     }
 
     /** {@inheritDoc} */
