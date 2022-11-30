@@ -22,6 +22,7 @@ import java.util.Set;
 import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.SystemProperty;
 import org.apache.ignite.cluster.ClusterNode;
+import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
 import org.apache.ignite.internal.processors.cache.distributed.dht.preloader.GridDhtPartitionsExchangeFuture;
 import org.apache.ignite.internal.processors.cache.distributed.dht.preloader.GridDhtPartitionsFullMessage;
 import org.apache.ignite.internal.util.typedef.internal.S;
@@ -53,6 +54,17 @@ public class ExchangeContext {
 
     /** PME is not required. */
     private boolean exchangeFreeSwitch;
+
+    /**
+     * Whether cache requests that were mapped to an outdated topology version should be forcibly remapped to
+     * the up-to-date one. {@code True} forces all cache requests (including those that were mapped to the stale topology
+     * version with the same key affinity distribution) to wait current PME completion on all nodes.
+     * This is critical in situations when you want to ensure that no cache requests can be executed until PME is
+     * finished on all nodes (e.g. snapshot operation).
+     *
+     * @see GridCacheAffinityManager#isCompatibleWithCurrentTopologyVersion(AffinityTopologyVersion)
+     */
+    private final boolean remapStaleCacheReq;
 
     /** Merges allowed flag. */
     private final boolean merge;
@@ -103,6 +115,8 @@ public class ExchangeContext {
         }
 
         evts = new ExchangeDiscoveryEvents(fut);
+
+        remapStaleCacheReq = isSnapshotOperation(fut.firstEvent());
     }
 
     /**
@@ -157,6 +171,14 @@ public class ExchangeContext {
      */
     public boolean mergeExchanges() {
         return merge;
+    }
+
+   /**
+     * @return Whether cache requests that were mapped to an outdated topology version should be forcibly remapped to
+     * the up-to-date one.
+     */
+    public boolean remapStaleCacheRequests() {
+        return remapStaleCacheReq;
     }
 
     /** {@inheritDoc} */

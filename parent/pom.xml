@@ -130,7 +130,7 @@
         <netlibjava.version>1.1.2</netlibjava.version>
         <oro.bundle.version>2.0.8_6</oro.bundle.version>
         <paho.version>1.0.2</paho.version>
-        <postgres.connector.version>42.3.3</postgres.connector.version>
+        <postgres.connector.version>42.5.0</postgres.connector.version>
         <scala210.jline.version>2.10.7</scala210.jline.version>
         <scala210.library.version>2.10.7</scala210.library.version>
         <scala.library.version>2.11.12</scala.library.version>

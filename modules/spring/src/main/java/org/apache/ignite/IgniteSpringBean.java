@@ -341,11 +341,6 @@ public class IgniteSpringBean implements Ignite, DisposableBean, SmartInitializi
     }
 
     /** {@inheritDoc} */
-    @Override public PersistenceMetrics persistentStoreMetrics() {
-        return DataStorageMetricsAdapter.valueOf(dataStorageMetrics());
-    }
-
-    /** {@inheritDoc} */
     @Override public <K, V> IgniteCache<K, V> cache(@Nullable String name) {
         checkIgnite();
 

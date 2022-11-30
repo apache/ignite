@@ -279,6 +279,9 @@ public abstract class QueryChecker {
     private List<List<?>> expectedResult;
 
     /** */
+    private int expectedResultSize = -1;
+
+    /** */
     private List<String> expectedColumnNames;
 
     /** */
@@ -315,6 +318,13 @@ public abstract class QueryChecker {
             expectedResult = new ArrayList<>();
 
         expectedResult.add(Arrays.asList(res));
+
+        return this;
+    }
+
+    /** */
+    public QueryChecker resultSize(int size) {
+        expectedResultSize = size;
 
         return this;
     }
@@ -379,6 +389,9 @@ public abstract class QueryChecker {
         }
 
         List<List<?>> res = cur.getAll();
+
+        if (expectedResultSize >= 0)
+            assertEquals("Unexpected result size", expectedResultSize, res.size());
 
         if (expectedResult != null) {
             if (!ordered) {

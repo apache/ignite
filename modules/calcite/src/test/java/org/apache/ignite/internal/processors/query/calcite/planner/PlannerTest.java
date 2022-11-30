@@ -34,6 +34,7 @@ import org.apache.calcite.rel.type.RelDataTypeFactory;
 import org.apache.calcite.schema.SchemaPlus;
 import org.apache.calcite.sql.SqlNode;
 import org.apache.calcite.util.ImmutableBitSet;
+import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
 import org.apache.ignite.internal.processors.query.calcite.QueryRegistryImpl;
 import org.apache.ignite.internal.processors.query.calcite.exec.ArrayRowHandler;
@@ -45,6 +46,7 @@ import org.apache.ignite.internal.processors.query.calcite.exec.QueryTaskExecuto
 import org.apache.ignite.internal.processors.query.calcite.exec.rel.Node;
 import org.apache.ignite.internal.processors.query.calcite.exec.rel.Outbox;
 import org.apache.ignite.internal.processors.query.calcite.exec.rel.RootNode;
+import org.apache.ignite.internal.processors.query.calcite.exec.tracker.NoOpMemoryTracker;
 import org.apache.ignite.internal.processors.query.calcite.message.MessageServiceImpl;
 import org.apache.ignite.internal.processors.query.calcite.message.TestIoManager;
 import org.apache.ignite.internal.processors.query.calcite.metadata.ColocationGroup;
@@ -257,166 +259,7 @@ public class PlannerTest extends AbstractPlannerTest {
             "ON d.projectId = p.id0 " +
             "WHERE (d.projectId + 1) > ?";
 
-        BaseQueryContext qctx = BaseQueryContext.builder()
-            .logger(log)
-            .frameworkConfig(newConfigBuilder(FRAMEWORK_CONFIG)
-                .defaultSchema(schema)
-                .build())
-            .build();
-
-        PlanningContext ctx = PlanningContext.builder()
-            .parentContext(qctx)
-            .query(sql)
-            .parameters(-10)
-            .build();
-
-        IgniteRel phys = physicalPlan(ctx);
-
-        assertNotNull(phys);
-
-        MultiStepPlan plan = new MultiStepQueryPlan(new QueryTemplate(new Splitter().go(phys)), null, null);
-        assertNotNull(plan);
-
-        plan.init(this::intermediateMapping, Commons.mapContext(F.first(nodes), AffinityTopologyVersion.NONE));
-
-        List<Fragment> fragments = plan.fragments();
-        assertEquals(2, fragments.size());
-
-        UUID qryId = UUID.randomUUID();
-
-        TestIoManager mgr = new TestIoManager();
-        GridTestKernalContext kernal;
-        QueryTaskExecutorImpl taskExecutor;
-        MessageServiceImpl msgSvc;
-        MailboxRegistryImpl mailboxRegistry;
-        ExchangeServiceImpl exchangeSvc;
-        ExecutionContext<Object[]> ectx;
-        Node<Object[]> exec;
-
-        //// Local part
-
-        Fragment fragment = fragments.get(0);
-        assert fragment.rootFragment();
-
-        kernal = newContext();
-
-        taskExecutor = new QueryTaskExecutorImpl(kernal);
-        taskExecutor.stripedThreadPoolExecutor(new IgniteStripedThreadPoolExecutor(
-            kernal.config().getQueryThreadPoolSize(),
-            kernal.igniteInstanceName(),
-            "calciteQry",
-            (t, ex) -> {
-                log().error(ex.getMessage(), ex);
-                lastE = ex;
-            },
-            true,
-            DFLT_THREAD_KEEP_ALIVE_TIME
-        ));
-        executors.add(taskExecutor);
-
-        msgSvc = new TestMessageServiceImpl(kernal, mgr);
-
-        msgSvc.localNodeId(nodes.get(0));
-        msgSvc.taskExecutor(taskExecutor);
-        mgr.register(msgSvc);
-
-        mailboxRegistry = new MailboxRegistryImpl(kernal);
-
-        exchangeSvc = new ExchangeServiceImpl(kernal);
-        exchangeSvc.taskExecutor(taskExecutor);
-        exchangeSvc.messageService(msgSvc);
-        exchangeSvc.mailboxRegistry(mailboxRegistry);
-        exchangeSvc.queryRegistry(new QueryRegistryImpl(kernal));
-        exchangeSvc.init();
-
-        ectx = new ExecutionContext<>(
-            qctx,
-            taskExecutor,
-            qryId,
-            F.first(nodes),
-            F.first(nodes),
-            AffinityTopologyVersion.NONE,
-            new FragmentDescription(
-                fragment.fragmentId(),
-                fragment.mapping(),
-                plan.target(fragment),
-                plan.remotes(fragment)),
-            ArrayRowHandler.INSTANCE,
-            Commons.parametersMap(ctx.parameters())
-        );
-
-        exec = new LogicalRelImplementor<>(ectx, c1 -> r1 -> 0, mailboxRegistry, exchangeSvc,
-            new TestFailureProcessor(kernal)).go(fragment.root());
-
-        RootNode<Object[]> consumer = new RootNode<>(ectx, exec.rowType());
-        consumer.register(exec);
-
-        //// Remote part
-
-        fragment = fragments.get(1);
-
-        assert !fragment.rootFragment();
-
-        kernal = newContext();
-
-        taskExecutor = new QueryTaskExecutorImpl(kernal);
-        taskExecutor.stripedThreadPoolExecutor(new IgniteStripedThreadPoolExecutor(
-            kernal.config().getQueryThreadPoolSize(),
-            kernal.igniteInstanceName(),
-            "calciteQry",
-            (t, ex) -> {
-                log().error(ex.getMessage(), ex);
-                lastE = ex;
-            },
-            true,
-            DFLT_THREAD_KEEP_ALIVE_TIME
-        ));
-        executors.add(taskExecutor);
-
-        msgSvc = new TestMessageServiceImpl(kernal, mgr);
-        msgSvc.localNodeId(nodes.get(1));
-        msgSvc.taskExecutor(taskExecutor);
-        mgr.register(msgSvc);
-
-        mailboxRegistry = new MailboxRegistryImpl(kernal);
-
-        exchangeSvc = new ExchangeServiceImpl(kernal);
-        exchangeSvc.taskExecutor(taskExecutor);
-        exchangeSvc.messageService(msgSvc);
-        exchangeSvc.mailboxRegistry(mailboxRegistry);
-        exchangeSvc.queryRegistry(new QueryRegistryImpl(kernal));
-        exchangeSvc.init();
-
-        ectx = new ExecutionContext<>(
-            qctx,
-            taskExecutor,
-            qryId,
-            nodes.get(1),
-            F.first(nodes),
-            AffinityTopologyVersion.NONE,
-            new FragmentDescription(
-                fragment.fragmentId(),
-                fragment.mapping(),
-                plan.target(fragment),
-                plan.remotes(fragment)),
-            ArrayRowHandler.INSTANCE,
-            Commons.parametersMap(ctx.parameters()));
-
-        exec = new LogicalRelImplementor<>(ectx, c -> r -> 0, mailboxRegistry, exchangeSvc,
-            new TestFailureProcessor(kernal)).go(fragment.root());
-
-        //// Start execution
-
-        assert exec instanceof Outbox;
-
-        Outbox<Object[]> outbox = (Outbox<Object[]>)exec;
-
-        exec.context().execute(outbox::init, outbox::onError);
-
-        ArrayList<Object[]> res = new ArrayList<>();
-
-        while (consumer.hasNext())
-            res.add(consumer.next());
+        List<Object[]> res = executeQuery(schema, sql, -10);
 
         assertFalse(res.isEmpty());
 
@@ -483,6 +326,18 @@ public class PlannerTest extends AbstractPlannerTest {
 
         String sql = "SELECT (ID0 + ID1) AS RES FROM PUBLIC.TEST_TABLE";
 
+        List<Object[]> res = executeQuery(schema, sql, -10);
+
+        assertFalse(res.isEmpty());
+
+        int pos = 0;
+
+        for (Object obj : checkRes.get())
+            Assert.assertArrayEquals((Object[])obj, res.get(pos++));
+    }
+
+    /** */
+    private List<Object[]> executeQuery(SchemaPlus schema, String sql, Object... parameters) throws Exception {
         BaseQueryContext qctx = BaseQueryContext.builder()
             .logger(log)
             .frameworkConfig(newConfigBuilder(FRAMEWORK_CONFIG)
@@ -493,7 +348,7 @@ public class PlannerTest extends AbstractPlannerTest {
         PlanningContext ctx = PlanningContext.builder()
             .parentContext(qctx)
             .query(sql)
-            .parameters(-10)
+            .parameters(parameters)
             .build();
 
         IgniteRel phys = physicalPlan(ctx);
@@ -512,12 +367,6 @@ public class PlannerTest extends AbstractPlannerTest {
         UUID qryId = UUID.randomUUID();
 
         TestIoManager mgr = new TestIoManager();
-        GridTestKernalContext kernal;
-        QueryTaskExecutorImpl taskExecutor;
-        MessageServiceImpl msgSvc;
-        MailboxRegistryImpl mailboxRegistry;
-        ExchangeServiceImpl exchangeSvc;
-        ExecutionContext<Object[]> ectx;
         Node<Object[]> exec;
 
         //// Local part
@@ -525,56 +374,9 @@ public class PlannerTest extends AbstractPlannerTest {
         Fragment fragment = fragments.get(0);
         assert fragment.rootFragment();
 
-        kernal = newContext();
+        exec = implementFragment(qctx, ctx, mgr, plan, fragment, qryId, F.first(nodes));
 
-        taskExecutor = new QueryTaskExecutorImpl(kernal);
-        taskExecutor.stripedThreadPoolExecutor(new IgniteStripedThreadPoolExecutor(
-            kernal.config().getQueryThreadPoolSize(),
-            kernal.igniteInstanceName(),
-            "calciteQry",
-            (t, ex) -> {
-                log().error(ex.getMessage(), ex);
-                lastE = ex;
-            },
-            true,
-            DFLT_THREAD_KEEP_ALIVE_TIME
-        ));
-        executors.add(taskExecutor);
-
-        msgSvc = new TestMessageServiceImpl(kernal, mgr);
-
-        msgSvc.localNodeId(nodes.get(0));
-        msgSvc.taskExecutor(taskExecutor);
-        mgr.register(msgSvc);
-
-        mailboxRegistry = new MailboxRegistryImpl(kernal);
-
-        exchangeSvc = new ExchangeServiceImpl(kernal);
-        exchangeSvc.taskExecutor(taskExecutor);
-        exchangeSvc.messageService(msgSvc);
-        exchangeSvc.mailboxRegistry(mailboxRegistry);
-        exchangeSvc.queryRegistry(new QueryRegistryImpl(kernal));
-        exchangeSvc.init();
-
-        ectx = new ExecutionContext<>(
-            qctx,
-            taskExecutor,
-            qryId,
-            F.first(nodes),
-            F.first(nodes),
-            AffinityTopologyVersion.NONE,
-            new FragmentDescription(
-                fragment.fragmentId(),
-                fragment.mapping(),
-                plan.target(fragment),
-                plan.remotes(fragment)),
-            ArrayRowHandler.INSTANCE,
-            Commons.parametersMap(ctx.parameters()));
-
-        exec = new LogicalRelImplementor<>(ectx, c1 -> r1 -> 0, mailboxRegistry, exchangeSvc,
-            new TestFailureProcessor(kernal)).go(fragment.root());
-
-        RootNode<Object[]> consumer = new RootNode<>(ectx, exec.rowType());
+        RootNode<Object[]> consumer = new RootNode<>(exec.context(), exec.rowType());
         consumer.register(exec);
 
         //// Remote part
@@ -583,53 +385,7 @@ public class PlannerTest extends AbstractPlannerTest {
 
         assert !fragment.rootFragment();
 
-        kernal = newContext();
-
-        taskExecutor = new QueryTaskExecutorImpl(kernal);
-        taskExecutor.stripedThreadPoolExecutor(new IgniteStripedThreadPoolExecutor(
-            kernal.config().getQueryThreadPoolSize(),
-            kernal.igniteInstanceName(),
-            "calciteQry",
-            (t, ex) -> {
-                log().error(ex.getMessage(), ex);
-                lastE = ex;
-            },
-            true,
-            DFLT_THREAD_KEEP_ALIVE_TIME
-        ));
-        executors.add(taskExecutor);
-
-        msgSvc = new TestMessageServiceImpl(kernal, mgr);
-        msgSvc.localNodeId(nodes.get(1));
-        msgSvc.taskExecutor(taskExecutor);
-        mgr.register(msgSvc);
-
-        mailboxRegistry = new MailboxRegistryImpl(kernal);
-
-        exchangeSvc = new ExchangeServiceImpl(kernal);
-        exchangeSvc.taskExecutor(taskExecutor);
-        exchangeSvc.messageService(msgSvc);
-        exchangeSvc.mailboxRegistry(mailboxRegistry);
-        exchangeSvc.queryRegistry(new QueryRegistryImpl(kernal));
-        exchangeSvc.init();
-
-        ectx = new ExecutionContext<>(
-            qctx,
-            taskExecutor,
-            qryId,
-            nodes.get(1),
-            F.first(nodes),
-            AffinityTopologyVersion.NONE,
-            new FragmentDescription(
-                fragment.fragmentId(),
-                fragment.mapping(),
-                plan.target(fragment),
-                plan.remotes(fragment)),
-            ArrayRowHandler.INSTANCE,
-            Commons.parametersMap(ctx.parameters()));
-
-        exec = new LogicalRelImplementor<>(ectx, c -> r -> 0, mailboxRegistry, exchangeSvc,
-            new TestFailureProcessor(kernal)).go(fragment.root());
+        exec = implementFragment(qctx, ctx, mgr, plan, fragment, qryId, nodes.get(1));
 
         //// Start execution
 
@@ -639,17 +395,75 @@ public class PlannerTest extends AbstractPlannerTest {
 
         exec.context().execute(outbox::init, outbox::onError);
 
-        ArrayList<Object[]> res = new ArrayList<>();
+        List<Object[]> res = new ArrayList<>();
 
         while (consumer.hasNext())
             res.add(consumer.next());
 
-        assertFalse(res.isEmpty());
+        return res;
+    }
 
-        int pos = 0;
+    /**
+     * Transforms fragment to the execution node.
+     */
+    private Node<Object[]> implementFragment(
+        BaseQueryContext qctx,
+        PlanningContext ctx,
+        TestIoManager mgr,
+        MultiStepPlan plan,
+        Fragment fragment,
+        UUID qryId,
+        UUID nodeId
+    ) throws IgniteCheckedException {
+        GridTestKernalContext kernal = newContext();
 
-        for (Object obj : checkRes.get())
-            Assert.assertArrayEquals((Object[])obj, res.get(pos++));
+        QueryTaskExecutorImpl taskExecutor = new QueryTaskExecutorImpl(kernal);
+        taskExecutor.stripedThreadPoolExecutor(new IgniteStripedThreadPoolExecutor(
+            kernal.config().getQueryThreadPoolSize(),
+            kernal.igniteInstanceName(),
+            "calciteQry",
+            (t, ex) -> {
+                log().error(ex.getMessage(), ex);
+                lastE = ex;
+            },
+            true,
+            DFLT_THREAD_KEEP_ALIVE_TIME
+        ));
+        executors.add(taskExecutor);
+
+        MessageServiceImpl msgSvc = new TestMessageServiceImpl(kernal, mgr);
+
+        msgSvc.localNodeId(nodeId);
+        msgSvc.taskExecutor(taskExecutor);
+        mgr.register(msgSvc);
+
+        MailboxRegistryImpl mailboxRegistry = new MailboxRegistryImpl(kernal);
+
+        ExchangeServiceImpl exchangeSvc = new ExchangeServiceImpl(kernal);
+        exchangeSvc.taskExecutor(taskExecutor);
+        exchangeSvc.messageService(msgSvc);
+        exchangeSvc.mailboxRegistry(mailboxRegistry);
+        exchangeSvc.queryRegistry(new QueryRegistryImpl(kernal));
+        exchangeSvc.init();
+
+        ExecutionContext<Object[]> ectx = new ExecutionContext<>(
+            qctx,
+            taskExecutor,
+            qryId,
+            nodeId,
+            F.first(nodes),
+            AffinityTopologyVersion.NONE,
+            new FragmentDescription(
+                fragment.fragmentId(),
+                fragment.mapping(),
+                plan.target(fragment),
+                plan.remotes(fragment)),
+            ArrayRowHandler.INSTANCE,
+            NoOpMemoryTracker.INSTANCE,
+            Commons.parametersMap(ctx.parameters()));
+
+        return new LogicalRelImplementor<>(ectx, c -> r -> 0, mailboxRegistry, exchangeSvc,
+            new TestFailureProcessor(kernal)).go(fragment.root());
     }
 
     /**

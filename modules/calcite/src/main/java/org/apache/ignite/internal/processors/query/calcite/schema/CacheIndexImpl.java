@@ -32,7 +32,9 @@ import org.apache.ignite.IgniteException;
 import org.apache.ignite.internal.cache.query.index.Index;
 import org.apache.ignite.internal.cache.query.index.sorted.inline.IndexQueryContext;
 import org.apache.ignite.internal.cache.query.index.sorted.inline.InlineIndex;
+import org.apache.ignite.internal.cache.query.index.sorted.inline.InlineIndexImpl;
 import org.apache.ignite.internal.processors.query.calcite.exec.ExecutionContext;
+import org.apache.ignite.internal.processors.query.calcite.exec.IndexFirstLastScan;
 import org.apache.ignite.internal.processors.query.calcite.exec.IndexScan;
 import org.apache.ignite.internal.processors.query.calcite.exec.exp.RangeIterable;
 import org.apache.ignite.internal.processors.query.calcite.metadata.ColocationGroup;
@@ -112,6 +114,30 @@ public class CacheIndexImpl implements IgniteIndex {
         if (group.nodeIds().contains(localNodeId) && idx != null) {
             return new IndexScan<>(execCtx, tbl.descriptor(), idx.unwrap(InlineIndex.class), collation.getKeys(),
                 group.partitions(localNodeId), filters, ranges, rowTransformer, requiredColumns);
+        }
+
+        return Collections.emptyList();
+    }
+
+    /** {@inheritDoc} */
+    @Override public <Row> Iterable<Row> firstOrLast(
+        boolean first,
+        ExecutionContext<Row> ectx,
+        ColocationGroup grp,
+        @Nullable ImmutableBitSet requiredColumns
+    ) {
+        UUID localNodeId = ectx.localNodeId();
+
+        if (grp.nodeIds().contains(localNodeId) && idx != null) {
+            return new IndexFirstLastScan<>(
+                first,
+                ectx,
+                tbl.descriptor(),
+                idx.unwrap(InlineIndexImpl.class),
+                collation.getKeys(),
+                grp.partitions(localNodeId),
+                requiredColumns
+            );
         }
 
         return Collections.emptyList();

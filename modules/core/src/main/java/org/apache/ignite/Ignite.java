@@ -731,13 +731,6 @@ public interface Ignite extends AutoCloseable {
     @Nullable public MemoryMetrics memoryMetrics(String dataRegionName);
 
     /**
-     * @return {@link PersistenceMetrics} snapshot.
-     * @deprecated Check the {@link ReadOnlyMetricRegistry} with "name=io.dataregion.{data_region_name}" instead.
-     */
-    @Deprecated
-    public PersistenceMetrics persistentStoreMetrics();
-
-    /**
      * Returns a collection of {@link DataRegionMetrics} that reflects page memory usage on this Apache Ignite node
      * instance.
      * Returns the collection that contains the latest snapshots for each memory region
