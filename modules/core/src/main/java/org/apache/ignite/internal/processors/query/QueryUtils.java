@@ -38,7 +38,6 @@ import java.util.Map;
 import java.util.Set;
 import java.util.UUID;
 import java.util.concurrent.TimeUnit;
-
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.IgniteSystemProperties;
@@ -1746,6 +1745,23 @@ public class QueryUtils {
             return SPACE_DELIM;
 
         return DEFAULT_DELIM;
+    }
+
+    /** */
+    public static boolean isConvertibleTypes(Object val, Class<?> expCls) {
+        if (val == null)
+            return true;
+
+        if (expCls == java.sql.Date.class || expCls == java.time.LocalDate.class)
+            return val instanceof java.sql.Date || val instanceof java.time.LocalDate;
+
+        if (expCls == java.sql.Time.class || expCls == java.time.LocalTime.class)
+            return val instanceof java.sql.Time || val instanceof java.time.LocalTime;
+
+        if (expCls == java.sql.Timestamp.class || expCls == java.util.Date.class || expCls == java.time.LocalDateTime.class)
+            return val instanceof java.time.LocalDateTime || val instanceof java.util.Date;
+
+        return false;
     }
 
     /**

@@ -33,7 +33,6 @@ import java.util.stream.IntStream;
 import javax.management.InstanceNotFoundException;
 import org.apache.ignite.DataRegionMetrics;
 import org.apache.ignite.DataRegionMetricsProvider;
-import org.apache.ignite.DataStorageMetrics;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.IgniteSystemProperties;
@@ -947,13 +946,6 @@ public class IgniteCacheDatabaseSharedManager extends GridCacheSharedManagerAdap
             .map(DataRegion::metrics)
             .map(DataRegionMetricsSnapshot::new)
             .collect(Collectors.toList());
-    }
-
-    /**
-     * @return DataStorageMetrics if persistence is enabled or {@code null} otherwise.
-     */
-    public DataStorageMetrics persistentStoreMetrics() {
-        return null;
     }
 
     /**
