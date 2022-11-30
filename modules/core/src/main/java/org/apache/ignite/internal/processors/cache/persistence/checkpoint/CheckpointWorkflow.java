@@ -399,11 +399,6 @@ public class CheckpointWorkflow {
                     assert part.highestAppliedCounter() >= part.updateCounter() :
                         "Highest applied partition counter is supposed to be >= update counter.";
 
-                    if (part.highestAppliedCounter() > 2000) {
-                        log.error("TEST | fillCacheGroupState() on " + this.igniteInstanceName +
-                            " with reserved part counter " + part.reservedCounter());
-                    }
-
                     state.addPartitionState(
                         part.id(),
                         part.dataStore().fullSize(),

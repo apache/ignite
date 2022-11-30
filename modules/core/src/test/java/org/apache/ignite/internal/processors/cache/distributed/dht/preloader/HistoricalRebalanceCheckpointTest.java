@@ -134,25 +134,13 @@ public class HistoricalRebalanceCheckpointTest extends GridCommonAbstractTest {
     }
 
     /**
-     * Test one-phase commit with lost backup responses
+     * Test one-phase commit with lost backup responses.
      */
     @Test
     public void testDelayed1PhaseCommitResponses() throws Exception {
-        doTestDelayed1PhaseCommitResponses(false);
-    }
-
-    /**
-     * Test one-phase commit with lost backup responses dropping backup checkpoint.
-     */
-    @Test
-    public void testDelayed1PhaseCommitResponsesDropBackupCheckpoints() throws Exception {
-        doTestDelayed1PhaseCommitResponses(true);
-    }
-
-    public void doTestDelayed1PhaseCommitResponses(boolean dropBackupCheckpoint) throws Exception {
         int updateCnt = 2_000;
 
-        int backupNodes = prepareCluster(2, updateCnt);
+        prepareCluster(2, updateCnt);
 
         Ignite prim = primaryNode(0L, DEFAULT_CACHE_NAME);
 
@@ -184,21 +172,15 @@ public class HistoricalRebalanceCheckpointTest extends GridCommonAbstractTest {
 
         prepareBlock.set(true);
 
-        blockLatch.set(new CountDownLatch(backupNodes * 20));
+        blockLatch.set(new CountDownLatch(20));
 
         for (int i = 0; i < 20; i++)
             cachePutAsync.accept(++updateCnt);
 
         blockLatch.get().await();
 
-        // Storing counters on primary.
+        // Storing highest counters on backup.
         forceCheckpoint();
-
-        // Emulating power off, OOM or disk overflow. Keeping data as is, with missed counters updates.
-        if (dropBackupCheckpoint) {
-            ((BlockableFileIOFactory)backup.configuration().getDataStorageConfiguration()
-                .getFileIOFactory()).blocked = true;
-        }
 
         String backName = backup.name();
 
@@ -209,13 +191,11 @@ public class HistoricalRebalanceCheckpointTest extends GridCommonAbstractTest {
         IdleVerifyResultV2 checkRes = idleVerify(prim, DEFAULT_CACHE_NAME);
 
         assertFalse(checkRes.hasConflicts());
-
-        assertEquals(updateCnt, prim.cache(DEFAULT_CACHE_NAME).size());
     }
 
     /** */
     private int prepareCluster(int nodes, int loadCnt) throws Exception {
-        assert  nodes > 1;
+        assert nodes > 1;
 
         int backupNodes = nodes - 1;
 
@@ -233,7 +213,7 @@ public class HistoricalRebalanceCheckpointTest extends GridCommonAbstractTest {
 
         // Initial preloading enough to have historical rebalance.
         for (int i = 0; i < loadCnt; i++)  //
-            grid(0).cache(DEFAULT_CACHE_NAME).put(i, i);
+            cache.put(i, i);
 
         // To have historical rebalance on cluster recovery. Decreases percent of updates in comparison to cache size.
         stopAllGrids();
@@ -348,8 +328,6 @@ public class HistoricalRebalanceCheckpointTest extends GridCommonAbstractTest {
         IdleVerifyResultV2 checkRes = idleVerify(prim, DEFAULT_CACHE_NAME);
 
         assertFalse(checkRes.hasConflicts());
-
-        assertEquals(updateCnt, prim.cache(DEFAULT_CACHE_NAME).size());
     }
 
     /** */
