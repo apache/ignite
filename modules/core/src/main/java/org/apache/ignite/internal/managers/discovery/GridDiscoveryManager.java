@@ -3302,6 +3302,11 @@ public class GridDiscoveryManager extends GridManagerAdapter<DiscoverySpi> {
 
                     break;
 
+                case USE_FAILURE_HANDLER:
+                    ctx.failure().process(new FailureContext(FailureType.SEGMENTATION, null));
+
+                    break;
+
                 default:
                     assert segPlc == NOOP : "Unsupported segmentation policy value: " + segPlc;
             }
