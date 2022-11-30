@@ -675,7 +675,7 @@ public interface IgniteCacheOffheapManager {
         long highestAppliedCounter();
 
         /**
-         * @return Pending updates counter.
+         * @return Reserved updates counter.
          */
         long reservedCounter();
 

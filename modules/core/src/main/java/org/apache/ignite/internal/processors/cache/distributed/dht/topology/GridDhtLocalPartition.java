@@ -919,7 +919,7 @@ public class GridDhtLocalPartition extends GridCacheConcurrentMapImpl implements
     }
 
     /**
-     * @return Current reserved counter.
+     * @return Reserved updated counter.
      */
     public long reservedCounter() {
         return store.reservedCounter();
