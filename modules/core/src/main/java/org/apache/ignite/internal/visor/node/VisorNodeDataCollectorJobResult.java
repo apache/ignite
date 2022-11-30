@@ -84,12 +84,6 @@ public class VisorNodeDataCollectorJobResult extends VisorDataTransferObject {
     /** Whether pending exchange future exists. */
     private boolean hasPendingExchange;
 
-    /** Persistence metrics. */
-    private VisorPersistenceMetrics persistenceMetrics;
-
-    /** Exception while collecting persistence metrics. */
-    private VisorExceptionWrapper persistenceMetricsEx;
-
     /** Rebalance percent. */
     private double rebalance;
 
@@ -276,36 +270,6 @@ public class VisorNodeDataCollectorJobResult extends VisorDataTransferObject {
     }
 
     /**
-     * Get persistence metrics.
-     */
-    public VisorPersistenceMetrics getPersistenceMetrics() {
-        return persistenceMetrics;
-    }
-
-    /**
-     * Set persistence metrics.
-     *
-     * @param persistenceMetrics Persistence metrics.
-     */
-    public void setPersistenceMetrics(VisorPersistenceMetrics persistenceMetrics) {
-        this.persistenceMetrics = persistenceMetrics;
-    }
-
-    /**
-     * @return Exception caught during collecting persistence metrics.
-     */
-    public VisorExceptionWrapper getPersistenceMetricsEx() {
-        return persistenceMetricsEx;
-    }
-
-    /**
-     * @param persistenceMetricsEx Exception caught during collecting persistence metrics.
-     */
-    public void setPersistenceMetricsEx(VisorExceptionWrapper persistenceMetricsEx) {
-        this.persistenceMetricsEx = persistenceMetricsEx;
-    }
-
-    /**
      * @return Rebalance progress.
      */
     public double getRebalance() {
@@ -341,8 +305,6 @@ public class VisorNodeDataCollectorJobResult extends VisorDataTransferObject {
         out.writeLong(errCnt);
         out.writeObject(readyTopVer);
         out.writeBoolean(hasPendingExchange);
-        out.writeObject(persistenceMetrics);
-        out.writeObject(persistenceMetricsEx);
         out.writeDouble(rebalance);
     }
 
@@ -363,8 +325,6 @@ public class VisorNodeDataCollectorJobResult extends VisorDataTransferObject {
         errCnt = in.readLong();
         readyTopVer = (VisorAffinityTopologyVersion)in.readObject();
         hasPendingExchange = in.readBoolean();
-        persistenceMetrics = (VisorPersistenceMetrics)in.readObject();
-        persistenceMetricsEx = (VisorExceptionWrapper)in.readObject();
         rebalance = (protoVer > V1) ? in.readDouble() : -1;
     }
 

@@ -86,9 +86,6 @@ public class VisorDataStorageConfiguration extends VisorDataTransferObject {
     /** WAL archive path. */
     private String walArchivePath;
 
-    /** Metrics enabled flag. */
-    private boolean metricsEnabled;
-
     /** Wal mode. */
     private WALMode walMode;
 
@@ -168,7 +165,6 @@ public class VisorDataStorageConfiguration extends VisorDataTransferObject {
         walSegmentSize = cfg.getWalSegmentSize();
         walPath = cfg.getWalPath();
         walArchivePath = cfg.getWalArchivePath();
-        metricsEnabled = cfg.isMetricsEnabled();
         walMode = cfg.getWalMode();
         walTlbSize = cfg.getWalThreadLocalBufferSize();
         walBufSize = cfg.getWalBufferSize();
@@ -298,13 +294,6 @@ public class VisorDataStorageConfiguration extends VisorDataTransferObject {
     }
 
     /**
-     * @return Metrics enabled flag.
-     */
-    public boolean isMetricsEnabled() {
-        return metricsEnabled;
-    }
-
-    /**
      * @return Time interval in milliseconds.
      */
     public long getMetricsRateTimeInterval() {
@@ -426,7 +415,6 @@ public class VisorDataStorageConfiguration extends VisorDataTransferObject {
         out.writeInt(walSegmentSize);
         U.writeString(out, walPath);
         U.writeString(out, walArchivePath);
-        out.writeBoolean(metricsEnabled);
         U.writeEnum(out, walMode);
         out.writeInt(walTlbSize);
         out.writeLong(walFlushFreq);
@@ -462,7 +450,6 @@ public class VisorDataStorageConfiguration extends VisorDataTransferObject {
         walSegmentSize = in.readInt();
         walPath = U.readString(in);
         walArchivePath = U.readString(in);
-        metricsEnabled = in.readBoolean();
         walMode = WALMode.fromOrdinal(in.readByte());
         walTlbSize = in.readInt();
         walFlushFreq = in.readLong();

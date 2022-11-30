@@ -106,7 +106,8 @@ public class DataStorageConfiguration implements Serializable {
     /** Lock default wait time, 10 sec. */
     public static final int DFLT_LOCK_WAIT_TIME = 10 * 1000;
 
-    /** */
+    /** @deprecated Will be removed in upcoming releases. */
+    @Deprecated
     public static final boolean DFLT_METRICS_ENABLED = false;
 
     /** Default amount of sub intervals to calculate rate-based metric. */
@@ -244,7 +245,11 @@ public class DataStorageConfiguration implements Serializable {
     @IgniteExperimental
     private String cdcWalPath = DFLT_WAL_CDC_PATH;
 
-    /** Metrics enabled flag. */
+    /**
+     * Metrics enabled flag.
+     * @deprecated Will be removed in upcoming releases.
+     */
+    @Deprecated
     private boolean metricsEnabled = DFLT_METRICS_ENABLED;
 
     /** Wal mode. */
@@ -801,7 +806,9 @@ public class DataStorageConfiguration implements Serializable {
      * Default value is {@link #DFLT_METRICS_ENABLED}.
      *
      * @return Metrics enabled flag.
+     * @deprecated Will be removed in upcoming releases.
      */
+    @Deprecated
     public boolean isMetricsEnabled() {
         return metricsEnabled;
     }
@@ -811,7 +818,9 @@ public class DataStorageConfiguration implements Serializable {
      *
      * @param metricsEnabled Metrics enabled flag.
      * @return {@code this} for chaining.
+     * @deprecated Will be removed in upcoming releases.
      */
+    @Deprecated
     public DataStorageConfiguration setMetricsEnabled(boolean metricsEnabled) {
         this.metricsEnabled = metricsEnabled;
 

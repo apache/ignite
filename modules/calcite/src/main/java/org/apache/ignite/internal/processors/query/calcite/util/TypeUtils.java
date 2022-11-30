@@ -23,7 +23,12 @@ import java.sql.Date;
 import java.sql.Time;
 import java.sql.Timestamp;
 import java.time.Duration;
+import java.time.Instant;
+import java.time.LocalDate;
+import java.time.LocalDateTime;
+import java.time.LocalTime;
 import java.time.Period;
+import java.time.ZoneOffset;
 import java.util.Arrays;
 import java.util.HashSet;
 import java.util.List;
@@ -59,6 +64,7 @@ import org.apache.calcite.util.Pair;
 import org.apache.calcite.util.TimeString;
 import org.apache.calcite.util.TimestampString;
 import org.apache.ignite.IgniteException;
+import org.apache.ignite.internal.cache.query.index.sorted.inline.types.DateValueUtils;
 import org.apache.ignite.internal.processors.query.IgniteSQLException;
 import org.apache.ignite.internal.processors.query.calcite.exec.ExecutionContext;
 import org.apache.ignite.internal.processors.query.calcite.exec.RowHandler;
@@ -81,6 +87,9 @@ public class TypeUtils {
         java.sql.Date.class,
         java.sql.Time.class,
         java.sql.Timestamp.class,
+        LocalDateTime.class,
+        LocalDate.class,
+        LocalTime.class,
         Duration.class,
         Period.class,
         byte[].class
@@ -316,13 +325,19 @@ public class TypeUtils {
         if (val == null)
             return null;
         else if (storageType == java.sql.Date.class)
-            return (int)(SqlFunctions.toLong((java.util.Date)val, DataContext.Variable.TIME_ZONE.get(ctx)) / DateTimeUtils.MILLIS_PER_DAY);
+            return (int)(toLong(ctx, val) / DateTimeUtils.MILLIS_PER_DAY);
+        else if (storageType == LocalDate.class)
+            return (int)(toLong(ctx, val) / DateTimeUtils.MILLIS_PER_DAY);
         else if (storageType == java.sql.Time.class)
-            return (int)(SqlFunctions.toLong((java.util.Date)val, DataContext.Variable.TIME_ZONE.get(ctx)) % DateTimeUtils.MILLIS_PER_DAY);
-        else if (storageType == Timestamp.class)
-            return SqlFunctions.toLong((java.util.Date)val, DataContext.Variable.TIME_ZONE.get(ctx));
+            return (int)(toLong(ctx, val) % DateTimeUtils.MILLIS_PER_DAY);
+        else if (storageType == LocalTime.class)
+            return (int)(toLong(ctx, val) % DateTimeUtils.MILLIS_PER_DAY);
+        else if (storageType == Timestamp.class || storageType == LocalDateTime.class)
+            return toLong(ctx, val);
         else if (storageType == java.util.Date.class)
-            return SqlFunctions.toLong((java.util.Date)val, DataContext.Variable.TIME_ZONE.get(ctx));
+            return toLong(ctx, val);
+        else if (storageType == java.util.Date.class)
+            return toLong(ctx, val);
         else if (storageType == Duration.class) {
             return TimeUnit.SECONDS.toMillis(((Duration)val).getSeconds())
                 + TimeUnit.NANOSECONDS.toMillis(((Duration)val).getNano());
@@ -348,16 +363,41 @@ public class TypeUtils {
             return val;
     }
 
+    /** Converts temporal objects to long.
+     *
+     * @param ctx Data context.
+     * @param val Temporal value.
+     * @return Millis value.
+     */
+    private static long toLong(DataContext ctx, Object val) {
+        if (val instanceof LocalDateTime)
+            return SqlFunctions.toLong(DateValueUtils.convertToTimestamp((LocalDateTime)val), DataContext.Variable.TIME_ZONE.get(ctx));
+
+        if (val instanceof LocalDate)
+            return SqlFunctions.toLong(DateValueUtils.convertToSqlDate((LocalDate)val), DataContext.Variable.TIME_ZONE.get(ctx));
+
+        if (val instanceof LocalTime)
+            return SqlFunctions.toLong(DateValueUtils.convertToSqlTime((LocalTime)val), DataContext.Variable.TIME_ZONE.get(ctx));
+
+        return SqlFunctions.toLong((java.util.Date)val, DataContext.Variable.TIME_ZONE.get(ctx));
+    }
+
     /** */
     public static Object fromInternal(DataContext ctx, Object val, Type storageType) {
         if (val == null)
             return null;
         else if (storageType == java.sql.Date.class && val instanceof Integer)
             return new java.sql.Date(fromLocalTs(ctx, (Integer)val * DateTimeUtils.MILLIS_PER_DAY));
+        else if (storageType == LocalDate.class && val instanceof Integer)
+            return new java.sql.Date(fromLocalTs(ctx, (Integer)val * DateTimeUtils.MILLIS_PER_DAY)).toLocalDate();
         else if (storageType == java.sql.Time.class && val instanceof Integer)
             return new java.sql.Time(fromLocalTs(ctx, (Integer)val));
+        else if (storageType == LocalTime.class && val instanceof Integer)
+            return Instant.ofEpochMilli((Integer)val).atZone(ZoneOffset.UTC).toLocalTime();
         else if (storageType == Timestamp.class && val instanceof Long)
             return new Timestamp(fromLocalTs(ctx, (Long)val));
+        else if (storageType == LocalDateTime.class && val instanceof Long)
+            return new Timestamp(fromLocalTs(ctx, (Long)val)).toLocalDateTime();
         else if (storageType == java.util.Date.class && val instanceof Long)
             return new java.util.Date(fromLocalTs(ctx, (Long)val));
         else if (storageType == Duration.class && val instanceof Long)

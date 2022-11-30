@@ -755,7 +755,8 @@ public abstract class JettyRestProcessorAbstractSelfTest extends JettyRestProces
 
         // Test with SQL.
         SqlFieldsQuery qry = new SqlFieldsQuery(
-            "create table employee(id integer primary key, name varchar(100), salary integer);" +
+            "drop table if exists employee;" +
+                "create table employee(id integer primary key, name varchar(100), salary integer);" +
                 "insert into employee(id, name, salary) values (1, 'Alex', 300);"
         );
 
@@ -1612,6 +1613,8 @@ public abstract class JettyRestProcessorAbstractSelfTest extends JettyRestProces
      */
     @Test
     public void testIncrement() throws Exception {
+        restartGrid();
+
         String ret = content(DEFAULT_CACHE_NAME, GridRestCommand.ATOMIC_INCREMENT,
             "key", "incrKey",
             "init", "2",
@@ -1639,6 +1642,8 @@ public abstract class JettyRestProcessorAbstractSelfTest extends JettyRestProces
      */
     @Test
     public void testDecrement() throws Exception {
+        restartGrid();
+
         String ret = content(DEFAULT_CACHE_NAME, GridRestCommand.ATOMIC_DECREMENT,
             "key", "decrKey",
             "init", "15",
@@ -2418,38 +2423,6 @@ public abstract class JettyRestProcessorAbstractSelfTest extends JettyRestProces
         assertTrue(res.size() > 0);
 
         info(GridRestCommand.DATA_REGION_METRICS.key().toUpperCase() + " command result: " + ret);
-    }
-
-    /**
-     * @throws Exception If failed.
-     */
-    @Test
-    public void testDataStorageMetricsDisabled() throws Exception {
-        String ret = content(F.asMap("cmd", GridRestCommand.DATA_STORAGE_METRICS.key()));
-
-        JsonNode res = validateJsonResponse(ret);
-
-        assertTrue(res.asText().equalsIgnoreCase("Storage metrics are not enabled"));
-
-        info(GridRestCommand.DATA_STORAGE_METRICS.key().toUpperCase() + " command result: " + ret);
-    }
-
-    /**
-     * @throws Exception If failed.
-     */
-    @Test
-    public void testDataStorageMetricsEnabled() throws Exception {
-        if (!memoryMetricsEnabled) {
-            restartGrid();
-
-            memoryMetricsEnabled = true;
-        }
-
-        String ret = content(F.asMap("cmd", GridRestCommand.DATA_STORAGE_METRICS.key()));
-
-        assertNotNull(validateJsonResponse(ret));
-
-        info(GridRestCommand.DATA_STORAGE_METRICS.key().toUpperCase() + " command result: " + ret);
     }
 
     /**
