@@ -41,6 +41,8 @@ import org.junit.runners.Parameterized;
 
 import static org.apache.ignite.cluster.ClusterState.ACTIVE;
 import static org.apache.ignite.configuration.IgniteConfiguration.DFLT_SNAPSHOT_DIRECTORY;
+import static org.apache.ignite.internal.util.distributed.DistributedProcess.DistributedProcessType.CACHE_GROUP_KEY_CHANGE_PREPARE;
+import static org.apache.ignite.internal.util.distributed.DistributedProcess.DistributedProcessType.MASTER_KEY_CHANGE_PREPARE;
 
 /**
  * Snapshot test for encrypted-only snapshots.
@@ -76,42 +78,42 @@ public class EncryptedSnapshotTest extends AbstractSnapshotSelfTest {
     /** Checks re-encryption fails during snapshot restoration. */
     @Test
     public void testReencryptDuringRestore() throws Exception {
-        checkActionFailsDuringSnapshotOperation(true, this::chageCacheKey, "Cache group key change " +
+        checkActionFailsDuringSnapshotOperation(true, this::changeCacheKey, "Cache group key change " +
             "was rejected.", IgniteException.class);
     }
 
     /** Checks master key changing fails during snapshot restoration. */
     @Test
     public void testMasterKeyChangeDuringRestore() throws Exception {
-        checkActionFailsDuringSnapshotOperation(true, this::chageMasterKey, "Master key change was " +
+        checkActionFailsDuringSnapshotOperation(true, this::changeMasterKey, "Master key change was " +
             "rejected.", IgniteException.class);
     }
 
     /** Checks re-encryption fails during snapshot creation. */
     @Test
     public void testReencryptDuringSnapshot() throws Exception {
-        checkActionFailsDuringSnapshotOperation(false, this::chageCacheKey, "Cache group key change " +
+        checkActionFailsDuringSnapshotOperation(false, this::changeCacheKey, "Cache group key change " +
             "was rejected.", IgniteException.class);
     }
 
     /** Checks master key changing fails during snapshot creation. */
     @Test
     public void testMasterKeyChangeDuringSnapshot() throws Exception {
-        checkActionFailsDuringSnapshotOperation(false, this::chageMasterKey, "Master key change was " +
+        checkActionFailsDuringSnapshotOperation(false, this::changeMasterKey, "Master key change was " +
             "rejected.", IgniteException.class);
     }
 
     /** Checks snapshot action fail during cache group key change. */
     @Test
     public void testSnapshotFailsDuringCacheKeyChange() throws Exception {
-        checkSnapshotActionFailsDuringReencryption(this::chageCacheKey, "Caches re-encryption process " +
+        checkSnapshotActionFailsDuringReencryption(this::changeCacheKey, "Caches re-encryption process " +
             "is not finished yet");
     }
 
     /** Checks snapshot action fail during master key change. */
     @Test
     public void testSnapshotFailsDuringMasterKeyChange() throws Exception {
-        checkSnapshotActionFailsDuringReencryption(this::chageMasterKey, "Master key changing process " +
+        checkSnapshotActionFailsDuringReencryption(this::changeMasterKey, "Master key changing process " +
             "is not finished yet.");
     }
 
@@ -331,7 +333,7 @@ public class EncryptedSnapshotTest extends AbstractSnapshotSelfTest {
         IgniteEx ig = startGridsWithCache(2, CACHE_KEYS_RANGE, valueBuilder(), dfltCacheCfg.setName(CACHE2));
 
         for (int r = 0; r < reencryptionIterations; ++r) {
-            chageCacheKey(0).get(TIMEOUT);
+            changeCacheKey(0).get(TIMEOUT);
 
             for (int g = 0; g < 2; ++g)
                 grid(g).context().encryption().reencryptionFuture(CU.cacheId(dfltCacheCfg.getName())).get();
@@ -423,7 +425,10 @@ public class EncryptedSnapshotTest extends AbstractSnapshotSelfTest {
 
         BlockingCustomMessageDiscoverySpi discoSpi = discoSpi(grid(0));
 
-        discoSpi.block(msg -> msg instanceof FullMessage && ((FullMessage<?>)msg).error().isEmpty());
+        discoSpi.block(msg -> msg instanceof FullMessage &&
+            (((FullMessage<?>)msg).type() == CACHE_GROUP_KEY_CHANGE_PREPARE.ordinal()
+                || (((FullMessage<?>)msg).type() == MASTER_KEY_CHANGE_PREPARE.ordinal()) &&
+                ((FullMessage<?>)msg).error().isEmpty()));
 
         IgniteFuture<?> fut = reencryption.apply(1);
 
@@ -489,14 +494,14 @@ public class EncryptedSnapshotTest extends AbstractSnapshotSelfTest {
     /**
      * @return Cache group key change action.
      */
-    private IgniteFuture<?> chageCacheKey(int gridNum) {
+    private IgniteFuture<?> changeCacheKey(int gridNum) {
         return grid(gridNum).encryption().changeCacheGroupKey(Collections.singletonList(CACHE2));
     }
 
     /**
      * @return Master key change action.
      */
-    private IgniteFuture<?> chageMasterKey(int gridNum) {
+    private IgniteFuture<?> changeMasterKey(int gridNum) {
         return grid(gridNum).encryption().changeMasterKey(AbstractEncryptionTest.MASTER_KEY_NAME_2);
     }
 }
