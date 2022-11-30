@@ -897,7 +897,7 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
 
         boolean cancelled = err.values().stream().anyMatch(e -> e instanceof IgniteFutureCancelledCheckedException);
 
-        if (snpReq == null || !snpReq.requestId().equals(id)) {
+        if (snpReq == null || !snpReq.requestId().equals(id) || !F.isEmpty(err)) {
             synchronized (snpOpMux) {
                 if (clusterSnpFut != null && clusterSnpFut.rqId.equals(id)) {
                     if (cancelled) {
@@ -911,6 +911,8 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
 
                     clusterSnpFut = null;
                 }
+
+                clusterSnpReq = null;
 
                 return;
             }
