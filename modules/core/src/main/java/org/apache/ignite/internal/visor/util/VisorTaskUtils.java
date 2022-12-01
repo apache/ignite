@@ -19,7 +19,6 @@ package org.apache.ignite.internal.visor.util;
 
 import java.io.ByteArrayOutputStream;
 import java.io.File;
-import java.io.FileFilter;
 import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.io.RandomAccessFile;
@@ -66,7 +65,6 @@ import org.apache.ignite.internal.util.typedef.internal.SB;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.internal.visor.event.VisorGridEvent;
 import org.apache.ignite.internal.visor.event.VisorGridEventsLost;
-import org.apache.ignite.internal.visor.log.VisorLogFile;
 import org.apache.ignite.lang.IgniteClosure;
 import org.apache.ignite.lang.IgnitePredicate;
 import org.apache.ignite.spi.eventstorage.NoopEventStorageSpi;
@@ -102,24 +100,6 @@ public class VisorTaskUtils {
     /** Period to grab events. */
     private static final int EVENTS_COLLECT_TIME_WINDOW = 10 * 60 * 1000;
 
-    /** Empty buffer for file block. */
-    private static final byte[] EMPTY_FILE_BUF = new byte[0];
-
-    /** Log files count limit */
-    public static final int LOG_FILES_COUNT_LIMIT = 5000;
-
-    /** */
-    public static final int NOTHING_TO_REBALANCE = -1;
-
-    /** */
-    public static final int REBALANCE_NOT_AVAILABLE = -2;
-
-    /** */
-    public static final double MINIMAL_REBALANCE = 0.01;
-
-    /** */
-    public static final int REBALANCE_COMPLETE = 1;
-
     /** */
     private static final int DFLT_BUFFER_SIZE = 4096;
 
@@ -147,16 +127,6 @@ public class VisorTaskUtils {
 
     /** Only non task event types that Visor should collect. */
     public static final int[] VISOR_ALL_EVTS = concat(VISOR_TASK_EVTS, VISOR_NON_TASK_EVTS);
-
-    /** Maximum folder depth. I.e. if depth is 4 we look in starting folder and 3 levels of sub-folders. */
-    public static final int MAX_FOLDER_DEPTH = 4;
-
-    /** Comparator for log files by last modified date. */
-    private static final Comparator<VisorLogFile> LAST_MODIFIED = new Comparator<VisorLogFile>() {
-        @Override public int compare(VisorLogFile f1, VisorLogFile f2) {
-            return Long.compare(f2.getLastModified(), f1.getLastModified());
-        }
-    };
 
     /**
      * @param name Grid-style nullable name.
@@ -558,60 +528,6 @@ public class VisorTaskUtils {
         Path path = file.toPath();
 
         return Files.isSymbolicLink(path) ? Files.readSymbolicLink(path).toFile() : file;
-    }
-
-    /**
-     * Finds all files in folder and in it's sub-tree of specified depth.
-     *
-     * @param file Starting folder
-     * @param maxDepth Depth of the tree. If 1 - just look in the folder, no sub-folders.
-     * @param filter file filter.
-     * @return List of found files.
-     * @throws IOException If failed to list files.
-     */
-    public static List<VisorLogFile> fileTree(File file, int maxDepth, @Nullable FileFilter filter) throws IOException {
-        file = resolveSymbolicLink(file);
-
-        if (file.isDirectory()) {
-            File[] files = (filter == null) ? file.listFiles() : file.listFiles(filter);
-
-            if (files == null)
-                return Collections.emptyList();
-
-            List<VisorLogFile> res = new ArrayList<>(files.length);
-
-            for (File f : files) {
-                if (f.isFile() && f.length() > 0)
-                    res.add(new VisorLogFile(f));
-                else if (maxDepth > 1)
-                    res.addAll(fileTree(f, maxDepth - 1, filter));
-            }
-
-            return res;
-        }
-
-        // Return ArrayList, because it could be sorted in matchedFiles() method.
-        return new ArrayList<>(F.asList(new VisorLogFile(file)));
-    }
-
-    /**
-     * @param file Folder with files to match.
-     * @param ptrn Pattern to match against file name.
-     * @return Collection of matched files.
-     * @throws IOException If failed to filter files.
-     */
-    public static List<VisorLogFile> matchedFiles(File file, final String ptrn) throws IOException {
-        List<VisorLogFile> files = fileTree(file, MAX_FOLDER_DEPTH,
-            new FileFilter() {
-                @Override public boolean accept(File f) {
-                    return !f.isHidden() && (f.isDirectory() || f.isFile() && f.getName().matches(ptrn));
-                }
-            }
-        );
-
-        Collections.sort(files, LAST_MODIFIED);
-
-        return files;
     }
 
     /** Text files mime types. */
