@@ -30,9 +30,7 @@ import org.apache.ignite.internal.processors.metric.GridMetricManager;
 import org.apache.ignite.internal.processors.metric.MetricRegistry;
 import org.apache.ignite.spi.metric.LongMetric;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
-import org.hamcrest.Matchers;
 import org.jetbrains.annotations.Nullable;
-import org.junit.Assert;
 import org.junit.Test;
 
 import static org.apache.ignite.internal.metric.IoStatisticsCacheSelfTest.logicalReads;
@@ -48,6 +46,8 @@ import static org.apache.ignite.internal.metric.IoStatisticsType.CACHE_GROUP;
 import static org.apache.ignite.internal.metric.IoStatisticsType.HASH_INDEX;
 import static org.apache.ignite.internal.processors.metric.impl.MetricUtils.metricName;
 import static org.apache.ignite.internal.util.IgniteUtils.MB;
+import static org.hamcrest.Matchers.greaterThan;
+import static org.junit.Assert.assertThat;
 
 /**
  * Tests for IO statistic manager.
@@ -151,13 +151,13 @@ public class IoStatisticsSelfTest extends GridCommonAbstractTest {
         long physicalReadsCnt = physicalReads(mmgr, CACHE_GROUP, DEFAULT_CACHE_NAME, null);
 
         if (isPersistent)
-            Assert.assertThat(physicalReadsCnt, Matchers.greaterThan(0L));
+            assertThat(physicalReadsCnt, greaterThan(0L));
         else
-            Assert.assertEquals(0, physicalReadsCnt);
+            assertEquals(0, physicalReadsCnt);
 
         long logicalReads = logicalReads(mmgr, HASH_INDEX, metricName(DEFAULT_CACHE_NAME, HASH_PK_IDX_NAME));
 
-        Assert.assertEquals(RECORD_COUNT, logicalReads);
+        assertEquals(RECORD_COUNT, logicalReads);
     }
 
     /**
@@ -194,6 +194,8 @@ public class IoStatisticsSelfTest extends GridCommonAbstractTest {
             DataStorageConfiguration dsCfg = new DataStorageConfiguration()
                 .setDefaultDataRegionConfiguration(
                     new DataRegionConfiguration()
+                        // Value is chosen so that DataPage are evicted from data region, when adding an entry to the
+                        // cache, we again loaded (read) the DataPage from disk in order to add an entry to it.
                         .setMaxSize(25 * MB)
                         .setPersistenceEnabled(true)
                 ).setWalMode(WALMode.LOG_ONLY);
