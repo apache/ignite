@@ -175,9 +175,6 @@ public class GridCacheOffheapManager extends IgniteCacheOffheapManagerImpl imple
     /** Flag indicates that all group partitions have restored their state from page memory / disk. */
     private volatile boolean partitionStatesRestored;
 
-    /** */
-    private DataStorageMetricsImpl persStoreMetrics;
-
     /** {@inheritDoc} */
     @Override protected void initPendingTree(GridCacheContext cctx) throws IgniteCheckedException {
         // No-op. Per-partition PendingTree should be used.
@@ -228,8 +225,6 @@ public class GridCacheOffheapManager extends IgniteCacheOffheapManagerImpl imple
             ctx.kernalContext().failure(),
             ctx.diagnostic().pageLockTracker()
         );
-
-        persStoreMetrics = databaseSharedManager.dataStorageMetricsImpl();
 
         databaseSharedManager.addCheckpointListener(this, grp.dataRegion());
     }

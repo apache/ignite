@@ -91,7 +91,7 @@ namespace Apache.Ignite.Core.Tests.Cache.Query.Linq
             {
                 cache.Put(i, new Person(i, string.Format(" Person_{0}  ", i))
                 {
-                    Address = new Address {Zip = i, Street = "Street " + i, AliasTest = i},
+                    Address = new Address {Zip = i, Street = "Street " + i, AddressAliasTest = i},
                     OrganizationId = i%2 + 1000,
                     Birthday = StartDateTime.AddYears(i),
                     AliasTest = -i
@@ -414,7 +414,7 @@ namespace Apache.Ignite.Core.Tests.Cache.Query.Linq
         {
             [QuerySqlField] public int Zip { get; set; }
             [QuerySqlField] public string Street { get; set; }
-            [QuerySqlField] public int AliasTest { get; set; }
+            [QuerySqlField] public int AddressAliasTest { get; set; }
         }
 
         public class Organization

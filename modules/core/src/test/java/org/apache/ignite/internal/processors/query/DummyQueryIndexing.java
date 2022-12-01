@@ -202,9 +202,4 @@ public class DummyQueryIndexing implements GridQueryIndexing {
     @Override public void registerMxBeans(IgniteMBeansManager mbMgr) {
 
     }
-
-    /** {@inheritDoc} */
-    @Override public boolean isConvertibleToColumnType(String schemaName, String tblName, String colName, Class<?> cls) {
-        return false;
-    }
 }

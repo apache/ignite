@@ -45,7 +45,6 @@ import java.util.concurrent.atomic.AtomicReference;
 import javax.cache.CacheException;
 import org.apache.ignite.DataRegionMetrics;
 import org.apache.ignite.DataRegionMetricsAdapter;
-import org.apache.ignite.DataStorageMetrics;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteAtomicLong;
 import org.apache.ignite.IgniteAtomicReference;
@@ -2851,18 +2850,6 @@ public class IgniteKernal implements IgniteEx, Externalizable {
 
         try {
             return ctx.cache().context().database().memoryMetrics(memPlcName);
-        }
-        finally {
-            unguard();
-        }
-    }
-
-    /** {@inheritDoc} */
-    @Override public DataStorageMetrics dataStorageMetrics() {
-        guard();
-
-        try {
-            return ctx.cache().context().database().persistentStoreMetrics();
         }
         finally {
             unguard();

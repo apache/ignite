@@ -758,15 +758,17 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
      * @return Future which will be completed when a snapshot has been started.
      */
     private IgniteInternalFuture<SnapshotOperationResponse> initLocalSnapshotStartStage(SnapshotOperationRequest req) {
-        if (cctx.kernalContext().clientNode() ||
-            !CU.baselineNode(cctx.localNode(), cctx.kernalContext().state().clusterState()))
-            return new GridFinishedFuture<>();
-
         // Executed inside discovery notifier thread, prior to firing discovery custom event,
         // so it is safe to set new snapshot task inside this method without synchronization.
         if (clusterSnpReq != null) {
             return new GridFinishedFuture<>(new IgniteCheckedException("Snapshot operation has been rejected. " +
                 "Another snapshot operation in progress [req=" + req + ", curr=" + clusterSnpReq + ']'));
+        }
+
+        if (!CU.baselineNode(cctx.localNode(), cctx.kernalContext().state().clusterState())) {
+            clusterSnpReq = req;
+
+            return new GridFinishedFuture<>();
         }
 
         Set<UUID> leftNodes = new HashSet<>(req.nodes());
@@ -778,12 +780,12 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
                 "prior to snapshot operation start: " + leftNodes));
         }
 
-        if (!cctx.localNode().isClient() && cctx.kernalContext().encryption().isMasterKeyChangeInProgress()) {
+        if (cctx.kernalContext().encryption().isMasterKeyChangeInProgress()) {
             return new GridFinishedFuture<>(new IgniteCheckedException("Snapshot operation has been rejected. Master " +
                 "key changing process is not finished yet."));
         }
 
-        if (!cctx.localNode().isClient() && cctx.kernalContext().encryption().reencryptionInProgress()) {
+        if (cctx.kernalContext().encryption().reencryptionInProgress()) {
             return new GridFinishedFuture<>(new IgniteCheckedException("Snapshot operation has been rejected. Caches " +
                 "re-encryption process is not finished yet."));
         }

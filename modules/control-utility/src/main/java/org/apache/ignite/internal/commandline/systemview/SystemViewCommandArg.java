@@ -21,8 +21,19 @@ import org.apache.ignite.internal.commandline.argument.CommandArg;
 
 /** Represents all possible arguments for {@link SystemViewCommand}. */
 public enum SystemViewCommandArg implements CommandArg {
-    /** Id of the node to get the system view from. */
-    NODE_ID("--node-id");
+    /**
+     * Id of the node to get the system view from.
+     *
+     * @deprecated Use {@link SystemViewCommandArg#NODE_IDS} instead.
+     */
+    @Deprecated
+    NODE_ID("--node-id"),
+
+    /** Node IDs to get the system view from. */
+    NODE_IDS("--node-ids"),
+
+    /** Get the system view from all nodes. */
+    ALL_NODES("--all-nodes");
 
     /** Name of the argument. */
     private final String name;

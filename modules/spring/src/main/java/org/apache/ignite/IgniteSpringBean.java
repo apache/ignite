@@ -305,13 +305,6 @@ public class IgniteSpringBean implements Ignite, DisposableBean, SmartInitializi
     }
 
     /** {@inheritDoc} */
-    @Override public DataStorageMetrics dataStorageMetrics() {
-        checkIgnite();
-
-        return g.dataStorageMetrics();
-    }
-
-    /** {@inheritDoc} */
     @Override public IgniteEncryption encryption() {
         checkIgnite();
 

@@ -23,7 +23,6 @@ import java.util.concurrent.ExecutorService;
 import javax.management.MBeanServer;
 import org.apache.ignite.DataRegionMetrics;
 import org.apache.ignite.DataRegionMetricsAdapter;
-import org.apache.ignite.DataStorageMetrics;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteAtomicLong;
 import org.apache.ignite.IgniteAtomicReference;
@@ -471,11 +470,6 @@ public class IgniteMock implements Ignite {
 
     /** {@inheritDoc} */
     @Nullable @Override public DataRegionMetrics dataRegionMetrics(String memPlcName) {
-        return null;
-    }
-
-    /** {@inheritDoc} */
-    @Override public DataStorageMetrics dataStorageMetrics() {
         return null;
     }
 
