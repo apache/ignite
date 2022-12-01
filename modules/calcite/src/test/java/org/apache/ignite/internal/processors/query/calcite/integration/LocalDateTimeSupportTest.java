@@ -23,7 +23,7 @@ import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.time.LocalTime;
 import java.time.Month;
-import java.time.temporal.ChronoField;
+import java.time.temporal.ChronoUnit;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
@@ -249,9 +249,9 @@ public class LocalDateTimeSupportTest extends AbstractBasicIntegrationTest {
         LocalDateTime oldDateTime = LocalDateTime.of(1042, Month.APRIL, 1, 12, 45, 0);
         LocalDate oldDate = LocalDate.of(1042, Month.APRIL, 1);
         if (cls == LocalDateTime.class)
-            return isOldDate ? oldDateTime : LocalDateTime.now().with(ChronoField.NANO_OF_SECOND, 0);
+            return isOldDate ? oldDateTime : LocalDateTime.now().truncatedTo(ChronoUnit.MILLIS);
         else if (cls == LocalTime.class)
-            return LocalTime.now().with(ChronoField.NANO_OF_SECOND, 0);
+            return LocalTime.now().truncatedTo(ChronoUnit.MILLIS);
         else if (cls == LocalDate.class)
             return isOldDate ? oldDate : LocalDate.now();
         else if (cls == Date.class)
@@ -260,8 +260,10 @@ public class LocalDateTimeSupportTest extends AbstractBasicIntegrationTest {
             return isOldDate ? java.sql.Date.valueOf(oldDate) : java.sql.Date.valueOf(LocalDate.now());
         else if (cls == java.sql.Time.class)
             return java.sql.Time.valueOf(LocalTime.now());
-        else if (cls == java.sql.Timestamp.class)
-            return isOldDate ? convertToTimestamp(oldDateTime) : java.sql.Timestamp.valueOf(LocalDateTime.now().with(ChronoField.NANO_OF_SECOND, 0));
+        else if (cls == java.sql.Timestamp.class) {
+            return isOldDate ? convertToTimestamp(oldDateTime)
+                : java.sql.Timestamp.valueOf(LocalDateTime.now().truncatedTo(ChronoUnit.MILLIS));
+        }
         else
             throw new IllegalStateException();
     }
