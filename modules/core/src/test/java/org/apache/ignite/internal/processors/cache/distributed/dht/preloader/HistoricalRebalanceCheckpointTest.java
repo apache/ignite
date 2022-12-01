@@ -48,7 +48,6 @@ import org.apache.ignite.internal.processors.cache.persistence.file.FileIO;
 import org.apache.ignite.internal.processors.cache.persistence.file.FileIODecorator;
 import org.apache.ignite.internal.processors.cache.persistence.file.FileIOFactory;
 import org.apache.ignite.internal.processors.cache.verify.IdleVerifyResultV2;
-import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgniteBiPredicate;
 import org.apache.ignite.plugin.extensions.communication.Message;
 import org.apache.ignite.testframework.GridTestUtils;
@@ -158,7 +157,7 @@ public class HistoricalRebalanceCheckpointTest extends GridCommonAbstractTest {
                 if (msg instanceof GridDhtTxPrepareResponse && prepareBlock.get()) {
                     CountDownLatch latch = blockLatch.get();
 
-                    assertTrue(latch.getCount() > 0);
+                    //assertTrue(latch.getCount() > 0);
 
                     latch.countDown();
 
@@ -190,8 +189,6 @@ public class HistoricalRebalanceCheckpointTest extends GridCommonAbstractTest {
         log.error("TEST | backup.close()");
 
         backup.close();
-
-        forceCheckpoint();
 
         System.err.println("TEST | cache size 1: " + prim.cache(DEFAULT_CACHE_NAME).size());
 
