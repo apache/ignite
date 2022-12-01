@@ -29,9 +29,6 @@ import static org.apache.ignite.internal.visor.util.VisorTaskUtils.VISOR_TASK_EV
  * Holder class to store information in node local map between data collector task executions.
  */
 public class VisorComputeMonitoringHolder {
-    /** Task monitoring events holder key. */
-    public static final String COMPUTE_MONITORING_HOLDER_KEY = "VISOR_COMPUTE_MONITORING_KEY";
-
     /** Visors that collect events (Visor instance key -> collect events since last cleanup check) */
     private final Map<String, Boolean> listenVisor = new HashMap<>();
 
