@@ -19,7 +19,6 @@ package org.apache.ignite.internal.processors.rest;
 
 import java.io.IOException;
 import java.io.Serializable;
-import java.io.UnsupportedEncodingException;
 import java.sql.Date;
 import java.sql.Time;
 import java.sql.Timestamp;
@@ -64,7 +63,6 @@ import org.apache.ignite.internal.processors.cache.IgniteCacheProxy;
 import org.apache.ignite.internal.processors.cache.query.GridCacheSqlIndexMetadata;
 import org.apache.ignite.internal.processors.cache.query.GridCacheSqlMetadata;
 import org.apache.ignite.internal.processors.rest.handlers.GridRestCommandHandler;
-import org.apache.ignite.internal.util.typedef.C1;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.P1;
 import org.apache.ignite.internal.util.typedef.T2;
@@ -3510,185 +3508,6 @@ public abstract class JettyRestProcessorAbstractSelfTest extends JettyRestProces
         /** {@inheritDoc} */
         @Override public boolean apply(ClusterNode n) {
             return n.id().equals(nid);
-        }
-    }
-
-    /**
-     * Helper for build {@link VisorGatewayTask} arguments.
-     */
-    public static class VisorGatewayArgument extends HashMap<String, String> {
-        /** Latest argument index. */
-        private int idx = 3;
-
-        /**
-         * Construct helper object.
-         *
-         * @param cls Class of executed task.
-         */
-        public VisorGatewayArgument(Class cls) {
-            super(F.asMap(
-                "cmd", GridRestCommand.EXE.key(),
-                "name", VisorGatewayTask.class.getName(),
-                "p1", "null",
-                "p2", cls.getName()
-            ));
-        }
-
-        /**
-         * Execute task on node.
-         *
-         * @param node Node.
-         * @return This helper for chaining method calls.
-         */
-        public VisorGatewayArgument forNode(ClusterNode node) {
-            put("p1", node != null ? node.id().toString() : null);
-
-            return this;
-        }
-
-        /**
-         * Prepare list of node IDs.
-         *
-         * @param nodes Collection of nodes.
-         * @return This helper for chaining method calls.
-         */
-        public VisorGatewayArgument forNodes(Collection<ClusterNode> nodes) {
-            put("p1", concat(F.transform(nodes, new C1<ClusterNode, UUID>() {
-                /** {@inheritDoc} */
-                @Override public UUID apply(ClusterNode node) {
-                    return node.id();
-                }
-            }).toArray(), ";"));
-
-            return this;
-        }
-
-        /**
-         * Add custom argument.
-         *
-         * @param vals Values.
-         * @return This helper for chaining method calls.
-         */
-        public VisorGatewayArgument arguments(Object... vals) {
-            for (Object val : vals)
-                put("p" + idx++, String.valueOf(val));
-
-            return this;
-        }
-
-        /**
-         * Add string argument.
-         *
-         * @param val Value.
-         * @return This helper for chaining method calls.
-         */
-        public VisorGatewayArgument argument(String val) {
-            put("p" + idx++, String.class.getName());
-            put("p" + idx++, val);
-
-            return this;
-        }
-
-        /**
-         * Add custom class argument.
-         *
-         * @param cls Class.
-         * @param vals Values.
-         * @return This helper for chaining method calls.
-         */
-        public VisorGatewayArgument argument(Class cls, Object... vals) {
-            put("p" + idx++, cls.getName());
-
-            for (Object val : vals)
-                put("p" + idx++, val != null ? val.toString() : null);
-
-            return this;
-        }
-
-        /**
-         * Add collection argument.
-         *
-         * @param cls Class.
-         * @param vals Values.
-         * @return This helper for chaining method calls.
-         */
-        public VisorGatewayArgument collection(Class cls, Object... vals) {
-            put("p" + idx++, Collection.class.getName());
-            put("p" + idx++, cls.getName());
-            put("p" + idx++, concat(vals, ";"));
-
-            return this;
-        }
-
-        /**
-         * Add set argument.
-         *
-         * @param cls Class.
-         * @param vals Values.
-         * @return This helper for chaining method calls.
-         */
-        public VisorGatewayArgument set(Class cls, Object... vals) {
-            put("p" + idx++, Set.class.getName());
-            put("p" + idx++, cls.getName());
-            put("p" + idx++, concat(vals, ";"));
-
-            return this;
-        }
-
-        /**
-         * Add map argument.
-         *
-         * @param keyCls Key class.
-         * @param valCls Value class.
-         * @param map Map.
-         */
-        public VisorGatewayArgument map(Class keyCls, Class valCls, Map<?, ?> map) throws UnsupportedEncodingException {
-            put("p" + idx++, Map.class.getName());
-            put("p" + idx++, keyCls.getName());
-            put("p" + idx++, valCls.getName());
-
-            SB sb = new SB();
-
-            boolean first = true;
-
-            for (Map.Entry<?, ?> entry : map.entrySet()) {
-                if (!first)
-                    sb.a(";");
-
-                sb.a(entry.getKey());
-
-                if (entry.getValue() != null)
-                    sb.a("=").a(entry.getValue());
-
-                first = false;
-            }
-
-            put("p" + idx++, sb.toString());
-
-            return this;
-        }
-
-        /**
-         * Concat object with delimiter.
-         *
-         * @param vals Values.
-         * @param delim Delimiter.
-         */
-        private static String concat(Object[] vals, String delim) {
-            SB sb = new SB();
-
-            boolean first = true;
-
-            for (Object val : vals) {
-                if (!first)
-                    sb.a(delim);
-
-                sb.a(val);
-
-                first = false;
-            }
-
-            return sb.toString();
         }
     }
 
