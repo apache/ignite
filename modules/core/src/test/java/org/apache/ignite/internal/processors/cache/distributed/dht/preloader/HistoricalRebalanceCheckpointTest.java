@@ -102,7 +102,7 @@ public class HistoricalRebalanceCheckpointTest extends GridCommonAbstractTest {
     }
 
     /**
-     * Tests delayes prepare/finish transaction requests to the backups with 2 backups.
+     * Tests delayed prepare/finish transaction requests to the backups with 2 backups.
      */
     @Test
     public void testDelayedToBackupsRequests2Backups() throws Exception {
@@ -110,15 +110,15 @@ public class HistoricalRebalanceCheckpointTest extends GridCommonAbstractTest {
     }
 
     /**
-     * Tests delayes prepare/finish transaction requests to the backups with 2 backups and puts after the gaps.
+     * Tests delayed prepare/finish transaction requests to the backups with 2 backups and puts after the gaps.
      */
     @Test
     public void testDelayedToBackupsRequests2BackupsMorePuts() throws Exception {
-        doTestDelayedToBackupsRequests(3, false);
+        doTestDelayedToBackupsRequests(3, true);
     }
 
     /**
-     * Tests delayes prepare/finish transaction requests to the backups with 1 backup and one-phase commit.
+     * Tests delayed prepare/finish transaction requests to the backups with 1 backup and one-phase commit.
      */
     @Test
     public void testDelayedToBackupsRequests1Backup() throws Exception {
@@ -126,7 +126,7 @@ public class HistoricalRebalanceCheckpointTest extends GridCommonAbstractTest {
     }
 
     /**
-     * Tests delayes prepare/finish transaction requests to the backups with 1 backup and one-phase commit using puts
+     * Tests delayed prepare/finish transaction requests to the backups with 1 backup and one-phase commit using puts
      * after the gaps.
      */
     @Test
@@ -231,9 +231,9 @@ public class HistoricalRebalanceCheckpointTest extends GridCommonAbstractTest {
     }
 
     /**
-     * Tests delayes prepare/finish transaction requests to the backups.
+     * Tests delayed prepare/finish transaction requests to the backups.
      *
-     * @param nodes Nodes number. The backups are {@code nodes} - 1.
+     * @param nodes Nodes number. The backups number is {@code nodes} - 1.
      * @param putAfterGaps If {@code true}, does more puts to the cache after the simulated gaps.
      */
     private void doTestDelayedToBackupsRequests(int nodes, boolean putAfterGaps) throws Exception {
