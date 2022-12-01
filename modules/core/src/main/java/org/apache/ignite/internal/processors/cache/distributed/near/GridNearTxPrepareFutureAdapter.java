@@ -201,8 +201,6 @@ public abstract class GridNearTxPrepareFutureAdapter extends
         if (res == null)
             return;
 
-        //log.error("TEST | onPrepareResponse()");
-
         assert res.error() == null : res;
 
         if (tx.onePhaseCommit() && !res.onePhaseCommit())

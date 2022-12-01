@@ -102,7 +102,7 @@ public class HistoricalRebalanceCheckpointTest extends GridCommonAbstractTest {
     }
 
     /**
-     * Test two-phase commit.
+     * Tests delayes prepare/finish transaction requests to the backups with 2 backups.
      */
     @Test
     public void testDelayedToBackupsRequests2Backups() throws Exception {
@@ -110,7 +110,7 @@ public class HistoricalRebalanceCheckpointTest extends GridCommonAbstractTest {
     }
 
     /**
-     * Test two-phase commit with puts after gaps.
+     * Tests delayes prepare/finish transaction requests to the backups with 2 backups and puts after the gaps.
      */
     @Test
     public void testDelayedToBackupsRequests2BackupsMorePuts() throws Exception {
@@ -118,7 +118,7 @@ public class HistoricalRebalanceCheckpointTest extends GridCommonAbstractTest {
     }
 
     /**
-     * Test one-phase commit.
+     * Tests delayes prepare/finish transaction requests to the backups with 1 backup and one-phase commit.
      */
     @Test
     public void testDelayedToBackupsRequests1Backup() throws Exception {
@@ -126,7 +126,8 @@ public class HistoricalRebalanceCheckpointTest extends GridCommonAbstractTest {
     }
 
     /**
-     * Test one-phase commit with puts after gaps.
+     * Tests delayes prepare/finish transaction requests to the backups with 1 backup and one-phase commit using puts
+     * after the gaps.
      */
     @Test
     public void testDelayedToBackupsRequests1BackupMorePuts() throws Exception {
@@ -144,8 +145,6 @@ public class HistoricalRebalanceCheckpointTest extends GridCommonAbstractTest {
 
         Ignite prim = primaryNode(0L, DEFAULT_CACHE_NAME);
 
-        log.error("TEST | after prepareCluster, prim: " + prim.configuration().getIgniteInstanceName() + ", order: " + prim.cluster().localNode().order());
-
         Ignite backup = backupNodes(0L, DEFAULT_CACHE_NAME).get(0);
 
         AtomicBoolean prepareBlock = new AtomicBoolean();
@@ -156,8 +155,6 @@ public class HistoricalRebalanceCheckpointTest extends GridCommonAbstractTest {
             @Override public boolean apply(ClusterNode node, Message msg) {
                 if (msg instanceof GridDhtTxPrepareResponse && prepareBlock.get()) {
                     CountDownLatch latch = blockLatch.get();
-
-                    //assertTrue(latch.getCount() > 0);
 
                     latch.countDown();
 
@@ -186,20 +183,21 @@ public class HistoricalRebalanceCheckpointTest extends GridCommonAbstractTest {
 
         String backName = backup.name();
 
-        log.error("TEST | backup.close()");
-
         backup.close();
 
-        System.err.println("TEST | cache size 1: " + prim.cache(DEFAULT_CACHE_NAME).size());
-
-        log.error("TEST | startGrid(backName)");
+        TestRecordingCommunicationSpi.spi(prim).blockMessages((n, m) -> m instanceof GridDhtPartitionDemandMessage ||
+            m instanceof GridDhtPartitionSupplyMessage
+        );
 
         startGrid(backName);
 
-        System.err.println("TEST | cache size 2: " + prim.cache(DEFAULT_CACHE_NAME).size());
+        awaitPartitionMapExchange();
+
+        // Primary commits transactions on node left. Ensure no rebalance occurs.
+        TestRecordingCommunicationSpi.spi(prim).waitForBlocked(1, 5_000);
+        assertFalse(TestRecordingCommunicationSpi.spi(prim).hasBlockedMessages());
 
         IdleVerifyResultV2 checkRes = idleVerify(prim, DEFAULT_CACHE_NAME);
-
         assertFalse(checkRes.hasConflicts());
     }
 
@@ -232,7 +230,12 @@ public class HistoricalRebalanceCheckpointTest extends GridCommonAbstractTest {
         return backupNodes;
     }
 
-    /** */
+    /**
+     * Tests delayes prepare/finish transaction requests to the backups.
+     *
+     * @param nodes Nodes number. The backups are {@code nodes} - 1.
+     * @param putAfterGaps If {@code true}, does more puts to the cache after the simulated gaps.
+     */
     private void doTestDelayedToBackupsRequests(int nodes, boolean putAfterGaps) throws Exception {
         int updateCnt = 2_000;
 
@@ -336,7 +339,6 @@ public class HistoricalRebalanceCheckpointTest extends GridCommonAbstractTest {
         rebalanceFinished.await();
 
         IdleVerifyResultV2 checkRes = idleVerify(prim, DEFAULT_CACHE_NAME);
-
         assertFalse(checkRes.hasConflicts());
     }
 
