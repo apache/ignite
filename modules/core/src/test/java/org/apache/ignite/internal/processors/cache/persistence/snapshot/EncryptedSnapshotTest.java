@@ -197,7 +197,7 @@ public class EncryptedSnapshotTest extends AbstractSnapshotSelfTest {
 
         ig = startGrids(2);
 
-        IdleVerifyResultV2 snpCheckRes = snp(ig).checkSnapshot(SNAPSHOT_NAME, null).get();
+        IdleVerifyResultV2 snpCheckRes = snp(ig).checkSnapshot(SNAPSHOT_NAME, null).get().idleVerifyResult();
 
         for (Exception e : snpCheckRes.exceptions().values()) {
             if (e.getMessage().contains("different master key digest"))
@@ -239,7 +239,7 @@ public class EncryptedSnapshotTest extends AbstractSnapshotSelfTest {
 
             ig.cluster().state(ACTIVE);
 
-            IdleVerifyResultV2 snpCheckRes = snp(ig).checkSnapshot(SNAPSHOT_NAME, null).get();
+            IdleVerifyResultV2 snpCheckRes = snp(ig).checkSnapshot(SNAPSHOT_NAME, null).get().idleVerifyResult();
 
             for (Exception e : snpCheckRes.exceptions().values()) {
                 if (e.getMessage().contains("has encrypted caches while encryption is disabled"))

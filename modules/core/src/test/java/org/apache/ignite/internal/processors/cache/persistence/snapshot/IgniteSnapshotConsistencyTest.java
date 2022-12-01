@@ -203,7 +203,8 @@ public class IgniteSnapshotConsistencyTest extends GridCommonAbstractTest {
         snpFut.get(getTestTimeout());
         putFut.get(getTestTimeout());
 
-        IdleVerifyResultV2 snpVerifyRes = crd.context().cache().context().snapshotMgr().checkSnapshot(SNAPSHOT_NAME, null).get();
+        IdleVerifyResultV2 snpVerifyRes = crd.context().cache().context().snapshotMgr()
+            .checkSnapshot(SNAPSHOT_NAME, null).get().idleVerifyResult();
 
         assertFalse(snpVerifyRes.hasConflicts());
     }
