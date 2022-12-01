@@ -557,7 +557,7 @@ public class IgniteClusterImpl extends ClusterGroupAdapter implements IgniteClus
             Collection<BaselineNode> target = new ArrayList<>(top.size());
 
             for (ClusterNode node : top) {
-                if (!node.isClient() && !node.isDaemon())
+                if (!node.isClient())
                     target.add(node);
             }
 

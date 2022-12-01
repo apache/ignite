@@ -135,12 +135,4 @@ public interface GridClientNode {
      * @see IgniteConfiguration#isClientMode()
      */
     public boolean isClient();
-
-    /**
-     * Tests whether or not this node is a daemon (see {@link IgniteConfiguration#isDaemon()}).
-     *
-     * @return {@code True} if this node is a daemon, {@code false} otherwise.
-     * @see IgniteConfiguration#isDaemon()
-     */
-    public boolean isDaemon();
 }

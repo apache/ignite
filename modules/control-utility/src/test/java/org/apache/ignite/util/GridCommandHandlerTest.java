@@ -2822,7 +2822,6 @@ public class GridCommandHandlerTest extends GridCommandHandlerClusterPerMethodAb
         IgniteEx ignite = startGrids(srvNodes);
 
         startGrid(CLIENT_NODE_NAME_PREFIX);
-        startGrid(DAEMON_NODE_NAME_PREFIX);
 
         ignite.cluster().state(ACTIVE);
 
@@ -2979,7 +2978,7 @@ public class GridCommandHandlerTest extends GridCommandHandlerClusterPerMethodAb
         for (Ignite grid : G.allGrids()) {
             ClusterNode locNode = grid.cluster().localNode();
 
-            if (locNode.isClient() || locNode.isDaemon())
+            if (locNode.isClient())
                 continue;
 
             if (((IgniteEx)grid).context().encryption().reencryptionFuture(CU.cacheId(cacheName)).isDone())

@@ -22,7 +22,6 @@ import java.util.concurrent.atomic.AtomicReference;
 
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.internal.GridKernalContext;
-import org.apache.ignite.internal.SkipDaemon;
 import org.apache.ignite.internal.managers.GridManagerAdapter;
 import org.apache.ignite.spi.collision.CollisionContext;
 import org.apache.ignite.spi.collision.CollisionExternalListener;
@@ -33,7 +32,6 @@ import org.jetbrains.annotations.Nullable;
 /**
  * This class defines a collision manager.
  */
-@SkipDaemon
 public class GridCollisionManager extends GridManagerAdapter<CollisionSpi> {
     /** Reference for external listener. */
     private final AtomicReference<CollisionExternalListener> extLsnr =
@@ -69,9 +67,6 @@ public class GridCollisionManager extends GridManagerAdapter<CollisionSpi> {
 
     /** {@inheritDoc} */
     @Override public void stop(boolean cancel) throws IgniteCheckedException {
-        if (ctx.config().isDaemon())
-            return;
-
         stopSpi();
 
         // Unsubscribe.

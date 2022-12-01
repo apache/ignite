@@ -37,9 +37,6 @@ public class ClusterProcessorCheckGlobalStateComputeRequestTest extends GridComm
 
         cfg.setMetricExporterSpi(new JmxMetricExporterSpi());
 
-        if (igniteInstanceName.equalsIgnoreCase("daemon"))
-            cfg.setDaemon(true);
-
         return cfg;
     }
 
@@ -49,13 +46,6 @@ public class ClusterProcessorCheckGlobalStateComputeRequestTest extends GridComm
     @Test
     public void testCheckGlobalStateComputeRequest() throws Exception {
         startGrids(1);
-        IgniteEx daemon = startGrid("daemon");
-
-        // GridInternal annotation will cause the job and response message to execute on management pool.
-        for (int i = 0; i < 100; i++)
-            daemon.cluster().active();
-
-        checkBeanAttribute(daemon, THREAD_POOLS, "GridManagementExecutor", "TaskCount", 100L);
 
         for (int i = 0; i < 100; i++)
             grid(0).cluster().active();

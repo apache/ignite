@@ -609,7 +609,7 @@ public class GridCacheProcessor extends GridProcessorAdapter {
         for (GridCacheSharedManager mgr : sharedCtx.managers())
             mgr.start(sharedCtx);
 
-        if (!ctx.isDaemon() && (!CU.isPersistenceEnabled(ctx.config())) || ctx.config().isClientMode()) {
+        if (!CU.isPersistenceEnabled(ctx.config()) || ctx.config().isClientMode()) {
             CacheJoinNodeDiscoveryData data = locCfgMgr.restoreCacheConfigurations();
 
             if (data != null)
@@ -679,9 +679,6 @@ public class GridCacheProcessor extends GridProcessorAdapter {
 
     /** {@inheritDoc} */
     @Override public void onKernalStart(boolean active) throws IgniteCheckedException {
-        if (ctx.isDaemon())
-            return;
-
         AffinityTopologyVersion joinVer;
 
         try {

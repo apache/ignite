@@ -18,7 +18,6 @@
 package org.apache.ignite.internal.processors.cache.persistence.standbycluster;
 
 import java.util.Arrays;
-import java.util.Collection;
 import java.util.Map;
 import java.util.concurrent.atomic.AtomicInteger;
 import org.apache.ignite.Ignite;
@@ -219,77 +218,6 @@ public class IgniteStandByClusterTest extends GridCommonAbstractTest {
         IgniteCache<Integer, String> cache = ig.cache("cache");
 
         assertEquals("1", cache.get(1));
-    }
-
-    /**
-     * @throws Exception if fail.
-     */
-    @Test
-    public void testJoinDaemonAndDaemonStop() throws Exception {
-        IgniteEx ig = startGrid(0);
-
-        IgniteEx daemon = startClientGrid(
-            getConfiguration("daemon")
-                .setDaemon(true)
-        );
-
-        Collection<ClusterNode> daemons = ig.cluster().forDaemons().nodes();
-
-        Assert.assertEquals(1, daemons.size());
-        assertEquals(daemon.localNode().id(), daemons.iterator().next().id());
-
-        daemon.close();
-    }
-
-    /**
-     * Check that daemon node does not move cluster to compatibility mode.
-     */
-    @Test
-    public void testJoinDaemonToBaseline() throws Exception {
-        Ignite ignite0 = startGrid(0);
-
-        startGrid(1);
-
-        ignite0.cluster().active(true);
-
-        startClientGrid(
-            getConfiguration("daemon")
-                .setDaemon(true)
-        );
-
-        stopGrid(1);
-
-        startGrid(1);
-    }
-
-    /**
-     * @throws Exception if fail.
-     */
-    @Test
-    public void testCheckStatusFromDaemon() throws Exception {
-        IgniteEx ig = startGrid(0);
-
-        assertFalse(ig.active());
-
-        ig.active(true);
-
-        IgniteEx daemon = startClientGrid(
-            getConfiguration("daemon")
-                .setDaemon(true)
-        );
-
-        assertTrue(ig.active());
-        assertTrue(daemon.active());
-
-        daemon.active(false);
-
-        assertFalse(ig.active());
-        assertFalse(daemon.active());
-
-        daemon.active(true);
-
-        assertTrue(ig.active());
-        assertTrue(daemon.active());
     }
 
     /**

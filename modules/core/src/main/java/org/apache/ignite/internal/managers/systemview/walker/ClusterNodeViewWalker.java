@@ -47,7 +47,6 @@ public class ClusterNodeViewWalker implements SystemViewRowAttributeWalker<Clust
         v.accept(1, "consistentId", String.class, row.consistentId());
         v.accept(2, "version", String.class, row.version());
         v.acceptBoolean(3, "isClient", row.isClient());
-        v.acceptBoolean(4, "isDaemon", row.isDaemon());
         v.acceptLong(5, "nodeOrder", row.nodeOrder());
         v.accept(6, "addresses", String.class, row.addresses());
         v.accept(7, "hostnames", String.class, row.hostnames());

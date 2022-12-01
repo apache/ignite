@@ -140,11 +140,6 @@ class ClientClusterNodeImpl implements ClusterNode {
     }
 
     /** {@inheritDoc} */
-    @Override public boolean isDaemon() {
-        return isDaemon;
-    }
-
-    /** {@inheritDoc} */
     @Override public boolean isClient() {
         return isClient;
     }

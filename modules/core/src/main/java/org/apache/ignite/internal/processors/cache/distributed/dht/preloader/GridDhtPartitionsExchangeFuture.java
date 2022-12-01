@@ -891,8 +891,6 @@ public class GridDhtPartitionsExchangeFuture extends GridDhtTopologyFutureAdapte
         if (isDone())
             return;
 
-        assert !cctx.kernalContext().isDaemon();
-
         cctx.exchange().exchangerBlockingSectionBegin();
 
         try {
@@ -3045,7 +3043,6 @@ public class GridDhtPartitionsExchangeFuture extends GridDhtTopologyFutureAdapte
      * @param msg Single partition info.
      */
     public void onReceiveSingleMessage(final ClusterNode node, final GridDhtPartitionsSingleMessage msg) {
-        assert !node.isDaemon() : node;
         assert msg != null;
         assert exchId.equals(msg.exchangeId()) : msg;
         assert !cctx.kernalContext().clientNode();
@@ -4440,7 +4437,6 @@ public class GridDhtPartitionsExchangeFuture extends GridDhtTopologyFutureAdapte
     public void onReceiveFullMessage(final ClusterNode node, final GridDhtPartitionsFullMessage msg) {
         assert msg != null;
         assert msg.exchangeId() != null : msg;
-        assert !node.isDaemon() : node;
 
         initFut.listen(new CI1<IgniteInternalFuture<Boolean>>() {
             @Override public void apply(IgniteInternalFuture<Boolean> f) {
@@ -4465,7 +4461,7 @@ public class GridDhtPartitionsExchangeFuture extends GridDhtTopologyFutureAdapte
      */
     public void onReceivePartitionRequest(final ClusterNode node, final GridDhtPartitionsSingleRequest msg) {
         assert !cctx.kernalContext().clientNode() || msg.restoreState();
-        assert !node.isDaemon() && !node.isClient() : node;
+        assert !node.isClient() : node;
 
         initFut.listen(new CI1<IgniteInternalFuture<Boolean>>() {
             @Override public void apply(IgniteInternalFuture<Boolean> fut) {

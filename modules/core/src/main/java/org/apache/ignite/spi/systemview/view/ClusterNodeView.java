@@ -100,15 +100,6 @@ public class ClusterNodeView {
     }
 
     /**
-     * @return {@code True} if node is daemon.
-     * @see ClusterNode#isDaemon()
-     */
-    @Order(4)
-    public boolean isDaemon() {
-        return n.isDaemon();
-    }
-
-    /**
      * @return {@code True} if node is client.
      * @see ClusterNode#isClient() ()
      */

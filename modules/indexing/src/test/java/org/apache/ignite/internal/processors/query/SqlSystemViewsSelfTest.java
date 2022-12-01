@@ -697,8 +697,6 @@ public class SqlSystemViewsSelfTest extends AbstractIndexingCommonTest {
         Ignite igniteCli =
             startClientGrid(getTestIgniteInstanceName(1), getConfiguration().setMetricsUpdateFrequency(500L));
 
-        startGrid(getTestIgniteInstanceName(2), getConfiguration().setMetricsUpdateFrequency(500L).setDaemon(true));
-
         UUID nodeId0 = igniteSrv.cluster().localNode().id();
 
         awaitPartitionMapExchange();
@@ -730,15 +728,6 @@ public class SqlSystemViewsSelfTest extends AbstractIndexingCommonTest {
         assertEquals(nodeId(1), resCli.get(0).get(0));
 
         assertEquals(2L, resCli.get(0).get(1));
-
-        List<List<?>> resDaemon = execSql(
-            "SELECT NODE_ID, NODE_ORDER FROM " + systemSchemaName() + ".NODES WHERE IS_DAEMON = TRUE");
-
-        assertEquals(1, resDaemon.size());
-
-        assertEquals(nodeId(2), resDaemon.get(0).get(0));
-
-        assertEquals(3L, resDaemon.get(0).get(1));
 
         // Check index on ID column.
         assertEquals(0, execSql("SELECT NODE_ID FROM " + systemSchemaName() + ".NODES WHERE NODE_ID = '-'").size());

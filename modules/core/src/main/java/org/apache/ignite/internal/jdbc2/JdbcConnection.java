@@ -742,10 +742,6 @@ public class JdbcConnection implements Connection {
 
                 assert grp.nodes().size() == 1;
 
-                if (grp.node().isDaemon())
-                    throw new SQLException("Failed to establish connection with node (is it a server node?): " +
-                        nodeId);
-
                 return ignite.compute(grp).callAsync(task).get(timeout, SECONDS);
             }
             else

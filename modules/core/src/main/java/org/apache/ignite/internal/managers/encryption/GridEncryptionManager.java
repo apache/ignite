@@ -423,7 +423,7 @@ public class GridEncryptionManager extends GridManagerAdapter<EncryptionSpi> imp
                 "Master key change is in progress! Node join is rejected.");
         }
 
-        if (node.isClient() || node.isDaemon())
+        if (node.isClient())
             return null;
 
         res = validateNode(node);

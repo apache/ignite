@@ -41,9 +41,6 @@ public class VisorGridDiscoveryEvent extends VisorGridEvent {
     /** Node address that caused this event to be generated. */
     private String addr;
 
-    /** If node that caused this event is daemon. */
-    private boolean isDaemon;
-
     /** Topology version. */
     private long topVer;
 
@@ -66,7 +63,6 @@ public class VisorGridDiscoveryEvent extends VisorGridEvent {
      * @param shortDisplay Shortened version of {@code toString()} result.
      * @param evtNodeId Event node id.
      * @param addr Event node address.
-     * @param isDaemon If event node is daemon on not.
      * @param topVer Topology version.
      */
     public VisorGridDiscoveryEvent(
@@ -79,14 +75,12 @@ public class VisorGridDiscoveryEvent extends VisorGridEvent {
         String shortDisplay,
         UUID evtNodeId,
         String addr,
-        boolean isDaemon,
         long topVer
     ) {
         super(typeId, id, name, nid, ts, msg, shortDisplay);
 
         this.evtNodeId = evtNodeId;
         this.addr = addr;
-        this.isDaemon = isDaemon;
         this.topVer = topVer;
     }
 
@@ -102,13 +96,6 @@ public class VisorGridDiscoveryEvent extends VisorGridEvent {
      */
     public String getAddress() {
         return addr;
-    }
-
-    /**
-     * @return If node that caused this event is daemon.
-     */
-    public boolean isDaemon() {
-        return isDaemon;
     }
 
     /**
@@ -129,7 +116,6 @@ public class VisorGridDiscoveryEvent extends VisorGridEvent {
 
         U.writeUuid(out, evtNodeId);
         U.writeString(out, addr);
-        out.writeBoolean(isDaemon);
         out.writeLong(topVer);
     }
 
@@ -141,7 +127,6 @@ public class VisorGridDiscoveryEvent extends VisorGridEvent {
 
         evtNodeId = U.readUuid(in);
         addr = U.readString(in);
-        isDaemon = in.readBoolean();
         topVer = in.readLong();
     }
 
