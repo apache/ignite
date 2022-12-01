@@ -34,6 +34,7 @@ import org.apache.ignite.internal.client.GridClientConfiguration;
 import org.apache.ignite.internal.client.GridClientFactory;
 import org.apache.ignite.internal.client.GridClientProtocol;
 import org.apache.ignite.internal.client.balancer.GridClientRoundRobinBalancer;
+import org.apache.ignite.internal.visor.VisorTaskArgument;
 import org.apache.ignite.internal.visor.systemview.VisorSystemViewTask;
 import org.apache.ignite.internal.visor.systemview.VisorSystemViewTaskArg;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
@@ -105,7 +106,7 @@ public class BinaryConfigurationCustomSerializerSelfTest extends GridCommonAbstr
 
         // Execute some task.
         client.compute().execute(VisorSystemViewTask.class.getName(),
-            new VisorSystemViewTaskArg(CACHES_VIEW));
+            new VisorTaskArgument<>(nid, new VisorSystemViewTaskArg(CACHES_VIEW), false));
 
         GridClientFactory.stop(client.id(), false);
     }
