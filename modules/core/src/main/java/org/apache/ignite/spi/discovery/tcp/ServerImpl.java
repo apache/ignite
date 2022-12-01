@@ -4091,8 +4091,6 @@ class ServerImpl extends TcpDiscoveryImpl {
          * @param msg Join request message.
          */
         private void processJoinRequestMessage(final TcpDiscoveryJoinRequestMessage msg) {
-            log.error("TEST | processJoinRequestMessage: " + msg);
-
             assert msg != null;
 
             final TcpDiscoveryNode node = msg.node();
@@ -4704,8 +4702,6 @@ class ServerImpl extends TcpDiscoveryImpl {
 
                 nodeAddedMsg.client(msg.client());
 
-                log.error("TEST | process join request -> processNodeAddedMessage()");
-
                 processNodeAddedMessage(nodeAddedMsg);
 
                 tracing.messages().finishProcessing(nodeAddedMsg);
@@ -4871,8 +4867,6 @@ class ServerImpl extends TcpDiscoveryImpl {
         private void processNodeAddedMessage(TcpDiscoveryNodeAddedMessage msg) {
             assert msg != null;
 
-            log.error("TEST | processNodeAddedMessage(): " + msg.id());
-
             TcpDiscoveryNode node = msg.node();
 
             assert node != null;
@@ -4992,8 +4986,6 @@ class ServerImpl extends TcpDiscoveryImpl {
                 }
 
                 synchronized (mux) {
-                    log.error("TEST | saving joining node " + node.id());
-
                     joiningNodes.add(node.id());
                 }
 
@@ -5247,8 +5239,6 @@ class ServerImpl extends TcpDiscoveryImpl {
          * @param msg Node add finished message.
          */
         private void processNodeAddFinishedMessage(TcpDiscoveryNodeAddFinishedMessage msg) {
-            log.error("TEST | processNodeAddFinishedMessage()");
-
             assert msg != null;
 
             UUID nodeId = msg.nodeId();
@@ -5318,8 +5308,6 @@ class ServerImpl extends TcpDiscoveryImpl {
             }
 
             synchronized (mux) {
-                log.error("TEST | joiningNodes.remove: " + nodeId);
-
                 joiningNodes.remove(nodeId);
             }
 
@@ -5353,11 +5341,8 @@ class ServerImpl extends TcpDiscoveryImpl {
 
                     notifiedDiscovery.set(notified);
 
-                    if (!node.isClient() && !node.isDaemon()) {
-                        log.error("TEST | saved node id: " + node.id() + " of order " + node.order());
-
+                    if (!node.isClient() && !node.isDaemon())
                         nodesIdsHist.put(node.id(), false);
-                    }
                 }
 
                 try {
@@ -5811,8 +5796,6 @@ class ServerImpl extends TcpDiscoveryImpl {
                 }
 
                 synchronized (mux) {
-                    log.error("TEST | joiningNodes.remove() failed node: " + failedNode.id());
-
                     joiningNodes.remove(failedNode.id());
                 }
 
