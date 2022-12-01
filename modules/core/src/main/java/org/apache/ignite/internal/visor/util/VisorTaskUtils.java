@@ -66,7 +66,6 @@ import org.apache.ignite.internal.util.typedef.internal.SB;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.internal.visor.event.VisorGridEvent;
 import org.apache.ignite.internal.visor.event.VisorGridEventsLost;
-import org.apache.ignite.internal.visor.file.VisorFileBlock;
 import org.apache.ignite.internal.visor.log.VisorLogFile;
 import org.apache.ignite.lang.IgniteClosure;
 import org.apache.ignite.lang.IgnitePredicate;
@@ -683,55 +682,6 @@ public class VisorTaskUtils {
         }
 
         return Charset.defaultCharset();
-    }
-
-    /**
-     * Read block from file.
-     *
-     * @param file - File to read.
-     * @param off - Marker position in file to start read from if {@code -1} read last blockSz bytes.
-     * @param blockSz - Maximum number of chars to read.
-     * @param lastModified - File last modification time.
-     * @return Read file block.
-     * @throws IOException In case of error.
-     */
-    public static VisorFileBlock readBlock(File file, long off, int blockSz, long lastModified) throws IOException {
-        RandomAccessFile raf = null;
-
-        try {
-            long fSz = file.length();
-            long fLastModified = file.lastModified();
-
-            long pos = off >= 0 ? off : Math.max(fSz - blockSz, 0);
-
-            // Try read more that file length.
-            if (fLastModified == lastModified && fSz != 0 && pos >= fSz)
-                throw new IOException("Trying to read file block with wrong offset: " + pos + " while file size: " + fSz);
-
-            if (fSz == 0)
-                return new VisorFileBlock(file.getPath(), pos, fLastModified, 0, false, EMPTY_FILE_BUF);
-            else {
-                int toRead = Math.min(blockSz, (int)(fSz - pos));
-
-                raf = new RandomAccessFile(file, "r");
-                raf.seek(pos);
-
-                byte[] buf = new byte[toRead];
-
-                int cntRead = raf.read(buf, 0, toRead);
-
-                if (cntRead != toRead)
-                    throw new IOException("Count of requested and actually read bytes does not match [cntRead=" +
-                        cntRead + ", toRead=" + toRead + ']');
-
-                boolean zipped = buf.length > 512;
-
-                return new VisorFileBlock(file.getPath(), pos, fSz, fLastModified, zipped, zipped ? zipBytes(buf) : buf);
-            }
-        }
-        finally {
-            U.close(raf, null);
-        }
     }
 
     /**
