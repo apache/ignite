@@ -1424,18 +1424,6 @@ public class TcpDiscoverySelfTest extends GridCommonAbstractTest {
         assertEquals(2, cache.get(2));
     }
 
-    /** */
-    @Test
-    public void testTest() throws Exception {
-        startGrid(0);
-
-        U.sleep(2000);
-
-        startGrid(1);
-
-        U.sleep(5000);
-    }
-
     /**
      * @throws Exception If failed
      */

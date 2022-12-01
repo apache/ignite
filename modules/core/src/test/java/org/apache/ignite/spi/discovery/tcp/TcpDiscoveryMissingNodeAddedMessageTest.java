@@ -78,7 +78,7 @@ public class TcpDiscoveryMissingNodeAddedMessageTest extends GridCommonAbstractT
 
         startGrid(NODE_2_NAME);
 
-        waitForRemoteNodes(ig0, 2);
+        waitForRemoteNodes(ig0, 1);
     }
 
     /**
@@ -97,8 +97,11 @@ public class TcpDiscoveryMissingNodeAddedMessageTest extends GridCommonAbstractT
         /** {@inheritDoc} */
         @Override protected void writeToSocket(Socket sock, TcpDiscoveryAbstractMessage msg, byte[] data,
             long timeout) throws IOException {
-            if (isDrop(msg, sock))
+            if (isDrop(msg, sock)) {
+                log.error("TEST | dropping TcpDiscoveryNodeAddedMessage on " + spiCtx.localNode().order());
+
                 return;
+            }
 
             super.writeToSocket(sock, msg, data, timeout);
         }
@@ -106,8 +109,11 @@ public class TcpDiscoveryMissingNodeAddedMessageTest extends GridCommonAbstractT
         /** {@inheritDoc} */
         @Override protected void writeToSocket(Socket sock, TcpDiscoveryAbstractMessage msg,
             long timeout) throws IOException, IgniteCheckedException {
-            if (isDrop(msg, sock))
+            if (isDrop(msg, sock)) {
+                log.error("TEST | dropping TcpDiscoveryNodeAddedMessage on " + spiCtx.localNode().order());
+
                 return;
+            }
 
             super.writeToSocket(sock, msg, timeout);
         }
@@ -116,8 +122,11 @@ public class TcpDiscoveryMissingNodeAddedMessageTest extends GridCommonAbstractT
         @Override protected void writeToSocket(ClusterNode node, Socket sock, OutputStream out,
             TcpDiscoveryAbstractMessage msg, long timeout) throws IOException, IgniteCheckedException {
 
-            if (isDrop(msg, sock))
+            if (isDrop(msg, sock)) {
+                log.error("TEST | dropping TcpDiscoveryNodeAddedMessage on " + spiCtx.localNode().order());
+
                 return;
+            }
 
             super.writeToSocket(node, sock, out, msg, timeout);
         }
@@ -125,8 +134,11 @@ public class TcpDiscoveryMissingNodeAddedMessageTest extends GridCommonAbstractT
         /** {@inheritDoc} */
         @Override protected void writeToSocket(Socket sock, OutputStream out, TcpDiscoveryAbstractMessage msg,
             long timeout) throws IOException, IgniteCheckedException {
-            if (isDrop(msg, sock))
+            if (isDrop(msg, sock)) {
+                log.error("TEST | dropping TcpDiscoveryNodeAddedMessage on " + spiCtx.localNode().order());
+
                 return;
+            }
 
             super.writeToSocket(sock, out, msg, timeout);
         }
@@ -134,17 +146,19 @@ public class TcpDiscoveryMissingNodeAddedMessageTest extends GridCommonAbstractT
         /** {@inheritDoc} */
         @Override protected void writeToSocket(TcpDiscoveryAbstractMessage msg, Socket sock, int res,
             long timeout) throws IOException {
-            if (isDrop(msg, sock))
+            if (isDrop(msg, sock)) {
+                log.error("TEST | dropping TcpDiscoveryNodeAddedMessage on " + spiCtx.localNode().order());
+
                 return;
+            }
 
             super.writeToSocket(msg, sock, res, timeout);
         }
 
         /** */
         private boolean isDrop(TcpDiscoveryAbstractMessage msg, Socket sock) {
-            if (msg instanceof TcpDiscoveryNodeAddedMessage && sock.getPort() == NODE_2_PORT) {
+            if (msg instanceof TcpDiscoveryNodeAddedMessage && sock.getPort() == NODE_2_PORT)
                 return dropCnt.getAndUpdate(v -> Math.max(0, v - 1)) > 0;
-            }
 
             return false;
         }
