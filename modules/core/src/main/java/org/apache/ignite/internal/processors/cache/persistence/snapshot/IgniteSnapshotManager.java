@@ -832,8 +832,6 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
                 ((DistributedMetaStorageImpl)cctx.kernalContext().distributedMetastorage())
                     .suspend(((SnapshotFutureTask)task0).started());
             }
-
-            clusterSnpReq = req;
         }
 
         return task0.chain(fut -> {
