@@ -50,7 +50,6 @@ namespace Apache.Ignite.Core.Impl
     using Apache.Ignite.Core.Lifecycle;
     using Apache.Ignite.Core.Log;
     using Apache.Ignite.Core.Messaging;
-    using Apache.Ignite.Core.PersistentStore;
     using Apache.Ignite.Core.Services;
     using Apache.Ignite.Core.Transactions;
     using UU = Apache.Ignite.Core.Impl.Unmanaged.UnmanagedUtils;
@@ -975,14 +974,6 @@ namespace Apache.Ignite.Core.Impl
         }
 
         /** <inheritdoc /> */
-#pragma warning disable 618
-        public IPersistentStoreMetrics GetPersistentStoreMetrics()
-        {
-            return _prj.GetPersistentStoreMetrics();
-        }
-#pragma warning restore 618
-
-        /** <inheritdoc /> */
         public ICollection<IDataRegionMetrics> GetDataRegionMetrics()
         {
             return _prj.GetDataRegionMetrics();
@@ -992,12 +983,6 @@ namespace Apache.Ignite.Core.Impl
         public IDataRegionMetrics GetDataRegionMetrics(string memoryPolicyName)
         {
             return _prj.GetDataRegionMetrics(memoryPolicyName);
-        }
-
-        /** <inheritdoc /> */
-        public IDataStorageMetrics GetDataStorageMetrics()
-        {
-            return _prj.GetDataStorageMetrics();
         }
 
         /** <inheritdoc /> */

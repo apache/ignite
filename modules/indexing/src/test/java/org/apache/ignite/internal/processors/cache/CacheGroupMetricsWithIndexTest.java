@@ -161,7 +161,7 @@ public class CacheGroupMetricsWithIndexTest extends CacheGroupMetricsTest {
 
         ignite.cluster().active(true);
 
-        MetricRegistry metrics = cacheGroupMetrics(0, GROUP_NAME).get2();
+        MetricRegistry metrics = cacheGroupMetrics(0, GROUP_NAME);
 
         LongMetric idxBuildCntPartitionsLeft = metrics.findMetric("IndexBuildCountPartitionsLeft");
 
@@ -201,7 +201,7 @@ public class CacheGroupMetricsWithIndexTest extends CacheGroupMetricsTest {
             cache1.put(id, o.build());
         }
 
-        MetricRegistry metrics = cacheGroupMetrics(0, GROUP_NAME).get2();
+        MetricRegistry metrics = cacheGroupMetrics(0, GROUP_NAME);
 
         GridTestUtils.runAsync(() -> {
             String createIdxSql = "CREATE INDEX " + INDEX_NAME + " ON " + TABLE + "(" + COLUMN3_NAME + ")";
@@ -274,7 +274,7 @@ public class CacheGroupMetricsWithIndexTest extends CacheGroupMetricsTest {
 
         startGrid(0);
 
-        MetricRegistry metrics = cacheGroupMetrics(0, GROUP_NAME).get2();
+        MetricRegistry metrics = cacheGroupMetrics(0, GROUP_NAME);
 
         LongMetric idxBuildCntPartitionsLeft = metrics.findMetric("IndexBuildCountPartitionsLeft");
 
@@ -326,7 +326,7 @@ public class CacheGroupMetricsWithIndexTest extends CacheGroupMetricsTest {
 
         stopGrid(1);
 
-        MetricRegistry metrics = cacheGroupMetrics(0, GROUP_NAME).get2();
+        MetricRegistry metrics = cacheGroupMetrics(0, GROUP_NAME);
 
         GridTestUtils.runAsync(() -> {
             String createIdxSql = "CREATE INDEX " + INDEX_NAME + " ON " + TABLE + "(" + COLUMN3_NAME + ")";
@@ -350,7 +350,7 @@ public class CacheGroupMetricsWithIndexTest extends CacheGroupMetricsTest {
 
         startGrid(1);
 
-        metrics = cacheGroupMetrics(1, GROUP_NAME).get2();
+        metrics = cacheGroupMetrics(1, GROUP_NAME);
 
         final LongMetric idxBuildCntPartitionsLeft1 = metrics.findMetric("IndexBuildCountPartitionsLeft");
 

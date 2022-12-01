@@ -81,40 +81,40 @@ public class SslContextFactory implements Factory<SSLContext> {
         System.getProperty(IGNITE_KEY_ALGORITHM_PROPERTY, "SunX509"));
 
     /** SSL protocol. */
-    private String proto = DFLT_SSL_PROTOCOL;
+    protected String proto = DFLT_SSL_PROTOCOL;
 
     /** Key manager algorithm. */
-    private String keyAlgorithm = DFLT_KEY_ALGORITHM;
+    protected String keyAlgorithm = DFLT_KEY_ALGORITHM;
 
     /** Key store type. */
-    private String keyStoreType = DFLT_STORE_TYPE;
+    protected String keyStoreType = DFLT_STORE_TYPE;
 
     /** Path to key store file */
-    private String keyStoreFilePath;
+    protected String keyStoreFilePath;
 
     /** Key store password */
-    private char[] keyStorePwd;
+    protected char[] keyStorePwd;
 
     /** Trust store type. */
-    private String trustStoreType = DFLT_STORE_TYPE;
+    protected String trustStoreType = DFLT_STORE_TYPE;
 
     /** Path to trust store. */
-    private String trustStoreFilePath;
+    protected String trustStoreFilePath;
 
     /** Trust store password */
-    private char[] trustStorePwd;
+    protected char[] trustStorePwd;
 
     /** Trust managers. */
-    private TrustManager[] trustMgrs;
+    protected TrustManager[] trustMgrs;
 
     /** Enabled cipher suites. */
-    private String[] cipherSuites;
+    protected String[] cipherSuites;
 
     /** Enabled protocols. */
-    private String[] protocols;
+    protected String[] protocols;
 
     /** Cached instance of an {@link SSLContext}. */
-    private final AtomicReference<SSLContext> sslCtx = new AtomicReference<>();
+    protected final AtomicReference<SSLContext> sslCtx = new AtomicReference<>();
 
     /**
      * Gets key store type used for context creation.
@@ -443,7 +443,7 @@ public class SslContextFactory implements Factory<SSLContext> {
      *
      * @throws SSLException If any of required parameters is missing.
      */
-    private void checkParameters() throws SSLException {
+    protected void checkParameters() throws SSLException {
         assert keyStoreType != null;
         assert proto != null;
 
@@ -464,7 +464,7 @@ public class SslContextFactory implements Factory<SSLContext> {
      * @param name Name.
      * @throws SSLException If {@code null}.
      */
-    private void checkNullParameter(Object param, String name) throws SSLException {
+    protected void checkNullParameter(Object param, String name) throws SSLException {
         if (param == null)
             throw new SSLException("Failed to initialize SSL context (parameter cannot be null): " + name);
     }
@@ -490,7 +490,7 @@ public class SslContextFactory implements Factory<SSLContext> {
      * @return Initialized key store.
      * @throws SSLException If key store could not be initialized.
      */
-    private KeyStore loadKeyStore(String keyStoreType, String storeFilePath, char[] keyStorePwd)
+    protected KeyStore loadKeyStore(String keyStoreType, String storeFilePath, char[] keyStorePwd)
         throws SSLException {
         try {
             KeyStore keyStore = KeyStore.getInstance(keyStoreType);

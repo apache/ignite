@@ -32,6 +32,7 @@ import org.apache.ignite.internal.processors.query.calcite.Query;
 import org.apache.ignite.internal.processors.query.calcite.QueryRegistry;
 import org.apache.ignite.internal.processors.query.calcite.exec.rel.Inbox;
 import org.apache.ignite.internal.processors.query.calcite.exec.rel.Outbox;
+import org.apache.ignite.internal.processors.query.calcite.exec.tracker.NoOpMemoryTracker;
 import org.apache.ignite.internal.processors.query.calcite.message.ErrorMessage;
 import org.apache.ignite.internal.processors.query.calcite.message.InboxCloseMessage;
 import org.apache.ignite.internal.processors.query.calcite.message.MessageService;
@@ -311,6 +312,7 @@ public class ExchangeServiceImpl extends AbstractService implements ExchangeServ
                 null,
                 null),
             null,
+            NoOpMemoryTracker.INSTANCE,
             ImmutableMap.of());
     }
 }

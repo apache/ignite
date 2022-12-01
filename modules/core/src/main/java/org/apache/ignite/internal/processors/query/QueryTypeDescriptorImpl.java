@@ -635,7 +635,7 @@ public class QueryTypeDescriptorImpl implements GridQueryTypeDescriptor {
                     isKey ? NULL_KEY : NULL_VALUE);
             }
 
-            if (validateTypes && propVal != null && !isCompatibleWithPropertyType(propVal, prop.name(), prop.type())) {
+            if (validateTypes && propVal != null && !isCompatibleWithPropertyType(propVal, prop.type())) {
                 throw new IgniteSQLException("Type for a column '" + prop.name() + "' is not compatible with table definition." +
                     " Expected '" + prop.type().getSimpleName() + "', actual type '" + typeName(propVal) + "'");
             }
@@ -702,7 +702,7 @@ public class QueryTypeDescriptorImpl implements GridQueryTypeDescriptor {
                 if (propVal == null)
                     continue;
 
-                if (!isCompatibleWithPropertyType(propVal, idxField, propType)) {
+                if (!isCompatibleWithPropertyType(propVal, propType)) {
                     throw new IgniteSQLException("Type for a column '" + idxField + "' is not compatible with index definition." +
                         " Expected '" + prop.type().getSimpleName() + "', actual type '" + typeName(propVal) + "'");
                 }
@@ -714,17 +714,14 @@ public class QueryTypeDescriptorImpl implements GridQueryTypeDescriptor {
      * Checks if the specified object is compatible with the type of the column through which this object will be accessed.
      *
      * @param val Object to check.
-     * @param colName Name of the column to which current property corresponds.
      * @param expColType Type of the column based on Query Property info.
      */
-    private boolean isCompatibleWithPropertyType(Object val, String colName, Class<?> expColType) {
+    private boolean isCompatibleWithPropertyType(Object val, Class<?> expColType) {
         if (!(val instanceof BinaryObject) || val instanceof BinaryArray) {
             if (U.box(expColType).isAssignableFrom(U.box(val.getClass())))
                 return true;
 
-            GridQueryIndexing indexing = coCtx.kernalContext().query().getIndexing();
-
-            if (indexing != null && indexing.isConvertibleToColumnType(schemaName, tableName(), colName, val.getClass()))
+            if (QueryUtils.isConvertibleTypes(val, expColType))
                 return true;
 
             return expColType.isArray()

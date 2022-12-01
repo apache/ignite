@@ -42,7 +42,7 @@ namespace Apache.Ignite.Core.Impl.Unmanaged.Jni
         // ReSharper disable once InconsistentNaming
         private const int JNI_VERSION_9 = 0x00090000;
 
-        /** Options to enable startup on Java 9. */
+        /** Options to enable startup on Java 9+. */
         public static readonly string[] Java9Options =
         {
             "--add-exports=java.base/jdk.internal.misc=ALL-UNNAMED",
@@ -50,7 +50,23 @@ namespace Apache.Ignite.Core.Impl.Unmanaged.Jni
             "--add-exports=java.management/com.sun.jmx.mbeanserver=ALL-UNNAMED",
             "--add-exports=jdk.internal.jvmstat/sun.jvmstat.monitor=ALL-UNNAMED",
             "--add-opens=jdk.management/com.sun.management.internal=ALL-UNNAMED",
-            "--illegal-access=permit"
+            "--illegal-access=permit",
+
+            "--add-opens=java.base/jdk.internal.misc=ALL-UNNAMED",
+            "--add-opens=java.base/sun.nio.ch=ALL-UNNAMED",
+            "--add-opens=java.management/com.sun.jmx.mbeanserver=ALL-UNNAMED",
+            "--add-opens=jdk.internal.jvmstat/sun.jvmstat.monitor=ALL-UNNAMED",
+            "--add-opens=java.base/sun.reflect.generics.reflectiveObjects=ALL-UNNAMED",
+            "--add-opens=java.base/java.io=ALL-UNNAMED",
+            "--add-opens=java.base/java.nio=ALL-UNNAMED",
+            "--add-opens=java.base/java.util=ALL-UNNAMED",
+            "--add-opens=java.base/java.util.concurrent=ALL-UNNAMED",
+            "--add-opens=java.base/java.util.concurrent.locks=ALL-UNNAMED",
+            "--add-opens=java.base/java.util.concurrent.atomic=ALL-UNNAMED",
+            "--add-opens=java.base/java.lang=ALL-UNNAMED",
+            "--add-opens=java.base/java.lang.invoke=ALL-UNNAMED",
+            "--add-opens=java.base/java.math=ALL-UNNAMED",
+            "--add-opens=java.sql/java.sql=ALL-UNNAMED"
         };
 
         /** */

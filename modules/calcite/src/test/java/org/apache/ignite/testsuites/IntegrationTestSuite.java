@@ -39,6 +39,8 @@ import org.apache.ignite.internal.processors.query.calcite.integration.JoinInteg
 import org.apache.ignite.internal.processors.query.calcite.integration.KeepBinaryIntegrationTest;
 import org.apache.ignite.internal.processors.query.calcite.integration.KillCommandDdlIntegrationTest;
 import org.apache.ignite.internal.processors.query.calcite.integration.KillQueryCommandDdlIntegrationTest;
+import org.apache.ignite.internal.processors.query.calcite.integration.LocalDateTimeSupportTest;
+import org.apache.ignite.internal.processors.query.calcite.integration.MemoryQuotasIntegrationTest;
 import org.apache.ignite.internal.processors.query.calcite.integration.MetadataIntegrationTest;
 import org.apache.ignite.internal.processors.query.calcite.integration.QueryEngineConfigurationIntegrationTest;
 import org.apache.ignite.internal.processors.query.calcite.integration.QueryMetadataIntegrationTest;
@@ -108,7 +110,9 @@ import org.junit.runners.Suite;
     QueryEngineConfigurationIntegrationTest.class,
     SearchSargOnIndexIntegrationTest.class,
     KeepBinaryIntegrationTest.class,
-    QueryMetadataIntegrationTest.class
+    QueryMetadataIntegrationTest.class,
+    MemoryQuotasIntegrationTest.class,
+    LocalDateTimeSupportTest.class
 })
 public class IntegrationTestSuite {
 }

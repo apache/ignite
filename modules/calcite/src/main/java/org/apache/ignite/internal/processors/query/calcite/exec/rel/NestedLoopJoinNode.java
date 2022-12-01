@@ -23,7 +23,6 @@ import java.util.BitSet;
 import java.util.Deque;
 import java.util.List;
 import java.util.function.BiPredicate;
-
 import org.apache.calcite.rel.core.JoinRelType;
 import org.apache.calcite.rel.type.RelDataType;
 import org.apache.ignite.internal.processors.query.calcite.exec.ExecutionContext;
@@ -32,7 +31,7 @@ import org.apache.ignite.internal.util.typedef.F;
 import org.jetbrains.annotations.NotNull;
 
 /** */
-public abstract class NestedLoopJoinNode<Row> extends AbstractNode<Row> {
+public abstract class NestedLoopJoinNode<Row> extends MemoryTrackingNode<Row> {
     /** Special value to highlights that all row were received and we are not waiting any more. */
     protected static final int NOT_WAITING = -1;
 
@@ -165,6 +164,8 @@ public abstract class NestedLoopJoinNode<Row> extends AbstractNode<Row> {
         waitingRight--;
 
         rightMaterialized.add(row);
+
+        nodeMemoryTracker.onRowAdded(row);
 
         if (waitingRight == 0)
             rightSource().request(waitingRight = IN_BUFFER_SIZE);

@@ -152,8 +152,6 @@ public class IgniteMBeansManager {
         MetricsMxBean metricsMxBean = new MetricsMxBeanImpl(ctx.metric(), log);
         registerMBean("Metrics", metricsMxBean.getClass().getSimpleName(), metricsMxBean, MetricsMxBean.class);
 
-        ctx.pools().registerMxBeans(this);
-
         if (U.IGNITE_TEST_FEATURES_ENABLED) {
             WorkersControlMXBean workerCtrlMXBean = new WorkersControlMXBeanImpl(ctx.workersRegistry());
 

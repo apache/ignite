@@ -31,7 +31,19 @@ public class CalciteQueryEngineConfiguration implements QueryEngineConfiguration
     public static final String ENGINE_NAME = "calcite";
 
     /** */
+    private static final long DFLT_GLOBAL_MEMORY_QUOTA = 0L;
+
+    /** */
+    private static final long DFLT_QUERY_MEMORY_QUOTA = 0L;
+
+    /** */
     private boolean isDflt;
+
+    /** */
+    private long globalMemoryQuota = DFLT_GLOBAL_MEMORY_QUOTA;
+
+    /** */
+    private long qryMemoryQuota = DFLT_QUERY_MEMORY_QUOTA;
 
     /** {@inheritDoc} */
     @Override public String engineName() {
@@ -51,6 +63,48 @@ public class CalciteQueryEngineConfiguration implements QueryEngineConfiguration
     /** {@inheritDoc} */
     @Override public CalciteQueryEngineConfiguration setDefault(boolean isDflt) {
         this.isDflt = isDflt;
+
+        return this;
+    }
+
+    /**
+     * Gets global heap memory quota for SQL engine.
+     *
+     * @return Global heap memory quota for SQL engine.
+     */
+    public long getGlobalMemoryQuota() {
+        return globalMemoryQuota;
+    }
+
+    /**
+     * Sets global heap memory quota for SQL engine.
+     *
+     * @param globalMemoryQuota Global heap memory quota for SQL engine.
+     * @return {@code this} for chaining.
+     */
+    public CalciteQueryEngineConfiguration setGlobalMemoryQuota(long globalMemoryQuota) {
+        this.globalMemoryQuota = globalMemoryQuota;
+
+        return this;
+    }
+
+    /**
+     * Gets per-query heap memory quota.
+     *
+     * @return Per-query heap memory quota.
+     */
+    public long getQueryMemoryQuota() {
+        return qryMemoryQuota;
+    }
+
+    /**
+     * Sets per-query heap memory quota.
+     *
+     * @param qryMemoryQuota Per-query heap memory quota.
+     * @return {@code this} for chaining.
+     */
+    public CalciteQueryEngineConfiguration setQueryMemoryQuota(long qryMemoryQuota) {
+        this.qryMemoryQuota = qryMemoryQuota;
 
         return this;
     }
