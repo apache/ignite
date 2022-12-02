@@ -123,9 +123,6 @@
                 <exclude>${project.groupId}:ignite-extdata-logo</exclude>
                 <exclude>${project.groupId}:ignite-examples</exclude>
                 <exclude>${project.groupId}:ignite-indexing</exclude>
-                <exclude>${project.groupId}:ignite-visor-console</exclude>
-                <exclude>${project.groupId}:ignite-visor-console_2.10</exclude>
-                <exclude>${project.groupId}:ignite-visor-plugins</exclude>
                 <exclude>${project.groupId}:ignite-codegen</exclude>
                 <exclude>${project.groupId}:ignite-appserver-test</exclude>
                 <exclude>${project.groupId}:ignite-websphere-test</exclude>
