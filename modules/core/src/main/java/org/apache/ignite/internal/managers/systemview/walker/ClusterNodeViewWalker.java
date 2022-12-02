@@ -34,11 +34,10 @@ public class ClusterNodeViewWalker implements SystemViewRowAttributeWalker<Clust
         v.accept(1, "consistentId", String.class);
         v.accept(2, "version", String.class);
         v.accept(3, "isClient", boolean.class);
-        v.accept(4, "isDaemon", boolean.class);
-        v.accept(5, "nodeOrder", long.class);
-        v.accept(6, "addresses", String.class);
-        v.accept(7, "hostnames", String.class);
-        v.accept(8, "isLocal", boolean.class);
+        v.accept(4, "nodeOrder", long.class);
+        v.accept(5, "addresses", String.class);
+        v.accept(6, "hostnames", String.class);
+        v.accept(7, "isLocal", boolean.class);
     }
 
     /** {@inheritDoc} */
@@ -47,14 +46,14 @@ public class ClusterNodeViewWalker implements SystemViewRowAttributeWalker<Clust
         v.accept(1, "consistentId", String.class, row.consistentId());
         v.accept(2, "version", String.class, row.version());
         v.acceptBoolean(3, "isClient", row.isClient());
-        v.acceptLong(5, "nodeOrder", row.nodeOrder());
-        v.accept(6, "addresses", String.class, row.addresses());
-        v.accept(7, "hostnames", String.class, row.hostnames());
-        v.acceptBoolean(8, "isLocal", row.isLocal());
+        v.acceptLong(4, "nodeOrder", row.nodeOrder());
+        v.accept(5, "addresses", String.class, row.addresses());
+        v.accept(6, "hostnames", String.class, row.hostnames());
+        v.acceptBoolean(7, "isLocal", row.isLocal());
     }
 
     /** {@inheritDoc} */
     @Override public int count() {
-        return 9;
+        return 8;
     }
 }

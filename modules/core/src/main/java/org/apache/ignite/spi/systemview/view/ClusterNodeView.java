@@ -59,7 +59,7 @@ public class ClusterNodeView {
      * @return Addresses.
      * @see ClusterNode#addresses()
      * */
-    @Order(6)
+    @Order(5)
     public String addresses() {
         return toStringSafe(n.addresses());
     }
@@ -68,7 +68,7 @@ public class ClusterNodeView {
      * @return Addresses string.
      * @see ClusterNode#hostNames()
      */
-    @Order(7)
+    @Order(6)
     public String hostnames() {
         return toStringSafe(n.hostNames());
     }
@@ -77,7 +77,7 @@ public class ClusterNodeView {
      * @return Topology order.
      * @see ClusterNode#order()
      */
-    @Order(5)
+    @Order(4)
     public long nodeOrder() {
         return n.order();
     }
