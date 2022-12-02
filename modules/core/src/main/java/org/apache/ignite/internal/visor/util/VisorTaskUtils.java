@@ -22,7 +22,6 @@ import java.net.InetAddress;
 import java.net.UnknownHostException;
 import java.time.Instant;
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.Collection;
 import java.util.List;
 import javax.cache.configuration.Factory;
@@ -44,76 +43,6 @@ import org.jetbrains.annotations.Nullable;
  * Contains utility methods for Visor tasks and jobs.
  */
 public class VisorTaskUtils {
-    /**
-     * Returns compact class host.
-     *
-     * @param obj Object to compact.
-     * @return String.
-     */
-    @Nullable public static Object compactObject(Object obj) {
-        if (obj == null)
-            return null;
-
-        if (obj instanceof Enum)
-            return obj.toString();
-
-        if (obj instanceof String || obj instanceof Boolean || obj instanceof Number)
-            return obj;
-
-        if (obj instanceof Collection) {
-            Collection col = (Collection)obj;
-
-            Object[] res = new Object[col.size()];
-
-            int i = 0;
-
-            for (Object elm : col)
-                res[i++] = compactObject(elm);
-
-            return res;
-        }
-
-        if (obj.getClass().isArray()) {
-            Class<?> arrType = obj.getClass().getComponentType();
-
-            if (arrType.isPrimitive()) {
-                if (obj instanceof boolean[])
-                    return Arrays.toString((boolean[])obj);
-                if (obj instanceof byte[])
-                    return Arrays.toString((byte[])obj);
-                if (obj instanceof short[])
-                    return Arrays.toString((short[])obj);
-                if (obj instanceof int[])
-                    return Arrays.toString((int[])obj);
-                if (obj instanceof long[])
-                    return Arrays.toString((long[])obj);
-                if (obj instanceof float[])
-                    return Arrays.toString((float[])obj);
-                if (obj instanceof double[])
-                    return Arrays.toString((double[])obj);
-            }
-
-            Object[] arr = (Object[])obj;
-
-            int iMax = arr.length - 1;
-
-            StringBuilder sb = new StringBuilder("[");
-
-            for (int i = 0; i <= iMax; i++) {
-                sb.append(compactObject(arr[i]));
-
-                if (i != iMax)
-                    sb.append(", ");
-            }
-
-            sb.append(']');
-
-            return sb.toString();
-        }
-
-        return U.compact(obj.getClass().getName());
-    }
-
     /**
      * Compact class names.
      *
@@ -307,16 +236,6 @@ public class VisorTaskUtils {
         log0(log, end, String.format("[%s]: %s, duration: %s", clazz.getSimpleName(), msg, formatDuration(end - start)));
 
         return end;
-    }
-
-    /**
-     * Log message.
-     *
-     * @param log Logger.
-     * @param msg Message.
-     */
-    public static void log(@Nullable IgniteLogger log, String msg) {
-        log0(log, System.currentTimeMillis(), " " + msg);
     }
 
     /**
