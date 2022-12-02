@@ -22,7 +22,6 @@ import java.net.InetAddress;
 import java.net.UnknownHostException;
 import java.time.Instant;
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.Collection;
 import java.util.List;
 import javax.cache.configuration.Factory;
@@ -40,154 +39,10 @@ import org.apache.ignite.internal.util.typedef.internal.U;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
-import static org.apache.ignite.events.EventType.EVT_JOB_CANCELLED;
-import static org.apache.ignite.events.EventType.EVT_JOB_FAILED;
-import static org.apache.ignite.events.EventType.EVT_JOB_FAILED_OVER;
-import static org.apache.ignite.events.EventType.EVT_JOB_FINISHED;
-import static org.apache.ignite.events.EventType.EVT_JOB_REJECTED;
-import static org.apache.ignite.events.EventType.EVT_JOB_STARTED;
-import static org.apache.ignite.events.EventType.EVT_JOB_TIMEDOUT;
-import static org.apache.ignite.events.EventType.EVT_TASK_FAILED;
-import static org.apache.ignite.events.EventType.EVT_TASK_FINISHED;
-import static org.apache.ignite.events.EventType.EVT_TASK_STARTED;
-import static org.apache.ignite.events.EventType.EVT_TASK_TIMEDOUT;
-
 /**
  * Contains utility methods for Visor tasks and jobs.
  */
 public class VisorTaskUtils {
-    /** Default substitute for {@code null} names. */
-    private static final String DFLT_EMPTY_NAME = "<default>";
-
-    /** Only task event types that Visor should collect. */
-    public static final int[] VISOR_TASK_EVTS = {
-        EVT_JOB_STARTED,
-        EVT_JOB_FINISHED,
-        EVT_JOB_TIMEDOUT,
-        EVT_JOB_FAILED,
-        EVT_JOB_FAILED_OVER,
-        EVT_JOB_REJECTED,
-        EVT_JOB_CANCELLED,
-
-        EVT_TASK_STARTED,
-        EVT_TASK_FINISHED,
-        EVT_TASK_FAILED,
-        EVT_TASK_TIMEDOUT
-    };
-
-    /**
-     * @param name Grid-style nullable name.
-     * @return Name with {@code null} replaced to &lt;default&gt;.
-     */
-    public static String escapeName(@Nullable Object name) {
-        return name == null ? DFLT_EMPTY_NAME : name.toString();
-    }
-
-    /**
-     * @param name Escaped name.
-     * @return Name or {@code null} for default name.
-     */
-    public static String unescapeName(String name) {
-        assert name != null;
-
-        return DFLT_EMPTY_NAME.equals(name) ? null : name;
-    }
-
-    /**
-     * Concat arrays in one.
-     *
-     * @param arrays Arrays.
-     * @return Summary array.
-     */
-    public static int[] concat(int[]... arrays) {
-        assert arrays != null;
-        assert arrays.length > 1;
-
-        int len = 0;
-
-        for (int[] a : arrays)
-            len += a.length;
-
-        int[] r = Arrays.copyOf(arrays[0], len);
-
-        for (int i = 1, shift = 0; i < arrays.length; i++) {
-            shift += arrays[i - 1].length;
-            System.arraycopy(arrays[i], 0, r, shift, arrays[i].length);
-        }
-
-        return r;
-    }
-
-    /**
-     * Returns compact class host.
-     *
-     * @param obj Object to compact.
-     * @return String.
-     */
-    @Nullable public static Object compactObject(Object obj) {
-        if (obj == null)
-            return null;
-
-        if (obj instanceof Enum)
-            return obj.toString();
-
-        if (obj instanceof String || obj instanceof Boolean || obj instanceof Number)
-            return obj;
-
-        if (obj instanceof Collection) {
-            Collection col = (Collection)obj;
-
-            Object[] res = new Object[col.size()];
-
-            int i = 0;
-
-            for (Object elm : col)
-                res[i++] = compactObject(elm);
-
-            return res;
-        }
-
-        if (obj.getClass().isArray()) {
-            Class<?> arrType = obj.getClass().getComponentType();
-
-            if (arrType.isPrimitive()) {
-                if (obj instanceof boolean[])
-                    return Arrays.toString((boolean[])obj);
-                if (obj instanceof byte[])
-                    return Arrays.toString((byte[])obj);
-                if (obj instanceof short[])
-                    return Arrays.toString((short[])obj);
-                if (obj instanceof int[])
-                    return Arrays.toString((int[])obj);
-                if (obj instanceof long[])
-                    return Arrays.toString((long[])obj);
-                if (obj instanceof float[])
-                    return Arrays.toString((float[])obj);
-                if (obj instanceof double[])
-                    return Arrays.toString((double[])obj);
-            }
-
-            Object[] arr = (Object[])obj;
-
-            int iMax = arr.length - 1;
-
-            StringBuilder sb = new StringBuilder("[");
-
-            for (int i = 0; i <= iMax; i++) {
-                sb.append(compactObject(arr[i]));
-
-                if (i != iMax)
-                    sb.append(", ");
-            }
-
-            sb.append(']');
-
-            return sb.toString();
-        }
-
-        return U.compact(obj.getClass().getName());
-    }
-
     /**
      * Compact class names.
      *
@@ -381,16 +236,6 @@ public class VisorTaskUtils {
         log0(log, end, String.format("[%s]: %s, duration: %s", clazz.getSimpleName(), msg, formatDuration(end - start)));
 
         return end;
-    }
-
-    /**
-     * Log message.
-     *
-     * @param log Logger.
-     * @param msg Message.
-     */
-    public static void log(@Nullable IgniteLogger log, String msg) {
-        log0(log, System.currentTimeMillis(), " " + msg);
     }
 
     /**

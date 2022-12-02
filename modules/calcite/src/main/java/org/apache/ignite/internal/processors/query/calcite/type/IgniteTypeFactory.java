@@ -333,4 +333,11 @@ public class IgniteTypeFactory extends JavaTypeFactoryImpl {
 
         return true;
     }
+
+    /** {@inheritDoc} */
+    @Override public RelDataType createUnknownType() {
+        // TODO workaround for https://issues.apache.org/jira/browse/CALCITE-5297
+        // Remove this after update to Calcite 1.33.
+        return createTypeWithNullability(super.createUnknownType(), true);
+    }
 }

@@ -262,6 +262,19 @@ public class ConverterUtils {
             }
         }
         if (toPrimitive != null) {
+            if (toPrimitive == Primitive.BOOLEAN) {
+                if (fromPrimitive != null)
+                    return Expressions.notEqual(operand, Expressions.constant(0));
+
+                if (fromNumber) {
+                    // Construct "SqlFunctions.ne(val, Number.valueOf(0))" expression.
+                    return Expressions.call(SqlFunctions.class, "ne", operand,
+                            Expressions.call(fromType, "valueOf", Expressions.constant(0)));
+                }
+
+                return Expressions.call(SqlFunctions.class, "toBoolean", operand);
+            }
+
             if (fromPrimitive != null) {
                 // E.g. from "float" to "double"
                 return Expressions.convert_(
