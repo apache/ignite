@@ -19,6 +19,7 @@ package org.apache.ignite.internal.managers.discovery;
 
 import java.util.Collection;
 import java.util.Collections;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
@@ -283,6 +284,23 @@ public class DiscoCache {
     @Nullable public Collection<ClusterNode> aliveBaselineNodes() {
         return baselineNodes == null ? null : F.viewReadOnly(baselineNodes, BASELINE_TO_CLUSTER, aliveBaselineNodePred);
 
+    }
+
+    /**
+     * @return Offline baseline nodes.
+     */
+    public Set<? extends BaselineNode> offlineBaselineNodes() {
+        List<? extends BaselineNode> baselineNodes = baselineNodes();
+        Collection<ClusterNode> aliveBaselineNodes = aliveBaselineNodes();
+
+        if (baselineNodes == null || aliveBaselineNodes == null)
+            return new HashSet<>();
+
+        Set<BaselineNode> offlineNodes = new HashSet<>(baselineNodes());
+
+        offlineNodes.removeAll(aliveBaselineNodes());
+
+        return offlineNodes;
     }
 
     /**

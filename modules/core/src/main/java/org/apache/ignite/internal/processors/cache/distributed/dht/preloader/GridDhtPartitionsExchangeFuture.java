@@ -2169,7 +2169,7 @@ public class GridDhtPartitionsExchangeFuture extends GridDhtTopologyFutureAdapte
             if (!F.isEmpty(caches))
                 resetLostPartitions(caches);
 
-            if (exchActions.finalizePartitionCounters())
+            if (exchActions.finalizePartitionCounters() || exchActions.activateFullBaseline())
                 finalizePartitionCounters();
         }
 
@@ -3481,7 +3481,7 @@ public class GridDhtPartitionsExchangeFuture extends GridDhtTopologyFutureAdapte
         List<SupplyPartitionInfo> list = assignHistoricalSuppliers(top, maxCntrs, varCntrs, haveHistory);
 
         if (resetOwners)
-            resetOwnersByCounter(top, maxCntrs, haveHistory);
+            resetOwnersByCounter(top, maxCntrs, exchActions.activate() ? new HashSet<>() : haveHistory);
 
         return list;
     }
@@ -4350,6 +4350,11 @@ public class GridDhtPartitionsExchangeFuture extends GridDhtTopologyFutureAdapte
 
                         // Failed node's primary partitions. Safe to use affinity since topology was fully rebalanced.
                         parts = grp.affinity().primaryPartitions(firstDiscoEvt.eventNode().id(), topVer);
+                    } else if (exchActions != null && exchActions.activateFullBaseline()) {
+                        AffinityTopologyVersion topVer = sharedContext().exchange().readyAffinityVersion();
+
+                        parts = grp.config().getBackups() > 1 ? grp.affinity().primaryPartitions(cctx.localNodeId(), topVer)
+                            : new HashSet<>();
                     }
                     else
                         parts = grp.topology().localPartitionMap().keySet();

@@ -33,6 +33,7 @@ import org.apache.ignite.util.GridCommandHandlerScheduleIndexRebuildTest;
 import org.apache.ignite.util.GridCommandHandlerTracingConfigurationTest;
 import org.apache.ignite.util.MetricCommandTest;
 import org.apache.ignite.util.PerformanceStatisticsCommandTest;
+import org.apache.ignite.util.GridCommandHandlerConsistencyOnClusterCrushTest;
 import org.apache.ignite.util.SystemViewCommandTest;
 import org.junit.runner.RunWith;
 import org.junit.runners.Suite;
@@ -58,6 +59,7 @@ import org.junit.runners.Suite;
     GridCommandHandlerConsistencyBinaryTest.class,
     GridCommandHandlerConsistencySensitiveTest.class,
     GridCommandHandlerConsistencyRepairCorrectnessAtomicTest.class,
+    GridCommandHandlerConsistencyOnClusterCrushTest.class,
 
     SystemViewCommandTest.class,
     MetricCommandTest.class,

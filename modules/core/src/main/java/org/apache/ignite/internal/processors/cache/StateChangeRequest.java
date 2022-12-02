@@ -43,22 +43,28 @@ public class StateChangeRequest {
     /** */
     private final AffinityTopologyVersion topVer;
 
+    /** {@code true} if all baseline nodes in the topology. */
+    private final boolean fullBaseline;
+
     /**
      * @param msg Message.
      * @param bltHistItem Baseline history item.
      * @param prevState Previous cluster state.
      * @param topVer State change topology versoin.
+     * @param fullBaseline {@code true} if all baseline nodes in the topology.
      */
     public StateChangeRequest(
         ChangeGlobalStateMessage msg,
         BaselineTopologyHistoryItem bltHistItem,
         ClusterState prevState,
-        AffinityTopologyVersion topVer
+        AffinityTopologyVersion topVer,
+        boolean fullBaseline
     ) {
         this.msg = msg;
         prevBltHistItem = bltHistItem;
         this.prevState = prevState;
         this.topVer = topVer;
+        this.fullBaseline = fullBaseline;
     }
 
     /**
@@ -110,6 +116,13 @@ public class StateChangeRequest {
      */
     public boolean activeChanged() {
         return prevState.active() != msg.state().active();
+    }
+
+    /**
+     * @return {@code true} if all baseline nodes in the topology.
+     */
+    public boolean fullBaseline() {
+        return fullBaseline;
     }
 
     /**
