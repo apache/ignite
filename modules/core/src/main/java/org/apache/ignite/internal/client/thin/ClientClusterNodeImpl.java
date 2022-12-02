@@ -56,9 +56,6 @@ class ClientClusterNodeImpl implements ClusterNode {
     /** Is local. For thin-client this flag is {@code true} for node to which client is connected. */
     private final boolean isLoc;
 
-    /** Is daemon. */
-    private final boolean isDaemon;
-
     /** Is client. */
     private final boolean isClient;
 
@@ -85,7 +82,6 @@ class ClientClusterNodeImpl implements ClusterNode {
         this.order = order;
         this.ver = ver;
         this.isLoc = isLoc;
-        this.isDaemon = isDaemon;
         this.isClient = isClient;
     }
 
