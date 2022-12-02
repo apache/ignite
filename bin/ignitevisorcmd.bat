@@ -155,9 +155,9 @@ if %ENABLE_ASSERTIONS% == 1 set JVM_OPTS_VISOR=%JVM_OPTS_VISOR% -ea
 if "%ARGS%" == "" set ARGS=%*
 
 ::
-:: Final JVM_OPTS for Java 9+ compatibility
+:: Final JVM_OPTS_VISOR for Java 9+ compatibility
 ::
-call "%SCRIPTS_HOME%\include\jvmdefaults.bat" %MAJOR_JAVA_VER% "%JVM_OPTS%" JVM_OPTS
+call "%SCRIPTS_HOME%\include\jvmdefaults.bat" %MAJOR_JAVA_VER% "%JVM_OPTS_VISOR%" JVM_OPTS_VISOR
 
 ::
 :: Starts Visor console.
