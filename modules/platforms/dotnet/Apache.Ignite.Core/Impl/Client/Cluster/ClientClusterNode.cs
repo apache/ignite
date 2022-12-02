@@ -75,6 +75,7 @@ namespace Apache.Ignite.Core.Impl.Client.Cluster
             _hosts = reader.ReadCollectionAsList<string>().AsReadOnly();
             _order = reader.ReadLong();
             _isLocal = reader.ReadBoolean();
+            reader.ReadBoolean(); // Keep for compatibility. Daemon node flag value.
             _isClient = reader.ReadBoolean();
             _consistentId = reader.ReadObject<object>();
             _version = new IgniteProductVersion(reader);
