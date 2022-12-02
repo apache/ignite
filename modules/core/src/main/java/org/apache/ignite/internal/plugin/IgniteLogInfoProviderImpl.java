@@ -144,7 +144,6 @@ public class IgniteLogInfoProviderImpl implements IgniteLogInfoProvider {
 
         ackSecurity(log, ignite);
         ackPerformanceSuggestions(log, igEx);
-        ackVisorConsole(log);
         ackClassPathContent(log);
         ackNodeInfo(log, igEx);
     }
@@ -531,13 +530,6 @@ public class IgniteLogInfoProviderImpl implements IgniteLogInfoProvider {
 
         ctx.performance().add("Disable assertions (remove '-ea' from JVM options)", !U.assertionsEnabled());
         ctx.performance().logSuggestions(log, ignite.name());
-    }
-
-    /**
-     * Print info about visor commandline console.
-     */
-    void ackVisorConsole(IgniteLogger log) {
-        U.quietAndInfo(log, "To start Console Management & Monitoring run ignitevisorcmd.{sh|bat}");
     }
 
     /**
