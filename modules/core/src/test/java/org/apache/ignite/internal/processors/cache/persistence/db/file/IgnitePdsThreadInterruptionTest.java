@@ -158,7 +158,7 @@ public class IgnitePdsThreadInterruptionTest extends GridCommonAbstractTest {
         for (Thread worker : workers)
             worker.start();
 
-        startThreadsLatch.await();
+        startThreadsLatch.await(3, TimeUnit.SECONDS);
 
         // Interrupts should not affect reads.
         for (Thread worker : workers)
