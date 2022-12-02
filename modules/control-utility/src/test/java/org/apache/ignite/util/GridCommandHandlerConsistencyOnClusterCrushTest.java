@@ -24,10 +24,6 @@ import java.nio.file.OpenOption;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
-import static org.apache.ignite.cache.CacheAtomicityMode.TRANSACTIONAL;
-import static org.apache.ignite.cache.CacheWriteSynchronizationMode.FULL_SYNC;
-import static org.apache.ignite.internal.commandline.CommandHandler.EXIT_CODE_OK;
-import static org.apache.ignite.testframework.GridTestUtils.assertContains;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCache;
 import org.apache.ignite.cache.affinity.rendezvous.RendezvousAffinityFunction;
@@ -52,6 +48,11 @@ import org.apache.ignite.testframework.ListeningTestLogger;
 import org.junit.Before;
 import org.junit.Test;
 
+import static org.apache.ignite.cache.CacheAtomicityMode.TRANSACTIONAL;
+import static org.apache.ignite.cache.CacheWriteSynchronizationMode.FULL_SYNC;
+import static org.apache.ignite.internal.commandline.CommandHandler.EXIT_CODE_OK;
+import static org.apache.ignite.testframework.GridTestUtils.assertContains;
+
 /** */
 public class GridCommandHandlerConsistencyOnClusterCrushTest extends GridCommandHandlerClusterPerMethodAbstractTest {
     /** Listening logger. */
@@ -63,9 +64,8 @@ public class GridCommandHandlerConsistencyOnClusterCrushTest extends GridCommand
     /** Number of backups for the default cache. */
     public int backupNodes = nodes - 1;
 
-    /** {@inheritDoc} */
-    @Before
-    public void beforeEachTest() throws Exception {
+    /** */
+    @Before public void beforeEachTest() throws Exception {
         cleanPersistenceDir();
 
         injectTestSystemOut();
