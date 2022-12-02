@@ -54,6 +54,7 @@ public class ClientClusterGroupGetNodesDetailsResponse extends ClientResponse {
             writer.writeCollection(node.hostNames());
             writer.writeLong(node.order());
             writer.writeBoolean(node.isLocal());
+            writer.writeBoolean(false);
             writer.writeBoolean(node.isClient());
             writer.writeObjectDetached(node.consistentId());
             PlatformUtils.writeNodeVersion(writer, node.version());
