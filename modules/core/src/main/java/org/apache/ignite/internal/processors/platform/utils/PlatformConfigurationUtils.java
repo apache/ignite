@@ -1350,7 +1350,6 @@ public class PlatformConfigurationUtils {
         w.writeString(cfg.getWorkDirectory());
         w.writeString(cfg.getLocalHost());
         w.writeBoolean(true);
-        w.writeBoolean(true);
         w.writeLong(cfg.getFailureDetectionTimeout());
         w.writeBoolean(true);
         w.writeLong(cfg.getClientFailureDetectionTimeout());
