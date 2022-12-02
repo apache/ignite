@@ -49,9 +49,6 @@ namespace Apache.Ignite.Core.Impl.Client.Cluster
         /** Local flag. */
         private readonly bool _isLocal;
 
-        /** Daemon flag. */
-        private readonly bool _isDaemon;
-
         /** Client flag. */
         private readonly bool _isClient;
 
@@ -78,7 +75,6 @@ namespace Apache.Ignite.Core.Impl.Client.Cluster
             _hosts = reader.ReadCollectionAsList<string>().AsReadOnly();
             _order = reader.ReadLong();
             _isLocal = reader.ReadBoolean();
-            _isDaemon = reader.ReadBoolean();
             _isClient = reader.ReadBoolean();
             _consistentId = reader.ReadObject<object>();
             _version = new IgniteProductVersion(reader);
@@ -112,12 +108,6 @@ namespace Apache.Ignite.Core.Impl.Client.Cluster
         public bool IsLocal
         {
             get { return _isLocal; }
-        }
-
-        /** <inheritDoc /> */
-        public bool IsDaemon
-        {
-            get { return _isDaemon; }
         }
 
         /** <inheritDoc /> */
