@@ -707,7 +707,7 @@ public class SqlSystemViewsSelfTest extends AbstractIndexingCommonTest {
         assertColumnTypes(resAll.get(0), UUID.class, String.class, String.class, Boolean.class,
             Long.class, String.class, String.class);
 
-        assertEquals(3, resAll.size());
+        assertEquals(2, resAll.size());
 
         List<List<?>> resSrv = execSql(
             "SELECT NODE_ID, NODE_ORDER FROM " +
