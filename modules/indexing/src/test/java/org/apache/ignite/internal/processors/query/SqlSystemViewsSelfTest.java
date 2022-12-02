@@ -701,17 +701,17 @@ public class SqlSystemViewsSelfTest extends AbstractIndexingCommonTest {
 
         awaitPartitionMapExchange();
 
-        List<List<?>> resAll = execSql("SELECT NODE_ID, CONSISTENT_ID, VERSION, IS_CLIENT, IS_DAEMON, " +
+        List<List<?>> resAll = execSql("SELECT NODE_ID, CONSISTENT_ID, VERSION, IS_CLIENT, " +
             "NODE_ORDER, ADDRESSES, HOSTNAMES FROM " + systemSchemaName() + ".NODES");
 
-        assertColumnTypes(resAll.get(0), UUID.class, String.class, String.class, Boolean.class, Boolean.class,
+        assertColumnTypes(resAll.get(0), UUID.class, String.class, String.class, Boolean.class,
             Long.class, String.class, String.class);
 
         assertEquals(3, resAll.size());
 
         List<List<?>> resSrv = execSql(
             "SELECT NODE_ID, NODE_ORDER FROM " +
-                systemSchemaName() + ".NODES WHERE IS_CLIENT = FALSE AND IS_DAEMON = FALSE"
+                systemSchemaName() + ".NODES WHERE IS_CLIENT = FALSE"
         );
 
         assertEquals(1, resSrv.size());
