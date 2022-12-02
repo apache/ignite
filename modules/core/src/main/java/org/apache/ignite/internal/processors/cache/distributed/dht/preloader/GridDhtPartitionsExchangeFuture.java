@@ -3481,7 +3481,7 @@ public class GridDhtPartitionsExchangeFuture extends GridDhtTopologyFutureAdapte
         List<SupplyPartitionInfo> list = assignHistoricalSuppliers(top, maxCntrs, varCntrs, haveHistory);
 
         if (resetOwners)
-            resetOwnersByCounter(top, maxCntrs, exchActions.activate() ? new HashSet<>() : haveHistory);
+            resetOwnersByCounter(top, maxCntrs, exchActions.activateFullBaseline() ? new HashSet<>() : haveHistory);
 
         return list;
     }
