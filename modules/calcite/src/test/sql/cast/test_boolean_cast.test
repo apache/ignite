@@ -128,3 +128,24 @@ query T
 SELECT CAST(CAST('0' AS decimal(38,0)) AS BOOLEAN)
 ----
 false
+
+query T
+SELECT CAST(CAST('1' AS float) AS BOOLEAN)
+----
+true
+
+query T
+SELECT CAST(CAST('0' AS float) AS BOOLEAN)
+----
+false
+
+query T
+SELECT CAST(CAST('1' AS double) AS BOOLEAN)
+----
+true
+
+query T
+SELECT CAST(CAST('0' AS double) AS BOOLEAN)
+----
+false
+
