@@ -61,6 +61,7 @@ import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.testframework.ListeningTestLogger;
 import org.apache.ignite.testframework.LogListener;
 import org.apache.ignite.transactions.TransactionHeuristicException;
+import org.junit.Ignore;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.junit.runners.Parameterized;
@@ -213,6 +214,7 @@ public class GridCommandHandlerConsistencyCountersTest extends GridCommandHandle
      * Profit :)
      */
     @Test
+    @Ignore
     public void testCountersOnCrachRecovery() throws Exception {
         int nodes = 3;
         int backupNodes = nodes - 1;

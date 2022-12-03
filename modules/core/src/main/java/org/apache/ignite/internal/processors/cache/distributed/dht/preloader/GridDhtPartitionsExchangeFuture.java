@@ -3480,8 +3480,11 @@ public class GridDhtPartitionsExchangeFuture extends GridDhtTopologyFutureAdapte
 
         List<SupplyPartitionInfo> list = assignHistoricalSuppliers(top, maxCntrs, varCntrs, haveHistory);
 
-        if (resetOwners)
-            resetOwnersByCounter(top, maxCntrs, exchActions.activateFullBaseline() ? new HashSet<>() : haveHistory);
+        if (resetOwners) {
+            resetOwnersByCounter(top, maxCntrs,
+                exchActions.activateFullBaseline() && cctx.kernalContext().cache().cacheGroup(top.groupId()).config().getBackups() > 1 ?
+                    new HashSet<>() : haveHistory);
+        }
 
         return list;
     }
