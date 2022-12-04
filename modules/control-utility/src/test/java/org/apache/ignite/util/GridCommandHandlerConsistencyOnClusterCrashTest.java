@@ -17,10 +17,6 @@
 
 package org.apache.ignite.util;
 
-import java.io.File;
-import java.io.IOException;
-import java.nio.ByteBuffer;
-import java.nio.file.OpenOption;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
@@ -37,9 +33,6 @@ import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.TestRecordingCommunicationSpi;
 import org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtTxFinishRequest;
 import org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtTxPrepareRequest;
-import org.apache.ignite.internal.processors.cache.persistence.file.FileIO;
-import org.apache.ignite.internal.processors.cache.persistence.file.FileIODecorator;
-import org.apache.ignite.internal.processors.cache.persistence.file.FileIOFactory;
 import org.apache.ignite.internal.util.typedef.G;
 import org.apache.ignite.lang.IgniteBiPredicate;
 import org.apache.ignite.plugin.extensions.communication.Message;
@@ -47,14 +40,12 @@ import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.testframework.ListeningTestLogger;
 import org.junit.Before;
 import org.junit.Test;
-
 import static org.apache.ignite.cache.CacheAtomicityMode.TRANSACTIONAL;
 import static org.apache.ignite.cache.CacheWriteSynchronizationMode.FULL_SYNC;
 import static org.apache.ignite.internal.commandline.CommandHandler.EXIT_CODE_OK;
-import static org.apache.ignite.testframework.GridTestUtils.assertContains;
 
 /** */
-public class GridCommandHandlerConsistencyOnClusterCrushTest extends GridCommandHandlerClusterPerMethodAbstractTest {
+public class GridCommandHandlerConsistencyOnClusterCrashTest extends GridCommandHandlerClusterPerMethodAbstractTest {
     /** Listening logger. */
     protected final ListeningTestLogger listeningLog = new ListeningTestLogger(log);
 
@@ -79,7 +70,7 @@ public class GridCommandHandlerConsistencyOnClusterCrushTest extends GridCommand
             .setFailureHandler(new StopNodeFailureHandler());
 
         cfg.getDataStorageConfiguration()
-            .setFileIOFactory(new ThrowableFileIOFactory(cfg.getDataStorageConfiguration().getFileIOFactory()))
+            .setFileIOFactory(new ThrowableFileIOTestFactory(cfg.getDataStorageConfiguration().getFileIOFactory()))
             .setWalMode(WALMode.FSYNC); // Allows to use special IO at WAL as well.
 
         cfg.setCacheConfiguration(new CacheConfiguration<>()
@@ -145,9 +136,9 @@ public class GridCommandHandlerConsistencyOnClusterCrushTest extends GridCommand
 
         finishLatch.await(getTestTimeout(), TimeUnit.MILLISECONDS);
 
-        // Emulating power off, OOM or disk overflow. Keeping data as is, with missed counters updates.
         G.allGrids().forEach(
-                node -> ((ThrowableFileIOFactory)node.configuration().getDataStorageConfiguration().getFileIOFactory()).throwIoEx = true);
+            node -> ((ThrowableFileIOTestFactory)node.configuration().getDataStorageConfiguration().getFileIOFactory())
+                .setThrowEx(true));
 
         stopAllGrids();
         startGrids(nodes);
@@ -156,61 +147,5 @@ public class GridCommandHandlerConsistencyOnClusterCrushTest extends GridCommand
 
         assertEquals(EXIT_CODE_OK, execute("--cache", "idle_verify"));
         assertConflicts(false, false);
-    }
-
-    /**
-     * Checks idle_vefify result.
-     *
-     * @param counter Counter conflicts.
-     * @param hash    Hash conflicts.
-     */
-    private void assertConflicts(boolean counter, boolean hash) {
-        if (counter || hash)
-            assertContains(log, testOut.toString(), "conflict partitions has been found: " +
-                    "[counterConflicts=" + (counter ? 1 : 0) + ", hashConflicts=" + (hash ? 1 : 0) + "]");
-        else
-            assertContains(log, testOut.toString(), "no conflicts have been found");
-    }
-
-    /** */
-    private static class ThrowableFileIOFactory implements FileIOFactory {
-        /** IO Factory. */
-        private final FileIOFactory factory;
-
-        /** Throw exception to emulate an error. */
-        public volatile boolean throwIoEx;
-
-        /**
-         * @param factory Factory.
-         */
-        public ThrowableFileIOFactory(FileIOFactory factory) {
-            this.factory = factory;
-        }
-
-        /** {@inheritDoc} */
-        @Override public FileIO create(File file, OpenOption... modes) throws IOException {
-            return new FileIODecorator(factory.create(file, modes)) {
-                @Override public int write(ByteBuffer srcBuf) throws IOException {
-                    if (throwIoEx)
-                        throw new IOException("Test exception");
-
-                    return super.write(srcBuf);
-                }
-
-                @Override public int write(ByteBuffer srcBuf, long position) throws IOException {
-                    if (throwIoEx)
-                        throw new IOException("Test exception");
-
-                    return super.write(srcBuf, position);
-                }
-
-                @Override public int write(byte[] buf, int off, int len) throws IOException {
-                    if (throwIoEx)
-                        throw new IOException("Test exception");
-
-                    return super.write(buf, off, len);
-                }
-            };
-        }
     }
 }

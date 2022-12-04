@@ -21,7 +21,7 @@ import org.apache.ignite.internal.commandline.indexreader.IgniteIndexReaderTest;
 import org.apache.ignite.util.CacheMetricsCommandTest;
 import org.apache.ignite.util.GridCommandHandlerConsistencyBinaryTest;
 import org.apache.ignite.util.GridCommandHandlerConsistencyCountersTest;
-import org.apache.ignite.util.GridCommandHandlerConsistencyOnClusterCrushTest;
+import org.apache.ignite.util.GridCommandHandlerConsistencyOnClusterCrashTest;
 import org.apache.ignite.util.GridCommandHandlerConsistencyRepairCorrectnessAtomicTest;
 import org.apache.ignite.util.GridCommandHandlerConsistencySensitiveTest;
 import org.apache.ignite.util.GridCommandHandlerConsistencyTest;
@@ -59,7 +59,7 @@ import org.junit.runners.Suite;
     GridCommandHandlerConsistencyBinaryTest.class,
     GridCommandHandlerConsistencySensitiveTest.class,
     GridCommandHandlerConsistencyRepairCorrectnessAtomicTest.class,
-    GridCommandHandlerConsistencyOnClusterCrushTest.class,
+    GridCommandHandlerConsistencyOnClusterCrashTest.class,
 
     SystemViewCommandTest.class,
     MetricCommandTest.class,
