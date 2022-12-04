@@ -670,12 +670,12 @@ public interface IgniteCacheOffheapManager {
         long updateCounter();
 
         /**
-         * @return Highest applied update counter (HWM).
+         * @return Highest applied update counter.
          */
         long highestAppliedCounter();
 
         /**
-         * @return Reserved updates counter.
+         * @return Reserved counter (HWM).
          */
         long reservedCounter();
 
