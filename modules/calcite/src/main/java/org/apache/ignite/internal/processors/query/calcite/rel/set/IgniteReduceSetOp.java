@@ -32,15 +32,6 @@ import org.apache.ignite.internal.processors.query.calcite.util.Commons;
  */
 public interface IgniteReduceSetOp extends IgniteSetOp {
     /** {@inheritDoc} */
-    @Override public default List<Pair<RelTraitSet, List<RelTraitSet>>> deriveRewindability(
-        RelTraitSet nodeTraits,
-        List<RelTraitSet> inputTraits
-    ) {
-        return ImmutableList.of(
-            Pair.of(nodeTraits.replace(RewindabilityTrait.ONE_WAY), ImmutableList.of(inputTraits.get(0))));
-    }
-
-    /** {@inheritDoc} */
     @Override public default Pair<RelTraitSet, List<RelTraitSet>> passThroughDistribution(RelTraitSet nodeTraits,
         List<RelTraitSet> inTraits) {
         if (TraitUtils.distribution(nodeTraits) == IgniteDistributions.single())

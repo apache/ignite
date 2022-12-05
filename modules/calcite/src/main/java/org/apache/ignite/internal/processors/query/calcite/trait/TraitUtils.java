@@ -154,17 +154,10 @@ public class TraitUtils {
         if (fromTrait.getType() == BROADCAST_DISTRIBUTED && toTrait.getType() == HASH_DISTRIBUTED)
             return new IgniteTrimExchange(rel.getCluster(), traits, rel, toTrait);
         else {
-            return new IgniteExchange(
-                rel.getCluster(),
-                traits
-                    .replace(RewindabilityTrait.ONE_WAY)
-                    .replace(CorrelationTrait.UNCORRELATED),
-                RelOptRule.convert(
-                    rel,
-                    rel.getTraitSet()
-                        .replace(CorrelationTrait.UNCORRELATED)
-                ),
-                toTrait);
+            if (correlation(rel).correlated())
+                return null;
+
+            return new IgniteExchange(rel.getCluster(), traits.replace(RewindabilityTrait.ONE_WAY), rel, toTrait);
         }
     }
 
@@ -176,16 +169,12 @@ public class TraitUtils {
         if (fromTrait.satisfies(toTrait))
             return rel;
 
-        RelTraitSet traits = rel.getTraitSet()
-            .replace(toTrait)
-            .replace(CorrelationTrait.UNCORRELATED);
+        if (correlation(rel).correlated())
+            return null;
 
-        return new IgniteTableSpool(
-            rel.getCluster(),
-            traits,
-            Spool.Type.LAZY,
-            RelOptRule.convert(rel, rel.getTraitSet().replace(CorrelationTrait.UNCORRELATED))
-        );
+        RelTraitSet traits = rel.getTraitSet().replace(toTrait);
+
+        return new IgniteTableSpool(rel.getCluster(), traits, Spool.Type.LAZY, rel);
     }
 
     /** */
@@ -426,8 +415,8 @@ public class TraitUtils {
         return new PropagationContext(combinations)
             .propagate(rel::deriveCollation)
             .propagate(rel::deriveDistribution)
-            .propagate(rel::deriveRewindability)
             .propagate(rel::deriveCorrelation)
+            .propagate(rel::deriveRewindability)
             .nodes(rel::createNode);
     }
 

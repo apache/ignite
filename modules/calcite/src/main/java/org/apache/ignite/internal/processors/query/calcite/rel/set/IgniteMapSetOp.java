@@ -40,22 +40,6 @@ import org.apache.ignite.internal.processors.query.calcite.util.Commons;
  */
 public interface IgniteMapSetOp extends IgniteSetOp {
     /** {@inheritDoc} */
-    @Override public default List<Pair<RelTraitSet, List<RelTraitSet>>> deriveRewindability(
-        RelTraitSet nodeTraits,
-        List<RelTraitSet> inputTraits
-    ) {
-        boolean rewindable = inputTraits.stream()
-            .map(TraitUtils::rewindability)
-            .allMatch(RewindabilityTrait::rewindable);
-
-        if (rewindable)
-            return ImmutableList.of(Pair.of(nodeTraits.replace(RewindabilityTrait.REWINDABLE), inputTraits));
-
-        return ImmutableList.of(Pair.of(nodeTraits.replace(RewindabilityTrait.ONE_WAY),
-            Commons.transform(inputTraits, t -> t.replace(RewindabilityTrait.ONE_WAY))));
-    }
-
-    /** {@inheritDoc} */
     @Override public default List<Pair<RelTraitSet, List<RelTraitSet>>> deriveDistribution(
         RelTraitSet nodeTraits,
         List<RelTraitSet> inputTraits
