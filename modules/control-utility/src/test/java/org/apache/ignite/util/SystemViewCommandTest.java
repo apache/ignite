@@ -1174,7 +1174,7 @@ public class SystemViewCommandTest extends GridCommandHandlerClusterByClassAbstr
 
             for (List<String> row : rows) {
                 UUID rowNodeId = UUID.fromString(row.get(0));
-                boolean isLocal = Boolean.parseBoolean(row.get(8));
+                boolean isLocal = Boolean.parseBoolean(row.get(7));
 
                 assertEquals(nodeId.equals(rowNodeId), isLocal);
             }
