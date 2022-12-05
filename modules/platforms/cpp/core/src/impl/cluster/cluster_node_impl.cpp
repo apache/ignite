@@ -46,7 +46,6 @@ namespace ignite
 
                 order = reader.ReadInt64();
                 isLocal = reader.ReadBool();
-                reader.ReadBool();
                 isClient = reader.ReadBool();
 
                 ReadConsistentId(reader);
