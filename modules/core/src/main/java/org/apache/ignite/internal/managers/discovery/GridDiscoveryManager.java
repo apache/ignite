@@ -1925,7 +1925,7 @@ public class GridDiscoveryManager extends GridManagerAdapter<DiscoverySpi> {
         return discoCacheHist.get(topVer);
     }
 
-    /** @return All non-daemon remote nodes in topology. */
+    /** @return All remote nodes in topology. */
     public Collection<ClusterNode> remoteNodes() {
         return discoCache().remoteNodes();
     }
