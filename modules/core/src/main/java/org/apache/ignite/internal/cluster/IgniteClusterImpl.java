@@ -424,7 +424,7 @@ public class IgniteClusterImpl extends ClusterGroupAdapter implements IgniteClus
 
     /**
      * Sets baseline topology constructed from the cluster topology of the given version (the method succeeds only if
-     * the cluster topology has not changed). All client and daemon nodes will be filtered out of the resulting
+     * the cluster topology has not changed). All client nodes will be filtered out of the resulting
      * baseline.
      *
      * @param topVer Topology version to set.
