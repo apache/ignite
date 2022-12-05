@@ -340,7 +340,7 @@ public class GridEventStorageManager extends GridManagerAdapter<EventStorageSpi>
                     U.gridEventName(type));
             }
 
-            // Override user recordable settings for daemon node.
+            // Override user recordable settings.
             if (isUserRecordable(type) && !isHiddenEvent(type)) {
                 try {
                     getSpi().record(evt);
