@@ -20,7 +20,6 @@ package org.apache.ignite.testsuites;
 import org.apache.ignite.GridSuppressedExceptionSelfTest;
 import org.apache.ignite.internal.ClusterGroupHostsSelfTest;
 import org.apache.ignite.internal.ClusterGroupSelfTest;
-import org.apache.ignite.internal.ClusterProcessorCheckGlobalStateComputeRequestTest;
 import org.apache.ignite.internal.GridFailFastNodeFailureDetectionSelfTest;
 import org.apache.ignite.internal.GridLifecycleAwareSelfTest;
 import org.apache.ignite.internal.GridLifecycleBeanSelfTest;
@@ -93,7 +92,6 @@ import org.junit.runners.Suite;
     IgniteMessagingWithClientTest.class,
     IgniteMessagingSendAsyncTest.class,
 
-    ClusterProcessorCheckGlobalStateComputeRequestTest.class,
     ClusterGroupSelfTest.class,
     GridMessagingSelfTest.class,
     GridMessagingNoPeerClassLoadingSelfTest.class,
