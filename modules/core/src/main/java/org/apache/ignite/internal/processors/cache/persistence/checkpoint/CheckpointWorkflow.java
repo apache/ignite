@@ -396,9 +396,6 @@ public class CheckpointWorkflow {
                     if (partState == LOST)
                         partState = OWNING;
 
-                    assert part.highestAppliedCounter() >= part.updateCounter() :
-                        "Highest applied partition counter is supposed to be >= update counter.";
-
                     state.addPartitionState(
                         part.id(),
                         part.dataStore().fullSize(),
