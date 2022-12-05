@@ -64,7 +64,7 @@ public class AccessToClassesInsideInternalPackageTest extends AbstractSandboxTes
             "\n" +
             "public class TestInternalUtilsCallable implements IgniteCallable {\n" +
             "    @Override public Object call() throws Exception {\n" +
-            "        return IgnitionEx.isDaemon();\n" +
+            "        return IgnitionEx.isClientMode();\n" +
             "    }\n" +
             "}";
 
