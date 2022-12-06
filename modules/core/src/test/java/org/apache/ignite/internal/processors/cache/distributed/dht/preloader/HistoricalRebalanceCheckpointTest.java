@@ -370,6 +370,7 @@ public class HistoricalRebalanceCheckpointTest extends GridCommonAbstractTest {
 
         ListeningTestLogger testLog = new ListeningTestLogger(prim.log());
 
+        // Ensures the rebalance was historical.
         LogListener rebalanceLsnr = LogListener.matches("fullPartitions=[], " +
             "histPartitions=[0]").times(backupNodes).build();
 
