@@ -65,7 +65,7 @@ import static org.apache.ignite.cache.CacheAtomicityMode.TRANSACTIONAL;
 import static org.apache.ignite.cache.CacheWriteSynchronizationMode.FULL_SYNC;
 
 /**
- *
+ * Test historical rebalance with lost transaction requests and responses.
  */
 public class HistoricalRebalanceCheckpointTest extends GridCommonAbstractTest {
     /** {@inheritDoc} */
@@ -143,7 +143,7 @@ public class HistoricalRebalanceCheckpointTest extends GridCommonAbstractTest {
     }
 
     /**
-     * Test one-phase commit with lost backup responses.
+     * Test one-phase commit with lost responses from the backup.
      */
     @Test
     public void testDelayed1PhaseCommitResponses() throws Exception {
@@ -402,7 +402,9 @@ public class HistoricalRebalanceCheckpointTest extends GridCommonAbstractTest {
             "]");
     }
 
-    /** */
+    /**
+     * Simulates IO falure on data writing.
+     */
     private static class BlockableFileIOFactory implements FileIOFactory {
         /** IO Factory. */
         private final FileIOFactory factory;
@@ -420,6 +422,7 @@ public class HistoricalRebalanceCheckpointTest extends GridCommonAbstractTest {
         /** {@inheritDoc} */
         @Override public FileIO create(File file, OpenOption... modes) throws IOException {
             return new FileIODecorator(factory.create(file, modes)) {
+                /** {@inheritDoc} */
                 @Override public int write(ByteBuffer srcBuf) throws IOException {
                     if (blocked)
                         throw new IOException("Simulated IO failure.");
@@ -427,6 +430,7 @@ public class HistoricalRebalanceCheckpointTest extends GridCommonAbstractTest {
                     return super.write(srcBuf);
                 }
 
+                /** {@inheritDoc} */
                 @Override public int write(ByteBuffer srcBuf, long position) throws IOException {
                     if (blocked)
                         throw new IOException();
@@ -434,6 +438,7 @@ public class HistoricalRebalanceCheckpointTest extends GridCommonAbstractTest {
                     return super.write(srcBuf, position);
                 }
 
+                /** {@inheritDoc} */
                 @Override public int write(byte[] buf, int off, int len) throws IOException {
                     if (blocked)
                         throw new IOException();
