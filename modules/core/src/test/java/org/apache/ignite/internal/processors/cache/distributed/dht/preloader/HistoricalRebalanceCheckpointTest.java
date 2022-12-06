@@ -21,12 +21,15 @@ import java.io.File;
 import java.io.IOException;
 import java.nio.ByteBuffer;
 import java.nio.file.OpenOption;
+import java.util.Collection;
 import java.util.List;
+import java.util.Map;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.Consumer;
 import java.util.stream.Collectors;
+import com.google.common.base.Functions;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCache;
 import org.apache.ignite.cache.affinity.rendezvous.RendezvousAffinityFunction;
@@ -48,9 +51,13 @@ import org.apache.ignite.internal.processors.cache.persistence.file.FileIO;
 import org.apache.ignite.internal.processors.cache.persistence.file.FileIODecorator;
 import org.apache.ignite.internal.processors.cache.persistence.file.FileIOFactory;
 import org.apache.ignite.internal.processors.cache.verify.IdleVerifyResultV2;
+import org.apache.ignite.internal.processors.cache.verify.PartitionHashRecordV2;
+import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.lang.IgniteBiPredicate;
 import org.apache.ignite.plugin.extensions.communication.Message;
 import org.apache.ignite.testframework.GridTestUtils;
+import org.apache.ignite.testframework.ListeningTestLogger;
+import org.apache.ignite.testframework.LogListener;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.junit.Test;
 
@@ -102,7 +109,7 @@ public class HistoricalRebalanceCheckpointTest extends GridCommonAbstractTest {
     }
 
     /**
-     * Tests delayed prepare/finish transaction requests to the backups with 2 backups.
+     * Tests delayed prepare/finish transaction requests to the backups with 2 backups and 2-phase commit.
      */
     @Test
     public void testDelayedToBackupsRequests2Backups() throws Exception {
@@ -110,7 +117,8 @@ public class HistoricalRebalanceCheckpointTest extends GridCommonAbstractTest {
     }
 
     /**
-     * Tests delayed prepare/finish transaction requests to the backups with 2 backups and puts after the gaps.
+     * Tests delayed prepare/finish transaction requests to the backups with 2 backups and 2-phase commit. Does more
+     * puts after the gaps.
      */
     @Test
     public void testDelayedToBackupsRequests2BackupsMorePuts() throws Exception {
@@ -126,8 +134,8 @@ public class HistoricalRebalanceCheckpointTest extends GridCommonAbstractTest {
     }
 
     /**
-     * Tests delayed prepare/finish transaction requests to the backups with 1 backup and one-phase commit using puts
-     * after the gaps.
+     * Tests delayed prepare/finish transaction requests to the backups with 1 backup and one-phase commit. Does more
+     * puts after the gaps.
      */
     @Test
     public void testDelayedToBackupsRequests1BackupMorePuts() throws Exception {
@@ -139,9 +147,9 @@ public class HistoricalRebalanceCheckpointTest extends GridCommonAbstractTest {
      */
     @Test
     public void testDelayed1PhaseCommitResponses() throws Exception {
-        int updateCnt = 2_000;
+        final int preloadCnt = 2_000;
 
-        prepareCluster(2, updateCnt);
+        prepareCluster(2, preloadCnt);
 
         Ignite prim = primaryNode(0L, DEFAULT_CACHE_NAME);
 
@@ -173,13 +181,27 @@ public class HistoricalRebalanceCheckpointTest extends GridCommonAbstractTest {
 
         blockLatch.set(new CountDownLatch(20));
 
+        int updateCnt = preloadCnt;
+
         for (int i = 0; i < 20; i++)
             cachePutAsync.accept(++updateCnt);
 
         blockLatch.get().await();
 
-        // Storing highest counters on backup.
+        // Storing the highest counters on backup.
         forceCheckpoint();
+
+        IdleVerifyResultV2 checkRes = idleVerify(prim, DEFAULT_CACHE_NAME);
+
+        Map<Boolean, PartitionHashRecordV2> conflicts = F.flatCollections(checkRes.counterConflicts().values())
+            .stream().collect(Collectors.toMap(PartitionHashRecordV2::isPrimary, Functions.identity()));
+
+        // The cache is of only 1 partition with 2 nodes: primary and backup.
+        assertEquals(2, conflicts.size());
+
+        // Ensure the backup node got a higher counter.
+        assertCounters(conflicts.get(true).updateCounter(), preloadCnt, null, preloadCnt);
+        assertCounters(conflicts.get(false).updateCounter(), updateCnt, null, updateCnt);
 
         String backName = backup.name();
 
@@ -193,11 +215,10 @@ public class HistoricalRebalanceCheckpointTest extends GridCommonAbstractTest {
 
         awaitPartitionMapExchange();
 
-        // Primary commits transactions on node left. Ensure no rebalance occurs.
-        TestRecordingCommunicationSpi.spi(prim).waitForBlocked(1, 5_000);
-        assertFalse(TestRecordingCommunicationSpi.spi(prim).hasBlockedMessages());
+        // Primary commits transactions when the backup node leaves. Ensure no rebalance occurs.
+        assertFalse(TestRecordingCommunicationSpi.spi(prim).waitForBlocked(1, 5_000));
 
-        IdleVerifyResultV2 checkRes = idleVerify(prim, DEFAULT_CACHE_NAME);
+        checkRes = idleVerify(prim, DEFAULT_CACHE_NAME);
         assertFalse(checkRes.hasConflicts());
     }
 
@@ -237,9 +258,12 @@ public class HistoricalRebalanceCheckpointTest extends GridCommonAbstractTest {
      * @param putAfterGaps If {@code true}, does more puts to the cache after the simulated gaps.
      */
     private void doTestDelayedToBackupsRequests(int nodes, boolean putAfterGaps) throws Exception {
-        int updateCnt = 2_000;
+        final int preloadCnt = 2_000;
+        final int prepareBlockCnt = 20;
+        final int finishBlockCnt = 30;
+        final int putsAfterGapsCnt = 50;
 
-        int backupNodes = prepareCluster(nodes, updateCnt);
+        int backupNodes = prepareCluster(nodes, preloadCnt);
 
         Ignite prim = primaryNode(0L, DEFAULT_CACHE_NAME);
 
@@ -271,13 +295,15 @@ public class HistoricalRebalanceCheckpointTest extends GridCommonAbstractTest {
 
         Consumer<Integer> cachePutAsync = (key) -> GridTestUtils.runAsync(() -> primCache.put(key, key));
 
+        int updateCnt = preloadCnt;
+
         try {
             // Blocked at primary and backups.
             prepareBlock.set(true);
 
-            blockLatch.set(new CountDownLatch(backupNodes * 20));
+            blockLatch.set(new CountDownLatch(backupNodes * prepareBlockCnt));
 
-            for (int i = 0; i < 20; i++)
+            for (int i = 0; i < prepareBlockCnt; i++)
                 cachePutAsync.accept(++updateCnt);
 
             blockLatch.get().await();
@@ -291,9 +317,9 @@ public class HistoricalRebalanceCheckpointTest extends GridCommonAbstractTest {
                 // Blocked at backups only.
                 finishBlock.set(true);
 
-                blockLatch.set(new CountDownLatch(backupNodes * 30));
+                blockLatch.set(new CountDownLatch(backupNodes * finishBlockCnt));
 
-                for (int i = 0; i < 30; i++)
+                for (int i = 0; i < finishBlockCnt; i++)
                     cachePutAsync.accept(++updateCnt);
 
                 blockLatch.get().await();
@@ -304,12 +330,31 @@ public class HistoricalRebalanceCheckpointTest extends GridCommonAbstractTest {
         }
 
         if (putAfterGaps) {
-            for (int i = 0; i < 50; i++)
+            for (int i = 0; i < putsAfterGapsCnt; i++)
                 prim.cache(DEFAULT_CACHE_NAME).put(++updateCnt, updateCnt);
         }
 
         // Storing counters on primary.
         forceCheckpoint();
+
+        Collection<PartitionHashRecordV2> conflicts =
+            F.flatCollections(idleVerify(prim, DEFAULT_CACHE_NAME).counterConflicts().values());
+
+        // With one-phase commit backup writes entries on the transaction request.
+        assertTrue(!conflicts.isEmpty() || backupNodes == 1);
+
+        // Ensure the primary node got a higher counter.
+        for (PartitionHashRecordV2 c : conflicts) {
+            if (c.isPrimary()) {
+                assertCounters(c.updateCounter(), preloadCnt, "" + (preloadCnt + 1) + " - " +
+                    (preloadCnt + prepareBlockCnt), updateCnt);
+            }
+            else {
+                assertCounters(c.updateCounter(), preloadCnt,
+                    putAfterGaps ? "" + (preloadCnt + 1) + " - " + (preloadCnt + putsAfterGapsCnt) : null,
+                    putAfterGaps ? updateCnt : preloadCnt);
+            }
+        }
 
         // Emulating power off, OOM or disk overflow. Keeping data as is, with missed counters updates.
         backups.forEach(node -> ((BlockableFileIOFactory)node.configuration().getDataStorageConfiguration()
@@ -322,6 +367,13 @@ public class HistoricalRebalanceCheckpointTest extends GridCommonAbstractTest {
         backups.forEach(Ignite::close);
 
         TestRecordingCommunicationSpi.spi(prim).blockMessages(GridDhtPartitionSupplyMessage.class, backNames.get(0));
+
+        ListeningTestLogger testLog = new ListeningTestLogger(prim.log());
+
+        LogListener rebalanceLsnr = LogListener.matches("fullPartitions=[], " +
+            "histPartitions=[0]").times(backupNodes).build();
+
+        testLog.registerListener(rebalanceLsnr);
 
         // Restore just any backup.
         IgniteEx backup = startGrid(backNames.get(0));
@@ -338,8 +390,16 @@ public class HistoricalRebalanceCheckpointTest extends GridCommonAbstractTest {
 
         rebalanceFinished.await();
 
+        rebalanceLsnr.check();
+
         IdleVerifyResultV2 checkRes = idleVerify(prim, DEFAULT_CACHE_NAME);
         assertFalse(checkRes.hasConflicts());
+    }
+
+    /** */
+    private static void assertCounters(Object cntr, int lwm, String missed, int hwm) {
+        assertEquals(cntr, "[lwm=" + lwm + ", missed=[" + (F.isEmpty(missed) ? "" : missed) + "], hwm=" + hwm +
+            "]");
     }
 
     /** */
