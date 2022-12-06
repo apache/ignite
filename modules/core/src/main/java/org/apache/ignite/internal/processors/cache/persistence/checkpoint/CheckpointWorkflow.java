@@ -400,8 +400,6 @@ public class CheckpointWorkflow {
                         part.id(),
                         part.dataStore().fullSize(),
                         part.highestAppliedCounter(),
-//                        Math.max(part.updateCounter(), part.reservedCounter()),
-//                        part.updateCounter(),
                         (byte)partState.ordinal()
                     );
                 }
