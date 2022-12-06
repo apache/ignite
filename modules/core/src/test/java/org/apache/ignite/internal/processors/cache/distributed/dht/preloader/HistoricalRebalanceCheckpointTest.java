@@ -65,7 +65,7 @@ import static org.apache.ignite.cache.CacheAtomicityMode.TRANSACTIONAL;
 import static org.apache.ignite.cache.CacheWriteSynchronizationMode.FULL_SYNC;
 
 /**
- * Test historical rebalance with lost transaction requests and responses.
+ * Test partitions consistency after a historical rebalance with lost transaction requests and responses.
  */
 public class HistoricalRebalanceCheckpointTest extends GridCommonAbstractTest {
     /** {@inheritDoc} */
