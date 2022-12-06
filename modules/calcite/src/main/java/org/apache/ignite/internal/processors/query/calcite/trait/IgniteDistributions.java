@@ -19,6 +19,7 @@ package org.apache.ignite.internal.processors.query.calcite.trait;
 
 import java.util.List;
 import org.apache.calcite.plan.RelTraitDef;
+import org.apache.calcite.rel.core.CorrelationId;
 import org.apache.calcite.util.ImmutableIntList;
 import org.apache.ignite.internal.util.typedef.internal.CU;
 
@@ -111,6 +112,15 @@ public class IgniteDistributions {
      */
     public static IgniteDistribution hash(List<Integer> keys, DistributionFunction function) {
         return canonize(new DistributionTrait(ImmutableIntList.copyOf(keys), function));
+    }
+
+    /**
+     * @param corrId Target distribution correlation id.
+     * @param target Target distribution.
+     * @return Distribution by correlate.
+     */
+    public static IgniteDistribution correlated(CorrelationId corrId, IgniteDistribution target) {
+        return canonize(new DistributionTrait(DistributionFunction.correlated(corrId, target)));
     }
 
     /**
