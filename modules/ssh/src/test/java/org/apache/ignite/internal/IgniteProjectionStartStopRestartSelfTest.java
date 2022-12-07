@@ -455,13 +455,7 @@ public class IgniteProjectionStartStopRestartSelfTest extends GridCommonAbstract
 
         assert ignite.cluster().nodes().size() == 4;
 
-        leftLatch = new CountDownLatch(3);
-
-        ignite.cluster().stopNodes();
-
-        assert leftLatch.await(WAIT_TIMEOUT, MILLISECONDS);
-
-        assert ignite.cluster().nodes().isEmpty();
+        stopAllGrids();
     }
 
     /**
