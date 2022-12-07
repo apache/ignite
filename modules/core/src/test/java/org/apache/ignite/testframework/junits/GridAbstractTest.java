@@ -1705,7 +1705,7 @@ public abstract class GridAbstractTest extends JUnitAssertAware {
                 return;
 
             try {
-                Thread.sleep(100);
+                Thread.sleep(1000);
             }
             catch (InterruptedException ignored) {
                 throw new IgniteCheckedException("Interrupted while waiting for remote nodes [igniteInstanceName=" +
