@@ -512,7 +512,7 @@ public class IgniteProjectionStartStopRestartSelfTest extends GridCommonAbstract
 
         assert leftLatch.await(WAIT_TIMEOUT, MILLISECONDS);
 
-        assert ignite.cluster().nodes().size() == 1;
+        assert ignite.cluster().nodes().size() == 2;
     }
 
     /**
@@ -544,7 +544,7 @@ public class IgniteProjectionStartStopRestartSelfTest extends GridCommonAbstract
 
         assert leftLatch.await(WAIT_TIMEOUT, MILLISECONDS);
 
-        assert ignite.cluster().nodes().size() == 2;
+        assert ignite.cluster().nodes().size() == 3;
     }
 
     /**
@@ -569,7 +569,7 @@ public class IgniteProjectionStartStopRestartSelfTest extends GridCommonAbstract
 
         assert leftLatch.await(WAIT_TIMEOUT, MILLISECONDS);
 
-        assert ignite.cluster().nodes().size() == 1;
+        assert ignite.cluster().nodes().size() == 2;
     }
 
     /**
@@ -589,7 +589,7 @@ public class IgniteProjectionStartStopRestartSelfTest extends GridCommonAbstract
         assert joinedLatch.await(WAIT_TIMEOUT, MILLISECONDS);
         assert leftLatch.await(WAIT_TIMEOUT, MILLISECONDS);
 
-        assert ignite.cluster().nodes().size() == 3;
+        assert ignite.cluster().nodes().size() == 4;
     }
 
     /**
@@ -648,7 +648,7 @@ public class IgniteProjectionStartStopRestartSelfTest extends GridCommonAbstract
         assert leftLatch.await(WAIT_TIMEOUT, MILLISECONDS);
         assert joinedLatch.await(WAIT_TIMEOUT, MILLISECONDS);
 
-        assert ignite.cluster().nodes().size() == 3;
+        assert ignite.cluster().nodes().size() == 4;
     }
 
     /**
@@ -668,7 +668,7 @@ public class IgniteProjectionStartStopRestartSelfTest extends GridCommonAbstract
         assert joinedLatch.await(WAIT_TIMEOUT, MILLISECONDS);
         assert leftLatch.await(WAIT_TIMEOUT, MILLISECONDS);
 
-        assert ignite.cluster().nodes().size() == 3;
+        assert ignite.cluster().nodes().size() == 4;
     }
 
     /**
@@ -690,7 +690,7 @@ public class IgniteProjectionStartStopRestartSelfTest extends GridCommonAbstract
         assert joinedLatch.await(WAIT_TIMEOUT, MILLISECONDS);
         assert leftLatch.await(WAIT_TIMEOUT, MILLISECONDS);
 
-        assert ignite.cluster().nodes().size() == 3;
+        assert ignite.cluster().nodes().size() == 4;
     }
 
     /**
