@@ -560,9 +560,9 @@ public class IgniteProjectionStartStopRestartSelfTest extends GridCommonAbstract
 
         Iterator<ClusterNode> it = ignite.cluster().nodes().iterator();
 
-        Collection<UUID> ids = new HashSet<>();
-
         it.next();
+
+        Collection<UUID> ids = new HashSet<>();
 
         ids.add(it.next().id());
         ids.add(it.next().id());
@@ -686,6 +686,8 @@ public class IgniteProjectionStartStopRestartSelfTest extends GridCommonAbstract
         leftLatch = new CountDownLatch(2);
 
         Iterator<ClusterNode> it = ignite.cluster().nodes().iterator();
+
+        it.next();
 
         ignite.cluster().restartNodes(F.asList(it.next().id(), it.next().id()));
 
