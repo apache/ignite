@@ -212,25 +212,6 @@
 
     <profiles>
         <profile>
-            <id>scala</id>
-
-            <dependencies>
-                <dependency>
-                    <groupId>org.scalatest</groupId>
-                    <artifactId>scalatest_2.11</artifactId>
-                    <version>${scala.test.version}</version>
-                    <scope>test</scope>
-                    <exclusions>
-                        <exclusion>
-                            <groupId>org.scala-lang</groupId>
-                            <artifactId>scala-library</artifactId>
-                        </exclusion>
-                    </exclusions>
-                </dependency>
-            </dependencies>
-        </profile>
-
-        <profile>
             <id>lgpl</id>
 
             <properties>

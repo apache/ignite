@@ -113,9 +113,6 @@ namespace Apache.Ignite.Core.Tests.Cache
                 });
                 cache[1] = 1;
 
-                // Check some metrics.
-                CheckDataStorageMetrics(ignite);
-
                 // Create cache with non-persistent region.
                 var volatileCache = ignite.CreateCache<int, int>(new CacheConfiguration
                 {
@@ -154,15 +151,6 @@ namespace Apache.Ignite.Core.Tests.Cache
 
                 Assert.IsFalse(ignite.GetCacheNames().Contains(cacheName));
             }
-        }
-
-        /// <summary>
-        /// Checks that data storage metrics reflect some write operations.
-        /// </summary>
-        private static void CheckDataStorageMetrics(IIgnite ignite)
-        {
-            var metrics = ignite.GetDataStorageMetrics();
-            Assert.Greater(metrics.WalLoggingRate, 0);
         }
 
         /// <summary>

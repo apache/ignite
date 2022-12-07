@@ -216,9 +216,6 @@ public enum GridRestCommand {
     /** Data region metrics. */
     DATA_REGION_METRICS("dataregion"),
 
-    /** Data storage metrics. */
-    DATA_STORAGE_METRICS("datastorage"),
-
     /** Node state before its start. */
     NODE_STATE_BEFORE_START("nodestatebeforestart"),
 

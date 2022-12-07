@@ -83,7 +83,6 @@ import org.apache.ignite.internal.util.typedef.internal.SB;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.internal.util.worker.GridWorker;
 import org.apache.ignite.internal.util.worker.GridWorkerFuture;
-import org.apache.ignite.internal.visor.compute.VisorGatewayTask;
 import org.apache.ignite.internal.visor.util.VisorClusterGroupEmptyException;
 import org.apache.ignite.lang.IgniteBiTuple;
 import org.apache.ignite.lang.IgniteInClosure;
@@ -904,10 +903,6 @@ public class GridRestProcessor extends GridProcessorAdapter implements IgniteRes
                 GridRestTaskRequest taskReq = (GridRestTaskRequest)req;
                 name = taskReq.taskName();
 
-                // We should extract task name wrapped by VisorGatewayTask.
-                if (VisorGatewayTask.class.getName().equals(name))
-                    name = (String)taskReq.params().get(WRAPPED_TASK_IDX);
-
                 break;
 
             case GET_OR_CREATE_CACHE:
@@ -935,7 +930,6 @@ public class GridRestProcessor extends GridProcessorAdapter implements IgniteRes
                 break;
 
             case DATA_REGION_METRICS:
-            case DATA_STORAGE_METRICS:
             case CACHE_METRICS:
             case CACHE_SIZE:
             case CACHE_METADATA:

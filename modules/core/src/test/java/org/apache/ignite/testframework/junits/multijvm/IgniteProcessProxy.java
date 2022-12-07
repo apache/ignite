@@ -33,8 +33,6 @@ import java.util.function.Supplier;
 import javax.cache.CacheException;
 import org.apache.ignite.DataRegionMetrics;
 import org.apache.ignite.DataRegionMetricsAdapter;
-import org.apache.ignite.DataStorageMetrics;
-import org.apache.ignite.DataStorageMetricsAdapter;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteAtomicLong;
 import org.apache.ignite.IgniteAtomicReference;
@@ -62,7 +60,6 @@ import org.apache.ignite.IgniteSystemProperties;
 import org.apache.ignite.IgniteTransactions;
 import org.apache.ignite.Ignition;
 import org.apache.ignite.MemoryMetrics;
-import org.apache.ignite.PersistenceMetrics;
 import org.apache.ignite.cache.affinity.Affinity;
 import org.apache.ignite.cluster.ClusterGroup;
 import org.apache.ignite.cluster.ClusterNode;
@@ -824,11 +821,6 @@ public class IgniteProcessProxy implements IgniteEx {
     }
 
     /** {@inheritDoc} */
-    @Override public DataStorageMetrics dataStorageMetrics() {
-        throw new UnsupportedOperationException("Operation isn't supported yet.");
-    }
-
-    /** {@inheritDoc} */
     @Override public IgniteEncryption encryption() {
         throw new UnsupportedOperationException("Operation isn't supported yet.");
     }
@@ -846,11 +838,6 @@ public class IgniteProcessProxy implements IgniteEx {
     /** {@inheritDoc} */
     @Nullable @Override public MemoryMetrics memoryMetrics(String memPlcName) {
         return DataRegionMetricsAdapter.valueOf(dataRegionMetrics(memPlcName));
-    }
-
-    /** {@inheritDoc} */
-    @Override public PersistenceMetrics persistentStoreMetrics() {
-        return DataStorageMetricsAdapter.valueOf(dataStorageMetrics());
     }
 
     /** {@inheritDoc} */
