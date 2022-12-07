@@ -25,6 +25,7 @@ import org.apache.tinkerpop.gremlin.structure.T;
 import org.apache.tinkerpop.gremlin.structure.util.ElementHelper;
 
 import java.util.Arrays;
+import java.util.Collection;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.UUID;
@@ -108,6 +109,9 @@ public final class IgniteGraphUtils {
             // add@byron
             if(IgniteGraph.stringedPropertyType) {
             	if(value.getClass().isArray() && value instanceof Object[]) {
+            		props.put(keyStr, value);
+            	}
+            	else if(value instanceof Collection) {
             		props.put(keyStr, value);
             	}
             	else {

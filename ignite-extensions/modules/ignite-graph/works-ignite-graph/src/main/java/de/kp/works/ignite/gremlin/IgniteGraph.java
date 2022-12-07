@@ -107,9 +107,12 @@ public class IgniteGraph implements Graph {
 
         this.features = new IgniteGraphFeatures(true);
         
-        String propertyType = config.getString("gremlin.graph.propertyType");
-        if(propertyType!=null && propertyType.equals("STRING")) {
-        	stringedPropertyType = true;
+        String propertyType = config.getString(IgniteGraphConfiguration.Keys.GRAPH_PROPERTY_TYPE);
+        if(propertyType!=null && !propertyType.isEmpty()) {        	
+        	ValueUtils.defaultPropertyType = ValueUtils.PropertyType.valueOf(propertyType);
+        	if(ValueUtils.defaultPropertyType==ValueUtils.PropertyType.STRING) {
+        	    stringedPropertyType = true;
+        	}
         }
         
         String igniteCfg = config.getString("gremlin.graph.ignite.cfg");

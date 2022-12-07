@@ -21,24 +21,37 @@ import org.apache.tinkerpop.gremlin.driver.Cluster;
 import org.apache.tinkerpop.gremlin.driver.Result;
 import org.apache.tinkerpop.gremlin.driver.ResultSet;
 import org.apache.tinkerpop.gremlin.process.traversal.Bindings;
+import org.apache.tinkerpop.gremlin.process.traversal.Traversal;
 import org.apache.tinkerpop.gremlin.process.traversal.dsl.graph.GraphTraversal;
 import org.apache.tinkerpop.gremlin.process.traversal.dsl.graph.GraphTraversalSource;
+import org.apache.tinkerpop.gremlin.structure.Edge;
 import org.apache.tinkerpop.gremlin.structure.Property;
+import org.apache.tinkerpop.gremlin.structure.T;
 import org.apache.tinkerpop.gremlin.structure.Vertex;
-
+import org.apache.tinkerpop.gremlin.structure.VertexProperty;
 import org.janusgraph.core.attribute.Geoshape;
 import org.janusgraph.util.system.ConfigurationUtil;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import com.baidu.hugegraph.driver.GraphManager;
+import com.baidu.hugegraph.driver.HugeClient;
+import com.baidu.hugegraph.driver.SchemaManager;
+//import com.baidu.hugegraph.io.HugeGraphIoRegistry;
+
 import java.io.IOException;
+import java.util.ArrayList;
+import java.util.Iterator;
 import java.util.List;
+import java.util.Map;
+import java.util.Map.Entry;
+import java.util.Set;
 import java.util.stream.Stream;
 
 import static org.apache.tinkerpop.gremlin.process.traversal.AnonymousTraversalSource.traversal;
 
-public class RemoteGraphApp extends JanusGraphApp {
-    private static final Logger LOGGER = LoggerFactory.getLogger(RemoteGraphApp.class);
+public class HugeRemoteGraphApp extends GraphApp {
+    private static final Logger LOGGER = LoggerFactory.getLogger(HugeRemoteGraphApp.class);
 
     // used for bindings
     private static final String NAME = "name";
@@ -52,14 +65,18 @@ public class RemoteGraphApp extends JanusGraphApp {
 
     
     protected Cluster cluster;
-    protected Client client;
+    protected HugeClient hugeClient;
     protected Configuration conf;
+    
+    GraphManager graph;
+    
+    SchemaManager schema;
 
     /**
      * Constructs a graph app using the given properties.
      * @param fileName location of the properties file
      */
-    public RemoteGraphApp(final String fileName) {
+    public HugeRemoteGraphApp(final String fileName) {
         super(fileName);
         // the server auto-commits per request, so the application code doesn't
         // need to explicitly commit transactions
@@ -70,18 +87,18 @@ public class RemoteGraphApp extends JanusGraphApp {
     public GraphTraversalSource openGraph() throws ConfigurationException, IOException {
         LOGGER.info("opening graph");
         conf = ConfigurationUtil.loadPropertiesConfig(propFileName);
-        useMixedIndex = useMixedIndex && conf.containsKey("index." + mixedIndexConfigName + ".backend");
+        
         // using the remote driver for schema
         try {
-            cluster = Cluster.open(conf.getString("gremlin.remote.driver.clusterFile"));
-            
-            client = cluster.connect();
-           
+        	hugeClient = HugeClient.builder("http://172.16.29.37:8080","hugegraph").build();
         } catch (Exception e) {
             throw new ConfigurationException(e);
         }
 
         // using the remote graph for queries
+        graph = hugeClient.graph();
+        
+        schema = hugeClient.schema();
         g = traversal().withRemote(conf);
         return g;
     }
@@ -176,8 +193,7 @@ public class RemoteGraphApp extends JanusGraphApp {
             }
         } finally {
             g = null;
-            graph = null;
-            client = null;
+            graph = null;            
             cluster = null;
         }
     }
@@ -185,30 +201,83 @@ public class RemoteGraphApp extends JanusGraphApp {
     @Override
     public void createSchema() {
         LOGGER.info("creating schema");
-        // get the schema request as a string
-        final String req = createSchemaRequest();
-        // submit the request to the server
-        final ResultSet resultSet = client.submit(req);
-        // drain the results completely
-        Stream<Result> futureList = resultSet.stream();
-        futureList.map(Result::toString).forEach(LOGGER::info);
+       
     }
     
-    public void copy(GraphTraversalSource toG) {    	
+    public void copy(GraphTraversalSource toG) {    	 
+    	Traversal<Vertex, Vertex> t = g.V();//.limit(100);
+    	while(t.hasNext()) {
+	    	Vertex v = t.next();
+	    	GraphTraversal<Vertex, Map<Object, Object>> pMap = g.V(v.id()).valueMap();
+	    	
+	    	Iterator<Entry<Object, Object>> pit = pMap.next().entrySet().iterator();	    	
+	    	
+	    	GraphTraversal<Vertex, Vertex> pAdder = toG.addV(v.label()).property(T.id, v.id());
+	    	while(pit.hasNext()) {
+	    		Entry<Object, Object> p = pit.next();
+	    		if(p.getValue() instanceof List) {
+	    			List array = (List) p.getValue();
+	    			if(array.size()==1) {
+	    				pAdder.property(p.getKey(), array.get(0));
+	    				continue;
+	    			}
+	    			else if(array.size()==0) {
+	    				pAdder.property(p.getKey(), "");
+	    				continue;
+	    			}
+	    		}
+	    		pAdder.property(p.getKey(), p.getValue());
+	    	}
+	    	
+	    	Vertex toV = pAdder.next();
+	    	
+	    	System.out.println(toV);
+    	}
     	
-    	toG.with("properties",true);
-		GraphTraversal<Vertex, ? extends Property<Object>> jupiter = toG.V().has("name", "jupiter").properties();
-		
-    	List<? extends Property<Object>> p0 = jupiter.next(10);
+    	Traversal<Edge, Edge> r = g.E();
+    	while(r.hasNext()) {
+	    	Edge e = r.next();
+	    	GraphTraversal<Edge, Map<Object, Object>> pMap = g.E(e.id()).valueMap();
+	    	
+	    	Iterator<Entry<Object, Object>> pit = pMap.next().entrySet().iterator();
+	    	
+	    	GraphTraversal<Vertex, Edge> pAdder = toG.V(e.inVertex().id()).as("a").V(e.outVertex().id()).addE(e.label()).from("a").property(T.id, e.id());
+	    	
+	    	while(pit.hasNext()) {
+	    		Entry<Object, Object> p = pit.next();
+	    		if(p.getValue() instanceof List) {
+	    			List array = (List) p.getValue();
+	    			if(array.size()==1) {
+	    				pAdder.property(p.getKey(), array.get(0));
+	    				continue;
+	    			}
+	    			else if(array.size()==0) {
+	    				pAdder.property(p.getKey(), "");
+	    				continue;
+	    			}
+	    		}
+	    		pAdder.property(p.getKey(), p.getValue());
+	    	}
+	    	
+	    	Edge toE = pAdder.next();
+	    	
+	    	System.out.println(toE);
+    	}
     	
     }
 
-    public static void main(String[] args) {
-        String fileName = (args != null && args.length > 0) ? args[0] : "conf/remote-graph.properties";
-       
-        final RemoteGraphApp app = new RemoteGraphApp(fileName);
+    public static void main(String[] args) throws ConfigurationException, IOException {
+        String hugeFileName = (args != null && args.length > 0) ? args[0] : "conf/remote-huge-graph.properties";
+        // 将数据从huge导入到ignite-graph
+        final HugeRemoteGraphApp app = new HugeRemoteGraphApp(hugeFileName);
         app.supportsSchema = false;
         app.supportsGeoshape = false;
-        app.runApp();
+        app.openGraph();        
+        
+        String fileName = (args != null && args.length > 0) ? args[0] : "conf/remote-graph.properties";
+        RemoteGraphApp toApp = new RemoteGraphApp(fileName);
+        
+        toApp.openGraph();
+        app.copy(toApp.g);
     }
 }

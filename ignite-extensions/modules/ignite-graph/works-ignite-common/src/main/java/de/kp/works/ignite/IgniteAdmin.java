@@ -50,7 +50,6 @@ import org.slf4j.LoggerFactory;
  *
  */
 
-import com.fasterxml.jackson.databind.json.JsonMapper;
 
 import java.util.Base64;
 import java.util.HashMap;
@@ -62,9 +61,8 @@ import java.util.stream.Collectors;
 
 public class IgniteAdmin {
 
-    private static final Logger LOGGER = LoggerFactory.getLogger(IgniteAdmin.class);
+    private static final Logger LOGGER = LoggerFactory.getLogger(IgniteAdmin.class);    
     
-    public  ToStringGraphSONSerializer mapper = new ToStringGraphSONSerializer();
     private IgniteConnect connect = null;
 
     private final String NO_CONNECT_INITIALIZATION = "IgniteConnect is not initialized.";
@@ -227,8 +225,11 @@ public class IgniteAdmin {
             valueBuilder.setField(IgniteConstants.PROPERTY_KEY_COL_NAME,  entry.propKey);
             valueBuilder.setField(IgniteConstants.PROPERTY_TYPE_COL_NAME,  entry.propType);
             String value = null;
-            if(entry.propType.equals("ARRAY")  || entry.propType.equals("ANY") || entry.propType.equals("SERIALIZABLE")) {
+            if(entry.propType.equals("ARRAY")  || entry.propType.equals("MAP") || entry.propType.equals("SERIALIZABLE")) {
             	value = ValueUtils.serializeToString(entry.propValue);
+            }
+            else if(entry.propType.equals("JSON_ARRAY") || entry.propType.equals("JSON_OBJECT")) {
+            	value = ValueUtils.serializeToJsonString(entry.propValue);
             }
             else if(entry.propType.equals("BINARY")) {
             	value = Base64.getEncoder().encodeToString((byte[])entry.propValue);
@@ -373,8 +374,11 @@ public class IgniteAdmin {
             valueBuilder.setField(IgniteConstants.PROPERTY_KEY_COL_NAME,  entry.propKey);
             valueBuilder.setField(IgniteConstants.PROPERTY_TYPE_COL_NAME,  entry.propType);
             String value = null;
-            if(entry.propType.equals("ARRAY")  || entry.propType.equals("ANY") || entry.propType.equals("SERIALIZABLE")) {
+            if(entry.propType.equals("ARRAY")  || entry.propType.equals("MAP") || entry.propType.equals("SERIALIZABLE")) {
             	value = ValueUtils.serializeToString(entry.propValue);
+            }
+            else if(entry.propType.equals("JSON_ARRAY") || entry.propType.equals("JSON_OBJECT")) {
+            	value = ValueUtils.serializeToJsonString(entry.propValue);
             }
             else if(entry.propType.equals("BINARY")) {
             	value = Base64.getEncoder().encodeToString((byte[])entry.propValue);

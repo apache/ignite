@@ -58,7 +58,9 @@ public enum ValueType {
     UUID(19),
     ANY(20),
     COUNTER(21),
-    ARRAY(22);
+    ARRAY(22),    
+    JSON_ARRAY(23),
+	JSON_OBJECT(24);
 
     private final byte code;
 
@@ -116,6 +118,10 @@ public enum ValueType {
                 return COUNTER;
             case 22:
                 return ARRAY;
+            case 23:
+                return JSON_ARRAY;
+            case 24:
+                return JSON_OBJECT;
             default:
                 return null;
         }

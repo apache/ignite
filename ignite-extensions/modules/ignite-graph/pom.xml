@@ -16,8 +16,8 @@
     </modules>
 
     <properties>
-        <maven.compiler.source>1.8</maven.compiler.source>
-        <maven.compiler.target>1.8</maven.compiler.target>
+        <maven.compiler.source>11</maven.compiler.source>
+        <maven.compiler.target>11</maven.compiler.target>
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
 
         <scala.binary.version>2.11</scala.binary.version>
@@ -68,28 +68,8 @@
             <version>${tinkerpop.version}</version>
         </dependency>
 
-        <!-- JACKSON
-        -->
-        <dependency>
-            <groupId>com.fasterxml.jackson.core</groupId>
-            <artifactId>jackson-databind</artifactId>
-            <version>${jackson.version}</version>
-        </dependency>
 
-        <dependency>
-            <groupId>com.fasterxml.jackson.module</groupId>
-            <artifactId>jackson-module-scala_${scala.binary.version}</artifactId>
-            <version>${jackson.version}</version>
-        </dependency>
-
-        <!-- JSON4S
-        -->
-        <dependency>
-            <groupId>org.json4s</groupId>
-            <artifactId>json4s-jackson_${scala.binary.version}</artifactId>
-            <version>3.5.3</version>
-        </dependency>
-
+       
      </dependencies>
      <build>              
         <pluginManagement>
@@ -129,32 +109,7 @@
                         </goals>
                     </execution>
                 </executions>
-            </plugin>
-             <plugin>
-                <groupId>net.alchim31.maven</groupId>
-                <artifactId>scala-maven-plugin</artifactId>
-                <version>4.4.0</version>
-                <configuration>
-                    <scalaVersion>2.11.12</scalaVersion>
-                    <args>
-                        <arg>-unchecked</arg>
-                        <arg>-deprecation</arg>
-                    </args>
-                    <addJavacArgs>-deprecation</addJavacArgs>
-                    <source>1.8</source>
-                    <target>1.8</target>
-                </configuration>
-                <executions>
-                    <execution>
-                        <id>scala-compile</id>
-                        <phase>process-resources</phase>
-                        <goals>
-                            <goal>add-source</goal>
-                            <goal>compile</goal>
-                        </goals>
-                    </execution>
-                 </executions>
-            </plugin>
+            </plugin>             
         </plugins>
     </build>
 

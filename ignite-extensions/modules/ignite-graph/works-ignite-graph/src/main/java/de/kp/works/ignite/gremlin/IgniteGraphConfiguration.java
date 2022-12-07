@@ -39,6 +39,7 @@ public class IgniteGraphConfiguration extends AbstractConfiguration implements S
     public static class Keys {
         public static final String GRAPH_NAMESPACE             = "gremlin.ignite.namespace";
         public static final String GRAPH_CLASS                 = "gremlin.graph";
+        public static final String GRAPH_PROPERTY_TYPE         = "gremlin.graph.propertyType";
         public static final String GLOBAL_CACHE_MAX_SIZE       = "gremlin.ignite.globalCacheMaxSize";
         public static final String GLOBAL_CACHE_TTL_SECS       = "gremlin.ignite.globalCacheTtlSecs";
         public static final String RELATIONSHIP_CACHE_MAX_SIZE = "gremlin.ignite.relationshipCacheMaxSize";

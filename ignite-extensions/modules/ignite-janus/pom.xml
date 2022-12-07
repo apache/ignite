@@ -76,6 +76,14 @@
             <version>${janus.version}</version>
             <scope>test</scope>
         </dependency>
+        
+	       
+	    <dependency>
+	        <groupId>com.baidu.hugegraph</groupId>
+	        <artifactId>hugegraph-client</artifactId>
+	        <version>2.0.1</version>
+	    </dependency>    
+
 
 		<!-- APACHE IGNITE
 		-->
