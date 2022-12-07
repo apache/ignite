@@ -428,7 +428,13 @@ public class IgniteProjectionStartStopRestartSelfTest extends GridCommonAbstract
 
         assert ignite.cluster().nodes().size() == 2;
 
-        assert CUSTOM_CFG_ATTR_VAL.equals(F.first(ignite.cluster().nodes()).<String>attribute(CUSTOM_CFG_ATTR_KEY));
+        Iterator<ClusterNode> iter = ignite.cluster().nodes().iterator();
+
+        iter.next();
+
+        ClusterNode node = iter.next();
+
+        assert CUSTOM_CFG_ATTR_VAL.equals(node.<String>attribute(CUSTOM_CFG_ATTR_KEY));
     }
 
     /**
