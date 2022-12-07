@@ -18,17 +18,15 @@
 package org.apache.ignite.internal.processors.cache.consistentcut;
 
 import java.util.List;
-import org.apache.ignite.internal.util.typedef.T2;
 import org.junit.runner.RunWith;
 import org.junit.runners.Parameterized;
-
 
 /** */
 @RunWith(Parameterized.class)
 public class ConsistentCutSingleBackupWALBlockingTest extends ConsistentCutNoBackupWALBlockingTest {
     /** */
-    @Override protected List<List<T2<Integer, Integer>>> cases() {
-        return ConsistentCutBlockingCases.casesWithBackup(nodes());
+    @Override protected List<TransactionTestCase> cases() {
+        return TransactionTestCase.buildTestCases(nodes(), true);
     }
 
     /** {@inheritDoc} */

@@ -360,12 +360,6 @@ public final class GridNearTxFinishFuture<K, V> extends GridCacheCompoundIdentit
                             finishOnePhase(commit);
 
                         try {
-                            if (tx.currentPrepareFuture() != null) {
-                                UUID txCutId = ((GridNearTxPrepareFutureAdapter)tx.currentPrepareFuture()).tx().cutId();
-
-                                tx.cutId(txCutId);
-                            }
-
                             tx.tmFinish(commit, nodeStop, true);
                         }
                         catch (IgniteCheckedException e) {

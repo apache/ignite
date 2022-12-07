@@ -23,45 +23,30 @@ import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
-import java.util.stream.Collectors;
+import java.util.function.Predicate;
 import org.apache.ignite.IgniteCheckedException;
-import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.GridKernalContext;
 import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.IgniteInternalFuture;
-import org.apache.ignite.internal.TestRecordingCommunicationSpi;
 import org.apache.ignite.internal.pagemem.wal.IgniteWriteAheadLogManager;
 import org.apache.ignite.internal.pagemem.wal.record.ConsistentCutStartRecord;
-import org.apache.ignite.internal.pagemem.wal.record.TxRecord;
 import org.apache.ignite.internal.pagemem.wal.record.WALRecord;
-import org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtTxFinishRequest;
-import org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtTxPrepareRequest;
-import org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtTxPrepareResponse;
-import org.apache.ignite.internal.processors.cache.distributed.near.GridNearTxFinishRequest;
-import org.apache.ignite.internal.processors.cache.distributed.near.GridNearTxFinishResponse;
-import org.apache.ignite.internal.processors.cache.distributed.near.GridNearTxPrepareRequest;
-import org.apache.ignite.internal.processors.cache.distributed.near.GridNearTxPrepareResponse;
 import org.apache.ignite.internal.processors.cache.persistence.StorageException;
 import org.apache.ignite.internal.processors.cache.persistence.wal.FileWriteAheadLogManager;
 import org.apache.ignite.internal.processors.cache.persistence.wal.WALPointer;
 import org.apache.ignite.internal.util.typedef.F;
-import org.apache.ignite.internal.util.typedef.T2;
+import org.apache.ignite.internal.util.typedef.T3;
 import org.apache.ignite.internal.util.typedef.internal.U;
-import org.apache.ignite.lang.IgniteBiTuple;
 import org.apache.ignite.lang.IgniteFuture;
-import org.apache.ignite.lang.IgniteUuid;
 import org.apache.ignite.plugin.AbstractTestPluginProvider;
 import org.apache.ignite.plugin.PluginContext;
-import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.transactions.Transaction;
 import org.apache.ignite.transactions.TransactionConcurrency;
-import org.apache.ignite.transactions.TransactionState;
 import org.jetbrains.annotations.Nullable;
 
-import static org.apache.ignite.internal.processors.cache.consistentcut.AbstractConsistentCutBlockingTest.BlkCutType.AFTER_VERSION_UPDATE;
-import static org.apache.ignite.internal.processors.cache.consistentcut.AbstractConsistentCutBlockingTest.BlkCutType.BEFORE_VERSION_UPDATE;
-import static org.apache.ignite.internal.processors.cache.consistentcut.AbstractConsistentCutBlockingTest.BlkNodeType.BACKUP;
+import static org.apache.ignite.internal.processors.cache.consistentcut.AbstractConsistentCutBlockingTest.BlkCutType.AFTER_START;
+import static org.apache.ignite.internal.processors.cache.consistentcut.AbstractConsistentCutBlockingTest.BlkCutType.BEFORE_START;
 import static org.apache.ignite.internal.processors.cache.consistentcut.AbstractConsistentCutBlockingTest.BlkNodeType.NEAR;
 import static org.apache.ignite.internal.processors.cache.consistentcut.AbstractConsistentCutBlockingTest.BlkNodeType.PRIMARY;
 import static org.apache.ignite.internal.processors.cache.persistence.snapshot.AbstractSnapshotSelfTest.snp;
@@ -70,25 +55,16 @@ import static org.apache.ignite.transactions.TransactionIsolation.SERIALIZABLE;
 /** Base class for testing Consistency Cut blocking some events. */
 public abstract class AbstractConsistentCutBlockingTest extends AbstractConsistentCutTest {
     /** Number of current testing case. */
-    private int caseNum;
+    protected int caseNum;
 
     /** */
-    private final Map<IgniteUuid, Integer> txNearNode = new ConcurrentHashMap<>();
+    protected static BlkNodeType cutBlkNodeType;
 
     /** */
-    private static BlkNodeType cutBlkNodeType;
+    protected static BlkCutType cutBlkType;
 
     /** */
-    private static BlkCutType cutBlkType;
-
-    /** */
-    private static BlkNodeType txBlkNodeType;
-
-    /** */
-    private static TransactionState txBlkState;
-
-    /** */
-    private static Class<?> txMsgBlkCls;
+    protected static BlkNodeType txBlkNodeType;
 
     /** {@inheritDoc} */
     @Override protected IgniteConfiguration getConfiguration(String instanceName) throws Exception {
@@ -101,213 +77,44 @@ public abstract class AbstractConsistentCutBlockingTest extends AbstractConsiste
         return cfg;
     }
 
-    /** Initialize latches for test cases with blocking tx messages. */
-    protected final void initMsgCase(Class<?> msgCls, BlkNodeType txBlkNode, BlkCutType cutBlkType, BlkNodeType cutBlkNode) {
-        txBlkState = null;
-        txBlkNodeType = txBlkNode;
-
-        txMsgBlkCls = msgCls;
-        AbstractConsistentCutBlockingTest.cutBlkType = cutBlkType;
-        cutBlkNodeType = cutBlkNode;
-    }
-
-    /** Initialize latches for test cases with blocking WAL tx states. */
-    protected final void initWALCase(TransactionState txState, BlkNodeType txBlkNode, BlkCutType cutBlkType, BlkNodeType cutBlkNode) {
-        txMsgBlkCls = null;
-
-        txBlkState = txState;
-        txBlkNodeType = txBlkNode;
-
-        AbstractConsistentCutBlockingTest.cutBlkType = cutBlkType;
-        cutBlkNodeType = cutBlkNode;
-    }
-
-    /** */
-    protected void runWalBlkCase(
-        List<T2<Integer, Integer>> testCase,
-        int nearNodeId,
-        TransactionConcurrency txConcurrency
-    ) throws Exception {
-        int txBlkNodeId = blkNode(nearNodeId, txBlkNodeType, testCase);
-
-        int cutBlkNodeId = -1;
-
-        if (cutBlkType != BlkCutType.NONE)
-            cutBlkNodeId = blkNode(nearNodeId, cutBlkNodeType, testCase);
-
-        // Skip cases with blocking WAL on clients (no WAL actually)
-        if (txBlkNodeId == nodes())
-            return;
-
-        if (txBlkNodeId >= 0)
-            BlockingWALManager.walMgr(grid(txBlkNodeId)).blockTx();
-
-        log.info("START CASE " + (++caseNum) + ". Data=" + testCase + ", nearNodeId=" + nearNodeId);
-
-        runCase(() -> tx(nearNodeId, testCase, txConcurrency), txBlkNodeId, cutBlkNodeId);
-
-        BlockingWALManager.walMgr(grid(txBlkNodeId)).clear();
-    }
-
-    /** */
-    protected void runMsgBlkCase(
-        List<T2<Integer, Integer>> testCase,
-        int nearNodeId,
-        TransactionConcurrency txConcurrency
-    ) throws Exception {
-        int txBlkNodeId = blkNode(nearNodeId, txBlkNodeType, testCase);
-
-        int cutBlkNodeId = -1;
-
-        if (cutBlkType != BlkCutType.NONE)
-            cutBlkNodeId = blkNode(nearNodeId, cutBlkNodeType, testCase);
-
-        if (skipMsgTestCase(txBlkNodeId, nearNodeId, testCase))
-            return;
-
-        TestRecordingCommunicationSpi.spi(grid(txBlkNodeId)).blockMessages((n, msg) ->
-            msg.getClass().equals(txMsgBlkCls)
-        );
-
-        log.info("START CASE " + (++caseNum) +
-            ". Data=" + testCase +
-            ", nearNodeId=" + nearNodeId +
-            ", txBlkNodeId=" + txBlkNodeId +
-            ", txBlkNodeType=" + txBlkNodeType +
-            ", cutBlkNodeId=" + cutBlkNodeId +
-            ", msg=" + txMsgBlkCls.getSimpleName());
-
-        runCase(() -> tx(nearNodeId, testCase, txConcurrency), txBlkNodeId, cutBlkNodeId);
-    }
-
-    /** */
-    private boolean skipMsgTestCase(int txBlkNodeId, int nearNodeId, List<T2<Integer, Integer>> testCase) {
-        if (txMsgBlkCls.equals(GridNearTxPrepareRequest.class)) {
-            if (txBlkNodeType != NEAR)
-                return true;
-
-            return allPrimaryOnNear(testCase, nearNodeId);
-        }
-
-        if (txMsgBlkCls.equals(GridNearTxPrepareResponse.class)) {
-            if (txBlkNodeType != PRIMARY || txBlkNodeId == nearNodeId)
-                return true;
-
-            return allPrimaryOnNear(testCase, nearNodeId);
-        }
-
-        if (txMsgBlkCls.equals(GridNearTxFinishRequest.class)) {
-            if (txBlkNodeType != NEAR || onePhase(testCase))
-                return true;
-
-            return allPrimaryOnNear(testCase, nearNodeId);
-        }
-
-        if (txMsgBlkCls.equals(GridNearTxFinishResponse.class)) {
-            if (onePhase(testCase) || txBlkNodeType != PRIMARY || txBlkNodeId == nearNodeId)
-                 return true;
-
-            return allPrimaryOnNear(testCase, nearNodeId);
-        }
-
-        if (txMsgBlkCls.equals(GridDhtTxPrepareRequest.class)) {
-            // Near node might send the request to the backup nodes in case if it is collocated.
-            if (txBlkNodeType == NEAR)
-                return !allPrimaryOnNear(testCase, nearNodeId);
-
-            return txBlkNodeType == BACKUP;
-        }
-
-        if (txMsgBlkCls.equals(GridDhtTxPrepareResponse.class))
-            return txBlkNodeType != BACKUP;
-
-        if (txMsgBlkCls.equals(GridDhtTxFinishRequest.class)) {
-            if (txBlkNodeType == BACKUP || onePhase(testCase))
-                return true;
-
-            // Near node might send the request to the backup nodes in case if near node is collocated.
-            if (txBlkNodeType == NEAR)
-                return !allPrimaryOnNear(testCase, nearNodeId);
-
-            return false;
-        }
-
-        return false;
-    }
-
-    /** */
-    private boolean allPrimaryOnNear(List<T2<Integer, Integer>> testCase, int nearNodeId) {
-        // If all primary partitions are on the near node.
-        return testCase.stream()
-            .map(IgniteBiTuple::get1)
-            .allMatch(prim -> prim == nearNodeId);
-    }
-
-    /** */
-    private boolean onePhase(List<T2<Integer, Integer>> testCase) {
-        int prims = testCase.stream()
-            .map(T2::get1)
-            .collect(Collectors.toSet())
-            .size();
-
-        int backups = testCase.stream()
-            .map(T2::get2)
-            .collect(Collectors.toSet())
-            .size();
-
-        return prims == 1 && backups <= 1;
-    }
-
     /**
-     * Run cases on Ignite cluster.
+     * Run test cases.
      *
      * @param cases Collection of cases. Every case is a collection of key description - tuple (primaryNodeId, backupNodeId).
-     * @param walOrMsg {@code true} for running test cases with blocking WAL writing, {@code false} for blocking messages.
      */
-    protected void runCases(List<List<T2<Integer, Integer>>> cases, boolean walOrMsg) throws Exception {
+    protected void runCases(List<TransactionTestCase> cases) throws Exception {
         // Ignite coordinator, ordinary server node, client node.
         // If test with stopping client node then use it as near node.
         List<Integer> nears = F.asList(0, nodes() - 1, nodes());
 
         for (int near: nears) {
             // Client nodes doesn't prepare anything after version update.
-            if (near == nodes() && cutBlkNodeType == NEAR && cutBlkType == AFTER_VERSION_UPDATE)
+            if (near == nodes() && cutBlkNodeType == NEAR && cutBlkType == AFTER_START)
                 continue;
 
             for (int c = 0; c < cases.size(); c++) {
-                if (walOrMsg) {
-                    runWalBlkCase(cases.get(c), near, TransactionConcurrency.PESSIMISTIC);
-                    runWalBlkCase(cases.get(c), near, TransactionConcurrency.OPTIMISTIC);
-                }
-                else {
-                    runMsgBlkCase(cases.get(c), near, TransactionConcurrency.PESSIMISTIC);
-                    runMsgBlkCase(cases.get(c), near, TransactionConcurrency.OPTIMISTIC);
-                }
+                runCase(cases.get(c), near, TransactionConcurrency.PESSIMISTIC);
+                runCase(cases.get(c), near, TransactionConcurrency.OPTIMISTIC);
             }
         }
     }
 
-    /** Checks WALs for correct Consistency Cut. */
-    protected void checkWalsConsistency() throws Exception {
-        checkWalsConsistency(txNearNode, caseNum);
-    }
+    /** Run single test cases. */
+    protected abstract void runCase(TransactionTestCase testCase, int nearNode, TransactionConcurrency txConcurrency) throws Exception;
 
     /**
-     * Test case is sequence of steps:
-     * 1. Start TX
-     * 2. Block TX somewhere (on sending tx message or on writing tx state to WAL)
-     * 3. Start Consistent Cut procedure
-     * 4. Optionally block consistent cut on single node (Start WAL / Publishing)
-     * 5. Resume transaction
-     * 6. Await transaction committed
-     * 7. Resume blocking consistent cut
-     * 8. Await Consistent Cut finished.
+     * Run test case.
      *
      * @param tx Function that performs transaction.
      * @param txBlkNodeId ID of node to block transaction.
      * @param cutBlkNodeId ID of node to block Consistent Cut.
      */
-    private void runCase(Runnable tx, int txBlkNodeId, int cutBlkNodeId) throws Exception {
+    protected void run(Runnable tx, int txBlkNodeId, int cutBlkNodeId) throws Exception {
+        caseNum++;
+
+        // 0. Block transaction.
+        blockTx(grid(txBlkNodeId));
+
         // 1. Start transaction.
         IgniteInternalFuture<?> txFut = multithreadedAsync(tx, 1);
 
@@ -336,58 +143,42 @@ public abstract class AbstractConsistentCutBlockingTest extends AbstractConsiste
 
         // 8. Await while Consistent Cut completed.
         cutFut.get(getTestTimeout());
-    }
 
-    /** */
-    private void awaitTxBlocked(IgniteEx blkNode) throws Exception {
-        if (txBlkState != null)
-            BlockingWALManager.walMgr(blkNode).awaitTxBlocked();
-        else
-            // In some cases blocking node doesn't send required message. Just hangs a little for such cases.
-            TestRecordingCommunicationSpi.spi(blkNode).waitForBlocked(1, 100);
-    }
-
-    /** */
-    private void unblockTx(IgniteEx blkNode) {
-        if (txBlkState != null)
-            BlockingWALManager.walMgr(blkNode).unblockTx();
-        else
-            TestRecordingCommunicationSpi.spi(blkNode).stopBlock();
+        clear();
     }
 
     /**
      * Function that runs transaction with specified keys.
      *
      * @param near ID of node to coordinate a transaction.
-     * @param keys List of pairs { primary -> backup } for keys to participate in tx.
+     * @param testCase Test case.
      */
-    private void tx(int near, List<T2<Integer, Integer>> keys, TransactionConcurrency concurrency) {
+    protected void tx(int near, TransactionTestCase testCase, TransactionConcurrency concurrency) {
         try (Transaction tx = grid(near).transactions().txStart(concurrency, SERIALIZABLE)) {
-            txNearNode.put(tx.xid(), near);
-
-            for (T2<Integer, Integer> desc: keys) {
-                int primary = desc.getKey();
-                Integer backup = desc.getValue();
-
-                ClusterNode backupNode = backup == null ? null : grid(backup).localNode();
-
-                int key = key(CACHE, grid(primary).localNode(), backupNode);
-
-                grid(near).cache(CACHE).put(key, key);
-            }
+            for (int key: testCase.keys(grid(0), CACHE))
+                grid(near).cache(CACHE).put(key, 0);
 
             tx.commit();
         }
     }
 
+    /** */
+    protected abstract void blockTx(IgniteEx blkNode);
+
+    /** */
+    protected abstract void awaitTxBlocked(IgniteEx blkNode) throws Exception;
+
+    /** */
+    protected abstract void unblockTx(IgniteEx blkNode);
+
     /** Finds ID of node to be blocked during a case. */
-    private int blkNode(int nearNodeId, BlkNodeType blkNodeType, List<T2<Integer, Integer>> c) {
+    protected int blkNode(int nearNodeId, BlkNodeType blkNodeType, TransactionTestCase c) {
         if (blkNodeType == NEAR)
             return nearNodeId;
         else if (blkNodeType == PRIMARY)
-            return c.get(0).get1();
+            return c.firstKeyPrimary();
         else
-            return c.get(0).get2();
+            return c.firstKeyBackup();
     }
 
     /** Manually triggers new Consistent Cut. */
@@ -397,28 +188,15 @@ public abstract class AbstractConsistentCutBlockingTest extends AbstractConsiste
         return snp(grid(0)).createIncrementalSnapshot(SNP);
     }
 
-    /** */
-    protected void waitForCutIsStartedOnAllNodes() throws Exception {
-        GridTestUtils.waitForCondition(() -> {
-            boolean allNodeStartedCut = true;
-
-            for (int i = 0; i < nodes(); i++)
-                allNodeStartedCut &= BlockingConsistentCutManager.cutMgr(grid(i)).consistentCut() != null;
-
-            return allNodeStartedCut;
-        }, getTestTimeout(), 10);
+    /** Checks WALs for correct Consistency Cut. */
+    protected void checkWalsConsistency() throws Exception {
+        checkWalsConsistency(caseNum, caseNum);
     }
 
     /** */
-    protected void waitForCutIsFinishedOnAllNodes() throws Exception {
-        GridTestUtils.waitForCondition(() -> {
-            boolean allNodeFinishedCut = true;
-
-            for (int i = 0; i < nodes(); i++)
-                allNodeFinishedCut &= BlockingConsistentCutManager.cutMgr(grid(i)).consistentCut() == null;
-
-            return allNodeFinishedCut;
-        }, getTestTimeout(), 10);
+    protected void clear() {
+        for (int n = 0; n < nodes(); n++)
+            BlockingWALManager.walMgr(grid(n)).clear();
     }
 
     /** */
@@ -437,25 +215,12 @@ public abstract class AbstractConsistentCutBlockingTest extends AbstractConsiste
         }
     }
 
-    /** Blocks writing to WAL specific tx record, and awaits for Consistent Cut procedure starts on every node. */
-    private static class BlockingWALManager extends FileWriteAheadLogManager {
-        /** */
-        private volatile CountDownLatch blkTxLatch;
+    /** Blocks writing to WAL {@link ConsistentCutStartRecord}. */
+    protected static class BlockingWALManager extends FileWriteAheadLogManager {
+        /** First CDL is actual block of record, second CDL shows whether first is blocked. */
+        private final Map<WALRecord.RecordType, T3<Predicate<WALRecord>, CountDownLatch, CountDownLatch>> map = new ConcurrentHashMap<>();
 
         /** */
-        private volatile CountDownLatch blkCutLatch;
-
-        /** */
-        private volatile CountDownLatch txBlocked;
-
-        /** */
-        private volatile CountDownLatch cutBlocked;
-
-        /**
-         * Constructor.
-         *
-         * @param ctx Kernal context.
-         */
         public BlockingWALManager(GridKernalContext ctx) {
             super(ctx);
         }
@@ -466,74 +231,36 @@ public abstract class AbstractConsistentCutBlockingTest extends AbstractConsiste
         }
 
         /** */
-        public void blockTx() {
-            blkTxLatch = new CountDownLatch(1);
-            txBlocked = new CountDownLatch(1);
+        public void block(WALRecord.RecordType recType, Predicate<WALRecord> pred) {
+            map.put(recType, new T3<>(pred, new CountDownLatch(1), new CountDownLatch(1)));
         }
 
         /** */
-        public void unblockTx() {
-            blkTxLatch.countDown();
+        public void unblock(WALRecord.RecordType recType) {
+            map.get(recType).get2().countDown();
         }
 
         /** */
-        public void awaitTxBlocked() {
-            U.awaitQuiet(txBlocked);
-        }
-
-        /** */
-        public void blockCut() {
-            blkCutLatch = new CountDownLatch(1);
-            cutBlocked = new CountDownLatch(1);
-        }
-
-        /** */
-        public void unblockCut() {
-            blkCutLatch.countDown();
-        }
-
-        /** */
-        public void awaitCutBlocked() {
-            U.awaitQuiet(cutBlocked);
+        public void awaitBlocked(WALRecord.RecordType recType) {
+            U.awaitQuiet(map.get(recType).get3());
         }
 
         /** */
         public void clear() {
-            blkTxLatch = null;
-            blkCutLatch = null;
-            txBlocked = null;
-            cutBlocked = null;
+            map.clear();
         }
 
         /** {@inheritDoc} */
         @Override public WALPointer log(WALRecord record) throws IgniteCheckedException, StorageException {
-            if (blkTxRecord(record)) {
-                txBlocked.countDown();
+            T3<Predicate<WALRecord>, CountDownLatch, CountDownLatch> info = map.get(record.type());
 
-                U.awaitQuiet(blkTxLatch);
-            }
-            else if (blkCutRecord(record)) {
-                cutBlocked.countDown();
+            if (info != null && info.get2().getCount() > 0 && info.get1().test(record)) {
+                info.get3().countDown();
 
-                U.awaitQuiet(blkCutLatch);
+                U.awaitQuiet(info.get2());
             }
 
             return super.log(record);
-        }
-
-        /** */
-        private boolean blkTxRecord(WALRecord record) {
-            return blkTxLatch != null
-                && blkTxLatch.getCount() > 0
-                && record instanceof TxRecord
-                && ((TxRecord)record).state() == txBlkState;
-        }
-
-        /** */
-        private boolean blkCutRecord(WALRecord record) {
-            return blkCutLatch != null
-                && blkCutLatch.getCount() > 0
-                && record instanceof ConsistentCutStartRecord;
         }
     }
 
@@ -553,10 +280,13 @@ public abstract class AbstractConsistentCutBlockingTest extends AbstractConsiste
         }
     }
 
-    /** Blocks Consistent Cut procedure on writing ConsistentCutStartRecord or preparing and publishing Consistent Cut state. */
+    /** Blocks local Consistent Cut before or after start. */
     static class BlockingConsistentCutManager extends TestConsistentCutManager {
-        /** Latch that blocks before Consistent Cut Version updated. */
-        private volatile CountDownLatch beforeUpdVer;
+        /** Blocks this record after local Consistent Cut started. */
+        private static final WALRecord.RecordType blkStartRecType = WALRecord.RecordType.CONSISTENT_CUT_START_RECORD;
+
+        /** Latch that blocks before local Consistent Cut started. */
+        private volatile CountDownLatch beforeStartLatch;
 
         /** */
         private volatile CountDownLatch blockedLatch;
@@ -568,15 +298,15 @@ public abstract class AbstractConsistentCutBlockingTest extends AbstractConsiste
 
         /** {@inheritDoc} */
         @Override public void handleConsistentCutId(UUID id) {
-            // Do not block transaction threads.
+            // Block only discovery worker thread.
             if (Thread.currentThread().getName().contains("disco")) {
-                if (beforeUpdVer != null) {
+                if (beforeStartLatch != null) {
                     blockedLatch.countDown();
                     blockedLatch = null;
 
-                    U.awaitQuiet(beforeUpdVer);
+                    U.awaitQuiet(beforeStartLatch);
 
-                    beforeUpdVer = null;
+                    beforeStartLatch = null;
                 }
             }
 
@@ -587,13 +317,10 @@ public abstract class AbstractConsistentCutBlockingTest extends AbstractConsiste
         public void block(BlkCutType type) {
             blockedLatch = new CountDownLatch(1);
 
-            if (type == BEFORE_VERSION_UPDATE)
-                beforeUpdVer = new CountDownLatch(1);
-            else if (type == AFTER_VERSION_UPDATE) {
-                BlockingWALManager blkWalMgr = (BlockingWALManager)cctx.wal();
-
-                blkWalMgr.blockCut();
-            }
+            if (type == BEFORE_START)
+                beforeStartLatch = new CountDownLatch(1);
+            else if (type == AFTER_START)
+                ((BlockingWALManager)cctx.wal()).block(blkStartRecType, (rec) -> rec.type() == blkStartRecType);
         }
 
         /** */
@@ -605,26 +332,21 @@ public abstract class AbstractConsistentCutBlockingTest extends AbstractConsiste
 
             cutFut.listen((f) -> latch.countDown());
 
-            if (beforeUpdVer != null)
+            if (beforeStartLatch != null)
                 U.awaitQuiet(latch);
             else {
                 latch.countDown();
 
-                BlockingWALManager blkWalMgr = (BlockingWALManager)cctx.wal();
-
-                blkWalMgr.awaitCutBlocked();
+                ((BlockingWALManager)cctx.wal()).awaitBlocked(blkStartRecType);
             }
         }
 
         /** */
         public void unblock(BlkCutType type) {
-            if (type == BEFORE_VERSION_UPDATE && beforeUpdVer != null)
-                beforeUpdVer.countDown();
-            else if (type == AFTER_VERSION_UPDATE) {
-                BlockingWALManager blkWalMgr = (BlockingWALManager)cctx.wal();
-
-                blkWalMgr.unblockCut();
-            }
+            if (type == BEFORE_START && beforeStartLatch != null)
+                beforeStartLatch.countDown();
+            else if (type == AFTER_START)
+                ((BlockingWALManager)cctx.wal()).unblock(blkStartRecType);
         }
     }
 
@@ -646,9 +368,9 @@ public abstract class AbstractConsistentCutBlockingTest extends AbstractConsiste
         NONE,
 
         /** */
-        BEFORE_VERSION_UPDATE,
+        BEFORE_START,
 
         /** */
-        AFTER_VERSION_UPDATE,
+        AFTER_START,
     }
 }

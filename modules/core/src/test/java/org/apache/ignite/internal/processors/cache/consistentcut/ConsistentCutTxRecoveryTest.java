@@ -17,11 +17,11 @@
 
 package org.apache.ignite.internal.processors.cache.consistentcut;
 
-import java.util.Random;
 import java.util.UUID;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCache;
 import org.apache.ignite.IgniteException;
+import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.TestRecordingCommunicationSpi;
 import org.apache.ignite.internal.pagemem.wal.WALIterator;
@@ -35,8 +35,17 @@ import org.junit.Test;
 
 import static org.apache.ignite.internal.processors.cache.persistence.snapshot.AbstractSnapshotSelfTest.snp;
 
-/***/
-public class ConsistentCutTxRecoveryTest extends AbstractConsistentCutBlockingTest {
+/** */
+public class ConsistentCutTxRecoveryTest extends AbstractConsistentCutTest {
+    /** {@inheritDoc} */
+    @Override protected IgniteConfiguration getConfiguration(String instanceName) throws Exception {
+        IgniteConfiguration cfg = super.getConfiguration(instanceName);
+
+        cfg.setCommunicationSpi(new TestRecordingCommunicationSpi());
+
+        return cfg;
+    }
+
     /** */
     @Test
     public void testSkipFinishRecordOnTxRecovery() throws Exception {
@@ -60,7 +69,7 @@ public class ConsistentCutTxRecoveryTest extends AbstractConsistentCutBlockingTe
 
             waitForCutIsStartedOnAllNodes();
 
-            UUID blkCutId = BlockingConsistentCutManager.cutMgr(grid(0)).consistentCut().id();
+            UUID blkCutId = TestConsistentCutManager.cutMgr(grid(0)).consistentCut().id();
 
             // Stop client node.
             stopGrid(nodes());
@@ -73,8 +82,7 @@ public class ConsistentCutTxRecoveryTest extends AbstractConsistentCutBlockingTe
 
             snp(grid(0)).createIncrementalSnapshot(SNP).get(getTestTimeout());
 
-            // Stop cluster with flushing WALs.
-            stopCluster();
+            stopAllGrids();
 
             for (int i = 0; i < nodes(); i++)
                 assertWalConsistentRecords(i, blkCutId, 2);
@@ -121,23 +129,31 @@ public class ConsistentCutTxRecoveryTest extends AbstractConsistentCutBlockingTe
     /** */
     private IgniteInternalFuture<?> asyncRunTx() throws Exception {
         return multithreadedAsync(() -> {
-            Random r = new Random();
-
             // Start on the client node.
             Ignite g = grid(nodes());
 
             try (Transaction tx = g.transactions().txStart()) {
-                for (int j = 0; j < nodes(); j++) {
+                for (int j = 0; j < 10; j++) {
                     IgniteCache<Integer, Integer> cache = g.cache(CACHE);
 
-                    int k = key(CACHE, grid(j).localNode(), grid((j + 1) % nodes()).localNode());
-
-                    cache.put(k, r.nextInt());
+                    cache.put(j, j);
                 }
 
                 tx.commit();
             }
         }, 1);
+    }
+
+    /** */
+    private void waitForCutIsStartedOnAllNodes() throws Exception {
+        GridTestUtils.waitForCondition(() -> {
+            boolean allNodeStartedCut = true;
+
+            for (int i = 0; i < nodes(); i++)
+                allNodeStartedCut &= TestConsistentCutManager.cutMgr(grid(i)).consistentCut() != null;
+
+            return allNodeStartedCut;
+        }, getTestTimeout(), 10);
     }
 
     /** {@inheritDoc} */

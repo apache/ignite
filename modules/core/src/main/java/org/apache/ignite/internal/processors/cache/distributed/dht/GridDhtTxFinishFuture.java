@@ -36,7 +36,6 @@ import org.apache.ignite.internal.processors.cache.GridCacheFuture;
 import org.apache.ignite.internal.processors.cache.GridCacheSharedContext;
 import org.apache.ignite.internal.processors.cache.consistentcut.ConsistentCutManager;
 import org.apache.ignite.internal.processors.cache.distributed.GridDistributedTxMapping;
-import org.apache.ignite.internal.processors.cache.distributed.near.GridNearTxPrepareFutureAdapter;
 import org.apache.ignite.internal.processors.cache.mvcc.MvccFuture;
 import org.apache.ignite.internal.processors.cache.mvcc.MvccSnapshot;
 import org.apache.ignite.internal.processors.cache.transactions.IgniteInternalTx;
@@ -50,7 +49,6 @@ import org.apache.ignite.internal.util.tostring.GridToStringInclude;
 import org.apache.ignite.internal.util.typedef.C1;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.X;
-import org.apache.ignite.internal.util.typedef.internal.CU;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgniteUuid;
@@ -241,17 +239,6 @@ public final class GridDhtTxFinishFuture<K, V> extends GridCacheCompoundIdentity
                 if (this.tx.onePhaseCommit() && (this.tx.state() == COMMITTING)) {
                     try {
                         boolean nodeStopping = X.hasCause(err, NodeStoppingException.class);
-
-                        if (CU.isIncrementalSnapshotsEnabled(cctx) && this.tx.currentPrepareFuture() != null) {
-                            UUID txCutId;
-
-                            if (this.tx.near())
-                                txCutId = ((GridNearTxPrepareFutureAdapter)this.tx.currentPrepareFuture()).tx().cutId();
-                            else
-                                txCutId = ((GridDhtTxPrepareFuture)this.tx.currentPrepareFuture()).tx().cutId();
-
-                            this.tx.cutId(txCutId);
-                        }
 
                         this.tx.tmFinish(err == null, nodeStopping || cctx.kernalContext().failure().nodeStopping(), false);
                     }

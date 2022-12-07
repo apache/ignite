@@ -1332,9 +1332,6 @@ public class IgniteTxHandler {
                             dhtTx.cutId(ctx.consistentCutMgr().consistentCutId());
 
                         finish(dhtTx, req);
-
-                        if (nearTx != null)
-                            nearTx.cutId(dhtTx.cutId());
                     }
 
                     if (nearTx != null) {

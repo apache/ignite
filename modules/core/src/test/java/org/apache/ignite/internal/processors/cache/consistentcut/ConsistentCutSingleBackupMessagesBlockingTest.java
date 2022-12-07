@@ -19,14 +19,13 @@ package org.apache.ignite.internal.processors.cache.consistentcut;
 
 import java.util.ArrayList;
 import java.util.List;
-import org.apache.ignite.internal.util.typedef.T2;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.junit.runners.Parameterized;
 
 /** */
 @RunWith(Parameterized.class)
-public class ConsistentCutSingleBackupMessagesBlockingTest extends AbstractConsistentCutBlockingTest {
+public class ConsistentCutSingleBackupMessagesBlockingTest extends AbstractConsistentCutMessagesBlockingTest {
     /** */
     @Parameterized.Parameter
     public BlkNodeType txNodeBlkType;
@@ -57,14 +56,14 @@ public class ConsistentCutSingleBackupMessagesBlockingTest extends AbstractConsi
     /** */
     @Test
     public void testMultipleCases() throws Exception {
-        List<List<T2<Integer, Integer>>> cases = ConsistentCutBlockingCases.casesWithBackup(nodes());
+        List<TransactionTestCase> cases = TransactionTestCase.buildTestCases(nodes(), true);
 
-        List<Class<?>> msgs = ConsistentCutBlockingCases.messages(true);
+        List<Class<?>> msgs = messages(true);
 
         for (Class<?> msg: msgs) {
             initMsgCase(msg, txNodeBlkType, cutBlkType, cutNodeBlkType);
 
-            runCases(cases, false);
+            runCases(cases);
         }
 
         checkWalsConsistency();

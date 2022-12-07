@@ -19,20 +19,22 @@ package org.apache.ignite.internal.processors.cache.consistentcut;
 
 import java.util.ArrayList;
 import java.util.List;
-import java.util.Map;
 import java.util.Random;
-import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.atomic.AtomicInteger;
+import java.util.concurrent.locks.Lock;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCache;
 import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.T2;
-import org.apache.ignite.lang.IgniteUuid;
+import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.transactions.Transaction;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.junit.runners.Parameterized;
+
+import static org.apache.ignite.internal.processors.cache.persistence.snapshot.AbstractSnapshotSelfTest.snp;
 
 /** Load Ignite with transactions and starts Consistent Cut concurrently. */
 @RunWith(Parameterized.class)
@@ -40,11 +42,11 @@ public class ConcurrentTxsConsistentCutTest extends AbstractConsistentCutTest {
     /** Amount of Consistent Cuts to await. */
     private static final int CUTS = 20;
 
-    /** How many times repeat the test. */
-    private static final int REPEAT = 1;
+    /** */
+    private static final Random RND = new Random();
 
-    /** Map {nearXidVersion -> nearNodeId}. */
-    private final Map<IgniteUuid, Integer> txOrigNode = new ConcurrentHashMap<>();
+    /** */
+    private final AtomicInteger txCnt = new AtomicInteger();
 
     /** Notifies data loader to stop preparing new transactions. */
     private volatile CountDownLatch stopLoadLatch;
@@ -59,10 +61,10 @@ public class ConcurrentTxsConsistentCutTest extends AbstractConsistentCutTest {
 
     /** */
     @Parameterized.Parameter(2)
-    public int repeat;
+    public boolean withNearCache;
 
     /** */
-    @Parameterized.Parameters(name = "nodes={0} backups={1} repeat={2}")
+    @Parameterized.Parameters(name = "nodes={0}, backups={1}, withNearCache={2}")
     public static List<Object[]> params() {
         List<T2<Integer, Integer>> nodesAndBackups = F.asList(
             new T2<>(3, 0),
@@ -71,9 +73,9 @@ public class ConcurrentTxsConsistentCutTest extends AbstractConsistentCutTest {
 
         List<Object[]> params = new ArrayList<>();
 
-        for (int repeat = 0; repeat < REPEAT; repeat++) {
-            for (T2<Integer, Integer> nb: nodesAndBackups)
-                params.add(new Object[] {nb.get1(), nb.get2(), repeat});
+        for (T2<Integer, Integer> nb: nodesAndBackups) {
+            for (boolean near: new boolean[] {false, true})
+                params.add(new Object[] {nb.get1(), nb.get2(), near});
         }
 
         return params;
@@ -89,59 +91,104 @@ public class ConcurrentTxsConsistentCutTest extends AbstractConsistentCutTest {
         return backups;
     }
 
-    /** */
-    @Test
-    public void noLoadAndCutTest() throws Exception {
-        awaitConsistentCuts(CUTS);
-
-        checkWalsConsistency(txOrigNode, CUTS);
+    /** {@inheritDoc} */
+    @Override protected boolean withNearCache() {
+        return withNearCache;
     }
 
     /** */
     @Test
-    public void concurrentLoadAndCutTest() throws Exception {
+    public void noLoadTest() throws Exception {
+        testConcurrentTransactionsAndCuts(() -> {}, false);
+    }
+
+    /** */
+    @Test
+    public void concurrentLoadTransactionsTest() throws Exception {
+        testConcurrentTransactionsAndCuts(() -> {
+            // +1 - client node.
+            int n = RND.nextInt(nodes() + 1);
+
+            Ignite g = grid(n);
+
+            try (Transaction tx = g.transactions().txStart()) {
+                int cnt = 1 + RND.nextInt(nodes());
+
+                for (int j = 0; j < cnt; j++) {
+                    IgniteCache<Integer, Integer> cache = g.cache(CACHE);
+
+                    cache.put(RND.nextInt(), RND.nextInt());
+                }
+
+                tx.commit();
+            }
+        }, true);
+    }
+
+    /** */
+    @Test
+    public void concurrentLoadImplicitTransactionsTest() throws Exception {
+        testConcurrentTransactionsAndCuts(() -> {
+            // +1 - client node.
+            int n = RND.nextInt(nodes() + 1);
+
+            IgniteCache<Integer, Integer> cache = grid(n).cache(CACHE);
+
+            cache.put(RND.nextInt(), RND.nextInt());
+        }, true);
+    }
+
+    /** */
+    @Test
+    public void concurrentLoadImplicitTransactionsAndExplicitLocksTest() throws Exception {
+        testConcurrentTransactionsAndCuts(() -> {
+            // +1 - client node.
+            int n = RND.nextInt(nodes() + 1);
+
+            IgniteCache<Integer, Integer> cache = grid(n).cache(CACHE);
+
+            int key = RND.nextInt();
+
+            Lock lock = cache.lock(key);
+
+            lock.lock();
+
+            try {
+                cache.put(key, RND.nextInt());
+            }
+            finally {
+                lock.unlock();
+            }
+        }, true);
+    }
+
+    /** */
+    private void testConcurrentTransactionsAndCuts(Runnable tx, boolean inc) throws Exception {
         stopLoadLatch = new CountDownLatch(1);
 
-        IgniteInternalFuture<?> f = asyncLoadData(2);
+        IgniteInternalFuture<?> f = GridTestUtils.runMultiThreadedAsync(() -> {
+            while (stopLoadLatch.getCount() > 0) {
+                if (inc)
+                    txCnt.incrementAndGet();
 
-        awaitConsistentCuts(CUTS);
+                tx.run();
+            }
+        }, 2, "async-load");
+
+        for (int i = 0; i < CUTS; i++) {
+            Thread.sleep(100);
+
+            awaitAllNodesReadyForIncrementalSnapshot();
+
+            snp(grid(0)).createIncrementalSnapshot(SNP).get(getTestTimeout());
+
+            log.info("Consistent Cut finished: " + i);
+        }
 
         stopLoadLatch.countDown();
 
         f.get();
 
-        checkWalsConsistency(txOrigNode, CUTS);
-    }
-
-    /**
-     * Starts creating transactions with concurrent load.
-     *
-     * @return Future that completes with full amount of transactions.
-     */
-    private IgniteInternalFuture<?> asyncLoadData(int threads) throws Exception {
-        return multithreadedAsync(() -> {
-            Random r = new Random();
-
-            while (stopLoadLatch.getCount() > 0) {
-                // +1 - client node.
-                int n = r.nextInt(nodes() + 1);
-
-                Ignite g = grid(n);
-
-                try (Transaction tx = g.transactions().txStart()) {
-                    txOrigNode.put(tx.xid(), n);
-
-                    int cnt = 1 + r.nextInt(nodes());
-
-                    for (int j = 0; j < cnt; j++) {
-                        IgniteCache<Integer, Integer> cache = g.cache(CACHE);
-
-                        cache.put(r.nextInt(), r.nextInt());
-                    }
-
-                    tx.commit();
-                }
-            }
-        }, threads);
+        checkWalsConsistency(txCnt.get(), CUTS);
     }
 }

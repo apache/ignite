@@ -20,7 +20,6 @@ package org.apache.ignite.internal.processors.cache.consistentcut;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.stream.Stream;
-import org.apache.ignite.internal.util.typedef.T2;
 import org.apache.ignite.transactions.TransactionState;
 import org.junit.Test;
 import org.junit.runner.RunWith;
@@ -33,7 +32,7 @@ import static org.apache.ignite.transactions.TransactionState.PREPARED;
 
 /** */
 @RunWith(Parameterized.class)
-public class ConsistentCutNoBackupWALBlockingTest extends AbstractConsistentCutBlockingTest {
+public class ConsistentCutNoBackupWALBlockingTest extends AbstractConsistentCutWalBlockingTest {
     /** */
     @Parameterized.Parameter
     public TransactionState txBlkState;
@@ -72,14 +71,14 @@ public class ConsistentCutNoBackupWALBlockingTest extends AbstractConsistentCutB
     public void testMultipleCases() throws Exception {
         initWALCase(txBlkState, txBlkNode, cutBlkType, cutBlkNode);
 
-        runCases(cases(), true);
+        runCases(cases());
 
         checkWalsConsistency();
     }
 
     /** */
-    protected List<List<T2<Integer, Integer>>> cases() {
-        return ConsistentCutBlockingCases.casesNoBackup(nodes());
+    protected List<TransactionTestCase> cases() {
+        return TransactionTestCase.buildTestCases(nodes(), false);
     }
 
     /** {@inheritDoc} */
