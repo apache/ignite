@@ -26,6 +26,7 @@ import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Iterator;
 import java.util.Map;
+import java.util.Objects;
 import java.util.UUID;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.atomic.AtomicInteger;
@@ -525,7 +526,21 @@ public class IgniteProjectionStartStopRestartSelfTest extends GridCommonAbstract
 
         leftLatch = new CountDownLatch(1);
 
-        ignite.cluster().stopNodes(Collections.singleton(F.first(ignite.cluster().forRemotes().nodes()).id()));
+        UUID toStop = null;
+
+        Collection<ClusterNode> nodes = ignite.cluster().forRemotes().nodes();
+
+        for (ClusterNode node : nodes) {
+            if (!Objects.equals(node.id(), ignite.cluster().localNode().id())) {
+                toStop = node.id();
+
+                break;
+            }
+        }
+
+        assert toStop != null;
+
+        ignite.cluster().stopNodes(Collections.singleton(toStop));
 
         assert leftLatch.await(WAIT_TIMEOUT, MILLISECONDS);
 
