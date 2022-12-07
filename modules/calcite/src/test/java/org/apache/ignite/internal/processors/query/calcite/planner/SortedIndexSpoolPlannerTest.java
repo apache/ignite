@@ -23,7 +23,9 @@ import org.apache.calcite.plan.RelOptUtil;
 import org.apache.calcite.rel.RelCollations;
 import org.apache.calcite.rel.type.RelDataTypeFactory;
 import org.apache.calcite.rex.RexFieldAccess;
-import org.apache.calcite.rex.RexNode;
+import org.apache.ignite.internal.processors.query.calcite.prepare.bounds.ExactBounds;
+import org.apache.ignite.internal.processors.query.calcite.prepare.bounds.RangeBounds;
+import org.apache.ignite.internal.processors.query.calcite.prepare.bounds.SearchBounds;
 import org.apache.ignite.internal.processors.query.calcite.rel.IgniteCorrelatedNestedLoopJoin;
 import org.apache.ignite.internal.processors.query.calcite.rel.IgniteRel;
 import org.apache.ignite.internal.processors.query.calcite.rel.IgniteSortedIndexSpool;
@@ -95,23 +97,15 @@ public class SortedIndexSpoolPlannerTest extends AbstractPlannerTest {
 
         IgniteSortedIndexSpool idxSpool = findFirstNode(phys, byClass(IgniteSortedIndexSpool.class));
 
-        List<RexNode> lBound = idxSpool.indexCondition().lowerBound();
+        List<SearchBounds> searchBounds = idxSpool.searchBounds();
 
-        assertNotNull(lBound);
-        assertEquals(3, lBound.size());
+        assertNotNull("Invalid plan\n" + RelOptUtil.toString(phys), searchBounds);
+        assertEquals(3, searchBounds.size());
 
-        assertNull(lBound.get(0));
-        assertTrue(lBound.get(1) instanceof RexFieldAccess);
-        assertNull(lBound.get(2));
-
-        List<RexNode> uBound = idxSpool.indexCondition().upperBound();
-
-        assertNotNull(uBound);
-        assertEquals(3, uBound.size());
-
-        assertNull(uBound.get(0));
-        assertTrue(uBound.get(1) instanceof RexFieldAccess);
-        assertNull(uBound.get(2));
+        assertNull(searchBounds.get(0));
+        assertTrue(searchBounds.get(1) instanceof ExactBounds);
+        assertTrue(((ExactBounds)searchBounds.get(1)).bound() instanceof RexFieldAccess);
+        assertNull(searchBounds.get(2));
     }
 
     /**
@@ -172,25 +166,16 @@ public class SortedIndexSpoolPlannerTest extends AbstractPlannerTest {
 
         IgniteSortedIndexSpool idxSpool = findFirstNode(phys, byClass(IgniteSortedIndexSpool.class));
 
-        List<RexNode> lBound = idxSpool.indexCondition().lowerBound();
+        List<SearchBounds> searchBounds = idxSpool.searchBounds();
 
-        assertNotNull(lBound);
-        assertEquals(4, lBound.size());
+        assertNotNull("Invalid plan\n" + RelOptUtil.toString(phys), searchBounds);
+        assertEquals(4, searchBounds.size());
 
-        assertNull(lBound.get(0));
-        assertTrue(lBound.get(1) instanceof RexFieldAccess);
-        assertNull(lBound.get(2));
-        assertNull(lBound.get(3));
-
-        List<RexNode> uBound = idxSpool.indexCondition().upperBound();
-
-        assertNotNull(uBound);
-        assertEquals(4, uBound.size());
-
-        assertNull(uBound.get(0));
-        assertTrue(uBound.get(1) instanceof RexFieldAccess);
-        assertNull(uBound.get(2));
-        assertNull(uBound.get(3));
+        assertNull(searchBounds.get(0));
+        assertTrue(searchBounds.get(1) instanceof ExactBounds);
+        assertTrue(((ExactBounds)searchBounds.get(1)).bound() instanceof RexFieldAccess);
+        assertNull(searchBounds.get(2));
+        assertNull(searchBounds.get(3));
     }
 
     /**
@@ -215,20 +200,22 @@ public class SortedIndexSpoolPlannerTest extends AbstractPlannerTest {
             isInstanceOf(IgniteCorrelatedNestedLoopJoin.class)
                 .and(input(1, isInstanceOf(IgniteSortedIndexSpool.class)
                     .and(spool -> {
-                        List<RexNode> lBound = spool.indexCondition().lowerBound();
+                        List<SearchBounds> searchBounds = spool.searchBounds();
 
                         // Condition is LESS_THEN, but we have DESC field and condition should be in lower bound
                         // instead of upper bound.
-                        assertNotNull(lBound);
-                        assertEquals(3, lBound.size());
+                        assertNotNull(searchBounds);
+                        assertEquals(3, searchBounds.size());
 
-                        assertNull(lBound.get(0));
-                        assertTrue(lBound.get(1) instanceof RexFieldAccess);
-                        assertNull(lBound.get(2));
-
-                        List<RexNode> uBound = spool.indexCondition().upperBound();
-
-                        assertNull(uBound);
+                        assertNull(searchBounds.get(0));
+                        assertTrue(searchBounds.get(1) instanceof RangeBounds);
+                        RangeBounds fld1Bounds = (RangeBounds)searchBounds.get(1);
+                        assertTrue(fld1Bounds.lowerBound() instanceof RexFieldAccess);
+                        assertFalse(fld1Bounds.lowerInclude());
+                        // NULLS LAST in collation, so nulls can be skipped by upper bound.
+                        assertEquals("$NULL_BOUND()", fld1Bounds.upperBound().toString());
+                        assertFalse(fld1Bounds.upperInclude());
+                        assertNull(searchBounds.get(2));
 
                         return true;
                     })

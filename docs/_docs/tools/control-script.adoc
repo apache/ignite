@@ -460,24 +460,28 @@ control.sh --cache reset_lost_partitions cacheName1,cacheName2,...
 ----
 
 
-== Consistency Check Commands
+== Consistency Check and Repair Commands
 
-`control.sh|bat` includes a set of consistency check commands that enable you to verify internal data consistency.
+`control.sh|bat` includes a set of consistency check commands that enable you to verify and repair internal data consistency.
 
 First, the commands can be used for debugging and troubleshooting purposes especially if you're in active development.
 
 Second, if there is a suspicion that a query (such as a SQL query, etc.) returns an incomplete or wrong result set, the commands can verify whether there is inconsistency in the data.
 
-Finally, the consistency check commands can be utilized as part of regular cluster health monitoring.
+Third, the consistency check commands can be utilized as a part of regular cluster health monitoring.
+
+Finally, consistency can be repaired if necessary.
 
 Let's review these usage scenarios in more detail.
 
 === Verifying Partition Checksums
 
-//Even if update counters and size are equal on the primary and backup nodes, there might be a case when the primary and backup  diverge due to some critical failure.
+Even if update counters and size are equal on the primary and backup nodes, the primary and backup might diverge due to some critical failure.
+
 The `idle_verify` command compares the hash of the primary partition with that of the backup partitions and reports any differences.
 The differences might be the result of node failure or incorrect shutdown during an update operation.
-If any inconsistency is detected, we recommend remove the incorrect partitions.
+
+If any inconsistency is detected, we recommend removing the incorrect partitions or repairing the consistency using the `--consistency repair` command.
 
 [source,shell]
 ----
@@ -506,6 +510,102 @@ Partition instances: [PartitionHashRecord [isPrimary=true, partHash=97595430, up
 === Cluster Should Be Idle During `idle_verify` Check
 All updates should be stopped when `idle_verify` calculates hashes, otherwise it may show false positive error results. It's impossible to compare big datasets in a distributed system if they are being constantly updated​.
 ====
+
+=== Repairing cache consistency
+[WARNING]
+====
+[discrete]
+===  Experimental feature
+The command may not work on some special/unique configurations or even cause a cluster/node failure.
+
+Command execution MUST be checked on the test environment using the data/configuration similar to the production before the execution on the real production environment.
+====
+
+[WARNING]
+====
+[discrete]
+===  Additional configuration required
+The command uses special link:https://ignite.apache.org/releases/{version}/javadoc/org/apache/ignite/events/EventType.html#EVT_CONSISTENCY_VIOLATION[Consistency Violation Event] to detect the consistency violations. This event must be enabled before the command execution.
+
+Please, refer to the link:events/listening-to-events#enabling-events[Enabling Events] section for details.
+====
+
+`idle_verify` command provides the inconsistent cache group names and partitions list as a result.
+The `repair` command allows performing cache consistency check and repair (when possible) using the link:key-value-api/read-repair[Read Repair] approach for every inconsistent partition found by `idle_verify`.
+
+The command uses special strategies to perform the repair. It's recommended to use `CHECK_ONLY` strategy to list inconsistent values and then choose the proper link:key-value-api/read-repair#strategies[Repair Strategy].
+
+By default, found inconsistent entries will be listed in the application log. You may change the location by configuring the logger for a special logging path for the `org.apache.ignite.internal.visor.consistency` package.
+
+By default, found inconsistent entries will be listed as is but may be masked by enabling link:logging#suppressing-sensitive-information[IGNITE_TO_STRING_INCLUDE_SENSITIVE] system property.
+
+[tabs]
+--
+tab:Unix[]
+[source,shell]
+----
+control.sh --enable-experimental --consistency repair --cache cache-name --partitions partitions --strategy strategy
+----
+tab:Window[]
+[source,shell]
+----
+control.bat --enable-experimental --consistency repair --cache cache-name --partitions partitions --strategy strategy
+----
+--
+Parameters:
+
+[cols="1,3",opts="header"]
+|===
+| Parameter | Description
+| `cache-name`| Cache (or cache group) name to be checked/repaired.
+| `partitions`| Comma separated list of cache's partitions to be checked/repaired.
+| `strategy`| See link:key-value-api/read-repair#strategies[Repair Strategies].
+|===
+
+Optional parameters:
+
+[cols="1,3",opts="header"]
+|===
+| Parameter | Description
+| `--parallel`| Allows performing check/repair in the fastest way, by parallel execution at all partition owners.
+|===
+
+=== Cache consistency check/repair operations status
+
+The command allows to check `--consistency repair` commands status.
+
+[tabs]
+--
+tab:Unix[]
+[source,shell]
+----
+control.sh --enable-experimental --consistency status
+----
+tab:Window[]
+[source,shell]
+----
+control.bat --enable-experimental --consistency status
+----
+--
+
+=== Partition update counters finalization
+
+The command allows fo finalize partition update counters after the manual repair.
+Finalization closes gaps at transactional cache partition update counters.
+
+[tabs]
+--
+tab:Unix[]
+[source,shell]
+----
+control.sh --enable-experimental --consistency finalize
+----
+tab:Window[]
+[source,shell]
+----
+control.bat --enable-experimental --consistency finalize
+----
+--
 
 === Validating SQL Index Consistency
 The `validate_indexes` command validates the indexes of given caches on all cluster nodes.
@@ -1024,79 +1124,6 @@ tab:Windows[]
 [source,shell]
 ----
 control.bat --property get --name 'statistics.usage.state'
-----
---
-
-== Cache Consistency
-
-=== Repair
-
-The command allows to perform cache consistency check and repair (when possible) using Read Repair approach.
-
-[tabs]
---
-tab:Unix[]
-[source,shell]
-----
-control.sh --enable-experimental --consistency repair --cache cache-name --partition partition --strategy strategy
-----
-tab:Window[]
-[source,shell]
-----
-control.bat --enable-experimental --consistency repair --cache cache-name --partition partition --strategy strategy
-----
---
-Parameters:
-
-[cols="1,3",opts="header"]
-|===
-| Parameter | Description
-| `cache-name`| Cache (or cache group) name to be checked/repaired.
-| `partition`| Cache's partition to be checked/repaired.
-| `strategy`| Repair strategy [LWW, PRIMARY, RELATIVE_MAJORITY, REMOVE, CHECK_ONLY].
-|===
-
-Optional parameters:
-
-[cols="1,3",opts="header"]
-|===
-| Parameter | Description
-| `--parallel`| Allows performing check/repair in the fastest way, by parallel execution at all partition owners.
-|===
-
-=== Status
-
-The command allows performing cache consistency check/repair operations status check.
-
-[tabs]
---
-tab:Unix[]
-[source,shell]
-----
-control.sh --enable-experimental --consistency status
-----
-tab:Window[]
-[source,shell]
-----
-control.bat --enable-experimental --consistency status
-----
---
-
-=== Partition update counters finalization
-
-The command allows fo finalize partition update counters after the manual repair.
-
-[tabs]
---
-tab:Unix[]
-[source,shell]
-----
-control.sh --enable-experimental --consistency finalize
-----
-tab:Window[]
-[source,shell]
-----
-control.bat --enable-experimental --consistency finalize
 ----
 --
 

@@ -79,6 +79,10 @@ public class SnapshotMetadata implements Serializable {
     @GridToStringInclude
     @Nullable private final byte[] masterKeyDigest;
 
+    /** Warnings occurred at snapshot creation. */
+    @GridToStringInclude
+    @Nullable private List<String> warnings;
+
     /**
      * F@param snpName Snapshot name.
      * @param consId Consistent id of a node to which this metadata relates.
@@ -239,6 +243,22 @@ public class SnapshotMetadata implements Serializable {
         return masterKeyDigest;
     }
 
+    /**
+     * @param warnings Snapshot creation warnings.
+     */
+    public void warnings(List<String> warnings) {
+        assert this.warnings == null : "Snapshot warnings are already set. No rewriting is supposed.";
+
+        this.warnings = warnings;
+    }
+
+    /**
+     * @return Snapshot creation warnings.
+     */
+    public List<String> warnings() {
+        return warnings;
+    }
+
     /** {@inheritDoc} */
     @Override public boolean equals(Object o) {
         if (this == o)
@@ -253,7 +273,9 @@ public class SnapshotMetadata implements Serializable {
             snpName.equals(meta.snpName) &&
             consId.equals(meta.consId) &&
             Objects.equals(grpIds, meta.grpIds) &&
-            Objects.equals(bltNodes, meta.bltNodes);
+            Objects.equals(bltNodes, meta.bltNodes) &&
+            Arrays.equals(masterKeyDigest, meta.masterKeyDigest) &&
+            Objects.equals(warnings, meta.warnings);
     }
 
     /** {@inheritDoc} */

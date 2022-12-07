@@ -35,10 +35,9 @@
 
     <!-- Module specific package versions -->
     <properties>
-        <avatica.version>1.20.0</avatica.version>
-        <calcite.version>1.30.0</calcite.version>
+        <avatica.version>1.22.0</avatica.version>
+        <calcite.version>1.32.0</calcite.version>
         <checker.version>3.10.0</checker.version>
-        <esri.geometry.version>2.2.0</esri.geometry.version>
         <immutables.version>2.8.2</immutables.version>
         <janino.version>3.1.6</janino.version>
         <javacc-maven-plugin>2.4</javacc-maven-plugin>
@@ -142,15 +141,15 @@
         </dependency>
 
         <dependency>
-            <groupId>com.esri.geometry</groupId>
-            <artifactId>esri-geometry-api</artifactId>
-            <version>${esri.geometry.version}</version>
-        </dependency>
-
-        <dependency>
             <groupId>org.slf4j</groupId>
             <artifactId>slf4j-api</artifactId>
             <version>${slf4j.version}</version>
+        </dependency>
+
+        <dependency>
+            <groupId>org.locationtech.jts</groupId>
+            <artifactId>jts-core</artifactId>
+            <version>1.19.0</version>
         </dependency>
 
         <dependency>
@@ -203,6 +202,13 @@
         <dependency>
             <groupId>${project.groupId}</groupId>
             <artifactId>ignite-clients</artifactId>
+            <scope>test</scope>
+        </dependency>
+
+        <dependency>
+            <groupId>org.mockito</groupId>
+            <artifactId>mockito-core</artifactId>
+            <version>${mockito.version}</version>
             <scope>test</scope>
         </dependency>
     </dependencies>

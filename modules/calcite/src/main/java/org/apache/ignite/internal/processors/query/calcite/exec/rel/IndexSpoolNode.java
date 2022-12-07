@@ -20,7 +20,6 @@ package org.apache.ignite.internal.processors.query.calcite.exec.rel;
 import java.util.Comparator;
 import java.util.function.Predicate;
 import java.util.function.Supplier;
-
 import org.apache.calcite.rel.RelCollation;
 import org.apache.calcite.rel.type.RelDataType;
 import org.apache.calcite.util.ImmutableBitSet;
@@ -28,13 +27,14 @@ import org.apache.ignite.internal.processors.query.calcite.exec.ExecutionContext
 import org.apache.ignite.internal.processors.query.calcite.exec.RuntimeHashIndex;
 import org.apache.ignite.internal.processors.query.calcite.exec.RuntimeIndex;
 import org.apache.ignite.internal.processors.query.calcite.exec.RuntimeSortedIndex;
+import org.apache.ignite.internal.processors.query.calcite.exec.exp.RangeIterable;
 import org.apache.ignite.internal.util.typedef.F;
 import org.jetbrains.annotations.Nullable;
 
 /**
  * Index spool node.
  */
-public class IndexSpoolNode<Row> extends AbstractNode<Row> implements SingleNode<Row>, Downstream<Row> {
+public class IndexSpoolNode<Row> extends MemoryTrackingNode<Row> implements SingleNode<Row>, Downstream<Row> {
     /** Scan. */
     private final ScanNode<Row> scan;
 
@@ -56,7 +56,7 @@ public class IndexSpoolNode<Row> extends AbstractNode<Row> implements SingleNode
         RuntimeIndex<Row> idx,
         ScanNode<Row> scan
     ) {
-        super(ctx, rowType);
+        super(ctx, rowType, idx instanceof HashAggregateNode ? HASH_MAP_ROW_OVERHEAD : ARRAY_ROW_OVERHEAD);
 
         this.idx = idx;
         this.scan = scan;
@@ -119,6 +119,8 @@ public class IndexSpoolNode<Row> extends AbstractNode<Row> implements SingleNode
 
         idx.push(row);
 
+        nodeMemoryTracker.onRowAdded(row);
+
         waiting--;
 
         if (waiting == 0)
@@ -165,8 +167,7 @@ public class IndexSpoolNode<Row> extends AbstractNode<Row> implements SingleNode
         RelCollation collation,
         Comparator<Row> comp,
         Predicate<Row> filter,
-        Supplier<Row> lowerIdxBound,
-        Supplier<Row> upperIdxBound
+        RangeIterable<Row> ranges
     ) {
         RuntimeSortedIndex<Row> idx = new RuntimeSortedIndex<>(ctx, collation, comp);
 
@@ -177,8 +178,7 @@ public class IndexSpoolNode<Row> extends AbstractNode<Row> implements SingleNode
                 ctx,
                 rowType,
                 filter,
-                lowerIdxBound,
-                upperIdxBound
+                ranges
             )
         );
 
@@ -191,9 +191,10 @@ public class IndexSpoolNode<Row> extends AbstractNode<Row> implements SingleNode
         RelDataType rowType,
         ImmutableBitSet keys,
         @Nullable Predicate<Row> filter,
-        Supplier<Row> searchRow
+        Supplier<Row> searchRow,
+        boolean allowNulls
     ) {
-        RuntimeHashIndex<Row> idx = new RuntimeHashIndex<>(ctx, keys);
+        RuntimeHashIndex<Row> idx = new RuntimeHashIndex<>(ctx, keys, allowNulls);
 
         ScanNode<Row> scan = new ScanNode<>(
             ctx,

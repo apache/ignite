@@ -106,6 +106,8 @@ public class StdSqlOperatorsTest extends AbstractBasicIntegrationTest {
         assertQuery("SELECT ARRAY_CONCAT_AGG(a ORDER BY CARDINALITY(a)) FROM " +
             "(SELECT 1 as id, ARRAY[3, 4, 5, 6] as a UNION SELECT 1 as id, ARRAY[1, 2] as a) GROUP BY id")
             .returns((IntStream.range(1, 7).boxed().collect(Collectors.toList()))).check();
+        assertExpression("EVERY(val = 1)").returns(true).check();
+        assertExpression("SOME(val = 1)").returns(true).check();
     }
 
     /** */
@@ -117,6 +119,8 @@ public class StdSqlOperatorsTest extends AbstractBasicIntegrationTest {
         assertExpression("1=1 IS NOT TRUE").returns(false).check();
         assertExpression("1=1 IS FALSE").returns(false).check();
         assertExpression("1=1 IS NOT FALSE").returns(true).check();
+        assertExpression("NULL IS DISTINCT FROM NULL").returns(false).check();
+        assertExpression("NULL IS NOT DISTINCT FROM NULL").returns(true).check();
     }
 
     /** */

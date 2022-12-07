@@ -153,7 +153,6 @@ import org.h2.api.ErrorCode;
 import org.h2.api.JavaObjectSerializer;
 import org.h2.engine.Session;
 import org.h2.engine.SysProperties;
-import org.h2.message.DbException;
 import org.h2.util.JdbcUtils;
 import org.h2.value.CompareMode;
 import org.jetbrains.annotations.Nullable;
@@ -1032,6 +1031,9 @@ public class IgniteH2Indexing implements GridQueryIndexing {
 
                         assert cmd != null;
 
+                        if (cmd.noOp() && remainingQry == null && newQryDesc.sql().isEmpty())
+                            continue;
+
                         FieldsQueryCursor<List<?>> cmdRes = executeCommand(
                             newQryDesc,
                             newQryParams,
@@ -1800,22 +1802,6 @@ public class IgniteH2Indexing implements GridQueryIndexing {
             filter,
             cancel
         );
-    }
-
-    /** {@inheritDoc} */
-    @Override public boolean isConvertibleToColumnType(String schemaName, String tblName, String colName, Class<?> cls) {
-        GridH2Table table = schemaMgr.dataTable(schemaName, tblName);
-
-        if (table == null)
-            throw new IgniteSQLException("Table was not found [schemaName=" + schemaName + ", tableName=" + tblName + ']');
-
-        try {
-            return H2Utils.isConvertableToColumnType(cls, table.getColumn(colName).getType());
-        }
-        catch (DbException e) {
-            throw new IgniteSQLException("Colum with specified name was not found for the table [schemaName=" + schemaName +
-                ", tableName=" + tblName + ", colName=" + colName + ']', e);
-        }
     }
 
     /** {@inheritDoc} */

@@ -46,6 +46,7 @@ import org.apache.calcite.util.Pair;
 import org.apache.calcite.util.Util;
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.internal.processors.query.calcite.prepare.BaseQueryContext;
+import org.apache.ignite.internal.processors.query.calcite.prepare.bounds.SearchBounds;
 import org.apache.ignite.internal.processors.query.calcite.util.Commons;
 
 /** */
@@ -242,6 +243,9 @@ public class RelJsonReader {
         /** {@inheritDoc} */
         @Override public List<RexNode> getExpressionList(String tag) {
             List<Object> jsonNodes = (List)jsonRel.get(tag);
+            if (jsonNodes == null)
+                return null;
+
             List<RexNode> nodes = new ArrayList<>();
             for (Object jsonNode : jsonNodes)
                 nodes.add(relJson.toRex(this, jsonNode));
@@ -280,6 +284,11 @@ public class RelJsonReader {
         /** {@inheritDoc} */
         @Override public RelCollation getCollation(String tag) {
             return relJson.toCollation((List)get(tag));
+        }
+
+        /** {@inheritDoc} */
+        @Override public List<SearchBounds> getSearchBounds(String tag) {
+            return relJson.toSearchBoundList(this, (List<Map<String, Object>>)get(tag));
         }
 
         /** {@inheritDoc} */

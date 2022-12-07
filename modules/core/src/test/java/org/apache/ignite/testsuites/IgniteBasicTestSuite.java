@@ -66,6 +66,7 @@ import org.apache.ignite.messaging.IgniteMessagingSendAsyncTest;
 import org.apache.ignite.messaging.IgniteMessagingWithClientTest;
 import org.apache.ignite.spi.GridSpiLocalHostInjectionTest;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTestSelfTest;
+import org.apache.ignite.testframework.junits.multijvm.JavaVersionCommandParserTest;
 import org.junit.runner.RunWith;
 import org.junit.runners.Suite;
 
@@ -141,6 +142,7 @@ import org.junit.runners.Suite;
     ClientListenerMetricsTest.class,   
     OdbcEscapeSequenceSelfTest.class,
     SqlListenerUtilsTest.class,
+    JavaVersionCommandParserTest.class
 })
 public class IgniteBasicTestSuite {
 }

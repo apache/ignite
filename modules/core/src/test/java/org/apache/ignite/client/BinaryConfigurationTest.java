@@ -27,6 +27,8 @@ import org.apache.ignite.internal.binary.BinaryObjectImpl;
 import org.apache.ignite.internal.client.thin.AbstractThinClientTest;
 import org.apache.ignite.internal.processors.platform.client.IgniteClientException;
 import org.apache.ignite.testframework.GridTestUtils;
+import org.apache.ignite.testframework.ListeningTestLogger;
+import org.apache.ignite.testframework.LogListener;
 import org.junit.Test;
 
 import static org.apache.ignite.internal.binary.BinaryUtils.FLAG_COMPACT_FOOTER;
@@ -68,8 +70,13 @@ public class BinaryConfigurationTest extends AbstractThinClientTest {
                 .setCompactFooter(false)
                 .setNameMapper(new BinaryBasicNameMapper().setSimpleName(true));
 
-        ClientConfiguration clientCfg = getClientConfiguration(server)
-                .setBinaryConfiguration(binaryCfg);
+        LogListener listener = LogListener.matches(
+                "Overriding compact footer setting according to cluster configuration: false -> true").build();
+
+        ClientConfiguration baseCfg = getClientConfiguration(server);
+        ClientConfiguration clientCfg = baseCfg
+                .setBinaryConfiguration(binaryCfg)
+                .setLogger(new ListeningTestLogger(baseCfg.getLogger(), listener));
 
         try (IgniteClient client = Ignition.startClient(clientCfg)) {
             BinaryObjectImpl res = getClientBinaryObjectFromServer(server, client);
@@ -77,6 +84,8 @@ public class BinaryConfigurationTest extends AbstractThinClientTest {
             // Server-side defaults are compact footers and full name mapper.
             assertTrue(res.isFlagSet(FLAG_COMPACT_FOOTER));
             assertEquals("org.apache.ignite.client.Person", res.type().typeName());
+
+            assertTrue(listener.check());
         }
     }
 
@@ -134,14 +143,21 @@ public class BinaryConfigurationTest extends AbstractThinClientTest {
 
         Ignite server = startGrid("0", cfg -> cfg.setBinaryConfiguration(binaryCfg));
 
-        ClientConfiguration clientCfg = getClientConfiguration(server)
-                .setBinaryConfiguration(binaryCfg);
+        LogListener listener = LogListener.matches(
+                "Cluster binary configuration retrieved: ClientInternalBinaryConfiguration " +
+                        "[compactFooter=true, binaryNameMapperMode=CUSTOM]").build();
+
+        ClientConfiguration baseCfg = getClientConfiguration(server);
+        ClientConfiguration clientCfg = baseCfg
+                .setBinaryConfiguration(binaryCfg)
+                .setLogger(new ListeningTestLogger(baseCfg.getLogger(), listener));
 
         try (IgniteClient client = Ignition.startClient(clientCfg)) {
             BinaryObjectImpl res = getClientBinaryObjectFromServer(server, client);
 
             assertTrue(res.isFlagSet(FLAG_COMPACT_FOOTER));
             assertEquals("org.apache.ignite.client.Person_", res.type().typeName());
+            assertTrue(listener.check());
         }
     }
 

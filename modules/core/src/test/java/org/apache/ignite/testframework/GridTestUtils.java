@@ -33,6 +33,8 @@ import java.lang.reflect.Modifier;
 import java.net.InetAddress;
 import java.net.MulticastSocket;
 import java.net.ServerSocket;
+import java.nio.file.Files;
+import java.nio.file.Path;
 import java.nio.file.attribute.PosixFilePermission;
 import java.security.GeneralSecurityException;
 import java.security.KeyStore;
@@ -48,6 +50,7 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
+import java.util.Optional;
 import java.util.Queue;
 import java.util.Random;
 import java.util.Set;
@@ -66,6 +69,7 @@ import java.util.concurrent.TimeoutException;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.function.BooleanSupplier;
 import java.util.stream.Collectors;
+import java.util.stream.Stream;
 import javax.cache.CacheException;
 import javax.cache.configuration.Factory;
 import javax.management.Attribute;
@@ -97,10 +101,11 @@ import org.apache.ignite.internal.processors.cache.GridCacheContext;
 import org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtCacheAdapter;
 import org.apache.ignite.internal.processors.cache.distributed.dht.topology.GridDhtPartitionTopology;
 import org.apache.ignite.internal.processors.cache.distributed.near.GridNearCacheAdapter;
+import org.apache.ignite.internal.processors.cache.persistence.GridCacheDatabaseSharedManager;
+import org.apache.ignite.internal.processors.cache.persistence.IgniteCacheDatabaseSharedManager;
 import org.apache.ignite.internal.processors.odbc.ClientListenerProcessor;
 import org.apache.ignite.internal.processors.port.GridPortRecord;
 import org.apache.ignite.internal.util.GridBusyLock;
-import org.apache.ignite.internal.util.IgniteUtils;
 import org.apache.ignite.internal.util.future.GridFutureAdapter;
 import org.apache.ignite.internal.util.lang.GridAbsClosure;
 import org.apache.ignite.internal.util.lang.GridAbsPredicate;
@@ -125,6 +130,8 @@ import org.apache.ignite.testframework.junits.GridAbstractTest;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
+import static java.lang.Long.parseLong;
+import static java.util.Comparator.comparingLong;
 import static org.apache.ignite.IgniteSystemProperties.IGNITE_HOME;
 import static org.apache.ignite.internal.processors.cache.persistence.file.FilePageStoreManager.DFLT_STORE_DIR;
 import static org.apache.ignite.ssl.SslContextFactory.DFLT_KEY_ALGORITHM;
@@ -145,7 +152,7 @@ public final class GridTestUtils {
     public static final long DFLT_TEST_TIMEOUT = 5 * 60 * 1000;
 
     /** */
-    static final String ALPHABETH = "qwertyuiopasdfghjklzxcvbnmQWERTYUIOPASDFGHJKLZXCVBNM1234567890_";
+    private static final String ALPHABETH = "qwertyuiopasdfghjklzxcvbnmQWERTYUIOPASDFGHJKLZXCVBNM1234567890_";
 
     /**
      * Hook object intervenes to discovery message handling
@@ -1290,9 +1297,14 @@ public final class GridTestUtils {
         String igniteHome = U.getIgniteHome();
 
         if (F.isEmpty(igniteHome)) {
+            // We failed to automatically resolve IGNITE_HOME. This can happen if Ignite Test Framework is used as a
+            // library in some external project. Let's forcibly set IGNITE_HOME to the user's working directory.
+            // Setting the IGNITE_HOME system property is crucial because Ignite Test Logging system relies on it
+            // to resolve log file paths.
             igniteHome = new File(System.getProperty("user.dir"), "ignite").getAbsolutePath();
 
-            IgniteUtils.setIgniteHome(igniteHome);
+            U.nullifyHomeDirectory();
+            U.setIgniteHome(igniteHome);
 
             U.warn(null, '"' + IGNITE_HOME + "\" system property was automatically set to " + igniteHome);
         }
@@ -2322,6 +2334,29 @@ public final class GridTestUtils {
 
         for (File cacheGrpDir : new File(workDir, nodeDirName).listFiles(cacheGrpFilter))
             U.delete(cacheGrpDir);
+    }
+
+    /**
+     * Removes the last checkpoint end marker for the given node.
+     *
+     * @param ignite Ignite node.
+     */
+    public static void deleteLastCheckpointEndMarker(IgniteEx ignite) throws IOException {
+        IgniteCacheDatabaseSharedManager dbSharedMgr = ignite.context().cache().context().database();
+
+        Path cpDir = ((GridCacheDatabaseSharedManager)dbSharedMgr).checkpointDirectory().toPath();
+
+        try (Stream<Path> files = Files.list(cpDir)) {
+            Optional<Path> endMarker = files
+                .map(path -> path.getFileName().toString())
+                .filter(fileName -> fileName.endsWith("START.bin"))
+                .max(comparingLong(fileName -> parseLong(fileName.split("-")[0])))
+                .map(fileName -> fileName.replace("START.bin", "END.bin"))
+                .map(cpDir::resolve);
+
+            if (endMarker.isPresent())
+                Files.delete(endMarker.get());
+        }
     }
 
     /**

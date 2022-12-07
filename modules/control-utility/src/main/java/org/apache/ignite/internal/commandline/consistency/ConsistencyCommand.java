@@ -17,14 +17,16 @@
 
 package org.apache.ignite.internal.commandline.consistency;
 
+import java.util.Collection;
 import java.util.Collections;
 import java.util.LinkedHashMap;
 import java.util.Map;
 import java.util.Set;
 import java.util.UUID;
 import java.util.function.Predicate;
-import java.util.logging.Logger;
+import java.util.stream.Collectors;
 import org.apache.ignite.IgniteCheckedException;
+import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.cache.ReadRepairStrategy;
 import org.apache.ignite.internal.client.GridClient;
 import org.apache.ignite.internal.client.GridClientConfiguration;
@@ -33,6 +35,7 @@ import org.apache.ignite.internal.commandline.AbstractCommand;
 import org.apache.ignite.internal.commandline.Command;
 import org.apache.ignite.internal.commandline.CommandArgIterator;
 import org.apache.ignite.internal.commandline.CommandLogger;
+import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.visor.consistency.VisorConsistencyRepairTaskArg;
 import org.apache.ignite.internal.visor.consistency.VisorConsistencyTaskResult;
 
@@ -52,8 +55,8 @@ public class ConsistencyCommand extends AbstractCommand<Object> {
     /** Cache. */
     public static final String CACHE = "--cache";
 
-    /** Partition. */
-    public static final String PARTITION = "--partition";
+    /** Partitions. */
+    public static final String PARTITIONS = "--partitions";
 
     /** Strategy. */
     public static final String STRATEGY = "--strategy";
@@ -74,7 +77,7 @@ public class ConsistencyCommand extends AbstractCommand<Object> {
     private static final Predicate<GridClientNode> SRV_NODES = node -> !node.isClient() && !node.isDaemon();
 
     /** {@inheritDoc} */
-    @Override public Object execute(GridClientConfiguration clientCfg, Logger log) throws Exception {
+    @Override public Object execute(GridClientConfiguration clientCfg, IgniteLogger log) throws Exception {
         String output;
 
         try (GridClient client = Command.startClient(clientCfg)) {
@@ -131,8 +134,8 @@ public class ConsistencyCommand extends AbstractCommand<Object> {
             }
         }
         catch (Throwable e) {
-            log.severe("Failed to perform operation.");
-            log.severe(CommandLogger.errorMessage(e));
+            log.error("Failed to perform operation.");
+            log.error(CommandLogger.errorMessage(e));
 
             throw e;
         }
@@ -148,7 +151,7 @@ public class ConsistencyCommand extends AbstractCommand<Object> {
     }
 
     /** {@inheritDoc} */
-    @Override public void printUsage(Logger log) {
+    @Override public void printUsage(IgniteLogger log) {
         Map<String, String> params = new LinkedHashMap<>();
 
         params.put("cache-name", "Cache to be checked/repaired.");
@@ -186,13 +189,13 @@ public class ConsistencyCommand extends AbstractCommand<Object> {
 
         if (cmd == REPAIR) {
             String cacheOrGrpName = null;
-            int part = -1;
+            Collection<Integer> parts = null;
             ReadRepairStrategy strategy = null;
 
             while (argIter.hasNextArg()) {
                 String arg = argIter.peekNextArg();
 
-                if (CACHE.equals(arg) || PARTITION.equals(arg) || STRATEGY.equals(arg) || PARALLEL.equals(arg)) {
+                if (CACHE.equals(arg) || PARTITIONS.equals(arg) || STRATEGY.equals(arg) || PARALLEL.equals(arg)) {
                     arg = argIter.nextArg("Expected parameter key.");
 
                     switch (arg) {
@@ -201,8 +204,10 @@ public class ConsistencyCommand extends AbstractCommand<Object> {
 
                             break;
 
-                        case PARTITION:
-                            part = argIter.nextNonNegativeIntArg("Expected partition.");
+                        case PARTITIONS:
+                            parts = argIter.nextStringSet("Expected comma separated list of partitions.").stream()
+                                .map(Integer::parseInt)
+                                .collect(Collectors.toSet());
 
                             break;
 
@@ -227,8 +232,8 @@ public class ConsistencyCommand extends AbstractCommand<Object> {
             if (cacheOrGrpName == null)
                 throw new IllegalArgumentException("Cache (or cache group) name argument missed.");
 
-            if (part == -1)
-                throw new IllegalArgumentException("Partition argument missed.");
+            if (F.isEmpty(parts))
+                throw new IllegalArgumentException("Partitions argument missed.");
 
             if (strategy == null)
                 throw new IllegalArgumentException("Strategy argument missed.");
@@ -239,7 +244,7 @@ public class ConsistencyCommand extends AbstractCommand<Object> {
                     "Parallel mode currently allowed only when CHECK_ONLY strategy is chosen.");
             }
 
-            cmdArg = new VisorConsistencyRepairTaskArg(cacheOrGrpName, part, strategy);
+            cmdArg = new VisorConsistencyRepairTaskArg(cacheOrGrpName, parts, strategy);
         }
         else if (cmd == STATUS || cmd == FINALIZE_COUNTERS)
             cmdArg = null;

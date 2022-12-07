@@ -26,6 +26,7 @@ from typing import NamedTuple
 from ducktape.cluster.remoteaccount import RemoteCommandError
 
 from ignitetest.services.utils.auth import get_credentials, is_auth_enabled
+from ignitetest.services.utils.ignite_spec import envs_to_exports
 from ignitetest.services.utils.ssl.ssl_params import get_ssl_params, is_ssl_enabled, IGNITE_ADMIN_ALIAS
 from ignitetest.services.utils.jmx_utils import JmxClient
 from ignitetest.utils.version import V_2_11_0
@@ -151,11 +152,15 @@ class ControlUtility:
 
         assert ('no issues found.' in data), data
 
-    def idle_verify(self):
+    def idle_verify(self, cache_names=None):
         """
         Idle verify.
         """
-        data = self.__run("--cache idle_verify")
+
+        if cache_names is None:
+            data = self.__run("--cache idle_verify")
+        else:
+            data = self.__run(f"--cache idle_verify {cache_names}")
 
         if self._cluster.config.version < V_2_11_0:
             msg = 'idle_verify check has finished, no conflicts have been found.'
@@ -163,6 +168,7 @@ class ControlUtility:
             msg = 'The check procedure has finished, no conflicts have been found.'
 
         assert (msg in data), data
+        return data
 
     def idle_verify_dump(self, node=None):
         """
@@ -182,6 +188,7 @@ class ControlUtility:
         data = self.__run(f"--consistency {args} --enable-experimental")
 
         assert ('Command [CONSISTENCY] finished with code: 0' in data), data
+        return data
 
     def snapshot_create(self, snapshot_name: str, timeout_sec: int = 60):
         """
@@ -364,7 +371,19 @@ class ControlUtility:
         auth = ""
         if hasattr(self, "username"):
             auth = f" --user {self.username} --password {self.password} "
-        return self._cluster.script(f"{self.BASE_COMMAND} --host {node_ip} {cmd} {ssl} {auth}")
+
+        return "%s %s" % \
+               (envs_to_exports(self.__envs()),
+                self._cluster.script(f"{self.BASE_COMMAND} --host {node_ip} {cmd} {ssl} {auth}"))
+
+    def __envs(self):
+        """
+        :return: environment set.
+        """
+        return {
+            'EXCLUDE_TEST_CLASSES': 'true',
+            'CONTROL_JVM_OPTS': '-Dlog4j.configurationFile=file:' + self._cluster.log_config_file
+        }
 
     @staticmethod
     def __parse_output(raw_output):

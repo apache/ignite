@@ -305,13 +305,6 @@ public class IgniteSpringBean implements Ignite, DisposableBean, SmartInitializi
     }
 
     /** {@inheritDoc} */
-    @Override public DataStorageMetrics dataStorageMetrics() {
-        checkIgnite();
-
-        return g.dataStorageMetrics();
-    }
-
-    /** {@inheritDoc} */
     @Override public IgniteEncryption encryption() {
         checkIgnite();
 
@@ -338,11 +331,6 @@ public class IgniteSpringBean implements Ignite, DisposableBean, SmartInitializi
     /** {@inheritDoc} */
     @Nullable @Override public MemoryMetrics memoryMetrics(String memPlcName) {
         return DataRegionMetricsAdapter.valueOf(dataRegionMetrics(memPlcName));
-    }
-
-    /** {@inheritDoc} */
-    @Override public PersistenceMetrics persistentStoreMetrics() {
-        return DataStorageMetricsAdapter.valueOf(dataStorageMetrics());
     }
 
     /** {@inheritDoc} */

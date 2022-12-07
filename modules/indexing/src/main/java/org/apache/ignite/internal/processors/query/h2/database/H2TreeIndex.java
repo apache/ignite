@@ -39,6 +39,8 @@ import org.apache.ignite.internal.cache.query.index.sorted.InlineIndexRowHandler
 import org.apache.ignite.internal.cache.query.index.sorted.SortedIndexDefinition;
 import org.apache.ignite.internal.cache.query.index.sorted.inline.IndexQueryContext;
 import org.apache.ignite.internal.cache.query.index.sorted.inline.InlineIndexImpl;
+import org.apache.ignite.internal.cache.query.index.sorted.inline.InlineIndexKeyType;
+import org.apache.ignite.internal.cache.query.index.sorted.inline.InlineIndexKeyTypeRegistry;
 import org.apache.ignite.internal.cache.query.index.sorted.keys.IndexKey;
 import org.apache.ignite.internal.cache.query.index.sorted.keys.IndexKeyFactory;
 import org.apache.ignite.internal.managers.communication.GridIoPolicy;
@@ -76,6 +78,7 @@ import org.apache.ignite.internal.util.GridSpinBusyLock;
 import org.apache.ignite.internal.util.lang.GridCursor;
 import org.apache.ignite.internal.util.typedef.CIX2;
 import org.apache.ignite.internal.util.typedef.T2;
+import org.apache.ignite.internal.util.typedef.internal.LT;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgniteBiTuple;
 import org.apache.ignite.plugin.extensions.communication.Message;
@@ -277,19 +280,34 @@ public class H2TreeIndex extends H2TreeIndexBase {
             IndexKeyType colType = rowHnd.indexKeyDefinitions().get(i).idxType();
 
             if (v == null)
-                continue;
+                break;
 
             // If it's possible to convert search row to index value type - do it. In this case converted value
-            // can be used for the inline search. Otherwise, wrap search row into index key and exploit
-            // comparison/convertion provided by H2. In this case indexed value will be converted to search row type on
-            // each comparison.
+            // can be used for the inline search.
+            // Otherwise, we can use search row as index find bound only if types have the same comparison rules.
+            // If types have different comparison rules (for example, '2' > '10' for strings and 2 < 10 for integers)
+            // best we can do here is leave search bound empty. In this case index scan by bounds can be extended to
+            // full index scan and rows will be filtered out by original condition on H2 level.
             if (colType.code() != v.getType()) {
                 if (Value.getHigherOrder(colType.code(), v.getType()) == colType.code())
                     v = v.convertTo(colType.code());
                 else {
-                    keys[i] = new H2ValueIndexKey(rowDescriptor().context().cacheObjectContext(), tbl, v);
+                    InlineIndexKeyType colKeyType = InlineIndexKeyTypeRegistry.get(colType, queryIndex.keyTypeSettings());
 
-                    continue;
+                    IndexKey idxKey = IndexKeyFactory.wrap(v.getObject(), v.getType(), cctx.cacheObjectContext(),
+                        queryIndex.keyTypeSettings());
+
+                    if (colKeyType.isComparableTo(idxKey)) {
+                        keys[i] = idxKey;
+
+                        continue;
+                    }
+
+                    LT.warn(log, "Provided value can't be used as index search bound due to column data type " +
+                        "mismatch. This can lead to full index scans instead of range index scans. [index=" +
+                        idxName + ", colType=" + colType + ", valType=" + IndexKeyType.forCode(v.getType()) + ']');
+
+                    break;
                 }
             }
 

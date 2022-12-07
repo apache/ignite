@@ -24,7 +24,6 @@ import java.util.Deque;
 import java.util.List;
 import java.util.Objects;
 import java.util.function.Supplier;
-
 import org.apache.calcite.rel.type.RelDataType;
 import org.apache.calcite.util.ImmutableBitSet;
 import org.apache.ignite.internal.processors.query.calcite.exec.ExecutionContext;
@@ -35,21 +34,13 @@ import org.apache.ignite.internal.processors.query.calcite.exec.exp.agg.Accumula
 import org.apache.ignite.internal.processors.query.calcite.exec.exp.agg.AggregateType;
 import org.apache.ignite.internal.processors.query.calcite.util.Commons;
 import org.apache.ignite.internal.util.typedef.F;
+
 import static org.apache.ignite.internal.processors.query.calcite.exec.exp.agg.AggregateType.REDUCE;
 
 /**
  *
  */
-public class SortAggregateNode<Row> extends AbstractNode<Row> implements SingleNode<Row>, Downstream<Row> {
-    /** */
-    private final AggregateType type;
-
-    /** May be {@code null} when there are not accumulators (DISTINCT aggregate node). */
-    private final Supplier<List<AccumulatorWrapper<Row>>> accFactory;
-
-    /** */
-    private final RowFactory<Row> rowFactory;
-
+public class SortAggregateNode<Row> extends AggregateNode<Row> {
     /** */
     private final ImmutableBitSet grpSet;
 
@@ -86,12 +77,9 @@ public class SortAggregateNode<Row> extends AbstractNode<Row> implements SingleN
         RowFactory<Row> rowFactory,
         Comparator<Row> comp
     ) {
-        super(ctx, rowType);
+        super(ctx, rowType, type, accFactory, rowFactory, ARRAY_ROW_OVERHEAD);
         assert Objects.nonNull(comp);
 
-        this.type = type;
-        this.accFactory = accFactory;
-        this.rowFactory = rowFactory;
         this.grpSet = grpSet;
         this.comp = comp;
     }
@@ -129,8 +117,12 @@ public class SortAggregateNode<Row> extends AbstractNode<Row> implements SingleN
         if (grp != null) {
             int cmp = comp.compare(row, prevRow);
 
-            if (cmp == 0)
+            if (cmp == 0) {
                 grp.add(row);
+
+                if (hasAggAccum)
+                    nodeMemoryTracker.onRowAdded(row);
+            }
             else {
                 if (cmpRes == 0)
                     cmpRes = cmp;
@@ -184,19 +176,7 @@ public class SortAggregateNode<Row> extends AbstractNode<Row> implements SingleN
         waiting = 0;
         grp = null;
         prevRow = null;
-    }
-
-    /** {@inheritDoc} */
-    @Override protected Downstream<Row> requestDownstream(int idx) {
-        if (idx != 0)
-            throw new IndexOutOfBoundsException();
-
-        return this;
-    }
-
-    /** */
-    private boolean hasAccumulators() {
-        return accFactory != null;
+        nodeMemoryTracker.reset();
     }
 
     /** */
@@ -212,6 +192,11 @@ public class SortAggregateNode<Row> extends AbstractNode<Row> implements SingleN
         Group grp = new Group(grpKeys);
 
         grp.add(r);
+
+        if (hasAggAccum) {
+            nodeMemoryTracker.reset();
+            nodeMemoryTracker.onRowAdded(r);
+        }
 
         return grp;
     }

@@ -17,7 +17,7 @@
 
 package org.apache.ignite.internal.commandline.meta.subcommands;
 
-import java.util.logging.Logger;
+import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.internal.client.GridClientConfiguration;
 import org.apache.ignite.internal.commandline.AbstractCommand;
 import org.apache.ignite.internal.commandline.meta.MetadataCommand;
@@ -26,12 +26,12 @@ import org.apache.ignite.internal.commandline.meta.MetadataSubCommandsList;
 /** */
 public class MetadataHelpCommand extends AbstractCommand<Void> {
     /** {@inheritDoc} */
-    @Override public void printUsage(Logger log) {
+    @Override public void printUsage(IgniteLogger log) {
         throw new UnsupportedOperationException("printUsage");
     }
 
     /** {@inheritDoc} */
-    @Override public Object execute(GridClientConfiguration clientCfg, Logger log) throws Exception {
+    @Override public Object execute(GridClientConfiguration clientCfg, IgniteLogger log) throws Exception {
         new MetadataCommand().printUsage(log);
 
         return null;

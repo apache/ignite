@@ -249,7 +249,6 @@ public class CheckpointPagesWriter implements Runnable {
                     return;
                 }
 
-                int groupId = fullPageId.groupId();
                 long pageId = fullPageId.pageId();
 
                 assert getType(buf) != 0 : "Invalid state. Type is 0! pageId = " + hexLong(pageId);

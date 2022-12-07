@@ -20,12 +20,21 @@
 <Configuration monitorInterval="60">
     <Appenders>
         <Console name="CONSOLE" target="SYSTEM_OUT">
-            <PatternLayout pattern="[%d{ISO8601}][%-5p][%t][%c{1}]%notEmpty{[%markerSimpleName]} %m%n"/>
-            <ThresholdFilter level="ERROR" onMatch="DENY" onMismatch="ACCEPT"/>
+            <!-- Add the `disableAnsi="true"` property to the pattern layout if you want to disable colors in the console output. -->
+            <PatternLayout
+                pattern="[%d{ISO8601}]%highlight{[%-5p]}{INFO=green, DEBUG=green bold, TRACE=blue}%style{[%t]}{magenta}%style{[%c{1}]}{cyan}%notEmpty{[%markerSimpleName]} %m%n"/>
+            <ThresholdFilter level="WARN" onMatch="DENY" onMismatch="ACCEPT"/>
+        </Console>
+
+        <Console name="CONSOLE_WARN" target="SYSTEM_OUT">
+            <!-- Add the `disableAnsi="true"` property to the pattern layout if you want to disable colors in the console output. -->
+            <PatternLayout pattern="%highlight{[%d{ISO8601}][%-5p][%t][%c{1}] %m%n}{WARN=yellow bold}"/>
+            <ThresholdFilter level="WARN" onMatch="ACCEPT" onMismatch="DENY"/>
         </Console>
 
         <Console name="CONSOLE_ERR" target="SYSTEM_ERR">
-            <PatternLayout pattern="[%d{ISO8601}][%-5p][%t][%c{1}]%notEmpty{[%markerSimpleName]} %m%n"/>
+            <!-- Add the `disableAnsi="true"` property to the pattern layout if you want to disable colors in the console output. -->
+            <PatternLayout pattern="%highlight{[%d{ISO8601}][%-5p][%t][%c{1}] %m%n}{ERROR=bright red}"/>
         </Console>
 
         <File name="CONSISTENCY" fileName="${sys:IGNITE_HOME}/work/log/consistency.log">
@@ -35,10 +44,10 @@
         </File>
 
         <Routing name="FILE">
-            <Routes pattern="$${sys:nodeId}">
+            <Routes pattern="$${sys:appId}$${sys:nodeId}">
                 <Route>
-                    <RollingFile name="Rolling-${sys:nodeId}" fileName="${sys:IGNITE_HOME}/work/log/${sys:appId}-${sys:nodeId}.log"
-                                 filePattern="${sys:IGNITE_HOME}/work/log/${sys:appId}-${sys:nodeId}-%i-%d{yyyy-MM-dd}.log.gz">
+                    <RollingFile name="Rolling-${sys:appId}${sys:nodeId}" fileName="${sys:IGNITE_HOME}/work/log/${sys:appId}${sys:nodeId}.log"
+                                 filePattern="${sys:IGNITE_HOME}/work/log/${sys:appId}${sys:nodeId}-%i-%d{yyyy-MM-dd}.log.gz">
                         <PatternLayout pattern="[%d{ISO8601}][%-5p][%t][%c{1}]%notEmpty{[%markerSimpleName]} %m%n"/>
                         <Policies>
                             <TimeBasedTriggeringPolicy interval="6" modulate="true" />
@@ -82,6 +91,7 @@
             <!-- Uncomment to enable logging to console. -->
             <!--
             <AppenderRef ref="CONSOLE" level="DEBUG"/>
+            <AppenderRef ref="CONSOLE_WARN" level="WARN"/>
             -->
 
             <AppenderRef ref="CONSOLE_ERR" level="ERROR"/>

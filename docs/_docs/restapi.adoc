@@ -826,7 +826,7 @@ Stores a given key-value pair in a cache only if the previous value is equal to 
 +
 [source,shell]
 ----
-https://[host]:[port]/ignite?cmd=authenticate&ignite.login=[user]&ignite.password=[password]
+http://host:port/ignite?cmd=cas&key=casKey&val=newValue&val2=expectedValue&cacheName={cacheName}&destId={nodeId}
 ----
 +
 [{request_table_props}]

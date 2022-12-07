@@ -30,20 +30,14 @@ import java.sql.SQLException;
 import java.sql.Time;
 import java.sql.Timestamp;
 import java.sql.Types;
-import java.time.LocalDate;
-import java.time.LocalDateTime;
-import java.time.LocalTime;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.Comparator;
-import java.util.HashMap;
-import java.util.HashSet;
 import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
-import java.util.Set;
 import java.util.UUID;
 import javax.cache.CacheException;
 import org.apache.ignite.IgniteCheckedException;
@@ -156,21 +150,6 @@ public class H2Utils {
 
     /** Quotation character. */
     private static final char ESC_CH = '\"';
-
-    /** Types that can be implicitly converted to H2 column type. */
-    private static final Map<Integer, Set<Class<?>>> CONVERTABLE_TYPES = new HashMap<Integer, Set<Class<?>>>() {
-        {
-            put(Value.TIMESTAMP, new HashSet<Class<?>>() {
-                {
-                    add(LocalDateTime.class);
-                    add(java.util.Date.class);
-                    add(java.sql.Date.class);
-                }
-            });
-            put(Value.TIME, Collections.singleton(LocalTime.class));
-            put(Value.DATE, Collections.singleton(LocalDate.class));
-        }
-    };
 
     /**
      * @param c1 First column.
@@ -539,32 +518,13 @@ public class H2Utils {
     }
 
     /**
-     * @param cls The class whose convertibility is to be tested.
-     * @param colType Column target type.
-     * @return Whether specified class can be implicitly converted to the specified type.
-     * @see #wrap(CacheObjectValueContext, Object, int)
-     */
-    public static boolean isConvertableToColumnType(Class<?> cls, int colType) {
-        assert cls != null;
-
-        if (DataType.getTypeClassName(colType).equals(cls.getName()))
-            return true;
-
-        Set<Class<?>> types = CONVERTABLE_TYPES.get(colType);
-
-        return types != null && types.contains(cls);
-    }
-
-    /**
      * Wraps object to respective {@link Value}.
      *
-     * Note, implicit type conversions must be also included into {@link #CONVERTABLE_TYPES}.
      *
      * @param obj Object.
      * @param type Value type.
      * @return Value.
      * @throws IgniteCheckedException If failed.
-     * @see #isConvertableToColumnType(Class, int)
      */
     @SuppressWarnings("ConstantConditions")
     public static Value wrap(CacheObjectValueContext coCtx, Object obj, int type) throws IgniteCheckedException {

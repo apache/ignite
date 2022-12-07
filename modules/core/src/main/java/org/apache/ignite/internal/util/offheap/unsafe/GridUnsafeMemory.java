@@ -168,7 +168,7 @@ public class GridUnsafeMemory {
             long ptr = GridUnsafe.allocateMemory(size);
 
             if (init)
-                fill(ptr, size, FREE);
+                GridUnsafe.zeroMemory(ptr, size);
 
             if (lsnr != null)
                 lsnr.onEvent(ALLOCATE);

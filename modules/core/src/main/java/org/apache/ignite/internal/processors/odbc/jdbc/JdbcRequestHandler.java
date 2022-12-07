@@ -1290,8 +1290,7 @@ public class JdbcRequestHandler implements ClientListenerRequestHandler {
         setupQuery(qry, schemaName);
 
         try {
-            List<JdbcParameterMeta> meta = connCtx.kernalContext().query().getIndexing().
-                parameterMetaData(schemaName, qry);
+            List<JdbcParameterMeta> meta = connCtx.kernalContext().query().parameterMetaData(qry, cliCtx);
 
             JdbcMetaParamsResult res = new JdbcMetaParamsResult(meta);
 

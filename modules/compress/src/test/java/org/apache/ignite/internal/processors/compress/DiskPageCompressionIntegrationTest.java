@@ -50,6 +50,7 @@ import static org.apache.ignite.configuration.DataStorageConfiguration.MAX_PAGE_
 import static org.apache.ignite.configuration.DiskPageCompression.ZSTD;
 import static org.apache.ignite.internal.processors.cache.CacheGroupMetricsImpl.CACHE_GROUP_METRICS_PREFIX;
 import static org.apache.ignite.internal.processors.cache.persistence.CheckpointState.FINISHED;
+import static org.apache.ignite.internal.processors.cache.persistence.DataStorageMetricsImpl.DATASTORAGE_METRIC_PREFIX;
 import static org.apache.ignite.internal.processors.metric.impl.MetricUtils.metricName;
 
 /**
@@ -67,7 +68,6 @@ public class DiskPageCompressionIntegrationTest extends AbstractPageCompressionI
         factory = getFileIOFactory();
 
         DataStorageConfiguration dsCfg = new DataStorageConfiguration()
-            .setMetricsEnabled(true)
             .setPageSize(MAX_PAGE_SIZE)
             .setDefaultDataRegionConfiguration(drCfg)
             .setFileIOFactory(U.isLinux() ? factory : new PunchFileIOFactory(factory));
@@ -121,8 +121,10 @@ public class DiskPageCompressionIntegrationTest extends AbstractPageCompressionI
 
         Thread.sleep(100); // Wait for metrics update.
 
-        long storeSize = ignite.dataStorageMetrics().getStorageSize();
-        long sparseStoreSize = ignite.dataStorageMetrics().getSparseStorageSize();
+        MetricRegistry pMetrics = ignite.context().metric().registry(DATASTORAGE_METRIC_PREFIX);
+
+        long storeSize = pMetrics.<LongMetric>findMetric("StorageSize").value();
+        long sparseStoreSize = pMetrics.<LongMetric>findMetric("SparseStorageSize").value();
 
         assertTrue("storeSize: " + storeSize, storeSize > 0);
 

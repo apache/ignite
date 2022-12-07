@@ -76,13 +76,18 @@ class DataRegionMetricsMXBeanImpl implements DataRegionMetricsMXBean {
     }
 
     /** {@inheritDoc} */
+    @Override public long getTotalAllocatedSize() {
+        return memMetrics.getTotalAllocatedSize();
+    }
+
+    /** {@inheritDoc} */
     @Override public long getTotalUsedPages() {
         return memMetrics.getTotalUsedPages();
     }
 
     /** {@inheritDoc} */
-    @Override public long getTotalAllocatedSize() {
-        return memMetrics.getTotalAllocatedSize();
+    @Override public long getTotalUsedSize() {
+        return memMetrics.getTotalUsedSize();
     }
 
     /** {@inheritDoc} */

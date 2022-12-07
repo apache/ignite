@@ -209,6 +209,66 @@ public class IndexRebuildIntegrationTest extends AbstractBasicIntegrationTest {
     }
 
     /**
+     * Test min-max optimization with index rebuilding.
+     */
+    @Test
+    public void testIndexFirstLastAtUnavailableIndex() throws IgniteCheckedException {
+        int records = 50;
+        int iterations = 500;
+
+        CalciteQueryProcessor srvEngine = Commons.lookupComponent(grid(0).context(), CalciteQueryProcessor.class);
+
+        for (boolean asc : new boolean[] {true, false}) {
+            for (int backups = -1; backups < 3; ++backups) {
+                String ddl = "CREATE TABLE tbl3 (id INT PRIMARY KEY, val BIGINT, val2 VARCHAR) WITH ";
+
+                ddl += backups < 0 ? "TEMPLATE=REPLICATED" : "TEMPLATE=PARTITIONED,backups=" + backups;
+
+                executeSql(ddl);
+
+                executeSql("CREATE INDEX TEST_IDX ON tbl3(val " + (asc ? "asc)" : "desc)"));
+
+                executeSql("INSERT INTO tbl3 VALUES (-1, null, null)");
+
+                for (int i = 0; i < records; i++)
+                    executeSql("INSERT INTO tbl3 VALUES (?, ?, ?)", i, i, "val" + i);
+
+                executeSql("INSERT INTO tbl3 VALUES (" + records + ", null, null)");
+
+                IgniteCacheTable tbl3 = (IgniteCacheTable)srvEngine.schemaHolder().schema("PUBLIC").getTable("TBL3");
+
+                AtomicBoolean stop = new AtomicBoolean();
+
+                tbl3.markIndexRebuildInProgress(false);
+
+                IgniteInternalFuture<?> fut = GridTestUtils.runAsync(() -> {
+                    boolean lever = true;
+
+                    while (!stop.get())
+                        tbl3.markIndexRebuildInProgress(lever = !lever);
+                });
+
+                try {
+                    for (int i = 0; i < iterations; ++i) {
+                        assertQuery("select MIN(val) from tbl3").returns((long)0).check();
+
+                        assertQuery("select MAX(val) from tbl3").returns((long)(records - 1)).check();
+                    }
+                }
+                finally {
+                    stop.set(true);
+
+                    tbl3.markIndexRebuildInProgress(false);
+
+                    executeSql("DROP TABLE tbl3");
+                }
+
+                fut.get();
+            }
+        }
+    }
+
+    /**
      * Test IndexCount is disabled at index rebuilding.
      */
     @Test

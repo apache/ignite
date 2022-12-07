@@ -24,9 +24,9 @@ import java.util.UUID;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.configuration.IgniteConfiguration;
+import org.apache.ignite.internal.logger.IgniteLoggerEx;
 import org.apache.ignite.internal.util.typedef.G;
 import org.apache.ignite.internal.util.typedef.internal.U;
-import org.apache.ignite.logger.LoggerNodeIdAndApplicationAware;
 import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.TcpDiscoveryVmIpFinder;
 import org.apache.ignite.testframework.GridTestUtils;
@@ -70,7 +70,7 @@ public class Log4j2LoggerSelfTest {
         assertTrue(log.toString().contains("Log4J2Logger"));
         assertTrue(log.toString().contains(xml.getPath()));
 
-        ((LoggerNodeIdAndApplicationAware)log).setApplicationAndNode(null, UUID.randomUUID());
+        ((IgniteLoggerEx)log).setApplicationAndNode(null, UUID.randomUUID());
 
         checkLog(log);
     }
@@ -93,7 +93,7 @@ public class Log4j2LoggerSelfTest {
         assertTrue(log.toString().contains("Log4J2Logger"));
         assertTrue(log.toString().contains(url.getPath()));
 
-        ((LoggerNodeIdAndApplicationAware)log).setApplicationAndNode(null, UUID.randomUUID());
+        ((IgniteLoggerEx)log).setApplicationAndNode(null, UUID.randomUUID());
 
         checkLog(log);
     }
@@ -110,7 +110,7 @@ public class Log4j2LoggerSelfTest {
         assertTrue(log.toString().contains("Log4J2Logger"));
         assertTrue(log.toString().contains(LOG_PATH_TEST));
 
-        ((LoggerNodeIdAndApplicationAware)log).setApplicationAndNode(null, UUID.randomUUID());
+        ((IgniteLoggerEx)log).setApplicationAndNode(null, UUID.randomUUID());
 
         checkLog(log);
     }
@@ -139,12 +139,17 @@ public class Log4j2LoggerSelfTest {
 
         new Log4J2Logger(LOG_PATH_TEST).setApplicationAndNode(null, id);
 
-        assertEquals(U.id8(id), System.getProperty("nodeId"));
+        assertEquals("-" + U.id8(id), System.getProperty("nodeId"));
         assertEquals("ignite", System.getProperty("appId"));
 
         new Log4J2Logger(LOG_PATH_TEST).setApplicationAndNode("other-app", id);
 
-        assertEquals(U.id8(id), System.getProperty("nodeId"));
+        assertEquals("-" + U.id8(id), System.getProperty("nodeId"));
+        assertEquals("other-app", System.getProperty("appId"));
+
+        new Log4J2Logger(LOG_PATH_TEST).setApplicationAndNode(null, id);
+
+        assertEquals("-" + U.id8(id), System.getProperty("nodeId"));
         assertEquals("other-app", System.getProperty("appId"));
     }
 

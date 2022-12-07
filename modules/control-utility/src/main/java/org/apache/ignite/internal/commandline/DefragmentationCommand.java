@@ -22,8 +22,8 @@ import java.util.List;
 import java.util.Locale;
 import java.util.Optional;
 import java.util.Set;
-import java.util.logging.Logger;
 import java.util.stream.Collectors;
+import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.internal.client.GridClient;
 import org.apache.ignite.internal.client.GridClientConfiguration;
 import org.apache.ignite.internal.client.GridClientNode;
@@ -51,7 +51,7 @@ public class DefragmentationCommand implements Command<DefragmentationArguments>
     private DefragmentationArguments args;
 
     /** {@inheritDoc} */
-    @Override public Object execute(GridClientConfiguration clientCfg, Logger log) throws Exception {
+    @Override public Object execute(GridClientConfiguration clientCfg, IgniteLogger log) throws Exception {
         try (GridClient client = Command.startClient(clientCfg)) {
             Optional<GridClientNode> firstNodeOpt = client.compute().nodes().stream().filter(GridClientNode::connectable).findFirst();
 
@@ -90,8 +90,8 @@ public class DefragmentationCommand implements Command<DefragmentationArguments>
                 log.warning("No nodes found in topology, command won't be executed.");
         }
         catch (Throwable t) {
-            log.severe("Failed to execute defragmentation command='" + args.subcommand().text() + "'");
-            log.severe(CommandLogger.errorMessage(t));
+            log.error("Failed to execute defragmentation command='" + args.subcommand().text() + "'");
+            log.error(CommandLogger.errorMessage(t));
 
             throw t;
         }
@@ -100,7 +100,7 @@ public class DefragmentationCommand implements Command<DefragmentationArguments>
     }
 
     /** */
-    private void printResult(VisorDefragmentationTaskResult res, Logger log) {
+    private void printResult(VisorDefragmentationTaskResult res, IgniteLogger log) {
         assert res != null;
 
         log.info(res.getMessage());
@@ -183,7 +183,7 @@ public class DefragmentationCommand implements Command<DefragmentationArguments>
     }
 
     /** {@inheritDoc} */
-    @Override public void printUsage(Logger log) {
+    @Override public void printUsage(IgniteLogger log) {
         String consistentIds = "consistentId0,consistentId1";
 
         String cacheNames = "cache1,cache2,cache3";

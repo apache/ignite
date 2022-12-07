@@ -168,6 +168,7 @@ import static org.apache.calcite.sql.fun.SqlStdOperatorTable.IS_JSON_ARRAY;
 import static org.apache.calcite.sql.fun.SqlStdOperatorTable.IS_JSON_OBJECT;
 import static org.apache.calcite.sql.fun.SqlStdOperatorTable.IS_JSON_SCALAR;
 import static org.apache.calcite.sql.fun.SqlStdOperatorTable.IS_JSON_VALUE;
+import static org.apache.calcite.sql.fun.SqlStdOperatorTable.IS_NOT_DISTINCT_FROM;
 import static org.apache.calcite.sql.fun.SqlStdOperatorTable.IS_NOT_EMPTY;
 import static org.apache.calcite.sql.fun.SqlStdOperatorTable.IS_NOT_FALSE;
 import static org.apache.calcite.sql.fun.SqlStdOperatorTable.IS_NOT_JSON_ARRAY;
@@ -227,6 +228,9 @@ import static org.apache.calcite.sql.fun.SqlStdOperatorTable.TRUNCATE;
 import static org.apache.calcite.sql.fun.SqlStdOperatorTable.UNARY_MINUS;
 import static org.apache.calcite.sql.fun.SqlStdOperatorTable.UNARY_PLUS;
 import static org.apache.calcite.sql.fun.SqlStdOperatorTable.UPPER;
+import static org.apache.ignite.internal.processors.query.calcite.sql.fun.IgniteOwnSqlOperatorTable.GREATEST2;
+import static org.apache.ignite.internal.processors.query.calcite.sql.fun.IgniteOwnSqlOperatorTable.LEAST2;
+import static org.apache.ignite.internal.processors.query.calcite.sql.fun.IgniteOwnSqlOperatorTable.NULL_BOUND;
 import static org.apache.ignite.internal.processors.query.calcite.sql.fun.IgniteOwnSqlOperatorTable.QUERY_ENGINE;
 import static org.apache.ignite.internal.processors.query.calcite.sql.fun.IgniteOwnSqlOperatorTable.SYSTEM_RANGE;
 import static org.apache.ignite.internal.processors.query.calcite.sql.fun.IgniteOwnSqlOperatorTable.TYPEOF;
@@ -274,7 +278,7 @@ public class RexImpTable {
         defineMethod(RIGHT, BuiltInMethod.RIGHT.method, NullPolicy.ANY);
         defineMethod(REPLACE, BuiltInMethod.REPLACE.method, NullPolicy.STRICT);
         defineMethod(TRANSLATE3, BuiltInMethod.TRANSLATE3.method, NullPolicy.STRICT);
-        defineMethod(CHR, "chr", NullPolicy.STRICT);
+        defineMethod(CHR, BuiltInMethod.CHAR_FROM_UTF8.method, NullPolicy.STRICT);
         defineMethod(CHAR_LENGTH, BuiltInMethod.CHAR_LENGTH.method, NullPolicy.STRICT);
         defineMethod(OCTET_LENGTH, BuiltInMethod.OCTET_LENGTH.method, NullPolicy.STRICT);
         defineMethod(CONCAT, BuiltInMethod.STRING_CONCAT.method, NullPolicy.STRICT);
@@ -513,18 +517,27 @@ public class RexImpTable {
                 new MethodImplementor(BuiltInMethod.IS_JSON_SCALAR.method,
                     NullPolicy.NONE, false)));
 
-        // System functions
+        // System functions.
         final SystemFunctionImplementor systemFunctionImplementor = new SystemFunctionImplementor();
         map.put(SYSTEM_RANGE, systemFunctionImplementor);
 
-        // Current time functions
+        // Current time functions.
         map.put(CURRENT_TIME, systemFunctionImplementor);
         map.put(CURRENT_TIMESTAMP, systemFunctionImplementor);
         map.put(CURRENT_DATE, systemFunctionImplementor);
         map.put(LOCALTIME, systemFunctionImplementor);
         map.put(LOCALTIMESTAMP, systemFunctionImplementor);
+
         map.put(TYPEOF, systemFunctionImplementor);
         map.put(QUERY_ENGINE, systemFunctionImplementor);
+        map.put(NULL_BOUND, systemFunctionImplementor);
+
+        defineMethod(LEAST2, IgniteMethod.LEAST2.method(), NullPolicy.ALL);
+        defineMethod(GREATEST2, IgniteMethod.GREATEST2.method(), NullPolicy.ALL);
+
+        // Operator IS_NOT_DISTINCT_FROM is removed by RexSimplify, but still possible in join conditions, so
+        // implementation required.
+        defineMethod(IS_NOT_DISTINCT_FROM, IgniteMethod.IS_NOT_DISTINCT_FROM.method(), NullPolicy.NONE);
     }
 
     /** */
@@ -1694,6 +1707,8 @@ public class RexImpTable {
             }
             else if (op == QUERY_ENGINE)
                 return Expressions.constant(CalciteQueryEngineConfiguration.ENGINE_NAME);
+            else if (op == NULL_BOUND)
+                return Expressions.call(root, IgniteMethod.CONTEXT_NULL_BOUND.method());
 
             throw new AssertionError("unknown function " + op);
         }

@@ -21,6 +21,9 @@ from typing import NamedTuple
 from ignitetest.utils.bean import Bean
 
 
+DFLT_PARTS_CNT: int = 1024
+
+
 class CacheConfiguration(NamedTuple):
     """
     Ignite Cache configuration.

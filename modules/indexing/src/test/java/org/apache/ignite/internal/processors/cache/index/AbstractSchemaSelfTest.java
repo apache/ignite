@@ -29,11 +29,13 @@ import java.util.HashMap;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.stream.Collectors;
 import javax.cache.CacheException;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCache;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.Ignition;
+import org.apache.ignite.cache.QueryEntity;
 import org.apache.ignite.cache.QueryIndex;
 import org.apache.ignite.cache.QueryIndexType;
 import org.apache.ignite.cache.query.SqlFieldsQuery;
@@ -61,6 +63,8 @@ import org.apache.ignite.internal.util.typedef.internal.SB;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgniteBiTuple;
 import org.jetbrains.annotations.Nullable;
+
+import static org.apache.ignite.internal.processors.query.QueryUtils.KEY_FIELD_NAME;
 
 /**
  * Tests for dynamic schema changes.
@@ -108,6 +112,19 @@ public abstract class AbstractSchemaSelfTest extends AbstractIndexingCommonTest 
 
     /** Field 2 escaped. */
     protected static final String FIELD_NAME_2_ESCAPED = "field2";
+
+    /**
+     * Extra index key fields to override default extra index fields in
+     * {@link #indexFields(IgniteCache, String, IgniteBiTuple[])}.
+     */
+    protected static List<IgniteBiTuple<String, Boolean>> extraIdxKeyFields;
+
+    /** {@inheritDoc} */
+    @Override protected void beforeTest() throws Exception {
+        super.beforeTest();
+
+        extraIdxKeyFields = null;
+    }
 
     /**
      * Create common node configuration.
@@ -238,7 +255,7 @@ public abstract class AbstractSchemaSelfTest extends AbstractIndexingCommonTest 
         String idxName, int inlineSize, IgniteBiTuple<String, Boolean>... fields) {
         awaitCompletion();
 
-        node.cache(cacheName);
+        IgniteCache<?, ?> cache = node.cache(cacheName);
 
         IgniteEx node0 = (IgniteEx)node;
 
@@ -254,9 +271,9 @@ public abstract class AbstractSchemaSelfTest extends AbstractIndexingCommonTest 
                 }
             }
 
-            assertTrue("Index not found: " + idxName, res.size() > 0);
+            assertFalse("Index not found: " + idxName, res.isEmpty());
 
-            assertEquals(Arrays.asList(fields), res);
+            assertEquals(indexFields(cache, idxName, fields), res);
         }
         catch (SQLException e) {
             throw new AssertionError(e);
@@ -266,6 +283,43 @@ public abstract class AbstractSchemaSelfTest extends AbstractIndexingCommonTest 
         QueryTypeDescriptorImpl typeDesc = typeExisting(node0, cacheName, tblName);
 
         assertInternalIndexParams(typeDesc, idxName, inlineSize);
+    }
+
+    /**
+     * Forms full list of index fields. It is assumed that cache has the only QueryEntity.
+     *
+     * @param cache Cache with index.
+     * @param idxName Index name.
+     * @param fields Index fields specified in configuration or DDL.
+     */
+    static Collection<IgniteBiTuple<String, Boolean>> indexFields(IgniteCache<?, ?> cache, String idxName,
+        IgniteBiTuple<String, Boolean>... fields) {
+        Collection<QueryEntity> qryEntities = cache.getConfiguration(CacheConfiguration.class).getQueryEntities();
+
+        assertEquals(1, qryEntities.size());
+
+        QueryEntity qryEntity = qryEntities.iterator().next();
+
+        List<IgniteBiTuple<String, Boolean>> keyFields;
+
+        if (F.isEmpty(extraIdxKeyFields)) {
+            // Indexes, created dynamically via DDL contains extra unwrapped primary key fields.
+            keyFields = qryEntity.getKeyFields()
+                .stream()
+                .map(f -> F.t(f.toUpperCase(), true))
+                .collect(Collectors.toList());
+
+            // All indexes have system field '_KEY'.
+            keyFields.add(F.t(KEY_FIELD_NAME, true));
+        }
+        else
+            keyFields = extraIdxKeyFields;
+
+        // Index fields are followed by primary key fields and _KEY field.
+        List<IgniteBiTuple<String, Boolean>> fieldsList = new ArrayList<>(Arrays.asList(fields));
+        fieldsList.addAll(keyFields);
+
+        return fieldsList;
     }
 
     /**

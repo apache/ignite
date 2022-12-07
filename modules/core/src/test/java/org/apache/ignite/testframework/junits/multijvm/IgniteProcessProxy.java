@@ -17,6 +17,7 @@
 
 package org.apache.ignite.testframework.junits.multijvm;
 
+import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
@@ -28,12 +29,10 @@ import java.util.concurrent.ConcurrentMap;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.TimeUnit;
-import java.util.function.Function;
+import java.util.function.Supplier;
 import javax.cache.CacheException;
 import org.apache.ignite.DataRegionMetrics;
 import org.apache.ignite.DataRegionMetricsAdapter;
-import org.apache.ignite.DataStorageMetrics;
-import org.apache.ignite.DataStorageMetricsAdapter;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteAtomicLong;
 import org.apache.ignite.IgniteAtomicReference;
@@ -62,7 +61,6 @@ import org.apache.ignite.IgniteSystemProperties;
 import org.apache.ignite.IgniteTransactions;
 import org.apache.ignite.Ignition;
 import org.apache.ignite.MemoryMetrics;
-import org.apache.ignite.PersistenceMetrics;
 import org.apache.ignite.cache.affinity.Affinity;
 import org.apache.ignite.cluster.ClusterGroup;
 import org.apache.ignite.cluster.ClusterNode;
@@ -102,6 +100,8 @@ import org.apache.ignite.testframework.junits.IgniteTestResources;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
+import static org.junit.Assert.fail;
+
 /**
  * Ignite proxy for ignite instance at another JVM.
  */
@@ -123,7 +123,7 @@ public class IgniteProcessProxy implements IgniteEx {
     private final transient IgniteConfiguration cfg;
 
     /** Local JVM grid. */
-    private final transient Function<Void, Ignite> locJvmGrid;
+    private final transient Supplier<Ignite> locJvmGrid;
 
     /** Logger. */
     private final transient IgniteLogger log;
@@ -139,7 +139,7 @@ public class IgniteProcessProxy implements IgniteEx {
      */
     public IgniteProcessProxy(IgniteConfiguration cfg, IgniteLogger log, Ignite locJvmGrid)
         throws Exception {
-        this(cfg, log, (Function<Void, Ignite>)locJvmGrid, true);
+        this(cfg, log, locJvmGrid == null ? null : () -> locJvmGrid, true);
     }
 
     /**
@@ -148,7 +148,7 @@ public class IgniteProcessProxy implements IgniteEx {
      * @param locJvmGrid Local JVM grid.
      * @throws Exception On error.
      */
-    public IgniteProcessProxy(IgniteConfiguration cfg, IgniteLogger log, Function<Void, Ignite> locJvmGrid, boolean discovery)
+    public IgniteProcessProxy(IgniteConfiguration cfg, IgniteLogger log, Supplier<Ignite> locJvmGrid, boolean discovery)
         throws Exception {
         this(cfg, log, locJvmGrid, discovery, Collections.emptyList());
     }
@@ -163,7 +163,7 @@ public class IgniteProcessProxy implements IgniteEx {
     public IgniteProcessProxy(
         IgniteConfiguration cfg,
         IgniteLogger log,
-        Function<Void, Ignite> locJvmGrid,
+        Supplier<Ignite> locJvmGrid,
         boolean resetDiscovery,
         List<String> additionalArgs
     )
@@ -173,6 +173,9 @@ public class IgniteProcessProxy implements IgniteEx {
         this.locJvmGrid = locJvmGrid;
         this.log = logger(log, "jvm-" + id.toString().substring(0, id.toString().indexOf('-')));
 
+        final String javaHome = System.getProperty(TEST_MULTIJVM_JAVA_HOME);
+        validateRemoteJre(javaHome);
+
         String params = params(cfg, resetDiscovery);
 
         Collection<String> filteredJvmArgs = filteredJvmArgs();
@@ -181,7 +184,7 @@ public class IgniteProcessProxy implements IgniteEx {
         final CountDownLatch rmtNodeStartedLatch = new CountDownLatch(1);
 
         if (locJvmGrid != null)
-            locJvmGrid.apply(null).events()
+            locJvmGrid.get().events()
                 .localListen(new NodeStartedListener(id, rmtNodeStartedLatch), EventType.EVT_NODE_JOINED);
 
         proc = GridJavaProcess.exec(
@@ -189,14 +192,10 @@ public class IgniteProcessProxy implements IgniteEx {
             params,
             this.log,
             // Optional closure to be called each time wrapped process prints line to system.out or system.err.
-            new IgniteInClosure<String>() {
-                @Override public void apply(String s) {
-                    IgniteProcessProxy.this.log.info(s);
-                }
-            },
+            (IgniteInClosure<String>)this.log::info,
             null,
-            System.getProperty(TEST_MULTIJVM_JAVA_HOME),
-            filteredJvmArgs, // JVM Args.
+            javaHome,
+            filteredJvmArgs,
             System.getProperty("surefire.test.class.path")
         );
 
@@ -210,6 +209,25 @@ public class IgniteProcessProxy implements IgniteEx {
 
             throw new IllegalStateException("There was found instance assotiated with " + cfg.getIgniteInstanceName() +
                 ", instance= " + prevVal + ". New started node was stopped.");
+        }
+    }
+
+    /**
+     * Validates that the JRE corresponding to the given Java home is valid for use as a remote JVM.
+     * This currently means only checking that its major version matches the major version of the JRE we run on.
+     *
+     * @param javaHome Java home.
+     * @throws IOException          If I/O fails when interacting with 'java' process.
+     * @throws InterruptedException If we get interrupted.
+     */
+    private static void validateRemoteJre(@Nullable String javaHome) throws IOException, InterruptedException {
+        int remoteMajorVersion = new JavaVersionCommand().majorVersion(javaHome);
+        int localMajorVersion = U.majorJavaVersion(System.getProperty("java.version"));
+
+        if (localMajorVersion != remoteMajorVersion) {
+            fail("Version of remote java with home at '" + javaHome + "' (" + remoteMajorVersion +
+                ") is different from local java version (" + localMajorVersion + "). " +
+                "Make sure test.multijvm.java.home property specifies a path to a correct Java installation");
         }
     }
 
@@ -433,7 +451,7 @@ public class IgniteProcessProxy implements IgniteEx {
      * @return Local JVM grid instance.
      */
     public Ignite localJvmGrid() {
-        return locJvmGrid.apply(null);
+        return locJvmGrid.get();
     }
 
     /**
@@ -805,11 +823,6 @@ public class IgniteProcessProxy implements IgniteEx {
     }
 
     /** {@inheritDoc} */
-    @Override public DataStorageMetrics dataStorageMetrics() {
-        throw new UnsupportedOperationException("Operation isn't supported yet.");
-    }
-
-    /** {@inheritDoc} */
     @Override public IgniteEncryption encryption() {
         throw new UnsupportedOperationException("Operation isn't supported yet.");
     }
@@ -827,11 +840,6 @@ public class IgniteProcessProxy implements IgniteEx {
     /** {@inheritDoc} */
     @Nullable @Override public MemoryMetrics memoryMetrics(String memPlcName) {
         return DataRegionMetricsAdapter.valueOf(dataRegionMetrics(memPlcName));
-    }
-
-    /** {@inheritDoc} */
-    @Override public PersistenceMetrics persistentStoreMetrics() {
-        return DataStorageMetricsAdapter.valueOf(dataStorageMetrics());
     }
 
     /** {@inheritDoc} */

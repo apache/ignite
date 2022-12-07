@@ -23,7 +23,6 @@ import java.util.Iterator;
 import java.util.List;
 import java.util.function.Function;
 import java.util.function.Predicate;
-import java.util.function.Supplier;
 import org.apache.calcite.rel.type.RelDataType;
 import org.apache.calcite.util.ImmutableBitSet;
 import org.apache.calcite.util.ImmutableIntList;
@@ -46,6 +45,7 @@ import org.apache.ignite.internal.processors.cache.distributed.dht.topology.Grid
 import org.apache.ignite.internal.processors.cache.distributed.dht.topology.GridDhtPartitionTopology;
 import org.apache.ignite.internal.processors.cache.mvcc.MvccSnapshot;
 import org.apache.ignite.internal.processors.query.calcite.exec.RowHandler.RowFactory;
+import org.apache.ignite.internal.processors.query.calcite.exec.exp.RangeIterable;
 import org.apache.ignite.internal.processors.query.calcite.schema.CacheTableDescriptor;
 import org.apache.ignite.internal.processors.query.calcite.type.IgniteTypeFactory;
 import org.apache.ignite.internal.processors.query.calcite.util.TypeUtils;
@@ -86,7 +86,7 @@ public class IndexScan<Row> extends AbstractIndexScan<Row, IndexRow> {
     private final ImmutableBitSet requiredColumns;
 
     /** */
-    private final InlineIndex idx;
+    protected final InlineIndex idx;
 
     /** Mapping from index keys to row fields. */
     private final ImmutableIntList idxFieldMapping;
@@ -98,10 +98,9 @@ public class IndexScan<Row> extends AbstractIndexScan<Row, IndexRow> {
      * @param ectx Execution context.
      * @param desc Table descriptor.
      * @param idxFieldMapping Mapping from index keys to row fields.
-     * @param idx Phisycal index.
+     * @param idx Physical index.
      * @param filters Additional filters.
-     * @param lowerBound Lower index scan bound.
-     * @param upperBound Upper index scan bound.
+     * @param ranges Index scan bounds.
      */
     public IndexScan(
         ExecutionContext<Row> ectx,
@@ -110,23 +109,44 @@ public class IndexScan<Row> extends AbstractIndexScan<Row, IndexRow> {
         ImmutableIntList idxFieldMapping,
         int[] parts,
         Predicate<Row> filters,
-        Supplier<Row> lowerBound,
-        Supplier<Row> upperBound,
+        RangeIterable<Row> ranges,
+        Function<Row, Row> rowTransformer,
+        @Nullable ImmutableBitSet requiredColumns
+    ) {
+        this(ectx, desc, new TreeIndexWrapper(idx), idxFieldMapping, parts, filters, ranges, rowTransformer,
+            requiredColumns);
+    }
+
+    /**
+     * @param ectx Execution context.
+     * @param desc Table descriptor.
+     * @param idxFieldMapping Mapping from index keys to row fields.
+     * @param treeIdx Physical index wrapper.
+     * @param filters Additional filters.
+     * @param ranges Index scan bounds.
+     */
+    protected IndexScan(
+        ExecutionContext<Row> ectx,
+        CacheTableDescriptor desc,
+        TreeIndexWrapper treeIdx,
+        ImmutableIntList idxFieldMapping,
+        int[] parts,
+        Predicate<Row> filters,
+        RangeIterable<Row> ranges,
         Function<Row, Row> rowTransformer,
         @Nullable ImmutableBitSet requiredColumns
     ) {
         super(
             ectx,
             desc.rowType(ectx.getTypeFactory(), requiredColumns),
-            new TreeIndexWrapper(idx),
+            treeIdx,
             filters,
-            lowerBound,
-            upperBound,
+            ranges,
             rowTransformer
         );
 
         this.desc = desc;
-        this.idx = idx;
+        this.idx = treeIdx.idx;
         cctx = desc.cacheContext();
         kctx = cctx.kernalContext();
 
@@ -286,19 +306,25 @@ public class IndexScan<Row> extends AbstractIndexScan<Row, IndexRow> {
     }
 
     /** */
-    private static class TreeIndexWrapper implements TreeIndex<IndexRow> {
+    protected static class TreeIndexWrapper implements TreeIndex<IndexRow> {
         /** Underlying index. */
-        private final InlineIndex idx;
+        protected final InlineIndex idx;
 
         /** */
-        private TreeIndexWrapper(InlineIndex idx) {
+        protected TreeIndexWrapper(InlineIndex idx) {
             this.idx = idx;
         }
 
         /** {@inheritDoc} */
-        @Override public GridCursor<IndexRow> find(IndexRow lower, IndexRow upper, IndexQueryContext qctx) {
+        @Override public GridCursor<IndexRow> find(
+            IndexRow lower,
+            IndexRow upper,
+            boolean lowerInclude,
+            boolean upperInclude,
+            IndexQueryContext qctx
+        ) {
             try {
-                return idx.find(lower, upper, true, true, qctx);
+                return idx.find(lower, upper, lowerInclude, upperInclude, qctx);
             }
             catch (IgniteCheckedException e) {
                 throw new IgniteException("Failed to find index rows", e);

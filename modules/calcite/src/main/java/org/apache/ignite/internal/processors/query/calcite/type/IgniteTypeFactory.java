@@ -23,6 +23,7 @@ import java.nio.charset.Charset;
 import java.nio.charset.StandardCharsets;
 import java.sql.Timestamp;
 import java.time.Duration;
+import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.time.LocalTime;
 import java.time.Period;
@@ -35,12 +36,12 @@ import org.apache.calcite.avatica.util.TimeUnit;
 import org.apache.calcite.jdbc.JavaTypeFactoryImpl;
 import org.apache.calcite.rel.type.RelDataType;
 import org.apache.calcite.rel.type.RelDataTypeSystem;
-import org.apache.calcite.runtime.Geometries;
 import org.apache.calcite.sql.SqlIntervalQualifier;
 import org.apache.calcite.sql.SqlUtil;
 import org.apache.calcite.sql.parser.SqlParserPos;
 import org.apache.calcite.sql.type.BasicSqlType;
 import org.apache.calcite.sql.type.IntervalSqlType;
+import org.apache.calcite.sql.type.SqlTypeName;
 import org.apache.ignite.internal.util.typedef.F;
 
 /**
@@ -54,9 +55,6 @@ public class IgniteTypeFactory extends JavaTypeFactoryImpl {
     /** Interval qualifier to create day-time interval types. */
     private static final SqlIntervalQualifier INTERVAL_QUALIFIER_DAY_TIME = new SqlIntervalQualifier(TimeUnit.DAY,
         TimeUnit.SECOND, SqlParserPos.ZERO);
-
-    /** */
-    private final RelDataType unknownType;
 
     /** */
     private final Charset charset;
@@ -80,8 +78,6 @@ public class IgniteTypeFactory extends JavaTypeFactoryImpl {
             // If JVM default charset is not supported by Calcite - use UTF-8.
             charset = StandardCharsets.UTF_8;
         }
-
-        unknownType = createUnknownType();
     }
 
     /** {@inheritDoc} */
@@ -132,7 +128,7 @@ public class IgniteTypeFactory extends JavaTypeFactoryImpl {
                 case VARBINARY:
                     return ByteString.class;
                 case GEOMETRY:
-                    return Geometries.Geom.class;
+                    throw new IllegalStateException("Unsupported data type: " + type);
                 case SYMBOL:
                     return Enum.class;
                 case ANY:
@@ -218,7 +214,7 @@ public class IgniteTypeFactory extends JavaTypeFactoryImpl {
                 case VARBINARY:
                     return byte[].class;
                 case GEOMETRY:
-                    return Geometries.Geom.class;
+                    throw new IllegalStateException("Unsupported data type: " + type);
                 case SYMBOL:
                     return Enum.class;
                 case ANY:
@@ -271,6 +267,12 @@ public class IgniteTypeFactory extends JavaTypeFactoryImpl {
                 return createTypeWithNullability(createSqlIntervalType(INTERVAL_QUALIFIER_DAY_TIME), true);
             else if (clazz == Period.class)
                 return createTypeWithNullability(createSqlIntervalType(INTERVAL_QUALIFIER_YEAR_MONTH), true);
+            else if (clazz == LocalDateTime.class)
+                return createTypeWithNullability(createSqlType(SqlTypeName.TIMESTAMP), true);
+            else if (clazz == LocalDate.class)
+                return createTypeWithNullability(createSqlType(SqlTypeName.DATE), true);
+            else if (clazz == LocalTime.class)
+                return createTypeWithNullability(createSqlType(SqlTypeName.TIME), true);
             else {
                 RelDataType relType = createCustomType(clazz);
 
@@ -299,11 +301,6 @@ public class IgniteTypeFactory extends JavaTypeFactoryImpl {
 
     /** {@inheritDoc} */
     @Override public RelDataType createTypeWithNullability(RelDataType type, boolean nullable) {
-        // TODO workaround for https://issues.apache.org/jira/browse/CALCITE-4872
-        // Remove this after update to Calcite 1.30.
-        if (unknownType.equals(type))
-            return type;
-
         if (type instanceof IgniteCustomType && type.isNullable() != nullable)
             return createCustomType(((IgniteCustomType)type).storageType(), nullable);
 
@@ -312,7 +309,8 @@ public class IgniteTypeFactory extends JavaTypeFactoryImpl {
 
     /** {@inheritDoc} */
     @Override public RelDataType createType(Type type) {
-        if (type == Duration.class || type == Period.class)
+        if (type == Duration.class || type == Period.class || type == LocalDateTime.class || type == LocalTime.class
+            || type == LocalDate.class)
             return createJavaType((Class<?>)type);
 
         RelDataType customType = createCustomType(type, false);
@@ -334,5 +332,12 @@ public class IgniteTypeFactory extends JavaTypeFactoryImpl {
         }
 
         return true;
+    }
+
+    /** {@inheritDoc} */
+    @Override public RelDataType createUnknownType() {
+        // TODO workaround for https://issues.apache.org/jira/browse/CALCITE-5297
+        // Remove this after update to Calcite 1.33.
+        return createTypeWithNullability(super.createUnknownType(), true);
     }
 }

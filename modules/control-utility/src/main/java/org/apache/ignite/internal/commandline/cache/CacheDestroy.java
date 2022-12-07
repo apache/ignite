@@ -20,7 +20,7 @@ package org.apache.ignite.internal.commandline.cache;
 import java.util.ArrayList;
 import java.util.Set;
 import java.util.TreeSet;
-import java.util.logging.Logger;
+import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.internal.client.GridClient;
 import org.apache.ignite.internal.client.GridClientConfiguration;
 import org.apache.ignite.internal.client.GridClientNode;
@@ -68,7 +68,7 @@ public class CacheDestroy extends AbstractCommand<VisorCacheStopTaskArg> {
     }
 
     /** {@inheritDoc} */
-    @Override public void printUsage(Logger log) {
+    @Override public void printUsage(IgniteLogger log) {
         String cacheNamesArgFull = CACHE_NAMES_ARG + " cache1,...,cacheN";
 
         usageCache(
@@ -118,7 +118,7 @@ public class CacheDestroy extends AbstractCommand<VisorCacheStopTaskArg> {
     }
 
     /** {@inheritDoc} */
-    @Override public Object execute(GridClientConfiguration clientCfg, Logger log) throws Exception {
+    @Override public Object execute(GridClientConfiguration clientCfg, IgniteLogger log) throws Exception {
         if (destroyAll && cacheNames == null)
             cacheNames = collectClusterCaches(clientCfg);
 

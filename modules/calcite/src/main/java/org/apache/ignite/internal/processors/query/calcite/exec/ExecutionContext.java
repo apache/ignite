@@ -33,6 +33,11 @@ import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
 import org.apache.ignite.internal.processors.cache.mvcc.MvccSnapshot;
 import org.apache.ignite.internal.processors.query.calcite.exec.exp.ExpressionFactory;
 import org.apache.ignite.internal.processors.query.calcite.exec.exp.ExpressionFactoryImpl;
+import org.apache.ignite.internal.processors.query.calcite.exec.tracker.ExecutionNodeMemoryTracker;
+import org.apache.ignite.internal.processors.query.calcite.exec.tracker.MemoryTracker;
+import org.apache.ignite.internal.processors.query.calcite.exec.tracker.NoOpMemoryTracker;
+import org.apache.ignite.internal.processors.query.calcite.exec.tracker.NoOpRowTracker;
+import org.apache.ignite.internal.processors.query.calcite.exec.tracker.RowTracker;
 import org.apache.ignite.internal.processors.query.calcite.metadata.ColocationGroup;
 import org.apache.ignite.internal.processors.query.calcite.metadata.FragmentDescription;
 import org.apache.ignite.internal.processors.query.calcite.prepare.AbstractQueryContext;
@@ -52,6 +57,9 @@ import static org.apache.ignite.internal.processors.query.calcite.util.Commons.c
 public class ExecutionContext<Row> extends AbstractQueryContext implements DataContext {
     /** Placeholder for values, which expressions is not specified. */
     private static final Object UNSPECIFIED_VALUE = new Object();
+
+    /** Placeholder for NULL values in search bounds. */
+    private static final Object NULL_BOUND = new Object();
 
     /** */
     private final UUID qryId;
@@ -87,6 +95,9 @@ public class ExecutionContext<Row> extends AbstractQueryContext implements DataC
     private final BaseDataContext baseDataContext;
 
     /** */
+    private final MemoryTracker qryMemoryTracker;
+
+    /** */
     private Object[] correlations = new Object[16];
 
     /**
@@ -105,6 +116,7 @@ public class ExecutionContext<Row> extends AbstractQueryContext implements DataC
         AffinityTopologyVersion topVer,
         FragmentDescription fragmentDesc,
         RowHandler<Row> handler,
+        MemoryTracker qryMemoryTracker,
         Map<String, Object> params
     ) {
         super(qctx);
@@ -116,6 +128,7 @@ public class ExecutionContext<Row> extends AbstractQueryContext implements DataC
         this.topVer = topVer;
         this.fragmentDesc = fragmentDesc;
         this.handler = handler;
+        this.qryMemoryTracker = qryMemoryTracker;
         this.params = params;
 
         baseDataContext = new BaseDataContext(qctx.typeFactory());
@@ -308,6 +321,19 @@ public class ExecutionContext<Row> extends AbstractQueryContext implements DataC
     /** */
     public Object unspecifiedValue() {
         return UNSPECIFIED_VALUE;
+    }
+
+    /** */
+    public Object nullBound() {
+        return NULL_BOUND;
+    }
+
+    /** */
+    public <R> RowTracker<R> createNodeMemoryTracker(long rowOverhead) {
+        if (qryMemoryTracker == NoOpMemoryTracker.INSTANCE)
+            return NoOpRowTracker.instance();
+        else
+            return new ExecutionNodeMemoryTracker<R>(qryMemoryTracker, rowOverhead);
     }
 
     /** {@inheritDoc} */

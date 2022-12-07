@@ -22,8 +22,8 @@ import java.util.Date;
 import java.util.List;
 import java.util.Map;
 import java.util.UUID;
-import java.util.logging.Logger;
 import java.util.stream.Collectors;
+import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.internal.commandline.CommandArgIterator;
 import org.apache.ignite.internal.commandline.systemview.SystemViewCommand;
 import org.apache.ignite.internal.util.GridStringBuilder;
@@ -48,7 +48,7 @@ public class SnapshotStatusCommand extends SnapshotSubcommand {
     }
 
     /** {@inheritDoc} */
-    @Override protected void printResult(Object res, Logger log) {
+    @Override protected void printResult(Object res, IgniteLogger log) {
         if (res == null) {
             log.info("There is no create or restore snapshot operation in progress.");
 
@@ -107,7 +107,7 @@ public class SnapshotStatusCommand extends SnapshotSubcommand {
     }
 
     /** {@inheritDoc} */
-    @Override public void printUsage(Logger log) {
+    @Override public void printUsage(IgniteLogger log) {
         usage(log, "Get the status of the current snapshot operation:", SNAPSHOT, STATUS.toString());
     }
 }
