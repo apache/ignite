@@ -50,7 +50,8 @@ import org.apache.ignite.internal.processors.cache.GridCacheMvccEntryInfo;
 import org.apache.ignite.internal.processors.cache.GridCacheReturn;
 import org.apache.ignite.internal.processors.cache.GridChangeGlobalStateMessageResponse;
 import org.apache.ignite.internal.processors.cache.KeyCacheObjectImpl;
-import org.apache.ignite.internal.processors.cache.TransformedCacheObject;
+import org.apache.ignite.internal.processors.cache.TransformedBinaryObject;
+import org.apache.ignite.internal.processors.cache.TransformedKeyBinaryObject;
 import org.apache.ignite.internal.processors.cache.WalStateAckMessage;
 import org.apache.ignite.internal.processors.cache.binary.MetadataRequestMessage;
 import org.apache.ignite.internal.processors.cache.binary.MetadataResponseMessage;
@@ -327,7 +328,6 @@ public class GridIoMessageFactory implements MessageFactoryProvider {
         factory.register((short)117, GridNearSingleGetResponse::new);
         factory.register((short)118, CacheContinuousQueryBatchAck::new);
         factory.register((short)119, BinaryEnumObjectImpl::new);
-        factory.register((short)120, TransformedCacheObject::new);
 
         // [120..123] - DR
         factory.register((short)124, GridMessageCollection::new);
@@ -391,6 +391,9 @@ public class GridIoMessageFactory implements MessageFactoryProvider {
         factory.register(StatisticsColumnData.TYPE_CODE, StatisticsColumnData::new);
         factory.register(StatisticsRequest.TYPE_CODE, StatisticsRequest::new);
         factory.register(StatisticsResponse.TYPE_CODE, StatisticsResponse::new);
+
+        factory.register((short)190, TransformedBinaryObject::new);
+        factory.register((short)191, TransformedKeyBinaryObject::new);
 
         // [-3..119] [124..129] [-23..-28] [-36..-55] - this
         // [120..123] - DR

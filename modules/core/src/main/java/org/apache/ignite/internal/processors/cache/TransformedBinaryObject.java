@@ -17,60 +17,49 @@
 
 package org.apache.ignite.internal.processors.cache;
 
-import java.nio.ByteBuffer;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.binary.BinaryObject;
 import org.apache.ignite.binary.BinaryObjectBuilder;
 import org.apache.ignite.binary.BinaryObjectException;
 import org.apache.ignite.binary.BinaryType;
-import org.apache.ignite.configuration.CacheObjectsTransformer;
-import org.apache.ignite.events.CacheObjectTransformedEvent;
-import org.apache.ignite.internal.GridDirectTransient;
 import org.apache.ignite.internal.GridKernalContext;
+import org.apache.ignite.internal.binary.BinaryObjectEx;
 import org.apache.ignite.internal.processors.cacheobject.IgniteCacheObjectProcessor;
 import org.apache.ignite.plugin.extensions.communication.Message;
-import org.apache.ignite.plugin.extensions.communication.MessageWriter;
 import org.jetbrains.annotations.Nullable;
-
-import static org.apache.ignite.events.EventType.EVT_CACHE_OBJECT_TRANSFORMED;
 
 /**
  *
  */
-public class TransformedCacheObject extends CacheObjectAdapter implements BinaryObject {
+public class TransformedBinaryObject extends CacheObjectAdapter implements BinaryObjectEx {
     /** */
     private static final long serialVersionUID = 0L;
-
-    /** Cache object type. */
-    @GridDirectTransient
-    private byte cacheObjType = CacheObject.TYPE_TRANSFORMER;
-
-    /** Direct type. */
-    @GridDirectTransient
-    private short directType = 120;
-
-    /** Transformed. */
-    @GridDirectTransient
-    private boolean transformed = true;
 
     /**
      * Default constructor.
      */
-    public TransformedCacheObject() {
+    public TransformedBinaryObject() {
     }
 
     /**
      * @param val Value.
      * @param valBytes Value bytes.
      */
-    public TransformedCacheObject(CacheObject val, byte[] valBytes) {
+    public TransformedBinaryObject(BinaryObjectEx val, byte[] valBytes) {
         assert val != null || valBytes != null;
 
-        assert !(val instanceof TransformedCacheObject);
+        assert !(val instanceof TransformedBinaryObject);
 
         this.val = val;
         this.valBytes = valBytes;
+    }
+
+    /**
+     *
+     */
+    protected boolean storeValue(CacheObjectValueContext ctx) {
+        return ctx.storeValue();
     }
 
     /** {@inheritDoc} */
@@ -87,34 +76,34 @@ public class TransformedCacheObject extends CacheObjectAdapter implements Binary
 
             IgniteCacheObjectProcessor proc = ctx.kernalContext().cacheObjects();
 
-//            if (cpy) {
-//                if (valBytes == null) {
-//                    assert val != null;
-//
-//                    valBytes = proc.marshal(ctx, val);
-//                }
-//
-//                if (ldr == null) {
-//                    if (val != null)
-//                        ldr = val.getClass().getClassLoader();
-//                    else if (kernalCtx.config().isPeerClassLoadingEnabled())
-//                        ldr = kernalCtx.cache().context().deploy().globalLoader();
-//                }
-//
-//                return (T)proc.unmarshal(ctx, valBytes, ldr);
-//            }
+            if (cpy) {
+                if (valBytes == null) {
+                    assert val != null;
+
+                    valBytes = proc.marshal(ctx, val);
+                }
+
+                if (ldr == null) {
+                    if (val != null)
+                        ldr = val.getClass().getClassLoader();
+                    else if (kernalCtx.config().isPeerClassLoadingEnabled())
+                        ldr = kernalCtx.cache().context().deploy().globalLoader();
+                }
+
+                return (T)proc.unmarshal(ctx, valBytes, ldr);
+            }
 
             if (val != null)
                 return (T)val;
 
             assert valBytes != null;
 
-            Object val = proc.unmarshal(ctx, restore(ctx), kernalCtx.config().isPeerClassLoadingEnabled() ?
+            Object val = proc.unmarshal(ctx, valBytes, kernalCtx.config().isPeerClassLoadingEnabled() ?
                 kernalCtx.cache().context().deploy().globalLoader() : null);
 
-            assert !(val instanceof TransformedCacheObject);
+            assert !(val instanceof TransformedBinaryObject);
 
-            if (ctx.storeValue())
+            if (storeValue(ctx))
                 this.val = val;
 
             return (T)val;
@@ -127,7 +116,7 @@ public class TransformedCacheObject extends CacheObjectAdapter implements Binary
     /** {@inheritDoc} */
     @Override public byte[] valueBytes(CacheObjectValueContext ctx) throws IgniteCheckedException {
         if (valBytes == null)
-            valBytes = transform(((CacheObject)val).valueBytes(ctx), ctx);
+            valBytes = ctx.kernalContext().cacheObjects().marshal(ctx, val);
 
         return valBytes;
     }
@@ -146,26 +135,32 @@ public class TransformedCacheObject extends CacheObjectAdapter implements Binary
     @Override public void prepareMarshal(CacheObjectValueContext ctx) throws IgniteCheckedException {
         assert val != null || valBytes != null;
 
-        if (valBytes == null)
+        if (valBytes == null) {
+            ((CacheObject)val).prepareMarshal(ctx);
+
             valBytes = valueBytes(ctx);
+        }
     }
 
     /** {@inheritDoc} */
     @Override public void finishUnmarshal(CacheObjectValueContext ctx, ClassLoader ldr) throws IgniteCheckedException {
         assert val != null || valBytes != null;
 
-        if (val == null && ctx.storeValue())
-            val = ctx.kernalContext().cacheObjects().unmarshal(ctx, restore(ctx), ldr);
+        if (val == null && storeValue(ctx)) {
+            val = ctx.kernalContext().cacheObjects().unmarshal(ctx, valBytes, ldr);
+
+            ((CacheObject)val).finishUnmarshal(ctx, ldr);
+        }
     }
 
     /** {@inheritDoc} */
     @Override public byte cacheObjectType() {
-        return cacheObjType;
+        return CacheObject.TYPE_BINARY_TRANSFORMER;
     }
 
     /** {@inheritDoc} */
     @Override public short directType() {
-        return directType;
+        return 190;
     }
 
     /** {@inheritDoc} */
@@ -224,73 +219,35 @@ public class TransformedCacheObject extends CacheObjectAdapter implements Binary
     }
 
     /** {@inheritDoc} */
-    @Override public boolean writeTo(ByteBuffer buf, MessageWriter writer) {
-        if (transformed)
-            return super.writeTo(buf, writer);
-        else
-            return ((Message)val).writeTo(buf, writer); // Writing the original message.
+    @Override public int typeId() {
+        return ((BinaryObjectEx)val).typeId();
     }
 
-    /**
-     *
-     */
-    public byte[] transform(byte[] bytes, CacheObjectValueContext ctx) throws IgniteCheckedException {
-        try {
-            CacheObjectsTransformer trans =
-                ctx.cacheConfiguration().getCacheObjectsTransformationConfiguration().getActiveTransformer();
-
-            byte[] res = trans.transform(bytes);
-
-            if (ctx.kernalContext().event().isRecordable(EVT_CACHE_OBJECT_TRANSFORMED)) {
-                ctx.kernalContext().event().record(
-                    new CacheObjectTransformedEvent(ctx.kernalContext().discovery().localNode(),
-                        "Object transformed",
-                        EVT_CACHE_OBJECT_TRANSFORMED,
-                        bytes,
-                        res,
-                        false));
-            }
-
-            return res;
-        }
-        catch (IgniteCheckedException ex) { // Can not be transformed.
-            cacheObjType = ((CacheObject)val).cacheObjectType();
-            directType = ((Message)val).directType();
-            transformed = false;
-
-            if (ctx.kernalContext().event().isRecordable(EVT_CACHE_OBJECT_TRANSFORMED)) {
-                ctx.kernalContext().event().record(
-                    new CacheObjectTransformedEvent(ctx.kernalContext().discovery().localNode(),
-                        "Object transformation was cancelled",
-                        EVT_CACHE_OBJECT_TRANSFORMED,
-                        bytes,
-                        null,
-                        false));
-            }
-
-            return bytes;
-        }
+    /** {@inheritDoc} */
+    @Override public @Nullable BinaryType rawType() throws BinaryObjectException {
+        return ((BinaryObjectEx)val).rawType();
     }
 
-    /**
-     *
-     */
-    public byte[] restore(CacheObjectValueContext ctx) throws IgniteCheckedException {
-        CacheObjectsTransformer trans =
-            ctx.cacheConfiguration().getCacheObjectsTransformationConfiguration().getActiveTransformer();
+    /** {@inheritDoc} */
+    @Override public boolean isFlagSet(short flag) {
+        return ((BinaryObjectEx)val).isFlagSet(flag);
+    }
 
-        byte[] res = trans.restore(valBytes);
+    /** {@inheritDoc} */
+    @Override public boolean equals(Object o) {
+        if (this == o)
+            return true;
 
-        if (ctx.kernalContext().event().isRecordable(EVT_CACHE_OBJECT_TRANSFORMED)) {
-            ctx.kernalContext().event().record(
-                new CacheObjectTransformedEvent(ctx.kernalContext().discovery().localNode(),
-                    "Object restored",
-                    EVT_CACHE_OBJECT_TRANSFORMED,
-                    res,
-                    valBytes,
-                    true));
-        }
+        if (o == null || getClass() != o.getClass())
+            return false;
 
-        return res;
+        TransformedBinaryObject obj = (TransformedBinaryObject)o;
+
+        return val.equals(obj.val);
+    }
+
+    /** {@inheritDoc} */
+    @Override public int hashCode() {
+        return val.hashCode();
     }
 }

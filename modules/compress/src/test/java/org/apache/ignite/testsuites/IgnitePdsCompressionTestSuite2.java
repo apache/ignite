@@ -36,6 +36,8 @@ public class IgnitePdsCompressionTestSuite2 {
         enableCompressionByDefault();
         IgnitePdsTestSuite2.addRealPageStoreTests(suite, null);
 
+        suite.addAll(IgniteCompressionTestSuite.suite());
+
         return suite;
     }
 }

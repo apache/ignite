@@ -33,7 +33,10 @@ public interface CacheObject extends Message {
     public static final byte TYPE_BYTE_ARR = 2;
 
     /** */
-    public static final byte TYPE_TRANSFORMER = 3;
+    public static final byte TYPE_BINARY_TRANSFORMER = 3;
+
+    /** */
+    public static final byte TYPE_BINARY_KEY_TRANSFORMER = 4;
 
     /** */
     public static final byte TYPE_BINARY = 100;

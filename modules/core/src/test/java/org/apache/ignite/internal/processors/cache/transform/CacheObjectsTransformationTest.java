@@ -17,85 +17,30 @@
 
 package org.apache.ignite.internal.processors.cache.transform;
 
-import java.util.Arrays;
-import java.util.Collection;
+import java.nio.ByteBuffer;
 import java.util.Collections;
-import java.util.Map;
-import java.util.Objects;
-import java.util.Set;
-import java.util.concurrent.ConcurrentLinkedDeque;
-import java.util.function.Supplier;
-import java.util.stream.Collectors;
-import com.google.common.collect.Sets;
+import java.util.List;
+import com.google.common.collect.Lists;
 import org.apache.ignite.Ignite;
-import org.apache.ignite.IgniteCache;
 import org.apache.ignite.IgniteCheckedException;
-import org.apache.ignite.IgniteDataStreamer;
 import org.apache.ignite.binary.BinaryObject;
 import org.apache.ignite.binary.BinaryObjectBuilder;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.CacheObjectsTransformationConfiguration;
 import org.apache.ignite.configuration.CacheObjectsTransformer;
-import org.apache.ignite.configuration.IgniteConfiguration;
-import org.apache.ignite.events.CacheObjectTransformedEvent;
-import org.apache.ignite.events.EventType;
-import org.apache.ignite.internal.processors.cache.TransformedCacheObject;
-import org.apache.ignite.internal.util.typedef.G;
-import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.junit.Test;
 
-import static org.apache.ignite.cache.CacheWriteSynchronizationMode.FULL_SYNC;
-
 /**
- * Leak test.
+ *
  */
-public class CacheObjectsTransformationTest extends GridCommonAbstractTest {
-    /** Cache name. */
-    protected static final String CACHE_NAME = "data";
-
-    /** Nodes count. */
-    protected static final int NODES = 3;
-
-    /** Key. */
-    protected static int key;
-
-    /** Event queue. */
-    protected final ConcurrentLinkedDeque<CacheObjectTransformedEvent> evtQueue = new ConcurrentLinkedDeque<>();
-
+public class CacheObjectsTransformationTest extends AbstractCacheObjectsTransformationTest {
     /** {@inheritDoc} */
-    @Override protected void afterTest() throws Exception {
-        super.afterTest();
+    @Override protected CacheConfiguration cacheConfiguration() {
+        CacheConfiguration cfg = super.cacheConfiguration();
 
-        stopAllGrids();
-    }
-
-    /** {@inheritDoc} */
-    @Override protected IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {
-        IgniteConfiguration cfg = super.getConfiguration(igniteInstanceName);
-
-        cfg.setCacheConfiguration(cacheConfiguration());
-        cfg.setIncludeEventTypes(EventType.EVT_CACHE_OBJECT_TRANSFORMED);
-
-        return cfg;
-    }
-
-    /**
-     * Gets cache configuration.
-     *
-     * @return Data cache configuration.
-     */
-    protected CacheConfiguration cacheConfiguration() {
-        CacheConfiguration cfg = defaultCacheConfiguration();
-
-        cfg.setName(CACHE_NAME);
-        cfg.setBackups(NODES);
-        cfg.setReadFromBackup(true);
-        cfg.setWriteSynchronizationMode(FULL_SYNC);
         cfg.setCacheObjectsTransformationConfiguration(
             new CacheObjectsTransformationConfiguration()
                 .setActiveTransformer(new ControllableCacheObjectsTransformer()));
-
-        // TODO atomic caches
 
         return cfg;
     }
@@ -104,74 +49,19 @@ public class CacheObjectsTransformationTest extends GridCommonAbstractTest {
      * @throws Exception If failed.
      */
     @Test
-    public void test() throws Exception {
-        Ignite ignite = startGrids(NODES);
-
-        awaitPartitionMapExchange();
-
-        ignite.events().remoteListen(
-            (uuid, evt) -> {
-                assertTrue(evt instanceof CacheObjectTransformedEvent);
-
-                evtQueue.add((CacheObjectTransformedEvent)evt);
-
-                return true;
-            },
-            null,
-            EventType.EVT_CACHE_OBJECT_TRANSFORMED);
-
-        int i = -42; // Avoiding intersection with an incremental key.
-        int[] is = new int[] {i, i, i};
-        Set<Integer> iSet = Sets.newHashSet(i, i, i);
-
-        putAndCheck(i, false);
-        putAndCheck(is, false);
-        putAndCheck(iSet, false);
-
-        String str = "test";
-        String[] strs = new String[] {str, str, str};
-        Set<String> strSet = Sets.newHashSet(str, str, str);
-
-        putAndCheck(str, false);
-        putAndCheck(strs, false);
-        putAndCheck(strSet, false);
-
-        BinarizableData data = new BinarizableData(str, Collections.singletonMap(i, i), i);
-        BinarizableData[] datas = new BinarizableData[] {data, data, data};
-        Set<BinarizableData> dataSet = Sets.newHashSet(data, data, data);
-
-        putAndCheck(data, true);
-        putAndCheck(datas, true);
-        putAndCheck(dataSet, true);
-
-        BinaryObjectBuilder builder = ignite.binary().builder(BinarizableData.class.getName());
-
-        builder.setField("str", str);
-        builder.setField("map", Collections.singletonMap(i, i));
-        builder.setField("i", i);
-
-        BinaryObject bo = builder.build();
-        BinaryObject[] bos = new BinaryObject[] {bo, bo, bo};
-        Set<BinaryObject> boSet = Sets.newHashSet(bo, bo, bo);
-
-        putAndCheck(bo, true);
-        putAndCheck(bos, true);
-        putAndCheck(boSet, true);
+    public void testTransformable() throws Exception {
+        doTest();
     }
 
     /**
-     * @param obj Object.
-     * @param binarizable Binarizable.
+     * @throws Exception If failed.
      */
-    private void putAndCheck(Object obj, boolean binarizable) {
-        putAndCheck(obj, binarizable, true, true);
-        putAndCheck(obj, binarizable, true, false);
-
+    @Test
+    public void testUntransformable() throws Exception {
         try {
             ControllableCacheObjectsTransformer.fail = true;
 
-            putAndCheck(obj, binarizable, false, true);
-            putAndCheck(obj, binarizable, false, false);
+            doTest();
         }
         finally {
             ControllableCacheObjectsTransformer.fail = false;
@@ -179,178 +69,63 @@ public class CacheObjectsTransformationTest extends GridCommonAbstractTest {
     }
 
     /**
-     *
+     * @throws Exception If failed.
      */
-    protected void putAndCheck(Object obj, boolean binarizable, boolean transformable, boolean reversed) {
-        assertFalse(obj instanceof TransformedCacheObject);
+    private void doTest() throws Exception {
+        Ignite ignite = prepareCluster();
 
-        boolean binary = obj instanceof BinaryObject
-            || obj instanceof BinaryObject[]
-            || (obj instanceof Collection && ((Iterable<?>)obj).iterator().next() instanceof BinaryObject);
+        int i = -42; // Avoiding intersection with an incremental key.
+        int[] is = new int[] {i, i, i};
+        List<Integer> iList = Lists.newArrayList(i, i, i);
 
-        if (binary)
-            assertTrue(binarizable);
+        putAndCheck(i, false, false);
+        putAndCheck(is, false, false);
+        putAndCheck(iList, false, false);
 
-        Ignite node = grid(0);
+        String str = "test";
+        String[] strs = new String[] {str, str, str};
+        List<String> strList = Lists.newArrayList(str, str, str);
 
-        IgniteCache<Object, Object> cache = node.getOrCreateCache(CACHE_NAME);
+        putAndCheck(str, false, false);
+        putAndCheck(strs, false, false);
+        putAndCheck(strList, false, false);
 
-        Supplier<?> kSup = () -> reversed ? obj : ++key;
-        Supplier<?> vSup = () -> reversed ? ++key : obj;
+        BinarizableData data = new BinarizableData(str, Lists.newArrayList(i, i, i), i);
+        BinarizableData[] datas = new BinarizableData[] {data, data, data};
+        List<BinarizableData> dataList = Lists.newArrayList(data, data, data);
 
-        // PUT
-        Object k = kSup.get();
-        Object v = vSup.get();
+        putAndCheck(data, true, false);
+        putAndCheck(datas, false, true);
+        putAndCheck(dataList, false, true);
 
-        cache.put(k, v);
+        BinaryObjectBuilder builder = ignite.binary().builder(BinarizableData.class.getName());
 
-        checkPut(transformable);
-        checkEventsAbsent();
-        checkGet(k, v, !reversed && binary, !reversed && binarizable, transformable);
+        builder.setField("str", str + "!");
+        builder.setField("map", Collections.singletonMap(i, i));
+        builder.setField("i", i);
 
-        // DATASTREAMER
-        k = kSup.get();
-        v = vSup.get();
+        BinaryObject bo = builder.build();
+        BinaryObject[] bos = new BinaryObject[] {bo, bo, bo};
+        List<BinaryObject> boList = Lists.newArrayList(bo, bo, bo);
 
-        if (reversed)
-            cache.remove(obj); // Removing since the key is the same.
-
-        try (IgniteDataStreamer<Object, Object> stmr = node.dataStreamer(CACHE_NAME)) {
-            stmr.addData(k, v);
-
-            stmr.flush();
-        }
-
-        boolean checked = false;
-
-        while (!evtQueue.isEmpty()) {
-            checked = true;
-
-            checkPut(transformable);
-        }
-
-        assertTrue(checked);
-
-        checkGet(k, v, !reversed && binary, !reversed && binarizable, transformable);
+        putAndCheck(bo, true, false);
+        putAndCheck(bos, false, true);
+        putAndCheck(boList, false, true);
     }
 
     /**
-     *
+     * @param obj Object.
+     * @param binarizable Binarizable.
      */
-    private void checkPut(boolean transformable) {
-        CacheObjectTransformedEvent evt = event();
-
-        assertFalse(evt.isRestore());
-
-        if (transformable) {
-            assertNotNull(evt.toString(), evt.getTransformed());
-            assertFalse(evt.toString(), Arrays.equals(evt.getOriginal(), evt.getTransformed()));
-        }
-        else
-            assertNull(evt.toString(), evt.getTransformed());
-    }
-
-    /**
-     *
-     */
-    private void checkGet(Object key, Object expected, boolean binary, boolean binarizable, boolean transformable) {
-        for (Ignite node : G.allGrids()) {
-            getWithCheck(node, key, expected, binary, binarizable, transformable, false);
-            getWithCheck(node, key, expected, binary, binarizable, transformable, true);
-        }
-
-        checkEventsAbsent();
-    }
-
-    /**
-     *
-     */
-    private void getWithCheck(
-        Ignite node,
-        Object key,
-        Object expected,
-        boolean binary,
-        boolean binarizable,
-        boolean transformable,
-        boolean keepBinary) {
-        IgniteCache<Object, Object> cache = node.getOrCreateCache(CACHE_NAME);
-
-        if (keepBinary)
-            cache = cache.withKeepBinary();
-
-        Object obj = cache.get(key);
-
-        assertFalse(obj.getClass().getName(), obj instanceof TransformedCacheObject);
-
-        if (!keepBinary && binary) // Need to deserialize the expectation to compare with the deserialized get result.
-            expected = deserializeBinary(expected);
-
-        if (keepBinary && binarizable && !binary) // Deserializing the get result to compare with the non-binary expectation.
-            obj = deserializeBinary(obj);
-
-        if (transformable) {
-            CacheObjectTransformedEvent evt = event();
-
-            assertTrue(evt.toString(), evt.isRestore());
-        }
-
-        assertEqualsArraysAware(expected, obj);
-    }
-
-    /**
-     *
-     */
-    private void checkEventsAbsent() {
-        assertTrue(evtQueue.size() + " unhandled events", evtQueue.isEmpty());
-    }
-
-    /**
-     *
-     */
-    private CacheObjectTransformedEvent event() {
-        CacheObjectTransformedEvent evt = null;
-
-        while (evt == null)
-            evt = evtQueue.poll();
-
-        return evt;
-    }
-
-    /**
-     *
-     */
-    private Object deserializeBinary(Object obj) {
-        Object res;
-
-        if (obj instanceof Object[])
-            res = deserializeBinaryArray((Object[])obj);
-        else if (obj instanceof Collection)
-            res = deserializeBinaryCollection((Collection<Object>)obj);
-        else
-            res = ((BinaryObject)obj).deserialize();
-
-        return res;
-    }
-
-    /**
-     *
-     */
-    private Object[] deserializeBinaryArray(Object[] objs) {
-        Object[] des = new Object[objs.length];
-
-        for (int i = 0; i < (objs).length; i++)
-            des[i] = ((BinaryObject)objs[i]).deserialize();
-
-        return des;
-    }
-
-    /**
-     *
-     */
-    private Collection<Object> deserializeBinaryCollection(Collection<Object> objSet) {
-        return objSet.stream()
-            .map(obj -> ((BinaryObject)obj).deserialize())
-            .collect(Collectors.toSet());
+    private void putAndCheck(Object obj, boolean binarizable, boolean binarizableCol) {
+        for (boolean reversed : new boolean[] {true, false})
+            putAndCheck(
+                obj,
+                binarizable,
+                binarizableCol,
+                !ControllableCacheObjectsTransformer.fail,
+                !ControllableCacheObjectsTransformer.fail,
+                reversed);
     }
 
     /**
@@ -361,87 +136,21 @@ public class CacheObjectsTransformationTest extends GridCommonAbstractTest {
         private static boolean fail;
 
         /** {@inheritDoc} */
-        @Override public byte[] transform(byte[] bytes) throws IgniteCheckedException {
+        @Override public int transform(ByteBuffer src, ByteBuffer res, int ignored) throws IgniteCheckedException {
             if (fail)
                 throw new IgniteCheckedException("Failed.");
 
-            byte[] res = new byte[bytes.length];
+            if (res.capacity() < src.remaining())
+                return src.remaining();
 
-            for (int i = 0; i < bytes.length; i++)
-                res[i] = (byte)(bytes[i] + 1);
+            res.put(src);
 
-            return res;
+            return 0;
         }
 
         /** {@inheritDoc} */
-        @Override public byte[] restore(byte[] bytes) {
-            byte[] res = new byte[bytes.length];
-
-            for (int i = 0; i < bytes.length; i++)
-                res[i] = (byte)(bytes[i] - 1);
-
-            return res;
-        }
-    }
-
-    /**
-     *
-     */
-    protected static final class BinarizableData {
-        /** String. */
-        String str;
-
-        /** Map. */
-        Map<Integer, Object> map;
-
-        /** Int. */
-        Integer i;
-
-        /**
-         * @param str String.
-         * @param map Map.
-         * @param i I.
-         */
-        public BinarizableData(String str, Map<Integer, Object> map, Integer i) {
-            this.str = str;
-            this.map = map;
-            this.i = i;
-        }
-
-        /**
-         * @return String.
-         */
-        public String string() {
-            return str;
-        }
-
-        /**
-         * @param str New string.
-         */
-        public void string(String str) {
-            this.str = str;
-        }
-
-        /**
-         * @return Map.
-         */
-        public Map<Integer, Object> map() {
-            return map;
-        }
-
-        /** {@inheritDoc} */
-        @Override public boolean equals(Object o) {
-            if (this == o)
-                return true;
-            if (o == null || getClass() != o.getClass())
-                return false;
-            BinarizableData data = (BinarizableData)o;
-            return Objects.equals(str, data.str) && Objects.equals(map, data.map) && Objects.equals(i, data.i);
-        }
-
-        /** {@inheritDoc} */
-        @Override public int hashCode() {
-            return Objects.hash(str, map, i);
+        @Override public void restore(ByteBuffer transformed, ByteBuffer restored) {
+            restored.put(transformed);
         }
     }
 }
