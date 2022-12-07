@@ -562,6 +562,8 @@ public class IgniteProjectionStartStopRestartSelfTest extends GridCommonAbstract
 
         Collection<UUID> ids = new HashSet<>();
 
+        it.next();
+
         ids.add(it.next().id());
         ids.add(it.next().id());
 
