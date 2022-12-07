@@ -617,7 +617,7 @@ public class IgniteProjectionStartStopRestartSelfTest extends GridCommonAbstract
 
         assert joinedLatch.await(WAIT_TIMEOUT, MILLISECONDS);
 
-        assert ignite.cluster().nodes().size() == 3;
+        assert ignite.cluster().nodes().size() == 4;
 
         joinedLatch = new CountDownLatch(2);
         leftLatch = new CountDownLatch(2);
@@ -768,7 +768,7 @@ public class IgniteProjectionStartStopRestartSelfTest extends GridCommonAbstract
 
         assert joinedLatch.await(WAIT_TIMEOUT, MILLISECONDS);
 
-        assert ignite.cluster().nodes().size() == 3;
+        assert ignite.cluster().nodes().size() == 4;
     }
 
     /**
