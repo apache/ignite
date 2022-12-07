@@ -126,6 +126,14 @@ public class HistoricalRebalanceCheckpointTest extends GridCommonAbstractTest {
     }
 
     /**
+     * Tests delayed prepare/finish transaction requests to the backups with 1 backup and one-phase commit.
+     */
+    @Test
+    public void testDelayedToBackupsRequests1Backup() throws Exception {
+        doTestDelayedToBackupsRequests(2, false);
+    }
+
+    /**
      * Tests delayed prepare/finish transaction requests to the backups with 1 backup and one-phase commit. Does more
      * puts after the gaps.
      */
@@ -332,6 +340,8 @@ public class HistoricalRebalanceCheckpointTest extends GridCommonAbstractTest {
         Collection<PartitionHashRecordV2> conflicts =
             F.flatCollections(idleVerify(prim, DEFAULT_CACHE_NAME).counterConflicts().values());
 
+        // With 1 backup and one-phase commit partitions are the same because there are no finish requests while all
+        // prepare requests were blocked.
         assertTrue(!conflicts.isEmpty() || backupNodes == 1);
 
         // Ensure the primary node got a higher counter.
