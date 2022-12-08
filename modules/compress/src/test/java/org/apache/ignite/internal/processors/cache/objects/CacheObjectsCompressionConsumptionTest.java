@@ -27,12 +27,13 @@ import org.apache.ignite.IgniteCache;
 import org.apache.ignite.configuration.DataRegionConfiguration;
 import org.apache.ignite.configuration.DataStorageConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
+import org.apache.ignite.internal.util.typedef.G;
 import org.apache.ignite.testframework.GridTestUtils;
 
 /**
  *
  */
-public class CacheObjectsCompressionMemoryConsumptionTest extends AbstractCacheObjectsCompressionTest {
+public class CacheObjectsCompressionConsumptionTest extends AbstractCacheObjectsCompressionTest {
     /** Huge string. */
     private static final String HUGE_STRING;
 
@@ -43,7 +44,7 @@ public class CacheObjectsCompressionMemoryConsumptionTest extends AbstractCacheO
         StringBuilder sb = new StringBuilder();
 
         for (int i = 0; i < 1000; i++)
-            sb.append("AAAAAAAAAA");
+            sb.append("A");
 
         HUGE_STRING = sb.toString();
     }
@@ -99,13 +100,13 @@ public class CacheObjectsCompressionMemoryConsumptionTest extends AbstractCacheO
      */
     private void testMemoryConsumption(Function<Integer, Object> keyGen, Function<Integer, Object> valGen) throws Exception {
         List<Integer> cnts = new ArrayList<>();
-        List<Long> raws = new ArrayList<>();
-        List<Long> comps = new ArrayList<>();
+        List<Consumption> raws = new ArrayList<>();
+        List<Consumption> comps = new ArrayList<>();
 
         for (int i = 0; i < 4; i++) {
             int cnt = ThreadLocalRandom.current().nextInt(1_000, 2_000);
-            long raw;
-            long compressed;
+            Consumption raw;
+            Consumption compressed;
 
             boolean reversed = i % 2 == 0;
 
@@ -123,7 +124,8 @@ public class CacheObjectsCompressionMemoryConsumptionTest extends AbstractCacheO
                 ZstdCompressionTransformer.fail = false;
             }
 
-            assertTrue("raw=" + raw + ", compressed=" + compressed, raw > compressed);
+            assertTrue("Network, raw=" + raw.net + ", compressed=" + compressed.net, raw.net > compressed.net);
+            assertTrue("Memory, raw=" + raw.mem + ", compressed=" + compressed.mem, raw.mem > compressed.mem);
 
             cnts.add(cnt);
             raws.add(raw);
@@ -136,9 +138,9 @@ public class CacheObjectsCompressionMemoryConsumptionTest extends AbstractCacheO
     /**
      *
      */
-    private long doTest(int cnt, Function<Integer, Object> keyGen, Function<Integer, Object> valGen) throws Exception {
+    private Consumption doTest(int cnt, Function<Integer, Object> keyGen, Function<Integer, Object> valGen) throws Exception {
         try {
-            Ignite ignite = startGrid();
+            Ignite ignite = startGrids(2);
 
             IgniteCache<Object, Object> cache = ignite.getOrCreateCache(CACHE_NAME);
 
@@ -153,10 +155,41 @@ public class CacheObjectsCompressionMemoryConsumptionTest extends AbstractCacheO
 
             DataRegionMetrics metrics = ignite.dataRegionMetrics(REGION_NAME);
 
-            return Math.round(metrics.getTotalUsedSize() * metrics.getPagesFillFactor());
+            long net = 0;
+
+            for (Ignite node : G.allGrids()) {
+                net += node.configuration().getCommunicationSpi().getSentBytesCount();
+                net += node.configuration().getCommunicationSpi().getReceivedBytesCount();
+            }
+
+            long mem = Math.round(metrics.getTotalUsedSize() * metrics.getPagesFillFactor());
+
+            return new Consumption(net, mem);
         }
         finally {
             stopAllGrids();
+        }
+    }
+    /***/
+    private static class Consumption {
+        /** Network. */
+        long net;
+
+        /** Memory. */
+        long mem;
+
+        /**
+         * @param net Network.
+         * @param mem Memory.
+         */
+        public Consumption(long net, long mem) {
+            this.net = net;
+            this.mem = mem;
+        }
+
+        /** {@inheritDoc} */
+        @Override public String toString() {
+            return "[net=" + net + ", mem=" + mem + ']';
         }
     }
 }
