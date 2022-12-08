@@ -170,6 +170,7 @@ public class CacheObjectsCompressionConsumptionTest extends AbstractCacheObjects
             stopAllGrids();
         }
     }
+
     /***/
     private static class Consumption {
         /** Network. */
