@@ -43,8 +43,13 @@ public class CacheObjectTransformer {
     /** Version. */
     private static final byte VER = 0;
 
-    /***/
-    public static byte[] transform(byte[] bytes, CacheObjectValueContext ctx) throws IgniteCheckedException {
+    /**
+     * Transforms bytes according to {@link CacheObjectsTransformationConfiguration} when specified.
+     * @param bytes Given bytes.
+     * @param ctx Context.
+     * @return Transformed bytes.
+     */
+    public static byte[] transform(byte[] bytes, CacheObjectValueContext ctx) {
         try {
             CacheObjectsTransformationConfiguration transCfg =
                 ctx.cacheConfiguration().getCacheObjectsTransformationConfiguration();
@@ -111,8 +116,13 @@ public class CacheObjectTransformer {
         }
     }
 
-    /***/
-    public static byte[] restore(byte[] bytes, CacheObjectValueContext ctx) throws IgniteCheckedException {
+    /**
+     * Restores transformed bytes if necessary.
+     * @param bytes Given bytes.
+     * @param ctx Context.
+     * @return Restored bytes.
+     */
+    public static byte[] restore(byte[] bytes, CacheObjectValueContext ctx) {
         if (bytes[0] != TRANSFORMED)
             return bytes;
 
