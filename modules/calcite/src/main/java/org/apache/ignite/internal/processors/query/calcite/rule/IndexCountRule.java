@@ -41,7 +41,7 @@ import org.apache.ignite.internal.processors.query.calcite.trait.RewindabilityTr
 import org.apache.ignite.internal.processors.query.calcite.util.Commons;
 import org.immutables.value.Value;
 
-/** Tries to optimize 'COUNT(*)' to use number of index records. */
+/** Tries to optimize 'COUNT()' to use number of index records. */
 @Value.Enclosing
 public class IndexCountRule extends RelRule<IndexCountRule.Config> {
     /** */
