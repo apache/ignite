@@ -40,7 +40,6 @@ import org.apache.ignite.cache.CacheKeyConfiguration;
 import org.apache.ignite.cache.affinity.Affinity;
 import org.apache.ignite.cache.affinity.AffinityFunction;
 import org.apache.ignite.cache.store.CacheStoreSessionListener;
-import org.apache.ignite.cluster.ClusterGroup;
 import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.cluster.ClusterState;
 import org.apache.ignite.compute.ComputeJob;
@@ -344,9 +343,6 @@ public class IgniteConfiguration {
 
     /** Marshal local jobs. */
     private boolean marshLocJobs = DFLT_MARSHAL_LOCAL_JOBS;
-
-    /** Daemon flag. */
-    private boolean daemon;
 
     /** Whether or not peer class loading is enabled. */
     private boolean p2pEnabled = DFLT_P2P_ENABLED;
@@ -680,7 +676,6 @@ public class IgniteConfiguration {
         cliConnCfg = cfg.getClientConnectorConfiguration();
         connectorCfg = cfg.getConnectorConfiguration();
         consistentId = cfg.getConsistentId();
-        daemon = cfg.isDaemon();
         dataStreamerPoolSize = cfg.getDataStreamerThreadPoolSize();
         deployMode = cfg.getDeploymentMode();
         discoStartupDelay = cfg.getDiscoveryStartupDelay();
@@ -794,46 +789,6 @@ public class IgniteConfiguration {
      */
     public String getIgniteInstanceName() {
         return igniteInstanceName;
-    }
-
-    /**
-     * Whether or not this node should be a daemon node.
-     * <p>
-     * Daemon nodes are the usual grid nodes that participate in topology but not
-     * visible on the main APIs, i.e. they are not part of any cluster groups. The only
-     * way to see daemon nodes is to use {@link ClusterGroup#forDaemons()} method.
-     * <p>
-     * Daemon nodes are used primarily for management and monitoring functionality that
-     * is build on Ignite and needs to participate in the topology, but also needs to be
-     * excluded from the "normal" topology, so that it won't participate in the task execution
-     * or in-memory data grid storage.
-     *
-     * @return {@code True} if this node should be a daemon node, {@code false} otherwise.
-     * @see ClusterGroup#forDaemons()
-     */
-    public boolean isDaemon() {
-        return daemon;
-    }
-
-    /**
-     * Sets daemon flag.
-     * <p>
-     * Daemon nodes are the usual grid nodes that participate in topology but not
-     * visible on the main APIs, i.e. they are not part of any cluster group. The only
-     * way to see daemon nodes is to use {@link ClusterGroup#forDaemons()} method.
-     * <p>
-     * Daemon nodes are used primarily for management and monitoring functionality that
-     * is build on Ignite and needs to participate in the topology, but also needs to be
-     * excluded from the "normal" topology, so that it won't participate in the task execution
-     * or in-memory data grid storage.
-     *
-     * @param daemon Daemon flag.
-     * @return {@code this} for chaining.
-     */
-    public IgniteConfiguration setDaemon(boolean daemon) {
-        this.daemon = daemon;
-
-        return this;
     }
 
     /**

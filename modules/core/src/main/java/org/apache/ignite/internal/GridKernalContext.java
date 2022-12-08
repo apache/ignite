@@ -498,13 +498,6 @@ public interface GridKernalContext extends Iterable<GridComponent> {
     public void printMemoryStats();
 
     /**
-     * Checks whether this node is daemon.
-     *
-     * @return {@code True} if this node is daemon, {@code false} otherwise.
-     */
-    public boolean isDaemon();
-
-    /**
      * @return Performance suggestions object.
      */
     public GridPerformanceSuggestions performance();

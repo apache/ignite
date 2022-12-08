@@ -965,7 +965,7 @@ public class GridRestProcessor extends GridProcessorAdapter implements IgniteRes
      * @return Whether or not REST is enabled.
      */
     private boolean isRestEnabled() {
-        return !ctx.config().isDaemon() && ctx.config().getConnectorConfiguration() != null;
+        return ctx.config().getConnectorConfiguration() != null;
     }
 
     /**

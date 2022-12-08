@@ -228,11 +228,6 @@ public class GridTestNode extends GridMetadataAwareAdapter implements ClusterNod
     }
 
     /** {@inheritDoc} */
-    @Override public boolean isDaemon() {
-        return false;
-    }
-
-    /** {@inheritDoc} */
     @Override public boolean isClient() {
         return false;
     }

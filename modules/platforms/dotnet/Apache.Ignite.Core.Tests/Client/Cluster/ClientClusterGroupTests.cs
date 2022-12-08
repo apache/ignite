@@ -276,7 +276,6 @@ namespace Apache.Ignite.Core.Tests.Client.Cluster
             AssertExtensions.ReflectionEqual(clusterNode.Addresses, clientNode.Addresses);
             AssertExtensions.ReflectionEqual(clusterNode.HostNames, clientNode.HostNames);
             AssertExtensions.ReflectionEqual(clusterNode.IsClient, clientNode.IsClient);
-            AssertExtensions.ReflectionEqual(clusterNode.IsDaemon, clientNode.IsDaemon);
             AssertExtensions.ReflectionEqual(clusterNode.IsLocal, clientNode.IsLocal);
             AssertExtensions.ReflectionEqual(clusterNode.Order, clientNode.Order);
             AssertExtensions.ReflectionEqual(clusterNode.Version, clientNode.Version);

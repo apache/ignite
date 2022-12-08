@@ -46,9 +46,6 @@ class GridClientComputeImpl extends GridClientAbstractProjection<GridClientCompu
         }
     };
 
-    /** */
-    private static final GridClientPredicate<GridClientNode> NOT_DAEMON = n -> !n.isDaemon();
-
     /** Projection factory. */
     @SuppressWarnings("TypeMayBeWeakened")
     private final GridClientComputeFactory prjFactory = new GridClientComputeFactory();
@@ -162,7 +159,7 @@ class GridClientComputeImpl extends GridClientAbstractProjection<GridClientCompu
      * @return Most recently refreshed topology.
      */
     @Override public Collection<GridClientNode> nodes() throws GridClientException {
-        return applyFilter(projectionNodes(), NOT_DAEMON);
+        return applyFilter(projectionNodes(), n -> true);
     }
 
     /** {@inheritDoc} */
@@ -177,12 +174,7 @@ class GridClientComputeImpl extends GridClientAbstractProjection<GridClientCompu
         throws GridClientException {
         A.notNull(filter, "filter");
 
-        return applyFilter(projectionNodes(), new GridClientAndPredicate<>(filter, NOT_DAEMON));
-    }
-
-    /** {@inheritDoc} */
-    @Override public Collection<GridClientNode> daemonNodes() throws GridClientException {
-        return applyFilter(projectionNodes(), GridClientNode::isDaemon);
+        return applyFilter(projectionNodes(), new GridClientAndPredicate<>(filter, n -> true));
     }
 
     /** {@inheritDoc} */
