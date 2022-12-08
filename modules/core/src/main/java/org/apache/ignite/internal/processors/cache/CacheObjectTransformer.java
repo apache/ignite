@@ -26,9 +26,7 @@ import org.apache.ignite.events.CacheObjectTransformedEvent;
 import static org.apache.ignite.events.EventType.EVT_CACHE_OBJECT_TRANSFORMED;
 import static org.apache.ignite.internal.binary.GridBinaryMarshaller.TRANSFORMED;
 
-/**
- *
- */
+/** */
 public class CacheObjectTransformer {
     /** Overhead. */
     private static final int OVERHEAD = 6;
@@ -45,9 +43,7 @@ public class CacheObjectTransformer {
     /** Version. */
     private static final byte VER = 0;
 
-    /**
-     *
-     */
+    /***/
     public static byte[] transform(byte[] bytes, CacheObjectValueContext ctx) throws IgniteCheckedException {
         try {
             CacheObjectsTransformationConfiguration transCfg =
@@ -115,9 +111,7 @@ public class CacheObjectTransformer {
         }
     }
 
-    /**
-     *
-     */
+    /***/
     public static byte[] restore(byte[] bytes, CacheObjectValueContext ctx) throws IgniteCheckedException {
         if (bytes[0] != TRANSFORMED)
             return bytes;
@@ -160,9 +154,7 @@ public class CacheObjectTransformer {
         return res;
     }
 
-    /**
-     *
-     */
+    /***/
     private static ByteBuffer sourceByteBuffer(byte[] bytes, boolean direct) {
         ByteBuffer src;
 
@@ -178,15 +170,12 @@ public class CacheObjectTransformer {
         return src;
     }
 
-    /**
-     */
+    /***/
     private static final class ThreadLocalByteBuffer extends ThreadLocal<ByteBuffer> {
-        /** */
+        /***/
         final int size;
 
-        /**
-         * @param size Size.
-         */
+        /***/
         ThreadLocalByteBuffer(int size) {
             this.size = size;
         }
@@ -196,7 +185,7 @@ public class CacheObjectTransformer {
             return allocateDirectBuffer(size);
         }
 
-        /** {@inheritDoc} */
+        /***/
         public ByteBuffer get(int capacity) {
             ByteBuffer buf = super.get();
 
@@ -221,9 +210,7 @@ public class CacheObjectTransformer {
         }
     }
 
-    /**
-     *
-     */
+    /***/
     private static ByteBuffer allocateDirectBuffer(int cap) {
         return ByteBuffer.allocateDirect(cap);
     }
