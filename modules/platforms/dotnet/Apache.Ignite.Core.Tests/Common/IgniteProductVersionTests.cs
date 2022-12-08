@@ -149,6 +149,9 @@ namespace Apache.Ignite.Core.Tests.Common
             // We do not add -SNAPSHOT in .NET
             logVersion = logVersion.Replace("-SNAPSHOT", "");
 
+            // For development environments
+            logVersion = logVersion.Replace(":DEV", ":00000000");
+
             IgniteProductVersion version = Ignite.GetVersion();
 
             Assert.AreEqual(logVersion, version.ToString());
