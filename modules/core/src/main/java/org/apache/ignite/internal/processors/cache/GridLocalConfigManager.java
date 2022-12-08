@@ -330,9 +330,6 @@ public class GridLocalConfigManager {
      * @throws IgniteCheckedException If failed.
      */
     public CacheJoinNodeDiscoveryData restoreCacheConfigurations() throws IgniteCheckedException {
-        if (ctx.isDaemon())
-            return null;
-
         Map<String, CacheJoinNodeDiscoveryData.CacheInfo> caches = new HashMap<>();
 
         Map<String, CacheJoinNodeDiscoveryData.CacheInfo> templates = new HashMap<>();
@@ -525,8 +522,6 @@ public class GridLocalConfigManager {
         Map<String, CacheJoinNodeDiscoveryData.CacheInfo> templates,
         IgniteConfiguration igniteCfg
     ) throws IgniteCheckedException {
-        assert !igniteCfg.isDaemon() : "Trying to restore cache configurations on daemon node.";
-
         CacheConfiguration[] cfgs = igniteCfg.getCacheConfiguration();
 
         for (int i = 0; i < cfgs.length; i++) {

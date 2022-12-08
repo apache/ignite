@@ -217,7 +217,7 @@ public class SnapshotRestoreProcess {
 
         try {
             if (ctx.clientNode())
-                throw new IgniteException(OP_REJECT_MSG + "Client and daemon nodes can not perform this operation.");
+                throw new IgniteException(OP_REJECT_MSG + "Client nodes can not perform this operation.");
 
             DiscoveryDataClusterState clusterState = ctx.state().clusterState();
 

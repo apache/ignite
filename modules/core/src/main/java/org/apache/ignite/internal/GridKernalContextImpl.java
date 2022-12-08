@@ -35,7 +35,6 @@ import java.util.concurrent.ForkJoinPool;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.IgniteLogger;
-import org.apache.ignite.IgniteSystemProperties;
 import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.failure.FailureType;
@@ -395,9 +394,6 @@ public class GridKernalContextImpl implements GridKernalContext, Externalizable 
 
     /** Recovery mode flag. Flag is set to {@code false} when discovery manager started. */
     private boolean recoveryMode = true;
-
-    /** */
-    private final boolean igniteDaemon = IgniteSystemProperties.getBoolean(IgniteSystemProperties.IGNITE_DAEMON);
 
     /**
      * No-arg constructor is required by externalization.
@@ -906,14 +902,6 @@ public class GridKernalContextImpl implements GridKernalContext, Externalizable 
     }
 
     /** {@inheritDoc} */
-    @Override public boolean isDaemon() {
-        ClusterNode locNode0 = localNode();
-
-        return locNode0 != null ? locNode0.isDaemon() :
-            (config().isDaemon() || igniteDaemon);
-    }
-
-    /** {@inheritDoc} */
     @Override public String userVersion(ClassLoader ldr) {
         return spring != null ? spring.userVersion(ldr, log(spring.getClass())) : U.DFLT_USER_VERSION;
     }
@@ -1016,7 +1004,7 @@ public class GridKernalContextImpl implements GridKernalContext, Externalizable 
 
     /** {@inheritDoc} */
     @Override public boolean clientNode() {
-        return cfg.isClientMode() || cfg.isDaemon();
+        return cfg.isClientMode();
     }
 
     /** {@inheritDoc} */

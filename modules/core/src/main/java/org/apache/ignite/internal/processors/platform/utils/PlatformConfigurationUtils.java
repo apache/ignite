@@ -746,8 +746,6 @@ public class PlatformConfigurationUtils {
         if (locHost != null)
             cfg.setLocalHost(locHost);
         if (in.readBoolean())
-            cfg.setDaemon(in.readBoolean());
-        if (in.readBoolean())
             cfg.setFailureDetectionTimeout(in.readLong());
         if (in.readBoolean())
             cfg.setClientFailureDetectionTimeout(in.readLong());
@@ -1351,8 +1349,6 @@ public class PlatformConfigurationUtils {
         w.writeLong(cfg.getNetworkTimeout());
         w.writeString(cfg.getWorkDirectory());
         w.writeString(cfg.getLocalHost());
-        w.writeBoolean(true);
-        w.writeBoolean(cfg.isDaemon());
         w.writeBoolean(true);
         w.writeLong(cfg.getFailureDetectionTimeout());
         w.writeBoolean(true);

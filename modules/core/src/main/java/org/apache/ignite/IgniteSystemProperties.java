@@ -186,15 +186,6 @@ public final class IgniteSystemProperties {
         type = Integer.class, defaults = "0")
     public static final String IGNITE_RESTART_CODE = "IGNITE_RESTART_CODE";
 
-    /**
-     * Presence of this system property with value {@code true} will make the grid
-     * node start as a daemon node. Node that this system property will override
-     * {@link org.apache.ignite.configuration.IgniteConfiguration#isDaemon()} configuration.
-     */
-    @SystemProperty("If true Ignite will start as a daemon node. Note that this system property " +
-        "will override IgniteConfiguration.isDaemon() configuration")
-    public static final String IGNITE_DAEMON = "IGNITE_DAEMON";
-
     /** Defines Ignite installation folder. */
     @SystemProperty(value = "Defines Ignite installation folder", type = String.class, defaults = "")
     public static final String IGNITE_HOME = "IGNITE_HOME";

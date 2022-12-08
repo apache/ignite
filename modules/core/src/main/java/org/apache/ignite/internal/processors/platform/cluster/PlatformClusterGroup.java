@@ -89,9 +89,6 @@ public class PlatformClusterGroup extends PlatformAbstractTarget {
     private static final int OP_FOR_REMOTES = 17;
 
     /** */
-    private static final int OP_FOR_DAEMONS = 18;
-
-    /** */
     private static final int OP_FOR_RANDOM = 19;
 
     /** */
@@ -421,9 +418,6 @@ public class PlatformClusterGroup extends PlatformAbstractTarget {
         switch (type) {
             case OP_FOR_REMOTES:
                 return new PlatformClusterGroup(platformCtx, (ClusterGroupEx)prj.forRemotes());
-
-            case OP_FOR_DAEMONS:
-                return new PlatformClusterGroup(platformCtx, (ClusterGroupEx)prj.forDaemons());
 
             case OP_FOR_RANDOM:
                 return new PlatformClusterGroup(platformCtx, (ClusterGroupEx)prj.forRandom());

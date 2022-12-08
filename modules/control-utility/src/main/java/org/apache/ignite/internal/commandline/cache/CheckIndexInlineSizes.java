@@ -50,7 +50,7 @@ public class CheckIndexInlineSizes extends AbstractCommand<Void> {
         "All secondary indexes have the same effective inline size on all cluster nodes.";
 
     /** Predicate to filter server nodes. */
-    private static final Predicate<GridClientNode> SRV_NODES = node -> !node.isClient() && !node.isDaemon();
+    private static final Predicate<GridClientNode> SRV_NODES = node -> !node.isClient();
 
     /** {@inheritDoc} */
     @Override public Object execute(GridClientConfiguration clientCfg, IgniteLogger log) throws Exception {

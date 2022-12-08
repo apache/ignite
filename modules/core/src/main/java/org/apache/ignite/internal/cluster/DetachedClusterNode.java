@@ -107,11 +107,6 @@ public class DetachedClusterNode implements ClusterNode {
     }
 
     /** {@inheritDoc} */
-    @Override public boolean isDaemon() {
-        return false;
-    }
-
-    /** {@inheritDoc} */
     @Override public boolean isClient() {
         return false;
     }
