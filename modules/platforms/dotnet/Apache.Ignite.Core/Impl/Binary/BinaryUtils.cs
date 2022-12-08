@@ -428,7 +428,7 @@ namespace Apache.Ignite.Core.Impl.Binary
         /// <returns>Resulting DateTime.</returns>
         public static DateTime JavaTicksToDateTime(long javaTicks)
         {
-            return new DateTime(JavaDateTicks + javaTicks * 1000, DateTimeKind.Utc);
+            return new DateTime(JavaDateTicks + javaTicks * 10000000, DateTimeKind.Utc);
         }
 
         /// <summary>
@@ -438,7 +438,7 @@ namespace Apache.Ignite.Core.Impl.Binary
         /// <returns>Ticks count</returns>
         public static long DateTimeToJavaTicks(DateTime dateTime)
         {
-            return (dateTime.Ticks - JavaDateTicks) / 1000;
+            return (dateTime.Ticks - JavaDateTicks) / 10000000;
         }
 
         /// <summary>
