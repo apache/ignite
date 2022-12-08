@@ -136,21 +136,23 @@ public class CacheObjectsTransformationTest extends AbstractCacheObjectsTransfor
         private static boolean fail;
 
         /** {@inheritDoc} */
-        @Override public int transform(ByteBuffer src, ByteBuffer res, int ignored) throws IgniteCheckedException {
+        @Override public int transform(ByteBuffer original, ByteBuffer transformed, int ignored) throws IgniteCheckedException {
             if (fail)
                 throw new IgniteCheckedException("Failed.");
 
-            if (res.capacity() < src.remaining())
-                return src.remaining();
+            if (transformed.capacity() < original.remaining()) // At least same capacity is required.
+                return original.remaining();
 
-            res.put(src);
+            while (original.hasRemaining())
+                transformed.put((byte)(original.get() + 1));
 
             return 0;
         }
 
         /** {@inheritDoc} */
         @Override public void restore(ByteBuffer transformed, ByteBuffer restored) {
-            restored.put(transformed);
+            while (transformed.hasRemaining())
+                restored.put((byte)(transformed.get() - 1));
         }
     }
 }

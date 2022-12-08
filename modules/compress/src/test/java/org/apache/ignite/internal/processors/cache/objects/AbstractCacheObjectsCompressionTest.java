@@ -88,10 +88,7 @@ public abstract class AbstractCacheObjectsCompressionTest extends AbstractCacheO
         }
 
         /** {@inheritDoc} */
-        @Override public int transform(
-            ByteBuffer original,
-            ByteBuffer transformed,
-            int overhead) throws IgniteCheckedException {
+        @Override public int transform(ByteBuffer original, ByteBuffer transformed, int overhead) throws IgniteCheckedException {
             if (fail)
                 throw new IgniteCheckedException("Failed.");
 
