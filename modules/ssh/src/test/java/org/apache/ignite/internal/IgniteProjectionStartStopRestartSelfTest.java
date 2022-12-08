@@ -26,6 +26,7 @@ import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Iterator;
 import java.util.Map;
+import java.util.Objects;
 import java.util.UUID;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.atomic.AtomicInteger;
@@ -150,11 +151,7 @@ public class IgniteProjectionStartStopRestartSelfTest extends GridCommonAbstract
         log.info("Password: " + pwd);
         log.info("Key path: " + key);
 
-        G.setDaemon(true);
-
         ignite = G.start(CFG_NO_ATTR);
-
-        G.setDaemon(false);
 
         ignite.events().localListen((IgnitePredicate<Event>)evt -> {
             info("Received event: " + evt.shortDisplay());
@@ -177,33 +174,11 @@ public class IgniteProjectionStartStopRestartSelfTest extends GridCommonAbstract
     }
 
     /** {@inheritDoc} */
-    @Override protected void afterTest() throws Exception {
-        boolean wasEmpty = true;
-
-        if (ignite != null) {
-            if (!ignite.cluster().nodes().isEmpty()) {
-                leftLatch = new CountDownLatch(ignite.cluster().nodes().size());
-
-                ignite.cluster().stopNodes();
-
-                assert leftLatch.await(
-                    WAIT_TIMEOUT,
-                    MILLISECONDS);
-            }
-
-            wasEmpty = ignite.cluster().nodes().isEmpty();
-        }
-
-        G.stop(true);
-
-        joinedCnt.set(0);
-        leftCnt.set(0);
+    @Override protected void afterTest() {
+        stopAllGrids();
 
         joinedLatch = null;
         leftLatch = null;
-
-        assert wasEmpty : "grid.isEmpty() returned false after all nodes were stopped " +
-            "[nodes=" + ignite.cluster().nodes() + ']';
     }
 
     /** {@inheritDoc} */
@@ -237,7 +212,7 @@ public class IgniteProjectionStartStopRestartSelfTest extends GridCommonAbstract
         assert joinedCnt.get() == 1;
         assert leftCnt.get() == 0;
 
-        assert ignite.cluster().nodes().size() == 1;
+        assert ignite.cluster().nodes().size() == 2;
     }
 
     /**
@@ -266,7 +241,7 @@ public class IgniteProjectionStartStopRestartSelfTest extends GridCommonAbstract
         assert joinedCnt.get() == 3;
         assert leftCnt.get() == 0;
 
-        assert ignite.cluster().nodes().size() == 3;
+        assert ignite.cluster().nodes().size() == 4;
     }
 
     /**
@@ -281,7 +256,7 @@ public class IgniteProjectionStartStopRestartSelfTest extends GridCommonAbstract
         assert joinedCnt.get() == 3;
         assert leftCnt.get() == 0;
 
-        assert ignite.cluster().nodes().size() == 3;
+        assert ignite.cluster().nodes().size() == 4;
 
         Collection<ClusterStartNodeResult> res = startNodes(ignite.cluster(),
             maps(Collections.singleton(HOST), pwd, key, 3, U.getIgniteHome(), CFG_NO_ATTR, null),
@@ -292,7 +267,7 @@ public class IgniteProjectionStartStopRestartSelfTest extends GridCommonAbstract
         assert joinedCnt.get() == 3;
         assert leftCnt.get() == 0;
 
-        assert ignite.cluster().nodes().size() == 3;
+        assert ignite.cluster().nodes().size() == 4;
     }
 
     /**
@@ -316,7 +291,7 @@ public class IgniteProjectionStartStopRestartSelfTest extends GridCommonAbstract
         assert joinedCnt.get() == 3;
         assert leftCnt.get() == 0;
 
-        assert ignite.cluster().nodes().size() == 3;
+        assert ignite.cluster().nodes().size() == 4;
     }
 
     /**
@@ -351,7 +326,7 @@ public class IgniteProjectionStartStopRestartSelfTest extends GridCommonAbstract
         assert joinedCnt.get() == 5;
         assert leftCnt.get() == 0;
 
-        assert ignite.cluster().nodes().size() == 5;
+        assert ignite.cluster().nodes().size() == 6;
     }
 
     /**
@@ -381,7 +356,7 @@ public class IgniteProjectionStartStopRestartSelfTest extends GridCommonAbstract
         assert joinedCnt.get() == 5;
         assert leftCnt.get() == 0;
 
-        assert ignite.cluster().nodes().size() == 5;
+        assert ignite.cluster().nodes().size() == 6;
     }
 
     /**
@@ -418,7 +393,7 @@ public class IgniteProjectionStartStopRestartSelfTest extends GridCommonAbstract
         assert joinedCnt.get() == 6;
         assert leftCnt.get() == 3;
 
-        assert ignite.cluster().nodes().size() == 3;
+        assert ignite.cluster().nodes().size() == 4;
     }
 
     /**
@@ -451,9 +426,15 @@ public class IgniteProjectionStartStopRestartSelfTest extends GridCommonAbstract
         assert joinedCnt.get() == 1;
         assert leftCnt.get() == 0;
 
-        assert ignite.cluster().nodes().size() == 1;
+        assert ignite.cluster().nodes().size() == 2;
 
-        assert CUSTOM_CFG_ATTR_VAL.equals(F.first(ignite.cluster().nodes()).<String>attribute(CUSTOM_CFG_ATTR_KEY));
+        Iterator<ClusterNode> iter = ignite.cluster().nodes().iterator();
+
+        iter.next();
+
+        ClusterNode node = iter.next();
+
+        assert CUSTOM_CFG_ATTR_VAL.equals(node.<String>attribute(CUSTOM_CFG_ATTR_KEY));
     }
 
     /**
@@ -479,15 +460,9 @@ public class IgniteProjectionStartStopRestartSelfTest extends GridCommonAbstract
 
         assert joinedLatch.await(WAIT_TIMEOUT, MILLISECONDS);
 
-        assert ignite.cluster().nodes().size() == 3;
+        assert ignite.cluster().nodes().size() == 4;
 
-        leftLatch = new CountDownLatch(3);
-
-        ignite.cluster().stopNodes();
-
-        assert leftLatch.await(WAIT_TIMEOUT, MILLISECONDS);
-
-        assert ignite.cluster().nodes().isEmpty();
+        stopAllGrids();
     }
 
     /**
@@ -530,7 +505,7 @@ public class IgniteProjectionStartStopRestartSelfTest extends GridCommonAbstract
 
         assert joinedLatch.await(WAIT_TIMEOUT, MILLISECONDS);
 
-        assert ignite.cluster().nodes().size() == 3;
+        assert ignite.cluster().nodes().size() == 4;
 
         leftLatch = new CountDownLatch(2);
 
@@ -543,7 +518,7 @@ public class IgniteProjectionStartStopRestartSelfTest extends GridCommonAbstract
 
         assert leftLatch.await(WAIT_TIMEOUT, MILLISECONDS);
 
-        assert ignite.cluster().nodes().size() == 1;
+        assert ignite.cluster().nodes().size() == 2;
     }
 
     /**
@@ -557,11 +532,25 @@ public class IgniteProjectionStartStopRestartSelfTest extends GridCommonAbstract
 
         leftLatch = new CountDownLatch(1);
 
-        ignite.cluster().stopNodes(Collections.singleton(F.first(ignite.cluster().forRemotes().nodes()).id()));
+        UUID toStop = null;
+
+        Collection<ClusterNode> nodes = ignite.cluster().forRemotes().nodes();
+
+        for (ClusterNode node : nodes) {
+            if (!Objects.equals(node.id(), ignite.cluster().localNode().id())) {
+                toStop = node.id();
+
+                break;
+            }
+        }
+
+        assert toStop != null;
+
+        ignite.cluster().stopNodes(Collections.singleton(toStop));
 
         assert leftLatch.await(WAIT_TIMEOUT, MILLISECONDS);
 
-        assert ignite.cluster().nodes().size() == 2;
+        assert ignite.cluster().nodes().size() == 3;
     }
 
     /**
@@ -577,6 +566,8 @@ public class IgniteProjectionStartStopRestartSelfTest extends GridCommonAbstract
 
         Iterator<ClusterNode> it = ignite.cluster().nodes().iterator();
 
+        it.next();
+
         Collection<UUID> ids = new HashSet<>();
 
         ids.add(it.next().id());
@@ -586,7 +577,7 @@ public class IgniteProjectionStartStopRestartSelfTest extends GridCommonAbstract
 
         assert leftLatch.await(WAIT_TIMEOUT, MILLISECONDS);
 
-        assert ignite.cluster().nodes().size() == 1;
+        assert ignite.cluster().nodes().size() == 2;
     }
 
     /**
@@ -606,7 +597,7 @@ public class IgniteProjectionStartStopRestartSelfTest extends GridCommonAbstract
         assert joinedLatch.await(WAIT_TIMEOUT, MILLISECONDS);
         assert leftLatch.await(WAIT_TIMEOUT, MILLISECONDS);
 
-        assert ignite.cluster().nodes().size() == 3;
+        assert ignite.cluster().nodes().size() == 4;
     }
 
     /**
@@ -649,7 +640,7 @@ public class IgniteProjectionStartStopRestartSelfTest extends GridCommonAbstract
 
         assert joinedLatch.await(WAIT_TIMEOUT, MILLISECONDS);
 
-        assert ignite.cluster().nodes().size() == 3;
+        assert ignite.cluster().nodes().size() == 4;
 
         joinedLatch = new CountDownLatch(2);
         leftLatch = new CountDownLatch(2);
@@ -665,7 +656,7 @@ public class IgniteProjectionStartStopRestartSelfTest extends GridCommonAbstract
         assert leftLatch.await(WAIT_TIMEOUT, MILLISECONDS);
         assert joinedLatch.await(WAIT_TIMEOUT, MILLISECONDS);
 
-        assert ignite.cluster().nodes().size() == 3;
+        assert ignite.cluster().nodes().size() == 4;
     }
 
     /**
@@ -685,7 +676,7 @@ public class IgniteProjectionStartStopRestartSelfTest extends GridCommonAbstract
         assert joinedLatch.await(WAIT_TIMEOUT, MILLISECONDS);
         assert leftLatch.await(WAIT_TIMEOUT, MILLISECONDS);
 
-        assert ignite.cluster().nodes().size() == 3;
+        assert ignite.cluster().nodes().size() == 4;
     }
 
     /**
@@ -702,12 +693,14 @@ public class IgniteProjectionStartStopRestartSelfTest extends GridCommonAbstract
 
         Iterator<ClusterNode> it = ignite.cluster().nodes().iterator();
 
+        it.next();
+
         ignite.cluster().restartNodes(F.asList(it.next().id(), it.next().id()));
 
         assert joinedLatch.await(WAIT_TIMEOUT, MILLISECONDS);
         assert leftLatch.await(WAIT_TIMEOUT, MILLISECONDS);
 
-        assert ignite.cluster().nodes().size() == 3;
+        assert ignite.cluster().nodes().size() == 4;
     }
 
     /**
@@ -800,7 +793,7 @@ public class IgniteProjectionStartStopRestartSelfTest extends GridCommonAbstract
 
         assert joinedLatch.await(WAIT_TIMEOUT, MILLISECONDS);
 
-        assert ignite.cluster().nodes().size() == 3;
+        assert ignite.cluster().nodes().size() == 4;
     }
 
     /**

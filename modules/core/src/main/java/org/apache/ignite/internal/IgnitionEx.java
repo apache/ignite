@@ -203,13 +203,6 @@ public class IgnitionEx {
     private static final Collection<IgnitionListener> lsnrs = new GridConcurrentHashSet<>(4);
 
     /** */
-    private static ThreadLocal<Boolean> daemon = new ThreadLocal<Boolean>() {
-        @Override protected Boolean initialValue() {
-            return false;
-        }
-    };
-
-    /** */
     private static ThreadLocal<Boolean> clientMode = new ThreadLocal<>();
 
     /** Dependency container. */
@@ -220,34 +213,6 @@ public class IgnitionEx {
      */
     private IgnitionEx() {
         // No-op.
-    }
-
-    /**
-     * Sets daemon flag.
-     * <p>
-     * If daemon flag is set then all grid instances created by the factory will be
-     * daemon, i.e. the local node for these instances will be a daemon node. Note that
-     * if daemon flag is set - it will override the same settings in {@link IgniteConfiguration#isDaemon()}.
-     * Note that you can set on and off daemon flag at will.
-     *
-     * @param daemon Daemon flag to set.
-     */
-    public static void setDaemon(boolean daemon) {
-        IgnitionEx.daemon.set(daemon);
-    }
-
-    /**
-     * Gets daemon flag.
-     * <p>
-     * If daemon flag it set then all grid instances created by the factory will be
-     * daemon, i.e. the local node for these instances will be a daemon node. Note that
-     * if daemon flag is set - it will override the same settings in {@link IgniteConfiguration#isDaemon()}.
-     * Note that you can set on and off daemon flag at will.
-     *
-     * @return Daemon flag.
-     */
-    public static boolean isDaemon() {
-        return daemon.get();
     }
 
     /**
@@ -1912,10 +1877,6 @@ public class IgnitionEx {
             String locHost = IgniteSystemProperties.getString(IGNITE_LOCAL_HOST);
 
             myCfg.setLocalHost(F.isEmpty(locHost) ? myCfg.getLocalHost() : locHost);
-
-            // Override daemon flag if it was set on the factory.
-            if (daemon.get())
-                myCfg.setDaemon(true);
 
             if (myCfg.isClientMode() == null) {
                 Boolean threadClient = clientMode.get();

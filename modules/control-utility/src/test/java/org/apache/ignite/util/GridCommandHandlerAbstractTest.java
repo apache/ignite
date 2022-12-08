@@ -93,9 +93,6 @@ public abstract class GridCommandHandlerAbstractTest extends GridCommonAbstractT
     /** */
     protected static final String CLIENT_NODE_NAME_PREFIX = "client";
 
-    /** */
-    protected static final String DAEMON_NODE_NAME_PREFIX = "daemon";
-
     /** Option is used for auto confirmation. */
     protected static final String CMD_AUTO_CONFIRMATION = "--yes";
 
@@ -275,8 +272,6 @@ public abstract class GridCommandHandlerAbstractTest extends GridCommonAbstractT
         cfg.setConsistentId(igniteInstanceName);
 
         cfg.setClientMode(igniteInstanceName.startsWith(CLIENT_NODE_NAME_PREFIX));
-
-        cfg.setDaemon(igniteInstanceName.startsWith(DAEMON_NODE_NAME_PREFIX));
 
         cfg.setIncludeEventTypes(EVT_CONSISTENCY_VIOLATION); // Extend if necessary.
 

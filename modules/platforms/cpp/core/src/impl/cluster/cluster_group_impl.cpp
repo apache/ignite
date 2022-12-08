@@ -66,8 +66,6 @@ namespace ignite
 
                     FOR_REMOTES = 17,
 
-                    FOR_DAEMONS = 18,
-
                     FOR_RANDOM = 19,
 
                     FOR_OLDEST = 20,
@@ -206,17 +204,6 @@ namespace ignite
             SP_ClusterGroupImpl ClusterGroupImpl::ForClients()
             {
                 return ForPredicate(new IsClientPredicate);
-            }
-
-            SP_ClusterGroupImpl ClusterGroupImpl::ForDaemons()
-            {
-                IgniteError err;
-
-                jobject res = InOpObject(Command::FOR_DAEMONS, err);
-
-                IgniteError::ThrowIfNeeded(err);
-
-                return FromTarget(res);
             }
 
             SP_ClusterGroupImpl ClusterGroupImpl::ForDataNodes(std::string cacheName)

@@ -93,9 +93,6 @@ namespace Apache.Ignite.Core.Impl.Cluster
         private const int OpForRemotes = 17;
 
         /** */
-        private const int OpForDaemons = 18;
-
-        /** */
         private const int OpForRandom = 19;
         
         /** */
@@ -324,12 +321,6 @@ namespace Apache.Ignite.Core.Impl.Cluster
         public IClusterGroup ForRemotes()
         {
             return GetClusterGroup(DoOutOpObject(OpForRemotes));
-        }
-
-        /** <inheritDoc /> */
-        public IClusterGroup ForDaemons()
-        {
-            return GetClusterGroup(DoOutOpObject(OpForDaemons));
         }
 
         /** <inheritDoc /> */

@@ -74,18 +74,6 @@ public interface IgniteSpiContext {
     public ClusterNode localNode();
 
     /**
-     * Gets a collection of all remote daemon nodes in topology. The daemon nodes are discovered via
-     * underlying {@link org.apache.ignite.spi.discovery.DiscoverySpi} implementation used.
-     *
-     * @return Collection of all daemon nodes.
-     * @see #localNode()
-     * @see #remoteNodes()
-     * @see #nodes()
-     * @see org.apache.ignite.spi.discovery.DiscoverySpi
-     */
-    public Collection<ClusterNode> remoteDaemonNodes();
-
-    /**
      * Gets a node instance based on its ID.
      *
      * @param nodeId ID of a node to get.

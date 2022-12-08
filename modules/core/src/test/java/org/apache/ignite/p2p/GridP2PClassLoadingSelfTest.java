@@ -137,11 +137,6 @@ public class GridP2PClassLoadingSelfTest extends GridCommonAbstractTest {
         }
 
         /** {@inheritDoc} */
-        @Override public boolean isDaemon() {
-            return false;
-        }
-
-        /** {@inheritDoc} */
         @Override public boolean isClient() {
             return false;
         }

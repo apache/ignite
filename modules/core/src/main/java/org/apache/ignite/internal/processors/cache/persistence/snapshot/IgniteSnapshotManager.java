@@ -1227,7 +1227,7 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
      */
     public List<String> localSnapshotNames() {
         if (cctx.kernalContext().clientNode())
-            throw new UnsupportedOperationException("Client and daemon nodes can not perform this operation.");
+            throw new UnsupportedOperationException("Client nodes can not perform this operation.");
 
         if (locSnpDir == null)
             return Collections.emptyList();

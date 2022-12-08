@@ -88,7 +88,7 @@ public class BaselineTopologyUpdater {
             this::isTopologyWatcherEnabled
         ), ctx.log(BaselineAutoAdjustScheduler.class));
         this.discoveryMgr = ctx.discovery();
-        this.isSupportedByLocalNode = !ctx.clientNode() && !ctx.isDaemon();
+        this.isSupportedByLocalNode = !ctx.clientNode();
         this.isPersistenceEnabled = CU.isPersistenceEnabled(cluster.ignite().configuration());
     }
 
