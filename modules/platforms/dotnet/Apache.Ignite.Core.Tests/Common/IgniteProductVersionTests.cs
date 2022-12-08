@@ -19,10 +19,14 @@ namespace Apache.Ignite.Core.Tests.Common
 {
     using System;
     using System.IO;
+    using System.Linq;
+    using System.Text.RegularExpressions;
     using Apache.Ignite.Core.Binary;
     using Apache.Ignite.Core.Common;
     using Apache.Ignite.Core.Impl.Binary;
     using Apache.Ignite.Core.Impl.Binary.IO;
+    using Apache.Ignite.Core.Log;
+    using Apache.Ignite.Core.Tests.Client.Cache;
     using NUnit.Framework;
 
     /// <summary>
@@ -35,6 +39,15 @@ namespace Apache.Ignite.Core.Tests.Common
 
         private IgniteProductVersion _defaultVersion;
 
+        /** <inheritdoc /> */
+        protected override IgniteConfiguration GetConfig()
+        {
+            return new IgniteConfiguration(base.GetConfig())
+            {
+                Logger = new ListLogger(new TestUtils.TestContextLogger()) {EnabledLevels = new[] {LogLevel.Info}}
+            };
+        }
+        
         [SetUp]
         public void SetUp()
         {
@@ -124,6 +137,21 @@ namespace Apache.Ignite.Core.Tests.Common
             Assert.AreEqual(clientVer.Major, version.Major);
             Assert.AreEqual(clientVer.Minor, version.Minor);
             Assert.AreEqual(clientVer.Build, version.Maintenance);
+        }
+
+        [Test]
+        public void TestVersionStringMatchesIgniteVersionInLog()
+        {
+            var logVersion = ((ListLogger) Ignite.Logger).Entries
+                .Select(e => Regex.Match(e.Message, @">>> ver\.\s+(\S+)")?.Groups[1].Value)
+                .First(m => !string.IsNullOrEmpty(m));
+
+            // We do not add -SNAPSHOT in .NET
+            logVersion = logVersion.Replace("-SNAPSHOT", "");
+
+            IgniteProductVersion version = Ignite.GetVersion();
+
+            Assert.AreEqual(logVersion, version.ToString());
         }
 
         [Test]
