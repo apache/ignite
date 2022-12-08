@@ -1245,7 +1245,7 @@ public class CacheObjectBinaryProcessorImpl extends GridProcessorAdapter impleme
 
         assert arr.length > 0;
 
-        return CacheObjectTransformer.transform(arr, ctx);
+        return CacheObjectTransformer.transformIfNecessary(arr, ctx);
     }
 
     /** {@inheritDoc} */
@@ -1254,7 +1254,7 @@ public class CacheObjectBinaryProcessorImpl extends GridProcessorAdapter impleme
         if (!ctx.binaryEnabled() || binaryMarsh == null)
             return U.unmarshal(ctx.kernalContext(), bytes, U.resolveClassLoader(clsLdr, ctx.kernalContext().config()));
 
-        return binaryMarsh.unmarshal(CacheObjectTransformer.restore(bytes, ctx), clsLdr);
+        return binaryMarsh.unmarshal(CacheObjectTransformer.restoreIfNecessary(bytes, ctx), clsLdr);
     }
 
     /** {@inheritDoc} */
@@ -1279,7 +1279,7 @@ public class CacheObjectBinaryProcessorImpl extends GridProcessorAdapter impleme
 
             if (key instanceof BinaryObjectImpl) {
                 // Need to create a copy because the key can be reused at the application layer after that (IGNITE-3505).
-                key = new TransformedKeyBinaryObject((BinaryObjectEx)key.copy(partition(ctx, cctx, key)), null);
+                key = CacheObjectTransformer.wrapBinaryKeyIfNecessary(ctx, key.copy(partition(ctx, cctx, key)));
             }
             else if (key.partition() == -1)
                 // Assume others KeyCacheObjects can not be reused for another cache.
@@ -1293,7 +1293,7 @@ public class CacheObjectBinaryProcessorImpl extends GridProcessorAdapter impleme
         if (obj instanceof BinaryObjectImpl) {
             ((KeyCacheObject)obj).partition(partition(ctx, cctx, obj));
 
-            return new TransformedKeyBinaryObject((BinaryObjectEx)obj, null);
+            return CacheObjectTransformer.wrapBinaryKeyIfNecessary(ctx, (KeyCacheObject)obj);
         }
 
         return toCacheKeyObject0(ctx, cctx, obj, userObj);
@@ -1340,8 +1340,8 @@ public class CacheObjectBinaryProcessorImpl extends GridProcessorAdapter impleme
                 return toCacheObject0(obj, userObj);
         }
 
-        if (res instanceof BinaryObjectEx)
-            return new TransformedBinaryObject((BinaryObjectEx)res, null);
+        if (res instanceof BinaryObject)
+            return CacheObjectTransformer.wrapBinaryIfNecessary(ctx, res);
         else
             return res;
     }
