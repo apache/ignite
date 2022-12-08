@@ -28,6 +28,7 @@ import org.apache.ignite.configuration.DataRegionConfiguration;
 import org.apache.ignite.configuration.DataStorageConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.util.typedef.G;
+import org.apache.ignite.spi.communication.CommunicationSpi;
 import org.apache.ignite.testframework.GridTestUtils;
 
 /**
@@ -153,16 +154,19 @@ public class CacheObjectsCompressionConsumptionTest extends AbstractCacheObjects
                 assertEquals(cache.get(key), val);
             }
 
-            DataRegionMetrics metrics = ignite.dataRegionMetrics(REGION_NAME);
-
             long net = 0;
+            long mem = 0;
 
             for (Ignite node : G.allGrids()) {
-                net += node.configuration().getCommunicationSpi().getSentBytesCount();
-                net += node.configuration().getCommunicationSpi().getReceivedBytesCount();
-            }
+                CommunicationSpi<?> spi = node.configuration().getCommunicationSpi();
 
-            long mem = Math.round(metrics.getTotalUsedSize() * metrics.getPagesFillFactor());
+                net += spi.getSentBytesCount();
+                net += spi.getReceivedBytesCount();
+
+                DataRegionMetrics metrics = node.dataRegionMetrics(REGION_NAME);
+
+                mem += Math.round(metrics.getTotalUsedSize() * metrics.getPagesFillFactor());
+            }
 
             return new Consumption(net, mem);
         }

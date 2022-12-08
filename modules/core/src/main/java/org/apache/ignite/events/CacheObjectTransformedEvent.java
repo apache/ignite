@@ -50,8 +50,10 @@ public class CacheObjectTransformedEvent extends EventAdapter {
         String msg,
         int type,
         byte[] original,
-        byte[] transformed, boolean restore) {
+        byte[] transformed,
+        boolean restore) {
         super(node, msg, type);
+
         this.original = original.clone();
         this.transformed = transformed == null ? null : transformed.clone();
         this.restore = restore;
