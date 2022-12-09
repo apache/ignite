@@ -108,9 +108,8 @@ public interface InlineIndexKeyType {
      *
      * @param pageAddr Page address.
      * @param off Offset.
-     * @return {@code true} if inline contains full index key. Can be {@code false} for truncated variable lenght types.
+     * @param maxSize Max size.
+     * @return {@code true} if inline contains full index key. Can be {@code false} for truncated variable length types.
      */
-    public default boolean inlinedFullValue(long pageAddr, int off) {
-        return true;
-    }
+    public boolean inlinedFullValue(long pageAddr, int off, int maxSize);
 }

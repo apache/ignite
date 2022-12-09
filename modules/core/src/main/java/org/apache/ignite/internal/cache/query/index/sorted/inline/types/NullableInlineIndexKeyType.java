@@ -34,6 +34,9 @@ public abstract class NullableInlineIndexKeyType<T extends IndexKey> implements 
     /** Value for comparison meaning 'Compare not supported for given value'. */
     public static final int COMPARE_UNSUPPORTED = Integer.MIN_VALUE;
 
+    /** Size of header for vartypes inlined values. */
+    public static final int VARTYPE_HEADER_SIZE = 3;
+
     /** Type of this key. */
     private final IndexKeyType type;
 
@@ -234,4 +237,20 @@ public abstract class NullableInlineIndexKeyType<T extends IndexKey> implements 
 
     /** Return inlined size for specified key. */
     protected abstract int inlineSize0(T key);
+
+    /** {@inheritDoc} */
+    @Override public boolean inlinedFullValue(long pageAddr, int off, int maxSize) {
+        if (maxSize < 1)
+            return false;
+
+        int type = PageUtils.getByte(pageAddr, off);
+
+        if (type == IndexKeyType.NULL.code())
+            return true;
+
+        if (keySize > 0) // For fixed length types.
+            return maxSize >= keySize + 1;
+        else // For variable length types.
+            return maxSize > VARTYPE_HEADER_SIZE && (PageUtils.getShort(pageAddr, off + 1) & 0x8000) == 0;
+    }
 }

@@ -133,7 +133,7 @@ public class LogicalRelImplementorTest extends GridCommonAbstractTest {
             null
         ) {
             @Override public ColocationGroup group(long srcId) {
-                return ColocationGroup.forNodes(Collections.singletonList(nodeId));
+                return ColocationGroup.forNodes(Collections.emptyList());
             }
         };
 
