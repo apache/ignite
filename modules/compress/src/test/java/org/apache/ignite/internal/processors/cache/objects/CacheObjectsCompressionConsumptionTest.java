@@ -18,22 +18,37 @@
 package org.apache.ignite.internal.processors.cache.objects;
 
 import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.Collection;
 import java.util.List;
-import java.util.concurrent.ThreadLocalRandom;
 import java.util.function.Function;
 import org.apache.ignite.DataRegionMetrics;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCache;
+import org.apache.ignite.client.ClientCache;
+import org.apache.ignite.client.IgniteClient;
+import org.apache.ignite.configuration.ClientConfiguration;
 import org.apache.ignite.configuration.DataRegionConfiguration;
 import org.apache.ignite.configuration.DataStorageConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
+import org.apache.ignite.internal.IgniteEx;
+import org.apache.ignite.internal.processors.metric.MetricRegistry;
 import org.apache.ignite.internal.util.typedef.G;
 import org.apache.ignite.spi.communication.CommunicationSpi;
+import org.apache.ignite.spi.metric.LongMetric;
 import org.apache.ignite.testframework.GridTestUtils;
+import org.junit.runner.RunWith;
+import org.junit.runners.Parameterized;
+
+import static org.apache.ignite.configuration.ClientConnectorConfiguration.DFLT_PORT;
+import static org.apache.ignite.internal.processors.metric.GridMetricManager.CLIENT_CONNECTOR_METRICS;
+import static org.apache.ignite.internal.util.nio.GridNioServer.RECEIVED_BYTES_METRIC_NAME;
+import static org.apache.ignite.internal.util.nio.GridNioServer.SENT_BYTES_METRIC_NAME;
 
 /**
  *
  */
+@RunWith(Parameterized.class)
 public class CacheObjectsCompressionConsumptionTest extends AbstractCacheObjectsCompressionTest {
     /** Huge string. */
     private static final String HUGE_STRING;
@@ -48,6 +63,16 @@ public class CacheObjectsCompressionConsumptionTest extends AbstractCacheObjects
             sb.append("A");
 
         HUGE_STRING = sb.toString();
+    }
+
+    /** Thin client. */
+    @Parameterized.Parameter
+    public boolean thinClient;
+
+    /** @return Test parameters. */
+    @Parameterized.Parameters(name = "thinClient={0}")
+    public static Collection<?> parameters() {
+        return Arrays.asList(new Object[][] {{false}, {true}});
     }
 
     /** {@inheritDoc} */
@@ -79,12 +104,12 @@ public class CacheObjectsCompressionConsumptionTest extends AbstractCacheObjects
      * @throws Exception If failed.
      */
     @org.junit.Test
-    public void testWrapperString() throws Exception {
+    public void testWrappedString() throws Exception {
         testMemoryConsumption((i) -> i, (i) -> new StringData(HUGE_STRING + i));
     }
 
     /**
-     * @throws Exception If failed.
+     *
      */
     @org.junit.Test
     public void testIncompressible() {
@@ -105,7 +130,7 @@ public class CacheObjectsCompressionConsumptionTest extends AbstractCacheObjects
         List<Consumption> comps = new ArrayList<>();
 
         for (int i = 0; i < 4; i++) {
-            int cnt = ThreadLocalRandom.current().nextInt(1_000, 2_000);
+            int cnt = (i + 1) * 1000;
             Consumption raw;
             Consumption compressed;
 
@@ -133,7 +158,24 @@ public class CacheObjectsCompressionConsumptionTest extends AbstractCacheObjects
             comps.add(compressed);
         }
 
-        log.info("Comparision result:\n cnt=" + cnts + "\n raw=" + raws + "\n compressed=" + comps);
+        StringBuilder sb = new StringBuilder();
+
+        sb.append("Comparision results:");
+
+        for (int i = 0; i < cnts.size(); i++)
+            sb.append("\nEntries=")
+                .append(cnts.get(i))
+                .append(",\tNetwork [raw=")
+                .append(raws.get(i).net)
+                .append(", compressed=")
+                .append(comps.get(i).net)
+                .append("],\tMemory [raw=")
+                .append(raws.get(i).mem)
+                .append(", compressed=")
+                .append(comps.get(i).mem)
+                .append("]");
+
+        log.info(sb.toString());
     }
 
     /**
@@ -145,13 +187,24 @@ public class CacheObjectsCompressionConsumptionTest extends AbstractCacheObjects
 
             IgniteCache<Object, Object> cache = ignite.getOrCreateCache(CACHE_NAME);
 
-            for (int i = 0; i < cnt; i++) {
-                Object key = keyGen.apply(i);
-                Object val = valGen.apply(i);
+            try (IgniteClient client = G.startClient(new ClientConfiguration().setAddresses("127.0.0.1:" + DFLT_PORT))) {
+                ClientCache<Object, Object> cCache = client.cache(CACHE_NAME);
 
-                cache.put(key, val);
+                for (int i = 0; i < cnt; i++) {
+                    Object key = keyGen.apply(i);
+                    Object val = valGen.apply(i);
 
-                assertEquals(cache.get(key), val);
+                    if (thinClient) {
+                        cCache.put(key, val);
+
+                        assertEquals(cCache.get(key), val);
+                    }
+                    else {
+                        cache.put(key, val);
+
+                        assertEquals(cache.get(key), val);
+                    }
+                }
             }
 
             long net = 0;
@@ -163,6 +216,11 @@ public class CacheObjectsCompressionConsumptionTest extends AbstractCacheObjects
                 net += spi.getSentBytesCount();
                 net += spi.getReceivedBytesCount();
 
+                MetricRegistry reg = mreg(node, CLIENT_CONNECTOR_METRICS);
+
+                net += reg.<LongMetric>findMetric(SENT_BYTES_METRIC_NAME).value();
+                net += reg.<LongMetric>findMetric(RECEIVED_BYTES_METRIC_NAME).value();
+
                 DataRegionMetrics metrics = node.dataRegionMetrics(REGION_NAME);
 
                 mem += Math.round(metrics.getTotalUsedSize() * metrics.getPagesFillFactor());
@@ -173,6 +231,11 @@ public class CacheObjectsCompressionConsumptionTest extends AbstractCacheObjects
         finally {
             stopAllGrids();
         }
+    }
+
+    /** Obtains the metric registry with the specified name from Ignite instance. */
+    private MetricRegistry mreg(Ignite ignite, String name) {
+        return ((IgniteEx)ignite).context().metric().registry(name);
     }
 
     /***/
