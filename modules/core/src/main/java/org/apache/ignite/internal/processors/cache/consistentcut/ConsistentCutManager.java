@@ -19,7 +19,6 @@ package org.apache.ignite.internal.processors.cache.consistentcut;
 
 import java.util.Objects;
 import java.util.UUID;
-import java.util.concurrent.atomic.AtomicReference;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.internal.pagemem.wal.record.ConsistentCutFinishRecord;
 import org.apache.ignite.internal.processors.cache.GridCacheMessage;
@@ -58,11 +57,11 @@ import static org.apache.ignite.internal.processors.cache.GridCacheUtils.baselin
 public class ConsistentCutManager extends GridCacheSharedManagerAdapter implements PartitionsExchangeAware {
     /** Current Consistent Cut, {@code null} if not running. */
     @GridToStringInclude
-    private final AtomicReference<ConsistentCut> consistentCutRef = new AtomicReference<>();
+    private volatile ConsistentCut consistentCut;
 
     /** ID of the last finished Consistent Cut. Required to avoid re-run Consistent Cut with the same id. */
     @GridToStringInclude
-    protected volatile UUID lastFinishedCutId;
+    private volatile UUID lastFinishedCutId;
 
     /** {@inheritDoc} */
     @Override public void start0() throws IgniteCheckedException {
@@ -93,7 +92,7 @@ public class ConsistentCutManager extends GridCacheSharedManagerAdapter implemen
         if (cctx.gridConfig().isClientMode())
             return;
 
-        ConsistentCut cut = consistentCut();
+        ConsistentCut cut = consistentCut;
 
         if (cut != null && cut.baseline())
             ((BaselineConsistentCut)cut).onCommit(tx.finishFuture());
@@ -128,17 +127,18 @@ public class ConsistentCutManager extends GridCacheSharedManagerAdapter implemen
      * @param id Consistent Cut ID.
      */
     public void handleConsistentCutId(UUID id) {
-        ConsistentCut cut = consistentCutRef.get();
-
-        if (cut != null || Objects.equals(id, lastFinishedCutId))
+        if (consistentCut != null || Objects.equals(id, lastFinishedCutId))
             return;
 
-        boolean baselineNode = baselineNode(cctx.localNode(), cctx.kernalContext().state().clusterState());
+        ConsistentCut newCut;
 
-        ConsistentCut newCut = baselineNode ? new BaselineConsistentCut(cctx, id) : new NonBaselineConsistentCut(id);
+        synchronized (this) {
+            if (consistentCut != null || Objects.equals(id, lastFinishedCutId))
+                return;
 
-        if (!consistentCutRef.compareAndSet(null, newCut))
-            return;
+            consistentCut = newCut = baselineNode(cctx.localNode(), cctx.kernalContext().state().clusterState()) ?
+                new BaselineConsistentCut(cctx, id) : new NonBaselineConsistentCut(id);
+        }
 
         if (newCut.baseline()) {
             cctx.kernalContext().pools().getSnapshotExecutorService().submit(() ->
@@ -153,7 +153,7 @@ public class ConsistentCutManager extends GridCacheSharedManagerAdapter implemen
      * @param err Error.
      */
     public void cancelConsistentCut(Throwable err) {
-        ConsistentCut cut = consistentCutRef.get();
+        ConsistentCut cut = consistentCut;
 
         if (cut != null)
             cut.cancel(err);
@@ -165,14 +165,14 @@ public class ConsistentCutManager extends GridCacheSharedManagerAdapter implemen
      * @return Current running Consistent Cut, if cut isn't running then {@code null}.
      */
     public @Nullable ConsistentCut consistentCut() {
-        return consistentCutRef.get();
+        return consistentCut;
     }
 
     /**
      * @return Current running Consistent Cut ID, if cut isn't running then {@code null}.
      */
     public @Nullable UUID consistentCutId() {
-        ConsistentCut cut = consistentCutRef.get();
+        ConsistentCut cut = consistentCut;
 
         return cut == null ? null : cut.id();
     }
@@ -181,16 +181,15 @@ public class ConsistentCutManager extends GridCacheSharedManagerAdapter implemen
      * Cleans local Consistent Cut.
      */
     public void cleanConsistentCut() {
-        ConsistentCut cut = consistentCutRef.get();
+        ConsistentCut cut = consistentCut;
 
         if (cut == null)
             return;
 
-        if (log.isDebugEnabled())
-            log.debug("Clean local cut: " + cut);
+        synchronized (this) {
+            lastFinishedCutId = cut.id();
 
-        lastFinishedCutId = cut.id();
-
-        consistentCutRef.set(null);
+            consistentCut = null;
+        }
     }
 }

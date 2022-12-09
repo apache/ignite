@@ -67,11 +67,16 @@ import org.apache.ignite.internal.TestRecordingCommunicationSpi;
 import org.apache.ignite.internal.encryption.AbstractEncryptionTest;
 import org.apache.ignite.internal.managers.discovery.CustomMessageWrapper;
 import org.apache.ignite.internal.managers.discovery.DiscoveryCustomMessage;
+import org.apache.ignite.internal.pagemem.wal.WALIterator;
+import org.apache.ignite.internal.pagemem.wal.record.ConsistentCutFinishRecord;
+import org.apache.ignite.internal.pagemem.wal.record.ConsistentCutStartRecord;
+import org.apache.ignite.internal.pagemem.wal.record.WALRecord;
 import org.apache.ignite.internal.processors.cache.CacheGroupDescriptor;
 import org.apache.ignite.internal.processors.cache.GridCacheSharedContext;
 import org.apache.ignite.internal.processors.cache.persistence.file.FilePageStoreManager;
 import org.apache.ignite.internal.processors.cache.persistence.partstate.GroupPartitionId;
 import org.apache.ignite.internal.processors.cache.persistence.wal.crc.FastCrc;
+import org.apache.ignite.internal.processors.cache.persistence.wal.reader.IgniteWalIteratorFactory;
 import org.apache.ignite.internal.processors.marshaller.MappedName;
 import org.apache.ignite.internal.processors.resource.GridSpringResourceContext;
 import org.apache.ignite.internal.util.tostring.GridToStringInclude;
@@ -652,9 +657,53 @@ public abstract class AbstractSnapshotSelfTest extends GridCommonAbstractTest {
     protected boolean checkIncremental(IgniteEx node, String snpName, String snpPath, int incIdx) {
         File incSnpDir = snp(node).incrementalSnapshotLocalDir(snpName, snpPath, incIdx);
 
-        return incSnpDir.exists()
+        boolean exists = incSnpDir.exists()
             && incSnpDir.isDirectory()
             && new File(incSnpDir, incrementalSnapshotMetaFileName(incIdx)).exists();
+
+        if (exists) {
+            checkIncrementalSnapshotWalRecords(node, incSnpDir, incIdx);
+
+            return true;
+        }
+
+        return false;
+    }
+
+    /** */
+    private void checkIncrementalSnapshotWalRecords(IgniteEx node, File incSnpDir, int incIdx) {
+        try {
+            IncrementalSnapshotMetadata incSnpMeta = snp(node)
+                .readFromFile(new File(incSnpDir, incrementalSnapshotMetaFileName(incIdx)));
+
+            WALIterator it = new IgniteWalIteratorFactory(log).iterator(
+                new IgniteWalIteratorFactory.IteratorParametersBuilder().filesOrDirs(incSnpDir));
+
+            boolean started = false;
+            boolean finished = false;
+
+            while (it.hasNext()) {
+                assertFalse("ConsistentCutFinishRecord must be the last record in snapshot", finished);
+
+                WALRecord rec = it.next().getValue();
+
+                if (rec.type() == WALRecord.RecordType.CONSISTENT_CUT_START_RECORD) {
+                    if (((ConsistentCutStartRecord)rec).cutId().equals(incSnpMeta.requestId()))
+                        started = true;
+                }
+
+                if (rec.type() == WALRecord.RecordType.CONSISTENT_CUT_FINISH_RECORD) {
+                    if (((ConsistentCutFinishRecord)rec).cutId().equals(incSnpMeta.requestId()))
+                        finished = true;
+                }
+            }
+
+            assertTrue(started);
+            assertTrue(finished);
+        }
+        catch (IOException | IgniteCheckedException | IllegalArgumentException e) {
+            assert false : "Unexpected exception while checking segments: " + e;
+        }
     }
 
     /**

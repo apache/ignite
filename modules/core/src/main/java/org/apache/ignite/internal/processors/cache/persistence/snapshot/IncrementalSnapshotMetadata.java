@@ -36,7 +36,7 @@ public class IncrementalSnapshotMetadata implements Serializable {
 
     /** Snapshot name. */
     private final String snpName;
-    
+
     /** Increment index. */
     private final int incIdx;
 
@@ -73,6 +73,11 @@ public class IncrementalSnapshotMetadata implements Serializable {
         this.consId = consId;
         this.folderName = folderName;
         this.cutPtr = cutPtr;
+    }
+
+    /** @return Snapshot request ID. */
+    public UUID requestId() {
+        return rqId;
     }
 
     /** @return Pointer to consistent cut record. */

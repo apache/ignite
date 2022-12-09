@@ -1822,7 +1822,7 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
      * @return Read metadata.
      * @param <T> Type of metadata.
      */
-    private <T> T readFromFile(File smf) throws IgniteCheckedException, IOException {
+    public <T> T readFromFile(File smf) throws IgniteCheckedException, IOException {
         if (!smf.exists())
             throw new IgniteCheckedException("Snapshot metafile cannot be read due to it doesn't exist: " + smf);
 

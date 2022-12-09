@@ -122,7 +122,7 @@ public abstract class AbstractConsistentCutMessagesBlockingTest extends Abstract
         }
 
         if (txMsgBlkCls.equals(GridNearTxFinishResponse.class)) {
-            if (testCase.onePhase() || txBlkNodeType != PRIMARY || txBlkNodeId == nearNodeId)
+            if (txBlkNodeType != PRIMARY || testCase.onePhase() || txBlkNodeId == nearNodeId)
                 return true;
 
             return testCase.allPrimaryOnNear(nearNodeId);
