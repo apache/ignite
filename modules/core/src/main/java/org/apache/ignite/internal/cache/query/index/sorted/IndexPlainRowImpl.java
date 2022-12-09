@@ -22,9 +22,9 @@ import org.apache.ignite.internal.processors.cache.persistence.CacheDataRow;
 import org.apache.ignite.internal.util.typedef.internal.S;
 
 /**
- * Represents a search row that used to find a place in a tree.
+ * Represents a plain row (not bounded to cache data row) that used to find a place in a tree.
  */
-public class IndexSearchRowImpl implements IndexRow {
+public class IndexPlainRowImpl implements IndexRow {
     /** */
     private final IndexKey[] keys;
 
@@ -32,7 +32,7 @@ public class IndexSearchRowImpl implements IndexRow {
     private final InlineIndexRowHandler rowHnd;
 
     /** Constructor. */
-    public IndexSearchRowImpl(IndexKey[] idxKeys, InlineIndexRowHandler rowHnd) {
+    public IndexPlainRowImpl(IndexKey[] idxKeys, InlineIndexRowHandler rowHnd) {
         keys = idxKeys;
         this.rowHnd = rowHnd;
     }
@@ -43,18 +43,18 @@ public class IndexSearchRowImpl implements IndexRow {
     }
 
     /** {@inheritDoc} */
-    @Override public IndexKey[] keys() {
-        return keys;
+    @Override public int keysCount() {
+        return keys.length;
     }
 
     /** {@inheritDoc} */
     @Override public String toString() {
-        return S.toString(IndexSearchRowImpl.class, this);
+        return S.toString(IndexPlainRowImpl.class, this);
     }
 
     /** {@inheritDoc} */
     @Override public long link() {
-        assert false : "Should not get link by IndexSearchRowImpl";
+        assert false : "Should not get link by IndexPlainRowImpl";
 
         return 0;
     }
@@ -66,13 +66,13 @@ public class IndexSearchRowImpl implements IndexRow {
 
     /** {@inheritDoc} */
     @Override public CacheDataRow cacheDataRow() {
-        assert false : "Should not cache data row by IndexSearchRowImpl";
+        assert false : "Should not cache data row by IndexPlainRowImpl";
 
         return null;
     }
 
     /** {@inheritDoc} */
-    @Override public boolean indexSearchRow() {
+    @Override public boolean indexPlainRow() {
         return true;
     }
 }

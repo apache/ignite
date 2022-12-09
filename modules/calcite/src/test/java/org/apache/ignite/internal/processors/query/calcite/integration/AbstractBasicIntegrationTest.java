@@ -267,6 +267,11 @@ public class AbstractBasicIntegrationTest extends GridCommonAbstractTest {
         ) {
             return delegate.firstOrLast(first, ectx, grp, requiredColumns);
         }
+
+        /** {@inheritDoc} */
+        @Override public boolean isInlineScanPossible(@Nullable ImmutableBitSet requiredColumns) {
+            return delegate.isInlineScanPossible(requiredColumns);
+        }
     }
 
     /** */

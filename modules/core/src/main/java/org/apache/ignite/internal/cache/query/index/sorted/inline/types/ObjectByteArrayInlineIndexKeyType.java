@@ -69,7 +69,7 @@ public class ObjectByteArrayInlineIndexKeyType extends NullableInlineIndexKeyTyp
     }
 
     /** {@inheritDoc} */
-    @Override public boolean inlinedFullValue(long pageAddr, int offset) {
-        return delegate.inlinedFullValue(pageAddr, offset);
+    @Override public boolean inlinedFullValue(long pageAddr, int offset, int maxSize) {
+        return delegate.inlinedFullValue(pageAddr, offset, maxSize);
     }
 }

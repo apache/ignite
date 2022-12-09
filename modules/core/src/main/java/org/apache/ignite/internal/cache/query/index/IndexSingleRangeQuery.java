@@ -18,9 +18,9 @@
 package org.apache.ignite.internal.cache.query.index;
 
 import org.apache.ignite.internal.cache.query.RangeIndexQueryCriterion;
+import org.apache.ignite.internal.cache.query.index.sorted.IndexPlainRowImpl;
 import org.apache.ignite.internal.cache.query.index.sorted.IndexRow;
 import org.apache.ignite.internal.cache.query.index.sorted.IndexRowComparator;
-import org.apache.ignite.internal.cache.query.index.sorted.IndexSearchRowImpl;
 import org.apache.ignite.internal.cache.query.index.sorted.keys.IndexKey;
 import org.apache.ignite.internal.processors.cache.persistence.tree.BPlusTree;
 import org.jetbrains.annotations.Nullable;
@@ -43,10 +43,10 @@ class IndexSingleRangeQuery {
     private boolean upperAllNulls = true;
 
     /** Lower bound to query underlying index. */
-    private @Nullable IndexSearchRowImpl lower;
+    private @Nullable IndexPlainRowImpl lower;
 
     /** Upper bound to query underlying index. */
-    private @Nullable IndexSearchRowImpl upper;
+    private @Nullable IndexPlainRowImpl upper;
 
     /** */
     IndexSingleRangeQuery(int idxRowSize, int critSize) {
@@ -101,17 +101,17 @@ class IndexSingleRangeQuery {
     }
 
     /** */
-    @Nullable IndexSearchRowImpl lower() {
+    @Nullable IndexPlainRowImpl lower() {
         if (lower == null && !lowerAllNulls)
-            lower = new IndexSearchRowImpl(lowerBounds, null);
+            lower = new IndexPlainRowImpl(lowerBounds, null);
 
         return lower;
     }
 
     /** */
-    @Nullable IndexSearchRowImpl upper() {
+    @Nullable IndexPlainRowImpl upper() {
         if (upper == null && !upperAllNulls)
-            upper = new IndexSearchRowImpl(upperBounds, null);
+            upper = new IndexPlainRowImpl(upperBounds, null);
 
         return upper;
     }

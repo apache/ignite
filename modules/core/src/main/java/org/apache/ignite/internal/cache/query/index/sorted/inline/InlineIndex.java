@@ -17,6 +17,7 @@
 
 package org.apache.ignite.internal.cache.query.index.sorted.inline;
 
+import org.apache.ignite.internal.cache.query.index.IndexDefinition;
 import org.apache.ignite.internal.cache.query.index.sorted.SortedSegmentedIndex;
 
 /**
@@ -38,4 +39,9 @@ public interface InlineIndex extends SortedSegmentedIndex {
      * @return Tree segment for specified number.
      */
     public InlineIndexTree segment(int segment);
+
+    /**
+     * @return Index definition.
+     */
+    public IndexDefinition indexDefinition();
 }

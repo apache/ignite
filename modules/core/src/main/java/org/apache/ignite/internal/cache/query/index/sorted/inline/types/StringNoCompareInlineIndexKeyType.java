@@ -55,7 +55,7 @@ public class StringNoCompareInlineIndexKeyType extends NullableInlineIndexKeyTyp
     }
 
     /** {@inheritDoc} */
-    @Override public boolean inlinedFullValue(long pageAddr, int off) {
-        return delegate.inlinedFullValue(pageAddr, off);
+    @Override public boolean inlinedFullValue(long pageAddr, int off, int maxSize) {
+        return delegate.inlinedFullValue(pageAddr, off, maxSize);
     }
 }
