@@ -245,7 +245,7 @@ public class WalEnableDisableWithNodeShutdownTest extends GridCommonAbstractTest
             node = Ignition.start(igniteCfg(false, consistentId));
         }
         catch (Exception ex) {
-            assertTrue(X.hasCause(ex, "Cache groups with potentially corrupted partition files", IgniteException.class));
+            assertTrue(X.hasCause(ex, "Ignite node with disabled WAL was stopped in the middle of a checkpoint", IgniteException.class));
 
             node = Ignition.start(igniteCfg(false, consistentId));
 

@@ -111,4 +111,9 @@ public interface IgniteIndex {
         ColocationGroup grp,
         @Nullable ImmutableBitSet requiredColumns
     );
+
+    /**
+     * If its possible to scan requred columns using inlined index keys.
+     */
+    public boolean isInlineScanPossible(@Nullable ImmutableBitSet requiredColumns);
 }

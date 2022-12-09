@@ -117,7 +117,7 @@ public class ExchangeLatchManager {
         this.discovery = ctx.discovery();
         this.io = ctx.io();
 
-        if (!ctx.clientNode() && !ctx.isDaemon()) {
+        if (!ctx.clientNode()) {
             ctx.io().addMessageListener(GridTopic.TOPIC_EXCHANGE, (nodeId, msg, plc) -> {
                 if (msg instanceof LatchAckMessage)
                     processAck(nodeId, (LatchAckMessage)msg);
@@ -284,7 +284,7 @@ public class ExchangeLatchManager {
             Collection<ClusterNode> histNodes = discovery.topology(topVer.topologyVersion());
 
             if (histNodes != null)
-                return histNodes.stream().filter(n -> !n.isClient() && !n.isDaemon() && discovery.alive(n))
+                return histNodes.stream().filter(n -> !n.isClient() && discovery.alive(n))
                     .collect(Collectors.toList());
             else
                 throw new IgniteException("Topology " + topVer + " not found in discovery history. "

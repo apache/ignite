@@ -273,8 +273,8 @@ public class GridDhtPartitionSupplier {
             if (sctx == null) {
                 if (log.isDebugEnabled())
                     log.debug("Starting supplying rebalancing [" + supplyRoutineInfo(topicId, nodeId, demandMsg) +
-                        ", fullPartitions=" + S.compact(demandMsg.partitions().fullSet()) +
-                        ", histPartitions=" + S.compact(demandMsg.partitions().historicalSet()) + "]");
+                        ", fullPartitions=" + S.toStringSortedDistinct(demandMsg.partitions().fullSet()) +
+                        ", histPartitions=" + S.toStringSortedDistinct(demandMsg.partitions().historicalSet()) + "]");
             }
             else
                 maxBatchesCnt = 1;

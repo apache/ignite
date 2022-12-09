@@ -99,7 +99,8 @@ class IndexQueryCriteriaClosure implements BPlusTree.TreeRowClosure<IndexRow, In
             if (inVals != null) {
                 IndexKey key = null;
 
-                if (keyType != null && keyType.type() != JAVA_OBJECT && keyType.inlinedFullValue(pageAddr, off + fieldOff))
+                if (keyType != null && keyType.type() != JAVA_OBJECT
+                    && keyType.inlinedFullValue(pageAddr, off + fieldOff, maxSize))
                     key = keyType.get(pageAddr, off + fieldOff, maxSize);
 
                 if (key == null) {

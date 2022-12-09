@@ -213,7 +213,7 @@ public interface GridClientCompute {
         Object taskArg);
 
     /**
-     * Gets most recently refreshed topology (only non-daemon nodes included).
+     * Gets most recently refreshed topology.
      * If this compute instance is a projection, then only nodes that
      * satisfy projection criteria will be returned.
      *
@@ -252,15 +252,6 @@ public interface GridClientCompute {
      */
     public Collection<GridClientNode> nodes(GridClientPredicate<GridClientNode> filter)
         throws GridClientException;
-
-    /**
-     * Gets most recently refreshed set of daemon nodes. If this compute instance is a projection,
-     * then only nodes that satisfy projection criteria will be returned.
-     *
-     * @return Daemon nodes in most recently refreshed topology.
-     * @throws GridClientException If client doesn't have an actual topology version.
-     */
-    public Collection<GridClientNode> daemonNodes() throws GridClientException;
 
     /**
      * Refreshes and returns node by its ID from remote grid. Use {@code includeAttrs} and

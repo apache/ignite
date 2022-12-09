@@ -119,8 +119,8 @@ public class PartitionUpdateCounterTrackingImpl implements PartitionUpdateCounte
         return lwm.get();
     }
 
-    /** */
-    protected synchronized long highestAppliedCounter() {
+    /** {@inheritDoc} */
+    @Override public synchronized long highestAppliedCounter() {
         return queue.isEmpty() ? lwm.get() : queue.lastEntry().getValue().absolute();
     }
 
@@ -229,8 +229,10 @@ public class PartitionUpdateCounterTrackingImpl implements PartitionUpdateCounte
 
         initCntr = get();
 
-        if (reservedCntr.get() < initCntr)
-            reservedCntr.set(initCntr);
+        long highestAppliedCounter = highestAppliedCounter();
+
+        if (reservedCntr.get() < highestAppliedCounter)
+            reservedCntr.set(highestAppliedCounter);
     }
 
     /** {@inheritDoc} */

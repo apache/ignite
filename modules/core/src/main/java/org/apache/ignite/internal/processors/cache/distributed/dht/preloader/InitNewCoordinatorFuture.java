@@ -254,7 +254,7 @@ public class InitNewCoordinatorFuture extends GridCompoundFuture implements Igni
                 GridDhtPartitionsFullMessage fullMsg0 = msg.finishMessage();
 
                 if (fullMsg0 != null && fullMsg0.resultTopologyVersion() != null) {
-                    if (node.isClient() || node.isDaemon()) {
+                    if (node.isClient()) {
                         assert resTopVer == null || resTopVer.equals(fullMsg0.resultTopologyVersion());
 
                         resTopVer = fullMsg0.resultTopologyVersion();

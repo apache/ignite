@@ -74,7 +74,7 @@ public class ConsistencyCommand extends AbstractCommand<Object> {
     private boolean parallel;
 
     /** Predicate to filter server nodes. */
-    private static final Predicate<GridClientNode> SRV_NODES = node -> !node.isClient() && !node.isDaemon();
+    private static final Predicate<GridClientNode> SRV_NODES = node -> !node.isClient();
 
     /** {@inheritDoc} */
     @Override public Object execute(GridClientConfiguration clientCfg, IgniteLogger log) throws Exception {

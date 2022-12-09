@@ -2399,14 +2399,6 @@
                     <xs:documentation>System-wide local address or host for all Ignite components to bind to. If provided it will override all default local bind settings within Ignite.</xs:documentation>
                 </xs:annotation>
             </xs:attribute>
-            <xs:attribute name="isDaemon" type="xs:boolean">
-                <xs:annotation>
-                    <xs:documentation>
-                        Whether this node should be a daemon node. Daemon nodes are the usual grid nodes that participate in topology but not visible on the main APIs.
-                        Daemon nodes are used primarily for management and monitoring functionality.
-                    </xs:documentation>
-                </xs:annotation>
-            </xs:attribute>
             <xs:attribute name="springConfigUrl" type="xs:string">
                 <xs:annotation>
                     <xs:documentation>URL to Spring configuration file.</xs:documentation>

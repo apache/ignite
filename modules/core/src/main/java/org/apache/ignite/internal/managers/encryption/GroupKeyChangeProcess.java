@@ -108,7 +108,7 @@ class GroupKeyChangeProcess {
      */
     public IgniteFuture<Void> start(Collection<String> cacheOrGrpNames) {
         if (ctx.clientNode())
-            throw new UnsupportedOperationException("Client and daemon nodes can not perform this operation.");
+            throw new UnsupportedOperationException("Client nodes can not perform this operation.");
 
         if (!IgniteFeatures.allNodesSupports(ctx.grid().cluster().nodes(), CACHE_GROUP_KEY_CHANGE))
             throw new IllegalStateException("Not all nodes in the cluster support this operation.");

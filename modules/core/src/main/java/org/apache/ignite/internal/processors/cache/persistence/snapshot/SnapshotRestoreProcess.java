@@ -217,7 +217,7 @@ public class SnapshotRestoreProcess {
 
         try {
             if (ctx.clientNode())
-                throw new IgniteException(OP_REJECT_MSG + "Client and daemon nodes can not perform this operation.");
+                throw new IgniteException(OP_REJECT_MSG + "Client nodes can not perform this operation.");
 
             DiscoveryDataClusterState clusterState = ctx.state().clusterState();
 
@@ -998,7 +998,7 @@ public class SnapshotRestoreProcess {
                         "[reqId=" + reqId +
                         ", snapshot=" + opCtx0.snpName +
                         ", map=" + snpAff.entrySet().stream().collect(Collectors.toMap(Map.Entry::getKey,
-                            e -> partitionsMapToCompactString(e.getValue()))) + ']');
+                            e -> partitionsMapToString(e.getValue()))) + ']');
                 }
 
                 for (Map.Entry<UUID, Map<Integer, Set<Integer>>> m : snpAff.entrySet()) {
@@ -1364,10 +1364,10 @@ public class SnapshotRestoreProcess {
      * @param map Map of partitions and cache groups.
      * @return String representation.
      */
-    private static String partitionsMapToCompactString(Map<Integer, Set<Integer>> map) {
+    private static String partitionsMapToString(Map<Integer, Set<Integer>> map) {
         return map.entrySet()
             .stream()
-            .collect(Collectors.toMap(Map.Entry::getKey, e -> S.compact(e.getValue())))
+            .collect(Collectors.toMap(Map.Entry::getKey, e -> S.toStringSortedDistinct(e.getValue())))
             .toString();
     }
 

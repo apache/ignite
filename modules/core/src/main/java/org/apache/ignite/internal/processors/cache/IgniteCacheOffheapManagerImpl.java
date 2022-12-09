@@ -1600,6 +1600,11 @@ public class IgniteCacheOffheapManagerImpl implements IgniteCacheOffheapManager 
         }
 
         /** {@inheritDoc} */
+        @Override public long highestAppliedCounter() {
+            return pCntr.highestAppliedCounter();
+        }
+
+        /** {@inheritDoc} */
         @Override public long reservedCounter() {
             return pCntr.reserved();
         }

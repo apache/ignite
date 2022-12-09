@@ -151,7 +151,7 @@ public class PdsFolderResolver<L extends FileLockHolder> {
      * @throws IgniteCheckedException if IO failed.
      */
     public PdsFolderSettings<L> resolve() throws IgniteCheckedException {
-        boolean clientMode = cfg.isClientMode() == TRUE || cfg.isDaemon();
+        boolean clientMode = cfg.isClientMode() == TRUE;
 
         final File pstStoreBasePath = resolvePersistentStoreBasePath(clientMode);
 

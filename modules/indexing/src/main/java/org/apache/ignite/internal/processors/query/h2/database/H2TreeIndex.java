@@ -31,9 +31,9 @@ import org.apache.ignite.internal.GridKernalContext;
 import org.apache.ignite.internal.GridTopic;
 import org.apache.ignite.internal.cache.query.index.Index;
 import org.apache.ignite.internal.cache.query.index.sorted.IndexKeyType;
+import org.apache.ignite.internal.cache.query.index.sorted.IndexPlainRowImpl;
 import org.apache.ignite.internal.cache.query.index.sorted.IndexRow;
 import org.apache.ignite.internal.cache.query.index.sorted.IndexRowImpl;
-import org.apache.ignite.internal.cache.query.index.sorted.IndexSearchRowImpl;
 import org.apache.ignite.internal.cache.query.index.sorted.IndexValueCursor;
 import org.apache.ignite.internal.cache.query.index.sorted.InlineIndexRowHandler;
 import org.apache.ignite.internal.cache.query.index.sorted.SortedIndexDefinition;
@@ -315,7 +315,7 @@ public class H2TreeIndex extends H2TreeIndexBase {
                 v.getObject(), v.getType(), cctx.cacheObjectContext(), queryIndex.keyTypeSettings());
         }
 
-        return new IndexSearchRowImpl(keys, rowHnd);
+        return new IndexPlainRowImpl(keys, rowHnd);
     }
 
     /** */

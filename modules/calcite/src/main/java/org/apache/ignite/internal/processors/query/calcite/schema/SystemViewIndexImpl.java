@@ -127,4 +127,9 @@ public class SystemViewIndexImpl implements IgniteIndex {
 
         return RexUtils.buildHashSearchBounds(cluster, cond, rowType, requiredColumns, true);
     }
+
+    /** {@inheritDoc} */
+    @Override public boolean isInlineScanPossible(@Nullable ImmutableBitSet requiredColumns) {
+        return false;
+    }
 }
