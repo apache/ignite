@@ -118,6 +118,16 @@ public class HashAggregatePlannerTest extends AbstractAggregatePlannerTest {
         assertPlan(sql, publicSchema, hasChildThat(isInstanceOf(IgniteIndexBound.class)).negate());
     }
 
+    @Test
+    public void test0(){
+        IgniteSchema publicSchema = new IgniteSchema("PUBLIC");
+
+        TestTable tbl = createTable(IgniteDistributions.random());
+        publicSchema.addTable("TEST", tbl);
+
+
+    }
+
     /**
      * Tests COUNT(...) plan with and without IndexCount optimization.
      */

@@ -158,6 +158,15 @@ public class CalciteQueryProcessorTest extends GridCommonAbstractTest {
             .check();
     }
 
+
+    /** */
+    @Test
+    public void test0() throws IgniteInterruptedCheckedException {
+        execute(client, "CREATE TABLE strings(a VARCHAR, b BIGINT)");
+        execute(client, "INSERT INTO STRINGS VALUES ('abc', 1);");
+        List<List<?>> rows = sql("SELECT LEFT(a, b) FROM strings");
+    }
+
     /** Tests varchar min\max aggregates. */
     @Test
     public void testVarCharMinMax() throws IgniteInterruptedCheckedException {
