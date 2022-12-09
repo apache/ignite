@@ -33,7 +33,6 @@ import java.util.function.Supplier;
 import javax.cache.CacheException;
 import org.apache.ignite.DataRegionMetrics;
 import org.apache.ignite.DataRegionMetricsAdapter;
-import org.apache.ignite.DataStorageMetrics;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteAtomicLong;
 import org.apache.ignite.IgniteAtomicReference;
@@ -818,11 +817,6 @@ public class IgniteProcessProxy implements IgniteEx {
 
     /** {@inheritDoc} */
     @Nullable @Override public DataRegionMetrics dataRegionMetrics(String memPlcName) {
-        throw new UnsupportedOperationException("Operation isn't supported yet.");
-    }
-
-    /** {@inheritDoc} */
-    @Override public DataStorageMetrics dataStorageMetrics() {
         throw new UnsupportedOperationException("Operation isn't supported yet.");
     }
 

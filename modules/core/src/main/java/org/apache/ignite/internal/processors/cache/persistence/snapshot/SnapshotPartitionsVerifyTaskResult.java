@@ -20,12 +20,17 @@ package org.apache.ignite.internal.processors.cache.persistence.snapshot;
 import java.io.IOException;
 import java.io.ObjectInput;
 import java.io.ObjectOutput;
+import java.util.Collection;
 import java.util.Collections;
 import java.util.List;
 import java.util.Map;
+import java.util.function.Consumer;
+import java.util.stream.Collectors;
 import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.internal.dto.IgniteDataTransferObject;
 import org.apache.ignite.internal.processors.cache.verify.IdleVerifyResultV2;
+import org.apache.ignite.internal.util.GridStringBuilder;
+import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.internal.U;
 
 /**
@@ -64,6 +69,32 @@ public class SnapshotPartitionsVerifyTaskResult extends IgniteDataTransferObject
      */
     public Map<ClusterNode, List<SnapshotMetadata>> metas() {
         return metas;
+    }
+
+    /**
+     * Print formatted result to the given printer. Adds the snapshot warnings if snapshot has conflicts.
+     *
+     * @param printer Consumer for handle formatted result.
+     */
+    public void print(Consumer<String> printer) {
+        idleRes.print(printer, true);
+
+        if (!F.isEmpty(idleVerifyResult().exceptions()))
+            return;
+
+        Collection<String> wrns = F.flatCollections(F.viewReadOnly(
+            F.flatCollections(metas.values()).stream().distinct().collect(Collectors.toList()),
+            SnapshotMetadata::warnings,
+            meta -> meta != null && !F.isEmpty(meta.warnings()))
+        );
+
+        if (!F.isEmpty(wrns)) {
+            GridStringBuilder sb = new GridStringBuilder("This snapshot was created with the warnings:")
+                .a(wrns.stream().collect(Collectors.joining("", U.nl() + "\t- ", "")))
+                .nl();
+
+            printer.accept(sb.toString());
+        }
     }
 
     /**

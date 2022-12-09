@@ -754,12 +754,6 @@ public interface Ignite extends AutoCloseable {
     @Nullable public DataRegionMetrics dataRegionMetrics(String memPlcName);
 
     /**
-     * @return {@link DataStorageMetrics} snapshot.
-     * @deprecated Check the {@link ReadOnlyMetricRegistry} with "name=io.datastorage" instead.
-     */
-    public DataStorageMetrics dataStorageMetrics();
-
-    /**
      * Gets an instance of {@link IgniteEncryption} interface.
      *
      * @return Instance of {@link IgniteEncryption} interface.

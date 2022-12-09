@@ -47,7 +47,7 @@ public class SnapshotHandlerContext {
      * {@code False} otherwise. Always {@code false} for snapshot restoration.
      * @param locNode Local node.
      * @param snpDir The full path to the snapshot files.
-     * @param streamerWrn {@code True} if concurrent streaming updates occured during snapshot operation.
+     * @param streamerWrn {@code True} if concurrent streaming updates occurred during snapshot operation.
      */
     public SnapshotHandlerContext(SnapshotMetadata metadata, @Nullable Collection<String> grps, ClusterNode locNode,
         File snpDir, boolean streamerWrn) {
@@ -88,7 +88,7 @@ public class SnapshotHandlerContext {
     }
 
     /**
-     * @return {@code True} if concurrent streaming updates occured during snapshot operation. {@code False} otherwise.
+     * @return {@code True} if concurrent streaming updates occurred during snapshot operation. {@code False} otherwise.
      */
     public boolean streamerWarning() {
         return streamerWrn;

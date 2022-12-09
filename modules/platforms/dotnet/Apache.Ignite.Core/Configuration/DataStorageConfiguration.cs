@@ -447,7 +447,7 @@ namespace Apache.Ignite.Core.Configuration
 
         /// <summary>
         /// Gets or sets a value indicating whether to enable data storage metrics.
-        /// See <see cref="IIgnite.GetDataStorageMetrics"/>.
+        /// See <see cref="IIgnite.GetMemoryMetrics()"/>.
         /// </summary>
         public bool MetricsEnabled { get; set; }
 
