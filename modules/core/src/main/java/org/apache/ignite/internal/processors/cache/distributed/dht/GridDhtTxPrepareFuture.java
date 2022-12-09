@@ -784,9 +784,10 @@ public final class GridDhtTxPrepareFuture extends GridCacheCompoundFuture<Ignite
                                 if (res.error() == null && fut.error() != null)
                                     res.error(fut.error());
 
-                                if (REPLIED_UPD.compareAndSet(GridDhtTxPrepareFuture.this, 0, 1))
+                                if (REPLIED_UPD.compareAndSet(GridDhtTxPrepareFuture.this, 0, 1)) {
                                     sendPrepareResponse(ConsistentCutManager.wrapMessage(
                                         cctx, res, fut.result() == null ? null : fut.result().cutId()));
+                                }
                             }
                         };
 
@@ -1597,7 +1598,7 @@ public final class GridDhtTxPrepareFuture extends GridCacheCompoundFuture<Ignite
                 assert req.transactionNodes() != null;
 
                 try {
-                    cctx.io().send(nearMapping.primary(), ConsistentCutManager.wrapMessage(cctx, req, null), tx.ioPolicy());
+                    cctx.io().send(nearMapping.primary(), req, tx.ioPolicy());
 
                     if (msgLog.isDebugEnabled()) {
                         msgLog.debug("DHT prepare fut, sent request near [txId=" + tx.nearXidVersion() +

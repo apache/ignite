@@ -20,11 +20,11 @@ package org.apache.ignite.testsuites;
 import org.apache.ignite.internal.processors.cache.consistentcut.ConcurrentTxsConsistentCutTest;
 import org.apache.ignite.internal.processors.cache.consistentcut.ConsistentCutNoBackupMessagesBlockingTest;
 import org.apache.ignite.internal.processors.cache.consistentcut.ConsistentCutNoBackupWALBlockingTest;
+import org.apache.ignite.internal.processors.cache.consistentcut.ConsistentCutNodeFailureTest;
 import org.apache.ignite.internal.processors.cache.consistentcut.ConsistentCutSingleBackupMessagesBlockingTest;
 import org.apache.ignite.internal.processors.cache.consistentcut.ConsistentCutSingleBackupWALBlockingTest;
 import org.apache.ignite.internal.processors.cache.consistentcut.ConsistentCutTwoBackupMessagesBlockingTest;
 import org.apache.ignite.internal.processors.cache.consistentcut.ConsistentCutTwoBackupWALBlockingTest;
-import org.apache.ignite.internal.processors.cache.consistentcut.ConsistentCutTxRecoveryTest;
 import org.apache.ignite.internal.processors.cache.persistence.snapshot.IncrementalSnapshotTest;
 import org.junit.runner.RunWith;
 import org.junit.runners.Suite;
@@ -42,7 +42,7 @@ import org.junit.runners.Suite;
     ConsistentCutSingleBackupWALBlockingTest.class,
     ConsistentCutTwoBackupWALBlockingTest.class,
     ConcurrentTxsConsistentCutTest.class,
-    ConsistentCutTxRecoveryTest.class,
+    ConsistentCutNodeFailureTest.class,
 
     // Incremental snapshots
     IncrementalSnapshotTest.class

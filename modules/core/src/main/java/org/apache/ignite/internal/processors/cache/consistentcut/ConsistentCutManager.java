@@ -44,16 +44,16 @@ import static org.apache.ignite.internal.processors.cache.GridCacheUtils.baselin
  * state without any coordination with each other.
  * <p>
  * The algorithm starts on Ignite node by snapshot creation command. Other nodes are notified with discovery message of snapshot
- * distributed process or by transaction messages {@link ConsistentCutAwareMessage}.
+ * distributed process or by transaction messages wrapped in {@link ConsistentCutAwareMessage}.
  * <p>
- * The algorithm consist of steps:
+ * The algorithm consists of steps:
  * 1. On receiving new Consistent Cut ID it immediately creates new {@link ConsistentCut} before processing the message.
  * 2. It starts wrapping all transaction messages to {@link ConsistentCutAwareMessage}.
  * 3. Every transaction holds {@link IgniteTxAdapter#cutId()} after which it committed. The value is initially set on
  *    originated node for two-phase-commit, and backup node for one-phase-commit. Then it is propagated to other nodes with
  *    {@link ConsistentCutAwareMessage}.
  * 4. On baseline nodes it awaits {@link BaselineConsistentCut}, that completes with pointer to {@link ConsistentCutFinishRecord}.
- * 5. After Consistent Cut finished on all nodes, it clears {@link ConsistentCut} and stops wrapping messages.
+ * 5. After Consistent Cut finished on all nodes, it clears reference to {@link ConsistentCut} and stops wrapping messages.
  */
 public class ConsistentCutManager extends GridCacheSharedManagerAdapter implements PartitionsExchangeAware {
     /** Current Consistent Cut, {@code null} if not running. */
@@ -90,6 +90,9 @@ public class ConsistentCutManager extends GridCacheSharedManagerAdapter implemen
      * @param tx Transaction.
      */
     public void onCommit(IgniteInternalTx tx) {
+        if (cctx.gridConfig().isClientMode())
+            return;
+
         ConsistentCut cut = consistentCut();
 
         if (cut != null && cut.baseline())

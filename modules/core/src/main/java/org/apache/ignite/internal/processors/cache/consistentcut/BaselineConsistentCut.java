@@ -45,9 +45,7 @@ import static org.apache.ignite.transactions.TransactionState.COMMITTED;
 import static org.apache.ignite.transactions.TransactionState.MARKED_ROLLBACK;
 import static org.apache.ignite.transactions.TransactionState.ROLLED_BACK;
 
-/**
- * Describes Consistent Cut running on baseline nodes.
- */
+/** Describes Consistent Cut running on baseline nodes. */
 public class BaselineConsistentCut implements ConsistentCut {
     /** */
     private final GridCacheSharedContext<?, ?> cctx;
@@ -83,9 +81,7 @@ public class BaselineConsistentCut implements ConsistentCut {
         fut.listen(r -> removedFromActive = null);
     }
 
-    /**
-     * Inits local Consistent Cut: prepares list of active transactions to check which side of Consistent Cut they belong to.
-     */
+    /** Inits local Consistent Cut: prepares list of active transactions to check which side of Consistent Cut they belong to. */
     protected void init() {
         try {
             cctx.wal().log(new ConsistentCutStartRecord(id));
@@ -119,6 +115,9 @@ public class BaselineConsistentCut implements ConsistentCut {
                     return;
                 }
 
+                if (fut.isDone())
+                    return;
+
                 cctx.database().checkpointReadLock();
 
                 try {
@@ -139,12 +138,12 @@ public class BaselineConsistentCut implements ConsistentCut {
         catch (IgniteCheckedException e) {
             fut.onDone(e);
 
-            U.error(log, "Failed to handle Consistent Cut: " + id, e);
+            U.error(log, "Failed to init Consistent Cut: " + id, e);
         }
     }
 
     /**
-     * Collects a transaction before it is committed and removed from {@link IgniteTxManager#activeTransactions()}.
+     * Collects a transaction before it is removed from {@link IgniteTxManager#activeTransactions()} while committing.
      *
      * @param txFinFut Transaction finish future.
      */
@@ -158,8 +157,8 @@ public class BaselineConsistentCut implements ConsistentCut {
     /**
      * Checks active transactions - decides which side of Consistent Cut they belong to after they finished.
      *
-     * @param activeTxFinFuts Collection of active transactions to check.
-     * @param checkFut Compound future that reduces finishes of checked transactions.
+     * @param activeTxFinFuts Active transactions to check.
+     * @param checkFut Compound future that reduces finishes of the checking transactions.
      */
     private void checkTransactions(
         Iterator<IgniteInternalFuture<IgniteInternalTx>> activeTxFinFuts,

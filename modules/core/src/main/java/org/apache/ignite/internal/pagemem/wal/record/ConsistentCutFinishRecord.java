@@ -26,7 +26,7 @@ import org.apache.ignite.internal.util.tostring.GridToStringInclude;
 import org.apache.ignite.internal.util.typedef.internal.S;
 
 /**
- * This record is written to WAL after it's finished to check transactions in {@link BaselineConsistentCut} and store them
+ * This record is written to WAL after {@link BaselineConsistentCut} finished checking transactions and stored them
  * in a particular set - {@link #before()} or {@link #after()}.
  * <p>
  * It guarantees that the BEFORE side consists of:
@@ -40,7 +40,7 @@ import org.apache.ignite.internal.util.typedef.internal.S;
  *    and weren't included into {@link #before()}.
  */
 public class ConsistentCutFinishRecord extends WALRecord {
-    /** ID of Consistent Cut. */
+    /** Consistent Cut ID. */
     @GridToStringInclude
     private final UUID cutId;
 

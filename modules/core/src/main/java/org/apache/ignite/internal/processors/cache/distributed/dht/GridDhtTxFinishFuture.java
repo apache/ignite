@@ -581,7 +581,7 @@ public final class GridDhtTxFinishFuture<K, V> extends GridCacheCompoundIdentity
                 req.writeVersion(tx.writeVersion());
 
                 try {
-                    cctx.io().send(nearMapping.primary(), ConsistentCutManager.wrapMessage(cctx, req, tx.cutId()), tx.ioPolicy());
+                    cctx.io().send(nearMapping.primary(), req, tx.ioPolicy());
 
                     if (msgLog.isDebugEnabled()) {
                         msgLog.debug("DHT finish fut, sent request near [txId=" + tx.nearXidVersion() +

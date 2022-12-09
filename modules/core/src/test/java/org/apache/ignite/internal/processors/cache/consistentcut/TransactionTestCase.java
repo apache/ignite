@@ -26,7 +26,9 @@ import org.apache.ignite.cache.affinity.Affinity;
 import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
+import org.apache.ignite.internal.util.tostring.GridToStringInclude;
 import org.apache.ignite.internal.util.typedef.T2;
+import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.lang.IgniteBiTuple;
 import org.jetbrains.annotations.Nullable;
 
@@ -35,6 +37,7 @@ import org.jetbrains.annotations.Nullable;
  */
 public class TransactionTestCase {
     /** Keys array described with pairs (primary, backup). */
+    @GridToStringInclude
     private final T2<Integer, Integer>[] keys;
 
     /** */
@@ -155,5 +158,10 @@ public class TransactionTestCase {
             .size();
 
         return prims == 1 && backups <= 1;
+    }
+
+    /** {@inheritDoc} */
+    @Override public String toString() {
+        return S.toString(TransactionTestCase.class, this);
     }
 }

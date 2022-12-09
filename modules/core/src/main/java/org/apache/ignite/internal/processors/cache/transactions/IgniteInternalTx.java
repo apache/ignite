@@ -666,14 +666,12 @@ public interface IgniteInternalTx {
     public MvccSnapshot mvccSnapshot();
 
     /**
-     * @return ID of Consistent Cut AFTER which this transaction was committed, {@code null} if transaction
-     *         committed BEFORE.
+     * @return ID of Consistent Cut AFTER which this transaction commits.
      */
     public @Nullable UUID cutId();
 
     /**
-     * @param id ID of Consistent Cut AFTER which this transaction was committed, {@code null} if transaction
-     *           committed BEFORE.
+     * @param id ID of Consistent Cut AFTER which this transaction commits, {@code null} if Consistent Cut isn't running.
      */
     public void cutId(@Nullable UUID id);
 

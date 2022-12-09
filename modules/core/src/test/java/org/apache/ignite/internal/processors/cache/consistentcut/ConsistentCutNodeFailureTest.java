@@ -18,8 +18,10 @@
 package org.apache.ignite.internal.processors.cache.consistentcut;
 
 import java.util.UUID;
+import java.util.function.Supplier;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCache;
+import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.IgniteInternalFuture;
@@ -36,7 +38,7 @@ import org.junit.Test;
 import static org.apache.ignite.internal.processors.cache.persistence.snapshot.AbstractSnapshotSelfTest.snp;
 
 /** */
-public class ConsistentCutTxRecoveryTest extends AbstractConsistentCutTest {
+public class ConsistentCutNodeFailureTest extends AbstractConsistentCutTest {
     /** {@inheritDoc} */
     @Override protected IgniteConfiguration getConfiguration(String instanceName) throws Exception {
         IgniteConfiguration cfg = super.getConfiguration(instanceName);
@@ -48,59 +50,76 @@ public class ConsistentCutTxRecoveryTest extends AbstractConsistentCutTest {
 
     /** */
     @Test
-    public void testSkipFinishRecordOnTxRecovery() throws Exception {
-        IgniteInternalFuture<?> loadFut = null;
-
-        try {
-            snp(grid(0)).createIncrementalSnapshot(SNP).get(getTestTimeout());
-
-            // Blocks finish message from client to server.
-            TestRecordingCommunicationSpi clnComm = TestRecordingCommunicationSpi.spi(grid(nodes()));
-
-            clnComm.blockMessages(GridNearTxFinishRequest.class, grid(0).name());
-
-            loadFut = asyncRunTx();
-
-            clnComm.waitForBlocked();
-
-            awaitAllNodesReadyForIncrementalSnapshot();
-
-            IgniteFuture<Void> snpFut = snp(grid(0)).createIncrementalSnapshot(SNP);
-
-            waitForCutIsStartedOnAllNodes();
-
-            UUID blkCutId = TestConsistentCutManager.cutMgr(grid(0)).consistentCut().id();
-
-            // Stop client node.
+    public void shouldSkipFinishRecordAfterTransactionRecovery() throws Exception {
+        runConsistentCutAndBreak(() -> {
             stopGrid(nodes());
 
-            loadFut.cancel();
-
-            GridTestUtils.assertThrows(log, () -> snpFut.get(), IgniteException.class, "Cut is inconsistent");
-
-            awaitAllNodesReadyForIncrementalSnapshot();
-
-            snp(grid(0)).createIncrementalSnapshot(SNP).get(getTestTimeout());
-
-            stopAllGrids();
-
-            for (int i = 0; i < nodes(); i++)
-                assertWalConsistentRecords(i, blkCutId, 2);
-        }
-        finally {
-            if (loadFut != null)
-                loadFut.cancel();
-        }
+            return "Cut is inconsistent";
+        }, false);
     }
 
     /** */
-    private void assertWalConsistentRecords(int nodeIdx, UUID blkCutId, int incSnpCnt) throws Exception {
+    @Test
+    public void shouldSkipFinishRecordAfterNodeFailure() throws Exception {
+        runConsistentCutAndBreak(() -> {
+            stopGrid(1);
+
+            return "Snapshot operation interrupted, because baseline node left the cluster";
+        }, true);
+    }
+
+    /** */
+    @Test
+    public void shouldSkipFinishRecordAfterBaselineChange() throws Exception {
+        startGrid(nodes() + 1);
+
+        runConsistentCutAndBreak(() -> {
+            GridTestUtils.runAsync(() -> grid(0).cluster().setBaselineTopology(nodes() + 2));
+
+            return "Ignite topology changed, can't finish Consistent Cut.";
+        }, true);
+    }
+
+    /** */
+    private void runConsistentCutAndBreak(Supplier<String> breakCutWithExcp, boolean unblock) throws Exception {
+        TestRecordingCommunicationSpi clnComm = TestRecordingCommunicationSpi.spi(grid(nodes()));
+
+        clnComm.blockMessages((n, msg) -> msg.getClass() == GridNearTxFinishRequest.class);
+
+        IgniteInternalFuture<?> loadFut = asyncRunTx();
+
+        clnComm.waitForBlocked();
+
+        awaitAllNodesReadyForIncrementalSnapshot();
+
+        IgniteFuture<Void> snpFut = snp(grid(0)).createIncrementalSnapshot(SNP);
+
+        waitForCutIsStartedOnAllNodes();
+
+        ConsistentCut cut = TestConsistentCutManager.cutMgr(grid(0)).consistentCut();
+
+        String excMsg = breakCutWithExcp.get();
+
+        GridTestUtils.assertThrows(log, () -> cut.consistentCutFuture().get(), IgniteCheckedException.class, excMsg);
+        GridTestUtils.assertThrows(log, () -> snpFut.get(), IgniteException.class, excMsg);
+
+        if (unblock) {
+            clnComm.stopBlock();
+
+            loadFut.get();
+        }
+
+        stopAllGrids();
+
+        for (int i = 0; i < nodes(); i++)
+            assertWalConsistentRecords(i, cut.id());
+    }
+
+    /** */
+    private void assertWalConsistentRecords(int nodeIdx, UUID blkCutId) throws Exception {
         WALIterator iter = walIter(nodeIdx);
 
-        boolean expFinRec = false;
         boolean reachInconsistent = false;
-
-        int actIncSnpCnt = 0;
 
         while (iter.hasNext()) {
             WALRecord rec = iter.next().getValue();
@@ -108,22 +127,15 @@ public class ConsistentCutTxRecoveryTest extends AbstractConsistentCutTest {
             if (rec.type() == WALRecord.RecordType.CONSISTENT_CUT_START_RECORD) {
                 ConsistentCutStartRecord startRec = (ConsistentCutStartRecord)rec;
 
-                expFinRec = !startRec.cutId().equals(blkCutId);
+                assertEquals(blkCutId, startRec.cutId());
 
-                if (!expFinRec)
-                    reachInconsistent = true;
+                reachInconsistent = true;
             }
-            else if (rec.type() == WALRecord.RecordType.CONSISTENT_CUT_FINISH_RECORD) {
-                assertTrue("Unexpect Finish Record. " + blkCutId, expFinRec);
-
-                expFinRec = false;
-
-                actIncSnpCnt++;
-            }
+            else
+                assert rec.type() != WALRecord.RecordType.CONSISTENT_CUT_FINISH_RECORD : "Unexpect Finish Record.";
         }
 
         assertTrue("Should reach StartRecord for bad snapshot", reachInconsistent);
-        assertEquals("Should reach blkCutId after " + blkCutId, incSnpCnt, actIncSnpCnt);
     }
 
     /** */

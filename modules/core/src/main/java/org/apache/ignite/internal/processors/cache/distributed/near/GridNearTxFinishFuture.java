@@ -651,7 +651,7 @@ public final class GridNearTxFinishFuture<K, V> extends GridCacheCompoundIdentit
                         GridDhtTxFinishRequest finishReq = checkCommittedRequest(mini.futureId(), false);
 
                         try {
-                            cctx.io().send(backup, ConsistentCutManager.wrapMessage(cctx, finishReq, tx.cutId()), tx.ioPolicy());
+                            cctx.io().send(backup, finishReq, tx.ioPolicy());
 
                             if (msgLog.isDebugEnabled()) {
                                 msgLog.debug("Near finish fut, sent check committed request [" +

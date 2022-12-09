@@ -52,7 +52,6 @@ import org.apache.ignite.internal.processors.cache.consistentcut.ConsistentCutMa
 import org.apache.ignite.internal.processors.cache.distributed.GridCacheTxRecoveryFuture;
 import org.apache.ignite.internal.processors.cache.distributed.GridCacheTxRecoveryRequest;
 import org.apache.ignite.internal.processors.cache.distributed.GridCacheTxRecoveryResponse;
-import org.apache.ignite.internal.processors.cache.distributed.GridDistributedBaseMessage;
 import org.apache.ignite.internal.processors.cache.distributed.GridDistributedTxRemoteAdapter;
 import org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtCacheAdapter;
 import org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtCacheEntry;
@@ -319,10 +318,7 @@ public class IgniteTxHandler {
      * @param msg Finish message signed with Consistent Cut ID.
      */
     private void setTransactionCutIdIfNeeded(ConsistentCutAwareMessage msg) {
-        if (ctx.localNode().isClient())
-            return;
-
-        if (msg.txCutId() != null) {
+        if (!ctx.gridConfig().isClientMode() && msg.txCutId() != null) {
             IgniteInternalTx tx = findTransactionByMessage(msg.payload());
 
             if (tx != null)
@@ -368,6 +364,8 @@ public class IgniteTxHandler {
             if (fut != null)
                 return fut.tx();
         }
+
+        assert false : "Unexpected message is wrapped into ConsistentCutAwareMessage: " + msg;
 
         return null;
     }
@@ -1646,7 +1644,7 @@ public class IgniteTxHandler {
      */
     private void sendReply(UUID nodeId,
         GridDhtTxPrepareRequest req,
-        GridDistributedBaseMessage res,
+        GridDhtTxPrepareResponse res,
         GridDhtTxRemote dhtTx,
         GridNearTxRemote nearTx) {
         try {
