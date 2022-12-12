@@ -40,7 +40,7 @@
         <maven.compiler.source>1.8</maven.compiler.source>
         <maven.compiler.target>1.8</maven.compiler.target>
         <maven.flatten.file.name>pom-installed.xml</maven.flatten.file.name>
-        <revision>15.0.0-SNAPSHOT</revision>
+        <revision>14.1</revision>
     </properties>
 
     <url>https://ignite.apache.org</url>
