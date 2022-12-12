@@ -140,8 +140,13 @@ public class HashAggregatePlannerTest extends AbstractAggregatePlannerTest {
 
             assertIndexCount("SELECT COUNT(*), COUNT(*), COUNT(1) FROM TEST", publicSchema);
 
-            // Count on certain fields can't be optimized. Nulls are count included.
+            assertIndexCount("SELECT COUNT(ID) FROM TEST", publicSchema);
+            assertNoIndexCount("SELECT COUNT(ID + 1) FROM TEST", publicSchema);
             assertNoIndexCount("SELECT COUNT(VAL0) FROM TEST", publicSchema);
+
+            tbl.addIndex("TEST_IDX", 1, 2);
+
+            assertIndexCount("SELECT COUNT(VAL0) FROM TEST", publicSchema);
             assertNoIndexCount("SELECT COUNT(DISTINCT VAL0) FROM TEST", publicSchema);
 
             assertNoIndexCount("SELECT COUNT(*), COUNT(VAL0) FROM TEST", publicSchema);

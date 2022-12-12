@@ -408,7 +408,7 @@ public class LogicalRelImplementor<Row> implements IgniteRelVisitor<Node<Row>> {
         if (idx != null && !tbl.isIndexRebuildInProgress()) {
             return new ScanNode<>(ctx, rel.getRowType(), () -> Collections.singletonList(ctx.rowHandler()
                 .factory(ctx.getTypeFactory(), rel.getRowType())
-                .create(idx.count(ctx, ctx.group(rel.sourceId())))).iterator());
+                .create(idx.count(ctx, ctx.group(rel.sourceId()), rel.notNull()))).iterator());
         }
         else {
             CollectNode<Row> replacement = CollectNode.createCountCollector(ctx);
