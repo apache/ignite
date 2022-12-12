@@ -38,6 +38,7 @@ import org.apache.ignite.internal.processors.cache.persistence.checkpoint.Checkp
 import org.apache.ignite.internal.processors.cache.persistence.checkpoint.Checkpointer;
 import org.apache.ignite.internal.processors.cache.persistence.wal.FileDescriptor;
 import org.apache.ignite.internal.processors.cache.persistence.wal.FileWriteAheadLogManager;
+import org.apache.ignite.internal.processors.cache.persistence.wal.WALPointer;
 import org.apache.ignite.internal.util.IgniteUtils;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.testframework.ListeningTestLogger;
@@ -351,8 +352,10 @@ public abstract class WalDeletionArchiveAbstractTest extends GridCommonAbstractT
         FileWriteAheadLogManager wal = wal(n);
 
         try {
+            long idxLastCp = lastCheckpointPtr(n).index();
+
             // Let's reserve the very first segment that will definitely be needed for the checkpoint.
-            assertTrue(wal.reserve(new FileWALPointer(0, 0, 0)));
+            assertTrue(wal.reserve(new WALPointer(idxLastCp, 0, 0)));
 
             for (int i = 0; wal.lastArchivedSegment() < 20L; i++)
                 n.cache(DEFAULT_CACHE_NAME).put(i, new byte[(int)(512 * KB)]);
@@ -362,23 +365,23 @@ public abstract class WalDeletionArchiveAbstractTest extends GridCommonAbstractT
             assertThat(wal.lastTruncatedSegment(), equalTo(-1L));
 
             // Let's try to reserve all the segments and then immediately release them.
-            long lastWalSegmentIndex = ((FileWALPointer)wal.lastWritePointer()).index();
+            long lastWalSegmentIndex = wal.lastWritePointer().index();
 
-            for (int i = 0; i < lastWalSegmentIndex; i++) {
-                FileWALPointer pointer = new FileWALPointer(i, 0, 0);
+            for (int i = (int)(idxLastCp + 1); i < lastWalSegmentIndex; i++) {
+                WALPointer pointer = new WALPointer(i, 0, 0);
 
-                // Unable to reserve because the archive is full.
-                assertFalse(String.valueOf(i), wal.reserve(pointer));
+                // Should be able to reserve segments because the checkpoint has not happened yet.
+                assertTrue(String.valueOf(i), wal.reserve(pointer));
 
                 wal.release(pointer);
             }
 
             assertTrue(
                 String.valueOf(lastWalSegmentIndex),
-                wal.reserve(new FileWALPointer(lastWalSegmentIndex, 0, 0))
+                wal.reserve(new WALPointer(lastWalSegmentIndex, 0, 0))
             );
 
-            wal.release(new FileWALPointer(lastWalSegmentIndex, 0, 0));
+            wal.release(new WALPointer(lastWalSegmentIndex, 0, 0));
 
             // Let's wait a bit, suddenly there will be a deletion from the archive?
             assertFalse(waitForCondition(() -> wal.lastTruncatedSegment() >= 0, 1_000, 100));
@@ -399,10 +402,7 @@ public abstract class WalDeletionArchiveAbstractTest extends GridCommonAbstractT
             waitForCondition(() -> walArchiveSize(n) <= walSegmentSize, 1_000, 100)
         );
 
-        assertThat(
-            wal.lastTruncatedSegment(),
-            lessThan(((FileWALPointer)getFieldValueHierarchy(wal, "lastCheckpointPtr")).index())
-        );
+        assertThat(wal.lastTruncatedSegment(), lessThan(lastCheckpointPtr(n).index()));
     }
 
     /**
@@ -427,5 +427,15 @@ public abstract class WalDeletionArchiveAbstractTest extends GridCommonAbstractT
      */
     private long walArchiveSize(Ignite n) {
         return Arrays.stream(wal(n).walArchiveFiles()).mapToLong(fd -> fd.file().length()).sum();
+    }
+
+    /**
+     * Returns the value of field {@code FileWriteAheadLogManager#lastCheckpointPtr}.
+     *
+     * @param n Node.
+     * @return Field value {@code FileWriteAheadLogManager#lastCheckpointPtr}.
+     */
+    private WALPointer lastCheckpointPtr(Ignite n) {
+        return getFieldValueHierarchy(wal(n), "lastCheckpointPtr");
     }
 }
