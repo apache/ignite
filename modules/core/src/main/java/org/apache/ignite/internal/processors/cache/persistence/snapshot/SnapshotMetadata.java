@@ -31,6 +31,7 @@ import java.util.Set;
 import java.util.UUID;
 import org.apache.ignite.internal.processors.cache.persistence.partstate.GroupPartitionId;
 import org.apache.ignite.internal.util.tostring.GridToStringInclude;
+import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.jetbrains.annotations.Nullable;
@@ -83,6 +84,12 @@ public class SnapshotMetadata implements Serializable {
     @GridToStringInclude
     @Nullable private List<String> warnings;
 
+    /** */
+    private transient Set<Integer> comprGrpIds;
+
+    /** */
+    private boolean hasComprGrps;
+
     /**
      * F@param snpName Snapshot name.
      * @param consId Consistent id of a node to which this metadata relates.
@@ -99,6 +106,7 @@ public class SnapshotMetadata implements Serializable {
         String folderName,
         int pageSize,
         List<Integer> grpIds,
+        List<Integer> compGrpIds,
         Set<String> bltNodes,
         Set<GroupPartitionId> pairs,
         @Nullable byte[] masterKeyDigest
@@ -111,6 +119,12 @@ public class SnapshotMetadata implements Serializable {
         this.grpIds = grpIds;
         this.bltNodes = bltNodes;
         this.masterKeyDigest = masterKeyDigest;
+
+        if (!F.isEmpty(compGrpIds)) {
+            hasComprGrps = true;
+
+            comprGrpIds = new HashSet<>(compGrpIds);
+        }
 
         pairs.forEach(p ->
             locParts.computeIfAbsent(p.getGroupId(), k -> new HashSet<>())
@@ -174,6 +188,16 @@ public class SnapshotMetadata implements Serializable {
         return Collections.unmodifiableMap(locParts);
     }
 
+    /** */
+    public boolean isGroupWithCompresion(int grpId) {
+        return hasComprGrps && comprGrpIds.contains(grpId);
+    }
+
+    /** */
+    public boolean hasCompressedGroups() {
+        return hasComprGrps;
+    }
+
     /** Save the state of this <tt>HashMap</tt> partitions and cache groups to a stream. */
     private void writeObject(java.io.ObjectOutputStream s)
         throws java.io.IOException {
@@ -190,6 +214,14 @@ public class SnapshotMetadata implements Serializable {
 
             for (Integer partId : e.getValue())
                 s.writeInt(partId);
+        }
+
+        if (hasComprGrps) {
+            s.writeInt(comprGrpIds.size());
+
+            for (int grpId : comprGrpIds)
+                s.writeInt(grpId);
+
         }
     }
 
@@ -220,6 +252,15 @@ public class SnapshotMetadata implements Serializable {
                 parts.add(s.readInt());
 
             locParts.put(grpId, parts);
+        }
+
+        if (hasComprGrps) {
+            int sz = s.readInt();
+
+            comprGrpIds = new HashSet<>(sz);
+
+            for (int i = 0; i < sz; ++i)
+                comprGrpIds.add(s.readInt());
         }
     }
 
@@ -275,7 +316,9 @@ public class SnapshotMetadata implements Serializable {
             Objects.equals(grpIds, meta.grpIds) &&
             Objects.equals(bltNodes, meta.bltNodes) &&
             Arrays.equals(masterKeyDigest, meta.masterKeyDigest) &&
-            Objects.equals(warnings, meta.warnings);
+            Objects.equals(warnings, meta.warnings) &&
+            Objects.equals(hasComprGrps, hasComprGrps) &&
+            Objects.equals(comprGrpIds, comprGrpIds);
     }
 
     /** {@inheritDoc} */

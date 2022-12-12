@@ -362,7 +362,9 @@ public class CachePartitionDefragmentationManager {
                         oldGrpCtx.localStartVersion(),
                         true,
                         false,
-                        true
+                        true,
+                        oldGrpCtx.diskPageCompression(),
+                        oldGrpCtx.diskPageCompressionLevel()
                     );
 
                     defragmentationCheckpoint.checkpointTimeoutLock().checkpointReadLock();

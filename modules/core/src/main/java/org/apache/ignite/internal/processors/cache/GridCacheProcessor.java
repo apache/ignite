@@ -17,6 +17,7 @@
 
 package org.apache.ignite.internal.processors.cache;
 
+import java.io.File;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
@@ -66,6 +67,7 @@ import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.DataRegionConfiguration;
 import org.apache.ignite.configuration.DataStorageConfiguration;
 import org.apache.ignite.configuration.DeploymentMode;
+import org.apache.ignite.configuration.DiskPageCompression;
 import org.apache.ignite.configuration.NearCacheConfiguration;
 import org.apache.ignite.configuration.WarmUpConfiguration;
 import org.apache.ignite.events.EventType;
@@ -141,6 +143,7 @@ import org.apache.ignite.internal.processors.cacheobject.IgniteCacheObjectProces
 import org.apache.ignite.internal.processors.cluster.ChangeGlobalStateFinishMessage;
 import org.apache.ignite.internal.processors.cluster.ChangeGlobalStateMessage;
 import org.apache.ignite.internal.processors.cluster.DiscoveryDataClusterState;
+import org.apache.ignite.internal.processors.compress.CompressionProcessor;
 import org.apache.ignite.internal.processors.datastructures.DataStructuresProcessor;
 import org.apache.ignite.internal.processors.metric.MetricRegistry;
 import org.apache.ignite.internal.processors.platform.cache.PlatformCacheManager;
@@ -1269,7 +1272,6 @@ public class GridCacheProcessor extends GridProcessorAdapter {
 
         boolean nearEnabled = GridCacheUtils.isNearEnabled(cfg);
 
-        CacheCompressionManager compressMgr = new CacheCompressionManager();
         GridCacheAffinityManager affMgr = new GridCacheAffinityManager();
         GridCacheEventManager evtMgr = new GridCacheEventManager();
         CacheEvictionManager evictMgr = (nearEnabled || cfg.isOnheapCacheEnabled())
@@ -1309,7 +1311,6 @@ public class GridCacheProcessor extends GridProcessorAdapter {
              * Managers in starting order!
              * ===========================
              */
-            compressMgr,
             evtMgr,
             storeMgr,
             evictMgr,
@@ -1427,7 +1428,6 @@ public class GridCacheProcessor extends GridProcessorAdapter {
                  * Managers in starting order!
                  * ===========================
                  */
-                compressMgr,
                 evtMgr,
                 storeMgr,
                 evictMgr,
@@ -2480,6 +2480,8 @@ public class GridCacheProcessor extends GridProcessorAdapter {
         boolean persistenceEnabled = recoveryMode || sharedCtx.localNode().isClient() ? desc.persistenceEnabled() :
             dataRegion != null && dataRegion.config().isPersistenceEnabled();
 
+        T2<DiskPageCompression, Integer> comprParams = getAndValidatePageCompressionParameters(cfg);
+
         CacheGroupContext grp = new CacheGroupContext(sharedCtx,
             desc.groupId(),
             desc.receivedFrom(),
@@ -2493,7 +2495,9 @@ public class GridCacheProcessor extends GridProcessorAdapter {
             exchTopVer,
             persistenceEnabled,
             desc.walEnabled(),
-            recoveryMode
+            recoveryMode,
+            comprParams.getKey(),
+            comprParams.getValue()
         );
 
         for (Object obj : grp.configuredUserObjects())
@@ -2904,6 +2908,33 @@ public class GridCacheProcessor extends GridProcessorAdapter {
         finally {
             sharedCtx.database().checkpointReadUnlock();
         }
+    }
+
+    /** */
+    public T2<DiskPageCompression, Integer> getAndValidatePageCompressionParameters(CacheConfiguration cfg) throws IgniteCheckedException {
+        DiskPageCompression diskPageCompr = cfg.getDiskPageCompression();
+        DataStorageConfiguration dsCfg = ctx.config().getDataStorageConfiguration();
+
+        if (ctx.clientNode() || diskPageCompr == DiskPageCompression.DISABLED || !CU.isPersistentCache(cfg, dsCfg))
+            return new T2<>(DiskPageCompression.DISABLED, 0);
+
+        CompressionProcessor comprProc = ctx.compress();
+
+        int lvl = cfg.getDiskPageCompressionLevel() == null ?
+            CompressionProcessor.getDefaultCompressionLevel(diskPageCompr) :
+            CompressionProcessor.checkCompressionLevelBounds(cfg.getDiskPageCompressionLevel(), diskPageCompr);
+
+        File dbPath = ctx.pdsFolderResolver().resolveFolders().persistentStoreRootPath();
+
+        assert dbPath != null;
+
+        comprProc.checkPageCompressionSupported(dbPath.toPath(), dsCfg.getPageSize());
+        if (log.isInfoEnabled()) {
+            log.info("Disk page compression is enabled [cacheGrp=" + CU.cacheOrGroupName(cfg) +
+                ", compression=" + diskPageCompr + ", level=" + lvl + "]");
+        }
+
+        return new T2<>(diskPageCompr, lvl);
     }
 
     /**

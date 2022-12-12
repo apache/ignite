@@ -68,8 +68,10 @@ import org.apache.ignite.internal.processors.cache.persistence.metastorage.MetaS
 import org.apache.ignite.internal.processors.cache.persistence.partstate.GroupPartitionId;
 import org.apache.ignite.internal.processors.cache.persistence.tree.io.PageIO;
 import org.apache.ignite.internal.processors.cache.persistence.wal.crc.FastCrc;
+import org.apache.ignite.internal.processors.compress.CompressionProcessor;
 import org.apache.ignite.internal.processors.marshaller.MappedName;
 import org.apache.ignite.internal.processors.metastorage.persistence.DistributedMetaStorageImpl;
+import org.apache.ignite.internal.util.GridUnsafe;
 import org.apache.ignite.internal.util.future.GridFutureAdapter;
 import org.apache.ignite.internal.util.lang.IgniteThrowableRunner;
 import org.apache.ignite.internal.util.tostring.GridToStringExclude;
@@ -949,6 +951,18 @@ class SnapshotFutureTask extends AbstractSnapshotFutureTask<Set<GroupPartitionId
                 }
                 else {
                     // Direct buffer is needs to be written, associated checkpoint not finished yet.
+                    if (PageIO.getCompressionType(GridUnsafe.bufferAddress(buf)) != CompressionProcessor.UNCOMPRESSED_PAGE) {
+                        final ByteBuffer locBuf = locBuff.get();
+
+                        assert locBuf.capacity() == store.getPageSize();
+
+                        locBuf.clear();
+
+                        GridUnsafe.copyOffheapOffheap(GridUnsafe.bufferAddress(buf), GridUnsafe.bufferAddress(locBuf), buf.limit());
+
+                        buf = locBuf;
+                    }
+
                     writePage0(pageId, buf);
 
                     // Page marked as written to delta file, so there is no need to

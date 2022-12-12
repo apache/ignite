@@ -54,6 +54,7 @@ import org.apache.ignite.internal.processors.cache.persistence.tree.io.PageParti
 import org.apache.ignite.internal.processors.cache.verify.IdleVerifyResultV2;
 import org.apache.ignite.internal.processors.cache.verify.PartitionHashRecordV2;
 import org.apache.ignite.internal.processors.cache.verify.PartitionKeyV2;
+import org.apache.ignite.internal.processors.compress.CompressionProcessor;
 import org.apache.ignite.internal.util.GridStringBuilder;
 import org.apache.ignite.internal.util.GridUnsafe;
 import org.apache.ignite.internal.util.typedef.F;
@@ -151,7 +152,8 @@ public class SnapshotPartitionsVerifyHandler implements SnapshotHandler<Map<Part
 
         IgniteSnapshotManager snpMgr = cctx.snapshotMgr();
 
-        GridKernalContext snpCtx = snpMgr.createStandaloneKernalContext(opCtx.snapshotDirectory(), meta.folderName());
+        GridKernalContext snpCtx = snpMgr.createStandaloneKernalContext(cctx.kernalContext().compress(),
+            opCtx.snapshotDirectory(), meta.folderName());
 
         FilePageStoreManager storeMgr = (FilePageStoreManager)cctx.pageStore();
 
@@ -190,6 +192,9 @@ public class SnapshotPartitionsVerifyHandler implements SnapshotHandler<Map<Part
                         pageStore.read(0, pageBuff, true);
 
                         long pageAddr = GridUnsafe.bufferAddress(pageBuff);
+
+                        if (PageIO.getCompressionType(pageBuff) != CompressionProcessor.UNCOMPRESSED_PAGE)
+                            snpCtx.compress().decompressPage(pageBuff, pageStore.getPageSize());
 
                         PagePartitionMetaIO io = PageIO.getPageIO(pageBuff);
                         GridDhtPartitionState partState = fromOrdinal(io.getPartitionState(pageAddr));

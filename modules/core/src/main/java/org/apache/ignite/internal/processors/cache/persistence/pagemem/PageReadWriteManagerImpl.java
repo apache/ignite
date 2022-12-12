@@ -19,13 +19,14 @@ package org.apache.ignite.internal.processors.cache.persistence.pagemem;
 
 import java.nio.ByteBuffer;
 import org.apache.ignite.IgniteCheckedException;
+import org.apache.ignite.configuration.DiskPageCompression;
 import org.apache.ignite.failure.FailureContext;
 import org.apache.ignite.failure.FailureType;
 import org.apache.ignite.internal.GridKernalContext;
 import org.apache.ignite.internal.pagemem.PageIdUtils;
 import org.apache.ignite.internal.pagemem.store.PageStore;
 import org.apache.ignite.internal.pagemem.store.PageStoreCollection;
-import org.apache.ignite.internal.processors.cache.GridCacheContext;
+import org.apache.ignite.internal.processors.cache.CacheGroupContext;
 import org.apache.ignite.internal.processors.cache.persistence.StorageException;
 import org.apache.ignite.internal.processors.cache.persistence.tree.io.PageIO;
 import org.apache.ignite.internal.util.tostring.GridToStringExclude;
@@ -93,12 +94,12 @@ public class PageReadWriteManagerImpl implements PageReadWriteManager {
             int pageSize = store.getPageSize();
             int compressedPageSize = pageSize;
 
-            GridCacheContext<?, ?> cctx0 = ctx.cache().context().cacheContext(grpId);
-
-            if (cctx0 != null) {
+            CacheGroupContext grpCtx = ctx.cache().cacheGroup(grpId);
+            if (grpCtx != null && grpCtx.diskPageCompression() != DiskPageCompression.DISABLED) {
                 assert pageBuf.position() == 0 && pageBuf.limit() == pageSize : pageBuf;
 
-                ByteBuffer compressedPageBuf = cctx0.compress().compressPage(pageBuf, store);
+                ByteBuffer compressedPageBuf = ctx.compress().compressPage(pageBuf, store.getPageSize(),
+                    store.getBlockSize(), grpCtx.diskPageCompression(), grpCtx.diskPageCompressionLevel());
 
                 if (compressedPageBuf != pageBuf) {
                     compressedPageSize = PageIO.getCompressedSize(compressedPageBuf);

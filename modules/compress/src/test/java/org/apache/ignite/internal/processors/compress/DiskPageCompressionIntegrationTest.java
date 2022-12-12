@@ -63,12 +63,14 @@ public class DiskPageCompressionIntegrationTest extends AbstractPageCompressionI
     /** {@inheritDoc} */
     @Override protected IgniteConfiguration getConfiguration(String igniteName) throws Exception {
         DataRegionConfiguration drCfg = new DataRegionConfiguration()
+            .setMetricsEnabled(true)
             .setPersistenceEnabled(true);
 
         factory = getFileIOFactory();
 
         DataStorageConfiguration dsCfg = new DataStorageConfiguration()
             .setPageSize(MAX_PAGE_SIZE)
+            .setMetricsEnabled(true)
             .setDefaultDataRegionConfiguration(drCfg)
             .setFileIOFactory(U.isLinux() ? factory : new PunchFileIOFactory(factory));
 

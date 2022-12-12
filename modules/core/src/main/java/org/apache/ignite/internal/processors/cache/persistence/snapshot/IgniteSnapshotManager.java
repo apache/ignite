@@ -81,6 +81,7 @@ import org.apache.ignite.binary.BinaryType;
 import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.compute.ComputeTask;
 import org.apache.ignite.configuration.CacheConfiguration;
+import org.apache.ignite.configuration.DiskPageCompression;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.events.DiscoveryEvent;
 import org.apache.ignite.events.SnapshotEvent;
@@ -142,6 +143,7 @@ import org.apache.ignite.internal.processors.cache.tree.DataRow;
 import org.apache.ignite.internal.processors.cache.verify.IdleVerifyResultV2;
 import org.apache.ignite.internal.processors.cluster.DiscoveryDataClusterState;
 import org.apache.ignite.internal.processors.cluster.IgniteChangeGlobalStateSupport;
+import org.apache.ignite.internal.processors.compress.CompressionProcessor;
 import org.apache.ignite.internal.processors.configuration.distributed.DistributedConfigurationLifecycleListener;
 import org.apache.ignite.internal.processors.configuration.distributed.DistributedLongProperty;
 import org.apache.ignite.internal.processors.configuration.distributed.DistributedPropertyDispatcher;
@@ -795,6 +797,10 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
         }
 
         List<Integer> grpIds = new ArrayList<>(F.viewReadOnly(req.groups(), CU::cacheId));
+        List<Integer> comprGrpIds = grpIds.stream().filter(i -> {
+            CacheGroupDescriptor desc = cctx.cache().cacheGroupDescriptor(i);
+            return desc != null && desc.config().getDiskPageCompression() != DiskPageCompression.DISABLED;
+        }).collect(Collectors.toList());
 
         Set<Integer> leftGrps = new HashSet<>(grpIds);
         leftGrps.removeAll(cctx.cache().cacheGroupDescriptors().keySet());
@@ -853,6 +859,7 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
                     pdsSettings.folderName(),
                     cctx.gridConfig().getDataStorageConfiguration().getPageSize(),
                     grpIds,
+                    comprGrpIds,
                     blts,
                     (Set<GroupPartitionId>)fut.result(),
                     cctx.gridConfig().getEncryptionSpi().masterKeyDigest()
@@ -1914,9 +1921,12 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
      * @return Standalone kernal context related to the snapshot.
      * @throws IgniteCheckedException If fails.
      */
-    public StandaloneGridKernalContext createStandaloneKernalContext(File snpDir, String folderName) throws IgniteCheckedException {
-        return new StandaloneGridKernalContext(log,
-            resolveBinaryWorkDir(snpDir.getAbsolutePath(), folderName),
+    public StandaloneGridKernalContext createStandaloneKernalContext(
+        CompressionProcessor cmpProc,
+        File snpDir,
+        String folderName
+    ) throws IgniteCheckedException {
+        return new StandaloneGridKernalContext(log, cmpProc, resolveBinaryWorkDir(snpDir.getAbsolutePath(), folderName),
             resolveMappingFileStoreWorkDir(snpDir.getAbsolutePath()));
     }
 
@@ -2495,6 +2505,12 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
         /** Batch of rows read through iteration. */
         private final Deque<CacheDataRow> rows = new LinkedList<>();
 
+        /** */
+        private final CompressionProcessor compressProc;
+
+        /** */
+        private boolean skipPunchHole;
+
         /** {@code true} if the iteration though partition reached its end. */
         private boolean secondScanComplete;
 
@@ -2524,6 +2540,7 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
             this.partId = partId;
             this.coctx = coctx;
             this.sctx = sctx;
+            compressProc = sctx.kernalContext().compress();
 
             store.ensure();
             pages = store.pages();
@@ -2669,6 +2686,21 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
             boolean read = store.read(pageId, buff, true);
 
             assert read : toDetailString(pageId);
+
+            if (PageIO.getCompressionType(buff) != CompressionProcessor.UNCOMPRESSED_PAGE) {
+                int comprPageSz = PageIO.getCompressedSize(buff);
+
+                compressProc.decompressPage(buff, store.getPageSize());
+
+                if (!skipPunchHole && comprPageSz < store.getPageSize()) {
+                    try {
+                        store.punchHole(pageId, comprPageSz);
+                    }
+                    catch (Exception e) {
+                        skipPunchHole = true;
+                    }
+                }
+            }
 
             return getType(buff) == flag(pageId);
         }
@@ -3389,6 +3421,7 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
                 .encryptedFileIoFactory(IgniteSnapshotManager.this.ioFactory, pair.getGroupId()) :
                 IgniteSnapshotManager.this.ioFactory;
 
+            boolean skipPunchHole = false;
             try (DeltaIterator deltaIter = deltaIterFactory.create(delta, ioFactory);
                  FilePageStore pageStore = (FilePageStore)storeMgr.getPageStoreFactory(pair.getGroupId(), encrypted)
                      .createPageStore(getTypeByPartId(pair.getPartitionId()), snpPart::toPath, v -> {})
@@ -3399,8 +3432,22 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
                     transferRateLimiter.acquire(pageSize);
 
                     ByteBuffer page = deltaIter.next();
+                    long pageId = PageIO.getPageId(page);
 
-                    pageStore.write(PageIO.getPageId(page), page, 0, false);
+                    pageStore.write(pageId, page, 0, false);
+
+                    if (PageIO.getCompressionType(page) != CompressionProcessor.UNCOMPRESSED_PAGE) {
+                        int comprPageSz = PageIO.getCompressedSize(page);
+
+                        if (!skipPunchHole && comprPageSz < pageSize) {
+                            try {
+                                pageStore.punchHole(pageId, comprPageSz);
+                            }
+                            catch (Exception e) {
+                                skipPunchHole = true;
+                            }
+                        }
+                    }
                 }
 
                 pageStore.finishRecover();

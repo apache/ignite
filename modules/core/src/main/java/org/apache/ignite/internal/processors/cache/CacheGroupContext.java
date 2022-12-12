@@ -33,6 +33,7 @@ import org.apache.ignite.cache.affinity.AffinityFunction;
 import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.DataPageEvictionMode;
+import org.apache.ignite.configuration.DiskPageCompression;
 import org.apache.ignite.configuration.TopologyValidator;
 import org.apache.ignite.events.CacheRebalancingEvent;
 import org.apache.ignite.internal.IgniteClientDisconnectedCheckedException;
@@ -192,6 +193,12 @@ public class CacheGroupContext {
     /** Topology validators. */
     private final Collection<TopologyValidator> topValidators;
 
+    /** Disk page compression method. */
+    private final DiskPageCompression diskPageCompr;
+
+    /** Disk page compression level. */
+    private final int diskPageComprLvl;
+
     /**
      * @param ctx Context.
      * @param grpId Group ID.
@@ -206,6 +213,8 @@ public class CacheGroupContext {
      * @param locStartVer Topology version when group was started on local node.
      * @param persistenceEnabled Persistence enabled flag.
      * @param walEnabled Wal enabled flag.
+     * @param diskPageCompr Disk page compression.
+     * @param diskPageComprLvl Disk page compression level.
      */
     public CacheGroupContext(
         GridCacheSharedContext ctx,
@@ -221,7 +230,9 @@ public class CacheGroupContext {
         AffinityTopologyVersion locStartVer,
         boolean persistenceEnabled,
         boolean walEnabled,
-        boolean recoveryMode
+        boolean recoveryMode,
+        DiskPageCompression diskPageCompr,
+        int diskPageComprLvl
     ) {
         assert ccfg != null;
         assert dataRegion != null || !affNode;
@@ -242,6 +253,8 @@ public class CacheGroupContext {
         this.persistenceEnabled = persistenceEnabled;
         this.localWalEnabled = true;
         this.recoveryMode = new AtomicBoolean(recoveryMode);
+        this.diskPageCompr = diskPageCompr;
+        this.diskPageComprLvl = diskPageComprLvl;
 
         ioPlc = cacheType.ioPolicy();
 
@@ -1327,6 +1340,16 @@ public class CacheGroupContext {
      */
     public IgniteWriteAheadLogManager wal() {
         return ctx.wal(cdcEnabled());
+    }
+
+    /** */
+    public DiskPageCompression diskPageCompression() {
+        return diskPageCompr;
+    }
+
+    /** */
+    public int diskPageCompressionLevel() {
+        return diskPageComprLvl;
     }
 
     /**
