@@ -18,12 +18,11 @@
 package org.apache.ignite.internal.pagemem.wal.record;
 
 import java.util.UUID;
-import org.apache.ignite.internal.processors.cache.consistentcut.BaselineConsistentCut;
 import org.apache.ignite.internal.util.tostring.GridToStringInclude;
 import org.apache.ignite.internal.util.typedef.internal.S;
 
 /**
- * This record is written to WAL at the moment when {@link BaselineConsistentCut} starts on a local node.
+ * This record is written to WAL at the moment when Consistent Cut starts on a baseline node.
  */
 public class ConsistentCutStartRecord extends WALRecord {
     /** Consistent Cut ID. */

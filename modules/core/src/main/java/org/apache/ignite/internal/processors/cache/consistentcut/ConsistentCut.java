@@ -26,9 +26,6 @@ public interface ConsistentCut {
     /** Consistent Cut ID. */
     public UUID id();
 
-    /** Consistent Cut future. */
-    public IgniteInternalFuture<WALPointer> consistentCutFuture();
-
     /** Cancels this Consistent Cut. */
     public void cancel(Throwable err);
 

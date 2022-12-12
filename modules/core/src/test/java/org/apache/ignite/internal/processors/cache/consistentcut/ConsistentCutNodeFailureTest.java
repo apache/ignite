@@ -21,7 +21,6 @@ import java.util.UUID;
 import java.util.function.Supplier;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCache;
-import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.IgniteInternalFuture;
@@ -100,7 +99,6 @@ public class ConsistentCutNodeFailureTest extends AbstractConsistentCutTest {
 
         String excMsg = breakCutWithExcp.get();
 
-        GridTestUtils.assertThrows(log, () -> cut.consistentCutFuture().get(), IgniteCheckedException.class, excMsg);
         GridTestUtils.assertThrows(log, () -> snpFut.get(), IgniteException.class, excMsg);
 
         if (unblock) {

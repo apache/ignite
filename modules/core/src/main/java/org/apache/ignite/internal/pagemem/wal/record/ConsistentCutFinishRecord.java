@@ -19,15 +19,13 @@ package org.apache.ignite.internal.pagemem.wal.record;
 
 import java.util.Set;
 import java.util.UUID;
-import org.apache.ignite.internal.processors.cache.consistentcut.BaselineConsistentCut;
 import org.apache.ignite.internal.processors.cache.persistence.tree.io.CacheVersionIO;
 import org.apache.ignite.internal.processors.cache.version.GridCacheVersion;
 import org.apache.ignite.internal.util.tostring.GridToStringInclude;
 import org.apache.ignite.internal.util.typedef.internal.S;
 
 /**
- * This record is written to WAL after {@link BaselineConsistentCut} finished checking transactions and stored them
- * in a particular set - {@link #before()} or {@link #after()}.
+ * This record is written to WAL after Consistent Cut finished on a baseline node.
  * <p>
  * It guarantees that the BEFORE side consists of:
  * 1. Transactions committed before {@link ConsistentCutStartRecord} and weren't included into {@link #after()}.

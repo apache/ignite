@@ -20,15 +20,18 @@ package org.apache.ignite.internal.processors.cache.consistentcut;
 import java.util.Objects;
 import java.util.UUID;
 import org.apache.ignite.IgniteCheckedException;
+import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.pagemem.wal.record.ConsistentCutFinishRecord;
 import org.apache.ignite.internal.processors.cache.GridCacheMessage;
 import org.apache.ignite.internal.processors.cache.GridCacheSharedContext;
 import org.apache.ignite.internal.processors.cache.GridCacheSharedManagerAdapter;
 import org.apache.ignite.internal.processors.cache.distributed.dht.preloader.GridDhtPartitionsExchangeFuture;
 import org.apache.ignite.internal.processors.cache.distributed.dht.preloader.PartitionsExchangeAware;
+import org.apache.ignite.internal.processors.cache.persistence.wal.WALPointer;
 import org.apache.ignite.internal.processors.cache.transactions.IgniteInternalTx;
 import org.apache.ignite.internal.processors.cache.transactions.IgniteTxAdapter;
 import org.apache.ignite.internal.processors.cache.transactions.IgniteTxManager;
+import org.apache.ignite.internal.util.future.GridCompoundIdentityFuture;
 import org.apache.ignite.internal.util.tostring.GridToStringInclude;
 import org.jetbrains.annotations.Nullable;
 
@@ -62,6 +65,9 @@ public class ConsistentCutManager extends GridCacheSharedManagerAdapter implemen
     /** ID of the last finished Consistent Cut. Required to avoid re-run Consistent Cut with the same id. */
     @GridToStringInclude
     private volatile UUID lastFinishedCutId;
+
+    /** Future that completes after last {@link ConsistentCutAwareMessage} with {@link #lastFinishedCutId} was sent. */
+    private volatile IgniteInternalFuture<IgniteInternalTx> lastCutAwareMsgSentFut;
 
     /** {@inheritDoc} */
     @Override public void start0() throws IgniteCheckedException {
@@ -155,10 +161,11 @@ public class ConsistentCutManager extends GridCacheSharedManagerAdapter implemen
     public void cancelConsistentCut(Throwable err) {
         ConsistentCut cut = consistentCut;
 
-        if (cut != null)
+        if (cut != null) {
             cut.cancel(err);
 
-        cleanConsistentCut();
+            cleanConsistentCut(cut.id());
+        }
     }
 
     /**
@@ -166,6 +173,15 @@ public class ConsistentCutManager extends GridCacheSharedManagerAdapter implemen
      */
     public @Nullable ConsistentCut consistentCut() {
         return consistentCut;
+    }
+
+    /**
+     * @return Current running Consistent Cut, if cut isn't running then {@code null}.
+     */
+    public @Nullable IgniteInternalFuture<WALPointer> consistentCutFuture() {
+        ConsistentCut cut = consistentCut;
+
+        return cut == null || !cut.baseline() ? null : ((BaselineConsistentCut)cut).consistentCutFuture();
     }
 
     /**
@@ -178,23 +194,34 @@ public class ConsistentCutManager extends GridCacheSharedManagerAdapter implemen
     }
 
     /**
-     * Cleans local Consistent Cut.
+     * Stops local Consistent Cut.
      */
-    public void cleanConsistentCut() {
-        ConsistentCut cut = consistentCut;
-
-        if (cut == null)
-            return;
-
+    public void cleanConsistentCut(UUID cutId) {
         synchronized (this) {
-            lastFinishedCutId = cut.id();
+            lastFinishedCutId = cutId;
 
             consistentCut = null;
         }
+
+        // Await compleition of all transactions that might send ConsistentCutAwareMessage.
+        GridCompoundIdentityFuture<IgniteInternalTx> activeTxsFut = new GridCompoundIdentityFuture<>();
+
+        for (IgniteInternalTx tx: cctx.tm().activeTransactions())
+            activeTxsFut.add(tx.finishFuture());
+
+        activeTxsFut.markInitialized();
+
+        lastCutAwareMsgSentFut = activeTxsFut;
     }
 
     /** */
-    public void cleanLastFinishedCutId() {
+    public void cleanLastFinishedCutId(UUID cutId) {
         lastFinishedCutId = null;
+        lastCutAwareMsgSentFut = null;
+    }
+
+    /** */
+    public IgniteInternalFuture<?> lastCutAwareMsgSentFuture() {
+        return lastCutAwareMsgSentFut;
     }
 }

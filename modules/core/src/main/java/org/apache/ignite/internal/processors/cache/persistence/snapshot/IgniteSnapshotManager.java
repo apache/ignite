@@ -77,7 +77,6 @@ import org.apache.ignite.binary.BinaryType;
 import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.compute.ComputeTask;
 import org.apache.ignite.configuration.CacheConfiguration;
-import org.apache.ignite.configuration.DataStorageConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.events.DiscoveryEvent;
 import org.apache.ignite.events.SnapshotEvent;
@@ -91,9 +90,7 @@ import org.apache.ignite.internal.IgniteFeatures;
 import org.apache.ignite.internal.IgniteFutureCancelledCheckedException;
 import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.IgniteInterruptedCheckedException;
-import org.apache.ignite.internal.MarshallerContextImpl;
 import org.apache.ignite.internal.NodeStoppingException;
-import org.apache.ignite.internal.binary.BinaryUtils;
 import org.apache.ignite.internal.cluster.ClusterTopologyCheckedException;
 import org.apache.ignite.internal.cluster.DistributedConfigurationUtils;
 import org.apache.ignite.internal.events.DiscoveryCustomEvent;
@@ -139,7 +136,6 @@ import org.apache.ignite.internal.processors.cache.persistence.tree.io.PageIO;
 import org.apache.ignite.internal.processors.cache.persistence.wal.WALPointer;
 import org.apache.ignite.internal.processors.cache.persistence.wal.crc.FastCrc;
 import org.apache.ignite.internal.processors.cache.persistence.wal.reader.StandaloneGridKernalContext;
-import org.apache.ignite.internal.processors.cache.transactions.IgniteInternalTx;
 import org.apache.ignite.internal.processors.cache.tree.DataRow;
 import org.apache.ignite.internal.processors.cache.verify.IdleVerifyResultV2;
 import org.apache.ignite.internal.processors.cluster.DiscoveryDataClusterState;
@@ -197,7 +193,6 @@ import static org.apache.ignite.internal.IgniteFeatures.nodeSupports;
 import static org.apache.ignite.internal.MarshallerContextImpl.mappingFileStoreWorkDir;
 import static org.apache.ignite.internal.MarshallerContextImpl.resolveMappingFileStoreWorkDir;
 import static org.apache.ignite.internal.MarshallerContextImpl.saveMappings;
-import static org.apache.ignite.internal.binary.BinaryUtils.METADATA_FILE_SUFFIX;
 import static org.apache.ignite.internal.events.DiscoveryCustomEvent.EVT_DISCOVERY_CUSTOM_EVT;
 import static org.apache.ignite.internal.managers.communication.GridIoPolicy.SYSTEM_POOL;
 import static org.apache.ignite.internal.pagemem.PageIdAllocator.FLAG_DATA;
@@ -290,7 +285,7 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
     /** Metastorage key to save currently running snapshot directory path. */
     private static final String SNP_RUNNING_DIR_KEY = "snapshot-running-dir";
 
-    /** @deprecated Use {@link #SNP_RUNNING_DIR_KEY} instead. */
+    /** @deprecated Use #SNP_RUNNING_DIR_KEY instead. */
     @Deprecated
     private static final String SNP_RUNNING_KEY = "snapshot-running";
 
@@ -780,23 +775,20 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
      * @return Future which will be completed when a snapshot has been started.
      */
     private IgniteInternalFuture<SnapshotOperationResponse> initLocalSnapshotStartStage(SnapshotOperationRequest req) {
+        if (cctx.kernalContext().clientNode() ||
+            !CU.baselineNode(cctx.localNode(), cctx.kernalContext().state().clusterState())) {
+            if (req.incremental() && clusterSnpReq == null)
+                clusterSnpReq = req;
+
+            return new GridFinishedFuture<>();
+        }
+
         // Executed inside discovery notifier thread, prior to firing discovery custom event,
         // so it is safe to set new snapshot task inside this method without synchronization.
         if (clusterSnpReq != null) {
             return new GridFinishedFuture<>(new IgniteCheckedException("Snapshot operation has been rejected. " +
                 "Another snapshot operation in progress [req=" + req + ", curr=" + clusterSnpReq + ']'));
         }
-
-        if (req.incremental()) {
-            // Start ConsistentCut in background immediately on every node in cluster.
-            cctx.consistentCutMgr().handleConsistentCutId(req.requestId());
-
-            clusterSnpReq = req;
-        }
-
-        if (cctx.kernalContext().clientNode() ||
-            !CU.baselineNode(cctx.localNode(), cctx.kernalContext().state().clusterState()))
-            return new GridFinishedFuture<>();
 
         Set<UUID> leftNodes = new HashSet<>(req.nodes());
         leftNodes.removeAll(F.viewReadOnly(cctx.discovery().serverNodes(AffinityTopologyVersion.NONE),
@@ -882,11 +874,9 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
         }
 
         try {
-            highPtr = cctx.consistentCutMgr().consistentCut().consistentCutFuture().get();
+            cctx.consistentCutMgr().handleConsistentCutId(req.requestId());
 
-            if (highPtr == null)
-                return new GridFinishedFuture<>(new NullPointerException());
-
+            highPtr = cctx.consistentCutMgr().consistentCutFuture().get();
         }
         catch (IgniteCheckedException e) {
             return new GridFinishedFuture<>(e);
@@ -1080,8 +1070,8 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
     private void processLocalSnapshotStartStageResult(UUID id, Map<UUID, SnapshotOperationResponse> res, Map<UUID, Exception> err) {
         SnapshotOperationRequest snpReq = clusterSnpReq;
 
-        if (snpReq != null && snpReq.incremental())
-            cctx.consistentCutMgr().cleanConsistentCut();
+        if (snpReq != null && F.eq(id, snpReq.requestId()) && snpReq.incremental())
+            cctx.consistentCutMgr().cleanConsistentCut(snpReq.requestId());
 
         if (cctx.kernalContext().clientNode())
             return;
@@ -1198,24 +1188,6 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
         if (snpReq == null || !F.eq(req.requestId(), snpReq.requestId()))
             return new GridFinishedFuture<>();
 
-        if (req.incremental()) {
-            // Await compleition of all transactions that might send old Consistent Cut ID.
-            // After their completion we can safely clean lastFinishedCutId.
-            GridCompoundFuture<IgniteInternalTx, IgniteInternalTx> fut = new GridCompoundFuture<>();
-
-            for (IgniteInternalTx tx: cctx.tm().activeTransactions())
-                fut.add(tx.finishFuture());
-
-            fut.markInitialized();
-
-            try {
-                fut.get();
-            }
-            catch (IgniteCheckedException e) {
-                req.error(e);
-            }
-        }
-
         try {
             if (req.error() != null) {
                 snpReq.error(req.error());
@@ -1232,7 +1204,10 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
             return new GridFinishedFuture<>(e);
         }
 
-        return new GridFinishedFuture<>(new SnapshotOperationResponse());
+        if (req.incremental())
+            return cctx.consistentCutMgr().lastCutAwareMsgSentFuture().chain(fut -> new SnapshotOperationResponse());
+        else
+            return new GridFinishedFuture<>(new SnapshotOperationResponse());
     }
 
     /**
@@ -1248,6 +1223,9 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
 
         Set<UUID> endFail = new HashSet<>(snpReq.nodes());
         endFail.removeAll(res.keySet());
+
+        if (snpReq.incremental())
+            cctx.consistentCutMgr().cleanLastFinishedCutId(id);
 
         clusterSnpReq = null;
 
@@ -1274,9 +1252,6 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
                 }
                 else
                     clusterSnpFut.onDone(snpReq.error());
-
-                if (snpReq.incremental())
-                    cctx.consistentCutMgr().cleanLastFinishedCutId();
 
                 clusterSnpFut = null;
             }

@@ -17,6 +17,7 @@
 
 package org.apache.ignite.internal.processors.cache.consistentcut;
 
+import java.util.UUID;
 import java.util.concurrent.CountDownLatch;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.IgniteEx;
@@ -128,14 +129,14 @@ public class SkipSameConsistentCutTest extends AbstractConsistentCutTest {
         }
 
         /** {@inheritDoc} */
-        @Override public void cleanConsistentCut() {
+        @Override public void cleanConsistentCut(UUID cutId) {
             if (latch != null) {
                 blkLatch.countDown();
 
                 U.awaitQuiet(latch);
             }
 
-            super.cleanConsistentCut();
+            super.cleanConsistentCut(cutId);
         }
 
         /** */

@@ -46,7 +46,7 @@ import static org.apache.ignite.transactions.TransactionState.MARKED_ROLLBACK;
 import static org.apache.ignite.transactions.TransactionState.ROLLED_BACK;
 
 /** Describes Consistent Cut running on baseline nodes. */
-public class BaselineConsistentCut implements ConsistentCut {
+class BaselineConsistentCut implements ConsistentCut {
     /** */
     private final GridCacheSharedContext<?, ?> cctx;
 
@@ -204,8 +204,8 @@ public class BaselineConsistentCut implements ConsistentCut {
         return id;
     }
 
-    /** {@inheritDoc} */
-    @Override public IgniteInternalFuture<WALPointer> consistentCutFuture() {
+    /** */
+    public IgniteInternalFuture<WALPointer> consistentCutFuture() {
         return fut;
     }
 

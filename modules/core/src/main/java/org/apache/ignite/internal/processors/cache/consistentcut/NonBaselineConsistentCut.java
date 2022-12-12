@@ -18,9 +18,6 @@
 package org.apache.ignite.internal.processors.cache.consistentcut;
 
 import java.util.UUID;
-import org.apache.ignite.internal.IgniteInternalFuture;
-import org.apache.ignite.internal.processors.cache.persistence.wal.WALPointer;
-import org.apache.ignite.internal.util.future.GridFinishedFuture;
 import org.apache.ignite.internal.util.tostring.GridToStringInclude;
 import org.apache.ignite.internal.util.typedef.internal.S;
 
@@ -30,9 +27,6 @@ class NonBaselineConsistentCut implements ConsistentCut {
     @GridToStringInclude
     private final UUID id;
 
-    /** Non baseline nodes don't store data, then complete Consistent Cut future at creation time. */
-    private final IgniteInternalFuture<WALPointer> fut = new GridFinishedFuture<>();
-
     /** */
     NonBaselineConsistentCut(UUID id) {
         this.id = id;
@@ -41,11 +35,6 @@ class NonBaselineConsistentCut implements ConsistentCut {
     /** {@inheritDoc} */
     @Override public UUID id() {
         return id;
-    }
-
-    /** {@inheritDoc} */
-    @Override public IgniteInternalFuture<WALPointer> consistentCutFuture() {
-        return fut;
     }
 
     /** {@inheritDoc} */
