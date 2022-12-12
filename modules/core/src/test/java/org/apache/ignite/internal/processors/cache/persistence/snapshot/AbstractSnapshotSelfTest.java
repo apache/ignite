@@ -75,6 +75,7 @@ import org.apache.ignite.internal.processors.cache.CacheGroupDescriptor;
 import org.apache.ignite.internal.processors.cache.GridCacheSharedContext;
 import org.apache.ignite.internal.processors.cache.persistence.file.FilePageStoreManager;
 import org.apache.ignite.internal.processors.cache.persistence.partstate.GroupPartitionId;
+import org.apache.ignite.internal.processors.cache.persistence.wal.WALPointer;
 import org.apache.ignite.internal.processors.cache.persistence.wal.crc.FastCrc;
 import org.apache.ignite.internal.processors.cache.persistence.wal.reader.IgniteWalIteratorFactory;
 import org.apache.ignite.internal.processors.marshaller.MappedName;
@@ -84,6 +85,7 @@ import org.apache.ignite.internal.util.typedef.G;
 import org.apache.ignite.internal.util.typedef.internal.CU;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.internal.util.typedef.internal.U;
+import org.apache.ignite.lang.IgniteBiTuple;
 import org.apache.ignite.lang.IgniteFuture;
 import org.apache.ignite.lang.IgniteFutureCancelledException;
 import org.apache.ignite.lang.IgnitePredicate;
@@ -682,10 +684,10 @@ public abstract class AbstractSnapshotSelfTest extends GridCommonAbstractTest {
             boolean started = false;
             boolean finished = false;
 
-            while (it.hasNext()) {
+            for (IgniteBiTuple<WALPointer, WALRecord> entry: it) {
                 assertFalse("ConsistentCutFinishRecord must be the last record in snapshot", finished);
 
-                WALRecord rec = it.next().getValue();
+                WALRecord rec = entry.getValue();
 
                 if (rec.type() == WALRecord.RecordType.CONSISTENT_CUT_START_RECORD) {
                     if (((ConsistentCutStartRecord)rec).cutId().equals(incSnpMeta.requestId()))

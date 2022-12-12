@@ -49,8 +49,6 @@ import org.apache.ignite.internal.util.tostring.GridToStringInclude;
 import org.apache.ignite.internal.util.typedef.T2;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgniteBiTuple;
-import org.apache.ignite.plugin.AbstractTestPluginProvider;
-import org.apache.ignite.plugin.PluginContext;
 import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.jetbrains.annotations.Nullable;
@@ -87,8 +85,6 @@ public abstract class AbstractConsistentCutTest extends GridCommonAbstractTest {
             ccfg.setNearConfiguration(new NearCacheConfiguration<>());
 
         cfg.setCacheConfiguration(ccfg);
-
-        cfg.setPluginProviders(new TestConsistentCutManagerPluginProvider());
 
         cfg.setConsistentId(instanceName);
 
@@ -215,27 +211,8 @@ public abstract class AbstractConsistentCutTest extends GridCommonAbstractTest {
     }
 
     /** */
-    private static class TestConsistentCutManagerPluginProvider extends AbstractTestPluginProvider {
-        /** {@inheritDoc} */
-        @Override public String name() {
-            return "TestConsistentCutManagerPluginProvider";
-        }
-
-        /** {@inheritDoc} */
-        @Override public <T> @Nullable T createComponent(PluginContext ctx, Class<T> cls) {
-            if (ConsistentCutManager.class.equals(cls))
-                return (T)new TestConsistentCutManager();
-
-            return null;
-        }
-    }
-
-    /** ConsistentCutManager with possibility to disable schedulling Consistent Cuts manually. */
-    protected static class TestConsistentCutManager extends ConsistentCutManager {
-        /** */
-        static TestConsistentCutManager cutMgr(IgniteEx ign) {
-            return (TestConsistentCutManager)ign.context().cache().context().consistentCutMgr();
-        }
+    protected ConsistentCutManager cutMgr(IgniteEx grid) {
+        return grid.context().cache().context().consistentCutMgr();
     }
 
     /**

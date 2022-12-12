@@ -112,36 +112,36 @@ public abstract class AbstractConsistentCutBlockingTest extends AbstractConsiste
     protected void run(Runnable tx, int txBlkNodeId, int cutBlkNodeId) throws Exception {
         caseNum++;
 
-        // 0. Block transaction.
+        // 1. Block transaction.
         blockTx(grid(txBlkNodeId));
 
-        // 1. Start transaction.
+        // 2. Start transaction.
         IgniteInternalFuture<?> txFut = multithreadedAsync(tx, 1);
 
-        // 2. Await transaction has blocked.
+        // 3. Await transaction has blocked.
         awaitTxBlocked(grid(txBlkNodeId));
 
-        // 3. Start Consistent Cut procedure concurrently with running transaction.
+        // 4. Start Consistent Cut procedure concurrently with running transaction.
         if (cutBlkNodeId != -1)
-            BlockingConsistentCutManager.cutMgr(grid(cutBlkNodeId)).block(cutBlkType);
+            ((BlockingConsistentCutManager)cutMgr(grid(cutBlkNodeId))).block(cutBlkType);
 
         IgniteFuture<Void> cutFut = triggerConsistentCut();
 
-        // 4. Await Consistent Cut has blocked.
+        // 5. Await Consistent Cut has blocked.
         if (cutBlkNodeId != -1)
-            BlockingConsistentCutManager.cutMgr(grid(cutBlkNodeId)).awaitBlockedOrFinishedCut(cutFut);
+            ((BlockingConsistentCutManager)cutMgr(grid(cutBlkNodeId))).awaitBlockedOrFinishedCut(cutFut);
 
-        // 5. Resume the blocking transaction.
+        // 6. Resume the blocking transaction.
         unblockTx(grid(txBlkNodeId));
 
-        // 6. Await transaction completed.
+        // 7. Await transaction completed.
         txFut.get(getTestTimeout(), TimeUnit.MILLISECONDS);
 
-        // 7. Resume the blocking Consistent Cut.
+        // 8. Resume the blocking Consistent Cut.
         if (cutBlkNodeId != -1)
-            BlockingConsistentCutManager.cutMgr(grid(cutBlkNodeId)).unblock(cutBlkType);
+            ((BlockingConsistentCutManager)cutMgr(grid(cutBlkNodeId))).unblock(cutBlkType);
 
-        // 8. Await while Consistent Cut completed.
+        // 9. Await while Consistent Cut completed.
         cutFut.get(getTestTimeout());
 
         clear();
@@ -281,7 +281,7 @@ public abstract class AbstractConsistentCutBlockingTest extends AbstractConsiste
     }
 
     /** Blocks local Consistent Cut before or after start. */
-    static class BlockingConsistentCutManager extends TestConsistentCutManager {
+    static class BlockingConsistentCutManager extends ConsistentCutManager {
         /** Blocks this record after local Consistent Cut started. */
         private static final WALRecord.RecordType blkStartRecType = WALRecord.RecordType.CONSISTENT_CUT_START_RECORD;
 
@@ -290,11 +290,6 @@ public abstract class AbstractConsistentCutBlockingTest extends AbstractConsiste
 
         /** */
         private volatile CountDownLatch blockedLatch;
-
-        /** */
-        static BlockingConsistentCutManager cutMgr(IgniteEx ign) {
-            return (BlockingConsistentCutManager)ign.context().cache().context().consistentCutMgr();
-        }
 
         /** {@inheritDoc} */
         @Override public void handleConsistentCutId(UUID id) {

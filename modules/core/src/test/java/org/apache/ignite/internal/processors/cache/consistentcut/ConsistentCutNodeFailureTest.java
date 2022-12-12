@@ -96,7 +96,7 @@ public class ConsistentCutNodeFailureTest extends AbstractConsistentCutTest {
 
         waitForCutIsStartedOnAllNodes();
 
-        ConsistentCut cut = TestConsistentCutManager.cutMgr(grid(0)).consistentCut();
+        ConsistentCut cut = cutMgr(grid(0)).consistentCut();
 
         String excMsg = breakCutWithExcp.get();
 
@@ -162,7 +162,7 @@ public class ConsistentCutNodeFailureTest extends AbstractConsistentCutTest {
             boolean allNodeStartedCut = true;
 
             for (int i = 0; i < nodes(); i++)
-                allNodeStartedCut &= TestConsistentCutManager.cutMgr(grid(i)).consistentCut() != null;
+                allNodeStartedCut &= cutMgr(grid(i)).consistentCut() != null;
 
             return allNodeStartedCut;
         }, getTestTimeout(), 10);
