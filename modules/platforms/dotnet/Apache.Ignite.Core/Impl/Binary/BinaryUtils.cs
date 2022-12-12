@@ -422,26 +422,6 @@ namespace Apache.Ignite.Core.Impl.Binary
         }
 
         /// <summary>
-        /// Convert Java ticks to DateTime.
-        /// </summary>
-        /// <param name="javaTicks">Ticks.</param>
-        /// <returns>Resulting DateTime.</returns>
-        public static DateTime JavaTicksToDateTime(long javaTicks)
-        {
-            return new DateTime(JavaDateTicks + javaTicks * 10000000, DateTimeKind.Utc);
-        }
-
-        /// <summary>
-        /// Convert DateTime struct to Java ticks
-        /// <param name="dateTime">DateTime to convert</param>
-        /// </summary>
-        /// <returns>Ticks count</returns>
-        public static long DateTimeToJavaTicks(DateTime dateTime)
-        {
-            return (dateTime.Ticks - JavaDateTicks) / 10000000;
-        }
-
-        /// <summary>
         /// Write nullable date array.
         /// </summary>
         /// <param name="vals">Values.</param>

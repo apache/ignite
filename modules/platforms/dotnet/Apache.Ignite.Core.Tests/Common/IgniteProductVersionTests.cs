@@ -76,7 +76,7 @@ namespace Apache.Ignite.Core.Tests.Common
                 writer.WriteByte(_defaultVersion.Minor);
                 writer.WriteByte(_defaultVersion.Maintenance);
                 writer.WriteString(_defaultVersion.Stage);
-                writer.WriteLong(BinaryUtils.DateTimeToJavaTicks(_defaultVersion.ReleaseDate));
+                writer.WriteLong((_defaultVersion.ReleaseDate.Ticks - BinaryUtils.JavaDateTicks) / TimeSpan.TicksPerSecond);
                 writer.WriteByteArray(hash);
 
                 stream.Seek(0, SeekOrigin.Begin);
