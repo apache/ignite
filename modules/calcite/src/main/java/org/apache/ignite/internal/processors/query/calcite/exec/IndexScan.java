@@ -55,6 +55,7 @@ import org.apache.ignite.internal.processors.query.calcite.schema.CacheTableDesc
 import org.apache.ignite.internal.processors.query.calcite.type.IgniteTypeFactory;
 import org.apache.ignite.internal.processors.query.calcite.util.TypeUtils;
 import org.apache.ignite.internal.util.lang.GridCursor;
+import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.spi.indexing.IndexingQueryFilter;
 import org.apache.ignite.spi.indexing.IndexingQueryFilterImpl;
 import org.jetbrains.annotations.Nullable;
@@ -438,6 +439,34 @@ public class IndexScan<Row> extends AbstractIndexScan<Row, IndexRow> {
 
             return new IndexPlainRowImpl(keys, idxRowHnd);
         }
+    }
+
+    /**
+     * Creates row filter to skip null values in the first index column.
+     */
+    public static BPlusTree.TreeRowClosure<IndexRow, IndexRow> createNotNullRowFilter(InlineIndex idx) {
+        List<InlineIndexKeyType> inlineKeyTypes = idx.segment(0).rowHandler().inlineIndexKeyTypes();
+
+        InlineIndexKeyType keyType = F.isEmpty(inlineKeyTypes) ? null : inlineKeyTypes.get(0);
+
+        return new BPlusTree.TreeRowClosure<IndexRow, IndexRow>() {
+            /** {@inheritDoc} */
+            @Override public boolean apply(
+                BPlusTree<IndexRow, IndexRow> tree,
+                BPlusIO<IndexRow> io,
+                long pageAddr,
+                int idx
+            ) throws IgniteCheckedException {
+                if (keyType != null && io instanceof InlineIO) {
+                    Boolean keyIsNull = keyType.isNull(pageAddr, io.offset(idx), ((InlineIO)io).inlineSize());
+
+                    if (keyIsNull != null)
+                        return !keyIsNull;
+                }
+
+                return io.getLookupRow(tree, pageAddr, idx).key(0).type() != IndexKeyType.NULL;
+            }
+        };
     }
 
     /** */
