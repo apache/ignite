@@ -25,7 +25,7 @@
     <modelVersion>4.0.0</modelVersion>
 
     <parent>
-        <groupId>com.sbt.ignite</groupId>
+        <groupId>org.apache.ignite</groupId>
         <artifactId>ignite-parent-internal</artifactId>
         <version>${revision}</version>
         <relativePath>../../parent-internal/pom.xml</relativePath>
@@ -47,7 +47,7 @@
         </dependency>
 
         <dependency>
-            <groupId>com.sbt.ignite</groupId>
+            <groupId>org.apache.ignite</groupId>
             <artifactId>ignite-calcite</artifactId>
         </dependency>
     </dependencies>
