@@ -30,6 +30,7 @@ import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.cache.CacheAtomicityMode;
 import org.apache.ignite.cache.CacheInterceptor;
 import org.apache.ignite.cache.CacheRebalanceMode;
+import org.apache.ignite.cluster.ClusterState;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.DataRegionConfiguration;
 import org.apache.ignite.configuration.DataStorageConfiguration;
@@ -146,7 +147,7 @@ public class CacheMvccConfigurationValidationTest extends GridCommonAbstractTest
 
         Ignite node = startGrid(cfg);
 
-        node.cluster().active(true);
+        node.cluster().state(ClusterState.ACTIVE);
 
         CacheConfiguration ccfg1 = new CacheConfiguration("test1").setAtomicityMode(TRANSACTIONAL);
 
@@ -195,7 +196,7 @@ public class CacheMvccConfigurationValidationTest extends GridCommonAbstractTest
 
         Ignite node = startGrid(cfg);
 
-        node.cluster().active(true);
+        node.cluster().state(ClusterState.ACTIVE);
 
         CacheConfiguration ccfg1 = new CacheConfiguration("test1").setAtomicityMode(TRANSACTIONAL_SNAPSHOT);
 

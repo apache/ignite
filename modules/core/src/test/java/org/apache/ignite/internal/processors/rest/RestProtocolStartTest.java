@@ -103,7 +103,7 @@ public class RestProtocolStartTest extends GridCommonAbstractTest {
             }
         });
 
-        assertTrue("Is active " + ignite.cluster().active(), ignite.cluster().active());
+        assertTrue("Is active " + ignite.cluster().state().active(), ignite.cluster().state().active());
 
         GridClient gridClient = client();
 
@@ -120,7 +120,7 @@ public class RestProtocolStartTest extends GridCommonAbstractTest {
             fail("Failed to wait rebalance completed. Node has hang.");
         }
 
-        assertTrue("Is active " + ignite.cluster().active(), ignite.cluster().active());
+        assertTrue("Is active " + ignite.cluster().state().active(), ignite.cluster().state().active());
     }
 
     /**

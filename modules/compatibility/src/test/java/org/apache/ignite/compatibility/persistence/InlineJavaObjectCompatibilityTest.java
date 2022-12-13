@@ -177,7 +177,7 @@ public class InlineJavaObjectCompatibilityTest extends IndexAbstractCompatibilit
     public static class PostStartupClosure implements IgniteInClosure<Ignite> {
         /** {@inheritDoc} */
         @Override public void apply(Ignite ignite) {
-            ignite.active(true);
+            ignite.cluster().state(ClusterState.ACTIVE);
 
             CacheConfiguration<Object, Object> cacheCfg = new CacheConfiguration<>();
             cacheCfg.setName(TEST_CACHE_NAME);
@@ -190,7 +190,7 @@ public class InlineJavaObjectCompatibilityTest extends IndexAbstractCompatibilit
 
             saveCacheData(cache);
 
-            ignite.active(false);
+            ignite.cluster().state(ClusterState.INACTIVE);
 
             try {
                 Thread.sleep(1_000);

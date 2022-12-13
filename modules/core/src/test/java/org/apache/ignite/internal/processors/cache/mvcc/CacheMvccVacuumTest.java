@@ -26,6 +26,7 @@ import org.apache.ignite.cache.CacheAtomicityMode;
 import org.apache.ignite.cache.CacheMode;
 import org.apache.ignite.cache.CacheWriteSynchronizationMode;
 import org.apache.ignite.cluster.ClusterNode;
+import org.apache.ignite.cluster.ClusterState;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.processors.cache.mvcc.txlog.TxLog;
@@ -90,7 +91,7 @@ public class CacheMvccVacuumTest extends CacheMvccAbstractTest {
         ensureNoVacuum(node0);
         ensureNoVacuum(node1);
 
-        node1.cluster().active(true);
+        node1.cluster().state(ClusterState.ACTIVE);
 
         ensureNoVacuum(node0);
         ensureNoVacuum(node1);
@@ -110,12 +111,12 @@ public class CacheMvccVacuumTest extends CacheMvccAbstractTest {
         ensureVacuum(node0);
         ensureVacuum(node1);
 
-        node1.cluster().active(false);
+        node1.cluster().state(ClusterState.INACTIVE);
 
         ensureNoVacuum(node0);
         ensureNoVacuum(node1);
 
-        node1.cluster().active(true);
+        node1.cluster().state(ClusterState.ACTIVE);
 
         ensureVacuum(node0);
         ensureVacuum(node1);
@@ -133,7 +134,7 @@ public class CacheMvccVacuumTest extends CacheMvccAbstractTest {
         node0 = startGrid(0);
         node1 = startGrid(1);
 
-        node1.cluster().active(true);
+        node1.cluster().state(ClusterState.ACTIVE);
 
         ensureVacuum(node0);
         ensureVacuum(node1);
@@ -175,7 +176,7 @@ public class CacheMvccVacuumTest extends CacheMvccAbstractTest {
         node0.cluster().baselineAutoAdjustEnabled(false);
         ensureNoVacuum(node0);
 
-        node0.cluster().active(true);
+        node0.cluster().state(ClusterState.ACTIVE);
 
         IgniteCache<Object, Object> cache = node0.createCache(
             cacheConfiguration(PARTITIONED, CacheWriteSynchronizationMode.FULL_SYNC, 1, 16));
@@ -207,7 +208,7 @@ public class CacheMvccVacuumTest extends CacheMvccAbstractTest {
         Ignite node1 = startGrid(1);
 
         node0.cluster().baselineAutoAdjustEnabled(false);
-        node0.cluster().active(true);
+        node0.cluster().state(ClusterState.ACTIVE);
 
         IgniteCache<Object, Object> cache = node0.createCache(
             cacheConfiguration(PARTITIONED, CacheWriteSynchronizationMode.FULL_SYNC, 1, 16));
@@ -250,7 +251,7 @@ public class CacheMvccVacuumTest extends CacheMvccAbstractTest {
         ensureNoVacuum(node0);
         ensureNoVacuum(node1);
 
-        node0.cluster().active(true);
+        node0.cluster().state(ClusterState.ACTIVE);
 
         IgniteCache<Object, Object> cache = node0.createCache(
             cacheConfiguration(PARTITIONED, CacheWriteSynchronizationMode.FULL_SYNC, 1, 16)
@@ -261,7 +262,7 @@ public class CacheMvccVacuumTest extends CacheMvccAbstractTest {
         ensureVacuum(node0);
         ensureNoVacuum(node1);
 
-        node0.cluster().active(false);
+        node0.cluster().state(ClusterState.INACTIVE);
 
         ensureNoVacuum(node0);
         ensureNoVacuum(node1);
@@ -271,7 +272,7 @@ public class CacheMvccVacuumTest extends CacheMvccAbstractTest {
         ensureNoVacuum(node0);
         ensureNoVacuum(node1);
 
-        node0.cluster().active(true);
+        node0.cluster().state(ClusterState.ACTIVE);
         node0.cluster().setBaselineTopology(Collections.singleton(node0.cluster().node()));
 
         ensureVacuum(node0);
@@ -302,7 +303,7 @@ public class CacheMvccVacuumTest extends CacheMvccAbstractTest {
 
         ensureNoVacuum(node);
 
-        node.cluster().active(true);
+        node.cluster().state(ClusterState.ACTIVE);
 
         ensureNoVacuum(node);
     }

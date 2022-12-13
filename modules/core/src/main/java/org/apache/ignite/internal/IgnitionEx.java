@@ -2170,7 +2170,7 @@ public class IgnitionEx {
                 }
             }
 
-            if (shutdown == ShutdownPolicy.GRACEFUL && !grid.context().clientNode() && grid.cluster().active()) {
+            if (shutdown == ShutdownPolicy.GRACEFUL && !grid.context().clientNode() && grid.cluster().state().active()) {
                 delayedShutdown = true;
 
                 if (log.isInfoEnabled())

@@ -20,6 +20,7 @@ package org.apache.ignite.internal.processors.cache.persistence.db.wal;
 import java.util.concurrent.atomic.AtomicBoolean;
 import org.apache.ignite.IgniteDataStreamer;
 import org.apache.ignite.cache.affinity.rendezvous.RendezvousAffinityFunction;
+import org.apache.ignite.cluster.ClusterState;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.DataRegionConfiguration;
 import org.apache.ignite.configuration.DataStorageConfiguration;
@@ -85,7 +86,7 @@ public class HistoricalReservationTest extends GridCommonAbstractTest {
     @Test
     public void testDeactivated() throws Exception {
         historicalRebalance(() -> {
-            G.allGrids().get(0).active(false);
+            G.allGrids().get(0).cluster().state(ClusterState.INACTIVE);
         });
     }
 
@@ -119,7 +120,7 @@ public class HistoricalReservationTest extends GridCommonAbstractTest {
     public void testDeactivateAndRestartGrid() throws Exception {
         historicalRebalance(() -> {
             try {
-                G.allGrids().get(0).active(false);
+                G.allGrids().get(0).cluster().state(ClusterState.INACTIVE);
 
                 stopAllGrids();
 
@@ -141,13 +142,13 @@ public class HistoricalReservationTest extends GridCommonAbstractTest {
     public void testDeactivateAndRestartGridActive() throws Exception {
         historicalRebalance(() -> {
             try {
-                G.allGrids().get(0).active(false);
+                G.allGrids().get(0).cluster().state(ClusterState.INACTIVE);
 
                 stopAllGrids();
 
                 startGrids(CLUSTER_NODES);
 
-                G.allGrids().get(0).active(true);
+                G.allGrids().get(0).cluster().state(ClusterState.ACTIVE);
             }
             catch (Exception e) {
                 fail(e.getMessage());
@@ -167,7 +168,7 @@ public class HistoricalReservationTest extends GridCommonAbstractTest {
         IgniteEx ignite0 = startGrids(CLUSTER_NODES);
         IgniteEx rebalancedNode = startGrid(rebalancedNodeName);
 
-        ignite0.cluster().active(true);
+        ignite0.cluster().state(ClusterState.ACTIVE);
 
         preloadData(ignite0, 0, 100);
 
@@ -202,7 +203,7 @@ public class HistoricalReservationTest extends GridCommonAbstractTest {
 
         rebalancedNode = startGrid(cfg);
 
-        rebalancedNode.cluster().active(true);
+        rebalancedNode.cluster().state(ClusterState.ACTIVE);
 
         awaitPartitionMapExchange();
 

@@ -44,6 +44,7 @@ import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteDataStreamer;
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.cluster.ClusterNode;
+import org.apache.ignite.cluster.ClusterState;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.DataRegionConfiguration;
 import org.apache.ignite.configuration.DataStorageConfiguration;
@@ -176,7 +177,7 @@ public class GridIoManagerFileTransmissionSelfTest extends GridCommonAbstractTes
         snd = startGrid(0);
         rcv = startGrid(1);
 
-        snd.cluster().active(true);
+        snd.cluster().state(ClusterState.ACTIVE);
 
         addCacheData(snd, DEFAULT_CACHE_NAME);
 
@@ -793,7 +794,7 @@ public class GridIoManagerFileTransmissionSelfTest extends GridCommonAbstractTes
         snd = startGrid(0);
         rcv = startGrid(1);
 
-        snd.cluster().active(true);
+        snd.cluster().state(ClusterState.ACTIVE);
 
         File fileToSend = createFileRandomData("testFile", 1024 * 1024);
 

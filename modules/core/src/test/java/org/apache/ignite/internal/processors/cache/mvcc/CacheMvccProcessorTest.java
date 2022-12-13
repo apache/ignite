@@ -19,6 +19,7 @@ package org.apache.ignite.internal.processors.cache.mvcc;
 
 import org.apache.ignite.cache.CacheAtomicityMode;
 import org.apache.ignite.cache.CacheMode;
+import org.apache.ignite.cluster.ClusterState;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.processors.cache.mvcc.txlog.TxState;
@@ -61,7 +62,7 @@ public class CacheMvccProcessorTest extends CacheMvccAbstractTest {
     private void checkTreeOperations() throws Exception {
         IgniteEx grid = startGrid(0);
 
-        grid.cluster().active(true);
+        grid.cluster().state(ClusterState.ACTIVE);
 
         grid.createCache(new CacheConfiguration<>("test").setAtomicityMode(CacheAtomicityMode.TRANSACTIONAL_SNAPSHOT));
 
@@ -86,7 +87,7 @@ public class CacheMvccProcessorTest extends CacheMvccAbstractTest {
             stopGrid(0, false);
             grid = startGrid(0);
 
-            grid.cluster().active(true);
+            grid.cluster().state(ClusterState.ACTIVE);
 
             mvccProcessor = mvccProcessor(grid);
         }

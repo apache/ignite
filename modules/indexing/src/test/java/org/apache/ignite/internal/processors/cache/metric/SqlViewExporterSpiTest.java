@@ -52,6 +52,7 @@ import org.apache.ignite.cache.query.ScanQuery;
 import org.apache.ignite.cache.query.SqlFieldsQuery;
 import org.apache.ignite.client.IgniteClient;
 import org.apache.ignite.cluster.ClusterNode;
+import org.apache.ignite.cluster.ClusterState;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.ClientConfiguration;
 import org.apache.ignite.configuration.DataRegionConfiguration;
@@ -139,7 +140,7 @@ public class SqlViewExporterSpiTest extends AbstractExporterSpiTest {
         ignite1 = startGrid(1);
 
         ignite0.cluster().baselineAutoAdjustEnabled(false);
-        ignite0.cluster().active(true);
+        ignite0.cluster().state(ClusterState.ACTIVE);
     }
 
     /** {@inheritDoc} */
@@ -935,9 +936,9 @@ public class SqlViewExporterSpiTest extends AbstractExporterSpiTest {
             dbMgr.enableCheckpoints(true).get();
         }
 
-        ignite0.cluster().active(false);
+        ignite0.cluster().state(ClusterState.INACTIVE);
 
-        ignite0.cluster().active(true);
+        ignite0.cluster().state(ClusterState.ACTIVE);
 
         IgniteCache<Integer, Integer> cacheInMemory = ignite0.getOrCreateCache(new CacheConfiguration<Integer, Integer>()
             .setName("cacheFLInMemory").setDataRegionName("in-memory"));

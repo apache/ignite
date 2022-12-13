@@ -815,7 +815,7 @@ public class GridDiscoveryManager extends GridManagerAdapter<DiscoverySpi> {
                     locJoin.onDone(new DiscoveryLocalJoinData(discoEvt,
                         discoCache,
                         transitionWaitFut,
-                        ctx.state().clusterState().active()));
+                        ctx.state().clusterState().state().active()));
 
                     return;
                 }

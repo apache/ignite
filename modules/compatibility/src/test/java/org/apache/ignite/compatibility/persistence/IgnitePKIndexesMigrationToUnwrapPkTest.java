@@ -92,7 +92,7 @@ public class IgnitePKIndexesMigrationToUnwrapPkTest extends IndexAbstractCompati
     private static class PostStartupClosure implements IgniteInClosure<Ignite> {
         /** {@inheritDoc} */
         @Override public void apply(Ignite ignite) {
-            ignite.active(true);
+            ignite.cluster().state(ClusterState.ACTIVE);
 
             IgniteEx igniteEx = (IgniteEx)ignite;
 
@@ -100,7 +100,7 @@ public class IgnitePKIndexesMigrationToUnwrapPkTest extends IndexAbstractCompati
 
             assertDontUsingPkIndex(igniteEx, TABLE_NAME);
 
-            ignite.active(false);
+            ignite.cluster().state(ClusterState.INACTIVE);
         }
     }
 

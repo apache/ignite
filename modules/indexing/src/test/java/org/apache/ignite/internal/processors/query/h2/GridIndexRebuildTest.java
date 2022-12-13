@@ -37,6 +37,7 @@ import org.apache.ignite.cache.QueryEntity;
 import org.apache.ignite.cache.QueryIndex;
 import org.apache.ignite.cache.QueryIndexType;
 import org.apache.ignite.cache.query.SqlFieldsQuery;
+import org.apache.ignite.cluster.ClusterState;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.DataRegionConfiguration;
 import org.apache.ignite.configuration.DataStorageConfiguration;
@@ -146,7 +147,7 @@ public class GridIndexRebuildTest extends GridCommonAbstractTest {
 
         IgniteEx grid1 = startGrids(4);
 
-        grid1.cluster().active(true);
+        grid1.cluster().state(ClusterState.ACTIVE);
 
         final int accountCnt = 2048;
 
@@ -256,7 +257,7 @@ public class GridIndexRebuildTest extends GridCommonAbstractTest {
 
         IgniteEx grid1 = startGrids(4);
 
-        grid1.cluster().active(true);
+        grid1.cluster().state(ClusterState.ACTIVE);
 
         final int accountCnt = 2048;
 
