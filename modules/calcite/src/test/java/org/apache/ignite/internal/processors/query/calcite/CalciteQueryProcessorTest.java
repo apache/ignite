@@ -162,9 +162,21 @@ public class CalciteQueryProcessorTest extends GridCommonAbstractTest {
     /** */
     @Test
     public void test0() throws IgniteInterruptedCheckedException {
-        execute(client, "CREATE TABLE strings(a VARCHAR, b BIGINT)");
-        execute(client, "INSERT INTO STRINGS VALUES ('abc', 1);");
-        List<List<?>> rows = sql("SELECT LEFT(a, b) FROM strings");
+        execute(client, "CREATE TABLE integers(ID INT primary key, i INTEGER)");
+        execute(client, "INSERT INTO integers VALUES (1, 1), (2, 2), (3, 3), (4, NULL)");
+
+        assertQuery(client, "SELECT SUM(i1.i) FROM integers i1").returns(6L).check();
+        assertQuery(client, "SELECT (SELECT SUM(i1.i)) FROM integers i1").returns(6L).check();
+    }
+
+
+    /** */
+    @Test
+    public void test1() throws IgniteInterruptedCheckedException {
+        execute(client, "CREATE TABLE strings(id int primary key, a VARCHAR, b BIGINT)");
+        execute(client, "INSERT INTO STRINGS VALUES (1, 'abc', 1)");
+
+        assertQuery(client, "SELECT LEFT('asd', ?)").withParams(1L).returns("a").check();
     }
 
     /** Tests varchar min\max aggregates. */
