@@ -41,7 +41,6 @@ import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.testframework.GridTestUtils;
 import org.hamcrest.CustomMatcher;
 import org.hamcrest.Matcher;
-import org.junit.Ignore;
 import org.junit.Test;
 
 import static org.apache.ignite.internal.processors.query.calcite.TestUtils.hasSize;
