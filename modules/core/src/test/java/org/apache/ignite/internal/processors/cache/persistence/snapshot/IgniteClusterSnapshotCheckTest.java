@@ -37,7 +37,6 @@ import java.util.Set;
 import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.atomic.AtomicBoolean;
-import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.cache.affinity.rendezvous.RendezvousAffinityFunction;
@@ -49,8 +48,8 @@ import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.binary.BinaryContext;
 import org.apache.ignite.internal.binary.BinaryObjectImpl;
 import org.apache.ignite.internal.managers.communication.GridMessageListener;
-import org.apache.ignite.internal.pagemem.store.PageStore;
 import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
+import org.apache.ignite.internal.processors.cache.CacheGroupContext;
 import org.apache.ignite.internal.processors.cache.GridCacheAdapter;
 import org.apache.ignite.internal.processors.cache.GridCacheEntryEx;
 import org.apache.ignite.internal.processors.cache.GridCacheSharedContext;
@@ -266,7 +265,7 @@ public class IgniteClusterSnapshotCheckTest extends AbstractSnapshotSelfTest {
             if (PageIO.getCompressionType(pageAddr) != CompressionProcessor.UNCOMPRESSED_PAGE) {
                 shouldCompress = true;
 
-                decompressPage(ignite, buff, pageStore);
+                ignite.context().compress().decompressPage(buff, pageStore.getPageSize());
             }
 
             PagePartitionMetaIO io = PageIO.getPageIO(buff);
@@ -274,7 +273,18 @@ public class IgniteClusterSnapshotCheckTest extends AbstractSnapshotSelfTest {
             io.setUpdateCounter(pageAddr, CACHE_KEYS_RANGE * 2);
 
             if (shouldCompress) {
-                compressPage(ignite, buff, pageStore);
+                CacheGroupContext grpCtx = ignite.context().cache().cacheGroup(grpId);
+
+                assertNotNull("Group context for grpId:" + grpId, grpCtx);
+
+                ByteBuffer compressedPageBuf = ignite.context().compress().compressPage(buff, pageStore.getPageSize(),
+                    pageStore.getBlockSize(), grpCtx.diskPageCompression(), grpCtx.diskPageCompressionLevel());
+
+                if (compressedPageBuf != buff) {
+                    buff = compressedPageBuf;
+
+                    PageIO.setCrc(buff, 0);
+                }
             }
             else
                 buff.flip();
@@ -572,16 +582,6 @@ public class IgniteClusterSnapshotCheckTest extends AbstractSnapshotSelfTest {
         int createdThreads = Thread.activeCount() - activeThreadsCntBefore;
 
         assertTrue("Threads created: " + createdThreads, createdThreads < iterations);
-    }
-
-    /** */
-    protected void decompressPage(Ignite grid, ByteBuffer pageBuf, PageStore pageStore) throws IgniteCheckedException {
-        // No-op
-    }
-
-    /** */
-    protected void compressPage(Ignite grid, ByteBuffer pageBuf, PageStore pageStore) throws IgniteCheckedException {
-
     }
 
     /**

@@ -945,7 +945,8 @@ class SnapshotFutureTask extends AbstractSnapshotFutureTask<Set<GroupPartitionId
                     if (!store.read(pageId, locBuf, true))
                         return;
 
-                    locBuf.flip();
+                    locBuf.limit(locBuf.capacity());
+                    locBuf.position(0);
 
                     writePage0(pageId, locBuf);
                 }
@@ -959,6 +960,9 @@ class SnapshotFutureTask extends AbstractSnapshotFutureTask<Set<GroupPartitionId
                         locBuf.clear();
 
                         GridUnsafe.copyOffheapOffheap(GridUnsafe.bufferAddress(buf), GridUnsafe.bufferAddress(locBuf), buf.limit());
+
+                        locBuf.limit(locBuf.capacity());
+                        locBuf.position(0);
 
                         buf = locBuf;
                     }
@@ -1003,6 +1007,8 @@ class SnapshotFutureTask extends AbstractSnapshotFutureTask<Set<GroupPartitionId
 
             // Write buffer to the end of the file.
             int len = deltaFileIo.writeFully(pageBuf);
+
+            assert len == pageBuf.capacity();
 
             totalSize.addAndGet(len);
         }

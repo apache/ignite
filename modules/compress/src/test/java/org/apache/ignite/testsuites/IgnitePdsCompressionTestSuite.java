@@ -18,14 +18,14 @@
 package org.apache.ignite.testsuites;
 
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.List;
 import org.apache.ignite.internal.processors.cache.persistence.db.wal.IgnitePdsCheckpointSimulationWithRealCpDisabledAndWalCompressionTest;
 import org.apache.ignite.internal.processors.cache.persistence.db.wal.WalCompactionAndPageCompressionTest;
 import org.apache.ignite.internal.processors.cache.persistence.db.wal.WalRecoveryWithPageCompressionAndTdeTest;
 import org.apache.ignite.internal.processors.cache.persistence.db.wal.WalRecoveryWithPageCompressionTest;
-import org.apache.ignite.internal.processors.cache.persistence.snapshot.IgniteClusterCompressedSnapshotCheckTest;
-import org.apache.ignite.internal.processors.cache.persistence.snapshot.IgniteClusterCompressedSnapshotRestoreSelfTest;
-import org.apache.ignite.internal.processors.cache.persistence.snapshot.IgniteCompressedSnapshotWithMetastorageTest;
+import org.apache.ignite.internal.processors.cache.persistence.snapshot.EncryptedSnapshotTest;
+import org.apache.ignite.internal.processors.cache.persistence.snapshot.PlainSnapshotTest;
 import org.apache.ignite.internal.processors.compress.CompressionConfigurationTest;
 import org.apache.ignite.internal.processors.compress.CompressionProcessorTest;
 import org.apache.ignite.internal.processors.compress.DiskPageCompressionConfigValidationTest;
@@ -63,12 +63,11 @@ public class IgnitePdsCompressionTestSuite {
         suite.add(IgnitePdsCheckpointSimulationWithRealCpDisabledAndWalCompressionTest.class);
         suite.add(WalCompactionAndPageCompressionTest.class);
 
-        // Snapshot
-        suite.add(IgniteClusterCompressedSnapshotCheckTest.class);
-        suite.add(IgniteClusterCompressedSnapshotRestoreSelfTest.class);
-        suite.add(IgniteCompressedSnapshotWithMetastorageTest.class);
-
         enableCompressionByDefault();
+
+        //Snapshot tests from common suites.
+        IgniteSnapshotTestSuite.addSnapshotTests(suite, Arrays.asList(PlainSnapshotTest.class, EncryptedSnapshotTest.class));
+        IgniteSnapshotWithIndexingTestSuite.addSnapshotTests(suite, null);
 
         IgnitePdsTestSuite.addRealPageStoreTests(suite, null);
 
