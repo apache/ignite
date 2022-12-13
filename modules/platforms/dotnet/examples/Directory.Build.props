@@ -20,7 +20,7 @@
         <RunAnalyzers>false</RunAnalyzers>
     </PropertyGroup>
 
-    <PropertyGroup Condition="Exists('$(MSBuildThisFileDirectory)..\bin\Apache.Ignite.Core.dll')">
+    <PropertyGroup Condition="Exists('$(MSBuildThisFileDirectory)..\bin\net6.0\Apache.Ignite.Core.dll')">
         <IgniteBinaryDistro>true</IgniteBinaryDistro>
     </PropertyGroup>
 
