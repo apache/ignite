@@ -26,8 +26,8 @@ import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.binary.BinaryObject;
 import org.apache.ignite.binary.BinaryObjectBuilder;
 import org.apache.ignite.configuration.CacheConfiguration;
-import org.apache.ignite.configuration.CacheObjectsTransformationConfiguration;
-import org.apache.ignite.configuration.CacheObjectsTransformer;
+import org.apache.ignite.spi.transform.CacheObjectsTransformer;
+import org.apache.ignite.configuration.IgniteConfiguration;
 import org.junit.Test;
 
 /**
@@ -35,14 +35,13 @@ import org.junit.Test;
  */
 public class CacheObjectsTransformationTest extends AbstractCacheObjectsTransformationTest {
     /** {@inheritDoc} */
-    @Override protected CacheConfiguration cacheConfiguration() {
-        CacheConfiguration cfg = super.cacheConfiguration();
-
-        cfg.setCacheObjectsTransformationConfiguration(
-            new CacheObjectsTransformationConfiguration()
-                .setActiveTransformer(new ControllableCacheObjectsTransformer()));
-
-        return cfg;
+    @Override protected IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {
+        return super.getConfiguration(igniteInstanceName)
+            .setCacheObjectsTransformSpi(new CacheObjectsTransformSpiAdapter() {
+                @Override public CacheObjectsTransformer transformer(CacheConfiguration<?, ?> ccfg) {
+                    return new ControllableCacheObjectsTransformer();
+                }
+            });
     }
 
     /**

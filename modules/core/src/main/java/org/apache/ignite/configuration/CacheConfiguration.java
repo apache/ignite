@@ -426,9 +426,6 @@ public class CacheConfiguration<K, V> extends MutableConfiguration<K, V> {
      */
     private boolean encryptionEnabled;
 
-    /** Cache objects transformation configuration. */
-    private CacheObjectsTransformationConfiguration cotCfg;
-
     /** */
     private DiskPageCompression diskPageCompression = IgniteSystemProperties.getEnum(
         DiskPageCompression.class, IGNITE_DEFAULT_DISK_PAGE_COMPRESSION);
@@ -534,7 +531,6 @@ public class CacheConfiguration<K, V> extends MutableConfiguration<K, V> {
         sqlOnheapCache = cc.isSqlOnheapCacheEnabled();
         sqlOnheapCacheMaxSize = cc.getSqlOnheapCacheMaxSize();
         evtsDisabled = cc.isEventsDisabled();
-        cotCfg = cc.getCacheObjectsTransformationConfiguration();
     }
 
     /**
@@ -2458,24 +2454,6 @@ public class CacheConfiguration<K, V> extends MutableConfiguration<K, V> {
         this.diskPageCompressionLevel = diskPageCompressionLevel;
 
         return this;
-    }
-
-    /**
-     * Sets cache objects transformation configuration.
-     *
-     * @param cotCfg Configuration.
-     */
-    public void setCacheObjectsTransformationConfiguration(CacheObjectsTransformationConfiguration cotCfg) {
-        this.cotCfg = cotCfg;
-    }
-
-    /**
-     * Gets cache objects transformation configuration.
-     *
-     * @return Configuration.
-     */
-    public CacheObjectsTransformationConfiguration getCacheObjectsTransformationConfiguration() {
-        return cotCfg;
     }
 
     /** {@inheritDoc} */

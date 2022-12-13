@@ -65,6 +65,7 @@ import org.apache.ignite.plugin.segmentation.SegmentationPolicy;
 import org.apache.ignite.plugin.segmentation.SegmentationResolver;
 import org.apache.ignite.services.Service;
 import org.apache.ignite.services.ServiceConfiguration;
+import org.apache.ignite.spi.transform.CacheObjectsTransformSpi;
 import org.apache.ignite.spi.checkpoint.CheckpointSpi;
 import org.apache.ignite.spi.checkpoint.noop.NoopCheckpointSpi;
 import org.apache.ignite.spi.collision.CollisionSpi;
@@ -416,6 +417,9 @@ public class IgniteConfiguration {
     /** Failover SPI. */
     private FailoverSpi[] failSpi;
 
+    /** Cache object transform spi. */
+    private CacheObjectsTransformSpi cacheObjsTransformSpi;
+
     /** Load balancing SPI. */
     private LoadBalancingSpi[] loadBalancingSpi;
 
@@ -641,6 +645,7 @@ public class IgniteConfiguration {
         cpSpi = cfg.getCheckpointSpi();
         colSpi = cfg.getCollisionSpi();
         failSpi = cfg.getFailoverSpi();
+        cacheObjsTransformSpi = cfg.getCacheObjectsTransformSpi();
         loadBalancingSpi = cfg.getLoadBalancingSpi();
         indexingSpi = cfg.getIndexingSpi();
         encryptionSpi = cfg.getEncryptionSpi();
@@ -2246,6 +2251,29 @@ public class IgniteConfiguration {
      */
     public IgniteConfiguration setFailoverSpi(FailoverSpi... failSpi) {
         this.failSpi = failSpi;
+
+        return this;
+    }
+
+    /**
+     * Should return fully configured cache object's transformer SPI implementation.
+     *
+     * @return Grid cache object transformer SPI implementation or {@code null}.
+     */
+    public CacheObjectsTransformSpi getCacheObjectsTransformSpi() {
+        return cacheObjsTransformSpi;
+    }
+
+    /**
+     * Sets fully configured instance of {@link CacheObjectsTransformSpi}.
+     *
+     * @param cacheObjsTransformSpi Fully configured instance of {@link CacheObjectsTransformSpi} or
+     * {@code null} if no SPI provided.
+     * @return {@code this} for chaining.
+     * @see IgniteConfiguration#getCacheObjectsTransformSpi()
+     */
+    public IgniteConfiguration setCacheObjectsTransformSpi(CacheObjectsTransformSpi cacheObjsTransformSpi) {
+        this.cacheObjsTransformSpi = cacheObjsTransformSpi;
 
         return this;
     }

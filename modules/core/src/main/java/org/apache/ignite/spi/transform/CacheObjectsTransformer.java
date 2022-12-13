@@ -15,7 +15,7 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.configuration;
+package org.apache.ignite.spi.transform;
 
 import java.io.Serializable;
 import java.nio.ByteBuffer;

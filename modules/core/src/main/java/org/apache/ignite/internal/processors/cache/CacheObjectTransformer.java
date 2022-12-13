@@ -19,11 +19,10 @@ package org.apache.ignite.internal.processors.cache;
 
 import java.nio.ByteBuffer;
 import org.apache.ignite.IgniteCheckedException;
-import org.apache.ignite.configuration.CacheConfiguration;
-import org.apache.ignite.configuration.CacheObjectsTransformationConfiguration;
-import org.apache.ignite.configuration.CacheObjectsTransformer;
+import org.apache.ignite.spi.transform.CacheObjectsTransformer;
 import org.apache.ignite.events.CacheObjectTransformedEvent;
 import org.apache.ignite.internal.binary.BinaryObjectEx;
+import org.apache.ignite.spi.transform.CacheObjectsTransformSpi;
 
 import static org.apache.ignite.events.EventType.EVT_CACHE_OBJECT_TRANSFORMED;
 import static org.apache.ignite.internal.binary.GridBinaryMarshaller.TRANSFORMED;
@@ -52,7 +51,7 @@ public class CacheObjectTransformer {
      * @return Transformed binary object.
      */
     public static CacheObject wrapBinaryIfNecessary(CacheObjectContext ctx, CacheObject obj) {
-        if (activeTransformer(ctx.cacheConfiguration()) != null)
+        if (transformer(ctx) != null)
             return new TransformedBinaryObject((BinaryObjectEx)obj, null);
         else
             return obj;
@@ -65,31 +64,28 @@ public class CacheObjectTransformer {
      * @return Transformed binary object.
      */
     public static KeyCacheObject wrapBinaryKeyIfNecessary(CacheObjectContext ctx, KeyCacheObject obj) {
-        if (activeTransformer(ctx.cacheConfiguration()) != null)
+        if (transformer(ctx) != null)
             return new TransformedKeyBinaryObject((BinaryObjectEx)obj, null);
         else
             return obj;
     }
 
     /***/
-    private static CacheObjectsTransformer activeTransformer(CacheConfiguration<?, ?> ccfg) {
-        CacheObjectsTransformationConfiguration tcfg = ccfg.getCacheObjectsTransformationConfiguration();
+    private static CacheObjectsTransformer transformer(CacheObjectValueContext ctx) {
+        CacheObjectsTransformSpi spi = ctx.kernalContext().config().getCacheObjectsTransformSpi();
 
-        if (tcfg != null && tcfg.getActiveTransformer() != null)
-            return tcfg.getActiveTransformer();
-        else
-            return null;
+        return (spi == null) ? null : spi.transformer(ctx.cacheConfiguration());
     }
 
     /**
-     * Transforms bytes according to {@link CacheObjectsTransformationConfiguration} when specified.
+     * Transforms bytes according to {@link CacheObjectsTransformSpi} when specified.
      * @param bytes Given bytes.
      * @param ctx Context.
      * @return Transformed bytes.
      */
     public static byte[] transformIfNecessary(byte[] bytes, CacheObjectValueContext ctx) {
         try {
-            CacheObjectsTransformer trans = activeTransformer(ctx.cacheConfiguration());
+            CacheObjectsTransformer trans = transformer(ctx);
 
             if (trans == null)
                 return bytes;
@@ -158,7 +154,7 @@ public class CacheObjectTransformer {
         if (bytes[0] != TRANSFORMED)
             return bytes;
 
-        CacheObjectsTransformer trans = activeTransformer(ctx.cacheConfiguration()); // TODO get by ID
+        CacheObjectsTransformer trans = transformer(ctx);
 
         ByteBuffer src = sourceByteBuffer(bytes, trans.direct());
 
