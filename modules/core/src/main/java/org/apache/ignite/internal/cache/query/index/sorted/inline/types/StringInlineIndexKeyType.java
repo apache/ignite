@@ -24,7 +24,6 @@ import org.apache.ignite.internal.cache.query.index.sorted.keys.IndexKey;
 import org.apache.ignite.internal.cache.query.index.sorted.keys.StringIndexKey;
 import org.apache.ignite.internal.pagemem.PageUtils;
 import org.apache.ignite.internal.util.GridUnsafe;
-import org.jetbrains.annotations.Nullable;
 
 /**
  * Inline index key implementation for inlining {@link String} values.
@@ -67,7 +66,7 @@ public class StringInlineIndexKeyType extends NullableInlineIndexKeyType<StringI
     }
 
     /** {@inheritDoc} */
-    @Override protected @Nullable StringIndexKey get0(long pageAddr, int off) {
+    @Override protected StringIndexKey get0(long pageAddr, int off) {
         String s = new String(readBytes(pageAddr, off), CHARSET);
 
         return new StringIndexKey(s);
