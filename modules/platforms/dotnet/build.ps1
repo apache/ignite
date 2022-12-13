@@ -191,7 +191,7 @@ if (!$skipDotNet) {
 
 if(!$skipDotNetCore) {
     # TODO other libraries are missing - how to add them properly?
-    Build-Solution ".\Apache.Ignite\Apache.Ignite.DotNetCore.csproj" "bin\net6.0"
+    Build-Solution ".\Apache.Ignite.DotNetCore.sln" "bin\net6.0"
 }
 
 
