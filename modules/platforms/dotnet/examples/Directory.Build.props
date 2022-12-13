@@ -36,10 +36,10 @@
 
     <ItemGroup Condition="$(IgniteBinaryDistro) == 'true' And $(IgniteDevMode) == ''">
         <Reference Include="Apache.Ignite.Core">
-            <HintPath>$(MSBuildThisFileDirectory)..\bin\Apache.Ignite.Core.dll</HintPath>
+            <HintPath>$(MSBuildThisFileDirectory)..\bin\net6.0\Apache.Ignite.Core.dll</HintPath>
         </Reference>
         <Reference Include="Apache.Ignite.Linq">
-            <HintPath>$(MSBuildThisFileDirectory)..\bin\Apache.Ignite.Linq.dll</HintPath>
+            <HintPath>$(MSBuildThisFileDirectory)..\bin\net6.0\Apache.Ignite.Linq.dll</HintPath>
         </Reference>
     </ItemGroup>
 
