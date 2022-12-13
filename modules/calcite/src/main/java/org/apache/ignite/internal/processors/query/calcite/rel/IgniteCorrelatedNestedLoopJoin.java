@@ -17,6 +17,7 @@
 
 package org.apache.ignite.internal.processors.query.calcite.rel;
 
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Set;
 
@@ -28,6 +29,7 @@ import org.apache.calcite.plan.RelOptPlanner;
 import org.apache.calcite.plan.RelTraitSet;
 import org.apache.calcite.rel.RelCollation;
 import org.apache.calcite.rel.RelCollations;
+import org.apache.calcite.rel.RelDistribution;
 import org.apache.calcite.rel.RelInput;
 import org.apache.calcite.rel.RelNode;
 import org.apache.calcite.rel.RelWriter;
@@ -40,6 +42,8 @@ import org.apache.calcite.util.Pair;
 import org.apache.ignite.internal.processors.query.calcite.metadata.cost.IgniteCost;
 import org.apache.ignite.internal.processors.query.calcite.metadata.cost.IgniteCostFactory;
 import org.apache.ignite.internal.processors.query.calcite.trait.CorrelationTrait;
+import org.apache.ignite.internal.processors.query.calcite.trait.IgniteDistribution;
+import org.apache.ignite.internal.processors.query.calcite.trait.IgniteDistributions;
 import org.apache.ignite.internal.processors.query.calcite.trait.RewindabilityTrait;
 import org.apache.ignite.internal.processors.query.calcite.trait.TraitUtils;
 import org.apache.ignite.internal.processors.query.calcite.util.Commons;
@@ -166,6 +170,31 @@ public class IgniteCorrelatedNestedLoopJoin extends AbstractIgniteJoin {
 
         return Pair.of(nodeTraits.replace(rewindability),
             ImmutableList.of(left.replace(rewindability), right.replace(RewindabilityTrait.REWINDABLE)));
+    }
+
+    /** {@inheritDoc} */
+    @Override public List<Pair<RelTraitSet, List<RelTraitSet>>> deriveDistribution(
+        RelTraitSet nodeTraits,
+        List<RelTraitSet> inputTraits
+    ) {
+        List<Pair<RelTraitSet, List<RelTraitSet>>> traits = super.deriveDistribution(nodeTraits, inputTraits);
+
+        RelTraitSet leftTraits = inputTraits.get(0);
+        RelTraitSet rightTraits = inputTraits.get(1);
+
+        IgniteDistribution leftDistr = TraitUtils.distribution(inputTraits.get(0));
+
+        if (leftDistr.getType() == RelDistribution.Type.HASH_DISTRIBUTED && variablesSet.size() == 1) {
+            // Add artifitial correlated distribution which can be restored to hash distribution by the filter node.
+            traits = new ArrayList<>(traits);
+
+            traits.add(Pair.of(nodeTraits.replace(leftDistr),
+                ImmutableList.of(
+                    leftTraits,
+                    rightTraits.replace(IgniteDistributions.correlated(F.first(variablesSet), leftDistr)))));
+        }
+
+        return traits;
     }
 
     /** {@inheritDoc} */
