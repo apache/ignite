@@ -133,7 +133,7 @@ public class LogicalRelImplementorTest extends GridCommonAbstractTest {
             null
         ) {
             @Override public ColocationGroup group(long srcId) {
-                return ColocationGroup.forNodes(Collections.singletonList(nodeId));
+                return ColocationGroup.forNodes(Collections.emptyList());
             }
         };
 
@@ -204,7 +204,7 @@ public class LogicalRelImplementorTest extends GridCommonAbstractTest {
     @Test
     public void testIndexCountRewriter() {
         IgniteIndexCount idxCnt = new IgniteIndexCount(cluster, cluster.traitSet(),
-            qctx.catalogReader().getTable(F.asList("PUBLIC", "TBL")), QueryUtils.PRIMARY_KEY_INDEX);
+            qctx.catalogReader().getTable(F.asList("PUBLIC", "TBL")), QueryUtils.PRIMARY_KEY_INDEX, false);
 
         checkCollectNode(relImplementor.visit(idxCnt));
 
