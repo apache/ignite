@@ -290,7 +290,7 @@ public abstract class IgniteAwareApplication {
     protected void waitForActivation() throws IgniteInterruptedCheckedException {
         boolean newApi = ignite.cluster().localNode().version().greaterThanEqual(2, 9, 0);
 
-        while (newApi ? ignite.cluster().state() != ClusterState.ACTIVE : !ignite.cluster().active()) {
+        while (newApi ? ignite.cluster().state() != ClusterState.ACTIVE : !ignite.cluster().state().active()) {
             U.sleep(100);
 
             log.info("Waiting for cluster activation");

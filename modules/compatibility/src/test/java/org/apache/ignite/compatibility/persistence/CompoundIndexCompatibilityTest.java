@@ -89,13 +89,13 @@ public class CompoundIndexCompatibilityTest extends IndexAbstractCompatibilityTe
     private static class PostStartupClosure implements IgniteInClosure<Ignite> {
         /** {@inheritDoc} */
         @Override public void apply(Ignite ignite) {
-            ignite.active(true);
+            ignite.cluster().state(ClusterState.ACTIVE);
 
             IgniteEx igniteEx = (IgniteEx)ignite;
 
             initializeTables(igniteEx);
 
-            ignite.active(false);
+            ignite.cluster().state(ClusterState.INACTIVE);
         }
     }
 

@@ -26,6 +26,7 @@ import org.apache.ignite.IgniteCache;
 import org.apache.ignite.cache.CacheMetrics;
 import org.apache.ignite.cache.QueryEntity;
 import org.apache.ignite.cache.QueryIndex;
+import org.apache.ignite.cluster.ClusterState;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.DataRegionConfiguration;
 import org.apache.ignite.configuration.DataStorageConfiguration;
@@ -112,7 +113,7 @@ public class IndexMetricsTest extends AbstractIndexingCommonTest {
     public void testIndexRebuildingMetric() throws Exception {
         IgniteEx n = startGrid(0);
 
-        n.cluster().active(true);
+        n.cluster().state(ClusterState.ACTIVE);
 
         String cacheName1 = "cache1";
         String cacheName2 = "cache2";
@@ -158,7 +159,7 @@ public class IndexMetricsTest extends AbstractIndexingCommonTest {
         CacheMetricsMXBean cacheClusterMetricsMXBean2 =
             cacheMetricsMXBean(n, cacheName2, CacheClusterMetricsMXBeanImpl.class);
 
-        n.cluster().active(true);
+        n.cluster().state(ClusterState.ACTIVE);
 
         BooleanSupplier[] idxRebuildProgressCache1 = {
             idxRebuildInProgress1::value,

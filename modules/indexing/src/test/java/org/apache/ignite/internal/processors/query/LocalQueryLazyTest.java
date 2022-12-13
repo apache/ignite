@@ -26,6 +26,7 @@ import org.apache.ignite.cache.affinity.rendezvous.RendezvousAffinityFunction;
 import org.apache.ignite.cache.query.FieldsQueryCursor;
 import org.apache.ignite.cache.query.QueryRetryException;
 import org.apache.ignite.cache.query.SqlFieldsQuery;
+import org.apache.ignite.cluster.ClusterState;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.failure.StopNodeFailureHandler;
@@ -189,9 +190,9 @@ public class LocalQueryLazyTest extends AbstractIndexingCommonTest {
 
         it.next();
 
-        grid(0).cluster().active(false);
+        grid(0).cluster().state(ClusterState.INACTIVE);
 
-        assertFalse(grid().cluster().active());
+        assertFalse(grid().cluster().state().active());
     }
 
     /**

@@ -26,6 +26,7 @@ import java.util.concurrent.TimeUnit;
 import java.util.concurrent.locks.LockSupport;
 import org.apache.ignite.cache.CacheAtomicityMode;
 import org.apache.ignite.cache.affinity.rendezvous.RendezvousAffinityFunction;
+import org.apache.ignite.cluster.ClusterState;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.DataRegionConfiguration;
 import org.apache.ignite.configuration.DataStorageConfiguration;
@@ -105,7 +106,7 @@ public class IgniteCheckpointDirtyPagesForLowLoadTest extends GridCommonAbstract
     public void testManyCachesAndNotManyPuts() throws Exception {
         try {
             IgniteEx ignite = startGrid(0);
-            ignite.active(true);
+            ignite.cluster().state(ClusterState.ACTIVE);
 
             log.info("Saving initial data to caches");
 

@@ -386,7 +386,7 @@ public class RebalanceCancellationTest extends GridCommonAbstractTest {
 
         IgniteEx ignite0 = startGrids(NODES_CNT);
 
-        ignite0.cluster().active(true);
+        ignite0.cluster().state(ClusterState.ACTIVE);
 
         ignite0.cluster().baselineAutoAdjustEnabled(false);
 
@@ -455,7 +455,7 @@ public class RebalanceCancellationTest extends GridCommonAbstractTest {
         IgniteEx ignite0 = startGrids(NODES_CNT);
         IgniteEx filteredNode = startGrid(getTestIgniteInstanceName(NODES_CNT) + FILTERED_NODE_SUFFIX);
 
-        ignite0.cluster().active(true);
+        ignite0.cluster().state(ClusterState.ACTIVE);
 
         grid(1).close();
 

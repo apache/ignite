@@ -25,6 +25,7 @@ import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCheckedException;
+import org.apache.ignite.cluster.ClusterState;
 import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.IgniteInterruptedCheckedException;
@@ -113,7 +114,7 @@ public class GridCommandHandlerIndexRebuildStatusTest extends GridCommandHandler
 
         Ignite ignite = startGrids(GRIDS_NUM);
 
-        ignite.cluster().active(true);
+        ignite.cluster().state(ClusterState.ACTIVE);
 
         createAndFillCache(ignite, "cache1", "group2");
         createAndFillCache(ignite, "cache2", "group1");

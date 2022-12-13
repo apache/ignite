@@ -26,6 +26,7 @@ import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ThreadLocalRandom;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.stream.Collectors;
+import org.apache.ignite.cluster.ClusterState;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.IgniteInternalFuture;
@@ -150,7 +151,7 @@ public class GridCommandHandlerIndexForceRebuildTest extends GridCommandHandlerA
 
         IgniteEx ignite = grid(0);
 
-        ignite.cluster().active(true);
+        ignite.cluster().state(ClusterState.ACTIVE);
 
         createAndFillCache(ignite, CACHE_NAME_1_1, GRP_NAME_1);
         createAndFillCache(ignite, CACHE_NAME_1_2, GRP_NAME_1);

@@ -18,6 +18,7 @@
 package org.apache.ignite.internal.encryption;
 
 import org.apache.ignite.IgniteCheckedException;
+import org.apache.ignite.cluster.ClusterState;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.managers.encryption.GridEncryptionManager;
@@ -49,7 +50,7 @@ public class EncryptedCacheGroupCreateTest extends AbstractEncryptionTest {
 
         startGrid(1);
 
-        igniteEx.cluster().active(true);
+        igniteEx.cluster().state(ClusterState.ACTIVE);
 
         awaitPartitionMapExchange();
     }

@@ -24,6 +24,7 @@ import org.apache.ignite.cache.QueryEntity;
 import org.apache.ignite.cache.affinity.rendezvous.RendezvousAffinityFunction;
 import org.apache.ignite.cache.query.SqlQuery;
 import org.apache.ignite.cache.query.annotations.QuerySqlField;
+import org.apache.ignite.cluster.ClusterState;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.DataPageEvictionMode;
 import org.apache.ignite.configuration.DataRegionConfiguration;
@@ -152,7 +153,7 @@ public class H2RowCachePageEvictionTest extends AbstractIndexingCommonTest {
 
         startGrid();
 
-        grid().active(true);
+        grid().cluster().state(ClusterState.ACTIVE);
 
         checkRowCacheOnPageEviction();
     }
@@ -166,7 +167,7 @@ public class H2RowCachePageEvictionTest extends AbstractIndexingCommonTest {
 
         startGrid();
 
-        grid().active(true);
+        grid().cluster().state(ClusterState.ACTIVE);
 
         grid().getOrCreateCache(cacheConfiguration("cacheWithoutOnHeapCache", false));
 

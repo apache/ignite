@@ -22,6 +22,7 @@ import java.util.List;
 import java.util.concurrent.Callable;
 import org.apache.ignite.IgniteCache;
 import org.apache.ignite.cluster.ClusterNode;
+import org.apache.ignite.cluster.ClusterState;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.DataRegionConfiguration;
 import org.apache.ignite.configuration.DataStorageConfiguration;
@@ -125,7 +126,7 @@ public class CacheWithDifferentDataRegionConfigurationTest extends GridCommonAbs
             .andCache(CACHE_2)
             .start();
 
-        node1.cluster().active(true);
+        node1.cluster().state(ClusterState.ACTIVE);
 
         populateCache(node1, CACHE_1, 1000);
         populateCache(node2, CACHE_2, 350);
@@ -148,7 +149,7 @@ public class CacheWithDifferentDataRegionConfigurationTest extends GridCommonAbs
             .andCache(CACHE_2)
             .start();
 
-        node1.cluster().active(true);
+        node1.cluster().state(ClusterState.ACTIVE);
 
         populateCache(node1, CACHE_1, 1000);
         populateCache(node2, CACHE_2, 350);
@@ -198,7 +199,7 @@ public class CacheWithDifferentDataRegionConfigurationTest extends GridCommonAbs
             .andExclusiveCache(CACHE_2, REGION_4)
             .start();
 
-        node1.cluster().active(true);
+        node1.cluster().state(ClusterState.ACTIVE);
 
         populateCache(node1, CACHE_1, 1000);
         populateCache(node2, CACHE_2, 350);

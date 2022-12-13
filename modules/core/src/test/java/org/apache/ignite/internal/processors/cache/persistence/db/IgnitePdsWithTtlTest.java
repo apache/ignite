@@ -35,6 +35,7 @@ import org.apache.ignite.cache.CachePeekMode;
 import org.apache.ignite.cache.CacheRebalanceMode;
 import org.apache.ignite.cache.CacheWriteSynchronizationMode;
 import org.apache.ignite.cache.affinity.rendezvous.RendezvousAffinityFunction;
+import org.apache.ignite.cluster.ClusterState;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.DataRegionConfiguration;
 import org.apache.ignite.configuration.DataStorageConfiguration;
@@ -420,7 +421,7 @@ public class IgnitePdsWithTtlTest extends GridCommonAbstractTest {
             srv.cluster().baselineAutoAdjustEnabled(false);
 
             startGrid(1);
-            srv.cluster().active(true);
+            srv.cluster().state(ClusterState.ACTIVE);
 
             ExpiryPolicy plc = CreatedExpiryPolicy.factoryOf(Duration.ONE_DAY).create();
 

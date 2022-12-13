@@ -29,6 +29,7 @@ import org.apache.ignite.DataRegionMetrics;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCache;
 import org.apache.ignite.cache.CacheMode;
+import org.apache.ignite.cluster.ClusterState;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.DataRegionConfiguration;
 import org.apache.ignite.configuration.DataStorageConfiguration;
@@ -150,7 +151,7 @@ public class IgnitePdsDataRegionMetricsTest extends GridCommonAbstractTest {
         for (int iter = 0; iter < ITERATIONS; iter++) {
             final IgniteEx node = startGrid(0);
 
-            node.cluster().active(true);
+            node.cluster().state(ClusterState.ACTIVE);
 
             DataRegionMetrics currMetrics = getDfltRegionMetrics(node);
 
@@ -193,7 +194,7 @@ public class IgnitePdsDataRegionMetricsTest extends GridCommonAbstractTest {
         IgniteEx node1 = startGrid(1);
 
         node0.cluster().baselineAutoAdjustEnabled(false);
-        node0.cluster().active(true);
+        node0.cluster().state(ClusterState.ACTIVE);
 
         final IgniteCache<Integer, String> cache = node0.cache(DEFAULT_CACHE_NAME);
 
@@ -244,7 +245,7 @@ public class IgnitePdsDataRegionMetricsTest extends GridCommonAbstractTest {
     public void testCheckpointBufferSize() throws Exception {
         IgniteEx ig = startGrid(0);
 
-        ig.cluster().active(true);
+        ig.cluster().state(ClusterState.ACTIVE);
 
         DataRegionMetricsImpl regionMetrics = ig.cachex(DEFAULT_CACHE_NAME)
             .context().group().dataRegion().metrics();
@@ -262,7 +263,7 @@ public class IgnitePdsDataRegionMetricsTest extends GridCommonAbstractTest {
     public void testUsedCheckpointBuffer() throws Exception {
         IgniteEx ig = startGrid(0);
 
-        ig.cluster().active(true);
+        ig.cluster().state(ClusterState.ACTIVE);
 
         final DataRegionMetricsImpl regionMetrics = ig.cachex(DEFAULT_CACHE_NAME)
             .context().group().dataRegion().metrics();

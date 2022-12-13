@@ -19,6 +19,7 @@ package org.apache.ignite.internal.processors.cache.persistence.file;
 
 import com.google.common.base.Strings;
 import org.apache.ignite.IgniteCache;
+import org.apache.ignite.cluster.ClusterState;
 import org.apache.ignite.configuration.DataRegionConfiguration;
 import org.apache.ignite.configuration.DataStorageConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
@@ -57,7 +58,7 @@ public class IgniteNativeIoWithNoPersistenceTest extends GridCommonAbstractTest 
     public void testDirectIoHandlesNoPersistentGrid() throws Exception {
         IgniteEx ignite = startGrid(0);
 
-        ignite.active(true);
+        ignite.cluster().state(ClusterState.ACTIVE);
 
         IgniteCache<Object, Object> cache = ignite.getOrCreateCache("cache");
 

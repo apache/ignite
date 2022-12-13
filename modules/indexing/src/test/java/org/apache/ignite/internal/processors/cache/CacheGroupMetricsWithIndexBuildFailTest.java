@@ -24,6 +24,7 @@ import java.util.List;
 import java.util.concurrent.atomic.AtomicBoolean;
 import javax.cache.Cache;
 import org.apache.ignite.IgniteCache;
+import org.apache.ignite.cluster.ClusterState;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.DataRegionConfiguration;
 import org.apache.ignite.configuration.DataStorageConfiguration;
@@ -98,7 +99,7 @@ public class CacheGroupMetricsWithIndexBuildFailTest extends AbstractIndexingCom
     public void testIndexRebuildCountPartitionsLeft() throws Exception {
         IgniteEx ignite0 = startGrid(0);
 
-        ignite0.cluster().active(true);
+        ignite0.cluster().state(ClusterState.ACTIVE);
 
         String cacheName1 = "cache1";
         String cacheName2 = "cache2";
@@ -122,7 +123,7 @@ public class CacheGroupMetricsWithIndexBuildFailTest extends AbstractIndexingCom
 
         IgniteEx ignite = startGrid(0);
 
-        ignite.cluster().active(true);
+        ignite.cluster().state(ClusterState.ACTIVE);
 
         MetricRegistry grpMreg = ignite.context().metric().registry(metricName(CACHE_GROUP_METRICS_PREFIX, GROUP_NAME));
 
