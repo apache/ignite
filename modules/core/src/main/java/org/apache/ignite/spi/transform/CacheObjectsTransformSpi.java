@@ -30,6 +30,7 @@ public interface CacheObjectsTransformSpi extends IgniteSpi {
      * Returns cache object's bytes transformer.
      *
      * @param ccfg Cache configuration.
+     * @return Transformer.
      */
     public CacheObjectsTransformer transformer(CacheConfiguration<?, ?> ccfg);
 }
