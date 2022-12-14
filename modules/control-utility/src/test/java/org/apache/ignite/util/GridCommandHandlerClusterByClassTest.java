@@ -514,14 +514,13 @@ public class GridCommandHandlerClusterByClassTest extends GridCommandHandlerClus
 
             assertContains(log, out, fileContent);
 
-            String summaryStr = "Total:" + nl() +DEFAULT_CACHE_NAME + " (6)" + nl() + "1,2,3,4,5,6" + nl();
+            String summaryStr = "Total:" + nl() + DEFAULT_CACHE_NAME + " (6)" + nl() + "1,2,3,4,5,6" + nl();
 
             assertContains(log, fileContent, "conflict partitions");
             assertContains(log, fileContent, summaryStr);
         }
-        else {
+        else
             fail("Should contain file name");
-        }
     }
 
     /** */

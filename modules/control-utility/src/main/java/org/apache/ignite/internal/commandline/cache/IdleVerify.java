@@ -320,6 +320,7 @@ public class IdleVerify extends AbstractCommand<IdleVerify.Arguments> {
     /**
      * @param client Client.
      * @param clientCfg Client configuration.
+     * @param logger Logger to use.
      */
     private void cacheIdleVerifyV2(
         GridClient client,
@@ -342,7 +343,7 @@ public class IdleVerify extends AbstractCommand<IdleVerify.Arguments> {
         res.print(sb::append, false);
         logger.info(sb.toString());
 
-        if (F.isEmpty(res.exceptions())&&!res.hasConflicts())
+        if (F.isEmpty(res.exceptions()) && !res.hasConflicts())
             return;
 
         try {
