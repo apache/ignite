@@ -127,7 +127,8 @@ public class LongJVMPauseDetector {
                         final long pause = now - PRECISION - lastWakeUpTime;
 
                         if (pause >= THRESHOLD) {
-                            log.warning("Possible too long JVM pause: " + pause + " milliseconds.");
+                            log.warning("Possible too long JVM pause: " + pause + " milliseconds. Possible reasons:" +
+                                " GC pause, hardware temporary freeze, bulk loading, other JVM pauses.");
 
                             synchronized (LongJVMPauseDetector.this) {
                                 final int next = (int)(longPausesCnt % EVT_CNT);
