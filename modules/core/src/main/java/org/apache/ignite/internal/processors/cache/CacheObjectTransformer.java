@@ -96,11 +96,8 @@ public class CacheObjectTransformer {
             while (true) {
                 int capacity = trans.transform(src, transformed, OVERHEAD); // TODO correct oberhead.
 
-                if (capacity <= 0) {
-                    transformed.flip();
-
+                if (capacity <= 0)
                     break;
-                }
 
                 transformed = dstBuf.get(capacity);
             }
@@ -168,9 +165,9 @@ public class CacheObjectTransformer {
 
         ByteBuffer restored = dstBuf.get(length);
 
-        trans.restore(src, restored);
+        restored.limit(length);
 
-        restored.flip();
+        trans.restore(src, restored);
 
         byte[] res = new byte[length];
 

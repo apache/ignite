@@ -145,6 +145,8 @@ public class CacheObjectsTransformationTest extends AbstractCacheObjectsTransfor
             while (original.hasRemaining())
                 transformed.put((byte)(original.get() + 1));
 
+            transformed.flip();
+
             return 0;
         }
 
@@ -152,6 +154,8 @@ public class CacheObjectsTransformationTest extends AbstractCacheObjectsTransfor
         @Override public void restore(ByteBuffer transformed, ByteBuffer restored) {
             while (transformed.hasRemaining())
                 restored.put((byte)(transformed.get() - 1));
+
+            restored.flip();
         }
     }
 }

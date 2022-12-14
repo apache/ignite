@@ -17,15 +17,22 @@
 
 package org.apache.ignite.internal.processors.cache.objects;
 
+import java.io.IOException;
 import java.nio.ByteBuffer;
 import java.util.Objects;
 import com.github.luben.zstd.Zstd;
 import com.github.luben.zstd.ZstdException;
+import net.jpountz.lz4.LZ4Compressor;
+import net.jpountz.lz4.LZ4Exception;
+import net.jpountz.lz4.LZ4Factory;
+import net.jpountz.lz4.LZ4FastDecompressor;
 import org.apache.ignite.IgniteCheckedException;
+import org.apache.ignite.IgniteException;
 import org.apache.ignite.configuration.CacheConfiguration;
-import org.apache.ignite.spi.transform.CacheObjectsTransformer;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.processors.cache.transform.AbstractCacheObjectsTransformationTest;
+import org.apache.ignite.spi.transform.CacheObjectsTransformer;
+import org.xerial.snappy.Snappy;
 
 /**
  *
@@ -36,7 +43,7 @@ public abstract class AbstractCacheObjectsCompressionTest extends AbstractCacheO
         return super.getConfiguration(igniteInstanceName)
             .setCacheObjectsTransformSpi(new CacheObjectsTransformSpiAdapter() {
                 @Override public CacheObjectsTransformer transformer(CacheConfiguration<?, ?> ccfg) {
-                    return new ZstdCompressionTransformer();
+                    return new CompressionTransformer();
                 }
             });
     }
@@ -77,9 +84,18 @@ public abstract class AbstractCacheObjectsCompressionTest extends AbstractCacheO
     /**
      *
      */
-    protected static class ZstdCompressionTransformer implements CacheObjectsTransformer {
-        /** Fail. */
-        protected static boolean fail;
+    protected static class CompressionTransformer implements CacheObjectsTransformer {
+        /** Comptession type. */
+        protected static CompressionType type = CompressionType.defaultType();
+
+        /** */
+        private static final LZ4Factory lz4Factory = LZ4Factory.fastestInstance();
+
+        /** */
+        static final LZ4FastDecompressor lz4Decompressor = lz4Factory.fastDecompressor();
+
+        /** */
+        static final LZ4Compressor lz4Compressor = lz4Factory.highCompressor(1);
 
         /** {@inheritDoc} */
         @Override public boolean direct() {
@@ -87,28 +103,130 @@ public abstract class AbstractCacheObjectsCompressionTest extends AbstractCacheO
         }
 
         /** {@inheritDoc} */
-        @Override public int transform(ByteBuffer original, ByteBuffer transformed, int overhead) throws IgniteCheckedException {
-            if (fail)
-                throw new IgniteCheckedException("Failed.");
+        @Override public int transform(ByteBuffer original, ByteBuffer compressed, int overhead) throws IgniteCheckedException {
+            if (type == CompressionType.DISABLED)
+                throw new IgniteCheckedException("Disabled.");
 
-            if (transformed.capacity() < original.remaining())
+            if (compressed.capacity() < original.remaining())
                 return original.remaining();
 
-            transformed.limit(Math.max(original.remaining() - overhead, 0)); // Limiting to gain compression profit.
+            int locOverhead = 4;
 
-            try {
-                Zstd.compress(transformed, original, 1);
+            int lim = original.remaining() - overhead - locOverhead;
+
+            if (lim <= 0)
+                throw new IgniteCheckedException("Compression is not possible.");
+
+            compressed.position(locOverhead); // Reserving for compression type.
+
+            switch (type) {
+                case ZSTD:
+                    try {
+                        compressed.limit(lim); // Limiting to gain compression profit.
+
+                        Zstd.compress(compressed, original, 1);
+
+                        compressed.flip();
+                    }
+                    catch (ZstdException e) {
+                        throw new IgniteCheckedException(e);
+                    }
+
+                    break;
+
+                case LZ4:
+                    try {
+                        compressed.limit(lim); // Limiting to gain compression profit.
+
+                        lz4Compressor.compress(original, compressed);
+
+                        compressed.flip();
+                    }
+                    catch (LZ4Exception e) {
+                        throw new IgniteCheckedException(e);
+                    }
+
+                    break;
+
+                case SNAPPY:
+                    try {
+                        int size = Snappy.compress(original, compressed);
+
+                        if (size > lim) // Limiting to gain compression profit.
+                            throw new IgniteCheckedException("Compression gains no profit.");
+
+                        compressed.position(0);
+                    }
+                    catch (IOException e) {
+                        throw new IgniteCheckedException(e);
+                    }
+
+                    break;
+
+                default:
+                    throw new UnsupportedOperationException();
             }
-            catch (ZstdException ex) {
-                throw new IgniteCheckedException(ex);
-            }
+
+            compressed.putInt(type.ordinal());
+            compressed.position(0);
 
             return 0;
         }
 
         /** {@inheritDoc} */
-        @Override public void restore(ByteBuffer transformed, ByteBuffer restored) {
-            Zstd.decompress(restored, transformed);
+        @Override public void restore(ByteBuffer compressed, ByteBuffer restored) {
+            switch (CompressionType.values()[compressed.getInt()]) {
+                case ZSTD:
+                    Zstd.decompress(restored, compressed);
+
+                    restored.flip();
+
+                    break;
+
+                case LZ4:
+                    lz4Decompressor.decompress(compressed, restored);
+
+                    restored.flip();
+
+                    break;
+
+                case SNAPPY:
+                    try {
+                        Snappy.uncompress(compressed, restored);
+                    }
+                    catch (IOException e) {
+                        throw new IgniteException(e);
+                    }
+
+                    break;
+
+                default:
+                    throw new UnsupportedOperationException();
+            }
+        }
+
+        /**
+         *
+         */
+        protected enum CompressionType {
+            /** Compression disabled. */
+            DISABLED,
+
+            /** Zstd compression. */
+            ZSTD,
+
+            /** LZ4 compression. */
+            LZ4,
+
+            /** Snappy compression. */
+            SNAPPY;
+
+            /**
+             * @return
+             */
+            static CompressionType defaultType() {
+                return ZSTD;
+            }
         }
     }
 }

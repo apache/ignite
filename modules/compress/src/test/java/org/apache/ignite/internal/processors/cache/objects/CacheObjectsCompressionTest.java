@@ -18,80 +18,108 @@
 package org.apache.ignite.internal.processors.cache.objects;
 
 import java.util.ArrayList;
+import java.util.Collection;
 import java.util.Collections;
 import java.util.List;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.binary.BinaryObjectBuilder;
 import org.junit.Test;
+import org.junit.runner.RunWith;
+import org.junit.runners.Parameterized;
+
+import static org.apache.ignite.internal.processors.cache.objects.AbstractCacheObjectsCompressionTest.CompressionTransformer.CompressionType;
 
 /**
  *
  */
+@RunWith(Parameterized.class)
 public class CacheObjectsCompressionTest extends AbstractCacheObjectsCompressionTest {
+    /** Thin client. */
+    @Parameterized.Parameter
+    public CompressionType type;
+
+    /** @return Test parameters. */
+    @Parameterized.Parameters(name = "type={0}")
+    public static Collection<?> parameters() {
+        List<Object[]> res = new ArrayList<>();
+
+        for (CompressionType type : CompressionType.values())
+            res.add(new Object[] {type});
+
+        return res;
+    }
+
     /**
      * @throws Exception If failed.
      */
     @Test
     public void testCompression() throws Exception {
-        Ignite ignite = prepareCluster();
+        try {
+            CompressionTransformer.type = type;
 
-        int i = 42;
-        String str = "Ololo";
+            Ignite ignite = prepareCluster();
 
-        putAndCheck(str, false, false, false);
+            int i = 42;
+            String str = "Ololo";
 
-        StringData sd = new StringData("");
+            putAndCheck(str, false, false, false);
 
-        putAndCheck(sd, true, false, false);
+            StringData sd = new StringData("");
 
-        List<Object> sdList = Collections.singletonList(sd);
+            putAndCheck(sd, true, false, false);
 
-        putAndCheck(sdList, false, true, false);
+            List<Object> sdList = Collections.singletonList(sd);
 
-        StringBuilder sb = new StringBuilder();
+            putAndCheck(sdList, false, true, false);
 
-        for (int k = 0; k < 100; k++)
-            sb.append("AAAAAAAAAA");
+            StringBuilder sb = new StringBuilder();
 
-        String str2 = sb.toString();
+            for (int k = 0; k < 100; k++)
+                sb.append("AAAAAAAAAA");
 
-        putAndCheck(str2, false, false, true);
+            String str2 = sb.toString();
 
-        List<Object> list = new ArrayList<>();
+            putAndCheck(str2, false, false, type != CompressionType.DISABLED);
 
-        list.add(new BinarizableData(str, null, i));
-        list.add(new BinarizableData(str, null, i));
-        list.add(new BinarizableData(str, null, i));
+            List<Object> list = new ArrayList<>();
 
-        putAndCheck(list, false, true, true);
+            list.add(new BinarizableData(str, null, i));
+            list.add(new BinarizableData(str, null, i));
+            list.add(new BinarizableData(str, null, i));
 
-        BinarizableData data = new BinarizableData(str, list, i);
+            putAndCheck(list, false, true, type != CompressionType.DISABLED);
 
-        putAndCheck(data, true, false, true);
+            BinarizableData data = new BinarizableData(str, list, i);
 
-        List<Object> list2 = new ArrayList<>();
+            putAndCheck(data, true, false, type != CompressionType.DISABLED);
 
-        list2.add(new BinarizableData(str, null, i + 1));
-        list2.add(new BinarizableData(str, null, i + 1));
-        list2.add(new BinarizableData(str, null, i + 1));
+            List<Object> list2 = new ArrayList<>();
 
-        putAndCheck(list2, false, true, true);
+            list2.add(new BinarizableData(str, null, i + 1));
+            list2.add(new BinarizableData(str, null, i + 1));
+            list2.add(new BinarizableData(str, null, i + 1));
 
-        BinarizableData data2 = new BinarizableData(str, list2, i + 1);
+            putAndCheck(list2, false, true, type != CompressionType.DISABLED);
 
-        putAndCheck(data2, true, false, true);
+            BinarizableData data2 = new BinarizableData(str, list2, i + 1);
 
-        BinaryObjectBuilder builder = ignite.binary().builder(BinarizableData.class.getName());
+            putAndCheck(data2, true, false, type != CompressionType.DISABLED);
 
-        builder.setField("str", str2);
-        builder.setField("list", list);
-        builder.setField("i", i);
+            BinaryObjectBuilder builder = ignite.binary().builder(BinarizableData.class.getName());
 
-        putAndCheck(builder.build(), true, false, true);
+            builder.setField("str", str2);
+            builder.setField("list", list);
+            builder.setField("i", i);
 
-        builder.setField("str", str);
+            putAndCheck(builder.build(), true, false, type != CompressionType.DISABLED);
 
-        putAndCheck(builder.build(), true, false, true);
+            builder.setField("str", str);
+
+            putAndCheck(builder.build(), true, false, type != CompressionType.DISABLED);
+        }
+        finally {
+            CompressionTransformer.type = CompressionTransformer.CompressionType.defaultType();  // Restoring default.
+        }
     }
 
     /**
