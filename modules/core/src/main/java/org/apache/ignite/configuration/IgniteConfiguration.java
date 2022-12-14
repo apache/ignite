@@ -65,7 +65,6 @@ import org.apache.ignite.plugin.segmentation.SegmentationPolicy;
 import org.apache.ignite.plugin.segmentation.SegmentationResolver;
 import org.apache.ignite.services.Service;
 import org.apache.ignite.services.ServiceConfiguration;
-import org.apache.ignite.spi.transform.CacheObjectsTransformSpi;
 import org.apache.ignite.spi.checkpoint.CheckpointSpi;
 import org.apache.ignite.spi.checkpoint.noop.NoopCheckpointSpi;
 import org.apache.ignite.spi.collision.CollisionSpi;
@@ -87,6 +86,7 @@ import org.apache.ignite.spi.loadbalancing.roundrobin.RoundRobinLoadBalancingSpi
 import org.apache.ignite.spi.metric.MetricExporterSpi;
 import org.apache.ignite.spi.systemview.SystemViewExporterSpi;
 import org.apache.ignite.spi.tracing.TracingSpi;
+import org.apache.ignite.spi.transform.CacheObjectsTransformSpi;
 import org.apache.ignite.ssl.SslContextFactory;
 import org.jetbrains.annotations.Nullable;
 

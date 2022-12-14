@@ -26,8 +26,8 @@ import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.binary.BinaryObject;
 import org.apache.ignite.binary.BinaryObjectBuilder;
 import org.apache.ignite.configuration.CacheConfiguration;
-import org.apache.ignite.spi.transform.CacheObjectsTransformer;
 import org.apache.ignite.configuration.IgniteConfiguration;
+import org.apache.ignite.spi.transform.CacheObjectsTransformer;
 import org.junit.Test;
 
 /**

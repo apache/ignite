@@ -23,9 +23,9 @@ import com.github.luben.zstd.Zstd;
 import com.github.luben.zstd.ZstdException;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.configuration.CacheConfiguration;
-import org.apache.ignite.spi.transform.CacheObjectsTransformer;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.processors.cache.transform.AbstractCacheObjectsTransformationTest;
+import org.apache.ignite.spi.transform.CacheObjectsTransformer;
 
 /**
  *

@@ -19,10 +19,10 @@ package org.apache.ignite.internal.processors.cache;
 
 import java.nio.ByteBuffer;
 import org.apache.ignite.IgniteCheckedException;
-import org.apache.ignite.spi.transform.CacheObjectsTransformer;
 import org.apache.ignite.events.CacheObjectTransformedEvent;
 import org.apache.ignite.internal.binary.BinaryObjectEx;
 import org.apache.ignite.spi.transform.CacheObjectsTransformSpi;
+import org.apache.ignite.spi.transform.CacheObjectsTransformer;
 
 import static org.apache.ignite.events.EventType.EVT_CACHE_OBJECT_TRANSFORMED;
 import static org.apache.ignite.internal.binary.GridBinaryMarshaller.TRANSFORMED;
