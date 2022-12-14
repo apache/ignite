@@ -20,6 +20,7 @@ package org.apache.ignite.internal.processors.cache.objects;
 import java.io.IOException;
 import java.nio.ByteBuffer;
 import java.util.Objects;
+import java.util.concurrent.atomic.AtomicLong;
 import com.github.luben.zstd.Zstd;
 import com.github.luben.zstd.ZstdException;
 import net.jpountz.lz4.LZ4Compressor;
@@ -38,6 +39,18 @@ import org.xerial.snappy.Snappy;
  *
  */
 public abstract class AbstractCacheObjectsCompressionTest extends AbstractCacheObjectsTransformationTest {
+    /** Huge string. */
+    protected static final String HUGE_STRING;
+
+    static {
+        StringBuilder sb = new StringBuilder();
+
+        for (int i = 0; i < 1000; i++)
+            sb.append("A");
+
+        HUGE_STRING = sb.toString();
+    }
+
     /** {@inheritDoc} */
     @Override protected IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {
         return super.getConfiguration(igniteInstanceName)
@@ -96,6 +109,15 @@ public abstract class AbstractCacheObjectsCompressionTest extends AbstractCacheO
 
         /** */
         static final LZ4Compressor lz4Compressor = lz4Factory.highCompressor(1);
+
+        /** Zstd count. */
+        static final AtomicLong zstdCnt = new AtomicLong();
+
+        /** Lz4 count. */
+        static final AtomicLong lz4Cnt = new AtomicLong();
+
+        /** Snappy count. */
+        static final AtomicLong snapCnt = new AtomicLong();
 
         /** {@inheritDoc} */
         @Override public boolean direct() {
@@ -181,6 +203,8 @@ public abstract class AbstractCacheObjectsCompressionTest extends AbstractCacheO
 
                     restored.flip();
 
+                    zstdCnt.incrementAndGet();
+
                     break;
 
                 case LZ4:
@@ -188,11 +212,15 @@ public abstract class AbstractCacheObjectsCompressionTest extends AbstractCacheO
 
                     restored.flip();
 
+                    lz4Cnt.incrementAndGet();
+
                     break;
 
                 case SNAPPY:
                     try {
                         Snappy.uncompress(compressed, restored);
+
+                        snapCnt.incrementAndGet();
                     }
                     catch (IOException e) {
                         throw new IgniteException(e);
@@ -222,7 +250,7 @@ public abstract class AbstractCacheObjectsCompressionTest extends AbstractCacheO
             SNAPPY;
 
             /**
-             * @return
+             * @return default.
              */
             static CompressionType defaultType() {
                 return ZSTD;

@@ -50,20 +50,8 @@ import static org.apache.ignite.internal.util.nio.GridNioServer.SENT_BYTES_METRI
  */
 @RunWith(Parameterized.class)
 public class CacheObjectsCompressionConsumptionTest extends AbstractCacheObjectsCompressionTest {
-    /** Huge string. */
-    private static final String HUGE_STRING;
-
     /** Region name. */
     private static final String REGION_NAME = "region";
-
-    static {
-        StringBuilder sb = new StringBuilder();
-
-        for (int i = 0; i < 1000; i++)
-            sb.append("A");
-
-        HUGE_STRING = sb.toString();
-    }
 
     /** Thin client. */
     @Parameterized.Parameter
