@@ -17,6 +17,21 @@
 
 package org.apache.ignite.internal.processors.cache.persistence.snapshot;
 
+import org.apache.ignite.internal.pagemem.wal.record.ConsistentCutFinishRecord;
+import org.apache.ignite.internal.processors.cache.persistence.wal.WALPointer;
+
 /** */
 class IncrementalSnapshotFutureTaskResult {
+    /** Pointer to {@link ConsistentCutFinishRecord}. */
+    private final WALPointer finishRecPtr;
+
+    /** */
+    IncrementalSnapshotFutureTaskResult(WALPointer finishRecPtr) {
+        this.finishRecPtr = finishRecPtr;
+    }
+
+    /** */
+    public WALPointer finishRecordPointer() {
+        return finishRecPtr;
+    }
 }

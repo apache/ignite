@@ -81,9 +81,7 @@ public class ConsistentCutManager extends GridCacheSharedManagerAdapter implemen
         cancelConsistentCut(new IgniteCheckedException("Ignite node is stopping."));
     }
 
-    /**
-     * Stops Consistent Cut in case of baseline topology changed.
-     */
+    /** Stops Consistent Cut in case of baseline topology changed. */
     @Override public void onInitBeforeTopologyLock(GridDhtPartitionsExchangeFuture fut) {
         if (fut.localJoinExchange() || fut.changedBaseline() || fut.isBaselineNodeFailed())
             cancelConsistentCut(new IgniteCheckedException("Ignite topology changed, can't finish Consistent Cut."));
@@ -102,28 +100,6 @@ public class ConsistentCutManager extends GridCacheSharedManagerAdapter implemen
 
         if (cut != null && cut.baseline())
             ((BaselineConsistentCut)cut).onCommit(tx.finishFuture());
-    }
-
-    /**
-     * Wraps a transaction message if Consistent Cut is running.
-     *
-     * @param txMsg Transaction message to wrap.
-     * @param txCutId Consistent Cut ID after which transaction committed, if specified.
-     */
-    public static GridCacheMessage wrapMessage(
-        GridCacheSharedContext<?, ?> cctx,
-        GridCacheMessage txMsg,
-        @Nullable UUID txCutId
-    ) {
-        if (cctx.consistentCutMgr() == null)
-            return txMsg;
-
-        ConsistentCut cut = cctx.consistentCutMgr().consistentCut();
-
-        if (cut != null)
-            return new ConsistentCutAwareMessage(txMsg, cut.id(), txCutId);
-
-        return txMsg;
     }
 
     /**
@@ -164,15 +140,8 @@ public class ConsistentCutManager extends GridCacheSharedManagerAdapter implemen
         if (cut != null) {
             cut.cancel(err);
 
-            cleanConsistentCut(cut.id());
+            onConsistentCutFinished(cut.id());
         }
-    }
-
-    /**
-     * @return Current running Consistent Cut, if cut isn't running then {@code null}.
-     */
-    public @Nullable ConsistentCut consistentCut() {
-        return consistentCut;
     }
 
     /**
@@ -181,7 +150,7 @@ public class ConsistentCutManager extends GridCacheSharedManagerAdapter implemen
     public @Nullable IgniteInternalFuture<WALPointer> consistentCutFuture() {
         ConsistentCut cut = consistentCut;
 
-        return cut == null || !cut.baseline() ? null : ((BaselineConsistentCut)cut).consistentCutFuture();
+        return cut == null ? null : cut.finishFuture();
     }
 
     /**
@@ -193,10 +162,8 @@ public class ConsistentCutManager extends GridCacheSharedManagerAdapter implemen
         return cut == null ? null : cut.id();
     }
 
-    /**
-     * Stops local Consistent Cut.
-     */
-    public void cleanConsistentCut(UUID cutId) {
+    /** Calls after all nodes finished Consistent Cut. */
+    public void onConsistentCutFinished(UUID cutId) {
         synchronized (this) {
             lastFinishedCutId = cutId;
 
@@ -214,14 +181,45 @@ public class ConsistentCutManager extends GridCacheSharedManagerAdapter implemen
         lastCutAwareMsgSentFut = activeTxsFut;
     }
 
-    /** */
-    public void cleanLastFinishedCutId(UUID cutId) {
+    /** Clean remaining resources related to Consistent Cut after cluster snapshot finished. */
+    public void onClusterSnapshotFinished(UUID cutId) {
         lastFinishedCutId = null;
         lastCutAwareMsgSentFut = null;
     }
 
-    /** */
+    /**
+     * @return Future that completes after last {@link ConsistentCutAwareMessage} were sent.
+     */
     public IgniteInternalFuture<?> lastCutAwareMsgSentFuture() {
         return lastCutAwareMsgSentFut;
+    }
+
+    /**
+     * Wraps a transaction message if Consistent Cut is running.
+     *
+     * @param txMsg Transaction message to wrap.
+     * @param txCutId Consistent Cut ID after which transaction committed, if specified.
+     */
+    public static GridCacheMessage wrapMessage(
+        GridCacheSharedContext<?, ?> cctx,
+        GridCacheMessage txMsg,
+        @Nullable UUID txCutId
+    ) {
+        if (cctx.consistentCutMgr() == null)
+            return txMsg;
+
+        ConsistentCut cut = cctx.consistentCutMgr().consistentCut();
+
+        if (cut != null)
+            return new ConsistentCutAwareMessage(txMsg, cut.id(), txCutId);
+
+        return txMsg;
+    }
+
+    /**
+     * @return Current running Consistent Cut, if cut isn't running then {@code null}.
+     */
+    protected @Nullable ConsistentCut consistentCut() {
+        return consistentCut;
     }
 }

@@ -204,11 +204,6 @@ class BaselineConsistentCut implements ConsistentCut {
         return id;
     }
 
-    /** */
-    public IgniteInternalFuture<WALPointer> consistentCutFuture() {
-        return fut;
-    }
-
     /** {@inheritDoc} */
     @Override public void cancel(Throwable err) {
         fut.onDone(err);
@@ -217,6 +212,11 @@ class BaselineConsistentCut implements ConsistentCut {
     /** {@inheritDoc} */
     @Override public boolean baseline() {
         return true;
+    }
+
+    /** {@inheritDoc} */
+    @Override public IgniteInternalFuture<WALPointer> finishFuture() {
+        return fut;
     }
 
     /** {@inheritDoc} */

@@ -129,14 +129,14 @@ public class SkipSameConsistentCutTest extends AbstractConsistentCutTest {
         }
 
         /** {@inheritDoc} */
-        @Override public void cleanConsistentCut(UUID cutId) {
+        @Override public void onConsistentCutFinished(UUID cutId) {
             if (latch != null) {
                 blkLatch.countDown();
 
                 U.awaitQuiet(latch);
             }
 
-            super.cleanConsistentCut(cutId);
+            super.onConsistentCutFinished(cutId);
         }
 
         /** */

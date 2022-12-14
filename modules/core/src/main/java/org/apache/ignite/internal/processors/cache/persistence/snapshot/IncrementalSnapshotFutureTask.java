@@ -63,9 +63,6 @@ class IncrementalSnapshotFutureTask
      */
     private final WALPointer lowPtr;
 
-    /** Current consistent cut WAL pointer. */
-    private final WALPointer highPtr;
-
     /** */
     public IncrementalSnapshotFutureTask(
         GridCacheSharedContext<?, ?> cctx,
@@ -76,8 +73,7 @@ class IncrementalSnapshotFutureTask
         int incIdx,
         File tmpWorkDir,
         FileIOFactory ioFactory,
-        WALPointer lowPtr,
-        WALPointer highPtr
+        WALPointer lowPtr
     ) {
         super(
             cctx,
@@ -109,7 +105,6 @@ class IncrementalSnapshotFutureTask
         this.snpPath = snpPath;
         this.affectedCacheGrps = new HashSet<>(meta.cacheGroupIds());
         this.lowPtr = lowPtr;
-        this.highPtr = highPtr;
 
         cctx.cache().configManager().addConfigurationChangeListener(this);
     }
@@ -130,9 +125,9 @@ class IncrementalSnapshotFutureTask
                 return false;
             }
 
-            cctx.kernalContext().pools().getSnapshotExecutorService().submit(() -> {
+            cctx.consistentCutMgr().consistentCutFuture().chain(fut -> {
                 try {
-                    copyWal(incSnpDir);
+                    copyWal(incSnpDir, fut.result());
 
                     File snpMarshallerDir = MarshallerContextImpl.mappingFileStoreWorkDir(incSnpDir.getAbsolutePath());
 
@@ -152,12 +147,14 @@ class IncrementalSnapshotFutureTask
                         file -> file.getName().endsWith(METADATA_FILE_SUFFIX)
                     );
 
-                    onDone(new IncrementalSnapshotFutureTaskResult());
+                    onDone(new IncrementalSnapshotFutureTaskResult(fut.result()));
                 }
                 catch (Throwable e) {
                     onDone(e);
                 }
-            });
+
+                return null;
+            }, cctx.kernalContext().pools().getSnapshotExecutorService());
 
             return true;
         }
@@ -170,10 +167,11 @@ class IncrementalSnapshotFutureTask
      * Copies WAL segments to the incremental snapshot directory.
      *
      * @param incSnpDir Incremental snapshot directory.
+     * @param highPtr High WAL pointer to copy.
      * @throws IgniteInterruptedCheckedException If failed.
      * @throws IOException If failed.
      */
-    private void copyWal(File incSnpDir) throws IgniteInterruptedCheckedException, IOException {
+    private void copyWal(File incSnpDir, WALPointer highPtr) throws IgniteInterruptedCheckedException, IOException {
         // First increment must include low segment, because full snapshot knows nothing about WAL.
         // All other begins from the next segment because lowPtr already saved inside previous increment.
         long lowIdx = lowPtr.index() + (incIdx == 1 ? 0 : 1);

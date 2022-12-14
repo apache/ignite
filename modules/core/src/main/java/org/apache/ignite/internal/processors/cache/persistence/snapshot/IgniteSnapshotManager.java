@@ -19,7 +19,6 @@ package org.apache.ignite.internal.processors.cache.persistence.snapshot;
 
 import java.io.BufferedInputStream;
 import java.io.File;
-import java.io.FileFilter;
 import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
@@ -775,20 +774,22 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
      * @return Future which will be completed when a snapshot has been started.
      */
     private IgniteInternalFuture<SnapshotOperationResponse> initLocalSnapshotStartStage(SnapshotOperationRequest req) {
-        if (cctx.kernalContext().clientNode() ||
-            !CU.baselineNode(cctx.localNode(), cctx.kernalContext().state().clusterState())) {
-            if (req.incremental() && clusterSnpReq == null)
-                clusterSnpReq = req;
-
-            return new GridFinishedFuture<>();
-        }
-
         // Executed inside discovery notifier thread, prior to firing discovery custom event,
         // so it is safe to set new snapshot task inside this method without synchronization.
         if (clusterSnpReq != null) {
             return new GridFinishedFuture<>(new IgniteCheckedException("Snapshot operation has been rejected. " +
                 "Another snapshot operation in progress [req=" + req + ", curr=" + clusterSnpReq + ']'));
         }
+
+        if (req.incremental()) {
+            cctx.consistentCutMgr().handleConsistentCutId(req.requestId());
+
+            clusterSnpReq = req;
+        }
+
+        if (cctx.kernalContext().clientNode() ||
+            !CU.baselineNode(cctx.localNode(), cctx.kernalContext().state().clusterState()))
+            return new GridFinishedFuture<>();
 
         Set<UUID> leftNodes = new HashSet<>(req.nodes());
         leftNodes.removeAll(F.viewReadOnly(cctx.discovery().serverNodes(AffinityTopologyVersion.NONE),
@@ -851,7 +852,7 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
         SnapshotMetadata meta
     ) {
         File incSnpDir = incrementalSnapshotLocalDir(req.snapshotName(), req.snapshotPath(), req.incrementIndex());
-        WALPointer lowPtr, highPtr;
+        WALPointer lowPtr;
 
         if (req.incrementIndex() == 1)
             lowPtr = meta.snapshotRecordPointer();
@@ -873,18 +874,6 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
             lowPtr = prevIncSnpMeta.cutPointer();
         }
 
-        try {
-            cctx.consistentCutMgr().handleConsistentCutId(req.requestId());
-
-            highPtr = cctx.consistentCutMgr().consistentCutFuture().get();
-        }
-        catch (IgniteCheckedException e) {
-            return new GridFinishedFuture<>(e);
-        }
-
-        // For now, forcefully rollover to the next WAL segments to make segments waiting possible.
-        assert cctx.wal().currentSegment() >= highPtr.index() : "Rollover must be invoked.";
-
         IgniteInternalFuture<SnapshotOperationResponse> task0 = registerTask(req.snapshotName(), new IncrementalSnapshotFutureTask(
             cctx,
             req.operationalNodeId(),
@@ -894,8 +883,7 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
             req.incrementIndex(),
             tmpWorkDir,
             ioFactory,
-            lowPtr,
-            highPtr
+            lowPtr
         )).chain(fut -> {
             if (fut.error() != null)
                 throw F.wrap(fut.error());
@@ -908,7 +896,7 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
                 req.incrementIndex(),
                 cctx.localNode().consistentId().toString(),
                 pdsSettings.folderName(),
-                highPtr
+                ((IncrementalSnapshotFutureTaskResult)fut.result()).finishRecordPointer()
             );
 
             writeSnapshotMetafile(
@@ -926,8 +914,6 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
             log.debug("Incremental snapshot operation submited for execution" +
                 "[snpName=" + req.snapshotName() + ", incIdx=" + req.incrementIndex());
         }
-
-        clusterSnpReq = req;
 
         cctx.kernalContext().pools().getSnapshotExecutorService().submit(() -> {
             SnapshotOperationRequest snpReq = clusterSnpReq;
@@ -1071,7 +1057,7 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
         SnapshotOperationRequest snpReq = clusterSnpReq;
 
         if (snpReq != null && F.eq(id, snpReq.requestId()) && snpReq.incremental())
-            cctx.consistentCutMgr().cleanConsistentCut(snpReq.requestId());
+            cctx.consistentCutMgr().onConsistentCutFinished(snpReq.requestId());
 
         if (cctx.kernalContext().clientNode())
             return;
@@ -1189,7 +1175,7 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
             return new GridFinishedFuture<>();
 
         try {
-            if (req.error() != null) {
+            if (req.error() != null && !cctx.kernalContext().clientNode()) {
                 snpReq.error(req.error());
 
                 if (req.incremental())
@@ -1225,7 +1211,7 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
         endFail.removeAll(res.keySet());
 
         if (snpReq.incremental())
-            cctx.consistentCutMgr().cleanLastFinishedCutId(id);
+            cctx.consistentCutMgr().onClusterSnapshotFinished(id);
 
         clusterSnpReq = null;
 
@@ -1256,23 +1242,6 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
                 clusterSnpFut = null;
             }
         }
-    }
-
-    /**
-     * Copy files {@code fromDir} to {@code toDir}.
-     *
-     * @param fromDir From directory.
-     * @param toDir To directory.
-     * @param filter File filter.
-     */
-    private void copyFiles(File fromDir, File toDir, FileFilter filter) throws IOException {
-        assert fromDir.exists() && fromDir.isDirectory();
-
-        if (!toDir.isDirectory() && !toDir.exists() && !toDir.mkdirs())
-            throw new IgniteException("Target directory can't be created [target=" + toDir.getAbsolutePath() + ']');
-
-        for (File from : fromDir.listFiles(filter))
-            Files.copy(from.toPath(), new File(toDir, from.getName()).toPath());
     }
 
     /**
@@ -1717,7 +1686,7 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
      * @return Read metadata.
      * @param <T> Type of metadata.
      */
-    public <T> T readFromFile(File smf) throws IgniteCheckedException, IOException {
+    <T> T readFromFile(File smf) throws IgniteCheckedException, IOException {
         if (!smf.exists())
             throw new IgniteCheckedException("Snapshot metafile cannot be read due to it doesn't exist: " + smf);
 
@@ -3820,7 +3789,7 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
         private static final long serialVersionUID = 0L;
 
         /** */
-        private final boolean incremental;
+        private final boolean needExchange;
 
         /**
          * @param processId Unique process id.
@@ -3832,12 +3801,12 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
         ) {
             super(processId, START_SNAPSHOT, req);
 
-            incremental = req.incremental();
+            needExchange = !req.incremental();
         }
 
         /** {@inheritDoc} */
         @Override public boolean needExchange() {
-            return !incremental;
+            return needExchange;
         }
 
         /** {@inheritDoc} */
