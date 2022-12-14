@@ -23,9 +23,9 @@ import com.github.luben.zstd.Zstd;
 import com.github.luben.zstd.ZstdException;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.configuration.CacheConfiguration;
+import org.apache.ignite.spi.transform.CacheObjectsTransformer;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.processors.cache.transform.AbstractCacheObjectsTransformationTest;
-import org.apache.ignite.spi.transform.CacheObjectsTransformer;
 
 /**
  *
@@ -77,7 +77,7 @@ public abstract class AbstractCacheObjectsCompressionTest extends AbstractCacheO
     /**
      *
      */
-    protected static final class ZstdCompressionTransformer implements CacheObjectsTransformer {
+    protected static class ZstdCompressionTransformer implements CacheObjectsTransformer {
         /** Fail. */
         protected static boolean fail;
 

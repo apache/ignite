@@ -94,7 +94,7 @@ public class CacheObjectTransformer {
             ByteBuffer transformed = dstBuf.get();
 
             while (true) {
-                int capacity = trans.transform(src, transformed, OVERHEAD);
+                int capacity = trans.transform(src, transformed, OVERHEAD); // TODO correct oberhead.
 
                 if (capacity <= 0) {
                     transformed.flip();
