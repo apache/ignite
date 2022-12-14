@@ -111,6 +111,12 @@ public class FunctionsTest extends AbstractBasicIntegrationTest {
 
     /** */
     @Test
+    public void testLeft() {
+
+    }
+
+    /** */
+    @Test
     public void testRange() {
         assertQuery("SELECT * FROM table(system_range(1, 4))")
             .returns(1L)

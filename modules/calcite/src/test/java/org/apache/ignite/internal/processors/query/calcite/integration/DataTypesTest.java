@@ -467,4 +467,21 @@ public class DataTypesTest extends AbstractBasicIntegrationTest {
             .returns((byte)7, (short)7, 7, 7L, BigDecimal.valueOf(7), 7f, 7d)
             .check();
     }
+
+    /** */
+    @Test
+    public void testNumericInFunctionConversion() {
+        sql("CREATE TABLE strings(a VARCHAR, b BIGINT)");
+
+//        sql(client, "INSERT INTO STRINGS VALUES ('abc', 1)");
+
+        assertQuery("SELECT LEFT(CAST(? AS INT), CAST(? AS INT))").withParams(12, 1).returns("1").check();
+
+        assertQuery("SELECT LEFT('asd', CAST(? AS BIGINT))").withParams(1).returns("a").check();
+
+
+//        assertQuery(client, "SELECT LEFT(a, CAST(? AS INT)) from strings").withParams(1).returns('a').check();
+//
+//        assertQuery(client, "SELECT LEFT(a, b) FROM strings").returns('a').check();
+    }
 }
