@@ -34,7 +34,7 @@ public class CacheObjectTransformer {
     private static final int OVERHEAD = 6;
 
     /** Binary object wrapping overhead. */
-    private static final int BINARY_OVERHEAD = 5;
+    private static final int BINARY_OVERHEAD = CacheObjectAdapter.HEAD_SIZE;
 
     /** Header buffer. */
     private static final ThreadLocalByteBuffer hdrBuf = new ThreadLocalByteBuffer(OVERHEAD);

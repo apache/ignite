@@ -38,6 +38,9 @@ public abstract class CacheObjectAdapter implements CacheObject, Externalizable 
     /** */
     private static final long serialVersionUID = 2006765505127197251L;
 
+    /** Head size. */
+    protected static final int HEAD_SIZE = 5; // 4 bytes len + 1 byte type
+
     /** */
     @GridToStringInclude(sensitive = true)
     @GridDirectTransient
@@ -195,7 +198,7 @@ public abstract class CacheObjectAdapter implements CacheObject, Externalizable 
      * @see #putValue(byte, ByteBuffer, int, int, byte[], int)
      */
     public static int objectPutSize(int dataLen) {
-        return dataLen + 5;
+        return dataLen + HEAD_SIZE;
     }
 
     /**
@@ -220,19 +223,17 @@ public abstract class CacheObjectAdapter implements CacheObject, Externalizable 
         if (buf.remaining() < len)
             return false;
 
-        final int headSize = 5; // 4 bytes len + 1 byte type
-
-        if (off == 0 && len >= headSize) {
+        if (off == 0 && len >= HEAD_SIZE) {
             buf.putInt(dataLen);
             buf.put(cacheObjType);
 
-            len -= headSize;
+            len -= HEAD_SIZE;
         }
-        else if (off >= headSize)
-            off -= headSize;
+        else if (off >= HEAD_SIZE)
+            off -= HEAD_SIZE;
         else {
             // Partial header write.
-            final ByteBuffer head = ByteBuffer.allocate(headSize);
+            final ByteBuffer head = ByteBuffer.allocate(HEAD_SIZE);
 
             head.order(buf.order());
 
@@ -246,10 +247,10 @@ public abstract class CacheObjectAdapter implements CacheObject, Externalizable 
 
             buf.put(head);
 
-            if (head.limit() < headSize)
+            if (head.limit() < HEAD_SIZE)
                 return true;
 
-            len -= headSize - off;
+            len -= HEAD_SIZE - off;
             off = 0;
         }
 
