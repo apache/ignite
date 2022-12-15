@@ -46,6 +46,7 @@ import org.apache.ignite.internal.managers.encryption.GroupKeyEncrypted;
 import org.apache.ignite.internal.processors.cache.GridCacheSharedContext;
 import org.apache.ignite.internal.processors.cache.StoredCacheData;
 import org.apache.ignite.internal.processors.cache.distributed.dht.topology.GridDhtPartitionState;
+import org.apache.ignite.internal.processors.cache.persistence.CacheDataRow;
 import org.apache.ignite.internal.processors.cache.persistence.file.FilePageStore;
 import org.apache.ignite.internal.processors.cache.persistence.file.FilePageStoreManager;
 import org.apache.ignite.internal.processors.cache.persistence.metastorage.MetaStorage;
@@ -55,8 +56,10 @@ import org.apache.ignite.internal.processors.cache.verify.IdleVerifyResultV2;
 import org.apache.ignite.internal.processors.cache.verify.PartitionHashRecordV2;
 import org.apache.ignite.internal.processors.cache.verify.PartitionKeyV2;
 import org.apache.ignite.internal.processors.compress.CompressionProcessor;
+import org.apache.ignite.internal.util.GridEmptyIterator;
 import org.apache.ignite.internal.util.GridStringBuilder;
 import org.apache.ignite.internal.util.GridUnsafe;
+import org.apache.ignite.internal.util.lang.GridIterator;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.internal.CU;
 import org.apache.ignite.internal.util.typedef.internal.U;
@@ -112,6 +115,8 @@ public class SnapshotPartitionsVerifyHandler implements SnapshotHandler<Map<Part
         Set<File> partFiles = new HashSet<>();
 
         Map<Integer, File> grpDirs = new HashMap<>();
+
+        boolean punchHoleEnabled = ifPunchHoleEnabled(opCtx);
 
         for (File dir : cacheDirectories(new File(opCtx.snapshotDirectory(), databaseRelativePath(meta.folderName())), name -> true)) {
             int grpId = CU.cacheId(cacheGroupName(dir));
@@ -176,13 +181,32 @@ public class SnapshotPartitionsVerifyHandler implements SnapshotHandler<Map<Part
                                  snpEncrKeyProvider : null).createPageStore(getTypeByPartId(partId), part::toPath, val -> {})
                     ) {
                         if (partId == INDEX_PARTITION) {
-                            checkPartitionsPageCrcSum(() -> pageStore, INDEX_PARTITION, FLAG_IDX);
+                            if (punchHoleEnabled && meta.isGroupWithCompresion(grpId) && type() == SnapshotHandlerType.CREATE) {
+                                checkPartitionsPageCrcSum(() -> pageStore, INDEX_PARTITION, FLAG_IDX, (id, buffer) -> {
+                                    if (PageIO.getCompressionType(buffer) == CompressionProcessor.UNCOMPRESSED_PAGE)
+                                        return;
+
+                                    int comprPageSz = PageIO.getCompressedSize(buffer);
+
+                                    if (comprPageSz < pageStore.getPageSize()) {
+                                        try {
+                                            pageStore.punchHole(id, comprPageSz);
+                                        }
+                                        catch (Exception ignored) {
+                                            // No-op
+                                        }
+                                    }
+                                });
+                            }
+                            else if (!skipHash())
+                                checkPartitionsPageCrcSum(() -> pageStore, INDEX_PARTITION, FLAG_IDX);
 
                             return null;
                         }
 
                         if (grpId == MetaStorage.METASTORAGE_CACHE_ID) {
-                            checkPartitionsPageCrcSum(() -> pageStore, partId, FLAG_DATA);
+                            if (!skipHash())
+                                checkPartitionsPageCrcSum(() -> pageStore, partId, FLAG_DATA);
 
                             return null;
                         }
@@ -193,8 +217,21 @@ public class SnapshotPartitionsVerifyHandler implements SnapshotHandler<Map<Part
 
                         long pageAddr = GridUnsafe.bufferAddress(pageBuff);
 
-                        if (PageIO.getCompressionType(pageBuff) != CompressionProcessor.UNCOMPRESSED_PAGE)
+                        if (PageIO.getCompressionType(pageBuff) != CompressionProcessor.UNCOMPRESSED_PAGE) {
+                            int comprPageSz = PageIO.getCompressedSize(pageBuff);
+                            long pageId = PageIO.getPageId(pageAddr);
+
                             snpCtx.compress().decompressPage(pageBuff, pageStore.getPageSize());
+
+                            if (punchHoleEnabled && comprPageSz < pageStore.getPageSize()) {
+                                try {
+                                    pageStore.punchHole(pageId, comprPageSz);
+                                }
+                                catch (Exception ignored) {
+                                    // No-op
+                                }
+                            }
+                        }
 
                         PagePartitionMetaIO io = PageIO.getPageIO(pageBuff);
                         GridDhtPartitionState partState = fromOrdinal(io.getPartitionState(pageAddr));
@@ -218,14 +255,21 @@ public class SnapshotPartitionsVerifyHandler implements SnapshotHandler<Map<Part
                         // There is no `primary` partitions for snapshot.
                         PartitionKeyV2 key = new PartitionKeyV2(grpId, partId, grpName);
 
+                        GridIterator<CacheDataRow> partRowIter;
+                        if (punchHoleEnabled && meta.isGroupWithCompresion(grpId) && type() == SnapshotHandlerType.CREATE)
+                            partRowIter = snpMgr.partitionRowIterator(snpCtx, grpName, partId, pageStore, true);
+                        else if (!skipHash())
+                            partRowIter = snpMgr.partitionRowIterator(snpCtx, grpName, partId, pageStore);
+                        else
+                            partRowIter = new GridEmptyIterator<>();
+
                         PartitionHashRecordV2 hash = calculatePartitionHash(key,
                             updateCntr,
                             meta.consistentId(),
                             GridDhtPartitionState.OWNING,
                             false,
                             size,
-                            skipHash() ? F.emptyIterator()
-                                : snpMgr.partitionRowIterator(snpCtx, grpName, partId, pageStore));
+                            partRowIter);
 
                         assert hash != null : "OWNING must have hash: " + key;
 
@@ -287,6 +331,26 @@ public class SnapshotPartitionsVerifyHandler implements SnapshotHandler<Map<Part
      * @return {@code True} if full partition hash calculation is required. {@code False} otherwise.
      */
     protected boolean skipHash() {
+        return false;
+    }
+
+    /** */
+    protected boolean ifPunchHoleEnabled(SnapshotHandlerContext opCtx) {
+        SnapshotMetadata meta = opCtx.metadata();
+        Path snapshotDirectory = opCtx.snapshotDirectory().toPath();
+
+        if (meta.hasCompressedGroups()) {
+            try {
+                cctx.kernalContext().compress().checkPageCompressionSupported(snapshotDirectory, meta.pageSize());
+
+                return true;
+            }
+            catch (Exception e) {
+                log.info("File system doesn't support page compression on snapshot directory: " + snapshotDirectory
+                    + ", snapshot may have larger size than expected.");
+            }
+        }
+
         return false;
     }
 

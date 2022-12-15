@@ -41,6 +41,7 @@ import org.apache.ignite.internal.processors.cache.distributed.dht.topology.Grid
 import org.apache.ignite.internal.processors.cache.persistence.CacheDataRow;
 import org.apache.ignite.internal.processors.cache.persistence.file.FilePageStore;
 import org.apache.ignite.internal.util.lang.GridIterator;
+import org.apache.ignite.internal.util.lang.IgniteThrowableBiConsumer;
 import org.apache.ignite.internal.util.lang.IgniteThrowableSupplier;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.internal.SB;
@@ -74,6 +75,24 @@ public class IdleVerifyUtility {
         int partId,
         byte pageType
     ) {
+        checkPartitionsPageCrcSum(pageStoreSup, partId, pageType, null);
+    }
+
+    /**
+     * Checks CRC sum of pages with {@code pageType} page type stored in partition with {@code partId} id
+     * and associated with cache group.
+     *
+     * @param pageStoreSup Page store supplier.
+     * @param partId Partition id.
+     * @param pageType Page type. Possible types {@link PageIdAllocator#FLAG_DATA}, {@link PageIdAllocator#FLAG_IDX}
+     *      and {@link PageIdAllocator#FLAG_AUX}.
+     */
+    public static void checkPartitionsPageCrcSum(
+        IgniteThrowableSupplier<FilePageStore> pageStoreSup,
+        int partId,
+        byte pageType,
+        @Nullable IgniteThrowableBiConsumer<Integer, ByteBuffer> pagePostProcessor
+    ) {
         assert pageType == FLAG_DATA || pageType == FLAG_IDX || pageType == FLAG_AUX : pageType;
 
         FilePageStore pageStore = null;
@@ -89,6 +108,9 @@ public class IdleVerifyUtility {
                 buf.clear();
 
                 pageStore.read(pageId, buf, true, true);
+
+                if (pagePostProcessor != null)
+                    pagePostProcessor.accept(partId, buf);
             }
         }
         catch (Throwable e) {
