@@ -53,6 +53,11 @@ public class IgniteTypeCoercion extends TypeCoercionImpl {
     }
 
     /** {@inheritDoc} */
+    @Override public boolean inOperationCoercion(SqlCallBinding binding) {
+        return super.inOperationCoercion(binding);
+    }
+
+    /** {@inheritDoc} */
     @Override public boolean builtinFunctionCoercion(SqlCallBinding binding, List<RelDataType> operandTypes,
         List<SqlTypeFamily> expectedFamilies) {
         if(!super.builtinFunctionCoercion(binding, operandTypes, expectedFamilies))

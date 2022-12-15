@@ -477,8 +477,8 @@ public class DataTypesTest extends AbstractBasicIntegrationTest {
 
 //        assertQuery("SELECT LEFT(CAST(? AS INT), CAST(? AS VARCHAR))").withParams(12, 1).returns("1").check();
 
-        assertQuery("SELECT LEFT(CAST(? AS INT), CAST(? AS BIGINT))").withParams(12, 1).returns("1").check();
-//        assertQuery("SELECT LEFT('abc', CAST(? AS BIGINT))").withParams(1).returns("a").check();
+//        assertQuery("SELECT LEFT(CAST(? AS INT), CAST(? AS BIGINT))").withParams(12, 1).returns("1").check();
+        assertQuery("SELECT LEFT('abc', CAST(? AS BIGINT))").withParams(1).returns("a").check();
 
 //        assertQuery("SELECT LEFT('asd', CAST(? AS BIGINT))").withParams(1).returns("a").check();
 
