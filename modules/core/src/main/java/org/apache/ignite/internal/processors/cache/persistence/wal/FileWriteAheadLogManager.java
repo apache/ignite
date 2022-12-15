@@ -508,16 +508,16 @@ public class FileWriteAheadLogManager extends GridCacheSharedManagerAdapter impl
 
                 cctx.kernalContext().internalSubscriptionProcessor()
                     .registerDistributedConfigurationListener(dispatcher -> {
-                            cdcForceDisable.addListener((name, oldVal, newVal) -> {
-                                if (log.isInfoEnabled())
-                                    log.info(format(PROPERTY_UPDATE_MSG, name, oldVal, newVal));
+                        cdcForceDisable.addListener((name, oldVal, newVal) -> {
+                            if (log.isInfoEnabled())
+                                log.info(format(PROPERTY_UPDATE_MSG, name, oldVal, newVal));
 
-                                if (newVal != null && newVal)
-                                    log.warning("CDC was forcibly disabled.");
-                            });
-
-                            dispatcher.registerProperty(cdcForceDisable);
+                            if (newVal != null && newVal)
+                                log.warning("CDC was forcibly disabled.");
                         });
+
+                        dispatcher.registerProperty(cdcForceDisable);
+                    });
             }
 
             serializer = new RecordSerializerFactoryImpl(cctx).createSerializer(serializerVer);
