@@ -226,8 +226,7 @@ public class PlatformContextImpl implements PlatformContext, PartitionsExchangeA
             gateway().nodeInfo(mem0.pointer());
         }
 
-        // TODO: Does this really consume a lot of memory? It is just a UUID - check count.
-        // sentNodes.add(node.id());
+        sentNodes.add(node.id());
     }
 
     /** {@inheritDoc} */
