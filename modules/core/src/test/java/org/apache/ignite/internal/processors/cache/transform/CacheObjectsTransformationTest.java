@@ -97,6 +97,14 @@ public class CacheObjectsTransformationTest extends AbstractCacheObjectsTransfor
         putAndCheck(datas, false, true);
         putAndCheck(dataList, false, true);
 
+        BinarizableData ddata = new BinarizableData(str, Lists.newArrayList(i, i, i), i, data);
+        BinarizableData[] ddatas = new BinarizableData[] {ddata, ddata, ddata};
+        List<BinarizableData> ddataList = Lists.newArrayList(ddata, ddata, ddata);
+
+        putAndCheck(ddata, true, false);
+        putAndCheck(ddatas, false, true);
+        putAndCheck(ddataList, false, true);
+
         BinaryObjectBuilder builder = ignite.binary().builder(BinarizableData.class.getName());
 
         builder.setField("str", str + "!");
@@ -110,6 +118,16 @@ public class CacheObjectsTransformationTest extends AbstractCacheObjectsTransfor
         putAndCheck(bo, true, false);
         putAndCheck(bos, false, true);
         putAndCheck(boList, false, true);
+
+        builder.setField("data", data);
+
+        BinaryObject dbo = builder.build();
+        BinaryObject[] dbos = new BinaryObject[] {dbo, dbo, dbo};
+        List<BinaryObject> dboList = Lists.newArrayList(dbo, dbo, dbo);
+
+        putAndCheck(dbo, true, false);
+        putAndCheck(dbos, false, true);
+        putAndCheck(dboList, false, true);
     }
 
     /**

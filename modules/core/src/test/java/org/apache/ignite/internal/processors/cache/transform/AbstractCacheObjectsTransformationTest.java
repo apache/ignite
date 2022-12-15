@@ -357,36 +357,22 @@ public abstract class AbstractCacheObjectsTransformationTest extends GridCommonA
         /** Int. */
         Integer i;
 
-        /**
-         * @param str String.
-         * @param list List.
-         * @param i I.
-         */
+        /** Data. */
+        BinarizableData data;
+
+        /***/
         public BinarizableData(String str, List<Object> list, Integer i) {
             this.str = str;
             this.list = list;
             this.i = i;
         }
 
-        /**
-         * @return String.
-         */
-        public String string() {
-            return str;
-        }
-
-        /**
-         * @param str New string.
-         */
-        public void string(String str) {
+        /***/
+        public BinarizableData(String str, List<Object> list, Integer i, BinarizableData data) {
             this.str = str;
-        }
-
-        /**
-         * @return Map.
-         */
-        public List<Object> list() {
-            return list;
+            this.list = list;
+            this.i = i;
+            this.data = data;
         }
 
         /** {@inheritDoc} */
