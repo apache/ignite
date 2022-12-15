@@ -1480,11 +1480,11 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
                                         "start Ignite with configured disk page compression";
                                 }
                                 else {
-                                    List<String> grpWithCompr = grpIds.entrySet().stream()
+                                    String grpWithCompr = grpIds.entrySet().stream()
                                         .filter(grp -> meta.isGroupWithCompresion(grp.getKey()))
-                                        .map(Map.Entry::getValue).collect(Collectors.toList());
+                                        .map(Map.Entry::getValue).collect(Collectors.joining(", "));
 
-                                    msg = "Requested cache groups [" + String.join(", ", grpWithCompr) + "] for restore " +
+                                    msg = "Requested cache groups [" + grpWithCompr + "] for restore " +
                                         "from snapshot '" + meta.snapshotName() + "' are compressed while " +
                                         "disk page compression is disabled. To restore these groups please " +
                                         "start Ignite with configured disk page compression";

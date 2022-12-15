@@ -116,8 +116,6 @@ public class SnapshotPartitionsVerifyHandler implements SnapshotHandler<Map<Part
 
         Map<Integer, File> grpDirs = new HashMap<>();
 
-        boolean punchHoleEnabled = ifPunchHoleEnabled(opCtx);
-
         for (File dir : cacheDirectories(new File(opCtx.snapshotDirectory(), databaseRelativePath(meta.folderName())), name -> true)) {
             int grpId = CU.cacheId(cacheGroupName(dir));
 
@@ -150,6 +148,8 @@ public class SnapshotPartitionsVerifyHandler implements SnapshotHandler<Map<Part
                 "[grps=" + grps + ", snpName=" + meta.snapshotName() + ", consId=" + meta.consistentId() +
                 ", meta=" + meta + ']');
         }
+
+        boolean punchHoleEnabled = isPunchHoleEnabled(opCtx, grps);
 
         Map<PartitionKeyV2, PartitionHashRecordV2> res = new ConcurrentHashMap<>();
         ThreadLocal<ByteBuffer> buff = ThreadLocal.withInitial(() -> ByteBuffer.allocateDirect(meta.pageSize())
@@ -335,11 +335,21 @@ public class SnapshotPartitionsVerifyHandler implements SnapshotHandler<Map<Part
     }
 
     /** */
-    protected boolean ifPunchHoleEnabled(SnapshotHandlerContext opCtx) {
+    protected boolean isPunchHoleEnabled(SnapshotHandlerContext opCtx, Set<Integer> grpIds) {
         SnapshotMetadata meta = opCtx.metadata();
         Path snapshotDirectory = opCtx.snapshotDirectory().toPath();
 
-        if (meta.hasCompressedGroups()) {
+        if (meta.hasCompressedGroups() && grpIds.stream().anyMatch(meta::isGroupWithCompresion)) {
+            try {
+                cctx.kernalContext().compress().checkPageCompressionSupported();
+            }
+            catch (IgniteCheckedException e) {
+                throw new IgniteException("Snapshot contains compressed cache groups " +
+                    "[grps=[" + grpIds.stream().filter(meta::isGroupWithCompresion).collect(Collectors.toList()) +
+                    "], snpName=" + meta.snapshotName() + "], but compression module is not enabled. " +
+                    "Make sure that ignite-compress module is in classpath.");
+            }
+
             try {
                 cctx.kernalContext().compress().checkPageCompressionSupported(snapshotDirectory, meta.pageSize());
 
