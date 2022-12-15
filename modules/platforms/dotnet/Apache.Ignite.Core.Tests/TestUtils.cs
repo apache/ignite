@@ -83,7 +83,7 @@ namespace Apache.Ignite.Core.Tests
 
         /** */
         private static readonly IList<string> TestJvmOpts = (Environment.Is64BitProcess
-                ? new[] { "-Xms4g", "-Xmx7g" }
+                ? new[] { "-Xms2g", "-Xmx2g" }
                 : new[] { "-Xms64m", "-Xmx99m", "-DIGNITE_ATOMIC_CACHE_DELETE_HISTORY_SIZE=1000" })
             .Concat(TestJvmOptsCommon).ToList();
 
