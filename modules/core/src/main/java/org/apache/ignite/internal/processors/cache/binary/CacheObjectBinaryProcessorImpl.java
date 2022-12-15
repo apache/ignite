@@ -93,8 +93,8 @@ import org.apache.ignite.internal.processors.cache.GridCacheUtils;
 import org.apache.ignite.internal.processors.cache.IncompleteCacheObject;
 import org.apache.ignite.internal.processors.cache.KeyCacheObject;
 import org.apache.ignite.internal.processors.cache.KeyCacheObjectImpl;
-import org.apache.ignite.internal.processors.cache.TransformedBinaryKeyObject;
-import org.apache.ignite.internal.processors.cache.TransformedBinaryObject;
+import org.apache.ignite.internal.processors.cache.TransformableBinaryKeyObject;
+import org.apache.ignite.internal.processors.cache.TransformableBinaryObject;
 import org.apache.ignite.internal.processors.cache.transactions.IgniteInternalTx;
 import org.apache.ignite.internal.processors.cacheobject.IgniteCacheObjectProcessor;
 import org.apache.ignite.internal.processors.cacheobject.UserCacheObjectByteArrayImpl;
@@ -1400,7 +1400,7 @@ public class CacheObjectBinaryProcessorImpl extends GridProcessorAdapter impleme
                 return new CacheObjectByteArrayImpl(bytes);
 
             case CacheObject.TYPE_BINARY_TRANSFORMER:
-                return new TransformedBinaryObject(null, bytes);
+                return new TransformableBinaryObject(null, bytes);
 
             case CacheObject.TYPE_REGULAR:
                 return new CacheObjectImpl(null, bytes);
@@ -1420,7 +1420,7 @@ public class CacheObjectBinaryProcessorImpl extends GridProcessorAdapter impleme
                 throw new IllegalArgumentException("Byte arrays cannot be used as cache keys.");
 
             case CacheObject.TYPE_BINARY_KEY_TRANSFORMER:
-                return new TransformedBinaryKeyObject(null, bytes);
+                return new TransformableBinaryKeyObject(null, bytes);
 
             case CacheObject.TYPE_REGULAR:
                 return new KeyCacheObjectImpl(ctx.kernalContext().cacheObjects().unmarshal(ctx, bytes, null), bytes, -1);

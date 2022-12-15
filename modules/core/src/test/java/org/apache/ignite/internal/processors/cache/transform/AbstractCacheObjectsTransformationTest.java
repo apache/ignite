@@ -32,7 +32,7 @@ import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.events.CacheObjectTransformedEvent;
 import org.apache.ignite.events.EventType;
-import org.apache.ignite.internal.processors.cache.TransformedBinaryObject;
+import org.apache.ignite.internal.processors.cache.TransformableBinaryObject;
 import org.apache.ignite.internal.util.typedef.G;
 import org.apache.ignite.lang.IgniteFuture;
 import org.apache.ignite.spi.IgniteSpiContext;
@@ -128,7 +128,7 @@ public abstract class AbstractCacheObjectsTransformationTest extends GridCommonA
         boolean transformableKey,
         boolean transformableVal,
         boolean reversed) {
-        assertFalse(obj instanceof TransformedBinaryObject);
+        assertFalse(obj instanceof TransformableBinaryObject);
 
         boolean binary = obj instanceof BinaryObject;
         boolean binaryCol = obj instanceof BinaryObject[]
@@ -240,7 +240,7 @@ public abstract class AbstractCacheObjectsTransformationTest extends GridCommonA
 
         Object obj = cache.get(key);
 
-        assertFalse(obj.getClass().getName(), obj instanceof TransformedBinaryObject);
+        assertFalse(obj.getClass().getName(), obj instanceof TransformableBinaryObject);
 
         // Need to deserialize the expectation to compare with the deserialized get result.
         if (!keepBinary && (binaryExpVal || binaryColExpVal))

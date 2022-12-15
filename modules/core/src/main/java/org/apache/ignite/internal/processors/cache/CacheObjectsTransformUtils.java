@@ -56,7 +56,7 @@ public class CacheObjectsTransformUtils {
      */
     public static CacheObject wrapBinaryIfNecessary(CacheObjectContext ctx, CacheObject obj) {
         if (transformer(ctx) != null)
-            return new TransformedBinaryObject((BinaryObjectEx)obj, null);
+            return new TransformableBinaryObject((BinaryObjectEx)obj, null);
         else
             return obj;
     }
@@ -69,7 +69,7 @@ public class CacheObjectsTransformUtils {
      */
     public static KeyCacheObject wrapBinaryKeyIfNecessary(CacheObjectContext ctx, KeyCacheObject obj) {
         if (transformer(ctx) != null)
-            return new TransformedBinaryKeyObject((BinaryObjectEx)obj, null);
+            return new TransformableBinaryKeyObject((BinaryObjectEx)obj, null);
         else
             return obj;
     }

@@ -50,8 +50,8 @@ import org.apache.ignite.internal.processors.cache.GridCacheMvccEntryInfo;
 import org.apache.ignite.internal.processors.cache.GridCacheReturn;
 import org.apache.ignite.internal.processors.cache.GridChangeGlobalStateMessageResponse;
 import org.apache.ignite.internal.processors.cache.KeyCacheObjectImpl;
-import org.apache.ignite.internal.processors.cache.TransformedBinaryKeyObject;
-import org.apache.ignite.internal.processors.cache.TransformedBinaryObject;
+import org.apache.ignite.internal.processors.cache.TransformableBinaryKeyObject;
+import org.apache.ignite.internal.processors.cache.TransformableBinaryObject;
 import org.apache.ignite.internal.processors.cache.WalStateAckMessage;
 import org.apache.ignite.internal.processors.cache.binary.MetadataRequestMessage;
 import org.apache.ignite.internal.processors.cache.binary.MetadataResponseMessage;
@@ -392,8 +392,8 @@ public class GridIoMessageFactory implements MessageFactoryProvider {
         factory.register(StatisticsRequest.TYPE_CODE, StatisticsRequest::new);
         factory.register(StatisticsResponse.TYPE_CODE, StatisticsResponse::new);
 
-        factory.register((short)190, TransformedBinaryObject::new);
-        factory.register((short)191, TransformedBinaryKeyObject::new);
+        factory.register((short)190, TransformableBinaryObject::new);
+        factory.register((short)191, TransformableBinaryKeyObject::new);
 
         // [-3..119] [124..129] [-23..-28] [-36..-55] - this
         // [120..123] - DR

@@ -39,24 +39,24 @@ import static org.apache.ignite.internal.binary.GridBinaryMarshaller.TRANSFORMED
 /**
  *
  */
-public class TransformedBinaryObject extends CacheObjectAdapter implements BinaryObjectEx {
+public class TransformableBinaryObject extends CacheObjectAdapter implements BinaryObjectEx {
     /** */
     private static final long serialVersionUID = 0L;
 
     /**
      * Default constructor.
      */
-    public TransformedBinaryObject() {
+    public TransformableBinaryObject() {
     }
 
     /**
      * @param val Value.
      * @param valBytes Value bytes.
      */
-    public TransformedBinaryObject(BinaryObjectEx val, byte[] valBytes) {
+    public TransformableBinaryObject(BinaryObjectEx val, byte[] valBytes) {
         assert val != null || (valBytes != null && transformed(valBytes));
 
-        assert !(val instanceof TransformedBinaryObject);
+        assert !(val instanceof TransformableBinaryObject);
 
         this.val = val;
         this.valBytes = valBytes;
@@ -101,7 +101,7 @@ public class TransformedBinaryObject extends CacheObjectAdapter implements Binar
             Object val = proc.unmarshal(ctx, valBytes, kernalCtx.config().isPeerClassLoadingEnabled() ?
                 kernalCtx.cache().context().deploy().globalLoader() : null);
 
-            assert !(val instanceof TransformedBinaryObject);
+            assert !(val instanceof TransformableBinaryObject);
 
             if (storeValue(ctx))
                 this.val = val;
@@ -260,7 +260,7 @@ public class TransformedBinaryObject extends CacheObjectAdapter implements Binar
         if (o == null || getClass() != o.getClass())
             return false;
 
-        TransformedBinaryObject obj = (TransformedBinaryObject)o;
+        TransformableBinaryObject obj = (TransformableBinaryObject)o;
 
         return val.equals(obj.val);
     }

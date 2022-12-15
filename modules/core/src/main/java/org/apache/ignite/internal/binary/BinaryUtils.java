@@ -70,7 +70,7 @@ import org.apache.ignite.internal.binary.streams.BinaryInputStream;
 import org.apache.ignite.internal.processors.cache.CacheObjectByteArrayImpl;
 import org.apache.ignite.internal.processors.cache.CacheObjectImpl;
 import org.apache.ignite.internal.processors.cache.KeyCacheObjectImpl;
-import org.apache.ignite.internal.processors.cache.TransformedBinaryObject;
+import org.apache.ignite.internal.processors.cache.TransformableBinaryObject;
 import org.apache.ignite.internal.processors.cacheobject.UserCacheObjectByteArrayImpl;
 import org.apache.ignite.internal.processors.cacheobject.UserCacheObjectImpl;
 import org.apache.ignite.internal.processors.cacheobject.UserKeyCacheObjectImpl;
@@ -751,7 +751,7 @@ public class BinaryUtils {
             cls == UserKeyCacheObjectImpl.class ||
             cls == UserCacheObjectImpl.class ||
             cls == UserCacheObjectByteArrayImpl.class ||
-            cls == TransformedBinaryObject.class;
+            cls == TransformableBinaryObject.class;
     }
 
     /**
