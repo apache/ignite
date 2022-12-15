@@ -52,6 +52,15 @@ public abstract class AbstractCacheObjectsCompressionTest extends AbstractCacheO
     }
 
     /** {@inheritDoc} */
+    @Override protected void beforeTest() throws Exception {
+        super.beforeTest();
+
+        CompressionTransformer.zstdCnt.set(0);
+        CompressionTransformer.lz4Cnt.set(0);
+        CompressionTransformer.snapCnt.set(0);
+    }
+
+    /** {@inheritDoc} */
     @Override protected IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {
         return super.getConfiguration(igniteInstanceName)
             .setCacheObjectsTransformSpi(new CacheObjectsTransformSpiAdapter() {
@@ -190,7 +199,7 @@ public abstract class AbstractCacheObjectsCompressionTest extends AbstractCacheO
             }
 
             compressed.putInt(type.ordinal());
-            compressed.position(0);
+            compressed.rewind();
 
             return 0;
         }

@@ -25,12 +25,16 @@ import org.apache.ignite.spi.transform.CacheObjectsTransformSpi;
 import org.apache.ignite.spi.transform.CacheObjectsTransformer;
 
 import static org.apache.ignite.events.EventType.EVT_CACHE_OBJECT_TRANSFORMED;
+import static org.apache.ignite.internal.binary.GridBinaryMarshaller.BINARY_OBJ;
 import static org.apache.ignite.internal.binary.GridBinaryMarshaller.TRANSFORMED;
 
 /** */
 public class CacheObjectTransformer {
-    /** Overhead. */
+    /** Marshalling overhead. */
     private static final int OVERHEAD = 6;
+
+    /** Binary object wrapping overhead. */
+    private static final int BINARY_OVERHEAD = 5;
 
     /** Header buffer. */
     private static final ThreadLocalByteBuffer hdrBuf = new ThreadLocalByteBuffer(OVERHEAD);
@@ -65,7 +69,7 @@ public class CacheObjectTransformer {
      */
     public static KeyCacheObject wrapBinaryKeyIfNecessary(CacheObjectContext ctx, KeyCacheObject obj) {
         if (transformer(ctx) != null)
-            return new TransformedKeyBinaryObject((BinaryObjectEx)obj, null);
+            return new TransformedBinaryKeyObject((BinaryObjectEx)obj, null);
         else
             return obj;
     }
@@ -93,8 +97,16 @@ public class CacheObjectTransformer {
             ByteBuffer src = sourceByteBuffer(bytes, trans.direct());
             ByteBuffer transformed = dstBuf.get();
 
+            byte type = src.get();
+
+            boolean binary = type == BINARY_OBJ;
+
+            int overhead = OVERHEAD + (binary ? BINARY_OVERHEAD : 0);
+
+            src.rewind();
+
             while (true) {
-                int capacity = trans.transform(src, transformed, OVERHEAD); // TODO correct oberhead.
+                int capacity = trans.transform(src, transformed, overhead);
 
                 if (capacity <= 0)
                     break;

@@ -25,7 +25,7 @@ import org.apache.ignite.plugin.extensions.communication.MessageWriter;
 /**
  *
  */
-public class TransformedKeyBinaryObject extends TransformedBinaryObject implements KeyCacheObject {
+public class TransformedBinaryKeyObject extends TransformedBinaryObject implements KeyCacheObject {
     /** */
     private static final long serialVersionUID = 0L;
 
@@ -35,14 +35,14 @@ public class TransformedKeyBinaryObject extends TransformedBinaryObject implemen
     /**
      * Default constructor.
      */
-    public TransformedKeyBinaryObject() {
+    public TransformedBinaryKeyObject() {
     }
 
     /**
      * @param val Value.
      * @param valBytes Value bytes.
      */
-    public TransformedKeyBinaryObject(BinaryObjectEx val, byte[] valBytes) {
+    public TransformedBinaryKeyObject(BinaryObjectEx val, byte[] valBytes) {
         assert val != null || valBytes != null;
 
         assert !(val instanceof TransformedBinaryObject);
@@ -79,7 +79,7 @@ public class TransformedKeyBinaryObject extends TransformedBinaryObject implemen
         if (this.part == part)
             return this;
 
-        TransformedKeyBinaryObject cp = new TransformedKeyBinaryObject((BinaryObjectEx)val, valBytes);
+        TransformedBinaryKeyObject cp = new TransformedBinaryKeyObject((BinaryObjectEx)val, valBytes);
 
         cp.partition(part);
 
