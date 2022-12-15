@@ -17,15 +17,18 @@
 
 package org.apache.ignite.internal.processors.query.calcite.prepare;
 
+import java.util.List;
 import org.apache.calcite.rel.type.RelDataType;
 import org.apache.calcite.rel.type.RelDataTypeFactory;
 import org.apache.calcite.sql.SqlCall;
+import org.apache.calcite.sql.SqlCallBinding;
 import org.apache.calcite.sql.SqlDataTypeSpec;
 import org.apache.calcite.sql.SqlDynamicParam;
 import org.apache.calcite.sql.SqlNode;
 import org.apache.calcite.sql.SqlUserDefinedTypeNameSpec;
 import org.apache.calcite.sql.fun.SqlStdOperatorTable;
 import org.apache.calcite.sql.parser.SqlParserPos;
+import org.apache.calcite.sql.type.SqlTypeFamily;
 import org.apache.calcite.sql.type.SqlTypeUtil;
 import org.apache.calcite.sql.validate.SqlValidator;
 import org.apache.calcite.sql.validate.SqlValidatorScope;
@@ -33,6 +36,7 @@ import org.apache.calcite.sql.validate.implicit.TypeCoercionImpl;
 import org.apache.ignite.internal.processors.query.calcite.type.IgniteCustomType;
 import org.apache.ignite.internal.processors.query.calcite.type.OtherType;
 import org.apache.ignite.internal.processors.query.calcite.type.UuidType;
+import org.checkerframework.checker.nullness.qual.Nullable;
 
 /**
  * Implementation of implicit type cast.
@@ -41,6 +45,20 @@ public class IgniteTypeCoercion extends TypeCoercionImpl {
     /** Ctor. */
     public IgniteTypeCoercion(RelDataTypeFactory typeFactory, SqlValidator validator) {
         super(typeFactory, validator);
+    }
+
+    /** {@inheritDoc} */
+    @Override public @Nullable RelDataType implicitCast(RelDataType in, SqlTypeFamily expected) {
+        return super.implicitCast(in, expected);
+    }
+
+    /** {@inheritDoc} */
+    @Override public boolean builtinFunctionCoercion(SqlCallBinding binding, List<RelDataType> operandTypes,
+        List<SqlTypeFamily> expectedFamilies) {
+        if(!super.builtinFunctionCoercion(binding, operandTypes, expectedFamilies))
+            return false;
+
+        return true;
     }
 
     /** {@inheritDoc} */

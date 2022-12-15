@@ -475,10 +475,12 @@ public class DataTypesTest extends AbstractBasicIntegrationTest {
 
 //        sql(client, "INSERT INTO STRINGS VALUES ('abc', 1)");
 
-        assertQuery("SELECT LEFT(CAST(? AS INT), CAST(? AS INT))").withParams(12, 1).returns("1").check();
+//        assertQuery("SELECT LEFT(CAST(? AS INT), CAST(? AS VARCHAR))").withParams(12, 1).returns("1").check();
 
-        assertQuery("SELECT LEFT('asd', CAST(? AS BIGINT))").withParams(1).returns("a").check();
+        assertQuery("SELECT LEFT(CAST(? AS INT), CAST(? AS BIGINT))").withParams(12, 1).returns("1").check();
+//        assertQuery("SELECT LEFT('abc', CAST(? AS BIGINT))").withParams(1).returns("a").check();
 
+//        assertQuery("SELECT LEFT('asd', CAST(? AS BIGINT))").withParams(1).returns("a").check();
 
 //        assertQuery(client, "SELECT LEFT(a, CAST(? AS INT)) from strings").withParams(1).returns('a').check();
 //
