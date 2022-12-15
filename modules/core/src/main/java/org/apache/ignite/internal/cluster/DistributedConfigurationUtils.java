@@ -33,8 +33,10 @@ import static java.lang.String.format;
  * Distributed configuration utilities methods.
  */
 public final class DistributedConfigurationUtils {
-    /**
-     */
+    /** Distributed property update message. */
+    public static final String PROPERTY_UPDATE_MSG = "Distributed property '%s' was changed from '%s' to '%s'.";
+
+    /** */
     private DistributedConfigurationUtils() {
         // No-op.
     }
