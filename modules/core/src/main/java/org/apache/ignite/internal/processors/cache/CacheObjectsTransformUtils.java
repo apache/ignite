@@ -48,8 +48,15 @@ public class CacheObjectsTransformUtils {
     /** Version. */
     private static final byte VER = 0;
 
+    /***/
+    private static CacheObjectsTransformer transformer(CacheObjectValueContext ctx) {
+        CacheObjectsTransformSpi spi = ctx.kernalContext().config().getCacheObjectsTransformSpi();
+
+        return (spi == null) ? null : spi.transformer(ctx.cacheConfiguration());
+    }
+
     /**
-     * Wraps binary object to the transformed binary object when active {@link CacheObjectsTransformer} is configured.
+     * Wraps binary object to the transformable binary object when {@link CacheObjectsTransformer} is configured.
      * @param ctx Context.
      * @param obj Object.
      * @return Transformed binary object.
@@ -62,7 +69,7 @@ public class CacheObjectsTransformUtils {
     }
 
     /**
-     * Wraps binary key object to the transformed binary object when active {@link CacheObjectsTransformer} is configured.
+     * Wraps binary key object to the transformable binary object when {@link CacheObjectsTransformer} is configured.
      * @param ctx Context.
      * @param obj Object.
      * @return Transformed binary object.
@@ -72,13 +79,6 @@ public class CacheObjectsTransformUtils {
             return new TransformableBinaryKeyObject((BinaryObjectEx)obj, null);
         else
             return obj;
-    }
-
-    /***/
-    private static CacheObjectsTransformer transformer(CacheObjectValueContext ctx) {
-        CacheObjectsTransformSpi spi = ctx.kernalContext().config().getCacheObjectsTransformSpi();
-
-        return (spi == null) ? null : spi.transformer(ctx.cacheConfiguration());
     }
 
     /**
