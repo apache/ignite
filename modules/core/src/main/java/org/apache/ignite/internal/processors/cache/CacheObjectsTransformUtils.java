@@ -29,7 +29,7 @@ import static org.apache.ignite.internal.binary.GridBinaryMarshaller.BINARY_OBJ;
 import static org.apache.ignite.internal.binary.GridBinaryMarshaller.TRANSFORMED;
 
 /** */
-public class CacheObjectTransformer {
+public class CacheObjectsTransformUtils {
     /** Marshalling overhead. */
     private static final int OVERHEAD = 6;
 

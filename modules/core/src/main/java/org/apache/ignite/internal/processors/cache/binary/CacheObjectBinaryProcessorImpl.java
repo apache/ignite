@@ -85,8 +85,8 @@ import org.apache.ignite.internal.processors.cache.CacheObject;
 import org.apache.ignite.internal.processors.cache.CacheObjectByteArrayImpl;
 import org.apache.ignite.internal.processors.cache.CacheObjectContext;
 import org.apache.ignite.internal.processors.cache.CacheObjectImpl;
-import org.apache.ignite.internal.processors.cache.CacheObjectTransformer;
 import org.apache.ignite.internal.processors.cache.CacheObjectValueContext;
+import org.apache.ignite.internal.processors.cache.CacheObjectsTransformUtils;
 import org.apache.ignite.internal.processors.cache.GridCacheContext;
 import org.apache.ignite.internal.processors.cache.GridCacheDefaultAffinityKeyMapper;
 import org.apache.ignite.internal.processors.cache.GridCacheUtils;
@@ -1245,7 +1245,7 @@ public class CacheObjectBinaryProcessorImpl extends GridProcessorAdapter impleme
 
         assert arr.length > 0;
 
-        return CacheObjectTransformer.transformIfNecessary(arr, ctx);
+        return CacheObjectsTransformUtils.transformIfNecessary(arr, ctx);
     }
 
     /** {@inheritDoc} */
@@ -1254,7 +1254,7 @@ public class CacheObjectBinaryProcessorImpl extends GridProcessorAdapter impleme
         if (!ctx.binaryEnabled() || binaryMarsh == null)
             return U.unmarshal(ctx.kernalContext(), bytes, U.resolveClassLoader(clsLdr, ctx.kernalContext().config()));
 
-        return binaryMarsh.unmarshal(CacheObjectTransformer.restoreIfNecessary(bytes, ctx), clsLdr);
+        return binaryMarsh.unmarshal(CacheObjectsTransformUtils.restoreIfNecessary(bytes, ctx), clsLdr);
     }
 
     /** {@inheritDoc} */
@@ -1279,7 +1279,7 @@ public class CacheObjectBinaryProcessorImpl extends GridProcessorAdapter impleme
 
             if (key instanceof BinaryObjectImpl) {
                 // Need to create a copy because the key can be reused at the application layer after that (IGNITE-3505).
-                key = CacheObjectTransformer.wrapBinaryKeyIfNecessary(ctx, key.copy(partition(ctx, cctx, key)));
+                key = CacheObjectsTransformUtils.wrapBinaryKeyIfNecessary(ctx, key.copy(partition(ctx, cctx, key)));
             }
             else if (key.partition() == -1)
                 // Assume others KeyCacheObjects can not be reused for another cache.
@@ -1293,7 +1293,7 @@ public class CacheObjectBinaryProcessorImpl extends GridProcessorAdapter impleme
         if (obj instanceof BinaryObjectImpl) {
             ((KeyCacheObject)obj).partition(partition(ctx, cctx, obj));
 
-            return CacheObjectTransformer.wrapBinaryKeyIfNecessary(ctx, (KeyCacheObject)obj);
+            return CacheObjectsTransformUtils.wrapBinaryKeyIfNecessary(ctx, (KeyCacheObject)obj);
         }
 
         return toCacheKeyObject0(ctx, cctx, obj, userObj);
@@ -1341,7 +1341,7 @@ public class CacheObjectBinaryProcessorImpl extends GridProcessorAdapter impleme
         }
 
         if (res instanceof BinaryObject)
-            return CacheObjectTransformer.wrapBinaryIfNecessary(ctx, res);
+            return CacheObjectsTransformUtils.wrapBinaryIfNecessary(ctx, res);
         else
             return res;
     }
