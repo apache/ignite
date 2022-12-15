@@ -17,6 +17,10 @@
 
 package org.apache.ignite.internal.processors.cache;
 
+import java.io.Externalizable;
+import java.io.IOException;
+import java.io.ObjectOutput;
+import java.nio.ByteBuffer;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.binary.BinaryObject;
@@ -27,7 +31,10 @@ import org.apache.ignite.internal.GridKernalContext;
 import org.apache.ignite.internal.binary.BinaryObjectEx;
 import org.apache.ignite.internal.processors.cacheobject.IgniteCacheObjectProcessor;
 import org.apache.ignite.plugin.extensions.communication.Message;
+import org.apache.ignite.plugin.extensions.communication.MessageWriter;
 import org.jetbrains.annotations.Nullable;
+
+import static org.apache.ignite.internal.binary.GridBinaryMarshaller.TRANSFORMED;
 
 /**
  *
@@ -47,19 +54,12 @@ public class TransformedBinaryObject extends CacheObjectAdapter implements Binar
      * @param valBytes Value bytes.
      */
     public TransformedBinaryObject(BinaryObjectEx val, byte[] valBytes) {
-        assert val != null || valBytes != null;
+        assert val != null || (valBytes != null && transformed(valBytes));
 
         assert !(val instanceof TransformedBinaryObject);
 
         this.val = val;
         this.valBytes = valBytes;
-    }
-
-    /**
-     *
-     */
-    protected boolean storeValue(CacheObjectValueContext ctx) {
-        return ctx.storeValue();
     }
 
     /** {@inheritDoc} */
@@ -80,7 +80,7 @@ public class TransformedBinaryObject extends CacheObjectAdapter implements Binar
                 if (valBytes == null) {
                     assert val != null;
 
-                    valBytes = proc.marshal(ctx, val);
+                    valBytes = bytes(ctx);
                 }
 
                 if (ldr == null) {
@@ -116,7 +116,7 @@ public class TransformedBinaryObject extends CacheObjectAdapter implements Binar
     /** {@inheritDoc} */
     @Override public byte[] valueBytes(CacheObjectValueContext ctx) throws IgniteCheckedException {
         if (valBytes == null)
-            valBytes = ctx.kernalContext().cacheObjects().marshal(ctx, val);
+            valBytes = bytes(ctx);
 
         return valBytes;
     }
@@ -135,11 +135,8 @@ public class TransformedBinaryObject extends CacheObjectAdapter implements Binar
     @Override public void prepareMarshal(CacheObjectValueContext ctx) throws IgniteCheckedException {
         assert val != null || valBytes != null;
 
-        if (valBytes == null) {
-            ((CacheObject)val).prepareMarshal(ctx);
-
-            valBytes = valueBytes(ctx);
-        }
+        if (valBytes == null)
+            valBytes = bytes(ctx);
     }
 
     /** {@inheritDoc} */
@@ -155,12 +152,26 @@ public class TransformedBinaryObject extends CacheObjectAdapter implements Binar
 
     /** {@inheritDoc} */
     @Override public byte cacheObjectType() {
-        return CacheObject.TYPE_BINARY_TRANSFORMER;
+        if (!transformed(valBytes))
+            return ((CacheObject)val).cacheObjectType();
+        else
+            return CacheObject.TYPE_BINARY_TRANSFORMER;
     }
 
     /** {@inheritDoc} */
     @Override public short directType() {
-        return 190;
+        if (!transformed(valBytes))
+            return ((Message)val).directType();
+        else
+            return 190;
+    }
+
+    /** {@inheritDoc} */
+    @Override public boolean writeTo(ByteBuffer buf, MessageWriter writer) {
+        if (!transformed(valBytes))
+            return ((Message)val).writeTo(buf, writer);
+        else
+            return super.writeTo(buf, writer);
     }
 
     /** {@inheritDoc} */
@@ -234,6 +245,14 @@ public class TransformedBinaryObject extends CacheObjectAdapter implements Binar
     }
 
     /** {@inheritDoc} */
+    @Override public void writeExternal(ObjectOutput out) throws IOException {
+        if (!transformed(valBytes))
+            ((Externalizable)val).writeExternal(out);
+        else
+            super.writeExternal(out);
+    }
+
+    /** {@inheritDoc} */
     @Override public boolean equals(Object o) {
         if (this == o)
             return true;
@@ -249,5 +268,25 @@ public class TransformedBinaryObject extends CacheObjectAdapter implements Binar
     /** {@inheritDoc} */
     @Override public int hashCode() {
         return val.hashCode();
+    }
+
+    /***/
+    private byte[] bytes(CacheObjectValueContext ctx) throws IgniteCheckedException {
+        byte[] bytes = ctx.kernalContext().cacheObjects().marshal(ctx, val);
+
+        if (!transformed(bytes))
+            return ((CacheObject)val).valueBytes(ctx);
+        else
+            return bytes;
+    }
+
+    /***/
+    protected boolean storeValue(CacheObjectValueContext ctx) {
+        return ctx.storeValue();
+    }
+
+    /***/
+    protected boolean transformed(byte[] bytes) {
+        return bytes[0] == TRANSFORMED;
     }
 }

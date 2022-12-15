@@ -19,6 +19,7 @@ package org.apache.ignite.internal.processors.cache;
 
 import java.nio.ByteBuffer;
 import org.apache.ignite.internal.binary.BinaryObjectEx;
+import org.apache.ignite.plugin.extensions.communication.Message;
 import org.apache.ignite.plugin.extensions.communication.MessageReader;
 import org.apache.ignite.plugin.extensions.communication.MessageWriter;
 
@@ -88,12 +89,18 @@ public class TransformedBinaryKeyObject extends TransformedBinaryObject implemen
 
     /** {@inheritDoc} */
     @Override public byte cacheObjectType() {
-        return CacheObject.TYPE_BINARY_KEY_TRANSFORMER;
+        if (!transformed(valBytes))
+            return ((CacheObject)val).cacheObjectType();
+        else
+            return CacheObject.TYPE_BINARY_KEY_TRANSFORMER;
     }
 
     /** {@inheritDoc} */
     @Override public short directType() {
-        return 191;
+        if (!transformed(valBytes))
+            return ((Message)val).directType();
+        else
+            return 191;
     }
 
     /** {@inheritDoc} */
