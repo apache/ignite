@@ -589,9 +589,10 @@ public class ClusterProcessor extends GridProcessorAdapter implements Distribute
                 updateNtfTimer = new Timer("ignite-update-notifier-timer", true);
 
                 // Setup periodic version check.
-                updateNtfTimer.scheduleAtFixedRate(
-                    new UpdateNotifierTimerTask((IgniteKernal)ctx.grid(), verChecker, notifyEnabled),
-                    0, PERIODIC_VER_CHECK_DELAY);
+                // TODO: This timer is not stopped in some cases?
+//                updateNtfTimer.scheduleAtFixedRate(
+//                    new UpdateNotifierTimerTask((IgniteKernal)ctx.grid(), verChecker, notifyEnabled),
+//                    0, PERIODIC_VER_CHECK_DELAY);
             }
             catch (IgniteCheckedException e) {
                 if (log.isDebugEnabled())
