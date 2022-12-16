@@ -72,27 +72,20 @@ namespace Apache.Ignite.Core.Tests
             // ReSharper disable once AssignNullToNotNullAttribute
             Path.Combine(Path.GetDirectoryName(Assembly.GetExecutingAssembly().Location), "ignite_work");
 
+        private static readonly IList<string> TestJvmOptsCommon = new List<string>
+        {
+            "-XX:+HeapDumpOnOutOfMemoryError",
+            "-ea",
+            "-DIGNITE_QUIET=true",
+            "-Duser.timezone=UTC",
+            "-DIGNITE_UPDATE_NOTIFIER=false"
+        };
+
         /** */
-        private static readonly IList<string> TestJvmOpts = Environment.Is64BitProcess
-            ? new List<string>
-            {
-                "-XX:+HeapDumpOnOutOfMemoryError",
-                "-Xms4g",
-                "-Xmx7g",
-                "-ea",
-                "-DIGNITE_QUIET=true",
-                "-Duser.timezone=UTC"
-            }
-            : new List<string>
-            {
-                "-XX:+HeapDumpOnOutOfMemoryError",
-                "-Xms64m",
-                "-Xmx99m",
-                "-ea",
-                "-DIGNITE_ATOMIC_CACHE_DELETE_HISTORY_SIZE=1000",
-                "-DIGNITE_QUIET=true",
-                "-Duser.timezone=UTC"
-            };
+        private static readonly IList<string> TestJvmOpts = (Environment.Is64BitProcess
+                ? new[] { "-Xms2g", "-Xmx2g" }
+                : new[] { "-Xms64m", "-Xmx99m", "-DIGNITE_ATOMIC_CACHE_DELETE_HISTORY_SIZE=1000" })
+            .Concat(TestJvmOptsCommon).ToList();
 
         /** */
         private static readonly IList<string> JvmDebugOpts =
