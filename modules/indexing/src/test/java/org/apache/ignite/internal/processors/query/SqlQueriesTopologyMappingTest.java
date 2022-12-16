@@ -220,7 +220,7 @@ public class SqlQueriesTopologyMappingTest extends AbstractIndexingCommonTest {
 
         TableStatistics stat = GridTestUtils.getFieldValue(tbl, "tblStats");
 
-        assertFalse(stat.primaryRowCount() == 0);
+        assertFalse(stat.localRowCount() == 0);
     }
 
     /** */

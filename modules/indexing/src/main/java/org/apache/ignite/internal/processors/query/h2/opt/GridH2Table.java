@@ -1012,7 +1012,7 @@ public class GridH2Table extends TableBase {
 
         refreshStatsIfNeeded();
 
-        return tblStats.primaryRowCount();
+        return tblStats.localRowCount();
     }
 
     /**
@@ -1042,7 +1042,7 @@ public class GridH2Table extends TableBase {
             int backups = ccfg.getCacheMode() == CacheMode.REPLICATED ? 0 : cacheContext().config().getBackups();
 
             // After restart of node with persistence and before affinity exchange - PRIMARY partitions are empty.
-            // Assume that data divides equally between PRIMARY and BACKUP.
+            // Try to predict local row count take into account ideal distribution.
             long localOwnerRowCnt = cacheSize(CachePeekMode.PRIMARY, CachePeekMode.BACKUP) / (backups + 1);
 
             int owners = cacheContext().discovery().cacheNodes(cacheContext().name(), NONE).size();
