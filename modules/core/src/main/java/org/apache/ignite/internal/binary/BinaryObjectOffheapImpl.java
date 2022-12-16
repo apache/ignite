@@ -82,8 +82,6 @@ public class BinaryObjectOffheapImpl extends BinaryObjectExImpl implements Exter
         this.ptr = ptr;
         this.start = start;
         this.size = size;
-
-        throw new RuntimeException("Offheap");
     }
 
     /**
