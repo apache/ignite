@@ -346,6 +346,7 @@ public class CdcMain implements Runnable {
                 IgniteConfiguration cfg = super.prepareIgniteConfiguration();
 
                 cfg.setIgniteInstanceName(cdcInstanceName(igniteCfg.getIgniteInstanceName()));
+                cfg.setWorkDirectory(igniteCfg.getWorkDirectory());
 
                 if (!F.isEmpty(cdcCfg.getMetricExporterSpi()))
                     cfg.setMetricExporterSpi(cdcCfg.getMetricExporterSpi());
