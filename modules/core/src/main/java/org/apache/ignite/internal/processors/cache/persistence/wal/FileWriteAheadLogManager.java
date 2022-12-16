@@ -851,9 +851,6 @@ public class FileWriteAheadLogManager extends GridCacheSharedManagerAdapter impl
         if (walForceArchiveTimeout > 0) {
             if (lastDataRecordLoggedMs.get() == 0)
                 return; //no data records were logged to current segment, do not rollover.
-
-            if (!checkTimeout(lastDataRecordLoggedMs, walForceArchiveTimeout))
-                return;
         }
         else if (!checkTimeout(lastRecordLoggedMs, walAutoArchiveAfterInactivity))
             return;
