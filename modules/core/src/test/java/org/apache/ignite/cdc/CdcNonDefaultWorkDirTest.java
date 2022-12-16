@@ -64,6 +64,7 @@ public class CdcNonDefaultWorkDirTest extends GridCommonAbstractTest {
     /** {@inheritDoc} */
     @Override protected void afterTest() throws Exception {
         U.delete(new File(DFLT_WORK_DIR));
+        U.nullifyHomeDirectory();
     }
 
     /** Tests CDC start with non default work directory. */
