@@ -492,6 +492,39 @@ public class GridCommandHandlerClusterByClassTest extends GridCommandHandlerClus
 
     /** */
     @Test
+    public void testCacheIdleVerifyDumpFile() throws IOException {
+        IgniteEx ignite = crd;
+
+        createCacheAndPreload(ignite, 100);
+
+        injectTestSystemOut();
+
+        HashSet<Integer> clearKeys = new HashSet<>(asList(1, 2, 3, 4, 5, 6));
+
+        ignite.context().cache().cache(DEFAULT_CACHE_NAME).clearLocallyAll(clearKeys, true, true, true);
+
+        assertEquals(EXIT_CODE_OK, execute("--cache", "idle_verify"));
+
+        Pattern fileNamePattern = Pattern.compile("See log for additional information. (.*)");
+        Matcher matcher = fileNamePattern.matcher(testOut.toString());
+
+        if (matcher.find()) {
+            String fileContent = new String(Files.readAllBytes(Paths.get(matcher.group(1))));
+            String out = testOut.toString();
+
+            assertContains(log, out, fileContent);
+
+            String summaryStr = "Total:" + nl() + DEFAULT_CACHE_NAME + " (6)" + nl() + "1,2,3,4,5,6" + nl();
+
+            assertContains(log, fileContent, "conflict partitions");
+            assertContains(log, fileContent, summaryStr);
+        }
+        else
+            fail("Should contain file name");
+    }
+
+    /** */
+    @Test
     public void testCacheIdleVerifyNodeFilter() {
         IgniteEx ignite = crd;
 
