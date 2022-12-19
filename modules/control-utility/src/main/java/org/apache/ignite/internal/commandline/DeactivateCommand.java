@@ -20,12 +20,14 @@ package org.apache.ignite.internal.commandline;
 import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.client.IgniteClient;
 import org.apache.ignite.configuration.ClientConfiguration;
+import org.apache.ignite.internal.visor.misc.VisorIdAndTagViewTask;
 
 import static org.apache.ignite.internal.commandline.ClusterStateChangeCommand.FORCE_COMMAND;
 import static org.apache.ignite.internal.commandline.CommandList.DEACTIVATE;
 import static org.apache.ignite.internal.commandline.CommandList.SET_STATE;
 import static org.apache.ignite.internal.commandline.CommandLogger.optional;
 import static org.apache.ignite.internal.commandline.CommonArgParser.CMD_AUTO_CONFIRMATION;
+import static org.apache.ignite.internal.commandline.TaskExecutor.executeTask;
 
 /**
  * Command to deactivate cluster.
@@ -41,14 +43,14 @@ public class DeactivateCommand extends AbstractCommand<Void> {
 
     /** {@inheritDoc} */
     @Override public void printUsage(IgniteLogger logger) {
-        usage(logger, "Deactivate cluster (deprecated. Use " + SET_STATE.toString() + " instead):", DEACTIVATE,
+        usage(logger, "Deactivate cluster (deprecated. Use " + SET_STATE + " instead):", DEACTIVATE,
             optional(FORCE_COMMAND), optional(CMD_AUTO_CONFIRMATION));
     }
 
     /** {@inheritDoc} */
     @Override public void prepareConfirmation(ClientConfiguration clientCfg) throws Exception {
         try (IgniteClient client = Command.startClient(clientCfg)) {
-            //TODO: clusterName = client.state().clusterName();
+            clusterName = executeTask(client, VisorIdAndTagViewTask.class, null, clientCfg).clusterName();
         }
     }
 

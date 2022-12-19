@@ -23,6 +23,7 @@ import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.client.IgniteClient;
 import org.apache.ignite.cluster.ClusterState;
 import org.apache.ignite.configuration.ClientConfiguration;
+import org.apache.ignite.internal.visor.misc.VisorIdAndTagViewTask;
 
 import static org.apache.ignite.cluster.ClusterState.ACTIVE;
 import static org.apache.ignite.cluster.ClusterState.ACTIVE_READ_ONLY;
@@ -31,6 +32,7 @@ import static org.apache.ignite.internal.commandline.CommandList.SET_STATE;
 import static org.apache.ignite.internal.commandline.CommandLogger.optional;
 import static org.apache.ignite.internal.commandline.CommandLogger.or;
 import static org.apache.ignite.internal.commandline.CommonArgParser.CMD_AUTO_CONFIRMATION;
+import static org.apache.ignite.internal.commandline.TaskExecutor.executeTask;
 
 /**
  * Command to change cluster state.
@@ -63,7 +65,7 @@ public class ClusterStateChangeCommand extends AbstractCommand<ClusterState> {
     /** {@inheritDoc} */
     @Override public void prepareConfirmation(ClientConfiguration clientCfg) throws Exception {
         try (IgniteClient client = Command.startClient(clientCfg)) {
-            //TODO: clusterName = client.state().clusterName();
+            clusterName = executeTask(client, VisorIdAndTagViewTask.class, null, clientCfg).clusterName();
         }
     }
 

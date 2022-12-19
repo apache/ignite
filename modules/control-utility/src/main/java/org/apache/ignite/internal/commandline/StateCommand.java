@@ -17,14 +17,16 @@
 
 package org.apache.ignite.internal.commandline;
 
-import java.util.UUID;
 import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.client.IgniteClient;
 import org.apache.ignite.cluster.ClusterState;
 import org.apache.ignite.configuration.ClientConfiguration;
 import org.apache.ignite.internal.client.thin.TcpIgniteClient;
+import org.apache.ignite.internal.visor.misc.VisorIdAndTagViewTask;
+import org.apache.ignite.internal.visor.misc.VisorIdAndTagViewTaskResult;
 
 import static org.apache.ignite.internal.commandline.CommandList.STATE;
+import static org.apache.ignite.internal.commandline.TaskExecutor.executeTask;
 
 /**
  * Command to print cluster state.
@@ -45,11 +47,10 @@ public class StateCommand extends AbstractCommand<Void> {
         try (IgniteClient client = TcpIgniteClient.start(clientCfg)) {
             ClusterState state = client.cluster().state();
 
-            UUID id = state.id();
-            String tag = state.tag();
+            VisorIdAndTagViewTaskResult idAndTag = executeTask(client, VisorIdAndTagViewTask.class, null, clientCfg);
 
-            log.info("Cluster  ID: " + id);
-            log.info("Cluster tag: " + tag);
+            log.info("Cluster  ID: " + idAndTag.id());
+            log.info("Cluster tag: " + idAndTag.tag());
 
             log.info(CommandHandler.DELIM);
 

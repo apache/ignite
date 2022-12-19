@@ -63,7 +63,7 @@ public class VisorIdAndTagViewTask extends VisorOneNodeTask<Void, VisorIdAndTagV
         private VisorIdAndTagViewTaskResult view() {
             IgniteClusterEx cl = ignite.cluster();
 
-            return new VisorIdAndTagViewTaskResult(cl.id(), cl.tag());
+            return new VisorIdAndTagViewTaskResult(cl.id(), cl.tag(), ignite.context().cluster().clusterName());
         }
     }
 }

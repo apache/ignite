@@ -22,6 +22,7 @@ import org.apache.ignite.client.IgniteClient;
 import org.apache.ignite.configuration.ClientConfiguration;
 import org.apache.ignite.internal.client.GridClientException;
 
+import static org.apache.ignite.cluster.ClusterState.ACTIVE;
 import static org.apache.ignite.internal.commandline.CommandList.ACTIVATE;
 import static org.apache.ignite.internal.commandline.CommandList.SET_STATE;
 
@@ -33,7 +34,7 @@ import static org.apache.ignite.internal.commandline.CommandList.SET_STATE;
 public class ActivateCommand extends AbstractCommand<Void> {
     /** {@inheritDoc} */
     @Override public void printUsage(IgniteLogger logger) {
-        usage(logger, "Activate cluster (deprecated. Use " + SET_STATE.toString() + " instead):", ACTIVATE);
+        usage(logger, "Activate cluster (deprecated. Use " + SET_STATE + " instead):", ACTIVATE);
     }
 
     /**
@@ -43,10 +44,10 @@ public class ActivateCommand extends AbstractCommand<Void> {
      * @throws GridClientException If failed to activate.
      */
     @Override public Object execute(ClientConfiguration cfg, IgniteLogger logger) throws Exception {
-        logger.warning("Command deprecated. Use " + SET_STATE.toString() + " instead.");
+        logger.warning("Command deprecated. Use " + SET_STATE + " instead.");
 
         try (IgniteClient client = Command.startClient(cfg)) {
-            //TODO: client.cluster().state(ACTIVE, false);
+            client.cluster().state(ACTIVE);
 
             logger.info("Cluster activated");
         }
