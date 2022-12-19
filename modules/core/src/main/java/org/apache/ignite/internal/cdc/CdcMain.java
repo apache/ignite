@@ -830,11 +830,6 @@ public class CdcMain implements Runnable {
         }
     }
 
-    /** @return {@code True} if consumer stopped {@code false} otherwise. */
-    public boolean stopped() {
-        return stopped;
-    }
-
     /** */
     private void ackAsciiLogo() {
         String ver = "ver. " + ACK_VER_STR;

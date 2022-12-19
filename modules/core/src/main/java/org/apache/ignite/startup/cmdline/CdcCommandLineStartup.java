@@ -83,9 +83,6 @@ public class CdcCommandLineStartup {
             if (!IgniteSystemProperties.getBoolean(IGNITE_NO_SHUTDOWN_HOOK, false)) {
                 Runtime.getRuntime().addShutdownHook(new Thread("cdc-shutdown-hook") {
                     @Override public void run() {
-                        if (cdc.get().stopped())
-                            return;
-
                         cdc.get().stop();
                     }
                 });
