@@ -151,7 +151,6 @@ import static org.apache.ignite.events.EventType.EVT_WAL_SEGMENT_ARCHIVED;
 import static org.apache.ignite.events.EventType.EVT_WAL_SEGMENT_COMPACTED;
 import static org.apache.ignite.failure.FailureType.CRITICAL_ERROR;
 import static org.apache.ignite.failure.FailureType.SYSTEM_WORKER_TERMINATION;
-import static org.apache.ignite.internal.cluster.DistributedConfigurationUtils.PROPERTY_UPDATE_MSG;
 import static org.apache.ignite.internal.pagemem.wal.record.WALRecord.RecordType.DATA_RECORD_V2;
 import static org.apache.ignite.internal.processors.cache.persistence.file.FilePageStoreManager.TMP_SUFFIX;
 import static org.apache.ignite.internal.processors.cache.persistence.file.FilePageStoreManager.ZIP_SUFFIX;
@@ -224,8 +223,8 @@ public class FileWriteAheadLogManager extends GridCacheSharedManagerAdapter impl
     /** @see IgniteSystemProperties#IGNITE_THRESHOLD_WAIT_TIME_NEXT_WAL_SEGMENT */
     public static final long DFLT_THRESHOLD_WAIT_TIME_NEXT_WAL_SEGMENT = 1000L;
 
-    /** CDC force disable distributed property name. */
-    public static final String CDC_FORCE_DISABLE = "cdc.forceDisable";
+    /** CDC disabled distributed property name. */
+    public static final String CDC_DISABLED = "cdc.disabled";
 
     /** Use mapped byte buffer. */
     private final boolean mmap = IgniteSystemProperties.getBoolean(IGNITE_WAL_MMAP, DFLT_WAL_MMAP);
@@ -416,8 +415,8 @@ public class FileWriteAheadLogManager extends GridCacheSharedManagerAdapter impl
     /** Pointer to the last successful checkpoint until which WAL segments can be safely deleted. */
     private volatile WALPointer lastCheckpointPtr = new WALPointer(0, 0, 0);
 
-    /** Force disable CDC. */
-    private final DistributedBooleanProperty cdcForceDisable = detachedBooleanProperty(CDC_FORCE_DISABLE);
+    /** CDC disabled flag. */
+    private final DistributedBooleanProperty cdcDisabled = detachedBooleanProperty(CDC_DISABLED);
 
     /**
      * Constructor.
@@ -508,15 +507,17 @@ public class FileWriteAheadLogManager extends GridCacheSharedManagerAdapter impl
 
                 cctx.kernalContext().internalSubscriptionProcessor()
                     .registerDistributedConfigurationListener(dispatcher -> {
-                        cdcForceDisable.addListener((name, oldVal, newVal) -> {
-                            if (log.isInfoEnabled())
-                                log.info(format(PROPERTY_UPDATE_MSG, name, oldVal, newVal));
+                        cdcDisabled.addListener((name, oldVal, newVal) -> {
+                            if (log.isInfoEnabled()) {
+                                log.info(format("Distributed property '%s' was changed from '%s' to '%s'.",
+                                    name, oldVal, newVal));
+                            }
 
                             if (newVal != null && newVal)
-                                log.warning("CDC was forcibly disabled.");
+                                log.warning("CDC was disabled.");
                         });
 
-                        dispatcher.registerProperty(cdcForceDisable);
+                        dispatcher.registerProperty(cdcDisabled);
                     });
             }
 
@@ -2141,8 +2142,14 @@ public class FileWriteAheadLogManager extends GridCacheSharedManagerAdapter impl
 
                 Files.move(dstTmpFile.toPath(), dstFile.toPath());
 
-                if (walCdcDir != null && !cdcForceDisable.getOrDefault(false))
-                    Files.createLink(walCdcDir.toPath().resolve(dstFile.getName()), dstFile.toPath());
+                if (walCdcDir != null) {
+                    if (!cdcDisabled.getOrDefault(false))
+                        Files.createLink(walCdcDir.toPath().resolve(dstFile.getName()), dstFile.toPath());
+                    else {
+                        log.warning("Creation of segment CDC link skipped. " +
+                            "'" + CDC_DISABLED + "' distributed property is 'true'.");
+                    }
+                }
 
                 if (mode != WALMode.NONE) {
                     try (FileIO f0 = ioFactory.create(dstFile, CREATE, READ, WRITE)) {

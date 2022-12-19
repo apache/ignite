@@ -695,7 +695,7 @@ public class CdcSelfTest extends AbstractCdcTest {
 
     /** */
     @Test
-    public void testForceDisable() throws Exception {
+    public void testDisable() throws Exception {
         IgniteEx ign = startGrid(0);
 
         ign.cluster().state(ACTIVE);
@@ -708,10 +708,10 @@ public class CdcSelfTest extends AbstractCdcTest {
 
         assertTrue(waitForCondition(() -> 1 == walCdcDir.list().length, 2 * WAL_ARCHIVE_TIMEOUT));
 
-        DistributedChangeableProperty<Serializable> forceDisable = ign.context().distributedConfiguration()
-            .property(FileWriteAheadLogManager.CDC_FORCE_DISABLE);
+        DistributedChangeableProperty<Serializable> disabled = ign.context().distributedConfiguration()
+            .property(FileWriteAheadLogManager.CDC_DISABLED);
 
-        forceDisable.propagate(true);
+        disabled.propagate(true);
 
         addData(cache, 0, 1);
 
@@ -719,7 +719,7 @@ public class CdcSelfTest extends AbstractCdcTest {
 
         assertEquals(1, walCdcDir.list().length);
 
-        forceDisable.propagate(false);
+        disabled.propagate(false);
 
         addData(cache, 0, 1);
 
