@@ -2777,7 +2777,7 @@ public class IgniteKernal implements IgniteEx, Externalizable {
 
     /** {@inheritDoc} */
     @Override public void active(boolean active) {
-        cluster().state(ClusterState.ACTIVE);
+        cluster().state(active ? ClusterState.ACTIVE : ClusterState.INACTIVE);
     }
 
     /** */
