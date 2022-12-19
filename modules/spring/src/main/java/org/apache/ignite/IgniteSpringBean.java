@@ -25,6 +25,7 @@ import java.util.Collection;
 import java.util.concurrent.ExecutorService;
 import org.apache.ignite.cache.affinity.Affinity;
 import org.apache.ignite.cluster.ClusterGroup;
+import org.apache.ignite.cluster.ClusterState;
 import org.apache.ignite.configuration.AtomicConfiguration;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.CollectionConfiguration;
@@ -609,7 +610,7 @@ public class IgniteSpringBean implements Ignite, DisposableBean, SmartInitializi
     @Override public void active(boolean active) {
         checkIgnite();
 
-        g.active(active);
+        g.cluster().state(active ? ClusterState.ACTIVE : ClusterState.INACTIVE);
     }
 
     /** {@inheritDoc} */
