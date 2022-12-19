@@ -85,15 +85,17 @@ import static org.apache.ignite.testframework.LogListener.matches;
 @RunWith(Parameterized.class)
 public class GridCommandHandlerConsistencyCountersTest extends GridCommandHandlerClusterPerMethodAbstractTest {
     /** */
-    @Parameterized.Parameters(name = "strategy={0}, reuse={1}, historical={2}, atomicity={3}")
+    @Parameterized.Parameters(name = "strategy={0}, reuse={1}, historical={2}, atomicity={3}, walRestore={4}")
     public static Iterable<Object[]> data() {
         List<Object[]> res = new ArrayList<>();
 
         for (ReadRepairStrategy strategy : ReadRepairStrategy.values()) {
             for (boolean reuse : new boolean[] {false, true}) {
                 for (boolean historical : new boolean[] {false, true}) {
-                    for (CacheAtomicityMode atomicityMode : new CacheAtomicityMode[] {ATOMIC, TRANSACTIONAL})
-                        res.add(new Object[] {strategy, reuse, historical, atomicityMode});
+                    for (CacheAtomicityMode atomicityMode : new CacheAtomicityMode[] {ATOMIC, TRANSACTIONAL}) {
+                        for (boolean walRestore: new boolean[] {false, true})
+                            res.add(new Object[] {strategy, reuse, historical, atomicityMode, walRestore});
+                    }
                 }
             }
         }
@@ -124,6 +126,12 @@ public class GridCommandHandlerConsistencyCountersTest extends GridCommandHandle
      */
     @Parameterized.Parameter(3)
     public CacheAtomicityMode atomicityMode;
+
+    /**
+     * Ignite nodes use WAL for restoring logical updates at restart after the crash.
+     */
+    @Parameterized.Parameter(4)
+    public boolean walRestore;
 
     /** Listening logger. */
     protected final ListeningTestLogger listeningLog = new ListeningTestLogger(log);
@@ -294,6 +302,7 @@ public class GridCommandHandlerConsistencyCountersTest extends GridCommandHandle
         String backupMissedTail = null; // Misses after backupHwm, which backups are not aware of before the recovery.
 
         int primaryKeysCnt = preloadCnt; // Keys present on primary.
+        int backupsKeysCnt = preloadCnt; // Keys present on backups.
 
         int iters = 11;
 
@@ -357,6 +366,7 @@ public class GridCommandHandlerConsistencyCountersTest extends GridCommandHandle
                     committedKey++;
                     updateCnt++;
                     primaryKeysCnt++;
+                    backupsKeysCnt++;
 
                     cachePut.accept(committedKey);
                 }
@@ -390,18 +400,39 @@ public class GridCommandHandlerConsistencyCountersTest extends GridCommandHandle
 
         injectTestSystemOut();
 
-        assertEquals(EXIT_CODE_OK, execute("--cache", "idle_verify"));
+        if (!walRestore) {
+            // Idle verify triggers checkpoint and then no WAL restore is performed after cluster restart.
+            assertEquals(EXIT_CODE_OK, execute("--cache", "idle_verify"));
 
-        assertConflicts(true, true);
+            assertConflicts(true, true);
 
-        if (atomicityMode == TRANSACTIONAL) {
-            assertTxCounters(primaryLwm, primaryMissed, updateCnt); // Primary
-            assertTxCounters(preloadCnt, backupMissed, backupHwm); // Backups
+            if (atomicityMode == TRANSACTIONAL) {
+                assertTxCounters(primaryLwm, primaryMissed, updateCnt); // Primary
+                assertTxCounters(preloadCnt, backupMissed, backupHwm); // Backups
+            }
+            else {
+                assertAtomicCounters(updateCnt); // Primary
+                assertAtomicCounters(backupHwm); // Backups
+            }
         }
-        else {
-            assertAtomicCounters(updateCnt); // Primary
-            assertAtomicCounters(backupHwm); // Backups
-        }
+
+        // On node start up it applies WAL changes twice: one for metastore updates, second for logical updates.
+        // Then this record is written to log (2 * nodes) times. This test doesn't perform metastore updates.
+        LogListener lsnrWalRestoreNoUpdates = LogListener
+            .matches("Finished applying WAL changes [updatesApplied=0,")
+            .times(walRestore ? nodes : 2 * nodes) // For walRestore=false nodes have neither metastore nor logical updates.
+                                                   // For walRestore=true nodes don't have metastore updates.
+            .build();
+
+        LogListener lsnrPrimaryWalRestoreUpdates = LogListener
+            .matches("Finished applying WAL changes [updatesApplied=" + (historical ? primaryKeysCnt - preloadCnt : primaryKeysCnt) + ',')
+            .times(walRestore ? 1 : 0)  // Only for walRestore=true nodes have logical updates.
+            .build();
+
+        LogListener lsnrBackupsWalRestoreUpdates = LogListener
+            .matches("Finished applying WAL changes [updatesApplied=" + (historical ? backupsKeysCnt - preloadCnt : backupsKeysCnt) + ',')
+            .times(walRestore ? nodes - 1 : 0) // Only for walRestore=true nodes have logical updates.
+            .build();
 
         LogListener lsnrRebalanceType = matches("fullPartitions=[" + (historical ? "" : 0) + "], " +
             "histPartitions=[" + (historical ? 0 : "") + "]").times(backupNodes).build();
@@ -421,6 +452,9 @@ public class GridCommandHandlerConsistencyCountersTest extends GridCommandHandle
 
         listeningLog.registerListener(lsnrRebalanceType);
         listeningLog.registerListener(lsnrRebalanceAmount);
+        listeningLog.registerListener(lsnrWalRestoreNoUpdates);
+        listeningLog.registerListener(lsnrBackupsWalRestoreUpdates);
+        listeningLog.registerListener(lsnrPrimaryWalRestoreUpdates);
 
         ioBlocked = true; // Emulating power off, OOM or disk overflow. Keeping data as is, with missed counters updates.
 
@@ -435,6 +469,9 @@ public class GridCommandHandlerConsistencyCountersTest extends GridCommandHandle
         awaitPartitionMapExchange();
 
         assertTrue(lsnrRebalanceType.check());
+        assertTrue(lsnrWalRestoreNoUpdates.check());
+        assertTrue(lsnrBackupsWalRestoreUpdates.check());
+        assertTrue(lsnrPrimaryWalRestoreUpdates.check());
 
         assertEquals(EXIT_CODE_OK, execute("--cache", "idle_verify"));
 

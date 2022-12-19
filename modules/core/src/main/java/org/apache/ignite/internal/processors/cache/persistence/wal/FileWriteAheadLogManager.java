@@ -854,9 +854,6 @@ public class FileWriteAheadLogManager extends GridCacheSharedManagerAdapter impl
         if (walForceArchiveTimeout > 0) {
             if (lastDataRecordLoggedMs.get() == 0)
                 return; //no data records were logged to current segment, do not rollover.
-
-            if (!checkTimeout(lastDataRecordLoggedMs, walForceArchiveTimeout))
-                return;
         }
         else if (!checkTimeout(lastRecordLoggedMs, walAutoArchiveAfterInactivity))
             return;
@@ -1709,8 +1706,10 @@ public class FileWriteAheadLogManager extends GridCacheSharedManagerAdapter impl
 
         long absNextIdxStartTime = System.nanoTime();
 
-        // Signal to archiver that we are done with the segment and it can be archived.
+        // Signal to archiver that we are done with the segment, and it can be archived.
         long absNextIdx = archiver0.nextAbsoluteSegmentIndex();
+
+        assert absNextIdx == curIdx + 1 : "curIdx=" + curIdx + ", nextIdx=" + absNextIdx;
 
         long absNextIdxWaitTime = U.nanosToMillis(System.nanoTime() - absNextIdxStartTime);
 
@@ -2029,7 +2028,31 @@ public class FileWriteAheadLogManager extends GridCacheSharedManagerAdapter impl
                 throw cleanErr;
 
             try {
-                long nextIdx = segmentAware.nextAbsoluteSegmentIndex();
+                long nextIdx;
+
+                boolean interrupted = false;
+
+                while (true) {
+                    try {
+                        nextIdx = segmentAware.nextAbsoluteSegmentIndex();
+
+                        break;
+                    }
+                    catch (IgniteInterruptedCheckedException e) {
+                        if (isCancelled.get()) {
+                            // Archiver will soon complete its work, so we can not wait for the segment to be archived.
+                            throw e;
+                        }
+                        else {
+                            // It is assumed that the interruption of the thread came for example from a user thread,
+                            // which should not interrupt write to the WAL, so we should just try again.
+                            interrupted = true;
+                        }
+                    }
+                }
+
+                if (interrupted)
+                    Thread.currentThread().interrupt();
 
                 synchronized (this) {
                     // Wait for formatter so that we do not open an empty file in DEFAULT mode.

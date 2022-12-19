@@ -202,6 +202,16 @@ public class WalRecordsConsumer<K, V> {
             log.info("WalRecordsConsumer stopped [consumer=" + consumer.getClass() + ']');
     }
 
+    /**
+     * Checks that consumer still alive.
+     * This method helps to determine {@link CdcConsumer} errors in case {@link CdcEvent} is rare or source cluster is down.
+     *
+     * @return {@code True} in case consumer alive, {@code false} otherwise.
+     */
+    public boolean alive() {
+        return consumer.alive();
+    }
+
     /** @return Change Data Capture Consumer. */
     public CdcConsumer consumer() {
         return consumer;

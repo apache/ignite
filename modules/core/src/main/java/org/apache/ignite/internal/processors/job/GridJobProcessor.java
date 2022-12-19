@@ -60,7 +60,6 @@ import org.apache.ignite.internal.GridJobSiblingsResponse;
 import org.apache.ignite.internal.GridKernalContext;
 import org.apache.ignite.internal.GridTaskSessionImpl;
 import org.apache.ignite.internal.GridTaskSessionRequest;
-import org.apache.ignite.internal.SkipDaemon;
 import org.apache.ignite.internal.cluster.ClusterTopologyCheckedException;
 import org.apache.ignite.internal.managers.collision.GridCollisionJobContextAdapter;
 import org.apache.ignite.internal.managers.collision.GridCollisionManager;
@@ -129,7 +128,6 @@ import static org.jsr166.ConcurrentLinkedHashMap.QueuePolicy.PER_SEGMENT_Q;
 /**
  * Responsible for all grid job execution and communication.
  */
-@SkipDaemon
 public class GridJobProcessor extends GridProcessorAdapter {
     /** */
     public static final String JOBS_VIEW = "jobs";

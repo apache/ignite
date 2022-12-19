@@ -505,7 +505,7 @@ public class CacheMetricsManageTest extends GridCommonAbstractTest {
     }
 
     /**
-     * Gets CacheGroupMetricsMXBean for given node and group name.
+     * Gets CacheMetricsMXBean for given node and group name.
      *
      * @param nodeIdx Node index.
      * @param cacheName Cache name.

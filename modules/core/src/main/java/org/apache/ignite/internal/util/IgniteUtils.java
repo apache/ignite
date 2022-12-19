@@ -7496,8 +7496,7 @@ public abstract class IgniteUtils {
      * @return Short string representing the node.
      */
     public static String toShortString(ClusterNode n) {
-        return "ClusterNode [id=" + n.id() + ", order=" + n.order() + ", addr=" + n.addresses() +
-            ", daemon=" + n.isDaemon() + ']';
+        return "ClusterNode [id=" + n.id() + ", order=" + n.order() + ", addr=" + n.addresses() + ']';
     }
 
     /**
@@ -11710,7 +11709,7 @@ public abstract class IgniteUtils {
      * @return {@code true} if local node is coordinator.
      */
     public static boolean isLocalNodeCoordinator(GridDiscoveryManager discoMgr) {
-        if (discoMgr.localNode().isClient() || discoMgr.localNode().isDaemon())
+        if (discoMgr.localNode().isClient())
             return false;
 
         DiscoverySpi spi = discoMgr.getInjectedDiscoverySpi();
@@ -12450,7 +12449,7 @@ public abstract class IgniteUtils {
      * @return {@code true} if the REST processor is enabled, {@code false} the otherwise.
      */
     public static boolean isRestEnabled(IgniteConfiguration cfg) {
-        boolean isClientNode = cfg.isClientMode() || cfg.isDaemon();
+        boolean isClientNode = cfg.isClientMode();
 
         // By default, rest processor doesn't start on client nodes.
         return cfg.getConnectorConfiguration() != null &&

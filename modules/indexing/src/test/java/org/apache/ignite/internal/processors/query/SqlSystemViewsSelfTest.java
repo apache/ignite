@@ -697,23 +697,21 @@ public class SqlSystemViewsSelfTest extends AbstractIndexingCommonTest {
         Ignite igniteCli =
             startClientGrid(getTestIgniteInstanceName(1), getConfiguration().setMetricsUpdateFrequency(500L));
 
-        startGrid(getTestIgniteInstanceName(2), getConfiguration().setMetricsUpdateFrequency(500L).setDaemon(true));
-
         UUID nodeId0 = igniteSrv.cluster().localNode().id();
 
         awaitPartitionMapExchange();
 
-        List<List<?>> resAll = execSql("SELECT NODE_ID, CONSISTENT_ID, VERSION, IS_CLIENT, IS_DAEMON, " +
+        List<List<?>> resAll = execSql("SELECT NODE_ID, CONSISTENT_ID, VERSION, IS_CLIENT, " +
             "NODE_ORDER, ADDRESSES, HOSTNAMES FROM " + systemSchemaName() + ".NODES");
 
-        assertColumnTypes(resAll.get(0), UUID.class, String.class, String.class, Boolean.class, Boolean.class,
+        assertColumnTypes(resAll.get(0), UUID.class, String.class, String.class, Boolean.class,
             Long.class, String.class, String.class);
 
-        assertEquals(3, resAll.size());
+        assertEquals(2, resAll.size());
 
         List<List<?>> resSrv = execSql(
             "SELECT NODE_ID, NODE_ORDER FROM " +
-                systemSchemaName() + ".NODES WHERE IS_CLIENT = FALSE AND IS_DAEMON = FALSE"
+                systemSchemaName() + ".NODES WHERE IS_CLIENT = FALSE"
         );
 
         assertEquals(1, resSrv.size());
@@ -731,30 +729,18 @@ public class SqlSystemViewsSelfTest extends AbstractIndexingCommonTest {
 
         assertEquals(2L, resCli.get(0).get(1));
 
-        List<List<?>> resDaemon = execSql(
-            "SELECT NODE_ID, NODE_ORDER FROM " + systemSchemaName() + ".NODES WHERE IS_DAEMON = TRUE");
-
-        assertEquals(1, resDaemon.size());
-
-        assertEquals(nodeId(2), resDaemon.get(0).get(0));
-
-        assertEquals(3L, resDaemon.get(0).get(1));
-
         // Check index on ID column.
         assertEquals(0, execSql("SELECT NODE_ID FROM " + systemSchemaName() + ".NODES WHERE NODE_ID = '-'").size());
 
         assertEquals(1, execSql("SELECT NODE_ID FROM " + systemSchemaName() + ".NODES WHERE NODE_ID = ?",
             nodeId0).size());
 
-        assertEquals(1, execSql("SELECT NODE_ID FROM " + systemSchemaName() + ".NODES WHERE NODE_ID = ?",
-            nodeId(2)).size());
-
         // Check index on ID column with disjunction.
-        assertEquals(3, execSql("SELECT NODE_ID FROM " + systemSchemaName() + ".NODES WHERE NODE_ID = ? " +
-            "OR node_order=1 OR node_order=2 OR node_order=3", nodeId0).size());
+        assertEquals(2, execSql("SELECT NODE_ID FROM " + systemSchemaName() + ".NODES WHERE NODE_ID = ? " +
+            "OR node_order=1 OR node_order=2", nodeId0).size());
 
         // Check quick-count.
-        assertEquals(3L, execSql("SELECT COUNT(*) FROM " + systemSchemaName() + ".NODES").get(0).get(0));
+        assertEquals(2L, execSql("SELECT COUNT(*) FROM " + systemSchemaName() + ".NODES").get(0).get(0));
 
         // Check joins
         assertEquals(nodeId0, execSql("SELECT N1.NODE_ID FROM " + systemSchemaName() + ".NODES N1 JOIN " +
@@ -777,7 +763,7 @@ public class SqlSystemViewsSelfTest extends AbstractIndexingCommonTest {
             execSql("SELECT NODE_ID FROM " + systemSchemaName() + ".NODE_ATTRIBUTES WHERE NAME = ? AND VALUE = 'true'",
                 cliAttrName).size());
 
-        assertEquals(3,
+        assertEquals(2,
             execSql("SELECT NODE_ID FROM " + systemSchemaName() + ".NODE_ATTRIBUTES WHERE NAME = ?", cliAttrName).size());
 
         assertEquals(1,
@@ -829,10 +815,10 @@ public class SqlSystemViewsSelfTest extends AbstractIndexingCommonTest {
             Integer.class, Long.class, Integer.class, Long.class, // Sent/received messages.
             Integer.class); // Outbound message queue.
 
-        assertEquals(3, resAll.size());
+        assertEquals(2, resAll.size());
 
         // Check join with nodes.
-        assertEquals(3, execSql("SELECT NM.LAST_UPDATE_TIME FROM " + systemSchemaName() + ".NODES N " +
+        assertEquals(2, execSql("SELECT NM.LAST_UPDATE_TIME FROM " + systemSchemaName() + ".NODES N " +
             "JOIN " + systemSchemaName() + ".NODE_METRICS NM ON N.NODE_ID = NM.NODE_ID").size());
 
         // Check index on NODE_ID column.
@@ -844,7 +830,7 @@ public class SqlSystemViewsSelfTest extends AbstractIndexingCommonTest {
             "-").size());
 
         // Check quick-count.
-        assertEquals(3L, execSql("SELECT COUNT(*) FROM " + systemSchemaName() + ".NODE_METRICS").get(0).get(0));
+        assertEquals(2L, execSql("SELECT COUNT(*) FROM " + systemSchemaName() + ".NODE_METRICS").get(0).get(0));
 
         // Check metric values.
 

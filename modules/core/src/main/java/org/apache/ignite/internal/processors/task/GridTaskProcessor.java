@@ -219,7 +219,7 @@ public class GridTaskProcessor extends GridProcessorAdapter implements IgniteCha
         if (!active)
             return;
 
-        tasksMetaCache = ctx.security().enabled() && !ctx.isDaemon() ?
+        tasksMetaCache = ctx.security().enabled() ?
             ctx.cache().<GridTaskNameHashKey, String>utilityCache() : null;
 
         startLatch.countDown();
@@ -940,9 +940,6 @@ public class GridTaskProcessor extends GridProcessorAdapter implements IgniteCha
      * @throws IgniteCheckedException If failed.
      */
     private void saveTaskMetadata(String taskName) throws IgniteCheckedException {
-        if (ctx.isDaemon())
-            return;
-
         assert ctx.security().enabled();
 
         int nameHash = taskName.hashCode();

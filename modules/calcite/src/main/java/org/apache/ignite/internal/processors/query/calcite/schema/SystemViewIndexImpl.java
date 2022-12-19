@@ -98,7 +98,9 @@ public class SystemViewIndexImpl implements IgniteIndex {
     }
 
     /** {@inheritDoc} */
-    @Override public long count(ExecutionContext<?> ectx, ColocationGroup grp) {
+    @Override public long count(ExecutionContext<?> ectx, ColocationGroup grp, boolean notNull) {
+        assert !notNull; // Collation is empty, cannot come here with "notNull" flag.
+
         return tbl.descriptor().systemView().size();
     }
 
@@ -124,5 +126,10 @@ public class SystemViewIndexImpl implements IgniteIndex {
         RelDataType rowType = tbl.getRowType(cluster.getTypeFactory());
 
         return RexUtils.buildHashSearchBounds(cluster, cond, rowType, requiredColumns, true);
+    }
+
+    /** {@inheritDoc} */
+    @Override public boolean isInlineScanPossible(@Nullable ImmutableBitSet requiredColumns) {
+        return false;
     }
 }

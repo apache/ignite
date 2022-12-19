@@ -101,8 +101,7 @@ public class GridTopologyCommandHandler extends GridRestCommandHandlerAdapter {
 
         switch (req.command()) {
             case TOPOLOGY: {
-                Collection<ClusterNode> allNodes = F.concat(false,
-                    ctx.discovery().allNodes(), ctx.discovery().daemonNodes());
+                Collection<ClusterNode> allNodes = ctx.discovery().allNodes();
 
                 Collection<GridClientNodeBean> top =
                     new ArrayList<>(allNodes.size());

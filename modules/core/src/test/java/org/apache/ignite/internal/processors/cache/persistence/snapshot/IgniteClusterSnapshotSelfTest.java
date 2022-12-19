@@ -1134,6 +1134,31 @@ public class IgniteClusterSnapshotSelfTest extends AbstractSnapshotSelfTest {
 
     /** @throws Exception If fails. */
     @Test
+    public void testClusterSnapshotFromNonBaseline() throws Exception {
+        startGridsWithCache(2, dfltCacheCfg, CACHE_KEYS_RANGE);
+
+        grid(0).cluster().baselineAutoAdjustEnabled(false);
+
+        grid(0).cluster().setBaselineTopology(grid(0).cluster().topologyVersion());
+
+        IgniteEx nonBaseLineNode = startGrid(G.allGrids().size());
+
+        // Yet another non-baseline.
+        startGrid(G.allGrids().size());
+
+        snp(nonBaseLineNode).createSnapshot(SNAPSHOT_NAME).get();
+
+        stopAllGrids();
+
+        IgniteEx snp = startGridsFromSnapshot(2, SNAPSHOT_NAME);
+
+        awaitPartitionMapExchange();
+
+        assertSnapshotCacheKeys(snp.cache(dfltCacheCfg.getName()));
+    }
+
+    /** @throws Exception If fails. */
+    @Test
     public void testClusterSnapshotFromClient() throws Exception {
         startGridsWithCache(2, dfltCacheCfg, CACHE_KEYS_RANGE);
         IgniteEx clnt = startClientGrid(2);

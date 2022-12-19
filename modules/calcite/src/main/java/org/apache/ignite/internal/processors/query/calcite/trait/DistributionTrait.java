@@ -136,6 +136,11 @@ public final class DistributionTrait implements IgniteDistribution {
         if (other.getType() == ANY)
             return true;
 
+        if (function.correlated() || other.function.correlated()) {
+            return function.correlated() && other.function.correlated() &&
+                DistributionFunction.satisfy(function, other.function);
+        }
+
         if (getType() == other.getType())
             return getType() != HASH_DISTRIBUTED
                 || (Objects.equals(keys, other.keys)

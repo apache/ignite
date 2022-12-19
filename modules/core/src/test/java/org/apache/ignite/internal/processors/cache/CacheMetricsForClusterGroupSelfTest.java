@@ -24,7 +24,6 @@ import org.apache.ignite.IgniteSystemProperties;
 import org.apache.ignite.cache.CacheMetrics;
 import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.configuration.CacheConfiguration;
-import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.managers.discovery.IgniteClusterNode;
 import org.apache.ignite.lang.IgniteClosure;
 import org.apache.ignite.testframework.MvccFeatureChecker;
@@ -56,23 +55,11 @@ public class CacheMetricsForClusterGroupSelfTest extends GridCommonAbstractTest 
     /** Cache 2. */
     private IgniteCache<Integer, Integer> cache2;
 
-    /** Daemon grid. */
-    private boolean daemon;
-
     /** {@inheritDoc} */
     @Override protected void beforeTestsStarted() throws Exception {
         MvccFeatureChecker.skipIfNotSupported(MvccFeatureChecker.Feature.METRICS);
 
         super.beforeTestsStarted();
-    }
-
-    /** {@inheritDoc} */
-    @Override protected IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {
-        IgniteConfiguration cfg = super.getConfiguration(igniteInstanceName);
-
-        cfg.setDaemon(daemon);
-
-        return cfg;
     }
 
     /**
@@ -191,8 +178,6 @@ public class CacheMetricsForClusterGroupSelfTest extends GridCommonAbstractTest 
      */
     private void startGrids() throws Exception {
         startGrids(GRID_CNT);
-
-        daemon = true;
 
         startGrid(GRID_CNT);
     }

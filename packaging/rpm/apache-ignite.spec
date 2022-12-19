@@ -84,9 +84,6 @@ case $1 in
 
         # Install alternatives
         # Commented out until ignitevisorcmd / ignitesqlline is ready to work from any user
-        #update-alternatives --install %{_bindir}/ignitevisorcmd ignitevisorcmd %{_datadir}/%{name}/bin/ignitevisorcmd.sh 0
-        #update-alternatives --auto ignitevisorcmd
-        #update-alternatives --display ignitevisorcmd
         #update-alternatives --install %{_bindir}/ignitesqlline ignitesqlline %{_datadir}/%{name}/bin/sqlline.sh 0
         #update-alternatives --auto ignitesqlline
         #update-alternatives --display ignitesqlline
@@ -135,8 +132,6 @@ case $1 in
 
         # Remove alternatives
         # Commented out until ignitevisorcmd / ignitesqlline is ready to work from any user
-        #update-alternatives --remove ignitevisorcmd /usr/share/%{name}/bin/ignitevisorcmd.sh
-        #update-alternatives --display ignitevisorcmd || true
         #update-alternatives --remove ignitesqlline /usr/share/%{name}/bin/sqlline.sh
         #update-alternatives --display ignitesqlline || true
         ;;

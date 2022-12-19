@@ -200,9 +200,6 @@ public class ClusterCachesInfo {
      * @param localCachesOnStart Caches which were already presented on node start.
      */
     public void filterDynamicCacheDescriptors(Set<String> localCachesOnStart) {
-        if (ctx.isDaemon())
-            return;
-
         if (!alreadyFiltered.compareAndSet(false, true))
             return;
 
@@ -1198,8 +1195,7 @@ public class ClusterCachesInfo {
      * @param dataBag Discovery data bag.
      */
     void collectJoiningNodeData(DiscoveryDataBag dataBag) {
-        if (!ctx.isDaemon())
-            dataBag.addJoiningNodeData(CACHE_PROC.ordinal(), joinDiscoveryData());
+        dataBag.addJoiningNodeData(CACHE_PROC.ordinal(), joinDiscoveryData());
     }
 
     /**
@@ -1252,7 +1248,7 @@ public class ClusterCachesInfo {
             return new CacheClientReconnectDiscoveryData(cacheGrpsInfo, cachesInfo);
         }
         else {
-            assert ctx.config().isDaemon() || joinDiscoData != null;
+            assert joinDiscoData != null;
 
             return joinDiscoData;
         }
@@ -1264,9 +1260,6 @@ public class ClusterCachesInfo {
      * @return Caches to be started when this node starts.
      */
     @Nullable public LocalJoinCachesContext localJoinCachesContext() {
-        if (ctx.isDaemon())
-            return null;
-
         LocalJoinCachesContext result = locJoinCachesCtx;
 
         locJoinCachesCtx = null;
@@ -1300,17 +1293,15 @@ public class ClusterCachesInfo {
 
         List<DynamicCacheDescriptor> started = null;
 
-        if (!ctx.isDaemon()) {
-            for (DynamicCacheDescriptor desc : orderedCaches(CacheComparators.DIRECT)) {
-                if (desc.staticallyConfigured()) {
-                    assert desc.receivedFrom() != null : desc;
+        for (DynamicCacheDescriptor desc : orderedCaches(CacheComparators.DIRECT)) {
+            if (desc.staticallyConfigured()) {
+                assert desc.receivedFrom() != null : desc;
 
-                    if (joinedNodeId.equals(desc.receivedFrom())) {
-                        if (started == null)
-                            started = new ArrayList<>();
+                if (joinedNodeId.equals(desc.receivedFrom())) {
+                    if (started == null)
+                        started = new ArrayList<>();
 
-                        started.add(desc);
-                    }
+                    started.add(desc);
                 }
             }
         }
@@ -1326,7 +1317,7 @@ public class ClusterCachesInfo {
      * @param topVer Topology version.
      */
     public void onDiscoveryEvent(int type, ClusterNode node, AffinityTopologyVersion topVer) {
-        if (type == EVT_NODE_JOINED && !ctx.isDaemon()) {
+        if (type == EVT_NODE_JOINED) {
             for (CacheGroupDescriptor desc : registeredCacheGrps.values()) {
                 if (node.id().equals(desc.receivedFrom()))
                     desc.receivedFromStartVersion(topVer);
@@ -1357,9 +1348,6 @@ public class ClusterCachesInfo {
      * @param splitter Cache configuration splitter.
      */
     public void collectGridNodeData(DiscoveryDataBag dataBag, CacheConfigurationSplitter splitter) {
-        if (ctx.isDaemon())
-            return;
-
         if (!dataBag.commonDataCollectedFor(CACHE_PROC.ordinal()))
             dataBag.addGridCommonData(CACHE_PROC.ordinal(), collectCommonDiscoveryData(splitter));
     }
@@ -1449,7 +1437,7 @@ public class ClusterCachesInfo {
      * @param data Discovery data.
      */
     public void onGridDataReceived(DiscoveryDataBag.GridDiscoveryData data) {
-        if (ctx.isDaemon() || data.commonData() == null)
+        if (data.commonData() == null)
             return;
 
         assert joinDiscoData != null || disconnectedState();

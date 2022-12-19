@@ -61,9 +61,12 @@ public class SnapshotOperationRequest implements Serializable {
 
     /**
      * Snapshot operation warnings. Warnings do not interrupt snapshot process but raise exception at the end to make
-     * the operation status 'not OK' if no other error occured.
+     * the operation status 'not OK' if no other error occurred.
      */
     private volatile List<String> warnings;
+
+    /** Snapshot metadata. */
+    private transient SnapshotMetadata meta;
 
     /**
      * Warning flag of concurrent inconsistent-by-nature streamer updates.
@@ -209,6 +212,8 @@ public class SnapshotOperationRequest implements Serializable {
      * @param warnings Warnings of snapshot operation.
      */
     public void warnings(List<String> warnings) {
+        assert this.warnings == null;
+
         this.warnings = warnings;
     }
 
@@ -224,6 +229,20 @@ public class SnapshotOperationRequest implements Serializable {
      */
     public boolean streamerWarning(boolean val) {
         return streamerWrn = val;
+    }
+
+    /**
+     * @return Snapshot metadata.
+     */
+    public SnapshotMetadata meta() {
+        return meta;
+    }
+
+    /**
+     * Stores snapshot metadata.
+     */
+    public void meta(SnapshotMetadata meta) {
+        this.meta = meta;
     }
 
     /** {@inheritDoc} */

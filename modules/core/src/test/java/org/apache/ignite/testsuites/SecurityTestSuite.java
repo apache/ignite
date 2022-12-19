@@ -43,7 +43,6 @@ import org.apache.ignite.internal.processors.security.compute.closure.ComputeTas
 import org.apache.ignite.internal.processors.security.compute.closure.ComputeTaskRemoteSecurityContextCheckTest;
 import org.apache.ignite.internal.processors.security.compute.closure.DistributedClosureRemoteSecurityContextCheckTest;
 import org.apache.ignite.internal.processors.security.compute.closure.ExecutorServiceRemoteSecurityContextCheckTest;
-import org.apache.ignite.internal.processors.security.daemon.DaemonNodeBasicSecurityTest;
 import org.apache.ignite.internal.processors.security.datastreamer.DataStreamerPermissionCheckTest;
 import org.apache.ignite.internal.processors.security.datastreamer.closure.DataStreamerRemoteSecurityContextCheckTest;
 import org.apache.ignite.internal.processors.security.events.EventsRemoteSecurityContextCheckTest;
@@ -130,7 +129,6 @@ import org.junit.runners.Suite;
     IgniteSecurityProcessorTest.class,
     MultipleSSLContextsTest.class,
     MaintenanceModeNodeSecurityTest.class,
-    DaemonNodeBasicSecurityTest.class,
     ServiceAuthorizationTest.class,
     ServiceStaticConfigTest.class
 })

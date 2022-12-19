@@ -213,7 +213,7 @@ public class IdleVerify extends AbstractCommand<IdleVerify.Arguments> {
             if (args.dump())
                 cacheIdleVerifyDump(client, clientCfg, logger);
             else if (idleVerifyV2)
-                cacheIdleVerifyV2(client, clientCfg);
+                cacheIdleVerifyV2(client, clientCfg, logger);
             else
                 legacyCacheIdleVerify(client, clientCfg, logger);
         }
@@ -320,10 +320,12 @@ public class IdleVerify extends AbstractCommand<IdleVerify.Arguments> {
     /**
      * @param client Client.
      * @param clientCfg Client configuration.
+     * @param logger Logger to use.
      */
     private void cacheIdleVerifyV2(
         GridClient client,
-        GridClientConfiguration clientCfg
+        GridClientConfiguration clientCfg,
+        IgniteLogger logger
     ) throws GridClientException {
         VisorIdleVerifyTaskArg taskArg = new VisorIdleVerifyTaskArg(
             args.caches(),
@@ -335,10 +337,13 @@ public class IdleVerify extends AbstractCommand<IdleVerify.Arguments> {
 
         IdleVerifyResultV2 res = executeTask(client, VisorIdleVerifyTaskV2.class, taskArg, clientCfg);
 
-        logParsedArgs(taskArg, System.out::print);
-        res.print(System.out::print, false);
+        logParsedArgs(taskArg, logger::info);
 
-        if (F.isEmpty(res.exceptions()))
+        StringBuilder sb = new StringBuilder();
+        res.print(sb::append, false);
+        logger.info(sb.toString());
+
+        if (F.isEmpty(res.exceptions()) && !res.hasConflicts())
             return;
 
         try {
@@ -349,18 +354,14 @@ public class IdleVerify extends AbstractCommand<IdleVerify.Arguments> {
                 res.print(pw::print, true);
                 pw.flush();
 
-                System.out.println("See log for additional information. " + f.getAbsolutePath());
+                logger.info("See log for additional information. " + f.getAbsolutePath());
             }
             catch (FileNotFoundException e) {
-                System.err.println("Can't write exceptions to file " + f.getAbsolutePath() + " " + e.getMessage());
-
-                e.printStackTrace();
+                logger.error("Can't write exceptions to file " + f.getAbsolutePath(), e);
             }
         }
         catch (IgniteCheckedException e) {
-            System.err.println("Can't find work directory. " + e.getMessage());
-
-            e.printStackTrace();
+            logger.error("Can't find work directory. " + e.getMessage(), e);
         }
     }
 

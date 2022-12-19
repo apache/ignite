@@ -95,6 +95,27 @@ increases the total amount of time for taking a snapshot. However, this keeps th
 
 See the link:perf-and-troubleshooting/thread-pools-tuning[Ignite Snapshot Execution Pool,window=_blank] page for more details.
 
+=== Distributed properties
+
+The distributed properties listed in the table below allow you to configure snapshots at runtime:
+
+[cols="1,3,1",opts="header"]
+|===
+|Parameter | Description | Default Value
+|`snapshotTransferRate`| Snapshot transfer rate limit in bytes/sec. | 0
+|===
+
+=== System properties
+
+The system properties listed in the table below allow you to configure snapshots:
+
+[cols="1,1,3,1",opts="header"]
+|===
+|Property | Type | Description | Default Value
+|`IGNITE_SNAPSHOT_SEQUENTIAL_WRITE`| Boolean | Flag to indicate that disk writes during snapshot process should be in a
+sequential manner when possible. This generates extra disk space usage. | True
+|===
+
 == Creating Snapshot
 
 Ignite provides several APIs for the snapshot creation. Let's review all the options.

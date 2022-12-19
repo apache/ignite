@@ -63,6 +63,6 @@ public class ClientIndexFactory implements IndexFactory {
             log
         );
 
-        return new ClientInlineIndex(def.idxName().idxName(), inlineSize);
+        return new ClientInlineIndex(def, inlineSize);
     }
 }
