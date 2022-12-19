@@ -27,8 +27,8 @@ import java.util.UUID;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 import org.apache.ignite.IgniteLogger;
-import org.apache.ignite.internal.client.GridClient;
-import org.apache.ignite.internal.client.GridClientConfiguration;
+import org.apache.ignite.client.IgniteClient;
+import org.apache.ignite.configuration.ClientConfiguration;
 import org.apache.ignite.internal.commandline.AbstractCommand;
 import org.apache.ignite.internal.commandline.Command;
 import org.apache.ignite.internal.commandline.CommandArgIterator;
@@ -91,10 +91,10 @@ public class CacheScheduleIndexesRebuild extends AbstractCommand<CacheScheduleIn
     }
 
     /** {@inheritDoc} */
-    @Override public Object execute(GridClientConfiguration clientCfg, IgniteLogger logger) throws Exception {
+    @Override public Object execute(ClientConfiguration clientCfg, IgniteLogger logger) throws Exception {
         ScheduleIndexRebuildTaskRes taskRes;
 
-        try (GridClient client = Command.startClient(clientCfg)) {
+        try (IgniteClient client = Command.startClient(clientCfg)) {
             UUID nodeId = args.nodeId;
 
             if (nodeId == null)

@@ -24,8 +24,8 @@ import java.util.Map;
 import java.util.UUID;
 import java.util.stream.Collectors;
 import org.apache.ignite.IgniteLogger;
-import org.apache.ignite.internal.client.GridClient;
-import org.apache.ignite.internal.client.GridClientConfiguration;
+import org.apache.ignite.client.IgniteClient;
+import org.apache.ignite.configuration.ClientConfiguration;
 import org.apache.ignite.internal.commandline.AbstractCommand;
 import org.apache.ignite.internal.commandline.Command;
 import org.apache.ignite.internal.commandline.CommandArgIterator;
@@ -54,11 +54,11 @@ public class MetricCommand extends AbstractCommand<VisorMetricTaskArg> {
     private UUID nodeId;
 
     /** {@inheritDoc} */
-    @Override public Object execute(GridClientConfiguration clientCfg, IgniteLogger log) throws Exception {
+    @Override public Object execute(ClientConfiguration clientCfg, IgniteLogger log) throws Exception {
         try {
             Map<String, ?> res;
 
-            try (GridClient client = Command.startClient(clientCfg)) {
+            try (IgniteClient client = Command.startClient(clientCfg)) {
                 res = executeTaskByNameOnNode(
                     client,
                     VisorMetricTask.class.getName(),

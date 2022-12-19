@@ -21,7 +21,7 @@ import java.util.LinkedHashMap;
 import java.util.Map;
 import java.util.Set;
 import org.apache.ignite.IgniteLogger;
-import org.apache.ignite.internal.client.GridClientConfiguration;
+import org.apache.ignite.configuration.ClientConfiguration;
 import org.apache.ignite.internal.commandline.CommandArgIterator;
 import org.apache.ignite.internal.commandline.argument.CommandArgUtils;
 import org.apache.ignite.internal.util.typedef.F;
@@ -47,7 +47,7 @@ public class SnapshotRestoreCommand extends SnapshotSubcommand {
     }
 
     /** {@inheritDoc} */
-    @Override public Object execute(GridClientConfiguration clientCfg, IgniteLogger log) throws Exception {
+    @Override public Object execute(ClientConfiguration clientCfg, IgniteLogger log) throws Exception {
         explainDeprecatedOptions(cmdArg, log);
 
         return super.execute(clientCfg, log);

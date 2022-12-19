@@ -23,9 +23,8 @@ import java.util.Map;
 import java.util.UUID;
 import java.util.stream.Collectors;
 import org.apache.ignite.IgniteLogger;
-import org.apache.ignite.internal.client.GridClient;
-import org.apache.ignite.internal.client.GridClientConfiguration;
-import org.apache.ignite.internal.client.GridClientException;
+import org.apache.ignite.client.IgniteClient;
+import org.apache.ignite.configuration.ClientConfiguration;
 import org.apache.ignite.internal.commandline.AbstractCommand;
 import org.apache.ignite.internal.commandline.Command;
 import org.apache.ignite.internal.commandline.CommandArgIterator;
@@ -161,12 +160,12 @@ public class CacheViewer extends AbstractCommand<CacheViewer.Arguments> {
     }
 
     /** {@inheritDoc} */
-    @Override public Object execute(GridClientConfiguration clientCfg, IgniteLogger logger) throws Exception {
+    @Override public Object execute(ClientConfiguration clientCfg, IgniteLogger logger) throws Exception {
         VisorViewCacheTaskArg taskArg = new VisorViewCacheTaskArg(args.regex(), args.cacheCommand());
 
         VisorViewCacheTaskResult res;
 
-        try (GridClient client = Command.startClient(clientCfg)) {
+        try (IgniteClient client = Command.startClient(clientCfg)) {
             res = TaskExecutor.executeTaskByNameOnNode(
                 client,
                 VisorViewCacheTask.class.getName(),
@@ -389,12 +388,12 @@ public class CacheViewer extends AbstractCommand<CacheViewer.Arguments> {
      * @param clientCfg Client configuration.
      */
     private void cachesConfig(
-        GridClient client,
+        IgniteClient client,
         Arguments cacheArgs,
         VisorViewCacheTaskResult viewRes,
-        GridClientConfiguration clientCfg,
+        ClientConfiguration clientCfg,
         IgniteLogger logger
-    ) throws GridClientException {
+    ) throws InterruptedException {
         VisorCacheConfigurationCollectorTaskArg taskArg = new VisorCacheConfigurationCollectorTaskArg(cacheArgs.regex());
 
         UUID nodeId = cacheArgs.nodeId() == null ? TaskExecutor.BROADCAST_UUID : cacheArgs.nodeId();

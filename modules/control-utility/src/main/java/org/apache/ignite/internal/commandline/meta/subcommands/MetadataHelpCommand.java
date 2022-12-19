@@ -18,7 +18,7 @@
 package org.apache.ignite.internal.commandline.meta.subcommands;
 
 import org.apache.ignite.IgniteLogger;
-import org.apache.ignite.internal.client.GridClientConfiguration;
+import org.apache.ignite.configuration.ClientConfiguration;
 import org.apache.ignite.internal.commandline.AbstractCommand;
 import org.apache.ignite.internal.commandline.meta.MetadataCommand;
 import org.apache.ignite.internal.commandline.meta.MetadataSubCommandsList;
@@ -31,7 +31,7 @@ public class MetadataHelpCommand extends AbstractCommand<Void> {
     }
 
     /** {@inheritDoc} */
-    @Override public Object execute(GridClientConfiguration clientCfg, IgniteLogger log) throws Exception {
+    @Override public Object execute(ClientConfiguration clientCfg, IgniteLogger log) throws Exception {
         new MetadataCommand().printUsage(log);
 
         return null;

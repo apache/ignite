@@ -23,9 +23,9 @@ import java.util.Optional;
 import java.util.Set;
 import java.util.UUID;
 import org.apache.ignite.IgniteLogger;
-import org.apache.ignite.internal.client.GridClient;
-import org.apache.ignite.internal.client.GridClientConfiguration;
-import org.apache.ignite.internal.client.GridClientNode;
+import org.apache.ignite.client.IgniteClient;
+import org.apache.ignite.cluster.ClusterNode;
+import org.apache.ignite.configuration.ClientConfiguration;
 import org.apache.ignite.internal.commandline.argument.CommandArgUtils;
 import org.apache.ignite.internal.commandline.persistence.CleanAndBackupSubcommandArg;
 import org.apache.ignite.internal.commandline.persistence.PersistenceArguments;
@@ -55,12 +55,12 @@ public class PersistenceCommand implements Command<PersistenceArguments> {
     private PersistenceArguments cleaningArgs;
 
     /** {@inheritDoc} */
-    @Override public Object execute(GridClientConfiguration clientCfg, IgniteLogger logger) throws Exception {
-        try (GridClient client = Command.startClient(clientCfg)) {
-            Optional<GridClientNode> firstNodeOpt = client.compute().nodes().stream().findFirst();
+    @Override public Object execute(ClientConfiguration clientCfg, IgniteLogger logger) throws Exception {
+        try (IgniteClient client = Command.startClient(clientCfg)) {
+            Optional<ClusterNode> firstNodeOpt = client.cluster().nodes().stream().findFirst();
 
             if (firstNodeOpt.isPresent()) {
-                UUID uuid = firstNodeOpt.get().nodeId();
+                UUID uuid = firstNodeOpt.get().id();
 
                 PersistenceTaskResult res = executeTaskByNameOnNode(client,
                     PersistenceTask.class.getName(),

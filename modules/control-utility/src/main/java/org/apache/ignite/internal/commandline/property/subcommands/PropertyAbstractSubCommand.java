@@ -19,11 +19,10 @@ package org.apache.ignite.internal.commandline.property.subcommands;
 
 import java.util.Collection;
 import org.apache.ignite.IgniteLogger;
-import org.apache.ignite.internal.client.GridClient;
-import org.apache.ignite.internal.client.GridClientCompute;
-import org.apache.ignite.internal.client.GridClientConfiguration;
-import org.apache.ignite.internal.client.GridClientDisconnectedException;
-import org.apache.ignite.internal.client.GridClientNode;
+import org.apache.ignite.client.ClientException;
+import org.apache.ignite.client.IgniteClient;
+import org.apache.ignite.cluster.ClusterNode;
+import org.apache.ignite.configuration.ClientConfiguration;
 import org.apache.ignite.internal.commandline.AbstractCommand;
 import org.apache.ignite.internal.commandline.Command;
 import org.apache.ignite.internal.commandline.CommandArgIterator;
@@ -51,29 +50,27 @@ public abstract class PropertyAbstractSubCommand<
     }
 
     /** {@inheritDoc} */
-    @Override public final Object execute(GridClientConfiguration clientCfg, IgniteLogger log) throws Exception {
-        try (GridClient client = Command.startClient(clientCfg)) {
-            GridClientCompute compute = client.compute();
-
+    @Override public final Object execute(ClientConfiguration clientCfg, IgniteLogger log) throws Exception {
+        try (IgniteClient client = Command.startClient(clientCfg)) {
             // Try to find connectable server nodes.
-            Collection<GridClientNode> nodes = compute.nodes((n) -> n.connectable() && !n.isClient());
+            Collection<ClusterNode> nodes = client.cluster().forServers().nodes();
 
             if (F.isEmpty(nodes)) {
-                nodes = compute.nodes(GridClientNode::connectable);
+                nodes = client.cluster().nodes();
 
                 if (F.isEmpty(nodes))
-                    throw new GridClientDisconnectedException("Connectable nodes not found", null);
+                    throw new ClientException("Connectable nodes not found", null);
             }
 
-            GridClientNode node = nodes.stream()
+            ClusterNode node = nodes.stream()
                 .findAny().orElse(null);
 
             if (node == null)
-                node = compute.balancer().balancedNode(nodes);
+                node = client.cluster().forOldest().node();
 
-            MetadataResultDto res = compute.projection(node).execute(
+            MetadataResultDto res = client.compute(client.cluster().forNodes(nodes)).execute(
                 taskName(),
-                new VisorTaskArgument<>(node.nodeId(), arg(), false)
+                new VisorTaskArgument<>(node.id(), arg(), false)
             );
 
             printResult(res, log);

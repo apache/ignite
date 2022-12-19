@@ -20,11 +20,9 @@ package org.apache.ignite.internal.commandline;
 import java.util.Comparator;
 import java.util.Map;
 import org.apache.ignite.IgniteLogger;
-import org.apache.ignite.internal.client.GridClient;
-import org.apache.ignite.internal.client.GridClientBeforeNodeStart;
-import org.apache.ignite.internal.client.GridClientConfiguration;
-import org.apache.ignite.internal.client.GridClientException;
-import org.apache.ignite.internal.client.GridClientFactory;
+import org.apache.ignite.client.IgniteClient;
+import org.apache.ignite.configuration.ClientConfiguration;
+import org.apache.ignite.internal.client.thin.TcpIgniteClient;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.internal.SB;
 import org.jetbrains.annotations.Nullable;
@@ -47,54 +45,8 @@ public interface Command<T> {
      * @return Grid thin client instance which is already connected to cluster.
      * @throws Exception If error occur.
      */
-    public static GridClient startClient(GridClientConfiguration clientCfg) throws Exception {
-        GridClient client = GridClientFactory.start(clientCfg);
-
-        // If connection is unsuccessful, fail before doing any operations:
-        if (!client.connected()) {
-            GridClientException lastErr = client.checkLastError();
-
-            try {
-                client.close();
-            }
-            catch (Throwable e) {
-                lastErr.addSuppressed(e);
-            }
-
-            throw lastErr;
-        }
-
-        return client;
-    }
-
-    /**
-     * Method to create thin client for communication with node before it starts.
-     * If node has already started, there will be an error.
-     *
-     * @param clientCfg Thin client configuration.
-     * @return Grid thin client instance which is already connected to node before it starts.
-     * @throws Exception If error occur.
-     */
-    public static GridClientBeforeNodeStart startClientBeforeNodeStart(
-        GridClientConfiguration clientCfg
-    ) throws Exception {
-        GridClientBeforeNodeStart client = GridClientFactory.startBeforeNodeStart(clientCfg);
-
-        // If connection is unsuccessful, fail before doing any operations:
-        if (!client.connected()) {
-            GridClientException lastErr = client.checkLastError();
-
-            try {
-                client.close();
-            }
-            catch (Throwable e) {
-                lastErr.addSuppressed(e);
-            }
-
-            throw lastErr;
-        }
-
-        return client;
+    public static IgniteClient startClient(ClientConfiguration clientCfg) throws Exception {
+        return TcpIgniteClient.start(clientCfg);
     }
 
     /**
@@ -188,13 +140,13 @@ public interface Command<T> {
      * @return Result of operation (mostly usable for tests).
      * @throws Exception If error occur.
      */
-    public Object execute(GridClientConfiguration clientCfg, IgniteLogger logger) throws Exception;
+    public Object execute(ClientConfiguration clientCfg, IgniteLogger logger) throws Exception;
 
     /**
      * Actual command execution with verbose mode if needed.
      * Implement it if your command supports verbose mode.
      *
-     * @see Command#execute(GridClientConfiguration, IgniteLogger)
+     * @see Command#execute(ClientConfiguration, IgniteLogger)
      *
      * @param clientCfg Thin client configuration if connection to cluster is necessary.
      * @param logger Logger to use.
@@ -202,7 +154,7 @@ public interface Command<T> {
      * @return Result of operation (mostly usable for tests).
      * @throws Exception If error occur.
      */
-    default Object execute(GridClientConfiguration clientCfg, IgniteLogger logger, boolean verbose) throws Exception {
+    default Object execute(ClientConfiguration clientCfg, IgniteLogger logger, boolean verbose) throws Exception {
         return execute(clientCfg, logger);
     }
 
@@ -212,7 +164,7 @@ public interface Command<T> {
      * @param clientCfg Thin client configuration.
      * @throws Exception If error occur.
      */
-    default void prepareConfirmation(GridClientConfiguration clientCfg) throws Exception{
+    default void prepareConfirmation(ClientConfiguration clientCfg) throws Exception{
         //no-op
     }
 

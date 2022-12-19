@@ -24,8 +24,8 @@ import java.util.Map.Entry;
 import java.util.Set;
 import java.util.UUID;
 import org.apache.ignite.IgniteLogger;
-import org.apache.ignite.internal.client.GridClient;
-import org.apache.ignite.internal.client.GridClientConfiguration;
+import org.apache.ignite.client.IgniteClient;
+import org.apache.ignite.configuration.ClientConfiguration;
 import org.apache.ignite.internal.commandline.AbstractCommand;
 import org.apache.ignite.internal.commandline.Command;
 import org.apache.ignite.internal.commandline.CommandArgIterator;
@@ -188,7 +188,7 @@ public class CacheValidateIndexes extends AbstractCommand<CacheValidateIndexes.A
     }
 
     /** {@inheritDoc} */
-    @Override public Object execute(GridClientConfiguration clientCfg, IgniteLogger logger) throws Exception {
+    @Override public Object execute(ClientConfiguration clientCfg, IgniteLogger logger) throws Exception {
         VisorValidateIndexesTaskArg taskArg = new VisorValidateIndexesTaskArg(
             args.caches(),
             args.nodeId() != null ? Collections.singleton(args.nodeId()) : null,
@@ -198,7 +198,7 @@ public class CacheValidateIndexes extends AbstractCommand<CacheValidateIndexes.A
             args.checkSizes()
         );
 
-        try (GridClient client = Command.startClient(clientCfg)) {
+        try (IgniteClient client = Command.startClient(clientCfg)) {
             VisorValidateIndexesTaskResult taskRes = executeTaskByNameOnNode(
                 client, "org.apache.ignite.internal.visor.verify.VisorValidateIndexesTask", taskArg, null, clientCfg);
 

@@ -23,9 +23,9 @@ import java.util.HashSet;
 import java.util.Map;
 import java.util.Set;
 import org.apache.ignite.IgniteLogger;
+import org.apache.ignite.client.IgniteClient;
 import org.apache.ignite.cluster.ClusterNode;
-import org.apache.ignite.internal.client.GridClient;
-import org.apache.ignite.internal.client.GridClientConfiguration;
+import org.apache.ignite.configuration.ClientConfiguration;
 import org.apache.ignite.internal.commandline.AbstractCommand;
 import org.apache.ignite.internal.commandline.Command;
 import org.apache.ignite.internal.commandline.CommandArgIterator;
@@ -62,18 +62,18 @@ public class PageLocksCommand extends AbstractCommand<PageLocksCommand.Arguments
 
 
     /** {@inheritDoc} */
-    @Override public Object execute(GridClientConfiguration clientCfg, IgniteLogger logger) throws Exception {
+    @Override public Object execute(ClientConfiguration clientCfg, IgniteLogger logger) throws Exception {
         this.logger = logger;
 
         Set<String> nodeIds = arguments.nodeIds;
 
         Map<ClusterNode, VisorPageLocksResult> res;
 
-        try (GridClient client = Command.startClient(clientCfg)) {
+        try (IgniteClient client = Command.startClient(clientCfg)) {
             if (arguments.allNodes) {
-                client.compute().nodes().forEach(n -> {
+                client.cluster().nodes().forEach(n -> {
                     nodeIds.add(String.valueOf(n.consistentId()));
-                    nodeIds.add(n.nodeId().toString());
+                    nodeIds.add(n.id().toString());
                 });
             }
 

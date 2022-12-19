@@ -18,7 +18,7 @@
 package org.apache.ignite.internal.commandline.property.subcommands;
 
 import org.apache.ignite.IgniteLogger;
-import org.apache.ignite.internal.client.GridClientConfiguration;
+import org.apache.ignite.configuration.ClientConfiguration;
 import org.apache.ignite.internal.commandline.Command;
 import org.apache.ignite.internal.commandline.meta.MetadataSubCommandsList;
 import org.apache.ignite.internal.commandline.property.PropertyCommand;
@@ -31,7 +31,7 @@ public class PropertyHelpCommand implements Command<Void> {
     }
 
     /** {@inheritDoc} */
-    @Override public Object execute(GridClientConfiguration clientCfg, IgniteLogger log) throws Exception {
+    @Override public Object execute(ClientConfiguration clientCfg, IgniteLogger log) throws Exception {
         new PropertyCommand().printUsage(log);
 
         return null;

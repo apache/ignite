@@ -26,11 +26,9 @@ import java.util.Set;
 import java.util.regex.Pattern;
 import java.util.regex.PatternSyntaxException;
 import org.apache.ignite.IgniteLogger;
+import org.apache.ignite.client.IgniteClient;
 import org.apache.ignite.cluster.ClusterNode;
-import org.apache.ignite.internal.IgniteFeatures;
-import org.apache.ignite.internal.client.GridClient;
-import org.apache.ignite.internal.client.GridClientConfiguration;
-import org.apache.ignite.internal.client.GridClientException;
+import org.apache.ignite.configuration.ClientConfiguration;
 import org.apache.ignite.internal.commandline.argument.CommandArgUtils;
 import org.apache.ignite.internal.processors.cache.version.GridCacheVersion;
 import org.apache.ignite.internal.util.typedef.F;
@@ -49,7 +47,6 @@ import org.apache.ignite.internal.visor.tx.VisorTxTaskArg;
 import org.apache.ignite.internal.visor.tx.VisorTxTaskResult;
 import org.apache.ignite.transactions.TransactionState;
 
-import static org.apache.ignite.internal.client.util.GridClientUtils.checkFeatureSupportedByCluster;
 import static org.apache.ignite.internal.commandline.CommandList.TX;
 import static org.apache.ignite.internal.commandline.CommandLogger.DOUBLE_INDENT;
 import static org.apache.ignite.internal.commandline.CommandLogger.optional;
@@ -108,10 +105,10 @@ public class TxCommands extends AbstractCommand<VisorTxTaskArg> {
      *
      * @param clientCfg Client configuration.
      */
-    @Override public Object execute(GridClientConfiguration clientCfg, IgniteLogger logger) throws Exception {
+    @Override public Object execute(ClientConfiguration clientCfg, IgniteLogger logger) throws Exception {
         this.logger = logger;
 
-        try (GridClient client = Command.startClient(clientCfg)) {
+        try (IgniteClient client = Command.startClient(clientCfg)) {
             if (args.getOperation() == VisorTxOperation.INFO)
                 return transactionInfo(client, clientCfg);
 
@@ -157,7 +154,7 @@ public class TxCommands extends AbstractCommand<VisorTxTaskArg> {
      *
      * @param client Client.
      */
-    private void transactions(GridClient client, GridClientConfiguration conf) throws GridClientException {
+    private void transactions(IgniteClient client, ClientConfiguration conf) throws InterruptedException {
         try {
             if (args.getOperation() == VisorTxOperation.INFO) {
                 transactionInfo(client, conf);
@@ -347,9 +344,7 @@ public class TxCommands extends AbstractCommand<VisorTxTaskArg> {
      *
      * @param client Client.
      */
-    private Object transactionInfo(GridClient client, GridClientConfiguration conf) throws GridClientException {
-        checkFeatureSupportedByCluster(client, IgniteFeatures.TX_INFO_COMMAND, true, true);
-
+    private Object transactionInfo(IgniteClient client, ClientConfiguration conf) throws InterruptedException {
         GridCacheVersion nearXidVer = executeTask(client, FetchNearXidVersionTask.class, args.txInfoArgument(), conf);
 
         boolean histMode = false;

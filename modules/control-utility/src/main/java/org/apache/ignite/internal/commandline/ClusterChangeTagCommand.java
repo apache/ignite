@@ -20,9 +20,9 @@ package org.apache.ignite.internal.commandline;
 import java.util.Comparator;
 import java.util.UUID;
 import org.apache.ignite.IgniteLogger;
-import org.apache.ignite.internal.client.GridClient;
-import org.apache.ignite.internal.client.GridClientConfiguration;
-import org.apache.ignite.internal.client.GridClientNode;
+import org.apache.ignite.client.IgniteClient;
+import org.apache.ignite.cluster.ClusterNode;
+import org.apache.ignite.configuration.ClientConfiguration;
 import org.apache.ignite.internal.visor.misc.VisorClusterChangeTagTask;
 import org.apache.ignite.internal.visor.misc.VisorClusterChangeTagTaskArg;
 import org.apache.ignite.internal.visor.misc.VisorClusterChangeTagTaskResult;
@@ -46,11 +46,11 @@ public class ClusterChangeTagCommand extends AbstractCommand<String> {
     private String newTagArg;
 
     /** {@inheritDoc} */
-    @Override public Object execute(GridClientConfiguration clientCfg, IgniteLogger logger) throws Exception {
-        try (GridClient client = Command.startClient(clientCfg)) {
-            UUID coordinatorId = client.compute().nodes().stream()
-                .min(Comparator.comparingLong(GridClientNode::order))
-                .map(GridClientNode::nodeId)
+    @Override public Object execute(ClientConfiguration clientCfg, IgniteLogger logger) throws Exception {
+        try (IgniteClient client = Command.startClient(clientCfg)) {
+            UUID coordinatorId = client.cluster().nodes().stream()
+                .min(Comparator.comparingLong(ClusterNode::order))
+                .map(ClusterNode::id)
                 .orElse(null);
 
             VisorClusterChangeTagTaskResult res = executeTaskByNameOnNode(

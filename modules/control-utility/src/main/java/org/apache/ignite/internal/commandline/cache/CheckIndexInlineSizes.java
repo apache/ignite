@@ -27,8 +27,9 @@ import java.util.function.Predicate;
 import java.util.stream.Collectors;
 import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.IgniteSystemProperties;
-import org.apache.ignite.internal.client.GridClient;
-import org.apache.ignite.internal.client.GridClientConfiguration;
+import org.apache.ignite.client.IgniteClient;
+import org.apache.ignite.cluster.ClusterNode;
+import org.apache.ignite.configuration.ClientConfiguration;
 import org.apache.ignite.internal.client.GridClientNode;
 import org.apache.ignite.internal.commandline.AbstractCommand;
 import org.apache.ignite.internal.commandline.Command;
@@ -38,7 +39,6 @@ import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.internal.SB;
 import org.apache.ignite.internal.visor.VisorTaskArgument;
 
-import static java.util.stream.Collectors.toSet;
 import static org.apache.ignite.internal.commandline.CommandLogger.INDENT;
 
 /**
@@ -53,15 +53,13 @@ public class CheckIndexInlineSizes extends AbstractCommand<Void> {
     private static final Predicate<GridClientNode> SRV_NODES = node -> !node.isClient();
 
     /** {@inheritDoc} */
-    @Override public Object execute(GridClientConfiguration clientCfg, IgniteLogger log) throws Exception {
-        try (GridClient client = Command.startClient(clientCfg)) {
-            Set<GridClientNode> serverNodes = client.compute().nodes().stream()
-                .filter(SRV_NODES)
-                .collect(toSet());
+    @Override public Object execute(ClientConfiguration clientCfg, IgniteLogger log) throws Exception {
+        try (IgniteClient client = Command.startClient(clientCfg)) {
+            Collection<ClusterNode> serverNodes = client.cluster().forServers().nodes();
 
-            Collection<UUID> serverNodeIds = F.transform(serverNodes, GridClientNode::nodeId);
+            Collection<UUID> serverNodeIds = F.transform(serverNodes, ClusterNode::id);
 
-            CheckIndexInlineSizesResult res = client.compute().projection(serverNodes).execute(
+            CheckIndexInlineSizesResult res = client.compute(client.cluster().forNodes(serverNodes)).execute(
                 CheckIndexInlineSizesTask.class.getName(),
                 new VisorTaskArgument<>(serverNodeIds, false)
             );

@@ -26,13 +26,14 @@ import java.util.List;
 import java.util.Scanner;
 import java.util.UUID;
 import java.util.stream.Collectors;
+import javax.net.ssl.SSLException;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.IgniteSystemProperties;
+import org.apache.ignite.configuration.ClientConfiguration;
 import org.apache.ignite.internal.client.GridClientAuthenticationException;
 import org.apache.ignite.internal.client.GridClientClosedException;
-import org.apache.ignite.internal.client.GridClientConfiguration;
 import org.apache.ignite.internal.client.GridClientDisconnectedException;
 import org.apache.ignite.internal.client.GridClientHandshakeException;
 import org.apache.ignite.internal.client.GridServerUnreachableException;
@@ -43,9 +44,6 @@ import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.X;
 import org.apache.ignite.internal.util.typedef.internal.SB;
 import org.apache.ignite.internal.util.typedef.internal.U;
-import org.apache.ignite.plugin.security.SecurityCredentials;
-import org.apache.ignite.plugin.security.SecurityCredentialsBasicProvider;
-import org.apache.ignite.plugin.security.SecurityCredentialsProvider;
 import org.apache.ignite.ssl.SslContextFactory;
 import org.jetbrains.annotations.NotNull;
 
@@ -200,7 +198,7 @@ public class CommandHandler {
             Command command = args.command();
             commandName = command.name();
 
-            GridClientConfiguration clientCfg = getClientConfiguration(args);
+            ClientConfiguration clientCfg = getClientConfiguration(args);
 
             int tryConnectMaxCount = 3;
 
@@ -456,82 +454,64 @@ public class CommandHandler {
      *
      * @param args Connection parameters.
      * @param clientCfg Client configuration.
-     * @throws IgniteCheckedException If security credetials cannot be provided from client configuration.
      */
     private String retrieveUserName(
         ConnectionAndSslParameters args,
-        GridClientConfiguration clientCfg
-    ) throws IgniteCheckedException {
+        ClientConfiguration clientCfg
+    ) {
         if (!F.isEmpty(args.userName()))
             return args.userName();
-        else if (clientCfg.getSecurityCredentialsProvider() == null)
+        else if (clientCfg.getUserName() == null)
             return requestDataFromConsole("user: ");
         else
-            return (String)clientCfg.getSecurityCredentialsProvider().credentials().getLogin();
+            return clientCfg.getUserName();
     }
 
     /**
      * @param args Common arguments.
      * @return Thin client configuration to connect to cluster.
-     * @throws IgniteCheckedException If error occur.
      */
-    @NotNull private GridClientConfiguration getClientConfiguration(
+    @NotNull private ClientConfiguration getClientConfiguration(
         ConnectionAndSslParameters args
-    ) throws IgniteCheckedException {
+    ) {
         return getClientConfiguration(args.userName(), args.password(), args);
     }
 
     /**
-     * @param userName User name for authorization.
+     * @param userName Username for authorization.
      * @param password Password for authorization.
      * @param args Common arguments.
      * @return Thin client configuration to connect to cluster.
-     * @throws IgniteCheckedException If error occur.
      */
-    @NotNull private GridClientConfiguration getClientConfiguration(
+    @NotNull private ClientConfiguration getClientConfiguration(
         String userName,
         String password,
         ConnectionAndSslParameters args
-    ) throws IgniteCheckedException {
-        GridClientConfiguration clientCfg = new GridClientConfiguration();
+    ) {
+        ClientConfiguration clientCfg = new ClientConfiguration();
 
-        clientCfg.setPingInterval(args.pingInterval());
+        clientCfg.setHeartbeatInterval(args.pingInterval());
+        clientCfg.setAddresses(args.host() + ":" + args.port());
 
-        clientCfg.setPingTimeout(args.pingTimeout());
+        if (!F.isEmpty(userName)) {
+            clientCfg.setUserName(userName);
+            clientCfg.setUserPassword(password);
+        }
 
-        clientCfg.setServers(Collections.singletonList(args.host() + ":" + args.port()));
+        if (!F.isEmpty(args.sslKeyStorePath())) {
+            GridSslBasicContextFactory factory = createSslSupportFactory(args);
 
-        if (!F.isEmpty(userName))
-            clientCfg.setSecurityCredentialsProvider(getSecurityCredentialsProvider(userName, password, clientCfg));
-
-        if (!F.isEmpty(args.sslKeyStorePath()))
-            clientCfg.setSslContextFactory(createSslSupportFactory(args));
+            clientCfg.setSslContextFactory(() -> {
+                try {
+                    return factory.createSslContext();
+                }
+                catch (SSLException e) {
+                    throw new RuntimeException(e);
+                }
+            });
+        }
 
         return clientCfg;
-    }
-
-    /**
-     * @param userName User name for authorization.
-     * @param password Password for authorization.
-     * @param clientCfg Thin client configuration to connect to cluster.
-     * @return Security credentials provider with usage of given user name and password.
-     * @throws IgniteCheckedException If error occur.
-     */
-    @NotNull private SecurityCredentialsProvider getSecurityCredentialsProvider(
-        String userName,
-        String password,
-        GridClientConfiguration clientCfg
-    ) throws IgniteCheckedException {
-        SecurityCredentialsProvider securityCredential = clientCfg.getSecurityCredentialsProvider();
-
-        if (securityCredential == null)
-            return new SecurityCredentialsBasicProvider(new SecurityCredentials(userName, password));
-
-        final SecurityCredentials credential = securityCredential.credentials();
-        credential.setLogin(userName);
-        credential.setPassword(password);
-
-        return securityCredential;
     }
 
     /**

@@ -27,10 +27,9 @@ import java.util.Map;
 import java.util.UUID;
 import java.util.stream.Collectors;
 import org.apache.ignite.IgniteLogger;
-import org.apache.ignite.internal.client.GridClient;
-import org.apache.ignite.internal.client.GridClientCompute;
-import org.apache.ignite.internal.client.GridClientConfiguration;
-import org.apache.ignite.internal.client.GridClientNode;
+import org.apache.ignite.client.IgniteClient;
+import org.apache.ignite.cluster.ClusterNode;
+import org.apache.ignite.configuration.ClientConfiguration;
 import org.apache.ignite.internal.commandline.AbstractCommand;
 import org.apache.ignite.internal.commandline.Command;
 import org.apache.ignite.internal.commandline.CommandArgIterator;
@@ -76,20 +75,18 @@ public class SystemViewCommand extends AbstractCommand<VisorSystemViewTaskArg> {
     private boolean allNodes;
 
     /** {@inheritDoc} */
-    @Override public Object execute(GridClientConfiguration clientCfg, IgniteLogger log) throws Exception {
+    @Override public Object execute(ClientConfiguration clientCfg, IgniteLogger log) throws Exception {
         try {
             VisorSystemViewTaskResult res;
 
-            try (GridClient client = Command.startClient(clientCfg)) {
-                GridClientCompute compute = client.compute();
-
-                Map<UUID, GridClientNode> clusterNodes = compute.nodes().stream()
-                    .collect(Collectors.toMap(GridClientNode::nodeId, n -> n));
+            try (IgniteClient client = Command.startClient(clientCfg)) {
+                Map<UUID, ClusterNode> clusterNodes = client.cluster().nodes().stream()
+                    .collect(Collectors.toMap(ClusterNode::id, n -> n));
 
                 if (allNodes)
                     nodeIds = clusterNodes.keySet();
                 else if (F.isEmpty(nodeIds))
-                    nodeIds = singleton(getBalancedNode(compute).nodeId());
+                    nodeIds = singleton(getBalancedNode(client).id());
                 else {
                     for (UUID id : nodeIds) {
                         if (!clusterNodes.containsKey(id))
@@ -97,14 +94,10 @@ public class SystemViewCommand extends AbstractCommand<VisorSystemViewTaskArg> {
                     }
                 }
 
-                Collection<GridClientNode> connectable = F.viewReadOnly(nodeIds, clusterNodes::get,
-                    id -> clusterNodes.get(id).connectable());
-
-                if (!F.isEmpty(connectable))
-                    compute = compute.projection(connectable);
-
-                res = compute.execute(VisorSystemViewTask.class.getName(),
-                    new VisorTaskArgument<>(nodeIds, taskArg, false));
+                res = client.compute(client.cluster().forPredicate(n -> nodeIds.contains(n.id()))).execute(
+                    VisorSystemViewTask.class.getName(),
+                    new VisorTaskArgument<>(nodeIds, taskArg, false)
+                );
             }
 
             if (res != null) {

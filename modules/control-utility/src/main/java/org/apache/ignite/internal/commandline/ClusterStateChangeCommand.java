@@ -20,9 +20,9 @@ package org.apache.ignite.internal.commandline;
 import java.util.LinkedHashMap;
 import java.util.Map;
 import org.apache.ignite.IgniteLogger;
+import org.apache.ignite.client.IgniteClient;
 import org.apache.ignite.cluster.ClusterState;
-import org.apache.ignite.internal.client.GridClient;
-import org.apache.ignite.internal.client.GridClientConfiguration;
+import org.apache.ignite.configuration.ClientConfiguration;
 
 import static org.apache.ignite.cluster.ClusterState.ACTIVE;
 import static org.apache.ignite.cluster.ClusterState.ACTIVE_READ_ONLY;
@@ -61,9 +61,9 @@ public class ClusterStateChangeCommand extends AbstractCommand<ClusterState> {
     }
 
     /** {@inheritDoc} */
-    @Override public void prepareConfirmation(GridClientConfiguration clientCfg) throws Exception {
-        try (GridClient client = Command.startClient(clientCfg)) {
-            clusterName = client.state().clusterName();
+    @Override public void prepareConfirmation(ClientConfiguration clientCfg) throws Exception {
+        try (IgniteClient client = Command.startClient(clientCfg)) {
+            //TODO: clusterName = client.state().clusterName();
         }
     }
 
@@ -73,9 +73,9 @@ public class ClusterStateChangeCommand extends AbstractCommand<ClusterState> {
     }
 
     /** {@inheritDoc} */
-    @Override public Object execute(GridClientConfiguration clientCfg, IgniteLogger log) throws Exception {
-        try (GridClient client = Command.startClient(clientCfg)) {
-            client.state().state(state, forceDeactivation);
+    @Override public Object execute(ClientConfiguration clientCfg, IgniteLogger log) throws Exception {
+        try (IgniteClient client = Command.startClient(clientCfg)) {
+            //TODO: client.cluster().state(state, forceDeactivation);
 
             log.info("Cluster state changed to " + state);
 

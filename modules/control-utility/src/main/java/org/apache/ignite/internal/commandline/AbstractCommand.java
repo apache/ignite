@@ -19,6 +19,7 @@ package org.apache.ignite.internal.commandline;
 
 import java.util.Map;
 import org.apache.ignite.IgniteLogger;
+import org.apache.ignite.configuration.ClientConfiguration;
 import org.apache.ignite.internal.client.GridClientConfiguration;
 import org.apache.ignite.internal.commandline.cache.CacheSubcommands;
 import org.apache.ignite.internal.util.typedef.F;
@@ -35,7 +36,7 @@ public abstract class AbstractCommand<T> implements Command<T> {
     protected boolean verbose;
 
     /** {@inheritDoc} */
-    @Override public Object execute(GridClientConfiguration clientCfg, IgniteLogger log, boolean verbose) throws Exception {
+    @Override public Object execute(ClientConfiguration clientCfg, IgniteLogger log, boolean verbose) throws Exception {
         this.verbose = verbose;
         return execute(clientCfg, log);
     }

@@ -18,8 +18,8 @@
 package org.apache.ignite.internal.commandline.encryption;
 
 import org.apache.ignite.IgniteLogger;
-import org.apache.ignite.internal.client.GridClient;
-import org.apache.ignite.internal.client.GridClientConfiguration;
+import org.apache.ignite.client.IgniteClient;
+import org.apache.ignite.configuration.ClientConfiguration;
 import org.apache.ignite.internal.commandline.AbstractCommand;
 import org.apache.ignite.internal.commandline.Command;
 import org.apache.ignite.internal.commandline.CommandArgIterator;
@@ -39,8 +39,8 @@ public class ChangeCacheGroupKeyCommand extends AbstractCommand<VisorCacheGroupE
     private VisorCacheGroupEncryptionTaskArg taskArg;
 
     /** {@inheritDoc} */
-    @Override public Object execute(GridClientConfiguration clientCfg, IgniteLogger log) throws Exception {
-        try (GridClient client = Command.startClient(clientCfg)) {
+    @Override public Object execute(ClientConfiguration clientCfg, IgniteLogger log) throws Exception {
+        try (IgniteClient client = Command.startClient(clientCfg)) {
             executeTaskByNameOnNode(
                 client,
                 VisorChangeCacheGroupKeyTask.class.getName(),

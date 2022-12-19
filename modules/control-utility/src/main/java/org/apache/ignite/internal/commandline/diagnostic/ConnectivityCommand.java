@@ -26,10 +26,9 @@ import java.util.Set;
 import java.util.UUID;
 import java.util.stream.Collectors;
 import org.apache.ignite.IgniteLogger;
+import org.apache.ignite.client.IgniteClient;
 import org.apache.ignite.cluster.ClusterNode;
-import org.apache.ignite.internal.client.GridClient;
-import org.apache.ignite.internal.client.GridClientConfiguration;
-import org.apache.ignite.internal.client.GridClientNode;
+import org.apache.ignite.configuration.ClientConfiguration;
 import org.apache.ignite.internal.commandline.Command;
 import org.apache.ignite.internal.commandline.TaskExecutor;
 import org.apache.ignite.internal.visor.diagnostic.availability.VisorConnectivityArgs;
@@ -73,13 +72,13 @@ public class ConnectivityCommand implements Command<Void> {
     private IgniteLogger logger;
 
     /** {@inheritDoc} */
-    @Override public Object execute(GridClientConfiguration clientCfg, IgniteLogger logger) throws Exception {
+    @Override public Object execute(ClientConfiguration clientCfg, IgniteLogger logger) throws Exception {
         this.logger = logger;
 
         Map<ClusterNode, VisorConnectivityResult> result;
 
-        try (GridClient client = Command.startClient(clientCfg)) {
-            Set<UUID> nodeIds = client.compute().nodes().stream().map(GridClientNode::nodeId).collect(Collectors.toSet());
+        try (IgniteClient client = Command.startClient(clientCfg)) {
+            Set<UUID> nodeIds = client.cluster().nodes().stream().map(ClusterNode::id).collect(Collectors.toSet());
 
             VisorConnectivityArgs taskArg = new VisorConnectivityArgs(nodeIds);
 

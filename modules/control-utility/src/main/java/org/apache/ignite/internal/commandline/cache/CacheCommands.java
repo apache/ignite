@@ -19,7 +19,7 @@ package org.apache.ignite.internal.commandline.cache;
 
 import java.util.Arrays;
 import org.apache.ignite.IgniteLogger;
-import org.apache.ignite.internal.client.GridClientConfiguration;
+import org.apache.ignite.configuration.ClientConfiguration;
 import org.apache.ignite.internal.commandline.AbstractCommand;
 import org.apache.ignite.internal.commandline.Command;
 import org.apache.ignite.internal.commandline.CommandArgIterator;
@@ -61,7 +61,7 @@ public class CacheCommands extends AbstractCommand<CacheSubcommands> {
     }
 
     /** {@inheritDoc} */
-    @Override public Object execute(GridClientConfiguration clientCfg, IgniteLogger logger) throws Exception {
+    @Override public Object execute(ClientConfiguration clientCfg, IgniteLogger logger) throws Exception {
         if (subcommand == CacheSubcommands.HELP) {
             printCacheHelp(logger);
 
@@ -123,7 +123,7 @@ public class CacheCommands extends AbstractCommand<CacheSubcommands> {
     }
 
     /** {@inheritDoc} */
-    @Override public void prepareConfirmation(GridClientConfiguration clientCfg) throws Exception {
+    @Override public void prepareConfirmation(ClientConfiguration clientCfg) throws Exception {
         if (subcommand != null && subcommand.subcommand() != null)
             subcommand.subcommand().prepareConfirmation(clientCfg);
     }

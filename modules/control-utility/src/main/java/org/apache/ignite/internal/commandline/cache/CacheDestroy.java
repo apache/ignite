@@ -18,12 +18,12 @@
 package org.apache.ignite.internal.commandline.cache;
 
 import java.util.ArrayList;
+import java.util.HashSet;
 import java.util.Set;
 import java.util.TreeSet;
 import org.apache.ignite.IgniteLogger;
-import org.apache.ignite.internal.client.GridClient;
-import org.apache.ignite.internal.client.GridClientConfiguration;
-import org.apache.ignite.internal.client.GridClientNode;
+import org.apache.ignite.client.IgniteClient;
+import org.apache.ignite.configuration.ClientConfiguration;
 import org.apache.ignite.internal.commandline.AbstractCommand;
 import org.apache.ignite.internal.commandline.Command;
 import org.apache.ignite.internal.commandline.CommandArgIterator;
@@ -104,7 +104,7 @@ public class CacheDestroy extends AbstractCommand<VisorCacheStopTaskArg> {
     }
 
     /** {@inheritDoc} */
-    @Override public void prepareConfirmation(GridClientConfiguration clientCfg) throws Exception {
+    @Override public void prepareConfirmation(ClientConfiguration clientCfg) throws Exception {
         if (destroyAll)
             cacheNames = collectClusterCaches(clientCfg);
     }
@@ -118,7 +118,7 @@ public class CacheDestroy extends AbstractCommand<VisorCacheStopTaskArg> {
     }
 
     /** {@inheritDoc} */
-    @Override public Object execute(GridClientConfiguration clientCfg, IgniteLogger log) throws Exception {
+    @Override public Object execute(ClientConfiguration clientCfg, IgniteLogger log) throws Exception {
         if (destroyAll && cacheNames == null)
             cacheNames = collectClusterCaches(clientCfg);
 
@@ -130,7 +130,7 @@ public class CacheDestroy extends AbstractCommand<VisorCacheStopTaskArg> {
             return null;
         }
 
-        try (GridClient client = Command.startClient(clientCfg)) {
+        try (IgniteClient client = Command.startClient(clientCfg)) {
             TaskExecutor.executeTask(client, VisorCacheStopTask.class, arg(), clientCfg);
         }
 
@@ -149,14 +149,9 @@ public class CacheDestroy extends AbstractCommand<VisorCacheStopTaskArg> {
      * @return Names of user-created caches that exist in the cluster.
      * @throws Exception If failed.
      */
-    private Set<String> collectClusterCaches(GridClientConfiguration clientCfg) throws Exception {
-        try (GridClient client = Command.startClient(clientCfg)) {
-            Set<String> caches = new TreeSet<>();
-
-            for (GridClientNode node : client.compute().nodes(GridClientNode::connectable))
-                caches.addAll(node.caches().keySet());
-
-            return caches;
+    private Set<String> collectClusterCaches(ClientConfiguration clientCfg) throws Exception {
+        try (IgniteClient client = Command.startClient(clientCfg)) {
+            return new HashSet(client.cacheNames());
         }
     }
 }

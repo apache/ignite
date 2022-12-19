@@ -23,14 +23,13 @@ import java.util.LinkedHashMap;
 import java.util.Map;
 import java.util.Set;
 import java.util.UUID;
-import java.util.function.Predicate;
 import java.util.stream.Collectors;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.cache.ReadRepairStrategy;
-import org.apache.ignite.internal.client.GridClient;
-import org.apache.ignite.internal.client.GridClientConfiguration;
-import org.apache.ignite.internal.client.GridClientNode;
+import org.apache.ignite.client.IgniteClient;
+import org.apache.ignite.cluster.ClusterNode;
+import org.apache.ignite.configuration.ClientConfiguration;
 import org.apache.ignite.internal.commandline.AbstractCommand;
 import org.apache.ignite.internal.commandline.Command;
 import org.apache.ignite.internal.commandline.CommandArgIterator;
@@ -73,14 +72,11 @@ public class ConsistencyCommand extends AbstractCommand<Object> {
     /** Parallel check.*/
     private boolean parallel;
 
-    /** Predicate to filter server nodes. */
-    private static final Predicate<GridClientNode> SRV_NODES = node -> !node.isClient();
-
     /** {@inheritDoc} */
-    @Override public Object execute(GridClientConfiguration clientCfg, IgniteLogger log) throws Exception {
+    @Override public Object execute(ClientConfiguration clientCfg, IgniteLogger log) throws Exception {
         String output;
 
-        try (GridClient client = Command.startClient(clientCfg)) {
+        try (IgniteClient client = Command.startClient(clientCfg)) {
             if (cmd == FINALIZE_COUNTERS)
                 output = executeTaskByNameOnNode(client, cmd.taskName(), arg(), null, clientCfg);
             else {
@@ -89,9 +85,8 @@ public class ConsistencyCommand extends AbstractCommand<Object> {
 
                 Set<UUID> nodeIds = parallel ?
                     Collections.singleton(BROADCAST_UUID) :
-                    client.compute().nodes().stream()
-                        .filter(SRV_NODES)
-                        .map(GridClientNode::nodeId)
+                    client.cluster().forServers().nodes().stream()
+                        .map(ClusterNode::id)
                         .collect(toSet());
 
                 for (UUID nodeId : nodeIds) {

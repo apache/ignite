@@ -22,8 +22,9 @@ import java.util.Collection;
 import java.util.List;
 import java.util.Map;
 import org.apache.ignite.IgniteLogger;
-import org.apache.ignite.internal.client.GridClient;
-import org.apache.ignite.internal.client.GridClientConfiguration;
+import org.apache.ignite.client.IgniteClient;
+import org.apache.ignite.configuration.ClientConfiguration;
+import org.apache.ignite.internal.client.thin.TcpIgniteClient;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.T2;
 import org.apache.ignite.internal.util.typedef.internal.U;
@@ -78,10 +79,10 @@ public class WalCommands extends AbstractCommand<T2<String, String>> {
      * @param clientCfg Client configuration.
      * @throws Exception If failed to execute wal action.
      */
-    @Override public Object execute(GridClientConfiguration clientCfg, IgniteLogger logger) throws Exception {
+    @Override public Object execute(ClientConfiguration clientCfg, IgniteLogger logger) throws Exception {
         this.logger = logger;
 
-        try (GridClient client = Command.startClient(clientCfg)) {
+        try (IgniteClient client = TcpIgniteClient.start(clientCfg)) {
             switch (walAct) {
                 case WAL_DELETE:
                     deleteUnusedWalSegments(client, walArgs, clientCfg);
@@ -139,9 +140,9 @@ public class WalCommands extends AbstractCommand<T2<String, String>> {
      * @param clientCfg Client configuration.
      */
     private void deleteUnusedWalSegments(
-        GridClient client,
+        IgniteClient client,
         String walArgs,
-        GridClientConfiguration clientCfg
+        ClientConfiguration clientCfg
     ) throws Exception {
         VisorWalTaskResult res = executeTask(client, VisorWalTask.class,
             walArg(VisorWalTaskOperation.DELETE_UNUSED_WAL_SEGMENTS, walArgs), clientCfg);
@@ -155,9 +156,9 @@ public class WalCommands extends AbstractCommand<T2<String, String>> {
      * @param clientCfg Client configuration.
      */
     private void printUnusedWalSegments(
-        GridClient client,
+        IgniteClient client,
         String walArgs,
-        GridClientConfiguration clientCfg
+        ClientConfiguration clientCfg
     ) throws Exception {
         VisorWalTaskResult res = executeTask(client, VisorWalTask.class,
             walArg(VisorWalTaskOperation.PRINT_UNUSED_WAL_SEGMENTS, walArgs), clientCfg);

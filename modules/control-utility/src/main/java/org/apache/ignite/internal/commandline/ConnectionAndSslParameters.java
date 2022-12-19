@@ -17,6 +17,7 @@
 
 package org.apache.ignite.internal.commandline;
 
+import org.apache.ignite.client.IgniteClient;
 import org.apache.ignite.internal.client.GridClientConfiguration;
 
 /**
@@ -181,7 +182,9 @@ public class ConnectionAndSslParameters {
      * See {@link GridClientConfiguration#getPingInterval()}.
      *
      * @return Ping timeout.
+     * @deprecated Not supported in {@link IgniteClient}.
      */
+    @Deprecated
     public long pingTimeout() {
         return pingTimeout;
     }

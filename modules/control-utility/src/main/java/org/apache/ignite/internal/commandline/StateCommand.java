@@ -19,10 +19,10 @@ package org.apache.ignite.internal.commandline;
 
 import java.util.UUID;
 import org.apache.ignite.IgniteLogger;
+import org.apache.ignite.client.IgniteClient;
 import org.apache.ignite.cluster.ClusterState;
-import org.apache.ignite.internal.client.GridClient;
-import org.apache.ignite.internal.client.GridClientClusterState;
-import org.apache.ignite.internal.client.GridClientConfiguration;
+import org.apache.ignite.configuration.ClientConfiguration;
+import org.apache.ignite.internal.client.thin.TcpIgniteClient;
 
 import static org.apache.ignite.internal.commandline.CommandList.STATE;
 
@@ -41,9 +41,9 @@ public class StateCommand extends AbstractCommand<Void> {
      * @param clientCfg Client configuration.
      * @throws Exception If failed to print state.
      */
-    @Override public Object execute(GridClientConfiguration clientCfg, IgniteLogger log) throws Exception {
-        try (GridClient client = Command.startClient(clientCfg)) {
-            GridClientClusterState state = client.state();
+    @Override public Object execute(ClientConfiguration clientCfg, IgniteLogger log) throws Exception {
+        try (IgniteClient client = TcpIgniteClient.start(clientCfg)) {
+            ClusterState state = client.cluster().state();
 
             UUID id = state.id();
             String tag = state.tag();
@@ -53,9 +53,7 @@ public class StateCommand extends AbstractCommand<Void> {
 
             log.info(CommandHandler.DELIM);
 
-            ClusterState clusterState = state.state();
-
-            switch (clusterState) {
+            switch (state) {
                 case ACTIVE:
                     log.info("Cluster is active");
 
@@ -72,7 +70,7 @@ public class StateCommand extends AbstractCommand<Void> {
                     break;
 
                 default:
-                    throw new IllegalStateException("Unknown state: " + clusterState);
+                    throw new IllegalStateException("Unknown state: " + state);
             }
         }
         catch (Throwable e) {

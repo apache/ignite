@@ -19,7 +19,7 @@ package org.apache.ignite.internal.commandline.diagnostic;
 
 import java.util.Arrays;
 import org.apache.ignite.IgniteLogger;
-import org.apache.ignite.internal.client.GridClientConfiguration;
+import org.apache.ignite.configuration.ClientConfiguration;
 import org.apache.ignite.internal.commandline.AbstractCommand;
 import org.apache.ignite.internal.commandline.Command;
 import org.apache.ignite.internal.commandline.CommandArgIterator;
@@ -40,7 +40,7 @@ public class DiagnosticCommand extends AbstractCommand<DiagnosticSubCommand> {
     private DiagnosticSubCommand subcommand;
 
     /** {@inheritDoc} */
-    @Override public Object execute(GridClientConfiguration clientCfg, IgniteLogger logger) throws Exception {
+    @Override public Object execute(ClientConfiguration clientCfg, IgniteLogger logger) throws Exception {
         if (subcommand == HELP) {
             printDiagnosticHelp(logger);
 

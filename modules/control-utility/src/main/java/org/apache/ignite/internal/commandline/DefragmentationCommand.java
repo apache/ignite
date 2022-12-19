@@ -24,9 +24,9 @@ import java.util.Optional;
 import java.util.Set;
 import java.util.stream.Collectors;
 import org.apache.ignite.IgniteLogger;
-import org.apache.ignite.internal.client.GridClient;
-import org.apache.ignite.internal.client.GridClientConfiguration;
-import org.apache.ignite.internal.client.GridClientNode;
+import org.apache.ignite.client.IgniteClient;
+import org.apache.ignite.cluster.ClusterNode;
+import org.apache.ignite.configuration.ClientConfiguration;
 import org.apache.ignite.internal.commandline.defragmentation.DefragmentationArguments;
 import org.apache.ignite.internal.commandline.defragmentation.DefragmentationSubcommands;
 import org.apache.ignite.internal.visor.VisorTaskArgument;
@@ -51,9 +51,9 @@ public class DefragmentationCommand implements Command<DefragmentationArguments>
     private DefragmentationArguments args;
 
     /** {@inheritDoc} */
-    @Override public Object execute(GridClientConfiguration clientCfg, IgniteLogger log) throws Exception {
-        try (GridClient client = Command.startClient(clientCfg)) {
-            Optional<GridClientNode> firstNodeOpt = client.compute().nodes().stream().filter(GridClientNode::connectable).findFirst();
+    @Override public Object execute(ClientConfiguration clientCfg, IgniteLogger log) throws Exception {
+        try (IgniteClient client = Command.startClient(clientCfg)) {
+            Optional<ClusterNode> firstNodeOpt = client.cluster().nodes().stream().findFirst();
 
             if (firstNodeOpt.isPresent()) {
                 VisorDefragmentationTaskResult res;
@@ -69,15 +69,15 @@ public class DefragmentationCommand implements Command<DefragmentationArguments>
                 }
                 else {
                     VisorTaskArgument<?> visorArg = new VisorTaskArgument<>(
-                        client.compute().nodes().stream().filter(
+                        client.cluster().nodes().stream().filter(
                             node -> args.nodeIds().contains(node.consistentId().toString())
-                        ).map(GridClientNode::nodeId).collect(Collectors.toList()),
+                        ).map(ClusterNode::id).collect(Collectors.toList()),
                         convertArguments(),
                         false
                     );
 
-                    res = client.compute()
-                        .projection(firstNodeOpt.get())
+                    res = client
+                        .compute(client.cluster().forNode(firstNodeOpt.get()))
                         .execute(
                             VisorDefragmentationTask.class.getName(),
                             visorArg

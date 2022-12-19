@@ -25,8 +25,8 @@ import java.util.UUID;
 import java.util.regex.Pattern;
 import java.util.regex.PatternSyntaxException;
 import org.apache.ignite.IgniteLogger;
-import org.apache.ignite.internal.client.GridClient;
-import org.apache.ignite.internal.client.GridClientConfiguration;
+import org.apache.ignite.client.IgniteClient;
+import org.apache.ignite.configuration.ClientConfiguration;
 import org.apache.ignite.internal.commandline.AbstractCommand;
 import org.apache.ignite.internal.commandline.Command;
 import org.apache.ignite.internal.commandline.CommandArgIterator;
@@ -80,14 +80,14 @@ public class CacheIndexesList extends AbstractCommand<CacheIndexesList.Arguments
     }
 
     /** {@inheritDoc} */
-    @Override public Object execute(GridClientConfiguration clientCfg, IgniteLogger logger) throws Exception {
+    @Override public Object execute(ClientConfiguration clientCfg, IgniteLogger logger) throws Exception {
         Set<IndexListInfoContainer> taskRes;
 
         final UUID nodeId = args.nodeId;
 
         IndexListTaskArg taskArg = new IndexListTaskArg(args.groupsRegEx, args.cachesRegEx, args.indexesRegEx);
 
-        try (GridClient client = Command.startClient(clientCfg)) {
+        try (IgniteClient client = Command.startClient(clientCfg)) {
             taskRes = TaskExecutor.executeTaskByNameOnNode(client,
                 IndexListTask.class.getName(), taskArg, nodeId, clientCfg);
         }

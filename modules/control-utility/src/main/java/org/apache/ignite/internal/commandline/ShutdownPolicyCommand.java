@@ -21,9 +21,10 @@ import java.util.Comparator;
 import java.util.UUID;
 import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.ShutdownPolicy;
-import org.apache.ignite.internal.client.GridClient;
-import org.apache.ignite.internal.client.GridClientConfiguration;
-import org.apache.ignite.internal.client.GridClientNode;
+import org.apache.ignite.client.IgniteClient;
+import org.apache.ignite.cluster.ClusterNode;
+import org.apache.ignite.configuration.ClientConfiguration;
+import org.apache.ignite.internal.client.thin.TcpIgniteClient;
 import org.apache.ignite.internal.commandline.shutdown.ShutdownPolicyArgument;
 import org.apache.ignite.internal.visor.shutdown.VisorShutdownPolicyTask;
 import org.apache.ignite.internal.visor.shutdown.VisorShutdownPolicyTaskArg;
@@ -39,14 +40,14 @@ public class ShutdownPolicyCommand extends AbstractCommand<ShutdownPolicyArgumen
     private ShutdownPolicyArgument shutdownPolicyArgument;
 
     /** {@inheritDoc} */
-    @Override public Object execute(GridClientConfiguration clientCfg, IgniteLogger logger) throws Exception {
-        try (GridClient client = Command.startClient(clientCfg)) {
-            UUID coordinatorId = client.compute()
+    @Override public Object execute(ClientConfiguration clientCfg, IgniteLogger logger) throws Exception {
+        try (IgniteClient client = TcpIgniteClient.start(clientCfg)) {
+            UUID coordinatorId = client.cluster()
                 //Only non client node can be coordinator.
-                .nodes(node -> !node.isClient())
+                .forServers().nodes()
                 .stream()
-                .min(Comparator.comparingLong(GridClientNode::order))
-                .map(GridClientNode::nodeId)
+                .min(Comparator.comparingLong(ClusterNode::order))
+                .map(ClusterNode::id)
                 .orElse(null);
 
             VisorShutdownPolicyTaskResult res = TaskExecutor.executeTaskByNameOnNode(
