@@ -23,12 +23,14 @@ import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCache;
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.configuration.IgniteConfiguration;
+import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.TestRecordingCommunicationSpi;
 import org.apache.ignite.internal.pagemem.wal.WALIterator;
 import org.apache.ignite.internal.pagemem.wal.record.ConsistentCutStartRecord;
 import org.apache.ignite.internal.pagemem.wal.record.WALRecord;
 import org.apache.ignite.internal.processors.cache.distributed.near.GridNearTxFinishRequest;
+import org.apache.ignite.internal.util.typedef.G;
 import org.apache.ignite.lang.IgniteFuture;
 import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.transactions.Transaction;
@@ -54,7 +56,7 @@ public class ConsistentCutNodeFailureTest extends AbstractConsistentCutTest {
             stopGrid(nodes());
 
             return "Cut is inconsistent";
-        }, false);
+        });
     }
 
     /** */
@@ -64,7 +66,7 @@ public class ConsistentCutNodeFailureTest extends AbstractConsistentCutTest {
             stopGrid(1);
 
             return "Snapshot operation interrupted, because baseline node left the cluster";
-        }, true);
+        });
     }
 
     /** */
@@ -76,12 +78,14 @@ public class ConsistentCutNodeFailureTest extends AbstractConsistentCutTest {
             GridTestUtils.runAsync(() -> grid(0).cluster().setBaselineTopology(nodes() + 2));
 
             return "Ignite topology changed, can't finish Consistent Cut.";
-        }, true);
+        });
     }
 
     /** */
-    private void runConsistentCutAndBreak(Supplier<String> breakCutWithExcp, boolean unblock) throws Exception {
-        TestRecordingCommunicationSpi clnComm = TestRecordingCommunicationSpi.spi(grid(nodes()));
+    private void runConsistentCutAndBreak(Supplier<String> breakCutWithExcp) throws Exception {
+        Ignite cln = grid(nodes());
+
+        TestRecordingCommunicationSpi clnComm = TestRecordingCommunicationSpi.spi(cln);
 
         clnComm.blockMessages((n, msg) -> msg.getClass() == GridNearTxFinishRequest.class);
 
@@ -89,32 +93,43 @@ public class ConsistentCutNodeFailureTest extends AbstractConsistentCutTest {
 
         clnComm.waitForBlocked();
 
-        awaitAllNodesReadyForIncrementalSnapshot();
+        awaitSnapshotResourcesCleaned();
 
         IgniteFuture<Void> snpFut = snp(grid(0)).createIncrementalSnapshot(SNP);
 
         waitForCutIsStartedOnAllNodes();
 
-        ConsistentCut cut = cutMgr(grid(0)).consistentCut();
+        ConsistentCut brokenCut = cutMgr(grid(0)).consistentCut();
 
         String excMsg = breakCutWithExcp.get();
 
-        GridTestUtils.assertThrows(log, () -> snpFut.get(), IgniteException.class, excMsg);
-
-        if (unblock) {
+        if (G.allGrids().contains(cln)) {
             clnComm.stopBlock();
 
             loadFut.get();
         }
 
+        GridTestUtils.assertThrows(log, () -> snpFut.get(), IgniteException.class, excMsg);
+
+        awaitSnapshotResourcesCleaned();
+
+        for (Ignite g: G.allGrids()) {
+            ConsistentCutManager cutMgr = ((IgniteEx)g).context().cache().context().consistentCutMgr();
+
+            assertNull(cutMgr.consistentCut());
+            assertNull(cutMgr.consistentCutId());
+            assertNull(cutMgr.consistentCutFuture());
+            assertNull(cutMgr.lastCutAwareMsgSentFuture());
+        }
+
         stopAllGrids();
 
         for (int i = 0; i < nodes(); i++)
-            assertWalConsistentRecords(i, cut.id());
+            assertWalConsistentRecords(i, brokenCut.id());
     }
 
     /** */
-    private void assertWalConsistentRecords(int nodeIdx, UUID blkCutId) throws Exception {
+    private void assertWalConsistentRecords(int nodeIdx, UUID brokenCutId) throws Exception {
         WALIterator iter = walIter(nodeIdx);
 
         boolean reachInconsistent = false;
@@ -125,7 +140,7 @@ public class ConsistentCutNodeFailureTest extends AbstractConsistentCutTest {
             if (rec.type() == WALRecord.RecordType.CONSISTENT_CUT_START_RECORD) {
                 ConsistentCutStartRecord startRec = (ConsistentCutStartRecord)rec;
 
-                assertEquals(blkCutId, startRec.cutId());
+                assertEquals(brokenCutId, startRec.cutId());
 
                 reachInconsistent = true;
             }

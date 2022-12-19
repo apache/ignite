@@ -83,7 +83,7 @@ public class ConsistentCutManager extends GridCacheSharedManagerAdapter implemen
 
     /** Stops Consistent Cut in case of baseline topology changed. */
     @Override public void onInitBeforeTopologyLock(GridDhtPartitionsExchangeFuture fut) {
-        if (fut.localJoinExchange() || fut.changedBaseline() || fut.isBaselineNodeFailed())
+        if (fut.changedBaseline() || fut.isBaselineNodeFailed())
             cancelConsistentCut(new IgniteCheckedException("Ignite topology changed, can't finish Consistent Cut."));
     }
 

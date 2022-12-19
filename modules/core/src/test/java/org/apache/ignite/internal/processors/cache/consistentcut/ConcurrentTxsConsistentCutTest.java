@@ -178,7 +178,7 @@ public class ConcurrentTxsConsistentCutTest extends AbstractConsistentCutTest {
         for (int i = 0; i < CUTS; i++) {
             Thread.sleep(100);
 
-            awaitAllNodesReadyForIncrementalSnapshot();
+            awaitSnapshotResourcesCleaned();
 
             snp(grid(0)).createIncrementalSnapshot(SNP).get(getTestTimeout());
 

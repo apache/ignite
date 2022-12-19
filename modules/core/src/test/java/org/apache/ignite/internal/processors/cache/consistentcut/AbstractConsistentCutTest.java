@@ -27,6 +27,7 @@ import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
 import java.util.UUID;
+import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.cache.CacheAtomicityMode;
 import org.apache.ignite.cluster.ClusterState;
@@ -46,6 +47,7 @@ import org.apache.ignite.internal.processors.cache.persistence.wal.WALPointer;
 import org.apache.ignite.internal.processors.cache.persistence.wal.reader.IgniteWalIteratorFactory;
 import org.apache.ignite.internal.processors.cache.version.GridCacheVersion;
 import org.apache.ignite.internal.util.tostring.GridToStringInclude;
+import org.apache.ignite.internal.util.typedef.G;
 import org.apache.ignite.internal.util.typedef.T2;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgniteBiTuple;
@@ -129,13 +131,13 @@ public abstract class AbstractConsistentCutTest extends GridCommonAbstractTest {
     protected abstract int backups();
 
     /** */
-    protected void awaitAllNodesReadyForIncrementalSnapshot() {
+    protected void awaitSnapshotResourcesCleaned() {
         try {
             GridTestUtils.waitForCondition(() -> {
                 boolean ready = true;
 
-                for (int n = 0; n < nodes(); n++)
-                    ready &= snp(grid(n)).currentCreateRequest() == null;
+                for (Ignite g: G.allGrids())
+                    ready &= snp((IgniteEx)g).currentCreateRequest() == null;
 
                 return ready;
             }, 10);

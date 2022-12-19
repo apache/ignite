@@ -126,6 +126,12 @@ class IncrementalSnapshotFutureTask
             }
 
             cctx.consistentCutMgr().consistentCutFuture().chain(fut -> {
+                if (fut.error() != null) {
+                    onDone(fut.error());
+
+                    return null;
+                }
+
                 try {
                     copyWal(incSnpDir, fut.result());
 

@@ -183,7 +183,7 @@ public abstract class AbstractConsistentCutBlockingTest extends AbstractConsiste
 
     /** Manually triggers new Consistent Cut. */
     private IgniteFuture<Void> triggerConsistentCut() {
-        awaitAllNodesReadyForIncrementalSnapshot();
+        awaitSnapshotResourcesCleaned();
 
         return snp(grid(0)).createIncrementalSnapshot(SNP);
     }
