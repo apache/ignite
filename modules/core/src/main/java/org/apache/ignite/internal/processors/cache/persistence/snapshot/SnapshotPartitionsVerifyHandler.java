@@ -149,7 +149,7 @@ public class SnapshotPartitionsVerifyHandler implements SnapshotHandler<Map<Part
                 ", meta=" + meta + ']');
         }
 
-        boolean punchHoleEnabled = isPunchHoleEnabled(opCtx, grps);
+        boolean punchHoleEnabled = isPunchHoleEnabled(opCtx, grpDirs.keySet());
 
         Map<PartitionKeyV2, PartitionHashRecordV2> res = new ConcurrentHashMap<>();
         ThreadLocal<ByteBuffer> buff = ThreadLocal.withInitial(() -> ByteBuffer.allocateDirect(meta.pageSize())
