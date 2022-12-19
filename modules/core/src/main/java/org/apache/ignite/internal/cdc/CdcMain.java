@@ -220,6 +220,9 @@ public class CdcMain implements Runnable {
     private Map<Integer, Long> cachesState;
 
     /** Stopped flag. */
+    private volatile boolean started;
+
+    /** Stopped flag. */
     private volatile boolean stopped;
 
     /** Already processed segments. */
@@ -314,10 +317,14 @@ public class CdcMain implements Runnable {
 
                 consumer.start(mreg, kctx.metric().registry(metricName("cdc", "consumer")));
 
+                started = true;
+
                 try {
                     consumeWalSegmentsUntilStopped();
                 }
                 finally {
+                    stopped = true;
+
                     consumer.stop();
 
                     if (log.isInfoEnabled())
@@ -811,11 +818,21 @@ public class CdcMain implements Runnable {
     /** Stops the application. */
     public void stop() {
         synchronized (this) {
+            if (stopped || !started)
+                return;
+
             if (log.isInfoEnabled())
                 log.info("Stopping Change Data Capture service instance");
 
             stopped = true;
+
+            consumer.stop();
         }
+    }
+
+    /** @return {@code True} if consumer stopped {@code false} otherwise. */
+    public boolean stopped() {
+        return stopped;
     }
 
     /** */
