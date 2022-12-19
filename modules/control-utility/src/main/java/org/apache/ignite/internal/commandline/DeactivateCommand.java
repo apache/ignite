@@ -19,6 +19,7 @@ package org.apache.ignite.internal.commandline;
 
 import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.client.IgniteClient;
+import org.apache.ignite.cluster.ClusterState;
 import org.apache.ignite.configuration.ClientConfiguration;
 import org.apache.ignite.internal.visor.misc.VisorIdAndTagViewTask;
 
@@ -69,7 +70,7 @@ public class DeactivateCommand extends AbstractCommand<Void> {
         logger.warning("Command deprecated. Use " + SET_STATE + " instead.");
 
         try (IgniteClient client = Command.startClient(clientCfg)) {
-            //TODO: client.cluster().state(ClusterState.INACTIVE, forceDeactivation);
+            client.cluster().state(ClusterState.INACTIVE, forceDeactivation);
 
             logger.info("Cluster deactivated");
         }

@@ -54,6 +54,11 @@ class ClientClusterImpl extends ClientClusterGroupImpl implements ClientCluster 
 
     /** {@inheritDoc} */
     @Override public void state(ClusterState newState) throws ClientException {
+        state(newState, false);
+    }
+
+    /** {@inheritDoc} */
+    @Override public void state(ClusterState newState, boolean forceDeactivation) throws ClientException {
         try {
             ch.service(ClientOperation.CLUSTER_CHANGE_STATE,
                 req -> {
@@ -67,6 +72,15 @@ class ClientClusterImpl extends ClientClusterGroupImpl implements ClientCluster 
                     }
 
                     req.out().writeByte((byte)newState.ordinal());
+
+                    if (protocolCtx.isFeatureSupported(ProtocolBitmaskFeature.FORCE_DEACTIVATION_FLAG)) {
+                        req.out().writeBoolean(forceDeactivation);
+                    }
+                    else if (forceDeactivation) {
+                        throw new ClientFeatureNotSupportedByServerException(
+                            "Force deactivation flag  is not supported by the server"
+                        );
+                    }
                 },
                 null
             );

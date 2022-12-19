@@ -77,7 +77,7 @@ public class ClusterStateChangeCommand extends AbstractCommand<ClusterState> {
     /** {@inheritDoc} */
     @Override public Object execute(ClientConfiguration clientCfg, IgniteLogger log) throws Exception {
         try (IgniteClient client = Command.startClient(clientCfg)) {
-            //TODO: client.cluster().state(state, forceDeactivation);
+            client.cluster().state(state, forceDeactivation);
 
             log.info("Cluster state changed to " + state);
 

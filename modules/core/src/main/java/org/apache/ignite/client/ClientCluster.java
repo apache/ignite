@@ -18,6 +18,7 @@
 package org.apache.ignite.client;
 
 import org.apache.ignite.cluster.ClusterState;
+import org.apache.ignite.lang.IgniteExperimental;
 
 /**
  * Thin client cluster facade. Represents whole cluster (all available nodes).
@@ -40,6 +41,19 @@ public interface ClientCluster extends ClientClusterGroup {
      * @throws ClientException If change state operation failed.
      */
     public void state(ClusterState newState) throws ClientException;
+
+    /**
+     * Changes current cluster state to given {@code newState} cluster state.
+     * <p>
+     * <b>NOTE:</b>
+     * Deactivation clears in-memory caches (without persistence) including the system caches.
+     *
+     * @param newState New cluster state.
+     * @param forceDeactivation If {@code true}, cluster deactivation will be forced.
+     * @throws ClientException If change state operation failed.
+     */
+    @IgniteExperimental
+    public void state(ClusterState newState, boolean forceDeactivation) throws ClientException;
 
     /**
      * Disables write-ahead logging for specified cache. When WAL is disabled, changes are not logged to disk.
