@@ -323,17 +323,15 @@ public class CdcMain implements Runnable {
                     consumeWalSegmentsUntilStopped();
                 }
                 finally {
-                    stopped = true;
-
-                    consumer.stop();
-
-                    if (log.isInfoEnabled())
-                        log.info("Ignite Change Data Capture Application stopped.");
+                    stop();
                 }
             }
             finally {
                 for (GridComponent comp : kctx)
                     comp.stop(false);
+
+                if (log.isInfoEnabled())
+                    log.info("Ignite Change Data Capture Application stopped.");
             }
         }
     }
