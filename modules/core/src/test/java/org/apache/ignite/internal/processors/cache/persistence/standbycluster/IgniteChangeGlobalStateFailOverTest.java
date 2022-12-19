@@ -65,9 +65,9 @@ public class IgniteChangeGlobalStateFailOverTest extends IgniteChangeGlobalState
         final Ignite igB2 = backUp(1);
         final Ignite igB3 = backUp(2);
 
-        assertTrue(!igB1.active());
-        assertTrue(!igB2.active());
-        assertTrue(!igB3.active());
+        assertTrue(!igB1.cluster().state().active());
+        assertTrue(!igB2.cluster().state().active());
+        assertTrue(!igB3.cluster().state().active());
 
         final AtomicInteger cntA = new AtomicInteger();
         final AtomicInteger cntD = new AtomicInteger();
@@ -95,7 +95,7 @@ public class IgniteChangeGlobalStateFailOverTest extends IgniteChangeGlobalState
                             cntA.incrementAndGet();
 
                             for (Ignite ign : allBackUpNodes())
-                                assertTrue(ign.active());
+                                assertTrue(ign.cluster().state().active());
 
                             canAct.set(false);
                         }
@@ -186,7 +186,7 @@ public class IgniteChangeGlobalStateFailOverTest extends IgniteChangeGlobalState
                             cntA.incrementAndGet();
 
                             for (Ignite ign : allBackUpNodes())
-                                assertTrue(ign.active());
+                                assertTrue(ign.cluster().state().active());
                         }
                         finally {
                             rwLock.readLock().unlock();
@@ -327,7 +327,7 @@ public class IgniteChangeGlobalStateFailOverTest extends IgniteChangeGlobalState
                             cntA.incrementAndGet();
 
                             for (Ignite ign : allBackUpNodes())
-                                assertTrue(ign.active());
+                                assertTrue(ign.cluster().state().active());
 
                             canAct.set(false);
                         }

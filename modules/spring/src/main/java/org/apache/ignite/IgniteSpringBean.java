@@ -603,7 +603,7 @@ public class IgniteSpringBean implements Ignite, DisposableBean, SmartInitializi
     @Override public boolean active() {
         checkIgnite();
 
-        return g.active();
+        return g.cluster().state().active();
     }
 
     /** {@inheritDoc} */

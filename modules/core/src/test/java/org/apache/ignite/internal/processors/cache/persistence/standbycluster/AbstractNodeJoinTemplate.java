@@ -614,7 +614,7 @@ public abstract class AbstractNodeJoinTemplate extends GridCommonAbstractTest {
                 IgniteEx crd = grid(nodes.get(0));
 
                 for (IgniteEx ig : grids())
-                    assertEquals((boolean)state, ig.active());
+                    assertEquals((boolean)state, ig.cluster().state().active());
 
                 if (!state) {
                     System.out.println(">>> Activate cluster");

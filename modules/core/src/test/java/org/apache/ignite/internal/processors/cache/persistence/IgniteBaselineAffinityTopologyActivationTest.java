@@ -608,7 +608,7 @@ public class IgniteBaselineAffinityTopologyActivationTest extends GridCommonAbst
 
         boolean activated = GridTestUtils.waitForCondition(new GridAbsPredicate() {
             @Override public boolean apply() {
-                return grid("A").active();
+                return grid("A").cluster().state().active();
             }
         }, 10_000);
 
@@ -623,7 +623,7 @@ public class IgniteBaselineAffinityTopologyActivationTest extends GridCommonAbst
 
         activated = GridTestUtils.waitForCondition(new GridAbsPredicate() {
             @Override public boolean apply() {
-                return grid("A").active();
+                return grid("A").cluster().state().active();
             }
         }, 10_000);
 
