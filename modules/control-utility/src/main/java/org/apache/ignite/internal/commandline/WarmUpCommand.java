@@ -22,7 +22,6 @@ import org.apache.ignite.configuration.ClientConfiguration;
 import org.apache.ignite.internal.client.GridClientBeforeNodeStart;
 import org.apache.ignite.internal.client.GridClientDisconnectedException;
 import org.apache.ignite.internal.client.GridClientException;
-import org.apache.ignite.internal.client.GridClientFactory;
 import org.apache.ignite.internal.commandline.argument.CommandArg;
 import org.apache.ignite.internal.commandline.argument.CommandArgUtils;
 
@@ -107,7 +106,7 @@ public class WarmUpCommand extends AbstractCommand<Void> {
     public static GridClientBeforeNodeStart startClientBeforeNodeStart(
         ClientConfiguration clientCfg
     ) throws Exception {
-        GridClientBeforeNodeStart client = GridClientFactory.startBeforeNodeStart(clientCfg);
+        GridClientBeforeNodeStart client = null; //GridClientFactory.startBeforeNodeStart(clientCfg);
 
         // If connection is unsuccessful, fail before doing any operations:
         if (!client.connected()) {

@@ -20,7 +20,6 @@ package org.apache.ignite.internal.commandline;
 import java.util.Map;
 import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.configuration.ClientConfiguration;
-import org.apache.ignite.internal.client.GridClientConfiguration;
 import org.apache.ignite.internal.commandline.cache.CacheSubcommands;
 import org.apache.ignite.internal.util.typedef.F;
 

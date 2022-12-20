@@ -19,7 +19,6 @@ package org.apache.ignite.internal.commandline.snapshot;
 
 import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.configuration.ClientConfiguration;
-import org.apache.ignite.internal.client.GridClientConfiguration;
 import org.apache.ignite.internal.commandline.AbstractCommand;
 import org.apache.ignite.internal.commandline.CommandArgIterator;
 import org.apache.ignite.internal.processors.cache.persistence.snapshot.IgniteSnapshotManager;

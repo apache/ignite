@@ -38,6 +38,7 @@ import org.apache.ignite.cache.affinity.rendezvous.RendezvousAffinityFunction;
 import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.configuration.AtomicConfiguration;
 import org.apache.ignite.configuration.CacheConfiguration;
+import org.apache.ignite.configuration.ClientConnectorConfiguration;
 import org.apache.ignite.configuration.ConnectorConfiguration;
 import org.apache.ignite.configuration.DataRegionConfiguration;
 import org.apache.ignite.configuration.DataStorageConfiguration;
@@ -290,6 +291,12 @@ public abstract class GridCommandHandlerAbstractTest extends GridCommonAbstractT
 
             dsCfg.setEncryptionConfiguration(encCfg);
         }
+
+        ClientConnectorConfiguration cliCfg = new ClientConnectorConfiguration(cfg.getClientConnectorConfiguration());
+
+        cliCfg.getThinClientConfiguration().setMaxActiveComputeTasksPerConnection(5);
+
+        cfg.setClientConnectorConfiguration(cliCfg);
 
         return cfg;
     }

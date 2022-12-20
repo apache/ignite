@@ -33,11 +33,10 @@ import java.util.regex.PatternSyntaxException;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.IgniteLogger;
+import org.apache.ignite.client.IgniteClient;
+import org.apache.ignite.cluster.ClusterNode;
+import org.apache.ignite.configuration.ClientConfiguration;
 import org.apache.ignite.internal.IgniteNodeAttributes;
-import org.apache.ignite.internal.client.GridClient;
-import org.apache.ignite.internal.client.GridClientConfiguration;
-import org.apache.ignite.internal.client.GridClientException;
-import org.apache.ignite.internal.client.GridClientNode;
 import org.apache.ignite.internal.commandline.AbstractCommand;
 import org.apache.ignite.internal.commandline.Command;
 import org.apache.ignite.internal.commandline.CommandArgIterator;
@@ -192,13 +191,13 @@ public class IdleVerify extends AbstractCommand<IdleVerify.Arguments> {
     }
 
     /** {@inheritDoc} */
-    @Override public Object execute(GridClientConfiguration clientCfg, IgniteLogger logger) throws Exception {
-        try (GridClient client = Command.startClient(clientCfg)) {
-            Collection<GridClientNode> nodes = client.compute().nodes(GridClientNode::connectable);
+    @Override public Object execute(ClientConfiguration clientCfg, IgniteLogger logger) throws Exception {
+        try (IgniteClient client = Command.startClient(clientCfg)) {
+            Collection<ClusterNode> nodes = client.cluster().nodes();
 
             boolean idleVerifyV2 = true;
 
-            for (GridClientNode node : nodes) {
+            for (ClusterNode node : nodes) {
                 String nodeVerStr = node.attribute(IgniteNodeAttributes.ATTR_BUILD_VER);
 
                 IgniteProductVersion nodeVer = IgniteProductVersion.fromString(nodeVerStr);
@@ -299,10 +298,10 @@ public class IdleVerify extends AbstractCommand<IdleVerify.Arguments> {
      * @param clientCfg Client configuration.
      */
     private void cacheIdleVerifyDump(
-        GridClient client,
-        GridClientConfiguration clientCfg,
+        IgniteClient client,
+        ClientConfiguration clientCfg,
         IgniteLogger logger
-    ) throws GridClientException {
+    ) throws InterruptedException {
         VisorIdleVerifyDumpTaskArg arg = new VisorIdleVerifyDumpTaskArg(
             args.caches(),
             args.excludeCaches(),
@@ -323,10 +322,10 @@ public class IdleVerify extends AbstractCommand<IdleVerify.Arguments> {
      * @param logger Logger to use.
      */
     private void cacheIdleVerifyV2(
-        GridClient client,
-        GridClientConfiguration clientCfg,
+        IgniteClient client,
+        ClientConfiguration clientCfg,
         IgniteLogger logger
-    ) throws GridClientException {
+    ) throws InterruptedException {
         VisorIdleVerifyTaskArg taskArg = new VisorIdleVerifyTaskArg(
             args.caches(),
             args.excludeCaches(),
@@ -370,10 +369,10 @@ public class IdleVerify extends AbstractCommand<IdleVerify.Arguments> {
      * @param clientCfg Client configuration.
      */
     private void legacyCacheIdleVerify(
-        GridClient client,
-        GridClientConfiguration clientCfg,
+        IgniteClient client,
+        ClientConfiguration clientCfg,
         IgniteLogger logger
-    ) throws GridClientException {
+    ) throws InterruptedException {
         VisorIdleVerifyTaskResult res = executeTask(
             client,
             VisorIdleVerifyTask.class,

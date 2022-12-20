@@ -26,6 +26,7 @@ import org.apache.ignite.client.IgniteClient;
 import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.compute.ComputeTask;
 import org.apache.ignite.configuration.ClientConfiguration;
+import org.apache.ignite.configuration.ClientConnectorConfiguration;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.visor.VisorTaskArgument;
 
@@ -37,7 +38,10 @@ public class TaskExecutor {
     public static final String DFLT_HOST = "127.0.0.1";
 
     /** */
-    public static final String DFLT_PORT = "11211";
+    public static final String DFLT_PORT = String.valueOf(ClientConnectorConfiguration.DFLT_PORT);
+
+    /** */
+    public static final String LEGACY_DFLT_PORT = "11211";
 
     /** Broadcast uuid. */
     public static final UUID BROADCAST_UUID = UUID.randomUUID();
