@@ -1526,20 +1526,16 @@ public abstract class GridCommonAbstractTest extends GridAbstractTest {
     /**
      * @param cache Cache.
      * @return Collection of keys for which given cache is primary.
-     * @throws IgniteCheckedException If failed.
      */
-    protected Integer primaryKey(IgniteCache<?, ?> cache)
-        throws IgniteCheckedException {
+    protected Integer primaryKey(IgniteCache<?, ?> cache) {
         return primaryKeys(cache, 1, 1).get(0);
     }
 
     /**
      * @param cache Cache.
      * @return Keys for which given cache is backup.
-     * @throws IgniteCheckedException If failed.
      */
-    protected Integer backupKey(IgniteCache<?, ?> cache)
-        throws IgniteCheckedException {
+    protected Integer backupKey(IgniteCache<?, ?> cache) {
         return backupKeys(cache, 1, 1).get(0);
     }
 
