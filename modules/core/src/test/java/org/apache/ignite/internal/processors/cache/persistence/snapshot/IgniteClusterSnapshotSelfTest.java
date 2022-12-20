@@ -1224,6 +1224,31 @@ public class IgniteClusterSnapshotSelfTest extends AbstractSnapshotSelfTest {
         assertSnapshotCacheKeys(snpIg.cache(dfltCacheCfg.getName()));
     }
 
+    /** @throws Exception If fails. */
+    @Test
+    public void testClientHandlesSnapshotFailOnStartStage() throws Exception {
+        Ignite ignite = startGridsWithCache(2, dfltCacheCfg, CACHE_KEYS_RANGE);
+
+        Ignite cln = startClientGrid();
+
+        TestRecordingCommunicationSpi failNodeSpi = TestRecordingCommunicationSpi.spi(grid(1));
+
+        failNodeSpi.blockMessages((n, msg) -> msg instanceof SingleNodeMessage);
+
+        IgniteFuture<Void> fut = ignite.snapshot().createSnapshot(SNAPSHOT_NAME);
+
+        failNodeSpi.waitForBlocked(1, 10_000L);
+
+        grid(1).close();
+
+        assertThrowsAnyCause(log,
+            fut::get,
+            ClusterTopologyException.class,
+            "Snapshot operation interrupted, because baseline node left the cluster");
+
+        assertTrue(G.allGrids().contains(cln));
+    }
+
     /**
      * @param ignite Ignite instance.
      * @param started Latch will be released when delta partition processing starts.
