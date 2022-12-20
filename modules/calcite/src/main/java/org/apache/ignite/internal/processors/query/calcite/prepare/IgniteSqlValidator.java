@@ -278,29 +278,64 @@ public class IgniteSqlValidator extends SqlValidatorImpl {
                 throw newValidationError(call, IgniteResource.INSTANCE.illegalAlias(alias));
         }
 
-        if(call.getOperator() instanceof SqlFunction){
-            SqlFunction fun = (SqlFunction)call.getOperator();
-
-            Method mtd = RexImpTable.INSTANCE.getSqlFunctionRef(fun);
-
-            if (mtd == null)
-                throw newValidationError(call, RESOURCE.functionNotFound(mtd.getName()));
-
-            Class<?>[] argTypes = call.getOperandList().stream()
-                .map(op -> typeFactory().getJavaClass(deriveType(scope, op))).toArray(v -> new Class<?>[v]);
-
-            try {
-                Types.lookupMethod(SqlFunctions.class, mtd.getName(), argTypes);
-            }
-            catch (Exception e) {
-                if (X.hasCause(e, NoSuchMethodException.class))
-                    throw newValidationError(call, IgniteResource.INSTANCE.invalidFunctionArgumentTypes(mtd.getName()));
-
-                throw e;
-            }
-        }
+//        if (call.getOperator() instanceof SqlFunction)
+//            validateSqlFunctionParameterTypes(call, scope);
 
         super.validateCall(call, scope);
+    }
+
+    /** Ensures . */
+    private void validateSqlFunctionParameterTypes(SqlCall call, SqlValidatorScope scope) {
+        SqlFunction fun = (SqlFunction)call.getOperator();
+
+        String mtdName = RexImpTable.INSTANCE.sqlFunctionMethodName(fun);
+
+        if (mtdName == null)
+            return;
+
+        Class<?>[] argTypes = call.getOperandList().stream()
+            .map(op -> typeFactory().getJavaClass(deriveType(scope, op))).toArray(v -> new Class<?>[v]);
+
+        try {
+            if (Types.lookupMethod(SqlFunctions.class, mtdName, argTypes) == null)
+                throw newValidationError(call, RESOURCE.functionNotFound(mtdName));
+            else
+                return;
+        }
+        catch (Exception e) {
+            if (!X.hasCause(e, NoSuchMethodException.class))
+                throw e;
+        }
+
+        boolean matched = false;
+
+        for (Method mtd : SqlFunctions.class.getMethods()) {
+            if (!mtd.getName().equals(mtdName) || (!mtd.isVarArgs() && mtd.getParameterCount() != argTypes.length))
+                continue;
+
+            final Class<?>[] expectedTypes = mtd.getParameterTypes();
+
+            for (int i = 0; i < expectedTypes.length; i++) {
+                Class<?> expType = !mtd.isVarArgs() || i < expectedTypes.length - 1
+                    ? expectedTypes[i]
+                    : Object.class;
+
+                Class<?> passedType = argTypes[i];
+
+                if ((!expType.isPrimitive() && passedType.isAssignableFrom(Void.class)) ||
+                    Types.allAssignable(false, new Class<?>[] {expType}, new Class<?>[] {passedType})) {
+                    matched = true;
+
+                    break;
+                }
+            }
+
+            if (matched)
+               break;
+        }
+
+        if(!matched)
+            throw newValidationError(call, IgniteResource.INSTANCE.invalidFunctionArgumentTypes(mtdName));
     }
 
     /** {@inheritDoc} */

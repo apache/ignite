@@ -47,7 +47,6 @@ import org.apache.calcite.linq4j.tree.MethodCallExpression;
 import org.apache.calcite.linq4j.tree.OptimizeShuttle;
 import org.apache.calcite.linq4j.tree.ParameterExpression;
 import org.apache.calcite.linq4j.tree.Primitive;
-import org.apache.calcite.linq4j.tree.Types;
 import org.apache.calcite.rel.type.RelDataType;
 import org.apache.calcite.rel.type.RelDataTypeFactory;
 import org.apache.calcite.rel.type.RelDataTypeFactoryImpl;
@@ -624,12 +623,10 @@ public class RexImpTable {
     }
 
     /** */
-    public @Nullable Method getSqlFunctionRef(SqlFunction fun) {
+    public @Nullable String sqlFunctionMethodName(SqlFunction fun) {
         RexCallImplementor impl = get(fun);
 
-        assert impl == null || impl instanceof MethodImplementor;
-
-        return impl == null ? null : ((MethodImplementor)impl).method;
+        return impl instanceof MethodNameHolder ? ((MethodNameHolder)impl).sqlFunctionMethodName() : null;
     }
 
     /** */
@@ -969,7 +966,7 @@ public class RexImpTable {
     }
 
     /** Implementor for a function that generates calls to a given method. */
-    private static class MethodImplementor extends AbstractRexCallImplementor {
+    private static class MethodImplementor extends AbstractRexCallImplementor implements MethodNameHolder {
         /** */
         protected final Method method;
 
@@ -990,7 +987,7 @@ public class RexImpTable {
             final Expression expression;
             Class clazz = method.getDeclaringClass();
 
-           // try {
+//            try {
                 if (Modifier.isStatic(method.getModifiers()))
                     expression = EnumUtils.call(null, clazz, method.getName(), argValueList);
                 else {
@@ -1018,6 +1015,11 @@ public class RexImpTable {
 //            }
 
             return expression;
+        }
+
+        /** {@inheritDoc} */
+        @Override public String sqlFunctionMethodName() {
+            return method.getName();
         }
     }
 
@@ -1120,7 +1122,7 @@ public class RexImpTable {
      * <p>Use this, as opposed to {@link MethodImplementor}, if the SQL function
      * is overloaded; then you can use one implementor for several overloads.
      */
-    private static class MethodNameImplementor extends AbstractRexCallImplementor {
+    private static class MethodNameImplementor extends AbstractRexCallImplementor implements MethodNameHolder {
         /** */
         protected final String methodName;
 
@@ -1144,6 +1146,11 @@ public class RexImpTable {
                 SqlFunctions.class,
                 methodName,
                 argValueList);
+        }
+
+        /** {@inheritDoc} */
+        @Override public String sqlFunctionMethodName() {
+            return methodName;
         }
     }
 
@@ -1911,6 +1918,11 @@ public class RexImpTable {
             RexToLixTranslator translator,
             RexCall call,
             List<RexToLixTranslator.Result> arguments);
+    }
+
+    /** */
+    private interface MethodNameHolder {
+        String sqlFunctionMethodName();
     }
 
     /**

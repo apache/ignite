@@ -471,7 +471,7 @@ public class DataTypesTest extends AbstractBasicIntegrationTest {
     /** */
     @Test
     public void testNumericInFunctionConversion() {
-        sql("CREATE TABLE strings(a VARCHAR, b BIGINT)");
+        sql("CREATE TABLE strings(vc VARCHAR, bi BIGINT, )");
 
 //        sql(client, "INSERT INTO STRINGS VALUES ('abc', 1)");
 
