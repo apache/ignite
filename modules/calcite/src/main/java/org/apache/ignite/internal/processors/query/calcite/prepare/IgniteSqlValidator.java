@@ -17,6 +17,7 @@
 
 package org.apache.ignite.internal.processors.query.calcite.prepare;
 
+import java.lang.reflect.Method;
 import java.math.BigDecimal;
 import java.util.Arrays;
 import java.util.Collections;
@@ -24,11 +25,13 @@ import java.util.EnumSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
+import org.apache.calcite.linq4j.tree.Types;
 import org.apache.calcite.plan.RelOptTable;
 import org.apache.calcite.prepare.CalciteCatalogReader;
 import org.apache.calcite.prepare.Prepare;
 import org.apache.calcite.rel.type.RelDataType;
 import org.apache.calcite.rel.type.RelDataTypeField;
+import org.apache.calcite.runtime.SqlFunctions;
 import org.apache.calcite.sql.JoinConditionType;
 import org.apache.calcite.sql.SqlAggFunction;
 import org.apache.calcite.sql.SqlCall;
@@ -44,7 +47,6 @@ import org.apache.calcite.sql.SqlLiteral;
 import org.apache.calcite.sql.SqlMerge;
 import org.apache.calcite.sql.SqlNode;
 import org.apache.calcite.sql.SqlNodeList;
-import org.apache.calcite.sql.SqlOperator;
 import org.apache.calcite.sql.SqlOperatorTable;
 import org.apache.calcite.sql.SqlSelect;
 import org.apache.calcite.sql.SqlUpdate;
@@ -64,12 +66,14 @@ import org.apache.calcite.sql.validate.SqlValidatorScope;
 import org.apache.calcite.sql.validate.SqlValidatorTable;
 import org.apache.calcite.sql.validate.SqlValidatorUtil;
 import org.apache.ignite.internal.processors.query.QueryUtils;
+import org.apache.ignite.internal.processors.query.calcite.exec.exp.RexImpTable;
 import org.apache.ignite.internal.processors.query.calcite.schema.CacheTableDescriptor;
 import org.apache.ignite.internal.processors.query.calcite.schema.IgniteCacheTable;
 import org.apache.ignite.internal.processors.query.calcite.schema.IgniteTable;
 import org.apache.ignite.internal.processors.query.calcite.type.IgniteTypeFactory;
 import org.apache.ignite.internal.processors.query.calcite.util.IgniteResource;
 import org.apache.ignite.internal.util.typedef.F;
+import org.apache.ignite.internal.util.typedef.X;
 import org.jetbrains.annotations.Nullable;
 
 import static org.apache.calcite.util.Static.RESOURCE;
@@ -277,7 +281,23 @@ public class IgniteSqlValidator extends SqlValidatorImpl {
         if(call.getOperator() instanceof SqlFunction){
             SqlFunction fun = (SqlFunction)call.getOperator();
 
-            fun.
+            Method mtd = RexImpTable.INSTANCE.getSqlFunctionRef(fun);
+
+            if (mtd == null)
+                throw newValidationError(call, RESOURCE.functionNotFound(mtd.getName()));
+
+            Class<?>[] argTypes = call.getOperandList().stream()
+                .map(op -> typeFactory().getJavaClass(deriveType(scope, op))).toArray(v -> new Class<?>[v]);
+
+            try {
+                Types.lookupMethod(SqlFunctions.class, mtd.getName(), argTypes);
+            }
+            catch (Exception e) {
+                if (X.hasCause(e, NoSuchMethodException.class))
+                    throw newValidationError(call, IgniteResource.INSTANCE.invalidFunctionArgumentTypes(mtd.getName()));
+
+                throw e;
+            }
         }
 
         super.validateCall(call, scope);

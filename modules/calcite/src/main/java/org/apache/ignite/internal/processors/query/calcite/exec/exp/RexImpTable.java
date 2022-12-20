@@ -47,6 +47,7 @@ import org.apache.calcite.linq4j.tree.MethodCallExpression;
 import org.apache.calcite.linq4j.tree.OptimizeShuttle;
 import org.apache.calcite.linq4j.tree.ParameterExpression;
 import org.apache.calcite.linq4j.tree.Primitive;
+import org.apache.calcite.linq4j.tree.Types;
 import org.apache.calcite.rel.type.RelDataType;
 import org.apache.calcite.rel.type.RelDataTypeFactory;
 import org.apache.calcite.rel.type.RelDataTypeFactoryImpl;
@@ -57,6 +58,7 @@ import org.apache.calcite.runtime.SqlFunctions;
 import org.apache.calcite.schema.QueryableTable;
 import org.apache.calcite.schema.SchemaPlus;
 import org.apache.calcite.sql.SqlBinaryOperator;
+import org.apache.calcite.sql.SqlFunction;
 import org.apache.calcite.sql.SqlJsonEmptyOrError;
 import org.apache.calcite.sql.SqlJsonValueEmptyOrErrorBehavior;
 import org.apache.calcite.sql.SqlKind;
@@ -74,6 +76,8 @@ import org.apache.calcite.util.BuiltInMethod;
 import org.apache.calcite.util.Util;
 import org.apache.ignite.calcite.CalciteQueryEngineConfiguration;
 import org.apache.ignite.internal.processors.query.calcite.util.IgniteMethod;
+import org.apache.ignite.internal.util.typedef.X;
+import org.jetbrains.annotations.Nullable;
 
 import static org.apache.calcite.adapter.enumerable.EnumUtils.generateCollatorExpression;
 import static org.apache.calcite.linq4j.tree.ExpressionType.Add;
@@ -620,6 +624,15 @@ public class RexImpTable {
     }
 
     /** */
+    public @Nullable Method getSqlFunctionRef(SqlFunction fun) {
+        RexCallImplementor impl = get(fun);
+
+        assert impl == null || impl instanceof MethodImplementor;
+
+        return impl == null ? null : ((MethodImplementor)impl).method;
+    }
+
+    /** */
     static Expression optimize(Expression expression) {
         return expression.accept(new OptimizeShuttle());
     }
@@ -976,12 +989,34 @@ public class RexImpTable {
             RexCall call, List<Expression> argValueList) {
             final Expression expression;
             Class clazz = method.getDeclaringClass();
-            if (Modifier.isStatic(method.getModifiers()))
-                expression = EnumUtils.call(null, clazz, method.getName(), argValueList);
-            else {
-                expression = EnumUtils.call(argValueList.get(0), clazz, method.getName(),
-                    Util.skip(argValueList, 1));
-            }
+
+           // try {
+                if (Modifier.isStatic(method.getModifiers()))
+                    expression = EnumUtils.call(null, clazz, method.getName(), argValueList);
+                else {
+                    expression = EnumUtils.call(argValueList.get(0), clazz, method.getName(),
+                        Util.skip(argValueList, 1));
+                }
+//            }
+//            catch (Exception e) {
+//                if (X.hasCause(e, NoSuchMethodException.class) && method.getParameterCount() == argValueList.size()) {
+//                    for (int i = 0; i < argValueList.size(); ++i) {
+//                        Type passedType = argValueList.get(i).getType();
+//                        Class<?> expectedType = method.getParameterTypes()[i];
+//
+//                        if (passedType.equals(expectedType))
+//                            continue;
+//
+//                        if(expectedType.isAssignableFrom(passedType))
+//                            System.err.println("TEST | can convert: " + passedType + " to " + expectedType);
+//                        else
+//                            System.err.println("TEST | cannot convert: " + passedType + " to " + expectedType);
+//                    }
+//                }
+//
+//                throw e;
+//            }
+
             return expression;
         }
     }

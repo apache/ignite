@@ -125,7 +125,7 @@ public class IgniteTypeCoercion extends TypeCoercionImpl {
     /** {@inheritDoc} */
     @Override protected boolean coerceOperandType(
         SqlValidatorScope scope,
-        SqlCall call1,
+        SqlCall call,
         int idx,
         RelDataType targetType
     ) {

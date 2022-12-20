@@ -72,4 +72,8 @@ public interface IgniteResource {
     /** */
     @Resources.BaseMessage("Modify operation is not supported for table ''{0}''")
     Resources.ExInst<SqlValidatorException> modifyTableNotSupported(String table);
+
+    /** */
+    @Resources.BaseMessage("Invalid argument types for function ''{0}''")
+    Resources.ExInst<SqlValidatorException> invalidFunctionArgumentTypes(String funName);
 }
