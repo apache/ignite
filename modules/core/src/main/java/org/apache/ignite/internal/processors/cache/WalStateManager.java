@@ -141,7 +141,7 @@ public class WalStateManager extends GridCacheSharedManagerAdapter {
 
             boolean client = cfg.isClientMode() != null && cfg.isClientMode();
 
-            srv = !client && !cfg.isDaemon();
+            srv = !client;
 
             log = kernalCtx.log(WalStateManager.class);
         }

@@ -432,19 +432,9 @@ namespace Apache.Ignite.Core
         bool IsActive();
 
         /// <summary>
-        /// Gets the persistent store metrics.
-        /// <para />
-        /// To enable metrics set <see cref="PersistentStoreConfiguration.MetricsEnabled"/> property
-        /// in <see cref="IgniteConfiguration.PersistentStoreConfiguration"/>.
-        /// </summary>
-        [Obsolete("Use GetDataStorageMetrics.")]
-        IPersistentStoreMetrics GetPersistentStoreMetrics();
-
-        /// <summary>
         /// Gets a collection of memory metrics, one for each
         /// <see cref="DataStorageConfiguration.DataRegionConfigurations"/>.
         /// <para />
-        /// Metrics should be enabled with <see cref="DataStorageConfiguration.MetricsEnabled"/>.
         /// </summary>
         ICollection<IDataRegionMetrics> GetDataRegionMetrics();
 
@@ -456,14 +446,6 @@ namespace Apache.Ignite.Core
         /// </summary>
         /// <param name="dataRegionName">Name of the data region.</param>
         IDataRegionMetrics GetDataRegionMetrics(string dataRegionName);
-
-        /// <summary>
-        /// Gets the persistent store metrics.
-        /// <para />
-        /// To enable metrics set <see cref="DataStorageConfiguration.MetricsEnabled"/> property
-        /// in <see cref="IgniteConfiguration.DataStorageConfiguration"/>.
-        /// </summary>
-        IDataStorageMetrics GetDataStorageMetrics();
 
         /// <summary>
         /// Adds cache configuration template. Name should contain *.

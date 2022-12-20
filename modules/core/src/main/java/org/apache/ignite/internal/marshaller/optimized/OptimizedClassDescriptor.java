@@ -95,6 +95,7 @@ import static org.apache.ignite.internal.marshaller.optimized.OptimizedMarshalle
 import static org.apache.ignite.internal.marshaller.optimized.OptimizedMarshallerUtils.STR;
 import static org.apache.ignite.internal.marshaller.optimized.OptimizedMarshallerUtils.UUID;
 import static org.apache.ignite.internal.marshaller.optimized.OptimizedMarshallerUtils.computeSerialVersionUid;
+import static org.apache.ignite.internal.util.IgniteUtils.isLambda;
 import static org.apache.ignite.marshaller.MarshallerUtils.jobReceiverVersion;
 import static org.apache.ignite.marshaller.MarshallerUtils.jobSenderVersion;
 
@@ -446,160 +447,166 @@ class OptimizedClassDescriptor {
                     readObjMtds = new ArrayList<>();
                     List<ClassFields> fields = new ArrayList<>();
 
-                    for (c = cls; c != null && !c.equals(Object.class); c = c.getSuperclass()) {
-                        Method mtd;
+                    if (isLambda(cls)) {
+                        if (!isSerial)
+                            throw new NotSerializableException("Lambda is not serializable: " + cls);
+                    }
+                    else {
+                        for (c = cls; c != null && !c.equals(Object.class); c = c.getSuperclass()) {
+                            Method mtd;
 
-                        try {
-                            mtd = c.getDeclaredMethod("writeObject", ObjectOutputStream.class);
-
-                            int mod = mtd.getModifiers();
-
-                            if (!isStatic(mod) && isPrivate(mod) && mtd.getReturnType() == Void.TYPE)
-                                mtd.setAccessible(true);
-                            else
-                                // Set method back to null if it has incorrect signature.
-                                mtd = null;
-                        }
-                        catch (NoSuchMethodException ignored) {
-                            mtd = null;
-                        }
-
-                        writeObjMtds.add(mtd);
-
-                        try {
-                            mtd = c.getDeclaredMethod("readObject", ObjectInputStream.class);
-
-                            int mod = mtd.getModifiers();
-
-                            if (!isStatic(mod) && isPrivate(mod) && mtd.getReturnType() == Void.TYPE)
-                                mtd.setAccessible(true);
-                            else
-                                // Set method back to null if it has incorrect signature.
-                                mtd = null;
-                        }
-                        catch (NoSuchMethodException ignored) {
-                            mtd = null;
-                        }
-
-                        readObjMtds.add(mtd);
-
-                        final SerializableTransient serTransAn = c.getAnnotation(SerializableTransient.class);
-                        final TransientSerializable transSerAn = c.getAnnotation(TransientSerializable.class);
-
-                        // Custom serialization policy for transient fields.
-                        if (serTransAn != null) {
                             try {
-                                serTransMtd = c.getDeclaredMethod(serTransAn.methodName(), IgniteProductVersion.class);
+                                mtd = c.getDeclaredMethod("writeObject", ObjectOutputStream.class);
 
-                                int mod = serTransMtd.getModifiers();
+                                int mod = mtd.getModifiers();
 
-                                if (isStatic(mod) && isPrivate(mod) && serTransMtd.getReturnType() == String[].class)
-                                    serTransMtd.setAccessible(true);
+                                if (!isStatic(mod) && isPrivate(mod) && mtd.getReturnType() == Void.TYPE)
+                                    mtd.setAccessible(true);
                                 else
                                     // Set method back to null if it has incorrect signature.
+                                    mtd = null;
+                            }
+                            catch (NoSuchMethodException ignored) {
+                                mtd = null;
+                            }
+
+                            writeObjMtds.add(mtd);
+
+                            try {
+                                mtd = c.getDeclaredMethod("readObject", ObjectInputStream.class);
+
+                                int mod = mtd.getModifiers();
+
+                                if (!isStatic(mod) && isPrivate(mod) && mtd.getReturnType() == Void.TYPE)
+                                    mtd.setAccessible(true);
+                                else
+                                    // Set method back to null if it has incorrect signature.
+                                    mtd = null;
+                            }
+                            catch (NoSuchMethodException ignored) {
+                                mtd = null;
+                            }
+
+                            readObjMtds.add(mtd);
+
+                            final SerializableTransient serTransAn = c.getAnnotation(SerializableTransient.class);
+                            final TransientSerializable transSerAn = c.getAnnotation(TransientSerializable.class);
+
+                            // Custom serialization policy for transient fields.
+                            if (serTransAn != null) {
+                                try {
+                                    serTransMtd = c.getDeclaredMethod(serTransAn.methodName(), IgniteProductVersion.class);
+
+                                    int mod = serTransMtd.getModifiers();
+
+                                    if (isStatic(mod) && isPrivate(mod) && serTransMtd.getReturnType() == String[].class)
+                                        serTransMtd.setAccessible(true);
+                                    else
+                                        // Set method back to null if it has incorrect signature.
+                                        serTransMtd = null;
+                                }
+                                catch (NoSuchMethodException ignored) {
                                     serTransMtd = null;
+                                }
                             }
-                            catch (NoSuchMethodException ignored) {
-                                serTransMtd = null;
-                            }
-                        }
 
-                        // Custom serialization policy for non-transient fields.
-                        if (transSerAn != null) {
-                            try {
-                                transSerMtd = c.getDeclaredMethod(transSerAn.methodName(), IgniteProductVersion.class);
+                            // Custom serialization policy for non-transient fields.
+                            if (transSerAn != null) {
+                                try {
+                                    transSerMtd = c.getDeclaredMethod(transSerAn.methodName(), IgniteProductVersion.class);
 
-                                int mod = transSerMtd.getModifiers();
+                                    int mod = transSerMtd.getModifiers();
 
-                                if (isStatic(mod) && isPrivate(mod) && transSerMtd.getReturnType() == String[].class)
-                                    transSerMtd.setAccessible(true);
-                                else
-                                    // Set method back to null if it has incorrect signature.
+                                    if (isStatic(mod) && isPrivate(mod) && transSerMtd.getReturnType() == String[].class)
+                                        transSerMtd.setAccessible(true);
+                                    else
+                                        // Set method back to null if it has incorrect signature.
+                                        transSerMtd = null;
+                                }
+                                catch (NoSuchMethodException ignored) {
                                     transSerMtd = null;
-                            }
-                            catch (NoSuchMethodException ignored) {
-                                transSerMtd = null;
-                            }
-                        }
-
-                        Field[] clsFields0 = c.getDeclaredFields();
-
-                        Map<String, Field> fieldNames = new HashMap<>();
-
-                        for (Field f : clsFields0)
-                            fieldNames.put(f.getName(), f);
-
-                        List<FieldInfo> clsFields = new ArrayList<>(clsFields0.length);
-
-                        boolean hasSerialPersistentFields = false;
-
-                        try {
-                            Field serFieldsDesc = c.getDeclaredField("serialPersistentFields");
-
-                            int mod = serFieldsDesc.getModifiers();
-
-                            if (serFieldsDesc.getType() == ObjectStreamField[].class &&
-                                isPrivate(mod) && isStatic(mod) && isFinal(mod)) {
-                                hasSerialPersistentFields = true;
-
-                                serFieldsDesc.setAccessible(true);
-
-                                ObjectStreamField[] serFields = (ObjectStreamField[])serFieldsDesc.get(null);
-
-                                for (int i = 0; i < serFields.length; i++) {
-                                    ObjectStreamField serField = serFields[i];
-
-                                    FieldInfo fieldInfo;
-
-                                    if (!fieldNames.containsKey(serField.getName())) {
-                                        fieldInfo = new FieldInfo(null,
-                                            serField.getName(),
-                                            -1,
-                                            fieldType(serField.getType()));
-                                    }
-                                    else {
-                                        Field f = fieldNames.get(serField.getName());
-
-                                        fieldInfo = new FieldInfo(f,
-                                            serField.getName(),
-                                            GridUnsafe.objectFieldOffset(f),
-                                            fieldType(serField.getType()));
-                                    }
-
-                                    clsFields.add(fieldInfo);
                                 }
                             }
-                        }
-                        catch (NoSuchFieldException ignored) {
-                            // No-op.
-                        }
-                        catch (IllegalAccessException e) {
-                            throw new IOException("Failed to get value of 'serialPersistentFields' field in class: " +
-                                cls.getName(), e);
-                        }
 
-                        if (!hasSerialPersistentFields) {
-                            for (int i = 0; i < clsFields0.length; i++) {
-                                Field f = clsFields0[i];
+                            Field[] clsFields0 = c.getDeclaredFields();
 
-                                int mod = f.getModifiers();
+                            Map<String, Field> fieldNames = new HashMap<>();
 
-                                if (!isStatic(mod) && !isTransient(mod)) {
-                                    FieldInfo fieldInfo = new FieldInfo(f, f.getName(),
-                                        GridUnsafe.objectFieldOffset(f), fieldType(f.getType()));
+                            for (Field f : clsFields0)
+                                fieldNames.put(f.getName(), f);
 
-                                    clsFields.add(fieldInfo);
+                            List<FieldInfo> clsFields = new ArrayList<>(clsFields0.length);
+
+                            boolean hasSerialPersistentFields = false;
+
+                            try {
+                                Field serFieldsDesc = c.getDeclaredField("serialPersistentFields");
+
+                                int mod = serFieldsDesc.getModifiers();
+
+                                if (serFieldsDesc.getType() == ObjectStreamField[].class &&
+                                        isPrivate(mod) && isStatic(mod) && isFinal(mod)) {
+                                    hasSerialPersistentFields = true;
+
+                                    serFieldsDesc.setAccessible(true);
+
+                                    ObjectStreamField[] serFields = (ObjectStreamField[])serFieldsDesc.get(null);
+
+                                    for (int i = 0; i < serFields.length; i++) {
+                                        ObjectStreamField serField = serFields[i];
+
+                                        FieldInfo fieldInfo;
+
+                                        if (!fieldNames.containsKey(serField.getName())) {
+                                            fieldInfo = new FieldInfo(null,
+                                                    serField.getName(),
+                                                    -1,
+                                                    fieldType(serField.getType()));
+                                        }
+                                        else {
+                                            Field f = fieldNames.get(serField.getName());
+
+                                            fieldInfo = new FieldInfo(f,
+                                                    serField.getName(),
+                                                    GridUnsafe.objectFieldOffset(f),
+                                                    fieldType(serField.getType()));
+                                        }
+
+                                        clsFields.add(fieldInfo);
+                                    }
                                 }
                             }
-                        }
-
-                        Collections.sort(clsFields, new Comparator<FieldInfo>() {
-                            @Override public int compare(FieldInfo t1, FieldInfo t2) {
-                                return t1.name().compareTo(t2.name());
+                            catch (NoSuchFieldException ignored) {
+                                // No-op.
                             }
-                        });
+                            catch (IllegalAccessException e) {
+                                throw new IOException("Failed to get value of 'serialPersistentFields' field in class: " +
+                                        cls.getName(), e);
+                            }
 
-                        fields.add(new ClassFields(clsFields));
+                            if (!hasSerialPersistentFields) {
+                                for (int i = 0; i < clsFields0.length; i++) {
+                                    Field f = clsFields0[i];
+
+                                    int mod = f.getModifiers();
+
+                                    if (!isStatic(mod) && !isTransient(mod)) {
+                                        FieldInfo fieldInfo = new FieldInfo(f, f.getName(),
+                                                GridUnsafe.objectFieldOffset(f), fieldType(f.getType()));
+
+                                        clsFields.add(fieldInfo);
+                                    }
+                                }
+                            }
+
+                            Collections.sort(clsFields, new Comparator<FieldInfo>() {
+                                @Override public int compare(FieldInfo t1, FieldInfo t2) {
+                                    return t1.name().compareTo(t2.name());
+                                }
+                            });
+
+                            fields.add(new ClassFields(clsFields));
+                        }
                     }
 
                     Collections.reverse(writeObjMtds);

@@ -87,13 +87,6 @@ namespace ignite
             ClusterGroup ForClients();
 
             /**
-             * Get cluster group consisting from the daemon nodes.
-             *
-             * @return Cluster group consisting from the daemon nodes.
-             */
-            ClusterGroup ForDaemons();
-
-            /**
              * Get ClusterGroup for all data nodes that have the cache with the specified name running.
              *
              * @param cacheName Cache name.

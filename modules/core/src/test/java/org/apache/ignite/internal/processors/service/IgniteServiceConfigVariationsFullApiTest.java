@@ -24,8 +24,6 @@ import java.io.ObjectOutput;
 import java.util.concurrent.ThreadLocalRandom;
 import javax.cache.configuration.Factory;
 import org.apache.ignite.IgniteCache;
-import org.apache.ignite.IgniteCheckedException;
-import org.apache.ignite.IgniteException;
 import org.apache.ignite.IgniteServices;
 import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.IgniteInterruptedCheckedException;
@@ -129,12 +127,7 @@ public class IgniteServiceConfigVariationsFullApiTest extends IgniteConfigVariat
             @Override public void run(IgniteServices services, String svcName, TestService svc) {
                 IgniteCache<Object, Object> cache = grid(testedNodeIdx).getOrCreateCache(CACHE_NAME);
 
-                try {
-                    services.deployKeyAffinitySingleton(svcName, (Service)svc, cache.getName(), primaryKey(cache));
-                }
-                catch (IgniteCheckedException e) {
-                    throw new IgniteException(e);
-                }
+                services.deployKeyAffinitySingleton(svcName, (Service)svc, cache.getName(), primaryKey(cache));
             }
         }));
     }

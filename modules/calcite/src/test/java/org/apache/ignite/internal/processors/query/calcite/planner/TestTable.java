@@ -17,9 +17,11 @@
 
 package org.apache.ignite.internal.processors.query.calcite.planner;
 
+import java.lang.reflect.Type;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.HashMap;
+import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.UUID;
@@ -30,8 +32,10 @@ import org.apache.calcite.config.CalciteConnectionConfig;
 import org.apache.calcite.plan.RelOptCluster;
 import org.apache.calcite.plan.RelOptTable;
 import org.apache.calcite.rel.RelCollation;
+import org.apache.calcite.rel.RelFieldCollation;
 import org.apache.calcite.rel.type.RelDataType;
 import org.apache.calcite.rel.type.RelDataTypeFactory;
+import org.apache.calcite.rel.type.RelDataTypeField;
 import org.apache.calcite.rel.type.RelDataTypeImpl;
 import org.apache.calcite.rel.type.RelProtoDataType;
 import org.apache.calcite.rex.RexNode;
@@ -40,6 +44,15 @@ import org.apache.calcite.schema.Statistic;
 import org.apache.calcite.sql.SqlCall;
 import org.apache.calcite.sql.SqlNode;
 import org.apache.calcite.util.ImmutableBitSet;
+import org.apache.ignite.internal.cache.query.index.IndexDefinition;
+import org.apache.ignite.internal.cache.query.index.IndexName;
+import org.apache.ignite.internal.cache.query.index.Order;
+import org.apache.ignite.internal.cache.query.index.SortOrder;
+import org.apache.ignite.internal.cache.query.index.sorted.IndexKeyDefinition;
+import org.apache.ignite.internal.cache.query.index.sorted.IndexKeyType;
+import org.apache.ignite.internal.cache.query.index.sorted.client.ClientIndexDefinition;
+import org.apache.ignite.internal.cache.query.index.sorted.client.ClientInlineIndex;
+import org.apache.ignite.internal.processors.query.QueryUtils;
 import org.apache.ignite.internal.processors.query.calcite.exec.ExecutionContext;
 import org.apache.ignite.internal.processors.query.calcite.metadata.ColocationGroup;
 import org.apache.ignite.internal.processors.query.calcite.prepare.MappingQueryContext;
@@ -51,8 +64,11 @@ import org.apache.ignite.internal.processors.query.calcite.schema.IgniteIndex;
 import org.apache.ignite.internal.processors.query.calcite.schema.IgniteStatisticsImpl;
 import org.apache.ignite.internal.processors.query.calcite.trait.IgniteDistribution;
 import org.apache.ignite.internal.processors.query.calcite.trait.TraitUtils;
+import org.apache.ignite.internal.processors.query.calcite.util.Commons;
 import org.apache.ignite.internal.processors.query.stat.ObjectStatisticsImpl;
 import org.jetbrains.annotations.Nullable;
+
+import static org.apache.ignite.internal.processors.query.calcite.planner.AbstractPlannerTest.DEFAULT_SCHEMA;
 
 /** */
 public class TestTable implements IgniteCacheTable {
@@ -210,7 +226,33 @@ public class TestTable implements IgniteCacheTable {
 
     /** */
     public TestTable addIndex(RelCollation collation, String name) {
-        indexes.put(name, new CacheIndexImpl(collation, name, null, this));
+        LinkedHashMap<String, IndexKeyDefinition> keyDefs = new LinkedHashMap<>();
+
+        RelDataType rowType = protoType.apply(Commons.typeFactory());
+
+        for (RelFieldCollation fc : collation.getFieldCollations()) {
+            RelDataTypeField field = rowType.getFieldList().get(fc.getFieldIndex());
+
+            Type fieldType = Commons.typeFactory().getResultClass(field.getType());
+
+            // For some reason IndexKeyType.forClass throw an exception for char classes, but we have such
+            // classes in tests.
+            IndexKeyType keyType = (fieldType == Character.class || fieldType == char.class) ? IndexKeyType.STRING_FIXED :
+                fieldType instanceof Class ? IndexKeyType.forClass((Class<?>)fieldType) : IndexKeyType.UNKNOWN;
+
+            Order order = new Order(fc.direction.isDescending() ? SortOrder.DESC : SortOrder.ASC, null);
+
+            keyDefs.put(field.getName(), new IndexKeyDefinition(keyType.code(), order, -1));
+        }
+
+        IndexDefinition idxDef = new ClientIndexDefinition(
+            new IndexName(QueryUtils.createTableCacheName(DEFAULT_SCHEMA, this.name), DEFAULT_SCHEMA, this.name, name),
+            keyDefs,
+            -1,
+            -1
+        );
+
+        indexes.put(name, new CacheIndexImpl(collation, name, new ClientInlineIndex(idxDef, -1), this));
 
         return this;
     }

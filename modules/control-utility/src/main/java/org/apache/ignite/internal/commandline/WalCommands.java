@@ -21,7 +21,7 @@ import java.util.ArrayList;
 import java.util.Collection;
 import java.util.List;
 import java.util.Map;
-import java.util.logging.Logger;
+import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.internal.client.GridClient;
 import org.apache.ignite.internal.client.GridClientConfiguration;
 import org.apache.ignite.internal.util.typedef.F;
@@ -52,7 +52,7 @@ public class WalCommands extends AbstractCommand<T2<String, String>> {
     static final String WAL_DELETE = "delete";
 
     /** */
-    private Logger logger;
+    private IgniteLogger logger;
 
     /**
      * Wal action.
@@ -65,7 +65,7 @@ public class WalCommands extends AbstractCommand<T2<String, String>> {
     private String walArgs;
 
     /** {@inheritDoc} */
-    @Override public void printUsage(Logger logger) {
+    @Override public void printUsage(IgniteLogger logger) {
         usage(logger, "Print absolute paths of unused archived wal segments on each node:", WAL,
             WAL_PRINT, "[consistentId1,consistentId2,....,consistentIdN]");
         usage(logger, "Delete unused archived wal segments on each node:", WAL, WAL_DELETE,
@@ -78,7 +78,7 @@ public class WalCommands extends AbstractCommand<T2<String, String>> {
      * @param clientCfg Client configuration.
      * @throws Exception If failed to execute wal action.
      */
-    @Override public Object execute(GridClientConfiguration clientCfg, Logger logger) throws Exception {
+    @Override public Object execute(GridClientConfiguration clientCfg, IgniteLogger logger) throws Exception {
         this.logger = logger;
 
         try (GridClient client = Command.startClient(clientCfg)) {

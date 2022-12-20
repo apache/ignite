@@ -35,8 +35,10 @@ import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.IgniteInterruptedException;
 import org.apache.ignite.IgniteLogger;
+import org.apache.ignite.cache.CacheMode;
 import org.apache.ignite.cache.CachePeekMode;
 import org.apache.ignite.cache.query.QueryRetryException;
+import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.internal.GridKernalContext;
 import org.apache.ignite.internal.processors.cache.GridCacheContext;
 import org.apache.ignite.internal.processors.cache.GridCacheContextInfo;
@@ -73,6 +75,7 @@ import org.h2.value.DataType;
 import org.jetbrains.annotations.Nullable;
 
 import static org.apache.ignite.cache.CacheMode.PARTITIONED;
+import static org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion.NONE;
 
 /**
  * H2 Table implementation.
@@ -1009,7 +1012,7 @@ public class GridH2Table extends TableBase {
 
         refreshStatsIfNeeded();
 
-        return tblStats.primaryRowCount();
+        return tblStats.localRowCount();
     }
 
     /**
@@ -1034,13 +1037,22 @@ public class GridH2Table extends TableBase {
 
         // Update stats if total table size changed significantly since the last stats update.
         if (needRefreshStats(statsTotalRowCnt, curTotalRowCnt) && cacheInfo.affinityNode()) {
-            long primaryRowCnt = cacheSize(CachePeekMode.PRIMARY);
-            long totalRowCnt = cacheSize(CachePeekMode.PRIMARY, CachePeekMode.BACKUP);
+            CacheConfiguration ccfg = cacheContext().config();
+
+            int backups = ccfg.getCacheMode() == CacheMode.REPLICATED ? 0 : cacheContext().config().getBackups();
+
+            // After restart of node with persistence and before affinity exchange - PRIMARY partitions are empty.
+            // Try to predict local row count take into account ideal distribution.
+            long localOwnerRowCnt = cacheSize(CachePeekMode.PRIMARY, CachePeekMode.BACKUP) / (backups + 1);
+
+            int owners = cacheContext().discovery().cacheNodes(cacheContext().name(), NONE).size();
+
+            long totalRowCnt = owners * localOwnerRowCnt;
 
             size.reset();
             size.add(totalRowCnt);
 
-            tblStats = new TableStatistics(totalRowCnt, primaryRowCnt);
+            tblStats = new TableStatistics(totalRowCnt, localOwnerRowCnt);
         }
     }
 

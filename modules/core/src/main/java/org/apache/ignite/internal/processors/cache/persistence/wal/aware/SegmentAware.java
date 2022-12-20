@@ -370,6 +370,7 @@ public class SegmentAware {
      */
     public void lastCheckpointIdx(long absIdx) {
         truncateStorage.lastCheckpointIdx(absIdx);
+        archiveSizeStorage.lastCheckpointIdx(absIdx);
     }
 
     /**

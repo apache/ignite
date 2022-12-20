@@ -38,6 +38,7 @@ import org.apache.ignite.internal.processors.query.QueryEngine;
 import org.apache.ignite.internal.processors.query.calcite.CalciteQueryProcessor;
 import org.apache.ignite.internal.processors.query.calcite.QueryChecker;
 import org.apache.ignite.internal.processors.query.calcite.exec.ExecutionContext;
+import org.apache.ignite.internal.processors.query.calcite.exec.ExecutionServiceImpl;
 import org.apache.ignite.internal.processors.query.calcite.exec.exp.RangeIterable;
 import org.apache.ignite.internal.processors.query.calcite.metadata.ColocationGroup;
 import org.apache.ignite.internal.processors.query.calcite.prepare.bounds.SearchBounds;
@@ -59,6 +60,9 @@ import static org.apache.ignite.testframework.GridTestUtils.waitForCondition;
  */
 @WithSystemProperty(key = "calcite.debug", value = "false")
 public class AbstractBasicIntegrationTest extends GridCommonAbstractTest {
+    /** */
+    protected static final Object[] NULL_RESULT = new Object[] { null };
+
     /** */
     protected static final String TABLE_NAME = "person";
 
@@ -84,8 +88,14 @@ public class AbstractBasicIntegrationTest extends GridCommonAbstractTest {
             for (String cacheName : ign.cacheNames())
                 ign.destroyCache(cacheName);
 
+            CalciteQueryProcessor qryProc = queryProcessor(((IgniteEx)ign));
+
             assertEquals("Not finished queries found [ignite=" + ign.name() + ']',
-                0, queryProcessor((IgniteEx)ign).queryRegistry().runningQueries().size());
+                0, qryProc.queryRegistry().runningQueries().size());
+
+            ExecutionServiceImpl<Object[]> execSvc = (ExecutionServiceImpl<Object[]>)qryProc.executionService();
+            assertEquals("Tracked memory must be 0 after test [ignite=" + ign.name() + ']',
+                0, execSvc.memoryTracker().allocated());
         }
 
         awaitPartitionMapExchange();
@@ -140,8 +150,8 @@ public class AbstractBasicIntegrationTest extends GridCommonAbstractTest {
      * @param cls Exception class.
      * @param msg Error message.
      */
-    protected void assertThrows(String sql, Class<? extends Exception> cls, String msg) {
-        assertThrowsAnyCause(log, () -> executeSql(sql), cls, msg);
+    protected void assertThrows(String sql, Class<? extends Exception> cls, String msg, Object... args) {
+        assertThrowsAnyCause(log, () -> executeSql(sql, args), cls, msg);
     }
 
     /** */
@@ -247,8 +257,23 @@ public class AbstractBasicIntegrationTest extends GridCommonAbstractTest {
         }
 
         /** {@inheritDoc} */
-        @Override public long count(ExecutionContext<?> ectx, ColocationGroup grp) {
-            return delegate.count(ectx, grp);
+        @Override public long count(ExecutionContext<?> ectx, ColocationGroup grp, boolean notNull) {
+            return delegate.count(ectx, grp, notNull);
+        }
+
+        /** {@inheritDoc} */
+        @Override public <Row> Iterable<Row> firstOrLast(
+            boolean first,
+            ExecutionContext<Row> ectx,
+            ColocationGroup grp,
+            @Nullable ImmutableBitSet requiredColumns
+        ) {
+            return delegate.firstOrLast(first, ectx, grp, requiredColumns);
+        }
+
+        /** {@inheritDoc} */
+        @Override public boolean isInlineScanPossible(@Nullable ImmutableBitSet requiredColumns) {
+            return delegate.isInlineScanPossible(requiredColumns);
         }
     }
 

@@ -20,8 +20,8 @@ package org.apache.ignite.internal.commandline.encryption;
 import java.util.List;
 import java.util.Map;
 import java.util.UUID;
-import java.util.logging.Logger;
 import org.apache.ignite.IgniteException;
+import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.internal.client.GridClient;
 import org.apache.ignite.internal.client.GridClientConfiguration;
 import org.apache.ignite.internal.commandline.AbstractCommand;
@@ -69,7 +69,7 @@ public abstract class CacheGroupEncryptionCommand<T> extends AbstractCommand<Vis
     }
 
     /** {@inheritDoc} */
-    @Override public Object execute(GridClientConfiguration clientCfg, Logger log) throws Exception {
+    @Override public Object execute(GridClientConfiguration clientCfg, IgniteLogger log) throws Exception {
         try (GridClient client = Command.startClient(clientCfg)) {
             VisorCacheGroupEncryptionTaskResult<T> res = executeTaskByNameOnNode(
                 client,
@@ -84,8 +84,8 @@ public abstract class CacheGroupEncryptionCommand<T> extends AbstractCommand<Vis
             return res;
         }
         catch (Throwable e) {
-            log.severe("Failed to perform operation.");
-            log.severe(CommandLogger.errorMessage(e));
+            log.error("Failed to perform operation.");
+            log.error(CommandLogger.errorMessage(e));
 
             throw e;
         }
@@ -96,7 +96,7 @@ public abstract class CacheGroupEncryptionCommand<T> extends AbstractCommand<Vis
      * @param grpName Cache group name.
      * @param log Logger.
      */
-    protected void printResults(VisorCacheGroupEncryptionTaskResult<T> res, String grpName, Logger log) {
+    protected void printResults(VisorCacheGroupEncryptionTaskResult<T> res, String grpName, IgniteLogger log) {
         Map<UUID, IgniteException> exceptions = res.exceptions();
 
         for (Map.Entry<UUID, IgniteException> entry : exceptions.entrySet()) {
@@ -120,7 +120,7 @@ public abstract class CacheGroupEncryptionCommand<T> extends AbstractCommand<Vis
      * @param grpName Cache group name.
      * @param log Logger.
      */
-    protected abstract void printNodeResult(T res, String grpName, Logger log);
+    protected abstract void printNodeResult(T res, String grpName, IgniteLogger log);
 
     /**
      * @return Visor task name.
@@ -130,7 +130,7 @@ public abstract class CacheGroupEncryptionCommand<T> extends AbstractCommand<Vis
     /** Subcommand to Display re-encryption status of the cache group. */
     protected static class ReencryptionStatus extends CacheGroupEncryptionCommand<Long> {
         /** {@inheritDoc} */
-        @Override protected void printNodeResult(Long bytesLeft, String grpName, Logger log) {
+        @Override protected void printNodeResult(Long bytesLeft, String grpName, IgniteLogger log) {
             if (bytesLeft == -1)
                 log.info(DOUBLE_INDENT + "re-encryption completed or not required");
             else if (bytesLeft == 0)
@@ -150,7 +150,7 @@ public abstract class CacheGroupEncryptionCommand<T> extends AbstractCommand<Vis
         }
 
         /** {@inheritDoc} */
-        @Override public void printUsage(Logger log) {
+        @Override public void printUsage(IgniteLogger log) {
             usage(log, "Display re-encryption status of the cache group:", CommandList.ENCRYPTION,
                 EncryptionSubcommands.REENCRYPTION_STATUS.toString(), "cacheGroupName");
         }
@@ -162,7 +162,7 @@ public abstract class CacheGroupEncryptionCommand<T> extends AbstractCommand<Vis
         @Override protected void printResults(
             VisorCacheGroupEncryptionTaskResult<List<Integer>> res,
             String grpName,
-            Logger log
+            IgniteLogger log
         ) {
             log.info("Encryption key identifiers for cache: " + grpName);
 
@@ -170,7 +170,7 @@ public abstract class CacheGroupEncryptionCommand<T> extends AbstractCommand<Vis
         }
 
         /** {@inheritDoc} */
-        @Override protected void printNodeResult(List<Integer> keyIds, String grpName, Logger log) {
+        @Override protected void printNodeResult(List<Integer> keyIds, String grpName, IgniteLogger log) {
             if (F.isEmpty(keyIds)) {
                 log.info(DOUBLE_INDENT + "---");
 
@@ -192,7 +192,7 @@ public abstract class CacheGroupEncryptionCommand<T> extends AbstractCommand<Vis
         }
 
         /** {@inheritDoc} */
-        @Override public void printUsage(Logger log) {
+        @Override public void printUsage(IgniteLogger log) {
             usage(log, "View encryption key identifiers of the cache group:", ENCRYPTION,
                 CACHE_GROUP_KEY_IDS.toString(), "cacheGroupName");
         }
@@ -211,13 +211,13 @@ public abstract class CacheGroupEncryptionCommand<T> extends AbstractCommand<Vis
         }
 
         /** {@inheritDoc} */
-        @Override public void printUsage(Logger log) {
+        @Override public void printUsage(IgniteLogger log) {
             usage(log, "Suspend re-encryption of the cache group:", CommandList.ENCRYPTION,
                 EncryptionSubcommands.REENCRYPTION_SUSPEND.toString(), "cacheGroupName");
         }
 
         /** {@inheritDoc} */
-        @Override protected void printNodeResult(Boolean success, String grpName, Logger log) {
+        @Override protected void printNodeResult(Boolean success, String grpName, IgniteLogger log) {
             log.info(String.format("%sre-encryption of the cache group \"%s\" has %sbeen suspended.",
                 DOUBLE_INDENT, grpName, (success ? "" : "already ")));
         }
@@ -226,7 +226,7 @@ public abstract class CacheGroupEncryptionCommand<T> extends AbstractCommand<Vis
         @Override protected void printResults(
             VisorCacheGroupEncryptionTaskResult<Boolean> res,
             String grpName,
-            Logger log
+            IgniteLogger log
         ) {
             super.printResults(res, grpName, log);
 
@@ -250,13 +250,13 @@ public abstract class CacheGroupEncryptionCommand<T> extends AbstractCommand<Vis
         }
 
         /** {@inheritDoc} */
-        @Override public void printUsage(Logger log) {
+        @Override public void printUsage(IgniteLogger log) {
             usage(log, "Resume re-encryption of the cache group:", CommandList.ENCRYPTION,
                 EncryptionSubcommands.REENCRYPTION_RESUME.toString(), "cacheGroupName");
         }
 
         /** {@inheritDoc} */
-        @Override protected void printNodeResult(Boolean success, String grpName, Logger log) {
+        @Override protected void printNodeResult(Boolean success, String grpName, IgniteLogger log) {
             log.info(String.format("%sre-encryption of the cache group \"%s\" has %sbeen resumed.",
                 DOUBLE_INDENT, grpName, (success ? "" : "already ")));
         }

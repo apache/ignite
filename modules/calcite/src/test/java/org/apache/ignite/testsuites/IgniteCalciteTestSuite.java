@@ -21,6 +21,7 @@ import org.apache.ignite.internal.processors.query.calcite.QueryCheckerTest;
 import org.apache.ignite.internal.processors.query.calcite.exec.ClosableIteratorsHolderTest;
 import org.apache.ignite.internal.processors.query.calcite.exec.LogicalRelImplementorTest;
 import org.apache.ignite.internal.processors.query.calcite.exec.exp.IgniteSqlFunctionsTest;
+import org.apache.ignite.internal.processors.query.calcite.exec.tracker.MemoryTrackerTest;
 import org.apache.ignite.internal.processors.query.calcite.sql.SqlCustomParserTest;
 import org.junit.runner.RunWith;
 import org.junit.runners.Suite;
@@ -35,6 +36,7 @@ import org.junit.runners.Suite;
     IntegrationTestSuite.class,
 
     ClosableIteratorsHolderTest.class,
+    MemoryTrackerTest.class,
     QueryCheckerTest.class,
     SqlCustomParserTest.class,
     IgniteSqlFunctionsTest.class,

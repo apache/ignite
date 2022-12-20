@@ -95,16 +95,18 @@ import org.apache.ignite.internal.processors.cache.persistence.db.IgniteCacheGro
 import org.apache.ignite.internal.processors.cache.persistence.diagnostic.pagelocktracker.dumpprocessors.ToFileDumpProcessor;
 import org.apache.ignite.internal.processors.cache.persistence.file.FileIO;
 import org.apache.ignite.internal.processors.cache.persistence.file.FileIOFactory;
+import org.apache.ignite.internal.processors.cache.persistence.snapshot.DataStreamerUpdatesHandler;
 import org.apache.ignite.internal.processors.cache.persistence.snapshot.IgniteSnapshotManager;
+import org.apache.ignite.internal.processors.cache.persistence.snapshot.SnapshotPartitionsVerifyTaskResult;
 import org.apache.ignite.internal.processors.cache.transactions.IgniteInternalTx;
 import org.apache.ignite.internal.processors.cache.transactions.IgniteTxEntry;
 import org.apache.ignite.internal.processors.cache.transactions.TransactionProxyImpl;
-import org.apache.ignite.internal.processors.cache.verify.IdleVerifyResultV2;
 import org.apache.ignite.internal.processors.cache.warmup.BlockedWarmUpConfiguration;
 import org.apache.ignite.internal.processors.cache.warmup.BlockedWarmUpStrategy;
 import org.apache.ignite.internal.processors.cache.warmup.WarmUpTestPluginProvider;
 import org.apache.ignite.internal.processors.cluster.ChangeGlobalStateFinishMessage;
 import org.apache.ignite.internal.processors.cluster.GridClusterStateProcessor;
+import org.apache.ignite.internal.processors.datastreamer.DataStreamerRequest;
 import org.apache.ignite.internal.processors.metric.MetricRegistry;
 import org.apache.ignite.internal.util.BasicRateLimiter;
 import org.apache.ignite.internal.util.distributed.SingleNodeMessage;
@@ -129,6 +131,7 @@ import org.apache.ignite.spi.communication.tcp.TcpCommunicationSpi;
 import org.apache.ignite.spi.metric.LongMetric;
 import org.apache.ignite.spi.metric.Metric;
 import org.apache.ignite.testframework.GridTestUtils;
+import org.apache.ignite.testframework.LogListener;
 import org.apache.ignite.testframework.junits.WithSystemProperty;
 import org.apache.ignite.transactions.Transaction;
 import org.apache.ignite.transactions.TransactionRollbackException;
@@ -2813,7 +2816,6 @@ public class GridCommandHandlerTest extends GridCommandHandlerClusterPerMethodAb
         IgniteEx ignite = startGrids(srvNodes);
 
         startGrid(CLIENT_NODE_NAME_PREFIX);
-        startGrid(DAEMON_NODE_NAME_PREFIX);
 
         ignite.cluster().state(ACTIVE);
 
@@ -2970,7 +2972,7 @@ public class GridCommandHandlerTest extends GridCommandHandlerClusterPerMethodAb
         for (Ignite grid : G.allGrids()) {
             ClusterNode locNode = grid.cluster().localNode();
 
-            if (locNode.isClient() || locNode.isDaemon())
+            if (locNode.isClient())
                 continue;
 
             if (((IgniteEx)grid).context().encryption().reencryptionFuture(CU.cacheId(cacheName)).isDone())
@@ -3059,6 +3061,82 @@ public class GridCommandHandlerTest extends GridCommandHandlerClusterPerMethodAb
     @Test
     public void testClusterSnapshotCreateSynchronously() throws Exception {
         doClusterSnapshotCreate(true);
+    }
+
+    /**
+     * Test that 'not OK' status of snapshot operation is set if the operation produces a warning.
+     *
+     * @throws Exception If failed.
+     */
+    @Test
+    public void testClusterCreateSnapshotWarning() throws Exception {
+        IgniteConfiguration cfg = getConfiguration(getTestIgniteInstanceName(0));
+        cfg.getConnectorConfiguration().setHost("localhost");
+
+        IgniteEx ig = startGrid(cfg);
+
+        cfg = getConfiguration(getTestIgniteInstanceName(1));
+        cfg.getConnectorConfiguration().setHost("localhost");
+
+        startGrid(cfg);
+
+        ig.cluster().state(ACTIVE);
+        createCacheAndPreload(ig, 100);
+
+        TestRecordingCommunicationSpi cm = (TestRecordingCommunicationSpi)grid(0).configuration().getCommunicationSpi();
+
+        cm.blockMessages(DataStreamerRequest.class, grid(1).name());
+
+        AtomicBoolean stopLoading = new AtomicBoolean();
+
+        IgniteInternalFuture<?> loadFut = runAsync(() -> {
+            try (IgniteDataStreamer<Integer, Integer> ds = ig.dataStreamer(DEFAULT_CACHE_NAME)) {
+                int i = 100;
+
+                while (!stopLoading.get()) {
+                    ds.addData(i, i);
+
+                    i++;
+                }
+            }
+        });
+
+        cm.waitForBlocked(IgniteDataStreamer.DFLT_PARALLEL_OPS_MULTIPLIER);
+
+        try {
+            injectTestSystemOut();
+
+            CommandHandler hnd = new CommandHandler();
+
+            List<String> args = new ArrayList<>(F.asList("--snapshot", "create", "testDsSnp", "--sync"));
+
+            int code = execute(hnd, args);
+
+            assertEquals(EXIT_CODE_UNEXPECTED_ERROR, code);
+
+            LogListener logLsnr = LogListener.matches(DataStreamerUpdatesHandler.WRN_MSG).times(1).build();
+            logLsnr.accept(testOut.toString());
+            logLsnr.check();
+
+            args = new ArrayList<>(F.asList("--snapshot", "check", "testDsSnp"));
+
+            code = execute(hnd, args);
+
+            assertEquals(EXIT_CODE_OK, code);
+
+            String out = testOut.toString();
+
+            logLsnr = LogListener.matches(DataStreamerUpdatesHandler.WRN_MSG).times(1).build();
+            logLsnr.accept(out);
+            logLsnr.check();
+
+            assertContains(log, out, "The check procedure has failed, conflict partitions has been found");
+        }
+        finally {
+            stopLoading.set(true);
+            cm.stopBlock();
+            loadFut.get();
+        }
     }
 
     /**
@@ -3186,7 +3264,7 @@ public class GridCommandHandlerTest extends GridCommandHandlerClusterPerMethodAb
 
         StringBuilder sb = new StringBuilder();
 
-        ((IdleVerifyResultV2)h.getLastOperationResult()).print(sb::append, true);
+        ((SnapshotPartitionsVerifyTaskResult)h.getLastOperationResult()).print(sb::append);
 
         assertContains(log, sb.toString(), "The check procedure has finished, no conflicts have been found");
     }

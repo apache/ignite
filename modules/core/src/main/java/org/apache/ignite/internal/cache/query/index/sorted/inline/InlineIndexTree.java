@@ -625,7 +625,7 @@ public class InlineIndexTree extends BPlusTree<IndexRow, IndexRow> {
      * @return Comparison result.
      */
     private int mvccCompare(MvccIO io, long pageAddr, int idx, IndexRow row) {
-        if (!mvccEnabled || row.indexSearchRow())
+        if (!mvccEnabled || row.indexPlainRow())
             return 0;
 
         long crd = io.mvccCoordinatorVersion(pageAddr, idx);
@@ -643,7 +643,7 @@ public class InlineIndexTree extends BPlusTree<IndexRow, IndexRow> {
      * @return Comparison result.
      */
     private int mvccCompare(IndexRow r1, IndexRow r2) {
-        if (!mvccEnabled || r2.indexSearchRow() || r1 == r2)
+        if (!mvccEnabled || r2.indexPlainRow() || r1 == r2)
             return 0;
 
         long crdVer1 = r1.mvccCoordinatorVersion();

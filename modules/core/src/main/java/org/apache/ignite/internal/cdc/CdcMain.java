@@ -220,6 +220,9 @@ public class CdcMain implements Runnable {
     private Map<Integer, Long> cachesState;
 
     /** Stopped flag. */
+    private volatile boolean started;
+
+    /** Stopped flag. */
     private volatile boolean stopped;
 
     /** Already processed segments. */
@@ -314,19 +317,21 @@ public class CdcMain implements Runnable {
 
                 consumer.start(mreg, kctx.metric().registry(metricName("cdc", "consumer")));
 
+                started = true;
+
                 try {
                     consumeWalSegmentsUntilStopped();
                 }
                 finally {
-                    consumer.stop();
-
-                    if (log.isInfoEnabled())
-                        log.info("Ignite Change Data Capture Application stopped.");
+                    stop();
                 }
             }
             finally {
                 for (GridComponent comp : kctx)
                     comp.stop(false);
+
+                if (log.isInfoEnabled())
+                    log.info("Ignite Change Data Capture Application stopped.");
             }
         }
     }
@@ -346,6 +351,7 @@ public class CdcMain implements Runnable {
                 IgniteConfiguration cfg = super.prepareIgniteConfiguration();
 
                 cfg.setIgniteInstanceName(cdcInstanceName(igniteCfg.getIgniteInstanceName()));
+                cfg.setWorkDirectory(igniteCfg.getWorkDirectory());
 
                 if (!F.isEmpty(cdcCfg.getMetricExporterSpi()))
                     cfg.setMetricExporterSpi(cdcCfg.getMetricExporterSpi());
@@ -418,6 +424,12 @@ public class CdcMain implements Runnable {
             AtomicLong lastSgmnt = new AtomicLong(-1);
 
             while (!stopped) {
+                if (!consumer.alive()) {
+                    log.warning("Consumer is not alive. Ignite Change Data Capture Application will be stopped.");
+
+                    return;
+                }
+
                 try (Stream<Path> cdcFiles = Files.list(cdcDir)) {
                     Set<Path> exists = new HashSet<>();
 
@@ -804,10 +816,15 @@ public class CdcMain implements Runnable {
     /** Stops the application. */
     public void stop() {
         synchronized (this) {
+            if (stopped || !started)
+                return;
+
             if (log.isInfoEnabled())
                 log.info("Stopping Change Data Capture service instance");
 
             stopped = true;
+
+            consumer.stop();
         }
     }
 

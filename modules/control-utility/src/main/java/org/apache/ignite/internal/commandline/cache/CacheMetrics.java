@@ -23,7 +23,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.TreeSet;
-import java.util.logging.Logger;
+import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.internal.client.GridClient;
 import org.apache.ignite.internal.client.GridClientConfiguration;
 import org.apache.ignite.internal.commandline.AbstractCommand;
@@ -71,7 +71,7 @@ public class CacheMetrics extends AbstractCommand<VisorCacheMetricsTaskArg> {
     private VisorCacheMetricsTaskArg arg;
 
     /** {@inheritDoc} */
-    @Override public Object execute(GridClientConfiguration clientCfg, Logger log) throws Exception {
+    @Override public Object execute(GridClientConfiguration clientCfg, IgniteLogger log) throws Exception {
         try (GridClient client = Command.startClient(clientCfg)) {
             VisorCacheMetricsTaskResult res = TaskExecutor.executeTaskByNameOnNode(client,
                 VisorCacheMetricsTask.class.getName(), arg, null, clientCfg);
@@ -88,7 +88,7 @@ public class CacheMetrics extends AbstractCommand<VisorCacheMetricsTaskArg> {
     }
 
     /** {@inheritDoc} */
-    @Override public void printUsage(Logger log) {
+    @Override public void printUsage(IgniteLogger log) {
         String desc = "Manages user cache metrics collection: enables, disables it or shows status.";
 
         String cachesArgDesc = CACHES_ARGUMENT + " cache1" + optional(",...,cacheN");

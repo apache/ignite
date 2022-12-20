@@ -19,6 +19,7 @@ package org.apache.ignite.internal.processors.cache.persistence.snapshot;
 
 import java.io.Serializable;
 import java.util.Collection;
+import java.util.List;
 import java.util.Set;
 import java.util.UUID;
 import org.apache.ignite.internal.util.distributed.DistributedProcess;
@@ -57,6 +58,20 @@ public class SnapshotOperationRequest implements Serializable {
 
     /** Exception occurred during snapshot operation processing. */
     private volatile Throwable err;
+
+    /**
+     * Snapshot operation warnings. Warnings do not interrupt snapshot process but raise exception at the end to make
+     * the operation status 'not OK' if no other error occurred.
+     */
+    private volatile List<String> warnings;
+
+    /** Snapshot metadata. */
+    private transient SnapshotMetadata meta;
+
+    /**
+     * Warning flag of concurrent inconsistent-by-nature streamer updates.
+     */
+    private transient volatile boolean streamerWrn;
 
     /** Flag indicating that the {@link DistributedProcessType#START_SNAPSHOT} phase has completed. */
     private transient volatile boolean startStageEnded;
@@ -162,6 +177,50 @@ public class SnapshotOperationRequest implements Serializable {
      */
     protected void startStageEnded(boolean startStageEnded) {
         this.startStageEnded = startStageEnded;
+    }
+
+    /**
+     * @return Warnings of snapshot operation.
+     */
+    public List<String> warnings() {
+        return warnings;
+    }
+
+    /**
+     * @param warnings Warnings of snapshot operation.
+     */
+    public void warnings(List<String> warnings) {
+        assert this.warnings == null;
+
+        this.warnings = warnings;
+    }
+
+    /**
+     * {@code True} If the streamer warning flag is set. {@code False} otherwise.
+     */
+    public boolean streamerWarning() {
+        return streamerWrn;
+    }
+
+    /**
+     * Sets the streamer warning flag.
+     */
+    public boolean streamerWarning(boolean val) {
+        return streamerWrn = val;
+    }
+
+    /**
+     * @return Snapshot metadata.
+     */
+    public SnapshotMetadata meta() {
+        return meta;
+    }
+
+    /**
+     * Stores snapshot metadata.
+     */
+    public void meta(SnapshotMetadata meta) {
+        this.meta = meta;
     }
 
     /** {@inheritDoc} */

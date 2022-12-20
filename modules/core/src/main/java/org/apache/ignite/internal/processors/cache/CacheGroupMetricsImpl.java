@@ -175,6 +175,14 @@ public class CacheGroupMetricsImpl {
             this::getTotalAllocatedSize,
             "Total size of memory allocated for group, in bytes.");
 
+        mreg.register("ClusterOwningPartitionsCount",
+            this::getClusterOwningPartitionsCount,
+            "Count of partitions for this cache group in the entire cluster with state OWNING.");
+
+        mreg.register("ClusterMovingPartitionsCount",
+            this::getClusterMovingPartitionsCount,
+            "Count of partitions for this cache group in the entire cluster with state MOVING.");
+
         if (ctx.config().isEncryptionEnabled()) {
             mreg.register("ReencryptionFinished",
                 () -> !ctx.shared().kernalContext().encryption().reencryptionInProgress(ctx.groupId()),

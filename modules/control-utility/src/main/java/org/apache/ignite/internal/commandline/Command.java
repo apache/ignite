@@ -19,7 +19,7 @@ package org.apache.ignite.internal.commandline;
 
 import java.util.Comparator;
 import java.util.Map;
-import java.util.logging.Logger;
+import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.internal.client.GridClient;
 import org.apache.ignite.internal.client.GridClientBeforeNodeStart;
 import org.apache.ignite.internal.client.GridClientConfiguration;
@@ -105,7 +105,7 @@ public interface Command<T> {
      * @param cmd Command.
      * @param args Arguments.
      */
-    public default void usage(Logger logger, String desc, CommandList cmd, String... args) {
+    public default void usage(IgniteLogger logger, String desc, CommandList cmd, String... args) {
         usage(logger, desc, cmd, null, args);
     }
 
@@ -119,7 +119,7 @@ public interface Command<T> {
      * @param args Arguments.
      */
     public default void usage(
-        Logger logger,
+        IgniteLogger logger,
         String desc,
         CommandList cmd,
         @Nullable Map<String, String> paramsDesc,
@@ -149,7 +149,7 @@ public interface Command<T> {
      * @param indent Indent string.
      * @param logger Logger to use.
      */
-    public default void usageParams(Map<String, String> paramsDesc, String indent, Logger logger) {
+    public default void usageParams(Map<String, String> paramsDesc, String indent, IgniteLogger logger) {
         int maxParamLen = paramsDesc.keySet().stream().max(Comparator.comparingInt(String::length)).get().length();
 
         for (Map.Entry<String, String> param : paramsDesc.entrySet())
@@ -188,13 +188,13 @@ public interface Command<T> {
      * @return Result of operation (mostly usable for tests).
      * @throws Exception If error occur.
      */
-    public Object execute(GridClientConfiguration clientCfg, Logger logger) throws Exception;
+    public Object execute(GridClientConfiguration clientCfg, IgniteLogger logger) throws Exception;
 
     /**
      * Actual command execution with verbose mode if needed.
      * Implement it if your command supports verbose mode.
      *
-     * @see Command#execute(GridClientConfiguration, Logger)
+     * @see Command#execute(GridClientConfiguration, IgniteLogger)
      *
      * @param clientCfg Thin client configuration if connection to cluster is necessary.
      * @param logger Logger to use.
@@ -202,7 +202,7 @@ public interface Command<T> {
      * @return Result of operation (mostly usable for tests).
      * @throws Exception If error occur.
      */
-    default Object execute(GridClientConfiguration clientCfg, Logger logger, boolean verbose) throws Exception {
+    default Object execute(GridClientConfiguration clientCfg, IgniteLogger logger, boolean verbose) throws Exception {
         return execute(clientCfg, logger);
     }
 
@@ -242,7 +242,7 @@ public interface Command<T> {
      *
      * @param logger Logger to use.
      */
-    public void printUsage(Logger logger);
+    public void printUsage(IgniteLogger logger);
 
     /**
      * @return command name.

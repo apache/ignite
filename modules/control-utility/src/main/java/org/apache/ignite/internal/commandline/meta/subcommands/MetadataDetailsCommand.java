@@ -20,8 +20,8 @@ package org.apache.ignite.internal.commandline.meta.subcommands;
 import java.util.Arrays;
 import java.util.HashMap;
 import java.util.Map;
-import java.util.logging.Logger;
 import java.util.stream.Collectors;
+import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.internal.binary.BinaryMetadata;
 import org.apache.ignite.internal.binary.BinaryUtils;
 import org.apache.ignite.internal.commandline.CommandArgIterator;
@@ -48,7 +48,7 @@ public class MetadataDetailsCommand
     }
 
     /** {@inheritDoc} */
-    @Override protected void printResult(MetadataListResult res, Logger log) {
+    @Override protected void printResult(MetadataListResult res, IgniteLogger log) {
         if (res.metadata() == null) {
             log.info("Type not found");
 

@@ -19,7 +19,7 @@ package org.apache.ignite.internal.commandline;
 
 import java.util.Map;
 import java.util.UUID;
-import java.util.logging.Logger;
+import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.internal.SB;
 
@@ -120,10 +120,10 @@ public class CommandLogger {
      *
      * @param exceptions map containing node ids and exceptions
      * @param infoMsg single message to log
-     * @param logger Logger to use
+     * @param logger IgniteLogger to use
      * @return true if errors were printed.
      */
-    public static boolean printErrors(Map<UUID, Exception> exceptions, String infoMsg, Logger logger) {
+    public static boolean printErrors(Map<UUID, Exception> exceptions, String infoMsg, IgniteLogger logger) {
         if (!F.isEmpty(exceptions)) {
             logger.info(infoMsg);
 

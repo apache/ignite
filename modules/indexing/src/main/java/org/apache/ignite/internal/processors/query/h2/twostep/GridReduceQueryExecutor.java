@@ -163,6 +163,9 @@ public class GridReduceQueryExecutor {
     /** Partition mapper. */
     private ReducePartitionMapper mapper;
 
+    /** Exactly one segment for limited scope of queries. */
+    private static final BitSet ONE_SEG = BitSet.valueOf(new byte[]{1});
+
     /**
      * @param ctx Context.
      * @param h2 H2 Indexing.
@@ -415,7 +418,7 @@ public class GridReduceQueryExecutor {
 
             final Collection<ClusterNode> nodes = mapping.nodes();
 
-            final Map<ClusterNode, Integer> nodeToSegmentsCnt = createNodeToSegmentsCountMapping(qry, mapping);
+            final Map<ClusterNode, BitSet> nodeToSegmentsCnt = createNodeToSegmentsCountMapping(qry, mapping);
 
             assert !F.isEmpty(nodes);
 
@@ -606,14 +609,14 @@ public class GridReduceQueryExecutor {
      * @param mapping Nodes to partition mapping.
      * @return Mapping of node to segments.
      */
-    private Map<ClusterNode, Integer> createNodeToSegmentsCountMapping(GridCacheTwoStepQuery qry, ReducePartitionMapResult mapping) {
-        Map<ClusterNode, Integer> res = new HashMap<>();
+    private Map<ClusterNode, BitSet> createNodeToSegmentsCountMapping(GridCacheTwoStepQuery qry, ReducePartitionMapResult mapping) {
+        Map<ClusterNode, BitSet> res = new HashMap<>();
 
         Collection<ClusterNode> nodes = mapping.nodes();
 
         if (qry.explain() || qry.isReplicatedOnly()) {
             for (ClusterNode node : nodes) {
-                Integer prev = res.put(node, 1);
+                BitSet prev = res.put(node, ONE_SEG);
 
                 assert prev == null;
             }
@@ -633,12 +636,15 @@ public class GridReduceQueryExecutor {
                 for (int i = 0; i < parts.size(); i++)
                     bs.set(InlineIndexImpl.calculateSegment(segments, parts.get(i)));
 
-                Integer prev = res.put(node, bs.cardinality());
+                BitSet prev = res.put(node, bs);
 
                 assert prev == null;
             }
-            else
-                res.put(node, segments);
+            else {
+                BitSet whole = new BitSet(segments);
+                whole.set(0, segments, true);
+                res.put(node, whole);
+            }
         }
 
         return res;
@@ -754,7 +760,7 @@ public class GridReduceQueryExecutor {
         List<GridCacheSqlQuery> mapQueries,
         Collection<ClusterNode> nodes,
         int pageSize,
-        Map<ClusterNode, Integer> nodeToSegmentsCnt,
+        Map<ClusterNode, BitSet> nodeToSegmentsCnt,
         boolean skipMergeTbl,
         boolean explain,
         Boolean dataPageScanEnabled) {
@@ -795,7 +801,7 @@ public class GridReduceQueryExecutor {
 
                 replicatedQrysCnt++;
 
-                reducer.setSources(singletonMap(node, 1)); // Replicated tables can have only 1 segment.
+                reducer.setSources(singletonMap(node, ONE_SEG));
             }
             else
                 reducer.setSources(nodeToSegmentsCnt);
@@ -805,7 +811,7 @@ public class GridReduceQueryExecutor {
             r.reducers().add(reducer);
         }
 
-        int cnt = nodeToSegmentsCnt.values().stream().mapToInt(i -> i).sum();
+        int cnt = nodeToSegmentsCnt.values().stream().mapToInt(BitSet::cardinality).sum();
 
         r.init( (r.reducers().size() - replicatedQrysCnt) * cnt + replicatedQrysCnt);
 

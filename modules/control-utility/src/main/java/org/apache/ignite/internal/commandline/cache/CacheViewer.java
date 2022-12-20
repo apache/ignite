@@ -21,8 +21,8 @@ import java.util.Collection;
 import java.util.LinkedHashMap;
 import java.util.Map;
 import java.util.UUID;
-import java.util.logging.Logger;
 import java.util.stream.Collectors;
+import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.internal.client.GridClient;
 import org.apache.ignite.internal.client.GridClientConfiguration;
 import org.apache.ignite.internal.client.GridClientException;
@@ -70,7 +70,7 @@ import static org.apache.ignite.internal.visor.verify.VisorViewCacheCmd.SEQ;
  */
 public class CacheViewer extends AbstractCommand<CacheViewer.Arguments> {
     /** {@inheritDoc} */
-    @Override public void printUsage(Logger logger) {
+    @Override public void printUsage(IgniteLogger logger) {
         String description = "Show information about caches, groups or sequences that match a regular expression. " +
             "When executed without parameters, this subcommand prints the list of caches.";
 
@@ -161,7 +161,7 @@ public class CacheViewer extends AbstractCommand<CacheViewer.Arguments> {
     }
 
     /** {@inheritDoc} */
-    @Override public Object execute(GridClientConfiguration clientCfg, Logger logger) throws Exception {
+    @Override public Object execute(GridClientConfiguration clientCfg, IgniteLogger logger) throws Exception {
         VisorViewCacheTaskArg taskArg = new VisorViewCacheTaskArg(args.regex(), args.cacheCommand());
 
         VisorViewCacheTaskResult res;
@@ -341,7 +341,7 @@ public class CacheViewer extends AbstractCommand<CacheViewer.Arguments> {
         Map<String, VisorCacheConfiguration> caches,
         OutputFormat outputFormat,
         Map<String, Integer> cacheToMapped,
-        Logger logger
+        IgniteLogger logger
     ) {
 
         for (Map.Entry<String, VisorCacheConfiguration> entry : caches.entrySet()) {
@@ -393,7 +393,7 @@ public class CacheViewer extends AbstractCommand<CacheViewer.Arguments> {
         Arguments cacheArgs,
         VisorViewCacheTaskResult viewRes,
         GridClientConfiguration clientCfg,
-        Logger logger
+        IgniteLogger logger
     ) throws GridClientException {
         VisorCacheConfigurationCollectorTaskArg taskArg = new VisorCacheConfigurationCollectorTaskArg(cacheArgs.regex());
 
@@ -414,7 +414,7 @@ public class CacheViewer extends AbstractCommand<CacheViewer.Arguments> {
      * @param infos Caches info.
      * @param cmd Command.
      */
-    private void printCacheInfos(Collection<CacheInfo> infos, VisorViewCacheCmd cmd, Logger logger) {
+    private void printCacheInfos(Collection<CacheInfo> infos, VisorViewCacheCmd cmd, IgniteLogger logger) {
         for (CacheInfo info : infos) {
             Map<String, Object> map = info.toMap(cmd);
 

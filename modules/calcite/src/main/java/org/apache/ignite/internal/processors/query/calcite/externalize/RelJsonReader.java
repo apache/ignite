@@ -243,6 +243,9 @@ public class RelJsonReader {
         /** {@inheritDoc} */
         @Override public List<RexNode> getExpressionList(String tag) {
             List<Object> jsonNodes = (List)jsonRel.get(tag);
+            if (jsonNodes == null)
+                return null;
+
             List<RexNode> nodes = new ArrayList<>();
             for (Object jsonNode : jsonNodes)
                 nodes.add(relJson.toRex(this, jsonNode));

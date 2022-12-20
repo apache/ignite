@@ -23,7 +23,7 @@ import java.util.HashSet;
 import java.util.Set;
 import java.util.UUID;
 import java.util.function.Consumer;
-import java.util.logging.Logger;
+import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.internal.client.GridClient;
 import org.apache.ignite.internal.client.GridClientConfiguration;
 import org.apache.ignite.internal.client.GridClientNode;
@@ -55,7 +55,7 @@ public class TracingConfigurationCommand extends AbstractCommand<TracingConfigur
     private TracingConfigurationArguments args;
 
     /** {@inheritDoc} */
-    @Override public void printUsage(Logger log) {
+    @Override public void printUsage(IgniteLogger log) {
         usage(
             log,
             "Print tracing configuration: ",
@@ -128,7 +128,7 @@ public class TracingConfigurationCommand extends AbstractCommand<TracingConfigur
      * @param clientCfg Client configuration.
      * @throws Exception If failed to execute tracing-configuration action.
      */
-    @Override public Object execute(GridClientConfiguration clientCfg, Logger log) throws Exception {
+    @Override public Object execute(GridClientConfiguration clientCfg, IgniteLogger log) throws Exception {
         try (GridClient client = Command.startClient(clientCfg)) {
             UUID crdId = client.compute()
                 //Only non client node can be coordinator.
@@ -151,7 +151,7 @@ public class TracingConfigurationCommand extends AbstractCommand<TracingConfigur
             return res;
         }
         catch (Throwable e) {
-            log.severe("Failed to execute tracing-configuration command='" + args.command().text() + "'");
+            log.error("Failed to execute tracing-configuration command='" + args.command().text() + "'");
 
             throw e;
         }

@@ -215,7 +215,6 @@ public class PlatformContextImpl implements PlatformContext, PartitionsExchangeA
             w.writeCollection(node.hostNames());
             w.writeLong(node.order());
             w.writeBoolean(node.isLocal());
-            w.writeBoolean(node.isDaemon());
             w.writeBoolean(node.isClient());
             w.writeObjectDetached(node.consistentId());
             PlatformUtils.writeNodeVersion(w, node.version());
