@@ -769,7 +769,6 @@ public class SystemViewSelfTest extends GridCommonAbstractTest {
         assertEquals(node.order(), view.nodeOrder());
         assertEquals(node.version().toString(), view.version());
         assertEquals(isLoc, view.isLocal());
-        assertEquals(node.isDaemon(), view.isDaemon());
         assertEquals(node.isClient(), view.isClient());
     }
 

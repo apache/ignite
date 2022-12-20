@@ -20,7 +20,7 @@ package org.apache.ignite.internal.metric;
 
 import com.google.common.collect.Iterators;
 import org.apache.ignite.IgniteCache;
-import org.apache.ignite.configuration.CacheConfiguration;
+import org.apache.ignite.cluster.ClusterState;
 import org.apache.ignite.configuration.DataRegionConfiguration;
 import org.apache.ignite.configuration.DataStorageConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
@@ -30,8 +30,7 @@ import org.apache.ignite.internal.processors.metric.GridMetricManager;
 import org.apache.ignite.internal.processors.metric.MetricRegistry;
 import org.apache.ignite.spi.metric.LongMetric;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
-import org.jetbrains.annotations.NotNull;
-import org.junit.Assert;
+import org.jetbrains.annotations.Nullable;
 import org.junit.Test;
 
 import static org.apache.ignite.internal.metric.IoStatisticsCacheSelfTest.logicalReads;
@@ -46,6 +45,9 @@ import static org.apache.ignite.internal.metric.IoStatisticsMetricsLocalMXBeanIm
 import static org.apache.ignite.internal.metric.IoStatisticsType.CACHE_GROUP;
 import static org.apache.ignite.internal.metric.IoStatisticsType.HASH_INDEX;
 import static org.apache.ignite.internal.processors.metric.impl.MetricUtils.metricName;
+import static org.apache.ignite.internal.util.IgniteUtils.MB;
+import static org.hamcrest.Matchers.greaterThan;
+import static org.junit.Assert.assertThat;
 
 /**
  * Tests for IO statistic manager.
@@ -55,7 +57,11 @@ public class IoStatisticsSelfTest extends GridCommonAbstractTest {
     private static final int RECORD_COUNT = 5000;
 
     /** {@inheritDoc} */
-    @Override protected void beforeTestsStarted() throws Exception {
+    @Override protected void beforeTest() throws Exception {
+        super.beforeTest();
+
+        stopAllGrids();
+
         cleanPersistenceDir();
     }
 
@@ -112,7 +118,7 @@ public class IoStatisticsSelfTest extends GridCommonAbstractTest {
     }
 
     /**
-     * Test LOCAL_NODE statistics tracking for persistent cache.
+     * Test LOCAL_NODE statistics tracking for not persistent cache.
      *
      * @throws Exception In case of failure.
      */
@@ -122,7 +128,7 @@ public class IoStatisticsSelfTest extends GridCommonAbstractTest {
     }
 
     /**
-     * Test LOCAL_NODE statistics tracking for not persistent cache.
+     * Test LOCAL_NODE statistics tracking for persistent cache.
      *
      * @throws Exception In case of failure.
      */
@@ -145,28 +151,26 @@ public class IoStatisticsSelfTest extends GridCommonAbstractTest {
         long physicalReadsCnt = physicalReads(mmgr, CACHE_GROUP, DEFAULT_CACHE_NAME, null);
 
         if (isPersistent)
-            Assert.assertTrue(physicalReadsCnt > 0);
+            assertThat(physicalReadsCnt, greaterThan(0L));
         else
-            Assert.assertEquals(0, physicalReadsCnt);
+            assertEquals(0, physicalReadsCnt);
 
-        Long logicalReads = logicalReads(mmgr, HASH_INDEX, metricName(DEFAULT_CACHE_NAME, HASH_PK_IDX_NAME));
+        long logicalReads = logicalReads(mmgr, HASH_INDEX, metricName(DEFAULT_CACHE_NAME, HASH_PK_IDX_NAME));
 
-        Assert.assertNotNull(logicalReads);
-
-        Assert.assertEquals(RECORD_COUNT, logicalReads.longValue());
+        assertEquals(RECORD_COUNT, logicalReads);
     }
 
     /**
      * Prepare Ignite instance and fill cache.
      *
-     * @param isPersistent {@code true} in case persistence should be enable.
+     * @param isPersistent {@code true} in case persistence should be enabled.
      * @return Ignite instance.
      * @throws Exception In case of failure.
      */
-    @NotNull private IgniteEx prepareData(boolean isPersistent) throws Exception {
+    private IgniteEx prepareData(boolean isPersistent) throws Exception {
         IgniteEx grid = prepareIgnite(isPersistent);
 
-        IgniteCache cache = grid.getOrCreateCache(DEFAULT_CACHE_NAME);
+        IgniteCache<String, String> cache = grid.getOrCreateCache(DEFAULT_CACHE_NAME);
 
         resetAllIoMetrics(grid);
 
@@ -190,9 +194,11 @@ public class IoStatisticsSelfTest extends GridCommonAbstractTest {
             DataStorageConfiguration dsCfg = new DataStorageConfiguration()
                 .setDefaultDataRegionConfiguration(
                     new DataRegionConfiguration()
-                        .setMaxSize(30L * 1024 * 1024)
-                        .setPersistenceEnabled(true))
-                .setWalMode(WALMode.LOG_ONLY);
+                        // Value is chosen so that DataPage are evicted from data region, when adding an entry to the
+                        // cache, we again loaded (read) the DataPage from disk in order to add an entry to it.
+                        .setMaxSize(25 * MB)
+                        .setPersistenceEnabled(true)
+                ).setWalMode(WALMode.LOG_ONLY);
 
             cfg.setDataStorageConfiguration(dsCfg);
         }
@@ -210,9 +216,9 @@ public class IoStatisticsSelfTest extends GridCommonAbstractTest {
     private IgniteEx prepareIgnite(boolean isPersist) throws Exception {
         IgniteEx ignite = startGrid(getConfiguration(isPersist));
 
-        ignite.cluster().active(true);
+        ignite.cluster().state(ClusterState.ACTIVE);
 
-        ignite.createCache(new CacheConfiguration<String, String>(DEFAULT_CACHE_NAME));
+        ignite.createCache(DEFAULT_CACHE_NAME);
 
         return ignite;
     }
@@ -223,6 +229,7 @@ public class IoStatisticsSelfTest extends GridCommonAbstractTest {
      * @param subName subName of statistics which need to take, e.g. index name.
      * @return Number of physical reads since last reset statistics.
      */
+    @Nullable
     public Long physicalReads(GridMetricManager mmgr, IoStatisticsType statType, String name, String subName) {
         String fullName = subName == null ? name : metricName(name, subName);
 

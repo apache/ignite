@@ -542,11 +542,6 @@ public class StandaloneGridKernalContext implements GridKernalContext {
     }
 
     /** {@inheritDoc} */
-    @Override public boolean isDaemon() {
-        return false;
-    }
-
-    /** {@inheritDoc} */
     @Override public GridPerformanceSuggestions performance() {
         return null;
     }

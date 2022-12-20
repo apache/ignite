@@ -20,8 +20,9 @@ package org.apache.ignite.internal.visor.systemview;
 import java.io.IOException;
 import java.io.ObjectInput;
 import java.io.ObjectOutput;
-import java.util.ArrayList;
 import java.util.List;
+import java.util.Map;
+import java.util.UUID;
 import org.apache.ignite.internal.dto.IgniteDataTransferObject;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.internal.visor.systemview.VisorSystemViewTask.SimpleType;
@@ -31,8 +32,8 @@ public class VisorSystemViewTaskResult extends IgniteDataTransferObject {
     /** */
     private static final long serialVersionUID = 0L;
 
-    /** Attribute values for each row of the system view. */
-    private List<List<?>> rows;
+    /** Attribute values for each row of the system view per node ID. */
+    private Map<UUID, List<List<?>>> rows;
 
     /** Names of the system view attributes. */
     private List<String> attrs;
@@ -48,9 +49,9 @@ public class VisorSystemViewTaskResult extends IgniteDataTransferObject {
     /**
      * @param attrs Names of system view attributes.
      * @param types Types of the system view attributes.
-     * @param rows Attribute values for each row of the system view.
+     * @param rows Attribute values for each row of the system view per node ID.
      */
-    public VisorSystemViewTaskResult(List<String> attrs, List<SimpleType> types, List<List<?>> rows) {
+    public VisorSystemViewTaskResult(List<String> attrs, List<SimpleType> types, Map<UUID, List<List<?>>> rows) {
         this.attrs = attrs;
         this.types = types;
         this.rows = rows;
@@ -61,8 +62,8 @@ public class VisorSystemViewTaskResult extends IgniteDataTransferObject {
         return attrs;
     }
 
-    /** @return Attribute values for each row of the system view. */
-    public List<List<?>> rows() {
+    /** @return Attribute values for each row of the system view per node ID. */
+    public Map<UUID, List<List<?>>> rows() {
         return rows;
     }
 
@@ -77,10 +78,7 @@ public class VisorSystemViewTaskResult extends IgniteDataTransferObject {
 
         U.writeCollection(out, types);
 
-        out.writeInt(rows.size());
-
-        for (List<?> row : rows)
-            U.writeCollection(out, row);
+        U.writeMap(out, rows);
     }
 
     /** {@inheritDoc} */
@@ -89,13 +87,6 @@ public class VisorSystemViewTaskResult extends IgniteDataTransferObject {
 
         types = U.readList(in);
 
-        int rowsCnt = in.readInt();
-
-        List<List<?>> rows = new ArrayList<>(rowsCnt);
-
-        for (int i = 0; i < rowsCnt; i++)
-            rows.add(U.readList(in));
-
-        this.rows = rows;
+        rows = U.readTreeMap(in);
     }
 }

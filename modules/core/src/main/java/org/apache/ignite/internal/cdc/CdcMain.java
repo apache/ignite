@@ -346,6 +346,7 @@ public class CdcMain implements Runnable {
                 IgniteConfiguration cfg = super.prepareIgniteConfiguration();
 
                 cfg.setIgniteInstanceName(cdcInstanceName(igniteCfg.getIgniteInstanceName()));
+                cfg.setWorkDirectory(igniteCfg.getWorkDirectory());
 
                 if (!F.isEmpty(cdcCfg.getMetricExporterSpi()))
                     cfg.setMetricExporterSpi(cdcCfg.getMetricExporterSpi());
@@ -418,6 +419,12 @@ public class CdcMain implements Runnable {
             AtomicLong lastSgmnt = new AtomicLong(-1);
 
             while (!stopped) {
+                if (!consumer.alive()) {
+                    log.warning("Consumer is not alive. Ignite Change Data Capture Application will be stopped.");
+
+                    return;
+                }
+
                 try (Stream<Path> cdcFiles = Files.list(cdcDir)) {
                     Set<Path> exists = new HashSet<>();
 

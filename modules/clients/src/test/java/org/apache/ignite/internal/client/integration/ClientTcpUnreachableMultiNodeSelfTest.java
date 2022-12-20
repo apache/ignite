@@ -128,10 +128,6 @@ public class ClientTcpUnreachableMultiNodeSelfTest extends ClientTcpMultiNodeSel
                 @Override public boolean isClient() {
                     return node.isClient();
                 }
-
-                @Override public boolean isDaemon() {
-                    return node.isDaemon();
-                }
             };
         }
 

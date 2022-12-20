@@ -4667,7 +4667,7 @@ public class ZookeeperDiscoveryImpl {
             return null;
 
         return rtState0.top.nodesByOrder.values().stream()
-                .filter(n -> !n.isClient() && !n.isDaemon())
+                .filter(n -> !n.isClient())
                 .map(ZookeeperClusterNode::id)
                 .findFirst()
                 .orElse(null);

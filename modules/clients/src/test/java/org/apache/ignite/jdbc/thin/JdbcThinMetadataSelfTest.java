@@ -801,7 +801,6 @@ public class JdbcThinMetadataSelfTest extends JdbcThinAbstractSelfTest {
                 "SYS.NODES.CONSISTENT_ID.null",
                 "SYS.NODES.VERSION.null",
                 "SYS.NODES.IS_CLIENT.null",
-                "SYS.NODES.IS_DAEMON.null",
                 "SYS.NODES.IS_LOCAL.null",
                 "SYS.NODES.NODE_ORDER.null",
                 "SYS.NODES.ADDRESSES.null",

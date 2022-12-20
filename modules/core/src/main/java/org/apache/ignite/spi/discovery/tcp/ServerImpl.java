@@ -4251,7 +4251,7 @@ class ServerImpl extends TcpDiscoveryImpl {
                     return;
                 }
                 else {
-                    if (!node.isClient() && !node.isDaemon()) {
+                    if (!node.isClient()) {
                         if (nodesIdsHist.contains(node.id())) {
                             try {
                                 trySendMessageDirectly(node, createTcpDiscoveryDuplicateIdMessage(locNodeId, node));
@@ -4947,7 +4947,7 @@ class ServerImpl extends TcpDiscoveryImpl {
             }
 
             if (msg.verified() && !locNodeId.equals(node.id())) {
-                if (!node.isClient() && !node.isDaemon() && nodesIdsHist.contains(node.id())) {
+                if (!node.isClient() && nodesIdsHist.contains(node.id())) {
                     U.warn(log, "Discarding node added message since local node has already seen " +
                         "joining node in topology [node=" + node + ", locNode=" + locNode + ", msg=" + msg + ']');
 
@@ -5066,8 +5066,7 @@ class ServerImpl extends TcpDiscoveryImpl {
                             // Node already connected to the cluster can apply joining nodes' disco data immediately
                             spi.onExchange(dataPacket, U.resolveClassLoader(spi.ignite().configuration()));
 
-                            if (!node.isDaemon())
-                                spi.collectExchangeData(dataPacket);
+                            spi.collectExchangeData(dataPacket);
                         }
                         else if (spiState == CONNECTING)
                             // Node joining to the cluster should postpone applying disco data of other joiners till
@@ -5332,7 +5331,7 @@ class ServerImpl extends TcpDiscoveryImpl {
 
                     notifiedDiscovery.set(notified);
 
-                    if (!node.isClient() && !node.isDaemon())
+                    if (!node.isClient())
                         nodesIdsHist.add(node.id());
                 }
 

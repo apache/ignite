@@ -49,6 +49,9 @@ public class IgniteIndexCount extends AbstractRelNode implements SourceAwareIgni
     /** */
     private final long sourceId;
 
+    /** */
+    private final boolean notNull;
+
     /**
      * Constructor for deserialization.
      *
@@ -65,6 +68,8 @@ public class IgniteIndexCount extends AbstractRelNode implements SourceAwareIgni
             sourceId = ((Number)srcIdObj).longValue();
         else
             sourceId = -1L;
+
+        notNull = input.getBoolean("notNull", false);
     }
 
     /**
@@ -74,14 +79,16 @@ public class IgniteIndexCount extends AbstractRelNode implements SourceAwareIgni
      * @param traits Traits of this relational expression.
      * @param tbl Table definition.
      * @param idxName Index name.
+     * @param notNull Count only not-null values.
      */
     public IgniteIndexCount(
         RelOptCluster cluster,
         RelTraitSet traits,
         RelOptTable tbl,
-        String idxName
+        String idxName,
+        boolean notNull
     ) {
-        this(-1, cluster, traits, tbl, idxName);
+        this(-1, cluster, traits, tbl, idxName, notNull);
     }
 
     /**
@@ -92,19 +99,22 @@ public class IgniteIndexCount extends AbstractRelNode implements SourceAwareIgni
      * @param traits Traits of this relational expression.
      * @param tbl Table definition.
      * @param idxName Index name.
+     * @param notNull Count only not-null values.
      */
     private IgniteIndexCount(
         long sourceId,
         RelOptCluster cluster,
         RelTraitSet traits,
         RelOptTable tbl,
-        String idxName
+        String idxName,
+        boolean notNull
     ) {
         super(cluster, traits);
 
         this.idxName = idxName;
         this.tbl = tbl;
         this.sourceId = sourceId;
+        this.notNull = notNull;
     }
 
     /** {@inheritDoc} */
@@ -145,7 +155,8 @@ public class IgniteIndexCount extends AbstractRelNode implements SourceAwareIgni
         return super.explainTerms(pw)
             .item("index", idxName)
             .item("table", tbl.getQualifiedName())
-            .itemIf("sourceId", sourceId, sourceId != -1L);
+            .itemIf("sourceId", sourceId, sourceId != -1L)
+            .item("notNull", notNull);
     }
 
     /** {@inheritDoc} */
@@ -155,11 +166,16 @@ public class IgniteIndexCount extends AbstractRelNode implements SourceAwareIgni
 
     /** {@inheritDoc} */
     @Override public IgniteRel clone(RelOptCluster cluster, List<IgniteRel> inputs) {
-        return new IgniteIndexCount(sourceId, cluster, traitSet, tbl, idxName);
+        return new IgniteIndexCount(sourceId, cluster, traitSet, tbl, idxName, notNull);
     }
 
     /** {@inheritDoc} */
     @Override public IgniteRel clone(long srcId) {
-        return new IgniteIndexCount(srcId, getCluster(), traitSet, tbl, idxName);
+        return new IgniteIndexCount(srcId, getCluster(), traitSet, tbl, idxName, notNull);
+    }
+
+    /** */
+    public boolean notNull() {
+        return notNull;
     }
 }

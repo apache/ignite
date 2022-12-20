@@ -793,7 +793,7 @@ public class IgniteAuthenticationProcessor extends GridProcessorAdapter implemen
      * Initial user set and initial user operation (received on join) are processed here.
      */
     private void onLocalJoin() {
-        if (ctx.isDaemon() || ctx.clientDisconnected() || coordinator() == null)
+        if (ctx.clientDisconnected() || coordinator() == null)
             return;
 
         if (F.eq(coordinator().id(), ctx.localNodeId())) {
@@ -890,7 +890,7 @@ public class IgniteAuthenticationProcessor extends GridProcessorAdapter implemen
      * @return {@code true} if node holds user information. Otherwise returns {@code false}.
      */
     private static boolean isNodeHoldsUsers(ClusterNode n) {
-        return !n.isClient() && !n.isDaemon();
+        return !n.isClient();
     }
 
     /**
