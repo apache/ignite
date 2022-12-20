@@ -36,7 +36,6 @@ import org.apache.ignite.internal.util.future.GridCompoundFuture;
 import org.apache.ignite.internal.util.future.GridFutureAdapter;
 import org.apache.ignite.internal.util.tostring.GridToStringInclude;
 import org.apache.ignite.internal.util.typedef.internal.CU;
-import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.internal.util.typedef.internal.U;
 
 import static org.apache.ignite.internal.processors.cache.transactions.IgniteInternalTx.FinalizationStatus.RECOVERY_FINISH;
@@ -46,7 +45,13 @@ import static org.apache.ignite.transactions.TransactionState.MARKED_ROLLBACK;
 import static org.apache.ignite.transactions.TransactionState.ROLLED_BACK;
 
 /** Describes Consistent Cut running on baseline nodes. */
-class BaselineConsistentCut extends ConsistentCut {
+class ConsistentCutMarkWalRole {
+    /** Cache context. */
+    private final GridCacheSharedContext<?, ?> cctx;
+
+    /** Consistent Cut ID. */
+    private final UUID id;
+
     /** */
     private final IgniteLogger log;
 
@@ -65,12 +70,11 @@ class BaselineConsistentCut extends ConsistentCut {
     private final GridFutureAdapter<WALPointer> fut = new GridFutureAdapter<>();
 
     /** */
-    BaselineConsistentCut(GridCacheSharedContext<?, ?> cctx, UUID id) {
-        super(cctx, id);
+    ConsistentCutMarkWalRole(GridCacheSharedContext<?, ?> cctx, UUID id) {
+        this.cctx = cctx;
+        this.id = id;
 
-        log = cctx.logger(BaselineConsistentCut.class);
-
-        fut.listen(r -> removedFromActive = null);
+        log = cctx.logger(ConsistentCutMarkWalRole.class);
     }
 
     /** Inits local Consistent Cut: prepares list of active transactions to check which side of Consistent Cut they belong to. */
@@ -95,20 +99,19 @@ class BaselineConsistentCut extends ConsistentCut {
 
             Iterator<IgniteInternalFuture<IgniteInternalTx>> removedFromActiveIter = removedFromActive.iterator();
             removedFromActive = null;
-
             checkTransactions(removedFromActiveIter, checkFut);
 
             checkFut.markInitialized();
 
             checkFut.listen(finish -> {
+                if (fut.isDone())
+                    return;
+
                 if (Boolean.FALSE.equals(finish.result())) {
                     fut.onDone(new IgniteCheckedException("Cut is inconsistent."));
 
                     return;
                 }
-
-                if (fut.isDone())
-                    return;
 
                 cctx.database().checkpointReadLock();
 
@@ -139,7 +142,7 @@ class BaselineConsistentCut extends ConsistentCut {
      *
      * @param txFinFut Transaction finish future.
      */
-    public void onCommit(IgniteInternalFuture<IgniteInternalTx> txFinFut) {
+    void onCommit(IgniteInternalFuture<IgniteInternalTx> txFinFut) {
         Set<IgniteInternalFuture<IgniteInternalTx>> removedFromActive0 = removedFromActive;
 
         if (removedFromActive0 != null)
@@ -191,23 +194,14 @@ class BaselineConsistentCut extends ConsistentCut {
         }
     }
 
-    /** {@inheritDoc} */
-    @Override public void cancel(Throwable err) {
-        fut.onDone(err);
-    }
 
-    /** {@inheritDoc} */
-    @Override public boolean baseline() {
-        return true;
+    /** Cancels writing records into WAL. */
+    boolean cancel(Throwable err) {
+        return fut.onDone(err);
     }
 
     /** Future that completes after {@link ConsistentCutFinishRecord} is written. */
-    public IgniteInternalFuture<WALPointer> finishFuture() {
+    IgniteInternalFuture<WALPointer> finishFuture() {
         return fut;
-    }
-
-    /** {@inheritDoc} */
-    @Override public String toString() {
-        return S.toString(BaselineConsistentCut.class, this);
     }
 }

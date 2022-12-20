@@ -131,8 +131,6 @@ public class ConsistentCutNodeFailureTest extends AbstractConsistentCutTest {
 
             assertNull(cutMgr.consistentCut());
             assertNull(cutMgr.consistentCutId());
-            assertNull(cutMgr.consistentCutFuture());
-            assertNull(cutMgr.lastCutAwareMsgSentFuture());
         }
 
         stopAllGrids();

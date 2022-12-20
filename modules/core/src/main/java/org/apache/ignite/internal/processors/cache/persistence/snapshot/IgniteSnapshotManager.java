@@ -1060,7 +1060,7 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
         SnapshotOperationRequest snpReq = clusterSnpReq;
 
         if (snpReq != null && F.eq(id, snpReq.requestId()) && snpReq.incremental())
-            cctx.consistentCutMgr().onConsistentCutFinished(snpReq.requestId());
+            cctx.consistentCutMgr().onConsistentCutFinished();
 
         if (cctx.kernalContext().clientNode())
             return;
@@ -1230,7 +1230,7 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
         }
 
         if (req.incremental()) {
-            IgniteInternalFuture<?> lastCutAwareMsgSentFut = cctx.consistentCutMgr().lastCutAwareMsgSentFuture();
+            IgniteInternalFuture<?> lastCutAwareMsgSentFut = cctx.consistentCutMgr().messagesWrappingRoleFinished();
 
             if (lastCutAwareMsgSentFut != null)
                 return lastCutAwareMsgSentFut.chain(fut -> new SnapshotOperationResponse());

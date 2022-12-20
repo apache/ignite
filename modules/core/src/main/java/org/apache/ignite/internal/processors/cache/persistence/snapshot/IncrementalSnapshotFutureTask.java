@@ -125,7 +125,7 @@ class IncrementalSnapshotFutureTask
                 return false;
             }
 
-            cctx.consistentCutMgr().consistentCutFuture().chain(fut -> {
+            cctx.consistentCutMgr().walMarkingRoleFinished().chain(fut -> {
                 if (fut.error() != null) {
                     onDone(fut.error());
 

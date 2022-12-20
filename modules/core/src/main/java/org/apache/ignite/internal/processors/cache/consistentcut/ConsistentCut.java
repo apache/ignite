@@ -19,36 +19,65 @@ package org.apache.ignite.internal.processors.cache.consistentcut;
 
 import java.util.UUID;
 import org.apache.ignite.internal.IgniteInternalFuture;
+import org.apache.ignite.internal.pagemem.wal.record.ConsistentCutFinishRecord;
 import org.apache.ignite.internal.processors.cache.GridCacheMessage;
 import org.apache.ignite.internal.processors.cache.GridCacheSharedContext;
+import org.apache.ignite.internal.processors.cache.persistence.wal.WALPointer;
 import org.apache.ignite.internal.processors.cache.transactions.IgniteInternalTx;
 import org.apache.ignite.internal.util.future.GridCompoundIdentityFuture;
-import org.apache.ignite.internal.util.tostring.GridToStringInclude;
-import org.apache.ignite.internal.util.typedef.internal.S;
 import org.jetbrains.annotations.Nullable;
 
+import static org.apache.ignite.internal.processors.cache.GridCacheUtils.baselineNode;
+
 /**
- * Basic class for Consistent Cut implementations. Common functionality is wrapping transaction messages
- * into {@link ConsistentCutAwareMessage}.
+ * Class represents Consistent Cut functionality that consist of 2 roles:
+ * 1. Wrapping outgoing transaction messages into {@link ConsistentCutAwareMessage}.
+ * 2. Writing Consistent Cut recors into WAL {@link ConsistentCutMarkWalRole}.
  */
-abstract class ConsistentCut {
-    /** Cache context. */
-    protected final GridCacheSharedContext<?, ?> cctx;
+public class ConsistentCut {
+    /** Grid context. */
+    private final GridCacheSharedContext<?, ?> cctx;
 
     /** Consistent Cut ID. */
-    @GridToStringInclude
-    protected final UUID id;
+    private final UUID id;
+
+    /**
+     * If {@code true} it wraps messages into {@link ConsistentCutAwareMessage}. Becames {@code false} after every baseline node
+     * finished {@link #walMarkRole}.
+     */
+    private boolean wrapMsgRole = true;
+
+    /** Role is responsible for marking WAL with Consistent Cut records on baseline nodes only. */
+    private final @Nullable ConsistentCutMarkWalRole walMarkRole;
 
     /** Future that completes after all transactions sending {@link ConsistentCutAwareMessage} finished. */
-    private IgniteInternalFuture<IgniteInternalTx> lastCutAwareMsgSentFut;
-
-    /** Wraps transaction message if {@code true}. */
-    private boolean wrapMsg = true;
+    private @Nullable IgniteInternalFuture<?> lastCutAwareMsgSentFut;
 
     /** */
     ConsistentCut(GridCacheSharedContext<?, ?> cctx, UUID id) {
         this.cctx = cctx;
         this.id = id;
+
+        walMarkRole = baselineNode(cctx.localNode(), cctx.kernalContext().state().clusterState())
+            ? new ConsistentCutMarkWalRole(cctx, id) : null;
+    }
+
+    /** */
+    void init(GridCacheSharedContext<?, ?> cctx) {
+        if (walMarkRole != null)
+            cctx.kernalContext().pools().getSnapshotExecutorService().submit(walMarkRole::init);
+    }
+
+    /** */
+    void cancel(Throwable err) {
+        if (walMarkRole != null)
+            walMarkRole.cancel(err);
+    }
+
+    /** */
+    void onCommit(IgniteInternalTx tx) {
+        if (walMarkRole != null)
+            walMarkRole.onCommit(tx.finishFuture());
     }
 
     /**
@@ -57,13 +86,21 @@ abstract class ConsistentCut {
      * @param txMsg Transaction message to wrap.
      * @param txCutId Consistent Cut ID after which transaction committed, if specified.
      */
-    public GridCacheMessage wrapMessageIfNeeded(GridCacheMessage txMsg, @Nullable UUID txCutId) {
-        return wrapMsg ? new ConsistentCutAwareMessage(txMsg, id, txCutId) : txMsg;
+    GridCacheMessage wrapMessageIfNeeded(GridCacheMessage txMsg, @Nullable UUID txCutId) {
+        if (wrapMsgRole)
+            return new ConsistentCutAwareMessage(txMsg, id, txCutId);
+
+        return txMsg;
     }
 
-    /** Stops wrapping messages. */
-    public void stopWrapMessages() {
-        wrapMsg = false;
+    /** @return Consistent Cut ID. */
+    UUID id() {
+        return id;
+    }
+
+    /** */
+    void finish() {
+        wrapMsgRole = false;
 
         GridCompoundIdentityFuture<IgniteInternalTx> activeTxsFut = new GridCompoundIdentityFuture<>();
 
@@ -75,24 +112,13 @@ abstract class ConsistentCut {
         lastCutAwareMsgSentFut = activeTxsFut;
     }
 
-    /** @return Future that completes after all transactions sending {@link ConsistentCutAwareMessage} finished. */
-    public IgniteInternalFuture<IgniteInternalTx> lastCutAwareMsgSentFut() {
+    /** @return Future that completes after last {@link ConsistentCutAwareMessage} were sent. */
+    IgniteInternalFuture<?> messagesWrappingRoleFinished() {
         return lastCutAwareMsgSentFut;
     }
 
-    /** Consistent Cut ID. */
-    public UUID id() {
-        return id;
-    }
-
-    /** Cancels this Consistent Cut. */
-    public abstract void cancel(Throwable err);
-
-    /** @return {@code true} if instance is created for baseline node, otherwise {@code false}. */
-    public abstract boolean baseline();
-
-    /** {@inheritDoc} */
-    @Override public String toString() {
-        return S.toString(ConsistentCut.class, this);
+    /** @return Future that completes with pointer to {@link ConsistentCutFinishRecord}. */
+    IgniteInternalFuture<WALPointer> walMarkingRoleFinished() {
+        return walMarkRole.finishFuture();
     }
 }
