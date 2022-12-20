@@ -18,23 +18,13 @@
 package org.apache.ignite.internal.processors.cache.consistentcut;
 
 import java.util.UUID;
-import org.apache.ignite.internal.util.tostring.GridToStringInclude;
-import org.apache.ignite.internal.util.typedef.internal.S;
+import org.apache.ignite.internal.processors.cache.GridCacheSharedContext;
 
 /** Describes Consistent Cut running on non-baseline nodes. */
-class NonBaselineConsistentCut implements ConsistentCut {
-    /** Consistent Cut ID. */
-    @GridToStringInclude
-    private final UUID id;
-
+class NonBaselineConsistentCut extends ConsistentCut {
     /** */
-    NonBaselineConsistentCut(UUID id) {
-        this.id = id;
-    }
-
-    /** {@inheritDoc} */
-    @Override public UUID id() {
-        return id;
+    NonBaselineConsistentCut(GridCacheSharedContext<?, ?> cctx, UUID id) {
+        super(cctx, id);
     }
 
     /** {@inheritDoc} */
@@ -45,10 +35,5 @@ class NonBaselineConsistentCut implements ConsistentCut {
     /** {@inheritDoc} */
     @Override public boolean baseline() {
         return false;
-    }
-
-    /** {@inheritDoc} */
-    @Override public String toString() {
-        return S.toString(NonBaselineConsistentCut.class, this);
     }
 }

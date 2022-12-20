@@ -1190,10 +1190,14 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
             return new GridFinishedFuture<>(e);
         }
 
-        if (req.incremental())
-            return cctx.consistentCutMgr().lastCutAwareMsgSentFuture().chain(fut -> new SnapshotOperationResponse());
-        else
-            return new GridFinishedFuture<>(new SnapshotOperationResponse());
+        if (req.incremental()) {
+            IgniteInternalFuture<?> lastCutAwareMsgSentFut = cctx.consistentCutMgr().lastCutAwareMsgSentFuture();
+
+            if (lastCutAwareMsgSentFut != null)
+                return lastCutAwareMsgSentFut.chain(fut -> new SnapshotOperationResponse());
+        }
+
+        return new GridFinishedFuture<>(new SnapshotOperationResponse());
     }
 
     /**

@@ -17,7 +17,6 @@
 
 package org.apache.ignite.internal.processors.cache.consistentcut;
 
-import java.util.Objects;
 import java.util.UUID;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.internal.IgniteInternalFuture;
@@ -31,7 +30,6 @@ import org.apache.ignite.internal.processors.cache.persistence.wal.WALPointer;
 import org.apache.ignite.internal.processors.cache.transactions.IgniteInternalTx;
 import org.apache.ignite.internal.processors.cache.transactions.IgniteTxAdapter;
 import org.apache.ignite.internal.processors.cache.transactions.IgniteTxManager;
-import org.apache.ignite.internal.util.future.GridCompoundIdentityFuture;
 import org.apache.ignite.internal.util.tostring.GridToStringInclude;
 import org.jetbrains.annotations.Nullable;
 
@@ -61,13 +59,6 @@ public class ConsistentCutManager extends GridCacheSharedManagerAdapter implemen
     /** Current Consistent Cut, {@code null} if not running. */
     @GridToStringInclude
     private volatile ConsistentCut consistentCut;
-
-    /** ID of the last finished Consistent Cut. Required to avoid re-run Consistent Cut with the same id. */
-    @GridToStringInclude
-    private volatile UUID lastFinishedCutId;
-
-    /** Future that completes after last {@link ConsistentCutAwareMessage} with {@link #lastFinishedCutId} was sent. */
-    private volatile IgniteInternalFuture<IgniteInternalTx> lastCutAwareMsgSentFut;
 
     /** {@inheritDoc} */
     @Override public void start0() throws IgniteCheckedException {
@@ -109,17 +100,17 @@ public class ConsistentCutManager extends GridCacheSharedManagerAdapter implemen
      * @param id Consistent Cut ID.
      */
     public void handleConsistentCutId(UUID id) {
-        if (consistentCut != null || Objects.equals(id, lastFinishedCutId))
+        if (consistentCut != null)
             return;
 
         ConsistentCut newCut;
 
         synchronized (this) {
-            if (consistentCut != null || Objects.equals(id, lastFinishedCutId))
+            if (consistentCut != null)
                 return;
 
             consistentCut = newCut = baselineNode(cctx.localNode(), cctx.kernalContext().state().clusterState()) ?
-                new BaselineConsistentCut(cctx, id) : new NonBaselineConsistentCut(id);
+                new BaselineConsistentCut(cctx, id) : new NonBaselineConsistentCut(cctx, id);
         }
 
         if (newCut.baseline()) {
@@ -137,11 +128,8 @@ public class ConsistentCutManager extends GridCacheSharedManagerAdapter implemen
     public void cancelConsistentCut(Throwable err) {
         ConsistentCut cut = consistentCut;
 
-        if (cut != null) {
+        if (cut != null)
             cut.cancel(err);
-
-            onConsistentCutFinished(cut.id());
-        }
     }
 
     /**
@@ -150,7 +138,10 @@ public class ConsistentCutManager extends GridCacheSharedManagerAdapter implemen
     public @Nullable IgniteInternalFuture<WALPointer> consistentCutFuture() {
         ConsistentCut cut = consistentCut;
 
-        return cut == null ? null : cut.finishFuture();
+        if (cut != null && cut.baseline())
+            return ((BaselineConsistentCut)cut).finishFuture();
+
+        return null;
     }
 
     /**
@@ -164,34 +155,24 @@ public class ConsistentCutManager extends GridCacheSharedManagerAdapter implemen
 
     /** Calls after all nodes finished Consistent Cut. */
     public void onConsistentCutFinished(UUID cutId) {
-        synchronized (this) {
-            lastFinishedCutId = cutId;
+        ConsistentCut cut = consistentCut;
 
-            consistentCut = null;
-        }
-
-        // Await compleition of all transactions that might send ConsistentCutAwareMessage.
-        GridCompoundIdentityFuture<IgniteInternalTx> activeTxsFut = new GridCompoundIdentityFuture<>();
-
-        for (IgniteInternalTx tx: cctx.tm().activeTransactions())
-            activeTxsFut.add(tx.finishFuture());
-
-        activeTxsFut.markInitialized();
-
-        lastCutAwareMsgSentFut = activeTxsFut;
+        if (cut != null)
+            cut.stopWrapMessages();
     }
 
-    /** Clean remaining resources related to Consistent Cut after cluster snapshot finished. */
-    public void onClusterSnapshotFinished(UUID cutId) {
-        lastFinishedCutId = null;
-        lastCutAwareMsgSentFut = null;
+    /** Clean Consistent Cut after cluster snapshot finished. */
+    public synchronized void onClusterSnapshotFinished(UUID cutId) {
+        consistentCut = null;
     }
 
     /**
-     * @return Future that completes after last {@link ConsistentCutAwareMessage} were sent.
+     * @return Future that completes after last {@link ConsistentCutAwareMessage} were sent for current Consistent Cut.
      */
-    public IgniteInternalFuture<?> lastCutAwareMsgSentFuture() {
-        return lastCutAwareMsgSentFut;
+    public @Nullable IgniteInternalFuture<?> lastCutAwareMsgSentFuture() {
+        ConsistentCut cut = consistentCut;
+
+        return cut == null ? null : cut.lastCutAwareMsgSentFut();
     }
 
     /**
@@ -210,10 +191,7 @@ public class ConsistentCutManager extends GridCacheSharedManagerAdapter implemen
 
         ConsistentCut cut = cctx.consistentCutMgr().consistentCut();
 
-        if (cut != null)
-            return new ConsistentCutAwareMessage(txMsg, cut.id(), txCutId);
-
-        return txMsg;
+        return cut == null ? txMsg : cut.wrapMessageIfNeeded(txMsg, txCutId);
     }
 
     /**

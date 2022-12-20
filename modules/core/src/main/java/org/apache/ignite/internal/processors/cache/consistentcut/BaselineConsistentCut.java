@@ -46,16 +46,9 @@ import static org.apache.ignite.transactions.TransactionState.MARKED_ROLLBACK;
 import static org.apache.ignite.transactions.TransactionState.ROLLED_BACK;
 
 /** Describes Consistent Cut running on baseline nodes. */
-class BaselineConsistentCut implements ConsistentCut {
-    /** */
-    private final GridCacheSharedContext<?, ?> cctx;
-
+class BaselineConsistentCut extends ConsistentCut {
     /** */
     private final IgniteLogger log;
-
-    /** Consistent Cut ID. */
-    @GridToStringInclude
-    private final UUID id;
 
     /** Set of checked transactions belong to the BEFORE set. */
     @GridToStringInclude
@@ -73,8 +66,7 @@ class BaselineConsistentCut implements ConsistentCut {
 
     /** */
     BaselineConsistentCut(GridCacheSharedContext<?, ?> cctx, UUID id) {
-        this.cctx = cctx;
-        this.id = id;
+        super(cctx, id);
 
         log = cctx.logger(BaselineConsistentCut.class);
 
@@ -200,11 +192,6 @@ class BaselineConsistentCut implements ConsistentCut {
     }
 
     /** {@inheritDoc} */
-    @Override public UUID id() {
-        return id;
-    }
-
-    /** {@inheritDoc} */
     @Override public void cancel(Throwable err) {
         fut.onDone(err);
     }
@@ -214,8 +201,8 @@ class BaselineConsistentCut implements ConsistentCut {
         return true;
     }
 
-    /** {@inheritDoc} */
-    @Override public IgniteInternalFuture<WALPointer> finishFuture() {
+    /** Future that completes after {@link ConsistentCutFinishRecord} is written. */
+    public IgniteInternalFuture<WALPointer> finishFuture() {
         return fut;
     }
 
