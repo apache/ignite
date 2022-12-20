@@ -24,6 +24,7 @@ import java.util.UUID;
 import java.util.stream.Collectors;
 import com.google.common.collect.ImmutableSet;
 import org.apache.calcite.runtime.CalciteException;
+import org.apache.calcite.sql.validate.SqlValidatorException;
 import org.apache.ignite.IgniteCache;
 import org.apache.ignite.cache.QueryEntity;
 import org.apache.ignite.configuration.CacheConfiguration;
@@ -471,14 +472,17 @@ public class DataTypesTest extends AbstractBasicIntegrationTest {
     /** */
     @Test
     public void testNumericInFunctionConversion() {
-        sql("CREATE TABLE strings(a VARCHAR, b BIGINT)");
+        sql("CREATE TABLE strings(cv VARCHAR, biv BIGINT)");
 
-//        sql(client, "INSERT INTO STRINGS VALUES ('abc', 1)");
+        sql("INSERT INTO STRINGS VALUES ('abc', 1)");
+
+        assertThrows("SELECT LEFT(cv, biv) FROM strings", SqlValidatorException.class,
+            "Invalid argument types for function");
 
 //        assertQuery("SELECT LEFT(CAST(? AS INT), CAST(? AS VARCHAR))").withParams(12, 1).returns("1").check();
 
 //        assertQuery("SELECT LEFT(CAST(? AS INT), CAST(? AS BIGINT))").withParams(12, 1).returns("1").check();
-        assertQuery("SELECT LEFT('abc', CAST(? AS BIGINT))").withParams(1).returns("a").check();
+//        assertQuery("SELECT LEFT('abc', CAST(? AS BIGINT))").withParams(1).returns("a").check();
 
 //        assertQuery("SELECT LEFT('asd', CAST(? AS BIGINT))").withParams(1).returns("a").check();
 
