@@ -525,8 +525,10 @@ public final class ClientConfiguration implements Serializable {
     }
 
     /**
-     * Used only whith a single key operations API without explicit transactions
-     * (initiated via org.apache.ignite.client.ClientTransactions#txStart) and ScanQuery/IndexQuery with specified part.
+     * Used only with single-key operations API and does not require explicit transactions (initiated via
+     * org.apache.ignite.client.ClientTransactions#txStart). In Java platform the functionality maintains ScanQuery/
+     * IndexQuery which specify a partition number to re-route the query to a particular server node that stores the
+     * requested data.
      *
      * @return A value indicating whether partition awareness should be enabled.
      * <p>
@@ -542,8 +544,10 @@ public final class ClientConfiguration implements Serializable {
     /**
      * Sets a value indicating whether partition awareness should be enabled.
      * <p>
-     * Used only whith a single key operations API without explicit transactions
-     * (initiated via org.apache.ignite.client.ClientTransactions#txStart) and ScanQuery/IndexQuery with specified part.
+     * Used only with single-key operations API and does not require explicit transactions (initiated via
+     * org.apache.ignite.client.ClientTransactions#txStart). In Java platform the functionality maintains ScanQuery/
+     * IndexQuery which specify a partition number to re-route the query to a particular server node that stores the
+     * requested data.
      * <p>
      * Default is {@code true}: client sends requests directly to the primary node for the given cache key.
      * To do so, connection is established to every known server node.
