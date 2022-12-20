@@ -887,12 +887,21 @@ public class SegmentAwareTest {
         assertTrue(aware.reserve(1));
         assertTrue(aware.reserve(8));
 
+        aware.lastCheckpointIdx(1);
         aware.addSize(9, 10);
 
         assertFalse(aware.reserved(0));
         assertFalse(aware.reserved(1));
         assertTrue(aware.reserved(8));
 
+        assertEquals(1, reservationStorage.minReserveIdx());
+
+        aware.lastCheckpointIdx(5);
+        aware.startAutoReleaseSegments();
+
+        assertFalse(aware.reserved(0));
+        assertFalse(aware.reserved(1));
+        assertTrue(aware.reserved(8));
         assertEquals(5, reservationStorage.minReserveIdx());
 
         for (int i = 0; i <= 5; i++) {
@@ -956,6 +965,22 @@ public class SegmentAwareTest {
         assertTrue(aware.reserved(8));
         assertEquals(-1, reservationStorage.minReserveIdx());
 
+        aware.startAutoReleaseSegments();
+
+        assertTrue(aware.reserved(0));
+        assertTrue(aware.reserved(1));
+        assertTrue(aware.reserved(8));
+        assertEquals(-1, reservationStorage.minReserveIdx());
+
+        aware.lastCheckpointIdx(0);
+        aware.startAutoReleaseSegments();
+
+        assertFalse(aware.reserved(0));
+        assertTrue(aware.reserved(1));
+        assertTrue(aware.reserved(8));
+        assertEquals(0, reservationStorage.minReserveIdx());
+
+        aware.lastCheckpointIdx(100);
         aware.startAutoReleaseSegments();
 
         assertFalse(aware.reserved(0));

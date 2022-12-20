@@ -36,9 +36,6 @@ import org.junit.Test;
  */
 public class FunctionsTest extends AbstractBasicIntegrationTest {
     /** */
-    private static final Object[] NULL_RESULT = new Object[] { null };
-
-    /** */
     @Test
     public void testTimestampDiffWithFractionsOfSecond() {
         assertQuery("SELECT TIMESTAMPDIFF(MICROSECOND, TIMESTAMP '2022-02-01 10:30:28.000', " +
