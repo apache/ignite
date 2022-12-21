@@ -31,17 +31,7 @@ import org.apache.ignite.internal.processors.cache.transactions.IgniteInternalTx
 import org.apache.ignite.internal.processors.cache.transactions.IgniteTxManager;
 import org.jetbrains.annotations.Nullable;
 
-/**
- * Processes all stuff related to Consistent Cut.
- * <p>
- * Consistent Cut is a distributed algorithm that defines two set of transactions - BEFORE and AFTER cut - on baseline nodes.
- * It guarantees that every transaction was included into BEFORE on one node also included into the BEFORE on every other node
- * participated in the transaction. It means that Ignite nodes can safely recover themselves to the consistent BEFORE
- * state without any coordination with each other.
- * <p>
- * The algorithm starts on Ignite node by snapshot creation command. Other nodes are notified with discovery message of snapshot
- * distributed process or by transaction messages wrapped in {@link ConsistentCutAwareMessage}.
- */
+/** Processes all stuff related to Consistent Cut. */
 public class ConsistentCutManager extends GridCacheSharedManagerAdapter implements PartitionsExchangeAware {
     /** Current Consistent Cut, {@code null} if not running. */
     private volatile @Nullable ConsistentCut consistentCut;
@@ -82,7 +72,7 @@ public class ConsistentCutManager extends GridCacheSharedManagerAdapter implemen
     }
 
     /** Clean Consistent Cut after cluster snapshot finished. */
-    public synchronized void onClusterSnapshotFinished(UUID cutId) {
+    public synchronized void onClusterSnapshotFinished() {
         consistentCut = null;
     }
 
@@ -119,17 +109,24 @@ public class ConsistentCutManager extends GridCacheSharedManagerAdapter implemen
 
     /** Calls after all nodes finished Consistent Cut. */
     public void onConsistentCutFinished() {
-        consistentCut.finish();
+        ConsistentCut cut = consistentCut;
+
+        if (cut != null)
+            cut.stopWrapMessages();
     }
 
     /** @return Future that completes after last {@link ConsistentCutAwareMessage} were sent. */
-    public @Nullable IgniteInternalFuture<?> messagesWrappingRoleFinished() {
-        return consistentCut.messagesWrappingRoleFinished();
+    public IgniteInternalFuture<?> wrapMessagesFinished() {
+        ConsistentCut cut = consistentCut;
+
+        return cut == null ? null : cut.wrapMessagesFinished();
     }
 
     /** @return Future that completes with pointer to {@link ConsistentCutFinishRecord}. */
-    public IgniteInternalFuture<WALPointer> walMarkingRoleFinished() {
-        return consistentCut.walMarkingRoleFinished();
+    public IgniteInternalFuture<WALPointer> markingWalFinished() {
+        ConsistentCut cut = consistentCut;
+
+        return cut == null ? null : cut.markingWalFinished();
     }
 
     /**
@@ -148,7 +145,7 @@ public class ConsistentCutManager extends GridCacheSharedManagerAdapter implemen
 
         ConsistentCut cut = cctx.consistentCutMgr().consistentCut();
 
-        return cut == null ? txMsg : cut.wrapMessageIfNeeded(txMsg, txCutId);
+        return cut == null ? txMsg : cut.wrapMessage(txMsg, txCutId);
     }
 
     /** @return Current running Consistent Cut, if cut isn't running then {@code null}. */

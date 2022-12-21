@@ -25,17 +25,29 @@ import org.apache.ignite.internal.processors.cache.GridCacheSharedContext;
 import org.apache.ignite.internal.processors.cache.persistence.wal.WALPointer;
 import org.apache.ignite.internal.processors.cache.transactions.IgniteInternalTx;
 import org.apache.ignite.internal.util.future.GridCompoundIdentityFuture;
+import org.apache.ignite.internal.util.future.GridFutureAdapter;
 import org.jetbrains.annotations.Nullable;
 
 import static org.apache.ignite.internal.processors.cache.GridCacheUtils.baselineNode;
 
 /**
- * Class represents Consistent Cut functionality that consist of 2 roles:
- * 1. Wrapping outgoing transaction messages into {@link ConsistentCutAwareMessage}.
- * 2. Writing Consistent Cut recors into WAL {@link ConsistentCutMarkWalRole}.
+ * Consistent Cut is a distributed algorithm that defines two set of transactions - BEFORE and AFTER cut - on baseline nodes.
+ * It guarantees that every transaction was included into BEFORE on one node also included into the BEFORE on every other node
+ * participated in the transaction. It means that Ignite nodes can safely recover themselves to the consistent BEFORE
+ * state without any coordination with each other.
+ * <p>
+ * The algorithm starts on Ignite node by snapshot creation command. Other nodes are notified with discovery message of snapshot
+ * distributed process or by transaction messages wrapped in {@link ConsistentCutAwareMessage}.
+ * <p>
+ * There are two roles that node can play:
+ * 1. Wraps outgoing transaction messages into {@link ConsistentCutAwareMessage}. For this role every node is responsible.
+ * 2. Writes Consistent Cut records into WAL. Only baseline nodes do it.
+ * <p>
+ * Nodes start wrapping messages from the moment Consistent Cut started on the node, and finsihed after all baseline
+ * nodes complete their role 2.
  */
 public class ConsistentCut {
-    /** Grid context. */
+    /** Grid cache context. */
     private final GridCacheSharedContext<?, ?> cctx;
 
     /** Consistent Cut ID. */
@@ -43,41 +55,23 @@ public class ConsistentCut {
 
     /**
      * If {@code true} it wraps messages into {@link ConsistentCutAwareMessage}. Becames {@code false} after every baseline node
-     * finished {@link #walMarkRole}.
+     * completes {@link #markWalFut}.
      */
-    private boolean wrapMsgRole = true;
+    private volatile boolean wrapMsg = true;
 
-    /** Role is responsible for marking WAL with Consistent Cut records on baseline nodes only. */
-    private final @Nullable ConsistentCutMarkWalRole walMarkRole;
+    /** Future that completes after last {@link ConsistentCutAwareMessage} was sent. */
+    private final GridFutureAdapter<?> wrapMsgsFut = new GridFutureAdapter<>();
 
-    /** Future that completes after all transactions sending {@link ConsistentCutAwareMessage} finished. */
-    private @Nullable IgniteInternalFuture<?> lastCutAwareMsgSentFut;
+    /** Future that completes after {@link ConsistentCutFinishRecord} was written. */
+    private final @Nullable ConsistentCutMarkWalFuture markWalFut;
 
     /** */
     ConsistentCut(GridCacheSharedContext<?, ?> cctx, UUID id) {
         this.cctx = cctx;
         this.id = id;
 
-        walMarkRole = baselineNode(cctx.localNode(), cctx.kernalContext().state().clusterState())
-            ? new ConsistentCutMarkWalRole(cctx, id) : null;
-    }
-
-    /** */
-    void init(GridCacheSharedContext<?, ?> cctx) {
-        if (walMarkRole != null)
-            cctx.kernalContext().pools().getSnapshotExecutorService().submit(walMarkRole::init);
-    }
-
-    /** */
-    void cancel(Throwable err) {
-        if (walMarkRole != null)
-            walMarkRole.cancel(err);
-    }
-
-    /** */
-    void onCommit(IgniteInternalTx tx) {
-        if (walMarkRole != null)
-            walMarkRole.onCommit(tx.finishFuture());
+        markWalFut = baselineNode(cctx.localNode(), cctx.kernalContext().state().clusterState())
+            ? new ConsistentCutMarkWalFuture(cctx, id) : null;
     }
 
     /**
@@ -86,21 +80,16 @@ public class ConsistentCut {
      * @param txMsg Transaction message to wrap.
      * @param txCutId Consistent Cut ID after which transaction committed, if specified.
      */
-    GridCacheMessage wrapMessageIfNeeded(GridCacheMessage txMsg, @Nullable UUID txCutId) {
-        if (wrapMsgRole)
+    GridCacheMessage wrapMessage(GridCacheMessage txMsg, @Nullable UUID txCutId) {
+        if (wrapMsg)
             return new ConsistentCutAwareMessage(txMsg, id, txCutId);
 
         return txMsg;
     }
 
-    /** @return Consistent Cut ID. */
-    UUID id() {
-        return id;
-    }
-
-    /** */
-    void finish() {
-        wrapMsgRole = false;
+    /** Stops wrapping outging messages. */
+    void stopWrapMessages() {
+        wrapMsg = false;
 
         GridCompoundIdentityFuture<IgniteInternalTx> activeTxsFut = new GridCompoundIdentityFuture<>();
 
@@ -109,16 +98,39 @@ public class ConsistentCut {
 
         activeTxsFut.markInitialized();
 
-        lastCutAwareMsgSentFut = activeTxsFut;
+        activeTxsFut.listen(f -> wrapMsgsFut.onDone());
+    }
+
+    /** */
+    void init(GridCacheSharedContext<?, ?> cctx) {
+        if (markWalFut != null)
+            cctx.kernalContext().pools().getSnapshotExecutorService().submit(markWalFut::init);
+    }
+
+    /** */
+    void cancel(Throwable err) {
+        if (markWalFut != null)
+            markWalFut.onDone(err);
+    }
+
+    /** */
+    void onCommit(IgniteInternalTx tx) {
+        if (markWalFut != null)
+            markWalFut.onCommit(tx.finishFuture());
+    }
+
+    /** @return Consistent Cut ID. */
+    UUID id() {
+        return id;
     }
 
     /** @return Future that completes after last {@link ConsistentCutAwareMessage} were sent. */
-    IgniteInternalFuture<?> messagesWrappingRoleFinished() {
-        return lastCutAwareMsgSentFut;
+    IgniteInternalFuture<?> wrapMessagesFinished() {
+        return wrapMsgsFut;
     }
 
     /** @return Future that completes with pointer to {@link ConsistentCutFinishRecord}. */
-    IgniteInternalFuture<WALPointer> walMarkingRoleFinished() {
-        return walMarkRole.finishFuture();
+    @Nullable IgniteInternalFuture<WALPointer> markingWalFinished() {
+        return markWalFut;
     }
 }

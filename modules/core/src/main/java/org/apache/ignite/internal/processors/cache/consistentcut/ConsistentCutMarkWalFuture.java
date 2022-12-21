@@ -44,15 +44,15 @@ import static org.apache.ignite.transactions.TransactionState.COMMITTED;
 import static org.apache.ignite.transactions.TransactionState.MARKED_ROLLBACK;
 import static org.apache.ignite.transactions.TransactionState.ROLLED_BACK;
 
-/** Describes Consistent Cut running on baseline nodes. */
-class ConsistentCutMarkWalRole {
+/** Writes Consistent Cut WAL records. Future completes with pointer to {@link ConsistentCutFinishRecord}. */
+class ConsistentCutMarkWalFuture extends GridFutureAdapter<WALPointer> {
     /** Cache context. */
     private final GridCacheSharedContext<?, ?> cctx;
 
     /** Consistent Cut ID. */
     private final UUID id;
 
-    /** */
+    /** Logger. */
     private final IgniteLogger log;
 
     /** Set of checked transactions belong to the BEFORE set. */
@@ -66,18 +66,15 @@ class ConsistentCutMarkWalRole {
     /** Collection of transactions removed from {@link IgniteTxManager#activeTransactions()}. */
     private volatile Set<IgniteInternalFuture<IgniteInternalTx>> removedFromActive = ConcurrentHashMap.newKeySet();
 
-    /** Consistent Cut future, completes with pointer to {@link ConsistentCutFinishRecord}. */
-    private final GridFutureAdapter<WALPointer> fut = new GridFutureAdapter<>();
-
     /** */
-    ConsistentCutMarkWalRole(GridCacheSharedContext<?, ?> cctx, UUID id) {
+    ConsistentCutMarkWalFuture(GridCacheSharedContext<?, ?> cctx, UUID id) {
         this.cctx = cctx;
         this.id = id;
 
-        log = cctx.logger(ConsistentCutMarkWalRole.class);
+        log = cctx.logger(ConsistentCutMarkWalFuture.class);
     }
 
-    /** Inits local Consistent Cut: prepares list of active transactions to check which side of Consistent Cut they belong to. */
+    /** Inits the future: it prepares list of active transactions to check which side of Consistent Cut they belong to. */
     protected void init() {
         try {
             cctx.wal().log(new ConsistentCutStartRecord(id));
@@ -104,11 +101,11 @@ class ConsistentCutMarkWalRole {
             checkFut.markInitialized();
 
             checkFut.listen(finish -> {
-                if (fut.isDone())
+                if (isDone())
                     return;
 
                 if (Boolean.FALSE.equals(finish.result())) {
-                    fut.onDone(new IgniteCheckedException("Cut is inconsistent."));
+                    onDone(new IgniteCheckedException("Cut is inconsistent."));
 
                     return;
                 }
@@ -118,12 +115,12 @@ class ConsistentCutMarkWalRole {
                 try {
                     WALPointer ptr = cctx.wal().log(new ConsistentCutFinishRecord(id, before, after), RolloverType.CURRENT_SEGMENT);
 
-                    fut.onDone(ptr);
+                    onDone(ptr);
                 }
                 catch (IgniteCheckedException e) {
                     U.error(log, "Failed to write ConsistentCutFinishRecord to WAL for [id= " + id + ']', e);
 
-                    fut.onDone(e);
+                    onDone(e);
                 }
                 finally {
                     cctx.database().checkpointReadUnlock();
@@ -131,7 +128,7 @@ class ConsistentCutMarkWalRole {
             });
         }
         catch (IgniteCheckedException e) {
-            fut.onDone(e);
+            onDone(e);
 
             U.error(log, "Failed to init Consistent Cut: " + id, e);
         }
@@ -192,16 +189,5 @@ class ConsistentCutMarkWalRole {
 
             checkFut.add(txCheckFut);
         }
-    }
-
-
-    /** Cancels writing records into WAL. */
-    boolean cancel(Throwable err) {
-        return fut.onDone(err);
-    }
-
-    /** Future that completes after {@link ConsistentCutFinishRecord} is written. */
-    IgniteInternalFuture<WALPointer> finishFuture() {
-        return fut;
     }
 }
