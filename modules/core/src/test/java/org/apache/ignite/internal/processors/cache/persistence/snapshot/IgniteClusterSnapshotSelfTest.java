@@ -1246,7 +1246,8 @@ public class IgniteClusterSnapshotSelfTest extends AbstractSnapshotSelfTest {
             ClusterTopologyException.class,
             "Snapshot operation interrupted, because baseline node left the cluster");
 
-        assertTrue(G.allGrids().contains(cln));
+        // Check that client node is alive.
+        assertSnapshotCacheKeys(cln.cache(dfltCacheCfg.getName()));
     }
 
     /**
