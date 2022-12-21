@@ -208,6 +208,9 @@ public final class BinaryObjectImpl extends BinaryObjectExImpl implements Extern
 
     /** {@inheritDoc} */
     @Override public CacheObject prepareForCache(CacheObjectContext ctx) {
+        if (arr == null)
+            arr = arrayFromValueBytes(ctx);
+
         if (detached())
             return this;
 
