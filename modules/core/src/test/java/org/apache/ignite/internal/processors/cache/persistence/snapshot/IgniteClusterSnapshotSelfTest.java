@@ -71,7 +71,6 @@ import org.apache.ignite.internal.processors.cache.persistence.file.RandomAccess
 import org.apache.ignite.internal.processors.cache.persistence.partstate.GroupPartitionId;
 import org.apache.ignite.internal.processors.metric.MetricRegistry;
 import org.apache.ignite.internal.processors.metric.impl.ObjectGauge;
-import org.apache.ignite.internal.util.distributed.DistributedProcess;
 import org.apache.ignite.internal.util.distributed.FullMessage;
 import org.apache.ignite.internal.util.distributed.SingleNodeMessage;
 import org.apache.ignite.internal.util.typedef.F;
@@ -98,6 +97,7 @@ import static org.apache.ignite.internal.processors.cache.persistence.snapshot.I
 import static org.apache.ignite.internal.processors.cache.persistence.snapshot.IgniteSnapshotManager.SNP_NODE_STOPPING_ERR_MSG;
 import static org.apache.ignite.internal.processors.cache.persistence.snapshot.IgniteSnapshotManager.isSnapshotOperation;
 import static org.apache.ignite.internal.processors.cache.persistence.snapshot.IgniteSnapshotManager.resolveSnapshotWorkDirectory;
+import static org.apache.ignite.internal.util.distributed.DistributedProcess.DistributedProcessType.START_SNAPSHOT;
 import static org.apache.ignite.testframework.GridTestUtils.assertThrowsAnyCause;
 import static org.apache.ignite.testframework.GridTestUtils.assertThrowsWithCause;
 import static org.apache.ignite.testframework.GridTestUtils.waitForCondition;
@@ -454,7 +454,7 @@ public class IgniteClusterSnapshotSelfTest extends AbstractSnapshotSelfTest {
                 FullMessage<?> msg0 = (FullMessage<?>)msg;
 
                 assertEquals("Snapshot distributed process must be used",
-                    DistributedProcess.DistributedProcessType.START_SNAPSHOT.ordinal(), msg0.type());
+                    START_SNAPSHOT.ordinal(), msg0.type());
 
                 assertTrue("Snapshot has to be finished successfully on all nodes", msg0.error().isEmpty());
 
@@ -1233,7 +1233,8 @@ public class IgniteClusterSnapshotSelfTest extends AbstractSnapshotSelfTest {
 
         TestRecordingCommunicationSpi failNodeSpi = TestRecordingCommunicationSpi.spi(grid(1));
 
-        failNodeSpi.blockMessages((n, msg) -> msg instanceof SingleNodeMessage);
+        failNodeSpi.blockMessages((n, msg) ->
+            msg instanceof SingleNodeMessage && ((SingleNodeMessage<?>)msg).type() == START_SNAPSHOT.ordinal());
 
         IgniteFuture<Void> fut = ignite.snapshot().createSnapshot(SNAPSHOT_NAME);
 
