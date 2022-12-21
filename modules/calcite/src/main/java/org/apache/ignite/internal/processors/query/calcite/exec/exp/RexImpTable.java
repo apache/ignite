@@ -75,7 +75,6 @@ import org.apache.calcite.util.BuiltInMethod;
 import org.apache.calcite.util.Util;
 import org.apache.ignite.calcite.CalciteQueryEngineConfiguration;
 import org.apache.ignite.internal.processors.query.calcite.util.IgniteMethod;
-import org.apache.ignite.internal.util.typedef.X;
 import org.jetbrains.annotations.Nullable;
 
 import static org.apache.calcite.adapter.enumerable.EnumUtils.generateCollatorExpression;
@@ -864,6 +863,11 @@ public class RexImpTable {
                 default:
                     throw new AssertionError("unknown type " + type);
             }
+        }
+
+        /** {@inheritDoc} */
+        @Override public String sqlFunctionMethodName() {
+            return null;
         }
 
         /** */

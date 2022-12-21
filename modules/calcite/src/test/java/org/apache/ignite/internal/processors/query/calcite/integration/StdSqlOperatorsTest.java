@@ -295,17 +295,17 @@ public class StdSqlOperatorsTest extends AbstractBasicIntegrationTest {
     @Test
     public void testXml() {
         assertExpression("EXTRACTVALUE('<a>b</a>', '//a')").returns("b").check();
-        assertExpression("XMLTRANSFORM('<a>b</a>',"
-            + "'<?xml version=\"1.0\"?>\n"
-            + "<xsl:stylesheet version=\"1.0\" xmlns:xsl=\"http://www.w3.org/1999/XSL/Transform\">"
-            + "  <xsl:output method=\"text\"/>"
-            + "  <xsl:template match=\"/\">"
-            + "    a - <xsl:value-of select=\"/a\"/>"
-            + "  </xsl:template>"
-            + "</xsl:stylesheet>')"
-        ).returns("    a - b").check();
-        assertExpression("\"EXTRACT\"('<a><b>c</b></a>', '/a/b')").returns("<b>c</b>").check();
-        assertExpression("EXISTSNODE('<a><b>c</b></a>', '/a/b')").returns(1).check();
+//        assertExpression("XMLTRANSFORM('<a>b</a>',"
+//            + "'<?xml version=\"1.0\"?>\n"
+//            + "<xsl:stylesheet version=\"1.0\" xmlns:xsl=\"http://www.w3.org/1999/XSL/Transform\">"
+//            + "  <xsl:output method=\"text\"/>"
+//            + "  <xsl:template match=\"/\">"
+//            + "    a - <xsl:value-of select=\"/a\"/>"
+//            + "  </xsl:template>"
+//            + "</xsl:stylesheet>')"
+//        ).returns("    a - b").check();
+//        assertExpression("\"EXTRACT\"('<a><b>c</b></a>', '/a/b')").returns("<b>c</b>").check();
+//        assertExpression("EXISTSNODE('<a><b>c</b></a>', '/a/b')").returns(1).check();
     }
 
     /** */

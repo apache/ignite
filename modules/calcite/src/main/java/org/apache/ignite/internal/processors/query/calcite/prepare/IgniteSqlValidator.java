@@ -25,6 +25,7 @@ import java.util.EnumSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
+import org.apache.calcite.linq4j.tree.Primitive;
 import org.apache.calcite.linq4j.tree.Types;
 import org.apache.calcite.plan.RelOptTable;
 import org.apache.calcite.prepare.CalciteCatalogReader;
@@ -278,8 +279,8 @@ public class IgniteSqlValidator extends SqlValidatorImpl {
                 throw newValidationError(call, IgniteResource.INSTANCE.illegalAlias(alias));
         }
 
-        if (call.getOperator() instanceof SqlFunction)
-            validateSqlFunctionParameterTypes(call, scope);
+//        if (call.getOperator() instanceof SqlFunction)
+//            validateSqlFunctionParameterTypes(call, scope);
 
         super.validateCall(call, scope);
     }
@@ -296,6 +297,8 @@ public class IgniteSqlValidator extends SqlValidatorImpl {
         Class<?>[] argTypes = call.getOperandList().stream()
             .map(op -> typeFactory().getJavaClass(deriveType(scope, op))).toArray(v -> new Class<?>[v]);
 
+        RexImpTable.INSTANCE.checkBuiltInFunction(fun, argTypes);
+
         try {
             if (Types.lookupMethod(SqlFunctions.class, mtdName, argTypes) == null)
                 throw newValidationError(call, RESOURCE.functionNotFound(mtdName));
@@ -307,7 +310,7 @@ public class IgniteSqlValidator extends SqlValidatorImpl {
                 throw e;
         }
 
-        boolean mtdFound = false;
+        boolean mtdFound;
 
         for (Method mtd : SqlFunctions.class.getMethods()) {
             if (!mtd.getName().equals(mtdName) || (!mtd.isVarArgs() && mtd.getParameterCount() != argTypes.length))
@@ -322,17 +325,22 @@ public class IgniteSqlValidator extends SqlValidatorImpl {
 
                 Class<?> passedType = argTypes[i];
 
-                if (!Types.allAssignable(false, F.asArray(expType), F.asArray(passedType)) &&
-                    (expType.isPrimitive() || passedType.isAssignableFrom(Void.class))) {
-                    mtdFound = false;
+                if (Types.allAssignable(false, F.asArray(expType), F.asArray(passedType)) ||
+                    (!expType.isPrimitive() && passedType.isAssignableFrom(Void.class)) ||
+                    expType.isPrimitive() && expType.isAssignableFrom(Primitive.unbox(passedType)) ||
+                    passedType.isPrimitive() && passedType.isAssignableFrom(Primitive.unbox(expType)))
+                    continue;
 
-                    break;
-                }
+                mtdFound = false;
+
+                break;
             }
+
+            if (mtdFound)
+                return;
         }
 
-        if(!mtdFound)
-            throw newValidationError(call, IgniteResource.INSTANCE.invalidFunctionArgumentTypes(mtdName));
+        throw newValidationError(call, IgniteResource.INSTANCE.invalidFunctionArgumentTypes(mtdName));
     }
 
     /** {@inheritDoc} */
