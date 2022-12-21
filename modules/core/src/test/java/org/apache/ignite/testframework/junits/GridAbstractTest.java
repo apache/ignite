@@ -38,6 +38,7 @@ import java.util.Collection;
 import java.util.Collections;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 import java.util.UUID;
 import java.util.concurrent.Callable;
 import java.util.concurrent.ConcurrentHashMap;
@@ -3144,7 +3145,7 @@ public abstract class GridAbstractTest extends JUnitAssertAware {
      * Return JMX bean.
      *
      * @param igniteInstanceName Ignite instance name.
-     * @param grp Name of the group.
+     * @param grp Name of the group.d
      * @param name Name of the bean.
      * @param clazz Class of the mbean.
      * @return MX bean.
@@ -3162,9 +3163,13 @@ public abstract class GridAbstractTest extends JUnitAssertAware {
 
         MBeanServer mbeanSrv = ManagementFactory.getPlatformMBeanServer();
 
-        if (!mbeanSrv.isRegistered(mbeanName))
-            throw new IgniteException("MBean not registered.");
+        Set<ObjectName> names = mbeanSrv.queryNames(mbeanName, null);
 
-        return MBeanServerInvocationHandler.newProxyInstance(mbeanSrv, mbeanName, clazz, false);
+        if (names.isEmpty())
+            throw new IgniteException("MBean not registered.");
+        else if (names.size() > 1)
+            throw new IgniteException("There is more the one MBean with name: " + mbeanName);
+        else
+            return MBeanServerInvocationHandler.newProxyInstance(mbeanSrv, names.iterator().next(), clazz, false);
     }
 }

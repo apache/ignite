@@ -268,7 +268,7 @@ public class IgniteCacheDatabaseSharedManager extends GridCacheSharedManagerAdap
         try {
             U.registerMBean(
                 cfg.getMBeanServer(),
-                cfg.getIgniteInstanceName(),
+                U.getInstanceNameFromContext(cctx.kernalContext()),
                 groupName,
                 dataRegionName,
                 impl,
@@ -297,7 +297,7 @@ public class IgniteCacheDatabaseSharedManager extends GridCacheSharedManagerAdap
         try {
             cfg.getMBeanServer().unregisterMBean(
                 U.makeMBeanName(
-                    cfg.getIgniteInstanceName(),
+                    U.getInstanceNameFromContext(cctx.kernalContext()),
                     groupName,
                     name
                 ));

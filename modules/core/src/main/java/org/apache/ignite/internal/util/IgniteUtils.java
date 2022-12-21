@@ -346,7 +346,7 @@ public abstract class IgniteUtils {
     public static final Long DFLT_MAX_CHECKPOINTING_PAGE_BUFFER_SIZE = 2 * GB;
 
     /** @see IgniteSystemProperties#IGNITE_MBEAN_APPEND_CLASS_LOADER_ID */
-    public static final boolean DFLT_MBEAN_APPEND_CLASS_LOADER_ID = true;
+    public static final boolean DFLT_MBEAN_APPEND_CLASS_LOADER_ID = false;
 
     /** {@code True} if {@code unsafe} should be used for array copy. */
     private static final boolean UNSAFE_BYTE_ARR_CP = unsafeByteArrayCopyAvailable();
@@ -4960,6 +4960,28 @@ public abstract class IgniteUtils {
             catch (SQLException ignored) {
                 // No-op.
             }
+    }
+
+    /**
+     * Get String name of instance from GridKernakContext.
+     *
+     * @param ctx Ignte kernal context.
+     * @return value for instance name..
+     */
+    public static @Nullable String getInstanceNameFromContext(GridKernalContext ctx) {
+        String igniteInstanceName = null;
+        if (ctx != null) {
+            igniteInstanceName = ctx.igniteInstanceName();
+
+            if (igniteInstanceName == null && ctx.config() != null) {
+                if (ctx.config().getConsistentId() != null)
+                    igniteInstanceName = "\"" + ctx.config().getConsistentId().toString() + "\"";
+                else if (ctx.config().getNodeId() != null)
+                    igniteInstanceName = ctx.config().getNodeId().toString();
+            }
+        }
+
+        return igniteInstanceName;
     }
 
     /**

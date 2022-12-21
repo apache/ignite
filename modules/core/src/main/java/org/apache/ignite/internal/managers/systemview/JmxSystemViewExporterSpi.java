@@ -23,6 +23,7 @@ import javax.management.JMException;
 import javax.management.MBeanServer;
 import javax.management.ObjectName;
 import org.apache.ignite.Ignite;
+import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.spi.IgniteSpiException;
 import org.apache.ignite.spi.systemview.view.SystemView;
@@ -58,7 +59,7 @@ public class JmxSystemViewExporterSpi extends AbstractSystemViewExporterSpi {
 
             ObjectName mbean = U.registerMBean(
                 ignite().configuration().getMBeanServer(),
-                igniteInstanceName,
+                U.getInstanceNameFromContext(((IgniteEx)ignite).context()),
                 VIEWS,
                 sysView.name(),
                 mlBean,

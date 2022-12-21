@@ -17,11 +17,17 @@
 
 package org.apache.ignite.util.mbeans;
 
+import java.util.Set;
 import javax.management.MBeanAttributeInfo;
 import javax.management.MBeanInfo;
 import javax.management.MBeanOperationInfo;
 import javax.management.MBeanParameterInfo;
+import javax.management.MBeanServer;
+import javax.management.ObjectInstance;
+import javax.management.ObjectName;
 import javax.management.StandardMBean;
+
+import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.mxbean.IgniteStandardMXBean;
 import org.apache.ignite.mxbean.IgniteMXBean;
@@ -30,6 +36,8 @@ import org.apache.ignite.mxbean.MXBeanParametersDescriptions;
 import org.apache.ignite.mxbean.MXBeanParametersNames;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.junit.Test;
+
+import static java.util.stream.Collectors.toSet;
 
 /**
  * MBean test.
@@ -333,6 +341,52 @@ public class GridMBeanSelfTest extends GridCommonAbstractTest {
         @MXBeanParametersNames({"ignored", "someData"})
         @MXBeanParametersDescriptions({"MBeanOperationParameter1."})
         public String doSomethingBadAgain(boolean ignored, String someData);
+    }
+
+    /**
+     * Test MBean interface creation
+     *
+     * @throws Exception Thrown if test fails.
+     */
+    @Test
+    public void testMbeanCreation() throws Exception {
+        checkIfMbeanHaveInstanceName(null, null);
+        checkIfMbeanHaveInstanceName("testInstanceName", null);
+        checkIfMbeanHaveInstanceName(null, "testConsistanceId");
+        checkIfMbeanHaveInstanceName("testInstanceName", "testConsistanceId");
+
+    }
+
+    private void checkIfMbeanHaveInstanceName(String instanceName, String consistanceId) throws Exception {
+        IgniteEx ignite = (IgniteEx) startGrid(instanceName, new IgniteConfiguration()
+            .setConsistentId(consistanceId)
+        );
+
+        MBeanServer srv = ignite.configuration().getMBeanServer();
+
+        Set<String> beans = srv.queryMBeans(new ObjectName("org.apache:*"), null)
+            .stream()
+            .map(ObjectInstance::getObjectName)
+            .map(ObjectName::toString)
+            .filter(o -> (!o.contains("igniteInstanceName=")))
+            .filter(o -> (!"org.apache:group=Kernal,name=Ignition".equals(o)))
+            .collect(toSet());
+
+        assertTrue("There are mbeans without instanceName for case when instanceName="
+                + instanceName + " and consistanceId="
+                + consistanceId + ":"
+                + String.join("\n", beans),
+            beans.isEmpty());
+
+        stopGrid(instanceName, false);
+
+        Set<String> mbeans = srv.queryMBeans(new ObjectName("org.apache:*"), null)
+            .stream()
+            .map(ObjectInstance::getObjectName)
+            .map(ObjectName::toString)
+            .collect(toSet());
+
+        assertTrue("There are " + mbeans.size() + " beans after node stopped" + String.join("\n", mbeans), mbeans.isEmpty());
     }
 
     /**

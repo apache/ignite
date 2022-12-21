@@ -206,7 +206,7 @@ public class IgniteMBeansManager {
         try {
             ObjectName objName = U.registerMBean(
                 ctx.config().getMBeanServer(),
-                ctx.config().getIgniteInstanceName(),
+                U.getInstanceNameFromContext(ctx),
                 grp, name, impl, itf);
 
             if (log.isDebugEnabled())

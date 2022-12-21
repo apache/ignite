@@ -613,7 +613,7 @@ public class ClusterProcessor extends GridProcessorAdapter implements Distribute
             try {
                 mBean = U.registerMBean(
                     ctx.config().getMBeanServer(),
-                    ctx.igniteInstanceName(),
+                    U.getInstanceNameFromContext(ctx),
                     M_BEAN_NAME,
                     mxBeanImpl.getClass().getSimpleName(),
                     mxBeanImpl,

@@ -1130,7 +1130,7 @@ namespace Apache.Ignite.Core.Tests.Client
         private static string[] GetThinClientConnections(IIgnite ignite)
         {
             return ignite.GetCompute().ExecuteJavaTask<string[]>(
-                "org.apache.ignite.platform.PlatformThinClientConnectionsTask", ignite.Name);
+                "org.apache.ignite.platform.PlatformThinClientConnectionsTask", "*");
         }
 
         /// <summary>
