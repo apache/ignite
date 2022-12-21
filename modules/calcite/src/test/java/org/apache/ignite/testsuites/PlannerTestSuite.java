@@ -25,6 +25,7 @@ import org.apache.ignite.internal.processors.query.calcite.planner.HashAggregate
 import org.apache.ignite.internal.processors.query.calcite.planner.HashIndexSpoolPlannerTest;
 import org.apache.ignite.internal.processors.query.calcite.planner.IndexRebuildPlannerTest;
 import org.apache.ignite.internal.processors.query.calcite.planner.IndexSearchBoundsPlannerTest;
+import org.apache.ignite.internal.processors.query.calcite.planner.InlineIndexScanPlannerTest;
 import org.apache.ignite.internal.processors.query.calcite.planner.JoinColocationPlannerTest;
 import org.apache.ignite.internal.processors.query.calcite.planner.JoinCommutePlannerTest;
 import org.apache.ignite.internal.processors.query.calcite.planner.JoinWithUsingPlannerTest;
@@ -73,6 +74,7 @@ import org.junit.runners.Suite;
     IndexRebuildPlannerTest.class,
     PlannerTimeoutTest.class,
     IndexSearchBoundsPlannerTest.class,
+    InlineIndexScanPlannerTest.class,
 })
 public class PlannerTestSuite {
 }

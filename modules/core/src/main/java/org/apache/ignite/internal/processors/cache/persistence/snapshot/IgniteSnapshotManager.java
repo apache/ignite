@@ -1022,7 +1022,7 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
     private IgniteInternalFuture<SnapshotOperationResponse> initLocalSnapshotEndStage(SnapshotOperationRequest req) {
         SnapshotOperationRequest snpReq = clusterSnpReq;
 
-        if (snpReq == null || !F.eq(req.requestId(), snpReq.requestId()))
+        if (snpReq == null || !F.eq(req.requestId(), snpReq.requestId()) || cctx.kernalContext().clientNode())
             return new GridFinishedFuture<>();
 
         try {
