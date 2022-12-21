@@ -2727,7 +2727,7 @@ public abstract class GridAbstractTest extends JUnitAssertAware {
         for (Ignite g : G.allGrids()) {
             final GridKernalContext ctx = ((IgniteKernal)g).context();
 
-            if (ctx.isStopping() || ctx.gateway().getState() == DISCONNECTED || !g.cluster().state().active())
+            if (ctx.isStopping() || ctx.gateway().getState() == DISCONNECTED || !g.active())
                 continue;
 
             AffinityTopologyVersion topVer = ctx.discovery().topologyVersionEx();
