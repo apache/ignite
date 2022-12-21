@@ -45,7 +45,6 @@ import static org.apache.ignite.cache.CacheWriteSynchronizationMode.FULL_SYNC;
 /**
  * Leak test.
  */
-//@WithSystemProperty(key = IgniteSystemProperties.IGNITE_USE_BINARY_ARRAYS, value = "true")
 public abstract class AbstractCacheObjectsTransformationTest extends GridCommonAbstractTest {
     /** Cache name. */
     protected static final String CACHE_NAME = "data";
@@ -177,11 +176,11 @@ public abstract class AbstractCacheObjectsTransformationTest extends GridCommonA
         boolean binarizableVal,
         boolean transformableKey,
         boolean transformableVal) {
-        int transformed = (transformableKey ? 1 : 0) + (transformableVal ? 1 : 0); // Key + Value
-        int transformCancelled = (transformableKey ? 0 : 1) + (transformableVal ? 0 : 1); // Key + Value
-        int restored = transformableKey ? NODES : 0; // Key must be restored at each node
+        int transformed = (transformableKey ? 1 : 0) + (transformableVal ? 1 : 0); // Key + Value.
+        int transformCancelled = (transformableKey ? 0 : 1) + (transformableVal ? 0 : 1); // Key + Value.
+        int restored = transformableKey ? NODES : 0; // Key must be restored at each node,
 
-        // As well as binary value (since binary array is required (e.g. to wait for proper Metadata))
+        // As well as binary value (since binary array is required (e.g. to wait for proper Metadata)).
         restored += transformableVal && binarizableVal ? NODES : 0;
 
         // Double key restoration. See UserKeyCacheObjectImpl#prepareForCache() for details.
