@@ -20,8 +20,6 @@ package org.apache.ignite.internal.processors.cache;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Map;
-import org.apache.ignite.IgniteCheckedException;
-import org.apache.ignite.IgniteException;
 import org.apache.ignite.binary.BinaryObject;
 import org.apache.ignite.internal.binary.BinaryArray;
 import org.apache.ignite.internal.binary.BinaryUtils;
@@ -194,16 +192,8 @@ public class CacheObjectUtils {
         while (BinaryUtils.knownCacheObject(o)) {
             CacheObject co = (CacheObject)o;
 
-            if (!co.isPlatformType() && keepBinary) {
-                try {
-                    co.finishUnmarshal(ctx, ldr);
-                }
-                catch (IgniteCheckedException e) {
-                    throw new IgniteException("Unmarshalling failed.", e);
-                }
-
+            if (!co.isPlatformType() && keepBinary)
                 return o;
-            }
 
             // It may be a collection of binaries
             o = co.value(ctx, cpy, ldr);
