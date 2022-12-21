@@ -85,7 +85,7 @@ public class CacheObjectsCompressionConsumptionTest extends AbstractCacheObjects
      */
     @org.junit.Test
     public void testString() throws Exception {
-        testMemoryConsumption((i) -> i, (i) -> HUGE_STRING + i);
+        testConsumption((i) -> i, (i) -> HUGE_STRING + i);
     }
 
     /**
@@ -93,7 +93,7 @@ public class CacheObjectsCompressionConsumptionTest extends AbstractCacheObjects
      */
     @org.junit.Test
     public void testWrappedString() throws Exception {
-        testMemoryConsumption((i) -> i, (i) -> new StringData(HUGE_STRING + i));
+        testConsumption((i) -> i, (i) -> new StringData(HUGE_STRING + i));
     }
 
     /**
@@ -103,7 +103,7 @@ public class CacheObjectsCompressionConsumptionTest extends AbstractCacheObjects
     public void testIncompressible() {
         GridTestUtils.assertThrowsWithCause(
             () -> {
-                testMemoryConsumption((i) -> i, (i) -> i);
+                testConsumption((i) -> i, (i) -> i);
 
                 return null;
             }, AssertionError.class);
@@ -112,13 +112,13 @@ public class CacheObjectsCompressionConsumptionTest extends AbstractCacheObjects
     /**
      * @throws Exception If failed.
      */
-    private void testMemoryConsumption(Function<Integer, Object> keyGen, Function<Integer, Object> valGen) throws Exception {
+    private void testConsumption(Function<Integer, Object> keyGen, Function<Integer, Object> valGen) throws Exception {
         List<Integer> cnts = new ArrayList<>();
         List<Consumption> raws = new ArrayList<>();
         List<Consumption> comps = new ArrayList<>();
 
         for (int i = 0; i < 4; i++) {
-            int cnt = (i + 1) * 1000;
+            int cnt = 5000 + i * 1000;
             Consumption raw;
             Consumption compressed;
 
@@ -164,6 +164,31 @@ public class CacheObjectsCompressionConsumptionTest extends AbstractCacheObjects
                 .append(", compressed=")
                 .append(comps.get(i).mem)
                 .append("]");
+
+        for (int i = 1; i < cnts.size(); i++) {
+            long rnd = raws.get(i).net - raws.get(i - 1).net;
+            long cnd = comps.get(i).net - comps.get(i - 1).net;
+            long rmd = raws.get(i).mem - raws.get(i - 1).mem;
+            long cmd = comps.get(i).mem - comps.get(i - 1).mem;
+
+            sb.append("\nEntries=")
+                .append(cnts.get(i - 1))
+                .append("-")
+                .append(cnts.get(i))
+                .append(",\tNetwork diff [raw=")
+                .append(rnd)
+                .append(", compressed=")
+                .append(cnd)
+                .append(", profit=")
+                .append((rnd - cnd) * 100 / rnd)
+                .append("%],\tMemory diff [raw=")
+                .append(rmd)
+                .append(", compressed=")
+                .append(cmd)
+                .append(", profit=")
+                .append((rmd - cmd) * 100 / rmd)
+                .append("%]");
+        }
 
         log.info(sb.toString());
     }
