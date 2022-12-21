@@ -4009,8 +4009,8 @@ public class GridNearTxLocal extends GridDhtTxLocalAdapter implements GridTimeou
 
                     commitOrRollbackStartTime.compareAndSet(0, System.nanoTime());
 
-                    if (!onePhaseCommit && CU.isIncrementalSnapshotsEnabled(cctx))
-                        cutId(cctx.consistentCutMgr().consistentCutId());
+                    if (!onePhaseCommit)
+                        cutId(cctx.snapshotMgr().consistentCutId());
 
                     try {
                         // Make sure that here are no exceptions.

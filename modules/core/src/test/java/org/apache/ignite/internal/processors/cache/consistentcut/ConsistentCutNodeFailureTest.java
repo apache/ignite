@@ -87,7 +87,7 @@ public class ConsistentCutNodeFailureTest extends AbstractConsistentCutTest {
 
         waitForCutIsStartedOnAllNodes();
 
-        ConsistentCut brokenCut = cutMgr(grid(0)).consistentCut();
+        UUID brokenCutId = snp(grid(0)).consistentCutId();
 
         String excMsg = breakCutWithExcp.get();
 
@@ -101,17 +101,13 @@ public class ConsistentCutNodeFailureTest extends AbstractConsistentCutTest {
 
         awaitSnapshotResourcesCleaned();
 
-        for (Ignite g: G.allGrids()) {
-            ConsistentCutManager cutMgr = ((IgniteEx)g).context().cache().context().consistentCutMgr();
-
-            assertNull(cutMgr.consistentCut());
-            assertNull(cutMgr.consistentCutId());
-        }
+        for (Ignite g: G.allGrids())
+            assertNull(snp((IgniteEx)g).consistentCutId());
 
         stopAllGrids();
 
         for (int i = 0; i < nodes(); i++)
-            assertWalConsistentRecords(i, brokenCut.id());
+            assertWalConsistentRecords(i, brokenCutId);
     }
 
     /** */
@@ -161,7 +157,7 @@ public class ConsistentCutNodeFailureTest extends AbstractConsistentCutTest {
             boolean allNodeStartedCut = true;
 
             for (int i = 0; i < nodes(); i++)
-                allNodeStartedCut &= cutMgr(grid(i)).consistentCut() != null;
+                allNodeStartedCut &= snp(grid(i)).consistentCutId() != null;
 
             return allNodeStartedCut;
         }, getTestTimeout(), 10);

@@ -117,6 +117,7 @@ import org.apache.ignite.internal.processors.cache.CacheGroupContext;
 import org.apache.ignite.internal.processors.cache.CacheGroupDescriptor;
 import org.apache.ignite.internal.processors.cache.CacheObjectContext;
 import org.apache.ignite.internal.processors.cache.CacheType;
+import org.apache.ignite.internal.processors.cache.GridCacheMessage;
 import org.apache.ignite.internal.processors.cache.GridCacheSharedContext;
 import org.apache.ignite.internal.processors.cache.GridCacheSharedManagerAdapter;
 import org.apache.ignite.internal.processors.cache.GridLocalConfigManager;
@@ -141,6 +142,7 @@ import org.apache.ignite.internal.processors.cache.persistence.tree.io.PageIO;
 import org.apache.ignite.internal.processors.cache.persistence.wal.WALPointer;
 import org.apache.ignite.internal.processors.cache.persistence.wal.crc.FastCrc;
 import org.apache.ignite.internal.processors.cache.persistence.wal.reader.StandaloneGridKernalContext;
+import org.apache.ignite.internal.processors.cache.transactions.IgniteInternalTx;
 import org.apache.ignite.internal.processors.cache.tree.DataRow;
 import org.apache.ignite.internal.processors.cache.verify.IdleVerifyResultV2;
 import org.apache.ignite.internal.processors.cluster.DiscoveryDataClusterState;
@@ -417,6 +419,9 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
 
     /** Manager to receive responses of remote snapshot requests. */
     private final SequentialRemoteSnapshotManager snpRmtMgr;
+
+    /** Current Consistent Cut on local node. */
+    private volatile ConsistentCut consistentCut;
 
     /** Snapshot transfer rate limit in bytes/sec. */
     private final DistributedLongProperty snapshotTransferRate = detachedLongProperty(SNAPSHOT_TRANSFER_RATE_DMS_KEY);
@@ -815,7 +820,7 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
         clusterSnpReq = req;
 
         if (req.incremental())
-            cctx.consistentCutMgr().handleConsistentCutId(req.requestId());
+            handleConsistentCutId(req.requestId());
 
         if (!CU.baselineNode(cctx.localNode(), cctx.kernalContext().state().clusterState()))
             return new GridFinishedFuture<>();
@@ -872,6 +877,27 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
     }
 
     /**
+     * Handles received Consistent Cut ID from remote node.
+     *
+     * @param id Consistent Cut ID.
+     */
+    public void handleConsistentCutId(UUID id) {
+        if (consistentCut != null)
+            return;
+
+        ConsistentCut newCut;
+
+        synchronized (snpOpMux) {
+            if (consistentCut != null)
+                return;
+
+            consistentCut = newCut = new ConsistentCut(cctx, id);
+        }
+
+        newCut.init(cctx);
+    }
+
+    /**
      * @param req Request on snapshot creation.
      * @param meta Full snapshot metadata.
      * @return Future which will be completed when a snapshot has been started.
@@ -912,7 +938,8 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
             req.incrementIndex(),
             tmpWorkDir,
             ioFactory,
-            lowPtr
+            lowPtr,
+            consistentCut.markWalFinished()
         )).chain(fut -> {
             if (fut.error() != null)
                 throw F.wrap(fut.error());
@@ -925,7 +952,7 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
                 req.incrementIndex(),
                 cctx.localNode().consistentId().toString(),
                 pdsSettings.folderName(),
-                ((IncrementalSnapshotFutureTaskResult)fut.result()).finishRecordPointer()
+                consistentCut.markWalFinished().result()
             );
 
             storeSnapshotMeta(
@@ -1060,7 +1087,7 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
         SnapshotOperationRequest snpReq = clusterSnpReq;
 
         if (snpReq != null && F.eq(id, snpReq.requestId()) && snpReq.incremental())
-            cctx.consistentCutMgr().onConsistentCutFinished();
+            consistentCut.stopWrapMessages();
 
         if (cctx.kernalContext().clientNode())
             return;
@@ -1201,42 +1228,42 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
     private IgniteInternalFuture<SnapshotOperationResponse> initLocalSnapshotEndStage(SnapshotOperationRequest req) {
         SnapshotOperationRequest snpReq = clusterSnpReq;
 
-        if (snpReq == null || !F.eq(req.requestId(), snpReq.requestId()) || cctx.kernalContext().clientNode())
+        if (snpReq == null || !F.eq(req.requestId(), snpReq.requestId()))
             return new GridFinishedFuture<>();
 
-        try {
-            if (req.error() != null) {
-                snpReq.error(req.error());
+        IgniteInternalFuture<?> prepFut = req.incremental() ? consistentCut.wrapMessagesFinished() : new GridFinishedFuture<>();
 
-                if (req.incremental())
-                    U.delete(incrementalSnapshotLocalDir(req.snapshotName(), req.snapshotPath(), req.incrementIndex()));
-                else
-                    deleteSnapshot(snapshotLocalDir(req.snapshotName(), req.snapshotPath()), pdsSettings.folderName());
+        return prepFut.chain(r -> {
+            if (cctx.kernalContext().clientNode())
+                return null;
+
+            try {
+                if (req.error() != null) {
+                    snpReq.error(req.error());
+
+                    if (req.incremental())
+                        U.delete(incrementalSnapshotLocalDir(req.snapshotName(), req.snapshotPath(), req.incrementIndex()));
+                    else
+                        deleteSnapshot(snapshotLocalDir(req.snapshotName(), req.snapshotPath()), pdsSettings.folderName());
+                }
+                else if (!F.isEmpty(req.warnings())) {
+                    // Pass the warnings further to the next stage for the case when snapshot started from not coordinator.
+                    if (!isLocalNodeCoordinator(cctx.discovery()))
+                        snpReq.warnings(req.warnings());
+
+                    snpReq.meta().warnings(Collections.unmodifiableList(req.warnings()));
+
+                    storeWarnings(snpReq);
+                }
+
+                removeLastMetaStorageKey();
             }
-            else if (!F.isEmpty(req.warnings())) {
-                // Pass the warnings further to the next stage for the case when snapshot started from not coordinator.
-                if (!isLocalNodeCoordinator(cctx.discovery()))
-                    snpReq.warnings(req.warnings());
-
-                snpReq.meta().warnings(Collections.unmodifiableList(req.warnings()));
-
-                storeWarnings(snpReq);
+            catch (Exception e) {
+                throw F.wrap(e);
             }
 
-            removeLastMetaStorageKey();
-        }
-        catch (Exception e) {
-            return new GridFinishedFuture<>(e);
-        }
-
-        if (req.incremental()) {
-            IgniteInternalFuture<?> lastCutAwareMsgSentFut = cctx.consistentCutMgr().wrapMessagesFinished();
-
-            if (lastCutAwareMsgSentFut != null)
-                return lastCutAwareMsgSentFut.chain(fut -> new SnapshotOperationResponse());
-        }
-
-        return new GridFinishedFuture<>(new SnapshotOperationResponse());
+            return new SnapshotOperationResponse();
+        }, cctx.kernalContext().pools().getSnapshotExecutorService());
     }
 
     /**
@@ -1296,7 +1323,7 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
         endFail.removeAll(res.keySet());
 
         if (snpReq.incremental())
-            cctx.consistentCutMgr().onClusterSnapshotFinished();
+            consistentCut = null;
 
         clusterSnpReq = null;
 
@@ -2219,7 +2246,7 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
         GridCacheSharedContext<?, ?> sctx = new GridCacheSharedContext<>(ctx, null, null, null,
             null, null, null, null, null, null,
             null, null, null, null, null,
-            null, null, null, null, null, null, null);
+            null, null, null, null, null, null);
 
         return new DataPageIterator(sctx, coctx, pageStore, partId);
     }
@@ -2597,6 +2624,26 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
     }
 
     /**
+     * Wraps a transaction message if Consistent Cut is running.
+     *
+     * @param txMsg Transaction message to wrap.
+     * @param txCutId Consistent Cut ID after which transaction committed, if specified.
+     */
+    public GridCacheMessage wrapMessage(GridCacheMessage txMsg, @Nullable UUID txCutId) {
+        ConsistentCut cut = consistentCut;
+
+        return cut == null ? txMsg : cut.wrapMessage(txMsg, txCutId);
+    }
+
+    /** Calls on transaction commits. */
+    public void onCommit(IgniteInternalTx tx) {
+        ConsistentCut cut = consistentCut;
+
+        if (cut != null)
+            cut.onCommit(tx);
+    }
+
+    /**
      * Checks that incremental snapshot can be created for given full snapshot and current cluster state.
      *
      * @param name Full snapshot name.
@@ -2724,6 +2771,13 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
     /** @return Snapshot handlers. */
     protected SnapshotHandlers handlers() {
         return handlers;
+    }
+
+    /** @return Current Consistent Cut ID. */
+    public UUID consistentCutId() {
+        ConsistentCut cut = consistentCut;
+
+        return cut == null ? null : cut.id();
     }
 
     /** Snapshot operation handlers. */

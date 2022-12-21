@@ -33,6 +33,7 @@ import org.apache.ignite.internal.pagemem.wal.IgniteWriteAheadLogManager;
 import org.apache.ignite.internal.pagemem.wal.record.ConsistentCutStartRecord;
 import org.apache.ignite.internal.pagemem.wal.record.WALRecord;
 import org.apache.ignite.internal.processors.cache.persistence.StorageException;
+import org.apache.ignite.internal.processors.cache.persistence.snapshot.IgniteSnapshotManager;
 import org.apache.ignite.internal.processors.cache.persistence.wal.FileWriteAheadLogManager;
 import org.apache.ignite.internal.processors.cache.persistence.wal.WALPointer;
 import org.apache.ignite.internal.util.typedef.F;
@@ -72,7 +73,7 @@ public abstract class AbstractConsistentCutBlockingTest extends AbstractConsiste
 
         cfg.setPluginProviders(
             new BlockingWALPluginProvider(),
-            new BlockingConsistentCutPluginProvider());
+            new BlockingSnapshotPluginProvider());
 
         return cfg;
     }
@@ -123,13 +124,13 @@ public abstract class AbstractConsistentCutBlockingTest extends AbstractConsiste
 
         // 4. Start Consistent Cut procedure concurrently with running transaction.
         if (cutBlkNodeId != -1)
-            ((BlockingConsistentCutManager)cutMgr(grid(cutBlkNodeId))).block(cutBlkType);
+            ((BlockingSnapshotManager)snp(grid(cutBlkNodeId))).block(cutBlkType);
 
         IgniteFuture<Void> cutFut = triggerConsistentCut();
 
         // 5. Await Consistent Cut has blocked.
         if (cutBlkNodeId != -1)
-            ((BlockingConsistentCutManager)cutMgr(grid(cutBlkNodeId))).awaitBlockedOrFinishedCut(cutFut);
+            ((BlockingSnapshotManager)snp(grid(cutBlkNodeId))).awaitBlockedOrFinishedCut(cutFut);
 
         // 6. Resume the blocking transaction.
         unblockTx(grid(txBlkNodeId));
@@ -139,7 +140,7 @@ public abstract class AbstractConsistentCutBlockingTest extends AbstractConsiste
 
         // 8. Resume the blocking Consistent Cut.
         if (cutBlkNodeId != -1)
-            ((BlockingConsistentCutManager)cutMgr(grid(cutBlkNodeId))).unblock(cutBlkType);
+            ((BlockingSnapshotManager)snp(grid(cutBlkNodeId))).unblock(cutBlkType);
 
         // 9. Await while Consistent Cut completed.
         cutFut.get(getTestTimeout());
@@ -265,23 +266,23 @@ public abstract class AbstractConsistentCutBlockingTest extends AbstractConsiste
     }
 
     /** */
-    private static class BlockingConsistentCutPluginProvider extends AbstractTestPluginProvider {
+    private static class BlockingSnapshotPluginProvider extends AbstractTestPluginProvider {
         /** {@inheritDoc} */
         @Override public String name() {
-            return "BlockingConsistentCutProvider";
+            return "BlockingSnapshotPluginProvider";
         }
 
         /** {@inheritDoc} */
         @Override public <T> @Nullable T createComponent(PluginContext ctx, Class<T> cls) {
-            if (ConsistentCutManager.class.equals(cls))
-                return (T)new BlockingConsistentCutManager();
+            if (IgniteSnapshotManager.class.equals(cls))
+                return (T)new BlockingSnapshotManager(((IgniteEx)ctx.grid()).context());
 
             return null;
         }
     }
 
     /** Blocks local Consistent Cut before or after start. */
-    static class BlockingConsistentCutManager extends ConsistentCutManager {
+    protected static class BlockingSnapshotManager extends IgniteSnapshotManager {
         /** Blocks this record after local Consistent Cut started. */
         private static final WALRecord.RecordType blkStartRecType = WALRecord.RecordType.CONSISTENT_CUT_START_RECORD;
 
@@ -290,6 +291,11 @@ public abstract class AbstractConsistentCutBlockingTest extends AbstractConsiste
 
         /** */
         private volatile CountDownLatch blockedLatch;
+
+        /** */
+        public BlockingSnapshotManager(GridKernalContext ctx) {
+            super(ctx);
+        }
 
         /** {@inheritDoc} */
         @Override public void handleConsistentCutId(UUID id) {

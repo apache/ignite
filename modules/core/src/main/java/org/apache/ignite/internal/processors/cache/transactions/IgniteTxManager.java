@@ -1608,8 +1608,8 @@ public class IgniteTxManager extends GridCacheSharedManagerAdapter {
                 ", tx=" + tx.getClass().getSimpleName() + ']');
         }
 
-        if (CU.isIncrementalSnapshotsEnabled(cctx))
-            cctx.consistentCutMgr().onCommit(tx);
+        if (!cctx.kernalContext().clientNode())
+            cctx.snapshotMgr().onCommit(tx);
 
         ConcurrentMap<GridCacheVersion, IgniteInternalTx> txIdMap = transactionMap(tx);
 

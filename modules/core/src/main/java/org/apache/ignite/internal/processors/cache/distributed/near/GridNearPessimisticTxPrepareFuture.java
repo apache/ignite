@@ -33,7 +33,6 @@ import org.apache.ignite.internal.processors.cache.GridCacheContext;
 import org.apache.ignite.internal.processors.cache.GridCacheEntryEx;
 import org.apache.ignite.internal.processors.cache.GridCacheMvccCandidate;
 import org.apache.ignite.internal.processors.cache.GridCacheSharedContext;
-import org.apache.ignite.internal.processors.cache.consistentcut.ConsistentCutManager;
 import org.apache.ignite.internal.processors.cache.distributed.GridDistributedTxMapping;
 import org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtTxMapping;
 import org.apache.ignite.internal.processors.cache.distributed.dht.topology.GridDhtPartitionTopology;
@@ -408,7 +407,7 @@ public class GridNearPessimisticTxPrepareFuture extends GridNearTxPrepareFutureA
                 add((IgniteInternalFuture)fut);
 
                 try {
-                    cctx.io().send(primary, ConsistentCutManager.wrapMessage(cctx, req, null), tx.ioPolicy());
+                    cctx.io().send(primary, cctx.snapshotMgr().wrapMessage(req, null), tx.ioPolicy());
 
                     if (msgLog.isDebugEnabled()) {
                         msgLog.debug("Near pessimistic prepare, sent request [txId=" + tx.nearXidVersion() +

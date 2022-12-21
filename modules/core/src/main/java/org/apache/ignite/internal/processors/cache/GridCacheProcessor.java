@@ -94,7 +94,6 @@ import org.apache.ignite.internal.processors.GridProcessorAdapter;
 import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
 import org.apache.ignite.internal.processors.affinity.GridAffinityAssignmentCache;
 import org.apache.ignite.internal.processors.cache.binary.CacheObjectBinaryProcessorImpl;
-import org.apache.ignite.internal.processors.cache.consistentcut.ConsistentCutManager;
 import org.apache.ignite.internal.processors.cache.datastructures.CacheDataStructuresManager;
 import org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtCache;
 import org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtCacheAdapter;
@@ -3040,7 +3039,11 @@ public class GridCacheProcessor extends GridProcessorAdapter {
 
         WalStateManager walStateMgr = new WalStateManager(ctx);
 
-        IgniteSnapshotManager snapshotMgr = new IgniteSnapshotManager(ctx);
+        IgniteSnapshotManager snapshotMgr = ctx.plugins().createComponent(IgniteSnapshotManager.class);
+
+        if (snapshotMgr == null)
+            snapshotMgr = new IgniteSnapshotManager(ctx);
+
         IgniteCacheSnapshotManager snpMgr = ctx.plugins().createComponent(IgniteCacheSnapshotManager.class);
 
         if (snpMgr == null)
@@ -3058,15 +3061,6 @@ public class GridCacheProcessor extends GridProcessorAdapter {
         DeadlockDetectionManager deadlockDetectionMgr = new DeadlockDetectionManager();
 
         CacheDiagnosticManager diagnosticMgr = new CacheDiagnosticManager();
-
-        ConsistentCutManager consistentCutMgr = null;
-
-        if (CU.isPersistenceEnabled(ctx.config())) {
-            consistentCutMgr = ctx.plugins().createComponent(ConsistentCutManager.class);
-
-            if (consistentCutMgr == null)
-                consistentCutMgr = new ConsistentCutManager();
-        }
 
         return new GridCacheSharedContext(
             kernalCtx,
@@ -3089,8 +3083,7 @@ public class GridCacheProcessor extends GridProcessorAdapter {
             storeSesLsnrs,
             mvccCachingMgr,
             deadlockDetectionMgr,
-            diagnosticMgr,
-            consistentCutMgr
+            diagnosticMgr
         );
     }
 

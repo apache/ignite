@@ -212,11 +212,6 @@ public abstract class AbstractConsistentCutTest extends GridCommonAbstractTest {
         return factory.iterator(params);
     }
 
-    /** */
-    protected ConsistentCutManager cutMgr(IgniteEx grid) {
-        return grid.context().cache().context().consistentCutMgr();
-    }
-
     /**
      * Read WAL and sort transactions by Consistent Cuts.
      */

@@ -38,7 +38,6 @@ import org.apache.ignite.internal.processors.cache.GridCacheReturn;
 import org.apache.ignite.internal.processors.cache.GridCacheReturnCompletableWrapper;
 import org.apache.ignite.internal.processors.cache.GridCacheSharedContext;
 import org.apache.ignite.internal.processors.cache.GridCacheVersionedFuture;
-import org.apache.ignite.internal.processors.cache.consistentcut.ConsistentCutManager;
 import org.apache.ignite.internal.processors.cache.distributed.GridDistributedTxMapping;
 import org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtTxFinishRequest;
 import org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtTxFinishResponse;
@@ -808,7 +807,7 @@ public final class GridNearTxFinishFuture<K, V> extends GridCacheCompoundIdentit
             add(fut); // Append new future.
 
             try {
-                cctx.io().send(n, ConsistentCutManager.wrapMessage(cctx, req, tx.cutId()), tx.ioPolicy());
+                cctx.io().send(n, cctx.snapshotMgr().wrapMessage(req, tx.cutId()), tx.ioPolicy());
 
                 if (msgLog.isDebugEnabled()) {
                     msgLog.debug("Near finish fut, sent request [" +

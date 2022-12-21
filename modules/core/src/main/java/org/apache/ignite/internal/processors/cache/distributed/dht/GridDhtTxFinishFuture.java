@@ -34,7 +34,6 @@ import org.apache.ignite.internal.cluster.ClusterTopologyCheckedException;
 import org.apache.ignite.internal.processors.cache.GridCacheCompoundIdentityFuture;
 import org.apache.ignite.internal.processors.cache.GridCacheFuture;
 import org.apache.ignite.internal.processors.cache.GridCacheSharedContext;
-import org.apache.ignite.internal.processors.cache.consistentcut.ConsistentCutManager;
 import org.apache.ignite.internal.processors.cache.distributed.GridDistributedTxMapping;
 import org.apache.ignite.internal.processors.cache.mvcc.MvccFuture;
 import org.apache.ignite.internal.processors.cache.mvcc.MvccSnapshot;
@@ -510,7 +509,7 @@ public final class GridDhtTxFinishFuture<K, V> extends GridCacheCompoundIdentity
                         + n.id()));
                 }
                 else {
-                    cctx.io().send(n, ConsistentCutManager.wrapMessage(cctx, req, tx.cutId()), tx.ioPolicy());
+                    cctx.io().send(n, cctx.snapshotMgr().wrapMessage(req, tx.cutId()), tx.ioPolicy());
 
                     if (msgLog.isDebugEnabled()) {
                         msgLog.debug("DHT finish fut, sent request dht [txId=" + tx.nearXidVersion() +

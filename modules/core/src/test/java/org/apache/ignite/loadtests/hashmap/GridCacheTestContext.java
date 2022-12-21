@@ -86,8 +86,7 @@ public class GridCacheTestContext<K, V> extends GridCacheContext<K, V> {
                 null,
                 null,
                 null,
-                new CacheDiagnosticManager(),
-                null
+                new CacheDiagnosticManager()
             ),
             defaultCacheConfiguration(),
             null,

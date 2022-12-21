@@ -15,7 +15,7 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.internal.processors.cache.consistentcut;
+package org.apache.ignite.internal.processors.cache.persistence.snapshot;
 
 import java.util.Iterator;
 import java.util.Set;

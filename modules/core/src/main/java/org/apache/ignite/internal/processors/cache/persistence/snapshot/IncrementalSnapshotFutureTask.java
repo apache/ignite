@@ -28,9 +28,11 @@ import java.util.UUID;
 import java.util.function.BiConsumer;
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.configuration.DataStorageConfiguration;
+import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.IgniteInterruptedCheckedException;
 import org.apache.ignite.internal.MarshallerContextImpl;
 import org.apache.ignite.internal.binary.BinaryUtils;
+import org.apache.ignite.internal.pagemem.wal.record.ConsistentCutFinishRecord;
 import org.apache.ignite.internal.pagemem.wal.record.delta.ClusterSnapshotRecord;
 import org.apache.ignite.internal.processors.cache.GridCacheSharedContext;
 import org.apache.ignite.internal.processors.cache.persistence.file.FileIOFactory;
@@ -63,6 +65,9 @@ class IncrementalSnapshotFutureTask
      */
     private final WALPointer lowPtr;
 
+    /** Future that completes with WAL pointer to {@link ConsistentCutFinishRecord}. */
+    private final IgniteInternalFuture<WALPointer> highPtrFut;
+
     /** */
     public IncrementalSnapshotFutureTask(
         GridCacheSharedContext<?, ?> cctx,
@@ -73,7 +78,8 @@ class IncrementalSnapshotFutureTask
         int incIdx,
         File tmpWorkDir,
         FileIOFactory ioFactory,
-        WALPointer lowPtr
+        WALPointer lowPtr,
+        IgniteInternalFuture<WALPointer> highPtrFut
     ) {
         super(
             cctx,
@@ -105,6 +111,7 @@ class IncrementalSnapshotFutureTask
         this.snpPath = snpPath;
         this.affectedCacheGrps = new HashSet<>(meta.cacheGroupIds());
         this.lowPtr = lowPtr;
+        this.highPtrFut = highPtrFut;
 
         cctx.cache().configManager().addConfigurationChangeListener(this);
     }
@@ -125,7 +132,7 @@ class IncrementalSnapshotFutureTask
                 return false;
             }
 
-            cctx.consistentCutMgr().markingWalFinished().chain(fut -> {
+            highPtrFut.chain(fut -> {
                 if (fut.error() != null) {
                     onDone(fut.error());
 
@@ -153,7 +160,7 @@ class IncrementalSnapshotFutureTask
                         file -> file.getName().endsWith(METADATA_FILE_SUFFIX)
                     );
 
-                    onDone(new IncrementalSnapshotFutureTaskResult(fut.result()));
+                    onDone(new IncrementalSnapshotFutureTaskResult());
                 }
                 catch (Throwable e) {
                     onDone(e);

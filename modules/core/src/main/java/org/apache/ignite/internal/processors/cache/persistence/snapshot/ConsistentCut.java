@@ -15,7 +15,7 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.internal.processors.cache.consistentcut;
+package org.apache.ignite.internal.processors.cache.persistence.snapshot;
 
 import java.util.UUID;
 import org.apache.ignite.internal.IgniteInternalFuture;
@@ -124,7 +124,7 @@ public class ConsistentCut {
     }
 
     /** @return Future that completes with pointer to {@link ConsistentCutFinishRecord}. */
-    @Nullable IgniteInternalFuture<WALPointer> markingWalFinished() {
+    @Nullable IgniteInternalFuture<WALPointer> markWalFinished() {
         return markWalFut;
     }
 }

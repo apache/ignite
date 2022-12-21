@@ -47,8 +47,6 @@ import org.apache.ignite.internal.processors.cache.GridCacheReturnCompletableWra
 import org.apache.ignite.internal.processors.cache.GridCacheSharedContext;
 import org.apache.ignite.internal.processors.cache.GridCacheUpdateTxResult;
 import org.apache.ignite.internal.processors.cache.KeyCacheObject;
-import org.apache.ignite.internal.processors.cache.consistentcut.ConsistentCutAwareMessage;
-import org.apache.ignite.internal.processors.cache.consistentcut.ConsistentCutManager;
 import org.apache.ignite.internal.processors.cache.distributed.GridCacheTxRecoveryFuture;
 import org.apache.ignite.internal.processors.cache.distributed.GridCacheTxRecoveryRequest;
 import org.apache.ignite.internal.processors.cache.distributed.GridCacheTxRecoveryResponse;
@@ -80,6 +78,7 @@ import org.apache.ignite.internal.processors.cache.distributed.near.GridNearTxPr
 import org.apache.ignite.internal.processors.cache.distributed.near.GridNearTxPrepareResponse;
 import org.apache.ignite.internal.processors.cache.distributed.near.GridNearTxRemote;
 import org.apache.ignite.internal.processors.cache.mvcc.MvccSnapshot;
+import org.apache.ignite.internal.processors.cache.persistence.snapshot.ConsistentCutAwareMessage;
 import org.apache.ignite.internal.processors.cache.persistence.wal.WALPointer;
 import org.apache.ignite.internal.processors.cache.query.IgniteQueryErrorCode;
 import org.apache.ignite.internal.processors.cache.version.GridCacheVersion;
@@ -301,7 +300,7 @@ public class IgniteTxHandler {
 
     /** */
     private void processConsistentCutAwareMessage(UUID nodeId, ConsistentCutAwareMessage msg) {
-        ctx.consistentCutMgr().handleConsistentCutId(msg.cutId());
+        ctx.snapshotMgr().handleConsistentCutId(msg.cutId());
 
         setTransactionCutIdIfNeeded(msg);
 
@@ -318,7 +317,7 @@ public class IgniteTxHandler {
      * @param msg Finish message signed with Consistent Cut ID.
      */
     private void setTransactionCutIdIfNeeded(ConsistentCutAwareMessage msg) {
-        if (!ctx.gridConfig().isClientMode() && msg.txCutId() != null) {
+        if (msg.txCutId() != null) {
             IgniteInternalTx tx = findTransactionByMessage(msg.payload());
 
             if (tx != null)
@@ -570,8 +569,7 @@ public class IgniteTxHandler {
                             req.deployInfo() != null);
 
                         try {
-                            ctx.io().send(nearNode, ConsistentCutManager.wrapMessage(
-                                ctx, res, tx == null ? null : tx.cutId()), req.policy());
+                            ctx.io().send(nearNode, ctx.snapshotMgr().wrapMessage(res, tx == null ? null : tx.cutId()), req.policy());
 
                             if (txPrepareMsgLog.isDebugEnabled()) {
                                 txPrepareMsgLog.debug("Sent remap response for near prepare [txId=" + req.version() +
@@ -1298,9 +1296,7 @@ public class IgniteTxHandler {
                     if (dhtTx != null) {
                         dhtTx.onePhaseCommit(true);
                         dhtTx.needReturnValue(req.needReturnValue());
-
-                        if (CU.isIncrementalSnapshotsEnabled(ctx))
-                            dhtTx.cutId(ctx.consistentCutMgr().consistentCutId());
+                        dhtTx.cutId(ctx.snapshotMgr().consistentCutId());
 
                         finish(dhtTx, req);
                     }
@@ -1624,7 +1620,7 @@ public class IgniteTxHandler {
             IgniteTxAdapter tx = dhtTx != null ? dhtTx : nearTx;
 
             // Reply back to sender.
-            ctx.io().send(nodeId, ConsistentCutManager.wrapMessage(ctx, res, tx == null ? null : tx.cutId()), req.policy());
+            ctx.io().send(nodeId, ctx.snapshotMgr().wrapMessage(res, tx == null ? null : tx.cutId()), req.policy());
 
             if (txPrepareMsgLog.isDebugEnabled()) {
                 txPrepareMsgLog.debug("Sent dht prepare response [txId=" + req.nearXidVersion() +

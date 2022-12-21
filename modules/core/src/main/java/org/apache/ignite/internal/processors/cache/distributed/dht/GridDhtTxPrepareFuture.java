@@ -61,7 +61,6 @@ import org.apache.ignite.internal.processors.cache.GridCacheReturn;
 import org.apache.ignite.internal.processors.cache.GridCacheSharedContext;
 import org.apache.ignite.internal.processors.cache.GridCacheVersionedFuture;
 import org.apache.ignite.internal.processors.cache.KeyCacheObject;
-import org.apache.ignite.internal.processors.cache.consistentcut.ConsistentCutManager;
 import org.apache.ignite.internal.processors.cache.distributed.GridDistributedCacheEntry;
 import org.apache.ignite.internal.processors.cache.distributed.GridDistributedTxMapping;
 import org.apache.ignite.internal.processors.cache.distributed.dht.topology.GridDhtLocalPartition;
@@ -785,8 +784,8 @@ public final class GridDhtTxPrepareFuture extends GridCacheCompoundFuture<Ignite
                                     res.error(fut.error());
 
                                 if (REPLIED_UPD.compareAndSet(GridDhtTxPrepareFuture.this, 0, 1)) {
-                                    sendPrepareResponse(ConsistentCutManager.wrapMessage(
-                                        cctx, res, fut.result() == null ? null : fut.result().cutId()));
+                                    sendPrepareResponse(cctx.snapshotMgr().wrapMessage(
+                                        res, fut.result() == null ? null : fut.result().cutId()));
                                 }
                             }
                         };
@@ -839,7 +838,7 @@ public final class GridDhtTxPrepareFuture extends GridCacheCompoundFuture<Ignite
                     // Will call super.onDone().
                     onComplete(res);
 
-                    sendPrepareResponse(ConsistentCutManager.wrapMessage(cctx, res, tx.cutId()));
+                    sendPrepareResponse(cctx.snapshotMgr().wrapMessage(res, tx.cutId()));
 
                     return true;
                 }
@@ -1518,7 +1517,7 @@ public final class GridDhtTxPrepareFuture extends GridCacheCompoundFuture<Ignite
             assert req.transactionNodes() != null;
 
             try {
-                cctx.io().send(n, ConsistentCutManager.wrapMessage(cctx, req, null), tx.ioPolicy());
+                cctx.io().send(n, cctx.snapshotMgr().wrapMessage(req, null), tx.ioPolicy());
 
                 if (msgLog.isDebugEnabled()) {
                     msgLog.debug("DHT prepare fut, sent request dht [txId=" + tx.nearXidVersion() +
