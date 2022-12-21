@@ -569,7 +569,7 @@ public class IgniteTxHandler {
                             req.deployInfo() != null);
 
                         try {
-                            ctx.io().send(nearNode, ctx.snapshotMgr().wrapMessage(res, tx == null ? null : tx.cutId()), req.policy());
+                            ctx.io().send(nearNode, res, req.policy());
 
                             if (txPrepareMsgLog.isDebugEnabled()) {
                                 txPrepareMsgLog.debug("Sent remap response for near prepare [txId=" + req.version() +
