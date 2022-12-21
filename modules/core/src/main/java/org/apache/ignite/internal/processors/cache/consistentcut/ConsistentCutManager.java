@@ -18,36 +18,20 @@
 package org.apache.ignite.internal.processors.cache.consistentcut;
 
 import java.util.UUID;
-import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.pagemem.wal.record.ConsistentCutFinishRecord;
 import org.apache.ignite.internal.processors.cache.GridCacheMessage;
 import org.apache.ignite.internal.processors.cache.GridCacheSharedContext;
 import org.apache.ignite.internal.processors.cache.GridCacheSharedManagerAdapter;
-import org.apache.ignite.internal.processors.cache.distributed.dht.preloader.GridDhtPartitionsExchangeFuture;
-import org.apache.ignite.internal.processors.cache.distributed.dht.preloader.PartitionsExchangeAware;
 import org.apache.ignite.internal.processors.cache.persistence.wal.WALPointer;
 import org.apache.ignite.internal.processors.cache.transactions.IgniteInternalTx;
 import org.apache.ignite.internal.processors.cache.transactions.IgniteTxManager;
 import org.jetbrains.annotations.Nullable;
 
 /** Processes all stuff related to Consistent Cut. */
-public class ConsistentCutManager extends GridCacheSharedManagerAdapter implements PartitionsExchangeAware {
+public class ConsistentCutManager extends GridCacheSharedManagerAdapter {
     /** Current Consistent Cut, {@code null} if not running. */
     private volatile @Nullable ConsistentCut consistentCut;
-
-    /** {@inheritDoc} */
-    @Override public void start0() throws IgniteCheckedException {
-        super.start0();
-
-        cctx.exchange().registerExchangeAwareComponent(this);
-    }
-
-    /** Stops Consistent Cut in case of baseline topology changed. */
-    @Override public void onInitBeforeTopologyLock(GridDhtPartitionsExchangeFuture fut) {
-        if (fut.changedBaseline() || fut.isBaselineNodeFailed())
-            cancelConsistentCut(new IgniteCheckedException("Ignite topology changed, can't finish Consistent Cut."));
-    }
 
     /**
      * Handles received Consistent Cut ID from remote node. It compares it with the latest ID that local node is aware of.
@@ -74,18 +58,6 @@ public class ConsistentCutManager extends GridCacheSharedManagerAdapter implemen
     /** Clean Consistent Cut after cluster snapshot finished. */
     public synchronized void onClusterSnapshotFinished() {
         consistentCut = null;
-    }
-
-    /**
-     * Cancels local Consistent Cut with error.
-     *
-     * @param err Error.
-     */
-    public void cancelConsistentCut(Throwable err) {
-        ConsistentCut cut = consistentCut;
-
-        if (cut != null)
-            cut.cancel(err);
     }
 
     /**

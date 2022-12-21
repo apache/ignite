@@ -25,13 +25,11 @@ import org.apache.ignite.IgniteException;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.IgniteInternalFuture;
-import org.apache.ignite.internal.IgniteInterruptedCheckedException;
 import org.apache.ignite.internal.TestRecordingCommunicationSpi;
 import org.apache.ignite.internal.pagemem.wal.WALIterator;
 import org.apache.ignite.internal.pagemem.wal.record.ConsistentCutStartRecord;
 import org.apache.ignite.internal.pagemem.wal.record.WALRecord;
 import org.apache.ignite.internal.processors.cache.distributed.near.GridNearTxFinishRequest;
-import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.G;
 import org.apache.ignite.lang.IgniteFuture;
 import org.apache.ignite.testframework.GridTestUtils;
@@ -68,29 +66,6 @@ public class ConsistentCutNodeFailureTest extends AbstractConsistentCutTest {
             stopGrid(1);
 
             return "Snapshot operation interrupted, because baseline node left the cluster";
-        });
-    }
-
-    /** */
-    @Test
-    public void shouldSkipFinishRecordAfterBaselineChange() throws Exception {
-        startGrid(nodes() + 1);
-
-        runConsistentCutAndBreak(() -> {
-            GridTestUtils.runAsync(() -> grid(0).cluster().setBaselineTopology(nodes() + 2));
-
-            for (Ignite g: G.allGrids()) {
-                try {
-                    GridTestUtils.waitForCondition(() ->
-                        ((IgniteEx)g).context().state().clusterState().baselineTopology().currentBaseline().size() == nodes() + 1,
-                        getTestTimeout(), 10);
-                }
-                catch (IgniteInterruptedCheckedException e) {
-                    throw F.wrap(e);
-                }
-            }
-
-            return "Ignite topology changed, can't finish Consistent Cut.";
         });
     }
 

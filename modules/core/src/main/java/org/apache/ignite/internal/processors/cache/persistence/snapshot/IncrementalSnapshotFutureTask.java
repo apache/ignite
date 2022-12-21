@@ -230,14 +230,6 @@ class IncrementalSnapshotFutureTask
     }
 
     /** {@inheritDoc} */
-    @Override public boolean onDone(@Nullable IncrementalSnapshotFutureTaskResult res, @Nullable Throwable err, boolean cancel) {
-        if (err != null)
-            cctx.consistentCutMgr().cancelConsistentCut(err);
-
-        return super.onDone(res, err, cancel);
-    }
-
-    /** {@inheritDoc} */
     @Override public void acceptException(Throwable th) {
         cctx.cache().configManager().removeConfigurationChangeListener(this);
 

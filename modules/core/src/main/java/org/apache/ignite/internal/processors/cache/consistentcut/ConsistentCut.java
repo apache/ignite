@@ -108,12 +108,6 @@ public class ConsistentCut {
     }
 
     /** */
-    void cancel(Throwable err) {
-        if (markWalFut != null)
-            markWalFut.onDone(err);
-    }
-
-    /** */
     void onCommit(IgniteInternalTx tx) {
         if (markWalFut != null)
             markWalFut.onCommit(tx.finishFuture());
