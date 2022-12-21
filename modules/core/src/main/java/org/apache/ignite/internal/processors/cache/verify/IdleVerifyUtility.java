@@ -86,6 +86,7 @@ public class IdleVerifyUtility {
      * @param partId Partition id.
      * @param pageType Page type. Possible types {@link PageIdAllocator#FLAG_DATA}, {@link PageIdAllocator#FLAG_IDX}
      *      and {@link PageIdAllocator#FLAG_AUX}.
+     * @param pagePostProcessor Page post processor closure.
      */
     public static void checkPartitionsPageCrcSum(
         IgniteThrowableSupplier<FilePageStore> pageStoreSup,
