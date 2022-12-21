@@ -29,7 +29,6 @@ import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCache;
 import org.apache.ignite.cache.CacheAtomicityMode;
 import org.apache.ignite.cache.CacheWriteSynchronizationMode;
-import org.apache.ignite.cluster.ClusterState;
 import org.apache.ignite.configuration.BinaryConfiguration;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.DataRegionConfiguration;
@@ -121,7 +120,7 @@ public class PersistenceBasicCompatibilityTest extends IgnitePersistenceCompatib
 
             assertEquals(1, ignite.context().discovery().topologyVersion());
 
-            ignite.cluster().state(ClusterState.ACTIVE);
+            ignite.active(true);
 
             validateResultingCacheData(ignite.cache(TEST_CACHE_NAME));
         }
@@ -195,7 +194,7 @@ public class PersistenceBasicCompatibilityTest extends IgnitePersistenceCompatib
     public static class PostStartupClosure implements IgniteInClosure<Ignite> {
         /** {@inheritDoc} */
         @Override public void apply(Ignite ignite) {
-            ignite.cluster().state(ClusterState.ACTIVE);
+            ignite.active(true);
 
             CacheConfiguration<Object, Object> cacheCfg = new CacheConfiguration<>();
             cacheCfg.setName(TEST_CACHE_NAME);
