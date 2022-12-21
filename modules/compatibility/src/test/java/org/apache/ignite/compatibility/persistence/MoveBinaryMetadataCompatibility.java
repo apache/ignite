@@ -21,7 +21,6 @@ import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteBinary;
 import org.apache.ignite.IgniteCache;
 import org.apache.ignite.binary.BinaryObject;
-import org.apache.ignite.cluster.ClusterState;
 import org.apache.ignite.configuration.DataRegionConfiguration;
 import org.apache.ignite.configuration.DataStorageConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
@@ -78,7 +77,7 @@ public class MoveBinaryMetadataCompatibility extends IgnitePersistenceCompatibil
                                             .setPersistenceEnabled(true)
                             ));
         }, (ignite) -> {
-            ignite.cluster().state(ClusterState.ACTIVE);
+            ignite.active(true);
 
             IgniteBinary binary = ignite.binary();
 

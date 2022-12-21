@@ -72,13 +72,13 @@ public class CompoundIndexCompatibilityTest extends IndexAbstractCompatibilityTe
 
             IgniteEx igniteEx = startGrid(0);
 
-            igniteEx.cluster().state(ClusterState.ACTIVE);
+            igniteEx.active(true);
 
             fillData(igniteEx, 100, 200);
 
             idxChecker.run();
 
-            igniteEx.cluster().state(ClusterState.INACTIVE);
+            igniteEx.active(false);
         }
         finally {
             stopAllGrids();
@@ -89,13 +89,13 @@ public class CompoundIndexCompatibilityTest extends IndexAbstractCompatibilityTe
     private static class PostStartupClosure implements IgniteInClosure<Ignite> {
         /** {@inheritDoc} */
         @Override public void apply(Ignite ignite) {
-            ignite.cluster().state(ClusterState.ACTIVE);
+            ignite.active(true);
 
             IgniteEx igniteEx = (IgniteEx)ignite;
 
             initializeTables(igniteEx);
 
-            ignite.cluster().state(ClusterState.INACTIVE);
+            ignite.active(false);
         }
     }
 
