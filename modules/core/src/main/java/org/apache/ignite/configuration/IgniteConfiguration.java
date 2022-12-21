@@ -86,7 +86,7 @@ import org.apache.ignite.spi.loadbalancing.roundrobin.RoundRobinLoadBalancingSpi
 import org.apache.ignite.spi.metric.MetricExporterSpi;
 import org.apache.ignite.spi.systemview.SystemViewExporterSpi;
 import org.apache.ignite.spi.tracing.TracingSpi;
-import org.apache.ignite.spi.transform.CacheObjectsTransformSpi;
+import org.apache.ignite.spi.transform.CacheObjectsTransformerSpi;
 import org.apache.ignite.ssl.SslContextFactory;
 import org.jetbrains.annotations.Nullable;
 
@@ -418,7 +418,7 @@ public class IgniteConfiguration {
     private FailoverSpi[] failSpi;
 
     /** Cache object transform spi. */
-    private CacheObjectsTransformSpi cacheObjsTransformSpi;
+    private CacheObjectsTransformerSpi cacheObjsTransSpi;
 
     /** Load balancing SPI. */
     private LoadBalancingSpi[] loadBalancingSpi;
@@ -645,7 +645,7 @@ public class IgniteConfiguration {
         cpSpi = cfg.getCheckpointSpi();
         colSpi = cfg.getCollisionSpi();
         failSpi = cfg.getFailoverSpi();
-        cacheObjsTransformSpi = cfg.getCacheObjectsTransformSpi();
+        cacheObjsTransSpi = cfg.getCacheObjectsTransformSpi();
         loadBalancingSpi = cfg.getLoadBalancingSpi();
         indexingSpi = cfg.getIndexingSpi();
         encryptionSpi = cfg.getEncryptionSpi();
@@ -2260,20 +2260,20 @@ public class IgniteConfiguration {
      *
      * @return Grid cache object transformer SPI implementation or {@code null}.
      */
-    public CacheObjectsTransformSpi getCacheObjectsTransformSpi() {
-        return cacheObjsTransformSpi;
+    public CacheObjectsTransformerSpi getCacheObjectsTransformSpi() {
+        return cacheObjsTransSpi;
     }
 
     /**
-     * Sets fully configured instance of {@link CacheObjectsTransformSpi}.
+     * Sets fully configured instance of {@link CacheObjectsTransformerSpi}.
      *
-     * @param cacheObjsTransformSpi Fully configured instance of {@link CacheObjectsTransformSpi} or
+     * @param cacheObjsTransformSpi Fully configured instance of {@link CacheObjectsTransformerSpi} or
      * {@code null} if no SPI provided.
      * @return {@code this} for chaining.
      * @see IgniteConfiguration#getCacheObjectsTransformSpi()
      */
-    public IgniteConfiguration setCacheObjectsTransformSpi(CacheObjectsTransformSpi cacheObjsTransformSpi) {
-        this.cacheObjsTransformSpi = cacheObjsTransformSpi;
+    public IgniteConfiguration setCacheObjectsTransformSpi(CacheObjectsTransformerSpi cacheObjsTransformSpi) {
+        this.cacheObjsTransSpi = cacheObjsTransformSpi;
 
         return this;
     }

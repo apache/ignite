@@ -32,12 +32,11 @@ import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.events.CacheObjectTransformedEvent;
 import org.apache.ignite.events.EventType;
-import org.apache.ignite.internal.processors.cache.TransformableBinaryObject;
 import org.apache.ignite.internal.util.typedef.G;
 import org.apache.ignite.lang.IgniteFuture;
 import org.apache.ignite.spi.IgniteSpiContext;
 import org.apache.ignite.spi.IgniteSpiException;
-import org.apache.ignite.spi.transform.CacheObjectsTransformSpi;
+import org.apache.ignite.spi.transform.CacheObjectsTransformerSpi;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.jetbrains.annotations.Nullable;
 
@@ -128,7 +127,6 @@ public abstract class AbstractCacheObjectsTransformationTest extends GridCommonA
         boolean transformableKey,
         boolean transformableVal,
         boolean reversed) {
-        assertFalse(obj instanceof TransformableBinaryObject);
 
         boolean binary = obj instanceof BinaryObject;
         boolean binaryCol = obj instanceof BinaryObject[]
@@ -154,6 +152,7 @@ public abstract class AbstractCacheObjectsTransformationTest extends GridCommonA
         checkPut(
             k,
             reversed && binarizable,
+            !reversed && binarizable,
             reversed ? transformableVal : transformableKey,
             reversed ? transformableKey : transformableVal);
 
@@ -175,11 +174,15 @@ public abstract class AbstractCacheObjectsTransformationTest extends GridCommonA
     private void checkPut(
         Object key,
         boolean binarizableKey,
+        boolean binarizableVal,
         boolean transformableKey,
         boolean transformableVal) {
-        int transformed = (transformableKey ? 1 : 0) + (transformableVal ? 1 : 0); // Key + Value;
-        int transformCancelled = (transformableKey ? 0 : 1) + (transformableVal ? 0 : 1); // Key + Value;
-        int restored = transformableKey ? NODES : 0;  // Key must be restored at each node.
+        int transformed = (transformableKey ? 1 : 0) + (transformableVal ? 1 : 0); // Key + Value
+        int transformCancelled = (transformableKey ? 0 : 1) + (transformableVal ? 0 : 1); // Key + Value
+        int restored = transformableKey ? NODES : 0; // Key must be restored at each node
+
+        // As well as binary value (since binary array is required (e.g. to wait for proper Metadata))
+        restored += transformableVal && binarizableVal ? NODES : 0;
 
         // Double key restoration. See UserKeyCacheObjectImpl#prepareForCache() for details.
         if (transformableKey && !binarizableKey && !grid(0).context().cacheObjects().immutable(key))
@@ -239,8 +242,6 @@ public abstract class AbstractCacheObjectsTransformationTest extends GridCommonA
             cache = cache.withKeepBinary();
 
         Object obj = cache.get(key);
-
-        assertFalse(obj.getClass().getName(), obj instanceof TransformableBinaryObject);
 
         // Need to deserialize the expectation to compare with the deserialized get result.
         if (!keepBinary && (binaryExpVal || binaryColExpVal))
@@ -397,7 +398,7 @@ public abstract class AbstractCacheObjectsTransformationTest extends GridCommonA
     /**
      *
      */
-    protected abstract static class CacheObjectsTransformSpiAdapter implements CacheObjectsTransformSpi {
+    protected abstract static class CacheObjectsTransformerSpiAdapter implements CacheObjectsTransformerSpi {
         /** {@inheritDoc} */
         @Override public String getName() {
             return null;

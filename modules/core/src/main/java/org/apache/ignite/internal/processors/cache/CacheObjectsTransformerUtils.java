@@ -20,21 +20,16 @@ package org.apache.ignite.internal.processors.cache;
 import java.nio.ByteBuffer;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.events.CacheObjectTransformedEvent;
-import org.apache.ignite.internal.binary.BinaryObjectEx;
-import org.apache.ignite.spi.transform.CacheObjectsTransformSpi;
 import org.apache.ignite.spi.transform.CacheObjectsTransformer;
+import org.apache.ignite.spi.transform.CacheObjectsTransformerSpi;
 
 import static org.apache.ignite.events.EventType.EVT_CACHE_OBJECT_TRANSFORMED;
-import static org.apache.ignite.internal.binary.GridBinaryMarshaller.BINARY_OBJ;
 import static org.apache.ignite.internal.binary.GridBinaryMarshaller.TRANSFORMED;
 
 /** */
-public class CacheObjectsTransformUtils {
+public class CacheObjectsTransformerUtils {
     /** Marshalling overhead. */
     private static final int OVERHEAD = 6;
-
-    /** Binary object wrapping overhead. */
-    private static final int BINARY_OVERHEAD = CacheObjectAdapter.HEAD_SIZE;
 
     /** Header buffer. */
     private static final ThreadLocalByteBuffer hdrBuf = new ThreadLocalByteBuffer(OVERHEAD);
@@ -50,63 +45,41 @@ public class CacheObjectsTransformUtils {
 
     /***/
     private static CacheObjectsTransformer transformer(CacheObjectValueContext ctx) {
-        CacheObjectsTransformSpi spi = ctx.kernalContext().config().getCacheObjectsTransformSpi();
+        CacheObjectsTransformerSpi spi = ctx.kernalContext().config().getCacheObjectsTransformSpi();
 
         return (spi == null) ? null : spi.transformer(ctx.cacheConfiguration());
     }
 
     /**
-     * Wraps binary object to the transformable binary object when {@link CacheObjectsTransformer} is configured.
-     * @param ctx Context.
-     * @param obj Object.
-     * @return Transformed binary object.
-     */
-    public static CacheObject wrapBinaryIfNecessary(CacheObjectContext ctx, CacheObject obj) {
-        if (transformer(ctx) != null)
-            return new TransformableBinaryObject((BinaryObjectEx)obj, null);
-        else
-            return obj;
-    }
-
-    /**
-     * Wraps binary key object to the transformable binary object when {@link CacheObjectsTransformer} is configured.
-     * @param ctx Context.
-     * @param obj Object.
-     * @return Transformed binary object.
-     */
-    public static KeyCacheObject wrapBinaryKeyIfNecessary(CacheObjectContext ctx, KeyCacheObject obj) {
-        if (transformer(ctx) != null)
-            return new TransformableBinaryKeyObject((BinaryObjectEx)obj, null);
-        else
-            return obj;
-    }
-
-    /**
-     * Transforms bytes according to {@link CacheObjectsTransformSpi} when specified.
+     * Transforms bytes according to {@link CacheObjectsTransformerSpi} when specified.
      * @param bytes Given bytes.
      * @param ctx Context.
      * @return Transformed bytes.
      */
     public static byte[] transformIfNecessary(byte[] bytes, CacheObjectValueContext ctx) {
+        return transformIfNecessary(bytes, 0, bytes.length, ctx);
+    }
+
+    /**
+     * Transforms bytes according to {@link CacheObjectsTransformerSpi} when specified.
+     * @param bytes Given bytes.
+     * @param ctx Context.
+     * @return Transformed bytes.
+     */
+    public static byte[] transformIfNecessary(byte[] bytes, int offset, int length, CacheObjectValueContext ctx) {
+        assert bytes[0] != TRANSFORMED;
+
         try {
             CacheObjectsTransformer trans = transformer(ctx);
 
             if (trans == null)
                 return bytes;
 
-            ByteBuffer src = sourceByteBuffer(bytes, trans.direct());
+            ByteBuffer src = sourceByteBuffer(bytes, offset, length, trans.direct());
             ByteBuffer transformed = dstBuf.get();
 
-            byte type = src.get();
-
-            boolean binary = type == BINARY_OBJ;
-
-            int overhead = OVERHEAD + (binary ? BINARY_OVERHEAD : 0);
-
-            src.rewind();
-
             while (true) {
-                int capacity = trans.transform(src, transformed, overhead);
+                int capacity = trans.transform(src, transformed, OVERHEAD);
 
                 if (capacity <= 0)
                     break;
@@ -165,13 +138,13 @@ public class CacheObjectsTransformUtils {
 
         CacheObjectsTransformer trans = transformer(ctx);
 
-        ByteBuffer src = sourceByteBuffer(bytes, trans.direct());
+        ByteBuffer src = sourceByteBuffer(bytes, 0, bytes.length, trans.direct());
 
         byte transformed = src.get();
         byte ver = src.get();
 
         assert transformed == TRANSFORMED;
-        assert ver == VER;
+        assert ver == VER; // Correct while VER == 0;
 
         int length = src.getInt();
 
@@ -199,17 +172,17 @@ public class CacheObjectsTransformUtils {
     }
 
     /***/
-    private static ByteBuffer sourceByteBuffer(byte[] bytes, boolean direct) {
+    private static ByteBuffer sourceByteBuffer(byte[] bytes, int offset, int length, boolean direct) {
         ByteBuffer src;
 
         if (direct) {
             src = srcBuf.get(bytes.length);
 
-            src.put(bytes);
+            src.put(bytes, offset, length);
             src.flip();
         }
         else
-            src = ByteBuffer.wrap(bytes);
+            src = ByteBuffer.wrap(bytes, offset, length);
 
         return src;
     }

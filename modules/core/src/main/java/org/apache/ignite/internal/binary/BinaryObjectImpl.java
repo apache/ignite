@@ -39,6 +39,7 @@ import org.apache.ignite.internal.processors.cache.CacheObject;
 import org.apache.ignite.internal.processors.cache.CacheObjectAdapter;
 import org.apache.ignite.internal.processors.cache.CacheObjectContext;
 import org.apache.ignite.internal.processors.cache.CacheObjectValueContext;
+import org.apache.ignite.internal.processors.cache.CacheObjectsTransformerUtils;
 import org.apache.ignite.internal.processors.cache.KeyCacheObject;
 import org.apache.ignite.internal.processors.cache.binary.CacheObjectBinaryProcessorImpl;
 import org.apache.ignite.internal.util.typedef.F;
@@ -63,6 +64,10 @@ public final class BinaryObjectImpl extends BinaryObjectExImpl implements Extern
 
     /** */
     private byte[] arr;
+
+    /** Bytes to be stored or transferred instead of raw binary array. */
+    @GridDirectTransient
+    private byte[] valBytes;
 
     /** */
     private int start;
@@ -99,12 +104,28 @@ public final class BinaryObjectImpl extends BinaryObjectExImpl implements Extern
         this.start = start;
     }
 
+    /**
+     * @param ctx Context.
+     * @param arr Array.
+     * @param start Start.
+     */
+    public BinaryObjectImpl(BinaryContext ctx, byte[] arr, int start, byte[] valBytes) {
+        assert ctx != null;
+        assert arr != null || valBytes != null;
+
+        this.ctx = ctx;
+        this.arr = arr;
+        this.start = start;
+        this.valBytes = valBytes;
+    }
+
     /** {@inheritDoc} */
     @Override public KeyCacheObject copy(int part) {
         if (this.part == part)
             return this;
 
-        BinaryObjectImpl cp = new BinaryObjectImpl(ctx, arr, start);
+        BinaryObjectImpl cp = new BinaryObjectImpl(ctx, arr, start, valBytes);
+
         cp.part = part;
 
         return cp;
@@ -144,6 +165,9 @@ public final class BinaryObjectImpl extends BinaryObjectExImpl implements Extern
     @Nullable @Override public <T> T value(CacheObjectValueContext ctx, boolean cpy, ClassLoader ldr) {
         Object obj0 = obj;
 
+        if (arr == null)
+            arr = arrayFromValueBytes(ctx);
+
         if (obj0 == null || (cpy && needCopy(ctx))) {
             if (ldr != null)
                 obj0 = deserialize(ldr);
@@ -156,36 +180,30 @@ public final class BinaryObjectImpl extends BinaryObjectExImpl implements Extern
 
     /** {@inheritDoc} */
     @Override public byte[] valueBytes(CacheObjectValueContext ctx) throws IgniteCheckedException {
-        if (detached())
-            return array();
+        if (valBytes == null)
+            valBytes = valueBytesFromArray(ctx);
 
-        int len = length();
-
-        byte[] arr0 = new byte[len];
-
-        U.arrayCopy(arr, start, arr0, 0, len);
-
-        return arr0;
+        return valBytes;
     }
 
     /** {@inheritDoc} */
     @Override public boolean putValue(ByteBuffer buf) throws IgniteCheckedException {
-        return putValue(buf, 0, CacheObjectAdapter.objectPutSize(length()));
+        return putValue(buf, 0, CacheObjectAdapter.objectPutSize(valBytes.length));
     }
 
     /** {@inheritDoc} */
     @Override public int putValue(long addr) throws IgniteCheckedException {
-        return CacheObjectAdapter.putValue(addr, cacheObjectType(), arr, start, length());
+        return CacheObjectAdapter.putValue(addr, cacheObjectType(), valBytes, 0, valBytes.length);
     }
 
     /** {@inheritDoc} */
     @Override public boolean putValue(final ByteBuffer buf, int off, int len) throws IgniteCheckedException {
-        return CacheObjectAdapter.putValue(cacheObjectType(), buf, off, len, arr, start);
+        return CacheObjectAdapter.putValue(cacheObjectType(), buf, off, len, valBytes, 0);
     }
 
     /** {@inheritDoc} */
     @Override public int valueBytesLength(CacheObjectContext ctx) throws IgniteCheckedException {
-        return CacheObjectAdapter.objectPutSize(length());
+        return CacheObjectAdapter.objectPutSize(valBytes.length);
     }
 
     /** {@inheritDoc} */
@@ -193,11 +211,14 @@ public final class BinaryObjectImpl extends BinaryObjectExImpl implements Extern
         if (detached())
             return this;
 
-        return (BinaryObjectImpl)detach();
+        return detach();
     }
 
     /** {@inheritDoc} */
     @Override public void finishUnmarshal(CacheObjectValueContext ctx, ClassLoader ldr) throws IgniteCheckedException {
+        if (arr == null)
+            arr = arrayFromValueBytes(ctx);
+
         CacheObjectBinaryProcessorImpl binaryProc = (CacheObjectBinaryProcessorImpl)ctx.kernalContext().cacheObjects();
 
         this.ctx = binaryProc.binaryContext();
@@ -207,7 +228,22 @@ public final class BinaryObjectImpl extends BinaryObjectExImpl implements Extern
 
     /** {@inheritDoc} */
     @Override public void prepareMarshal(CacheObjectValueContext ctx) throws IgniteCheckedException {
-        // No-op.
+        if (valBytes == null)
+            valBytes = valueBytesFromArray(ctx);
+    }
+
+    /**
+     * @return Value bytes.
+     */
+    private byte[] valueBytesFromArray(CacheObjectValueContext ctx) {
+        return CacheObjectsTransformerUtils.transformIfNecessary(arr, start, detached() ? arr.length : length(), ctx);
+    }
+
+    /**
+     * @return Array.
+     */
+    private byte[] arrayFromValueBytes(CacheObjectValueContext ctx) {
+        return CacheObjectsTransformerUtils.restoreIfNecessary(valBytes, ctx);
     }
 
     /** {@inheritDoc} */
@@ -738,9 +774,9 @@ public final class BinaryObjectImpl extends BinaryObjectExImpl implements Extern
         switch (writer.state()) {
             case 0:
                 if (!writer.writeByteArray("arr",
-                    arr,
-                    detachAllowed ? start : 0,
-                    detachAllowed ? length() : arr.length))
+                    valBytes,
+                    0,
+                    valBytes.length))
                     return false;
 
                 writer.incrementState();
@@ -752,7 +788,7 @@ public final class BinaryObjectImpl extends BinaryObjectExImpl implements Extern
                 writer.incrementState();
 
             case 2:
-                if (!writer.writeInt("start", detachAllowed ? 0 : start))
+                if (!writer.writeInt("start", 0))
                     return false;
 
                 writer.incrementState();
@@ -771,7 +807,7 @@ public final class BinaryObjectImpl extends BinaryObjectExImpl implements Extern
 
         switch (reader.state()) {
             case 0:
-                arr = reader.readByteArray("arr");
+                valBytes = reader.readByteArray("arr");
 
                 if (!reader.isLastRead())
                     return false;

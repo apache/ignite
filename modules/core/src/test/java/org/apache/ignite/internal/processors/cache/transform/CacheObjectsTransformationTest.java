@@ -37,7 +37,7 @@ public class CacheObjectsTransformationTest extends AbstractCacheObjectsTransfor
     /** {@inheritDoc} */
     @Override protected IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {
         return super.getConfiguration(igniteInstanceName)
-            .setCacheObjectsTransformSpi(new CacheObjectsTransformSpiAdapter() {
+            .setCacheObjectsTransformSpi(new CacheObjectsTransformerSpiAdapter() {
                 @Override public CacheObjectsTransformer transformer(CacheConfiguration<?, ?> ccfg) {
                     return new ControllableCacheObjectsTransformer();
                 }
