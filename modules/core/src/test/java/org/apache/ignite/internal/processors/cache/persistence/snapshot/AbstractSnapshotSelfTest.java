@@ -59,7 +59,6 @@ import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.DataRegionConfiguration;
 import org.apache.ignite.configuration.DataStorageConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
-import org.apache.ignite.failure.StopNodeFailureHandler;
 import org.apache.ignite.internal.GridKernalContext;
 import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.IgniteInternalFuture;
@@ -178,8 +177,7 @@ public abstract class AbstractSnapshotSelfTest extends GridCommonAbstractTest {
                 .setPageSize(DFLT_PAGE_SIZE))
             .setClusterStateOnStart(INACTIVE)
             .setIncludeEventTypes(EVTS_CLUSTER_SNAPSHOT)
-            .setDiscoverySpi(discoSpi)
-            .setFailureHandler(new StopNodeFailureHandler());
+            .setDiscoverySpi(discoSpi);
     }
 
     /** {@inheritDoc} */

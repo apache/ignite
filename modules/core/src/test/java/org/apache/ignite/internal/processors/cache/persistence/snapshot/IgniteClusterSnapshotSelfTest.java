@@ -49,6 +49,7 @@ import org.apache.ignite.cache.query.ScanQuery;
 import org.apache.ignite.cluster.ClusterTopologyException;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
+import org.apache.ignite.failure.StopNodeFailureHandler;
 import org.apache.ignite.internal.GridKernalContext;
 import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.IgniteInternalFuture;
@@ -71,6 +72,7 @@ import org.apache.ignite.internal.processors.cache.persistence.file.RandomAccess
 import org.apache.ignite.internal.processors.cache.persistence.partstate.GroupPartitionId;
 import org.apache.ignite.internal.processors.metric.MetricRegistry;
 import org.apache.ignite.internal.processors.metric.impl.ObjectGauge;
+import org.apache.ignite.internal.util.distributed.DistributedProcess;
 import org.apache.ignite.internal.util.distributed.FullMessage;
 import org.apache.ignite.internal.util.distributed.SingleNodeMessage;
 import org.apache.ignite.internal.util.typedef.F;
@@ -97,7 +99,6 @@ import static org.apache.ignite.internal.processors.cache.persistence.snapshot.I
 import static org.apache.ignite.internal.processors.cache.persistence.snapshot.IgniteSnapshotManager.SNP_NODE_STOPPING_ERR_MSG;
 import static org.apache.ignite.internal.processors.cache.persistence.snapshot.IgniteSnapshotManager.isSnapshotOperation;
 import static org.apache.ignite.internal.processors.cache.persistence.snapshot.IgniteSnapshotManager.resolveSnapshotWorkDirectory;
-import static org.apache.ignite.internal.util.distributed.DistributedProcess.DistributedProcessType.START_SNAPSHOT;
 import static org.apache.ignite.testframework.GridTestUtils.assertThrowsAnyCause;
 import static org.apache.ignite.testframework.GridTestUtils.assertThrowsWithCause;
 import static org.apache.ignite.testframework.GridTestUtils.waitForCondition;
@@ -454,7 +455,7 @@ public class IgniteClusterSnapshotSelfTest extends AbstractSnapshotSelfTest {
                 FullMessage<?> msg0 = (FullMessage<?>)msg;
 
                 assertEquals("Snapshot distributed process must be used",
-                    START_SNAPSHOT.ordinal(), msg0.type());
+                    DistributedProcess.DistributedProcessType.START_SNAPSHOT.ordinal(), msg0.type());
 
                 assertTrue("Snapshot has to be finished successfully on all nodes", msg0.error().isEmpty());
 
@@ -1227,14 +1228,19 @@ public class IgniteClusterSnapshotSelfTest extends AbstractSnapshotSelfTest {
     /** @throws Exception If fails. */
     @Test
     public void testClientHandlesSnapshotFailOnStartStage() throws Exception {
-        Ignite ignite = startGridsWithCache(2, dfltCacheCfg, CACHE_KEYS_RANGE);
+        int grids = 2;
 
-        Ignite cln = startClientGrid();
+        Ignite ignite = startGridsWithCache(grids, dfltCacheCfg, CACHE_KEYS_RANGE);
+
+        Ignite cln = startClientGrid(optimize(getConfiguration(getTestIgniteInstanceName(grids))
+            .setCacheConfiguration(dfltCacheCfg))
+            .setFailureHandler(new StopNodeFailureHandler()));
 
         TestRecordingCommunicationSpi failNodeSpi = TestRecordingCommunicationSpi.spi(grid(1));
 
         failNodeSpi.blockMessages((n, msg) ->
-            msg instanceof SingleNodeMessage && ((SingleNodeMessage<?>)msg).type() == START_SNAPSHOT.ordinal());
+            msg instanceof SingleNodeMessage
+                && ((SingleNodeMessage<?>)msg).type() == DistributedProcess.DistributedProcessType.START_SNAPSHOT.ordinal());
 
         IgniteFuture<Void> fut = ignite.snapshot().createSnapshot(SNAPSHOT_NAME);
 
