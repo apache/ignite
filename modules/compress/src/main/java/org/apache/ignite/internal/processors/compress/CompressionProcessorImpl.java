@@ -17,11 +17,10 @@
 
 package org.apache.ignite.internal.processors.compress;
 
+import java.io.File;
 import java.io.IOException;
 import java.nio.ByteBuffer;
-import java.nio.file.Files;
 import java.nio.file.Path;
-import java.util.UUID;
 import com.github.luben.zstd.Zstd;
 import net.jpountz.lz4.LZ4Compressor;
 import net.jpountz.lz4.LZ4Factory;
@@ -179,23 +178,25 @@ public class CompressionProcessorImpl extends CompressionProcessor {
 
     /** Check if filesystem actually supports punching holes. */
     private void checkPunchHole(Path storagePath, int fsBlockSz) throws IgniteException {
-        Path testFile = storagePath.resolve("punch_hole_" + UUID.randomUUID() + ".test");
-
-        ByteBuffer buffer = GridUnsafe.allocateBuffer(fsBlockSz * 2);
-        GridUnsafe.zeroMemory(GridUnsafe.bufferAddress(buffer), buffer.capacity());
-
+        ByteBuffer buffer = null;
         try {
-            try (RandomAccessFileIO testFileIO = new RandomAccessFileIO(testFile.toFile(), CREATE, WRITE)) {
+            File testFile = File.createTempFile("punch_hole_", null, storagePath.toFile());
+
+            buffer = GridUnsafe.allocateBuffer(fsBlockSz * 2);
+            GridUnsafe.zeroMemory(GridUnsafe.bufferAddress(buffer), buffer.capacity());
+
+            try (RandomAccessFileIO testFileIO = new RandomAccessFileIO(testFile, CREATE, WRITE)) {
                 testFileIO.writeFully(buffer);
 
                 testFileIO.punchHole(fsBlockSz, fsBlockSz);
             }
-            finally {
-                Files.deleteIfExists(testFile);
-            }
         }
         catch (Exception e) {
             throw new IgniteException("File system does not support punching holes on path " + storagePath, e);
+        }
+        finally {
+            if (buffer != null)
+                GridUnsafe.freeBuffer(buffer);
         }
     }
 

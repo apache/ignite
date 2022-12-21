@@ -27,6 +27,7 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
+import java.util.function.BiConsumer;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.internal.IgniteEx;
@@ -41,7 +42,6 @@ import org.apache.ignite.internal.processors.cache.distributed.dht.topology.Grid
 import org.apache.ignite.internal.processors.cache.persistence.CacheDataRow;
 import org.apache.ignite.internal.processors.cache.persistence.file.FilePageStore;
 import org.apache.ignite.internal.util.lang.GridIterator;
-import org.apache.ignite.internal.util.lang.IgniteThrowableBiConsumer;
 import org.apache.ignite.internal.util.lang.IgniteThrowableSupplier;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.internal.SB;
@@ -91,7 +91,7 @@ public class IdleVerifyUtility {
         IgniteThrowableSupplier<FilePageStore> pageStoreSup,
         int partId,
         byte pageType,
-        @Nullable IgniteThrowableBiConsumer<Integer, ByteBuffer> pagePostProcessor
+        @Nullable BiConsumer<Integer, ByteBuffer> pagePostProcessor
     ) {
         assert pageType == FLAG_DATA || pageType == FLAG_IDX || pageType == FLAG_AUX : pageType;
 

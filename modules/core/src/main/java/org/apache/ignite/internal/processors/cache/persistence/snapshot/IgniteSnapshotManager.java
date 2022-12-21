@@ -797,10 +797,10 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
         }
 
         List<Integer> grpIds = new ArrayList<>(F.viewReadOnly(req.groups(), CU::cacheId));
-        List<Integer> comprGrpIds = grpIds.stream().filter(i -> {
+        Collection<Integer> comprGrpIds = F.view(grpIds, i -> {
             CacheGroupDescriptor desc = cctx.cache().cacheGroupDescriptor(i);
             return desc != null && desc.config().getDiskPageCompression() != DiskPageCompression.DISABLED;
-        }).collect(Collectors.toList());
+        });
 
         Set<Integer> leftGrps = new HashSet<>(grpIds);
         leftGrps.removeAll(cctx.cache().cacheGroupDescriptors().keySet());

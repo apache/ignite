@@ -21,6 +21,7 @@ import java.io.IOException;
 import java.io.InvalidObjectException;
 import java.io.Serializable;
 import java.util.Arrays;
+import java.util.Collection;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.HashSet;
@@ -106,7 +107,7 @@ public class SnapshotMetadata implements Serializable {
         String folderName,
         int pageSize,
         List<Integer> grpIds,
-        List<Integer> compGrpIds,
+        Collection<Integer> compGrpIds,
         Set<String> bltNodes,
         Set<GroupPartitionId> pairs,
         @Nullable byte[] masterKeyDigest
@@ -216,13 +217,8 @@ public class SnapshotMetadata implements Serializable {
                 s.writeInt(partId);
         }
 
-        if (hasComprGrps) {
-            s.writeInt(comprGrpIds.size());
-
-            for (int grpId : comprGrpIds)
-                s.writeInt(grpId);
-
-        }
+        if (hasComprGrps)
+            U.writeCollection(s, comprGrpIds);
     }
 
     /** Reconstitute the <tt>HashMap</tt> instance of partitions and cache groups from a stream. */
@@ -254,14 +250,8 @@ public class SnapshotMetadata implements Serializable {
             locParts.put(grpId, parts);
         }
 
-        if (hasComprGrps) {
-            int sz = s.readInt();
-
-            comprGrpIds = new HashSet<>(sz);
-
-            for (int i = 0; i < sz; ++i)
-                comprGrpIds.add(s.readInt());
-        }
+        if (hasComprGrps)
+            comprGrpIds = U.readSet(s);
     }
 
     /**
