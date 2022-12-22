@@ -24,6 +24,7 @@ import java.lang.reflect.Type;
 import java.math.BigDecimal;
 import java.math.RoundingMode;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.HashMap;
 import java.util.LinkedHashMap;
 import java.util.List;
@@ -54,6 +55,7 @@ import org.apache.calcite.rel.type.RelDataTypeFactoryImpl;
 import org.apache.calcite.rex.RexCall;
 import org.apache.calcite.rex.RexLiteral;
 import org.apache.calcite.rex.RexNode;
+import org.apache.calcite.runtime.JsonFunctions;
 import org.apache.calcite.runtime.SqlFunctions;
 import org.apache.calcite.schema.QueryableTable;
 import org.apache.calcite.schema.SchemaPlus;
@@ -671,9 +673,16 @@ public class RexImpTable {
     }
 
     /** */
-    public boolean checkBuiltInFunction(SqlCall call, RelDataType[] relArgTypes, Class<?>[] argJavaTypes) {
-        assert relArgTypes != null && argJavaTypes != null;
-        assert relArgTypes.length == argJavaTypes.length;
+    public boolean implementedBuiltIncall(SqlOperator sqlOp){
+        RexCallImplementor impl = get(sqlOp);
+
+        return impl instanceof MethodInvocker;
+    }
+
+    /** */
+    public boolean checkBuiltInFunction(SqlCall call, RelDataType[] relArgTypes, Class<?>[] passedTypes) {
+        assert relArgTypes != null && passedTypes != null;
+        assert relArgTypes.length == passedTypes.length;
 
         RexCallImplementor impl = get(call.getOperator());
 
@@ -683,10 +692,12 @@ public class RexImpTable {
         MethodInvocker mtdInvoker = (MethodInvocker)impl;
 
         String mtdName = mtdInvoker.methodName(relArgTypes);
-        Class<?>[] strictParamTypes = mtdInvoker.paramTypes(relArgTypes);
+        Class<?>[] strictParamTypes = mtdInvoker.paramTypesToSearch(relArgTypes);
+        int expectedArgsNum = mtdInvoker.expectedArgsNum();
 
         try {
-            if (strictParamTypes == null && Types.lookupMethod(mtdInvoker.methodHolder(), mtdName, argJavaTypes) == null)
+            if (expectedArgsNum < 0 && strictParamTypes == null &&
+                Types.lookupMethod(mtdInvoker.methodHolder(), mtdName, passedTypes) == null)
                 return true;
         }
         catch (Exception e) {
@@ -696,34 +707,45 @@ public class RexImpTable {
 
         boolean mtdFound;
 
-        for (Method curMtd : mtdInvoker.methodHolder().getMethods()) {
-            Class<?>[] curMtdParams = curMtd.getParameterTypes();
-
-            if (!curMtd.getName().equals(mtdName) || (!curMtd.isVarArgs() && (strictParamTypes == null &&
-                curMtdParams.length != argJavaTypes.length) || (strictParamTypes != null &&
-                strictParamTypes.length != argJavaTypes.length + 1)))
-                continue;
-
-            mtdFound = true;
-
-            for (int i = 0; i < (strictParamTypes == null ? curMtdParams.length : curMtdParams.length - 1); i++) {
-                Class<?> expType = !curMtd.isVarArgs() || i < curMtdParams.length - 1 ? curMtdParams[i] : Object.class;
-
-                Class<?> passedType = argJavaTypes[i];
-
-                if (Types.allAssignable(false, F.asArray(expType), F.asArray(passedType)) ||
-                    (!expType.isPrimitive() && passedType.isAssignableFrom(Void.class)) ||
-                    expType.isPrimitive() && expType.isAssignableFrom(Primitive.unbox(passedType)) ||
-                    passedType.isPrimitive() && passedType.isAssignableFrom(Primitive.unbox(expType)))
+        try {
+            for (Method mtd : strictParamTypes == null ? mtdInvoker.methodHolder().getMethods() :
+                F.asArray(mtdInvoker.methodHolder().getDeclaredMethod(mtdName, strictParamTypes))) {
+                if(!mtd.getName().equals(mtdName))
                     continue;
 
-                mtdFound = false;
+                Class<?>[] mtdParams = mtd.getParameterTypes();
 
-                break;
+                if (!Modifier.isStatic(mtd.getModifiers()))
+                    passedTypes = Util.skip(Arrays.asList(passedTypes), 1).toArray(new Class<?>[passedTypes.length - 1]);
+
+                if (!mtd.isVarArgs() && (expectedArgsNum < 1 && mtdParams.length != passedTypes.length) ||
+                    (expectedArgsNum >= 1 && expectedArgsNum != passedTypes.length))
+                    continue;
+
+                mtdFound = true;
+
+                for (int i = 0; i < (expectedArgsNum < 1 ? mtdParams.length : expectedArgsNum); i++) {
+                    Class<?> expType = !mtd.isVarArgs() || i < mtdParams.length - 1 ? mtdParams[i] : Object.class;
+                    Class<?> passedType = passedTypes[i];
+
+                    if (Types.allAssignable(false, F.asArray(expType), F.asArray(passedType)) ||
+                        (!expType.isPrimitive() && passedType.isAssignableFrom(Void.class)) ||
+                        expType.isPrimitive() && expType.isAssignableFrom(Primitive.unbox(passedType)) ||
+                        passedType.isPrimitive() && passedType.isAssignableFrom(Primitive.unbox(expType)) ||
+                        (expType.isEnum() && !passedType.isEnum() || !expType.isEnum() && passedType.isEnum()))
+                        continue;
+
+                    mtdFound = false;
+
+                    break;
+                }
+
+                if (mtdFound)
+                    return true;
             }
-
-            if (mtdFound)
-                return true;
+        }
+        catch (NoSuchMethodException e) {
+            e.printStackTrace();
         }
 
         return false;
@@ -921,8 +943,13 @@ public class RexImpTable {
         }
 
         /** {@inheritDoc} */
-        @Override public Class<?>[] paramTypes(RelDataType[] argTypes) {
+        @Override public Class<?>[] paramTypesToSearch(RelDataType[] argTypes) {
             return mtd(argTypes).method.getParameterTypes();
+        }
+
+        /** {@inheritDoc} */
+        @Override public int expectedArgsNum() {
+            return 1;
         }
 
         /** */
@@ -1043,9 +1070,18 @@ public class RexImpTable {
         protected final Method method;
 
         /** */
+        protected final boolean lastParamNotPassed;
+
+        /** */
         MethodImplementor(Method method, NullPolicy nullPolicy, boolean harmonize) {
+            this(method, nullPolicy, harmonize, false);
+        }
+
+        /** */
+        protected MethodImplementor(Method method, NullPolicy nullPolicy, boolean harmonize, boolean lastParamNotPassed) {
             super(nullPolicy, harmonize);
             this.method = method;
+            this.lastParamNotPassed = lastParamNotPassed;
         }
 
         /** {@inheritDoc} */
@@ -1098,6 +1134,11 @@ public class RexImpTable {
         @Override public Class<?> methodHolder() {
             return method.getDeclaringClass();
         }
+
+        /** {@inheritDoc} */
+        @Override public @Nullable Class<?>[] paramTypesToSearch(RelDataType[] argTypes) {
+            return lastParamNotPassed ? method.getParameterTypes() : null;
+        }
     }
 
     /**
@@ -1109,7 +1150,7 @@ public class RexImpTable {
 
         /** Constructor. */
         PosixRegexMethodImplementor(boolean caseSensitive) {
-            super(BuiltInMethod.POSIX_REGEX.method, NullPolicy.STRICT, false);
+            super(BuiltInMethod.POSIX_REGEX.method, NullPolicy.STRICT, false, true);
             this.caseSensitive = caseSensitive;
         }
 
@@ -1134,7 +1175,7 @@ public class RexImpTable {
     private static class JsonValueImplementor extends MethodImplementor {
         /** */
         JsonValueImplementor(Method method) {
-            super(method, NullPolicy.ARG0, false);
+            super(method, NullPolicy.ARG0, false, false);
         }
 
         /** {@inheritDoc} */
@@ -1191,6 +1232,16 @@ public class RexImpTable {
                 translator.typeFactory.getJavaClass(call.getType());
             return EnumUtils.convert(expression, returnType);
         }
+
+        /** {@inheritDoc} */
+        @Override public Class<?> methodHolder() {
+            return JsonFunctions.class;
+        }
+
+        /** {@inheritDoc} */
+        @Override public int expectedArgsNum() {
+            return 2;
+        }
     }
 
     /**
@@ -1228,11 +1279,6 @@ public class RexImpTable {
         /** {@inheritDoc} */
         @Override public String methodName(RelDataType[] argTypes) {
             return methodName;
-        }
-
-        /** {@inheritDoc} */
-        @Override public Class<?> methodHolder() {
-            return SqlFunctions.class;
         }
     }
 
@@ -2008,11 +2054,18 @@ public class RexImpTable {
         String methodName(RelDataType[] argTypes);
 
         /** */
-        Class<?> methodHolder();
+        default Class<?> methodHolder(){
+            return SqlFunctions.class;
+        }
 
         /** */
-        default @Nullable Class<?>[] paramTypes(RelDataType[] argTypes){
+        default @Nullable Class<?>[] paramTypesToSearch(RelDataType[] argTypes){
             return null;
+        }
+
+        /** */
+        default int expectedArgsNum(){
+            return -1;
         }
     }
 
