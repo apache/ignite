@@ -112,7 +112,7 @@ public class CacheObjectsTransformerUtils {
             if (ctx.kernalContext().event().isRecordable(EVT_CACHE_OBJECT_TRANSFORMED)) {
                 ctx.kernalContext().event().record(
                     new CacheObjectTransformedEvent(ctx.kernalContext().discovery().localNode(),
-                        "Object transformation was cancelled",
+                        "Object transformation was cancelled. " + ex.getMessage(),
                         EVT_CACHE_OBJECT_TRANSFORMED,
                         bytes,
                         null,
