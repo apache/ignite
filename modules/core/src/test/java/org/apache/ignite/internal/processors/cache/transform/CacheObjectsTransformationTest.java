@@ -150,7 +150,7 @@ public class CacheObjectsTransformationTest extends AbstractCacheObjectsTransfor
      */
     private static final class ControllableCacheObjectsTransformer implements CacheObjectsTransformer {
         /** Fail. */
-        private static boolean fail;
+        private static volatile boolean fail;
 
         /** {@inheritDoc} */
         @Override public int transform(ByteBuffer original, ByteBuffer transformed) throws IgniteCheckedException {

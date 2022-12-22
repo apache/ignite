@@ -108,7 +108,7 @@ public abstract class AbstractCacheObjectsCompressionTest extends AbstractCacheO
      */
     protected static class CompressionTransformer implements CacheObjectsTransformer {
         /** Comptession type. */
-        protected static CompressionType type = CompressionType.defaultType();
+        protected static volatile CompressionType type = CompressionType.defaultType();
 
         /** */
         private static final LZ4Factory lz4Factory = LZ4Factory.fastestInstance();
