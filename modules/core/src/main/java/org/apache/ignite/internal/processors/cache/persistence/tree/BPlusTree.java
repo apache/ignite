@@ -2208,7 +2208,16 @@ public abstract class BPlusTree<L, T extends L> extends DataStructure implements
             throw new IgniteCheckedException("Runtime failure on search row: " + row, e);
         }
         catch (RuntimeException | AssertionError e) {
-            throw corruptedTreeException("Runtime failure on search row: " + row, e, grpId, x.pageId);
+            e.printStackTrace();  // TODO
+            System.out.println(e);
+            System.out.println(e.getCause());
+            if (e.getCause() != null) {
+                System.out.println(e.getCause().getCause());
+                if (e.getCause().getCause() != null)
+                    System.out.println(e.getCause().getCause().getCause());
+            }
+            throw e; // TODO
+            //throw corruptedTreeException("Runtime failure on search row: " + row, e, grpId, x.pageId);
         }
         finally {
             x.releaseAll();
