@@ -31,7 +31,7 @@ public interface CacheObjectsTransformer extends Serializable {
     public static final int OVERHEAD = 6;
 
     /**
-     * Transforms data.
+     * Transforms the data.
      *
      * @param original Original data.
      * @param transformed Transformed data.
@@ -42,7 +42,7 @@ public interface CacheObjectsTransformer extends Serializable {
     public int transform(ByteBuffer original, ByteBuffer transformed) throws IgniteCheckedException;
 
     /**
-     * Restores data.
+     * Restores the data.
      *
      * @param transformed Transformed data.
      * @param restored Restored data.
