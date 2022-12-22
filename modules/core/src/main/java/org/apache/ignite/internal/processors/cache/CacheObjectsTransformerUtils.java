@@ -64,7 +64,7 @@ public class CacheObjectsTransformerUtils {
      * @return Transformed bytes.
      */
     public static byte[] transformIfNecessary(byte[] bytes, int offset, int length, CacheObjectValueContext ctx) {
-        assert bytes[0] != TRANSFORMED;
+        assert bytes[offset] != TRANSFORMED;
 
         try {
             CacheObjectsTransformer trans = transformer(ctx);

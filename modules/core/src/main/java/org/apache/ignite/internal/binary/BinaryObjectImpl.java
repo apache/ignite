@@ -268,12 +268,31 @@ public final class BinaryObjectImpl extends BinaryObjectExImpl implements Extern
      * @return Value bytes.
      */
     private byte[] valueBytesFromArray(CacheObjectValueContext ctx) {
-        return CacheObjectsTransformerUtils.transformIfNecessary(arr, start, detached() ? arr.length : length(), ctx);
+        byte[] bytes =
+            CacheObjectsTransformerUtils.transformIfNecessary(arr, start, detached() ? arr.length : length(), ctx);
+
+        if (!detached() && bytes == arr) // Was not transformed, but starts not from 0.
+            return detachArray();
+        else
+            return bytes;
     }
 
     /** {@inheritDoc} */
     @Override public int length() {
         return BinaryPrimitives.readInt(arr, start + GridBinaryMarshaller.TOTAL_LEN_POS);
+    }
+
+    /**
+     * @return Detached binary array.
+     */
+    private byte[] detachArray() {
+        int len = length();
+
+        byte[] arr0 = new byte[len];
+
+        U.arrayCopy(arr, start, arr0, 0, len);
+
+        return arr0;
     }
 
     /**
@@ -283,13 +302,7 @@ public final class BinaryObjectImpl extends BinaryObjectExImpl implements Extern
         if (!detachAllowed || detached())
             return this;
 
-        int len = length();
-
-        byte[] arr0 = new byte[len];
-
-        U.arrayCopy(arr, start, arr0, 0, len);
-
-        return new BinaryObjectImpl(ctx, arr0, 0);
+        return new BinaryObjectImpl(ctx, detachArray(), 0);
     }
 
     /**
@@ -811,13 +824,6 @@ public final class BinaryObjectImpl extends BinaryObjectExImpl implements Extern
                     return false;
 
                 writer.incrementState();
-
-            case 2:
-                if (!writer.writeInt("start", 0))
-                    return false;
-
-                writer.incrementState();
-
         }
 
         return true;
@@ -846,15 +852,6 @@ public final class BinaryObjectImpl extends BinaryObjectExImpl implements Extern
                     return false;
 
                 reader.incrementState();
-
-            case 2:
-                start = reader.readInt("start");
-
-                if (!reader.isLastRead())
-                    return false;
-
-                reader.incrementState();
-
         }
 
         return reader.afterMessageRead(BinaryObjectImpl.class);
@@ -867,7 +864,7 @@ public final class BinaryObjectImpl extends BinaryObjectExImpl implements Extern
 
     /** {@inheritDoc} */
     @Override public byte fieldsCount() {
-        return 3;
+        return 2;
     }
 
     /**
