@@ -182,9 +182,6 @@ public final class BinaryObjectImpl extends BinaryObjectExImpl implements Extern
     @Nullable @Override public <T> T value(CacheObjectValueContext ctx, boolean cpy, ClassLoader ldr) {
         Object obj0 = obj;
 
-        if (arr == null)
-            arr = arrayFromValueBytes(ctx);
-
         if (obj0 == null || (cpy && needCopy(ctx))) {
             if (ldr != null)
                 obj0 = deserialize(ldr);
@@ -197,9 +194,6 @@ public final class BinaryObjectImpl extends BinaryObjectExImpl implements Extern
 
     /** {@inheritDoc} */
     @Override public byte[] valueBytes(CacheObjectValueContext ctx) throws IgniteCheckedException {
-        if (valBytes == null)
-            valBytes = valueBytesFromArray(ctx);
-
         return valBytes;
     }
 
@@ -225,9 +219,6 @@ public final class BinaryObjectImpl extends BinaryObjectExImpl implements Extern
 
     /** {@inheritDoc} */
     @Override public CacheObject prepareForCache(CacheObjectContext ctx) {
-        if (arr == null)
-            arr = arrayFromValueBytes(ctx);
-
         if (detached())
             return this;
 
@@ -248,15 +239,15 @@ public final class BinaryObjectImpl extends BinaryObjectExImpl implements Extern
 
     /** {@inheritDoc} */
     @Override public void prepareMarshal(CacheObjectValueContext ctx) throws IgniteCheckedException {
-        if (valBytes == null)
-            valBytes = valueBytesFromArray(ctx);
+        // No-op.
     }
 
-    /**
-     * @return Value bytes.
+    /** Prepares binary object to be used as cache object.
+     * @param ctx Context.
      */
-    private byte[] valueBytesFromArray(CacheObjectValueContext ctx) {
-        return CacheObjectsTransformerUtils.transformIfNecessary(arr, start, detached() ? arr.length : length(), ctx);
+    public void toCacheObject(CacheObjectValueContext ctx) {
+        if (valBytes == null)
+            valBytes = CacheObjectsTransformerUtils.transformIfNecessary(arr, start, detached() ? arr.length : length(), ctx);
     }
 
     /**

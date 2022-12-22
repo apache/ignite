@@ -173,7 +173,7 @@ public class CacheObjectsCompressionConsumptionTest extends AbstractCacheObjects
 
             sb.append("\nEntries=")
                 .append(cnts.get(i - 1))
-                .append("-")
+                .append("->")
                 .append(cnts.get(i))
                 .append(",\tNetwork diff [raw=")
                 .append(rnd)
