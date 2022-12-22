@@ -148,9 +148,6 @@ public class IgniteCacheDatabaseSharedManager extends GridCacheSharedManagerAdap
     private final Map<String, DirectMemoryProvider> memProviderMap = new ConcurrentHashMap<>();
 
     /** */
-    private static final String MBEAN_GROUP_NAME = "DataRegionMetrics";
-
-    /** */
     protected volatile boolean dataRegionsInitialized;
 
     /** */

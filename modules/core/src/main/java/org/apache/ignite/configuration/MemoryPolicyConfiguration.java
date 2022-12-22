@@ -293,8 +293,7 @@ public final class MemoryPolicyConfiguration implements Serializable {
     }
 
     /**
-     * Gets whether memory metrics are enabled by default on node startup. Memory metrics can be enabled and disabled
-     * at runtime via memory metrics "name=io.dataregion.{data_region_name}" mx bean.
+     * Gets whether memory metrics are enabled by default on node startup.
      *
      * @return Metrics enabled flag.
      */
@@ -304,7 +303,6 @@ public final class MemoryPolicyConfiguration implements Serializable {
 
     /**
      * Sets memory metrics enabled flag. If this flag is {@code true}, metrics will be enabled on node startup.
-     * Memory metrics can be enabled and disabled at runtime via memory metrics "name=io.dataregion.{data_region_name}" mx bean.
      *
      * @param metricsEnabled Metrics enabled flag.
      * @return {@code this} for chaining.
