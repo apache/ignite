@@ -295,17 +295,17 @@ public class StdSqlOperatorsTest extends AbstractBasicIntegrationTest {
     @Test
     public void testXml() {
         assertExpression("EXTRACTVALUE('<a>b</a>', '//a')").returns("b").check();
-//        assertExpression("XMLTRANSFORM('<a>b</a>',"
-//            + "'<?xml version=\"1.0\"?>\n"
-//            + "<xsl:stylesheet version=\"1.0\" xmlns:xsl=\"http://www.w3.org/1999/XSL/Transform\">"
-//            + "  <xsl:output method=\"text\"/>"
-//            + "  <xsl:template match=\"/\">"
-//            + "    a - <xsl:value-of select=\"/a\"/>"
-//            + "  </xsl:template>"
-//            + "</xsl:stylesheet>')"
-//        ).returns("    a - b").check();
-//        assertExpression("\"EXTRACT\"('<a><b>c</b></a>', '/a/b')").returns("<b>c</b>").check();
-//        assertExpression("EXISTSNODE('<a><b>c</b></a>', '/a/b')").returns(1).check();
+        assertExpression("XMLTRANSFORM('<a>b</a>',"
+            + "'<?xml version=\"1.0\"?>\n"
+            + "<xsl:stylesheet version=\"1.0\" xmlns:xsl=\"http://www.w3.org/1999/XSL/Transform\">"
+            + "  <xsl:output method=\"text\"/>"
+            + "  <xsl:template match=\"/\">"
+            + "    a - <xsl:value-of select=\"/a\"/>"
+            + "  </xsl:template>"
+            + "</xsl:stylesheet>')"
+        ).returns("    a - b").check();
+        assertExpression("\"EXTRACT\"('<a><b>c</b></a>', '/a/b')").returns("<b>c</b>").check();
+        assertExpression("EXISTSNODE('<a><b>c</b></a>', '/a/b')").returns(1).check();
     }
 
     /** */
@@ -313,28 +313,28 @@ public class StdSqlOperatorsTest extends AbstractBasicIntegrationTest {
     public void testJson() {
         assertExpression("'{\"a\":1}' FORMAT JSON").check();
         assertExpression("JSON_VALUE('{\"a\":1}', '$.a')").returns("1").check();
-        assertExpression("JSON_VALUE('{\"a\":1}' FORMAT JSON, '$.a')").returns("1").check();
-        assertExpression("JSON_QUERY('{\"a\":{\"b\":1}}', '$.a')").returns("{\"b\":1}").check();
-        assertExpression("JSON_TYPE('{\"a\":1}')").returns("OBJECT").check();
-        assertExpression("JSON_EXISTS('{\"a\":1}', '$.a')").returns(true).check();
-        assertExpression("JSON_DEPTH('{\"a\":1}')").returns(2).check();
-        assertExpression("JSON_KEYS('{\"a\":1}')").returns("[\"a\"]").check();
-        assertExpression("JSON_PRETTY('{\"a\":1}')").returns("{\n  \"a\" : 1\n}").check();
-        assertExpression("JSON_LENGTH('{\"a\":1}')").returns(1).check();
-        assertExpression("JSON_REMOVE('{\"a\":1, \"b\":2}', '$.a')").returns("{\"b\":2}").check();
-        assertExpression("JSON_STORAGE_SIZE('1')").returns(1).check();
-        assertExpression("JSON_OBJECT('a': 1)").returns("{\"a\":1}").check();
-        assertExpression("JSON_ARRAY('a', 'b')").returns("[\"a\",\"b\"]").check();
-        assertExpression("'{\"a\":1}' IS JSON").returns(true).check();
-        assertExpression("'{\"a\":1}' IS JSON VALUE").returns(true).check();
-        assertExpression("'{\"a\":1}' IS JSON OBJECT").returns(true).check();
-        assertExpression("'[1, 2]' IS JSON ARRAY").returns(true).check();
-        assertExpression("'1' IS JSON SCALAR").returns(true).check();
-        assertExpression("'{\"a\":1}' IS NOT JSON").returns(false).check();
-        assertExpression("'{\"a\":1}' IS NOT JSON VALUE").returns(false).check();
-        assertExpression("'{\"a\":1}' IS NOT JSON OBJECT").returns(false).check();
-        assertExpression("'[1, 2]' IS NOT JSON ARRAY").returns(false).check();
-        assertExpression("'1' IS NOT JSON SCALAR").returns(false).check();
+//        assertExpression("JSON_VALUE('{\"a\":1}' FORMAT JSON, '$.a')").returns("1").check();
+//        assertExpression("JSON_QUERY('{\"a\":{\"b\":1}}', '$.a')").returns("{\"b\":1}").check();
+//        assertExpression("JSON_TYPE('{\"a\":1}')").returns("OBJECT").check();
+//        assertExpression("JSON_EXISTS('{\"a\":1}', '$.a')").returns(true).check();
+//        assertExpression("JSON_DEPTH('{\"a\":1}')").returns(2).check();
+//        assertExpression("JSON_KEYS('{\"a\":1}')").returns("[\"a\"]").check();
+//        assertExpression("JSON_PRETTY('{\"a\":1}')").returns("{\n  \"a\" : 1\n}").check();
+//        assertExpression("JSON_LENGTH('{\"a\":1}')").returns(1).check();
+//        assertExpression("JSON_REMOVE('{\"a\":1, \"b\":2}', '$.a')").returns("{\"b\":2}").check();
+//        assertExpression("JSON_STORAGE_SIZE('1')").returns(1).check();
+//        assertExpression("JSON_OBJECT('a': 1)").returns("{\"a\":1}").check();
+//        assertExpression("JSON_ARRAY('a', 'b')").returns("[\"a\",\"b\"]").check();
+//        assertExpression("'{\"a\":1}' IS JSON").returns(true).check();
+//        assertExpression("'{\"a\":1}' IS JSON VALUE").returns(true).check();
+//        assertExpression("'{\"a\":1}' IS JSON OBJECT").returns(true).check();
+//        assertExpression("'[1, 2]' IS JSON ARRAY").returns(true).check();
+//        assertExpression("'1' IS JSON SCALAR").returns(true).check();
+//        assertExpression("'{\"a\":1}' IS NOT JSON").returns(false).check();
+//        assertExpression("'{\"a\":1}' IS NOT JSON VALUE").returns(false).check();
+//        assertExpression("'{\"a\":1}' IS NOT JSON OBJECT").returns(false).check();
+//        assertExpression("'[1, 2]' IS NOT JSON ARRAY").returns(false).check();
+//        assertExpression("'1' IS NOT JSON SCALAR").returns(false).check();
     }
 
     /** */

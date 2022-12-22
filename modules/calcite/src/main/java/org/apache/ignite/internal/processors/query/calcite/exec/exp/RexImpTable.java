@@ -47,6 +47,7 @@ import org.apache.calcite.linq4j.tree.MethodCallExpression;
 import org.apache.calcite.linq4j.tree.OptimizeShuttle;
 import org.apache.calcite.linq4j.tree.ParameterExpression;
 import org.apache.calcite.linq4j.tree.Primitive;
+import org.apache.calcite.linq4j.tree.Types;
 import org.apache.calcite.rel.type.RelDataType;
 import org.apache.calcite.rel.type.RelDataTypeFactory;
 import org.apache.calcite.rel.type.RelDataTypeFactoryImpl;
@@ -57,7 +58,7 @@ import org.apache.calcite.runtime.SqlFunctions;
 import org.apache.calcite.schema.QueryableTable;
 import org.apache.calcite.schema.SchemaPlus;
 import org.apache.calcite.sql.SqlBinaryOperator;
-import org.apache.calcite.sql.SqlFunction;
+import org.apache.calcite.sql.SqlCall;
 import org.apache.calcite.sql.SqlJsonEmptyOrError;
 import org.apache.calcite.sql.SqlJsonValueEmptyOrErrorBehavior;
 import org.apache.calcite.sql.SqlKind;
@@ -75,6 +76,8 @@ import org.apache.calcite.util.BuiltInMethod;
 import org.apache.calcite.util.Util;
 import org.apache.ignite.calcite.CalciteQueryEngineConfiguration;
 import org.apache.ignite.internal.processors.query.calcite.util.IgniteMethod;
+import org.apache.ignite.internal.util.typedef.F;
+import org.apache.ignite.internal.util.typedef.X;
 import org.jetbrains.annotations.Nullable;
 
 import static org.apache.calcite.adapter.enumerable.EnumUtils.generateCollatorExpression;
@@ -230,6 +233,7 @@ import static org.apache.calcite.sql.fun.SqlStdOperatorTable.TRUNCATE;
 import static org.apache.calcite.sql.fun.SqlStdOperatorTable.UNARY_MINUS;
 import static org.apache.calcite.sql.fun.SqlStdOperatorTable.UNARY_PLUS;
 import static org.apache.calcite.sql.fun.SqlStdOperatorTable.UPPER;
+import static org.apache.calcite.sql.type.SqlTypeName.TIMESTAMP;
 import static org.apache.ignite.internal.processors.query.calcite.sql.fun.IgniteOwnSqlOperatorTable.GREATEST2;
 import static org.apache.ignite.internal.processors.query.calcite.sql.fun.IgniteOwnSqlOperatorTable.LEAST2;
 import static org.apache.ignite.internal.processors.query.calcite.sql.fun.IgniteOwnSqlOperatorTable.NULL_BOUND;
@@ -622,13 +626,6 @@ public class RexImpTable {
     }
 
     /** */
-    public @Nullable String sqlFunctionMethodName(SqlFunction fun) {
-        RexCallImplementor impl = get(fun);
-
-        return impl instanceof MethodNameHolder ? ((MethodNameHolder)impl).sqlFunctionMethodName() : null;
-    }
-
-    /** */
     static Expression optimize(Expression expression) {
         return expression.accept(new OptimizeShuttle());
     }
@@ -671,6 +668,65 @@ public class RexImpTable {
             prev = e;
         }
         return true;
+    }
+
+    /** */
+    public boolean checkBuiltInFunction(SqlCall call, RelDataType[] relArgTypes, Class<?>[] argJavaTypes) {
+        assert relArgTypes != null && argJavaTypes != null;
+        assert relArgTypes.length == argJavaTypes.length;
+
+        RexCallImplementor impl = get(call.getOperator());
+
+        if(!(impl instanceof MethodInvocker))
+            return true;
+
+        MethodInvocker mtdInvoker = (MethodInvocker)impl;
+
+        String mtdName = mtdInvoker.methodName(relArgTypes);
+        Class<?>[] strictParamTypes = mtdInvoker.paramTypes(relArgTypes);
+
+        try {
+            if (strictParamTypes == null && Types.lookupMethod(mtdInvoker.methodHolder(), mtdName, argJavaTypes) == null)
+                return true;
+        }
+        catch (Exception e) {
+            if (!X.hasCause(e, NoSuchMethodException.class))
+                throw e;
+        }
+
+        boolean mtdFound;
+
+        for (Method curMtd : mtdInvoker.methodHolder().getMethods()) {
+            Class<?>[] curMtdParams = curMtd.getParameterTypes();
+
+            if (!curMtd.getName().equals(mtdName) || (!curMtd.isVarArgs() && (strictParamTypes == null &&
+                curMtdParams.length != argJavaTypes.length) || (strictParamTypes != null &&
+                strictParamTypes.length != argJavaTypes.length + 1)))
+                continue;
+
+            mtdFound = true;
+
+            for (int i = 0; i < (strictParamTypes == null ? curMtdParams.length : curMtdParams.length - 1); i++) {
+                Class<?> expType = !curMtd.isVarArgs() || i < curMtdParams.length - 1 ? curMtdParams[i] : Object.class;
+
+                Class<?> passedType = argJavaTypes[i];
+
+                if (Types.allAssignable(false, F.asArray(expType), F.asArray(passedType)) ||
+                    (!expType.isPrimitive() && passedType.isAssignableFrom(Void.class)) ||
+                    expType.isPrimitive() && expType.isAssignableFrom(Primitive.unbox(passedType)) ||
+                    passedType.isPrimitive() && passedType.isAssignableFrom(Primitive.unbox(expType)))
+                    continue;
+
+                mtdFound = false;
+
+                break;
+            }
+
+            if (mtdFound)
+                return true;
+        }
+
+        return false;
     }
 
     /**
@@ -853,21 +909,20 @@ public class RexImpTable {
         /** {@inheritDoc} */
         @Override Expression implementSafe(final RexToLixTranslator translator,
             final RexCall call, final List<Expression> argValueList) {
+
             Expression operand = argValueList.get(0);
-            final RelDataType type = call.operands.get(0).getType();
-            switch (type.getSqlTypeName()) {
-                case TIMESTAMP:
-                    return getExpression(translator, operand, timestampMethod);
-                case DATE:
-                    return getExpression(translator, operand, dateMethod);
-                default:
-                    throw new AssertionError("unknown type " + type);
-            }
+
+            return getExpression(translator, operand, mtd(F.asArray(call.operands.get(0).getType())));
         }
 
         /** {@inheritDoc} */
-        @Override public String sqlFunctionMethodName() {
-            return null;
+        @Override public String methodName(RelDataType[] argTypes) {
+            return mtd(argTypes).getMethodName();
+        }
+
+        /** {@inheritDoc} */
+        @Override public Class<?>[] paramTypes(RelDataType[] argTypes) {
+            return mtd(argTypes).method.getParameterTypes();
         }
 
         /** */
@@ -877,6 +932,19 @@ public class RexImpTable {
                 Expressions.call(BuiltInMethod.LOCALE.method, translator.getRoot());
             return Expressions.call(builtInMethod.method.getDeclaringClass(),
                 builtInMethod.method.getName(), operand, locale);
+        }
+
+        /** */
+        private BuiltInMethod mtd(RelDataType[] argTypes) {
+            switch (argTypes[0].getSqlTypeName()) {
+                case TIMESTAMP:
+                    return timestampMethod;
+                case DATE:
+                    return dateMethod;
+                default:
+                    throw new AssertionError("Unable to determine implementation method name for passed " +
+                        "argument type " + argTypes[0].getSqlTypeName());
+            }
         }
     }
 
@@ -970,7 +1038,7 @@ public class RexImpTable {
     }
 
     /** Implementor for a function that generates calls to a given method. */
-    private static class MethodImplementor extends AbstractRexCallImplementor implements MethodNameHolder {
+    private static class MethodImplementor extends AbstractRexCallImplementor implements MethodInvocker {
         /** */
         protected final Method method;
 
@@ -1022,8 +1090,13 @@ public class RexImpTable {
         }
 
         /** {@inheritDoc} */
-        @Override public String sqlFunctionMethodName() {
+        @Override public String methodName(RelDataType[] argTypes) {
             return method.getName();
+        }
+
+        /** {@inheritDoc} */
+        @Override public Class<?> methodHolder() {
+            return method.getDeclaringClass();
         }
     }
 
@@ -1126,7 +1199,7 @@ public class RexImpTable {
      * <p>Use this, as opposed to {@link MethodImplementor}, if the SQL function
      * is overloaded; then you can use one implementor for several overloads.
      */
-    private static class MethodNameImplementor extends AbstractRexCallImplementor implements MethodNameHolder {
+    private static class MethodNameImplementor extends AbstractRexCallImplementor implements MethodInvocker {
         /** */
         protected final String methodName;
 
@@ -1153,8 +1226,13 @@ public class RexImpTable {
         }
 
         /** {@inheritDoc} */
-        @Override public String sqlFunctionMethodName() {
+        @Override public String methodName(RelDataType[] argTypes) {
             return methodName;
+        }
+
+        /** {@inheritDoc} */
+        @Override public Class<?> methodHolder() {
+            return SqlFunctions.class;
         }
     }
 
@@ -1857,7 +1935,7 @@ public class RexImpTable {
                             return Expressions.convert_(trop0, long.class);
                         default:
                             final BuiltInMethod method =
-                                operand0.getType().getSqlTypeName() == SqlTypeName.TIMESTAMP
+                                operand0.getType().getSqlTypeName() == TIMESTAMP
                                     ? BuiltInMethod.ADD_MONTHS
                                     : BuiltInMethod.ADD_MONTHS_INT;
                             return Expressions.call(method.method, trop0, trop1);
@@ -1925,8 +2003,17 @@ public class RexImpTable {
     }
 
     /** */
-    private interface MethodNameHolder {
-        String sqlFunctionMethodName();
+    private interface MethodInvocker {
+        /** */
+        String methodName(RelDataType[] argTypes);
+
+        /** */
+        Class<?> methodHolder();
+
+        /** */
+        default @Nullable Class<?>[] paramTypes(RelDataType[] argTypes){
+            return null;
+        }
     }
 
     /**
