@@ -20,7 +20,6 @@ package org.apache.ignite.compatibility.persistence;
 
 import java.util.List;
 import org.apache.ignite.Ignite;
-import org.apache.ignite.cluster.ClusterState;
 import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.lang.IgniteInClosure;
 import org.junit.Test;
