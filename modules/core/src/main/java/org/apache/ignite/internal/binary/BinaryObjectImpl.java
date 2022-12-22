@@ -227,6 +227,8 @@ public final class BinaryObjectImpl extends BinaryObjectExImpl implements Extern
 
     /** {@inheritDoc} */
     @Override public void finishUnmarshal(CacheObjectValueContext ctx, ClassLoader ldr) throws IgniteCheckedException {
+        assert arr != null || valBytes != null;
+
         if (arr == null)
             arr = arrayFromValueBytes(ctx);
 
@@ -239,15 +241,20 @@ public final class BinaryObjectImpl extends BinaryObjectExImpl implements Extern
 
     /** {@inheritDoc} */
     @Override public void prepareMarshal(CacheObjectValueContext ctx) throws IgniteCheckedException {
-        // No-op.
+        assert arr != null || valBytes != null;
+
+        if (valBytes == null)
+            valBytes = valueBytesFromArray(ctx);
     }
 
     /** Prepares binary object to be used as cache object.
      * @param ctx Context.
      */
     public void toCacheObject(CacheObjectValueContext ctx) {
+        assert arr != null;
+
         if (valBytes == null)
-            valBytes = CacheObjectsTransformerUtils.transformIfNecessary(arr, start, detached() ? arr.length : length(), ctx);
+            valBytes = valueBytesFromArray(ctx);
     }
 
     /**
@@ -255,6 +262,13 @@ public final class BinaryObjectImpl extends BinaryObjectExImpl implements Extern
      */
     private byte[] arrayFromValueBytes(CacheObjectValueContext ctx) {
         return CacheObjectsTransformerUtils.restoreIfNecessary(valBytes, ctx);
+    }
+
+    /**
+     * @return Value bytes.
+     */
+    private byte[] valueBytesFromArray(CacheObjectValueContext ctx) {
+        return CacheObjectsTransformerUtils.transformIfNecessary(arr, start, detached() ? arr.length : length(), ctx);
     }
 
     /** {@inheritDoc} */
@@ -784,7 +798,7 @@ public final class BinaryObjectImpl extends BinaryObjectExImpl implements Extern
 
         switch (writer.state()) {
             case 0:
-                if (!writer.writeByteArray("arr",
+                if (!writer.writeByteArray("valBytes",
                     valBytes,
                     0,
                     valBytes.length))
@@ -818,7 +832,7 @@ public final class BinaryObjectImpl extends BinaryObjectExImpl implements Extern
 
         switch (reader.state()) {
             case 0:
-                valBytes = reader.readByteArray("arr");
+                valBytes = reader.readByteArray("valBytes");
 
                 if (!reader.isLastRead())
                     return false;
