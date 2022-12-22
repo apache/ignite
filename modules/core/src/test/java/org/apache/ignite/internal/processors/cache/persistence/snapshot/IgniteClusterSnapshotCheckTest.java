@@ -398,6 +398,8 @@ public class IgniteClusterSnapshotCheckTest extends AbstractSnapshotSelfTest {
                 try {
                     BinaryObjectImpl newVal = new BinaryObjectImpl(binCtx, binCtx.marshaller().marshal(new Value(bytes)), 0);
 
+                    newVal.prepareMarshal(cached.context().cacheObjectContext());
+
                     boolean success = cached.initialValue(
                         newVal,
                         new GridCacheVersion(row0.version().topologyVersion(),
