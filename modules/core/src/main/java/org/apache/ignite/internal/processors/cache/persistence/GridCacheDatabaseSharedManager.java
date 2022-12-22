@@ -1150,12 +1150,6 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
 
         super.onKernalStop0(cancel);
 
-        unregisterMetricsMBean(
-            cctx.gridConfig(),
-            MBEAN_GROUP,
-            MBEAN_NAME
-        );
-
         if (metaStorage != null)
             metaStorage.close();
 
