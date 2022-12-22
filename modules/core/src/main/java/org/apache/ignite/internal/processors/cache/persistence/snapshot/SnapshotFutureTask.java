@@ -945,8 +945,7 @@ class SnapshotFutureTask extends AbstractSnapshotFutureTask<Set<GroupPartitionId
                     if (!store.read(pageId, locBuf, true))
                         return;
 
-                    locBuf.limit(locBuf.capacity());
-                    locBuf.position(0);
+                    locBuf.clear();
 
                     writePage0(pageId, locBuf);
                 }

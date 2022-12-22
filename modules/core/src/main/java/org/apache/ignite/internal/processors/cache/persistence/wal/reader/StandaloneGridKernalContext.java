@@ -145,7 +145,7 @@ public class StandaloneGridKernalContext implements GridKernalContext {
     private MarshallerContextImpl marshallerCtx;
 
     /** */
-    @Nullable private CompressionProcessor cmpProc;
+    @Nullable private CompressionProcessor compressProc;
 
     /**
      * @param log Logger.
@@ -166,7 +166,7 @@ public class StandaloneGridKernalContext implements GridKernalContext {
 
     /**
      * @param log Logger.
-     * @param cmpProc Compression processor.
+     * @param compressProc Compression processor.
      * @param binaryMetadataFileStoreDir folder specifying location of metadata File Store.
      * {@code null} means no specific folder is configured. <br>
      *
@@ -176,7 +176,7 @@ public class StandaloneGridKernalContext implements GridKernalContext {
      */
     public StandaloneGridKernalContext(
         IgniteLogger log,
-        @Nullable CompressionProcessor cmpProc,
+        @Nullable CompressionProcessor compressProc,
         @Nullable File binaryMetadataFileStoreDir,
         @Nullable File marshallerMappingFileStoreDir
     ) throws IgniteCheckedException {
@@ -210,7 +210,7 @@ public class StandaloneGridKernalContext implements GridKernalContext {
             marshallerCtx.onMarshallerProcessorStarted(this, null);
         }
 
-        this.cmpProc = cmpProc;
+        this.compressProc = compressProc;
     }
 
     /**
@@ -667,7 +667,7 @@ public class StandaloneGridKernalContext implements GridKernalContext {
 
     /** {@inheritDoc} */
     @Override public CompressionProcessor compress() {
-        return cmpProc;
+        return compressProc;
     }
 
     /** {@inheritDoc} */

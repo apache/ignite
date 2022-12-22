@@ -22,25 +22,32 @@ import java.lang.reflect.Field;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
+import java.nio.file.StandardOpenOption;
 import java.util.Arrays;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Map;
+import java.util.Objects;
 import java.util.Set;
+import java.util.function.Function;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCache;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteException;
+import org.apache.ignite.cache.QueryEntity;
+import org.apache.ignite.cache.QueryIndex;
 import org.apache.ignite.cluster.ClusterState;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.DiskPageCompression;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.GridKernalContextImpl;
 import org.apache.ignite.internal.IgniteEx;
+import org.apache.ignite.internal.processors.cache.persistence.file.FileIO;
+import org.apache.ignite.internal.processors.cache.persistence.file.RandomAccessFileIO;
 import org.apache.ignite.internal.processors.cache.verify.IdleVerifyResultV2;
 import org.apache.ignite.internal.processors.compress.CompressionProcessor;
 import org.apache.ignite.internal.util.typedef.F;
@@ -216,11 +223,25 @@ public class SnapshotCompressionBasicTest extends AbstractSnapshotSelfTest {
         }
     }
 
+    /** {@inheritDoc} */
+    @Override protected Function<Integer, Object> valueBuilder() {
+        return i -> new Value("name_" + i);
+    }
+
     /** */
     protected void createTestSnapshot() throws Exception {
         CacheConfiguration[] caches = CACHES.entrySet().stream()
             .map(cache -> {
                 CacheConfiguration config = new CacheConfiguration(cache.getKey());
+
+                config.setQueryEntities(Collections.singletonList(
+                    new QueryEntity()
+                        .setKeyType(Integer.class.getName())
+                        .setValueType(Value.class.getName())
+                        .addQueryField("id", Integer.class.getName(), null)
+                        .addQueryField("name", String.class.getName(), null)
+                        .setIndexes(F.asList(new QueryIndex("name")))
+                ));
 
                 if (cache.getValue() != null)
                     config.setGroupName(cache.getValue());
@@ -234,6 +255,8 @@ public class SnapshotCompressionBasicTest extends AbstractSnapshotSelfTest {
             }).toArray(CacheConfiguration[]::new);
 
         IgniteEx ignite = startGridsWithCache(3, 1000, valueBuilder(), caches);
+
+        forceCheckpoint();
 
         G.allGrids().forEach(i -> failCompressionProcessor(i, SNAPSHOT_WITHOUT_HOLES));
 
@@ -250,13 +273,23 @@ public class SnapshotCompressionBasicTest extends AbstractSnapshotSelfTest {
             assertTrue(F.isEmpty(res.exceptions()));
         }
 
-        long withHolesSize = directorySize(
-            Paths.get(U.resolveWorkDirectory(U.defaultWorkDirectory(), DFLT_SNAPSHOT_DIRECTORY, false).toString(), SNAPSHOT_WITH_HOLES));
+        Path withHolesPath = Paths.get(U.resolveWorkDirectory(U.defaultWorkDirectory(), DFLT_SNAPSHOT_DIRECTORY, false)
+            .toString(), SNAPSHOT_WITH_HOLES);
 
-        long withoutHolesSize = directorySize(
-            Paths.get(U.resolveWorkDirectory(U.defaultWorkDirectory(), DFLT_SNAPSHOT_DIRECTORY, false).toString(), SNAPSHOT_WITHOUT_HOLES));
+        Path withoutHolesPath = Paths.get(U.resolveWorkDirectory(U.defaultWorkDirectory(), DFLT_SNAPSHOT_DIRECTORY, false)
+            .toString(), SNAPSHOT_WITHOUT_HOLES);
 
-        assertTrue("withHolesSize < withoutHolesSize: " + withHolesSize + " <" + withoutHolesSize, withHolesSize < withoutHolesSize);
+        long withHolesSize = directorySize(withHolesPath);
+        long withoutHolesSize = directorySize(withoutHolesPath);
+
+        assertTrue("withHolesSize < withoutHolesSize: " + withHolesSize + " < " + withoutHolesSize,
+            withHolesSize < withoutHolesSize);
+
+        long idxWithHolesSize = directorySize(withHolesPath, "index\\.bin");
+        long idxWithoutHolesSize = directorySize(withoutHolesPath, "index\\.bin");
+
+        assertTrue("idxWithHolesSize < idxWithoutHolesSize: " + idxWithHolesSize + " < " + idxWithoutHolesSize,
+            idxWithHolesSize < idxWithoutHolesSize);
 
         ignite.cacheNames().forEach(c -> ignite.getOrCreateCache(c).destroy());
 
@@ -309,16 +342,51 @@ public class SnapshotCompressionBasicTest extends AbstractSnapshotSelfTest {
 
     /** */
     private static long directorySize(Path path) throws IOException {
+        return directorySize(path, null);
+    }
+
+    /** */
+    private static long directorySize(Path path, String pattern) throws IOException {
         try (Stream<Path> walk = Files.walk(path)) {
             return walk.filter(Files::isRegularFile)
+                .filter(f -> F.isEmpty(pattern) || f.getFileName().toString().matches(pattern))
                 .mapToLong(p -> {
-                    try {
-                        return Files.size(p);
+                    try (FileIO fio = new RandomAccessFileIO(p.toFile(), StandardOpenOption.READ)) {
+                        return fio.getSparseSize();
                     }
                     catch (IOException e) {
                         throw new RuntimeException(e);
                     }
                 }).sum();
+        }
+    }
+
+    /** */
+    private static class Value {
+        /** */
+        String name;
+
+        /** */
+        Value(String name) {
+            this.name = name;
+        }
+
+        /** {@inheritDoc} */
+        @Override public boolean equals(Object o) {
+            if (this == o)
+                return true;
+
+            if (o == null || getClass() != o.getClass())
+                return false;
+
+            Value value = (Value)o;
+
+            return Objects.equals(name, value.name);
+        }
+
+        /** {@inheritDoc} */
+        @Override public int hashCode() {
+            return Objects.hash(name);
         }
     }
 }

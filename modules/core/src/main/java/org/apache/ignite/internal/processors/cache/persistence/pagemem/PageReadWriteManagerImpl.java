@@ -19,7 +19,6 @@ package org.apache.ignite.internal.processors.cache.persistence.pagemem;
 
 import java.nio.ByteBuffer;
 import org.apache.ignite.IgniteCheckedException;
-import org.apache.ignite.configuration.DiskPageCompression;
 import org.apache.ignite.failure.FailureContext;
 import org.apache.ignite.failure.FailureType;
 import org.apache.ignite.internal.GridKernalContext;
@@ -95,11 +94,10 @@ public class PageReadWriteManagerImpl implements PageReadWriteManager {
             int compressedPageSize = pageSize;
 
             CacheGroupContext grpCtx = ctx.cache().cacheGroup(grpId);
-            if (grpCtx != null && grpCtx.diskPageCompression() != DiskPageCompression.DISABLED) {
+            if (grpCtx != null) {
                 assert pageBuf.position() == 0 && pageBuf.limit() == pageSize : pageBuf;
 
-                ByteBuffer compressedPageBuf = ctx.compress().compressPage(pageBuf, store.getPageSize(),
-                    store.getBlockSize(), grpCtx.diskPageCompression(), grpCtx.diskPageCompressionLevel());
+                ByteBuffer compressedPageBuf = grpCtx.compressionHandler().compressPage(pageBuf, store);
 
                 if (compressedPageBuf != pageBuf) {
                     compressedPageSize = PageIO.getCompressedSize(compressedPageBuf);

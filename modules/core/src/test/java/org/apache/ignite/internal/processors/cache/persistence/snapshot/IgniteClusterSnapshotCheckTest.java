@@ -277,8 +277,7 @@ public class IgniteClusterSnapshotCheckTest extends AbstractSnapshotSelfTest {
 
                 assertNotNull("Group context for grpId:" + grpId, grpCtx);
 
-                ByteBuffer compressedPageBuf = ignite.context().compress().compressPage(buff, pageStore.getPageSize(),
-                    pageStore.getBlockSize(), grpCtx.diskPageCompression(), grpCtx.diskPageCompressionLevel());
+                ByteBuffer compressedPageBuf = grpCtx.compressionHandler().compressPage(buff, pageStore);
 
                 if (compressedPageBuf != buff) {
                     buff = compressedPageBuf;

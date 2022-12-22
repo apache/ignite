@@ -33,7 +33,6 @@ import org.apache.ignite.cache.affinity.AffinityFunction;
 import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.DataPageEvictionMode;
-import org.apache.ignite.configuration.DiskPageCompression;
 import org.apache.ignite.configuration.TopologyValidator;
 import org.apache.ignite.events.CacheRebalancingEvent;
 import org.apache.ignite.internal.IgniteClientDisconnectedCheckedException;
@@ -57,6 +56,7 @@ import org.apache.ignite.internal.processors.cache.persistence.GridCacheOffheapM
 import org.apache.ignite.internal.processors.cache.persistence.freelist.FreeList;
 import org.apache.ignite.internal.processors.cache.persistence.tree.reuse.ReuseList;
 import org.apache.ignite.internal.processors.cache.query.continuous.CounterSkipContext;
+import org.apache.ignite.internal.processors.compress.CompressionHandler;
 import org.apache.ignite.internal.processors.metric.GridMetricManager;
 import org.apache.ignite.internal.processors.plugin.IgnitePluginProcessor;
 import org.apache.ignite.internal.processors.query.QueryUtils;
@@ -72,6 +72,7 @@ import org.apache.ignite.lang.IgniteFuture;
 import org.apache.ignite.lang.IgnitePredicate;
 import org.apache.ignite.plugin.CacheTopologyValidatorProvider;
 import org.jetbrains.annotations.Nullable;
+
 import static org.apache.ignite.cache.CacheAtomicityMode.ATOMIC;
 import static org.apache.ignite.cache.CacheAtomicityMode.TRANSACTIONAL_SNAPSHOT;
 import static org.apache.ignite.cache.CacheMode.REPLICATED;
@@ -194,10 +195,7 @@ public class CacheGroupContext {
     private final Collection<TopologyValidator> topValidators;
 
     /** Disk page compression method. */
-    private final DiskPageCompression diskPageCompr;
-
-    /** Disk page compression level. */
-    private final int diskPageComprLvl;
+    private final CompressionHandler compressHandler;
 
     /**
      * @param ctx Context.
@@ -213,8 +211,7 @@ public class CacheGroupContext {
      * @param locStartVer Topology version when group was started on local node.
      * @param persistenceEnabled Persistence enabled flag.
      * @param walEnabled Wal enabled flag.
-     * @param diskPageCompr Disk page compression.
-     * @param diskPageComprLvl Disk page compression level.
+     * @param compressHandler Compresion handler.
      */
     public CacheGroupContext(
         GridCacheSharedContext ctx,
@@ -231,8 +228,7 @@ public class CacheGroupContext {
         boolean persistenceEnabled,
         boolean walEnabled,
         boolean recoveryMode,
-        DiskPageCompression diskPageCompr,
-        int diskPageComprLvl
+        CompressionHandler compressHandler
     ) {
         assert ccfg != null;
         assert dataRegion != null || !affNode;
@@ -253,8 +249,7 @@ public class CacheGroupContext {
         this.persistenceEnabled = persistenceEnabled;
         this.localWalEnabled = true;
         this.recoveryMode = new AtomicBoolean(recoveryMode);
-        this.diskPageCompr = diskPageCompr;
-        this.diskPageComprLvl = diskPageComprLvl;
+        this.compressHandler = compressHandler;
 
         ioPlc = cacheType.ioPolicy();
 
@@ -1343,13 +1338,8 @@ public class CacheGroupContext {
     }
 
     /** */
-    public DiskPageCompression diskPageCompression() {
-        return diskPageCompr;
-    }
-
-    /** */
-    public int diskPageCompressionLevel() {
-        return diskPageComprLvl;
+    public CompressionHandler compressionHandler() {
+        return compressHandler;
     }
 
     /**

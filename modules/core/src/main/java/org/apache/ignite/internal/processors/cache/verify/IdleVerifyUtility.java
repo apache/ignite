@@ -92,7 +92,7 @@ public class IdleVerifyUtility {
         IgniteThrowableSupplier<FilePageStore> pageStoreSup,
         int partId,
         byte pageType,
-        @Nullable BiConsumer<Integer, ByteBuffer> pagePostProcessor
+        @Nullable BiConsumer<Long, ByteBuffer> pagePostProcessor
     ) {
         assert pageType == FLAG_DATA || pageType == FLAG_IDX || pageType == FLAG_AUX : pageType;
 
@@ -111,7 +111,7 @@ public class IdleVerifyUtility {
                 pageStore.read(pageId, buf, true, true);
 
                 if (pagePostProcessor != null)
-                    pagePostProcessor.accept(partId, buf);
+                    pagePostProcessor.accept(pageId, buf);
             }
         }
         catch (Throwable e) {

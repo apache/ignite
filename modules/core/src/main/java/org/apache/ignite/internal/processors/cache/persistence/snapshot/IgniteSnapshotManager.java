@@ -1467,28 +1467,17 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
 
                         if (meta.hasCompressedGroups() && grpIds.keySet().stream().anyMatch(meta::isGroupWithCompresion)) {
                             try {
-                                File dbPath = kctx0.pdsFolderResolver().resolveFolders().persistentStoreRootPath();
-                                int pageSize = kctx0.config().getDataStorageConfiguration().getPageSize();
-
-                                kctx0.compress().checkPageCompressionSupported(dbPath.toPath(), pageSize);
+                                kctx0.compress().checkPageCompressionSupported();
                             }
                             catch (IgniteCheckedException e) {
-                                String msg;
-                                if (grpIds.isEmpty()) {
-                                    msg = "Snapshot '" + meta.snapshotName() + "' contains compressed cache groups while " +
-                                        "disk page compression is disabled. To restore this snapshot please " +
-                                        "start Ignite with configured disk page compression";
-                                }
-                                else {
-                                    String grpWithCompr = grpIds.entrySet().stream()
-                                        .filter(grp -> meta.isGroupWithCompresion(grp.getKey()))
-                                        .map(Map.Entry::getValue).collect(Collectors.joining(", "));
+                                String grpWithCompr = grpIds.entrySet().stream()
+                                    .filter(grp -> meta.isGroupWithCompresion(grp.getKey()))
+                                    .map(Map.Entry::getValue).collect(Collectors.joining(", "));
 
-                                    msg = "Requested cache groups [" + grpWithCompr + "] for restore " +
-                                        "from snapshot '" + meta.snapshotName() + "' are compressed while " +
-                                        "disk page compression is disabled. To restore these groups please " +
-                                        "start Ignite with configured disk page compression";
-                                }
+                                String msg = "Requested cache groups [" + grpWithCompr + "] for check " +
+                                    "from snapshot '" + meta.snapshotName() + "' are compressed while " +
+                                    "disk page compression is disabled. To check these groups please " +
+                                    "start Ignite with ignite-compress module in classpath";
 
                                 res.onDone(new SnapshotPartitionsVerifyTaskResult(metas, new IdleVerifyResultV2(
                                     Collections.singletonMap(cctx.localNode(), new IllegalArgumentException(msg)))));
@@ -1974,23 +1963,6 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
         int partId,
         FilePageStore pageStore
     ) throws IgniteCheckedException {
-        return partitionRowIterator(ctx, grpName, partId, pageStore, false);
-    }
-
-    /**
-     * @param grpName Cache group name.
-     * @param partId Partition id.
-     * @param pageStore File page store to iterate over.
-     * @param punchHoleEnabled If puching holes enabled.
-     * @return Iterator over partition.
-     * @throws IgniteCheckedException If and error occurs.
-     */
-    public GridCloseableIterator<CacheDataRow> partitionRowIterator(GridKernalContext ctx,
-        String grpName,
-        int partId,
-        FilePageStore pageStore,
-        boolean punchHoleEnabled
-    ) throws IgniteCheckedException {
         CacheObjectContext coctx = new CacheObjectContext(ctx, grpName, null, false,
             false, false, false, false);
 
@@ -1999,7 +1971,7 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
             null, null, null, null, null,
             null, null, null, null, null, null);
 
-        return new DataPageIterator(sctx, coctx, pageStore, partId, punchHoleEnabled);
+        return new DataPageIterator(sctx, coctx, pageStore, partId);
     }
 
     /**
@@ -2557,9 +2529,6 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
         /** */
         private final CompressionProcessor compressProc;
 
-        /** */
-        private boolean punchHoleEnabled;
-
         /** {@code true} if the iteration though partition reached its end. */
         private boolean secondScanComplete;
 
@@ -2583,14 +2552,12 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
             GridCacheSharedContext<?, ?> sctx,
             CacheObjectContext coctx,
             PageStore store,
-            int partId,
-            boolean punchHoleEnabled
+            int partId
         ) throws IgniteCheckedException {
             this.store = store;
             this.partId = partId;
             this.coctx = coctx;
             this.sctx = sctx;
-            this.punchHoleEnabled = punchHoleEnabled;
             compressProc = sctx.kernalContext().compress();
 
             store.ensure();
@@ -2738,20 +2705,8 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
 
             assert read : toDetailString(pageId);
 
-            if (PageIO.getCompressionType(buff) != CompressionProcessor.UNCOMPRESSED_PAGE) {
-                int comprPageSz = PageIO.getCompressedSize(buff);
-
+            if (PageIO.getCompressionType(buff) != CompressionProcessor.UNCOMPRESSED_PAGE)
                 compressProc.decompressPage(buff, store.getPageSize());
-
-                if (punchHoleEnabled && comprPageSz < store.getPageSize()) {
-                    try {
-                        store.punchHole(pageId, comprPageSz);
-                    }
-                    catch (Exception ignored) {
-                        // No-op.
-                    }
-                }
-            }
 
             return getType(buff) == flag(pageId);
         }

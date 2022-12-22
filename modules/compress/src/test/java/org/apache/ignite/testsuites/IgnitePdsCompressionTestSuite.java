@@ -64,7 +64,7 @@ public class IgnitePdsCompressionTestSuite {
         suite.add(IgnitePdsCheckpointSimulationWithRealCpDisabledAndWalCompressionTest.class);
         suite.add(WalCompactionAndPageCompressionTest.class);
 
-        // Snapshots
+        // Snapshots.
         suite.add(SnapshotCompressionBasicTest.class);
 
         //Snapshot tests from common suites.
