@@ -37,6 +37,7 @@ public interface CacheObjectsTransformer extends Serializable {
      * @param transformed Transformed data.
      * @return {@code 0} on successful transformation or byte buffer's capacity required to perform the transformation
      * when provided byte buffer's capacity in not enough.
+     * @throws IgniteCheckedException when transformation is not possible/suitable.
      */
     public int transform(ByteBuffer original, ByteBuffer transformed) throws IgniteCheckedException;
 
