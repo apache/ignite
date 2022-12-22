@@ -153,7 +153,7 @@ public class CacheObjectsTransformationTest extends AbstractCacheObjectsTransfor
         private static boolean fail;
 
         /** {@inheritDoc} */
-        @Override public int transform(ByteBuffer original, ByteBuffer transformed, int ignored) throws IgniteCheckedException {
+        @Override public int transform(ByteBuffer original, ByteBuffer transformed) throws IgniteCheckedException {
             if (fail)
                 throw new IgniteCheckedException("Failed.");
 

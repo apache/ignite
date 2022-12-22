@@ -134,7 +134,7 @@ public abstract class AbstractCacheObjectsCompressionTest extends AbstractCacheO
         }
 
         /** {@inheritDoc} */
-        @Override public int transform(ByteBuffer original, ByteBuffer compressed, int overhead) throws IgniteCheckedException {
+        @Override public int transform(ByteBuffer original, ByteBuffer compressed) throws IgniteCheckedException {
             if (type == CompressionType.DISABLED)
                 throw new IgniteCheckedException("Disabled.");
 
@@ -143,7 +143,7 @@ public abstract class AbstractCacheObjectsCompressionTest extends AbstractCacheO
 
             int locOverhead = 4;
 
-            int lim = original.remaining() - overhead - locOverhead;
+            int lim = original.remaining() - CacheObjectsTransformer.OVERHEAD - locOverhead;
 
             if (lim <= 0)
                 throw new IgniteCheckedException("Compression is not possible.");

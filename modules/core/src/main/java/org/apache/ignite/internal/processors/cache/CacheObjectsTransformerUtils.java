@@ -28,11 +28,8 @@ import static org.apache.ignite.internal.binary.GridBinaryMarshaller.TRANSFORMED
 
 /** */
 public class CacheObjectsTransformerUtils {
-    /** Marshalling overhead. */
-    private static final int OVERHEAD = 6;
-
     /** Header buffer. */
-    private static final ThreadLocalByteBuffer hdrBuf = new ThreadLocalByteBuffer(OVERHEAD);
+    private static final ThreadLocalByteBuffer hdrBuf = new ThreadLocalByteBuffer(CacheObjectsTransformer.OVERHEAD);
 
     /** Destination buffer. */
     private static final ThreadLocalByteBuffer dstBuf = new ThreadLocalByteBuffer(1 << 10);
@@ -79,7 +76,7 @@ public class CacheObjectsTransformerUtils {
             ByteBuffer transformed = dstBuf.get();
 
             while (true) {
-                int capacity = trans.transform(src, transformed, OVERHEAD);
+                int capacity = trans.transform(src, transformed);
 
                 if (capacity <= 0)
                     break;
@@ -97,7 +94,7 @@ public class CacheObjectsTransformerUtils {
             byte[] res = new byte[hdr.remaining() + transformed.remaining()];
 
             hdr.get(res, 0, hdr.remaining());
-            transformed.get(res, OVERHEAD, transformed.remaining());
+            transformed.get(res, CacheObjectsTransformer.OVERHEAD, transformed.remaining());
 
             if (ctx.kernalContext().event().isRecordable(EVT_CACHE_OBJECT_TRANSFORMED)) {
                 ctx.kernalContext().event().record(

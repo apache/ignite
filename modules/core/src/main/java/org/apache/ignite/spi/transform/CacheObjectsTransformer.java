@@ -27,23 +27,32 @@ import org.apache.ignite.lang.IgniteExperimental;
  */
 @IgniteExperimental
 public interface CacheObjectsTransformer extends Serializable {
+    /** Additional space required to store transformed data. */
+    public static final int OVERHEAD = 6;
+
     /**
+     * Transforms data.
+     *
      * @param original Original data.
      * @param transformed Transformed data.
-     * @param overhead Additional space required to store transformed data.
      * @return {@code 0} on successful transformation or byte buffer's capacity required to perform the transformation
      * when provided byte buffer's capacity in not enough.
      */
-    public int transform(ByteBuffer original, ByteBuffer transformed, int overhead) throws IgniteCheckedException;
+    public int transform(ByteBuffer original, ByteBuffer transformed) throws IgniteCheckedException;
 
     /**
+     * Restores data.
+     *
      * @param transformed Transformed data.
      * @param restored Restored data.
      */
     public void restore(ByteBuffer transformed, ByteBuffer restored);
 
     /**
-     * @return True when direct byte buffers are required.
+     * Direct byte buffer flag.
+     *
+     * @return True when direct byte buffers are required at {@link #transform(ByteBuffer, ByteBuffer)} and
+     * {@link #restore(ByteBuffer, ByteBuffer)} methods.
      */
     public default boolean direct() {
         return false;
