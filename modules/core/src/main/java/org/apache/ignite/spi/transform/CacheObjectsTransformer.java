@@ -28,7 +28,7 @@ import org.apache.ignite.lang.IgniteExperimental;
 @IgniteExperimental
 public interface CacheObjectsTransformer extends Serializable {
     /** Additional space required to store transformed data. */
-    public static final int OVERHEAD = 6;
+    public int OVERHEAD = 6;
 
     /**
      * Transforms the data.
