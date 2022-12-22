@@ -99,7 +99,7 @@ public class MigratingToWalV2SerializerWithCompactionTest extends IgnitePersiste
 
             IgniteEx ignite = startGrid(0);
 
-            ignite.cluster().state(ClusterState.ACTIVE);
+            ignite.active(true);
 
             IgniteCache<Integer, byte[]> cache = ignite.getOrCreateCache(TEST_CACHE_NAME);
 
@@ -168,7 +168,7 @@ public class MigratingToWalV2SerializerWithCompactionTest extends IgnitePersiste
 
             ignite = startGrid(0);
 
-            ignite.cluster().state(ClusterState.ACTIVE);
+            ignite.active(true);
 
             cache = ignite.cache(TEST_CACHE_NAME);
 
@@ -201,7 +201,7 @@ public class MigratingToWalV2SerializerWithCompactionTest extends IgnitePersiste
     private static class PostStartupClosure implements IgniteInClosure<Ignite> {
         /** {@inheritDoc} */
         @Override public void apply(Ignite ignite) {
-            ignite.cluster().state(ClusterState.ACTIVE);
+            ignite.active(true);
 
             CacheConfiguration<Object, Object> cacheCfg = new CacheConfiguration<>();
             cacheCfg.setName(TEST_CACHE_NAME);

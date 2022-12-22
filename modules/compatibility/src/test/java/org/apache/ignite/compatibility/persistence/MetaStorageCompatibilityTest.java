@@ -23,7 +23,6 @@ import java.nio.file.OpenOption;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteException;
-import org.apache.ignite.cluster.ClusterState;
 import org.apache.ignite.configuration.DataRegionConfiguration;
 import org.apache.ignite.configuration.DataStorageConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
@@ -268,7 +267,7 @@ public class MetaStorageCompatibilityTest extends IgnitePersistenceCompatibility
         /** {@inheritDoc} */
         @Override public void apply(Ignite ignite) {
             try {
-                ignite.cluster().state(ClusterState.ACTIVE);
+                ignite.active(true);
 
                 ((IgniteEx)ignite).context().cache().context().database()
                     .wakeupForCheckpoint("force test checkpoint").get();
@@ -288,7 +287,7 @@ public class MetaStorageCompatibilityTest extends IgnitePersistenceCompatibility
     private static class ActivateAndStopClosure implements IgniteInClosure<Ignite> {
         /** {@inheritDoc} */
         @Override public void apply(Ignite ignite) {
-            ignite.cluster().state(ClusterState.ACTIVE);
+            ignite.active(true);
 
             ignite.close();
         }

@@ -67,7 +67,7 @@ public class IgnitePKIndexesMigrationToUnwrapPkTest extends IndexAbstractCompati
 
             IgniteEx igniteEx = startGrid(0);
 
-            igniteEx.cluster().state(ClusterState.ACTIVE);
+            igniteEx.active(true);
 
             assertDontUsingPkIndex(igniteEx, TABLE_NAME);
 
@@ -81,7 +81,7 @@ public class IgnitePKIndexesMigrationToUnwrapPkTest extends IndexAbstractCompati
 
             assertQueryWorks(igniteEx, newTblName);
 
-            igniteEx.cluster().state(ClusterState.INACTIVE);
+            igniteEx.active(false);
         }
         finally {
             stopAllGrids();
@@ -92,7 +92,7 @@ public class IgnitePKIndexesMigrationToUnwrapPkTest extends IndexAbstractCompati
     private static class PostStartupClosure implements IgniteInClosure<Ignite> {
         /** {@inheritDoc} */
         @Override public void apply(Ignite ignite) {
-            ignite.cluster().state(ClusterState.ACTIVE);
+            ignite.active(true);
 
             IgniteEx igniteEx = (IgniteEx)ignite;
 
@@ -100,7 +100,7 @@ public class IgnitePKIndexesMigrationToUnwrapPkTest extends IndexAbstractCompati
 
             assertDontUsingPkIndex(igniteEx, TABLE_NAME);
 
-            ignite.cluster().state(ClusterState.INACTIVE);
+            ignite.active(false);
         }
     }
 

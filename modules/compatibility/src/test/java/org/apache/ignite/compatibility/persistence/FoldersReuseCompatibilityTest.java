@@ -113,7 +113,7 @@ public class FoldersReuseCompatibilityTest extends IgnitePersistenceCompatibilit
 
         IgniteEx ignite = startGrid(0);
 
-        ignite.cluster().state(ClusterState.ACTIVE);
+        ignite.active(true);
         ignite.getOrCreateCache("cache2createdForNewGrid").put("Object", "Value");
         assertEquals(1, ignite.context().discovery().topologyVersion());
 
@@ -134,7 +134,7 @@ public class FoldersReuseCompatibilityTest extends IgnitePersistenceCompatibilit
     private static class PostStartupClosure implements IgniteInClosure<Ignite> {
         /** {@inheritDoc} */
         @Override public void apply(Ignite ignite) {
-            ignite.cluster().state(ClusterState.ACTIVE);
+            ignite.active(true);
 
             final IgniteCache<Object, Object> cache = ignite.getOrCreateCache(CACHE_NAME);
             cache.put(KEY, VAL);
