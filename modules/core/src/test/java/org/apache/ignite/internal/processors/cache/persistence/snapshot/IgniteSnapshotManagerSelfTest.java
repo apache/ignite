@@ -68,7 +68,6 @@ import org.apache.ignite.testframework.LogListener;
 import org.junit.Test;
 
 import static java.util.Objects.nonNull;
-import static org.apache.ignite.configuration.DataStorageConfiguration.DFLT_PAGE_SIZE;
 import static org.apache.ignite.internal.processors.cache.persistence.snapshot.IgniteSnapshotManager.CP_SNAPSHOT_REASON;
 import static org.apache.ignite.internal.processors.cache.persistence.snapshot.IgniteSnapshotManager.SNAPSHOT_RUNNER_THREAD_PREFIX;
 import static org.apache.ignite.testframework.GridTestUtils.assertThrowsAnyCause;
@@ -79,7 +78,7 @@ import static org.apache.ignite.testframework.GridTestUtils.setFieldValue;
  */
 public class IgniteSnapshotManagerSelfTest extends AbstractSnapshotSelfTest {
     /** The size of value array to fit 3 pages. */
-    private static final int SIZE_FOR_FIT_3_PAGES = 12008;
+    private static final int SIZE_FOR_FIT_3_PAGES = PAGE_SIZE * 2 + PAGE_SIZE / 2;
 
     /** Listenning logger. */
     private ListeningTestLogger listenLog;
@@ -462,7 +461,7 @@ public class IgniteSnapshotManagerSelfTest extends AbstractSnapshotSelfTest {
 
         IgniteEx ignite = startGridsWithoutCache(2);
 
-        assertEquals(DFLT_PAGE_SIZE, ignite.configuration().getDataStorageConfiguration().getPageSize());
+        assertEquals(PAGE_SIZE, ignite.configuration().getDataStorageConfiguration().getPageSize());
 
         for (int i = 0; i < keys; i++)
             ignite.getOrCreateCache(ccfg).put(i, new Value(new byte[SIZE_FOR_FIT_3_PAGES]));
