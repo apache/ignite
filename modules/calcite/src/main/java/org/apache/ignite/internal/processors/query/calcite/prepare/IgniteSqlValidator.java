@@ -274,18 +274,18 @@ public class IgniteSqlValidator extends SqlValidatorImpl {
                 throw newValidationError(call, IgniteResource.INSTANCE.illegalAlias(alias));
         }
 
-        if (call.getOperator() instanceof SqlFunction && RexImpTable.INSTANCE.implementedBuiltIncall(call.getOperator())) {
-            RelDataType[] relArgTypes = call.getOperandList().stream()
-                .map(op -> deriveType(scope, op)).toArray(v -> new RelDataType[v]);
-
-            Class<?>[] argJavaTypes = Arrays.stream(relArgTypes)
-                .map(relType -> typeFactory().getJavaClass(relType)).toArray(v -> new Class<?>[v]);
-
-            if (!RexImpTable.INSTANCE.checkBuiltInFunction(call, relArgTypes, argJavaTypes)) {
-                throw newValidationError(call,
-                    IgniteResource.INSTANCE.invalidFunctionArgumentTypes(call.getOperator().getName()));
-            }
-        }
+//        if (call.getOperator() instanceof SqlFunction && RexImpTable.INSTANCE.implementedBuiltIncall(call.getOperator())) {
+//            RelDataType[] relArgTypes = call.getOperandList().stream()
+//                .map(op -> deriveType(scope, op)).toArray(v -> new RelDataType[v]);
+//
+//            Class<?>[] argJavaTypes = Arrays.stream(relArgTypes)
+//                .map(relType -> typeFactory().getJavaClass(relType)).toArray(v -> new Class<?>[v]);
+//
+//            if (!RexImpTable.INSTANCE.checkBuiltInFunction(call, relArgTypes, argJavaTypes)) {
+//                throw newValidationError(call,
+//                    IgniteResource.INSTANCE.invalidFunctionArgumentTypes(call.getOperator().getName()));
+//            }
+//        }
 
         super.validateCall(call, scope);
     }

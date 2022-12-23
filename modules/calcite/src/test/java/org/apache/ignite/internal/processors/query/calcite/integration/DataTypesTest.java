@@ -472,12 +472,15 @@ public class DataTypesTest extends AbstractBasicIntegrationTest {
     /** */
     @Test
     public void testNumericInFunctionConversion() {
-        sql("CREATE TABLE strings(cv VARCHAR, biv BIGINT)");
+        sql("CREATE TABLE tbl(cv VARCHAR, iv INTEGER, biv BIGINT, dv DOUBLE, tv TINYINT)");
+//        sql("CREATE TABLE tbl(cv VARCHAR, biv BIGINT)");
 
-        sql("INSERT INTO STRINGS VALUES ('abc', 1)");
+        sql("INSERT INTO tbl VALUES ('abc', 1, 1, 2.5, 127)");
 
-        assertThrows("SELECT LEFT(cv, biv) FROM strings", SqlValidatorException.class,
-            "Invalid argument types for function");
+//        assertQuery("SELECT ROUND(CAST ? as TINYINT) from tbl").withParams(127).returns((byte)127).check();
+//        assertQuery("SELECT CEIL(dv::tinyint) from tbl").returns(42d).check();
+
+        assertQuery("SELECT LEFT(cv, biv) FROM tbl").returns('a').check();
 
 //        assertQuery("SELECT LEFT(CAST(? AS INT), CAST(? AS VARCHAR))").withParams(12, 1).returns("1").check();
 

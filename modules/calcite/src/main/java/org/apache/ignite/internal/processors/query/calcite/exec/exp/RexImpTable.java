@@ -282,7 +282,7 @@ public class RexImpTable {
         defineMethod(MD5, BuiltInMethod.MD5.method, NullPolicy.STRICT);
         defineMethod(SHA1, BuiltInMethod.SHA1.method, NullPolicy.STRICT);
         defineMethod(SUBSTRING, BuiltInMethod.SUBSTRING.method, NullPolicy.STRICT);
-        defineMethod(LEFT, BuiltInMethod.LEFT.method, NullPolicy.ANY);
+        defineMethod(LEFT, new LeftRightImplementor(LEFT.method));
         defineMethod(RIGHT, BuiltInMethod.RIGHT.method, NullPolicy.ANY);
         defineMethod(REPLACE, BuiltInMethod.REPLACE.method, NullPolicy.STRICT);
         defineMethod(TRANSLATE3, BuiltInMethod.TRANSLATE3.method, NullPolicy.STRICT);
@@ -904,6 +904,15 @@ public class RexImpTable {
         }
     }
 
+    /** */
+    private static class LeftRightImplementor extends MethodNameImplementor {
+        /** */
+        private final BuiltInMethod leftMethod;
+
+        /** */
+        private final BuiltInMethod rightMethod;
+    }
+
     /**
      * Implementor for the {@code MONTHNAME} and {@code DAYNAME} functions. Each takes a {@link java.util.Locale}
      * argument.
@@ -1095,32 +1104,12 @@ public class RexImpTable {
             final Expression expression;
             Class clazz = method.getDeclaringClass();
 
-//            try {
-                if (Modifier.isStatic(method.getModifiers()))
-                    expression = EnumUtils.call(null, clazz, method.getName(), argValueList);
-                else {
-                    expression = EnumUtils.call(argValueList.get(0), clazz, method.getName(),
-                        Util.skip(argValueList, 1));
-                }
-//            }
-//            catch (Exception e) {
-//                if (X.hasCause(e, NoSuchMethodException.class) && method.getParameterCount() == argValueList.size()) {
-//                    for (int i = 0; i < argValueList.size(); ++i) {
-//                        Type passedType = argValueList.get(i).getType();
-//                        Class<?> expectedType = method.getParameterTypes()[i];
-//
-//                        if (passedType.equals(expectedType))
-//                            continue;
-//
-//                        if(expectedType.isAssignableFrom(passedType))
-//                            System.err.println("TEST | can convert: " + passedType + " to " + expectedType);
-//                        else
-//                            System.err.println("TEST | cannot convert: " + passedType + " to " + expectedType);
-//                    }
-//                }
-//
-//                throw e;
-//            }
+            if (Modifier.isStatic(method.getModifiers()))
+                expression = EnumUtils.call(null, clazz, method.getName(), argValueList);
+            else {
+                expression = EnumUtils.call(argValueList.get(0), clazz, method.getName(),
+                    Util.skip(argValueList, 1));
+            }
 
             return expression;
         }
