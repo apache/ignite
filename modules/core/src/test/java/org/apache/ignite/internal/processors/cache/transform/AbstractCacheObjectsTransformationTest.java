@@ -53,7 +53,7 @@ public abstract class AbstractCacheObjectsTransformationTest extends GridCommonA
     protected static final int NODES = 3;
 
     /** Key. */
-    protected static int key;
+    protected int key;
 
     /** Event queue. */
     protected final ConcurrentLinkedDeque<CacheObjectTransformedEvent> evtQueue = new ConcurrentLinkedDeque<>();
