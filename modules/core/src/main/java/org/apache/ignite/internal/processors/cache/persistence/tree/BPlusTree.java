@@ -2214,7 +2214,8 @@ public abstract class BPlusTree<L, T extends L> extends DataStructure implements
             PrintWriter pw = new PrintWriter(sw);
             e.printStackTrace(pw);
 
-            throw corruptedTreeException("Runtime failure on search row: " + row + "\n" + e + "\n" + e.getCause() + "\n" + sw.toString(), e, grpId, x.pageId);
+            throw corruptedTreeException("Runtime failure on search row: " + row + "\n" + e + "\n" + e.getCause() +
+                "\n" + sw.toString(), e, grpId, x.pageId);
         }
         finally {
             x.releaseAll();
