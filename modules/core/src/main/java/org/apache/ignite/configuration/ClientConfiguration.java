@@ -26,6 +26,8 @@ import javax.cache.configuration.Factory;
 import javax.net.ssl.SSLContext;
 
 import org.apache.ignite.IgniteLogger;
+import org.apache.ignite.cache.query.IndexQuery;
+import org.apache.ignite.cache.query.ScanQuery;
 import org.apache.ignite.client.ClientAddressFinder;
 import org.apache.ignite.client.ClientPartitionAwarenessMapper;
 import org.apache.ignite.client.ClientPartitionAwarenessMapperFactory;
@@ -525,10 +527,10 @@ public final class ClientConfiguration implements Serializable {
     }
 
     /**
-     * Used only with single-key operations API and does not require explicit transactions (initiated via
-     * org.apache.ignite.client.ClientTransactions#txStart). In Java platform the functionality maintains ScanQuery/
-     * IndexQuery which specify a partition number to re-route the query to a particular server node that stores the
-     * requested data.
+     * Used only with single-key operations API, and it does not work for those operations within explicit transactions
+     * (initiated via org.apache.ignite.client.ClientTransactions#txStart). The functionality maintains
+     * {@link ScanQuery#setPartition(Integer)} and {@link IndexQuery#setPartition(Integer)} which specify a partition
+     * number to route the query to a particular server node that stores the requested data.
      *
      * @return A value indicating whether partition awareness should be enabled.
      * <p>
@@ -544,10 +546,10 @@ public final class ClientConfiguration implements Serializable {
     /**
      * Sets a value indicating whether partition awareness should be enabled.
      * <p>
-     * Used only with single-key operations API and does not require explicit transactions (initiated via
-     * org.apache.ignite.client.ClientTransactions#txStart). In Java platform the functionality maintains ScanQuery/
-     * IndexQuery which specify a partition number to re-route the query to a particular server node that stores the
-     * requested data.
+     * Used only with single-key operations API, and it does not work for those operations within explicit transactions
+     * (initiated via org.apache.ignite.client.ClientTransactions#txStart). The functionality maintains
+     * {@link ScanQuery#setPartition(Integer)} and {@link IndexQuery#setPartition(Integer)} which specify a partition
+     * number to route the query to a particular server node that stores the requested data.
      * <p>
      * Default is {@code true}: client sends requests directly to the primary node for the given cache key.
      * To do so, connection is established to every known server node.

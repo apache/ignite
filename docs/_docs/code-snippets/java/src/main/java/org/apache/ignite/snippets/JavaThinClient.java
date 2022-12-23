@@ -350,6 +350,9 @@ public class JavaThinClient {
         //end::system-views[]
     }
 
+    /** Partition. */
+    private final Integer part;
+
     void partitionAwareness() throws Exception {
         //tag::partition-awareness[]
         ClientConfiguration cfg = new ClientConfiguration()
@@ -357,8 +360,10 @@ public class JavaThinClient {
                 .setPartitionAwarenessEnabled(true);
 
         try (IgniteClient client = Ignition.startClient(cfg)) {
-            ClientCache<Integer, String> cache = client.cache("myCache");
             // Put, get or remove data from the cache...
+            ClientCache<Integer, String> cache = client.cache("myCache");
+            // The partition number can be specified with indexQuery.setPartition(Integer) as well.
+            ScanQuery scanQuery = new ScanQuery().setPartition(part);
         } catch (ClientException e) {
             System.err.println(e.getMessage());
         }
