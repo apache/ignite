@@ -84,6 +84,8 @@ namespace Apache.Ignite.Core.Tests.Cache.Platform
             TestUtils.WaitForTrueCondition(() => !_cache[0].ContainsKey(Key3));
             Assert.Throws<KeyNotFoundException>(() => _cache[0].Get(Key3));
             Assert.Throws<KeyNotFoundException>(() => _cache[1].Get(Key3));
+
+            TestUtils.WaitForTrueCondition(() => !clientCache.ContainsKey(Key3));
             Assert.Throws<KeyNotFoundException>(() => clientCache.Get(Key3));
 
             // Check that updates for that key work on all nodes.
