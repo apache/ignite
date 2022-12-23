@@ -42,6 +42,9 @@ namespace Apache.Ignite.Core.Impl.Unmanaged.Jni
         private readonly EnvDelegates.CallStaticBooleanMethod _callStaticBoolMethod;
 
         /** */
+        private readonly EnvDelegates.CallStaticIntMethod _callStaticIntMethod;
+
+        /** */
         private readonly EnvDelegates.FindClass _findClass;
 
         /** */
@@ -127,6 +130,7 @@ namespace Apache.Ignite.Core.Impl.Unmanaged.Jni
 
             GetDelegate(func.CallStaticVoidMethod, out _callStaticVoidMethod);
             GetDelegate(func.CallStaticBooleanMethod, out _callStaticBoolMethod);
+            GetDelegate(func.CallStaticIntMethod, out _callStaticIntMethod);
             GetDelegate(func.FindClass, out _findClass);
             GetDelegate(func.GetMethodID, out _getMethodId);
             GetDelegate(func.GetStaticMethodID, out _getStaticMethodId);
@@ -191,6 +195,18 @@ namespace Apache.Ignite.Core.Impl.Unmanaged.Jni
             ExceptionCheck();
 
             return res > 0;
+        }
+
+        /// <summary>
+        /// Calls a static int method.
+        /// </summary>
+        public int CallStaticIntMethod(GlobalRef cls, IntPtr methodId, long* argsPtr = null)
+        {
+            var res = _callStaticIntMethod(_envPtr, cls.Target, methodId, argsPtr);
+
+            ExceptionCheck();
+
+            return res;
         }
 
         /// <summary>

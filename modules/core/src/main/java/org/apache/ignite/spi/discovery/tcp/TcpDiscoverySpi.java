@@ -2133,9 +2133,6 @@ public class TcpDiscoverySpi extends IgniteSpiAdapter implements IgniteDiscovery
      * @param dataPacket Data packet.
      */
     DiscoveryDataPacket collectExchangeData(DiscoveryDataPacket dataPacket) {
-        if (locNode.isDaemon())
-            return dataPacket;
-
         assert dataPacket != null;
         assert dataPacket.joiningNodeId() != null;
 
@@ -2169,9 +2166,6 @@ public class TcpDiscoverySpi extends IgniteSpiAdapter implements IgniteDiscovery
      * @param clsLdr Class loader.
      */
     protected void onExchange(DiscoveryDataPacket dataPacket, ClassLoader clsLdr) {
-        if (locNode.isDaemon())
-            return;
-
         assert dataPacket != null;
         assert dataPacket.joiningNodeId() != null;
 

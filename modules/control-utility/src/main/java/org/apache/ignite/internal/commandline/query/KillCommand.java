@@ -20,7 +20,7 @@ package org.apache.ignite.internal.commandline.query;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.UUID;
-import java.util.logging.Logger;
+import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.internal.client.GridClient;
 import org.apache.ignite.internal.client.GridClientConfiguration;
 import org.apache.ignite.internal.commandline.AbstractCommand;
@@ -84,7 +84,7 @@ public class KillCommand extends AbstractCommand<Object> {
     private UUID nodeId;
 
     /** {@inheritDoc} */
-    @Override public Object execute(GridClientConfiguration clientCfg, Logger log) throws Exception {
+    @Override public Object execute(GridClientConfiguration clientCfg, IgniteLogger log) throws Exception {
         try (GridClient client = Command.startClient(clientCfg)) {
             return executeTaskByNameOnNode(
                 client,
@@ -95,8 +95,8 @@ public class KillCommand extends AbstractCommand<Object> {
             );
         }
         catch (Throwable e) {
-            log.severe("Failed to perform operation.");
-            log.severe(CommandLogger.errorMessage(e));
+            log.error("Failed to perform operation.");
+            log.error(CommandLogger.errorMessage(e));
 
             throw e;
         }
@@ -218,7 +218,7 @@ public class KillCommand extends AbstractCommand<Object> {
     }
 
     /** {@inheritDoc} */
-    @Override public void printUsage(Logger log) {
+    @Override public void printUsage(IgniteLogger log) {
         usage(log, "Kill compute task by session id:", KILL, singletonMap("session_id", "Session identifier."),
             COMPUTE.toString(), "session_id");
 

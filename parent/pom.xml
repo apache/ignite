@@ -94,7 +94,7 @@
         <hamcrest.version>2.2</hamcrest.version>
         <httpclient.version>4.5.13</httpclient.version>
         <httpcore.version>4.4.14</httpcore.version>
-        <jackson.version>2.12.7</jackson.version>
+        <jackson.version>2.14.0</jackson.version>
         <jaxb.api.version>2.1</jaxb.api.version>
         <jaxb.impl.version>2.1.14</jaxb.impl.version>
         <javassist.version>3.28.0-GA</javassist.version>
@@ -130,7 +130,7 @@
         <netlibjava.version>1.1.2</netlibjava.version>
         <oro.bundle.version>2.0.8_6</oro.bundle.version>
         <paho.version>1.0.2</paho.version>
-        <postgres.connector.version>42.3.3</postgres.connector.version>
+        <postgres.connector.version>42.5.0</postgres.connector.version>
         <scala210.jline.version>2.10.7</scala210.jline.version>
         <scala210.library.version>2.10.7</scala210.library.version>
         <scala.library.version>2.11.12</scala.library.version>
@@ -1024,8 +1024,10 @@
                                 --add-opens=java.base/java.util=ALL-UNNAMED
                                 --add-opens=java.base/java.util.concurrent=ALL-UNNAMED
                                 --add-opens=java.base/java.util.concurrent.locks=ALL-UNNAMED
+                                --add-opens=java.base/java.util.concurrent.atomic=ALL-UNNAMED
                                 --add-opens=java.base/java.lang=ALL-UNNAMED
                                 --add-opens=java.base/java.lang.invoke=ALL-UNNAMED
+                                --add-opens=java.base/java.math=ALL-UNNAMED
                                 --add-opens=java.sql/java.sql=ALL-UNNAMED
                             </argLine>
                         </configuration>

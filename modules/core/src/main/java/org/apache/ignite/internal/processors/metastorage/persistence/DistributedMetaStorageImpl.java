@@ -640,7 +640,7 @@ public class DistributedMetaStorageImpl extends GridProcessorAdapter
             if (!discoData.hasJoiningNodeData()) {
                 // Joining node doesn't support distributed metastorage feature.
 
-                if (isSupported(ctx) && locVer.id() > 0 && !(node.isClient() || node.isDaemon())) {
+                if (isSupported(ctx) && locVer.id() > 0 && !node.isClient()) {
                     String errorMsg = "Node not supporting distributed metastorage feature" +
                         " is not allowed to join the cluster";
 

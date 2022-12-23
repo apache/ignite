@@ -19,6 +19,7 @@ package org.apache.ignite.internal.processors.query.calcite.trait;
 
 import java.util.List;
 import org.apache.calcite.plan.RelTraitDef;
+import org.apache.calcite.rel.core.CorrelationId;
 import org.apache.calcite.util.ImmutableIntList;
 import org.apache.ignite.internal.util.typedef.internal.CU;
 
@@ -111,6 +112,20 @@ public class IgniteDistributions {
      */
     public static IgniteDistribution hash(List<Integer> keys, DistributionFunction function) {
         return canonize(new DistributionTrait(ImmutableIntList.copyOf(keys), function));
+    }
+
+    /**
+     * Creates correlated distribution, thats used to bypass set of nodes on the right hand of CNLJ in cases when
+     * hash distribution cannot bypass these nodes.
+     * It's an proxy for hash distribution. Nodes can't be enforced to this distribution. Original hash distribution
+     * (with remapped keys) thats can be used in final plan is restored by the filter node.
+     *
+     * @param corrId Target distribution correlation id.
+     * @param target Target distribution.
+     * @return Distribution by correlate.
+     */
+    public static IgniteDistribution correlated(CorrelationId corrId, IgniteDistribution target) {
+        return canonize(new DistributionTrait(DistributionFunction.correlated(corrId, target)));
     }
 
     /**

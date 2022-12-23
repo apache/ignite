@@ -149,11 +149,15 @@ public class VerifyBackupPartitionsDumpTask extends ComputeTaskAdapter<VisorIdle
             return true;
 
         int firstHash = record.partitionHash();
+        int firstVerHash = record.partitionVersionsHash();
 
         for (int i = 1; i < records.size(); i++) {
             record = records.get(i);
 
-            if (record.partitionHash() != firstHash || record.size() != 0)
+            if (record.partitionHash() != firstHash
+                || record.partitionVersionsHash() != firstVerHash
+                || record.size() != 0
+            )
                 return true;
         }
 

@@ -33,6 +33,7 @@ import java.util.IdentityHashMap;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
+import java.util.TreeSet;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.concurrent.locks.Condition;
@@ -1883,15 +1884,16 @@ public class GridToStringBuilder {
     }
 
     /**
-     * Returns sorted and compacted string representation of given {@code col}.
-     * Two nearby numbers with difference at most 1 are compacted to one continuous segment.
-     * E.g. collection of [1, 2, 3, 5, 6, 7, 10] will be compacted to [1-3, 5-7, 10].
+     * Creates string representation of a specified collection with preliminary sorting and duplicates removing.
      *
-     * @param col Collection of integers.
-     * @return Compacted string representation of given collections.
+     * @param c Input collection.
+     * @return String representation of collection.
      */
-    public static String compact(Collection<Integer> col) {
-        return compact(col, i -> i + 1);
+    public static String toStringSortedDistinct(Collection<? extends Comparable<?>> c) {
+        if (c.isEmpty())
+            return "[]";
+
+        return '[' + F.concat(new TreeSet<>(c), ",") + ']';
     }
 
     /**

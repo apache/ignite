@@ -214,6 +214,7 @@ import org.apache.ignite.internal.cluster.ClusterTopologyCheckedException;
 import org.apache.ignite.internal.compute.ComputeTaskCancelledCheckedException;
 import org.apache.ignite.internal.compute.ComputeTaskTimeoutCheckedException;
 import org.apache.ignite.internal.events.DiscoveryCustomEvent;
+import org.apache.ignite.internal.logger.IgniteLoggerEx;
 import org.apache.ignite.internal.managers.communication.GridIoManager;
 import org.apache.ignite.internal.managers.communication.GridIoPolicy;
 import org.apache.ignite.internal.managers.deployment.GridDeployment;
@@ -264,8 +265,6 @@ import org.apache.ignite.lang.IgniteProductVersion;
 import org.apache.ignite.lang.IgniteRunnable;
 import org.apache.ignite.lang.IgniteUuid;
 import org.apache.ignite.lifecycle.LifecycleAware;
-import org.apache.ignite.logger.LoggerNodeIdAndApplicationAware;
-import org.apache.ignite.logger.LoggerNodeIdAware;
 import org.apache.ignite.logger.java.JavaLogger;
 import org.apache.ignite.marshaller.Marshaller;
 import org.apache.ignite.plugin.PluginProvider;
@@ -4741,7 +4740,7 @@ public abstract class IgniteUtils {
         return initLogger(
             cfg.getGridLogger(),
             app,
-            cfg.getNodeId() != null ? cfg.getNodeId() : UUID.randomUUID(),
+            null,
             cfg.getWorkDirectory()
         );
     }
@@ -4757,7 +4756,7 @@ public abstract class IgniteUtils {
     public static IgniteLogger initLogger(
         @Nullable IgniteLogger cfgLog,
         @Nullable String app,
-        UUID nodeId,
+        @Nullable UUID nodeId,
         String workDir
     ) throws IgniteCheckedException {
         try {
@@ -4822,10 +4821,8 @@ public abstract class IgniteUtils {
                 ((JavaLogger)cfgLog).setWorkDirectory(workDir);
 
             // Set node IDs for all file appenders.
-            if (cfgLog instanceof LoggerNodeIdAndApplicationAware)
-                ((LoggerNodeIdAndApplicationAware)cfgLog).setApplicationAndNode(app, nodeId);
-            else if (cfgLog instanceof LoggerNodeIdAware)
-                ((LoggerNodeIdAware)cfgLog).setNodeId(nodeId);
+            if (cfgLog instanceof IgniteLoggerEx)
+                ((IgniteLoggerEx)cfgLog).setApplicationAndNode(app, nodeId);
 
             if (log4jInitErr != null)
                 U.warn(cfgLog, "Failed to initialize Log4J2Logger (falling back to standard java logging): "
@@ -7452,8 +7449,7 @@ public abstract class IgniteUtils {
      * @return Short string representing the node.
      */
     public static String toShortString(ClusterNode n) {
-        return "ClusterNode [id=" + n.id() + ", order=" + n.order() + ", addr=" + n.addresses() +
-            ", daemon=" + n.isDaemon() + ']';
+        return "ClusterNode [id=" + n.id() + ", order=" + n.order() + ", addr=" + n.addresses() + ']';
     }
 
     /**
@@ -11666,7 +11662,7 @@ public abstract class IgniteUtils {
      * @return {@code true} if local node is coordinator.
      */
     public static boolean isLocalNodeCoordinator(GridDiscoveryManager discoMgr) {
-        if (discoMgr.localNode().isClient() || discoMgr.localNode().isDaemon())
+        if (discoMgr.localNode().isClient())
             return false;
 
         DiscoverySpi spi = discoMgr.getInjectedDiscoverySpi();
@@ -12406,7 +12402,7 @@ public abstract class IgniteUtils {
      * @return {@code true} if the REST processor is enabled, {@code false} the otherwise.
      */
     public static boolean isRestEnabled(IgniteConfiguration cfg) {
-        boolean isClientNode = cfg.isClientMode() || cfg.isDaemon();
+        boolean isClientNode = cfg.isClientMode();
 
         // By default, rest processor doesn't start on client nodes.
         return cfg.getConnectorConfiguration() != null &&
@@ -12418,5 +12414,36 @@ public abstract class IgniteUtils {
      */
     public static boolean isRestartEnabled() {
         return IGNITE_SUCCESS_FILE_PROPERTY != null;
+    }
+
+    /**
+     * Returns {@code true} if class is a lambda.
+     *
+     * @param objectClass Class.
+     * @return {@code true} if class is a lambda, {@code false} otherwise.
+     */
+    public static boolean isLambda(Class<?> objectClass) {
+        return !objectClass.isPrimitive() && !objectClass.isArray()
+            // Order is crucial here, isAnonymousClass and isLocalClass may fail if
+            // class' outer class was loaded with different classloader.
+            && objectClass.isSynthetic()
+            && !objectClass.isAnonymousClass() && !objectClass.isLocalClass()
+            && classCannotBeLoadedByName(objectClass);
+    }
+
+    /**
+     * Returns {@code true} if class can not be loaded by name.
+     *
+     * @param objectClass Class.
+     * @return {@code true} if class can not be loaded by name, {@code false} otherwise.
+     */
+    public static boolean classCannotBeLoadedByName(Class<?> objectClass) {
+        try {
+            Class.forName(objectClass.getName());
+            return false;
+        }
+        catch (ClassNotFoundException e) {
+            return true;
+        }
     }
 }

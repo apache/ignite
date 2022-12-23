@@ -358,7 +358,7 @@ public class IgniteCacheOffheapManagerImpl implements IgniteCacheOffheapManager 
         boolean primary,
         boolean backup,
         AffinityTopologyVersion topVer
-    ) throws IgniteCheckedException {
+    ) {
         long cnt = 0;
 
         Iterator<CacheDataStore> it = cacheData(primary, backup, topVer);
@@ -1597,6 +1597,11 @@ public class IgniteCacheOffheapManagerImpl implements IgniteCacheOffheapManager 
         /** {@inheritDoc} */
         @Override public long updateCounter() {
             return pCntr.get();
+        }
+
+        /** {@inheritDoc} */
+        @Override public long highestAppliedCounter() {
+            return pCntr.highestAppliedCounter();
         }
 
         /** {@inheritDoc} */

@@ -1,7 +1,6 @@
 # name: test/sql/join/test_not_distinct_from.test
 # description: Test join on is not distinct from query
 # group: [join]
-# Ignore https://issues.apache.org/jira/browse/IGNITE-15574
 # Ignore https://issues.apache.org/jira/browse/IGNITE-15412
 
 
@@ -28,7 +27,7 @@ SELECT a from tbl_1 WHERE a IS NOT DISTINCT FROM b
 ----
 NULL
 
-query II
+query II rowsort
 select a,tbl_2.b from tbl_1 inner join tbl_2 on (a IS NOT DISTINCT FROM tbl_2.b)
 ----
 1	1
@@ -225,7 +224,7 @@ select count(*) from big inner join tbl_2 on (big.rowid IS NOT DISTINCT FROM tbl
 2
 
 # Use in subqueries with correlated expressions
-query II
+query II rowsort
 SELECT a, (select count(*) from tbl_1 where tbl_1.a is distinct from t.b) from tbl_1 as t ORDER BY a NULLS LAST
 ----
 1	2

@@ -73,15 +73,8 @@ public class IndexRowImpl implements IndexRow {
     }
 
     /** {@inheritDoc} */
-    @Override public IndexKey[] keys() {
-        int keysCnt = rowHnd.indexKeyDefinitions().size();
-
-        IndexKey[] keys = new IndexKey[keysCnt];
-
-        for (int i = 0; i < keysCnt; ++i)
-            keys[i] = key(i);
-
-        return keys;
+    @Override public int keysCount() {
+        return rowHnd.indexKeyDefinitions().size();
     }
 
     /** {@inheritDoc} */
@@ -169,7 +162,7 @@ public class IndexRowImpl implements IndexRow {
     }
 
     /** {@inheritDoc} */
-    @Override public boolean indexSearchRow() {
+    @Override public boolean indexPlainRow() {
         return false;
     }
 }

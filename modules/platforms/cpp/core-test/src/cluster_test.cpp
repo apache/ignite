@@ -153,19 +153,6 @@ BOOST_AUTO_TEST_CASE(IgniteForClientNodes)
     BOOST_REQUIRE(group3.GetNodes().size() == 0);
 }
 
-BOOST_AUTO_TEST_CASE(IgniteForDaemons)
-{
-    IgniteCluster cluster = server1.GetCluster();
-
-    BOOST_REQUIRE(cluster.IsActive());
-
-    ClusterGroup group = cluster.AsClusterGroup().ForDaemons();
-
-    std::vector<ClusterNode> nodes = group.GetNodes();
-
-    BOOST_REQUIRE(nodes.size() == 0);
-}
-
 BOOST_AUTO_TEST_CASE(IgniteForDataNodes)
 {
     IgniteCluster cluster = server1.GetCluster();

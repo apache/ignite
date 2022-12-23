@@ -79,7 +79,6 @@ namespace Apache.Ignite.Core.Tests
 
             Assert.AreEqual("c:", cfg.WorkDirectory);
             Assert.AreEqual("127.1.1.1", cfg.Localhost);
-            Assert.IsTrue(cfg.IsDaemon);
             Assert.AreEqual(1024, cfg.JvmMaxMemoryMb);
             Assert.AreEqual(TimeSpan.FromSeconds(10), cfg.MetricsLogFrequency);
             Assert.AreEqual(TimeSpan.FromMinutes(1), ((TcpDiscoverySpi)cfg.DiscoverySpi).JoinTimeout);
@@ -874,7 +873,6 @@ namespace Apache.Ignite.Core.Tests
                 NetworkTimeout = TimeSpan.FromMinutes(4),
                 SuppressWarnings = true,
                 WorkDirectory = @"c:\work",
-                IsDaemon = true,
                 UserAttributes = Enumerable.Range(1, 10).ToDictionary(x => x.ToString(),
                     x => x % 2 == 0 ? (object) x : new FooClass {Bar = x.ToString()}),
                 AtomicConfiguration = new AtomicConfiguration

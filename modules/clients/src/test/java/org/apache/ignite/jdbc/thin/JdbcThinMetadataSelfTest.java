@@ -35,6 +35,7 @@ import java.util.Collections;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.LinkedHashMap;
+import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.TreeSet;
@@ -47,9 +48,9 @@ import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.configuration.SqlConfiguration;
 import org.apache.ignite.internal.IgniteVersionUtils;
-import org.apache.ignite.internal.jdbc2.JdbcUtils;
 import org.apache.ignite.internal.processors.query.QueryEntityEx;
 import org.apache.ignite.internal.util.typedef.F;
+import org.apache.ignite.spi.systemview.view.sql.SqlIndexView;
 import org.apache.ignite.testframework.GridTestUtils;
 import org.junit.Assert;
 import org.junit.Test;
@@ -61,10 +62,12 @@ import static java.sql.Types.OTHER;
 import static java.sql.Types.VARCHAR;
 import static org.apache.ignite.cache.CacheMode.PARTITIONED;
 import static org.apache.ignite.cache.CacheWriteSynchronizationMode.FULL_SYNC;
+import static org.apache.ignite.internal.jdbc2.JdbcUtils.CATALOG_NAME;
 import static org.apache.ignite.internal.processors.query.QueryUtils.DFLT_SCHEMA;
 import static org.apache.ignite.internal.processors.query.QueryUtils.KEY_FIELD_NAME;
 import static org.apache.ignite.internal.processors.query.QueryUtils.SCHEMA_SYS;
 import static org.apache.ignite.internal.processors.query.QueryUtils.VAL_FIELD_NAME;
+import static org.apache.ignite.internal.processors.query.schema.management.SchemaManager.SQL_IDXS_VIEW;
 import static org.apache.ignite.internal.util.lang.GridFunc.asMap;
 
 /**
@@ -350,7 +353,7 @@ public class JdbcThinMetadataSelfTest extends JdbcThinAbstractSelfTest {
             assertNotNull(rs);
             assertTrue(rs.next());
             assertEquals("TABLE", rs.getString("TABLE_TYPE"));
-            assertEquals(JdbcUtils.CATALOG_NAME, rs.getString("TABLE_CAT"));
+            assertEquals(CATALOG_NAME, rs.getString("TABLE_CAT"));
             assertEquals("PERSON", rs.getString("TABLE_NAME"));
 
             assertFalse(rs.next());
@@ -359,7 +362,7 @@ public class JdbcThinMetadataSelfTest extends JdbcThinAbstractSelfTest {
             assertNotNull(rs);
             assertTrue(rs.next());
             assertEquals("TABLE", rs.getString("TABLE_TYPE"));
-            assertEquals(JdbcUtils.CATALOG_NAME, rs.getString("TABLE_CAT"));
+            assertEquals(CATALOG_NAME, rs.getString("TABLE_CAT"));
             assertEquals("ORGANIZATION", rs.getString("TABLE_NAME"));
 
             assertFalse(rs.next());
@@ -368,7 +371,7 @@ public class JdbcThinMetadataSelfTest extends JdbcThinAbstractSelfTest {
             assertNotNull(rs);
             assertTrue(rs.next());
             assertEquals("TABLE", rs.getString("TABLE_TYPE"));
-            assertEquals(JdbcUtils.CATALOG_NAME, rs.getString("TABLE_CAT"));
+            assertEquals(CATALOG_NAME, rs.getString("TABLE_CAT"));
             assertEquals("PERSON", rs.getString("TABLE_NAME"));
 
             assertFalse(rs.next());
@@ -377,7 +380,7 @@ public class JdbcThinMetadataSelfTest extends JdbcThinAbstractSelfTest {
             assertNotNull(rs);
             assertTrue(rs.next());
             assertEquals("TABLE", rs.getString("TABLE_TYPE"));
-            assertEquals(JdbcUtils.CATALOG_NAME, rs.getString("TABLE_CAT"));
+            assertEquals(CATALOG_NAME, rs.getString("TABLE_CAT"));
             assertEquals("ORGANIZATION", rs.getString("TABLE_NAME"));
 
             assertFalse(rs.next());
@@ -798,7 +801,6 @@ public class JdbcThinMetadataSelfTest extends JdbcThinAbstractSelfTest {
                 "SYS.NODES.CONSISTENT_ID.null",
                 "SYS.NODES.VERSION.null",
                 "SYS.NODES.IS_CLIENT.null",
-                "SYS.NODES.IS_DAEMON.null",
                 "SYS.NODES.IS_LOCAL.null",
                 "SYS.NODES.NODE_ORDER.null",
                 "SYS.NODES.ADDRESSES.null",
@@ -1179,37 +1181,42 @@ public class JdbcThinMetadataSelfTest extends JdbcThinAbstractSelfTest {
      */
     @Test
     public void testIndexMetadata() throws Exception {
+        List<String> expectedIdxs = Arrays.asList(
+            "_key_PK.1._KEY.A",
+            "PERSON_NAME_ASC_AGE_DESC_IDX.1.NAME.A",
+            "PERSON_NAME_ASC_AGE_DESC_IDX.2.AGE.D",
+            "PERSON_NAME_ASC_AGE_DESC_IDX.3._KEY.A",
+            "PERSON_ORGID_ASC_IDX.1.ORGID.A",
+            "PERSON_ORGID_ASC_IDX.2._KEY.A"
+        );
+
         try (Connection conn = DriverManager.getConnection(URL);
              ResultSet rs = conn.getMetaData().getIndexInfo(null, "pers", "PERSON", false, false)) {
 
-            int cnt = 0;
+            List<String> actualIdxs = new ArrayList<>();
 
             while (rs.next()) {
-                String idxName = rs.getString("INDEX_NAME");
-                String field = rs.getString("COLUMN_NAME");
-                String ascOrDesc = rs.getString("ASC_OR_DESC");
+                actualIdxs.add(String.join(".",
+                    rs.getString("INDEX_NAME"),
+                    String.valueOf(rs.getInt("ORDINAL_POSITION")),
+                    rs.getString("COLUMN_NAME"),
+                    rs.getString("ASC_OR_DESC")));
 
-                assert rs.getShort("TYPE") == DatabaseMetaData.tableIndexOther;
-
-                if ("PERSON_ORGID_ASC_IDX".equals(idxName)) {
-                    assert "ORGID".equals(field);
-                    assert "A".equals(ascOrDesc);
-                }
-                else if ("PERSON_NAME_ASC_AGE_DESC_IDX".equals(idxName)) {
-                    if ("NAME".equals(field))
-                        assert "A".equals(ascOrDesc);
-                    else if ("AGE".equals(field))
-                        assert "D".equals(ascOrDesc);
-                    else
-                        fail("Unexpected field: " + field);
-                }
-                else
-                    fail("Unexpected index: " + idxName);
-
-                cnt++;
+                // Below values are constant for a cache
+                assertEquals(CATALOG_NAME, rs.getString("TABLE_CAT"));
+                assertEquals("pers", rs.getString("TABLE_SCHEM"));
+                assertEquals("PERSON", rs.getString("TABLE_NAME"));
+                assertNull(rs.getObject("INDEX_QUALIFIER"));
+                assertEquals(DatabaseMetaData.tableIndexOther, rs.getShort("TYPE"));
+                assertEquals(0, rs.getInt("CARDINALITY"));
+                assertEquals(0, rs.getInt("PAGES"));
+                assertNull(rs.getString("FILTER_CONDITION"));
             }
 
-            assert cnt == 3;
+            assertEquals("Unexpected indexes count", expectedIdxs.size(), actualIdxs.size());
+
+            for (int i = 0; i < actualIdxs.size(); i++)
+                assertEquals("Unexpected index", expectedIdxs.get(i), actualIdxs.get(i));
         }
     }
 
@@ -1221,25 +1228,95 @@ public class JdbcThinMetadataSelfTest extends JdbcThinAbstractSelfTest {
         try (Connection conn = DriverManager.getConnection(URL)) {
             ResultSet rs = conn.getMetaData().getIndexInfo(null, null, null, false, false);
 
-            Set<String> expectedIdxs = new HashSet<>(Arrays.asList(
-                "org.ORGANIZATION.ORGANIZATION_ID_ASC_IDX",
-                "org.ORGANIZATION.ORG_NAME_INDEX",
-                "pers.PERSON.PERSON_ORGID_ASC_IDX",
-                "pers.PERSON.PERSON_NAME_ASC_AGE_DESC_IDX",
-                "PUBLIC.TEST.IDX",
-                "PUBLIC.Quoted.MyTestIndex quoted"));
+            List<String> expectedIdxs = Arrays.asList(
+                "PUBLIC.Quoted._key_PK.Id",
+                "PUBLIC.Quoted.AFFINITY_KEY.Id",
+                "PUBLIC.Quoted.MyTestIndex quoted.Id",
+                "PUBLIC.TEST._key_PK.ID",
+                "PUBLIC.TEST._key_PK.NAME",
+                "PUBLIC.TEST.IDX.ID",
+                "PUBLIC.TEST.IDX.NAME",
+                "PUBLIC.TEST.IDX._KEY",
+                "PUBLIC.TEST_DECIMAL_COLUMN._key_PK._KEY",
+                "PUBLIC.TEST_DECIMAL_COLUMN._key_PK_proxy.ID",
+                "PUBLIC.TEST_DECIMAL_COLUMN_PRECISION._key_PK._KEY",
+                "PUBLIC.TEST_DECIMAL_COLUMN_PRECISION._key_PK_proxy.ID",
+                "PUBLIC.TEST_DECIMAL_DATE_COLUMN_META._key_PK._KEY",
+                "PUBLIC.TEST_DECIMAL_DATE_COLUMN_META._key_PK_proxy.ID",
+                "dep.DEPARTMENT._key_PK._KEY",
+                "org.ORGANIZATION._key_PK._KEY",
+                "org.ORGANIZATION.ORGANIZATION_ID_ASC_IDX.ID",
+                "org.ORGANIZATION.ORGANIZATION_ID_ASC_IDX._KEY",
+                "org.ORGANIZATION.ORG_NAME_INDEX.NAME",
+                "org.ORGANIZATION.ORG_NAME_INDEX._KEY",
+                "pers.PERSON._key_PK._KEY",
+                "pers.PERSON.PERSON_NAME_ASC_AGE_DESC_IDX.NAME",
+                "pers.PERSON.PERSON_NAME_ASC_AGE_DESC_IDX.AGE",
+                "pers.PERSON.PERSON_NAME_ASC_AGE_DESC_IDX._KEY",
+                "pers.PERSON.PERSON_ORGID_ASC_IDX.ORGID",
+                "pers.PERSON.PERSON_ORGID_ASC_IDX._KEY"
+            );
 
-            Set<String> actualIdxs = new HashSet<>(expectedIdxs.size());
+            List<String> actualIdxs = new ArrayList<>();
 
             while (rs.next()) {
-                actualIdxs.add(rs.getString("TABLE_SCHEM") +
-                    '.' + rs.getString("TABLE_NAME") +
-                    '.' + rs.getString("INDEX_NAME"));
+                actualIdxs.add(String.join(".",
+                    rs.getString("TABLE_SCHEM"),
+                    rs.getString("TABLE_NAME"),
+                    rs.getString("INDEX_NAME"),
+                    rs.getString("COLUMN_NAME")));
             }
 
-            assert expectedIdxs.equals(actualIdxs) : "expectedIdxs=" + expectedIdxs +
-                ", actualIdxs" + actualIdxs;
+            assertEquals("Unexpected indexes count", expectedIdxs.size(), actualIdxs.size());
+
+            for (int i = 0; i < actualIdxs.size(); i++)
+                assertEquals("Unexpected index", expectedIdxs.get(i), actualIdxs.get(i));
         }
+    }
+
+    /**
+     *
+     */
+    @Test
+    public void testIndexMetadataMatchesSystemView() throws Exception {
+        Map<String, String> indexesFromMeta = new HashMap<>();
+
+        try (Connection connection = DriverManager.getConnection(URL);
+             ResultSet idxMeta = connection.getMetaData()
+                 .getIndexInfo(null, null, null, false, false)) {
+
+            while (idxMeta.next()) {
+                String idxName = String.join(".",
+                    idxMeta.getString("TABLE_SCHEM"),
+                    idxMeta.getString("TABLE_NAME"),
+                    idxMeta.getString("INDEX_NAME"));
+
+                String fieldInfo = '"' + idxMeta.getString("COLUMN_NAME") + "\" " +
+                    ("A".equals(idxMeta.getString("ASC_OR_DESC")) ? "ASC" : "DESC");
+
+                indexesFromMeta.compute(idxName, (k, v) -> v == null ? fieldInfo : v + ", " + fieldInfo);
+
+                // Check sorting by ordinal position
+                int fieldsCnt = indexesFromMeta.get(idxName).split(", ").length;
+                int ordinalPos = idxMeta.getInt("ORDINAL_POSITION");
+                assertEquals("Unexpected ordinal position", ordinalPos, fieldsCnt);
+            }
+        }
+
+        Map<String, String> indexesFromSysView = new HashMap<>();
+
+        for (Object o : grid(0).context().systemView().view(SQL_IDXS_VIEW)) {
+            SqlIndexView idxView = (SqlIndexView)o;
+
+            String idxName = String.join(".",
+                idxView.schemaName(),
+                idxView.tableName(),
+                idxView.indexName());
+
+            indexesFromSysView.put(idxName, idxView.columns());
+        }
+
+        assertEqualsMaps(indexesFromSysView, indexesFromMeta);
     }
 
     /**
@@ -1414,7 +1491,7 @@ public class JdbcThinMetadataSelfTest extends JdbcThinAbstractSelfTest {
                 schemas.add(rs.getString(1));
 
                 assertEquals("There is only one possible catalog.",
-                    JdbcUtils.CATALOG_NAME, rs.getString(2));
+                    CATALOG_NAME, rs.getString(2));
             }
 
             assert expectedSchemas.equals(schemas) : "Unexpected schemas: " + schemas +

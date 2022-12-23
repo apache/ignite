@@ -68,7 +68,7 @@ namespace Apache.Ignite.Examples.Thick.Misc.Events
         /// <param name="ignite">Ignite instance.</param>
         private static void ExecuteTask(IIgnite ignite)
         {
-            var employees = Enumerable.Range(1, 10).SelectMany(x => new[]
+            var employees = Enumerable.Range(1, 10).SelectMany(_ => new[]
             {
                 new Employee("Allison Mathis",
                     25300,

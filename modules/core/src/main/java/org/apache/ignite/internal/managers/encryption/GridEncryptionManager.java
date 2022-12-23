@@ -423,7 +423,7 @@ public class GridEncryptionManager extends GridManagerAdapter<EncryptionSpi> imp
                 "Master key change is in progress! Node join is rejected.");
         }
 
-        if (node.isClient() || node.isDaemon())
+        if (node.isClient())
             return null;
 
         res = validateNode(node);
@@ -666,7 +666,7 @@ public class GridEncryptionManager extends GridManagerAdapter<EncryptionSpi> imp
     /** {@inheritDoc} */
     @Override public IgniteFuture<Void> changeMasterKey(String masterKeyName) {
         if (ctx.clientNode()) {
-            return new IgniteFinishedFutureImpl<>(new UnsupportedOperationException("Client and daemon nodes can not " +
+            return new IgniteFinishedFutureImpl<>(new UnsupportedOperationException("Client nodes can not " +
                 "perform this operation."));
         }
 
@@ -728,7 +728,7 @@ public class GridEncryptionManager extends GridManagerAdapter<EncryptionSpi> imp
     /** {@inheritDoc} */
     @Override public String getMasterKeyName() {
         if (ctx.clientNode())
-            throw new UnsupportedOperationException("Client and daemon nodes can not perform this operation.");
+            throw new UnsupportedOperationException("Client nodes can not perform this operation.");
 
         return withMasterKeyChangeReadLock(() -> getSpi().getMasterKeyName());
     }

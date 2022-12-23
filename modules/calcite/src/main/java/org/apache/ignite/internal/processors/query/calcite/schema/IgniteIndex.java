@@ -91,7 +91,29 @@ public interface IgniteIndex {
      *
      * @param ectx Execution context.
      * @param grp  Colocation group.
+     * @param notNull Exclude null values.
      * @return Index records number for {@code group}.
      */
-    public long count(ExecutionContext<?> ectx, ColocationGroup grp);
+    public long count(ExecutionContext<?> ectx, ColocationGroup grp, boolean notNull);
+
+    /**
+     * Takes only first or last not-null index value.
+     *
+     * @param first {@code True} to take first index not-null value. {@code False} for last.
+     * @param ectx Execution context.
+     * @param grp Colocation group.
+     * @param requiredColumns  Required columns.
+     * @return Index records for {@code grp}.
+     */
+    public <Row> Iterable<Row> firstOrLast(
+        boolean first,
+        ExecutionContext<Row> ectx,
+        ColocationGroup grp,
+        @Nullable ImmutableBitSet requiredColumns
+    );
+
+    /**
+     * If its possible to scan requred columns using inlined index keys.
+     */
+    public boolean isInlineScanPossible(@Nullable ImmutableBitSet requiredColumns);
 }

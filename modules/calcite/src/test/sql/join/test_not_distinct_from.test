@@ -26,6 +26,13 @@ SELECT a from tbl_1 WHERE a IS NOT DISTINCT FROM b
 ----
 NULL
 
+query II rowsort
+select a,tbl_2.b from tbl_1 inner join tbl_2 on (a IS NOT DISTINCT FROM tbl_2.b)
+----
+1	1
+2	2
+NULL	NULL
+
 query II
 select a,tbl_2.b from tbl_1 inner join tbl_2 on (a IS DISTINCT FROM tbl_2.b) order by a,tbl_2.b
 ----
@@ -189,3 +196,32 @@ query T
 SELECT INTERVAL '30' DAY is not distinct from NULL
 ----
 false
+
+# Use on a bigger table (~10K elements)
+statement ok
+CREATE table big(a int);
+
+statement ok
+insert into big select x from table(system_range(1, 9999));
+
+statement ok
+insert into big values (NULL)
+
+query I
+select count(*) from big  inner join tbl_2 on (a IS NOT DISTINCT FROM tbl_2.b)
+----
+3
+
+# Use with filter (e.g. SELECT x IS NOT DISTINCT FROM y FROM tbl WHERE z%2=0, where the expression filters like 50% of the rows)
+query I
+select count(*) from big  inner join tbl_2 on (a IS NOT DISTINCT FROM tbl_2.b) where a >1  and a < 5000
+----
+1
+
+# Use in subqueries with correlated expressions
+query II rowsort
+SELECT a, (select count(*) from tbl_1 where tbl_1.a is distinct from t.b) from tbl_1 as t ORDER BY a NULLS LAST
+----
+1	2
+2	3
+NULL	2

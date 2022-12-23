@@ -2,11 +2,11 @@ Requirements
 ============
 
 * Oracle JDK 8 or 11
-* .NET Core SDK 3.1
+* .NET 6 SDK
 * JAVA_HOME environment variable set to the corresponding JDK (x64 or x86)
 * Apache Maven bin directory in PATH, or MAVEN_HOME environment variable
 * PowerShell
-* Any OS supported by .NET Core SDK (Linux, Windows, macOS)
+* Any OS supported by .NET SDK (Linux, Windows, macOS)
 
 
 Build Binaries and NuGet

@@ -19,7 +19,7 @@ package org.apache.ignite.internal.visor.snapshot;
 
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.internal.processors.cache.persistence.snapshot.IgniteSnapshotManager;
-import org.apache.ignite.internal.processors.cache.verify.IdleVerifyResultV2;
+import org.apache.ignite.internal.processors.cache.persistence.snapshot.SnapshotPartitionsVerifyTaskResult;
 import org.apache.ignite.internal.processors.task.GridInternal;
 import org.apache.ignite.internal.util.future.IgniteFutureImpl;
 import org.apache.ignite.internal.visor.VisorJob;
@@ -28,17 +28,19 @@ import org.apache.ignite.internal.visor.VisorJob;
  * @see IgniteSnapshotManager#checkSnapshot(String, String)
  */
 @GridInternal
-public class VisorSnapshotCheckTask extends VisorSnapshotOneNodeTask<VisorSnapshotCheckTaskArg, IdleVerifyResultV2> {
+public class VisorSnapshotCheckTask extends VisorSnapshotOneNodeTask<VisorSnapshotCheckTaskArg,
+    SnapshotPartitionsVerifyTaskResult> {
     /** Serial version uid. */
     private static final long serialVersionUID = 0L;
 
     /** {@inheritDoc} */
-    @Override protected VisorJob<VisorSnapshotCheckTaskArg, IdleVerifyResultV2> job(VisorSnapshotCheckTaskArg arg) {
+    @Override protected VisorJob<VisorSnapshotCheckTaskArg, SnapshotPartitionsVerifyTaskResult> job(VisorSnapshotCheckTaskArg arg) {
         return new VisorSnapshotCheckJob(arg, debug);
     }
 
     /** */
-    private static class VisorSnapshotCheckJob extends VisorJob<VisorSnapshotCheckTaskArg, IdleVerifyResultV2> {
+    private static class VisorSnapshotCheckJob extends VisorJob<VisorSnapshotCheckTaskArg,
+        SnapshotPartitionsVerifyTaskResult> {
         /** Serial version uid. */
         private static final long serialVersionUID = 0L;
 
@@ -51,7 +53,7 @@ public class VisorSnapshotCheckTask extends VisorSnapshotOneNodeTask<VisorSnapsh
         }
 
         /** {@inheritDoc} */
-        @Override protected IdleVerifyResultV2 run(VisorSnapshotCheckTaskArg arg) throws IgniteException {
+        @Override protected SnapshotPartitionsVerifyTaskResult run(VisorSnapshotCheckTaskArg arg) throws IgniteException {
             IgniteSnapshotManager snpMgr = ignite.context().cache().context().snapshotMgr();
 
             return new IgniteFutureImpl<>(snpMgr.checkSnapshot(arg.snapshotName(), arg.snapshotPath()))

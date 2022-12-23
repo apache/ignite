@@ -169,7 +169,6 @@ namespace Apache.Ignite.Core.Tests
                 Assert.AreEqual(cfg.JvmOptions, resCfg.JvmOptions);
                 Assert.AreEqual(cfg.JvmDllPath, resCfg.JvmDllPath);
                 Assert.AreEqual(cfg.Localhost, resCfg.Localhost);
-                Assert.AreEqual(cfg.IsDaemon, resCfg.IsDaemon);
                 Assert.AreEqual(IgniteConfiguration.DefaultIsLateAffinityAssignment, resCfg.IsLateAffinityAssignment);
                 Assert.AreEqual(cfg.UserAttributes, resCfg.UserAttributes);
 
@@ -781,7 +780,6 @@ namespace Apache.Ignite.Core.Tests
                 NetworkSendRetryDelay = TimeSpan.FromMinutes(11),
                 WorkDirectory = Path.GetTempPath(),
                 Localhost = "127.0.0.1",
-                IsDaemon = false,
                 IsLateAffinityAssignment = false,
                 UserAttributes = Enumerable.Range(1, 10).ToDictionary(x => x.ToString(), x => (object) x),
                 AtomicConfiguration = new AtomicConfiguration

@@ -52,6 +52,7 @@ import static java.sql.Types.TIME;
 import static java.sql.Types.TIMESTAMP;
 import static java.sql.Types.TINYINT;
 import static java.sql.Types.VARCHAR;
+import static org.apache.ignite.internal.processors.query.QueryUtils.PRIMARY_KEY_INDEX;
 
 /**
  * Utility methods for JDBC driver.
@@ -253,10 +254,13 @@ public class JdbcUtils {
         for (int i = 0; i < idxMeta.fields().size(); ++i) {
             List<Object> row = new ArrayList<>(13);
 
+            // Now, only primary key index (and PK proxy) can be unique.
+            boolean nonUnique = !idxMeta.indexName().startsWith(PRIMARY_KEY_INDEX);
+
             row.add(CATALOG_NAME);              // TABLE_CAT
             row.add(idxMeta.schemaName());      // TABLE_SCHEM
             row.add(idxMeta.tableName());       // TABLE_NAME
-            row.add(true);                      // NON_UNIQUE
+            row.add(nonUnique);                 // NON_UNIQUE
             row.add(null);                      // INDEX_QUALIFIER (index catalog)
             row.add(idxMeta.indexName());       // INDEX_NAME
             row.add(tableIndexOther);           // TYPE
