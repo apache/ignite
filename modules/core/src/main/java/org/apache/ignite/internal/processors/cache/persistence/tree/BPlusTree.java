@@ -2216,8 +2216,8 @@ public abstract class BPlusTree<L, T extends L> extends DataStructure implements
                 if (e.getCause().getCause() != null)
                     System.out.println(e.getCause().getCause().getCause());
             }
-            throw e; // TODO
-            //throw corruptedTreeException("Runtime failure on search row: " + row, e, grpId, x.pageId);
+
+            throw corruptedTreeException("Runtime failure on search row: " + row + "\n" + e + "\n" + e.getCause(), e, grpId, x.pageId);
         }
         finally {
             x.releaseAll();
