@@ -18,7 +18,6 @@
 package org.apache.ignite.internal.processors.cache.persistence.snapshot;
 
 import java.io.IOException;
-import java.lang.reflect.Field;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
@@ -298,19 +297,19 @@ public class SnapshotCompressionBasicTest extends AbstractSnapshotSelfTest {
 
     /** */
     private void failCompressionProcessor(Ignite ignite, String... snpNames) {
-        CompressionProcessor cmp = ((IgniteEx)ignite).context().compress();
+        CompressionProcessor compressProc = ((IgniteEx)ignite).context().compress();
 
-        CompressionProcessor spyCmp = Mockito.spy(cmp);
+        CompressionProcessor spyCompressProc = Mockito.spy(compressProc);
 
         if (F.isEmpty(snpNames)) {
             try {
                 Mockito.doAnswer(inv -> {
                     throw new IgniteCheckedException(new IgniteException("errno: -12"));
-                }).when(spyCmp).checkPageCompressionSupported();
+                }).when(spyCompressProc).checkPageCompressionSupported();
 
                 Mockito.doAnswer(inv -> {
                     throw new IgniteCheckedException(new IgniteException("errno: -12"));
-                }).when(spyCmp).checkPageCompressionSupported(Mockito.any(), Mockito.anyInt());
+                }).when(spyCompressProc).checkPageCompressionSupported(Mockito.any(), Mockito.anyInt());
             }
             catch (IgniteCheckedException e) {
                 throw new IgniteException(e);
@@ -323,7 +322,7 @@ public class SnapshotCompressionBasicTest extends AbstractSnapshotSelfTest {
                         if (snpName != null && ((Path)inv.getArgument(0)).endsWith(snpName))
                             throw new IgniteCheckedException(new IgniteException("errno: -12"));
                         return null;
-                    }).when(spyCmp).checkPageCompressionSupported(Mockito.any(), Mockito.anyInt());
+                    }).when(spyCompressProc).checkPageCompressionSupported(Mockito.any(), Mockito.anyInt());
                 }
                 catch (IgniteCheckedException e) {
                     throw new IgniteException(e);
@@ -331,13 +330,7 @@ public class SnapshotCompressionBasicTest extends AbstractSnapshotSelfTest {
             }
         }
 
-        try {
-            Field cmpField = U.findField(GridKernalContextImpl.class, "compressProc");
-            cmpField.set(((IgniteEx)ignite).context(), spyCmp);
-        }
-        catch (IllegalAccessException e) {
-            throw new RuntimeException(e);
-        }
+        ((GridKernalContextImpl)((IgniteEx)ignite).context()).add(spyCompressProc);
     }
 
     /** */
