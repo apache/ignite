@@ -485,25 +485,36 @@ public class DataTypesTest extends AbstractBasicIntegrationTest {
     private void testLeftOrRight(boolean left) {
         String func = left ? "LEFT" : "RIGHT";
 
-        sql("CREATE TABLE tbl(cv VARCHAR, iv INTEGER, biv BIGINT, dv DOUBLE, tiv TINYINT, fv FLOAT)");
+        sql("CREATE TABLE tbl(cv VARCHAR, iv INTEGER, biv BIGINT, dv DOUBLE, tiv TINYINT, fv FLOAT, smiv SMALLINT)");
 
-        sql("INSERT INTO tbl VALUES ('123456789', 1, 2, 3.5, 4.8, 5.7)");
+        sql("INSERT INTO tbl VALUES ('123456789', 1, 2, 3.5, 4.8, 5.7, 6)");
 
-        assertQuery("SELECT " + func + "(cv, ?) FROM tbl").withParams(1).returns(left ? "1" : "9").check();
+        assertQuery("SELECT " + func + "(cv, iv) FROM tbl").returns(left ? "1" : "9").check();
+        assertQuery("SELECT " + func + "(cv, CAST(iv as BIGINT)) FROM tbl").returns(left ? "1" : "9").check();
+        assertQuery("SELECT " + func + "(cv, CAST(iv as TINYINT)) FROM tbl").returns(left ? "1" : "9").check();
+        assertQuery("SELECT " + func + "(cv, CAST(iv as SMALLINT)) FROM tbl").returns(left ? "1" : "9").check();
+        assertThrows("SELECT " + func + "(cv, CAST(iv as FLOAT)) FROM tbl", SqlValidatorException.class,
+            "Cannot apply '" + func + "' to arguments of type", 1);
+        assertThrows("SELECT " + func + "(cv, CAST(iv as REAL)) FROM tbl", SqlValidatorException.class,
+            "Cannot apply '" + func + "' to arguments of type", 1);
 
-
-//        assertQuery("SELECT " + func + "(cv, iv) FROM tbl").returns(left ? "1" : "9").check();
-//
-//        assertQuery("SELECT " + func + "(cv, biv) FROM tbl").returns(left ? "12" : "89").check();
-        assertQuery("SELECT " + func + "(cv, ?) FROM tbl").withParams(2).returns(left ? "12" : "89").check();
-
-        assertQuery("SELECT " + func + "(cv, CAST(? AS BIGINT)) FROM tbl").withParams(2)
+        // Bigint
+        assertQuery("SELECT " + func + "(cv, biv) FROM tbl").returns(left ? "12" : "89").check();
+        assertQuery("SELECT " + func + "(cv, CAST(? as BIGINT)) FROM tbl").withParams(2)
             .returns(left ? "12" : "89").check();
 
+        // Double
         assertThrows("SELECT " + func + "(cv, dv) FROM tbl", SqlValidatorException.class,
             "Cannot apply '" + func + "' to arguments of type");
+
+        // Tiny
         assertQuery("SELECT " + func + "(cv, tiv) FROM tbl").returns(left ? "1234" : "6789").check();
-        assertThrows("SELECT " + func + "(fv, dv) FROM tbl", SqlValidatorException.class,
+
+        // Smallint
+        assertQuery("SELECT " + func + "(cv, smiv) FROM tbl").returns(left ? "123456" : "456789").check();
+
+        // Float
+        assertThrows("SELECT " + func + "(fv, fv) FROM tbl", SqlValidatorException.class,
             "Cannot apply '" + func + "' to arguments of type");
     }
 }
