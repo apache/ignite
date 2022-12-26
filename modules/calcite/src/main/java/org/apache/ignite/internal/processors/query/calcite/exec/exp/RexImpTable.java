@@ -76,6 +76,7 @@ import org.apache.calcite.sql.validate.SqlUserDefinedTableFunction;
 import org.apache.calcite.sql.validate.SqlUserDefinedTableMacro;
 import org.apache.calcite.util.BuiltInMethod;
 import org.apache.calcite.util.Util;
+import org.apache.ignite.IgniteException;
 import org.apache.ignite.calcite.CalciteQueryEngineConfiguration;
 import org.apache.ignite.internal.processors.query.calcite.util.IgniteMethod;
 import org.apache.ignite.internal.util.typedef.F;
@@ -282,8 +283,8 @@ public class RexImpTable {
         defineMethod(MD5, BuiltInMethod.MD5.method, NullPolicy.STRICT);
         defineMethod(SHA1, BuiltInMethod.SHA1.method, NullPolicy.STRICT);
         defineMethod(SUBSTRING, BuiltInMethod.SUBSTRING.method, NullPolicy.STRICT);
-        defineMethod(LEFT, new LeftRightImplementor(LEFT.method));
-        defineMethod(RIGHT, BuiltInMethod.RIGHT.method, NullPolicy.ANY);
+        map.put(LEFT, new LeftRightImplementor(BuiltInMethod.LEFT.getMethodName()));
+        map.put(RIGHT, new LeftRightImplementor(BuiltInMethod.RIGHT.getMethodName()));
         defineMethod(REPLACE, BuiltInMethod.REPLACE.method, NullPolicy.STRICT);
         defineMethod(TRANSLATE3, BuiltInMethod.TRANSLATE3.method, NullPolicy.STRICT);
         defineMethod(CHR, BuiltInMethod.CHAR_FROM_UTF8.method, NullPolicy.STRICT);
@@ -907,10 +908,69 @@ public class RexImpTable {
     /** */
     private static class LeftRightImplementor extends MethodNameImplementor {
         /** */
-        private final BuiltInMethod leftMethod;
+        private LeftRightImplementor(String mtdName) {
+            super(mtdName, NullPolicy.ANY, false);
+        }
 
-        /** */
-        private final BuiltInMethod rightMethod;
+        /** {@inheritDoc} */
+        @Override Expression implementSafe(RexToLixTranslator translator, RexCall call, List<Expression> argValueList) {
+            try {
+                return super.implementSafe(translator, call, argValueList);
+            }
+            catch (Exception e) {
+                if (!X.hasCause(e, NoSuchMethodException.class) || argValueList.size() != 2)
+                    throw e;
+
+                for (Method method : SqlFunctions.class.getMethods()) {
+                    if (!method.getName().equals(methodName))
+                        continue;
+
+                    List<Expression> newArgValueList = new ArrayList<>(argValueList.size());
+
+                    assert !method.isVarArgs();
+
+                    Class<?>[] params = method.getParameterTypes();
+                    Class<?>[] passedTypes = Types.toClassArray(argValueList);
+
+                    boolean changed = false;
+
+                    for (int i = 0; i < passedTypes.length; i++) {
+                        Class<?> paramT = params[i];
+                        Class<?> passedT = passedTypes[i];
+
+                        Primitive paramP = Primitive.of(paramT);
+                        Primitive paramBox = paramP == null ? Primitive.ofBox(paramT) : null;
+                        Primitive passedP = Primitive.of(passedT);
+                        Primitive passedBox = passedP == null ? Primitive.ofBox(passedT) : null;
+
+                        if (paramT.isAssignableFrom(passedT) || (paramP == null && paramBox == null) ||
+                            (passedP == null && passedBox == null)) {
+                            newArgValueList.add(argValueList.get(i));
+
+                            continue;
+                        }
+
+                        newArgValueList.add(EnumUtils.convert(argValueList.get(i),
+                            paramP == null ? paramBox.getBoxClass() : paramP.getPrimitiveClass()));
+
+                        changed = true;
+                    }
+
+                    if (!changed)
+                        continue;
+
+                    try {
+                        return super.implementSafe(translator, call, newArgValueList);
+                    }
+                    catch (Exception e2) {
+                        if (!X.hasCause(e, NoSuchMethodException.class))
+                            throw new IgniteException("Unable to convert function parameters.", e2);
+                    }
+                }
+
+                throw e;
+            }
+        }
     }
 
     /**

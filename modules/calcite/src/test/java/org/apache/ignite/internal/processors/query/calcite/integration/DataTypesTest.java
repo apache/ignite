@@ -471,26 +471,39 @@ public class DataTypesTest extends AbstractBasicIntegrationTest {
 
     /** */
     @Test
-    public void testNumericInFunctionConversion() {
-        sql("CREATE TABLE tbl(cv VARCHAR, iv INTEGER, biv BIGINT, dv DOUBLE, tv TINYINT)");
-//        sql("CREATE TABLE tbl(cv VARCHAR, biv BIGINT)");
+    public void testLeftConvertation() {
+        testLeftOrRight(true);
+    }
 
-        sql("INSERT INTO tbl VALUES ('abc', 1, 1, 2.5, 127)");
+    /** */
+    @Test
+    public void testRightConvertation() {
+        testLeftOrRight(false);
+    }
 
-//        assertQuery("SELECT ROUND(CAST ? as TINYINT) from tbl").withParams(127).returns((byte)127).check();
-//        assertQuery("SELECT CEIL(dv::tinyint) from tbl").returns(42d).check();
+    /** */
+    private void testLeftOrRight(boolean left) {
+        String func = left ? "LEFT" : "RIGHT";
 
-        assertQuery("SELECT LEFT(cv, biv) FROM tbl").returns('a').check();
+        sql("CREATE TABLE tbl(cv VARCHAR, iv INTEGER, biv BIGINT, dv DOUBLE, tiv TINYINT, fv FLOAT)");
 
-//        assertQuery("SELECT LEFT(CAST(? AS INT), CAST(? AS VARCHAR))").withParams(12, 1).returns("1").check();
+        sql("INSERT INTO tbl VALUES ('123456789', 1, 2, 3.5, 4.8, 5.7)");
 
-//        assertQuery("SELECT LEFT(CAST(? AS INT), CAST(? AS BIGINT))").withParams(12, 1).returns("1").check();
-//        assertQuery("SELECT LEFT('abc', CAST(? AS BIGINT))").withParams(1).returns("a").check();
+        assertQuery("SELECT " + func + "(cv, ?) FROM tbl").withParams(1).returns(left ? "1" : "9").check();
 
-//        assertQuery("SELECT LEFT('asd', CAST(? AS BIGINT))").withParams(1).returns("a").check();
 
-//        assertQuery(client, "SELECT LEFT(a, CAST(? AS INT)) from strings").withParams(1).returns('a').check();
+//        assertQuery("SELECT " + func + "(cv, iv) FROM tbl").returns(left ? "1" : "9").check();
 //
-//        assertQuery(client, "SELECT LEFT(a, b) FROM strings").returns('a').check();
+//        assertQuery("SELECT " + func + "(cv, biv) FROM tbl").returns(left ? "12" : "89").check();
+        assertQuery("SELECT " + func + "(cv, ?) FROM tbl").withParams(2).returns(left ? "12" : "89").check();
+
+        assertQuery("SELECT " + func + "(cv, CAST(? AS BIGINT)) FROM tbl").withParams(2)
+            .returns(left ? "12" : "89").check();
+
+        assertThrows("SELECT " + func + "(cv, dv) FROM tbl", SqlValidatorException.class,
+            "Cannot apply '" + func + "' to arguments of type");
+        assertQuery("SELECT " + func + "(cv, tiv) FROM tbl").returns(left ? "1234" : "6789").check();
+        assertThrows("SELECT " + func + "(fv, dv) FROM tbl", SqlValidatorException.class,
+            "Cannot apply '" + func + "' to arguments of type");
     }
 }
