@@ -745,7 +745,7 @@ namespace Apache.Ignite.Core.Tests.Client.Datastream
             using (var streamer = Client.GetDataStreamer<IBinaryObject, IBinaryObject>(cacheCfg.Name))
             {
                 streamer.Add(personKey, person);
-                streamer.Flush();
+               // streamer.Flush(); TODO
             }
 
             // Check that SQL works.
