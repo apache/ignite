@@ -35,7 +35,6 @@ import org.apache.calcite.sql.SqlCall;
 import org.apache.calcite.sql.SqlCallBinding;
 import org.apache.calcite.sql.SqlDelete;
 import org.apache.calcite.sql.SqlDynamicParam;
-import org.apache.calcite.sql.SqlFunction;
 import org.apache.calcite.sql.SqlIdentifier;
 import org.apache.calcite.sql.SqlInsert;
 import org.apache.calcite.sql.SqlJoin;
@@ -63,7 +62,6 @@ import org.apache.calcite.sql.validate.SqlValidatorScope;
 import org.apache.calcite.sql.validate.SqlValidatorTable;
 import org.apache.calcite.sql.validate.SqlValidatorUtil;
 import org.apache.ignite.internal.processors.query.QueryUtils;
-import org.apache.ignite.internal.processors.query.calcite.exec.exp.RexImpTable;
 import org.apache.ignite.internal.processors.query.calcite.schema.CacheTableDescriptor;
 import org.apache.ignite.internal.processors.query.calcite.schema.IgniteCacheTable;
 import org.apache.ignite.internal.processors.query.calcite.schema.IgniteTable;
@@ -273,19 +271,6 @@ public class IgniteSqlValidator extends SqlValidatorImpl {
             if (isSystemFieldName(alias))
                 throw newValidationError(call, IgniteResource.INSTANCE.illegalAlias(alias));
         }
-
-//        if (call.getOperator() instanceof SqlFunction && RexImpTable.INSTANCE.implementedBuiltIncall(call.getOperator())) {
-//            RelDataType[] relArgTypes = call.getOperandList().stream()
-//                .map(op -> deriveType(scope, op)).toArray(v -> new RelDataType[v]);
-//
-//            Class<?>[] argJavaTypes = Arrays.stream(relArgTypes)
-//                .map(relType -> typeFactory().getJavaClass(relType)).toArray(v -> new Class<?>[v]);
-//
-//            if (!RexImpTable.INSTANCE.checkBuiltInFunction(call, relArgTypes, argJavaTypes)) {
-//                throw newValidationError(call,
-//                    IgniteResource.INSTANCE.invalidFunctionArgumentTypes(call.getOperator().getName()));
-//            }
-//        }
 
         super.validateCall(call, scope);
     }

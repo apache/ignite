@@ -58,7 +58,6 @@ import org.apache.calcite.rex.RexSubQuery;
 import org.apache.calcite.rex.RexTableInputRef;
 import org.apache.calcite.rex.RexUtil;
 import org.apache.calcite.rex.RexVisitor;
-import org.apache.calcite.sql.SqlFunction;
 import org.apache.calcite.sql.SqlIntervalQualifier;
 import org.apache.calcite.sql.SqlOperator;
 import org.apache.calcite.sql.fun.SqlStdOperatorTable;
@@ -1032,7 +1031,6 @@ public class RexToLixTranslator implements RexVisitor<RexToLixTranslator.Result>
         for (int i = 0; i < operandList.size(); i++) {
             final Result operandResult =
                 implementCallOperand(operandList.get(i), storageTypes.get(i), this);
-
             operandResults.add(operandResult);
         }
         callOperandResultMap.put(call, operandResults);

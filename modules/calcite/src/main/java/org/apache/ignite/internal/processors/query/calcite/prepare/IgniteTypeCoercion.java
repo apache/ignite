@@ -17,20 +17,15 @@
 
 package org.apache.ignite.internal.processors.query.calcite.prepare;
 
-import java.util.List;
 import org.apache.calcite.rel.type.RelDataType;
 import org.apache.calcite.rel.type.RelDataTypeFactory;
 import org.apache.calcite.sql.SqlCall;
-import org.apache.calcite.sql.SqlCallBinding;
 import org.apache.calcite.sql.SqlDataTypeSpec;
 import org.apache.calcite.sql.SqlDynamicParam;
-import org.apache.calcite.sql.SqlFunction;
 import org.apache.calcite.sql.SqlNode;
-import org.apache.calcite.sql.SqlNodeList;
 import org.apache.calcite.sql.SqlUserDefinedTypeNameSpec;
 import org.apache.calcite.sql.fun.SqlStdOperatorTable;
 import org.apache.calcite.sql.parser.SqlParserPos;
-import org.apache.calcite.sql.type.SqlTypeFamily;
 import org.apache.calcite.sql.type.SqlTypeUtil;
 import org.apache.calcite.sql.validate.SqlValidator;
 import org.apache.calcite.sql.validate.SqlValidatorScope;
@@ -38,7 +33,6 @@ import org.apache.calcite.sql.validate.implicit.TypeCoercionImpl;
 import org.apache.ignite.internal.processors.query.calcite.type.IgniteCustomType;
 import org.apache.ignite.internal.processors.query.calcite.type.OtherType;
 import org.apache.ignite.internal.processors.query.calcite.type.UuidType;
-import org.checkerframework.checker.nullness.qual.Nullable;
 
 /**
  * Implementation of implicit type cast.
@@ -47,79 +41,6 @@ public class IgniteTypeCoercion extends TypeCoercionImpl {
     /** Ctor. */
     public IgniteTypeCoercion(RelDataTypeFactory typeFactory, SqlValidator validator) {
         super(typeFactory, validator);
-    }
-
-    /** {@inheritDoc} */
-    @Override public @Nullable RelDataType implicitCast(RelDataType in, SqlTypeFamily expected) {
-        return super.implicitCast(in, expected);
-    }
-
-    @Override public boolean binaryArithmeticCoercion(SqlCallBinding binding) {
-        return super.binaryArithmeticCoercion(binding);
-    }
-
-    @Override
-    protected boolean binaryArithmeticWithStrings(SqlCallBinding binding, RelDataType left, RelDataType right) {
-        return super.binaryArithmeticWithStrings(binding, left, right);
-    }
-
-    @Override public boolean binaryComparisonCoercion(SqlCallBinding binding) {
-        return super.binaryComparisonCoercion(binding);
-    }
-
-    @Override protected @Nullable RelDataType commonTypeForComparison(List<RelDataType> dataTypes) {
-        return super.commonTypeForComparison(dataTypes);
-    }
-
-    @Override public boolean caseWhenCoercion(SqlCallBinding callBinding) {
-        return super.caseWhenCoercion(callBinding);
-    }
-
-    @Override public boolean userDefinedFunctionCoercion(SqlValidatorScope scope, SqlCall call, SqlFunction function) {
-        return super.userDefinedFunctionCoercion(scope, call, function);
-    }
-
-    @Override public boolean querySourceCoercion(@Nullable SqlValidatorScope scope, RelDataType sourceRowType,
-        RelDataType targetRowType, SqlNode query) {
-        return super.querySourceCoercion(scope, sourceRowType, targetRowType, query);
-    }
-
-    @Override
-    protected boolean coerceOperandsType(@Nullable SqlValidatorScope scope, SqlCall call, RelDataType commonType) {
-        return super.coerceOperandsType(scope, call, commonType);
-    }
-
-    @Override protected boolean coerceColumnType(@Nullable SqlValidatorScope scope, SqlNodeList nodeList, int index,
-        RelDataType targetType) {
-        return super.coerceColumnType(scope, nodeList, index, targetType);
-    }
-
-    @Override protected void updateInferredType(SqlNode node, RelDataType type) {
-        super.updateInferredType(node, type);
-    }
-
-    @Override protected void updateInferredColumnType(SqlValidatorScope scope, SqlNode query, int columnIndex,
-        RelDataType desiredType) {
-        super.updateInferredColumnType(scope, query, columnIndex, desiredType);
-    }
-
-    @Override
-    public @Nullable RelDataType getTightestCommonType(@Nullable RelDataType type1, @Nullable RelDataType type2) {
-        return super.getTightestCommonType(type1, type2);
-    }
-
-    /** {@inheritDoc} */
-    @Override public boolean inOperationCoercion(SqlCallBinding binding) {
-        return super.inOperationCoercion(binding);
-    }
-
-    /** {@inheritDoc} */
-    @Override public boolean builtinFunctionCoercion(SqlCallBinding binding, List<RelDataType> operandTypes,
-        List<SqlTypeFamily> expectedFamilies) {
-        if(!super.builtinFunctionCoercion(binding, operandTypes, expectedFamilies))
-            return false;
-
-        return true;
     }
 
     /** {@inheritDoc} */
@@ -197,10 +118,5 @@ public class IgniteTypeCoercion extends TypeCoercionImpl {
         }
 
         return super.needToCast(scope, node, toType);
-    }
-
-    @Override public boolean rowTypeCoercion(@Nullable SqlValidatorScope scope, SqlNode query, int columnIndex,
-        RelDataType targetType) {
-        return super.rowTypeCoercion(scope, query, columnIndex, targetType);
     }
 }

@@ -705,7 +705,7 @@ public class TableDdlIntegrationTest extends AbstractDdlIntegrationTest {
      * Alter table from server and client nodes.
      */
     @Test
-//    @Ignore("https://issues.apache.org/jira/browse/IGNITE-16292")
+    @Ignore("https://issues.apache.org/jira/browse/IGNITE-16292")
     public void alterTableServerAndClient() throws Exception {
         sql(grid(0), "create table my_table (id int primary key, val varchar)");
 
