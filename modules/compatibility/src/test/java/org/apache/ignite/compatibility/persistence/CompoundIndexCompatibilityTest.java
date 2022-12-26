@@ -22,6 +22,7 @@ import java.math.BigDecimal;
 import java.util.ArrayList;
 import java.util.List;
 import org.apache.ignite.Ignite;
+import org.apache.ignite.cluster.ClusterState;
 import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.cache.query.index.IndexName;
 import org.apache.ignite.internal.cache.query.index.sorted.inline.InlineIndexImpl;
@@ -71,13 +72,13 @@ public class CompoundIndexCompatibilityTest extends IndexAbstractCompatibilityTe
 
             IgniteEx igniteEx = startGrid(0);
 
-            igniteEx.active(true);
+            igniteEx.cluster().state(ClusterState.ACTIVE);
 
             fillData(igniteEx, 100, 200);
 
             idxChecker.run();
 
-            igniteEx.active(false);
+            igniteEx.cluster().state(ClusterState.INACTIVE);
         }
         finally {
             stopAllGrids();

@@ -20,6 +20,7 @@ package org.apache.ignite.compatibility.persistence;
 
 import java.util.List;
 import org.apache.ignite.Ignite;
+import org.apache.ignite.cluster.ClusterState;
 import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.lang.IgniteInClosure;
 import org.junit.Test;
@@ -66,7 +67,7 @@ public class IgnitePKIndexesMigrationToUnwrapPkTest extends IndexAbstractCompati
 
             IgniteEx igniteEx = startGrid(0);
 
-            igniteEx.active(true);
+            igniteEx.cluster().state(ClusterState.ACTIVE);
 
             assertDontUsingPkIndex(igniteEx, TABLE_NAME);
 
@@ -80,7 +81,7 @@ public class IgnitePKIndexesMigrationToUnwrapPkTest extends IndexAbstractCompati
 
             assertQueryWorks(igniteEx, newTblName);
 
-            igniteEx.active(false);
+            igniteEx.cluster().state(ClusterState.INACTIVE);
         }
         finally {
             stopAllGrids();

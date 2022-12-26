@@ -35,6 +35,7 @@ import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCache;
 import org.apache.ignite.cache.CacheAtomicityMode;
 import org.apache.ignite.cache.query.SqlFieldsQuery;
+import org.apache.ignite.cluster.ClusterState;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.lang.IgniteInClosure;
@@ -126,7 +127,7 @@ public class IndexTypesCompatibilityTest extends IndexAbstractCompatibilityTest 
 
             assertEquals(1, ignite.context().discovery().topologyVersion());
 
-            ignite.active(true);
+            ignite.cluster().state(ClusterState.ACTIVE);
 
             validateResultingCacheData(ignite.cache(TEST_CACHE_NAME));
         }
