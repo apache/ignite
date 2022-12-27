@@ -75,7 +75,7 @@ public class CacheKey {
         if (!query.equals(cacheKey.query))
             return false;
 
-        if (Objects.equals(contextKey, cacheKey.contextKey))
+        if (!Objects.equals(contextKey, cacheKey.contextKey))
             return false;
 
         return Arrays.deepEquals(paramTypes, cacheKey.paramTypes);
