@@ -353,6 +353,12 @@ public class JavaThinClient {
     /** Partition. */
     private final Integer part;
 
+    /** Map. */
+    final Map<Integer, Integer> map = new HashMap<>();
+
+    for (int i = 0; i < 100; i++)
+        map.put(i, i);
+
     void partitionAwareness() throws Exception {
         //tag::partition-awareness[]
         ClientConfiguration cfg = new ClientConfiguration()
@@ -362,6 +368,8 @@ public class JavaThinClient {
         try (IgniteClient client = Ignition.startClient(cfg)) {
             // Put, get or remove data from the cache...
             ClientCache<Integer, String> cache = client.cache("myCache");
+            for (Map.Entry<Integer, Integer> e : map.entrySet())
+                cache.put(e.getKey(), e.getValue());
             // The partition number can be specified with indexQuery.setPartition(Integer) as well.
             ScanQuery scanQuery = new ScanQuery().setPartition(part);
         } catch (ClientException e) {

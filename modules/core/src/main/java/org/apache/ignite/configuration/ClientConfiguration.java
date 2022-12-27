@@ -527,7 +527,7 @@ public final class ClientConfiguration implements Serializable {
     }
 
     /**
-     * Used only with single-key operations API, and it does not work for those operations within explicit transactions
+     * Used with single-key operations API, and it does not work for those operations within explicit transactions
      * (initiated via org.apache.ignite.client.ClientTransactions#txStart). The functionality maintains
      * {@link ScanQuery#setPartition(Integer)} and {@link IndexQuery#setPartition(Integer)} which specify a partition
      * number to route the query to a particular server node that stores the requested data.
@@ -546,7 +546,7 @@ public final class ClientConfiguration implements Serializable {
     /**
      * Sets a value indicating whether partition awareness should be enabled.
      * <p>
-     * Used only with single-key operations API, and it does not work for those operations within explicit transactions
+     * Used with single-key operations API, and it does not work for those operations within explicit transactions
      * (initiated via org.apache.ignite.client.ClientTransactions#txStart). The functionality maintains
      * {@link ScanQuery#setPartition(Integer)} and {@link IndexQuery#setPartition(Integer)} which specify a partition
      * number to route the query to a particular server node that stores the requested data.
