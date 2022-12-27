@@ -122,7 +122,7 @@ public class CacheObjectsCompressionConsumptionTest extends AbstractCacheObjects
             Consumption raw;
             Consumption compressed;
 
-            boolean reversed = i % 2 == 0;
+            boolean reversed = i % 2 != 0;
 
             Function<Integer, Object> kGen = reversed ? valGen : keyGen;
             Function<Integer, Object> vGen = reversed ? keyGen : valGen;
