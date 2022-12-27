@@ -24,7 +24,6 @@ import java.util.UUID;
 import java.util.stream.Collectors;
 import com.google.common.collect.ImmutableSet;
 import org.apache.calcite.runtime.CalciteException;
-import org.apache.calcite.sql.validate.SqlValidatorException;
 import org.apache.ignite.IgniteCache;
 import org.apache.ignite.cache.QueryEntity;
 import org.apache.ignite.configuration.CacheConfiguration;
@@ -489,32 +488,65 @@ public class DataTypesTest extends AbstractBasicIntegrationTest {
 
         sql("INSERT INTO tbl VALUES ('123456789', 1, 2, 3.5, 4.8, 5.7, 6)");
 
-        assertQuery("SELECT " + func + "(cv, iv) FROM tbl").returns(left ? "1" : "9").check();
-        assertQuery("SELECT " + func + "(cv, CAST(iv as BIGINT)) FROM tbl").returns(left ? "1" : "9").check();
-        assertQuery("SELECT " + func + "(cv, CAST(iv as TINYINT)) FROM tbl").returns(left ? "1" : "9").check();
-        assertQuery("SELECT " + func + "(cv, CAST(iv as SMALLINT)) FROM tbl").returns(left ? "1" : "9").check();
-        assertThrows("SELECT " + func + "(cv, CAST(iv as FLOAT)) FROM tbl", SqlValidatorException.class,
-            "Cannot apply '" + func + "' to arguments of type", 1);
-        assertThrows("SELECT " + func + "(cv, CAST(iv as REAL)) FROM tbl", SqlValidatorException.class,
-            "Cannot apply '" + func + "' to arguments of type", 1);
-
-        // Bigint
-        assertQuery("SELECT " + func + "(cv, biv) FROM tbl").returns(left ? "12" : "89").check();
-        assertQuery("SELECT " + func + "(cv, CAST(? as BIGINT)) FROM tbl").withParams(2)
-            .returns(left ? "12" : "89").check();
-
-        // Double
-        assertThrows("SELECT " + func + "(cv, dv) FROM tbl", SqlValidatorException.class,
-            "Cannot apply '" + func + "' to arguments of type");
-
         // Tiny
         assertQuery("SELECT " + func + "(cv, tiv) FROM tbl").returns(left ? "1234" : "6789").check();
+        assertQuery("SELECT " + func + "(cv, CAST(tiv as SMALLINT)) FROM tbl").returns(left ? "1234" : "6789").check();
+        assertQuery("SELECT " + func + "(cv, CAST(tiv as INTEGER)) FROM tbl").returns(left ? "1234" : "6789").check();
+        assertQuery("SELECT " + func + "(cv, CAST(tiv as BIGINT)) FROM tbl").returns(left ? "1234" : "6789").check();
+        assertQuery("SELECT " + func + "(cv, CAST(tiv as FLOAT)) FROM tbl").returns(left ? "1234" : "6789").check();
+        assertQuery("SELECT " + func + "(cv, CAST(tiv as DOUBLE)) FROM tbl").returns(left ? "1234" : "6789").check();
 
         // Smallint
         assertQuery("SELECT " + func + "(cv, smiv) FROM tbl").returns(left ? "123456" : "456789").check();
+        assertQuery("SELECT " + func + "(cv, CAST(smiv as TINYINT)) FROM tbl").returns(left ? "123456" : "456789").check();
+        assertQuery("SELECT " + func + "(cv, CAST(smiv as INTEGER)) FROM tbl").returns(left ? "123456" : "456789").check();
+        assertQuery("SELECT " + func + "(cv, CAST(smiv as BIGINT)) FROM tbl").returns(left ? "123456" : "456789").check();
+        assertQuery("SELECT " + func + "(cv, CAST(smiv as FLOAT)) FROM tbl").returns(left ? "123456" : "456789").check();
+        assertQuery("SELECT " + func + "(cv, CAST(smiv as REAL)) FROM tbl").returns(left ? "123456" : "456789").check();
+
+        // Int
+        assertQuery("SELECT " + func + "(cv, CAST(iv as TINYINT)) FROM tbl").returns(left ? "1" : "9").check();
+        assertQuery("SELECT " + func + "(cv, CAST(iv as SMALLINT)) FROM tbl").returns(left ? "1" : "9").check();
+        assertQuery("SELECT " + func + "(cv, iv) FROM tbl").returns(left ? "1" : "9").check();
+        assertQuery("SELECT " + func + "(cv, CAST(iv as BIGINT)) FROM tbl").returns(left ? "1" : "9").check();
+        assertQuery("SELECT " + func + "(cv, CAST(iv as FLOAT)) FROM tbl").returns(left ? "1" : "9").check();
+        assertQuery("SELECT " + func + "(cv, CAST(iv as DOUBLE)) FROM tbl").returns(left ? "1" : "9").check();
+
+        // Bigint
+        assertQuery("SELECT " + func + "(cv, biv) FROM tbl").returns(left ? "12" : "89").check();
+        assertQuery("SELECT " + func + "(cv, CAST(biv as TINYINT)) FROM tbl").returns(left ? "12" : "89").check();
+        assertQuery("SELECT " + func + "(cv, CAST(biv as SMALLINT)) FROM tbl").returns(left ? "12" : "89").check();
+        assertQuery("SELECT " + func + "(cv, CAST(biv as INTEGER)) FROM tbl").returns(left ? "12" : "89").check();
+        assertQuery("SELECT " + func + "(cv, CAST(biv as FLOAT)) FROM tbl").returns(left ? "12" : "89").check();
+        assertQuery("SELECT " + func + "(cv, CAST(biv as DOUBLE)) FROM tbl").returns(left ? "12" : "89").check();
 
         // Float
-        assertThrows("SELECT " + func + "(fv, fv) FROM tbl", SqlValidatorException.class,
-            "Cannot apply '" + func + "' to arguments of type");
+        assertQuery("SELECT " + func + "(cv, fv) FROM tbl").returns(left ? "12345" : "56789").check();
+        assertQuery("SELECT " + func + "(cv, CAST(fv as TINYINT)) FROM tbl").returns(left ? "12345" : "56789").check();
+        assertQuery("SELECT " + func + "(cv, CAST(fv as SMALLINT)) FROM tbl").returns(left ? "12345" : "56789").check();
+        assertQuery("SELECT " + func + "(cv, CAST(fv as INTEGER)) FROM tbl").returns(left ? "12345" : "56789").check();
+        assertQuery("SELECT " + func + "(cv, CAST(fv as DOUBLE)) FROM tbl").returns(left ? "12345" : "56789").check();
+
+        // Double
+        assertQuery("SELECT " + func + "(cv, dv) FROM tbl").returns(left ? "123" : "789").check();
+        assertQuery("SELECT " + func + "(cv, CAST(dv as TINYINT)) FROM tbl").returns(left ? "123" : "789").check();
+        assertQuery("SELECT " + func + "(cv, CAST(dv as SMALLINT)) FROM tbl").returns(left ? "123" : "789").check();
+        assertQuery("SELECT " + func + "(cv, CAST(dv as INTEGER)) FROM tbl").returns(left ? "123" : "789").check();
+        assertQuery("SELECT " + func + "(cv, CAST(dv as FLOAT)) FROM tbl").returns(left ? "123" : "789").check();
+
+        // All types as a param
+        assertQuery("SELECT " + func + "('123456789', ?)").withParams((byte)3).returns(left ? "123" : "789").check();
+        assertQuery("SELECT " + func + "('123456789', ?)").withParams((short)3).returns(left ? "123" : "789").check();
+        assertQuery("SELECT " + func + "('123456789', ?)").withParams(3).returns(left ? "123" : "789").check();
+        assertQuery("SELECT " + func + "('123456789', ?)").withParams(3L).returns(left ? "123" : "789").check();
+        assertQuery("SELECT " + func + "('123456789', ?)").withParams(3.0f).returns(left ? "123" : "789").check();
+        assertQuery("SELECT " + func + "('123456789', ?)").withParams(3.0).returns(left ? "123" : "789").check();
+
+        //        assertQuery("SELECT " + func + "(cv, ?) from tbl").withParams((byte)3).returns(left ? "123" : "789").check();
+//        assertQuery("SELECT " + func + "(cv, ?) from tbl").withParams((short)3).returns(left ? "123" : "789").check();
+//        assertQuery("SELECT " + func + "(cv, ?) from tbl").withParams(3).returns(left ? "123" : "789").check();
+//        assertQuery("SELECT " + func + "(cv, ?) from tbl").withParams(3L).returns(left ? "123" : "789").check();
+//        assertQuery("SELECT " + func + "(cv, ?) from tbl").withParams(3.0f).returns(left ? "123" : "789").check();
+//        assertQuery("SELECT " + func + "(cv, ?) from tbl").withParams(3.0).returns(left ? "123" : "789").check();
     }
 }

@@ -26,6 +26,7 @@ import org.apache.calcite.sql.SqlNode;
 import org.apache.calcite.sql.SqlUserDefinedTypeNameSpec;
 import org.apache.calcite.sql.fun.SqlStdOperatorTable;
 import org.apache.calcite.sql.parser.SqlParserPos;
+import org.apache.calcite.sql.type.SqlTypeFamily;
 import org.apache.calcite.sql.type.SqlTypeUtil;
 import org.apache.calcite.sql.validate.SqlValidator;
 import org.apache.calcite.sql.validate.SqlValidatorScope;
@@ -33,6 +34,7 @@ import org.apache.calcite.sql.validate.implicit.TypeCoercionImpl;
 import org.apache.ignite.internal.processors.query.calcite.type.IgniteCustomType;
 import org.apache.ignite.internal.processors.query.calcite.type.OtherType;
 import org.apache.ignite.internal.processors.query.calcite.type.UuidType;
+import org.checkerframework.checker.nullness.qual.Nullable;
 
 /**
  * Implementation of implicit type cast.
@@ -41,6 +43,24 @@ public class IgniteTypeCoercion extends TypeCoercionImpl {
     /** Ctor. */
     public IgniteTypeCoercion(RelDataTypeFactory typeFactory, SqlValidator validator) {
         super(typeFactory, validator);
+    }
+
+    /** {@inheritDoc} */
+    @Override public @Nullable RelDataType implicitCast(RelDataType in, SqlTypeFamily expected) {
+        RelDataType res = super.implicitCast(in, expected);
+
+        if (res == null) {
+            // FLOAT/DOUBLE -> LONG/INTEGER/SHORT/BYTE
+            if (SqlTypeUtil.isApproximateNumeric(in) && expected == SqlTypeFamily.INTEGER)
+                return expected.getDefaultConcreteType(factory);
+        }
+
+        return res;
+    }
+
+    @Override
+    protected boolean coerceOperandsType(@Nullable SqlValidatorScope scope, SqlCall call, RelDataType commonType) {
+        return super.coerceOperandsType(scope, call, commonType);
     }
 
     /** {@inheritDoc} */
@@ -78,6 +98,25 @@ public class IgniteTypeCoercion extends TypeCoercionImpl {
             }
             else
                 return false;
+        }
+        else if (SqlTypeUtil.isIntType(targetType)) {
+            SqlNode operand = call.getOperandList().get(idx);
+
+            RelDataType fromType = validator.deriveType(scope, operand);
+
+            if (SqlTypeUtil.isApproximateNumeric(fromType)) {
+                SqlNode desired = SqlStdOperatorTable.CAST.createCall(
+                    SqlParserPos.ZERO,
+                    operand,
+                    new SqlDataTypeSpec(SqlTypeUtil.convertTypeToSpec(targetType).getTypeNameSpec(),
+                        SqlParserPos.ZERO).withNullable(targetType.isNullable())
+                );
+
+                call.setOperand(idx, desired);
+                updateInferredType(desired, targetType);
+
+                return true;
+            }
         }
 
         return super.coerceOperandType(scope, call, idx, targetType);
