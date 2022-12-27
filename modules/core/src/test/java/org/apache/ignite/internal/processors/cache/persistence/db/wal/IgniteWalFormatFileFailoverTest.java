@@ -24,6 +24,7 @@ import java.util.Arrays;
 import java.util.concurrent.atomic.AtomicReference;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.cache.CacheAtomicityMode;
+import org.apache.ignite.cluster.ClusterState;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.DataRegionConfiguration;
 import org.apache.ignite.configuration.DataStorageConfiguration;
@@ -145,7 +146,7 @@ public class IgniteWalFormatFileFailoverTest extends GridCommonAbstractTest {
 
         failMtdNameRef.set(formatFile);
 
-        grid(0).cluster().active(true);
+        grid(0).cluster().state(ClusterState.ACTIVE);
 
         checkCause(failureHandler(0).awaitFailure(2000).error());
         checkCause(failureHandler(1).awaitFailure(2000).error());

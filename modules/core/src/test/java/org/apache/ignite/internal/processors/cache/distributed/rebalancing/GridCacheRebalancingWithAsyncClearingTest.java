@@ -24,6 +24,7 @@ import org.apache.ignite.cache.CacheAtomicityMode;
 import org.apache.ignite.cache.CacheWriteSynchronizationMode;
 import org.apache.ignite.cache.PartitionLossPolicy;
 import org.apache.ignite.cache.affinity.rendezvous.RendezvousAffinityFunction;
+import org.apache.ignite.cluster.ClusterState;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.DataRegionConfiguration;
 import org.apache.ignite.configuration.DataStorageConfiguration;
@@ -120,7 +121,7 @@ public class GridCacheRebalancingWithAsyncClearingTest extends GridCommonAbstrac
     @WithSystemProperty(key = IGNITE_PDS_MAX_CHECKPOINT_MEMORY_HISTORY_SIZE, value = "1")
     public void testPartitionClearingNotBlockExchange() throws Exception {
         IgniteEx ig = (IgniteEx)startGrids(3);
-        ig.cluster().active(true);
+        ig.cluster().state(ClusterState.ACTIVE);
 
         // High number of keys triggers long partition eviction.
         final int keysCnt = SF.applyLB(300_000, 10_000);
@@ -217,7 +218,7 @@ public class GridCacheRebalancingWithAsyncClearingTest extends GridCommonAbstrac
         IgniteEx ignite = startGrids(3);
 
         ignite.cluster().baselineAutoAdjustEnabled(false);
-        ignite.cluster().active(true);
+        ignite.cluster().state(ClusterState.ACTIVE);
 
         // High number of keys triggers long partition eviction.
         final int keysCnt = SF.applyLB(300_000, 10_000);

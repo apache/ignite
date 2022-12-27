@@ -444,7 +444,7 @@ public class IgniteAuthenticationProcessor extends GridProcessorAdapter implemen
         if (!ctx.state().publicApiActiveState(true)) {
             throw new IgniteException("Can not perform the operation because the cluster is inactive. Note, that " +
                 "the cluster is considered inactive by default if Ignite Persistent Store is used to let all the nodes " +
-                "join the cluster. To activate the cluster call Ignite.active(true).");
+                "join the cluster. To activate the cluster call Ignite.cluster().state(ClusterState.ACTIVE).");
         }
     }
 

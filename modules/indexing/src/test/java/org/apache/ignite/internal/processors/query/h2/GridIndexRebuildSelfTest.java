@@ -26,6 +26,7 @@ import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCache;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteException;
+import org.apache.ignite.cluster.ClusterState;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.IgniteInterruptedCheckedException;
@@ -379,7 +380,7 @@ public class GridIndexRebuildSelfTest extends DynamicIndexAbstractSelfTest {
      */
     protected IgniteEx startServer() throws Exception {
         IgniteEx srvNode = startGrid(serverConfiguration(0));
-        srvNode.active(true);
+        srvNode.cluster().state(ClusterState.ACTIVE);
         return srvNode;
     }
 

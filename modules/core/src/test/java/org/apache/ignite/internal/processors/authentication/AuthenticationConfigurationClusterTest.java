@@ -20,6 +20,7 @@ package org.apache.ignite.internal.processors.authentication;
 import java.util.concurrent.Callable;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteException;
+import org.apache.ignite.cluster.ClusterState;
 import org.apache.ignite.configuration.DataRegionConfiguration;
 import org.apache.ignite.configuration.DataStorageConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
@@ -149,7 +150,7 @@ public class AuthenticationConfigurationClusterTest extends GridCommonAbstractTe
     public void testDisabledAuthentication() throws Exception {
         startGrid(configuration(0, false, false));
 
-        grid(0).cluster().active(true);
+        grid(0).cluster().state(ClusterState.ACTIVE);
 
         GridTestUtils.assertThrows(log, new Callable<Object>() {
                 @Override public Object call() throws Exception {

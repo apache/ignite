@@ -22,6 +22,7 @@ import java.util.Set;
 import java.util.function.Predicate;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteDataStreamer;
+import org.apache.ignite.cluster.ClusterState;
 import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.commandline.CommandHandler;
 import org.apache.ignite.internal.commandline.cache.CacheCommands;
@@ -54,7 +55,7 @@ public class GridCommandHandlerIndexListTest extends GridCommandHandlerAbstractT
 
         ignite = startGrids(GRIDS_NUM);
 
-        ignite.cluster().active(true);
+        ignite.cluster().state(ClusterState.ACTIVE);
 
         createAndFillSeveralCaches(ignite);
     }
