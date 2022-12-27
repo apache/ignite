@@ -433,7 +433,7 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
 
         marsh = MarshallerUtils.jdkMarshaller(ctx.igniteInstanceName());
 
-        restoreCacheGrpProc = new SnapshotRestoreProcess(ctx);
+        restoreCacheGrpProc = new SnapshotRestoreProcess(ctx, locBuff);
 
         // Manage remote snapshots.
         snpRmtMgr = new SequentialRemoteSnapshotManager();
