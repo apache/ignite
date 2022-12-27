@@ -79,7 +79,7 @@ Note that the code above provides a failover mechanism in case of server node fa
 
 include::includes/partition-awareness.adoc[]
 
-Partition awareness functionality works only with single-key operations API, and it does not work for those operations within explicit transactions (initiated via org.apache.ignite.client.ClientTransactions#txStart()). ScanQuery and IndexQuery set a partition number with which in place the query is routed to a particular server node that stores the requested data.
+Partition awareness functionality works with single-key operations API, and it does not work for those operations within explicit transactions (initiated via org.apache.ignite.client.ClientTransactions#txStart()). ScanQuery and IndexQuery set a partition number with which in place the query is routed to a particular server node that stores the requested data.
 
 The following code sample illustrates how to use the partition awareness feature with the java thin client.
 
