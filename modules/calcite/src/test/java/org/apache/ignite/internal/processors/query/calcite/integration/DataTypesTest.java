@@ -467,4 +467,87 @@ public class DataTypesTest extends AbstractBasicIntegrationTest {
             .returns((byte)7, (short)7, 7, 7L, BigDecimal.valueOf(7), 7f, 7d)
             .check();
     }
+
+    /** */
+    @Test
+    public void testLeftConvertation() {
+        testLeftOrRight(true);
+    }
+
+    /** */
+    @Test
+    public void testRightConvertation() {
+        testLeftOrRight(false);
+    }
+
+    /** */
+    private void testLeftOrRight(boolean left) {
+        String func = left ? "LEFT" : "RIGHT";
+
+        sql("CREATE TABLE tbl(cv VARCHAR, iv INTEGER, biv BIGINT, dv DOUBLE, tiv TINYINT, fv FLOAT, smiv SMALLINT)");
+
+        sql("INSERT INTO tbl VALUES ('123456789', 1, 2, 3.5, 4.8, 5.7, 6)");
+
+        // Tiny
+        assertQuery("SELECT " + func + "(cv, tiv) FROM tbl").returns(left ? "1234" : "6789").check();
+        assertQuery("SELECT " + func + "(cv, CAST(tiv as SMALLINT)) FROM tbl").returns(left ? "1234" : "6789").check();
+        assertQuery("SELECT " + func + "(cv, CAST(tiv as INTEGER)) FROM tbl").returns(left ? "1234" : "6789").check();
+        assertQuery("SELECT " + func + "(cv, CAST(tiv as BIGINT)) FROM tbl").returns(left ? "1234" : "6789").check();
+        assertQuery("SELECT " + func + "(cv, CAST(tiv as FLOAT)) FROM tbl").returns(left ? "1234" : "6789").check();
+        assertQuery("SELECT " + func + "(cv, CAST(tiv as DOUBLE)) FROM tbl").returns(left ? "1234" : "6789").check();
+
+        // Smallint
+        assertQuery("SELECT " + func + "(cv, smiv) FROM tbl").returns(left ? "123456" : "456789").check();
+        assertQuery("SELECT " + func + "(cv, CAST(smiv as TINYINT)) FROM tbl").returns(left ? "123456" : "456789").check();
+        assertQuery("SELECT " + func + "(cv, CAST(smiv as INTEGER)) FROM tbl").returns(left ? "123456" : "456789").check();
+        assertQuery("SELECT " + func + "(cv, CAST(smiv as BIGINT)) FROM tbl").returns(left ? "123456" : "456789").check();
+        assertQuery("SELECT " + func + "(cv, CAST(smiv as FLOAT)) FROM tbl").returns(left ? "123456" : "456789").check();
+        assertQuery("SELECT " + func + "(cv, CAST(smiv as REAL)) FROM tbl").returns(left ? "123456" : "456789").check();
+
+        // Int
+        assertQuery("SELECT " + func + "(cv, CAST(iv as TINYINT)) FROM tbl").returns(left ? "1" : "9").check();
+        assertQuery("SELECT " + func + "(cv, CAST(iv as SMALLINT)) FROM tbl").returns(left ? "1" : "9").check();
+        assertQuery("SELECT " + func + "(cv, iv) FROM tbl").returns(left ? "1" : "9").check();
+        assertQuery("SELECT " + func + "(cv, CAST(iv as BIGINT)) FROM tbl").returns(left ? "1" : "9").check();
+        assertQuery("SELECT " + func + "(cv, CAST(iv as FLOAT)) FROM tbl").returns(left ? "1" : "9").check();
+        assertQuery("SELECT " + func + "(cv, CAST(iv as DOUBLE)) FROM tbl").returns(left ? "1" : "9").check();
+
+        // Bigint
+        assertQuery("SELECT " + func + "(cv, biv) FROM tbl").returns(left ? "12" : "89").check();
+        assertQuery("SELECT " + func + "(cv, CAST(biv as TINYINT)) FROM tbl").returns(left ? "12" : "89").check();
+        assertQuery("SELECT " + func + "(cv, CAST(biv as SMALLINT)) FROM tbl").returns(left ? "12" : "89").check();
+        assertQuery("SELECT " + func + "(cv, CAST(biv as INTEGER)) FROM tbl").returns(left ? "12" : "89").check();
+        assertQuery("SELECT " + func + "(cv, CAST(biv as FLOAT)) FROM tbl").returns(left ? "12" : "89").check();
+        assertQuery("SELECT " + func + "(cv, CAST(biv as DOUBLE)) FROM tbl").returns(left ? "12" : "89").check();
+
+        // Float
+        assertQuery("SELECT " + func + "(cv, fv) FROM tbl").returns(left ? "12345" : "56789").check();
+        assertQuery("SELECT " + func + "(cv, CAST(fv as TINYINT)) FROM tbl").returns(left ? "12345" : "56789").check();
+        assertQuery("SELECT " + func + "(cv, CAST(fv as SMALLINT)) FROM tbl").returns(left ? "12345" : "56789").check();
+        assertQuery("SELECT " + func + "(cv, CAST(fv as INTEGER)) FROM tbl").returns(left ? "12345" : "56789").check();
+        assertQuery("SELECT " + func + "(cv, CAST(fv as DOUBLE)) FROM tbl").returns(left ? "12345" : "56789").check();
+
+        // Double
+        assertQuery("SELECT " + func + "(cv, dv) FROM tbl").returns(left ? "123" : "789").check();
+        assertQuery("SELECT " + func + "(cv, CAST(dv as TINYINT)) FROM tbl").returns(left ? "123" : "789").check();
+        assertQuery("SELECT " + func + "(cv, CAST(dv as SMALLINT)) FROM tbl").returns(left ? "123" : "789").check();
+        assertQuery("SELECT " + func + "(cv, CAST(dv as INTEGER)) FROM tbl").returns(left ? "123" : "789").check();
+        assertQuery("SELECT " + func + "(cv, CAST(dv as FLOAT)) FROM tbl").returns(left ? "123" : "789").check();
+
+        // All types as params
+        assertQuery("SELECT " + func + "('123456789', ?)").withParams((byte)3).returns(left ? "123" : "789").check();
+        assertQuery("SELECT " + func + "('123456789', ?)").withParams((short)3).returns(left ? "123" : "789").check();
+        assertQuery("SELECT " + func + "('123456789', ?)").withParams(3).returns(left ? "123" : "789").check();
+        assertQuery("SELECT " + func + "('123456789', ?)").withParams(3L).returns(left ? "123" : "789").check();
+        assertQuery("SELECT " + func + "('123456789', ?)").withParams(3.0f).returns(left ? "123" : "789").check();
+        assertQuery("SELECT " + func + "('123456789', ?)").withParams(3.0).returns(left ? "123" : "789").check();
+
+        // Int value as casted param
+        assertQuery("SELECT " + func + "(cv, CAST(? as TINYINT)) from tbl").withParams(3).returns(left ? "123" : "789").check();
+        assertQuery("SELECT " + func + "(cv, CAST(? as SMALLINT)) from tbl").withParams(3).returns(left ? "123" : "789").check();
+        assertQuery("SELECT " + func + "(cv, CAST(? as INTEGER)) from tbl").withParams(3).returns(left ? "123" : "789").check();
+        assertQuery("SELECT " + func + "(cv, CAST(? as BIGINT)) from tbl").withParams(3).returns(left ? "123" : "789").check();
+        assertQuery("SELECT " + func + "(cv, CAST(? as FLOAT)) from tbl").withParams(3).returns(left ? "123" : "789").check();
+        assertQuery("SELECT " + func + "(cv, CAST(? as DOUBLE)) from tbl").withParams(3).returns(left ? "123" : "789").check();
+    }
 }

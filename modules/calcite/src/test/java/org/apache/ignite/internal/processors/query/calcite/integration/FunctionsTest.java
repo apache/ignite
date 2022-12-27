@@ -228,7 +228,9 @@ public class FunctionsTest extends AbstractBasicIntegrationTest {
     @Test
     public void testMonthnameDayname() {
         assertQuery("SELECT MONTHNAME(DATE '2021-01-01')").returns("January").check();
+        assertQuery("SELECT MONTHNAME(TIMESTAMP '2021-01-01 10:30:28.000')").returns("January").check();
         assertQuery("SELECT DAYNAME(DATE '2021-01-01')").returns("Friday").check();
+        assertQuery("SELECT DAYNAME(TIMESTAMP '2021-01-01 10:30:28.000')").returns("Friday").check();
     }
 
     /** */
