@@ -27,6 +27,7 @@ import org.apache.ignite.IgniteException;
 import org.apache.ignite.cache.QueryEntity;
 import org.apache.ignite.cache.QueryIndex;
 import org.apache.ignite.cache.QueryIndexType;
+import org.apache.ignite.cluster.ClusterState;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.DataRegionConfiguration;
 import org.apache.ignite.configuration.DataStorageConfiguration;
@@ -187,7 +188,7 @@ public class GridCommandHandlerInterruptCommandTest extends GridCommandHandlerAb
 
         IgniteEx ignite = startGrid(0);
 
-        ignite.cluster().active(true);
+        ignite.cluster().state(ClusterState.ACTIVE);
 
         preloadeData(ignite);
 
@@ -223,7 +224,7 @@ public class GridCommandHandlerInterruptCommandTest extends GridCommandHandlerAb
 
         IgniteEx ignite = startGrid(0);
 
-        ignite.cluster().active(true);
+        ignite.cluster().state(ClusterState.ACTIVE);
 
         preloadeData(ignite);
 
@@ -294,7 +295,7 @@ public class GridCommandHandlerInterruptCommandTest extends GridCommandHandlerAb
     public void testCancelValidateIndexesClosure() throws Exception {
         IgniteEx ignite0 = startGrid(0);
 
-        ignite0.cluster().active(true);
+        ignite0.cluster().state(ClusterState.ACTIVE);
 
         preloadeData(ignite0);
 

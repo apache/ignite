@@ -27,6 +27,7 @@ import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.IgniteState;
 import org.apache.ignite.Ignition;
 import org.apache.ignite.cluster.ClusterNode;
+import org.apache.ignite.cluster.ClusterState;
 import org.apache.ignite.configuration.DataRegionConfiguration;
 import org.apache.ignite.configuration.DataStorageConfiguration;
 import org.apache.ignite.events.Event;
@@ -103,10 +104,10 @@ public abstract class IgniteAbstractBenchmark extends BenchmarkDriverAdapter {
             }
         }
 
-        if ((args.persistentStoreEnabled() || pdsInCfg) && !ignite().cluster().active()) {
+        if ((args.persistentStoreEnabled() || pdsInCfg) && !ignite().cluster().state().active()) {
             BenchmarkUtils.println("Activating cluster.");
 
-            ignite().cluster().active(true);
+            ignite().cluster().state(ClusterState.ACTIVE);
         }
     }
 

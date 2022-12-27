@@ -24,6 +24,7 @@ import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCache;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.cluster.ClusterNode;
+import org.apache.ignite.cluster.ClusterState;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.DataRegionConfiguration;
 import org.apache.ignite.configuration.DataStorageConfiguration;
@@ -80,15 +81,15 @@ public class IgniteStandByClusterTest extends GridCommonAbstractTest {
         IgniteEx ig2 = startGrid(cfg2);
         IgniteEx ig3 = startClientGrid(cfg3);
 
-        assertTrue(!ig1.active());
-        assertTrue(!ig2.active());
-        assertTrue(!ig3.active());
+        assertTrue(!ig1.cluster().state().active());
+        assertTrue(!ig2.cluster().state().active());
+        assertTrue(!ig3.cluster().state().active());
 
-        ig3.active(true);
+        ig3.cluster().state(ClusterState.ACTIVE);
 
-        assertTrue(ig1.active());
-        assertTrue(ig2.active());
-        assertTrue(ig3.active());
+        assertTrue(ig1.cluster().state().active());
+        assertTrue(ig2.cluster().state().active());
+        assertTrue(ig3.cluster().state().active());
 
         ig3.createCache(new CacheConfiguration<>(cacheName));
 
@@ -100,17 +101,17 @@ public class IgniteStandByClusterTest extends GridCommonAbstractTest {
         assertNotNull(ig3.cache(cacheName0));
         assertNotNull(ig2.cache(cacheName0));
 
-        ig3.active(false);
+        ig3.cluster().state(ClusterState.INACTIVE);
 
-        assertTrue(!ig1.active());
-        assertTrue(!ig2.active());
-        assertTrue(!ig3.active());
+        assertTrue(!ig1.cluster().state().active());
+        assertTrue(!ig2.cluster().state().active());
+        assertTrue(!ig3.cluster().state().active());
 
-        ig3.active(true);
+        ig3.cluster().state(ClusterState.ACTIVE);
 
-        assertTrue(ig1.active());
-        assertTrue(ig2.active());
-        assertTrue(ig3.active());
+        assertTrue(ig1.cluster().state().active());
+        assertTrue(ig2.cluster().state().active());
+        assertTrue(ig3.cluster().state().active());
 
         assertNotNull(ig1.cache(cacheName));
         assertNotNull(ig2.cache(cacheName));
@@ -154,15 +155,15 @@ public class IgniteStandByClusterTest extends GridCommonAbstractTest {
         IgniteEx ig2 = startGrid(cfg2);
         IgniteEx ig3 = startGrid(cfg3);
 
-        assertTrue(!ig1.active());
-        assertTrue(!ig2.active());
-        assertTrue(!ig3.active());
+        assertTrue(!ig1.cluster().state().active());
+        assertTrue(!ig2.cluster().state().active());
+        assertTrue(!ig3.cluster().state().active());
 
-        ig3.active(true);
+        ig3.cluster().state(ClusterState.ACTIVE);
 
-        assertTrue(ig1.active());
-        assertTrue(ig2.active());
-        assertTrue(ig3.active());
+        assertTrue(ig1.cluster().state().active());
+        assertTrue(ig2.cluster().state().active());
+        assertTrue(ig3.cluster().state().active());
 
         for (IgniteEx ig : Arrays.asList(ig1, ig2, ig3)) {
             Map<String, DynamicCacheDescriptor> desc = U.field(
@@ -201,7 +202,7 @@ public class IgniteStandByClusterTest extends GridCommonAbstractTest {
     public void testSimple() throws Exception {
         IgniteEx ig = startGrid(0);
 
-        ig.active(true);
+        ig.cluster().state(ClusterState.ACTIVE);
 
         IgniteCache<Integer, String> cache0 = ig.getOrCreateCache("cache");
 
@@ -209,11 +210,11 @@ public class IgniteStandByClusterTest extends GridCommonAbstractTest {
 
         assertEquals("1", cache0.get(1));
 
-        ig.active(false);
+        ig.cluster().state(ClusterState.INACTIVE);
 
-        assertTrue(!ig.active());
+        assertTrue(!ig.cluster().state().active());
 
-        ig.active(true);
+        ig.cluster().state(ClusterState.ACTIVE);
 
         IgniteCache<Integer, String> cache = ig.cache("cache");
 
@@ -229,18 +230,18 @@ public class IgniteStandByClusterTest extends GridCommonAbstractTest {
         IgniteEx ig2 = startGrid(getConfiguration("node2"));
         IgniteEx ig3 = startGrid(getConfiguration("node3"));
 
-        assertTrue(!ig1.active());
-        assertTrue(!ig2.active());
-        assertTrue(!ig3.active());
+        assertTrue(!ig1.cluster().state().active());
+        assertTrue(!ig2.cluster().state().active());
+        assertTrue(!ig3.cluster().state().active());
 
-        ig2.active(true);
+        ig2.cluster().state(ClusterState.ACTIVE);
 
         IgniteCache<Integer, String> cache = ig2.getOrCreateCache("cache");
 
         for (int i = 0; i < 2048; i++)
             cache.put(i, String.valueOf(i));
 
-        ig3.active(false);
+        ig3.cluster().state(ClusterState.INACTIVE);
 
         stopAllGrids();
 
@@ -248,7 +249,7 @@ public class IgniteStandByClusterTest extends GridCommonAbstractTest {
         ig2 = startGrid(getConfiguration("node2"));
         ig3 = startGrid(getConfiguration("node3"));
 
-        ig1.active(true);
+        ig1.cluster().state(ClusterState.ACTIVE);
 
         IgniteCache<Integer, String> cache2 = ig1.cache("cache");
 
@@ -265,27 +266,27 @@ public class IgniteStandByClusterTest extends GridCommonAbstractTest {
         IgniteEx ig2 = startGrid(getConfiguration("node2"));
         IgniteEx ig3 = startGrid(getConfiguration("node3"));
 
-        assertTrue(!ig1.active());
-        assertTrue(!ig2.active());
-        assertTrue(!ig3.active());
+        assertTrue(!ig1.cluster().state().active());
+        assertTrue(!ig2.cluster().state().active());
+        assertTrue(!ig3.cluster().state().active());
 
-        ig1.active(true);
+        ig1.cluster().state(ClusterState.ACTIVE);
 
         checkPlugin(ig1, 1, 0);
         checkPlugin(ig2, 1, 0);
         checkPlugin(ig3, 1, 0);
 
-        ig2.active(false);
+        ig2.cluster().state(ClusterState.INACTIVE);
 
-        ig3.active(true);
+        ig3.cluster().state(ClusterState.ACTIVE);
 
         checkPlugin(ig1, 2, 1);
         checkPlugin(ig2, 2, 1);
         checkPlugin(ig3, 2, 1);
 
-        ig1.active(false);
+        ig1.cluster().state(ClusterState.INACTIVE);
 
-        ig2.active(true);
+        ig2.cluster().state(ClusterState.ACTIVE);
 
         checkPlugin(ig1, 3, 2);
         checkPlugin(ig2, 3, 2);

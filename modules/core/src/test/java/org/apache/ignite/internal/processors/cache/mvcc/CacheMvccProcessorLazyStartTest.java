@@ -20,6 +20,7 @@ import org.apache.ignite.IgniteCache;
 import org.apache.ignite.cache.CacheAtomicityMode;
 import org.apache.ignite.cache.CacheMode;
 import org.apache.ignite.cache.CacheWriteSynchronizationMode;
+import org.apache.ignite.cluster.ClusterState;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.IgniteEx;
@@ -95,7 +96,7 @@ public class CacheMvccProcessorLazyStartTest extends CacheMvccAbstractTest {
         assertFalse(mvccEnabled(node1));
         assertFalse(mvccEnabled(node2));
 
-        node1.cluster().active(true);
+        node1.cluster().state(ClusterState.ACTIVE);
 
         assertFalse(mvccEnabled(node1));
         assertFalse(mvccEnabled(node2));
@@ -116,7 +117,7 @@ public class CacheMvccProcessorLazyStartTest extends CacheMvccAbstractTest {
         node1 = startGrid(1);
         node2 = startGrid(2);
 
-        node1.cluster().active(true);
+        node1.cluster().state(ClusterState.ACTIVE);
 
         assertTrue(mvccEnabled(node1));
         assertTrue(mvccEnabled(node2));

@@ -23,6 +23,7 @@ import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.cache.CacheAtomicityMode;
 import org.apache.ignite.cache.affinity.rendezvous.RendezvousAffinityFunction;
+import org.apache.ignite.cluster.ClusterState;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.DataRegionConfiguration;
 import org.apache.ignite.configuration.DataStorageConfiguration;
@@ -80,7 +81,7 @@ public class CachePageWriteLockUnlockTest extends GridCommonAbstractTest {
         try {
             IgniteEx grid0 = startGrid(0);
 
-            grid0.cluster().active(true);
+            grid0.cluster().state(ClusterState.ACTIVE);
 
             int total = 512;
 
@@ -94,7 +95,7 @@ public class CachePageWriteLockUnlockTest extends GridCommonAbstractTest {
 
             grid0 = startGrid(0);
 
-            grid0.cluster().active(true);
+            grid0.cluster().state(ClusterState.ACTIVE);
 
             putData(grid0, total, PARTITION); // Will use pages from reuse pool.
 
@@ -104,7 +105,7 @@ public class CachePageWriteLockUnlockTest extends GridCommonAbstractTest {
 
             grid0 = startGrid(0);
 
-            grid0.cluster().active(true);
+            grid0.cluster().state(ClusterState.ACTIVE);
 
             preloadPartition(grid0, DEFAULT_CACHE_NAME, PARTITION);
 

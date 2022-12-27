@@ -18,6 +18,7 @@
 package org.apache.ignite.cache;
 
 import org.apache.ignite.cache.affinity.rendezvous.RendezvousAffinityFunction;
+import org.apache.ignite.cluster.ClusterState;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.processors.cache.distributed.dht.preloader.GridDhtPartitionFullMap;
@@ -69,7 +70,7 @@ public class ClientCreateCacheGroupOnJoinNodeMapsTest extends GridCommonAbstract
     public void testNodeMapsVolatile() throws Exception {
         final IgniteEx srv = startGrids(2);
 
-        srv.cluster().active(true);
+        srv.cluster().state(ClusterState.ACTIVE);
 
         awaitPartitionMapExchange();
 
@@ -84,6 +85,6 @@ public class ClientCreateCacheGroupOnJoinNodeMapsTest extends GridCommonAbstract
         assertEquals(2, map0.size());
         assertEquals(2, map1.size());
 
-        srv.cluster().active(false);
+        srv.cluster().state(ClusterState.INACTIVE);
     }
 }

@@ -25,6 +25,7 @@ import org.apache.ignite.cache.CacheRebalanceMode;
 import org.apache.ignite.cache.CacheWriteSynchronizationMode;
 import org.apache.ignite.cache.affinity.rendezvous.RendezvousAffinityFunction;
 import org.apache.ignite.cache.query.annotations.QuerySqlField;
+import org.apache.ignite.cluster.ClusterState;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.DataRegionConfiguration;
 import org.apache.ignite.configuration.DataStorageConfiguration;
@@ -86,7 +87,7 @@ public class IgnitePdsDynamicCacheTest extends IgniteDbDynamicCacheSelfTest {
 
         Ignite ignite = ignite(0);
 
-        ignite.active(true);
+        ignite.cluster().state(ClusterState.ACTIVE);
 
         CacheConfiguration ccfg1 = new CacheConfiguration();
 
@@ -129,7 +130,7 @@ public class IgnitePdsDynamicCacheTest extends IgniteDbDynamicCacheSelfTest {
 
             ignite = ignite(0);
 
-            ignite.active(true);
+            ignite.cluster().state(ClusterState.ACTIVE);
 
             ignite.getOrCreateCache(ccfg1);
 
@@ -150,7 +151,7 @@ public class IgnitePdsDynamicCacheTest extends IgniteDbDynamicCacheSelfTest {
     public void testDynamicCacheSavingOnNewNode() throws Exception {
         Ignite ignite = startGrid(0);
 
-        ignite.active(true);
+        ignite.cluster().state(ClusterState.ACTIVE);
 
         CacheConfiguration ccfg = new CacheConfiguration(DEFAULT_CACHE_NAME);
 
@@ -178,7 +179,7 @@ public class IgnitePdsDynamicCacheTest extends IgniteDbDynamicCacheSelfTest {
         startGrid(0);
         ignite = startGrid(1);
 
-        ignite.active(true);
+        ignite.cluster().state(ClusterState.ACTIVE);
 
         cache = ignite.cache(DEFAULT_CACHE_NAME);
 

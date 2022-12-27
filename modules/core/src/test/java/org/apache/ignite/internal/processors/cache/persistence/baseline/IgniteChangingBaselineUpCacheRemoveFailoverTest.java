@@ -27,6 +27,7 @@ import org.apache.ignite.cache.CacheAtomicityMode;
 import org.apache.ignite.cache.CacheMode;
 import org.apache.ignite.cluster.BaselineNode;
 import org.apache.ignite.cluster.ClusterNode;
+import org.apache.ignite.cluster.ClusterState;
 import org.apache.ignite.configuration.DataRegionConfiguration;
 import org.apache.ignite.configuration.DataStorageConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
@@ -91,7 +92,7 @@ public class IgniteChangingBaselineUpCacheRemoveFailoverTest extends GridCacheAb
 
         startGrids(GRIDS_COUNT);
 
-        grid(0).active(true);
+        grid(0).cluster().state(ClusterState.ACTIVE);
 
         awaitPartitionMapExchange();
     }

@@ -29,6 +29,7 @@ import org.apache.ignite.IgniteCache;
 import org.apache.ignite.IgniteSystemProperties;
 import org.apache.ignite.cache.CacheAtomicityMode;
 import org.apache.ignite.cache.CacheMode;
+import org.apache.ignite.cluster.ClusterState;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.DataRegionConfiguration;
 import org.apache.ignite.configuration.DataStorageConfiguration;
@@ -576,7 +577,7 @@ public class IgniteWalConverterTest extends GridCommonAbstractTest {
         String nodeFolder;
 
         try (final IgniteEx node = startGrid(0)) {
-            node.cluster().active(true);
+            node.cluster().state(ClusterState.ACTIVE);
 
             nodeFolder = node.context().pdsFolderResolver().resolveFolders().folderName();
 

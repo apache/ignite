@@ -46,6 +46,7 @@ import org.apache.ignite.cache.CacheAtomicityMode;
 import org.apache.ignite.cache.CacheMode;
 import org.apache.ignite.cache.CacheWriteSynchronizationMode;
 import org.apache.ignite.cache.affinity.rendezvous.RendezvousAffinityFunction;
+import org.apache.ignite.cluster.ClusterState;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.DataStorageConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
@@ -157,7 +158,7 @@ public class CheckpointFreeListTest extends GridCommonAbstractTest {
     public void testFreeListRestoredCorrectly() throws Exception {
         IgniteEx ignite0 = startGrid(0);
 
-        ignite0.cluster().active(true);
+        ignite0.cluster().state(ClusterState.ACTIVE);
 
         IgniteEx igniteClient = startClientGrid(getClientConfiguration("client"));
 
@@ -186,7 +187,7 @@ public class CheckpointFreeListTest extends GridCommonAbstractTest {
 
         ignite0 = startGrid(0);
 
-        ignite0.cluster().active(true);
+        ignite0.cluster().state(ClusterState.ACTIVE);
 
         GridCacheOffheapManager offheap2 = cacheOffheapManager();
 
@@ -230,7 +231,7 @@ public class CheckpointFreeListTest extends GridCommonAbstractTest {
     @WithSystemProperty(key = IgniteSystemProperties.IGNITE_PAGES_LIST_DISABLE_ONHEAP_CACHING, value = "true")
     public void testRestoreFreeListCorrectlyAfterRandomStop() throws Exception {
         IgniteEx ignite0 = startGrid(0);
-        ignite0.cluster().active(true);
+        ignite0.cluster().state(ClusterState.ACTIVE);
 
         Random random = new Random();
 
@@ -286,7 +287,7 @@ public class CheckpointFreeListTest extends GridCommonAbstractTest {
 
             ignite0 = startGrid(0);
 
-            ignite0.cluster().active(true);
+            ignite0.cluster().state(ClusterState.ACTIVE);
 
             if (entriesToRemove.isEmpty())
                 break;
@@ -320,7 +321,7 @@ public class CheckpointFreeListTest extends GridCommonAbstractTest {
     public void testFreeListUnderLoadMultipleCheckpoints() throws Throwable {
         IgniteEx ignite = startGrid(0);
 
-        ignite.cluster().active(true);
+        ignite.cluster().state(ClusterState.ACTIVE);
 
         int minValSize = 64;
         int maxValSize = 128;

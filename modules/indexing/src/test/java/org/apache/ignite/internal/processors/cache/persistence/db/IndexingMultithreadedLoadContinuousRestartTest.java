@@ -27,6 +27,7 @@ import org.apache.ignite.cache.QueryEntity;
 import org.apache.ignite.cache.QueryIndex;
 import org.apache.ignite.cache.QueryIndexType;
 import org.apache.ignite.cache.affinity.rendezvous.RendezvousAffinityFunction;
+import org.apache.ignite.cluster.ClusterState;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.DataRegionConfiguration;
 import org.apache.ignite.configuration.DataStorageConfiguration;
@@ -151,7 +152,7 @@ public class IndexingMultithreadedLoadContinuousRestartTest extends GridCommonAb
         for (int i = 0; i < RESTARTS; i++) {
             IgniteEx ignite = startGrid(0);
 
-            ignite.cluster().active(true);
+            ignite.cluster().state(ClusterState.ACTIVE);
 
             // Ensure that checkpoint isn't running - otherwise validate indexes task may fail.
             forceCheckpoint();

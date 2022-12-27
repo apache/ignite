@@ -24,6 +24,7 @@ import java.util.Collection;
 import java.util.List;
 import org.apache.ignite.IgniteDataStreamer;
 import org.apache.ignite.cache.affinity.rendezvous.RendezvousAffinityFunction;
+import org.apache.ignite.cluster.ClusterState;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.DataRegionConfiguration;
 import org.apache.ignite.configuration.DataStorageConfiguration;
@@ -93,7 +94,7 @@ public class GridInternalTaskUnusedWalSegmentsTest extends GridCommonAbstractTes
         try {
             IgniteEx ig0 = (IgniteEx)startGrids(4);
 
-            ig0.cluster().active(true);
+            ig0.cluster().state(ClusterState.ACTIVE);
 
             try (IgniteDataStreamer streamer = ig0.dataStreamer(DEFAULT_CACHE_NAME)) {
                 for (int k = 0; k < 10_000; k++)

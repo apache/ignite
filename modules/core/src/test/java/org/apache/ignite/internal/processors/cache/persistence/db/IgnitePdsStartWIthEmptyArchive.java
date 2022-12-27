@@ -23,6 +23,7 @@ import java.util.HashMap;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 import org.apache.ignite.IgniteDataStreamer;
+import org.apache.ignite.cluster.ClusterState;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.DataRegionConfiguration;
 import org.apache.ignite.configuration.DataStorageConfiguration;
@@ -120,7 +121,7 @@ public class IgnitePdsStartWIthEmptyArchive extends GridCommonAbstractTest {
     public void test() throws Exception {
         IgniteEx ig = startGrid(0);
 
-        ig.cluster().active(true);
+        ig.cluster().state(ClusterState.ACTIVE);
 
         FileWriteAheadLogManager walMgr = (FileWriteAheadLogManager)ig.context().cache().context().wal();
 
@@ -175,7 +176,7 @@ public class IgnitePdsStartWIthEmptyArchive extends GridCommonAbstractTest {
             afterLastArchivedAbsoluteIndex >=
             (beforeLastArchivedAbsoluteIdx - segments));
 
-        ig.cluster().active(true);
+        ig.cluster().state(ClusterState.ACTIVE);
 
         FileWriteHandle fhAfter = U.field(walMgr, "currHnd");
 

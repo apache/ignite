@@ -23,6 +23,7 @@ import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.cache.CacheAtomicityMode;
 import org.apache.ignite.cache.CacheMode;
+import org.apache.ignite.cluster.ClusterState;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.util.lang.IgniteInClosureX;
@@ -63,7 +64,7 @@ public abstract class WalModeChangeAbstractSelfTest extends WalModeChangeCommonA
 
         Ignite cli = startGrid(config(CLI, true, false));
 
-        cli.cluster().active(true);
+        cli.cluster().state(ClusterState.ACTIVE);
     }
 
     /**
