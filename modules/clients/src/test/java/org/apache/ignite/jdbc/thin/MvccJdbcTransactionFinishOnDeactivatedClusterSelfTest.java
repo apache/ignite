@@ -22,6 +22,7 @@ import java.sql.DriverManager;
 import java.sql.Statement;
 import java.util.Collections;
 import java.util.concurrent.CountDownLatch;
+import org.apache.ignite.cluster.ClusterState;
 import org.apache.ignite.configuration.ConnectorConfiguration;
 import org.apache.ignite.configuration.DataRegionConfiguration;
 import org.apache.ignite.configuration.DataStorageConfiguration;
@@ -80,7 +81,7 @@ public class MvccJdbcTransactionFinishOnDeactivatedClusterSelfTest extends GridC
     public void checkTxFinishAfterDeactivation(boolean commit) throws Exception {
         IgniteEx node0 = startGrid(0);
 
-        node0.cluster().active(true);
+        node0.cluster().state(ClusterState.ACTIVE);
 
         try (Connection conn = connect()) {
             execute(conn, "CREATE TABLE t1(a INT, b VARCHAR, PRIMARY KEY(a)) WITH \"atomicity=TRANSACTIONAL_SNAPSHOT,backups=1\"");
@@ -88,7 +89,7 @@ public class MvccJdbcTransactionFinishOnDeactivatedClusterSelfTest extends GridC
 
         final CountDownLatch enlistedLatch = new CountDownLatch(1);
 
-        assert node0.cluster().active();
+        assert node0.cluster().state().active();
 
         IgniteInternalFuture txFinishedFut = GridTestUtils.runAsync(() -> {
             executeTransaction(commit, enlistedLatch, () -> !node0.context().state().publicApiActiveState(true));

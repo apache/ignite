@@ -41,6 +41,7 @@ import org.apache.ignite.cache.CacheMetrics;
 import org.apache.ignite.cache.CacheMode;
 import org.apache.ignite.cache.CacheWriteSynchronizationMode;
 import org.apache.ignite.cluster.ClusterNode;
+import org.apache.ignite.cluster.ClusterState;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.DataRegionConfiguration;
 import org.apache.ignite.configuration.DataStorageConfiguration;
@@ -410,7 +411,7 @@ public class CacheMetricsManageTest extends GridCommonAbstractTest {
         Ignite ig1 = startGrid(1);
         Ignite ig2 = startGrid(2);
 
-        ig1.cluster().active(true);
+        ig1.cluster().state(ClusterState.ACTIVE);
 
         CacheConfiguration<Object, Object> ccfg = ig1.cache(CACHE1).getConfiguration(CacheConfiguration.class);
         CacheConfiguration<Object, Object> cacheCfg2 = new CacheConfiguration<>(ccfg);
@@ -483,7 +484,7 @@ public class CacheMetricsManageTest extends GridCommonAbstractTest {
 
         ig1 = startGrid(1);
 
-        ig1.cluster().active(true);
+        ig1.cluster().state(ClusterState.ACTIVE);
 
         ig1.getOrCreateCache(cacheCfg2.setStatisticsEnabled(false));
 
@@ -575,7 +576,7 @@ public class CacheMetricsManageTest extends GridCommonAbstractTest {
 
         CountDownLatch txLatch0 = new CountDownLatch(contCnt * 2);
 
-        ig.cluster().active(true);
+        ig.cluster().state(ClusterState.ACTIVE);
 
         client = true;
 
@@ -709,7 +710,7 @@ public class CacheMetricsManageTest extends GridCommonAbstractTest {
 
         CountDownLatch txLatch = new CountDownLatch(contCnt);
 
-        ig.cluster().active(true);
+        ig.cluster().state(ClusterState.ACTIVE);
 
         client = true;
 

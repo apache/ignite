@@ -23,6 +23,7 @@ import java.util.Arrays;
 import org.apache.ignite.IgniteCache;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.cache.affinity.rendezvous.RendezvousAffinityFunction;
+import org.apache.ignite.cluster.ClusterState;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.DataRegionConfiguration;
 import org.apache.ignite.configuration.DataStorageConfiguration;
@@ -125,7 +126,7 @@ public class LightweightCheckpointTest extends GridCommonAbstractTest {
     public void testLightCheckpointAbleToStoreOnlyGivenDataRegion() throws Exception {
         //given: One started node with default cache and cache which won't be checkpointed.
         IgniteEx ignite0 = startGrid(0);
-        ignite0.cluster().active(true);
+        ignite0.cluster().state(ClusterState.ACTIVE);
 
         IgniteCache<Integer, Object> checkpointedCache = ignite0.cache(DEFAULT_CACHE_NAME);
         IgniteCache<Integer, Object> notCheckpointedCache = ignite0.cache(NOT_CHECKPOINTED_CACHE);
@@ -180,7 +181,7 @@ public class LightweightCheckpointTest extends GridCommonAbstractTest {
         stopAllGrids();
 
         ignite0 = startGrid(0);
-        ignite0.cluster().active(true);
+        ignite0.cluster().state(ClusterState.ACTIVE);
 
         checkpointedCache = ignite0.cache(DEFAULT_CACHE_NAME);
         notCheckpointedCache = ignite0.cache(NOT_CHECKPOINTED_CACHE);

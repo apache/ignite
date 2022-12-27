@@ -24,6 +24,7 @@ import javax.cache.integration.CacheLoaderException;
 import javax.cache.integration.CacheWriterException;
 import org.apache.ignite.cache.CacheAtomicityMode;
 import org.apache.ignite.cache.store.CacheStoreAdapter;
+import org.apache.ignite.cluster.ClusterState;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.DataRegionConfiguration;
 import org.apache.ignite.configuration.DataStorageConfiguration;
@@ -127,7 +128,7 @@ public class IgniteDbPutGetWithCacheStoreTest extends GridCommonAbstractTest {
         IgniteEx ig = startGrid(0);
 
         try {
-            ig.active(true);
+            ig.cluster().state(ClusterState.ACTIVE);
 
             for (int i = 0; i < 2000; i++)
                 ig.cache(CACHE_NAME).put(i, i);
@@ -140,7 +141,7 @@ public class IgniteDbPutGetWithCacheStoreTest extends GridCommonAbstractTest {
 
             ig = startGrid(0);
 
-            ig.active(true);
+            ig.cluster().state(ClusterState.ACTIVE);
 
             for (int i = 0; i < 2000; i++)
                 assertEquals(i, ig.cache(CACHE_NAME).get(i));
@@ -160,7 +161,7 @@ public class IgniteDbPutGetWithCacheStoreTest extends GridCommonAbstractTest {
         IgniteEx ig = startGrid(0);
 
         try {
-            ig.active(true);
+            ig.cluster().state(ClusterState.ACTIVE);
 
             for (int i = 0; i < 2000; i++)
                 storeMap.put(i, i);
@@ -174,7 +175,7 @@ public class IgniteDbPutGetWithCacheStoreTest extends GridCommonAbstractTest {
 
             ig = startGrid(0);
 
-            ig.active(true);
+            ig.cluster().state(ClusterState.ACTIVE);
 
             for (int i = 0; i < 2000; i++)
                 assertEquals(i, ig.cache(CACHE_NAME).get(i));

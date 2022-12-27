@@ -18,6 +18,7 @@
 package org.apache.ignite.internal.processors.cache.binary;
 
 import org.apache.ignite.binary.BinaryObjectBuilder;
+import org.apache.ignite.cluster.ClusterState;
 import org.apache.ignite.configuration.DataRegionConfiguration;
 import org.apache.ignite.configuration.DataStorageConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
@@ -46,7 +47,7 @@ public class BinaryMetadataRemoveWithPersistenceTest extends BinaryMetadataRemov
     @Override protected void startCluster() throws Exception {
         super.startCluster();
 
-        grid("srv0").cluster().active(true);
+        grid("srv0").cluster().state(ClusterState.ACTIVE);
     }
 
     /**

@@ -19,6 +19,7 @@ package org.apache.ignite.internal.processors.cache.persistence;
 
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCheckedException;
+import org.apache.ignite.cluster.ClusterState;
 import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.util.typedef.G;
 import org.junit.Test;
@@ -44,7 +45,7 @@ public class IgnitePdsDestroyCacheWithoutCheckpointsTest extends IgnitePdsDestro
     public void testDestroyCachesAbruptlyWithoutCheckpoints() throws Exception {
         Ignite ignite = startGrids(NODES);
 
-        ignite.cluster().active(true);
+        ignite.cluster().state(ClusterState.ACTIVE);
 
         startCachesDynamically(ignite);
 
@@ -62,7 +63,7 @@ public class IgnitePdsDestroyCacheWithoutCheckpointsTest extends IgnitePdsDestro
     public void testDestroyGroupCachesAbruptlyWithoutCheckpoints() throws Exception {
         Ignite ignite = startGrids(NODES);
 
-        ignite.cluster().active(true);
+        ignite.cluster().state(ClusterState.ACTIVE);
 
         startGroupCachesDynamically(ignite);
 

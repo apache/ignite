@@ -164,7 +164,7 @@ public class GridBaselineCommandHandler extends GridRestCommandHandlerAdapter {
 
         Collection<? extends BaselineNode> srvrs = cluster.forServers().nodes();
 
-        return new GridBaselineCommandResponse(cluster.active(), cluster.topologyVersion(), currentBaseLine(), srvrs);
+        return new GridBaselineCommandResponse(cluster.state().active(), cluster.topologyVersion(), currentBaseLine(), srvrs);
     }
 
     /**
