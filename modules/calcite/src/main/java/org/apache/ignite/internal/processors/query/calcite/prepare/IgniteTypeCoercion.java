@@ -58,11 +58,6 @@ public class IgniteTypeCoercion extends TypeCoercionImpl {
         return res;
     }
 
-    @Override
-    protected boolean coerceOperandsType(@Nullable SqlValidatorScope scope, SqlCall call, RelDataType commonType) {
-        return super.coerceOperandsType(scope, call, commonType);
-    }
-
     /** {@inheritDoc} */
     @Override protected boolean coerceOperandType(
         SqlValidatorScope scope,
