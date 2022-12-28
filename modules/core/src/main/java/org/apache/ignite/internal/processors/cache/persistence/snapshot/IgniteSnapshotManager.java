@@ -670,8 +670,8 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
             File binDir = binaryWorkDir(snpDir.getAbsolutePath(), folderName);
             File nodeDbDir = new File(snpDir.getAbsolutePath(), databaseRelativePath(folderName));
 
-            deleteDirectory(binDir);
-            deleteDirectory(nodeDbDir);
+            U.delete(binDir);
+            U.delete(nodeDbDir);
 
             File marshDir = mappingFileStoreWorkDir(snpDir.getAbsolutePath());
 
@@ -685,11 +685,9 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
 
             File db = new File(snpDir, DB_DEFAULT_FOLDER);
 
-            if (!db.exists() || F.isEmpty(db.list())) {
-                marshDir.delete();
-                db.delete();
-                deleteDirectory(snpDir);
-            }
+            // May be non-empty due to concurrent deletion of shared directories.
+            db.delete();
+            snpDir.delete();
         }
         catch (IOException e) {
             throw new IgniteException(e);
