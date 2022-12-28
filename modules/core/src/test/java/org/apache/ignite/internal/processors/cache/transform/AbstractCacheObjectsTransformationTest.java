@@ -27,6 +27,7 @@ import java.util.stream.Collectors;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCache;
 import org.apache.ignite.binary.BinaryObject;
+import org.apache.ignite.cache.CacheAtomicityMode;
 import org.apache.ignite.cache.affinity.rendezvous.RendezvousAffinityFunction;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
@@ -89,8 +90,6 @@ public abstract class AbstractCacheObjectsTransformationTest extends GridCommonA
         cfg.setWriteSynchronizationMode(FULL_SYNC);
         cfg.setAffinity(new RendezvousAffinityFunction(false, 1)); // Simplifies event calculation.
 
-        // TODO atomic caches ?
-
         return cfg;
     }
 
@@ -149,6 +148,7 @@ public abstract class AbstractCacheObjectsTransformationTest extends GridCommonA
         cache.put(k, v);
 
         checkPut(
+            cache,
             k,
             reversed && binarizable,
             !reversed && binarizable,
@@ -171,6 +171,7 @@ public abstract class AbstractCacheObjectsTransformationTest extends GridCommonA
      *
      */
     private void checkPut(
+        IgniteCache<Object, Object> cache,
         Object key,
         boolean binarizableKey,
         boolean binarizableVal,
@@ -183,9 +184,10 @@ public abstract class AbstractCacheObjectsTransformationTest extends GridCommonA
         // As well as binary value (since binary array is required (e.g. to wait for proper Metadata)).
         restored += transformableVal && binarizableVal ? NODES : 0;
 
-        // Double key restoration. See UserKeyCacheObjectImpl#prepareForCache() for details.
-        if (transformableKey && !binarizableKey && !grid(0).context().cacheObjects().immutable(key))
-            restored += 2;
+        if (cache.getConfiguration(CacheConfiguration.class).getAtomicityMode() == CacheAtomicityMode.TRANSACTIONAL)
+            // Double key restoration. See UserKeyCacheObjectImpl#prepareForCache() for details.
+            if (transformableKey && !binarizableKey && !grid(0).context().cacheObjects().immutable(key))
+                restored += 2;
 
         checkEvents(transformed, transformCancelled, restored);
     }

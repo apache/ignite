@@ -18,6 +18,8 @@
 package org.apache.ignite.internal.processors.cache.transform;
 
 import java.nio.ByteBuffer;
+import java.util.ArrayList;
+import java.util.Collection;
 import java.util.Collections;
 import java.util.List;
 import com.google.common.collect.Lists;
@@ -25,15 +27,34 @@ import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.binary.BinaryObject;
 import org.apache.ignite.binary.BinaryObjectBuilder;
+import org.apache.ignite.cache.CacheAtomicityMode;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.spi.transform.CacheObjectsTransformer;
 import org.junit.Test;
+import org.junit.runner.RunWith;
+import org.junit.runners.Parameterized;
 
 /**
  *
  */
+@RunWith(Parameterized.class)
 public class CacheObjectsTransformationTest extends AbstractCacheObjectsTransformationTest {
+    /** Atomicity mode. */
+    @Parameterized.Parameter
+    public CacheAtomicityMode mode;
+
+    /** @return Test parameters. */
+    @Parameterized.Parameters(name = "mode={0}")
+    public static Collection<?> parameters() {
+        List<Object[]> res = new ArrayList<>();
+
+        for (CacheAtomicityMode mode : new CacheAtomicityMode[] {CacheAtomicityMode.TRANSACTIONAL, CacheAtomicityMode.ATOMIC})
+            res.add(new Object[] {mode});
+
+        return res;
+    }
+
     /** {@inheritDoc} */
     @Override protected IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {
         return super.getConfiguration(igniteInstanceName)
@@ -42,6 +63,16 @@ public class CacheObjectsTransformationTest extends AbstractCacheObjectsTransfor
                     return new ControllableCacheObjectsTransformer();
                 }
             });
+    }
+
+
+    /** {@inheritDoc} */
+    @Override protected CacheConfiguration cacheConfiguration() {
+        CacheConfiguration cfg = super.cacheConfiguration();
+
+        cfg.setAtomicityMode(mode);
+
+        return cfg;
     }
 
     /**
