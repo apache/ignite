@@ -102,8 +102,13 @@ public class PrepareServiceImpl extends AbstractService implements PrepareServic
                         "querySql=\"" + ctx.query() + "\"]", IgniteQueryErrorCode.UNSUPPORTED_OPERATION);
             }
         }
-        catch (ValidationException | CalciteContextException e) {
+        catch (CalciteContextException e) {
             throw new IgniteSQLException("Failed to validate query. " + e.getMessage(), IgniteQueryErrorCode.PARSING, e);
+        }
+        catch (ValidationException e) {
+            String cause = e.getCause() == null ? e.getMessage() : e.getCause().getMessage();
+
+            throw new IgniteSQLException("Failed to validate query. " + cause, IgniteQueryErrorCode.PARSING, e);
         }
     }
 
