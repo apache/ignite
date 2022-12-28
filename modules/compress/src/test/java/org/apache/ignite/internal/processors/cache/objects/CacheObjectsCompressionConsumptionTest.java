@@ -25,6 +25,7 @@ import java.util.function.Function;
 import org.apache.ignite.DataRegionMetrics;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCache;
+import org.apache.ignite.IgniteSystemProperties;
 import org.apache.ignite.client.ClientCache;
 import org.apache.ignite.client.IgniteClient;
 import org.apache.ignite.configuration.ClientConfiguration;
@@ -37,6 +38,7 @@ import org.apache.ignite.internal.util.typedef.G;
 import org.apache.ignite.spi.communication.CommunicationSpi;
 import org.apache.ignite.spi.metric.LongMetric;
 import org.apache.ignite.testframework.GridTestUtils;
+import org.apache.ignite.testframework.junits.WithSystemProperty;
 import org.junit.runner.RunWith;
 import org.junit.runners.Parameterized;
 
@@ -110,6 +112,15 @@ public class CacheObjectsCompressionConsumptionTest extends AbstractCacheObjects
     @org.junit.Test
     public void testWrappedStringArray() throws Exception {
         testConsumption((i) -> i, (i) -> new StringData[] {new StringData(hugeValue(i))});
+    }
+
+    /**
+     * @throws Exception If failed.
+     */
+    @WithSystemProperty(key = IgniteSystemProperties.IGNITE_USE_BINARY_ARRAYS, value = "true")
+    @org.junit.Test
+    public void testWrappedStringBinaryArray() throws Exception {
+        testWrappedStringArray();
     }
 
     /**
