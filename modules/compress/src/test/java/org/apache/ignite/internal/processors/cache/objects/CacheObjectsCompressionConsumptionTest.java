@@ -85,7 +85,7 @@ public class CacheObjectsCompressionConsumptionTest extends AbstractCacheObjects
      */
     @org.junit.Test
     public void testString() throws Exception {
-        testConsumption((i) -> i, (i) -> HUGE_STRING + i);
+        testConsumption((i) -> i, this::hugeValue);
     }
 
     /**
@@ -93,7 +93,23 @@ public class CacheObjectsCompressionConsumptionTest extends AbstractCacheObjects
      */
     @org.junit.Test
     public void testWrappedString() throws Exception {
-        testConsumption((i) -> i, (i) -> new StringData(HUGE_STRING + i));
+        testConsumption((i) -> i, (i) -> new StringData(hugeValue(i)));
+    }
+
+    /**
+     * @throws Exception If failed.
+     */
+    @org.junit.Test
+    public void testStringArray() throws Exception {
+        testConsumption((i) -> i, (i) -> new String[] {hugeValue(i)});
+    }
+
+    /**
+     * @throws Exception If failed.
+     */
+    @org.junit.Test
+    public void testWrappedStringArray() throws Exception {
+        testConsumption((i) -> i, (i) -> new StringData[] {new StringData(hugeValue(i))});
     }
 
     /**
@@ -213,12 +229,12 @@ public class CacheObjectsCompressionConsumptionTest extends AbstractCacheObjects
                     if (thinClient) {
                         cCache.put(key, val);
 
-                        assertEquals(cCache.get(key), val);
+                        assertEqualsArraysAware(cCache.get(key), val);
                     }
                     else {
                         cache.put(key, val);
 
-                        assertEquals(cache.get(key), val);
+                        assertEqualsArraysAware(cache.get(key), val);
                     }
                 }
             }
@@ -252,6 +268,11 @@ public class CacheObjectsCompressionConsumptionTest extends AbstractCacheObjects
     /** Obtains the metric registry with the specified name from Ignite instance. */
     private MetricRegistry mreg(Ignite ignite, String name) {
         return ((IgniteEx)ignite).context().metric().registry(name);
+    }
+
+    /***/
+    private String hugeValue(int i) {
+        return HUGE_STRING + i;
     }
 
     /***/
