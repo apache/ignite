@@ -95,7 +95,7 @@ public class CdcCommandLineStartup {
             appThread.join();
         }
         catch (InterruptedException ignore) {
-            X.error("CdcCommandLineStartup execution was interrupted.");
+            X.error("CDC was interrupted.");
         }
         catch (Throwable e) {
             e.printStackTrace();
