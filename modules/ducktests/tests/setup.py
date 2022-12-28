@@ -30,5 +30,5 @@ setup(name="ignitetest",
       license="apache2.0",
       packages=find_packages(exclude=["ignitetest.tests", "ignitetest.tests.*"]),
       include_package_data=True,
-      install_requires=["ducktape==0.8.2"],
-      tests_require=["pytest==6.0.1"])
+      install_requires=open('docker/requirements.txt').read(),
+      tests_require=["pytest==6.2.5"])
