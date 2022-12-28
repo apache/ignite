@@ -6724,14 +6724,12 @@ public abstract class GridCacheMapEntry extends GridMetadataAwareAdapter impleme
 
         try {
             CacheObjectContext ctx = this.cctx.cacheObjectContext();
-
-            boolean valid = ver != null && this.valid(ver);
+            byte[] keyBytes = this.key.valueBytes(ctx);
 
             // val is null when entry is removed.
-            byte[] keyBytes = this.key.valueBytes(ctx);
+            boolean valid = ver != null && this.valid(ver);
             byte[] valBytes = val == null || !valid ? null : val.valueBytes(ctx);
 
-            // TODO: if ((GridNearCacheEntry)this).topVer == NONE then remove from platform cache.
             proc.context().updatePlatformCache(this.cctx.cacheId(), keyBytes, valBytes, partition(), ver);
         }
         catch (Throwable e) {
