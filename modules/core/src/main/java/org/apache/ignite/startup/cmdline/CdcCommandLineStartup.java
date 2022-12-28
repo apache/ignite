@@ -94,6 +94,9 @@ public class CdcCommandLineStartup {
 
             appThread.join();
         }
+        catch (InterruptedException e) {
+            e.printStackTrace();
+        }
         catch (Throwable e) {
             e.printStackTrace();
 
