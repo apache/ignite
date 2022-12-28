@@ -47,22 +47,12 @@ public class CdcCommandLineStartup {
     /** Quite log flag. */
     private static final boolean QUITE = IgniteSystemProperties.getBoolean(IgniteSystemProperties.IGNITE_QUIET);
 
-    /** Cdc instance. */
-    private final AtomicReference<CdcMain> cdc = new AtomicReference<>();
-
     /**
      * Main entry point.
      *
      * @param args Command line arguments.
      */
     public static void main(String[] args) {
-        new CdcCommandLineStartup().start(args);
-    }
-
-    /**
-     * @param args Args.
-     */
-    public void start(String[] args) {
         if (!QUITE) {
             X.println("    __________  ________________    ________  _____" + NL +
                       "   /  _/ ___/ |/ /  _/_  __/ __/   / ___/ _ \\/ ___/" + NL +
@@ -84,6 +74,8 @@ public class CdcCommandLineStartup {
 
         if (args.length > 0 && args[0].charAt(0) == '-')
             exit("Invalid arguments: " + args[0], true, -1);
+
+        AtomicReference<CdcMain> cdc = new AtomicReference<>();
 
         try {
             cdc.set(CdcLoader.loadCdc(args[0]));
@@ -121,7 +113,7 @@ public class CdcCommandLineStartup {
      * @param showUsage Whether or not to show usage information.
      * @param exitCode Exit code.
      */
-    private void exit(@Nullable String errMsg, boolean showUsage, int exitCode) {
+    private static void exit(@Nullable String errMsg, boolean showUsage, int exitCode) {
         if (errMsg != null)
             X.error(errMsg);
 
@@ -141,12 +133,5 @@ public class CdcCommandLineStartup {
         }
 
         System.exit(exitCode);
-    }
-
-    /**
-     * @return Cdc instance.
-     */
-    public CdcMain cdc() {
-        return cdc.get();
     }
 }
