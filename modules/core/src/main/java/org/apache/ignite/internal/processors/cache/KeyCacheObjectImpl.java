@@ -200,6 +200,8 @@ public class KeyCacheObjectImpl extends CacheObjectAdapter implements KeyCacheOb
 
     /** {@inheritDoc} */
     @Override public boolean equals(Object obj) {
+        assert val != null;
+
         if (!(obj instanceof KeyCacheObjectImpl))
             return false;
 

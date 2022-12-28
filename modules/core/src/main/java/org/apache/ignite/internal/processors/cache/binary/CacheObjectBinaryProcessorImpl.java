@@ -1408,8 +1408,7 @@ public class CacheObjectBinaryProcessorImpl extends GridProcessorAdapter impleme
     }
 
     /** {@inheritDoc} */
-    @Override public KeyCacheObject toKeyCacheObject(CacheObjectContext ctx, byte type, byte[] bytes)
-        throws IgniteCheckedException {
+    @Override public KeyCacheObject toKeyCacheObject(CacheObjectContext ctx, byte type, byte[] bytes) {
         switch (type) {
             case BinaryObjectImpl.TYPE_BINARY:
                 return new BinaryObjectImpl(binaryContext(), bytes, ctx);
@@ -1418,11 +1417,7 @@ public class CacheObjectBinaryProcessorImpl extends GridProcessorAdapter impleme
                 throw new IllegalArgumentException("Byte arrays cannot be used as cache keys.");
 
             case CacheObject.TYPE_REGULAR:
-                KeyCacheObjectImpl key = new KeyCacheObjectImpl(null, bytes, -1);
-
-                key.finishUnmarshal(ctx, null); // TODO is it necessary?
-
-                return key;
+                return new KeyCacheObjectImpl(null, bytes, -1);
         }
 
         throw new IllegalArgumentException("Invalid object type: " + type);
