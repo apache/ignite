@@ -1279,7 +1279,7 @@ public class CacheObjectBinaryProcessorImpl extends GridProcessorAdapter impleme
                 // Need to create a copy because the key can be reused at the application layer after that (IGNITE-3505).
                 key = key.copy(partition(ctx, cctx, key));
 
-                ((BinaryObjectImpl)key).toCacheObject(ctx);
+                ((BinaryObjectImpl)key).prepareMarshal(ctx);
             }
             else if (key.partition() == -1)
                 // Assume others KeyCacheObjects can not be reused for another cache.
@@ -1293,7 +1293,7 @@ public class CacheObjectBinaryProcessorImpl extends GridProcessorAdapter impleme
         if (obj instanceof BinaryObjectImpl) {
             ((KeyCacheObject)obj).partition(partition(ctx, cctx, obj));
 
-            ((BinaryObjectImpl)obj).toCacheObject(ctx);
+            ((BinaryObjectImpl)obj).prepareMarshal(ctx);
 
             return (KeyCacheObject)obj;
         }
@@ -1331,7 +1331,7 @@ public class CacheObjectBinaryProcessorImpl extends GridProcessorAdapter impleme
 
         if (obj == null || obj instanceof CacheObject) {
             if (obj instanceof BinaryObjectImpl)
-                ((BinaryObjectImpl)obj).toCacheObject(ctx);
+                ((BinaryObjectImpl)obj).prepareMarshal(ctx);
 
             return (CacheObject)obj;
         }
@@ -1340,7 +1340,7 @@ public class CacheObjectBinaryProcessorImpl extends GridProcessorAdapter impleme
 
         if (obj instanceof CacheObject) {
             if (obj instanceof BinaryObjectImpl)
-                ((BinaryObjectImpl)obj).toCacheObject(ctx);
+                ((BinaryObjectImpl)obj).prepareMarshal(ctx);
 
             return (CacheObject)obj;
         }

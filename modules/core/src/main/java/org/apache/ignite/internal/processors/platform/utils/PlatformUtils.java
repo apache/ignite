@@ -1389,7 +1389,7 @@ public class PlatformUtils {
             return null;
 
         if (obj instanceof BinaryObjectImpl)
-            ((BinaryObjectImpl)obj).toCacheObject(ctx);
+            ((BinaryObjectImpl)obj).prepareMarshal(ctx);
 
         if (obj instanceof CacheObject)
             return (T)obj;

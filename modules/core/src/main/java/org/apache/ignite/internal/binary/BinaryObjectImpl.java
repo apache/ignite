@@ -240,18 +240,8 @@ public final class BinaryObjectImpl extends BinaryObjectExImpl implements Extern
     }
 
     /** {@inheritDoc} */
-    @Override public void prepareMarshal(CacheObjectValueContext ctx) throws IgniteCheckedException {
+    @Override public void prepareMarshal(CacheObjectValueContext ctx) {
         assert arr != null || valBytes != null;
-
-        if (valBytes == null)
-            valBytes = valueBytesFromArray(ctx);
-    }
-
-    /** Prepares binary object to be used as cache object.
-     * @param ctx Context.
-     */
-    public void toCacheObject(CacheObjectValueContext ctx) {
-        assert arr != null;
 
         if (valBytes == null)
             valBytes = valueBytesFromArray(ctx);
