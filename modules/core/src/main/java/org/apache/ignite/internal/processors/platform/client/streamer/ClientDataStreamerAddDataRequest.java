@@ -18,9 +18,9 @@
 package org.apache.ignite.internal.processors.platform.client.streamer;
 
 import java.util.Collection;
-
 import org.apache.ignite.internal.binary.BinaryReaderExImpl;
 import org.apache.ignite.internal.processors.cache.CacheObject;
+import org.apache.ignite.internal.processors.cache.CacheObjectValueContext;
 import org.apache.ignite.internal.processors.cache.KeyCacheObject;
 import org.apache.ignite.internal.processors.datastreamer.DataStreamerEntry;
 import org.apache.ignite.internal.processors.datastreamer.DataStreamerImpl;
@@ -48,12 +48,19 @@ public class ClientDataStreamerAddDataRequest extends ClientDataStreamerRequest 
      *
      * @param reader Data reader.
      */
-    public ClientDataStreamerAddDataRequest(BinaryReaderExImpl reader) {
+    public ClientDataStreamerAddDataRequest(BinaryReaderExImpl reader, ClientConnectionContext ctx) {
         super(reader);
 
         streamerId = reader.readLong();
         flags = reader.readByte();
-        entries = ClientDataStreamerReader.read(reader);
+
+        ClientDataStreamerHandle handle = ctx.resources().get(streamerId);
+
+        String cacheName = handle.getStreamer().cacheName();
+
+        CacheObjectValueContext cotx = ctx.kernalContext().cache().cache(cacheName).context().cacheObjectContext();
+
+        entries = ClientDataStreamerReader.read(reader, cotx);
     }
 
     /**

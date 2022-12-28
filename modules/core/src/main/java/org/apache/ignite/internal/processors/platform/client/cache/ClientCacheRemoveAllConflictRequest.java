@@ -20,8 +20,10 @@ package org.apache.ignite.internal.processors.platform.client.cache;
 import java.util.LinkedHashMap;
 import java.util.Map;
 import org.apache.ignite.IgniteCheckedException;
+import org.apache.ignite.IgniteException;
 import org.apache.ignite.internal.binary.BinaryReaderExImpl;
 import org.apache.ignite.internal.client.thin.TcpClientCache;
+import org.apache.ignite.internal.processors.cache.CacheObjectValueContext;
 import org.apache.ignite.internal.processors.cache.KeyCacheObject;
 import org.apache.ignite.internal.processors.cache.version.GridCacheVersion;
 import org.apache.ignite.internal.processors.platform.client.ClientConnectionContext;
@@ -43,15 +45,24 @@ public class ClientCacheRemoveAllConflictRequest extends ClientCacheDataRequest 
      *
      * @param reader Reader.
      */
-    public ClientCacheRemoveAllConflictRequest(BinaryReaderExImpl reader) {
+    public ClientCacheRemoveAllConflictRequest(BinaryReaderExImpl reader, ClientConnectionContext ctx) {
         super(reader);
 
         int cnt = reader.readInt();
 
         map = new LinkedHashMap<>(cnt);
 
+        CacheObjectValueContext cotx;
+
+        try {
+            cotx = cacheObjectContext(ctx);
+        }
+        catch (IgniteCheckedException e) {
+            throw new IgniteException("Unable to get cache object value context.", e);
+        }
+
         for (int i = 0; i < cnt; i++) {
-            KeyCacheObject key = readCacheObject(reader, true);
+            KeyCacheObject key = readCacheObject(cotx, reader, true);
             GridCacheVersion ver = (GridCacheVersion)reader.readObjectDetached();
 
             map.put(key, ver);

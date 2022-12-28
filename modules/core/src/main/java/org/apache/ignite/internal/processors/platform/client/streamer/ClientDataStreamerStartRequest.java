@@ -18,12 +18,13 @@
 package org.apache.ignite.internal.processors.platform.client.streamer;
 
 import java.util.Collection;
-
+import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.binary.BinaryObject;
 import org.apache.ignite.internal.GridKernalContext;
 import org.apache.ignite.internal.binary.BinaryReaderExImpl;
 import org.apache.ignite.internal.processors.cache.CacheObject;
+import org.apache.ignite.internal.processors.cache.CacheObjectValueContext;
 import org.apache.ignite.internal.processors.cache.KeyCacheObject;
 import org.apache.ignite.internal.processors.datastreamer.DataStreamerEntry;
 import org.apache.ignite.internal.processors.datastreamer.DataStreamerImpl;
@@ -73,7 +74,7 @@ public class ClientDataStreamerStartRequest extends ClientDataStreamerRequest {
      *
      * @param reader Data reader.
      */
-    public ClientDataStreamerStartRequest(BinaryReaderExImpl reader) {
+    public ClientDataStreamerStartRequest(BinaryReaderExImpl reader, ClientConnectionContext ctx) {
         super(reader);
 
         cacheId = reader.readInt();
@@ -82,7 +83,17 @@ public class ClientDataStreamerStartRequest extends ClientDataStreamerRequest {
         perThreadBufferSize = reader.readInt();
         receiverObj = reader.readObjectDetached();
         receiverPlatform = receiverObj == null ? 0 : reader.readByte();
-        entries = ClientDataStreamerReader.read(reader);
+
+        CacheObjectValueContext cotx;
+
+        try {
+            cotx = ctx.kernalContext().cache().context().cacheObjectContext(cacheId);
+        }
+        catch (IgniteCheckedException e) {
+            throw new IgniteException("Unable to get cache object value context.", e);
+        }
+
+        entries = ClientDataStreamerReader.read(reader, cotx);
     }
 
     /** {@inheritDoc} */

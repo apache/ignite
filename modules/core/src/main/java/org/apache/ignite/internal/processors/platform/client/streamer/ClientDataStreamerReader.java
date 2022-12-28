@@ -20,6 +20,7 @@ package org.apache.ignite.internal.processors.platform.client.streamer;
 import java.util.ArrayList;
 import java.util.Collection;
 import org.apache.ignite.internal.binary.BinaryReaderExImpl;
+import org.apache.ignite.internal.processors.cache.CacheObjectValueContext;
 import org.apache.ignite.internal.processors.datastreamer.DataStreamerEntry;
 
 import static org.apache.ignite.internal.processors.platform.utils.PlatformUtils.readCacheObject;
@@ -34,7 +35,7 @@ class ClientDataStreamerReader {
      * @param reader Data reader.
      * @return Streamer entry.
      */
-    public static Collection<DataStreamerEntry> read(BinaryReaderExImpl reader) {
+    public static Collection<DataStreamerEntry> read(BinaryReaderExImpl reader, CacheObjectValueContext ctx) {
         int entriesCnt = reader.readInt();
 
         if (entriesCnt == 0)
@@ -43,8 +44,8 @@ class ClientDataStreamerReader {
         Collection<DataStreamerEntry> entries = new ArrayList<>(entriesCnt);
 
         for (int i = 0; i < entriesCnt; i++) {
-            entries.add(new DataStreamerEntry(readCacheObject(reader, true),
-                    readCacheObject(reader, false)));
+            entries.add(new DataStreamerEntry(readCacheObject(ctx, reader, true),
+                readCacheObject(ctx, reader, false)));
         }
 
         return entries;

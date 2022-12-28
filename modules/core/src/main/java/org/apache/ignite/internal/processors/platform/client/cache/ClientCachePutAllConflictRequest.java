@@ -20,9 +20,11 @@ package org.apache.ignite.internal.processors.platform.client.cache;
 import java.util.LinkedHashMap;
 import java.util.Map;
 import org.apache.ignite.IgniteCheckedException;
+import org.apache.ignite.IgniteException;
 import org.apache.ignite.internal.binary.BinaryReaderExImpl;
 import org.apache.ignite.internal.client.thin.TcpClientCache;
 import org.apache.ignite.internal.processors.cache.CacheObject;
+import org.apache.ignite.internal.processors.cache.CacheObjectValueContext;
 import org.apache.ignite.internal.processors.cache.KeyCacheObject;
 import org.apache.ignite.internal.processors.cache.dr.GridCacheDrExpirationInfo;
 import org.apache.ignite.internal.processors.cache.dr.GridCacheDrInfo;
@@ -58,9 +60,18 @@ public class ClientCachePutAllConflictRequest extends ClientCacheDataRequest imp
 
         map = new LinkedHashMap<>(cnt);
 
+        CacheObjectValueContext cotx;
+
+        try {
+            cotx = cacheObjectContext(ctx);
+        }
+        catch (IgniteCheckedException e) {
+            throw new IgniteException("Unable to get cache object value context.", e);
+        }
+
         for (int i = 0; i < cnt; i++) {
-            KeyCacheObject key = readCacheObject(reader, true);
-            CacheObject val = readCacheObject(reader, false);
+            KeyCacheObject key = readCacheObject(cotx, reader, true);
+            CacheObject val = readCacheObject(cotx, reader, false);
             GridCacheVersion ver = (GridCacheVersion)reader.readObjectDetached();
 
             GridCacheDrInfo info = expPlc ?
