@@ -34,8 +34,8 @@ namespace Apache.Ignite.Core.Tests.Cache.Platform
         private const string CacheName = "cache1";
         private const string AttrMacs = "org.apache.ignite.macs";
 
-        private const string Key = "k";
-        private const string InitialValue = "0";
+        private const int Key = 1;
+        private const int InitialValue = 0;
 
         [TearDown]
         public void TearDown()
@@ -60,8 +60,8 @@ namespace Apache.Ignite.Core.Tests.Cache.Platform
             var client2 = Ignition.Start(GetConfiguration(true, backupServer2Mac, backupServer2Mac));
 
             // Check initial value.
-            var client1Cache = client1.GetOrCreateNearCache<string, string>(CacheName, new NearCacheConfiguration());
-            var client2Cache = client2.GetOrCreateNearCache<string, string>(CacheName, new NearCacheConfiguration());
+            var client1Cache = client1.GetOrCreateNearCache<int, int>(CacheName, new NearCacheConfiguration());
+            var client2Cache = client2.GetOrCreateNearCache<int, int>(CacheName, new NearCacheConfiguration());
 
             var client1Value = client1Cache.Get(Key);
             var client2Value = client2Cache.Get(Key);
@@ -70,7 +70,7 @@ namespace Apache.Ignite.Core.Tests.Cache.Platform
             Assert.AreEqual(InitialValue, client2Value);
 
             // Update value from client 1.
-            const string newValue = "1";
+            const int newValue = 1;
             client1Cache.Put(Key, newValue);
 
             // Read value from client 1 and 2.
@@ -125,12 +125,12 @@ namespace Apache.Ignite.Core.Tests.Cache.Platform
                 ReadFromBackup = true, // Does not reproduce without this
                 PlatformCacheConfiguration = new PlatformCacheConfiguration
                 {
-                    KeyTypeName = typeof(string).FullName,
-                    ValueTypeName = typeof(string).FullName
+                    KeyTypeName = typeof(int).FullName,
+                    ValueTypeName = typeof(int).FullName
                 }
             };
 
-            var cache = ignite.GetOrCreateCache<string, string>(cacheConfig);
+            var cache = ignite.GetOrCreateCache<int, int>(cacheConfig);
             cache.Put(Key, InitialValue);
         }
     }
