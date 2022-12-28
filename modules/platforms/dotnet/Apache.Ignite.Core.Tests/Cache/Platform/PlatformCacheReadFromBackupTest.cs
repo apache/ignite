@@ -122,7 +122,7 @@ namespace Apache.Ignite.Core.Tests.Cache.Platform
             var cacheConfig = new CacheConfiguration(CacheName)
             {
                 CacheMode = CacheMode.Replicated,
-                ReadFromBackup = true, // Does not reproduce without this
+                ReadFromBackup = true, // Does not reproduce when false.
                 PlatformCacheConfiguration = new PlatformCacheConfiguration
                 {
                     KeyTypeName = typeof(int).FullName,
