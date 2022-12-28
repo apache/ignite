@@ -24,6 +24,7 @@ import java.util.UUID;
 import java.util.stream.Collectors;
 import com.google.common.collect.ImmutableSet;
 import org.apache.calcite.runtime.CalciteException;
+import org.apache.calcite.runtime.SqlFunctions;
 import org.apache.ignite.IgniteCache;
 import org.apache.ignite.cache.QueryEntity;
 import org.apache.ignite.configuration.CacheConfiguration;
@@ -468,13 +469,19 @@ public class DataTypesTest extends AbstractBasicIntegrationTest {
             .check();
     }
 
-    /** */
+    /**
+     * Test number type convertation of 'LEFT' function since {@link SqlFunctions#left(String, int)} has only
+     * {@code int} truncate parameter type.
+     */
     @Test
     public void testLeftConvertation() {
         testLeftOrRight(true);
     }
 
-    /** */
+    /**
+     * Test number type convertation of 'RIGHT' function since {@link SqlFunctions#right(String, int)} has only
+     * {@code int} truncate parameter type.
+     */
     @Test
     public void testRightConvertation() {
         testLeftOrRight(false);
