@@ -23,6 +23,7 @@ import org.apache.calcite.sql.SqlCall;
 import org.apache.calcite.sql.SqlDataTypeSpec;
 import org.apache.calcite.sql.SqlDynamicParam;
 import org.apache.calcite.sql.SqlNode;
+import org.apache.calcite.sql.SqlTypeNameSpec;
 import org.apache.calcite.sql.SqlUserDefinedTypeNameSpec;
 import org.apache.calcite.sql.fun.SqlStdOperatorTable;
 import org.apache.calcite.sql.parser.SqlParserPos;
@@ -63,7 +64,7 @@ public class IgniteTypeCoercion extends TypeCoercionImpl {
         int idx,
         RelDataType targetType
     ) {
-        if (targetType instanceof IgniteCustomType) {
+        if (targetType instanceof IgniteCustomType || SqlTypeUtil.isIntType(targetType)) {
             SqlNode operand = call.getOperandList().get(idx);
 
             if (operand instanceof SqlDynamicParam)
@@ -74,39 +75,20 @@ public class IgniteTypeCoercion extends TypeCoercionImpl {
             if (fromType == null)
                 return false;
 
-            if (SqlTypeUtil.inCharFamily(fromType) || targetType instanceof OtherType) {
-                targetType = factory.createTypeWithNullability(targetType, fromType.isNullable());
+            if (targetType instanceof IgniteCustomType) {
+                if (SqlTypeUtil.inCharFamily(fromType) || targetType instanceof OtherType) {
+                    targetType = factory.createTypeWithNullability(targetType, fromType.isNullable());
 
-                SqlNode desired = SqlStdOperatorTable.CAST.createCall(
-                    SqlParserPos.ZERO,
-                    operand,
-                    new SqlDataTypeSpec(new SqlUserDefinedTypeNameSpec(targetType.toString(), SqlParserPos.ZERO),
-                        SqlParserPos.ZERO).withNullable(targetType.isNullable())
-                );
+                    castOperand(call, operand, idx, targetType, new SqlUserDefinedTypeNameSpec(targetType.toString(),
+                        SqlParserPos.ZERO));
 
-                call.setOperand(idx, desired);
-                updateInferredType(desired, targetType);
-
-                return true;
+                    return true;
+                }
+                else
+                    return false;
             }
-            else
-                return false;
-        }
-        else if (SqlTypeUtil.isIntType(targetType)) {
-            SqlNode operand = call.getOperandList().get(idx);
-
-            RelDataType fromType = validator.deriveType(scope, operand);
-
-            if (SqlTypeUtil.isApproximateNumeric(fromType)) {
-                SqlNode desired = SqlStdOperatorTable.CAST.createCall(
-                    SqlParserPos.ZERO,
-                    operand,
-                    new SqlDataTypeSpec(SqlTypeUtil.convertTypeToSpec(targetType).getTypeNameSpec(),
-                        SqlParserPos.ZERO).withNullable(targetType.isNullable())
-                );
-
-                call.setOperand(idx, desired);
-                updateInferredType(desired, targetType);
+            else if (SqlTypeUtil.isApproximateNumeric(fromType)) {
+                castOperand(call, operand, idx, targetType, SqlTypeUtil.convertTypeToSpec(targetType).getTypeNameSpec());
 
                 return true;
             }
@@ -150,5 +132,26 @@ public class IgniteTypeCoercion extends TypeCoercionImpl {
         }
 
         return super.needToCast(scope, node, toType);
+    }
+
+    /**
+     * Casts passed operand to {@code targetType}.
+     *
+     * @param call Call node.
+     * @param operand The operand to cast.
+     * @param opIdx Operand position index.
+     * @param targetType The type to cast to.
+     * @param targetTypeSpec Spec of {@code targetType}.
+     */
+    private void castOperand(SqlCall call, SqlNode operand, int opIdx, RelDataType targetType,
+        SqlTypeNameSpec targetTypeSpec) {
+        SqlNode desired = SqlStdOperatorTable.CAST.createCall(
+            SqlParserPos.ZERO,
+            operand,
+            new SqlDataTypeSpec(targetTypeSpec, SqlParserPos.ZERO).withNullable(targetType.isNullable())
+        );
+
+        call.setOperand(opIdx, desired);
+        updateInferredType(desired, targetType);
     }
 }

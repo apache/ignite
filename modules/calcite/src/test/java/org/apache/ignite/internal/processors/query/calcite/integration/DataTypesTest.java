@@ -484,11 +484,11 @@ public class DataTypesTest extends AbstractBasicIntegrationTest {
     private void testLeftOrRight(boolean left) {
         String func = left ? "LEFT" : "RIGHT";
 
-        sql("CREATE TABLE tbl(cv VARCHAR, iv INTEGER, biv BIGINT, dv DOUBLE, tiv TINYINT, fv FLOAT, smiv SMALLINT)");
+        sql("CREATE TABLE tbl(cv VARCHAR, tiv TINYINT, smiv SMALLINT, iv INTEGER, biv BIGINT, fv FLOAT, dv DOUBLE)");
 
-        sql("INSERT INTO tbl VALUES ('123456789', 1, 2, 3.5, 4.8, 5.7, 6)");
+        sql("INSERT INTO tbl VALUES ('123456789', 4, 6, 1, 2, 5.7, 3.5)");
 
-        // Tiny
+        // Tinyint
         assertQuery("SELECT " + func + "(cv, tiv) FROM tbl").returns(left ? "1234" : "6789").check();
         assertQuery("SELECT " + func + "(cv, CAST(tiv as SMALLINT)) FROM tbl").returns(left ? "1234" : "6789").check();
         assertQuery("SELECT " + func + "(cv, CAST(tiv as INTEGER)) FROM tbl").returns(left ? "1234" : "6789").check();
