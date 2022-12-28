@@ -540,10 +540,10 @@ public class ClientMessageParser implements ClientListenerMessageParser {
                 return new ClientCacheRemoveAllRequest(reader);
 
             case OP_CACHE_PUT_ALL_CONFLICT:
-                return new ClientCachePutAllConflictRequest(reader, ctx);
+                return new ClientCachePutAllConflictRequest(reader);
 
             case OP_CACHE_REMOVE_ALL_CONFLICT:
-                return new ClientCacheRemoveAllConflictRequest(reader, ctx);
+                return new ClientCacheRemoveAllConflictRequest(reader);
 
             case OP_CACHE_CREATE_WITH_NAME:
                 return new ClientCacheCreateWithNameRequest(reader);
@@ -627,10 +627,10 @@ public class ClientMessageParser implements ClientListenerMessageParser {
                 return new ClientServiceGetDescriptorRequest(reader);
 
             case OP_DATA_STREAMER_START:
-                return new ClientDataStreamerStartRequest(reader, ctx);
+                return new ClientDataStreamerStartRequest(reader);
 
             case OP_DATA_STREAMER_ADD_DATA:
-                return new ClientDataStreamerAddDataRequest(reader, ctx);
+                return new ClientDataStreamerAddDataRequest(reader);
 
             case OP_ATOMIC_LONG_CREATE:
                 return new ClientAtomicLongCreateRequest(reader);

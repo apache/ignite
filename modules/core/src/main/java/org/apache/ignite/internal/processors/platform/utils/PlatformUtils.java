@@ -1375,10 +1375,8 @@ public class PlatformUtils {
      * Read cache object from the stream as raw bytes to avoid marshalling.
      *
      * @param reader Reader.
-     * @param isKey {@code True} if object is a key.
      */
-    public static <T extends CacheObject> T readCacheObject(CacheObjectValueContext ctx, BinaryReaderExImpl reader,
-        boolean isKey) {
+    public static ObjectWithBytes readCacheObject(BinaryReaderExImpl reader) {
         BinaryInputStream in = reader.in();
 
         int pos0 = in.position();
@@ -1388,21 +1386,58 @@ public class PlatformUtils {
         if (obj == null)
             return null;
 
-        if (obj instanceof BinaryObjectImpl)
-            ((BinaryObjectImpl)obj).prepareMarshal(ctx);
-
-        if (obj instanceof CacheObject)
-            return (T)obj;
-
         int pos1 = in.position();
 
         in.position(pos0);
 
         byte[] objBytes = in.readByteArray(pos1 - pos0);
 
+        return new ObjectWithBytes(obj, objBytes);
+    }
+
+    /**
+     * Build cache object keeping its bytes to avoid marshalling.
+     *
+     * @param ctx Context.
+     * @param objWithBytes Object with bytes.
+     * @param isKey {@code True} if object is a key.
+     */
+    public static <T extends CacheObject> T buildCacheObject(CacheObjectValueContext ctx, ObjectWithBytes objWithBytes,
+        boolean isKey) {
+        if (objWithBytes == null)
+            return null;
+
+        Object obj = objWithBytes.obj;
+
+        if (obj instanceof BinaryObjectImpl)
+            ((BinaryObjectImpl)obj).prepareMarshal(ctx);
+
+        if (obj instanceof CacheObject)
+            return (T)obj;
+
         return isKey ?
-            (T)new KeyCacheObjectImpl(obj, CacheObjectsTransformerUtils.transformIfNecessary(objBytes, ctx), -1) :
-            (T)new CacheObjectImpl(obj, CacheObjectsTransformerUtils.transformIfNecessary(objBytes, ctx));
+            (T)new KeyCacheObjectImpl(obj, CacheObjectsTransformerUtils.transformIfNecessary(objWithBytes.bytes, ctx), -1) :
+            (T)new CacheObjectImpl(obj, CacheObjectsTransformerUtils.transformIfNecessary(objWithBytes.bytes, ctx));
+    }
+
+    /**
+     *
+     */
+    public static final class ObjectWithBytes {
+        /** Object. */
+        Object obj;
+
+        /** Bytes. */
+        byte[] bytes;
+
+        /**
+         * @param obj Object.
+         * @param bytes Bytes.
+         */
+        public ObjectWithBytes(Object obj, byte[] bytes) {
+            this.obj = obj;
+            this.bytes = bytes;
+        }
     }
 
     /**

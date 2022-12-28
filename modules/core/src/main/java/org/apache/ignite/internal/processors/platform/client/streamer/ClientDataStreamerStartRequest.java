@@ -35,6 +35,8 @@ import org.apache.ignite.internal.processors.platform.client.ClientPlatform;
 import org.apache.ignite.internal.processors.platform.client.ClientResponse;
 import org.apache.ignite.internal.processors.platform.client.cache.ClientCacheRequest;
 import org.apache.ignite.internal.processors.platform.utils.PlatformUtils;
+import org.apache.ignite.internal.util.typedef.T2;
+import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.stream.StreamReceiver;
 
 import static org.apache.ignite.internal.processors.platform.client.streamer.ClientDataStreamerFlags.ALLOW_OVERWRITE;
@@ -42,6 +44,7 @@ import static org.apache.ignite.internal.processors.platform.client.streamer.Cli
 import static org.apache.ignite.internal.processors.platform.client.streamer.ClientDataStreamerFlags.FLUSH;
 import static org.apache.ignite.internal.processors.platform.client.streamer.ClientDataStreamerFlags.KEEP_BINARY;
 import static org.apache.ignite.internal.processors.platform.client.streamer.ClientDataStreamerFlags.SKIP_STORE;
+import static org.apache.ignite.internal.processors.platform.utils.PlatformUtils.ObjectWithBytes;
 
 /**
  * Starts the data streamer.
@@ -66,15 +69,15 @@ public class ClientDataStreamerStartRequest extends ClientDataStreamerRequest {
     /** Receiver platform. */
     private final byte receiverPlatform;
 
-    /** Data entries. */
-    private final Collection<DataStreamerEntry> entries;
+    /** */
+    private final Collection<T2<ObjectWithBytes, ObjectWithBytes>> entries;
 
     /**
      * Ctor.
      *
      * @param reader Data reader.
      */
-    public ClientDataStreamerStartRequest(BinaryReaderExImpl reader, ClientConnectionContext ctx) {
+    public ClientDataStreamerStartRequest(BinaryReaderExImpl reader) {
         super(reader);
 
         cacheId = reader.readInt();
@@ -83,17 +86,7 @@ public class ClientDataStreamerStartRequest extends ClientDataStreamerRequest {
         perThreadBufferSize = reader.readInt();
         receiverObj = reader.readObjectDetached();
         receiverPlatform = receiverObj == null ? 0 : reader.readByte();
-
-        CacheObjectValueContext cotx;
-
-        try {
-            cotx = ctx.kernalContext().cache().context().cacheObjectContext(cacheId);
-        }
-        catch (IgniteCheckedException e) {
-            throw new IgniteException("Unable to get cache object value context.", e);
-        }
-
-        entries = ClientDataStreamerReader.read(reader, cotx);
+        entries = read(reader);
     }
 
     /** {@inheritDoc} */
@@ -103,6 +96,10 @@ public class ClientDataStreamerStartRequest extends ClientDataStreamerRequest {
                 ctx.kernalContext().grid().<KeyCacheObject, CacheObject>dataStreamer(cacheName);
 
         try {
+            CacheObjectValueContext cotx = ctx.kernalContext().cache().context().cacheObjectContext(cacheId);
+
+            Collection<DataStreamerEntry> dseEntries = build(cotx, entries);
+
             boolean close = (flags & CLOSE) != 0;
             boolean keepBinary = (flags & KEEP_BINARY) != 0;
             boolean flush = (flags & FLUSH) != 0;
@@ -114,8 +111,8 @@ public class ClientDataStreamerStartRequest extends ClientDataStreamerRequest {
 
             if (perNodeBufferSize >= 0)
                 dataStreamer.perNodeBufferSize(perNodeBufferSize);
-            else if (entries != null && !entries.isEmpty() && close)
-                dataStreamer.perNodeBufferSize(entries.size());
+            else if (dseEntries != null && !dseEntries.isEmpty() && close)
+                dataStreamer.perNodeBufferSize(dseEntries.size());
 
             if (perThreadBufferSize >= 0 && useThreadBuffer)
                 dataStreamer.perThreadBufferSize(perThreadBufferSize);
@@ -127,8 +124,8 @@ public class ClientDataStreamerStartRequest extends ClientDataStreamerRequest {
             if (receiverObj != null)
                 dataStreamer.receiver(createReceiver(ctx.kernalContext(), receiverObj, receiverPlatform, keepBinary));
 
-            if (entries != null)
-                dataStreamer.addDataInternal(entries, useThreadBuffer);
+            if (dseEntries != null)
+                dataStreamer.addDataInternal(dseEntries, useThreadBuffer);
 
             if (flush)
                 dataStreamer.flush();
@@ -144,8 +141,11 @@ public class ClientDataStreamerStartRequest extends ClientDataStreamerRequest {
                 return new ClientLongResponse(requestId(), rsrcId);
             }
         }
-        catch (IllegalStateException unused) {
+        catch (IllegalStateException ignored) {
             return getInvalidNodeStateResponse();
+        }
+        catch (IgniteCheckedException e) {
+            throw U.convertException(e);
         }
     }
 

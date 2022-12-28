@@ -17,10 +17,11 @@
 
 package org.apache.ignite.internal.processors.platform.client.cache;
 
+import java.util.ArrayList;
+import java.util.Collection;
 import java.util.LinkedHashMap;
 import java.util.Map;
 import org.apache.ignite.IgniteCheckedException;
-import org.apache.ignite.IgniteException;
 import org.apache.ignite.internal.binary.BinaryReaderExImpl;
 import org.apache.ignite.internal.client.thin.TcpClientCache;
 import org.apache.ignite.internal.processors.cache.CacheObjectValueContext;
@@ -29,8 +30,11 @@ import org.apache.ignite.internal.processors.cache.version.GridCacheVersion;
 import org.apache.ignite.internal.processors.platform.client.ClientConnectionContext;
 import org.apache.ignite.internal.processors.platform.client.ClientResponse;
 import org.apache.ignite.internal.processors.platform.client.tx.ClientTxAwareRequest;
+import org.apache.ignite.internal.util.typedef.T2;
 import org.apache.ignite.internal.util.typedef.internal.U;
 
+import static org.apache.ignite.internal.processors.platform.utils.PlatformUtils.ObjectWithBytes;
+import static org.apache.ignite.internal.processors.platform.utils.PlatformUtils.buildCacheObject;
 import static org.apache.ignite.internal.processors.platform.utils.PlatformUtils.readCacheObject;
 
 /**
@@ -38,40 +42,42 @@ import static org.apache.ignite.internal.processors.platform.utils.PlatformUtils
  */
 public class ClientCacheRemoveAllConflictRequest extends ClientCacheDataRequest implements ClientTxAwareRequest {
     /** */
-    private final Map<KeyCacheObject, GridCacheVersion> map;
+    private final Collection<T2<ObjectWithBytes, GridCacheVersion>> entries;
 
     /**
      * Constructor.
      *
      * @param reader Reader.
      */
-    public ClientCacheRemoveAllConflictRequest(BinaryReaderExImpl reader, ClientConnectionContext ctx) {
+    public ClientCacheRemoveAllConflictRequest(BinaryReaderExImpl reader) {
         super(reader);
 
         int cnt = reader.readInt();
 
-        map = new LinkedHashMap<>(cnt);
-
-        CacheObjectValueContext cotx;
-
-        try {
-            cotx = cacheObjectContext(ctx);
-        }
-        catch (IgniteCheckedException e) {
-            throw new IgniteException("Unable to get cache object value context.", e);
-        }
+        entries = new ArrayList<>(cnt);
 
         for (int i = 0; i < cnt; i++) {
-            KeyCacheObject key = readCacheObject(cotx, reader, true);
+            ObjectWithBytes key = readCacheObject(reader);
             GridCacheVersion ver = (GridCacheVersion)reader.readObjectDetached();
 
-            map.put(key, ver);
+            entries.add(new T2<>(key, ver));
         }
     }
 
     /** {@inheritDoc} */
     @Override public ClientResponse process(ClientConnectionContext ctx) {
         try {
+            CacheObjectValueContext cotx = cacheObjectContext(ctx);
+
+            Map<KeyCacheObject, GridCacheVersion> map = new LinkedHashMap<>(entries.size());
+
+            for (T2<ObjectWithBytes, GridCacheVersion> t2 : entries) {
+                KeyCacheObject key = buildCacheObject(cotx, t2.get1(), true);
+                GridCacheVersion ver = t2.get2();
+
+                map.put(key, ver);
+            }
+
             cachex(ctx).removeAllConflict(map);
         }
         catch (IgniteCheckedException e) {

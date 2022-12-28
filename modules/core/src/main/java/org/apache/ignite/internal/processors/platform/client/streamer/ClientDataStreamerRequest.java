@@ -17,10 +17,20 @@
 
 package org.apache.ignite.internal.processors.platform.client.streamer;
 
+import java.util.ArrayList;
+import java.util.Collection;
 import org.apache.ignite.binary.BinaryRawReader;
+import org.apache.ignite.internal.binary.BinaryReaderExImpl;
+import org.apache.ignite.internal.processors.cache.CacheObjectValueContext;
+import org.apache.ignite.internal.processors.datastreamer.DataStreamerEntry;
 import org.apache.ignite.internal.processors.platform.client.ClientRequest;
 import org.apache.ignite.internal.processors.platform.client.ClientResponse;
 import org.apache.ignite.internal.processors.platform.client.ClientStatus;
+import org.apache.ignite.internal.util.typedef.T2;
+
+import static org.apache.ignite.internal.processors.platform.utils.PlatformUtils.ObjectWithBytes;
+import static org.apache.ignite.internal.processors.platform.utils.PlatformUtils.buildCacheObject;
+import static org.apache.ignite.internal.processors.platform.utils.PlatformUtils.readCacheObject;
 
 /**
  * Base class for streamer requests.
@@ -43,5 +53,44 @@ abstract class ClientDataStreamerRequest extends ClientRequest {
     protected ClientResponse getInvalidNodeStateResponse() {
         return new ClientResponse(requestId(), ClientStatus.INVALID_NODE_STATE,
                 "Data streamer has been closed because node is stopping.");
+    }
+
+    /**
+     * Reads entries.
+     *
+     * @param reader Data reader.
+     * @return Streamer entries.
+     */
+    protected static Collection<T2<ObjectWithBytes, ObjectWithBytes>> read(BinaryReaderExImpl reader) {
+        int entriesCnt = reader.readInt();
+
+        if (entriesCnt == 0)
+            return null;
+
+        Collection<T2<ObjectWithBytes, ObjectWithBytes>> entries = new ArrayList<>(entriesCnt);
+
+        for (int i = 0; i < entriesCnt; i++)
+            entries.add(new T2<>(readCacheObject(reader), readCacheObject(reader)));
+
+        return entries;
+    }
+
+    /**
+     * Builds entries.
+     *
+     * @param cotx Context.
+     * @param entries Entries.
+     * @return Streamer entries.
+     */
+    protected static Collection<DataStreamerEntry> build(CacheObjectValueContext cotx,
+        Collection<T2<ObjectWithBytes, ObjectWithBytes>> entries) {
+        Collection<DataStreamerEntry> dsEntries = entries != null ? new ArrayList<>(entries.size()) : null;
+
+        for (T2<ObjectWithBytes, ObjectWithBytes> t2 : entries)
+            dsEntries.add(new DataStreamerEntry(
+                buildCacheObject(cotx, t2.getKey(), true),
+                buildCacheObject(cotx, t2.getValue(), false)));
+
+        return dsEntries;
     }
 }

@@ -26,9 +26,11 @@ import org.apache.ignite.internal.processors.datastreamer.DataStreamerEntry;
 import org.apache.ignite.internal.processors.datastreamer.DataStreamerImpl;
 import org.apache.ignite.internal.processors.platform.client.ClientConnectionContext;
 import org.apache.ignite.internal.processors.platform.client.ClientResponse;
+import org.apache.ignite.internal.util.typedef.T2;
 
 import static org.apache.ignite.internal.processors.platform.client.streamer.ClientDataStreamerFlags.CLOSE;
 import static org.apache.ignite.internal.processors.platform.client.streamer.ClientDataStreamerFlags.FLUSH;
+import static org.apache.ignite.internal.processors.platform.utils.PlatformUtils.ObjectWithBytes;
 
 /**
  * Adds data to the existing streamer.
@@ -41,26 +43,19 @@ public class ClientDataStreamerAddDataRequest extends ClientDataStreamerRequest 
     private final byte flags;
 
     /** */
-    private final Collection<DataStreamerEntry> entries;
+    private final Collection<T2<ObjectWithBytes, ObjectWithBytes>> entries;
 
     /**
      * Constructor.
      *
      * @param reader Data reader.
      */
-    public ClientDataStreamerAddDataRequest(BinaryReaderExImpl reader, ClientConnectionContext ctx) {
+    public ClientDataStreamerAddDataRequest(BinaryReaderExImpl reader) {
         super(reader);
 
         streamerId = reader.readLong();
         flags = reader.readByte();
-
-        ClientDataStreamerHandle handle = ctx.resources().get(streamerId);
-
-        String cacheName = handle.getStreamer().cacheName();
-
-        CacheObjectValueContext cotx = ctx.kernalContext().cache().cache(cacheName).context().cacheObjectContext();
-
-        entries = ClientDataStreamerReader.read(reader, cotx);
+        entries = read(reader);
     }
 
     /**
@@ -69,11 +64,17 @@ public class ClientDataStreamerAddDataRequest extends ClientDataStreamerRequest 
     @Override public ClientResponse process(ClientConnectionContext ctx) {
         ClientDataStreamerHandle handle = ctx.resources().get(streamerId);
         DataStreamerImpl<KeyCacheObject, CacheObject> dataStreamer =
-                (DataStreamerImpl<KeyCacheObject, CacheObject>)handle.getStreamer();
+            (DataStreamerImpl<KeyCacheObject, CacheObject>)handle.getStreamer();
 
         try {
-            if (entries != null)
-                dataStreamer.addData(entries);
+            String cacheName = handle.getStreamer().cacheName();
+
+            CacheObjectValueContext cotx = ctx.kernalContext().cache().cache(cacheName).context().cacheObjectContext();
+
+            Collection<DataStreamerEntry> dseEntries = build(cotx, entries);
+
+            if (dseEntries != null)
+                dataStreamer.addData(dseEntries);
 
             if ((flags & FLUSH) != 0)
                 dataStreamer.flush();
@@ -83,7 +84,7 @@ public class ClientDataStreamerAddDataRequest extends ClientDataStreamerRequest 
                 ctx.resources().release(streamerId);
             }
         }
-        catch (IllegalStateException unused) {
+        catch (IllegalStateException ignored) {
             return getInvalidNodeStateResponse();
         }
 
