@@ -6718,19 +6718,22 @@ public abstract class GridCacheMapEntry extends GridMetadataAwareAdapter impleme
         if (!hasPlatformCache())
             return;
 
-        PlatformProcessor proc = this.cctx.kernalContext().platform();
+        PlatformProcessor proc = cctx.kernalContext().platform();
         if (!proc.hasContext() || !proc.context().isPlatformCacheSupported())
             return;
 
         try {
-            CacheObjectContext ctx = this.cctx.cacheObjectContext();
-            byte[] keyBytes = this.key.valueBytes(ctx);
+            CacheObjectContext ctx = cctx.cacheObjectContext();
+            byte[] keyBytes = key.valueBytes(ctx);
 
             // val is null when entry is removed.
-            boolean valid = ver != null && this.valid(ver);
-            byte[] valBytes = val == null || !valid ? null : val.valueBytes(ctx);
+            // valid(ver) is false when near cache entry is out of sync.
+            boolean valid = val != null && ver != null && valid(ver);
 
-            proc.context().updatePlatformCache(this.cctx.cacheId(), keyBytes, valBytes, partition(), ver);
+            // null valBytes means that entry should be removed from platform cache.
+            byte[] valBytes = valid ? val.valueBytes(ctx) : null;
+
+            proc.context().updatePlatformCache(cctx.cacheId(), keyBytes, valBytes, partition(), ver);
         }
         catch (Throwable e) {
             U.error(log, "Failed to update Platform Cache: " + e);
