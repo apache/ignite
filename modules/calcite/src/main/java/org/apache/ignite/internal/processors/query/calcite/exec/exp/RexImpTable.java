@@ -833,21 +833,25 @@ public class RexImpTable {
                 return super.implementSafe(translator, call, argValueList);
             }
             catch (Exception e) {
-                if (!X.hasCause(e, NoSuchMethodException.class) || argValueList.size() != 2)
+                if (!X.hasCause(e, NoSuchMethodException.class))
                     throw e;
 
                 for (Method method : SqlFunctions.class.getMethods()) {
                     if (!method.getName().equals(methodName))
                         continue;
 
-                    List<Expression> newArgValueList = new ArrayList<>(argValueList.size());
-
                     assert !method.isVarArgs();
 
                     Class<?>[] params = method.getParameterTypes();
+
+                    if(params.length != argValueList.size())
+                        continue;
+
+                    List<Expression> newArgValueList = new ArrayList<>(argValueList.size());
+
                     Class<?>[] passedTypes = Types.toClassArray(argValueList);
 
-                    boolean changed = false;
+                    boolean converted = false;
 
                     for (int i = 0; i < passedTypes.length; i++) {
                         Class<?> paramT = params[i];
@@ -868,18 +872,19 @@ public class RexImpTable {
                         newArgValueList.add(EnumUtils.convert(argValueList.get(i),
                             paramP == null ? paramBox.getBoxClass() : paramP.getPrimitiveClass()));
 
-                        changed = true;
+                        converted = true;
                     }
 
-                    if (!changed)
+                    if (!converted)
                         continue;
 
                     try {
                         return super.implementSafe(translator, call, newArgValueList);
                     }
                     catch (Exception e2) {
-                        if (!X.hasCause(e, NoSuchMethodException.class))
-                            throw new IgniteException("Unable to convert function parameters.", e2);
+                        if (!X.hasCause(e2, NoSuchMethodException.class))
+                            throw new IgniteException("Unable to convert  parameters of function implementation '" +
+                                methodName + '.', e2);
                     }
                 }
 

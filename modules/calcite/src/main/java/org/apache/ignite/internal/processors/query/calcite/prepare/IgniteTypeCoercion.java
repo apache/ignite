@@ -49,11 +49,9 @@ public class IgniteTypeCoercion extends TypeCoercionImpl {
     @Override public @Nullable RelDataType implicitCast(RelDataType in, SqlTypeFamily expected) {
         RelDataType res = super.implicitCast(in, expected);
 
-        if (res == null) {
-            // FLOAT/DOUBLE -> LONG/INTEGER/SHORT/BYTE
-            if (SqlTypeUtil.isApproximateNumeric(in) && expected == SqlTypeFamily.INTEGER)
-                return expected.getDefaultConcreteType(factory);
-        }
+        // FLOAT/DOUBLE -> LONG/INTEGER/SHORT/BYTE
+        if (res == null && SqlTypeUtil.isApproximateNumeric(in) && expected == SqlTypeFamily.INTEGER)
+            return expected.getDefaultConcreteType(factory);
 
         return res;
     }
