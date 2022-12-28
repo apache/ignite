@@ -31,6 +31,7 @@ import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.ShutdownPolicy;
 import org.apache.ignite.cache.CacheAtomicityMode;
 import org.apache.ignite.cache.affinity.rendezvous.RendezvousAffinityFunction;
+import org.apache.ignite.cluster.ClusterState;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.DataRegionConfiguration;
 import org.apache.ignite.configuration.DataStorageConfiguration;
@@ -141,7 +142,7 @@ public class IgniteSequentialNodeCrashRecoveryTest extends GridCommonAbstractTes
     public void testCrashOnCheckpointAfterLogicalRecovery() throws Exception {
         IgniteEx g = startGrid(0);
 
-        g.cluster().active(true);
+        g.cluster().state(ClusterState.ACTIVE);
 
         g.getOrCreateCache(new CacheConfiguration<>("cache")
             .setAtomicityMode(CacheAtomicityMode.TRANSACTIONAL)

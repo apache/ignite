@@ -27,6 +27,7 @@ import java.util.stream.Collectors;
 import java.util.stream.IntStream;
 import java.util.stream.Stream;
 import org.apache.ignite.cache.query.SqlFieldsQuery;
+import org.apache.ignite.cluster.ClusterState;
 import org.apache.ignite.configuration.DataRegionConfiguration;
 import org.apache.ignite.configuration.DataStorageConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
@@ -100,7 +101,7 @@ public class CheckIndexesInlineSizeOnNodeJoinMultiJvmTest extends GridCommonAbst
 
         testLog = new ListeningTestLogger(log);
 
-        startGrids(NODES_CNT).cluster().active(true);
+        startGrids(NODES_CNT).cluster().state(ClusterState.ACTIVE);
 
         for (Map.Entry<String, Object[]> entry : getSqlStatements().entrySet())
             executeSql(grid(0), entry.getKey(), entry.getValue());

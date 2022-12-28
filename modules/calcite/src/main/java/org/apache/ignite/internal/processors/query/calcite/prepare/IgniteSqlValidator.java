@@ -494,14 +494,14 @@ public class IgniteSqlValidator extends SqlValidatorImpl {
     /** {@inheritDoc} */
     @Override protected void inferUnknownTypes(RelDataType inferredType, SqlValidatorScope scope, SqlNode node) {
         if (node instanceof SqlDynamicParam && inferredType.equals(unknownType)) {
-            // Infer type of dynamic parameters of unknown type as OTHER.
-            // Parameter will be converted from Object class to required class in runtime.
-            // Such an approach helps to bypass some cases where parameter types can never be inferred (for example,
-            // in expression "CASE WHEN ... THEN ? ELSE ? END"), but also has new issues: if SQL function's method
-            // has overloads, it's not possible to find correct unique method to call, so random method will be choosen.
-            // For such functions operand type inference should be implemented to find the correct method
-            // (see https://issues.apache.org/jira/browse/CALCITE-4347).
-            setValidatedNodeType(node, typeFactory().createCustomType(Object.class));
+            if (parameters.length > ((SqlDynamicParam)node).getIndex()) {
+                Object param = parameters[((SqlDynamicParam)node).getIndex()];
+
+                setValidatedNodeType(node, (param == null) ? typeFactory().createSqlType(SqlTypeName.NULL) :
+                    typeFactory().toSql(typeFactory().createType(param.getClass())));
+            }
+            else
+                setValidatedNodeType(node, typeFactory().createCustomType(Object.class));
         }
         else if (node instanceof SqlCall) {
             final SqlValidatorScope newScope = scopes.get(node);

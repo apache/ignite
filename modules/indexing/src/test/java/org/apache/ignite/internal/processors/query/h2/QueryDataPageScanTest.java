@@ -44,6 +44,7 @@ import org.apache.ignite.cache.query.SqlFieldsQuery;
 import org.apache.ignite.cache.query.SqlQuery;
 import org.apache.ignite.cache.query.annotations.QuerySqlField;
 import org.apache.ignite.cache.query.annotations.QuerySqlFunction;
+import org.apache.ignite.cluster.ClusterState;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.DataRegionConfiguration;
 import org.apache.ignite.configuration.DataStorageConfiguration;
@@ -102,7 +103,7 @@ public class QueryDataPageScanTest extends GridCommonAbstractTest {
         final String cacheName = "test_multi_type";
 
         IgniteEx server = startGrid(0);
-        server.cluster().active(true);
+        server.cluster().state(ClusterState.ACTIVE);
 
         CacheConfiguration<Object, Object> ccfg = new CacheConfiguration<>(cacheName);
         ccfg.setAffinity(new RendezvousAffinityFunction(false, 1));
@@ -193,7 +194,7 @@ public class QueryDataPageScanTest extends GridCommonAbstractTest {
         final String cacheName = "test_updates";
 
         IgniteEx server = startGrid(0);
-        server.cluster().active(true);
+        server.cluster().state(ClusterState.ACTIVE);
 
         CacheConfiguration<Long, Long> ccfg = new CacheConfiguration<>(cacheName);
         ccfg.setIndexedTypes(Long.class, Long.class);
@@ -311,7 +312,7 @@ public class QueryDataPageScanTest extends GridCommonAbstractTest {
 
         GridQueryProcessor.idxCls = DirectPageScanIndexing.class;
         IgniteEx server = startGrid(0);
-        server.cluster().active(true);
+        server.cluster().state(ClusterState.ACTIVE);
 
         IgniteEx client = startClientGrid(1);
 

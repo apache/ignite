@@ -1104,7 +1104,7 @@ public class GridCacheCommandHandler extends GridRestCommandHandlerAdapter {
         @Override public Collection<GridCacheSqlMetadata> execute() {
             try {
                 if (future == null) {
-                    if (!ignite.cluster().active())
+                    if (!ignite.cluster().state().active())
                         return Collections.emptyList();
 
                     IgniteInternalCache<?, ?> cache = null;

@@ -23,6 +23,7 @@ import java.util.concurrent.ThreadLocalRandom;
 import org.apache.ignite.IgniteCache;
 import org.apache.ignite.IgniteSystemProperties;
 import org.apache.ignite.cache.affinity.rendezvous.RendezvousAffinityFunction;
+import org.apache.ignite.cluster.ClusterState;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.DataRegionConfiguration;
 import org.apache.ignite.configuration.DataStorageConfiguration;
@@ -130,7 +131,7 @@ public class IgnitePdsPageSizesTest extends GridCommonAbstractTest {
 
         IgniteEx ignite = startGrid(0);
 
-        ignite.active(true);
+        ignite.cluster().state(ClusterState.ACTIVE);
 
         try {
             final IgniteCache<Object, Object> cache = ignite.cache(cacheName);

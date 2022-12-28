@@ -23,6 +23,7 @@ import org.apache.ignite.IgniteException;
 import org.apache.ignite.Ignition;
 import org.apache.ignite.cache.CacheAtomicityMode;
 import org.apache.ignite.cache.CacheMode;
+import org.apache.ignite.cluster.ClusterState;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.DataRegionConfiguration;
 import org.apache.ignite.configuration.DataStorageConfiguration;
@@ -71,7 +72,7 @@ public class WalEnableDisableWithRestartsTest extends GridCommonAbstractTest {
         for (int i = 0; i < NODES; i++)
             nodes.add(Ignition.start(igniteCfg(false, "server_" + i)));
 
-        nodes.getFirst().active(true);
+        nodes.getFirst().cluster().state(ClusterState.ACTIVE);
 
         Ignite client = Ignition.start(igniteCfg(true, "client"));
 

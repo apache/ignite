@@ -22,6 +22,7 @@ import java.util.List;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteAtomicSequence;
 import org.apache.ignite.cache.affinity.rendezvous.RendezvousAffinityFunction;
+import org.apache.ignite.cluster.ClusterState;
 import org.apache.ignite.configuration.AtomicConfiguration;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
@@ -109,9 +110,9 @@ public class IgniteSequenceInternalCleanupTest extends GridCommonAbstractTest {
 
             assertEquals(1, puts);
 
-            grid(GRIDS_CNT - 1).cluster().active(false);
+            grid(GRIDS_CNT - 1).cluster().state(ClusterState.INACTIVE);
 
-            ignite.cluster().active(true);
+            ignite.cluster().state(ClusterState.ACTIVE);
 
             long putsAfter = ignite.cache("test0").metrics().getCachePuts();
 

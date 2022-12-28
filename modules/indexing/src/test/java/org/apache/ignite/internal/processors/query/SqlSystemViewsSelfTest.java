@@ -341,7 +341,7 @@ public class SqlSystemViewsSelfTest extends AbstractIndexingCommonTest {
 
         IgniteEx srv = startGrid(getConfiguration());
 
-        srv.cluster().active(true);
+        srv.cluster().state(ClusterState.ACTIVE);
 
         String cacheName1 = "CACHE_1";
         String cacheSqlName1 = "SQL_PUBLIC_" + cacheName1;
@@ -371,7 +371,7 @@ public class SqlSystemViewsSelfTest extends AbstractIndexingCommonTest {
 
         srv = startGrid(getConfiguration());
 
-        srv.cluster().active(true);
+        srv.cluster().state(ClusterState.ACTIVE);
 
         checkIndexRebuild(cacheName1, true);
         checkIndexRebuild(cacheName2, true);
@@ -955,7 +955,7 @@ public class SqlSystemViewsSelfTest extends AbstractIndexingCommonTest {
         startGrid(getTestIgniteInstanceName(1), getPdsConfiguration("node1")
             .setUserAttributes(F.asMap(customAttr, "val1")));
 
-        ignite.cluster().active(true);
+        ignite.cluster().state(ClusterState.ACTIVE);
 
         List<List<?>> res = execSql("SELECT CONSISTENT_ID, ONLINE FROM " +
             systemSchemaName() + ".BASELINE_NODES ORDER BY CONSISTENT_ID");
@@ -1130,7 +1130,7 @@ public class SqlSystemViewsSelfTest extends AbstractIndexingCommonTest {
     public void testIoStatisticsViews() throws Exception {
         Ignite ignite = startGrid(getTestIgniteInstanceName(), getPdsConfiguration("node0"));
 
-        ignite.cluster().active(true);
+        ignite.cluster().state(ClusterState.ACTIVE);
 
         execSql("CREATE TABLE TST(id INTEGER PRIMARY KEY, name VARCHAR, age integer)");
 
@@ -1407,7 +1407,7 @@ public class SqlSystemViewsSelfTest extends AbstractIndexingCommonTest {
 
         Ignite ignite1 = startGrid(getConfiguration().setDataStorageConfiguration(dsCfg).setIgniteInstanceName("node1"));
 
-        ignite0.cluster().active(true);
+        ignite0.cluster().state(ClusterState.ACTIVE);
 
         Ignite ignite2 = startGrid(getConfiguration().setDataStorageConfiguration(dsCfg).setIgniteInstanceName("node2"));
 

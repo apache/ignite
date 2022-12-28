@@ -373,7 +373,7 @@ public class CacheGroupMetricsTest extends GridCommonAbstractTest implements Ser
 
         IgniteEx ignite = startGrid(0);
 
-        ignite.cluster().active(true);
+        ignite.cluster().state(ClusterState.ACTIVE);
 
         MetricRegistry mxBean0Grp1 = cacheGroupMetrics(0, "group1");
         MetricRegistry mxBean0Grp2 = cacheGroupMetrics(0, "group2");
@@ -471,7 +471,7 @@ public class CacheGroupMetricsTest extends GridCommonAbstractTest implements Ser
 
         IgniteEx ignite = startGrid(0);
 
-        ignite.cluster().active(true);
+        ignite.cluster().state(ClusterState.ACTIVE);
 
         MetricRegistry group1Metrics = cacheGroupMetrics(0, "group1");
 

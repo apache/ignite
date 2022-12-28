@@ -18,6 +18,7 @@
 package org.apache.ignite.internal.processors.cache.distributed;
 
 import org.apache.ignite.cache.affinity.rendezvous.RendezvousAffinityFunction;
+import org.apache.ignite.cluster.ClusterState;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.DataRegionConfiguration;
 import org.apache.ignite.configuration.DataStorageConfiguration;
@@ -85,7 +86,7 @@ public class Cache64kPartitionsTest extends GridCommonAbstractTest {
         try {
             startGrids(4);
 
-            grid(0).active(true);
+            grid(0).cluster().state(ClusterState.ACTIVE);
         }
         finally {
             stopAllGrids();

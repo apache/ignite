@@ -26,6 +26,7 @@ import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCache;
 import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.cluster.ClusterNode;
+import org.apache.ignite.cluster.ClusterState;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.DataRegionConfiguration;
 import org.apache.ignite.configuration.DataStorageConfiguration;
@@ -171,7 +172,7 @@ public class CleanupRestoredCachesSlowTest extends GridCommonAbstractTest implem
         ClusterNode cn0 = grid(0).cluster().localNode();
         ClusterNode cn1 = grid(1).cluster().localNode();
 
-        ignite.cluster().active(true);
+        ignite.cluster().state(ClusterState.ACTIVE);
 
         ignite.cluster().baselineAutoAdjustEnabled(false);
 

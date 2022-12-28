@@ -41,6 +41,7 @@ import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.IgniteTransactions;
 import org.apache.ignite.cluster.ClusterNode;
+import org.apache.ignite.cluster.ClusterState;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.DataRegionConfiguration;
 import org.apache.ignite.configuration.DataStorageConfiguration;
@@ -170,7 +171,7 @@ public class TxRollbackAsyncTest extends GridCommonAbstractTest {
 
         startGridsMultiThreaded(1, GRID_CNT - 1);
 
-        crd.cluster().active(true);
+        crd.cluster().state(ClusterState.ACTIVE);
 
         awaitPartitionMapExchange();
     }
