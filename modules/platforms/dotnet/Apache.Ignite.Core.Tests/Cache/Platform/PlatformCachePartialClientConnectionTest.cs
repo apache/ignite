@@ -27,9 +27,9 @@ namespace Apache.Ignite.Core.Tests.Cache.Platform
     using NUnit.Framework;
 
     /// <summary>
-    /// Tests platform cache with <see cref="CacheConfiguration.ReadFromBackup"/> enabled.
+    /// Tests platform cache with thick clients connected to different parts of the cluster.
     /// </summary>
-    public class PlatformCacheReadFromBackupTest
+    public class PlatformCachePartialClientConnectionTest
     {
         private const string CacheName = "cache1";
         private const string AttrMacs = "org.apache.ignite.macs";
@@ -43,15 +43,21 @@ namespace Apache.Ignite.Core.Tests.Cache.Platform
             Ignition.StopAll(true);
         }
 
+        /// <summary>
+        /// Tests that thick client connected only to backup node 1 updates a value,
+        /// and another thick client connected to a different backup node sees the update in Platform Cache.
+        /// </summary>
         [Test]
         public static void TestPutFromOneClientGetFromAnother()
         {
+            // Start 3 servers.
             var servers = Enumerable.Range(0, 3)
                 .Select(i => Ignition.Start(GetConfiguration(false, i, 0)))
                 .ToArray();
 
             CreateCache(servers[0]);
 
+            // Start 2 thick clients, connect to different backup nodes only (not entire cluster).
             var primaryAndBackups = servers[0].GetAffinity(CacheName).MapKeyToPrimaryAndBackups(Key);
             var backupServer1Mac = GetMac(primaryAndBackups[1]);
             var backupServer2Mac = GetMac(primaryAndBackups[2]);
@@ -78,7 +84,7 @@ namespace Apache.Ignite.Core.Tests.Cache.Platform
             client2Value = client2Cache.Get(Key);
 
             Assert.AreEqual(newValue, client1Value);
-            Assert.AreEqual(newValue, client2Value); // Second client does not have correct value.
+            Assert.AreEqual(newValue, client2Value);
         }
 
         private static int GetMac(IClusterNode node) => Convert.ToInt32(node.Attributes[AttrMacs]);
