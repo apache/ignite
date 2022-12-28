@@ -685,7 +685,6 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
 
             File db = new File(snpDir, DB_DEFAULT_FOLDER);
 
-            // May be non-empty due to concurrent deletion of shared directories.
             db.delete();
             snpDir.delete();
         }
