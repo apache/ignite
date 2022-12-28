@@ -1200,9 +1200,9 @@ public class IgniteClusterSnapshotSelfTest extends AbstractSnapshotSelfTest {
     /** @throws Exception If fails. */
     @Test
     public void testClusterSnapshotInProgressCancelled() throws Exception {
-        IgniteEx srv = startGridsWithCache(1, dfltCacheCfg, CACHE_KEYS_RANGE);
-        IgniteEx startCli = startClientGrid(1);
-        IgniteEx killCli = startClientGrid(2);
+        IgniteEx srv = startGridsWithCache(3, dfltCacheCfg, CACHE_KEYS_RANGE);
+        IgniteEx startCli = startClientGrid(3);
+        IgniteEx killCli = startClientGrid(4);
 
         doSnapshotCancellationTest(startCli, Collections.singletonList(srv), srv.cache(dfltCacheCfg.getName()),
             snpName -> killCli.snapshot().cancelSnapshot(snpName).get());
