@@ -470,7 +470,7 @@ public class DataTypesTest extends AbstractBasicIntegrationTest {
     }
 
     /**
-     * Test number type convertation of 'LEFT' function since {@link SqlFunctions#left(String, int)} has only
+     * Tests number type convertation of 'LEFT' function since {@link SqlFunctions#left(String, int)} has only
      * {@code int} truncate parameter type.
      */
     @Test
@@ -479,7 +479,7 @@ public class DataTypesTest extends AbstractBasicIntegrationTest {
     }
 
     /**
-     * Test number type convertation of 'RIGHT' function since {@link SqlFunctions#right(String, int)} has only
+     * Tests number type convertation of 'RIGHT' function since {@link SqlFunctions#right(String, int)} has only
      * {@code int} truncate parameter type.
      */
     @Test
