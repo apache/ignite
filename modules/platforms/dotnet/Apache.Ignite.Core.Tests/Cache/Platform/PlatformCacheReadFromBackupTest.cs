@@ -21,6 +21,7 @@ namespace Apache.Ignite.Core.Tests.Cache.Platform
     using System.Collections.Generic;
     using System.Linq;
     using Apache.Ignite.Core.Cache.Configuration;
+    using Apache.Ignite.Core.Cluster;
     using Apache.Ignite.Core.Discovery.Tcp;
     using Apache.Ignite.Core.Discovery.Tcp.Static;
     using NUnit.Framework;
@@ -36,8 +37,8 @@ namespace Apache.Ignite.Core.Tests.Cache.Platform
         private const string Key = "k";
         private const string InitialValue = "0";
 
-        [TestFixtureTearDown]
-        public void FixtureTearDown()
+        [TearDown]
+        public void TearDown()
         {
             Ignition.StopAll(true);
         }
@@ -45,18 +46,18 @@ namespace Apache.Ignite.Core.Tests.Cache.Platform
         [Test]
         public static void TestPutFromOneClientGetFromAnother()
         {
-            var servers = Enumerable.Range(0, 3).Select(i => Ignition.Start(NewIgniteConfiguration(false, i, 0)))
+            var servers = Enumerable.Range(0, 3)
+                .Select(i => Ignition.Start(GetConfiguration(false, i, 0)))
                 .ToArray();
-            InitCache(servers[0]);
 
-            var nodes = servers[0].GetAffinity(CacheName).MapKeyToPrimaryAndBackups(Key);
-            var backupServer1MacAddress = Convert.ToInt32(nodes[1].Attributes[AttrMacs]);
-            var backupServer2MacAddress = Convert.ToInt32(nodes[2].Attributes[AttrMacs]);
+            CreateCache(servers[0]);
 
-            var client1 =
-                Ignition.Start(NewIgniteConfiguration(true, backupServer1MacAddress, backupServer1MacAddress));
-            var client2 =
-                Ignition.Start(NewIgniteConfiguration(true, backupServer2MacAddress, backupServer2MacAddress));
+            var primaryAndBackups = servers[0].GetAffinity(CacheName).MapKeyToPrimaryAndBackups(Key);
+            var backupServer1Mac = GetMac(primaryAndBackups[1]);
+            var backupServer2Mac = GetMac(primaryAndBackups[2]);
+
+            var client1 = Ignition.Start(GetConfiguration(true, backupServer1Mac, backupServer1Mac));
+            var client2 = Ignition.Start(GetConfiguration(true, backupServer2Mac, backupServer2Mac));
 
             // Check initial value.
             var client1Cache = client1.GetOrCreateNearCache<string, string>(CacheName, new NearCacheConfiguration());
@@ -80,13 +81,13 @@ namespace Apache.Ignite.Core.Tests.Cache.Platform
             Assert.AreEqual(newValue, client2Value); // Second client does not have correct value.
         }
 
-        private static IgniteConfiguration NewIgniteConfiguration(
-            bool clientMode,
-            int localMacAddress,
-            int remoteMacAddress)
+        private static int GetMac(IClusterNode node) => Convert.ToInt32(node.Attributes[AttrMacs]);
+
+        private static IgniteConfiguration GetConfiguration(bool client, int localMac, int remoteMac)
         {
-            var name = (clientMode ? "client" : "server") + localMacAddress;
-            var remotePort = 48500 + remoteMacAddress;
+            var name = (client ? "client" : "server") + localMac;
+            var remotePort = 48500 + remoteMac;
+
             var discoverySpi = new TcpDiscoverySpi
             {
                 IpFinder = new TcpDiscoveryStaticIpFinder
@@ -95,29 +96,28 @@ namespace Apache.Ignite.Core.Tests.Cache.Platform
                 }
             };
 
+            if (!client)
+            {
+                discoverySpi.LocalPort = 48500 + localMac;
+                discoverySpi.LocalPortRange = 1;
+            }
+
             var igniteConfig = new IgniteConfiguration(TestUtils.GetTestConfiguration())
             {
-                ClientMode = clientMode,
+                ClientMode = client,
                 IgniteInstanceName = name,
-                ConsistentId = name,
+                // ConsistentId = name,
                 UserAttributes = new Dictionary<string, object>
                 {
-                    [$"override.{AttrMacs}"] = localMacAddress.ToString()
+                    [$"override.{AttrMacs}"] = localMac.ToString()
                 },
                 DiscoverySpi = discoverySpi
             };
 
-            if (!clientMode)
-            {
-                var localPort = 48500 + localMacAddress;
-                discoverySpi.LocalPort = localPort;
-                discoverySpi.LocalPortRange = 1;
-            }
-
             return igniteConfig;
         }
 
-        private static void InitCache(IIgnite ignite)
+        private static void CreateCache(IIgnite ignite)
         {
             var cacheConfig = new CacheConfiguration(CacheName)
             {
