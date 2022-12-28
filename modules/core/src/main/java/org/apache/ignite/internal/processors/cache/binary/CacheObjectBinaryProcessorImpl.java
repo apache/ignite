@@ -86,7 +86,6 @@ import org.apache.ignite.internal.processors.cache.CacheObjectByteArrayImpl;
 import org.apache.ignite.internal.processors.cache.CacheObjectContext;
 import org.apache.ignite.internal.processors.cache.CacheObjectImpl;
 import org.apache.ignite.internal.processors.cache.CacheObjectValueContext;
-import org.apache.ignite.internal.processors.cache.CacheObjectsTransformerUtils;
 import org.apache.ignite.internal.processors.cache.GridCacheContext;
 import org.apache.ignite.internal.processors.cache.GridCacheDefaultAffinityKeyMapper;
 import org.apache.ignite.internal.processors.cache.GridCacheUtils;
@@ -1243,7 +1242,7 @@ public class CacheObjectBinaryProcessorImpl extends GridProcessorAdapter impleme
 
         assert arr.length > 0;
 
-        return CacheObjectsTransformerUtils.transformIfNecessary(arr, ctx);
+        return arr;
     }
 
     /** {@inheritDoc} */
@@ -1252,7 +1251,7 @@ public class CacheObjectBinaryProcessorImpl extends GridProcessorAdapter impleme
         if (!ctx.binaryEnabled() || binaryMarsh == null)
             return U.unmarshal(ctx.kernalContext(), bytes, U.resolveClassLoader(clsLdr, ctx.kernalContext().config()));
 
-        return binaryMarsh.unmarshal(CacheObjectsTransformerUtils.restoreIfNecessary(bytes, ctx), clsLdr);
+        return binaryMarsh.unmarshal(bytes, clsLdr);
     }
 
     /** {@inheritDoc} */
@@ -1419,7 +1418,11 @@ public class CacheObjectBinaryProcessorImpl extends GridProcessorAdapter impleme
                 throw new IllegalArgumentException("Byte arrays cannot be used as cache keys.");
 
             case CacheObject.TYPE_REGULAR:
-                return new KeyCacheObjectImpl(ctx.kernalContext().cacheObjects().unmarshal(ctx, bytes, null), bytes, -1);
+                KeyCacheObjectImpl key = new KeyCacheObjectImpl(null, bytes, -1);
+
+                key.finishUnmarshal(ctx, null); // TODO is it necessary?
+
+                return key;
         }
 
         throw new IllegalArgumentException("Invalid object type: " + type);

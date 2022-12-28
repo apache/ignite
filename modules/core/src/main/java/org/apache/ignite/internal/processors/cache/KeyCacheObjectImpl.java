@@ -49,7 +49,7 @@ public class KeyCacheObjectImpl extends CacheObjectAdapter implements KeyCacheOb
      * @param part Partition.
      */
     public KeyCacheObjectImpl(Object val, byte[] valBytes, int part) {
-        assert val != null;
+        assert val != null || valBytes != null;
 
         this.val = val;
         this.valBytes = valBytes;
@@ -77,7 +77,7 @@ public class KeyCacheObjectImpl extends CacheObjectAdapter implements KeyCacheOb
     /** {@inheritDoc} */
     @Override public byte[] valueBytes(CacheObjectValueContext ctx) throws IgniteCheckedException {
         if (valBytes == null)
-            valBytes = ctx.kernalContext().cacheObjects().marshal(ctx, val);
+            valBytes = valueBytesFromValue(ctx);
 
         return valBytes;
     }
@@ -186,7 +186,7 @@ public class KeyCacheObjectImpl extends CacheObjectAdapter implements KeyCacheOb
     /** {@inheritDoc} */
     @Override public void prepareMarshal(CacheObjectValueContext ctx) throws IgniteCheckedException {
         if (valBytes == null)
-            valBytes = ctx.kernalContext().cacheObjects().marshal(ctx, val);
+            valBytes = valueBytesFromValue(ctx);
     }
 
     /** {@inheritDoc} */
@@ -194,7 +194,7 @@ public class KeyCacheObjectImpl extends CacheObjectAdapter implements KeyCacheOb
         if (val == null) {
             assert valBytes != null;
 
-            val = ctx.kernalContext().cacheObjects().unmarshal(ctx, valBytes, ldr);
+            val = valueFromValueBytes(ctx, ldr);
         }
     }
 

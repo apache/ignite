@@ -72,14 +72,14 @@ public class UserKeyCacheObjectImpl extends KeyCacheObjectImpl {
 
             if (!proc.immutable(val)) {
                 if (valBytes == null)
-                    valBytes = proc.marshal(ctx, val);
+                    valBytes = valueBytesFromValue(ctx);
 
                 boolean p2pEnabled = ctx.kernalContext().config().isPeerClassLoadingEnabled();
 
                 ClassLoader ldr = p2pEnabled ?
-                    IgniteUtils.detectClassLoader(IgniteUtils.detectClass(this.val)) : U.gridClassLoader();
+                    IgniteUtils.detectClassLoader(IgniteUtils.detectClass(val)) : U.gridClassLoader();
 
-                Object val = proc.unmarshal(ctx, valBytes, ldr);
+                Object val = valueFromValueBytes(ctx, ldr);
 
                 KeyCacheObject key = new KeyCacheObjectImpl(val, valBytes, partition());
 

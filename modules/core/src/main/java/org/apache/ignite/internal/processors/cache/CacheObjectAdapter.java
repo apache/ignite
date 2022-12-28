@@ -57,6 +57,24 @@ public abstract class CacheObjectAdapter implements CacheObject, Externalizable 
         return ctx.copyOnGet() && val != null && !ctx.kernalContext().cacheObjects().immutable(val);
     }
 
+    /**
+     * @return Value bytes from value.
+     */
+    protected byte[] valueBytesFromValue(CacheObjectValueContext ctx) throws IgniteCheckedException {
+        byte[] bytes = ctx.kernalContext().cacheObjects().marshal(ctx, val);
+
+        return CacheObjectsTransformerUtils.transformIfNecessary(bytes, ctx);
+    }
+
+    /**
+     * @return Value from value bytes.
+     */
+    protected Object valueFromValueBytes(CacheObjectValueContext ctx, ClassLoader ldr) throws IgniteCheckedException {
+        byte[] bytes = CacheObjectsTransformerUtils.restoreIfNecessary(valBytes, ctx);
+
+        return ctx.kernalContext().cacheObjects().unmarshal(ctx, bytes, ldr);
+    }
+
     /** {@inheritDoc} */
     @Override public byte cacheObjectType() {
         return TYPE_REGULAR;
