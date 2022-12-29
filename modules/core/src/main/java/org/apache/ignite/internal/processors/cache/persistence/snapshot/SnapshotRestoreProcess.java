@@ -1433,8 +1433,7 @@ public class SnapshotRestoreProcess {
         FilePageStoreManager storeMgr = (FilePageStoreManager)ctx.cache().context().pageStore();
         FileVersionCheckingFactory factory = storeMgr.getPageStoreFactory(grpId, null);
 
-        try (FilePageStore pageStore = (FilePageStore)factory.createPageStore(getTypeByPartId(partId), partFile, val -> {})
-        ) {
+        try (FilePageStore pageStore = (FilePageStore)factory.createPageStore(getTypeByPartId(partId), partFile, val -> {})) {
             pageStore.init();
 
             ByteBuffer buf = locBuff.get();
