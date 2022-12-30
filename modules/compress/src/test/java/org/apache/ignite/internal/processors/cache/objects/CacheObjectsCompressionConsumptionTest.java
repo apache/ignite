@@ -18,16 +18,17 @@
 package org.apache.ignite.internal.processors.cache.objects;
 
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.Collection;
 import java.util.List;
 import java.util.function.Function;
+import org.apache.commons.io.FileUtils;
 import org.apache.ignite.DataRegionMetrics;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCache;
 import org.apache.ignite.IgniteSystemProperties;
 import org.apache.ignite.client.ClientCache;
 import org.apache.ignite.client.IgniteClient;
+import org.apache.ignite.cluster.ClusterState;
 import org.apache.ignite.configuration.ClientConfiguration;
 import org.apache.ignite.configuration.DataRegionConfiguration;
 import org.apache.ignite.configuration.DataStorageConfiguration;
@@ -35,6 +36,7 @@ import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.processors.metric.MetricRegistry;
 import org.apache.ignite.internal.util.typedef.G;
+import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.spi.communication.CommunicationSpi;
 import org.apache.ignite.spi.metric.LongMetric;
 import org.apache.ignite.testframework.GridTestUtils;
@@ -42,7 +44,7 @@ import org.apache.ignite.testframework.junits.WithSystemProperty;
 import org.junit.runner.RunWith;
 import org.junit.runners.Parameterized;
 
-import static org.apache.ignite.configuration.ClientConnectorConfiguration.DFLT_PORT;
+import static org.apache.ignite.internal.processors.cache.persistence.file.FilePageStoreManager.DFLT_STORE_DIR;
 import static org.apache.ignite.internal.processors.metric.GridMetricManager.CLIENT_CONNECTOR_METRICS;
 import static org.apache.ignite.internal.util.nio.GridNioServer.RECEIVED_BYTES_METRIC_NAME;
 import static org.apache.ignite.internal.util.nio.GridNioServer.SENT_BYTES_METRIC_NAME;
@@ -57,26 +59,35 @@ public class CacheObjectsCompressionConsumptionTest extends AbstractCacheObjects
 
     /** Thin client. */
     @Parameterized.Parameter
-    public boolean thinClient;
+    public ConsumptionTestMode mode;
 
     /** @return Test parameters. */
-    @Parameterized.Parameters(name = "thinClient={0}")
+    @Parameterized.Parameters(name = "mode={0}")
     public static Collection<?> parameters() {
-        return Arrays.asList(new Object[][] {{false}, {true}});
+        List<Object[]> res = new ArrayList<>();
+
+        for (ConsumptionTestMode mode : ConsumptionTestMode.values())
+            res.add(new Object[] {mode});
+
+        return res;
     }
 
     /** {@inheritDoc} */
     @Override protected IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {
         IgniteConfiguration cfg = super.getConfiguration(igniteInstanceName);
 
+        DataRegionConfiguration drCgf = new DataRegionConfiguration()
+            .setName(REGION_NAME)
+            .setMetricsEnabled(true)
+            .setMaxSize(1000L * 1024 * 1024)
+            .setInitialSize(1000L * 1024 * 1024);
+
+        if (mode == ConsumptionTestMode.PERSISTENT)
+            drCgf.setPersistenceEnabled(true);
+
         cfg.setDataStorageConfiguration(
             new DataStorageConfiguration()
-                .setDefaultDataRegionConfiguration(
-                    new DataRegionConfiguration()
-                        .setName(REGION_NAME)
-                        .setMetricsEnabled(true)
-                        .setMaxSize(1000L * 1024 * 1024)
-                        .setInitialSize(1000L * 1024 * 1024))
+                .setDefaultDataRegionConfiguration(drCgf)
                 .setMetricsEnabled(true));
 
         return cfg;
@@ -144,8 +155,8 @@ public class CacheObjectsCompressionConsumptionTest extends AbstractCacheObjects
         List<Consumption> raws = new ArrayList<>();
         List<Consumption> comps = new ArrayList<>();
 
-        for (int i = 0; i < 4; i++) {
-            int cnt = 5000 + i * 1000;
+        for (int i = 1; i <= 4; i++) {
+            int cnt = i * 1000;
 
             Consumption raw;
             Consumption compressed;
@@ -171,6 +182,10 @@ public class CacheObjectsCompressionConsumptionTest extends AbstractCacheObjects
             assertTrue("Network, raw=" + raw.net + ", compressed=" + compressed.net, raw.net > compressed.net);
             assertTrue("Memory, raw=" + raw.mem + ", compressed=" + compressed.mem, raw.mem > compressed.mem);
 
+            if (mode == ConsumptionTestMode.PERSISTENT)
+                assertTrue("Persistence, raw=" + raw.persist + ", compressed=" + compressed.persist,
+                    raw.persist > compressed.persist);
+
             cnts.add(cnt);
             raws.add(raw);
             comps.add(compressed);
@@ -178,43 +193,83 @@ public class CacheObjectsCompressionConsumptionTest extends AbstractCacheObjects
 
         StringBuilder sb = new StringBuilder();
 
-        sb.append("Comparision results:");
+        sb.append("\nComparision results [mode=").append(mode).append("]:");
 
-        for (int i = 0; i < cnts.size(); i++)
+        for (int i = 0; i < cnts.size(); i++) {
+            long rn = raws.get(i).net;
+            long cn = comps.get(i).net;
+            long rm = raws.get(i).mem;
+            long cm = comps.get(i).mem;
+            long rp = raws.get(i).persist;
+            long cp = comps.get(i).persist;
+
             sb.append("\nEntries=")
                 .append(cnts.get(i))
-                .append(",\tNetwork [raw=")
-                .append(raws.get(i).net)
+                .append("\n\t")
+                .append("Network     [raw=")
+                .append(rn)
                 .append(", compressed=")
-                .append(comps.get(i).net)
-                .append("],\tMemory [raw=")
-                .append(raws.get(i).mem)
+                .append(cn)
+                .append(", profit=")
+                .append((rn - cn) * 100 / rn)
+                .append("%],\n\t")
+                .append("Memory      [raw=")
+                .append(rm)
                 .append(", compressed=")
-                .append(comps.get(i).mem)
-                .append("]");
+                .append(cm)
+                .append(", profit=")
+                .append((rm - cm) * 100 / rm)
+                .append("%],\n\t")
+                .append("Persistence [raw=")
+                .append(rp)
+                .append(", compressed=")
+                .append(cp)
+                .append(", profit=")
+                .append((mode == ConsumptionTestMode.PERSISTENT) ? (rp - cp) * 100 / rp : 0)
+                .append("%]");
+        }
 
         for (int i = 1; i < cnts.size(); i++) {
             long rnd = raws.get(i).net - raws.get(i - 1).net;
             long cnd = comps.get(i).net - comps.get(i - 1).net;
             long rmd = raws.get(i).mem - raws.get(i - 1).mem;
             long cmd = comps.get(i).mem - comps.get(i - 1).mem;
+            long rpd = raws.get(i).persist - raws.get(i - 1).persist;
+            long cpd = comps.get(i).persist - comps.get(i - 1).persist;
 
-            sb.append("\nEntries=")
+            assertTrue(rnd > 0);
+            assertTrue(cnd > 0);
+            assertTrue(rmd > 0);
+            assertTrue(cmd > 0);
+
+            assertTrue(mode == ConsumptionTestMode.PERSISTENT ? rpd > 0 : rpd == 0);
+            assertTrue(mode == ConsumptionTestMode.PERSISTENT ? cpd > 0 : cpd == 0);
+
+            sb.append("\nDiff [entries=")
                 .append(cnts.get(i - 1))
                 .append("->")
                 .append(cnts.get(i))
-                .append(",\tNetwork diff [raw=")
+                .append("]\n\t")
+                .append("Network     [raw=")
                 .append(rnd)
                 .append(", compressed=")
                 .append(cnd)
                 .append(", profit=")
                 .append((rnd - cnd) * 100 / rnd)
-                .append("%],\tMemory diff [raw=")
+                .append("%],\n\t")
+                .append("Memory      [raw=")
                 .append(rmd)
                 .append(", compressed=")
                 .append(cmd)
                 .append(", profit=")
                 .append((rmd - cmd) * 100 / rmd)
+                .append("%],\n\t")
+                .append("Persistence [raw=")
+                .append(rpd)
+                .append(", compressed=")
+                .append(cpd)
+                .append(", profit=")
+                .append((mode == ConsumptionTestMode.PERSISTENT) ? (rpd - cpd) * 100 / rpd : 0)
                 .append("%]");
         }
 
@@ -226,53 +281,91 @@ public class CacheObjectsCompressionConsumptionTest extends AbstractCacheObjects
      */
     private Consumption doTest(int cnt, Function<Integer, Object> keyGen, Function<Integer, Object> valGen) throws Exception {
         try {
+            cleanPersistenceDir();
+
             Ignite ignite = startGrids(2);
 
-            IgniteCache<Object, Object> cache = ignite.getOrCreateCache(CACHE_NAME);
+            if (mode == ConsumptionTestMode.PERSISTENT)
+                ignite.cluster().state(ClusterState.ACTIVE);
 
-            try (IgniteClient client = G.startClient(new ClientConfiguration().setAddresses("127.0.0.1:" + DFLT_PORT))) {
-                ClientCache<Object, Object> cCache = client.cache(CACHE_NAME);
+            awaitPartitionMapExchange();
 
-                for (int i = 0; i < cnt; i++) {
-                    Object key = keyGen.apply(i);
-                    Object val = valGen.apply(i);
+            for (Ignite node : G.allGrids())
+                node.configuration().getCommunicationSpi().resetMetrics();
 
-                    if (thinClient) {
-                        cCache.put(key, val);
+            Ignite prim = primaryNode(0, CACHE_NAME);
 
-                        assertEqualsArraysAware(cCache.get(key), val);
-                    }
-                    else {
+            if (mode == ConsumptionTestMode.THIN_CLIENT) {
+                String host = prim.configuration().getLocalHost();
+                int port = prim.configuration().getClientConnectorConfiguration().getPort();
+
+                try (IgniteClient client = G.startClient(new ClientConfiguration().setAddresses(host + ":" + port))) {
+                    ClientCache<Object, Object> cache = client.cache(CACHE_NAME);
+
+                    for (int i = 0; i < cnt; i++) {
+                        Object key = keyGen.apply(i);
+                        Object val = valGen.apply(i);
+
                         cache.put(key, val);
 
                         assertEqualsArraysAware(cache.get(key), val);
                     }
                 }
             }
+            else {
+                IgniteCache<Object, Object> cache = prim.getOrCreateCache(CACHE_NAME);
+
+                for (int i = 0; i < cnt; i++) {
+                    Object key = keyGen.apply(i);
+                    Object val = valGen.apply(i);
+
+                    cache.put(key, val);
+
+                    assertEqualsArraysAware(cache.get(key), val);
+                }
+            }
 
             long net = 0;
             long mem = 0;
+            long pers = 0;
 
             for (Ignite node : G.allGrids()) {
+                if (mode == ConsumptionTestMode.PERSISTENT)
+                    forceCheckpoint(node);
+
                 CommunicationSpi<?> spi = node.configuration().getCommunicationSpi();
 
                 net += spi.getSentBytesCount();
                 net += spi.getReceivedBytesCount();
 
+                long clNet = 0;
+
                 MetricRegistry reg = mreg(node, CLIENT_CONNECTOR_METRICS);
 
-                net += reg.<LongMetric>findMetric(SENT_BYTES_METRIC_NAME).value();
-                net += reg.<LongMetric>findMetric(RECEIVED_BYTES_METRIC_NAME).value();
+                clNet += reg.<LongMetric>findMetric(SENT_BYTES_METRIC_NAME).value();
+                clNet += reg.<LongMetric>findMetric(RECEIVED_BYTES_METRIC_NAME).value();
+
+                if (mode != ConsumptionTestMode.THIN_CLIENT)
+                    assertEquals(0, clNet);
+
+                net += clNet;
 
                 DataRegionMetrics metrics = node.dataRegionMetrics(REGION_NAME);
 
-                mem += Math.round(metrics.getTotalUsedSize() * metrics.getPagesFillFactor());
+                mem += metrics.getTotalAllocatedSize();
+
+                String nodeFolder = ((IgniteEx)node).context().pdsFolderResolver().resolveFolders().folderName();
+
+                pers += FileUtils.sizeOfDirectory(
+                    U.resolveWorkDirectory(U.defaultWorkDirectory(), DFLT_STORE_DIR + "/" + nodeFolder, false));
             }
 
-            return new Consumption(net, mem);
+            return new Consumption(net, mem, pers);
         }
         finally {
             stopAllGrids();
+
+            cleanPersistenceDir();
         }
     }
 
@@ -294,18 +387,33 @@ public class CacheObjectsCompressionConsumptionTest extends AbstractCacheObjects
         /** Memory. */
         long mem;
 
-        /**
-         * @param net Network.
-         * @param mem Memory.
-         */
-        public Consumption(long net, long mem) {
+        /** Persistence. */
+        long persist;
+
+        /***/
+        public Consumption(long net, long mem, long persist) {
             this.net = net;
             this.mem = mem;
+            this.persist = persist;
         }
 
         /** {@inheritDoc} */
         @Override public String toString() {
-            return "[net=" + net + ", mem=" + mem + ']';
+            return "[net=" + net + ", mem=" + mem + ", pers=" + persist + ']';
         }
+    }
+
+    /**
+     *
+     */
+    private enum ConsumptionTestMode {
+        /** Node. */
+        NODE,
+
+        /** Thin client. */
+        THIN_CLIENT,
+
+        /** Node + Persistent. */
+        PERSISTENT
     }
 }
