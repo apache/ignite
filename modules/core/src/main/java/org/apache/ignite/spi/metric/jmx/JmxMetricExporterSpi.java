@@ -125,6 +125,8 @@ public class JmxMetricExporterSpi extends IgniteSpiAdapter implements MetricExpo
         else if (log.isDebugEnabled())
             log.debug("Found new metric registry [name=" + mreg.name() + ']');
 
+        log.error("Found new metric registry [name=" + mreg.name() + ']');
+
         MetricName n = parse(mreg.name());
 
         try {

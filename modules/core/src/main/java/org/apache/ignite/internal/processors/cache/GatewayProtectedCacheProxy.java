@@ -1506,30 +1506,6 @@ public class GatewayProtectedCacheProxy<K, V> extends AsyncSupportAdapter<Ignite
     }
 
     /** {@inheritDoc} */
-    @Override public CacheMetricsMXBean mxBean() {
-        CacheOperationGate opGate = onEnter();
-
-        try {
-            return delegate.mxBean();
-        }
-        finally {
-            onLeave(opGate);
-        }
-    }
-
-    /** {@inheritDoc} */
-    @Override public CacheMetricsMXBean localMxBean() {
-        CacheOperationGate opGate = onEnter();
-
-        try {
-            return delegate.localMxBean();
-        }
-        finally {
-            onLeave(opGate);
-        }
-    }
-
-    /** {@inheritDoc} */
     @Override public Collection<Integer> lostPartitions() {
         CacheOperationGate opGate = onEnter();
 

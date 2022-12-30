@@ -63,6 +63,7 @@ import org.apache.ignite.lang.IgniteBiPredicate;
 import org.apache.ignite.mxbean.CacheMetricsMXBean;
 import org.apache.ignite.mxbean.TransactionsMXBean;
 import org.apache.ignite.plugin.extensions.communication.Message;
+import org.apache.ignite.spi.metric.jmx.JmxMetricExporterSpi;
 import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.testframework.MvccFeatureChecker;
 import org.apache.ignite.testframework.junits.WithSystemProperty;
@@ -505,17 +506,6 @@ public class CacheMetricsManageTest extends GridCommonAbstractTest {
         assertCachesStatisticsMode(true, false);
     }
 
-    /**
-     * Gets CacheMetricsMXBean for given node and group name.
-     *
-     * @param nodeIdx Node index.
-     * @param cacheName Cache name.
-     * @return MBean instance.
-     */
-    private CacheMetricsMXBean mxBean(int nodeIdx, String cacheName, Class<? extends CacheMetricsMXBean> clazz) {
-        return getMxBean(getTestIgniteInstanceName(nodeIdx), cacheName, clazz.getName(), CacheMetricsMXBean.class);
-    }
-
     /** Default cache config. */
     private CacheConfiguration<?, ?> getCacheConfiguration() {
         CacheConfiguration<?, ?> cacheCfg = new CacheConfiguration<>()
@@ -555,6 +545,10 @@ public class CacheMetricsManageTest extends GridCommonAbstractTest {
                 .setWalMode(WALMode.LOG_ONLY)
             );
 
+        JmxMetricExporterSpi jmxSpi = new JmxMetricExporterSpi();
+
+        cfg.setMetricExporterSpi(jmxSpi);
+
         return cfg;
     }
 
@@ -592,7 +586,7 @@ public class CacheMetricsManageTest extends GridCommonAbstractTest {
 
         IgniteCache<Integer, Integer> cache0 = cl.cache(cacheName);
 
-        CacheMetricsMXBean mxBeanCache = mxBean(0, cacheName, CacheLocalMetricsMXBeanImpl.class);
+//        CacheMetricsMXBean mxBeanCache = mxBean(0, cacheName, CacheLocalMetricsMXBeanImpl.class);
 
         final List<Integer> priKeys = primaryKeys(cache, 3, 1);
 

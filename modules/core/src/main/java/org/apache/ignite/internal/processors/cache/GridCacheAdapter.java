@@ -155,7 +155,6 @@ import org.apache.ignite.lang.IgniteOutClosure;
 import org.apache.ignite.lang.IgnitePredicate;
 import org.apache.ignite.lang.IgniteProductVersion;
 import org.apache.ignite.lang.IgniteRunnable;
-import org.apache.ignite.mxbean.CacheMetricsMXBean;
 import org.apache.ignite.plugin.security.SecurityPermission;
 import org.apache.ignite.resources.IgniteInstanceResource;
 import org.apache.ignite.resources.JobContextResource;
@@ -291,12 +290,6 @@ public abstract class GridCacheAdapter<K, V> implements IgniteInternalCache<K, V
     /** Cache metrics. */
     protected CacheMetricsImpl metrics;
 
-    /** Cache localMxBean. */
-    private CacheMetricsMXBean locMxBean;
-
-    /** Cache mxBean. */
-    private CacheMetricsMXBean clusterMxBean;
-
     /** Logger. */
     protected IgniteLogger log;
 
@@ -355,9 +348,6 @@ public abstract class GridCacheAdapter<K, V> implements IgniteInternalCache<K, V
         txLockMsgLog = ctx.shared().txLockMessageLogger();
 
         metrics = new CacheMetricsImpl(ctx, isNear());
-
-        locMxBean = new CacheLocalMetricsMXBeanImpl(this);
-        clusterMxBean = new CacheClusterMetricsMXBeanImpl(this);
 
         if (ctx.config().getMaxConcurrentAsyncOperations() > 0)
             asyncOpsSem = new Semaphore(ctx.config().getMaxConcurrentAsyncOperations());
@@ -3469,16 +3459,6 @@ public abstract class GridCacheAdapter<K, V> implements IgniteInternalCache<K, V
         Collection<ClusterNode> nodes = ctx.discovery().allNodes();
 
         return IgniteFeatures.allNodesSupports(nodes, IgniteFeatures.CACHE_METRICS_V2);
-    }
-
-    /** {@inheritDoc} */
-    @Override public CacheMetricsMXBean localMxBean() {
-        return locMxBean;
-    }
-
-    /** {@inheritDoc} */
-    @Override public CacheMetricsMXBean clusterMxBean() {
-        return clusterMxBean;
     }
 
     /**

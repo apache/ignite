@@ -42,6 +42,10 @@ import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.mxbean.CacheMetricsMXBean;
 import org.apache.ignite.spi.metric.BooleanMetric;
 import org.apache.ignite.spi.metric.Metric;
+import org.apache.ignite.spi.metric.MetricExporterSpi;
+import org.apache.ignite.spi.metric.ReadOnlyMetricManager;
+import org.apache.ignite.spi.metric.ReadOnlyMetricRegistry;
+import org.apache.ignite.spi.metric.jmx.JmxMetricExporterSpi;
 import org.junit.Test;
 
 import static java.util.Objects.requireNonNull;
@@ -151,12 +155,23 @@ public class IndexMetricsTest extends AbstractIndexingCommonTest {
         CacheMetrics cacheMetrics1 = cacheMetrics(n, cacheName1);
         CacheMetrics cacheMetrics2 = cacheMetrics(n, cacheName2);
 
-        CacheMetricsMXBean cacheMetricsMXBean1 = cacheMetricsMXBean(n, cacheName1, CacheLocalMetricsMXBeanImpl.class);
-        CacheMetricsMXBean cacheMetricsMXBean2 = cacheMetricsMXBean(n, cacheName2, CacheLocalMetricsMXBeanImpl.class);
+        /**
+         * This interface defines JMX view on {@link IgniteCache}.
+         *
+         * @deprecated Check the {@link JmxMetricExporterSpi} with "name=cache.{cache_name}" instead.
+         *
+         * @see ReadOnlyMetricManager
+         * @see ReadOnlyMetricRegistry
+         * @see JmxMetricExporterSpi
+         * @see MetricExporterSpi
+         */
 
-        CacheMetricsMXBean cacheClusterMetricsMXBean1 =
+        CacheMetricsMXBean cacheMetricsMXBean11 = cacheMetricsMXBean(n, cacheName1, CacheLocalMetricsMXBeanImpl.class);
+        CacheMetricsMXBean cacheMetricsMXBean22 = cacheMetricsMXBean(n, cacheName2, CacheLocalMetricsMXBeanImpl.class);
+
+        CacheMetricsMXBean cacheClusterMetricsMXBean11 =
             cacheMetricsMXBean(n, cacheName1, CacheClusterMetricsMXBeanImpl.class);
-        CacheMetricsMXBean cacheClusterMetricsMXBean2 =
+        CacheMetricsMXBean cacheClusterMetricsMXBean22 =
             cacheMetricsMXBean(n, cacheName2, CacheClusterMetricsMXBeanImpl.class);
 
         n.cluster().state(ClusterState.ACTIVE);
@@ -266,7 +281,7 @@ public class IndexMetricsTest extends AbstractIndexingCommonTest {
      * @param cls Cache metrics MXBean implementation.
      * @return Cache metrics MXBean.
      */
-    private <T extends CacheMetricsMXBean> T cacheMetricsMXBean(
+    private <T extends CacheMetricsMXBean> T cacheMetricsMXBeanDeleteMe(
         IgniteEx n,
         String cacheName,
         Class<? super T> cls

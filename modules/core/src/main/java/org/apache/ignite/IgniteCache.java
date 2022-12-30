@@ -67,7 +67,6 @@ import org.apache.ignite.lang.IgniteBiPredicate;
 import org.apache.ignite.lang.IgniteClosure;
 import org.apache.ignite.lang.IgniteExperimental;
 import org.apache.ignite.lang.IgniteFuture;
-import org.apache.ignite.mxbean.CacheMetricsMXBean;
 import org.apache.ignite.transactions.TransactionConcurrency;
 import org.apache.ignite.transactions.TransactionException;
 import org.apache.ignite.transactions.TransactionHeuristicException;
@@ -1616,20 +1615,6 @@ public interface IgniteCache<K, V> extends javax.cache.Cache<K, V>, IgniteAsyncS
      * @return Cache metrics.
      */
     public CacheMetrics localMetrics();
-
-    /**
-     * Gets whole cluster MxBean for this cache.
-     *
-     * @return MxBean.
-     */
-    public CacheMetricsMXBean mxBean();
-
-    /**
-     * Gets local MxBean for this cache.
-     *
-     * @return MxBean.
-     */
-    public CacheMetricsMXBean localMxBean();
 
     /**
      * Gets a collection of lost partition IDs.
