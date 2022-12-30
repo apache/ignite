@@ -156,7 +156,7 @@ public class CacheObjectsCompressionConsumptionTest extends AbstractCacheObjects
         List<Consumption> comps = new ArrayList<>();
 
         for (int i = 1; i <= 4; i++) {
-            int cnt = i * 1000;
+            int cnt = 2000 + i * 1000;
 
             Consumption raw;
             Consumption compressed;
