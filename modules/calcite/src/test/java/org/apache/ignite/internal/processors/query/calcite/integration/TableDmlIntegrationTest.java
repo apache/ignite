@@ -465,18 +465,15 @@ public class TableDmlIntegrationTest extends AbstractBasicIntegrationTest {
     public void testFailureOnNonExistentTable() {
         assertThrows("INSERT INTO NON_EXISTENT_TABLE(ID, NAME) VALUES (1, 'Name')",
             IgniteSQLException.class,
-            "Failed to validate query. From line 1, column 13 to line 1, column 30: " +
-                "Object 'NON_EXISTENT_TABLE' not found");
+            "Object 'NON_EXISTENT_TABLE' not found");
 
         assertThrows("UPDATE NON_EXISTENT_TABLE SET NAME ='NAME' WHERE ID = 1",
             IgniteSQLException.class,
-            "Failed to validate query. From line 1, column 1 to line 1, column 55: " +
-                "Object 'NON_EXISTENT_TABLE' not found");
+            "Object 'NON_EXISTENT_TABLE' not found");
 
         assertThrows("DELETE FROM NON_EXISTENT_TABLE WHERE ID = 1",
             IgniteSQLException.class,
-            "Failed to validate query. From line 1, column 13 to line 1, column 30: " +
-                "Object 'NON_EXISTENT_TABLE' not found");
+            "Object 'NON_EXISTENT_TABLE' not found");
 
         executeSql("CREATE TABLE PERSON(ID INT, PRIMARY KEY(id), NAME VARCHAR)");
 
@@ -485,16 +482,14 @@ public class TableDmlIntegrationTest extends AbstractBasicIntegrationTest {
                 "    WHEN MATCHED THEN UPDATE SET NAME = SRC.NAME" +
                 "    WHEN NOT MATCHED THEN INSERT (ID, NAME) VALUES (SRC.ID, SRC.NAME)",
             IgniteSQLException.class,
-            "Failed to validate query. From line 1, column 29 to line 1, column 46: " +
-                "Object 'NON_EXISTENT_TABLE' not found");
+            "Object 'NON_EXISTENT_TABLE' not found");
 
         assertThrows("" +
                 "MERGE INTO NON_EXISTENT_TABLE DST USING PERSON SRC ON DST.ID = SRC.ID" +
                 "    WHEN MATCHED THEN UPDATE SET NAME = SRC.NAME" +
                 "    WHEN NOT MATCHED THEN INSERT (ID, NAME) VALUES (SRC.ID, SRC.NAME)",
             IgniteSQLException.class,
-            "Failed to validate query. From line 1, column 74 to line 1, column 117: " +
-                "Object 'NON_EXISTENT_TABLE' not found");
+            "Object 'NON_EXISTENT_TABLE' not found");
     }
 
     /** */
