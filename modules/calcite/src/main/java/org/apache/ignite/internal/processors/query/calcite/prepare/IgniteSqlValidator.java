@@ -61,6 +61,7 @@ import org.apache.calcite.sql.validate.SqlValidatorNamespace;
 import org.apache.calcite.sql.validate.SqlValidatorScope;
 import org.apache.calcite.sql.validate.SqlValidatorTable;
 import org.apache.calcite.sql.validate.SqlValidatorUtil;
+import org.apache.calcite.util.Static;
 import org.apache.ignite.internal.processors.query.QueryUtils;
 import org.apache.ignite.internal.processors.query.calcite.schema.CacheTableDescriptor;
 import org.apache.ignite.internal.processors.query.calcite.schema.IgniteCacheTable;
@@ -153,6 +154,9 @@ public class IgniteSqlValidator extends SqlValidatorImpl {
     private void validateTableModify(SqlNode table) {
         final SqlValidatorTable targetTable = getCatalogReader().getTable(((SqlIdentifier)table).names);
 
+        if (targetTable == null)
+            throw newValidationError(table, Static.RESOURCE.objectNotFound(table.toString()));
+
         if (!targetTable.unwrap(IgniteTable.class).isModifiable())
             throw newValidationError(table, IgniteResource.INSTANCE.modifyTableNotSupported(table.toString()));
     }
@@ -168,6 +172,9 @@ public class IgniteSqlValidator extends SqlValidatorImpl {
         final SqlNodeList selectList = new SqlNodeList(SqlParserPos.ZERO);
         final SqlIdentifier targetTable = (SqlIdentifier)call.getTargetTable();
         final SqlValidatorTable table = getCatalogReader().getTable(targetTable.names);
+
+        if (table == null)
+            throw newValidationError(call, Static.RESOURCE.objectNotFound(targetTable.toString()));
 
         SqlIdentifier alias = call.getAlias() != null ? call.getAlias() :
             new SqlIdentifier(deriveAlias(targetTable, 0), SqlParserPos.ZERO);
