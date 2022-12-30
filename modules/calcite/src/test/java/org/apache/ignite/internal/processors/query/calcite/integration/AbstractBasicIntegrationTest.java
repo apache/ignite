@@ -164,7 +164,11 @@ public class AbstractBasicIntegrationTest extends GridCommonAbstractTest {
         IgniteCache<Integer, Employer> person = client.getOrCreateCache(new CacheConfiguration<Integer, Employer>()
             .setName(TABLE_NAME)
             .setSqlSchema("PUBLIC")
-            .setQueryEntities(F.asList(new QueryEntity(Integer.class, Employer.class).setTableName(TABLE_NAME)))
+            .setQueryEntities(F.asList(new QueryEntity(Integer.class, Employer.class)
+                .setTableName(TABLE_NAME)
+                .addQueryField("ID", Integer.class.getName(), null)
+                .setKeyFieldName("ID")
+            ))
             .setCacheMode(cacheMode)
             .setBackups(backups)
         );

@@ -279,18 +279,6 @@ public class FunctionsTest extends AbstractBasicIntegrationTest {
 
     /** */
     @Test
-    public void testDynamicParameterTypesInference() {
-        assertQuery("SELECT lower(?)").withParams("ASD").returns("asd").check();
-        assertQuery("SELECT ? % ?").withParams(11, 10).returns(BigDecimal.valueOf(1)).check();
-        assertQuery("SELECT sqrt(?)").withParams(4d).returns(2d).check();
-        assertQuery("SELECT last_day(?)").withParams(Date.valueOf("2022-01-01"))
-            .returns(Date.valueOf("2022-01-31")).check();
-        assertQuery("SELECT ?").withParams("asd").returns("asd").check();
-        assertQuery("SELECT coalesce(?, ?)").withParams("a", 10).returns("a").check();
-    }
-
-    /** */
-    @Test
     public void testCastToBoolean() {
         assertQuery("SELECT CAST(CAST(null AS DOUBLE) AS BOOLEAN)").returns(NULL_RESULT).check();
         assertQuery("SELECT CAST(CAST('1' AS DOUBLE) AS BOOLEAN)").returns(true).check();
