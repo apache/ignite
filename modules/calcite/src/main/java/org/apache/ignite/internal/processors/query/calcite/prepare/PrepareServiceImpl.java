@@ -29,6 +29,7 @@ import org.apache.calcite.sql.SqlKind;
 import org.apache.calcite.sql.SqlNode;
 import org.apache.calcite.sql.SqlNodeList;
 import org.apache.calcite.sql.type.SqlTypeName;
+import org.apache.calcite.tools.ValidationException;
 import org.apache.ignite.internal.GridKernalContext;
 import org.apache.ignite.internal.processors.cache.query.IgniteQueryErrorCode;
 import org.apache.ignite.internal.processors.query.IgniteSQLException;
@@ -101,7 +102,7 @@ public class PrepareServiceImpl extends AbstractService implements PrepareServic
                         "querySql=\"" + ctx.query() + "\"]", IgniteQueryErrorCode.UNSUPPORTED_OPERATION);
             }
         }
-        catch (CalciteContextException e) {
+        catch (ValidationException | CalciteContextException e) {
             throw new IgniteSQLException("Failed to validate query. " + e.getMessage(), IgniteQueryErrorCode.PARSING, e);
         }
     }
@@ -118,7 +119,7 @@ public class PrepareServiceImpl extends AbstractService implements PrepareServic
     /**
      *
      */
-    private QueryPlan prepareExplain(SqlNode explain, PlanningContext ctx) {
+    private QueryPlan prepareExplain(SqlNode explain, PlanningContext ctx) throws ValidationException {
         IgnitePlanner planner = ctx.planner();
 
         SqlNode sql = ((SqlExplain)explain).getExplicandum();
@@ -163,7 +164,7 @@ public class PrepareServiceImpl extends AbstractService implements PrepareServic
     }
 
     /** */
-    private QueryPlan prepareDml(SqlNode sqlNode, PlanningContext ctx) {
+    private QueryPlan prepareDml(SqlNode sqlNode, PlanningContext ctx) throws ValidationException {
         IgnitePlanner planner = ctx.planner();
 
         // Validate
