@@ -111,7 +111,7 @@ tab:C++[unsupported]
 --
 
 
-To warm up a specific data region, pass the configuration parameter `LoadAllWarmUpStrategy` to the `DataStorageConfiguration#setWarmUpConfiguration` as follows:
+To warm up a specific data region, pass the configuration parameter `LoadAllWarmUpStrategy` to the `DataRegionConfiguration#setWarmUpConfiguration` as follows:
 
 
 [tabs]
@@ -153,7 +153,7 @@ tab:C++[unsupported]
 --
 
 
-To stop the warm-up for a specific data region, pass the configuration parameter `NoOpWarmUpStrategy` to the `DataStorageConfiguration#setWarmUpConfiguration` as follows:
+To stop the warm-up for a specific data region, pass the configuration parameter `NoOpWarmUpStrategy` to the `DataRegionConfiguration#setWarmUpConfiguration` as follows:
 
 [tabs]
 --

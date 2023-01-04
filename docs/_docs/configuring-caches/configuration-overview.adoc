@@ -82,7 +82,7 @@ a| This parameter controls the way the rebalancing process is performed. Possibl
 | [[readfrombackup]] Read requested cache entry from the backup partition if it is available on the local node instead of making a request to the primary partition (which can be located on the remote nodes).
 |  `true`
 
-|`queryPrallelism` | The number of threads in a single node to process a SQL query executed on the cache. Refer to the link:SQL/sql-tuning#query-parallelism[Query Parallelism] section in the Performance guide for more information.
+|`queryParallelism` | The number of threads in a single node to process a SQL query executed on the cache. Refer to the link:SQL/sql-tuning#query-parallelism[Query Parallelism] section in the Performance guide for more information.
 | 1
 |===
 

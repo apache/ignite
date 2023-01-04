@@ -57,9 +57,9 @@ The Apache Ignite github repository contains a number of runnable examples that 
 * link:{githubUrl}/examples[Java^]
 * link:{githubUrl}/modules/platforms/dotnet/examples[C#/.NET^]
 * link:{githubUrl}/modules/platforms/cpp/examples[C++^]
-* link:{githubUrl}/modules/platforms/python/examples[Python^]
-* link:{githubUrl}/modules/platforms/nodejs/examples[Node.JS^]
-* link:{githubUrl}/modules/platforms/php/examples[PHP^]
+* link:https://github.com/apache/ignite-python-thin-client/tree/master/examples[Python^]
+* link:https://github.com/apache/ignite-php-thin-client/tree/master/examples[Node.JS^]
+* link:https://github.com/apache/ignite-nodejs-thin-client/tree/master/examples[PHP^]
 
 == Programming Languages
 include::includes/intro-languages.adoc[]
