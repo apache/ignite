@@ -206,5 +206,5 @@ tab:Java[]
 
 == Examples
 
-Refer to several available https://github.com/apache/ignite-extensions/tree/master/modules/spring-boot-autoconfigure-ext/examples/main[examples, windows="_blank"]
+Refer to several available https://github.com/apache/ignite-extensions/tree/master/modules/spring-boot-autoconfigure-ext/examples/src/main[examples, windows="_blank"]
 for more details.
