@@ -132,7 +132,7 @@ tab:C++[unsupported]
 --
 
 
-To stop the warm-up for all data regions, pass the configuration parameter `NoOpWarmUpConfiguration` to the `DataStorageConfiguration#setDefaultWarmUpConfiguration` as follows:
+To stop the warm-up for all data regions, pass the configuration parameter `NoOpWarmUpStrategy` to the `DataStorageConfiguration#setDefaultWarmUpConfiguration` as follows:
 
 
 [tabs]

@@ -162,7 +162,7 @@ Mapped to:
 - ODBC: `SQL_BINARY`
 
 == GEOMETRY
-Possible values: A spatial geometry type, based on the `com.vividsolutions.jts` library. Normally represented in a textual format using the WKT (well-known text) format.
+Possible values: A spatial geometry type, based on the `org.locationtech.jts` library. Normally represented in a textual format using the WKT (well-known text) format.
 
 Mapped to:
 
