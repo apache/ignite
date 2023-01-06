@@ -356,7 +356,7 @@ public class MetricsConfigurationTest extends GridCommonAbstractTest {
         IgniteEx g1 = startGrid("persistent-1");
 
         try {
-            g0.cluster().active(true);
+            g0.cluster().state(ClusterState.ACTIVE);
 
             afterStart.apply(g0, g1);
 
@@ -366,7 +366,7 @@ public class MetricsConfigurationTest extends GridCommonAbstractTest {
             g0 = startGrid("persistent-0");
             g1 = startGrid("persistent-1");
 
-            g0.cluster().active(true);
+            g0.cluster().state(ClusterState.ACTIVE);
 
             afterRestart.apply(g0, g1);
         }

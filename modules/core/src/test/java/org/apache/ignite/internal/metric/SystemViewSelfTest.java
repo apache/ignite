@@ -1813,7 +1813,7 @@ public class SystemViewSelfTest extends GridCommonAbstractTest {
                     new DataRegionConfiguration().setName("dr1").setMaxSize(100L * 1024 * 1024)
                         .setPersistenceEnabled(true)
                 )))) {
-            ignite.cluster().active(true);
+            ignite.cluster().state(ClusterState.ACTIVE);
 
             GridCacheDatabaseSharedManager dbMgr = (GridCacheDatabaseSharedManager)ignite.context().cache().context()
                 .database();

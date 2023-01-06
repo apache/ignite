@@ -27,6 +27,7 @@ import org.apache.ignite.internal.processors.query.calcite.integration.CalciteBa
 import org.apache.ignite.internal.processors.query.calcite.integration.CalciteErrorHandlilngIntegrationTest;
 import org.apache.ignite.internal.processors.query.calcite.integration.CorrelatesIntegrationTest;
 import org.apache.ignite.internal.processors.query.calcite.integration.DataTypesTest;
+import org.apache.ignite.internal.processors.query.calcite.integration.DynamicParametersIntegrationTest;
 import org.apache.ignite.internal.processors.query.calcite.integration.FunctionsTest;
 import org.apache.ignite.internal.processors.query.calcite.integration.HashSpoolIntegrationTest;
 import org.apache.ignite.internal.processors.query.calcite.integration.IndexDdlIntegrationTest;
@@ -112,7 +113,8 @@ import org.junit.runners.Suite;
     KeepBinaryIntegrationTest.class,
     QueryMetadataIntegrationTest.class,
     MemoryQuotasIntegrationTest.class,
-    LocalDateTimeSupportTest.class
+    LocalDateTimeSupportTest.class,
+    DynamicParametersIntegrationTest.class,
 })
 public class IntegrationTestSuite {
 }

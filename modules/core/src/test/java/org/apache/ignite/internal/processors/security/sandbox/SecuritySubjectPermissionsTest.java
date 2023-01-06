@@ -35,6 +35,7 @@ import javax.management.MBeanServerPermission;
 import javax.management.MBeanTrustPermission;
 import javax.net.ssl.SSLPermission;
 import org.apache.ignite.Ignite;
+import org.apache.ignite.cluster.ClusterState;
 import org.junit.Test;
 
 import static org.apache.ignite.plugin.security.SecurityPermissionSetBuilder.ALLOW_ALL;
@@ -57,7 +58,7 @@ public class SecuritySubjectPermissionsTest extends AbstractSandboxTest {
 
         Ignite clnt = startGrid("clnt", ALLOW_ALL, perms, true);
 
-        srv.cluster().active(true);
+        srv.cluster().state(ClusterState.ACTIVE);
 
         clnt.compute().broadcast(() -> securityManager().checkPermission(new TestPermission("common")));
 

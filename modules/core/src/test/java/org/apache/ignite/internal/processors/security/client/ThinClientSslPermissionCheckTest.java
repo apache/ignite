@@ -29,6 +29,7 @@ import org.apache.ignite.client.ClientAuthorizationException;
 import org.apache.ignite.client.Config;
 import org.apache.ignite.client.IgniteClient;
 import org.apache.ignite.client.SslMode;
+import org.apache.ignite.cluster.ClusterState;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.ClientConfiguration;
 import org.apache.ignite.configuration.ClientConnectorConfiguration;
@@ -138,7 +139,7 @@ public class ThinClientSslPermissionCheckTest extends AbstractSecurityTest {
             )
         );
 
-        ignite.cluster().active(true);
+        ignite.cluster().state(ClusterState.ACTIVE);
     }
 
     /** */

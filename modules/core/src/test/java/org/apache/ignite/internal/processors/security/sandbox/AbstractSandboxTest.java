@@ -32,6 +32,7 @@ import java.util.PropertyPermission;
 import javax.tools.JavaCompiler;
 import javax.tools.ToolProvider;
 import org.apache.ignite.Ignite;
+import org.apache.ignite.cluster.ClusterState;
 import org.apache.ignite.internal.processors.security.AbstractSecurityTest;
 import org.apache.ignite.internal.util.lang.RunnableX;
 import org.apache.ignite.lang.IgniteCallable;
@@ -110,7 +111,7 @@ public abstract class AbstractSandboxTest extends AbstractSecurityTest {
 
         startGrid(CLNT_FORBIDDEN_WRITE_PROP, ALLOW_ALL, true);
 
-        srv.cluster().active(true);
+        srv.cluster().state(ClusterState.ACTIVE);
     }
 
     /**

@@ -731,7 +731,8 @@ public class IgniteClusterImpl extends ClusterGroupAdapter implements IgniteClus
 
         if (!ctx.state().publicApiActiveState(true)) {
             throw new IgniteCheckedException(
-                "Can not change cluster tag on inactive cluster. To activate the cluster call Ignite.active(true)."
+                "Can not change cluster tag on inactive cluster. To activate the cluster call " +
+                    "Ignite.cluster().state(ClusterState.ACTIVE)."
             );
         }
 

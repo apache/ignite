@@ -20,6 +20,7 @@ package org.apache.ignite.internal.processors.cache.mvcc;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCache;
 import org.apache.ignite.cache.CacheMode;
+import org.apache.ignite.cluster.ClusterState;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.junit.Test;
 
@@ -177,17 +178,17 @@ public class CacheMvccPartitionedCoordinatorFailoverTest extends CacheMvccAbstra
 
         CacheConfiguration ccfg = cacheConfiguration(cacheMode(), FULL_SYNC, DATA_NODES - 1, DFLT_PARTITION_COUNT);
 
-        near.cluster().active(true);
+        near.cluster().state(ClusterState.ACTIVE);
 
         IgniteCache cache = near.createCache(ccfg);
 
         cache.put(1, 1);
 
-        near.cluster().active(false);
+        near.cluster().state(ClusterState.INACTIVE);
 
         stopGrid(0);
 
-        near.cluster().active(true);
+        near.cluster().state(ClusterState.ACTIVE);
 
         assertEquals(1, cache.get(1));
     }

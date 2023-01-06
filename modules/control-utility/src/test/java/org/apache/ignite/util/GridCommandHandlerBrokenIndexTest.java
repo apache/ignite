@@ -21,6 +21,7 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.regex.Pattern;
 import org.apache.ignite.Ignite;
+import org.apache.ignite.cluster.ClusterState;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.cache.query.index.Index;
@@ -124,7 +125,7 @@ public class GridCommandHandlerBrokenIndexTest extends GridCommandHandlerCluster
     private void prepareGridForTest() throws Exception {
         Ignite ignite = startGrids(2);
 
-        ignite.cluster().active(true);
+        ignite.cluster().state(ClusterState.ACTIVE);
 
         Ignite client = startGrid(CLIENT_NODE_NAME_PREFIX);
 

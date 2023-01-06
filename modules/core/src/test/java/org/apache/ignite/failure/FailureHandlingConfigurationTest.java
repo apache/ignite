@@ -19,6 +19,7 @@ package org.apache.ignite.failure;
 
 import java.util.concurrent.CountDownLatch;
 import org.apache.ignite.Ignite;
+import org.apache.ignite.cluster.ClusterState;
 import org.apache.ignite.configuration.DataRegionConfiguration;
 import org.apache.ignite.configuration.DataStorageConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
@@ -110,7 +111,7 @@ public class FailureHandlingConfigurationTest extends GridCommonAbstractTest {
 
         IgniteEx ignite = startGrid(0);
 
-        ignite.cluster().active(true);
+        ignite.cluster().state(ClusterState.ACTIVE);
 
         WorkersRegistry reg = ignite.context().workersRegistry();
 
@@ -135,7 +136,7 @@ public class FailureHandlingConfigurationTest extends GridCommonAbstractTest {
 
         IgniteEx ignite = startGrid(0);
 
-        ignite.cluster().active(true);
+        ignite.cluster().state(ClusterState.ACTIVE);
 
         WorkersRegistry reg = ignite.context().workersRegistry();
 
@@ -160,7 +161,7 @@ public class FailureHandlingConfigurationTest extends GridCommonAbstractTest {
 
         IgniteEx ignite = startGrid(0);
 
-        ignite.cluster().active(true);
+        ignite.cluster().state(ClusterState.ACTIVE);
 
         WorkersRegistry reg = ignite.context().workersRegistry();
 
@@ -187,7 +188,7 @@ public class FailureHandlingConfigurationTest extends GridCommonAbstractTest {
 
         IgniteEx ignite = startGrid(0);
 
-        ignite.cluster().active(true);
+        ignite.cluster().state(ClusterState.ACTIVE);
 
         WorkersRegistry reg = ignite.context().workersRegistry();
 
@@ -216,7 +217,7 @@ public class FailureHandlingConfigurationTest extends GridCommonAbstractTest {
     public void testMBeanParamsChanging() throws Exception {
         IgniteEx ignite = startGrid(0);
 
-        ignite.cluster().active(true);
+        ignite.cluster().state(ClusterState.ACTIVE);
 
         FailureHandlingMxBean mBean = getMBean();
 

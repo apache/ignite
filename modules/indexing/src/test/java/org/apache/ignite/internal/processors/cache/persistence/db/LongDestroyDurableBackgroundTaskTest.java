@@ -42,6 +42,7 @@ import org.apache.ignite.Ignition;
 import org.apache.ignite.cache.query.SqlFieldsQuery;
 import org.apache.ignite.client.IgniteClient;
 import org.apache.ignite.cluster.ClusterNode;
+import org.apache.ignite.cluster.ClusterState;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.ClientConfiguration;
 import org.apache.ignite.configuration.DataRegionConfiguration;
@@ -299,7 +300,7 @@ public class LongDestroyDurableBackgroundTaskTest extends GridCommonAbstractTest
 
                 forceCheckpoint(aliveNode);
 
-                aliveNode.cluster().active(false);
+                aliveNode.cluster().state(ClusterState.INACTIVE);
             }
 
             ignite = startGrid(RESTARTED_NODE_NUM);
@@ -309,7 +310,7 @@ public class LongDestroyDurableBackgroundTaskTest extends GridCommonAbstractTest
             awaitPartitionMapExchange();
 
             if (checkWhenOneNodeStopped) {
-                ignite.cluster().active(true);
+                ignite.cluster().state(ClusterState.ACTIVE);
 
                 // If index was dropped, we need to wait it's rebuild on restarted node.
                 if (!dropIdxWhenOneNodeStopped0)
@@ -577,7 +578,7 @@ public class LongDestroyDurableBackgroundTaskTest extends GridCommonAbstractTest
     public void testClusterDeactivationShouldPassWithoutErrors() throws Exception {
         IgniteEx ignite = startGrids(NODES_COUNT);
 
-        ignite.cluster().active(true);
+        ignite.cluster().state(ClusterState.ACTIVE);
 
         IgniteCache<Integer, Integer> cache = ignite.cache("TEST");
 
@@ -595,7 +596,7 @@ public class LongDestroyDurableBackgroundTaskTest extends GridCommonAbstractTest
 
         testLog.registerAllListeners(lsnr, lsnr2, lsnr3);
 
-        ignite.cluster().active(false);
+        ignite.cluster().state(ClusterState.INACTIVE);
 
         doSleep(1_000);
 

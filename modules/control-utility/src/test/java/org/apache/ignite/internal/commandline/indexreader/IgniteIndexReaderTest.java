@@ -42,6 +42,7 @@ import org.apache.ignite.cache.QueryEntity;
 import org.apache.ignite.cache.QueryIndex;
 import org.apache.ignite.cache.affinity.rendezvous.RendezvousAffinityFunction;
 import org.apache.ignite.cache.query.SqlFieldsQuery;
+import org.apache.ignite.cluster.ClusterState;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.DataRegionConfiguration;
 import org.apache.ignite.configuration.DataStorageConfiguration;
@@ -237,8 +238,8 @@ public class IgniteIndexReaderTest extends GridCommandHandlerAbstractTest {
 
         IgniteClusterEx cluster = node.cluster();
 
-        if (!cluster.active())
-            cluster.active(true);
+        if (!cluster.state().active())
+            cluster.state(ClusterState.ACTIVE);
 
         IgniteCache<Integer, Object> qryCache = node.cache(QUERY_CACHE_NAME);
 

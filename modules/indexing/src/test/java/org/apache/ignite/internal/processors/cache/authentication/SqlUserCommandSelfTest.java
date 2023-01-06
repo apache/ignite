@@ -20,6 +20,7 @@ package org.apache.ignite.internal.processors.cache.authentication;
 import java.util.List;
 import java.util.concurrent.Callable;
 import org.apache.ignite.cache.query.SqlFieldsQuery;
+import org.apache.ignite.cluster.ClusterState;
 import org.apache.ignite.configuration.DataRegionConfiguration;
 import org.apache.ignite.configuration.DataStorageConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
@@ -72,7 +73,7 @@ public class SqlUserCommandSelfTest extends GridCommonAbstractTest {
 
         startClientGrid(NODES_COUNT - 1);
 
-        grid(0).cluster().active(true);
+        grid(0).cluster().state(ClusterState.ACTIVE);
 
         secCtxDflt = authenticate(grid(0), DFAULT_USER_NAME, "ignite");
 

@@ -17,7 +17,8 @@
 
 package org.apache.ignite.configuration;
 
-import org.apache.ignite.Ignite;
+import org.apache.ignite.IgniteCluster;
+import org.apache.ignite.cluster.ClusterState;
 import org.jetbrains.annotations.Nullable;
 
 /**
@@ -45,7 +46,7 @@ public enum WALMode {
 
     /**
      * WAL is disabled. Data is guaranteed to be persisted on disk only in case of graceful cluster shutdown using
-     * {@link Ignite#active(boolean)} method. If an Ignite node is terminated in NONE mode abruptly, it is likely
+     * {@link IgniteCluster#state(ClusterState)} method. If an Ignite node is terminated in NONE mode abruptly, it is likely
      * that the data stored on disk is corrupted and work directory will need to be cleared for a node restart.
      */
     NONE,

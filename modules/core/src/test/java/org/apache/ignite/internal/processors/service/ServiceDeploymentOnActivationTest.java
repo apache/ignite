@@ -21,6 +21,7 @@ import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.cluster.ClusterNode;
+import org.apache.ignite.cluster.ClusterState;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.lang.IgnitePredicate;
@@ -143,7 +144,7 @@ public class ServiceDeploymentOnActivationTest extends GridCommonAbstractTest {
 
         Ignite ignite = grid(0);
 
-        ignite.cluster().active(true);
+        ignite.cluster().state(ClusterState.ACTIVE);
 
         if (!isStatic) {
             ServiceConfiguration srvcCfg = getServiceConfiguration(nodeFilter);
@@ -153,7 +154,7 @@ public class ServiceDeploymentOnActivationTest extends GridCommonAbstractTest {
 
         assertTrue(exeLatch.await(10, TimeUnit.SECONDS));
 
-        ignite.cluster().active(false);
+        ignite.cluster().state(ClusterState.INACTIVE);
 
         assertTrue(cancelLatch.await(10, TimeUnit.SECONDS));
 
@@ -161,7 +162,7 @@ public class ServiceDeploymentOnActivationTest extends GridCommonAbstractTest {
 
         DummyService.exeLatch(SERVICE_NAME, exeLatch);
 
-        ignite.cluster().active(true);
+        ignite.cluster().state(ClusterState.ACTIVE);
 
         assertTrue(exeLatch.await(10, TimeUnit.SECONDS));
     }
