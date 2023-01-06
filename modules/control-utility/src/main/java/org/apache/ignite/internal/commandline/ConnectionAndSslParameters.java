@@ -39,10 +39,20 @@ public class ConnectionAndSslParameters {
     /** Force option is used for auto confirmation. */
     private boolean autoConfirmation;
 
-    /** Ping timeout for grid client. See {@link GridClientConfiguration#getPingTimeout()}. */
+    /**
+     * Ping timeout for grid client. See {@link GridClientConfiguration#getPingTimeout()}.
+     *
+     * @deprecated Not supported by {@link IgniteClient}.
+     */
+    @Deprecated
     private long pingTimeout;
 
-    /** Ping interval for grid client. See {@link GridClientConfiguration#getPingInterval()}. */
+    /**
+     * Ping interval for grid client. See {@link GridClientConfiguration#getPingInterval()}.
+     *
+     * @deprecated Not supported by {@link IgniteClient}.
+     */
+    @Deprecated
     private long pingInterval;
 
     /** Verbose mode. */
@@ -182,7 +192,7 @@ public class ConnectionAndSslParameters {
      * See {@link GridClientConfiguration#getPingInterval()}.
      *
      * @return Ping timeout.
-     * @deprecated Not supported in {@link IgniteClient}.
+     * @deprecated Not supported by {@link IgniteClient}.
      */
     @Deprecated
     public long pingTimeout() {
@@ -193,7 +203,9 @@ public class ConnectionAndSslParameters {
      * See {@link GridClientConfiguration#getPingInterval()}.
      *
      * @return Ping interval.
+     * @deprecated Not supported by {@link IgniteClient}.
      */
+    @Deprecated
     public long pingInterval() {
         return pingInterval;
     }

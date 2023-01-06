@@ -490,7 +490,6 @@ public class CommandHandler {
     ) {
         ClientConfiguration clientCfg = new ClientConfiguration();
 
-        clientCfg.setHeartbeatInterval(args.pingInterval());
         clientCfg.setAddresses(args.host() + ":" + args.port());
 
         if (!F.isEmpty(userName)) {
