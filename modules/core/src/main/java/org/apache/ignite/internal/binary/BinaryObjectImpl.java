@@ -70,6 +70,7 @@ public final class BinaryObjectImpl extends BinaryObjectExImpl implements Extern
     private byte[] valBytes;
 
     /** */
+    @GridDirectTransient
     private int start;
 
     /** */
