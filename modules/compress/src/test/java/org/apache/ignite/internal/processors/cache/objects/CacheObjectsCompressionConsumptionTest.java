@@ -156,24 +156,24 @@ public class CacheObjectsCompressionConsumptionTest extends AbstractCacheObjects
         List<Consumption> comps = new ArrayList<>();
 
         for (int i = 1; i <= 4; i++) {
-            int cnt = 2000 + i * 1000;
+            int cnt = 2000 + i * 1000; // At least 2000 entries to guarantee compression profit.
 
             Consumption raw;
             Consumption compressed;
 
-            boolean reversed = i % 2 != 0;
+            boolean reversed = i % 2 != 0; // Value instead of key and vice versa.
 
             Function<Integer, Object> kGen = reversed ? valGen : keyGen;
             Function<Integer, Object> vGen = reversed ? keyGen : valGen;
 
-            compressed = doTest(cnt, kGen, vGen);
+            compressed = doTest(cnt, kGen, vGen); // Compression enabled.
 
             try {
                 assertEquals(CompressionTransformer.CompressionType.defaultType(), CompressionTransformer.type);
 
                 CompressionTransformer.type = CompressionTransformer.CompressionType.DISABLED;
 
-                raw = doTest(cnt, kGen, vGen);
+                raw = doTest(cnt, kGen, vGen); // Compresson disabled.
             }
             finally {
                 CompressionTransformer.type = CompressionTransformer.CompressionType.defaultType();  // Restoring default.
@@ -225,7 +225,7 @@ public class CacheObjectsCompressionConsumptionTest extends AbstractCacheObjects
                 .append(", compressed=")
                 .append(cp)
                 .append(", profit=")
-                .append((mode == ConsumptionTestMode.PERSISTENT) ? (rp - cp) * 100 / rp : 0)
+                .append((mode == ConsumptionTestMode.PERSISTENT) ? (rp - cp) * 100 / rp : "NA")
                 .append("%]");
         }
 
@@ -269,7 +269,7 @@ public class CacheObjectsCompressionConsumptionTest extends AbstractCacheObjects
                 .append(", compressed=")
                 .append(cpd)
                 .append(", profit=")
-                .append((mode == ConsumptionTestMode.PERSISTENT) ? (rpd - cpd) * 100 / rpd : 0)
+                .append((mode == ConsumptionTestMode.PERSISTENT) ? (rpd - cpd) * 100 / rpd : "NA")
                 .append("%]");
         }
 
@@ -358,6 +358,9 @@ public class CacheObjectsCompressionConsumptionTest extends AbstractCacheObjects
 
                 pers += FileUtils.sizeOfDirectory(
                     U.resolveWorkDirectory(U.defaultWorkDirectory(), DFLT_STORE_DIR + "/" + nodeFolder, false));
+
+                if (mode != ConsumptionTestMode.PERSISTENT)
+                    assertEquals(0, pers);
             }
 
             return new Consumption(net, mem, pers);

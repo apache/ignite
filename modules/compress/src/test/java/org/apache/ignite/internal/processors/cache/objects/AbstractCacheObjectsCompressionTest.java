@@ -119,13 +119,13 @@ public abstract class AbstractCacheObjectsCompressionTest extends AbstractCacheO
         /** */
         static final LZ4Compressor lz4Compressor = lz4Factory.highCompressor(1);
 
-        /** Zstd count. */
+        /** Zstd restore count. */
         static final AtomicLong zstdCnt = new AtomicLong();
 
-        /** Lz4 count. */
+        /** Lz4 restore count. */
         static final AtomicLong lz4Cnt = new AtomicLong();
 
-        /** Snappy count. */
+        /** Snappy restore count. */
         static final AtomicLong snapCnt = new AtomicLong();
 
         /** {@inheritDoc} */
@@ -141,7 +141,7 @@ public abstract class AbstractCacheObjectsCompressionTest extends AbstractCacheO
             if (compressed.capacity() < original.remaining())
                 return original.remaining();
 
-            int locOverhead = 4;
+            int locOverhead = 4; // Integer.
 
             int lim = original.remaining() - CacheObjectsTransformer.OVERHEAD - locOverhead;
 
