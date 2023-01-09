@@ -102,7 +102,7 @@ image:../../assets/images/integrations/CDC-ignite2kafka.svg[]
 | `caches` | Set of cache names to replicate. | null
 | `kafkaProperties` | Kafka producer properties. | null
 | `topic` | Name of the Kafka topic. | null
-| `kafkaParts` | Number of Kafka topic partitions. | null
+| `kafkaPartitions` | Number of Kafka topic partitions. | null
 | `onlyPrimary` | Flag to handle changes only on primary node. | `false`
 | `maxBatchSize` | Maximum size of concurrently produced Kafka records. When streamer reaches this number, it waits for Kafka acknowledgements, and then commits CDC offset. | `1024`
 | `kafkaRequestTimeout` | Kafka request timeout in milliseconds.  | `3000`
