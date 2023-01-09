@@ -248,8 +248,10 @@ public class CacheIndexImpl implements IgniteIndex {
             return false;
 
         // Since inline scan doesn't check expire time, allow it only if expired entries are eagerly removed.
-        if (!tbl.descriptor().cacheContext().config().isEagerTtl())
-            return false;
+        if (tbl.descriptor().cacheInfo() != null) {
+            if (!tbl.descriptor().cacheInfo().config().isEagerTtl())
+                return false;
+        }
 
         if (requiredColumns == null)
             requiredColumns = ImmutableBitSet.range(tbl.descriptor().columnDescriptors().size());
