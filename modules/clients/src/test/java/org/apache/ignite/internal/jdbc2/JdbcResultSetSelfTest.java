@@ -18,6 +18,7 @@
 package org.apache.ignite.internal.jdbc2;
 
 import java.io.Serializable;
+import java.lang.reflect.Field;
 import java.math.BigDecimal;
 import java.net.MalformedURLException;
 import java.net.URL;
@@ -29,10 +30,12 @@ import java.sql.Statement;
 import java.sql.Time;
 import java.sql.Timestamp;
 import java.util.Arrays;
+import java.util.Objects;
 import java.util.concurrent.Callable;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteBinary;
 import org.apache.ignite.IgniteCache;
+import org.apache.ignite.binary.BinaryObject;
 import org.apache.ignite.cache.query.annotations.QuerySqlField;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.ConnectorConfiguration;
@@ -42,12 +45,12 @@ import org.apache.ignite.internal.util.tostring.GridToStringInclude;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
+import org.jetbrains.annotations.Nullable;
 import org.junit.Test;
 
 import static org.apache.ignite.IgniteJdbcDriver.CFG_URL_PREFIX;
 import static org.apache.ignite.cache.CacheMode.PARTITIONED;
 import static org.apache.ignite.cache.CacheWriteSynchronizationMode.FULL_SYNC;
-import static org.apache.ignite.jdbc.JdbcResultSetSelfTest.assertEqualsToStringRepresentation;
 
 /**
  * Result set test.
@@ -1127,5 +1130,66 @@ public class JdbcResultSetSelfTest extends GridCommonAbstractTest {
         @Override public String toString() {
             return S.toString(TestObjectField.class, this);
         }
+    }
+
+    /**
+     * This does extended toString compare. <br> Actual toString in case binary is enabled is called at {@link
+     * org.apache.ignite.internal.processors.cache.query.jdbc.GridCacheQueryJdbcTask.JdbcDriverJob#execute()},  <br>
+     * org/apache/ignite/internal/processors/cache/query/jdbc/GridCacheQueryJdbcTask.java:312 <br> and then strings are
+     * compared in assertions <p> And for binary marshaller result of such BinaryObjectImpl.toString will be unexpected
+     * by this test: <br> <code>org.apache.ignite.jdbc.JdbcResultSetSelfTest$TestObjectField [idHash=1624306582,
+     * hash=11433031, a=100, b=AAAA]</code> <br>
+     *
+     * @param originalObj object initially placed to cache
+     * @param binary optional parameter, if absent, direct toString compare is used
+     * @param resSetObj object returned by result set
+     */
+    public static void assertEqualsToStringRepresentation(
+        final Object originalObj,
+        @Nullable final IgniteBinary binary,
+        final Object resSetObj) {
+        if (binary != null) {
+            final BinaryObject origObjAsBinary = binary.toBinary(originalObj);
+            final String strFromResSet = Objects.toString(resSetObj);
+            for (Field declaredField : originalObj.getClass().getDeclaredFields()) {
+                checkFieldPresenceInToString(origObjAsBinary, strFromResSet, declaredField.getName());
+            }
+        }
+        else
+            assertEquals(originalObj.toString(), Objects.toString(resSetObj));
+    }
+
+    /**
+     * Checks particular field from original binary object
+     *
+     * @param original binary object representation of original object
+     * @param strToCheck string from result set, to be checked for presence of all fields
+     * @param fieldName field name have being checked
+     */
+    private static void checkFieldPresenceInToString(final BinaryObject original,
+                                                     final String strToCheck,
+                                                     final String fieldName) {
+
+        final Object fieldVal = original.field(fieldName);
+        String strValToSearch = Objects.toString(fieldVal);
+        if (fieldVal != null) {
+            final Class<?> aCls = fieldVal.getClass();
+            if (aCls.isArray()) {
+                final Class<?> elemCls = aCls.getComponentType();
+                if (elemCls == Byte.TYPE)
+                    strValToSearch = Arrays.toString((byte[])fieldVal);
+            }
+            else if (BinaryObject.class.isAssignableFrom(aCls)) {
+                // hack to avoid search of unpredictable toString representation like
+                // JdbcResultSetSelfTest$TestObjectField [idHash=1518952510, hash=11433031, a=100, b=AAAA]
+                // in toString
+                // other way to fix: iterate on binary object fields: final BinaryObject binVal = (BinaryObject)fieldVal;
+                strValToSearch = "";
+            }
+        }
+        assertTrue("Expected to find field "
+                + fieldName + " having value " + strValToSearch
+                + " in toString representation [" + strToCheck + "]",
+            strToCheck.contains(fieldName + "=" + strValToSearch));
     }
 }

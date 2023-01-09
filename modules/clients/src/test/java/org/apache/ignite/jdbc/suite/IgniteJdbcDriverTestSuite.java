@@ -26,15 +26,8 @@ import org.apache.ignite.internal.jdbc2.JdbcDistributedJoinsQueryTest;
 import org.apache.ignite.internal.jdbc2.JdbcSchemaCaseSelfTest;
 import org.apache.ignite.jdbc.JdbcAuthorizationTest;
 import org.apache.ignite.jdbc.JdbcComplexQuerySelfTest;
-import org.apache.ignite.jdbc.JdbcDefaultNoOpCacheTest;
-import org.apache.ignite.jdbc.JdbcEmptyCacheSelfTest;
 import org.apache.ignite.jdbc.JdbcMetadataSelfTest;
-import org.apache.ignite.jdbc.JdbcNoDefaultCacheTest;
-import org.apache.ignite.jdbc.JdbcPojoLegacyQuerySelfTest;
 import org.apache.ignite.jdbc.JdbcPojoQuerySelfTest;
-import org.apache.ignite.jdbc.JdbcPreparedStatementSelfTest;
-import org.apache.ignite.jdbc.JdbcResultSetSelfTest;
-import org.apache.ignite.jdbc.JdbcStatementSelfTest;
 import org.apache.ignite.jdbc.JdbcThinMetadataSqlMatchTest;
 import org.apache.ignite.jdbc.thin.JdbcThinAuthenticateConnectionSelfTest;
 import org.apache.ignite.jdbc.thin.JdbcThinAutoCloseServerCursorTest;
@@ -111,16 +104,9 @@ import org.junit.runners.Suite;
 
     RunningQueryInfoCheckInitiatorTest.class,
 
-    JdbcStatementSelfTest.class,
-    JdbcPreparedStatementSelfTest.class,
-    JdbcResultSetSelfTest.class,
     JdbcComplexQuerySelfTest.class,
     JdbcMetadataSelfTest.class,
-    JdbcEmptyCacheSelfTest.class,
-    JdbcNoDefaultCacheTest.class,
-    JdbcDefaultNoOpCacheTest.class,
     JdbcPojoQuerySelfTest.class,
-    JdbcPojoLegacyQuerySelfTest.class,
     JdbcConnectionReopenTest.class,
     JdbcAuthorizationTest.class,
 
