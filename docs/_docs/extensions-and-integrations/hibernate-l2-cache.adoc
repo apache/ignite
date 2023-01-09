@@ -54,12 +54,9 @@ The `ignite-hibernate` module has been moved to the Apache Ignite Extensions pro
 
 To configure Ignite with as a Hibernate L2 cache, without any changes required to the existing Hibernate code, you need to:
 
-* Add the `ignite-hibernate` module version `5.3.0`, `5.1.0` or `4.2.0` as a dependency to your project depending on whether
-Hibernate 5 or Hibernate 4 is used. Alternatively, you can copy JAR files of the same name from
-`+{apache_ignite_release}/libs/optional+` to `+{apache_ignite_release}/libs+` folder if you start an Apache Ignite node
-from a command line.
-* Configure Hibernate itself to use Ignite as an L2 cache.
-* Configure Ignite caches appropriately.
+* Add the `ignite-hibernate` module version `5.3.0`, `5.1.0` or `4.2.0` as a dependency to your project depending on whether Hibernate 5 or Hibernate 4 is used
+* Configure Hibernate itself to use Ignite as an L2 cache
+* Configure Ignite caches appropriately
 
 === Maven Configuration
 
