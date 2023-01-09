@@ -62,15 +62,15 @@ public class CacheObjectsCompressionTest extends AbstractCacheObjectsCompression
             int i = 42;
             String str = "Test string";
 
-            putAndCheck(str, false, false, false);
+            putAndCheck(str, false);
 
             StringData sd = new StringData("");
 
-            putAndCheck(sd, true, false, false);
+            putAndCheck(sd, false);
 
             List<Object> sdList = Collections.singletonList(sd);
 
-            putAndCheck(sdList, false, true, false);
+            putAndCheck(sdList, false);
 
             StringBuilder sb = new StringBuilder();
 
@@ -79,7 +79,7 @@ public class CacheObjectsCompressionTest extends AbstractCacheObjectsCompression
 
             String str2 = sb.toString();
 
-            putAndCheck(str2, false, false, type != CompressionType.DISABLED);
+            putAndCheck(str2, type != CompressionType.DISABLED);
 
             List<Object> list = new ArrayList<>();
 
@@ -87,11 +87,11 @@ public class CacheObjectsCompressionTest extends AbstractCacheObjectsCompression
             list.add(new BinarizableData(str, null, i));
             list.add(new BinarizableData(str, null, i));
 
-            putAndCheck(list, false, true, type != CompressionType.DISABLED);
+            putAndCheck(list, type != CompressionType.DISABLED);
 
             BinarizableData data = new BinarizableData(str, list, i);
 
-            putAndCheck(data, true, false, type != CompressionType.DISABLED);
+            putAndCheck(data, type != CompressionType.DISABLED);
 
             List<Object> list2 = new ArrayList<>();
 
@@ -99,11 +99,11 @@ public class CacheObjectsCompressionTest extends AbstractCacheObjectsCompression
             list2.add(new BinarizableData(str, null, i + 1));
             list2.add(new BinarizableData(str, null, i + 1));
 
-            putAndCheck(list2, false, true, type != CompressionType.DISABLED);
+            putAndCheck(list2, type != CompressionType.DISABLED);
 
             BinarizableData data2 = new BinarizableData(str, list2, i + 1);
 
-            putAndCheck(data2, true, false, type != CompressionType.DISABLED);
+            putAndCheck(data2, type != CompressionType.DISABLED);
 
             BinaryObjectBuilder builder = ignite.binary().builder(BinarizableData.class.getName());
 
@@ -111,11 +111,11 @@ public class CacheObjectsCompressionTest extends AbstractCacheObjectsCompression
             builder.setField("list", list);
             builder.setField("i", i);
 
-            putAndCheck(builder.build(), true, false, type != CompressionType.DISABLED);
+            putAndCheck(builder.build(), type != CompressionType.DISABLED);
 
             builder.setField("str", str);
 
-            putAndCheck(builder.build(), true, false, type != CompressionType.DISABLED);
+            putAndCheck(builder.build(), type != CompressionType.DISABLED);
         }
         finally {
             CompressionTransformer.type = CompressionTransformer.CompressionType.defaultType();  // Restoring default.
@@ -125,7 +125,7 @@ public class CacheObjectsCompressionTest extends AbstractCacheObjectsCompression
     /**
      *
      */
-    private void putAndCheck(Object obj, boolean binarizable, boolean binarizableCol, boolean compressible) {
-        putAndCheck(obj, binarizable, binarizableCol, false, compressible, false);
+    private void putAndCheck(Object obj, boolean compressible) {
+        putAndCheck(obj, false, compressible, false);
     }
 }

@@ -120,23 +120,30 @@ public abstract class AbstractCacheObjectsTransformationTest extends GridCommonA
      */
     protected void putAndCheck(
         Object obj,
-        boolean binarizable,
-        boolean binarizableCol,
         boolean transformableKey,
         boolean transformableVal,
         boolean reversed) {
 
-        boolean binary = obj instanceof BinaryObject;
-        boolean binaryCol = obj instanceof BinaryObject[]
-            || (obj instanceof Collection && ((Iterable<?>)obj).iterator().next() instanceof BinaryObject);
+        boolean binarizable = !(obj instanceof String || obj instanceof Integer || obj instanceof Object[] ||
+            obj instanceof int[] || obj instanceof Collection);
 
-        assertFalse(binary && binaryCol);
+        boolean binarizableCol = (obj instanceof Object[] && !(obj instanceof String[] || obj instanceof int[])) ||
+            (obj instanceof Collection && !(
+                ((Iterable<?>)obj).iterator().next() instanceof String || ((Iterable<?>)obj).iterator().next() instanceof Integer)
+            );
+
+        boolean binary = obj instanceof BinaryObject;
+        boolean binaryCol = obj instanceof BinaryObject[] ||
+            (obj instanceof Collection && ((Iterable<?>)obj).iterator().next() instanceof BinaryObject);
 
         if (binary)
             assertTrue(binarizable);
 
         if (binaryCol)
             assertTrue(binarizableCol);
+
+        assertFalse(binary && binaryCol);
+        assertFalse(binarizable && binarizableCol);
 
         Ignite node = backupNode(0, CACHE_NAME); // Any key, besause of single partiition.
 
