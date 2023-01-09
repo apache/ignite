@@ -62,15 +62,15 @@ public class CacheObjectsCompressionTest extends AbstractCacheObjectsCompression
             int i = 42;
             String str = "Test string";
 
-            putAndCheck(str, false);
+            putAndCheck(str, false); // Too short string.
 
             StringData sd = new StringData("");
 
-            putAndCheck(sd, false);
+            putAndCheck(sd, false); // Too short wrapped string.
 
             List<Object> sdList = Collections.singletonList(sd);
 
-            putAndCheck(sdList, false);
+            putAndCheck(sdList, false); // Too short wrapped string.
 
             StringBuilder sb = new StringBuilder();
 
@@ -84,38 +84,34 @@ public class CacheObjectsCompressionTest extends AbstractCacheObjectsCompression
             List<Object> list = new ArrayList<>();
 
             list.add(new BinarizableData(str, null, i));
+
+            putAndCheck(list, false); // Too short list.
+
+            // Adding more elements.
             list.add(new BinarizableData(str, null, i));
             list.add(new BinarizableData(str, null, i));
 
-            putAndCheck(list, type != CompressionType.DISABLED);
+            putAndCheck(list, type != CompressionType.DISABLED); // Enough to be compressed.
 
             BinarizableData data = new BinarizableData(str, list, i);
 
             putAndCheck(data, type != CompressionType.DISABLED);
 
-            List<Object> list2 = new ArrayList<>();
-
-            list2.add(new BinarizableData(str, null, i + 1));
-            list2.add(new BinarizableData(str, null, i + 1));
-            list2.add(new BinarizableData(str, null, i + 1));
-
-            putAndCheck(list2, type != CompressionType.DISABLED);
-
-            BinarizableData data2 = new BinarizableData(str, list2, i + 1);
-
-            putAndCheck(data2, type != CompressionType.DISABLED);
-
             BinaryObjectBuilder builder = ignite.binary().builder(BinarizableData.class.getName());
 
-            builder.setField("str", str2);
-            builder.setField("list", list);
+            builder.setField("str", str2); // Wrapped string, enough to be compressed.
+            builder.setField("list", list); // Wrapped strings, enough to be compressed.
             builder.setField("i", i);
 
-            putAndCheck(builder.build(), type != CompressionType.DISABLED);
+            putAndCheck(builder.build(), type != CompressionType.DISABLED); // Enough to be compressed.
 
             builder.setField("str", str);
 
-            putAndCheck(builder.build(), type != CompressionType.DISABLED);
+            putAndCheck(builder.build(), type != CompressionType.DISABLED); // Still enough to be compressed.
+
+            builder.setField("list", null);
+
+            putAndCheck(builder.build(), false); // Too short wrapped string.
         }
         finally {
             CompressionTransformer.type = CompressionTransformer.CompressionType.defaultType();  // Restoring default.
