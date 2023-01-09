@@ -63,10 +63,10 @@ public final class BinaryObjectImpl extends BinaryObjectExImpl implements Extern
     private BinaryContext ctx;
 
     /** */
+    @GridDirectTransient
     private byte[] arr;
 
     /** Bytes to be stored or transferred instead of raw binary array. */
-    @GridDirectTransient
     private byte[] valBytes;
 
     /** */

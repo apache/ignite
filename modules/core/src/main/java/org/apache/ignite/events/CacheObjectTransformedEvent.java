@@ -34,7 +34,7 @@ public class CacheObjectTransformedEvent extends EventAdapter {
     /** Transformed cache object bytes. */
     private final byte[] transformed;
 
-    /** Restore. */
+    /** Restore operation. */
     private final boolean restore;
 
     /**
