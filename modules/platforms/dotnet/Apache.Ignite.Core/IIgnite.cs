@@ -33,7 +33,6 @@ namespace Apache.Ignite.Core
     using Apache.Ignite.Core.Log;
     using Apache.Ignite.Core.Lifecycle;
     using Apache.Ignite.Core.Messaging;
-    using Apache.Ignite.Core.PersistentStore;
     using Apache.Ignite.Core.Plugin;
     using Apache.Ignite.Core.Services;
     using Apache.Ignite.Core.Transactions;
