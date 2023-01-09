@@ -60,7 +60,7 @@ public class CacheObjectsCompressionTest extends AbstractCacheObjectsCompression
             Ignite ignite = prepareCluster();
 
             int i = 42;
-            String str = "Ololo";
+            String str = "Test string";
 
             putAndCheck(str, false, false, false);
 
