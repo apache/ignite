@@ -25,7 +25,7 @@ import org.junit.Test;
  */
 public class JdbcPojoLegacyQuerySelfTest extends AbstractJdbcPojoQuerySelfTest {
     /** URL. */
-    private static final String URL = "jdbc:ignite://127.0.0.1/";
+    private static final String URL = "jdbc:ignite:thin://127.0.0.1/";
 
     /**
      * @throws Exception If failed.

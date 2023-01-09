@@ -51,13 +51,14 @@ import static java.sql.Types.TINYINT;
 import static java.sql.Types.VARCHAR;
 import static org.apache.ignite.cache.CacheMode.PARTITIONED;
 import static org.apache.ignite.cache.CacheWriteSynchronizationMode.FULL_SYNC;
+import static org.apache.ignite.internal.processors.query.QueryUtils.DFLT_SCHEMA;
 
 /**
  * Prepared statement test.
  */
 public class JdbcPreparedStatementSelfTest extends GridCommonAbstractTest {
     /** URL. */
-    private static final String URL = "jdbc:ignite://127.0.0.1/";
+    private static final String URL = "jdbc:ignite:thin://127.0.0.1/";
 
     /** Connection. */
     private Connection conn;
@@ -71,6 +72,7 @@ public class JdbcPreparedStatementSelfTest extends GridCommonAbstractTest {
 
         CacheConfiguration<?, ?> cache = defaultCacheConfiguration();
 
+        cache.setSqlSchema(DFLT_SCHEMA);
         cache.setCacheMode(PARTITIONED);
         cache.setBackups(1);
         cache.setWriteSynchronizationMode(FULL_SYNC);

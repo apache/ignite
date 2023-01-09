@@ -20,48 +20,18 @@ package org.apache.ignite.jdbc;
 import java.sql.DriverManager;
 import java.sql.ResultSet;
 import java.sql.Statement;
-import org.apache.ignite.configuration.CacheConfiguration;
-import org.apache.ignite.configuration.ConnectorConfiguration;
-import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.junit.Test;
-
-import static org.apache.ignite.cache.CacheMode.PARTITIONED;
-import static org.apache.ignite.cache.CacheWriteSynchronizationMode.FULL_SYNC;
 
 /**
  * Tests for empty cache.
  */
 public class JdbcEmptyCacheSelfTest extends GridCommonAbstractTest {
-    /** Cache name. */
-    private static final String CACHE_NAME = "cache";
-
     /** URL. */
-    private static final String URL = "jdbc:ignite://127.0.0.1/" + CACHE_NAME;
+    private static final String URL = "jdbc:ignite:thin://127.0.0.1/";
 
     /** Statement. */
     private Statement stmt;
-
-    /** {@inheritDoc} */
-    @Override protected IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {
-        IgniteConfiguration cfg = super.getConfiguration(igniteInstanceName);
-
-        CacheConfiguration cache = defaultCacheConfiguration();
-
-        cache.setName(CACHE_NAME);
-        cache.setCacheMode(PARTITIONED);
-        cache.setBackups(1);
-        cache.setWriteSynchronizationMode(FULL_SYNC);
-        cache.setIndexedTypes(
-            Byte.class, Byte.class
-        );
-
-        cfg.setCacheConfiguration(cache);
-
-        cfg.setConnectorConfiguration(new ConnectorConfiguration());
-
-        return cfg;
-    }
 
     /** {@inheritDoc} */
     @Override protected void beforeTestsStarted() throws Exception {

@@ -33,13 +33,14 @@ import org.junit.Test;
 
 import static org.apache.ignite.cache.CacheMode.PARTITIONED;
 import static org.apache.ignite.cache.CacheWriteSynchronizationMode.FULL_SYNC;
+import static org.apache.ignite.internal.processors.query.QueryUtils.DFLT_SCHEMA;
 
 /**
  * Statement test.
  */
 public class JdbcStatementSelfTest extends GridCommonAbstractTest {
     /** URL. */
-    private static final String URL = "jdbc:ignite://127.0.0.1/";
+    private static final String URL = "jdbc:ignite:thin://127.0.0.1/";
 
     /** SQL query. */
     private static final String SQL = "select * from Person where age > 30";
@@ -56,6 +57,7 @@ public class JdbcStatementSelfTest extends GridCommonAbstractTest {
 
         CacheConfiguration<?, ?> cache = defaultCacheConfiguration();
 
+        cache.setSqlSchema(DFLT_SCHEMA);
         cache.setCacheMode(PARTITIONED);
         cache.setBackups(1);
         cache.setWriteSynchronizationMode(FULL_SYNC);

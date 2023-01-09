@@ -23,17 +23,10 @@ import java.sql.DriverManager;
 import java.sql.DriverPropertyInfo;
 import java.sql.SQLException;
 import java.sql.SQLFeatureNotSupportedException;
-import java.util.Arrays;
-import java.util.List;
 import java.util.Properties;
 import java.util.logging.Logger;
 import org.apache.ignite.cache.affinity.AffinityKey;
-import org.apache.ignite.internal.jdbc.JdbcConnection;
 import org.apache.ignite.internal.jdbc.JdbcDriverPropertyInfo;
-
-import static org.apache.ignite.ssl.SslContextFactory.DFLT_KEY_ALGORITHM;
-import static org.apache.ignite.ssl.SslContextFactory.DFLT_SSL_PROTOCOL;
-import static org.apache.ignite.ssl.SslContextFactory.DFLT_STORE_TYPE;
 
 /**
  * JDBC driver implementation for In-Memory Data Grid.
@@ -130,139 +123,9 @@ import static org.apache.ignite.ssl.SslContextFactory.DFLT_STORE_TYPE;
  *         <p> Defaults to {@code false}, meaning that the whole result set is fetched to memory eagerly.
  *     </li>
  * </ul>
- *
- * <h2 class="header">Configuration of Ignite Java client based connection</h2>
- *
- * All Ignite Java client configuration properties can be applied to JDBC connection of this type.
- * <p>
- * JDBC connection URL has the following pattern:
- * {@code jdbc:ignite://<hostname>:<port>/<cache_name>?nodeId=<UUID>}<br>
- * Note the following:
- * <ul>
- *     <li>Hostname is required.</li>
- *     <li>If port is not defined, {@code 11211} is used (default for Ignite client).</li>
- *     <li>Leave {@code <cache_name>} empty if you are connecting to default cache.</li>
- *     <li>
- *         Provide {@code nodeId} parameter if you want to specify node where to execute
- *         your queries. Note that local and replicated caches will be queried locally on
- *         this node while partitioned cache is queried distributively. If node ID is not
- *         provided, random node is used. If node with provided ID doesn't exist,
- *         exception is thrown.
- *     </li>
- * </ul>
- * Other properties can be defined in {@link Properties} object passed to
- * {@link DriverManager#getConnection(String, Properties)} method:
- * <table class="doctable">
- *     <tr>
- *         <th>Name</th>
- *         <th>Description</th>
- *         <th>Default</th>
- *         <th>Optional</th>
- *     </tr>
- *     <tr>
- *         <td><b>ignite.client.protocol</b></td>
- *         <td>Communication protocol ({@code TCP} or {@code HTTP}).</td>
- *         <td>{@code TCP}</td>
- *         <td>Yes</td>
- *     </tr>
- *     <tr>
- *         <td><b>ignite.client.connectTimeout</b></td>
- *         <td>Socket connection timeout.</td>
- *         <td>{@code 0} (infinite timeout)</td>
- *         <td>Yes</td>
- *     </tr>
- *     <tr>
- *         <td><b>ignite.client.tcp.noDelay</b></td>
- *         <td>Flag indicating whether TCP_NODELAY flag should be enabled for outgoing connections.</td>
- *         <td>{@code true}</td>
- *         <td>Yes</td>
- *     </tr>
- *     <tr>
- *         <td><b>ignite.client.ssl.enabled</b></td>
- *         <td>Flag indicating that {@code SSL} is needed for connection.</td>
- *         <td>{@code false}</td>
- *         <td>Yes</td>
- *     </tr>
- *     <tr>
- *         <td><b>ignite.client.ssl.protocol</b></td>
- *         <td>SSL protocol ({@code SSL} or {@code TLS}).</td>
- *         <td>{@code TLS}</td>
- *         <td>Yes</td>
- *     </tr>
- *     <tr>
- *         <td><b>ignite.client.ssl.key.algorithm</b></td>
- *         <td>Key manager algorithm.</td>
- *         <td>{@code SunX509}</td>
- *         <td>Yes</td>
- *     </tr>
- *     <tr>
- *         <td><b>ignite.client.ssl.keystore.location</b></td>
- *         <td>Key store to be used by client to connect with Ignite topology.</td>
- *         <td>&nbsp;</td>
- *         <td>No (if {@code SSL} is enabled)</td>
- *     </tr>
- *     <tr>
- *         <td><b>ignite.client.ssl.keystore.password</b></td>
- *         <td>Key store password.</td>
- *         <td>&nbsp;</td>
- *         <td>Yes</td>
- *     </tr>
- *     <tr>
- *         <td><b>ignite.client.ssl.keystore.type</b></td>
- *         <td>Key store type.</td>
- *         <td>{@code jks}</td>
- *         <td>Yes</td>
- *     </tr>
- *     <tr>
- *         <td><b>ignite.client.ssl.truststore.location</b></td>
- *         <td>Trust store to be used by client to connect with Ignite topology.</td>
- *         <td>&nbsp;</td>
- *         <td>No (if {@code SSL} is enabled)</td>
- *     </tr>
- *     <tr>
- *         <td><b>ignite.client.ssl.truststore.password</b></td>
- *         <td>Trust store password.</td>
- *         <td>&nbsp;</td>
- *         <td>Yes</td>
- *     </tr>
- *     <tr>
- *         <td><b>ignite.client.ssl.truststore.type</b></td>
- *         <td>Trust store type.</td>
- *         <td>{@code jks}</td>
- *         <td>Yes</td>
- *     </tr>
- *     <tr>
- *         <td><b>ignite.client.credentials</b></td>
- *         <td>Client credentials used in authentication process.</td>
- *         <td>&nbsp;</td>
- *         <td>Yes</td>
- *     </tr>
- *     <tr>
- *         <td><b>ignite.client.cache.top</b></td>
- *         <td>
- *             Flag indicating that topology is cached internally. Cache will be refreshed in
- *             the background with interval defined by {@code ignite.client.topology.refresh}
- *             property (see below).
- *         </td>
- *         <td>{@code false}</td>
- *         <td>Yes</td>
- *     </tr>
- *     <tr>
- *         <td><b>ignite.client.topology.refresh</b></td>
- *         <td>Topology cache refresh frequency (ms).</td>
- *         <td>{@code 2000}</td>
- *         <td>Yes</td>
- *     </tr>
- *     <tr>
- *         <td><b>ignite.client.idleTimeout</b></td>
- *         <td>Maximum amount of time that connection can be idle before it is closed (ms).</td>
- *         <td>{@code 30000}</td>
- *         <td>Yes</td>
- *     </tr>
- * </table>
  * <h1 class="header">Example</h1>
  * <pre name="code" class="java">
-  * // Open JDBC connection.
+ *  // Open JDBC connection.
  * Connection conn = DriverManager.getConnection("jdbc:ignite:cfg//cache=persons@file:///etc/configs/ignite-jdbc.xml");
  *
  * // Query persons' names
@@ -398,9 +261,6 @@ public class IgniteJdbcDriver implements Driver {
     /** Cache name property name. */
     public static final String PROP_CFG = PROP_PREFIX + "cfg";
 
-    /** URL prefix. */
-    public static final String URL_PREFIX = "jdbc:ignite://";
-
     /** Config URL prefix. */
     public static final String CFG_URL_PREFIX = "jdbc:ignite:cfg://";
 
@@ -436,19 +296,12 @@ public class IgniteJdbcDriver implements Driver {
         if (!parseUrl(url, props))
             throw new SQLException("URL is invalid: " + url);
 
-        if (url.startsWith(URL_PREFIX)) {
-            if (props.getProperty(PROP_CFG) != null)
-                LOG.warning(PROP_CFG + " property is not applicable for this URL.");
-
-            return new JdbcConnection(url, props);
-        }
-        else
-            return new org.apache.ignite.internal.jdbc2.JdbcConnection(url, props);
+        return new org.apache.ignite.internal.jdbc2.JdbcConnection(url, props);
     }
 
     /** {@inheritDoc} */
     @Override public boolean acceptsURL(String url) throws SQLException {
-        return url.startsWith(URL_PREFIX) || url.startsWith(CFG_URL_PREFIX);
+        return url.startsWith(CFG_URL_PREFIX);
     }
 
     /** {@inheritDoc} */
@@ -456,7 +309,7 @@ public class IgniteJdbcDriver implements Driver {
         if (!parseUrl(url, info))
             throw new SQLException("URL is invalid: " + url);
 
-        List<DriverPropertyInfo> props = Arrays.<DriverPropertyInfo>asList(
+        return new DriverPropertyInfo[]{
             new JdbcDriverPropertyInfo("Hostname", info.getProperty(PROP_HOST), ""),
             new JdbcDriverPropertyInfo("Port number", info.getProperty(PROP_PORT), ""),
             new JdbcDriverPropertyInfo("Cache name", info.getProperty(PROP_CACHE), ""),
@@ -469,66 +322,9 @@ public class IgniteJdbcDriver implements Driver {
             new JdbcDriverPropertyInfo("Transactions Allowed", info.getProperty(PROP_TX_ALLOWED), ""),
             new JdbcDriverPropertyInfo("Queries with multiple statements allowed", info.getProperty(PROP_MULTIPLE_STMTS), ""),
             new JdbcDriverPropertyInfo("Skip reducer on update", info.getProperty(PROP_SKIP_REDUCER_ON_UPDATE), ""),
-            new JdbcDriverPropertyInfo("Schema name", info.getProperty(PROP_SCHEMA), "")
-        );
-
-        if (info.getProperty(PROP_CFG) != null)
-            props.add(new JdbcDriverPropertyInfo("Configuration path", info.getProperty(PROP_CFG), ""));
-        else
-            props.addAll(Arrays.<DriverPropertyInfo>asList(
-                new JdbcDriverPropertyInfo("ignite.client.protocol",
-                    info.getProperty("ignite.client.protocol", "TCP"),
-                    "Communication protocol (TCP or HTTP)."),
-                new JdbcDriverPropertyInfo("ignite.client.connectTimeout",
-                    info.getProperty("ignite.client.connectTimeout", "0"),
-                    "Socket connection timeout."),
-                new JdbcDriverPropertyInfo("ignite.client.tcp.noDelay",
-                    info.getProperty("ignite.client.tcp.noDelay", "true"),
-                    "Flag indicating whether TCP_NODELAY flag should be enabled for outgoing connections."),
-                new JdbcDriverPropertyInfo("ignite.client.ssl.enabled",
-                    info.getProperty("ignite.client.ssl.enabled", "false"),
-                    "Flag indicating that SSL is needed for connection."),
-                new JdbcDriverPropertyInfo("ignite.client.ssl.protocol",
-                    info.getProperty("ignite.client.ssl.protocol", DFLT_SSL_PROTOCOL),
-                    "SSL protocol."),
-                new JdbcDriverPropertyInfo("ignite.client.ssl.key.algorithm",
-                    info.getProperty("ignite.client.ssl.key.algorithm", DFLT_KEY_ALGORITHM),
-                    "Key manager algorithm."),
-                new JdbcDriverPropertyInfo("ignite.client.ssl.keystore.location",
-                    info.getProperty("ignite.client.ssl.keystore.location", ""),
-                    "Key store to be used by client to connect with Ignite topology."),
-                new JdbcDriverPropertyInfo("ignite.client.ssl.keystore.password",
-                    info.getProperty("ignite.client.ssl.keystore.password", ""),
-                    "Key store password."),
-                new JdbcDriverPropertyInfo("ignite.client.ssl.keystore.type",
-                    info.getProperty("ignite.client.ssl.keystore.type", DFLT_STORE_TYPE),
-                    "Key store type."),
-                new JdbcDriverPropertyInfo("ignite.client.ssl.truststore.location",
-                    info.getProperty("ignite.client.ssl.truststore.location", ""),
-                    "Trust store to be used by client to connect with Ignite topology."),
-                new JdbcDriverPropertyInfo("ignite.client.ssl.keystore.password",
-                    info.getProperty("ignite.client.ssl.truststore.password", ""),
-                    "Trust store password."),
-                new JdbcDriverPropertyInfo("ignite.client.ssl.truststore.type",
-                    info.getProperty("ignite.client.ssl.truststore.type", DFLT_STORE_TYPE),
-                    "Trust store type."),
-                new JdbcDriverPropertyInfo("ignite.client.credentials",
-                    info.getProperty("ignite.client.credentials", ""),
-                    "Client credentials used in authentication process."),
-                new JdbcDriverPropertyInfo("ignite.client.cache.top",
-                    info.getProperty("ignite.client.cache.top", "false"),
-                    "Flag indicating that topology is cached internally. Cache will be refreshed in the " +
-                        "background with interval defined by topologyRefreshFrequency property (see below)."),
-                new JdbcDriverPropertyInfo("ignite.client.topology.refresh",
-                    info.getProperty("ignite.client.topology.refresh", "2000"),
-                    "Topology cache refresh frequency (ms)."),
-                new JdbcDriverPropertyInfo("ignite.client.idleTimeout",
-                    info.getProperty("ignite.client.idleTimeout", "30000"),
-                    "Maximum amount of time that connection can be idle before it is closed (ms).")
-                )
-            );
-
-        return props.toArray(new DriverPropertyInfo[0]);
+            new JdbcDriverPropertyInfo("Schema name", info.getProperty(PROP_SCHEMA), ""),
+            new JdbcDriverPropertyInfo("Configuration path", info.getProperty(PROP_CFG), "")
+        };
     }
 
     /** {@inheritDoc} */
@@ -562,9 +358,7 @@ public class IgniteJdbcDriver implements Driver {
         if (url == null)
             return false;
 
-        if (url.startsWith(URL_PREFIX) && url.length() > URL_PREFIX.length())
-            return parseJdbcUrl(url, props);
-        else if (url.startsWith(CFG_URL_PREFIX) && url.length() >= CFG_URL_PREFIX.length())
+        if (url.startsWith(CFG_URL_PREFIX) && url.length() >= CFG_URL_PREFIX.length())
             return parseJdbcConfigUrl(url, props);
 
         return false;
@@ -588,53 +382,6 @@ public class IgniteJdbcDriver implements Driver {
         }
 
         props.setProperty(PROP_CFG, parts[parts.length - 1]);
-
-        return true;
-    }
-
-    /**
-     * @param url Url.
-     * @param props Properties.
-     */
-    private boolean parseJdbcUrl(String url, Properties props) {
-        url = url.substring(URL_PREFIX.length());
-
-        String[] parts = url.split("\\?");
-
-        if (parts.length > 2)
-            return false;
-
-        if (parts.length == 2)
-            if (!parseParameters(parts[1], "&", props))
-                return false;
-
-        parts = parts[0].split("/");
-
-        assert parts.length > 0;
-
-        if (parts.length > 2)
-            return false;
-
-        if (parts.length == 2 && !parts[1].isEmpty())
-            props.setProperty(PROP_CACHE, parts[1]);
-
-        url = parts[0];
-
-        parts = url.split(":");
-
-        assert parts.length > 0;
-
-        if (parts.length > 2)
-            return false;
-
-        props.setProperty(PROP_HOST, parts[0]);
-
-        try {
-            props.setProperty(PROP_PORT, String.valueOf(parts.length == 2 ? Integer.valueOf(parts[1]) : DFLT_PORT));
-        }
-        catch (NumberFormatException ignored) {
-            return false;
-        }
 
         return true;
     }
