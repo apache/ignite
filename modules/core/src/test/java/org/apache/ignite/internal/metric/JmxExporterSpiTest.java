@@ -158,7 +158,7 @@ public class JmxExporterSpiTest extends AbstractExporterSpiTest {
 
         ignite = startGrid(0);
 
-        ignite.cluster().active(true);
+        ignite.cluster().state(ClusterState.ACTIVE);
     }
 
     /** {@inheritDoc} */

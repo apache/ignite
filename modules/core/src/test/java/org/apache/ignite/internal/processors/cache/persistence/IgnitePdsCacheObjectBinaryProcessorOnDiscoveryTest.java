@@ -21,6 +21,7 @@ import java.util.Arrays;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.binary.BinaryObject;
 import org.apache.ignite.binary.BinaryObjectBuilder;
+import org.apache.ignite.cluster.ClusterState;
 import org.apache.ignite.configuration.DataRegionConfiguration;
 import org.apache.ignite.configuration.DataStorageConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
@@ -68,7 +69,7 @@ public class IgnitePdsCacheObjectBinaryProcessorOnDiscoveryTest extends GridComm
     public void testJoiningNodeBinaryMetaOnClient() throws Exception {
         IgniteEx ig0 = (IgniteEx)startGrids(2);
 
-        ig0.cluster().active(true);
+        ig0.cluster().state(ClusterState.ACTIVE);
 
         addBinaryType(ig0, "test_1", new IgniteBiTuple<>("name", String.class));
 

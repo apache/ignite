@@ -29,6 +29,7 @@ import java.util.concurrent.TimeUnit;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteDataStreamer;
 import org.apache.ignite.cache.query.annotations.QuerySqlField;
+import org.apache.ignite.cluster.ClusterState;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.jetbrains.annotations.NotNull;
@@ -147,7 +148,7 @@ public class JdbcThinMissingLongArrayResultsTest extends JdbcThinAbstractSelfTes
             }
             streamer.flush();
         }
-        ignite.active(true);
+        ignite.cluster().state(ClusterState.ACTIVE);
     }
 
     /**

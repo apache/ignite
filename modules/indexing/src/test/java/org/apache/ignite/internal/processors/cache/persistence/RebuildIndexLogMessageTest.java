@@ -24,6 +24,7 @@ import java.util.concurrent.TimeoutException;
 import org.apache.ignite.IgniteCache;
 import org.apache.ignite.cache.affinity.rendezvous.RendezvousAffinityFunction;
 import org.apache.ignite.cache.query.annotations.QuerySqlField;
+import org.apache.ignite.cluster.ClusterState;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.DataRegionConfiguration;
 import org.apache.ignite.configuration.DataStorageConfiguration;
@@ -135,7 +136,7 @@ public class RebuildIndexLogMessageTest extends GridCommonAbstractTest implement
 
         String gridName = ignite.name();
 
-        ignite.cluster().active(true);
+        ignite.cluster().state(ClusterState.ACTIVE);
 
         IgniteCache<Integer, Person> cacheA = ignite.getOrCreateCache(CACHE_NAME_A);
         IgniteCache<Integer, Person> cacheB = ignite.getOrCreateCache(CACHE_NAME_B);
@@ -166,7 +167,7 @@ public class RebuildIndexLogMessageTest extends GridCommonAbstractTest implement
 
         ignite = startGrid(getConfiguration(gridName));
 
-        ignite.cluster().active(true);
+        ignite.cluster().state(ClusterState.ACTIVE);
 
         cacheA = ignite.getOrCreateCache(CACHE_NAME_A);
         cacheB = ignite.getOrCreateCache(CACHE_NAME_B);

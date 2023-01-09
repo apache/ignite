@@ -23,6 +23,7 @@ import org.apache.ignite.IgniteCache;
 import org.apache.ignite.cache.CacheAtomicityMode;
 import org.apache.ignite.cache.query.FieldsQueryCursor;
 import org.apache.ignite.cache.query.SqlFieldsQuery;
+import org.apache.ignite.cluster.ClusterState;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.DataRegionConfiguration;
 import org.apache.ignite.configuration.DataStorageConfiguration;
@@ -93,7 +94,7 @@ public class SqlTwoCachesInGroupWithSameEntryTest extends AbstractIndexingCommon
     public void test() throws Exception {
         IgniteEx ign = startGrid(0);
 
-        ign.cluster().active(true);
+        ign.cluster().state(ClusterState.ACTIVE);
 
         IgniteCache cache0 = ign.createCache(new CacheConfiguration<>("cache0")
             .setAtomicityMode(CacheAtomicityMode.TRANSACTIONAL)

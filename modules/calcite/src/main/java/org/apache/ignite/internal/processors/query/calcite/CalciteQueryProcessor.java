@@ -424,23 +424,24 @@ public class CalciteQueryProcessor extends GridProcessorAdapter implements Query
 
         List<RootQuery<Object[]>> qrys = new ArrayList<>(batchedParams.size());
 
-        Function<RootQuery<Object[]>, QueryPlan> planSupplier = new Function<RootQuery<Object[]>, QueryPlan>() {
-            private QueryPlan plan;
+        BiFunction<RootQuery<Object[]>, Object[], QueryPlan> planSupplier =
+            new BiFunction<RootQuery<Object[]>, Object[], QueryPlan>() {
+                private QueryPlan plan;
 
-            @Override public QueryPlan apply(RootQuery<Object[]> qry) {
-                if (plan == null) {
-                    plan = queryPlanCache().queryPlan(new CacheKey(schema.getName(), sql), () ->
-                        prepareSvc.prepareSingle(qryNode, qry.planningContext())
-                    );
+                @Override public QueryPlan apply(RootQuery<Object[]> qry, Object[] params) {
+                    if (plan == null) {
+                        plan = queryPlanCache().queryPlan(new CacheKey(schema.getName(), sql, null, params), () ->
+                            prepareSvc.prepareSingle(qryNode, qry.planningContext())
+                        );
+                    }
+
+                    return plan;
                 }
-
-                return plan;
-            }
-        };
+            };
 
         for (final Object[] batch: batchedParams) {
             FieldsQueryCursor<List<?>> cur = processQuery(qryCtx, qry ->
-                executionSvc.executePlan(qry, planSupplier.apply(qry)), schema.getName(), sql, qrys, batch);
+                executionSvc.executePlan(qry, planSupplier.apply(qry, batch)), schema.getName(), sql, qrys, batch);
 
             cursors.add(cur);
         }
@@ -460,7 +461,7 @@ public class CalciteQueryProcessor extends GridProcessorAdapter implements Query
 
         assert schema != null : "Schema not found: " + schemaName;
 
-        QueryPlan plan = queryPlanCache().queryPlan(new CacheKey(schema.getName(), sql));
+        QueryPlan plan = queryPlanCache().queryPlan(new CacheKey(schema.getName(), sql, null, params));
 
         if (plan != null) {
             return Collections.singletonList(
@@ -478,7 +479,8 @@ public class CalciteQueryProcessor extends GridProcessorAdapter implements Query
                 QueryPlan plan0;
                 if (qryList.size() == 1) {
                     plan0 = queryPlanCache().queryPlan(
-                        new CacheKey(schema.getName(), sql), // Use source SQL to avoid redundant parsing next time.
+                        // Use source SQL to avoid redundant parsing next time.
+                        new CacheKey(schema.getName(), sql, null, params),
                         () -> prepareSvc.prepareSingle(sqlNode, qry.planningContext())
                     );
                 }

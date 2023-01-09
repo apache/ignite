@@ -1229,13 +1229,14 @@ namespace Apache.Ignite.Core.Tests.Cache.Platform
         /// Tests that Replicated cache puts all entries on all nodes to platform cache.
         /// </summary>
         [Test]
-        public void TestPlatformCachingReplicated()
+        public void TestPlatformCachingReplicated([Values(false, true)] bool readFromBackup)
         {
             var cfg = new CacheConfiguration(TestUtils.TestName)
             {
                 CacheMode = CacheMode.Replicated,
                 PlatformCacheConfiguration = new PlatformCacheConfiguration(),
-                WriteSynchronizationMode = CacheWriteSynchronizationMode.FullSync
+                WriteSynchronizationMode = CacheWriteSynchronizationMode.FullSync,
+                ReadFromBackup = readFromBackup
             };
 
             var cache1 = _grid.CreateCache<int, int>(cfg);

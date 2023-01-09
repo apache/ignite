@@ -63,8 +63,8 @@ public class WalPageCompressionIntegrationTest extends AbstractPageCompressionIn
         // Reference ignite instance with uncompressed WAL page records.
         IgniteEx ignite1 = startGrid(1);
 
-        ignite0.cluster().active(true);
-        ignite1.cluster().active(true);
+        ignite0.cluster().state(ClusterState.ACTIVE);
+        ignite1.cluster().state(ClusterState.ACTIVE);
 
         String cacheName = "test";
 

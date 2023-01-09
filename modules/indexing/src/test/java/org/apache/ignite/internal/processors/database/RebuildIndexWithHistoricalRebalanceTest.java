@@ -33,6 +33,7 @@ import org.apache.ignite.cache.QueryIndexType;
 import org.apache.ignite.cache.affinity.rendezvous.RendezvousAffinityFunction;
 import org.apache.ignite.cache.eviction.fifo.FifoEvictionPolicy;
 import org.apache.ignite.cluster.ClusterNode;
+import org.apache.ignite.cluster.ClusterState;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.DataRegionConfiguration;
 import org.apache.ignite.configuration.DataStorageConfiguration;
@@ -205,7 +206,7 @@ public class RebuildIndexWithHistoricalRebalanceTest extends GridCommonAbstractT
         IgniteEx node1 = startGrid(0);
         startGrid(1);
 
-        node1.cluster().active(true);
+        node1.cluster().state(ClusterState.ACTIVE);
 
         IgniteCache<UserKey, UserValue> cache = node1.getOrCreateCache(CACHE_NAME);
 

@@ -32,6 +32,7 @@ import org.apache.ignite.IgniteException;
 import org.apache.ignite.cache.CacheAtomicityMode;
 import org.apache.ignite.cache.CacheWriteSynchronizationMode;
 import org.apache.ignite.cache.affinity.rendezvous.RendezvousAffinityFunction;
+import org.apache.ignite.cluster.ClusterState;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.DataRegionConfiguration;
 import org.apache.ignite.configuration.DataStorageConfiguration;
@@ -169,7 +170,7 @@ public class TxOnCachesStopTest extends GridCommonAbstractTest {
 
         IgniteEx ig = startClientGrid("client");
 
-        ig.cluster().active(true);
+        ig.cluster().state(ClusterState.ACTIVE);
 
         for (TransactionConcurrency conc : TransactionConcurrency.values()) {
             for (TransactionIsolation iso : TransactionIsolation.values())
@@ -186,7 +187,7 @@ public class TxOnCachesStopTest extends GridCommonAbstractTest {
 
         IgniteEx ig = startClientGrid("client");
 
-        ig.cluster().active(true);
+        ig.cluster().state(ClusterState.ACTIVE);
 
         for (TransactionConcurrency conc : TransactionConcurrency.values()) {
             for (TransactionIsolation iso : TransactionIsolation.values())
@@ -205,7 +206,7 @@ public class TxOnCachesStopTest extends GridCommonAbstractTest {
 
         Ignite client = startClientGrid("client");
 
-        client.cluster().active(true);
+        client.cluster().state(ClusterState.ACTIVE);
 
         awaitPartitionMapExchange(true, true, null);
 
@@ -350,7 +351,7 @@ public class TxOnCachesStopTest extends GridCommonAbstractTest {
         for (int ci = 0; ci < 2; ++ci)
             clients.add(startClientGrid("client-" + ci));
 
-        clients.get(0).cluster().active(true);
+        clients.get(0).cluster().state(ClusterState.ACTIVE);
 
         for (TransactionIsolation iso : TransactionIsolation.values()) {
             grid(0).getOrCreateCaches(createCacheConfigurations());

@@ -20,6 +20,7 @@ package org.apache.ignite.internal.processors.query;
 import java.util.List;
 import org.apache.ignite.IgniteCache;
 import org.apache.ignite.cache.query.SqlFieldsQuery;
+import org.apache.ignite.cluster.ClusterState;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.DataRegionConfiguration;
 import org.apache.ignite.configuration.DataStorageConfiguration;
@@ -98,7 +99,7 @@ public class IgniteSqlCustomSchemaWithPdsEnabled extends AbstractIndexingCommonT
 
         stopGrid(0);
 
-        startGrid(0).cluster().active(true);
+        startGrid(0).cluster().state(ClusterState.ACTIVE);
 
         for (String schemaName : ALL_SCHEMAS) {
             List<List<?>> act = execSql("SELECT COUNT(*) FROM " + t(q(schemaName), TABLE_NAME)
@@ -137,7 +138,7 @@ public class IgniteSqlCustomSchemaWithPdsEnabled extends AbstractIndexingCommonT
     private IgniteEx startAndActivate() throws Exception {
         IgniteEx ignite = startGrid(0);
 
-        ignite.cluster().active(true);
+        ignite.cluster().state(ClusterState.ACTIVE);
 
         return ignite;
     }

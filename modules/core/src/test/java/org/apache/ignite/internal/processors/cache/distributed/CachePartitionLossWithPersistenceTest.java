@@ -29,6 +29,7 @@ import org.apache.ignite.cache.CacheWriteSynchronizationMode;
 import org.apache.ignite.cache.PartitionLossPolicy;
 import org.apache.ignite.cache.affinity.rendezvous.RendezvousAffinityFunction;
 import org.apache.ignite.cluster.ClusterNode;
+import org.apache.ignite.cluster.ClusterState;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.DataRegionConfiguration;
 import org.apache.ignite.configuration.DataStorageConfiguration;
@@ -121,12 +122,12 @@ public class CachePartitionLossWithPersistenceTest extends GridCommonAbstractTes
     @Test
     public void testResetOnLesserTopologyAfterRestart() throws Exception {
         IgniteEx crd = startGrids(5);
-        crd.cluster().active(true);
+        crd.cluster().state(ClusterState.ACTIVE);
 
         stopAllGrids();
 
         crd = startGrids(2);
-        crd.cluster().active(true);
+        crd.cluster().state(ClusterState.ACTIVE);
 
         resetBaselineTopology();
 
@@ -181,7 +182,7 @@ public class CachePartitionLossWithPersistenceTest extends GridCommonAbstractTes
         lossPlc = READ_WRITE_SAFE;
 
         IgniteEx crd = startGrids(2);
-        crd.cluster().active(true);
+        crd.cluster().state(ClusterState.ACTIVE);
 
         startGrid(2);
         resetBaselineTopology();

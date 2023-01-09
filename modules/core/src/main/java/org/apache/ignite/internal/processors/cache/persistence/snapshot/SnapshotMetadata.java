@@ -21,6 +21,7 @@ import java.io.IOException;
 import java.io.InvalidObjectException;
 import java.io.Serializable;
 import java.util.Arrays;
+import java.util.Collection;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.HashSet;
@@ -33,6 +34,7 @@ import org.apache.ignite.internal.pagemem.wal.record.delta.ClusterSnapshotRecord
 import org.apache.ignite.internal.processors.cache.persistence.partstate.GroupPartitionId;
 import org.apache.ignite.internal.processors.cache.persistence.wal.WALPointer;
 import org.apache.ignite.internal.util.tostring.GridToStringInclude;
+import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.jetbrains.annotations.Nullable;
@@ -88,6 +90,12 @@ public class SnapshotMetadata implements Serializable {
     @GridToStringInclude
     @Nullable private List<String> warnings;
 
+    /** */
+    private transient Set<Integer> comprGrpIds;
+
+    /** */
+    private boolean hasComprGrps;
+
     /**
      * @param rqId Unique request id.
      * @param snpName Snapshot name.
@@ -106,6 +114,7 @@ public class SnapshotMetadata implements Serializable {
         String folderName,
         int pageSize,
         List<Integer> grpIds,
+        Collection<Integer> compGrpIds,
         Set<String> bltNodes,
         Set<GroupPartitionId> pairs,
         @Nullable WALPointer snpRecPtr,
@@ -120,6 +129,12 @@ public class SnapshotMetadata implements Serializable {
         this.bltNodes = bltNodes;
         this.snpRecPtr = snpRecPtr;
         this.masterKeyDigest = masterKeyDigest;
+
+        if (!F.isEmpty(compGrpIds)) {
+            hasComprGrps = true;
+
+            comprGrpIds = new HashSet<>(compGrpIds);
+        }
 
         pairs.forEach(p ->
             locParts.computeIfAbsent(p.getGroupId(), k -> new HashSet<>())
@@ -183,6 +198,16 @@ public class SnapshotMetadata implements Serializable {
         return Collections.unmodifiableMap(locParts);
     }
 
+    /** */
+    public boolean isGroupWithCompresion(int grpId) {
+        return hasComprGrps && comprGrpIds.contains(grpId);
+    }
+
+    /** */
+    public boolean hasCompressedGroups() {
+        return hasComprGrps;
+    }
+
     /**
      * @return WAL pointer to {@link ClusterSnapshotRecord} if exists.
      */
@@ -207,6 +232,9 @@ public class SnapshotMetadata implements Serializable {
             for (Integer partId : e.getValue())
                 s.writeInt(partId);
         }
+
+        if (hasComprGrps)
+            U.writeCollection(s, comprGrpIds);
     }
 
     /** Reconstitute the <tt>HashMap</tt> instance of partitions and cache groups from a stream. */
@@ -237,6 +265,9 @@ public class SnapshotMetadata implements Serializable {
 
             locParts.put(grpId, parts);
         }
+
+        if (hasComprGrps)
+            comprGrpIds = U.readSet(s);
     }
 
     /**
@@ -291,7 +322,9 @@ public class SnapshotMetadata implements Serializable {
             Objects.equals(grpIds, meta.grpIds) &&
             Objects.equals(bltNodes, meta.bltNodes) &&
             Arrays.equals(masterKeyDigest, meta.masterKeyDigest) &&
-            Objects.equals(warnings, meta.warnings);
+            Objects.equals(warnings, meta.warnings) &&
+            Objects.equals(hasComprGrps, hasComprGrps) &&
+            Objects.equals(comprGrpIds, comprGrpIds);
     }
 
     /** {@inheritDoc} */

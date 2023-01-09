@@ -20,6 +20,7 @@ package org.apache.ignite.internal.processors.cache.persistence.db.wal;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCache;
 import org.apache.ignite.cache.affinity.rendezvous.RendezvousAffinityFunction;
+import org.apache.ignite.cluster.ClusterState;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.DataStorageConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
@@ -191,7 +192,7 @@ public class IgniteWalRebalanceLoggingTest extends GridCommonAbstractTest {
      */
     private void checkFollowingPartitionsWereReservedForPotentialHistoryRebalanceMsg(LogListener... lsnrs)
         throws Exception {
-        startGridsMultiThreaded(2).cluster().active(true);
+        startGridsMultiThreaded(2).cluster().state(ClusterState.ACTIVE);
 
         IgniteCache<Integer, String> cache1 = createCache("cache1", "cache_group1");
         IgniteCache<Integer, String> cache2 = createCache("cache2", "cache_group2");

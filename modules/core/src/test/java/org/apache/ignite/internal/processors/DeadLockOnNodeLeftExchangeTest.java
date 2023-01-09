@@ -17,6 +17,7 @@
 
 package org.apache.ignite.internal.processors;
 
+import org.apache.ignite.cluster.ClusterState;
 import org.apache.ignite.configuration.DataRegionConfiguration;
 import org.apache.ignite.configuration.DataStorageConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
@@ -83,7 +84,7 @@ public class DeadLockOnNodeLeftExchangeTest extends GridCommonAbstractTest {
         IgniteClusterEx cluster = grid(0).cluster();
 
         cluster.baselineAutoAdjustEnabled(false);
-        cluster.active(true);
+        cluster.state(ClusterState.ACTIVE);
 
         TestRecordingCommunicationSpi spi = TestRecordingCommunicationSpi.spi(grid(3));
         spi.blockMessages(GridDhtPartitionsSingleMessage.class, getTestIgniteInstanceName(0));

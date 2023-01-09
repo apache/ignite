@@ -21,6 +21,7 @@ import java.util.Arrays;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicLong;
+import org.apache.ignite.cluster.ClusterState;
 import org.apache.ignite.configuration.ConnectorConfiguration;
 import org.apache.ignite.configuration.DataRegionConfiguration;
 import org.apache.ignite.configuration.DataStorageConfiguration;
@@ -77,7 +78,7 @@ public abstract class BaselineEventsTest extends GridCommonAbstractTest {
     /** */
     @Test
     public void testChangeBltWithControlUtility() throws Exception {
-        startGrid(0).cluster().active(true);
+        startGrid(0).cluster().state(ClusterState.ACTIVE);
 
         AtomicBoolean baselineChanged = new AtomicBoolean();
 
@@ -110,7 +111,7 @@ public abstract class BaselineEventsTest extends GridCommonAbstractTest {
     /** */
     @Test
     public void testChangeBltWithPublicApi() throws Exception {
-        startGrid(0).cluster().active(true);
+        startGrid(0).cluster().state(ClusterState.ACTIVE);
 
         AtomicBoolean baselineChanged = new AtomicBoolean();
 
@@ -150,13 +151,13 @@ public abstract class BaselineEventsTest extends GridCommonAbstractTest {
             EventType.EVT_BASELINE_CHANGED
         );
 
-        ignite.cluster().active(true);
+        ignite.cluster().state(ClusterState.ACTIVE);
 
         assertTrue(GridTestUtils.waitForCondition(baselineChanged::get, 3_000));
         baselineChanged.set(false);
 
-        ignite.cluster().active(false);
-        ignite.cluster().active(true);
+        ignite.cluster().state(ClusterState.INACTIVE);
+        ignite.cluster().state(ClusterState.ACTIVE);
 
         assertFalse(GridTestUtils.waitForCondition(baselineChanged::get, 3_000));
     }
@@ -166,7 +167,7 @@ public abstract class BaselineEventsTest extends GridCommonAbstractTest {
     public void testChangeAutoAdjustEnabled() throws Exception {
         IgniteClusterEx cluster = startGrids(2).cluster();
 
-        cluster.active(true);
+        cluster.state(ClusterState.ACTIVE);
 
         assertFalse(cluster.isBaselineAutoAdjustEnabled());
 
@@ -208,7 +209,7 @@ public abstract class BaselineEventsTest extends GridCommonAbstractTest {
     public void testChangeAutoAdjustTimeout() throws Exception {
         IgniteClusterEx cluster = startGrids(2).cluster();
 
-        cluster.active(true);
+        cluster.state(ClusterState.ACTIVE);
 
         AtomicLong autoAdjustTimeout = new AtomicLong();
 
@@ -241,7 +242,7 @@ public abstract class BaselineEventsTest extends GridCommonAbstractTest {
         includedEvtTypes = new int[0];
 
         IgniteClusterEx cluster = startGrid(0).cluster();
-        cluster.active(true);
+        cluster.state(ClusterState.ACTIVE);
 
         AtomicInteger evtsTriggered = new AtomicInteger();
 

@@ -21,6 +21,7 @@ import java.lang.reflect.Method;
 import java.util.LinkedHashMap;
 import java.util.Map;
 import org.apache.ignite.Ignite;
+import org.apache.ignite.cluster.ClusterState;
 import org.apache.ignite.configuration.DataRegionConfiguration;
 import org.apache.ignite.configuration.DataStorageConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
@@ -122,11 +123,11 @@ public class GridActivateExtensionTest extends GridCacheAbstractFullApiSelfTest 
 
         Ignite ig = grid(0);
 
-        ig.active(true);
+        ig.cluster().state(ClusterState.ACTIVE);
 
         log.info("activate backUp cluster");
 
-        assertEquals(true, ig.active());
+        assertEquals(true, ig.cluster().state().active());
 
         Class c = getClass();
 

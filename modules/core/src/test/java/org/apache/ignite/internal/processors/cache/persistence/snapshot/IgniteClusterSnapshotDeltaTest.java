@@ -44,7 +44,7 @@ import org.junit.runner.RunWith;
 import org.junit.runners.Parameterized;
 
 import static org.apache.ignite.IgniteSystemProperties.IGNITE_SNAPSHOT_SEQUENTIAL_WRITE;
-import static org.apache.ignite.configuration.DataStorageConfiguration.DFLT_PAGE_SIZE;
+import static org.apache.ignite.internal.pagemem.PageIdAllocator.INDEX_PARTITION;
 import static org.apache.ignite.internal.processors.cache.persistence.file.FilePageStoreManager.CACHE_DIR_PREFIX;
 import static org.apache.ignite.internal.processors.cache.persistence.snapshot.IgniteSnapshotManager.DeltaSortedIterator.DELTA_SORT_BATCH_SIZE;
 import static org.apache.ignite.internal.processors.cache.persistence.snapshot.IgniteSnapshotManager.partDeltaIndexFile;
@@ -77,7 +77,7 @@ public class IgniteClusterSnapshotDeltaTest extends AbstractSnapshotSelfTest {
     @Test
     public void testSendDelta() throws Exception {
         int keys = 10_000;
-        byte[] payload = new byte[DFLT_PAGE_SIZE / 2];
+        byte[] payload = new byte[PAGE_SIZE / 2];
         int partCnt = 2;
 
         System.setProperty(IGNITE_SNAPSHOT_SEQUENTIAL_WRITE, String.valueOf(sequentialWrite));
@@ -121,8 +121,8 @@ public class IgniteClusterSnapshotDeltaTest extends AbstractSnapshotSelfTest {
             }
 
             @Override public void sendDelta0(File delta, String cacheDirName, GroupPartitionId pair) {
-                if (cacheDir.equals(cacheDirName))
-                    assertTrue(delta.length() > 0);
+                if (cacheDir.equals(cacheDirName) && pair.getPartitionId() != INDEX_PARTITION)
+                    assertTrue("Delta length : " + delta.length() + " > 0", delta.length() > 0);
 
                 if (!sequentialWrite)
                     U.delete(partDeltaIndexFile(delta));

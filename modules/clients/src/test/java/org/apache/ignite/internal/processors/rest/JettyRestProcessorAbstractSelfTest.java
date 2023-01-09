@@ -2052,7 +2052,7 @@ public abstract class JettyRestProcessorAbstractSelfTest extends JettyRestProces
 
         startGrids(gridCount());
 
-        grid(0).cluster().active(true);
+        grid(0).cluster().state(ClusterState.ACTIVE);
 
         initCache();
     }
@@ -3575,7 +3575,7 @@ public abstract class JettyRestProcessorAbstractSelfTest extends JettyRestProces
         JsonNode res = validateJsonResponse(ret);
 
         assertEquals(ret, exp, res.asBoolean());
-        assertEquals(ret, exp, grid(0).cluster().active());
+        assertEquals(ret, exp, grid(0).cluster().state().active());
     }
 
     /**
