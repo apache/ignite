@@ -77,8 +77,10 @@ public class CacheObjectContext implements CacheObjectValueContext {
         this.binaryEnabled = binaryEnabled;
     }
 
-    /** {@inheritDoc} */
-    @Override public String cacheName() {
+    /**
+     * @return Cache name.
+     */
+    public String cacheName() {
         return cacheName;
     }
 

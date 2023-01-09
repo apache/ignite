@@ -28,8 +28,7 @@ public interface CacheObjectTransformerSpi extends IgniteSpi {
     /**
      * Returns cache object's bytes transformer.
      *
-     * @param cacheName Cache name.
      * @return Transformer.
      */
-    public CacheObjectTransformer transformer(String cacheName);
+    public CacheObjectTransformer transformer();
 }

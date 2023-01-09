@@ -44,7 +44,7 @@ public class CacheObjectsTransformerUtils {
     private static CacheObjectTransformer transformer(CacheObjectValueContext ctx) {
         CacheObjectTransformerSpi spi = ctx.kernalContext().config().getCacheObjectTransformSpi();
 
-        return (spi == null) ? null : spi.transformer(ctx.cacheName());
+        return (spi == null) ? null : spi.transformer();
     }
 
     /**

@@ -43,11 +43,6 @@ public class CacheQueryObjectValueContext implements CacheObjectValueContext {
     }
 
     /** {@inheritDoc} */
-    @Override public String cacheName() {
-        return null;
-    }
-
-    /** {@inheritDoc} */
     @Override public boolean copyOnGet() {
         return false;
     }

@@ -28,9 +28,6 @@ public interface CacheObjectValueContext {
      */
     public GridKernalContext kernalContext();
 
-    /** Cache name. */
-    public String cacheName();
-
     /**
      * @return Copy on get flag.
      */

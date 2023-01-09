@@ -63,7 +63,7 @@ public abstract class AbstractCacheObjectsCompressionTest extends AbstractCacheO
     @Override protected IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {
         return super.getConfiguration(igniteInstanceName)
             .setCacheObjectTransformSpi(new CacheObjectTransformerSpiAdapter() {
-                @Override public CacheObjectTransformer transformer(String cacheName) {
+                @Override public CacheObjectTransformer transformer() {
                     return new CompressionTransformer();
                 }
             });
