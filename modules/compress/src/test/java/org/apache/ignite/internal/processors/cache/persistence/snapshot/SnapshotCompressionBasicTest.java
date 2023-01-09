@@ -18,6 +18,7 @@
 package org.apache.ignite.internal.processors.cache.persistence.snapshot;
 
 import java.io.IOException;
+import java.nio.file.DirectoryStream;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
@@ -41,6 +42,7 @@ import org.apache.ignite.cache.QueryEntity;
 import org.apache.ignite.cache.QueryIndex;
 import org.apache.ignite.cluster.ClusterState;
 import org.apache.ignite.configuration.CacheConfiguration;
+import org.apache.ignite.configuration.DataStorageConfiguration;
 import org.apache.ignite.configuration.DiskPageCompression;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.GridKernalContextImpl;
@@ -63,6 +65,7 @@ import static org.apache.ignite.configuration.IgniteConfiguration.DFLT_SNAPSHOT_
 import static org.apache.ignite.events.EventType.EVTS_CLUSTER_SNAPSHOT;
 import static org.apache.ignite.events.EventType.EVT_CLUSTER_SNAPSHOT_RESTORE_FINISHED;
 import static org.apache.ignite.events.EventType.EVT_CLUSTER_SNAPSHOT_RESTORE_STARTED;
+import static org.apache.ignite.internal.processors.cache.persistence.file.FilePageStoreManager.DFLT_STORE_DIR;
 
 /** */
 public class SnapshotCompressionBasicTest extends AbstractSnapshotSelfTest {
@@ -82,7 +85,10 @@ public class SnapshotCompressionBasicTest extends AbstractSnapshotSelfTest {
     protected static final long TIMEOUT = 30_000;
 
     /** */
-    private static final Map<String, String> CACHES = new HashMap<>();
+    protected static final Map<String, String> CACHES = new HashMap<>();
+
+    /** */
+    public static final int DFLT_GRIDS_CNT = 3;
 
     static {
         CACHES.put("cache1", "group1");
@@ -92,7 +98,7 @@ public class SnapshotCompressionBasicTest extends AbstractSnapshotSelfTest {
     }
 
     /** */
-    private static final Set<String> COMPRESSED_CACHES = new HashSet<>();
+    protected static final Set<String> COMPRESSED_CACHES = new HashSet<>();
 
     static {
         COMPRESSED_CACHES.add("cache1");
@@ -111,6 +117,7 @@ public class SnapshotCompressionBasicTest extends AbstractSnapshotSelfTest {
         IgniteConfiguration config = super.getConfiguration(igniteInstanceName);
 
         config.getDataStorageConfiguration().setPageSize(PAGE_SIZE);
+        config.setWorkDirectory(workingDirectory(config).toString());
 
         return config;
     }
@@ -125,8 +132,12 @@ public class SnapshotCompressionBasicTest extends AbstractSnapshotSelfTest {
 
     /** {@inheritDoc} */
     @Before
-    @Override public void beforeTestSnapshot() {
+    @Override public void beforeTestSnapshot() throws Exception {
+        assertTrue(G.allGrids().isEmpty());
+
         locEvts.clear();
+
+        cleanPersistenceDir(true);
     }
 
     /** {@inheritDoc} */
@@ -135,28 +146,46 @@ public class SnapshotCompressionBasicTest extends AbstractSnapshotSelfTest {
         if (G.allGrids().isEmpty())
             return;
 
-        IgniteEx ig = grid(0);
-        for (String cacheName : ig.cacheNames()) {
-            IgniteCache cache = ig.cache(cacheName);
-
-            cache.destroy();
-        }
-
         stopAllGrids();
+    }
+
+    /** {@inheritDoc} */
+    @Override public void afterTestsStopped() throws Exception {
+        stopAllGrids();
+
+        cleanPersistenceDir();
     }
 
     /** */
     @Test
     public void testRestoreFullSnapshot() throws Exception {
-        IgniteEx ignite = startGrids(3);
+        testRestoreFullSnapshot(DFLT_GRIDS_CNT);
+    }
+
+    /** */
+    @Test
+    public void testRestoreFullSnapshot_OnLargerTopology() throws Exception {
+        testRestoreFullSnapshot(2 * DFLT_GRIDS_CNT);
+    }
+
+    /** */
+    private void testRestoreFullSnapshot(int gridCnt) throws Exception {
+        IgniteEx ignite = startGrids(gridCnt);
         ignite.events().localListen(e -> locEvts.add(e.type()), EVTS_CLUSTER_SNAPSHOT);
         ignite.cluster().state(ClusterState.ACTIVE);
+
+        long withoutHolesSize = snapshotSize(G.allGrids(), SNAPSHOT_WITHOUT_HOLES);
 
         for (String snpName: Arrays.asList(SNAPSHOT_WITH_HOLES, SNAPSHOT_WITHOUT_HOLES)) {
             try {
                 ignite.snapshot().restoreSnapshot(snpName, null).get(TIMEOUT);
 
                 waitForEvents(EVT_CLUSTER_SNAPSHOT_RESTORE_STARTED, EVT_CLUSTER_SNAPSHOT_RESTORE_FINISHED);
+
+                long persistSz = persistenseSize(G.allGrids());
+
+                assertTrue("persistSz < withoutHolesSize " + persistSz + "< " + withoutHolesSize,
+                    persistSz < 0.75 * withoutHolesSize);
 
                 for (String cacheName : CACHES.keySet()) {
                     IgniteCache cache = ignite.cache(cacheName);
@@ -175,7 +204,7 @@ public class SnapshotCompressionBasicTest extends AbstractSnapshotSelfTest {
     /** */
     @Test
     public void testRestoreFail_OnGridWithoutCompression() throws Exception {
-        IgniteEx ignite = startGrids(3);
+        IgniteEx ignite = startGrids(DFLT_GRIDS_CNT);
         ignite.events().localListen(e -> locEvts.add(e.type()), EVTS_CLUSTER_SNAPSHOT);
         ignite.cluster().state(ClusterState.ACTIVE);
 
@@ -187,11 +216,10 @@ public class SnapshotCompressionBasicTest extends AbstractSnapshotSelfTest {
         }
     }
 
-
     /** */
     @Test
     public void testRestoreNotCompressed_OnGridWithoutCompression() throws Exception {
-        IgniteEx ignite = startGrids(3);
+        IgniteEx ignite = startGrids(DFLT_GRIDS_CNT);
         ignite.events().localListen(e -> locEvts.add(e.type()), EVTS_CLUSTER_SNAPSHOT);
         ignite.cluster().state(ClusterState.ACTIVE);
 
@@ -227,6 +255,40 @@ public class SnapshotCompressionBasicTest extends AbstractSnapshotSelfTest {
         return i -> new Value("name_" + i);
     }
 
+    /** {@inheritDoc} */
+    @Override protected void cleanPersistenceDir() throws Exception {
+        super.cleanPersistenceDir();
+
+        cleanPersistenceDir(false);
+    }
+
+    /** */
+    protected void cleanPersistenceDir(boolean saveSnap) throws Exception {
+        assertTrue("Grids are not stopped", F.isEmpty(G.allGrids()));
+
+        String mask = U.maskForFileName(getTestIgniteInstanceName());
+
+        try (DirectoryStream<Path> ds = Files.newDirectoryStream(defaultWorkDirectory(),
+            path -> Files.isDirectory(path) && path.getFileName().toString().contains(mask))
+        ) {
+            for (Path dir : ds) {
+                if (!saveSnap) {
+                    U.delete(dir);
+
+                    continue;
+                }
+
+                U.delete(U.resolveWorkDirectory(dir.toString(), "cp", false));
+                U.delete(U.resolveWorkDirectory(dir.toString(), DFLT_STORE_DIR, false));
+                U.delete(U.resolveWorkDirectory(dir.toString(), DataStorageConfiguration.DFLT_MARSHALLER_PATH, false));
+                U.delete(U.resolveWorkDirectory(dir.toString(), DataStorageConfiguration.DFLT_BINARY_METADATA_PATH, false));
+            }
+        }
+        catch (IOException e) {
+            throw new IgniteException(e);
+        }
+    }
+
     /** */
     protected void createTestSnapshot() throws Exception {
         CacheConfiguration[] caches = CACHES.entrySet().stream()
@@ -253,7 +315,7 @@ public class SnapshotCompressionBasicTest extends AbstractSnapshotSelfTest {
                 return config;
             }).toArray(CacheConfiguration[]::new);
 
-        IgniteEx ignite = startGridsWithCache(3, 1000, valueBuilder(), caches);
+        IgniteEx ignite = startGridsWithCache(DFLT_GRIDS_CNT, 1000, valueBuilder(), caches);
 
         forceCheckpoint();
 
@@ -272,31 +334,23 @@ public class SnapshotCompressionBasicTest extends AbstractSnapshotSelfTest {
             assertTrue(F.isEmpty(res.exceptions()));
         }
 
-        Path withHolesPath = Paths.get(U.resolveWorkDirectory(U.defaultWorkDirectory(), DFLT_SNAPSHOT_DIRECTORY, false)
-            .toString(), SNAPSHOT_WITH_HOLES);
-
-        Path withoutHolesPath = Paths.get(U.resolveWorkDirectory(U.defaultWorkDirectory(), DFLT_SNAPSHOT_DIRECTORY, false)
-            .toString(), SNAPSHOT_WITHOUT_HOLES);
-
-        long withHolesSize = directorySize(withHolesPath);
-        long withoutHolesSize = directorySize(withoutHolesPath);
+        long withHolesSize = snapshotSize(G.allGrids(), SNAPSHOT_WITH_HOLES);
+        long withoutHolesSize = snapshotSize(G.allGrids(), SNAPSHOT_WITHOUT_HOLES);
 
         assertTrue("withHolesSize < withoutHolesSize: " + withHolesSize + " < " + withoutHolesSize,
             withHolesSize < withoutHolesSize);
 
-        long idxWithHolesSize = directorySize(withHolesPath, "index\\.bin");
-        long idxWithoutHolesSize = directorySize(withoutHolesPath, "index\\.bin");
+        long idxWithHolesSize = snapshotSize(G.allGrids(), SNAPSHOT_WITH_HOLES, "index\\.bin");
+        long idxWithoutHolesSize = snapshotSize(G.allGrids(), SNAPSHOT_WITHOUT_HOLES, "index\\.bin");
 
         assertTrue("idxWithHolesSize < idxWithoutHolesSize: " + idxWithHolesSize + " < " + idxWithoutHolesSize,
             idxWithHolesSize < idxWithoutHolesSize);
-
-        ignite.cacheNames().forEach(c -> ignite.getOrCreateCache(c).destroy());
 
         G.stopAll(true);
     }
 
     /** */
-    private void failCompressionProcessor(Ignite ignite, String... snpNames) {
+    protected void failCompressionProcessor(Ignite ignite, String... snpNames) {
         CompressionProcessor compressProc = ((IgniteEx)ignite).context().compress();
 
         CompressionProcessor spyCompressProc = Mockito.spy(compressProc);
@@ -334,12 +388,34 @@ public class SnapshotCompressionBasicTest extends AbstractSnapshotSelfTest {
     }
 
     /** */
-    private static long directorySize(Path path) throws IOException {
-        return directorySize(path, null);
+    protected long persistenseSize(Collection<Ignite> grids) {
+        return grids.stream()
+            .map(ig -> workingDirectory(ig).resolve(DFLT_STORE_DIR))
+            .reduce(0L, (acc, p) -> acc + directorySize(p), Long::sum);
     }
 
     /** */
-    private static long directorySize(Path path, String pattern) throws IOException {
+    protected long snapshotSize(Collection<Ignite> grids, String snpName) {
+        return snapshotSize(grids, snpName, "(part-\\d+|index)\\.bin");
+    }
+
+    /** */
+    protected long snapshotSize(Collection<Ignite> grids, String snpName, String pattern) {
+        return grids.stream()
+            .map(ig -> workingDirectory(ig).resolve(DFLT_SNAPSHOT_DIRECTORY).resolve(snpName))
+            .reduce(0L, (acc, p) -> acc + directorySize(p, pattern), Long::sum);
+    }
+
+    /** */
+    protected long directorySize(Path path) {
+        return directorySize(path, "(part-\\d+|index)\\.bin");
+    }
+
+    /** */
+    protected long directorySize(Path path, String pattern) {
+        if (!Files.exists(path))
+            return 0;
+
         try (Stream<Path> walk = Files.walk(path)) {
             return walk.filter(Files::isRegularFile)
                 .filter(f -> F.isEmpty(pattern) || f.getFileName().toString().matches(pattern))
@@ -352,10 +428,38 @@ public class SnapshotCompressionBasicTest extends AbstractSnapshotSelfTest {
                     }
                 }).sum();
         }
+        catch (IOException e) {
+            throw new IgniteException(e);
+        }
     }
 
     /** */
-    private static class Value {
+    protected Path workingDirectory(Ignite ig) {
+        return workingDirectory(ig.configuration());
+    }
+
+    /** */
+    protected Path workingDirectory(IgniteConfiguration cfg) {
+        try {
+            return Paths.get(U.defaultWorkDirectory(), U.maskForFileName(cfg.getIgniteInstanceName()));
+        }
+        catch (IgniteCheckedException e) {
+            throw new IgniteException(e);
+        }
+    }
+
+    /** */
+    protected Path defaultWorkDirectory() {
+        try {
+            return Paths.get(U.defaultWorkDirectory());
+        }
+        catch (IgniteCheckedException e) {
+            throw new IgniteException(e);
+        }
+    }
+
+    /** */
+    static class Value {
         /** */
         String name;
 
