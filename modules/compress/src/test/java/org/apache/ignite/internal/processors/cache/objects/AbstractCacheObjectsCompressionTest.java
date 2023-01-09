@@ -32,7 +32,7 @@ import org.apache.ignite.IgniteException;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.processors.cache.transform.AbstractCacheObjectsTransformationTest;
-import org.apache.ignite.spi.transform.CacheObjectsTransformer;
+import org.apache.ignite.spi.transform.CacheObjectTransformer;
 import org.xerial.snappy.Snappy;
 
 /**
@@ -63,8 +63,8 @@ public abstract class AbstractCacheObjectsCompressionTest extends AbstractCacheO
     /** {@inheritDoc} */
     @Override protected IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {
         return super.getConfiguration(igniteInstanceName)
-            .setCacheObjectsTransformSpi(new CacheObjectsTransformerSpiAdapter() {
-                @Override public CacheObjectsTransformer transformer(CacheConfiguration<?, ?> ccfg) {
+            .setCacheObjectTransformSpi(new CacheObjectTransformerSpiAdapter() {
+                @Override public CacheObjectTransformer transformer(CacheConfiguration<?, ?> ccfg) {
                     return new CompressionTransformer();
                 }
             });
@@ -106,7 +106,7 @@ public abstract class AbstractCacheObjectsCompressionTest extends AbstractCacheO
     /**
      *
      */
-    protected static class CompressionTransformer implements CacheObjectsTransformer {
+    protected static class CompressionTransformer implements CacheObjectTransformer {
         /** Comptession type. */
         protected static volatile CompressionType type = CompressionType.defaultType();
 
@@ -143,7 +143,7 @@ public abstract class AbstractCacheObjectsCompressionTest extends AbstractCacheO
 
             int locOverhead = 4; // Integer.
 
-            int lim = original.remaining() - CacheObjectsTransformer.OVERHEAD - locOverhead;
+            int lim = original.remaining() - (CacheObjectTransformer.OVERHEAD + locOverhead);
 
             if (lim <= 0)
                 throw new IgniteCheckedException("Compression is not possible.");

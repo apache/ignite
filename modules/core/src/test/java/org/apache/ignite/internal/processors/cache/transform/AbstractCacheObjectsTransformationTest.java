@@ -37,7 +37,7 @@ import org.apache.ignite.internal.util.typedef.G;
 import org.apache.ignite.lang.IgniteFuture;
 import org.apache.ignite.spi.IgniteSpiContext;
 import org.apache.ignite.spi.IgniteSpiException;
-import org.apache.ignite.spi.transform.CacheObjectsTransformerSpi;
+import org.apache.ignite.spi.transform.CacheObjectTransformerSpi;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.jetbrains.annotations.Nullable;
 
@@ -406,7 +406,7 @@ public abstract class AbstractCacheObjectsTransformationTest extends GridCommonA
     /**
      *
      */
-    protected abstract static class CacheObjectsTransformerSpiAdapter implements CacheObjectsTransformerSpi {
+    protected abstract static class CacheObjectTransformerSpiAdapter implements CacheObjectTransformerSpi {
         /** {@inheritDoc} */
         @Override public String getName() {
             return null;

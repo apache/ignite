@@ -20,8 +20,8 @@ package org.apache.ignite.internal.processors.cache;
 import java.nio.ByteBuffer;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.events.CacheObjectTransformedEvent;
-import org.apache.ignite.spi.transform.CacheObjectsTransformer;
-import org.apache.ignite.spi.transform.CacheObjectsTransformerSpi;
+import org.apache.ignite.spi.transform.CacheObjectTransformer;
+import org.apache.ignite.spi.transform.CacheObjectTransformerSpi;
 
 import static org.apache.ignite.events.EventType.EVT_CACHE_OBJECT_TRANSFORMED;
 import static org.apache.ignite.internal.binary.GridBinaryMarshaller.TRANSFORMED;
@@ -29,7 +29,7 @@ import static org.apache.ignite.internal.binary.GridBinaryMarshaller.TRANSFORMED
 /** */
 public class CacheObjectsTransformerUtils {
     /** Header buffer. */
-    private static final ThreadLocalByteBuffer hdrBuf = new ThreadLocalByteBuffer(CacheObjectsTransformer.OVERHEAD);
+    private static final ThreadLocalByteBuffer hdrBuf = new ThreadLocalByteBuffer(CacheObjectTransformer.OVERHEAD);
 
     /** Destination buffer. */
     private static final ThreadLocalByteBuffer dstBuf = new ThreadLocalByteBuffer(1 << 10);
@@ -41,14 +41,14 @@ public class CacheObjectsTransformerUtils {
     private static final byte VER = 0;
 
     /***/
-    private static CacheObjectsTransformer transformer(CacheObjectValueContext ctx) {
-        CacheObjectsTransformerSpi spi = ctx.kernalContext().config().getCacheObjectsTransformSpi();
+    private static CacheObjectTransformer transformer(CacheObjectValueContext ctx) {
+        CacheObjectTransformerSpi spi = ctx.kernalContext().config().getCacheObjectTransformSpi();
 
         return (spi == null) ? null : spi.transformer(ctx.cacheConfiguration());
     }
 
     /**
-     * Transforms bytes according to {@link CacheObjectsTransformerSpi} when specified.
+     * Transforms bytes according to {@link CacheObjectTransformerSpi} when specified.
      * @param bytes Given bytes.
      * @param ctx Context.
      * @return Transformed bytes.
@@ -58,7 +58,7 @@ public class CacheObjectsTransformerUtils {
     }
 
     /**
-     * Transforms bytes according to {@link CacheObjectsTransformerSpi} when specified.
+     * Transforms bytes according to {@link CacheObjectTransformerSpi} when specified.
      * @param bytes Given bytes.
      * @param ctx Context.
      * @return Transformed bytes.
@@ -67,7 +67,7 @@ public class CacheObjectsTransformerUtils {
         assert bytes[offset] != TRANSFORMED;
 
         try {
-            CacheObjectsTransformer trans = transformer(ctx);
+            CacheObjectTransformer trans = transformer(ctx);
 
             if (trans == null)
                 return bytes;
@@ -94,7 +94,7 @@ public class CacheObjectsTransformerUtils {
             byte[] res = new byte[hdr.remaining() + transformed.remaining()];
 
             hdr.get(res, 0, hdr.remaining());
-            transformed.get(res, CacheObjectsTransformer.OVERHEAD, transformed.remaining());
+            transformed.get(res, CacheObjectTransformer.OVERHEAD, transformed.remaining());
 
             if (ctx.kernalContext().event().isRecordable(EVT_CACHE_OBJECT_TRANSFORMED)) {
                 ctx.kernalContext().event().record(
@@ -133,7 +133,7 @@ public class CacheObjectsTransformerUtils {
         if (bytes[0] != TRANSFORMED)
             return bytes;
 
-        CacheObjectsTransformer trans = transformer(ctx);
+        CacheObjectTransformer trans = transformer(ctx);
 
         ByteBuffer src = sourceByteBuffer(bytes, 0, bytes.length, trans.direct());
 

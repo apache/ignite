@@ -30,7 +30,7 @@ import org.apache.ignite.binary.BinaryObjectBuilder;
 import org.apache.ignite.cache.CacheAtomicityMode;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
-import org.apache.ignite.spi.transform.CacheObjectsTransformer;
+import org.apache.ignite.spi.transform.CacheObjectTransformer;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.junit.runners.Parameterized;
@@ -58,9 +58,9 @@ public class CacheObjectsTransformationTest extends AbstractCacheObjectsTransfor
     /** {@inheritDoc} */
     @Override protected IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {
         return super.getConfiguration(igniteInstanceName)
-            .setCacheObjectsTransformSpi(new CacheObjectsTransformerSpiAdapter() {
-                @Override public CacheObjectsTransformer transformer(CacheConfiguration<?, ?> ccfg) {
-                    return new ControllableCacheObjectsTransformer();
+            .setCacheObjectTransformSpi(new CacheObjectTransformerSpiAdapter() {
+                @Override public CacheObjectTransformer transformer(CacheConfiguration<?, ?> ccfg) {
+                    return new ControllableCacheObjectTransformer();
                 }
             });
     }
@@ -89,12 +89,12 @@ public class CacheObjectsTransformationTest extends AbstractCacheObjectsTransfor
     @Test
     public void testUntransformable() throws Exception {
         try {
-            ControllableCacheObjectsTransformer.fail = true;
+            ControllableCacheObjectTransformer.fail = true;
 
             doTest();
         }
         finally {
-            ControllableCacheObjectsTransformer.fail = false;
+            ControllableCacheObjectTransformer.fail = false;
         }
     }
 
@@ -168,15 +168,15 @@ public class CacheObjectsTransformationTest extends AbstractCacheObjectsTransfor
         for (boolean reversed : new boolean[] {true, false})
             putAndCheck(
                 obj,
-                !ControllableCacheObjectsTransformer.fail,
-                !ControllableCacheObjectsTransformer.fail,
+                !ControllableCacheObjectTransformer.fail,
+                !ControllableCacheObjectTransformer.fail,
                 reversed);
     }
 
     /**
      *
      */
-    private static final class ControllableCacheObjectsTransformer implements CacheObjectsTransformer {
+    private static final class ControllableCacheObjectTransformer implements CacheObjectTransformer {
         /** Fail. */
         private static volatile boolean fail;
 

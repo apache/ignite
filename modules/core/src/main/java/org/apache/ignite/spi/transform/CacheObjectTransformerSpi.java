@@ -25,12 +25,12 @@ import org.apache.ignite.spi.IgniteSpi;
  * SPI provides cache object's bytes transformation (eg. encryption, compression, etc).
  */
 @IgniteExperimental
-public interface CacheObjectsTransformerSpi extends IgniteSpi {
+public interface CacheObjectTransformerSpi extends IgniteSpi {
     /**
      * Returns cache object's bytes transformer.
      *
      * @param ccfg Cache configuration.
      * @return Transformer.
      */
-    public CacheObjectsTransformer transformer(CacheConfiguration<?, ?> ccfg);
+    public CacheObjectTransformer transformer(CacheConfiguration<?, ?> ccfg);
 }
