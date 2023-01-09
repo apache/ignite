@@ -17,8 +17,6 @@
 
 package org.apache.ignite.internal.processors.cache.persistence.tree;
 
-import java.io.PrintWriter;
-import java.io.StringWriter;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
@@ -2210,12 +2208,7 @@ public abstract class BPlusTree<L, T extends L> extends DataStructure implements
             throw new IgniteCheckedException("Runtime failure on search row: " + row, e);
         }
         catch (RuntimeException | AssertionError e) {
-            StringWriter sw = new StringWriter();
-            PrintWriter pw = new PrintWriter(sw);
-            e.printStackTrace(pw);
-
-            throw corruptedTreeException("Runtime failure on search row: " + row + "\n" + e + "\n" + e.getCause() +
-                "\n" + sw.toString(), e, grpId, x.pageId);
+            throw corruptedTreeException("Runtime failure on search row: " + row, e, grpId, x.pageId);
         }
         finally {
             x.releaseAll();
