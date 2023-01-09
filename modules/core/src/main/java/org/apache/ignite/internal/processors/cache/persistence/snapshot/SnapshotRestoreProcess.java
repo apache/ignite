@@ -1068,21 +1068,18 @@ public class SnapshotRestoreProcess {
                                     return;
                                 }
 
-                                CompletableFuture.supplyAsync(
+                                CompletableFuture.runAsync(
                                     () -> {
                                         try {
                                             punchHole(grpId, partId, snpFile);
 
                                             partFut.complete(snpFile.toPath());
-
-                                            return null;
                                         }
                                         catch (Throwable t0) {
                                             opCtx0.errHnd.accept(t0);
 
                                             completeListExceptionally(rmtAwaitParts, t0);
                                         }
-                                        return null;
                                     },
                                     snpMgr.snapshotExecutorService()
                                 );
