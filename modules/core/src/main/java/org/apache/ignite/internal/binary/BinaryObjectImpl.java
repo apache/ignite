@@ -261,7 +261,7 @@ public final class BinaryObjectImpl extends BinaryObjectExImpl implements Extern
         byte[] bytes =
             CacheObjectsTransformerUtils.transformIfNecessary(arr, start, detached() ? arr.length : length(), ctx);
 
-        if (!detached() && bytes == arr) // Was not transformed, but starts not from 0.
+        if (bytes == arr && !detached()) // Was not transformed, but starts not from 0.
             return detachArray();
         else
             return bytes;
