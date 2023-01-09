@@ -141,6 +141,7 @@ import org.apache.ignite.internal.processors.cacheobject.IgniteCacheObjectProces
 import org.apache.ignite.internal.processors.cluster.ChangeGlobalStateFinishMessage;
 import org.apache.ignite.internal.processors.cluster.ChangeGlobalStateMessage;
 import org.apache.ignite.internal.processors.cluster.DiscoveryDataClusterState;
+import org.apache.ignite.internal.processors.compress.CompressionHandler;
 import org.apache.ignite.internal.processors.datastructures.DataStructuresProcessor;
 import org.apache.ignite.internal.processors.metric.MetricRegistry;
 import org.apache.ignite.internal.processors.platform.cache.PlatformCacheManager;
@@ -194,6 +195,7 @@ import org.apache.ignite.spi.systemview.view.CachePagesListView;
 import org.apache.ignite.spi.systemview.view.PartitionStateView;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
+
 import static java.lang.String.format;
 import static java.util.Arrays.asList;
 import static java.util.Objects.isNull;
@@ -1269,7 +1271,6 @@ public class GridCacheProcessor extends GridProcessorAdapter {
 
         boolean nearEnabled = GridCacheUtils.isNearEnabled(cfg);
 
-        CacheCompressionManager compressMgr = new CacheCompressionManager();
         GridCacheAffinityManager affMgr = new GridCacheAffinityManager();
         GridCacheEventManager evtMgr = new GridCacheEventManager();
         CacheEvictionManager evictMgr = (nearEnabled || cfg.isOnheapCacheEnabled())
@@ -1309,7 +1310,6 @@ public class GridCacheProcessor extends GridProcessorAdapter {
              * Managers in starting order!
              * ===========================
              */
-            compressMgr,
             evtMgr,
             storeMgr,
             evictMgr,
@@ -1427,7 +1427,6 @@ public class GridCacheProcessor extends GridProcessorAdapter {
                  * Managers in starting order!
                  * ===========================
                  */
-                compressMgr,
                 evtMgr,
                 storeMgr,
                 evictMgr,
@@ -2480,6 +2479,14 @@ public class GridCacheProcessor extends GridProcessorAdapter {
         boolean persistenceEnabled = recoveryMode || sharedCtx.localNode().isClient() ? desc.persistenceEnabled() :
             dataRegion != null && dataRegion.config().isPersistenceEnabled();
 
+        CompressionHandler compressHandler = CompressionHandler.create(ctx, cfg);
+
+        if (log.isInfoEnabled() && compressHandler.compressionEnabled()) {
+            log.info("Disk page compression is enabled [cacheGrp=" + CU.cacheOrGroupName(cfg) +
+                ", compression=" + compressHandler.diskPageCompression() + ", level=" +
+                compressHandler.diskPageCompressionLevel() + "]");
+        }
+
         CacheGroupContext grp = new CacheGroupContext(sharedCtx,
             desc.groupId(),
             desc.receivedFrom(),
@@ -2493,7 +2500,8 @@ public class GridCacheProcessor extends GridProcessorAdapter {
             exchTopVer,
             persistenceEnabled,
             desc.walEnabled(),
-            recoveryMode
+            recoveryMode,
+            compressHandler
         );
 
         for (Object obj : grp.configuredUserObjects())

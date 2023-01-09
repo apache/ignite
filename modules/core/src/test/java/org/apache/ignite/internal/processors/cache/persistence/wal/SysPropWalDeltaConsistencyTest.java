@@ -18,6 +18,7 @@
 package org.apache.ignite.internal.processors.cache.persistence.wal;
 
 import org.apache.ignite.IgniteCache;
+import org.apache.ignite.cluster.ClusterState;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.processors.cache.persistence.wal.memtracker.PageMemoryTrackerPluginProvider;
@@ -64,7 +65,7 @@ public class SysPropWalDeltaConsistencyTest extends AbstractWalDeltaConsistencyT
     public final void testPutRemoveMultinode() throws Exception {
         IgniteEx ignite0 = startGrid(0);
 
-        ignite0.cluster().active(true);
+        ignite0.cluster().state(ClusterState.ACTIVE);
 
         IgniteCache<Integer, Object> cache0 = ignite0.createCache(cacheConfiguration("cache0"));
 

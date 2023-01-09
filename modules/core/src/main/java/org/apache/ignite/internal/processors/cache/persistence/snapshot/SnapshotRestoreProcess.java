@@ -688,6 +688,7 @@ public class SnapshotRestoreProcess {
 
         // Collect the cache configurations and prepare a temporary directory for copying files.
         // Metastorage can be restored only manually by directly copying files.
+        boolean skipCompressCheck = false;
         for (SnapshotMetadata meta : metas) {
             for (File snpCacheDir : cctx.snapshotMgr().snapshotCacheDirectories(req.snapshotName(), req.snapshotPath(), meta.folderName(),
                 name -> !METASTORAGE_CACHE_NAME.equals(name))) {
@@ -695,6 +696,28 @@ public class SnapshotRestoreProcess {
 
                 if (!F.isEmpty(req.groups()) && !req.groups().contains(grpName))
                     continue;
+
+                if (!skipCompressCheck && meta.isGroupWithCompresion(CU.cacheId(grpName))) {
+                    try {
+                        File path = ctx.pdsFolderResolver().resolveFolders().persistentStoreRootPath();
+
+                        ctx.compress().checkPageCompressionSupported(path.toPath(), meta.pageSize());
+                    }
+                    catch (Exception e) {
+                        String grpWithCompr = req.groups().stream().filter(s -> meta.isGroupWithCompresion(CU.cacheId(grpName)))
+                            .collect(Collectors.joining(", "));
+
+                        String msg = "Requested cache groups [" + grpWithCompr + "] for restore " +
+                            "from snapshot '" + meta.snapshotName() + "' are compressed while " +
+                            "disk page compression is disabled. To restore these groups please " +
+                            "start Ignite with configured disk page compression";
+
+                        throw new IgniteCheckedException(msg);
+                    }
+                    finally {
+                        skipCompressCheck = true;
+                    }
+                }
 
                 File cacheDir = pageStore.cacheWorkDir(snpCacheDir.getName().startsWith(CACHE_GRP_DIR_PREFIX), grpName);
 

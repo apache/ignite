@@ -21,6 +21,7 @@ import java.util.Collections;
 import java.util.Set;
 import java.util.concurrent.CountDownLatch;
 import com.google.common.collect.Sets;
+import org.apache.ignite.cluster.ClusterState;
 import org.apache.ignite.internal.IgniteEx;
 import org.junit.Test;
 
@@ -43,13 +44,13 @@ public class IgniteStandByClientReconnectToNewClusterTest extends IgniteAbstract
         IgniteEx ig2 = grid(node2);
         IgniteEx client = grid(nodeClient);
 
-        assertTrue(!ig1.cluster().active());
-        assertTrue(!ig2.cluster().active());
-        assertTrue(!client.cluster().active());
+        assertTrue(!ig1.cluster().state().active());
+        assertTrue(!ig2.cluster().state().active());
+        assertTrue(!client.cluster().state().active());
 
         info(">>>> activate grid");
 
-        client.cluster().active(true);
+        client.cluster().state(ClusterState.ACTIVE);
 
         checkDescriptors(ig1, staticCacheNames);
         checkDescriptors(ig2, staticCacheNames);
@@ -63,9 +64,9 @@ public class IgniteStandByClientReconnectToNewClusterTest extends IgniteAbstract
 
         client.createCache(ccfgDynamicWithFilter);
 
-        assertTrue(ig1.cluster().active());
-        assertTrue(ig2.cluster().active());
-        assertTrue(client.cluster().active());
+        assertTrue(ig1.cluster().state().active());
+        assertTrue(ig2.cluster().state().active());
+        assertTrue(client.cluster().state().active());
 
         checkDescriptors(ig1, allCacheNames);
         checkDescriptors(ig2, allCacheNames);
@@ -88,10 +89,10 @@ public class IgniteStandByClientReconnectToNewClusterTest extends IgniteAbstract
 
         info(">>>> activate new servers");
 
-        ig1.cluster().active(true);
+        ig1.cluster().state(ClusterState.ACTIVE);
 
-        assertTrue(ig1.cluster().active());
-        assertTrue(ig2.cluster().active());
+        assertTrue(ig1.cluster().state().active());
+        assertTrue(ig2.cluster().state().active());
 
         activateLatch.countDown();
 
@@ -101,9 +102,9 @@ public class IgniteStandByClientReconnectToNewClusterTest extends IgniteAbstract
 
         info(">>>> client reconnected");
 
-        assertTrue(ig1.cluster().active());
-        assertTrue(ig2.cluster().active());
-        assertTrue(client.cluster().active());
+        assertTrue(ig1.cluster().state().active());
+        assertTrue(ig2.cluster().state().active());
+        assertTrue(client.cluster().state().active());
 
         checkAllCaches();
     }
@@ -121,13 +122,13 @@ public class IgniteStandByClientReconnectToNewClusterTest extends IgniteAbstract
         IgniteEx ig2 = grid(node2);
         IgniteEx client = grid(nodeClient);
 
-        assertTrue(!ig1.cluster().active());
-        assertTrue(!ig2.cluster().active());
-        assertTrue(!client.cluster().active());
+        assertTrue(!ig1.cluster().state().active());
+        assertTrue(!ig2.cluster().state().active());
+        assertTrue(!client.cluster().state().active());
 
         info(">>>> activate grid");
 
-        client.cluster().active(true);
+        client.cluster().state(ClusterState.ACTIVE);
 
         checkStaticCaches();
 
@@ -145,9 +146,9 @@ public class IgniteStandByClientReconnectToNewClusterTest extends IgniteAbstract
         checkDescriptors(ig2, allCacheNames);
         checkDescriptors(client, allCacheNames);
 
-        assertTrue(ig1.cluster().active());
-        assertTrue(ig2.cluster().active());
-        assertTrue(client.cluster().active());
+        assertTrue(ig1.cluster().state().active());
+        assertTrue(ig2.cluster().state().active());
+        assertTrue(client.cluster().state().active());
 
         final CountDownLatch disconnectedLatch = new CountDownLatch(1);
         final CountDownLatch reconnectedLatch = new CountDownLatch(1);
@@ -159,7 +160,7 @@ public class IgniteStandByClientReconnectToNewClusterTest extends IgniteAbstract
         stopGrid(node1);
         stopGrid(node2);
 
-        assertTrue(client.cluster().active());
+        assertTrue(client.cluster().state().active());
 
         System.out.println("Await disconnected");
 
@@ -174,17 +175,17 @@ public class IgniteStandByClientReconnectToNewClusterTest extends IgniteAbstract
 
         info(">>>> client reconnected");
 
-        assertTrue(!ig1.cluster().active());
-        assertTrue(!ig2.cluster().active());
-        assertTrue(!client.cluster().active());
+        assertTrue(!ig1.cluster().state().active());
+        assertTrue(!ig2.cluster().state().active());
+        assertTrue(!client.cluster().state().active());
 
         info(">>>> activate new servers");
 
-        client.cluster().active(true);
+        client.cluster().state(ClusterState.ACTIVE);
 
-        assertTrue(ig1.cluster().active());
-        assertTrue(ig2.cluster().active());
-        assertTrue(client.cluster().active());
+        assertTrue(ig1.cluster().state().active());
+        assertTrue(ig2.cluster().state().active());
+        assertTrue(client.cluster().state().active());
 
         checkAllCaches();
     }
@@ -202,9 +203,9 @@ public class IgniteStandByClientReconnectToNewClusterTest extends IgniteAbstract
         IgniteEx ig2 = grid(node2);
         IgniteEx client = grid(nodeClient);
 
-        assertTrue(!ig1.cluster().active());
-        assertTrue(!ig2.cluster().active());
-        assertTrue(!client.cluster().active());
+        assertTrue(!ig1.cluster().state().active());
+        assertTrue(!ig2.cluster().state().active());
+        assertTrue(!client.cluster().state().active());
 
         final CountDownLatch disconnectedLatch = new CountDownLatch(1);
         final CountDownLatch reconnectedLatch = new CountDownLatch(1);
@@ -219,10 +220,10 @@ public class IgniteStandByClientReconnectToNewClusterTest extends IgniteAbstract
         ig1 = startGrid(getConfiguration(node1));
         ig2 = startGrid(getConfiguration(node2));
 
-        ig1.cluster().active(true);
+        ig1.cluster().state(ClusterState.ACTIVE);
 
-        assertTrue(ig1.cluster().active());
-        assertTrue(ig2.cluster().active());
+        assertTrue(ig1.cluster().state().active());
+        assertTrue(ig2.cluster().state().active());
 
         checkDescriptors(ig1, Collections.<String>emptySet());
         checkDescriptors(ig2, Collections.<String>emptySet());
@@ -231,9 +232,9 @@ public class IgniteStandByClientReconnectToNewClusterTest extends IgniteAbstract
 
         reconnectedLatch.await();
 
-        assertTrue(ig1.cluster().active());
-        assertTrue(ig2.cluster().active());
-        assertTrue(client.cluster().active());
+        assertTrue(ig1.cluster().state().active());
+        assertTrue(ig2.cluster().state().active());
+        assertTrue(client.cluster().state().active());
 
         checkOnlySystemCaches(false);
 
@@ -262,9 +263,9 @@ public class IgniteStandByClientReconnectToNewClusterTest extends IgniteAbstract
         IgniteEx ig2 = grid(node2);
         IgniteEx client = grid(nodeClient);
 
-        assertTrue(!ig1.cluster().active());
-        assertTrue(!ig2.cluster().active());
-        assertTrue(!client.cluster().active());
+        assertTrue(!ig1.cluster().state().active());
+        assertTrue(!ig2.cluster().state().active());
+        assertTrue(!client.cluster().state().active());
 
         final CountDownLatch disconnectedLatch = new CountDownLatch(1);
         final CountDownLatch reconnectedLatch = new CountDownLatch(1);
@@ -274,7 +275,7 @@ public class IgniteStandByClientReconnectToNewClusterTest extends IgniteAbstract
         stopGrid(node1);
         stopGrid(node2);
 
-        assertTrue(!client.cluster().active());
+        assertTrue(!client.cluster().state().active());
 
         disconnectedLatch.await();
 
@@ -283,15 +284,15 @@ public class IgniteStandByClientReconnectToNewClusterTest extends IgniteAbstract
 
         reconnectedLatch.await();
 
-        assertTrue(!ig1.cluster().active());
-        assertTrue(!ig2.cluster().active());
-        assertTrue(!client.cluster().active());
+        assertTrue(!ig1.cluster().state().active());
+        assertTrue(!ig2.cluster().state().active());
+        assertTrue(!client.cluster().state().active());
 
-        client.cluster().active(true);
+        client.cluster().state(ClusterState.ACTIVE);
 
-        assertTrue(ig1.cluster().active());
-        assertTrue(ig2.cluster().active());
-        assertTrue(client.cluster().active());
+        assertTrue(ig1.cluster().state().active());
+        assertTrue(ig2.cluster().state().active());
+        assertTrue(client.cluster().state().active());
 
         checkOnlySystemCaches(true);
 

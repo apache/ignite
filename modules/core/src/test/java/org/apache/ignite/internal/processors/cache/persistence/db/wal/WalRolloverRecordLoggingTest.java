@@ -20,6 +20,7 @@ package org.apache.ignite.internal.processors.cache.persistence.db.wal;
 import java.util.concurrent.ThreadLocalRandom;
 import org.apache.ignite.IgniteCache;
 import org.apache.ignite.IgniteCheckedException;
+import org.apache.ignite.cluster.ClusterState;
 import org.apache.ignite.configuration.DataRegionConfiguration;
 import org.apache.ignite.configuration.DataStorageConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
@@ -91,7 +92,7 @@ public abstract class WalRolloverRecordLoggingTest extends GridCommonAbstractTes
     public void testAvoidInfinityWaitingOnRolloverOfSegment() throws Exception {
         IgniteEx ig = startGrid(0);
 
-        ig.cluster().active(true);
+        ig.cluster().state(ClusterState.ACTIVE);
 
         IgniteCache<Integer, Integer> cache = ig.getOrCreateCache(DEFAULT_CACHE_NAME);
 

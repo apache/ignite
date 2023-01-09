@@ -3782,7 +3782,7 @@ public abstract class IgniteUtils {
     }
 
     /**
-     * Deletes file or directory with all sub-directories and files.
+     * Deletes file or directory with all sub-directories and files. Not thread-safe.
      *
      * @param file File or directory to delete.
      * @return {@code true} if and only if the file or directory is successfully deleted,
@@ -3803,7 +3803,7 @@ public abstract class IgniteUtils {
     }
 
     /**
-     * Deletes file or directory with all sub-directories and files.
+     * Deletes file or directory with all sub-directories and files. Not thread-safe.
      *
      * @param path File or directory to delete.
      * @return {@code true} if and only if the file or directory is successfully deleted,

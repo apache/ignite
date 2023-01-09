@@ -33,6 +33,7 @@ import org.apache.ignite.cache.affinity.rendezvous.RendezvousAffinityFunction;
 import org.apache.ignite.cache.query.QueryCursor;
 import org.apache.ignite.cache.query.SqlQuery;
 import org.apache.ignite.cache.query.annotations.QuerySqlField;
+import org.apache.ignite.cluster.ClusterState;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.DataRegionConfiguration;
 import org.apache.ignite.configuration.DataStorageConfiguration;
@@ -145,7 +146,7 @@ public class IgnitePdsCorruptedIndexTest extends GridCommonAbstractTest {
 
         startGrid(2);
 
-        ignite.cluster().active(true);
+        ignite.cluster().state(ClusterState.ACTIVE);
 
         awaitPartitionMapExchange();
 
@@ -177,7 +178,7 @@ public class IgnitePdsCorruptedIndexTest extends GridCommonAbstractTest {
 
         corruptedNode = (IgniteEx)startGrid(corruptedNodeName);
 
-        corruptedNode.cluster().active(true);
+        corruptedNode.cluster().state(ClusterState.ACTIVE);
 
         // Not all owners have been returned, data loss is expected.
         assertFalse(grid(0).cache(CACHE).lostPartitions().isEmpty());

@@ -28,6 +28,7 @@ import java.util.ArrayDeque;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -48,6 +49,7 @@ import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteDataStreamer;
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.IgniteLogger;
+import org.apache.ignite.IgniteSystemProperties;
 import org.apache.ignite.binary.BinaryType;
 import org.apache.ignite.cache.CacheAtomicityMode;
 import org.apache.ignite.cache.CacheMode;
@@ -58,6 +60,7 @@ import org.apache.ignite.cluster.ClusterState;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.DataRegionConfiguration;
 import org.apache.ignite.configuration.DataStorageConfiguration;
+import org.apache.ignite.configuration.DiskPageCompression;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.GridKernalContext;
 import org.apache.ignite.internal.IgniteEx;
@@ -101,6 +104,8 @@ import org.junit.runner.RunWith;
 import org.junit.runners.Parameterized;
 
 import static java.nio.file.Files.newDirectoryStream;
+import static org.apache.ignite.IgniteSystemProperties.IGNITE_DEFAULT_DATA_STORAGE_PAGE_SIZE;
+import static org.apache.ignite.IgniteSystemProperties.IGNITE_DEFAULT_DISK_PAGE_COMPRESSION;
 import static org.apache.ignite.cache.affinity.rendezvous.RendezvousAffinityFunction.DFLT_PARTITION_COUNT;
 import static org.apache.ignite.cluster.ClusterState.ACTIVE;
 import static org.apache.ignite.cluster.ClusterState.INACTIVE;
@@ -132,6 +137,14 @@ public abstract class AbstractSnapshotSelfTest extends GridCommonAbstractTest {
     /** Timeout in milliseconds to await for snapshot operation being completed. */
     protected static final long TIMEOUT = 15_000;
 
+    /** */
+    protected static final DiskPageCompression DISK_PAGE_COMPRESSION =
+        IgniteSystemProperties.getEnum(IGNITE_DEFAULT_DISK_PAGE_COMPRESSION, DiskPageCompression.DISABLED);
+
+    /** */
+    protected static final int PAGE_SIZE =
+        IgniteSystemProperties.getInteger(IGNITE_DEFAULT_DATA_STORAGE_PAGE_SIZE, DFLT_PAGE_SIZE);
+
     /** List of collected snapshot test events. */
     protected final List<Integer> locEvts = new CopyOnWriteArrayList<>();
 
@@ -161,6 +174,9 @@ public abstract class AbstractSnapshotSelfTest extends GridCommonAbstractTest {
     /** Parameters. */
     @Parameterized.Parameters(name = "Encryption={0}")
     public static Collection<Boolean> encryptionParams() {
+        if (DISK_PAGE_COMPRESSION != DiskPageCompression.DISABLED)
+            return Collections.singletonList(false);
+
         return Arrays.asList(false, true);
     }
 
@@ -179,10 +195,10 @@ public abstract class AbstractSnapshotSelfTest extends GridCommonAbstractTest {
             .setCommunicationSpi(new TestRecordingCommunicationSpi())
             .setDataStorageConfiguration(new DataStorageConfiguration()
                 .setDefaultDataRegionConfiguration(new DataRegionConfiguration()
-                    .setMaxSize(100L * 1024 * 1024)
+                    .setMaxSize(512L * 1024 * 1024)
                     .setPersistenceEnabled(persistence))
                 .setCheckpointFrequency(3000)
-                .setPageSize(DFLT_PAGE_SIZE)
+                .setPageSize(PAGE_SIZE)
                 .setWalCompactionEnabled(true))
             .setClusterStateOnStart(INACTIVE)
             .setIncludeEventTypes(EVTS_CLUSTER_SNAPSHOT)

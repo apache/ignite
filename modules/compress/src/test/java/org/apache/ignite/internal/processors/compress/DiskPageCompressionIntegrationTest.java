@@ -27,6 +27,7 @@ import java.util.concurrent.ConcurrentMap;
 import org.apache.ignite.IgniteCache;
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.cache.affinity.rendezvous.RendezvousAffinityFunction;
+import org.apache.ignite.cluster.ClusterState;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.DataRegionConfiguration;
 import org.apache.ignite.configuration.DataStorageConfiguration;
@@ -63,12 +64,14 @@ public class DiskPageCompressionIntegrationTest extends AbstractPageCompressionI
     /** {@inheritDoc} */
     @Override protected IgniteConfiguration getConfiguration(String igniteName) throws Exception {
         DataRegionConfiguration drCfg = new DataRegionConfiguration()
+            .setMetricsEnabled(true)
             .setPersistenceEnabled(true);
 
         factory = getFileIOFactory();
 
         DataStorageConfiguration dsCfg = new DataStorageConfiguration()
             .setPageSize(MAX_PAGE_SIZE)
+            .setMetricsEnabled(true)
             .setDefaultDataRegionConfiguration(drCfg)
             .setFileIOFactory(U.isLinux() ? factory : new PunchFileIOFactory(factory));
 
@@ -88,7 +91,7 @@ public class DiskPageCompressionIntegrationTest extends AbstractPageCompressionI
     @Override protected void doTestPageCompression() throws Exception {
         IgniteEx ignite = startGrid(0);
 
-        ignite.cluster().active(true);
+        ignite.cluster().state(ClusterState.ACTIVE);
 
         String cacheName = "test";
 
@@ -185,7 +188,7 @@ public class DiskPageCompressionIntegrationTest extends AbstractPageCompressionI
     public void _testCompressionRatio() throws Exception {
         IgniteEx ignite = startGrid(0);
 
-        ignite.cluster().active(true);
+        ignite.cluster().state(ClusterState.ACTIVE);
 
         String cacheName = "test";
 

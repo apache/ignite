@@ -18,6 +18,7 @@
 package org.apache.ignite.internal.encryption;
 
 import org.apache.ignite.IgniteException;
+import org.apache.ignite.cluster.ClusterState;
 import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.managers.encryption.EncryptionMXBeanImpl;
 import org.apache.ignite.internal.util.typedef.internal.CU;
@@ -37,7 +38,7 @@ public class EncryptionMXBeanTest extends AbstractEncryptionTest {
     public void testMasterKeyChange() throws Exception {
         IgniteEx ignite = startGrid(GRID_0);
 
-        ignite.cluster().active(true);
+        ignite.cluster().state(ClusterState.ACTIVE);
 
         EncryptionMXBean mBean = getMBean(GRID_0);
 
@@ -57,7 +58,7 @@ public class EncryptionMXBeanTest extends AbstractEncryptionTest {
 
         IgniteEx client = startClientGrid(getConfiguration("client"));
 
-        ignite.cluster().active(true);
+        ignite.cluster().state(ClusterState.ACTIVE);
 
         EncryptionMXBean mBean = getMBean(client.name());
 
@@ -75,7 +76,7 @@ public class EncryptionMXBeanTest extends AbstractEncryptionTest {
     public void testMasterKeyChangeTheSameKeyName() throws Exception {
         IgniteEx ignite = startGrid(GRID_0);
 
-        ignite.cluster().active(true);
+        ignite.cluster().state(ClusterState.ACTIVE);
 
         EncryptionMXBean mBean = getMBean(GRID_0);
 
@@ -95,7 +96,7 @@ public class EncryptionMXBeanTest extends AbstractEncryptionTest {
     public void testMasterKeyChangeOnInactiveAndReadonlyCluster() throws Exception {
         IgniteEx grid0 = startGrid(GRID_0);
 
-        assertFalse(grid0.cluster().active());
+        assertFalse(grid0.cluster().state().active());
 
         EncryptionMXBean mBean = getMBean(GRID_0);
 
@@ -117,7 +118,7 @@ public class EncryptionMXBeanTest extends AbstractEncryptionTest {
     public void testCacheGroupKeyChange() throws Exception {
         IgniteEx ignite = startGrid(GRID_0);
 
-        ignite.cluster().active(true);
+        ignite.cluster().state(ClusterState.ACTIVE);
 
         createEncryptedCache(ignite, null, cacheName(), null);
 

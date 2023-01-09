@@ -28,6 +28,7 @@ import java.util.stream.Collectors;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteDataStreamer;
+import org.apache.ignite.cluster.ClusterState;
 import org.apache.ignite.configuration.DataRegionConfiguration;
 import org.apache.ignite.configuration.DataStorageConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
@@ -184,7 +185,7 @@ public class IgniteNodeStoppedDuringDisableWALTest extends GridCommonAbstractTes
 
         ig0.context().internalSubscriptionProcessor().registerMetastorageListener(walDisableContext);
 
-        ig0.cluster().active(true);
+        ig0.cluster().state(ClusterState.ACTIVE);
 
         try (IgniteDataStreamer<Integer, Integer> st = ig0.dataStreamer(DEFAULT_CACHE_NAME)) {
             st.allowOverwrite(true);

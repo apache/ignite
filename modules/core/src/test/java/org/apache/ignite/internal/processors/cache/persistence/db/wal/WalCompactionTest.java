@@ -30,6 +30,7 @@ import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.cache.CacheAtomicityMode;
 import org.apache.ignite.cache.CacheWriteSynchronizationMode;
 import org.apache.ignite.cache.affinity.rendezvous.RendezvousAffinityFunction;
+import org.apache.ignite.cluster.ClusterState;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.DataRegionConfiguration;
 import org.apache.ignite.configuration.DataStorageConfiguration;
@@ -163,7 +164,7 @@ public class WalCompactionTest extends GridCommonAbstractTest {
         IgniteEx ig = (IgniteEx)startGrids(3);
 
         ig.cluster().baselineAutoAdjustEnabled(false);
-        ig.cluster().active(true);
+        ig.cluster().state(ClusterState.ACTIVE);
 
         IgniteCache<Integer, byte[]> cache = ig.cache(CACHE_NAME);
 
@@ -258,7 +259,7 @@ public class WalCompactionTest extends GridCommonAbstractTest {
 
         Ignite ignite = startGrids(2);
 
-        ignite.cluster().active(true);
+        ignite.cluster().state(ClusterState.ACTIVE);
 
         resetBaselineTopology();
 
@@ -298,7 +299,7 @@ public class WalCompactionTest extends GridCommonAbstractTest {
 
         IgniteEx ig = (IgniteEx)startGrid(getTestIgniteInstanceName(0), optimize(icfg), null);
 
-        ig.cluster().active(true);
+        ig.cluster().state(ClusterState.ACTIVE);
 
         IgniteCache<Integer, byte[]> cache = ig.cache(CACHE_NAME);
 
@@ -360,7 +361,7 @@ public class WalCompactionTest extends GridCommonAbstractTest {
         compactionEnabled = false;
 
         IgniteEx ig = startGrid(0);
-        ig.cluster().active(true);
+        ig.cluster().state(ClusterState.ACTIVE);
 
         IgniteCache<Integer, byte[]> cache = ig.cache(CACHE_NAME);
 
@@ -408,7 +409,7 @@ public class WalCompactionTest extends GridCommonAbstractTest {
         compactionEnabled = true;
 
         ig = startGrid(0);
-        ig.cluster().active(true);
+        ig.cluster().state(ClusterState.ACTIVE);
 
         // Allow compressor to compress WAL segments.
         assertTrue(GridTestUtils.waitForCondition(zippedWalSegment::exists, 15_000));
@@ -450,7 +451,7 @@ public class WalCompactionTest extends GridCommonAbstractTest {
     @Test
     public void testSeekingStartInCompactedSegment() throws Exception {
         IgniteEx ig = startGrids(3);
-        ig.cluster().active(true);
+        ig.cluster().state(ClusterState.ACTIVE);
 
         IgniteCache<Integer, byte[]> cache = ig.cache(CACHE_NAME);
 

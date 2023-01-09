@@ -23,6 +23,7 @@ import java.security.AccessControlException;
 import java.security.Permissions;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCompute;
+import org.apache.ignite.cluster.ClusterState;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgniteCallable;
@@ -111,7 +112,7 @@ public class AccessToClassesInsideInternalPackageTest extends AbstractSandboxTes
 
         startGrid(FORBIDDEN, ALLOW_ALL, false);
 
-        srv.cluster().active(true);
+        srv.cluster().state(ClusterState.ACTIVE);
     }
 
     /** {@inheritDoc} */

@@ -31,6 +31,7 @@ import java.util.stream.Stream;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.cluster.ClusterNode;
+import org.apache.ignite.cluster.ClusterState;
 import org.apache.ignite.compute.ComputeJob;
 import org.apache.ignite.compute.ComputeJobResult;
 import org.apache.ignite.compute.ComputeJobResultPolicy;
@@ -131,7 +132,7 @@ public class ComputePermissionCheckTest extends AbstractSecurityTest {
 
         Ignite clntForbiddenCancel = startGrid("clnt_forbidden_cnl", permissions(TASK_EXECUTE), true);
 
-        srvAllowed.cluster().active(true);
+        srvAllowed.cluster().state(ClusterState.ACTIVE);
 
         operations(srvAllowed, clntAllowed).forEach(this::runOperation);
 

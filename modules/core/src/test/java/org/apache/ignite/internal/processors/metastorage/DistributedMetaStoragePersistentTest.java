@@ -73,7 +73,7 @@ public class DistributedMetaStoragePersistentTest extends DistributedMetaStorage
     public void testRestart() throws Exception {
         IgniteEx ignite = startGrid(0);
 
-        ignite.cluster().active(true);
+        ignite.cluster().state(ClusterState.ACTIVE);
 
         ignite.context().distributedMetastorage().write("key", "value");
 
@@ -81,7 +81,7 @@ public class DistributedMetaStoragePersistentTest extends DistributedMetaStorage
 
         ignite = startGrid(0);
 
-        ignite.cluster().active(true);
+        ignite.cluster().state(ClusterState.ACTIVE);
 
         assertEquals("value", ignite.context().distributedMetastorage().read("key"));
     }
@@ -95,7 +95,7 @@ public class DistributedMetaStoragePersistentTest extends DistributedMetaStorage
 
         startGrid(1);
 
-        ignite.cluster().active(true);
+        ignite.cluster().state(ClusterState.ACTIVE);
 
         ignite.context().distributedMetastorage().write("key1", "value1");
 
@@ -105,7 +105,7 @@ public class DistributedMetaStoragePersistentTest extends DistributedMetaStorage
 
         ignite = startGrid(0);
 
-        ignite.cluster().active(true);
+        ignite.cluster().state(ClusterState.ACTIVE);
 
         ignite.context().distributedMetastorage().write("key2", "value2");
 
@@ -128,7 +128,7 @@ public class DistributedMetaStoragePersistentTest extends DistributedMetaStorage
 
         startGrid(1);
 
-        ignite.cluster().active(true);
+        ignite.cluster().state(ClusterState.ACTIVE);
 
         ignite.context().distributedMetastorage().write("key1", "value1");
 
@@ -138,7 +138,7 @@ public class DistributedMetaStoragePersistentTest extends DistributedMetaStorage
 
         ignite = startGrid(0);
 
-        ignite.cluster().active(true);
+        ignite.cluster().state(ClusterState.ACTIVE);
 
         ignite.context().distributedMetastorage().write("key2", "value2");
 
@@ -164,7 +164,7 @@ public class DistributedMetaStoragePersistentTest extends DistributedMetaStorage
 
         startGrid(1);
 
-        ignite.cluster().active(true);
+        ignite.cluster().state(ClusterState.ACTIVE);
 
         ignite.context().distributedMetastorage().write("key1", "value1");
 
@@ -197,7 +197,7 @@ public class DistributedMetaStoragePersistentTest extends DistributedMetaStorage
 
         startGrid(1);
 
-        ignite.cluster().active(true);
+        ignite.cluster().state(ClusterState.ACTIVE);
 
         ignite.context().distributedMetastorage().write("key1", "value1");
 
@@ -231,7 +231,7 @@ public class DistributedMetaStoragePersistentTest extends DistributedMetaStorage
     public void testNamesCollision() throws Exception {
         IgniteEx ignite = startGrid(0);
 
-        ignite.cluster().active(true);
+        ignite.cluster().state(ClusterState.ACTIVE);
 
         IgniteCacheDatabaseSharedManager dbSharedMgr = ignite.context().cache().context().database();
 
@@ -272,7 +272,7 @@ public class DistributedMetaStoragePersistentTest extends DistributedMetaStorage
 
         startGridsMultiThreaded(cnt);
 
-        grid(0).cluster().active(true);
+        grid(0).cluster().state(ClusterState.ACTIVE);
 
         metastorage(2).write("key1", "value1");
 
@@ -309,7 +309,7 @@ public class DistributedMetaStoragePersistentTest extends DistributedMetaStorage
 
         startGridsMultiThreaded(cnt);
 
-        grid(0).cluster().active(true);
+        grid(0).cluster().state(ClusterState.ACTIVE);
 
         metastorage(4).write("key1", "value1");
 
@@ -358,7 +358,7 @@ public class DistributedMetaStoragePersistentTest extends DistributedMetaStorage
 
         startGridsMultiThreaded(cnt);
 
-        grid(0).cluster().active(true);
+        grid(0).cluster().state(ClusterState.ACTIVE);
 
         metastorage(3).write("key1", "value1");
 
@@ -403,7 +403,7 @@ public class DistributedMetaStoragePersistentTest extends DistributedMetaStorage
 
         startGridsMultiThreaded(cnt);
 
-        grid(0).cluster().active(true);
+        grid(0).cluster().state(ClusterState.ACTIVE);
 
         metastorage(4).write("key1", "value1");
 
@@ -465,13 +465,13 @@ public class DistributedMetaStoragePersistentTest extends DistributedMetaStorage
     public void testDeactivateActivateRestart() throws Exception {
         startGrid(0);
 
-        grid(0).cluster().active(true);
+        grid(0).cluster().state(ClusterState.ACTIVE);
 
-        grid(0).cluster().active(false);
+        grid(0).cluster().state(ClusterState.INACTIVE);
 
         metastorage(0).write("key", "value");
 
-        grid(0).cluster().active(true);
+        grid(0).cluster().state(ClusterState.ACTIVE);
 
         stopGrid(0);
 
@@ -491,7 +491,7 @@ public class DistributedMetaStoragePersistentTest extends DistributedMetaStorage
 
         startGrid(1);
 
-        grid(0).cluster().active(true);
+        grid(0).cluster().state(ClusterState.ACTIVE);
 
         stopGrid(0);
 
@@ -501,7 +501,7 @@ public class DistributedMetaStoragePersistentTest extends DistributedMetaStorage
 
         startGrid(0);
 
-        grid(0).cluster().active(true);
+        grid(0).cluster().state(ClusterState.ACTIVE);
 
         metastorage(0).write("key", "value2");
 
@@ -521,7 +521,7 @@ public class DistributedMetaStoragePersistentTest extends DistributedMetaStorage
 
         assumeThat(grid(0).context().config().getDiscoverySpi(), is(instanceOf(TcpDiscoverySpi.class)));
 
-        startGrid(1).cluster().active(true);
+        startGrid(1).cluster().state(ClusterState.ACTIVE);
 
         metastorage(0).write("key0", "value0");
         metastorage(0).write("key1", "value1");
