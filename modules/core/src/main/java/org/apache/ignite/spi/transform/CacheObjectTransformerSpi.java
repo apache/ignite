@@ -17,7 +17,6 @@
 
 package org.apache.ignite.spi.transform;
 
-import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.lang.IgniteExperimental;
 import org.apache.ignite.spi.IgniteSpi;
 
@@ -29,8 +28,8 @@ public interface CacheObjectTransformerSpi extends IgniteSpi {
     /**
      * Returns cache object's bytes transformer.
      *
-     * @param ccfg Cache configuration.
+     * @param cacheName Cache name.
      * @return Transformer.
      */
-    public CacheObjectTransformer transformer(CacheConfiguration<?, ?> ccfg);
+    public CacheObjectTransformer transformer(String cacheName);
 }

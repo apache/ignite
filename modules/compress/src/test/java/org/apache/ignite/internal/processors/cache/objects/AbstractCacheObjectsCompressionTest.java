@@ -29,7 +29,6 @@ import net.jpountz.lz4.LZ4Factory;
 import net.jpountz.lz4.LZ4FastDecompressor;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteException;
-import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.processors.cache.transform.AbstractCacheObjectsTransformationTest;
 import org.apache.ignite.spi.transform.CacheObjectTransformer;
@@ -64,7 +63,7 @@ public abstract class AbstractCacheObjectsCompressionTest extends AbstractCacheO
     @Override protected IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {
         return super.getConfiguration(igniteInstanceName)
             .setCacheObjectTransformSpi(new CacheObjectTransformerSpiAdapter() {
-                @Override public CacheObjectTransformer transformer(CacheConfiguration<?, ?> ccfg) {
+                @Override public CacheObjectTransformer transformer(String cacheName) {
                     return new CompressionTransformer();
                 }
             });

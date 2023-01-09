@@ -17,7 +17,6 @@
 
 package org.apache.ignite.internal.processors.cache;
 
-import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.internal.GridKernalContext;
 
 /**
@@ -29,8 +28,8 @@ public interface CacheObjectValueContext {
      */
     public GridKernalContext kernalContext();
 
-    /** Cache configuration. */
-    public CacheConfiguration cacheConfiguration();
+    /** Cache name. */
+    public String cacheName();
 
     /**
      * @return Copy on get flag.
