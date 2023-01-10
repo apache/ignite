@@ -20,22 +20,18 @@ package org.apache.ignite.internal.processors.cache;
 import java.nio.ByteBuffer;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.events.CacheObjectTransformedEvent;
+import org.apache.ignite.internal.ThreadLocalDirectByteBuffer;
 import org.apache.ignite.spi.transform.CacheObjectTransformer;
 import org.apache.ignite.spi.transform.CacheObjectTransformerSpi;
 
 import static org.apache.ignite.events.EventType.EVT_CACHE_OBJECT_TRANSFORMED;
 import static org.apache.ignite.internal.binary.GridBinaryMarshaller.TRANSFORMED;
+import static org.apache.ignite.spi.transform.CacheObjectTransformer.OVERHEAD;
 
 /** */
 public class CacheObjectsTransformerUtils {
     /** Header buffer. */
-    private static final ThreadLocalByteBuffer hdrBuf = new ThreadLocalByteBuffer(CacheObjectTransformer.OVERHEAD);
-
-    /** Destination buffer. */
-    private static final ThreadLocalByteBuffer dstBuf = new ThreadLocalByteBuffer(1 << 10);
-
-    /** Source buffer. */
-    private static final ThreadLocalByteBuffer srcBuf = new ThreadLocalByteBuffer(1 << 10);
+    private static final ThreadLocalDirectByteBuffer hdrBuf = new ThreadLocalDirectByteBuffer(OVERHEAD);
 
     /** Version. */
     private static final byte VER = 0;
@@ -72,17 +68,7 @@ public class CacheObjectsTransformerUtils {
             if (trans == null)
                 return bytes;
 
-            ByteBuffer src = sourceByteBuffer(bytes, offset, length, trans.direct());
-            ByteBuffer transformed = dstBuf.get();
-
-            while (true) {
-                int capacity = trans.transform(src, transformed);
-
-                if (capacity <= 0)
-                    break;
-
-                transformed = dstBuf.get(capacity);
-            }
+            byte[] transformed = trans.transform(bytes, offset, length);
 
             ByteBuffer hdr = hdrBuf.get();
 
@@ -91,10 +77,7 @@ public class CacheObjectsTransformerUtils {
             hdr.putInt(bytes.length);
             hdr.flip();
 
-            byte[] res = new byte[hdr.remaining() + transformed.remaining()];
-
-            hdr.get(res, 0, hdr.remaining());
-            transformed.get(res, CacheObjectTransformer.OVERHEAD, transformed.remaining());
+            hdr.get(transformed, 0, hdr.remaining());
 
             if (ctx.kernalContext().event().isRecordable(EVT_CACHE_OBJECT_TRANSFORMED)) {
                 ctx.kernalContext().event().record(
@@ -102,11 +85,11 @@ public class CacheObjectsTransformerUtils {
                         "Object transformed",
                         EVT_CACHE_OBJECT_TRANSFORMED,
                         bytes,
-                        res,
+                        transformed,
                         false));
             }
 
-            return res;
+            return transformed;
         }
         catch (IgniteCheckedException ex) { // Can not be transformed.
             if (ctx.kernalContext().event().isRecordable(EVT_CACHE_OBJECT_TRANSFORMED)) {
@@ -135,97 +118,36 @@ public class CacheObjectsTransformerUtils {
 
         CacheObjectTransformer trans = transformer(ctx);
 
-        ByteBuffer src = sourceByteBuffer(bytes, 0, bytes.length, trans.direct());
+        ByteBuffer hdr = ByteBuffer.wrap(bytes);
 
-        byte transformed = src.get();
-        byte ver = src.get();
+        byte transformed = hdr.get();
+        byte ver = hdr.get();
 
         assert transformed == TRANSFORMED;
-        assert ver == VER; // Correct while VER == 0;
 
-        int length = src.getInt();
+        byte[] restored;
 
-        ByteBuffer restored = dstBuf.get(length);
+        if (ver == 0) {
+            int length = hdr.getInt();
+            int offset = 1 /*transformed*/ + 1 /*ver*/ + 4 /*length*/;
 
-        restored.limit(length);
+            assert offset == OVERHEAD : offset; // Correct while VER == 0;
 
-        trans.restore(src, restored);
-
-        byte[] res = new byte[length];
-
-        restored.get(res);
+            restored = trans.restore(bytes, offset, length);
+        }
+        else
+            throw new IllegalStateException("Unknown version " + ver);
 
         if (ctx.kernalContext().event().isRecordable(EVT_CACHE_OBJECT_TRANSFORMED)) {
             ctx.kernalContext().event().record(
                 new CacheObjectTransformedEvent(ctx.kernalContext().discovery().localNode(),
                     "Object restored",
                     EVT_CACHE_OBJECT_TRANSFORMED,
-                    res,
+                    restored,
                     bytes,
                     true));
         }
 
-        return res;
-    }
-
-    /***/
-    private static ByteBuffer sourceByteBuffer(byte[] bytes, int offset, int length, boolean direct) {
-        ByteBuffer src;
-
-        if (direct) {
-            src = srcBuf.get(bytes.length);
-
-            src.put(bytes, offset, length);
-            src.flip();
-        }
-        else
-            src = ByteBuffer.wrap(bytes, offset, length);
-
-        return src;
-    }
-
-    /***/
-    private static final class ThreadLocalByteBuffer extends ThreadLocal<ByteBuffer> {
-        /***/
-        final int size;
-
-        /***/
-        ThreadLocalByteBuffer(int size) {
-            this.size = size;
-        }
-
-        /** {@inheritDoc} */
-        @Override protected ByteBuffer initialValue() {
-            return allocateDirectBuffer(size);
-        }
-
-        /***/
-        public ByteBuffer get(int capacity) {
-            ByteBuffer buf = super.get();
-
-            if (buf.capacity() < capacity) {
-                buf = allocateDirectBuffer(capacity);
-
-                set(buf);
-            }
-            else
-                buf.clear();
-
-            return buf;
-        }
-
-        /** {@inheritDoc} */
-        @Override public ByteBuffer get() {
-            ByteBuffer buf = super.get();
-
-            buf.clear();
-
-            return buf;
-        }
-    }
-
-    /***/
-    private static ByteBuffer allocateDirectBuffer(int cap) {
-        return ByteBuffer.allocateDirect(cap);
+        return restored;
     }
 }

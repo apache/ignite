@@ -32,6 +32,7 @@ import org.apache.ignite.IgniteException;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.processors.cache.transform.AbstractCacheObjectsTransformationTest;
 import org.apache.ignite.spi.transform.CacheObjectTransformer;
+import org.apache.ignite.spi.transform.CacheObjectTransformerAdapter;
 import org.xerial.snappy.Snappy;
 
 /**
@@ -105,7 +106,7 @@ public abstract class AbstractCacheObjectsCompressionTest extends AbstractCacheO
     /**
      *
      */
-    protected static class CompressionTransformer implements CacheObjectTransformer {
+    protected static class CompressionTransformer extends CacheObjectTransformerAdapter {
         /** Comptession type. */
         protected static volatile CompressionType type = CompressionType.defaultType();
 
@@ -128,32 +129,29 @@ public abstract class AbstractCacheObjectsCompressionTest extends AbstractCacheO
         static final AtomicLong snapCnt = new AtomicLong();
 
         /** {@inheritDoc} */
-        @Override public boolean direct() {
+        @Override protected boolean direct() {
             return true;
         }
 
         /** {@inheritDoc} */
-        @Override public int transform(ByteBuffer original, ByteBuffer compressed) throws IgniteCheckedException {
+        @Override public ByteBuffer transform(ByteBuffer original) throws IgniteCheckedException {
             if (type == CompressionType.DISABLED)
                 throw new IgniteCheckedException("Disabled.");
 
-            if (compressed.capacity() < original.remaining())
-                return original.remaining();
-
-            int locOverhead = 4; // Integer.
+            int locOverhead = 4; // Compression type, Integer.
 
             int lim = original.remaining() - (CacheObjectTransformer.OVERHEAD + locOverhead);
 
             if (lim <= 0)
-                throw new IgniteCheckedException("Compression is not possible.");
+                throw new IgniteCheckedException("Compression is not profitable.");
+
+            ByteBuffer compressed = byteBuffer(lim); // Limiting to gain compression profit.
 
             compressed.position(locOverhead); // Reserving for compression type.
 
             switch (type) {
                 case ZSTD:
                     try {
-                        compressed.limit(lim); // Limiting to gain compression profit.
-
                         Zstd.compress(compressed, original, 1);
 
                         compressed.flip();
@@ -166,8 +164,6 @@ public abstract class AbstractCacheObjectsCompressionTest extends AbstractCacheO
 
                 case LZ4:
                     try {
-                        compressed.limit(lim); // Limiting to gain compression profit.
-
                         lz4Compressor.compress(original, compressed);
 
                         compressed.flip();
@@ -182,7 +178,7 @@ public abstract class AbstractCacheObjectsCompressionTest extends AbstractCacheO
                     try {
                         int size = Snappy.compress(original, compressed);
 
-                        if (size > lim) // Limiting to gain compression profit.
+                        if (size > lim) // Limiting to gain compression profit (ByteBuffer limit is ignoring by Snappy).
                             throw new IgniteCheckedException("Compression gains no profit.");
 
                         compressed.position(0);
@@ -200,7 +196,7 @@ public abstract class AbstractCacheObjectsCompressionTest extends AbstractCacheO
             compressed.putInt(type.ordinal());
             compressed.rewind();
 
-            return 0;
+            return compressed;
         }
 
         /** {@inheritDoc} */

@@ -31,6 +31,7 @@ import org.apache.ignite.cache.CacheAtomicityMode;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.spi.transform.CacheObjectTransformer;
+import org.apache.ignite.spi.transform.CacheObjectTransformerAdapter;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.junit.runners.Parameterized;
@@ -176,30 +177,32 @@ public class CacheObjectsTransformationTest extends AbstractCacheObjectsTransfor
     /**
      *
      */
-    private static final class ControllableCacheObjectTransformer implements CacheObjectTransformer {
+    private static final class ControllableCacheObjectTransformer extends CacheObjectTransformerAdapter {
+        /** Shift. */
+        private static final int SHIFT = 42;
+
         /** Fail. */
         private static volatile boolean fail;
 
         /** {@inheritDoc} */
-        @Override public int transform(ByteBuffer original, ByteBuffer transformed) throws IgniteCheckedException {
+        @Override public ByteBuffer transform(ByteBuffer original) throws IgniteCheckedException {
             if (fail)
                 throw new IgniteCheckedException("Failed.");
 
-            if (transformed.capacity() < original.remaining()) // At least same capacity is required.
-                return original.remaining();
+            ByteBuffer transformed = byteBuffer(original.remaining()); // At least same capacity is required.
 
             while (original.hasRemaining())
-                transformed.put((byte)(original.get() + 1));
+                transformed.put((byte)(original.get() + SHIFT));
 
             transformed.flip();
 
-            return 0;
+            return transformed;
         }
 
         /** {@inheritDoc} */
         @Override public void restore(ByteBuffer transformed, ByteBuffer restored) {
             while (transformed.hasRemaining())
-                restored.put((byte)(transformed.get() - 1));
+                restored.put((byte)(transformed.get() - SHIFT));
 
             restored.flip();
         }

@@ -29,6 +29,8 @@ import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.configuration.DiskPageCompression;
 import org.apache.ignite.internal.GridKernalContext;
+import org.apache.ignite.internal.ThreadLocalDirectByteBuffer;
+import org.apache.ignite.internal.ThreadLocalNativeOrderDirectByteBuffer;
 import org.apache.ignite.internal.pagemem.PageUtils;
 import org.apache.ignite.internal.processors.cache.persistence.file.RandomAccessFileIO;
 import org.apache.ignite.internal.processors.cache.persistence.tree.io.CompactablePageIO;
@@ -41,17 +43,16 @@ import static java.nio.file.StandardOpenOption.CREATE;
 import static java.nio.file.StandardOpenOption.WRITE;
 import static org.apache.ignite.configuration.DataStorageConfiguration.MAX_PAGE_SIZE;
 import static org.apache.ignite.configuration.DiskPageCompression.SKIP_GARBAGE;
-import static org.apache.ignite.internal.util.GridUnsafe.NATIVE_BYTE_ORDER;
 
 /**
  * Compression processor.
  */
 public class CompressionProcessorImpl extends CompressionProcessor {
     /** Max page size. */
-    private final ThreadLocalByteBuffer compactBuf = new ThreadLocalByteBuffer(MAX_PAGE_SIZE);
+    private final ThreadLocalDirectByteBuffer compactBuf = new ThreadLocalNativeOrderDirectByteBuffer(MAX_PAGE_SIZE);
 
     /** A bit more than max page size. */
-    private final ThreadLocalByteBuffer compressBuf = new ThreadLocalByteBuffer(MAX_PAGE_SIZE + 1024);
+    private final ThreadLocalDirectByteBuffer compressBuf = new ThreadLocalNativeOrderDirectByteBuffer(MAX_PAGE_SIZE + 1024);
 
     /**
      * @param ctx Kernal context.
@@ -59,14 +60,6 @@ public class CompressionProcessorImpl extends CompressionProcessor {
     @SuppressWarnings("WeakerAccess")
     public CompressionProcessorImpl(GridKernalContext ctx) {
         super(ctx);
-    }
-
-    /**
-     * @param cap Capacity.
-     * @return Direct byte buffer.
-     */
-    static ByteBuffer allocateDirectBuffer(int cap) {
-        return ByteBuffer.allocateDirect(cap).order(NATIVE_BYTE_ORDER);
     }
 
     /** {@inheritDoc} */
@@ -446,32 +439,6 @@ public class CompressionProcessorImpl extends CompressionProcessor {
          */
         static void decompress(ByteBuffer page, ByteBuffer dst) {
             decompressor.decompress(page, dst);
-        }
-    }
-
-    /**
-     */
-    static final class ThreadLocalByteBuffer extends ThreadLocal<ByteBuffer> {
-        /** */
-        final int size;
-
-        /**
-         * @param size Size.
-         */
-        ThreadLocalByteBuffer(int size) {
-            this.size = size;
-        }
-
-        /** {@inheritDoc} */
-        @Override protected ByteBuffer initialValue() {
-            return allocateDirectBuffer(size);
-        }
-
-        /** {@inheritDoc} */
-        @Override public ByteBuffer get() {
-            ByteBuffer buf = super.get();
-            buf.clear();
-            return buf;
         }
     }
 }

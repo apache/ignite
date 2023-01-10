@@ -17,8 +17,6 @@
 
 package org.apache.ignite.spi.transform;
 
-import java.io.Serializable;
-import java.nio.ByteBuffer;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.lang.IgniteExperimental;
 
@@ -26,36 +24,29 @@ import org.apache.ignite.lang.IgniteExperimental;
  * Cache objects transformer.
  */
 @IgniteExperimental
-public interface CacheObjectTransformer extends Serializable {
+public interface CacheObjectTransformer {
     /** Additional space required to store the transformed data. */
     public int OVERHEAD = 6;
 
     /**
      * Transforms the data.
      *
-     * @param original Original data.
-     * @param transformed Transformed data.
-     * @return {@code 0} on successful transformation or byte buffer's capacity required to perform the transformation
-     * when provided byte buffer's capacity in not enough.
+     * @param bytes Byte array contains the data.
+     * @param offset Data offset.
+     * @param length Data length.
+     *
+     * @return Byte array started with non-filled area with {@link #OVERHEAD} size.
      * @throws IgniteCheckedException when transformation is not possible/suitable.
      */
-    public int transform(ByteBuffer original, ByteBuffer transformed) throws IgniteCheckedException;
+    public byte[] transform(byte[] bytes, int offset, int length) throws IgniteCheckedException;
+
 
     /**
      * Restores the data.
      *
-     * @param transformed Transformed data.
-     * @param restored Restored data.
+     * @param bytes Byte array ending with the transformed data.
+     * @param offset Transformed data offset.
+     * @param length Original data length.
      */
-    public void restore(ByteBuffer transformed, ByteBuffer restored);
-
-    /**
-     * Direct byte buffer flag.
-     *
-     * @return True when direct byte buffers are required at {@link #transform(ByteBuffer, ByteBuffer)} and
-     * {@link #restore(ByteBuffer, ByteBuffer)} methods.
-     */
-    public default boolean direct() {
-        return false;
-    }
+    public byte[] restore(byte[] bytes, int offset, int length);
 }

@@ -51,9 +51,9 @@ import static org.apache.ignite.internal.processors.compress.CompressionProcesso
 import static org.apache.ignite.internal.processors.compress.CompressionProcessor.LZ4_MIN_LEVEL;
 import static org.apache.ignite.internal.processors.compress.CompressionProcessor.UNCOMPRESSED_PAGE;
 import static org.apache.ignite.internal.processors.compress.CompressionProcessor.ZSTD_MAX_LEVEL;
-import static org.apache.ignite.internal.processors.compress.CompressionProcessorImpl.allocateDirectBuffer;
 import static org.apache.ignite.internal.processors.compress.CompressionProcessorTest.TestInnerIO.INNER_IO;
 import static org.apache.ignite.internal.processors.compress.CompressionProcessorTest.TestLeafIO.LEAF_IO;
+import static org.apache.ignite.internal.util.GridUnsafe.NATIVE_BYTE_ORDER;
 import static org.apache.ignite.internal.util.GridUnsafe.bufferAddress;
 
 /**
@@ -992,6 +992,11 @@ public class CompressionProcessorTest extends GridCommonAbstractTest {
      */
     private static byte[] getPageCommonHeader(ByteBuffer page) {
         return PageUtils.getBytes(GridUnsafe.bufferAddress(page), 0, PageIO.COMMON_HEADER_END);
+    }
+
+    /** */
+    private ByteBuffer allocateDirectBuffer(int cap) {
+        return ByteBuffer.allocateDirect(cap).order(NATIVE_BYTE_ORDER);
     }
 
     /**

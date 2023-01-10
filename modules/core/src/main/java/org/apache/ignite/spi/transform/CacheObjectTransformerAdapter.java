@@ -1,0 +1,110 @@
+/*
+ * Licensed to the Apache Software Foundation (ASF) under one or more
+ * contributor license agreements.  See the NOTICE file distributed with
+ * this work for additional information regarding copyright ownership.
+ * The ASF licenses this file to You under the Apache License, Version 2.0
+ * (the "License"); you may not use this file except in compliance with
+ * the License.  You may obtain a copy of the License at
+ *
+ *      http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+
+package org.apache.ignite.spi.transform;
+
+import java.nio.ByteBuffer;
+import org.apache.ignite.IgniteCheckedException;
+import org.apache.ignite.internal.ThreadLocalDirectByteBuffer;
+import org.apache.ignite.lang.IgniteExperimental;
+
+/**
+ *
+ */
+@IgniteExperimental
+public abstract class CacheObjectTransformerAdapter implements CacheObjectTransformer {
+    /** Source byte buffer. */
+    private final ThreadLocalDirectByteBuffer srcBuf = new ThreadLocalDirectByteBuffer(1 << 10);
+
+    /** Destination byte buffer. */
+    private final ThreadLocalDirectByteBuffer dstBuf = new ThreadLocalDirectByteBuffer(1 << 10);
+
+    /** */
+    private ByteBuffer sourceByteBuffer(byte[] bytes, int offset, int length) {
+        ByteBuffer src;
+
+        if (direct()) {
+            src = srcBuf.get(bytes.length);
+
+            src.put(bytes, offset, length);
+            src.flip();
+        }
+        else
+            src = ByteBuffer.wrap(bytes, offset, length);
+
+        return src;
+    }
+
+    /** Thread local direct byte buffer with required capacty. */
+    protected ByteBuffer byteBuffer(int capacity) {
+        ByteBuffer buf = dstBuf.get(capacity);
+
+        buf.limit(capacity);
+
+        return buf;
+    }
+
+    /** {@inheritDoc} */
+    @Override public byte[] transform(byte[] bytes, int offset, int length) throws IgniteCheckedException {
+        ByteBuffer src = sourceByteBuffer(bytes, offset, length);
+
+        ByteBuffer transformed = transform(src);
+
+        byte[] res = new byte[OVERHEAD + transformed.remaining()];
+
+        transformed.get(res, OVERHEAD, transformed.remaining());
+
+        return res;
+    }
+
+    /**
+     * Transforms the data.
+     *
+     * @param original Original data.
+     * @return Transformed data.
+     * @throws IgniteCheckedException when transformation is not possible/suitable.
+     */
+    public abstract ByteBuffer transform(ByteBuffer original) throws IgniteCheckedException;
+
+    /** {@inheritDoc} */
+    @Override public byte[] restore(byte[] bytes, int offset, int length) {
+        ByteBuffer src = sourceByteBuffer(bytes, offset, bytes.length - offset);
+        ByteBuffer restored = byteBuffer(length);
+        byte[] res = new byte[length];
+
+        restore(src, restored);
+
+        restored.get(res);
+
+        return res;
+    }
+
+    /**
+     * Restores the data.
+     *
+     * @param compressed Transformed data.
+     * @param restored Restored data.
+     */
+    public abstract void restore(ByteBuffer compressed, ByteBuffer restored);
+
+    /**
+     * Returns {@code true} when direct byte buffers are required.
+     */
+    protected boolean direct() {
+        return false;
+    }
+}
