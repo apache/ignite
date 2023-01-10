@@ -79,7 +79,7 @@ import org.jetbrains.annotations.Nullable;
 /**
  * Implementation of {@link IgniteClient} over TCP protocol.
  */
-public class TcpIgniteClient implements IgniteClient, IgniteClientInternal {
+public class TcpIgniteClient implements IgniteClient {
     /** Channel. */
     private final ReliableChannel ch;
 
@@ -411,8 +411,8 @@ public class TcpIgniteClient implements IgniteClient, IgniteClientInternal {
         });
     }
 
-    /** {@inheritDoc} */
-    @Override public void stopWarmUp() {
+    /** Stops cache warmup. */
+    public void stopWarmUp() {
         ch.service(ClientOperation.OP_STOP_WARMUP, null, null);
     }
 
