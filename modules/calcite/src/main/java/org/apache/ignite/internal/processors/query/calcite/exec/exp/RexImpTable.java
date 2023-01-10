@@ -47,7 +47,6 @@ import org.apache.calcite.linq4j.tree.MethodCallExpression;
 import org.apache.calcite.linq4j.tree.OptimizeShuttle;
 import org.apache.calcite.linq4j.tree.ParameterExpression;
 import org.apache.calcite.linq4j.tree.Primitive;
-import org.apache.calcite.linq4j.tree.Types;
 import org.apache.calcite.rel.type.RelDataType;
 import org.apache.calcite.rel.type.RelDataTypeFactory;
 import org.apache.calcite.rel.type.RelDataTypeFactoryImpl;
@@ -73,10 +72,8 @@ import org.apache.calcite.sql.validate.SqlUserDefinedTableFunction;
 import org.apache.calcite.sql.validate.SqlUserDefinedTableMacro;
 import org.apache.calcite.util.BuiltInMethod;
 import org.apache.calcite.util.Util;
-import org.apache.ignite.IgniteException;
 import org.apache.ignite.calcite.CalciteQueryEngineConfiguration;
 import org.apache.ignite.internal.processors.query.calcite.util.IgniteMethod;
-import org.apache.ignite.internal.util.typedef.X;
 
 import static org.apache.calcite.adapter.enumerable.EnumUtils.generateCollatorExpression;
 import static org.apache.calcite.linq4j.tree.ExpressionType.Add;
@@ -277,8 +274,8 @@ public class RexImpTable {
         defineMethod(MD5, BuiltInMethod.MD5.method, NullPolicy.STRICT);
         defineMethod(SHA1, BuiltInMethod.SHA1.method, NullPolicy.STRICT);
         defineMethod(SUBSTRING, BuiltInMethod.SUBSTRING.method, NullPolicy.STRICT);
-        map.put(LEFT, new LeftRightImplementor(BuiltInMethod.LEFT.getMethodName()));
-        map.put(RIGHT, new LeftRightImplementor(BuiltInMethod.RIGHT.getMethodName()));
+        defineMethod(LEFT, BuiltInMethod.LEFT.method, NullPolicy.ANY);
+        defineMethod(RIGHT, BuiltInMethod.RIGHT.method, NullPolicy.ANY);
         defineMethod(REPLACE, BuiltInMethod.REPLACE.method, NullPolicy.STRICT);
         defineMethod(TRANSLATE3, BuiltInMethod.TRANSLATE3.method, NullPolicy.STRICT);
         defineMethod(CHR, BuiltInMethod.CHAR_FROM_UTF8.method, NullPolicy.STRICT);
@@ -817,79 +814,6 @@ public class RexImpTable {
                 argValueList.get(1),
                 argValueList.get(2),
                 Expressions.constant(strict));
-        }
-    }
-
-    /** */
-    private static class LeftRightImplementor extends MethodNameImplementor {
-        /** */
-        private LeftRightImplementor(String mtdName) {
-            super(mtdName, NullPolicy.ANY, false);
-        }
-
-        /** {@inheritDoc} */
-        @Override Expression implementSafe(RexToLixTranslator translator, RexCall call, List<Expression> argValueList) {
-            try {
-                return super.implementSafe(translator, call, argValueList);
-            }
-            catch (Exception e) {
-                if (!X.hasCause(e, NoSuchMethodException.class))
-                    throw e;
-
-                for (Method method : SqlFunctions.class.getMethods()) {
-                    if (!method.getName().equals(methodName))
-                        continue;
-
-                    assert !method.isVarArgs();
-
-                    Class<?>[] params = method.getParameterTypes();
-
-                    if(params.length != argValueList.size())
-                        continue;
-
-                    List<Expression> newArgValueList = new ArrayList<>(argValueList.size());
-
-                    Class<?>[] passedTypes = Types.toClassArray(argValueList);
-
-                    boolean converted = false;
-
-                    for (int i = 0; i < passedTypes.length; i++) {
-                        Class<?> paramT = params[i];
-                        Class<?> passedT = passedTypes[i];
-
-                        Primitive paramP = Primitive.of(paramT);
-                        Primitive paramBox = paramP == null ? Primitive.ofBox(paramT) : null;
-                        Primitive passedP = Primitive.of(passedT);
-                        Primitive passedBox = passedP == null ? Primitive.ofBox(passedT) : null;
-
-                        if (paramT.isAssignableFrom(passedT) || (paramP == null && paramBox == null) ||
-                            (passedP == null && passedBox == null)) {
-                            newArgValueList.add(argValueList.get(i));
-
-                            continue;
-                        }
-
-                        newArgValueList.add(EnumUtils.convert(argValueList.get(i),
-                            paramP == null ? paramBox.getBoxClass() : paramP.getPrimitiveClass()));
-
-                        converted = true;
-                    }
-
-                    if (!converted)
-                        continue;
-
-                    try {
-                        return super.implementSafe(translator, call, newArgValueList);
-                    }
-                    catch (Exception e2) {
-                        if (!X.hasCause(e2, NoSuchMethodException.class))
-                            throw new IgniteException("Unable to convert  parameters of function implementation '" +
-                                methodName + '.', e2);
-                    }
-                }
-
-                throw e;
-            }
         }
     }
 

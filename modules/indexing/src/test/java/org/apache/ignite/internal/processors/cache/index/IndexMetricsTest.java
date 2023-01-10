@@ -33,13 +33,10 @@ import org.apache.ignite.configuration.DataStorageConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.cache.query.index.IndexProcessor;
-import org.apache.ignite.internal.processors.cache.CacheClusterMetricsMXBeanImpl;
-import org.apache.ignite.internal.processors.cache.CacheLocalMetricsMXBeanImpl;
 import org.apache.ignite.internal.processors.metric.MetricRegistry;
 import org.apache.ignite.internal.processors.metric.impl.LongAdderMetric;
 import org.apache.ignite.internal.util.typedef.internal.CU;
 import org.apache.ignite.internal.util.typedef.internal.U;
-import org.apache.ignite.mxbean.CacheMetricsMXBean;
 import org.apache.ignite.spi.metric.BooleanMetric;
 import org.apache.ignite.spi.metric.Metric;
 import org.apache.ignite.spi.metric.MetricExporterSpi;
@@ -166,59 +163,41 @@ public class IndexMetricsTest extends AbstractIndexingCommonTest {
          * @see MetricExporterSpi
          */
 
-        CacheMetricsMXBean cacheMetricsMXBean11 = cacheMetricsMXBean(n, cacheName1, CacheLocalMetricsMXBeanImpl.class);
-        CacheMetricsMXBean cacheMetricsMXBean22 = cacheMetricsMXBean(n, cacheName2, CacheLocalMetricsMXBeanImpl.class);
-
-        CacheMetricsMXBean cacheClusterMetricsMXBean11 =
-            cacheMetricsMXBean(n, cacheName1, CacheClusterMetricsMXBeanImpl.class);
-        CacheMetricsMXBean cacheClusterMetricsMXBean22 =
-            cacheMetricsMXBean(n, cacheName2, CacheClusterMetricsMXBeanImpl.class);
+//        CacheMetricsMXBean cacheMetricsMXBean11 = cacheMetricsMXBean(n, cacheName1, CacheLocalMetricsMXBeanImpl.class);
+//        CacheMetricsMXBean cacheMetricsMXBean22 = cacheMetricsMXBean(n, cacheName2, CacheLocalMetricsMXBeanImpl.class);
+//
+//        CacheMetricsMXBean cacheClusterMetricsMXBean11 =
+//            cacheMetricsMXBean(n, cacheName1, CacheClusterMetricsMXBeanImpl.class);
+//        CacheMetricsMXBean cacheClusterMetricsMXBean22 =
+//            cacheMetricsMXBean(n, cacheName2, CacheClusterMetricsMXBeanImpl.class);
 
         n.cluster().state(ClusterState.ACTIVE);
 
         BooleanSupplier[] idxRebuildProgressCache1 = {
             idxRebuildInProgress1::value,
-            cacheMetrics1::isIndexRebuildInProgress,
-            cacheMetricsMXBean1::isIndexRebuildInProgress
+            cacheMetrics1::isIndexRebuildInProgress
         };
 
         BooleanSupplier[] idxRebuildProgressCache2 = {
             idxRebuildInProgress2::value,
-            cacheMetrics2::isIndexRebuildInProgress,
-            cacheMetricsMXBean2::isIndexRebuildInProgress
-        };
-
-        // It must always be false, because metric is only per node.
-        BooleanSupplier[] idxRebuildProgressCluster = {
-            cacheClusterMetricsMXBean1::isIndexRebuildInProgress,
-            cacheClusterMetricsMXBean2::isIndexRebuildInProgress
+            cacheMetrics2::isIndexRebuildInProgress
         };
 
         LongSupplier[] idxRebuildKeyProcessedCache1 = {
             idxRebuildKeyProcessed1::value,
-            cacheMetrics1::getIndexRebuildKeysProcessed,
-            cacheMetricsMXBean1::getIndexRebuildKeysProcessed,
+            cacheMetrics1::getIndexRebuildKeysProcessed
         };
 
         LongSupplier[] idxRebuildKeyProcessedCache2 = {
             idxRebuildKeyProcessed2::value,
-            cacheMetrics2::getIndexRebuildKeysProcessed,
-            cacheMetricsMXBean2::getIndexRebuildKeysProcessed,
-        };
-
-        // It must always be 0, because metric is only per node.
-        LongSupplier[] idxRebuildKeyProcessedCluster = {
-            cacheClusterMetricsMXBean1::getIndexRebuildKeysProcessed,
-            cacheClusterMetricsMXBean2::getIndexRebuildKeysProcessed
+            cacheMetrics2::getIndexRebuildKeysProcessed
         };
 
         assertEquals(true, idxRebuildProgressCache1);
         assertEquals(true, idxRebuildProgressCache2);
-        assertEquals(false, idxRebuildProgressCluster);
 
         assertEquals(0, idxRebuildKeyProcessedCache1);
         assertEquals(0, idxRebuildKeyProcessedCache2);
-        assertEquals(0, idxRebuildKeyProcessedCluster);
 
         ((BlockingIndexesRebuildTask)n.context().indexProcessor().idxRebuild()).stopBlock(cacheName1);
 
@@ -226,11 +205,9 @@ public class IndexMetricsTest extends AbstractIndexingCommonTest {
 
         assertEquals(false, idxRebuildProgressCache1);
         assertEquals(true, idxRebuildProgressCache2);
-        assertEquals(false, idxRebuildProgressCluster);
 
         assertEquals(entryCnt1, idxRebuildKeyProcessedCache1);
         assertEquals(0, idxRebuildKeyProcessedCache2);
-        assertEquals(0, idxRebuildKeyProcessedCluster);
 
         ((BlockingIndexesRebuildTask)n.context().indexProcessor().idxRebuild()).stopBlock(cacheName2);
 
@@ -238,11 +215,9 @@ public class IndexMetricsTest extends AbstractIndexingCommonTest {
 
         assertEquals(false, idxRebuildProgressCache1);
         assertEquals(false, idxRebuildProgressCache2);
-        assertEquals(false, idxRebuildProgressCluster);
 
         assertEquals(entryCnt1, idxRebuildKeyProcessedCache1);
         assertEquals(entryCnt2, idxRebuildKeyProcessedCache2);
-        assertEquals(0, idxRebuildKeyProcessedCluster);
     }
 
     /**
@@ -271,26 +246,6 @@ public class IndexMetricsTest extends AbstractIndexingCommonTest {
         requireNonNull(cacheName);
 
         return node.context().cache().cacheGroup(CU.cacheId(cacheName)).singleCacheContext().cache().metrics0();
-    }
-
-    /**
-     * Get cache metrics MXBean.
-     *
-     * @param n Node.
-     * @param cacheName Cache name.
-     * @param cls Cache metrics MXBean implementation.
-     * @return Cache metrics MXBean.
-     */
-    private <T extends CacheMetricsMXBean> T cacheMetricsMXBeanDeleteMe(
-        IgniteEx n,
-        String cacheName,
-        Class<? super T> cls
-    ) {
-        requireNonNull(n);
-        requireNonNull(cacheName);
-        requireNonNull(cls);
-
-        return (T)getMxBean(n.name(), cacheName, cls.getName(), CacheMetricsMXBean.class);
     }
 
     /**

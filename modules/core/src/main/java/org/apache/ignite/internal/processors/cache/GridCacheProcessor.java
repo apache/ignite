@@ -539,10 +539,12 @@ public class GridCacheProcessor extends GridProcessorAdapter {
         cleanup(cfg, cfg.getInterceptor(), false);
         cleanup(cfg, cctx.store().configuredStore(), false);
 
-        if (!CU.isUtilityCache(cfg.getName()) && !CU.isSystemCache(cfg.getName())) {
-            unregisterMbean(cctx.cache().localMxBean(), cfg.getName(), false);
-            unregisterMbean(cctx.cache().clusterMxBean(), cfg.getName(), false);
-        }
+        // TODO : disable ?
+
+//        if (!CU.isUtilityCache(cfg.getName()) && !CU.isSystemCache(cfg.getName())) {
+//            unregisterMbean(cctx.cache().localMxBean(), cfg.getName(), false);
+//            unregisterMbean(cctx.cache().clusterMxBean(), cfg.getName(), false);
+//        }
 
         cctx.cleanup();
     }
@@ -1491,8 +1493,9 @@ public class GridCacheProcessor extends GridProcessorAdapter {
         }
 
         if (!CU.isUtilityCache(cache.name()) && !CU.isSystemCache(cache.name())) {
-            registerMbean(cache.localMxBean(), cache.name(), false);
-            registerMbean(cache.clusterMxBean(), cache.name(), false);
+            // TODO : register stats?
+//            registerMbean(cache.localMxBean(), cache.name(), false);
+//            registerMbean(cache.clusterMxBean(), cache.name(), false);
         }
 
         return ret;
@@ -3223,9 +3226,10 @@ public class GridCacheProcessor extends GridProcessorAdapter {
             for (String cacheName : msg.caches()) {
                 IgniteInternalCache<?, ?> cache = ctx.cache().cache(cacheName);
 
-                if (cache != null)
-                    cache.localMxBean().clear();
-                else
+                if (cache != null) {
+                    //TODO: clear statistic
+                   // cache.localMxBean().clear();
+                } else
                     log.warning("Failed to clear cache statistics, cache not found [cacheName="
                         + cacheName + ']');
             }

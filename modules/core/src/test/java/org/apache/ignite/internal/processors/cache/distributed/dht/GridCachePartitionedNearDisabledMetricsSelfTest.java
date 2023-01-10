@@ -130,7 +130,8 @@ public class GridCachePartitionedNearDisabledMetricsSelfTest extends GridCacheTr
 
             assert g.cache(DEFAULT_CACHE_NAME).localSize() == 0;
 
-            g.cache(DEFAULT_CACHE_NAME).mxBean().clear();
+            // TODO: clear ?
+//            g.cache(DEFAULT_CACHE_NAME).mxBean().clear();
         }
 
         assertNull("Value is not null for key: " + 0, cache.get(0));

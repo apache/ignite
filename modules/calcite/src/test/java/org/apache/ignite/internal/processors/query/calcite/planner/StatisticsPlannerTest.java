@@ -380,7 +380,7 @@ public class StatisticsPlannerTest extends AbstractPlannerTest {
     @Test
     public void testIndexChoosingFromUnifunction() throws Exception {
         tbl1.setStatistics(tbl1stat);
-        String sql = "select * from TBL1 where abs(1.0) > 55555";
+        String sql = "select * from TBL1 where abs(t1c7short) > 55555";
 
         IgniteRel phys = physicalPlan(sql, publicSchema);
         IgniteIndexScan idxScan = findFirstNode(phys, byClass(IgniteIndexScan.class));

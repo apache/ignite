@@ -17,11 +17,14 @@
 
 package org.apache.ignite.internal.processors.cache;
 
+import javax.management.DynamicMBean;
 import org.apache.ignite.IgniteCache;
 import org.apache.ignite.cache.CacheAtomicityMode;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.junit.Test;
+
+import static org.apache.ignite.internal.processors.cache.CacheMetricsImpl.CACHE_METRICS;
 
 /**
  * Test for cluster wide offheap cache metrics.
@@ -81,13 +84,16 @@ public class OffheapCacheMetricsForClusterGroupSelfTest extends GridCommonAbstra
 
         for (int i = 0; i < GRID_CNT; i++) {
             IgniteCache<Integer, Integer> cache = grid("server-" + i).cache(cacheName);
-            assertEquals(count, cache.metrics().getOffHeapPrimaryEntriesCount());
-            assertEquals(count, cache.mxBean().getOffHeapPrimaryEntriesCount());
-            assertEquals(count, cache.metrics().getOffHeapBackupEntriesCount());
-            assertEquals(count, cache.mxBean().getOffHeapBackupEntriesCount());
 
-            localPrimary += cache.localMxBean().getOffHeapPrimaryEntriesCount();
-            localBackups += cache.localMxBean().getOffHeapPrimaryEntriesCount();
+            DynamicMBean mBean = metricRegistry("server-" + i, CACHE_METRICS, cacheName);
+
+            assertEquals(count, cache.metrics().getOffHeapPrimaryEntriesCount());
+            assertEquals(count, mBean.getAttribute("OffHeapPrimaryEntriesCount"));
+            assertEquals(count, cache.metrics().getOffHeapBackupEntriesCount());
+            assertEquals(count, mBean.getAttribute("OffHeapPrimaryEntriesCount"));
+
+            localPrimary += (Long)mBean.getAttribute("OffHeapPrimaryEntriesCount");
+            localBackups += (Long)mBean.getAttribute("OffHeapBackupEntriesCount");
         }
 
         assertEquals(count, localPrimary);
@@ -95,12 +101,16 @@ public class OffheapCacheMetricsForClusterGroupSelfTest extends GridCommonAbstra
 
         for (int i = 0; i < CLIENT_CNT; i++) {
             IgniteCache<Integer, Integer> cache = grid("client-" + i).cache(cacheName);
+
+            DynamicMBean mBean = metricRegistry("client-" + i, CACHE_METRICS, cacheName);
+
             assertEquals(count, cache.metrics().getOffHeapPrimaryEntriesCount());
-            assertEquals(count, cache.mxBean().getOffHeapPrimaryEntriesCount());
+            assertEquals(count, mBean.getAttribute("OffHeapPrimaryEntriesCount"));
             assertEquals(count, cache.metrics().getOffHeapBackupEntriesCount());
-            assertEquals(count, cache.mxBean().getOffHeapBackupEntriesCount());
-            assertEquals(0L, cache.localMxBean().getOffHeapPrimaryEntriesCount());
-            assertEquals(0L, cache.localMxBean().getOffHeapBackupEntriesCount());
+            assertEquals(count, mBean.getAttribute("OffHeapPrimaryEntriesCount"));
+
+            assertEquals(0L, mBean.getAttribute("OffHeapPrimaryEntriesCount"));
+            assertEquals(0L, mBean.getAttribute("OffHeapPrimaryEntriesCount"));
         }
     }
 
