@@ -7,15 +7,9 @@ import org.apache.ignite.internal.processors.platform.client.ClientConnectionCon
 import org.apache.ignite.internal.processors.platform.client.ClientRequest;
 import org.apache.ignite.internal.processors.platform.client.ClientResponse;
 
-/**
- * Stop warmup request.
- */
+/** Stop warmup request. */
 public class ClientCacheStopWarmupRequest extends ClientRequest implements BeforeStartupRequest {
-    /**
-     * Constructor.
-     *
-     * @param reader Reader.
-     */
+    /** */
     public ClientCacheStopWarmupRequest(BinaryRawReader reader) {
         super(reader);
     }
