@@ -382,7 +382,7 @@ public class GridCommandHandlerTest extends GridCommandHandlerClusterPerMethodAb
 
         String port = ig1.localNode().attribute(ClientListenerProcessor.CLIENT_LISTENER_PORT).toString();
 
-        assertEquals(EXIT_CODE_INVALID_ARGUMENTS, execute("--persistence", "clean", "caches",
+        assertEquals(EXIT_CODE_UNEXPECTED_ERROR, execute("--persistence", "clean", "caches",
             nonExistingCacheName,
             "--host", "localhost", "--port", port));
 
@@ -609,7 +609,7 @@ public class GridCommandHandlerTest extends GridCommandHandlerClusterPerMethodAb
 
         String port = ig1.localNode().attribute(ClientListenerProcessor.CLIENT_LISTENER_PORT).toString();
 
-        assertEquals(EXIT_CODE_INVALID_ARGUMENTS, execute("--persistence", "backup", "caches",
+        assertEquals(EXIT_CODE_UNEXPECTED_ERROR, execute("--persistence", "backup", "caches",
             nonExistingCacheName,
             "--host", "localhost", "--port", port));
 
@@ -1203,7 +1203,7 @@ public class GridCommandHandlerTest extends GridCommandHandlerClusterPerMethodAb
 
         assertEquals(EXIT_CODE_INVALID_ARGUMENTS, execute("--baseline", "add"));
 
-        assertEquals(EXIT_CODE_INVALID_ARGUMENTS, execute("--baseline", "add", "non-existent-id"));
+        assertEquals(EXIT_CODE_UNEXPECTED_ERROR, execute("--baseline", "add", "non-existent-id"));
 
         Ignite other = startGrid(2);
 
@@ -1494,7 +1494,7 @@ public class GridCommandHandlerTest extends GridCommandHandlerClusterPerMethodAb
 
         assertEquals(2, ignite.cluster().currentBaselineTopology().size());
 
-        assertEquals(EXIT_CODE_INVALID_ARGUMENTS, execute("--baseline", "set", "invalidConsistentId"));
+        assertEquals(EXIT_CODE_UNEXPECTED_ERROR, execute("--baseline", "set", "invalidConsistentId"));
     }
 
     /**
@@ -2019,7 +2019,7 @@ public class GridCommandHandlerTest extends GridCommandHandlerClusterPerMethodAb
                 getTestIgniteInstanceName(2) + "," +
                 getTestIgniteInstanceName(3);
 
-        assertEquals(EXIT_CODE_INVALID_ARGUMENTS, execute("--baseline", "add", consistentIDs));
+        assertEquals(EXIT_CODE_UNEXPECTED_ERROR, execute("--baseline", "add", consistentIDs));
 
         String testOutStr = testOut.toString();
 
@@ -2723,7 +2723,7 @@ public class GridCommandHandlerTest extends GridCommandHandlerClusterPerMethodAb
         ignite(0).createCache(defaultCacheConfiguration().setNodeFilter(
             (IgnitePredicate<ClusterNode>)node -> node.attribute("some-attr") != null));
 
-        assertEquals(EXIT_CODE_INVALID_ARGUMENTS,
+        assertEquals(EXIT_CODE_UNEXPECTED_ERROR,
             execute("--baseline", "set", "non-existing-node-id ," + consistentIds(ignite)));
     }
 
