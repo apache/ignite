@@ -31,22 +31,21 @@ public interface CacheObjectTransformer {
     /**
      * Transforms the data.
      *
-     * @param bytes Byte array contains the data.
+     * @param bytes  Byte array contains the data.
      * @param offset Data offset.
      * @param length Data length.
-     *
-     * @return Byte array started with non-filled area with {@link #OVERHEAD} size.
+     * @return Byte array contains the transformed data started with non-filled area with {@link #OVERHEAD} size.
      * @throws IgniteCheckedException when transformation is not possible/suitable.
      */
     public byte[] transform(byte[] bytes, int offset, int length) throws IgniteCheckedException;
 
-
     /**
      * Restores the data.
      *
-     * @param bytes Byte array ending with the transformed data.
+     * @param bytes  Byte array ending with the transformed data.
      * @param offset Transformed data offset.
      * @param length Original data length.
+     * @return Byte array contains the restored data.
      */
     public byte[] restore(byte[] bytes, int offset, int length);
 }
