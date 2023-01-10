@@ -118,11 +118,7 @@ public abstract class AbstractCacheObjectsTransformationTest extends GridCommonA
     /**
      *
      */
-    protected void putAndCheck(
-        Object obj,
-        boolean transformableKey,
-        boolean transformableVal,
-        boolean reversed) {
+    protected void putAndCheck(Object obj, boolean transformableKey, boolean transformableVal, boolean reversed) {
 
         boolean binarizable = !(obj instanceof String || obj instanceof Integer || obj instanceof Object[] ||
             obj instanceof int[] || obj instanceof Collection);
