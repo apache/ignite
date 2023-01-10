@@ -110,7 +110,7 @@ public class CacheContention extends AbstractCommand<CacheContention.Arguments> 
 
         VisorContentionTaskResult res;
 
-        try (IgniteClient client = Command.startClient(clientCfg);) {
+        try (IgniteClient client = Command.startClient(clientCfg)) {
             res = executeTaskByNameOnNode(client, VisorContentionTask.class.getName(), taskArg, nodeId, clientCfg);
         }
 

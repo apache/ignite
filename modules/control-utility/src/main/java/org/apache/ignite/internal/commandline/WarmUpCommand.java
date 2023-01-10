@@ -18,10 +18,10 @@
 package org.apache.ignite.internal.commandline;
 
 import org.apache.ignite.IgniteLogger;
+import org.apache.ignite.client.ClientException;
 import org.apache.ignite.configuration.ClientConfiguration;
-import org.apache.ignite.internal.client.GridClientBeforeNodeStart;
-import org.apache.ignite.internal.client.GridClientDisconnectedException;
 import org.apache.ignite.internal.client.GridClientException;
+import org.apache.ignite.internal.client.thin.TcpIgniteClient;
 import org.apache.ignite.internal.commandline.argument.CommandArg;
 import org.apache.ignite.internal.commandline.argument.CommandArgUtils;
 
@@ -85,44 +85,14 @@ public class WarmUpCommand extends AbstractCommand<Void> {
 
     /** {@inheritDoc} */
     @Override public Object execute(ClientConfiguration clientCfg, IgniteLogger log) throws Exception {
-        try (GridClientBeforeNodeStart client = startClientBeforeNodeStart(clientCfg)) {
-            client.beforeStartState().stopWarmUp();
+        try (TcpIgniteClient client = (TcpIgniteClient)Command.startClient(clientCfg)) {
+            client.stopWarmUp();
         }
-        catch (GridClientDisconnectedException e) {
+        catch (ClientException e) {
             throw new GridClientException(e.getCause());
         }
 
         return true;
-    }
-
-    /**
-     * Method to create thin client for communication with node before it starts.
-     * If node has already started, there will be an error.
-     *
-     * @param clientCfg Thin client configuration.
-     * @return Grid thin client instance which is already connected to node before it starts.
-     * @throws Exception If error occur.
-     */
-    public static GridClientBeforeNodeStart startClientBeforeNodeStart(
-        ClientConfiguration clientCfg
-    ) throws Exception {
-        GridClientBeforeNodeStart client = null; //GridClientFactory.startBeforeNodeStart(clientCfg);
-
-        // If connection is unsuccessful, fail before doing any operations:
-        if (!client.connected()) {
-            GridClientException lastErr = client.checkLastError();
-
-            try {
-                client.close();
-            }
-            catch (Throwable e) {
-                lastErr.addSuppressed(e);
-            }
-
-            throw lastErr;
-        }
-
-        return client;
     }
 
     /**

@@ -18,7 +18,6 @@
 package org.apache.ignite.internal.commandline.cache;
 
 import java.util.ArrayList;
-import java.util.HashSet;
 import java.util.Set;
 import java.util.TreeSet;
 import org.apache.ignite.IgniteLogger;
@@ -151,7 +150,7 @@ public class CacheDestroy extends AbstractCommand<VisorCacheStopTaskArg> {
      */
     private Set<String> collectClusterCaches(ClientConfiguration clientCfg) throws Exception {
         try (IgniteClient client = Command.startClient(clientCfg)) {
-            return new HashSet(client.cacheNames());
+            return new TreeSet(client.cacheNames());
         }
     }
 }

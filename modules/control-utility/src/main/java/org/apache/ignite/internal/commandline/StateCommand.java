@@ -21,7 +21,6 @@ import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.client.IgniteClient;
 import org.apache.ignite.cluster.ClusterState;
 import org.apache.ignite.configuration.ClientConfiguration;
-import org.apache.ignite.internal.client.thin.TcpIgniteClient;
 import org.apache.ignite.internal.visor.misc.VisorIdAndTagViewTask;
 import org.apache.ignite.internal.visor.misc.VisorIdAndTagViewTaskResult;
 
@@ -44,7 +43,7 @@ public class StateCommand extends AbstractCommand<Void> {
      * @throws Exception If failed to print state.
      */
     @Override public Object execute(ClientConfiguration clientCfg, IgniteLogger log) throws Exception {
-        try (IgniteClient client = TcpIgniteClient.start(clientCfg)) {
+        try (IgniteClient client = Command.startClient(clientCfg)) {
             ClusterState state = client.cluster().state();
 
             VisorIdAndTagViewTaskResult idAndTag = executeTask(client, VisorIdAndTagViewTask.class, null, clientCfg);

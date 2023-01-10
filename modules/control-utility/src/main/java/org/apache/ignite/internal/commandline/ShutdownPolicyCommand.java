@@ -24,7 +24,6 @@ import org.apache.ignite.ShutdownPolicy;
 import org.apache.ignite.client.IgniteClient;
 import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.configuration.ClientConfiguration;
-import org.apache.ignite.internal.client.thin.TcpIgniteClient;
 import org.apache.ignite.internal.commandline.shutdown.ShutdownPolicyArgument;
 import org.apache.ignite.internal.visor.shutdown.VisorShutdownPolicyTask;
 import org.apache.ignite.internal.visor.shutdown.VisorShutdownPolicyTaskArg;
@@ -41,7 +40,7 @@ public class ShutdownPolicyCommand extends AbstractCommand<ShutdownPolicyArgumen
 
     /** {@inheritDoc} */
     @Override public Object execute(ClientConfiguration clientCfg, IgniteLogger logger) throws Exception {
-        try (IgniteClient client = TcpIgniteClient.start(clientCfg)) {
+        try (IgniteClient client = Command.startClient(clientCfg)) {
             UUID coordinatorId = client.cluster()
                 //Only non client node can be coordinator.
                 .forServers().nodes()

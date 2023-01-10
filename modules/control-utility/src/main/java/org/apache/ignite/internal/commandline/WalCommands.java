@@ -24,7 +24,6 @@ import java.util.Map;
 import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.client.IgniteClient;
 import org.apache.ignite.configuration.ClientConfiguration;
-import org.apache.ignite.internal.client.thin.TcpIgniteClient;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.T2;
 import org.apache.ignite.internal.util.typedef.internal.U;
@@ -82,7 +81,7 @@ public class WalCommands extends AbstractCommand<T2<String, String>> {
     @Override public Object execute(ClientConfiguration clientCfg, IgniteLogger logger) throws Exception {
         this.logger = logger;
 
-        try (IgniteClient client = TcpIgniteClient.start(clientCfg)) {
+        try (IgniteClient client = Command.startClient(clientCfg)) {
             switch (walAct) {
                 case WAL_DELETE:
                     deleteUnusedWalSegments(client, walArgs, clientCfg);
