@@ -31,12 +31,10 @@ import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.IgniteSystemProperties;
+import org.apache.ignite.client.ClientConnectionException;
 import org.apache.ignite.configuration.ClientConfiguration;
 import org.apache.ignite.internal.client.GridClientAuthenticationException;
-import org.apache.ignite.internal.client.GridClientClosedException;
 import org.apache.ignite.internal.client.GridClientDisconnectedException;
-import org.apache.ignite.internal.client.GridClientHandshakeException;
-import org.apache.ignite.internal.client.GridServerUnreachableException;
 import org.apache.ignite.internal.client.impl.connection.GridClientConnectionResetException;
 import org.apache.ignite.internal.client.ssl.GridSslBasicContextFactory;
 import org.apache.ignite.internal.logger.IgniteLoggerEx;
@@ -613,11 +611,7 @@ public class CommandHandler {
      * @return {@code true} if specified exception is a connection error.
      */
     private static boolean isConnectionError(Throwable e) {
-        return e instanceof GridClientClosedException ||
-            e instanceof GridClientConnectionResetException ||
-            e instanceof GridClientDisconnectedException ||
-            e instanceof GridClientHandshakeException ||
-            e instanceof GridServerUnreachableException;
+        return e instanceof ClientConnectionException;
     }
 
     /**

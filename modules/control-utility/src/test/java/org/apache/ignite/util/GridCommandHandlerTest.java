@@ -73,7 +73,6 @@ import org.apache.ignite.internal.GridJobExecuteResponse;
 import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.IgniteInterruptedCheckedException;
-import org.apache.ignite.internal.IgniteNodeAttributes;
 import org.apache.ignite.internal.TestRecordingCommunicationSpi;
 import org.apache.ignite.internal.client.GridClientFactory;
 import org.apache.ignite.internal.client.impl.GridClientImpl;
@@ -108,6 +107,7 @@ import org.apache.ignite.internal.processors.cluster.ChangeGlobalStateFinishMess
 import org.apache.ignite.internal.processors.cluster.GridClusterStateProcessor;
 import org.apache.ignite.internal.processors.datastreamer.DataStreamerRequest;
 import org.apache.ignite.internal.processors.metric.MetricRegistry;
+import org.apache.ignite.internal.processors.odbc.ClientListenerProcessor;
 import org.apache.ignite.internal.util.BasicRateLimiter;
 import org.apache.ignite.internal.util.distributed.SingleNodeMessage;
 import org.apache.ignite.internal.util.future.IgniteFinishedFutureImpl;
@@ -380,7 +380,7 @@ public class GridCommandHandlerTest extends GridCommandHandlerClusterPerMethodAb
 
         IgniteEx ig1 = startGrid(1);
 
-        String port = ig1.localNode().attribute(IgniteNodeAttributes.ATTR_REST_TCP_PORT).toString();
+        String port = ig1.localNode().attribute(ClientListenerProcessor.CLIENT_LISTENER_PORT).toString();
 
         assertEquals(EXIT_CODE_INVALID_ARGUMENTS, execute("--persistence", "clean", "caches",
             nonExistingCacheName,
@@ -444,7 +444,7 @@ public class GridCommandHandlerTest extends GridCommandHandlerClusterPerMethodAb
 
         IgniteEx ig1 = startGrid(1);
 
-        String port = ig1.localNode().attribute(IgniteNodeAttributes.ATTR_REST_TCP_PORT).toString();
+        String port = ig1.localNode().attribute(ClientListenerProcessor.CLIENT_LISTENER_PORT).toString();
 
         assertEquals(EXIT_CODE_OK, execute("--persistence", "clean", "corrupted",
             "--host", "localhost", "--port", port));
@@ -486,7 +486,7 @@ public class GridCommandHandlerTest extends GridCommandHandlerClusterPerMethodAb
 
         IgniteEx ig1 = startGrid(1);
 
-        String port = ig1.localNode().attribute(IgniteNodeAttributes.ATTR_REST_TCP_PORT).toString();
+        String port = ig1.localNode().attribute(ClientListenerProcessor.CLIENT_LISTENER_PORT).toString();
 
         assertEquals(EXIT_CODE_OK, execute("--persistence", "clean", "all",
             "--host", "localhost", "--port", port));
@@ -525,7 +525,7 @@ public class GridCommandHandlerTest extends GridCommandHandlerClusterPerMethodAb
 
         IgniteEx ig1 = startGrid(1);
 
-        String port = ig1.localNode().attribute(IgniteNodeAttributes.ATTR_REST_TCP_PORT).toString();
+        String port = ig1.localNode().attribute(ClientListenerProcessor.CLIENT_LISTENER_PORT).toString();
 
         assertEquals(EXIT_CODE_OK, execute("--persistence", "backup", "all",
             "--host", "localhost", "--port", port));
@@ -567,7 +567,7 @@ public class GridCommandHandlerTest extends GridCommandHandlerClusterPerMethodAb
 
         IgniteEx ig1 = startGrid(1);
 
-        String port = ig1.localNode().attribute(IgniteNodeAttributes.ATTR_REST_TCP_PORT).toString();
+        String port = ig1.localNode().attribute(ClientListenerProcessor.CLIENT_LISTENER_PORT).toString();
 
         assertEquals(EXIT_CODE_OK, execute("--persistence", "backup", "corrupted",
             "--host", "localhost", "--port", port));
@@ -607,7 +607,7 @@ public class GridCommandHandlerTest extends GridCommandHandlerClusterPerMethodAb
 
         IgniteEx ig1 = startGrid(1);
 
-        String port = ig1.localNode().attribute(IgniteNodeAttributes.ATTR_REST_TCP_PORT).toString();
+        String port = ig1.localNode().attribute(ClientListenerProcessor.CLIENT_LISTENER_PORT).toString();
 
         assertEquals(EXIT_CODE_INVALID_ARGUMENTS, execute("--persistence", "backup", "caches",
             nonExistingCacheName,
