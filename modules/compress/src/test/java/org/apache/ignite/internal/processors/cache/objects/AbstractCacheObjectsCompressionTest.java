@@ -200,10 +200,10 @@ public abstract class AbstractCacheObjectsCompressionTest extends AbstractCacheO
         }
 
         /** {@inheritDoc} */
-        @Override public void restore(ByteBuffer compressed, ByteBuffer restored) {
-            switch (CompressionType.values()[compressed.getInt()]) {
+        @Override public void restore(ByteBuffer transformed, ByteBuffer restored) {
+            switch (CompressionType.values()[transformed.getInt()]) {
                 case ZSTD:
-                    Zstd.decompress(restored, compressed);
+                    Zstd.decompress(restored, transformed);
 
                     restored.flip();
 
@@ -212,7 +212,7 @@ public abstract class AbstractCacheObjectsCompressionTest extends AbstractCacheO
                     break;
 
                 case LZ4:
-                    lz4Decompressor.decompress(compressed, restored);
+                    lz4Decompressor.decompress(transformed, restored);
 
                     restored.flip();
 
@@ -222,7 +222,7 @@ public abstract class AbstractCacheObjectsCompressionTest extends AbstractCacheO
 
                 case SNAPPY:
                     try {
-                        Snappy.uncompress(compressed, restored);
+                        Snappy.uncompress(transformed, restored);
 
                         snapCnt.incrementAndGet();
                     }

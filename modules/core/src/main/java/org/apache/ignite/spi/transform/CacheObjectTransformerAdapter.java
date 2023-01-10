@@ -96,10 +96,10 @@ public abstract class CacheObjectTransformerAdapter implements CacheObjectTransf
     /**
      * Restores the data.
      *
-     * @param compressed Transformed data.
+     * @param transformed Transformed data.
      * @param restored Restored data.
      */
-    public abstract void restore(ByteBuffer compressed, ByteBuffer restored);
+    public abstract void restore(ByteBuffer transformed, ByteBuffer restored);
 
     /**
      * Returns {@code true} when direct byte buffers are required.
