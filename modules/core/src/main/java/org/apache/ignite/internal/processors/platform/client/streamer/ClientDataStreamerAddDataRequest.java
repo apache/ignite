@@ -71,10 +71,10 @@ public class ClientDataStreamerAddDataRequest extends ClientDataStreamerRequest 
 
             CacheObjectValueContext cotx = ctx.kernalContext().cache().cache(cacheName).context().cacheObjectContext();
 
-            Collection<DataStreamerEntry> dseEntries = build(cotx, entries);
+            Collection<DataStreamerEntry> dsEntries = build(cotx, entries);
 
-            if (dseEntries != null)
-                dataStreamer.addData(dseEntries);
+            if (dsEntries != null)
+                dataStreamer.addData(dsEntries);
 
             if ((flags & FLUSH) != 0)
                 dataStreamer.flush();

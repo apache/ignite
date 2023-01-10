@@ -98,7 +98,7 @@ public class ClientDataStreamerStartRequest extends ClientDataStreamerRequest {
         try {
             CacheObjectValueContext cotx = ctx.kernalContext().cache().context().cacheObjectContext(cacheId);
 
-            Collection<DataStreamerEntry> dseEntries = build(cotx, entries);
+            Collection<DataStreamerEntry> dsEntries = build(cotx, entries);
 
             boolean close = (flags & CLOSE) != 0;
             boolean keepBinary = (flags & KEEP_BINARY) != 0;
@@ -111,8 +111,8 @@ public class ClientDataStreamerStartRequest extends ClientDataStreamerRequest {
 
             if (perNodeBufferSize >= 0)
                 dataStreamer.perNodeBufferSize(perNodeBufferSize);
-            else if (dseEntries != null && !dseEntries.isEmpty() && close)
-                dataStreamer.perNodeBufferSize(dseEntries.size());
+            else if (dsEntries != null && !dsEntries.isEmpty() && close)
+                dataStreamer.perNodeBufferSize(dsEntries.size());
 
             if (perThreadBufferSize >= 0 && useThreadBuffer)
                 dataStreamer.perThreadBufferSize(perThreadBufferSize);
@@ -124,8 +124,8 @@ public class ClientDataStreamerStartRequest extends ClientDataStreamerRequest {
             if (receiverObj != null)
                 dataStreamer.receiver(createReceiver(ctx.kernalContext(), receiverObj, receiverPlatform, keepBinary));
 
-            if (dseEntries != null)
-                dataStreamer.addDataInternal(dseEntries, useThreadBuffer);
+            if (dsEntries != null)
+                dataStreamer.addDataInternal(dsEntries, useThreadBuffer);
 
             if (flush)
                 dataStreamer.flush();
