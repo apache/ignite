@@ -21,6 +21,7 @@ import java.util.Map;
 import java.util.concurrent.TimeUnit;
 import java.util.stream.Stream;
 import org.apache.ignite.IgniteCheckedException;
+import org.apache.ignite.configuration.ClientConfiguration;
 import org.apache.ignite.configuration.DataRegionConfiguration;
 import org.apache.ignite.configuration.DataStorageConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
@@ -30,6 +31,8 @@ import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.IgniteKernal;
 import org.apache.ignite.internal.IgnitionEx;
+import org.apache.ignite.internal.client.IgniteClientInternal;
+import org.apache.ignite.internal.client.thin.TcpIgniteClient;
 import org.apache.ignite.internal.processors.cache.GridCacheProcessor;
 import org.apache.ignite.internal.util.lang.IgniteInClosureX;
 import org.apache.ignite.internal.util.typedef.internal.CU;
@@ -41,6 +44,7 @@ import org.junit.Test;
 import static java.util.Objects.requireNonNull;
 import static java.util.function.Function.identity;
 import static java.util.stream.Collectors.toMap;
+import static org.apache.ignite.client.Config.SERVER;
 import static org.apache.ignite.testframework.GridTestUtils.assertThrowsAnyCause;
 
 /**
@@ -311,6 +315,33 @@ public class WarmUpSelfTest extends GridCommonAbstractTest {
     }
 
     /**
+     * Test checks to stop warming up by {@link org.apache.ignite.internal.client.IgniteClientInternal}.
+     * <p>
+     * Steps:
+     * 1)Running a node in a separate thread with {@link BlockedWarmUpConfiguration} for one region;
+     * 2)Stop warm-up by {@link org.apache.ignite.internal.client.IgniteClientInternal};
+     * 3)Make sure that warm-up is stopped and node has started successfully.
+     *
+     * @throws Exception If failed.
+     */
+    @Test
+    public void testStopWarmUpByThinClient() throws Exception {
+        checkStopWarmUp(new IgniteInClosureX<IgniteKernal>() {
+            /** {@inheritDoc} */
+            @Override public void applyx(IgniteKernal kernal) {
+                try (IgniteClientInternal thinCli =
+                    (IgniteClientInternal)TcpIgniteClient.start(new ClientConfiguration().setAddresses(SERVER))) {
+
+                    thinCli.stopWarmUp();
+                }
+                catch (Exception e) {
+                    throw new RuntimeException(e);
+                }
+            }
+        });
+    }
+
+    /**
      * Asserts that two warm-up maps are equal.
      *
      * @param exp Expected value.
@@ -351,7 +382,7 @@ public class WarmUpSelfTest extends GridCommonAbstractTest {
         WarmUpTestPluginProvider pluginProvider = (WarmUpTestPluginProvider)cfg.getPluginProviders()[0];
         BlockedWarmUpStrategy strat = (BlockedWarmUpStrategy)pluginProvider.strats.get(1);
 
-        strat.startLatch.await(1, TimeUnit.MINUTES);
+        strat.startLatch.await(10, TimeUnit.SECONDS);
 
         IgniteKernal n = IgnitionEx.gridx(cfg.getIgniteInstanceName());
 

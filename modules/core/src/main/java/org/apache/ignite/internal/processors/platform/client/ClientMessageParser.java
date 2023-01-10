@@ -29,6 +29,8 @@ import org.apache.ignite.internal.processors.odbc.ClientListenerMessageParser;
 import org.apache.ignite.internal.processors.odbc.ClientListenerRequest;
 import org.apache.ignite.internal.processors.odbc.ClientListenerResponse;
 import org.apache.ignite.internal.processors.odbc.ClientMessage;
+import org.apache.ignite.internal.processors.platform.client.beforestart.BeforeStartupRequest;
+import org.apache.ignite.internal.processors.platform.client.beforestart.ClientCacheStopWarmupRequest;
 import org.apache.ignite.internal.processors.platform.client.binary.ClientBinaryConfigurationGetRequest;
 import org.apache.ignite.internal.processors.platform.client.binary.ClientBinaryTypeGetRequest;
 import org.apache.ignite.internal.processors.platform.client.binary.ClientBinaryTypeNameGetRequest;
@@ -393,6 +395,9 @@ public class ClientMessageParser implements ClientListenerMessageParser {
     /** IgniteSet.iterator page. */
     private static final short OP_SET_ITERATOR_GET_PAGE = 9023;
 
+    /** Stop warmup. */
+    private static final short OP_STOP_WARMUP = 9024;
+
     /** Marshaller. */
     private final GridBinaryMarshaller marsh;
 
@@ -426,7 +431,12 @@ public class ClientMessageParser implements ClientListenerMessageParser {
         BinaryReaderExImpl reader = new BinaryReaderExImpl(marsh.context(), inStream,
                 null, null, true, true);
 
-        return decode(reader);
+        ClientListenerRequest req = decode(reader);
+
+        if (ctx.kernalContext().recoveryMode() && !(req instanceof BeforeStartupRequest))
+            return new ClientRawRequest(req.requestId(), ClientStatus.FAILED, "Node in recovery mode");
+
+        return req;
     }
 
     /**
@@ -435,7 +445,7 @@ public class ClientMessageParser implements ClientListenerMessageParser {
      * @param reader Reader.
      * @return Request.
      */
-    public ClientListenerRequest decode(BinaryReaderExImpl reader) {
+    private ClientListenerRequest decode(BinaryReaderExImpl reader) {
         short opCode = reader.readShort();
 
         switch (opCode) {
@@ -697,6 +707,9 @@ public class ClientMessageParser implements ClientListenerMessageParser {
 
             case OP_SET_ITERATOR_GET_PAGE:
                 return new ClientIgniteSetIteratorGetPageRequest(reader);
+
+            case OP_STOP_WARMUP:
+                return new ClientCacheStopWarmupRequest(reader);
         }
 
         return new ClientRawRequest(reader.readLong(), ClientStatus.INVALID_OP_CODE,

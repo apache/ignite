@@ -195,19 +195,13 @@ public class ClientListenerProcessor extends GridProcessorAdapter {
                     ClientConnectionView::new);
 
                 distrThinCfg = new DistributedThinClientConfiguration(ctx);
+
+                srv.start();
             }
             catch (Exception e) {
                 throw new IgniteCheckedException("Failed to start client connector processor.", e);
             }
         }
-    }
-
-    /** {@inheritDoc} */
-    @Override public void onKernalStart(boolean active) throws IgniteCheckedException {
-        super.onKernalStart(active);
-
-        if (srv != null)
-            srv.start();
     }
 
     /**
