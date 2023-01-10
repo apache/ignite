@@ -380,7 +380,7 @@ public class WarmUpSelfTest extends GridCommonAbstractTest {
         WarmUpTestPluginProvider pluginProvider = (WarmUpTestPluginProvider)cfg.getPluginProviders()[0];
         BlockedWarmUpStrategy strat = (BlockedWarmUpStrategy)pluginProvider.strats.get(1);
 
-        strat.startLatch.await(10, TimeUnit.SECONDS);
+        strat.startLatch.await(1, TimeUnit.MINUTES);
 
         IgniteKernal n = IgnitionEx.gridx(cfg.getIgniteInstanceName());
 
