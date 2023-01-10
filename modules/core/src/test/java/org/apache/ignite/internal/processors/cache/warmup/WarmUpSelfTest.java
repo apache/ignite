@@ -31,7 +31,6 @@ import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.IgniteKernal;
 import org.apache.ignite.internal.IgnitionEx;
-import org.apache.ignite.internal.client.IgniteClientInternal;
 import org.apache.ignite.internal.client.thin.TcpIgniteClient;
 import org.apache.ignite.internal.processors.cache.GridCacheProcessor;
 import org.apache.ignite.internal.util.lang.IgniteInClosureX;
@@ -315,11 +314,11 @@ public class WarmUpSelfTest extends GridCommonAbstractTest {
     }
 
     /**
-     * Test checks to stop warming up by {@link org.apache.ignite.internal.client.IgniteClientInternal}.
+     * Test checks to stop warming up by thin client.
      * <p>
      * Steps:
      * 1)Running a node in a separate thread with {@link BlockedWarmUpConfiguration} for one region;
-     * 2)Stop warm-up by {@link org.apache.ignite.internal.client.IgniteClientInternal};
+     * 2)Stop warm-up by thin client;
      * 3)Make sure that warm-up is stopped and node has started successfully.
      *
      * @throws Exception If failed.
@@ -329,9 +328,8 @@ public class WarmUpSelfTest extends GridCommonAbstractTest {
         checkStopWarmUp(new IgniteInClosureX<IgniteKernal>() {
             /** {@inheritDoc} */
             @Override public void applyx(IgniteKernal kernal) {
-                try (IgniteClientInternal thinCli =
-                    (IgniteClientInternal)TcpIgniteClient.start(new ClientConfiguration().setAddresses(SERVER))) {
-
+                try (TcpIgniteClient thinCli =
+                         (TcpIgniteClient)TcpIgniteClient.start(new ClientConfiguration().setAddresses(SERVER))) {
                     thinCli.stopWarmUp();
                 }
                 catch (Exception e) {
