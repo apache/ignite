@@ -184,7 +184,7 @@ public class CacheObjectsTransformationTest extends AbstractCacheObjectsTransfor
             if (fail)
                 throw new IgniteCheckedException("Failed.");
 
-            ByteBuffer transformed = byteBuffer(original.remaining()); // At least same capacity is required.
+            ByteBuffer transformed = byteBuffer(original.remaining()); // Same capacity is required.
 
             while (original.hasRemaining())
                 transformed.put((byte)(original.get() + SHIFT));
