@@ -118,7 +118,8 @@ public abstract class AbstractCacheObjectsTransformationTest extends GridCommonA
 
         boolean binarizableCol = (obj instanceof Object[] && !(obj instanceof String[] || obj instanceof int[])) ||
             (obj instanceof Collection && !(
-                ((Iterable<?>)obj).iterator().next() instanceof String || ((Iterable<?>)obj).iterator().next() instanceof Integer)
+                ((Iterable<?>)obj).iterator().next() instanceof String ||
+                    ((Iterable<?>)obj).iterator().next() instanceof Integer)
             );
 
         boolean binary = obj instanceof BinaryObject;
