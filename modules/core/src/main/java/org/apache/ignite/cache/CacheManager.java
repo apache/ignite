@@ -318,13 +318,6 @@ public class CacheManager implements javax.cache.CacheManager {
             if (cache == null)
                 throw new CacheException("Cache not found: " + cacheName);
 
-            // TODO: register / unregister
-
-//            if (enabled)
-//                registerCacheObject(cache.mxBean(), cacheName, CACHE_CONFIGURATION);
-//            else
-//                unregisterCacheObject(cacheName, CACHE_CONFIGURATION);
-
             cache.getConfiguration(CacheConfiguration.class).setManagementEnabled(enabled);
         }
         finally {
@@ -344,12 +337,6 @@ public class CacheManager implements javax.cache.CacheManager {
 
             if (cache == null)
                 throw new CacheException("Cache not found: " + cacheName);
-
-            // TODO : enable / disable?
-//            if (enabled)
-//                registerCacheObject(cache.mxBean(), cacheName, CACHE_STATISTICS);
-//            else
-//                unregisterCacheObject(cacheName, CACHE_STATISTICS);
 
             ignite.context().cache().cache(cacheName).context().statisticsEnabled(enabled);
         }

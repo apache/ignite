@@ -167,10 +167,9 @@ public abstract class GridCacheAbstractMetricsSelfTest extends GridCacheAbstract
         }
 
         for (int i = 0; i < gridCount(); i++) {
-            Ignite g = grid(i);
+            IgniteEx g = grid(i);
 
-            // TODO: clear ?
-            // g.cache(DEFAULT_CACHE_NAME).localMxBean().clear();
+            g.context().cache().internalCache(DEFAULT_CACHE_NAME).metrics0().clear();
 
             g.transactions().resetMetrics();
         }

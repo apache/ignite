@@ -39,10 +39,6 @@ import org.apache.ignite.internal.util.typedef.internal.CU;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.spi.metric.BooleanMetric;
 import org.apache.ignite.spi.metric.Metric;
-import org.apache.ignite.spi.metric.MetricExporterSpi;
-import org.apache.ignite.spi.metric.ReadOnlyMetricManager;
-import org.apache.ignite.spi.metric.ReadOnlyMetricRegistry;
-import org.apache.ignite.spi.metric.jmx.JmxMetricExporterSpi;
 import org.junit.Test;
 
 import static java.util.Objects.requireNonNull;
@@ -152,52 +148,57 @@ public class IndexMetricsTest extends AbstractIndexingCommonTest {
         CacheMetrics cacheMetrics1 = cacheMetrics(n, cacheName1);
         CacheMetrics cacheMetrics2 = cacheMetrics(n, cacheName2);
 
-        /**
-         * This interface defines JMX view on {@link IgniteCache}.
-         *
-         * @deprecated Check the {@link JmxMetricExporterSpi} with "name=cache.{cache_name}" instead.
-         *
-         * @see ReadOnlyMetricManager
-         * @see ReadOnlyMetricRegistry
-         * @see JmxMetricExporterSpi
-         * @see MetricExporterSpi
-         */
+        CacheMetrics cacheLocalMetrics1 = n.cache(cacheName1).localMetrics();
+        CacheMetrics cacheLocalMetrics2 = n.cache(cacheName2).localMetrics();
 
-//        CacheMetricsMXBean cacheMetricsMXBean11 = cacheMetricsMXBean(n, cacheName1, CacheLocalMetricsMXBeanImpl.class);
-//        CacheMetricsMXBean cacheMetricsMXBean22 = cacheMetricsMXBean(n, cacheName2, CacheLocalMetricsMXBeanImpl.class);
-//
-//        CacheMetricsMXBean cacheClusterMetricsMXBean11 =
-//            cacheMetricsMXBean(n, cacheName1, CacheClusterMetricsMXBeanImpl.class);
-//        CacheMetricsMXBean cacheClusterMetricsMXBean22 =
-//            cacheMetricsMXBean(n, cacheName2, CacheClusterMetricsMXBeanImpl.class);
+        CacheMetrics cacheClusterMetrics1 = n.cache(cacheName1).metrics();
+        CacheMetrics cacheClusterMetrics2 = n.cache(cacheName2).metrics();
 
         n.cluster().state(ClusterState.ACTIVE);
 
         BooleanSupplier[] idxRebuildProgressCache1 = {
             idxRebuildInProgress1::value,
-            cacheMetrics1::isIndexRebuildInProgress
+            cacheMetrics1::isIndexRebuildInProgress,
+            cacheLocalMetrics1::isIndexRebuildInProgress
         };
 
         BooleanSupplier[] idxRebuildProgressCache2 = {
             idxRebuildInProgress2::value,
-            cacheMetrics2::isIndexRebuildInProgress
+            cacheMetrics2::isIndexRebuildInProgress,
+            cacheLocalMetrics2::isIndexRebuildInProgress
+        };
+
+        // It must always be false, because metric is only per node.
+        BooleanSupplier[] idxRebuildProgressCluster = {
+            cacheClusterMetrics1::isIndexRebuildInProgress,
+            cacheClusterMetrics2::isIndexRebuildInProgress
         };
 
         LongSupplier[] idxRebuildKeyProcessedCache1 = {
             idxRebuildKeyProcessed1::value,
-            cacheMetrics1::getIndexRebuildKeysProcessed
+            cacheMetrics1::getIndexRebuildKeysProcessed,
+            cacheLocalMetrics1::getIndexRebuildKeysProcessed,
         };
 
         LongSupplier[] idxRebuildKeyProcessedCache2 = {
             idxRebuildKeyProcessed2::value,
-            cacheMetrics2::getIndexRebuildKeysProcessed
+            cacheMetrics2::getIndexRebuildKeysProcessed,
+            cacheLocalMetrics2::getIndexRebuildKeysProcessed,
+        };
+
+        // It must always be 0, because metric is only per node.
+        LongSupplier[] idxRebuildKeyProcessedCluster = {
+            cacheClusterMetrics1::getIndexRebuildKeysProcessed,
+            cacheClusterMetrics2::getIndexRebuildKeysProcessed
         };
 
         assertEquals(true, idxRebuildProgressCache1);
         assertEquals(true, idxRebuildProgressCache2);
+        assertEquals(false, idxRebuildProgressCluster);
 
         assertEquals(0, idxRebuildKeyProcessedCache1);
         assertEquals(0, idxRebuildKeyProcessedCache2);
+        assertEquals(0, idxRebuildKeyProcessedCluster);
 
         ((BlockingIndexesRebuildTask)n.context().indexProcessor().idxRebuild()).stopBlock(cacheName1);
 
@@ -205,9 +206,11 @@ public class IndexMetricsTest extends AbstractIndexingCommonTest {
 
         assertEquals(false, idxRebuildProgressCache1);
         assertEquals(true, idxRebuildProgressCache2);
+        assertEquals(false, idxRebuildProgressCluster);
 
         assertEquals(entryCnt1, idxRebuildKeyProcessedCache1);
         assertEquals(0, idxRebuildKeyProcessedCache2);
+        assertEquals(0, idxRebuildKeyProcessedCluster);
 
         ((BlockingIndexesRebuildTask)n.context().indexProcessor().idxRebuild()).stopBlock(cacheName2);
 
@@ -215,9 +218,11 @@ public class IndexMetricsTest extends AbstractIndexingCommonTest {
 
         assertEquals(false, idxRebuildProgressCache1);
         assertEquals(false, idxRebuildProgressCache2);
+        assertEquals(false, idxRebuildProgressCluster);
 
         assertEquals(entryCnt1, idxRebuildKeyProcessedCache1);
         assertEquals(entryCnt2, idxRebuildKeyProcessedCache2);
+        assertEquals(0, idxRebuildKeyProcessedCluster);
     }
 
     /**
