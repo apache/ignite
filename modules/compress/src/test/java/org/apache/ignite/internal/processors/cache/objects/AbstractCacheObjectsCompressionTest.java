@@ -179,7 +179,7 @@ public abstract class AbstractCacheObjectsCompressionTest extends AbstractCacheO
 
                         compressed.position(0);
                     }
-                    catch (IOException e) {
+                    catch (IOException | IllegalArgumentException e) {
                         throw new IgniteCheckedException(e);
                     }
 

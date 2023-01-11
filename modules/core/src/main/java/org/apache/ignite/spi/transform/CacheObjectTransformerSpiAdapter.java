@@ -20,6 +20,7 @@ package org.apache.ignite.spi.transform;
 import java.nio.ByteBuffer;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.internal.ThreadLocalDirectByteBuffer;
+import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgniteExperimental;
 import org.apache.ignite.spi.IgniteSpiAdapter;
 import org.apache.ignite.spi.IgniteSpiException;
@@ -66,11 +67,17 @@ public abstract class CacheObjectTransformerSpiAdapter extends IgniteSpiAdapter 
         return src;
     }
 
-    /** Thread local direct byte buffer with required capacty. */
+    /** Thread local direct byte buffer with a required capacty. */
     protected ByteBuffer byteBuffer(int capacity) {
-        ByteBuffer buf = dstBuf.get(capacity);
+        ByteBuffer buf;
 
-        buf.limit(capacity);
+        if (direct()) {
+            buf = dstBuf.get(capacity);
+
+            buf.limit(capacity);
+        }
+        else
+            buf = ByteBuffer.wrap(new byte[capacity]);
 
         return buf;
     }
@@ -84,7 +91,13 @@ public abstract class CacheObjectTransformerSpiAdapter extends IgniteSpiAdapter 
 
         byte[] res = new byte[OVERHEAD + transformed.remaining()];
 
-        transformed.get(res, OVERHEAD, transformed.remaining());
+        if (transformed.isDirect())
+            transformed.get(res, OVERHEAD, transformed.remaining());
+        else {
+            byte[] arr = transformed.array();
+
+            U.arrayCopy(arr, 0, res, OVERHEAD, arr.length);
+        }
 
         return res;
     }
@@ -105,11 +118,15 @@ public abstract class CacheObjectTransformerSpiAdapter extends IgniteSpiAdapter 
 
         assert restored.remaining() == length : "expected=" + length + ", actual=" + restored.remaining();
 
-        byte[] res = new byte[length];
+        if (restored.isDirect()) {
+            byte[] res = new byte[length];
 
-        restored.get(res);
+            restored.get(res);
 
-        return res;
+            return res;
+        }
+        else
+            return restored.array();
     }
 
     /**

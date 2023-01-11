@@ -166,18 +166,13 @@ public class CacheObjectsCompressionConsumptionTest extends AbstractCacheObjects
             Function<Integer, Object> kGen = reversed ? valGen : keyGen;
             Function<Integer, Object> vGen = reversed ? keyGen : valGen;
 
+            CompressionTransformerSpi.type = CompressionTransformerSpi.CompressionType.DISABLED;
+
+            raw = doTest(cnt, kGen, vGen); // Compresson disabled.
+
+            CompressionTransformerSpi.type = CompressionTransformerSpi.CompressionType.defaultType();
+
             compressed = doTest(cnt, kGen, vGen); // Compression enabled.
-
-            try {
-                assertEquals(CompressionTransformerSpi.CompressionType.defaultType(), CompressionTransformerSpi.type);
-
-                CompressionTransformerSpi.type = CompressionTransformerSpi.CompressionType.DISABLED;
-
-                raw = doTest(cnt, kGen, vGen); // Compresson disabled.
-            }
-            finally {
-                CompressionTransformerSpi.type = CompressionTransformerSpi.CompressionType.defaultType();  // Restoring default.
-            }
 
             assertTrue("Network, raw=" + raw.net + ", compressed=" + compressed.net, raw.net > compressed.net);
             assertTrue("Memory, raw=" + raw.mem + ", compressed=" + compressed.mem, raw.mem > compressed.mem);
