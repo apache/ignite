@@ -28,7 +28,7 @@ import static org.apache.ignite.internal.binary.GridBinaryMarshaller.TRANSFORMED
 import static org.apache.ignite.spi.transform.CacheObjectTransformerSpi.OVERHEAD;
 
 /** */
-public class CacheObjectsTransformerUtils {
+public class CacheObjectsTransformer {
     /** Header buffer. */
     private static final ThreadLocalDirectByteBuffer hdrBuf = new ThreadLocalDirectByteBuffer(OVERHEAD);
 
