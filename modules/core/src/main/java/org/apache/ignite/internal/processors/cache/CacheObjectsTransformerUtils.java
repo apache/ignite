@@ -21,12 +21,11 @@ import java.nio.ByteBuffer;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.events.CacheObjectTransformedEvent;
 import org.apache.ignite.internal.ThreadLocalDirectByteBuffer;
-import org.apache.ignite.spi.transform.CacheObjectTransformer;
 import org.apache.ignite.spi.transform.CacheObjectTransformerSpi;
 
 import static org.apache.ignite.events.EventType.EVT_CACHE_OBJECT_TRANSFORMED;
 import static org.apache.ignite.internal.binary.GridBinaryMarshaller.TRANSFORMED;
-import static org.apache.ignite.spi.transform.CacheObjectTransformer.OVERHEAD;
+import static org.apache.ignite.spi.transform.CacheObjectTransformerSpi.OVERHEAD;
 
 /** */
 public class CacheObjectsTransformerUtils {
@@ -37,10 +36,8 @@ public class CacheObjectsTransformerUtils {
     private static final byte VER = 0;
 
     /***/
-    private static CacheObjectTransformer transformer(CacheObjectValueContext ctx) {
-        CacheObjectTransformerSpi spi = ctx.kernalContext().config().getCacheObjectTransformSpi();
-
-        return (spi == null) ? null : spi.transformer();
+    private static CacheObjectTransformerSpi spi(CacheObjectValueContext ctx) {
+        return ctx.kernalContext().config().getCacheObjectTransformSpi();
     }
 
     /**
@@ -63,12 +60,12 @@ public class CacheObjectsTransformerUtils {
         assert bytes[offset] != TRANSFORMED;
 
         try {
-            CacheObjectTransformer trans = transformer(ctx);
+            CacheObjectTransformerSpi spi = spi(ctx);
 
-            if (trans == null)
+            if (spi == null)
                 return bytes;
 
-            byte[] transformed = trans.transform(bytes, offset, length);
+            byte[] transformed = spi.transform(bytes, offset, length);
 
             ByteBuffer hdr = hdrBuf.get();
 
@@ -116,7 +113,7 @@ public class CacheObjectsTransformerUtils {
         if (bytes[0] != TRANSFORMED)
             return bytes;
 
-        CacheObjectTransformer trans = transformer(ctx);
+        CacheObjectTransformerSpi spi = spi(ctx);
 
         ByteBuffer hdr = ByteBuffer.wrap(bytes);
 
@@ -133,7 +130,7 @@ public class CacheObjectsTransformerUtils {
 
             assert offset == OVERHEAD : offset; // Correct while VER == 0;
 
-            restored = trans.restore(bytes, offset, length);
+            restored = spi.restore(bytes, offset, length);
         }
         else
             throw new IllegalStateException("Unknown version " + ver);

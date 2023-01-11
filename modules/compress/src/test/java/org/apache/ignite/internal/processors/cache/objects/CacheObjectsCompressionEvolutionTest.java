@@ -21,7 +21,7 @@ import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCache;
 import org.junit.Test;
 
-import static org.apache.ignite.internal.processors.cache.objects.AbstractCacheObjectsCompressionTest.CompressionTransformer.CompressionType;
+import static org.apache.ignite.internal.processors.cache.objects.AbstractCacheObjectsCompressionTest.CompressionTransformerSpi.CompressionType;
 
 /**
  * Checks compression algorithm change.
@@ -40,23 +40,23 @@ public class CacheObjectsCompressionEvolutionTest extends AbstractCacheObjectsCo
 
         for (int i = 0; i < cnt; i++) {
             for (CompressionType type : CompressionType.values()) {
-                CompressionTransformer.type = type;
+                CompressionTransformerSpi.type = type;
 
                 cache.put(++key, HUGE_STRING + key);
             }
         }
 
-        CompressionTransformer.type = CompressionTransformer.CompressionType.defaultType();
+        CompressionTransformerSpi.type = CompressionTransformerSpi.CompressionType.defaultType();
 
-        assertEquals(0, CompressionTransformer.zstdCnt.get());
-        assertEquals(0, CompressionTransformer.lz4Cnt.get());
-        assertEquals(0, CompressionTransformer.snapCnt.get());
+        assertEquals(0, CompressionTransformerSpi.zstdCnt.get());
+        assertEquals(0, CompressionTransformerSpi.lz4Cnt.get());
+        assertEquals(0, CompressionTransformerSpi.snapCnt.get());
 
         while (key > 0)
             assertEquals(HUGE_STRING + key, cache.get(key--));
 
-        assertEquals(cnt, CompressionTransformer.zstdCnt.get());
-        assertEquals(cnt, CompressionTransformer.lz4Cnt.get());
-        assertEquals(cnt, CompressionTransformer.snapCnt.get());
+        assertEquals(cnt, CompressionTransformerSpi.zstdCnt.get());
+        assertEquals(cnt, CompressionTransformerSpi.lz4Cnt.get());
+        assertEquals(cnt, CompressionTransformerSpi.snapCnt.get());
     }
 }

@@ -20,7 +20,6 @@ package org.apache.ignite.internal.processors.cache.transform;
 import java.util.Arrays;
 import java.util.Collection;
 import java.util.List;
-import java.util.Map;
 import java.util.Objects;
 import java.util.concurrent.ConcurrentLinkedDeque;
 import java.util.stream.Collectors;
@@ -34,12 +33,7 @@ import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.events.CacheObjectTransformedEvent;
 import org.apache.ignite.events.EventType;
 import org.apache.ignite.internal.util.typedef.G;
-import org.apache.ignite.lang.IgniteFuture;
-import org.apache.ignite.spi.IgniteSpiContext;
-import org.apache.ignite.spi.IgniteSpiException;
-import org.apache.ignite.spi.transform.CacheObjectTransformerSpi;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
-import org.jetbrains.annotations.Nullable;
 
 import static org.apache.ignite.cache.CacheWriteSynchronizationMode.FULL_SYNC;
 
@@ -395,51 +389,6 @@ public abstract class AbstractCacheObjectsTransformationTest extends GridCommonA
         /** {@inheritDoc} */
         @Override public int hashCode() {
             return Objects.hash(str, list, i);
-        }
-    }
-
-    /**
-     *
-     */
-    protected abstract static class CacheObjectTransformerSpiAdapter implements CacheObjectTransformerSpi {
-        /** {@inheritDoc} */
-        @Override public String getName() {
-            return null;
-        }
-
-        /** {@inheritDoc} */
-        @Override public Map<String, Object> getNodeAttributes() throws IgniteSpiException {
-            return null;
-        }
-
-        /** {@inheritDoc} */
-        @Override public void spiStart(@Nullable String igniteInstanceName) throws IgniteSpiException {
-            // No-op.
-        }
-
-        /** {@inheritDoc} */
-        @Override public void onContextInitialized(IgniteSpiContext spiCtx) throws IgniteSpiException {
-            // No-op.
-        }
-
-        /** {@inheritDoc} */
-        @Override public void onContextDestroyed() {
-            // No-op.
-        }
-
-        /** {@inheritDoc} */
-        @Override public void spiStop() throws IgniteSpiException {
-            // No-op.
-        }
-
-        /** {@inheritDoc} */
-        @Override public void onClientDisconnected(IgniteFuture<?> reconnectFut) {
-            // No-op.
-        }
-
-        /** {@inheritDoc} */
-        @Override public void onClientReconnected(boolean clusterRestarted) {
-            // No-op.
         }
     }
 }

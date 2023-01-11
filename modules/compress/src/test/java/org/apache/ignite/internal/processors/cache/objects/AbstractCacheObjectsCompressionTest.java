@@ -31,8 +31,8 @@ import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.processors.cache.transform.AbstractCacheObjectsTransformationTest;
-import org.apache.ignite.spi.transform.CacheObjectTransformer;
-import org.apache.ignite.spi.transform.CacheObjectTransformerAdapter;
+import org.apache.ignite.spi.transform.CacheObjectTransformerSpi;
+import org.apache.ignite.spi.transform.CacheObjectTransformerSpiAdapter;
 import org.xerial.snappy.Snappy;
 
 /**
@@ -55,19 +55,15 @@ public abstract class AbstractCacheObjectsCompressionTest extends AbstractCacheO
     @Override protected void beforeTest() throws Exception {
         super.beforeTest();
 
-        CompressionTransformer.zstdCnt.set(0);
-        CompressionTransformer.lz4Cnt.set(0);
-        CompressionTransformer.snapCnt.set(0);
+        CompressionTransformerSpi.zstdCnt.set(0);
+        CompressionTransformerSpi.lz4Cnt.set(0);
+        CompressionTransformerSpi.snapCnt.set(0);
     }
 
     /** {@inheritDoc} */
     @Override protected IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {
         return super.getConfiguration(igniteInstanceName)
-            .setCacheObjectTransformSpi(new CacheObjectTransformerSpiAdapter() {
-                @Override public CacheObjectTransformer transformer() {
-                    return new CompressionTransformer();
-                }
-            });
+            .setCacheObjectTransformSpi(new CompressionTransformerSpi());
     }
 
     /**
@@ -106,7 +102,7 @@ public abstract class AbstractCacheObjectsCompressionTest extends AbstractCacheO
     /**
      *
      */
-    protected static class CompressionTransformer extends CacheObjectTransformerAdapter {
+    protected static class CompressionTransformerSpi extends CacheObjectTransformerSpiAdapter {
         /** Comptession type. */
         protected static volatile CompressionType type = CompressionType.defaultType();
 
@@ -140,7 +136,7 @@ public abstract class AbstractCacheObjectsCompressionTest extends AbstractCacheO
 
             int locOverhead = 4; // Compression type, Integer.
 
-            int lim = original.remaining() - (CacheObjectTransformer.OVERHEAD + locOverhead);
+            int lim = original.remaining() - (CacheObjectTransformerSpi.OVERHEAD + locOverhead);
 
             if (lim <= 0)
                 throw new IgniteCheckedException("Compression is not profitable.");

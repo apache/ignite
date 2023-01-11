@@ -30,8 +30,7 @@ import org.apache.ignite.binary.BinaryObjectBuilder;
 import org.apache.ignite.cache.CacheAtomicityMode;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
-import org.apache.ignite.spi.transform.CacheObjectTransformer;
-import org.apache.ignite.spi.transform.CacheObjectTransformerAdapter;
+import org.apache.ignite.spi.transform.CacheObjectTransformerSpiAdapter;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.junit.runners.Parameterized;
@@ -59,11 +58,7 @@ public class CacheObjectsTransformationTest extends AbstractCacheObjectsTransfor
     /** {@inheritDoc} */
     @Override protected IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {
         return super.getConfiguration(igniteInstanceName)
-            .setCacheObjectTransformSpi(new CacheObjectTransformerSpiAdapter() {
-                @Override public CacheObjectTransformer transformer() {
-                    return new ControllableCacheObjectTransformer();
-                }
-            });
+            .setCacheObjectTransformSpi(new ControllableCacheObjectTransformerSpi());
     }
 
 
@@ -90,12 +85,12 @@ public class CacheObjectsTransformationTest extends AbstractCacheObjectsTransfor
     @Test
     public void testUntransformable() throws Exception {
         try {
-            ControllableCacheObjectTransformer.fail = true;
+            ControllableCacheObjectTransformerSpi.fail = true;
 
             doTest();
         }
         finally {
-            ControllableCacheObjectTransformer.fail = false;
+            ControllableCacheObjectTransformerSpi.fail = false;
         }
     }
 
@@ -169,15 +164,15 @@ public class CacheObjectsTransformationTest extends AbstractCacheObjectsTransfor
         for (boolean reversed : new boolean[] {true, false})
             putAndCheck(
                 obj,
-                !ControllableCacheObjectTransformer.fail,
-                !ControllableCacheObjectTransformer.fail,
+                !ControllableCacheObjectTransformerSpi.fail,
+                !ControllableCacheObjectTransformerSpi.fail,
                 reversed);
     }
 
     /**
      *
      */
-    private static final class ControllableCacheObjectTransformer extends CacheObjectTransformerAdapter {
+    private static final class ControllableCacheObjectTransformerSpi extends CacheObjectTransformerSpiAdapter {
         /** Shift. */
         private static final int SHIFT = 42;
 

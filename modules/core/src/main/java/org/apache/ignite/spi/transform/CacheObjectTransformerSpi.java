@@ -17,6 +17,7 @@
 
 package org.apache.ignite.spi.transform;
 
+import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.lang.IgniteExperimental;
 import org.apache.ignite.spi.IgniteSpi;
 
@@ -25,10 +26,27 @@ import org.apache.ignite.spi.IgniteSpi;
  */
 @IgniteExperimental
 public interface CacheObjectTransformerSpi extends IgniteSpi {
+    /** Additional space required to store the transformed data. */
+    public int OVERHEAD = 6;
+
     /**
-     * Returns cache object's bytes transformer.
+     * Transforms the data.
      *
-     * @return Transformer.
+     * @param bytes  Byte array contains the data.
+     * @param offset Data offset.
+     * @param length Data length.
+     * @return Byte array contains the transformed data started with non-filled area with {@link #OVERHEAD} size.
+     * @throws IgniteCheckedException when transformation is not possible/suitable.
      */
-    public CacheObjectTransformer transformer();
+    public byte[] transform(byte[] bytes, int offset, int length) throws IgniteCheckedException;
+
+    /**
+     * Restores the data.
+     *
+     * @param bytes  Byte array ending with the transformed data.
+     * @param offset Transformed data offset.
+     * @param length Original data length.
+     * @return Byte array contains the restored data.
+     */
+    public byte[] restore(byte[] bytes, int offset, int length);
 }

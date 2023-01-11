@@ -169,14 +169,14 @@ public class CacheObjectsCompressionConsumptionTest extends AbstractCacheObjects
             compressed = doTest(cnt, kGen, vGen); // Compression enabled.
 
             try {
-                assertEquals(CompressionTransformer.CompressionType.defaultType(), CompressionTransformer.type);
+                assertEquals(CompressionTransformerSpi.CompressionType.defaultType(), CompressionTransformerSpi.type);
 
-                CompressionTransformer.type = CompressionTransformer.CompressionType.DISABLED;
+                CompressionTransformerSpi.type = CompressionTransformerSpi.CompressionType.DISABLED;
 
                 raw = doTest(cnt, kGen, vGen); // Compresson disabled.
             }
             finally {
-                CompressionTransformer.type = CompressionTransformer.CompressionType.defaultType();  // Restoring default.
+                CompressionTransformerSpi.type = CompressionTransformerSpi.CompressionType.defaultType();  // Restoring default.
             }
 
             assertTrue("Network, raw=" + raw.net + ", compressed=" + compressed.net, raw.net > compressed.net);
