@@ -20,7 +20,6 @@ package org.apache.ignite.internal.processors.cache.transform;
 import java.nio.ByteBuffer;
 import java.util.ArrayList;
 import java.util.Collection;
-import java.util.Collections;
 import java.util.List;
 import com.google.common.collect.Lists;
 import org.apache.ignite.Ignite;
@@ -135,7 +134,7 @@ public class CacheObjectsTransformationTest extends AbstractCacheObjectsTransfor
         BinaryObjectBuilder builder = ignite.binary().builder(BinarizableData.class.getName());
 
         builder.setField("str", str + "!");
-        builder.setField("map", Collections.singletonMap(i, i));
+        builder.setField("list", Lists.newArrayList(i, i));
         builder.setField("i", i);
 
         BinaryObject bo = builder.build();
