@@ -113,27 +113,27 @@ public abstract class AbstractCacheObjectsTransformationTest extends GridCommonA
      *
      */
     protected void putAndCheck(Object obj, boolean transformableKey, boolean transformableVal, boolean reversed) {
-        boolean binarizable = !(obj instanceof String || obj instanceof Integer || obj instanceof Object[] ||
+        boolean binarizableVal = !(obj instanceof String || obj instanceof Integer || obj instanceof Object[] ||
             obj instanceof int[] || obj instanceof Collection);
 
-        boolean binarizableCol = (obj instanceof Object[] && !(obj instanceof String[] || obj instanceof int[])) ||
+        boolean binarizableColVal = (obj instanceof Object[] && !(obj instanceof String[] || obj instanceof int[])) ||
             (obj instanceof Collection && !(
                 ((Iterable<?>)obj).iterator().next() instanceof String ||
                     ((Iterable<?>)obj).iterator().next() instanceof Integer)
             );
 
-        boolean binary = obj instanceof BinaryObject;
-        boolean binaryCol = obj instanceof BinaryObject[] ||
+        boolean binaryVal = obj instanceof BinaryObject;
+        boolean binaryColVal = obj instanceof BinaryObject[] ||
             (obj instanceof Collection && ((Iterable<?>)obj).iterator().next() instanceof BinaryObject);
 
-        if (binary)
-            assertTrue(binarizable);
+        if (binaryVal)
+            assertTrue(binarizableVal);
 
-        if (binaryCol)
-            assertTrue(binarizableCol);
+        if (binaryColVal)
+            assertTrue(binarizableColVal);
 
-        assertFalse(binary && binaryCol);
-        assertFalse(binarizable && binarizableCol);
+        assertFalse(binaryVal && binaryColVal);
+        assertFalse(binarizableVal && binarizableColVal);
 
         Ignite node = backupNode(0, CACHE_NAME); // Any key, besause of single partition.
 
@@ -147,19 +147,19 @@ public abstract class AbstractCacheObjectsTransformationTest extends GridCommonA
         checkPut(
             cache,
             k,
-            reversed && binarizable,
-            !reversed && binarizable,
+            reversed && binarizableVal,
+            !reversed && binarizableVal,
             reversed ? transformableVal : transformableKey,
             reversed ? transformableKey : transformableVal);
 
         checkGet(
             k,
             v,
-            !reversed && binary,
-            !reversed && binaryCol,
-            reversed && binarizable,
-            !reversed && binarizable,
-            !reversed && binarizableCol,
+            !reversed && binaryVal,
+            !reversed && binaryColVal,
+            reversed && binarizableVal,
+            !reversed && binarizableVal,
+            !reversed && binarizableColVal,
             reversed ? transformableVal : transformableKey,
             reversed ? transformableKey : transformableVal);
     }
