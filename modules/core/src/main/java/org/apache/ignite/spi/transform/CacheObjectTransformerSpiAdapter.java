@@ -78,7 +78,6 @@ public abstract class CacheObjectTransformerSpiAdapter extends IgniteSpiAdapter 
     /** {@inheritDoc} */
     @Override public byte[] transform(byte[] bytes, int offset, int length) throws IgniteCheckedException {
         ByteBuffer src = sourceByteBuffer(bytes, offset, length);
-
         ByteBuffer transformed = transform(src);
 
         byte[] res = new byte[OVERHEAD + transformed.remaining()];
@@ -101,6 +100,7 @@ public abstract class CacheObjectTransformerSpiAdapter extends IgniteSpiAdapter 
     @Override public byte[] restore(byte[] bytes, int offset, int length) {
         ByteBuffer src = sourceByteBuffer(bytes, offset, bytes.length - offset);
         ByteBuffer restored = byteBuffer(length);
+
         byte[] res = new byte[length];
 
         restore(src, restored);
