@@ -181,10 +181,12 @@ public abstract class AbstractCacheObjectsTransformationTest extends GridCommonA
         // As well as binary value (since binary array is required (e.g. to wait for proper Metadata)).
         restored += transformableVal && binarizableVal ? NODES : 0;
 
-        if (cache.getConfiguration(CacheConfiguration.class).getAtomicityMode() == CacheAtomicityMode.TRANSACTIONAL)
-            // Double key restoration. See UserKeyCacheObjectImpl#prepareForCache() for details.
-            if (transformableKey && !binarizableKey && !grid(0).context().cacheObjects().immutable(key))
-                restored += 2;
+        if (cache.getConfiguration(CacheConfiguration.class).getAtomicityMode() == CacheAtomicityMode.TRANSACTIONAL &&
+            transformableKey && !binarizableKey &&
+            !grid(0).context().cacheObjects().immutable(key))
+            // Additional double key restoration when keys is a mutable non-binarizable object, like arrays.
+            // See UserKeyCacheObjectImpl#prepareForCache() for details.
+            restored += 2;
 
         checkEvents(transformed, transformCancelled, restored);
     }
