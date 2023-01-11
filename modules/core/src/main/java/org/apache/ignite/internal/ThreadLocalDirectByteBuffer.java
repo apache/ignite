@@ -27,13 +27,18 @@ public class ThreadLocalDirectByteBuffer extends ThreadLocal<ByteBuffer> {
     final int size;
 
     /** */
+    public ThreadLocalDirectByteBuffer() {
+        this(-1); // Avoiding useless initialization.
+    }
+
+    /** */
     public ThreadLocalDirectByteBuffer(int size) {
         this.size = size;
     }
 
     /** {@inheritDoc} */
     @Override protected ByteBuffer initialValue() {
-        return allocateDirectBuffer(size);
+        return size > 0 ? allocateDirectBuffer(size) : null;
     }
 
     /** */
@@ -42,7 +47,7 @@ public class ThreadLocalDirectByteBuffer extends ThreadLocal<ByteBuffer> {
 
         ByteBuffer buf = super.get();
 
-        if (buf.capacity() < capacity) {
+        if (buf == null || buf.capacity() < capacity) {
             buf = allocateDirectBuffer(capacity);
 
             set(buf);
@@ -55,6 +60,8 @@ public class ThreadLocalDirectByteBuffer extends ThreadLocal<ByteBuffer> {
 
     /** {@inheritDoc} */
     @Override public ByteBuffer get() {
+        assert size > 0 : size;
+
         ByteBuffer buf = super.get();
 
         buf.clear();

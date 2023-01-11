@@ -30,7 +30,7 @@ import static org.apache.ignite.spi.transform.CacheObjectTransformerSpi.OVERHEAD
 /** */
 public class CacheObjectsTransformer {
     /** Header buffer. */
-    private static final ThreadLocalDirectByteBuffer hdrBuf = new ThreadLocalDirectByteBuffer(OVERHEAD);
+    private static final ThreadLocalDirectByteBuffer hdrBuf = new ThreadLocalDirectByteBuffer();
 
     /** Version. */
     private static final byte VER = 0;
@@ -67,7 +67,7 @@ public class CacheObjectsTransformer {
 
             byte[] transformed = spi.transform(bytes, offset, length);
 
-            ByteBuffer hdr = hdrBuf.get();
+            ByteBuffer hdr = hdrBuf.get(OVERHEAD);
 
             hdr.put(TRANSFORMED);
             hdr.put(VER);

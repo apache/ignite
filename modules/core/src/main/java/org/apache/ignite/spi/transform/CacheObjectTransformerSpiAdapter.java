@@ -31,10 +31,10 @@ import org.jetbrains.annotations.Nullable;
 @IgniteExperimental
 public abstract class CacheObjectTransformerSpiAdapter extends IgniteSpiAdapter implements CacheObjectTransformerSpi {
     /** Source byte buffer. */
-    private final ThreadLocalDirectByteBuffer srcBuf = new ThreadLocalDirectByteBuffer(1 << 10);
+    private final ThreadLocalDirectByteBuffer srcBuf = new ThreadLocalDirectByteBuffer();
 
     /** Destination byte buffer. */
-    private final ThreadLocalDirectByteBuffer dstBuf = new ThreadLocalDirectByteBuffer(1 << 10);
+    private final ThreadLocalDirectByteBuffer dstBuf = new ThreadLocalDirectByteBuffer();
 
     /** {@inheritDoc} */
     @Override public void spiStart(@Nullable String igniteInstanceName) throws IgniteSpiException {
