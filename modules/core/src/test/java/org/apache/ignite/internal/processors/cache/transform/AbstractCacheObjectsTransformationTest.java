@@ -331,7 +331,7 @@ public abstract class AbstractCacheObjectsTransformationTest extends GridCommonA
     private Object[] deserializeBinaryArray(Object[] objs) {
         Object[] des = new Object[objs.length];
 
-        for (int i = 0; i < (objs).length; i++)
+        for (int i = 0; i < objs.length; i++)
             des[i] = ((BinaryObject)objs[i]).deserialize();
 
         return des;
