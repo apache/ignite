@@ -29,7 +29,6 @@ import org.apache.ignite.internal.processors.odbc.ClientListenerMessageParser;
 import org.apache.ignite.internal.processors.odbc.ClientListenerRequest;
 import org.apache.ignite.internal.processors.odbc.ClientListenerResponse;
 import org.apache.ignite.internal.processors.odbc.ClientMessage;
-import org.apache.ignite.internal.processors.platform.client.beforestart.BeforeStartupRequest;
 import org.apache.ignite.internal.processors.platform.client.beforestart.ClientCacheStopWarmupRequest;
 import org.apache.ignite.internal.processors.platform.client.binary.ClientBinaryConfigurationGetRequest;
 import org.apache.ignite.internal.processors.platform.client.binary.ClientBinaryTypeGetRequest;
@@ -433,7 +432,7 @@ public class ClientMessageParser implements ClientListenerMessageParser {
 
         ClientListenerRequest req = decode(reader);
 
-        if (ctx.kernalContext().recoveryMode() && !(req instanceof BeforeStartupRequest))
+        if (ctx.kernalContext().recoveryMode() && !req.beforeStartupRequest())
             return new ClientRawRequest(req.requestId(), ClientStatus.FAILED, "Node in recovery mode");
 
         return req;

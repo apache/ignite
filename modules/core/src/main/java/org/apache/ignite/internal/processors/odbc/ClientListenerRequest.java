@@ -28,4 +28,11 @@ public interface ClientListenerRequest {
      * @return Request ID.
      */
     public long requestId();
+
+    /**
+     * @return {@code True} if request can be handled before node join topology.
+     */
+    default boolean beforeStartupRequest() {
+        return false;
+    }
 }

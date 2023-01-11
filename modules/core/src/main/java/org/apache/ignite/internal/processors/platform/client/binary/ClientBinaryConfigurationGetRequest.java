@@ -23,13 +23,12 @@ import org.apache.ignite.configuration.BinaryConfiguration;
 import org.apache.ignite.internal.processors.platform.client.ClientConnectionContext;
 import org.apache.ignite.internal.processors.platform.client.ClientRequest;
 import org.apache.ignite.internal.processors.platform.client.ClientResponse;
-import org.apache.ignite.internal.processors.platform.client.beforestart.BeforeStartupRequest;
 import org.jetbrains.annotations.Nullable;
 
 /**
  * Binary configuration retrieval request.
  */
-public class ClientBinaryConfigurationGetRequest extends ClientRequest implements BeforeStartupRequest {
+public class ClientBinaryConfigurationGetRequest extends ClientRequest {
     /** */
     private static final byte NAME_MAPPER_BASIC_FULL = 0;
 
@@ -73,5 +72,10 @@ public class ClientBinaryConfigurationGetRequest extends ClientRequest implement
         BinaryBasicNameMapper basicNameMapper = (BinaryBasicNameMapper)cfg.getNameMapper();
 
         return basicNameMapper.isSimpleName() ? NAME_MAPPER_BASIC_SIMPLE : NAME_MAPPER_BASIC_FULL;
+    }
+
+    /** {@inheritDoc} */
+    @Override public boolean beforeStartupRequest() {
+        return true;
     }
 }
