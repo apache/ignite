@@ -25,7 +25,7 @@ import org.apache.ignite.internal.processors.platform.client.ClientRequest;
 import org.apache.ignite.internal.processors.platform.client.ClientResponse;
 
 /** Stop warmup request. */
-public class ClientCacheStopWarmupRequest extends ClientRequest implements BeforeStartupRequest {
+public class ClientCacheStopWarmupRequest extends ClientRequest {
     /** */
     public ClientCacheStopWarmupRequest(BinaryRawReader reader) {
         super(reader);
@@ -41,5 +41,10 @@ public class ClientCacheStopWarmupRequest extends ClientRequest implements Befor
         }
 
         return super.process(ctx);
+    }
+
+    /** {@inheritDoc} */
+    @Override public boolean beforeStartupRequest() {
+        return true;
     }
 }
