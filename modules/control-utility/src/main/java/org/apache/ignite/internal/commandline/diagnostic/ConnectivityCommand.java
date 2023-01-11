@@ -82,10 +82,11 @@ public class ConnectivityCommand implements Command<Void> {
 
             VisorConnectivityArgs taskArg = new VisorConnectivityArgs(nodeIds);
 
-            result = TaskExecutor.executeTask(
+            result = TaskExecutor.executeTaskByNameOnNode(
                 client,
-                VisorConnectivityTask.class,
+                VisorConnectivityTask.class.getName(),
                 taskArg,
+                TaskExecutor.BROADCAST_UUID,
                 clientCfg
             );
         }

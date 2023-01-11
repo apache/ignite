@@ -73,6 +73,7 @@ import org.apache.ignite.internal.processors.cache.transactions.IgniteInternalTx
 import org.apache.ignite.internal.processors.cache.transactions.IgniteTxManager;
 import org.apache.ignite.internal.processors.cache.version.GridCacheVersion;
 import org.apache.ignite.internal.processors.datastructures.GridCacheInternalKeyImpl;
+import org.apache.ignite.internal.processors.odbc.ClientListenerProcessor;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.G;
 import org.apache.ignite.internal.util.typedef.X;
@@ -149,7 +150,7 @@ public class GridCommandHandlerClusterByClassTest extends GridCommandHandlerClus
      */
     @Test
     public void testFindAndDeleteGarbage() {
-        Ignite ignite = crd;
+        IgniteEx ignite = crd;
 
         injectTestSystemOut();
 
@@ -157,17 +158,19 @@ public class GridCommandHandlerClusterByClassTest extends GridCommandHandlerClus
             new CacheConfiguration<>("garbage1").setGroupName("groupGarbage"),
             new CacheConfiguration<>("garbage2").setGroupName("groupGarbage")));
 
-        assertEquals(EXIT_CODE_OK, execute("--cache", "find_garbage", "--port", "11212"));
+        String port = ignite.localNode().attribute(ClientListenerProcessor.CLIENT_LISTENER_PORT).toString();
+
+        assertEquals(EXIT_CODE_OK, execute("--cache", "find_garbage", "--port", port));
 
         assertContains(log, testOut.toString(), "garbage not found");
 
         assertEquals(EXIT_CODE_OK, execute("--cache", "find_garbage",
-            ignite(0).localNode().id().toString(), "--port", "11212"));
+            ignite(0).localNode().id().toString(), "--port", port));
 
         assertContains(log, testOut.toString(), "garbage not found");
 
         assertEquals(EXIT_CODE_OK, execute("--cache", "find_garbage",
-            "groupGarbage", "--port", "11212"));
+            "groupGarbage", "--port", port));
 
         assertContains(log, testOut.toString(), "garbage not found");
     }

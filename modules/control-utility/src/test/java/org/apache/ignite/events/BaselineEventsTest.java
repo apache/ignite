@@ -22,10 +22,12 @@ import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicLong;
 import org.apache.ignite.cluster.ClusterState;
+import org.apache.ignite.configuration.ClientConnectorConfiguration;
 import org.apache.ignite.configuration.ConnectorConfiguration;
 import org.apache.ignite.configuration.DataRegionConfiguration;
 import org.apache.ignite.configuration.DataStorageConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
+import org.apache.ignite.configuration.ThinClientConfiguration;
 import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.cluster.IgniteClusterEx;
 import org.apache.ignite.internal.commandline.CommandHandler;
@@ -52,6 +54,9 @@ public abstract class BaselineEventsTest extends GridCommonAbstractTest {
                     .setWalSegments(3)
                     .setWalSegmentSize(512 * 1024)
             )
+            .setClientConnectorConfiguration(new ClientConnectorConfiguration()
+                .setThinClientConfiguration(new ThinClientConfiguration()
+                    .setMaxActiveComputeTasksPerConnection(1)))
             .setConsistentId(igniteInstanceName)
             .setIncludeEventTypes(includedEvtTypes);
     }

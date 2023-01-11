@@ -79,10 +79,11 @@ public class PageLocksCommand extends AbstractCommand<PageLocksCommand.Arguments
 
             VisorPageLocksTrackerArgs taskArg = new VisorPageLocksTrackerArgs(arguments.op, arguments.filePath, nodeIds);
 
-            res = TaskExecutor.executeTask(
+            res = TaskExecutor.executeTaskByNameOnNode(
                 client,
-                VisorPageLocksTask.class,
+                VisorPageLocksTask.class.getName(),
                 taskArg,
+                TaskExecutor.BROADCAST_UUID,
                 clientCfg
             );
         }

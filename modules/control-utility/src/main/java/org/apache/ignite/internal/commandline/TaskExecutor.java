@@ -72,7 +72,10 @@ public class TaskExecutor {
                 .map(ClusterNode::id)
                 .collect(Collectors.toList());
 
-            return client.compute().execute(taskClsName, new VisorTaskArgument<>(nodeIds, taskArgs, false));
+            return client.compute(client.cluster().forPredicate(n -> true)).execute(
+                taskClsName,
+                new VisorTaskArgument<>(nodeIds, taskArgs, false)
+            );
         }
 
         ClusterNode node = null;
@@ -93,7 +96,10 @@ public class TaskExecutor {
                 throw new IllegalArgumentException("Node with id=" + nodeId + " not found");
         }
 
-        return client.compute(client.cluster().forNode(node)).execute(taskClsName, new VisorTaskArgument<>(node.id(), taskArgs, false));
+        return client.compute(client.cluster().forPredicate(n -> true)).execute(
+            taskClsName,
+            new VisorTaskArgument<>(node.id(), taskArgs, false)
+        );
     }
 
     /**

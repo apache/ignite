@@ -29,9 +29,11 @@ import org.apache.ignite.cache.QueryIndex;
 import org.apache.ignite.cache.QueryIndexType;
 import org.apache.ignite.cluster.ClusterState;
 import org.apache.ignite.configuration.CacheConfiguration;
+import org.apache.ignite.configuration.ClientConnectorConfiguration;
 import org.apache.ignite.configuration.DataRegionConfiguration;
 import org.apache.ignite.configuration.DataStorageConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
+import org.apache.ignite.configuration.ThinClientConfiguration;
 import org.apache.ignite.events.DeploymentEvent;
 import org.apache.ignite.events.EventType;
 import org.apache.ignite.internal.IgniteEx;
@@ -88,6 +90,9 @@ public class GridCommandHandlerInterruptCommandTest extends GridCommandHandlerAb
                     .setMaxSize(200L * 1024 * 1024)
                 )
             )
+            .setClientConnectorConfiguration(new ClientConnectorConfiguration()
+                .setThinClientConfiguration(new ThinClientConfiguration()
+                    .setMaxActiveComputeTasksPerConnection(1)))
             .setIncludeEventTypes(EventType.EVT_TASK_DEPLOYED)
             .setCacheConfiguration(new CacheConfiguration<Integer, UserValue>(DEFAULT_CACHE_NAME)
                 .setName(DEFAULT_CACHE_NAME)

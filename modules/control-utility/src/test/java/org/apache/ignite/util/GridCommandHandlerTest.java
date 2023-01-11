@@ -1085,7 +1085,7 @@ public class GridCommandHandlerTest extends GridCommandHandlerClusterPerMethodAb
      */
     @Test
     public void testBaselineCollectCrd() throws Exception {
-        Ignite ignite = startGrids(2);
+        IgniteEx ignite = startGrids(2);
 
         assertFalse(ignite.cluster().state().active());
 
@@ -1093,7 +1093,10 @@ public class GridCommandHandlerTest extends GridCommandHandlerClusterPerMethodAb
 
         injectTestSystemOut();
 
-        assertEquals(EXIT_CODE_OK, execute("--baseline", "--port", "11212"));
+        String port0 = ignite.localNode().attribute(ClientListenerProcessor.CLIENT_LISTENER_PORT).toString();
+        String port1 = grid(1).localNode().attribute(ClientListenerProcessor.CLIENT_LISTENER_PORT).toString();
+
+        assertEquals(EXIT_CODE_OK, execute("--baseline", "--port", port0));
 
         String crdStr = findCrdInfo();
 
@@ -1102,7 +1105,7 @@ public class GridCommandHandlerTest extends GridCommandHandlerClusterPerMethodAb
 
         stopGrid(0);
 
-        assertEquals(EXIT_CODE_OK, execute("--baseline", "--port", "11212"));
+        assertEquals(EXIT_CODE_OK, execute("--baseline", "--port", port1));
 
         crdStr = findCrdInfo();
 
@@ -1111,7 +1114,7 @@ public class GridCommandHandlerTest extends GridCommandHandlerClusterPerMethodAb
 
         startGrid(0);
 
-        assertEquals(EXIT_CODE_OK, execute("--baseline", "--port", "11212"));
+        assertEquals(EXIT_CODE_OK, execute("--baseline", "--port", port1));
 
         crdStr = findCrdInfo();
 
@@ -1120,7 +1123,7 @@ public class GridCommandHandlerTest extends GridCommandHandlerClusterPerMethodAb
 
         stopGrid(1);
 
-        assertEquals(EXIT_CODE_OK, execute("--baseline", "--port", "11211"));
+        assertEquals(EXIT_CODE_OK, execute("--baseline", "--port", port0));
 
         crdStr = findCrdInfo();
 
@@ -3759,7 +3762,9 @@ public class GridCommandHandlerTest extends GridCommandHandlerClusterPerMethodAb
     ) {
         CommandHandler hnd = new CommandHandler();
 
-        List<String> args = new ArrayList<>(Arrays.asList("--yes", "--port", "11212", "--cache", "find_garbage",
+        String port = ignite.localNode().attribute(ClientListenerProcessor.CLIENT_LISTENER_PORT).toString();
+
+        List<String> args = new ArrayList<>(Arrays.asList("--yes", "--port", port, "--cache", "find_garbage",
             ignite.localNode().id().toString()));
 
         if (delFoundGarbage)

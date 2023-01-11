@@ -39,10 +39,12 @@ import org.apache.ignite.cache.store.CacheStore;
 import org.apache.ignite.cache.store.CacheStoreAdapter;
 import org.apache.ignite.cluster.ClusterState;
 import org.apache.ignite.configuration.CacheConfiguration;
+import org.apache.ignite.configuration.ClientConnectorConfiguration;
 import org.apache.ignite.configuration.ConnectorConfiguration;
 import org.apache.ignite.configuration.DataRegionConfiguration;
 import org.apache.ignite.configuration.DataStorageConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
+import org.apache.ignite.configuration.ThinClientConfiguration;
 import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.util.typedef.X;
 import org.apache.ignite.internal.util.typedef.internal.CU;
@@ -85,6 +87,8 @@ public class IgniteCacheGroupsWithRestartsTest extends GridCommonAbstractTest {
         configuration.setConsistentId(gridName);
 
         configuration.setConnectorConfiguration(new ConnectorConfiguration());
+        configuration.setClientConnectorConfiguration(new ClientConnectorConfiguration()
+            .setThinClientConfiguration(new ThinClientConfiguration().setMaxActiveComputeTasksPerConnection(1)));
 
         DataStorageConfiguration cfg = new DataStorageConfiguration();
 
