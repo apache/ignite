@@ -135,7 +135,7 @@ public abstract class AbstractCacheObjectsTransformationTest extends GridCommonA
         assertFalse(binary && binaryCol);
         assertFalse(binarizable && binarizableCol);
 
-        Ignite node = backupNode(0, CACHE_NAME); // Any key, besause of single partiition.
+        Ignite node = backupNode(0, CACHE_NAME); // Any key, besause of single partition.
 
         IgniteCache<Object, Object> cache = node.getOrCreateCache(CACHE_NAME);
 
