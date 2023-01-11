@@ -196,7 +196,9 @@ public abstract class AbstractCacheObjectsCompressionTest extends AbstractCacheO
         }
 
         /** {@inheritDoc} */
-        @Override public void restore(ByteBuffer transformed, ByteBuffer restored) {
+        @Override public ByteBuffer restore(ByteBuffer transformed, int length) {
+            ByteBuffer restored = byteBuffer(length);
+
             switch (CompressionType.values()[transformed.getInt()]) {
                 case ZSTD:
                     Zstd.decompress(restored, transformed);
@@ -231,6 +233,8 @@ public abstract class AbstractCacheObjectsCompressionTest extends AbstractCacheO
                 default:
                     throw new UnsupportedOperationException();
             }
+
+            return restored;
         }
 
         /**

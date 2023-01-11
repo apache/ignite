@@ -195,11 +195,15 @@ public class CacheObjectsTransformationTest extends AbstractCacheObjectsTransfor
         }
 
         /** {@inheritDoc} */
-        @Override public void restore(ByteBuffer transformed, ByteBuffer restored) {
+        @Override public ByteBuffer restore(ByteBuffer transformed, int length) {
+            ByteBuffer restored = byteBuffer(length);
+
             while (transformed.hasRemaining())
                 restored.put((byte)(transformed.get() - SHIFT));
 
             restored.flip();
+
+            return restored;
         }
     }
 }
