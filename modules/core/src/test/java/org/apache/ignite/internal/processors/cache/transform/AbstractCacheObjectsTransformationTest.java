@@ -257,9 +257,10 @@ public abstract class AbstractCacheObjectsTransformationTest extends GridCommonA
         int transformCancelled = transformableKey ? 0 : 1; // Key transformation cancelled.
         int restored = transformableVal ? 1 : 0; // Value restored.
 
-        // Key restoration. See UserKeyCacheObjectImpl#prepareForCache() for details.
+        // Additional key restoration on originating node when key is a mutable non-binarizable object, like arrays.
+        // See UserKeyCacheObjectImpl#prepareForCache() for details.
         if (transformableKey && !binarizableKey && !grid(0).context().cacheObjects().immutable(key))
-            restored += 4; // TODO WTF?
+            restored += 4;
 
         checkEvents(transformed, transformCancelled, restored);
     }
