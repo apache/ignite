@@ -130,7 +130,7 @@ public abstract class AbstractCacheObjectsCompressionTest extends AbstractCacheO
         }
 
         /** {@inheritDoc} */
-        @Override public ByteBuffer transform(ByteBuffer original) throws IgniteCheckedException {
+        @Override protected ByteBuffer transform(ByteBuffer original) throws IgniteCheckedException {
             if (type == CompressionType.DISABLED)
                 throw new IgniteCheckedException("Disabled.");
 
@@ -196,7 +196,7 @@ public abstract class AbstractCacheObjectsCompressionTest extends AbstractCacheO
         }
 
         /** {@inheritDoc} */
-        @Override public ByteBuffer restore(ByteBuffer transformed, int length) {
+        @Override protected ByteBuffer restore(ByteBuffer transformed, int length) {
             ByteBuffer restored = byteBuffer(length);
 
             switch (CompressionType.values()[transformed.getInt()]) {

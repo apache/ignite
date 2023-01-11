@@ -180,7 +180,7 @@ public class CacheObjectsTransformationTest extends AbstractCacheObjectsTransfor
         private static volatile boolean fail;
 
         /** {@inheritDoc} */
-        @Override public ByteBuffer transform(ByteBuffer original) throws IgniteCheckedException {
+        @Override protected ByteBuffer transform(ByteBuffer original) throws IgniteCheckedException {
             if (fail)
                 throw new IgniteCheckedException("Failed.");
 
@@ -195,7 +195,7 @@ public class CacheObjectsTransformationTest extends AbstractCacheObjectsTransfor
         }
 
         /** {@inheritDoc} */
-        @Override public ByteBuffer restore(ByteBuffer transformed, int length) {
+        @Override protected ByteBuffer restore(ByteBuffer transformed, int length) {
             ByteBuffer restored = byteBuffer(length);
 
             while (transformed.hasRemaining())

@@ -109,7 +109,7 @@ public abstract class CacheObjectTransformerSpiAdapter extends IgniteSpiAdapter 
      * @return Transformed data.
      * @throws IgniteCheckedException when transformation is not possible/suitable.
      */
-    public abstract ByteBuffer transform(ByteBuffer original) throws IgniteCheckedException;
+    protected abstract ByteBuffer transform(ByteBuffer original) throws IgniteCheckedException;
 
     /** {@inheritDoc} */
     @Override public byte[] restore(byte[] bytes, int offset, int length) {
@@ -136,7 +136,7 @@ public abstract class CacheObjectTransformerSpiAdapter extends IgniteSpiAdapter 
      * @param length Original data length.
      * @return Restored data.
      */
-    public abstract ByteBuffer restore(ByteBuffer transformed, int length);
+    protected abstract ByteBuffer restore(ByteBuffer transformed, int length);
 
     /**
      * Returns {@code true} when direct byte buffers are required.
