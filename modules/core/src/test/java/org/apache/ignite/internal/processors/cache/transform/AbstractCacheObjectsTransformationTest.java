@@ -353,7 +353,7 @@ public abstract class AbstractCacheObjectsTransformationTest extends GridCommonA
         /** String. */
         String str;
 
-        /** Map. */
+        /** List. */
         List<Object> list;
 
         /** Int. */
@@ -362,14 +362,14 @@ public abstract class AbstractCacheObjectsTransformationTest extends GridCommonA
         /** Data. */
         BinarizableData data;
 
-        /***/
+        /** */
         public BinarizableData(String str, List<Object> list, Integer i) {
             this.str = str;
             this.list = list;
             this.i = i;
         }
 
-        /***/
+        /** */
         public BinarizableData(String str, List<Object> list, Integer i, BinarizableData data) {
             this.str = str;
             this.list = list;
