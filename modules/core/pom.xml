@@ -484,7 +484,7 @@
                                 <exclude>**/annotation/*Test.java</exclude>
                                 <exclude>**/ClientServerTest.java</exclude>
                                 <exclude>org.jsr107.tck.management.CacheMBStatisticsBeanTest</exclude>
-                                <exclude>org.jsr107.tck.management.CacheManagerManagementTest</exclude>
+<!--                                <exclude>org.jsr107.tck.management.CacheManagerManagementTest</exclude>-->
                             </excludes>
                         </configuration>
                     </plugin>

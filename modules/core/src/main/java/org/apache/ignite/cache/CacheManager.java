@@ -23,14 +23,11 @@ import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.Properties;
-import java.util.Set;
 import java.util.concurrent.atomic.AtomicInteger;
 import javax.cache.Cache;
 import javax.cache.CacheException;
 import javax.cache.configuration.CompleteConfiguration;
 import javax.cache.configuration.Configuration;
-import javax.cache.management.CacheMXBean;
-import javax.management.MBeanServer;
 import javax.management.MalformedObjectNameException;
 import javax.management.ObjectName;
 import org.apache.ignite.IgniteCache;
@@ -42,7 +39,6 @@ import org.apache.ignite.internal.GridKernalGateway;
 import org.apache.ignite.internal.GridKernalState;
 import org.apache.ignite.internal.IgniteKernal;
 import org.apache.ignite.internal.IgnitionEx;
-import org.apache.ignite.internal.mxbean.IgniteStandardMXBean;
 import org.apache.ignite.internal.processors.cache.GatewayProtectedCacheProxy;
 import org.apache.ignite.internal.util.IgniteUtils;
 import org.apache.ignite.internal.util.typedef.internal.CU;
@@ -269,9 +265,6 @@ public class CacheManager implements javax.cache.CacheManager {
 
         try {
             cache = getCache0(cacheName);
-
-            if (cache != null)
-                unregisterCacheConfigurationObject(cacheName);
         }
         finally {
             kernalGateway.readUnlock();
@@ -304,24 +297,8 @@ public class CacheManager implements javax.cache.CacheManager {
         if (IgniteUtils.IGNITE_MBEANS_DISABLED)
             return;
 
-        kernalGateway.readLock();
-
-        try {
-            IgniteCache<?, ?> cache = getCache0(cacheName);
-
-            if (cache == null)
-                throw new CacheException("Cache not found: " + cacheName);
-
-            if (enabled)
-                registerCacheConfigurationObject(ignite.internalCache(cacheName).managementMXBean(), cacheName);
-            else
-                unregisterCacheConfigurationObject(cacheName);
-
-            cache.getConfiguration(CacheConfiguration.class).setManagementEnabled(enabled);
-        }
-        finally {
-            kernalGateway.readUnlock();
-        }
+        throw new UnsupportedOperationException("JMX cache management is enabled for cache '" + cacheName +
+            "'. JCache cache management (CacheMXBean) is not supported.");
     }
 
     /** {@inheritDoc} */
@@ -341,51 +318,6 @@ public class CacheManager implements javax.cache.CacheManager {
         }
         finally {
             kernalGateway.readUnlock();
-        }
-    }
-
-    /**
-     * @param mxbean MXBean.
-     * @param name Cache name.
-     */
-    private void registerCacheConfigurationObject(Object mxbean, String name) {
-        MBeanServer mBeanSrv = ignite.configuration().getMBeanServer();
-
-        ObjectName registeredObjName = getObjectName(name, CACHE_CONFIGURATION);
-
-        try {
-            if (mBeanSrv.queryNames(registeredObjName, null).isEmpty()) {
-                mBeanSrv.registerMBean(new IgniteStandardMXBean((CacheMXBean)mxbean, CacheMXBean.class),
-                    registeredObjName);
-            }
-        }
-        catch (Exception e) {
-            throw new CacheException("Failed to register MBean: " + registeredObjName, e);
-        }
-    }
-
-    /**
-     * UnRegisters the JCache management mxbean if registered already.
-     *
-     * @param name Cache name.
-     */
-    private void unregisterCacheConfigurationObject(String name) {
-        if (IgniteUtils.IGNITE_MBEANS_DISABLED)
-            return;
-
-        MBeanServer mBeanSrv = ignite.configuration().getMBeanServer();
-
-        Set<ObjectName> registeredObjNames = mBeanSrv.queryNames(getObjectName(name, CACHE_CONFIGURATION), null);
-
-        //should just be one
-        for (ObjectName registeredObjectName : registeredObjNames) {
-            try {
-                mBeanSrv.unregisterMBean(registeredObjectName);
-            }
-            catch (Exception e) {
-                throw new CacheException("Error unregistering object instance " + registeredObjectName
-                    + " . Error was " + e.getMessage(), e);
-            }
         }
     }
 
