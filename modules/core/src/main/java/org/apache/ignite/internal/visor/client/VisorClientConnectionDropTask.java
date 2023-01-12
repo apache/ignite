@@ -31,6 +31,9 @@ import org.jetbrains.annotations.Nullable;
 @GridInternal
 @GridVisorManagementTask
 public class VisorClientConnectionDropTask extends VisorOneNodeTask<Long, Void> {
+    /** */
+    private static final long serialVersionUID = 0L;
+
     /** {@inheritDoc} */
     @Override protected VisorJob<Long, Void> job(Long arg) {
         return new VisorClientConnectionDropJob(arg, debug);
@@ -40,6 +43,9 @@ public class VisorClientConnectionDropTask extends VisorOneNodeTask<Long, Void> 
      * Job to cancel client connection(s).
      */
     private static class VisorClientConnectionDropJob extends VisorJob<Long, Void> {
+        /** */
+        private static final long serialVersionUID = 0L;
+
         /**
          * Create job with specified argument.
          *
