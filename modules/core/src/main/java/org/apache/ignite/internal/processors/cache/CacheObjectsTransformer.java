@@ -37,7 +37,7 @@ public class CacheObjectsTransformer {
 
     /***/
     private static CacheObjectTransformerSpi spi(CacheObjectValueContext ctx) {
-        return ctx.kernalContext().config().getCacheObjectTransformSpi();
+        return ctx.kernalContext().config().getCacheObjectTransformerSpi();
     }
 
     /**

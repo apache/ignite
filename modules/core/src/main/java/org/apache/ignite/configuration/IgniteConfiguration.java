@@ -645,7 +645,7 @@ public class IgniteConfiguration {
         cpSpi = cfg.getCheckpointSpi();
         colSpi = cfg.getCollisionSpi();
         failSpi = cfg.getFailoverSpi();
-        cacheObjTransSpi = cfg.getCacheObjectTransformSpi();
+        cacheObjTransSpi = cfg.getCacheObjectTransformerSpi();
         loadBalancingSpi = cfg.getLoadBalancingSpi();
         indexingSpi = cfg.getIndexingSpi();
         encryptionSpi = cfg.getEncryptionSpi();
@@ -2260,7 +2260,7 @@ public class IgniteConfiguration {
      *
      * @return Grid cache object transformer SPI implementation or {@code null}.
      */
-    public CacheObjectTransformerSpi getCacheObjectTransformSpi() {
+    public CacheObjectTransformerSpi getCacheObjectTransformerSpi() {
         return cacheObjTransSpi;
     }
 
@@ -2270,9 +2270,9 @@ public class IgniteConfiguration {
      * @param cacheObjTransSpi Fully configured instance of {@link CacheObjectTransformerSpi} or
      * {@code null} if no SPI provided.
      * @return {@code this} for chaining.
-     * @see IgniteConfiguration#getCacheObjectTransformSpi()
+     * @see IgniteConfiguration#getCacheObjectTransformerSpi()
      */
-    public IgniteConfiguration setCacheObjectTransformSpi(CacheObjectTransformerSpi cacheObjTransSpi) {
+    public IgniteConfiguration setCacheObjectTransformerSpi(CacheObjectTransformerSpi cacheObjTransSpi) {
         this.cacheObjTransSpi = cacheObjTransSpi;
 
         return this;
