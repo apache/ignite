@@ -466,9 +466,12 @@ namespace Apache.Ignite.Core.Impl.Unmanaged
         /// Called on cache stop.
         /// </summary>
         /// <param name="cacheId">Cache id.</param>
-        private long OnCacheStopped(long cacheId)
+        /// <param name="cancel">Cancel flag.</param>
+        /// <param name="destroy">Destroy flag.</param>
+        /// <param name="arg">Ignored.</param>
+        private long OnCacheStopped(long cacheId, long cancel, long destroy, void* arg)
         {
-            _ignite.PlatformCacheManager.Stop((int) cacheId);
+            _ignite.PlatformCacheManager.Stop((int) cacheId, destroy == 1L);
 
             return 0;
         }
