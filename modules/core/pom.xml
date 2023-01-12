@@ -483,8 +483,9 @@
                                 <exclude>**/org/apache/ignite/**/*.java</exclude>
                                 <exclude>**/annotation/*Test.java</exclude>
                                 <exclude>**/ClientServerTest.java</exclude>
+                                <!-- JMX statistics bean is not supported anymore. -->
                                 <exclude>org.jsr107.tck.management.CacheMBStatisticsBeanTest</exclude>
-                                <exclude>org.jsr107.tck.management.CacheManagerManagementTest</exclude>
+<!--                                <exclude>org.jsr107.tck.management.CacheManagerManagementTest</exclude>-->
                             </excludes>
                         </configuration>
                     </plugin>
