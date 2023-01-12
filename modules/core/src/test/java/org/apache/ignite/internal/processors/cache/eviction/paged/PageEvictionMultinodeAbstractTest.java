@@ -126,7 +126,7 @@ public abstract class PageEvictionMultinodeAbstractTest extends PageEvictionAbst
         System.out.println(">>> Resulting size: " + resultingSize);
 
         // Eviction started, no OutOfMemory occurred, success.
-        assertTrue(resultingSize < ENTRIES);
+        assertTrue(resultingSize < ENTRIES * 10 / 11);
 
         clientGrid().destroyCache(cfg.getName());
     }

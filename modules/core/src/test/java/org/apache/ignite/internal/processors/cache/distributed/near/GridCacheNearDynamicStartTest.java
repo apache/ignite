@@ -19,12 +19,9 @@ package org.apache.ignite.internal.processors.cache.distributed.near;
 
 import java.util.ArrayList;
 import java.util.List;
-import java.util.TreeMap;
-import java.util.function.Function;
-import java.util.stream.Collectors;
-import java.util.stream.IntStream;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCache;
+import org.apache.ignite.IgniteDataStreamer;
 import org.apache.ignite.cache.CachePeekMode;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
@@ -48,8 +45,11 @@ public class GridCacheNearDynamicStartTest extends GridCommonAbstractTest {
     private static final String CLIENT_ID = "client";
 
     /** */
+    private static final int NUM_ENTRIES = 1000;
+
+    /** */
     @Parameterized.Parameters(name = "nodeCacheStart = {0}, nodeNearCheck = {1}")
-    public static Iterable<Object[]> useBinaryArrays() {
+    public static Iterable<Object[]> testParameters() {
         List<Object[]> params = new ArrayList<>();
 
         for (NODE_TYPE nodeStart: NODE_TYPE.values()) {
@@ -93,23 +93,23 @@ public class GridCacheNearDynamicStartTest extends GridCommonAbstractTest {
 
         IgniteEx ign = testNode(nodeCheck);
 
-        IntStream.range(0, 1000).boxed().forEach(i -> {
-            IgniteCache<Integer, Integer> cache = ign.cache(DEFAULT_CACHE_NAME);
+        IgniteCache<Integer, Integer> cache = ign.cache(DEFAULT_CACHE_NAME);
 
-            assertEquals(i, cache.get(i));
+        for (int i = 0; i < NUM_ENTRIES; ++i) {
+            assertEquals((Integer)i, cache.get(i));
 
             if (ign.affinity(DEFAULT_CACHE_NAME).isPrimary(ign.localNode(), i))
                 return;
 
-            assertEquals(i, cache.localPeek(i, CachePeekMode.NEAR));
-        });
+            assertEquals((Integer)i, cache.localPeek(i, CachePeekMode.NEAR));
+        }
     }
 
     /** */
     private void startCache() {
         Ignite ign = testNode(nodeStart);
 
-        IgniteCache<Integer, Integer> cache = ign.createCache(
+        ign.createCache(
             new CacheConfiguration<Integer, Integer>(DEFAULT_CACHE_NAME)
                 .setNodeFilter(n -> {
                     if (n.consistentId() == null)
@@ -121,11 +121,12 @@ public class GridCacheNearDynamicStartTest extends GridCommonAbstractTest {
                 .setNearConfiguration(new NearCacheConfiguration<>())
         );
 
-        cache.putAll(
-            IntStream.range(0, 1000).boxed().collect(
-                Collectors.toMap(Function.identity(), Function.identity(), (i, j) -> i, TreeMap::new)
-            )
-        );
+        try (IgniteDataStreamer<Integer, Integer> streamer = ign.dataStreamer(DEFAULT_CACHE_NAME)) {
+            for (int i = 0; i < NUM_ENTRIES; ++i)
+                streamer.addData(i, i);
+
+            streamer.flush();
+        }
 
         assertEquals(ign.cache(DEFAULT_CACHE_NAME).size(CachePeekMode.PRIMARY), 1000);
     }
