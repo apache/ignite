@@ -285,7 +285,7 @@ public class TableDdlIntegrationTest extends AbstractDdlIntegrationTest {
      * Create table using reserved word
      */
     @Test
-    public void createTableUseReserverWord() {
+    public void createTableUseReservedWord() {
         assertThrows("create table table (id int primary key, val varchar)", IgniteSQLException.class,
             "Was expecting one of:");
 
