@@ -620,16 +620,20 @@ public class ClientListenerProcessor extends GridProcessorAdapter {
                     continue;
 
                 if (ses.closeTime() != 0) {
-                    if (log.isDebugEnabled())
-                        log.debug("Client session is already closed: " + clientConnectionDescription(ses, connCtx));
+                    if (log.isDebugEnabled()) {
+                        log.debug("Client session is already closed: " +
+                            clientConnectionDescription(ses, connCtx));
+                    }
 
                     return false;
                 }
 
                 srv.close(ses);
 
-                if (log.isInfoEnabled())
-                    log.info("Client session has been dropped: " + clientConnectionDescription(ses, connCtx));
+                if (log.isInfoEnabled()) {
+                    log.info("Client session has been dropped: " +
+                        clientConnectionDescription(ses, connCtx));
+                }
 
                 return true;
             }
