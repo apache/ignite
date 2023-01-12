@@ -192,7 +192,6 @@ public class SqlCommandProcessor {
             ctx.sqlListener().mxBean().dropAllConnections();
         else
             ctx.sqlListener().mxBean().dropConnection(cmd.connectionId());
-
     }
 
     /**
