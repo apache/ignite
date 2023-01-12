@@ -475,7 +475,7 @@ This view exposes information about currently running SQL queries.
 |SUBJECT_ID | UUID | The subject ID of the entity that initiated the query
 |===
 
-== SQL_QUERIES_HISTORY
+== SQL_QUERY_HISTORY
 
 [{table_opts}]
 |===
