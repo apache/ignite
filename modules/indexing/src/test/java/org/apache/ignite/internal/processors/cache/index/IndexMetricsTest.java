@@ -37,6 +37,7 @@ import org.apache.ignite.internal.processors.metric.MetricRegistry;
 import org.apache.ignite.internal.processors.metric.impl.LongAdderMetric;
 import org.apache.ignite.internal.util.typedef.internal.CU;
 import org.apache.ignite.internal.util.typedef.internal.U;
+import org.apache.ignite.lang.IgniteFuture;
 import org.apache.ignite.spi.metric.BooleanMetric;
 import org.apache.ignite.spi.metric.Metric;
 import org.junit.Test;
@@ -108,15 +109,15 @@ public class IndexMetricsTest extends AbstractIndexingCommonTest {
      */
     @Test
     public void testIndexRebuildingMetric() throws Exception {
-        IgniteEx n = startGrid(0);
+        IgniteEx ig0 = startGrid(0);
 
-        n.cluster().state(ClusterState.ACTIVE);
+        ig0.cluster().state(ClusterState.ACTIVE);
 
         String cacheName1 = "cache1";
         String cacheName2 = "cache2";
 
-        IgniteCache<KeyClass, ValueClass> cache1 = n.getOrCreateCache(cacheConfiguration(cacheName1));
-        IgniteCache<KeyClass, ValueClass> cache2 = n.getOrCreateCache(cacheConfiguration(cacheName2));
+        IgniteCache<KeyClass, ValueClass> cache1 = ig0.getOrCreateCache(cacheConfiguration(cacheName1));
+        IgniteCache<KeyClass, ValueClass> cache2 = ig0.getOrCreateCache(cacheConfiguration(cacheName2));
 
         int entryCnt1 = 100;
         int entryCnt2 = 200;
@@ -137,7 +138,7 @@ public class IndexMetricsTest extends AbstractIndexingCommonTest {
 
         IndexProcessor.idxRebuildCls = BlockingIndexesRebuildTask.class;
 
-        n = startGrid(0);
+        IgniteEx n = startGrid(0);
 
         BooleanMetric idxRebuildInProgress1 = indexRebuildMetric(n, cacheName1, "IsIndexRebuildInProgress");
         BooleanMetric idxRebuildInProgress2 = indexRebuildMetric(n, cacheName2, "IsIndexRebuildInProgress");
@@ -148,48 +149,42 @@ public class IndexMetricsTest extends AbstractIndexingCommonTest {
         CacheMetrics cacheMetrics1 = cacheMetrics(n, cacheName1);
         CacheMetrics cacheMetrics2 = cacheMetrics(n, cacheName2);
 
-        CacheMetrics cacheLocMetrics1 = n.cache(cacheName1).localMetrics();
-        CacheMetrics cacheLocMetrics2 = n.cache(cacheName2).localMetrics();
-
-        CacheMetrics cacheClusterMetrics1 = n.cache(cacheName1).metrics();
-        CacheMetrics cacheClusterMetrics2 = n.cache(cacheName2).metrics();
-
         n.cluster().state(ClusterState.ACTIVE);
 
         BooleanSupplier[] idxRebuildProgressCache1 = {
             idxRebuildInProgress1::value,
             cacheMetrics1::isIndexRebuildInProgress,
-            cacheLocMetrics1::isIndexRebuildInProgress
+            () -> n.cache(cacheName1).localMetrics().isIndexRebuildInProgress()
         };
 
         BooleanSupplier[] idxRebuildProgressCache2 = {
             idxRebuildInProgress2::value,
             cacheMetrics2::isIndexRebuildInProgress,
-            cacheLocMetrics2::isIndexRebuildInProgress
+            () -> n.cache(cacheName2).localMetrics().isIndexRebuildInProgress()
         };
 
         // It must always be false, because metric is only per node.
         BooleanSupplier[] idxRebuildProgressCluster = {
-            cacheClusterMetrics1::isIndexRebuildInProgress,
-            cacheClusterMetrics2::isIndexRebuildInProgress
+            () -> n.cache(cacheName1).metrics().isIndexRebuildInProgress(),
+            () -> n.cache(cacheName2).metrics().isIndexRebuildInProgress()
         };
 
         LongSupplier[] idxRebuildKeyProcessedCache1 = {
             idxRebuildKeyProcessed1::value,
             cacheMetrics1::getIndexRebuildKeysProcessed,
-            cacheLocMetrics1::getIndexRebuildKeysProcessed,
+            () -> n.cache(cacheName1).localMetrics().getIndexRebuildKeysProcessed()
         };
 
         LongSupplier[] idxRebuildKeyProcessedCache2 = {
             idxRebuildKeyProcessed2::value,
             cacheMetrics2::getIndexRebuildKeysProcessed,
-            cacheLocMetrics2::getIndexRebuildKeysProcessed,
+            () -> n.cache(cacheName2).localMetrics().getIndexRebuildKeysProcessed()
         };
 
         // It must always be 0, because metric is only per node.
         LongSupplier[] idxRebuildKeyProcessedCluster = {
-            cacheClusterMetrics1::getIndexRebuildKeysProcessed,
-            cacheClusterMetrics2::getIndexRebuildKeysProcessed
+            () -> n.cache(cacheName1).metrics().getIndexRebuildKeysProcessed(),
+            () -> n.cache(cacheName2).metrics().getIndexRebuildKeysProcessed()
         };
 
         assertEquals(true, idxRebuildProgressCache1);
@@ -202,9 +197,9 @@ public class IndexMetricsTest extends AbstractIndexingCommonTest {
 
         ((BlockingIndexesRebuildTask)n.context().indexProcessor().idxRebuild()).stopBlock(cacheName1);
 
-        n.cache(cacheName1).indexReadyFuture().get(30_000);
+        IgniteFuture<?> fut = n.cache(cacheName1).indexReadyFuture();
 
-        boolean test = cacheLocMetrics1.isIndexRebuildInProgress();
+        fut.get(30_000);
 
         assertEquals(false, idxRebuildProgressCache1);
         assertEquals(true, idxRebuildProgressCache2);
