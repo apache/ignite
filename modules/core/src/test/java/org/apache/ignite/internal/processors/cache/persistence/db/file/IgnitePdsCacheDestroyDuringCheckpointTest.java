@@ -115,8 +115,7 @@ public class IgnitePdsCacheDestroyDuringCheckpointTest extends GridCommonAbstrac
     private void populateCache(Ignite client) {
         for (int i = 0; i < NUM_CACHES; i++) {
             CacheConfiguration cfg = new CacheConfiguration();
-            cfg.setName(NAME_PREFIX + i).setAtomicityMode(CacheAtomicityMode.ATOMIC)
-                    .setBackups(1).setStatisticsEnabled(true).setManagementEnabled(true);
+            cfg.setName(NAME_PREFIX + i).setAtomicityMode(CacheAtomicityMode.ATOMIC).setBackups(1);
             client.getOrCreateCache(cfg);
 
             IgniteDataStreamer<Object, Object> streamer = client.dataStreamer(NAME_PREFIX + i);

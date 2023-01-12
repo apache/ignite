@@ -3461,6 +3461,11 @@ public abstract class GridCacheAdapter<K, V> implements IgniteInternalCache<K, V
         return IgniteFeatures.allNodesSupports(nodes, IgniteFeatures.CACHE_METRICS_V2);
     }
 
+    /** @return JCache management mxbean impl. */
+    public CacheMXBeanImpl managementMXBean() {
+        return new CacheMXBeanImpl(this);
+    }
+
     /**
      * @return Metrics.
      */

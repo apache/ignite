@@ -30,7 +30,6 @@ import javax.cache.CacheException;
 import javax.cache.configuration.CompleteConfiguration;
 import javax.cache.configuration.Configuration;
 import javax.cache.management.CacheMXBean;
-import javax.cache.management.CacheStatisticsMXBean;
 import javax.management.MBeanServer;
 import javax.management.MalformedObjectNameException;
 import javax.management.ObjectName;
@@ -60,9 +59,6 @@ import static org.apache.ignite.IgniteSystemProperties.getBoolean;
 public class CacheManager implements javax.cache.CacheManager {
     /** @see IgniteSystemProperties#IGNITE_JCACHE_DEFAULT_ISOLATED */
     public static final boolean DFLT_JCACHE_DEFAULT_ISOLATED = true;
-
-    /** */
-    private static final String CACHE_STATISTICS = "CacheStatistics";
 
     /** */
     private static final String CACHE_CONFIGURATION = "CacheConfiguration";
@@ -274,10 +270,8 @@ public class CacheManager implements javax.cache.CacheManager {
         try {
             cache = getCache0(cacheName);
 
-            if (cache != null) {
-                unregisterCacheObject(cacheName, CACHE_CONFIGURATION);
-                unregisterCacheObject(cacheName, CACHE_STATISTICS);
-            }
+            if (cache != null)
+                unregisterCacheConfigurationObject(cacheName);
         }
         finally {
             kernalGateway.readUnlock();
@@ -318,6 +312,11 @@ public class CacheManager implements javax.cache.CacheManager {
             if (cache == null)
                 throw new CacheException("Cache not found: " + cacheName);
 
+            if (enabled)
+                registerCacheConfigurationObject(ignite.internalCache(cacheName).managementMXBean(), cacheName);
+            else
+                unregisterCacheConfigurationObject(cacheName);
+
             cache.getConfiguration(CacheConfiguration.class).setManagementEnabled(enabled);
         }
         finally {
@@ -348,20 +347,16 @@ public class CacheManager implements javax.cache.CacheManager {
     /**
      * @param mxbean MXBean.
      * @param name Cache name.
-     * @param beanType Bean type.
      */
-    private void registerCacheObject(Object mxbean, String name, String beanType) {
+    private void registerCacheConfigurationObject(Object mxbean, String name) {
         MBeanServer mBeanSrv = ignite.configuration().getMBeanServer();
 
-        ObjectName registeredObjName = getObjectName(name, beanType);
+        ObjectName registeredObjName = getObjectName(name, CACHE_CONFIGURATION);
 
         try {
             if (mBeanSrv.queryNames(registeredObjName, null).isEmpty()) {
-                IgniteStandardMXBean bean = beanType.equals(CACHE_CONFIGURATION)
-                    ? new IgniteStandardMXBean((CacheMXBean)mxbean, CacheMXBean.class)
-                    : new IgniteStandardMXBean((CacheStatisticsMXBean)mxbean, CacheStatisticsMXBean.class);
-
-                mBeanSrv.registerMBean(bean, registeredObjName);
+                mBeanSrv.registerMBean(new IgniteStandardMXBean((CacheMXBean)mxbean, CacheMXBean.class),
+                    registeredObjName);
             }
         }
         catch (Exception e) {
@@ -370,18 +365,17 @@ public class CacheManager implements javax.cache.CacheManager {
     }
 
     /**
-     * UnRegisters the mxbean if registered already.
+     * UnRegisters the JCache management mxbean if registered already.
      *
      * @param name Cache name.
-     * @param beanType Mxbean name.
      */
-    private void unregisterCacheObject(String name, String beanType) {
+    private void unregisterCacheConfigurationObject(String name) {
         if (IgniteUtils.IGNITE_MBEANS_DISABLED)
             return;
 
         MBeanServer mBeanSrv = ignite.configuration().getMBeanServer();
 
-        Set<ObjectName> registeredObjNames = mBeanSrv.queryNames(getObjectName(name, beanType), null);
+        Set<ObjectName> registeredObjNames = mBeanSrv.queryNames(getObjectName(name, CACHE_CONFIGURATION), null);
 
         //should just be one
         for (ObjectName registeredObjectName : registeredObjNames) {
