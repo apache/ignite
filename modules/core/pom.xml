@@ -483,6 +483,7 @@
                                 <exclude>**/org/apache/ignite/**/*.java</exclude>
                                 <exclude>**/annotation/*Test.java</exclude>
                                 <exclude>**/ClientServerTest.java</exclude>
+                                <exclude>org.jsr107.tck.management.CacheMBStatisticsBeanTest</exclude>
                             </excludes>
                         </configuration>
                     </plugin>
