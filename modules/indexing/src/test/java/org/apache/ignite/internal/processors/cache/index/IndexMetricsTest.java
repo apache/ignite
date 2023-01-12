@@ -148,8 +148,8 @@ public class IndexMetricsTest extends AbstractIndexingCommonTest {
         CacheMetrics cacheMetrics1 = cacheMetrics(n, cacheName1);
         CacheMetrics cacheMetrics2 = cacheMetrics(n, cacheName2);
 
-        CacheMetrics cacheLocalMetrics1 = n.cache(cacheName1).localMetrics();
-        CacheMetrics cacheLocalMetrics2 = n.cache(cacheName2).localMetrics();
+        CacheMetrics cacheLocMetrics1 = n.cache(cacheName1).localMetrics();
+        CacheMetrics cacheLocMetrics2 = n.cache(cacheName2).localMetrics();
 
         CacheMetrics cacheClusterMetrics1 = n.cache(cacheName1).metrics();
         CacheMetrics cacheClusterMetrics2 = n.cache(cacheName2).metrics();
@@ -159,13 +159,13 @@ public class IndexMetricsTest extends AbstractIndexingCommonTest {
         BooleanSupplier[] idxRebuildProgressCache1 = {
             idxRebuildInProgress1::value,
             cacheMetrics1::isIndexRebuildInProgress,
-            cacheLocalMetrics1::isIndexRebuildInProgress
+            cacheLocMetrics1::isIndexRebuildInProgress
         };
 
         BooleanSupplier[] idxRebuildProgressCache2 = {
             idxRebuildInProgress2::value,
             cacheMetrics2::isIndexRebuildInProgress,
-            cacheLocalMetrics2::isIndexRebuildInProgress
+            cacheLocMetrics2::isIndexRebuildInProgress
         };
 
         // It must always be false, because metric is only per node.
@@ -177,13 +177,13 @@ public class IndexMetricsTest extends AbstractIndexingCommonTest {
         LongSupplier[] idxRebuildKeyProcessedCache1 = {
             idxRebuildKeyProcessed1::value,
             cacheMetrics1::getIndexRebuildKeysProcessed,
-            cacheLocalMetrics1::getIndexRebuildKeysProcessed,
+            cacheLocMetrics1::getIndexRebuildKeysProcessed,
         };
 
         LongSupplier[] idxRebuildKeyProcessedCache2 = {
             idxRebuildKeyProcessed2::value,
             cacheMetrics2::getIndexRebuildKeysProcessed,
-            cacheLocalMetrics2::getIndexRebuildKeysProcessed,
+            cacheLocMetrics2::getIndexRebuildKeysProcessed,
         };
 
         // It must always be 0, because metric is only per node.
