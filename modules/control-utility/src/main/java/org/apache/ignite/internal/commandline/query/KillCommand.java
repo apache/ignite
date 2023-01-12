@@ -54,6 +54,7 @@ import org.apache.ignite.mxbean.TransactionsMXBean;
 import static java.util.Collections.singletonMap;
 import static org.apache.ignite.internal.QueryMXBeanImpl.EXPECTED_GLOBAL_QRY_ID_FORMAT;
 import static org.apache.ignite.internal.commandline.CommandList.KILL;
+import static org.apache.ignite.internal.commandline.CommandLogger.optional;
 import static org.apache.ignite.internal.commandline.TaskExecutor.BROADCAST_UUID;
 import static org.apache.ignite.internal.commandline.TaskExecutor.executeTaskByNameOnNode;
 import static org.apache.ignite.internal.commandline.query.KillSubcommand.CLIENT;
@@ -269,10 +270,12 @@ public class KillCommand extends AbstractCommand<Object> {
 
         params.clear();
 
-        params.put("--node-id node_id ", "Node id to drop connection from.");
+        params.put("--node-id node_id", "Node id to drop connection from.");
         params.put("connection_id", "Connection identifier or ALL.");
 
-        usage(log, "Kill client connection by id:", KILL, params, CLIENT.toString(), "connection_id");
+        usage(log, "Kill client connection by id:", KILL, params, CLIENT.toString(),
+            "connection_id",
+            optional("--node-id node_id"));
 
         usage(log, "Kill running snapshot by snapshot name:", KILL, singletonMap("snapshot_name", "Snapshot name."),
             SNAPSHOT.toString(), "snapshot_name");

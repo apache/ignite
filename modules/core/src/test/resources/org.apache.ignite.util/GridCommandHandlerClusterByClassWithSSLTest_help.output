@@ -134,11 +134,11 @@ This utility can do the following commands:
       origin_node_id  - Originating node id.
 
   Kill client connection by id:
-    control.(sh|bat) --kill CLIENT connection_id
+    control.(sh|bat) --kill CLIENT connection_id [--node-id node_id]
 
     Parameters:
-      --node-id node_id   - Node id to drop connection from.
-      connection_id       - Connection identifier or ALL.
+      connection_id      - Connection identifier or ALL.
+      --node-id node_id  - Node id to drop connection from.
 
   Kill running snapshot by snapshot name:
     control.(sh|bat) --kill SNAPSHOT snapshot_name
