@@ -28,53 +28,53 @@ import org.apache.ignite.internal.util.typedef.internal.S;
  * This record is written to WAL after Consistent Cut finished on a baseline node.
  * <p>
  * It guarantees that the BEFORE side consists of:
- * 1. Transactions committed before {@link ConsistentCutStartRecord} and weren't included into {@link #after()}.
+ * 1. Transactions committed before {@link ConsistentCutStartRecord} and weren't included into {@link #excluded()}.
  * 2. Transactions committed between {@link ConsistentCutStartRecord} and {@link ConsistentCutFinishRecord}
- *    and were included into {@link #before()}.
+ *    and were included into {@link #included()}.
  * <p>
  * It guarantees that the AFTER side consists of:
- * 1. Transactions committed before {@link ConsistentCutStartRecord} and were included into {@link #after()}.
+ * 1. Transactions committed before {@link ConsistentCutStartRecord} and were included into {@link #excluded()}.
  * 2. Transactions committed between {@link ConsistentCutStartRecord} and {@link ConsistentCutFinishRecord}
- *    and weren't included into {@link #before()}.
+ *    and weren't included into {@link #included()}.
  */
 public class ConsistentCutFinishRecord extends WALRecord {
     /** Consistent Cut ID. */
     @GridToStringInclude
-    private final UUID cutId;
+    private final UUID id;
 
     /**
      * Set of transactions committed between {@link ConsistentCutStartRecord} and {@link ConsistentCutFinishRecord}
      * to include to the BEFORE side of Consistent Cut.
      */
     @GridToStringInclude
-    private final Set<GridCacheVersion> before;
+    private final Set<GridCacheVersion> included;
 
     /**
-     * Set of transactions committed before {@link ConsistentCutStartRecord} to include to the AFTER side of Consistent Cut.
+     * Set of transactions committed before {@link ConsistentCutStartRecord} to exclude from the AFTER side of Consistent Cut.
      */
     @GridToStringInclude
-    private final Set<GridCacheVersion> after;
+    private final Set<GridCacheVersion> excluded;
 
     /** */
-    public ConsistentCutFinishRecord(UUID cutId, Set<GridCacheVersion> before, Set<GridCacheVersion> after) {
-        this.cutId = cutId;
-        this.before = before;
-        this.after = after;
+    public ConsistentCutFinishRecord(UUID id, Set<GridCacheVersion> included, Set<GridCacheVersion> excluded) {
+        this.id = id;
+        this.included = included;
+        this.excluded = excluded;
     }
 
     /** */
-    public Set<GridCacheVersion> before() {
-        return before;
+    public Set<GridCacheVersion> included() {
+        return included;
     }
 
     /** */
-    public Set<GridCacheVersion> after() {
-        return after;
+    public Set<GridCacheVersion> excluded() {
+        return excluded;
     }
 
     /** */
-    public UUID cutId() {
-        return cutId;
+    public UUID id() {
+        return id;
     }
 
     /** {@inheritDoc} */
@@ -88,12 +88,12 @@ public class ConsistentCutFinishRecord extends WALRecord {
      * @return Size in bytes.
      */
     public int dataSize() {
-        int size = 8 + 8 + 4 + 4;  // ID, before and after tx count.
+        int size = 16 + 4 + 4;  // ID, before and after tx count.
 
-        for (GridCacheVersion v: before)
+        for (GridCacheVersion v: included)
             size += CacheVersionIO.size(v, false);
 
-        for (GridCacheVersion v: after)
+        for (GridCacheVersion v: excluded)
             size += CacheVersionIO.size(v, false);
 
         return size;

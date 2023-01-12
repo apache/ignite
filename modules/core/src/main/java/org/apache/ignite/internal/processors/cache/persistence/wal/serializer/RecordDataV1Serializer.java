@@ -561,7 +561,7 @@ public class RecordDataV1Serializer implements RecordDataSerializer {
                 return 4 + ((ClusterSnapshotRecord)record).clusterSnapshotName().getBytes().length;
 
             case CONSISTENT_CUT_START_RECORD:
-                return 8 + 8;
+                return 16;
 
             case CONSISTENT_CUT_FINISH_RECORD:
                 return ((ConsistentCutFinishRecord)record).dataSize();
@@ -1970,25 +1970,25 @@ public class RecordDataV1Serializer implements RecordDataSerializer {
             case CONSISTENT_CUT_START_RECORD:
                 ConsistentCutStartRecord startRec = (ConsistentCutStartRecord)rec;
 
-                buf.putLong(startRec.cutId().getMostSignificantBits());
-                buf.putLong(startRec.cutId().getLeastSignificantBits());
+                buf.putLong(startRec.id().getMostSignificantBits());
+                buf.putLong(startRec.id().getLeastSignificantBits());
 
                 break;
 
             case CONSISTENT_CUT_FINISH_RECORD:
                 ConsistentCutFinishRecord cutFinRec = (ConsistentCutFinishRecord)rec;
 
-                buf.putLong(cutFinRec.cutId().getMostSignificantBits());
-                buf.putLong(cutFinRec.cutId().getLeastSignificantBits());
+                buf.putLong(cutFinRec.id().getMostSignificantBits());
+                buf.putLong(cutFinRec.id().getLeastSignificantBits());
 
-                buf.putInt(cutFinRec.before().size());
+                buf.putInt(cutFinRec.included().size());
 
-                for (GridCacheVersion v: cutFinRec.before())
+                for (GridCacheVersion v: cutFinRec.included())
                     putVersion(buf, v, false);
 
-                buf.putInt(cutFinRec.after().size());
+                buf.putInt(cutFinRec.excluded().size());
 
-                for (GridCacheVersion v: cutFinRec.after())
+                for (GridCacheVersion v: cutFinRec.excluded())
                     putVersion(buf, v, false);
 
                 break;

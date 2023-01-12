@@ -706,12 +706,12 @@ public abstract class AbstractSnapshotSelfTest extends GridCommonAbstractTest {
                 WALRecord rec = entry.getValue();
 
                 if (rec.type() == WALRecord.RecordType.CONSISTENT_CUT_START_RECORD) {
-                    if (((ConsistentCutStartRecord)rec).cutId().equals(incSnpMeta.requestId()))
+                    if (((ConsistentCutStartRecord)rec).id().equals(incSnpMeta.requestId()))
                         started = true;
                 }
 
                 if (rec.type() == WALRecord.RecordType.CONSISTENT_CUT_FINISH_RECORD) {
-                    if (((ConsistentCutFinishRecord)rec).cutId().equals(incSnpMeta.requestId()))
+                    if (((ConsistentCutFinishRecord)rec).id().equals(incSnpMeta.requestId()))
                         finished = true;
                 }
             }

@@ -27,16 +27,16 @@ import org.apache.ignite.internal.util.typedef.internal.S;
 public class ConsistentCutStartRecord extends WALRecord {
     /** Consistent Cut ID. */
     @GridToStringInclude
-    private final UUID cutId;
+    private final UUID id;
 
     /** */
-    public ConsistentCutStartRecord(UUID cutId) {
-        this.cutId = cutId;
+    public ConsistentCutStartRecord(UUID id) {
+        this.id = id;
     }
 
     /** */
-    public UUID cutId() {
-        return cutId;
+    public UUID id() {
+        return id;
     }
 
     /** {@inheritDoc} */

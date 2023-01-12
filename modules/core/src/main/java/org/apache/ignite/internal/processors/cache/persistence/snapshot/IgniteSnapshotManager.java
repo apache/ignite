@@ -113,12 +113,12 @@ import org.apache.ignite.internal.managers.systemview.walker.SnapshotViewWalker;
 import org.apache.ignite.internal.pagemem.PageIdUtils;
 import org.apache.ignite.internal.pagemem.store.PageStore;
 import org.apache.ignite.internal.pagemem.wal.IgniteWriteAheadLogManager;
+import org.apache.ignite.internal.pagemem.wal.record.ConsistentCutFinishRecord;
 import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
 import org.apache.ignite.internal.processors.cache.CacheGroupContext;
 import org.apache.ignite.internal.processors.cache.CacheGroupDescriptor;
 import org.apache.ignite.internal.processors.cache.CacheObjectContext;
 import org.apache.ignite.internal.processors.cache.CacheType;
-import org.apache.ignite.internal.processors.cache.GridCacheMessage;
 import org.apache.ignite.internal.processors.cache.GridCacheSharedContext;
 import org.apache.ignite.internal.processors.cache.GridCacheSharedManagerAdapter;
 import org.apache.ignite.internal.processors.cache.GridLocalConfigManager;
@@ -162,6 +162,7 @@ import org.apache.ignite.internal.util.GridCloseableIteratorAdapter;
 import org.apache.ignite.internal.util.distributed.DistributedProcess;
 import org.apache.ignite.internal.util.distributed.InitMessage;
 import org.apache.ignite.internal.util.future.GridCompoundFuture;
+import org.apache.ignite.internal.util.future.GridCompoundIdentityFuture;
 import org.apache.ignite.internal.util.future.GridFinishedFuture;
 import org.apache.ignite.internal.util.future.GridFutureAdapter;
 import org.apache.ignite.internal.util.future.IgniteFinishedFutureImpl;
@@ -213,6 +214,7 @@ import static org.apache.ignite.internal.pagemem.PageIdUtils.flag;
 import static org.apache.ignite.internal.pagemem.PageIdUtils.pageId;
 import static org.apache.ignite.internal.pagemem.PageIdUtils.pageIndex;
 import static org.apache.ignite.internal.pagemem.PageIdUtils.toDetailString;
+import static org.apache.ignite.internal.processors.cache.GridCacheUtils.baselineNode;
 import static org.apache.ignite.internal.processors.cache.binary.CacheObjectBinaryProcessorImpl.binaryWorkDir;
 import static org.apache.ignite.internal.processors.cache.binary.CacheObjectBinaryProcessorImpl.resolveBinaryWorkDir;
 import static org.apache.ignite.internal.processors.cache.persistence.file.FilePageStoreManager.INDEX_FILE_NAME;
@@ -247,6 +249,7 @@ import static org.apache.ignite.spi.systemview.view.SnapshotView.SNAPSHOT_SYS_VI
  * These major actions available:
  * <ul>
  *     <li>Create snapshot of the whole cluster cache groups by triggering PME to achieve consistency.</li>
+ *     <li>Create incremental snapshot of transactional cache groups by using Consistent Cut algorithm.</li>
  * </ul>
  */
 public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
@@ -422,8 +425,18 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
     /** Manager to receive responses of remote snapshot requests. */
     private final SequentialRemoteSnapshotManager snpRmtMgr;
 
-    /** Current Consistent Cut on local node. */
-    private volatile ConsistentCut consistentCut;
+    /** Consistent Cut ID. */
+    private volatile UUID consistentCutId;
+
+    /**
+     * While Consistent Cut is running every node wraps outgoing transaction messages into {@link ConsistentCutAwareMessage}.
+     * Nodes start wrapping messages from the moment Consistent Cut started on the node, and finsihes after all baseline
+     * nodes completed {@link #markWalFut}. This future completes after last {@link ConsistentCutAwareMessage} was sent.
+     */
+    private volatile GridFutureAdapter<?> wrapMsgsFut;
+
+    /** Future that completes after {@link ConsistentCutFinishRecord} was written. */
+    private volatile @Nullable ConsistentCutMarkWalFuture markWalFut;
 
     /** Snapshot transfer rate limit in bytes/sec. */
     private final DistributedLongProperty snapshotTransferRate = detachedLongProperty(SNAPSHOT_TRANSFER_RATE_DMS_KEY);
@@ -891,19 +904,25 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
      * @param id Consistent Cut ID.
      */
     public void handleConsistentCutId(UUID id) {
-        if (consistentCut != null)
+        if (consistentCutId != null)
             return;
 
-        ConsistentCut newCut;
-
         synchronized (snpOpMux) {
-            if (consistentCut != null)
+            if (consistentCutId != null)
                 return;
 
-            consistentCut = newCut = new ConsistentCut(cctx, id);
+            wrapMsgsFut = new GridFutureAdapter<>();
+
+            cctx.tm().txMessageTransformer((msg, tx) -> new ConsistentCutAwareMessage(msg, id, tx == null ? null : tx.cutId()));
+
+            markWalFut = baselineNode(cctx.localNode(), cctx.kernalContext().state().clusterState())
+                    ? new ConsistentCutMarkWalFuture(cctx, id) : null;
+
+            consistentCutId = id;
         }
 
-        newCut.init(cctx);
+        if (markWalFut != null)
+            cctx.kernalContext().pools().getSnapshotExecutorService().submit(markWalFut::init);
     }
 
     /**
@@ -948,7 +967,7 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
             tmpWorkDir,
             ioFactory,
             lowPtr,
-            consistentCut.markWalFinished()
+            markWalFut
         )).chain(fut -> {
             if (fut.error() != null)
                 throw F.wrap(fut.error());
@@ -961,7 +980,7 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
                 req.incrementIndex(),
                 cctx.localNode().consistentId().toString(),
                 pdsSettings.folderName(),
-                consistentCut.markWalFinished().result()
+                markWalFut.result()
             );
 
             storeSnapshotMeta(
@@ -1098,8 +1117,18 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
     private void processLocalSnapshotStartStageResult(UUID id, Map<UUID, SnapshotOperationResponse> res, Map<UUID, Exception> err) {
         SnapshotOperationRequest snpReq = clusterSnpReq;
 
-        if (snpReq != null && F.eq(id, snpReq.requestId()) && snpReq.incremental())
-            consistentCut.stopWrapMessages();
+        if (snpReq != null && F.eq(id, snpReq.requestId()) && snpReq.incremental()) {
+            cctx.tm().txMessageTransformer(null);
+
+            GridCompoundIdentityFuture<IgniteInternalTx> activeTxsFut = new GridCompoundIdentityFuture<>();
+
+            for (IgniteInternalTx tx: cctx.tm().activeTransactions())
+                activeTxsFut.add(tx.finishFuture());
+
+            activeTxsFut.markInitialized();
+
+            activeTxsFut.listen(f -> wrapMsgsFut.onDone());
+        }
 
         if (cctx.kernalContext().clientNode())
             return;
@@ -1243,7 +1272,7 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
         if (snpReq == null || !F.eq(req.requestId(), snpReq.requestId()))
             return new GridFinishedFuture<>();
 
-        IgniteInternalFuture<?> prepFut = req.incremental() ? consistentCut.wrapMessagesFinished() : new GridFinishedFuture<>();
+        IgniteInternalFuture<?> prepFut = req.incremental() ? wrapMsgsFut : new GridFinishedFuture<>();
 
         return prepFut.chain(r -> {
             if (cctx.kernalContext().clientNode())
@@ -1334,8 +1363,12 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
         Set<UUID> endFail = new HashSet<>(snpReq.nodes());
         endFail.removeAll(res.keySet());
 
-        if (snpReq.incremental())
-            consistentCut = null;
+        if (snpReq.incremental()) {
+            wrapMsgsFut = null;
+            markWalFut = null;
+
+            consistentCutId = null;
+        }
 
         clusterSnpReq = null;
 
@@ -2660,26 +2693,6 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
     }
 
     /**
-     * Wraps a transaction message if Consistent Cut is running.
-     *
-     * @param txMsg Transaction message to wrap.
-     * @param txCutId Consistent Cut ID after which transaction committed, if specified.
-     */
-    public GridCacheMessage wrapMessage(GridCacheMessage txMsg, @Nullable UUID txCutId) {
-        ConsistentCut cut = consistentCut;
-
-        return cut == null ? txMsg : cut.wrapMessage(txMsg, txCutId);
-    }
-
-    /** Calls on transaction commits. */
-    public void onCommit(IgniteInternalTx tx) {
-        ConsistentCut cut = consistentCut;
-
-        if (cut != null)
-            cut.onCommit(tx);
-    }
-
-    /**
      * Checks that incremental snapshot can be created for given full snapshot and current cluster state.
      *
      * @param name Full snapshot name.
@@ -2810,10 +2823,8 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
     }
 
     /** @return Current Consistent Cut ID. */
-    public UUID consistentCutId() {
-        ConsistentCut cut = consistentCut;
-
-        return cut == null ? null : cut.id();
+    public @Nullable UUID consistentCutId() {
+        return consistentCutId;
     }
 
     /** Snapshot operation handlers. */

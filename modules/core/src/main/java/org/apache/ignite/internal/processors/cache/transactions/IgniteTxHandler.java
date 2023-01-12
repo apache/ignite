@@ -300,9 +300,9 @@ public class IgniteTxHandler {
 
     /** */
     private void processConsistentCutAwareMessage(UUID nodeId, ConsistentCutAwareMessage msg) {
-        ctx.snapshotMgr().handleConsistentCutId(msg.cutId());
+        ctx.snapshotMgr().handleConsistentCutId(msg.id());
 
-        setTransactionCutIdIfNeeded(msg);
+        setTransactionCutIdIfRequired(msg);
 
         GridCacheMessage cacheMsg = msg.payload();
 
@@ -316,7 +316,7 @@ public class IgniteTxHandler {
      *
      * @param msg Finish message signed with Consistent Cut ID.
      */
-    private void setTransactionCutIdIfNeeded(ConsistentCutAwareMessage msg) {
+    private void setTransactionCutIdIfRequired(ConsistentCutAwareMessage msg) {
         if (msg.txCutId() != null) {
             IgniteInternalTx tx = findTransactionByMessage(msg.payload());
 
@@ -1620,7 +1620,7 @@ public class IgniteTxHandler {
             IgniteTxAdapter tx = dhtTx != null ? dhtTx : nearTx;
 
             // Reply back to sender.
-            ctx.io().send(nodeId, ctx.snapshotMgr().wrapMessage(res, tx == null ? null : tx.cutId()), req.policy());
+            ctx.tm().sendTransactionMessage(nodeId, res, tx, req.policy());
 
             if (txPrepareMsgLog.isDebugEnabled()) {
                 txPrepareMsgLog.debug("Sent dht prepare response [txId=" + req.nearXidVersion() +

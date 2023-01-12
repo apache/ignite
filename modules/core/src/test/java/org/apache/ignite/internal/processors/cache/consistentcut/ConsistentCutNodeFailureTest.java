@@ -122,7 +122,7 @@ public class ConsistentCutNodeFailureTest extends AbstractConsistentCutTest {
             if (rec.type() == WALRecord.RecordType.CONSISTENT_CUT_START_RECORD) {
                 ConsistentCutStartRecord startRec = (ConsistentCutStartRecord)rec;
 
-                assertEquals(brokenCutId, startRec.cutId());
+                assertEquals(brokenCutId, startRec.id());
 
                 reachInconsistent = true;
             }

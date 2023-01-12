@@ -243,7 +243,7 @@ public abstract class AbstractConsistentCutTest extends GridCommonAbstractTest {
                 else if (rec.type() == CONSISTENT_CUT_START_RECORD) {
                     assert cut.id == null : "Lost FINISH record: " + rec;
 
-                    cut.id = ((ConsistentCutStartRecord)rec).cutId();
+                    cut.id = ((ConsistentCutStartRecord)rec).id();
 
                     cuts.add(ReadConsistentCut.fromPrev(currentCut()));
                 }
@@ -285,14 +285,14 @@ public abstract class AbstractConsistentCutTest extends GridCommonAbstractTest {
 
         /** */
         private void finishCut(ConsistentCutFinishRecord rec) {
-            assert rec.cutId().equals(prev.id) : prev.id + " " + rec;
+            assert rec.id().equals(prev.id) : prev.id + " " + rec;
 
-            for (GridCacheVersion txId: rec.before()) {
+            for (GridCacheVersion txId: rec.included()) {
                 if (txs.remove(txId))
                     prev.txs.add(txId);
             }
 
-            for (GridCacheVersion txId: rec.after()) {
+            for (GridCacheVersion txId: rec.excluded()) {
                 if (prev.txs.remove(txId))
                     txs.add(txId);
             }

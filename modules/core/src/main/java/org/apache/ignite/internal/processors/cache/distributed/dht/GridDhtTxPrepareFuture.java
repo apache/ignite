@@ -54,7 +54,6 @@ import org.apache.ignite.internal.processors.cache.GridCacheContext;
 import org.apache.ignite.internal.processors.cache.GridCacheEntryEx;
 import org.apache.ignite.internal.processors.cache.GridCacheEntryInfo;
 import org.apache.ignite.internal.processors.cache.GridCacheEntryRemovedException;
-import org.apache.ignite.internal.processors.cache.GridCacheMessage;
 import org.apache.ignite.internal.processors.cache.GridCacheMvccCandidate;
 import org.apache.ignite.internal.processors.cache.GridCacheOperation;
 import org.apache.ignite.internal.processors.cache.GridCacheReturn;
@@ -783,10 +782,8 @@ public final class GridDhtTxPrepareFuture extends GridCacheCompoundFuture<Ignite
                                 if (res.error() == null && fut.error() != null)
                                     res.error(fut.error());
 
-                                if (REPLIED_UPD.compareAndSet(GridDhtTxPrepareFuture.this, 0, 1)) {
-                                    sendPrepareResponse(cctx.snapshotMgr().wrapMessage(
-                                        res, fut.result() == null ? null : fut.result().cutId()));
-                                }
+                                if (REPLIED_UPD.compareAndSet(GridDhtTxPrepareFuture.this, 0, 1))
+                                    sendPrepareResponse(res);
                             }
                         };
 
@@ -838,7 +835,7 @@ public final class GridDhtTxPrepareFuture extends GridCacheCompoundFuture<Ignite
                     // Will call super.onDone().
                     onComplete(res);
 
-                    sendPrepareResponse(cctx.snapshotMgr().wrapMessage(res, tx.cutId()));
+                    sendPrepareResponse(res);
 
                     return true;
                 }
@@ -864,7 +861,7 @@ public final class GridDhtTxPrepareFuture extends GridCacheCompoundFuture<Ignite
     /**
      * @param res Response.
      */
-    private void sendPrepareResponse(GridCacheMessage res) {
+    private void sendPrepareResponse(GridNearTxPrepareResponse res) {
         if (!tx.nearNodeId().equals(cctx.localNodeId())) {
             Throwable err = this.err;
 
@@ -881,7 +878,7 @@ public final class GridDhtTxPrepareFuture extends GridCacheCompoundFuture<Ignite
             }
 
             try {
-                cctx.io().send(tx.nearNodeId(), res, tx.ioPolicy());
+                cctx.tm().sendTransactionMessage(tx.nearNodeId(), res, tx, tx.ioPolicy());
 
                 if (msgLog.isDebugEnabled()) {
                     msgLog.debug("DHT prepare fut, sent response [txId=" + tx.nearXidVersion() +
@@ -1517,7 +1514,7 @@ public final class GridDhtTxPrepareFuture extends GridCacheCompoundFuture<Ignite
             assert req.transactionNodes() != null;
 
             try {
-                cctx.io().send(n, cctx.snapshotMgr().wrapMessage(req, null), tx.ioPolicy());
+                cctx.tm().sendTransactionMessage(n, req, tx, tx.ioPolicy());
 
                 if (msgLog.isDebugEnabled()) {
                     msgLog.debug("DHT prepare fut, sent request dht [txId=" + tx.nearXidVersion() +

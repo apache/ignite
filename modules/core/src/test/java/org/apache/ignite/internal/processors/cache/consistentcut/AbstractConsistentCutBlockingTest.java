@@ -145,6 +145,8 @@ public abstract class AbstractConsistentCutBlockingTest extends AbstractConsiste
         // 9. Await while Consistent Cut completed.
         cutFut.get(getTestTimeout());
 
+        awaitSnapshotResourcesCleaned();
+
         clear();
     }
 

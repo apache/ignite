@@ -41,7 +41,7 @@ public class ConsistentCutAwareMessage extends GridCacheIdMessage {
     private GridCacheMessage payload;
 
     /** Consistent Cut ID. */
-    private UUID cutId;
+    private UUID id;
 
     /** ID of the latest Consistent Cut AFTER which this transaction committed. */
     private @Nullable UUID txCutId;
@@ -53,20 +53,20 @@ public class ConsistentCutAwareMessage extends GridCacheIdMessage {
     /** */
     public ConsistentCutAwareMessage(
         GridCacheMessage payload,
-        UUID cutId,
+        UUID id,
         @Nullable UUID txCutId
     ) {
         this.payload = payload;
-        this.cutId = cutId;
+        this.id = id;
         this.txCutId = txCutId;
     }
 
-    /** */
-    public UUID cutId() {
-        return cutId;
+    /** @return Consistent Cut ID. */
+    public UUID id() {
+        return id;
     }
 
-    /** */
+    /** @return ID of the latest Consistent Cut AFTER which this transaction committed. */
     public UUID txCutId() {
         return txCutId;
     }
@@ -102,7 +102,7 @@ public class ConsistentCutAwareMessage extends GridCacheIdMessage {
 
         switch (writer.state()) {
             case 4:
-                if (!writer.writeUuid("cutId", cutId))
+                if (!writer.writeUuid("id", id))
                     return false;
 
                 writer.incrementState();
@@ -136,7 +136,7 @@ public class ConsistentCutAwareMessage extends GridCacheIdMessage {
 
         switch (reader.state()) {
             case 4:
-                cutId = reader.readUuid("cutId");
+                id = reader.readUuid("id");
 
                 if (!reader.isLastRead())
                     return false;

@@ -484,7 +484,7 @@ public class GridNearOptimisticSerializableTxPrepareFuture extends GridNearOptim
                     m.reads(),
                     m.writes());
 
-                cctx.io().send(primary, cctx.snapshotMgr().wrapMessage(req, null), tx.ioPolicy());
+                cctx.tm().sendTransactionMessage(primary, req, tx, tx.ioPolicy());
             }
             catch (ClusterTopologyCheckedException e) {
                 e.retryReadyFuture(cctx.nextAffinityReadyFuture(tx.topologyVersion()));
