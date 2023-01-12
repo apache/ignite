@@ -204,6 +204,8 @@ public class IndexMetricsTest extends AbstractIndexingCommonTest {
 
         n.cache(cacheName1).indexReadyFuture().get(30_000);
 
+        boolean test = cacheLocMetrics1.isIndexRebuildInProgress();
+
         assertEquals(false, idxRebuildProgressCache1);
         assertEquals(true, idxRebuildProgressCache2);
         assertEquals(false, idxRebuildProgressCluster);
