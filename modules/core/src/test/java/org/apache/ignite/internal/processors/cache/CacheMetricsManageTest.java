@@ -29,6 +29,7 @@ import java.util.concurrent.ThreadLocalRandom;
 import java.util.concurrent.atomic.AtomicInteger;
 import javax.cache.CacheManager;
 import javax.cache.Caching;
+import javax.cache.management.CacheMXBean;
 import javax.management.MBeanServer;
 import javax.management.MBeanServerInvocationHandler;
 import javax.management.ObjectName;
@@ -121,6 +122,24 @@ public class CacheMetricsManageTest extends GridCommonAbstractTest {
         Assume.assumeFalse("https://issues.apache.org/jira/browse/IGNITE-9224", MvccFeatureChecker.forcedMvcc());
 
         testStatisticsEnable(true);
+    }
+
+    @Test
+    public void test0() throws Exception {
+        IgniteEx ig = startGrids(1);
+
+        CacheConfiguration<?, ?> cacheCfg = defaultCacheConfiguration();
+
+        cacheCfg.setManagementEnabled(true);
+
+        IgniteCache<?, ?> cache = ig.createCache(cacheCfg);
+
+        cache.getCacheManager().enableManagement(cacheCfg.getName(), true);
+
+        CacheMXBean bean = getMxBean(ig.context().igniteInstanceName(), "Metrics",
+            CacheMXBeanImpl.class, CacheMXBean.class);
+
+        assertNotNull(bean);
     }
 
     /**
