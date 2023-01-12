@@ -282,6 +282,24 @@ public class TableDdlIntegrationTest extends AbstractDdlIntegrationTest {
     }
 
     /**
+     * Create table using reserved word
+     */
+    @Test
+    public void createTableUseReserverWord() {
+        assertThrows("create table table (id int primary key, val varchar)", IgniteSQLException.class,
+            "Was expecting one of:");
+
+        sql("create table \"table\" (id int primary key, val varchar)");
+
+        sql("insert into \"table\" (id, val) values (0, '1')");
+
+        List<List<?>> res = sql("select * from \"table\" ");
+
+        assertEquals(1, res.size());
+        assertEquals(2, res.get(0).size());
+    }
+
+    /**
      * Creates a table without a primary key and then insert a few rows.
      */
     @Test
