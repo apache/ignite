@@ -28,6 +28,7 @@ import org.apache.ignite.internal.commandline.Command;
 import org.apache.ignite.internal.commandline.CommandArgIterator;
 import org.apache.ignite.internal.commandline.CommandLogger;
 import org.apache.ignite.internal.util.typedef.T2;
+import org.apache.ignite.internal.visor.client.VisorClientConnectionDropTask;
 import org.apache.ignite.internal.visor.compute.VisorComputeCancelSessionTask;
 import org.apache.ignite.internal.visor.compute.VisorComputeCancelSessionTaskArg;
 import org.apache.ignite.internal.visor.consistency.VisorConsistencyCancelTask;
@@ -55,6 +56,7 @@ import static org.apache.ignite.internal.QueryMXBeanImpl.EXPECTED_GLOBAL_QRY_ID_
 import static org.apache.ignite.internal.commandline.CommandList.KILL;
 import static org.apache.ignite.internal.commandline.TaskExecutor.BROADCAST_UUID;
 import static org.apache.ignite.internal.commandline.TaskExecutor.executeTaskByNameOnNode;
+import static org.apache.ignite.internal.commandline.query.KillSubcommand.CLIENT;
 import static org.apache.ignite.internal.commandline.query.KillSubcommand.COMPUTE;
 import static org.apache.ignite.internal.commandline.query.KillSubcommand.CONTINUOUS;
 import static org.apache.ignite.internal.commandline.query.KillSubcommand.SCAN;
@@ -212,6 +214,24 @@ public class KillCommand extends AbstractCommand<Object> {
 
                 break;
 
+            case CLIENT:
+                taskName = VisorClientConnectionDropTask.class.getName();
+
+                for (int i = 0; i < 2; i++) {
+                    String argVal = argIter.nextArg("next argument");
+
+                    switch (argVal) {
+                        case "--node-id":
+                            nodeId = UUID.fromString(argIter.nextArg("node_id"));
+
+                            break;
+                        default:
+                            taskArgs = argVal.equals("ALL") ? null : Long.parseLong(argVal);
+                    }
+                }
+
+                break;
+
             default:
                 throw new IllegalArgumentException("Unknown kill subcommand: " + cmd);
         }
@@ -246,6 +266,13 @@ public class KillCommand extends AbstractCommand<Object> {
 
         usage(log, "Kill continuous query by routine id:", KILL, params, CONTINUOUS.toString(),
             "origin_node_id", "routine_id");
+
+        params.clear();
+
+        params.put("--node-id node_id ", "Node id to drop connection from.");
+        params.put("connection_id", "Connection identifier or ALL.");
+
+        usage(log, "Kill client connection by id:", KILL, params, CLIENT.toString(), "connection_id");
 
         usage(log, "Kill running snapshot by snapshot name:", KILL, singletonMap("snapshot_name", "Snapshot name."),
             SNAPSHOT.toString(), "snapshot_name");

@@ -52,6 +52,7 @@ import static org.apache.ignite.testframework.GridTestUtils.assertContains;
 import static org.apache.ignite.testframework.GridTestUtils.assertNotContains;
 import static org.apache.ignite.util.KillCommandsTests.PAGES_CNT;
 import static org.apache.ignite.util.KillCommandsTests.PAGE_SZ;
+import static org.apache.ignite.util.KillCommandsTests.doTestCancelClientConnection;
 import static org.apache.ignite.util.KillCommandsTests.doTestCancelComputeTask;
 import static org.apache.ignite.util.KillCommandsTests.doTestCancelContinuousQuery;
 import static org.apache.ignite.util.KillCommandsTests.doTestCancelSQLQuery;
@@ -60,7 +61,7 @@ import static org.apache.ignite.util.KillCommandsTests.doTestCancelTx;
 import static org.apache.ignite.util.KillCommandsTests.doTestScanQueryCancel;
 
 /** Tests cancel of user created entities via control.sh. */
-public class KillCommandsCommandShTest extends GridCommandHandlerClusterByClassAbstractTest {
+public class KillCommandsControlShTest extends GridCommandHandlerClusterByClassAbstractTest {
     /** */
     private static List<IgniteEx> srvs;
 
@@ -148,6 +149,18 @@ public class KillCommandsCommandShTest extends GridCommandHandlerClusterByClassA
     public void testCancelContinuousQuery() throws Exception {
         doTestCancelContinuousQuery(client, srvs, (nodeId, routineId) -> {
             int res = execute("--kill", "continuous", nodeId.toString(), routineId.toString());
+
+            assertEquals(EXIT_CODE_OK, res);
+        });
+    }
+
+    /** @throws Exception If failed. */
+    @Test
+    public void testCancelClientConnection() {
+        doTestCancelClientConnection(srvs, connId -> {
+            String nodeId = srvs.get(0).localNode().id().toString();
+
+            int res = execute("--kill", "client", "--node-id", nodeId, connId == null ? "ALL" : Long.toString(connId));
 
             assertEquals(EXIT_CODE_OK, res);
         });

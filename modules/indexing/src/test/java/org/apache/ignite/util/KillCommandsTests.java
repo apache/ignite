@@ -26,6 +26,7 @@ import java.util.concurrent.ConcurrentMap;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
+import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.BiConsumer;
 import java.util.function.Consumer;
 import javax.cache.Cache;
@@ -34,10 +35,16 @@ import javax.cache.event.CacheEntryEvent;
 import org.apache.ignite.IgniteCache;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteException;
+import org.apache.ignite.Ignition;
 import org.apache.ignite.cache.query.ContinuousQuery;
 import org.apache.ignite.cache.query.QueryCursor;
 import org.apache.ignite.cache.query.ScanQuery;
 import org.apache.ignite.cache.query.SqlFieldsQuery;
+import org.apache.ignite.client.ClientConnectionException;
+import org.apache.ignite.client.Config;
+import org.apache.ignite.client.IgniteClient;
+import org.apache.ignite.cluster.ClusterState;
+import org.apache.ignite.configuration.ClientConfiguration;
 import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.processors.cache.GridCacheContext;
@@ -470,6 +477,40 @@ class KillCommandsTests {
 
             assertTrue(srv.configuration().getIgniteInstanceName(), res);
         }
+    }
+
+    /**
+     * Test cancel of the continuous query.
+     *
+     * @param srvs Server nodes.
+     * @param cliCanceler Client connection cancel closure.
+     */
+    public static void doTestCancelClientConnection(List<IgniteEx> srvs, Consumer<Long> cliCanceler) {
+        AtomicReference<IgniteClient> cli = new AtomicReference<>(
+            Ignition.startClient(new ClientConfiguration().setAddresses(Config.SERVER))
+        );
+
+        assertEquals(ClusterState.ACTIVE, cli.get().cluster().state());
+
+        List<List<?>> conns = execute(srvs.get(0), "SELECT CONNECTION_ID FROM SYS.CLIENT_CONNECTIONS");
+
+        assertEquals(1, conns.size());
+
+        cliCanceler.accept((Long)conns.get(0).get(0));
+
+        conns = execute(srvs.get(0), "SELECT CONNECTION_ID FROM SYS.CLIENT_CONNECTIONS");
+
+        assertEquals(0, conns.size());
+
+        assertThrowsWithCause(() -> cli.get().cluster().state(), ClientConnectionException.class);
+
+        cli.set(Ignition.startClient(new ClientConfiguration().setAddresses(Config.SERVER)));
+
+        assertEquals(ClusterState.ACTIVE, cli.get().cluster().state());
+
+        cliCanceler.accept(null);
+
+        assertThrowsWithCause(() -> cli.get().cluster().state(), ClientConnectionException.class);
     }
 
     /** */

@@ -32,7 +32,9 @@ import org.apache.ignite.internal.QueryMXBeanImpl;
 import org.apache.ignite.internal.ServiceMXBeanImpl;
 import org.apache.ignite.internal.TransactionsMXBeanImpl;
 import org.apache.ignite.internal.processors.cache.persistence.snapshot.SnapshotMXBeanImpl;
+import org.apache.ignite.internal.processors.odbc.ClientListenerProcessor;
 import org.apache.ignite.lang.IgniteUuid;
+import org.apache.ignite.mxbean.ClientProcessorMXBean;
 import org.apache.ignite.mxbean.ComputeMXBean;
 import org.apache.ignite.mxbean.QueryMXBean;
 import org.apache.ignite.mxbean.ServiceMXBean;
@@ -46,6 +48,7 @@ import static org.apache.ignite.cluster.ClusterState.ACTIVE;
 import static org.apache.ignite.internal.processors.cache.persistence.snapshot.AbstractSnapshotSelfTest.doSnapshotCancellationTest;
 import static org.apache.ignite.util.KillCommandsTests.PAGES_CNT;
 import static org.apache.ignite.util.KillCommandsTests.PAGE_SZ;
+import static org.apache.ignite.util.KillCommandsTests.doTestCancelClientConnection;
 import static org.apache.ignite.util.KillCommandsTests.doTestCancelComputeTask;
 import static org.apache.ignite.util.KillCommandsTests.doTestCancelContinuousQuery;
 import static org.apache.ignite.util.KillCommandsTests.doTestCancelSQLQuery;
@@ -81,6 +84,9 @@ public class KillCommandsMXBeanTest extends GridCommonAbstractTest {
 
     /** Snapshot control JMX bean. */
     private static SnapshotMXBean snpMxBean;
+
+    /** */
+    private static ClientProcessorMXBean cliMxBean;
 
     /** {@inheritDoc} */
     @Override protected IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {
@@ -133,6 +139,9 @@ public class KillCommandsMXBeanTest extends GridCommonAbstractTest {
 
         snpMxBean = getMxBean(killCli.name(), "Snapshot",
             SnapshotMXBeanImpl.class.getSimpleName(), SnapshotMXBean.class);
+
+        cliMxBean = getMxBean(srvs.get(0).name(), "Clients",
+            ClientListenerProcessor.class.getSimpleName(), ClientProcessorMXBean.class);
     }
 
     /** {@inheritDoc} */
@@ -186,6 +195,17 @@ public class KillCommandsMXBeanTest extends GridCommonAbstractTest {
     public void testCancelSnapshot() {
         doSnapshotCancellationTest(startCli, srvs, startCli.cache(DEFAULT_CACHE_NAME),
             snpName -> snpMxBean.cancelSnapshot(snpName));
+    }
+
+    /** */
+    @Test
+    public void testCancelClientConnection() {
+        doTestCancelClientConnection(srvs, connId -> {
+            if (connId == null)
+                cliMxBean.dropAllConnections();
+            else
+                cliMxBean.dropConnection(connId);
+        } );
     }
 
     /** */

@@ -52,6 +52,7 @@ import org.apache.ignite.internal.util.nio.ssl.GridNioSslFilter;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.mxbean.ClientProcessorMXBean;
+import org.apache.ignite.plugin.security.SecurityPermission;
 import org.apache.ignite.spi.IgnitePortProtocol;
 import org.apache.ignite.spi.systemview.view.ClientConnectionView;
 import org.jetbrains.annotations.NotNull;
@@ -567,9 +568,16 @@ public class ClientListenerProcessor extends GridProcessorAdapter {
     }
 
     /**
+     * @return MX bean instance.
+     */
+    public ClientProcessorMXBean mxBean() {
+        return new ClientProcessorMXBeanImpl();
+    }
+
+    /**
      * ClientProcessorMXBean interface.
      */
-    private class ClientProcessorMXBeanImpl implements ClientProcessorMXBean {
+    public class ClientProcessorMXBeanImpl implements ClientProcessorMXBean {
         /** {@inheritDoc} */
         @Override public List<String> getConnections() {
             Collection<? extends GridNioSession> sessions = srv.sessions();
@@ -592,11 +600,15 @@ public class ClientListenerProcessor extends GridProcessorAdapter {
 
         /** {@inheritDoc} */
         @Override public void dropAllConnections() {
+            ctx.security().authorize(null, SecurityPermission.ADMIN_OPS);
+
             closeAllSessions();
         }
 
         /** {@inheritDoc} */
         @Override public boolean dropConnection(long id) {
+            ctx.security().authorize(null, SecurityPermission.ADMIN_OPS);
+
             assert (id >> 32) == ctx.discovery().localNode().order() : "Invalid connection id.";
 
             Collection<? extends GridNioSession> sessions = srv.sessions();
@@ -608,20 +620,16 @@ public class ClientListenerProcessor extends GridProcessorAdapter {
                     continue;
 
                 if (ses.closeTime() != 0) {
-                    if (log.isDebugEnabled()) {
-                        log.debug("Client session is already closed: " +
-                            clientConnectionDescription(ses, connCtx));
-                    }
+                    if (log.isDebugEnabled())
+                        log.debug("Client session is already closed: " + clientConnectionDescription(ses, connCtx));
 
                     return false;
                 }
 
                 srv.close(ses);
 
-                if (log.isInfoEnabled()) {
-                    log.info("Client session has been dropped: " +
-                        clientConnectionDescription(ses, connCtx));
-                }
+                if (log.isInfoEnabled())
+                    log.info("Client session has been dropped: " + clientConnectionDescription(ses, connCtx));
 
                 return true;
             }

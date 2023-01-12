@@ -55,6 +55,7 @@ import org.apache.ignite.internal.sql.command.SqlDropIndexCommand;
 import org.apache.ignite.internal.sql.command.SqlDropStatisticsCommand;
 import org.apache.ignite.internal.sql.command.SqlDropUserCommand;
 import org.apache.ignite.internal.sql.command.SqlIndexColumn;
+import org.apache.ignite.internal.sql.command.SqlKillClientCommand;
 import org.apache.ignite.internal.sql.command.SqlKillComputeTaskCommand;
 import org.apache.ignite.internal.sql.command.SqlKillContinuousQueryCommand;
 import org.apache.ignite.internal.sql.command.SqlKillQueryCommand;
@@ -105,6 +106,8 @@ public class SqlCommandProcessor {
 
         if (isDdl(cmdNative))
             runCommandNativeDdl(cmdNative);
+        else if (cmdNative instanceof SqlKillClientCommand)
+            processKillClientCommand((SqlKillClientCommand)cmdNative);
         else if (cmdNative instanceof SqlKillComputeTaskCommand)
             processKillComputeTaskCommand((SqlKillComputeTaskCommand)cmdNative);
         else if (cmdNative instanceof SqlKillTransactionCommand)
@@ -137,6 +140,7 @@ public class SqlCommandProcessor {
             || cmd instanceof SqlCreateUserCommand
             || cmd instanceof SqlAlterUserCommand
             || cmd instanceof SqlDropUserCommand
+            || cmd instanceof SqlKillClientCommand
             || cmd instanceof SqlKillComputeTaskCommand
             || cmd instanceof SqlKillServiceCommand
             || cmd instanceof SqlKillTransactionCommand
@@ -176,6 +180,19 @@ public class SqlCommandProcessor {
     private void processKillScanQueryCommand(SqlKillScanQueryCommand cmd) {
         new QueryMXBeanImpl(ctx)
             .cancelScan(cmd.getOriginNodeId(), cmd.getCacheName(), cmd.getQryId());
+    }
+
+    /**
+     * Process kill client command.
+     *
+     * @param cmd Command.
+     */
+    private void processKillClientCommand(SqlKillClientCommand cmd) {
+        if (cmd.connectionId() == null)
+            ctx.sqlListener().mxBean().dropAllConnections();
+        else
+            ctx.sqlListener().mxBean().dropConnection(cmd.connectionId());
+
     }
 
     /**

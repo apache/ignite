@@ -17,6 +17,7 @@
 
 package org.apache.ignite.internal.commandline.query;
 
+import org.apache.ignite.mxbean.ClientProcessorMXBean;
 import org.apache.ignite.mxbean.ComputeMXBean;
 import org.apache.ignite.mxbean.QueryMXBean;
 import org.apache.ignite.mxbean.ServiceMXBean;
@@ -32,6 +33,7 @@ import org.apache.ignite.mxbean.TransactionsMXBean;
  * @see TransactionsMXBean
  * @see ServiceMXBean
  * @see SnapshotMXBean
+ * @see ClientProcessorMXBean
  */
 public enum KillSubcommand {
     /** Kill compute task. */
@@ -57,4 +59,7 @@ public enum KillSubcommand {
 
     /** Kill consistency tasks. */
     CONSISTENCY,
+
+    /** Kill client connection. */
+    CLIENT
 }
