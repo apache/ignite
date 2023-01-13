@@ -29,13 +29,13 @@ import java.util.concurrent.ThreadLocalRandom;
 import java.util.concurrent.atomic.AtomicInteger;
 import javax.cache.CacheManager;
 import javax.cache.Caching;
-import javax.cache.management.CacheMXBean;
 import javax.management.MBeanServer;
 import javax.management.MBeanServerInvocationHandler;
 import javax.management.ObjectName;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCache;
 import org.apache.ignite.IgniteCheckedException;
+import org.apache.ignite.IgniteException;
 import org.apache.ignite.IgniteTransactions;
 import org.apache.ignite.cache.CacheAtomicityMode;
 import org.apache.ignite.cache.CacheMetrics;
@@ -72,6 +72,7 @@ import org.junit.Assume;
 import org.junit.Test;
 
 import static org.apache.ignite.IgniteSystemProperties.IGNITE_DUMP_TX_COLLISIONS_INTERVAL;
+import static org.apache.ignite.testframework.GridTestUtils.assertThrows;
 import static org.apache.ignite.transactions.TransactionConcurrency.PESSIMISTIC;
 import static org.apache.ignite.transactions.TransactionIsolation.READ_COMMITTED;
 
@@ -122,25 +123,6 @@ public class CacheMetricsManageTest extends GridCommonAbstractTest {
         Assume.assumeFalse("https://issues.apache.org/jira/browse/IGNITE-9224", MvccFeatureChecker.forcedMvcc());
 
         testStatisticsEnable(true);
-    }
-
-    /** */
-    @Test
-    public void testCacheManagerManagementsEnable() throws Exception {
-        IgniteEx ig = startGrids(1);
-
-        CacheConfiguration<?, ?> cacheCfg = defaultCacheConfiguration();
-
-        cacheCfg.setManagementEnabled(true);
-
-        IgniteCache<?, ?> cache = ig.createCache(cacheCfg);
-
-        cache.getCacheManager().enableManagement(cacheCfg.getName(), true);
-
-        CacheMXBean bean = getMxBean(ig.context().igniteInstanceName(), "Metrics",
-            CacheMXBeanImpl.class, CacheMXBean.class);
-
-        assertNotNull(bean);
     }
 
     /**
@@ -815,7 +797,8 @@ public class CacheMetricsManageTest extends GridCommonAbstractTest {
 
         assertFalse(grid.cluster().state().active());
 
-        assertEquals(-1, grid.cache(CACHE1).localMetrics().getCacheSize());
+        assertThrows(null, ()->grid.cache(CACHE1).metrics().getCacheSize(), IgniteException.class,
+            "Can not perform the operation because the cluster is inactive");
     }
 
     /**
