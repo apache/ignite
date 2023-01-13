@@ -167,11 +167,14 @@ public class CacheIndexImpl implements IgniteIndex {
 
             BPlusTree.TreeRowClosure<IndexRow, IndexRow> rowFilter = null;
 
+            boolean checkExpired = !tbl.descriptor().cacheContext().config().isEagerTtl();
+
             if (notNull) {
                 boolean nullsFirst = collation.getFieldCollations().get(0).nullDirection ==
                     RelFieldCollation.NullDirection.FIRST;
 
-                BPlusTree.TreeRowClosure<IndexRow, IndexRow> notNullRowFilter = IndexScan.createNotNullRowFilter(iidx);
+                BPlusTree.TreeRowClosure<IndexRow, IndexRow> notNullRowFilter =
+                    IndexScan.createNotNullRowFilter(iidx, checkExpired);
 
                 AtomicBoolean skipCheck = new AtomicBoolean();
 
@@ -186,7 +189,7 @@ public class CacheIndexImpl implements IgniteIndex {
                         // don't need to check it with notNullRowFilter.
                         // In case of NULL-LAST collation, all values after first null value will be null,
                         // don't need to check it too.
-                        if (skipCheck.get())
+                        if (skipCheck.get() && !checkExpired)
                             return nullsFirst;
 
                         boolean res = notNullRowFilter.apply(tree, io, pageAddr, idx);
@@ -198,6 +201,8 @@ public class CacheIndexImpl implements IgniteIndex {
                     }
                 };
             }
+            else if (checkExpired)
+                rowFilter = IndexScan.createNotExpiredRowFilter();
 
             try {
                 for (int i = 0; i < iidx.segmentsCount(); ++i)
@@ -241,6 +246,12 @@ public class CacheIndexImpl implements IgniteIndex {
     @Override public boolean isInlineScanPossible(@Nullable ImmutableBitSet requiredColumns) {
         if (idx == null)
             return false;
+
+        // Since inline scan doesn't check expire time, allow it only if expired entries are eagerly removed.
+        if (tbl.descriptor().cacheInfo() != null) {
+            if (!tbl.descriptor().cacheInfo().config().isEagerTtl())
+                return false;
+        }
 
         if (requiredColumns == null)
             requiredColumns = ImmutableBitSet.range(tbl.descriptor().columnDescriptors().size());
