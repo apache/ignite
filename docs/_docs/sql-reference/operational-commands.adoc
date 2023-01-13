@@ -420,7 +420,7 @@ control.bat --kill CLIENT connection_id [--node-id node_id]
 
 === Parameters
 
-* `connection_id` - corresponds to the connection id of the client. Specify ALL to droll all connections. Note, connection_id are local value.
+* `connection_id` - corresponds to the connection id of the client. Specify ALL to drop all connections. Note, connection_id are local value.
 Value differs on nodes for the same client. You can always find parameter values with the link:monitoring-metrics/system-views#client_connections[CLIENT_CONNECTIONS] view.
 
 * `node_id` - corresponds to the node_id to drop connection from.

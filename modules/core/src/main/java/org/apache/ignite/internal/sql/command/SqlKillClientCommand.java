@@ -38,7 +38,7 @@ public class SqlKillClientCommand implements SqlCommand {
             if (lex.tokenType() == SqlLexerTokenType.DEFAULT) {
                 String connIdStr = lex.token();
 
-                if (!connIdStr.equals("ALL"))
+                if (!"ALL".equals(connIdStr))
                     connectionId = Long.parseLong(connIdStr);
 
                 return this;
