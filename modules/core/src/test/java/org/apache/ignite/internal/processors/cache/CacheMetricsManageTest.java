@@ -797,7 +797,7 @@ public class CacheMetricsManageTest extends GridCommonAbstractTest {
 
         assertFalse(grid.cluster().state().active());
 
-        assertThrows(null, ()->grid.cache(CACHE1).metrics().getCacheSize(), IgniteException.class,
+        assertThrows(null, () -> grid.cache(CACHE1).metrics().getCacheSize(), IgniteException.class,
             "Can not perform the operation because the cluster is inactive");
     }
 
