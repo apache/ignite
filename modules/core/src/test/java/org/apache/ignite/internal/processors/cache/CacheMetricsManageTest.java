@@ -35,6 +35,7 @@ import javax.management.ObjectName;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCache;
 import org.apache.ignite.IgniteCheckedException;
+import org.apache.ignite.IgniteException;
 import org.apache.ignite.IgniteTransactions;
 import org.apache.ignite.cache.CacheAtomicityMode;
 import org.apache.ignite.cache.CacheMetrics;
@@ -71,6 +72,7 @@ import org.junit.Assume;
 import org.junit.Test;
 
 import static org.apache.ignite.IgniteSystemProperties.IGNITE_DUMP_TX_COLLISIONS_INTERVAL;
+import static org.apache.ignite.testframework.GridTestUtils.assertThrows;
 import static org.apache.ignite.transactions.TransactionConcurrency.PESSIMISTIC;
 import static org.apache.ignite.transactions.TransactionIsolation.READ_COMMITTED;
 
@@ -795,7 +797,8 @@ public class CacheMetricsManageTest extends GridCommonAbstractTest {
 
         assertFalse(grid.cluster().state().active());
 
-        assertEquals(-1, grid.cache(CACHE1).localMetrics().getCacheSize());
+        assertThrows(null, ()->grid.cache(CACHE1).metrics().getCacheSize(), IgniteException.class,
+            "Can not perform the operation because the cluster is inactive");
     }
 
     /**
