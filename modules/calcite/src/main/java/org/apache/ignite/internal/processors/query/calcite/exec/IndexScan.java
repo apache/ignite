@@ -467,11 +467,11 @@ public class IndexScan<Row> extends AbstractIndexScan<Row, IndexRow> {
                 long pageAddr,
                 int idx
             ) throws IgniteCheckedException {
-                if (keyType != null && io instanceof InlineIO) {
+                if (!checkExpired && keyType != null && io instanceof InlineIO) {
                     Boolean keyIsNull = keyType.isNull(pageAddr, io.offset(idx), ((InlineIO)io).inlineSize());
 
-                    if (keyIsNull != null && (!checkExpired || keyIsNull == Boolean.TRUE))
-                        return !keyIsNull;
+                    if (keyIsNull == Boolean.TRUE)
+                        return false;
                 }
 
                 IndexRow idxRow = io.getLookupRow(tree, pageAddr, idx);
