@@ -28,6 +28,7 @@ import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.function.BiConsumer;
 import java.util.function.Consumer;
+import java.util.function.Predicate;
 import javax.cache.Cache;
 import javax.cache.CacheException;
 import javax.cache.event.CacheEntryEvent;
@@ -40,7 +41,6 @@ import org.apache.ignite.cache.query.QueryCursor;
 import org.apache.ignite.cache.query.ScanQuery;
 import org.apache.ignite.cache.query.SqlFieldsQuery;
 import org.apache.ignite.client.ClientConnectionException;
-import org.apache.ignite.client.Config;
 import org.apache.ignite.client.IgniteClient;
 import org.apache.ignite.cluster.ClusterState;
 import org.apache.ignite.configuration.ClientConfiguration;
@@ -61,6 +61,7 @@ import org.apache.ignite.transactions.Transaction;
 
 import static org.apache.ignite.internal.managers.systemview.ScanQuerySystemView.SCAN_QRY_SYS_VIEW;
 import static org.apache.ignite.internal.processors.cache.index.AbstractSchemaSelfTest.queryProcessor;
+import static org.apache.ignite.internal.processors.odbc.ClientListenerProcessor.CLIENT_LISTENER_PORT;
 import static org.apache.ignite.internal.processors.service.IgniteServiceProcessor.SVCS_VIEW;
 import static org.apache.ignite.testframework.GridTestUtils.assertThrowsAnyCause;
 import static org.apache.ignite.testframework.GridTestUtils.assertThrowsWithCause;
@@ -485,10 +486,16 @@ class KillCommandsTests {
      * @param cliCanceler Client connection cancel closure.
      */
     public static void doTestCancelClientConnection(List<IgniteEx> srvs, BiConsumer<UUID, Long> cliCanceler) {
-        IgniteClient cli0 = Ignition.startClient(new ClientConfiguration().setAddresses(Config.SERVER));
-        IgniteClient cli1 = Ignition.startClient(new ClientConfiguration().setAddresses(Config.SERVER));
-        IgniteClient cli2 = Ignition.startClient(new ClientConfiguration().setAddresses(Config.SERVER));
-        IgniteClient cli3 = Ignition.startClient(new ClientConfiguration().setAddresses("127.0.0.1:10801"));
+        ClientConfiguration cfg = new ClientConfiguration()
+            .setAddresses("127.0.0.1:" + srvs.get(0).localNode().attribute(CLIENT_LISTENER_PORT))
+            .setPartitionAwarenessEnabled(false);
+
+        IgniteClient cli0 = Ignition.startClient(cfg);
+        IgniteClient cli1 = Ignition.startClient(cfg);
+        IgniteClient cli2 = Ignition.startClient(cfg);
+        IgniteClient cli3 = Ignition.startClient(new ClientConfiguration()
+            .setAddresses("127.0.0.1:" + srvs.get(1).localNode().attribute(CLIENT_LISTENER_PORT))
+            .setPartitionAwarenessEnabled(false));
 
         assertEquals(ClusterState.ACTIVE, cli0.cluster().state());
         assertEquals(ClusterState.ACTIVE, cli1.cluster().state());
@@ -505,7 +512,25 @@ class KillCommandsTests {
 
         assertEquals(2, conns.size());
 
-        assertThrowsWithCause(() -> cli0.cluster().state(), ClientConnectionException.class);
+        Predicate<IgniteClient> checker = cli -> {
+            try {
+                return waitForCondition(() -> {
+                    try {
+                        cli.cluster().state();
+
+                        return false;
+                    }
+                    catch (ClientConnectionException e) {
+                        return true;
+                    }
+                }, 10_000);
+            }
+            catch (Exception e) {
+                return false;
+            }
+        };
+
+        assertTrue(checker.test(cli0));
         assertEquals(ClusterState.ACTIVE, cli1.cluster().state());
         assertEquals(ClusterState.ACTIVE, cli2.cluster().state());
         assertEquals(ClusterState.ACTIVE, cli3.cluster().state());
@@ -514,13 +539,13 @@ class KillCommandsTests {
 
         assertEquals(0, execute(srvs.get(0), "SELECT CONNECTION_ID FROM SYS.CLIENT_CONNECTIONS").size());
 
-        assertThrowsWithCause(() -> cli1.cluster().state(), ClientConnectionException.class);
-        assertThrowsWithCause(() -> cli2.cluster().state(), ClientConnectionException.class);
+        assertTrue(checker.test(cli1));
+        assertTrue(checker.test(cli2));
         assertEquals(ClusterState.ACTIVE, cli3.cluster().state());
 
         cliCanceler.accept(null, null);
 
-        assertThrowsWithCause(() -> cli3.cluster().state(), ClientConnectionException.class);
+        assertTrue(checker.test(cli3));
     }
 
     /** */
