@@ -18,7 +18,6 @@
 package org.apache.ignite.util;
 
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.List;
 import java.util.UUID;
 import java.util.concurrent.CountDownLatch;
@@ -43,6 +42,7 @@ import org.apache.ignite.spi.systemview.view.SystemView;
 import org.apache.ignite.testframework.GridTestUtils;
 import org.junit.Test;
 
+import static java.util.Arrays.asList;
 import static org.apache.ignite.internal.commandline.CommandHandler.EXIT_CODE_INVALID_ARGUMENTS;
 import static org.apache.ignite.internal.commandline.CommandHandler.EXIT_CODE_OK;
 import static org.apache.ignite.internal.commandline.CommandHandler.EXIT_CODE_UNEXPECTED_ERROR;
@@ -159,10 +159,12 @@ public class KillCommandsControlShTest extends GridCommandHandlerClusterByClassA
     @Test
     public void testCancelClientConnection() {
         doTestCancelClientConnection(srvs, (nodeId, connId) -> {
-            List<String> params = new ArrayList<>(Arrays.asList("--kill", "client", connId == null ? "ALL" : Long.toString(connId)));
+            List<String> params = new ArrayList<>(
+                asList("--kill", "client", connId == null ? "ALL" : Long.toString(connId))
+            );
 
             if (nodeId != null)
-                params.addAll(Arrays.asList("--node-id", nodeId.toString()));
+                params.addAll(asList("--node-id", nodeId.toString()));
 
             assertEquals(EXIT_CODE_OK, execute(params));
         });
@@ -369,7 +371,7 @@ public class KillCommandsControlShTest extends GridCommandHandlerClusterByClassA
 
         injectTestSystemOut();
 
-        List<String> cmd = new ArrayList<>(Arrays.asList(
+        List<String> cmd = new ArrayList<>(asList(
             "--consistency", "repair",
             ConsistencyCommand.STRATEGY, ReadRepairStrategy.CHECK_ONLY.toString(),
             ConsistencyCommand.PARTITIONS, "0",
