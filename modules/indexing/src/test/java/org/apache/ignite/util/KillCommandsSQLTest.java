@@ -26,6 +26,7 @@ import org.apache.ignite.cache.CacheAtomicityMode;
 import org.apache.ignite.cache.query.SqlFieldsQuery;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.internal.IgniteEx;
+import org.apache.ignite.internal.util.typedef.G;
 import org.apache.ignite.lang.IgniteUuid;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.junit.Test;
@@ -155,8 +156,10 @@ public class KillCommandsSQLTest extends GridCommonAbstractTest {
     /** */
     @Test
     public void testCancelClientConnection() {
-        doTestCancelClientConnection(srvs, connId ->
-            execute(srvs.get(0), KILL_CLI_QRY + " " + (connId == null ? "ALL" : Long.toString(connId))));
+        doTestCancelClientConnection(srvs, (nodeId, connId) -> execute(
+            nodeId == null ? srvs.get(1) : G.ignite(nodeId),
+            KILL_CLI_QRY + " " + (connId == null ? "ALL" : Long.toString(connId))
+        ));
     }
 
     /** */

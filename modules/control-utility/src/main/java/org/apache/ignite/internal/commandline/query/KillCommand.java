@@ -218,18 +218,17 @@ public class KillCommand extends AbstractCommand<Object> {
             case CLIENT:
                 taskName = VisorClientConnectionDropTask.class.getName();
 
-                for (int i = 0; i < 2; i++) {
-                    String argVal = argIter.nextArg("next argument");
+                String argVal = argIter.nextArg("connection id");
 
-                    switch (argVal) {
-                        case "--node-id":
-                            nodeId = UUID.fromString(argIter.nextArg("node_id"));
+                taskArgs = "ALL".equals(argVal) ? null : Long.parseLong(argVal);
 
-                            break;
-                        default:
-                            taskArgs = argVal.equals("ALL") ? null : Long.parseLong(argVal);
-                    }
+                if ("--node-id".equals(argIter.peekNextArg())) {
+                    argIter.nextArg("--node-id");
+
+                    nodeId = UUID.fromString(argIter.nextArg("node_id"));
                 }
+                else
+                    nodeId = BROADCAST_UUID;
 
                 break;
 
@@ -270,8 +269,8 @@ public class KillCommand extends AbstractCommand<Object> {
 
         params.clear();
 
-        params.put("--node-id node_id", "Node id to drop connection from.");
         params.put("connection_id", "Connection identifier or ALL.");
+        params.put("--node-id node_id", "Node id to drop connection from.");
 
         usage(log, "Kill client connection by id:", KILL, params, CLIENT.toString(),
             "connection_id",

@@ -17,11 +17,13 @@
 
 package org.apache.ignite.internal.visor.client;
 
+import java.util.List;
 import org.apache.ignite.IgniteException;
+import org.apache.ignite.compute.ComputeJobResult;
 import org.apache.ignite.internal.processors.task.GridInternal;
 import org.apache.ignite.internal.processors.task.GridVisorManagementTask;
 import org.apache.ignite.internal.visor.VisorJob;
-import org.apache.ignite.internal.visor.VisorOneNodeTask;
+import org.apache.ignite.internal.visor.VisorMultiNodeTask;
 import org.apache.ignite.mxbean.ClientProcessorMXBean;
 import org.jetbrains.annotations.Nullable;
 
@@ -30,19 +32,36 @@ import org.jetbrains.annotations.Nullable;
  */
 @GridInternal
 @GridVisorManagementTask
-public class VisorClientConnectionDropTask extends VisorOneNodeTask<Long, Void> {
+public class VisorClientConnectionDropTask extends VisorMultiNodeTask<Long, Void, Boolean> {
     /** */
     private static final long serialVersionUID = 0L;
 
     /** {@inheritDoc} */
-    @Override protected VisorJob<Long, Void> job(Long arg) {
+    @Override protected VisorJob<Long, Boolean> job(Long arg) {
         return new VisorClientConnectionDropJob(arg, debug);
+    }
+
+    /** {@inheritDoc} */
+    @Override protected Void reduce0(List<ComputeJobResult> results) throws IgniteException {
+        boolean res = false;
+
+        for (ComputeJobResult jobRes : results) {
+            if (jobRes.getException() != null)
+                throw jobRes.getException();
+
+            res |= jobRes.<Boolean>getData();
+        }
+
+        if (!res)
+            throw new IgniteException("No connection was dropped");
+
+        return null;
     }
 
     /**
      * Job to cancel client connection(s).
      */
-    private static class VisorClientConnectionDropJob extends VisorJob<Long, Void> {
+    private static class VisorClientConnectionDropJob extends VisorJob<Long, Boolean> {
         /** */
         private static final long serialVersionUID = 0L;
 
@@ -57,15 +76,15 @@ public class VisorClientConnectionDropTask extends VisorOneNodeTask<Long, Void> 
         }
 
         /** {@inheritDoc} */
-        @Override protected Void run(@Nullable Long arg) throws IgniteException {
+        @Override protected Boolean run(@Nullable Long arg) throws IgniteException {
             ClientProcessorMXBean bean = ignite.context().sqlListener().mxBean();
 
-            if (arg == null)
-                bean.dropAllConnections();
-            else
-                bean.dropConnection(arg);
+            if (arg != null)
+                return bean.dropConnection(arg);
 
-            return null;
+            bean.dropAllConnections();
+
+            return true;
         }
     }
 }

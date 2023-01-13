@@ -33,6 +33,7 @@ import org.apache.ignite.internal.ServiceMXBeanImpl;
 import org.apache.ignite.internal.TransactionsMXBeanImpl;
 import org.apache.ignite.internal.processors.cache.persistence.snapshot.SnapshotMXBeanImpl;
 import org.apache.ignite.internal.processors.odbc.ClientListenerProcessor;
+import org.apache.ignite.internal.util.typedef.G;
 import org.apache.ignite.lang.IgniteUuid;
 import org.apache.ignite.mxbean.ClientProcessorMXBean;
 import org.apache.ignite.mxbean.ComputeMXBean;
@@ -85,9 +86,6 @@ public class KillCommandsMXBeanTest extends GridCommonAbstractTest {
     /** Snapshot control JMX bean. */
     private static SnapshotMXBean snpMxBean;
 
-    /** */
-    private static ClientProcessorMXBean cliMxBean;
-
     /** {@inheritDoc} */
     @Override protected IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {
         return super.getConfiguration(igniteInstanceName)
@@ -139,9 +137,6 @@ public class KillCommandsMXBeanTest extends GridCommonAbstractTest {
 
         snpMxBean = getMxBean(killCli.name(), "Snapshot",
             SnapshotMXBeanImpl.class.getSimpleName(), SnapshotMXBean.class);
-
-        cliMxBean = getMxBean(srvs.get(0).name(), "Clients",
-            ClientListenerProcessor.class.getSimpleName(), ClientProcessorMXBean.class);
     }
 
     /** {@inheritDoc} */
@@ -200,7 +195,14 @@ public class KillCommandsMXBeanTest extends GridCommonAbstractTest {
     /** */
     @Test
     public void testCancelClientConnection() {
-        doTestCancelClientConnection(srvs, connId -> {
+        doTestCancelClientConnection(srvs, (nodeId, connId) -> {
+            ClientProcessorMXBean cliMxBean = getMxBean(
+                (nodeId == null ? srvs.get(1) : G.ignite(nodeId)).name(),
+                "Clients",
+                ClientListenerProcessor.class.getSimpleName(),
+                ClientProcessorMXBean.class
+            );
+
             if (connId == null)
                 cliMxBean.dropAllConnections();
             else

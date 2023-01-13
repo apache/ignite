@@ -43,6 +43,7 @@ import org.apache.ignite.spi.systemview.view.SystemView;
 import org.apache.ignite.testframework.GridTestUtils;
 import org.junit.Test;
 
+import static org.apache.ignite.internal.commandline.CommandHandler.EXIT_CODE_INVALID_ARGUMENTS;
 import static org.apache.ignite.internal.commandline.CommandHandler.EXIT_CODE_OK;
 import static org.apache.ignite.internal.commandline.CommandHandler.EXIT_CODE_UNEXPECTED_ERROR;
 import static org.apache.ignite.internal.processors.cache.persistence.snapshot.AbstractSnapshotSelfTest.doSnapshotCancellationTest;
@@ -157,13 +158,24 @@ public class KillCommandsControlShTest extends GridCommandHandlerClusterByClassA
     /** @throws Exception If failed. */
     @Test
     public void testCancelClientConnection() {
-        doTestCancelClientConnection(srvs, connId -> {
-            String nodeId = srvs.get(0).localNode().id().toString();
+        doTestCancelClientConnection(srvs, (nodeId, connId) -> {
+            List<String> params = new ArrayList<>(Arrays.asList("--kill", "client", connId == null ? "ALL" : Long.toString(connId)));
 
-            int res = execute("--kill", "client", "--node-id", nodeId, connId == null ? "ALL" : Long.toString(connId));
+            if (nodeId != null)
+                params.addAll(Arrays.asList("--node-id", nodeId.toString()));
 
-            assertEquals(EXIT_CODE_OK, res);
+            assertEquals(EXIT_CODE_OK, execute(params));
         });
+    }
+
+    /** @throws Exception If failed. */
+    @Test
+    public void testCancelClientConnectionWrongParams() {
+        assertEquals(EXIT_CODE_INVALID_ARGUMENTS, execute("--kill", "client"));
+        assertEquals(EXIT_CODE_INVALID_ARGUMENTS, execute("--kill", "client", "not_a_number"));
+        assertEquals(EXIT_CODE_INVALID_ARGUMENTS, execute("--kill", "client", "1", "--node-id"));
+        assertEquals(EXIT_CODE_INVALID_ARGUMENTS, execute("--kill", "client", "1", "--node-id", "not_an_uuid"));
+        assertEquals("Unknown connection id", EXIT_CODE_UNEXPECTED_ERROR, execute("--kill", "client", "123"));
     }
 
     /** */

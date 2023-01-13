@@ -26,7 +26,6 @@ import java.util.concurrent.ConcurrentMap;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
-import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.BiConsumer;
 import java.util.function.Consumer;
 import javax.cache.Cache;
@@ -480,37 +479,48 @@ class KillCommandsTests {
     }
 
     /**
-     * Test cancel of the continuous query.
+     * Test cancel of the client connection(s).
      *
      * @param srvs Server nodes.
      * @param cliCanceler Client connection cancel closure.
      */
-    public static void doTestCancelClientConnection(List<IgniteEx> srvs, Consumer<Long> cliCanceler) {
-        AtomicReference<IgniteClient> cli = new AtomicReference<>(
-            Ignition.startClient(new ClientConfiguration().setAddresses(Config.SERVER))
-        );
+    public static void doTestCancelClientConnection(List<IgniteEx> srvs, BiConsumer<UUID, Long> cliCanceler) {
+        IgniteClient cli0 = Ignition.startClient(new ClientConfiguration().setAddresses(Config.SERVER));
+        IgniteClient cli1 = Ignition.startClient(new ClientConfiguration().setAddresses(Config.SERVER));
+        IgniteClient cli2 = Ignition.startClient(new ClientConfiguration().setAddresses(Config.SERVER));
+        IgniteClient cli3 = Ignition.startClient(new ClientConfiguration().setAddresses("127.0.0.1:10801"));
 
-        assertEquals(ClusterState.ACTIVE, cli.get().cluster().state());
+        assertEquals(ClusterState.ACTIVE, cli0.cluster().state());
+        assertEquals(ClusterState.ACTIVE, cli1.cluster().state());
+        assertEquals(ClusterState.ACTIVE, cli2.cluster().state());
+        assertEquals(ClusterState.ACTIVE, cli3.cluster().state());
 
-        List<List<?>> conns = execute(srvs.get(0), "SELECT CONNECTION_ID FROM SYS.CLIENT_CONNECTIONS");
+        List<List<?>> conns = execute(srvs.get(0), "SELECT CONNECTION_ID FROM SYS.CLIENT_CONNECTIONS ORDER BY 1");
 
-        assertEquals(1, conns.size());
+        assertEquals(3, conns.size());
 
-        cliCanceler.accept((Long)conns.get(0).get(0));
+        cliCanceler.accept(srvs.get(0).localNode().id(), (Long)conns.get(0).get(0));
 
         conns = execute(srvs.get(0), "SELECT CONNECTION_ID FROM SYS.CLIENT_CONNECTIONS");
 
-        assertEquals(0, conns.size());
+        assertEquals(2, conns.size());
 
-        assertThrowsWithCause(() -> cli.get().cluster().state(), ClientConnectionException.class);
+        assertThrowsWithCause(() -> cli0.cluster().state(), ClientConnectionException.class);
+        assertEquals(ClusterState.ACTIVE, cli1.cluster().state());
+        assertEquals(ClusterState.ACTIVE, cli2.cluster().state());
+        assertEquals(ClusterState.ACTIVE, cli3.cluster().state());
 
-        cli.set(Ignition.startClient(new ClientConfiguration().setAddresses(Config.SERVER)));
+        cliCanceler.accept(srvs.get(0).localNode().id(), null);
 
-        assertEquals(ClusterState.ACTIVE, cli.get().cluster().state());
+        assertEquals(0, execute(srvs.get(0), "SELECT CONNECTION_ID FROM SYS.CLIENT_CONNECTIONS").size());
 
-        cliCanceler.accept(null);
+        assertThrowsWithCause(() -> cli1.cluster().state(), ClientConnectionException.class);
+        assertThrowsWithCause(() -> cli2.cluster().state(), ClientConnectionException.class);
+        assertEquals(ClusterState.ACTIVE, cli3.cluster().state());
 
-        assertThrowsWithCause(() -> cli.get().cluster().state(), ClientConnectionException.class);
+        cliCanceler.accept(null, null);
+
+        assertThrowsWithCause(() -> cli3.cluster().state(), ClientConnectionException.class);
     }
 
     /** */
