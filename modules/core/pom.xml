@@ -483,8 +483,10 @@
                                 <exclude>**/org/apache/ignite/**/*.java</exclude>
                                 <exclude>**/annotation/*Test.java</exclude>
                                 <exclude>**/ClientServerTest.java</exclude>
+                                <!-- JMX cache statistics and management aren't supported -->
                                 <exclude>org.jsr107.tck.management.CacheMBStatisticsBeanTest</exclude>
-<!--                                <exclude>org.jsr107.tck.management.CacheManagerManagementTest</exclude>-->
+                                <exclude>org.jsr107.tck.management.CacheManagerManagementTest</exclude>
+                                <exclude>org.jsr107.tck.management.CacheMXBeanTest</exclude>
                             </excludes>
                         </configuration>
                     </plugin>
