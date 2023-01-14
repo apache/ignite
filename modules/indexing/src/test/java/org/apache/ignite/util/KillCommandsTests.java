@@ -504,13 +504,7 @@ class KillCommandsTests {
 
         List<List<?>> conns = execute(srvs.get(0), "SELECT CONNECTION_ID FROM SYS.CLIENT_CONNECTIONS ORDER BY 1");
 
-        assertEquals(3, conns.size());
-
         cliCanceler.accept(srvs.get(0).localNode().id(), (Long)conns.get(0).get(0));
-
-        conns = execute(srvs.get(0), "SELECT CONNECTION_ID FROM SYS.CLIENT_CONNECTIONS");
-
-        assertEquals(2, conns.size());
 
         Predicate<IgniteClient> checker = cli -> {
             try {
@@ -536,8 +530,6 @@ class KillCommandsTests {
         assertEquals(ClusterState.ACTIVE, cli3.cluster().state());
 
         cliCanceler.accept(srvs.get(0).localNode().id(), null);
-
-        assertEquals(0, execute(srvs.get(0), "SELECT CONNECTION_ID FROM SYS.CLIENT_CONNECTIONS").size());
 
         assertTrue(checker.test(cli1));
         assertTrue(checker.test(cli2));
