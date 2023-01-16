@@ -37,7 +37,6 @@ import org.apache.ignite.internal.processors.metric.MetricRegistry;
 import org.apache.ignite.internal.processors.metric.impl.LongAdderMetric;
 import org.apache.ignite.internal.util.typedef.internal.CU;
 import org.apache.ignite.internal.util.typedef.internal.U;
-import org.apache.ignite.lang.IgniteFuture;
 import org.apache.ignite.spi.metric.BooleanMetric;
 import org.apache.ignite.spi.metric.Metric;
 import org.junit.Test;
@@ -197,9 +196,7 @@ public class IndexMetricsTest extends AbstractIndexingCommonTest {
 
         ((BlockingIndexesRebuildTask)n.context().indexProcessor().idxRebuild()).stopBlock(cacheName1);
 
-        IgniteFuture<?> fut = n.cache(cacheName1).indexReadyFuture();
-
-        fut.get(30_000);
+        n.cache(cacheName1).indexReadyFuture().get(30_000);
 
         assertEquals(false, idxRebuildProgressCache1);
         assertEquals(true, idxRebuildProgressCache2);

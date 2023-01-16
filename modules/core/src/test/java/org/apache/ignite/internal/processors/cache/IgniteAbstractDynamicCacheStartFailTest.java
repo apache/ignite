@@ -837,11 +837,8 @@ public abstract class IgniteAbstractDynamicCacheStartFailTest extends GridCacheA
 
             cfg.setName(cacheName);
 
-            if (i == unluckyCfg) {
-                cfg.setNodeFilter(new AnyNodeMXFilter());
-
+            if (i == unluckyCfg)
                 mbSrv.cache(cacheName);
-            }
 
             cfgs.add(cfg);
         }
@@ -894,21 +891,6 @@ public abstract class IgniteAbstractDynamicCacheStartFailTest extends GridCacheA
         /** */
         public int getValue() {
             return fieldVal;
-        }
-    }
-
-    /** Used to attempt to register mx beanat dynamic cache creation. */
-    public interface UUIDMXBean {
-
-    }
-
-    /**
-     * Filter used to attempt to register mxbean at dynamic cache creation.
-     */
-    public static class AnyNodeMXFilter implements IgnitePredicate<ClusterNode>, UUIDMXBean {
-        /** {@inheritDoc} */
-        @Override public boolean apply(ClusterNode clusterNode) {
-            return true;
         }
     }
 

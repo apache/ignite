@@ -30,6 +30,7 @@ import javax.cache.CacheException;
 import javax.cache.configuration.CompleteConfiguration;
 import javax.cache.configuration.Configuration;
 import javax.cache.management.CacheMXBean;
+import javax.cache.management.CacheStatisticsMXBean;
 import javax.management.MBeanServer;
 import javax.management.MalformedObjectNameException;
 import javax.management.ObjectName;
@@ -43,11 +44,17 @@ import org.apache.ignite.internal.GridKernalState;
 import org.apache.ignite.internal.IgniteKernal;
 import org.apache.ignite.internal.IgnitionEx;
 import org.apache.ignite.internal.mxbean.IgniteStandardMXBean;
+import org.apache.ignite.internal.processors.cache.CacheMetricsImpl;
 import org.apache.ignite.internal.processors.cache.GatewayProtectedCacheProxy;
+import org.apache.ignite.internal.processors.cache.GridCacheAdapter;
 import org.apache.ignite.internal.util.IgniteUtils;
 import org.apache.ignite.internal.util.typedef.internal.CU;
 import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.TcpDiscoveryVmIpFinder;
+import org.apache.ignite.spi.metric.MetricExporterSpi;
+import org.apache.ignite.spi.metric.ReadOnlyMetricManager;
+import org.apache.ignite.spi.metric.ReadOnlyMetricRegistry;
+import org.apache.ignite.spi.metric.jmx.JmxMetricExporterSpi;
 import org.jetbrains.annotations.Nullable;
 
 import static org.apache.ignite.IgniteSystemProperties.IGNITE_JCACHE_DEFAULT_ISOLATED;
@@ -59,6 +66,9 @@ import static org.apache.ignite.IgniteSystemProperties.getBoolean;
 public class CacheManager implements javax.cache.CacheManager {
     /** @see IgniteSystemProperties#IGNITE_JCACHE_DEFAULT_ISOLATED */
     public static final boolean DFLT_JCACHE_DEFAULT_ISOLATED = true;
+
+    /** */
+    private static final String CACHE_STATISTICS = "CacheStatistics";
 
     /** */
     private static final String CACHE_CONFIGURATION = "CacheConfiguration";
@@ -270,8 +280,10 @@ public class CacheManager implements javax.cache.CacheManager {
         try {
             cache = getCache0(cacheName);
 
-            if (cache != null)
-                unregisterCacheConfigurationObject(cacheName);
+            if (cache != null) {
+                unregisterCacheObject(cacheName, CACHE_CONFIGURATION);
+                unregisterCacheObject(cacheName, CACHE_STATISTICS);
+            }
         }
         finally {
             kernalGateway.readUnlock();
@@ -312,12 +324,16 @@ public class CacheManager implements javax.cache.CacheManager {
             if (cache == null)
                 throw new CacheException("Cache not found: " + cacheName);
 
-            if (enabled)
-                registerCacheConfigurationObject(ignite.internalCache(cacheName).managementMXBean(), cacheName);
-            else
-                unregisterCacheConfigurationObject(cacheName);
+            GridCacheAdapter<?, ?> cache0 = ignite.context().cache().internalCache(cacheName);
 
-            cache.getConfiguration(CacheConfiguration.class).setManagementEnabled(enabled);
+            assert cache0 != null;
+
+            if (enabled)
+                registerCacheObject(new CacheMXBeanImpl(cache0.metrics0()), cacheName, CACHE_CONFIGURATION);
+            else
+                unregisterCacheObject(cacheName, CACHE_STATISTICS);
+
+            cache0.configuration().setManagementEnabled(enabled);
         }
         finally {
             kernalGateway.readUnlock();
@@ -337,7 +353,16 @@ public class CacheManager implements javax.cache.CacheManager {
             if (cache == null)
                 throw new CacheException("Cache not found: " + cacheName);
 
-            ignite.context().cache().cache(cacheName).context().statisticsEnabled(enabled);
+            GridCacheAdapter<?, ?> cache0 = ignite.context().cache().internalCache(cacheName);
+
+            assert cache0 != null;
+
+            if (enabled)
+                registerCacheObject(new CacheStatisticsMXBeanImpl(cache0.metrics0()), cacheName, CACHE_STATISTICS);
+            else
+                unregisterCacheObject(cacheName, CACHE_STATISTICS);
+
+            cache0.context().statisticsEnabled(enabled);
         }
         finally {
             kernalGateway.readUnlock();
@@ -347,16 +372,20 @@ public class CacheManager implements javax.cache.CacheManager {
     /**
      * @param mxbean MXBean.
      * @param name Cache name.
+     * @param beanType Bean type.
      */
-    private void registerCacheConfigurationObject(Object mxbean, String name) {
+    private void registerCacheObject(Object mxbean, String name, String beanType) {
         MBeanServer mBeanSrv = ignite.configuration().getMBeanServer();
 
-        ObjectName registeredObjName = getObjectName(name, CACHE_CONFIGURATION);
+        ObjectName registeredObjName = getObjectName(name, beanType);
 
         try {
             if (mBeanSrv.queryNames(registeredObjName, null).isEmpty()) {
-                mBeanSrv.registerMBean(new IgniteStandardMXBean((CacheMXBean)mxbean, CacheMXBean.class),
-                    registeredObjName);
+                IgniteStandardMXBean bean = beanType.equals(CACHE_CONFIGURATION)
+                    ? new IgniteStandardMXBean((CacheMXBean)mxbean, CacheMXBean.class)
+                    : new IgniteStandardMXBean((CacheStatisticsMXBean)mxbean, CacheStatisticsMXBean.class);
+
+                mBeanSrv.registerMBean(bean, registeredObjName);
             }
         }
         catch (Exception e) {
@@ -365,17 +394,18 @@ public class CacheManager implements javax.cache.CacheManager {
     }
 
     /**
-     * UnRegisters the JCache management mxbean if registered already.
+     * UnRegisters the mxbean if registered already.
      *
      * @param name Cache name.
+     * @param beanType Mxbean name.
      */
-    private void unregisterCacheConfigurationObject(String name) {
+    private void unregisterCacheObject(String name, String beanType) {
         if (IgniteUtils.IGNITE_MBEANS_DISABLED)
             return;
 
         MBeanServer mBeanSrv = ignite.configuration().getMBeanServer();
 
-        Set<ObjectName> registeredObjNames = mBeanSrv.queryNames(getObjectName(name, CACHE_CONFIGURATION), null);
+        Set<ObjectName> registeredObjNames = mBeanSrv.queryNames(getObjectName(name, beanType), null);
 
         //should just be one
         for (ObjectName registeredObjectName : registeredObjNames) {
@@ -423,5 +453,142 @@ public class CacheManager implements javax.cache.CacheManager {
             return clazz.cast(ignite);
 
         throw new IllegalArgumentException();
+    }
+
+    /**
+     * Implementation of {@link CacheStatisticsMXBean} to support JCache specification. An echanced statistics is
+     * available through {@link JmxMetricExporterSpi} with "name=cache.{cache_name}".
+     *
+     * @see ReadOnlyMetricManager
+     * @see ReadOnlyMetricRegistry
+     * @see JmxMetricExporterSpi
+     * @see MetricExporterSpi
+     */
+    private static class CacheStatisticsMXBeanImpl implements CacheStatisticsMXBean {
+        /** Cache statistics. */
+        private final CacheMetricsImpl metrics;
+
+        /**
+         * Creates MBean;
+         *
+         * @param metrics Cache metrics.
+         */
+        private CacheStatisticsMXBeanImpl(CacheMetricsImpl metrics) {
+            assert metrics != null;
+
+            this.metrics = metrics;
+        }
+
+        /** {@inheritDoc} */
+        @Override public void clear() {
+            metrics.clear();
+        }
+
+        /** {@inheritDoc} */
+        @Override public long getCacheHits() {
+            return metrics.getCacheHits();
+        }
+
+        /** {@inheritDoc} */
+        @Override public float getCacheHitPercentage() {
+            return metrics.getCacheHitPercentage();
+        }
+
+        /** {@inheritDoc} */
+        @Override public long getCacheMisses() {
+            return metrics.getCacheMisses();
+        }
+
+        /** {@inheritDoc} */
+        @Override public float getCacheMissPercentage() {
+            return metrics.getCacheMissPercentage();
+        }
+
+        /** {@inheritDoc} */
+        @Override public long getCacheGets() {
+            return metrics.getCacheGets();
+        }
+
+        /** {@inheritDoc} */
+        @Override public long getCachePuts() {
+            return metrics.getCachePuts();
+        }
+
+        /** {@inheritDoc} */
+        @Override public long getCacheRemovals() {
+            return metrics.getCacheRemovals();
+        }
+
+        /** {@inheritDoc} */
+        @Override public long getCacheEvictions() {
+            return metrics.getCacheEvictions();
+        }
+
+        /** {@inheritDoc} */
+        @Override public float getAverageGetTime() {
+            return metrics.getAverageGetTime();
+        }
+
+        /** {@inheritDoc} */
+        @Override public float getAveragePutTime() {
+            return metrics.getAveragePutTime();
+        }
+
+        /** {@inheritDoc} */
+        @Override public float getAverageRemoveTime() {
+            return metrics.getAverageRemoveTime();
+        }
+    }
+
+    /**
+     * Implementation of {@link CacheMXBean} to support JCache specification.
+     */
+    private static class CacheMXBeanImpl implements CacheMXBean {
+        /** Cache metrics. */
+        private final CacheMetricsImpl metrics;
+
+        /**
+         * Creates MBean;
+         *
+         * @param metrics Cache metrics.
+         */
+        private CacheMXBeanImpl(CacheMetricsImpl metrics) {
+            this.metrics = metrics;
+        }
+
+        /** {@inheritDoc} */
+        @Override public String getKeyType() {
+            return metrics.getKeyType();
+        }
+
+        /** {@inheritDoc} */
+        @Override public String getValueType() {
+            return metrics.getValueType();
+        }
+
+        /** {@inheritDoc} */
+        @Override public boolean isReadThrough() {
+            return metrics.isReadThrough();
+        }
+
+        /** {@inheritDoc} */
+        @Override public boolean isWriteThrough() {
+            return metrics.isWriteThrough();
+        }
+
+        /** {@inheritDoc} */
+        @Override public boolean isStoreByValue() {
+            return metrics.isStoreByValue();
+        }
+
+        /** {@inheritDoc} */
+        @Override public boolean isStatisticsEnabled() {
+            return metrics.isStatisticsEnabled();
+        }
+
+        /** {@inheritDoc} */
+        @Override public boolean isManagementEnabled() {
+            return metrics.isManagementEnabled();
+        }
     }
 }
