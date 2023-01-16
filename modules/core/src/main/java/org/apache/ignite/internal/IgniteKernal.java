@@ -109,6 +109,7 @@ import org.apache.ignite.internal.managers.indexing.GridIndexingManager;
 import org.apache.ignite.internal.managers.loadbalancer.GridLoadBalancerManager;
 import org.apache.ignite.internal.managers.systemview.GridSystemViewManager;
 import org.apache.ignite.internal.managers.tracing.GridTracingManager;
+import org.apache.ignite.internal.managers.transform.CacheObjectTransformerManager;
 import org.apache.ignite.internal.marshaller.optimized.OptimizedMarshaller;
 import org.apache.ignite.internal.plugin.IgniteLogInfoProvider;
 import org.apache.ignite.internal.plugin.IgniteLogInfoProviderImpl;
@@ -1000,6 +1001,7 @@ public class IgniteKernal implements IgniteEx, Externalizable {
             startManager(new GridFailoverManager(ctx));
             startManager(new GridCollisionManager(ctx));
             startManager(new GridIndexingManager(ctx));
+            startManager(new CacheObjectTransformerManager(ctx));
 
             // Assign discovery manager to context before other processors start so they
             // are able to register custom event listener.

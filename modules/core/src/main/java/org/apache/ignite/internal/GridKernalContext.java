@@ -35,6 +35,7 @@ import org.apache.ignite.internal.managers.failover.GridFailoverManager;
 import org.apache.ignite.internal.managers.indexing.GridIndexingManager;
 import org.apache.ignite.internal.managers.loadbalancer.GridLoadBalancerManager;
 import org.apache.ignite.internal.managers.systemview.GridSystemViewManager;
+import org.apache.ignite.internal.managers.transform.CacheObjectTransformerManager;
 import org.apache.ignite.internal.processors.affinity.GridAffinityProcessor;
 import org.apache.ignite.internal.processors.cache.GridCacheProcessor;
 import org.apache.ignite.internal.processors.cache.mvcc.MvccProcessor;
@@ -248,6 +249,13 @@ public interface GridKernalContext extends Iterable<GridComponent> {
      * @return Tracing processor.
      */
     public Tracing tracing();
+
+    /**
+     * Gets cache objects transformer manager.
+     *
+     * @return Cache objects transformer manager.
+     */
+    public CacheObjectTransformerManager cacheObjectTransformer();
 
     /**
      * Gets task session processor.

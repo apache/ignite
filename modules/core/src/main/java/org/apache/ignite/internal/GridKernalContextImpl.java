@@ -52,6 +52,7 @@ import org.apache.ignite.internal.managers.indexing.GridIndexingManager;
 import org.apache.ignite.internal.managers.loadbalancer.GridLoadBalancerManager;
 import org.apache.ignite.internal.managers.systemview.GridSystemViewManager;
 import org.apache.ignite.internal.managers.tracing.GridTracingManager;
+import org.apache.ignite.internal.managers.transform.CacheObjectTransformerManager;
 import org.apache.ignite.internal.processors.affinity.GridAffinityProcessor;
 import org.apache.ignite.internal.processors.cache.CacheConflictResolutionManager;
 import org.apache.ignite.internal.processors.cache.GridCacheProcessor;
@@ -186,6 +187,10 @@ public class GridKernalContextImpl implements GridKernalContext, Externalizable 
     /** */
     @GridToStringExclude
     private GridTracingManager tracingMgr;
+
+    /** */
+    @GridToStringExclude
+    private CacheObjectTransformerManager cacheObjTransMgr;
 
     /*
      * Processors.
@@ -501,6 +506,8 @@ public class GridKernalContextImpl implements GridKernalContext, Externalizable 
             encryptionMgr = (GridEncryptionManager)comp;
         else if (comp instanceof GridTracingManager)
             tracingMgr = (GridTracingManager)comp;
+        else if (comp instanceof CacheObjectTransformerManager)
+            cacheObjTransMgr = (CacheObjectTransformerManager)comp;
 
         /*
          * Processors.
@@ -710,6 +717,11 @@ public class GridKernalContextImpl implements GridKernalContext, Externalizable 
     /** {@inheritDoc} */
     @Override public Tracing tracing() {
         return tracingMgr;
+    }
+
+    /** {@inheritDoc} */
+    @Override public CacheObjectTransformerManager cacheObjectTransformer() {
+        return cacheObjTransMgr;
     }
 
     /** {@inheritDoc} */
