@@ -94,7 +94,7 @@ This way to replicate changes between clusters requires setting up two applicati
 
 NOTE: Instances of `ignite-cdc.sh` with configured streamer should be started on each server node of source cluster to capture all changes.
 
-NOTE: CDC trough Kafka requires _metadata topic with the only one partition_ for sequential ordering guaranties.
+IMPORTANT: CDC trough Kafka requires _metadata topic with the only one partition_ for sequential ordering guarantees.
 
 image:../../assets/images/integrations/CDC-ignite2kafka.svg[]
 
