@@ -64,7 +64,7 @@ public class CacheObjectsCompressionTest extends AbstractCacheObjectsCompression
 
             putAndCheck(str, false); // Too short string.
 
-            StringData sd = new StringData("");
+            StringData sd = new StringData(str);
 
             putAndCheck(sd, false); // Too short wrapped string.
 

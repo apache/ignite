@@ -141,13 +141,15 @@ public abstract class AbstractCacheObjectsCompressionTest extends AbstractCacheO
             if (lim <= 0)
                 throw new IgniteCheckedException("Compression is not profitable.");
 
-            ByteBuffer compressed = byteBuffer(lim); // Limiting to gain compression profit.
+            ByteBuffer compressed = byteBuffer(original.remaining() + locOverhead); // Same as original (SNAPPY requirement + header.
 
             compressed.position(locOverhead); // Reserving for compression type.
 
             switch (type) {
                 case ZSTD:
                     try {
+                        compressed.limit(lim); // Limiting to gain compression profit.
+
                         Zstd.compress(compressed, original, 1);
 
                         compressed.flip();
@@ -160,6 +162,8 @@ public abstract class AbstractCacheObjectsCompressionTest extends AbstractCacheO
 
                 case LZ4:
                     try {
+                        compressed.limit(lim); // Limiting to gain compression profit.
+
                         lz4Compressor.compress(original, compressed);
 
                         compressed.flip();
