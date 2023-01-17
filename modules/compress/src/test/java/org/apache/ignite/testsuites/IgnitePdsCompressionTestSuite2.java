@@ -34,8 +34,6 @@ public class IgnitePdsCompressionTestSuite2 {
     public static List<Class<?>> suite() {
         List<Class<?>> suite = new ArrayList<>();
 
-        suite.addAll(IgniteCompressionTestSuite.suite());
-
         enableCompressionByDefault();
         IgnitePdsTestSuite2.addRealPageStoreTests(suite, null);
 
