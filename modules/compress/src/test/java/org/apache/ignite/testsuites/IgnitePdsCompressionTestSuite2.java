@@ -29,7 +29,6 @@ import static org.apache.ignite.testsuites.IgnitePdsCompressionTestSuite.enableC
 public class IgnitePdsCompressionTestSuite2 {
     /**
      * @return Suite.
-     * @return Suite.
      */
     public static List<Class<?>> suite() {
         List<Class<?>> suite = new ArrayList<>();
