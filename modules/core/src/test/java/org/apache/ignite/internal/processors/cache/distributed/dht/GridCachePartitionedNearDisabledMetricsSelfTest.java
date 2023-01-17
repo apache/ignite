@@ -17,11 +17,11 @@
 
 package org.apache.ignite.internal.processors.cache.distributed.dht;
 
+import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCache;
 import org.apache.ignite.cache.CacheMetrics;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
-import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.processors.cache.GridCacheTransactionalAbstractMetricsSelfTest;
 import org.junit.Test;
 
@@ -120,7 +120,7 @@ public class GridCachePartitionedNearDisabledMetricsSelfTest extends GridCacheTr
         cache.put(0, 0);
 
         for (int i = 0; i < gridCount(); i++) {
-            IgniteEx g = grid(i);
+            Ignite g = grid(i);
 
             // TODO: getting of removed key will produce 3 inner read operations.
             g.cache(DEFAULT_CACHE_NAME).removeAll();
@@ -129,9 +129,9 @@ public class GridCachePartitionedNearDisabledMetricsSelfTest extends GridCacheTr
             //((IgniteKernal)g).cache(DEFAULT_CACHE_NAME).remove(0);
 
             assert g.cache(DEFAULT_CACHE_NAME).localSize() == 0;
-
-            g.context().cache().internalCache(DEFAULT_CACHE_NAME).metrics0().clear();
         }
+
+        grid(0).cache(DEFAULT_CACHE_NAME).clearStatistics();
 
         assertNull("Value is not null for key: " + 0, cache.get(0));
 

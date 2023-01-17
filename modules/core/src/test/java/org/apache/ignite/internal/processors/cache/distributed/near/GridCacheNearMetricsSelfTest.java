@@ -73,14 +73,14 @@ public class GridCacheNearMetricsSelfTest extends GridCacheAbstractSelfTest {
         super.afterTest();
 
         for (int i = 0; i < gridCount(); i++) {
-            IgniteEx g = grid(i);
+            Ignite g = grid(i);
 
             g.cache(DEFAULT_CACHE_NAME).removeAll();
 
             assert g.cache(DEFAULT_CACHE_NAME).localSize() == 0;
-
-            g.context().cache().internalCache(DEFAULT_CACHE_NAME).metrics0().clear();
         }
+
+        grid(0).cache(DEFAULT_CACHE_NAME).clearStatistics();
     }
 
     /** {@inheritDoc} */

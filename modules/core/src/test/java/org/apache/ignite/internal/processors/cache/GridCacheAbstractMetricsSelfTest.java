@@ -167,12 +167,12 @@ public abstract class GridCacheAbstractMetricsSelfTest extends GridCacheAbstract
         }
 
         for (int i = 0; i < gridCount(); i++) {
-            IgniteEx g = grid(i);
-
-            g.context().cache().internalCache(DEFAULT_CACHE_NAME).metrics0().clear();
+            Ignite g = grid(i);
 
             g.transactions().resetMetrics();
         }
+
+        grid(0).cache(DEFAULT_CACHE_NAME).clearStatistics();
     }
 
     /** {@inheritDoc} */

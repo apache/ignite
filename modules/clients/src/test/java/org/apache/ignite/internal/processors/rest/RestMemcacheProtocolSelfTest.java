@@ -185,8 +185,8 @@ public class RestMemcacheProtocolSelfTest extends GridCommonAbstractTest {
      */
     @Test
     public void testMetrics() throws Exception {
-        grid().context().cache().internalCache(DEFAULT_CACHE_NAME).metrics0().clear();
-        grid().context().cache().internalCache(CACHE_NAME).metrics0().clear();
+        grid().cache(DEFAULT_CACHE_NAME).clearStatistics();
+        grid().cache(CACHE_NAME).clearStatistics();
 
         grid().cache(DEFAULT_CACHE_NAME).put("key1", "val");
         grid().cache(DEFAULT_CACHE_NAME).put("key2", "val");

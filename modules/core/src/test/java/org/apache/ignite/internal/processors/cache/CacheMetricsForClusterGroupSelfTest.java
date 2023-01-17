@@ -293,13 +293,13 @@ public class CacheMetricsForClusterGroupSelfTest extends GridCommonAbstractTest 
             assertEquals(clusterMetrics.name(), locMetrics.name());
 
             assertEquals(0L, clusterMetrics.getCacheGets());
-            assertEquals(locMetrics.getCacheGets(), locMetrics.getCacheGets());
+            assertEquals(0L, locMetrics.getCacheGets());
 
             assertEquals(0L, clusterMetrics.getCachePuts());
-            assertEquals(locMetrics.getCachePuts(), locMetrics.getCachePuts());
+            assertEquals(0L, locMetrics.getCachePuts());
 
             assertEquals(0L, clusterMetrics.getCacheHits());
-            assertEquals(locMetrics.getCacheHits(), locMetrics.getCacheHits());
+            assertEquals(0L, locMetrics.getCacheHits());
         }
     }
 
