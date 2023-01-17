@@ -23,11 +23,10 @@ import java.util.Random;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.locks.Lock;
+import java.util.function.Supplier;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCache;
 import org.apache.ignite.internal.IgniteInternalFuture;
-import org.apache.ignite.internal.util.typedef.F;
-import org.apache.ignite.internal.util.typedef.T2;
 import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.transactions.Transaction;
 import org.junit.Test;
@@ -66,16 +65,17 @@ public class ConcurrentTxsConsistentCutTest extends AbstractConsistentCutTest {
     /** */
     @Parameterized.Parameters(name = "nodes={0}, backups={1}, withNearCache={2}")
     public static List<Object[]> params() {
-        List<T2<Integer, Integer>> nodesAndBackups = F.asList(
-            new T2<>(3, 0),
-            new T2<>(2, 1),
-            new T2<>(3, 2));
+        int[][] nodesAndBackups = new int[][] {
+            new int[] {3, 0},
+            new int[] {2, 1},
+            new int[] {3, 2}
+        };
 
         List<Object[]> params = new ArrayList<>();
 
-        for (T2<Integer, Integer> nb: nodesAndBackups) {
+        for (int[] nb: nodesAndBackups) {
             for (boolean near: new boolean[] {false, true})
-                params.add(new Object[] {nb.get1(), nb.get2(), near});
+                params.add(new Object[] {nb[0], nb[1], near});
         }
 
         return params;
@@ -99,30 +99,19 @@ public class ConcurrentTxsConsistentCutTest extends AbstractConsistentCutTest {
     /** */
     @Test
     public void noLoadTest() throws Exception {
-        testConcurrentTransactionsAndCuts(() -> {}, false);
+        testConcurrentTransactionsAndCuts(() -> false);
     }
 
     /** */
     @Test
     public void concurrentLoadTransactionsTest() throws Exception {
-        testConcurrentTransactionsAndCuts(() -> {
-            // +1 - client node.
-            int n = RND.nextInt(nodes() + 1);
+        testConcurrentTransactionsAndCuts(() -> tx(false));
+    }
 
-            Ignite g = grid(n);
-
-            try (Transaction tx = g.transactions().txStart()) {
-                int cnt = 1 + RND.nextInt(nodes());
-
-                for (int j = 0; j < cnt; j++) {
-                    IgniteCache<Integer, Integer> cache = g.cache(CACHE);
-
-                    cache.put(RND.nextInt(), RND.nextInt());
-                }
-
-                tx.commit();
-            }
-        }, true);
+    /** */
+    @Test
+    public void concurrentLoadTransactionsWithRollbackTest() throws Exception {
+        testConcurrentTransactionsAndCuts(() -> tx(true));
     }
 
     /** */
@@ -135,7 +124,9 @@ public class ConcurrentTxsConsistentCutTest extends AbstractConsistentCutTest {
             IgniteCache<Integer, Integer> cache = grid(n).cache(CACHE);
 
             cache.put(RND.nextInt(), RND.nextInt());
-        }, true);
+
+            return true;
+        });
     }
 
     /** */
@@ -159,25 +150,52 @@ public class ConcurrentTxsConsistentCutTest extends AbstractConsistentCutTest {
             finally {
                 lock.unlock();
             }
-        }, true);
+
+            return true;
+        });
     }
 
     /** */
-    private void testConcurrentTransactionsAndCuts(Runnable tx, boolean inc) throws Exception {
+    private boolean tx(boolean withRollback) {
+        // +1 - client node.
+        int n = RND.nextInt(nodes() + 1);
+
+        Ignite g = grid(n);
+
+        try (Transaction tx = g.transactions().txStart()) {
+            int cnt = 1 + RND.nextInt(nodes());
+
+            for (int j = 0; j < cnt; j++) {
+                IgniteCache<Integer, Integer> cache = g.cache(CACHE);
+
+                cache.put(RND.nextInt(), RND.nextInt());
+            }
+
+            if (withRollback && RND.nextBoolean()) {
+                tx.rollback();
+
+                return false;
+            }
+            else {
+                tx.commit();
+
+                return true;
+            }
+        }
+    }
+
+    /** */
+    private void testConcurrentTransactionsAndCuts(Supplier<Boolean> tx) throws Exception {
         stopLoadLatch = new CountDownLatch(1);
 
         IgniteInternalFuture<?> f = GridTestUtils.runMultiThreadedAsync(() -> {
             while (stopLoadLatch.getCount() > 0) {
-                if (inc)
+                if (tx.get())
                     txCnt.incrementAndGet();
-
-                tx.run();
             }
         }, 2, "async-load");
 
         for (int i = 0; i < CUTS; i++) {
-            Thread.sleep(100);
-
             awaitSnapshotResourcesCleaned();
 
             snp(grid(0)).createIncrementalSnapshot(SNP).get(getTestTimeout());

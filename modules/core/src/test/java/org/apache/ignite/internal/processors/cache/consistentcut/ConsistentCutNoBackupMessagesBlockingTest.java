@@ -56,7 +56,7 @@ public class ConsistentCutNoBackupMessagesBlockingTest extends AbstractConsisten
 
     /** */
     @Test
-    public void testExplicitTransactions() throws Exception {
+    public void testMultipleCases() throws Exception {
         List<TransactionTestCase> cases = TransactionTestCase.buildTestCases(nodes(), false);
 
         List<Class<?>> msgs = messages(false);

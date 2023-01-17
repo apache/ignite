@@ -29,9 +29,6 @@ import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.DataStorageConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.IgniteEx;
-import org.apache.ignite.internal.pagemem.wal.record.RolloverType;
-import org.apache.ignite.internal.pagemem.wal.record.delta.ClusterSnapshotRecord;
-import org.apache.ignite.internal.processors.cache.GridCacheSharedContext;
 import org.apache.ignite.internal.processors.cache.GridLocalConfigManager;
 import org.apache.ignite.internal.processors.cache.StoredCacheData;
 import org.apache.ignite.internal.processors.cache.persistence.wal.FileWriteAheadLogManager;
@@ -69,7 +66,8 @@ public class IncrementalSnapshotTest extends AbstractSnapshotSelfTest {
         IgniteConfiguration cfg = super.getConfiguration(igniteInstanceName);
 
         cfg.getDataStorageConfiguration()
-            .setWalCompactionEnabled(walCompactionEnabled);
+            .setWalCompactionEnabled(walCompactionEnabled)
+            .setWalSegmentSize((int)U.MB);
 
         return cfg;
     }
@@ -220,8 +218,6 @@ public class IncrementalSnapshotTest extends AbstractSnapshotSelfTest {
         addData(srv);
 
         FileWriteAheadLogManager wal = (FileWriteAheadLogManager)srv.context().cache().context().wal();
-
-        forceRollWal(srv);
 
         assertTrue(waitForCondition(() -> wal.lastCompactedSegment() >= 0, getTestTimeout()));
 
@@ -398,19 +394,5 @@ public class IncrementalSnapshotTest extends AbstractSnapshotSelfTest {
             IgniteException.class,
             errMsg
         );
-    }
-
-    /** Force rolling WAL segment by writing dummy record. */
-    private void forceRollWal(IgniteEx srv) throws Exception {
-        GridCacheSharedContext<?, ?> cctx = srv.context().cache().context();
-
-        cctx.database().checkpointReadLock();
-
-        try {
-            cctx.wal().log(new ClusterSnapshotRecord("dummy"), RolloverType.CURRENT_SEGMENT);
-        }
-        finally {
-            cctx.database().checkpointReadUnlock();
-        }
     }
 }

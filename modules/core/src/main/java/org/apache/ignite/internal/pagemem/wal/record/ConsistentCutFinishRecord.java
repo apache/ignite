@@ -27,15 +27,10 @@ import org.apache.ignite.internal.util.typedef.internal.S;
 /**
  * This record is written to WAL after Consistent Cut finished on a baseline node.
  * <p>
- * It guarantees that the BEFORE side consists of:
- * 1. Transactions committed before {@link ConsistentCutStartRecord} and weren't included into {@link #excluded()}.
+ * During recovery node must apply:
+ * 1. Transactions committed before {@link ConsistentCutStartRecord} except those contained in {@link #excluded()}.
  * 2. Transactions committed between {@link ConsistentCutStartRecord} and {@link ConsistentCutFinishRecord}
- *    and were included into {@link #included()}.
- * <p>
- * It guarantees that the AFTER side consists of:
- * 1. Transactions committed before {@link ConsistentCutStartRecord} and were included into {@link #excluded()}.
- * 2. Transactions committed between {@link ConsistentCutStartRecord} and {@link ConsistentCutFinishRecord}
- *    and weren't included into {@link #included()}.
+ *    and contained in {@link #included()}.
  */
 public class ConsistentCutFinishRecord extends WALRecord {
     /** Consistent Cut ID. */

@@ -1315,10 +1315,10 @@ public class RecordDataV1Serializer implements RecordDataSerializer {
                 long mstSignBits = in.readLong();
                 long lstSignBits = in.readLong();
 
-                Set<GridCacheVersion> before = readVersions(in);
-                Set<GridCacheVersion> after = readVersions(in);
+                Set<GridCacheVersion> included = readVersions(in);
+                Set<GridCacheVersion> excluded = readVersions(in);
 
-                res = new ConsistentCutFinishRecord(new UUID(mstSignBits, lstSignBits), before, after);
+                res = new ConsistentCutFinishRecord(new UUID(mstSignBits, lstSignBits), included, excluded);
 
                 break;
 

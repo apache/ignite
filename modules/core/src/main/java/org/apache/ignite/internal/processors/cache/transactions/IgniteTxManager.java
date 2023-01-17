@@ -3179,12 +3179,7 @@ public class IgniteTxManager extends GridCacheSharedManagerAdapter {
      * @param plc IO policy.
      */
     public void sendTransactionMessage(ClusterNode n, GridCacheMessage msg, IgniteInternalTx tx, byte plc) throws IgniteCheckedException {
-        BiFunction<GridCacheMessage, IgniteInternalTx, GridCacheMessage> transform = txMsgTransform;
-
-        if (transform != null)
-            msg = transform.apply(msg, tx);
-
-        cctx.io().send(n, msg, plc);
+        sendTransactionMessage(n.id(), msg, tx, plc);
     }
 
     /** Tx key collisions info holder. */

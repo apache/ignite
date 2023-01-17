@@ -908,8 +908,12 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
             return;
 
         synchronized (snpOpMux) {
-            if (consistentCutId != null)
+            if (consistentCutId != null) {
+                if (!consistentCutId.equals(id))
+                    U.warn(log, "Received Consistent Cut ID differs from current [rcvId=" + id + ", currId=" + consistentCutId + ']');
+
                 return;
+            }
 
             wrapMsgsFut = new GridFutureAdapter<>();
 

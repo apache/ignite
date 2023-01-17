@@ -151,7 +151,7 @@ public abstract class AbstractConsistentCutTest extends GridCommonAbstractTest {
      * Checks WALs for correct Consistency Cut.
      *
      * @param txCnt Count of run transactions.
-     * @param cuts    Number of Consistent Cuts was run within a test.
+     * @param cuts  Number of Consistent Cuts was run within a test.
      */
     protected void checkWalsConsistency(int txCnt, int cuts) throws Exception {
         List<ConsistentCutWalReader> readers = new ArrayList<>();
