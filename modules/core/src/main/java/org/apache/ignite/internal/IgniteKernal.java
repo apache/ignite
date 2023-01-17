@@ -1001,7 +1001,9 @@ public class IgniteKernal implements IgniteEx, Externalizable {
             startManager(new GridFailoverManager(ctx));
             startManager(new GridCollisionManager(ctx));
             startManager(new GridIndexingManager(ctx));
-            startManager(new CacheObjectTransformerManager(ctx));
+
+            if (ctx.config().getCacheObjectTransformerSpi() != null)
+                startManager(new CacheObjectTransformerManager(ctx));
 
             // Assign discovery manager to context before other processors start so they
             // are able to register custom event listener.
