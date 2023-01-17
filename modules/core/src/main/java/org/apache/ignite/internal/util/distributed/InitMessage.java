@@ -99,6 +99,11 @@ public class InitMessage<I extends Serializable> implements DiscoveryCustomMessa
         return req;
     }
 
+    /** @return Whether coordinator waits client nodes results. */
+    public boolean waitClientResults() {
+        return false;
+    }
+
     /** {@inheritDoc} */
     @Override public String toString() {
         return S.toString(InitMessage.class, this);

@@ -142,6 +142,7 @@ public class DistributedProcess<I extends Serializable, R extends Serializable> 
             }
 
             p.crdId = crd.id();
+            p.waitClnRes = msg.waitClientResults();
 
             if (crd.isLocal())
                 initCoordinator(p, topVer);
@@ -154,7 +155,7 @@ public class DistributedProcess<I extends Serializable, R extends Serializable> 
                 else
                     p.resFut.onDone(f.result());
 
-                if (!ctx.clientNode()) {
+                if (!ctx.clientNode() || p.waitClnRes) {
                     assert crd != null;
 
                     sendSingleMessage(p);
@@ -213,7 +214,7 @@ public class DistributedProcess<I extends Serializable, R extends Serializable> 
                         if (crd.isLocal())
                             initCoordinator(p, discoCache.version());
 
-                        if (!ctx.clientNode())
+                        if (!ctx.clientNode() || p.waitClnRes)
                             p.resFut.listen(f -> sendSingleMessage(p));
                     }
                     else if (F.eq(ctx.localNodeId(), p.crdId)) {
@@ -260,7 +261,9 @@ public class DistributedProcess<I extends Serializable, R extends Serializable> 
 
             assert p.remaining.isEmpty();
 
-            p.remaining.addAll(F.viewReadOnly(ctx.discovery().serverNodes(topVer), F.node2id()));
+            p.remaining.addAll(F.viewReadOnly(
+                p.waitClnRes ? ctx.discovery().nodes(topVer) : ctx.discovery().serverNodes(topVer),
+                F.node2id()));
 
             p.initCrdFut.onDone();
         }
@@ -378,6 +381,9 @@ public class DistributedProcess<I extends Serializable, R extends Serializable> 
 
         /** Remaining nodes ids to received single nodes result. */
         private final Set<UUID> remaining = new GridConcurrentHashSet<>();
+
+        /** If {@code true} it waits client nodes results, otherwise only server nodes results are awaited. */
+        private volatile boolean waitClnRes;
 
         /** Future for a local action result. */
         private final GridFutureAdapter<R> resFut = new GridFutureAdapter<>();
