@@ -325,7 +325,7 @@ public class CacheManager implements javax.cache.CacheManager {
             if (enabled)
                 registerCacheObject(new CacheMXBeanImpl(cache), cacheName, CACHE_CONFIGURATION);
             else
-                unregisterCacheObject(cacheName, CACHE_STATISTICS);
+                unregisterCacheObject(cacheName, CACHE_CONFIGURATION);
 
             cache.getConfiguration(CacheConfiguration.class).setManagementEnabled(enabled);
         }
