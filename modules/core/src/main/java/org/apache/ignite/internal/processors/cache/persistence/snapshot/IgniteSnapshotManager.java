@@ -4080,7 +4080,7 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
             UUID processId,
             SnapshotOperationRequest req
         ) {
-            super(processId, START_SNAPSHOT, req);
+            super(processId, START_SNAPSHOT, req, false);
         }
 
         /** {@inheritDoc} */

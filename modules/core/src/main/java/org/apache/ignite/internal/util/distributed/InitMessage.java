@@ -52,15 +52,19 @@ public class InitMessage<I extends Serializable> implements DiscoveryCustomMessa
     /** Request. */
     private final I req;
 
+    /** Whether coordinator waits client nodes results. */
+    private final boolean waitClnRes;
+
     /**
      * @param processId Process id.
      * @param type Process type.
      * @param req Request.
      */
-    public InitMessage(UUID processId, DistributedProcessType type, I req) {
+    public InitMessage(UUID processId, DistributedProcessType type, I req, boolean waitClnRes) {
         this.processId = processId;
         this.type = type.ordinal();
         this.req = req;
+        this.waitClnRes = waitClnRes;
     }
 
     /** {@inheritDoc} */
@@ -101,7 +105,7 @@ public class InitMessage<I extends Serializable> implements DiscoveryCustomMessa
 
     /** @return Whether coordinator waits client nodes results. */
     public boolean waitClientResults() {
-        return false;
+        return waitClnRes;
     }
 
     /** {@inheritDoc} */

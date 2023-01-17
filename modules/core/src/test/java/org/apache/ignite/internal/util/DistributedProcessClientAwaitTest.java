@@ -83,7 +83,7 @@ public class DistributedProcessClientAwaitTest extends GridCommonAbstractTest {
         for (int i = 0; i < NODES_CNT; i++)
             nodeIdsRes.add(grid(i).localNode().id());
 
-        checkExpectedResults(nodeIdsRes, (id, req) -> new InitMessage<>(id, TEST_PROCESS, req));
+        checkExpectedResults(nodeIdsRes, (id, req) -> new InitMessage<>(id, TEST_PROCESS, req, false));
     }
 
     /** */
@@ -94,7 +94,7 @@ public class DistributedProcessClientAwaitTest extends GridCommonAbstractTest {
         for (int i = 0; i < NODES_CNT + 1; i++)
             nodeIdsRes.add(grid(i).localNode().id());
 
-        checkExpectedResults(nodeIdsRes, AwaitClientInitMessage::new);
+        checkExpectedResults(nodeIdsRes, (id, req) -> new InitMessage<>(id, TEST_PROCESS, req, true));
     }
 
     /** */
@@ -114,7 +114,7 @@ public class DistributedProcessClientAwaitTest extends GridCommonAbstractTest {
 
         for (int n = 0; n < NODES_CNT + 1; n++) {
             DistributedProcess<Integer, Integer> dp = new TestDistributedProcess(
-                nodeIdsRes, grid(n).context(), AwaitClientInitMessage::new);
+                nodeIdsRes, grid(n).context(), (id, req) -> new InitMessage<>(id, TEST_PROCESS, req, true));
 
             processes.add(dp);
         }
@@ -147,7 +147,7 @@ public class DistributedProcessClientAwaitTest extends GridCommonAbstractTest {
 
         for (int n = 0; n < NODES_CNT + 1; n++) {
             DistributedProcess<Integer, Integer> dp = new TestDistributedProcess(
-                nodeIdsRes, grid(n).context(), AwaitClientInitMessage::new);
+                nodeIdsRes, grid(n).context(), (id, req) -> new InitMessage<>(id, TEST_PROCESS, req, true));
 
             processes.add(dp);
         }
@@ -216,19 +216,6 @@ public class DistributedProcessClientAwaitTest extends GridCommonAbstractTest {
                     finishLatchRef.get().countDown();
                 },
                 initMsgFactory);
-        }
-    }
-
-    /** */
-    private static class AwaitClientInitMessage extends InitMessage<Integer> {
-        /** */
-        public AwaitClientInitMessage(UUID processId, Integer req) {
-            super(processId, TEST_PROCESS, req);
-        }
-
-        /** {@inheritDoc} */
-        @Override public boolean waitClientResults() {
-            return true;
         }
     }
 }
