@@ -701,7 +701,7 @@ public abstract class AbstractPlannerTest extends GridCommonAbstractTest {
 
         /** {@inheritDoc} */
         @Override public GridCacheContextInfo cacheInfo() {
-            throw new AssertionError();
+            return null;
         }
 
         /** {@inheritDoc} */

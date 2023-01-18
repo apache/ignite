@@ -56,6 +56,7 @@ import org.apache.ignite.internal.processors.query.calcite.type.IgniteTypeFactor
 import org.apache.ignite.internal.processors.query.calcite.util.TypeUtils;
 import org.apache.ignite.internal.util.lang.GridCursor;
 import org.apache.ignite.internal.util.typedef.F;
+import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.spi.indexing.IndexingQueryFilter;
 import org.apache.ignite.spi.indexing.IndexingQueryFilterImpl;
 import org.jetbrains.annotations.Nullable;
@@ -184,6 +185,10 @@ public class IndexScan<Row> extends AbstractIndexScan<Row, IndexRow> {
      */
     private int[] fieldToInlinedKeysMapping(int srcFieldsCnt) {
         List<InlineIndexKeyType> inlinedKeys = idx.segment(0).rowHandler().inlineIndexKeyTypes();
+
+        // Since inline scan doesn't check expire time, allow it only if expired entries are eagerly removed.
+        if (!cctx.config().isEagerTtl())
+            return null;
 
         // Even if we need some subset of inlined keys we are required to the read full inlined row, since this row
         // is also participated in comparison with other rows when cursor processing the next index page.
@@ -376,7 +381,9 @@ public class IndexScan<Row> extends AbstractIndexScan<Row, IndexRow> {
         InlineIndexRowFactory rowFactory = isInlineScan() ?
             new InlineIndexRowFactory(rowHnd.inlineIndexKeyTypes().toArray(new InlineIndexKeyType[0]), rowHnd) : null;
 
-        return new IndexQueryContext(filter, null, rowFactory, mvccSnapshot);
+        BPlusTree.TreeRowClosure<IndexRow, IndexRow> rowFilter = isInlineScan() ? null : createNotExpiredRowFilter();
+
+        return new IndexQueryContext(filter, rowFilter, rowFactory, mvccSnapshot);
     }
 
     /** */
@@ -444,7 +451,10 @@ public class IndexScan<Row> extends AbstractIndexScan<Row, IndexRow> {
     /**
      * Creates row filter to skip null values in the first index column.
      */
-    public static BPlusTree.TreeRowClosure<IndexRow, IndexRow> createNotNullRowFilter(InlineIndex idx) {
+    public static BPlusTree.TreeRowClosure<IndexRow, IndexRow> createNotNullRowFilter(
+        InlineIndex idx,
+        boolean checkExpired
+    ) {
         List<InlineIndexKeyType> inlineKeyTypes = idx.segment(0).rowHandler().inlineIndexKeyTypes();
 
         InlineIndexKeyType keyType = F.isEmpty(inlineKeyTypes) ? null : inlineKeyTypes.get(0);
@@ -457,15 +467,33 @@ public class IndexScan<Row> extends AbstractIndexScan<Row, IndexRow> {
                 long pageAddr,
                 int idx
             ) throws IgniteCheckedException {
-                if (keyType != null && io instanceof InlineIO) {
+                if (!checkExpired && keyType != null && io instanceof InlineIO) {
                     Boolean keyIsNull = keyType.isNull(pageAddr, io.offset(idx), ((InlineIO)io).inlineSize());
 
-                    if (keyIsNull != null)
-                        return !keyIsNull;
+                    if (keyIsNull == Boolean.TRUE)
+                        return false;
                 }
 
-                return io.getLookupRow(tree, pageAddr, idx).key(0).type() != IndexKeyType.NULL;
+                IndexRow idxRow = io.getLookupRow(tree, pageAddr, idx);
+
+                if (checkExpired &&
+                    idxRow.cacheDataRow().expireTime() > 0 &&
+                    idxRow.cacheDataRow().expireTime() <= U.currentTimeMillis())
+                    return false;
+
+                return idxRow.key(0).type() != IndexKeyType.NULL;
             }
+        };
+    }
+
+    /** */
+    public static BPlusTree.TreeRowClosure<IndexRow, IndexRow> createNotExpiredRowFilter() {
+        return (tree, io, pageAddr, idx) -> {
+            IndexRow idxRow = io.getLookupRow(tree, pageAddr, idx);
+
+            // Skip expired.
+            return !(idxRow.cacheDataRow().expireTime() > 0 &&
+                idxRow.cacheDataRow().expireTime() <= U.currentTimeMillis());
         };
     }
 
