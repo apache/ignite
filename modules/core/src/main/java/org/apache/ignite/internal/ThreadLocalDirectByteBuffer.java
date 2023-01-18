@@ -48,9 +48,9 @@ public class ThreadLocalDirectByteBuffer extends ThreadLocal<ByteBuffer> {
         ByteBuffer buf = super.get();
 
 //        if (buf == null || buf.capacity() < capacity) {
-            buf = allocateDirectBuffer(capacity);
+        buf = allocateDirectBuffer(capacity);
 
-            set(buf);
+        set(buf);
 //        }
 //        else
 //            buf.clear();
