@@ -99,7 +99,7 @@ public class OffheapCacheMetricsForClusterGroupSelfTest extends GridCommonAbstra
             assertEquals(count, cache.metrics().getOffHeapBackupEntriesCount());
 
             assertEquals(0L, cache.localMetrics().getOffHeapPrimaryEntriesCount());
-            assertEquals(0L, cache.localMetrics().getOffHeapPrimaryEntriesCount());
+            assertEquals(0L, cache.localMetrics().getOffHeapBackupEntriesCount());
         }
     }
 
