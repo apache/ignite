@@ -446,13 +446,7 @@ public class CacheManager implements javax.cache.CacheManager {
     }
 
     /**
-     * Implementation of {@link CacheStatisticsMXBean} to support JCache specification. An echanced statistics is
-     * available through {@link JmxMetricExporterSpi} with "name=cache.{cache_name}".
-     *
-     * @see ReadOnlyMetricManager
-     * @see ReadOnlyMetricRegistry
-     * @see JmxMetricExporterSpi
-     * @see MetricExporterSpi
+     * Implementation of {@link CacheStatisticsMXBean} to support JCache specification.
      */
     private static class CacheStatisticsMXBeanImpl implements CacheStatisticsMXBean {
         /** The cache. */
