@@ -145,6 +145,12 @@ public class GridLoggerProxy implements IgniteLogger, LifecycleAware, Externaliz
     /** {@inheritDoc} */
     @Override public void warning(String msg) {
         impl.warning(enrich(msg));
+        try {
+            U.sleep(100);
+        }
+        catch (IgniteInterruptedCheckedException e) {
+            throw new RuntimeException(e);
+        }
     }
 
     /** {@inheritDoc} */
