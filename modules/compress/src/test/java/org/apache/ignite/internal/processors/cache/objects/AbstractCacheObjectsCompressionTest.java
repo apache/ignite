@@ -142,7 +142,7 @@ public abstract class AbstractCacheObjectsCompressionTest extends AbstractCacheO
                 throw new IgniteCheckedException("Compression is not profitable.");
 
             // Same as original (SNAPPY requirement) + header.
-            ByteBuffer compressed = byteBuffer(original.remaining() + locOverhead + 1024 /*TODO*/);
+            ByteBuffer compressed = byteBuffer(original.remaining() + locOverhead);
 
             compressed.putInt(type.ordinal());
 
