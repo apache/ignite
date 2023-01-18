@@ -157,15 +157,17 @@ public abstract class AbstractConsistentCutTest extends GridCommonAbstractTest {
         List<ConsistentCutWalReader> readers = new ArrayList<>();
 
         for (int i = 0; i < nodes(); i++) {
-            ConsistentCutWalReader reader = new ConsistentCutWalReader(walIter(i));
+            try (WALIterator walIter = walIter(i)) {
+                ConsistentCutWalReader reader = new ConsistentCutWalReader(walIter);
 
-            readers.add(reader);
+                readers.add(reader);
 
-            reader.read();
+                reader.read();
 
-            int expCuts = reader.cuts.get(reader.cuts.size() - 1).id != null ? cuts : cuts + 1;
+                int expCuts = reader.cuts.get(reader.cuts.size() - 1).id != null ? cuts : cuts + 1;
 
-            assertEquals(expCuts, reader.cuts.size());
+                assertEquals(expCuts, reader.cuts.size());
+            }
         }
 
         // Transaction ID -> (cutId, nodeId).

@@ -156,17 +156,15 @@ class ConsistentCutMarkWalFuture extends GridFutureAdapter<WALPointer> {
                 // The `txFut` never fails and always returns IgniteInternalTx.
                 IgniteInternalTx tx = txFut.result();
 
-                if (!(tx.state() == MARKED_ROLLBACK
-                    || tx.state() == ROLLED_BACK
-                    || tx.state() == COMMITTED)) {
-                    U.warn(log, "Cut is inconsistent due to transaction is in unexepcted state: " + tx);
-
-                    return false;
-                }
-
                 // ROLLED_BACK transactions don't change data then don't care.
                 if (tx.state() == ROLLED_BACK || tx.state() == MARKED_ROLLBACK)
                     return true;
+
+                if (tx.state() != COMMITTED) {
+                    U.warn(log, "Cut is inconsistent due to transaction is in unexpected state: " + tx);
+
+                    return false;
+                }
 
                 if (tx.finalizationStatus() == RECOVERY_FINISH) {
                     U.warn(log, "Cut is inconsistent due to transaction committed after recovery process: " + tx);

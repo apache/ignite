@@ -28,6 +28,7 @@ import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
 import org.apache.ignite.internal.util.tostring.GridToStringInclude;
 import org.apache.ignite.internal.util.typedef.internal.S;
+import org.jetbrains.annotations.Nullable;
 
 /**
  * Class represents a transaction test case for single or two keys.
@@ -89,31 +90,37 @@ public class TransactionTestCase {
     public int[] keys(IgniteEx grid, String cache) {
         int[] k = new int[keys.length];
 
-        for (int i = 0; i < keys.length; i++) {
-            int primary = keys[i][0];
-            Integer backup = keys[i][1];
-
-            List<ClusterNode> nodes = grid.context().discovery().serverNodes(AffinityTopologyVersion.NONE);
-
-            ClusterNode primaryNode = nodes.get(primary);
-            ClusterNode backupNode = backup == null ? null : nodes.get(backup);
-
-            Affinity<Integer> aff = grid.affinity(cache);
-
-            int key = ThreadLocalRandom.current().nextInt();
-
-            while (true) {
-                if (aff.isPrimary(primaryNode, key) && (backup == null || aff.isBackup(backupNode, key))) {
-                    k[i] = key;
-
-                    break;
-                }
-
-                key++;
-            }
-        }
+        for (int i = 0; i < keys.length; i++)
+            k[i] = key(grid, cache, keys[i][0], keys[i][1]);
 
         return k;
+    }
+
+    /**
+     * Provides a key that for an existing partitioning schema match specified primary and backup nodes.
+     *
+     * @param grid   Ignite grid.
+     * @param cache  Cache name.
+     * @param primaryNodeId Primary node ID.
+     * @param backupNodeId Backup node ID if specified.
+     * @return Key that matches specified primaryNodeId and backupNodeId nodes.
+     */
+    static int key(IgniteEx grid, String cache, int primaryNodeId, @Nullable Integer backupNodeId) {
+        List<ClusterNode> nodes = grid.context().discovery().serverNodes(AffinityTopologyVersion.NONE);
+
+        ClusterNode primaryNode = nodes.get(primaryNodeId);
+        ClusterNode backupNode = backupNodeId == null ? null : nodes.get(backupNodeId);
+
+        Affinity<Integer> aff = grid.affinity(cache);
+
+        int key = ThreadLocalRandom.current().nextInt();
+
+        while (true) {
+            if (aff.isPrimary(primaryNode, key) && (backupNodeId == null || aff.isBackup(backupNode, key)))
+                return key;
+
+            key++;
+        }
     }
 
     /** */
