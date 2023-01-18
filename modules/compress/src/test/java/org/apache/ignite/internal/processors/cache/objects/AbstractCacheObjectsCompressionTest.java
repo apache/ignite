@@ -176,7 +176,11 @@ public abstract class AbstractCacheObjectsCompressionTest extends AbstractCacheO
 
                 case SNAPPY:
                     try {
+                        log.info("Transforming [orig="+original + ", comp="+compressed); // TODO
+
                         int size = Snappy.compress(original, compressed);
+
+                        log.info("Transformed [size=" + size); // TODO
 
                         if (size > lim) // Limiting to gain compression profit (ByteBuffer limit is ignoring by Snappy).
                             throw new IgniteCheckedException("Compression gains no profit.");
@@ -224,7 +228,11 @@ public abstract class AbstractCacheObjectsCompressionTest extends AbstractCacheO
 
                 case SNAPPY:
                     try {
+                        log.info("Restoring [trans="+transformed + ", rest="+restored); // TODO
+
                         Snappy.uncompress(transformed, restored);
+
+                        log.info("Restored"); // TODO
 
                         snapCnt.incrementAndGet();
                     }
