@@ -30,6 +30,8 @@ import org.apache.ignite.testframework.MvccFeatureChecker;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.junit.Test;
 
+import static org.junit.Assert.assertNotEquals;
+
 /**
  * Test for cluster wide cache metrics.
  */
@@ -293,13 +295,13 @@ public class CacheMetricsForClusterGroupSelfTest extends GridCommonAbstractTest 
             assertEquals(clusterMetrics.name(), locMetrics.name());
 
             assertEquals(0L, clusterMetrics.getCacheGets());
-            assertEquals(0L, locMetrics.getCacheGets());
+            assertNotEquals(0L, locMetrics.getCacheGets());
 
             assertEquals(0L, clusterMetrics.getCachePuts());
-            assertEquals(0L, locMetrics.getCachePuts());
+            assertNotEquals(0L, locMetrics.getCachePuts());
 
             assertEquals(0L, clusterMetrics.getCacheHits());
-            assertEquals(0L, locMetrics.getCacheHits());
+            assertNotEquals(0L, locMetrics.getCacheHits());
         }
     }
 
