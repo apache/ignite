@@ -769,7 +769,7 @@ public class CacheMetricsManageTest extends GridCommonAbstractTest {
 
             localCacheMetrics.getTxKeyCollisions();
 
-            ((IgniteEx)ig).context().cache().internalCache(cacheName).metrics0().clear();
+            ig.cache(cacheName).clearStatistics();
 
             try {
                 U.invoke(IgniteTxManager.class, txManager, "collectTxCollisionsInfo");
