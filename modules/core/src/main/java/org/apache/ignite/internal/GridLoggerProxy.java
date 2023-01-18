@@ -25,6 +25,7 @@ import java.io.ObjectOutput;
 import java.io.ObjectStreamException;
 import java.util.Collections;
 import org.apache.ignite.IgniteLogger;
+import org.apache.ignite.internal.logger.IgniteLoggerEx;
 import org.apache.ignite.internal.util.tostring.GridToStringExclude;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.internal.util.typedef.internal.U;
@@ -145,6 +146,7 @@ public class GridLoggerProxy implements IgniteLogger, LifecycleAware, Externaliz
     /** {@inheritDoc} */
     @Override public void warning(String msg) {
         impl.warning(enrich(msg));
+        ((IgniteLoggerEx)impl).flush(); // TODO REMOVE
     }
 
     /** {@inheritDoc} */
