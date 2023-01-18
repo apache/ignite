@@ -18,6 +18,7 @@
 package org.apache.ignite.internal.processors.cache.consistentcut;
 
 import java.io.File;
+import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.ArrayList;
 import java.util.HashMap;
@@ -162,24 +163,24 @@ public abstract class AbstractConsistentCutTest extends GridCommonAbstractTest {
             }
         }
 
-        // Transaction ID -> (cutId, nodeId).
+        // Transaction ID -> (cutId, nodeIdx).
         Map<GridCacheVersion, T2<UUID, Integer>> txMap = new HashMap<>();
 
         // Includes incomplete state also.
         for (int cutId = 0; cutId < cuts + 1; cutId++) {
-            for (int nodeId = 0; nodeId < nodes(); nodeId++) {
+            for (int nodeIdx = 0; nodeIdx < nodes(); nodeIdx++) {
                 // Skip if the latest cut is completed.
-                if (readers.get(nodeId).cuts.size() == cutId)
+                if (readers.get(nodeIdx).cuts.size() == cutId)
                     continue;
 
-                ReadConsistentCut cut = readers.get(nodeId).cuts.get(cutId);
+                ReadConsistentCut cut = readers.get(nodeIdx).cuts.get(cutId);
 
                 for (GridCacheVersion xid: cut.txs) {
-                    T2<UUID, Integer> prev = txMap.put(xid, new T2<>(cut.id, nodeId));
+                    T2<UUID, Integer> prev = txMap.put(xid, new T2<>(cut.id, nodeIdx));
 
                     if (prev != null) {
                         assertTrue("Transaction miscutted: [xid=" + xid + ", node" + prev.get2() + "=" + prev.get1() +
-                            ", node" + nodeId + "=" + cut.id,
+                            ", node" + nodeIdx + "=" + cut.id,
                             Objects.equals(prev == null ? null : prev.get1(), cut.id));
                     }
                 }
@@ -191,14 +192,14 @@ public abstract class AbstractConsistentCutTest extends GridCommonAbstractTest {
 
     /** Get iterator over WAL. */
     protected WALIterator walIter(int nodeIdx) throws Exception {
-        String workDir = U.defaultWorkDirectory();
+        Path workDir = Paths.get(U.defaultWorkDirectory());
 
         IgniteWalIteratorFactory factory = new IgniteWalIteratorFactory(log);
 
         String subfolderName = U.maskForFileName(getTestIgniteInstanceName(nodeIdx));
 
-        File wal = Paths.get(workDir).resolve(DataStorageConfiguration.DFLT_WAL_PATH).resolve(subfolderName).toFile();
-        File archive = Paths.get(workDir).resolve(DataStorageConfiguration.DFLT_WAL_ARCHIVE_PATH).resolve(subfolderName).toFile();
+        File wal = workDir.resolve(DataStorageConfiguration.DFLT_WAL_PATH).resolve(subfolderName).toFile();
+        File archive = workDir.resolve(DataStorageConfiguration.DFLT_WAL_ARCHIVE_PATH).resolve(subfolderName).toFile();
 
         IgniteWalIteratorFactory.IteratorParametersBuilder params = new IgniteWalIteratorFactory.IteratorParametersBuilder()
             .filesOrDirs(wal, archive);

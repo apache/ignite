@@ -38,21 +38,25 @@ public abstract class AbstractConsistentCutWalBlockingTest extends AbstractConsi
     }
 
     /** */
-    @Override protected void runCase(TransactionTestCase testCase, int nearNode, TransactionConcurrency txConcurrency) throws Exception {
-        int txBlkNodeId = blkNode(nearNode, txBlkNodeType, testCase);
+    @Override protected void runCase(
+        TransactionTestCase testCase,
+        int nearNodeIdx,
+        TransactionConcurrency txConcurrency
+    ) throws Exception {
+        int txBlkNodeIdx = blkNodeIndex(nearNodeIdx, txBlkNodeType, testCase);
 
         int cutBlkNodeId = -1;
 
         if (cutBlkType != BlkCutType.NONE)
-            cutBlkNodeId = blkNode(nearNode, cutBlkNodeType, testCase);
+            cutBlkNodeId = blkNodeIndex(nearNodeIdx, cutBlkNodeType, testCase);
 
         // Skip cases with blocking WAL on clients (no WAL actually)
-        if (txBlkNodeId == nodes())
+        if (txBlkNodeIdx == nodes())
             return;
 
-        log.info("START CASE " + caseNum + ". Data=" + testCase + ", nearNode=" + nearNode);
+        log.info("START CASE " + caseNum + ". Data=" + testCase + ", nearNodeIdx=" + nearNodeIdx);
 
-        run(() -> tx(nearNode, testCase, txConcurrency), txBlkNodeId, cutBlkNodeId);
+        run(() -> tx(nearNodeIdx, testCase, txConcurrency), txBlkNodeIdx, cutBlkNodeId);
     }
 
     /** */

@@ -101,46 +101,46 @@ public abstract class AbstractConsistentCutBlockingTest extends AbstractConsiste
     }
 
     /** Run single test cases. */
-    protected abstract void runCase(TransactionTestCase testCase, int nearNode, TransactionConcurrency txConcurrency) throws Exception;
+    protected abstract void runCase(TransactionTestCase testCase, int nearNodeIdx, TransactionConcurrency txConcurrency) throws Exception;
 
     /**
      * Run test case.
      *
      * @param tx Function that performs transaction.
-     * @param txBlkNodeId ID of node to block transaction.
-     * @param cutBlkNodeId ID of node to block Consistent Cut.
+     * @param txBlkNodeIdx ID of node to block transaction.
+     * @param cutBlkNodeIdx ID of node to block Consistent Cut.
      */
-    protected void run(Runnable tx, int txBlkNodeId, int cutBlkNodeId) throws Exception {
+    protected void run(Runnable tx, int txBlkNodeIdx, int cutBlkNodeIdx) throws Exception {
         caseNum++;
 
         // 1. Block transaction.
-        blockTx(grid(txBlkNodeId));
+        blockTx(grid(txBlkNodeIdx));
 
         // 2. Start transaction.
         IgniteInternalFuture<?> txFut = multithreadedAsync(tx, 1);
 
         // 3. Await transaction has blocked.
-        awaitTxBlocked(grid(txBlkNodeId));
+        awaitTxBlocked(grid(txBlkNodeIdx));
 
         // 4. Start Consistent Cut procedure concurrently with running transaction.
-        if (cutBlkNodeId != -1)
-            ((BlockingSnapshotManager)snp(grid(cutBlkNodeId))).block(cutBlkType);
+        if (cutBlkNodeIdx != -1)
+            ((BlockingSnapshotManager)snp(grid(cutBlkNodeIdx))).block(cutBlkType);
 
         IgniteFuture<Void> cutFut = triggerConsistentCut();
 
         // 5. Await Consistent Cut has blocked.
-        if (cutBlkNodeId != -1)
-            ((BlockingSnapshotManager)snp(grid(cutBlkNodeId))).awaitBlockedOrFinishedCut(cutFut);
+        if (cutBlkNodeIdx != -1)
+            ((BlockingSnapshotManager)snp(grid(cutBlkNodeIdx))).awaitBlockedOrFinishedCut(cutFut);
 
         // 6. Resume the blocking transaction.
-        unblockTx(grid(txBlkNodeId));
+        unblockTx(grid(txBlkNodeIdx));
 
         // 7. Await transaction completed.
         txFut.get(getTestTimeout(), TimeUnit.MILLISECONDS);
 
         // 8. Resume the blocking Consistent Cut.
-        if (cutBlkNodeId != -1)
-            ((BlockingSnapshotManager)snp(grid(cutBlkNodeId))).unblock(cutBlkType);
+        if (cutBlkNodeIdx != -1)
+            ((BlockingSnapshotManager)snp(grid(cutBlkNodeIdx))).unblock(cutBlkType);
 
         // 9. Await while Consistent Cut completed.
         cutFut.get(getTestTimeout());
@@ -174,14 +174,14 @@ public abstract class AbstractConsistentCutBlockingTest extends AbstractConsiste
     /** */
     protected abstract void unblockTx(IgniteEx blkNode);
 
-    /** Finds ID of node to be blocked during a case. */
-    protected int blkNode(int nearNodeId, BlkNodeType blkNodeType, TransactionTestCase c) {
+    /** Finds index of node to be blocked during a case. */
+    protected int blkNodeIndex(int nearNodeIdx, BlkNodeType blkNodeType, TransactionTestCase c) {
         if (blkNodeType == NEAR)
-            return nearNodeId;
+            return nearNodeIdx;
         else if (blkNodeType == PRIMARY)
-            return c.firstKeyPrimary();
+            return c.keys[0][0];
         else
-            return c.firstKeyBackup();
+            return c.keys[0][1];
     }
 
     /** Manually triggers new Consistent Cut. */

@@ -58,6 +58,7 @@ public class ConsistentCutTxRecoveryTest extends AbstractConsistentCutTest {
     /** In case of rollback scenario with failing client incremental snapshot should succeed. */
     @Test
     public void testNotSkipFinishRecordTxRecoveryRollbacked() throws Exception {
+        // Block prepare request to the last node to force rollback scenario.
         forceTransactionRecoveryAndCheckConsistentCut((n, msg) ->
             n.equals(grid(nodes() - 1).localNode()) && msg instanceof GridNearTxPrepareRequest, false);
     }

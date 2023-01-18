@@ -59,26 +59,30 @@ public abstract class AbstractConsistentCutMessagesBlockingTest extends Abstract
     }
 
     /** */
-    @Override protected void runCase(TransactionTestCase testCase, int nearNode, TransactionConcurrency txConcurrency) throws Exception {
-        int txBlkNodeId = blkNode(nearNode, txBlkNodeType, testCase);
+    @Override protected void runCase(
+        TransactionTestCase testCase,
+        int nearNodeIdx,
+        TransactionConcurrency txConcurrency
+    ) throws Exception {
+        int txBlkNodeIdx = blkNodeIndex(nearNodeIdx, txBlkNodeType, testCase);
 
-        int cutBlkNodeId = -1;
+        int cutBlkNodeIdx = -1;
 
         if (cutBlkType != BlkCutType.NONE)
-            cutBlkNodeId = blkNode(nearNode, cutBlkNodeType, testCase);
+            cutBlkNodeIdx = blkNodeIndex(nearNodeIdx, cutBlkNodeType, testCase);
 
-        if (skipMsgTestCase(txBlkNodeId, nearNode, testCase))
+        if (skipMsgTestCase(txBlkNodeIdx, nearNodeIdx, testCase))
             return;
 
         log.info("START CASE " + caseNum +
             ". Data=" + testCase +
-            ", nearNode=" + nearNode +
-            ", txBlkNodeId=" + txBlkNodeId +
+            ", nearNodeIdx=" + nearNodeIdx +
+            ", txBlkNodeIdx=" + txBlkNodeIdx +
             ", txBlkNodeType=" + txBlkNodeType +
-            ", cutBlkNodeId=" + cutBlkNodeId +
+            ", cutBlkNodeIdx=" + cutBlkNodeIdx +
             ", msg=" + txMsgBlkCls.getSimpleName());
 
-        run(() -> tx(nearNode, testCase, txConcurrency), txBlkNodeId, cutBlkNodeId);
+        run(() -> tx(nearNodeIdx, testCase, txConcurrency), txBlkNodeIdx, cutBlkNodeIdx);
     }
 
     /** {@inheritDoc} */
@@ -99,67 +103,51 @@ public abstract class AbstractConsistentCutMessagesBlockingTest extends Abstract
     }
 
     /**
-     * @return true if test case should be skipped because it describes impossible scenario.
+     * Test cases are auto-generated and some of them are invalid, when node {@code #txBlkNodeIdx} that should block
+     * a transaction on sending {@link #txMsgBlkCls} actually doesn't participate in sending such message. Basing on
+     * transctional protocol it checks whether specified test case is invalid and return {@code true} if it is.
+     *
+     * @return true if test case should be skipped.
      */
-    private boolean skipMsgTestCase(int txBlkNodeId, int nearNodeId, TransactionTestCase testCase) {
-        // Skip test cases when blocking node doesn't send GridNearTxPrepareRequest.
+    private boolean skipMsgTestCase(int txBlkNodeIdx, int nearNodeIdx, TransactionTestCase testCase) {
+        // GridNearTxPrepareRequest is sent only from near node if at least one primary copy isn't collocated.
         if (txMsgBlkCls.equals(GridNearTxPrepareRequest.class)) {
-            // Primary and backup nodes don't send GridNearTxPrepareRequest.
-            if (txBlkNodeType != NEAR)
-                return true;
-
-            // All primary copies are collocated on near node, no GridNearTxPrepareRequest is sent.
-            return testCase.allPrimaryOnNear(nearNodeId);
+            return txBlkNodeType != NEAR || testCase.allPrimaryOnNear(nearNodeIdx);
         }
 
-        // Skip test cases when blocking node doesn't send GridNearTxPrepareResponse.
+        // GridNearTxPrepareResponse is sent only from primary node if it isn't collocated on near node.
         if (txMsgBlkCls.equals(GridNearTxPrepareResponse.class)) {
-            // Only primary nodes send GridNearTxPrepareResponse if primary copy isn't collocated on near node.
-            return txBlkNodeType != PRIMARY || txBlkNodeId == nearNodeId;
+            return txBlkNodeType != PRIMARY || txBlkNodeIdx == nearNodeIdx;
         }
 
-        // Skip test cases when blocking node doesn't send GridNearTxFinishRequest.
+        // GridNearTxFinishRequest is sent only from near node for two-phase-commit and if at least one primary isn't collocated.
         if (txMsgBlkCls.equals(GridNearTxFinishRequest.class)) {
-            // Only near nodes send GridNearTxFinishRequest for two-phase-commit only.
-            if (txBlkNodeType != NEAR || testCase.onePhase())
-                return true;
-
-            // All primary copies are collocated on near node, no GridNearTxFinishRequest is sent.
-            return testCase.allPrimaryOnNear(nearNodeId);
+            return txBlkNodeType != NEAR || testCase.onePhase() || testCase.allPrimaryOnNear(nearNodeIdx);
         }
 
-        // Skip test cases when blocking node doesn't send GridNearTxFinishResponse.
+        // GridNearTxFinishResponse is sent only from primary node for two-phase-commit and if it isn't collocated.
         if (txMsgBlkCls.equals(GridNearTxFinishResponse.class)) {
-            // Only primary nodes send GridNearTxFinishResponse for two-phase-commit only if primary copy isn't collocated on near node.
-            return txBlkNodeType != PRIMARY || testCase.onePhase() || txBlkNodeId == nearNodeId;
+            return txBlkNodeType != PRIMARY || testCase.onePhase() || txBlkNodeIdx == nearNodeIdx;
         }
 
-        // Skip test cases when blocking node doesn't send GridDhtTxPrepareRequest.
+        // GridDhtTxPrepareRequest is sent from primary node, or from near node if primaries are collocated.
         if (txMsgBlkCls.equals(GridDhtTxPrepareRequest.class)) {
-            // Near node might send the request to the backup nodes in case primary copies are collocated on near node.
             if (txBlkNodeType == NEAR)
-                return !testCase.allPrimaryOnNear(nearNodeId);
+                return !testCase.allPrimaryOnNear(nearNodeIdx);
 
-            // Backup nodes don't send GridDhtTxPrepareRequest.
-            return txBlkNodeType == BACKUP;
+            return txBlkNodeType != PRIMARY;
         }
 
-        // Skip test cases when blocking node doesn't send GridDhtTxPrepareResponse.
-        // Only backup nodes can send GridDhtTxPrepareResponse.
+        // GridDhtTxPrepareResponse is sent from backup nodes only.
         if (txMsgBlkCls.equals(GridDhtTxPrepareResponse.class))
             return txBlkNodeType != BACKUP;
 
-        // Skip test cases when blocking node doesn't send GridDhtTxFinishRequest.
+        // GridDhtTxFinishRequest is sent from primary node for two-phase-commit, or from near node if primaries are collocated.
         if (txMsgBlkCls.equals(GridDhtTxFinishRequest.class)) {
-            // Backup nodes don't send GridDhtTxFinishRequest, also this message isn't sent for one-phase-commit.
-            if (txBlkNodeType == BACKUP || testCase.onePhase())
-                return true;
-
-            // Near node might send the request to the backup nodes in case if near node is collocated.
             if (txBlkNodeType == NEAR)
-                return !testCase.allPrimaryOnNear(nearNodeId);
+                return !testCase.allPrimaryOnNear(nearNodeIdx);
 
-            return false;
+            return txBlkNodeType != PRIMARY || testCase.onePhase();
         }
 
         return false;

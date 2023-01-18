@@ -85,7 +85,14 @@ public class ConsistentCutNodeFailureTest extends AbstractConsistentCutTest {
 
         IgniteFuture<Void> snpFut = snp(grid(0)).createIncrementalSnapshot(SNP);
 
-        waitForCutIsStartedOnAllNodes();
+        GridTestUtils.waitForCondition(() -> {
+            boolean allNodeStartedCut = true;
+
+            for (int i = 0; i < nodes(); i++)
+                allNodeStartedCut &= snp(grid(i)).consistentCutId() != null;
+
+            return allNodeStartedCut;
+        }, getTestTimeout(), 10);
 
         UUID brokenCutId = snp(grid(0)).consistentCutId();
 
@@ -112,25 +119,25 @@ public class ConsistentCutNodeFailureTest extends AbstractConsistentCutTest {
 
     /** */
     private void assertWalConsistentRecords(int nodeIdx, UUID brokenCutId) throws Exception {
-        WALIterator iter = walIter(nodeIdx);
+        try (WALIterator iter = walIter(nodeIdx)) {
+            boolean reachInconsistent = false;
 
-        boolean reachInconsistent = false;
+            while (iter.hasNext()) {
+                WALRecord rec = iter.next().getValue();
 
-        while (iter.hasNext()) {
-            WALRecord rec = iter.next().getValue();
+                if (rec.type() == WALRecord.RecordType.CONSISTENT_CUT_START_RECORD) {
+                    ConsistentCutStartRecord startRec = (ConsistentCutStartRecord)rec;
 
-            if (rec.type() == WALRecord.RecordType.CONSISTENT_CUT_START_RECORD) {
-                ConsistentCutStartRecord startRec = (ConsistentCutStartRecord)rec;
+                    assertEquals(brokenCutId, startRec.id());
 
-                assertEquals(brokenCutId, startRec.id());
-
-                reachInconsistent = true;
+                    reachInconsistent = true;
+                }
+                else
+                    assert rec.type() != WALRecord.RecordType.CONSISTENT_CUT_FINISH_RECORD : "Unexpect Finish Record.";
             }
-            else
-                assert rec.type() != WALRecord.RecordType.CONSISTENT_CUT_FINISH_RECORD : "Unexpect Finish Record.";
-        }
 
-        assertTrue("Should reach StartRecord for bad snapshot", reachInconsistent);
+            assertTrue("Should reach StartRecord for bad snapshot", reachInconsistent);
+        }
     }
 
     /** */
@@ -149,18 +156,6 @@ public class ConsistentCutNodeFailureTest extends AbstractConsistentCutTest {
                 tx.commit();
             }
         }, 1);
-    }
-
-    /** */
-    private void waitForCutIsStartedOnAllNodes() throws Exception {
-        GridTestUtils.waitForCondition(() -> {
-            boolean allNodeStartedCut = true;
-
-            for (int i = 0; i < nodes(); i++)
-                allNodeStartedCut &= snp(grid(i)).consistentCutId() != null;
-
-            return allNodeStartedCut;
-        }, getTestTimeout(), 10);
     }
 
     /** {@inheritDoc} */

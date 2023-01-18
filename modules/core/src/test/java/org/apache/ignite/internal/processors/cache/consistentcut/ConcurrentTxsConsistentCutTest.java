@@ -73,7 +73,7 @@ public class ConcurrentTxsConsistentCutTest extends AbstractConsistentCutTest {
     /** */
     @Parameterized.Parameters(name = "nodes={0}, backups={1}, withNearCache={2}")
     public static List<Object[]> params() {
-        int[][] nodesAndBackups = new int[][] {
+        int[][] nodesAndBackupsCnt = new int[][] {
             new int[] {3, 0},
             new int[] {2, 1},
             new int[] {3, 2}
@@ -81,7 +81,7 @@ public class ConcurrentTxsConsistentCutTest extends AbstractConsistentCutTest {
 
         List<Object[]> params = new ArrayList<>();
 
-        for (int[] nb: nodesAndBackups) {
+        for (int[] nb: nodesAndBackupsCnt) {
             for (boolean near: new boolean[] {false, true})
                 params.add(new Object[] {nb[0], nb[1], near});
         }

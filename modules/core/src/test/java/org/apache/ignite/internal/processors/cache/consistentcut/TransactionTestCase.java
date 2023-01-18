@@ -34,9 +34,9 @@ import org.jetbrains.annotations.Nullable;
  * Class represents a transaction test case for single or two keys.
  */
 public class TransactionTestCase {
-    /** Keys array described with pairs (primary, backup). */
+    /** Keys array described with pairs (primaryNodeIdx, backupNodeIdx). */
     @GridToStringInclude
-    private final Integer[][] keys;
+    final Integer[][] keys;
 
     /** */
     private TransactionTestCase(Integer[][] keys) {
@@ -56,12 +56,12 @@ public class TransactionTestCase {
         // One entry.
         int backups = withBakup ? nodesCnt : 0;
 
-        for (int primary = 0; primary < nodesCnt; primary++) {
-            for (int backup = 0; backup <= backups; backup++) {
-                if (withBakup && (backup == primary || backup == nodesCnt))
+        for (int primaryNodeIdx = 0; primaryNodeIdx < nodesCnt; primaryNodeIdx++) {
+            for (int backupNodeIdx = 0; backupNodeIdx <= backups; backupNodeIdx++) {
+                if (withBakup && (backupNodeIdx == primaryNodeIdx || backupNodeIdx == nodesCnt))
                     continue;
 
-                cases.add(new TransactionTestCase(new Integer[][] {new Integer[] {primary, withBakup ? backup : null}}));
+                cases.add(new TransactionTestCase(new Integer[][] {new Integer[] {primaryNodeIdx, withBakup ? backupNodeIdx : null}}));
             }
         }
 
@@ -74,16 +74,6 @@ public class TransactionTestCase {
         }
 
         return cases;
-    }
-
-    /** */
-    public int firstKeyPrimary() {
-        return keys[0][0];
-    }
-
-    /** */
-    public int firstKeyBackup() {
-        return keys[0][1];
     }
 
     /** */
@@ -101,22 +91,22 @@ public class TransactionTestCase {
      *
      * @param grid   Ignite grid.
      * @param cache  Cache name.
-     * @param primaryNodeId Primary node ID.
-     * @param backupNodeId Backup node ID if specified.
-     * @return Key that matches specified primaryNodeId and backupNodeId nodes.
+     * @param primaryNodeIdx Primary node ID.
+     * @param backupNodeIdx Backup node ID if specified.
+     * @return Key that matches specified primaryNodeIdx and backupNodeIdx nodes.
      */
-    static int key(IgniteEx grid, String cache, int primaryNodeId, @Nullable Integer backupNodeId) {
+    static int key(IgniteEx grid, String cache, int primaryNodeIdx, @Nullable Integer backupNodeIdx) {
         List<ClusterNode> nodes = grid.context().discovery().serverNodes(AffinityTopologyVersion.NONE);
 
-        ClusterNode primaryNode = nodes.get(primaryNodeId);
-        ClusterNode backupNode = backupNodeId == null ? null : nodes.get(backupNodeId);
+        ClusterNode primaryNode = nodes.get(primaryNodeIdx);
+        ClusterNode backupNode = backupNodeIdx == null ? null : nodes.get(backupNodeIdx);
 
         Affinity<Integer> aff = grid.affinity(cache);
 
         int key = ThreadLocalRandom.current().nextInt();
 
         while (true) {
-            if (aff.isPrimary(primaryNode, key) && (backupNodeId == null || aff.isBackup(backupNode, key)))
+            if (aff.isPrimary(primaryNode, key) && (backupNodeIdx == null || aff.isBackup(backupNode, key)))
                 return key;
 
             key++;
@@ -124,11 +114,11 @@ public class TransactionTestCase {
     }
 
     /** */
-    public boolean allPrimaryOnNear(int nearNodeId) {
+    public boolean allPrimaryOnNear(int nearNodeIdx) {
         // If all primary partitions are on the near node.
         return Arrays.stream(keys)
             .map(arr -> arr[0])
-            .allMatch(prim -> prim == nearNodeId);
+            .allMatch(primNodeIdx -> primNodeIdx == nearNodeIdx);
     }
 
     /** */
