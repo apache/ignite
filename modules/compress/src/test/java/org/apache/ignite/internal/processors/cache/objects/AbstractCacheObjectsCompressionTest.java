@@ -135,14 +135,21 @@ public abstract class AbstractCacheObjectsCompressionTest extends AbstractCacheO
                 throw new IgniteCheckedException("Disabled.");
 
             int locOverhead = 4; // Compression type, Integer.
+            int totalOverhead = CacheObjectTransformerSpi.OVERHEAD + locOverhead;
 
-            int lim = original.remaining() - (CacheObjectTransformerSpi.OVERHEAD + locOverhead);
+            int lim = original.remaining() - totalOverhead;
 
             if (lim <= 0)
                 throw new IgniteCheckedException("Compression is not profitable.");
 
-            // Same as original (SNAPPY requirement) + header.
-            ByteBuffer compressed = byteBuffer(original.remaining() + locOverhead);
+            int maxCompSize =
+                type == CompressionType.SNAPPY ?
+                    Snappy.maxCompressedLength(original.remaining()) : // Will be limited later by result size check.
+                    lim; // Limiting to gain compression profit.
+
+            int bufSize = locOverhead + maxCompSize;
+
+            ByteBuffer compressed = byteBuffer(bufSize);
 
             compressed.putInt(type.ordinal());
 
@@ -151,8 +158,6 @@ public abstract class AbstractCacheObjectsCompressionTest extends AbstractCacheO
             switch (type) {
                 case ZSTD:
                     try {
-                        compressed.limit(lim); // Limiting to gain compression profit.
-
                         Zstd.compress(compressed, original, 1);
 
                         compressed.flip();
@@ -165,8 +170,6 @@ public abstract class AbstractCacheObjectsCompressionTest extends AbstractCacheO
 
                 case LZ4:
                     try {
-                        compressed.limit(lim); // Limiting to gain compression profit.
-
                         lz4Compressor.compress(original, compressed);
 
                         compressed.flip();
@@ -181,8 +184,8 @@ public abstract class AbstractCacheObjectsCompressionTest extends AbstractCacheO
                     try {
                         int size = Snappy.compress(original, compressed);
 
-                        if (size > lim) // Limiting to gain compression profit (ByteBuffer limit is ignoring by Snappy).
-                            throw new IgniteCheckedException("Compression gains no profit.");
+                        if (size >= lim) // Limiting to gain compression profit (ByteBuffer limit is ignoring by Snappy).
+                            throw new IgniteCheckedException("Compression is not profitable.");
 
                         compressed.position(0);
                     }
