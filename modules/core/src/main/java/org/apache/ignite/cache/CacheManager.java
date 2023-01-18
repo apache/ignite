@@ -449,13 +449,13 @@ public class CacheManager implements javax.cache.CacheManager {
      * Implementation of {@link CacheStatisticsMXBean} to support JCache specification.
      */
     private static class CacheStatisticsMXBeanImpl implements CacheStatisticsMXBean {
-        /** The cache. */
+        /** Cache. */
         private final IgniteCache<?, ?> cache;
 
         /**
          * Creates MBean;
          *
-         * @param cache The cache.
+         * @param cache Cache.
          */
         private CacheStatisticsMXBeanImpl(IgniteCache<?, ?> cache) {
             this.cache = cache;
@@ -526,13 +526,13 @@ public class CacheManager implements javax.cache.CacheManager {
      * Implementation of {@link CacheMXBean} to support JCache specification.
      */
     private static class CacheMXBeanImpl implements CacheMXBean {
-        /** The cache. */
+        /** Cache. */
         private final IgniteCache<?, ?> cache;
 
         /**
          * Creates MBean;
          *
-         * @param cache The cache.
+         * @param cache Cache.
          */
         private CacheMXBeanImpl(IgniteCache<?, ?> cache) {
             this.cache = cache;
