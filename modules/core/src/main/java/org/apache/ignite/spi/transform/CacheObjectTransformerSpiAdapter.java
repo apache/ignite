@@ -71,7 +71,7 @@ public abstract class CacheObjectTransformerSpiAdapter extends IgniteSpiAdapter 
     protected ByteBuffer byteBuffer(int capacity) {
         ByteBuffer buf;
 
-        log.info("Buffer Capacity="+capacity); // TODO
+        log.info("Buffer Capacity=" + capacity); // TODO
 
         if (direct()) {
             buf = dstBuf.get(capacity);
