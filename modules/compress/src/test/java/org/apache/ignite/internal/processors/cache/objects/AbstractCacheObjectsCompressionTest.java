@@ -30,6 +30,7 @@ import net.jpountz.lz4.LZ4FastDecompressor;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.configuration.IgniteConfiguration;
+import org.apache.ignite.internal.logger.IgniteLoggerEx;
 import org.apache.ignite.internal.processors.cache.transform.AbstractCacheObjectsTransformationTest;
 import org.apache.ignite.spi.transform.CacheObjectTransformerSpi;
 import org.apache.ignite.spi.transform.CacheObjectTransformerSpiAdapter;
@@ -177,10 +178,12 @@ public abstract class AbstractCacheObjectsCompressionTest extends AbstractCacheO
                 case SNAPPY:
                     try {
                         log.info("Transforming [orig=" + original + ", comp=" + compressed); // TODO
+                        ((IgniteLoggerEx)log).flush();
 
                         int size = Snappy.compress(original, compressed);
 
                         log.info("Transformed [size=" + size); // TODO
+                        ((IgniteLoggerEx)log).flush();
 
                         if (size > lim) // Limiting to gain compression profit (ByteBuffer limit is ignoring by Snappy).
                             throw new IgniteCheckedException("Compression gains no profit.");
@@ -229,10 +232,12 @@ public abstract class AbstractCacheObjectsCompressionTest extends AbstractCacheO
                 case SNAPPY:
                     try {
                         log.info("Restoring [trans=" + transformed + ", rest=" + restored); // TODO
+                        ((IgniteLoggerEx)log).flush();
 
                         Snappy.uncompress(transformed, restored);
 
                         log.info("Restored"); // TODO
+                        ((IgniteLoggerEx)log).flush();
 
                         snapCnt.incrementAndGet();
                     }

@@ -20,6 +20,7 @@ package org.apache.ignite.spi.transform;
 import java.nio.ByteBuffer;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.internal.ThreadLocalDirectByteBuffer;
+import org.apache.ignite.internal.logger.IgniteLoggerEx;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgniteExperimental;
 import org.apache.ignite.spi.IgniteSpiAdapter;
@@ -72,6 +73,7 @@ public abstract class CacheObjectTransformerSpiAdapter extends IgniteSpiAdapter 
         ByteBuffer buf;
 
         log.info("Buffer Capacity=" + capacity); // TODO
+        ((IgniteLoggerEx)log).flush();
 
         if (direct()) {
             buf = dstBuf.get(capacity);
@@ -82,6 +84,7 @@ public abstract class CacheObjectTransformerSpiAdapter extends IgniteSpiAdapter 
             buf = ByteBuffer.wrap(new byte[capacity]);
 
         log.info("Buffer ready"); // TODO
+        ((IgniteLoggerEx)log).flush();
 
         return buf;
     }
