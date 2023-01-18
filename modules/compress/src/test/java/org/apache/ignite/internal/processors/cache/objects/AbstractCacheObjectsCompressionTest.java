@@ -176,7 +176,7 @@ public abstract class AbstractCacheObjectsCompressionTest extends AbstractCacheO
 
                 case SNAPPY:
                     try {
-                        log.info("Transforming [orig="+original + ", comp="+compressed); // TODO
+                        log.info("Transforming [orig=" + original + ", comp=" + compressed); // TODO
 
                         int size = Snappy.compress(original, compressed);
 
@@ -228,7 +228,7 @@ public abstract class AbstractCacheObjectsCompressionTest extends AbstractCacheO
 
                 case SNAPPY:
                     try {
-                        log.info("Restoring [trans="+transformed + ", rest="+restored); // TODO
+                        log.info("Restoring [trans=" + transformed + ", rest=" + restored); // TODO
 
                         Snappy.uncompress(transformed, restored);
 
