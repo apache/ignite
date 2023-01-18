@@ -144,10 +144,13 @@ public abstract class AbstractConsistentCutMessagesBlockingTest extends Abstract
 
         // GridDhtTxFinishRequest is sent from primary node for two-phase-commit, or from near node if primaries are collocated.
         if (txMsgBlkCls.equals(GridDhtTxFinishRequest.class)) {
+            if (testCase.onePhase())
+                return true;
+
             if (txBlkNodeType == NEAR)
                 return !testCase.allPrimaryOnNear(nearNodeIdx);
 
-            return txBlkNodeType != PRIMARY || testCase.onePhase();
+            return txBlkNodeType != PRIMARY;
         }
 
         return false;
