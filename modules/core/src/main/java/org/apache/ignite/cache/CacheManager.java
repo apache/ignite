@@ -49,10 +49,6 @@ import org.apache.ignite.internal.util.IgniteUtils;
 import org.apache.ignite.internal.util.typedef.internal.CU;
 import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.TcpDiscoveryVmIpFinder;
-import org.apache.ignite.spi.metric.MetricExporterSpi;
-import org.apache.ignite.spi.metric.ReadOnlyMetricManager;
-import org.apache.ignite.spi.metric.ReadOnlyMetricRegistry;
-import org.apache.ignite.spi.metric.jmx.JmxMetricExporterSpi;
 import org.jetbrains.annotations.Nullable;
 
 import static org.apache.ignite.IgniteSystemProperties.IGNITE_JCACHE_DEFAULT_ISOLATED;
