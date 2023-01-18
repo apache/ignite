@@ -35,7 +35,6 @@ import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.DataRegionConfiguration;
 import org.apache.ignite.configuration.DataStorageConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
-import org.apache.ignite.configuration.NearCacheConfiguration;
 import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.IgniteInterruptedCheckedException;
 import org.apache.ignite.internal.pagemem.wal.WALIterator;
@@ -78,15 +77,7 @@ public abstract class AbstractConsistentCutTest extends GridCommonAbstractTest {
                 .setName("consistent-cut-persist")
                 .setPersistenceEnabled(true)));
 
-        CacheConfiguration<Integer, Integer> ccfg = new CacheConfiguration<Integer, Integer>()
-            .setName(CACHE)
-            .setAtomicityMode(CacheAtomicityMode.TRANSACTIONAL)
-            .setBackups(backups());
-
-        if (withNearCache())
-            ccfg.setNearConfiguration(new NearCacheConfiguration<>());
-
-        cfg.setCacheConfiguration(ccfg);
+        cfg.setCacheConfiguration(cacheConfiguration(CACHE));
 
         cfg.setConsistentId(instanceName);
 
@@ -113,11 +104,12 @@ public abstract class AbstractConsistentCutTest extends GridCommonAbstractTest {
         cleanPersistenceDir();
     }
 
-    /**
-     * @return {@code true} if NearCache is enabled, otherwise {@code false}.
-     */
-    protected boolean withNearCache() {
-        return false;
+    /** */
+    protected CacheConfiguration<Integer, Integer> cacheConfiguration(String cacheName) {
+        return new CacheConfiguration<Integer, Integer>()
+            .setName(cacheName)
+            .setAtomicityMode(CacheAtomicityMode.TRANSACTIONAL)
+            .setBackups(backups());
     }
 
     /**

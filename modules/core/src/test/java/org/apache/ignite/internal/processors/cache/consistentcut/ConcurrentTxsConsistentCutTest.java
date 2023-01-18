@@ -23,9 +23,14 @@ import java.util.Random;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.locks.Lock;
+import java.util.function.BiFunction;
 import java.util.function.Supplier;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCache;
+import org.apache.ignite.cache.affinity.rendezvous.RendezvousAffinityFunction;
+import org.apache.ignite.configuration.CacheConfiguration;
+import org.apache.ignite.configuration.IgniteConfiguration;
+import org.apache.ignite.configuration.NearCacheConfiguration;
 import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.transactions.Transaction;
@@ -40,6 +45,9 @@ import static org.apache.ignite.internal.processors.cache.persistence.snapshot.A
 public class ConcurrentTxsConsistentCutTest extends AbstractConsistentCutTest {
     /** Amount of Consistent Cuts to await. */
     private static final int CUTS = 20;
+
+    /** */
+    private static final String CACHE2 = "CACHE2";
 
     /** */
     private static final Random RND = new Random();
@@ -92,8 +100,21 @@ public class ConcurrentTxsConsistentCutTest extends AbstractConsistentCutTest {
     }
 
     /** {@inheritDoc} */
-    @Override protected boolean withNearCache() {
-        return withNearCache;
+    @Override protected IgniteConfiguration getConfiguration(String instanceName) throws Exception {
+        IgniteConfiguration cfg = super.getConfiguration(instanceName);
+
+        CacheConfiguration<Integer, Integer> ccfg1 = cacheConfiguration(CACHE);
+
+        if (withNearCache)
+            ccfg1.setNearConfiguration(new NearCacheConfiguration<>());
+
+        // Set less partitions to handle default open files limit in OS.
+        CacheConfiguration<Integer, Integer> ccfg2 = cacheConfiguration(CACHE2)
+            .setAffinity(new RendezvousAffinityFunction(false, 100));
+
+        cfg.setCacheConfiguration(ccfg1, ccfg2);
+
+        return cfg;
     }
 
     /** */
@@ -105,13 +126,64 @@ public class ConcurrentTxsConsistentCutTest extends AbstractConsistentCutTest {
     /** */
     @Test
     public void concurrentLoadTransactionsTest() throws Exception {
-        testConcurrentTransactionsAndCuts(() -> tx(false));
+        testConcurrentTransactionsAndCuts(() -> explicitTransaction((g, tx) -> {
+            int cnt = 1 + RND.nextInt(nodes());
+
+            for (int j = 0; j < cnt; j++) {
+                IgniteCache<Integer, Integer> cache = g.cache(CACHE);
+
+                cache.put(RND.nextInt(), RND.nextInt());
+            }
+
+            tx.commit();
+
+            return true;
+        }));
     }
 
     /** */
     @Test
     public void concurrentLoadTransactionsWithRollbackTest() throws Exception {
-        testConcurrentTransactionsAndCuts(() -> tx(true));
+        testConcurrentTransactionsAndCuts(() -> explicitTransaction((g, tx) -> {
+            int cnt = 1 + RND.nextInt(nodes());
+
+            for (int j = 0; j < cnt; j++) {
+                IgniteCache<Integer, Integer> cache = g.cache(CACHE);
+
+                cache.put(RND.nextInt(), RND.nextInt());
+            }
+
+            if (RND.nextBoolean()) {
+                tx.rollback();
+
+                return false;
+            }
+            else {
+                tx.commit();
+
+                return true;
+            }
+        }));
+    }
+
+    /** */
+    @Test
+    public void testTransactionsForMultipleCaches() throws Exception {
+        testConcurrentTransactionsAndCuts(() -> explicitTransaction((g, tx) -> {
+            for (String c: new String[] {CACHE, CACHE2}) {
+                int cnt = 1 + RND.nextInt(nodes());
+
+                for (int j = 0; j < cnt; j++) {
+                    IgniteCache<Integer, Integer> cache = g.cache(c);
+
+                    cache.put(RND.nextInt(), RND.nextInt());
+                }
+            }
+
+            tx.commit();
+
+            return true;
+        }));
     }
 
     /** */
@@ -155,36 +227,21 @@ public class ConcurrentTxsConsistentCutTest extends AbstractConsistentCutTest {
         });
     }
 
-    /** */
-    private boolean tx(boolean withRollback) {
+    /** @return {@code true} if transaction committed. */
+    private boolean explicitTransaction(BiFunction<Ignite, Transaction, Boolean> txFunc) {
         // +1 - client node.
         int n = RND.nextInt(nodes() + 1);
 
         Ignite g = grid(n);
 
         try (Transaction tx = g.transactions().txStart()) {
-            int cnt = 1 + RND.nextInt(nodes());
-
-            for (int j = 0; j < cnt; j++) {
-                IgniteCache<Integer, Integer> cache = g.cache(CACHE);
-
-                cache.put(RND.nextInt(), RND.nextInt());
-            }
-
-            if (withRollback && RND.nextBoolean()) {
-                tx.rollback();
-
-                return false;
-            }
-            else {
-                tx.commit();
-
-                return true;
-            }
+            return txFunc.apply(g, tx);
         }
     }
 
-    /** */
+    /**
+     * @param tx Transaction, returs {@code true} if transaction committed.
+     */
     private void testConcurrentTransactionsAndCuts(Supplier<Boolean> tx) throws Exception {
         stopLoadLatch = new CountDownLatch(1);
 
