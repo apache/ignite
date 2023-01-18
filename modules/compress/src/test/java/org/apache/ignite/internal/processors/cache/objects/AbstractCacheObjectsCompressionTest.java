@@ -144,7 +144,9 @@ public abstract class AbstractCacheObjectsCompressionTest extends AbstractCacheO
             // Same as original (SNAPPY requirement) + header.
             ByteBuffer compressed = byteBuffer(original.remaining() + locOverhead + 1024 /*TODO*/);
 
-            compressed.position(locOverhead); // Reserving for compression type.
+            compressed.putInt(type.ordinal());
+
+            assertEquals(locOverhead, compressed.position());
 
             switch (type) {
                 case ZSTD:
@@ -197,9 +199,6 @@ public abstract class AbstractCacheObjectsCompressionTest extends AbstractCacheO
                 default:
                     throw new UnsupportedOperationException();
             }
-
-            compressed.putInt(type.ordinal());
-            compressed.rewind();
 
             return compressed;
         }
