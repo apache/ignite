@@ -22,9 +22,7 @@ import java.nio.ByteBuffer;
 import java.util.Objects;
 import java.util.concurrent.atomic.AtomicLong;
 import com.github.luben.zstd.Zstd;
-import com.github.luben.zstd.ZstdException;
 import net.jpountz.lz4.LZ4Compressor;
-import net.jpountz.lz4.LZ4Exception;
 import net.jpountz.lz4.LZ4Factory;
 import net.jpountz.lz4.LZ4FastDecompressor;
 import org.apache.ignite.IgniteCheckedException;
@@ -142,54 +140,60 @@ public abstract class AbstractCacheObjectsCompressionTest extends AbstractCacheO
             if (lim <= 0)
                 throw new IgniteCheckedException("Compression is not profitable.");
 
-            int maxCompSize =
-                type == CompressionType.SNAPPY ?
-                    Snappy.maxCompressedLength(original.remaining()) : // Will be limited later by result size check.
-                    lim; // Limiting to gain compression profit.
+            int maxCompLen;
 
-            int bufSize = locOverhead + maxCompSize;
+            switch (type) {
+                case ZSTD:
+                    maxCompLen = (int)Zstd.compressBound(original.remaining());
 
-            ByteBuffer compressed = byteBuffer(bufSize);
+                    break;
+
+                case LZ4:
+                    maxCompLen = lz4Compressor.maxCompressedLength(original.remaining());
+
+                    break;
+
+                case SNAPPY:
+                    maxCompLen = Snappy.maxCompressedLength(original.remaining());
+
+                    break;
+
+                default:
+                    throw new UnsupportedOperationException();
+            }
+
+            ByteBuffer compressed = byteBuffer(locOverhead + maxCompLen);
 
             compressed.putInt(type.ordinal());
 
             assertEquals(locOverhead, compressed.position());
 
+            int size;
+
             switch (type) {
                 case ZSTD:
-                    try {
-                        Zstd.compress(compressed, original, 1);
+                    size = Zstd.compress(compressed, original, 1);
 
-                        compressed.flip();
-                    }
-                    catch (ZstdException e) {
-                        throw new IgniteCheckedException(e);
-                    }
+                    compressed.flip();
 
                     break;
 
                 case LZ4:
-                    try {
-                        lz4Compressor.compress(original, compressed);
+                    lz4Compressor.compress(original, compressed);
 
-                        compressed.flip();
-                    }
-                    catch (LZ4Exception e) {
-                        throw new IgniteCheckedException(e);
-                    }
+                    size = compressed.position() - locOverhead;
+
+                    compressed.flip();
 
                     break;
 
                 case SNAPPY:
                     try {
-                        int size = Snappy.compress(original, compressed);
-
-                        if (size >= lim) // Limiting to gain compression profit (ByteBuffer limit is ignoring by Snappy).
-                            throw new IgniteCheckedException("Compression is not profitable.");
+                        size = Snappy.compress(original, compressed);
 
                         compressed.position(0);
                     }
-                    catch (IOException | IllegalArgumentException e) {
+                    catch (IOException e) {
                         throw new IgniteCheckedException(e);
                     }
 
@@ -198,6 +202,9 @@ public abstract class AbstractCacheObjectsCompressionTest extends AbstractCacheO
                 default:
                     throw new UnsupportedOperationException();
             }
+
+            if (size >= lim) // Limiting to gain compression profit.
+                throw new IgniteCheckedException("Compression is not profitable.");
 
             return compressed;
         }
