@@ -107,9 +107,6 @@ import static org.apache.ignite.internal.managers.communication.GridIoPolicy.PUB
 import static org.apache.ignite.internal.processors.job.ComputeJobStatusEnum.CANCELLED;
 import static org.apache.ignite.internal.processors.job.ComputeJobStatusEnum.FAILED;
 import static org.apache.ignite.internal.processors.job.ComputeJobStatusEnum.FINISHED;
-import static org.apache.ignite.internal.processors.task.GridTaskThreadContextKey.TC_IO_POLICY;
-import static org.apache.ignite.internal.processors.task.GridTaskThreadContextKey.TC_NO_FAILOVER;
-import static org.apache.ignite.internal.processors.task.GridTaskThreadContextKey.TC_NO_RESULT_CACHE;
 
 /**
  * Grid task worker. Handles full task life cycle.
@@ -177,8 +174,8 @@ public class GridTaskWorker<T, R> extends GridWorker implements GridTimeoutObjec
     /** Task class. */
     private final Class<?> taskCls;
 
-    /** Optional subgrid. */
-    private final Map<GridTaskThreadContextKey, Object> thCtx;
+    /** Task execution options. */
+    private final TaskExecutionOptions opts;
 
     /** */
     private ComputeTask<T, R> task;
@@ -285,7 +282,7 @@ public class GridTaskWorker<T, R> extends GridWorker implements GridTimeoutObjec
      * @param task Task instance that might be null.
      * @param dep Deployed task.
      * @param evtLsnr Event listener.
-     * @param thCtx Thread-local context from task processor.
+     * @param opts Task execution options.
      * @param subjId Subject ID.
      */
     GridTaskWorker(
@@ -297,7 +294,7 @@ public class GridTaskWorker<T, R> extends GridWorker implements GridTimeoutObjec
         @Nullable ComputeTask<T, R> task,
         GridDeployment dep,
         GridTaskEventListener evtLsnr,
-        @Nullable Map<GridTaskThreadContextKey, Object> thCtx,
+        TaskExecutionOptions opts,
         UUID subjId) {
         super(ctx.config().getIgniteInstanceName(), "grid-task-worker", ctx.log(GridTaskWorker.class));
 
@@ -314,7 +311,7 @@ public class GridTaskWorker<T, R> extends GridWorker implements GridTimeoutObjec
         this.task = task;
         this.dep = dep;
         this.evtLsnr = evtLsnr;
-        this.thCtx = thCtx;
+        this.opts = opts;
         this.subjId = subjId;
 
         log = U.logger(ctx, logRef, this);
@@ -323,13 +320,9 @@ public class GridTaskWorker<T, R> extends GridWorker implements GridTimeoutObjec
 
         boolean noResCacheAnnotation = dep.annotation(taskCls, ComputeTaskNoResultCache.class) != null;
 
-        Boolean noResCacheCtxFlag = getThreadContext(TC_NO_RESULT_CACHE);
+        resCache = !(noResCacheAnnotation || opts.isNoResultCaching());
 
-        resCache = !(noResCacheAnnotation || (noResCacheCtxFlag != null && noResCacheCtxFlag));
-
-        Boolean noFailover = getThreadContext(TC_NO_FAILOVER);
-
-        this.noFailover = noFailover != null ? noFailover : false;
+        this.noFailover = opts.isNoFailover();
 
         if (task instanceof AffinityTask) {
             AffinityTask affTask = (AffinityTask)task;
@@ -354,16 +347,6 @@ public class GridTaskWorker<T, R> extends GridWorker implements GridTimeoutObjec
             mapTopVer = null;
             affCacheIds = null;
         }
-    }
-
-    /**
-     * Gets value from thread-local context.
-     *
-     * @param key Thread-local context key.
-     * @return Thread-local context value, if any.
-     */
-    @Nullable private <V> V getThreadContext(GridTaskThreadContextKey key) {
-        return thCtx == null ? null : (V)thCtx.get(key);
     }
 
     /**
@@ -1448,14 +1431,8 @@ public class GridTaskWorker<T, R> extends GridWorker implements GridTimeoutObjec
 
                         if (internal)
                             plc = MANAGEMENT_POOL;
-                        else {
-                            Byte ctxPlc = getThreadContext(TC_IO_POLICY);
-
-                            if (ctxPlc != null)
-                                plc = ctxPlc;
-                            else
-                                plc = PUBLIC_POOL;
-                        }
+                        else
+                            plc = opts.pool().orElse(PUBLIC_POOL);
 
                         // Send job execution request.
                         ctx.io().sendToGridTopic(node, TOPIC_JOB, req, plc);

@@ -225,8 +225,7 @@ import static org.apache.ignite.internal.processors.cache.persistence.tree.io.Pa
 import static org.apache.ignite.internal.processors.cache.persistence.tree.io.PageIO.getType;
 import static org.apache.ignite.internal.processors.cache.persistence.tree.io.PageIO.getVersion;
 import static org.apache.ignite.internal.processors.configuration.distributed.DistributedLongProperty.detachedLongProperty;
-import static org.apache.ignite.internal.processors.task.GridTaskThreadContextKey.TC_SKIP_AUTH;
-import static org.apache.ignite.internal.processors.task.GridTaskThreadContextKey.TC_SUBGRID;
+import static org.apache.ignite.internal.processors.task.TaskExecutionOptions.options;
 import static org.apache.ignite.internal.util.GridUnsafe.bufferAddress;
 import static org.apache.ignite.internal.util.IgniteUtils.isLocalNodeCoordinator;
 import static org.apache.ignite.internal.util.distributed.DistributedProcess.DistributedProcessType.END_SNAPSHOT;
@@ -1264,12 +1263,14 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
         cctx.kernalContext().security().authorize(ADMIN_SNAPSHOT);
 
         return cctx.kernalContext().closure()
-            .callAsyncNoFailover(BROADCAST,
+            .callAsync(
+                BROADCAST,
                 new CancelSnapshotCallable(null, name),
-                cctx.discovery().aliveServerNodes(),
-                false,
-                0,
-                true);
+                options()
+                    .withNoFailover()
+                    .withProjection(cctx.discovery().aliveServerNodes())
+                    .withAuthenticationSkipped()
+            );
     }
 
     /**
@@ -1282,12 +1283,14 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
         cctx.kernalContext().security().authorize(ADMIN_SNAPSHOT);
 
         IgniteInternalFuture<Boolean> fut0 = cctx.kernalContext().closure()
-            .callAsyncNoFailover(BROADCAST,
+            .callAsync(
+                BROADCAST,
                 new CancelSnapshotCallable(reqId, null),
-                cctx.discovery().aliveServerNodes(),
-                false,
-                0,
-                true);
+                options()
+                    .withNoFailover()
+                    .withProjection(cctx.discovery().aliveServerNodes())
+                    .withAuthenticationSkipped()
+            );
 
         return new IgniteFutureImpl<>(fut0);
     }
@@ -1431,12 +1434,15 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
         Collection<ClusterNode> bltNodes = F.view(cctx.discovery().serverNodes(AffinityTopologyVersion.NONE),
             (node) -> CU.baselineNode(node, kctx0.state().clusterState()));
 
-        kctx0.task().setThreadContext(TC_SKIP_AUTH, true);
-        kctx0.task().setThreadContext(TC_SUBGRID, bltNodes);
-
         SnapshotMetadataCollectorTaskArg taskArg = new SnapshotMetadataCollectorTaskArg(name, snpPath);
 
-        kctx0.task().execute(SnapshotMetadataCollectorTask.class, taskArg).listen(f0 -> {
+        kctx0.task().execute(
+            SnapshotMetadataCollectorTask.class,
+            taskArg,
+            options()
+                .withAuthenticationSkipped()
+                .withProjection(bltNodes)
+        ).listen(f0 -> {
             if (f0.error() == null) {
                 Map<ClusterNode, List<SnapshotMetadata>> metas = f0.result();
 
@@ -1511,14 +1517,16 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
                     return;
                 }
 
-                kctx0.task().setThreadContext(TC_SKIP_AUTH, true);
-                kctx0.task().setThreadContext(TC_SUBGRID, new ArrayList<>(metas.keySet()));
-
                 Class<? extends AbstractSnapshotVerificationTask> cls =
                     includeCustomHandlers ? SnapshotHandlerRestoreTask.class : SnapshotPartitionsVerifyTask.class;
 
-                kctx0.task().execute(cls, new SnapshotPartitionsVerifyTaskArg(grps, metas, snpPath))
-                    .listen(f1 -> {
+                kctx0.task().execute(
+                        cls,
+                        new SnapshotPartitionsVerifyTaskArg(grps, metas, snpPath),
+                        options()
+                            .withAuthenticationSkipped()
+                            .withProjection(new ArrayList<>(metas.keySet()))
+                    ).listen(f1 -> {
                         if (f1.error() == null)
                             res.onDone(f1.result());
                         else if (f1.error() instanceof IgniteSnapshotVerifyException)
@@ -1693,12 +1701,14 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
                     throw new IgniteException("There is no alive server nodes in the cluster");
 
                 return new IgniteSnapshotFutureImpl(cctx.kernalContext().closure()
-                    .callAsyncNoFailover(BALANCE,
+                    .callAsync(
+                        BALANCE,
                         new CreateSnapshotCallable(name),
-                        Collections.singletonList(crd),
-                        false,
-                        0,
-                        true));
+                        options()
+                            .withNoFailover()
+                            .withProjection(Collections.singletonList(crd))
+                            .withAuthenticationSkipped()
+                    ));
             }
 
             ClusterSnapshotFuture snpFut0;
@@ -2323,10 +2333,13 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
         Collection<ClusterNode> bltNodes = F.view(cctx.discovery().serverNodes(AffinityTopologyVersion.NONE),
             (node) -> CU.baselineNode(node, cctx.kernalContext().state().clusterState()));
 
-        cctx.kernalContext().task().setThreadContext(TC_SKIP_AUTH, true);
-        cctx.kernalContext().task().setThreadContext(TC_SUBGRID, bltNodes);
-
-        return new IgniteFutureImpl<>(cctx.kernalContext().task().execute(taskCls, snpName));
+        return new IgniteFutureImpl<>(cctx.kernalContext().task().execute(
+            taskCls,
+            snpName,
+            options()
+                .withAuthenticationSkipped()
+                .withProjection(bltNodes)
+        ));
     }
 
     /**

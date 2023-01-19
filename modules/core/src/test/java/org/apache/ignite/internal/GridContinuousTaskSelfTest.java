@@ -58,6 +58,9 @@ import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 import org.junit.Test;
 
+import static org.apache.ignite.internal.GridClosureCallMode.BALANCE;
+import static org.apache.ignite.internal.processors.task.TaskExecutionOptions.options;
+
 /**
  * Continuous task test.
  */
@@ -203,15 +206,18 @@ public class GridContinuousTaskSelfTest extends GridCommonAbstractTest {
         try {
             IgniteEx ign = startGrid(0);
 
-            ComputeTaskInternalFuture<String> fut = ign.context().closure().callAsync(GridClosureCallMode.BALANCE, new Callable<String>() {
-                /** */
-                @IgniteInstanceResource
-                private IgniteEx g;
+            IgniteInternalFuture<String> fut = ign.context().closure().callAsync(
+                BALANCE,
+                new Callable<String>() {
+                    @IgniteInstanceResource
+                    private IgniteEx g;
 
-                @Override public String call() throws Exception {
-                    return g.compute(g.cluster()).execute(NestedHoldccTask.class, null);
-                }
-            }, ign.cluster().nodes());
+                    @Override public String call() throws Exception {
+                        return g.compute(g.cluster()).execute(NestedHoldccTask.class, null);
+                    }
+                },
+                options().withProjection(ign.cluster().nodes())
+            );
 
             assertEquals("DONE", fut.get(3000));
         }

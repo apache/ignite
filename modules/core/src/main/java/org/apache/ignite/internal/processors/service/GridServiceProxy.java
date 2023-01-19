@@ -47,7 +47,6 @@ import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.binary.BinaryArray;
 import org.apache.ignite.internal.binary.BinaryMarshaller;
 import org.apache.ignite.internal.cluster.ClusterTopologyCheckedException;
-import org.apache.ignite.internal.managers.communication.GridIoPolicy;
 import org.apache.ignite.internal.processors.metric.impl.HistogramMetricImpl;
 import org.apache.ignite.internal.processors.platform.PlatformNativeException;
 import org.apache.ignite.internal.processors.platform.services.PlatformService;
@@ -64,7 +63,8 @@ import org.apache.ignite.services.Service;
 import org.apache.ignite.services.ServiceCallInterceptor;
 import org.jetbrains.annotations.Nullable;
 
-import static org.apache.ignite.internal.processors.task.GridTaskThreadContextKey.TC_IO_POLICY;
+import static org.apache.ignite.internal.managers.communication.GridIoPolicy.SERVICE_POOL;
+import static org.apache.ignite.internal.processors.task.TaskExecutionOptions.options;
 
 /**
  * Wrapper for making {@link org.apache.ignite.services.Service} class proxies.
@@ -218,16 +218,17 @@ public class GridServiceProxy<T> implements Serializable {
                         }
                     }
                     else {
-                        ctx.task().setThreadContext(TC_IO_POLICY, GridIoPolicy.SERVICE_POOL);
-
                         // Execute service remotely.
-                        return unmarshalResult(ctx.closure().callAsyncNoFailover(
-                            GridClosureCallMode.BROADCAST,
-                            new ServiceProxyCallable(methodName(mtd), name, mtd.getParameterTypes(), args, callAttrs),
-                            Collections.singleton(node),
-                            false,
-                            waitTimeout,
-                            true).get());
+                        return unmarshalResult(ctx.closure().callAsync(
+                                GridClosureCallMode.BROADCAST,
+                                new ServiceProxyCallable(methodName(mtd), name, mtd.getParameterTypes(), args, callAttrs),
+                                options()
+                                    .withPool(SERVICE_POOL)
+                                    .withNoFailover()
+                                    .withProjection(Collections.singleton(node))
+                                    .withTimeout(waitTimeout)
+                                    .withAuthenticationSkipped()
+                            ).get());
                     }
                 }
                 catch (InvocationTargetException e) {

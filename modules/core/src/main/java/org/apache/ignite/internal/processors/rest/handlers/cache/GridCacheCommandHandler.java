@@ -121,7 +121,7 @@ import static org.apache.ignite.internal.processors.rest.GridRestCommand.CACHE_S
 import static org.apache.ignite.internal.processors.rest.GridRestCommand.CACHE_UPDATE_TLL;
 import static org.apache.ignite.internal.processors.rest.GridRestCommand.DESTROY_CACHE;
 import static org.apache.ignite.internal.processors.rest.GridRestCommand.GET_OR_CREATE_CACHE;
-import static org.apache.ignite.internal.processors.task.GridTaskThreadContextKey.TC_NO_FAILOVER;
+import static org.apache.ignite.internal.processors.task.TaskExecutionOptions.options;
 
 /**
  * Command handler for API requests.
@@ -762,11 +762,13 @@ public class GridCacheCommandHandler extends GridRestCommandHandlerAdapter {
         else {
             ClusterGroup prj = ctx.grid().cluster().forPredicate(F.nodeForNodeId(destId));
 
-            ctx.task().setThreadContext(TC_NO_FAILOVER, true);
-
-            return ctx.closure().callAsync(BALANCE,
+            return ctx.closure().callAsync(
+                BALANCE,
                 new FlaggedCacheOperationCallable(cacheName, cacheFlags, op, key),
-                prj.nodes());
+                options()
+                    .withNoFailover()
+                    .withProjection(prj.nodes())
+            );
         }
     }
 
@@ -796,11 +798,13 @@ public class GridCacheCommandHandler extends GridRestCommandHandlerAdapter {
         else {
             ClusterGroup prj = ctx.grid().cluster().forPredicate(F.nodeForNodeId(destId));
 
-            ctx.task().setThreadContext(TC_NO_FAILOVER, true);
-
-            return ctx.closure().callAsync(BALANCE,
+            return ctx.closure().callAsync(
+                BALANCE,
                 new CacheOperationCallable(cacheName, op, key),
-                prj.nodes());
+                options()
+                    .withNoFailover()
+                    .withProjection(prj.nodes())
+            );
         }
     }
 
