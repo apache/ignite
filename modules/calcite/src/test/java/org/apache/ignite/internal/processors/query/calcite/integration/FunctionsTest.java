@@ -36,9 +36,6 @@ import org.junit.Test;
  */
 public class FunctionsTest extends AbstractBasicIntegrationTest {
     /** */
-    private static final Object[] NULL_RESULT = new Object[] { null };
-
-    /** */
     @Test
     public void testTimestampDiffWithFractionsOfSecond() {
         assertQuery("SELECT TIMESTAMPDIFF(MICROSECOND, TIMESTAMP '2022-02-01 10:30:28.000', " +
@@ -276,18 +273,6 @@ public class FunctionsTest extends AbstractBasicIntegrationTest {
         assertQuery("SELECT 'abcd' !~* null").returns(NULL_RESULT).check();
         assertQuery("SELECT null !~* null").returns(NULL_RESULT).check();
         assertThrows("SELECT 'abcd' ~ '[a-z'", IgniteSQLException.class, null);
-    }
-
-    /** */
-    @Test
-    public void testDynamicParameterTypesInference() {
-        assertQuery("SELECT lower(?)").withParams("ASD").returns("asd").check();
-        assertQuery("SELECT ? % ?").withParams(11, 10).returns(BigDecimal.valueOf(1)).check();
-        assertQuery("SELECT sqrt(?)").withParams(4d).returns(2d).check();
-        assertQuery("SELECT last_day(?)").withParams(Date.valueOf("2022-01-01"))
-            .returns(Date.valueOf("2022-01-31")).check();
-        assertQuery("SELECT ?").withParams("asd").returns("asd").check();
-        assertQuery("SELECT coalesce(?, ?)").withParams("a", 10).returns("a").check();
     }
 
     /** */

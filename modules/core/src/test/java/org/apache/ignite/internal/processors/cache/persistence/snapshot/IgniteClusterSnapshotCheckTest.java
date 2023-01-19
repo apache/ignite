@@ -49,6 +49,7 @@ import org.apache.ignite.internal.binary.BinaryContext;
 import org.apache.ignite.internal.binary.BinaryObjectImpl;
 import org.apache.ignite.internal.managers.communication.GridMessageListener;
 import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
+import org.apache.ignite.internal.processors.cache.CacheGroupContext;
 import org.apache.ignite.internal.processors.cache.GridCacheAdapter;
 import org.apache.ignite.internal.processors.cache.GridCacheEntryEx;
 import org.apache.ignite.internal.processors.cache.GridCacheSharedContext;
@@ -67,6 +68,7 @@ import org.apache.ignite.internal.processors.cache.verify.PartitionHashRecordV2;
 import org.apache.ignite.internal.processors.cache.verify.PartitionKeyV2;
 import org.apache.ignite.internal.processors.cache.verify.VerifyBackupPartitionsTaskV2;
 import org.apache.ignite.internal.processors.cache.version.GridCacheVersion;
+import org.apache.ignite.internal.processors.compress.CompressionProcessor;
 import org.apache.ignite.internal.util.GridUnsafe;
 import org.apache.ignite.internal.util.lang.GridIterator;
 import org.apache.ignite.internal.util.typedef.F;
@@ -257,15 +259,36 @@ public class IgniteClusterSnapshotCheckTest extends AbstractSnapshotSelfTest {
             buff.clear();
             pageStore.read(0, buff, false);
 
-            PagePartitionMetaIO io = PageIO.getPageIO(buff);
-
             long pageAddr = GridUnsafe.bufferAddress(buff);
+
+            boolean shouldCompress = false;
+            if (PageIO.getCompressionType(pageAddr) != CompressionProcessor.UNCOMPRESSED_PAGE) {
+                shouldCompress = true;
+
+                ignite.context().compress().decompressPage(buff, pageStore.getPageSize());
+            }
+
+            PagePartitionMetaIO io = PageIO.getPageIO(buff);
 
             io.setUpdateCounter(pageAddr, CACHE_KEYS_RANGE * 2);
 
-            pageStore.beginRecover();
+            if (shouldCompress) {
+                CacheGroupContext grpCtx = ignite.context().cache().cacheGroup(grpId);
 
-            buff.flip();
+                assertNotNull("Group context for grpId:" + grpId, grpCtx);
+
+                ByteBuffer compressedPageBuf = grpCtx.compressionHandler().compressPage(buff, pageStore);
+
+                if (compressedPageBuf != buff) {
+                    buff = compressedPageBuf;
+
+                    PageIO.setCrc(buff, 0);
+                }
+            }
+            else
+                buff.flip();
+
+            pageStore.beginRecover();
             pageStore.write(PageIO.getPageId(buff), buff, 0, true);
             pageStore.finishRecover();
         }

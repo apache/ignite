@@ -19,7 +19,6 @@ package org.apache.ignite;
 
 import org.apache.ignite.configuration.DataRegionConfiguration;
 import org.apache.ignite.configuration.DataStorageConfiguration;
-import org.apache.ignite.mxbean.DataRegionMetricsMXBean;
 import org.apache.ignite.spi.metric.MetricExporterSpi;
 import org.apache.ignite.spi.metric.ReadOnlyMetricManager;
 import org.apache.ignite.spi.metric.ReadOnlyMetricRegistry;
@@ -39,16 +38,15 @@ import org.apache.ignite.spi.metric.jmx.JmxMetricExporterSpi;
  *       the method returns data region metrics snapshots rather than just in time memory state.
  *     </li>
  *     <li>
- *       Second, all {@link DataRegionMetrics} of a local Apache Ignite node are visible through JMX interface. Refer to
- *       {@link DataRegionMetricsMXBean} for more details.
+ *       Second, all {@link DataRegionMetrics} of a local Apache Ignite node are visible through JMX interface.
+ *       Refer to JMX bean with the name "name=io.dataregion.{data_region_name}" for more details.
  *     </li>
  * </ol>
  * </p>
  * <p>
  * Data region metrics collection is not a free operation and might affect performance of an application. This is the reason
  * why the metrics are turned off by default. To enable the collection you can use both
- * {@link DataRegionConfiguration#setMetricsEnabled(boolean)} configuration property or
- * {@link DataRegionMetricsMXBean#enableMetrics()} method of a respective JMX bean.
+ * {@link DataRegionConfiguration#setMetricsEnabled(boolean)} configuration property.
  *
  * @deprecated Check the {@link ReadOnlyMetricRegistry} with "name=io.dataregion.{data_region_name}" instead.
  *

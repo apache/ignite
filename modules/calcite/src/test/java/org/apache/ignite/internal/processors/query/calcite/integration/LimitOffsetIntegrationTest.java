@@ -15,7 +15,7 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.internal.processors.query.calcite;
+package org.apache.ignite.internal.processors.query.calcite.integration;
 
 import java.math.BigDecimal;
 import java.util.Arrays;
@@ -24,18 +24,13 @@ import org.apache.calcite.sql.validate.SqlValidatorException;
 import org.apache.ignite.IgniteCache;
 import org.apache.ignite.cache.CacheMode;
 import org.apache.ignite.cache.QueryEntity;
-import org.apache.ignite.cache.query.FieldsQueryCursor;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
-import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.processors.query.IgniteSQLException;
-import org.apache.ignite.internal.processors.query.QueryEngine;
 import org.apache.ignite.internal.processors.query.calcite.exec.rel.AbstractNode;
-import org.apache.ignite.internal.processors.query.calcite.util.Commons;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.X;
 import org.apache.ignite.internal.util.typedef.internal.U;
-import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.junit.Test;
 
 import static java.util.Collections.singletonList;
@@ -43,7 +38,7 @@ import static java.util.Collections.singletonList;
 /**
  * Limit / offset tests.
  */
-public class LimitOffsetTest extends GridCommonAbstractTest {
+public class LimitOffsetIntegrationTest extends AbstractBasicIntegrationTest {
     /** */
     private static IgniteCache<Integer, String> cacheRepl;
 
@@ -51,11 +46,14 @@ public class LimitOffsetTest extends GridCommonAbstractTest {
     private static IgniteCache<Integer, String> cachePart;
 
     /** {@inheritDoc} */
-    @Override protected void beforeTestsStarted() throws Exception {
-        startGrids(2);
+    @Override protected void beforeTest() throws Exception {
+        cacheRepl = client.cache("TEST_REPL");
+        cachePart = client.cache("TEST_PART");
+    }
 
-        cacheRepl = grid(0).cache("TEST_REPL");
-        cachePart = grid(0).cache("TEST_PART");
+    /** {@inheritDoc} */
+    @Override protected void afterTest() throws Exception {
+        // Override method to keep caches after tests.
     }
 
     /** {@inheritDoc} */
@@ -76,7 +74,7 @@ public class LimitOffsetTest extends GridCommonAbstractTest {
             .setKeyFieldName("id")
             .setValueFieldName("val")
             .addQueryField("id", Integer.class.getName(), null)
-            .addQueryField("val", String.class.getName(), null);;
+            .addQueryField("val", String.class.getName(), null);
 
         return super.getConfiguration(igniteInstanceName)
             .setCacheConfiguration(
@@ -93,117 +91,35 @@ public class LimitOffsetTest extends GridCommonAbstractTest {
     /** Tests correctness of fetch / offset params. */
     @Test
     public void testInvalidLimitOffset() {
-        QueryEngine engine = engine(grid(0));
-
         String bigInt = BigDecimal.valueOf(10000000000L).toString();
 
-        try {
-            List<FieldsQueryCursor<List<?>>> cursors =
-                engine.query(null, "PUBLIC",
-                    "SELECT * FROM TEST_REPL OFFSET " + bigInt + " ROWS");
-            cursors.get(0).getAll();
+        assertThrows("SELECT * FROM TEST_REPL OFFSET " + bigInt + " ROWS",
+            SqlValidatorException.class, "Illegal value of offset");
 
-            fail();
-        }
-        catch (Throwable e) {
-            assertTrue(e.toString(), X.hasCause(e, "Illegal value of offset", SqlValidatorException.class));
-        }
+        assertThrows("SELECT * FROM TEST_REPL FETCH FIRST " + bigInt + " ROWS ONLY",
+            SqlValidatorException.class, "Illegal value of fetch / limit");
 
-        try {
-            List<FieldsQueryCursor<List<?>>> cursors =
-                engine.query(null, "PUBLIC",
-                    "SELECT * FROM TEST_REPL FETCH FIRST " + bigInt + " ROWS ONLY");
-            cursors.get(0).getAll();
+        assertThrows("SELECT * FROM TEST_REPL LIMIT " + bigInt,
+            SqlValidatorException.class, "Illegal value of fetch / limit");
 
-            fail();
-        }
-        catch (Throwable e) {
-            assertTrue(e.toString(), X.hasCause(e, "Illegal value of fetch / limit", SqlValidatorException.class));
-        }
+        assertThrows("SELECT * FROM TEST_REPL OFFSET -1 ROWS FETCH FIRST -1 ROWS ONLY",
+            IgniteSQLException.class, null);
 
-        try {
-            List<FieldsQueryCursor<List<?>>> cursors =
-                engine.query(null, "PUBLIC", "SELECT * FROM TEST_REPL LIMIT " + bigInt);
-            cursors.get(0).getAll();
+        assertThrows("SELECT * FROM TEST_REPL OFFSET -1 ROWS",
+            IgniteSQLException.class, null);
 
-            fail();
-        }
-        catch (Throwable e) {
-            assertTrue(e.toString(), X.hasCause(e, "Illegal value of fetch / limit", SqlValidatorException.class));
-        }
-
-        try {
-            List<FieldsQueryCursor<List<?>>> cursors =
-                engine.query(null, "PUBLIC",
-                    "SELECT * FROM TEST_REPL OFFSET -1 ROWS FETCH FIRST -1 ROWS ONLY");
-            cursors.get(0).getAll();
-
-            fail();
-        }
-        catch (Throwable e) {
-            assertTrue(e.toString(), X.hasCause(e, IgniteSQLException.class));
-        }
-
-        try {
-            List<FieldsQueryCursor<List<?>>> cursors =
-                engine.query(null, "PUBLIC",
-                    "SELECT * FROM TEST_REPL OFFSET -1 ROWS");
-            cursors.get(0).getAll();
-
-            fail();
-        }
-        catch (Throwable e) {
-            assertTrue(e.toString(), X.hasCause(e, IgniteSQLException.class));
-        }
-
-        try {
-            List<FieldsQueryCursor<List<?>>> cursors =
-                engine.query(null, "PUBLIC",
-                    "SELECT * FROM TEST_REPL OFFSET 2+1 ROWS");
-            cursors.get(0).getAll();
-
-            fail();
-        }
-        catch (Throwable e) {
-            assertTrue(e.toString(), X.hasCause(e, IgniteSQLException.class));
-        }
+        assertThrows("SELECT * FROM TEST_REPL OFFSET 2+1 ROWS",
+            IgniteSQLException.class, null);
 
         // Check with parameters
-        try {
-            List<FieldsQueryCursor<List<?>>> cursors =
-                engine.query(null, "PUBLIC",
-                    "SELECT * FROM TEST_REPL OFFSET ? ROWS FETCH FIRST ? ROWS ONLY", -1, -1);
-            cursors.get(0).getAll();
+        assertThrows("SELECT * FROM TEST_REPL OFFSET ? ROWS FETCH FIRST ? ROWS ONLY",
+            SqlValidatorException.class, "Illegal value of fetch / limit", -1, -1);
 
-            fail();
-        }
-        catch (Throwable e) {
-            assertTrue(e.toString(), X.hasCause(e, "Illegal value of fetch / limit", SqlValidatorException.class));
-        }
+        assertThrows("SELECT * FROM TEST_REPL OFFSET ? ROWS",
+            SqlValidatorException.class, "Illegal value of offset", -1);
 
-        try {
-            List<FieldsQueryCursor<List<?>>> cursors =
-                engine.query(null, "PUBLIC",
-                    "SELECT * FROM TEST_REPL OFFSET ? ROWS", -1);
-            cursors.get(0).getAll();
-
-            fail();
-        }
-        catch (Throwable e) {
-            assertTrue(e.toString(), X.hasCause(e, "Illegal value of offset", SqlValidatorException.class));
-        }
-
-        try {
-            List<FieldsQueryCursor<List<?>>> cursors =
-                engine.query(null, "PUBLIC",
-                    "SELECT * FROM TEST_REPL FETCH FIRST ? ROWS ONLY", -1);
-            cursors.get(0).getAll();
-
-            fail();
-        }
-        catch (Throwable e) {
-            assertTrue(e.toString(), X.hasCause(e, "Illegal value of fetch / limit", SqlValidatorException.class));
-        }
+        assertThrows("SELECT * FROM TEST_REPL FETCH FIRST ? ROWS ONLY",
+            SqlValidatorException.class, "Illegal value of fetch / limit", -1);
     }
 
     /**
@@ -239,13 +155,8 @@ public class LimitOffsetTest extends GridCommonAbstractTest {
     public void testLimitDistributed() throws Exception {
         fillCache(cachePart, 10_000);
 
-        QueryEngine engine = engine(grid(0));
-
         for (String order : F.asArray("id", "val")) { // Order by ID - without explicit IgniteSort node.
-            FieldsQueryCursor<List<?>> cur = engine.query(null, "PUBLIC",
-                "SELECT id FROM TEST_PART ORDER BY " + order + " LIMIT 1000 OFFSET 5000").get(0);
-
-            List<List<?>> res = cur.getAll();
+            List<List<?>> res = sql("SELECT id FROM TEST_PART ORDER BY " + order + " LIMIT 1000 OFFSET 5000");
 
             assertEquals(1000, res.size());
 
@@ -254,11 +165,19 @@ public class LimitOffsetTest extends GridCommonAbstractTest {
         }
     }
 
+    /** */
+    @Test
+    public void testOffsetOutOfRange() throws Exception {
+        fillCache(cachePart, 5);
+
+        assertQuery("SELECT (SELECT id FROM TEST_PART ORDER BY id LIMIT 1 OFFSET 10)").returns(NULL_RESULT).check();
+    }
+
     /**
      * @param c Cache.
      * @param rows Rows count.
      */
-    private void fillCache(IgniteCache c, int rows) throws InterruptedException {
+    private void fillCache(IgniteCache<Integer, String> c, int rows) throws InterruptedException {
         c.clear();
 
         for (int i = 0; i < rows; ++i)
@@ -277,8 +196,6 @@ public class LimitOffsetTest extends GridCommonAbstractTest {
      * @param sorted Use sorted query (adds ORDER BY).
      */
     void checkQuery(int rows, int lim, int off, boolean param, boolean sorted) {
-        QueryEngine engine = engine(grid(0));
-
         String sql = createSql(lim, off, param, sorted);
 
         Object[] params;
@@ -293,10 +210,7 @@ public class LimitOffsetTest extends GridCommonAbstractTest {
 
         log.info("SQL: " + sql + (param ? "params=" + Arrays.toString(params) : ""));
 
-        List<FieldsQueryCursor<List<?>>> cursors =
-            engine.query(null, "PUBLIC", sql, param ? params : X.EMPTY_OBJECT_ARRAY);
-
-        List<List<?>> res = cursors.get(0).getAll();
+        List<List<?>> res = sql(sql, params);
 
         assertEquals("Invalid results size. [rows=" + rows + ", limit=" + lim + ", off=" + off
             + ", res=" + res.size() + ']', expectedSize(rows, lim, off), res.size());
@@ -340,10 +254,5 @@ public class LimitOffsetTest extends GridCommonAbstractTest {
             sb.append("FETCH FIRST ").append(param ? "?" : Integer.toString(lim)).append(" ROWS ONLY ");
 
         return sb.toString();
-    }
-
-    /** */
-    private QueryEngine engine(IgniteEx grid) {
-        return Commons.lookupComponent(grid.context(), QueryEngine.class);
     }
 }

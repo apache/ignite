@@ -30,6 +30,7 @@ import org.apache.ignite.binary.BinaryObject;
 import org.apache.ignite.cache.CacheAtomicityMode;
 import org.apache.ignite.cache.CacheMode;
 import org.apache.ignite.cluster.ClusterNode;
+import org.apache.ignite.cluster.ClusterState;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.DataStorageConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
@@ -199,7 +200,7 @@ public class IgniteMarshallerCacheFSRestoreTest extends GridCommonAbstractTest {
 
         Ignite ig = startGrids(3);
 
-        ig.active(true);
+        ig.cluster().state(ClusterState.ACTIVE);
 
         ig.cache(DEFAULT_CACHE_NAME).put(0, new SimpleValue(0, "value0"));
 

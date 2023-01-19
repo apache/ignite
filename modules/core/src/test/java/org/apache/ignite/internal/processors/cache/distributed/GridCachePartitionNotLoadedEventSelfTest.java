@@ -24,6 +24,7 @@ import java.util.concurrent.TimeUnit;
 import org.apache.ignite.IgniteCache;
 import org.apache.ignite.cache.affinity.Affinity;
 import org.apache.ignite.cache.affinity.rendezvous.RendezvousAffinityFunction;
+import org.apache.ignite.cluster.ClusterState;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.events.CacheRebalancingEvent;
@@ -108,7 +109,7 @@ public class GridCachePartitionNotLoadedEventSelfTest extends GridCommonAbstract
         IgniteEx crd = (IgniteEx)startGridsMultiThreaded(4);
 
         crd.cluster().baselineAutoAdjustEnabled(false);
-        crd.cluster().active(true);
+        crd.cluster().state(ClusterState.ACTIVE);
 
         awaitPartitionMapExchange();
 
@@ -176,7 +177,7 @@ public class GridCachePartitionNotLoadedEventSelfTest extends GridCommonAbstract
         startGrid(1);
 
         crd.cluster().baselineAutoAdjustEnabled(false);
-        crd.cluster().active(true);
+        crd.cluster().state(ClusterState.ACTIVE);
 
         final PartitionNotFullyLoadedListener lsnr = new PartitionNotFullyLoadedListener();
 
@@ -211,7 +212,7 @@ public class GridCachePartitionNotLoadedEventSelfTest extends GridCommonAbstract
         IgniteEx crd = startGrid(1);
 
         crd.cluster().baselineAutoAdjustEnabled(false);
-        crd.cluster().active(true);
+        crd.cluster().state(ClusterState.ACTIVE);
 
         startGrid(0);
 
@@ -251,7 +252,7 @@ public class GridCachePartitionNotLoadedEventSelfTest extends GridCommonAbstract
         startGrid(1);
 
         crd.cluster().baselineAutoAdjustEnabled(false);
-        crd.cluster().active(true);
+        crd.cluster().state(ClusterState.ACTIVE);
 
         final PartitionNotFullyLoadedListener lsnr = new PartitionNotFullyLoadedListener();
 

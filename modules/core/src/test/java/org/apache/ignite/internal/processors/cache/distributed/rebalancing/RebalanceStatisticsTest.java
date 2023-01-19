@@ -30,6 +30,7 @@ import org.apache.ignite.cache.CacheAtomicityMode;
 import org.apache.ignite.cache.CacheMode;
 import org.apache.ignite.cache.affinity.rendezvous.RendezvousAffinityFunction;
 import org.apache.ignite.cluster.ClusterNode;
+import org.apache.ignite.cluster.ClusterState;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.IgniteEx;
@@ -241,7 +242,7 @@ public class RebalanceStatisticsTest extends GridCommonAbstractTest {
         };
 
         IgniteEx crd = startGrids(nodeCnt);
-        crd.cluster().active(true);
+        crd.cluster().state(ClusterState.ACTIVE);
 
         populateCluster(crd, 10, "");
 

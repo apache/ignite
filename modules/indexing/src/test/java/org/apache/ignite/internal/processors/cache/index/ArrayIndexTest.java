@@ -29,6 +29,7 @@ import org.apache.ignite.cache.CacheWriteSynchronizationMode;
 import org.apache.ignite.cache.QueryEntity;
 import org.apache.ignite.cache.query.SqlFieldsQuery;
 import org.apache.ignite.client.IgniteClient;
+import org.apache.ignite.cluster.ClusterState;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.ClientConfiguration;
 import org.apache.ignite.configuration.DataRegionConfiguration;
@@ -98,7 +99,7 @@ public class ArrayIndexTest extends AbstractIndexingCommonTest {
     public void shouldSelectAllRows() throws Exception {
         IgniteEx ex = startGrid(0);
 
-        ex.cluster().active(true);
+        ex.cluster().state(ClusterState.ACTIVE);
 
         IgniteCache<Object, Object> cache = ex.getOrCreateCache(DEFAULT_CACHE_NAME);
 
@@ -130,7 +131,7 @@ public class ArrayIndexTest extends AbstractIndexingCommonTest {
     public void shouldSelectParticularValue() throws Exception {
         IgniteEx ex = startGrid(0);
 
-        ex.cluster().active(true);
+        ex.cluster().state(ClusterState.ACTIVE);
 
         IgniteCache<Object, Object> cache = ex.getOrCreateCache(DEFAULT_CACHE_NAME);
 
@@ -158,7 +159,7 @@ public class ArrayIndexTest extends AbstractIndexingCommonTest {
 
         IgniteEx ex = startGrid(0);
 
-        ex.cluster().active(true);
+        ex.cluster().state(ClusterState.ACTIVE);
 
         executeSql(ex, "CREATE TABLE Binary_Entries (key binary(16) not null, val binary(16), PRIMARY KEY(key))");
 
@@ -190,7 +191,7 @@ public class ArrayIndexTest extends AbstractIndexingCommonTest {
              IgniteEx cli = startClientGrid(1);
              IgniteClient thinCli = Ignition.startClient(new ClientConfiguration().setAddresses(SERVER))) {
 
-            ex.cluster().active(true);
+            ex.cluster().state(ClusterState.ACTIVE);
 
             executeSql(cli, "CREATE TABLE T1 (id int not null, name varchar(1), PRIMARY KEY(id))");
 

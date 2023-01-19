@@ -19,7 +19,6 @@ package org.apache.ignite;
 
 import org.apache.ignite.configuration.MemoryConfiguration;
 import org.apache.ignite.configuration.MemoryPolicyConfiguration;
-import org.apache.ignite.mxbean.DataRegionMetricsMXBean;
 import org.apache.ignite.spi.metric.ReadOnlyMetricRegistry;
 
 /**
@@ -36,16 +35,15 @@ import org.apache.ignite.spi.metric.ReadOnlyMetricRegistry;
  *       the method returns memory metrics snapshots rather than just in time memory state.
  *     </li>
  *     <li>
- *       Second, all {@link MemoryMetrics} of a local Apache Ignite node are visible through JMX interface. Refer to
- *       {@link DataRegionMetricsMXBean} for more details.
+ *       Second, all {@link MemoryMetrics} of a local Apache Ignite node are visible through JMX interface.
+ *       Refer to JMX bean with the name "name=io.dataregion.{data_region_name}" for more details.
  *     </li>
  * </ol>
  * </p>
  * <p>
  * Memory metrics collection is not a free operation and might affect performance of an application. This is the reason
  * why the metrics are turned off by default. To enable the collection you can use both
- * {@link MemoryPolicyConfiguration#setMetricsEnabled(boolean)} configuration property or
- * {@link DataRegionMetricsMXBean#enableMetrics()} method of a respective JMX bean.
+ * {@link MemoryPolicyConfiguration#setMetricsEnabled(boolean)} configuration property.
  *
  * @deprecated Check the {@link ReadOnlyMetricRegistry} with "name=io.dataregion.{data_region_name}" instead.
  */
