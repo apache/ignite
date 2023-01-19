@@ -15,41 +15,40 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.internal.processors.cache.consistentcut;
+package org.apache.ignite.internal.processors.cache.persistence.snapshot.incremental;
 
 import java.util.ArrayList;
 import java.util.List;
-import java.util.stream.Stream;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.junit.runners.Parameterized;
 
 /** */
 @RunWith(Parameterized.class)
-public class ConsistentCutNoBackupMessagesBlockingTest extends AbstractConsistentCutMessagesBlockingTest {
+public class IncrementalSnapshotSingleBackupMessagesBlockingTest extends AbstractIncrementalSnapshotMessagesBlockingTest {
     /** */
     @Parameterized.Parameter
     public BlkNodeType txNodeBlkType;
 
     /** */
     @Parameterized.Parameter(1)
-    public BlkCutType cutBlkType;
+    public BlkSnpType snpBlkType;
 
     /** */
     @Parameterized.Parameter(2)
-    public BlkNodeType cutNodeBlkType;
+    public BlkNodeType snpNodeBlkType;
 
     /** */
-    @Parameterized.Parameters(name = "txNodeBlk={0}, cutBlkAt={1}, cutNodeBlk={2}")
+    @Parameterized.Parameters(name = "txNodeBlk={0}, snpBlkAt={1}, snpNodeBlk={2}")
     public static List<Object[]> params() {
         List<Object[]> p = new ArrayList<>();
 
-        Stream.of(BlkNodeType.NEAR, BlkNodeType.PRIMARY).forEach(txN ->
-            Stream.of(BlkNodeType.NEAR, BlkNodeType.PRIMARY).forEach(cutN -> {
-                for (BlkCutType c : BlkCutType.values())
-                    p.add(new Object[] {txN, c, cutN});
-            })
-        );
+        for (BlkNodeType txN: BlkNodeType.values()) {
+            for (BlkNodeType snpN: BlkNodeType.values()) {
+                for (BlkSnpType c : BlkSnpType.values())
+                    p.add(new Object[] {txN, c, snpN});
+            }
+        }
 
         return p;
     }
@@ -57,12 +56,12 @@ public class ConsistentCutNoBackupMessagesBlockingTest extends AbstractConsisten
     /** */
     @Test
     public void testMultipleCases() throws Exception {
-        List<TransactionTestCase> cases = TransactionTestCase.buildTestCases(nodes(), false);
+        List<TransactionTestCase> cases = TransactionTestCase.buildTestCases(nodes(), true);
 
-        List<Class<?>> msgs = messages(false);
+        List<Class<?>> msgs = messages(true);
 
         for (Class<?> msg: msgs) {
-            initMsgCase(msg, txNodeBlkType, cutBlkType, cutNodeBlkType);
+            initMsgCase(msg, txNodeBlkType, snpBlkType, snpNodeBlkType);
 
             runCases(cases);
         }
@@ -72,11 +71,11 @@ public class ConsistentCutNoBackupMessagesBlockingTest extends AbstractConsisten
 
     /** {@inheritDoc} */
     @Override protected int nodes() {
-        return 3;
+        return 2;
     }
 
     /** {@inheritDoc} */
     @Override protected int backups() {
-        return 0;
+        return 1;
     }
 }

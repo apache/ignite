@@ -15,17 +15,27 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.internal.processors.cache.consistentcut;
+package org.apache.ignite.internal.processors.cache.persistence.snapshot.incremental;
+
+import java.util.List;
+import org.junit.runner.RunWith;
+import org.junit.runners.Parameterized;
 
 /** */
-public class ConsistentCutTwoBackupWALBlockingTest extends ConsistentCutSingleBackupWALBlockingTest {
+@RunWith(Parameterized.class)
+public class IncrementalSnapshotSingleBackupWALBlockingTest extends IncrementalSnapshotNoBackupWALBlockingTest {
+    /** */
+    @Override protected List<TransactionTestCase> cases() {
+        return TransactionTestCase.buildTestCases(nodes(), true);
+    }
+
     /** {@inheritDoc} */
     @Override protected int nodes() {
-        return 3;
+        return 2;
     }
 
     /** {@inheritDoc} */
     @Override protected int backups() {
-        return 2;
+        return 1;
     }
 }

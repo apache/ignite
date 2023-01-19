@@ -19,6 +19,7 @@ package org.apache.ignite.internal.processors.cache.persistence.snapshot;
 
 import java.io.Serializable;
 import java.util.UUID;
+import org.apache.ignite.internal.pagemem.wal.record.IncrementalSnapshotFinishRecord;
 import org.apache.ignite.internal.processors.cache.persistence.wal.WALPointer;
 import org.apache.ignite.internal.util.typedef.internal.S;
 
@@ -49,15 +50,15 @@ public class IncrementalSnapshotMetadata implements Serializable {
      */
     private final String folderName;
 
-    /** WAL pointer to consistent cut record. */
-    private final WALPointer cutPtr;
+    /** WAL pointer to {@link IncrementalSnapshotFinishRecord}. */
+    private final WALPointer incSnpRec;
 
     /**
      * @param rqId Unique request id.
      * @param snpName Snapshot name.
      * @param consId Consistent id of a node to which this metadata relates.
      * @param folderName Directory name which stores the data files.
-     * @param cutPtr Pointer to consistent cut record.
+     * @param incSnpRec Pointer to {@link IncrementalSnapshotFinishRecord}.
      */
     public IncrementalSnapshotMetadata(
         UUID rqId,
@@ -65,14 +66,14 @@ public class IncrementalSnapshotMetadata implements Serializable {
         int incIdx,
         String consId,
         String folderName,
-        WALPointer cutPtr
+        WALPointer incSnpRec
     ) {
         this.rqId = rqId;
         this.snpName = snpName;
         this.incIdx = incIdx;
         this.consId = consId;
         this.folderName = folderName;
-        this.cutPtr = cutPtr;
+        this.incSnpRec = incSnpRec;
     }
 
     /** @return Snapshot request ID. */
@@ -80,9 +81,9 @@ public class IncrementalSnapshotMetadata implements Serializable {
         return rqId;
     }
 
-    /** @return Pointer to consistent cut record. */
-    public WALPointer cutPointer() {
-        return cutPtr;
+    /** @return Pointer to {@link IncrementalSnapshotFinishRecord}. */
+    public WALPointer incSnpPointer() {
+        return incSnpRec;
     }
 
     /** {@inheritDoc} */

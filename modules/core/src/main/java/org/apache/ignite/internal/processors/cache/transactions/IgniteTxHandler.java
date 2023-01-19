@@ -78,7 +78,7 @@ import org.apache.ignite.internal.processors.cache.distributed.near.GridNearTxPr
 import org.apache.ignite.internal.processors.cache.distributed.near.GridNearTxPrepareResponse;
 import org.apache.ignite.internal.processors.cache.distributed.near.GridNearTxRemote;
 import org.apache.ignite.internal.processors.cache.mvcc.MvccSnapshot;
-import org.apache.ignite.internal.processors.cache.persistence.snapshot.ConsistentCutAwareMessage;
+import org.apache.ignite.internal.processors.cache.persistence.snapshot.IncrementalSnapshotAwareMessage;
 import org.apache.ignite.internal.processors.cache.persistence.wal.WALPointer;
 import org.apache.ignite.internal.processors.cache.query.IgniteQueryErrorCode;
 import org.apache.ignite.internal.processors.cache.version.GridCacheVersion;
@@ -290,19 +290,19 @@ public class IgniteTxHandler {
                 }
             });
 
-        ctx.io().addCacheHandler(TX_MSG_HND_ID, ConsistentCutAwareMessage.class,
-            new CI2<UUID, ConsistentCutAwareMessage>() {
-                @Override public void apply(UUID nodeId, ConsistentCutAwareMessage msg) {
-                    processConsistentCutAwareMessage(nodeId, msg);
+        ctx.io().addCacheHandler(TX_MSG_HND_ID, IncrementalSnapshotAwareMessage.class,
+            new CI2<UUID, IncrementalSnapshotAwareMessage>() {
+                @Override public void apply(UUID nodeId, IncrementalSnapshotAwareMessage msg) {
+                    processIncrementalSnapshotAwareMessage(nodeId, msg);
                 }
             });
     }
 
     /** */
-    private void processConsistentCutAwareMessage(UUID nodeId, ConsistentCutAwareMessage msg) {
-        ctx.snapshotMgr().handleConsistentCutId(msg.id());
+    private void processIncrementalSnapshotAwareMessage(UUID nodeId, IncrementalSnapshotAwareMessage msg) {
+        ctx.snapshotMgr().handleIncrementalSnapshotId(msg.id());
 
-        setTransactionCutIdIfRequired(msg);
+        setIncrementalSnapshotIdIfRequired(msg);
 
         GridCacheMessage cacheMsg = msg.payload();
 
@@ -312,16 +312,16 @@ public class IgniteTxHandler {
     }
 
     /**
-     * Set received Consistent Cut ID to transaction if specified.
+     * Set received incremental snapshot ID to transaction if specified.
      *
-     * @param msg Finish message signed with Consistent Cut ID.
+     * @param msg Finish message signed with incremental snapshot ID.
      */
-    private void setTransactionCutIdIfRequired(ConsistentCutAwareMessage msg) {
-        if (msg.txCutId() != null) {
+    private void setIncrementalSnapshotIdIfRequired(IncrementalSnapshotAwareMessage msg) {
+        if (msg.txSnpId() != null) {
             IgniteInternalTx tx = findTransactionByMessage(msg.payload());
 
             if (tx != null)
-                tx.cutId(msg.txCutId());
+                tx.incSnpId(msg.txSnpId());
         }
     }
 
@@ -364,7 +364,7 @@ public class IgniteTxHandler {
                 return fut.tx();
         }
 
-        assert false : "Unexpected message is wrapped into ConsistentCutAwareMessage: " + msg;
+        assert false : "Unexpected message is wrapped into IncrementalSnapshotAwareMessage: " + msg;
 
         return null;
     }
@@ -1129,7 +1129,7 @@ public class IgniteTxHandler {
             tx.storeEnabled(req.storeEnabled());
 
             if (locTx != null)
-                tx.cutId(locTx.cutId());
+                tx.incSnpId(locTx.incSnpId());
 
             if (!tx.markFinalizing(USER_FINISH)) {
                 if (log.isDebugEnabled())
@@ -1296,7 +1296,7 @@ public class IgniteTxHandler {
                     if (dhtTx != null) {
                         dhtTx.onePhaseCommit(true);
                         dhtTx.needReturnValue(req.needReturnValue());
-                        dhtTx.cutId(ctx.snapshotMgr().consistentCutId());
+                        dhtTx.incSnpId(ctx.snapshotMgr().incrementalSnapshotId());
 
                         finish(dhtTx, req);
                     }

@@ -113,7 +113,7 @@ import org.apache.ignite.internal.managers.systemview.walker.SnapshotViewWalker;
 import org.apache.ignite.internal.pagemem.PageIdUtils;
 import org.apache.ignite.internal.pagemem.store.PageStore;
 import org.apache.ignite.internal.pagemem.wal.IgniteWriteAheadLogManager;
-import org.apache.ignite.internal.pagemem.wal.record.ConsistentCutFinishRecord;
+import org.apache.ignite.internal.pagemem.wal.record.IncrementalSnapshotFinishRecord;
 import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
 import org.apache.ignite.internal.processors.cache.CacheGroupContext;
 import org.apache.ignite.internal.processors.cache.CacheGroupDescriptor;
@@ -425,18 +425,18 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
     /** Manager to receive responses of remote snapshot requests. */
     private final SequentialRemoteSnapshotManager snpRmtMgr;
 
-    /** Consistent Cut ID. */
-    private volatile UUID consistentCutId;
+    /** Incremental snapshot ID. */
+    private volatile UUID incSnpId;
 
     /**
-     * While Consistent Cut is running every node wraps outgoing transaction messages into {@link ConsistentCutAwareMessage}.
-     * Nodes start wrapping messages from the moment Consistent Cut started on the node, and finsihes after all baseline
-     * nodes completed {@link #markWalFut}. This future completes after last {@link ConsistentCutAwareMessage} was sent.
+     * While incremental snapshot is running every node wraps outgoing transaction messages into {@link IncrementalSnapshotAwareMessage}.
+     * Nodes start wrapping messages from the moment snapshot started on the node, and finsihes after all baseline
+     * nodes completed {@link #markWalFut}. This future completes after last {@link IncrementalSnapshotAwareMessage} was sent.
      */
     private volatile GridFutureAdapter<?> wrapMsgsFut;
 
-    /** Future that completes after {@link ConsistentCutFinishRecord} was written. */
-    private volatile @Nullable ConsistentCutMarkWalFuture markWalFut;
+    /** Future that completes after {@link IncrementalSnapshotFinishRecord} was written. */
+    private volatile @Nullable IncrementalSnapshotMarkWalFuture markWalFut;
 
     /** Snapshot transfer rate limit in bytes/sec. */
     private final DistributedLongProperty snapshotTransferRate = detachedLongProperty(SNAPSHOT_TRANSFER_RATE_DMS_KEY);
@@ -838,7 +838,7 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
         clusterSnpReq = req;
 
         if (req.incremental())
-            handleConsistentCutId(req.requestId());
+            handleIncrementalSnapshotId(req.requestId());
 
         if (!CU.baselineNode(cctx.localNode(), cctx.kernalContext().state().clusterState()))
             return new GridFinishedFuture<>();
@@ -899,30 +899,30 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
     }
 
     /**
-     * Handles received Consistent Cut ID from remote node.
+     * Handles received incremental snapshot ID from remote node.
      *
-     * @param id Consistent Cut ID.
+     * @param id Incremental snapshot ID.
      */
-    public void handleConsistentCutId(UUID id) {
-        if (consistentCutId != null)
+    public void handleIncrementalSnapshotId(UUID id) {
+        if (incSnpId != null)
             return;
 
         synchronized (snpOpMux) {
-            if (consistentCutId != null) {
-                if (!consistentCutId.equals(id))
-                    U.warn(log, "Received Consistent Cut ID differs from current [rcvId=" + id + ", currId=" + consistentCutId + ']');
+            if (incSnpId != null) {
+                if (!incSnpId.equals(id))
+                    U.warn(log, "Received incremental snapshot ID differs from current [rcvId=" + id + ", currId=" + incSnpId + ']');
 
                 return;
             }
 
             wrapMsgsFut = new GridFutureAdapter<>();
 
-            cctx.tm().txMessageTransformer((msg, tx) -> new ConsistentCutAwareMessage(msg, id, tx == null ? null : tx.cutId()));
+            cctx.tm().txMessageTransformer((msg, tx) -> new IncrementalSnapshotAwareMessage(msg, id, tx == null ? null : tx.incSnpId()));
 
             markWalFut = baselineNode(cctx.localNode(), cctx.kernalContext().state().clusterState())
-                    ? new ConsistentCutMarkWalFuture(cctx, id) : null;
+                    ? new IncrementalSnapshotMarkWalFuture(cctx, id) : null;
 
-            consistentCutId = id;
+            incSnpId = id;
         }
 
         if (markWalFut != null)
@@ -958,7 +958,7 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
                 return new GridFinishedFuture<>(e);
             }
 
-            lowPtr = prevIncSnpMeta.cutPointer();
+            lowPtr = prevIncSnpMeta.incSnpPointer();
         }
 
         IgniteInternalFuture<SnapshotOperationResponse> task0 = registerTask(req.snapshotName(), new IncrementalSnapshotFutureTask(
@@ -1371,7 +1371,7 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
             wrapMsgsFut = null;
             markWalFut = null;
 
-            consistentCutId = null;
+            incSnpId = null;
         }
 
         clusterSnpReq = null;
@@ -2826,9 +2826,9 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
         return handlers;
     }
 
-    /** @return Current Consistent Cut ID. */
-    public @Nullable UUID consistentCutId() {
-        return consistentCutId;
+    /** @return Current incremental snapshot ID. */
+    public @Nullable UUID incrementalSnapshotId() {
+        return incSnpId;
     }
 
     /** Snapshot operation handlers. */

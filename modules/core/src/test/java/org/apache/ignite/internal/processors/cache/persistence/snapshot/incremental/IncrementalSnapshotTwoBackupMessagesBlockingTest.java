@@ -15,7 +15,7 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.internal.processors.cache.consistentcut;
+package org.apache.ignite.internal.processors.cache.persistence.snapshot.incremental;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -25,28 +25,36 @@ import org.junit.runners.Parameterized;
 
 /** */
 @RunWith(Parameterized.class)
-public class ConsistentCutSingleBackupMessagesBlockingTest extends AbstractConsistentCutMessagesBlockingTest {
+public class IncrementalSnapshotTwoBackupMessagesBlockingTest extends AbstractIncrementalSnapshotMessagesBlockingTest {
     /** */
     @Parameterized.Parameter
     public BlkNodeType txNodeBlkType;
 
     /** */
     @Parameterized.Parameter(1)
-    public BlkCutType cutBlkType;
+    public BlkSnpType snpBlkType;
 
     /** */
     @Parameterized.Parameter(2)
-    public BlkNodeType cutNodeBlkType;
+    public BlkNodeType snpNodeBlkType;
 
     /** */
-    @Parameterized.Parameters(name = "txNodeBlk={0}, cutBlkAt={1}, cutNodeBlk={2}")
+    @Parameterized.Parameter(3)
+    public Class<?> blkMsgCls;
+
+    /** */
+    @Parameterized.Parameters(name = "txNodeBlk={0}, snpBlkAt={1}, nodeBlk={2}, blkMsgCls={3}")
     public static List<Object[]> params() {
         List<Object[]> p = new ArrayList<>();
 
+        List<Class<?>> msgs = messages(true);
+
         for (BlkNodeType txN: BlkNodeType.values()) {
-            for (BlkNodeType cutN: BlkNodeType.values()) {
-                for (BlkCutType c : BlkCutType.values())
-                    p.add(new Object[] {txN, c, cutN});
+            for (BlkNodeType snpN: BlkNodeType.values()) {
+                for (BlkSnpType c : BlkSnpType.values()) {
+                    for (Class<?> m: msgs)
+                        p.add(new Object[] {txN, c, snpN, m});
+                }
             }
         }
 
@@ -58,24 +66,20 @@ public class ConsistentCutSingleBackupMessagesBlockingTest extends AbstractConsi
     public void testMultipleCases() throws Exception {
         List<TransactionTestCase> cases = TransactionTestCase.buildTestCases(nodes(), true);
 
-        List<Class<?>> msgs = messages(true);
+        initMsgCase(blkMsgCls, txNodeBlkType, snpBlkType, snpNodeBlkType);
 
-        for (Class<?> msg: msgs) {
-            initMsgCase(msg, txNodeBlkType, cutBlkType, cutNodeBlkType);
-
-            runCases(cases);
-        }
+        runCases(cases);
 
         checkWalsConsistency();
     }
 
     /** {@inheritDoc} */
     @Override protected int nodes() {
-        return 2;
+        return 3;
     }
 
     /** {@inheritDoc} */
     @Override protected int backups() {
-        return 1;
+        return 2;
     }
 }

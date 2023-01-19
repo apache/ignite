@@ -32,7 +32,7 @@ import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.IgniteInterruptedCheckedException;
 import org.apache.ignite.internal.MarshallerContextImpl;
 import org.apache.ignite.internal.binary.BinaryUtils;
-import org.apache.ignite.internal.pagemem.wal.record.ConsistentCutFinishRecord;
+import org.apache.ignite.internal.pagemem.wal.record.IncrementalSnapshotFinishRecord;
 import org.apache.ignite.internal.pagemem.wal.record.delta.ClusterSnapshotRecord;
 import org.apache.ignite.internal.processors.cache.GridCacheSharedContext;
 import org.apache.ignite.internal.processors.cache.persistence.file.FileIOFactory;
@@ -61,11 +61,11 @@ class IncrementalSnapshotFutureTask
     /**
      * Pointer to the previous snapshot record.
      * In case first increment snapshot will point to the {@link ClusterSnapshotRecord}.
-     * For second and subsequent incements on the previous consistent cut record.
+     * For second and subsequent incements on the previous {@link IncrementalSnapshotFinishRecord}.
      */
     private final WALPointer lowPtr;
 
-    /** Future that completes with WAL pointer to {@link ConsistentCutFinishRecord}. */
+    /** Future that completes with WAL pointer to {@link IncrementalSnapshotFinishRecord}. */
     private final IgniteInternalFuture<WALPointer> highPtrFut;
 
     /** */

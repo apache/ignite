@@ -15,7 +15,7 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.internal.processors.cache.consistentcut;
+package org.apache.ignite.internal.processors.cache.persistence.snapshot.incremental;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -40,11 +40,11 @@ import org.junit.runners.Parameterized;
 
 import static org.apache.ignite.internal.processors.cache.persistence.snapshot.AbstractSnapshotSelfTest.snp;
 
-/** Load Ignite with transactions and starts Consistent Cut concurrently. */
+/** Load Ignite with transactions and starts incremental snapshots concurrently. */
 @RunWith(Parameterized.class)
-public class ConcurrentTxsConsistentCutTest extends AbstractConsistentCutTest {
-    /** Amount of Consistent Cuts to await. */
-    private static final int CUTS = 20;
+public class ConcurrentTxsIncrementalSnapshotTest extends AbstractIncrementalSnapshotTest {
+    /** Amount of incremental snapshots to run. */
+    private static final int SNP_CNT = 20;
 
     /** */
     private static final String CACHE2 = "CACHE2";
@@ -120,13 +120,13 @@ public class ConcurrentTxsConsistentCutTest extends AbstractConsistentCutTest {
     /** */
     @Test
     public void noLoadTest() throws Exception {
-        testConcurrentTransactionsAndCuts(() -> false);
+        testConcurrentTransactionsAndSnapshots(() -> false);
     }
 
     /** */
     @Test
     public void concurrentLoadTransactionsTest() throws Exception {
-        testConcurrentTransactionsAndCuts(() -> explicitTransaction((g, tx) -> {
+        testConcurrentTransactionsAndSnapshots(() -> explicitTransaction((g, tx) -> {
             int cnt = 1 + RND.nextInt(nodes());
 
             for (int j = 0; j < cnt; j++) {
@@ -144,7 +144,7 @@ public class ConcurrentTxsConsistentCutTest extends AbstractConsistentCutTest {
     /** */
     @Test
     public void concurrentLoadTransactionsWithRollbackTest() throws Exception {
-        testConcurrentTransactionsAndCuts(() -> explicitTransaction((g, tx) -> {
+        testConcurrentTransactionsAndSnapshots(() -> explicitTransaction((g, tx) -> {
             int cnt = 1 + RND.nextInt(nodes());
 
             for (int j = 0; j < cnt; j++) {
@@ -169,7 +169,7 @@ public class ConcurrentTxsConsistentCutTest extends AbstractConsistentCutTest {
     /** */
     @Test
     public void testTransactionsForMultipleCaches() throws Exception {
-        testConcurrentTransactionsAndCuts(() -> explicitTransaction((g, tx) -> {
+        testConcurrentTransactionsAndSnapshots(() -> explicitTransaction((g, tx) -> {
             for (String c: new String[] {CACHE, CACHE2}) {
                 int cnt = 1 + RND.nextInt(nodes());
 
@@ -189,7 +189,7 @@ public class ConcurrentTxsConsistentCutTest extends AbstractConsistentCutTest {
     /** */
     @Test
     public void concurrentLoadImplicitTransactionsTest() throws Exception {
-        testConcurrentTransactionsAndCuts(() -> {
+        testConcurrentTransactionsAndSnapshots(() -> {
             // +1 - client node.
             int n = RND.nextInt(nodes() + 1);
 
@@ -204,7 +204,7 @@ public class ConcurrentTxsConsistentCutTest extends AbstractConsistentCutTest {
     /** */
     @Test
     public void concurrentLoadImplicitTransactionsAndExplicitLocksTest() throws Exception {
-        testConcurrentTransactionsAndCuts(() -> {
+        testConcurrentTransactionsAndSnapshots(() -> {
             // +1 - client node.
             int n = RND.nextInt(nodes() + 1);
 
@@ -242,7 +242,7 @@ public class ConcurrentTxsConsistentCutTest extends AbstractConsistentCutTest {
     /**
      * @param tx Transaction, returs {@code true} if transaction committed.
      */
-    private void testConcurrentTransactionsAndCuts(Supplier<Boolean> tx) throws Exception {
+    private void testConcurrentTransactionsAndSnapshots(Supplier<Boolean> tx) throws Exception {
         stopLoadLatch = new CountDownLatch(1);
 
         IgniteInternalFuture<?> f = GridTestUtils.runMultiThreadedAsync(() -> {
@@ -252,18 +252,16 @@ public class ConcurrentTxsConsistentCutTest extends AbstractConsistentCutTest {
             }
         }, 2, "async-load");
 
-        for (int i = 0; i < CUTS; i++) {
+        for (int i = 0; i < SNP_CNT; i++) {
             awaitSnapshotResourcesCleaned();
 
             snp(grid(0)).createIncrementalSnapshot(SNP).get(getTestTimeout());
-
-            log.info("Consistent Cut finished: " + i);
         }
 
         stopLoadLatch.countDown();
 
         f.get(getTestTimeout());
 
-        checkWalsConsistency(txCnt.get(), CUTS);
+        checkWalsConsistency(txCnt.get(), SNP_CNT);
     }
 }

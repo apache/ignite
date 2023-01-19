@@ -15,7 +15,7 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.internal.processors.cache.consistentcut;
+package org.apache.ignite.internal.processors.cache.persistence.snapshot.incremental;
 
 import java.util.List;
 import java.util.Map;
@@ -30,7 +30,7 @@ import org.apache.ignite.internal.GridKernalContext;
 import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.pagemem.wal.IgniteWriteAheadLogManager;
-import org.apache.ignite.internal.pagemem.wal.record.ConsistentCutStartRecord;
+import org.apache.ignite.internal.pagemem.wal.record.IncrementalSnapshotStartRecord;
 import org.apache.ignite.internal.pagemem.wal.record.WALRecord;
 import org.apache.ignite.internal.processors.cache.persistence.StorageException;
 import org.apache.ignite.internal.processors.cache.persistence.snapshot.IgniteSnapshotManager;
@@ -46,23 +46,23 @@ import org.apache.ignite.transactions.Transaction;
 import org.apache.ignite.transactions.TransactionConcurrency;
 import org.jetbrains.annotations.Nullable;
 
-import static org.apache.ignite.internal.processors.cache.consistentcut.AbstractConsistentCutBlockingTest.BlkCutType.AFTER_START;
-import static org.apache.ignite.internal.processors.cache.consistentcut.AbstractConsistentCutBlockingTest.BlkCutType.BEFORE_START;
-import static org.apache.ignite.internal.processors.cache.consistentcut.AbstractConsistentCutBlockingTest.BlkNodeType.NEAR;
-import static org.apache.ignite.internal.processors.cache.consistentcut.AbstractConsistentCutBlockingTest.BlkNodeType.PRIMARY;
 import static org.apache.ignite.internal.processors.cache.persistence.snapshot.AbstractSnapshotSelfTest.snp;
+import static org.apache.ignite.internal.processors.cache.persistence.snapshot.incremental.AbstractIncrementalSnapshotBlockingTest.BlkNodeType.NEAR;
+import static org.apache.ignite.internal.processors.cache.persistence.snapshot.incremental.AbstractIncrementalSnapshotBlockingTest.BlkNodeType.PRIMARY;
+import static org.apache.ignite.internal.processors.cache.persistence.snapshot.incremental.AbstractIncrementalSnapshotBlockingTest.BlkSnpType.AFTER_START;
+import static org.apache.ignite.internal.processors.cache.persistence.snapshot.incremental.AbstractIncrementalSnapshotBlockingTest.BlkSnpType.BEFORE_START;
 import static org.apache.ignite.transactions.TransactionIsolation.SERIALIZABLE;
 
-/** Base class for testing Consistency Cut blocking some events. */
-public abstract class AbstractConsistentCutBlockingTest extends AbstractConsistentCutTest {
+/** Base class for testing incremental snapshot blocking some events. */
+public abstract class AbstractIncrementalSnapshotBlockingTest extends AbstractIncrementalSnapshotTest {
     /** Number of current testing case. */
     protected int caseNum;
 
     /** */
-    protected static BlkNodeType cutBlkNodeType;
+    protected static BlkNodeType snpBlkNodeType;
 
     /** */
-    protected static BlkCutType cutBlkType;
+    protected static BlkSnpType snpBlkType;
 
     /** */
     protected static BlkNodeType txBlkNodeType;
@@ -90,7 +90,7 @@ public abstract class AbstractConsistentCutBlockingTest extends AbstractConsiste
 
         for (int near: nears) {
             // Client nodes doesn't prepare anything after version update.
-            if (near == nodes() && cutBlkNodeType == NEAR && cutBlkType == AFTER_START)
+            if (near == nodes() && snpBlkNodeType == NEAR && snpBlkType == AFTER_START)
                 continue;
 
             for (int c = 0; c < cases.size(); c++) {
@@ -108,9 +108,9 @@ public abstract class AbstractConsistentCutBlockingTest extends AbstractConsiste
      *
      * @param tx Function that performs transaction.
      * @param txBlkNodeIdx ID of node to block transaction.
-     * @param cutBlkNodeIdx ID of node to block Consistent Cut.
+     * @param snpBlkNodeIdx ID of node to block incremental snapshot.
      */
-    protected void run(Runnable tx, int txBlkNodeIdx, int cutBlkNodeIdx) throws Exception {
+    protected void run(Runnable tx, int txBlkNodeIdx, int snpBlkNodeIdx) throws Exception {
         caseNum++;
 
         // 1. Block transaction.
@@ -122,15 +122,15 @@ public abstract class AbstractConsistentCutBlockingTest extends AbstractConsiste
         // 3. Await transaction has blocked.
         awaitTxBlocked(grid(txBlkNodeIdx));
 
-        // 4. Start Consistent Cut procedure concurrently with running transaction.
-        if (cutBlkNodeIdx != -1)
-            ((BlockingSnapshotManager)snp(grid(cutBlkNodeIdx))).block(cutBlkType);
+        // 4. Start incremental snapshot procedure concurrently with running transaction.
+        if (snpBlkNodeIdx != -1)
+            ((BlockingSnapshotManager)snp(grid(snpBlkNodeIdx))).block(snpBlkType);
 
-        IgniteFuture<Void> cutFut = triggerConsistentCut();
+        IgniteFuture<Void> snpFut = snp(grid(0)).createIncrementalSnapshot(SNP);
 
-        // 5. Await Consistent Cut has blocked.
-        if (cutBlkNodeIdx != -1)
-            ((BlockingSnapshotManager)snp(grid(cutBlkNodeIdx))).awaitBlockedOrFinishedCut(cutFut);
+        // 5. Await incremental snapshot has blocked.
+        if (snpBlkNodeIdx != -1)
+            ((BlockingSnapshotManager)snp(grid(snpBlkNodeIdx))).awaitSnpBlockedOrFinished(snpFut);
 
         // 6. Resume the blocking transaction.
         unblockTx(grid(txBlkNodeIdx));
@@ -138,12 +138,12 @@ public abstract class AbstractConsistentCutBlockingTest extends AbstractConsiste
         // 7. Await transaction completed.
         txFut.get(getTestTimeout(), TimeUnit.MILLISECONDS);
 
-        // 8. Resume the blocking Consistent Cut.
-        if (cutBlkNodeIdx != -1)
-            ((BlockingSnapshotManager)snp(grid(cutBlkNodeIdx))).unblock(cutBlkType);
+        // 8. Resume the blocking incremental snapshot.
+        if (snpBlkNodeIdx != -1)
+            ((BlockingSnapshotManager)snp(grid(snpBlkNodeIdx))).unblock(snpBlkType);
 
-        // 9. Await while Consistent Cut completed.
-        cutFut.get(getTestTimeout());
+        // 9. Await while incremental snapshot completed.
+        snpFut.get(getTestTimeout());
 
         clear();
     }
@@ -182,14 +182,7 @@ public abstract class AbstractConsistentCutBlockingTest extends AbstractConsiste
             return c.keys[0][1];
     }
 
-    /** Manually triggers new Consistent Cut. */
-    private IgniteFuture<Void> triggerConsistentCut() {
-        awaitSnapshotResourcesCleaned();
-
-        return snp(grid(0)).createIncrementalSnapshot(SNP);
-    }
-
-    /** Checks WALs for correct Consistency Cut. */
+    /** Checks WALs correctness for incremental snapshots from all nodes. */
     protected void checkWalsConsistency() throws Exception {
         checkWalsConsistency(caseNum, caseNum);
     }
@@ -216,7 +209,7 @@ public abstract class AbstractConsistentCutBlockingTest extends AbstractConsiste
         }
     }
 
-    /** Blocks writing to WAL {@link ConsistentCutStartRecord}. */
+    /** Blocks writing to WAL {@link IncrementalSnapshotStartRecord}. */
     protected static class BlockingWALManager extends FileWriteAheadLogManager {
         /** First CDL is actual block of record, second CDL shows whether first is blocked. */
         private final Map<WALRecord.RecordType, T3<Predicate<WALRecord>, CountDownLatch, CountDownLatch>> map = new ConcurrentHashMap<>();
@@ -281,12 +274,12 @@ public abstract class AbstractConsistentCutBlockingTest extends AbstractConsiste
         }
     }
 
-    /** Blocks local Consistent Cut before or after start. */
+    /** Blocks local incremental snapshot before or after start. */
     protected static class BlockingSnapshotManager extends IgniteSnapshotManager {
-        /** Blocks this record after local Consistent Cut started. */
-        private static final WALRecord.RecordType blkStartRecType = WALRecord.RecordType.CONSISTENT_CUT_START_RECORD;
+        /** Blocks this record after local incremental snapshot started. */
+        private static final WALRecord.RecordType blkStartRecType = WALRecord.RecordType.INCREMENTAL_SNAPSHOT_START_RECORD;
 
-        /** Latch that blocks before local Consistent Cut started. */
+        /** Latch that blocks before local incremental snapshot started. */
         private volatile CountDownLatch beforeStartLatch;
 
         /** */
@@ -298,7 +291,7 @@ public abstract class AbstractConsistentCutBlockingTest extends AbstractConsiste
         }
 
         /** {@inheritDoc} */
-        @Override public void handleConsistentCutId(UUID id) {
+        @Override public void handleIncrementalSnapshotId(UUID id) {
             // Block only discovery worker thread.
             if (Thread.currentThread().getName().contains("disco")) {
                 if (beforeStartLatch != null) {
@@ -311,11 +304,11 @@ public abstract class AbstractConsistentCutBlockingTest extends AbstractConsiste
                 }
             }
 
-            super.handleConsistentCutId(id);
+            super.handleIncrementalSnapshotId(id);
         }
 
         /** */
-        public void block(BlkCutType type) {
+        public void block(BlkSnpType type) {
             blockedLatch = new CountDownLatch(1);
 
             if (type == BEFORE_START)
@@ -325,13 +318,13 @@ public abstract class AbstractConsistentCutBlockingTest extends AbstractConsiste
         }
 
         /** */
-        public void awaitBlockedOrFinishedCut(@Nullable IgniteFuture<?> cutFut) {
+        public void awaitSnpBlockedOrFinished(@Nullable IgniteFuture<?> snpFut) {
             CountDownLatch latch = blockedLatch;
 
             if (latch == null)
                 return;
 
-            cutFut.listen((f) -> latch.countDown());
+            snpFut.listen((f) -> latch.countDown());
 
             if (beforeStartLatch != null)
                 U.awaitQuiet(latch);
@@ -343,7 +336,7 @@ public abstract class AbstractConsistentCutBlockingTest extends AbstractConsiste
         }
 
         /** */
-        public void unblock(BlkCutType type) {
+        public void unblock(BlkSnpType type) {
             if (type == BEFORE_START && beforeStartLatch != null)
                 beforeStartLatch.countDown();
             else if (type == AFTER_START)
@@ -364,7 +357,7 @@ public abstract class AbstractConsistentCutBlockingTest extends AbstractConsiste
     }
 
     /** */
-    protected enum BlkCutType {
+    protected enum BlkSnpType {
         /** */
         NONE,
 

@@ -17,16 +17,16 @@
 
 package org.apache.ignite.testsuites;
 
-import org.apache.ignite.internal.processors.cache.consistentcut.ConcurrentTxsConsistentCutTest;
-import org.apache.ignite.internal.processors.cache.consistentcut.ConsistentCutNoBackupMessagesBlockingTest;
-import org.apache.ignite.internal.processors.cache.consistentcut.ConsistentCutNoBackupWALBlockingTest;
-import org.apache.ignite.internal.processors.cache.consistentcut.ConsistentCutNodeFailureTest;
-import org.apache.ignite.internal.processors.cache.consistentcut.ConsistentCutSingleBackupMessagesBlockingTest;
-import org.apache.ignite.internal.processors.cache.consistentcut.ConsistentCutSingleBackupWALBlockingTest;
-import org.apache.ignite.internal.processors.cache.consistentcut.ConsistentCutTwoBackupMessagesBlockingTest;
-import org.apache.ignite.internal.processors.cache.consistentcut.ConsistentCutTwoBackupWALBlockingTest;
-import org.apache.ignite.internal.processors.cache.consistentcut.ConsistentCutTxRecoveryTest;
 import org.apache.ignite.internal.processors.cache.persistence.snapshot.IncrementalSnapshotTest;
+import org.apache.ignite.internal.processors.cache.persistence.snapshot.incremental.ConcurrentTxsIncrementalSnapshotTest;
+import org.apache.ignite.internal.processors.cache.persistence.snapshot.incremental.IncrementalSnapshotNoBackupMessagesBlockingTest;
+import org.apache.ignite.internal.processors.cache.persistence.snapshot.incremental.IncrementalSnapshotNoBackupWALBlockingTest;
+import org.apache.ignite.internal.processors.cache.persistence.snapshot.incremental.IncrementalSnapshotNodeFailureTest;
+import org.apache.ignite.internal.processors.cache.persistence.snapshot.incremental.IncrementalSnapshotSingleBackupMessagesBlockingTest;
+import org.apache.ignite.internal.processors.cache.persistence.snapshot.incremental.IncrementalSnapshotSingleBackupWALBlockingTest;
+import org.apache.ignite.internal.processors.cache.persistence.snapshot.incremental.IncrementalSnapshotTwoBackupMessagesBlockingTest;
+import org.apache.ignite.internal.processors.cache.persistence.snapshot.incremental.IncrementalSnapshotTwoBackupWALBlockingTest;
+import org.apache.ignite.internal.processors.cache.persistence.snapshot.incremental.IncrementalSnapshotTxRecoveryTest;
 import org.junit.runner.RunWith;
 import org.junit.runners.Suite;
 
@@ -35,18 +35,15 @@ import org.junit.runners.Suite;
  */
 @RunWith(Suite.class)
 @Suite.SuiteClasses({
-    // Consistent Cut
-    ConsistentCutNoBackupMessagesBlockingTest.class,
-    ConsistentCutSingleBackupMessagesBlockingTest.class,
-    ConsistentCutTwoBackupMessagesBlockingTest.class,
-    ConsistentCutNoBackupWALBlockingTest.class,
-    ConsistentCutSingleBackupWALBlockingTest.class,
-    ConsistentCutTwoBackupWALBlockingTest.class,
-    ConcurrentTxsConsistentCutTest.class,
-    ConsistentCutNodeFailureTest.class,
-    ConsistentCutTxRecoveryTest.class,
-
-    // Incremental snapshots
+    IncrementalSnapshotNoBackupMessagesBlockingTest.class,
+    IncrementalSnapshotSingleBackupMessagesBlockingTest.class,
+    IncrementalSnapshotTwoBackupMessagesBlockingTest.class,
+    IncrementalSnapshotNoBackupWALBlockingTest.class,
+    IncrementalSnapshotSingleBackupWALBlockingTest.class,
+    IncrementalSnapshotTwoBackupWALBlockingTest.class,
+    ConcurrentTxsIncrementalSnapshotTest.class,
+    IncrementalSnapshotNodeFailureTest.class,
+    IncrementalSnapshotTxRecoveryTest.class,
     IncrementalSnapshotTest.class
 })
 public class IncrementalSnapshotsTestSuite {

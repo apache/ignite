@@ -15,7 +15,7 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.internal.processors.cache.consistentcut;
+package org.apache.ignite.internal.processors.cache.persistence.snapshot.incremental;
 
 import java.util.UUID;
 import java.util.function.Supplier;
@@ -27,7 +27,7 @@ import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.TestRecordingCommunicationSpi;
 import org.apache.ignite.internal.pagemem.wal.WALIterator;
-import org.apache.ignite.internal.pagemem.wal.record.ConsistentCutStartRecord;
+import org.apache.ignite.internal.pagemem.wal.record.IncrementalSnapshotStartRecord;
 import org.apache.ignite.internal.pagemem.wal.record.WALRecord;
 import org.apache.ignite.internal.processors.cache.distributed.near.GridNearTxFinishRequest;
 import org.apache.ignite.internal.util.typedef.G;
@@ -39,7 +39,7 @@ import org.junit.Test;
 import static org.apache.ignite.internal.processors.cache.persistence.snapshot.AbstractSnapshotSelfTest.snp;
 
 /** */
-public class ConsistentCutNodeFailureTest extends AbstractConsistentCutTest {
+public class IncrementalSnapshotNodeFailureTest extends AbstractIncrementalSnapshotTest {
     /** {@inheritDoc} */
     @Override protected IgniteConfiguration getConfiguration(String instanceName) throws Exception {
         IgniteConfiguration cfg = super.getConfiguration(instanceName);
@@ -52,17 +52,17 @@ public class ConsistentCutNodeFailureTest extends AbstractConsistentCutTest {
     /** */
     @Test
     public void shouldSkipFinishRecordAfterTransactionRecovery() throws Exception {
-        runConsistentCutAndBreak(() -> {
+        runIncrementalSnapshotAndBreak(() -> {
             stopGrid(nodes());
 
-            return "Cut is inconsistent";
+            return "Incremental snapshot is inconsistent";
         });
     }
 
     /** */
     @Test
     public void shouldSkipFinishRecordAfterNodeFailure() throws Exception {
-        runConsistentCutAndBreak(() -> {
+        runIncrementalSnapshotAndBreak(() -> {
             stopGrid(1);
 
             return "Snapshot operation interrupted, because baseline node left the cluster";
@@ -70,7 +70,7 @@ public class ConsistentCutNodeFailureTest extends AbstractConsistentCutTest {
     }
 
     /** */
-    private void runConsistentCutAndBreak(Supplier<String> breakCutWithExcp) throws Exception {
+    private void runIncrementalSnapshotAndBreak(Supplier<String> breakSnpWithExcp) throws Exception {
         Ignite cln = grid(nodes());
 
         TestRecordingCommunicationSpi clnComm = TestRecordingCommunicationSpi.spi(cln);
@@ -87,16 +87,16 @@ public class ConsistentCutNodeFailureTest extends AbstractConsistentCutTest {
 
         assertTrue(GridTestUtils.waitForCondition(() -> {
             for (int i = 0; i < nodes(); i++) {
-                if (snp(grid(i)).consistentCutId() == null)
+                if (snp(grid(i)).incrementalSnapshotId() == null)
                     return false;
             }
 
             return true;
         }, getTestTimeout(), 10));
 
-        UUID brokenCutId = snp(grid(0)).consistentCutId();
+        UUID brokenSnpId = snp(grid(0)).incrementalSnapshotId();
 
-        String excMsg = breakCutWithExcp.get();
+        String excMsg = breakSnpWithExcp.get();
 
         if (G.allGrids().contains(cln)) {
             clnComm.stopBlock();
@@ -109,31 +109,31 @@ public class ConsistentCutNodeFailureTest extends AbstractConsistentCutTest {
         awaitSnapshotResourcesCleaned();
 
         for (Ignite g: G.allGrids())
-            assertNull(snp((IgniteEx)g).consistentCutId());
+            assertNull(snp((IgniteEx)g).incrementalSnapshotId());
 
         stopAllGrids();
 
         for (int i = 0; i < nodes(); i++)
-            assertWalConsistentRecords(i, brokenCutId);
+            assertWalSnapshotRecords(i, brokenSnpId);
     }
 
     /** */
-    private void assertWalConsistentRecords(int nodeIdx, UUID brokenCutId) throws Exception {
+    private void assertWalSnapshotRecords(int nodeIdx, UUID brokenSnpId) throws Exception {
         try (WALIterator iter = walIter(nodeIdx)) {
             boolean reachInconsistent = false;
 
             while (iter.hasNext()) {
                 WALRecord rec = iter.next().getValue();
 
-                if (rec.type() == WALRecord.RecordType.CONSISTENT_CUT_START_RECORD) {
-                    ConsistentCutStartRecord startRec = (ConsistentCutStartRecord)rec;
+                if (rec.type() == WALRecord.RecordType.INCREMENTAL_SNAPSHOT_START_RECORD) {
+                    IncrementalSnapshotStartRecord startRec = (IncrementalSnapshotStartRecord)rec;
 
-                    assertEquals(brokenCutId, startRec.id());
+                    assertEquals(brokenSnpId, startRec.id());
 
                     reachInconsistent = true;
                 }
                 else
-                    assert rec.type() != WALRecord.RecordType.CONSISTENT_CUT_FINISH_RECORD : "Unexpect Finish Record.";
+                    assert rec.type() != WALRecord.RecordType.INCREMENTAL_SNAPSHOT_FINISH_RECORD : "Unexpect Finish Record.";
             }
 
             assertTrue("Should reach StartRecord for bad snapshot", reachInconsistent);

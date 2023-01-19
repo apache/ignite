@@ -15,7 +15,7 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.internal.processors.cache.consistentcut;
+package org.apache.ignite.internal.processors.cache.persistence.snapshot.incremental;
 
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -44,7 +44,7 @@ public class TransactionTestCase {
     }
 
     /**
-     * Builds test cases for checking Consistency Cut.
+     * Builds test cases for checking incremental snapshots.
      *
      * @param nodesCnt  Count of nodes that participated in a test case.
      * @param withBakup If {@code false} then no backups.

@@ -15,7 +15,7 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.internal.processors.cache.consistentcut;
+package org.apache.ignite.internal.processors.cache.persistence.snapshot.incremental;
 
 import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.pagemem.wal.record.TxRecord;
@@ -24,17 +24,17 @@ import org.apache.ignite.transactions.TransactionConcurrency;
 import org.apache.ignite.transactions.TransactionState;
 
 /** */
-public abstract class AbstractConsistentCutWalBlockingTest extends AbstractConsistentCutBlockingTest {
+public abstract class AbstractIncrementalSnapshotWalBlockingTest extends AbstractIncrementalSnapshotBlockingTest {
     /** */
     protected static TransactionState txBlkState;
 
     /** Initialize latches for test cases with blocking WAL tx states. */
-    protected final void initWALCase(TransactionState txState, BlkNodeType txBlkNode, BlkCutType cutBlkType, BlkNodeType cutBlkNode) {
+    protected final void initWALCase(TransactionState txState, BlkNodeType txBlkNode, BlkSnpType snpBlkType, BlkNodeType snpBlkNode) {
         txBlkState = txState;
         txBlkNodeType = txBlkNode;
 
-        AbstractConsistentCutBlockingTest.cutBlkType = cutBlkType;
-        cutBlkNodeType = cutBlkNode;
+        AbstractIncrementalSnapshotBlockingTest.snpBlkType = snpBlkType;
+        snpBlkNodeType = snpBlkNode;
     }
 
     /** */
@@ -45,10 +45,10 @@ public abstract class AbstractConsistentCutWalBlockingTest extends AbstractConsi
     ) throws Exception {
         int txBlkNodeIdx = blkNodeIndex(nearNodeIdx, txBlkNodeType, testCase);
 
-        int cutBlkNodeId = -1;
+        int snpBlkNodeId = -1;
 
-        if (cutBlkType != BlkCutType.NONE)
-            cutBlkNodeId = blkNodeIndex(nearNodeIdx, cutBlkNodeType, testCase);
+        if (snpBlkType != BlkSnpType.NONE)
+            snpBlkNodeId = blkNodeIndex(nearNodeIdx, snpBlkNodeType, testCase);
 
         // Skip cases with blocking WAL on clients (no WAL actually)
         if (txBlkNodeIdx == nodes())
@@ -56,7 +56,7 @@ public abstract class AbstractConsistentCutWalBlockingTest extends AbstractConsi
 
         log.info("START CASE " + caseNum + ". Data=" + testCase + ", nearNodeIdx=" + nearNodeIdx);
 
-        run(() -> tx(nearNodeIdx, testCase, txConcurrency), txBlkNodeIdx, cutBlkNodeId);
+        run(() -> tx(nearNodeIdx, testCase, txConcurrency), txBlkNodeIdx, snpBlkNodeId);
     }
 
     /** */

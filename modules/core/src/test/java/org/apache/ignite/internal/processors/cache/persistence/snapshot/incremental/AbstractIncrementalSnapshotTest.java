@@ -15,7 +15,7 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.internal.processors.cache.consistentcut;
+package org.apache.ignite.internal.processors.cache.persistence.snapshot.incremental;
 
 import java.io.File;
 import java.nio.file.Path;
@@ -39,9 +39,9 @@ import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.IgniteInterruptedCheckedException;
 import org.apache.ignite.internal.pagemem.wal.WALIterator;
-import org.apache.ignite.internal.pagemem.wal.record.ConsistentCutFinishRecord;
-import org.apache.ignite.internal.pagemem.wal.record.ConsistentCutStartRecord;
 import org.apache.ignite.internal.pagemem.wal.record.DataRecord;
+import org.apache.ignite.internal.pagemem.wal.record.IncrementalSnapshotFinishRecord;
+import org.apache.ignite.internal.pagemem.wal.record.IncrementalSnapshotStartRecord;
 import org.apache.ignite.internal.pagemem.wal.record.WALRecord;
 import org.apache.ignite.internal.processors.cache.persistence.wal.WALPointer;
 import org.apache.ignite.internal.processors.cache.persistence.wal.reader.IgniteWalIteratorFactory;
@@ -55,13 +55,13 @@ import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.jetbrains.annotations.Nullable;
 
-import static org.apache.ignite.internal.pagemem.wal.record.WALRecord.RecordType.CONSISTENT_CUT_FINISH_RECORD;
-import static org.apache.ignite.internal.pagemem.wal.record.WALRecord.RecordType.CONSISTENT_CUT_START_RECORD;
 import static org.apache.ignite.internal.pagemem.wal.record.WALRecord.RecordType.DATA_RECORD_V2;
+import static org.apache.ignite.internal.pagemem.wal.record.WALRecord.RecordType.INCREMENTAL_SNAPSHOT_FINISH_RECORD;
+import static org.apache.ignite.internal.pagemem.wal.record.WALRecord.RecordType.INCREMENTAL_SNAPSHOT_START_RECORD;
 import static org.apache.ignite.internal.processors.cache.persistence.snapshot.AbstractSnapshotSelfTest.snp;
 
-/** Base class for testing Consistency Cut algorithm. */
-public abstract class AbstractConsistentCutTest extends GridCommonAbstractTest {
+/** Base class for testing incremental snapshot algorithm. */
+public abstract class AbstractIncrementalSnapshotTest extends GridCommonAbstractTest {
     /** */
     protected static final String CACHE = "CACHE";
 
@@ -75,7 +75,7 @@ public abstract class AbstractConsistentCutTest extends GridCommonAbstractTest {
         cfg.setDataStorageConfiguration(new DataStorageConfiguration()
             .setWalCompactionEnabled(true)
             .setDefaultDataRegionConfiguration(new DataRegionConfiguration()
-                .setName("consistent-cut-persist")
+                .setName("incremental-snapshot-persist")
                 .setPersistenceEnabled(true)));
 
         cfg.setCacheConfiguration(cacheConfiguration(CACHE));
@@ -141,47 +141,47 @@ public abstract class AbstractConsistentCutTest extends GridCommonAbstractTest {
     }
 
     /**
-     * Checks WALs for correct Consistency Cut.
+     * Checks WALs for correct incremental snapshots.
      *
      * @param txCnt Count of run transactions.
-     * @param cuts  Number of Consistent Cuts was run within a test.
+     * @param snpCnt Count of incremental snapshots were run within a test.
      */
-    protected void checkWalsConsistency(int txCnt, int cuts) throws Exception {
-        List<ConsistentCutWalReader> readers = new ArrayList<>();
+    protected void checkWalsConsistency(int txCnt, int snpCnt) throws Exception {
+        List<IncrementalSnapshotWalReader> readers = new ArrayList<>();
 
         for (int i = 0; i < nodes(); i++) {
             try (WALIterator walIter = walIter(i)) {
-                ConsistentCutWalReader reader = new ConsistentCutWalReader(walIter);
+                IncrementalSnapshotWalReader reader = new IncrementalSnapshotWalReader(walIter);
 
                 readers.add(reader);
 
                 reader.read();
 
-                int expCuts = reader.cuts.get(reader.cuts.size() - 1).id != null ? cuts : cuts + 1;
+                int expSnpCnt = reader.snps.get(reader.snps.size() - 1).id != null ? snpCnt : snpCnt + 1;
 
-                assertEquals(expCuts, reader.cuts.size());
+                assertEquals(expSnpCnt, reader.snps.size());
             }
         }
 
-        // Transaction ID -> (cutId, nodeIdx).
+        // Transaction ID -> (incSnpId, nodeIdx).
         Map<GridCacheVersion, T2<UUID, Integer>> txMap = new HashMap<>();
 
         // +1 - includes incomplete state also.
-        for (int cutId = 0; cutId < cuts + 1; cutId++) {
+        for (int snpId = 0; snpId < snpCnt + 1; snpId++) {
             for (int nodeIdx = 0; nodeIdx < nodes(); nodeIdx++) {
-                // Skip if the latest cut is completed.
-                if (readers.get(nodeIdx).cuts.size() == cutId)
+                // Skip if the latest snapshot is completed.
+                if (readers.get(nodeIdx).snps.size() == snpId)
                     continue;
 
-                ReadConsistentCut cut = readers.get(nodeIdx).cuts.get(cutId);
+                IncrementalSnapshot snp = readers.get(nodeIdx).snps.get(snpId);
 
-                for (GridCacheVersion xid: cut.txs) {
-                    T2<UUID, Integer> prev = txMap.put(xid, new T2<>(cut.id, nodeIdx));
+                for (GridCacheVersion xid: snp.txs) {
+                    T2<UUID, Integer> prev = txMap.put(xid, new T2<>(snp.id, nodeIdx));
 
                     if (prev != null) {
-                        assertTrue("Transaction miscutted: [xid=" + xid + ", node" + prev.get2() + "=" + prev.get1() +
-                            ", node" + nodeIdx + "=" + cut.id,
-                            Objects.equals(prev == null ? null : prev.get1(), cut.id));
+                        assertTrue("Transaction missed: [xid=" + xid + ", node" + prev.get2() + "=" + prev.get1() +
+                            ", node" + nodeIdx + "=" + snp.id,
+                            Objects.equals(prev == null ? null : prev.get1(), snp.id));
                     }
                 }
             }
@@ -208,57 +208,57 @@ public abstract class AbstractConsistentCutTest extends GridCommonAbstractTest {
     }
 
     /**
-     * Read WAL and sort transactions by Consistent Cuts.
+     * Read WAL and sort transactions by incremental snapshots.
      */
-    private static class ConsistentCutWalReader {
+    private static class IncrementalSnapshotWalReader {
         /** Iterator over WAL archive files. */
         private final WALIterator walIter;
 
-        /** Collection of Consistent Cuts. */
-        final List<ReadConsistentCut> cuts = new ArrayList<>();
+        /** Collection of incremental snapshots. */
+        final List<IncrementalSnapshot> snps = new ArrayList<>();
 
         /** For test purposes. */
-        ConsistentCutWalReader(WALIterator walIter) {
+        IncrementalSnapshotWalReader(WALIterator walIter) {
             this.walIter = walIter;
         }
 
-        /** Read WAL and fills {@link #cuts} with read Consistent Cuts. */
+        /** Read WAL and fills {@link #snps} with read incremental snapshot. */
         void read() {
-            cuts.add(new ReadConsistentCut());
+            snps.add(new IncrementalSnapshot());
 
             while (walIter.hasNext()) {
                 IgniteBiTuple<WALPointer, WALRecord> next = walIter.next();
 
                 WALRecord rec = next.getValue();
 
-                ReadConsistentCut cut = currentCut();
+                IncrementalSnapshot snp = currentSnapshot();
 
                 if (rec.type() == DATA_RECORD_V2)
-                    cut.addTransaction(((DataRecord)rec).writeEntries().get(0).nearXidVersion());
-                else if (rec.type() == CONSISTENT_CUT_START_RECORD) {
-                    assert cut.id == null : "Lost FINISH record: " + rec;
+                    snp.addTransaction(((DataRecord)rec).writeEntries().get(0).nearXidVersion());
+                else if (rec.type() == INCREMENTAL_SNAPSHOT_START_RECORD) {
+                    assert snp.id == null : "Lost FINISH record: " + rec;
 
-                    cut.id = ((ConsistentCutStartRecord)rec).id();
+                    snp.id = ((IncrementalSnapshotStartRecord)rec).id();
 
-                    cuts.add(ReadConsistentCut.fromPrev(currentCut()));
+                    snps.add(IncrementalSnapshot.fromPrev(currentSnapshot()));
                 }
-                else if (rec.type() == CONSISTENT_CUT_FINISH_RECORD)
-                    cut.finishCut((ConsistentCutFinishRecord)rec);
+                else if (rec.type() == INCREMENTAL_SNAPSHOT_FINISH_RECORD)
+                    snp.finish((IncrementalSnapshotFinishRecord)rec);
             }
         }
 
         /** */
-        private ReadConsistentCut currentCut() {
-            return cuts.get(cuts.size() - 1);
+        private IncrementalSnapshot currentSnapshot() {
+            return snps.get(snps.size() - 1);
         }
     }
 
-    /** Consistent Cut state read from WAL. */
-    static class ReadConsistentCut {
-        /** Previous Consistent Cut. */
-        private @Nullable AbstractConsistentCutTest.ReadConsistentCut prev;
+    /** Incremental snapshot state read from WAL. */
+    static class IncrementalSnapshot {
+        /** Previous incremental snapshot. */
+        private @Nullable AbstractIncrementalSnapshotTest.IncrementalSnapshot prev;
 
-        /** Consistent Cut ID. */
+        /** Incremental snapshot ID. */
         private UUID id;
 
         /** Set of transactions ids. */
@@ -266,11 +266,11 @@ public abstract class AbstractConsistentCutTest extends GridCommonAbstractTest {
         private final Set<GridCacheVersion> txs = new HashSet<>();
 
         /** */
-        private static ReadConsistentCut fromPrev(ReadConsistentCut prev) {
-            ReadConsistentCut cut = new ReadConsistentCut();
-            cut.prev = prev;
+        private static IncrementalSnapshot fromPrev(IncrementalSnapshot prev) {
+            IncrementalSnapshot snp = new IncrementalSnapshot();
+            snp.prev = prev;
 
-            return cut;
+            return snp;
         }
 
         /** */
@@ -279,7 +279,7 @@ public abstract class AbstractConsistentCutTest extends GridCommonAbstractTest {
         }
 
         /** */
-        private void finishCut(ConsistentCutFinishRecord rec) {
+        private void finish(IncrementalSnapshotFinishRecord rec) {
             assert rec.id().equals(prev.id) : prev.id + " " + rec;
 
             for (GridCacheVersion txId: rec.included()) {

@@ -22,30 +22,30 @@ import org.apache.ignite.internal.util.tostring.GridToStringInclude;
 import org.apache.ignite.internal.util.typedef.internal.S;
 
 /**
- * This record is written to WAL at the moment when Consistent Cut starts on a baseline node.
+ * This record is written to WAL at the moment when incremental snapshot starts on a baseline node.
  */
-public class ConsistentCutStartRecord extends WALRecord {
-    /** Consistent Cut ID. */
+public class IncrementalSnapshotStartRecord extends WALRecord {
+    /** Incremental snapshot ID. */
     @GridToStringInclude
     private final UUID id;
 
-    /** */
-    public ConsistentCutStartRecord(UUID id) {
+    /** @param id Incremental snapshot ID. */
+    public IncrementalSnapshotStartRecord(UUID id) {
         this.id = id;
     }
 
-    /** */
+    /** @return Incremental snapshot ID. */
     public UUID id() {
         return id;
     }
 
     /** {@inheritDoc} */
     @Override public RecordType type() {
-        return RecordType.CONSISTENT_CUT_START_RECORD;
+        return RecordType.INCREMENTAL_SNAPSHOT_START_RECORD;
     }
 
     /** {@inheritDoc} */
     @Override public String toString() {
-        return S.toString(ConsistentCutStartRecord.class, this);
+        return S.toString(IncrementalSnapshotStartRecord.class, this);
     }
 }

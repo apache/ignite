@@ -25,10 +25,10 @@ import java.util.UUID;
 import java.util.function.Supplier;
 import org.apache.ignite.internal.pagemem.FullPageId;
 import org.apache.ignite.internal.pagemem.wal.record.CheckpointRecord;
-import org.apache.ignite.internal.pagemem.wal.record.ConsistentCutFinishRecord;
-import org.apache.ignite.internal.pagemem.wal.record.ConsistentCutStartRecord;
 import org.apache.ignite.internal.pagemem.wal.record.DataRecord;
 import org.apache.ignite.internal.pagemem.wal.record.ExchangeRecord;
+import org.apache.ignite.internal.pagemem.wal.record.IncrementalSnapshotFinishRecord;
+import org.apache.ignite.internal.pagemem.wal.record.IncrementalSnapshotStartRecord;
 import org.apache.ignite.internal.pagemem.wal.record.IndexRenameRootPageRecord;
 import org.apache.ignite.internal.pagemem.wal.record.MasterKeyChangeRecordV2;
 import org.apache.ignite.internal.pagemem.wal.record.MemoryRecoveryRecord;
@@ -115,8 +115,6 @@ import static org.apache.ignite.internal.pagemem.wal.record.WALRecord.RecordType
 import static org.apache.ignite.internal.pagemem.wal.record.WALRecord.RecordType.CHECKPOINT_RECORD;
 import static org.apache.ignite.internal.pagemem.wal.record.WALRecord.RecordType.CLUSTER_SNAPSHOT;
 import static org.apache.ignite.internal.pagemem.wal.record.WALRecord.RecordType.CONSISTENT_CUT;
-import static org.apache.ignite.internal.pagemem.wal.record.WALRecord.RecordType.CONSISTENT_CUT_FINISH_RECORD;
-import static org.apache.ignite.internal.pagemem.wal.record.WALRecord.RecordType.CONSISTENT_CUT_START_RECORD;
 import static org.apache.ignite.internal.pagemem.wal.record.WALRecord.RecordType.DATA_PAGE_INSERT_FRAGMENT_RECORD;
 import static org.apache.ignite.internal.pagemem.wal.record.WALRecord.RecordType.DATA_PAGE_INSERT_RECORD;
 import static org.apache.ignite.internal.pagemem.wal.record.WALRecord.RecordType.DATA_PAGE_REMOVE_RECORD;
@@ -132,6 +130,8 @@ import static org.apache.ignite.internal.pagemem.wal.record.WALRecord.RecordType
 import static org.apache.ignite.internal.pagemem.wal.record.WALRecord.RecordType.ENCRYPTED_RECORD_V2;
 import static org.apache.ignite.internal.pagemem.wal.record.WALRecord.RecordType.EXCHANGE;
 import static org.apache.ignite.internal.pagemem.wal.record.WALRecord.RecordType.HEADER_RECORD;
+import static org.apache.ignite.internal.pagemem.wal.record.WALRecord.RecordType.INCREMENTAL_SNAPSHOT_FINISH_RECORD;
+import static org.apache.ignite.internal.pagemem.wal.record.WALRecord.RecordType.INCREMENTAL_SNAPSHOT_START_RECORD;
 import static org.apache.ignite.internal.pagemem.wal.record.WALRecord.RecordType.INDEX_META_PAGE_DELTA_RECORD;
 import static org.apache.ignite.internal.pagemem.wal.record.WALRecord.RecordType.INDEX_ROOT_PAGE_RENAME_RECORD;
 import static org.apache.ignite.internal.pagemem.wal.record.WALRecord.RecordType.INIT_NEW_PAGE_RECORD;
@@ -263,8 +263,8 @@ public class RecordUtils {
         put(PARTITION_CLEARING_START_RECORD, RecordUtils::buildPartitionClearingStartedRecord);
         put(ENCRYPTED_OUT_OF_ORDER_UPDATE, buildUpsupportedWalRecord(ENCRYPTED_OUT_OF_ORDER_UPDATE));
         put(CLUSTER_SNAPSHOT, RecordUtils::buildClusterSnapshotRecord);
-        put(CONSISTENT_CUT_START_RECORD, RecordUtils::buildConsistentCutStartRecord);
-        put(CONSISTENT_CUT_FINISH_RECORD, RecordUtils::buildConsistentCutFinishRecord);
+        put(INCREMENTAL_SNAPSHOT_START_RECORD, RecordUtils::buildIncrementalSnapshotStartRecord);
+        put(INCREMENTAL_SNAPSHOT_FINISH_RECORD, RecordUtils::buildIncrementalSnapshotFinishRecord);
     }
 
     /** */
@@ -638,13 +638,13 @@ public class RecordUtils {
     }
 
     /** **/
-    public static ConsistentCutStartRecord buildConsistentCutStartRecord() {
-        return new ConsistentCutStartRecord(UUID.randomUUID());
+    public static IncrementalSnapshotStartRecord buildIncrementalSnapshotStartRecord() {
+        return new IncrementalSnapshotStartRecord(UUID.randomUUID());
     }
 
     /** **/
-    public static ConsistentCutFinishRecord buildConsistentCutFinishRecord() {
-        return new ConsistentCutFinishRecord(
+    public static IncrementalSnapshotFinishRecord buildIncrementalSnapshotFinishRecord() {
+        return new IncrementalSnapshotFinishRecord(
             UUID.randomUUID(), F.asSet(new GridCacheVersion()), F.asSet(new GridCacheVersion()));
     }
 }

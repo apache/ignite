@@ -38,11 +38,11 @@ import org.apache.ignite.internal.managers.encryption.GroupKeyEncrypted;
 import org.apache.ignite.internal.pagemem.FullPageId;
 import org.apache.ignite.internal.pagemem.wal.record.CacheState;
 import org.apache.ignite.internal.pagemem.wal.record.CheckpointRecord;
-import org.apache.ignite.internal.pagemem.wal.record.ConsistentCutFinishRecord;
-import org.apache.ignite.internal.pagemem.wal.record.ConsistentCutStartRecord;
 import org.apache.ignite.internal.pagemem.wal.record.DataEntry;
 import org.apache.ignite.internal.pagemem.wal.record.DataRecord;
 import org.apache.ignite.internal.pagemem.wal.record.EncryptedRecord;
+import org.apache.ignite.internal.pagemem.wal.record.IncrementalSnapshotFinishRecord;
+import org.apache.ignite.internal.pagemem.wal.record.IncrementalSnapshotStartRecord;
 import org.apache.ignite.internal.pagemem.wal.record.IndexRenameRootPageRecord;
 import org.apache.ignite.internal.pagemem.wal.record.LazyDataEntry;
 import org.apache.ignite.internal.pagemem.wal.record.MasterKeyChangeRecordV2;
@@ -560,11 +560,11 @@ public class RecordDataV1Serializer implements RecordDataSerializer {
             case CLUSTER_SNAPSHOT:
                 return 4 + ((ClusterSnapshotRecord)record).clusterSnapshotName().getBytes().length;
 
-            case CONSISTENT_CUT_START_RECORD:
+            case INCREMENTAL_SNAPSHOT_START_RECORD:
                 return 16;
 
-            case CONSISTENT_CUT_FINISH_RECORD:
-                return ((ConsistentCutFinishRecord)record).dataSize();
+            case INCREMENTAL_SNAPSHOT_FINISH_RECORD:
+                return ((IncrementalSnapshotFinishRecord)record).dataSize();
 
             default:
                 throw new UnsupportedOperationException("Type: " + record.type());
@@ -1303,22 +1303,22 @@ public class RecordDataV1Serializer implements RecordDataSerializer {
 
                 break;
 
-            case CONSISTENT_CUT_START_RECORD:
+            case INCREMENTAL_SNAPSHOT_START_RECORD:
                 long mst = in.readLong();
                 long lst = in.readLong();
 
-                res = new ConsistentCutStartRecord(new UUID(mst, lst));
+                res = new IncrementalSnapshotStartRecord(new UUID(mst, lst));
 
                 break;
 
-            case CONSISTENT_CUT_FINISH_RECORD:
+            case INCREMENTAL_SNAPSHOT_FINISH_RECORD:
                 long mstSignBits = in.readLong();
                 long lstSignBits = in.readLong();
 
                 Set<GridCacheVersion> included = readVersions(in);
                 Set<GridCacheVersion> excluded = readVersions(in);
 
-                res = new ConsistentCutFinishRecord(new UUID(mstSignBits, lstSignBits), included, excluded);
+                res = new IncrementalSnapshotFinishRecord(new UUID(mstSignBits, lstSignBits), included, excluded);
 
                 break;
 
@@ -1967,28 +1967,28 @@ public class RecordDataV1Serializer implements RecordDataSerializer {
 
                 break;
 
-            case CONSISTENT_CUT_START_RECORD:
-                ConsistentCutStartRecord startRec = (ConsistentCutStartRecord)rec;
+            case INCREMENTAL_SNAPSHOT_START_RECORD:
+                IncrementalSnapshotStartRecord startRec = (IncrementalSnapshotStartRecord)rec;
 
                 buf.putLong(startRec.id().getMostSignificantBits());
                 buf.putLong(startRec.id().getLeastSignificantBits());
 
                 break;
 
-            case CONSISTENT_CUT_FINISH_RECORD:
-                ConsistentCutFinishRecord cutFinRec = (ConsistentCutFinishRecord)rec;
+            case INCREMENTAL_SNAPSHOT_FINISH_RECORD:
+                IncrementalSnapshotFinishRecord incSnpFinRec = (IncrementalSnapshotFinishRecord)rec;
 
-                buf.putLong(cutFinRec.id().getMostSignificantBits());
-                buf.putLong(cutFinRec.id().getLeastSignificantBits());
+                buf.putLong(incSnpFinRec.id().getMostSignificantBits());
+                buf.putLong(incSnpFinRec.id().getLeastSignificantBits());
 
-                buf.putInt(cutFinRec.included().size());
+                buf.putInt(incSnpFinRec.included().size());
 
-                for (GridCacheVersion v: cutFinRec.included())
+                for (GridCacheVersion v: incSnpFinRec.included())
                     putVersion(buf, v, false);
 
-                buf.putInt(cutFinRec.excluded().size());
+                buf.putInt(incSnpFinRec.excluded().size());
 
-                for (GridCacheVersion v: cutFinRec.excluded())
+                for (GridCacheVersion v: incSnpFinRec.excluded())
                     putVersion(buf, v, false);
 
                 break;

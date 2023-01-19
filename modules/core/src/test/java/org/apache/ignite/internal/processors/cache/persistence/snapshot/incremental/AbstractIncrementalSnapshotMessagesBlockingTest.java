@@ -15,7 +15,7 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.internal.processors.cache.consistentcut;
+package org.apache.ignite.internal.processors.cache.persistence.snapshot.incremental;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -31,12 +31,8 @@ import org.apache.ignite.internal.processors.cache.distributed.near.GridNearTxPr
 import org.apache.ignite.internal.processors.cache.distributed.near.GridNearTxPrepareResponse;
 import org.apache.ignite.transactions.TransactionConcurrency;
 
-import static org.apache.ignite.internal.processors.cache.consistentcut.AbstractConsistentCutBlockingTest.BlkNodeType.BACKUP;
-import static org.apache.ignite.internal.processors.cache.consistentcut.AbstractConsistentCutBlockingTest.BlkNodeType.NEAR;
-import static org.apache.ignite.internal.processors.cache.consistentcut.AbstractConsistentCutBlockingTest.BlkNodeType.PRIMARY;
-
 /** */
-public abstract class AbstractConsistentCutMessagesBlockingTest extends AbstractConsistentCutBlockingTest {
+public abstract class AbstractIncrementalSnapshotMessagesBlockingTest extends AbstractIncrementalSnapshotBlockingTest {
     /** */
     private static Class<?> txMsgBlkCls;
 
@@ -50,12 +46,12 @@ public abstract class AbstractConsistentCutMessagesBlockingTest extends Abstract
     }
 
     /** Initialize latches for test cases with blocking tx messages. */
-    protected final void initMsgCase(Class<?> msgCls, BlkNodeType txBlkNode, BlkCutType cutBlkType, BlkNodeType cutBlkNode) {
+    protected final void initMsgCase(Class<?> msgCls, BlkNodeType txBlkNode, BlkSnpType snpBlkType, BlkNodeType snpBlkNode) {
         txBlkNodeType = txBlkNode;
 
         txMsgBlkCls = msgCls;
-        AbstractConsistentCutBlockingTest.cutBlkType = cutBlkType;
-        cutBlkNodeType = cutBlkNode;
+        AbstractIncrementalSnapshotBlockingTest.snpBlkType = snpBlkType;
+        snpBlkNodeType = snpBlkNode;
     }
 
     /** */
@@ -66,10 +62,10 @@ public abstract class AbstractConsistentCutMessagesBlockingTest extends Abstract
     ) throws Exception {
         int txBlkNodeIdx = blkNodeIndex(nearNodeIdx, txBlkNodeType, testCase);
 
-        int cutBlkNodeIdx = -1;
+        int snpBlkNodeIdx = -1;
 
-        if (cutBlkType != BlkCutType.NONE)
-            cutBlkNodeIdx = blkNodeIndex(nearNodeIdx, cutBlkNodeType, testCase);
+        if (snpBlkType != BlkSnpType.NONE)
+            snpBlkNodeIdx = blkNodeIndex(nearNodeIdx, snpBlkNodeType, testCase);
 
         if (skipMsgTestCase(txBlkNodeIdx, nearNodeIdx, testCase))
             return;
@@ -79,10 +75,10 @@ public abstract class AbstractConsistentCutMessagesBlockingTest extends Abstract
             ", nearNodeIdx=" + nearNodeIdx +
             ", txBlkNodeIdx=" + txBlkNodeIdx +
             ", txBlkNodeType=" + txBlkNodeType +
-            ", cutBlkNodeIdx=" + cutBlkNodeIdx +
+            ", snpBlkNodeIdx=" + snpBlkNodeIdx +
             ", msg=" + txMsgBlkCls.getSimpleName());
 
-        run(() -> tx(nearNodeIdx, testCase, txConcurrency), txBlkNodeIdx, cutBlkNodeIdx);
+        run(() -> tx(nearNodeIdx, testCase, txConcurrency), txBlkNodeIdx, snpBlkNodeIdx);
     }
 
     /** {@inheritDoc} */
@@ -112,45 +108,45 @@ public abstract class AbstractConsistentCutMessagesBlockingTest extends Abstract
     private boolean skipMsgTestCase(int txBlkNodeIdx, int nearNodeIdx, TransactionTestCase testCase) {
         // GridNearTxPrepareRequest is sent only from near node if at least one primary copy isn't collocated.
         if (txMsgBlkCls.equals(GridNearTxPrepareRequest.class)) {
-            return txBlkNodeType != NEAR || testCase.allPrimaryOnNear(nearNodeIdx);
+            return txBlkNodeType != BlkNodeType.NEAR || testCase.allPrimaryOnNear(nearNodeIdx);
         }
 
         // GridNearTxPrepareResponse is sent only from primary node if it isn't collocated on near node.
         if (txMsgBlkCls.equals(GridNearTxPrepareResponse.class)) {
-            return txBlkNodeType != PRIMARY || txBlkNodeIdx == nearNodeIdx;
+            return txBlkNodeType != BlkNodeType.PRIMARY || txBlkNodeIdx == nearNodeIdx;
         }
 
         // GridNearTxFinishRequest is sent only from near node for two-phase-commit and if at least one primary isn't collocated.
         if (txMsgBlkCls.equals(GridNearTxFinishRequest.class)) {
-            return txBlkNodeType != NEAR || testCase.onePhase() || testCase.allPrimaryOnNear(nearNodeIdx);
+            return txBlkNodeType != BlkNodeType.NEAR || testCase.onePhase() || testCase.allPrimaryOnNear(nearNodeIdx);
         }
 
         // GridNearTxFinishResponse is sent only from primary node for two-phase-commit and if it isn't collocated.
         if (txMsgBlkCls.equals(GridNearTxFinishResponse.class)) {
-            return txBlkNodeType != PRIMARY || testCase.onePhase() || txBlkNodeIdx == nearNodeIdx;
+            return txBlkNodeType != BlkNodeType.PRIMARY || testCase.onePhase() || txBlkNodeIdx == nearNodeIdx;
         }
 
         // GridDhtTxPrepareRequest is sent from primary node, or from near node if primaries are collocated.
         if (txMsgBlkCls.equals(GridDhtTxPrepareRequest.class)) {
-            if (txBlkNodeType == NEAR)
+            if (txBlkNodeType == BlkNodeType.NEAR)
                 return !testCase.allPrimaryOnNear(nearNodeIdx);
 
-            return txBlkNodeType != PRIMARY;
+            return txBlkNodeType != BlkNodeType.PRIMARY;
         }
 
         // GridDhtTxPrepareResponse is sent from backup nodes only.
         if (txMsgBlkCls.equals(GridDhtTxPrepareResponse.class))
-            return txBlkNodeType != BACKUP;
+            return txBlkNodeType != BlkNodeType.BACKUP;
 
         // GridDhtTxFinishRequest is sent from primary node for two-phase-commit, or from near node if primaries are collocated.
         if (txMsgBlkCls.equals(GridDhtTxFinishRequest.class)) {
             if (testCase.onePhase())
                 return true;
 
-            if (txBlkNodeType == NEAR)
+            if (txBlkNodeType == BlkNodeType.NEAR)
                 return !testCase.allPrimaryOnNear(nearNodeIdx);
 
-            return txBlkNodeType != PRIMARY;
+            return txBlkNodeType != BlkNodeType.PRIMARY;
         }
 
         return false;

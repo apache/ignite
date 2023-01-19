@@ -15,7 +15,7 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.internal.processors.cache.consistentcut;
+package org.apache.ignite.internal.processors.cache.persistence.snapshot.incremental;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -25,14 +25,12 @@ import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.junit.runners.Parameterized;
 
-import static org.apache.ignite.internal.processors.cache.consistentcut.AbstractConsistentCutBlockingTest.BlkNodeType.NEAR;
-import static org.apache.ignite.internal.processors.cache.consistentcut.AbstractConsistentCutBlockingTest.BlkNodeType.PRIMARY;
 import static org.apache.ignite.transactions.TransactionState.COMMITTED;
 import static org.apache.ignite.transactions.TransactionState.PREPARED;
 
 /** */
 @RunWith(Parameterized.class)
-public class ConsistentCutNoBackupWALBlockingTest extends AbstractConsistentCutWalBlockingTest {
+public class IncrementalSnapshotNoBackupWALBlockingTest extends AbstractIncrementalSnapshotWalBlockingTest {
     /** */
     @Parameterized.Parameter
     public TransactionState txBlkState;
@@ -43,21 +41,21 @@ public class ConsistentCutNoBackupWALBlockingTest extends AbstractConsistentCutW
 
     /** */
     @Parameterized.Parameter(2)
-    public BlkCutType cutBlkType;
+    public BlkSnpType snpBlkType;
 
     /** */
     @Parameterized.Parameter(3)
-    public BlkNodeType cutBlkNode;
+    public BlkNodeType snpBlkNode;
 
     /** */
-    @Parameterized.Parameters(name = "txStateBlk={0}, txNodeBlk={1}, cutBlkType={2}, cutBlkNode={3}")
+    @Parameterized.Parameters(name = "txStateBlk={0}, txNodeBlk={1}, snpBlkType={2}, snpBlkNode={3}")
     public static List<Object[]> params() {
         List<Object[]> params = new ArrayList<>();
 
         Stream.of(PREPARED, COMMITTED).forEach((tx) ->
-            Stream.of(NEAR, PRIMARY).forEach((nt) ->
-                Stream.of(NEAR, PRIMARY).forEach(nc -> {
-                    for (BlkCutType c : BlkCutType.values())
+            Stream.of(BlkNodeType.NEAR, BlkNodeType.PRIMARY).forEach((nt) ->
+                Stream.of(BlkNodeType.NEAR, BlkNodeType.PRIMARY).forEach(nc -> {
+                    for (BlkSnpType c : BlkSnpType.values())
                         params.add(new Object[] {tx, nt, c, nc});
                 })
             )
@@ -69,7 +67,7 @@ public class ConsistentCutNoBackupWALBlockingTest extends AbstractConsistentCutW
     /** */
     @Test
     public void testMultipleCases() throws Exception {
-        initWALCase(txBlkState, txBlkNode, cutBlkType, cutBlkNode);
+        initWALCase(txBlkState, txBlkNode, snpBlkType, snpBlkNode);
 
         runCases(cases());
 

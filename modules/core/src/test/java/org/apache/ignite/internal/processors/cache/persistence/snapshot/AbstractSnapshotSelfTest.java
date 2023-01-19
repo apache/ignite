@@ -71,8 +71,8 @@ import org.apache.ignite.internal.encryption.AbstractEncryptionTest;
 import org.apache.ignite.internal.managers.discovery.CustomMessageWrapper;
 import org.apache.ignite.internal.managers.discovery.DiscoveryCustomMessage;
 import org.apache.ignite.internal.pagemem.wal.WALIterator;
-import org.apache.ignite.internal.pagemem.wal.record.ConsistentCutFinishRecord;
-import org.apache.ignite.internal.pagemem.wal.record.ConsistentCutStartRecord;
+import org.apache.ignite.internal.pagemem.wal.record.IncrementalSnapshotFinishRecord;
+import org.apache.ignite.internal.pagemem.wal.record.IncrementalSnapshotStartRecord;
 import org.apache.ignite.internal.pagemem.wal.record.WALRecord;
 import org.apache.ignite.internal.processors.cache.CacheGroupDescriptor;
 import org.apache.ignite.internal.processors.cache.GridCacheSharedContext;
@@ -701,17 +701,17 @@ public abstract class AbstractSnapshotSelfTest extends GridCommonAbstractTest {
             boolean finished = false;
 
             for (IgniteBiTuple<WALPointer, WALRecord> entry: it) {
-                assertFalse("ConsistentCutFinishRecord must be the last record in snapshot", finished);
+                assertFalse("IncrementalSnapshotFinishRecord must be the last record in snapshot", finished);
 
                 WALRecord rec = entry.getValue();
 
-                if (rec.type() == WALRecord.RecordType.CONSISTENT_CUT_START_RECORD) {
-                    if (((ConsistentCutStartRecord)rec).id().equals(incSnpMeta.requestId()))
+                if (rec.type() == WALRecord.RecordType.INCREMENTAL_SNAPSHOT_START_RECORD) {
+                    if (((IncrementalSnapshotStartRecord)rec).id().equals(incSnpMeta.requestId()))
                         started = true;
                 }
 
-                if (rec.type() == WALRecord.RecordType.CONSISTENT_CUT_FINISH_RECORD) {
-                    if (((ConsistentCutFinishRecord)rec).id().equals(incSnpMeta.requestId()))
+                if (rec.type() == WALRecord.RecordType.INCREMENTAL_SNAPSHOT_FINISH_RECORD) {
+                    if (((IncrementalSnapshotFinishRecord)rec).id().equals(incSnpMeta.requestId()))
                         finished = true;
                 }
             }

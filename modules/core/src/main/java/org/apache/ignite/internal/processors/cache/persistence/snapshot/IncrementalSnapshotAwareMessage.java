@@ -28,9 +28,9 @@ import org.apache.ignite.plugin.extensions.communication.MessageWriter;
 import org.jetbrains.annotations.Nullable;
 
 /**
- * Message that holds a transaction message and Consistent Cut info.
+ * Message that holds a transaction message and incremental snapshot ID.
  */
-public class ConsistentCutAwareMessage extends GridCacheIdMessage {
+public class IncrementalSnapshotAwareMessage extends GridCacheIdMessage {
     /** */
     private static final long serialVersionUID = 0L;
 
@@ -40,35 +40,35 @@ public class ConsistentCutAwareMessage extends GridCacheIdMessage {
     /** Original transaction message. */
     private GridCacheMessage payload;
 
-    /** Consistent Cut ID. */
+    /** Incremental snapshot ID. */
     private UUID id;
 
-    /** ID of the latest Consistent Cut AFTER which this transaction committed. */
-    private @Nullable UUID txCutId;
+    /** ID of the latest incremental snapshot after which this transaction committed. */
+    private @Nullable UUID txSnpId;
 
     /** */
-    public ConsistentCutAwareMessage() {
+    public IncrementalSnapshotAwareMessage() {
     }
 
     /** */
-    public ConsistentCutAwareMessage(
+    public IncrementalSnapshotAwareMessage(
         GridCacheMessage payload,
         UUID id,
-        @Nullable UUID txCutId
+        @Nullable UUID txSnpId
     ) {
         this.payload = payload;
         this.id = id;
-        this.txCutId = txCutId;
+        this.txSnpId = txSnpId;
     }
 
-    /** @return Consistent Cut ID. */
+    /** @return Incremental snapshot ID. */
     public UUID id() {
         return id;
     }
 
-    /** @return ID of the latest Consistent Cut AFTER which this transaction committed. */
-    public UUID txCutId() {
-        return txCutId;
+    /** ID of the latest incremental snapshot after which this transaction committed. */
+    public UUID txSnpId() {
+        return txSnpId;
     }
 
     /** */
@@ -114,7 +114,7 @@ public class ConsistentCutAwareMessage extends GridCacheIdMessage {
                 writer.incrementState();
 
             case 6:
-                if (!writer.writeUuid("txCutId", txCutId))
+                if (!writer.writeUuid("txSnpId", txSnpId))
                     return false;
 
                 writer.incrementState();
@@ -152,7 +152,7 @@ public class ConsistentCutAwareMessage extends GridCacheIdMessage {
                 reader.incrementState();
 
             case 6:
-                txCutId = reader.readUuid("txCutId");
+                txSnpId = reader.readUuid("txSnpId");
 
                 if (!reader.isLastRead())
                     return false;
@@ -161,7 +161,7 @@ public class ConsistentCutAwareMessage extends GridCacheIdMessage {
 
         }
 
-        return reader.afterMessageRead(ConsistentCutAwareMessage.class);
+        return reader.afterMessageRead(IncrementalSnapshotAwareMessage.class);
     }
 
     /** {@inheritDoc} */

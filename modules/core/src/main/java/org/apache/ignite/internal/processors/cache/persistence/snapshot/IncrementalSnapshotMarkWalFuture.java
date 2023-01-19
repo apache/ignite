@@ -24,8 +24,8 @@ import java.util.concurrent.ConcurrentHashMap;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.internal.IgniteInternalFuture;
-import org.apache.ignite.internal.pagemem.wal.record.ConsistentCutFinishRecord;
-import org.apache.ignite.internal.pagemem.wal.record.ConsistentCutStartRecord;
+import org.apache.ignite.internal.pagemem.wal.record.IncrementalSnapshotFinishRecord;
+import org.apache.ignite.internal.pagemem.wal.record.IncrementalSnapshotStartRecord;
 import org.apache.ignite.internal.pagemem.wal.record.RolloverType;
 import org.apache.ignite.internal.processors.cache.GridCacheSharedContext;
 import org.apache.ignite.internal.processors.cache.persistence.wal.WALPointer;
@@ -45,26 +45,26 @@ import static org.apache.ignite.transactions.TransactionState.MARKED_ROLLBACK;
 import static org.apache.ignite.transactions.TransactionState.ROLLED_BACK;
 
 /**
- * Consistent Cut is a distributed algorithm that goal is to define a specific set of transactions. It guarantees that
- * every transaction was included into the set on one node also included into the same set on every other node participated
- * in the transaction. It means that Ignite nodes can safely recover themselves to the consistent state by applying
+ * Incremental snapshot based on the Consistent Cut distributed algorithm that goal is to define a specific set of transactions.
+ * It guarantees that every transaction was included into the set on one node also included into the same set on every other
+ * node participated in the transaction. It means that Ignite nodes can safely recover themselves to the consistent state by applying
  * transactions from this set.
  */
-class ConsistentCutMarkWalFuture extends GridFutureAdapter<WALPointer> {
+class IncrementalSnapshotMarkWalFuture extends GridFutureAdapter<WALPointer> {
     /** Cache context. */
     private final GridCacheSharedContext<?, ?> cctx;
 
-    /** Consistent Cut ID. */
+    /** Incremental snapshot ID. */
     private final UUID id;
 
     /** Logger. */
     private final IgniteLogger log;
 
-    /** Set of checked transactions included into the Consistent Cut. */
+    /** Set of checked transactions included into the incremental snapshot. */
     @GridToStringInclude
     private final Set<GridCacheVersion> included = ConcurrentHashMap.newKeySet();
 
-    /** Set of checked transactions excluded from the Consistent Cut. */
+    /** Set of checked transactions excluded from the incremental snapshot. */
     @GridToStringInclude
     private final Set<GridCacheVersion> excluded = ConcurrentHashMap.newKeySet();
 
@@ -72,19 +72,19 @@ class ConsistentCutMarkWalFuture extends GridFutureAdapter<WALPointer> {
     private final Set<IgniteInternalFuture<IgniteInternalTx>> removedFromActive = ConcurrentHashMap.newKeySet();
 
     /** */
-    ConsistentCutMarkWalFuture(GridCacheSharedContext<?, ?> cctx, UUID id) {
+    IncrementalSnapshotMarkWalFuture(GridCacheSharedContext<?, ?> cctx, UUID id) {
         this.cctx = cctx;
         this.id = id;
 
-        log = cctx.logger(ConsistentCutMarkWalFuture.class);
+        log = cctx.logger(IncrementalSnapshotMarkWalFuture.class);
 
         cctx.tm().onCommitCallback((tx) -> removedFromActive.add(tx.finishFuture()));
     }
 
-    /** Inits the future: it prepares list of active transactions to check which side of Consistent Cut they belong to. */
+    /** Inits the future: it prepares list of active transactions to check whether they belong the incremental snapshot. */
     void init() {
         try {
-            cctx.wal().log(new ConsistentCutStartRecord(id));
+            cctx.wal().log(new IncrementalSnapshotStartRecord(id));
 
             GridCompoundFuture<Boolean, Boolean> checkFut = new GridCompoundFuture<>(CU.boolReducer());
 
@@ -106,7 +106,7 @@ class ConsistentCutMarkWalFuture extends GridFutureAdapter<WALPointer> {
                     return;
 
                 if (Boolean.FALSE.equals(finish.result())) {
-                    onDone(new IgniteCheckedException("Cut is inconsistent."));
+                    onDone(new IgniteCheckedException("Incremental snapshot is inconsistent."));
 
                     return;
                 }
@@ -117,10 +117,10 @@ class ConsistentCutMarkWalFuture extends GridFutureAdapter<WALPointer> {
                 cctx.database().checkpointReadLock();
 
                 try {
-                    ptr = cctx.wal().log(new ConsistentCutFinishRecord(id, included, excluded), RolloverType.CURRENT_SEGMENT);
+                    ptr = cctx.wal().log(new IncrementalSnapshotFinishRecord(id, included, excluded), RolloverType.CURRENT_SEGMENT);
                 }
                 catch (IgniteCheckedException e) {
-                    U.error(log, "Failed to write ConsistentCutFinishRecord to WAL for [id= " + id + ']', e);
+                    U.error(log, "Failed to write IncrementalSnapshotFinishRecord to WAL for [id= " + id + ']', e);
 
                     err = e;
                 }
@@ -134,7 +134,7 @@ class ConsistentCutMarkWalFuture extends GridFutureAdapter<WALPointer> {
         catch (IgniteCheckedException e) {
             onDone(e);
 
-            U.error(log, "Failed to init Consistent Cut: " + id, e);
+            U.error(log, "Failed to init incremental snapshot: " + id, e);
         }
         finally {
             cctx.tm().onCommitCallback(null);
@@ -142,7 +142,7 @@ class ConsistentCutMarkWalFuture extends GridFutureAdapter<WALPointer> {
     }
 
     /**
-     * Checks active transactions - decides which side of Consistent Cut they belong to after they finished.
+     * Checks active transactions - decides whether they belong to the incremental snapshot after they finished.
      *
      * @param activeTxFinFuts Active transactions to check.
      * @param checkFut Compound future that reduces finishes of the checking transactions.
@@ -161,18 +161,18 @@ class ConsistentCutMarkWalFuture extends GridFutureAdapter<WALPointer> {
                     return true;
 
                 if (tx.state() != COMMITTED) {
-                    U.warn(log, "Cut is inconsistent due to transaction is in unexpected state: " + tx);
+                    U.warn(log, "Incremental snapshot is inconsistent due to transaction is in unexpected state: " + tx);
 
                     return false;
                 }
 
                 if (tx.finalizationStatus() == RECOVERY_FINISH) {
-                    U.warn(log, "Cut is inconsistent due to transaction committed after recovery process: " + tx);
+                    U.warn(log, "Incremental snapshot is inconsistent due to transaction committed after recovery process: " + tx);
 
                     return false;
                 }
 
-                if (id.equals(tx.cutId()))
+                if (id.equals(tx.incSnpId()))
                     excluded.add(tx.nearXidVersion());
                 else
                     included.add(tx.nearXidVersion());
